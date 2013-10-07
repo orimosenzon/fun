@@ -1,0 +1,120 @@
+﻿<svg 
+   xmlns = "http://www.w3.org/2000/svg"
+
+  xmlns:xlink = "http://www.w3.org/1999/xlink"
+
+  width = "100%" height = "100%"
+  onload = "init(evt)"
+
+  onmouseup = "upHandle(evt)"	
+  onmousemove  = "moveHandle(evt)"
+ 
+ >
+
+
+
+<script>
+<![CDATA[
+function init(evt) {
+	xmlns = "http://www.w3.org/2000/svg";
+	svgDoc = document;
+	rootElement = svgDoc.rootElement;
+	c1 = svgDoc.getElementById("c1");
+	dragging = false;  
+	px = [300,350,400,450]; 
+	py = [300,250,250,300];   
+
+	l1 = createLine(px[0],py[0],px[1],py[1]);
+	l2 = createLine(px[2],py[2],px[3],py[3]);
+
+	theCurve = createBezier(px[0],py[0], px[1],py[1], px[2],py[2], px[3],py[3]);
+	for(i=0; i<4; ++i) 
+		createCircle(px[i],py[i],7,i,"downHandle(evt)"); 
+}
+
+
+function createBezier(x1,y1, x2,y2, x3,y3, x4,y4) {
+    var p = svgDoc.createElementNS(xmlns,"path");
+    setPathD(p, x1,y1, x2,y2, x3,y3, x4,y4); 
+    p.setAttribute("stroke-width","4"); 
+    p.setAttribute("stroke","black"); 
+    p.setAttribute("fill","none"); 
+    rootElement.appendChild(p);
+    return p; 
+}
+
+
+function createCircle(x,y,r,id,func) {
+    var c = svgDoc.createElementNS(xmlns,"circle"); 
+    c.setAttribute("cx",x);
+    c.setAttribute("cy",y);
+    c.setAttribute("r",r); 
+    c.setAttribute("id",""+id);	
+    c.setAttribute("onmousedown",func); 	
+    rootElement.appendChild(c); 
+    return c; 	
+}
+
+function createLine(x1,y1,x2,y2) {
+    var l = svgDoc.createElementNS(xmlns,"line");
+    setLine(l,x1,y1,x2,y2); 	
+    l.setAttribute("stroke","gray"); 
+    l.setAttribute("stroke-width","1"); 
+    
+    rootElement.appendChild(l);
+    return l; 
+}
+
+function setLine(l,x1,y1,x2,y2) {
+    l.setAttribute("x1",x1); 
+    l.setAttribute("y1",y1); 
+    l.setAttribute("x2",x2); 
+    l.setAttribute("y2",y2); 
+}
+
+
+
+function setPathD(p, x1,y1, x2,y2, x3,y3, x4,y4) {
+	p.setAttribute("d","M"+x1+" "+y1+"C"+x2+" "+y2+" "+x3+" "+y3+" "+x4+" "+y4);  
+}
+
+function downHandle(evt) {
+	dragging = true; 
+	sctCir = evt.target; 
+}
+
+function upHandle(evt) {
+	dragging = false; 
+
+}
+
+function moveHandle(evt) {
+
+	if(!dragging)
+		return;
+	var i = parseInt(sctCir.id); 
+	px[i] = evt.clientX; 
+	py[i] = evt.clientY; 
+	setPathD(theCurve,px[0],py[0], px[1],py[1], px[2],py[2], px[3],py[3]);
+
+	sctCir.setAttribute("cx",evt.clientX);    
+	sctCir.setAttribute("cy",evt.clientY); 
+
+	if(i < 2)
+		setLine(l1,px[0],py[0],px[1],py[1]);
+	else
+		setLine(l2,px[2],py[2],px[3],py[3]);
+
+}
+
+
+
+
+
+
+//]]>
+
+</script>
+
+
+</svg>

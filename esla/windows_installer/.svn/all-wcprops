@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/82/trunk/windows_installer
+END
+trans.ico
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/63/trunk/windows_installer/trans.ico
+END
+create_installer.bat
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/64/trunk/windows_installer/create_installer.bat
+END
+vec_comb.ico
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/63/trunk/windows_installer/vec_comb.ico
+END
+setup.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/34/trunk/windows_installer/setup.py
+END
+license_gpl_v3.txt
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/34/trunk/windows_installer/license_gpl_v3.txt
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/62/trunk/windows_installer/README.txt
+END
+esla.nsi
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/82/trunk/windows_installer/esla.nsi
+END
+esla.ico
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/63/trunk/windows_installer/esla.ico
+END

@@ -1,0 +1,12 @@
+﻿<!DOCTYPE HTML>
+<html lang="iw">
+	<head>	
+		<title> אנימציית ביזייר </title>
+	</head>	
+	<body>
+		<nav style="text-align:right">
+			<h2> טיוטה ראשונה </h2>
+			<embed src="./bezier_draw.svg" width="900" height="500" type="image/svg+xml" />
+		</nav>
+	</body>
+<html>

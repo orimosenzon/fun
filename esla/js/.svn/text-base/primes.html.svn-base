@@ -1,0 +1,65 @@
+<html>
+	<head>
+		<title> </title>
+	
+	<script type = "text/javascript">
+	function addPrime(c,p) {
+		if (c != 1)
+			all += ",";
+		all += p;
+		if (c % 40)
+                	all += "\n"; 
+	}
+	function primes() {
+		N = document.getElementById("inp").value; 		
+		arr = new Array(); 
+                for(i=2; i<=N; i++)
+			arr[i] = true;
+                i = 2; c = 0; 
+	        while(true) {
+                	while(!arr[i]) {
+					i++;
+					if (i>N)
+						return; 
+			} 
+			c++; 
+			addPrime(c,i); 
+			j = i+i; 
+			while (j<=N) {
+				arr[j] = false; 
+				j+= i
+
+			}
+			i++;
+		}  
+		
+	}	
+	function write(s) {
+		document.getElementById("out").innerHTML = s;  
+	}
+	function processInput(e) {
+		if (e.keyCode != 13) // enter
+			return; 
+
+		n = parseInt(document.getElementById("inp").value); 
+
+
+		if (isNaN(n)) 
+			return; 
+		all = ""; 
+		primes(n); 
+		write(all);  
+	}
+	</script>
+	</head>
+
+
+	<body>
+		<p> Max: </p> 
+		<input type = "text" size = "10" id = "inp" onkeypress = "processInput(event)"/> 
+		<p> Primes: </p>
+		<p id = "out"> </p>
+
+	</body>
+
+</html>

@@ -1,0 +1,195 @@
+﻿<svg 
+   xmlns = "http://www.w3.org/2000/svg"
+   xmlns:xlink = "http://www.w3.org/1999/xlink"
+   width = "100%" height = "100%" 
+   onload = "init(evt)"
+   onclick = "clickHandle(evt)"
+   onmousemove = "moveHandle(evt)"
+>
+
+<script>
+<![CDATA[
+var goalsX = [-4,-3,-2,0,1,4]; 
+var goalsY = [0,2,-3,-2,3,-4];   
+
+function init(evt) {
+    svgDoc = document; // change to target?.. 
+    rootElement = svgDoc.rootElement; 
+    xmlns = "http://www.w3.org/2000/svg";
+    pSize = 3; 
+    
+    WIDTH = 900; 
+    HEIGHT = 500; // still needs to find out how to know these.. 
+    
+    CX = WIDTH / 2; 
+    CY = HEIGHT / 2; 
+    drawAxis();
+	writeMission(); 
+}
+
+function writeMission() {
+	var x = WIDTH-100; 
+	createText(x,20,":נסו לסמן את הנקודות האלה",12); 
+	for(var i=0; i<goalsX.length; ++i) 
+		createText(WIDTH-60*(i+1),40,"("+goalsX[i]+","+goalsY[i]+")"); 
+}
+
+function drawAxis() {
+    axisOffset = 30; 
+    createLine(axisOffset, CY, WIDTH - axisOffset,CY); 
+    createLine(CX, axisOffset, CX, HEIGHT - axisOffset); 
+    
+    xUnits = 10;  
+    shnataSize = 2; 
+    shnataFactor = 2; 
+    s2 = shnataSize * shnataFactor; 
+    sTsize = 12; 
+    sOffset = 14; 
+    tap = 3; 
+    unit = (CX - axisOffset) / xUnits;  
+    for(var i=0; i < xUnits; ++i) {
+	var s = shnataSize; 
+	var x = i * unit;
+	
+	var t1 = createText(CX+x-tap,CY+s2+sOffset,i,sTsize);
+    var t2 = createText(CX-x-tap,CY+s2+sOffset,-i,sTsize);
+
+	if (i%2 == 0) {
+	    s = s2; 
+		t1.setAttribute("style","font-weight:bold");
+		t2.setAttribute("style","font-weight:bold");
+	}
+
+	createLine(CX + x,CY - s, CX + x, CY + s);
+	createLine(CX - x,CY - s, CX - x, CY + s);
+    }
+
+    yUnits = (CY - axisOffset) / unit; 
+
+    for(var i=0; i < yUnits; ++i) {
+		var s = shnataSize; 
+		var y = i * unit;
+
+		t1 = createText(CX - s2 - sOffset, CY + y + tap, -i, sTsize);
+		t2 = createText(CX - s2 - sOffset, CY - y + tap, i, sTsize);
+
+		if (i%2 == 0) {
+			s = s2;
+			t1.setAttribute("style","font-weight:bold");
+			t2.setAttribute("style","font-weight:bold");
+		}
+
+		createLine(CX - s, CY + y, CX + s, CY + y);
+		createLine(CX - s, CY - y, CX + s, CY - y);
+    }
+
+    var tr1 = svgDoc.getElementById("t1");
+    var tr2 = tr1.cloneNode(true);
+    var str; 
+
+    str = "translate(" + CX + "," + axisOffset + ")";
+    tr1.setAttribute("transform",str);
+
+    str = "translate(" + (WIDTH-axisOffset) + "," + CY + ")";
+    tr2.setAttribute("transform",str + " rotate(90)");
+
+    rootElement.appendChild(tr2); 
+}
+
+function createText(x,y,str,size) {
+    var t = svgDoc.createElementNS(xmlns,"text");
+    t.setAttribute("x",x);
+    t.setAttribute("y",y);
+    t.setAttribute("font-size",size);	
+    t.textContent = str;
+
+    rootElement.appendChild(t);
+    return t; 
+}
+
+function createLine(x1,y1,x2,y2) {
+
+    var l = svgDoc.createElementNS(xmlns,"line");
+    l.setAttribute("x1",x1); 
+    l.setAttribute("y1",y1); 
+    l.setAttribute("x2",x2); 
+    l.setAttribute("y2",y2); 
+    l.setAttribute("stroke","black"); 
+    
+    rootElement.appendChild(l);
+}
+
+function createCircle(x,y,r) {
+    var c = svgDoc.createElementNS(xmlns,"circle"); 
+    c.setAttribute("cx",x);
+    c.setAttribute("cy",y);
+    c.setAttribute("r",r); 
+    rootElement.appendChild(c); 
+
+    return c; 
+}
+
+function moveHandle(evt) {
+    var lx = svgDoc.getElementById("lineX");
+    lx.setAttribute("x1",evt.clientX);
+    lx.setAttribute("y1",evt.clientY);
+    lx.setAttribute("x2",evt.clientX);
+    lx.setAttribute("y2",CY);
+
+    var ly = svgDoc.getElementById("lineY");
+    ly.setAttribute("x1",evt.clientX);
+    ly.setAttribute("y1",evt.clientY);
+    ly.setAttribute("x2",CX);
+    ly.setAttribute("y2",evt.clientY);
+}
+
+function removePointFromGoals(x,y) {
+	var l = goalsX.length; 
+	for(var i=0; i < l; ++i)
+		if(goalsX[i] == x && goalsY[i] == y) {
+			goalsX[i] = goalsX[l-1];
+			goalsX.pop();
+			goalsY[i] = goalsY[l-1];
+			goalsY.pop();
+			return true; 
+		}
+	return false; 		
+}
+
+function clickHandle(evt) {
+    var c = createCircle(evt.clientX,evt.clientY,pSize); 
+    var x = myFix((evt.clientX - CX) / unit); 
+    var y = myFix((CY - evt.clientY) / unit); 
+    var t = createText(evt.clientX, evt.clientY - pSize - 2, "(" + x + "," + y + ")" ,10);  
+	if (removePointFromGoals(x,y)) {
+		if(! goalsX.length) 
+			createText(WIDTH-270,70,"כל הכבוד! הצלחת",30); 
+	} else {
+		t.setAttribute("fill","red"); 
+		c.setAttribute("fill","red");
+	}
+}
+
+function myFix(x) {
+    // like x.toFixed(1) but without unnecessary zeros 
+    x = Math.floor(x*100) / 10.0;
+    var t = x; 
+    x = Math.floor(x); 
+    t -= x; 
+    if( t >= .5)
+	++x; 
+    return x / 10.0; 
+}
+
+
+
+
+//]]>
+</script>
+
+<line id = "lineX" x1="0" y1 = "0" x2 = "0" y2 = "0" stroke = "gray" /> 
+<line id = "lineY" x1="0" y1 = "0" x2 = "0" y2 = "0" stroke = "gray" /> 
+
+<polygon id = "t1" points = "-5,0 0,-14 5,0" />
+
+</svg>

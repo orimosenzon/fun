@@ -1,0 +1,461 @@
+<svg 
+   xmlns = "http://www.w3.org/2000/svg"
+
+   xmlns:xlink = "http://www.w3.org/1999/xlink"
+
+   width = "100%" height = "100%"
+   onclick = "clickHandle(evt)" 
+
+   onmousemove = "mouseMoveHandle(evt)" 
+   onmouseup = "dragging = false" 
+>
+
+
+
+<script>
+<![CDATA[
+// == todo == 
+
+// == globals == 
+
+var POINTR = 5; // point radius 
+
+
+var svgDoc = document;
+var xmlns = "http://www.w3.org/2000/svg";
+var rootElement = svgDoc.rootElement;
+
+var currPoint; 
+var dragging = false;
+
+var segNum = 0; 
+var penDown = false;    
+
+var cp = createPath("thePath"); 
+CF = 0.4; 
+var freeze = false; 
+
+var firstPoint; 
+
+var grayPath; 
+
+var dxs; 
+var dys; 
+
+var maxNorm; 
+
+var pathClosed = false; 
+// == functions == 
+
+function clickHandle(evt) {
+	if (freeze)
+		return;
+
+	var list = cp.pathSegList; 
+    var x = evt.clientX; 
+    var y = evt.clientY; 
+	
+	if(evt.target.id == "D0") {
+		if(segNum == 1)
+			return;
+		x = evt.target.getAttribute("cx");		
+		y = evt.target.getAttribute("cy");		
+		pathClosed = true; 
+	} else {
+		if(evt.target.parentNode != svgDoc ) // if you are not the drawing canvas 
+			return;
+	}			
+
+	if (! penDown) {
+		penDown = true; 
+		var seg = cp.createSVGPathSegMovetoAbs(x,y); 
+		list.appendItem(seg);
+		firstPoint = createPoint(x,y,"D"+segNum,"black"); 
+		++segNum; 
+		return; 
+	}
+	
+	var n = list.numberOfItems; 
+    
+    var ls = list.getItem(n-1); 
+    var lx = ls.x; 
+    var ly = ls.y; 
+        
+	var dx = (x-lx)*CF;
+	var dy = (y-ly)*CF; 
+
+    var x2 = x-dx; 
+    var y2 = y-dy; 
+	
+	if(segNum > 1) {
+		var dxl = lx - ls.x2; 
+		var dyl = ly - ls.y2; 
+		dx = (dx + dxl)/2; 
+		dy = (dy + dyl)/2 
+		
+		ls.x2 = lx - dx;   
+		ls.y2 = ly - dy;   
+
+		var ll = svgDoc.getElementById("F"+(segNum-1));
+		setLine(ll,lx,ly,ls.x2,ls.y2);
+		var pp = svgDoc.getElementById("C"+(segNum-1));
+		pp.setAttribute("cx",ls.x2); 
+		pp.setAttribute("cy",ls.y2); 
+	}
+
+	var x1 = lx+dx; 
+	var y1 = ly+dy; 
+		
+    var cubSeg = cp.createSVGPathSegCurvetoCubicAbs(x,y,x1,y1,x2,y2);
+    list.appendItem(cubSeg); 
+    
+    createLine(lx,ly,x1,y1,"E"+segNum);
+    createLine(x,y,x2,y2,"F"+segNum); 
+
+    createPoint(x1,y1,"B"+segNum,"blue");
+    createPoint(x2,y2,"C"+segNum,"blue");
+	if(! pathClosed)
+		createPoint(x,y,"D"+segNum,"black"); 
+	else
+		ctr2update(x2, y2, cubSeg, segNum, list);  
+    ++segNum; 
+}
+
+function createPoint(x,y,id,color) {
+    c = createCircle(x,y,POINTR);
+    c.setAttribute("id",id); 	
+    c.setAttribute("fill",color);
+    c.setAttribute("onmousedown","mouseDownHandle(evt)"); 
+	return c; 
+}
+
+function createPath(id) {
+    var p = svgDoc.createElementNS(xmlns,"path"); 
+    p.setAttribute("id",id);
+    p.setAttribute("stroke-width",4);
+    p.setAttribute("stroke","red");
+    p.setAttribute("fill","pink");
+    p.setAttribute("opacity","0.7");
+	rootElement.appendChild(p); 
+    return p; 	
+}
+
+function createButtomPath(id) {
+    var p = svgDoc.createElementNS(xmlns,"path"); 
+    p.setAttribute("id",id);
+    p.setAttribute("stroke-width",4);
+    p.setAttribute("stroke","gray");
+    p.setAttribute("fill","none");
+    rootElement.insertBefore(p,cp); 
+    return p; 	
+}
+
+function mouseMoveHandle(evt) {
+    if(!dragging)
+		return; 
+    var x = evt.clientX;
+    var y = evt.clientY;
+    currPoint.setAttribute("cx",x);
+    currPoint.setAttribute("cy",y);
+
+    var id = currPoint.getAttribute("id"); 
+    var c = id[0]; 
+    var segIdx = parseInt(id.slice(1,id.length)); 
+
+    var list = cp.pathSegList;
+    var seg = list.getItem(segIdx); 
+	
+    switch (c) {
+    case 'B':
+		ctr1update(x,y,seg,segIdx,list);
+		break; 
+    case 'C': 
+		ctr2update(x,y,seg,segIdx,list);
+		break; 
+    case 'D': 
+		endPointUpdate(x,y,seg,segIdx,list);
+		break; 
+    default:
+		alert("Error: wrong id character: "+c); 
+    }
+
+}
+
+function ctr1update(x,y,seg,segIdx,list) {
+	seg.x1 = x;
+	seg.y1 = y;
+	var l = svgDoc.getElementById("E"+segIdx); 
+
+	var segP = list.getItem(segIdx-1); 
+	setLine(l, segP.x, segP.y, x, y);
+
+	var nextIdx; 
+	
+	if(segIdx == 1) {
+		if( !pathClosed) 
+			return; 
+		nextIdx = list.numberOfItems - 1; 	
+	} else
+		nextIdx = segIdx-1;
+
+	segP = list.getItem(nextIdx); 
+	
+	segP.x2 = segP.x + segP.x - x; // segP.x - ( x - segP.x) 
+	segP.y2 = segP.y + segP.y - y;
+	var pointP = svgDoc.getElementById("C" + nextIdx);
+	pointP.setAttribute("cx",segP.x2); 
+	pointP.setAttribute("cy",segP.y2); 
+
+	l = svgDoc.getElementById("F" + nextIdx);
+	setLine(l,segP.x, segP.y, segP.x2, segP.y2);
+}
+
+function ctr2update(x,y,seg,segIdx,list) {
+	seg.x2 = x; 
+	seg.y2 = y; 
+	var l = svgDoc.getElementById("F"+segIdx);
+	setLine(l,seg.x,seg.y,x,y);
+	
+	var nextIdx; 
+	
+	if(segIdx == list.numberOfItems - 1) { // last segment 
+		if( !pathClosed )
+			return; 
+		nextIdx = 1; 		
+	} else
+		nextIdx = segIdx+1; 
+		
+	var segN = list.getItem(nextIdx); 
+
+	segN.x1 = seg.x + seg.x - x;    // seg.x - (x - seg.x)
+	segN.y1 = seg.y + seg.y - y;
+	var pointN = svgDoc.getElementById("B" + nextIdx);
+	pointN.setAttribute("cx",segN.x1); 
+	pointN.setAttribute("cy",segN.y1);
+
+	l = svgDoc.getElementById("E" + nextIdx);
+	setLine(l, seg.x, seg.y, segN.x1, segN.y1); 
+}
+
+function endPointUpdate(x,y,seg,segIdx,list) {
+	var dx = x - seg.x; 
+	var dy = y - seg.y; 
+
+	seg.x = x; 
+	seg.y = y; 
+	
+	if(segIdx > 0) {
+		x = seg.x2 + dx; 
+		y = seg.y2 + dy; 
+		var p = svgDoc.getElementById("C"+segIdx);
+		p.setAttribute("cx",x);
+		p.setAttribute("cy",y); 
+		ctr2update(x,y,seg,segIdx,list);
+		return; 
+	} 
+
+	if(list.numberOfItems == 1)
+		return; 
+
+	if(pathClosed) {
+		seg = list.getItem(list.numberOfItems - 1);
+		seg.x = x; 
+		seg.y = y; 
+	}
+	
+	segIdx = 1; 
+	seg = list.getItem(segIdx);
+	x = seg.x1 + dx; 
+	y = seg.y1 + dy; 
+	var p = svgDoc.getElementById("B"+segIdx);
+	p.setAttribute("cx",x);
+	p.setAttribute("cy",y); 
+	ctr1update(x,y,seg,segIdx,list); 	
+}
+
+function setLine(l,x1,y1,x2,y2) {
+    l.x1.baseVal.value = x1;
+    l.y1.baseVal.value = y1; 
+    l.x2.baseVal.value = x2; 
+    l.y2.baseVal.value = y2; 
+}
+
+function mouseDownHandle(evt) {
+    currPoint = evt.target;
+    dragging = true; 
+}
+
+function mouseUpHandle(evt) {
+    dragging = false; 
+}
+
+function createCircle(x,y,r) {
+    var c = svgDoc.createElementNS(xmlns,"circle"); 
+    c.setAttribute("cx",x);
+    c.setAttribute("cy",y);
+    c.setAttribute("r",r); 
+    rootElement.appendChild(c); 
+    return c; 	
+}
+
+function createGrayPoint(x,y,id) {
+    var c = svgDoc.createElementNS(xmlns,"circle"); 
+    c.setAttribute("cx",x);
+    c.setAttribute("cy",y);
+    c.setAttribute("r",POINTR); 
+	c.setAttribute("fill","gray");
+    c.setAttribute("id",id); 
+
+    rootElement.insertBefore(c,firstPoint); 
+}
+
+function createLine(x1,y1,x2,y2,id) {
+    var l = svgDoc.createElementNS(xmlns,"line");
+    
+    l.setAttribute("x1",x1); 
+    l.setAttribute("y1",y1); 
+    l.setAttribute("x2",x2); 
+    l.setAttribute("y2",y2); 	
+    
+    l.setAttribute("stroke","gray"); 
+    l.setAttribute("stroke-width","1"); 
+
+    l.setAttribute("id",id); 
+    
+    rootElement.appendChild(l);
+    return l; 
+}
+
+function nextHandle(evt) {
+	if(freeze)
+		return; 
+
+	markButton("freezeBut"); 
+
+	freeze = true;  
+
+    var list = cp.pathSegList; 
+	var n = list.numberOfItems; 
+
+	grayPath = createButtomPath("grayPath");  
+	
+	var nlist = grayPath.pathSegList; 
+	
+	var s = list.getItem(0); 
+	createGrayPoint(s.x,s.y,"G"+segNum);
+	var ns = grayPath.createSVGPathSegMovetoAbs(s.x,s.y); 
+	nlist.appendItem(ns);
+    var lx; 
+	var ly; 
+	for(var i=1; i<n; ++i) {
+		lx = s.x; 
+		ly = s.y; 
+		s = list.getItem(i); 
+
+		createLine(lx,ly,s.x1,s.y1,"H"+segNum);
+		createLine(s.x,s.y,s.x2,s.y2,"I"+segNum); 
+
+	    createGrayPoint(s.x,s.y,"G"+segNum);
+	    createGrayPoint(s.x1,s.y1,"G"+segNum);
+	    createGrayPoint(s.x2,s.y2,"G"+segNum);
+
+		ns = grayPath.createSVGPathSegCurvetoCubicAbs(s.x,s.y,s.x1,s.y1,s.x2,s.y2);
+		nlist.appendItem(ns);
+	}
+}
+
+function startAnimate(evt) {
+	if( !freeze )
+		return; 
+	markButton("animateBut"); 
+	var list = cp.pathSegList; 
+	var glist = grayPath.pathSegList; 
+	var n = list.numberOfItems;
+	maxNorm = 0; 
+	dxs = []; 
+	dys = []; 
+
+	var s = list.getItem(0);
+	var gs = glist.getItem(0); 
+	updateMaxNormAndSaveDxDy(s.x,s.y,gs.x,gs.y);
+
+	for(var i=1; i<n; ++i) {
+		s = list.getItem(i);
+		gs = glist.getItem(i); 
+
+		updateMaxNormAndSaveDxDy(s.x1,s.y1,gs.x1,gs.y1);
+		updateMaxNormAndSaveDxDy(s.x2,s.y2,gs.x2,gs.y2);
+		updateMaxNormAndSaveDxDy(s.x,s.y,gs.x,gs.y);
+	}
+
+	maxNorm = Math.sqrt(maxNorm);
+	
+	for(var i=0; i< dxs.length; ++i) {
+		dxs[i] /= maxNorm; 
+		dys[i] /= maxNorm; 
+	}
+	animate(maxNorm);
+}
+
+function markButton(id) {
+	b = svgDoc.getElementById(id);
+	b.setAttribute("stroke","black");
+	b.setAttribute("stroke-width","4");
+}
+
+function updateMaxNormAndSaveDxDy(x1,y1,x2,y2) {
+	var dx = x2 - x1; 
+	var dy = y2 - y1;
+
+	var norm = dx*dx+dy*dy; 
+	if (norm > maxNorm)
+		maxNorm = norm;
+	dxs.push(dx);
+	dys.push(dy);	
+}
+
+function animate(rest) {  
+	if(rest < 0.5)
+		return; 
+	rest -= 1; 
+
+    var list = cp.pathSegList; 
+	var glist = grayPath.pathSegList; 
+	var n = list.numberOfItems;
+	var seg = list.getItem(0);
+	seg.x += dxs[0]; 
+	seg.y += dys[0]; 
+	var c = 1; 
+	for(var i=1; i<n; ++i) {
+		seg = list.getItem(i);
+
+		seg.x1 += dxs[c]; 
+		seg.y1 += dys[c]; 
+
+		seg.x2 += dxs[c+1]; 
+		seg.y2 += dys[c+1]; 
+
+		seg.x += dxs[c+2]; 
+		seg.y += dys[c+2];
+
+		c += 3; 
+	}
+	
+	setTimeout("animate("+rest+")",0); 
+}
+
+//]]>
+
+  </script>
+
+	<rect x = "20" y = "20" width = "800" height = "400" rx = "10" ry = "10" 
+     fill = "none" stroke = "black" stroke-width = "5"/> 
+
+	<rect id = "freezeBut" x = "30" y = "30" width = "40" height = "25" rx = "10" ry = "10" 
+     fill = "gray" onclick = "nextHandle(evt)" /> 
+ 
+	 
+	<rect id = "animateBut" x = "30" y = "100" width = "40" height = "25" rx = "10" ry = "10" 
+     fill = "orange" onclick = "startAnimate(evt)"/> 
+	 
+</svg>

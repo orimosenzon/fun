@@ -1,0 +1,91 @@
+<html>
+<head>
+<title> Check equations </title>
+<script type = "text/javascript">
+
+function foo() {
+	array = [];
+	for(i=0; i<100; i+=2) {
+		array[i] = new C1(); 
+		array[i+1] = new C2();
+	} 
+
+	for(i=0; i< array.length; i++) {
+		document.write("i: "+i+" <br>"); 
+		array[i].print();
+	}
+
+/*
+	array = [1,2,3,'gadi'];
+	array[14] = 'yosi';
+	array = [111,222].concat(array); 
+	document.write("hello lord  <br> <br>"); 
+	document.write(array[0]+" * "+array[1]+" * "+array[2]+" * "+array[3]+" * --"+array+"<br>" + array.length+"<br>"); 
+	array.length = 5; 
+	document.write(array); 
+
+*/ 
+
+/*
+	// http://nefariousdesigns.co.uk/archive/2006/05/object-oriented-javascript/
+	a = new A; 
+	a.toPrint(); 
+ 	a.func = f; 
+ 	a.func();
+*/	
+
+/*
+	latexUrl = "http://www.forkosh.dreamhost.com/mathtex.cgi?";
+	theImg = document.getElementById("img");  
+	theImg.width = "200"; 
+	theImg.height = "200"; 
+	theImg.src = latexUrl + "\\frac{\\Sigma_i^n{x^2}}{\\sqrt{(a+b)^{100}}}"; 
+*/ 
+}
+
+function C1() {
+	this.print = 
+		function() {
+			document.write("hi <br>"); 
+		}
+}
+
+function C2() {
+	this.print = 
+		function() {
+			document.write("bye <br>"); 
+		}
+}
+
+function f() {
+	alert("func - data = " + this.data); 
+}
+
+function A() {
+	this.data = 177;
+	this.toPrint = toPrint1;  
+}
+
+function toPrint1() {
+	alert("data =" + this.data);
+
+}
+
+function Expression() {
+	return true; 
+}
+
+function PlusExpression() {
+	this.elements = null; 
+}
+
+PlusExpression.prototype = new Expression(); 
+
+</script> 
+
+</head>
+<body onload = "foo()">
+	<img id = "img" />  
+</body>
+
+<html>
