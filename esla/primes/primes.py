@@ -193,7 +193,40 @@ def spiral3():
         r+= dalp/pi2 * 5 
         i += 1
     print(i) 
-    
+
+X0 = WIDTH/2
+Y0 = HEIGHT/2
+
+def squareSpir():
+    x = X0
+    y = Y0 
+    ds = [0,1,0,-1]
+    idx = 1
+    idy = 0
+    r = 1
+    i = 2
+    ic = 0 
+    colors = ["blue","red","green","orange","yellow"]
+    flipflop = False
+    while r < 700:
+        color = colors[ic]
+        ic = (ic +1) % len(colors) 
+        for c in range(r):
+            x += ds[idx]
+            y += ds[idy] 
+            #if random.random()<0.1:
+            if idxes[i] != -1:
+                canvas.create_rectangle(x,y,x,y,outline = "black")
+            #canvas.create_rectangle(x,y,x,y,outline = color)
+            i+=1 
+        idx = (idx+1)% 4
+        idy = (idy+1)% 4
+        if flipflop:
+            r += 1
+        flipflop = not flipflop
+        #input("cont?")
+        
+            
 # main
 init()    
 #draw(sum)
@@ -202,8 +235,10 @@ init()
 #draw(smallerThan)
 #spiral() 
 #spiral1() 
-spiral2() 
+#spiral2() 
 #spiral3() 
+squareSpir() 
+
 
 ##def isPrime(n):
 ##    for i in range(2,int(sqrt(n))+1):
