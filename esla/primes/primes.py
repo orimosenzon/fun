@@ -66,7 +66,7 @@ def draw(func):
             cx = x -start
             canvas.create_line(cx,HEIGHT,cx,HEIGHT-y)
 
-        a = input("continue? ")
+        a = input("continue? (n or e to exit)")
         if a == 'n' or a == 'e':
             return
         canvas.delete("all")
@@ -225,18 +225,37 @@ def squareSpir():
             r += 1
         flipflop = not flipflop
         #input("cont?")
+
+def pauseAndDelete():
+        input("Press enter")
+        canvas.delete("all")
+
         
+def run():
+    draw(sum)
+    pauseAndDelete()
+    draw(norm)
+    pauseAndDelete()
+    draw(idxesSum)
+    pauseAndDelete()
+    draw(smallerThan)
+    pauseAndDelete()
+    spiral() 
+    pauseAndDelete()
+    spiral1() 
+    pauseAndDelete()
+    spiral2() 
+    pauseAndDelete()
+    spiral3() 
+    pauseAndDelete()
+    squareSpir() 
+    pauseAndDelete()
+
             
 # main
-init()    
-#draw(sum)
-#draw(norm)
-#draw(idxesSum)
-#draw(smallerThan)
-#spiral() 
-#spiral1() 
-#spiral2() 
-#spiral3() 
+init()
+
+#run() 
 squareSpir() 
 
 
