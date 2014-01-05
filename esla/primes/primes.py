@@ -230,7 +230,186 @@ def pauseAndDelete():
         input("Press enter")
         canvas.delete("all")
 
+class Editor:
+    SIZE = 20
+    curI = 2        
+    stack = [] 
+    def __init__(self):
+        canvas.bind('<Button-1>', self.butt1Pressed)
+        canvas.bind('<Button-3>', self.butt3Pressed)
+
+
+    def butt1Pressed(self,e):
+        x = (e.x // self.SIZE) * self.SIZE 
+        y = (e.y // self.SIZE) * self.SIZE
+        self.stack += [(x,y)] 
+        if idxes[self.curI] == -1:
+            color = "yellow"
+        else:
+            color = "red"
+        canvas.create_rectangle(x,y,x+SIZE,y+SIZE,fill = color) 
+        canvas.create_text(x+SIZE//2,y+SIZE//2,text = str(self.curI))
+        self.curI += 1
+
+    def butt3Pressed(self,e):
+        x,y = self.stack[-1]
+        canvas.create_rectangle(x,y,x+SIZE,y+SIZE,fill = "white") 
+        del(self.stack[-1])
+        self.curI -= 1 
+ 
         
+    def drawGrid(self):
+        for x in range(0,WIDTH,self.SIZE):
+            canvas.create_line(x,0,x,HEIGHT)
+        for y in range(0,HEIGHT,self.SIZE):
+            canvas.create_line(0,y,WIDTH,y)
+        
+def squareSpir1():
+    size = 2 
+    x = 20*size
+    y = 20*size
+    ds = [0,1,0,-1]
+    idx = 1
+    idy = 0
+    r = 1000//size
+    i = 2
+    ic = 0 
+    colors = ["blue","red","green","orange","yellow"]
+    flipflop = False
+    while r > 0:
+        color = colors[ic]
+        ic = (ic +1) % len(colors) 
+        for c in range(r):
+            x += ds[idx]*size
+            y += ds[idy]*size 
+            #if random.random()<0.1:
+            if idxes[i] != -1:
+                canvas.create_rectangle(x,y,x+size,y+size,outline = "black",fill = "blue")
+            #canvas.create_rectangle(x,y,x,y,outline = color)
+            i+=1 
+        idx = (idx+1)% 4
+        idy = (idy+1)% 4
+        if flipflop:
+            r -= 1
+        flipflop = not flipflop
+        #input("cont?")
+
+
+def diagonals():
+    size = 20 
+    i = 2
+    d = 1
+    Y0 = X0 = 20 
+    while d<200:
+            x = size*d + X0
+            y = Y0 
+            for k in range(d):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+
+                x -= size
+                y += size
+                i += 1 
+            d += 1 
+def nuns():
+    size = 20 
+    i = 2
+    d = 1
+    Y0 = X0 = 20 
+    while d<70:
+            x = size*d + X0
+            y = Y0 
+            for k in range(d):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                y += size
+                i += 1
+            y -= size
+            x -= size 
+            for k in range(d-1):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                x -= size
+                i += 1 
+            d += 1 
+
+
+def triangle():
+    X0 = WIDTH // 2
+    Y0 = 20
+    size = 2
+    i = 2 
+    for d in range(HEIGHT // size):
+        y = Y0+d*size
+        for k in range(2*d+1):
+            x = X0+k*size
+            color = "white"
+            if idxes[i] != -1:
+                color = "red"
+            canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+            if i < 100: 
+                canvas.create_text(x+size//2,y+size//2,text = str(i))
+
+            i += 1 
+        X0 -= size 
+
+order = [] 
+curI=2 
+size = 5 
+def recTessellation(x,y,level):
+    global curI 
+    if level ==0:
+        color = "white"
+        if idxes[curI] != -1:
+            color = "red"
+            canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+        if curI < 100: 
+            canvas.create_text(x+size//2,y+size//2,text = str(curI))
+        curI += 1
+        return
+    recSize = int(math.pow(3,level-1)) * size 
+    for k in range(len(order)):
+        dx,dy = order[k]
+        recTessellation(x+dx*recSize,y+dy*recSize,level-1)
+
+def tessellation():
+    recTessellation(10,10,5)
+
+        
+def allPerms(lst):
+    if len(lst) == 1:
+        return [lst] 
+    ans = [] 
+    for i in range(len(lst)):
+        rec = allPerms(lst[0:i]+lst[i+1:])
+        for perm in rec:
+            ans += [perm+[lst[i]]]
+    return ans
+
+def allOrders():
+    global order
+    global curI 
+    perms = allPerms([(0,0),(0,1),(0,2),(1,2),(2,2),(2,1),(2,0),(1,0),(1,1)])
+    for perm in perms:
+        order = perm
+        tessellation()
+        input("press enter")
+        canvas.delete("all")
+        curI=2
+    
+
 def run():
     draw(sum)
     pauseAndDelete()
@@ -252,12 +431,25 @@ def run():
     pauseAndDelete()
 
             
+
 # main
 init()
 
 #run() 
-squareSpir() 
 
+##ed = Editor()
+##ed.drawGrid() 
+
+#squareSpir1() 
+
+#diagonals() 
+#nuns()
+
+#triangle()
+
+#tessellation() 
+
+allOrders()
 
 ##def isPrime(n):
 ##    for i in range(2,int(sqrt(n))+1):
