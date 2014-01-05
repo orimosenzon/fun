@@ -2,3 +2,7 @@ this is just a test file to
 play a bit with git's branching
 
 this is a change made in master  
+and 
+I added this from the testBranch 
+
+thus, the merge conflict was resolved 
