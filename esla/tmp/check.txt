@@ -1,2 +1,4 @@
 this is just a test file to 
-play a bit with git's branching 
+play a bit with git's branching
+
+this is a change made in master  
