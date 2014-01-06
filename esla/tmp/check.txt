@@ -6,3 +6,7 @@ and
 I added this from the testBranch 
 
 thus, the merge conflict was resolved 
+
+
+yet another change done locally in branch master 
+
