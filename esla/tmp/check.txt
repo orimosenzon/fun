@@ -7,6 +7,9 @@ I added this from the testBranch
 
 thus, the merge conflict was resolved 
 
+resolving the conflict between local repository and github's:
 
 yet another change done locally in branch master 
+
+ok, this change was made through github's web editor 
 
