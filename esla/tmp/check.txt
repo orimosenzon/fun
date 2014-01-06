@@ -6,3 +6,5 @@ and
 I added this from the testBranch 
 
 thus, the merge conflict was resolved 
+
+ok, this change was made through github's web editor 
