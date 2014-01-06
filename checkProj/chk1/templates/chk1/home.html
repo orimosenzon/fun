@@ -1,0 +1,11 @@
+{% extends "chk1/base.html" %} 
+
+{% block content %}
+<h1> Welcome to chk1 </h1>
+<br>
+{% for line in lines %}
+<p style = "color:{% cycle 'yellow' 'green' %}"> value of the line: {{ line.t }} </p>
+{% endfor %}
+
+<br>
+{% endblock %} 
