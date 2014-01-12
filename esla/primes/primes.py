@@ -432,6 +432,27 @@ def run():
 
             
 
+def allKvaras():
+    colors = ["black","blue","red","green","orange","yellow","pink"]
+    size = 20
+    for k in range(2,WIDTH // size):
+        i = 1
+        x0 = 0 #k*size*10
+        for yi in range(HEIGHT // size):
+            for xi in range(k):
+                x = x0+size*xi
+                y = size*yi 
+                color = ""
+                if idxes[i] != -1:
+                    #color = colors[idxes[i] % len(colors)]
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                i += 1
+        pauseAndDelete()
+
+
 # main
 init()
 
@@ -449,7 +470,9 @@ init()
 
 #tessellation() 
 
-allOrders()
+#allOrders()
+
+allKvaras()
 
 ##def isPrime(n):
 ##    for i in range(2,int(sqrt(n))+1):
