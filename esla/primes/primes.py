@@ -297,7 +297,7 @@ def squareSpir1():
 
 def diagonals():
     size = 20 
-    i = 2
+    i = 1
     d = 1
     Y0 = X0 = 20 
     while d<200:
@@ -317,10 +317,10 @@ def diagonals():
             d += 1 
 def nuns():
     size = 20 
-    i = 2
+    i = 1
     d = 1
     Y0 = X0 = 20 
-    while d<70:
+    while d<WIDTH//size:
             x = size*d + X0
             y = Y0 
             for k in range(d):
@@ -452,7 +452,123 @@ def allKvaras():
                 i += 1
         pauseAndDelete()
 
+def allKvaras1():
+    colors = ["black","blue","red","green","orange","yellow","pink"]
+    size = 20
+    for k in range(2,HEIGHT // size):
+        i = 1
+        x0 = 0 #k*size*10
+        for xi in range(WIDTH//size):
+            for yi in range(k):
+                x = x0+size*xi
+                y = size*yi 
+                color = ""
+                if idxes[i] != -1:
+                    #color = colors[idxes[i] % len(colors)]
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                i += 1
+        pauseAndDelete()
 
+def allKvaras2():
+    colors = ["black","blue","red","green","orange","yellow","pink"]
+    size = 20
+    flipflop = True
+    for k in range(2,WIDTH // size):
+        i = 1
+        x0 = 0 #k*size*10
+        for yi in range(HEIGHT // size):
+            for xi in range(k):
+                x = x0+size*xi
+                y = size*yi 
+                color = ""
+                if idxes[i] != -1:
+                    #color = colors[idxes[i] % len(colors)]
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                if flipflop: 
+                    i += 4
+                else:
+                    i += 2
+                flipflop = not flipflop
+        pauseAndDelete()
+
+
+def fracRemain():
+    m = 1
+    for i in range(len(primes)):
+        m *= (primes[i]-1)/primes[i]
+    print(m)
+
+
+def diagonalsSerp():
+    size = 20 
+    i = 1
+    Y0 = X0 = 20 
+    for d in range((WIDTH+HEIGHT)//size):
+            odd = d%2   # 1 - odd, 0 - even 
+            odd1 = odd*2-1 # 1 - odd, -1 - even 
+            dx = -size*odd1
+            dy = size*odd1 
+
+            x = X0 + odd*d*size
+            y = Y0 + (1-odd)*d*size
+     
+            for k in range(d+1):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+
+                x += dx
+                y += dy 
+                i += 1 
+
+def nunsSerp():
+    size = 20 
+    i = 1
+    Y0 = X0 = 20 
+    for d in range(WIDTH//size):
+            odd = d%2   # 1 - odd, 0 - even 
+
+            x = X0 + odd*d*size
+            y = Y0 + (1-odd)*d*size
+
+            dx = size*(1-odd)
+            dy = size*odd 
+
+            for k in range(d):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                x += dx  
+                y += dy
+                i += 1
+
+            dx = -size*odd
+            dy = -size*(1-odd) 
+
+            for k in range(d+1):
+                color = "white"
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline="black",fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                x += dx  
+                y += dy
+                i += 1 
+            
+    
 # main
 init()
 
@@ -472,7 +588,14 @@ init()
 
 #allOrders()
 
-allKvaras()
+#allKvaras()
+#allKvaras1()
+#allKvaras2()
+#fracRemain()
+
+#diagonalsSerp()
+
+nunsSerp() 
 
 ##def isPrime(n):
 ##    for i in range(2,int(sqrt(n))+1):
