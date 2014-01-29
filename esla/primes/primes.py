@@ -744,17 +744,36 @@ def gcd(x,y):
         x,y = y,x%y
     return x 
 
+def gcd1(x,y):
+    if y==0:
+        return (x,1,0)
+    (g,a,b) = gcd1(y,x%y)
+    return (g,b,a-b*(x//y))
+
+def gcdComb(x,y):
+    if y>x:
+        x,y = y,x
+    (g,a,b) = gcd1(x,y)
+    print(a,"*",x,"+",b,"*",y,"=",a*x+b*y)
+    print("gcd =",g)
+
 
 def allKvarasWithBlackSpots():
+    #two types of spots that cannot contain prime numbers:
+    # if n = k*y+x, when gcd(k,x) > 1 and when gcd (y,x) > 1
+    # the first type depends on the k but the other doesn't, it depens only on the location 
     size = 20
     for k in range(2,WIDTH // size):
         for yi in range(HEIGHT // size):
             for xi in range(WIDTH // size):
-                if gcd(yi,xi+1) > 1:
-                    x = size*xi
-                    y = size*yi 
+                x = size*xi
+                y = size*yi
+                s3 = size // 3 
+                if xi <= k and gcd(xi+1,k) > 1:
+                    canvas.create_rectangle(x,y+s3,x+size,y+2*s3,outline = "blue", fill = "blue") 
+                if yi > 0 and gcd(yi,xi+1) > 1:
                     canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = "")
-                    canvas.create_text(x+size//2,y+size//2,text = str("N"))
+                    canvas.create_rectangle(x+s3,y,x+2*s3,y+size,outline = "blue", fill = "blue")
         i = 1
         for yi in range(HEIGHT // size):
             for xi in range(k):
