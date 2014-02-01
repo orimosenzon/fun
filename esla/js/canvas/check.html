@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<body onload = "init()"> 
+<!-- == page == -->
+
+<button type = "button" onclick = "buttonPressed()"> press me </button> 
+
+<h1 id = "firstHeader"> Hello lord </h1> 
+
+
+<select id="colorSelection" onchange="colorChanged()">
+	<option> black </option>
+	<option> blue </option>
+	<option> red </option>
+</select> 
+
+<canvas id="myCanvas" width="700" height="600"></canvas>
+
+
+
+
+<!--   == script == --> 
+<script>
+function init() {
+	// globals
+	px = 100;
+	py = 100 ;
+
+	var canvas = document.getElementById('myCanvas');
+	canvas.addEventListener("mousedown", but1Pressed ,false); 
+	var context = canvas.getContext('2d');
+	context.strokeStyle = 'black';
+}
+
+function but1Pressed(e) {
+	document.getElementById("firstHeader").innerHTML = "("+e.offsetX +"," + e.offsetY +")"
+	
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+	context.beginPath();
+  	context.moveTo(px,  py);
+  	var px1 = e.offsetX, py1 = e.offsetY, pxmean = (px + px1)/2; 
+  	context.bezierCurveTo(pxmean, py+30, pxmean, py-30, px1, py1);
+  	context.lineWidth = 3;
+	context.stroke();
+
+  	px = px1; 
+  	py = py1; 
+}
+
+function colorChanged() {
+	var dropList = document.getElementById("colorSelection"); 
+	var str = ""+dropList.options[dropList.selectedIndex].text; 
+	
+	document.getElementById("firstHeader").innerHTML = str; 
+	
+	var canvas = document.getElementById('myCanvas');
+  	var context = canvas.getContext('2d');
+
+	 context.strokeStyle = str; 
+	 context.stroke();
+} 
+
+function buttonPressed() {
+	var name = "Ori" ;
+	var age = "44" ;
+	var map = {1:"one", 2:"two", three:"3"}; 
+	var str ="";
+	for (x in map) {
+		str +=  x + " " + map[x] ;
+	}
+	document.getElementById("firstHeader").innerHTML = "Hello "+name+" "+str; 
+}
+</script> 
+
+</body> 
+</html> 
+

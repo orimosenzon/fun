@@ -184,7 +184,7 @@ class Sieves:
                     if i >= 100:
                         fntSize = 7
                     self.canvas.create_text(x + self.size//2,y + self.size//2,
-                                            text = str(i),font=("Helvetica",fntSize) ) #   
+                                            text = str(i),font=("TkDefaultFont",fntSize) ) #  "Helvetica" 
                 i += 1
         if self.futuresVisiable.get():
             self.futureComp(self.futuresNum.get())
