@@ -787,7 +787,105 @@ def allKvarasWithBlackSpots():
                     canvas.create_text(x+size//2,y+size//2,text = str(i))
                 i += 1
         pauseAndDelete()
+
+def squareSpir2():
+    size = 20 
+    ds = [0,1,0,-1]
+
+    for k in range(1,-1000,-1):
+        x = WIDTH // 2 
+        y = HEIGHT //2 
+        idx = 1
+        idy = 0
+        r = 1
+        i = k 
+        flipflop = False
+        while r < HEIGHT//size:
+            for c in range(r):
+                if i >= 1:
+                    color = ""
+                    if idxes[i] != -1:
+                        color = "red" 
+                    canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+                    if i < 100: 
+                        canvas.create_text(x+size//2,y+size//2,text = str(i))
+                x += ds[idx]*size
+                y += ds[idy]*size
+                i+=1 
+            idx = (idx+1)% 4
+            idy = (idy+1)% 4
+            if flipflop:
+                r += 1
+            flipflop = not flipflop
+        pauseAndDelete() 
+
+def kvara210():
+    size = 40
+    k = 210
+    i = 1
+    for yi in range(HEIGHT // size):
+        for xi in range(k):
+            x = size*xi
+            y = size*yi 
+            color = ""
+            if idxes[i] != -1:
+                color = "red"
+            canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+            if i < 2400 and i % 10 == 0: 
+                canvas.create_text(x+size//2,y+size//2,text = str(i))
+            i += 1
+   
+
+class Sieves:
+    k = 2
+    size = 20
+    def __init__(self):
+        canvas.bind('<Button-1>', self.butt1Pressed)
+        canvas.bind('<Button-3>', self.butt3Pressed)
+        self.draw()
+        
+    def butt1Pressed(self,e):
+        x = e.x - e.x % self.size
+        y = e.y - e.y % self.size
+        canvas.create_rectangle(x,y,x+self.size,y+self.size,fill="yellow")
+
+    def butt3Pressed(self,e):
+        self.k +=1
+        self.draw()
     
+    def futureComp(self,w):
+        for d in range(0,w+1):
+            n = self.k+d 
+            while(True):
+                n += self.k+d
+                xi = (n % self.k - 1)%self.k
+                yi = n // self.k  
+                if n% self.k == 0:
+                    yi -= 1 
+                x = xi*self.size
+                y = yi*self.size
+                if y > HEIGHT:
+                    break
+                canvas.create_rectangle(x,y,x+size,y+size,fill = "yellow")
+                canvas.create_text(x+size//2,y+size//2,text = str(n),font=("Helvetica",7))
+
+        
+    def draw(self):
+        canvas.delete("all")
+        i = 1
+        for yi in range(HEIGHT // self.size):
+            for xi in range(self.k):
+                x = self.size*xi
+                y = self.size*yi
+                color = "" 
+                if idxes[i] != -1:
+                    color = "red"
+                canvas.create_rectangle(x,y,x+size,y+size,outline = "black", fill = color)
+                if i < 100: 
+                    canvas.create_text(x+size//2,y+size//2,text = str(i))
+                i += 1
+        #self.futureComp(1)
+
 # main
 init()
 
@@ -821,11 +919,13 @@ init()
 #allKvarasWithColors()
 #allKvarasNoDel()
 
-allKvarasWithBlackSpots()
+#allKvarasWithBlackSpots()
 
+#squareSpir2()
 
+#kvara210()
 
-
+Sieves()
 
 
 
