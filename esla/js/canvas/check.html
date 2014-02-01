@@ -14,7 +14,7 @@
 	<option> red </option>
 </select> 
 
-<canvas id="myCanvas" width="700" height="600"></canvas>
+<canvas id="myCanvas" width="1500" height="900"></canvas>
 
 
 
@@ -25,7 +25,7 @@ function init() {
 	colorChanged();
 	
 	// globals
-	points = [[0,0]];  	
+	points = [];  	
 	drag = false; 
 	pointRad = 15; 
 	
@@ -48,20 +48,30 @@ function mouseUp(e) {
 
 function mouseMove(e) {
 	if (drag && selectedPoint != -1) {
-		points[selectedPoint] =  [e.offsetX, e.offsetY,10];
+		points[selectedPoint] =  [e.offsetX, e.offsetY];
 		redraw();  
 	}
 } 
 
 function redraw() {
 	clearCanvas(); // should be changed to delete only current curve  
-	for (i=0; i<points.length-1; ++i)  {
-		var x1 = points[i][0], y1 = points[i][1], 
-			  x2 = points[i+1][0], y2 = points[i+1][1],
-			  xm = (x1+x2)/2, ym = (y1+y2)/2; 
-			  curve(x1,y1,xm,ym,xm,ym,x2,y2); 
-			  circle(x1,y1,pointRad); 
+	
+	if (points.length == 0) {
+		return; 
 	}
+	
+	var lastIdx = points.length-1; 
+	
+	for (i=0; i < lastIdx; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1], 
+			  x1 = points[i+1][0], y1 = points[i+1][1],
+			  x2 = points[i+2][0], y2 = points[i+2][1],
+			  x3 = points[i+3][0], y3 = points[i+3][1]; 
+
+			  curve(x0,y0, x1,y1, x2,y2 ,x3,y3); 
+			  circle(x0,y0,pointRad); 
+	}
+	circle(points[lastIdx][0],points[lastIdx][1],pointRad);
 }
 
 function clearCanvas() {
@@ -87,15 +97,25 @@ function mouseDown(e) {
   			return; 
   		}
 
-  	var n = points.length-1, 
-	  	  px = points[n][0], py = points[n][1], 
-  		  px1 = e.offsetX, py1 = e.offsetY, 
-  		  pxmean = (px + px1)/2; 
+	var	n = points.length-1,
+			px3 = e.offsetX, py3 = e.offsetY; 
+				
+	if (n < 0) {
+		points = [[px3,py3]]; 
+		redraw(); 
+		return; 
+	}
 
-  	curve(px,py, pxmean, py+30, pxmean, py-30, px1, py1);
-	circle(px1, py1, pointRad); 
+  	var px0 = points[n][0], py0 = points[n][1], 
+   		  pxm = (px3-px0)/3, pym =  (py3-py0)/3, 
+   		  px1 = px0+pxm, py1 = py0+pym, 
+   		  px2 = px0+pxm*2, py2 = py0+pym*2;  
 	
 	points.push([px1,py1]); 
+	points.push([px2,py2]); 
+	points.push([px3,py3]);
+	
+	redraw();  
 }
 
 function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
