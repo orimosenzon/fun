@@ -1,0 +1,3 @@
+# ignore all file in top level build directory  
+/build/
+
