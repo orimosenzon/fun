@@ -25,6 +25,14 @@ class Sieves:
         self.menubar = tkinter.Menu(self.root)
         self.viewmenu = tkinter.Menu(self.menubar, tearoff=False)
 
+        self.showNumbers = tkinter.BooleanVar()
+        self.showNumbers.set(True)
+        self.viewmenu.add_checkbutton(label="Show Numbers", variable=self.showNumbers, command=self.draw)
+
+        self.showBorder = tkinter.BooleanVar()
+        self.showBorder.set(True)
+        self.viewmenu.add_checkbutton(label="Show Border", variable=self.showBorder, command=self.draw)
+       
         self.spotsXYVisiable = tkinter.BooleanVar()
         self.spotsXYVisiable.set(False)
         self.viewmenu.add_checkbutton(label="Show SpotsXY", variable=self.spotsXYVisiable, command=self.draw)
@@ -57,7 +65,7 @@ class Sieves:
 
 ## -- slider 
         self.slider = tkinter.Scale(self.root, orient=tkinter.HORIZONTAL,
-                                    length = 2*self.WIDTH // 3,command = self.slideChanged)
+                                    length = 2*self.WIDTH // 3,command = self.slideChanged, from_ = "1", to = "200")
         self.slider.set(20)
         
         self.slider.pack(anchor="w")
@@ -153,8 +161,8 @@ class Sieves:
                 y = yi*self.size
                 if y > self.HEIGHT:
                     break
-                self.canvas.create_rectangle(x,y,x+size,y+size,fill = "yellow")
-                self.canvas.create_text(x+size//2,y+size//2,text = str(n),font=("Helvetica",7))
+                self.canvas.create_rectangle(x,y,x + self.size,y + self.size , fill = "yellow")
+                self.canvas.create_text(x + self.size//2, y + self.size//2, text = str(n),font=("Helvetica",7))
 
         
     def draw(self):
@@ -164,12 +172,19 @@ class Sieves:
             for xi in range(self.k):
                 x = self.size*xi
                 y = self.size*yi
-                color = "" 
+                color = ""
+                ocolor = "black"
                 if self.isPrime(i):
                     color = "red"
-                self.canvas.create_rectangle(x,y,x + self.size,y + self.size,outline = "black", fill = color)
-                if i < 100: 
-                    self.canvas.create_text(x + self.size//2,y + self.size//2,text = str(i))
+                if not self.showBorder.get():
+                    ocolor = color
+                self.canvas.create_rectangle(x,y,x + self.size,y + self.size,outline = ocolor, fill = color)
+                if self.showNumbers.get():
+                    fntSize = 9
+                    if i >= 100:
+                        fntSize = 7
+                    self.canvas.create_text(x + self.size//2,y + self.size//2,
+                                            text = str(i),font=("Helvetica",fntSize) ) #   
                 i += 1
         if self.futuresVisiable.get():
             self.futureComp(self.futuresNum.get())
