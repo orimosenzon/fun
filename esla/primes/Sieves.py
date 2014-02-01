@@ -5,7 +5,7 @@ import tkinter
 
 class Sieves:
     WIDTH = 1900
-    HEIGHT = 1000
+    HEIGHT = 900
 
     N = 1000000 # number of primes to find 
     idxes = [] 
@@ -20,8 +20,6 @@ class Sieves:
         self.root = tkinter.Tk() 
         self.root.title("Sieves")
 
-        self.canvas = tkinter.Canvas(self.root,width=self.WIDTH, height=self.HEIGHT, background="white")
-        self.canvas.pack()
 
 ## menue 
         self.menubar = tkinter.Menu(self.root)
@@ -51,10 +49,27 @@ class Sieves:
         
         self.root.config(menu=self.menubar)
 
-## --         
+
+## -- canvas         
+        self.canvas = tkinter.Canvas(self.root,width=self.WIDTH, height=self.HEIGHT, background="white")
+        self.canvas.pack()
+
+
+## -- slider 
+        self.slider = tkinter.Scale(self.root, orient=tkinter.HORIZONTAL,
+                                    length = 2*self.WIDTH // 3,command = self.slideChanged)
+        self.slider.set(20)
+        
+        self.slider.pack(anchor="w")
+
+ ## -- mouse         
         self.canvas.bind('<Button-1>', self.butt1Pressed)
         self.canvas.bind('<Button-3>', self.butt3Pressed)
-        
+       
+        self.draw()
+
+    def slideChanged(self,val):
+        self.size = int(val) 
         self.draw()
 
     def calcPrimes(self,n):
