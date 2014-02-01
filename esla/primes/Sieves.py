@@ -27,10 +27,27 @@ class Sieves:
         self.menubar = tkinter.Menu(self.root)
         self.viewmenu = tkinter.Menu(self.menubar, tearoff=False)
 
+        self.spotsXYVisiable = tkinter.BooleanVar()
+        self.spotsXYVisiable.set(False)
+        self.viewmenu.add_checkbutton(label="Show SpotsXY", variable=self.spotsXYVisiable, command=self.draw)
+
+        self.spotsKVisiable = tkinter.BooleanVar()
+        self.spotsKVisiable.set(False)
+        self.viewmenu.add_checkbutton(label="Show SpotsK", variable=self.spotsKVisiable, command=self.draw)
+        
         self.futuresVisiable = tkinter.BooleanVar()
         self.futuresVisiable.set(False)
-        self.viewmenu.add_checkbutton(label="Show Futures", variable=self.futuresVisiable, command=self.draw)
+        self.viewmenu.add_checkbutton(label="Show Lookahead", variable=self.futuresVisiable, command=self.draw)
         self.menubar.add_cascade(label="View", menu=self.viewmenu)
+
+        self.futuresMenu = tkinter.Menu(self.viewmenu)
+        self.futuresNum = tkinter.IntVar()
+        self.futuresNum.set(1)
+        self.futuresMenu.add_radiobutton(label="Current", variable=self.futuresNum, value=0, command = self.draw)
+        self.futuresMenu.add_radiobutton(label="One ahead", variable=self.futuresNum, value=1, command = self.draw)
+        self.futuresMenu.add_radiobutton(label="two ahead", variable=self.futuresNum, value=2, command = self.draw)
+
+        self.viewmenu.add_cascade(label="Lookahead Num", menu=self.futuresMenu)
         
         self.root.config(menu=self.menubar)
 
@@ -58,15 +75,55 @@ class Sieves:
     def isPrime(self,n):
         return self.idxes[n] != -1 
 
+    def gcd(self,x,y):
+        if y > x:
+            x,y = y,x
+        while y>0:
+            x,y = y,x%y
+        return x 
+
+    def markWhiteSpotsXY(self):
+        for yi in range(self.HEIGHT // self.size):
+            for xi in range(self.WIDTH // self.size):
+                x = self.size*xi
+                y = self.size*yi
+                if yi > 0 and self.gcd(yi,xi+1) > 1:
+                    self.canvas.create_rectangle(x, y, x+self.size, y+self.size, outline = "black", fill = "yellow")
+                    if xi < self.k:
+                        n = self.xy2n(xi,yi)
+                        self.canvas.create_text(x + self.size//2,y + self.size//2,text = str(n),font=("Helvetica",7))
+
+    def markWhiteSpotsK(self):
+        for yi in range(self.HEIGHT // self.size):
+            for xi in range(self.k):
+                x = self.size*xi
+                y = self.size*yi
+                if yi>0 and self.gcd(xi+1,self.k) > 1:
+                    self.canvas.create_rectangle(x, y, x+self.size, y+self.size, outline = "black", fill = "yellow")
+                    n = self.xy2n(xi,yi)
+                    self.canvas.create_text(x + self.size//2,y + self.size//2,text = str(n),font=("Helvetica",7))
+      
+
         
     def butt1Pressed(self,e):
-        x = e.x - e.x % self.size
-        y = e.y - e.y % self.size
-        self.canvas.create_rectangle(x,y,x+self.size,y+self.size,fill="yellow")
-
-    def butt3Pressed(self,e):
+##        x = e.x - e.x % self.size
+##        y = e.y - e.y % self.size
+##        self.canvas.create_rectangle(x,y,x+self.size,y+self.size,fill="yellow")
         self.k +=1
         self.draw()
+
+    def butt3Pressed(self,e):
+        if self.k == 2:
+            return
+        self.k -=1
+        self.draw()
+
+    def xy2n(self,x,y):
+        x1 = x+1
+        y1 = y+1 
+        if x1 == self.k:
+            return self.k*y1
+        return self.k*y+x1
     
     def futureComp(self,w):
         for d in range(0,w+1):
@@ -100,7 +157,11 @@ class Sieves:
                     self.canvas.create_text(x + self.size//2,y + self.size//2,text = str(i))
                 i += 1
         if self.futuresVisiable.get():
-            self.futureComp(1)
+            self.futureComp(self.futuresNum.get())
+        if self.spotsXYVisiable.get():
+            self.markWhiteSpotsXY()
+        if self.spotsKVisiable.get():
+            self.markWhiteSpotsK()
 
 
 
