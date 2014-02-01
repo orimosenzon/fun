@@ -22,43 +22,112 @@
 <!--   == script == --> 
 <script>
 function init() {
+	colorChanged();
+	
 	// globals
-	px = 100;
-	py = 100 ;
-
-	var canvas = document.getElementById('myCanvas');
-	canvas.addEventListener("mousedown", but1Pressed ,false); 
-	var context = canvas.getContext('2d');
-	context.strokeStyle = 'black';
-}
-
-function but1Pressed(e) {
-	document.getElementById("firstHeader").innerHTML = "("+e.offsetX +"," + e.offsetY +")"
+	points = [[0,0]];  	
+	drag = false; 
+	pointRad = 15; 
+	
+	selectedPoint = -1;   
+	// ---- 
 	
 	var canvas = document.getElementById('myCanvas');
+
+	canvas.addEventListener("mousedown", mouseDown ,false); 
+	canvas.addEventListener("mouseup", mouseUp ,false); 
+	canvas.addEventListener("mousemove", mouseMove ,false); 
+
+	clearCanvas();
+}
+
+function mouseUp(e) {
+	drag = false; 
+	selectedPoint = -1; 
+}
+
+function mouseMove(e) {
+	if (drag && selectedPoint != -1) {
+		points[selectedPoint] =  [e.offsetX, e.offsetY,10];
+		redraw();  
+	}
+} 
+
+function redraw() {
+	clearCanvas(); // should be changed to delete only current curve  
+	for (i=0; i<points.length-1; ++i)  {
+		var x1 = points[i][0], y1 = points[i][1], 
+			  x2 = points[i+1][0], y2 = points[i+1][1],
+			  xm = (x1+x2)/2, ym = (y1+y2)/2; 
+			  curve(x1,y1,xm,ym,xm,ym,x2,y2); 
+			  circle(x1,y1,pointRad); 
+	}
+}
+
+function clearCanvas() {
+	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
-	context.beginPath();
-  	context.moveTo(px,  py);
-  	var px1 = e.offsetX, py1 = e.offsetY, pxmean = (px + px1)/2; 
-  	context.bezierCurveTo(pxmean, py+30, pxmean, py-30, px1, py1);
-  	context.lineWidth = 3;
+
+	context.clearRect(0, 0, canvas.width, canvas.height);
+
+	context.rect(0,0,canvas.width, canvas.height);
 	context.stroke();
 
-  	px = px1; 
-  	py = py1; 
+}
+
+function distance(x1,y1,x2,y2) {
+	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
+}
+
+function mouseDown(e) {
+  	for(i=0; i<points.length; i++)
+  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < pointRad ) {
+  			selectedPoint = i; 
+  			drag = true; 
+  			return; 
+  		}
+
+  	var n = points.length-1, 
+	  	  px = points[n][0], py = points[n][1], 
+  		  px1 = e.offsetX, py1 = e.offsetY, 
+  		  pxmean = (px + px1)/2; 
+
+  	curve(px,py, pxmean, py+30, pxmean, py-30, px1, py1);
+	circle(px1, py1, pointRad); 
+	
+	points.push([px1,py1]); 
+}
+
+function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.beginPath();
+  	context.moveTo(x1,  y1);
+  	context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+  	context.lineWidth = 3;
+  	context.strokeStyle = color; 
+	context.stroke();
+}
+
+function circle(x,y,r) {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.beginPath();
+	context.arc(x, y, r, 0, 2 * Math.PI, false);
+	context.fillStyle = 'gray';
+	context.fill();
+	context.lineWidth = 2;
+	context.strokeStyle = 'black';
+	context.stroke();
 }
 
 function colorChanged() {
 	var dropList = document.getElementById("colorSelection"); 
-	var str = ""+dropList.options[dropList.selectedIndex].text; 
+	color = ""+dropList.options[dropList.selectedIndex].text; 
 	
-	document.getElementById("firstHeader").innerHTML = str; 
-	
-	var canvas = document.getElementById('myCanvas');
-  	var context = canvas.getContext('2d');
-
-	 context.strokeStyle = str; 
-	 context.stroke();
+	document.getElementById("firstHeader").innerHTML = color; 
 } 
 
 function buttonPressed() {
