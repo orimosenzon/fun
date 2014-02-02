@@ -32,12 +32,13 @@
 
 // * zooming capability 
 
+// * export to animated image? 
+
 
 function init() {
 	
 	// globals
 	points = [];  	
-	drag = false; 
 
 	jointRad = 5; 
 	controlRad = 2; 
@@ -45,6 +46,7 @@ function init() {
 	selectRad = 15; 
 	
 	selectedPoint = -1;   
+	draggedPoint = -1; 
 	// ---- 
 	
 	colorChanged();
@@ -59,26 +61,38 @@ function init() {
 }
 
 function mouseUp(e) {
-	drag = false; 
-	selectedPoint = -1; 
+	draggedPoint = -1; 
 }
 
 function mouseMove(e) {
-	if (drag && selectedPoint != -1) {
-		var dx = e.offsetX - points[selectedPoint][0], dy = e.offsetY - points[selectedPoint][1],  
-			  last = points.length-1;
-			  
-		if (selectedPoint < last) {
-			points[selectedPoint+1][0] += dx; 
-			points[selectedPoint+1][1] += dy; 
+	if (draggedPoint == -1)
+		return; 
+		
+	var dx = e.offsetX - points[draggedPoint][0], dy = e.offsetY - points[draggedPoint][1],  
+		  last = points.length-1;
+	
+	points[draggedPoint] =  [ e.offsetX, e.offsetY ]; 
+
+	var pointType = draggedPoint % 3; 
+
+	if(pointType ==0) { // drag joint point : control points escort 
+		if (draggedPoint < last) {
+			points[draggedPoint+1][0] += dx; 
+			points[draggedPoint+1][1] += dy; 
 		}
-		if (selectedPoint > 0) {
-			points[selectedPoint-1][0] += dx; 
-			points[selectedPoint-1][1] += dy; 
+		if (draggedPoint > 0) {
+			points[draggedPoint-1][0] += dx; 
+			points[draggedPoint-1][1] += dy; 
 		}
-		points[selectedPoint] =  [ e.offsetX, e.offsetY ]; 
-		redraw();  
+	} else { // drag control point: other control reverse mirror  
+		var otherControl = draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		if(otherControl>0 && otherControl <last) {
+			points[otherControl][0] -= dx; 
+			points[otherControl][1] -= dy; 
+		}	
 	}
+	
+	redraw();  
 } 
 
 // == redraw() == 
@@ -145,13 +159,23 @@ function distance(x1,y1,x2,y2) {
 // == mouse press handle == 
 
 function mouseDown(e) {
-  	for(i=0; i<points.length; i+=3) // selection search 
-  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
-  			selectedPoint = i; 
-  			drag = true; 
-  			return; 
-  		}
-
+	if(selectedPoint == -1) {
+	  	for(i=0; i<points.length; i+=3) 
+	  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
+	  			selectedPoint = i; 
+				draggedPoint = i; 
+	  			return; 
+	  		}
+	} else {
+		for(i=0; i<poinrs.length; ++i)
+			if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
+				draggedPoint = i; 
+	  			return; 
+			}
+	}
+	
+	selectedPoint = -1; 
+	
 	var	n = points.length-1,
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
