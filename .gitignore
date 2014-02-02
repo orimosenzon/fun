@@ -1,3 +1,11 @@
 # ignore all file in top level build directory  
+
 /build/
+
+# all temporary editor files 
+*~ 
+
+
+
+
 
