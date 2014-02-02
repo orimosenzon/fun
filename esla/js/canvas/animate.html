@@ -75,23 +75,36 @@ function mouseMove(e) {
 
 	var pointType = draggedPoint % 3; 
 
-	if(pointType ==0) { // drag joint point : control points escort 
-		if (draggedPoint < last) {
-			points[draggedPoint+1][0] += dx; 
-			points[draggedPoint+1][1] += dy; 
-		} 
-		if (draggedPoint > 0) {
-			points[draggedPoint-1][0] += dx; 
-			points[draggedPoint-1][1] += dy; 
-		}
-	} else { // drag control point: other control reverse mirror  
-		var otherControl = draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
-		if(otherControl>0 && otherControl <last) {
-			points[otherControl][0] -= dx; 
-			points[otherControl][1] -= dy; 
-		}	
-	}
-	
+    if(!isClosed) {
+	    if(pointType ==0) { // drag joint point : control points escort 
+		    if (draggedPoint < last) {
+			    points[draggedPoint+1][0] += dx; 
+			    points[draggedPoint+1][1] += dy; 
+		    } 
+		    if (draggedPoint > 0) {
+			    points[draggedPoint-1][0] += dx; 
+			    points[draggedPoint-1][1] += dy; 
+		    }
+	    } else { // drag control point: other control reverse mirror  
+		    var otherControl = draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    if(otherControl>0 && otherControl <last) {
+			    points[otherControl][0] -= dx; 
+			    points[otherControl][1] -= dy; 
+		    }	
+	    }
+    } else {
+        var n = points.length; 
+	    if(pointType ==0) { // drag joint point : control points escort 
+			    points[(draggedPoint+1)%n][0] += dx; 
+			    points[(draggedPoint+1)%n][1] += dy; 
+			    points[(draggedPoint-1+n)%n][0] += dx; 
+			    points[(draggedPoint-1+n)%n][1] += dy; 
+	    } else { // drag control point: other control reverse mirror  
+		    var otherControl = (draggedPoint+(pointType-1)*4-2 +n)%n; 
+		    points[otherControl][0] -= dx; 
+		    points[otherControl][1] -= dy; 
+	    }
+    }	
 	redraw();  
 } 
 
