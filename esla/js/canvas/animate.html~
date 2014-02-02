@@ -3,7 +3,6 @@
 <body onload = "init()"> 
 <!-- == page == -->
 
-<button type = "button" onclick = "buttonPressed()"> press me </button> 
 
 <h1 id = "firstHeader"> Hello lord </h1> 
 
@@ -48,6 +47,7 @@ function init() {
 	
 	selectedPoint = -1;   
 	draggedPoint = -1; 
+
 	// ---- 
 	
 	colorChanged();
@@ -115,14 +115,14 @@ function redraw() {
 
 			  curve(x0,y0, x1,y1, x2,y2 ,x3,y3); 
 			  if (i == selectedPoint) {
-			  	line(x0,y0,x1,y1); 
-			  	circle(x0,y0,chosenRad,"cyan"); 
-			  	circle(x1,y1,controlRad,"gray"); 
 			  	if(i > 0) {
 			  		var xp = points[i-1][0], yp = points[i-1][1]; 
 			  		line(x0,y0,xp,yp);  
 			  		circle(xp,yp,controlRad,"gray");
 			  	}	
+			  	line(x0,y0,x1,y1); 
+			  	circle(x0,y0,chosenRad,"cyan"); 
+			  	circle(x1,y1,controlRad,"gray"); 
 			  } else {
 				  circle(x0,y0,jointRad,"gray"); 
 			  }
@@ -131,12 +131,12 @@ function redraw() {
 	var x0 = points[lastIdx][0], y0 = points[lastIdx][1]; 
 	
 	if(selectedPoint == lastIdx) {
-		circle(x0,y0,jointRad,"cyan");
 		if (lastIdx > 0) {
 			var xp = points[lastIdx-1][0], yp = points[lastIdx-1][1];
-			circle(xp,yp,controlRad,"gray");
 			line(x0,y0,xp,yp);   
+			circle(xp,yp,controlRad,"gray"); 
 		}		
+		circle(x0,y0,jointRad,"cyan");
 	} else {
 		circle(x0,y0,jointRad,"gray");
 	} // need to rethink about this whole selection code with duplications and special case of only one point 
@@ -146,6 +146,8 @@ function clearCanvas() {
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
 
+	context.beginPath() ; // this is necessary due to some behaivour of canvas that I do not understand. Without this, the last 
+	                                // stroke doesn't get deleted 
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
 	context.rect(0,0,canvas.width, canvas.height);
@@ -253,16 +255,11 @@ function colorChanged() {
 	redraw();
 } 
 
-function buttonPressed() {
-	var name = "Ori" ;
-	var age = "44" ;
-	var map = {1:"one", 2:"two", three:"3"}; 
-	var str ="";
-	for (x in map) {
-		str +=  x + " " + map[x] ;
-	}
-	document.getElementById("firstHeader").innerHTML = "Hello "+name+" "+str; 
+function debugPrint(str) {
+	document.getElementById("firstHeader").innerHTML = str; 
+
 }
+
 </script> 
 
 </body> 
