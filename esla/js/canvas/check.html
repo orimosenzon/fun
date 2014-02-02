@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
-<body onload > 
+<body onload = "foo()" > 
 <!-- == page == -->
 
 <button type = "button" onclick = "buttonPressed()"> press me </button> 
 
 <h1 id = "firstHeader"> Hello lord </h1> 
+<h1 id = "secondHeader"> Hello lord </h1> 
 
 
 <select id="colorSelection" onchange="colorChanged()">
@@ -18,7 +19,12 @@
 
 <!--   == script == --> 
 <script>
-
+function foo() {
+	var arr = [1,2,3,4]; 
+	document.getElementById("firstHeader").innerHTML = "hello there <br> bye bye"+ arr+ "---"+arr.length; 
+	arr.splice(3,1); 
+	document.getElementById("secondHeader").innerHTML = arr+" ---" + arr.length; 
+}
 	
 
 </script> 
