@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<body onload = "init()"> 
+<!-- == page == -->
+
+<button type = "button" onclick = "buttonPressed()"> press me </button> 
+
+<h1 id = "firstHeader"> Hello lord </h1> 
+
+
+<select id="colorSelection" onchange="colorChanged()">
+	<option> black </option>
+	<option> blue </option>
+	<option> red </option>
+</select> 
+
+<canvas id="myCanvas" width="1500" height="900"></canvas>
+
+<!--   == script == --> 
+<script>
+
+//     == future == 
+// * ability to move the control points 
+
+// * closed curves (try to improve the code for the special cases at the edges) 
+
+// * move to object archecture and avoid all those global variables 
+
+// * data strcture for multiple curves (frame or image) 
+
+// * data strcture for multiple frames 
+
+
+function init() {
+	
+	// globals
+	points = [];  	
+	drag = false; 
+
+	jointRad = 5; 
+	controlRad = 2; 
+	
+	selectRad = 15; 
+	
+	selectedPoint = -1;   
+	// ---- 
+	
+	colorChanged();
+
+	var canvas = document.getElementById('myCanvas');
+
+	canvas.addEventListener("mousedown", mouseDown ,false); 
+	canvas.addEventListener("mouseup", mouseUp ,false); 
+	canvas.addEventListener("mousemove", mouseMove ,false); 
+
+	clearCanvas();
+}
+
+function mouseUp(e) {
+	drag = false; 
+	selectedPoint = -1; 
+}
+
+function mouseMove(e) {
+	if (drag && selectedPoint != -1) {
+		var dx = e.offsetX - points[selectedPoint][0], dy = e.offsetY - points[selectedPoint][1],  
+			  last = points.length-1;
+			  
+		if (selectedPoint < last) {
+			points[selectedPoint+1][0] += dx; 
+			points[selectedPoint+1][1] += dy; 
+		}
+		if (selectedPoint > 0) {
+			points[selectedPoint-1][0] += dx; 
+			points[selectedPoint-1][1] += dy; 
+		}
+		points[selectedPoint] =  [ e.offsetX, e.offsetY ]; 
+		redraw();  
+	}
+} 
+
+// == redraw() == 
+
+function redraw() {
+	clearCanvas(); // should be changed to delete only current curve  
+	
+	if (points.length == 0) {
+		return; 
+	}
+	
+	var lastIdx = points.length-1; 
+	
+	for (i=0; i < lastIdx; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1], 
+			  x1 = points[i+1][0], y1 = points[i+1][1],
+			  x2 = points[i+2][0], y2 = points[i+2][1],
+			  x3 = points[i+3][0], y3 = points[i+3][1]; 
+
+			  curve(x0,y0, x1,y1, x2,y2 ,x3,y3); 
+			  if (i == selectedPoint) {
+			  	circle(x0,y0,jointRad,"cyan"); 
+			  	circle(x1,y1,controlRad,"gray"); 
+			  	line(x0,y0,x1,y1); 
+			  	if(i > 0) {
+			  		var xp = points[i-1][0], yp = points[i-1][1]; 
+			  		circle(xp,yp,controlRad,"gray");
+			  		line(x0,y0,xp,yp);  
+			  	}	
+			  } else {
+				  circle(x0,y0,jointRad,"gray"); 
+			  }
+	}
+	
+	var x0 = points[lastIdx][0], y0 = points[lastIdx][1]; 
+	
+	if(selectedPoint == lastIdx) {
+		circle(x0,y0,jointRad,"cyan");
+		if (lastIdx > 0) {
+			var xp = points[lastIdx-1][0], yp = points[lastIdx-1][1];
+			circle(xp,yp,controlRad,"gray");
+			line(x0,y0,xp,yp);   
+		}		
+	} else {
+		circle(x0,y0,jointRad,"gray");
+	} // need to rethink about this whole selection code with duplications and special case of only one point 
+}
+
+function clearCanvas() {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.clearRect(0, 0, canvas.width, canvas.height);
+
+	context.rect(0,0,canvas.width, canvas.height);
+	context.stroke();
+
+}
+
+function distance(x1,y1,x2,y2) {
+	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
+}
+
+// == mouse press handle == 
+
+function mouseDown(e) {
+  	for(i=0; i<points.length; i+=3) // selection search 
+  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
+  			selectedPoint = i; 
+  			drag = true; 
+  			return; 
+  		}
+
+	var	n = points.length-1,
+			x3 = e.offsetX, y3 = e.offsetY; 
+				
+	if (n < 0) {
+		points = [[x3,y3]]; 
+		redraw(); 
+		return; 
+	}
+
+  	var x0 = points[n][0], y0 = points[n][1], 
+   		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
+   		  x1 = x0+xm, y1 = y0+ym, 
+   		  x2 = x0+xm*2, y2 = y0+ym*2;  
+	
+	if (n>0) {
+		var xq = 2*x0-points[n-1][0], yq =2*y0 - points[n-1][1]; 
+		x1 = (x1+xq)/2;
+		y1 = (y1+yq)/2; 
+	
+		points[n-1][0] = 2*x0-x1;
+		points[n-1][1] = 2*y0-y1; 
+	}
+	
+	points.push([x1,y1]); 
+	points.push([x2,y2]); 
+	points.push([x3,y3]);
+	
+	redraw();  
+}
+
+function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.beginPath();
+  	context.moveTo(x1,  y1);
+  	context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+  	context.lineWidth = 3;
+  	context.strokeStyle = color; 
+	context.stroke();
+}
+
+function line(x1,y1,x2,y2) {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.beginPath();
+  	context.moveTo(x1,  y1);
+	context.lineTo(x2,y2);
+	context.strokeStyle = "gray"; 
+	context.stroke();
+}
+
+function circle(x,y,r,c) {
+	var canvas = document.getElementById('myCanvas');
+	var context = canvas.getContext('2d');
+
+	context.beginPath();
+	context.arc(x, y, r, 0, 2 * Math.PI, false);
+	context.fillStyle = c;
+	context.fill();
+	context.lineWidth = 2;
+	context.strokeStyle = 'black';
+	context.stroke();
+}
+
+function colorChanged() {
+	var dropList = document.getElementById("colorSelection"); 
+	color = ""+dropList.options[dropList.selectedIndex].text; 
+	
+	document.getElementById("firstHeader").innerHTML = color; 
+	redraw();
+} 
+
+function buttonPressed() {
+	var name = "Ori" ;
+	var age = "44" ;
+	var map = {1:"one", 2:"two", three:"3"}; 
+	var str ="";
+	for (x in map) {
+		str +=  x + " " + map[x] ;
+	}
+	document.getElementById("firstHeader").innerHTML = "Hello "+name+" "+str; 
+}
+</script> 
+
+</body> 
+</html> 
+
