@@ -8,7 +8,7 @@
 
 
 <select id="colorSelection" onchange="colorChanged()">
-	<option> black </option>
+	<option> Purple </option>
 	<option> blue </option>
 	<option> red </option>
 </select> 
@@ -103,54 +103,73 @@ function redraw() {
 	if (points.length == 0) {
 		return; 
 	}
+
+	if(isClosed) {
+		redrawClosed();
+	} else {
+		redrawOpen(); 
+	}
 	
-	var lastIdx = points.length-1; 
+}
+
+// == redrawOpen == 
+function redrawOpen() {
+	var last = points.length-1; 
 	
-	for (i=0; i < lastIdx; i+=3)  {
-		var x0 = points[i][0], y0 = points[i][1], 
-			  x1 = points[i+1][0], y1 = points[i+1][1],
-			  x2 = points[i+2][0], y2 = points[i+2][1]; 
-		
-		var x3,y3; 
-		
-		if(i+2 == lastIdx) { // reached end of closed path 
-			x3 = points[0][0]; y3 = points[0][1]; 
-		} else {  
-			  x3 = points[i+3][0], y3 = points[i+3][1]; 
+	for (i=0; i <= last; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1],
+		      x1, y1, 
+		      x2,y2,
+		      x3,y3; 
+		if(i < last) {
+            x1 = points[i+1][0], y1 = points[i+1][1],
+            x2 = points[i+2][0], y2 = points[i+2][1],
+            x3 = points[i+3][0], y3 = points[i+3][1]; 
+
+			curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
 		}
-		
-		curve(x0,y0, x1,y1, x2,y2 ,x3,y3); 
 		if (i == selectedPoint) {
-		if(i > 0) {
-			var xp = points[i-1][0], yp = points[i-1][1]; 
-			line(x0,y0,xp,yp);  
-			circle(xp,yp,controlRad,"gray");
-		}	
-		line(x0,y0,x1,y1); 
-		circle(x0,y0,chosenRad,"cyan"); 
-		circle(x1,y1,controlRad,"gray"); 
+			if(i > 0) {
+				var xp = points[i-1][0], yp = points[i-1][1]; 
+				line(x0,y0,xp,yp);  
+				circle(xp,yp,controlRad,"gray");
+			}	
+			if (i < last) {
+			    line(x0,y0,x1,y1); 
+	            circle(x1,y1,controlRad,"gray"); 		 
+			 }
+			circle(x0,y0,chosenRad,"cyan"); 
 		} else {
 		  circle(x0,y0,jointRad,"gray"); 
 		}
 	}
+} 
+
+// == redrawClosed == 
+function redrawClosed() {
+	var n = points.length; 
 	
-	if(isClosed)
-		return; 
-		
-	var x0 = points[lastIdx][0], y0 = points[lastIdx][1]; 
-	
-	if(selectedPoint == lastIdx) {
-		if (lastIdx > 0) {
-			var xp = points[lastIdx-1][0], yp = points[lastIdx-1][1];
-			line(x0,y0,xp,yp);   
-			circle(xp,yp,controlRad,"gray"); 
-		}		
-		circle(x0,y0,chosenRad,"cyan");
-	} else {
-		circle(x0,y0,jointRad,"gray");
-	} // need to rethink about this whole selection code with duplications and special case of only one point 
+	for (i=0; i < n; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1],
+              x1 = points[i+1][0], y1 = points[i+1][1],
+              x2 = points[i+2][0], y2 = points[i+2][1],
+              x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
+
+		curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
+		if (i == selectedPoint) {
+            var xp = points[(i+n-1)%n][0], yp = points[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
+            line(x0,y0,xp,yp);  
+            circle(xp,yp,controlRad,"gray");
+            line(x0,y0,x1,y1); 
+            circle(x1,y1,controlRad,"gray"); 		 
+            circle(x0,y0,chosenRad,"cyan"); 
+		} else {
+		  circle(x0,y0,jointRad,"gray"); 
+		}
+	}
 }
 
+// == clearCanvas == 
 function clearCanvas() {
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -169,7 +188,6 @@ function distance(x1,y1,x2,y2) {
 }
 
 // == mouse press handle == 
-
 function mouseDown(e) {
  	// check for joint point selection 
   	for(i=0; i<points.length; i+=3) 
@@ -252,6 +270,7 @@ function mouseUp(e) {
 	draggedPoint = -1; 
 }
 
+// == curve == 
 function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -264,6 +283,7 @@ function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
 	context.stroke();
 }
 
+// == line == 
 function line(x1,y1,x2,y2) {
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -275,6 +295,7 @@ function line(x1,y1,x2,y2) {
 	context.stroke();
 }
 
+// == circle == 
 function circle(x,y,r,c) {
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -288,6 +309,12 @@ function circle(x,y,r,c) {
 	context.stroke();
 }
 
+// =debugPrint == 
+function debugPrint(str) {
+	document.getElementById("firstHeader").innerHTML = str; 
+}
+
+// == misc == 
 function colorChanged() {
 	var dropList = document.getElementById("colorSelection"); 
 	color = ""+dropList.options[dropList.selectedIndex].text; 
@@ -295,12 +322,6 @@ function colorChanged() {
 	document.getElementById("firstHeader").innerHTML = color; 
 	redraw();
 } 
-
-function debugPrint(str) {
-	document.getElementById("firstHeader").innerHTML = str; 
-
-}
-
 </script> 
 
 </body> 
