@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<body onload = "init()"> 
+<body onload > 
 <!-- == page == -->
 
 <button type = "button" onclick = "buttonPressed()"> press me </button> 
@@ -16,150 +16,11 @@
 
 <canvas id="myCanvas" width="1500" height="900"></canvas>
 
-
-
-
 <!--   == script == --> 
 <script>
-function init() {
-	colorChanged();
+
 	
-	// globals
-	points = [];  	
-	drag = false; 
-	pointRad = 15; 
-	
-	selectedPoint = -1;   
-	// ---- 
-	
-	var canvas = document.getElementById('myCanvas');
 
-	canvas.addEventListener("mousedown", mouseDown ,false); 
-	canvas.addEventListener("mouseup", mouseUp ,false); 
-	canvas.addEventListener("mousemove", mouseMove ,false); 
-
-	clearCanvas();
-}
-
-function mouseUp(e) {
-	drag = false; 
-	selectedPoint = -1; 
-}
-
-function mouseMove(e) {
-	if (drag && selectedPoint != -1) {
-		points[selectedPoint] =  [e.offsetX, e.offsetY];
-		redraw();  
-	}
-} 
-
-function redraw() {
-	clearCanvas(); // should be changed to delete only current curve  
-	
-	if (points.length == 0) {
-		return; 
-	}
-	
-	var lastIdx = points.length-1; 
-	
-	for (i=0; i < lastIdx; i+=3)  {
-		var x0 = points[i][0], y0 = points[i][1], 
-			  x1 = points[i+1][0], y1 = points[i+1][1],
-			  x2 = points[i+2][0], y2 = points[i+2][1],
-			  x3 = points[i+3][0], y3 = points[i+3][1]; 
-
-			  curve(x0,y0, x1,y1, x2,y2 ,x3,y3); 
-			  circle(x0,y0,pointRad); 
-	}
-	circle(points[lastIdx][0],points[lastIdx][1],pointRad);
-}
-
-function clearCanvas() {
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
-
-	context.clearRect(0, 0, canvas.width, canvas.height);
-
-	context.rect(0,0,canvas.width, canvas.height);
-	context.stroke();
-
-}
-
-function distance(x1,y1,x2,y2) {
-	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
-}
-
-function mouseDown(e) {
-  	for(i=0; i<points.length; i++)
-  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < pointRad ) {
-  			selectedPoint = i; 
-  			drag = true; 
-  			return; 
-  		}
-
-	var	n = points.length-1,
-			px3 = e.offsetX, py3 = e.offsetY; 
-				
-	if (n < 0) {
-		points = [[px3,py3]]; 
-		redraw(); 
-		return; 
-	}
-
-  	var px0 = points[n][0], py0 = points[n][1], 
-   		  pxm = (px3-px0)/3, pym =  (py3-py0)/3, 
-   		  px1 = px0+pxm, py1 = py0+pym, 
-   		  px2 = px0+pxm*2, py2 = py0+pym*2;  
-	
-	points.push([px1,py1]); 
-	points.push([px2,py2]); 
-	points.push([px3,py3]);
-	
-	redraw();  
-}
-
-function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
-
-	context.beginPath();
-  	context.moveTo(x1,  y1);
-  	context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-  	context.lineWidth = 3;
-  	context.strokeStyle = color; 
-	context.stroke();
-}
-
-function circle(x,y,r) {
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
-
-	context.beginPath();
-	context.arc(x, y, r, 0, 2 * Math.PI, false);
-	context.fillStyle = 'gray';
-	context.fill();
-	context.lineWidth = 2;
-	context.strokeStyle = 'black';
-	context.stroke();
-}
-
-function colorChanged() {
-	var dropList = document.getElementById("colorSelection"); 
-	color = ""+dropList.options[dropList.selectedIndex].text; 
-	
-	document.getElementById("firstHeader").innerHTML = color; 
-} 
-
-function buttonPressed() {
-	var name = "Ori" ;
-	var age = "44" ;
-	var map = {1:"one", 2:"two", three:"3"}; 
-	var str ="";
-	for (x in map) {
-		str +=  x + " " + map[x] ;
-	}
-	document.getElementById("firstHeader").innerHTML = "Hello "+name+" "+str; 
-}
 </script> 
 
 </body> 
