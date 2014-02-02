@@ -8,7 +8,7 @@
 
 
 <select id="colorSelection" onchange="colorChanged()">
-	<option> Purple </option>
+	<option> black </option>
 	<option> blue </option>
 	<option> red </option>
 </select> 
@@ -219,6 +219,9 @@ function mouseDown(e) {
 			}
 	}
 	
+    if(isClosed) 
+        return; 
+ 	
 	selectedPoint = -1; 
 	
 	var	n = points.length-1,
