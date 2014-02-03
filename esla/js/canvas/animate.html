@@ -20,35 +20,38 @@
 
 //     == future == 
 
-// * closed curves (try to improve the code for the special cases at the edges) 
 
-// * move to object archecture and avoid all those global variables 
-
+// * integrate (in a very basic manner) to a django application 
+ 
 // * data strcture for multiple curves (frame or image) 
 
-// * data strcture for multiple frames 
+// * data strcture for multiple frames (clip) , then multiple clips (library?) 
 
 // * zooming capability 
 
 // * export to animated image? 
 
+// * menues and other options (lines, colors, gradients... ) 
 
 // == init == 
 function init() {
 	
-	// globals
-	points = [];  	
-
-	jointRad = 3;
-	chosenRad = 4;  
-	controlRad = 2; 
+// == global namespace == 
+g = {
 	
-	selectRad = 15; 
+	points:[], 
+	 	
+	jointRad:3,
+	chosenRad:4,  
+	controlRad:2, 
 	
-	selectedPoint = -1;   
-	draggedPoint = -1; 
+	selectRad:15, 
+	
+	selectedPoint:-1,   
+	draggedPoint:-1, 
 
-	isClosed = false; 
+	isClosed:false, 
+} 
 	// ---- 
 	
 	colorChanged();
@@ -65,44 +68,44 @@ function init() {
 
 // == mouseMove == 
 function mouseMove(e) {
-	if (draggedPoint == -1)
+	if (g.draggedPoint == -1)
 		return; 
 		
-	var dx = e.offsetX - points[draggedPoint][0], dy = e.offsetY - points[draggedPoint][1],  
-		  last = points.length-1;
+	var dx = e.offsetX - g.points[g.draggedPoint][0], dy = e.offsetY - g.points[g.draggedPoint][1],  
+		  last = g.points.length-1;
 	
-	points[draggedPoint] =  [ e.offsetX, e.offsetY ]; 
+	g.points[g.draggedPoint] =  [ e.offsetX, e.offsetY ]; 
 
-	var pointType = draggedPoint % 3; 
+	var pointType = g.draggedPoint % 3; 
 
-    if(!isClosed) {
-	    if(pointType ==0) { // drag joint point : control points escort 
-		    if (draggedPoint < last) {
-			    points[draggedPoint+1][0] += dx; 
-			    points[draggedPoint+1][1] += dy; 
+    if(!g.isClosed) {
+	    if(pointType ==0) { // drag joint point : control g.points escort 
+		    if (g.draggedPoint < last) {
+			    g.points[g.draggedPoint+1][0] += dx; 
+			    g.points[g.draggedPoint+1][1] += dy; 
 		    } 
-		    if (draggedPoint > 0) {
-			    points[draggedPoint-1][0] += dx; 
-			    points[draggedPoint-1][1] += dy; 
+		    if (g.draggedPoint > 0) {
+			    g.points[g.draggedPoint-1][0] += dx; 
+			    g.points[g.draggedPoint-1][1] += dy; 
 		    }
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    var otherControl = g.draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
 		    if(otherControl>0 && otherControl <last) {
-			    points[otherControl][0] -= dx; 
-			    points[otherControl][1] -= dy; 
+			    g.points[otherControl][0] -= dx; 
+			    g.points[otherControl][1] -= dy; 
 		    }	
 	    }
     } else {
-        var n = points.length; 
-	    if(pointType ==0) { // drag joint point : control points escort 
-			    points[(draggedPoint+1)%n][0] += dx; 
-			    points[(draggedPoint+1)%n][1] += dy; 
-			    points[(draggedPoint-1+n)%n][0] += dx; 
-			    points[(draggedPoint-1+n)%n][1] += dy; 
+        var n = g.points.length; 
+	    if(pointType ==0) { // drag joint point : control g.points escort 
+			    g.points[(g.draggedPoint+1)%n][0] += dx; 
+			    g.points[(g.draggedPoint+1)%n][1] += dy; 
+			    g.points[(g.draggedPoint-1+n)%n][0] += dx; 
+			    g.points[(g.draggedPoint-1+n)%n][1] += dy; 
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = (draggedPoint+(pointType-1)*4-2 +n)%n; 
-		    points[otherControl][0] -= dx; 
-		    points[otherControl][1] -= dy; 
+		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n; 
+		    g.points[otherControl][0] -= dx; 
+		    g.points[otherControl][1] -= dy; 
 	    }
     }	
 	redraw();  
@@ -113,11 +116,11 @@ function mouseMove(e) {
 function redraw() {
 	clearCanvas(); // should be changed to delete only current curve  
 	
-	if (points.length == 0) {
+	if (g.points.length == 0) {
 		return; 
 	}
 
-	if(isClosed) {
+	if(g.isClosed) {
 		redrawClosed();
 	} else {
 		redrawOpen(); 
@@ -127,57 +130,57 @@ function redraw() {
 
 // == redrawOpen == 
 function redrawOpen() {
-	var last = points.length-1; 
+	var last = g.points.length-1; 
 	
 	for (i=0; i <= last; i+=3)  {
-		var x0 = points[i][0], y0 = points[i][1],
+		var x0 = g.points[i][0], y0 = g.points[i][1],
 		      x1, y1, 
 		      x2,y2,
 		      x3,y3; 
 		if(i < last) {
-            x1 = points[i+1][0], y1 = points[i+1][1],
-            x2 = points[i+2][0], y2 = points[i+2][1],
-            x3 = points[i+3][0], y3 = points[i+3][1]; 
+            x1 = g.points[i+1][0], y1 = g.points[i+1][1],
+            x2 = g.points[i+2][0], y2 = g.points[i+2][1],
+            x3 = g.points[i+3][0], y3 = g.points[i+3][1]; 
 
 			curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
 		}
-		if (i == selectedPoint) {
+		if (i == g.selectedPoint) {
 			if(i > 0) {
-				var xp = points[i-1][0], yp = points[i-1][1]; 
+				var xp = g.points[i-1][0], yp = g.points[i-1][1]; 
 				line(x0,y0,xp,yp);  
-				circle(xp,yp,controlRad,"gray");
+				circle(xp,yp,g.controlRad,"gray");
 			}	
 			if (i < last) {
 			    line(x0,y0,x1,y1); 
-	            circle(x1,y1,controlRad,"gray"); 		 
+	            circle(x1,y1,g.controlRad,"gray"); 		 
 			 }
-			circle(x0,y0,chosenRad,"cyan"); 
+			circle(x0,y0,g.chosenRad,"cyan"); 
 		} else {
-		  circle(x0,y0,jointRad,"gray"); 
+		  circle(x0,y0,g.jointRad,"gray"); 
 		}
 	}
 } 
 
 // == redrawClosed == 
 function redrawClosed() {
-	var n = points.length; 
+	var n = g.points.length; 
 	
 	for (i=0; i < n; i+=3)  {
-		var x0 = points[i][0], y0 = points[i][1],
-              x1 = points[i+1][0], y1 = points[i+1][1],
-              x2 = points[i+2][0], y2 = points[i+2][1],
-              x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
+		var x0 = g.points[i][0], y0 = g.points[i][1],
+              x1 = g.points[i+1][0], y1 = g.points[i+1][1],
+              x2 = g.points[i+2][0], y2 = g.points[i+2][1],
+              x3 = g.points[(i+3)%n][0], y3 = g.points[(i+3)%n][1]; 
 
 		curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
-		if (i == selectedPoint) {
-            var xp = points[(i+n-1)%n][0], yp = points[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
+		if (i == g.selectedPoint) {
+            var xp = g.points[(i+n-1)%n][0], yp = g.points[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
             line(x0,y0,xp,yp);  
-            circle(xp,yp,controlRad,"gray");
+            circle(xp,yp,g.controlRad,"gray");
             line(x0,y0,x1,y1); 
-            circle(x1,y1,controlRad,"gray"); 		 
-            circle(x0,y0,chosenRad,"cyan"); 
+            circle(x1,y1,g.controlRad,"gray"); 		 
+            circle(x0,y0,g.chosenRad,"cyan"); 
 		} else {
-		  circle(x0,y0,jointRad,"gray"); 
+		  circle(x0,y0,g.jointRad,"gray"); 
 		}
 	}
 }
@@ -203,87 +206,87 @@ function distance(x1,y1,x2,y2) {
 // == mouse press handle == 
 function mouseDown(e) {
  	// check for joint point selection 
-  	for(i=0; i<points.length; i+=3) 
-  		if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
-  			selectedPoint = i; 
-			draggedPoint = i; 
+  	for(i=0; i<g.points.length; i+=3) 
+  		if ( distance(e.offsetX, e.offsetY,g.points[i][0], g.points[i][1]) < g.selectRad ) {
+  			g.selectedPoint = i; 
+			g.draggedPoint = i; 
 			redraw(); 
   			return; 
   		}
 	 
-	 if(selectedPoint != -1) { // selection is on : search for drag 
-		for(i=0; i<points.length; ++i)
-			if ( distance(e.offsetX, e.offsetY,points[i][0], points[i][1]) < selectRad ) {
-				draggedPoint = i; 
+	 if(g.selectedPoint != -1) { // selection is on : search for drag 
+		for(i=0; i<g.points.length; ++i)
+			if ( distance(e.offsetX, e.offsetY,g.points[i][0], g.points[i][1]) < g.selectRad ) {
+				g.draggedPoint = i; 
 	  			return; 
 			}
 	}
 	
-    if(isClosed) 
+    if(g.isClosed) 
         return; 
  	
-	selectedPoint = -1; 
+	g.selectedPoint = -1; 
 	
-	var	n = points.length-1,
+	var	n = g.points.length-1,
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
 	if (n < 0) {
-		points = [[x3,y3]]; 
+		g.points = [[x3,y3]]; 
 		redraw(); 
 		return; 
 	}
 
-  	var x0 = points[n][0], y0 = points[n][1], 
+  	var x0 = g.points[n][0], y0 = g.points[n][1], 
    		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
    		  x1 = x0+xm, y1 = y0+ym; 
 	
 	if (n>0) {
-		var xq = 2*x0-points[n-1][0], yq =2*y0 - points[n-1][1]; 
+		var xq = 2*x0-g.points[n-1][0], yq =2*y0 - g.points[n-1][1]; 
 		x1 = (x1+xq)/2;
 		y1 = (y1+yq)/2; 
 	
-		points[n-1][0] = 2*x0-x1;
-		points[n-1][1] = 2*y0-y1; 
+		g.points[n-1][0] = 2*x0-x1;
+		g.points[n-1][1] = 2*y0-y1; 
 	}
 	
-	points.push([x1,y1]); 
+	g.points.push([x1,y1]); 
 	
 	var  x2 = x0+xm*2, y2 = y0+ym*2;   
 
-	points.push([x2,y2]); 
+	g.points.push([x2,y2]); 
 	
-	points.push([x3,y3]);
+	g.points.push([x3,y3]);
 	
 	redraw();  
 }
 
 // == mouseUp == 
 function mouseUp(e) {
-	var last = points.length-1; 
+	var last = g.points.length-1; 
 	if (last <= 0) {
-		draggedPoint = -1; 
+		g.draggedPoint = -1; 
 		return; 
 	}
-    if 	( draggedPoint == last && distance(e.offsetX,e.offsetY, points[0][0], points[0][1]) < selectRad 
+    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, g.points[0][0], g.points[0][1]) < g.selectRad 
     		      ||
-    	       draggedPoint == 0 && distance(e.offsetX,e.offsetY, points[last][0], points[last][1]) < selectRad   )  { 
-		isClosed = true; 
-		points.splice(last,1); // delete last element
-		var x3 = points[0][0],  y3 = points[0][1], 
-			  x2 = points[last-1][0], y2 = points[last-1][1];  
+    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, g.points[last][0], g.points[last][1]) < g.selectRad   )  { 
+		g.isClosed = true; 
+		g.points.splice(last,1); // delete last element
+		var x3 = g.points[0][0],  y3 = g.points[0][1], 
+			  x2 = g.points[last-1][0], y2 = g.points[last-1][1];  
 		
-		var xp = 2*x3 - points[1][0], yp = 2*y3 - points[1][1];
+		var xp = 2*x3 - g.points[1][0], yp = 2*y3 - g.points[1][1];
 		x2 = (x2+xp)/2; 
 		y2 = (y2+yp)/2; 
 		
-		points[last-1][0] = x2; 
-		points[last-1][1] = y2; 
-	    points[1][0] = 2*x3 - x2; 
-	 	points[1][1] = 2*y3 - y2; 
+		g.points[last-1][0] = x2; 
+		g.points[last-1][1] = y2; 
+	    g.points[1][0] = 2*x3 - x2; 
+	 	g.points[1][1] = 2*y3 - y2; 
 		
 		redraw(); 
 	}
-	draggedPoint = -1; 
+	g.draggedPoint = -1; 
 }
 
 // == curve == 

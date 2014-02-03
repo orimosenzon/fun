@@ -1,31 +1,53 @@
 <!DOCTYPE html>
 <html>
-<body onload = "foo()" > 
+<body  onload = "doOnload()"> 
 <!-- == page == -->
+<h1 id="title1"> Check page </h1>
 
-<button type = "button" onclick = "buttonPressed()"> press me </button> 
+<textarea id="text1" cols = "100" rows = "3">  </textarea>
 
-<h1 id = "firstHeader"> Hello lord </h1> 
-<h1 id = "secondHeader"> Hello lord </h1> 
+<button type = "button" onclick = "buttonCheck()"> check </button> 
+<button type = "button" onclick = "buttonEval()"> eval as js </button> 
 
-
-<select id="colorSelection" onchange="colorChanged()">
-	<option> black </option>
-	<option> blue </option>
-	<option> red </option>
-</select> 
-
-<canvas id="myCanvas" width="1500" height="900"></canvas>
+<h1 id="title2"> output goes here: </h1>
 
 <!--   == script == --> 
 <script>
-function foo() {
-	var arr = [1,2,3,4]; 
-	document.getElementById("firstHeader").innerHTML = "hello there <br> bye bye"+ arr+ "---"+arr.length; 
-	arr.splice(3,1); 
-	document.getElementById("secondHeader").innerHTML = (-1)%6; 
+
+var global = {
+
+    foo: function() {
+        print("foo!"); 
+        global.x ++; 
+    },
+
+    bar: function() {
+    }, 
+    
+    x:5,
+    y:"ori", 
+};
+
+function doOnload() {
+    print("ready"); 
+}
+
+function print(str) {
+    document.getElementById("title2").innerHTML += str+"<br>"; 
+}
+function buttonEval() {
+    document.getElementById("text1").value = "return value:\n"+eval(document.getElementById("text1").value);
+    print("ok, man"); 
 }
 	
+function buttonCheck() {
+     global.foo(); 
+     print(global.x+global.y); 
+}
+
+
+
+
 
 </script> 
 
