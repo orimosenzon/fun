@@ -61,8 +61,13 @@ g = {
 	canvas.addEventListener("mousedown", mouseDown ,false); 
 	canvas.addEventListener("mouseup", mouseUp ,false); 
 	canvas.addEventListener("mousemove", mouseMove ,false); 
+	canvas.addEventListener("mousewheel",mouseWheel,false);
 
 	clearCanvas();
+}
+
+function mouseWheel(e) {
+    debugPrint(e.wheelDelta);
 }
 
 

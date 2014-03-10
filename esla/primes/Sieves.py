@@ -20,7 +20,8 @@ class Sieves:
         self.root = tkinter.Tk() 
         self.root.title("Sieves")
 
-
+        
+        
 ## menue 
         self.menubar = tkinter.Menu(self.root)
         self.viewmenu = tkinter.Menu(self.menubar, tearoff=False)
@@ -195,5 +196,7 @@ class Sieves:
 
 
 
+
 Sieves()            
 
+tkinter.mainloop()
