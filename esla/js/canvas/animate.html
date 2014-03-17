@@ -53,7 +53,8 @@ g = {
 	cx:0,
 	cy:0,
 	factor:1,
-
+    df:1.2,
+    
 	isClosed:false, 
 } 
 	// ---- 
@@ -73,9 +74,15 @@ g = {
 // == mouseWheel == 
 function mouseWheel(e) {
     debugPrint(e.wheelDelta+" "+e.offsetX+" " + e.offsetY);
-    g.factor *= 1.2; 
-    
+
     x = tr1X(e.offsetX);   y = tr1Y(e.offsetY); 
+
+    if(e.wheelDelta > 0) {
+        g.factor *= g.df; 
+     } else {
+        g.factor /= g.df;
+     }
+    
     g.cx = x + (g.cx - x) / g.factor; 
     g.cy = y + (g.cy - y) / g.factor; 
 
@@ -371,7 +378,7 @@ function trX(x) {
 
 //  == tr1X ==
 function tr1X(x) {
-	return (x / g.factor)+g.cx; 
+	return x / g.factor + g.cx; 
 }
 
 //  == trY ==
@@ -381,7 +388,7 @@ function trY(y) {
 
 //  == tr1Y ==
 function tr1Y(y) {
-	return (y / g.factor)+g.cy; 
+	return y / g.factor + g.cy; 
 }
 
 // == misc == 
