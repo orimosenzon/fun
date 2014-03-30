@@ -71,68 +71,6 @@ g = {
 	clearCanvas();
 }
 
-// == mouseWheel == 
-function mouseWheel(e) {
-
-    x = canvas2dataX(e.offsetX);   y = canvas2dataY(e.offsetY); 
-    
-    if(e.wheelDelta > 0) 
-        f = g.df
-     else 
-        f = 1/g.df;  
-          
-     g.factor *= f; 
-    
-    g.cx = x + (g.cx - x) / f; 
-    g.cy = y + (g.cy - y) / f; 
-
-    redraw(); 
-}
-
-// == mouseMove == 
-function mouseMove(e) {
-	if (g.draggedPoint == -1)
-		return; 
-		
-	var dx = e.offsetX - g.points[g.draggedPoint][0], dy = e.offsetY - g.points[g.draggedPoint][1],  
-		  last = g.points.length-1;
-	
-	g.points[g.draggedPoint] =  [ e.offsetX, e.offsetY ]; 
-
-	var pointType = g.draggedPoint % 3; 
-
-    if(!g.isClosed) {
-	    if(pointType ==0) { // drag joint point : control g.points escort 
-		    if (g.draggedPoint < last) {
-			    g.points[g.draggedPoint+1][0] += dx; 
-			    g.points[g.draggedPoint+1][1] += dy; 
-		    } 
-		    if (g.draggedPoint > 0) {
-			    g.points[g.draggedPoint-1][0] += dx; 
-			    g.points[g.draggedPoint-1][1] += dy; 
-		    }
-	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = g.draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
-		    if(otherControl>0 && otherControl <last) {
-			    g.points[otherControl][0] -= dx; 
-			    g.points[otherControl][1] -= dy; 
-		    }	
-	    }
-    } else {
-        var n = g.points.length; 
-	    if(pointType ==0) { // drag joint point : control g.points escort 
-			    g.points[(g.draggedPoint+1)%n][0] += dx; 
-			    g.points[(g.draggedPoint+1)%n][1] += dy; 
-			    g.points[(g.draggedPoint-1+n)%n][0] += dx; 
-			    g.points[(g.draggedPoint-1+n)%n][1] += dy; 
-	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n; 
-		    g.points[otherControl][0] -= dx; 
-		    g.points[otherControl][1] -= dy; 
-	    }
-    }	
-	redraw();  
-} 
 
 // == redraw() == 
 
@@ -226,11 +164,32 @@ function distance(x1,y1,x2,y2) {
 	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
 }
 
+
+// == mouseWheel == 
+function mouseWheel(e) {
+
+    x = canvas2dataX(e.offsetX);   y = canvas2dataY(e.offsetY); 
+    
+    if(e.wheelDelta > 0) 
+        f = g.df
+     else 
+        f = 1/g.df;  
+          
+     g.factor *= f; 
+    
+    g.cx = x + (g.cx - x) / f; 
+    g.cy = y + (g.cy - y) / f; 
+
+    redraw(); 
+}
+
+
+
 // == mouse press handle == 
 function mouseDown(e) {
  	// check for joint point selection 
   	for(i=0; i<g.points.length; i+=3) 
-  		if ( distance(e.offsetX, e.offsetY,g.points[i][0], g.points[i][1]) < g.selectRad ) {
+  		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])) < g.selectRad ) {
   			g.selectedPoint = i; 
 			g.draggedPoint = i; 
 			redraw(); 
@@ -239,7 +198,7 @@ function mouseDown(e) {
 	 
 	 if(g.selectedPoint != -1) { // selection is on : search for drag 
 		for(i=0; i<g.points.length; ++i)
-			if ( distance(e.offsetX, e.offsetY,g.points[i][0], g.points[i][1]) < g.selectRad ) {
+			if ( distance(e.offsetX, e.offsetY,data2canvasX(g.points[i][0]), data2canvasX(g.points[i][1])) < g.selectRad ) {
 				g.draggedPoint = i; 
 	  			return; 
 			}
@@ -283,6 +242,56 @@ function mouseDown(e) {
 	redraw();  
 }
 
+// == mouseMove == 
+function mouseMove(e) {
+	if (g.draggedPoint == -1)
+		return; 
+		
+	var dx = e.offsetX - g.points[g.draggedPoint][0], dy = e.offsetY - g.points[g.draggedPoint][1],  
+		  last = g.points.length-1;
+	
+	g.points[g.draggedPoint] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
+
+	var pointType = g.draggedPoint % 3; 
+
+
+    dxf = dx * g.factor; 
+    dyf = dy * g.factor; 
+    
+    if(!g.isClosed) {
+	    if(pointType ==0) { // drag joint point : control g.points escort 
+		    if (g.draggedPoint < last) {
+			    g.points[g.draggedPoint+1][0] += dx;   
+			    g.points[g.draggedPoint+1][1] += dy; 
+		    } 
+		    if (g.draggedPoint > 0) {
+			    g.points[g.draggedPoint-1][0] += dx; 
+			    g.points[g.draggedPoint-1][1] += dy; 
+		    }
+	    } else { // drag control point: other control reverse mirror  
+		    var otherControl = g.draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    if(otherControl>0 && otherControl <last) {
+			    g.points[otherControl][0] -= dx; 
+			    g.points[otherControl][1] -= dy; 
+		    }	
+	    }
+    } else {
+        var n = g.points.length; 
+	    if(pointType ==0) { // drag joint point : control g.points escort 
+			    g.points[(g.draggedPoint+1)%n][0] += dx; 
+			    g.points[(g.draggedPoint+1)%n][1] += dy; 
+			    g.points[(g.draggedPoint-1+n)%n][0] += dx; 
+			    g.points[(g.draggedPoint-1+n)%n][1] += dy; 
+	    } else { // drag control point: other control reverse mirror  
+		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n; 
+		    g.points[otherControl][0] -= dx; 
+		    g.points[otherControl][1] -= dy; 
+	    }
+    }	
+	redraw();  
+} 
+
+
 // == mouseUp == 
 function mouseUp(e) {
 	var last = g.points.length-1; 
@@ -290,9 +299,9 @@ function mouseUp(e) {
 		g.draggedPoint = -1; 
 		return; 
 	}
-    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, g.points[0][0], g.points[0][1]) < g.selectRad 
+    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, data2canvasX(g.points[0][0]), data2canvasY(g.points[0][1])) < g.selectRad 
     		      ||
-    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, g.points[last][0], g.points[last][1]) < g.selectRad   )  { 
+    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, data2canvasX(g.points[last][0]), data2canvasY(g.points[last][1])) < g.selectRad   )  { 
 		g.isClosed = true; 
 		g.points.splice(last,1); // delete last element
 		var x3 = g.points[0][0],  y3 = g.points[0][1], 
@@ -302,10 +311,10 @@ function mouseUp(e) {
 		x2 = (x2+xp)/2; 
 		y2 = (y2+yp)/2; 
 		
-		g.points[last-1][0] = x2; 
-		g.points[last-1][1] = y2; 
-	    g.points[1][0] = 2*x3 - x2; 
-	 	g.points[1][1] = 2*y3 - y2; 
+		g.points[last-1][0] = canvas2dataX(x2); 
+		g.points[last-1][1] = canvas2dataY(y2); 
+	    g.points[1][0] = canvas2dataX(2*x3 - x2); 
+	 	g.points[1][1] = canvas2dataY(2*y3 - y2); 
 		
 		redraw(); 
 	}
