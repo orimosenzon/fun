@@ -73,19 +73,18 @@ g = {
 
 // == mouseWheel == 
 function mouseWheel(e) {
-    debugPrint(e.wheelDelta+" "+e.offsetX+" " + e.offsetY);
 
-    x = tr1X(e.offsetX);   y = tr1Y(e.offsetY); 
-
-    if(e.wheelDelta > 0) {
-        g.factor *= g.df; 
-     } else {
-        g.factor /= g.df;
-     }
+    x = canvas2dataX(e.offsetX);   y = canvas2dataY(e.offsetY); 
     
-    g.cx = x + (g.cx - x) / g.factor; 
-    g.cy = y + (g.cy - y) / g.factor; 
-
+    if(e.wheelDelta > 0) 
+        f = g.df
+     else 
+        f = 1/g.df;  
+          
+     g.factor *= f; 
+    
+    g.cx = x + (g.cx - x) / f; 
+    g.cy = y + (g.cy - y) / f; 
 
     redraw(); 
 }
@@ -255,7 +254,7 @@ function mouseDown(e) {
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
 	if (n < 0) {
-		g.points = [[tr1X(x3),tr1Y(y3)]]; 
+		g.points = [[canvas2dataX(x3),canvas2dataY(y3)]]; 
 		redraw(); 
 		return; 
 	}
@@ -269,17 +268,17 @@ function mouseDown(e) {
 		x1 = (x1+xq)/2;
 		y1 = (y1+yq)/2; 
 	
-		g.points[n-1][0] = tr1X(2*x0-x1);
-		g.points[n-1][1] = tr1Y(2*y0-y1); 
+		g.points[n-1][0] = canvas2dataX(2*x0-x1);
+		g.points[n-1][1] = canvas2dataY(2*y0-y1); 
 	}
 	
-	g.points.push([tr1X(x1),tr1Y(y1)]); 
+	g.points.push([canvas2dataX(x1),canvas2dataY(y1)]); 
 	
 	var  x2 = x0+xm*2, y2 = y0+ym*2;   
 
-	g.points.push([tr1X(x2),tr1Y(y2)]); 
+	g.points.push([canvas2dataX(x2),canvas2dataY(y2)]); 
 	
-	g.points.push([tr1X(x3),tr1Y(y3)]);
+	g.points.push([canvas2dataX(x3),canvas2dataY(y3)]);
 	
 	redraw();  
 }
@@ -315,10 +314,10 @@ function mouseUp(e) {
 
 // == curve == 
 function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
-	x1 = trX(x1);	 	 y1 = trY(y1);
-	x2 = trX(x2);	 y2 = trY(y2);
-	x3 = trX(x3); 	 y3 = trY(y3);
-	x4 = trX(x4); 	 y4 = trY(y4);
+	x1 = data2canvasX(x1);	 	 y1 = data2canvasY(y1);
+	x2 = data2canvasX(x2);	 y2 = data2canvasY(y2);
+	x3 = data2canvasX(x3); 	 y3 = data2canvasY(y3);
+	x4 = data2canvasX(x4); 	 y4 = data2canvasY(y4);
 
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -333,8 +332,8 @@ function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
 
 // == line == 
 function line(x1,y1,x2,y2) {
-	x1 = trX(x1);	 	 y1 = trY(y1);
-	x2 = trX(x2);	 y2 = trY(y2);
+	x1 = data2canvasX(x1);	 	 y1 = data2canvasY(y1);
+	x2 = data2canvasX(x2);	 y2 = data2canvasY(y2);
 
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -348,7 +347,7 @@ function line(x1,y1,x2,y2) {
 
 // == circle == 
 function circle(x,y,r,c) {
-	x = trX(x);	 	 y = trY(y);
+	x = data2canvasX(x);	 	 y = data2canvasY(y);
 	// r *= g.factor; 
 	var canvas = document.getElementById('myCanvas');
 	var context = canvas.getContext('2d');
@@ -368,26 +367,24 @@ function debugPrint(str) {
 }
 
 // == translations: == 
-//      tr:  data --> canvas 
-//      tr1: canvas --> data    
 
-//  == trX ==
-function trX(x) {
+//  == data2canvasX ==
+function data2canvasX(x) {
 	return (x-g.cx)*g.factor; 
 }
 
-//  == tr1X ==
-function tr1X(x) {
+//  == canvas2dataX ==
+function canvas2dataX(x) {
 	return x / g.factor + g.cx; 
 }
 
-//  == trY ==
-function trY(y) {
+//  == data2canvasY ==
+function data2canvasY(y) {
 	return (y-g.cy)*g.factor; 
 }
 
-//  == tr1Y ==
-function tr1Y(y) {
+//  == canvas2dataY ==
+function canvas2dataY(y) {
 	return y / g.factor + g.cy; 
 }
 
