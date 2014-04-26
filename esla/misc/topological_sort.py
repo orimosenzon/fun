@@ -1,22 +1,23 @@
 from random import random as rnd 
 
-marks = []  #this is a global variable
+marks = []  # colors of nodes of the DAG. this is a global variable
             # should be a member variable of an object in larger projects 
 
-M_UNMARKED, M_TMP, M_MARKED = 0,1,2 
+M_UNMARKED, M_TMP, M_MARKED = 0,1,2  # possible colors  
 
-def visit(lst, n, dag, marks):
+# That's the heart of the algorithm, a version of DFS with colors 
+def visit(n, dag):
     global marks;  
-    lst += [n]
     marks[n] = M_TMP
+    lst = [] 
     for m in dag[n]:
         if marks[m] == M_TMP:
-            print("error, your graph contains a circle")
+            print("error, your graph contains a circle ("+m+" is part of it)")
             continue
         if marks[m] == M_UNMARKED:
-            lst += visit(lst, m,dag,marks)
+            lst += visit(m,dag)
     marks[n] = M_MARKED
-    return lst
+    return [n]+lst
 
 
 def topological_sort(dag):
@@ -26,8 +27,7 @@ def topological_sort(dag):
     lst = [] 
     for i in range(N):
         if marks[i] == M_UNMARKED:
-            lst += visit([],i,dag,marks)
-            break
+            lst += visit(i,dag)            
     print(lst)
 
 topological_sort([[],[0],[0],[1,2]])
