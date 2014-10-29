@@ -123,6 +123,10 @@ def set_value_inter(i,j,v):
     global board
     board[i][j][0] = v
     board[i][j][-1] = 1
+    for x in range(1,10):
+        if x!=v:
+            board[i][j][x] = False
+        
     prop_value(i,j,v)
 
 def delete_value(i,j,v):
@@ -192,8 +196,8 @@ def prop_square(i,j):
         for y in range(3):
             if s>1:
                 break
+            pi = ii + y
             for x in range(3):
-                pi = ii + y
                 pj = jj + x
                 if board[pi][pj][k]:
                     s+=1
