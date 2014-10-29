@@ -8,6 +8,7 @@ canvas.pack()
 # == globals == 
 board = []
 raw_board = []
+guess_board = []
 
 xOffset = 20
 yOffset = 120 
@@ -38,6 +39,12 @@ def butt1Pressed(e):
 
 def keyPressed(event):
     global inEdit,raw_board
+    if event.char == 'v':
+        is_valid()
+        return
+    if event.char == 'g':
+        guess()
+        return
     if inEdit and ('1' <= event.char <= '9' or event.char==" "):
         if event.char==" ":
             raw_board[yc][xc]=0
@@ -56,7 +63,20 @@ def keyPressed(event):
 canvas.bind('<Button-1>', butt1Pressed)
 canvas.bind_all('<Key>',keyPressed)
 
- 
+
+def guess():
+    print("guessing..")
+    for i in range(9):
+        for j in range(9):
+            if board[i][j][0]>0:
+                continue
+            for k in range(1,10):
+                if board[i][j][k]:
+                    set_value_inter(i,j,k)
+                    guess_board[i][j] = k
+                    draw_board()
+                    return 
+                
 def draw_board():
     canvas.delete("all")
     for k in range(9):
@@ -77,6 +97,8 @@ def draw_board():
             if board[i][j][0] > 0:
                 if raw_board[i][j] >0:
                     c = "red"
+                elif guess_board[i][j] >0:
+                    c = 'purple'
                 else:
                     c = "black"
                 canvas.create_text(xOffset+j*size+size//2,yOffset+i*size+size//2,text=str(board[i][j][0]),fill=c,font=("Purisa",17,"bold"))
@@ -85,6 +107,11 @@ def init_raw_board():
     global raw_board
     for i in range(9):
         raw_board += [[0]*9]
+
+def init_guess_board():
+    global guess_board
+    for i in range(9):
+        guess_board += [[0]*9]
 
 def init_board():
     global board
@@ -97,6 +124,7 @@ def init_board():
 
 def init():
     init_raw_board()
+    init_guess_board() 
     init_board()
     
 def print_board():
@@ -214,10 +242,40 @@ def recalc():
             if v > 0:
                 set_value(i,j,v)
             
-init()
+def is_valid_raw(i):
+    flags = [False]*10
+    for j in range(9):
+        flags[board[i][j][0]] = True
+    return flags[1:] == [True]*9 
+                           
+def is_valid_column(j):
+    flags = [False]*10
+    for i in range(9):
+        flags[board[i][j][0]] = True
+    return flags[1:] == [True]*9 
 
-#recalc... using raw_board.. delete an entry..
-# prop using needed one..
+def is_valid_square(i,j):
+    flags = [False]*10
+    for y in range(3): 
+        for x in range(3):
+            flags[board[i+y][j+x][0]] = True
+    return flags[1:] == [True]*9 
+
+def is_valid():
+    print("validity check..")
+    for i in range(9):
+        if not is_valid_raw(i):
+            print("raw invalid",i)
+    for j in range(9):
+        if not is_valid_column(j):
+            print("invalid column",j)
+    for i in range(3):
+        for j in range(3):
+            if not is_valid_square(i*3,j*3):
+                print("invalid square",i,j)
+    print("validity check done")
+    
+init()
 
 
 #print_board()
