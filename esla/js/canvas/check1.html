@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<body  onload = "doOnload()"> 
+<!-- == page == -->
+
+<h1 id="title1"> Check page </h1>
+
+<canvas id="myCanvas" width="1000" height="500"></canvas>
+<br> 
+
+<textarea id="text1" cols = "100" rows = "3">  </textarea>
+
+<button type = "button" onclick = "buttonCheck()"> check </button> 
+
+<h1 id="title2"> output goes here: </h1>
+
+<!--   == script == --> 
+<script>
+var x; 
+var y; 
+var isDown = false; 
+var canvas;
+var context;
+var points = []; 
+ 
+function doOnload() {
+	canvas = document.getElementById('myCanvas');
+        context = canvas.getContext('2d');
+
+	canvas.addEventListener("mousedown", mouseDown ,false); 
+	canvas.addEventListener("mouseup", mouseUp ,false); 
+	canvas.addEventListener("mousemove", mouseMove ,false); 
+	//canvas.addEventListener("mousewheel",mouseWheel,false);
+
+	print("ready"); 
+}
+
+function print(str) {
+    document.getElementById("title2").innerHTML += str+"<br>"; 
+}
+
+function buttonCheck() {
+ 	//clearCanvas(); 
+
+	for(var i=0; i<points.length; i++) 
+		circle(points[i][0],points[i][1],10,"red"); 
+	
+	
+}	
+
+function line(x1,y1,x2,y2) {
+	context.beginPath();
+  	context.moveTo(x1,  y1);
+	context.lineTo(x2,y2);
+	context.strokeStyle = "black"; 
+	context.stroke();
+}
+
+function circle(x,y,r,c) {
+	context.beginPath();
+	context.arc(x, y, r, 0, 2 * Math.PI, false);
+	context.fillStyle = c;
+	context.fill();
+	context.lineWidth = 2;
+	context.strokeStyle = 'black';
+	context.stroke();
+}
+
+// == mouse == 
+
+function mouseDown(e) {
+	isDown = true; 
+	line(x,y,e.offsetX, e.offsetY);  
+	circle(e.offsetX, e.offsetY,20,"blue"); 
+	x = e.offsetX;
+	y =  e.offsetY; 
+	points.push([x,y]); 
+}
+
+function mouseMove(e) {
+	if (! isDown ) {
+		return; 
+	}
+	line(x,y,e.offsetX, e.offsetY);  
+
+	x = e.offsetX;
+	y =  e.offsetY; 
+	
+}
+
+function mouseUp(e) {
+	isDown = false; 
+}
+
+function clearCanvas() {
+	context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+</script> 
+
+</body> 
+</html> 
+

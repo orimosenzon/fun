@@ -1,0 +1,45 @@
+<!DOCTYPE html> 
+
+<html>
+<head>
+	<title> This is just a skelaton </title> 
+</head>
+
+<body>
+
+This is the content... 
+<h1> title 1 </h1> 
+<h2> title 2 </h2> 
+<h3> title 3 </h3> 
+<p> a paragraph </p> 
+<p id="p2"> a paragraph </p> 
+<textarea  id ="ta" cols = "200">
+I'm a text area
+</textarea> 
+<button onclick="butPressed()"> click me! </button> 
+
+
+<script>
+var x = 7; 
+document.write("<br> <br>this is an attempt to write...<h1> Wow!</h1> <br>"); 
+
+function butPressed() {
+	document.getElementById("p2").innerHTML = "the button was clicked!"
+	alert(eval(document.getElementById("ta").value)); 
+	document.body.style.backgroundColor="red";
+	
+}
+
+</script> 
+
+
+</body> 
+</html> 
+
+<!-- 
+<tag param1 = ".." param2 = ""> 
+</tag> 
+
+<tag /> 
+
+-->
