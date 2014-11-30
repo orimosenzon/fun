@@ -266,14 +266,18 @@ def is_valid():
     for i in range(9):
         if not is_valid_raw(i):
             print("raw invalid",i)
+            return False
     for j in range(9):
         if not is_valid_column(j):
             print("invalid column",j)
+            return False
     for i in range(3):
         for j in range(3):
             if not is_valid_square(i*3,j*3):
                 print("invalid square",i,j)
+                return False
     print("validity check done")
+    return True
     
 init()
 
