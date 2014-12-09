@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<body  onload = "doOnload()"> 
+<!-- == page == -->
+
+<h1 id="title1"> Check page </h1>
+
+<canvas id="myCanvas" width="1000" height="500"></canvas>
+<br> 
+
+<textarea id="text1" cols = "100" rows = "3">  </textarea>
+
+<button type = "button" onclick = "buttonCheck()"> check </button> 
+
+<h1 id="title2"> output goes here: </h1>
+
+<!--   == script == --> 
+<script>
+var x; 
+var y; 
+var isDown = false; 
+var canvas;
+var context;
+var points = []; 
+
+var canvas = document.getElementById('myCanvas');
+var context = canvas.getContext('2d');
+
+/*
+bricks = [] 
+
+function drawBricks() {
+	for (var i=0; i<7; ++i) {
+		
+		for ((var j=0; j < Math.floor(canvas.width/brickWidth); ++j) {
+			var x = ... 
+			rectangle(x,yOffsey,brickWidth,brickHeight,"green"); 
+		}
+			
+	}
+
+}
+*/
+function animate() {
+	requestAnimationFrame(animate); 
+	clearCanvas(); 
+	
+	drawBall(); 
+	drawUser(); 
+}
+
+var aBall = {
+        x: 100,
+        y: 100,
+		dx: 5, 
+		dy: 5
+};
+
+var user = {
+		x: canvas.width / 2, 
+		y: canvas.height - 20,
+		width: 70,
+		height: 20
+};
+
+function drawBall() {
+		if (aBall.x < 0  || aBall.x > canvas.width) 
+			aBall.dx = -aBall.dx;
+		if (aBall.y <0 || aBall.y > canvas.height) 
+			aBall.dy = -aBall.dy; 
+		
+		aBall.x += aBall.dx; 
+		aBall.y += aBall.dy; 
+
+		circle(aBall.x,aBall.y,10,"green"); 
+} 
+
+function drawUser() {
+	rectangle(user.x, user.y, user.width, user.height,"orange"); 
+}
+ 
+function doOnload() {
+	canvas.focus();
+	canvas.addEventListener("mousedown", mouseDown ,false); 
+	canvas.addEventListener("mouseup", mouseUp ,false); 
+	canvas.addEventListener("mousemove", mouseMove ,false); 
+	window.addEventListener("keydown",onKeyDown,false);
+	//canvas.addEventListener("mousewheel",mouseWheel,false);
+
+	animate(); 
+	
+	
+	print("ready"); 
+}
+
+function onKeyDown(e) {
+	if (e.keyCode ==37 ) { // left arrow 
+		user.x -= 7; 
+	}	
+	if (e.keyCode ==39 ) { // right arrow 
+		user.x += 7; 
+	}	
+	return false; 
+
+}
+function print(str) {
+    document.getElementById("title2").innerHTML += str+"<br>"; 
+}
+
+function buttonCheck() {
+ 	//clearCanvas(); 
+
+	for(var i=0; i<points.length; i++) 
+		circle(points[i][0],points[i][1],10,"red"); 
+	 
+}	
+
+
+function line(x1,y1,x2,y2) {
+	context.beginPath();
+  	context.moveTo(x1,  y1);
+	context.lineTo(x2,y2);
+	context.strokeStyle = "black"; 
+	context.stroke();
+}
+
+function circle(x,y,r,c) {
+	context.beginPath();
+	context.arc(x, y, r, 0, 2 * Math.PI, false);
+	context.fillStyle = c;
+	context.fill();
+	context.lineWidth = 2;
+	context.strokeStyle = 'black';
+	context.stroke();
+}
+
+function rectangle(x,y,width,height,color) {
+	context.beginPath();
+	context.rect(x, y, width, height);
+  	context.fillStyle = color;
+	context.fill();
+	context.lineWidth = 2;
+	context.strokeStyle = "black"; 
+	context.stroke();
+
+
+}
+
+// == mouse == 
+
+function mouseDown(e) {
+	isDown = true; 
+	line(x,y,e.offsetX, e.offsetY);  
+	circle(e.offsetX, e.offsetY,20,"blue"); 
+	x = e.offsetX;
+	y =  e.offsetY; 
+	points.push([x,y]); 
+}
+
+function mouseMove(e) {
+	if (! isDown ) {
+		return; 
+	}
+	line(x,y,e.offsetX, e.offsetY);  
+
+	x = e.offsetX;
+	y =  e.offsetY; 
+	
+}
+
+function mouseUp(e) {
+	isDown = false; 
+}
+
+function clearCanvas() {
+	context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+</script> 
+
+</body> 
+</html> 
+
