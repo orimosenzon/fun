@@ -44,7 +44,7 @@ function init() {
 // == global namespace == 
 g = {
 	
-	points:[], 
+	path:[], 
 	 	
 	jointRad:3,
 	chosenRad:4,  
@@ -82,7 +82,7 @@ g = {
 function redraw() {
 	clearCanvas(); // should be changed to delete only current curve  
 	
-	if (g.points.length == 0) {
+	if (g.path.length == 0) {
 		return; 
 	}
 
@@ -96,23 +96,23 @@ function redraw() {
 
 // == redrawOpen == 
 function redrawOpen() {
-	var last = g.points.length-1; 
+	var last = g.path.length-1; 
 	
 	for (i=0; i <= last; i+=3)  {
-		var x0 = g.points[i][0], y0 = g.points[i][1],
+		var x0 = g.path[i][0], y0 = g.path[i][1],
 		      x1, y1, 
 		      x2,y2,
 		      x3,y3; 
 		if(i < last) {
-            x1 = g.points[i+1][0], y1 = g.points[i+1][1],
-            x2 = g.points[i+2][0], y2 = g.points[i+2][1],
-            x3 = g.points[i+3][0], y3 = g.points[i+3][1]; 
+            x1 = g.path[i+1][0], y1 = g.path[i+1][1],
+            x2 = g.path[i+2][0], y2 = g.path[i+2][1],
+            x3 = g.path[i+3][0], y3 = g.path[i+3][1]; 
 
 			curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
 		}
 		if (i == g.selectedPoint) {
 			if(i > 0) {
-				var xp = g.points[i-1][0], yp = g.points[i-1][1]; 
+				var xp = g.path[i-1][0], yp = g.path[i-1][1]; 
 				line(x0,y0,xp,yp);  
 				circle(xp,yp,g.controlRad,"gray");
 			}	
@@ -129,17 +129,17 @@ function redrawOpen() {
 
 // == redrawClosed == 
 function redrawClosed() {
-	var n = g.points.length; 
+	var n = g.path.length; 
 	
 	for (i=0; i < n; i+=3)  {
-		var x0 = g.points[i][0], y0 = g.points[i][1],
-              x1 = g.points[i+1][0], y1 = g.points[i+1][1],
-              x2 = g.points[i+2][0], y2 = g.points[i+2][1],
-              x3 = g.points[(i+3)%n][0], y3 = g.points[(i+3)%n][1]; 
+		var x0 = g.path[i][0], y0 = g.path[i][1],
+              x1 = g.path[i+1][0], y1 = g.path[i+1][1],
+              x2 = g.path[i+2][0], y2 = g.path[i+2][1],
+              x3 = g.path[(i+3)%n][0], y3 = g.path[(i+3)%n][1]; 
 
 		curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
 		if (i == g.selectedPoint) {
-            var xp = g.points[(i+n-1)%n][0], yp = g.points[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
+            var xp = g.path[(i+n-1)%n][0], yp = g.path[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
             line(x0,y0,xp,yp);  
             circle(xp,yp,g.controlRad,"gray");
             line(x0,y0,x1,y1); 
@@ -193,8 +193,8 @@ function mouseWheel(e) {
 // == mouse press handle == 
 function mouseDown(e) {
 	// check for joint point selection 
-	for(i=0; i<g.points.length; i+=3) 
-		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])) < g.selectRad ) {
+	for(i=0; i<g.path.length; i+=3) 
+		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.path[i][0]), data2canvasY(g.path[i][1])) < g.selectRad ) {
 			g.selectedPoint = i; 
 			g.draggedPoint = i; 
 			redraw(); 
@@ -206,17 +206,17 @@ function mouseDown(e) {
 		if(!g.isClosed) {
 			if (g.selectedPoint > 0)
 				idxs.push(g.selectedPoint -1);
-			if ( g.selectedPoint < g.points.length-1)
+			if ( g.selectedPoint < g.path.length-1)
 				idxs.push(g.selectedPoint + 1); 
 		} else {
-			n = g.points.length; 
+			n = g.path.length; 
 			idxs.push( (g.selectedPoint - 1+n)%n); 
 			idxs.push( (g.selectedPoint + 1)%n); 
 		}
 		for(k=0; k <= idxs.length; ++k) { 
 			i = idxs[k]; 
 			if ( distance(e.offsetX, e.offsetY,
-			              data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])
+			              data2canvasX(g.path[i][0]), data2canvasY(g.path[i][1])
 			             ) < g.selectRad ) {
 				g.draggedPoint = i; 
 	  			return; 
@@ -229,43 +229,43 @@ function mouseDown(e) {
  	
 	g.selectedPoint = -1; 
 	
-	var	n = g.points.length-1,
+	var	n = g.path.length-1,
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
 	if (n < 0) { // first point in path 
-		g.points = [[canvas2dataX(x3),canvas2dataY(y3)]]; 
+		g.path = [[canvas2dataX(x3),canvas2dataY(y3)]]; 
 		redraw(); 
 		return; 
 	}
 
-  	var x0 = g.points[n][0], y0 = g.points[n][1], 
+  	var x0 = g.path[n][0], y0 = g.path[n][1], 
    		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
    		  x1 = x0+xm, y1 = y0+ym; 
 	
 	if (n>0) { // if the path alreay contains a segment
-		var xq = 2*x0-g.points[n-1][0], yq =2*y0 - g.points[n-1][1]; 
+		var xq = 2*x0-g.path[n-1][0], yq =2*y0 - g.path[n-1][1]; 
 		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last conrol point of the last sgement 
 		y1 = (y1+yq)/2; 
 	
-		g.points[n-1][0] = canvas2dataX(2*x0-x1); // also fix that last control point 
-		g.points[n-1][1] = canvas2dataY(2*y0-y1); // to be symetric to our new (x1,y1) 
+		g.path[n-1][0] = canvas2dataX(2*x0-x1); // also fix that last control point 
+		g.path[n-1][1] = canvas2dataY(2*y0-y1); // to be symetric to our new (x1,y1) 
 	}
 	
-	g.points.push([canvas2dataX(x1),canvas2dataY(y1)]); 
+	g.path.push([canvas2dataX(x1),canvas2dataY(y1)]); 
 	
 	var  x2 = x0+xm*2, y2 = y0+ym*2;   
 
-	g.points.push([canvas2dataX(x2),canvas2dataY(y2)]); 
+	g.path.push([canvas2dataX(x2),canvas2dataY(y2)]); 
 	
-	g.points.push([canvas2dataX(x3),canvas2dataY(y3)]);
+	g.path.push([canvas2dataX(x3),canvas2dataY(y3)]);
 	
 	redraw();  
 }
 
 // == changePoint == 
 function changePoint(idx,xv,yv) {
-	g.points[idx][0] = canvas2dataX(data2canvasX(g.points[idx][0])+xv); 
-	g.points[idx][1] = canvas2dataY(data2canvasY(g.points[idx][1])+yv); 
+	g.path[idx][0] = canvas2dataX(data2canvasX(g.path[idx][0])+xv); 
+	g.path[idx][1] = canvas2dataY(data2canvasY(g.path[idx][1])+yv); 
 }
 
 // == mouseMove == 
@@ -273,16 +273,16 @@ function mouseMove(e) {
 	if (g.draggedPoint == -1)
 		return; 
 		
-	var dx = e.offsetX - data2canvasX(g.points[g.draggedPoint][0]), 
-	    dy = e.offsetY - data2canvasY(g.points[g.draggedPoint][1]),  
-		last = g.points.length-1;
+	var dx = e.offsetX - data2canvasX(g.path[g.draggedPoint][0]), 
+	    dy = e.offsetY - data2canvasY(g.path[g.draggedPoint][1]),  
+		last = g.path.length-1;
 	
-	g.points[g.draggedPoint] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
+	g.path[g.draggedPoint] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
 
 	var pointType = g.draggedPoint % 3; 
    
     if(!g.isClosed) {
-	    if(pointType ==0) { // drag joint point : control g.points escort 
+	    if(pointType ==0) { // drag joint point : control g.path escort 
 		    if (g.draggedPoint < last) {
 				changePoint(g.draggedPoint+1,dx,dy); 
 		    } 
@@ -296,14 +296,12 @@ function mouseMove(e) {
 		    }	
 	    }
     } else {
-        var n = g.points.length; 
-	    if(pointType ==0) { // drag joint point : control g.points escort 
+        var n = g.path.length; 
+	    if(pointType ==0) { // drag joint point : control g.path escort 
 			changePoint((g.draggedPoint+1)%n,dx,dy); 
 			changePoint((g.draggedPoint-1+n)%n,dx,dy); 	
-			debugPrint((g.draggedPoint-1+n)%n);
 	    } else { // drag control point: other control reverse mirror  
 		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n;  
-		    debugPrint("*"+otherControl);
 		    changePoint(otherControl,-dx,-dy); 	    
 	    }
     }	
@@ -313,27 +311,27 @@ function mouseMove(e) {
 
 // == mouseUp == 
 function mouseUp(e) {
-	var last = g.points.length-1; 
+	var last = g.path.length-1; 
 	if (last <= 0) {
 		g.draggedPoint = -1; 
 		return; 
 	}
-    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, data2canvasX(g.points[0][0]), data2canvasY(g.points[0][1])) < g.selectRad 
+    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, data2canvasX(g.path[0][0]), data2canvasY(g.path[0][1])) < g.selectRad 
     		      ||
-    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, data2canvasX(g.points[last][0]), data2canvasY(g.points[last][1])) < g.selectRad   )  { 
+    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, data2canvasX(g.path[last][0]), data2canvasY(g.path[last][1])) < g.selectRad   )  { 
 		g.isClosed = true; 
-		g.points.splice(last,1); // delete last element
-		var x3 = g.points[0][0],  y3 = g.points[0][1], 
-			  x2 = g.points[last-1][0], y2 = g.points[last-1][1];  
+		g.path.splice(last,1); // delete last element
+		var x3 = g.path[0][0],  y3 = g.path[0][1], 
+			  x2 = g.path[last-1][0], y2 = g.path[last-1][1];  
 		
-		var xp = 2*x3 - g.points[1][0], yp = 2*y3 - g.points[1][1];
+		var xp = 2*x3 - g.path[1][0], yp = 2*y3 - g.path[1][1];
 		x2 = (x2+xp)/2; 
 		y2 = (y2+yp)/2; 
 		
-		g.points[last-1][0] = canvas2dataX(x2); 
-		g.points[last-1][1] = canvas2dataY(y2); 
-	    g.points[1][0] = canvas2dataX(2*x3 - x2); 
-	 	g.points[1][1] = canvas2dataY(2*y3 - y2); 
+		g.path[last-1][0] = canvas2dataX(x2); 
+		g.path[last-1][1] = canvas2dataY(y2); 
+	    g.path[1][0] = canvas2dataX(2*x3 - x2); 
+	 	g.path[1][1] = canvas2dataY(2*y3 - y2); 
 		
 		redraw(); 
 	}
@@ -414,6 +412,19 @@ function data2canvasY(y) {
 //  == canvas2dataY ==
 function canvas2dataY(y) {
 	return y / g.factor + g.cy; 
+}
+
+// == cloneArray ==
+function cloneArray(ar) {
+	
+	if (typeof ar.length == 'undefined') {
+		return ar; 
+	}
+
+	var r = []; 
+	for (var i=0; i<ar.length; ++i)
+		r.push(cloneArray(ar[i]));  
+	return r; 
 }
 
 // == misc == 
