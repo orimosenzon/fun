@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+</head>	
 <body onload = "init()"> 
 <!-- == page == -->
 
 
-<h1 id = "firstHeader"> Hello lord </h1> 
 
 
 <select id="colorSelection" onchange="colorChanged()">
@@ -13,7 +15,9 @@
 	<option> red </option>
 </select> 
 
-<canvas id="myCanvas" width="1500" height="900"></canvas>
+<canvas id="myCanvas" width="1500" height="700"></canvas>
+
+<h1 id = "firstHeader"> Hello lord </h1> 
 
 <!--   == script == --> 
 <script>
@@ -33,6 +37,7 @@
 
 // * menues and other options (lines, colors, gradients... ) 
 
+
 // == init == 
 function init() {
 	
@@ -50,10 +55,10 @@ g = {
 	selectedPoint:-1,   
 	draggedPoint:-1, 
 
-	cx:0,
-	cy:0,
-	factor:1,
-    df:1.2,
+	cx:0, // the place of the upper left corner of the screen in the logical plane 
+	cy:0, // (the one which is used in the data structure) 
+	factor:1, // the zoom factor of the display 
+    df:1.2,   //  zoom factor's change ratio (for each wheel move) 
     
 	isClosed:false, 
 } 
@@ -187,21 +192,36 @@ function mouseWheel(e) {
 
 // == mouse press handle == 
 function mouseDown(e) {
- 	// check for joint point selection 
-  	for(i=0; i<g.points.length; i+=3) 
-  		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])) < g.selectRad ) {
-  			g.selectedPoint = i; 
+	// check for joint point selection 
+	for(i=0; i<g.points.length; i+=3) 
+		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])) < g.selectRad ) {
+			g.selectedPoint = i; 
 			g.draggedPoint = i; 
 			redraw(); 
-  			return; 
-  		}
+			return; 
+		}
 	 
 	 if(g.selectedPoint != -1) { // selection is on : search for drag 
-		for(i=0; i<g.points.length; ++i)
-			if ( distance(e.offsetX, e.offsetY,data2canvasX(g.points[i][0]), data2canvasX(g.points[i][1])) < g.selectRad ) {
+		var idxs = [];  // indexs of the selected point's control points 
+		if(!g.isClosed) {
+			if (g.selectedPoint > 0)
+				idxs.push(g.selectedPoint -1);
+			if ( g.selectedPoint < g.points.length-1)
+				idxs.push(g.selectedPoint + 1); 
+		} else {
+			n = g.points.length; 
+			idxs.push( (g.selectedPoint - 1+n)%n); 
+			idxs.push( (g.selectedPoint + 1)%n); 
+		}
+		for(k=0; k <= idxs.length; ++k) { 
+			i = idxs[k]; 
+			if ( distance(e.offsetX, e.offsetY,
+			              data2canvasX(g.points[i][0]), data2canvasY(g.points[i][1])
+			             ) < g.selectRad ) {
 				g.draggedPoint = i; 
 	  			return; 
 			}
+		}
 	}
 	
     if(g.isClosed) 
@@ -212,7 +232,7 @@ function mouseDown(e) {
 	var	n = g.points.length-1,
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
-	if (n < 0) {
+	if (n < 0) { // first point in path 
 		g.points = [[canvas2dataX(x3),canvas2dataY(y3)]]; 
 		redraw(); 
 		return; 
@@ -222,13 +242,13 @@ function mouseDown(e) {
    		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
    		  x1 = x0+xm, y1 = y0+ym; 
 	
-	if (n>0) {
+	if (n>0) { // if the path alreay contains a segment
 		var xq = 2*x0-g.points[n-1][0], yq =2*y0 - g.points[n-1][1]; 
-		x1 = (x1+xq)/2;
+		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last conrol point of the last sgement 
 		y1 = (y1+yq)/2; 
 	
-		g.points[n-1][0] = canvas2dataX(2*x0-x1);
-		g.points[n-1][1] = canvas2dataY(2*y0-y1); 
+		g.points[n-1][0] = canvas2dataX(2*x0-x1); // also fix that last control point 
+		g.points[n-1][1] = canvas2dataY(2*y0-y1); // to be symetric to our new (x1,y1) 
 	}
 	
 	g.points.push([canvas2dataX(x1),canvas2dataY(y1)]); 
@@ -242,50 +262,49 @@ function mouseDown(e) {
 	redraw();  
 }
 
+// == changePoint == 
+function changePoint(idx,xv,yv) {
+	g.points[idx][0] = canvas2dataX(data2canvasX(g.points[idx][0])+xv); 
+	g.points[idx][1] = canvas2dataY(data2canvasY(g.points[idx][1])+yv); 
+}
+
 // == mouseMove == 
 function mouseMove(e) {
 	if (g.draggedPoint == -1)
 		return; 
 		
-	var dx = e.offsetX - g.points[g.draggedPoint][0], dy = e.offsetY - g.points[g.draggedPoint][1],  
-		  last = g.points.length-1;
+	var dx = e.offsetX - data2canvasX(g.points[g.draggedPoint][0]), 
+	    dy = e.offsetY - data2canvasY(g.points[g.draggedPoint][1]),  
+		last = g.points.length-1;
 	
 	g.points[g.draggedPoint] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
 
 	var pointType = g.draggedPoint % 3; 
-
-
-    dxf = dx * g.factor; 
-    dyf = dy * g.factor; 
-    
+   
     if(!g.isClosed) {
 	    if(pointType ==0) { // drag joint point : control g.points escort 
 		    if (g.draggedPoint < last) {
-			    g.points[g.draggedPoint+1][0] += dx;   
-			    g.points[g.draggedPoint+1][1] += dy; 
+				changePoint(g.draggedPoint+1,dx,dy); 
 		    } 
 		    if (g.draggedPoint > 0) {
-			    g.points[g.draggedPoint-1][0] += dx; 
-			    g.points[g.draggedPoint-1][1] += dy; 
-		    }
+				changePoint(g.draggedPoint-1,dx,dy); 
+		    } 
 	    } else { // drag control point: other control reverse mirror  
 		    var otherControl = g.draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
 		    if(otherControl>0 && otherControl <last) {
-			    g.points[otherControl][0] -= dx; 
-			    g.points[otherControl][1] -= dy; 
+			    changePoint(otherControl,-dx,-dy); 
 		    }	
 	    }
     } else {
         var n = g.points.length; 
 	    if(pointType ==0) { // drag joint point : control g.points escort 
-			    g.points[(g.draggedPoint+1)%n][0] += dx; 
-			    g.points[(g.draggedPoint+1)%n][1] += dy; 
-			    g.points[(g.draggedPoint-1+n)%n][0] += dx; 
-			    g.points[(g.draggedPoint-1+n)%n][1] += dy; 
+			changePoint((g.draggedPoint+1)%n,dx,dy); 
+			changePoint((g.draggedPoint-1+n)%n,dx,dy); 	
+			debugPrint((g.draggedPoint-1+n)%n);
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n; 
-		    g.points[otherControl][0] -= dx; 
-		    g.points[otherControl][1] -= dy; 
+		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n;  
+		    debugPrint("*"+otherControl);
+		    changePoint(otherControl,-dx,-dy); 	    
 	    }
     }	
 	redraw();  
@@ -372,7 +391,7 @@ function circle(x,y,r,c) {
 
 // == debugPrint == 
 function debugPrint(str) {
-	document.getElementById("firstHeader").innerHTML = str; 
+	document.getElementById("firstHeader").innerHTML += str +" "; 
 }
 
 // == translations: == 
