@@ -8,7 +8,7 @@
 
 
 
-
+<br /> 
 <select id="colorSelection" onchange="colorChanged()">
 	<option> black </option>
 	<option> blue </option>
@@ -16,6 +16,7 @@
 </select> 
 
 <canvas id="myCanvas" width="1500" height="700"></canvas>
+<button id="npB" onclick = "newPath()" >New path</button> 
 
 <h1 id = "firstHeader"> Hello lord </h1> 
 
@@ -43,9 +44,10 @@ function init() {
 	
 // == global namespace == 
 g = {
-	
-	path:[], 
-	 	
+	paths: [[]],
+	path: null,  // will point to an element of paths 
+	cpIdx: 0,    // current path index  
+			
 	jointRad:3,
 	chosenRad:4,  
 	controlRad:2, 
@@ -62,6 +64,7 @@ g = {
     
 	isClosed:false, 
 } 
+	g.path = g.paths[g.cpIdx]; 
 	// ---- 
 	
 	colorChanged();
@@ -76,22 +79,31 @@ g = {
 	clearCanvas();
 }
 
+function newPath() { 
+	g.paths.push([]); 
+	g.cpIdx = g.paths.length-1; 
+	g.path = g.paths[g.cpIdx];
+}
 
 // == redraw() == 
 
 function redraw() {
 	clearCanvas(); // should be changed to delete only current curve  
 	
-	if (g.path.length == 0) {
-		return; 
-	}
+	for(var i=0; i<g.paths.length; ++i) {	
+		g.path = g.paths[i];
+		
+		if (g.path.length == 0) {
+			return; 
+		}
 
-	if(g.isClosed) {
-		redrawClosed();
-	} else {
-		redrawOpen(); 
+		if(g.isClosed) {
+			redrawClosed();
+		} else {
+			redrawOpen(); 
+		}
 	}
-	
+	g.path = g.paths[g.cpIdx];	
 }
 
 // == redrawOpen == 
@@ -233,7 +245,7 @@ function mouseDown(e) {
 			x3 = e.offsetX, y3 = e.offsetY; 
 				
 	if (n < 0) { // first point in path 
-		g.path = [[canvas2dataX(x3),canvas2dataY(y3)]]; 
+		g.path.push([canvas2dataX(x3),canvas2dataY(y3)]); 
 		redraw(); 
 		return; 
 	}
@@ -258,7 +270,7 @@ function mouseDown(e) {
 	g.path.push([canvas2dataX(x2),canvas2dataY(y2)]); 
 	
 	g.path.push([canvas2dataX(x3),canvas2dataY(y3)]);
-	
+
 	redraw();  
 }
 
