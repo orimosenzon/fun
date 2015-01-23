@@ -1,88 +1,86 @@
 <!DOCTYPE html>
 <html>
-<head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-</head>	
-<body onload = "init()"> 
-<!-- == page == -->
+<body  onload = "init()"> 
 
 
-
-<br /> 
-<select id="colorSelection" onchange="colorChanged()">
-	<option> black </option>
-	<option> blue </option>
-	<option> red </option>
-</select> 
-
+<h1 id="title1"> Animation </h1>
 <canvas id="myCanvas" width="1500" height="700"></canvas>
-<button id="npB" onclick = "newPath()" >New path</button> 
+<br /> 
+<button id="npB" onclick = "addPath()" >New path</button> 
+<br />
+<h1 id="o1"> output goes here: </h1>
 
-<h1 id = "firstHeader"> Hello lord </h1> 
-
-<!--   == script == --> 
+ 
 <script>
 
-//     == future == 
-
-
-// * integrate (in a very basic manner) to a django application 
- 
-// * data strcture for multiple curves (frame or image) 
-
-// * data strcture for multiple frames (clip) , then multiple clips (library?) 
-
-// * zooming capability 
-
-// * export to animated image? 
-
-// * menues and other options (lines, colors, gradients... ) 
-
-
-// == init == 
-function init() {
+// == global vars == 
+var g = {
+	JOINT_RAD:3,     // radius of the joint point 
+	CHOSEN_RAD:4,    // radius of selected point 
+	CONTROL_RAD:2,   // radius of control point  
+	SELECT_RAD:15,   // determines the proximity of the mouse for selection 
 	
-// == global namespace == 
-g = {
-	paths: [[]],
-	path: null,  // will point to an element of paths 
-	cpIdx: 0,    // current path index  
-			
-	jointRad:3,
-	chosenRad:4,  
-	controlRad:2, 
+	canvas: null,  // the html canvas element 
+	context: null, // it's context 
 	
-	selectRad:15, 
-	
-	selectedPoint:-1,   
-	draggedPoint:-1, 
+	cClip : null,     // current clip  
+	cFrame: null,     // current frame 
+	cPath: null,      // current path  
+}; 
 
+// == view == (single for now) 
+var v = {
 	cx:0, // the place of the upper left corner of the screen in the logical plane 
 	cy:0, // (the one which is used in the data structure) 
 	factor:1, // the zoom factor of the display 
-    df:1.2,   //  zoom factor's change ratio (for each wheel move) 
-    
-	isClosed:false, 
-} 
-	g.path = g.paths[g.cpIdx]; 
-	// ---- 
-	
-	colorChanged();
+    df:1.2,   //  zoom factor's change ratio (for each wheel move)     
+};  
 
-	var canvas = document.getElementById('myCanvas');
+// == ctors == 
 
-	canvas.addEventListener("mousedown", mouseDown ,false); 
-	canvas.addEventListener("mouseup", mouseUp ,false); 
-	canvas.addEventListener("mousemove", mouseMove ,false); 
-	canvas.addEventListener("mousewheel",mouseWheel,false);
-
-	clearCanvas();
+function newPath() {
+	return { points:[],   		// points of bezier curves 
+			 sIdx: -1,          // index of the selected point 
+			 dIdx: -1,          // index of the selected dragged point    
+			 isClosed: false    // is it a closed path 
+			 } ;
 }
 
-function newPath() { 
-	g.paths.push([]); 
-	g.cpIdx = g.paths.length-1; 
-	g.path = g.paths[g.cpIdx];
+function newFrame() {
+	return { paths:[], sIdx:-1}; 
+}
+
+function newClip() {
+	return { frames:[], sIdx:-1 }; 
+}
+
+// == init == 
+function init() {
+	g.canvas = document.getElementById('myCanvas');
+	g.context = g.canvas.getContext('2d');
+	
+	g.canvas.addEventListener("mousedown", mouseDown ,false); 
+	g.canvas.addEventListener("mouseup", mouseUp ,false); 
+	g.canvas.addEventListener("mousemove", mouseMove ,false); 
+	g.canvas.addEventListener("mousewheel",mouseWheel,false);
+
+	clearCanvas();
+	g.cClip = newClip();
+	g.cFrame = newFrame(); 
+	g.cPath = newPath(); 
+	
+	g.cClip.frames.push(g.cFrame);
+	g.cClip.sIdx = 0; 	
+
+	g.cFrame.paths.push(g.cPath); 
+	g.cFrame.sIdx = 0; 	
+}
+
+function addPath() { 
+	g.cPath.sIdx = -1; 
+	g.cPath = newPath(); 
+	g.cFrame.paths.push(g.cPath); 
+	g.cFrame.sIdx = g.cFrame.paths.length - 1; 
 }
 
 // == redraw() == 
@@ -90,365 +88,386 @@ function newPath() {
 function redraw() {
 	clearCanvas(); // should be changed to delete only current curve  
 	
-	for(var i=0; i<g.paths.length; ++i) {	
-		g.path = g.paths[i];
+	var paths = g.cFrame.paths; 
+	for(var i=0; i<paths.length; ++i) {	
+		var path = paths[i];
 		
-		if (g.path.length == 0) {
-			return; 
-		}
-
-		if(g.isClosed) {
-			redrawClosed();
+		if (path.points.length == 0)
+			continue; 
+			
+		if(path.isClosed) {
+			redrawClosed(path);
 		} else {
-			redrawOpen(); 
+			redrawOpen(path); 
 		}
 	}
-	g.path = g.paths[g.cpIdx];	
 }
 
 // == redrawOpen == 
-function redrawOpen() {
-	var last = g.path.length-1; 
+function redrawOpen(path) {
+	var points = path.points;
+	var last = points.length-1; 
 	
-	for (i=0; i <= last; i+=3)  {
-		var x0 = g.path[i][0], y0 = g.path[i][1],
+	for (var i=0; i <= last; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1],
 		      x1, y1, 
 		      x2,y2,
 		      x3,y3; 
 		if(i < last) {
-            x1 = g.path[i+1][0], y1 = g.path[i+1][1],
-            x2 = g.path[i+2][0], y2 = g.path[i+2][1],
-            x3 = g.path[i+3][0], y3 = g.path[i+3][1]; 
+            x1 = points[i+1][0], y1 = points[i+1][1],
+            x2 = points[i+2][0], y2 = points[i+2][1],
+            x3 = points[i+3][0], y3 = points[i+3][1]; 
 
-			curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
+			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
 		}
-		if (i == g.selectedPoint) {
+		if (path == g.cPath && i == path.sIdx) {
 			if(i > 0) {
-				var xp = g.path[i-1][0], yp = g.path[i-1][1]; 
-				line(x0,y0,xp,yp);  
-				circle(xp,yp,g.controlRad,"gray");
+				var xp = points[i-1][0], yp = points[i-1][1]; 
+				line(x0,y0,xp,yp,"gray");  
+				circle(xp, yp, g.CONTROL_RAD, "gray");
 			}	
 			if (i < last) {
-			    line(x0,y0,x1,y1); 
-	            circle(x1,y1,g.controlRad,"gray"); 		 
+			    line(x0,y0,x1,y1,"gray"); 
+	            circle(x1, y1 ,g.CONTROL_RAD, "gray"); 		 
 			 }
-			circle(x0,y0,g.chosenRad,"cyan"); 
+			circle(x0, y0, g.CHOSEN_RAD, "cyan"); 
 		} else {
-		  circle(x0,y0,g.jointRad,"gray"); 
+		  if (path == g.cPath) // tmp 	
+			circle(x0,y0, g.JOINT_RAD, "gray"); 
 		}
 	}
 } 
 
 // == redrawClosed == 
-function redrawClosed() {
-	var n = g.path.length; 
+function redrawClosed(path) {
+	var points = path.points;
+	var n = points.length; 
 	
-	for (i=0; i < n; i+=3)  {
-		var x0 = g.path[i][0], y0 = g.path[i][1],
-              x1 = g.path[i+1][0], y1 = g.path[i+1][1],
-              x2 = g.path[i+2][0], y2 = g.path[i+2][1],
-              x3 = g.path[(i+3)%n][0], y3 = g.path[(i+3)%n][1]; 
+	for (var i=0; i < n; i += 3)  {
+		var x0 = points[i][0], y0 = points[i][1],
+              x1 = points[i+1][0], y1 = points[i+1][1],
+              x2 = points[i+2][0], y2 = points[i+2][1],
+              x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
 
-		curve(x0,y0, x1,y1, x2,y2 ,x3,y3);
-		if (i == g.selectedPoint) {
-            var xp = g.path[(i+n-1)%n][0], yp = g.path[(i+n-1)%n][1]; // the '+n' is due to the fact that in js, is the reminder operator not the modulus (boo) 
-            line(x0,y0,xp,yp);  
-            circle(xp,yp,g.controlRad,"gray");
-            line(x0,y0,x1,y1); 
-            circle(x1,y1,g.controlRad,"gray"); 		 
-            circle(x0,y0,g.chosenRad,"cyan"); 
+		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
+		if (path == g.cPath && i == path.sIdx) {
+            var xp = points[(i-1+n)%n][0],
+  			    yp = points[(i-1+n)%n][1]; 
+            line(x0,y0,xp,yp,"gray");  
+            circle(xp,yp, g.CONTROL_RAD, "gray");
+            line(x0,y0,x1,y1,"gray"); 
+            circle(x1,y1, g.CONTROL_RAD, "gray"); 		 
+            circle(x0,y0, g.CHOSEN_RAD, "cyan"); 
 		} else {
-		  circle(x0,y0,g.jointRad,"gray"); 
+		if (path == g.cPath) // tmp
+		  circle(x0,y0,g.JOINT_RAD,"gray"); 
 		}
 	}
 }
 
-// == clearCanvas == 
-function clearCanvas() {
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
 
-	context.beginPath() ; // this is necessary due to some behaivour of canvas that I do not understand. Without this, the last 
-	                                // stroke doesn't get deleted 
-	context.clearRect(0, 0, canvas.width, canvas.height);
+// = Mouse event handlers = 
 
-	context.rect(0,0,canvas.width, canvas.height);
-	context.stroke();
+// == dis == 
+// distance from a point to a point in path 
+function dis(x,y, path, idx) {   
 
-}
+	return distance(x,y,
+					data2canvasX(path.points[idx][0]),
+					data2canvasY(path.points[idx][1])); 
 
-function distance(x1,y1,x2,y2) {
-	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
-}
+	}
 
-
-// == mouseWheel == 
-function mouseWheel(e) {
-
-    x = canvas2dataX(e.offsetX);   y = canvas2dataY(e.offsetY); 
-    
-    if(e.wheelDelta > 0) 
-        f = g.df
-     else 
-        f = 1/g.df;  
-          
-     g.factor *= f; 
-    
-    g.cx = x + (g.cx - x) / f; 
-    g.cy = y + (g.cy - y) / f; 
-
-    redraw(); 
-}
-
-
-
+	
 // == mouse press handle == 
 function mouseDown(e) {
-	// check for joint point selection 
-	for(i=0; i<g.path.length; i+=3) 
-		if ( distance(e.offsetX, e.offsetY, data2canvasX(g.path[i][0]), data2canvasY(g.path[i][1])) < g.selectRad ) {
-			g.selectedPoint = i; 
-			g.draggedPoint = i; 
-			redraw(); 
-			return; 
-		}
+	var path;  
+	var points; 
+	
 	 
-	 if(g.selectedPoint != -1) { // selection is on : search for drag 
+	// check for joint point selection
+	for (var i=0; i<g.cFrame.paths.length; ++i) {
+		path = g.cFrame.paths[i];
+		points = path.points; 
+		
+		for(j=0; j<points.length; j+=3) {  
+			if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
+				g.cFrame.sIdx = i; 
+				g.cPath = path; 
+				path.sIdx = j; 
+				path.dIdx = j; 
+				redraw(); 				
+				return; 
+			}
+		}
+	}
+	
+    path = g.cPath; 
+	points = path.points; 
+	
+	if(path.sIdx != -1) { // selection is on : search for drag 
 		var idxs = [];  // indexs of the selected point's control points 
-		if(!g.isClosed) {
-			if (g.selectedPoint > 0)
-				idxs.push(g.selectedPoint -1);
-			if ( g.selectedPoint < g.path.length-1)
-				idxs.push(g.selectedPoint + 1); 
+		if(!path.isClosed) { 
+			if (path.sIdx > 0)
+				idxs.push(path.sIdx -1);
+			if ( path.sIdx < points.length-1)
+				idxs.push(path.sIdx + 1); 
 		} else {
-			n = g.path.length; 
-			idxs.push( (g.selectedPoint - 1+n)%n); 
-			idxs.push( (g.selectedPoint + 1)%n); 
+			n = points.length; 
+			idxs.push( (path.sIdx - 1+n)%n); 
+			idxs.push( (path.sIdx + 1)%n); 
 		}
 		for(k=0; k <= idxs.length; ++k) { 
 			i = idxs[k]; 
-			if ( distance(e.offsetX, e.offsetY,
-			              data2canvasX(g.path[i][0]), data2canvasY(g.path[i][1])
-			             ) < g.selectRad ) {
-				g.draggedPoint = i; 
+			if ( dis (e.offsetX, e.offsetY, path, i) < g.SELECT_RAD ) {
+				path.dIdx = i; 
 	  			return; 
 			}
 		}
 	}
 	
-    if(g.isClosed) 
+    if(path.isClosed) 
         return; 
  	
-	g.selectedPoint = -1; 
-	
-	var	n = g.path.length-1,
-			x3 = e.offsetX, y3 = e.offsetY; 
+	path.sIdx = -1; 
+
+	// add an additional segment to the path 	
+	var	n = points.length-1,
+		x3 = canvas2dataX(e.offsetX), y3 = canvas2dataY(e.offsetY); 
 				
 	if (n < 0) { // first point in path 
-		g.path.push([canvas2dataX(x3),canvas2dataY(y3)]); 
+		points.push([x3,y3]); 
 		redraw(); 
 		return; 
 	}
 
-  	var x0 = g.path[n][0], y0 = g.path[n][1], 
+  	var x0 = points[n][0], y0 = points[n][1], 
    		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
    		  x1 = x0+xm, y1 = y0+ym; 
 	
-	if (n>0) { // if the path alreay contains a segment
-		var xq = 2*x0-g.path[n-1][0], yq =2*y0 - g.path[n-1][1]; 
-		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last conrol point of the last sgement 
+	if (n>0) { // if the path already contains a segment
+		var xq = 2*x0-points[n-1][0], 
+			yq =2*y0 - points[n-1][1]; 
+		
+		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last control point of the last segment 
 		y1 = (y1+yq)/2; 
 	
-		g.path[n-1][0] = canvas2dataX(2*x0-x1); // also fix that last control point 
-		g.path[n-1][1] = canvas2dataY(2*y0-y1); // to be symetric to our new (x1,y1) 
+		points[n-1][0] = 2*x0-x1; // also fix that last control point 
+		points[n-1][1] = 2*y0-y1; // to be symmetric to our new (x1,y1) 
 	}
 	
-	g.path.push([canvas2dataX(x1),canvas2dataY(y1)]); 
+	points.push([x1,y1]); 
 	
 	var  x2 = x0+xm*2, y2 = y0+ym*2;   
 
-	g.path.push([canvas2dataX(x2),canvas2dataY(y2)]); 
+	points.push([x2,y2]); 
 	
-	g.path.push([canvas2dataX(x3),canvas2dataY(y3)]);
+	points.push([x3,y3]);
 
 	redraw();  
 }
 
+
+// == mouseUp == 
+function mouseUp(e) {
+	var path = g.cPath; 
+	var points = path.points; 
+	
+	var last = points.length-1; 
+	if (last <= 0 || path.isClosed) {
+		path.dIdx = -1;  // deselect the dragged point  
+		return; 
+	}
+	// check if the user closed the path 
+    if 	( path.dIdx == last && dis(e.offsetX,e.offsetY, path, 0) < g.SELECT_RAD 
+    		      ||
+    	  path.dIdx == 0 && dis(e.offsetX,e.offsetY, path, last) < g.SELECT_RAD)  { 
+		path.isClosed = true; 
+		points.splice(last,1); // delete last element
+		
+		// fix the two control points after the path closure 
+		var x3 = points[0][0],      y3 = points[0][1], 
+			x2 = points[last-1][0], y2 = points[last-1][1];  
+		
+		var xp = 2*x3 - points[1][0], yp = 2*y3 - points[1][1];
+		x2 = (x2+xp)/2; 
+		y2 = (y2+yp)/2; 
+		
+		points[last-1][0] = x2; 
+		points[last-1][1] = y2; 
+	    points[1][0] = 2*x3 - x2; 
+	 	points[1][1] = 2*y3 - y2; 
+		
+		redraw(); 
+	}
+	path.dIdx = -1; 
+}
+
 // == changePoint == 
 function changePoint(idx,xv,yv) {
-	g.path[idx][0] = canvas2dataX(data2canvasX(g.path[idx][0])+xv); 
-	g.path[idx][1] = canvas2dataY(data2canvasY(g.path[idx][1])+yv); 
+	var points = g.cPath.points; 
+	points[idx][0] = canvas2dataX(data2canvasX(points[idx][0])+xv); 
+	points[idx][1] = canvas2dataY(data2canvasY(points[idx][1])+yv); 
 }
 
 // == mouseMove == 
 function mouseMove(e) {
-	if (g.draggedPoint == -1)
+	var path = g.cPath,
+        points = path.points; 
+		
+	if (path.dIdx == -1)
 		return; 
 		
-	var dx = e.offsetX - data2canvasX(g.path[g.draggedPoint][0]), 
-	    dy = e.offsetY - data2canvasY(g.path[g.draggedPoint][1]),  
-		last = g.path.length-1;
+	var dx = e.offsetX - data2canvasX(points[path.dIdx][0]), 
+	    dy = e.offsetY - data2canvasY(points[path.dIdx][1]),  
+		last = points.length-1;
 	
-	g.path[g.draggedPoint] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
+	points[path.dIdx] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
 
-	var pointType = g.draggedPoint % 3; 
+	var pointType = path.dIdx % 3;  // 0 - joint; 1,2 - control 
    
-    if(!g.isClosed) {
-	    if(pointType ==0) { // drag joint point : control g.path escort 
-		    if (g.draggedPoint < last) {
-				changePoint(g.draggedPoint+1,dx,dy); 
+    if(!path.isClosed) {
+	    if(pointType ==0) { // drag joint point : control point escort 
+		    if (path.dIdx < last) {
+				changePoint(path.dIdx+1,dx,dy); 
 		    } 
-		    if (g.draggedPoint > 0) {
-				changePoint(g.draggedPoint-1,dx,dy); 
+		    if (path.dIdx > 0) {
+				changePoint(path.dIdx-1,dx,dy); 
 		    } 
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = g.draggedPoint+(pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
-		    if(otherControl>0 && otherControl <last) {
+		    var otherControl = path.dIdx + (pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    if(otherControl > 0 && otherControl <last) {
 			    changePoint(otherControl,-dx,-dy); 
 		    }	
 	    }
     } else {
-        var n = g.path.length; 
-	    if(pointType ==0) { // drag joint point : control g.path escort 
-			changePoint((g.draggedPoint+1)%n,dx,dy); 
-			changePoint((g.draggedPoint-1+n)%n,dx,dy); 	
+        var n = points.length; 
+	    if(pointType ==0) { // drag joint point : control point escort 
+			changePoint((path.dIdx+1)%n,dx,dy); 
+			changePoint((path.dIdx-1+n)%n,dx,dy); 	
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = (g.draggedPoint+(pointType-1)*4-2 +n)%n;  
+		    var otherControl = (path.dIdx+(pointType-1)*4-2 +n)%n;  
 		    changePoint(otherControl,-dx,-dy); 	    
 	    }
     }	
 	redraw();  
 } 
 
+// == mouseWheel == 
+function mouseWheel(e) {
 
-// == mouseUp == 
-function mouseUp(e) {
-	var last = g.path.length-1; 
-	if (last <= 0) {
-		g.draggedPoint = -1; 
-		return; 
-	}
-    if 	( g.draggedPoint == last && distance(e.offsetX,e.offsetY, data2canvasX(g.path[0][0]), data2canvasY(g.path[0][1])) < g.selectRad 
-    		      ||
-    	       g.draggedPoint == 0 && distance(e.offsetX,e.offsetY, data2canvasX(g.path[last][0]), data2canvasY(g.path[last][1])) < g.selectRad   )  { 
-		g.isClosed = true; 
-		g.path.splice(last,1); // delete last element
-		var x3 = g.path[0][0],  y3 = g.path[0][1], 
-			  x2 = g.path[last-1][0], y2 = g.path[last-1][1];  
-		
-		var xp = 2*x3 - g.path[1][0], yp = 2*y3 - g.path[1][1];
-		x2 = (x2+xp)/2; 
-		y2 = (y2+yp)/2; 
-		
-		g.path[last-1][0] = canvas2dataX(x2); 
-		g.path[last-1][1] = canvas2dataY(y2); 
-	    g.path[1][0] = canvas2dataX(2*x3 - x2); 
-	 	g.path[1][1] = canvas2dataY(2*y3 - y2); 
-		
-		redraw(); 
-	}
-	g.draggedPoint = -1; 
+    var x = canvas2dataX(e.offsetX),
+		y = canvas2dataY(e.offsetY), 
+		f; 
+    
+    if(e.wheelDelta > 0) 
+        f = v.df
+     else 
+        f = 1 / v.df;  
+          
+     v.factor *= f; 
+    
+    v.cx = x + (v.cx - x) / f; 
+    v.cy = y + (v.cy - y) / f; 
+
+    redraw(); 
+}
+
+
+// = Utils = 
+
+// == clearCanvas == 
+function clearCanvas() {
+
+	g.context.beginPath() ; // this is necessary due to some strange 
+						  // behaviour of canvas that I do not understand. 
+						  // Without this, the last stroke doesn't get deleted 
+	g.context.clearRect(0, 0, g.canvas.width, g.canvas.height);
+
+	g.context.rect(0,0, g.canvas.width, g.canvas.height);
+	g.context.stroke();
+
 }
 
 // == curve == 
-function curve(x1,y1,x2,y2,x3,y3,x4,y4) {
-	x1 = data2canvasX(x1);	 	 y1 = data2canvasY(y1);
+function curve(x1,y1,x2,y2,x3,y3,x4,y4,c) {
+	x1 = data2canvasX(x1);	 y1 = data2canvasY(y1);
 	x2 = data2canvasX(x2);	 y2 = data2canvasY(y2);
 	x3 = data2canvasX(x3); 	 y3 = data2canvasY(y3);
 	x4 = data2canvasX(x4); 	 y4 = data2canvasY(y4);
 
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
-
-	context.beginPath();
-  	context.moveTo(x1,  y1);
-  	context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
-  	context.lineWidth = 3;
-  	context.strokeStyle = color; 
-	context.stroke();
+	g.context.beginPath();
+  	g.context.moveTo(x1,  y1);
+  	g.context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+  	g.context.lineWidth = 3;
+  	g.context.strokeStyle = c; 
+	g.context.stroke();
 }
 
 // == line == 
-function line(x1,y1,x2,y2) {
-	x1 = data2canvasX(x1);	 	 y1 = data2canvasY(y1);
-	x2 = data2canvasX(x2);	 y2 = data2canvasY(y2);
+function line(x1,y1,x2,y2,c) {
+	x1 = data2canvasX(x1);	 	 
+	y1 = data2canvasY(y1);
 
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
+	x2 = data2canvasX(x2);
+	y2 = data2canvasY(y2);
 
-	context.beginPath();
-  	context.moveTo(x1,  y1);
-	context.lineTo(x2,y2);
-	context.strokeStyle = "gray"; 
-	context.stroke();
+	g.context.beginPath();
+  	g.context.moveTo(x1,  y1);
+	g.context.lineTo(x2,y2);
+	g.context.strokeStyle = c; 
+	g.context.stroke();
 }
+
 
 // == circle == 
 function circle(x,y,r,c) {
-	x = data2canvasX(x);	 	 y = data2canvasY(y);
-	// r *= g.factor; 
-	var canvas = document.getElementById('myCanvas');
-	var context = canvas.getContext('2d');
+	x = data2canvasX(x);	 	 
+	y = data2canvasY(y);
 
-	context.beginPath();
-	context.arc(x, y, r, 0, 2 * Math.PI, false);
-	context.fillStyle = c;
-	context.fill();
-	context.lineWidth = 2;
-	context.strokeStyle = 'black';
-	context.stroke();
-}
-
-// == debugPrint == 
-function debugPrint(str) {
-	document.getElementById("firstHeader").innerHTML += str +" "; 
+	g.context.beginPath();
+	g.context.arc(x, y, r, 0, 2 * Math.PI, false);
+	g.context.fillStyle = c;
+	g.context.fill();
+	g.context.lineWidth = 2;
+	g.context.strokeStyle = 'black';
+	g.context.stroke();
 }
 
 // == translations: == 
 
 //  == data2canvasX ==
 function data2canvasX(x) {
-	return (x-g.cx)*g.factor; 
+	return (x-v.cx)*v.factor; 
 }
 
 //  == canvas2dataX ==
 function canvas2dataX(x) {
-	return x / g.factor + g.cx; 
+	return x / v.factor + v.cx; 
 }
 
 //  == data2canvasY ==
 function data2canvasY(y) {
-	return (y-g.cy)*g.factor; 
+	return (y-v.cy)*v.factor; 
 }
 
 //  == canvas2dataY ==
 function canvas2dataY(y) {
-	return y / g.factor + g.cy; 
+	return y / v.factor + v.cy; 
 }
 
-// == cloneArray ==
-function cloneArray(ar) {
-	
-	if (typeof ar.length == 'undefined') {
-		return ar; 
-	}
-
-	var r = []; 
-	for (var i=0; i<ar.length; ++i)
-		r.push(cloneArray(ar[i]));  
-	return r; 
+// == distance == 
+function distance(x1,y1,x2,y2) {
+	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
 }
 
-// == misc == 
-function colorChanged() {
-	var dropList = document.getElementById("colorSelection"); 
-	color = ""+dropList.options[dropList.selectedIndex].text; 
-	
-	document.getElementById("firstHeader").innerHTML = color; 
-	redraw();
-} 
+// == debugPrint == 
+function print(str) {
+	document.getElementById("o1").innerHTML += str +"<br />"; 
+}
+
+
 </script> 
 
 </body> 
 </html> 
-
