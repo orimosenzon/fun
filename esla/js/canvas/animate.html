@@ -4,7 +4,7 @@
 
 
 <h1 id="title1"> Animation </h1>
-<canvas id="myCanvas" width="1500" height="700"></canvas>
+<canvas id="myCanvas" width="1500" height="300"></canvas>
 <br /> 
 <button id="npB" onclick = "addPath()" >New path</button> 
 <br />
@@ -120,7 +120,13 @@ function redrawOpen(path) {
 
 			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
 		}
-		if (path == g.cPath && i == path.sIdx) {
+		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
+			if(i==0 || i == last)
+				circle(x0,y0, g.JOINT_RAD, "gray");
+			continue; 
+		}
+		// if current path, mark all joint points and the selected+control points 
+		if (i == path.sIdx) {
 			if(i > 0) {
 				var xp = points[i-1][0], yp = points[i-1][1]; 
 				line(x0,y0,xp,yp,"gray");  
@@ -131,8 +137,7 @@ function redrawOpen(path) {
 	            circle(x1, y1 ,g.CONTROL_RAD, "gray"); 		 
 			 }
 			circle(x0, y0, g.CHOSEN_RAD, "cyan"); 
-		} else {
-		  if (path == g.cPath) // tmp 	
+		} else { 	
 			circle(x0,y0, g.JOINT_RAD, "gray"); 
 		}
 	}
@@ -150,7 +155,12 @@ function redrawClosed(path) {
               x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
 
 		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
-		if (path == g.cPath && i == path.sIdx) {
+		if (path != g.cPath) {
+			if (i==0)
+				circle(x0,y0,g.JOINT_RAD,"gray");
+			continue; 
+		}
+		if (i == path.sIdx) {
             var xp = points[(i-1+n)%n][0],
   			    yp = points[(i-1+n)%n][1]; 
             line(x0,y0,xp,yp,"gray");  
@@ -159,7 +169,6 @@ function redrawClosed(path) {
             circle(x1,y1, g.CONTROL_RAD, "gray"); 		 
             circle(x0,y0, g.CHOSEN_RAD, "cyan"); 
 		} else {
-		if (path == g.cPath) // tmp
 		  circle(x0,y0,g.JOINT_RAD,"gray"); 
 		}
 	}
@@ -178,18 +187,34 @@ function dis(x,y, path, idx) {
 
 	}
 
-	
-// == mouse press handle == 
-function mouseDown(e) {
-	var path;  
-	var points; 
-	
+// == didSelectJoint ==
+// did the user select a joint point of a path?  
+function didSelectJoint(e) {
 	 
 	// check for joint point selection
 	for (var i=0; i<g.cFrame.paths.length; ++i) {
-		path = g.cFrame.paths[i];
-		points = path.points; 
+		var path = g.cFrame.paths[i];
+		var points = path.points; 
 		
+		if (path != g.cPath) { // for path which is not current, check only edges points 
+			var idxs = [0];
+			if (! path.isClossed)
+				idxs.push(points.length-1); 
+			for(var k=0; k<idxs.length; ++k) {
+				var j=idxs[k]; 
+				if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
+					g.cFrame.sIdx = i; 
+					g.cPath = path; 
+					path.sIdx = j; 
+					path.dIdx = j; 
+					redraw(); 				
+					return true; 					
+				}
+			}
+			continue; 
+		}
+		
+		// for current path, check all points. 
 		for(j=0; j<points.length; j+=3) {  
 			if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
 				g.cFrame.sIdx = i; 
@@ -197,47 +222,52 @@ function mouseDown(e) {
 				path.sIdx = j; 
 				path.dIdx = j; 
 				redraw(); 				
-				return; 
+				return true; 
 			}
 		}
 	}
-	
-    path = g.cPath; 
-	points = path.points; 
-	
-	if(path.sIdx != -1) { // selection is on : search for drag 
-		var idxs = [];  // indexs of the selected point's control points 
-		if(!path.isClosed) { 
-			if (path.sIdx > 0)
-				idxs.push(path.sIdx -1);
-			if ( path.sIdx < points.length-1)
-				idxs.push(path.sIdx + 1); 
-		} else {
-			n = points.length; 
-			idxs.push( (path.sIdx - 1+n)%n); 
-			idxs.push( (path.sIdx + 1)%n); 
-		}
-		for(k=0; k <= idxs.length; ++k) { 
-			i = idxs[k]; 
-			if ( dis (e.offsetX, e.offsetY, path, i) < g.SELECT_RAD ) {
-				path.dIdx = i; 
-	  			return; 
-			}
-		}
-	}
-	
-    if(path.isClosed) 
-        return; 
- 	
-	path.sIdx = -1; 
+	return false; 
 
-	// add an additional segment to the path 	
+}
+
+// == didSelectControl ==
+// did the user select a control point 
+function didSelectControl(e,path) {
+	
+	var points = path.points; 
+	
+	var idxs = [];  // indexs of the selected point's control points 
+	var n = points.length;
+	if(!path.isClosed) { 
+		if (path.sIdx > 0)
+			idxs.push(path.sIdx -1);
+		if ( path.sIdx < n-1)
+			idxs.push(path.sIdx + 1); 
+	} else {
+		idxs.push( (path.sIdx - 1+n)%n); 
+		idxs.push( (path.sIdx + 1)%n); 
+	}
+	for(k=0; k < idxs.length; ++k) { 
+		i = idxs[k];  
+		if ( dis (e.offsetX, e.offsetY, path, i) < g.SELECT_RAD ) {
+			path.dIdx = i; 
+  			return true; 
+		}
+	}
+	return false; 
+}
+	
+// == addSegmentToPath == 
+
+function addSegmentToPath(e,path) {
+	
+	var points = path.points; 
+	
 	var	n = points.length-1,
 		x3 = canvas2dataX(e.offsetX), y3 = canvas2dataY(e.offsetY); 
 				
 	if (n < 0) { // first point in path 
 		points.push([x3,y3]); 
-		redraw(); 
 		return; 
 	}
 
@@ -263,7 +293,28 @@ function mouseDown(e) {
 	points.push([x2,y2]); 
 	
 	points.push([x3,y3]);
+}
+	
+// == mouse press handle == 
+function mouseDown(e) {
 
+	if(didSelectJoint(e))
+		return; 
+
+    var path = g.cPath; 
+	var points = path.points; 
+	
+	if(path.sIdx != -1)  // if one joint point is already selected 
+		if(didSelectControl(e,path))
+			return; 
+	
+    if(path.isClosed) 
+        return; 
+ 	
+	path.sIdx = -1; 
+
+	addSegmentToPath(e,path); 
+	
 	redraw();  
 }
 
