@@ -6,7 +6,7 @@
 <h1 id="title1"> Animation </h1>
 <canvas id="myCanvas" width="1500" height="300"></canvas>
 <br /> 
-<button id="npB" onclick = "addPath()" >New path</button> 
+<button id="npB" onclick = "addFrame()" >New Frame</button> 
 <br />
 <h1 id="o1"> output goes here: </h1>
 
@@ -18,7 +18,7 @@ var g = {
 	JOINT_RAD:3,     // radius of the joint point 
 	CHOSEN_RAD:4,    // radius of selected point 
 	CONTROL_RAD:2,   // radius of control point  
-	SELECT_RAD:15,   // determines the proximity of the mouse for selection 
+	SELECT_RAD:4,   // determines the proximity of the mouse for selection 
 	
 	canvas: null,  // the html canvas element 
 	context: null, // it's context 
@@ -76,11 +76,21 @@ function init() {
 	g.cFrame.sIdx = 0; 	
 }
 
-function addPath() { 
+// == addFrame == 
+function addFrame() {
+}
+
+// == addPath == 
+function addPath(e) { 
+
 	g.cPath.sIdx = -1; 
 	g.cPath = newPath(); 
+	g.cPath.points.push([canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]); 
+
 	g.cFrame.paths.push(g.cPath); 
 	g.cFrame.sIdx = g.cFrame.paths.length - 1; 
+	
+	redraw(); 
 }
 
 // == redraw() == 
@@ -304,9 +314,11 @@ function mouseDown(e) {
     var path = g.cPath; 
 	var points = path.points; 
 	
-	if(path.sIdx != -1)  // if one joint point is already selected 
-		if(didSelectControl(e,path))
-			return; 
+	if(path.sIdx != -1)  {// if one joint point is already selected 
+		if(!didSelectControl(e,path))
+			addPath(e); 
+		return; 
+	}
 	
     if(path.isClosed) 
         return; 
