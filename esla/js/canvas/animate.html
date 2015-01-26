@@ -14,7 +14,8 @@
 <br />
 <button id="nextFrame" onclick = "nextFrame()" > >> </button> 
 <br />
-
+<button id="playB" onclick = "playClip()"  > Play </button> 
+<br />
 
 <h1 id="o1"> output goes here: </h1>
 
@@ -34,6 +35,8 @@ var g = {
 	cClip : null,     // current clip  
 	cFrame: null,     // current frame 
 	cPath: null,      // current path  
+	cPlay: 0, 
+	isPlayed: false, 
 }; 
 
 // == view == (single for now) 
@@ -128,6 +131,27 @@ function copyPrevFrame() {
 	redraw(); 
 }
 
+function playClip() {
+	if(! g.isPlayed) { 
+		document.getElementById("playB").innerHTML = "stop"; 
+		g.isPlayed = true; 
+		g.cPlay = 0;
+		setTimeout(playRec,10); 
+	} 
+	else {
+		g.isPlayed = false; 
+		document.getElementById("playB").innerHTML = "Play"; 
+	}
+}
+
+function playRec() {
+		clearCanvas(); 
+		drawFrame(g.cClip.frames[g.cPlay],false,"black");
+		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
+		if(g.isPlayed)
+			setTimeout(playRec,200);
+}
+
 // == addPath == 
 function addPath() {
 	g.cPath.sIdx = -1; 
@@ -153,15 +177,14 @@ function addPathWithClick(e) {
 function redraw() {
 	clearCanvas();  
 	if (g.cClip.sIdx > 0)
-		drawFrame(g.cClip.frames[g.cClip.sIdx - 1]); 
-	drawFrame(g.cFrame); 
+		drawFrame(g.cClip.frames[g.cClip.sIdx - 1], false, "gray"); 
+	drawFrame(g.cFrame, true, "black"); 
 }
 
 // == drawFrame == 
-function drawFrame(frame) {
+function drawFrame(frame, isEdditedFrame, color) {
 	var paths = frame.paths; 
-	var isCurrent = (frame == g.cFrame); 
-	
+		
 	for(var i=0; i<paths.length; ++i) {	
 		var path = paths[i];
 		
@@ -169,9 +192,9 @@ function drawFrame(frame) {
 			continue; 
 			
 		if(path.isClosed) {
-			redrawClosed(path,isCurrent);
+			redrawClosed(path,isEdditedFrame, color);
 		} else {
-			redrawOpen(path,isCurrent); 
+			redrawOpen(path,isEdditedFrame, color); 
 		}
 	}
 
@@ -179,14 +202,10 @@ function drawFrame(frame) {
 
 
 // == redrawOpen == 
-function redrawOpen(path, isCurrentFrame) {
+function redrawOpen(path, isEdditedFrame, color) {
 	var points = path.points;
 	var last = points.length-1; 
 	var color; 
-	if (isCurrentFrame)
-		color = "black"; 
-	else
-		color = "gray"; 
 	
 	for (var i=0; i <= last; i+=3)  {
 		var x0 = points[i][0], y0 = points[i][1],
@@ -201,7 +220,7 @@ function redrawOpen(path, isCurrentFrame) {
 			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
 		}
 		
-		if (! isCurrentFrame )
+		if (! isEdditedFrame )
 			continue; 
 			
 		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
@@ -228,14 +247,10 @@ function redrawOpen(path, isCurrentFrame) {
 } 
 
 // == redrawClosed == 
-function redrawClosed(path, isCurrentFrame) {
+function redrawClosed(path, isEdditedFrame, color) {
 	var points = path.points;
 	var n = points.length; 
 	var color; 
-	if (isCurrentFrame)
-		color = "black"; 
-	else
-		color = "gray"; 
 	
 	for (var i=0; i < n; i += 3)  {
 		var x0 = points[i][0], y0 = points[i][1],
@@ -245,7 +260,7 @@ function redrawClosed(path, isCurrentFrame) {
 
 		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
 		
-		if (! isCurrentFrame )
+		if (! isEdditedFrame )
 			continue; 
 		
 		if (path != g.cPath) {
@@ -530,6 +545,7 @@ function clearCanvas() {
 	g.context.clearRect(0, 0, g.canvas.width, g.canvas.height);
 
 	g.context.rect(0,0, g.canvas.width, g.canvas.height);
+	g.context.strokeStyle = 'black';
 	g.context.stroke();
 
 }
