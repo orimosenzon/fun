@@ -66,18 +66,20 @@ function init() {
 
 	clearCanvas();
 	g.cClip = newClip();
-	g.cFrame = newFrame(); 
-	g.cPath = newPath(); 
-	
-	g.cClip.frames.push(g.cFrame);
-	g.cClip.sIdx = 0; 	
-
-	g.cFrame.paths.push(g.cPath); 
-	g.cFrame.sIdx = 0; 	
+	addFrame(); 
 }
 
 // == addFrame == 
 function addFrame() {
+	g.cFrame = newFrame(); 
+	g.cPath = newPath(); 
+	
+	g.cClip.frames.push(g.cFrame);
+	g.cClip.sIdx = g.cClip.frames.length - 1; 	
+
+	g.cFrame.paths.push(g.cPath); 
+	g.cFrame.sIdx = 0; 	
+	redraw(); 
 }
 
 // == addPath == 
@@ -93,12 +95,21 @@ function addPath(e) {
 	redraw(); 
 }
 
-// == redraw() == 
 
+
+// == redraw() == 
 function redraw() {
-	clearCanvas(); // should be changed to delete only current curve  
+	clearCanvas();  
+	if (g.cClip.sIdx > 0)
+		drawFrame(g.cClip.frames[g.cClip.sIdx - 1]); 
+	drawFrame(g.cFrame); 
+}
+
+// == drawFrame == 
+function drawFrame(frame) {
+	var paths = frame.paths; 
+	var isCurrent = (frame == g.cFrame); 
 	
-	var paths = g.cFrame.paths; 
 	for(var i=0; i<paths.length; ++i) {	
 		var path = paths[i];
 		
@@ -106,17 +117,24 @@ function redraw() {
 			continue; 
 			
 		if(path.isClosed) {
-			redrawClosed(path);
+			redrawClosed(path,isCurrent);
 		} else {
-			redrawOpen(path); 
+			redrawOpen(path,isCurrent); 
 		}
 	}
+
 }
 
+
 // == redrawOpen == 
-function redrawOpen(path) {
+function redrawOpen(path, isCurrentFrame) {
 	var points = path.points;
 	var last = points.length-1; 
+	var color; 
+	if (isCurrentFrame)
+		color = "black"; 
+	else
+		color = "gray"; 
 	
 	for (var i=0; i <= last; i+=3)  {
 		var x0 = points[i][0], y0 = points[i][1],
@@ -128,8 +146,12 @@ function redrawOpen(path) {
             x2 = points[i+2][0], y2 = points[i+2][1],
             x3 = points[i+3][0], y3 = points[i+3][1]; 
 
-			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
+			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
 		}
+		
+		if (! isCurrentFrame )
+			continue; 
+			
 		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
 			if(i==0 || i == last)
 				circle(x0,y0, g.JOINT_RAD, "gray");
@@ -154,9 +176,14 @@ function redrawOpen(path) {
 } 
 
 // == redrawClosed == 
-function redrawClosed(path) {
+function redrawClosed(path, isCurrentFrame) {
 	var points = path.points;
 	var n = points.length; 
+	var color; 
+	if (isCurrentFrame)
+		color = "black"; 
+	else
+		color = "gray"; 
 	
 	for (var i=0; i < n; i += 3)  {
 		var x0 = points[i][0], y0 = points[i][1],
@@ -164,7 +191,11 @@ function redrawClosed(path) {
               x2 = points[i+2][0], y2 = points[i+2][1],
               x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
 
-		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, "black");
+		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
+		
+		if (! isCurrentFrame )
+			continue; 
+		
 		if (path != g.cPath) {
 			if (i==0)
 				circle(x0,y0,g.JOINT_RAD,"gray");
