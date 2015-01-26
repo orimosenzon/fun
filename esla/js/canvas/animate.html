@@ -6,18 +6,20 @@
 <h1 id="title1"> Animation </h1>
 <canvas id="myCanvas" width="1500" height="500"></canvas>
 <br /> 
+<button onclick = "addAndCopyFrame()" >New+Copy</button> 
+<br /> 
+
 <button id="npB" onclick = "addFrame()" >New Frame</button> 
-<br />
+
 <button id="copyPrev" onclick = "copyPrevFrame()" > copy prev </button> 
 <br />
 <button id="prevFrame" onclick = "prevFrame()" > << </button> 
-<br />
 <button id="nextFrame" onclick = "nextFrame()" > >> </button> 
 <br />
 <button id="playB" onclick = "playClip()"  > Play </button> 
 <br />
 
-<h1 id="o1"> output goes here: </h1>
+<h1 id="o1">  </h1>
 
  
 <script>
@@ -78,6 +80,12 @@ function init() {
 	clearCanvas();
 	g.cClip = newClip();
 	addFrame(); 
+}
+
+// == addAndCopyFrame == 
+function addAndCopyFrame() {
+	addFrame();
+	copyPrevFrame();
 }
 
 // == addFrame == 
