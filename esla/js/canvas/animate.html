@@ -4,7 +4,7 @@
 
 
 <h1 id="title1"> Animation </h1>
-<canvas id="myCanvas" width="1500" height="300"></canvas>
+<canvas id="myCanvas" width="1500" height="500"></canvas>
 <br /> 
 <button id="npB" onclick = "addFrame()" >New Frame</button> 
 <br />
@@ -122,6 +122,7 @@ function copyPrevFrame() {
 		addPath(); 
 		for(var j=0; j<pFrame.paths[i].points.length; ++j)
 			g.cPath.points.push( clonePoint(pFrame.paths[i].points[j])); 
+		g.cPath.isClosed = pFrame.paths[i].isClosed; 
 	} 
 
 	redraw(); 
