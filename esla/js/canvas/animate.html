@@ -8,6 +8,11 @@
 <br /> 
 <button id="npB" onclick = "addFrame()" >New Frame</button> 
 <br />
+<button id="prevFrame" onclick = "prevFrame()" > << </button> 
+<br />
+<button id="nextFrame" onclick = "nextFrame()" > >> </button> 
+<br />
+
 <h1 id="o1"> output goes here: </h1>
 
  
@@ -81,6 +86,25 @@ function addFrame() {
 	g.cFrame.sIdx = 0; 	
 	redraw(); 
 }
+
+// == prevFrame == 
+function prevFrame() {
+	if (g.cClip.sIdx ==0)
+		return; 
+	-- g.cClip.sIdx;
+	g.cFrame = g.cClip.frames[g.cClip.sIdx]; 
+	redraw(); 	
+}
+
+// == nextFrame ==
+function nextFrame() {
+	if (g.cClip.sIdx == g.cClip.frames.length - 1)
+		return; 
+	++ g.cClip.sIdx; 
+	g.cFrame = g.cClip.frames[g.cClip.sIdx]
+	redraw(); 	
+}
+
 
 // == addPath == 
 function addPath(e) { 
