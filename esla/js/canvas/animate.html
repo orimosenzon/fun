@@ -3,9 +3,12 @@
 <body  onload = "init()"> 
 
 
-<h1 id="title1"> Animation </h1>
+<h1 id="title1" align = "center"> Animate </h1>
 <canvas id="myCanvas" width="1500" height="500"></canvas>
 <br /> 
+
+<center>
+
 <button onclick = "addAndCopyFrame()" >New+Copy</button> 
 <br /> 
 
@@ -18,6 +21,7 @@
 <br />
 <button id="playB" onclick = "playClip()"  > Play </button> 
 <br />
+</center>
 
 <h1 id="o1">  </h1>
 
@@ -39,6 +43,10 @@ var g = {
 	cPath: null,      // current path  
 	cPlay: 0, 
 	isPlayed: false, 
+	
+	INT_FRAMES:40,     // number of frames in interpolation 
+	intLeft:0,        // number of frame left in this interpolation 
+	frame:null,       // temporary frame for interpolation  
 }; 
 
 // == view == (single for now) 
@@ -60,7 +68,10 @@ function newPath() {
 }
 
 function newFrame() {
-	return { paths:[], sIdx:-1}; 
+	return { paths:[],
+		sIdx:-1,
+		isCopy:false,
+	}; 
 }
 
 function newClip() {
@@ -124,27 +135,35 @@ function clonePoint(p) {
 	return [p[0],p[1]]; 
 }
 
+// == copyFrame == 
+
+function copyFrame(sFrame,dFrame) {
+	dFrame.isCopy = true; 
+	for(var i=0; i < sFrame.paths.length; ++i) {
+		dFrame.paths.push(newPath()); 
+		for(var j=0; j < sFrame.paths[i].points.length; ++j)
+			dFrame.paths[i].points.push( clonePoint(sFrame.paths[i].points[j])); 
+			dFrame.paths[i].isClosed = sFrame.paths[i].isClosed; 
+	} 
+	dFrame.sIdx = dFrame.paths.length-1; 
+}
+
 // == copyPrevFrame == 
 function copyPrevFrame() {
 	if (g.cClip.sIdx ==0)
 		return; 
-	var pFrame = g.cClip.frames[g.cClip.sIdx-1]; 
-	for(var i=0; i < pFrame.paths.length; ++i) {
-		addPath(); 
-		for(var j=0; j<pFrame.paths[i].points.length; ++j)
-			g.cPath.points.push( clonePoint(pFrame.paths[i].points[j])); 
-		g.cPath.isClosed = pFrame.paths[i].isClosed; 
-	} 
+	copyFrame(g.cClip.frames[g.cClip.sIdx-1], g.cClip.frames[g.cClip.sIdx]);	
 
 	redraw(); 
 }
 
+// == playClip == 
 function playClip() {
 	if(! g.isPlayed) { 
-		document.getElementById("playB").innerHTML = "stop"; 
+		document.getElementById("playB").innerHTML = "Stop"; 
 		g.isPlayed = true; 
 		g.cPlay = 0;
-		setTimeout(playRec,10); 
+		playSched(); 
 	} 
 	else {
 		g.isPlayed = false; 
@@ -152,12 +171,71 @@ function playClip() {
 	}
 }
 
-function playRec() {
+// == playSched == 
+function playSched() {
+		
+		var frame =  g.cClip.frames[g.cPlay]; 
+
+		if (frame.isCopy) { 
+			interpolateStart();
+			return; 
+		}					
+
 		clearCanvas(); 
-		drawFrame(g.cClip.frames[g.cPlay],false,"black");
+		drawFrame(frame,false,"black");
+		
 		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
 		if(g.isPlayed)
-			setTimeout(playRec,200);
+			setTimeout(playSched,200);
+}
+
+function interpolateStart() {
+	g.intLeft = g.INT_FRAMES; 
+	
+	var n = g.cClip.frames.length; 
+	
+	var frame = g.cClip.frames[(g.cPlay-1+n)%n]; 
+			
+	g.frame = newFrame();
+	
+	copyFrame(frame, g.frame); 
+	
+	interpolateSched(); 	
+}
+
+// == interpulateSched == 
+function interpolateSched() {
+	if (g.intLeft == 0) {
+		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
+		if(g.isPlayed)
+			setTimeout(playSched,200); 
+		return; 
+	}	
+	
+	var frame = g.cClip.frames[g.cPlay];
+	
+	for( var i=0; i < g.frame.paths.length; ++i) {
+		var gpoints = g.frame.paths[i].points,
+		    points  = frame.paths[i].points;  
+		
+		for (var j=0; j < gpoints.length; ++j) {
+			var x1 = gpoints[j][0], 
+				y1 = gpoints[j][1],
+				x2 = points[j][0], 
+				y2 = points[j][1];
+				
+			gpoints[j][0] += (x2-x1) / g.intLeft; 
+			gpoints[j][1] += (y2-y1) / g.intLeft; 	 
+		}
+	
+	} 
+	
+	clearCanvas(); 
+	drawFrame(g.frame,false,"black");
+	
+	--g.intLeft; 
+	
+	setTimeout(interpolateSched,50);  
 }
 
 // == addPath == 
