@@ -9,17 +9,13 @@
 
 <center>
 
-<button onclick = "addAndCopyFrame()" >New+Copy</button> 
-<br /> 
-
-<button id="npB" onclick = "addFrame()" >New Frame</button> 
-
-<button id="copyPrev" onclick = "copyPrevFrame()" > copy prev </button> 
+<button onclick = "addAndCopyFrame()" >New Copy</button> 
+<button id="npB" onclick = "addFrame()" >New Scratch</button> 
 <br />
 <button id="prevFrame" onclick = "prevFrame()" > << </button> 
 <button id="nextFrame" onclick = "nextFrame()" > >> </button> 
 <br />
-<button id="playB" onclick = "playClip()"  > Play </button> 
+<button id="playB" onclick = "togglePlay()"  > Play </button> 
 <br />
 </center>
 
@@ -95,8 +91,15 @@ function init() {
 
 // == addAndCopyFrame == 
 function addAndCopyFrame() {
-	addFrame();
-	copyPrevFrame();
+	
+	g.cFrame = newFrame(); 
+	g.cClip.frames.push(g.cFrame);
+	g.cClip.sIdx = g.cClip.frames.length - 1;
+	
+	copyFrame(g.cClip.frames[g.cClip.sIdx-1], g.cClip.frames[g.cClip.sIdx]);
+	g.cPath = g.cFrame.paths[g.cFrame.sIdx]; 
+	
+	redraw(); 
 }
 
 // == addFrame == 
@@ -141,33 +144,54 @@ function copyFrame(sFrame,dFrame) {
 	dFrame.isCopy = true; 
 	for(var i=0; i < sFrame.paths.length; ++i) {
 		dFrame.paths.push(newPath()); 
-		for(var j=0; j < sFrame.paths[i].points.length; ++j)
+		for(var j=0; j < sFrame.paths[i].points.length; ++j) {
 			dFrame.paths[i].points.push( clonePoint(sFrame.paths[i].points[j])); 
-			dFrame.paths[i].isClosed = sFrame.paths[i].isClosed; 
+		}
+		dFrame.paths[i].isClosed = sFrame.paths[i].isClosed; 
+		dFrame.paths[i].sIdx = sFrame.paths[i].sIdx;		
 	} 
-	dFrame.sIdx = dFrame.paths.length-1; 
+	dFrame.sIdx = sFrame.sIdx; 
 }
 
-// == copyPrevFrame == 
-function copyPrevFrame() {
-	if (g.cClip.sIdx ==0)
+
+// == makeClipCycledIfPossible == 
+function makeClipCycledIfPossible() {
+
+	var isCyc = true, 
+		fFrame = g.cClip.frames[0], 
+		lFrame = g.cClip.frames[g.cClip.frames.length-1]; 
+	
+	if(fFrame.paths.length == lFrame.paths.length) {
+		for(var i=0; i < fFrame.paths.length; ++i)
+			if(fFrame.paths[i].points.length != lFrame.paths[i].points.length) {
+				isCyc = false; 
+				break; 
+			}
+	} else 
+		isCyc = false;
+
+	fFrame.isCopy = isCyc; 
+}
+
+// == togglePlay == 
+function togglePlay() {
+	
+	if(g.cClip.frames.length < 2)
 		return; 
-	copyFrame(g.cClip.frames[g.cClip.sIdx-1], g.cClip.frames[g.cClip.sIdx]);	
-
-	redraw(); 
-}
-
-// == playClip == 
-function playClip() {
-	if(! g.isPlayed) { 
+	
+	if(! g.isPlayed) {
+		makeClipCycledIfPossible(); 		
 		document.getElementById("playB").innerHTML = "Stop"; 
 		g.isPlayed = true; 
-		g.cPlay = 0;
+		if(g.cClip.frames[1].isCopy)
+			g.cPlay = 1;
+		else 
+			g.cPlay = 0;
 		playSched(); 
 	} 
 	else {
 		g.isPlayed = false; 
-		document.getElementById("playB").innerHTML = "Play"; 
+		document.getElementById("playB").innerHTML = "Play";		  
 	}
 }
 
@@ -187,6 +211,8 @@ function playSched() {
 		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
 		if(g.isPlayed)
 			setTimeout(playSched,200);
+		else
+			redraw(); 
 }
 
 function interpolateStart() {
@@ -205,10 +231,14 @@ function interpolateStart() {
 
 // == interpulateSched == 
 function interpolateSched() {
+	if (!g.isPlayed) {
+		redraw(); 
+		return; 
+	}
+	
 	if (g.intLeft == 0) {
 		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
-		if(g.isPlayed)
-			setTimeout(playSched,200); 
+		setTimeout(playSched,200); 
 		return; 
 	}	
 	
