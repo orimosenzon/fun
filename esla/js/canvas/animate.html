@@ -261,6 +261,10 @@ function addPathWithClick(e) {
 
 // == redraw() == 
 function redraw() {
+
+	if(g.isPlayed)
+		return; 
+		
 	clearCanvas();  
 	if (g.cClip.sIdx > 0)
 		drawFrame(g.cClip.frames[g.cClip.sIdx - 1], false, "gray"); 
