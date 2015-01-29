@@ -2,12 +2,13 @@
 <html>
 <body  onload = "init()"> 
 
+<center>
+
 
 <h1 id="title1" align = "center"> Animate </h1>
-<canvas id="myCanvas" width="1500" height="500"></canvas>
+<canvas id="myCanvas" width="1500" height="700"></canvas>
 <br /> 
 
-<center>
 
 <button onclick = "addAndCopyFrame()" >New Copy</button> 
 <button id="npB" onclick = "addFrame()" >New Scratch</button> 
@@ -16,7 +17,10 @@
 <button id="nextFrame" onclick = "nextFrame()" > >> </button> 
 <br />
 <button id="playB" onclick = "togglePlay()"  > Play </button> 
+<br /> <br /> 
+<button id="clearB" onclick = "clearAll()"  > Clear </button> 
 <br />
+
 </center>
 
 <h1 id="o1">  </h1>
@@ -80,13 +84,16 @@ function init() {
 	g.context = g.canvas.getContext('2d');
 	
 	g.canvas.addEventListener("mousedown", mouseDown ,false); 
+	g.canvas.addEventListener("dblclick", mouseDbClick ,false); 
+	
 	g.canvas.addEventListener("mouseup", mouseUp ,false); 
 	g.canvas.addEventListener("mousemove", mouseMove ,false); 
 	g.canvas.addEventListener("mousewheel",mouseWheel,false);
 
-	clearCanvas();
 	g.cClip = newClip();
 	addFrame(); 
+
+	clearCanvas();
 }
 
 // == addAndCopyFrame == 
@@ -100,6 +107,11 @@ function addAndCopyFrame() {
 	g.cPath = g.cFrame.paths[g.cFrame.sIdx]; 
 	
 	redraw(); 
+}
+
+// == clearAll == 
+function clearAll() {
+	init(); 
 }
 
 // == addFrame == 
@@ -522,9 +534,17 @@ function addSegmentToPath(e,path) {
 	points.push([x3,y3]);
 }
 	
+	
+function mouseDbClick(e) {
+
+	g.cPath.sIdx = 0; 
+}
+
+
 // == mouse press handle == 
 function mouseDown(e) {
-
+	
+	
 	if(didSelectJoint(e))
 		return; 
 
@@ -664,8 +684,19 @@ function clearCanvas() {
 						  // Without this, the last stroke doesn't get deleted 
 	g.context.clearRect(0, 0, g.canvas.width, g.canvas.height);
 
+	g.context.strokeStyle = 'gray';	
 	g.context.rect(0,0, g.canvas.width, g.canvas.height);
-	g.context.strokeStyle = 'black';
+	
+
+	var frameNum; 
+	if (g.isPlayed)
+		frameNum = g.cPlay; 
+	else
+		frameNum = g.cClip.sIdx; 
+	
+	g.context.fillStyle  = "gray"; 	
+	g.context.fillText("frame: " + frameNum,50,50);
+
 	g.context.stroke();
 
 }
