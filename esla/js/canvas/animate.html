@@ -88,7 +88,19 @@ function init() {
 	
 	g.canvas.addEventListener("mouseup", mouseUp ,false); 
 	g.canvas.addEventListener("mousemove", mouseMove ,false); 
-	g.canvas.addEventListener("mousewheel",mouseWheel,false);
+	
+	// == copied from somewhere for ff cmopatibilitied issues 
+	var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel" //FF doesn't recognize mousewheel as of FF3.x
+ 
+	if (g.canvas.attachEvent) //if IE (and Opera depending on user setting)
+		g.canvas.attachEvent("on"+mousewheelevt, mouseWheel)
+	else if (g.canvas.addEventListener) //WC3 browsers
+		g.canvas.addEventListener(mousewheelevt, mouseWheel, false)
+	// == 
+	
+	
+	
+	//g.canvas.addEventListener("mousewheel",mouseWheel,false);
 
 	g.cClip = newClip();
 	addFrame(); 
@@ -495,6 +507,7 @@ function didSelectControl(e,path) {
 	}
 	return false; 
 }
+
 	
 // == addSegmentToPath == 
 
@@ -504,7 +517,6 @@ function addSegmentToPath(e,path) {
 	
 	var	n = points.length-1,
 		x3 = canvas2dataX(e.offsetX), y3 = canvas2dataY(e.offsetY); 
-				
 	if (n < 0) { // first point in path 
 		points.push([x3,y3]); 
 		return; 
@@ -540,10 +552,17 @@ function mouseDbClick(e) {
 	g.cPath.sIdx = 0; 
 }
 
+// == copied from an answer in stack overflow to fix firefox's incompatability 
+function fixEvent(e) {
+	if(!e.hasOwnProperty('offsetX')) {
+		e.offsetX = e.layerX - e.currentTarget.offsetLeft;
+		e.offsetY = e.layerY - e.currentTarget.offsetTop;
+	}
+}
 
 // == mouse press handle == 
 function mouseDown(e) {
-	
+	fixEvent(e);
 	
 	if(didSelectJoint(e))
 		return; 
@@ -570,6 +589,8 @@ function mouseDown(e) {
 
 // == mouseUp == 
 function mouseUp(e) {
+	fixEvent(e);
+	
 	var path = g.cPath; 
 	var points = path.points; 
 	
@@ -612,6 +633,8 @@ function changePoint(idx,xv,yv) {
 
 // == mouseMove == 
 function mouseMove(e) {
+	fixEvent(e);
+	
 	var path = g.cPath,
         points = path.points; 
 		
@@ -653,14 +676,26 @@ function mouseMove(e) {
 	redraw();  
 } 
 
+// == copied from stack overflow for firefox compatabilities issues == 
+function extractDelta(e) {
+    if (e.wheelDelta) {
+        return e.wheelDelta;
+    }
+ 
+    return e.detail*(-120);
+ }
+
 // == mouseWheel == 
 function mouseWheel(e) {
+	fixEvent(e);
 
     var x = canvas2dataX(e.offsetX),
 		y = canvas2dataY(e.offsetY), 
 		f; 
     
-    if(e.wheelDelta > 0) 
+    var d = extractDelta(e); 
+    
+    if(d > 0) 
         f = v.df
      else 
         f = 1 / v.df;  
