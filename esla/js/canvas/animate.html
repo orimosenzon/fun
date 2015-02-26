@@ -1,32 +1,30 @@
 <!DOCTYPE html>
 <html>
-<body  onload = "init()"> 
+<head>
+	<title> Animate </title>
+</head>
 
-<center>
+<body onload="init()"> 
 
+	<center>
+		<h1 id="title1" align="center"> Animate </h1>
+		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
 
-<h1 id="title1" align = "center"> Animate </h1>
-<canvas id="myCanvas" width="1500" height="700"></canvas>
-<br /> 
+		<button onclick="addAndCopyFrame()">New Copy</button> 
+		<button id="npB" onclick="addFrame()">New Scratch</button> 	<br />
 
+        <button id="prevFrame" onclick="prevFrame()"> << </button> 
+		<button id="nextFrame" onclick="nextFrame()"> >> </button> <br />
 
-<button onclick = "addAndCopyFrame()" >New Copy</button> 
-<button id="npB" onclick = "addFrame()" >New Scratch</button> 
-<br />
-<button id="prevFrame" onclick = "prevFrame()" > << </button> 
-<button id="nextFrame" onclick = "nextFrame()" > >> </button> 
-<br />
-<button id="playB" onclick = "togglePlay()"  > Play </button> 
-<br /> <br /> 
-<button id="clearB" onclick = "clearAll()"  > Clear </button> 
-<br />
+		<button id="playB" onclick="togglePlay()"> Play </button> <br /> 
+		<br /> 
+		<button id="clearB" onclick="clearAll()"> Clear </button>  <br />
 
-</center>
+	</center>
 
-<h1 id="o1">  </h1>
-
+	<h1 id="o1">  </h1>
  
-<script>
+	<script>
 
 // == global vars == 
 var g = {
@@ -47,6 +45,9 @@ var g = {
 	INT_FRAMES:40,     // number of frames in interpolation 
 	intLeft:0,        // number of frame left in this interpolation 
 	frame:null,       // temporary frame for interpolation  
+
+	commands:[],     // list of commands for undo/redo 
+	cIdx:0,          // index of the command that is bout to be executed   
 }; 
 
 // == view == (single for now) 
@@ -89,6 +90,8 @@ function init() {
 	g.canvas.addEventListener("mouseup", mouseUp ,false); 
 	g.canvas.addEventListener("mousemove", mouseMove ,false); 
 	
+	window.addEventListener( "keypress", keyDown, false ); 
+
 	// == copied from somewhere for ff cmopatibilitied issues 
 	var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel" //FF doesn't recognize mousewheel as of FF3.x
  
@@ -107,6 +110,16 @@ function init() {
 
 	clearCanvas();
 }
+
+function addCommand(command) {
+	++g.cIdx;
+	if(g.cIdx < g.commands.length) 
+		g.commands[g.cIdx] = command; 		
+	else 
+		g.commands.push(command); 
+	
+}
+
 
 // == addAndCopyFrame == 
 function addAndCopyFrame() {
@@ -306,7 +319,12 @@ function addPath() {
 function addPathWithClick(e) { 
 
 	addPath(); 
-	g.cPath.points.push([canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]); 
+	var command = newFirstPointCommand(g.cPath, 
+						 canvas2dataX(e.offsetX),
+						 canvas2dataY(e.offsetY)); 
+	
+	command.redo(); 
+	addCommand(command); 
 	
 	redraw(); 
 }
@@ -508,48 +526,96 @@ function didSelectControl(e,path) {
 	return false; 
 }
 
+
+function newFirstPointCommand(path,x,y) {
+	return {
+			name:"addFirstPoint",
+			x:x, y:y, 
+			path: path,
+			redo:function() {
+				this.path.points.push([this.x, this.y]);
+			},
+			undo: function() {
+				this.path.points = []; 
+			}
+		} 
+}
 	
 // == addSegmentToPath == 
 
 function addSegmentToPath(e,path) {
 	
 	var points = path.points; 
-	
+
 	var	n = points.length-1,
 		x3 = canvas2dataX(e.offsetX), y3 = canvas2dataY(e.offsetY); 
+	
 	if (n < 0) { // first point in path 
-		points.push([x3,y3]); 
+		var command = newFirstPointCommand(path,x3,y3); 
+		addCommand(command); 
+		command.redo();  
 		return; 
 	}
+
 
   	var x0 = points[n][0], y0 = points[n][1], 
    		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
    		  x1 = x0+xm, y1 = y0+ym; 
 	
+	var xb4,yb4, 
+		xb4n,yb4n; 
 	if (n>0) { // if the path already contains a segment
-		var xq = 2*x0-points[n-1][0], 
-			yq =2*y0 - points[n-1][1]; 
+		xb4 = points[n-1][0], yb4 = points[n-1][1]; 
+		var xq = 2*x0- xb4, 
+			yq =2*y0 - yb4; 
 		
 		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last control point of the last segment 
 		y1 = (y1+yq)/2; 
 	
-		points[n-1][0] = 2*x0-x1; // also fix that last control point 
-		points[n-1][1] = 2*y0-y1; // to be symmetric to our new (x1,y1) 
+		xb4n = 2*x0-x1; // also fix that last control point 
+		yb4n = 2*y0-y1; // to be symmetric to our new (x1,y1) 
 	}
-	
-	points.push([x1,y1]); 
 	
 	var  x2 = x0+xm*2, y2 = y0+ym*2;   
 
-	points.push([x2,y2]); 
-	
-	points.push([x3,y3]);
+	var command = {
+		name:"addSegment", 
+		path:path, 
+		xb4: xb4, yb4: yb4, 
+		xb4n: xb4n, yb4n: yb4n, 
+		x1:x1, y1:y1,
+		x2:x2, y2:y2,		
+		x3:x3, y3:y3,		
+
+		redo: function() {
+			var points = this.path.points;   
+			var n = points.length-1; 
+			if(n>0) {
+				points[n-1][0] = this.xb4n; 
+				points[n-1][1] = this.yb4n; 
+			}
+			points.push([this.x1, this.y1]); 			
+			points.push([this.x2, this.y2]); 			
+			points.push([this.x3 ,this.y3]);
+		}, 
+		undo: function() {
+			var points = this.path.points; 
+		    points.splice(points.length-3);
+		    var n = points.length-1;
+		    if(n>0) {
+		    	points[n-1][0] = this.xb4; 
+		    	points[n-1][1] = this.yb4; 
+		    }
+		},
+	};
+	addCommand(command); 
+	command.redo(); 
 }
 	
 	
 function mouseDbClick(e) {
 
-	g.cPath.sIdx = 0; 
+//	g.cPath.sIdx = 0; 
 }
 
 // == copied from an answer in stack overflow to fix firefox's incompatability 
@@ -624,12 +690,27 @@ function mouseUp(e) {
 	path.dIdx = -1; 
 }
 
-// == changePoint == 
-function changePoint(idx,xv,yv) {
-	var points = g.cPath.points; 
-	points[idx][0] = canvas2dataX(data2canvasX(points[idx][0])+xv); 
-	points[idx][1] = canvas2dataY(data2canvasY(points[idx][1])+yv); 
+
+// == keyDown == 
+function keyDown(e) {
+	if(e.keyCode == 26) { // ctr+z 
+		if(g.cIdx ==0)
+			return; 
+		--g.cIdx;
+		g.commands[g.cIdx].undo(); 		 		
+		redraw(); 
+		return; 
+	}
+	if(e.keyCode == 25) { // ctr+y 
+		if(g.cIdx == g.commands.length)
+			return; 		
+		g.commands[g.cIdx].redo(); 		 		
+		++g.cIdx;
+		redraw(); 
+	}
+	
 }
+
 
 // == mouseMove == 
 function mouseMove(e) {
@@ -640,39 +721,72 @@ function mouseMove(e) {
 		
 	if (path.dIdx == -1)
 		return; 
-		
-	var dx = e.offsetX - data2canvasX(points[path.dIdx][0]), 
-	    dy = e.offsetY - data2canvasY(points[path.dIdx][1]),  
-		last = points.length-1;
 	
-	points[path.dIdx] =  [ canvas2dataX(e.offsetX), canvas2dataY(e.offsetY) ]; 
+	var x = canvas2dataX(e.offsetX), y = canvas2dataY(e.offsetY); 
+
+	var dx = x - points[path.dIdx][0], 
+	    dy = y - points[path.dIdx][1],  
+		last = points.length-1;
+
+	var command = {
+		dx:dx, dy:dy,
+		points: points,  
+		idxs: [path.dIdx], 
+		redo: function() {
+			for(var i=0; i<this.idxs.length; ++i) {
+				points[this.idxs[i]][0] += this.dx; 
+				points[this.idxs[i]][1] += this.dy; 
+			}
+			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
+				points[this.otherIdx][0] -= this.dx; 
+				points[this.otherIdx][1] -= this.dy; 
+			}
+			
+		},
+		undo: function() {
+			for(var i=0; i<this.idxs.length; ++i) {
+				points[this.idxs[i]][0] -= this.dx; 
+				points[this.idxs[i]][1] -= this.dy; 
+			}
+			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
+				points[this.otherIdx][0] += this.dx; 
+				points[this.otherIdx][1] += this.dy; 
+			}
+		
+		}, 
+	}; 	
 
 	var pointType = path.dIdx % 3;  // 0 - joint; 1,2 - control 
    
     if(!path.isClosed) {
-	    if(pointType ==0) { // drag joint point : control point escort 
-		    if (path.dIdx < last) {
-				changePoint(path.dIdx+1,dx,dy); 
-		    } 
-		    if (path.dIdx > 0) {
-				changePoint(path.dIdx-1,dx,dy); 
-		    } 
+	    if(pointType ==0) { // drag joint point : control point escort
+	    	command.name = "moveJoint"; 
+		    if (path.dIdx < last) 
+		 		command.idxs.push(path.dIdx+1);      
+		    if (path.dIdx > 0)
+		    	command.idxs.push(path.dIdx-1);  
 	    } else { // drag control point: other control reverse mirror  
-		    var otherControl = path.dIdx + (pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
-		    if(otherControl > 0 && otherControl <last) {
-			    changePoint(otherControl,-dx,-dy); 
-		    }	
+		    command.name = "moveControl"; 
+			var otherControl = path.dIdx + (pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    if(otherControl > 0 && otherControl <last) 
+			   command.otherIdx = otherControl;  
 	    }
     } else {
         var n = points.length; 
 	    if(pointType ==0) { // drag joint point : control point escort 
-			changePoint((path.dIdx+1)%n,dx,dy); 
-			changePoint((path.dIdx-1+n)%n,dx,dy); 	
-	    } else { // drag control point: other control reverse mirror  
+			command.name = "moveJoint"; 
+			command.idxs.push((path.dIdx+1)%n); 
+			command.idxs.push((path.dIdx-1+n)%n); 
+	    } else { // drag control point: other control reverse mirror
+			command.name = "moveControl";
 		    var otherControl = (path.dIdx+(pointType-1)*4-2 +n)%n;  
-		    changePoint(otherControl,-dx,-dy); 	    
+		    command.otherIdx = otherControl; 
 	    }
     }	
+	
+	addCommand(command); 
+	command.redo(); 
+	
 	redraw();  
 } 
 
@@ -813,8 +927,24 @@ function print(str) {
 	document.getElementById("o1").innerHTML += str +"<br />"; 
 }
 
+function check() {
+	g.commands.push({
+		name:"add",
+		action: function() {
+			print("*add*"); 
+		}
+	}); 
+	g.commands.push({
+		name:"move",
+		x:10, y:20, 
+		action: function() {
+			print("*move* ("+this.x+","+this.y+")"); 
+		}
+	});
+	for (var i=0; i< g.commands.length; ++i)	
+		g.commands[i].action(); 
+}
 
 </script> 
-
-</body> 
-</html> 
+</body>
+</html>
