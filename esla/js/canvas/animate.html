@@ -48,6 +48,8 @@ var g = {
 
 	commands:[],     // list of commands for undo/redo 
 	cIdx:0,          // index of the command that is bout to be executed   
+
+	firstMove:true, // first move of mouseMove
 }; 
 
 // == view == (single for now) 
@@ -652,13 +654,40 @@ function mouseDown(e) {
 	redraw();  
 }
 
+// == keyDown == 
+function keyDown(e) {
+	if(e.keyCode == 26) { // ctr+z 
+		if(g.cIdx ==0)
+			return; 
+		--g.cIdx;
+		g.commands[g.cIdx].undo(); 		 		
+		redraw(); 
+		return; 
+	}
+	if(e.keyCode == 25) { // ctr+y 
+		if(g.cIdx == g.commands.length)
+			return; 		
+		g.commands[g.cIdx].redo(); 		 		
+		++g.cIdx;
+		redraw(); 
+	}
+	
+}
 
 // == mouseUp == 
 function mouseUp(e) {
 	fixEvent(e);
 	
+	
 	var path = g.cPath; 
 	var points = path.points; 
+	
+	g.firstMove = true; 
+	if(path.dIdx != -1) { // update the dragged command to reflect the total delta 
+		var c = g.commands[g.cIdx-1]; 
+		c.dx =  points[path.dIdx][0]- c.x0; 
+		c.dy =  points[path.dIdx][1]- c.y0; 
+	}	
 	
 	var last = points.length-1; 
 	if (last <= 0 || path.isClosed) {
@@ -691,26 +720,6 @@ function mouseUp(e) {
 }
 
 
-// == keyDown == 
-function keyDown(e) {
-	if(e.keyCode == 26) { // ctr+z 
-		if(g.cIdx ==0)
-			return; 
-		--g.cIdx;
-		g.commands[g.cIdx].undo(); 		 		
-		redraw(); 
-		return; 
-	}
-	if(e.keyCode == 25) { // ctr+y 
-		if(g.cIdx == g.commands.length)
-			return; 		
-		g.commands[g.cIdx].redo(); 		 		
-		++g.cIdx;
-		redraw(); 
-	}
-	
-}
-
 
 // == mouseMove == 
 function mouseMove(e) {
@@ -723,12 +732,25 @@ function mouseMove(e) {
 		return; 
 	
 	var x = canvas2dataX(e.offsetX), y = canvas2dataY(e.offsetY); 
-
 	var dx = x - points[path.dIdx][0], 
-	    dy = y - points[path.dIdx][1],  
-		last = points.length-1;
+	    dy = y - points[path.dIdx][1];
+	
+
+	if (!g.firstMove) {
+		var c = g.commands[g.cIdx-1]; 
+		c.dx = dx; 
+		c.dy = dy; 
+		c.redo(); 
+		redraw();  
+		return; 
+	}
+	
+	g.firstMove = false; 
+	
 
 	var command = {
+		x0: points[path.dIdx][0], 
+		y0: points[path.dIdx][1], 
 		dx:dx, dy:dy,
 		points: points,  
 		idxs: [path.dIdx], 
@@ -757,7 +779,8 @@ function mouseMove(e) {
 	}; 	
 
 	var pointType = path.dIdx % 3;  // 0 - joint; 1,2 - control 
-   
+	var last = points.length-1;
+	
     if(!path.isClosed) {
 	    if(pointType ==0) { // drag joint point : control point escort
 	    	command.name = "moveJoint"; 
