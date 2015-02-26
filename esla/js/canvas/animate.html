@@ -114,14 +114,13 @@ function init() {
 }
 
 
-/// is that ok?
-function addCommand(command) {
-	++g.cIdx;
+
+function addCommand(command) {	
 	if(g.cIdx < g.commands.length) 
 		g.commands[g.cIdx] = command; 		
 	else 
 		g.commands.push(command); 
-	
+	++g.cIdx;	
 }
 
 // == addAndCopyFrame == 
