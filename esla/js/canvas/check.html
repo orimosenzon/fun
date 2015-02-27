@@ -4,46 +4,36 @@
 <!-- == page == -->
 <h1 id="title1"> Check page </h1>
 
-<textarea id="text1" cols = "100" rows = "3">  </textarea>
-
 <button type = "button" onclick = "buttonCheck()"> check </button> 
-<button type = "button" onclick = "buttonEval()"> eval as js </button> 
 
 <h1 id="title2"> output goes here: </h1>
 
 <!--   == script == --> 
 <script>
 
-var global = {
 
-    foo: function() {
-        print("foo!"); 
-        global.x ++; 
-    },
-
-    bar: function() {
-    }, 
-    
-    x:5,
-    y:"ori", 
-};
 
 function doOnload() {
     print("ready"); 
 }
 
+function buttonCheck() {
+	s = "12.3,-3.32,4.56,-1.001";
+	var i = 0; 
+	while(i < s.length) {
+		var i1 = s.indexOf(",",i); 
+		if (i1==-1)
+			i1 = s.length; 
+		print(parseFloat(s.slice(i,i1)));
+		i = i1+1;  	
+	}
+	
+}
+
 function print(str) {
     document.getElementById("title2").innerHTML += str+"<br>"; 
 }
-function buttonEval() {
-    document.getElementById("text1").value = "return value:\n"+eval(document.getElementById("text1").value);
-    print("ok, man"); 
-}
 	
-function buttonCheck() {
-     global.foo(); 
-     print(global.x+global.y); 
-}
 
 
 

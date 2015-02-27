@@ -81,6 +81,53 @@ function newClip() {
 	return { frames:[], sIdx:-1 }; 
 }
 
+// == data2string == 
+function data2string() {
+	var s = "{"; 
+	for(var i=0; i< g.cClip.frames.length; ++i) {
+		s+="<";
+		var frame = g.cClip.frames[i]; 
+		for(var j=0; j< frame.paths.length; ++j) {
+			s+="["; 
+			var path = frame.paths[j]; 
+			for(var k=0; k<path.points.length; ++k) {
+				var x= path.points[k][0];
+				var y= path.points[k][1];
+				s+="("+x+","+y+")"; 
+			}
+			s+="]"; 
+		}
+		s+=">";	
+	}
+	s+="}"; 
+	return s; 
+}
+
+// == string2data == 
+function string2data(s) {
+	var i=0; 
+	i += 1; // "{"
+	while(s[i] != "}") {
+		i+=1; // "<"
+		while(s[i] != ">") {
+			i+=1; // "["
+			while(s[i] != "]") {
+				i+=1; //"(" 
+				var i1 = s.indexOf(",",i); 
+				var x = parseFloat(s.slice(i,i1));
+				i = i1+1; 
+				i1 = s.indexOf(")",i);  
+				var y = parseFloat(s.slice(i,i1));
+				i = i1+1; 
+				print("*"+x+","+y+"*"); 
+			}
+			i+=1; // "]"
+		}
+		i+=1; // ">"
+	}
+	i+=1; // "}" 
+}
+
 // == init == 
 function init() {
 	g.canvas = document.getElementById('myCanvas');
@@ -656,6 +703,7 @@ function mouseDown(e) {
 
 // == keyDown == 
 function keyDown(e) {
+	
 	if(e.keyCode == 26) { // ctr+z 
 		if(g.cIdx ==0)
 			return; 
@@ -671,7 +719,11 @@ function keyDown(e) {
 		++g.cIdx;
 		redraw(); 
 	}
-	
+	if(e.keyCode == 32) { // space
+		var s = data2string(); 
+		print(s); 
+		string2data(s); 
+	}
 }
 
 // == mouseUp == 
@@ -844,6 +896,8 @@ function mouseWheel(e) {
 
     redraw(); 
 }
+
+
 
 
 // = Utils = 
