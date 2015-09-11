@@ -1,0 +1,21 @@
+#include <iostream> 
+#include "Logger.hh" 
+
+Logger* Logger::pLoggerInstance = 0; 
+
+
+Logger* Logger::getInstance() {
+    if(! pLoggerInstance) 
+	pLoggerInstance = new Logger(); 
+    return pLoggerInstance; 
+}
+ 
+
+void Logger::foo() {
+    std::cout << "loging... loging.. \n"; 
+}
+
+int main() {
+    Logger::getInstance()->foo();
+    Logger::getInstance()->foo();
+}

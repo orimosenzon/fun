@@ -1,0 +1,10 @@
+void myMouse(int btn, int state, int x, int y) {..
+..
+    if(btn==GLUT_LEFT_BUTTON && state==GLUT_DOWN && m!=GLUT_ACTIVE_SHIFT && !selecting && s != GLUT_MENU_IN_USE )  
+..}
+
+void myMotion(int x, int y) {..}
+
+in main:
+    glutMouseFunc (myMouse);
+    glutMotionFunc(myMotion);

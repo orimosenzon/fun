@@ -1,0 +1,6 @@
+class Logger {
+    static Logger* pLoggerInstance; 
+ public:
+    static Logger* getInstance();
+    void foo(); 
+}; 

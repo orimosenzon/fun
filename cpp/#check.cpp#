@@ -1,0 +1,11 @@
+
+Logger logger; 
+
+
+Class A {
+ public:
+  A() { logger.log("an A object was created"); }
+};
+
+A a; // at this stage we do not know if logger was already created  
+ 
