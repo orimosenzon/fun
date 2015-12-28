@@ -29,9 +29,9 @@ float s = 0.0;
 GLfloat angle1 = 0.0, angle2 = 0.0;
 
 void 
-output(GLfloat x, GLfloat y, char *text)
+output(GLfloat x, GLfloat y, const char *text)
 {
-  char *p;
+  const char *p;
 
   glPushMatrix();
   glTranslatef(x, y, 0);
@@ -85,7 +85,7 @@ display(void)
   glPushMatrix();
   glLoadIdentity();
   /* Rotate text slightly to help show jaggies. */
-  glRotatef(4, 0.0, 0.0, 1.0);
+  glRotatef(2, 0.0, 0.0, 1.0);
   output(200, 225, "This is antialiased.");
   glDisable(GL_LINE_SMOOTH);
   glDisable(GL_BLEND);
@@ -143,7 +143,7 @@ main(int argc, char **argv)
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_LINE_SMOOTH);
-  glLineWidth(2.0);
+  glLineWidth(4.0);
 
   glMatrixMode(GL_PROJECTION);
   gluPerspective( /* field of view in degree */ 40.0,
