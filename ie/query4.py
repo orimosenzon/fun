@@ -6,8 +6,11 @@ apiUrl = 'http://en.wikipedia.org/w/api.php'
 def membersInCategory(cname):
     params = {'action': 'query', 'format': 'json', 'list':'categorymembers'}
     params['cmtitle']='Category:'+cname
-#    apiRequest(params)
-    query(params)
+    for item in contQuery(params):
+        mems = item['categorymembers']
+        for mem in mems:
+            print(mem['title'])
+        print('\n\n  ** end of chunck ** \n\n')    
 
 # == all templates in page == 
 def templatesInPage(pname):
@@ -22,31 +25,32 @@ def apiRequest(params):
 
 def query(params):
     for item in contQuery(params):
-        print(item) 
+        print(item)
+        print('\n\n  ** end of chunck ** \n\n') 
 
 def contQuery(params):
     params['generator'] = 'allpages'
     lastContinue = {'continue': ''}
     while True:
-        req = params.copy()
+        params1 = params.copy()
 
-        req.update(lastContinue)
+        params1.update(lastContinue)
 
-        result = requests.get(apiUrl, params = params).json()
+        result = requests.get(apiUrl, params = params1).json()
 
         if 'error' in result: raise Error(result['error'])
-        if 'warnings' in result: print(result['warnings'])
+        if 'warnings' in result: print("\n\n *Warning* \n\n",result['warnings'])
         if 'query' in result: yield result['query']
         if 'continue' not in result: break
         lastContinue = result['continue']    
 
 # == main ==
 
-#membersInCategory('21st-century_American_male_actors')
+membersInCategory('21st-century_American_male_actors')
 #membersInCategory('American_male_voice_actors')
 
 
-templatesInPage("Brad_pitt")
+#templatesInPage("Brad_pitt")
 
 
 
@@ -57,6 +61,17 @@ templatesInPage("Brad_pitt")
 
 
 
+# == header attempt ==
+##headers = {'user_agent':'MyCoolTool/1.1 (https://example.org/MyCoolTool/; MyCoolTool@example.org) BasedOnSuperLib/1.4'}
+##requests.post(apiUrl, headers=headers)
+
+##headers = {'Api-User-Agent':'RExample/1.0'}
+##requests.post(apiUrl, headers=headers)
+
+
+##headers = {'content-type': 'application/x-www-form-urlencoded'}
+##r4 = requests.post(apiUrl, headers=headers)
+##print (r4.text)
 
 
 
