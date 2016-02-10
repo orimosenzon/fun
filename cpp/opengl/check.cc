@@ -3,9 +3,9 @@
 #include <GL/glut.h>
 #include <math.h> 
 
-GLfloat light_diffuse[] = {0.0, 1.0, 0.0, 1.0};  /* Red diffuse light. */
+GLfloat light_diffuse[] = {0.0, 0.0, 1.0, 0.1};  /* Red diffuse light. */
 
-GLfloat light_position[] = {1.0, 1.0, 1.0, 0.0};  /* Infinite light location. */
+GLfloat light_position[] = {1.0, 0.0, 1.0, 0.0};  /* Infinite light location. */
 
 GLfloat n[6][3] = {  /* Normals for the 6 faces of a cube. */
   {-1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0},

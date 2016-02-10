@@ -1,7 +1,12 @@
-all: rot check trian scrib ex1 ex2 ex5 
+all: rot check check1 trian scrib ex1 ex2 ex5 
 
 check: check.cc
 	g++ check.cc -o check -lGL -lGLU -lglut
+
+check1: check1.cc
+	g++ check1.cc -o check1 -lGL -lGLU -lglut
+
+
 rot: rot.cc
 	g++ rot.cc -o rot -lGL -lGLU -lglut
 

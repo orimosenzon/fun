@@ -1,27 +1,53 @@
 import requests
+import mwparserfromhell
 
 apiUrl = 'http://en.wikipedia.org/w/api.php'
+
+def dates(name):
+    params = {'action': 'query', 'prop':'revisions', 'rvprop':'content','rvsection':'0','format': 'json'}
+    params['titles'] = name
+    result = requests.get(apiUrl, params = params).json()
+    text = list(result["query"]["pages"].values())[0]["revisions"][0]["*"]
+
+    wiki = mwparserfromhell.parse(text)
+
+    birth_data = wiki.filter_templates(matches="Birth date")[1]
+    birth_year = birth_data.get(1).value
+    birth_month = birth_data.get(2).value
+    birth_day = birth_data.get(3).value
+
+    death_data = wiki.filter_templates(matches="Death date")[1]
+    death_year = death_data.get(1).value
+    death_month = death_data.get(2).value
+    death_day = death_data.get(3).value
+
+    print("born: ",birth_day,".",birth_month,".",birth_year)
+    print("died: ",death_day,".",death_month,".",death_year)
 
 # == all of a category == 
 def membersInCategory(cname):
     params = {'action': 'query', 'format': 'json', 'list':'categorymembers'}
     params['cmtitle']='Category:'+cname
+
     for item in contQuery(params):
         mems = item['categorymembers']
         for mem in mems:
-            print(mem['title'])
+            name = mem['title']
+            print(name)
+##            try:
+##                dates(name)
+##            except Exception:
+##                pass
         print('\n\n  ** end of chunck ** \n\n')    
 
 # == all templates in page == 
 def templatesInPage(pname):
     params = {'action':'query', 'format':'json', 'prop':'templates'}
-    params['titles'] =  pname 
+    params['titles'] =  pname
+
     query(params)
 
 # == Query == 
-def apiRequest(params): 
-    result = requests.get(apiUrl, params = params).json()
-    print(result)
 
 def query(params):
     for item in contQuery(params):
@@ -46,20 +72,23 @@ def contQuery(params):
 
 # == main ==
 
+#membersInCategory('Kibbutzim')
 membersInCategory('21st-century_American_male_actors')
 #membersInCategory('American_male_voice_actors')
 
-
 #templatesInPage("Brad_pitt")
 
+#dates('Albert Einstein')
 
 
 
 
 
 
+## == leftovers == 
 
-
+# == ==
+# result['query']['pages']['1317804']['templates']
 
 # == header attempt ==
 ##headers = {'user_agent':'MyCoolTool/1.1 (https://example.org/MyCoolTool/; MyCoolTool@example.org) BasedOnSuperLib/1.4'}
@@ -89,3 +118,7 @@ membersInCategory('21st-century_American_male_actors')
 
 ## == all templates used in a page == 
 ## https://en.wikipedia.org/w/api.php?action=query&titles=almog&prop=templates
+
+
+# help sources:
+# http://stackoverflow.com/questions/12250580/parse-birth-and-death-dates-from-wikipedia
