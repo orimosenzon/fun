@@ -8,6 +8,11 @@
 
 	<center>
 		<h1 id="title1" align="center"> Animate </h1>
+		<form action="">
+			<input type="radio" name="state" value="arrow" onchange = "onPointerSelect()" checked = "checked"> Pointer 
+			<input type="radio" name="state" value="draw"  onchange = "onDrawSelect()" > Draw <br>
+		</form>
+
 		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
 
 		<button onclick="addAndCopyFrame()">New Copy</button> 
@@ -60,6 +65,8 @@ var g = {
 	cIdx:0,          // index of the command that is bout to be executed   
 
 	firstMove:true, // first move of mouseMove
+	
+	state:"pointer"  // can take the values: "pointer, draw... 
 }; 
 
 // == view == (single for now) 
@@ -178,6 +185,17 @@ function addCommand(command) {
 	else 
 		g.commands.push(command); 
 	++g.cIdx;	
+}
+
+// == state handles == 
+function onPointerSelect() {
+	g.state = "pointer";
+	print(g.state);
+}
+
+function onDrawSelect() {
+	g.state = "draw";
+	print(g.state);
 }
 
 // == addAndCopyFrame == 
