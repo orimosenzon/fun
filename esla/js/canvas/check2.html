@@ -21,6 +21,12 @@
 var g = {
 	canvas: null,  // the html canvas element 
 	context: null, // it's context 
+	lastx:0,
+	lasty:0,
+	x1:-1,
+	y1:-1, 
+	inDrug:false,
+	points:[], 
 }; 
 
 function init() {
@@ -30,15 +36,64 @@ function init() {
 
 	
 	g.canvas.addEventListener("mousedown", mouseDown ,false); 
-//	g.canvas.addEventListener("mouseup", mouseUp ,false); 
-//	g.canvas.addEventListener("mousemove", mouseMove ,false); 
+	g.canvas.addEventListener("mouseup", mouseUp ,false); 
+	g.canvas.addEventListener("mousemove", mouseMove ,false); 
 
 	clearCanvas();
 }
 
 function mouseDown(e) {
-	circle(e.offsetX,e.offsetY,20,"red"); 
-	print(e.offsetX); 
+	var x = e.offsetX; 
+	var y = e.offsetY; 
+	
+	circle(x, y, 20, "red"); 
+	g.lastx = x; 
+	g.lasty = y;
+	g.inDrug = true;
+	g.points.push([x,y])  
+}
+
+function redraw() {
+	for(var i=0; i < g.points.length; ++i) {
+		var x = g.points[i][0]; 
+		var y = g.points[i][1];  
+		circle(x, y, 20, "red");
+	}
+}
+
+function inInterval(a,a1,a2) {
+	print( (a1<a && a < a2) || (a2<a && a<a1) )
+	return ( (a1<a && a < a2) || (a2<a && a<a1) )	
+}
+
+function markSelections(x1,y1,x2,y2) {
+
+	for(var i=0; i < g.points.length; ++i) {
+		var x = g.points[i][0]; 
+		var y = g.points[i][1]; 
+		if( inInterval(x,x1,x2) && inInterval(y,y1,y2))
+			circle(x, y, 25, "cyan");
+	}
+}
+
+function mouseUp(e) {
+	rect(g.lastx, g.lasty, g.x1, g.y1,'white');
+	markSelections(g.lastx, g.lasty, g.x1, g.y1); 
+	g.x1 = -1;
+	g.y1 = -1;
+	g.inDrug = false; 
+	redraw(); 
+}
+
+function mouseMove(e) {
+	if(g.x1 != -1)
+		rect(g.lastx, g.lasty, g.x1, g.y1,'white');
+	redraw(); 	
+	if(g.inDrug) {
+		rect(g.lastx, g.lasty, e.offsetX, e.offsetY,'gray');
+		g.x1 = e.offsetX;
+		g.y1 = e.offsetY; 
+	} 
 }
 
 function print(str) {
@@ -59,7 +114,12 @@ function clearCanvas() {
 
 }
 
-
+function rect(x,y,x1,y1,c) {
+	g.context.beginPath();
+	g.context.strokeStyle = c;
+	g.context.rect(x,y, x1-x, y1-y);
+	g.context.stroke();
+}
 
 function circle(x,y,r,c) {
 
