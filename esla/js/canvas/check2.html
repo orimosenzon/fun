@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> Check </title>
+</head>
+
+<body onload="init()"> 
+
+	<center>
+		<h1 id="title1" align="center"> Check </h1>
+
+		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
+
+		<button id="clearB" onclick="clearCanvas()"> Clear </button>  <br />
+	</center>
+
+	<h1 id="o1">  </h1>
+ 
+	<script>
+
+var g = {
+	canvas: null,  // the html canvas element 
+	context: null, // it's context 
+}; 
+
+function init() {
+
+	g.canvas = document.getElementById('myCanvas');
+	g.context = g.canvas.getContext('2d');
+
+	
+	g.canvas.addEventListener("mousedown", mouseDown ,false); 
+//	g.canvas.addEventListener("mouseup", mouseUp ,false); 
+//	g.canvas.addEventListener("mousemove", mouseMove ,false); 
+
+	clearCanvas();
+}
+
+function mouseDown(e) {
+	circle(e.offsetX,e.offsetY,20,"red"); 
+	print(e.offsetX); 
+}
+
+function print(str) {
+	document.getElementById("o1").innerHTML += str +"<br />"; 
+}
+
+function clearCanvas() {
+	g.context.beginPath() ; // this is necessary due to some strange 
+						  // behaviour of canvas that I do not understand. 
+						  // Without this, the last stroke doesn't get deleted 
+	g.context.strokeStyle = 'gray';	
+
+	g.context.clearRect(0, 0, g.canvas.width, g.canvas.height);
+
+	g.context.rect(0,0, g.canvas.width, g.canvas.height);
+	
+	g.context.stroke();
+
+}
+
+
+
+function circle(x,y,r,c) {
+
+	g.context.beginPath();
+	g.context.arc(x, y, r, 0, 2 * Math.PI, false);
+	g.context.fillStyle = c;
+	g.context.fill();
+	g.context.lineWidth = 2;
+	g.context.strokeStyle = 'black';
+	g.context.stroke();
+}
+
+	</script> 
+</body>
+</html>

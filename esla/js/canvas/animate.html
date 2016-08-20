@@ -9,8 +9,8 @@
 	<center>
 		<h1 id="title1" align="center"> Animate </h1>
 		<form action="">
-			<input type="radio" name="state" value="arrow" onchange = "onPointerSelect()" checked = "checked"> Pointer 
-			<input type="radio" name="state" value="draw"  onchange = "onDrawSelect()" > Draw <br>
+			<input type="radio" name="state" value="arrow" onchange = "onPointerSelect()" > Pointer 
+			<input type="radio" name="state" value="draw"  onchange = "onDrawSelect()" checked = "checked" > Draw <br>
 		</form>
 
 		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
@@ -174,6 +174,8 @@ function init() {
 	g.cClip = newClip();
 	addFrame(); 
 
+	onDrawSelect();  // start in drawing mode 
+	
 	clearCanvas();
 }
 
@@ -659,7 +661,7 @@ function addSegmentToPath(e,path) {
 		name:"addSegment", 
 		path:path, 
 		xb4: xb4, yb4: yb4, 
-		xb4n: xb4n, yb4n: yb4n, 
+		xb4n: xb4n, yb4n: yb4n, //seems to be never used.. y? 
 		x1:x1, y1:y1,
 		x2:x2, y2:y2,		
 		x3:x3, y3:y3,		
@@ -707,7 +709,7 @@ function fixEvent(e) {
 function mouseDown(e) {
 	fixEvent(e);
 	
-	if (g.state == "pointer")
+	if (g.state == "pointer") // selection mode 
 		return mouseDownPointer(e)
 	
 	if (g.state == "draw")
@@ -717,7 +719,7 @@ function mouseDown(e) {
 function mouseDownPointer(e) {
 	if(didSelectJoint(e))
 		return; 
-
+/*
     var path = g.cPath; 
 	var points = path.points; 
 	
@@ -736,11 +738,16 @@ function mouseDownPointer(e) {
 	addSegmentToPath(e,path); 
 	
 	redraw();  
+*/
 }
 
 function mouseDownDraw(e) {
-		addSegmentToPath(e,path); 
-....
+    var path = g.cPath; 
+
+	addSegmentToPath(e,path); 
+	
+	redraw();
+//....
 }
 
 
