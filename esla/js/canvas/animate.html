@@ -707,6 +707,14 @@ function fixEvent(e) {
 function mouseDown(e) {
 	fixEvent(e);
 	
+	if (g.state == "pointer")
+		return mouseDownPointer(e)
+	
+	if (g.state == "draw")
+		return mouseDownDraw(e)
+}
+
+function mouseDownPointer(e) {
 	if(didSelectJoint(e))
 		return; 
 
@@ -721,6 +729,7 @@ function mouseDown(e) {
 	
     if(path.isClosed) 
         return; 
+ .....
  	
 	path.sIdx = -1; 
 
@@ -728,6 +737,12 @@ function mouseDown(e) {
 	
 	redraw();  
 }
+
+function mouseDownDraw(e) {
+		addSegmentToPath(e,path); 
+....
+}
+
 
 // == keyDown == 
 function keyDown(e) {
