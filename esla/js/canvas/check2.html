@@ -8,6 +8,11 @@
 
 	<center>
 		<h1 id="title1" align="center"> Check </h1>
+		<form action="">
+			<input type="radio" name="state" value="arrow" onchange = "onSelectionChoose()" > Selection 
+			<input type="radio" name="state" value="draw"  onchange = "onDrawChoose()" checked = "checked" > Draw <br>
+		</form>
+
 
 		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
 
@@ -27,7 +32,16 @@ var g = {
 	y1:-1, 
 	inDrug:false,
 	points:[], 
+	state:"draw",  // possible values: draw, selection 
 }; 
+
+function onSelectionChoose() {
+	g.state = "selection";
+}
+
+function onDrawChoose() {
+	g.state = "draw";
+}
 
 function init() {
 
@@ -43,26 +57,41 @@ function init() {
 }
 
 function mouseDown(e) {
+	if (g.state == "draw") 
+		mouseDownDraw(e); 
+	else
+		mouseDownSelection(e); 
+}
+
+function mouseDownDraw(e) {
 	var x = e.offsetX; 
 	var y = e.offsetY; 
 	
 	circle(x, y, 20, "red"); 
+	g.points.push([x,y])  
+}
+
+function mouseDownSelection(e) {
+	var x = e.offsetX; 
+	var y = e.offsetY; 
+
 	g.lastx = x; 
 	g.lasty = y;
 	g.inDrug = true;
-	g.points.push([x,y])  
 }
 
 function redraw() {
 	for(var i=0; i < g.points.length; ++i) {
 		var x = g.points[i][0]; 
-		var y = g.points[i][1];  
-		circle(x, y, 20, "red");
+		var y = g.points[i][1]; 
+		if(g.points[i].length == 2) 
+			circle(x, y, 20, "red");
+		else
+		    circle(x, y, 20, "cyan");
 	}
 }
 
 function inInterval(a,a1,a2) {
-	print( (a1<a && a < a2) || (a2<a && a<a1) )
 	return ( (a1<a && a < a2) || (a2<a && a<a1) )	
 }
 
@@ -72,11 +101,21 @@ function markSelections(x1,y1,x2,y2) {
 		var x = g.points[i][0]; 
 		var y = g.points[i][1]; 
 		if( inInterval(x,x1,x2) && inInterval(y,y1,y2))
-			circle(x, y, 25, "cyan");
+			g.points[i]=[x,y,0];
 	}
 }
 
 function mouseUp(e) {
+	if (g.state == "draw") 
+		mouseUpDraw(e); 
+	else
+		mouseUpSelection(e); 
+}
+
+function mouseUpDraw(e) {
+}
+
+function mouseUpSelection(e) {
 	rect(g.lastx, g.lasty, g.x1, g.y1,'white');
 	markSelections(g.lastx, g.lasty, g.x1, g.y1); 
 	g.x1 = -1;
@@ -86,6 +125,15 @@ function mouseUp(e) {
 }
 
 function mouseMove(e) {
+	if (g.state == "draw") 
+		mouseMoveDraw(e); 
+	else
+		mouseMoveSelection(e); 
+}
+
+function mouseMoveDraw(e) {}
+
+function mouseMoveSelection(e) {
 	if(g.x1 != -1)
 		rect(g.lastx, g.lasty, g.x1, g.y1,'white');
 	redraw(); 	
