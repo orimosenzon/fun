@@ -151,7 +151,7 @@ function mouseMoveSelection(e) {
 		var x = e.offsetX; 
 		var y = e.offsetY; 
 
-		moveAllPoints(x-g.lastx, y-g.lasty); 
+		moveAllSelected(x-g.lastx, y-g.lasty); 
 		
 		g.lastx = x; 
 		g.lasty = y;
@@ -170,10 +170,12 @@ function mouseMoveSelection(e) {
 	} 
 }
 
-function moveAllPoints(dx, dy) {
+function moveAllSelected(dx, dy) {
 	for(var i=0; i < g.points.length; ++i)  {
-		g.points[i][0] += dx; 
-		g.points[i][1] += dy; 
+		if (g.points[i].length == 3) {
+			g.points[i][0] += dx; 
+			g.points[i][1] += dy; 
+		}
 	}
 }
 
