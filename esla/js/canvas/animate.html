@@ -9,8 +9,8 @@
 	<center>
 		<h1 id="title1" align="center"> Animate </h1>
 		<form action="">
-			<input type="radio" name="state" value="arrow" onchange = "onPointerSelect()" > Pointer 
-			<input type="radio" name="state" value="draw"  onchange = "onDrawSelect()" checked = "checked" > Draw <br>
+			<input type="radio" name="state" value="arrow" onchange = "onSelectionChoose()" > Selection 
+			<input type="radio" name="state" value="draw"  onchange = "onDrawChoose()" checked = "checked" > Draw <br>
 		</form>
 
 		<canvas id="myCanvas" width="1500" height="700"></canvas> <br /> 
@@ -27,7 +27,7 @@
 
 	</center>
 
-	<h1 id="o1">  </h1>
+	<h1 id="o1"> p </h1>
  
 	<script>
 
@@ -66,7 +66,7 @@ var g = {
 
 	firstMove:true, // first move of mouseMove
 	
-	state:"draw"  // can take the values: "pointer, draw... 
+	state:"draw"  // can take the values: "selection, draw... 
 }; 
 
 // == view == (single for now) 
@@ -188,14 +188,14 @@ function addCommand(command) {
 }
 
 // == state handles == 
-function onPointerSelect() {
-	g.state = "pointer";
-	print(g.state);
+function onSelectionChoose() {
+	g.state = "selection";
+	redraw();  
 }
 
-function onDrawSelect() {
+function onDrawChoose() {
 	g.state = "draw";
-	print(g.state);
+	redraw(); 
 }
 
 // == addAndCopyFrame == 
@@ -462,11 +462,16 @@ function redrawOpen(path, isEdditedFrame, color) {
 		if (! isEdditedFrame )
 			continue; 
 			
-		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
+		if(g.state == "selection")
+			continue
+
+/*		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
 			if(i==0 || i == last)
 				circle(x0,y0, g.JOINT_RAD, "gray");
 			continue; 
 		}
+*/	
+
 		// if current path, mark all joint points and the selected+control points 
 		if (i == path.sIdx) {
 			if(i > 0) {
@@ -707,17 +712,21 @@ function fixEvent(e) {
 function mouseDown(e) {
 	fixEvent(e);
 	
-	if (g.state == "pointer") // selection mode 
-		return mouseDownPointer(e)
+	if (g.state == "selection") // selection mode
+		return mouseDownSelection(e)
 	
 	if (g.state == "draw")
 		return mouseDownDraw(e)
 }
 
-function mouseDownPointer(e) {
+function mouseDownSelection(e) {
+
+	
+	redraw(); 
+/*
 	if(didSelectJoint(e))
 		return; 
-/*
+
     var path = g.cPath; 
 	var points = path.points; 
 	
