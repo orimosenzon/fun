@@ -113,28 +113,6 @@ function markSelections(x1,y1,x2,y2) {
 	}
 }
 
-// == mouse up == 
-
-function mouseUp(e) {
-	if (g.state == "draw") 
-		mouseUpDraw(e); 
-	else
-		mouseUpSelection(e); 
-}
-
-function mouseUpDraw(e) {
-}
-
-function mouseUpSelection(e) {
-	g.moveSelection = false; 
-	rect(g.lastx, g.lasty, g.x1, g.y1,'white');
-	markSelections(g.lastx, g.lasty, g.x1, g.y1); 
-	g.x1 = -1;
-	g.y1 = -1;
-	g.inDrug = false; 
-	redraw(); 
-}
-
 // == mouse move == 
 
 function mouseMove(e) {
@@ -169,6 +147,31 @@ function mouseMoveSelection(e) {
 		g.y1 = e.offsetY; 
 	} 
 }
+
+// == mouse up == 
+
+function mouseUp(e) {
+	if (g.state == "draw") 
+		mouseUpDraw(e); 
+	else
+		mouseUpSelection(e); 
+}
+
+function mouseUpDraw(e) {
+}
+
+function mouseUpSelection(e) {
+	g.moveSelection = false; 
+	rect(g.lastx, g.lasty, g.x1, g.y1,'white');
+	markSelections(g.lastx, g.lasty, e.offsetX, e.offsetY); 
+	g.x1 = -1;  
+	g.y1 = -1;
+	g.inDrug = false; 
+	redraw(); 
+}
+
+
+
 
 function moveAllSelected(dx, dy) {
 	for(var i=0; i < g.points.length; ++i)  {
