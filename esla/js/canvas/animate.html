@@ -523,23 +523,6 @@ function dis(x,y, path, idx) {
 
 	}
 
-// == selectJoint == 
-function selectJoint(e) {
-	
-	var path = g.cPath; 
-	if(!path)
-		return; 
-	var points = path.points;
-	for(j=0; j<points.length; j+=3) {  
-		if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
-			path.sIdx = j; 
-			path.dIdx = j; 
-			redraw(); 				
-			return; 
-		}
-	}
-}
-
 // == didSelectControl ==
 // did the user select a control point 
 function didSelectControl(e,path) {
@@ -709,7 +692,45 @@ function selectPath(e) {
 			return; 
 		}
 	}
-	g.cPath = null; 
+	
+}
+
+// == selectJoint == 
+function selectJoint(e) {
+	
+	var path = g.cPath; 
+	if(!path)
+		return; 
+	var points = path.points;
+	for(j=0; j<points.length; j+=3) {  
+		if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
+			path.sIdx = j; 
+			path.dIdx = j; 
+			redraw(); 				
+			return; 
+		}
+	}
+}
+
+// == selectControl == 
+function selectControl(e) {
+	var path = g.cPath; 
+
+	if(!path)
+		return; 
+
+	if(path.sIdx == -1)
+		return; 
+	if(path.sIdx > 0)
+		if(dis(e.offsetX, e.offsetY, path, path.sIdx -1) < g.SELECT_RAD ) {
+			path.dIdx = path.sIdx -1;
+			return; 
+		}
+	if(path.sIdx < path.points.length-1)
+		if(dis(e.offsetX, e.offsetY, path, path.sIdx + 1) < g.SELECT_RAD ) {
+			path.dIdx = path.sIdx +1;
+			return; 
+		}
 }
 
 // == mouseDown == 
@@ -727,6 +748,7 @@ function mouseDownSelection(e) {
 
 	selectPath(e); 
 	selectJoint(e); 
+	selectControl(e);
 	redraw(); 
 }
 
