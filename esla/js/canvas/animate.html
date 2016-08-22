@@ -678,16 +678,6 @@ function onDrawChoose() {
 	redraw(); 
 }
 
-// == mouse press handle == 
-function mouseDown(e) {
-	fixEvent(e);
-	
-	if (g.state == "selection") // selection mode
-		return mouseDownSelection(e)
-	
-	if (g.state == "draw")
-		return mouseDownDraw(e)
-}
 
 function didSelectThisPath(e,path) {
 	var points = path.points;
@@ -719,6 +709,18 @@ function selectPath(e) {
 			return; 
 		}
 	}
+	g.cPath = null; 
+}
+
+// == mouseDown == 
+function mouseDown(e) {
+	fixEvent(e);
+	
+	if (g.state == "selection") // selection mode
+		return mouseDownSelection(e)
+	
+	if (g.state == "draw")
+		return mouseDownDraw(e)
 }
 
 function mouseDownSelection(e) {
@@ -726,65 +728,14 @@ function mouseDownSelection(e) {
 	selectPath(e); 
 	selectJoint(e); 
 	redraw(); 
-
-/*
-	if(didSelectJoint(e))
-		return; 
-
-    var path = g.cPath; 
-	var points = path.points; 
-	
-	if(path.sIdx != -1)  {// if one joint point is already selected 
-		if(!didSelectControl(e,path)) 
-			addPathWithClick(e);		
-		return; 
-	}
-	
-    if(path.isClosed) 
-        return; 
- .....
- 	
-	path.sIdx = -1; 
-
-	addSegmentToPath(e,path); 
-	
-	redraw();  
-*/
 }
 
 function mouseDownDraw(e) {
-    var path = g.cPath; 
 
-	addSegmentToPath(e,path); 
-	
+	addSegmentToPath(e,g.cPath); 
 	redraw();
-//....
 }
 
-
-// == keyDown == 
-function keyDown(e) {
-	
-	if(e.keyCode == 26) { // ctr+z 
-		if(g.cIdx ==0)
-			return; 
-		--g.cIdx;
-		g.commands[g.cIdx].undo(); 		 		
-		redraw(); 
-		return; 
-	}
-	if(e.keyCode == 25) { // ctr+y 
-		if(g.cIdx == g.commands.length)
-			return; 		
-		g.commands[g.cIdx].redo(); 		 		
-		++g.cIdx;
-		redraw(); 
-	}
-	if(e.keyCode == 32) { // space
-		addPath(); // todo: make it a command... 
-		redraw(); 
-	}
-}
 
 // == mouseUp == 
 function mouseUp(e) {
@@ -924,6 +875,32 @@ function mouseMove(e) {
 	
 	redraw();  
 } 
+
+// == keyDown == 
+function keyDown(e) {
+	
+	if(e.keyCode == 26) { // ctr+z 
+		if(g.cIdx ==0)
+			return; 
+		--g.cIdx;
+		g.commands[g.cIdx].undo(); 		 		
+		redraw(); 
+		return; 
+	}
+	if(e.keyCode == 25) { // ctr+y 
+		if(g.cIdx == g.commands.length)
+			return; 		
+		g.commands[g.cIdx].redo(); 		 		
+		++g.cIdx;
+		redraw(); 
+	}
+	if(e.keyCode == 32) { // space
+		addPath(); // todo: make it a command... 
+		redraw(); 
+	}
+}
+
+
 
 // == copied from stack overflow for firefox compatabilities issues == 
 function extractDelta(e) {
