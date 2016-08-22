@@ -452,15 +452,9 @@ function redrawOpen(path, isEdditedFrame, color) {
 		if (! isEdditedFrame )
 			continue; 
 			
-		if(g.cFrame.sIdx != 0)
-			continue
 
-/*		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
-			if(i==0 || i == last)
-				circle(x0,y0, g.JOINT_RAD, "gray");
+		if (path != g.cPath) // if not cuurent path, mark only the first and last points 
 			continue; 
-		}
-*/	
 
 		// if current path, mark all joint points and the selected+control points 
 		if (i == path.sIdx) {
@@ -701,13 +695,11 @@ function fixEvent(e) {
 // == state handles == 
 function onSelectionChoose() {
 	g.state = "selection";
-	g.cFrame.sIdx = 1; 
 	redraw();  
 }
 
 function onDrawChoose() {
 	g.state = "draw";
-	g.cFrame.sIdx = 0;
 	redraw(); 
 }
 
@@ -722,7 +714,7 @@ function mouseDown(e) {
 		return mouseDownDraw(e)
 }
 
-function didSelectPath(e,path) {
+function didSelectThisPath(e,path) {
 	var points = path.points;
 	var last = points.length-1; 
 	for (var i=0; i < last; i+=3)  {
@@ -743,10 +735,20 @@ function didSelectPath(e,path) {
 	return false; 
 }
 
+function selectPath(e) {
+	for(var i=0; i<g.cFrame.paths.length; ++i) {
+		var path = g.cFrame.paths[i]; 
+		if(didSelectThisPath(e,path)) {
+			g.cPath = path; 
+			g.cFrame.sIdx = i; 
+			return; 
+		}
+	}
+}
+
 function mouseDownSelection(e) {
 
-	if(didSelectPath(e,g.cPath))
-		g.cFrame.sIdx = 0; 
+	selectPath(e); 
 
 	redraw(); 
 
@@ -804,9 +806,8 @@ function keyDown(e) {
 		redraw(); 
 	}
 	if(e.keyCode == 32) { // space
-		var s = data2string(); 
-		print(s); 
-		string2data(s); 
+		addPath(); // todo: make it a command... 
+		redraw(); 
 	}
 }
 
