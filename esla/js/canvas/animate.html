@@ -683,6 +683,11 @@ function didSelectThisPath(e,path) {
 	return false; 
 }
 
+function clearPointSelection() {
+	for(var i=0; i<g.cFrame.paths.length; ++i)
+		g.cFrame.paths[i].sIdx = -1; 
+}
+
 function selectPath(e) {
 	for(var i=0; i<g.cFrame.paths.length; ++i) {
 		var path = g.cFrame.paths[i]; 
@@ -745,7 +750,7 @@ function mouseDown(e) {
 }
 
 function mouseDownSelection(e) {
-
+	clearPointSelection();
 	selectPath(e); 
 	selectJoint(e); 
 	selectControl(e);
