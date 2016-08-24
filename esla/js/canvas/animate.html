@@ -45,6 +45,8 @@
 var t = { // temporary global variables 
 	x:0,
 	y:0, // temporary location 
+	
+	windowSelect: false, 
 }; 
 
 var g = {
@@ -528,34 +530,6 @@ function dis(x,y, path, idx) {
 
 	}
 
-// == didSelectControl ==
-// did the user select a control point 
-function didSelectControl(e,path) {
-	
-	var points = path.points; 
-	
-	var idxs = [];  // indexs of the selected point's control points 
-	var n = points.length;
-	if(!path.isClosed) { 
-		if (path.sIdx > 0)
-			idxs.push(path.sIdx -1);
-		if ( path.sIdx < n-1)
-			idxs.push(path.sIdx + 1); 
-	} else {
-		idxs.push( (path.sIdx - 1+n)%n); 
-		idxs.push( (path.sIdx + 1)%n); 
-	}
-	for(k=0; k < idxs.length; ++k) { 
-		i = idxs[k];  
-		if ( dis (e.offsetX, e.offsetY, path, i) < g.SELECT_RAD ) {
-			path.dIdx = i; 
-  			return true; 
-		}
-	}
-	return false; 
-}
-
-
 function newFirstPointCommand(path,x,y) {
 	return {
 			name:"addFirstPoint",
@@ -764,6 +738,9 @@ function mouseDownSelection(e) {
 	if(!didPath && !didControl) {
 		g.cFrame.sIdx = -1; 
 		g.cPath = null; 
+		t.windowSelect = true; 
+		t.x = e.offsetX; 
+		t.y = e.offsetY; 
 	}
 	redraw(); 
 }
@@ -779,6 +756,7 @@ function mouseDownDraw(e) {
 function mouseUp(e) {
 	fixEvent(e);
 	
+	t.windowSelect = false; 
 	
 	var path = g.cPath;
 	if(!path)
@@ -832,6 +810,13 @@ function mouseUp(e) {
 // == mouseMove == 
 function mouseMove(e) {
 	fixEvent(e);
+	
+	if(t.windowSelect) {
+		redraw(); 
+		rect(t.x, t.y, e.offsetX, e.offsetY, "gray"); 
+		return; 
+	}
+	
 	
 	var path = g.cPath;
 	if(!path)
@@ -1048,6 +1033,17 @@ function clearCanvas() {
 	g.context.stroke();
 
 }
+
+// == rect ==
+// canvas coordinates
+function rect(x,y,x1,y1,c) {
+	g.context.beginPath();
+	g.context.strokeStyle = c;
+	g.context.rect(x,y, x1-x, y1-y);
+	g.context.stroke();
+}
+
+
 
 // == curve == 
 function curve(x1,y1,x2,y2,x3,y3,x4,y4,c) {
