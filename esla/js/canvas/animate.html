@@ -727,20 +727,21 @@ function selectControl(e) {
 	var path = g.cPath; 
 
 	if(!path)
-		return; 
+		return false; 
 
 	if(path.sIdx == -1)
-		return; 
+		return false; 
 	if(path.sIdx > 0)
 		if(dis(e.offsetX, e.offsetY, path, path.sIdx -1) < g.SELECT_RAD ) {
 			path.dIdx = path.sIdx -1;
-			return; 
+			return true; 
 		}
 	if(path.sIdx < path.points.length-1)
 		if(dis(e.offsetX, e.offsetY, path, path.sIdx + 1) < g.SELECT_RAD ) {
 			path.dIdx = path.sIdx +1;
-			return; 
+			return true; 
 		}
+	return false; 
 }
 
 // == mouseDown == 
@@ -755,13 +756,12 @@ function mouseDown(e) {
 }
 
 function mouseDownSelection(e) {
-	if(g.cPath)
-		g.cPath.sIdx = -1; 
 
-	if(selectPath(e)) { 
-		selectJoint(e); 
-		selectControl(e);
-	} else {
+	var didPath = selectPath(e);  
+	selectJoint(e); 
+	var didControl = selectControl(e);
+	
+	if(!didPath && !didControl) {
 		g.cFrame.sIdx = -1; 
 		g.cPath = null; 
 	}
