@@ -688,10 +688,6 @@ function didSelectThisPath(e,path) {
 	return false; 
 }
 
-function clearPointSelection() {
-	for(var i=0; i<g.cFrame.paths.length; ++i)
-		g.cFrame.paths[i].sIdx = -1; 
-}
 
 // == select path == 
 function selectPath(e) {
@@ -703,10 +699,10 @@ function selectPath(e) {
 			t.x = canvas2dataX(e.offsetX); 
 			t.y = canvas2dataY(e.offsetY); 
 			g.cFrame.sIdx = i; 
-			return; 
+			return true; 
 		}
 	}
-	
+	return false; 
 }
 
 // == selectJoint == 
@@ -759,10 +755,16 @@ function mouseDown(e) {
 }
 
 function mouseDownSelection(e) {
-//	clearPointSelection();
-	selectPath(e); 
-	selectJoint(e); 
-	selectControl(e);
+	if(g.cPath)
+		g.cPath.sIdx = -1; 
+
+	if(selectPath(e)) { 
+		selectJoint(e); 
+		selectControl(e);
+	} else {
+		g.cFrame.sIdx = -1; 
+		g.cPath = null; 
+	}
 	redraw(); 
 }
 
@@ -778,7 +780,9 @@ function mouseUp(e) {
 	fixEvent(e);
 	
 	
-	var path = g.cPath; 
+	var path = g.cPath;
+	if(!path)
+		return; 
 	var points = path.points; 
 	
 	g.firstMove = true;
@@ -829,8 +833,10 @@ function mouseUp(e) {
 function mouseMove(e) {
 	fixEvent(e);
 	
-	var path = g.cPath,
-        points = path.points; 
+	var path = g.cPath;
+	if(!path)
+		return; 
+    var points = path.points; 
 		
 	if (path.dIdx == -1)
 		return; 
