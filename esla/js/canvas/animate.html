@@ -42,6 +42,11 @@
 
 
 // == global vars == 
+var t = { // temporary global variables 
+	x:0,
+	y:0, // temporary location 
+}; 
+
 var g = {
 	JOINT_RAD:3,     // radius of the joint point 
 	CHOSEN_RAD:4,    // radius of selected point 
@@ -688,11 +693,15 @@ function clearPointSelection() {
 		g.cFrame.paths[i].sIdx = -1; 
 }
 
+// == select path == 
 function selectPath(e) {
 	for(var i=0; i<g.cFrame.paths.length; ++i) {
 		var path = g.cFrame.paths[i]; 
 		if(didSelectThisPath(e,path)) {
 			g.cPath = path; 
+			path.dIdx = -2; 
+			t.x = canvas2dataX(e.offsetX); 
+			t.y = canvas2dataY(e.offsetY); 
 			g.cFrame.sIdx = i; 
 			return; 
 		}
@@ -772,12 +781,17 @@ function mouseUp(e) {
 	var path = g.cPath; 
 	var points = path.points; 
 	
-	g.firstMove = true; 
-	if(path.dIdx != -1) { // update the dragged command to reflect the total delta 
+	g.firstMove = true;
+	if(path.dIdx == -2) {
 		var c = g.commands[g.cIdx-1]; 
-		c.dx =  points[path.dIdx][0]- c.x0; 
-		c.dy =  points[path.dIdx][1]- c.y0; 
-	}	
+		c.dx =  points[0][0]- c.x0; 
+		c.dy =  points[0][1]- c.y0; 
+	} else
+		if(path.dIdx != -1) { // update the dragged command to reflect the total delta 
+			var c = g.commands[g.cIdx-1]; 
+			c.dx =  points[path.dIdx][0]- c.x0; 
+			c.dy =  points[path.dIdx][1]- c.y0; 
+		}	
 	
 	var last = points.length-1; 
 	if (last <= 0 || path.isClosed) {
@@ -821,10 +835,18 @@ function mouseMove(e) {
 	if (path.dIdx == -1)
 		return; 
 	
-	var x = canvas2dataX(e.offsetX), y = canvas2dataY(e.offsetY); 
-	var dx = x - points[path.dIdx][0], 
+	var x = canvas2dataX(e.offsetX), y = canvas2dataY(e.offsetY);
+	var dx,dy; 
+	if (path.dIdx == -2) {
+		dx = x-t.x; 
+		dy = y-t.y; 
+		t.x = x;
+		t.y = y; 		
+	}
+	else { 
+		dx = x - points[path.dIdx][0], 
 	    dy = y - points[path.dIdx][1];
-	
+	}
 
 	if (!g.firstMove) {
 		var c = g.commands[g.cIdx-1]; 
@@ -836,9 +858,39 @@ function mouseMove(e) {
 	}
 	
 	g.firstMove = false; 
-	
 
-	var command = {
+	var command; 	
+	
+	if(path.sIdx == -1) {
+		command = {
+			x0:t.x,
+			y0:t.y,
+			dx:dx, dy:dy,
+			points: points,
+			redo: function() {
+				for(var i=0; i<this.points.length; ++i) {
+					this.points[i][0] += this.dx; 
+					this.points[i][1] += this.dy; 
+				}
+			}, 
+			undo: function() {
+				for(var i=0; i<this.points.length; ++i) {
+					this.points[i][0] -= this.dx; 
+					this.points[i][1] -= this.dy; 
+				}
+			}, 
+			
+		}; 
+
+		addCommand(command); 
+		command.redo(); 
+		
+		redraw();  
+	
+		return; 
+	}
+	
+	command = {
 		x0: points[path.dIdx][0], 
 		y0: points[path.dIdx][1], 
 		dx:dx, dy:dy,
@@ -846,28 +898,28 @@ function mouseMove(e) {
 		idxs: [path.dIdx], 
 		redo: function() {
 			for(var i=0; i<this.idxs.length; ++i) {
-				points[this.idxs[i]][0] += this.dx; 
-				points[this.idxs[i]][1] += this.dy; 
+				this.points[this.idxs[i]][0] += this.dx; 
+				this.points[this.idxs[i]][1] += this.dy; 
 			}
 			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
-				points[this.otherIdx][0] -= this.dx; 
-				points[this.otherIdx][1] -= this.dy; 
+				this.points[this.otherIdx][0] -= this.dx; 
+				this.points[this.otherIdx][1] -= this.dy; 
 			}
 			
 		},
 		undo: function() {
 			for(var i=0; i<this.idxs.length; ++i) {
-				points[this.idxs[i]][0] -= this.dx; 
-				points[this.idxs[i]][1] -= this.dy; 
+				this.points[this.idxs[i]][0] -= this.dx; 
+				this.points[this.idxs[i]][1] -= this.dy; 
 			}
 			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
-				points[this.otherIdx][0] += this.dx; 
-				points[this.otherIdx][1] += this.dy; 
+				this.points[this.otherIdx][0] += this.dx; 
+				this.points[this.otherIdx][1] += this.dy; 
 			}
 		
 		}, 
 	}; 	
-
+	
 	var pointType = path.dIdx % 3;  // 0 - joint; 1,2 - control 
 	var last = points.length-1;
 	
