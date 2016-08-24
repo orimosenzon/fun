@@ -73,7 +73,9 @@ var g = {
 
 	firstMove:true, // first move of mouseMove
 	
-	state:"draw"  // can take the values: "selection, draw... 
+	state:"draw",  // can take the values: "selection, draw... 
+	
+	windowPaths:[], // pathes selected through window selection
 }; 
 
 // == view == (single for now) 
@@ -430,15 +432,21 @@ function drawFrame(frame, isEdditedFrame, color) {
 		if(path.isClosed) {
 			redrawClosed(path,isEdditedFrame, color);
 		} else {
-			redrawOpen(path,isEdditedFrame, color); 
+			var inWindow = inArray(i,g.windowPaths);
+			redrawOpen(path,isEdditedFrame, color, inWindow); 
 		}
 	}
 
 }
 
-
+function inArray(a,arr) {
+	for(var i=0; i<arr.length; ++i)
+		if(a==arr[i])
+			return true; 
+	return false; 
+}
 // == redrawOpen == 
-function redrawOpen(path, isEdditedFrame, color) {
+function redrawOpen(path, isEdditedFrame, color, inWindow) {
 	var points = path.points;
 	var last = points.length-1; 
 	var color; 
@@ -459,12 +467,16 @@ function redrawOpen(path, isEdditedFrame, color) {
 		if (! isEdditedFrame )
 			continue; 
 			
+		if(inWindow) {
+			circle(x0,y0, g.JOINT_RAD, "gray");
+		}
 
 		if (path != g.cPath) // if not cuurent path, mark only the first and last points 
 			continue; 
 
+		
 		// if current path, mark all joint points and the selected+control points 
-		if (i == path.sIdx) {
+		if (i == path.sIdx) { 
 			if(i > 0) {
 				var xp = points[i-1][0], yp = points[i-1][1]; 
 				line(x0,y0,xp,yp,"gray");  
@@ -806,12 +818,42 @@ function mouseUp(e) {
 }
 
 
+function inInterval(a,a1,a2) {
+	return ( (a1<a && a < a2) || (a2<a && a<a1) )	
+}
+
+function isPathInWindow(path,x1,y1,x2,y2) {
+	var points = path.points; 
+	for (var j=0; j< points.length; j+=3) {
+		var x = points[j][0]; 
+		var y = points[j][1];
+		if(inInterval(x,x1,x2) && inInterval(y,y1,y2))
+			return true;
+	}
+	return false; 
+}
+
+// == findWindowPaths == 
+function findWindowPaths(x1,y1,x2,y2) {
+	answer = []; 
+	x1 = canvas2dataX(x1);
+	y1 = canvas2dataY(y1);
+	x2 = canvas2dataX(x2);
+	y2 = canvas2dataY(y2);
+
+	for(var i=0; i<g.cFrame.paths.length; ++i) 
+		if(isPathInWindow(g.cFrame.paths[i], x1, y1, x2, y2) )	
+			answer.push(i); 
+	return answer; 
+}
+
 
 // == mouseMove == 
 function mouseMove(e) {
 	fixEvent(e);
 	
 	if(t.windowSelect) {
+		g.windowPaths = findWindowPaths(t.x, t.y, e.offsetX, e.offsetY); 
 		redraw(); 
 		rect(t.x, t.y, e.offsetX, e.offsetY, "gray"); 
 		return; 
@@ -1042,8 +1084,6 @@ function rect(x,y,x1,y1,c) {
 	g.context.rect(x,y, x1-x, y1-y);
 	g.context.stroke();
 }
-
-
 
 // == curve == 
 function curve(x1,y1,x2,y2,x3,y3,x4,y4,c) {
