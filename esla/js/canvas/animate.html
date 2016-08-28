@@ -746,6 +746,12 @@ function mouseDownSelection(e) {
 	var didPath = selectPath(e);  
 	selectJoint(e); 
 	var didControl = selectControl(e);
+
+	if(g.windowPaths.length > 0) {
+		t.x = canvas2dataX(e.offsetX); 
+		t.y = canvas2dataY(e.offsetY); 
+		return; 
+	}
 	
 	if(!didPath && !didControl) {
 		g.cFrame.sIdx = -1; 
@@ -767,6 +773,10 @@ function mouseDownDraw(e) {
 // == mouseUp == 
 function mouseUp(e) {
 	fixEvent(e);
+
+	if(!t.windowSelect) {
+		g.windowPaths = [];
+	}
 	
 	t.windowSelect = false; 
 	
@@ -894,6 +904,41 @@ function mouseMove(e) {
 
 	var command; 	
 	
+	if(g.windowPaths.length > 0) {
+		command = {
+			x0:t.x,
+			y0:t.y,
+			dx:dx, dy:dy,
+			redo: function() { 
+				for(var i=0; i<g.windowPaths.length; ++i) {
+					var points = g.cFrame.paths[ g.windowPaths[i] ].points; 		
+					for(var j=0; j< points.length; ++j) {
+						points[j][0] += this.dx; 
+						points[j][1] += this.dy; 
+					}
+				}
+			}, 
+			undo: function() {
+				for(var i=0; i<g.windowPaths.length; ++i) {
+					var points = g.cFrame.paths[ g.windowPaths[i] ].points; 		
+					for(var j=0; j< points.length; ++j) {
+						points[j][0] -= this.dx; 
+						points[j][1] -= this.dy; 
+					}
+				}
+			}, 
+			
+		}; 
+
+		addCommand(command); 
+		command.redo(); 
+		
+		redraw();  
+	
+		return; 
+	
+	}
+
 	if(path.sIdx == -1) {
 		command = {
 			x0:t.x,
