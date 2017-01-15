@@ -43,5 +43,5 @@ print('the accuracy: **',accuracy.eval(feed_dict={x: mnist.test.images, y_: mnis
 
 
 
-# == reached: Convolution and Pooling == 
+# == reached: Convolution and Pooling ==  
   
