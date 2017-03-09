@@ -1,39 +1,36 @@
 <!DOCTYPE html>
 <html>
-<body  onload = "doOnload()"> 
+<body> 
 <!-- == page == -->
-<h1 id="title1"> Check page </h1>
+<h1 id="title1"> Check page </h1> <br> <br>
+<h1 id="title2">  </h1>
 
 <button type = "button" onclick = "buttonCheck()"> check </button> 
 
-<h1 id="title2"> output goes here: </h1>
-<form action="">
-  <input type="radio" name="state" value="arrow" onchange = "onArrowSelect()"> Arrow <br>
-  <input type="radio" name="state" value="draw" checked = "checked" onchange = "onDrawSelect()" > Draw <br>
-</form>
 
 <!--   == script == --> 
 <script>
-	state = "draw"
-	
-function onArrowSelect() {
-	state = "arrow"
-}
-
-function onDrawSelect() {
-	state = "draw"
-}
-function doOnload() {
-    print("ready"); 
-}
-
-function buttonCheck() {
-		print(state)
-}
-
 function print(str) {
     document.getElementById("title2").innerHTML += str+"<br>"; 
 }
+
+	
+function A(data) { // I treat this function as a defenition of class and also a ctor 
+	this._data = data
+}
+
+A.prototype.printInfo =  function() {
+		print("object of type-A, data: "+this._data); 	
+}
+
+
+function buttonCheck() {
+	a = new A(5); 
+	a.printInfo(); 
+	a._data = 7; 
+	a.printInfo(); 
+}
+
 
 </script> 
 

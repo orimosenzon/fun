@@ -25,5 +25,6 @@ for i in range(1000):
   train_step.run(feed_dict={x: batch[0], y_: batch[1]})
   
 
+print(type(tf.argmx(y_,1)))
 
   
