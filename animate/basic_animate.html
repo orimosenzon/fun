@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> Animate </title>
+</head>
+
+<body onload="init()"> 
+
+	<center>
+		<h1 id="title1" align="center"> Animate </h1>
+		<canvas id="myCanvas" width="1200" height="700"></canvas> <br /> 
+
+		<button onclick="addAndCopyFrame()">New Copy</button> 
+		<button id="npB" onclick="addFrame()">New Scratch</button> <br />
+
+		<button id="prevFrame" onclick="prevFrame()"> << </button> 
+		<button id="nextFrame" onclick="nextFrame()"> >> </button> <br />
+
+		<button id="playB" onclick="togglePlay()"> Play </button> <br /> 
+		<br /> 
+		<button id="clearB" onclick="clearAll()"> Clear </button>  <br />
+
+
+	</center>
+	
+	<a rel="license"
+	   href="http://creativecommons.org/licenses/by-sa/4.0/">
+
+	  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" />
+
+	</a><br />
+
+	This work is licensed under a
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+	  Creative Commons Attribution-ShareAlike 4.0 International License
+	</a>.
+
+	
+	<h1 id="o1">  </h1>
+ 
+	<script>
+
+// Animate: a small online application that enables creation of simple smooth animations 
+
+// Demo: https://www.youtube.com/watch?v=q7C_TO6P7cw
+
+// Try it out: http://orimosenzon.com/animate.html
+
+
+
+
+
+// == global vars == 
+var g = {
+	JOINT_RAD:4,     // radius of the joint point 
+	CHOSEN_RAD:5,    // radius of selected point 
+	CONTROL_RAD:3,   // radius of control point  
+	SELECT_RAD:7,    // determines the proximity of the mouse for selection 
+	
+	canvas: null,  // the html canvas element 
+	context: null, // it's context 
+	
+	cClip : null,     // current clip  
+	cFrame: null,     // current frame 
+	cPath: null,      // current path  
+	cPlay: 0, 
+	isPlayed: false, 
+	
+	INT_FRAMES:40,     // number of frames in interpolation 
+	intLeft:0,        // number of frame left in this interpolation 
+	frame:null,       // temporary frame for interpolation  
+
+	commands:[],     // list of commands for undo/redo 
+	cIdx:0,          // index of the command that is bout to be executed   
+
+	firstMove:true, // first move of mouseMove
+}; 
+
+// == view == (single for now) 
+var v = {
+	cx:0, // the place of the upper left corner of the screen in the logical plane 
+	cy:0, // (the one which is used in the data structure) 
+	factor:1, // the zoom factor of the display 
+        df:1.2,   //  zoom factor's change ratio (for each wheel move)     
+};  
+
+
+	  
+
+	  
+// == Save  ==
+	  
+// taken from: https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
+function download(filename, text) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+function load() {
+
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,');
+
+    var filename=""
+    element.setAttribute('upload', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+	  
+function save() {
+    download("animation7.anm", data2string())
+}
+
+	  
+// == ctors == 
+
+function newPath() {
+	return { points:[],   		// points of bezier curves 
+		 sIdx: -1,          // index of the selected point 
+		 dIdx: -1,          // index of the selected dragged point    
+		 isClosed: false    // is it a closed path 
+	 } ;
+}
+
+function newFrame() {
+	return { paths:[],
+		sIdx:-1,
+		isCopy:false,
+	}; 
+}
+
+function newClip() {
+	return { frames:[], sIdx:-1 }; 
+}
+
+// == data2string == 
+function data2string() {
+	var s = "{"; 
+	for(var i=0; i< g.cClip.frames.length; ++i) {
+		s+="<";
+		var frame = g.cClip.frames[i]; 
+		for(var j=0; j<frame.paths.length; ++j) {
+			s+="["; 
+			var path = frame.paths[j]; 
+			for(var k=0; k<path.points.length; ++k) {
+				var x= path.points[k][0];
+				var y= path.points[k][1];
+				s+="("+x+","+y+")"; 
+			}
+			s+="]\n"; 
+		}
+		s+=">\n\n";	
+	}
+	s+="}"; 
+	return s; 
+}
+
+// == string2data == 
+function string2data(s) {
+	var i=0; 
+	i += 1; // "{"
+	while(s[i] != "}") {
+		i+=1; // "<"
+		while(s[i] != ">") {
+			i+=1; // "["
+			while(s[i] != "]") {
+				i+=1; //"(" 
+				var i1 = s.indexOf(",",i); 
+				var x = parseFloat(s.slice(i,i1));
+				i = i1+1; 
+				i1 = s.indexOf(")",i);  
+				var y = parseFloat(s.slice(i,i1));
+				i = i1+1; 
+				print("*"+x+","+y+"*"); 
+			}
+			i+=1; // "]"
+		}
+		i+=1; // ">"
+	}
+	i+=1; // "}" 
+}
+
+// == init == 
+function init() {
+	g.canvas = document.getElementById('myCanvas');
+	g.context = g.canvas.getContext('2d');
+	
+	g.canvas.addEventListener("mousedown", mouseDown ,false); 
+	g.canvas.addEventListener("dblclick", mouseDbClick ,false); 
+	
+	g.canvas.addEventListener("mouseup", mouseUp ,false); 
+	g.canvas.addEventListener("mousemove", mouseMove ,false); 
+	
+	window.addEventListener( "keypress", keyDown, false ); 
+
+	// == copied from somewhere for ff cmopatibilitied issues 
+	var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel" //FF doesn't recognize mousewheel as of FF3.x
+ 
+	if (g.canvas.attachEvent) //if IE (and Opera depending on user setting)
+		g.canvas.attachEvent("on"+mousewheelevt, mouseWheel)
+	else if (g.canvas.addEventListener) //WC3 browsers
+		g.canvas.addEventListener(mousewheelevt, mouseWheel, false)
+	// == 
+	
+	
+	
+	//g.canvas.addEventListener("mousewheel",mouseWheel,false);
+
+	g.cClip = newClip();
+	addFrame(); 
+
+	clearCanvas();
+}
+
+
+
+function addCommand(command) {	
+	if(g.cIdx < g.commands.length) 
+		g.commands[g.cIdx] = command; 		
+	else 
+		g.commands.push(command); 
+	++g.cIdx;	
+}
+
+// == addAndCopyFrame == 
+function addAndCopyFrame() {
+	
+	g.cFrame = newFrame(); 
+	g.cClip.frames.push(g.cFrame);
+	g.cClip.sIdx = g.cClip.frames.length - 1;
+	
+	copyFrame(g.cClip.frames[g.cClip.sIdx-1], g.cClip.frames[g.cClip.sIdx]);
+	g.cPath = g.cFrame.paths[g.cFrame.sIdx]; 
+	
+	redraw(); 
+}
+
+// == clearAll == 
+function clearAll() {
+	init(); 
+}
+
+// == addFrame == 
+function addFrame() {
+	g.cFrame = newFrame(); 
+	g.cPath = newPath(); 
+	
+	g.cClip.frames.push(g.cFrame);
+	g.cClip.sIdx = g.cClip.frames.length - 1; 	
+
+	g.cFrame.paths.push(g.cPath); 
+	g.cFrame.sIdx = 0; 	
+	redraw(); 
+}
+
+// == prevFrame == 
+function prevFrame() {
+	if (g.cClip.sIdx ==0)
+		return; 
+	-- g.cClip.sIdx;
+	g.cFrame = g.cClip.frames[g.cClip.sIdx]; 
+	redraw(); 	
+}
+
+// == nextFrame ==
+function nextFrame() {
+	if (g.cClip.sIdx == g.cClip.frames.length - 1)
+		return; 
+	++ g.cClip.sIdx; 
+	g.cFrame = g.cClip.frames[g.cClip.sIdx]
+	redraw(); 	
+}
+
+// == clonePoint == 
+function clonePoint(p) {
+	return [p[0],p[1]]; 
+}
+
+// == copyFrame == 
+
+function copyFrame(sFrame,dFrame) {
+	dFrame.isCopy = true; 
+	for(var i=0; i < sFrame.paths.length; ++i) {
+		dFrame.paths.push(newPath()); 
+		for(var j=0; j < sFrame.paths[i].points.length; ++j) {
+			dFrame.paths[i].points.push( clonePoint(sFrame.paths[i].points[j])); 
+		}
+		dFrame.paths[i].isClosed = sFrame.paths[i].isClosed; 
+		dFrame.paths[i].sIdx = sFrame.paths[i].sIdx;		
+	} 
+	dFrame.sIdx = sFrame.sIdx; 
+}
+
+
+// == makeClipCycledIfPossible == 
+function makeClipCycledIfPossible() {
+
+	var isCyc = true, 
+		fFrame = g.cClip.frames[0], 
+		lFrame = g.cClip.frames[g.cClip.frames.length-1]; 
+	
+	if(fFrame.paths.length == lFrame.paths.length) {
+		for(var i=0; i < fFrame.paths.length; ++i)
+			if(fFrame.paths[i].points.length != lFrame.paths[i].points.length) {
+				isCyc = false; 
+				break; 
+			}
+	} else 
+		isCyc = false;
+
+	fFrame.isCopy = isCyc; 
+}
+
+// == togglePlay == 
+function togglePlay() {
+	
+	if(g.cClip.frames.length < 2)
+		return; 
+	
+	if(! g.isPlayed) {
+		makeClipCycledIfPossible(); 		
+		document.getElementById("playB").innerHTML = "Stop"; 
+		g.isPlayed = true; 
+		if(g.cClip.frames[1].isCopy)
+			g.cPlay = 1;
+		else 
+			g.cPlay = 0;
+		playSched(); 
+	} 
+	else {
+		g.isPlayed = false; 
+		document.getElementById("playB").innerHTML = "Play";		  
+	}
+}
+
+// == playSched == 
+function playSched() {
+		
+		var frame =  g.cClip.frames[g.cPlay]; 
+
+		if (frame.isCopy) { 
+			interpolateStart();
+			return; 
+		}					
+
+		clearCanvas(); 
+		drawFrame(frame,false,"black");
+		
+		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
+		if(g.isPlayed)
+			setTimeout(playSched,200);
+		else
+			redraw(); 
+}
+
+function interpolateStart() {
+	g.intLeft = g.INT_FRAMES; 
+	
+	var n = g.cClip.frames.length; 
+	
+	var frame = g.cClip.frames[(g.cPlay-1+n)%n]; 
+			
+	g.frame = newFrame();
+	
+	copyFrame(frame, g.frame); 
+	
+	interpolateSched(); 	
+}
+
+// == interpulateSched == 
+function interpolateSched() {
+	if (!g.isPlayed) {
+		redraw(); 
+		return; 
+	}
+	
+	if (g.intLeft == 0) {
+		g.cPlay = (g.cPlay + 1) % g.cClip.frames.length;
+		setTimeout(playSched,200); 
+		return; 
+	}	
+	
+	var frame = g.cClip.frames[g.cPlay];
+	
+	for( var i=0; i < g.frame.paths.length; ++i) {
+		var gpoints = g.frame.paths[i].points,
+		    points  = frame.paths[i].points;  
+		
+		for (var j=0; j < gpoints.length; ++j) {
+			var x1 = gpoints[j][0], 
+				y1 = gpoints[j][1],
+				x2 = points[j][0], 
+				y2 = points[j][1];
+				
+			gpoints[j][0] += (x2-x1) / g.intLeft; 
+			gpoints[j][1] += (y2-y1) / g.intLeft; 	 
+		}
+	
+	} 
+	
+	clearCanvas(); 
+	drawFrame(g.frame,false,"black");
+	
+	--g.intLeft; 
+	
+	setTimeout(interpolateSched,50);  
+}
+
+// == addPath == 
+function addPath() {
+	g.cPath.sIdx = -1; 
+	g.cPath = newPath(); 
+	
+	g.cFrame.paths.push(g.cPath); 
+	g.cFrame.sIdx = g.cFrame.paths.length - 1; 
+
+}
+
+// == addPathWithClick == 
+function addPathWithClick(e) { 
+
+	addPath(); 
+	var command = newFirstPointCommand(g.cPath, 
+						 canvas2dataX(e.offsetX),
+						 canvas2dataY(e.offsetY)); 
+	
+	command.redo(); 
+	addCommand(command); 
+	
+	redraw(); 
+}
+
+
+
+// == redraw() == 
+function redraw() {
+
+	if(g.isPlayed)
+		return; 
+		
+	clearCanvas();  
+	if (g.cClip.sIdx > 0)
+		drawFrame(g.cClip.frames[g.cClip.sIdx - 1], false, "gray"); 
+	drawFrame(g.cFrame, true, "black"); 
+}
+
+// == drawFrame == 
+function drawFrame(frame, isEdditedFrame, color) {
+	var paths = frame.paths; 
+		
+	for(var i=0; i<paths.length; ++i) {	
+		var path = paths[i];
+		
+		if (path.points.length == 0)
+			continue; 
+			
+		if(path.isClosed) {
+			redrawClosed(path,isEdditedFrame, color);
+		} else {
+			redrawOpen(path,isEdditedFrame, color); 
+		}
+	}
+
+}
+
+
+// == redrawOpen == 
+function redrawOpen(path, isEdditedFrame, color) {
+	var points = path.points;
+	var last = points.length-1; 
+	var color; 
+	
+	for (var i=0; i <= last; i+=3)  {
+		var x0 = points[i][0], y0 = points[i][1],
+		      x1, y1, 
+		      x2,y2,
+		      x3,y3; 
+		if(i < last) {
+            x1 = points[i+1][0], y1 = points[i+1][1],
+            x2 = points[i+2][0], y2 = points[i+2][1],
+            x3 = points[i+3][0], y3 = points[i+3][1]; 
+
+			curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
+		}
+		
+		if (! isEdditedFrame )
+			continue; 
+			
+		if (path != g.cPath) {// if not cuurent path, mark only the first and last points 
+			if(i==0 || i == last)
+				circle(x0,y0, g.JOINT_RAD, "gray");
+			continue; 
+		}
+		// if current path, mark all joint points and the selected+control points 
+		if (i == path.sIdx) {
+			if(i > 0) {
+				var xp = points[i-1][0], yp = points[i-1][1]; 
+				line(x0,y0,xp,yp,"gray");  
+				circle(xp, yp, g.CONTROL_RAD, "gray");
+			}	
+			if (i < last) {
+			    line(x0,y0,x1,y1,"gray"); 
+	            circle(x1, y1 ,g.CONTROL_RAD, "gray"); 		 
+			 }
+			circle(x0, y0, g.CHOSEN_RAD, "cyan"); 
+		} else { 	
+			circle(x0,y0, g.JOINT_RAD, "gray"); 
+		}
+	}
+} 
+
+// == redrawClosed == 
+function redrawClosed(path, isEdditedFrame, color) {
+	var points = path.points;
+	var n = points.length; 
+	var color; 
+	
+	for (var i=0; i < n; i += 3)  {
+		var x0 = points[i][0], y0 = points[i][1],
+              x1 = points[i+1][0], y1 = points[i+1][1],
+              x2 = points[i+2][0], y2 = points[i+2][1],
+              x3 = points[(i+3)%n][0], y3 = points[(i+3)%n][1]; 
+
+		curve(x0,y0, x1,y1, x2,y2 ,x3,y3, color);
+		
+		if (! isEdditedFrame )
+			continue; 
+		
+		if (path != g.cPath) {
+			if (i==0)
+				circle(x0,y0,g.JOINT_RAD,"gray");
+			continue; 
+		}
+		if (i == path.sIdx) {
+            var xp = points[(i-1+n)%n][0],
+  			    yp = points[(i-1+n)%n][1]; 
+            line(x0,y0,xp,yp,"gray");  
+            circle(xp,yp, g.CONTROL_RAD, "gray");
+            line(x0,y0,x1,y1,"gray"); 
+            circle(x1,y1, g.CONTROL_RAD, "gray"); 		 
+            circle(x0,y0, g.CHOSEN_RAD, "cyan"); 
+		} else {
+		  circle(x0,y0,g.JOINT_RAD,"gray"); 
+		}
+	}
+}
+
+
+// = Mouse event handlers = 
+
+// == dis == 
+// distance from a point to a point in path 
+function dis(x,y, path, idx) {   
+
+	return distance(x,y,
+					data2canvasX(path.points[idx][0]),
+					data2canvasY(path.points[idx][1])); 
+
+	}
+
+// == didSelectJoint ==
+// did the user select a joint point of a path?  
+function didSelectJoint(e) {
+
+	for (var i=0; i<g.cFrame.paths.length; ++i) {
+		var path = g.cFrame.paths[i];
+		var points = path.points; 
+		
+		if (path != g.cPath && points.length >0) { // for path which is not current, check only edges points 
+			var idxs = [0];
+			if (! path.isClossed && points.length > 1)
+				idxs.push(points.length-1); 
+			for(var k=0; k<idxs.length; ++k) {
+				var j=idxs[k]; 
+				if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
+					g.cFrame.sIdx = i; 
+					g.cPath = path; 
+					path.sIdx = j; 
+					path.dIdx = j; 
+					redraw(); 				
+					return true; 					
+				}
+			}
+			continue; 
+		}
+		
+		// for current path, check all points. 
+		for(j=0; j<points.length; j+=3) {  
+			if ( dis(e.offsetX, e.offsetY, path, j) < g.SELECT_RAD ) {
+				g.cFrame.sIdx = i; 
+				g.cPath = path; 
+				path.sIdx = j; 
+				path.dIdx = j; 
+				redraw(); 				
+				return true; 
+			}
+		}
+	}
+	return false; 
+
+}
+
+// == didSelectControl ==
+// did the user select a control point 
+function didSelectControl(e,path) {
+	
+	var points = path.points; 
+	
+	var idxs = [];  // indexs of the selected point's control points 
+	var n = points.length;
+	if(!path.isClosed) { 
+		if (path.sIdx > 0)
+			idxs.push(path.sIdx -1);
+		if ( path.sIdx < n-1)
+			idxs.push(path.sIdx + 1); 
+	} else {
+		idxs.push( (path.sIdx - 1+n)%n); 
+		idxs.push( (path.sIdx + 1)%n); 
+	}
+	for(k=0; k < idxs.length; ++k) { 
+		i = idxs[k];  
+		if ( dis (e.offsetX, e.offsetY, path, i) < g.SELECT_RAD ) {
+			path.dIdx = i; 
+  			return true; 
+		}
+	}
+	return false; 
+}
+
+
+function newFirstPointCommand(path,x,y) {
+	return {
+			name:"addFirstPoint",
+			x:x, y:y, 
+			path: path,
+			redo:function() {
+				this.path.points.push([this.x, this.y]);
+			},
+			undo: function() {
+				this.path.points = []; 
+			}
+		} 
+}
+	
+// == addSegmentToPath == 
+
+function addSegmentToPath(e,path) {
+	
+	var points = path.points; 
+
+	var	n = points.length-1,
+		x3 = canvas2dataX(e.offsetX), y3 = canvas2dataY(e.offsetY); 
+	
+	if (n < 0) { // first point in path 
+		var command = newFirstPointCommand(path,x3,y3); 
+		addCommand(command); 
+		command.redo();  
+		return; 
+	}
+
+
+  	var x0 = points[n][0], y0 = points[n][1], 
+   		  xm = (x3-x0)/3, ym =  (y3-y0)/3, 
+   		  x1 = x0+xm, y1 = y0+ym; 
+	
+	var xb4,yb4, 
+		xb4n,yb4n; 
+	if (n>0) { // if the path already contains a segment
+		xb4 = points[n-1][0], yb4 = points[n-1][1]; 
+		var xq = 2*x0- xb4, 
+			yq =2*y0 - yb4; 
+		
+		x1 = (x1+xq)/2; // fix (x1,y1) to reflect last control point of the last segment 
+		y1 = (y1+yq)/2; 
+	
+		xb4n = 2*x0-x1; // also fix that last control point 
+		yb4n = 2*y0-y1; // to be symmetric to our new (x1,y1) 
+	}
+	
+	var  x2 = x0+xm*2, y2 = y0+ym*2;   
+
+	var command = {
+		name:"addSegment", 
+		path:path, 
+		xb4: xb4, yb4: yb4, 
+		xb4n: xb4n, yb4n: yb4n, 
+		x1:x1, y1:y1,
+		x2:x2, y2:y2,		
+		x3:x3, y3:y3,		
+
+		redo: function() {
+			var points = this.path.points;   
+			var n = points.length-1; 
+			if(n>0) {
+				points[n-1][0] = this.xb4n; 
+				points[n-1][1] = this.yb4n; 
+			}
+			points.push([this.x1, this.y1]); 			
+			points.push([this.x2, this.y2]); 			
+			points.push([this.x3 ,this.y3]);
+		}, 
+		undo: function() {
+			var points = this.path.points; 
+		    points.splice(points.length-3);
+		    var n = points.length-1;
+		    if(n>0) {
+		    	points[n-1][0] = this.xb4; 
+		    	points[n-1][1] = this.yb4; 
+		    }
+		},
+	};
+	addCommand(command); 
+	command.redo(); 
+}
+	
+	
+function mouseDbClick(e) {
+
+//	g.cPath.sIdx = 0; 
+}
+
+// == copied from an answer in stack overflow to fix firefox's incompatability 
+function fixEvent(e) {
+	if(!e.hasOwnProperty('offsetX')) {
+		e.offsetX = e.layerX - e.currentTarget.offsetLeft;
+		e.offsetY = e.layerY - e.currentTarget.offsetTop;
+	}
+}
+
+// == mouse press handle == 
+function mouseDown(e) {
+	fixEvent(e);
+	
+	if(didSelectJoint(e))
+		return; 
+
+    var path = g.cPath; 
+	var points = path.points; 
+	
+	if(path.sIdx != -1)  {// if one joint point is already selected 
+		if(!didSelectControl(e,path)) 
+			addPathWithClick(e);		
+		return; 
+	}
+	
+    if(path.isClosed) 
+        return; 
+ 	
+	path.sIdx = -1; 
+
+	addSegmentToPath(e,path); 
+	
+	redraw();  
+}
+
+// == keyDown == 
+function keyDown(e) {
+	
+	if(e.keyCode == 26) { // ctr+z 
+		if(g.cIdx ==0)
+			return; 
+		--g.cIdx;
+		g.commands[g.cIdx].undo(); 		 		
+		redraw(); 
+		return; 
+	}
+	if(e.keyCode == 25) { // ctr+y 
+		if(g.cIdx == g.commands.length)
+			return; 		
+		g.commands[g.cIdx].redo(); 		 		
+		++g.cIdx;
+		redraw(); 
+	}
+	if(e.keyCode == 32) { // space
+		var s = data2string(); 
+		print(s); 
+		string2data(s); 
+	}
+}
+
+// == mouseUp == 
+function mouseUp(e) {
+	fixEvent(e);
+	
+	
+	var path = g.cPath; 
+	var points = path.points; 
+	
+	g.firstMove = true; 
+	if(path.dIdx != -1) { // update the dragged command to reflect the total delta 
+		var c = g.commands[g.cIdx-1]; 
+		c.dx =  points[path.dIdx][0]- c.x0; 
+		c.dy =  points[path.dIdx][1]- c.y0; 
+	}	
+	
+	var last = points.length-1; 
+	if (last <= 0 || path.isClosed) {
+		path.dIdx = -1;  // deselect the dragged point  
+		return; 
+	}
+	// check if the user closed the path 
+    if 	( path.dIdx == last && dis(e.offsetX,e.offsetY, path, 0) < g.SELECT_RAD 
+    		      ||
+    	  path.dIdx == 0 && dis(e.offsetX,e.offsetY, path, last) < g.SELECT_RAD)  { 
+		path.isClosed = true; 
+		points.splice(last,1); // delete last element
+		
+		// fix the two control points after the path closure 
+		var x3 = points[0][0],      y3 = points[0][1], 
+			x2 = points[last-1][0], y2 = points[last-1][1];  
+		
+		var xp = 2*x3 - points[1][0], yp = 2*y3 - points[1][1];
+		x2 = (x2+xp)/2; 
+		y2 = (y2+yp)/2; 
+		
+		points[last-1][0] = x2; 
+		points[last-1][1] = y2; 
+	    points[1][0] = 2*x3 - x2; 
+	 	points[1][1] = 2*y3 - y2; 
+		
+		redraw(); 
+	}
+	path.dIdx = -1; 
+}
+
+
+
+// == mouseMove == 
+function mouseMove(e) {
+	fixEvent(e);
+	
+	var path = g.cPath,
+        points = path.points; 
+		
+	if (path.dIdx == -1)
+		return; 
+	
+	var x = canvas2dataX(e.offsetX), y = canvas2dataY(e.offsetY); 
+	var dx = x - points[path.dIdx][0], 
+	    dy = y - points[path.dIdx][1];
+	
+
+	if (!g.firstMove) {
+		var c = g.commands[g.cIdx-1]; 
+		c.dx = dx; 
+		c.dy = dy; 
+		c.redo(); 
+		redraw();  
+		return; 
+	}
+	
+	g.firstMove = false; 
+	
+
+	var command = {
+		x0: points[path.dIdx][0], 
+		y0: points[path.dIdx][1], 
+		dx:dx, dy:dy,
+		points: points,  
+		idxs: [path.dIdx], 
+		redo: function() {
+			for(var i=0; i<this.idxs.length; ++i) {
+				points[this.idxs[i]][0] += this.dx; 
+				points[this.idxs[i]][1] += this.dy; 
+			}
+			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
+				points[this.otherIdx][0] -= this.dx; 
+				points[this.otherIdx][1] -= this.dy; 
+			}
+			
+		},
+		undo: function() {
+			for(var i=0; i<this.idxs.length; ++i) {
+				points[this.idxs[i]][0] -= this.dx; 
+				points[this.idxs[i]][1] -= this.dy; 
+			}
+			if(this.otherIdx) { // if(typeof this.otherIdx !== 'undefined') 
+				points[this.otherIdx][0] += this.dx; 
+				points[this.otherIdx][1] += this.dy; 
+			}
+		
+		}, 
+	}; 	
+
+	var pointType = path.dIdx % 3;  // 0 - joint; 1,2 - control 
+	var last = points.length-1;
+	
+    if(!path.isClosed) {
+	    if(pointType ==0) { // drag joint point : control point escort
+	    	command.name = "moveJoint"; 
+		    if (path.dIdx < last) 
+		 		command.idxs.push(path.dIdx+1);      
+		    if (path.dIdx > 0)
+		    	command.idxs.push(path.dIdx-1);  
+	    } else { // drag control point: other control reverse mirror  
+		    command.name = "moveControl"; 
+			var otherControl = path.dIdx + (pointType-1)*4-2; // type==1 --> -2, type ==2 --> +2   
+		    if(otherControl > 0 && otherControl <last) 
+			   command.otherIdx = otherControl;  
+	    }
+    } else {
+        var n = points.length; 
+	    if(pointType ==0) { // drag joint point : control point escort 
+			command.name = "moveJoint"; 
+			command.idxs.push((path.dIdx+1)%n); 
+			command.idxs.push((path.dIdx-1+n)%n); 
+	    } else { // drag control point: other control reverse mirror
+			command.name = "moveControl";
+		    var otherControl = (path.dIdx+(pointType-1)*4-2 +n)%n;  
+		    command.otherIdx = otherControl; 
+	    }
+    }	
+	
+	addCommand(command); 
+	command.redo(); 
+	
+	redraw();  
+} 
+
+// == copied from stack overflow for firefox compatabilities issues == 
+function extractDelta(e) {
+    if (e.wheelDelta) {
+        return e.wheelDelta;
+    }
+ 
+    return e.detail*(-120);
+ }
+
+// == mouseWheel == 
+function mouseWheel(e) {
+	fixEvent(e);
+
+    var x = canvas2dataX(e.offsetX),
+		y = canvas2dataY(e.offsetY), 
+		f; 
+    
+    var d = extractDelta(e); 
+    
+    if(d > 0) 
+        f = v.df
+     else 
+        f = 1 / v.df;  
+          
+     v.factor *= f; 
+    
+    v.cx = x + (v.cx - x) / f; 
+    v.cy = y + (v.cy - y) / f; 
+
+    redraw(); 
+}
+
+
+
+
+// = Utils = 
+
+// == clearCanvas == 
+function clearCanvas() {
+
+	g.context.beginPath() ; // this is necessary due to some strange 
+						  // behaviour of canvas that I do not understand. 
+						  // Without this, the last stroke doesn't get deleted 
+	g.context.clearRect(0, 0, g.canvas.width, g.canvas.height);
+
+	g.context.strokeStyle = 'gray';	
+	g.context.rect(0,0, g.canvas.width, g.canvas.height);
+	
+
+	var frameNum; 
+	if (g.isPlayed)
+		frameNum = g.cPlay; 
+	else
+		frameNum = g.cClip.sIdx; 
+	
+	g.context.fillStyle  = "gray"; 	
+	g.context.fillText("frame: " + frameNum,50,50);
+
+	g.context.stroke();
+
+}
+
+// == curve == 
+function curve(x1,y1,x2,y2,x3,y3,x4,y4,c) {
+	x1 = data2canvasX(x1);	 y1 = data2canvasY(y1);
+	x2 = data2canvasX(x2);	 y2 = data2canvasY(y2);
+	x3 = data2canvasX(x3); 	 y3 = data2canvasY(y3);
+	x4 = data2canvasX(x4); 	 y4 = data2canvasY(y4);
+
+	g.context.beginPath();
+  	g.context.moveTo(x1,  y1);
+  	g.context.bezierCurveTo(x2, y2, x3, y3, x4, y4);
+  	g.context.lineWidth = 3;
+  	g.context.strokeStyle = c; 
+	g.context.stroke();
+}
+
+// == line == 
+function line(x1,y1,x2,y2,c) {
+	x1 = data2canvasX(x1);	 	 
+	y1 = data2canvasY(y1);
+
+	x2 = data2canvasX(x2);
+	y2 = data2canvasY(y2);
+
+	g.context.beginPath();
+  	g.context.moveTo(x1,  y1);
+	g.context.lineTo(x2,y2);
+	g.context.strokeStyle = c; 
+	g.context.stroke();
+}
+
+
+// == circle == 
+function circle(x,y,r,c) {
+	x = data2canvasX(x);	 	 
+	y = data2canvasY(y);
+
+	g.context.beginPath();
+	g.context.arc(x, y, r, 0, 2 * Math.PI, false);
+	g.context.fillStyle = c;
+	g.context.fill();
+	g.context.lineWidth = 2;
+	g.context.strokeStyle = 'black';
+	g.context.stroke();
+}
+
+// == translations: == 
+
+//  == data2canvasX ==
+function data2canvasX(x) {
+	return (x-v.cx)*v.factor; 
+}
+
+//  == canvas2dataX ==
+function canvas2dataX(x) {
+	return x / v.factor + v.cx; 
+}
+
+//  == data2canvasY ==
+function data2canvasY(y) {
+	return (y-v.cy)*v.factor; 
+}
+
+//  == canvas2dataY ==
+function canvas2dataY(y) {
+	return y / v.factor + v.cy; 
+}
+
+// == distance == 
+function distance(x1,y1,x2,y2) {
+	return Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2) ); 
+}
+
+// == debugPrint == 
+function print(str) {
+	document.getElementById("o1").innerHTML += str +"<br />"; 
+}
+
+function check() {
+	g.commands.push({
+		name:"add",
+		action: function() {
+			print("*add*"); 
+		}
+	}); 
+	g.commands.push({
+		name:"move",
+		x:10, y:20, 
+		action: function() {
+			print("*move* ("+this.x+","+this.y+")"); 
+		}
+	});
+	for (var i=0; i< g.commands.length; ++i)	
+		g.commands[i].action(); 
+}
+
+</script> 
+</body>
+</html>
