@@ -21,8 +21,9 @@
 		<button id="clearB" onclick="clearAll()"> Clear </button>  <br />
 
 		<button id="saveB" onclick="save()"> Save </button>
-		<button id="loadB" onclick="load()"> Load </button> <br />
-
+		
+		<input type="file" id="load-selector" multiple> <br />
+		
 	</center>
 	
 	<a rel="license"
@@ -39,8 +40,9 @@
 
 	
 	<h1 id="o1">  </h1>
+
  
-	<script>
+<script>
 
 // Animate: a small online application that enables creation of simple smooth animations 
 
@@ -49,6 +51,12 @@
 // Try it out: http://orimosenzon.com/animate.html
 
 
+const fileSelector = document.getElementById('load-selector');
+
+fileSelector.addEventListener('change', (event) => {
+    const fileList = event.target.files;
+    console.log(fileList);
+  });
 
 
 
