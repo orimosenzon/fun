@@ -83,7 +83,7 @@ class Board:
                 self.brd[ref] = cur 
     
 
-    def print_board(self):
+    def print(self):
         bar = '+---' * self.n + '+'
         for i in range(self.n):
             print(bar)
@@ -91,7 +91,7 @@ class Board:
                 print(f'|{self.brd[i, j]:2}', end='')
             print('|')
         print(bar)
-        
+
 
     def play(self): 
         while True: 
