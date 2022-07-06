@@ -84,11 +84,14 @@ class Board:
     
 
     def print_board(self):
+        bar = '+---' * self.n + '+'
         for i in range(self.n):
-            print('+---' * self.n + '+')
+            print(bar)
             for j in range(self.n):
-                print(f'|{self.brd[i, j]:2}|', end='')
+                print(f'|{self.brd[i, j]:2}', end='')
             print('|')
+        print(bar)
+        
 
     def play(self): 
         while True: 
