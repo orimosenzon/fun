@@ -26,8 +26,13 @@ class Board:
         loc = (0, 0)
         for i in range(self.n):
             loc[dim] = i
-            for j in range(self.n):
-                loc[other_dim] = (-j * dir[other_dim]) % self.n
+            delta = dir[other_dim] 
+            if delta == 1:
+                r = self.n - 1
+            else:
+                r = 0
+            for j in range(2, self.n):
+                loc[other_dim] = (-j * delta) % self.n
                 next_loc = loc[dim], loc[other_dim] - dir[other_dim]
                 self.board[loc] = self.board[next_loc] #.... not done ... 
 
