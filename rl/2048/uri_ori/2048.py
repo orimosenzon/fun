@@ -1,3 +1,5 @@
+import random 
+
 import numpy as np
 
 
@@ -92,13 +94,39 @@ class Board:
             print('|')
         print(bar)
 
+    def get_random_empty_loc(self): 
+        N = self.n * self.n
+        indices = list(range(N))
+        last_i = N-1
+        while last_i > 0: 
+            i = random.randint(0, last_i)
+            loc = i // self.n, i % self.n
+            if self.brd[loc] == 0:
+                return loc 
+            indices[i] = indices[last_i]
+            last_i -= 1 
+        return None
+
 
     def play(self): 
         while True: 
             char = input('dir? (r,l,d,u) or e for exit: ')
+            
             if char == 'e':
+                print('You have decided to quit')
                 break
+            
             self.ori_move(char)
+
+            loc = self.get_random_empty_loc()
+            if not loc:
+                print('You have lost')
+                break
+            if random.random() < .5: # different odds in game rules? 
+                self.brd[loc] = 2
+            else:
+                self.brd[loc] = 4
+
             self.print()
 
 
