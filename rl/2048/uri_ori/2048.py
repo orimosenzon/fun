@@ -44,7 +44,7 @@ class Board:
         'd': (1, 0), 
         'u': (-1, 0), 
     }
-    
+
 
     def ori_move(self, dir_char):
         dm, dn = self.char2dir[dir_char]
@@ -66,7 +66,7 @@ class Board:
             else:                         # -1  
                 j1, j2 = self.n-1, 0         
                 
-            for j in range(j2-delta, j1+delta, -delta):
+            for j in range(j2-delta, j1-delta, -delta):
                 loc[o_dim] = j 
                 cur = self.brd[loc]
                 if cur == 0:
