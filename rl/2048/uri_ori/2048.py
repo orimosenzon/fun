@@ -14,9 +14,18 @@ class Board:
 
 
     def __init__(self, n):
-        self.brd = np.zeros((n, n))
         self.n = n
+        self.clear()
     
+
+    def clear(self):
+        self.brd = np.zeros((self.n, self.n), dtype=np.int32)
+
+
+    def initialize(self):
+        for _ in range(2):
+            self.place_new_entry()
+
 
     def move(self, dir_num):
         dm, dn = dir = self.directions[dir_num]
@@ -73,10 +82,14 @@ class Board:
                 cur = self.brd[loc]
                 if cur == 0:
                     continue
+
                 ref = (0, 0)
                 ref[dim] = i 
                 ref[o_dim] = j2 
-                if cur == self.brd[ref]: # merge case 
+                
+                if self.brd[ref] == 0:   # slide case 
+                    self.brd[ref] = cur
+                elif cur == self.brd[ref]: # merge case 
                     self.brd[ref] *= 2
                 
                 self.brd[loc] = 0 
@@ -93,6 +106,7 @@ class Board:
                 print(f'|{self.brd[i, j]:2}', end='')
             print('|')
         print(bar)
+
 
     def get_random_empty_loc(self): 
         N = self.n * self.n
@@ -114,10 +128,10 @@ class Board:
         if not loc:
             return False
         
-        if random.random() < .5: # different odds in game rules? 
-            self.brd[loc] = 2
-        else:
+        if random.random() < .1: 
             self.brd[loc] = 4
+        else:
+            self.brd[loc] = 2
         
         return True
 
@@ -141,4 +155,5 @@ class Board:
 
 if __name__ == '__main__':
     board = Board(4)
+    board.initialize()
     board.play() 
