@@ -108,6 +108,20 @@ class Board:
         return None
 
 
+    def place_new_entry(self):
+        loc = self.get_random_empty_loc()
+        
+        if not loc:
+            return False
+        
+        if random.random() < .5: # different odds in game rules? 
+            self.brd[loc] = 2
+        else:
+            self.brd[loc] = 4
+        
+        return True
+
+
     def play(self): 
         while True: 
             char = input('dir? (r,l,d,u) or e for exit: ')
@@ -118,15 +132,10 @@ class Board:
             
             self.ori_move(char)
 
-            loc = self.get_random_empty_loc()
-            if not loc:
+            if not self.place_new_entry():
                 print('You have lost')
                 break
-            if random.random() < .5: # different odds in game rules? 
-                self.brd[loc] = 2
-            else:
-                self.brd[loc] = 4
-
+            
             self.print()
 
 
