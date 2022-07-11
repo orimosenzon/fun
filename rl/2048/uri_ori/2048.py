@@ -47,8 +47,14 @@ class Board:
                 j1, j2 = 0, self.n-1
             else:                         # -1  
                 j1, j2 = self.n-1, 0         
-                
-            ref[o_dim] = j2     
+
+            #find initial place for ref 
+            for j in range(j2, j1, -delta):    
+                if j-delta == 0 or self.brd[ref1] == self.brd[ref2]:
+                    break
+                ref = ref1 
+
+                #ref[o_dim] = j2     
             for j in range(j2-delta, j1-delta, -delta):
                 loc[o_dim] = j 
                 cur = self.brd[loc]
