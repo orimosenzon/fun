@@ -3,6 +3,9 @@
 import random 
 import numpy as np
 
+from pynput import keyboard
+
+
 
 class Board:
 
@@ -147,8 +150,38 @@ class Board:
                 print('You have lost')
                 break
 
+a_key_is_pressed = False 
+
+def on_press(key):
+    global a_key_is_pressed, board
+    
+    try:
+        if key.char == 'q':
+            print('Quit.')
+            return False
+        if not a_key_is_pressed and key.char in ['l', 'r', 'd', 'u']: 
+            a_key_is_pressed = True
+            board.move(key.char)
+            board.place_new_entry()
+            print('\n')
+            board.print()
+            print('\n')
+    except AttributeError:
+        print(f'{key} was pressed', type(key))
+
+
+def on_release(key):
+    global a_key_is_pressed
+    # print(f'{key} released')
+    a_key_is_pressed = False
+
 
 if __name__ == '__main__':
     board = Board(4)
     board.initialize()
-    board.play() 
+    # board.play() 
+    board.print()
+
+    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+        listener.join()
+
