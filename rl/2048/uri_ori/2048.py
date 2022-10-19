@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from pynput import keyboard
-
+from pynput.keyboard import Key
 
 
 class Board:
@@ -152,6 +152,13 @@ class Board:
 
 a_key_is_pressed = False 
 
+key2char = {
+    Key.up: 'u', 
+    Key.down: 'd', 
+    Key.left: 'l', 
+    Key.right: 'r',     
+}
+
 def on_press(key):
     global a_key_is_pressed, board
     
@@ -159,15 +166,22 @@ def on_press(key):
         if key.char == 'q':
             print('Quit.')
             return False
-        if not a_key_is_pressed and key.char in ['l', 'r', 'd', 'u']: 
+    except AttributeError:
+        if not a_key_is_pressed:
             a_key_is_pressed = True
-            board.move(key.char)
+            if key not in key2char.keys():
+                return True
+            board.move(key2char[key])
             board.place_new_entry()
             print('\n')
             board.print()
             print('\n')
-    except AttributeError:
-        print(f'{key} was pressed', type(key))
+
+
+
+        if key == Key.up:
+            print('**up arrow!**')
+        
 
 
 def on_release(key):
