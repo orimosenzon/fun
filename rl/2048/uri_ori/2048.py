@@ -72,19 +72,17 @@ class Board:
                 j2 = self._next_item(i, j1, dim, delta)
                 
                 if j2 == -1: 
-                    self._set_loc(i, s, dim, val)
+                    self._set_loc(i, s, dim, val) # slide 
                     break
     
-                if val == self.loc(i, j2, dim):   #merge case                    
+                if val == self.loc(i, j2, dim):   # merge case                    
                     self._set_loc(i, j2, dim, 0)
                     self._set_loc(i, s, dim, 2 * val)
-
                     j1 = self._next_item(i, j2, dim, delta)
-                    if j1 == -1: 
-                        break 
-                else: 
+                else:                             # slide case
                     self._set_loc(i, s, dim, val)
                     j1 = j2 
+
                 s += delta         
 
 
