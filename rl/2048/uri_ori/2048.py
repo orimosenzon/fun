@@ -172,21 +172,16 @@ def on_press(key):
             if key not in key2char.keys():
                 return True
             board.move(key2char[key])
-            board.place_new_entry()
+            if not board.place_new_entry():
+                print('board is full. Quit.')
+                return False
             print('\n')
             board.print()
             print('\n')
 
 
-
-        if key == Key.up:
-            print('**up arrow!**')
-        
-
-
 def on_release(key):
     global a_key_is_pressed
-    # print(f'{key} released')
     a_key_is_pressed = False
 
 
