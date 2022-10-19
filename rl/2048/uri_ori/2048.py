@@ -81,7 +81,7 @@ class Board:
                     j1 = self._next_item(i, j2, dim, delta)
                 else:                             # slide case
                     self._set_loc(i, s, dim, val)
-                    j1 = j2 
+                    j1 = self._next_item(i, j2, dim, delta) 
 
                 s += delta         
 
