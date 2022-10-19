@@ -27,6 +27,14 @@ class Board:
     }
 
 
+    def _next_item(self, i, j, dim, delta):
+        j += delta 
+
+
+        return j 
+        
+
+
     def move(self, dir_char):
         dm, dn = self.char2dir[dir_char]
 
@@ -36,40 +44,38 @@ class Board:
         else:
             dim = 1
             delta = dm
-        o_dim = 1 - dim
 
-        loc = (0, 0)
-        ref = (0, 0)
-        for i in range(self.n):                
-            loc[dim] = ref[dim] = i
+        if delta == 1: 
+            first = 0
+        else: 
+            first = self.n - 1
 
-            if delta == 1:                # 1
-                j1, j2 = 0, self.n-1
-            else:                         # -1  
-                j1, j2 = self.n-1, 0         
+        for i in range(self.n):
+            s = first
+            while True:
+                j1 = self._next_item(i, s, dim, delta) 
+                j2 = self._next_item(i, j1, dim, delta)
+                val = self._loc(i, j1, dim)
+                self._set_loc(i, j1, dim, 0)
 
-            #find initial place for ref 
-            for j in range(j2, j1, -delta):    
-                if j-delta == 0 or self.brd[ref1] == self.brd[ref2]:
-                    break
-                ref = ref1 
+                if val == self.loc(i, j2, dim):   #merge case                    
+                    self._set_loc(i, j2, dim, 0)
+                    self._set_loc(i, s, dim, 2 * val)
 
-                #ref[o_dim] = j2     
-            for j in range(j2-delta, j1-delta, -delta):
-                loc[o_dim] = j 
-                cur = self.brd[loc]
-                if cur == 0:
-                    continue
-               
-                if self.brd[ref] == 0:     # slide case 
-                    self.brd[ref] = cur
-                elif cur == self.brd[ref]: # merge case 
-                    self.brd[ref] *= 2
-                
-                self.brd[loc] = 0 
-                j2 -= delta 
-                ref[o_dim] = j2
-                self.brd[ref] = cur 
+                    j1 = self._next_item(i, j2, dim, delta)
+                    if j1 == -1: 
+                        break 
+                    j2 = self._next_item(i, j1, dim, delta)
+                    if j2 == -1:
+                        break
+                else: 
+                    self._set_loc(i, s, dim, val)
+                    j1 = j2 
+                    j2 = self._next_item(i, j1, dim, delta)
+                    if j2 == -1:
+                        break
+                s += delta         
+
     
 
     def uri_move(self, dir_char):
