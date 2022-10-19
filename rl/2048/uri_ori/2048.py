@@ -1,11 +1,11 @@
 import random 
-
 import numpy as np
 
 
 class Board:
 
     def __init__(self, n):
+        assert n > 1, 'a too smaller board'
         self.n = n
         self.clear()
     
@@ -128,19 +128,22 @@ class Board:
 
     def play(self): 
         while True: 
+            self.print()
             char = input('dir? (r,l,d,u) or e for exit: ')
             
             if char == 'e':
                 print('You have decided to quit')
                 break
             
+            if char not in self.char2dir.keys():
+                print(f'{char} is not a valid option')
+                continue  
+
             self.move(char)
 
             if not self.place_new_entry():
                 print('You have lost')
                 break
-            
-            self.print()
 
 
 if __name__ == '__main__':
