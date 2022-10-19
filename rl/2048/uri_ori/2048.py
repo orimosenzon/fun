@@ -56,23 +56,25 @@ class Board:
         if dn != 0:  #  Running on rows (r or l)
             dim = 0
             delta = dn
-        else:
+        else:        #  Running on columns (u or d)
             dim = 1
             delta = dm
 
-        if delta == 1: 
-            first = 0
-        else: 
-            first = self.n - 1
+        first = 0 if delta == 1 else self.n - 1 
 
         for i in range(self.n):
             s = first
-            while True:
-                j1 = self._next_item(i, s, dim, delta) 
-                j2 = self._next_item(i, j1, dim, delta)
+            j1 = self._next_item(i, s, dim, delta) 
+            while j1 != -1:
                 val = self._loc(i, j1, dim)
                 self._set_loc(i, j1, dim, 0)
-
+                
+                j2 = self._next_item(i, j1, dim, delta)
+                
+                if j2 == -1: 
+                    self._set_loc(i, s, dim, val)
+                    break
+    
                 if val == self.loc(i, j2, dim):   #merge case                    
                     self._set_loc(i, j2, dim, 0)
                     self._set_loc(i, s, dim, 2 * val)
@@ -80,15 +82,9 @@ class Board:
                     j1 = self._next_item(i, j2, dim, delta)
                     if j1 == -1: 
                         break 
-                    j2 = self._next_item(i, j1, dim, delta)
-                    if j2 == -1:
-                        break
                 else: 
                     self._set_loc(i, s, dim, val)
                     j1 = j2 
-                    j2 = self._next_item(i, j1, dim, delta)
-                    if j2 == -1:
-                        break
                 s += delta         
 
 
