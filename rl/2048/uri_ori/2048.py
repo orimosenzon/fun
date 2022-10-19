@@ -85,7 +85,6 @@ class Board:
 
                 s += delta         
 
-
             
     def print(self):
         bar = '+----' * self.n + '+'
@@ -100,10 +99,12 @@ class Board:
     def get_random_empty_loc(self): 
         N = self.n * self.n
         indices = list(range(N))
+        # random.shuffle(indices)
         last_i = N-1
-        while last_i > 0: 
+        while last_i >= 0: 
             i = random.randint(0, last_i)
-            loc = i // self.n, i % self.n
+            idx = indices[i]
+            loc = (idx // self.n, idx % self.n)
             if self.brd[loc] == 0:
                 return loc 
             indices[i] = indices[last_i]
