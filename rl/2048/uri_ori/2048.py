@@ -57,16 +57,16 @@ class Board:
 
         if dn != 0:  #  Running on rows (r or l)
             dim = 0
-            delta = dn
+            delta = -dn
         else:        #  Running on columns (u or d)
             dim = 1
-            delta = dm
+            delta = -dm
 
         first = 0 if delta == 1 else self.n - 1 
 
         for i in range(self.n):
             s = first
-            j1 = self._next_item(i, s, dim, delta) 
+            j1 = self._next_item(i, s-delta, dim, delta) 
             while j1 != -1:
                 val = self._loc(i, j1, dim)
                 self._set_loc(i, j1, dim, 0)
@@ -131,9 +131,9 @@ class Board:
     def play(self): 
         while True: 
             self.print()
-            char = input('dir? (r,l,d,u) or e for exit: ')
+            char = input('dir? (r,l,d,u) or q to quit: ')
             
-            if char == 'e':
+            if char == 'q':
                 print('You have decided to quit')
                 break
             
