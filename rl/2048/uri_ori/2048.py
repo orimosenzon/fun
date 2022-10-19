@@ -27,12 +27,27 @@ class Board:
     }
 
 
+    def _loc(self, i, j, dim):
+        loc = [0, 0]
+        loc[dim] = i 
+        loc[1-dim] = j 
+        return self.brd.item(*loc)
+
+
+    def _set_loc(self, i, j, dim, val): 
+        loc = [0, 0]
+        loc[dim] = i 
+        loc[1-dim] = j 
+        self.brd[tuple(loc)] = val
+
+
     def _next_item(self, i, j, dim, delta):
-        j += delta 
-
-
-        return j 
-        
+        while True: 
+            j += delta 
+            if j == self.n or j == -1:
+                return -1  
+            if self._loc(i, j, dim) != 0: 
+                return j 
 
 
     def move(self, dir_char):
@@ -76,50 +91,7 @@ class Board:
                         break
                 s += delta         
 
-    
 
-    def uri_move(self, dir_char):
-            dm, dn = self.char2dir[dir_char]
-
-            if dn != 0:  #  Running on rows (r or l)
-                dim = 0
-                delta = dn
-            else:
-                dim = 1
-                delta = dm
-            o_dim = 1 - dim
-
-            loc = (-1, -1)
-            ref = (-1, -1)
-            for i in range(self.n):                
-                loc[dim] = ref[dim] = i
-
-                if delta == 1:                # 1
-                    j1, j2 = 0, self.n-1
-                else:                         # -1  
-                    j1, j2 = self.n-1, 0         
-
-                #find initial place for ref 
-                for j in range(j1, j2, delta):
-                    loc[o_dim] = j
-                    if ref = (0,0) && self.brd[i, j] > 0:
-                        ref = (i, j)
-                    else:
-                        if self.brd[i, j] > 0:
-                            loc = (i, j)
-                            break
-                if loc != (-1,-1) && self.brd[ref] == self.brd[loc]:
-                    self.brd[loc] *= 2
-                    self.brd[ref] = 0
-                if loc != (-1,-1) && self.brd[ref] != self.brd[loc] && np.abs(ref[o_dim] - loc[o_dim]) > 1:
-                    loc1 = loc
-                    loc1[o_dim] += delta
-                    self.brd[loc] = self.brd[ref]
-                    self.brd[ref] = 0
-                if loc == (-1,-1) && ref != (-1,-1) && ref[o_dim] != j2:
-                    self.brd[loc] = self.brd[ref]
-                    self.brd[ref] = 0
-            
             
     def print(self):
         bar = '+----' * self.n + '+'
