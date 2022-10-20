@@ -185,12 +185,42 @@ def on_release(key):
     a_key_is_pressed = False
 
 
-if __name__ == '__main__':
-    board = Board(4)
-    board.initialize()
-    # board.play() 
-    board.print()
+board = None
 
+
+def gui_play(): 
+    global board 
+    board = Board(5)
+    board.initialize()
+    board.print()
     with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
+
+
+def random_play(): 
+    board = Board(5)
+    board.initialize()
+    board.print()
+ 
+    c = 0 
+    actions = list(key2char.values())
+    while True:
+        for i in range(100): 
+            board.move(random.choice(actions))
+            if not board.place_new_entry():
+                print('board is full. Quit.')
+                return False
+
+            print(f'{c}:')
+            c += 1 
+            board.print()
+        cont = input('Continue?')
+        if cont == 'n': 
+            break
+
+
+
+if __name__ == '__main__':
+    gui_play()
+    # random_play()
 
