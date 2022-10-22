@@ -8,14 +8,15 @@ class Board:
     def __init__(self, n):
         assert n > 1, 'a too smaller board'
         self.n = n
-        self.clear()
     
 
     def clear(self):
+        self.score = 0 
         self.brd = np.zeros((self.n, self.n), dtype=np.int32)
 
 
     def reset(self):
+        self.clear()
         for _ in range(2):
             self._place_new_entry()
 
@@ -125,6 +126,7 @@ class Board:
                 if val == self._loc(i, j2, dim):   # merge case   
                     self._set_loc(i, j2, dim, 0)
                     self._set_loc(i, s, dim, 2 * val)
+                    self.score += 2 * val
                     j1 = self._next_item(i, j2, dim, delta)
                 else:                             # slide case
                     self._set_loc(i, s, dim, val)
@@ -163,7 +165,7 @@ class Board:
     def _place_new_entry(self):
         loc = self._get_random_empty_loc()
         self.new_entry = loc
-        
+
         if random.random() < .1: 
             self.brd[loc] = 4
         else:

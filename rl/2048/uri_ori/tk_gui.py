@@ -33,6 +33,7 @@ def draw_board():
     offset_y = (height - size) // 2 
     n_i, n_j = board.new_entry
 
+    canvas.create_text(offset_x + size, offset_y //2, text=f'score: {board.score:,}')
     for i in range(board.n):
          for j in range(board.n):
             x, y = offset_x + j * s, offset_y + i *s                     
@@ -81,7 +82,7 @@ key2char = {
 
 root = tk.Tk()
 
-WIDTH, HEIGHT = 500, 500 
+WIDTH, HEIGHT = 650, 500 
 SIZE_F = 0.8 
 
 root.geometry(f'{WIDTH}x{HEIGHT}') # 
