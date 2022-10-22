@@ -31,6 +31,7 @@ def draw_board():
     s = size // board.n
     offset_x = (width - size) // 2 
     offset_y = (height - size) // 2 
+    n_i, n_j = board.new_entry
 
     for i in range(board.n):
          for j in range(board.n):
@@ -39,8 +40,12 @@ def draw_board():
             if val != 0: 
                 lg = int(math.log(val) / math.log(2))  
                 rgb = log2rgb.get(lg, (255, 255, 255))              
-                color = rgb_color(rgb)
-                canvas.create_rectangle(x, y, x+s, y+s, fill=color, width=1)    
+                f_color = rgb_color(rgb)
+                if (i, j) == (n_i, n_j):
+                    l_width = 2
+                else:
+                    l_width = 1 
+                canvas.create_rectangle(x, y, x+s, y+s, fill=f_color, width=l_width)    
                 canvas.create_text(x+s//2, y+s//2, text=str(val))
             else: 
                 canvas.create_rectangle(x, y, x+s, y+s, width=1)    

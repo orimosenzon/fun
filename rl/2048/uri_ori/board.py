@@ -162,6 +162,7 @@ class Board:
 
     def _place_new_entry(self):
         loc = self._get_random_empty_loc()
+        self.new_entry = loc
         
         if random.random() < .1: 
             self.brd[loc] = 4
