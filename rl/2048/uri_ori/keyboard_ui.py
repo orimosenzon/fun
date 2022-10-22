@@ -25,10 +25,12 @@ def on_press(key):
             a_key_is_pressed = True
             if key not in key2char.keys():
                 return True
-            is_valid = board.step(key2char[key])
-            if not is_valid:
-                print('Not a valid action')
+            a = key2char[key]    
+            actions = board.get_actions()
+            if not a in actions: 
+                print('Invalid move')
                 return True
+            board.step(a)
             print('\n')
             print(f'Valid actions: {board.get_actions()}')
             board.print()

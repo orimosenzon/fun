@@ -99,8 +99,6 @@ class Board:
 
 
     def _move(self, dir_char):
-        changed = False
-
         dm, dn = self.char2dir[dir_char]
 
         if dn != 0:  #  Running on rows (r or l)
@@ -122,23 +120,18 @@ class Board:
                 j2 = self._next_item(i, j1, dim, delta)
                 
                 if j2 == -1: 
-                    changed = True
                     self._set_loc(i, s, dim, val) # slide 
                     break
     
                 if val == self._loc(i, j2, dim):   # merge case   
-                    changed = True                 
                     self._set_loc(i, j2, dim, 0)
                     self._set_loc(i, s, dim, 2 * val)
                     j1 = self._next_item(i, j2, dim, delta)
                 else:                             # slide case
-                    changed = True
                     self._set_loc(i, s, dim, val)
                     j1 = j2
 
                 s += delta
-
-        return changed         
 
             
     def print(self):
@@ -177,23 +170,20 @@ class Board:
         if random.random() < .1: 
             self.brd[loc] = 4
         else:
-            self.brd[loc] = 2
-        
+            self.brd[loc] = 2        
 
 
     def step(self, action):
-        changed = self._move(action)
-        if not changed:
-            return False
+        self._move(action)
         self._place_new_entry()
-        return True
 
 
     def play_ui(self): 
         while True: 
-            print(f'valid actions: {self.get_actions()}')
+            actions = self.get_actions()
+            print(f'valid actions: {actions}')
             self.print()
-            char = input('dir? (r,l,d,u) or q to quit: ')
+            char = input('? (q to quit) ')
             
             if char == 'q':
                 print('You have decided to quit')
@@ -203,10 +193,11 @@ class Board:
                 print(f'{char} is not a valid option')
                 continue  
 
-            valid = self.step(char)
-
-            if not valid:
+            if not char in actions:
                 print('Invalid action')
+            else:
+                self.step(char)
+
 
 
 if __name__ == '__main__':
