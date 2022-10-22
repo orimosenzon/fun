@@ -3,10 +3,6 @@
 import random 
 import numpy as np
 
-from pynput import keyboard
-from pynput.keyboard import Key
-
-
 class Board:
 
     def __init__(self, n):
@@ -19,9 +15,9 @@ class Board:
         self.brd = np.zeros((self.n, self.n), dtype=np.int32)
 
 
-    def initialize(self):
+    def reset(self):
         for _ in range(2):
-            self.place_new_entry()
+            self._place_new_entry()
 
 
     char2dir = {
@@ -31,6 +27,7 @@ class Board:
         'u': (-1, 0), 
     }
 
+    actions = list(char2dir.keys())
 
     def _loc(self, i, j, dim):
         loc = [0, 0]
@@ -55,7 +52,7 @@ class Board:
                 return j 
 
 
-    def move(self, dir_char):
+    def _move(self, dir_char):
         dm, dn = self.char2dir[dir_char]
 
         if dn != 0:  #  Running on rows (r or l)
@@ -101,7 +98,7 @@ class Board:
         print(bar)
 
 
-    def get_random_empty_loc(self): 
+    def _get_random_empty_loc(self): 
         N = self.n * self.n
         indices = list(range(N))
         # random.shuffle(indices)
@@ -117,8 +114,8 @@ class Board:
         return None
 
 
-    def place_new_entry(self):
-        loc = self.get_random_empty_loc()
+    def _place_new_entry(self):
+        loc = self._get_random_empty_loc()
         
         if not loc:
             return False
@@ -131,7 +128,12 @@ class Board:
         return True
 
 
-    def play(self): 
+    def step(self, action):
+        self._move(action)
+        return not self._place_new_entry()
+
+
+    def play_ui(self): 
         while True: 
             self.print()
             char = input('dir? (r,l,d,u) or q to quit: ')
@@ -144,83 +146,16 @@ class Board:
                 print(f'{char} is not a valid option')
                 continue  
 
-            self.move(char)
+            is_done = self.step(char)
 
-            if not self.place_new_entry():
-                print('You have lost')
+            if is_done:
+                print('Done.')
                 break
-
-a_key_is_pressed = False 
-
-key2char = {
-    Key.up: 'u', 
-    Key.down: 'd', 
-    Key.left: 'l', 
-    Key.right: 'r',     
-}
-
-def on_press(key):
-    global a_key_is_pressed, board
-    
-    try:
-        if key.char == 'q':
-            print('Quit.')
-            return False
-    except AttributeError:
-        if not a_key_is_pressed:
-            a_key_is_pressed = True
-            if key not in key2char.keys():
-                return True
-            board.move(key2char[key])
-            if not board.place_new_entry():
-                print('board is full. Quit.')
-                return False
-            print('\n')
-            board.print()
-            print('\n')
-
-
-def on_release(key):
-    global a_key_is_pressed
-    a_key_is_pressed = False
-
-
-board = None
-
-
-def gui_play(): 
-    global board 
-    board = Board(5)
-    board.initialize()
-    board.print()
-    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
-        listener.join()
-
-
-def random_play(): 
-    board = Board(5)
-    board.initialize()
-    board.print()
- 
-    c = 0 
-    actions = list(key2char.values())
-    while True:
-        for i in range(100): 
-            board.move(random.choice(actions))
-            if not board.place_new_entry():
-                print('board is full. Quit.')
-                return False
-
-            print(f'{c}:')
-            c += 1 
-            board.print()
-        cont = input('Continue?')
-        if cont == 'n': 
-            break
 
 
 
 if __name__ == '__main__':
-    gui_play()
-    # random_play()
+    board = Board(4)
+    board.reset()
+    board.play_ui()
 
