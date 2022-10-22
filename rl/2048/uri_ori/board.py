@@ -8,7 +8,6 @@ class Board:
     def __init__(self, n):
         assert n > 1, 'a too smaller board'
         self.n = n
-        self.is_done = False
         self.clear()
     
 
@@ -22,7 +21,7 @@ class Board:
 
 
     def is_done(self):
-        return self.is_done
+        return not self.get_actions()
 
 
     char2dir = {
@@ -157,16 +156,13 @@ class Board:
                 return loc 
             indices[i] = indices[last_i]
             last_i -= 1 
-        return None
+
+        raise Exception('problem')
 
 
     def _place_new_entry(self):
         loc = self._get_random_empty_loc()
         
-        if not loc:
-            self.is_done = True
-            return 
-
         if random.random() < .1: 
             self.brd[loc] = 4
         else:
@@ -181,6 +177,9 @@ class Board:
     def play_ui(self): 
         while True: 
             actions = self.get_actions()
+            if not actions:
+                print('Game over.')
+                break 
             print(f'valid actions: {actions}')
             self.print()
             char = input('? (q to quit) ')
@@ -201,7 +200,7 @@ class Board:
 
 
 if __name__ == '__main__':
-    board = Board(4)
+    board = Board(3)
     board.reset()
     board.play_ui()
 

@@ -35,6 +35,10 @@ def on_press(key):
             print(f'Valid actions: {board.get_actions()}')
             board.print()
             print('\n')
+            if board.is_done():
+                print('Game over')
+                return False
+            return True            
 
 
 def on_release(key):

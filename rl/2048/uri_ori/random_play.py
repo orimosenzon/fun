@@ -6,21 +6,21 @@ from board import Board
 
 
 def random_play(): 
-    board = Board(5)
+    board = Board(4)
     board.reset()
     board.print()
  
     c = 0 
-    actions = board.actions 
 
     while True:
         for i in range(10): 
-            action = random.choice(actions)
-            print(f'action={action}')
-            is_done = board.step(action)
-            if is_done:
-                print('Done.')
-                return False
+            actions = board.get_actions()
+            if not actions:
+                print('Game over.')
+                return
+            a = random.choice(actions)
+            print(f'action={a}')
+            board.step(a)
 
             print(f'{c}:')
             c += 1 
