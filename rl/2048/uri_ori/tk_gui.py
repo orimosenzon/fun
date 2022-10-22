@@ -26,11 +26,15 @@ def rgb_color(rgb):
 
 def draw_board(): 
     brd = board.brd
-    s = SIZE // board.n
-    offset = (WIDTH - SIZE) // 2 
+
+    size = min(width, height) * SIZE_F
+    s = size // board.n
+    offset_x = (width - size) // 2 
+    offset_y = (height - size) // 2 
+
     for i in range(board.n):
          for j in range(board.n):
-            x, y = offset + j * s, offset + i *s                     
+            x, y = offset_x + j * s, offset_y + i *s                     
             val = brd[i, j]            
             if val != 0: 
                 lg = int(math.log(val) / math.log(2))  
@@ -41,9 +45,6 @@ def draw_board():
             else: 
                 canvas.create_rectangle(x, y, x+s, y+s, width=1)    
 
-
-board = Board(4)
-board.reset()
 
 def key_press(e):
     if e.keysym not in key2char.keys():
@@ -59,6 +60,13 @@ def key_press(e):
         print('Game over')
 
 
+def resize(e):
+    global width, height
+    width, height = canvas.winfo_width(), canvas.winfo_height()
+    canvas.delete('all')
+    draw_board()
+
+
 key2char = {
     'Right': 'r', 
     'Left':  'l', 
@@ -68,21 +76,19 @@ key2char = {
 
 root = tk.Tk()
 
-# WIDTH, HEIGHT = root.winfo_screenwidth(), root.winfo_screenheight()
 WIDTH, HEIGHT = 500, 500 
-SIZE = 400
+SIZE_F = 0.8 
 
 root.geometry(f'{WIDTH}x{HEIGHT}') # 
 
 canvas = tk.Canvas(background='white')
 canvas.pack(expand=True, fill=tk.BOTH)
 
-
 canvas.bind('<KeyPress>', key_press)
+canvas.bind("<Configure>", resize)
 canvas.focus_set()
 
-offset = (WIDTH - SIZE) // 2 
-
-draw_board()
+board = Board(4)
+board.reset()
 
 root.mainloop()
