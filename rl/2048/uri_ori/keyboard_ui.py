@@ -25,13 +25,14 @@ def on_press(key):
             a_key_is_pressed = True
             if key not in key2char.keys():
                 return True
-            is_done = board.step(key2char[key])
-            if is_done:
-                print('board is full. Quit.')
-                return False
+            is_valid = board.step(key2char[key])
+            if not is_valid:
+                print('Not a valid action')
+                return True
             print('\n')
+            print(f'Valid actions: {board.get_actions()}')
             board.print()
-            print('\n'q)
+            print('\n')
 
 
 def on_release(key):
@@ -46,6 +47,7 @@ def gui_play():
     global board 
     board = Board(4)
     board.reset()
+    print(f'Valid actions: {board.get_actions()}')
     board.print()
     with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()

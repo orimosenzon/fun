@@ -8,6 +8,7 @@ class Board:
     def __init__(self, n):
         assert n > 1, 'a too smaller board'
         self.n = n
+        self.is_done = False
         self.clear()
     
 
@@ -20,6 +21,10 @@ class Board:
             self._place_new_entry()
 
 
+    def is_done(self):
+        return self.is_done
+
+
     char2dir = {
         'r': (0, 1),  
         'l': (0, -1),  
@@ -27,13 +32,17 @@ class Board:
         'u': (-1, 0), 
     }
 
-    actions = list(char2dir.keys())
+    all_actions = list(char2dir.keys())
 
     def _loc(self, i, j, dim):
         loc = [0, 0]
         loc[dim] = i 
         loc[1-dim] = j 
-        return self.brd.item(*loc)
+        try:
+            return self.brd.item(*loc)
+        except Exception as e:
+            print(f'{e}: i={i}, j={j}, dim={dim}')
+            raise e
 
 
     def _set_loc(self, i, j, dim, val): 
@@ -52,7 +61,46 @@ class Board:
                 return j 
 
 
+    def _is_valid_action(self, dir_char):
+        dm, dn = self.char2dir[dir_char]
+        
+        if dn != 0:  #  Running on rows (r or l)
+            dim = 0
+            delta = dn
+        else:        #  Running on columns (u or d)
+            dim = 1
+            delta = dm
+
+        if delta == 1:
+            first = 0
+            last =  self.n - 1
+        else:
+            first = self.n - 1
+            last = 0
+
+        for i in range(self.n):
+            j = self._next_item(i, first-delta, dim, delta) 
+            if j == -1:      # empty case 
+                continue
+            while j != last:
+                val = self._loc(i, j+delta, dim)
+                if val == 0 or val == self._loc(i, j, dim):
+                    return True
+                j += delta 
+        return False
+
+
+    def get_actions(self):
+        ret = [] 
+        for a in self.all_actions:
+            if self._is_valid_action(a):
+                ret.append(a)
+        return ret 
+
+
     def _move(self, dir_char):
+        changed = False
+
         dm, dn = self.char2dir[dir_char]
 
         if dn != 0:  #  Running on rows (r or l)
@@ -74,18 +122,23 @@ class Board:
                 j2 = self._next_item(i, j1, dim, delta)
                 
                 if j2 == -1: 
+                    changed = True
                     self._set_loc(i, s, dim, val) # slide 
                     break
     
-                if val == self._loc(i, j2, dim):   # merge case                    
+                if val == self._loc(i, j2, dim):   # merge case   
+                    changed = True                 
                     self._set_loc(i, j2, dim, 0)
                     self._set_loc(i, s, dim, 2 * val)
                     j1 = self._next_item(i, j2, dim, delta)
                 else:                             # slide case
+                    changed = True
                     self._set_loc(i, s, dim, val)
                     j1 = j2
 
-                s += delta         
+                s += delta
+
+        return changed         
 
             
     def print(self):
@@ -118,23 +171,27 @@ class Board:
         loc = self._get_random_empty_loc()
         
         if not loc:
-            return False
-        
+            self.is_done = True
+            return 
+
         if random.random() < .1: 
             self.brd[loc] = 4
         else:
             self.brd[loc] = 2
         
-        return True
 
 
     def step(self, action):
-        self._move(action)
-        return not self._place_new_entry()
+        changed = self._move(action)
+        if not changed:
+            return False
+        self._place_new_entry()
+        return True
 
 
     def play_ui(self): 
         while True: 
+            print(f'valid actions: {self.get_actions()}')
             self.print()
             char = input('dir? (r,l,d,u) or q to quit: ')
             
@@ -146,12 +203,10 @@ class Board:
                 print(f'{char} is not a valid option')
                 continue  
 
-            is_done = self.step(char)
+            valid = self.step(char)
 
-            if is_done:
-                print('Done.')
-                break
-
+            if not valid:
+                print('Invalid action')
 
 
 if __name__ == '__main__':
