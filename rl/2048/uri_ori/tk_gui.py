@@ -49,9 +49,14 @@ def key_press(e):
     if e.keysym not in key2char.keys():
         return 
     a = key2char[e.keysym]
+    if a not in board.get_actions():
+        print('Invalid action')
+        return 
     board.step(a)
     canvas.delete('all')
     draw_board()
+    if board.is_done():
+        print('Game over')
 
 
 key2char = {
