@@ -3,29 +3,21 @@
 from env_2048 import Env2048
 from random_agent import RandomAgent
 
-def obs2str(obs):
-    n = len(obs)
-    bar = '+----' * n + '+\n'
-    ret = ''
-    for i in range(n):
-        ret += bar
-        for j in range(n):
-            ret += f'|{obs[i, j]:4}'
-        ret += '|\n'
-    ret += bar
-    return ret
-
-
 def experiment():
     agent = RandomAgent()
     
     env = Env2048(4)
-    obs = env.reset() 
+    env.reset()  
+    
     c = 0 
-    print(c, obs2str(obs))
 
     while not env.is_done():
-        agent.step(env)
+        print(env.get_valid_actions())
+        env.render()
+        action = agent.step(env)
+        print(f'action: {env.action2str[action]}')
+
+    env.render()
     
     return agent.total_reward, env.score
 

@@ -14,6 +14,12 @@ class Env2048(gym.Env):
         3: (-1, 0), # up
     }
 
+    action2str = {
+        0: 'left',
+        1: 'down',
+        2: 'right', 
+        3: 'up',
+    }
 
     def _loc(self, i, j, dim):
         loc = [0, 0]

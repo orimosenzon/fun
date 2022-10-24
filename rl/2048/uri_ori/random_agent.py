@@ -12,6 +12,7 @@ class RandomAgent:
         action = env.action_space.sample()
         obs, reward, is_done, _ = env.step(action)        
         self.total_reward += reward
+        return action 
 
 
 if __name__ == '__main__': 
