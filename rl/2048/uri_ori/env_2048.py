@@ -3,16 +3,17 @@
 import random 
 import numpy as np
 
-class Env2048:
+import gym
 
-    char2dir = {
-        'r': (0, 1),  
-        'l': (0, -1),  
-        'd': (1, 0), 
-        'u': (-1, 0), 
+class Env2048(gym.Env):
+
+    action2dir = {
+        0: (0, -1), # left
+        1: (1, 0),  # down
+        2: (0, 1),  # right 
+        3: (-1, 0), # up
     }
 
-    all_actions = list(char2dir.keys())
 
     def _loc(self, i, j, dim):
         loc = [0, 0]
@@ -41,8 +42,8 @@ class Env2048:
                 return j 
 
 
-    def _is_valid_action(self, dir_char):
-        dm, dn = self.char2dir[dir_char]
+    def _is_valid_action(self, action):
+        dm, dn = self.action2dir[action]
         
         if dn != 0:  #  Running on rows (r or l)
             dim = 0
@@ -70,16 +71,8 @@ class Env2048:
         return False
 
 
-    def get_actions(self):
-        ret = [] 
-        for a in self.all_actions:
-            if self._is_valid_action(a):
-                ret.append(a)
-        return ret 
-
-
-    def _move(self, dir_char):
-        dm, dn = self.char2dir[dir_char]
+    def _move(self, action):
+        dm, dn = self.action2dir[action]
 
         if dn != 0:  #  Running on rows (r or l)
             dim = 0
@@ -152,30 +145,40 @@ class Env2048:
     def __init__(self, n):
         assert n > 1, 'a too smaller board'
         self.n = n
-    
+        self.action_space = gym.spaces.Discrete(4)
+        self.observation_space = gym.spaces.Box(
+            low=0, high=np.inf,
+            shape=(n,n), dtype=np.int32
+        )
+
 
     def reset(self):
         self._clear()
         for _ in range(2):
             self._place_new_entry()
-
-
-    def get_observation(self):
+        
         return self.brd
 
 
+    def get_valid_actions(self):
+        ret = [] 
+        for a in range(4):
+            if self._is_valid_action(a):
+                ret.append(a)
+        return ret 
+
+
     def is_done(self):
-        return not self.get_actions()
+        return not self.get_valid_actions()
 
 
-    def action(self, a: str) -> float:
-        if self.is_done():
-            raise Exception('Game over')
-        self._move(a)
+    def step(self, action):
+        self._move(action)
         self._place_new_entry()
-        return 1 
+        return (self.brd, 1, self.is_done(), None) # observation, reward, done, info
 
-    def __str__(self):
+
+    def __str__(self): 
         bar = '+----' * self.n + '+\n'
         ret = ''
         for i in range(self.n):
@@ -185,6 +188,10 @@ class Env2048:
             ret += '|\n'
         ret += bar
         return ret
+    
+    
+    def render(self):
+        print(str(self))
 
 
 if __name__ == '__main__':
