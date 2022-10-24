@@ -10,6 +10,7 @@ class RandomAgent:
 
     def step(self, env): 
         action = env.action_space.sample()
+        print(f'action: {env.action2str[action]}')
         obs, reward, is_done, _ = env.step(action)        
         self.total_reward += reward
         return action 

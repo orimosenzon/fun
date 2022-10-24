@@ -12,10 +12,13 @@ def experiment():
     c = 0 
 
     while not env.is_done():
-        print(env.get_valid_actions())
+        print('valid: ', end='')
+        for a in env.get_valid_actions(): 
+            print(env.action2str[a], end=', ')
+        print() 
         env.render()
         action = agent.step(env)
-        print(f'action: {env.action2str[action]}')
+        
 
     env.render()
     
