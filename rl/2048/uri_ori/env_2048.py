@@ -156,6 +156,7 @@ class Env2048(gym.Env):
             low=0, high=np.inf,
             shape=(n,n), dtype=np.int32
         )
+        self.reset()
 
 
     def reset(self):
@@ -180,10 +181,10 @@ class Env2048(gym.Env):
 
     def step(self, action):
         if not action in self.get_valid_actions():
-            return self.brd, 0, self.is_done(), 'Invalid action'
+            return self.brd, 0, self.is_done(), {'error': 'Invalid action'}
         self._move(action)
         self._place_new_entry()
-        return self.brd, 1, self.is_done(), None # observation, reward, done, info
+        return self.brd, 1, self.is_done(), {}   # observation, reward, done, info
 
 
     def __str__(self): 
