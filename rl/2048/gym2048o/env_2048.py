@@ -261,17 +261,19 @@ class Env2048(gym.Env):
                     canvas.rectangle((x, y, x+s, y+s), 
                                     fill=white, outline=True, width=1)    
         # img.show() 
-        return np.asarray(img).swapaxes(0, 1)
+        return np.asarray(img) #.swapaxes(0, 1)
 
 if __name__ == '__main__':
     env = Env2048(4)
     env.reset()
 
-    for _ in range(3): 
+    for _ in range(17): 
         img = env.render()
         plt.imshow(img)
         plt.show()
-        a = env.action_space.sample()
+        plt.close()
+        # a = env.action_space.sample()
+        a = random.choice(env.get_valid_actions())
         o, r, d, _, = env.step(a)
         if d: 
             break 
