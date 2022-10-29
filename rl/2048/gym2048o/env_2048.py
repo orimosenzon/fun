@@ -2,7 +2,9 @@
 
 import random 
 import numpy as np
+import math 
 
+from PIL import Image, ImageDraw, ImageFont
 import gym
 
 class Env2048(gym.Env):
@@ -20,6 +22,22 @@ class Env2048(gym.Env):
         2: 'right', 
         3: 'up',
     }
+
+
+    log2rgb = {
+        1: (238, 228, 218), 
+        2: (237, 224, 200), 
+        3: (242, 177, 121), 
+        4: (245, 149, 99), 
+        5: (246, 124, 95), 
+        6: (246, 94, 59), 
+        7: (237, 207, 114),  
+        8: (237, 204, 97),  
+        9: (237, 200, 80),  
+        10: (237, 197, 63),  
+        11: (237, 194, 46), 
+    }
+
 
     def _loc(self, i, j, dim):
         loc = [0, 0]
@@ -159,7 +177,7 @@ class Env2048(gym.Env):
         self.reset()
 
 
-    def reset(self):
+    def reset(self): #  more arguments? super().render? 
         self._clear()
         for _ in range(2):
             self._place_new_entry()
@@ -199,12 +217,60 @@ class Env2048(gym.Env):
         return ret
     
     
-    def render(self):
+    def render_text(self):
         print(str(self))
+
+
+    def render(self):
+        width, height = 500, 500 
+        size = min(width, height) * 0.8
+        s = size // self.n
+        offset_x = (width - size) // 2 
+        offset_y = (height - size) // 2 
+        n_i, n_j = self.new_entry
+
+        white = (255, 255, 255)
+        black = (0, 0, 0)
+        img = Image.new('RGB', (width, height), white)
+        canvas = ImageDraw.Draw(img)
+        fnt = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 20)
+
+        canvas.text(
+            (offset_x, offset_y //2), 
+            text=f'score: {self.score:,}', 
+            fill = black, 
+            font = fnt 
+        )
+
+        for i in range(self.n):
+            for j in range(self.n):
+                x, y = offset_x + j * s, offset_y + i *s                     
+                val = self.brd[i, j]            
+                if val != 0: 
+                    lg = int(math.log(val) / math.log(2))  
+                    f_color = self.log2rgb.get(lg, black)
+                    if (i, j) == (n_i, n_j):
+                        l_width = 2
+                    else:
+                        l_width = 1 
+                    canvas.rectangle((x, y, x+s, y+s), fill=f_color, 
+                                      outline=True, width=l_width)    
+                    canvas.text((x+s//2, y+s//2), text=str(val), fill=black, font=fnt)
+                else: 
+                    canvas.rectangle((x, y, x+s, y+s), 
+                                    fill=white, outline=True, width=1)    
+        img.show() 
 
 
 if __name__ == '__main__':
     env = Env2048(4)
     env.reset()
-    print(env)
+
+    for _ in range(3): 
+        env.render()
+        input('?')
+        a = env.action_space.sample()
+        o, r, d, _, = env.step(a)
+        if d: 
+            break 
 
