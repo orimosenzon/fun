@@ -3,6 +3,8 @@
 import random 
 import numpy as np
 import math 
+import time
+
 
 import pygame 
 import gym
@@ -179,6 +181,14 @@ class Env2048(gym.Env):
         self.canvas.fill(self.white)
         self.font = pygame.font.Font('freesansbold.ttf', 20)
 
+    def _draw_text(self, x, y, txt, size, b_color):
+        text = self.font.render(txt, True, self.black, b_color)
+
+        textRect = text.get_rect()
+        textRect.center = (x+size// 2, y+size// 2)
+    
+        self.canvas.blit(text, textRect)
+
 
     def _draw_square(self, x, y, size, border, val):
         pygame.draw.rect(self.canvas, self.black, (x, y, size, size), border, 1)
@@ -190,15 +200,8 @@ class Env2048(gym.Env):
             color = self.log2rgb.get(lg, self.black)
         pygame.draw.rect(self.canvas, color, 
                          (x+border, y+border, s_size, s_size), 0)
-        if val == 0:
-            return 
-        text = self.font.render(str(val), True, self.black, color)
-
-        textRect = text.get_rect()
-        textRect.center = (x+size// 2, y+size// 2)
-    
-        self.canvas.blit(text, textRect)
-
+        if val != 0:
+            self._draw_text(x, y, str(val), size, color) 
 
     # == interface == 
 
@@ -266,13 +269,8 @@ class Env2048(gym.Env):
         offset_y = (self.height - size) // 2 
         n_i, n_j = self.new_entry
 
-        # canvas.text(
-        #     (offset_x, offset_y //2), 
-        #     text=f'score: {self.score:,}', 
-        #     fill = black, 
-        #     font = fnt 
-        # )
-
+        self._draw_text(offset_x, offset_y //2, f'score: {self.score:,}', 22, self.white)
+        
         for i in range(self.n):
             for j in range(self.n):
                 x, y = offset_x + j * s, offset_y + i *s                     
@@ -285,23 +283,18 @@ class Env2048(gym.Env):
 
         pygame.display.flip()
 
+
 if __name__ == '__main__':
     env = Env2048(4)
     env.reset()
-    env.render()
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
     
-    
-    # for _ in range(17): 
-    #     env.render()
-    #     # a = env.action_space.sample()
-    #     a = random.choice(env.get_valid_actions())
-    #     o, r, d, _, = env.step(a)
-    #     if d: 
-    #         break 
+    while True: 
+        env.render()
+        time.sleep(0.2)
+        # a = env.action_space.sample()
+        a = random.choice(env.get_valid_actions())
+        o, r, d, _, = env.step(a)
+        if d: 
+            break 
 
+    print('Game over')
