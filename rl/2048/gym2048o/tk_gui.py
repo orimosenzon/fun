@@ -4,7 +4,7 @@ import math
 
 import tkinter as tk
 
-from board import Board
+from env_2048 import Env2048
 
 log2rgb = {
    1: (238, 228, 218), 
@@ -20,12 +20,10 @@ log2rgb = {
    11: (237, 194, 46), 
 }
 
-
 def rgb_color(rgb):
     return f'#%02x%02x%02x' % rgb
 
-def draw_board(): 
-    brd = board.brd
+def draw_board(brd): 
 
     size = min(width, height) * SIZE_F
     s = size // board.n
@@ -56,13 +54,13 @@ def key_press(e):
     if e.keysym not in key2char.keys():
         return 
     a = key2char[e.keysym]
-    if a not in board.get_actions():
+    if a not in board.get_valid_actions():
         print('Invalid action')
         return 
-    board.step(a)
+    observation, reward, done, _ = board.step(a)
     canvas.delete('all')
-    draw_board()
-    if board.is_done():
+    draw_board(observation)
+    if done:
         print('Game over')
 
 
@@ -70,14 +68,14 @@ def resize(e):
     global width, height
     width, height = canvas.winfo_width(), canvas.winfo_height()
     canvas.delete('all')
-    draw_board()
+    draw_board(board.brd)
 
 
 key2char = {
-    'Right': 'r', 
-    'Left':  'l', 
-    'Up':    'u', 
-    'Down':  'd', 
+    'Right': 2, 
+    'Left':  0, 
+    'Up':    3, 
+    'Down':  1, 
 }
 
 root = tk.Tk()
@@ -94,7 +92,7 @@ canvas.bind('<KeyPress>', key_press)
 canvas.bind("<Configure>", resize)
 canvas.focus_set()
 
-board = Board(4)
+board = Env2048(4)
 board.reset()
 
 root.mainloop()

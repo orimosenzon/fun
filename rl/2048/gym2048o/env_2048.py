@@ -213,7 +213,7 @@ class Env2048(gym.Env):
             low=0, high=np.inf,
             shape=(n,n), dtype=np.int32
         )
-        self._init_gui()
+        self.did_render = False 
         self.reset()
 
 
@@ -262,7 +262,9 @@ class Env2048(gym.Env):
 
 
     def render(self):
-        self._draw_square(100, 100, 50, 4, 128)
+        if not self.did_render:
+            self.did_render = True 
+            self._init_gui()
         size = min(self.width, self.height) * 0.8
         s = size // self.n
         offset_x = (self.width - size) // 2 
