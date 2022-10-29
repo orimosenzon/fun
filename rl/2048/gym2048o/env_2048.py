@@ -5,6 +5,7 @@ import numpy as np
 import math 
 
 from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt 
 import gym
 
 class Env2048(gym.Env):
@@ -259,16 +260,17 @@ class Env2048(gym.Env):
                 else: 
                     canvas.rectangle((x, y, x+s, y+s), 
                                     fill=white, outline=True, width=1)    
-        img.show() 
-
+        # img.show() 
+        return np.asarray(img).swapaxes(0, 1)
 
 if __name__ == '__main__':
     env = Env2048(4)
     env.reset()
 
     for _ in range(3): 
-        env.render()
-        input('?')
+        img = env.render()
+        plt.imshow(img)
+        plt.show()
         a = env.action_space.sample()
         o, r, d, _, = env.step(a)
         if d: 
