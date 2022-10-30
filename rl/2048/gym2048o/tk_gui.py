@@ -92,7 +92,7 @@ canvas.bind('<KeyPress>', key_press)
 canvas.bind("<Configure>", resize)
 canvas.focus_set()
 
-board = Env2048(2)
+board = Env2048(4)
 board.reset()
 
 root.mainloop()

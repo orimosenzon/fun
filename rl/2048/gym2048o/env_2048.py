@@ -4,9 +4,11 @@ import random
 import numpy as np
 import math 
 import time
+import os 
 
-
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame 
+
 import gym
 
 class Env2048(gym.Env):

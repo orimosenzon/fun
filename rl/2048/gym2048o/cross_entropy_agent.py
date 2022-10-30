@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import time
 from collections import namedtuple
 
@@ -41,8 +43,9 @@ class CrossEntropyAgent:
         self.episodes = [] 
         self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=0.01)
         self.loss_fn = nn.CrossEntropyLoss()
-        self.sm = nn.Softmax() 
-        self.writer = SummaryWriter(comment='Cross Entropy Agent')
+        self.sm = nn.Softmax(dim=0) 
+        self.writer = SummaryWriter(comment=f'_CE{env.n}X{env.n}_')
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
     def _avrg_reward(self):
@@ -87,7 +90,7 @@ class CrossEntropyAgent:
             for e_step in episode.steps: 
                 x.append(e_step.observation.reshape(self.obs_size))
                 y.append(e_step.action)
-        x = torch.FloatTensor(x)
+        x = torch.FloatTensor(np.stack(x))
         y = torch.LongTensor(y)
         return x, y 
 
@@ -127,7 +130,6 @@ class CrossEntropyAgent:
             if c > epochs: 
                 break
             prev_avrg = avrg_reward
-
             self._train_net()
             self._display_training_values(self.current_loss, avrg_reward, c)
 
@@ -167,7 +169,7 @@ if __name__ == '__main__':
     from env_2048 import Env2048
     env = Env2048(2)
     cea = CrossEntropyAgent(env)
-    cea.train(150) 
+    cea.train(50) 
     cea.demonstrate_policy()
     cea.demonstrate_eposide(cea.episodes[-1])
     
