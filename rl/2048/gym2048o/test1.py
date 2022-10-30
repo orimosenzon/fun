@@ -3,30 +3,28 @@
 from env_2048 import Env2048
 from random_agent import RandomAgent
 
-def experiment():
-    agent = RandomAgent()
-    
+def execute_one_episode(agent):
     env = Env2048(4)
     env.reset()  
-    
-    c = 0 
+    agent.reset() 
 
-    while not env.is_done():
-        print('valid: ', end='')
-        for a in env.get_valid_actions(): 
-            print(env.action2str[a], end=', ')
-        print() 
-        env.render()
-        action = agent.step(env)
+    while True:
+        obs, r, done, total_reward = agent.act(env)
+        if done: 
+            return total_reward
         
 
-    env.render()
-    
-    return agent.total_reward, env.score
-
+def evaluate_total_expectation(agent, N): 
+    exp = execute_one_episode(agent) 
+    for n in range(2, N+1):
+        total = execute_one_episode(agent)
+        exp = (exp * (n-1) + total)/ n 
+    return exp 
 
 if __name__ == '__main__': 
-    res = []
-    for _ in range(10):
-        res.append(experiment())
-    print('\n' * 4, res)
+    ra = RandomAgent()
+
+    print(evaluate_total_expectation(ra, 500))
+    
+    # for _ in range(4):
+    #     print(execute_one_episode(ra))
