@@ -287,12 +287,12 @@ class Env2048(gym.Env):
 
 
 if __name__ == '__main__':
-    env = Env2048(4)
+    env = Env2048(7)
     env.reset()
     
     while True: 
         env.render()
-        time.sleep(0.2)
+        time.sleep(0.1)
         # a = env.action_space.sample()
         a = random.choice(env.get_valid_actions())
         o, r, d, _, = env.step(a)
