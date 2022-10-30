@@ -32,7 +32,7 @@ class Net(nn.Module):
 
 class CrossEntropyAgent: 
     HIDDEN_SIZE = 128
-    BATCH_SIZE = 16
+    BATCH_SIZE = 160
     PERCENTILE = 10 #70
     def __init__(self, env):
         self.env = env
@@ -165,9 +165,9 @@ class CrossEntropyAgent:
 
 if __name__ == '__main__':
     from env_2048 import Env2048
-    env = Env2048(4)
+    env = Env2048(2)
     cea = CrossEntropyAgent(env)
-    cea.train(20) 
+    cea.train(150) 
     cea.demonstrate_policy()
     cea.demonstrate_eposide(cea.episodes[-1])
     
