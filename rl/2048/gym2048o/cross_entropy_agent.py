@@ -77,15 +77,28 @@ class CrossEntropyAgent:
         return ret
 
 
+    def _create_train_data(self):
+        x = torch.zeros().... 
+        y = [] 
+        for episode in self.episodes: 
+            for e_step in episode.steps: 
+                x.append(torch.Tensor(e_step.observation).view(self.obs_size))
+                y.append(e_step.action)
+        x = torch.FloatTensor(x)
+        y = torch.LongTensor(y)
+        print(x.shape, y.shape)
+        return x, y 
+
+
     def _train_net(self): 
         for episode in self.episodes: 
             for e_step in episode.steps: 
                 inp = torch.Tensor(e_step.observation).view(self.obs_size)
                 pred = self.net(inp)
-                episode_act = self.make_hot(e_step.action)
-                print(pred, episode_act)
+                # episode_act = self.make_hot(e_step.action)
+                # print(pred, episode_act)
                 self.optimizer.zero_grad()
-                loss = self.loss_fn(pred, episode_act)
+                loss = self.loss_fn(pred, e_step.action)
                 loss.backward()
                 self.optimizer.step()
 
@@ -115,4 +128,8 @@ if __name__ == '__main__':
     from env_2048 import Env2048
     env = Env2048(4)
     cea = CrossEntropyAgent(env)
-    cea.train() 
+    cea._gain_experiance()
+    cea._create_train_data()
+    
+    
+    # cea.train() 
