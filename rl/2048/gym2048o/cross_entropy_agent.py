@@ -1,3 +1,4 @@
+import time
 from collections import namedtuple
 
 import torch 
@@ -78,29 +79,23 @@ class CrossEntropyAgent:
 
 
     def _create_train_data(self):
-        x = torch.zeros().... 
-        y = [] 
+        x, y = [], [] 
         for episode in self.episodes: 
             for e_step in episode.steps: 
-                x.append(torch.Tensor(e_step.observation).view(self.obs_size))
+                x.append(e_step.observation.reshape(self.obs_size))
                 y.append(e_step.action)
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
-        print(x.shape, y.shape)
         return x, y 
 
 
     def _train_net(self): 
-        for episode in self.episodes: 
-            for e_step in episode.steps: 
-                inp = torch.Tensor(e_step.observation).view(self.obs_size)
-                pred = self.net(inp)
-                # episode_act = self.make_hot(e_step.action)
-                # print(pred, episode_act)
-                self.optimizer.zero_grad()
-                loss = self.loss_fn(pred, e_step.action)
-                loss.backward()
-                self.optimizer.step()
+        x, y = self._create_train_data()
+        pred = self.net(x)
+        self.optimizer.zero_grad()
+        loss = self.loss_fn(pred, y)
+        loss.backward()
+        self.optimizer.step()
 
 
     def _keep_best_episodes(self): 
@@ -117,19 +112,37 @@ class CrossEntropyAgent:
             
             avrg_reward = self._avrg_reward()
             print(f'avrg_reward={avrg_reward}')
-            if abs(avrg_reward - prev_avrg) < 1: 
-                break 
+            # if abs(avrg_reward - prev_avrg) < .001: 
+            #     break 
+            if avrg_reward > 200: 
+                break
             prev_avrg = avrg_reward
 
             self._train_net()
+
+
+    def demonstrate_policy(self):
+        invalids = 0 
+        obs = self.env.reset()
+        while True:
+            self.env.render() 
+            time.sleep(0.1)
+            inp = torch.Tensor(obs).view(self.obs_size)
+            pred = self.net(inp)
+            action = int(torch.argmax(pred))
+            n_obs, r, done, _ = self.env.step(action)
+            if r==0:  # invalid action
+                invalids += 1 
+                print(f'invalid action! {invalids}')
+                n_obs, r, done, _ = self.env.step(env.action_space.sample())
+            if done:
+                break 
+            obs = n_obs
 
 
 if __name__ == '__main__':
     from env_2048 import Env2048
     env = Env2048(4)
     cea = CrossEntropyAgent(env)
-    cea._gain_experiance()
-    cea._create_train_data()
-    
-    
-    # cea.train() 
+    cea.train() 
+    cea.demonstrate_policy()

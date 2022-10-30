@@ -1,13 +1,15 @@
+import gym
+env = gym.make("CartPole-v0")
+obs = env.reset()
+print(obs, type(obs))  
 
-
+# from collections import namedtuple
   
-from collections import namedtuple
-  
-# Declaring namedtuple()
-Student = namedtuple('Student', ['name', 'age', 'DOB'])
-s = Student('Nandini', '19', '2541997')
-print(s)
-print(s[0], s.name)
+# # Declaring namedtuple()
+# Student = namedtuple('Student', ['name', 'age', 'DOB'])
+# s = Student('Nandini', '19', '2541997')
+# print(s)
+# print(s[0], s.name)
 
 
 # == == 
