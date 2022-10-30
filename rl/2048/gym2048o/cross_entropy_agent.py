@@ -1,6 +1,7 @@
 import time
 from collections import namedtuple
 
+import numpy as np 
 import torch 
 from torch import nn
 
@@ -17,7 +18,9 @@ class Net(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(obs_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, n_actions)
+            nn.Linear(hidden_size, 7 * hidden_size),
+            nn.ReLU(),
+            nn.Linear(7 * hidden_size, n_actions)
         )
 
 
@@ -36,7 +39,7 @@ class CrossEntropyAgent:
         self.episodes = [] 
         self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=0.01)
         self.loss_fn = nn.CrossEntropyLoss()
-        self.sm = nn.Softmax() #dim=1)
+        self.sm = nn.Softmax() 
 
 
     def _avrg_reward(self):
@@ -55,8 +58,9 @@ class CrossEntropyAgent:
             while True: 
                 inp = torch.Tensor(obs).view(self.obs_size)
                 pred = self.net(inp)
-                action = int(torch.argmax(pred))
-                # a1 = int(torch.argmax(self.sm(pred)))
+                # action = int(torch.argmax(pred))
+                act_prob = self.sm(pred).data.numpy()
+                action = np.random.choice(len(act_prob), p=act_prob)
                 
                 n_obs, r, done, _ = self.env.step(action)
                 if r==-1:  # invalid action
@@ -104,7 +108,7 @@ class CrossEntropyAgent:
         self.episodes = self.episodes[idx:]
 
 
-    def train(self): 
+    def train(self, epochs=30): 
         prev_avrg = 0 
         c = 0 
         while True: 
@@ -112,11 +116,11 @@ class CrossEntropyAgent:
             self._keep_best_episodes()
             
             avrg_reward = self._avrg_reward()
-            print(f'avrg_reward={avrg_reward}')
+            print(f'{c}: avrg_reward={avrg_reward}')
             # if abs(avrg_reward - prev_avrg) < .001: 
             #     break 
             c += 1 
-            if c > 200: 
+            if c > epochs: 
                 break
             prev_avrg = avrg_reward
 
@@ -142,9 +146,31 @@ class CrossEntropyAgent:
             obs = n_obs
 
 
+    def demonstrate_eposide(self, episode):  
+        invalids = 0 
+        meanings = env.get_action_meanings()
+        print(f'episode total = {episode.reward}')
+        self.env.reset()
+        env.brd = episode.steps[0].observation # restore the initial state to what it was at the episode beginning (breaking incapsulation)
+        env.render_text()
+        for obs, act in episode.steps:
+            self.env.render() 
+            time.sleep(0.1)
+            print(f'action: {meanings[act]}')
+            n_obs, r, done, _ = self.env.step(act)
+            if r==-1:  # invalid action
+                invalids += 1 
+                print(f'invalid action! {invalids}')
+            if done:
+                break 
+        print(f'episode total = {episode.reward}')
+
+
 if __name__ == '__main__':
     from env_2048 import Env2048
     env = Env2048(4)
     cea = CrossEntropyAgent(env)
-    cea.train() 
+    cea.train(20) 
     cea.demonstrate_policy()
+    cea.demonstrate_eposide(cea.episodes[-1])
+    
