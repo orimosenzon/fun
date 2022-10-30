@@ -3,7 +3,9 @@ from collections import namedtuple
 
 import numpy as np 
 import torch 
-from torch import nn
+from torch import nn 
+
+from torch.utils.tensorboard import SummaryWriter
 
 Episode = namedtuple('Episode', field_names=['reward', 'steps'])
 
@@ -40,6 +42,7 @@ class CrossEntropyAgent:
         self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=0.01)
         self.loss_fn = nn.CrossEntropyLoss()
         self.sm = nn.Softmax() 
+        self.writer = SummaryWriter(comment='Cross Entropy Agent')
 
 
     def _avrg_reward(self):
@@ -94,6 +97,7 @@ class CrossEntropyAgent:
         pred = self.net(x)
         self.optimizer.zero_grad()
         loss = self.loss_fn(pred, y)
+        self.current_loss = loss.item()
         loss.backward()
         self.optimizer.step()
 
@@ -104,15 +108,19 @@ class CrossEntropyAgent:
         self.episodes = self.episodes[idx:]
 
 
+    def _display_training_values(self, loss, avarage, t):
+            print(f'{t}: avrg_reward={avarage}, loss={loss}')
+            self.writer.add_scalar("loss", loss, t)
+            self.writer.add_scalar("avarage reward", avarage, t)
+
+
     def train(self, epochs=30): 
         prev_avrg = 0 
         c = 0 
         while True: 
             self._gain_experiance()
-            self._keep_best_episodes()
-            
+            self._keep_best_episodes()            
             avrg_reward = self._avrg_reward()
-            print(f'{c}: avrg_reward={avrg_reward}')
             # if abs(avrg_reward - prev_avrg) < .001: 
             #     break 
             c += 1 
@@ -121,6 +129,7 @@ class CrossEntropyAgent:
             prev_avrg = avrg_reward
 
             self._train_net()
+            self._display_training_values(self.current_loss, avrg_reward, c)
 
 
     def demonstrate_policy(self):
