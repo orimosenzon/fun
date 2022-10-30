@@ -51,7 +51,7 @@ class CrossEntropyAgent:
 
     def _gain_experiance(self):
         self.episodes = [] 
-        for episode_n in range(self.BATCH_SIZE):
+        for _ in range(self.BATCH_SIZE):
             obs = self.env.reset() 
             total = 0 
             steps = []  
@@ -64,7 +64,9 @@ class CrossEntropyAgent:
                 
                 n_obs, r, done, _ = self.env.step(action)
                 if r==-1:  # invalid action
-                    n_obs, r, done, _ = self.env.step(env.action_space.sample())
+                    action = env.action_space.sample()
+                    n_obs, r, done, _ = self.env.step(action)
+                    # r = 0 
                 total += r 
                 episode_step = EpisodeStep(obs, action)
                 steps.append(episode_step)
@@ -74,12 +76,6 @@ class CrossEntropyAgent:
 
             episode = Episode(total, steps)
             self.episodes.append(episode)
-
-
-    def make_hot(self, action): 
-        ret = torch.zeros(4)
-        ret[action] = 1 
-        return ret
 
 
     def _create_train_data(self):
@@ -147,22 +143,14 @@ class CrossEntropyAgent:
 
 
     def demonstrate_eposide(self, episode):  
-        invalids = 0 
         meanings = env.get_action_meanings()
-        print(f'episode total = {episode.reward}')
         self.env.reset()
-        env.brd = episode.steps[0].observation # restore the initial state to what it was at the episode beginning (breaking incapsulation)
-        env.render_text()
+        total = 0 
         for obs, act in episode.steps:
+            env.brd = obs # hard set board (encapsulatio vaiolation)
             self.env.render() 
-            time.sleep(0.1)
+            time.sleep(.1)
             print(f'action: {meanings[act]}')
-            n_obs, r, done, _ = self.env.step(act)
-            if r==-1:  # invalid action
-                invalids += 1 
-                print(f'invalid action! {invalids}')
-            if done:
-                break 
         print(f'episode total = {episode.reward}')
 
 
