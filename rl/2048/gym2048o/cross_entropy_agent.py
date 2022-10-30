@@ -28,7 +28,7 @@ class Net(nn.Module):
 class CrossEntropyAgent: 
     HIDDEN_SIZE = 128
     BATCH_SIZE = 16
-    PERCENTILE = 70
+    PERCENTILE = 10 #70
     def __init__(self, env):
         self.env = env
         self.obs_size = env.n ** 2 
@@ -59,7 +59,7 @@ class CrossEntropyAgent:
                 # a1 = int(torch.argmax(self.sm(pred)))
                 
                 n_obs, r, done, _ = self.env.step(action)
-                if r==0:  # invalid action
+                if r==-1:  # invalid action
                     n_obs, r, done, _ = self.env.step(env.action_space.sample())
                 total += r 
                 episode_step = EpisodeStep(obs, action)
@@ -106,6 +106,7 @@ class CrossEntropyAgent:
 
     def train(self): 
         prev_avrg = 0 
+        c = 0 
         while True: 
             self._gain_experiance()
             self._keep_best_episodes()
@@ -114,7 +115,8 @@ class CrossEntropyAgent:
             print(f'avrg_reward={avrg_reward}')
             # if abs(avrg_reward - prev_avrg) < .001: 
             #     break 
-            if avrg_reward > 200: 
+            c += 1 
+            if c > 200: 
                 break
             prev_avrg = avrg_reward
 
@@ -131,7 +133,7 @@ class CrossEntropyAgent:
             pred = self.net(inp)
             action = int(torch.argmax(pred))
             n_obs, r, done, _ = self.env.step(action)
-            if r==0:  # invalid action
+            if r==-1:  # invalid action
                 invalids += 1 
                 print(f'invalid action! {invalids}')
                 n_obs, r, done, _ = self.env.step(env.action_space.sample())

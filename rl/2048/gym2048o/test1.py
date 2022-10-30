@@ -14,17 +14,17 @@ def execute_one_episode(agent):
             return total_reward
         
 
-def evaluate_total_expectation(agent, N): 
-    exp = execute_one_episode(agent) 
-    for n in range(2, N+1):
-        total = execute_one_episode(agent)
-        exp = (exp * (n-1) + total)/ n 
-    return exp 
+def evaluate_total_expectation(agent, n): 
+    total = 0
+    for _ in range(n):
+        total += execute_one_episode(agent)
+        
+    return total / n 
+     
 
 if __name__ == '__main__': 
     ra = RandomAgent()
 
     print(evaluate_total_expectation(ra, 500))
     
-    # for _ in range(4):
-    #     print(execute_one_episode(ra))
+ 

@@ -239,10 +239,12 @@ class Env2048(gym.Env):
 
     def step(self, action):
         if not action in self.get_valid_actions():
-            return self.brd, 0, self.is_done(), {'error': 'Invalid action'}
+            return self.brd, -1, self.is_done(), {'error': 'Invalid action'}
+        old_score = self.score
         self._move(action)
+        reward = self.score - old_score
         self._place_new_entry()
-        return self.brd, 1, self.is_done(), {}   # observation, reward, done, info
+        return self.brd, reward, self.is_done(), {}   # observation, reward, done, info
 
 
     def __str__(self): 
