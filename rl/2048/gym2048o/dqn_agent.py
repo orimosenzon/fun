@@ -1,5 +1,6 @@
 #!/usr/bin/python3 
 
+import ossaudiodev
 import random 
 import collections 
 import time 
@@ -42,7 +43,7 @@ class Dqn_Agent:
         self.net = Net(env.n, env.action_space.n)
         self.epsilon = 1
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(lr = LR)
+        self.optimizer = torch.optim.Adam(lr=LR)
         self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
 
 
@@ -50,14 +51,14 @@ class Dqn_Agent:
         if random.random() < self.epsilon:
             a = self.env.action_space.sample()
         else:
-            action_vals = self.net(torch.FloatTensor(o)) 
+            action_vals = self.net(torch.FloatTensor(ossaudiodev)) 
             a = torch.argmax(action_vals).item()
         if self.epsilon > 0.2: 
             self.epsilon -= 0.00001
         return a 
 
 
-    def gain_experience(self, batch_size = BATCH_SIZE): 
+    def gain_experience(self, batch_size=BATCH_SIZE): 
         s = self.env.reset().flatten()
         i = 0 
         steps = []
@@ -84,10 +85,11 @@ class Dqn_Agent:
             return states, actions, rewards, next_states
 
 
-    def calc_loss(q_values, actions, rewards, next_states):
-        # gather detach? 
-        pass 
-
+    def calc_loss(self, q_values, actions, rewards, ns_q_values):
+        q_values_chosen = torch.gather(q_values, 1, actions.unsqueeze(1)).squeeze()
+        belmann_values = rewards + GAMMA * ns_q_values
+        return self.loss_fn(q_values_chosen, belmann_values)
+        
 
 
     def train(self, n_batches=100): 
@@ -97,9 +99,10 @@ class Dqn_Agent:
                 self.wrap_as_tensors(states, actions, rewards, next_states)
             
             q_values = self.net(states)
+            ns_q_values = self.net(next_states).detach()
             self.optimizer.zero_grad()    
-            loss = self.calc_loss(q_values, actions, rewards, next_states)
-            loss.backwards() 
+            loss = self.calc_loss(q_values, actions, rewards, ns_q_values)
+            loss.backward() 
             self.optim.step()
             self.writer.add_scalar("loss", loss, t)
 
