@@ -15,7 +15,7 @@ from env_2048 import Env2048
 GAMMA = 0.9 
 BATCH_SIZE = 10 
 LR = 1e-3
-EPSILON_DECAY=1e-4
+EPSILON_DECAY=1e-2
 
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1', 'is_final'])
 
@@ -78,7 +78,7 @@ class Dqn_Agent:
     @staticmethod
     def wrap_as_tensors(states, actions, rewards, next_states, finals):
         states = torch.tensor(np.array(states), dtype=torch.float32)
-        actions = torch.tensor(np.array(actions), dtype=torch.float32)
+        actions = torch.tensor(np.array(actions), dtype=torch.int64)
         rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
         next_states = torch.tensor(np.array(next_states), dtype=torch.float32)
         finals = np.array(finals)
@@ -101,6 +101,8 @@ class Dqn_Agent:
 
     def train(self, n_batches=100): 
         for t, batch in enumerate(self.gain_experience()): 
+            if t == n_batches:
+                break
             states, actions, rewards, next_states, finals = zip(*batch)
             states, actions, rewards, next_states, finals = \
                 self.wrap_as_tensors(states, actions, rewards, next_states, finals)
@@ -108,16 +110,18 @@ class Dqn_Agent:
             self.optimizer.zero_grad()    
             loss = self.calc_loss(states, actions, rewards, next_states, finals)
             loss.backward() 
-            self.optim.step()
-            self.writer.add_scalar("loss", loss, t)
+            self.optimizer.step()
+            self.writer.add_scalar("loss", loss.item(), t)
+            print(t, loss.item())
 
 
 if __name__ == '__main__': 
     env = Env2048(2)
     agent = Dqn_Agent(env)
-    for i, batch in enumerate(agent.gain_experience()):
-        if i == 2:
-            break
-        for step in batch:
-            print(step)
-        print('*' * 40 + '\n\n')
+    agent.train(200)
+    # for i, batch in enumerate(agent.gain_experience()):
+    #     if i == 2:
+    #         break
+    #     for step in batch:
+    #         print(step)
+    #     print('*' * 40 + '\n\n')
