@@ -1,17 +1,29 @@
 
 class A:
-    a = 15 
-    class B:
-        b = 17 
-        def __init__(self): 
-            print(f'A.B.__init__:{A.a}, {self.b}')
 
-    def __init__(self):
-        b = self.B()
+    # @staticmethod
+    def foo():
+        print('foo')
 
+    def foo1(self):
+        self.foo()
 
 a = A()
-# b = A.B()
+a.foo1() 
+
+# class A:
+#     a = 15 
+#     class B:
+#         b = 17 
+#         def __init__(self): 
+#             print(f'A.B.__init__:{A.a}, {self.b}')
+
+#     def __init__(self):
+#         b = self.B()
+
+
+# a = A()
+# # b = A.B()
 
 
 # import random

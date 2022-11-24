@@ -3,14 +3,19 @@
 import random 
 import collections 
 import time 
+import numpy as np 
+
 
 import torch 
 from torch import nn 
+
+from torch.utils.tensorboard import SummaryWriter
 
 from env_2048 import Env2048
 
 GAMMA = 0.9 
 BATCH_SIZE = 10 
+LR = 1e-3
 
 
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1'])
@@ -36,6 +41,10 @@ class Dqn_Agent:
         self.env = env 
         self.net = Net(env.n, env.action_space.n)
         self.epsilon = 1
+        self.loss_fn = nn.MSELoss()
+        self.optimizer = torch.optim.Adam(lr = LR)
+        self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
+
 
     def choose_action(self): 
         if random.random() < self.epsilon:
@@ -66,11 +75,37 @@ class Dqn_Agent:
             s = self.env.reset().flatten() if d else s1
             i += 1 
 
+    @staticmethod
+    def wrap_as_tensors():
+            states = torch.Tensor(np.array(states))
+            actions = torch.Tensor(np.array(actions))
+            rewards = torch.Tensor(np.array(rewards))
+            next_states = torch.Tensor(np.array(next_states))
+            return states, actions, rewards, next_states
 
 
-    def train(self, n_episodes=100): 
-        for ep_n in range(n_episodes): 
-            pass 
+    def calc_loss(q_values, actions, rewards, next_states):
+        # gather detach? 
+        pass 
+
+
+
+    def train(self, n_batches=100): 
+        for t, batch in enumerate(self.gain_experience()): 
+            states, actions, rewards, next_states = zip(*batch)
+            states, actions, rewards, next_states = \
+                self.wrap_as_tensors(states, actions, rewards, next_states)
+            
+            q_values = self.net(states)
+            self.optimizer.zero_grad()    
+            loss = self.calc_loss(q_values, actions, rewards, next_states)
+            loss.backwards() 
+            self.optim.step()
+            self.writer.add_scalar("loss", loss, t)
+
+
+
+
 
 
 if __name__ == '__main__': 
@@ -81,7 +116,8 @@ if __name__ == '__main__':
         if i == 2:
             break
         for step in batch:
-            env1.brd = step.s.reshape((2,2))
-            env1.render()
-            time.sleep(2)
+            print(step)
+            # env1.brd = step.s1.reshape((2,2))
+            # env1.render()
+            # time.sleep(2)
         print('*' * 40 + '\n\n')
