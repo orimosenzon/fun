@@ -16,7 +16,7 @@ from env_2048 import Env2048
 GAMMA = 0.9 
 BATCH_SIZE = 10 
 LR = 1e-3
-
+EPSILON_DECAY=1e-1
 
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1'])
 
@@ -42,7 +42,7 @@ class Dqn_Agent:
         self.net = Net(env.n, env.action_space.n)
         self.epsilon = 1
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(lr=LR)
+        self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=LR)
         self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
 
 
@@ -50,10 +50,10 @@ class Dqn_Agent:
         if random.random() < self.epsilon:
             a = self.env.action_space.sample()
         else:
-            action_vals = self.net(torch.Tensor(s)) #unsqueeze(0)? 
+            action_vals = self.net(torch.Tensor(s)) 
             a = torch.argmax(action_vals).item()
         if self.epsilon > 0.2: 
-            self.epsilon -= 0.00001
+            self.epsilon -= EPSILON_DECAY
         return a 
 
 
@@ -78,19 +78,24 @@ class Dqn_Agent:
 
     @staticmethod
     def wrap_as_tensors():
-            states = torch.Tensor(np.array(states))
-            actions = torch.Tensor(np.array(actions))
-            rewards = torch.Tensor(np.array(rewards))
-            next_states = torch.Tensor(np.array(next_states))
-            return states, actions, rewards, next_states
+        states = torch.Tensor(np.array(states))
+        actions = torch.Tensor(np.array(actions))
+        rewards = torch.Tensor(np.array(rewards))
+        next_states = torch.Tensor(np.array(next_states))
+        return states, actions, rewards, next_states
 
 
-    def calc_loss(self, q_values, actions, rewards, ns_q_values):
+    def calc_loss(self, states, actions, rewards, next_states):
+        q_values = self.net(states)
+
+        ns_q_values = self.net(next_states).detach()
+        ns_values = torch.max(ns_q_values, 1)[0]    
+
         q_values_chosen = torch.gather(q_values, 1, actions.unsqueeze(1)).squeeze()
-        belmann_values = rewards + GAMMA * ns_q_values
+
+        belmann_values = rewards + GAMMA * ns_values
         return self.loss_fn(q_values_chosen, belmann_values)
         
-
 
     def train(self, n_batches=100): 
         for t, batch in enumerate(self.gain_experience()): 
@@ -98,10 +103,8 @@ class Dqn_Agent:
             states, actions, rewards, next_states = \
                 self.wrap_as_tensors(states, actions, rewards, next_states)
             
-            q_values = self.net(states)
-            ns_q_values = self.net(next_states).detach()
             self.optimizer.zero_grad()    
-            loss = self.calc_loss(q_values, actions, rewards, ns_q_values)
+            loss = self.calc_loss(states, actions, rewards, next_states)
             loss.backward() 
             self.optim.step()
             self.writer.add_scalar("loss", loss, t)
@@ -109,14 +112,10 @@ class Dqn_Agent:
 
 if __name__ == '__main__': 
     env = Env2048(2)
-    env1 = Env2048(2)
     agent = Dqn_Agent(env)
     for i, batch in enumerate(agent.gain_experience()):
         if i == 2:
             break
         for step in batch:
             print(step)
-            # env1.brd = step.s1.reshape((2,2))
-            # env1.render()
-            # time.sleep(2)
         print('*' * 40 + '\n\n')
