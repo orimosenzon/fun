@@ -50,7 +50,7 @@ class Dqn_Agent:
         if random.random() < self.epsilon:
             a = self.env.action_space.sample()
         else:
-            action_vals = self.net(torch.Tensor(s)) 
+            action_vals = self.net(torch.tensor(s, dtype=torch.float32)) 
             a = torch.argmax(action_vals).item()
         if self.epsilon > 0.2: 
             self.epsilon -= EPSILON_DECAY
@@ -78,10 +78,10 @@ class Dqn_Agent:
 
     @staticmethod
     def wrap_as_tensors():
-        states = torch.Tensor(np.array(states))
-        actions = torch.Tensor(np.array(actions))
-        rewards = torch.Tensor(np.array(rewards))
-        next_states = torch.Tensor(np.array(next_states))
+        states = torch.tensor(np.array(states), dtype=torch.float32)
+        actions = torch.tensor(np.array(actions), dtype=torch.float32)
+        rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
+        next_states = torch.tensor(np.array(next_states), dtype=torch.float32)
         return states, actions, rewards, next_states
 
 
