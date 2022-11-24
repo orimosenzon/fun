@@ -1,6 +1,5 @@
 #!/usr/bin/python3 
 
-import ossaudiodev
 import random 
 import collections 
 import time 
@@ -47,11 +46,11 @@ class Dqn_Agent:
         self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
 
 
-    def choose_action(self): 
+    def choose_action(self, s): 
         if random.random() < self.epsilon:
             a = self.env.action_space.sample()
         else:
-            action_vals = self.net(torch.FloatTensor(ossaudiodev)) 
+            action_vals = self.net(torch.Tensor(s)) #unsqueeze(0)? 
             a = torch.argmax(action_vals).item()
         if self.epsilon > 0.2: 
             self.epsilon -= 0.00001
@@ -68,13 +67,14 @@ class Dqn_Agent:
                 steps = [] 
                 i = 0
 
-            a = self.choose_action()
+            a = self.choose_action(s)
 
             s1, r, d, info = self.env.step(a)
             s1 = s1.flatten()
             steps.append(Step(s, a, r, s1))
             s = self.env.reset().flatten() if d else s1
             i += 1 
+
 
     @staticmethod
     def wrap_as_tensors():
@@ -105,10 +105,6 @@ class Dqn_Agent:
             loss.backward() 
             self.optim.step()
             self.writer.add_scalar("loss", loss, t)
-
-
-
-
 
 
 if __name__ == '__main__': 
