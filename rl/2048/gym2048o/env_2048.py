@@ -244,9 +244,10 @@ class Env2048(gym.Env):
             return self.brd.copy(), -1, self.is_done(), {'error': 'Invalid action'}
         old_score = self.score
         self._move(action)
+        bin_reward = 1 if self.score > old_score else 0 
         reward = self.score - old_score
         self._place_new_entry()
-        return self.brd.copy(), reward, self.is_done(), {}   # observation, reward, done, info
+        return self.brd.copy(), reward, self.is_done(), {'bin_reward': bin_reward}   
 
 
     def get_action_meanings(self):

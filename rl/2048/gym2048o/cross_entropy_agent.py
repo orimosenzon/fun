@@ -167,9 +167,9 @@ class CrossEntropyAgent:
 
 if __name__ == '__main__':
     from env_2048 import Env2048
-    env = Env2048(2)
+    env = Env2048(3)
     cea = CrossEntropyAgent(env)
-    cea.train(50) 
+    cea.train(100) 
     cea.demonstrate_policy()
     cea.demonstrate_eposide(cea.episodes[-1])
     

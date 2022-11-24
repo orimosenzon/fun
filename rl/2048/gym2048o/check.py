@@ -1,7 +1,39 @@
-import gym
-env = gym.make("CartPole-v0")
-obs = env.reset()
-print(obs, type(obs))  
+
+class A:
+    a = 15 
+    class B:
+        b = 17 
+        def __init__(self): 
+            print(f'A.B.__init__:{A.a}, {self.b}')
+
+    def __init__(self):
+        b = self.B()
+
+
+a = A()
+# b = A.B()
+
+
+# import random
+
+# def av(lst): 
+#     a = sum(lst)/len(lst)
+#     b = lst[0]
+#     i = 1 
+#     for r in lst[1:]:
+#         i += 1 
+#         b = 1/i * r + (i-1)/i * b
+#     return a, b 
+
+# for i in range(7): 
+#     lst = [random.randint(0,100) for _ in range(10)]
+#     a, b = av(lst)
+#     print(a, b, lst)
+
+# import gym
+# env = gym.make("CartPole-v0")
+# obs = env.reset()
+# print(obs, type(obs))  
 
 # from collections import namedtuple
   
