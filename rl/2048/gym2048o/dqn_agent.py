@@ -13,9 +13,9 @@ from torch.utils.tensorboard import SummaryWriter
 from env_2048 import Env2048
 
 GAMMA = 0.9 
-BATCH_SIZE = 10 
-LR = 1e-3
-EPSILON_DECAY=1e-2
+BATCH_SIZE = 100 
+LR = 1e-4
+EPSILON_DECAY=1e-4
 
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1', 'is_final'])
 
@@ -100,6 +100,8 @@ class Dqn_Agent:
         
 
     def train(self, n_batches=100): 
+        test_env = Env2048(self.env.n)
+        test_n = 3
         for t, batch in enumerate(self.gain_experience()): 
             if t == n_batches:
                 break
@@ -111,14 +113,36 @@ class Dqn_Agent:
             loss = self.calc_loss(states, actions, rewards, next_states, finals)
             loss.backward() 
             self.optimizer.step()
-            self.writer.add_scalar("loss", loss.item(), t)
-            print(t, loss.item())
+            self.writer.add_scalar('loss', loss.item(), t)
+            if t % 100 == 0:
+                total = 0 
+                for _ in range(test_n):
+                    g = self.play_episode(test_env)
+                    total += g 
+                avg = total / test_n
+                print(t, loss.item(), f'avg reward:{avg}')
+                self.writer.add_scalar('reward', avg, t)
+
+
+    def play_episode(self, env): 
+        total = 0 
+        s = env.reset().flatten()
+        for _ in range(200): 
+            action_vals = self.net(torch.tensor(s, dtype=torch.float32)) 
+            a = torch.argmax(action_vals).item()
+            s1, r, d, _ = env.step(a)
+            total += r 
+            if d: 
+                break 
+            s = s1.flatten() 
+        return total 
 
 
 if __name__ == '__main__': 
-    env = Env2048(2)
+    env = Env2048(4)
     agent = Dqn_Agent(env)
-    agent.train(200)
+    agent.train(70000)
+
     # for i, batch in enumerate(agent.gain_experience()):
     #     if i == 2:
     #         break
