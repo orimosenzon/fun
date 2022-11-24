@@ -18,6 +18,8 @@ log2rgb = {
    9: (237, 200, 80),  
    10: (237, 197, 63),  
    11: (237, 194, 46), 
+   12: (255, 0, 127),
+   13: (102, 102, 255),  
 }
 
 def rgb_color(rgb):
@@ -38,7 +40,7 @@ def draw_board(brd):
             val = brd[i, j]            
             if val != 0: 
                 lg = int(math.log(val) / math.log(2))  
-                rgb = log2rgb.get(lg, (255, 255, 255))              
+                rgb = log2rgb.get(lg, (1, 1, 1))              
                 f_color = rgb_color(rgb)
                 if (i, j) == (n_i, n_j):
                     l_width = 2

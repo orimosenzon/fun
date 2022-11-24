@@ -2,7 +2,6 @@
 
 import random 
 import collections 
-import time 
 import numpy as np 
 
 
@@ -16,9 +15,9 @@ from env_2048 import Env2048
 GAMMA = 0.9 
 BATCH_SIZE = 10 
 LR = 1e-3
-EPSILON_DECAY=1e-1
+EPSILON_DECAY=1e-4
 
-Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1'])
+Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1', 'is_final'])
 
 class Net(nn.Module):
     def __init__(self, n, n_actions):
@@ -71,25 +70,28 @@ class Dqn_Agent:
 
             s1, r, d, info = self.env.step(a)
             s1 = s1.flatten()
-            steps.append(Step(s, a, r, s1))
+            steps.append(Step(s, a, r, s1, d))
             s = self.env.reset().flatten() if d else s1
             i += 1 
 
 
     @staticmethod
-    def wrap_as_tensors():
+    def wrap_as_tensors(states, actions, rewards, next_states, finals):
         states = torch.tensor(np.array(states), dtype=torch.float32)
         actions = torch.tensor(np.array(actions), dtype=torch.float32)
         rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
         next_states = torch.tensor(np.array(next_states), dtype=torch.float32)
-        return states, actions, rewards, next_states
+        finals = np.array(finals)
+        return states, actions, rewards, next_states, finals
 
 
-    def calc_loss(self, states, actions, rewards, next_states):
+    def calc_loss(self, states, actions, rewards, next_states, final_mask):
         q_values = self.net(states)
 
         ns_q_values = self.net(next_states).detach()
-        ns_values = torch.max(ns_q_values, 1)[0]    
+        ns_values = torch.max(ns_q_values, 1)[0]
+        ns_values[final_mask] = 0 
+
 
         q_values_chosen = torch.gather(q_values, 1, actions.unsqueeze(1)).squeeze()
 
@@ -99,12 +101,12 @@ class Dqn_Agent:
 
     def train(self, n_batches=100): 
         for t, batch in enumerate(self.gain_experience()): 
-            states, actions, rewards, next_states = zip(*batch)
-            states, actions, rewards, next_states = \
-                self.wrap_as_tensors(states, actions, rewards, next_states)
+            states, actions, rewards, next_states, finals = zip(*batch)
+            states, actions, rewards, next_states, finals = \
+                self.wrap_as_tensors(states, actions, rewards, next_states, finals)
             
             self.optimizer.zero_grad()    
-            loss = self.calc_loss(states, actions, rewards, next_states)
+            loss = self.calc_loss(states, actions, rewards, next_states, finals)
             loss.backward() 
             self.optim.step()
             self.writer.add_scalar("loss", loss, t)
