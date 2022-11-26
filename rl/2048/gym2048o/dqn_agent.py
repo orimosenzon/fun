@@ -14,7 +14,7 @@ from env_2048 import Env2048
 
 GAMMA = 0.9 
 BATCH_SIZE = 100 
-LR = 1e-4
+LR = 1e-3
 EPSILON_DECAY=1e-4
 MIN_EPSILON = 0.2 
 DISPLAY_PERIOD = 100 
@@ -26,9 +26,9 @@ class Net(nn.Module):
         super().__init__()
         n2 = n * n  
         self.net = nn.Sequential(
-            nn.Linear(n2, n2), 
+            nn.Linear(n2, n2*3), 
             nn.ReLU(), 
-            nn.Linear(n2, n_actions), 
+            nn.Linear(n2*3, n_actions), 
             nn.ReLU(), 
         )
 
@@ -41,19 +41,21 @@ class Dqn_Agent:
     def __init__(self, env): 
         self.env = env 
         self.test_env = Env2048(env.n)
-        self.net = Net(env.n, env.action_space.n)
         self.epsilon = 1
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=LR)
         self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu' # on my machine cuda caused it to run slower :(
+        self.net = Net(env.n, env.action_space.n).to(self.device)
+        self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=LR)
+        print(f'Running on {self.device}.')
 
 
     def choose_action(self, s): 
         if random.random() < self.epsilon:  # explore
             a = self.env.action_space.sample()
         else:                               # exploit   
-            action_vals = self.net(torch.tensor(s, dtype=torch.float32)) 
+            s = torch.tensor(s, dtype=torch.float32).to(self.device)
+            action_vals = self.net(s) 
             a = torch.argmax(action_vals).item()
         if self.epsilon > MIN_EPSILON: 
             self.epsilon -= EPSILON_DECAY
@@ -79,14 +81,16 @@ class Dqn_Agent:
             i += 1 
 
 
-    @staticmethod
-    def wrap_as_tensors(batch):
+    def wrap_as_tensors(self, batch):
         states, actions, rewards, next_states, finals = zip(*batch)
-        states = torch.tensor(np.array(states), dtype=torch.float32)
-        actions = torch.tensor(np.array(actions), dtype=torch.int64)
-        rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
-        next_states = torch.tensor(np.array(next_states), dtype=torch.float32)
+
+        states = torch.tensor(np.array(states), dtype=torch.float32).to(self.device)
+        actions = torch.tensor(np.array(actions), dtype=torch.int64).to(self.device)
+        rewards = torch.tensor(np.array(rewards), dtype=torch.float32).to(self.device)
+        next_states = torch.tensor(np.array(next_states), dtype=torch.float32).to(self.device)
+        
         finals = np.array(finals)
+        
         return states, actions, rewards, next_states, finals
 
 
@@ -138,7 +142,8 @@ class Dqn_Agent:
         total = 0 
         s = env.reset().flatten()
         for _ in range(200): 
-            action_vals = self.net(torch.tensor(s, dtype=torch.float32)) 
+            s = torch.tensor(s, dtype=torch.float32).to(self.device)    
+            action_vals = self.net(s) 
             a = torch.argmax(action_vals).item()
             s1, r, d, _ = env.step(a)
             total += r 
@@ -151,5 +156,6 @@ class Dqn_Agent:
 if __name__ == '__main__': 
     env = Env2048(4)
     agent = Dqn_Agent(env)
+    # agent.train(500)
     agent.train(30_000)
 
