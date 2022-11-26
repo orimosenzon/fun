@@ -15,23 +15,29 @@ from env_2048 import Env2048
 
 GAMMA = 0.9 
 BATCH_SIZE = 100 
-LR = 1e-4
+LR = 1e-3
 EPSILON_DECAY=1e-4
 MIN_EPSILON = 0.2 
 DISPLAY_PERIOD = 100 
+EPISODES_FOR_EVAL = 300 
 
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1', 'is_final'])
 
 class Net(nn.Module):
-    def __init__(self, n, n_actions):
+    def __init__(self, n, n_actions, n_blocks=3, internal_size_f=3):
         super().__init__()
-        n2 = n * n  
-        self.net = nn.Sequential(
-            nn.Linear(n2, n2*5), 
-            nn.ReLU(), 
-            nn.Linear(n2*5, n_actions), 
-            nn.ReLU(), 
-        )
+        n2 = n * n
+        internal_size = n2 * internal_size_f  
+        layers = collections.OrderedDict()
+        in_f, out_f = n2, internal_size
+        for i in range(n_blocks):
+            if i == n_blocks-1:
+                out_f = n_actions
+            layers[f'Linear-{i}'] = nn.Linear(in_f, out_f)
+            in_f = out_f        
+            layers[f'ReLU-{i}'] = nn.ReLU()
+
+        self.net = nn.Sequential(layers)
 
 
     def forward(self, x): 
@@ -139,13 +145,14 @@ class Dqn_Agent:
                 self.writer.add_scalar('reward', avg_rwd, t)
 
         model_filename = f'dqn-net-{datetime.datetime.now()}.pt'
-        torch.save(self.net.state_dict(), model_filename)
+        # torch.save(self.net.state_dict(), model_filename)
+        torch.save(self.net, model_filename)
 
 
     def play_episode(self, env): 
         total = 0 
         s = env.reset().flatten()
-        for _ in range(200): 
+        for _ in range(EPISODES_FOR_EVAL): 
             s = torch.tensor(s, dtype=torch.float32).to(self.device)    
             action_vals = self.net(s) 
             a = torch.argmax(action_vals).item()
@@ -158,8 +165,9 @@ class Dqn_Agent:
 
 
 def show_model_performance(env, filename): 
-    net = Net(env.n, env.action_space.n)
-    net.load_state_dict(torch.load(filename))
+    # net = Net(env.n, env.action_space.n)
+    # net.load_state_dict(torch.load(filename))
+    net = torch.load(filename)
     net.eval()
 
     s = env.reset().flatten()
@@ -178,6 +186,8 @@ if __name__ == '__main__':
     env = Env2048(4)
     agent = Dqn_Agent(env)
     # agent.train(500)
-    # agent.train(50_000)
-    show_model_performance(env, 'dqn-net-2022-11-26 21:47:34.326715.pt')
+    agent.train(60_000)
+    
+    # show_model_performance(env, 'dqn-net-2022-11-26 23:29:18.840492.pt')
+
 
