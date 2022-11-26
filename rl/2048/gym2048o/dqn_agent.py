@@ -3,7 +3,8 @@
 import random 
 import collections 
 import numpy as np 
-
+import datetime
+import time
 
 import torch 
 from torch import nn 
@@ -14,7 +15,7 @@ from env_2048 import Env2048
 
 GAMMA = 0.9 
 BATCH_SIZE = 100 
-LR = 1e-3
+LR = 1e-4
 EPSILON_DECAY=1e-4
 MIN_EPSILON = 0.2 
 DISPLAY_PERIOD = 100 
@@ -26,9 +27,9 @@ class Net(nn.Module):
         super().__init__()
         n2 = n * n  
         self.net = nn.Sequential(
-            nn.Linear(n2, n2*3), 
+            nn.Linear(n2, n2*5), 
             nn.ReLU(), 
-            nn.Linear(n2*3, n_actions), 
+            nn.Linear(n2*5, n_actions), 
             nn.ReLU(), 
         )
 
@@ -137,6 +138,9 @@ class Dqn_Agent:
                 self.writer.add_scalar('loss', avg_loss, t)
                 self.writer.add_scalar('reward', avg_rwd, t)
 
+        model_filename = f'dqn-net-{datetime.datetime.now()}.pt'
+        torch.save(self.net.state_dict(), model_filename)
+
 
     def play_episode(self, env): 
         total = 0 
@@ -153,9 +157,27 @@ class Dqn_Agent:
         return total 
 
 
+def show_model_performance(env, filename): 
+    net = Net(env.n, env.action_space.n)
+    net.load_state_dict(torch.load(filename))
+    net.eval()
+
+    s = env.reset().flatten()
+    while True: 
+        env.render() 
+        s = torch.tensor(s, dtype= torch.float32)
+        a = torch.argmax(net(s)).item() 
+        s1, r, d, _ = env.step(a)
+        if d:
+            break 
+        s = s1.flatten() 
+        time.sleep(1)
+
+
 if __name__ == '__main__': 
     env = Env2048(4)
     agent = Dqn_Agent(env)
     # agent.train(500)
-    agent.train(30_000)
+    # agent.train(50_000)
+    show_model_performance(env, 'dqn-net-2022-11-26 21:47:34.326715.pt')
 
