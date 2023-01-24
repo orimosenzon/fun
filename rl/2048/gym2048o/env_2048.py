@@ -6,6 +6,7 @@ import math
 import time
 import os 
 
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame 
 
@@ -21,10 +22,10 @@ class Env2048(gym.Env):
     }
 
     action2str = {
-        0: 'left',
-        1: 'down',
-        2: 'right', 
-        3: 'up',
+        0: '<-',
+        1: '\/',
+        2: '->', 
+        3: '/\\',
     }
 
 
@@ -183,6 +184,7 @@ class Env2048(gym.Env):
         self.canvas.fill(self.white)
         self.font = pygame.font.Font('freesansbold.ttf', 20)
 
+
     def _draw_text(self, x, y, txt, size, b_color):
         text = self.font.render(txt, True, self.black, b_color)
 
@@ -217,6 +219,13 @@ class Env2048(gym.Env):
         )
         self.did_render = False 
         self.reset()
+
+
+    def clone(self):
+        ret = Env2048(self.n)
+        ret.brd = self.brd.copy()
+        ret.score = self.score 
+        return ret
 
 
     def reset(self): #  more arguments? super().render? 
