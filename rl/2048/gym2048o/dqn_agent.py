@@ -24,7 +24,7 @@ EPISODES_FOR_EVAL = 300
 Step = collections.namedtuple('Step', field_names=['s', 'a', 'r', 's1', 'is_final'])
 
 class Net(nn.Module):
-    def __init__(self, n, n_actions, n_blocks=3, internal_size_f=3):
+    def __init__(self, n, n_actions, n_blocks=2, internal_size_f=3):
         super().__init__()
         n2 = n * n
         internal_size = n2 * internal_size_f  
@@ -32,6 +32,8 @@ class Net(nn.Module):
         in_f, out_f = n2, internal_size
         for i in range(n_blocks):
             if i == n_blocks-1:
+                # layers[f'Conv-{i}-1'] = nn.Conv1d(1, 10, 3)
+                # layers[f'Conv-{i}-2'] = nn.Conv1d(10, 1, 3)
                 out_f = n_actions
             layers[f'Linear-{i}'] = nn.Linear(in_f, out_f)
             in_f = out_f        
@@ -45,15 +47,21 @@ class Net(nn.Module):
 
 
 class Dqn_Agent: 
-    def __init__(self, env): 
+    def __init__(self, env, start_model=None): 
         self.env = env 
         self.test_env = Env2048(env.n)
         self.epsilon = 1
         self.loss_fn = nn.MSELoss()
         self.writer = SummaryWriter(comment=f'_dqn{env.n}X{env.n}_')
         self.device = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu' # on my machine cuda caused it to run slower :(
-        self.net = Net(env.n, env.action_space.n).to(self.device)
-        self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=LR)
+        if not start_model:
+            self.net = Net(env.n, env.action_space.n).to(self.device)
+        else:
+            self.net = torch.load(start_model).to(self.device)
+            self.net.eval()
+            print(f'Starting from {start_model}')
+        print(f'Using net:\n{self.net}')
+        self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=LR, weight_decay=1e-4) 
         print(f'Running on {self.device}.')
 
 
@@ -185,9 +193,11 @@ def show_model_performance(env, filename):
 if __name__ == '__main__': 
     env = Env2048(4)
     agent = Dqn_Agent(env)
+    # agent = Dqn_Agent(env, start_model='dqn-net-2022-11-27 00:30:52.012667.pt')
     # agent.train(500)
     agent.train(60_000)
     
     # show_model_performance(env, 'dqn-net-2022-11-26 23:29:18.840492.pt')
 
-
+    # net = Net(4,4)
+    # print(net)
