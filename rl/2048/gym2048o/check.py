@@ -1,15 +1,91 @@
+def pair_sum(nums, target): 
+    nums.sort()
+    i1, i2 = 0, len(nums)-1
+    while i1 < i2: 
+        s = nums[i1] + nums[i2]
+        if s == target:
+            return (nums[i1], nums[i2])
+        if s < target:
+            i1 +=1 
+        else: 
+            i2 -=1
 
-class A:
+    return False 
 
-    # @staticmethod
-    def foo():
-        print('foo')
 
-    def foo1(self):
-        self.foo()
+print(pair_sum([2, 11, 28, -3, 4, 15], -1)) 
 
-a = A()
-a.foo1() 
+# def min_win(s, t):
+#     N = len(s)
+#     for i in range(N): 
+#         for j in range(i+1, N+1):
+#             print(t, s[i:j])
+#             if t in s[i:j]:
+#                 return s[i:j]
+
+
+# print(min_win("ADOBECODEBANC", "ABC"))
+
+
+# def flatten(lst):
+#     if type(lst) == int:
+#         return lst
+#     ret = []
+#     for l in lst: 
+#         ret.extend(flatten(l))
+#     return ret 
+
+
+# def sort_by_length(strings):
+#     return sorted(strings, key=lambda x: (len(x), x))
+
+
+
+
+
+# def pair_sum(nums, t): 
+#     nums.sort()
+#     N = len(nums)
+#     for i in range(N): 
+#         for j in range(i+1, N): 
+#             s = nums[i] + nums[j] 
+#             if s == t:
+#                 return [i,j]
+#             if s > t:
+#                 continue
+
+
+# def pair_sum(nums, target): 
+#     N = len(nums)
+#     for i in range(N):
+#         for j in range(i+1, N):
+#             if nums[i] + nums[j] == target:
+#                 print(f'nums[{i}] + nums[{j}] = {nums[i]} + {nums[i]} = {target}')
+
+# def longest_prefix(strings):
+#     prefix = '' 
+#     i = 0 
+#     while True: 
+#         for s in strings:
+#             if i == len(s) or s[i] != strings[0][i]:
+#                 return prefix 
+#         prefix += strings[0][i]
+#         i+=1
+
+# print(longest_prefix(["flower","flow","flight"]))
+# print(longest_prefix(["dog","racecar","car"]))
+
+# class A:
+
+#     # @staticmethod
+#     def foo():
+#         print('foo')
+
+#     def foo1(self):
+#         self.foo()
+
+# a = A()
+# a.foo1() 
 
 # class A:
 #     a = 15 
