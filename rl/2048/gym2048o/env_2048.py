@@ -45,7 +45,7 @@ class Env2048(gym.Env):
 
     white = (255, 255, 255)
     black = (0, 0, 0)
-    width, height = 500, 500
+    width, height = 1000, 1000
 
     def _loc(self, i, j, dim):
         loc = [0, 0]
@@ -305,15 +305,15 @@ class Env2048(gym.Env):
 
 
 if __name__ == '__main__':
-    env = Env2048(7)
+    env = Env2048(5)
     env.reset()
     
     while True: 
         env.render()
-        time.sleep(0.1)
+        time.sleep(0.5)
         # a = env.action_space.sample()
         a = random.choice(env.get_valid_actions())
-        o, r, d, _, = env.step(a)
+        o, r, d, _ = env.step(a)
         if d: 
             break 
 
