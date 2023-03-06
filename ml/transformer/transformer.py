@@ -12,9 +12,9 @@ import torch
 import torch.nn as nn
 
 
-class SelfAttention(nn.Module):
+class Attention(nn.Module):
     def __init__(self, embed_size, heads):
-        super(SelfAttention, self).__init__()
+        super(Attention, self).__init__()
         self.embed_size = embed_size
         self.heads = heads
         self.head_dim = embed_size // heads
@@ -80,7 +80,7 @@ class SelfAttention(nn.Module):
 class TransformerBlock(nn.Module):
     def __init__(self, embed_size, heads, dropout, forward_expansion):
         super(TransformerBlock, self).__init__()
-        self.attention = SelfAttention(embed_size, heads)
+        self.attention = Attention(embed_size, heads)
         self.norm1 = nn.LayerNorm(embed_size)
         self.norm2 = nn.LayerNorm(embed_size)
 
@@ -154,7 +154,7 @@ class DecoderBlock(nn.Module):
     def __init__(self, embed_size, heads, forward_expansion, dropout, device):
         super(DecoderBlock, self).__init__()
         self.norm = nn.LayerNorm(embed_size)
-        self.attention = SelfAttention(embed_size, heads=heads)
+        self.attention = Attention(embed_size, heads=heads)
         self.transformer_block = TransformerBlock(
             embed_size, heads, dropout, forward_expansion
         )
