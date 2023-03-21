@@ -1,10 +1,13 @@
-import cv2 
-cv2.resize(src, dsize, fx, fy, interpolation)
+import os 
 
-'''
-src	- The file path in which the input image resides.
-dsize -	The size of the output image, which adheres to the syntax (width, height).
-fx	- The scale factor for the X axis.
-fy	- The scale factor for the Y axis.
-interpolation - The technique for adding or removing pixels during the resizing process. The default is cv2.INTER_LINEAR.
-'''
+from PIL import Image
+
+dir1 = 'dataset_orig'
+dir2 = 'dataset'
+
+for i, fname in enumerate(os.listdir(dir1)):
+    img = Image.open(f'{dir1}/{fname}')
+    img1 = img.resize((200, 200))
+    img1.save(f'{dir2}/{fname}')
+    if i % 10 == 0:
+        print(i)
