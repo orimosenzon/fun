@@ -11,11 +11,12 @@ print(f'{openai.api_key=}')
 @app.route("/", methods=("GET", "POST"))
 def index():
     if request.method == "POST":
-        animal = request.form["animal"]
+        question = request.form["question"]
         response = openai.Completion.create(
             model="text-davinci-003",
-            prompt=generate_prompt(animal),
+            prompt=generate_prompt(question),
             temperature=0.6,
+            max_tokens=150, 
         )
         print(f'{response=}')
         return redirect(url_for("index", result=response.choices[0].text))
@@ -24,8 +25,20 @@ def index():
     return render_template("index.html", result=result)
 
 
-def generate_prompt(animal):
-    return f'Please tell me all you know about {animal}'
+def load_prevoius_session(session):
+    pass # self.prev_session = session 
+
+
+def profile(): 
+    return 'Please describe my personality as reflected from our conversation'
+
+
+def summarize(n): 
+    return f'Please summarize our conversation so far, in {n} sentences'
+
+
+def generate_prompt(question):
+    return f'Please tell me all you know about {question}'
 
 #     return """Suggest three names for an animal that is a superhero.
 
