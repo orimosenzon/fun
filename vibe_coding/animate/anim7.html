@@ -56,12 +56,20 @@
             justify-content: center;
             font-size: 14px;
             font-weight: 600;
-            margin-left: 6px;
+            margin-left: 6px; /* Default spacing for buttons within a group */
             margin-bottom: 5px;
             cursor: pointer;
             border-radius: 6px;
             transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
         }
+        /* Specific spacing for the load button if it's next to save */
+        #loadMovieInput + .file-input-label { /* This might be too specific, consider a class */
+             /* margin-left: 10px; /* Increased spacing if they are separate but close */
+        }
+         .toolbar-group .file-input-label { /* Add margin to the left of the upload button if it's not the first in its group */
+            margin-left: 10px;
+        }
+
 
         .toolbar-button i, .nav-button i, .file-input-label i {
             margin-right: 6px; /* Space between icon and text (visual left in RTL) */
@@ -73,7 +81,7 @@
 
 
         .toolbar-group > *:first-child {
-             margin-left: 0;
+             margin-left: 0; /* No margin for the first button in a group */
         }
 
         .nav-button {
@@ -98,11 +106,11 @@
         }
         
         #playMovieButton { /* Specific style for play button */
-            background-color: #90EE90; /* Light green */
-            color: #333; /* Darker text for contrast on light green */
+            background-color: #ffc107; /* Amber/Orange-Yellow */
+            color: #333; /* Darker text for contrast */
         }
         #playMovieButton:hover {
-            background-color: #7CFC00; /* Brighter green on hover */
+            background-color: #e0a800; /* Darker Amber on hover */
         }
 
         .toolbar-button.playing { /* This class is added by JS when playing */
