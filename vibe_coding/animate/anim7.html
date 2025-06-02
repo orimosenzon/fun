@@ -302,7 +302,7 @@
         <p><strong><i class="fas fa-info-circle" style="margin-left: 8px;"></i>הוראות שימוש:</strong></p>
         <ul>
             <li>השתמש בכפתורי <strong>"בטל"</strong> (<i class="fas fa-undo"></i> Ctrl+Z) ו<strong>"בצע שוב"</strong> (<i class="fas fa-redo"></i> Ctrl+Y) לתיקונים.</li>
-            <li>לחץ על <strong>"הוסף תמונה"</strong> (<i class="fas fa-plus-square"></i>) כדי ליצור תמונה חדשה באנימציה (תהיה עותק של הנוכחית).</li>
+            <li>לחץ על <strong>"הוסף תמונה"</strong> (<i class="fas fa-plus-square"></i>) כדי ליצור תמונה חדשה באנימציה (תהיה עותק של הנוכחית). המערכת תעבור אוטומטית למצב עריכה.</li>
             <li>השתמש בחיצים (כעת הפוכים ויזואלית) כדי לנווט בין תמונות.</li>
             <li>**יצירת רצפים חדשים (נקודות עגינה וכו') אפשרית רק בתמונה הראשונה.**</li>
             <li>בכל תמונה, לחץ על משטח הציור כדי להתחיל לצייר רצף עקומות חדש (רק בתמונה 1) או להוסיף נקודות לרצף הנוכחי (רק בתמונה 1).</li>
@@ -325,9 +325,27 @@
     </div>
 
     <script>
-        // JavaScript code for the Bezier curve animation editor
-        // Original source: https://orimosenzon.github.io/fun/vibe_coding/anim6.html
-        // This script handles all the logic for drawing, editing, animating, saving, and loading Bezier curves.
+        // Bezier Curve Animation Editor
+        // Copyright (C) 2025 [Ori Mosenzon] <orimosenzon at gmail>
+        //
+        // This program is free software: you can redistribute it and/or modify
+        // it under the terms of the GNU General Public License as published by
+        // the Free Software Foundation, either version 3 of the License, or
+        // (at your option) any later version.
+        //
+        // This program is distributed in the hope that it will be useful,
+        // but WITHOUT ANY WARRANTY; without even the implied warranty of
+        // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        // GNU General Public License for more details.
+        //
+        // You should have received a copy of the GNU General Public License
+        // along with this program. If not, see <https://www.gnu.org/licenses/>.
+        //
+        // ---
+        // Original Bezier curve animation logic based on work by orimosenzon
+        // (see: https://orimosenzon.github.io/fun/vibe_coding/anim6.html)
+        // Further UI enhancements and modifications by [google's gemini pro 2.5].
+        // ---
 
         // DOM Element References
         const canvas = document.getElementById('drawingCanvas');
@@ -346,125 +364,109 @@
         const clearCanvasButton = document.getElementById('clearCanvasButton'); 
 
         // --- Global State Variables ---
-        let animationFrames = []; // Stores all frames of the animation. Each frame is an array of curve sequences.
-        let currentFrameIndex = 0; // Index of the currently displayed/edited frame.
+        let animationFrames = []; 
+        let currentFrameIndex = 0;
         
-        // Represents the curve currently being drawn by the user before it's finalized.
         let activeCurve = { id: 'active_initial', anchors: [], segments: [], showAnchorsInEdit: true }; 
 
-        let isDrawingMode = false;  // True if the user is currently adding points to a new curve.
-        let isEditModeActive = false; // True if existing curves can be edited.
+        let isDrawingMode = false;  
+        let isEditModeActive = false; 
         
-        let draggedPointInfo = null; // Information about the point/segment being dragged.
-        let isDragging = false;      // True if a mouse drag operation is in progress.
+        let draggedPointInfo = null; 
+        let isDragging = false;      
 
         // --- Undo/Redo State ---
-        let undoStack = []; // Stores previous states for undo functionality.
-        let redoStack = []; // Stores undone states for redo functionality.
-        const MAX_UNDO_STEPS = 50; // Maximum number of undo steps to store.
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_UNDO_STEPS = 50; 
 
         // --- Zoom and Pan State ---
-        let scaleFactor = 1.0; // Current zoom level of the canvas.
-        let originX = 0; // X-coordinate of the canvas origin (for panning).
-        let originY = 0; // Y-coordinate of the canvas origin (for panning).
-        const ZOOM_INTENSITY = 0.1; // How much to zoom in/out on each wheel scroll.
-        const MIN_SCALE = 0.001; // Minimum allowed zoom level.
-        const MAX_SCALE = 1000.0; // Maximum allowed zoom level.
+        let scaleFactor = 1.0;
+        let originX = 0; 
+        let originY = 0;
+        const ZOOM_INTENSITY = 0.1; 
+        const MIN_SCALE = 0.001; 
+        const MAX_SCALE = 1000.0; 
 
         // --- Animation State ---
-        let isAnimating = false; // True if the animation is currently playing.
-        let animationRequestID; // ID for canceling the animation frame request.
-        let anim_sourceFrameIdx; // Index of the source frame for the current animation transition.
-        let anim_targetFrameIdx; // Index of the target frame for the current animation transition.
-        let anim_startTime; // Timestamp when the current transition started.
-        const ANIM_DURATION_PER_TRANSITION = 1000; // Duration (ms) for each transition between frames.
-        let anim_currentInterpolatedSequences = []; // Holds the curve data for the current interpolated animation step.
+        let isAnimating = false;
+        let animationRequestID;
+        let anim_sourceFrameIdx;
+        let anim_targetFrameIdx;
+        let anim_startTime;
+        const ANIM_DURATION_PER_TRANSITION = 1000; // ms
+        let anim_currentInterpolatedSequences = []; 
 
         // --- Drawing Constants ---
-        const TENSION = 0.33; // Tension for calculating Catmull-Rom splines, influences Bezier control points.
-        const VISUAL_ANCHOR_RADIUS_ON_SCREEN = 5; // Radius (pixels) for drawing anchor points on screen.
-        const VISUAL_CONTROL_RADIUS_ON_SCREEN = 4; // Radius (pixels) for drawing control points on screen.
-        const HIT_RADIUS_ON_SCREEN = 8; // Radius (pixels) for detecting mouse hits on points.
-        const CURVE_HIT_THRESHOLD_ON_SCREEN = 5; // Threshold (pixels) for detecting mouse hits on curve lines.
+        const TENSION = 0.33; 
+        const VISUAL_ANCHOR_RADIUS_ON_SCREEN = 5; 
+        const VISUAL_CONTROL_RADIUS_ON_SCREEN = 4; 
+        const HIT_RADIUS_ON_SCREEN = 8; 
+        const CURVE_HIT_THRESHOLD_ON_SCREEN = 5; 
 
         // --- Color Constants (Updated for new UI) ---
-        const CURVE_COLOR = '#007bff'; // Main color for drawing curves.
-        const ONION_SKIN_COLOR = 'rgba(108, 117, 125, 0.4)'; // Color for onion skinning (previous frame).
-        const EDIT_ANCHOR_POINT_COLOR = '#343a40'; // Color for anchor points (position) in edit mode.
-        const EDIT_CONTROL_POINT_COLOR = '#87CEEB'; // Light Blue (Sky Blue) color for control points (slope) in edit mode.
-        const HELPER_LINE_COLOR = 'rgba(100, 100, 100, 0.3)'; // Color for lines connecting anchors to control points.
-        const DRAW_MODE_FIRST_ANCHOR_COLOR = '#dc3545'; // Color for the first anchor point in drawing mode.
-        const DRAW_MODE_OTHER_ANCHORS_COLOR = '#343a40'; // Color for subsequent anchor points in drawing mode.
+        const CURVE_COLOR = '#007bff'; 
+        const ONION_SKIN_COLOR = 'rgba(108, 117, 125, 0.4)'; 
+        const EDIT_ANCHOR_POINT_COLOR = '#343a40'; 
+        const EDIT_CONTROL_POINT_COLOR = '#87CEEB'; 
+        const HELPER_LINE_COLOR = 'rgba(100, 100, 100, 0.3)'; 
+        const DRAW_MODE_FIRST_ANCHOR_COLOR = '#dc3545'; 
+        const DRAW_MODE_OTHER_ANCHORS_COLOR = '#343a40'; 
 
 
         // --- Vector Math Helper Functions ---
-        // These functions perform basic 2D vector operations.
         function vecAdd(v1, v2) { return { x: v1.x + v2.x, y: v1.y + v2.y }; }
         function vecSub(v1, v2) { return { x: v1.x - v2.x, y: v1.y - v2.y }; }
         function vecScale(v, s) { return { x: v.x * s, y: v.y * s }; }
         function vecLength(v) { return Math.sqrt(v.x * v.x + v.y * v.y); }
         function vecNormalize(v) {
             const len = vecLength(v);
-            if (len === 0) return { x: 0, y: 0 }; // Avoid division by zero
+            if (len === 0) return { x: 0, y: 0 }; 
             return vecScale(v, 1 / len);
         }
 
         // --- Bezier Calculation Logic ---
-        /**
-         * Calculates all Bezier curve segments for a given array of anchor points.
-         * This implementation uses a method similar to Catmull-Rom to automatically
-         * determine control points for smooth transitions between segments.
-         * @param {Array<Object>} points - Array of anchor point objects {x, y}.
-         * @param {number} tension - Tension factor influencing the curve's tightness.
-         * @returns {Array<Object>} Array of segment objects, each with p0_obj, cp1, cp2, p1_obj.
-         */
         function calculateAllBezierSegments(points, tension) {
             const segments = [];
             const numAnchors = points.length;
-            if (numAnchors < 2) return []; // Not enough points to form a segment
+            if (numAnchors < 2) return []; 
 
             const anchor0_obj = points[0]; 
             const anchor1_obj = points[1]; 
-            // First control point for the first segment
             let cp0_1 = vecAdd(anchor0_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
 
-            if (numAnchors === 2) { // Special case for a single segment (2 anchors)
+            if (numAnchors === 2) { 
                 let cp0_2 = vecSub(anchor1_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
                 segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
                 return segments;
             }
 
             const anchor2_obj = points[2];
-            // Calculate tangent at the first interior anchor (points[1])
             let tangent_at_p1_dir = vecNormalize(vecSub(anchor2_obj, anchor0_obj));
-            // Handle collinear points case
             if (tangent_at_p1_dir.x === 0 && tangent_at_p1_dir.y === 0) {
                 tangent_at_p1_dir = vecNormalize(vecSub(anchor1_obj, anchor0_obj));
             }
             const len_p0p1 = vecLength(vecSub(anchor1_obj, anchor0_obj));
-            // Second control point for the first segment
             let cp0_2 = vecSub(anchor1_obj, vecScale(tangent_at_p1_dir, len_p0p1 * tension));
             segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
 
-            // Calculate segments for the rest of the points
             for (let i = 1; i < numAnchors - 1; i++) {
                 const current_anchor_start_obj = points[i];
                 const current_anchor_end_obj = points[i+1];
                 
-                // First control point of the current segment is mirrored from the previous segment's second control point
                 const prev_segment_cp2 = segments[i-1].cp2;
                 const current_cp1 = vecSub(vecScale(current_anchor_start_obj, 2), prev_segment_cp2);
                 
                 let current_cp2;
-                if (i < numAnchors - 2) { // If there's a point after the current segment's end anchor
+                if (i < numAnchors - 2) { 
                     const anchor_next_next_obj = points[i+2];
                     let tangent_at_current_p_end_dir = vecNormalize(vecSub(anchor_next_next_obj, current_anchor_start_obj));
-                     if (tangent_at_current_p_end_dir.x === 0 && tangent_at_current_p_end_dir.y === 0) { // Handle collinear points
+                     if (tangent_at_current_p_end_dir.x === 0 && tangent_at_current_p_end_dir.y === 0) { 
                         tangent_at_current_p_end_dir = vecNormalize(vecSub(current_anchor_end_obj, current_anchor_start_obj));
                     }
                     const len_segment = vecLength(vecSub(current_anchor_end_obj, current_anchor_start_obj));
                     current_cp2 = vecSub(current_anchor_end_obj, vecScale(tangent_at_current_p_end_dir, len_segment * tension));
-                } else { // Last segment
+                } else { 
                     current_cp2 = vecSub(current_anchor_end_obj, vecScale(vecSub(current_anchor_end_obj, current_anchor_start_obj), tension));
                 }
                 segments.push({ p0_obj: current_anchor_start_obj, cp1: current_cp1, cp2: current_cp2, p1_obj: current_anchor_end_obj });
@@ -473,26 +475,17 @@
         }
         
         // --- Undo/Redo and Cloning Logic ---
-        /**
-         * Creates a deep clone of a single curve sequence.
-         * @param {Object} seq - The curve sequence to clone.
-         * @returns {Object} A new, cloned curve sequence.
-         */
         function cloneSingleSequence(seq) {
             if (!seq || !seq.anchors) return { id: 'empty_cloned_seq_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: false };
             
-            // Clone anchors (simple objects)
             const newAnchors = seq.anchors.map(a => ({ ...a })); 
             
-            // Clone segments, ensuring p0_obj and p1_obj reference the new anchor objects
             const newSegments = (seq.segments && Array.isArray(seq.segments)) ? seq.segments.map(seg => {
-                // Find the index of original anchor objects to map to new anchor objects
                 const p0Index = seq.anchors.indexOf(seg.p0_obj);
                 const p1Index = seq.anchors.indexOf(seg.p1_obj);
                 return {
                     cp1: { ...seg.cp1 }, 
                     cp2: { ...seg.cp2 },
-                    // If original anchor was found, use the corresponding new anchor, otherwise keep null/original (should ideally always be found)
                     p0_obj: p0Index !== -1 ? newAnchors[p0Index] : null, 
                     p1_obj: p1Index !== -1 ? newAnchors[p1Index] : null
                 };
@@ -506,32 +499,18 @@
             };
         }
 
-        /**
-         * Creates a deep clone of a single frame's data (an array of sequences).
-         * @param {Array<Object>} sourceFrameData - The frame data to clone.
-         * @returns {Array<Object>} A new, cloned frame data array.
-         */
         function cloneSingleFrame(sourceFrameData) {
             if (!sourceFrameData || !Array.isArray(sourceFrameData)) return [];
             return sourceFrameData.map(seq => cloneSingleSequence(seq));
         }
 
-        /**
-         * Creates a deep clone of the entire animationFrames state.
-         * @param {Array<Array<Object>>} sourceFrames - The animationFrames array to clone.
-         * @returns {Array<Array<Object>>} A new, cloned animationFrames array.
-         */
         function cloneAnimationFramesState(sourceFrames) {
             if (!sourceFrames || !Array.isArray(sourceFrames)) return [];
             return sourceFrames.map(frame => cloneSingleFrame(frame));
         }
 
-        /**
-         * Saves the current application state to the undo stack.
-         * This includes animation frames, current frame index, active curve, modes, and view transform.
-         */
         function saveStateForUndo() {
-            if (isAnimating && draggedPointInfo === null) return; // Don't save state during animation playback, unless a drag operation is happening (like zoom)
+            if (isAnimating && draggedPointInfo === null) return; 
             const state = {
                 animationFrames: cloneAnimationFramesState(animationFrames), 
                 currentFrameIndex: currentFrameIndex,
@@ -544,15 +523,12 @@
             };
             undoStack.push(state);
             if (undoStack.length > MAX_UNDO_STEPS) {
-                undoStack.shift(); // Remove oldest state if stack is full
+                undoStack.shift(); 
             }
-            redoStack = []; // Clear redo stack whenever a new action is performed
+            redoStack = []; 
             updateUndoRedoButtons();
         }
 
-        /**
-         * Restores the application state from the undo stack.
-         */
         function performUndo() {
             if (undoStack.length <= 1 || (isAnimating && draggedPointInfo === null) ) return; 
             
@@ -584,9 +560,6 @@
             redrawCanvas();
         }
 
-        /**
-         * Restores the application state from the redo stack.
-         */
         function performRedo() {
             if (redoStack.length === 0 || (isAnimating && draggedPointInfo === null) ) return;
             saveStateToStack(undoStack, { 
@@ -617,11 +590,6 @@
             redrawCanvas();
         }
         
-        /**
-         * Helper function to push state onto a stack (undo or redo) and manage its size.
-         * @param {Array} stack - The stack (undoStack or redoStack).
-         * @param {Object} state - The state object to push.
-         */
         function saveStateToStack(stack, state) {
             stack.push(state);
             if (stack.length > MAX_UNDO_STEPS) { 
@@ -629,9 +597,6 @@
             }
         }
 
-        /**
-         * Updates the enabled/disabled state of undo and redo buttons.
-         */
         function updateUndoRedoButtons() {
             undoButton.disabled = undoStack.length <= 1 || (isAnimating && draggedPointInfo === null); 
             redoButton.disabled = redoStack.length === 0 || (isAnimating && draggedPointInfo === null);
@@ -639,9 +604,6 @@
 
 
         // --- Frame Management ---
-        /**
-         * Resets the entire application to its initial, empty state.
-         */
         function resetApplicationToInitialState() {
             animationFrames = [[]]; 
             currentFrameIndex = 0;
@@ -660,23 +622,14 @@
             redrawCanvas();     
         }
 
-        /**
-         * Initializes the application when the page loads.
-         */
         function initializeAppOnLoad() {
             resetApplicationToInitialState();
         }
         
-        /**
-         * Updates the zoom level indicator in the UI.
-         */
         function updateZoomIndicator() {
             zoomIndicator.textContent = `זום: ${Math.round(scaleFactor * 100)}%`;
         }
 
-        /**
-         * Updates all UI elements related to frame navigation, editing modes, and playback.
-         */
         function updateFrameUI() {
             frameIndicator.textContent = `תמונה: ${currentFrameIndex + 1}/${animationFrames.length}`;
             updateZoomIndicator(); 
@@ -710,9 +663,6 @@
             updateUndoRedoButtons();
         }
         
-        /**
-         * "Rehydrates" frame data loaded from a file.
-         */
         function rehydrateFrameData(loadedFrames) { 
             return loadedFrames.map(frame => 
                 frame.map(seq => {
@@ -738,9 +688,6 @@
         }
 
         // --- Canvas Drawing Functions ---
-        /**
-         * Draws a set of curve sequences on the canvas.
-         */
         function drawCurveSequence(sequences, color, lineWidth, drawEditPoints = false) {
             sequences.forEach(seq => {
                 if (seq.segments && seq.segments.length > 0) {
@@ -792,9 +739,6 @@
             });
         }
 
-        /**
-         * Clears and redraws the entire canvas based on the current state.
-         */
         function redrawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
             ctx.save(); 
@@ -834,10 +778,6 @@
             ctx.restore(); 
         }
         
-        // --- Mouse Position Utility ---
-        /**
-         * Gets mouse coordinates relative to the canvas element.
-         */
         function getMouseCanvasPos(event) {
             const rect = canvas.getBoundingClientRect(); 
             const scaleX = canvas.width / rect.width;
@@ -848,9 +788,6 @@
             };
         }
 
-        /**
-         * Gets mouse coordinates in the "world" space (considering pan and zoom).
-         */
         function getMouseWorldPos(event) {
             const mouseCanvasPos = getMouseCanvasPos(event);
             return {
@@ -859,10 +796,6 @@
             };
         }
 
-        // --- Curve Hit Detection ---
-        /**
-         * Calculates a point on a Bezier curve at a given parameter t.
-         */
         function getPointOnBezier(p0, cp1, cp2, p1, t) {
             const mt = 1 - t; 
             const mt2 = mt * mt;
@@ -875,9 +808,6 @@
             return { x, y };
         }
 
-        /**
-         * Checks if a given mouse position is near a Bezier curve segment.
-         */
         function isPointNearBezier(mousePos, p0_obj, cp1, cp2, p1_obj, hitThresholdInWorld) {
             const steps = 20; 
             for (let i = 0; i <= steps; i++) {
@@ -890,12 +820,6 @@
             return false; 
         }
 
-
-        // --- Merge Sequences Logic ---
-        /**
-         * Merges two curve sequences (seqA and seqB) if an endpoint of seqA is dragged
-         * onto an endpoint of seqB. This is only allowed in the first frame.
-         */
         function mergeAndReplaceSequences(currentFrameCurves, seqA, draggedAnchorIndexOnA, seqB, targetAnchorIndexOnB) {
             if (currentFrameIndex !== 0) { 
                 console.warn("Merging sequences is only allowed in the first frame.");
@@ -941,10 +865,6 @@
             return true; 
         }
 
-        // --- Animation Logic ---
-        /**
-         * Interpolates a single point between two points p1 and p2 based on parameter t.
-         */
         function interpolatePoint(p1, p2, t) {
             return {
                 x: p1.x + (p2.x - p1.x) * t,
@@ -952,9 +872,6 @@
             };
         }
 
-        /**
-         * Interpolates all sequences between two frames (seqsA and seqsB) at parameter t.
-         */
         function interpolateSequences(seqsA, seqsB, t) {
             if (!seqsA || !seqsB || seqsA.length !== seqsB.length) {
                 console.warn("Cannot interpolate: Mismatched sequence structures or undefined frames. Displaying source frame.", seqsA, seqsB);
@@ -996,9 +913,6 @@
             });
         }
 
-        /**
-         * The main animation loop, called via requestAnimationFrame.
-         */
         function animationLoop(timestamp) {
             if (!isAnimating) return; 
 
@@ -1039,9 +953,6 @@
             animationRequestID = requestAnimationFrame(animationLoop); 
         }
 
-        /**
-         * Starts the animation playback.
-         */
         function startAnimation() {
             if (animationFrames.length < 2) return; 
             saveStateForUndo(); 
@@ -1070,9 +981,6 @@
             animationRequestID = requestAnimationFrame(animationLoop);
         }
 
-        /**
-         * Stops the animation playback.
-         */
         function stopAnimation() {
             isAnimating = false;
             cancelAnimationFrame(animationRequestID);
@@ -1090,11 +998,6 @@
             }
         });
 
-
-        // --- Event Handlers (mousedown, mousemove, mouseup, keydown, wheel) ---
-        /**
-         * Handles common tasks after frame navigation.
-         */
         function handleFrameNavigation() {
             saveStateForUndo(); 
             const currentFrameSequences = animationFrames[currentFrameIndex];
@@ -1123,11 +1026,17 @@
 
             const currentFrameData = animationFrames[currentFrameIndex] || [];
             const newFrameData = cloneSingleFrame(currentFrameData); 
-            newFrameData.forEach(seq => seq.showAnchorsInEdit = isEditModeActive); 
 
             const newFrameTargetIndex = currentFrameIndex + 1; 
             animationFrames.splice(newFrameTargetIndex, 0, newFrameData);
             currentFrameIndex = newFrameTargetIndex; 
+            
+            // --- New: Enter edit mode after adding a frame ---
+            isEditModeActive = true;
+            if (animationFrames[currentFrameIndex]) {
+                animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = true);
+            }
+            // --- End New ---
             
             updateFrameUI(); 
             redrawCanvas(); 
@@ -1190,7 +1099,7 @@
         });
 
         canvas.addEventListener('mousedown', (event) => {
-            if (isAnimating && draggedPointInfo === null) return; // Allow mousedown for zoom/pan during animation
+            if (isAnimating && draggedPointInfo === null) return; 
             
             const mouseWorldPos = getMouseWorldPos(event); 
             const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
@@ -1265,7 +1174,7 @@
                         }
                     }
                 }
-            } else if (!isEditModeActive) { // Only allow drawing if not in edit mode
+            } else if (!isEditModeActive) { 
                 if (currentFrameIndex !== 0) { 
                     isDrawingMode = false; 
                     activeCurve = { id: 'active_attempt_draw_non_frame0', anchors: [], segments: [], showAnchorsInEdit: true };
@@ -1286,7 +1195,7 @@
         });
 
         canvas.addEventListener('mousemove', (event) => {
-            if (isAnimating && draggedPointInfo === null && !isEditModeActive) return; // Allow mousemove for cursor changes in edit mode during animation if needed, or for zoom
+            if (isAnimating && draggedPointInfo === null && !isEditModeActive) return; 
             const mouseWorldPos = getMouseWorldPos(event); 
             const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
             const effectiveCurveHitRadius = CURVE_HIT_THRESHOLD_ON_SCREEN / scaleFactor;
@@ -1382,9 +1291,6 @@
         });
 
         canvas.addEventListener('mouseup', () => {
-            // Allow mouseup to stop dragging even during animation (for zoom/pan)
-            // if (isAnimating && draggedPointInfo === null) return; // Original check, might be too restrictive
-            
             const currentFrameSequences = animationFrames[currentFrameIndex];
             if (isDragging && draggedPointInfo && draggedPointInfo.type === 'anchor' && currentFrameSequences) {
                 const draggedSeq = currentFrameSequences.find(s => s.id === draggedPointInfo.seqId);
@@ -1434,7 +1340,7 @@
             draggedPointInfo = null;
             if (canvas.style.cursor === 'grabbing') {
                  canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair';
-            } else if (!isEditModeActive && !isAnimating) { // Only reset to crosshair if not animating and not edit mode
+            } else if (!isEditModeActive && !isAnimating) { 
                  canvas.style.cursor = 'crosshair';
             } 
             redrawCanvas(); 
@@ -1446,7 +1352,7 @@
                 draggedPointInfo = null;
                 redrawCanvas(); 
             }
-            if (!isAnimating) { // Don't change cursor if animating and mouse leaves
+            if (!isAnimating) { 
                 canvas.style.cursor = 'default'; 
             }
         });
@@ -1489,7 +1395,7 @@
 
         canvas.addEventListener('wheel', (event) => {
             event.preventDefault(); 
-            // Removed: if (isAnimating) return; -> Allows zoom during animation
+            // Zoom is now allowed during animation
 
             const mouseCanvasPos = getMouseCanvasPos(event); 
             const worldMouseX = (mouseCanvasPos.x - originX) / scaleFactor;
@@ -1505,8 +1411,7 @@
             newScaleFactor = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScaleFactor));
 
             if (newScaleFactor !== scaleFactor) { 
-                // Only save state for undo if not animating, or if an interaction (like drag for pan) is happening
-                if (!isAnimating || draggedPointInfo !== null) {
+                if (!isAnimating || draggedPointInfo !== null) { 
                     saveStateForUndo();
                 }
                 scaleFactor = newScaleFactor;
@@ -1518,7 +1423,6 @@
             }
         });
 
-        // --- Save/Load Functionality ---
         saveMovieButton.addEventListener('click', () => {
             if (isAnimating && draggedPointInfo === null) return;
             if (isDrawingMode && activeCurve.anchors.length > 0) { 
