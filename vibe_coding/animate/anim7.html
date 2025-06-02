@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עורך אנימציית עקומות בזייה - גרסה משופרת</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" xintegrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* General page styles */
+        body {
+            font-family: 'Open Sans', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding-top: 0;
+            background-color: #f8f9fa; /* Lighter background */
+            color: #343a40; /* Darker text for better contrast */
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Toolbar styles */
+        #toolbar {
+            width: 100%;
+            background-color: #ffffff; /* White toolbar */
+            padding: 12px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            direction: rtl; /* Right-to-left for Hebrew */
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            margin-left: 15px; /* Space between groups */
+        }
+        .toolbar-group:first-child {
+            margin-left: 0;
+        }
+
+
+        .toolbar-button, .nav-button, .file-input-label {
+            background-color: #007bff; /* Primary blue */
+            color: white;
+            border: none;
+            padding: 9px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex; /* For aligning icon and text */
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 6px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+        }
+
+        .toolbar-button i, .nav-button i, .file-input-label i {
+            margin-right: 6px; /* Space between icon and text (visual left in RTL) */
+        }
+        .toolbar-button i.fa-fw, .nav-button i.fa-fw, .file-input-label i.fa-fw { /* Fixed width icons */
+             margin-right: 0;
+             font-size: 1.1em;
+        }
+
+
+        .toolbar-group > *:first-child {
+             margin-left: 0;
+        }
+
+        .nav-button {
+            font-size: 16px;
+            padding: 8px 12px;
+        }
+        .file-input-label input[type="file"] {
+            display: none;
+        }
+
+        .toolbar-button:hover, .nav-button:hover, .file-input-label:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .toolbar-button:active, .nav-button:active, .file-input-label:active {
+            transform: translateY(1px);
+        }
+
+        .toolbar-button.active {
+            background-color: #28a745; /* Green for active state */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        #playMovieButton { /* Specific style for play button */
+            background-color: #90EE90; /* Light green */
+            color: #333; /* Darker text for contrast on light green */
+        }
+        #playMovieButton:hover {
+            background-color: #7CFC00; /* Brighter green on hover */
+        }
+
+        .toolbar-button.playing { /* This class is added by JS when playing */
+            background-color: #dc3545 !important; /* Red for playing state - important to override base */
+            color: white !important;
+        }
+         .toolbar-button.playing:hover {
+            background-color: #c82333 !important; /* Darker Red for playing state on hover */
+        }
+
+        .nav-button:disabled, .toolbar-button:disabled {
+            background-color: #adb5bd; /* Muted gray for disabled */
+            color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #frameIndicator, #zoomIndicator {
+            margin: 0 8px;
+            font-size: 14px;
+            color: #495057;
+            font-weight: 600;
+            padding: 5px 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        
+        .toolbar-divider { /* New class for dividers */
+            height: 24px;
+            width: 1px;
+            background-color: #ced4da;
+            margin: 0 12px;
+        }
+        .toolbar-flexible-spacer {
+            flex-grow: 1;
+        }
+
+
+        /* Canvas styles */
+        #drawingCanvas {
+            border: 1px solid #ced4da; /* Softer border */
+            background-color: #ffffff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.07);
+            border-radius: 8px;
+            max-width: calc(100% - 40px); /* Ensure canvas does not overflow */
+            display: block; /* Prevents extra space below canvas */
+        }
+
+        /* Instructions area styles */
+        #instructions {
+            margin-top: 25px;
+            padding: 20px 25px;
+            background-color: #ffffff; /* White background */
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: right;
+            max-width: 800px;
+            width: calc(100% - 70px); /* Ensure instructions do not overflow */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        #instructions p strong { /* Main title of instructions */
+            margin-top: 0;
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #007bff; /* Primary blue for title */
+            display: block;
+            margin-bottom: 15px;
+        }
+        #instructions ul {
+            list-style-type: none; /* Remove default bullets */
+            padding-right: 0;
+        }
+        #instructions li {
+            margin-bottom: 10px;
+            padding-right: 25px; /* Space for custom bullet */
+            position: relative;
+        }
+        #instructions li::before { /* Custom bullet */
+            content: "\f138"; /* Font Awesome circle arrow right or similar */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #007bff;
+            position: absolute;
+            right: 0;
+            top: 1px;
+        }
+         #instructions ul ul {
+            list-style-type: none;
+            padding-right: 20px;
+            margin-top: 8px;
+        }
+        #instructions ul ul li::before {
+            content: "\f101"; /* Font Awesome angle right */
+        }
+        .button-text { /* Class for text next to icon */
+            /* margin-left: 6px;  RTL: icon is to the right of text, or text is to the left of icon */
+        }
+        .icon-only .button-text {
+            display: none; /* Hide text on larger screens for icon-only buttons if needed */
+        }
+
+        @media (max-width: 768px) { /* Example for mobile responsiveness */
+            .toolbar-button .button-text, .file-input-label .button-text {
+                /* display: none; /* Hide text, show only icon if desired on small screens */
+            }
+            .toolbar-button i, .file-input-label i {
+                /* margin-right: 0; /* Adjust if text is hidden */
+            }
+            .toolbar-group {
+                 margin-left: 5px;
+            }
+            #toolbar {
+                padding: 10px;
+                justify-content: space-around; /* Better spacing on small screens */
+            }
+            #frameIndicator, #zoomIndicator {
+                font-size: 12px;
+                padding: 4px 6px;
+                margin: 0 4px;
+            }
+            .toolbar-divider {
+                margin: 0 5px;
+            }
+        }
+         @media (max-width: 480px) {
+            .toolbar-button, .nav-button, .file-input-label {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+            .toolbar-button .button-text, .file-input-label .button-text {
+                 display: none; /* Hide text on very small screens */
+            }
+             .toolbar-button i, .nav-button i, .file-input-label i {
+                margin-right: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <div class="toolbar-group">
+            <button id="editButton" class="toolbar-button" title="עריכה"><i class="fas fa-pencil-alt"></i><span class="button-text">עריכה</span></button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+            <button id="undoButton" class="toolbar-button" title="בטל (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+            <button id="redoButton" class="toolbar-button" title="בצע שוב (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+            <button id="prevFrameButton" class="nav-button" title="התמונה הקודמת"><i class="fas fa-chevron-right"></i></button>
+            <span id="frameIndicator">תמונה: 1/1</span>
+            <button id="nextFrameButton" class="nav-button" title="התמונה הבאה"><i class="fas fa-chevron-left"></i></button>
+            <button id="addFrameButton" class="toolbar-button" title="הוסף תמונה"><i class="fas fa-plus-square"></i><span class="button-text">הוסף</span></button>
+            <span id="zoomIndicator">זום: 100%</span>
+        </div>
+        
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+            <button id="saveMovieButton" class="toolbar-button" title="שמור סרט"><i class="fas fa-save"></i><span class="button-text">שמור</span></button>
+            <label for="loadMovieInput" class="file-input-label toolbar-button" title="העלה סרט"><i class="fas fa-upload"></i><span class="button-text">העלה</span></label>
+            <input type="file" id="loadMovieInput" accept=".clp" style="display: none;">
+        </div>
+        
+        <div class="toolbar-divider"></div>
+        
+        <div class="toolbar-group">
+             <button id="playMovieButton" class="toolbar-button" title="נגן/עצור סרט"><i class="fas fa-play"></i><span class="button-text">נגן</span></button>
+        </div>
+
+        <div class="toolbar-flexible-spacer"></div>
+        
+        <div class="toolbar-group">
+            <button id="clearCanvasButton" class="toolbar-button" title="נקה הכל" style="background-color: #6c757d;"><i class="fas fa-trash-alt"></i><span class="button-text">נקה</span></button>
+        </div>
+    </div>
+
+    <canvas id="drawingCanvas" width="800" height="500">
+        הדפדפן שלך אינו תומך באלמנט ה-canvas.
+    </canvas>
+
+    <div dir="rtl" id="instructions">
+        <p><strong><i class="fas fa-info-circle" style="margin-left: 8px;"></i>הוראות שימוש:</strong></p>
+        <ul>
+            <li>השתמש בכפתורי <strong>"בטל"</strong> (<i class="fas fa-undo"></i> Ctrl+Z) ו<strong>"בצע שוב"</strong> (<i class="fas fa-redo"></i> Ctrl+Y) לתיקונים.</li>
+            <li>לחץ על <strong>"הוסף תמונה"</strong> (<i class="fas fa-plus-square"></i>) כדי ליצור תמונה חדשה באנימציה (תהיה עותק של הנוכחית).</li>
+            <li>השתמש בחיצים (כעת הפוכים ויזואלית) כדי לנווט בין תמונות.</li>
+            <li>**יצירת רצפים חדשים (נקודות עגינה וכו') אפשרית רק בתמונה הראשונה.**</li>
+            <li>בכל תמונה, לחץ על משטח הציור כדי להתחיל לצייר רצף עקומות חדש (רק בתמונה 1) או להוסיף נקודות לרצף הנוכחי (רק בתמונה 1).</li>
+            <li>בסיום ציור רצף בתמונה, לחץ על מקש <strong>רווח</strong>. הרצף יישמר בתמונה הנוכחית.</li>
+            <li>השתמש ב<strong>גלגלת העכבר</strong> לזום. מציין הזום מופיע בסרגל הכלים.</li>
+            <li>לחץ על כפתור <strong>"עריכה"</strong> (<i class="fas fa-pencil-alt"></i>):
+                <ul>
+                    <li>הרצפים בתמונה הנוכחית יהפכו לניתנים לעריכה. העקומות מהתמונה הקודמת יוצגו באפור.</li>
+                    <li>מצב העריכה יישמר גם במעבר בין תמונות.</li>
+                    <li>ניתן לגרור נקודות בקרה ועגינה. **ניתן גם לגרור רצף שלם על ידי לחיצה על הקו עצמו וגרירה.**</li>
+                    <li>איחוד רצפים אפשרי רק בתמונה הראשונה.</li>
+                </ul>
+            </li>
+            <li>לחץ על <strong>"נגן סרט"</strong> (<i class="fas fa-play"></i>) כדי לראות אנימציה של המעבר בין התמונות. לחיצה נוספת תעצור.</li>
+            <li>לחץ על <strong>"שמור סרט"</strong> (<i class="fas fa-save"></i>) כדי לשמור את האנימציה לקובץ (`.clp`).</li>
+            <li>לחץ על <strong>"העלה סרט"</strong> (<i class="fas fa-upload"></i>) כדי לטעון אנימציה מקובץ (`.clp`).</li>
+            <li>לחץ על <strong>"נקה הכל"</strong> (<i class="fas fa-trash-alt"></i>) כדי לאפס את האפליקציה למצב התחלתי.</li>
+            <li>לחיצה נוספת על "עריכה" תסיים את מצב העריכה.</li>
+        </ul>
+    </div>
+
+    <script>
+        // JavaScript code for the Bezier curve animation editor
+        // Original source: https://orimosenzon.github.io/fun/vibe_coding/anim6.html
+        // This script handles all the logic for drawing, editing, animating, saving, and loading Bezier curves.
+
+        // DOM Element References
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const editButton = document.getElementById('editButton');
+        const addFrameButton = document.getElementById('addFrameButton');
+        const prevFrameButton = document.getElementById('prevFrameButton');
+        const nextFrameButton = document.getElementById('nextFrameButton');
+        const frameIndicator = document.getElementById('frameIndicator');
+        const zoomIndicator = document.getElementById('zoomIndicator'); 
+        const playMovieButton = document.getElementById('playMovieButton');
+        const saveMovieButton = document.getElementById('saveMovieButton');
+        const loadMovieInput = document.getElementById('loadMovieInput');
+        const undoButton = document.getElementById('undoButton');
+        const redoButton = document.getElementById('redoButton');
+        const clearCanvasButton = document.getElementById('clearCanvasButton'); 
+
+        // --- Global State Variables ---
+        let animationFrames = []; // Stores all frames of the animation. Each frame is an array of curve sequences.
+        let currentFrameIndex = 0; // Index of the currently displayed/edited frame.
+        
+        // Represents the curve currently being drawn by the user before it's finalized.
+        let activeCurve = { id: 'active_initial', anchors: [], segments: [], showAnchorsInEdit: true }; 
+
+        let isDrawingMode = false;  // True if the user is currently adding points to a new curve.
+        let isEditModeActive = false; // True if existing curves can be edited.
+        
+        let draggedPointInfo = null; // Information about the point/segment being dragged.
+        let isDragging = false;      // True if a mouse drag operation is in progress.
+
+        // --- Undo/Redo State ---
+        let undoStack = []; // Stores previous states for undo functionality.
+        let redoStack = []; // Stores undone states for redo functionality.
+        const MAX_UNDO_STEPS = 50; // Maximum number of undo steps to store.
+
+        // --- Zoom and Pan State ---
+        let scaleFactor = 1.0; // Current zoom level of the canvas.
+        let originX = 0; // X-coordinate of the canvas origin (for panning).
+        let originY = 0; // Y-coordinate of the canvas origin (for panning).
+        const ZOOM_INTENSITY = 0.1; // How much to zoom in/out on each wheel scroll.
+        const MIN_SCALE = 0.001; // Minimum allowed zoom level.
+        const MAX_SCALE = 1000.0; // Maximum allowed zoom level.
+
+        // --- Animation State ---
+        let isAnimating = false; // True if the animation is currently playing.
+        let animationRequestID; // ID for canceling the animation frame request.
+        let anim_sourceFrameIdx; // Index of the source frame for the current animation transition.
+        let anim_targetFrameIdx; // Index of the target frame for the current animation transition.
+        let anim_startTime; // Timestamp when the current transition started.
+        const ANIM_DURATION_PER_TRANSITION = 1000; // Duration (ms) for each transition between frames.
+        let anim_currentInterpolatedSequences = []; // Holds the curve data for the current interpolated animation step.
+
+        // --- Drawing Constants ---
+        const TENSION = 0.33; // Tension for calculating Catmull-Rom splines, influences Bezier control points.
+        const VISUAL_ANCHOR_RADIUS_ON_SCREEN = 5; // Radius (pixels) for drawing anchor points on screen.
+        const VISUAL_CONTROL_RADIUS_ON_SCREEN = 4; // Radius (pixels) for drawing control points on screen.
+        const HIT_RADIUS_ON_SCREEN = 8; // Radius (pixels) for detecting mouse hits on points.
+        const CURVE_HIT_THRESHOLD_ON_SCREEN = 5; // Threshold (pixels) for detecting mouse hits on curve lines.
+
+        // --- Color Constants (Updated for new UI) ---
+        const CURVE_COLOR = '#007bff'; // Main color for drawing curves.
+        const ONION_SKIN_COLOR = 'rgba(108, 117, 125, 0.4)'; // Color for onion skinning (previous frame).
+        const EDIT_ANCHOR_POINT_COLOR = '#343a40'; // Color for anchor points (position) in edit mode.
+        const EDIT_CONTROL_POINT_COLOR = '#87CEEB'; // Light Blue (Sky Blue) color for control points (slope) in edit mode.
+        const HELPER_LINE_COLOR = 'rgba(100, 100, 100, 0.3)'; // Color for lines connecting anchors to control points.
+        const DRAW_MODE_FIRST_ANCHOR_COLOR = '#dc3545'; // Color for the first anchor point in drawing mode.
+        const DRAW_MODE_OTHER_ANCHORS_COLOR = '#343a40'; // Color for subsequent anchor points in drawing mode.
+
+
+        // --- Vector Math Helper Functions ---
+        // These functions perform basic 2D vector operations.
+        function vecAdd(v1, v2) { return { x: v1.x + v2.x, y: v1.y + v2.y }; }
+        function vecSub(v1, v2) { return { x: v1.x - v2.x, y: v1.y - v2.y }; }
+        function vecScale(v, s) { return { x: v.x * s, y: v.y * s }; }
+        function vecLength(v) { return Math.sqrt(v.x * v.x + v.y * v.y); }
+        function vecNormalize(v) {
+            const len = vecLength(v);
+            if (len === 0) return { x: 0, y: 0 }; // Avoid division by zero
+            return vecScale(v, 1 / len);
+        }
+
+        // --- Bezier Calculation Logic ---
+        /**
+         * Calculates all Bezier curve segments for a given array of anchor points.
+         * This implementation uses a method similar to Catmull-Rom to automatically
+         * determine control points for smooth transitions between segments.
+         * @param {Array<Object>} points - Array of anchor point objects {x, y}.
+         * @param {number} tension - Tension factor influencing the curve's tightness.
+         * @returns {Array<Object>} Array of segment objects, each with p0_obj, cp1, cp2, p1_obj.
+         */
+        function calculateAllBezierSegments(points, tension) {
+            const segments = [];
+            const numAnchors = points.length;
+            if (numAnchors < 2) return []; // Not enough points to form a segment
+
+            const anchor0_obj = points[0]; 
+            const anchor1_obj = points[1]; 
+            // First control point for the first segment
+            let cp0_1 = vecAdd(anchor0_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
+
+            if (numAnchors === 2) { // Special case for a single segment (2 anchors)
+                let cp0_2 = vecSub(anchor1_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
+                segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
+                return segments;
+            }
+
+            const anchor2_obj = points[2];
+            // Calculate tangent at the first interior anchor (points[1])
+            let tangent_at_p1_dir = vecNormalize(vecSub(anchor2_obj, anchor0_obj));
+            // Handle collinear points case
+            if (tangent_at_p1_dir.x === 0 && tangent_at_p1_dir.y === 0) {
+                tangent_at_p1_dir = vecNormalize(vecSub(anchor1_obj, anchor0_obj));
+            }
+            const len_p0p1 = vecLength(vecSub(anchor1_obj, anchor0_obj));
+            // Second control point for the first segment
+            let cp0_2 = vecSub(anchor1_obj, vecScale(tangent_at_p1_dir, len_p0p1 * tension));
+            segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
+
+            // Calculate segments for the rest of the points
+            for (let i = 1; i < numAnchors - 1; i++) {
+                const current_anchor_start_obj = points[i];
+                const current_anchor_end_obj = points[i+1];
+                
+                // First control point of the current segment is mirrored from the previous segment's second control point
+                const prev_segment_cp2 = segments[i-1].cp2;
+                const current_cp1 = vecSub(vecScale(current_anchor_start_obj, 2), prev_segment_cp2);
+                
+                let current_cp2;
+                if (i < numAnchors - 2) { // If there's a point after the current segment's end anchor
+                    const anchor_next_next_obj = points[i+2];
+                    let tangent_at_current_p_end_dir = vecNormalize(vecSub(anchor_next_next_obj, current_anchor_start_obj));
+                     if (tangent_at_current_p_end_dir.x === 0 && tangent_at_current_p_end_dir.y === 0) { // Handle collinear points
+                        tangent_at_current_p_end_dir = vecNormalize(vecSub(current_anchor_end_obj, current_anchor_start_obj));
+                    }
+                    const len_segment = vecLength(vecSub(current_anchor_end_obj, current_anchor_start_obj));
+                    current_cp2 = vecSub(current_anchor_end_obj, vecScale(tangent_at_current_p_end_dir, len_segment * tension));
+                } else { // Last segment
+                    current_cp2 = vecSub(current_anchor_end_obj, vecScale(vecSub(current_anchor_end_obj, current_anchor_start_obj), tension));
+                }
+                segments.push({ p0_obj: current_anchor_start_obj, cp1: current_cp1, cp2: current_cp2, p1_obj: current_anchor_end_obj });
+            }
+            return segments;
+        }
+        
+        // --- Undo/Redo and Cloning Logic ---
+        /**
+         * Creates a deep clone of a single curve sequence.
+         * @param {Object} seq - The curve sequence to clone.
+         * @returns {Object} A new, cloned curve sequence.
+         */
+        function cloneSingleSequence(seq) {
+            if (!seq || !seq.anchors) return { id: 'empty_cloned_seq_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: false };
+            
+            // Clone anchors (simple objects)
+            const newAnchors = seq.anchors.map(a => ({ ...a })); 
+            
+            // Clone segments, ensuring p0_obj and p1_obj reference the new anchor objects
+            const newSegments = (seq.segments && Array.isArray(seq.segments)) ? seq.segments.map(seg => {
+                // Find the index of original anchor objects to map to new anchor objects
+                const p0Index = seq.anchors.indexOf(seg.p0_obj);
+                const p1Index = seq.anchors.indexOf(seg.p1_obj);
+                return {
+                    cp1: { ...seg.cp1 }, 
+                    cp2: { ...seg.cp2 },
+                    // If original anchor was found, use the corresponding new anchor, otherwise keep null/original (should ideally always be found)
+                    p0_obj: p0Index !== -1 ? newAnchors[p0Index] : null, 
+                    p1_obj: p1Index !== -1 ? newAnchors[p1Index] : null
+                };
+            }) : [];
+            
+            return { 
+                id: seq.id || 'cloned_seq_' + Date.now(), 
+                anchors: newAnchors, 
+                segments: newSegments, 
+                showAnchorsInEdit: seq.showAnchorsInEdit 
+            };
+        }
+
+        /**
+         * Creates a deep clone of a single frame's data (an array of sequences).
+         * @param {Array<Object>} sourceFrameData - The frame data to clone.
+         * @returns {Array<Object>} A new, cloned frame data array.
+         */
+        function cloneSingleFrame(sourceFrameData) {
+            if (!sourceFrameData || !Array.isArray(sourceFrameData)) return [];
+            return sourceFrameData.map(seq => cloneSingleSequence(seq));
+        }
+
+        /**
+         * Creates a deep clone of the entire animationFrames state.
+         * @param {Array<Array<Object>>} sourceFrames - The animationFrames array to clone.
+         * @returns {Array<Array<Object>>} A new, cloned animationFrames array.
+         */
+        function cloneAnimationFramesState(sourceFrames) {
+            if (!sourceFrames || !Array.isArray(sourceFrames)) return [];
+            return sourceFrames.map(frame => cloneSingleFrame(frame));
+        }
+
+        /**
+         * Saves the current application state to the undo stack.
+         * This includes animation frames, current frame index, active curve, modes, and view transform.
+         */
+        function saveStateForUndo() {
+            if (isAnimating) return; // Don't save state during animation playback
+            const state = {
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex,
+                activeCurve: cloneSingleSequence(activeCurve),
+                isDrawingMode: isDrawingMode,
+                isEditModeActive: isEditModeActive,
+                scaleFactor: scaleFactor,
+                originX: originX,
+                originY: originY
+            };
+            undoStack.push(state);
+            if (undoStack.length > MAX_UNDO_STEPS) {
+                undoStack.shift(); // Remove oldest state if stack is full
+            }
+            redoStack = []; // Clear redo stack whenever a new action is performed
+            updateUndoRedoButtons();
+        }
+
+        /**
+         * Restores the application state from the undo stack.
+         */
+        function performUndo() {
+            if (undoStack.length <= 1 || isAnimating) return; // Cannot undo initial state or during animation
+            
+            // Save current state to redo stack before undoing
+            saveStateToStack(redoStack, { 
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex,
+                activeCurve: cloneSingleSequence(activeCurve),
+                isDrawingMode: isDrawingMode,
+                isEditModeActive: isEditModeActive,
+                scaleFactor: scaleFactor, originX: originX, originY: originY
+            });
+            
+            const prevState = undoStack.pop(); // Get the last saved state
+            // Restore state variables
+            animationFrames = prevState.animationFrames; 
+            currentFrameIndex = prevState.currentFrameIndex;
+            activeCurve = prevState.activeCurve; 
+            isDrawingMode = prevState.isDrawingMode;
+            isEditModeActive = prevState.isEditModeActive; 
+            scaleFactor = prevState.scaleFactor;
+            originX = prevState.originX;
+            originY = prevState.originY;
+
+            // Ensure showAnchorsInEdit is correctly set for the restored frame
+            if (animationFrames[currentFrameIndex]) {
+                 animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = isEditModeActive);
+            }
+
+            updateUndoRedoButtons();
+            updateFrameUI();
+            redrawCanvas();
+        }
+
+        /**
+         * Restores the application state from the redo stack.
+         */
+        function performRedo() {
+            if (redoStack.length === 0 || isAnimating) return; // Cannot redo if stack is empty or during animation
+            
+            // Save current state to undo stack before redoing
+            saveStateToStack(undoStack, { 
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex,
+                activeCurve: cloneSingleSequence(activeCurve),
+                isDrawingMode: isDrawingMode,
+                isEditModeActive: isEditModeActive,
+                scaleFactor: scaleFactor, originX: originX, originY: originY
+            });
+
+            const nextState = redoStack.pop(); // Get the last undone state
+            // Restore state variables
+            animationFrames = nextState.animationFrames; 
+            currentFrameIndex = nextState.currentFrameIndex;
+            activeCurve = nextState.activeCurve;
+            isDrawingMode = nextState.isDrawingMode;
+            isEditModeActive = nextState.isEditModeActive; 
+            scaleFactor = nextState.scaleFactor;
+            originX = nextState.originX;
+            originY = nextState.originY;
+
+            // Ensure showAnchorsInEdit is correctly set for the restored frame
+            if (animationFrames[currentFrameIndex]) {
+                 animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = isEditModeActive);
+            }
+
+            updateUndoRedoButtons();
+            updateFrameUI();
+            redrawCanvas();
+        }
+        
+        /**
+         * Helper function to push state onto a stack (undo or redo) and manage its size.
+         * @param {Array} stack - The stack (undoStack or redoStack).
+         * @param {Object} state - The state object to push.
+         */
+        function saveStateToStack(stack, state) {
+            stack.push(state);
+            if (stack.length > MAX_UNDO_STEPS) { 
+                stack.shift(); // Remove oldest state if stack is full
+            }
+        }
+
+        /**
+         * Updates the enabled/disabled state of undo and redo buttons.
+         */
+        function updateUndoRedoButtons() {
+            undoButton.disabled = undoStack.length <= 1 || isAnimating; 
+            redoButton.disabled = redoStack.length === 0 || isAnimating;
+        }
+
+
+        // --- Frame Management ---
+        /**
+         * Resets the entire application to its initial, empty state.
+         */
+        function resetApplicationToInitialState() {
+            animationFrames = [[]]; // Start with one empty frame
+            currentFrameIndex = 0;
+            activeCurve = { id: 'active_reset_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: true };
+            isDrawingMode = false;
+            isEditModeActive = false; 
+            scaleFactor = 1.0;    
+            originX = 0;          
+            originY = 0;
+            
+            undoStack = []; // Clear undo stack
+            redoStack = []; // Clear redo stack
+            saveStateForUndo(); // Save this initial empty state as the first undo step
+
+            updateFrameUI();    
+            redrawCanvas();     
+        }
+
+        /**
+         * Initializes the application when the page loads.
+         */
+        function initializeAppOnLoad() {
+            resetApplicationToInitialState();
+        }
+        
+        /**
+         * Updates the zoom level indicator in the UI.
+         */
+        function updateZoomIndicator() {
+            zoomIndicator.textContent = `זום: ${Math.round(scaleFactor * 100)}%`;
+        }
+
+        /**
+         * Updates all UI elements related to frame navigation, editing modes, and playback.
+         */
+        function updateFrameUI() {
+            frameIndicator.textContent = `תמונה: ${currentFrameIndex + 1}/${animationFrames.length}`;
+            updateZoomIndicator(); 
+            prevFrameButton.disabled = isAnimating || currentFrameIndex === 0;
+            nextFrameButton.disabled = isAnimating || currentFrameIndex === animationFrames.length - 1;
+            addFrameButton.disabled = isAnimating;
+            editButton.classList.toggle('active', isEditModeActive);
+            
+            // Disable edit button if current frame is empty (unless it's the first frame where drawing is allowed)
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+            const currentFrameHasContent = currentFrameSequences && currentFrameSequences.length > 0;
+            editButton.disabled = isAnimating || (!currentFrameHasContent && currentFrameIndex !== 0 && !isDrawingMode); // Allow edit on frame 0 even if empty for drawing
+            
+            playMovieButton.disabled = animationFrames.length < 2;
+            playMovieButton.classList.toggle('playing', isAnimating);
+            
+            // Update play/stop button icon and text
+            const playIcon = playMovieButton.querySelector('i');
+            const playTextSpan = playMovieButton.querySelector('.button-text');
+
+            if (isAnimating) {
+                if (playIcon) playIcon.className = 'fas fa-stop';
+                if (playTextSpan) playTextSpan.textContent = "עצור";
+                playMovieButton.title = "עצור סרט";
+            } else {
+                if (playIcon) playIcon.className = 'fas fa-play';
+                if (playTextSpan) playTextSpan.textContent = "נגן";
+                playMovieButton.title = "נגן סרט";
+            }
+
+            saveMovieButton.disabled = isAnimating || animationFrames.length === 0 || (animationFrames.length === 1 && (!animationFrames[0] || animationFrames[0].length === 0));
+            loadMovieInput.disabled = isAnimating; // Accessing the input element directly
+            updateUndoRedoButtons();
+        }
+        
+        /**
+         * "Rehydrates" frame data loaded from a file.
+         * This primarily involves ensuring that p0_obj and p1_obj in segments
+         * correctly reference anchor objects within their own sequence after JSON parsing.
+         * JSON.stringify/parse breaks direct object references.
+         * @param {Array<Array<Object>>} loadedFrames - The raw frame data loaded from JSON.
+         * @returns {Array<Array<Object>>} Rehydrated frame data.
+         */
+        function rehydrateFrameData(loadedFrames) { 
+            return loadedFrames.map(frame => 
+                frame.map(seq => {
+                    // Create new anchor array to ensure cloned objects
+                    const rehydratedAnchors = seq.anchors.map(a => ({...a})); 
+                    const rehydratedSegments = seq.segments.map(seg => {
+                        let p0_ref = null;
+                        let p1_ref = null;
+                        // Attempt to find the corresponding anchor in the new rehydratedAnchors array
+                        // This assumes anchor points within a sequence are unique by their x,y coordinates
+                        // A more robust method would be to store indices or unique IDs if coordinates aren't guaranteed unique.
+                        if (seg.p0_obj && typeof seg.p0_obj.x !== 'undefined') { 
+                           p0_ref = rehydratedAnchors.find(a => a.x === seg.p0_obj.x && a.y === seg.p0_obj.y);
+                        }
+                        if (seg.p1_obj && typeof seg.p1_obj.x !== 'undefined') { 
+                           p1_ref = rehydratedAnchors.find(a => a.x === seg.p1_obj.x && a.y === seg.p1_obj.y);
+                        }
+                        return {
+                            ...seg, 
+                            p0_obj: p0_ref || seg.p0_obj, // Fallback to original if not found (shouldn't happen with correct data)
+                            p1_obj: p1_ref || seg.p1_obj  
+                        };
+                    });
+                    return { ...seq, anchors: rehydratedAnchors, segments: rehydratedSegments };
+                })
+            );
+        }
+
+        // --- Canvas Drawing Functions ---
+        /**
+         * Draws a set of curve sequences on the canvas.
+         * @param {Array<Object>} sequences - Array of sequence objects to draw.
+         * @param {string} color - Color to draw the curves.
+         * @param {number} lineWidth - Line width for the curves.
+         * @param {boolean} drawEditPoints - Whether to draw anchor and control points (for edit mode).
+         */
+        function drawCurveSequence(sequences, color, lineWidth, drawEditPoints = false) {
+            sequences.forEach(seq => {
+                // Draw the curve segments
+                if (seq.segments && seq.segments.length > 0) {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth / scaleFactor; // Adjust line width based on zoom
+                    ctx.beginPath();
+                    seq.segments.forEach(segData => {
+                        if (!segData.p0_obj || !segData.p1_obj) {
+                            // This check is important after loading data, as references might be broken
+                            console.warn("Segment missing p0_obj or p1_obj during drawing", segData, seq);
+                            return; 
+                        }
+                        ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y);
+                        ctx.bezierCurveTo(segData.cp1.x, segData.cp1.y, segData.cp2.x, segData.cp2.y, segData.p1_obj.x, segData.p1_obj.y);
+                    });
+                    ctx.stroke();
+                }
+
+                // Draw edit points if in edit mode and sequence is marked for showing anchors
+                if (drawEditPoints && isEditModeActive && seq.showAnchorsInEdit) {
+                    const anchorDrawRadiusInWorld = VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor;
+                    const controlDrawRadiusInWorld = VISUAL_CONTROL_RADIUS_ON_SCREEN / scaleFactor;
+                    
+                    // Draw anchor points (position points)
+                    seq.anchors.forEach(point => {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, anchorDrawRadiusInWorld, 0, 2 * Math.PI);
+                        ctx.fillStyle = EDIT_ANCHOR_POINT_COLOR; // Use black for anchor points
+                        ctx.fill();
+                    });
+
+                    // Draw control points (slope points) and helper lines
+                    if (seq.segments) {
+                        ctx.save(); 
+                        ctx.strokeStyle = HELPER_LINE_COLOR; 
+                        ctx.lineWidth = 1 / scaleFactor; // Thin lines for helpers
+                        seq.segments.forEach(segData => {
+                             if (!segData.p0_obj || !segData.p1_obj) return; // Skip if segment anchors are missing
+                            
+                            // Line from start anchor to first control point
+                            ctx.beginPath(); ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y); ctx.lineTo(segData.cp1.x, segData.cp1.y); ctx.stroke();
+                            // First control point (light blue)
+                            ctx.beginPath(); ctx.arc(segData.cp1.x, segData.cp1.y, controlDrawRadiusInWorld, 0, 2 * Math.PI); 
+                            ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; // Use light blue for control points
+                            ctx.fill();
+
+                            // Line from end anchor to second control point
+                            ctx.beginPath(); ctx.moveTo(segData.p1_obj.x, segData.p1_obj.y); ctx.lineTo(segData.cp2.x, segData.cp2.y); ctx.stroke();
+                            // Second control point (light blue)
+                            ctx.beginPath(); ctx.arc(segData.cp2.x, segData.cp2.y, controlDrawRadiusInWorld, 0, 2 * Math.PI); 
+                            ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; // Use light blue for control points
+                            ctx.fill();
+                        });
+                        ctx.restore(); 
+                    }
+                }
+            });
+        }
+
+        /**
+         * Clears and redraws the entire canvas based on the current state.
+         * Handles drawing for animation, edit mode, drawing mode, and onion skinning.
+         */
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            ctx.save(); 
+            // Apply pan and zoom transformations
+            ctx.translate(originX, originY); 
+            ctx.scale(scaleFactor, scaleFactor); 
+
+            if (isAnimating) {
+                // If animating, draw the interpolated sequences
+                drawCurveSequence(anim_currentInterpolatedSequences, CURVE_COLOR, 2.5, false);
+            } else {
+                // If not animating, draw based on current frame and mode
+
+                // Onion skinning: Draw previous frame if not the first frame
+                if (currentFrameIndex > 0 && animationFrames[currentFrameIndex - 1]) {
+                    drawCurveSequence(animationFrames[currentFrameIndex - 1], ONION_SKIN_COLOR, 2.5, false);
+                }
+
+                // Draw current frame's sequences
+                if (animationFrames[currentFrameIndex]) {
+                    drawCurveSequence(animationFrames[currentFrameIndex], CURVE_COLOR, 2.5, true); // True to draw edit points if active
+                }
+
+                // If in drawing mode, draw the active curve being constructed
+                if (isDrawingMode && activeCurve.segments && activeCurve.segments.length > 0) {
+                    ctx.strokeStyle = CURVE_COLOR;
+                    ctx.lineWidth = 2.5 / scaleFactor;
+                    ctx.beginPath();
+                    activeCurve.segments.forEach(seg => {
+                        if (!seg.p0_obj || !seg.p1_obj) return;
+                        ctx.moveTo(seg.p0_obj.x, seg.p0_obj.y);
+                        ctx.bezierCurveTo(seg.cp1.x, seg.cp1.y, seg.cp2.x, seg.cp2.y, seg.p1_obj.x, seg.p1_obj.y);
+                    });
+                    ctx.stroke();
+                }
+                // Draw anchor points for the active curve being drawn
+                if (isDrawingMode && activeCurve.anchors) {
+                    const anchorDrawRadiusInWorld = VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor;
+                    activeCurve.anchors.forEach((point, index) => {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, anchorDrawRadiusInWorld, 0, 2 * Math.PI);
+                        // Different color for the first anchor point
+                        ctx.fillStyle = (index === 0) ? DRAW_MODE_FIRST_ANCHOR_COLOR : DRAW_MODE_OTHER_ANCHORS_COLOR; 
+                        ctx.fill();
+                    });
+                }
+            }
+            ctx.restore(); // Restore canvas state (removes transformations)
+        }
+        
+        // --- Mouse Position Utility ---
+        /**
+         * Gets mouse coordinates relative to the canvas element.
+         * @param {MouseEvent} event - The mouse event.
+         * @returns {Object} {x, y} coordinates on the canvas.
+         */
+        function getMouseCanvasPos(event) {
+            const rect = canvas.getBoundingClientRect(); // Get canvas position and size
+            // Adjust for CSS scaling if canvas display size differs from its resolution
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY
+            };
+        }
+
+        /**
+         * Gets mouse coordinates in the "world" space (considering pan and zoom).
+         * @param {MouseEvent} event - The mouse event.
+         * @returns {Object} {x, y} coordinates in world space.
+         */
+        function getMouseWorldPos(event) {
+            const mouseCanvasPos = getMouseCanvasPos(event);
+            // Transform canvas coordinates to world coordinates
+            return {
+                x: (mouseCanvasPos.x - originX) / scaleFactor,
+                y: (mouseCanvasPos.y - originY) / scaleFactor
+            };
+        }
+
+        // --- Curve Hit Detection ---
+        /**
+         * Calculates a point on a Bezier curve at a given parameter t.
+         * @param {Object} p0 - Start anchor point {x, y}.
+         * @param {Object} cp1 - First control point {x, y}.
+         * @param {Object} cp2 - Second control point {x, y}.
+         * @param {Object} p1 - End anchor point {x, y}.
+         * @param {number} t - Parameter value (0 to 1).
+         * @returns {Object} {x, y} point on the curve.
+         */
+        function getPointOnBezier(p0, cp1, cp2, p1, t) {
+            const mt = 1 - t; // (1-t)
+            const mt2 = mt * mt;
+            const mt3 = mt2 * mt;
+            const t2 = t * t;
+            const t3 = t2 * t;
+
+            // Bezier formula
+            const x = mt3 * p0.x + 3 * mt2 * t * cp1.x + 3 * mt * t2 * cp2.x + t3 * p1.x;
+            const y = mt3 * p0.y + 3 * mt2 * t * cp1.y + 3 * mt * t2 * cp2.y + t3 * p1.y;
+            return { x, y };
+        }
+
+        /**
+         * Checks if a given mouse position is near a Bezier curve segment.
+         * @param {Object} mousePos - Mouse position {x, y} in world coordinates.
+         * @param {Object} p0_obj - Start anchor of the segment.
+         * @param {Object} cp1 - First control point.
+         * @param {Object} cp2 - Second control point.
+         * @param {Object} p1_obj - End anchor of the segment.
+         * @param {number} hitThresholdInWorld - The distance threshold for considering a "hit".
+         * @returns {boolean} True if the point is near the curve, false otherwise.
+         */
+        function isPointNearBezier(mousePos, p0_obj, cp1, cp2, p1_obj, hitThresholdInWorld) {
+            const steps = 20; // Number of points to check along the curve
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const pointOnCurve = getPointOnBezier(p0_obj, cp1, cp2, p1_obj, t);
+                if (vecLength(vecSub(mousePos, pointOnCurve)) < hitThresholdInWorld) {
+                    return true; // Mouse is close enough to this point on the curve
+                }
+            }
+            return false; // Mouse is not near any checked point on the curve
+        }
+
+
+        // --- Merge Sequences Logic ---
+        /**
+         * Merges two curve sequences (seqA and seqB) if an endpoint of seqA is dragged
+         * onto an endpoint of seqB. This is only allowed in the first frame.
+         * The original sequences are removed, and a new merged sequence is added.
+         * @param {Array<Object>} currentFrameCurves - Array of sequences in the current frame.
+         * @param {Object} seqA - The sequence being dragged.
+         * @param {number} draggedAnchorIndexOnA - Index of the anchor on seqA being dragged (0 or last).
+         * @param {Object} seqB - The target sequence to merge with.
+         * @param {number} targetAnchorIndexOnB - Index of the anchor on seqB being targeted (0 or last).
+         * @returns {boolean} True if merge was successful, false otherwise.
+         */
+        function mergeAndReplaceSequences(currentFrameCurves, seqA, draggedAnchorIndexOnA, seqB, targetAnchorIndexOnB) {
+            if (currentFrameIndex !== 0) { 
+                console.warn("Merging sequences is only allowed in the first frame.");
+                return false;
+            }
+            saveStateForUndo(); 
+            let finalAnchors = [];
+            const anchorsA = [...seqA.anchors]; // Clone to avoid modifying original if merge fails
+            const anchorsB = [...seqB.anchors];
+            const isDraggedAStart = (draggedAnchorIndexOnA === 0);
+            const isTargetBStart = (targetAnchorIndexOnB === 0);
+
+            // Determine anchor order for merging based on which endpoints are connected
+            if (!isDraggedAStart && isTargetBStart) { // A_end to B_start
+                finalAnchors = [...anchorsA, ...anchorsB.slice(1)]; // Attach B (minus its start) to A
+            } else if (isDraggedAStart && !isTargetBStart) { // A_start to B_end
+                finalAnchors = [...anchorsB.reverse(), ...anchorsA.slice(1)]; // Attach A (minus its start) to reversed B
+            } else if (isDraggedAStart && isTargetBStart) { // A_start to B_start
+                finalAnchors = [...anchorsA.reverse(), ...anchorsB.slice(1)]; // Attach B (minus its start) to reversed A
+            } else if (!isDraggedAStart && !isTargetBStart) { // A_end to B_end
+                finalAnchors = [...anchorsA, ...anchorsB.reverse().slice(1)]; // Attach reversed B (minus its (new) start) to A
+            } else { return false; } // Should not happen with endpoint checks
+
+            if (finalAnchors.length < 2) { return false; } // Merged sequence too short
+
+            // Remove original sequences
+            const indexA = currentFrameCurves.findIndex(s => s.id === seqA.id);
+            if (indexA > -1) currentFrameCurves.splice(indexA, 1);
+            const indexB = currentFrameCurves.findIndex(s => s.id === seqB.id);
+            if (indexB > -1) currentFrameCurves.splice(indexB, 1);
+
+            // Create and add the new merged sequence
+            const newMergedId = 'merged_' + Date.now() + Math.random(); 
+            const newSegments = calculateAllBezierSegments(finalAnchors, TENSION); 
+            currentFrameCurves.push({
+                id: newMergedId,
+                anchors: finalAnchors, 
+                segments: newSegments, 
+                showAnchorsInEdit: true 
+            });
+
+            // Since structure of frame 0 changed, re-clone it to all subsequent frames
+            for (let i = 1; i < animationFrames.length; i++) {
+                animationFrames[i] = cloneSingleFrame(animationFrames[0]); 
+                animationFrames[i].forEach(s => s.showAnchorsInEdit = false); // Keep edit mode consistent
+            }
+            return true; 
+        }
+
+        // --- Animation Logic ---
+        /**
+         * Interpolates a single point between two points p1 and p2 based on parameter t.
+         * @param {Object} p1 - Start point {x, y}.
+         * @param {Object} p2 - End point {x, y}.
+         * @param {number} t - Interpolation parameter (0 to 1).
+         * @returns {Object} Interpolated point {x, y}.
+         */
+        function interpolatePoint(p1, p2, t) {
+            return {
+                x: p1.x + (p2.x - p1.x) * t,
+                y: p1.y + (p2.y - p1.y) * t
+            };
+        }
+
+        /**
+         * Interpolates all sequences between two frames (seqsA and seqsB) at parameter t.
+         * Assumes seqsA and seqsB have the same number of sequences, and corresponding
+         * sequences have the same number of anchors and segments.
+         * @param {Array<Object>} seqsA - Array of sequences from the source frame.
+         * @param {Array<Object>} seqsB - Array of sequences from the target frame.
+         * @param {number} t - Interpolation parameter (0 to 1).
+         * @returns {Array<Object>} Array of interpolated sequences.
+         */
+        function interpolateSequences(seqsA, seqsB, t) {
+            // Basic validation for interpolation
+            if (!seqsA || !seqsB || seqsA.length !== seqsB.length) {
+                console.warn("Cannot interpolate: Mismatched sequence structures or undefined frames. Displaying source frame.", seqsA, seqsB);
+                return seqsA ? cloneSingleFrame(seqsA) : []; // Fallback to source frame
+            }
+
+            return seqsA.map((seqA, seqIdx) => {
+                const seqB = seqsB[seqIdx];
+                // Further validation for individual sequences
+                if (!seqB || seqA.anchors.length !== seqB.anchors.length || seqA.segments.length !== seqB.segments.length) {
+                     console.warn(`Mismatched structure in sequence ID ${seqA.id}. Displaying source sequence.`, seqA, seqB);
+                     return cloneSingleSequence(seqA); // Fallback to source sequence
+                }
+
+                // Interpolate anchor points
+                const interpolatedAnchors = seqA.anchors.map((anchorA, anchorIdx) => {
+                    return interpolatePoint(anchorA, seqB.anchors[anchorIdx], t);
+                });
+                
+                // Interpolate segments (control points and anchor references)
+                const interpolatedSegments = seqA.segments.map((segA, seg_idx) => {
+                    const segB = seqB.segments[seg_idx];
+                    
+                    // Find original anchor indices to correctly map to interpolatedAnchors
+                    const p0_original_in_A = segA.p0_obj;
+                    const p1_original_in_A = segA.p1_obj;
+                    const p0_original_idx_in_A_anchors = seqA.anchors.findIndex(a => a === p0_original_in_A);
+                    const p1_original_idx_in_A_anchors = seqA.anchors.findIndex(a => a === p1_original_in_A);
+
+                    return {
+                        p0_obj: interpolatedAnchors[p0_original_idx_in_A_anchors],
+                        cp1: interpolatePoint(segA.cp1, segB.cp1, t),
+                        cp2: interpolatePoint(segA.cp2, segB.cp2, t),
+                        p1_obj: interpolatedAnchors[p1_original_idx_in_A_anchors]
+                    };
+                });
+                return {
+                    id: seqA.id, // Keep original ID
+                    anchors: interpolatedAnchors,
+                    segments: interpolatedSegments,
+                    showAnchorsInEdit: false // No editing during animation
+                };
+            });
+        }
+
+        /**
+         * The main animation loop, called via requestAnimationFrame.
+         * Calculates interpolation and redraws the canvas for each animation step.
+         * @param {DOMHighResTimeStamp} timestamp - Current time provided by requestAnimationFrame.
+         */
+        function animationLoop(timestamp) {
+            if (!isAnimating) return; // Stop if animation is no longer active
+
+            if (!anim_startTime) anim_startTime = timestamp; // Initialize start time for the transition
+            const elapsedTime = timestamp - anim_startTime;
+            let t = elapsedTime / ANIM_DURATION_PER_TRANSITION; // Normalized time (0 to 1) for current transition
+
+            if (t >= 1) { // Current transition finished
+                t = 1; 
+                anim_currentInterpolatedSequences = cloneSingleFrame(animationFrames[anim_targetFrameIdx]); // Ensure final state is exactly target
+                redrawCanvas(); 
+
+                // Move to the next transition
+                anim_sourceFrameIdx++;
+                anim_targetFrameIdx++;
+                anim_startTime = timestamp; // Reset start time for new transition
+
+                // Loop animation or stop if end is reached
+                if (anim_targetFrameIdx >= animationFrames.length) {
+                    anim_sourceFrameIdx = 0;
+                    anim_targetFrameIdx = 1;
+                    if (animationFrames.length < 2) { // Not enough frames to loop
+                        stopAnimation();
+                        return;
+                    }
+                }
+                // Safety check for frame existence (should not happen in normal flow)
+                if (!animationFrames[anim_sourceFrameIdx] || !animationFrames[anim_targetFrameIdx]) {
+                    console.error("Animation frames missing during loop.");
+                    stopAnimation();
+                    return;
+                }
+                t = 0; // Reset t for the new transition
+            }
+            
+            // Interpolate between source and target frames for the current t value
+            const sourceFrameData = animationFrames[anim_sourceFrameIdx];
+            const targetFrameData = animationFrames[anim_targetFrameIdx];
+            anim_currentInterpolatedSequences = interpolateSequences(sourceFrameData, targetFrameData, t);
+            
+            redrawCanvas();
+            animationRequestID = requestAnimationFrame(animationLoop); // Request next frame
+        }
+
+        /**
+         * Starts the animation playback.
+         */
+        function startAnimation() {
+            if (animationFrames.length < 2) return; // Need at least two frames to animate
+            saveStateForUndo(); // Save state before starting animation (e.g., if drawing was active)
+            
+            // Finalize any active drawing before starting animation
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                 const currentFrameSequences = animationFrames[currentFrameIndex];
+                 currentFrameSequences.push({
+                    id: 'finalized_before_anim_' + Date.now(),
+                    anchors: [...activeCurve.anchors],
+                    segments: [...activeCurve.segments],
+                    showAnchorsInEdit: false 
+                });
+                activeCurve = { id: 'active_cleared_for_anim', anchors: [], segments: [], showAnchorsInEdit: true };
+                isDrawingMode = false;
+            }
+
+            isAnimating = true;
+            isEditModeActive = false; // Disable editing during animation
+            
+            // Initialize animation parameters
+            anim_sourceFrameIdx = 0;
+            anim_targetFrameIdx = 1;
+            anim_startTime = null; // Will be set on the first call to animationLoop
+            anim_currentInterpolatedSequences = cloneSingleFrame(animationFrames[0]); // Start by showing the first frame
+
+            updateFrameUI();
+            animationRequestID = requestAnimationFrame(animationLoop);
+        }
+
+        /**
+         * Stops the animation playback.
+         */
+        function stopAnimation() {
+            isAnimating = false;
+            cancelAnimationFrame(animationRequestID);
+            // Set current frame to where animation stopped (or a default if undefined)
+            currentFrameIndex = anim_sourceFrameIdx !== undefined ? anim_sourceFrameIdx : currentFrameIndex; 
+            anim_currentInterpolatedSequences = []; // Clear interpolated data
+            updateFrameUI();
+            redrawCanvas(); // Redraw the static frame
+        }
+
+        // Event listener for the play/stop button
+        playMovieButton.addEventListener('click', () => {
+            if (isAnimating) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+
+
+        // --- Event Handlers (mousedown, mousemove, mouseup, keydown, wheel) ---
+        /**
+         * Handles common tasks after frame navigation (undo save, UI update, redraw).
+         */
+        function handleFrameNavigation() {
+            saveStateForUndo(); 
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+            if (currentFrameSequences) {
+                 // Ensure edit points visibility matches current edit mode for the new frame
+                 currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = isEditModeActive);
+            }
+            updateFrameUI();
+            redrawCanvas();
+        }
+
+        // Event listener for "Add Frame" button
+        addFrameButton.addEventListener('click', () => {
+            if (isAnimating) return;
+            saveStateForUndo(); 
+            
+            // Finalize any active drawing before adding a new frame
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                 const currentFrameSequences = animationFrames[currentFrameIndex];
+                 currentFrameSequences.push({
+                    id: 'finalized_on_add_frame_' + Date.now(),
+                    anchors: [...activeCurve.anchors],
+                    segments: [...activeCurve.segments],
+                    showAnchorsInEdit: false // New curves added to frame are not in edit mode by default
+                });
+                activeCurve = { id: 'active_cleared_on_add_frame', anchors: [], segments: [], showAnchorsInEdit: true };
+                isDrawingMode = false;
+            }
+
+            // New frame is a clone of the current frame's content
+            const currentFrameData = animationFrames[currentFrameIndex] || [];
+            const newFrameData = cloneSingleFrame(currentFrameData); 
+            // Set edit point visibility based on current edit mode
+            newFrameData.forEach(seq => seq.showAnchorsInEdit = isEditModeActive); 
+
+            const newFrameTargetIndex = currentFrameIndex + 1; // Insert new frame after current
+            animationFrames.splice(newFrameTargetIndex, 0, newFrameData);
+            currentFrameIndex = newFrameTargetIndex; // Move to the new frame
+            
+            updateFrameUI(); 
+            redrawCanvas(); 
+        });
+
+        // Event listener for "Previous Frame" button
+        prevFrameButton.addEventListener('click', () => {
+            if (currentFrameIndex > 0 && !isAnimating) {
+                // Finalize active drawing if any (though drawing is restricted to frame 0)
+                if (isDrawingMode && activeCurve.anchors.length > 0) {
+                    const frameWeAreLeaving = animationFrames[currentFrameIndex];
+                    if (frameWeAreLeaving) { // Should always exist
+                        frameWeAreLeaving.push(cloneSingleSequence(activeCurve));
+                    }
+                    activeCurve = { id: 'active_nav_prev_clear', anchors: [], segments: [], showAnchorsInEdit: true };
+                    isDrawingMode = false;
+                }
+                currentFrameIndex--;
+                handleFrameNavigation(); 
+            }
+        });
+
+        // Event listener for "Next Frame" button
+        nextFrameButton.addEventListener('click', () => {
+            if (currentFrameIndex < animationFrames.length - 1 && !isAnimating) {
+                 // Finalize active drawing if any
+                if (isDrawingMode && activeCurve.anchors.length > 0) {
+                    const frameWeAreLeaving = animationFrames[currentFrameIndex];
+                    if (frameWeAreLeaving) {
+                        frameWeAreLeaving.push(cloneSingleSequence(activeCurve));
+                    }
+                    activeCurve = { id: 'active_nav_next_clear', anchors: [], segments: [], showAnchorsInEdit: true };
+                    isDrawingMode = false;
+                }
+                currentFrameIndex++;
+                handleFrameNavigation(); 
+            }
+        });
+
+        // Event listener for "Edit" button
+        editButton.addEventListener('click', () => {
+            if (isAnimating) return; 
+            saveStateForUndo(); 
+            isEditModeActive = !isEditModeActive; // Toggle edit mode
+
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+            if (isEditModeActive) {
+                // If entering edit mode while drawing on frame 0, finalize the drawing
+                if (isDrawingMode && activeCurve.anchors.length > 1 && currentFrameIndex === 0) { 
+                    currentFrameSequences.push(cloneSingleSequence(activeCurve));
+                    activeCurve = { id: 'active_edit_toggle_finalize', anchors: [], segments: [], showAnchorsInEdit: true }; 
+                }
+                isDrawingMode = false; // Exit drawing mode when entering edit mode
+                if (currentFrameSequences) {
+                    currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = true);
+                }
+            } else { 
+                // Exiting edit mode
+                if (currentFrameSequences) {
+                    currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = false);
+                }
+                isDragging = false; // Stop any active dragging
+                draggedPointInfo = null;
+            }
+            updateFrameUI();
+            redrawCanvas();
+        });
+
+        // Event listener for mouse down on the canvas
+        canvas.addEventListener('mousedown', (event) => {
+            if (isAnimating) return;
+            
+            const mouseWorldPos = getMouseWorldPos(event); 
+            const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
+            const effectiveCurveHitRadius = CURVE_HIT_THRESHOLD_ON_SCREEN / scaleFactor;
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+
+            if (isEditModeActive && currentFrameSequences) {
+                // --- Edit Mode: Check for hits on points or curves ---
+                let pointHit = false;
+                // Iterate sequences in reverse to prioritize top-most elements
+                for (let seqIndex = currentFrameSequences.length - 1; seqIndex >= 0; seqIndex--) { 
+                    const seq = currentFrameSequences[seqIndex];
+                    if (!seq.showAnchorsInEdit) continue; // Skip if sequence not showing edit points
+
+                    // Check for hits on anchor points
+                    for (let i = 0; i < seq.anchors.length; i++) {
+                        if (vecLength(vecSub(mouseWorldPos, seq.anchors[i])) < effectivePointHitRadius) {
+                            saveStateForUndo(); 
+                            isDragging = true;
+                            // Store info about the dragged anchor, including offsets for linked control points
+                            draggedPointInfo = { 
+                                type: 'anchor', seqId: seq.id, anchorIndex: i, pointObject: seq.anchors[i], 
+                                cp2_incoming_offset: null, cp1_outgoing_offset: null
+                            };
+                            // Calculate offsets of control points relative to the anchor
+                            // This helps maintain their relative positions when the anchor moves (for non-mirrored control points)
+                            if (i > 0 && seq.segments && seq.segments[i-1]) { // Incoming segment's cp2
+                                draggedPointInfo.cp2_incoming_offset = vecSub(seq.segments[i-1].cp2, seq.anchors[i]);
+                            }
+                            if (i < seq.anchors.length - 1 && seq.segments && seq.segments[i]) { // Outgoing segment's cp1
+                                draggedPointInfo.cp1_outgoing_offset = vecSub(seq.segments[i].cp1, seq.anchors[i]);
+                            }
+                            canvas.style.cursor = 'grabbing'; pointHit = true; break;
+                        }
+                    }
+                    if (pointHit) break;
+
+                    // Check for hits on control points
+                    if (seq.segments) {
+                        for (let i = 0; i < seq.segments.length; i++) {
+                            const seg = seq.segments[i];
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < effectivePointHitRadius) {
+                                saveStateForUndo(); 
+                                isDragging = true;
+                                draggedPointInfo = { 
+                                    type: 'control', seqId: seq.id, segmentIndex: i, pointType: 'cp1', pointObject: seg.cp1 
+                                };
+                                canvas.style.cursor = 'grabbing'; pointHit = true; break;
+                            }
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp2)) < effectivePointHitRadius) {
+                                saveStateForUndo(); 
+                                isDragging = true;
+                                draggedPointInfo = { 
+                                    type: 'control', seqId: seq.id, segmentIndex: i, pointType: 'cp2', pointObject: seg.cp2 
+                                };
+                                canvas.style.cursor = 'grabbing'; pointHit = true; break;
+                            }
+                        }
+                    }
+                    if (pointHit) break;
+                }
+                if (pointHit) return; // Point was hit, no need to check for curve hits
+
+                // Check for hits on curve lines (for dragging entire sequence)
+                for (let seqIndex = currentFrameSequences.length - 1; seqIndex >= 0; seqIndex--) {
+                    const seq = currentFrameSequences[seqIndex];
+                    if (!seq.showAnchorsInEdit || !seq.segments) continue;
+                    for (const seg of seq.segments) {
+                        if (!seg.p0_obj || !seg.p1_obj) continue; // Ensure segment is valid
+                        if (isPointNearBezier(mouseWorldPos, seg.p0_obj, seg.cp1, seg.cp2, seg.p1_obj, effectiveCurveHitRadius)) {
+                            saveStateForUndo(); 
+                            isDragging = true;
+                            draggedPointInfo = {
+                                type: 'sequence',
+                                seqId: seq.id,
+                                initialMousePos: { ...mouseWorldPos } // Store initial mouse for delta calculation
+                            };
+                            canvas.style.cursor = 'move';
+                            return; // Curve was hit
+                        }
+                    }
+                }
+            } else { 
+                // --- Drawing Mode (not edit mode) ---
+                if (currentFrameIndex !== 0) { 
+                    // Drawing new curves is restricted to the first frame
+                    isDrawingMode = false; // Ensure drawing mode is off
+                    activeCurve = { id: 'active_attempt_draw_non_frame0', anchors: [], segments: [], showAnchorsInEdit: true };
+                    console.warn("New curves can only be added in the first frame.");
+                    // Consider showing a user-friendly message here instead of just console.warn
+                    // For example, a temporary message on the canvas or a non-blocking notification.
+                    return;
+                }
+                saveStateForUndo(); 
+                if (!isDrawingMode) { // Start a new curve
+                    isDrawingMode = true;
+                    activeCurve = { id: 'active_drawing_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: true }; 
+                }
+                // Add new anchor point
+                activeCurve.anchors.push({ x: mouseWorldPos.x, y: mouseWorldPos.y }); 
+                // If at least two anchors, calculate segments
+                if (activeCurve.anchors.length >= 2) {
+                    activeCurve.segments = calculateAllBezierSegments(activeCurve.anchors, TENSION);
+                }
+                redrawCanvas();
+            }
+        });
+
+        // Event listener for mouse move on the canvas
+        canvas.addEventListener('mousemove', (event) => {
+            if (isAnimating) return;
+            const mouseWorldPos = getMouseWorldPos(event); 
+            const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
+            const effectiveCurveHitRadius = CURVE_HIT_THRESHOLD_ON_SCREEN / scaleFactor;
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+
+            if (isDragging && draggedPointInfo && currentFrameSequences) {
+                // --- Handle dragging of points or sequences ---
+                const targetSequence = currentFrameSequences.find(s => s.id === draggedPointInfo.seqId);
+                if (!targetSequence) { // Safety check, should not happen
+                    isDragging = false; draggedPointInfo = null; return;
+                }
+                
+                if (draggedPointInfo.type === 'anchor') {
+                    // Move the anchor point
+                    draggedPointInfo.pointObject.x = mouseWorldPos.x;
+                    draggedPointInfo.pointObject.y = mouseWorldPos.y;
+                    const anchorIdx = draggedPointInfo.anchorIndex;
+                    // If control points had stored offsets, move them relative to the new anchor position
+                    // This maintains their shape unless they are mirrored (handled separately for mirrored)
+                    if (draggedPointInfo.cp2_incoming_offset && anchorIdx > 0 && targetSequence.segments && targetSequence.segments[anchorIdx - 1]) { 
+                        const new_cp2_pos = vecAdd(draggedPointInfo.pointObject, draggedPointInfo.cp2_incoming_offset);
+                        targetSequence.segments[anchorIdx - 1].cp2.x = new_cp2_pos.x;
+                        targetSequence.segments[anchorIdx - 1].cp2.y = new_cp2_pos.y;
+                    }
+                    if (draggedPointInfo.cp1_outgoing_offset && anchorIdx < targetSequence.anchors.length - 1 && targetSequence.segments && targetSequence.segments[anchorIdx]) { 
+                        const new_cp1_pos = vecAdd(draggedPointInfo.pointObject, draggedPointInfo.cp1_outgoing_offset);
+                        targetSequence.segments[anchorIdx].cp1.x = new_cp1_pos.x;
+                        targetSequence.segments[anchorIdx].cp1.y = new_cp1_pos.y;
+                    }
+                } else if (draggedPointInfo.type === 'control') {
+                    // Move the control point
+                    draggedPointInfo.pointObject.x = mouseWorldPos.x;
+                    draggedPointInfo.pointObject.y = mouseWorldPos.y;
+                    const segIdx = draggedPointInfo.segmentIndex;
+                    const pointType = draggedPointInfo.pointType;
+                    // If a control point is moved, its mirrored counterpart on the other side of the anchor also moves
+                    if (pointType === 'cp1') { // Dragging cp1 of segment[segIdx]
+                        if (segIdx > 0 && targetSequence.anchors[segIdx]) { // If there's a previous segment and a pivot anchor
+                            const pivot = targetSequence.anchors[segIdx]; // Anchor between seg[segIdx-1] and seg[segIdx]
+                            const draggedCp = targetSequence.segments[segIdx].cp1; 
+                            // Mirror cp2 of segment[segIdx-1]
+                            targetSequence.segments[segIdx-1].cp2 = vecSub(vecScale(pivot, 2), draggedCp);
+                        }
+                    } else if (pointType === 'cp2') { // Dragging cp2 of segment[segIdx]
+                        if (segIdx < targetSequence.segments.length - 1 && targetSequence.anchors[segIdx+1]) { // If there's a next segment and a pivot anchor
+                            const pivot = targetSequence.anchors[segIdx+1]; // Anchor between seg[segIdx] and seg[segIdx+1]
+                            const draggedCp = targetSequence.segments[segIdx].cp2; 
+                            // Mirror cp1 of segment[segIdx+1]
+                            targetSequence.segments[segIdx+1].cp1 = vecSub(vecScale(pivot, 2), draggedCp);
+                        }
+                    }
+                } else if (draggedPointInfo.type === 'sequence') {
+                    // Move the entire sequence
+                    const delta = vecSub(mouseWorldPos, draggedPointInfo.initialMousePos);
+                    targetSequence.anchors.forEach(anchor => {
+                        anchor.x += delta.x;
+                        anchor.y += delta.y;
+                    });
+                    targetSequence.segments.forEach(seg => {
+                        seg.cp1.x += delta.x;
+                        seg.cp1.y += delta.y;
+                        seg.cp2.x += delta.x;
+                        seg.cp2.y += delta.y;
+                    });
+                    // Update initial mouse position for continuous dragging
+                    draggedPointInfo.initialMousePos = { ...mouseWorldPos }; 
+                }
+                redrawCanvas();
+
+            } else if (isEditModeActive && currentFrameSequences) { 
+                // --- Not dragging, but in Edit Mode: Update cursor based on hover ---
+                let newCursor = 'default'; // Default cursor for edit mode general area
+                
+                // Check for hover over points or curves to change cursor
+                for (const seq of currentFrameSequences) {
+                    if (!seq.showAnchorsInEdit) continue;
+                    let pointHover = false;
+                    // Hover over anchors
+                    for (const anchor of seq.anchors) {
+                        if (vecLength(vecSub(mouseWorldPos, anchor)) < effectivePointHitRadius) { newCursor = 'grab'; pointHover = true; break; }
+                    }
+                    if (pointHover) break;
+                    // Hover over control points
+                    if (seq.segments) {
+                        for (const seg of seq.segments) {
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < effectivePointHitRadius || 
+                                vecLength(vecSub(mouseWorldPos, seg.cp2)) < effectivePointHitRadius) {
+                                newCursor = 'grab'; pointHover = true; break;
+                            }
+                        }
+                    }
+                    if (pointHover) break;
+                    // Hover over curve lines
+                    if (seq.segments) {
+                        for (const seg of seq.segments) {
+                            if (!seg.p0_obj || !seg.p1_obj) continue;
+                            if (isPointNearBezier(mouseWorldPos, seg.p0_obj, seg.cp1, seg.cp2, seg.p1_obj, effectiveCurveHitRadius)) {
+                                newCursor = 'move'; break;
+                            }
+                        }
+                    }
+                    if (newCursor === 'move' || newCursor === 'grab') break; // Prioritize grab/move over default
+                }
+                canvas.style.cursor = newCursor;
+            } else { // Not edit mode (implies drawing mode or no interaction)
+                 canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        // Event listener for mouse up on the canvas
+        canvas.addEventListener('mouseup', () => {
+            if (isAnimating) return;
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+
+            // If dragging an anchor point and it's an endpoint on frame 0, check for merging
+            if (isDragging && draggedPointInfo && draggedPointInfo.type === 'anchor' && currentFrameSequences) {
+                const draggedSeq = currentFrameSequences.find(s => s.id === draggedPointInfo.seqId);
+                const draggedAnchorIndex = draggedPointInfo.anchorIndex;
+
+                // Merging is only possible with endpoints of sequences on the first frame
+                if (draggedSeq && 
+                    (draggedAnchorIndex === 0 || draggedAnchorIndex === draggedSeq.anchors.length - 1) && 
+                    currentFrameIndex === 0) { 
+                    
+                    const draggedAnchorPos = draggedSeq.anchors[draggedAnchorIndex];
+                    const effectiveWorldHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor; // Use world radius for hit
+                    let mergedSuccessfully = false;
+
+                    // Check against endpoints of all other sequences in the frame
+                    for (let i = 0; i < currentFrameSequences.length; i++) {
+                        const otherSeq = currentFrameSequences[i];
+                        if (otherSeq.id === draggedSeq.id) continue; // Don't merge with self
+
+                        if (otherSeq.anchors.length > 0) { 
+                            // Check against start point of otherSeq
+                            const otherStartPoint = otherSeq.anchors[0];
+                            if (vecLength(vecSub(draggedAnchorPos, otherStartPoint)) < effectiveWorldHitRadius) {
+                                if (mergeAndReplaceSequences(currentFrameCurves, draggedSeq, draggedAnchorIndex, otherSeq, 0)) {
+                                    mergedSuccessfully = true;
+                                }
+                                break; // Stop checking after a successful or attempted merge
+                            }
+                            // Check against end point of otherSeq (if it has more than one anchor, or if it's a different single anchor)
+                            if (otherSeq.anchors.length > 1 || (otherSeq.anchors.length === 1 && otherSeq.anchors[0] !== otherStartPoint) ) { // Ensure there is an endpoint distinct from start if only one anchor
+                                const otherEndPoint = otherSeq.anchors[otherSeq.anchors.length - 1];
+                                if (vecLength(vecSub(draggedAnchorPos, otherEndPoint)) < effectiveWorldHitRadius) {
+                                    if (mergeAndReplaceSequences(currentFrameCurves, draggedSeq, draggedAnchorIndex, otherSeq, otherSeq.anchors.length - 1)) {
+                                        mergedSuccessfully = true;
+                                    }
+                                    break; 
+                                }
+                            }
+                        }
+                    }
+                    if (mergedSuccessfully) {
+                        isDragging = false; draggedPointInfo = null;
+                        canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair'; // Reset cursor
+                        redrawCanvas();
+                        return; // Merge handled, exit mouseup
+                    }
+                }
+            }
+
+            // General mouseup: stop dragging
+            isDragging = false; 
+            draggedPointInfo = null;
+            // Reset cursor based on current mode if it was 'grabbing'
+            if (canvas.style.cursor === 'grabbing') {
+                 canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair';
+            } else if (!isEditModeActive) { // If not edit mode, should be crosshair
+                 canvas.style.cursor = 'crosshair';
+            } // Otherwise, keep cursor set by mousemove (e.g., 'move', 'default')
+            redrawCanvas(); // Redraw to reflect any final state changes
+        });
+
+        // Event listener for mouse leaving the canvas area
+        canvas.addEventListener('mouseleave', () => {
+            if (isDragging) { // If mouse leaves while dragging, cancel drag
+                isDragging = false; 
+                draggedPointInfo = null;
+                redrawCanvas(); // Redraw to remove any visual artifacts of dragging
+            }
+            canvas.style.cursor = 'default'; // Set to default cursor when outside canvas
+        });
+
+        // Event listener for keydown events on the window
+        window.addEventListener('keydown', (event) => {
+            if (isAnimating) return; // Ignore keyboard shortcuts during animation
+
+            // Ctrl+Z for Undo
+            if (event.ctrlKey && event.key === 'z') {
+                event.preventDefault(); // Prevent browser's default undo
+                performUndo();
+            } 
+            // Ctrl+Y or Ctrl+Shift+Z for Redo
+            else if (event.ctrlKey && (event.key === 'y' || (event.key === 'Z' && event.shiftKey))) { 
+                event.preventDefault(); // Prevent browser's default redo
+                performRedo();
+            } 
+            // Spacebar to finalize drawing a curve (only if not in edit mode)
+            else if (event.code === 'Space' && !isEditModeActive) {
+                event.preventDefault(); // Prevent page scroll
+                if (isDrawingMode && activeCurve.anchors.length > 1) { // Must have at least 2 anchors
+                   saveStateForUndo(); 
+                   const currentFrameSequences = animationFrames[currentFrameIndex];
+                   currentFrameSequences.push({ 
+                       id: 'finalized_by_space_' + Date.now(),
+                       anchors: [...activeCurve.anchors], 
+                       segments: [...activeCurve.segments], 
+                       showAnchorsInEdit: false // Finalized curves don't show edit points immediately
+                   });
+                   // If curve added to frame 0, propagate this new structure to all other frames
+                   if (currentFrameIndex === 0) {
+                       for (let i = 1; i < animationFrames.length; i++) {
+                            animationFrames[i] = cloneSingleFrame(animationFrames[0]); 
+                            animationFrames[i].forEach(s => s.showAnchorsInEdit = false); // Keep edit mode consistent
+                       }
+                   }
+                   activeCurve = { id: 'active_after_space_finalize', anchors: [], segments: [], showAnchorsInEdit: true }; 
+                   isDrawingMode = false; // Exit drawing mode
+                   updateFrameUI();
+                   redrawCanvas();
+                }
+            }
+        });
+
+        // Event listener for mouse wheel on the canvas (for zooming)
+        canvas.addEventListener('wheel', (event) => {
+            event.preventDefault(); // Prevent page scroll
+            if (isAnimating) return;
+
+            const mouseCanvasPos = getMouseCanvasPos(event); 
+            // Calculate mouse position in world coordinates *before* zoom
+            const worldMouseX = (mouseCanvasPos.x - originX) / scaleFactor;
+            const worldMouseY = (mouseCanvasPos.y - originY) / scaleFactor;
+            
+            const oldScaleFactor = scaleFactor; 
+            let newScaleFactor = scaleFactor;
+            if (event.deltaY < 0) { // Zoom in
+                newScaleFactor *= (1 + ZOOM_INTENSITY);
+            } else { // Zoom out
+                newScaleFactor /= (1 + ZOOM_INTENSITY);
+            }
+            // Clamp zoom level to min/max
+            newScaleFactor = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScaleFactor));
+
+            if (newScaleFactor !== scaleFactor) { // If zoom actually changed
+                saveStateForUndo();
+                scaleFactor = newScaleFactor;
+                // Adjust origin so that the point under the mouse stays in the same place
+                originX = mouseCanvasPos.x - worldMouseX * scaleFactor;
+                originY = mouseCanvasPos.y - worldMouseY * scaleFactor;
+                
+                updateZoomIndicator(); 
+                redrawCanvas();
+            }
+        });
+
+        // --- Save/Load Functionality ---
+        // Event listener for "Save Movie" button
+        saveMovieButton.addEventListener('click', () => {
+            if (isAnimating) return;
+            // Finalize any active drawing before saving
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                 const currentFrameSequences = animationFrames[currentFrameIndex];
+                 currentFrameSequences.push({
+                    id: 'finalized_on_save_' + Date.now(),
+                    anchors: [...activeCurve.anchors],
+                    segments: [...activeCurve.segments],
+                    showAnchorsInEdit: false 
+                });
+                activeCurve = {id: 'active_cleared_on_save', anchors: [], segments: [], showAnchorsInEdit: true};
+                isDrawingMode = false;
+                redrawCanvas(); // Update canvas before saving
+            }
+
+            // Prepare data for saving (only animationFrames is needed, other state is transient or re-init)
+            const dataToSave = {
+                animationFrames: animationFrames,
+                // Could also save scaleFactor and origin if desired for restoring view,
+                // but current implementation resets view on load.
+            };
+            const jsonData = JSON.stringify(dataToSave); 
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); // Create temporary link element
+            a.href = url;
+            a.download = 'animation.clp'; // Suggested filename
+            document.body.appendChild(a);
+            a.click(); // Programmatically click to trigger download
+            document.body.removeChild(a); // Clean up
+            URL.revokeObjectURL(url); // Release object URL
+        });
+
+        // Event listener for file input change (when a file is selected for loading)
+        loadMovieInput.addEventListener('change', (event) => {
+            if (isAnimating) return;
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { // File read successfully
+                    try {
+                        const loadedData = JSON.parse(e.target.result);
+                        if (loadedData && loadedData.animationFrames) {
+                            // Rehydrate and restore state from loaded data
+                            animationFrames = rehydrateFrameData(loadedData.animationFrames);
+                            currentFrameIndex = 0; // Reset to first frame
+                            activeCurve = { id: 'active_after_load', anchors: [], segments: [], showAnchorsInEdit: true };
+                            isDrawingMode = false;
+                            isEditModeActive = false;
+                            scaleFactor = 1.0; // Reset view
+                            originX = 0;
+                            originY = 0;
+                            undoStack = []; // Clear undo/redo history for the new project
+                            redoStack = [];
+                            saveStateForUndo(); // Save the loaded state as initial undo state
+                            if(isAnimating) stopAnimation(); // Ensure animation is stopped
+                            
+                            updateFrameUI();
+                            redrawCanvas();
+                            console.log("Animation loaded successfully.");
+                        } else {
+                            alert("קובץ לא תקין או חסר נתונים.");
+                        }
+                    } catch (error) {
+                        console.error("Error loading or parsing file:", error);
+                        alert("שגיאה בטעינת הקובץ: " + error.message);
+                    } finally {
+                        loadMovieInput.value = ''; // Reset file input to allow loading same file again
+                    }
+                };
+                reader.onerror = () => { // Error reading file
+                    alert("שגיאה בקריאת הקובץ.");
+                     loadMovieInput.value = '';
+                };
+                reader.readAsText(file); // Read file as text
+            }
+        });
+        
+        // Event listener for "Clear Canvas" button
+        clearCanvasButton.addEventListener('click', () => {
+            if (isAnimating) return;
+            // User confirmation for a destructive action
+            if (confirm("האם אתה בטוח שברצונך לנקות הכל ולהתחיל מחדש?")) {
+                // Save current state *before* clearing, so "clear" itself can be undone.
+                saveStateForUndo(); 
+                
+                // Reset application state (similar to initializeAppOnLoad but keeps undo history)
+                animationFrames = [[]]; 
+                currentFrameIndex = 0;
+                activeCurve = { id: 'active_cleared_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: true };
+                isDrawingMode = false;
+                isEditModeActive = false; 
+                scaleFactor = 1.0;    
+                originX = 0;          
+                originY = 0;
+                // Note: redoStack is already cleared by saveStateForUndo().
+                // The undoStack now has the state *before* this clear operation.
+                // If you want the "cleared state" to be the new base (not undoable to before clear),
+                // you would call resetApplicationToInitialState() which also clears undo/redo.
+                
+                updateFrameUI();    
+                redrawCanvas();     
+            }
+        });
+
+
+        // Add event listeners for Undo/Redo buttons (if they are separate from Ctrl+Z/Y)
+        undoButton.addEventListener('click', performUndo);
+        redoButton.addEventListener('click', performRedo);
+        
+        // Initialize the application on page load
+        initializeAppOnLoad(); 
+    </script>
+</body>
+</html>
