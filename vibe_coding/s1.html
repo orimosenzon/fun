@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <title>הדמיית מערכת השמש</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            color: white; 
+            font-family: 'Arial', sans-serif;
+        }
+        #controls-container { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 100; 
+            background-color: rgba(40,40,40,0.9); 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            min-width: 270px; 
+        }
+        #controls-container .control-group {
+            margin-bottom: 12px; 
+        }
+        #controls-container .control-group div label,
+        #controls-container .control-group label { 
+            margin-right: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        input[type="checkbox"] { 
+            margin-left: 2px; 
+            margin-right: 3px; 
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        input[type="range"] {
+            width: calc(100% - 125px); 
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+        select#focusSelect {
+            width: 100%;
+            padding: 5px;
+            border-radius: 4px;
+            background-color: #555;
+            color: white;
+            border: 1px solid #666;
+            font-size: 13px;
+        }
+        #speedValue { 
+            display: inline-block;
+            width: 45px; 
+            text-align: right;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .instructions-text {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+        #instructionsDiv {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #555;
+        }
+        button#toggleInstructionsButton, button#pausePlayButton, button#launchRocketButton { 
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 10px; 
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px; 
+            margin-top: 5px; 
+            vertical-align: middle;
+        }
+        button#toggleInstructionsButton:hover, button#pausePlayButton:hover, button#launchRocketButton:hover {
+            background-color: #0056b3;
+        }
+        button#pausePlayButton {
+             margin-left: 5px; 
+        }
+        button#pausePlayButton.paused {
+            background-color: #dc3545; 
+        }
+        button#pausePlayButton.paused:hover {
+            background-color: #c82333;
+        }
+        button#launchRocketButton {
+            display: block; 
+            width: 100%;
+            margin-top: 10px;
+            background-color: #28a745; 
+        }
+        button#launchRocketButton:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls-container">
+        <div class="control-group">
+            <div>
+                <input type="checkbox" id="realisticScaleToggle">
+                <label for="realisticScaleToggle">הצג גדלים מציאותיים</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div>
+                <input type="checkbox" id="toggleLabels" checked>
+                <label for="toggleLabels">הצג שמות</label>
+            </div>
+        </div>
+         <div class="control-group">
+            <div>
+                <input type="checkbox" id="toggleDistanceLines">
+                <label for="toggleDistanceLines">הצג מרחקים (AU)</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="simulationSpeedSlider" style="font-weight: bold; font-size:14px;">מכפיל מהירות:</label>
+            <div>
+                <input type="range" id="simulationSpeedSlider" min="0.1" max="10" value="1" step="0.1">
+                <span id="speedValue">x1.0</span>
+                <button id="pausePlayButton">עצור</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="focusSelect" style="font-weight: bold; font-size:14px;">בחר גוף למיקוד:</label>
+            <select id="focusSelect">
+                <option value="Sun">שמש (Sun)</option> 
+            </select>
+        </div>
+
+        <div class="control-group">
+             <button id="launchRocketButton">שגר טיל למאדים</button>
+        </div>
+        
+        <button id="toggleInstructionsButton">הצג הוראות</button>
+        <div id="instructionsDiv" style="display: none;">
+            <p class="instructions-text"><b>זום:</b> גלגל את גלגלת העכבר (ממוקד לסמן).</p>
+            <p class="instructions-text"><b>סיבוב:</b> לחץ שמאלי על העכבר וגרור.</p>
+            <p class="instructions-text"><b>הזזת נקודת המבט (Pan):</b> לחץ על גלגלת העכבר (או Shift + לחץ שמאלי) וגרור כדי לשנות את מרכז התצוגה והמיקוד של הזום/סיבוב.</p>
+            <p class="instructions-text"><b>מיקוד:</b> בחר גוף מהרשימה למעלה כדי למקד את המצלמה עליו.</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+
+    <script>
+        // --- Global Constants ---
+        const BASE_EARTH_ORBIT_DURATION_SECONDS = 5; 
+        let currentSpeedMultiplier = 1.0; 
+
+        const ASTRONOMICAL_UNIT_KM = 149597870.7; 
+        const DISTANCE_SCALE_AU_TO_SCENE = 150; 
+        const INITIAL_SUN_RADIUS_SCENE = 18; 
+        
+        const INITIAL_PLANET_SCENE_RADII = {
+            "כוכב חמה": 2.5, "נוגה": 3.8, "ארץ": 4.0, "מאדים": 2.8,   
+            "צדק": 9.0, "שבתאי": 7.5, "אורנוס": 5.5, "נפטון": 5.2   
+        };
+        const REALISTIC_SUN_TARGET_RADIUS_SCENE = 40; 
+        const MOON_ORBITAL_PERIOD_DAYS = 27.3;
+        const MOON_DISTANCE_FROM_EARTH_KM = 384400;
+        const MOON_RADIUS_KM = 1737.4;
+        const ROCKET_SPEED_SCENE_UNITS_PER_SEC = 80; 
+        const ROCKET_SIZE = { radius: 1.5, height: 6 }; 
+
+        // --- Celestial Bodies Data (Hebrew and English Names) ---
+        const sunData = { name: 'שמש', englishName: 'Sun', radiusKm: 695700, color: 0xFFFF00, isSun: true, id: 'Sun' };
+        const planetData = [
+            { name: 'כוכב חמה', englishName: 'Mercury', id: 'Mercury', radiusKm: 2439.7, distanceAU: 0.387, orbitalPeriodDays: 87.97, color: 0xAAAAAA },
+            { name: 'נוגה', englishName: 'Venus', id: 'Venus', radiusKm: 6051.8, distanceAU: 0.723, orbitalPeriodDays: 224.70, color: 0xFFE4B5 },
+            { name: 'ארץ', englishName: 'Earth', id: 'Earth', radiusKm: 6371, distanceAU: 1.000, orbitalPeriodDays: 365.25, color: 0x0077FF, hasMoon: true },
+            { name: 'מאדים', englishName: 'Mars', id: 'Mars', radiusKm: 3389.5, distanceAU: 1.524, orbitalPeriodDays: 686.98, color: 0xFF5733 },
+            { name: 'צדק', englishName: 'Jupiter', id: 'Jupiter', radiusKm: 69911, distanceAU: 5.203, orbitalPeriodDays: 4332.59, color: 0xFFD700 },
+            { name: 'שבתאי', englishName: 'Saturn', id: 'Saturn', radiusKm: 58232, distanceAU: 9.537, orbitalPeriodDays: 10759.22, color: 0xF4A460, hasRings: true },
+            { name: 'אורנוס', englishName: 'Uranus', id: 'Uranus', radiusKm: 25362, distanceAU: 19.191, orbitalPeriodDays: 30688.5, color: 0xAFEEEE },
+            { name: 'נפטון', englishName: 'Neptune', id: 'Neptune', radiusKm: 24622, distanceAU: 30.069, orbitalPeriodDays: 60190, color: 0x3F51B5 }
+        ];
+        const moonData = { name: 'ירח', englishName: 'Moon', id: 'Moon', radiusKm: MOON_RADIUS_KM, color: 0xCCCCCC, isMoon: true };
+
+
+        // --- Global Scene Variables ---
+        let scene, camera, renderer, controls;
+        let sunMesh, planetMeshes = [], orbitPathMeshes = [], moonMesh, rocketMesh, rocketPathLine;
+        let allLabelSprites = []; 
+        let distanceLines = {}; 
+        let isRealisticScaleActive = false; 
+        let showCelestialLabels = true; 
+        let showDistanceIndicators = false;
+        let isSimulationPaused = false; 
+        let focusedBodyMesh = null; 
+        let rocketInFlight = false;
+        let rocketTargetPosition = new THREE.Vector3();
+
+        const simulationClock = new THREE.Clock(); 
+        const KM_TO_SCENE_UNIT_REALISTIC = REALISTIC_SUN_TARGET_RADIUS_SCENE / sunData.radiusKm;
+        const MOON_DISTANCE_SCALE_FACTOR_NON_REALISTIC = INITIAL_PLANET_SCENE_RADII['ארץ'] * 2.5;
+
+
+        // --- Initialization Function ---
+        function initSimulation() {
+            scene = new THREE.Scene();
+
+            isRealisticScaleActive = document.getElementById('realisticScaleToggle').checked;
+            showCelestialLabels = document.getElementById('toggleLabels').checked;
+            showDistanceIndicators = document.getElementById('toggleDistanceLines').checked;
+            
+            currentSpeedMultiplier = parseFloat(document.getElementById('simulationSpeedSlider').value); 
+            document.getElementById('speedValue').textContent = `x${currentSpeedMultiplier.toFixed(1)}`;
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, DISTANCE_SCALE_AU_TO_SCENE * 70); 
+            const viewAngleRad = 40 * Math.PI / 180; 
+            const cameraDistanceZ = DISTANCE_SCALE_AU_TO_SCENE * 6.5; 
+            const cameraDistanceY = cameraDistanceZ * Math.tan(viewAngleRad); 
+            camera.position.set(0, cameraDistanceY, cameraDistanceZ);
+            camera.lookAt(0,0,0); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = true; 
+            controls.minDistance = 0.1; 
+            controls.maxDistance = DISTANCE_SCALE_AU_TO_SCENE * 60; 
+            controls.zoomToCursor = true; 
+
+            const ambientLight = new THREE.AmbientLight(0x666666); 
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xFFFFFF, 1.5, DISTANCE_SCALE_AU_TO_SCENE * 50, 1.0);
+            scene.add(pointLight);
+
+            createSunObject();
+            createPlanetObjects(); 
+            createRocketObject(); 
+            createOrbitalPathVisuals();
+            createDistanceIndicators(); 
+            populateFocusDropdown(); 
+
+            document.getElementById('realisticScaleToggle').addEventListener('change', handleScaleChange);
+            document.getElementById('toggleLabels').addEventListener('change', handleLabelVisibilityChange);
+            document.getElementById('toggleDistanceLines').addEventListener('change', handleDistanceIndicatorVisibilityChange);
+            document.getElementById('simulationSpeedSlider').addEventListener('input', handleSpeedChange);
+            document.getElementById('toggleInstructionsButton').addEventListener('click', toggleInstructionsVisibility);
+            document.getElementById('pausePlayButton').addEventListener('click', handlePausePlay); 
+            document.getElementById('focusSelect').addEventListener('change', handleFocusChange);
+            document.getElementById('launchRocketButton').addEventListener('click', handleLaunchRocket); 
+            
+            toggleAllLabelsVisibility(); 
+            toggleDistanceIndicatorsVisibility();
+
+            window.addEventListener('resize', onWindowResizeHandler, false);
+            animateScene();
+        }
+
+        // --- Create Sun Texture (Procedural Gradient) ---
+        function createSunTexture() {
+            const canvas = document.createElement('canvas');
+            const size = 256; 
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+            gradient.addColorStop(0, 'rgba(255, 255, 200, 1)'); 
+            gradient.addColorStop(0.4, 'rgba(255, 200, 0, 1)');  
+            gradient.addColorStop(0.8, 'rgba(255, 100, 0, 1)');  
+            gradient.addColorStop(1, 'rgba(200, 0, 0, 0.5)');    
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // --- Create Text Sprite (for names and distances) ---
+        function createTextSprite(text, fontSize = 28, color = "rgba(255, 255, 255, 0.9)", scaleHeight = 45) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const padding = 10;
+            context.font = `Bold ${fontSize}px Arial`;
+            const textMetrics = context.measureText(text);
+            const textWidth = textMetrics.width;
+            canvas.width = textWidth + padding * 2;
+            canvas.height = fontSize + padding * 2;
+            context.font = `Bold ${fontSize}px Arial`; 
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, sizeAttenuation: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(scaleHeight * (canvas.width / canvas.height), scaleHeight, 1);
+            return sprite;
+        }
+
+
+        // --- Create Celestial Body Label ---
+        function createCelestialBodyLabel(ownerMesh, text, isSunOrMoonLabel = false, isMoon = false) {
+            const fontSize = isSunOrMoonLabel ? (isMoon ? 20 : 42) : 28;
+            const scaleHeight = isSunOrMoonLabel ? (isMoon ? 25 : 70) : 45;
+            const sprite = createTextSprite(text, fontSize, "rgba(255, 255, 255, 0.9)", scaleHeight);
+            ownerMesh.userData.labelSprite = sprite;
+            scene.add(sprite);
+            allLabelSprites.push(sprite);
+            sprite.visible = showCelestialLabels;
+            updateLabelPosition(ownerMesh, sprite, isMoon);
+            return sprite;
+        }
+        
+        // --- Create Distance Indicators (Lines and Labels) ---
+        function createDistanceIndicators() {
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+            planetMeshes.forEach(planetMesh => {
+                const planetData = planetMesh.userData;
+                if (planetData.isMoon) return; 
+
+                const points = [];
+                points.push(new THREE.Vector3(0, 0, 0)); 
+                points.push(planetMesh.position.clone()); 
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, lineMaterial);
+                line.visible = showDistanceIndicators;
+                scene.add(line);
+
+                const distanceText = `${planetData.distanceAU.toFixed(2)} AU`;
+                const distanceLabel = createTextSprite(distanceText, 18, "rgba(200, 200, 255, 0.8)", 20);
+                distanceLabel.visible = showDistanceIndicators;
+                scene.add(distanceLabel);
+                allLabelSprites.push(distanceLabel); 
+
+                distanceLines[planetData.id] = { line: line, label: distanceLabel };
+                updateDistanceIndicatorPosition(planetMesh, line, distanceLabel);
+            });
+        }
+
+        // --- Update Distance Indicator Position ---
+        function updateDistanceIndicatorPosition(planetMesh, line, label) {
+            if (!planetMesh || !line || !label) return;
+            const planetPosition = planetMesh.position;
+            line.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), planetPosition]);
+            line.geometry.attributes.position.needsUpdate = true;
+
+            const midPoint = new THREE.Vector3().addVectors(sunMesh.position, planetPosition).multiplyScalar(0.5);
+            label.position.set(midPoint.x, midPoint.y + 5, midPoint.z); 
+        }
+
+
+        // --- Update Label Position ---
+        function updateLabelPosition(ownerMesh, labelSprite, isMoon = false) {
+            if (!ownerMesh || !labelSprite) return;
+            const visualRadius = ownerMesh.scale.y; 
+            const labelWorldHeightApproximation = labelSprite.scale.y * (isMoon ? 0.4 : 0.25) ; 
+            const labelOffset = visualRadius + labelWorldHeightApproximation + (ownerMesh.userData.isSun ? 10 : (isMoon ? 1.5 : 5) ); 
+            const ownerPosition = new THREE.Vector3();
+            ownerMesh.getWorldPosition(ownerPosition); 
+            labelSprite.position.set(ownerPosition.x, ownerPosition.y + labelOffset, ownerPosition.z);
+        }
+
+        // --- Handle Scale Change ---
+        function handleScaleChange(event) {
+            isRealisticScaleActive = event.target.checked; 
+            updateCelestialBodyVisualScale(sunMesh, sunData);
+            planetMeshes.forEach(mesh => { updateCelestialBodyVisualScale(mesh, mesh.userData); });
+            if (moonMesh) { 
+                updateCelestialBodyVisualScale(moonMesh, moonData); 
+            }
+        }
+
+        // --- Handle Label Visibility Change ---
+        function handleLabelVisibilityChange(event) {
+            showCelestialLabels = event.target.checked; 
+            toggleAllLabelsVisibility();
+        }
+        
+        // --- Handle Distance Indicators Visibility Change ---
+        function handleDistanceIndicatorVisibilityChange(event) {
+            showDistanceIndicators = event.target.checked;
+            toggleDistanceIndicatorsVisibility();
+        }
+        
+        function toggleDistanceIndicatorsVisibility() {
+             for (const id in distanceLines) {
+                distanceLines[id].line.visible = showDistanceIndicators;
+                distanceLines[id].label.visible = showDistanceIndicators && showCelestialLabels;
+            }
+        }
+
+
+        // --- Handle Simulation Speed Change ---
+        function handleSpeedChange(event) {
+            currentSpeedMultiplier = parseFloat(event.target.value);
+            document.getElementById('speedValue').textContent = `x${currentSpeedMultiplier.toFixed(1)}`; 
+        }
+        
+        // --- Handle Pause/Play Simulation ---
+        function handlePausePlay() {
+            const button = document.getElementById('pausePlayButton');
+            isSimulationPaused = !isSimulationPaused;
+            if (isSimulationPaused) {
+                button.textContent = 'המשך';
+                button.classList.add('paused');
+            } else {
+                button.textContent = 'עצור';
+                button.classList.remove('paused');
+            }
+        }
+
+        // --- Toggle All Labels Visibility (names and distance if shown) ---
+        function toggleAllLabelsVisibility() {
+            planetMeshes.forEach(mesh => {
+                if (mesh.userData.labelSprite) mesh.userData.labelSprite.visible = showCelestialLabels;
+            });
+            if (sunMesh && sunMesh.userData.labelSprite) sunMesh.userData.labelSprite.visible = showCelestialLabels;
+            if (moonMesh && moonMesh.userData.labelSprite) moonMesh.userData.labelSprite.visible = showCelestialLabels;
+            
+            for (const id in distanceLines) { 
+                 distanceLines[id].label.visible = showDistanceIndicators && showCelestialLabels;
+            }
+        }
+        
+        // --- Toggle Instructions Visibility ---
+        function toggleInstructionsVisibility() {
+            const instructionsDiv = document.getElementById('instructionsDiv');
+            const button = document.getElementById('toggleInstructionsButton');
+            if (instructionsDiv.style.display === 'none') {
+                instructionsDiv.style.display = 'block';
+                button.textContent = 'הסתר הוראות';
+            } else {
+                instructionsDiv.style.display = 'none';
+                button.textContent = 'הצג הוראות';
+            }
+        }
+        
+        // --- Populate Focus Dropdown ---
+        function populateFocusDropdown() {
+            const select = document.getElementById('focusSelect');
+            while (select.options.length > 1) { 
+                select.remove(1);
+            }
+            select.options[0].textContent = `${sunData.name} (${sunData.englishName})`; 
+
+            planetData.forEach(pData => {
+                const option = document.createElement('option');
+                option.value = pData.id;
+                option.textContent = `${pData.name} (${pData.englishName}) - ${pData.distanceAU.toFixed(2)} AU`;
+                select.appendChild(option);
+            });
+            const moonOption = document.createElement('option');
+            moonOption.value = moonData.id;
+            moonOption.textContent = `${moonData.name} (${moonData.englishName})`; 
+            select.appendChild(moonOption);
+        }
+
+        // --- Handle Focus Change ---
+        function handleFocusChange(event) {
+            const selectedId = event.target.value;
+            let targetMesh = null;
+
+            if (selectedId === sunData.id) {
+                targetMesh = sunMesh;
+            } else if (selectedId === moonData.id) {
+                targetMesh = moonMesh;
+            } else {
+                targetMesh = planetMeshes.find(p => p.userData.id === selectedId);
+            }
+
+            if (targetMesh) {
+                focusedBodyMesh = targetMesh; 
+                
+                const targetPosition = new THREE.Vector3();
+                targetMesh.getWorldPosition(targetPosition); 
+
+                new TWEEN.Tween(controls.target)
+                    .to({ x: targetPosition.x, y: targetPosition.y, z: targetPosition.z }, 750) 
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .onUpdate(() => controls.update()) 
+                    .start();
+                
+                const offset = camera.position.clone().sub(controls.target); 
+                const newCameraPosition = targetPosition.clone().add(offset);
+
+                new TWEEN.Tween(camera.position)
+                    .to({ x: newCameraPosition.x, y: newCameraPosition.y, z: newCameraPosition.z }, 750)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start();
+
+            } else if (selectedId === "Sun") { 
+                focusedBodyMesh = sunMesh; 
+                 new TWEEN.Tween(controls.target)
+                    .to({ x: 0, y: 0, z: 0 }, 750)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .onUpdate(() => controls.update())
+                    .start();
+            }
+        }
+
+
+        // --- Create Sun Object ---
+        function createSunObject() {
+            const geometry = new THREE.SphereGeometry(1, 64, 64); 
+            const sunTexture = createSunTexture();
+            const material = new THREE.MeshBasicMaterial({ map: sunTexture });
+            sunMesh = new THREE.Mesh(geometry, material);
+            sunMesh.userData = sunData; 
+            updateCelestialBodyVisualScale(sunMesh, sunData); 
+            scene.add(sunMesh);
+            createCelestialBodyLabel(sunMesh, sunData.name, true, false); 
+        }
+        
+        // --- Create Moon Object ---
+        function createMoonObject(earthMesh) {
+            const geometry = new THREE.SphereGeometry(1, 16, 16); 
+            const material = new THREE.MeshLambertMaterial({ color: moonData.color });
+            moonMesh = new THREE.Mesh(geometry, material);
+            moonMesh.userData = moonData;
+            updateCelestialBodyVisualScale(moonMesh, moonData); 
+            scene.add(moonMesh); 
+            createCelestialBodyLabel(moonMesh, moonData.name, true, true); 
+        }
+        
+        // --- Create Rocket Object ---
+        function createRocketObject() {
+            const geometry = new THREE.ConeGeometry(ROCKET_SIZE.radius, ROCKET_SIZE.height, 16); 
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff0000 }); 
+            rocketMesh = new THREE.Mesh(geometry, material);
+            rocketMesh.visible = false; 
+            rocketMesh.rotation.x = Math.PI / 2;
+            scene.add(rocketMesh);
+
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+            const points = [new THREE.Vector3(), new THREE.Vector3()]; 
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+            rocketPathLine = new THREE.Line(lineGeometry, lineMaterial);
+            rocketPathLine.visible = false;
+            scene.add(rocketPathLine);
+        }
+        
+        // --- Handle Rocket Launch ---
+        function handleLaunchRocket() {
+            if (rocketInFlight) return; 
+
+            const earth = planetMeshes.find(p => p.userData.id === 'Earth');
+            const mars = planetMeshes.find(p => p.userData.id === 'Mars');
+
+            if (!earth || !mars) {
+                console.error("Earth or Mars mesh not found for rocket launch.");
+                return;
+            }
+
+            const earthPosition = new THREE.Vector3();
+            earth.getWorldPosition(earthPosition);
+            rocketMesh.position.copy(earthPosition);
+            
+            const marsData = mars.userData;
+            const marsOrbitalRadiusScene = marsData.distanceAU * DISTANCE_SCALE_AU_TO_SCENE;
+            
+            const distanceToMarsOrbitApprox = earthPosition.distanceTo(new THREE.Vector3(marsOrbitalRadiusScene, 0, 0)); 
+            let estimatedTravelTimeSeconds = distanceToMarsOrbitApprox / ROCKET_SPEED_SCENE_UNITS_PER_SEC;
+            estimatedTravelTimeSeconds = Math.max(0.5, Math.min(estimatedTravelTimeSeconds, BASE_EARTH_ORBIT_DURATION_SECONDS * 5 / currentSpeedMultiplier));
+
+
+            const baseMarsOrbitDurationSimSeconds = (marsData.orbitalPeriodDays / 365.25) * BASE_EARTH_ORBIT_DURATION_SECONDS;
+            if (baseMarsOrbitDurationSimSeconds > 0) {
+                 const marsAngularSpeedRadPerSec = ((2 * Math.PI) / baseMarsOrbitDurationSimSeconds) * currentSpeedMultiplier;
+                 const marsAngleChange = marsAngularSpeedRadPerSec * estimatedTravelTimeSeconds;
+                 const predictedMarsAngle = (marsData.currentAngleRad + marsAngleChange) % (2 * Math.PI);
+
+                 rocketTargetPosition.set(
+                    Math.cos(predictedMarsAngle) * marsOrbitalRadiusScene,
+                    0, 
+                    Math.sin(predictedMarsAngle) * marsOrbitalRadiusScene
+                 );
+            } else { 
+                mars.getWorldPosition(rocketTargetPosition);
+            }
+            
+            rocketMesh.lookAt(rocketTargetPosition);
+            rocketMesh.visible = true;
+            rocketInFlight = true;
+
+            rocketPathLine.geometry.setFromPoints([earthPosition.clone(), rocketTargetPosition.clone()]);
+            rocketPathLine.geometry.attributes.position.needsUpdate = true;
+            rocketPathLine.visible = true;
+        }
+
+
+        // --- Create Planet Objects ---
+        function createPlanetObjects() {
+            planetData.forEach(data => {
+                const geometry = new THREE.SphereGeometry(1, 32, 32); 
+                const material = new THREE.MeshLambertMaterial({ color: data.color, wireframe: false });
+                const planetMesh = new THREE.Mesh(geometry, material);
+                planetMesh.userData = data; 
+                planetMesh.userData.currentAngleRad = Math.random() * 2 * Math.PI; 
+                updateCelestialBodyVisualScale(planetMesh, data); 
+                scene.add(planetMesh);
+                planetMeshes.push(planetMesh);
+                createCelestialBodyLabel(planetMesh, data.name, false, false); 
+
+                if (data.hasMoon && data.name === 'ארץ') { 
+                    createMoonObject(planetMesh);
+                    if (moonMesh) { 
+                         moonMesh.userData.currentAngleRad = Math.random() * 2 * Math.PI;
+                    }
+                }
+
+                if (data.hasRings) {
+                    const ringInnerKm = data.radiusKm * 1.15; 
+                    const ringOuterKm = data.radiusKm * 2.5;  
+                    let ringInnerRadiusScene, ringOuterRadiusScene;
+                    if (isRealisticScaleActive) {
+                        ringInnerRadiusScene = (ringInnerKm / data.radiusKm); 
+                        ringOuterRadiusScene = (ringOuterKm / data.radiusKm); 
+                    } else {
+                        ringInnerRadiusScene = 1.2; 
+                        ringOuterRadiusScene = 2.0;
+                    }
+                    const ringGeometry = new THREE.RingGeometry(ringInnerRadiusScene, ringOuterRadiusScene, 64);
+                    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x999988, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                    const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+                    ringMesh.rotation.x = Math.PI / 2; 
+                    planetMesh.add(ringMesh); 
+                    planetMesh.userData.ringMesh = ringMesh; 
+                    planetMesh.userData.ringScalesKm = { innerKm: ringInnerKm, outerKm: ringOuterKm }; 
+                }
+            });
+        }
+
+        // --- Create Orbital Path Visuals ---
+        function createOrbitalPathVisuals() {
+            planetData.forEach(data => {
+                const orbitRadiusScene = data.distanceAU * DISTANCE_SCALE_AU_TO_SCENE;
+                const orbitGeometry = new THREE.RingGeometry(orbitRadiusScene - 0.15, orbitRadiusScene + 0.15, 128);
+                const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0xBBBBBB, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
+                const orbitMesh = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                orbitMesh.rotation.x = Math.PI / 2; 
+                scene.add(orbitMesh);
+                orbitPathMeshes.push(orbitMesh);
+            });
+        }
+        
+        // --- Update Celestial Body Visual Scale ---
+        function updateCelestialBodyVisualScale(mesh, data) { 
+            let scaleFactor;
+            if (data.isSun) { 
+                scaleFactor = isRealisticScaleActive ? data.radiusKm * KM_TO_SCENE_UNIT_REALISTIC : INITIAL_SUN_RADIUS_SCENE;
+            } else if (data.isMoon) {
+                if (isRealisticScaleActive) {
+                    scaleFactor = data.radiusKm * KM_TO_SCENE_UNIT_REALISTIC;
+                } else {
+                    const earthActualRadiusKm = planetData.find(p => p.name === 'ארץ').radiusKm;
+                    const earthEnlargedVisualRadius = INITIAL_PLANET_SCENE_RADII['ארץ'];
+                    scaleFactor = earthEnlargedVisualRadius * (data.radiusKm / earthActualRadiusKm);
+                }
+            } else { 
+                scaleFactor = isRealisticScaleActive ? data.radiusKm * KM_TO_SCENE_UNIT_REALISTIC : INITIAL_PLANET_SCENE_RADII[data.name];
+            }
+            mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+            if (data.hasRings && mesh.userData.ringMesh) { 
+                const ringMesh = mesh.userData.ringMesh;
+                let newRingInnerRadius, newRingOuterRadius;
+                if (isRealisticScaleActive) {
+                    newRingInnerRadius = mesh.userData.ringScalesKm.innerKm / data.radiusKm;
+                    newRingOuterRadius = mesh.userData.ringScalesKm.outerKm / data.radiusKm;
+                } else {
+                    newRingInnerRadius = 1.2; 
+                    newRingOuterRadius = 2.0;
+                }
+                mesh.remove(ringMesh); 
+                const newRingGeometry = new THREE.RingGeometry(newRingInnerRadius, newRingOuterRadius, 64);
+                ringMesh.geometry.dispose(); 
+                ringMesh.geometry = newRingGeometry; 
+                mesh.add(ringMesh); 
+            }
+        }
+
+        // --- Main Animation Loop ---
+        function animateScene() {
+            requestAnimationFrame(animateScene); 
+            TWEEN.update(); 
+            
+            const deltaTime = simulationClock.getDelta(); 
+            const MAX_DELTA_TIME = 0.1; 
+            let earthMesh;
+
+            if (!isSimulationPaused && deltaTime < MAX_DELTA_TIME) {
+                planetMeshes.forEach(planetMesh => {
+                    const data = planetMesh.userData;
+                    if (data.name === 'ארץ') {
+                        earthMesh = planetMesh; 
+                    }
+                    if (data.orbitalPeriodDays > 0) { 
+                        const basePlanetOrbitDurationSimSeconds = (data.orbitalPeriodDays / 365.25) * BASE_EARTH_ORBIT_DURATION_SECONDS;
+                        if (basePlanetOrbitDurationSimSeconds > 0) { 
+                            const angularSpeedRadPerSec = ((2 * Math.PI) / basePlanetOrbitDurationSimSeconds) * currentSpeedMultiplier;
+                            const angleChange = angularSpeedRadPerSec * deltaTime;
+                            data.currentAngleRad += angleChange;
+                            data.currentAngleRad %= (2 * Math.PI); 
+
+                            const orbitalRadiusScene = data.distanceAU * DISTANCE_SCALE_AU_TO_SCENE;
+                            planetMesh.position.x = Math.cos(data.currentAngleRad) * orbitalRadiusScene;
+                            planetMesh.position.z = Math.sin(data.currentAngleRad) * orbitalRadiusScene; 
+                        }
+                    }
+                });
+
+                if (moonMesh && earthMesh) { 
+                    const moonData = moonMesh.userData;
+                    const baseMoonOrbitDurationSimSeconds = (MOON_ORBITAL_PERIOD_DAYS / 365.25) * BASE_EARTH_ORBIT_DURATION_SECONDS;
+                    if (baseMoonOrbitDurationSimSeconds > 0) {
+                        const moonAngularSpeedRadPerSec = ((2 * Math.PI) / baseMoonOrbitDurationSimSeconds) * currentSpeedMultiplier;
+                        const angleChange = moonAngularSpeedRadPerSec * deltaTime; 
+                        moonData.currentAngleRad += angleChange;
+                        moonData.currentAngleRad %= (2 * Math.PI);
+                        
+                        let moonOrbitRadiusScene;
+                        if (isRealisticScaleActive) {
+                             // Corrected: Use KM_TO_SCENE_UNIT_REALISTIC for Moon's orbit in realistic mode
+                             moonOrbitRadiusScene = MOON_DISTANCE_FROM_EARTH_KM * KM_TO_SCENE_UNIT_REALISTIC;
+                        } else {
+                             moonOrbitRadiusScene = MOON_DISTANCE_SCALE_FACTOR_NON_REALISTIC; 
+                        }
+
+                        moonMesh.position.x = earthMesh.position.x + Math.cos(moonData.currentAngleRad) * moonOrbitRadiusScene;
+                        moonMesh.position.z = earthMesh.position.z + Math.sin(moonData.currentAngleRad) * moonOrbitRadiusScene;
+                        moonMesh.position.y = earthMesh.position.y; 
+                    }
+                }
+                
+                if (rocketInFlight && rocketMesh) {
+                    const direction = new THREE.Vector3().subVectors(rocketTargetPosition, rocketMesh.position).normalize();
+                    rocketMesh.position.add(direction.multiplyScalar(ROCKET_SPEED_SCENE_UNITS_PER_SEC * deltaTime));
+                    
+                    const currentRocketPos = rocketMesh.position.clone();
+                    const launchPosArray = rocketPathLine.geometry.attributes.position.array;
+                    const launchPos = new THREE.Vector3(launchPosArray[0],launchPosArray[1],launchPosArray[2]);
+                    rocketPathLine.geometry.setFromPoints([launchPos , currentRocketPos]); 
+                    rocketPathLine.geometry.attributes.position.needsUpdate = true;
+
+
+                    if (rocketMesh.position.distanceTo(rocketTargetPosition) < ROCKET_SPEED_SCENE_UNITS_PER_SEC * deltaTime * 1.1) { 
+                        rocketInFlight = false;
+                        rocketMesh.visible = false;
+                        rocketPathLine.visible = false; 
+                    }
+                }
+
+            } 
+            
+            if (!earthMesh) {
+                earthMesh = planetMeshes.find(p => p.userData.name === 'ארץ');
+            }
+
+            if (focusedBodyMesh) {
+                 const targetPosition = new THREE.Vector3();
+                 focusedBodyMesh.getWorldPosition(targetPosition);
+                 if (focusedBodyMesh !== sunMesh) { 
+                    controls.target.lerp(targetPosition, 0.1); 
+                 } else { 
+                    controls.target.set(0,0,0);
+                 }
+            }
+            
+            planetMeshes.forEach(planetMesh => {
+                 if (planetMesh.userData.labelSprite && planetMesh.userData.labelSprite.visible) { 
+                    updateLabelPosition(planetMesh, planetMesh.userData.labelSprite, false);
+                }
+            });
+            if (sunMesh && sunMesh.userData.labelSprite && sunMesh.userData.labelSprite.visible) { 
+                 updateLabelPosition(sunMesh, sunMesh.userData.labelSprite, false);
+            }
+            if (moonMesh && moonMesh.userData.labelSprite && moonMesh.userData.labelSprite.visible) {
+                updateLabelPosition(moonMesh, moonMesh.userData.labelSprite, true);
+            }
+
+            if (showDistanceIndicators) {
+                for (const id in distanceLines) {
+                    const planetMesh = planetMeshes.find(p => p.userData.id === id);
+                    if (planetMesh) {
+                        updateDistanceIndicatorPosition(planetMesh, distanceLines[id].line, distanceLines[id].label);
+                    }
+                }
+            }
+            
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+
+        // --- Handle Window Resize ---
+        function onWindowResizeHandler() {
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        }
+
+        window.onload = initSimulation;
+    </script>
+</body>
+</html>

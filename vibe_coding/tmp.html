@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מבוך הארץ התיכונה - תיקוני תאורה ושליטה</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #111;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #ui-container { /* ישמש עכשיו רק למפה */
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            pointer-events: none; 
+        }
+        #mapCanvas {
+            border: 1px solid #f0e68c; 
+            background-color: rgba(0, 0, 0, 0.6);
+            pointer-events: auto; 
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #message-area, #inventory-area, #instructions {
+            display: none;
+        }
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            z-index: 1000; 
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">טוען משאבים...</div>
+    <div id="ui-container">
+        <canvas id="mapCanvas"></canvas>
+    </div>
+    <div id="crosshair">+</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <script>
+        // --- הגדרות כלליות ---
+        let scene, camera, renderer;
+        const playerCapsule = { radius: 1.5, height: 3, position: new THREE.Vector3() };
+        const playerSpeed = 15.0;
+        const mouseSensitivity = 0.002;
+
+        const TILE_SIZE = 10;
+        const WALL_HEIGHT = 10;
+        const mazeObjects = []; 
+        const interactiveItems = []; 
+        let gameWon = false;
+        let gameOver = false; 
+
+        const keyStates = {};
+        const collectedItems = new Set();
+
+        // --- רפאי טבעת ---
+        const nazgulList = [];
+        const NAZGUL_SPEED = 0.8; 
+        const NAZGUL_MOVE_INTERVAL = 1200; 
+        const NAZGUL_DETECTION_RADIUS = TILE_SIZE * 0.6; 
+
+        // --- מפה ---
+        let mapCanvas, mapCtx;
+        const MAP_SCALE = 5; 
+        const MAP_PLAYER_COLOR = "blue";
+        const MAP_NAZGUL_COLOR = "red";
+        const MAP_WALL_COLOR = "#555"; 
+        const MAP_PATH_COLOR = "#aaa"; 
+        const MAP_ITEM_COLOR = "yellow";
+        const MAP_EXIT_COLOR = "lime";
+
+        // --- טוען טקסטורות ---
+        const textureLoader = new THREE.TextureLoader();
+        let wallTexture, floorTexture, nazgulTexture, lembasTexture, mapScrollTexture;
+        let texturesLoaded = 0;
+        const totalTexturesToLoad = 5; 
+
+        // --- מבוך ---
+        const mazeLayout = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 'S', 0, 1, 0, 0, 'N', 0, 1, 0, 'R', 0, 0, 0, 1],
+            [1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 'N', 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 'L', 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+            [1, 'N', 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 'P', 0, 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+            [1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+            [1, 0, 0, 0, 0, 1, 'M', 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'E', 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+        
+        // --- צלילים ---
+        let itemPickupSound, wallBumpSound, winSound, phialSound, nazgulProximitySound, gameOverSound;
+        let nazgulProximityPlaying = false;
+
+        // --- Euler לשליטת מצלמה ---
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ'); // סדר סיבוב YXZ למניעת גלגול
+        const PI_2 = Math.PI / 2; // קבוע לחצי פאי
+
+        function onTextureLoad() {
+            texturesLoaded++;
+            if (texturesLoaded === totalTexturesToLoad) {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) loadingScreen.style.display = 'none'; 
+                console.log("All textures loaded, starting game.");
+                initGameLogic(); 
+            }
+        }
+        
+        function loadTextures() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) loadingScreen.style.display = 'flex';
+
+            wallTexture = textureLoader.load('https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/castle_wall_slotted_001/castle_wall_slotted_001_diff_1k.png', onTextureLoad, undefined, () => { console.error("Failed to load wall texture."); onTextureLoad(); }); 
+            floorTexture = textureLoader.load('https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/large_sandstone_blocks/large_sandstone_blocks_diff_1k.png', onTextureLoad, undefined, () => { console.error("Failed to load floor texture."); onTextureLoad(); }); 
+            nazgulTexture = textureLoader.load('https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/fabric_pattern_07/fabric_pattern_07_diff_1k.png', onTextureLoad, undefined, () => { console.error("Failed to load nazgul texture."); onTextureLoad(); }); 
+            lembasTexture = textureLoader.load('https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/bread_01/bread_01_diff_1k.png', onTextureLoad, undefined, () => { console.error("Failed to load lembas texture."); onTextureLoad(); });
+            mapScrollTexture = textureLoader.load('https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/scroll_01/scroll_01_diff_1k.png', onTextureLoad, undefined, () => { console.error("Failed to load map scroll texture."); onTextureLoad(); });
+
+            [wallTexture, floorTexture, nazgulTexture, lembasTexture, mapScrollTexture].forEach(texture => {
+                if (texture) { 
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.RepeatWrapping;
+                }
+            });
+        }
+
+        function initSounds() {
+            if (typeof Tone === 'undefined') { console.warn("Tone.js not loaded. Sounds disabled."); return; }
+            try {
+                itemPickupSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination();
+                wallBumpSound = new Tone.MembraneSynth({ pitchDecay: 0.08, octaves: 2, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+                winSound = new Tone.Synth({ oscillator: { type: "triangle8" }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.3, release: 1 } }).toDestination();
+                phialSound = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.5, decay: 1.0, sustain: 0, release: 0.5 }, volume: -10 }).toDestination();
+                const phialFilter = new Tone.AutoFilter("4n").toDestination().start();
+                phialSound.connect(phialFilter);
+                nazgulProximitySound = new Tone.NoiseSynth({ noise: { type: "brown", playbackRate: 0.5 }, envelope: { attack: 0.5, decay: 0.2, sustain: 1, release: 0.5 }, volume: -15 }).toDestination();
+                const proximityLFO = new Tone.LFO("2n", -25, -15).start(); 
+                proximityLFO.connect(nazgulProximitySound.volume);
+                gameOverSound = new Tone.Synth({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 1.5, sustain: 0.1, release: 0.5 }, volume: -5 }).toDestination();
+                const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination().start();
+                gameOverSound.connect(chorus);
+            } catch (error) { console.error("Error initializing sounds:", error); }
+        }
+
+        function initGameLogic() { 
+            initMap();
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x202833); // רקע מעט בהיר יותר
+            scene.fog = new THREE.Fog(0x202833, TILE_SIZE * 2, TILE_SIZE * 15); // טווח ראייה מעט גדול יותר בערפל
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // אתחול ה-Euler של המצלמה מה-quaternion הנוכחי (למקרה שהמצלמה לא מתחילה ב-(0,0,0))
+            euler.setFromQuaternion(camera.quaternion);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.physicallyCorrectLights = true; 
+
+            // הגברת תאורה
+            const ambientLight = new THREE.AmbientLight(0x404050, 1.8); // עוצמה גבוהה יותר
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xfff0e0, 2.0); // עוצמה גבוהה יותר וצבע חם יותר
+            directionalLight.position.set(25, 40, 30); // מיקום מעט שונה
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024; 
+            directionalLight.shadow.mapSize.height = 1024;
+            directionalLight.shadow.camera.far = 120; // הגדלת טווח הצל
+            directionalLight.shadow.camera.left = -60;
+            directionalLight.shadow.camera.right = 60;
+            directionalLight.shadow.camera.top = 60;
+            directionalLight.shadow.camera.bottom = -60;
+            scene.add(directionalLight);
+            // const helper = new THREE.CameraHelper( directionalLight.shadow.camera ); // לניפוי שגיאות צל
+            // scene.add( helper );
+
+
+            createMazeAndEntities(); 
+
+            const floorMaterialWithTexture = new THREE.MeshStandardMaterial({ 
+                map: floorTexture, 
+                roughness: 0.8, // רצפה פחות מבריקה
+                metalness: 0.05 
+            });
+            if (floorTexture) floorTexture.repeat.set(mazeLayout[0].length / 3, mazeLayout.length / 3); 
+
+            const floorGeometry = new THREE.PlaneGeometry(mazeLayout[0].length * TILE_SIZE, mazeLayout.length * TILE_SIZE);
+            const floor = new THREE.Mesh(floorGeometry, floorMaterialWithTexture);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -WALL_HEIGHT / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            setupPointerLock();
+            document.addEventListener('keydown', (event) => { keyStates[event.code] = true; });
+            document.addEventListener('keyup', (event) => { keyStates[event.code] = false; });
+
+            animate();
+        }
+        
+        initSounds();
+        loadTextures();
+
+        function createMazeAndEntities() {
+            const wallGeometry = new THREE.BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
+            const wallMaterialWithTexture = new THREE.MeshStandardMaterial({ 
+                map: wallTexture,
+                roughness: 0.85, 
+                metalness: 0.05,
+            });
+            if (wallTexture) wallTexture.repeat.set(1, WALL_HEIGHT / TILE_SIZE); 
+            
+            for (let i = 0; i < mazeLayout.length; i++) {
+                for (let j = 0; j < mazeLayout[i].length; j++) {
+                    const x = (j - mazeLayout[i].length / 2 + 0.5) * TILE_SIZE; 
+                    const z = (i - mazeLayout.length / 2 + 0.5) * TILE_SIZE; 
+
+                    if (mazeLayout[i][j] === 1) { 
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterialWithTexture);
+                        wall.position.set(x, 0, z);
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        scene.add(wall);
+                        mazeObjects.push(wall);
+                    } else if (mazeLayout[i][j] === 'S') { 
+                        camera.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2 + 1, z);
+                        playerCapsule.position.copy(camera.position);
+                        // אתחול ה-Euler של המצלמה ממיקומה ההתחלתי
+                        euler.setFromQuaternion(camera.quaternion);
+                    } else if (mazeLayout[i][j] === 'N') { 
+                        createNazgul(x, z, i, j);
+                    } 
+                    else if (mazeLayout[i][j] === 'R') {
+                        const ringGeometry = new THREE.TorusGeometry(TILE_SIZE / 8, TILE_SIZE / 24, 16, 100);
+                        const ringMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.15, emissive: 0xccaa00, emissiveIntensity: 0.6 }); 
+                        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                        ring.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2, z);
+                        ring.rotation.x = Math.PI / 2;
+                        ring.userData = { type: 'item', name: 'הטבעת האחת', id: 'ring' };
+                        ring.castShadow = true;
+                        scene.add(ring);
+                        interactiveItems.push(ring);
+                    } else if (mazeLayout[i][j] === 'L') {
+                        const lembasGeometry = new THREE.BoxGeometry(TILE_SIZE / 4, TILE_SIZE / 8, TILE_SIZE / 4);
+                        const lembasMaterial = new THREE.MeshStandardMaterial({ map: lembasTexture, color: 0xf0e68c });
+                         if (lembasTexture) lembasTexture.repeat.set(1,1);
+                        const lembas = new THREE.Mesh(lembasGeometry, lembasMaterial);
+                        lembas.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2, z);
+                        lembas.userData = { type: 'item', name: 'לחם למבס', id: 'lembas' };
+                        lembas.castShadow = true;
+                        scene.add(lembas);
+                        interactiveItems.push(lembas);
+                    } else if (mazeLayout[i][j] === 'P') {
+                        const phialGeometry = new THREE.SphereGeometry(TILE_SIZE / 6, 16, 16);
+                        const phialMaterial = new THREE.MeshStandardMaterial({ 
+                            color: 0xffffff, emissive: 0xeeeeff, emissiveIntensity: 0.9, 
+                            transparent: true, opacity: 0.85, roughness: 0.05, metalness: 0.05,
+                            envMapIntensity: 0.6 
+                        });
+                        const phial = new THREE.Mesh(phialGeometry, phialMaterial);
+                        phial.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2 + 1, z);
+                        const phialLight = new THREE.PointLight(0xddeeff, 3.5, TILE_SIZE * 2.5, 1.6); 
+                        phialLight.castShadow = false;
+                        phial.add(phialLight);
+                        phial.userData = { type: 'item', name: 'בקבוקון גלדריאל', id: 'phial', light: phialLight };
+                        phial.castShadow = true; 
+                        scene.add(phial);
+                        interactiveItems.push(phial);
+                    } else if (mazeLayout[i][j] === 'M') {
+                        const mapGeometry = new THREE.CylinderGeometry(TILE_SIZE / 10, TILE_SIZE / 10, TILE_SIZE / 3, 12);
+                        const mapMaterial = new THREE.MeshStandardMaterial({ map: mapScrollTexture, color: 0xdeb887 });
+                        if (mapScrollTexture) mapScrollTexture.repeat.set(1,1);
+                        const mapScrollMesh = new THREE.Mesh(mapGeometry, mapMaterial);
+                        mapScrollMesh.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2 + 0.5, z);
+                        mapScrollMesh.rotation.z = Math.PI / 2;
+                        mapScrollMesh.userData = { type: 'item', name: 'מגילת מפה', id: 'map' };
+                        mapScrollMesh.castShadow = true;
+                        scene.add(mapScrollMesh);
+                        interactiveItems.push(mapScrollMesh);
+                    } else if (mazeLayout[i][j] === 'E') { 
+                        const exitPortalGeo = new THREE.CircleGeometry(TILE_SIZE / 3, 32);
+                        const exitPortalMat = new THREE.MeshBasicMaterial({ 
+                            color: 0x00ff88, side: THREE.DoubleSide, transparent: true, 
+                            opacity: 0.6, blending: THREE.AdditiveBlending 
+                        });
+                        const exitMarker = new THREE.Mesh(exitPortalGeo, exitPortalMat);
+                        exitMarker.position.set(x, playerCapsule.height / 2 - WALL_HEIGHT / 2 + 1, z); 
+                        exitMarker.rotation.y = Math.PI / 2; 
+                        const exitLight = new THREE.PointLight(0x00ff88, 4, TILE_SIZE * 1.5, 1.5);
+                        exitMarker.add(exitLight);
+                        exitMarker.userData = { type: 'exit', name: 'יציאה' };
+                        scene.add(exitMarker);
+                        interactiveItems.push(exitMarker);
+                    }
+                }
+            }
+        }
+        
+        function createNazgul(worldX, worldZ, gridRow, gridCol) {
+            const nazgulHeight = WALL_HEIGHT * 0.85; 
+            const nazgulWidth = TILE_SIZE * 0.35;
+            const nazgulGeometry = new THREE.BoxGeometry(nazgulWidth, nazgulHeight, nazgulWidth);
+            const nazgulMaterialWithTexture = new THREE.MeshStandardMaterial({ 
+                map: nazgulTexture,
+                color: 0xffffff, // צבע לבן כדי שהטקסטורה תיראה כפי שהיא
+                roughness: 0.7, 
+                metalness: 0.1 
+            });
+             if (nazgulTexture) nazgulTexture.repeat.set(1,2); 
+            const nazgulMesh = new THREE.Mesh(nazgulGeometry, nazgulMaterialWithTexture);
+            nazgulMesh.position.set(worldX, nazgulHeight / 2 - WALL_HEIGHT / 2, worldZ); 
+            nazgulMesh.castShadow = true;
+            scene.add(nazgulMesh);
+
+            const nazgul = {
+                mesh: nazgulMesh,
+                gridR: gridRow, 
+                gridC: gridCol, 
+                lastMoveTime: 0,
+                targetPosition: new THREE.Vector3().copy(nazgulMesh.position) 
+            };
+            nazgulList.push(nazgul);
+        }
+
+        function setupPointerLock() {
+            const canvas = renderer.domElement;
+            canvas.addEventListener('click', async () => {
+                if (Tone.context.state !== 'running') { 
+                    try { await Tone.start(); console.log("AudioContext started"); } catch(e) { console.error("Could not start AudioContext", e); }
+                }
+                if (!gameOver && !gameWon) { 
+                    canvas.requestPointerLock().catch(err => console.warn("Pointer lock failed:", err));
+                }
+            });
+            document.addEventListener('pointerlockchange', () => {
+                if (document.pointerLockElement === canvas) {
+                    document.addEventListener('mousemove', onMouseMove, false);
+                } else {
+                    document.removeEventListener('mousemove', onMouseMove, false);
+                }
+            });
+        }
+        
+        function onMouseMove(event) {
+            if (document.pointerLockElement !== renderer.domElement || gameOver || gameWon) return;
+            const movementX = event.movementX || 0;
+            const movementY = event.movementY || 0;
+            
+            // שימוש ב-Euler לסיבוב המצלמה
+            euler.y -= movementX * mouseSensitivity;
+            euler.x -= movementY * mouseSensitivity; // עדיין מינוס כי תנועת עכבר למעלה = מבט למעלה
+
+            euler.x = Math.max(-PI_2, Math.min(PI_2, euler.x)); // הגבלת מבט אנכי
+
+            camera.quaternion.setFromEuler(euler); // עדכון ה-quaternion של המצלמה מה-Euler
+        }
+
+        const clock = new THREE.Clock();
+        function animate() {
+            const deltaTime = clock.getDelta();
+            
+            if (scene && camera) { 
+                if (!gameOver && !gameWon) {
+                    updatePlayer(deltaTime);
+                    updateNazgul(deltaTime, clock.elapsedTime);
+                    checkInteractions();
+                    updateProximitySounds();
+                } else {
+                    if (nazgulProximityPlaying && nazgulProximitySound) {
+                        try { nazgulProximitySound.stop(); } catch(e){}
+                        nazgulProximityPlaying = false;
+                    }
+                }
+                
+                interactiveItems.forEach(item => {
+                    if (item.userData.id === 'ring' && item.parent) {
+                        item.rotation.z += 0.5 * deltaTime;
+                        item.position.y = (playerCapsule.height / 2 - WALL_HEIGHT / 2) + Math.sin(clock.elapsedTime * 2.2) * 0.6; 
+                    }
+                    if (item.userData.id === 'phial' && item.parent) {
+                        item.position.y = (playerCapsule.height / 2 - WALL_HEIGHT / 2 + 1) + Math.sin(clock.elapsedTime * 1.7) * 0.35;
+                    }
+                });
+
+                renderer.render(scene, camera);
+                if (mapCtx) drawMap(); 
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function updatePlayer(deltaTime) {
+            const moveSpeed = playerSpeed * deltaTime;
+            const originalPosition = camera.position.clone();
+            const forward = new THREE.Vector3();
+            // קבלת כיוון קדימה מה-quaternion של המצלמה
+            camera.getWorldDirection(forward);
+            forward.y = 0; // שמירה על תנועה אופקית
+            forward.normalize();
+            
+            // חישוב וקטור ימינה מה-quaternion
+            const right = new THREE.Vector3();
+            right.crossVectors(camera.up, forward).normalize(); // מצלמה למעלה X קדימה = ימינה
+            // תיקון: right.crossVectors(forward, camera.up) זה שמאלה. צריך camera.up X forward
+            // או פשוט:
+            right.set(forward.z, 0, -forward.x); // זהו וקטור שמאלה
+            // תיקון לוקטור ימינה:
+            right.set(-forward.z, 0, forward.x);
+
+
+            if (keyStates['KeyW']) camera.position.addScaledVector(forward, moveSpeed);
+            if (keyStates['KeyS']) camera.position.addScaledVector(forward, -moveSpeed);
+            if (keyStates['KeyA']) camera.position.addScaledVector(right, -moveSpeed); // תנועה שמאלה
+            if (keyStates['KeyD']) camera.position.addScaledVector(right, moveSpeed);  // תנועה ימינה
+
+            playerCapsule.position.copy(camera.position);
+            playerCapsule.position.y = playerCapsule.height / 2 - WALL_HEIGHT / 2 + 1;
+
+            for (const obj of mazeObjects) { 
+                const wallBox = new THREE.Box3().setFromObject(obj);
+                const playerSphere = new THREE.Sphere(playerCapsule.position, playerCapsule.radius);
+                if (playerSphere.intersectsBox(wallBox)) {
+                    camera.position.copy(originalPosition); 
+                    playerCapsule.position.copy(originalPosition);
+                    if (wallBumpSound && Tone.context.state === 'running') {
+                        try { wallBumpSound.triggerAttackRelease("C1", "8n", Tone.now(), 0.2); } catch(e){}
+                    }
+                    break; 
+                }
+            }
+        }
+
+        function updateNazgul(deltaTime, elapsedTime) {
+            nazgulList.forEach(nazgul => {
+                nazgul.mesh.position.lerp(nazgul.targetPosition, NAZGUL_SPEED * deltaTime * 2.5); 
+
+                if (elapsedTime * 1000 - nazgul.lastMoveTime > NAZGUL_MOVE_INTERVAL) {
+                    nazgul.lastMoveTime = elapsedTime * 1000;
+                    const possibleMoves = [];
+                    if (nazgul.gridR > 0 && mazeLayout[nazgul.gridR - 1][nazgul.gridC] !== 1) possibleMoves.push([-1, 0]); 
+                    if (nazgul.gridR < mazeLayout.length - 1 && mazeLayout[nazgul.gridR + 1][nazgul.gridC] !== 1) possibleMoves.push([1, 0]); 
+                    if (nazgul.gridC > 0 && mazeLayout[nazgul.gridR][nazgul.gridC - 1] !== 1) possibleMoves.push([0, -1]); 
+                    if (nazgul.gridC < mazeLayout[0].length - 1 && mazeLayout[nazgul.gridR][nazgul.gridC + 1] !== 1) possibleMoves.push([0, 1]); 
+
+                    if (possibleMoves.length > 0) {
+                        const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                        nazgul.gridR += move[0];
+                        nazgul.gridC += move[1];
+                        nazgul.targetPosition.x = (nazgul.gridC - mazeLayout[0].length / 2 + 0.5) * TILE_SIZE;
+                        nazgul.targetPosition.z = (nazgul.gridR - mazeLayout.length / 2 + 0.5) * TILE_SIZE;
+                    }
+                }
+            });
+        }
+        
+        function updateProximitySounds() {
+            if (!nazgulProximitySound || Tone.context.state !== 'running') return;
+            let playerCloseToAnyNazgul = false;
+            const playerPos2D = new THREE.Vector2(camera.position.x, camera.position.z);
+
+            for (const nazgul of nazgulList) {
+                const nazgulPos2D = new THREE.Vector2(nazgul.mesh.position.x, nazgul.mesh.position.z);
+                const distance = playerPos2D.distanceTo(nazgulPos2D);
+                if (distance < TILE_SIZE * 3.5) { 
+                    playerCloseToAnyNazgul = true;
+                    break;
+                }
+            }
+
+            if (playerCloseToAnyNazgul && !nazgulProximityPlaying) {
+                try { nazgulProximitySound.start(); } catch(e){}
+                nazgulProximityPlaying = true;
+            } else if (!playerCloseToAnyNazgul && nazgulProximityPlaying) {
+                try { nazgulProximitySound.stop(); } catch(e){}
+                nazgulProximityPlaying = false;
+            }
+        }
+
+        function checkInteractions() {
+            const playerPos = camera.position;
+
+            for (const nazgul of nazgulList) {
+                const distanceToNazgul = playerPos.distanceTo(nazgul.mesh.position);
+                if (distanceToNazgul < NAZGUL_DETECTION_RADIUS) {
+                    console.log("Game Over - Caught by Nazgul!");
+                    gameOver = true;
+                    if (document.pointerLockElement) document.exitPointerLock(); 
+                    if (gameOverSound && Tone.context.state === 'running') {
+                       try { gameOverSound.triggerAttackRelease("A2", "2s"); } catch(e){} 
+                    }
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.innerHTML = "נתפסת על ידי רפאי הטבעת!<br><small>לחץ F5 למשחק חוזר</small>";
+                        loadingScreen.style.display = 'flex';
+                        loadingScreen.style.flexDirection = 'column'; 
+                        loadingScreen.style.fontSize = '1.5em'; 
+                    }
+                    return; 
+                }
+            }
+
+            for (let i = interactiveItems.length - 1; i >= 0; i--) {
+                const item = interactiveItems[i];
+                if (!item.parent) continue; 
+                const itemPos = item.position;
+                const distanceToItem = playerPos.distanceTo(itemPos);
+
+                if (distanceToItem < TILE_SIZE / 1.8) { 
+                    if (item.userData.type === 'item') {
+                        console.log(`Item collected: ${item.userData.name}`);
+                        scene.remove(item);
+                        if (item.userData.light && item.userData.light.parent) {
+                            item.remove(item.userData.light); 
+                        }
+                        interactiveItems.splice(i, 1);
+                        collectedItems.add(item.userData.name);
+
+                        if (itemPickupSound && Tone.context.state === 'running') {
+                            try { itemPickupSound.triggerAttackRelease("C5", "8n"); } catch(e){} 
+                        }
+
+                        if (item.userData.id === 'phial') {
+                            const ambient = scene.children.find(c => c.isAmbientLight);
+                            if (ambient) ambient.intensity = Math.min(2.2, ambient.intensity + 0.6); // הגברה נוספת משמעותית
+                            if (phialSound && Tone.context.state === 'running') {
+                                try { phialSound.triggerAttackRelease("1n"); } catch(e){}
+                            }
+                        }
+                    } else if (item.userData.type === 'exit') {
+                        console.log("Exit found! Game Won!");
+                        gameWon = true;
+                        if (document.pointerLockElement) document.exitPointerLock();
+                        if (winSound && Tone.context.state === 'running') {
+                           try { winSound.triggerAttackRelease("G5", "1.5s"); } catch(e){} 
+                        }
+                        const loadingScreen = document.getElementById('loading-screen');
+                        if (loadingScreen) {
+                            loadingScreen.innerHTML = "ברכות! מצאת את היציאה!<br><small>לחץ F5 למשחק חוזר</small>";
+                            loadingScreen.style.display = 'flex';
+                            loadingScreen.style.flexDirection = 'column';
+                            loadingScreen.style.fontSize = '1.5em';
+                        }
+                    }
+                }
+            }
+        }
+        
+        function initMap() {
+            mapCanvas = document.getElementById('mapCanvas');
+            mapCtx = mapCanvas.getContext('2d');
+            mapCanvas.width = mazeLayout[0].length * MAP_SCALE;
+            mapCanvas.height = mazeLayout.length * MAP_SCALE;
+        }
+
+        function drawMap() {
+            if (!mapCtx || !mazeLayout) return;
+            mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height); 
+
+            for (let r = 0; r < mazeLayout.length; r++) {
+                for (let c = 0; c < mazeLayout[r].length; c++) {
+                    if (mazeLayout[r][c] === 1) {
+                        mapCtx.fillStyle = MAP_WALL_COLOR;
+                    } else {
+                        mapCtx.fillStyle = MAP_PATH_COLOR;
+                        const entityType = mazeLayout[r][c];
+                        if (typeof entityType === 'string' && entityType !== 'S' && entityType !== 'N') {
+                            const itemExists = interactiveItems.some(item => {
+                                const itemWorldX = (c - mazeLayout[0].length / 2 + 0.5) * TILE_SIZE;
+                                const itemWorldZ = (r - mazeLayout.length / 2 + 0.5) * TILE_SIZE;
+                                return item.position.x.toFixed(1) === itemWorldX.toFixed(1) && 
+                                       item.position.z.toFixed(1) === itemWorldZ.toFixed(1);
+                            });
+                            if(itemExists){
+                                if (entityType === 'E') mapCtx.fillStyle = MAP_EXIT_COLOR;
+                                else mapCtx.fillStyle = MAP_ITEM_COLOR;
+                            } else {
+                                 mapCtx.fillStyle = MAP_PATH_COLOR; 
+                            }
+                        }
+                    }
+                    mapCtx.fillRect(c * MAP_SCALE, r * MAP_SCALE, MAP_SCALE, MAP_SCALE);
+                }
+            }
+
+            const playerMapC = (camera.position.x / TILE_SIZE) + mazeLayout[0].length / 2 - 0.5;
+            const playerMapR = (camera.position.z / TILE_SIZE) + mazeLayout.length / 2 - 0.5;
+            mapCtx.fillStyle = MAP_PLAYER_COLOR;
+            mapCtx.beginPath();
+            mapCtx.arc(playerMapC * MAP_SCALE + MAP_SCALE/2, playerMapR * MAP_SCALE + MAP_SCALE/2, MAP_SCALE / 2.5, 0, Math.PI * 2);
+            mapCtx.fill();
+
+            mapCtx.fillStyle = MAP_NAZGUL_COLOR;
+            nazgulList.forEach(nazgul => {
+                mapCtx.beginPath();
+                mapCtx.arc(nazgul.gridC * MAP_SCALE + MAP_SCALE/2, nazgul.gridR * MAP_SCALE + MAP_SCALE/2, MAP_SCALE / 2.8, 0, Math.PI * 2);
+                mapCtx.fill();
+            });
+        }
+        
+        window.addEventListener('resize', () => {
+            if (camera && renderer) { 
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>

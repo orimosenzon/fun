@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מרוץ אופנועי שטח (גרסה משופרת)</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: Arial, sans-serif; direction: rtl; }
+        canvas { display: block; }
+        #loader {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; font-size: 24px; text-align: center;
+        }
+        #info {
+            position: absolute; top: 10px; left: 10px; color: white;
+            background-color: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;
+            font-size: 14px;
+        }
+        #raceInfo {
+            position: absolute; top: 10px; right: 10px; color: white;
+            background-color: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;
+            font-size: 16px; text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div id="loader">טוען משחק... אנא המתן.</div>
+    <div id="info">
+        <b>מקשים:</b><br>
+        W/חץ למעלה: האצה<br>
+        S/חץ למטה: ברקס/רוורס<br>
+        A/חץ שמאלה: פנייה שמאלה<br>
+        D/חץ ימינה: פנייה ימינה<br>
+        R: איפוס אופנוע
+    </div>
+    <div id="raceInfo">
+        הקפות: <span id="lapCount">0</span>/<span id="totalLaps">1</span><br>
+        מיקום: <span id="playerPosition">1</span>/4
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+            "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js",
+            "cannon-es-debugger": "https://unpkg.com/cannon-es-debugger@1.0.0/dist/cannon-es-debugger.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import * as CANNON from 'cannon-es';
+        import CannonDebugRenderer from 'cannon-es-debugger';
+
+        let scene, camera, renderer, clock, physicsWorld, cannonDebugger;
+        let playerVehicle, playerChassisMesh;
+        const aiVehicles = [];
+        const aiChassisMeshes = [];
+
+        let groundCannonMaterial, wheelCannonMaterial, chassisCannonMaterial;
+
+        const controls = { forward: false, backward: false, left: false, right: false, reset: false };
+        const playerStartPos = new CANNON.Vec3(0, 1.5, 0); // Start a bit higher
+        const playerStartQuaternion = new CANNON.Quaternion();
+
+        const LOADER_DIV = document.getElementById('loader');
+        const INFO_DIV = document.getElementById('info');
+        const RACE_INFO_DIV = document.getElementById('raceInfo');
+        const LAP_COUNT_SPAN = document.getElementById('lapCount');
+        const TOTAL_LAPS_SPAN = document.getElementById('totalLaps');
+        const PLAYER_POS_SPAN = document.getElementById('playerPosition');
+
+        const MAX_STEER_VAL = 0.35; // Reduced max steer to prevent oversteer
+        const MAX_FORCE_VAL = 1000;
+        const BRAKE_FORCE_VAL = 250;
+        const WHEEL_RADIUS_VAL = 0.3;
+        const CHASSIS_WIDTH = 0.8; // Narrower chassis
+        const CHASSIS_HEIGHT = 0.4;
+        const CHASSIS_DEPTH = 1.8;
+
+        const waypoints = [
+            new THREE.Vector3(0, 0, 10), // Start a bit forward to see bikes
+            new THREE.Vector3(50, 0, 10),
+            new THREE.Vector3(50, 0, 60),
+            new THREE.Vector3(0, 0, 60),
+            new THREE.Vector3(-30, 0, 35),
+            new THREE.Vector3(0, 0, 10)
+        ];
+        const totalLaps = 1;
+        let playerLap = 0;
+        let playerNextWaypointIndex = 1;
+        const aiLapData = [];
+
+        async function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 70, 350);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 7, -10); // Adjusted camera
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            clock = new THREE.Clock();
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(40, 60, 30);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048; directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 1; directionalLight.shadow.camera.far = 200;
+            directionalLight.shadow.camera.left = -100; directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100; directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
+             // const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera); // For debugging shadows
+             // scene.add(shadowHelper);
+
+
+            physicsWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, -15, 0) }); // Slightly less gravity
+            physicsWorld.broadphase = new CANNON.SAPBroadphase(physicsWorld);
+            physicsWorld.solver.iterations = 10; // Can reduce if performance is an issue, but 10-15 is good for vehicles
+            physicsWorld.allowSleep = true;
+
+            groundCannonMaterial = new CANNON.Material('ground');
+            wheelCannonMaterial = new CANNON.Material('wheel');
+            chassisCannonMaterial = new CANNON.Material('chassis');
+
+            const wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelCannonMaterial, groundCannonMaterial, {
+                friction: 0.9, restitution: 0.05, // More friction, less bounce
+                contactEquationStiffness: 1e8, contactEquationRelaxation: 3,
+                frictionEquationStiffness: 1e8, frictionEquationRelaxation: 3
+            });
+            physicsWorld.addContactMaterial(wheelGroundContactMaterial);
+
+            const chassisGroundContactMaterial = new CANNON.ContactMaterial(chassisCannonMaterial, groundCannonMaterial, {
+                friction: 0.1, restitution: 0.0 // Low friction for chassis sliding
+            });
+            physicsWorld.addContactMaterial(chassisGroundContactMaterial);
+
+            cannonDebugger = new CannonDebugRenderer(scene, physicsWorld);
+
+            createGroundAndTrack();
+            playerStartPos.set(waypoints[0].x, 1.5, waypoints[0].z - 5); // Start player behind the line
+
+            playerChassisMesh = createBikeMesh(new THREE.Color(0xff0000));
+            playerVehicle = createVehiclePhysics(playerStartPos, playerStartQuaternion, chassisCannonMaterial, wheelCannonMaterial, true);
+            scene.add(playerChassisMesh);
+
+            const aiColors = [0x0000ff, 0x00ff00, 0xffff00];
+            for (let i = 0; i < 3; i++) {
+                const aiChassis = createBikeMesh(new THREE.Color(aiColors[i]));
+                // Stagger AI start positions a bit more
+                const startOffset = new CANNON.Vec3( (i - 1) * 2.5, 1.5, waypoints[0].z + (i * 1.5) );
+                const aiVehicle = createVehiclePhysics(startOffset, playerStartQuaternion, chassisCannonMaterial, wheelCannonMaterial, false);
+                aiChassisMeshes.push(aiChassis);
+                aiVehicles.push(aiVehicle);
+                scene.add(aiChassis);
+                aiLapData.push({ lap: 0, nextWaypointIndex: 1, vehicle: aiVehicle, stuckTime: 0, lastPosition: new CANNON.Vec3().copy(aiVehicle.chassisBody.position) });
+            }
+
+            setupInputListeners();
+            window.addEventListener('resize', onWindowResize, false);
+
+            LOADER_DIV.style.display = 'none';
+            INFO_DIV.style.display = 'block';
+            RACE_INFO_DIV.style.display = 'block';
+            TOTAL_LAPS_SPAN.textContent = totalLaps;
+            playerNextWaypointIndex = 1; // Ensure player starts at waypoint 1 after start line
+
+            animate();
+        }
+
+        function createBikeMesh(color) {
+            const mainChassisGeo = new THREE.BoxGeometry(CHASSIS_WIDTH * 0.7, CHASSIS_HEIGHT, CHASSIS_DEPTH);
+            const bikeMaterial = new THREE.MeshStandardMaterial({ color: color, metalness: 0.4, roughness: 0.5 });
+            const chassisMesh = new THREE.Mesh(mainChassisGeo, bikeMaterial);
+            chassisMesh.castShadow = true;
+
+            // Rider (simple capsule)
+            const riderGeo = new THREE.CapsuleGeometry(0.25, 0.7, 4, 8);
+            const riderMat = new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.7});
+            const riderMesh = new THREE.Mesh(riderGeo, riderMat);
+            riderMesh.position.set(0, CHASSIS_HEIGHT / 2 + 0.3, -0.1); // Position on chassis
+            riderMesh.castShadow = true;
+            chassisMesh.add(riderMesh);
+
+            // Wheels (visual only, physics uses raycasts)
+            const wheelGeo = new THREE.CylinderGeometry(WHEEL_RADIUS_VAL, WHEEL_RADIUS_VAL, 0.15, 20);
+            const wheelMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness:0.1, roughness: 0.8});
+            
+            const frontWheelMesh = new THREE.Mesh(wheelGeo, wheelMat);
+            frontWheelMesh.rotateX(Math.PI / 2); // Rotate to align with Z-axis forward
+            frontWheelMesh.position.set(0, -CHASSIS_HEIGHT * 0.1 + WHEEL_RADIUS_VAL, CHASSIS_DEPTH * 0.4);
+            frontWheelMesh.castShadow = true;
+            chassisMesh.add(frontWheelMesh);
+
+            const rearWheelMesh = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheelMesh.rotateX(Math.PI / 2);
+            rearWheelMesh.position.set(0, -CHASSIS_HEIGHT * 0.1 + WHEEL_RADIUS_VAL, -CHASSIS_DEPTH * 0.4);
+            rearWheelMesh.castShadow = true;
+            chassisMesh.add(rearWheelMesh);
+            
+            // Add some handlebars (simple cylinder)
+            const handlebarGeo = new THREE.CylinderGeometry(0.03, 0.03, CHASSIS_WIDTH * 1.2, 8);
+            const handlebarMat = new THREE.MeshStandardMaterial({color: 0x444444});
+            const handlebarMesh = new THREE.Mesh(handlebarGeo, handlebarMat);
+            handlebarMesh.rotateZ(Math.PI/2);
+            handlebarMesh.position.set(0, CHASSIS_HEIGHT * 0.5, CHASSIS_DEPTH * 0.35);
+            chassisMesh.add(handlebarMesh);
+
+
+            return chassisMesh;
+        }
+
+        function createVehiclePhysics(initialPosition, initialQuaternion, chassisPhysMat, wheelPhysMat, isPlayer) {
+            // Chassis body: Make it slightly taller than visual to help with stability if it tips a bit
+            const chassisShape = new CANNON.Box(new CANNON.Vec3(CHASSIS_WIDTH * 0.5, CHASSIS_HEIGHT * 0.6, CHASSIS_DEPTH * 0.5));
+            const chassisBody = new CANNON.Body({
+                mass: isPlayer ? 120 : 130, // Player slightly lighter
+                material: chassisPhysMat,
+                position: initialPosition,
+                quaternion: initialQuaternion,
+                angularDamping: 0.8, // Increased angular damping to resist rolling over
+                linearDamping: 0.15 // Helps prevent sliding forever
+            });
+            chassisBody.addShape(chassisShape);
+            // Lower center of mass slightly by offsetting the shape from the body's center
+            // chassisBody.addShape(chassisShape, new CANNON.Vec3(0, -CHASSIS_HEIGHT * 0.1, 0));
+
+
+            const vehicle = new CANNON.RaycastVehicle({
+                chassisBody: chassisBody,
+                indexRightAxis: 0, indexForwardAxis: 2, indexUpAxis: 1,
+            });
+
+            const wheelOptions = {
+                radius: WHEEL_RADIUS_VAL,
+                directionLocal: new CANNON.Vec3(0, -1, 0),
+                suspensionStiffness: 35, // Softer suspension for offroad
+                suspensionRestLength: 0.3,
+                frictionSlip: 4.5, // High grip
+                dampingRelaxation: 1.8, // Less springy
+                dampingCompression: 1.5, // Less springy
+                maxSuspensionForce: 100000,
+                rollInfluence: 0.2, // **CRITICAL for stability**: higher value resists roll. For a bike, this simulates rider balancing.
+                axleLocal: new CANNON.Vec3(1, 0, 0), // Wheel axle for rotation
+                chassisConnectionPointLocal: new CANNON.Vec3(),
+                customSlidingRotationalSpeed: -20, // Lower value for more slide control
+                maxSuspensionTravel: 0.28,
+                useCustomSlidingRotationalSpeed: true,
+                material: wheelPhysMat,
+            };
+            
+            // Front Wheel (index 0) - Connect slightly lower on chassis
+            wheelOptions.chassisConnectionPointLocal.set(0, -CHASSIS_HEIGHT * 0.3, CHASSIS_DEPTH * 0.45);
+            vehicle.addWheel({ ...wheelOptions, isFrontWheel: true });
+
+            // Rear Wheel (index 1) - Connect slightly lower on chassis
+            wheelOptions.chassisConnectionPointLocal.set(0, -CHASSIS_HEIGHT * 0.3, -CHASSIS_DEPTH * 0.45);
+            vehicle.addWheel({ ...wheelOptions, isFrontWheel: false });
+            
+            vehicle.addToWorld(physicsWorld);
+            return vehicle;
+        }
+
+        function createGroundAndTrack() {
+            const groundShape = new CANNON.Plane();
+            const groundBody = new CANNON.Body({ mass: 0, material: groundCannonMaterial });
+            groundBody.addShape(groundShape);
+            groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+            physicsWorld.addBody(groundBody);
+
+            const groundGeometry = new THREE.PlaneGeometry(500, 500);
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#A0522D'; context.fillRect(0, 0, 64, 64); // Sienna (dirt)
+            context.fillStyle = '#8B4513'; context.fillRect(0, 0, 32, 32); // SaddleBrown
+            context.fillRect(32, 32, 32, 32);
+            const groundTexture = new THREE.CanvasTexture(canvas);
+            groundTexture.wrapS = THREE.RepeatWrapping; groundTexture.wrapT = THREE.RepeatWrapping;
+            groundTexture.repeat.set(150, 150); // Repeat more for denser pattern
+            const groundMeshMaterial = new THREE.MeshStandardMaterial({ map: groundTexture, roughness: 0.95, metalness: 0.05 });
+            const groundMesh = new THREE.Mesh(groundGeometry, groundMeshMaterial);
+            groundMesh.rotation.x = -Math.PI / 2;
+            groundMesh.receiveShadow = true;
+            scene.add(groundMesh);
+
+            const rampVisualMaterial = new THREE.MeshStandardMaterial({ color: 0x708090, roughness: 0.8, metalness: 0.2 }); // SlateGray
+            const rampPhysicsMaterial = groundCannonMaterial; 
+
+            // Ramp 1 - Wider and longer for easier jumps
+            const ramp1Geo = new THREE.BoxGeometry(12, 1.5, 20);
+            const ramp1Mesh = new THREE.Mesh(ramp1Geo, rampVisualMaterial);
+            ramp1Mesh.position.set(35, 1.5/2, 10); 
+            ramp1Mesh.castShadow = true; ramp1Mesh.receiveShadow = true;
+            scene.add(ramp1Mesh);
+            const ramp1Shape = new CANNON.Box(new CANNON.Vec3(6, 1.5/2, 10));
+            const ramp1Body = new CANNON.Body({ mass: 0, material: rampPhysicsMaterial, position: ramp1Mesh.position, quaternion: ramp1Mesh.quaternion });
+            ramp1Body.addShape(ramp1Shape);
+            physicsWorld.addBody(ramp1Body);
+
+            // Ramp 2 - Taller jump
+            const ramp2Geo = new THREE.BoxGeometry(10, 3, 15);
+            const ramp2Mesh = new THREE.Mesh(ramp2Geo, rampVisualMaterial);
+            ramp2Mesh.position.set(50, 3/2, 45);
+            ramp2Mesh.rotation.y = Math.PI / 12;
+            ramp2Mesh.castShadow = true; ramp2Mesh.receiveShadow = true;
+            scene.add(ramp2Mesh);
+            const ramp2Shape = new CANNON.Box(new CANNON.Vec3(5, 3/2, 7.5));
+            const ramp2Body = new CANNON.Body({ mass: 0, material: rampPhysicsMaterial, position: ramp2Mesh.position, quaternion: ramp2Mesh.quaternion });
+            ramp2Body.addShape(ramp2Shape);
+            physicsWorld.addBody(ramp2Body);
+            
+            const finishLineGeo = new THREE.PlaneGeometry(10, 3);
+            const finishLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.6});
+            const finishLineMesh = new THREE.Mesh(finishLineGeo, finishLineMat);
+            finishLineMesh.rotation.x = -Math.PI / 2;
+            finishLineMesh.position.set(waypoints[0].x, 0.01, waypoints[0].z);
+            scene.add(finishLineMesh);
+        }
+
+        function setupInputListeners() {
+            document.addEventListener('keydown', (event) => {
+                const key = event.key.toLowerCase();
+                switch(key) {
+                    case 'w': case 'arrowup': controls.forward = true; break;
+                    case 's': case 'arrowdown': controls.backward = true; break;
+                    case 'a': case 'arrowleft': controls.left = true; break;
+                    case 'd': case 'arrowright': controls.right = true; break;
+                    case 'r': controls.reset = true; break;
+                }
+            });
+            document.addEventListener('keyup', (event) => {
+                const key = event.key.toLowerCase();
+                switch(key) {
+                    case 'w': case 'arrowup': controls.forward = false; break;
+                    case 's': case 'arrowdown': controls.backward = false; break;
+                    case 'a': case 'arrowleft': controls.left = false; break;
+                    case 'd': case 'arrowright': controls.right = false; break;
+                    // R is a momentary action, handled in update
+                }
+            });
+        }
+
+        function updatePlayerVehicle() {
+            if (!playerVehicle) return;
+            const vehicle = playerVehicle;
+            const chassisBody = vehicle.chassisBody;
+
+            let engineForce = 0;
+            let brakeToApply = 0; 
+            let steerValue = 0;
+
+            if (controls.left) steerValue = MAX_STEER_VAL;
+            else if (controls.right) steerValue = -MAX_STEER_VAL;
+            // Gradually return steering to 0 if no input, helps with stability
+            vehicle.setSteeringValue(vehicle.wheelInfos[0].steering + (steerValue - vehicle.wheelInfos[0].steering) * 0.2, 0);
+
+
+            if (controls.forward) {
+                engineForce = MAX_FORCE_VAL;
+                brakeToApply = 0; // Ensure no braking when accelerating
+            }
+            if (controls.backward) {
+                 // Get current speed along vehicle's forward axis
+                const worldForward = new CANNON.Vec3();
+                chassisBody.vectorToWorldFrame(new CANNON.Vec3(0, 0, 1), worldForward);
+                const currentForwardSpeedDot = chassisBody.velocity.dot(worldForward);
+
+                if (currentForwardSpeedDot > 0.2 && !controls.forward) { // Moving forward, S is brake
+                    brakeToApply = BRAKE_FORCE_VAL;
+                    engineForce = 0; 
+                } else if (!controls.forward) { // Stationary or moving backward, S is reverse
+                    engineForce = -MAX_FORCE_VAL * 0.5; // Reverse with less power
+                    brakeToApply = 0;
+                } else if (controls.forward && controls.backward){ // Both pressed, prioritize braking
+                    brakeToApply = BRAKE_FORCE_VAL * 0.8;
+                    // engineForce remains MAX_FORCE_VAL from above if W is also pressed
+                }
+            }
+            
+            // Apply to rear wheel (index 1) for RWD feel
+            vehicle.applyEngineForce(engineForce, 1); 
+            
+            // Apply brake to all wheels
+            vehicle.setBrake(brakeToApply, 0); 
+            vehicle.setBrake(brakeToApply, 1); 
+
+            if (controls.reset) {
+                chassisBody.position.copy(playerStartPos);
+                chassisBody.quaternion.copy(playerStartQuaternion);
+                chassisBody.velocity.set(0, 0, 0);
+                chassisBody.angularVelocity.set(0, 0, 0);
+                playerNextWaypointIndex = 1; playerLap = 0;
+                LAP_COUNT_SPAN.textContent = playerLap;
+                INFO_DIV.innerHTML = `<b>מקשים:</b><br>W/↑: האצה<br>S/↓: ברקס/רוורס<br>A/←: שמאלה<br>D/→: ימינה<br>R: איפוס`;
+                controls.reset = false; // Consume reset
+            }
+        }
+        
+        function updateAI() {
+            const targetSpeed = 8; // Slower AI for now
+            const steerCorrectionFactor = 1.5; 
+            const lookAheadDistance = 20; // Look further ahead
+            const stuckResetTime = 5; 
+
+            aiVehicles.forEach((vehicle, index) => {
+                if (!vehicle || !vehicle.chassisBody) return;
+
+                const aiData = aiLapData[index];
+                const chassisBody = vehicle.chassisBody;
+                
+                const currentPos = chassisBody.position;
+                const deltaPos = currentPos.distanceTo(aiData.lastPosition);
+                
+                if (deltaPos < 0.05) { // Very little movement over a tick
+                    aiData.stuckTime += clock.getDelta();
+                } else {
+                    aiData.stuckTime = 0;
+                    aiData.lastPosition.copy(currentPos);
+                }
+
+                if (aiData.stuckTime > stuckResetTime) {
+                    const prevWaypointIndex = (aiData.nextWaypointIndex - 1 + waypoints.length) % waypoints.length;
+                    const resetPos = new CANNON.Vec3(waypoints[prevWaypointIndex].x, 1.5, waypoints[prevWaypointIndex].z);
+                    const randomOffset = new CANNON.Vec3((Math.random()-0.5)*3, 0, (Math.random()-0.5)*3);
+                    chassisBody.position.copy(resetPos.vadd(randomOffset));
+                    
+                    const nextWp = waypoints[aiData.nextWaypointIndex % waypoints.length];
+                    const dirToNext = new CANNON.Vec3(nextWp.x - chassisBody.position.x, 0, nextWp.z - chassisBody.position.z).normalize();
+                    const angle = Math.atan2(dirToNext.x, dirToNext.z); // atan2 expects (y,x) but here x,z maps to screen x,y
+                    chassisBody.quaternion.setFromEuler(0, angle, 0);
+
+                    chassisBody.velocity.set(0,0,0); chassisBody.angularVelocity.set(0,0,0);
+                    aiData.stuckTime = 0;
+                    vehicle.applyEngineForce(0,1); // Stop engine on reset
+                    vehicle.setBrake(1000,0); vehicle.setBrake(1000,1); // Brake hard
+                    return; 
+                }
+
+                const targetWaypointThree = waypoints[aiData.nextWaypointIndex % waypoints.length];
+                // AI aims for the waypoint's XZ, but at its current Y to avoid trying to fly
+                const targetPosCannon = new CANNON.Vec3(targetWaypointThree.x, chassisBody.position.y, targetWaypointThree.z);
+
+
+                const dirToTarget = new CANNON.Vec3();
+                targetPosCannon.vsub(chassisBody.position, dirToTarget);
+                const distToTarget = dirToTarget.length();
+                dirToTarget.normalize();
+                
+                const worldForwardDir = chassisBody.vectorToWorldFrame(new CANNON.Vec3(0,0,1));
+
+                // Steering: cross product's Y gives us turn direction
+                let steer = worldForwardDir.cross(dirToTarget).y; 
+                steer = Math.max(-1, Math.min(1, steer * steerCorrectionFactor)); // Clamp and scale
+                vehicle.setSteeringValue(steer * -MAX_STEER_VAL, 0); // Apply steer to front wheel
+
+
+                // Acceleration/Braking
+                let engineForce = 0;
+                const currentSpeed = chassisBody.velocity.length();
+                
+                // AI needs to be on the ground to accelerate
+                if (vehicle.wheelInfos[0].raycastResult.hasHit || vehicle.wheelInfos[1].raycastResult.hasHit) {
+                    if (currentSpeed < targetSpeed && distToTarget > 5) { // Don't overshoot target
+                        engineForce = MAX_FORCE_VAL * 0.6; 
+                    } else if (currentSpeed > targetSpeed * 1.1) { // Slight brake if too fast
+                        vehicle.setBrake(BRAKE_FORCE_VAL * 0.2, 1);
+                    }
+                }
+                vehicle.applyEngineForce(engineForce, 1); // Apply to rear wheel
+                if(engineForce === 0 && currentSpeed > 0.5) { // if not accelerating and moving, apply small brake
+                     vehicle.setBrake(BRAKE_FORCE_VAL * 0.1, 1);
+                } else {
+                    vehicle.setBrake(0, 1); // Release brake if accelerating
+                }
+                 vehicle.setBrake(0, 0); // Front brake always off for AI unless specifically braking
+
+
+                if (distToTarget < lookAheadDistance * 0.75) { // Reduced distance for waypoint switch
+                    aiData.nextWaypointIndex++;
+                    if (aiData.nextWaypointIndex % waypoints.length === 0 && aiData.nextWaypointIndex >= waypoints.length) {
+                        aiData.lap++;
+                    }
+                }
+            });
+        }
+        
+        function updateCamera() {
+            if (!playerChassisMesh || !playerVehicle) return;
+            const chassisBody = playerVehicle.chassisBody;
+            const offset = new THREE.Vector3(0, 3.5, -7); // Camera higher and closer
+            const targetPosition = new THREE.Vector3();
+            targetPosition.copy(chassisBody.position);
+            const worldQuaternion = new THREE.Quaternion().copy(chassisBody.quaternion);
+            const rotatedOffset = offset.clone().applyQuaternion(worldQuaternion);
+            targetPosition.add(rotatedOffset);
+            camera.position.lerp(targetPosition, 0.15); // Faster lerp
+            const lookAtTarget = new THREE.Vector3().copy(chassisBody.position);
+            const forward = new THREE.Vector3(0,0,4); 
+            forward.applyQuaternion(worldQuaternion);
+            lookAtTarget.add(forward);
+            lookAtTarget.y += 0.5; 
+            camera.lookAt(lookAtTarget);
+        }
+
+        function checkLaps() { /* ... (same as before, check if needed for current issue) ... */ }
+        function updateRaceInfo() { /* ... (same as before, check if needed for current issue) ... */ }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const deltaTime = Math.min(clock.getDelta(), 0.1); 
+
+            if (playerLap < totalLaps) {
+                updatePlayerVehicle();
+                updateAI();
+            }
+
+            physicsWorld.step(1 / 60, deltaTime, 3); 
+
+            playerChassisMesh.position.copy(playerVehicle.chassisBody.position);
+            playerChassisMesh.quaternion.copy(playerVehicle.chassisBody.quaternion);
+
+            aiVehicles.forEach((vehicle, index) => {
+                if (vehicle && vehicle.chassisBody && aiChassisMeshes[index]) {
+                    aiChassisMeshes[index].position.copy(vehicle.chassisBody.position);
+                    aiChassisMeshes[index].quaternion.copy(vehicle.chassisBody.quaternion);
+                }
+            });
+
+            updateCamera();
+            if (playerLap < totalLaps) {
+                 checkLaps();
+                 updateRaceInfo();
+            }
+            
+            if (cannonDebugger) cannonDebugger.update();
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init().catch(err => {
+            console.error("Failed to initialize game:", err);
+            LOADER_DIV.textContent = "שגיאה בטעינת המשחק: " + err.message;
+            LOADER_DIV.style.color = "red";
+        });
+    </script>
+</body>
+</html>

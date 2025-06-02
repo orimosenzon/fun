@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ספירלות מספרים מתקדמות</title>
+    <style>
+        /* Basic reset and full-screen setup */
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a; /* Dark background for body */
+            direction: rtl;
+        }
+
+        /* Canvas styling - fixed to cover the entire viewport */
+        #mainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind controls and loader */
+            background-color: #ffffff;
+        }
+
+        /* Controls container - overlayed on top right */
+        .controls-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            left: auto;
+            transform: none;
+            z-index: 10;
+            background-color: rgba(40, 40, 40, 0.88); /* Slightly more opaque */
+            padding: 10px 15px;
+            border-radius: 20px; /* Consistent rounding */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column; /* Stack controls vertically */
+            align-items: flex-start; /* Align items to the start (right in RTL) */
+            gap: 8px; /* Space between control groups */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: calc(100vh - 30px); /* Prevent overflow */
+            overflow-y: auto; /* Allow scrolling if too many controls */
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%; /* Make groups take full width of container */
+        }
+
+        label {
+            font-size: 0.95em; 
+            color: #f0f0f0;
+            margin-left: 5px;
+            white-space: nowrap; 
+        }
+        label.checkbox-label {
+            display: flex; 
+            align-items: center;
+            cursor: pointer; /* Make label clickable for checkbox */
+        }
+
+        input[type="number"], select {
+            padding: 7px 9px; 
+            border: 1px solid #555;
+            background-color: #333;
+            color: #f0f0f0;
+            border-radius: 15px; 
+            font-size: 0.85em; 
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        input[type="number"] {
+            width: 80px; 
+            direction: ltr; 
+            text-align: left;
+        }
+        select {
+            min-width: 130px; 
+        }
+        input[type="checkbox"] {
+            margin-left: 5px; 
+            accent-color: #007bff; 
+            cursor: pointer;
+        }
+
+
+        input[type="number"]:focus, select:focus {
+            border-color: #007bff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.35);
+        }
+
+        button {
+            padding: 7px 15px; 
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 15px; 
+            font-size: 0.85em; 
+            transition: background-color 0.15s ease-in-out;
+            width: 100%; 
+        }
+        button:hover { background-color: #0056b3; }
+        button:active { background-color: #004085; }
+
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            border: 5px solid #555;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @media (max-width: 480px) { 
+            .controls-container {
+                right: 10px; 
+                top: 10px;
+                padding: 8px;
+                gap: 6px;
+                max-width: 180px; 
+            }
+             input[type="number"] { width: 70px; }
+             select { min-width: 110px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls-container">
+        <div class="control-group">
+            <label for="curveTypeSelect">סוג עקומה:</label>
+            <select id="curveTypeSelect">
+                <option value="ulam" selected>ספירלת אולם</option>
+                <option value="reverse_ulam">ספירלת אולם הפוכה</option>
+                <option value="hilbert">עקומת הילברט</option>
+                <option value="morton">עקומת מורטון</option>
+                <option value="dragon">עקומת הדרקון</option>
+                <option value="twindragon">דרקון תאום</option>
+                <option value="sierpinski_arrowhead">חץ סיירפינסקי</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="maxNumberInput">מספר סופי:</label>
+            <input type="number" id="maxNumberInput" value="64" min="1" max="100000"> 
+        </div>
+        <div class="control-group">
+            <label class="checkbox-label" for="showCurveLineCheckbox">
+                <input type="checkbox" id="showCurveLineCheckbox">
+                הצג קו עקומה
+            </label>
+        </div>
+        <div class="control-group">
+            <label class="checkbox-label" for="showNumbersCheckbox">
+                <input type="checkbox" id="showNumbersCheckbox" checked>
+                הצג מספרים
+            </label>
+        </div>
+        <div class="control-group">
+            <button onclick="prepareAndGenerateCurve()">צור</button>
+        </div>
+    </div>
+
+    <div class="loader" id="loader"></div>
+    <canvas id="mainCanvas"></canvas>
+
+    <script>
+        let canvas, ctx;
+        let currentMaxNum = 0; 
+        let currentCurveType = 'ulam';
+        let showCurveLine = false;
+        let showNumbers = true; 
+
+        function isPrime(num) {
+            if (num <= 1) return false;
+            if (num <= 3) return true;
+            if (num % 2 === 0 || num % 3 === 0) return false;
+            for (let i = 5; i * i <= num; i = i + 6) {
+                if (num % i === 0 || num % (i + 2) === 0) return false;
+            }
+            return true;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        const debouncedResizeAndRedraw = debounce(function() {
+            if (!canvas || !ctx) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (currentMaxNum > 0) { 
+                drawCurrentCurve();
+            }
+        }, 250);
+
+
+        function prepareAndGenerateCurve() {
+            const maxNumInput = document.getElementById('maxNumberInput');
+            const curveSelect = document.getElementById('curveTypeSelect');
+            const showCurveLineCheckbox = document.getElementById('showCurveLineCheckbox');
+            const showNumbersCheckbox = document.getElementById('showNumbersCheckbox'); 
+            let userInputMaxNum = parseInt(maxNumInput.value); 
+            const loader = document.getElementById('loader');
+
+            currentCurveType = curveSelect.value;
+            showCurveLine = showCurveLineCheckbox.checked;
+            showNumbers = showNumbersCheckbox.checked; 
+
+            let actualNumToDraw = userInputMaxNum;
+            let maxCap = 100000; 
+
+            if (isNaN(actualNumToDraw) || actualNumToDraw < 1) actualNumToDraw = 1;
+
+            if (currentCurveType === 'hilbert' || currentCurveType === 'morton' || currentCurveType === 'sierpinski_arrowhead') {
+                maxCap = 65536; // 2^16 
+            } else if (currentCurveType === 'dragon' || currentCurveType === 'twindragon') {
+                 maxCap = 32768; // 2^15, these curves can spread out
+            }
+            // Ulam and Reverse Ulam use general maxCap
+            
+            if (actualNumToDraw > maxCap) {
+                actualNumToDraw = maxCap;
+                alert(`הערך המקסימלי עבור סוג עקומה זה הוא ${maxCap}. המספר הוגבל.`);
+            }
+            
+            maxNumInput.value = actualNumToDraw.toString(); 
+            currentMaxNum = actualNumToDraw; 
+
+            loader.style.display = 'block';
+            setTimeout(() => {
+                if (!canvas || !ctx) {
+                    loader.style.display = 'none';
+                    return;
+                }
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                if (currentMaxNum > 0) {
+                    drawCurrentCurve();
+                }
+                
+                loader.style.display = 'none';
+            }, 50);
+        }
+
+        function drawCurrentCurve() {
+            if (!ctx) return;
+            if (currentCurveType === 'ulam') {
+                drawUlamSpiral(currentMaxNum);
+            } else if (currentCurveType === 'reverse_ulam') {
+                drawReverseUlamSpiral(currentMaxNum);
+            } else if (currentCurveType === 'hilbert') {
+                drawHilbertCurve(currentMaxNum);
+            } else if (currentCurveType === 'morton') {
+                drawMortonCurve(currentMaxNum);
+            } else if (currentCurveType === 'dragon') {
+                drawDragonCurve(currentMaxNum);
+            } else if (currentCurveType === 'twindragon') {
+                drawTwindragonCurve(currentMaxNum);
+            } else if (currentCurveType === 'sierpinski_arrowhead') {
+                drawSierpinskiArrowheadCurve(currentMaxNum);
+            }
+        }
+        
+        function drawNumberInCell(numStr, cX_center, cY_center, cellSize, isCellPrime) {
+            if (showNumbers && cellSize > 10) { 
+                ctx.fillStyle = isCellPrime ? "black" : "#333333"; 
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                let fontSize = Math.floor(cellSize * 0.55); 
+                fontSize = Math.min(fontSize, 36);          
+                fontSize = Math.max(fontSize, 6);           
+                const maxTextWidth = cellSize * 0.9; 
+                ctx.font = `${fontSize}px Arial`;
+                let textWidth = ctx.measureText(numStr).width;
+                while (textWidth > maxTextWidth && fontSize > 6) {
+                    fontSize -= 1;
+                    ctx.font = `${fontSize}px Arial`;
+                    textWidth = ctx.measureText(numStr).width;
+                }
+                ctx.fillText(numStr, cX_center, cY_center);
+            } else if (isCellPrime && cellSize > 1 && !showNumbers) { 
+            } else if (isCellPrime && cellSize > 4 && showNumbers) { 
+                ctx.fillStyle = "darkorange";
+                ctx.fillRect(cX_center - cellSize * 0.2, cY_center - cellSize * 0.2, cellSize * 0.4, cellSize * 0.4);
+            } else if (isCellPrime && cellSize > 1 && showNumbers) { 
+                ctx.fillStyle = "red";
+                ctx.fillRect(cX_center - cellSize * 0.1, cY_center - cellSize * 0.1, cellSize * 0.2, cellSize * 0.2);
+            }
+        }
+
+        function drawGenericCurve(maxNum, d2xy_func, mOrderCalc_func_or_direct_order, curveName, isPathBased = false, pathGenerator_func = null) {
+            // ... (drawGenericCurve logic remains the same) ...
+            if (!ctx) return;
+            const canvasWidth = canvas.width; const canvasHeight = canvas.height;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            let m_order, sideLength, minX = 0, minY = 0, maxX = 0, maxY = 0;
+            const pathCoords = []; 
+
+            if (isPathBased) {
+                const generatedPath = pathGenerator_func(maxNum);
+                pathCoords.push(...generatedPath.coords);
+                minX = generatedPath.minX; minY = generatedPath.minY;
+                maxX = generatedPath.maxX; maxY = generatedPath.maxY;
+                sideLength = Math.max(maxX - minX + 1, maxY - minY + 1);
+                if (sideLength === 0 && pathCoords.length > 0) sideLength = 1; 
+                 m_order = generatedPath.m_order; 
+            } else {
+                m_order = mOrderCalc_func_or_direct_order(maxNum);
+                const base = 2; 
+                sideLength = Math.pow(base, m_order);
+                 if (sideLength === 0 && maxNum > 0) sideLength = 1;
+            }
+            
+            if (sideLength === 0) sideLength = 1; 
+
+            let cellSize = Math.floor(Math.min(canvasWidth / sideLength, canvasHeight / sideLength));
+            cellSize = Math.max(1, cellSize);
+            
+            const totalGridWidth = sideLength * cellSize; 
+            const totalGridHeight = sideLength * cellSize;
+            const offsetX = (canvasWidth - totalGridWidth) / 2 - (isPathBased ? minX * cellSize : 0); 
+            const offsetY = (canvasHeight - totalGridHeight) / 2 - (isPathBased ? minY * cellSize : 0);
+            
+            const pointsToDrawLine = [];
+
+            for (let d = 0; d < maxNum; d++) {
+                const numToDraw = d + 1;
+                let coords;
+                if (isPathBased) {
+                    coords = pathCoords[d];
+                     if (!coords) continue; 
+                } else {
+                    coords = d2xy_func(m_order, d);
+                }
+                if (coords === null) continue; 
+
+                const cX_center = offsetX + coords.x * cellSize + cellSize / 2;
+                const cY_center = offsetY + coords.y * cellSize + cellSize / 2;
+
+                if (showCurveLine) pointsToDrawLine.push({x: cX_center, y: cY_center});
+
+                if (numToDraw <= maxNum && cX_center + cellSize / 2 > 0 && cX_center - cellSize / 2 < canvasWidth && 
+                    cY_center + cellSize / 2 > 0 && cY_center - cellSize / 2 < canvasHeight) {
+                    const prime = isPrime(numToDraw);
+                    ctx.beginPath(); ctx.fillStyle = prime ? "gold" : "#ffffff";
+                    ctx.fillRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    if (cellSize > 2) {
+                        ctx.strokeStyle = prime ? "#b8860b" : "#dddddd"; ctx.lineWidth = 0.5;
+                        ctx.strokeRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    }
+                    drawNumberInCell(numToDraw.toString(), cX_center, cY_center, cellSize, prime);
+                }
+            }
+            if (showCurveLine && pointsToDrawLine.length > 1) {
+                ctx.beginPath(); ctx.moveTo(pointsToDrawLine[0].x, pointsToDrawLine[0].y);
+                for (let k = 1; k < pointsToDrawLine.length; k++) ctx.lineTo(pointsToDrawLine[k].x, pointsToDrawLine[k].y);
+                ctx.strokeStyle = "rgba(0, 0, 255, 0.6)";
+                ctx.lineWidth = Math.max(1, cellSize * 0.1); ctx.stroke();
+            }
+        }
+
+
+        function drawUlamSpiralBase(maxNumToDraw, isReverse) { 
+            if (!ctx) return;
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            const estimatedGridDim = Math.max(5, Math.ceil(Math.sqrt(maxNumToDraw)));
+            let cellSize = Math.floor(Math.min(canvasWidth / estimatedGridDim, canvasHeight / estimatedGridDim));
+            cellSize = Math.max(1, cellSize);
+            
+            const positions = new Array(maxNumToDraw + 1); // To store {x, y} for each number i
+            let gridX = 0, gridY = 0, dx = 1, dy = 0;
+            let stepsInLeg = 1, stepsTaken = 0, turns = 0;
+
+            // First, calculate all positions for a regular Ulam spiral
+            for (let i = 1; i <= maxNumToDraw; i++) { 
+                positions[i] = { x: gridX, y: gridY };
+                gridX += dx; gridY += dy; stepsTaken++;
+                if (stepsTaken >= stepsInLeg) {
+                    stepsTaken = 0; [dx, dy] = [-dy, dx]; turns++;
+                    if (turns % 2 === 0) stepsInLeg++;
+                }
+            }
+
+            const pointsForLine = [];
+            // Now, draw the cells based on whether it's reversed or not
+            for (let i = 1; i <= maxNumToDraw; i++) {
+                const numToDisplay = isReverse ? (maxNumToDraw - i + 1) : i;
+                const posIndex = isReverse ? (maxNumToDraw - numToDisplay + 1) : numToDisplay; // This logic was tricky, simplified:
+                                                                                         // For reverse, number maxNum is at pos 1, maxNum-1 at pos 2 etc.
+                                                                                         // So, number 'dispNum' is at logical position 'maxNum - dispNum + 1'
+                const logicalPosForMap = i; // The position in the calculated forward spiral
+                const currentGridPos = positions[logicalPosForMap];
+                
+                const cX_center = canvasWidth / 2 + currentGridPos.x * cellSize;
+                const cY_center = canvasHeight / 2 - currentGridPos.y * cellSize;
+
+                if (showCurveLine) {
+                    // For reverse, line should go from maxNum to 1.
+                    // For forward, line should go from 1 to maxNum.
+                    // This means points should be collected based on numToDisplay's order.
+                    // A bit complex to manage directly here, easier to collect and sort/reverse later if needed,
+                    // or collect based on the drawing order.
+                    // Let's collect based on the cell being drawn (i from 1 to maxNumToDraw)
+                    // and then the line will connect cell 1 to cell 2 etc. in the *drawing* order.
+                    pointsForLine.push({x: cX_center, y: cY_center, num: numToDisplay});
+                }
+                
+                if (cX_center + cellSize / 2 > 0 && cX_center - cellSize / 2 < canvasWidth && 
+                    cY_center + cellSize / 2 > 0 && cY_center - cellSize / 2 < canvasHeight) {
+                    const prime = isPrime(numToDisplay);
+                    ctx.beginPath();
+                    ctx.fillStyle = prime ? "gold" : "#ffffff";
+                    ctx.fillRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    if (cellSize > 2) {
+                        ctx.strokeStyle = prime ? "#b8860b" : "#dddddd";
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    }
+                    drawNumberInCell(numToDisplay.toString(), cX_center, cY_center, cellSize, prime);
+                }
+            }
+            
+            if (showCurveLine && pointsForLine.length > 1) {
+                // Sort points by the number they represent to draw the line in logical order
+                pointsForLine.sort((a, b) => isReverse ? b.num - a.num : a.num - b.num);
+
+                ctx.beginPath(); 
+                ctx.moveTo(pointsForLine[0].x, pointsForLine[0].y);
+                for (let k = 1; k < pointsForLine.length; k++) {
+                    ctx.lineTo(pointsForLine[k].x, pointsForLine[k].y);
+                }
+                ctx.strokeStyle = "rgba(0, 0, 255, 0.6)";
+                ctx.lineWidth = Math.max(1, cellSize * 0.1); 
+                ctx.stroke();
+            }
+        }
+
+        function drawUlamSpiral(maxNumToDraw) {
+            drawUlamSpiralBase(maxNumToDraw, false);
+        }
+        function drawReverseUlamSpiral(maxNumToDraw) {
+            drawUlamSpiralBase(maxNumToDraw, true);
+        }
+
+
+        function d2xy_hilbert(m_order, d_val) { 
+            let x = 0, y = 0, t = d_val;
+            const n_side = 1 << m_order; 
+            for (let s_level_side = 1; s_level_side < n_side; s_level_side <<= 1) {
+                const rx = 1 & (t >>> 1); 
+                const ry = 1 & (t ^ rx);  
+                if (ry === 0) {
+                    if (rx === 1) { x = s_level_side - 1 - x; y = s_level_side - 1 - y; }
+                    [x, y] = [y, x]; 
+                }
+                x += s_level_side * rx; y += s_level_side * ry; t >>>= 2; 
+            }
+            return { x: x, y: y };
+        }
+        function mOrderCalc_generic_base2(maxNum) { return maxNum === 1 ? 1 : Math.max(1, Math.ceil(Math.log2(maxNum) / 2.0)); }
+        function drawHilbertCurve(maxNum) { drawGenericCurve(maxNum, d2xy_hilbert, mOrderCalc_generic_base2, 'hilbert'); }
+
+        function d2xy_morton(m_order, d_val) {
+            let x = 0; let y = 0;
+            for (let i = 0; i < m_order; i++) {
+                x |= (d_val & (1 << (2 * i))) >> i;
+                y |= (d_val & (1 << (2 * i + 1))) >> (i + 1);
+            }
+            return { x: x, y: y };
+        }
+        function mOrderCalc_morton(maxNum) { return maxNum === 1 ? 1 : Math.max(1, Math.ceil(Math.log2(Math.sqrt(maxNum))));}
+        function drawMortonCurve(maxNum) { drawGenericCurve(maxNum, d2xy_morton, mOrderCalc_morton, 'morton'); }
+        
+        function generateDragonPath(maxNum, initialTurn = 1) { 
+            const pathCoords = [];
+            let currentX = 0, currentY = 0;
+            let angle = 0; 
+            let minX = 0, minY = 0, maxX = 0, maxY = 0;
+
+            const m_order = (maxNum > 1) ? Math.floor(Math.log2(maxNum)) : 0;
+            let turnSequence = [];
+            if (maxNum > 1) { 
+                let tempSequence = [];
+                for (let iter = 0; iter < m_order; iter++) {
+                    const reversedInverted = tempSequence.slice().reverse().map(turn => 1 - turn);
+                    tempSequence = tempSequence.concat(initialTurn === 1 ? 1 : 0, reversedInverted);
+                }
+                turnSequence = tempSequence;
+            }
+
+            pathCoords.push({ x: currentX, y: currentY });
+            minX = maxX = currentX; minY = maxY = currentY;
+
+            for (let i = 0; i < maxNum - 1 && i < turnSequence.length; i++) {
+                if (angle === 0) currentX++; 
+                else if (angle === 1) currentY--; 
+                else if (angle === 2) currentX--; 
+                else if (angle === 3) currentY++; 
+                
+                pathCoords.push({ x: currentX, y: currentY });
+                minX = Math.min(minX, currentX); maxX = Math.max(maxX, currentX);
+                minY = Math.min(minY, currentY); maxY = Math.max(maxY, currentY);
+
+                if (turnSequence[i] === 1) angle = (angle + 1) % 4; 
+                else angle = (angle + 3) % 4; 
+            }
+            return { coords: pathCoords, minX, minY, maxX, maxY, m_order };
+        }
+
+        function drawDragonCurve(maxNum) {
+            drawGenericCurve(maxNum, null, null, 'dragon', true, (num) => generateDragonPath(num, 1));
+        }
+
+        function drawTwindragonCurve(maxNum) {
+            if (!ctx) return;
+            const canvasWidth = canvas.width; const canvasHeight = canvas.height;
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            const numPerDragon = Math.floor(maxNum / 2);
+            const dragon1Data = generateDragonPath(numPerDragon, 1); 
+            const dragon2Data = generateDragonPath(maxNum - numPerDragon, 0); 
+
+            const minX = Math.min(dragon1Data.minX, dragon2Data.minX);
+            const minY = Math.min(dragon1Data.minY, dragon2Data.minY);
+            const maxX = Math.max(dragon1Data.maxX, dragon2Data.maxX);
+            const maxY = Math.max(dragon1Data.maxY, dragon2Data.maxY);
+            const sideLength = Math.max(maxX - minX + 1, maxY - minY + 1, 1);
+
+            let cellSize = Math.floor(Math.min(canvasWidth / sideLength, canvasHeight / sideLength));
+            cellSize = Math.max(1, cellSize);
+            
+            const totalGridWidth = sideLength * cellSize; 
+            const totalGridHeight = sideLength * cellSize;
+            const offsetX = (canvasWidth - totalGridWidth) / 2 - minX * cellSize; 
+            const offsetY = (canvasHeight - totalGridHeight) / 2 - minY * cellSize;
+            
+            const pointsToDrawLine1 = [];
+            const pointsToDrawLine2 = [];
+            const occupiedCells = new Set(); 
+
+            for (let d = 0; d < numPerDragon; d++) {
+                const numToDraw = d + 1;
+                const coords = dragon1Data.coords[d];
+                if (!coords) continue;
+                const cX_center = offsetX + coords.x * cellSize + cellSize / 2;
+                const cY_center = offsetY + coords.y * cellSize + cellSize / 2;
+                if (showCurveLine) pointsToDrawLine1.push({x: cX_center, y: cY_center});
+                
+                const cellKey = `${coords.x},${coords.y}`;
+                if (numToDraw <= maxNum && !occupiedCells.has(cellKey) &&
+                    cX_center + cellSize / 2 > 0 && cX_center - cellSize / 2 < canvasWidth && 
+                    cY_center + cellSize / 2 > 0 && cY_center - cellSize / 2 < canvasHeight) {
+                    const prime = isPrime(numToDraw);
+                    ctx.fillStyle = prime ? "gold" : "#ffffff";
+                    ctx.fillRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    if (cellSize > 2) { ctx.strokeStyle = prime ? "#b8860b" : "#dddddd"; ctx.strokeRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize); }
+                    drawNumberInCell(numToDraw.toString(), cX_center, cY_center, cellSize, prime);
+                    occupiedCells.add(cellKey);
+                }
+            }
+
+            for (let d = 0; d < (maxNum - numPerDragon); d++) {
+                const numToDraw = numPerDragon + d + 1;
+                const coords = dragon2Data.coords[d];
+                 if (!coords) continue;
+                const cX_center = offsetX + coords.x * cellSize + cellSize / 2; 
+                const cY_center = offsetY + coords.y * cellSize + cellSize / 2;
+                if (showCurveLine) pointsToDrawLine2.push({x: cX_center, y: cY_center});
+
+                const cellKey = `${coords.x},${coords.y}`;
+                 if (numToDraw <= maxNum && !occupiedCells.has(cellKey) &&
+                    cX_center + cellSize / 2 > 0 && cX_center - cellSize / 2 < canvasWidth && 
+                    cY_center + cellSize / 2 > 0 && cY_center - cellSize / 2 < canvasHeight) {
+                    const prime = isPrime(numToDraw);
+                    ctx.fillStyle = prime ? "lightgreen" : "#f8f8f8"; 
+                    ctx.fillRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize);
+                    if (cellSize > 2) { ctx.strokeStyle = prime ? "darkgreen" : "#eeeeee"; ctx.strokeRect(cX_center - cellSize / 2, cY_center - cellSize / 2, cellSize, cellSize); }
+                    drawNumberInCell(numToDraw.toString(), cX_center, cY_center, cellSize, prime);
+                    occupiedCells.add(cellKey);
+                }
+            }
+
+            if (showCurveLine) {
+                if (pointsToDrawLine1.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(pointsToDrawLine1[0].x, pointsToDrawLine1[0].y);
+                    for (let k = 1; k < pointsToDrawLine1.length; k++) ctx.lineTo(pointsToDrawLine1[k].x, pointsToDrawLine1[k].y);
+                    ctx.strokeStyle = "rgba(0, 0, 255, 0.6)"; ctx.lineWidth = Math.max(1, cellSize * 0.1); ctx.stroke();
+                }
+                if (pointsToDrawLine2.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(pointsToDrawLine2[0].x, pointsToDrawLine2[0].y);
+                    for (let k = 1; k < pointsToDrawLine2.length; k++) ctx.lineTo(pointsToDrawLine2[k].x, pointsToDrawLine2[k].y);
+                    ctx.strokeStyle = "rgba(255, 0, 0, 0.6)"; ctx.lineWidth = Math.max(1, cellSize * 0.1); ctx.stroke(); 
+                }
+            }
+        }
+
+        function d2xy_sierpinski_arrowhead(m_order, d) {
+            let x = 0, y = 0;
+            let t = d;
+            // const n_side = 1 << m_order; // Not directly used in this iterative version's loop logic
+
+            for (let i = 0; i < m_order; i++) {
+                const s_current_level = 1 << (m_order - 1 - i); // Size of current sub-quadrant side
+                const q = t % 4; // Quadrant for this level
+
+                if (q === 0) { // (0,0) -> (y,x)
+                    [x, y] = [y, x];
+                } else if (q === 1) { // (0,1) -> (x, y+s)
+                    y += s_current_level;
+                } else if (q === 2) { // (1,1) -> (x+s, y+s)
+                    x += s_current_level;
+                    y += s_current_level;
+                } else { // q === 3 (1,0) -> (2s-1-y, s-1-x)
+                    const temp_x = x;
+                    x = 2 * s_current_level - 1 - y;
+                    y = s_current_level - 1 - temp_x;
+                }
+                t = Math.floor(t / 4);
+            }
+            return { x: x, y: y };
+        }
+        function drawSierpinskiArrowheadCurve(maxNum) {
+            drawGenericCurve(maxNum, d2xy_sierpinski_arrowhead, mOrderCalc_generic_base2, 'sierpinski_arrowhead');
+        }
+
+
+        window.onload = function() {
+            canvas = document.getElementById('mainCanvas');
+            const maxNumInputElement = document.getElementById('maxNumberInput'); 
+
+            if (canvas && canvas.getContext) {
+                ctx = canvas.getContext('2d');
+                const curveSelect = document.getElementById('curveTypeSelect');
+                const showCurveLineCheckbox = document.getElementById('showCurveLineCheckbox');
+                const showNumbersCheckbox = document.getElementById('showNumbersCheckbox'); 
+                
+                if(curveSelect) curveSelect.addEventListener('change', prepareAndGenerateCurve);
+                if(showCurveLineCheckbox) showCurveLineCheckbox.addEventListener('change', prepareAndGenerateCurve);
+                if(showNumbersCheckbox) showNumbersCheckbox.addEventListener('change', prepareAndGenerateCurve); 
+                
+                if(maxNumInputElement) {
+                    maxNumInputElement.addEventListener('keypress', function(event) {
+                        if (event.key === 'Enter' || event.keyCode === 13) {
+                            event.preventDefault(); 
+                            prepareAndGenerateCurve();
+                        }
+                    });
+                }
+                
+                prepareAndGenerateCurve();
+                window.addEventListener('resize', debouncedResizeAndRedraw);
+            } else {
+                alert("הדפדפן שלך אינו תומך ב-Canvas של HTML5 או שאלמנט הקנבס לא נמצא.");
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Large-Scale Hexagonal Prime Spiral</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3e);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            font-size: 0.9em;
+        }
+        
+        label {
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100px;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+        
+        input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        .canvas-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        canvas {
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            cursor: grab;
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        .stats {
+            margin-top: 15px;
+            font-size: 0.9em;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Large-Scale Hexagonal Prime Spiral</h1>
+        <p class="subtitle">Explore millions of numbers and discover prime patterns</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="maxNumber">Max Number:</label>
+                <input type="number" id="maxNumber" min="100" max="10000000" value="10000" step="100">
+            </div>
+            
+            <div class="control-group">
+                <label for="zoom">Zoom:</label>
+                <input type="range" id="zoom" min="0.1" max="5" step="0.1" value="1">
+                <span id="zoomValue">1.0x</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="hexSize">Hex Size:</label>
+                <input type="range" id="hexSize" min="1" max="15" value="3">
+                <span id="hexSizeValue">3</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="showNumbers">Numbers:</label>
+                <input type="checkbox" id="showNumbers">
+            </div>
+            
+            <div class="control-group">
+                <label for="showGrid">Grid:</label>
+                <input type="checkbox" id="showGrid">
+            </div>
+            
+            <div class="control-group">
+                <label for="showSpiral">Spiral Path:</label>
+                <input type="checkbox" id="showSpiral">
+            </div>
+            
+            <div class="control-group">
+                <button onclick="generate()">Generate</button>
+                <button onclick="resetView()">Reset View</button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvas" width="1200" height="800"></canvas>
+            <div class="loading" id="loading">Generating prime spiral...</div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalNumbers">0</div>
+                <div>Total Numbers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="primeCount">0</div>
+                <div>Primes Found</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="primePercentage">0%</div>
+                <div>Prime Density</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="visibleCount">0</div>
+                <div>Visible</div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <p><strong>Controls:</strong> Drag to pan, use zoom slider to scale. For large numbers (100k+), disable numbers and grid for better performance. 
+            The visualization uses viewport culling to render only visible hexagons efficiently.</p>
+            <p><strong>Performance Tips:</strong> Start with smaller numbers (10k) and gradually increase. Prime patterns become more apparent at larger scales.</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let maxNumber = 10000;
+        let zoom = 1;
+        let hexSize = 3;
+        let showNumbers = false;
+        let showGrid = false;
+        let showSpiral = false;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        let spiralData = [];
+        let primeCache = new Set();
+        let isGenerating = false;
+        
+        // Controls
+        const maxNumberInput = document.getElementById('maxNumber');
+        const zoomSlider = document.getElementById('zoom');
+        const hexSizeSlider = document.getElementById('hexSize');
+        const showNumbersCheck = document.getElementById('showNumbers');
+        const showGridCheck = document.getElementById('showGrid');
+        const showSpiralCheck = document.getElementById('showSpiral');
+        const zoomValue = document.getElementById('zoomValue');
+        const hexSizeValue = document.getElementById('hexSizeValue');
+        const loadingDiv = document.getElementById('loading');
+        
+        // Stats elements
+        const totalNumbersEl = document.getElementById('totalNumbers');
+        const primeCountEl = document.getElementById('primeCount');
+        const primePercentageEl = document.getElementById('primePercentage');
+        const visibleCountEl = document.getElementById('visibleCount');
+        
+        // Event listeners
+        zoomSlider.addEventListener('input', (e) => {
+            zoom = parseFloat(e.target.value);
+            zoomValue.textContent = zoom.toFixed(1) + 'x';
+            draw();
+        });
+        
+        hexSizeSlider.addEventListener('input', (e) => {
+            hexSize = parseInt(e.target.value);
+            hexSizeValue.textContent = hexSize;
+            draw();
+        });
+        
+        showNumbersCheck.addEventListener('change', (e) => {
+            showNumbers = e.target.checked;
+            draw();
+        });
+        
+        showGridCheck.addEventListener('change', (e) => {
+            showGrid = e.target.checked;
+            draw();
+        });
+        
+        showSpiralCheck.addEventListener('change', (e) => {
+            showSpiral = e.target.checked;
+            draw();
+        });
+        
+        // Mouse events for panning
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                offsetX += deltaX;
+                offsetY += deltaY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                draw();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+        
+        // Wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+            zoomSlider.value = zoom;
+            zoomValue.textContent = zoom.toFixed(1) + 'x';
+            draw();
+        });
+        
+        function resetView() {
+            offsetX = 0;
+            offsetY = 0;
+            zoom = 1;
+            zoomSlider.value = 1;
+            zoomValue.textContent = '1.0x';
+            draw();
+        }
+        
+        // Efficient prime checking with caching
+        function isPrime(n) {
+            if (primeCache.has(n)) return true;
+            if (n < 2) return false;
+            if (n === 2) {
+                primeCache.add(n);
+                return true;
+            }
+            if (n % 2 === 0) return false;
+            
+            for (let i = 3; i <= Math.sqrt(n); i += 2) {
+                if (n % i === 0) return false;
+            }
+            
+            primeCache.add(n);
+            return true;
+        }
+        
+        // Generate hexagonal spiral coordinates
+        function generateHexSpiral(maxNum) {
+            const coords = [];
+            coords.push({q: 0, r: 0, number: 1, isPrime: false});
+            
+            let number = 2;
+            let ring = 1;
+            
+            while (number <= maxNum) {
+                let q = ring;
+                let r = 0;
+                
+                const directions = [
+                    {dq: 0, dr: -1},   // Up
+                    {dq: -1, dr: 0},   // Up-left
+                    {dq: -1, dr: 1},   // Down-left
+                    {dq: 0, dr: 1},    // Down
+                    {dq: 1, dr: 0},    // Down-right
+                    {dq: 1, dr: -1}    // Up-right
+                ];
+                
+                for (let side = 0; side < 6 && number <= maxNum; side++) {
+                    for (let step = 0; step < ring && number <= maxNum; step++) {
+                        const prime = isPrime(number);
+                        coords.push({q: q, r: r, number: number, isPrime: prime});
+                        number++;
+                        
+                        q += directions[side].dq;
+                        r += directions[side].dr;
+                    }
+                }
+                ring++;
+            }
+            
+            return coords;
+        }
+        
+        // Convert hex coordinates to pixel coordinates
+        function hexToPixel(q, r, centerX, centerY, size) {
+            const x = centerX + size * zoom * (3/2 * q);
+            const y = centerY + size * zoom * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
+            return {x, y};
+        }
+        
+        // Check if point is in viewport (with margin)
+        function isInViewport(x, y, margin = 50) {
+            return x > -margin && x < canvas.width + margin && 
+                   y > -margin && y < canvas.height + margin;
+        }
+        
+        async function generate() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            loadingDiv.style.display = 'block';
+            maxNumber = parseInt(maxNumberInput.value);
+            
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    spiralData = generateHexSpiral(maxNumber);
+                    draw();
+                } catch (error) {
+                    console.error('Error generating spiral:', error);
+                    alert('Error generating spiral. Try a smaller number.');
+                } finally {
+                    isGenerating = false;
+                    loadingDiv.style.display = 'none';
+                }
+            }, 10);
+        }
+        
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (spiralData.length === 0) return;
+            
+            const centerX = canvas.width / 2 + offsetX;
+            const centerY = canvas.height / 2 + offsetY;
+            const effectiveHexSize = hexSize * zoom;
+            
+            let visibleCount = 0;
+            let primeCount = 0;
+            
+            // Only draw visible hexagons for performance
+            for (let i = 0; i < spiralData.length; i++) {
+                const hex = spiralData[i];
+                const pos = hexToPixel(hex.q, hex.r, centerX, centerY, hexSize);
+                
+                // Skip if not in viewport
+                if (!isInViewport(pos.x, pos.y, effectiveHexSize * 2)) continue;
+                
+                visibleCount++;
+                if (hex.isPrime) primeCount++;
+                
+                // Determine colors
+                let fillColor = '#1a1a2e';
+                let strokeColor = showGrid ? 'rgba(255, 255, 255, 0.1)' : null;
+                
+                if (hex.isPrime) {
+                    fillColor = '#ff4757';
+                    strokeColor = effectiveHexSize > 2 ? '#ff6b7a' : null;
+                }
+                
+                // Draw hexagon
+                if (effectiveHexSize > 1) {
+                    drawHexagon(pos.x, pos.y, effectiveHexSize * 0.9, fillColor, strokeColor, 0.5);
+                } else {
+                    // For very small hexagons, just draw points
+                    ctx.fillStyle = fillColor;
+                    ctx.fillRect(pos.x - 0.5, pos.y - 0.5, 1, 1);
+                }
+                
+                // Draw number only if large enough and enabled
+                if (showNumbers && effectiveHexSize > 8) {
+                    ctx.font = `${Math.max(6, effectiveHexSize * 0.4)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = hex.isPrime ? 'white' : 'rgba(255, 255, 255, 0.7)';
+                    
+                    if (hex.number.toString().length <= 4 || effectiveHexSize > 12) {
+                        ctx.fillText(hex.number.toString(), pos.x, pos.y);
+                    }
+                }
+            }
+            
+            // Update stats
+            const totalPrimes = spiralData.filter(h => h.isPrime).length;
+            const primePercentage = ((totalPrimes / spiralData.length) * 100).toFixed(2);
+            
+            totalNumbersEl.textContent = spiralData.length.toLocaleString();
+            primeCountEl.textContent = totalPrimes.toLocaleString();
+            primePercentageEl.textContent = primePercentage + '%';
+            visibleCountEl.textContent = visibleCount.toLocaleString();
+        }
+        
+        // Draw hexagon
+        function drawHexagon(centerX, centerY, size, fillColor, strokeColor = null, lineWidth = 1) {
+            if (size < 1) return; // Skip tiny hexagons
+            
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i;
+                const x = centerX + size * Math.cos(angle);
+                const y = centerY + size * Math.sin(angle);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            
+            if (fillColor) {
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+            }
+            
+            if (strokeColor && size > 2) {
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        }
+        
+        // Initial generation
+        generate();
+    </script>
+</body>
+</html>
