@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אימפריות היסטוריות על המפה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Heebo', sans-serif;
+            overflow: hidden;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        #controls-wrapper {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+        #controls-wrapper.is-open {
+            transform: translateY(0);
+        }
+        .custom-checkbox {
+            appearance: none; -webkit-appearance: none; height: 20px; width: 20px;
+            border-radius: 4px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; outline: none; transition: all 0.2s ease;
+        }
+        .custom-checkbox:after {
+            content: '✔'; font-size: 14px; color: white; display: none;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--empire-color, #666); border-color: var(--empire-color, #666);
+        }
+        .custom-checkbox:checked:after { display: block; }
+
+        .map-type-button {
+             background-color: white; color: #333; padding: 8px 12px;
+             border: 1px solid #ccc; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+        }
+        .map-type-button.active {
+            background-color: #4285F4; color: white; border-color: #4285F4;
+        }
+        .map-type-button:first-of-type { border-radius: 0 6px 6px 0; }
+        .map-type-button:last-of-type { border-radius: 6px 0 0 6px; }
+        
+        #ai-panel {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(105%); /* Changed for RTL */
+        }
+        #ai-panel.is-visible {
+            transform: translateX(0);
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .custom-marker {
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.4);
+            transition: transform 0.1s ease-in-out;
+            cursor: pointer;
+        }
+        .custom-marker:hover {
+            transform: scale(1.2);
+        }
+        .regular-marker { width: 14px; height: 14px; }
+        .capital-marker { width: 20px; height: 20px; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- AI Panel Toggle Button -->
+    <button id="open-ai-btn" class="hidden fixed top-4 right-4 z-30 bg-white text-gray-800 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"> <!-- Changed left to right -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+    </button>
+    
+    <div id="ai-panel" class="fixed top-0 right-0 h-full w-full md:w-1/3 lg:w-1/4 bg-white z-40 shadow-lg p-6 flex flex-col"> <!-- Changed left to right -->
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="ai-panel-title" class="text-2xl font-bold text-gray-800">תובנות על אימפריות</h2>
+            <button id="close-ai-btn" class="text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="ai-panel-content" class="flex-grow overflow-y-auto bg-gray-50 p-4 rounded-lg text-gray-700">בחר אימפריה כדי ללמוד עליה.</div>
+        <div id="ai-loader" class="hidden my-4 self-center"><div class="loader"></div></div>
+        <div id="ai-buttons" class="mt-4 flex flex-col gap-2"></div>
+    </div>
+    <div id="controls-wrapper" class="fixed bottom-0 left-0 right-0 z-20 md:absolute md:top-4 md:left-4 md:bottom-auto md:right-auto md:transform-none"> <!-- Changed right to left for desktop -->
+        <div id="controls-container" class="bg-white p-4 rounded-t-xl md:rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">בחר אימפריות להצגה</h3>
+            <div id="empire-checkboxes" class="space-y-3"></div>
+        </div>
+    </div>
+    <button id="toggle-controls-btn" class="md:hidden fixed bottom-4 left-4 z-30 bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg text-2xl"> <!-- Changed right to left -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+    </button>
+    <div id="map-type-control" class="absolute top-20 right-4 z-10 flex shadow-md md:top-4"> <!-- Changed left to right -->
+        <button id="satellite-btn" class="map-type-button">לוויין</button>
+        <button id="map-btn" class="map-type-button active">מפה</button>
+    </div>
+    <div id="map"></div>
+
+    <script>
+        // ===================================================================
+        // PASTE YOUR API KEYS HERE
+        // ===================================================================
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+        const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
+        // ===================================================================
+
+        let map;
+        let infoWindow;
+        const activeElements = {}; 
+        const selectedEmpires = new Set();
+        const empiresData = {
+            roman: { name: "האימפריה הרומית", color: '#e6194B', polygons: [[{lat: 36.5, lng: -6.0}, {lat: 43.0, lng: -9.5}, {lat: 44.0, lng: -1.0}, {lat: 51.0, lng: 1.5}, {lat: 55.5, lng: -3.0}, {lat: 54.5, lng: 2.0}, {lat: 51.5, lng: 6.0}, {lat: 48.0, lng: 9.0}, {lat: 45.5, lng: 15.0}, {lat: 47.0, lng: 20.0}, {lat: 44.0, lng: 29.0}, {lat: 41.5, lng: 40.0}, {lat: 40.0, lng: 48.0}, {lat: 35.0, lng: 42.0}, {lat: 31.0, lng: 38.0}, {lat: 29.0, lng: 35.0}, {lat: 24.0, lng: 35.5}, {lat: 29.0, lng: 32.0}, {lat: 31.5, lng: 25.0}, {lat: 30.5, lng: 18.0}, {lat: 33.0, lng: 11.0}, {lat: 37.0, lng: 10.5}, {lat: 34.5, lng: -7.0}]], cities: [{ name: 'רומא (בירה)', lat: 41.9028, lng: 12.4964, isCapital: true }, { name: 'קרתגו', lat: 36.852, lng: 10.334 }, { name: 'אלכסנדריה', lat: 31.2001, lng: 29.9187 }, { name: 'קונסטנטינופול', lat: 41.0082, lng: 28.9784 }] },
+            mongol: { name: "האימפריה המונגולית", color: '#3cb44b', polygons: [[{lat: 48.0, lng: 30.0}, {lat: 58.0, lng: 60.0}, {lat: 57.0, lng: 100.0}, {lat: 53.0, lng: 120.0}, {lat: 41.0, lng: 125.0}, {lat: 30.0, lng: 120.0}, {lat: 22.0, lng: 108.0}, {lat: 22.0, lng: 95.0}, {lat: 27.0, lng: 80.0}, {lat: 35.0, lng: 65.0}, {lat: 30.0, lng: 55.0}, {lat: 35.0, lng: 45.0}, {lat: 42.0, lng: 42.0}, {lat: 45.0, lng: 35.0}]], cities: [{ name: 'קארקורום (בירה)', lat: 47.213, lng: 102.846, isCapital: true }, { name: 'בייג\'ינג (חאנבליק)', lat: 39.9042, lng: 116.4074 }, { name: 'סמרקנד', lat: 39.6542, lng: 66.9758 }] },
+            persian: { name: "האימפריה הפרסית האחמנית", color: '#ffe119', polygons: [[{lat: 42.0, lng: 26.0}, {lat: 41.5, lng: 44.0}, {lat: 42.5, lng: 51.0}, {lat: 40.0, lng: 60.0}, {lat: 40.0, lng: 70.0}, {lat: 34.0, lng: 73.0}, {lat: 28.0, lng: 68.0}, {lat: 25.0, lng: 60.0}, {lat: 28.0, lng: 50.0}, {lat: 25.0, lng: 45.0}, {lat: 26.0, lng: 35.0}, {lat: 30.0, lng: 31.0}, {lat: 35.0, lng: 28.0}, {lat: 39.5, lng: 24.0}]], cities: [{ name: 'פרספוליס (בירה)', lat: 29.9346, lng: 52.8911, isCapital: true }, { name: 'בבל', lat: 32.542, lng: 44.421 }, { name: 'שושן', lat: 32.189, lng: 48.243 }] },
+            british: { name: "האימפריה הבריטית", color: '#911eb4', polygons: [ [{lat: 60.8, lng: -4.5}, {lat: 58.6, lng: 1.7}, {lat: 50.7, lng: 1.4}, {lat: 50.0, lng: -5.7}], [{lat: 78.9, lng: -123.0}, {lat: 51.2, lng: -128.0}, {lat: 49.0, lng: -123.0}, {lat: 45.0, lng: -95.0}, {lat: 43.0, lng: -79.0}, {lat: 47.5, lng: -52.7}, {lat: 60.0, lng: -64.0}, {lat: 70.0, lng: -75.0}], [{lat: -10.6, lng: 142.5}, {lat: -43.5, lng: 147.0}, {lat: -33.9, lng: 115.0}, {lat: -12.4, lng: 130.8}], [{lat: -17.0, lng: 12.0}, {lat: -34.8, lng: 20.0}, {lat: -26.9, lng: 32.8}, {lat: -10.0, lng: 40.5}, {lat: 0.0, lng: 38.0}, {lat: 5.0, lng: 15.0}, {lat: 12.0, lng: 1.0}, {lat: 5.0, lng: -5.0}, {lat: 20.0, lng: 22.0}, {lat: 22.0, lng: 31.5}, {lat: 15.0, lng: 38.0}], [{lat: 35.0, lng: 62.0}, {lat: 36.0, lng: 77.0}, {lat: 28.0, lng: 97.0}, {lat: 21.0, lng: 92.0}, {lat: 8.0, lng: 77.0}, {lat: 20.0, lng: 68.0}] ], cities: [{ name: 'לונדון (בירה)', lat: 51.5074, lng: -0.1278, isCapital: true }, { name: 'קולקטה', lat: 22.5726, lng: 88.3639 }, { name: 'אוטווה', lat: 45.4215, lng: -75.6972 }, { name: 'קנברה', lat: -35.2809, lng: 149.1300 }] },
+            ottoman: { name: "האימפריה העות'מאנית", color: '#f58231', polygons: [[{lat: 48.2, lng: 16.3}, {lat: 47.0, lng: 26.0}, {lat: 44.0, lng: 34.0}, {lat: 43.0, lng: 43.0}, {lat: 38.0, lng: 48.5}, {lat: 30.0, lng: 48.0}, {lat: 20.0, lng: 42.0}, {lat: 26.0, lng: 35.0}, {lat: 31.0, lng: 26.0}, {lat: 32.0, lng: 11.0}, {lat: 37.0, lng: 6.0}, {lat: 43.0, lng: 13.0}]], cities: [{ name: 'קונסטנטינופול (בירה)', lat: 41.0082, lng: 28.9784, isCapital: true }, { name: 'קהיר', lat: 30.0444, lng: 31.2357 }, { name: 'בגדאד', lat: 33.3152, lng: 44.3661 }] },
+            macedonian: { name: "האימפריה המוקדונית", color: '#4363d8', polygons: [[{lat: 41.5, lng: 20.0}, {lat: 41.0, lng: 28.0}, {lat: 38.0, lng: 35.0}, {lat: 37.0, lng: 50.0}, {lat: 40.0, lng: 60.0}, {lat: 37.0, lng: 72.0}, {lat: 30.0, lng: 73.0}, {lat: 25.0, lng: 65.0}, {lat: 28.0, lng: 56.0}, {lat: 26.0, lng: 48.0}, {lat: 30.0, lng: 32.0}, {lat: 34.0, lng: 26.0}]], cities: [{ name: 'פלה (בירה)', lat: 40.760, lng: 22.522, isCapital: true }, { name: 'בבל', lat: 32.542, lng: 44.421 }, { name: 'אלכסנדריה', lat: 31.2001, lng: 29.9187 }] }
+        };
+
+        async function initMap() {
+            const { Map } = await google.maps.importLibrary("maps");
+            await google.maps.importLibrary("marker");
+            
+            map = new Map(document.getElementById("map"), {
+                center: { lat: 30, lng: 45 },
+                zoom: 3,
+                mapTypeId: 'terrain',
+                disableDefaultUI: true,
+                zoomControl: true,
+                zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP }, // RTL
+                mapId: 'HISTORICAL_EMPIRES_MAP'
+            });
+            
+            infoWindow = new google.maps.InfoWindow();
+            
+            const container = document.getElementById('empire-checkboxes');
+            Object.keys(empiresData).forEach(key => {
+                const data = empiresData[key];
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.id = key; checkbox.value = key;
+                checkbox.className = 'custom-checkbox'; checkbox.style.borderColor = data.color;
+                checkbox.style.setProperty('--empire-color', data.color);
+                const label = document.createElement('label');
+                label.htmlFor = key; label.textContent = data.name; label.className = 'text-gray-700 cursor-pointer';
+                div.appendChild(checkbox); div.appendChild(label);
+                container.appendChild(div);
+                checkbox.addEventListener('change', (event) => {
+                    handleEmpireSelection(event.target.value, event.target.checked);
+                });
+            });
+
+            // Map type toggle
+            const mapBtn = document.getElementById('map-btn');
+            const satelliteBtn = document.getElementById('satellite-btn');
+            mapBtn.addEventListener('click', () => { map.setMapTypeId('terrain'); mapBtn.classList.add('active'); satelliteBtn.classList.remove('active'); });
+            satelliteBtn.addEventListener('click', () => { map.setMapTypeId('satellite'); satelliteBtn.classList.add('active'); mapBtn.classList.remove('active'); });
+            
+            // Mobile controls for selection panel
+            const toggleBtn = document.getElementById('toggle-controls-btn');
+            const controlsWrapper = document.getElementById('controls-wrapper');
+            toggleBtn.addEventListener('click', () => { controlsWrapper.classList.toggle('is-open'); });
+            
+            // AI Panel controls
+            const aiPanel = document.getElementById('ai-panel');
+            const openAiBtn = document.getElementById('open-ai-btn');
+            const closeAiBtn = document.getElementById('close-ai-btn');
+
+            closeAiBtn.addEventListener('click', () => {
+                aiPanel.classList.remove('is-visible');
+                if (selectedEmpires.size > 0) {
+                    openAiBtn.classList.remove('hidden');
+                }
+            });
+            openAiBtn.addEventListener('click', () => {
+                aiPanel.classList.add('is-visible');
+                openAiBtn.classList.add('hidden');
+            });
+
+            map.addListener('click', () => {
+                controlsWrapper.classList.remove('is-open');
+            });
+        }
+        
+        function handleEmpireSelection(empireKey, isChecked) {
+            toggleEmpireOnMap(empireKey, isChecked);
+            if(isChecked) { selectedEmpires.add(empireKey); } else { selectedEmpires.delete(empireKey); }
+            updateAiPanel();
+        }
+
+        async function toggleEmpireOnMap(empireKey, isVisible) {
+            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+            if (isVisible) {
+                const data = empiresData[empireKey];
+                activeElements[empireKey] = { polygons: [], markers: [] };
+                data.polygons.forEach(path => {
+                    const polygon = new google.maps.Polygon({ paths: path, strokeColor: data.color, strokeOpacity: 0.8, strokeWeight: 1.5, fillColor: data.color, fillOpacity: 0.35, map: map });
+                    activeElements[empireKey].polygons.push(polygon);
+                });
+                data.cities.forEach(city => {
+                    const markerEl = document.createElement('div');
+                    markerEl.className = city.isCapital ? 'custom-marker capital-marker' : 'custom-marker regular-marker';
+                    markerEl.style.backgroundColor = data.color;
+                    const marker = new AdvancedMarkerElement({
+                        position: { lat: city.lat, lng: city.lng },
+                        map: map,
+                        title: city.name,
+                        content: markerEl
+                    });
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(`<strong>${city.name}</strong>`);
+                        infoWindow.open({ anchor: marker, map });
+                    });
+                    activeElements[empireKey].markers.push(marker);
+                });
+            } else {
+                if (activeElements[empireKey]) {
+                    activeElements[empireKey].polygons.forEach(p => p.setMap(null));
+                    activeElements[empireKey].markers.forEach(m => { m.map = null; });
+                    delete activeElements[empireKey];
+                }
+            }
+        }
+        
+        function updateAiPanel() {
+            const aiPanel = document.getElementById('ai-panel');
+            const openAiBtn = document.getElementById('open-ai-btn');
+            const aiTitle = document.getElementById('ai-panel-title');
+            const aiContent = document.getElementById('ai-panel-content');
+            const aiButtons = document.getElementById('ai-buttons');
+            aiButtons.innerHTML = ''; 
+
+            if (selectedEmpires.size === 0) {
+                aiPanel.classList.remove('is-visible');
+                openAiBtn.classList.add('hidden');
+                return;
+            }
+            
+            if(!aiPanel.classList.contains('is-visible')){
+                 openAiBtn.classList.remove('hidden');
+            } else {
+                 openAiBtn.classList.add('hidden');
+            }
+            aiContent.innerHTML = 'בחר פעולת AI למטה.';
+            
+            if (selectedEmpires.size === 1) {
+                const empireKey = selectedEmpires.values().next().value;
+                aiTitle.textContent = empiresData[empireKey].name;
+                
+                const factsButton = document.createElement('button');
+                factsButton.innerHTML = '✨ צור עובדות מעניינות';
+                factsButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+                factsButton.onclick = () => getFunFacts(empireKey);
+                aiButtons.appendChild(factsButton);
+            } else if (selectedEmpires.size === 2) {
+                aiTitle.textContent = 'השוואת אימפריות';
+                const compareButton = document.createElement('button');
+                compareButton.innerHTML = '✨ השווה אימפריות';
+                compareButton.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+                compareButton.onclick = () => compareEmpires();
+                aiButtons.appendChild(compareButton);
+
+                const warButton = document.createElement('button');
+                warButton.innerHTML = '⚔️ מי תנצח במלחמה?';
+                warButton.className = 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+                warButton.onclick = () => getWarScenario();
+                aiButtons.appendChild(warButton);
+            } else { // 3 or more
+                aiTitle.textContent = 'השוואת אימפריות';
+                const compareButton = document.createElement('button');
+                compareButton.innerHTML = '✨ השווה אימפריות נבחרות';
+                compareButton.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors';
+                compareButton.onclick = () => compareEmpires();
+                aiButtons.appendChild(compareButton);
+            }
+        }
+
+        async function getFunFacts(empireKey) {
+            const empireName = empiresData[empireKey].name;
+            const prompt = `Tell me 3 interesting and little-known fun facts about the ${empireName}. Present them as a numbered list.`;
+            await generateAiContent(prompt);
+        }
+
+        async function compareEmpires() {
+            const empireNames = Array.from(selectedEmpires).map(key => empiresData[key].name);
+            const prompt = `Provide a brief, interesting comparison between ${empireNames.join(' and ')}. Focus on one surprising similarity and one major difference.`;
+            await generateAiContent(prompt);
+        }
+
+        async function getWarScenario() {
+            const empireNames = Array.from(selectedEmpires).map(key => empiresData[key].name);
+            const prompt = `Imagine the ${empireNames[0]} at its peak and the ${empireNames[1]} at its peak went to war. Provide a creative and plausible analysis of who would likely win and why. Consider their military, technology, and strategic advantages.`;
+            await generateAiContent(prompt);
+        }
+
+        async function generateAiContent(prompt) {
+            const loader = document.getElementById('ai-loader');
+            const contentArea = document.getElementById('ai-panel-content');
+            const buttonsArea = document.getElementById('ai-buttons');
+            
+            const apiKey = GEMINI_API_KEY;
+            if (apiKey === "YOUR_API_KEY" || !apiKey) {
+                 contentArea.innerHTML = `<span class="text-red-500">מפתח ה-API של Gemini אינו מוגדר. אנא הוסף אותו לסקריפט.</span>`;
+                 return;
+            }
+
+            loader.style.display = 'block';
+            contentArea.innerHTML = '';
+            buttonsArea.style.display = 'none';
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    contentArea.innerHTML = text.replace(/\n/g, '<br>'); // Basic formatting
+                } else {
+                    throw new Error("No content received from Gemini API.");
+                }
+
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                contentArea.innerHTML = `<span class="text-red-500">מצטערים, אירעה שגיאה. לא ניתן לקבל תובנות AI.</span>`;
+            } finally {
+                loader.style.display = 'none';
+                buttonsArea.style.display = 'flex';
+            }
+        }
+        
+        (async () => {
+            const apiKey = GOOGLE_MAPS_API_KEY;
+            if (apiKey === "YOUR_API_KEY" || !apiKey) {
+                document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>שגיאת תצורה</h2><p class='text-gray-700'>אנא הגדר מפתח API של מפות גוגל בקוד המקור.</p></div></div>`;
+                return;
+            }
+            const src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&callback=initMap`;
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.defer = true;
+             script.onerror = () => { 
+                 document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>שגיאה בטעינת המפה</h2><p class='text-gray-700'>לא ניתן לטעון את סקריפט המפות. בדוק את הגדרות מפתח ה-API שלך.</p></div></div>`;
+            };
+            document.head.appendChild(script);
+        })();
+
+    </script>
+</body>
+</html>
