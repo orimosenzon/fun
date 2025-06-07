@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Empires on the Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        /* Mobile-first approach for the controls panel */
+        #controls-wrapper {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+        #controls-wrapper.is-open {
+            transform: translateY(0);
+        }
+        .custom-checkbox {
+            appearance: none; -webkit-appearance: none; height: 20px; width: 20px;
+            border-radius: 4px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; outline: none; transition: all 0.2s ease;
+        }
+        .custom-checkbox:after {
+            content: '✔'; font-size: 14px; color: white; display: none;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--empire-color, #666); border-color: var(--empire-color, #666);
+        }
+        .custom-checkbox:checked:after { display: block; }
+
+        .map-type-button {
+             background-color: white; color: #333; padding: 8px 12px;
+             border: 1px solid #ccc; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+        }
+        .map-type-button.active {
+            background-color: #4285F4; color: white; border-color: #4285F4;
+        }
+        .map-type-button:first-of-type { border-radius: 6px 0 0 6px; }
+        .map-type-button:last-of-type { border-radius: 0 6px 6px 0; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Controls Panel (Mobile: Bottom Sheet, Desktop: Top-Right Box) -->
+    <div id="controls-wrapper" class="fixed bottom-0 left-0 right-0 z-20 md:absolute md:top-4 md:right-4 md:bottom-auto md:left-auto md:transform-none">
+        <div id="controls-container" class="bg-white p-4 rounded-t-xl md:rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">Select Empires to Display</h3>
+            <div id="empire-checkboxes" class="space-y-3">
+                <!-- Checkboxes will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile-only FAB to toggle the controls panel -->
+    <button id="toggle-controls-btn" class="md:hidden fixed bottom-4 right-4 z-30 bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg text-2xl">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+    </button>
+    
+    <!-- Map Type Toggle -->
+    <div id="map-type-control" class="absolute top-4 left-4 z-10 flex shadow-md">
+        <button id="map-btn" class="map-type-button active">Map</button>
+        <button id="satellite-btn" class="map-type-button">Satellite</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // ===================================================================
+        // PASTE YOUR GOOGLE MAPS API KEY HERE
+        // Replace "YOUR_API_KEY" with your actual key.
+        // ===================================================================
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+        // ===================================================================
+
+
+        let map;
+        let infoWindow;
+        const activeElements = {}; // Tracks active polygons and markers
+
+        const empiresData = {
+            roman: {
+                name: "Roman Empire", color: '#e6194B',
+                polygons: [[ {lat: 43.39, lng: -9.23}, {lat: 36.14, lng: -5.63}, {lat: 30.2, lng: -9.5}, {lat: 34.6, lng: 11.0}, {lat: 31.0, lng: 25.0}, {lat: 31.5, lng: 32.5}, {lat: 33.0, lng: 35.5}, {lat: 36.0, lng: 36.0}, {lat: 41.5, lng: 39.7}, {lat: 41.0, lng: 45.0}, {lat: 44.0, lng: 47.0}, {lat: 45.0, lng: 33.0}, {lat: 44.3, lng: 28.7}, {lat: 46.5, lng: 20.0}, {lat: 45.8, lng: 13.8}, {lat: 48.7, lng: 9.0}, {lat: 51.0, lng: 5.0}, {lat: 52.5, lng: -5.0} ]],
+                cities: [
+                    { name: 'Rome (Capital)', lat: 41.9028, lng: 12.4964, isCapital: true },
+                    { name: 'Carthage', lat: 36.852, lng: 10.334 },
+                    { name: 'Alexandria', lat: 31.2001, lng: 29.9187 },
+                    { name: 'Constantinople', lat: 41.0082, lng: 28.9784 }
+                ]
+            },
+            mongol: {
+                name: "Mongol Empire", color: '#3cb44b',
+                polygons: [[ {lat: 49.0, lng: 25.0}, {lat: 55.0, lng: 85.0}, {lat: 52.0, lng: 120.0}, {lat: 40.0, lng: 124.0}, {lat: 22.0, lng: 110.0}, {lat: 25.0, lng: 95.0}, {lat: 28.0, lng: 70.0}, {lat: 35.0, lng: 60.0}, {lat: 30.0, lng: 48.0}, {lat: 38.0, lng: 40.0}, {lat: 43.0, lng: 35.0} ]],
+                cities: [
+                    { name: 'Karakorum (Capital)', lat: 47.213, lng: 102.846, isCapital: true },
+                    { name: 'Beijing (Khanbaliq)', lat: 39.9042, lng: 116.4074 },
+                    { name: 'Samarkand', lat: 39.6542, lng: 66.9758 }
+                ]
+            },
+            persian: {
+                name: "Achaemenid Empire", color: '#ffe119',
+                polygons: [[ {lat: 42.0, lng: 22.0}, {lat: 40.0, lng: 40.0}, {lat: 42.0, lng: 52.0}, {lat: 38.0, lng: 72.0}, {lat: 29.0, lng: 70.0}, {lat: 25.0, lng: 62.0}, {lat: 30.0, lng: 50.0}, {lat: 30.0, lng: 32.0}, {lat: 35.0, lng: 27.0} ]],
+                 cities: [
+                    { name: 'Persepolis (Capital)', lat: 29.9346, lng: 52.8911, isCapital: true },
+                    { name: 'Babylon', lat: 32.542, lng: 44.421 },
+                    { name: 'Susa', lat: 32.189, lng: 48.243 }
+                ]
+            },
+            british: {
+                name: "British Empire", color: '#911eb4',
+                polygons: [ [ {lat: 58.6, lng: -7.5}, {lat: 50.0, lng: -5.7}, {lat: 50.7, lng: 1.4}, {lat: 52.9, lng: 0.5}, {lat: 55.8, lng: -1.0} ], [ {lat: 78.9, lng: -123}, {lat: 49.0, lng: -123}, {lat: 45.0, lng: -95}, {lat: 43.0, lng: -79}, {lat: 51.0, lng: -56}, {lat: 60.0, lng: -64} ], [ {lat: -12.5, lng: 113}, {lat: -38.0, lng: 141}, {lat: -12.0, lng: 142}, {lat: -10.0, lng: 130} ], [ {lat: -17.0, lng: 11.7}, {lat: -34.8, lng: 20.0}, {lat: -28.7, lng: 32.5}, {lat: -15.0, lng: 35.0}, {lat: -10.0, lng: 25.0} ], [ {lat: 35.0, lng: 68.0}, {lat: 23.0, lng: 97.0}, {lat: 8.0, lng: 77.0}, {lat: 20.0, lng: 68.0} ] ],
+                cities: [
+                    { name: 'London (Capital)', lat: 51.5074, lng: -0.1278, isCapital: true },
+                    { name: 'Kolkata', lat: 22.5726, lng: 88.3639 },
+                    { name: 'Ottawa', lat: 45.4215, lng: -75.6972 },
+                    { name: 'Canberra', lat: -35.2809, lng: 149.1300 }
+                ]
+            },
+             ottoman: {
+                name: "Ottoman Empire", color: '#f58231',
+                polygons: [[ { lat: 48, lng: 16 }, { lat: 47, lng: 38 }, {lat: 38, lng: 48.5}, {lat: 30, lng: 48}, {lat: 22, lng: 40}, {lat: 26, lng: 28}, {lat: 32, lng: 11}, {lat: 38, lng: 6}, {lat: 42.5, lng: 13} ]],
+                 cities: [
+                    { name: 'Constantinople (Capital)', lat: 41.0082, lng: 28.9784, isCapital: true },
+                    { name: 'Cairo', lat: 30.0444, lng: 31.2357 },
+                    { name: 'Baghdad', lat: 33.3152, lng: 44.3661 }
+                ]
+            },
+            macedonian: {
+                name: "Macedonian Empire", color: '#4363d8',
+                polygons: [[ {lat: 41.5, lng: 21.0}, {lat: 40.0, lng: 38.0}, {lat: 37.0, lng: 58.0}, {lat: 33.0, lng: 73.0}, {lat: 28.0, lng: 65.0}, {lat: 25.0, lng: 55.0}, {lat: 30.0, lng: 32.0}, {lat: 34.0, lng: 26.0} ]],
+                cities: [
+                    { name: 'Pella (Capital)', lat: 40.760, lng: 22.522, isCapital: true },
+                    { name: 'Babylon', lat: 32.542, lng: 44.421 },
+                    { name: 'Alexandria', lat: 31.2001, lng: 29.9187 }
+                ]
+            }
+        };
+
+        function createMarkerIcon(color, isCapital) {
+            return {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: isCapital ? 10 : 6,
+                fillColor: color, fillOpacity: 0.9,
+                strokeColor: 'white', strokeWeight: 1.5,
+            };
+        }
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 30, lng: 45 }, zoom: 3, mapTypeId: 'terrain',
+                disableDefaultUI: true, zoomControl: true,
+                // On mobile, move zoom controls to not interfere with UI
+                zoomControlOptions: { position: google.maps.ControlPosition.LEFT_TOP }
+            });
+            
+            infoWindow = new google.maps.InfoWindow();
+            
+            const container = document.getElementById('empire-checkboxes');
+            Object.keys(empiresData).forEach(key => {
+                const data = empiresData[key];
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.id = key; checkbox.value = key;
+                checkbox.className = 'custom-checkbox'; checkbox.style.borderColor = data.color;
+                checkbox.style.setProperty('--empire-color', data.color);
+                const label = document.createElement('label');
+                label.htmlFor = key; label.textContent = data.name; label.className = 'text-gray-700 cursor-pointer';
+                div.appendChild(checkbox); div.appendChild(label);
+                container.appendChild(div);
+                checkbox.addEventListener('change', (event) => {
+                    toggleEmpire(event.target.value, event.target.checked);
+                });
+            });
+
+            const mapBtn = document.getElementById('map-btn');
+            const satelliteBtn = document.getElementById('satellite-btn');
+            mapBtn.addEventListener('click', () => { map.setMapTypeId('terrain'); mapBtn.classList.add('active'); satelliteBtn.classList.remove('active'); });
+            satelliteBtn.addEventListener('click', () => { map.setMapTypeId('satellite'); satelliteBtn.classList.add('active'); mapBtn.classList.remove('active'); });
+            
+            // Mobile controls toggle
+            const toggleBtn = document.getElementById('toggle-controls-btn');
+            const controlsWrapper = document.getElementById('controls-wrapper');
+            toggleBtn.addEventListener('click', () => {
+                controlsWrapper.classList.toggle('is-open');
+            });
+            // Close panel if map is clicked
+            map.addListener('click', () => {
+                controlsWrapper.classList.remove('is-open');
+            });
+        }
+
+        function toggleEmpire(empireKey, isVisible) {
+            if (isVisible) {
+                const data = empiresData[empireKey];
+                activeElements[empireKey] = { polygons: [], markers: [] };
+
+                data.polygons.forEach(path => {
+                    const polygon = new google.maps.Polygon({
+                        paths: path, strokeColor: data.color, strokeOpacity: 0.8,
+                        strokeWeight: 1.5, fillColor: data.color, fillOpacity: 0.35, map: map
+                    });
+                    activeElements[empireKey].polygons.push(polygon);
+                });
+
+                data.cities.forEach(city => {
+                    const marker = new google.maps.Marker({
+                        position: { lat: city.lat, lng: city.lng }, map: map,
+                        title: city.name, icon: createMarkerIcon(data.color, city.isCapital)
+                    });
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(`<strong>${city.name}</strong>`);
+                        infoWindow.open(map, marker);
+                    });
+                    activeElements[empireKey].markers.push(marker);
+                });
+
+            } else {
+                if (activeElements[empireKey]) {
+                    activeElements[empireKey].polygons.forEach(p => p.setMap(null));
+                    activeElements[empireKey].markers.forEach(m => m.setMap(null));
+                    delete activeElements[empireKey];
+                }
+            }
+        }
+        
+        function loadGoogleMapsApi() {
+            const apiKey = GOOGLE_MAPS_API_KEY; 
+            
+            if (apiKey === "YOUR_API_KEY" || !apiKey) {
+                console.error("Google Maps API Key is missing. Please replace 'YOUR_API_KEY' in the code.");
+                document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>Configuration Error</h2><p class='text-gray-700'>Please set your Google Maps API key in the source code.</p></div></div>`;
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
+            script.async = true;
+            script.onerror = () => { 
+                console.error("Error loading Google Maps script. Check your API key, network connection, and API restrictions in Google Cloud Console.");
+                document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>Map Load Error</h2><p class='text-gray-700'>Could not load the Google Maps script. Please check your API key settings in the Google Cloud Console.</p></div></div>`;
+            };
+            document.head.appendChild(script);
+        }
+
+        window.onload = loadGoogleMapsApi;
+    </script>
+</body>
+</html>

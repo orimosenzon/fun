@@ -318,31 +318,53 @@
 <body>
     <div id="toolbar">
         <div class="toolbar-group">
-            <button id="editButton" class="toolbar-button" title="עריכה"><i class="fas fa-pencil-alt"></i><span class="button-text">עריכה</span></button>
+            <button id="editButton" class="toolbar-button" title="עריכה">
+                <i class="fas fa-pencil-alt"></i>
+                <span class="button-text">עריכה</span>
+            </button>
         </div>
 
         <div class="toolbar-divider"></div>
 
         <div class="toolbar-group">
-            <button id="undoButton" class="toolbar-button" title="בטל (Ctrl+Z)"><i class="fas fa-undo"></i></button>
-            <button id="redoButton" class="toolbar-button" title="בצע שוב (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+            <button id="undoButton" class="toolbar-button" title="בטל (Ctrl+Z)">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button id="redoButton" class="toolbar-button" title="בצע שוב (Ctrl+Y)">
+                <i class="fas fa-redo"></i>
+            </button>
         </div>
 
         <div class="toolbar-divider"></div>
 
         <div class="toolbar-group">
-            <button id="prevFrameButton" class="nav-button" title="התמונה הקודמת"><i class="fas fa-chevron-right"></i></button>
+            <button id="prevFrameButton" class="nav-button" title="התמונה הקודמת">
+                <i class="fas fa-chevron-right"></i>
+            </button>
             <span id="frameIndicator">תמונה: 1/1</span>
-            <button id="nextFrameButton" class="nav-button" title="התמונה הבאה"><i class="fas fa-chevron-left"></i></button>
-            <button id="addFrameButton" class="toolbar-button" title="הוסף תמונה"><i class="fas fa-plus-square"></i><span class="button-text">הוסף</span></button>
+            <button id="nextFrameButton" class="nav-button" title="התמונה הבאה">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button id="addFrameButton" class="toolbar-button" title="הוסף תמונה">
+                <i class="fas fa-plus-square"></i>
+                <span class="button-text">הוסף</span>
+            </button>
             <span id="zoomIndicator">זום: 100%</span>
         </div>
         
         <div class="toolbar-divider"></div>
 
         <div class="toolbar-group">
-            <button id="saveMovieButton" class="toolbar-button" title="שמור סרט"><i class="fas fa-save"></i><span class="button-text">שמור</span></button>
-            <label for="loadMovieInput" class="file-input-label toolbar-button" title="העלה סרט"><i class="fas fa-upload"></i><span class="button-text">העלה</span></label>
+            <button id="saveMovieButton" class="toolbar-button" title="שמור סרט">
+                <i class="fas fa-save"></i>
+                <span class="button-text">שמור</span>
+            </button>
+            <label for="loadMovieInput" 
+                   class="file-input-label toolbar-button" 
+                   title="העלה סרט">
+                <i class="fas fa-upload"></i>
+                <span class="button-text">העלה</span>
+            </label>
             <input type="file" id="loadMovieInput" accept=".clp" style="display: none;">
         </div>
         
@@ -354,7 +376,9 @@
                     <i class="fas fa-play"></i>
                     <span class="button-text">נגן</span>
                 </span>
-                <label for="showControlsCheckbox" class="checkbox-in-button-container" title="הצג/הסתר נקודות בקרה בזמן אנימציה">
+                <label for="showControlsCheckbox" 
+                       class="checkbox-in-button-container" 
+                       title="הצג/הסתר נקודות בקרה בזמן אנימציה">
                     <input type="checkbox" id="showControlsCheckbox">
                     <span class="checkbox-text">הצג נק' בקרה</span>
                 </label>
@@ -364,7 +388,13 @@
         <div class="toolbar-flexible-spacer"></div>
         
         <div class="toolbar-group">
-            <button id="clearCanvasButton" class="toolbar-button" title="נקה הכל" style="background-color: #6c757d;"><i class="fas fa-trash-alt"></i><span class="button-text">נקה</span></button>
+            <button id="clearCanvasButton" 
+                    class="toolbar-button" 
+                    title="נקה הכל" 
+                    style="background-color: #6c757d;">
+                <i class="fas fa-trash-alt"></i>
+                <span class="button-text">נקה</span>
+            </button>
         </div>
     </div>
 
@@ -373,27 +403,64 @@
     </canvas>
 
     <div id="timelineContainer">
-        <!-- Timeline frames (canvas elements) will be appended here by JavaScript -->
+        <!-- Timeline frames will be appended here by JavaScript -->
     </div>
 
     <div dir="rtl" id="instructions">
-        <p><strong><i class="fas fa-info-circle" style="margin-left: 8px;"></i>הוראות שימוש:</strong></p>
+        <p><strong>
+            <i class="fas fa-info-circle" style="margin-left: 8px;"></i>
+            הוראות שימוש:
+        </strong></p>
         <ul>
-            <li>מתחת למשטח הציור הראשי, יופיע <strong>ציר זמן</strong> עם תמונות ממוזערות של כל הפריימים. ניתן ללחוץ על פריים בציר הזמן כדי לנווט אליו.</li>
-            <li>בזמן ניגון האנימציה, הפריים הנוכחי בציר הזמן יודגש במסגרת אדומה.</li>
-            <li>השתמש בכפתורי <strong>"בטל"</strong> (<i class="fas fa-undo"></i> Ctrl+Z) ו<strong>"בצע שוב"</strong> (<i class="fas fa-redo"></i> Ctrl+Y) לתיקונים.</li>
-            <li>לחץ על <strong>"הוסף תמונה"</strong> (<i class="fas fa-plus-square"></i>) כדי ליצור תמונה חדשה באנימציה. המערכת תעבור אוטומטית למצב עריכה.</li>
+            <li>
+                מתחת למשטח הציור הראשי, יופיע <strong>ציר זמן</strong> 
+                עם תמונות ממוזערות של כל הפריימים. 
+                ניתן ללחוץ על פריים בציר הזמן כדי לנווט אליו.
+            </li>
+            <li>
+                בזמן ניגון האנימציה, הפריים הנוכחי בציר הזמן 
+                יודגש במסגרת אדומה.
+            </li>
+            <li>
+                השתמש בכפתורי <strong>"בטל"</strong> 
+                (<i class="fas fa-undo"></i> Ctrl+Z) 
+                ו<strong>"בצע שוב"</strong> 
+                (<i class="fas fa-redo"></i> Ctrl+Y) לתיקונים.
+            </li>
+            <li>
+                לחץ על <strong>"הוסף תמונה"</strong> 
+                (<i class="fas fa-plus-square"></i>) 
+                כדי ליצור תמונה חדשה באנימציה. 
+                המערכת תעבור אוטומטית למצב עריכה.
+            </li>
             <li>**יצירת רצפים חדשים אפשרית רק בתמונה הראשונה.**</li>
-            <li>לחץ על משטח הציור כדי להתחיל לצייר רצף חדש (רק בתמונה 1) או להוסיף נקודות לרצף קיים (רק בתמונה 1).</li>
+            <li>
+                לחץ על משטח הציור כדי להתחיל לצייר רצף חדש (רק בתמונה 1) 
+                או להוסיף נקודות לרצף קיים (רק בתמונה 1).
+            </li>
             <li>בסיום ציור רצף, לחץ <strong>רווח</strong>.</li>
             <li>השתמש ב<strong>גלגלת העכבר</strong> לזום.</li>
-            <li>לחץ על <strong>"עריכה"</strong> (<i class="fas fa-pencil-alt"></i>):
+            <li>
+                לחץ על <strong>"עריכה"</strong> 
+                (<i class="fas fa-pencil-alt"></i>):
                 <ul>
-                    <li>הרצפים בתמונה הנוכחית יהפכו לניתנים לעריכה. ניתן לגרור נקודות בקרה ועגינה, או רצף שלם.</li>
+                    <li>
+                        הרצפים בתמונה הנוכחית יהפכו לניתנים לעריכה. 
+                        ניתן לגרור נקודות בקרה ועגינה, או רצף שלם.
+                    </li>
                 </ul>
             </li>
-            <li>לחץ על <strong>"נגן סרט"</strong> (<i class="fas fa-play"></i>). בתוך הכפתור, תיבת הסימון <strong>"הצג נק' בקרה"</strong> תאפשר הצגת נקודות בקרה בזמן האנימציה.</li>
-            <li><strong>"שמור סרט"</strong> (<i class="fas fa-save"></i>), <strong>"העלה סרט"</strong> (<i class="fas fa-upload"></i>), <strong>"נקה הכל"</strong> (<i class="fas fa-trash-alt"></i>).</li>
+            <li>
+                לחץ על <strong>"נגן סרט"</strong> 
+                (<i class="fas fa-play"></i>). 
+                בתוך הכפתור, תיבת הסימון <strong>"הצג נק' בקרה"</strong> 
+                תאפשר הצגת נקודות בקרה בזמן האנימציה.
+            </li>
+            <li>
+                <strong>"שמור סרט"</strong> (<i class="fas fa-save"></i>), 
+                <strong>"העלה סרט"</strong> (<i class="fas fa-upload"></i>), 
+                <strong>"נקה הכל"</strong> (<i class="fas fa-trash-alt"></i>).
+            </li>
         </ul>
     </div>
 
@@ -418,13 +485,19 @@
         const undoButton = document.getElementById('undoButton');
         const redoButton = document.getElementById('redoButton');
         const clearCanvasButton = document.getElementById('clearCanvasButton'); 
-        const showControlsCheckbox = document.getElementById('showControlsCheckbox');
+        const showControlsCheckbox = 
+            document.getElementById('showControlsCheckbox');
         const timelineContainer = document.getElementById('timelineContainer'); 
 
         // --- Global State Variables ---
         let animationFrames = []; 
         let currentFrameIndex = 0;
-        let activeCurve = { id: 'active_initial', anchors: [], segments: [], showAnchorsInEdit: true }; 
+        let activeCurve = { 
+            id: 'active_initial', 
+            anchors: [], 
+            segments: [], 
+            showAnchorsInEdit: true 
+        }; 
         let isDrawingMode = false;  
         let isEditModeActive = false; 
         let draggedPointInfo = null; 
@@ -466,28 +539,58 @@
 
 
         // --- Simple Modal Function ---
-        function showModal(message, type = 'info', onConfirmCallback = null, showCancelButton = false) {
+        function showModal(
+            message, 
+            type = 'info', 
+            onConfirmCallback = null, 
+            showCancelButton = false
+        ) {
             const existingModal = document.getElementById('simpleModal');
             if (existingModal) existingModal.remove();
             const modalOverlay = document.createElement('div');
             modalOverlay.id = 'simpleModal';
-            Object.assign(modalOverlay.style, { position: 'fixed', left: '0', top: '0', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '10000', direction: 'rtl'});
+            Object.assign(modalOverlay.style, { 
+                position: 'fixed', left: '0', top: '0', 
+                width: '100%', height: '100%', 
+                backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', 
+                justifyContent: 'center', alignItems: 'center', 
+                zIndex: '10000', direction: 'rtl'
+            });
             const modalContent = document.createElement('div');
-            Object.assign(modalContent.style, {backgroundColor: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', textAlign: 'center', maxWidth: '400px', width: '90%'});
+            Object.assign(modalContent.style, {
+                backgroundColor: '#fff', padding: '25px', 
+                borderRadius: '8px', 
+                boxShadow: '0 4px 15px rgba(0,0,0,0.2)', 
+                textAlign: 'center', maxWidth: '400px', width: '90%'
+            });
             const messageP = document.createElement('p');
             messageP.textContent = message;
-            Object.assign(messageP.style, { marginBottom: '20px', fontSize: '16px', color: '#333' });
+            Object.assign(messageP.style, 
+                { marginBottom: '20px', fontSize: '16px', color: '#333' }
+            );
             modalContent.appendChild(messageP);
             const buttonContainer = document.createElement('div');
             const confirmButton = document.createElement('button');
             confirmButton.textContent = 'אישור';
-            Object.assign(confirmButton.style, { padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginLeft: showCancelButton ? '10px' : '0'});
-            confirmButton.onclick = () => { if (onConfirmCallback) onConfirmCallback(); modalOverlay.remove(); };
+            Object.assign(confirmButton.style, { 
+                padding: '10px 20px', backgroundColor: '#007bff', 
+                color: 'white', border: 'none', borderRadius: '5px', 
+                cursor: 'pointer', 
+                marginLeft: showCancelButton ? '10px' : '0'
+            });
+            confirmButton.onclick = () => { 
+                if (onConfirmCallback) onConfirmCallback(); 
+                modalOverlay.remove(); 
+            };
             buttonContainer.appendChild(confirmButton);
             if (showCancelButton) {
                 const cancelButton = document.createElement('button');
                 cancelButton.textContent = 'ביטול';
-                Object.assign(cancelButton.style, { padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'});
+                Object.assign(cancelButton.style, { 
+                    padding: '10px 20px', backgroundColor: '#6c757d', 
+                    color: 'white', border: 'none', borderRadius: '5px', 
+                    cursor: 'pointer'
+                });
                 cancelButton.onclick = () => modalOverlay.remove();
                 buttonContainer.appendChild(cancelButton);
             }
@@ -501,7 +604,11 @@
         function vecSub(v1, v2) { return { x: v1.x - v2.x, y: v1.y - v2.y }; }
         function vecScale(v, s) { return { x: v.x * s, y: v.y * s }; }
         function vecLength(v) { return Math.sqrt(v.x * v.x + v.y * v.y); }
-        function vecNormalize(v) { const len = vecLength(v); if (len === 0) return { x: 0, y: 0 }; return vecScale(v, 1 / len); }
+        function vecNormalize(v) { 
+            const len = vecLength(v); 
+            if (len === 0) return { x: 0, y: 0 }; 
+            return vecScale(v, 1 / len); 
+        }
         function interpolatePoint(p1, p2, t) {
             return {
                 x: p1.x + (p2.x - p1.x) * t,
@@ -517,68 +624,297 @@
 
             const anchor0_obj = points[0]; 
             const anchor1_obj = points[1]; 
-            let cp0_1 = vecAdd(anchor0_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
+            let cp0_1 = vecAdd(
+                anchor0_obj, 
+                vecScale(vecSub(anchor1_obj, anchor0_obj), tension)
+            );
 
             if (numAnchors === 2) { 
-                let cp0_2 = vecSub(anchor1_obj, vecScale(vecSub(anchor1_obj, anchor0_obj), tension));
-                segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
+                let cp0_2 = vecSub(
+                    anchor1_obj, 
+                    vecScale(vecSub(anchor1_obj, anchor0_obj), tension)
+                );
+                segments.push({ 
+                    p0_obj: anchor0_obj, cp1: cp0_1, 
+                    cp2: cp0_2, p1_obj: anchor1_obj 
+                });
                 return segments;
             }
 
             const anchor2_obj = points[2];
-            let tangent_at_p1_dir = vecNormalize(vecSub(anchor2_obj, anchor0_obj));
+            let tangent_at_p1_dir = vecNormalize(
+                vecSub(anchor2_obj, anchor0_obj)
+            );
             if (tangent_at_p1_dir.x === 0 && tangent_at_p1_dir.y === 0) {
-                tangent_at_p1_dir = vecNormalize(vecSub(anchor1_obj, anchor0_obj));
+                tangent_at_p1_dir = vecNormalize(
+                    vecSub(anchor1_obj, anchor0_obj)
+                );
             }
             const len_p0p1 = vecLength(vecSub(anchor1_obj, anchor0_obj));
-            let cp0_2 = vecSub(anchor1_obj, vecScale(tangent_at_p1_dir, len_p0p1 * tension));
-            segments.push({ p0_obj: anchor0_obj, cp1: cp0_1, cp2: cp0_2, p1_obj: anchor1_obj });
+            let cp0_2 = vecSub(
+                anchor1_obj, 
+                vecScale(tangent_at_p1_dir, len_p0p1 * tension)
+            );
+            segments.push({ 
+                p0_obj: anchor0_obj, cp1: cp0_1, 
+                cp2: cp0_2, p1_obj: anchor1_obj 
+            });
 
             for (let i = 1; i < numAnchors - 1; i++) {
                 const current_anchor_start_obj = points[i];
                 const current_anchor_end_obj = points[i+1];
                 
                 const prev_segment_cp2 = segments[i-1].cp2;
-                const current_cp1 = vecSub(vecScale(current_anchor_start_obj, 2), prev_segment_cp2);
+                const current_cp1 = vecSub(
+                    vecScale(current_anchor_start_obj, 2), 
+                    prev_segment_cp2
+                );
                 
                 let current_cp2;
                 if (i < numAnchors - 2) { 
                     const anchor_next_next_obj = points[i+2];
-                    let tangent_at_current_p_end_dir = vecNormalize(vecSub(anchor_next_next_obj, current_anchor_start_obj));
-                     if (tangent_at_current_p_end_dir.x === 0 && tangent_at_current_p_end_dir.y === 0) { 
-                         tangent_at_current_p_end_dir = vecNormalize(vecSub(current_anchor_end_obj, current_anchor_start_obj));
+                    let tangent_at_current_p_end_dir = vecNormalize(
+                        vecSub(anchor_next_next_obj, current_anchor_start_obj)
+                    );
+                     if (tangent_at_current_p_end_dir.x === 0 && 
+                         tangent_at_current_p_end_dir.y === 0) { 
+                         tangent_at_current_p_end_dir = vecNormalize(
+                             vecSub(current_anchor_end_obj, 
+                                    current_anchor_start_obj)
+                         );
                     }
-                    const len_segment = vecLength(vecSub(current_anchor_end_obj, current_anchor_start_obj));
-                    current_cp2 = vecSub(current_anchor_end_obj, vecScale(tangent_at_current_p_end_dir, len_segment * tension));
+                    const len_segment = vecLength(
+                        vecSub(current_anchor_end_obj, current_anchor_start_obj)
+                    );
+                    current_cp2 = vecSub(
+                        current_anchor_end_obj, 
+                        vecScale(tangent_at_current_p_end_dir, 
+                                 len_segment * tension)
+                    );
                 } else { 
-                    current_cp2 = vecSub(current_anchor_end_obj, vecScale(vecSub(current_anchor_end_obj, current_anchor_start_obj), tension));
+                    current_cp2 = vecSub(
+                        current_anchor_end_obj, 
+                        vecScale(vecSub(current_anchor_end_obj, 
+                                        current_anchor_start_obj), 
+                                 tension)
+                    );
                 }
-                segments.push({ p0_obj: current_anchor_start_obj, cp1: current_cp1, cp2: current_cp2, p1_obj: current_anchor_end_obj });
+                segments.push({ 
+                    p0_obj: current_anchor_start_obj, cp1: current_cp1, 
+                    cp2: current_cp2, p1_obj: current_anchor_end_obj 
+                });
             }
             return segments;
         }
         
         // --- Undo/Redo and Cloning Logic ---
-        function cloneSingleSequence(seq) { if (!seq || !seq.anchors) return { id: 'empty_cloned_seq_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: false }; const newAnchors = seq.anchors.map(a => ({ ...a })); const newSegments = (seq.segments && Array.isArray(seq.segments)) ? seq.segments.map(seg => { const p0Index = seq.anchors.indexOf(seg.p0_obj); const p1Index = seq.anchors.indexOf(seg.p1_obj); return { cp1: { ...seg.cp1 }, cp2: { ...seg.cp2 }, p0_obj: p0Index !== -1 ? newAnchors[p0Index] : null, p1_obj: p1Index !== -1 ? newAnchors[p1Index] : null }; }) : []; return { id: seq.id || 'cloned_seq_' + Date.now(), anchors: newAnchors, segments: newSegments, showAnchorsInEdit: seq.showAnchorsInEdit }; }
-        function cloneSingleFrame(sourceFrameData) { if (!sourceFrameData || !Array.isArray(sourceFrameData)) return []; return sourceFrameData.map(seq => cloneSingleSequence(seq)); }
-        function cloneAnimationFramesState(sourceFrames) { if (!sourceFrames || !Array.isArray(sourceFrames)) return []; return sourceFrames.map(frame => cloneSingleFrame(frame)); }
-        function saveStateForUndo() { if (isAnimating && draggedPointInfo === null) return; const state = { animationFrames: cloneAnimationFramesState(animationFrames), currentFrameIndex: currentFrameIndex, activeCurve: cloneSingleSequence(activeCurve), isDrawingMode: isDrawingMode, isEditModeActive: isEditModeActive, scaleFactor: scaleFactor, originX: originX, originY: originY }; undoStack.push(state); if (undoStack.length > MAX_UNDO_STEPS) undoStack.shift(); redoStack = []; updateUndoRedoButtons(); }
-        function performUndo() { if (undoStack.length <= 1 || (isAnimating && draggedPointInfo === null) ) return; saveStateToStack(redoStack, { animationFrames: cloneAnimationFramesState(animationFrames), currentFrameIndex: currentFrameIndex, activeCurve: cloneSingleSequence(activeCurve), isDrawingMode: isDrawingMode, isEditModeActive: isEditModeActive, scaleFactor: scaleFactor, originX: originX, originY: originY }); const prevState = undoStack.pop(); animationFrames = prevState.animationFrames; currentFrameIndex = prevState.currentFrameIndex; activeCurve = prevState.activeCurve; isDrawingMode = prevState.isDrawingMode; isEditModeActive = prevState.isEditModeActive; scaleFactor = prevState.scaleFactor; originX = prevState.originX; originY = prevState.originY; if (animationFrames[currentFrameIndex]) animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = isEditModeActive); updateUndoRedoButtons(); updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); highlightCurrentTimelineFrame(); }
-        function performRedo() { if (redoStack.length === 0 || (isAnimating && draggedPointInfo === null) ) return; saveStateToStack(undoStack, { animationFrames: cloneAnimationFramesState(animationFrames), currentFrameIndex: currentFrameIndex, activeCurve: cloneSingleSequence(activeCurve), isDrawingMode: isDrawingMode, isEditModeActive: isEditModeActive, scaleFactor: scaleFactor, originX: originX, originY: originY }); const nextState = redoStack.pop(); animationFrames = nextState.animationFrames; currentFrameIndex = nextState.currentFrameIndex; activeCurve = nextState.activeCurve; isDrawingMode = nextState.isDrawingMode; isEditModeActive = nextState.isEditModeActive; scaleFactor = nextState.scaleFactor; originX = nextState.originX; originY = nextState.originY; if (animationFrames[currentFrameIndex]) animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = isEditModeActive); updateUndoRedoButtons(); updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); highlightCurrentTimelineFrame(); }
-        function saveStateToStack(stack, state) { stack.push(state); if (stack.length > MAX_UNDO_STEPS) stack.shift(); }
-        function updateUndoRedoButtons() { undoButton.disabled = undoStack.length <= 1 || (isAnimating && draggedPointInfo === null); redoButton.disabled = redoStack.length === 0 || (isAnimating && draggedPointInfo === null); }
+        function cloneSingleSequence(seq) { 
+            if (!seq || !seq.anchors) return { 
+                id: 'empty_cloned_seq_' + Date.now(), anchors: [], 
+                segments: [], showAnchorsInEdit: false 
+            }; 
+            const newAnchors = seq.anchors.map(a => ({ ...a })); 
+            const newSegments = (seq.segments && Array.isArray(seq.segments)) ? 
+                seq.segments.map(seg => { 
+                    const p0Index = seq.anchors.indexOf(seg.p0_obj); 
+                    const p1Index = seq.anchors.indexOf(seg.p1_obj); 
+                    return { 
+                        cp1: { ...seg.cp1 }, cp2: { ...seg.cp2 }, 
+                        p0_obj: p0Index !== -1 ? newAnchors[p0Index] : null, 
+                        p1_obj: p1Index !== -1 ? newAnchors[p1Index] : null 
+                    }; 
+                }) : []; 
+            return { 
+                id: seq.id || 'cloned_seq_' + Date.now(), 
+                anchors: newAnchors, segments: newSegments, 
+                showAnchorsInEdit: seq.showAnchorsInEdit 
+            }; 
+        }
+        function cloneSingleFrame(sfData) { 
+            if (!sfData || !Array.isArray(sfData)) return []; 
+            return sfData.map(seq => cloneSingleSequence(seq)); 
+        }
+        function cloneAnimationFramesState(sFrames) { 
+            if (!sFrames || !Array.isArray(sFrames)) return []; 
+            return sFrames.map(frame => cloneSingleFrame(frame)); 
+        }
+        function saveStateForUndo() { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            const state = { 
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex, 
+                activeCurve: cloneSingleSequence(activeCurve), 
+                isDrawingMode: isDrawingMode, 
+                isEditModeActive: isEditModeActive, 
+                scaleFactor: scaleFactor, originX: originX, originY: originY 
+            }; 
+            undoStack.push(state); 
+            if (undoStack.length > MAX_UNDO_STEPS) undoStack.shift(); 
+            redoStack = []; 
+            updateUndoRedoButtons(); 
+        }
+        function performUndo() { 
+            if (undoStack.length <= 1 || 
+                (isAnimating && draggedPointInfo === null) ) return; 
+            saveStateToStack(redoStack, { 
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex, 
+                activeCurve: cloneSingleSequence(activeCurve), 
+                isDrawingMode: isDrawingMode, 
+                isEditModeActive: isEditModeActive, 
+                scaleFactor: scaleFactor, originX: originX, originY: originY 
+            }); 
+            const prevState = undoStack.pop(); 
+            animationFrames = prevState.animationFrames; 
+            currentFrameIndex = prevState.currentFrameIndex; 
+            activeCurve = prevState.activeCurve; 
+            isDrawingMode = prevState.isDrawingMode; 
+            isEditModeActive = prevState.isEditModeActive; 
+            scaleFactor = prevState.scaleFactor; 
+            originX = prevState.originX; 
+            originY = prevState.originY; 
+            if (animationFrames[currentFrameIndex]) 
+                animationFrames[currentFrameIndex].forEach(
+                    seq => seq.showAnchorsInEdit = isEditModeActive
+                ); 
+            updateUndoRedoButtons(); updateFrameUI(); redrawCanvas(); 
+            updateTimelineDisplay(); highlightCurrentTimelineFrame(); 
+        }
+        function performRedo() { 
+            if (redoStack.length === 0 || 
+                (isAnimating && draggedPointInfo === null) ) return; 
+            saveStateToStack(undoStack, { 
+                animationFrames: cloneAnimationFramesState(animationFrames), 
+                currentFrameIndex: currentFrameIndex, 
+                activeCurve: cloneSingleSequence(activeCurve), 
+                isDrawingMode: isDrawingMode, 
+                isEditModeActive: isEditModeActive, 
+                scaleFactor: scaleFactor, originX: originX, originY: originY 
+            }); 
+            const nextState = redoStack.pop(); 
+            animationFrames = nextState.animationFrames; 
+            currentFrameIndex = nextState.currentFrameIndex; 
+            activeCurve = nextState.activeCurve; 
+            isDrawingMode = nextState.isDrawingMode; 
+            isEditModeActive = nextState.isEditModeActive; 
+            scaleFactor = nextState.scaleFactor; 
+            originX = nextState.originX; 
+            originY = nextState.originY; 
+            if (animationFrames[currentFrameIndex]) 
+                animationFrames[currentFrameIndex].forEach(
+                    seq => seq.showAnchorsInEdit = isEditModeActive
+                ); 
+            updateUndoRedoButtons(); updateFrameUI(); redrawCanvas(); 
+            updateTimelineDisplay(); highlightCurrentTimelineFrame(); 
+        }
+        function saveStateToStack(stack, state) { 
+            stack.push(state); 
+            if (stack.length > MAX_UNDO_STEPS) stack.shift(); 
+        }
+        function updateUndoRedoButtons() { 
+            undoButton.disabled = undoStack.length <= 1 || 
+                                  (isAnimating && draggedPointInfo === null); 
+            redoButton.disabled = redoStack.length === 0 || 
+                                  (isAnimating && draggedPointInfo === null); 
+        }
 
         // --- Frame Management ---
-        function resetApplicationToInitialState() { animationFrames = [[]]; currentFrameIndex = 0; activeCurve = { id: 'active_reset_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; isEditModeActive = false; scaleFactor = 1.0; originX = 0; originY = 0; undoStack = []; redoStack = []; saveStateForUndo(); updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); }
-        function initializeAppOnLoad() { resetApplicationToInitialState(); const checkboxContainer = playMovieButton.querySelector('.checkbox-in-button-container'); if (checkboxContainer) { checkboxContainer.addEventListener('click', (event) => { event.stopPropagation(); if (!isAnimating) redrawCanvas(); }); } }
-        function updateZoomIndicator() { zoomIndicator.textContent = `זום: ${Math.round(scaleFactor * 100)}%`; }
-        function updateFrameUI() { frameIndicator.textContent = `תמונה: ${currentFrameIndex + 1}/${animationFrames.length}`; updateZoomIndicator(); prevFrameButton.disabled = (isAnimating && draggedPointInfo === null) || currentFrameIndex === 0; nextFrameButton.disabled = (isAnimating && draggedPointInfo === null) || currentFrameIndex === animationFrames.length - 1; addFrameButton.disabled = (isAnimating && draggedPointInfo === null); editButton.classList.toggle('active', isEditModeActive); const currentFrameSequences = animationFrames[currentFrameIndex]; const currentFrameHasContent = currentFrameSequences && currentFrameSequences.length > 0; editButton.disabled = (isAnimating && draggedPointInfo === null) || (!currentFrameHasContent && currentFrameIndex !== 0 && !isDrawingMode); playMovieButton.disabled = animationFrames.length < 2; playMovieButton.classList.toggle('playing', isAnimating); const playActionGroup = playMovieButton.querySelector('.play-action-group'); const playIcon = playActionGroup ? playActionGroup.querySelector('i') : null; const playTextSpan = playActionGroup ? playActionGroup.querySelector('.button-text') : null; if (isAnimating) { if (playIcon) playIcon.className = 'fas fa-stop'; if (playTextSpan) playTextSpan.textContent = "עצור"; playMovieButton.title = "עצור סרט"; } else { if (playIcon) playIcon.className = 'fas fa-play'; if (playTextSpan) playTextSpan.textContent = "נגן"; playMovieButton.title = "נגן סרט"; } saveMovieButton.disabled = (isAnimating && draggedPointInfo === null) || animationFrames.length === 0 || (animationFrames.length === 1 && (!animationFrames[0] || animationFrames[0].length === 0)); loadMovieInput.disabled = (isAnimating && draggedPointInfo === null); updateUndoRedoButtons(); }
-        function rehydrateFrameData(loadedFrames) { return loadedFrames.map(frame => frame.map(seq => { const rehydratedAnchors = seq.anchors.map(a => ({...a})); const rehydratedSegments = seq.segments.map(seg => { let p0_ref = null, p1_ref = null; if (seg.p0_obj && typeof seg.p0_obj.x !== 'undefined') p0_ref = rehydratedAnchors.find(a => a.x === seg.p0_obj.x && a.y === seg.p0_obj.y); if (seg.p1_obj && typeof seg.p1_obj.x !== 'undefined') p1_ref = rehydratedAnchors.find(a => a.x === seg.p1_obj.x && a.y === seg.p1_obj.y); return { ...seg, p0_obj: p0_ref || seg.p0_obj, p1_obj: p1_ref || seg.p1_obj }; }); return { ...seq, anchors: rehydratedAnchors, segments: rehydratedSegments }; })); }
+        function resetApplicationToInitialState() { 
+            animationFrames = [[]]; currentFrameIndex = 0; 
+            activeCurve = { 
+                id: 'active_reset_' + Date.now(), anchors: [], 
+                segments: [], showAnchorsInEdit: true 
+            }; 
+            isDrawingMode = false; isEditModeActive = false; 
+            scaleFactor = 1.0; originX = 0; originY = 0; 
+            undoStack = []; redoStack = []; 
+            saveStateForUndo(); updateFrameUI(); redrawCanvas(); 
+            updateTimelineDisplay(); 
+        }
+        function initializeAppOnLoad() { 
+            resetApplicationToInitialState(); 
+            const checkboxContainer = 
+                playMovieButton.querySelector('.checkbox-in-button-container'); 
+            if (checkboxContainer) { 
+                checkboxContainer.addEventListener('click', (event) => { 
+                    event.stopPropagation(); if (!isAnimating) redrawCanvas(); 
+                }); 
+            } 
+        }
+        function updateZoomIndicator() { 
+            zoomIndicator.textContent = `זום: ${Math.round(scaleFactor*100)}%`; 
+        }
+        function updateFrameUI() { 
+            frameIndicator.textContent = 
+                `תמונה: ${currentFrameIndex + 1}/${animationFrames.length}`; 
+            updateZoomIndicator(); 
+            prevFrameButton.disabled = (isAnimating && draggedPointInfo===null) || 
+                                     currentFrameIndex === 0; 
+            nextFrameButton.disabled = (isAnimating && draggedPointInfo===null) || 
+                                     currentFrameIndex === animationFrames.length-1; 
+            addFrameButton.disabled = (isAnimating && draggedPointInfo === null); 
+            editButton.classList.toggle('active', isEditModeActive); 
+            const currentFrameSequences = animationFrames[currentFrameIndex]; 
+            const currentFrameHasContent = currentFrameSequences && 
+                                         currentFrameSequences.length > 0; 
+            editButton.disabled = (isAnimating && draggedPointInfo === null) || 
+                                  (!currentFrameHasContent && 
+                                   currentFrameIndex !== 0 && !isDrawingMode); 
+            playMovieButton.disabled = animationFrames.length < 2; 
+            playMovieButton.classList.toggle('playing', isAnimating); 
+            const playActionGroup = 
+                playMovieButton.querySelector('.play-action-group'); 
+            const playIcon = playActionGroup ? 
+                playActionGroup.querySelector('i') : null; 
+            const playTextSpan = playActionGroup ? 
+                playActionGroup.querySelector('.button-text') : null; 
+            if (isAnimating) { 
+                if (playIcon) playIcon.className = 'fas fa-stop'; 
+                if (playTextSpan) playTextSpan.textContent = "עצור"; 
+                playMovieButton.title = "עצור סרט"; 
+            } else { 
+                if (playIcon) playIcon.className = 'fas fa-play'; 
+                if (playTextSpan) playTextSpan.textContent = "נגן"; 
+                playMovieButton.title = "נגן סרט"; 
+            } 
+            saveMovieButton.disabled = 
+                (isAnimating && draggedPointInfo === null) || 
+                animationFrames.length === 0 || 
+                (animationFrames.length === 1 && 
+                 (!animationFrames[0] || animationFrames[0].length === 0)); 
+            loadMovieInput.disabled = (isAnimating && draggedPointInfo === null); 
+            updateUndoRedoButtons(); 
+        }
+        function rehydrateFrameData(loadedFrames) { 
+            return loadedFrames.map(frame => frame.map(seq => { 
+                const rehydratedAnchors = seq.anchors.map(a => ({...a})); 
+                const rehydratedSegments = seq.segments.map(seg => { 
+                    let p0_ref = null, p1_ref = null; 
+                    if (seg.p0_obj && typeof seg.p0_obj.x !== 'undefined') 
+                        p0_ref = rehydratedAnchors.find(
+                            a => a.x === seg.p0_obj.x && a.y === seg.p0_obj.y
+                        ); 
+                    if (seg.p1_obj && typeof seg.p1_obj.x !== 'undefined') 
+                        p1_ref = rehydratedAnchors.find(
+                            a => a.x === seg.p1_obj.x && a.y === seg.p1_obj.y
+                        ); 
+                    return { 
+                        ...seg, p0_obj: p0_ref || seg.p0_obj, 
+                        p1_obj: p1_ref || seg.p1_obj 
+                    }; 
+                }); 
+                return { 
+                    ...seq, anchors: rehydratedAnchors, 
+                    segments: rehydratedSegments 
+                }; 
+            })); 
+        }
 
         // --- Timeline Drawing Functions ---
         function getFrameBoundingBox(sequences) {
             if (!sequences || sequences.length === 0) return null;
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, hasContent = false;
+            let minX = Infinity, minY = Infinity, 
+                maxX = -Infinity, maxY = -Infinity, hasContent = false;
             sequences.forEach(seq => {
                 if (seq.anchors && seq.anchors.length > 0) { 
                     hasContent = true; 
@@ -604,33 +940,68 @@
             }); 
             if (!hasContent) return null;
             const padding = 20; 
-            return { minX: minX - padding, minY: minY - padding, maxX: maxX + padding, maxY: maxY + padding, width: (maxX - minX) + 2 * padding, height: (maxY - minY) + 2 * padding };
+            return { 
+                minX: minX - padding, minY: minY - padding, 
+                maxX: maxX + padding, maxY: maxY + padding, 
+                width: (maxX - minX) + 2 * padding, 
+                height: (maxY - minY) + 2 * padding 
+            };
         }
 
         function drawSingleSequenceForTimeline(localCtx, seq, color, lineWidth) {
             if (seq.segments && seq.segments.length > 0) {
-                localCtx.strokeStyle = color; localCtx.lineWidth = lineWidth; localCtx.beginPath();
-                seq.segments.forEach(segData => { if (!segData.p0_obj || !segData.p1_obj) return; localCtx.moveTo(segData.p0_obj.x, segData.p0_obj.y); localCtx.bezierCurveTo(segData.cp1.x, segData.cp1.y, segData.cp2.x, segData.cp2.y, segData.p1_obj.x, segData.p1_obj.y); });
+                localCtx.strokeStyle = color; 
+                localCtx.lineWidth = lineWidth; 
+                localCtx.beginPath();
+                seq.segments.forEach(segData => { 
+                    if (!segData.p0_obj || !segData.p1_obj) return; 
+                    localCtx.moveTo(segData.p0_obj.x, segData.p0_obj.y); 
+                    localCtx.bezierCurveTo(
+                        segData.cp1.x, segData.cp1.y, 
+                        segData.cp2.x, segData.cp2.y, 
+                        segData.p1_obj.x, segData.p1_obj.y
+                    ); 
+                });
                 localCtx.stroke();
             }
         }
 
         function drawFrameOnTimelineCanvas(frameData, timelineCanvasElement) {
             const tlCtx = timelineCanvasElement.getContext('2d');
-            const timelineWidth = timelineCanvasElement.width; const timelineHeight = timelineCanvasElement.height;
+            const timelineWidth = timelineCanvasElement.width; 
+            const timelineHeight = timelineCanvasElement.height;
             tlCtx.clearRect(0, 0, timelineWidth, timelineHeight);
-            if (!frameData || frameData.length === 0) { tlCtx.fillStyle = '#f0f0f0'; tlCtx.fillRect(0, 0, timelineWidth, timelineHeight); tlCtx.strokeStyle = '#ccc'; tlCtx.strokeRect(0.5,0.5,timelineWidth-1,timelineHeight-1); return; }
+            if (!frameData || frameData.length === 0) { 
+                tlCtx.fillStyle = '#f0f0f0'; 
+                tlCtx.fillRect(0, 0, timelineWidth, timelineHeight); 
+                tlCtx.strokeStyle = '#ccc'; 
+                tlCtx.strokeRect(0.5,0.5,timelineWidth-1,timelineHeight-1); 
+                return; 
+            }
             const bbox = getFrameBoundingBox(frameData);
             tlCtx.save();
             if (bbox && bbox.width > 0 && bbox.height > 0) {
-                const scaleX = timelineWidth / bbox.width; const scaleY = timelineHeight / bbox.height;
+                const scaleX = timelineWidth / bbox.width; 
+                const scaleY = timelineHeight / bbox.height;
                 const newScaleFactorForTimeline = Math.min(scaleX, scaleY) * 0.9; 
-                const translateX = (timelineWidth - bbox.width * newScaleFactorForTimeline) / 2 - bbox.minX * newScaleFactorForTimeline;
-                const translateY = (timelineHeight - bbox.height * newScaleFactorForTimeline) / 2 - bbox.minY * newScaleFactorForTimeline;
-                tlCtx.translate(translateX, translateY); tlCtx.scale(newScaleFactorForTimeline, newScaleFactorForTimeline);
-                frameData.forEach(seq => { drawSingleSequenceForTimeline(tlCtx, seq, CURVE_COLOR, 1.5 / newScaleFactorForTimeline); });
+                const translateX = (timelineWidth - 
+                                 bbox.width * newScaleFactorForTimeline) / 2 
+                                 - bbox.minX * newScaleFactorForTimeline;
+                const translateY = (timelineHeight - 
+                                 bbox.height * newScaleFactorForTimeline) / 2 
+                                 - bbox.minY * newScaleFactorForTimeline;
+                tlCtx.translate(translateX, translateY); 
+                tlCtx.scale(newScaleFactorForTimeline, newScaleFactorForTimeline);
+                frameData.forEach(seq => { 
+                    drawSingleSequenceForTimeline(
+                        tlCtx, seq, CURVE_COLOR, 
+                        1.5 / newScaleFactorForTimeline
+                    ); 
+                });
             } else { 
-                 frameData.forEach(seq => { drawSingleSequenceForTimeline(tlCtx, seq, CURVE_COLOR, 1.5); }); 
+                 frameData.forEach(seq => { 
+                     drawSingleSequenceForTimeline(tlCtx, seq, CURVE_COLOR,1.5); 
+                 }); 
             }
             tlCtx.restore();
         }
@@ -639,15 +1010,18 @@
             timelineContainer.innerHTML = ''; 
             animationFrames.forEach((frameData, index) => {
                 const timelineCanvas = document.createElement('canvas');
-                timelineCanvas.width = TIMELINE_CANVAS_WIDTH; timelineCanvas.height = TIMELINE_CANVAS_HEIGHT;
-                timelineCanvas.classList.add('timeline-frame-canvas'); timelineCanvas.dataset.frameIndex = index;
+                timelineCanvas.width = TIMELINE_CANVAS_WIDTH; 
+                timelineCanvas.height = TIMELINE_CANVAS_HEIGHT;
+                timelineCanvas.classList.add('timeline-frame-canvas'); 
+                timelineCanvas.dataset.frameIndex = index;
                 timelineCanvas.addEventListener('click', (e) => {
                     e.stopPropagation(); 
                     if (isAnimating) stopAnimation();
                     currentFrameIndex = index;
                     handleFrameNavigation(false); 
                 });
-                timelineContainer.appendChild(timelineCanvas); // Appending in order, RTL CSS will handle visual order
+                // Appending in order, RTL CSS will handle visual order
+                timelineContainer.appendChild(timelineCanvas); 
                 drawFrameOnTimelineCanvas(frameData, timelineCanvas);
             });
             highlightCurrentTimelineFrame();
@@ -655,15 +1029,21 @@
 
         function redrawSingleTimelineFrame(index) {
             if (index < 0 || index >= animationFrames.length) return;
-            const timelineCanvas = timelineContainer.querySelector(`.timeline-frame-canvas[data-frame-index="${index}"]`);
+            const timelineCanvas = timelineContainer.querySelector(
+                `.timeline-frame-canvas[data-frame-index="${index}"]`
+            );
             if (timelineCanvas) {
                 drawFrameOnTimelineCanvas(animationFrames[index], timelineCanvas);
             }
         }
 
         function highlightCurrentTimelineFrame() {
-            const timelineCanvases = timelineContainer.querySelectorAll('.timeline-frame-canvas');
-            let frameToHighlight = isAnimating ? (anim_sourceFrameIdx !== undefined ? anim_sourceFrameIdx : currentFrameIndex) : currentFrameIndex;
+            const timelineCanvases = 
+                timelineContainer.querySelectorAll('.timeline-frame-canvas');
+            let frameToHighlight = isAnimating ? 
+                (anim_sourceFrameIdx !== undefined ? 
+                    anim_sourceFrameIdx : currentFrameIndex) 
+                : currentFrameIndex;
             timelineCanvases.forEach((canvasEl) => {
                 if (parseInt(canvasEl.dataset.frameIndex) === frameToHighlight) {
                     canvasEl.classList.add('active-timeline-frame');
@@ -675,24 +1055,202 @@
 
 
         // --- Main Canvas Drawing Functions ---
-        function drawCurveSequence(sequences, color, lineWidth, drawEditPointsIntent = false) { sequences.forEach(seq => { if (seq.segments && seq.segments.length > 0) { ctx.strokeStyle = color; ctx.lineWidth = lineWidth / scaleFactor; ctx.beginPath(); seq.segments.forEach(segData => { if (!segData.p0_obj || !segData.p1_obj) return; ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y); ctx.bezierCurveTo(segData.cp1.x, segData.cp1.y, segData.cp2.x, segData.cp2.y, segData.p1_obj.x, segData.p1_obj.y); }); ctx.stroke(); } if (drawEditPointsIntent) { let actuallyShowPointsForThisSequence = false; if (isAnimating) { actuallyShowPointsForThisSequence = true; } else { if (isEditModeActive && seq.showAnchorsInEdit) { actuallyShowPointsForThisSequence = true; } } if (actuallyShowPointsForThisSequence) { const anchorDrawRadiusInWorld = VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor; const controlDrawRadiusInWorld = VISUAL_CONTROL_RADIUS_ON_SCREEN / scaleFactor; if (seq.anchors && Array.isArray(seq.anchors)) { seq.anchors.forEach(point => { ctx.beginPath(); ctx.arc(point.x, point.y, anchorDrawRadiusInWorld, 0, 2 * Math.PI); ctx.fillStyle = EDIT_ANCHOR_POINT_COLOR; ctx.fill(); }); } if (seq.segments && Array.isArray(seq.segments)) { ctx.save(); ctx.strokeStyle = HELPER_LINE_COLOR; ctx.lineWidth = 1 / scaleFactor; seq.segments.forEach(segData => { if (!segData.p0_obj || !segData.p1_obj) return; ctx.beginPath(); ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y); ctx.lineTo(segData.cp1.x, segData.cp1.y); ctx.stroke(); ctx.beginPath(); ctx.arc(segData.cp1.x, segData.cp1.y, controlDrawRadiusInWorld, 0, 2 * Math.PI); ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; ctx.fill(); ctx.beginPath(); ctx.moveTo(segData.p1_obj.x, segData.p1_obj.y); ctx.lineTo(segData.cp2.x, segData.cp2.y); ctx.stroke(); ctx.beginPath(); ctx.arc(segData.cp2.x, segData.cp2.y, controlDrawRadiusInWorld, 0, 2 * Math.PI); ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; ctx.fill(); }); ctx.restore(); } } } }); }
-        function redrawCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(originX, originY); ctx.scale(scaleFactor, scaleFactor); if (isAnimating) { drawCurveSequence(anim_currentInterpolatedSequences, CURVE_COLOR, 2.5, showControlsCheckbox.checked); } else { if (currentFrameIndex > 0 && animationFrames[currentFrameIndex - 1]) { drawCurveSequence(animationFrames[currentFrameIndex - 1], ONION_SKIN_COLOR, 2.5, false); } if (animationFrames[currentFrameIndex]) { drawCurveSequence(animationFrames[currentFrameIndex], CURVE_COLOR, 2.5, true); } if (isDrawingMode && activeCurve.segments && activeCurve.segments.length > 0) { ctx.strokeStyle = CURVE_COLOR; ctx.lineWidth = 2.5 / scaleFactor; ctx.beginPath(); activeCurve.segments.forEach(seg => { if (!seg.p0_obj || !seg.p1_obj) return; ctx.moveTo(seg.p0_obj.x, seg.p0_obj.y); ctx.bezierCurveTo(seg.cp1.x, seg.cp1.y, seg.cp2.x, seg.cp2.y, seg.p1_obj.x, seg.p1_obj.y); }); ctx.stroke(); } if (isDrawingMode && activeCurve.anchors) { const anchorDrawRadiusInWorld = VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor; activeCurve.anchors.forEach((point, index) => { ctx.beginPath(); ctx.arc(point.x, point.y, anchorDrawRadiusInWorld, 0, 2 * Math.PI); ctx.fillStyle = (index === 0) ? DRAW_MODE_FIRST_ANCHOR_COLOR : DRAW_MODE_OTHER_ANCHORS_COLOR; ctx.fill(); }); } } ctx.restore(); }
+        function drawCurveSequence(
+            sequences, color, lineWidth, drawEditPointsIntent = false
+        ) { 
+            sequences.forEach(seq => { 
+                if (seq.segments && seq.segments.length > 0) { 
+                    ctx.strokeStyle = color; 
+                    ctx.lineWidth = lineWidth / scaleFactor; 
+                    ctx.beginPath(); 
+                    seq.segments.forEach(segData => { 
+                        if (!segData.p0_obj || !segData.p1_obj) return; 
+                        ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y); 
+                        ctx.bezierCurveTo(
+                            segData.cp1.x, segData.cp1.y, 
+                            segData.cp2.x, segData.cp2.y, 
+                            segData.p1_obj.x, segData.p1_obj.y
+                        ); 
+                    }); 
+                    ctx.stroke(); 
+                } 
+                if (drawEditPointsIntent) { 
+                    let actuallyShowPointsForThisSequence = false; 
+                    if (isAnimating) { 
+                        actuallyShowPointsForThisSequence = true; 
+                    } else { 
+                        if (isEditModeActive && seq.showAnchorsInEdit) { 
+                            actuallyShowPointsForThisSequence = true; 
+                        } 
+                    } 
+                    if (actuallyShowPointsForThisSequence) { 
+                        const anchorDrawRadiusInWorld = 
+                            VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor; 
+                        const controlDrawRadiusInWorld = 
+                            VISUAL_CONTROL_RADIUS_ON_SCREEN / scaleFactor; 
+                        if (seq.anchors && Array.isArray(seq.anchors)) { 
+                            seq.anchors.forEach(point => { 
+                                ctx.beginPath(); 
+                                ctx.arc(
+                                    point.x, point.y, 
+                                    anchorDrawRadiusInWorld, 0, 2 * Math.PI
+                                ); 
+                                ctx.fillStyle = EDIT_ANCHOR_POINT_COLOR; 
+                                ctx.fill(); 
+                            }); 
+                        } 
+                        if (seq.segments && Array.isArray(seq.segments)) { 
+                            ctx.save(); 
+                            ctx.strokeStyle = HELPER_LINE_COLOR; 
+                            ctx.lineWidth = 1 / scaleFactor; 
+                            seq.segments.forEach(segData => { 
+                                if (!segData.p0_obj || !segData.p1_obj) return; 
+                                ctx.beginPath(); 
+                                ctx.moveTo(segData.p0_obj.x, segData.p0_obj.y); 
+                                ctx.lineTo(segData.cp1.x, segData.cp1.y); 
+                                ctx.stroke(); 
+                                ctx.beginPath(); 
+                                ctx.arc(
+                                    segData.cp1.x, segData.cp1.y, 
+                                    controlDrawRadiusInWorld, 0, 2 * Math.PI
+                                ); 
+                                ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; 
+                                ctx.fill(); 
+                                ctx.beginPath(); 
+                                ctx.moveTo(segData.p1_obj.x, segData.p1_obj.y); 
+                                ctx.lineTo(segData.cp2.x, segData.cp2.y); 
+                                ctx.stroke(); 
+                                ctx.beginPath(); 
+                                ctx.arc(
+                                    segData.cp2.x, segData.cp2.y, 
+                                    controlDrawRadiusInWorld, 0, 2 * Math.PI
+                                ); 
+                                ctx.fillStyle = EDIT_CONTROL_POINT_COLOR; 
+                                ctx.fill(); 
+                            }); 
+                            ctx.restore(); 
+                        } 
+                    } 
+                } 
+            }); 
+        }
+        function redrawCanvas() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            ctx.save(); 
+            ctx.translate(originX, originY); 
+            ctx.scale(scaleFactor, scaleFactor); 
+            if (isAnimating) { 
+                drawCurveSequence(
+                    anim_currentInterpolatedSequences, 
+                    CURVE_COLOR, 2.5, showControlsCheckbox.checked
+                ); 
+            } else { 
+                if (currentFrameIndex > 0 && 
+                    animationFrames[currentFrameIndex - 1]) { 
+                    drawCurveSequence(
+                        animationFrames[currentFrameIndex - 1], 
+                        ONION_SKIN_COLOR, 2.5, false
+                    ); 
+                } 
+                if (animationFrames[currentFrameIndex]) { 
+                    drawCurveSequence(
+                        animationFrames[currentFrameIndex], 
+                        CURVE_COLOR, 2.5, true
+                    ); 
+                } 
+                if (isDrawingMode && activeCurve.segments && 
+                    activeCurve.segments.length > 0) { 
+                    ctx.strokeStyle = CURVE_COLOR; 
+                    ctx.lineWidth = 2.5 / scaleFactor; 
+                    ctx.beginPath(); 
+                    activeCurve.segments.forEach(seg => { 
+                        if (!seg.p0_obj || !seg.p1_obj) return; 
+                        ctx.moveTo(seg.p0_obj.x, seg.p0_obj.y); 
+                        ctx.bezierCurveTo(
+                            seg.cp1.x, seg.cp1.y, 
+                            seg.cp2.x, seg.cp2.y, 
+                            seg.p1_obj.x, seg.p1_obj.y
+                        ); 
+                    }); 
+                    ctx.stroke(); 
+                } 
+                if (isDrawingMode && activeCurve.anchors) { 
+                    const anchorDrawRadiusInWorld = 
+                        VISUAL_ANCHOR_RADIUS_ON_SCREEN / scaleFactor; 
+                    activeCurve.anchors.forEach((point, index) => { 
+                        ctx.beginPath(); 
+                        ctx.arc(
+                            point.x, point.y, anchorDrawRadiusInWorld, 
+                            0, 2 * Math.PI
+                        ); 
+                        ctx.fillStyle = (index === 0) ? 
+                            DRAW_MODE_FIRST_ANCHOR_COLOR : 
+                            DRAW_MODE_OTHER_ANCHORS_COLOR; 
+                        ctx.fill(); 
+                    }); 
+                } 
+            } 
+            ctx.restore(); 
+        }
         
         // --- Mouse and Event Helper Functions ---
-        function getMouseCanvasPos(event) { const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; return { x: (event.clientX - rect.left) * scaleX, y: (event.clientY - rect.top) * scaleY }; }
-        function getMouseWorldPos(event) { const mouseCanvasPos = getMouseCanvasPos(event); return { x: (mouseCanvasPos.x - originX) / scaleFactor, y: (mouseCanvasPos.y - originY) / scaleFactor }; }
-        function getPointOnBezier(p0, cp1, cp2, p1, t) { const mt = 1 - t, mt2 = mt * mt, mt3 = mt2 * mt, t2 = t * t, t3 = t2 * t; const x = mt3 * p0.x + 3 * mt2 * t * cp1.x + 3 * mt * t2 * cp2.x + t3 * p1.x; const y = mt3 * p0.y + 3 * mt2 * t * cp1.y + 3 * mt * t2 * cp2.y + t3 * p1.y; return { x, y }; }
-        function isPointNearBezier(mousePos, p0_obj, cp1, cp2, p1_obj, hitThresholdInWorld) { const steps = 20; for (let i = 0; i <= steps; i++) { const t = i / steps; const pointOnCurve = getPointOnBezier(p0_obj, cp1, cp2, p1_obj, t); if (vecLength(vecSub(mousePos, pointOnCurve)) < hitThresholdInWorld) return true; } return false; }
-        function mergeAndReplaceSequences(currentFrameCurves, seqA, draggedAnchorIndexOnA, seqB, targetAnchorIndexOnB) { 
-            if (currentFrameIndex !== 0) { console.warn("Merging only in first frame."); return false; } 
+        function getMouseCanvasPos(event) { 
+            const rect = canvas.getBoundingClientRect(); 
+            const scaleX = canvas.width / rect.width; 
+            const scaleY = canvas.height / rect.height; 
+            return { 
+                x: (event.clientX - rect.left) * scaleX, 
+                y: (event.clientY - rect.top) * scaleY 
+            }; 
+        }
+        function getMouseWorldPos(event) { 
+            const mouseCanvasPos = getMouseCanvasPos(event); 
+            return { 
+                x: (mouseCanvasPos.x - originX) / scaleFactor, 
+                y: (mouseCanvasPos.y - originY) / scaleFactor 
+            }; 
+        }
+        function getPointOnBezier(p0, cp1, cp2, p1, t) { 
+            const mt = 1 - t, mt2 = mt * mt, mt3 = mt2 * mt, 
+                  t2 = t * t, t3 = t2 * t; 
+            const x = mt3*p0.x + 3*mt2*t*cp1.x + 3*mt*t2*cp2.x + t3*p1.x; 
+            const y = mt3*p0.y + 3*mt2*t*cp1.y + 3*mt*t2*cp2.y + t3*p1.y; 
+            return { x, y }; 
+        }
+        function isPointNearBezier(
+            mousePos, p0_obj, cp1, cp2, p1_obj, hitThresholdInWorld
+        ) { 
+            const steps = 20; 
+            for (let i = 0; i <= steps; i++) { 
+                const t = i / steps; 
+                const pointOnCurve = getPointOnBezier(
+                    p0_obj, cp1, cp2, p1_obj, t
+                ); 
+                if (vecLength(vecSub(mousePos, pointOnCurve)) < 
+                    hitThresholdInWorld) return true; 
+            } 
+            return false; 
+        }
+        function mergeAndReplaceSequences(
+            currentFrameCurves, seqA, draggedAnchorIndexOnA, 
+            seqB, targetAnchorIndexOnB
+        ) { 
+            if (currentFrameIndex !== 0) { 
+                console.warn("Merging only in first frame."); return false; 
+            } 
             saveStateForUndo(); 
             let finalAnchors = []; 
             const anchorsA = [...seqA.anchors], anchorsB = [...seqB.anchors]; 
-            const isDraggedAStart = (draggedAnchorIndexOnA === 0), isTargetBStart = (targetAnchorIndexOnB === 0); 
-            if (!isDraggedAStart && isTargetBStart) finalAnchors = [...anchorsA, ...anchorsB.slice(1)]; 
-            else if (isDraggedAStart && !isTargetBStart) finalAnchors = [...anchorsB.reverse(), ...anchorsA.slice(1)]; 
-            else if (isDraggedAStart && isTargetBStart) finalAnchors = [...anchorsA.reverse(), ...anchorsB.slice(1)]; 
-            else if (!isDraggedAStart && !isTargetBStart) finalAnchors = [...anchorsA, ...anchorsB.reverse().slice(1)]; 
+            const isDraggedAStart = (draggedAnchorIndexOnA === 0), 
+                  isTargetBStart = (targetAnchorIndexOnB === 0); 
+            if (!isDraggedAStart && isTargetBStart) 
+                finalAnchors = [...anchorsA, ...anchorsB.slice(1)]; 
+            else if (isDraggedAStart && !isTargetBStart) 
+                finalAnchors = [...anchorsB.reverse(), ...anchorsA.slice(1)]; 
+            else if (isDraggedAStart && isTargetBStart) 
+                finalAnchors = [...anchorsA.reverse(), ...anchorsB.slice(1)]; 
+            else if (!isDraggedAStart && !isTargetBStart) 
+                finalAnchors = [...anchorsA, ...anchorsB.reverse().slice(1)]; 
             else return false; 
             if (finalAnchors.length < 2) return false; 
             const indexA = currentFrameCurves.findIndex(s => s.id === seqA.id); 
@@ -700,58 +1258,81 @@
             const indexB = currentFrameCurves.findIndex(s => s.id === seqB.id); 
             if (indexB > -1) currentFrameCurves.splice(indexB, 1); 
             const newMergedId = 'merged_' + Date.now() + Math.random(); 
-            const newSegments = calculateAllBezierSegments(finalAnchors, TENSION); 
-            currentFrameCurves.push({ id: newMergedId, anchors: finalAnchors, segments: newSegments, showAnchorsInEdit: true }); 
+            const newSegments = calculateAllBezierSegments(finalAnchors,TENSION); 
+            currentFrameCurves.push({ 
+                id: newMergedId, anchors: finalAnchors, 
+                segments: newSegments, showAnchorsInEdit: true 
+            }); 
             for (let i = 1; i < animationFrames.length; i++) { 
                 animationFrames[i] = cloneSingleFrame(animationFrames[0]); 
                 animationFrames[i].forEach(s => s.showAnchorsInEdit = false); 
             } 
-            updateTimelineDisplay(); // Ensure timeline updates after merge and propagation
+            updateTimelineDisplay(); 
             return true; 
         }
         
         function interpolateSequences(seqsA, seqsB, t) {
             if (!seqsA || !seqsB || seqsA.length !== seqsB.length) {
-                console.warn("interpolateSequences: Mismatched sequence structures or undefined frames. Displaying source frame.", seqsA, seqsB);
+                console.warn(
+                    "interpolateSequences: Mismatched structures. Using source.", 
+                    seqsA, seqsB
+                );
                 return seqsA ? cloneSingleFrame(seqsA) : []; 
             }
 
             return seqsA.map((seqA, seqIdx) => {
                 const seqB_current = seqsB[seqIdx]; 
-                if (!seqB_current || seqA.anchors.length !== seqB_current.anchors.length || seqA.segments.length !== seqB_current.segments.length) {
-                     console.warn(`interpolateSequences: Mismatched structure in sequence ID ${seqA.id}. Displaying source sequence.`, seqA, seqB_current);
+                if (!seqB_current || 
+                    seqA.anchors.length !== seqB_current.anchors.length || 
+                    seqA.segments.length !== seqB_current.segments.length) {
+                     console.warn(
+                        `interpolateSequences: Mismatch in seq ID ${seqA.id}.`, 
+                        seqA, seqB_current
+                     );
                      return cloneSingleSequence(seqA); 
                 }
 
-                const interpolatedAnchors = seqA.anchors.map((anchorA, anchorIdx) => {
-                    if (!seqB_current.anchors[anchorIdx]) { // Should not happen if lengths match
-                        console.error("interpolateSequences: Anchor missing in seqB_current despite length match.");
-                        return {...anchorA}; // Fallback to anchorA
+                const interpolatedAnchors = seqA.anchors.map(
+                    (anchorA, anchorIdx) => {
+                    if (!seqB_current.anchors[anchorIdx]) { 
+                        console.error(
+                           "interpolateSequences: Anchor missing in seqB_current."
+                        );
+                        return {...anchorA};
                     }
-                    return interpolatePoint(anchorA, seqB_current.anchors[anchorIdx], t);
+                    return interpolatePoint(
+                        anchorA, seqB_current.anchors[anchorIdx], t
+                    );
                 });
                 
-                const interpolatedSegments = seqA.segments.map((segA, seg_idx) => {
-                    const segB_for_current_segment = seqB_current.segments[seg_idx]; 
+                const interpolatedSegments = 
+                    seqA.segments.map((segA, seg_idx) => {
+                    const segB_seg = seqB_current.segments[seg_idx]; 
                     
-                    const p0_original_in_A = segA.p0_obj;
-                    const p1_original_in_A = segA.p1_obj;
-                    const p0_original_idx_in_A_anchors = seqA.anchors.indexOf(p0_original_in_A);
-                    const p1_original_idx_in_A_anchors = seqA.anchors.indexOf(p1_original_in_A);
+                    const p0_idx = seqA.anchors.indexOf(segA.p0_obj);
+                    const p1_idx = seqA.anchors.indexOf(segA.p1_obj);
                     
-                    if (!segB_for_current_segment || !segB_for_current_segment.cp1 || !segB_for_current_segment.cp2 || p0_original_idx_in_A_anchors === -1 || p1_original_idx_in_A_anchors === -1 ) {
-                        console.error("interpolateSequences: Segment data missing or anchor index invalid. This indicates a structural problem not caught by earlier checks.", segA, segB_current);
-                        // Fallback to a static version of segA's segment, using interpolated anchors if possible
-                        const p0_fallback = interpolatedAnchors[p0_original_idx_in_A_anchors] || segA.p0_obj || {x:0,y:0};
-                        const p1_fallback = interpolatedAnchors[p1_original_idx_in_A_anchors] || segA.p1_obj || {x:0,y:0};
-                        return { p0_obj: p0_fallback, cp1: { ...segA.cp1 }, cp2: { ...segA.cp2 }, p1_obj: p1_fallback };
+                    if (!segB_seg || !segB_seg.cp1 || !segB_seg.cp2 || 
+                        p0_idx === -1 || p1_idx === -1 ) {
+                        console.error(
+                           "interpolateSequences: Segment data error.", 
+                           segA, segB_current
+                        );
+                        const p0_fb = interpolatedAnchors[p0_idx] || 
+                                      segA.p0_obj || {x:0,y:0};
+                        const p1_fb = interpolatedAnchors[p1_idx] || 
+                                      segA.p1_obj || {x:0,y:0};
+                        return { 
+                            p0_obj: p0_fb, cp1: { ...segA.cp1 }, 
+                            cp2: { ...segA.cp2 }, p1_obj: p1_fb 
+                        };
                     }
                     
                     return {
-                        p0_obj: interpolatedAnchors[p0_original_idx_in_A_anchors],
-                        cp1: interpolatePoint(segA.cp1, segB_for_current_segment.cp1, t),
-                        cp2: interpolatePoint(segA.cp2, segB_for_current_segment.cp2, t),
-                        p1_obj: interpolatedAnchors[p1_original_idx_in_A_anchors]
+                        p0_obj: interpolatedAnchors[p0_idx],
+                        cp1: interpolatePoint(segA.cp1, segB_seg.cp1, t),
+                        cp2: interpolatePoint(segA.cp2, segB_seg.cp2, t),
+                        p1_obj: interpolatedAnchors[p1_idx]
                     };
                 });
                 return {
@@ -766,19 +1347,22 @@
         // --- Animation Control ---
         function animationLoop(timestamp) { 
             if (!isAnimating) return; 
-            // console.log(`Anim Loop Start: Source=${anim_sourceFrameIdx}, Target=${anim_targetFrameIdx}, TotalFrames=${animationFrames.length}`);
-
             if (!anim_startTime) anim_startTime = timestamp; 
             const elapsedTime = timestamp - anim_startTime;
             let t = elapsedTime / ANIM_DURATION_PER_TRANSITION; 
 
             if (t >= 1) { 
                 t = 1; 
-                if (animationFrames[anim_targetFrameIdx]) { // Ensure target frame data exists
-                    anim_currentInterpolatedSequences = cloneSingleFrame(animationFrames[anim_targetFrameIdx]); 
+                if (animationFrames[anim_targetFrameIdx]) { 
+                    anim_currentInterpolatedSequences = 
+                        cloneSingleFrame(animationFrames[anim_targetFrameIdx]); 
                 } else {
-                    console.warn(`animationLoop: Target frame ${anim_targetFrameIdx} data is missing. Using source frame.`);
-                    anim_currentInterpolatedSequences = animationFrames[anim_sourceFrameIdx] ? cloneSingleFrame(animationFrames[anim_sourceFrameIdx]) : [];
+                    console.warn(
+                        `animationLoop: Target frame ${anim_targetFrameIdx} missing.`
+                    );
+                    anim_currentInterpolatedSequences = 
+                        animationFrames[anim_sourceFrameIdx] ? 
+                        cloneSingleFrame(animationFrames[anim_sourceFrameIdx]) : [];
                 }
                 redrawCanvas(); 
 
@@ -787,20 +1371,20 @@
                 anim_startTime = timestamp; 
 
                 if (anim_targetFrameIdx >= animationFrames.length) { 
-                    // console.log('Animation reached end. Looping back.');
                     anim_sourceFrameIdx = 0;
                     anim_targetFrameIdx = 1; 
                     if (animationFrames.length < 2) { 
-                        stopAnimation();
-                        return;
+                        stopAnimation(); return;
                     }
                 }
-                // Check if the new source/target frames are valid after potential loop
-                if (!animationFrames[anim_sourceFrameIdx] || (animationFrames.length > 1 && !animationFrames[anim_targetFrameIdx])) {
-                    console.error("animationLoop: Invalid source or target frame after advancing/looping. Stopping.", 
-                                  `Source: ${anim_sourceFrameIdx}, Target: ${anim_targetFrameIdx}, Length: ${animationFrames.length}`);
-                    stopAnimation();
-                    return;
+                if (!animationFrames[anim_sourceFrameIdx] || 
+                    (animationFrames.length > 1 && 
+                     !animationFrames[anim_targetFrameIdx])) {
+                    console.error(
+                        "animationLoop: Invalid source/target after loop. Stopping.", 
+                        `S:${anim_sourceFrameIdx}, T:${anim_targetFrameIdx}, L:${animationFrames.length}`
+                    );
+                    stopAnimation(); return;
                 }
                 t = 0; 
             }
@@ -809,43 +1393,586 @@
             const targetData = animationFrames[anim_targetFrameIdx];
             
             if (!sourceData || !targetData ) {
-                // This condition should ideally be caught by earlier checks,
-                // but as a safeguard:
-                // console.warn(`animationLoop: Source or Target data missing for interpolation. S:${anim_sourceFrameIdx}, T:${anim_targetFrameIdx}`);
-                // Display the last known good state (or source) if one of them is missing
-                anim_currentInterpolatedSequences = sourceData ? cloneSingleFrame(sourceData) : [];
+                anim_currentInterpolatedSequences = sourceData ? 
+                    cloneSingleFrame(sourceData) : [];
             } else {
-                anim_currentInterpolatedSequences = interpolateSequences(sourceData, targetData, t);
+                anim_currentInterpolatedSequences = 
+                    interpolateSequences(sourceData, targetData, t);
             }
             
             redrawCanvas(); 
             highlightCurrentTimelineFrame(); 
             animationRequestID = requestAnimationFrame(animationLoop); 
         }
-        function startAnimation() { if (animationFrames.length < 2) return; saveStateForUndo(); if (isDrawingMode && activeCurve.anchors.length > 0) { animationFrames[currentFrameIndex].push({ id: 'finalized_before_anim_' + Date.now(), anchors: [...activeCurve.anchors], segments: [...activeCurve.segments], showAnchorsInEdit: false }); activeCurve = { id: 'active_cleared_for_anim', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; redrawSingleTimelineFrame(currentFrameIndex); } isAnimating = true; isEditModeActive = false; anim_sourceFrameIdx = 0; anim_targetFrameIdx = 1; if (!animationFrames[anim_sourceFrameIdx] || !animationFrames[anim_targetFrameIdx]) { console.error("startAnimation: Initial source or target frame data missing. Cannot start animation."); stopAnimation(); return; } anim_startTime = null; anim_currentInterpolatedSequences = cloneSingleFrame(animationFrames[0]); updateFrameUI(); animationRequestID = requestAnimationFrame(animationLoop); }
-        function stopAnimation() { isAnimating = false; cancelAnimationFrame(animationRequestID); currentFrameIndex = anim_sourceFrameIdx !== undefined ? anim_sourceFrameIdx : currentFrameIndex; anim_currentInterpolatedSequences = []; updateFrameUI(); redrawCanvas(); highlightCurrentTimelineFrame(); }
+        function startAnimation() { 
+            if (animationFrames.length < 2) return; 
+            saveStateForUndo(); 
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                animationFrames[currentFrameIndex].push({ 
+                    id: 'finalized_before_anim_' + Date.now(), 
+                    anchors: [...activeCurve.anchors], 
+                    segments: [...activeCurve.segments], 
+                    showAnchorsInEdit: false 
+                }); 
+                activeCurve = { 
+                    id: 'active_cleared_for_anim', anchors: [], 
+                    segments: [], showAnchorsInEdit: true 
+                }; 
+                isDrawingMode = false; 
+                redrawSingleTimelineFrame(currentFrameIndex); 
+            } 
+            isAnimating = true; isEditModeActive = false; 
+            anim_sourceFrameIdx = 0; anim_targetFrameIdx = 1; 
+            if (!animationFrames[anim_sourceFrameIdx] || 
+                !animationFrames[anim_targetFrameIdx]) { 
+                console.error(
+                    "startAnimation: Initial source/target frame data missing."
+                ); 
+                stopAnimation(); return; 
+            } 
+            anim_startTime = null; 
+            anim_currentInterpolatedSequences = 
+                cloneSingleFrame(animationFrames[0]); 
+            updateFrameUI(); 
+            animationRequestID = requestAnimationFrame(animationLoop); 
+        }
+        function stopAnimation() { 
+            isAnimating = false; 
+            cancelAnimationFrame(animationRequestID); 
+            currentFrameIndex = anim_sourceFrameIdx !== undefined ? 
+                anim_sourceFrameIdx : currentFrameIndex; 
+            anim_currentInterpolatedSequences = []; 
+            updateFrameUI(); redrawCanvas(); highlightCurrentTimelineFrame(); 
+        }
         
         // --- Event Listeners ---
-        playMovieButton.addEventListener('click', () => { if (isAnimating) stopAnimation(); else startAnimation(); });
+        playMovieButton.addEventListener('click', 
+            () => { if (isAnimating) stopAnimation(); else startAnimation(); }
+        );
         function handleFrameNavigation(fullTimelineUpdate = true) { 
-            saveStateForUndo(); const currentFrameSequences = animationFrames[currentFrameIndex];
-            if (currentFrameSequences) currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = isEditModeActive);
+            saveStateForUndo(); 
+            const currentFrameSequences = animationFrames[currentFrameIndex];
+            if (currentFrameSequences) 
+                currentFrameSequences.forEach(
+                    seq => seq.showAnchorsInEdit = isEditModeActive
+                );
             updateFrameUI(); redrawCanvas();
-            if (fullTimelineUpdate) updateTimelineDisplay(); else highlightCurrentTimelineFrame();
+            if (fullTimelineUpdate) updateTimelineDisplay(); 
+            else highlightCurrentTimelineFrame();
         }
-        addFrameButton.addEventListener('click', () => { if (isAnimating && draggedPointInfo === null) return; saveStateForUndo(); if (isDrawingMode && activeCurve.anchors.length > 0) { animationFrames[currentFrameIndex].push(cloneSingleSequence(activeCurve)); activeCurve = { id: 'active_cleared_on_add_frame', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; } const currentFrameData = animationFrames[currentFrameIndex] || []; const newFrameData = cloneSingleFrame(currentFrameData); const newFrameTargetIndex = currentFrameIndex + 1; animationFrames.splice(newFrameTargetIndex, 0, newFrameData); currentFrameIndex = newFrameTargetIndex; isEditModeActive = true; if (animationFrames[currentFrameIndex]) animationFrames[currentFrameIndex].forEach(seq => seq.showAnchorsInEdit = true); updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); });
-        prevFrameButton.addEventListener('click', () => { if (currentFrameIndex > 0 && !(isAnimating && draggedPointInfo === null)) { if (isDrawingMode && activeCurve.anchors.length > 0) { animationFrames[currentFrameIndex].push(cloneSingleSequence(activeCurve)); redrawSingleTimelineFrame(currentFrameIndex); activeCurve = { id: 'active_nav_prev_clear', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; } currentFrameIndex--; handleFrameNavigation(false); } });
-        nextFrameButton.addEventListener('click', () => { if (currentFrameIndex < animationFrames.length - 1 && !(isAnimating && draggedPointInfo === null)) { if (isDrawingMode && activeCurve.anchors.length > 0) { animationFrames[currentFrameIndex].push(cloneSingleSequence(activeCurve)); redrawSingleTimelineFrame(currentFrameIndex); activeCurve = { id: 'active_nav_next_clear', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; } currentFrameIndex++; handleFrameNavigation(false); } });
-        editButton.addEventListener('click', () => { if (isAnimating && draggedPointInfo === null) return; saveStateForUndo(); isEditModeActive = !isEditModeActive; const currentFrameSequences = animationFrames[currentFrameIndex]; if (isEditModeActive) { if (isDrawingMode && activeCurve.anchors.length > 1 && currentFrameIndex === 0) { currentFrameSequences.push(cloneSingleSequence(activeCurve)); activeCurve = { id: 'active_edit_toggle_finalize', anchors: [], segments: [], showAnchorsInEdit: true }; redrawSingleTimelineFrame(currentFrameIndex); } isDrawingMode = false; if (currentFrameSequences) currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = true); } else { if (currentFrameSequences) currentFrameSequences.forEach(seq => seq.showAnchorsInEdit = false); isDragging = false; draggedPointInfo = null; } updateFrameUI(); redrawCanvas(); redrawSingleTimelineFrame(currentFrameIndex); highlightCurrentTimelineFrame(); });
-        canvas.addEventListener('mousedown', (event) => { if (isAnimating && draggedPointInfo === null) return; const mouseWorldPos = getMouseWorldPos(event); const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor; const effectiveCurveHitRadius = CURVE_HIT_THRESHOLD_ON_SCREEN / scaleFactor; const currentFrameSequences = animationFrames[currentFrameIndex]; if (isEditModeActive && currentFrameSequences) { let pointHit = false; for (let seqIndex = currentFrameSequences.length - 1; seqIndex >= 0; seqIndex--) { const seq = currentFrameSequences[seqIndex]; if (!seq.showAnchorsInEdit) continue; for (let i = 0; i < seq.anchors.length; i++) { if (vecLength(vecSub(mouseWorldPos, seq.anchors[i])) < effectivePointHitRadius) { saveStateForUndo(); isDragging = true; draggedPointInfo = { type: 'anchor', seqId: seq.id, anchorIndex: i, pointObject: seq.anchors[i], cp2_incoming_offset: null, cp1_outgoing_offset: null }; if (i > 0 && seq.segments && seq.segments[i-1]) draggedPointInfo.cp2_incoming_offset = vecSub(seq.segments[i-1].cp2, seq.anchors[i]); if (i < seq.anchors.length - 1 && seq.segments && seq.segments[i]) draggedPointInfo.cp1_outgoing_offset = vecSub(seq.segments[i].cp1, seq.anchors[i]); canvas.style.cursor = 'grabbing'; pointHit = true; break; } } if (pointHit) break; if (seq.segments) { for (let i = 0; i < seq.segments.length; i++) { const seg = seq.segments[i]; if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < effectivePointHitRadius) { saveStateForUndo(); isDragging = true; draggedPointInfo = { type: 'control', seqId: seq.id, segmentIndex: i, pointType: 'cp1', pointObject: seg.cp1 }; canvas.style.cursor = 'grabbing'; pointHit = true; break; } if (vecLength(vecSub(mouseWorldPos, seg.cp2)) < effectivePointHitRadius) { saveStateForUndo(); isDragging = true; draggedPointInfo = { type: 'control', seqId: seq.id, segmentIndex: i, pointType: 'cp2', pointObject: seg.cp2 }; canvas.style.cursor = 'grabbing'; pointHit = true; break; } } } if (pointHit) break; } if (pointHit) return; for (let seqIndex = currentFrameSequences.length - 1; seqIndex >= 0; seqIndex--) { const seq = currentFrameSequences[seqIndex]; if (!seq.showAnchorsInEdit || !seq.segments) continue; for (const seg of seq.segments) { if (!seg.p0_obj || !seg.p1_obj) continue; if (isPointNearBezier(mouseWorldPos, seg.p0_obj, seg.cp1, seg.cp2, seg.p1_obj, effectiveCurveHitRadius)) { saveStateForUndo(); isDragging = true; draggedPointInfo = { type: 'sequence', seqId: seq.id, initialMousePos: { ...mouseWorldPos } }; canvas.style.cursor = 'move'; return; } } } } else if (!isEditModeActive) { if (currentFrameIndex !== 0) { console.warn("New curves only in first frame."); return; } saveStateForUndo(); if (!isDrawingMode) { isDrawingMode = true; activeCurve = { id: 'active_drawing_' + Date.now(), anchors: [], segments: [], showAnchorsInEdit: true }; } activeCurve.anchors.push({ x: mouseWorldPos.x, y: mouseWorldPos.y }); if (activeCurve.anchors.length >= 2) activeCurve.segments = calculateAllBezierSegments(activeCurve.anchors, TENSION); redrawCanvas(); } });
-        canvas.addEventListener('mousemove', (event) => { if (isAnimating && draggedPointInfo === null && !isEditModeActive) return; const mouseWorldPos = getMouseWorldPos(event); const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor; const effectiveCurveHitRadius = CURVE_HIT_THRESHOLD_ON_SCREEN / scaleFactor; const currentFrameSequences = animationFrames[currentFrameIndex]; if (isDragging && draggedPointInfo && currentFrameSequences) { const targetSequence = currentFrameSequences.find(s => s.id === draggedPointInfo.seqId); if (!targetSequence) { isDragging = false; draggedPointInfo = null; return; } if (draggedPointInfo.type === 'anchor') { draggedPointInfo.pointObject.x = mouseWorldPos.x; draggedPointInfo.pointObject.y = mouseWorldPos.y; const anchorIdx = draggedPointInfo.anchorIndex; if (draggedPointInfo.cp2_incoming_offset && anchorIdx > 0 && targetSequence.segments && targetSequence.segments[anchorIdx - 1]) { const new_cp2_pos = vecAdd(draggedPointInfo.pointObject, draggedPointInfo.cp2_incoming_offset); targetSequence.segments[anchorIdx - 1].cp2.x = new_cp2_pos.x; targetSequence.segments[anchorIdx - 1].cp2.y = new_cp2_pos.y; } if (draggedPointInfo.cp1_outgoing_offset && anchorIdx < targetSequence.anchors.length - 1 && targetSequence.segments && targetSequence.segments[anchorIdx]) { const new_cp1_pos = vecAdd(draggedPointInfo.pointObject, draggedPointInfo.cp1_outgoing_offset); targetSequence.segments[anchorIdx].cp1.x = new_cp1_pos.x; targetSequence.segments[anchorIdx].cp1.y = new_cp1_pos.y; } } else if (draggedPointInfo.type === 'control') { draggedPointInfo.pointObject.x = mouseWorldPos.x; draggedPointInfo.pointObject.y = mouseWorldPos.y; const segIdx = draggedPointInfo.segmentIndex, pointType = draggedPointInfo.pointType; if (pointType === 'cp1') { if (segIdx > 0 && targetSequence.anchors[segIdx]) { const pivot = targetSequence.anchors[segIdx], draggedCp = targetSequence.segments[segIdx].cp1; targetSequence.segments[segIdx-1].cp2 = vecSub(vecScale(pivot, 2), draggedCp); } } else if (pointType === 'cp2') { if (segIdx < targetSequence.segments.length - 1 && targetSequence.anchors[segIdx+1]) { const pivot = targetSequence.anchors[segIdx+1], draggedCp = targetSequence.segments[segIdx].cp2; targetSequence.segments[segIdx+1].cp1 = vecSub(vecScale(pivot, 2), draggedCp); } } } else if (draggedPointInfo.type === 'sequence') { const delta = vecSub(mouseWorldPos, draggedPointInfo.initialMousePos); targetSequence.anchors.forEach(anchor => { anchor.x += delta.x; anchor.y += delta.y; }); targetSequence.segments.forEach(seg => { seg.cp1.x += delta.x; seg.cp1.y += delta.y; seg.cp2.x += delta.x; seg.cp2.y += delta.y; }); draggedPointInfo.initialMousePos = { ...mouseWorldPos }; } redrawCanvas(); } else if (isEditModeActive && currentFrameSequences) { let newCursor = 'default'; for (const seq of currentFrameSequences) { if (!seq.showAnchorsInEdit) continue; let pointHover = false; for (const anchor of seq.anchors) { if (vecLength(vecSub(mouseWorldPos, anchor)) < effectivePointHitRadius) { newCursor = 'grab'; pointHover = true; break; } } if (pointHover) break; if (seq.segments) { for (const seg of seq.segments) { if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < effectivePointHitRadius || vecLength(vecSub(mouseWorldPos, seg.cp2)) < effectivePointHitRadius) { newCursor = 'grab'; pointHover = true; break; } } } if (pointHover) break; if (seq.segments) { for (const seg of seq.segments) { if (!seg.p0_obj || !seg.p1_obj) continue; if (isPointNearBezier(mouseWorldPos, seg.p0_obj, seg.cp1, seg.cp2, seg.p1_obj, effectiveCurveHitRadius)) { newCursor = 'move'; break; } } } if (newCursor === 'move' || newCursor === 'grab') break; } canvas.style.cursor = newCursor; } else if (!isEditModeActive) { canvas.style.cursor = 'crosshair'; } });
-        canvas.addEventListener('mouseup', () => { const currentFrameSequences = animationFrames[currentFrameIndex]; if (isDragging && draggedPointInfo && draggedPointInfo.type === 'anchor' && currentFrameSequences) { const draggedSeq = currentFrameSequences.find(s => s.id === draggedPointInfo.seqId); const draggedAnchorIndex = draggedPointInfo.anchorIndex; if (draggedSeq && (draggedAnchorIndex === 0 || draggedAnchorIndex === draggedSeq.anchors.length - 1) && currentFrameIndex === 0) { const draggedAnchorPos = draggedSeq.anchors[draggedAnchorIndex]; const effectiveWorldHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor; let mergedSuccessfully = false; for (let i = 0; i < currentFrameSequences.length; i++) { const otherSeq = currentFrameSequences[i]; if (otherSeq.id === draggedSeq.id) continue; if (otherSeq.anchors.length > 0) { const otherStartPoint = otherSeq.anchors[0]; if (vecLength(vecSub(draggedAnchorPos, otherStartPoint)) < effectiveWorldHitRadius) { if (mergeAndReplaceSequences(animationFrames[currentFrameIndex], draggedSeq, draggedAnchorIndex, otherSeq, 0)) mergedSuccessfully = true; break; } if (otherSeq.anchors.length > 1 || (otherSeq.anchors.length === 1 && otherSeq.anchors[0] !== otherStartPoint) ) { const otherEndPoint = otherSeq.anchors[otherSeq.anchors.length - 1]; if (vecLength(vecSub(draggedAnchorPos, otherEndPoint)) < effectiveWorldHitRadius) { if (mergeAndReplaceSequences(animationFrames[currentFrameIndex], draggedSeq, draggedAnchorIndex, otherSeq, otherSeq.anchors.length - 1)) mergedSuccessfully = true; break; } } } } if (mergedSuccessfully) { isDragging = false; draggedPointInfo = null; canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair'; redrawCanvas(); updateTimelineDisplay(); return; } } } if(isDragging) redrawSingleTimelineFrame(currentFrameIndex); isDragging = false; draggedPointInfo = null; if (canvas.style.cursor === 'grabbing') canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair'; else if (!isEditModeActive && !isAnimating) canvas.style.cursor = 'crosshair'; redrawCanvas(); });
-        canvas.addEventListener('mouseleave', () => { if (isDragging) { isDragging = false; draggedPointInfo = null; redrawCanvas(); redrawSingleTimelineFrame(currentFrameIndex); } if (!isAnimating) canvas.style.cursor = 'default'; });
-        window.addEventListener('keydown', (event) => { if (isAnimating && draggedPointInfo === null) return; if (event.ctrlKey && event.key === 'z') { event.preventDefault(); performUndo(); } else if (event.ctrlKey && (event.key === 'y' || (event.key === 'Z' && event.shiftKey))) { event.preventDefault(); performRedo(); } else if (event.code === 'Space' && !isEditModeActive) { event.preventDefault(); if (isDrawingMode && activeCurve.anchors.length > 1) { saveStateForUndo(); animationFrames[currentFrameIndex].push({ id: 'finalized_by_space_' + Date.now(), anchors: [...activeCurve.anchors], segments: [...activeCurve.segments], showAnchorsInEdit: false }); if (currentFrameIndex === 0) { for (let i = 1; i < animationFrames.length; i++) { animationFrames[i] = cloneSingleFrame(animationFrames[0]); animationFrames[i].forEach(s => s.showAnchorsInEdit = false); } updateTimelineDisplay(); } else { redrawSingleTimelineFrame(currentFrameIndex); } activeCurve = { id: 'active_after_space_finalize', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; updateFrameUI(); redrawCanvas(); } } });
-        canvas.addEventListener('wheel', (event) => { event.preventDefault(); const mouseCanvasPos = getMouseCanvasPos(event); const worldMouseX = (mouseCanvasPos.x - originX) / scaleFactor, worldMouseY = (mouseCanvasPos.y - originY) / scaleFactor; let newScaleFactor = scaleFactor; if (event.deltaY < 0) {newScaleFactor *= (1 + ZOOM_INTENSITY);} else {newScaleFactor /= (1 + ZOOM_INTENSITY);} newScaleFactor = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScaleFactor)); if (newScaleFactor !== scaleFactor) { if (!isAnimating || draggedPointInfo !== null) {saveStateForUndo();} scaleFactor = newScaleFactor; originX = mouseCanvasPos.x - worldMouseX * scaleFactor; originY = mouseCanvasPos.y - worldMouseY * scaleFactor; updateZoomIndicator(); redrawCanvas(); } });
-        saveMovieButton.addEventListener('click', () => { if (isAnimating && draggedPointInfo === null) return; if (isDrawingMode && activeCurve.anchors.length > 0) { animationFrames[currentFrameIndex].push({ id: 'finalized_on_save_' + Date.now(), anchors: [...activeCurve.anchors], segments: [...activeCurve.segments], showAnchorsInEdit: false }); activeCurve = {id: 'active_cleared_on_save', anchors: [], segments: [], showAnchorsInEdit: true}; isDrawingMode = false; redrawCanvas(); redrawSingleTimelineFrame(currentFrameIndex); } const dataToSave = { animationFrames: animationFrames }; const jsonData = JSON.stringify(dataToSave); const blob = new Blob([jsonData], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'animation.clp'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
-        loadMovieInput.addEventListener('change', (event) => { if (isAnimating && draggedPointInfo === null) return; const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { try { const loadedData = JSON.parse(e.target.result); if (loadedData && loadedData.animationFrames) { animationFrames = rehydrateFrameData(loadedData.animationFrames); currentFrameIndex = 0; activeCurve = { id: 'active_after_load', anchors: [], segments: [], showAnchorsInEdit: true }; isDrawingMode = false; isEditModeActive = false; scaleFactor = 1.0; originX = 0; originY = 0; undoStack = []; redoStack = []; saveStateForUndo(); if(isAnimating) stopAnimation(); updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); } else { showModal("קובץ לא תקין או חסר נתונים.", 'error'); } } catch (error) { console.error("Error loading or parsing file:", error); showModal("שגיאה בטעינת הקובץ: " + error.message, 'error'); } finally { loadMovieInput.value = ''; } }; reader.onerror = () => { showModal("שגיאה בקריאת הקובץ.", 'error'); loadMovieInput.value = ''; }; reader.readAsText(file); } });
-        clearCanvasButton.addEventListener('click', () => { if (isAnimating && draggedPointInfo === null) return; showModal("האם אתה בטוח שברצונך לנקות הכל ולהתחיל מחדש?", 'confirm', () => { saveStateForUndo(); resetApplicationToInitialState(); }, true); });
+        addFrameButton.addEventListener('click', () => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            saveStateForUndo(); 
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                animationFrames[currentFrameIndex].push(
+                    cloneSingleSequence(activeCurve)
+                ); 
+                activeCurve = { 
+                    id: 'active_cleared_on_add_frame', anchors: [], 
+                    segments: [], showAnchorsInEdit: true 
+                }; 
+                isDrawingMode = false; 
+            } 
+            const currentFrameData = animationFrames[currentFrameIndex] || []; 
+            const newFrameData = cloneSingleFrame(currentFrameData); 
+            const newFrameTargetIndex = currentFrameIndex + 1; 
+            animationFrames.splice(newFrameTargetIndex, 0, newFrameData); 
+            currentFrameIndex = newFrameTargetIndex; 
+            isEditModeActive = true; 
+            if (animationFrames[currentFrameIndex]) 
+                animationFrames[currentFrameIndex].forEach(
+                    seq => seq.showAnchorsInEdit = true
+                ); 
+            updateFrameUI(); redrawCanvas(); updateTimelineDisplay(); 
+        });
+        prevFrameButton.addEventListener('click', () => { 
+            if (currentFrameIndex > 0 && 
+                !(isAnimating && draggedPointInfo === null)) { 
+                if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                    animationFrames[currentFrameIndex].push(
+                        cloneSingleSequence(activeCurve)
+                    ); 
+                    redrawSingleTimelineFrame(currentFrameIndex); 
+                    activeCurve = { 
+                        id: 'active_nav_prev_clear', anchors: [], 
+                        segments: [], showAnchorsInEdit: true 
+                    }; 
+                    isDrawingMode = false; 
+                } 
+                currentFrameIndex--; 
+                handleFrameNavigation(false); 
+            } 
+        });
+        nextFrameButton.addEventListener('click', () => { 
+            if (currentFrameIndex < animationFrames.length - 1 && 
+                !(isAnimating && draggedPointInfo === null)) { 
+                if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                    animationFrames[currentFrameIndex].push(
+                        cloneSingleSequence(activeCurve)
+                    ); 
+                    redrawSingleTimelineFrame(currentFrameIndex); 
+                    activeCurve = { 
+                        id: 'active_nav_next_clear', anchors: [], 
+                        segments: [], showAnchorsInEdit: true 
+                    }; 
+                    isDrawingMode = false; 
+                } 
+                currentFrameIndex++; 
+                handleFrameNavigation(false); 
+            } 
+        });
+        editButton.addEventListener('click', () => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            saveStateForUndo(); 
+            isEditModeActive = !isEditModeActive; 
+            const currentFrameSequences = animationFrames[currentFrameIndex]; 
+            if (isEditModeActive) { 
+                if (isDrawingMode && activeCurve.anchors.length > 1 && 
+                    currentFrameIndex === 0) { 
+                    currentFrameSequences.push(cloneSingleSequence(activeCurve)); 
+                    activeCurve = { 
+                        id: 'active_edit_toggle_finalize', anchors: [], 
+                        segments: [], showAnchorsInEdit: true 
+                    }; 
+                    redrawSingleTimelineFrame(currentFrameIndex); 
+                } 
+                isDrawingMode = false; 
+                if (currentFrameSequences) 
+                    currentFrameSequences.forEach(
+                        seq => seq.showAnchorsInEdit = true
+                    ); 
+            } else { 
+                if (currentFrameSequences) 
+                    currentFrameSequences.forEach(
+                        seq => seq.showAnchorsInEdit = false
+                    ); 
+                isDragging = false; draggedPointInfo = null; 
+            } 
+            updateFrameUI(); redrawCanvas(); 
+            redrawSingleTimelineFrame(currentFrameIndex); 
+            highlightCurrentTimelineFrame(); 
+        });
+        canvas.addEventListener('mousedown', (event) => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            const mouseWorldPos = getMouseWorldPos(event); 
+            const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
+            const effectiveCurveHitRadius=CURVE_HIT_THRESHOLD_ON_SCREEN/scaleFactor;
+            const currentFrameSequences = animationFrames[currentFrameIndex]; 
+            if (isEditModeActive && currentFrameSequences) { 
+                let pointHit = false; 
+                for (let seqIdx = currentFrameSequences.length - 1; 
+                     seqIdx >= 0; seqIdx--) { 
+                    const seq = currentFrameSequences[seqIdx]; 
+                    if (!seq.showAnchorsInEdit) continue; 
+                    for (let i = 0; i < seq.anchors.length; i++) { 
+                        if (vecLength(vecSub(mouseWorldPos, seq.anchors[i])) < 
+                            effectivePointHitRadius) { 
+                            saveStateForUndo(); isDragging = true; 
+                            draggedPointInfo = { 
+                                type: 'anchor', seqId: seq.id, anchorIndex: i, 
+                                pointObject: seq.anchors[i], 
+                                cp2_incoming_offset: null, 
+                                cp1_outgoing_offset: null 
+                            }; 
+                            if (i>0 && seq.segments && seq.segments[i-1]) 
+                                draggedPointInfo.cp2_incoming_offset = 
+                                    vecSub(seq.segments[i-1].cp2, seq.anchors[i]);
+                            if (i<seq.anchors.length-1 && seq.segments && 
+                                seq.segments[i]) 
+                                draggedPointInfo.cp1_outgoing_offset = 
+                                    vecSub(seq.segments[i].cp1, seq.anchors[i]);
+                            canvas.style.cursor = 'grabbing'; pointHit = true; 
+                            break; 
+                        } 
+                    } 
+                    if (pointHit) break; 
+                    if (seq.segments) { 
+                        for (let i = 0; i < seq.segments.length; i++) { 
+                            const seg = seq.segments[i]; 
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < 
+                                effectivePointHitRadius) { 
+                                saveStateForUndo(); isDragging = true; 
+                                draggedPointInfo = { 
+                                    type: 'control', seqId: seq.id, 
+                                    segmentIndex: i, pointType: 'cp1', 
+                                    pointObject: seg.cp1 
+                                }; 
+                                canvas.style.cursor = 'grabbing'; 
+                                pointHit = true; break; 
+                            } 
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp2)) < 
+                                effectivePointHitRadius) { 
+                                saveStateForUndo(); isDragging = true; 
+                                draggedPointInfo = { 
+                                    type: 'control', seqId: seq.id, 
+                                    segmentIndex: i, pointType: 'cp2', 
+                                    pointObject: seg.cp2 
+                                }; 
+                                canvas.style.cursor = 'grabbing'; 
+                                pointHit = true; break; 
+                            } 
+                        } 
+                    } 
+                    if (pointHit) break; 
+                } 
+                if (pointHit) return; 
+                for (let seqIdx = currentFrameSequences.length - 1; 
+                     seqIdx >= 0; seqIdx--) { 
+                    const seq = currentFrameSequences[seqIdx]; 
+                    if (!seq.showAnchorsInEdit || !seq.segments) continue; 
+                    for (const seg of seq.segments) { 
+                        if (!seg.p0_obj || !seg.p1_obj) continue; 
+                        if (isPointNearBezier(
+                                mouseWorldPos, seg.p0_obj, seg.cp1, 
+                                seg.cp2, seg.p1_obj, effectiveCurveHitRadius
+                            )) { 
+                            saveStateForUndo(); isDragging = true; 
+                            draggedPointInfo = { 
+                                type: 'sequence', seqId: seq.id, 
+                                initialMousePos: { ...mouseWorldPos } 
+                            }; 
+                            canvas.style.cursor = 'move'; return; 
+                        } 
+                    } 
+                } 
+            } else if (!isEditModeActive) { 
+                if (currentFrameIndex !== 0) { 
+                    console.warn("New curves only in first frame."); return; 
+                } 
+                saveStateForUndo(); 
+                if (!isDrawingMode) { 
+                    isDrawingMode = true; 
+                    activeCurve = { 
+                        id: 'active_drawing_' + Date.now(), anchors: [], 
+                        segments: [], showAnchorsInEdit: true 
+                    }; 
+                } 
+                activeCurve.anchors.push({x:mouseWorldPos.x,y:mouseWorldPos.y}); 
+                if (activeCurve.anchors.length >= 2) 
+                    activeCurve.segments = 
+                        calculateAllBezierSegments(activeCurve.anchors,TENSION); 
+                redrawCanvas(); 
+            } 
+        });
+        canvas.addEventListener('mousemove', (event) => { 
+            if (isAnimating && draggedPointInfo === null && 
+                !isEditModeActive) return; 
+            const mouseWorldPos = getMouseWorldPos(event); 
+            const effectivePointHitRadius = HIT_RADIUS_ON_SCREEN / scaleFactor;
+            const effectiveCurveHitRadius=CURVE_HIT_THRESHOLD_ON_SCREEN/scaleFactor;
+            const currentFrameSequences = animationFrames[currentFrameIndex]; 
+            if (isDragging && draggedPointInfo && currentFrameSequences) { 
+                const targetSequence = currentFrameSequences.find(
+                    s => s.id === draggedPointInfo.seqId
+                ); 
+                if (!targetSequence) { 
+                    isDragging = false; draggedPointInfo = null; return; 
+                } 
+                if (draggedPointInfo.type === 'anchor') { 
+                    draggedPointInfo.pointObject.x = mouseWorldPos.x; 
+                    draggedPointInfo.pointObject.y = mouseWorldPos.y; 
+                    const anchorIdx = draggedPointInfo.anchorIndex; 
+                    if (draggedPointInfo.cp2_incoming_offset && anchorIdx > 0 && 
+                        targetSequence.segments && 
+                        targetSequence.segments[anchorIdx - 1]) { 
+                        const new_cp2_pos = vecAdd(
+                            draggedPointInfo.pointObject, 
+                            draggedPointInfo.cp2_incoming_offset
+                        ); 
+                        targetSequence.segments[anchorIdx-1].cp2.x = new_cp2_pos.x;
+                        targetSequence.segments[anchorIdx-1].cp2.y = new_cp2_pos.y;
+                    } 
+                    if (draggedPointInfo.cp1_outgoing_offset && 
+                        anchorIdx < targetSequence.anchors.length - 1 && 
+                        targetSequence.segments && 
+                        targetSequence.segments[anchorIdx]) { 
+                        const new_cp1_pos = vecAdd(
+                            draggedPointInfo.pointObject, 
+                            draggedPointInfo.cp1_outgoing_offset
+                        );
+                        targetSequence.segments[anchorIdx].cp1.x = new_cp1_pos.x;
+                        targetSequence.segments[anchorIdx].cp1.y = new_cp1_pos.y;
+                    } 
+                } else if (draggedPointInfo.type === 'control') { 
+                    draggedPointInfo.pointObject.x = mouseWorldPos.x; 
+                    draggedPointInfo.pointObject.y = mouseWorldPos.y; 
+                    const segIdx = draggedPointInfo.segmentIndex, 
+                          pointType = draggedPointInfo.pointType; 
+                    if (pointType === 'cp1') { 
+                        if (segIdx > 0 && targetSequence.anchors[segIdx]) { 
+                            const pivot = targetSequence.anchors[segIdx], 
+                                  draggedCp = targetSequence.segments[segIdx].cp1; 
+                            targetSequence.segments[segIdx-1].cp2 = 
+                                vecSub(vecScale(pivot, 2), draggedCp); 
+                        } 
+                    } else if (pointType === 'cp2') { 
+                        if (segIdx < targetSequence.segments.length - 1 && 
+                            targetSequence.anchors[segIdx+1]) { 
+                            const pivot = targetSequence.anchors[segIdx+1], 
+                                  draggedCp = targetSequence.segments[segIdx].cp2; 
+                            targetSequence.segments[segIdx+1].cp1 = 
+                                vecSub(vecScale(pivot, 2), draggedCp); 
+                        } 
+                    } 
+                } else if (draggedPointInfo.type === 'sequence') { 
+                    const delta = vecSub(
+                        mouseWorldPos, draggedPointInfo.initialMousePos
+                    ); 
+                    targetSequence.anchors.forEach(anchor => { 
+                        anchor.x += delta.x; anchor.y += delta.y; 
+                    }); 
+                    targetSequence.segments.forEach(seg => { 
+                        seg.cp1.x += delta.x; seg.cp1.y += delta.y; 
+                        seg.cp2.x += delta.x; seg.cp2.y += delta.y; 
+                    }); 
+                    draggedPointInfo.initialMousePos = { ...mouseWorldPos }; 
+                } 
+                redrawCanvas(); 
+            } else if (isEditModeActive && currentFrameSequences) { 
+                let newCursor = 'default'; 
+                for (const seq of currentFrameSequences) { 
+                    if (!seq.showAnchorsInEdit) continue; 
+                    let pointHover = false; 
+                    for (const anchor of seq.anchors) { 
+                        if (vecLength(vecSub(mouseWorldPos, anchor)) < 
+                            effectivePointHitRadius) { 
+                            newCursor = 'grab'; pointHover = true; break; 
+                        } 
+                    } 
+                    if (pointHover) break; 
+                    if (seq.segments) { 
+                        for (const seg of seq.segments) { 
+                            if (vecLength(vecSub(mouseWorldPos, seg.cp1)) < 
+                                effectivePointHitRadius || 
+                                vecLength(vecSub(mouseWorldPos, seg.cp2)) < 
+                                effectivePointHitRadius) { 
+                                newCursor = 'grab'; pointHover = true; break; 
+                            } 
+                        } 
+                    } 
+                    if (pointHover) break; 
+                    if (seq.segments) { 
+                        for (const seg of seq.segments) { 
+                            if (!seg.p0_obj || !seg.p1_obj) continue; 
+                            if (isPointNearBezier(
+                                    mouseWorldPos, seg.p0_obj, seg.cp1, 
+                                    seg.cp2, seg.p1_obj, effectiveCurveHitRadius
+                                )) { 
+                                newCursor = 'move'; break; 
+                            } 
+                        } 
+                    } 
+                    if (newCursor === 'move' || newCursor === 'grab') break; 
+                } 
+                canvas.style.cursor = newCursor; 
+            } else if (!isEditModeActive) { 
+                canvas.style.cursor = 'crosshair'; 
+            } 
+        });
+        canvas.addEventListener('mouseup', () => { 
+            const currentFrameSequences = animationFrames[currentFrameIndex]; 
+            if (isDragging && draggedPointInfo && 
+                draggedPointInfo.type === 'anchor' && currentFrameSequences) { 
+                const draggedSeq = currentFrameSequences.find(
+                    s => s.id === draggedPointInfo.seqId
+                ); 
+                const draggedAnchorIndex = draggedPointInfo.anchorIndex; 
+                if (draggedSeq && 
+                    (draggedAnchorIndex === 0 || 
+                     draggedAnchorIndex === draggedSeq.anchors.length - 1) && 
+                    currentFrameIndex === 0) { 
+                    const draggedAnchorPos = draggedSeq.anchors[draggedAnchorIndex];
+                    const effectiveWorldHitRadius = 
+                        HIT_RADIUS_ON_SCREEN / scaleFactor; 
+                    let mergedSuccessfully = false; 
+                    for (let i = 0; i < currentFrameSequences.length; i++) { 
+                        const otherSeq = currentFrameSequences[i]; 
+                        if (otherSeq.id === draggedSeq.id) continue; 
+                        if (otherSeq.anchors.length > 0) { 
+                            const otherStartPoint = otherSeq.anchors[0]; 
+                            if (vecLength(vecSub(draggedAnchorPos, 
+                                                 otherStartPoint)) < 
+                                effectiveWorldHitRadius) { 
+                                if (mergeAndReplaceSequences(
+                                        animationFrames[currentFrameIndex], 
+                                        draggedSeq, draggedAnchorIndex, 
+                                        otherSeq, 0
+                                    )) mergedSuccessfully = true; 
+                                break; 
+                            } 
+                            if (otherSeq.anchors.length > 1 || 
+                                (otherSeq.anchors.length === 1 && 
+                                 otherSeq.anchors[0] !== otherStartPoint) ) { 
+                                const otherEndPoint = 
+                                    otherSeq.anchors[otherSeq.anchors.length - 1];
+                                if (vecLength(vecSub(draggedAnchorPos, 
+                                                     otherEndPoint)) < 
+                                    effectiveWorldHitRadius) { 
+                                    if (mergeAndReplaceSequences(
+                                            animationFrames[currentFrameIndex], 
+                                            draggedSeq, draggedAnchorIndex,otherSeq, 
+                                            otherSeq.anchors.length - 1
+                                        )) mergedSuccessfully = true; 
+                                    break; 
+                                } 
+                            } 
+                        } 
+                    } 
+                    if (mergedSuccessfully) { 
+                        isDragging = false; draggedPointInfo = null; 
+                        canvas.style.cursor = isEditModeActive ? 
+                            'grab' : 'crosshair'; 
+                        redrawCanvas(); updateTimelineDisplay(); return; 
+                    } 
+                } 
+            } 
+            if(isDragging) redrawSingleTimelineFrame(currentFrameIndex); 
+            isDragging = false; draggedPointInfo = null; 
+            if (canvas.style.cursor === 'grabbing') 
+                canvas.style.cursor = isEditModeActive ? 'grab' : 'crosshair'; 
+            else if (!isEditModeActive && !isAnimating) 
+                canvas.style.cursor = 'crosshair'; 
+            redrawCanvas(); 
+        });
+        canvas.addEventListener('mouseleave', () => { 
+            if (isDragging) { 
+                isDragging = false; draggedPointInfo = null; 
+                redrawCanvas(); redrawSingleTimelineFrame(currentFrameIndex); 
+            } 
+            if (!isAnimating) canvas.style.cursor = 'default'; 
+        });
+        window.addEventListener('keydown', (event) => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            if (event.ctrlKey && event.key === 'z') { 
+                event.preventDefault(); performUndo(); 
+            } else if (event.ctrlKey && (event.key === 'y' || 
+                       (event.key === 'Z' && event.shiftKey))) { 
+                event.preventDefault(); performRedo(); 
+            } else if (event.code === 'Space' && !isEditModeActive) { 
+                event.preventDefault(); 
+                if (isDrawingMode && activeCurve.anchors.length > 1) { 
+                    saveStateForUndo(); 
+                    animationFrames[currentFrameIndex].push({ 
+                        id: 'finalized_by_space_' + Date.now(), 
+                        anchors: [...activeCurve.anchors], 
+                        segments: [...activeCurve.segments], 
+                        showAnchorsInEdit: false 
+                    }); 
+                    if (currentFrameIndex === 0) { 
+                        for (let i=1; i<animationFrames.length; i++) { 
+                            animationFrames[i] = 
+                                cloneSingleFrame(animationFrames[0]); 
+                            animationFrames[i].forEach(
+                                s => s.showAnchorsInEdit = false
+                            ); 
+                        } 
+                        updateTimelineDisplay(); 
+                    } else { 
+                        redrawSingleTimelineFrame(currentFrameIndex); 
+                    } 
+                    activeCurve = { 
+                        id: 'active_after_space_finalize', anchors: [], 
+                        segments: [], showAnchorsInEdit: true 
+                    }; 
+                    isDrawingMode = false; 
+                    updateFrameUI(); redrawCanvas(); 
+                } 
+            } 
+        });
+        canvas.addEventListener('wheel', (event) => { 
+            event.preventDefault(); 
+            const mouseCanvasPos = getMouseCanvasPos(event); 
+            const worldMouseX = (mouseCanvasPos.x - originX) / scaleFactor, 
+                  worldMouseY = (mouseCanvasPos.y - originY) / scaleFactor; 
+            let newScaleFactor = scaleFactor; 
+            if (event.deltaY < 0) {newScaleFactor *= (1 + ZOOM_INTENSITY);} 
+            else {newScaleFactor /= (1 + ZOOM_INTENSITY);} 
+            newScaleFactor = Math.max(MIN_SCALE,Math.min(MAX_SCALE,newScaleFactor));
+            if (newScaleFactor !== scaleFactor) { 
+                if (!isAnimating || draggedPointInfo !== null) {saveStateForUndo();}
+                scaleFactor = newScaleFactor; 
+                originX = mouseCanvasPos.x - worldMouseX * scaleFactor; 
+                originY = mouseCanvasPos.y - worldMouseY * scaleFactor; 
+                updateZoomIndicator(); redrawCanvas(); 
+            } 
+        });
+        saveMovieButton.addEventListener('click', () => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            if (isDrawingMode && activeCurve.anchors.length > 0) { 
+                animationFrames[currentFrameIndex].push({ 
+                    id: 'finalized_on_save_' + Date.now(), 
+                    anchors: [...activeCurve.anchors], 
+                    segments: [...activeCurve.segments], 
+                    showAnchorsInEdit: false 
+                }); 
+                activeCurve = {
+                    id: 'active_cleared_on_save', anchors: [], 
+                    segments: [], showAnchorsInEdit: true
+                }; 
+                isDrawingMode = false; 
+                redrawCanvas(); redrawSingleTimelineFrame(currentFrameIndex); 
+            } 
+            const dataToSave = { animationFrames: animationFrames }; 
+            const jsonData = JSON.stringify(dataToSave); 
+            const blob = new Blob([jsonData], { type: 'application/json' }); 
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; a.download = 'animation.clp'; 
+            document.body.appendChild(a); a.click(); 
+            document.body.removeChild(a); URL.revokeObjectURL(url); 
+        });
+        loadMovieInput.addEventListener('change', (event) => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            const file = event.target.files[0]; 
+            if (file) { 
+                const reader = new FileReader(); 
+                reader.onload = (e) => { 
+                    try { 
+                        const loadedData = JSON.parse(e.target.result); 
+                        if (loadedData && loadedData.animationFrames) { 
+                            animationFrames = 
+                                rehydrateFrameData(loadedData.animationFrames); 
+                            currentFrameIndex = 0; 
+                            activeCurve = { 
+                                id: 'active_after_load', anchors: [], 
+                                segments: [], showAnchorsInEdit: true 
+                            }; 
+                            isDrawingMode = false; isEditModeActive = false; 
+                            scaleFactor = 1.0; originX = 0; originY = 0; 
+                            undoStack = []; redoStack = []; 
+                            saveStateForUndo(); 
+                            if(isAnimating) stopAnimation(); 
+                            updateFrameUI(); redrawCanvas(); 
+                            updateTimelineDisplay(); 
+                        } else { 
+                            showModal("קובץ לא תקין או חסר נתונים.", 'error'); 
+                        } 
+                    } catch (error) { 
+                        console.error("Error loading or parsing file:", error); 
+                        showModal(
+                            "שגיאה בטעינת הקובץ: " + error.message, 'error'
+                        ); 
+                    } finally { 
+                        loadMovieInput.value = ''; 
+                    } 
+                }; 
+                reader.onerror = () => { 
+                    showModal("שגיאה בקריאת הקובץ.", 'error'); 
+                    loadMovieInput.value = ''; 
+                }; 
+                reader.readAsText(file); 
+            } 
+        });
+        clearCanvasButton.addEventListener('click', () => { 
+            if (isAnimating && draggedPointInfo === null) return; 
+            showModal(
+                "האם אתה בטוח שברצונך לנקות הכל ולהתחיל מחדש?", 
+                'confirm', () => { 
+                    saveStateForUndo(); 
+                    resetApplicationToInitialState(); 
+                }, true
+            ); 
+        });
         undoButton.addEventListener('click', performUndo);
         redoButton.addEventListener('click', performRedo);
         

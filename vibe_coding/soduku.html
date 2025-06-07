@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סודוקו עם רמזים חכמים</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --secondary-color-start: #6a11cb;
+            --secondary-color-end: #2575fc;
+            --fixed-bg: #e9ecef;
+            --correct-bg: #d4edda;
+            --incorrect-bg: #f8d7da;
+            --border-light: #ccc;
+            --border-dark: #333;
+            --text-dark: #333;
+            --highlight-bg: #a7d7f9;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            color: var(--text-dark);
+        }
+
+        h1 {
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+        
+        #difficulty-controls, #game-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .btn.active {
+            background-color: #004085;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+        }
+
+        .hint-btn {
+            background: linear-gradient(45deg, var(--secondary-color-start), var(--secondary-color-end));
+        }
+        .hint-btn:hover {
+            background: linear-gradient(45deg, #5e0faabf, #1e63d8bf);
+        }
+
+        #board-container {
+            display: flex;
+            flex-direction: column; /* Default for mobile */
+            align-items: center;
+            gap: 20px;
+        }
+
+        #sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            width: 90vw;
+            height: 90vw;
+            max-width: 540px;
+            max-height: 540px;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            /* New border strategy: container handles outer borders */
+            border-top: 3px solid var(--border-dark);
+            border-left: 3px solid var(--border-dark);
+            border-right: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .cell-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            transition: background-color 0.3s;
+            /* New border strategy: each cell handles its top and left border */
+            border-top: 1px solid var(--border-light);
+            border-left: 1px solid var(--border-light);
+        }
+        
+        /* New CSS classes for thick borders */
+        .cell-wrapper.border-v-thick {
+            border-left: 2px solid var(--border-dark);
+        }
+        .cell-wrapper.border-h-thick {
+            border-top: 2px solid var(--border-dark);
+        }
+        
+        input.cell-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            box-sizing: border-box;
+            font-size: clamp(16px, 4vw, 24px);
+            color: var(--primary-color);
+            font-weight: bold;
+            background-color: transparent;
+            caret-color: var(--primary-color);
+        }
+
+        input.cell-input:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: -2px;
+            background-color: #e8f0fe;
+        }
+        
+        .cell-wrapper.fixed {
+            background-color: var(--fixed-bg);
+        }
+        .cell-wrapper.fixed input.cell-input {
+            color: var(--text-dark);
+            font-weight: bold;
+        }
+
+        .cell-wrapper.correct {
+            background-color: var(--correct-bg) !important;
+        }
+        
+        .cell-wrapper.incorrect {
+            background-color: var(--incorrect-bg) !important;
+        }
+        
+        .cell-wrapper.highlight {
+            background-color: var(--highlight-bg) !important;
+        }
+
+        #number-palette {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .num-btn {
+            width: clamp(35px, 9vw, 45px);
+            height: clamp(35px, 9vw, 45px);
+            padding: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #message {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            min-height: 25px;
+            text-align: right;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            width: 90%;
+            max-width: 540px;
+            line-height: 1.6;
+            transition: all 0.3s;
+        }
+
+        @media (min-width: 700px) {
+            #board-container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            #number-palette {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>סודוקו</h1>
+
+    <div id="game-container">
+        <div id="difficulty-controls">
+            <button class="btn active" data-difficulty="easy">קל</button>
+            <button class="btn" data-difficulty="medium">בינוני</button>
+            <button class="btn" data-difficulty="hard">קשה</button>
+            <button class="btn" data-difficulty="expert">מומחה</button>
+        </div>
+        
+        <div id="board-container">
+            <div id="sudoku-grid"></div>
+            <div id="number-palette"></div>
+        </div>
+
+
+        <div id="game-controls">
+            <button id="check-btn" class="btn">בדיקה</button>
+            <button id="hint-btn" class="btn hint-btn">✨ קבל רמז</button>
+            <button id="new-game-btn" class="btn">משחק חדש</button>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridElement = document.getElementById('sudoku-grid');
+            const messageElement = document.getElementById('message');
+            
+            let solution = [];
+            let difficulty = 'easy';
+            let selectedNumber = null;
+
+            const difficultySettings = {
+                easy: 36, medium: 30, hard: 25, expert: 22
+            };
+
+            function createGrid() {
+                gridElement.innerHTML = '';
+                for (let i = 0; i < 81; i++) {
+                    const row = Math.floor(i / 9);
+                    const col = i % 9;
+                    const cellWrapper = document.createElement('div');
+                    cellWrapper.classList.add('cell-wrapper');
+                    
+                    // Add classes for thick borders based on position
+                    if (col === 2 || col === 5) {
+                        cellWrapper.classList.add('border-v-thick');
+                    }
+                     if (row === 3 || row === 6) {
+                        cellWrapper.classList.add('border-h-thick');
+                    }
+                    
+                    const cellInput = document.createElement('input');
+                    cellInput.type = 'text';
+                    cellInput.inputMode = 'numeric';
+                    cellInput.pattern = '[1-9]';
+                    cellInput.maxLength = '1';
+                    cellInput.classList.add('cell-input');
+                    cellInput.dataset.index = i;
+
+                    cellInput.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.replace(/[^1-9]/g, '');
+                        cellWrapper.classList.remove('correct', 'incorrect');
+                        messageElement.textContent = '';
+                        highlightNumbers();
+                    });
+
+                    cellWrapper.addEventListener('click', () => {
+                        if (selectedNumber !== null && !cellInput.disabled) {
+                            cellInput.value = selectedNumber;
+                            cellInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+                    
+                    cellWrapper.appendChild(cellInput);
+                    gridElement.appendChild(cellWrapper);
+                }
+            }
+            
+            function createPalette() {
+                const palette = document.getElementById('number-palette');
+                palette.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.classList.add('btn', 'num-btn');
+                    btn.dataset.number = i;
+                    btn.addEventListener('click', handlePaletteClick);
+                    palette.appendChild(btn);
+                }
+            }
+
+            function handlePaletteClick(e) {
+                const clickedNumber = parseInt(e.target.dataset.number);
+                if (selectedNumber === clickedNumber) {
+                    selectedNumber = null;
+                } else {
+                    selectedNumber = clickedNumber;
+                }
+
+                document.querySelectorAll('.num-btn').forEach(btn => {
+                    btn.classList.toggle('active', parseInt(btn.dataset.number) === selectedNumber);
+                });
+                highlightNumbers();
+            }
+
+            function highlightNumbers() {
+                const allCells = gridElement.querySelectorAll('.cell-wrapper');
+                allCells.forEach(cell => cell.classList.remove('highlight'));
+
+                if (selectedNumber !== null) {
+                    const inputs = gridElement.querySelectorAll('input.cell-input');
+                    inputs.forEach(input => {
+                        const cellValue = parseInt(input.value);
+                        if (!isNaN(cellValue) && cellValue === selectedNumber) {
+                            input.parentElement.classList.add('highlight');
+                        }
+                    });
+                }
+            }
+            
+            function updateGridUI(board) {
+                const inputs = gridElement.querySelectorAll('input.cell-input');
+                inputs.forEach((input, index) => {
+                    const cellWrapper = input.parentElement;
+                    const value = board[index];
+                    
+                    input.value = '';
+                    input.disabled = false;
+                    cellWrapper.classList.remove('fixed', 'correct', 'incorrect', 'highlight');
+
+                    if (value !== 0) {
+                        input.value = value;
+                        input.disabled = true;
+                        cellWrapper.classList.add('fixed');
+                    }
+                });
+            }
+
+            function newGame() {
+                messageElement.textContent = 'יוצר לוח חדש...';
+                setTimeout(() => {
+                    const board = Array(81).fill(0);
+                    fillGrid(board);
+                    solution = [...board];
+                    const puzzle = createPuzzle(board, 81 - difficultySettings[difficulty]);
+                    updateGridUI(puzzle);
+                    messageElement.textContent = 'בהצלחה!';
+                }, 50);
+            }
+            
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function isValid(board, row, col, num) {
+                for (let x = 0; x < 9; x++) {
+                    if (board[row * 9 + x] === num) return false;
+                    if (board[x * 9 + col] === num) return false;
+                }
+                const startRow = row - row % 3;
+                const startCol = col - col % 3;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[(startRow + i) * 9 + startCol + j] === num) return false;
+                    }
+                }
+                return true;
+            }
+            
+            function fillGrid(board) {
+                let find = findEmpty(board);
+                if (!find) return true;
+                let [row, col] = find;
+                const numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                for (let num of numbers) {
+                    if (isValid(board, row, col, num)) {
+                        board[row * 9 + col] = num;
+                        if (fillGrid(board)) return true;
+                        board[row * 9 + col] = 0;
+                    }
+                }
+                return false;
+            }
+            
+            function findEmpty(board) {
+                 for (let i = 0; i < 81; i++) {
+                    if (board[i] === 0) return [Math.floor(i / 9), i % 9];
+                }
+                return null;
+            }
+
+            function createPuzzle(fullBoard, cellsToRemove) {
+                const puzzle = [...fullBoard];
+                let removed = 0;
+                const indices = shuffle(Array.from(Array(81).keys()));
+                while(removed < cellsToRemove) {
+                    const index = indices.pop();
+                    if(index === undefined) break;
+                    puzzle[index] = 0;
+                    removed++;
+                }
+                return puzzle;
+            }
+            
+            function checkSolution() {
+                const inputs = gridElement.querySelectorAll('input.cell-input');
+                let allCorrect = true;
+                let isComplete = true;
+
+                inputs.forEach((input, index) => {
+                    const cellWrapper = input.parentElement;
+                    if (!cellWrapper.classList.contains('fixed')) {
+                        const val = parseInt(input.value, 10);
+                        if (!isNaN(val) && val > 0) {
+                            if (val === solution[index]) {
+                                cellWrapper.classList.add('correct');
+                                cellWrapper.classList.remove('incorrect');
+                            } else {
+                                cellWrapper.classList.add('incorrect');
+                                cellWrapper.classList.remove('correct');
+                                allCorrect = false;
+                            }
+                        } else {
+                             cellWrapper.classList.remove('correct', 'incorrect');
+                             if (isComplete) isComplete = false;
+                        }
+                    }
+                });
+                
+                if (!isComplete) {
+                     messageElement.textContent = 'הלוח עדיין לא מלא.';
+                     return;
+                }
+                if (allCorrect) {
+                    messageElement.textContent = 'כל הכבוד! פתרת נכון!';
+                } else {
+                    messageElement.textContent = 'יש טעויות. נסה שוב.';
+                }
+            }
+
+            function getCurrentBoardState() {
+                const inputs = gridElement.querySelectorAll('input.cell-input');
+                const board = Array(81).fill(0);
+                inputs.forEach((input, index) => {
+                    const val = parseInt(input.value, 10);
+                    if (!isNaN(val) && val > 0) board[index] = val;
+                });
+                return board;
+            }
+
+            async function getStrategyHint() {
+                messageElement.textContent = '🤖 חושב על הצעד הבא...';
+                const hintBtn = document.getElementById('hint-btn');
+                hintBtn.disabled = true;
+                const currentBoard = getCurrentBoardState();
+                const boardString = currentBoard.join('');
+                const prompt = `You are a helpful and friendly Sudoku tutor. The user is playing Sudoku and has asked for a strategic hint.
+Here is the current state of the board, where '0' represents an empty cell:
+${boardString}
+Your task is:
+1. Analyze the board and find a single, logical next move. Aim for a simple one (like a 'Naked Single' or 'Hidden Single').
+2. Explain the reasoning behind this move in Hebrew.
+3. Keep the explanation clear, simple, and encouraging.
+4. Structure your response to first guide the user to look at a specific row, column, or 3x3 box. Then, explain the logic. Finally, state the cell (e.g., "בשורה 3, עמודה 5") and the number that should go there.
+5. Your entire response MUST be in Hebrew.`;
+
+                try {
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        messageElement.innerHTML = text.replace(/\n/g, '<br>');
+                    } else {
+                        console.error("Invalid response structure from API:", result);
+                        if (result.promptFeedback && result.promptFeedback.blockReason) {
+                            messageElement.textContent = `בקשה נחסמה: ${result.promptFeedback.blockReason}`;
+                        } else {
+                            throw new Error('Invalid response structure from API.');
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching hint:", error);
+                    messageElement.textContent = 'שגיאה בקבלת הרמז. אנא נסה שוב מאוחר יותר.';
+                } finally {
+                    hintBtn.disabled = false;
+                }
+            }
+            
+            document.getElementById('check-btn').addEventListener('click', checkSolution);
+            document.getElementById('new-game-btn').addEventListener('click', newGame);
+            document.getElementById('hint-btn').addEventListener('click', getStrategyHint);
+            
+            document.querySelectorAll('#difficulty-controls .btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('#difficulty-controls .btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    difficulty = button.dataset.difficulty;
+                    newGame();
+                });
+            });
+
+            createGrid();
+            createPalette();
+            newGame();
+        });
+    </script>
+</body>
+</html>
