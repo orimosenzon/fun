@@ -52,7 +52,7 @@
         
         #ai-panel {
             transition: transform 0.3s ease-in-out;
-            transform: translateX(105%); /* Changed for RTL */
+            transform: translateX(105%); /* RTL */
         }
         #ai-panel.is-visible {
             transform: translateX(0);
@@ -83,13 +83,13 @@
 </head>
 <body class="bg-gray-100">
     <!-- AI Panel Toggle Button -->
-    <button id="open-ai-btn" class="hidden fixed top-4 right-4 z-30 bg-white text-gray-800 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"> <!-- Changed left to right -->
+    <button id="open-ai-btn" class="hidden fixed top-4 right-4 z-30 bg-white text-gray-800 w-12 h-12 rounded-full flex items-center justify-center shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
     </button>
     
-    <div id="ai-panel" class="fixed top-0 right-0 h-full w-full md:w-1/3 lg:w-1/4 bg-white z-40 shadow-lg p-6 flex flex-col"> <!-- Changed left to right -->
+    <div id="ai-panel" class="fixed top-0 right-0 h-full w-full md:w-1/3 lg:w-1/4 bg-white z-40 shadow-lg p-6 flex flex-col">
         <div class="flex justify-between items-center mb-4">
             <h2 id="ai-panel-title" class="text-2xl font-bold text-gray-800">תובנות על אימפריות</h2>
             <button id="close-ai-btn" class="text-gray-500 hover:text-gray-800">
@@ -102,16 +102,16 @@
         <div id="ai-loader" class="hidden my-4 self-center"><div class="loader"></div></div>
         <div id="ai-buttons" class="mt-4 flex flex-col gap-2"></div>
     </div>
-    <div id="controls-wrapper" class="fixed bottom-0 left-0 right-0 z-20 md:absolute md:top-4 md:left-4 md:bottom-auto md:right-auto md:transform-none"> <!-- Changed right to left for desktop -->
+    <div id="controls-wrapper" class="fixed bottom-0 left-0 right-0 z-20 md:absolute md:top-4 md:left-4 md:bottom-auto md:right-auto md:transform-none">
         <div id="controls-container" class="bg-white p-4 rounded-t-xl md:rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
             <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">בחר אימפריות להצגה</h3>
             <div id="empire-checkboxes" class="space-y-3"></div>
         </div>
     </div>
-    <button id="toggle-controls-btn" class="md:hidden fixed bottom-4 left-4 z-30 bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg text-2xl"> <!-- Changed right to left -->
+    <button id="toggle-controls-btn" class="md:hidden fixed bottom-4 left-4 z-30 bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg text-2xl">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
     </button>
-    <div id="map-type-control" class="absolute top-20 right-4 z-10 flex shadow-md md:top-4"> <!-- Changed left to right -->
+    <div id="map-type-control" class="absolute top-20 right-4 z-10 flex shadow-md md:top-4">
         <button id="satellite-btn" class="map-type-button">לוויין</button>
         <button id="map-btn" class="map-type-button active">מפה</button>
     </div>
@@ -300,19 +300,19 @@
 
         async function getFunFacts(empireKey) {
             const empireName = empiresData[empireKey].name;
-            const prompt = `Tell me 3 interesting and little-known fun facts about the ${empireName}. Present them as a numbered list.`;
+            const prompt = `ספר לי 3 עובדות מעניינות ופחות מוכרות על ${empireName}. הצג אותן בעברית כרשימה ממוספרת.`;
             await generateAiContent(prompt);
         }
 
         async function compareEmpires() {
             const empireNames = Array.from(selectedEmpires).map(key => empiresData[key].name);
-            const prompt = `Provide a brief, interesting comparison between ${empireNames.join(' and ')}. Focus on one surprising similarity and one major difference.`;
+            const prompt = `ספק השוואה קצרה ומעניינת בעברית בין ${empireNames.join(' ו-')}. התמקד בדמיון אחד מפתיע ובהבדל משמעותי אחד.`;
             await generateAiContent(prompt);
         }
 
         async function getWarScenario() {
             const empireNames = Array.from(selectedEmpires).map(key => empiresData[key].name);
-            const prompt = `Imagine the ${empireNames[0]} at its peak and the ${empireNames[1]} at its peak went to war. Provide a creative and plausible analysis of who would likely win and why. Consider their military, technology, and strategic advantages.`;
+            const prompt = `דמיין שה${empireNames[0]} בשיאה וה${empireNames[1]} בשיאה יוצאות למלחמה. ספק ניתוח יצירתי וסביר בעברית של מי צפויה לנצח ומדוע. התחשב בצבא, בטכנולוגיה וביתרונות האסטרטגיים של כל אחת.`;
             await generateAiContent(prompt);
         }
 
@@ -370,7 +370,8 @@
                 document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>שגיאת תצורה</h2><p class='text-gray-700'>אנא הגדר מפתח API של מפות גוגל בקוד המקור.</p></div></div>`;
                 return;
             }
-            const src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&callback=initMap`;
+            // Add language=he for Hebrew map labels
+            const src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&callback=initMap&language=he`;
             const script = document.createElement('script');
             script.src = src;
             script.async = true;
