@@ -10,6 +10,8 @@
         :root {
             --panel-width: 360px;
             --panel-transition: transform 0.3s ease-in-out;
+            --perfect-match-color: #28a745;
+            --partial-match-color: #fd7e14;
         }
 
         body, html {
@@ -145,6 +147,14 @@
             padding: 8px;
             border-radius: 4px;
             border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        #examples-button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            cursor: pointer;
         }
         .slider-group label {
             display: block;
@@ -167,6 +177,11 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            border-right: 4px solid transparent; 
+        }
+        html[dir="ltr"] .result-item-header {
+            border-left: 4px solid transparent;
+            border-right: none;
         }
         .result-item {
             border-bottom: 1px solid #e0e0e0;
@@ -175,6 +190,19 @@
         .result-item.active > .result-item-header {
             background-color: #d3e3fd;
         }
+        .result-item.perfect-match > .result-item-header {
+            border-right-color: var(--perfect-match-color);
+        }
+        html[dir="ltr"] .result-item.perfect-match > .result-item-header {
+            border-left-color: var(--perfect-match-color);
+        }
+        .result-item.partial-match > .result-item-header {
+            border-right-color: var(--partial-match-color);
+        }
+         html[dir="ltr"] .result-item.partial-match > .result-item-header {
+            border-left-color: var(--partial-match-color);
+        }
+
         .result-item-photo {
             width: 60px;
             height: 60px;
@@ -251,7 +279,6 @@
         .stars {
             color: #fbbc05;
         }
-        /* *** NEW: Photo gallery styles *** */
         .photo-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -266,6 +293,42 @@
             cursor: pointer;
         }
 
+        #examples-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .modal-header h3 { margin: 0; }
+        .modal-close-button {
+            background: none; border: none; font-size: 24px; cursor: pointer;
+        }
+        .modal-body { overflow-y: auto; }
+        .modal-body ul { list-style: none; padding: 0; }
+        .modal-body li { padding: 10px; cursor: pointer; border-radius: 4px; }
+        .modal-body li:hover { background-color: #f0f0f0; }
 
         .hidden {
             display: none !important;
@@ -347,8 +410,9 @@
                 <div class="controls-row">
                     <div class="slider-group">
                         <label for="radius-slider" id="radius-label">Radius</label>
-                        <input type="range" id="radius-slider" min="50" max="10000" value="5000" step="50">
+                        <input type="range" id="radius-slider" min="50" max="40000" value="5000" step="50">
                     </div>
+                    <button id="examples-button"></button>
                     <select id="language-selector">
                         <option value="en">English</option>
                         <option value="he">עברית</option>
@@ -368,6 +432,19 @@
         </div>
     </div>
     
+    <div id="examples-modal" class="hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="modal-close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul id="examples-list"></ul>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
         const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
@@ -378,79 +455,65 @@
 
         const translations = {
             en: {
-                title: "Smart Search Map",
-                placeholder: "e.g., 'gas station near me'",
-                placeholderLoading: "Verifying location...",
-                placeholderListening: "Listening...",
-                searchButton: "Search",
-                searchingButton: "Searching...",
-                radiusLabel: 'Search Radius: <span id="radius-value">5.0 km</span>',
-                voiceTitle: "Voice Search",
-                myLocation: "My Location",
-                locationError: "Location services failed. Check your browser permissions.",
-                noBrowserSupport: "Your browser does not support geolocation.",
-                noResults: "No results found for your search.",
-                noResultsInRadius: "No results found in this radius.",
-                detailsLoading: "Loading details...",
-                detailsNotAvailable: "Could not load more details.",
-                detailsNone: "No more details available.",
-                summaryTitle: "Summary",
-                addressTitle: "Address",
-                ratingTitle: "Rating",
-                ratingText: (r, c) => `${r} (${c} reviews)`,
-                hoursTitle: "Opening Hours",
-                photosTitle: "Photos",
-                geminiPrompt: (text) => `From the following user request in English, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "I'm looking for a gas station that is open now" -> {"query": "gas station", "openNow": true} - User request: "a nearby taco stand" -> {"query": "taco stand", "openNow": false} User request: "${text}"`,
+                title: "Smart Search Map", placeholder: "e.g., 'coffee shop with great desserts'", placeholderLoading: "Verifying location...", placeholderListening: "Listening...", searchButton: "Search", searchingButton: "Searching...", radiusLabel: 'Search Radius: <span id="radius-value">5.0 km</span>', voiceTitle: "Voice Search", myLocation: "My Location", locationError: "Location services failed.", noBrowserSupport: "Your browser does not support geolocation.", noResults: "No results found.", noResultsInRadius: "No results found in this radius.", detailsLoading: "Loading details...", detailsNotAvailable: "Could not load more details.", detailsNone: "No more details available.", summaryTitle: "Summary", addressTitle: "Address", ratingTitle: "Rating", ratingText: (r, c) => `${r} (${c} reviews)`, hoursTitle: "Opening Hours", photosTitle: "Photos", examplesButton: "Examples", modalTitle: "Example Searches",
+                examples: [ "A supermarket open on Saturday", "Coffee shop that doesn't close before midnight", "A quiet place to work", "Restaurant with a beautiful view", "Place with great desserts", "Hotel between $50 and $150" ],
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
+Current date and time: ${dateTime}.
+The JSON output must have ONE main key: "searchPlan", which is an object.
+- "searchPlan" must contain:
+  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
+  - "minPriceLevel" (number 1-4, or null): Minimum price level.
+  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
+  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
+  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
+    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
+    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
+
+Examples:
+- User request: "supermarket open on Saturday" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
+- User request: "coffee shop open at 11pm" -> {"searchPlan": {"textQuery": "coffee shop", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
+- User request: "restaurant with a nice view" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}
+User request: "${text}"`,
             },
             he: {
-                title: "מפת חיפוש חכמה",
-                placeholder: "לדוגמה: 'תחנת דלק קרובה'",
-                placeholderLoading: "מאמת מיקום...",
-                placeholderListening: "מקשיב...",
-                searchButton: "חפש",
-                searchingButton: "מחפש...",
-                radiusLabel: 'רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span>',
-                voiceTitle: "חיפוש קולי",
-                myLocation: "המיקום שלי",
-                locationError: "שירותי המיקום נכשלו. אנא בדוק את הרשאות המיקום בדפדפן.",
-                noBrowserSupport: "הדפדפן שלך אינו תומך בשירותי מיקום.",
-                noResults: "לא נמצאו תוצאות התואמות לחיפוש שלך.",
-                noResultsInRadius: "לא נמצאו תוצאות התואמות לחיפוש שלך ברדיוס זה.",
-                detailsLoading: "טוען פרטים...",
-                detailsNotAvailable: "לא ניתן היה לטעון פרטים נוספים.",
-                detailsNone: "אין פרטים נוספים זמינים.",
-                summaryTitle: "תקציר",
-                addressTitle: "כתובת",
-                ratingTitle: "דירוג",
-                ratingText: (r, c) => `${r} (${c} ביקורות)`,
-                hoursTitle: "שעות פתיחה",
-                photosTitle: "תמונות",
-                geminiPrompt: (text) => `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} User request: "${text}"`,
+                title: "מפת חיפוש חכמה", placeholder: "לדוגמה: 'בית קפה עם קינוחים טעימים'", placeholderLoading: "מאמת מיקום...", placeholderListening: "מקשיב...", searchButton: "חפש", searchingButton: "מחפש...", radiusLabel: 'רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span>', voiceTitle: "חיפוש קולי", myLocation: "המיקום שלי", locationError: "שירותי המיקום נכשלו.", noBrowserSupport: "הדפדפן שלך אינו תומך בשירותי מיקום.", noResults: "לא נמצאו תוצאות.", noResultsInRadius: "לא נמצאו תוצאות ברדיוס זה.", detailsLoading: "טוען פרטים...", detailsNotAvailable: "לא ניתן היה לטעון פרטים.", detailsNone: "אין פרטים נוספים זמינים.", summaryTitle: "תקציר", addressTitle: "כתובת", ratingTitle: "דירוג", ratingText: (r, c) => `${r} (${c} ביקורות)`, hoursTitle: "שעות פתיחה", photosTitle: "תמונות", examplesButton: "דוגמאות", modalTitle: "חיפושים לדוגמה",
+                examples: [ "סופרמרקט שפתוח בשבת", "בית קפה שלא נסגר לפני חצות", "מקום שקט לעבוד בו", "מסעדה עם נוף יפה", "מקום עם קינוחים טעימים", "מלון זול" ],
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
+Current date and time: ${dateTime}.
+The JSON output must have ONE main key: "searchPlan", which is an object.
+- "searchPlan" must contain:
+  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
+  - "minPriceLevel" (number 1-4, or null): Minimum price level.
+  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
+  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
+  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
+    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
+    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
+Examples:
+- User request: "סופר שפתוח בשבת" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
+- User request: "מסעדה שפתוחה ב-11 בלילה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
+- User request: "מסעדה עם נוף יפה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}
+User request: "${text}"`,
             },
             es: {
-                title: "Mapa de Búsqueda Inteligente",
-                placeholder: "Ej: 'gasolinera cercana'",
-                placeholderLoading: "Verificando ubicación...",
-                placeholderListening: "Escuchando...",
-                searchButton: "Buscar",
-                searchingButton: "Buscando...",
-                radiusLabel: 'Radio de búsqueda: <span id="radius-value">5.0 km</span>',
-                voiceTitle: "Búsqueda por voz",
-                myLocation: "Mi ubicación",
-                locationError: "Fallaron los servicios de ubicación. Revisa los permisos en tu navegador.",
-                noBrowserSupport: "Tu navegador no soporta los servicios de ubicación.",
-                noResults: "No se encontraron resultados para tu búsqueda.",
-                noResultsInRadius: "No se encontraron resultados en este radio de búsqueda.",
-                detailsLoading: "Cargando detalles...",
-                detailsNotAvailable: "No se pudieron cargar más detalles.",
-                detailsNone: "No hay más detalles disponibles.",
-                summaryTitle: "Resumen",
-                addressTitle: "Dirección",
-                ratingTitle: "Valoración",
-                ratingText: (r, c) => `${r} (${c} reseñas)`,
-                hoursTitle: "Horario de apertura",
-                photosTitle: "Fotos",
-                geminiPrompt: (text) => `From the following user request in Spanish, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "busco una gasolinera que esté abierta ahora" -> {"query": "gasolinera", "openNow": true} - User request: "un puesto de tacos cercano" -> {"query": "tacos", "openNow": false} User request: "${text}"`,
+                title: "Mapa de Búsqueda Inteligente", placeholder: "Ej: 'cafetería con buenos postres'", placeholderLoading: "Verificando ubicación...", placeholderListening: "Escuchando...", searchButton: "Buscar", searchingButton: "Buscando...", radiusLabel: 'Radio de búsqueda: <span id="radius-value">5.0 km</span>', voiceTitle: "Búsqueda por voz", myLocation: "Mi ubicación", locationError: "Fallaron los servicios de ubicación.", noBrowserSupport: "Tu navegador no soporta geolocalización.", noResults: "No se encontraron resultados.", noResultsInRadius: "No se encontraron resultados en este radio.", detailsLoading: "Cargando detalles...", detailsNotAvailable: "No se pudieron cargar más detalles.", detailsNone: "No hay más detalles disponibles.", summaryTitle: "Resumen", addressTitle: "Dirección", ratingTitle: "Valoración", ratingText: (r, c) => `${r} (${c} reseñas)`, hoursTitle: "Horario de apertura", photosTitle: "Fotos", examplesButton: "Ejemplos", modalTitle: "Búsquedas de Ejemplo",
+                examples: [ "Supermercado abierto el sábado", "Cafetería que no cierre antes de medianoche", "Un lugar tranquilo para trabajar", "Restaurante con una vista hermosa", "Lugar con postres deliciosos", "Hotel barato" ],
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
+Current date and time: ${dateTime}.
+The JSON output must have ONE main key: "searchPlan", which is an object.
+- "searchPlan" must contain:
+  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
+  - "minPriceLevel" (number 1-4, or null): Minimum price level.
+  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
+  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
+  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
+    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
+    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
+Examples:
+- User request: "supermercado abierto el sábado" -> {"searchPlan": {"textQuery": "supermercado", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
+- User request: "cafetería abierta a las 11 de la noche" -> {"searchPlan": {"textQuery": "cafetería", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
+- User request: "restaurante con una vista bonita" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "vista", "scenic", "panoramic", "hermosa"]}]}}
+User request: "${text}"`,
             }
         };
         
@@ -476,6 +539,7 @@
             document.getElementById('search-button').textContent = t.searchButton;
             document.getElementById('radius-label').innerHTML = t.radiusLabel;
             document.getElementById('voice-search-button').title = t.voiceTitle;
+            document.getElementById('examples-button').textContent = t.examplesButton;
 
             const script = document.createElement('script');
             script.id = 'google-maps-script';
@@ -553,12 +617,13 @@
             radiusSlider.addEventListener('input', () => {
                 const radiusMeters = parseInt(radiusSlider.value);
                 const radiusValue = document.getElementById('radius-label').querySelector('span');
-                radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters} m`;
+                if (radiusValue) radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters} m`;
                 if (searchRadiusCircle && userMarker) drawSearchCircle(userMarker.getPosition(), radiusMeters);
             });
             const uiContainer = document.getElementById('ui-container');
             document.getElementById('mobile-toggle-button').addEventListener('click', () => uiContainer.classList.add('panel-open'));
             document.getElementById('panel-close-button').addEventListener('click', () => uiContainer.classList.remove('panel-open'));
+            setupExamplesModal();
         }
         
         function setupVoiceSearch() {
@@ -584,6 +649,34 @@
             };
             recognition.onerror = (event) => alert(`Speech recognition error: ${event.error}`);
         }
+        
+        function setupExamplesModal() {
+            const modal = document.getElementById('examples-modal');
+            const openButton = document.getElementById('examples-button');
+            const closeButton = modal.querySelector('.modal-close-button');
+            const examplesList = modal.querySelector('#examples-list');
+            
+            document.getElementById('modal-title').textContent = translations[currentLang].modalTitle;
+
+            examplesList.innerHTML = '';
+            translations[currentLang].examples.forEach(text => {
+                const li = document.createElement('li');
+                li.textContent = text;
+                li.onclick = () => {
+                    document.getElementById('search-input').value = text;
+                    modal.classList.add('hidden');
+                    performSearch();
+                };
+                examplesList.appendChild(li);
+            });
+
+            const showModal = () => modal.classList.remove('hidden');
+            const hideModal = () => modal.classList.add('hidden');
+            
+            openButton.onclick = showModal;
+            closeButton.onclick = hideModal;
+            modal.onclick = (e) => { if(e.target === modal) hideModal(); };
+        }
 
         async function performSearch() {
             const queryText = document.getElementById('search-input').value;
@@ -592,11 +685,13 @@
             searchButton.textContent = translations[currentLang].searchingButton;
             searchButton.disabled = true;
             try {
-                const structuredQuery = await getStructuredQueryFromGemini(queryText);
-                if(structuredQuery?.query) await searchPlaces(structuredQuery);
-                else throw new Error("Gemini did not return a valid query.");
+                const result = await getStructuredQueryFromGemini(queryText);
+                const searchPlan = result.searchPlan;
+                if(searchPlan?.textQuery) await searchPlaces(searchPlan);
+                else throw new Error("Gemini did not return a valid query plan.");
             } catch (error) {
                 console.error("Search failed:", error);
+                alert("Sorry, there was an error processing the search plan. Please try a simpler query.");
             } finally {
                 searchButton.textContent = translations[currentLang].searchButton;
                 searchButton.disabled = false;
@@ -605,7 +700,9 @@
 
         async function getStructuredQueryFromGemini(text) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const prompt = translations[currentLang].geminiPrompt(text);
+            const now = new Date();
+            const dateTimeString = `${now.toDateString()} ${now.toTimeString()}`;
+            const prompt = translations[currentLang].geminiPrompt(text, dateTimeString);
             const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (!response.ok) throw new Error(`Gemini API request failed with status ${response.status}`);
             const data = await response.json();
@@ -622,38 +719,95 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        async function searchPlaces({ query, openNow }) {
+        function isPlaceMatch(details, filter) {
+            if (!filter || filter.type === 'none') return true;
+            if (!details) return false;
+            if(filter.type === 'reviewFilter') {
+                if (!details?.reviews) return false;
+                const keywords = filter.rules[0].keywords;
+                return details.reviews.some(review => review.text && keywords.some(keyword => review.text.text.toLowerCase().includes(keyword.toLowerCase())));
+            }
+            if (filter.type === 'openingHours') {
+                 if (!details?.regularOpeningHours) return false;
+                 return filter.rules.every(rule => {
+                    const dayToCheck = rule.day ?? new Date().getDay();
+                    const periods = details.regularOpeningHours.periods;
+                    if (rule.time) {
+                        const timeToCheckMinutes = parseInt(rule.time.split(':')[0]) * 60 + parseInt(rule.time.split(':')[1]);
+                        return periods.some(p => {
+                            if (p.open.day === 0 && !p.close) return true;
+                            const openTimeMinutes = p.open.hour * 60 + p.open.minute;
+                            if (p.close && p.open.day !== p.close.day) {
+                                const closeTimeMinutes = p.close.hour * 60 + p.close.minute;
+                                if (dayToCheck === p.open.day && timeToCheckMinutes >= openTimeMinutes) return true;
+                                if (dayToCheck === p.close.day && timeToCheckMinutes < closeTimeMinutes) return true;
+                                return false;
+                            }
+                            if (dayToCheck === p.open.day) {
+                                 const closeTimeMinutes = p.close ? (p.close.hour * 60 + p.close.minute) : (24 * 60);
+                                 return timeToCheckMinutes >= openTimeMinutes && timeToCheckMinutes < closeTimeMinutes;
+                            }
+                            return false;
+                        });
+                    } else {
+                        return periods.some(p => p.open.day === dayToCheck);
+                    }
+                });
+            }
+            return true;
+        }
+
+        async function searchPlaces(searchPlan) {
             clearPreviousResults();
-            const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             const url = 'https://places.googleapis.com/v1/places:searchText';
-            // *** UPDATED: Request `id` for details fetch ***
             const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.photos' };
-            const requestBody = { textQuery: query, maxResultCount: 10, locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } } };
-            if ((openNow === true || String(openNow).toLowerCase() === 'true')) { requestBody.openNow = true; }
+            const requestBody = {
+                textQuery: searchPlan.textQuery,
+                maxResultCount: 20, 
+                locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } }
+            };
+            if(searchPlan.minPriceLevel) requestBody.minPriceLevel = searchPlan.minPriceLevel;
+            if(searchPlan.maxPriceLevel) requestBody.maxPriceLevel = searchPlan.maxPriceLevel;
+
             const body = JSON.stringify(requestBody);
             const response = await fetch(url, { method: 'POST', headers, body });
             if (!response.ok) {
-                const errorBody = await response.json();
-                console.error('Places API Error:', errorBody);
                 alert(translations[currentLang].noResults);
-                throw new Error(`Places API request failed with status ${response.status}`);
+                throw new Error(`Places API request failed`);
             }
             const data = await response.json();
-            if (data.places) {
-                const userLat = userLocation.lat(), userLng = userLocation.lng();
-                const placesWithDistance = data.places.map(place => ({ place, distance: getDistanceInMeters(userLat, userLng, place.location.latitude, place.location.longitude) }));
-                const filteredPlaces = placesWithDistance.filter(item => item.distance <= radius);
-                const sortedPlaces = filteredPlaces.sort((a, b) => a.distance - b.distance);
-                if (sortedPlaces.length > 0) {
-                    searchResults = sortedPlaces.map(item => item.place);
-                    displayResultsOnMapAndList();
-                } else {
-                    drawSearchCircle(userMarker.getPosition(), parseFloat(radius));
-                    alert(translations[currentLang].noResultsInRadius);
-                }
+            if (!data.places || data.places.length === 0) {
+                alert(translations[currentLang].noResults);
+                return;
+            }
+
+            const radius = document.getElementById('radius-slider').value;
+            const userLat = userLocation.lat(), userLng = userLocation.lng();
+            
+            const detailedPlaces = await Promise.all(data.places.map(p => fetchPlaceDetails(p.id)));
+
+            const categorizedPlaces = detailedPlaces.map((details, index) => {
+                const place = data.places[index];
+                const distance = getDistanceInMeters(userLat, userLng, place.location.latitude, place.location.longitude);
+                const isPerfect = isPlaceMatch(details, searchPlan.filterType, searchPlan.filterRules);
+                return { place: { ...place, details }, distance, isPerfect };
+            }).filter(item => item.distance <= radius);
+
+            const perfectMatches = categorizedPlaces.filter(p => p.isPerfect);
+            const partialMatches = categorizedPlaces.filter(p => !p.isPerfect);
+            
+            perfectMatches.sort((a,b) => a.distance - b.distance);
+            partialMatches.sort((a,b) => a.distance - b.distance);
+            
+            const combinedResults = [...perfectMatches, ...partialMatches].slice(0, 10);
+
+            if (combinedResults.length > 0) {
+                searchResults = combinedResults;
+                displayResultsOnMapAndList();
             } else {
-                 alert(translations[currentLang].noResults);
+                 drawSearchCircle(userMarker.getPosition(), parseFloat(radius));
+                 alert(translations[currentLang].noResultsInRadius);
             }
         }
 
@@ -662,7 +816,9 @@
             const resultsList = document.getElementById('results-list');
             bounds.extend(userMarker.getPosition());
             drawSearchCircle(userMarker.getPosition(), parseFloat(document.getElementById('radius-slider').value));
-            searchResults.forEach((place, index) => {
+            
+            searchResults.forEach((result, index) => {
+                const place = result.place;
                 const location = { lat: place.location.latitude, lng: place.location.longitude };
                 markers.push(new google.maps.Marker({ position: location, map: map, label: { text: `${index + 1}`, color: 'white' } }));
                 bounds.extend(location);
@@ -672,7 +828,7 @@
                     photoHtml = `<img src="${photoUrl}" alt="${place.displayName.text}" onerror="this.parentElement.innerHTML = '${photoHtml.replace(/"/g, '\\"')}';">`;
                 }
                 const listItem = document.createElement('li');
-                listItem.className = 'result-item';
+                listItem.className = 'result-item ' + (result.isPerfect ? 'perfect-match' : 'partial-match');
                 listItem.innerHTML = `<div class="result-item-header"><div class="result-item-photo">${photoHtml}<span class="result-item-number">${index + 1}</span></div><span class="result-item-text">${place.displayName.text}</span></div><div class="result-details"></div>`;
                 listItem.querySelector('.result-item-header').addEventListener('click', () => handleResultClick(index, listItem));
                 resultsList.appendChild(listItem);
@@ -698,15 +854,18 @@
         async function showSingleResult(index, listItem) {
             markers.forEach((marker, markerIndex) => marker.setAnimation(markerIndex === index ? google.maps.Animation.BOUNCE : null));
             setTimeout(() => { if (markers[index]) markers[index].setAnimation(null); }, 1500);
-            const place = searchResults[index];
+            
+            const resultItem = searchResults[index];
+            const place = resultItem.place;
             const location = { lat: place.location.latitude, lng: place.location.longitude };
             calculateAndDisplayRoute(location);
+            
             const detailsContainer = listItem.querySelector('.result-details');
             if (!listItem.dataset.detailsLoaded) {
                 detailsContainer.innerHTML = translations[currentLang].detailsLoading;
                 listItem.classList.add('details-visible');
-                const placeDetails = await fetchPlaceDetails(place.id);
-                populatePlaceDetails(detailsContainer, placeDetails);
+                // Details are already fetched, just populate them
+                populatePlaceDetails(detailsContainer, place.details);
                 listItem.dataset.detailsLoaded = 'true';
             } else {
                  listItem.classList.add('details-visible');
@@ -715,8 +874,7 @@
         
         async function fetchPlaceDetails(placeId) {
             const url = `https://places.googleapis.com/v1/places/${placeId}`;
-            // *** UPDATED: Added new fields to the mask ***
-            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'formattedAddress,editorialSummary,reviews,regularOpeningHours,rating,userRatingCount,photos' };
+            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'id,formattedAddress,editorialSummary,reviews,regularOpeningHours,rating,userRatingCount,photos' };
             try {
                 const response = await fetch(url, { headers });
                 if (!response.ok) throw new Error('Failed to fetch details');
@@ -731,7 +889,6 @@
             const t = translations[currentLang];
             if (!details) { container.innerHTML = `<p>${t.detailsNotAvailable}</p>`; return; }
             let html = '';
-            // *** UPDATED: Add address if available ***
             if (details.formattedAddress) html += `<h4>${t.addressTitle}</h4><p>${details.formattedAddress}</p>`;
             if (details.editorialSummary) html += `<h4>${t.summaryTitle}</h4><p>${details.editorialSummary.text}</p>`;
             if (details.rating) html += `<h4>${t.ratingTitle}</h4><div class="rating"><span class="stars">⭐</span> <span>${t.ratingText(details.rating, details.userRatingCount)}</span></div>`;
@@ -740,10 +897,8 @@
                 details.regularOpeningHours.weekdayDescriptions.forEach(desc => { html += `<li>${desc}</li>`; });
                 html += '</ul>';
             }
-            // *** UPDATED: Add photo gallery ***
-            if (details.photos && details.photos.length > 1) { // Show gallery if there's more than the main photo
+            if (details.photos && details.photos.length > 1) {
                 html += `<h4>${t.photosTitle}</h4><div class="photo-gallery">`;
-                // Start from the second photo, limit to 5 extra photos
                 details.photos.slice(1, 6).forEach(photo => {
                     const photoUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=200&maxWidthPx=200&key=${GOOGLE_MAPS_API_KEY}`;
                     html += `<img src="${photoUrl}" alt="Photo of the place">`;
