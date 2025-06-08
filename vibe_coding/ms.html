@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<!-- Defaulting to English, will be updated by JS -->
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מפת חיפוש חכמה</title>
+    <title>Smart Search Map</title>
     
     <style>
         :root {
@@ -27,7 +28,7 @@
             flex-shrink: 0;
             height: 100%;
             background: #f8f9fa;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
             z-index: 1001;
             display: flex;
             flex-direction: column;
@@ -63,10 +64,15 @@
             width: 100%;
             padding: 12px;
             padding-left: 50px;
+            padding-right: 12px;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 16px;
             box-sizing: border-box;
+        }
+        html[dir="rtl"] #search-input {
+            padding-right: 50px;
+            padding-left: 12px;
         }
         #search-input:disabled {
             background-color: #f2f2f2;
@@ -74,7 +80,6 @@
         
         #voice-search-button {
             position: absolute;
-            left: 5px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -88,6 +93,9 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
+        html[dir="ltr"] #voice-search-button { right: 5px; }
+        html[dir="rtl"] #voice-search-button { left: 5px; }
+
         #voice-search-button:hover {
             background-color: #f0f0f0;
         }
@@ -110,7 +118,7 @@
             border: none;
             background-color: #4285F4;
             color: white;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 16px;
@@ -122,14 +130,26 @@
             background-color: #9E9E9E;
             cursor: not-allowed;
         }
-        .slider-group {
-            text-align: right;
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-top: 15px;
+            gap: 15px;
+        }
+        .slider-group {
+            flex-grow: 1;
+        }
+        #language-selector {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
         }
         .slider-group label {
             display: block;
             margin-bottom: 5px;
             color: #333;
+            font-size: 14px;
         }
         #radius-slider {
             width: 100%;
@@ -186,15 +206,15 @@
             font-weight: bold;
             position: absolute;
             top: -8px;
-            right: -8px;
             border: 2px solid white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
+        html[dir="ltr"] .result-item-number { left: -8px; }
+        html[dir="rtl"] .result-item-number { right: -8px; }
         .result-item-text {
             flex-grow: 1;
         }
         
-        /* *** NEW: Styles for the expandable details section *** */
         .result-details {
             max-height: 0;
             overflow: hidden;
@@ -240,7 +260,6 @@
             display: none;
             position: absolute;
             top: 20px;
-            right: 20px;
             width: 50px;
             height: 50px;
             background-color: #fff;
@@ -251,15 +270,18 @@
             align-items: center;
             justify-content: center;
         }
+        html[dir="ltr"] #mobile-toggle-button { left: 20px; }
+        html[dir="rtl"] #mobile-toggle-button { right: 20px; }
         #panel-close-button {
             display: none;
             position: absolute;
             top: 15px;
-            left: 15px;
             background: none;
             border: none;
             cursor: pointer;
         }
+        html[dir="ltr"] #panel-close-button { right: 15px; }
+        html[dir="rtl"] #panel-close-button { left: 15px; }
 
         @media (max-width: 768px) {
             #app-layout {
@@ -268,15 +290,16 @@
             #ui-container {
                 position: fixed;
                 top: 0;
-                right: 0;
                 height: 100%;
-                transform: translateX(100%);
                 transition: var(--panel-transition);
                 max-width: 90%;
             }
-            #ui-container.panel-open {
-                transform: translateX(0);
-            }
+            html[dir="ltr"] #ui-container { left: 0; transform: translateX(-100%); }
+            html[dir="rtl"] #ui-container { right: 0; transform: translateX(100%); }
+
+            html[dir="ltr"] #ui-container.panel-open { transform: translateX(0); }
+            html[dir="rtl"] #ui-container.panel-open { transform: translateX(0); }
+
             #mobile-toggle-button, #panel-close-button {
                 display: flex;
             }
@@ -297,16 +320,23 @@
                 </button>
                 <div class="input-group">
                     <div class="search-input-wrapper">
-                        <input type="text" id="search-input" placeholder="מאמת מיקום..." disabled>
-                        <button id="voice-search-button" title="חיפוש קולי" disabled>
+                        <input type="text" id="search-input" disabled>
+                        <button id="voice-search-button" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                         </button>
                     </div>
-                    <button id="search-button" disabled>חפש</button>
+                    <button id="search-button" disabled></button>
                 </div>
-                <div class="slider-group">
-                    <label for="radius-slider">רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span></label>
-                    <input type="range" id="radius-slider" min="50" max="10000" value="5000" step="50">
+                <div class="controls-row">
+                    <div class="slider-group">
+                        <label for="radius-slider" id="radius-label">Radius</label>
+                        <input type="range" id="radius-slider" min="50" max="10000" value="5000" step="50">
+                    </div>
+                    <select id="language-selector">
+                        <option value="en">English</option>
+                        <option value="he">עברית</option>
+                        <option value="es">Español</option>
+                    </select>
                 </div>
             </div>
             <div id="results-container" class="hidden">
@@ -326,25 +356,128 @@
         const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
     
         let map, userMarker, directionsService, directionsRenderer;
-        let searchResults = [];
-        let markers = [];
-        let currentResultIndex = -1;
-        let searchRadiusCircle = null;
-        let locationWatcher = null;
+        let searchResults = [], markers = [], currentResultIndex = -1, searchRadiusCircle = null, locationWatcher = null;
+        let currentLang;
+
+        const translations = {
+            en: {
+                title: "Smart Search Map",
+                placeholder: "e.g., 'gas station near me'",
+                placeholderLoading: "Verifying location...",
+                placeholderListening: "Listening...",
+                searchButton: "Search",
+                searchingButton: "Searching...",
+                radiusLabel: 'Search Radius: <span id="radius-value">5.0 km</span>',
+                voiceTitle: "Voice Search",
+                myLocation: "My Location",
+                locationError: "Location services failed. Check your browser permissions.",
+                noBrowserSupport: "Your browser does not support geolocation.",
+                noResults: "No results found for your search.",
+                noResultsInRadius: "No results found in this radius.",
+                detailsLoading: "Loading details...",
+                detailsNotAvailable: "Could not load more details.",
+                detailsNone: "No more details available.",
+                summaryTitle: "Summary",
+                ratingTitle: "Rating",
+                ratingText: (r, c) => `${r} (${c} reviews)`,
+                hoursTitle: "Opening Hours",
+                geminiPrompt: (text) => `From the following user request in English, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "I'm looking for a gas station that is open now" -> {"query": "gas station", "openNow": true} - User request: "a nearby taco stand" -> {"query": "taco stand", "openNow": false} User request: "${text}"`,
+            },
+            he: {
+                title: "מפת חיפוש חכמה",
+                placeholder: "לדוגמה: 'תחנת דלק קרובה'",
+                placeholderLoading: "מאמת מיקום...",
+                placeholderListening: "מקשיב...",
+                searchButton: "חפש",
+                searchingButton: "מחפש...",
+                radiusLabel: 'רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span>',
+                voiceTitle: "חיפוש קולי",
+                myLocation: "המיקום שלי",
+                locationError: "שירותי המיקום נכשלו. אנא בדוק את הרשאות המיקום בדפדפן.",
+                noBrowserSupport: "הדפדפן שלך אינו תומך בשירותי מיקום.",
+                noResults: "לא נמצאו תוצאות התואמות לחיפוש שלך.",
+                noResultsInRadius: "לא נמצאו תוצאות התואמות לחיפוש שלך ברדיוס זה.",
+                detailsLoading: "טוען פרטים...",
+                detailsNotAvailable: "לא ניתן היה לטעון פרטים נוספים.",
+                detailsNone: "אין פרטים נוספים זמינים.",
+                summaryTitle: "תקציר",
+                ratingTitle: "דירוג",
+                ratingText: (r, c) => `${r} (${c} ביקורות)`,
+                hoursTitle: "שעות פתיחה",
+                geminiPrompt: (text) => `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} User request: "${text}"`,
+            },
+            es: {
+                title: "Mapa de Búsqueda Inteligente",
+                placeholder: "Ej: 'gasolinera cercana'",
+                placeholderLoading: "Verificando ubicación...",
+                placeholderListening: "Escuchando...",
+                searchButton: "Buscar",
+                searchingButton: "Buscando...",
+                radiusLabel: 'Radio de búsqueda: <span id="radius-value">5.0 km</span>',
+                voiceTitle: "Búsqueda por voz",
+                myLocation: "Mi ubicación",
+                locationError: "Fallaron los servicios de ubicación. Revisa los permisos en tu navegador.",
+                noBrowserSupport: "Tu navegador no soporta los servicios de ubicación.",
+                noResults: "No se encontraron resultados para tu búsqueda.",
+                noResultsInRadius: "No se encontraron resultados en este radio de búsqueda.",
+                detailsLoading: "Cargando detalles...",
+                detailsNotAvailable: "No se pudieron cargar más detalles.",
+                detailsNone: "No hay más detalles disponibles.",
+                summaryTitle: "Resumen",
+                ratingTitle: "Valoración",
+                ratingText: (r, c) => `${r} (${c} reseñas)`,
+                hoursTitle: "Horario de apertura",
+                geminiPrompt: (text) => `From the following user request in Spanish, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "busco una gasolinera que esté abierta ahora" -> {"query": "gasolinera", "openNow": true} - User request: "un puesto de tacos cercano" -> {"query": "tacos", "openNow": false} User request: "${text}"`,
+            }
+        };
         
-        function initMap() {
+        // *** UPDATED: New robust language change function ***
+        function setLanguage(lang) {
+            if (!translations[lang] || lang === currentLang) return;
+            // Store the selected language in the URL to persist on reload
+            const url = new URL(window.location);
+            url.searchParams.set('lang', lang);
+            window.location.href = url.href;
+        }
+        
+        // This function runs on every page load
+        function initializeApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get('lang') || 'en'; // Default to English
+            currentLang = lang;
+            
+            // Apply translations and direction
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
+            document.getElementById('language-selector').value = currentLang;
+            
+            const t = translations[currentLang];
+            document.title = t.title;
+            document.getElementById('search-input').placeholder = t.placeholderLoading;
+            document.getElementById('search-button').textContent = t.searchButton;
+            document.getElementById('radius-label').innerHTML = t.radiusLabel;
+            document.getElementById('voice-search-button').title = t.voiceTitle;
+
+            // Load Google Maps script with the correct language
+            const script = document.createElement('script');
+            script.id = 'google-maps-script';
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=${currentLang}`;
+            script.async = true;
+            document.head.appendChild(script);
+
+            // Add listener for future language changes
+             document.getElementById('language-selector').addEventListener('change', (e) => setLanguage(e.target.value));
+        }
+
+        window.initMap = function() {
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
-
             const defaultLocation = { lat: 32.0853, lng: 34.7818 };
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 15,
                 center: defaultLocation,
                 mapTypeControl: true,
-                mapTypeControlOptions: {
-                    style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                    position: google.maps.ControlPosition.TOP_LEFT,
-                },
+                mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR, position: google.maps.ControlPosition.TOP_LEFT, },
                 streetViewControl: false,
                 fullscreenControl: false,
             });
@@ -364,15 +497,12 @@
         }
         
         function handleLocationUpdate(position, centerMap = false) {
-            const userLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-            };
+            const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
             if (!userMarker) {
                 userMarker = new google.maps.Marker({
                     position: userLocation,
                     map: map,
-                    title: "המיקום שלי",
+                    title: translations[currentLang].myLocation,
                     icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 3, strokeColor: "white" },
                     zIndex: 999 
                 });
@@ -382,49 +512,46 @@
                 searchInput.disabled = false;
                 searchButton.disabled = false;
                 voiceButton.disabled = false;
-                searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
+                searchInput.placeholder = translations[currentLang].placeholder;
+                setupVoiceSearch(); 
             } else {
                 userMarker.setPosition(userLocation);
             }
             if (centerMap) map.setCenter(userLocation);
         }
 
-        function handleLocationError(browserHasGeolocation) {
-            document.getElementById('search-input').placeholder = 'לא ניתן לקבוע מיקום';
-            alert(browserHasGeolocation ? 'שירותי המיקום נכשלו.' : 'הדפדפן שלך אינו תומך בשירותי מיקום.');
+        function handleLocationError() {
+            document.getElementById('search-input').placeholder = translations[currentLang].locationError;
+            alert(translations[currentLang].locationError);
         }
 
         function setupEventListeners() {
             document.getElementById('search-button').addEventListener('click', performSearch);
             document.getElementById('search-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             const radiusSlider = document.getElementById('radius-slider');
-            const radiusValue = document.getElementById('radius-value');
             radiusSlider.addEventListener('input', () => {
                 const radiusMeters = parseInt(radiusSlider.value);
-                radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} ק"מ` : `${radiusMeters} מטר`;
+                const radiusValue = document.getElementById('radius-label').querySelector('span');
+                radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters} m`;
                 if (searchRadiusCircle && userMarker) drawSearchCircle(userMarker.getPosition(), radiusMeters);
             });
             const uiContainer = document.getElementById('ui-container');
             document.getElementById('mobile-toggle-button').addEventListener('click', () => uiContainer.classList.add('panel-open'));
             document.getElementById('panel-close-button').addEventListener('click', () => uiContainer.classList.remove('panel-open'));
-            setupVoiceSearch();
         }
         
         function setupVoiceSearch() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const voiceButton = document.getElementById('voice-search-button');
-            if (!SpeechRecognition) {
-                voiceButton.style.display = 'none';
-                return;
-            }
+            if (!SpeechRecognition) { voiceButton.style.display = 'none'; return; }
             const recognition = new SpeechRecognition();
-            recognition.lang = 'he-IL';
+            recognition.lang = currentLang === 'he' ? 'he-IL' : currentLang === 'es' ? 'es-ES' : 'en-US';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
             voiceButton.addEventListener('click', () => recognition.start());
             recognition.onstart = () => {
                 voiceButton.classList.add('is-listening');
-                document.getElementById('search-input').placeholder = 'מקשיב...';
+                document.getElementById('search-input').placeholder = translations[currentLang].placeholderListening;
             };
             recognition.onresult = (event) => {
                 document.getElementById('search-input').value = event.results[0][0].transcript;
@@ -432,20 +559,16 @@
             };
             recognition.onspeechend = () => recognition.stop();
             recognition.onend = () => {
-                voiceButton.classList.remove('is-listening');
-                document.getElementById('search-input').placeholder = "לדוגמה: 'תחנת דלק קרובה'";
+                document.getElementById('search-input').placeholder = translations[currentLang].placeholder;
             };
-            recognition.onerror = (event) => alert(`שגיאת זיהוי דיבור: ${event.error}`);
+            recognition.onerror = (event) => alert(`Speech recognition error: ${event.error}`);
         }
 
         async function performSearch() {
             const queryText = document.getElementById('search-input').value;
-            if (!queryText || !userMarker) {
-                alert(!userMarker ? "לא ניתן לקבוע את מיקומך." : "אנא הזן מונח חיפוש.");
-                return;
-            }
+            if (!queryText || !userMarker) return;
             const searchButton = document.getElementById('search-button');
-            searchButton.textContent = 'מחפש...';
+            searchButton.textContent = translations[currentLang].searchingButton;
             searchButton.disabled = true;
             try {
                 const structuredQuery = await getStructuredQueryFromGemini(queryText);
@@ -454,14 +577,14 @@
             } catch (error) {
                 console.error("Search failed:", error);
             } finally {
-                searchButton.textContent = 'חפש';
+                searchButton.textContent = translations[currentLang].searchButton;
                 searchButton.disabled = false;
             }
         }
 
         async function getStructuredQueryFromGemini(text) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const prompt = `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} User request: "${text}"`;
+            const prompt = translations[currentLang].geminiPrompt(text);
             const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (!response.ok) throw new Error(`Gemini API request failed with status ${response.status}`);
             const data = await response.json();
@@ -491,7 +614,7 @@
             if (!response.ok) {
                 const errorBody = await response.json();
                 console.error('Places API Error:', errorBody);
-                alert('שגיאה בחיפוש מקומות.');
+                alert(translations[currentLang].noResults);
                 throw new Error(`Places API request failed with status ${response.status}`);
             }
             const data = await response.json();
@@ -505,10 +628,10 @@
                     displayResultsOnMapAndList();
                 } else {
                     drawSearchCircle(userMarker.getPosition(), parseFloat(radius));
-                    alert("לא נמצאו תוצאות התואמות לחיפוש שלך ברדיוס זה.");
+                    alert(translations[currentLang].noResultsInRadius);
                 }
             } else {
-                 alert("לא נמצאו תוצאות התואמות לחיפוש שלך.");
+                 alert(translations[currentLang].noResults);
             }
         }
 
@@ -521,29 +644,15 @@
                 const location = { lat: place.location.latitude, lng: place.location.longitude };
                 markers.push(new google.maps.Marker({ position: location, map: map, label: { text: `${index + 1}`, color: 'white' } }));
                 bounds.extend(location);
-                
-                let photoHtml;
+                let photoHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
                 if (place.photos && place.photos.length > 0) {
                     const photoUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=120&maxWidthPx=120&key=${GOOGLE_MAPS_API_KEY}`;
-                    photoHtml = `<img src="${photoUrl}" alt="${place.displayName.text}" onerror="this.parentElement.innerHTML = '<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'24\\' height=\\'24\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'#888\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><path d=\\'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\\'></path><circle cx=\\'12\\' cy=\\'10\\' r=\\'3\\'></circle></svg>';">`;
-                } else {
-                    photoHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+                    photoHtml = `<img src="${photoUrl}" alt="${place.displayName.text}" onerror="this.parentElement.innerHTML = '${photoHtml.replace(/"/g, '\\"')}';">`;
                 }
                 const listItem = document.createElement('li');
                 listItem.className = 'result-item';
-                listItem.innerHTML = `
-                    <div class="result-item-header">
-                        <div class="result-item-photo">
-                            ${photoHtml}
-                            <span class="result-item-number">${index + 1}</span>
-                        </div>
-                        <span class="result-item-text">${place.displayName.text}</span>
-                    </div>
-                    <div class="result-details"></div>`; // Placeholder for details
-                
-                listItem.querySelector('.result-item-header').addEventListener('click', () => {
-                    handleResultClick(index, listItem);
-                });
+                listItem.innerHTML = `<div class="result-item-header"><div class="result-item-photo">${photoHtml}<span class="result-item-number">${index + 1}</span></div><span class="result-item-text">${place.displayName.text}</span></div><div class="result-details"></div>`;
+                listItem.querySelector('.result-item-header').addEventListener('click', () => handleResultClick(index, listItem));
                 resultsList.appendChild(listItem);
             });
             document.getElementById('results-container').classList.remove('hidden');
@@ -557,12 +666,7 @@
 
         async function handleResultClick(index, listItem) {
             const isActive = listItem.classList.contains('active');
-            // Close all other items
-            document.querySelectorAll('.result-item').forEach(item => {
-                item.classList.remove('active');
-                item.classList.remove('details-visible');
-            });
-            // If it was already active, just close it. Otherwise, open the new one.
+            document.querySelectorAll('.result-item').forEach(item => { item.classList.remove('active', 'details-visible'); });
             if (!isActive) {
                 listItem.classList.add('active');
                 showSingleResult(index, listItem);
@@ -572,17 +676,13 @@
         async function showSingleResult(index, listItem) {
             markers.forEach((marker, markerIndex) => marker.setAnimation(markerIndex === index ? google.maps.Animation.BOUNCE : null));
             setTimeout(() => { if (markers[index]) markers[index].setAnimation(null); }, 1500);
-            
             const place = searchResults[index];
             const location = { lat: place.location.latitude, lng: place.location.longitude };
             calculateAndDisplayRoute(location);
-            
-            // *** NEW: Fetch and display place details ***
             const detailsContainer = listItem.querySelector('.result-details');
             if (!listItem.dataset.detailsLoaded) {
-                detailsContainer.innerHTML = 'טוען פרטים...';
+                detailsContainer.innerHTML = translations[currentLang].detailsLoading;
                 listItem.classList.add('details-visible');
-                
                 const placeDetails = await fetchPlaceDetails(place.id);
                 populatePlaceDetails(detailsContainer, placeDetails);
                 listItem.dataset.detailsLoaded = 'true';
@@ -605,25 +705,17 @@
         }
 
         function populatePlaceDetails(container, details) {
-            if (!details) {
-                container.innerHTML = '<p>לא ניתן היה לטעון פרטים נוספים.</p>';
-                return;
-            }
+            const t = translations[currentLang];
+            if (!details) { container.innerHTML = `<p>${t.detailsNotAvailable}</p>`; return; }
             let html = '';
-            if (details.editorialSummary) {
-                html += `<h4>תקציר</h4><p>${details.editorialSummary.text}</p>`;
-            }
-            if (details.rating) {
-                html += `<h4>דירוג</h4><div class="rating"><span class="stars">⭐</span> <span>${details.rating} (${details.userRatingCount} ביקורות)</span></div>`;
-            }
+            if (details.editorialSummary) html += `<h4>${t.summaryTitle}</h4><p>${details.editorialSummary.text}</p>`;
+            if (details.rating) html += `<h4>${t.ratingTitle}</h4><div class="rating"><span class="stars">⭐</span> <span>${t.ratingText(details.rating, details.userRatingCount)}</span></div>`;
             if (details.regularOpeningHours) {
-                html += '<h4>שעות פתיחה</h4><ul>';
-                details.regularOpeningHours.weekdayDescriptions.forEach(desc => {
-                    html += `<li>${desc}</li>`;
-                });
+                html += `<h4>${t.hoursTitle}</h4><ul>`;
+                details.regularOpeningHours.weekdayDescriptions.forEach(desc => { html += `<li>${desc}</li>`; });
                 html += '</ul>';
             }
-            container.innerHTML = html || '<p>אין פרטים נוספים זמינים.</p>';
+            container.innerHTML = html || `<p>${t.detailsNone}</p>`;
         }
 
         function calculateAndDisplayRoute(destination) {
@@ -643,7 +735,7 @@
             markers = [];
             document.getElementById('results-list').innerHTML = '';
             document.getElementById('results-container').classList.add('hidden');
-            directionsRenderer.setDirections({ routes: [] });
+            if (directionsRenderer) directionsRenderer.setDirections({ routes: [] });
             if (searchRadiusCircle) {
                 searchRadiusCircle.setMap(null);
                 searchRadiusCircle = null;
@@ -652,10 +744,8 @@
             currentResultIndex = -1;
         }
 
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
-        script.async = true;
-        document.head.appendChild(script);
+        // Initial app setup
+        initializeApp();
 
     </script>
 </body>
