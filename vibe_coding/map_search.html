@@ -15,28 +15,31 @@
             overflow: hidden; /* Prevent scrollbars */
         }
 
-        /* Map container */
-        #map {
-            height: 100%;
-            width: 100%;
+        /* *** NEW: Main layout container using Flexbox *** */
+        #app-layout {
+            display: flex;
+            height: 100vh;
         }
 
-        /* UI container that overlays the map */
+        /* *** UPDATED: Side panel styling *** */
         #ui-container {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            width: 360px; /* Fixed width for the side panel */
+            height: 100%;
+            background: #f8f9fa;
+            padding: 20px;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1); /* Shadow to the left (due to RTL) */
+            z-index: 10;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            width: 90%;
-            max-width: 450px;
+            gap: 15px;
+            overflow-y: auto; /* Allow scrolling for panel content */
+            direction: rtl; /* Ensure panel content is RTL */
+        }
+
+        /* *** UPDATED: Map container takes remaining space *** */
+        #map {
+            flex: 1; /* The map will grow to fill available space */
+            height: 100%;
         }
 
         .input-group {
@@ -95,7 +98,13 @@
         #navigation-controls {
             text-align: center;
             border-top: 1px solid #eee;
-            padding-top: 10px;
+            padding-top: 15px;
+            margin-top: auto; /* Push navigation to the bottom */
+        }
+
+        #results-info {
+            font-weight: bold;
+            color: #333;
         }
 
         .button-group {
@@ -105,12 +114,13 @@
         }
 
         #prev-button, #next-button {
-            padding: 8px 12px;
+            padding: 10px 12px;
             border: 1px solid #ccc;
-            background-color: #f7f7f7;
+            background-color: #fff;
             border-radius: 4px;
             cursor: pointer;
             width: 48%;
+            font-size: 16px;
         }
 
         #prev-button:hover, #next-button:hover {
@@ -124,32 +134,39 @@
     </style>
 </head>
 <body>
-    <div id="map"></div>
-
-    <div id="ui-container">
-        <div class="input-group">
-            <input type="text" id="search-input" placeholder="מאמת מיקום..." disabled>
-            <button id="search-button" disabled>חפש</button>
-        </div>
+    <!-- *** NEW: Main layout wrapper *** -->
+    <div id="app-layout">
         
-        <div class="slider-group">
-            <label for="radius-slider">רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span></label>
-            <input type="range" id="radius-slider" min="50" max="10000" value="5000" step="50">
-        </div>
-
-        <div id="navigation-controls" class="hidden">
-            <p id="results-info"></p>
-            <div class="button-group">
-                <button id="prev-button">הקודם</button>
-                <button id="next-button">הבא</button>
+        <!-- *** MOVED: UI Panel is now a direct child of the layout *** -->
+        <div id="ui-container">
+            <div class="input-group">
+                <input type="text" id="search-input" placeholder="מאמת מיקום..." disabled>
+                <button id="search-button" disabled>חפש</button>
+            </div>
+            
+            <div class="slider-group">
+                <label for="radius-slider">רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span></label>
+                <input type="range" id="radius-slider" min="50" max="10000" value="5000" step="50">
+            </div>
+    
+            <div id="navigation-controls" class="hidden">
+                <p id="results-info"></p>
+                <div class="button-group">
+                    <button id="prev-button">הקודם</button>
+                    <button id="next-button">הבא</button>
+                </div>
             </div>
         </div>
+
+        <!-- The map container -->
+        <div id="map"></div>
+
     </div>
     
     <script>
         // --- API Keys (SECURITY WARNING!) ---
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
-        const Maps_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
     
         // Global variables
         let map, userMarker, directionsService, directionsRenderer;
@@ -169,6 +186,7 @@
                 center: defaultLocation,
                 mapTypeControl: false,
                 streetViewControl: false,
+                fullscreenControl: false, // Cleaner map
             });
             directionsRenderer.setMap(map);
 
@@ -190,15 +208,15 @@
                             title: "המיקום שלי",
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
-                                scale: 7,
+                                scale: 8,
                                 fillColor: "#4285F4",
                                 fillOpacity: 1,
-                                strokeWeight: 2,
+                                strokeWeight: 3,
                                 strokeColor: "white",
                             },
+                            zIndex: 999 
                         });
 
-                        // *** FIXED: Enable search controls only after location is found ***
                         searchInput.disabled = false;
                         searchButton.disabled = false;
                         searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
@@ -312,7 +330,7 @@
             
             const headers = {
                 'Content-Type': 'application/json',
-                'X-Goog-Api-Key': Maps_API_KEY,
+                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
                 'X-Goog-FieldMask': 'places.displayName,places.location,places.id'
             };
             const body = JSON.stringify({
@@ -407,6 +425,11 @@
         }
 
         function calculateAndDisplayRoute(destination) {
+            if (!userMarker) {
+                console.error("User location is not available to calculate route.");
+                return;
+            }
+
             const request = {
                 origin: userMarker.getPosition(),
                 destination: destination,
@@ -414,10 +437,11 @@
             };
 
             directionsService.route(request, (result, status) => {
-                if (status == 'OK') {
+                if (status === 'OK') {
                     directionsRenderer.setDirections(result);
                 } else {
                     console.error('Directions request failed due to ' + status);
+                    alert('לא ניתן לחשב מסלול. ודא שה-Directions API מופעל בחשבון Google Cloud שלך. סטטוס: ' + status);
                     directionsRenderer.setDirections({ routes: [] });
                 }
             });
@@ -433,7 +457,7 @@
         }
 
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${Maps_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
