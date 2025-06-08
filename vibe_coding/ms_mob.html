@@ -256,7 +256,6 @@
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 15,
                 center: defaultLocation,
-                // *** UPDATED: Enable map type control ***
                 mapTypeControl: true,
                 mapTypeControlOptions: {
                     style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
@@ -271,6 +270,12 @@
             const searchButton = document.getElementById('search-button');
 
             if (navigator.geolocation) {
+                // *** UPDATED: Added options for high accuracy ***
+                const geoOptions = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const userLocation = {
@@ -296,7 +301,8 @@
                         searchButton.disabled = false;
                         searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
                     },
-                    () => handleLocationError(true)
+                    () => handleLocationError(true),
+                    geoOptions // Pass the options here
                 );
             } else {
                 handleLocationError(false);
