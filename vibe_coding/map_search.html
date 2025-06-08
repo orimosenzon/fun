@@ -51,6 +51,9 @@
             border-radius: 4px;
             font-size: 16px;
         }
+        #search-input:disabled {
+            background-color: #f2f2f2;
+        }
 
         #search-button {
             padding: 10px 15px;
@@ -125,8 +128,8 @@
 
     <div id="ui-container">
         <div class="input-group">
-            <input type="text" id="search-input" placeholder="לדוגמה: 'פלאפל פתוח עכשיו'">
-            <button id="search-button">חפש</button>
+            <input type="text" id="search-input" placeholder="מאמת מיקום..." disabled>
+            <button id="search-button" disabled>חפש</button>
         </div>
         
         <div class="slider-group">
@@ -145,8 +148,6 @@
     
     <script>
         // --- API Keys (SECURITY WARNING!) ---
-        // For development only. In a real app, use a server-side proxy.
-        // The keys provided in the prompt are used here for demonstration.
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
         const Maps_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
     
@@ -156,30 +157,24 @@
         let markers = [];
         let currentResultIndex = 0;
         
-        /**
-         * Initializes the map and user location services.
-         * This function is the callback for the Google Maps script.
-         */
         function initMap() {
-            // Initialize services
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({
-                suppressMarkers: true // We'll use our own custom markers
+                suppressMarkers: true 
             });
 
-            // Default location (Tel Aviv) if geolocation fails
             const defaultLocation = { lat: 32.0853, lng: 34.7818 };
-
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 15,
                 center: defaultLocation,
                 mapTypeControl: false,
                 streetViewControl: false,
             });
-
             directionsRenderer.setMap(map);
 
-            // Try to get user's current location
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -188,7 +183,7 @@
                             lng: position.coords.longitude,
                         };
                         map.setCenter(userLocation);
-                        if (userMarker) userMarker.setMap(null); // Clear previous marker
+                        if (userMarker) userMarker.setMap(null);
                         userMarker = new google.maps.Marker({
                             position: userLocation,
                             map: map,
@@ -202,43 +197,39 @@
                                 strokeColor: "white",
                             },
                         });
+
+                        // *** FIXED: Enable search controls only after location is found ***
+                        searchInput.disabled = false;
+                        searchButton.disabled = false;
+                        searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
                     },
                     () => {
-                        handleLocationError(true, map.getCenter());
+                        handleLocationError(true);
                     }
                 );
             } else {
-                handleLocationError(false, map.getCenter());
+                handleLocationError(false);
             }
 
             setupEventListeners();
         }
 
-        /**
-         * Handles errors related to geolocation.
-         */
-        function handleLocationError(browserHasGeolocation, pos) {
+        function handleLocationError(browserHasGeolocation) {
+            const searchInput = document.getElementById('search-input');
+            searchInput.placeholder = 'לא ניתן לקבוע מיקום';
             alert(browserHasGeolocation ?
                   'שירותי המיקום נכשלו. אנא בדוק את הרשאות המיקום בדפדפן.' :
                   'הדפדפן שלך אינו תומך בשירותי מיקום.');
         }
 
-        /**
-         * Sets up all the event listeners for UI elements.
-         */
         function setupEventListeners() {
-            const searchButton = document.getElementById('search-button');
-            const searchInput = document.getElementById('search-input');
-            const radiusSlider = document.getElementById('radius-slider');
-            const radiusValue = document.getElementById('radius-value');
-            const nextButton = document.getElementById('next-button');
-            const prevButton = document.getElementById('prev-button');
-            
-            searchButton.addEventListener('click', performSearch);
-            searchInput.addEventListener('keypress', (e) => {
+            document.getElementById('search-button').addEventListener('click', performSearch);
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') performSearch();
             });
 
+            const radiusSlider = document.getElementById('radius-slider');
+            const radiusValue = document.getElementById('radius-value');
             radiusSlider.addEventListener('input', () => {
                 const radiusMeters = parseInt(radiusSlider.value);
                 if (radiusMeters >= 1000) {
@@ -248,13 +239,10 @@
                 }
             });
 
-            nextButton.addEventListener('click', () => navigateResults(1));
-            prevButton.addEventListener('click', () => navigateResults(-1));
+            document.getElementById('next-button').addEventListener('click', () => navigateResults(1));
+            document.getElementById('prev-button').addEventListener('click', () => navigateResults(-1));
         }
-
-        /**
-         * Main function to start the search process.
-         */
+        
         async function performSearch() {
             const queryText = document.getElementById('search-input').value;
             if (!queryText) {
@@ -286,22 +274,9 @@
             }
         }
 
-        /**
-         * Uses Gemini API to convert natural language to a structured search query.
-         */
         async function getStructuredQueryFromGemini(text) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-            
-            const prompt = `
-                From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now.
-                The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean).
-                Examples:
-                - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true}
-                - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false}
-                - User request: "בית מרקחת תורן" -> {"query": "בית מרקחת", "openNow": true}
-                - User request: "סניף דואר" -> {"query": "סניף דואר", "openNow": false}
-                User request: "${text}"
-            `;
+            const prompt = `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} - User request: "בית מרקחת תורן" -> {"query": "בית מרקחת", "openNow": true} - User request: "סניף דואר" -> {"query": "סניף דואר", "openNow": false} User request: "${text}"`;
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -310,8 +285,7 @@
             });
 
             if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
+                throw new Error(`Gemini API request failed with status ${response.status}`);
             }
 
             const data = await response.json();
@@ -327,15 +301,11 @@
             return JSON.parse(jsonMatch[0]);
         }
 
-        /**
-         * Searches for places using the modern Places API (New) via a fetch request.
-         */
         async function searchPlaces({ query, openNow }) {
             clearPreviousResults();
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             
-            // *** Defensive Fix: Ensure 'openNow' is a strict boolean ***
             const isOpeningNow = (openNow === true || String(openNow).toLowerCase() === 'true');
 
             const url = 'https://places.googleapis.com/v1/places:searchText';
@@ -347,7 +317,7 @@
             };
             const body = JSON.stringify({
                 textQuery: query,
-                openNow: isOpeningNow, // Use the sanitized boolean
+                openNow: isOpeningNow,
                 maxResultCount: 10,
                 locationBias: {
                     circle: {
@@ -376,9 +346,6 @@
             }
         }
 
-        /**
-         * Displays search results on the map.
-         */
         function displayResults() {
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(userMarker.getPosition());
@@ -407,9 +374,6 @@
             }
         }
 
-        /**
-         * Shows a single result: updates info, highlights marker, and draws route.
-         */
         function showSingleResult(index) {
             const place = searchResults[index];
             const location = {
@@ -417,8 +381,7 @@
                 lng: place.location.longitude
             };
             
-            const resultsInfo = document.getElementById('results-info');
-            resultsInfo.textContent = `מציג ${index + 1}/${searchResults.length}: ${place.displayName.text}`;
+            document.getElementById('results-info').textContent = `מציג ${index + 1}/${searchResults.length}: ${place.displayName.text}`;
 
             markers.forEach((marker, i) => {
                 marker.setAnimation(i === index ? google.maps.Animation.BOUNCE : null);
@@ -433,22 +396,16 @@
             calculateAndDisplayRoute(location);
         }
 
-        /**
-         * Handles navigation between results (next/previous).
-         */
         function navigateResults(direction) {
             currentResultIndex += direction;
             if (currentResultIndex >= searchResults.length) {
-                currentResultIndex = 0; // Wrap to start
+                currentResultIndex = 0;
             } else if (currentResultIndex < 0) {
-                currentResultIndex = searchResults.length - 1; // Wrap to end
+                currentResultIndex = searchResults.length - 1; 
             }
             showSingleResult(currentResultIndex);
         }
 
-        /**
-         * Calculates and draws a route from user to destination.
-         */
         function calculateAndDisplayRoute(destination) {
             const request = {
                 origin: userMarker.getPosition(),
@@ -466,9 +423,6 @@
             });
         }
 
-        /**
-         * Clears all markers, routes, and result data from the map and state.
-         */
         function clearPreviousResults() {
             markers.forEach(marker => marker.setMap(null));
             markers = [];
@@ -478,7 +432,6 @@
             document.getElementById('navigation-controls').classList.add('hidden');
         }
 
-        // Dynamically load the Google Maps script
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${Maps_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
         script.async = true;
