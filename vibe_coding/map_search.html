@@ -335,6 +335,9 @@
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             
+            // *** Defensive Fix: Ensure 'openNow' is a strict boolean ***
+            const isOpeningNow = (openNow === true || String(openNow).toLowerCase() === 'true');
+
             const url = 'https://places.googleapis.com/v1/places:searchText';
             
             const headers = {
@@ -344,9 +347,8 @@
             };
             const body = JSON.stringify({
                 textQuery: query,
-                openNow: openNow,
+                openNow: isOpeningNow, // Use the sanitized boolean
                 maxResultCount: 10,
-                // *** FIXED: Changed locationRestriction to locationBias for more flexibility ***
                 locationBias: {
                     circle: {
                         center: {
