@@ -335,7 +335,6 @@
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             
-            // *** FIXED: Changed endpoint from searchNearby to searchText ***
             const url = 'https://places.googleapis.com/v1/places:searchText';
             
             const headers = {
@@ -347,7 +346,8 @@
                 textQuery: query,
                 openNow: openNow,
                 maxResultCount: 10,
-                locationRestriction: {
+                // *** FIXED: Changed locationRestriction to locationBias for more flexibility ***
+                locationBias: {
                     circle: {
                         center: {
                             latitude: userLocation.lat(),
@@ -370,7 +370,7 @@
                 searchResults = data.places;
                 displayResults();
             } else {
-                 alert("לא נמצאו תוצאות התואמות לחיפוש שלך ברדיוס المحدد.");
+                 alert("לא נמצאו תוצאות התואמות לחיפוש שלך.");
             }
         }
 
