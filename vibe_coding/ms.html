@@ -32,6 +32,7 @@
             z-index: 1001;
             display: flex;
             flex-direction: column;
+            position: relative; /* Needed for the close button positioning */
         }
         #ui-container-header {
             padding: 20px;
@@ -257,7 +258,7 @@
 
         /* Mobile specific styles */
         #mobile-toggle-button {
-            display: none;
+            display: none; /* Hidden on desktop */
             position: absolute;
             top: 20px;
             width: 50px;
@@ -279,7 +280,9 @@
             background: none;
             border: none;
             cursor: pointer;
+            z-index: 1002; /* Ensure it's on top */
         }
+        /* *** FIXED: Position close button on opposite side *** */
         html[dir="ltr"] #panel-close-button { right: 15px; }
         html[dir="rtl"] #panel-close-button { left: 15px; }
 
@@ -314,10 +317,11 @@
 <body>
     <div id="app-layout">
         <div id="ui-container">
+            <!-- *** MOVED: Close button is now first for stacking order *** -->
+            <button id="panel-close-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
             <div id="ui-container-header">
-                <button id="panel-close-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
                 <div class="input-group">
                     <div class="search-input-wrapper">
                         <input type="text" id="search-input" disabled>
@@ -431,22 +435,18 @@
             }
         };
         
-        // *** UPDATED: New robust language change function ***
         function setLanguage(lang) {
             if (!translations[lang] || lang === currentLang) return;
-            // Store the selected language in the URL to persist on reload
             const url = new URL(window.location);
             url.searchParams.set('lang', lang);
             window.location.href = url.href;
         }
         
-        // This function runs on every page load
         function initializeApp() {
             const urlParams = new URLSearchParams(window.location.search);
-            const lang = urlParams.get('lang') || 'en'; // Default to English
+            const lang = urlParams.get('lang') || 'he'; // Default to Hebrew
             currentLang = lang;
             
-            // Apply translations and direction
             document.documentElement.lang = currentLang;
             document.documentElement.dir = currentLang === 'he' ? 'rtl' : 'ltr';
             document.getElementById('language-selector').value = currentLang;
@@ -458,14 +458,12 @@
             document.getElementById('radius-label').innerHTML = t.radiusLabel;
             document.getElementById('voice-search-button').title = t.voiceTitle;
 
-            // Load Google Maps script with the correct language
             const script = document.createElement('script');
             script.id = 'google-maps-script';
             script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=${currentLang}`;
             script.async = true;
             document.head.appendChild(script);
 
-            // Add listener for future language changes
              document.getElementById('language-selector').addEventListener('change', (e) => setLanguage(e.target.value));
         }
 
