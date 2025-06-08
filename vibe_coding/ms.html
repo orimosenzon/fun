@@ -54,15 +54,15 @@
             flex-direction: column;
             gap: 10px;
         }
-        /* *** NEW: Container for input and voice button *** */
-        .search-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
         }
         #search-input {
-            flex-grow: 1;
+            width: 100%;
             padding: 12px;
+            padding-left: 50px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 16px;
@@ -71,16 +71,19 @@
         #search-input:disabled {
             background-color: #f2f2f2;
         }
-        /* *** NEW: Voice search button style *** */
+        
         #voice-search-button {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 46px;
-            height: 46px;
-            flex-shrink: 0;
-            border: 1px solid #ccc;
-            background-color: #fff;
+            width: 38px;
+            height: 38px;
+            border: none;
+            background-color: transparent;
             border-radius: 50%;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -90,7 +93,6 @@
         }
         #voice-search-button.is-listening {
             background-color: #ff4136;
-            border-color: #ff4136;
             animation: pulse 1.5s infinite;
         }
         #voice-search-button.is-listening svg {
@@ -138,21 +140,19 @@
             padding: 0;
             margin: 0;
         }
-        .result-item {
+        .result-item-header {
             padding: 15px 20px;
             cursor: pointer;
-            border-bottom: 1px solid #e0e0e0;
-            transition: background-color 0.2s;
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        .result-item:hover {
-            background-color: #e9ecef;
+        .result-item {
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #fff;
         }
-        .result-item.active {
+        .result-item.active > .result-item-header {
             background-color: #d3e3fd;
-            font-weight: bold;
         }
         .result-item-photo {
             width: 60px;
@@ -193,13 +193,51 @@
         .result-item-text {
             flex-grow: 1;
         }
+        
+        /* *** NEW: Styles for the expandable details section *** */
+        .result-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            padding: 0 20px;
+            background-color: #fff;
+            font-size: 14px;
+            color: #555;
+        }
+        .result-item.details-visible .result-details {
+            max-height: 500px; /* Large enough value */
+            padding: 15px 20px;
+            transition: max-height 0.5s ease-in, padding 0.5s ease-in;
+        }
+        .result-details p {
+            margin: 0 0 10px 0;
+        }
+        .result-details h4 {
+            margin: 15px 0 5px 0;
+            font-size: 15px;
+            color: #333;
+        }
+        .result-details ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+         .result-details .rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stars {
+            color: #fbbc05;
+        }
+
         .hidden {
             display: none !important;
         }
 
         /* Mobile specific styles */
         #mobile-toggle-button {
-            display: none; /* Hidden on desktop */
+            display: none;
             position: absolute;
             top: 20px;
             right: 20px;
@@ -258,7 +296,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
                 <div class="input-group">
-                    <div class="search-row">
+                    <div class="search-input-wrapper">
                         <input type="text" id="search-input" placeholder="מאמת מיקום..." disabled>
                         <button id="voice-search-button" title="חיפוש קולי" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
@@ -313,16 +351,9 @@
             directionsRenderer.setMap(map);
 
             if (navigator.geolocation) {
-                const geoOptions = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
-                
+                const geoOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
                 locationWatcher = navigator.geolocation.watchPosition(
-                    (position) => {
-                        handleLocationUpdate(position, !userMarker);
-                    },
+                    (position) => handleLocationUpdate(position, !userMarker),
                     () => handleLocationError(true),
                     geoOptions
                 );
@@ -337,23 +368,14 @@
                 lat: position.coords.latitude,
                 lng: position.coords.longitude,
             };
-
             if (!userMarker) {
                 userMarker = new google.maps.Marker({
                     position: userLocation,
                     map: map,
                     title: "המיקום שלי",
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: "#4285F4",
-                        fillOpacity: 1,
-                        strokeWeight: 3,
-                        strokeColor: "white",
-                    },
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 3, strokeColor: "white" },
                     zIndex: 999 
                 });
-                
                 const searchInput = document.getElementById('search-input');
                 const searchButton = document.getElementById('search-button');
                 const voiceButton = document.getElementById('voice-search-button');
@@ -361,105 +383,74 @@
                 searchButton.disabled = false;
                 voiceButton.disabled = false;
                 searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
-
             } else {
                 userMarker.setPosition(userLocation);
             }
-            
-            if (centerMap) {
-                map.setCenter(userLocation);
-            }
+            if (centerMap) map.setCenter(userLocation);
         }
 
         function handleLocationError(browserHasGeolocation) {
             document.getElementById('search-input').placeholder = 'לא ניתן לקבוע מיקום';
-            alert(browserHasGeolocation ? 'שירותי המיקום נכשלו. אנא בדוק את הרשאות המיקום בדפדפן.' : 'הדפדפן שלך אינו תומך בשירותי מיקום.');
+            alert(browserHasGeolocation ? 'שירותי המיקום נכשלו.' : 'הדפדפן שלך אינו תומך בשירותי מיקום.');
         }
 
         function setupEventListeners() {
             document.getElementById('search-button').addEventListener('click', performSearch);
-            document.getElementById('search-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') performSearch();
-            });
+            document.getElementById('search-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             const radiusSlider = document.getElementById('radius-slider');
             const radiusValue = document.getElementById('radius-value');
             radiusSlider.addEventListener('input', () => {
                 const radiusMeters = parseInt(radiusSlider.value);
                 radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} ק"מ` : `${radiusMeters} מטר`;
-                if (searchRadiusCircle && userMarker) {
-                    drawSearchCircle(userMarker.getPosition(), radiusMeters);
-                }
+                if (searchRadiusCircle && userMarker) drawSearchCircle(userMarker.getPosition(), radiusMeters);
             });
-            
             const uiContainer = document.getElementById('ui-container');
             document.getElementById('mobile-toggle-button').addEventListener('click', () => uiContainer.classList.add('panel-open'));
             document.getElementById('panel-close-button').addEventListener('click', () => uiContainer.classList.remove('panel-open'));
-            
-            // *** NEW: Voice Search Logic ***
             setupVoiceSearch();
         }
         
         function setupVoiceSearch() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const voiceButton = document.getElementById('voice-search-button');
-
             if (!SpeechRecognition) {
-                console.warn("Speech Recognition not supported in this browser.");
                 voiceButton.style.display = 'none';
                 return;
             }
-
             const recognition = new SpeechRecognition();
             recognition.lang = 'he-IL';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
-
-            voiceButton.addEventListener('click', () => {
-                recognition.start();
-            });
-
+            voiceButton.addEventListener('click', () => recognition.start());
             recognition.onstart = () => {
                 voiceButton.classList.add('is-listening');
                 document.getElementById('search-input').placeholder = 'מקשיב...';
             };
-
             recognition.onresult = (event) => {
-                const speechResult = event.results[0][0].transcript;
-                document.getElementById('search-input').value = speechResult;
-                performSearch(); // Automatically perform search after recognition
+                document.getElementById('search-input').value = event.results[0][0].transcript;
+                document.getElementById('search-button').click();
             };
-            
-            recognition.onspeechend = () => {
-                recognition.stop();
-            };
-
+            recognition.onspeechend = () => recognition.stop();
             recognition.onend = () => {
                 voiceButton.classList.remove('is-listening');
                 document.getElementById('search-input').placeholder = "לדוגמה: 'תחנת דלק קרובה'";
             };
-            
-            recognition.onerror = (event) => {
-                alert(`שגיאת זיהוי דיבור: ${event.error}`);
-            };
+            recognition.onerror = (event) => alert(`שגיאת זיהוי דיבור: ${event.error}`);
         }
 
         async function performSearch() {
             const queryText = document.getElementById('search-input').value;
             if (!queryText || !userMarker) {
-                alert(!userMarker ? "לא ניתן לקבוע את מיקומך. אנא אשר הרשאות מיקום ונסה שנית." : "אנא הזן מונח חיפוש.");
+                alert(!userMarker ? "לא ניתן לקבוע את מיקומך." : "אנא הזן מונח חיפוש.");
                 return;
             }
             const searchButton = document.getElementById('search-button');
             searchButton.textContent = 'מחפש...';
             searchButton.disabled = true;
-
             try {
                 const structuredQuery = await getStructuredQueryFromGemini(queryText);
-                if(structuredQuery?.query) {
-                    await searchPlaces(structuredQuery);
-                } else {
-                     throw new Error("Gemini did not return a valid query.");
-                }
+                if(structuredQuery?.query) await searchPlaces(structuredQuery);
+                else throw new Error("Gemini did not return a valid query.");
             } catch (error) {
                 console.error("Search failed:", error);
             } finally {
@@ -471,11 +462,7 @@
         async function getStructuredQueryFromGemini(text) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
             const prompt = `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} User request: "${text}"`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-            });
+            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (!response.ok) throw new Error(`Gemini API request failed with status ${response.status}`);
             const data = await response.json();
             if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Invalid response structure from Gemini API.");
@@ -496,16 +483,11 @@
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             const url = 'https://places.googleapis.com/v1/places:searchText';
-            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'places.displayName,places.location,places.photos' };
-            const requestBody = {
-                textQuery: query,
-                maxResultCount: 10,
-                locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } }
-            };
+            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.photos' };
+            const requestBody = { textQuery: query, maxResultCount: 10, locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } } };
             if ((openNow === true || String(openNow).toLowerCase() === 'true')) { requestBody.openNow = true; }
             const body = JSON.stringify(requestBody);
             const response = await fetch(url, { method: 'POST', headers, body });
-            
             if (!response.ok) {
                 const errorBody = await response.json();
                 console.error('Places API Error:', errorBody);
@@ -514,9 +496,12 @@
             }
             const data = await response.json();
             if (data.places) {
-                const filteredPlaces = data.places.filter(place => getDistanceInMeters(userLocation.lat(), userLocation.lng(), place.location.latitude, place.location.longitude) <= radius);
-                if (filteredPlaces.length > 0) {
-                    searchResults = filteredPlaces;
+                const userLat = userLocation.lat(), userLng = userLocation.lng();
+                const placesWithDistance = data.places.map(place => ({ place, distance: getDistanceInMeters(userLat, userLng, place.location.latitude, place.location.longitude) }));
+                const filteredPlaces = placesWithDistance.filter(item => item.distance <= radius);
+                const sortedPlaces = filteredPlaces.sort((a, b) => a.distance - b.distance);
+                if (sortedPlaces.length > 0) {
+                    searchResults = sortedPlaces.map(item => item.place);
                     displayResultsOnMapAndList();
                 } else {
                     drawSearchCircle(userMarker.getPosition(), parseFloat(radius));
@@ -531,10 +516,7 @@
             const bounds = new google.maps.LatLngBounds();
             const resultsList = document.getElementById('results-list');
             bounds.extend(userMarker.getPosition());
-            
-            const radius = parseFloat(document.getElementById('radius-slider').value);
-            drawSearchCircle(userMarker.getPosition(), radius);
-
+            drawSearchCircle(userMarker.getPosition(), parseFloat(document.getElementById('radius-slider').value));
             searchResults.forEach((place, index) => {
                 const location = { lat: place.location.latitude, lng: place.location.longitude };
                 markers.push(new google.maps.Marker({ position: location, map: map, label: { text: `${index + 1}`, color: 'white' } }));
@@ -550,67 +532,106 @@
                 const listItem = document.createElement('li');
                 listItem.className = 'result-item';
                 listItem.innerHTML = `
-                    <div class="result-item-photo">
-                        ${photoHtml}
-                        <span class="result-item-number">${index + 1}</span>
+                    <div class="result-item-header">
+                        <div class="result-item-photo">
+                            ${photoHtml}
+                            <span class="result-item-number">${index + 1}</span>
+                        </div>
+                        <span class="result-item-text">${place.displayName.text}</span>
                     </div>
-                    <span class="result-item-text">${place.displayName.text}</span>`;
+                    <div class="result-details"></div>`; // Placeholder for details
                 
-                listItem.addEventListener('click', () => {
-                    currentResultIndex = index;
-                    showSingleResult(index);
-                    if (window.innerWidth <= 768) {
-                        document.getElementById('ui-container').classList.remove('panel-open');
-                    }
+                listItem.querySelector('.result-item-header').addEventListener('click', () => {
+                    handleResultClick(index, listItem);
                 });
                 resultsList.appendChild(listItem);
             });
-            
             document.getElementById('results-container').classList.remove('hidden');
             map.fitBounds(bounds);
-            
-            if (searchResults.length > 0) {
-                currentResultIndex = 0;
-                showSingleResult(0);
-            }
         }
         
         function drawSearchCircle(position, radius) {
-            if (searchRadiusCircle) {
-                searchRadiusCircle.setMap(null);
-            }
-            searchRadiusCircle = new google.maps.Circle({
-                strokeColor: "#4285F4",
-                strokeOpacity: 0.9,
-                strokeWeight: 3,
-                fillOpacity: 0.0,
-                map: map,
-                center: position,
-                radius: radius,
-                clickable: false
-            });
+            if (searchRadiusCircle) searchRadiusCircle.setMap(null);
+            searchRadiusCircle = new google.maps.Circle({ strokeColor: "#4285F4", strokeOpacity: 0.9, strokeWeight: 3, fillOpacity: 0.0, map, center: position, radius, clickable: false });
         }
 
+        async function handleResultClick(index, listItem) {
+            const isActive = listItem.classList.contains('active');
+            // Close all other items
+            document.querySelectorAll('.result-item').forEach(item => {
+                item.classList.remove('active');
+                item.classList.remove('details-visible');
+            });
+            // If it was already active, just close it. Otherwise, open the new one.
+            if (!isActive) {
+                listItem.classList.add('active');
+                showSingleResult(index, listItem);
+            }
+        }
 
-        function showSingleResult(index) {
-            document.querySelectorAll('.result-item').forEach((item, itemIndex) => item.classList.toggle('active', itemIndex === index));
+        async function showSingleResult(index, listItem) {
             markers.forEach((marker, markerIndex) => marker.setAnimation(markerIndex === index ? google.maps.Animation.BOUNCE : null));
             setTimeout(() => { if (markers[index]) markers[index].setAnimation(null); }, 1500);
-            const location = { lat: searchResults[index].location.latitude, lng: searchResults[index].location.longitude };
+            
+            const place = searchResults[index];
+            const location = { lat: place.location.latitude, lng: place.location.longitude };
             calculateAndDisplayRoute(location);
+            
+            // *** NEW: Fetch and display place details ***
+            const detailsContainer = listItem.querySelector('.result-details');
+            if (!listItem.dataset.detailsLoaded) {
+                detailsContainer.innerHTML = 'טוען פרטים...';
+                listItem.classList.add('details-visible');
+                
+                const placeDetails = await fetchPlaceDetails(place.id);
+                populatePlaceDetails(detailsContainer, placeDetails);
+                listItem.dataset.detailsLoaded = 'true';
+            } else {
+                 listItem.classList.add('details-visible');
+            }
+        }
+        
+        async function fetchPlaceDetails(placeId) {
+            const url = `https://places.googleapis.com/v1/places/${placeId}`;
+            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'editorialSummary,reviews,regularOpeningHours,rating,userRatingCount' };
+            try {
+                const response = await fetch(url, { headers });
+                if (!response.ok) throw new Error('Failed to fetch details');
+                return await response.json();
+            } catch (error) {
+                console.error("Fetch Place Details failed:", error);
+                return null;
+            }
+        }
+
+        function populatePlaceDetails(container, details) {
+            if (!details) {
+                container.innerHTML = '<p>לא ניתן היה לטעון פרטים נוספים.</p>';
+                return;
+            }
+            let html = '';
+            if (details.editorialSummary) {
+                html += `<h4>תקציר</h4><p>${details.editorialSummary.text}</p>`;
+            }
+            if (details.rating) {
+                html += `<h4>דירוג</h4><div class="rating"><span class="stars">⭐</span> <span>${details.rating} (${details.userRatingCount} ביקורות)</span></div>`;
+            }
+            if (details.regularOpeningHours) {
+                html += '<h4>שעות פתיחה</h4><ul>';
+                details.regularOpeningHours.weekdayDescriptions.forEach(desc => {
+                    html += `<li>${desc}</li>`;
+                });
+                html += '</ul>';
+            }
+            container.innerHTML = html || '<p>אין פרטים נוספים זמינים.</p>';
         }
 
         function calculateAndDisplayRoute(destination) {
             if (!userMarker) return;
-            const request = {
-                origin: userMarker.getPosition(),
-                destination: destination,
-                travelMode: google.maps.TravelMode.DRIVING,
-            };
+            const request = { origin: userMarker.getPosition(), destination, travelMode: google.maps.TravelMode.DRIVING };
             directionsService.route(request, (result, status) => {
-                if (status === 'OK') {
-                    directionsRenderer.setDirections(result);
-                } else {
+                if (status === 'OK') directionsRenderer.setDirections(result);
+                else {
                     console.error('Directions request failed due to ' + status);
                     directionsRenderer.setDirections({ routes: [] });
                 }
