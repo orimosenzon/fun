@@ -258,7 +258,7 @@
 
         /* Mobile specific styles */
         #mobile-toggle-button {
-            display: none; /* Hidden on desktop */
+            display: none;
             position: absolute;
             top: 20px;
             width: 50px;
@@ -282,7 +282,6 @@
             cursor: pointer;
             z-index: 1002; /* Ensure it's on top */
         }
-        /* *** FIXED: Position close button on opposite side *** */
         html[dir="ltr"] #panel-close-button { right: 15px; }
         html[dir="rtl"] #panel-close-button { left: 15px; }
 
@@ -317,7 +316,6 @@
 <body>
     <div id="app-layout">
         <div id="ui-container">
-            <!-- *** MOVED: Close button is now first for stacking order *** -->
             <button id="panel-close-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
@@ -444,7 +442,8 @@
         
         function initializeApp() {
             const urlParams = new URLSearchParams(window.location.search);
-            const lang = urlParams.get('lang') || 'he'; // Default to Hebrew
+            // *** FIXED: Default language set back to English ***
+            const lang = urlParams.get('lang') || 'en'; 
             currentLang = lang;
             
             document.documentElement.lang = currentLang;
@@ -468,6 +467,12 @@
         }
 
         window.initMap = function() {
+            if (locationWatcher) {
+                navigator.geolocation.clearWatch(locationWatcher);
+            }
+            userMarker = null;
+            clearPreviousResults();
+            
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
             const defaultLocation = { lat: 32.0853, lng: 34.7818 };
