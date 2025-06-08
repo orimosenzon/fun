@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מפת חיפוש חכמה</title>
     
-    <!-- CSS STYLES -->
     <style>
         /* Basic body and html styling */
         body, html {
@@ -122,7 +121,6 @@
     </style>
 </head>
 <body>
-    <!-- HTML STRUCTURE -->
     <div id="map"></div>
 
     <div id="ui-container">
@@ -145,13 +143,12 @@
         </div>
     </div>
     
-    <!-- APPLICATION JAVASCRIPT -->
     <script>
         // --- API Keys (SECURITY WARNING!) ---
         // For development only. In a real app, use a server-side proxy.
         // The keys provided in the prompt are used here for demonstration.
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
-        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+        const Maps_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
     
         // Global variables
         let map, userMarker, directionsService, directionsRenderer;
@@ -331,7 +328,6 @@
         }
 
         /**
-         * *** NEW ***
          * Searches for places using the modern Places API (New) via a fetch request.
          */
         async function searchPlaces({ query, openNow }) {
@@ -339,10 +335,12 @@
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             
-            const url = 'https://places.googleapis.com/v1/places:searchNearby';
+            // *** FIXED: Changed endpoint from searchNearby to searchText ***
+            const url = 'https://places.googleapis.com/v1/places:searchText';
+            
             const headers = {
                 'Content-Type': 'application/json',
-                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+                'X-Goog-Api-Key': Maps_API_KEY,
                 'X-Goog-FieldMask': 'places.displayName,places.location,places.id'
             };
             const body = JSON.stringify({
@@ -378,7 +376,6 @@
 
         /**
          * Displays search results on the map.
-         * Adjusted for the Places API (New) response format.
          */
         function displayResults() {
             const bounds = new google.maps.LatLngBounds();
@@ -410,7 +407,6 @@
 
         /**
          * Shows a single result: updates info, highlights marker, and draws route.
-         * Adjusted for the Places API (New) response format.
          */
         function showSingleResult(index) {
             const place = searchResults[index];
@@ -482,7 +478,7 @@
 
         // Dynamically load the Google Maps script
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${Maps_API_KEY}&libraries=places,routes&callback=initMap&language=he`;
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
