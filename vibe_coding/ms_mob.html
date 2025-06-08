@@ -247,6 +247,7 @@
         let markers = [];
         let currentResultIndex = -1;
         let searchRadiusCircle = null;
+        let locationWatcher = null; // *** NEW: To hold the watchPosition ID ***
         
         function initMap() {
             directionsService = new google.maps.DirectionsService();
@@ -266,49 +267,68 @@
             });
             directionsRenderer.setMap(map);
 
-            const searchInput = document.getElementById('search-input');
-            const searchButton = document.getElementById('search-button');
-
             if (navigator.geolocation) {
-                // *** UPDATED: Added options for high accuracy ***
                 const geoOptions = {
                     enableHighAccuracy: true,
                     timeout: 10000,
                     maximumAge: 0
                 };
-                navigator.geolocation.getCurrentPosition(
+                
+                // *** UPDATED: Use watchPosition for continuous, accurate updates ***
+                locationWatcher = navigator.geolocation.watchPosition(
                     (position) => {
-                        const userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                        };
-                        map.setCenter(userLocation);
-                        userMarker = new google.maps.Marker({
-                            position: userLocation,
-                            map: map,
-                            title: "המיקום שלי",
-                            icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
-                                fillColor: "#4285F4",
-                                fillOpacity: 1,
-                                strokeWeight: 3,
-                                strokeColor: "white",
-                            },
-                            zIndex: 999 
-                        });
-                        searchInput.disabled = false;
-                        searchButton.disabled = false;
-                        searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
+                        handleLocationUpdate(position, true); // First time centers map
                     },
                     () => handleLocationError(true),
-                    geoOptions // Pass the options here
+                    geoOptions
                 );
             } else {
                 handleLocationError(false);
             }
             setupEventListeners();
         }
+        
+        // *** NEW: Central function to handle location updates ***
+        function handleLocationUpdate(position, centerMap = false) {
+            const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+
+            if (!userMarker) {
+                // Create marker for the first time
+                userMarker = new google.maps.Marker({
+                    position: userLocation,
+                    map: map,
+                    title: "המיקום שלי",
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#4285F4",
+                        fillOpacity: 1,
+                        strokeWeight: 3,
+                        strokeColor: "white",
+                    },
+                    zIndex: 999 
+                });
+                
+                // Enable UI on first successful location
+                const searchInput = document.getElementById('search-input');
+                const searchButton = document.getElementById('search-button');
+                searchInput.disabled = false;
+                searchButton.disabled = false;
+                searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
+
+            } else {
+                // Just update position of existing marker
+                userMarker.setPosition(userLocation);
+            }
+            
+            if (centerMap) {
+                map.setCenter(userLocation);
+            }
+        }
+
 
         function handleLocationError(browserHasGeolocation) {
             document.getElementById('search-input').placeholder = 'לא ניתן לקבוע מיקום';
