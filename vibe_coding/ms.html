@@ -226,7 +226,7 @@
             color: #555;
         }
         .result-item.details-visible .result-details {
-            max-height: 500px; /* Large enough value */
+            max-height: 1000px; /* Large enough value */
             padding: 15px 20px;
             transition: max-height 0.5s ease-in, padding 0.5s ease-in;
         }
@@ -251,6 +251,21 @@
         .stars {
             color: #fbbc05;
         }
+        /* *** NEW: Photo gallery styles *** */
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .photo-gallery img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
 
         .hidden {
             display: none !important;
@@ -280,7 +295,7 @@
             background: none;
             border: none;
             cursor: pointer;
-            z-index: 1002; /* Ensure it's on top */
+            z-index: 1002;
         }
         html[dir="ltr"] #panel-close-button { right: 15px; }
         html[dir="rtl"] #panel-close-button { left: 15px; }
@@ -380,9 +395,11 @@
                 detailsNotAvailable: "Could not load more details.",
                 detailsNone: "No more details available.",
                 summaryTitle: "Summary",
+                addressTitle: "Address",
                 ratingTitle: "Rating",
                 ratingText: (r, c) => `${r} (${c} reviews)`,
                 hoursTitle: "Opening Hours",
+                photosTitle: "Photos",
                 geminiPrompt: (text) => `From the following user request in English, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "I'm looking for a gas station that is open now" -> {"query": "gas station", "openNow": true} - User request: "a nearby taco stand" -> {"query": "taco stand", "openNow": false} User request: "${text}"`,
             },
             he: {
@@ -403,9 +420,11 @@
                 detailsNotAvailable: "לא ניתן היה לטעון פרטים נוספים.",
                 detailsNone: "אין פרטים נוספים זמינים.",
                 summaryTitle: "תקציר",
+                addressTitle: "כתובת",
                 ratingTitle: "דירוג",
                 ratingText: (r, c) => `${r} (${c} ביקורות)`,
                 hoursTitle: "שעות פתיחה",
+                photosTitle: "תמונות",
                 geminiPrompt: (text) => `From the following user request in Hebrew, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "אני מחפש תחנת דלק שפתוחה עכשיו" -> {"query": "תחנת דלק", "openNow": true} - User request: "דוכן פלאפל קרוב" -> {"query": "פלאפל", "openNow": false} User request: "${text}"`,
             },
             es: {
@@ -426,9 +445,11 @@
                 detailsNotAvailable: "No se pudieron cargar más detalles.",
                 detailsNone: "No hay más detalles disponibles.",
                 summaryTitle: "Resumen",
+                addressTitle: "Dirección",
                 ratingTitle: "Valoración",
                 ratingText: (r, c) => `${r} (${c} reseñas)`,
                 hoursTitle: "Horario de apertura",
+                photosTitle: "Fotos",
                 geminiPrompt: (text) => `From the following user request in Spanish, extract the primary search term for the Google Places API and whether the user wants a place that is open now. The output must be a valid JSON object with two keys: "query" (string) and "openNow" (boolean). Examples: - User request: "busco una gasolinera que esté abierta ahora" -> {"query": "gasolinera", "openNow": true} - User request: "un puesto de tacos cercano" -> {"query": "tacos", "openNow": false} User request: "${text}"`,
             }
         };
@@ -442,8 +463,7 @@
         
         function initializeApp() {
             const urlParams = new URLSearchParams(window.location.search);
-            // *** FIXED: Default language set back to English ***
-            const lang = urlParams.get('lang') || 'en'; 
+            const lang = urlParams.get('lang') || 'en';
             currentLang = lang;
             
             document.documentElement.lang = currentLang;
@@ -467,9 +487,7 @@
         }
 
         window.initMap = function() {
-            if (locationWatcher) {
-                navigator.geolocation.clearWatch(locationWatcher);
-            }
+            if (locationWatcher) navigator.geolocation.clearWatch(locationWatcher);
             userMarker = null;
             clearPreviousResults();
             
@@ -609,6 +627,7 @@
             const radius = document.getElementById('radius-slider').value;
             const userLocation = userMarker.getPosition();
             const url = 'https://places.googleapis.com/v1/places:searchText';
+            // *** UPDATED: Request `id` for details fetch ***
             const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.photos' };
             const requestBody = { textQuery: query, maxResultCount: 10, locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } } };
             if ((openNow === true || String(openNow).toLowerCase() === 'true')) { requestBody.openNow = true; }
@@ -696,7 +715,8 @@
         
         async function fetchPlaceDetails(placeId) {
             const url = `https://places.googleapis.com/v1/places/${placeId}`;
-            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'editorialSummary,reviews,regularOpeningHours,rating,userRatingCount' };
+            // *** UPDATED: Added new fields to the mask ***
+            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'formattedAddress,editorialSummary,reviews,regularOpeningHours,rating,userRatingCount,photos' };
             try {
                 const response = await fetch(url, { headers });
                 if (!response.ok) throw new Error('Failed to fetch details');
@@ -711,12 +731,24 @@
             const t = translations[currentLang];
             if (!details) { container.innerHTML = `<p>${t.detailsNotAvailable}</p>`; return; }
             let html = '';
+            // *** UPDATED: Add address if available ***
+            if (details.formattedAddress) html += `<h4>${t.addressTitle}</h4><p>${details.formattedAddress}</p>`;
             if (details.editorialSummary) html += `<h4>${t.summaryTitle}</h4><p>${details.editorialSummary.text}</p>`;
             if (details.rating) html += `<h4>${t.ratingTitle}</h4><div class="rating"><span class="stars">⭐</span> <span>${t.ratingText(details.rating, details.userRatingCount)}</span></div>`;
             if (details.regularOpeningHours) {
                 html += `<h4>${t.hoursTitle}</h4><ul>`;
                 details.regularOpeningHours.weekdayDescriptions.forEach(desc => { html += `<li>${desc}</li>`; });
                 html += '</ul>';
+            }
+            // *** UPDATED: Add photo gallery ***
+            if (details.photos && details.photos.length > 1) { // Show gallery if there's more than the main photo
+                html += `<h4>${t.photosTitle}</h4><div class="photo-gallery">`;
+                // Start from the second photo, limit to 5 extra photos
+                details.photos.slice(1, 6).forEach(photo => {
+                    const photoUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=200&maxWidthPx=200&key=${GOOGLE_MAPS_API_KEY}`;
+                    html += `<img src="${photoUrl}" alt="Photo of the place">`;
+                });
+                html += `</div>`;
             }
             container.innerHTML = html || `<p>${t.detailsNone}</p>`;
         }
@@ -747,7 +779,6 @@
             currentResultIndex = -1;
         }
 
-        // Initial app setup
         initializeApp();
 
     </script>
