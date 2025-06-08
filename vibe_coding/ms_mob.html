@@ -49,22 +49,26 @@
         #map {
              height: 100%;
         }
+        /* *** UPDATED: Changed layout for search group *** */
         .input-group {
             display: flex;
-            gap: 5px;
+            flex-direction: column;
+            gap: 10px;
         }
         #search-input {
-            flex-grow: 1;
-            padding: 10px;
+            width: 100%;
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 16px;
+            box-sizing: border-box;
         }
         #search-input:disabled {
             background-color: #f2f2f2;
         }
         #search-button {
-            padding: 10px 15px;
+            width: 100%;
+            padding: 12px 15px;
             border: none;
             background-color: #4285F4;
             color: white;
@@ -247,7 +251,7 @@
         let markers = [];
         let currentResultIndex = -1;
         let searchRadiusCircle = null;
-        let locationWatcher = null; // *** NEW: To hold the watchPosition ID ***
+        let locationWatcher = null;
         
         function initMap() {
             directionsService = new google.maps.DirectionsService();
@@ -274,10 +278,9 @@
                     maximumAge: 0
                 };
                 
-                // *** UPDATED: Use watchPosition for continuous, accurate updates ***
                 locationWatcher = navigator.geolocation.watchPosition(
                     (position) => {
-                        handleLocationUpdate(position, true); // First time centers map
+                        handleLocationUpdate(position, !userMarker); // Center map only on the first update
                     },
                     () => handleLocationError(true),
                     geoOptions
@@ -288,7 +291,6 @@
             setupEventListeners();
         }
         
-        // *** NEW: Central function to handle location updates ***
         function handleLocationUpdate(position, centerMap = false) {
             const userLocation = {
                 lat: position.coords.latitude,
@@ -296,7 +298,6 @@
             };
 
             if (!userMarker) {
-                // Create marker for the first time
                 userMarker = new google.maps.Marker({
                     position: userLocation,
                     map: map,
@@ -312,7 +313,6 @@
                     zIndex: 999 
                 });
                 
-                // Enable UI on first successful location
                 const searchInput = document.getElementById('search-input');
                 const searchButton = document.getElementById('search-button');
                 searchInput.disabled = false;
@@ -320,7 +320,6 @@
                 searchInput.placeholder = "לדוגמה: 'תחנת דלק קרובה'";
 
             } else {
-                // Just update position of existing marker
                 userMarker.setPosition(userLocation);
             }
             
@@ -328,7 +327,6 @@
                 map.setCenter(userLocation);
             }
         }
-
 
         function handleLocationError(browserHasGeolocation) {
             document.getElementById('search-input').placeholder = 'לא ניתן לקבוע מיקום';
