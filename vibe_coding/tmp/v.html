@@ -3,143 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ורד ולב</title>
-    <!-- Tailwind CSS CDN for basic styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ורד ולב 3D</title>
     <style>
-        /* Define the Inter font */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-
         body {
-            font-family: 'Inter', sans-serif;
             margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #fce7f3; /* Soft pink background */
-            overflow: hidden; /* Prevent scrollbars from animation */
-            position: relative; /* For absolute positioning of elements */
+            background-color: #000000; /* Black background for HTML body */
+            font-family: sans-serif; /* Fallback font */
         }
-
-        /* Keyframes for the word "ורד" - clear converging spiral towards the exact center */
-        @keyframes roseMoveSpiral {
-            0% {
-                /* Start far from center, from top-right relative to center */
-                transform: translate(30vw, -20vh) rotate(0deg) scale(0.6);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1; /* Fully visible quickly */
-            }
-            20% {
-                /* First wide loop section, moving clockwise and inward */
-                transform: translate(20vw, 15vh) rotate(360deg) scale(0.8);
-            }
-            40% {
-                /* Second loop section, further inward */
-                transform: translate(-15vw, 10vh) rotate(720deg) scale(1);
-            }
-            60% {
-                /* Third loop section, getting closer */
-                transform: translate(-10vw, -8vh) rotate(1080deg) scale(1.1);
-            }
-            80% {
-                /* Fourth loop, converging precisely to the exact center */
-                transform: translate(0, 0) rotate(1440deg) scale(0.7); /* Exactly at center */
-                opacity: 0.5; /* Fading out as it hits center */
-            }
-            100% {
-                /* Final position: at exact center, completely faded */
-                transform: translate(0, 0) rotate(1620deg) scale(0.6);
-                opacity: 0;
-            }
-        }
-
-
-        /* Keyframes for the heart's appearance and pulsing */
-        @keyframes heartBeat {
-            0% {
-                transform: translate(-50%, -50%) scale(0.01); /* Start very small */
-                opacity: 0;
-            }
-            20% {
-                transform: translate(-50%, -50%) scale(1); /* Grow to initial full size */
-                opacity: 1;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.2); /* Grow for the "beat" */
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1); /* Shrink back for the "beat" */
-            }
-        }
-
-        .rose-word {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Initial centering for the element */
-            font-size: 5rem; /* Large font size for "ורד" */
-            font-weight: 700;
-            color: #d12c6a; /* Deep rose color */
-            animation: roseMoveSpiral 10s ease-in-out forwards; /* Apply new spiral animation, increased duration for more turns */
-            white-space: nowrap; /* Prevent word wrap */
-            z-index: 10; /* Ensure the word is above the heart if they overlap briefly */
-        }
-
-        .heart-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Centering the heart icon exactly */
-            font-size: 10rem; /* Initial size of the heart when it appears */
-            color: #ef4444; /* Tailwind red-500 */
-            display: none; /* Hidden by default */
-            z-index: 5; /* Ensure heart is behind the word initially */
-        }
-
-        /* Media queries for smaller screens */
-        @media (max-width: 768px) {
-            .rose-word {
-                font-size: 3rem; /* Smaller font size on mobile */
-            }
-            .heart-icon {
-                font-size: 8rem; /* Slightly smaller heart on mobile */
-            }
-        }
-
-        @media (max-width: 480px) {
-            .rose-word {
-                font-size: 2.5rem; /* Even smaller font size on very small phones */
-            }
-            .heart-icon {
-                font-size: 7rem; /* Even smaller heart on very small phones */
-            }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <!-- The word "ורד" element -->
-    <div class="rose-word">ורד</div>
+    <canvas id="three-canvas"></canvas>
 
-    <!-- The heart element -->
-    <div class="heart-icon">&#10084;</div> <!-- Unicode character for a heart -->
+    <!-- Three.js Library CDN - classic build (exposes THREE globally) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <!-- FontLoader and TextGeometry from 'examples/js' (not 'jsm') to work with global THREE -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <!-- OrbitControls for camera interaction (from 'examples/js' for global THREE compatibility) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const roseWord = document.querySelector('.rose-word');
-            const heartIcon = document.querySelector('.heart-icon');
+        console.log("Script started: Displaying 'Rose' text orbiting heart.");
 
-            // The roseMoveSpiral animation is 10s long.
-            // The word "ורד" reaches the center around 80% (8 seconds) mark, and fully fades out at 100%.
-            // We want the heart to appear exactly when the word reaches the center (around 80% mark, 8 seconds).
-            setTimeout(() => {
-                heartIcon.style.display = 'block'; // Make the heart visible
-                // Apply the heartBeat animation: 1.5s duration, infinite, alternating directions, forwards
-                heartIcon.style.animation = 'heartBeat 1.5s ease-in-out infinite alternate forwards';
-            }, 8000); // Heart appears after 8 seconds, when the word "ורד" is at the center.
+        // 1. Scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); // Set Three.js scene background to black
+        console.log("Scene created.");
+
+        // 2. Camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 120; // Position camera further back to make the scene appear more distant
+        console.log("Camera created and positioned.");
+
+        // 3. Renderer
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        console.log("Renderer created and sized.");
+
+        // Initialize OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // For smoother camera movement
+        controls.dampingFactor = 0.05;
+        // OrbitControls handles touch events (pan and zoom) automatically
+        console.log("OrbitControls initialized.");
+
+
+        // 4. Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // General illumination
+        scene.add(ambientLight);
+        console.log("Ambient Light added.");
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // Strong intensity
+        directionalLight.position.set(10, 10, 10);
+        scene.add(directionalLight);
+        console.log("Directional Light added.");
+
+        const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
+        pointLight.position.set(0, 0, 50);
+        scene.add(pointLight);
+        console.log("Point Light added.");
+
+        // --- Global Variables ---
+        let roseTextBox; // Our 3D box with the Hebrew text texture
+        let heartMesh;
+        const clock = new THREE.Clock();
+
+        // Orbit specific variables for 'ורד'
+        const orbitRadius = 80; // Significantly increased radius for 'ורד' around the center (heart)
+        const orbitSpeed = 0.5; // Radians per second for orbit speed
+
+        // --- Helper function to create a 3D Box with 2D Canvas Text Texture on one face ---
+        function createHebrewTextBox(text, fontSize, textColor, boxColor, boxWidth, boxHeight, boxDepth) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Set canvas dimensions
+            canvas.width = 512; // Standard texture size for power of 2
+            canvas.height = 256; // Standard texture size for power of 2
+
+            // Fill background (this is for the text plane's background, not the scene)
+            context.fillStyle = boxColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Set text properties
+            context.font = `${fontSize}px Arial, sans-serif`; // Use a common font that supports Hebrew
+            context.fillStyle = textColor;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.direction = 'rtl'; // Ensure right-to-left for Hebrew text on canvas
+
+            // Draw text
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            // Create materials for all 6 faces of the box
+            const materials = [
+                new THREE.MeshPhongMaterial({ color: boxColor }), // Right face
+                new THREE.MeshPhongMaterial({ color: boxColor }), // Left face
+                new THREE.MeshPhongMaterial({ color: boxColor }), // Top face
+                new THREE.MeshPhongMaterial({ color: boxColor }), // Bottom face
+                new THREE.MeshPhongMaterial({ map: texture }),    // Front face (where text is)
+                new THREE.MeshPhongMaterial({ color: boxColor })  // Back face
+            ];
+
+            const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+            const mesh = new THREE.Mesh(geometry, materials);
+
+            console.log(`Created text box for: ${text}`);
+            return mesh;
+        }
+
+        // --- Create 3D Text Box ("ורד") ---
+        roseTextBox = createHebrewTextBox('ורד', 120, '#d12c6a', '#a0c0ff', 40, 20, 5); // Adjusted font size, and made text plane background bluish
+        scene.add(roseTextBox);
+        console.log("Rose text box created and added to scene.");
+
+        // --- Create 3D Heart ---
+        function createHeartShape() {
+            const shape = new THREE.Shape();
+
+            const x = 0, y = 0; // Center the heart shape's drawing coordinates
+            shape.moveTo( x + 2.5, y + 2.5 );
+            shape.bezierCurveTo( x + 2.5, y + 2.5, x + 2, y, x, y );
+            shape.bezierCurveTo( x - 3, y, x - 3, y + 3.5, x - 3, y + 3.5 );
+            shape.bezierCurveTo( x - 3, y + 5.5, x - 1.5, y + 7.7, x + 2.5, y + 9.5 );
+            shape.bezierCurveTo( x + 6.5, y + 7.7, x + 8, y + 5.5, x + 8, y + 3.5 );
+            shape.bezierCurveTo( x + 8, y + 3.5, x + 8, y, x + 5, y );
+            shape.bezierCurveTo( x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5 );
+
+            return shape;
+        }
+
+        const extrudeSettings = {
+            steps: 2,
+            depth: 2,
+            bevelEnabled: true,
+            bevelThickness: 0.5,
+            bevelSize: 0.5,
+            bevelSegments: 4
+        };
+        const heartShape = createHeartShape();
+        const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+        heartGeometry.center(); // Center the geometry's origin
+
+        const heartMaterial = new THREE.MeshPhongMaterial({ color: 0xef4444 });
+        heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
+        heartMesh.scale.set(8, 8, 8); // Set initial large size for the heart
+        heartMesh.visible = true; // Heart is always visible
+        heartMesh.rotation.x = Math.PI; // Rotate heart 180 degrees around X-axis to fix upside-down issue
+        scene.add(heartMesh);
+        console.log("Heart mesh created and added to scene (always visible and pulsing).");
+
+        // 5. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+
+            // Update OrbitControls
+            controls.update(); // This handles mouse and touch input for camera movement
+
+            // Animate "ורד" (orbiting around the center - the heart)
+            if (roseTextBox) {
+                // Orbit in the XZ plane (like Earth around Sun, viewed from side)
+                roseTextBox.position.x = Math.cos(elapsedTime * orbitSpeed) * orbitRadius;
+                roseTextBox.position.z = Math.sin(elapsedTime * orbitSpeed) * orbitRadius;
+                roseTextBox.position.y = 0; // Keep it on the XZ plane (height of orbit)
+
+                // The box itself rotates around its own Y-axis (vertical)
+                roseTextBox.rotation.y = elapsedTime * orbitSpeed * 2; // Adjust speed as desired
+                roseTextBox.rotation.x = Math.sin(elapsedTime * orbitSpeed * 2) * 0.1; // Still add a slight tilt
+            }
+
+            // Animate Heart (pulsing)
+            const pulseTime = elapsedTime * 3; // Adjust speed of pulse
+            const scaleFactor = 1 + (Math.sin(pulseTime) * 0.1); // Pulse from 0.9 to 1.1
+            heartMesh.scale.set(8 * scaleFactor, 8 * scaleFactor, 8 * scaleFactor); // Apply pulse relative to initial large size
+
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation loop
+        animate();
+
+        // 6. Handle Window Resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            console.log("Window resized.");
         });
+
+        console.log("Script finished initialization part.");
     </script>
 </body>
 </html>
