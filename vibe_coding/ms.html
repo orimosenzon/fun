@@ -5,15 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Search Map</title>
-    
-    <style>
+    <!-- UPDATED: Favicon changed to the delicate Round Pushpin -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234285F4' d='M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z'/%3E%3C/svg%3E">
+        <style>
         :root {
             --panel-width: 360px;
             --panel-transition: transform 0.3s ease-in-out;
             --perfect-match-color: #28a745;
             --partial-match-color: #fd7e14;
+            --primary-color: #4285F4;
         }
-
         body, html {
             height: 100%;
             margin: 0;
@@ -34,12 +35,15 @@
             z-index: 1001;
             display: flex;
             flex-direction: column;
-            position: relative; /* Needed for the close button positioning */
+            position: relative;
         }
         #ui-container-header {
             padding: 20px;
             border-bottom: 1px solid #e0e0e0;
             background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         #results-container {
             flex-grow: 1;
@@ -52,13 +56,13 @@
         }
         #map {
              height: 100%;
+             cursor: pointer;
         }
         .input-group {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        
         .search-input-wrapper {
             position: relative;
             width: 100%;
@@ -80,7 +84,6 @@
         #search-input:disabled {
             background-color: #f2f2f2;
         }
-        
         #voice-search-button {
             position: absolute;
             top: 50%;
@@ -98,7 +101,6 @@
         }
         html[dir="ltr"] #voice-search-button { right: 5px; }
         html[dir="rtl"] #voice-search-button { left: 5px; }
-
         #voice-search-button:hover {
             background-color: #f0f0f0;
         }
@@ -114,12 +116,11 @@
             70% { box-shadow: 0 0 0 10px rgba(255, 65, 54, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 65, 54, 0); }
         }
-
         #search-button {
             width: 100%;
             padding: 12px 15px;
             border: none;
-            background-color: #4285F4;
+            background-color: var(--primary-color);
             color: white;
             border-radius: 8px;
             cursor: pointer;
@@ -133,24 +134,22 @@
             background-color: #9E9E9E;
             cursor: not-allowed;
         }
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
         .controls-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 15px;
-            gap: 15px;
+            gap: 10px;
         }
         .slider-group {
-            flex-grow: 1;
+            width: 100%;
         }
-        #language-selector {
+        #language-selector, #examples-button, #instructions-button {
             padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-        }
-        #examples-button {
-            padding: 8px 12px;
             border-radius: 4px;
             border: 1px solid #ccc;
             background-color: #fff;
@@ -171,17 +170,13 @@
             padding: 0;
             margin: 0;
         }
+        /* FIXED: Using explicit border rules for maximum compatibility */
         .result-item-header {
             padding: 15px 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 15px;
-            border-right: 4px solid transparent; 
-        }
-        html[dir="ltr"] .result-item-header {
-            border-left: 4px solid transparent;
-            border-right: none;
         }
         .result-item {
             border-bottom: 1px solid #e0e0e0;
@@ -190,18 +185,10 @@
         .result-item.active > .result-item-header {
             background-color: #d3e3fd;
         }
-        .result-item.perfect-match > .result-item-header {
-            border-right-color: var(--perfect-match-color);
-        }
-        html[dir="ltr"] .result-item.perfect-match > .result-item-header {
-            border-left-color: var(--perfect-match-color);
-        }
-        .result-item.partial-match > .result-item-header {
-            border-right-color: var(--partial-match-color);
-        }
-         html[dir="ltr"] .result-item.partial-match > .result-item-header {
-            border-left-color: var(--partial-match-color);
-        }
+        html[dir="ltr"] .result-item.perfect-match > .result-item-header { border-left: 4px solid var(--perfect-match-color); }
+        html[dir="rtl"] .result-item.perfect-match > .result-item-header { border-right: 4px solid var(--perfect-match-color); }
+        html[dir="ltr"] .result-item.partial-match > .result-item-header { border-left: 4px solid var(--partial-match-color); }
+        html[dir="rtl"] .result-item.partial-match > .result-item-header { border-right: 4px solid var(--partial-match-color); }
 
         .result-item-photo {
             width: 60px;
@@ -223,7 +210,7 @@
             border-radius: 8px;
         }
         .result-item-number {
-            background-color: #4285F4;
+            background-color: var(--primary-color);
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -242,8 +229,17 @@
         html[dir="rtl"] .result-item-number { right: -8px; }
         .result-item-text {
             flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
-        
+        .result-item-info {
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
         .result-details {
             max-height: 0;
             overflow: hidden;
@@ -254,140 +250,51 @@
             color: #555;
         }
         .result-item.details-visible .result-details {
-            max-height: 1000px; /* Large enough value */
+            max-height: 1000px;
             padding: 15px 20px;
             transition: max-height 0.5s ease-in, padding 0.5s ease-in;
         }
-        .result-details p {
-            margin: 0 0 10px 0;
-        }
-        .result-details h4 {
-            margin: 15px 0 5px 0;
-            font-size: 15px;
-            color: #333;
-        }
-        .result-details ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-         .result-details .rating {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stars {
-            color: #fbbc05;
-        }
-        .photo-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .photo-gallery img {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        #examples-modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
+        .result-details p { margin: 0 0 10px 0; }
+        .result-details h4 { margin: 15px 0 5px 0; font-size: 15px; color: #333; }
+        .result-details ul { list-style: none; padding: 0; margin: 0; }
+        .result-details .rating { display: flex; align-items: center; gap: 8px; }
+        .stars { color: #fbbc05; }
+        .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
+        .photo-gallery img { width: 100%; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
         .modal-header h3 { margin: 0; }
-        .modal-close-button {
-            background: none; border: none; font-size: 24px; cursor: pointer;
-        }
+        .modal-close-button { background: none; border: none; font-size: 24px; cursor: pointer; }
         .modal-body { overflow-y: auto; }
         .modal-body ul { list-style: none; padding: 0; }
         .modal-body li { padding: 10px; cursor: pointer; border-radius: 4px; }
         .modal-body li:hover { background-color: #f0f0f0; }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Mobile specific styles */
-        #mobile-toggle-button {
-            display: none;
-            position: absolute;
-            top: 20px;
-            width: 50px;
-            height: 50px;
-            background-color: #fff;
-            border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
+        #instructions-modal .instruction-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+        #instructions-modal .instruction-icon { flex-shrink: 0; width: 40px; height: 40px; fill: var(--primary-color); }
+        #instructions-modal h4 { margin-top: 0; margin-bottom: 5px; }
+        #instructions-modal p { margin: 0; font-size: 14px; line-height: 1.5; }
+        .hidden { display: none !important; }
+        #mobile-toggle-button { display: none; position: absolute; top: 20px; width: 50px; height: 50px; background-color: #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000; align-items: center; justify-content: center; }
         html[dir="ltr"] #mobile-toggle-button { left: 20px; }
         html[dir="rtl"] #mobile-toggle-button { right: 20px; }
-        #panel-close-button {
-            display: none;
-            position: absolute;
-            top: 15px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            z-index: 1002;
-        }
+        #panel-close-button { display: none; position: absolute; top: 15px; background: none; border: none; cursor: pointer; z-index: 1002; }
         html[dir="ltr"] #panel-close-button { right: 15px; }
         html[dir="rtl"] #panel-close-button { left: 15px; }
-
+        .user-marker { width: 18px; height: 18px; border-radius: 50%; background-color: var(--primary-color); border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .search-center-marker { width: 36px; height: 36px; transform: translate(-50%, -100%); }
+        .result-marker-content { background-color: #EA4335; color: white; padding: 5px 10px; border-radius: 8px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.4); cursor: pointer; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-20px);} 60% {transform: translateY(-10px);} }
+        .bounce { animation: bounce 1.4s; }
         @media (max-width: 768px) {
-            #app-layout {
-                flex-direction: column;
-            }
-            #ui-container {
-                position: fixed;
-                top: 0;
-                height: 100%;
-                transition: var(--panel-transition);
-                max-width: 90%;
-            }
+            #app-layout { flex-direction: column; }
+            #ui-container { position: fixed; top: 0; height: 100%; transition: var(--panel-transition); max-width: 90%; }
             html[dir="ltr"] #ui-container { left: 0; transform: translateX(-100%); }
             html[dir="rtl"] #ui-container { right: 0; transform: translateX(100%); }
-
             html[dir="ltr"] #ui-container.panel-open { transform: translateX(0); }
             html[dir="rtl"] #ui-container.panel-open { transform: translateX(0); }
-
-            #mobile-toggle-button, #panel-close-button {
-                display: flex;
-            }
-            #map-container {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-            }
+            #mobile-toggle-button, #panel-close-button { display: flex; }
+            #map-container { position: absolute; width: 100%; height: 100%; }
         }
     </style>
 </head>
@@ -407,17 +314,20 @@
                     </div>
                     <button id="search-button" disabled></button>
                 </div>
-                <div class="controls-row">
+                <div class="controls-group">
                     <div class="slider-group">
                         <label for="radius-slider" id="radius-label">Radius</label>
                         <input type="range" id="radius-slider" min="50" max="40000" value="5000" step="50">
                     </div>
-                    <button id="examples-button"></button>
-                    <select id="language-selector">
-                        <option value="en">English</option>
-                        <option value="he">עברית</option>
-                        <option value="es">Español</option>
-                    </select>
+                    <div class="controls-row">
+                        <button id="instructions-button"></button>
+                        <button id="examples-button"></button>
+                        <select id="language-selector">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="he">🇮🇱 עברית</option>
+                            <option value="es">🇪🇸 Español</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div id="results-container" class="hidden">
@@ -431,11 +341,10 @@
              </button>
         </div>
     </div>
-    
-    <div id="examples-modal" class="hidden">
+    <div id="examples-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title"></h3>
+                <h3 id="modal-title-examples"></h3>
                 <button class="modal-close-button">&times;</button>
             </div>
             <div class="modal-body">
@@ -443,77 +352,45 @@
             </div>
         </div>
     </div>
-
+    <div id="instructions-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title-instructions"></h3>
+                <button class="modal-close-button">&times;</button>
+            </div>
+            <div class="modal-body" id="instructions-body">
+            </div>
+        </div>
+    </div>
 
     <script>
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
         const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
-    
-        let map, userMarker, directionsService, directionsRenderer;
+        
+        let map, userMarker, searchCenterMarker, directionsService, directionsRenderer, distanceMatrixService;
         let searchResults = [], markers = [], currentResultIndex = -1, searchRadiusCircle = null, locationWatcher = null;
         let currentLang;
+        let AdvancedMarkerElement;
 
         const translations = {
             en: {
-                title: "Smart Search Map", placeholder: "e.g., 'coffee shop with great desserts'", placeholderLoading: "Verifying location...", placeholderListening: "Listening...", searchButton: "Search", searchingButton: "Searching...", radiusLabel: 'Search Radius: <span id="radius-value">5.0 km</span>', voiceTitle: "Voice Search", myLocation: "My Location", locationError: "Location services failed.", noBrowserSupport: "Your browser does not support geolocation.", noResults: "No results found.", noResultsInRadius: "No results found in this radius.", detailsLoading: "Loading details...", detailsNotAvailable: "Could not load more details.", detailsNone: "No more details available.", summaryTitle: "Summary", addressTitle: "Address", ratingTitle: "Rating", ratingText: (r, c) => `${r} (${c} reviews)`, hoursTitle: "Opening Hours", photosTitle: "Photos", examplesButton: "Examples", modalTitle: "Example Searches",
+                title: "Smart Search Map", placeholder: "e.g., 'coffee shop with great desserts'", placeholderLoading: "Verifying location...", placeholderListening: "Listening...", searchButton: "Search", searchingButton: "Searching...", radiusLabel: 'Search Radius: <span id="radius-value">5.0 km</span>', voiceTitle: "Voice Search", myLocation: "My Location", searchCenter: "Search from here", locationError: "Location services failed.", noBrowserSupport: "Your browser does not support geolocation.", noResults: "No results found.", noResultsInRadius: "No results found in this radius.", detailsLoading: "Loading details...", detailsNotAvailable: "Could not load more details.", detailsNone: "No more details available.", summaryTitle: "Summary", addressTitle: "Address", ratingTitle: "Rating", ratingText: (r, c) => `${r} (${c} reviews)`, hoursTitle: "Opening Hours", photosTitle: "Photos", examplesButton: "Examples", modalTitleExamples: "Example Searches", instructionsButton: "Instructions", modalTitleInstructions: "How to Use",
+                instructionsHTML: `<div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg><div><h4>1. Smart Search</h4><p>Type what you're looking for in natural language, like "a quiet cafe with wifi" or "a park that's open now".</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--primary-color)" d="M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z"/></svg><div><h4>2. Set Search Center</h4><p>The <b>blue pin 📍</b> is your search center. Click anywhere on the map to move it and search in a different area.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 6.5c-3.79 0-7.17 2.13-8.82 5.5-1.65 3.37-1.65 7.63 0 11l8.82-16.5zM12 2c-3.79 0-7.17 2.13-8.82 5.5L12 22l8.82-16.5C19.17 4.13 15.79 2 12 2z"/></svg><div><h4>3. Your Location</h4><p>The <b>blue dot 🔵</b> is your actual current location. Directions will always be calculated from here.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M2.001 10.999a1 1 0 0 1 .99-1.161l18-2a1 1 0 0 1 .172 2l-18 2a1 1 0 0 1-1.162-.839zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM22 12l-2.439-5.999L14 3.562 16.438 9H14v2h2.438L14 18.438l5.562-2.439L22 12z"/></svg><div><h4>4. Adjust Radius</h4><p>Use the slider to define the search radius around the blue pin. The circle on the map will update as you slide.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/><path d="M0 0h24v24H0z" fill="none"/></svg><div><h4>5. Understand Results</h4><p>Results with a <span style="color:var(--perfect-match-color); font-weight:bold;">green</span> border are a perfect match for your criteria. <span style="color:var(--partial-match-color); font-weight:bold;">Orange</span> ones are good general matches.</p></div></div>`,
                 examples: [ "A supermarket open on Saturday", "Coffee shop that doesn't close before midnight", "A quiet place to work", "Restaurant with a beautiful view", "Place with great desserts", "Hotel between $50 and $150" ],
-                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
-Current date and time: ${dateTime}.
-The JSON output must have ONE main key: "searchPlan", which is an object.
-- "searchPlan" must contain:
-  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
-  - "minPriceLevel" (number 1-4, or null): Minimum price level.
-  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
-  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
-  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
-    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
-    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
-
-Examples:
-- User request: "supermarket open on Saturday" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
-- User request: "coffee shop open at 11pm" -> {"searchPlan": {"textQuery": "coffee shop", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
-- User request: "restaurant with a nice view" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}
-User request: "${text}"`,
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.Current date and time: ${dateTime}.The JSON output must have ONE main key: "searchPlan", which is an object.- "searchPlan" must contain:  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").  - "minPriceLevel" (number 1-4, or null): Minimum price level.  - "maxPriceLevel" (number 1-4, or null): Maximum price level.  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
+Examples:- User request: "supermarket open on Saturday" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}- User request: "coffee shop open at 11pm" -> {"searchPlan": {"textQuery": "coffee shop", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}- User request: "restaurant with a nice view" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}User request: "${text}"`,
             },
             he: {
-                title: "מפת חיפוש חכמה", placeholder: "לדוגמה: 'בית קפה עם קינוחים טעימים'", placeholderLoading: "מאמת מיקום...", placeholderListening: "מקשיב...", searchButton: "חפש", searchingButton: "מחפש...", radiusLabel: 'רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span>', voiceTitle: "חיפוש קולי", myLocation: "המיקום שלי", locationError: "שירותי המיקום נכשלו.", noBrowserSupport: "הדפדפן שלך אינו תומך בשירותי מיקום.", noResults: "לא נמצאו תוצאות.", noResultsInRadius: "לא נמצאו תוצאות ברדיוס זה.", detailsLoading: "טוען פרטים...", detailsNotAvailable: "לא ניתן היה לטעון פרטים.", detailsNone: "אין פרטים נוספים זמינים.", summaryTitle: "תקציר", addressTitle: "כתובת", ratingTitle: "דירוג", ratingText: (r, c) => `${r} (${c} ביקורות)`, hoursTitle: "שעות פתיחה", photosTitle: "תמונות", examplesButton: "דוגמאות", modalTitle: "חיפושים לדוגמה",
+                title: "מפת חיפוש חכמה", placeholder: "לדוגמה: 'בית קפה עם קינוחים טעימים'", placeholderLoading: "מאמת מיקום...", placeholderListening: "מקשיב...", searchButton: "חפש", searchingButton: "מחפש...", radiusLabel: 'רדיוס חיפוש: <span id="radius-value">5.0 ק"מ</span>', voiceTitle: "חיפוש קולי", myLocation: "המיקום שלי", searchCenter: "חפש מפה", locationError: "שירותי המיקום נכשלו.", noBrowserSupport: "הדפדפן שלך אינו תומך בשירותי מיקום.", noResults: "לא נמצאו תוצאות.", noResultsInRadius: "לא נמצאו תוצאות ברדיוס זה.", detailsLoading: "טוען פרטים...", detailsNotAvailable: "לא ניתן היה לטעון פרטים.", detailsNone: "אין פרטים נוספים זמינים.", summaryTitle: "תקציר", addressTitle: "כתובת", ratingTitle: "דירוג", ratingText: (r, c) => `${r} (${c} ביקורות)`, hoursTitle: "שעות פתיחה", photosTitle: "תמונות", examplesButton: "דוגמאות", modalTitleExamples: "חיפושים לדוגמה", instructionsButton: "הוראות", modalTitleInstructions: "הוראות הפעלה",
+                instructionsHTML: `<div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg><div><h4>1. חיפוש חכם</h4><p>כתבו מה אתם מחפשים בשפה חופשית, למשל: "בית קפה שקט עם אינטרנט" או "פארק שפתוח עכשיו".</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--primary-color)" d="M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z"/></svg><div><h4>2. קביעת מרכז החיפוש</h4><p><b>הסיכה הכחולה 📍</b> היא מרכז החיפוש. לחצו בכל מקום על המפה כדי להזיז אותה ולחפש באזור אחר.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 6.5c-3.79 0-7.17 2.13-8.82 5.5-1.65 3.37-1.65 7.63 0 11l8.82-16.5zM12 2c-3.79 0-7.17 2.13-8.82 5.5L12 22l8.82-16.5C19.17 4.13 15.79 2 12 2z"/></svg><div><h4>3. המיקום שלך</h4><p><b>הנקודה הכחולה 🔵</b> היא המיקום הנוכחי האמיתי שלכם. מסלולי ניווט תמיד יחושבו מנקודה זו.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M2.001 10.999a1 1 0 0 1 .99-1.161l18-2a1 1 0 0 1 .172 2l-18 2a1 1 0 0 1-1.162-.839zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM22 12l-2.439-5.999L14 3.562 16.438 9H14v2h2.438L14 18.438l5.562-2.439L22 12z"/></svg><div><h4>4. התאמת רדיוס</h4><p>השתמשו בסליידר כדי לקבוע את רדיוס החיפוש סביב הסיכה הכחולה. העיגול על המפה יתעדכן בהתאם.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/><path d="M0 0h24v24H0z" fill="none"/></svg><div><h4>5. הבנת התוצאות</h4><p>תוצאות עם מסגרת <span style="color:var(--perfect-match-color); font-weight:bold;">ירוקה</span> הן התאמה מושלמת לקריטריונים. מסגרת <span style="color:var(--partial-match-color); font-weight:bold;">כתומה</span> היא התאמה כללית טובה.</p></div></div>`,
                 examples: [ "סופרמרקט שפתוח בשבת", "בית קפה שלא נסגר לפני חצות", "מקום שקט לעבוד בו", "מסעדה עם נוף יפה", "מקום עם קינוחים טעימים", "מלון זול" ],
-                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
-Current date and time: ${dateTime}.
-The JSON output must have ONE main key: "searchPlan", which is an object.
-- "searchPlan" must contain:
-  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
-  - "minPriceLevel" (number 1-4, or null): Minimum price level.
-  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
-  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
-  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
-    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
-    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
-Examples:
-- User request: "סופר שפתוח בשבת" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
-- User request: "מסעדה שפתוחה ב-11 בלילה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
-- User request: "מסעדה עם נוף יפה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}
-User request: "${text}"`,
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.Current date and time: ${dateTime}.The JSON output must have ONE main key: "searchPlan", which is an object.- "searchPlan" must contain:  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").  - "minPriceLevel" (number 1-4, or null): Minimum price level.  - "maxPriceLevel" (number 1-4, or null): Maximum price level.  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).Examples:- User request: "סופר שפתוח בשבת" -> {"searchPlan": {"textQuery": "supermarket", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}- User request: "מסעדה שפתוחה ב-11 בלילה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}- User request: "מסעדה עם נוף יפה" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "scenic", "beautiful", "panorama"]}]}}User request: "${text}"`,
             },
             es: {
-                title: "Mapa de Búsqueda Inteligente", placeholder: "Ej: 'cafetería con buenos postres'", placeholderLoading: "Verificando ubicación...", placeholderListening: "Escuchando...", searchButton: "Buscar", searchingButton: "Buscando...", radiusLabel: 'Radio de búsqueda: <span id="radius-value">5.0 km</span>', voiceTitle: "Búsqueda por voz", myLocation: "Mi ubicación", locationError: "Fallaron los servicios de ubicación.", noBrowserSupport: "Tu navegador no soporta geolocalización.", noResults: "No se encontraron resultados.", noResultsInRadius: "No se encontraron resultados en este radio.", detailsLoading: "Cargando detalles...", detailsNotAvailable: "No se pudieron cargar más detalles.", detailsNone: "No hay más detalles disponibles.", summaryTitle: "Resumen", addressTitle: "Dirección", ratingTitle: "Valoración", ratingText: (r, c) => `${r} (${c} reseñas)`, hoursTitle: "Horario de apertura", photosTitle: "Fotos", examplesButton: "Ejemplos", modalTitle: "Búsquedas de Ejemplo",
+                title: "Mapa de Búsqueda Inteligente", placeholder: "Ej: 'cafetería con buenos postres'", placeholderLoading: "Verificando ubicación...", placeholderListening: "Escuchando...", searchButton: "Buscar", searchingButton: "Buscando...", radiusLabel: 'Radio de búsqueda: <span id="radius-value">5.0 km</span>', voiceTitle: "Búsqueda por voz", myLocation: "Mi ubicación", searchCenter: "Buscar desde aquí", locationError: "Fallaron los servicios de ubicación.", noBrowserSupport: "Tu navegador no soporta geolocalización.", noResults: "No se encontraron resultados.", noResultsInRadius: "No se encontraron resultados en este radio.", detailsLoading: "Cargando detalles...", detailsNotAvailable: "No se pudieron cargar más detalles.", detailsNone: "No hay más detalles disponibles.", summaryTitle: "Resumen", addressTitle: "Dirección", ratingTitle: "Valoración", ratingText: (r, c) => `${r} (${c} reseñas)`, hoursTitle: "Horario de apertura", photosTitle: "Fotos", examplesButton: "Ejemplos", modalTitleExamples: "Búsquedas de Ejemplo", instructionsButton: "Instrucciones", modalTitleInstructions: "Cómo Usar",
+                instructionsHTML: `<div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg><div><h4>1. Búsqueda Inteligente</h4><p>Escribe lo que buscas en lenguaje natural, como "un café tranquilo con wifi" o "un parque que esté abierto ahora".</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--primary-color)" d="M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z"/></svg><div><h4>2. Fija el Centro de Búsqueda</h4><p>El <b>pin azul 📍</b> es tu centro de búsqueda. Haz clic en cualquier lugar del mapa para moverla y buscar en otra área.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 6.5c-3.79 0-7.17 2.13-8.82 5.5-1.65 3.37-1.65 7.63 0 11l8.82-16.5zM12 2c-3.79 0-7.17 2.13-8.82 5.5L12 22l8.82-16.5C19.17 4.13 15.79 2 12 2z"/></svg><div><h4>3. Tu Ubicación</h4><p>El <b>punto azul 🔵</b> es tu ubicación actual real. Las rutas siempre se calcularán desde aquí.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M2.001 10.999a1 1 0 0 1 .99-1.161l18-2a1 1 0 0 1 .172 2l-18 2a1 1 0 0 1-1.162-.839zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM22 12l-2.439-5.999L14 3.562 16.438 9H14v2h2.438L14 18.438l5.562-2.439L22 12z"/></svg><div><h4>4. Ajusta el Radio</h4><p>Usa el control deslizante para definir el radio de búsqueda alrededor del pin azul. El círculo en el mapa se actualizará.</p></div></div><div class="instruction-item"><svg class="instruction-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/><path d="M0 0h24v24H0z" fill="none"/></svg><div><h4>5. Entiende los Resultados</h4><p>Los resultados con un borde <span style="color:var(--perfect-match-color); font-weight:bold;">verde</span> coinciden perfectamente. Los de borde <span style="color:var(--partial-match-color); font-weight:bold;">naranja</span> son buenas coincidencias generales.</p></div></div>`,
                 examples: [ "Supermercado abierto el sábado", "Cafetería que no cierre antes de medianoche", "Un lugar tranquilo para trabajar", "Restaurante con una vista hermosa", "Lugar con postres deliciosos", "Hotel barato" ],
-                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.
-Current date and time: ${dateTime}.
-The JSON output must have ONE main key: "searchPlan", which is an object.
-- "searchPlan" must contain:
-  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").
-  - "minPriceLevel" (number 1-4, or null): Minimum price level.
-  - "maxPriceLevel" (number 1-4, or null): Maximum price level.
-  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.
-  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.
-    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).
-    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).
-Examples:
-- User request: "supermercado abierto el sábado" -> {"searchPlan": {"textQuery": "supermercado", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}
-- User request: "cafetería abierta a las 11 de la noche" -> {"searchPlan": {"textQuery": "cafetería", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}
-- User request: "restaurante con una vista bonita" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "vista", "scenic", "panoramic", "hermosa"]}]}}
-User request: "${text}"`,
+                geminiPrompt: (text, dateTime) => `You are an expert search query planner for the Google Places API. Analyze the user's request and the current date/time to create a precise JSON object with a plan.Current date and time: ${dateTime}.The JSON output must have ONE main key: "searchPlan", which is an object.- "searchPlan" must contain:  - "textQuery" (string): The primary search term (e.g., "restaurant", "hotel").  - "minPriceLevel" (number 1-4, or null): Minimum price level.  - "maxPriceLevel" (number 1-4, or null): Maximum price level.  - "filterType" (string): Must be ONE of 'none', 'openingHours', or 'reviewFilter'.  - "filterRules" (array): An array of conditions. Can be empty if filterType is 'none'.    - If filterType is 'openingHours', each object in the array has "day" (0-6, Sun=0) and/or "time" (string "HH:MM", 24h format).    - If filterType is 'reviewFilter', the array contains ONE object with a "keywords" array of strings (in English).Examples:- User request: "supermercado abierto el sábado" -> {"searchPlan": {"textQuery": "supermercado", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"day": 6}]}}- User request: "cafetería abierta a las 11 de la noche" -> {"searchPlan": {"textQuery": "cafetería", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "openingHours", "filterRules": [{"time": "23:00"}]}}- User request: "restaurante con una vista bonita" -> {"searchPlan": {"textQuery": "restaurant", "minPriceLevel": null, "maxPriceLevel": null, "filterType": "reviewFilter", "filterRules": [{"keywords": ["view", "vista", "scenic", "panoramic", "hermosa"]}]}}User request: "${text}"`,
             }
         };
         
@@ -540,34 +417,45 @@ User request: "${text}"`,
             document.getElementById('radius-label').innerHTML = t.radiusLabel;
             document.getElementById('voice-search-button').title = t.voiceTitle;
             document.getElementById('examples-button').textContent = t.examplesButton;
-
+            document.getElementById('instructions-button').textContent = t.instructionsButton;
+            
             const script = document.createElement('script');
             script.id = 'google-maps-script';
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes&callback=initMap&language=${currentLang}`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,routes,marker,geometry&callback=initMap&language=${currentLang}`;
             script.async = true;
             document.head.appendChild(script);
-
-             document.getElementById('language-selector').addEventListener('change', (e) => setLanguage(e.target.value));
+            
+            document.getElementById('language-selector').addEventListener('change', (e) => setLanguage(e.target.value));
         }
 
-        window.initMap = function() {
+        async function initMap() {
+            AdvancedMarkerElement = (await google.maps.importLibrary("marker")).AdvancedMarkerElement;
             if (locationWatcher) navigator.geolocation.clearWatch(locationWatcher);
             userMarker = null;
+            searchCenterMarker = null;
             clearPreviousResults();
-            
             directionsService = new google.maps.DirectionsService();
+            distanceMatrixService = new google.maps.DistanceMatrixService();
             directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
             const defaultLocation = { lat: 32.0853, lng: 34.7818 };
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 15,
                 center: defaultLocation,
+                mapId: 'SMART_SEARCH_MAP_ID',
                 mapTypeControl: true,
                 mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR, position: google.maps.ControlPosition.TOP_LEFT, },
                 streetViewControl: false,
                 fullscreenControl: false,
             });
             directionsRenderer.setMap(map);
-
+            map.addListener('click', (event) => {
+                if (searchCenterMarker) {
+                    searchCenterMarker.position = event.latLng;
+                    if(searchRadiusCircle) {
+                        drawSearchCircle(event.latLng, searchRadiusCircle.radius);
+                    }
+                }
+            });
             if (navigator.geolocation) {
                 const geoOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
                 locationWatcher = navigator.geolocation.watchPosition(
@@ -584,13 +472,30 @@ User request: "${text}"`,
         function handleLocationUpdate(position, centerMap = false) {
             const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
             if (!userMarker) {
-                userMarker = new google.maps.Marker({
+                const userMarkerDiv = document.createElement('div');
+                userMarkerDiv.className = 'user-marker';
+                userMarker = new AdvancedMarkerElement({
                     position: userLocation,
                     map: map,
                     title: translations[currentLang].myLocation,
-                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 3, strokeColor: "white" },
-                    zIndex: 999 
+                    content: userMarkerDiv,
+                    zIndex: 999
+                 });
+
+                const searchMarkerDiv = document.createElement('div');
+                searchMarkerDiv.className = 'search-center-marker';
+                // UPDATED: Using the new delicate pin icon
+                searchMarkerDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--primary-color)" d="M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z"/></svg>`;
+
+                searchCenterMarker = new AdvancedMarkerElement({
+                    position: userLocation,
+                    map: map,
+                    gmpDraggable: true,
+                    title: translations[currentLang].searchCenter,
+                    content: searchMarkerDiv,
+                    zIndex: 1000
                 });
+
                 const searchInput = document.getElementById('search-input');
                 const searchButton = document.getElementById('search-button');
                 const voiceButton = document.getElementById('voice-search-button');
@@ -598,9 +503,9 @@ User request: "${text}"`,
                 searchButton.disabled = false;
                 voiceButton.disabled = false;
                 searchInput.placeholder = translations[currentLang].placeholder;
-                setupVoiceSearch(); 
-            } else {
-                userMarker.setPosition(userLocation);
+                setupVoiceSearch();
+             } else {
+                userMarker.position = userLocation;
             }
             if (centerMap) map.setCenter(userLocation);
         }
@@ -618,12 +523,13 @@ User request: "${text}"`,
                 const radiusMeters = parseInt(radiusSlider.value);
                 const radiusValue = document.getElementById('radius-label').querySelector('span');
                 if (radiusValue) radiusValue.textContent = radiusMeters >= 1000 ? `${(radiusMeters / 1000).toFixed(1)} km` : `${radiusMeters} m`;
-                if (searchRadiusCircle && userMarker) drawSearchCircle(userMarker.getPosition(), radiusMeters);
+                if (searchCenterMarker) drawSearchCircle(searchCenterMarker.position, radiusMeters);
             });
             const uiContainer = document.getElementById('ui-container');
             document.getElementById('mobile-toggle-button').addEventListener('click', () => uiContainer.classList.add('panel-open'));
             document.getElementById('panel-close-button').addEventListener('click', () => uiContainer.classList.remove('panel-open'));
             setupExamplesModal();
+            setupInstructionsModal();
         }
         
         function setupVoiceSearch() {
@@ -641,135 +547,150 @@ User request: "${text}"`,
             };
             recognition.onresult = (event) => {
                 document.getElementById('search-input').value = event.results[0][0].transcript;
-                document.getElementById('search-button').click();
+                performSearch();
             };
             recognition.onspeechend = () => recognition.stop();
             recognition.onend = () => {
+                voiceButton.classList.remove('is-listening');
                 document.getElementById('search-input').placeholder = translations[currentLang].placeholder;
             };
-            recognition.onerror = (event) => alert(`Speech recognition error: ${event.error}`);
+            recognition.onerror = (event) => console.error(`Speech recognition error: ${event.error}`);
         }
         
         function setupExamplesModal() {
             const modal = document.getElementById('examples-modal');
+            if (!modal) return;
             const openButton = document.getElementById('examples-button');
+            if (!openButton) return;
             const closeButton = modal.querySelector('.modal-close-button');
             const examplesList = modal.querySelector('#examples-list');
-            
-            document.getElementById('modal-title').textContent = translations[currentLang].modalTitle;
-
+            const modalTitle = document.getElementById('modal-title-examples');
+            if (!closeButton || !examplesList || !modalTitle) return;
+            const t = translations[currentLang];
+            if (!t) return;
+            modalTitle.textContent = t.modalTitleExamples || 'Examples';
             examplesList.innerHTML = '';
-            translations[currentLang].examples.forEach(text => {
-                const li = document.createElement('li');
-                li.textContent = text;
-                li.onclick = () => {
-                    document.getElementById('search-input').value = text;
-                    modal.classList.add('hidden');
-                    performSearch();
-                };
-                examplesList.appendChild(li);
-            });
-
+            if (t.examples && Array.isArray(t.examples)) {
+                t.examples.forEach(text => {
+                    const li = document.createElement('li');
+                    li.textContent = text;
+                    li.onclick = () => {
+                        document.getElementById('search-input').value = text;
+                        modal.classList.add('hidden');
+                        performSearch();
+                    };
+                    examplesList.appendChild(li);
+                });
+            }
             const showModal = () => modal.classList.remove('hidden');
             const hideModal = () => modal.classList.add('hidden');
-            
             openButton.onclick = showModal;
             closeButton.onclick = hideModal;
-            modal.onclick = (e) => { if(e.target === modal) hideModal(); };
+            modal.onclick = (e) => { if (e.target === modal) hideModal(); };
+        }
+
+        function setupInstructionsModal() {
+            const modal = document.getElementById('instructions-modal');
+            if (!modal) return;
+            const openButton = document.getElementById('instructions-button');
+            if (!openButton) return;
+            const closeButton = modal.querySelector('.modal-close-button');
+            const modalTitle = document.getElementById('modal-title-instructions');
+            const modalBody = document.getElementById('instructions-body');
+            if (!closeButton || !modalTitle || !modalBody) return;
+            const t = translations[currentLang];
+            if (!t) return;
+            modalTitle.textContent = t.modalTitleInstructions || 'Instructions';
+            modalBody.innerHTML = t.instructionsHTML || '<p>Instructions not available.</p>';
+            const showModal = () => modal.classList.remove('hidden');
+            const hideModal = () => modal.classList.add('hidden');
+            openButton.onclick = showModal;
+            closeButton.onclick = hideModal;
+            modal.onclick = (e) => { if (e.target === modal) hideModal(); };
         }
 
         async function performSearch() {
             const queryText = document.getElementById('search-input').value;
-            if (!queryText || !userMarker) return;
+            if (!queryText || !searchCenterMarker) return;
             const searchButton = document.getElementById('search-button');
             searchButton.textContent = translations[currentLang].searchingButton;
             searchButton.disabled = true;
             try {
                 const result = await getStructuredQueryFromGemini(queryText);
                 const searchPlan = result.searchPlan;
-                if(searchPlan?.textQuery) await searchPlaces(searchPlan);
-                else throw new Error("Gemini did not return a valid query plan.");
+                if(searchPlan?.textQuery) {
+                    await searchPlaces(searchPlan);
+                } else {
+                    throw new Error("Gemini did not return a valid query plan.");
+                }
             } catch (error) {
                 console.error("Search failed:", error);
-                alert("Sorry, there was an error processing the search plan. Please try a simpler query.");
+                alert("Sorry, an error occurred. Please try a different search.");
             } finally {
                 searchButton.textContent = translations[currentLang].searchButton;
                 searchButton.disabled = false;
             }
         }
-
+        
         async function getStructuredQueryFromGemini(text) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
             const now = new Date();
             const dateTimeString = `${now.toDateString()} ${now.toTimeString()}`;
             const prompt = translations[currentLang].geminiPrompt(text, dateTimeString);
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            const response = await fetch(url, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
+            });
             if (!response.ok) throw new Error(`Gemini API request failed with status ${response.status}`);
             const data = await response.json();
             if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Invalid response structure from Gemini API.");
-            const jsonMatch = data.candidates[0].content.parts[0].text.match(/\{.*\}/s);
+            const jsonText = data.candidates[0].content.parts[0].text;
+            const jsonMatch = jsonText.match(/```json\s*(\{[\s\S]*?\})\s*```|(\{[\s\S]*\})/);
             if (!jsonMatch) throw new Error("Could not find a valid JSON object in Gemini's response.");
-            return JSON.parse(jsonMatch[0]);
+            const jsonString = jsonMatch[1] || jsonMatch[2];
+            return JSON.parse(jsonString);
         }
         
-        function getDistanceInMeters(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180, Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
-
-        function isPlaceMatch(details, filter) {
-            if (!filter || filter.type === 'none') return true;
-            if (!details) return false;
-            if(filter.type === 'reviewFilter') {
-                if (!details?.reviews) return false;
-                const keywords = filter.rules[0].keywords;
-                return details.reviews.some(review => review.text && keywords.some(keyword => review.text.text.toLowerCase().includes(keyword.toLowerCase())));
+        async function getTravelDurations(origin, destinations) {
+            if (!distanceMatrixService || !origin || !destinations || destinations.length === 0) {
+                return destinations.map(() => null);
             }
-            if (filter.type === 'openingHours') {
-                 if (!details?.regularOpeningHours) return false;
-                 return filter.rules.every(rule => {
-                    const dayToCheck = rule.day ?? new Date().getDay();
-                    const periods = details.regularOpeningHours.periods;
-                    if (rule.time) {
-                        const timeToCheckMinutes = parseInt(rule.time.split(':')[0]) * 60 + parseInt(rule.time.split(':')[1]);
-                        return periods.some(p => {
-                            if (p.open.day === 0 && !p.close) return true;
-                            const openTimeMinutes = p.open.hour * 60 + p.open.minute;
-                            if (p.close && p.open.day !== p.close.day) {
-                                const closeTimeMinutes = p.close.hour * 60 + p.close.minute;
-                                if (dayToCheck === p.open.day && timeToCheckMinutes >= openTimeMinutes) return true;
-                                if (dayToCheck === p.close.day && timeToCheckMinutes < closeTimeMinutes) return true;
-                                return false;
-                            }
-                            if (dayToCheck === p.open.day) {
-                                 const closeTimeMinutes = p.close ? (p.close.hour * 60 + p.close.minute) : (24 * 60);
-                                 return timeToCheckMinutes >= openTimeMinutes && timeToCheckMinutes < closeTimeMinutes;
-                            }
-                            return false;
+            return new Promise((resolve) => {
+                distanceMatrixService.getDistanceMatrix({
+                    origins: [origin],
+                    destinations: destinations,
+                    travelMode: 'DRIVING',
+                }, (response, status) => {
+                    if (status === 'OK' && response.rows[0]) {
+                        const durations = response.rows[0].elements.map(element => {
+                            return element.status === 'OK' ? element.duration.text : null;
                         });
+                        resolve(durations);
                     } else {
-                        return periods.some(p => p.open.day === dayToCheck);
+                        console.error('Distance Matrix failed due to: ' + status);
+                        resolve(destinations.map(() => null));
                     }
                 });
-            }
-            return true;
+            });
         }
-
+        
         async function searchPlaces(searchPlan) {
             clearPreviousResults();
-            const userLocation = userMarker.getPosition();
+            const searchLocation = searchCenterMarker.position;
             const url = 'https://places.googleapis.com/v1/places:searchText';
-            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.photos' };
+            const headers = { 
+                'Content-Type': 'application/json', 
+                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.photos' 
+            };
             const requestBody = {
                 textQuery: searchPlan.textQuery,
-                maxResultCount: 20, 
-                locationBias: { circle: { center: { latitude: userLocation.lat(), longitude: userLocation.lng() }, radius: 50000 } }
+                maxResultCount: 20,
+                locationBias: { circle: { center: { latitude: searchLocation.lat, longitude: searchLocation.lng }, radius: 50000.0 } }
             };
             if(searchPlan.minPriceLevel) requestBody.minPriceLevel = searchPlan.minPriceLevel;
             if(searchPlan.maxPriceLevel) requestBody.maxPriceLevel = searchPlan.maxPriceLevel;
-
             const body = JSON.stringify(requestBody);
             const response = await fetch(url, { method: 'POST', headers, body });
             if (!response.ok) {
@@ -781,100 +702,55 @@ User request: "${text}"`,
                 alert(translations[currentLang].noResults);
                 return;
             }
-
             const radius = document.getElementById('radius-slider').value;
-            const userLat = userLocation.lat(), userLng = userLocation.lng();
             
-            const detailedPlaces = await Promise.all(data.places.map(p => fetchPlaceDetails(p.id)));
+            let categorizedPlaces = data.places
+                .map(place => {
+                    if (!place || !place.location) return null;
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(searchLocation, new google.maps.LatLng(place.location.latitude, place.location.longitude));
+                    return { place, distance, isPerfect: false, duration: null };
+                })
+                .filter(item => item && item.distance <= radius);
 
-            const categorizedPlaces = detailedPlaces.map((details, index) => {
-                const place = data.places[index];
-                const distance = getDistanceInMeters(userLat, userLng, place.location.latitude, place.location.longitude);
-                const isPerfect = isPlaceMatch(details, searchPlan.filterType, searchPlan.filterRules);
-                return { place: { ...place, details }, distance, isPerfect };
-            }).filter(item => item.distance <= radius);
+            const placesToDetail = categorizedPlaces.map(item => item.place);
+            const detailedPlaces = await Promise.all(placesToDetail.map(p => fetchPlaceDetails(p.id)));
+
+            categorizedPlaces.forEach((item, index) => {
+                item.place.details = detailedPlaces[index];
+                item.isPerfect = isPlaceMatch(item.place.details, searchPlan);
+            });
 
             const perfectMatches = categorizedPlaces.filter(p => p.isPerfect);
             const partialMatches = categorizedPlaces.filter(p => !p.isPerfect);
-            
             perfectMatches.sort((a,b) => a.distance - b.distance);
             partialMatches.sort((a,b) => a.distance - b.distance);
             
-            const combinedResults = [...perfectMatches, ...partialMatches].slice(0, 10);
-
+            let combinedResults = [...perfectMatches, ...partialMatches].slice(0, 10);
+            
             if (combinedResults.length > 0) {
+                // FIXED: Correctly map destinations for Distance Matrix
+                const destinations = combinedResults.map(r => ({ lat: r.place.location.latitude, lng: r.place.location.longitude }));
+                if(userMarker && userMarker.position) {
+                    const durations = await getTravelDurations(userMarker.position, destinations);
+                    combinedResults.forEach((result, i) => {
+                        result.duration = durations[i];
+                    });
+                }
                 searchResults = combinedResults;
                 displayResultsOnMapAndList();
             } else {
-                 drawSearchCircle(userMarker.getPosition(), parseFloat(radius));
+                 drawSearchCircle(searchCenterMarker.position, parseFloat(radius));
                  alert(translations[currentLang].noResultsInRadius);
-            }
-        }
-
-        function displayResultsOnMapAndList() {
-            const bounds = new google.maps.LatLngBounds();
-            const resultsList = document.getElementById('results-list');
-            bounds.extend(userMarker.getPosition());
-            drawSearchCircle(userMarker.getPosition(), parseFloat(document.getElementById('radius-slider').value));
-            
-            searchResults.forEach((result, index) => {
-                const place = result.place;
-                const location = { lat: place.location.latitude, lng: place.location.longitude };
-                markers.push(new google.maps.Marker({ position: location, map: map, label: { text: `${index + 1}`, color: 'white' } }));
-                bounds.extend(location);
-                let photoHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
-                if (place.photos && place.photos.length > 0) {
-                    const photoUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=120&maxWidthPx=120&key=${GOOGLE_MAPS_API_KEY}`;
-                    photoHtml = `<img src="${photoUrl}" alt="${place.displayName.text}" onerror="this.parentElement.innerHTML = '${photoHtml.replace(/"/g, '\\"')}';">`;
-                }
-                const listItem = document.createElement('li');
-                listItem.className = 'result-item ' + (result.isPerfect ? 'perfect-match' : 'partial-match');
-                listItem.innerHTML = `<div class="result-item-header"><div class="result-item-photo">${photoHtml}<span class="result-item-number">${index + 1}</span></div><span class="result-item-text">${place.displayName.text}</span></div><div class="result-details"></div>`;
-                listItem.querySelector('.result-item-header').addEventListener('click', () => handleResultClick(index, listItem));
-                resultsList.appendChild(listItem);
-            });
-            document.getElementById('results-container').classList.remove('hidden');
-            map.fitBounds(bounds);
-        }
-        
-        function drawSearchCircle(position, radius) {
-            if (searchRadiusCircle) searchRadiusCircle.setMap(null);
-            searchRadiusCircle = new google.maps.Circle({ strokeColor: "#4285F4", strokeOpacity: 0.9, strokeWeight: 3, fillOpacity: 0.0, map, center: position, radius, clickable: false });
-        }
-
-        async function handleResultClick(index, listItem) {
-            const isActive = listItem.classList.contains('active');
-            document.querySelectorAll('.result-item').forEach(item => { item.classList.remove('active', 'details-visible'); });
-            if (!isActive) {
-                listItem.classList.add('active');
-                showSingleResult(index, listItem);
-            }
-        }
-
-        async function showSingleResult(index, listItem) {
-            markers.forEach((marker, markerIndex) => marker.setAnimation(markerIndex === index ? google.maps.Animation.BOUNCE : null));
-            setTimeout(() => { if (markers[index]) markers[index].setAnimation(null); }, 1500);
-            
-            const resultItem = searchResults[index];
-            const place = resultItem.place;
-            const location = { lat: place.location.latitude, lng: place.location.longitude };
-            calculateAndDisplayRoute(location);
-            
-            const detailsContainer = listItem.querySelector('.result-details');
-            if (!listItem.dataset.detailsLoaded) {
-                detailsContainer.innerHTML = translations[currentLang].detailsLoading;
-                listItem.classList.add('details-visible');
-                // Details are already fetched, just populate them
-                populatePlaceDetails(detailsContainer, place.details);
-                listItem.dataset.detailsLoaded = 'true';
-            } else {
-                 listItem.classList.add('details-visible');
             }
         }
         
         async function fetchPlaceDetails(placeId) {
             const url = `https://places.googleapis.com/v1/places/${placeId}`;
-            const headers = { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': 'id,formattedAddress,editorialSummary,reviews,regularOpeningHours,rating,userRatingCount,photos' };
+            const headers = { 
+                'Content-Type': 'application/json', 
+                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 
+                'X-Goog-FieldMask': 'id,formattedAddress,editorialSummary,reviews,regularOpeningHours,rating,userRatingCount,photos' 
+            };
             try {
                 const response = await fetch(url, { headers });
                 if (!response.ok) throw new Error('Failed to fetch details');
@@ -884,7 +760,146 @@ User request: "${text}"`,
                 return null;
             }
         }
+        
+        function isPlaceMatch(details, searchPlan) {
+            if (!searchPlan || searchPlan.filterType === 'none') return true;
+            if (!details) return false;
+            if(searchPlan.filterType === 'reviewFilter') {
+                if (!details?.reviews || !searchPlan.filterRules?.[0]?.keywords) return false;
+                const keywords = searchPlan.filterRules[0].keywords;
+                return details.reviews.some(review => 
+                    review.text?.text && keywords.some(keyword => 
+                        review.text.text.toLowerCase().includes(keyword.toLowerCase())
+                    )
+                );
+            }
+            if (searchPlan.filterType === 'openingHours') {
+                 if (!details?.regularOpeningHours?.periods) return false;
+                 const rules = searchPlan.filterRules || [];
+                 return rules.every(rule => {
+                    const dayToCheck = rule.day ?? new Date().getDay();
+                    const periods = details.regularOpeningHours.periods;
+                    if (rule.time) {
+                        const timeToCheckMinutes = parseInt(rule.time.split(':')[0]) * 60 + parseInt(rule.time.split(':')[1]);
+                        return periods.some(p => {
+                            if (!p.open || !p.close) return false;
+                            if (p.open.day !== p.close.day) {
+                                const openTimeMinutes = p.open.hour * 60 + p.open.minute;
+                                const closeTimeMinutes = p.close.hour * 60 + p.close.minute;
+                                if (dayToCheck === p.open.day && timeToCheckMinutes >= openTimeMinutes) return true;
+                                if (dayToCheck === p.close.day && timeToCheckMinutes < closeTimeMinutes) return true;
+                                return false;
+                            }
+                            if (dayToCheck === p.open.day) {
+                                 const openTimeMinutes = p.open.hour * 60 + p.open.minute;
+                                 const closeTimeMinutes = p.close.hour * 60 + p.close.minute;
+                                 return timeToCheckMinutes >= openTimeMinutes && timeToCheckMinutes < closeTimeMinutes;
+                            }
+                            return false;
+                        });
+                    } else {
+                        return periods.some(p => p.open?.day === dayToCheck);
+                    }
+                });
+            }
+            return true;
+        }
 
+        function displayResultsOnMapAndList() {
+            const bounds = new google.maps.LatLngBounds();
+            const resultsList = document.getElementById('results-list');
+            bounds.extend(searchCenterMarker.position);
+            drawSearchCircle(searchCenterMarker.position, parseFloat(document.getElementById('radius-slider').value));
+            searchResults.forEach((result, index) => {
+                const place = result.place;
+                const location = { lat: place.location.latitude, lng: place.location.longitude };
+                const markerContent = document.createElement('div');
+                markerContent.className = 'result-marker-content';
+                markerContent.textContent = `${index + 1}`;
+                const resultMarker = new AdvancedMarkerElement({ 
+                    position: location, 
+                    map: map, 
+                    content: markerContent
+                });
+                markers.push(resultMarker);
+                bounds.extend(location);
+                let photoHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+                if (place.photos && place.photos.length > 0) {
+                    const photoUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=120&maxWidthPx=120&key=${GOOGLE_MAPS_API_KEY}`;
+                    photoHtml = `<img src="${photoUrl}" alt="${place.displayName.text}" loading="lazy" onerror="this.parentElement.innerHTML = '${photoHtml.replace(/"/g, '\\"')}';">`;
+                }
+                const listItem = document.createElement('li');
+                listItem.className = 'result-item ' + (result.isPerfect ? 'perfect-match' : 'partial-match');
+                const durationHtml = result.duration ? `&bull; 🚗 ${result.duration}` : '';
+                listItem.innerHTML = `<div class="result-item-header"><div class="result-item-photo">${photoHtml}<span class="result-item-number">${index + 1}</span></div><div class="result-item-text"><h5>${place.displayName.text}</h5><div class="result-item-info"><span class="distance">${(result.distance/1000).toFixed(1)} km</span><span class="travel-duration">${durationHtml}</span></div></div></div><div class="result-details"></div>`;
+                listItem.querySelector('.result-item-header').addEventListener('click', () => handleResultClick(index, listItem));
+                resultsList.appendChild(listItem);
+            });
+            document.getElementById('results-container').classList.remove('hidden');
+            if (searchResults.length > 1) {
+                map.fitBounds(bounds);
+            } else if (searchResults.length === 1) {
+                map.setCenter(bounds.getCenter());
+                map.setZoom(15);
+            }
+        }
+        
+        function drawSearchCircle(position, radius) {
+            if (searchRadiusCircle) searchRadiusCircle.setMap(null);
+            searchRadiusCircle = new google.maps.Circle({ 
+                strokeColor: "#4285F4", 
+                strokeOpacity: 0.8, 
+                strokeWeight: 2, 
+                fillColor: "#4285F4",
+                fillOpacity: 0.0, 
+                map, 
+                center: position, 
+                radius, 
+                clickable: false 
+            });
+        }
+
+        async function handleResultClick(index, listItem) {
+            const isActive = listItem.classList.contains('active');
+            document.querySelectorAll('.result-item.active').forEach(item => {
+                if(item !== listItem) {
+                    item.classList.remove('active', 'details-visible');
+                    item.querySelector('.result-details').innerHTML = '';
+                }
+            });
+            if (!isActive) {
+                listItem.classList.add('active');
+                await showSingleResult(index, listItem);
+            } else {
+                 listItem.classList.remove('active', 'details-visible');
+                 listItem.querySelector('.result-details').innerHTML = '';
+            }
+        }
+
+        async function showSingleResult(index, listItem) {
+            markers.forEach((marker) => marker.content?.classList.remove('bounce'));
+            if(markers[index]) {
+                const markerContent = markers[index].content;
+                if(markerContent) {
+                    markerContent.classList.add('bounce');
+                    setTimeout(() => markerContent.classList.remove('bounce'), 1400);
+                }
+            }
+            const resultItem = searchResults[index];
+            const place = resultItem.place;
+            const location = { lat: place.location.latitude, lng: place.location.longitude };
+            calculateAndDisplayRoute(location);
+            const detailsContainer = listItem.querySelector('.result-details');
+            if (!listItem.dataset.detailsLoaded) {
+                detailsContainer.innerHTML = `<p>${translations[currentLang].detailsLoading}</p>`;
+                listItem.classList.add('details-visible');
+                populatePlaceDetails(detailsContainer, place.details);
+                listItem.dataset.detailsLoaded = 'true';
+            } else {
+                 listItem.classList.add('details-visible');
+            }
+        }
+        
         function populatePlaceDetails(container, details) {
             const t = translations[currentLang];
             if (!details) { container.innerHTML = `<p>${t.detailsNotAvailable}</p>`; return; }
@@ -901,7 +916,7 @@ User request: "${text}"`,
                 html += `<h4>${t.photosTitle}</h4><div class="photo-gallery">`;
                 details.photos.slice(1, 6).forEach(photo => {
                     const photoUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=200&maxWidthPx=200&key=${GOOGLE_MAPS_API_KEY}`;
-                    html += `<img src="${photoUrl}" alt="Photo of the place">`;
+                    html += `<img src="${photoUrl}" alt="Photo of the place" loading="lazy">`;
                 });
                 html += `</div>`;
             }
@@ -910,10 +925,15 @@ User request: "${text}"`,
 
         function calculateAndDisplayRoute(destination) {
             if (!userMarker) return;
-            const request = { origin: userMarker.getPosition(), destination, travelMode: google.maps.TravelMode.DRIVING };
+            const request = { 
+                origin: userMarker.position, 
+                destination, 
+                travelMode: google.maps.TravelMode.DRIVING 
+            };
             directionsService.route(request, (result, status) => {
-                if (status === 'OK') directionsRenderer.setDirections(result);
-                else {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                } else {
                     console.error('Directions request failed due to ' + status);
                     directionsRenderer.setDirections({ routes: [] });
                 }
@@ -921,7 +941,7 @@ User request: "${text}"`,
         }
 
         function clearPreviousResults() {
-            markers.forEach(marker => marker.setMap(null));
+            markers.forEach(marker => marker.map = null);
             markers = [];
             document.getElementById('results-list').innerHTML = '';
             document.getElementById('results-container').classList.add('hidden');
@@ -935,7 +955,6 @@ User request: "${text}"`,
         }
 
         initializeApp();
-
     </script>
 </body>
 </html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ורד ולב</title>
+    <!-- Tailwind CSS CDN for basic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define the Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #fce7f3; /* Soft pink background */
+            overflow: hidden; /* Prevent scrollbars from animation */
+            position: relative; /* For absolute positioning of elements */
+        }
+
+        /* Keyframes for the word "ורד" - clear converging spiral towards the exact center */
+        @keyframes roseMoveSpiral {
+            0% {
+                /* Start far from center, from top-right relative to center */
+                transform: translate(30vw, -20vh) rotate(0deg) scale(0.6);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1; /* Fully visible quickly */
+            }
+            20% {
+                /* First wide loop section, moving clockwise and inward */
+                transform: translate(20vw, 15vh) rotate(360deg) scale(0.8);
+            }
+            40% {
+                /* Second loop section, further inward */
+                transform: translate(-15vw, 10vh) rotate(720deg) scale(1);
+            }
+            60% {
+                /* Third loop section, getting closer */
+                transform: translate(-10vw, -8vh) rotate(1080deg) scale(1.1);
+            }
+            80% {
+                /* Fourth loop, converging precisely to the exact center */
+                transform: translate(0, 0) rotate(1440deg) scale(0.7); /* Exactly at center */
+                opacity: 0.5; /* Fading out as it hits center */
+            }
+            100% {
+                /* Final position: at exact center, completely faded */
+                transform: translate(0, 0) rotate(1620deg) scale(0.6);
+                opacity: 0;
+            }
+        }
+
+
+        /* Keyframes for the heart's appearance and pulsing */
+        @keyframes heartBeat {
+            0% {
+                transform: translate(-50%, -50%) scale(0.01); /* Start very small */
+                opacity: 0;
+            }
+            20% {
+                transform: translate(-50%, -50%) scale(1); /* Grow to initial full size */
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2); /* Grow for the "beat" */
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1); /* Shrink back for the "beat" */
+            }
+        }
+
+        .rose-word {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Initial centering for the element */
+            font-size: 5rem; /* Large font size for "ורד" */
+            font-weight: 700;
+            color: #d12c6a; /* Deep rose color */
+            animation: roseMoveSpiral 10s ease-in-out forwards; /* Apply new spiral animation, increased duration for more turns */
+            white-space: nowrap; /* Prevent word wrap */
+            z-index: 10; /* Ensure the word is above the heart if they overlap briefly */
+        }
+
+        .heart-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Centering the heart icon exactly */
+            font-size: 10rem; /* Initial size of the heart when it appears */
+            color: #ef4444; /* Tailwind red-500 */
+            display: none; /* Hidden by default */
+            z-index: 5; /* Ensure heart is behind the word initially */
+        }
+
+        /* Media queries for smaller screens */
+        @media (max-width: 768px) {
+            .rose-word {
+                font-size: 3rem; /* Smaller font size on mobile */
+            }
+            .heart-icon {
+                font-size: 8rem; /* Slightly smaller heart on mobile */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .rose-word {
+                font-size: 2.5rem; /* Even smaller font size on very small phones */
+            }
+            .heart-icon {
+                font-size: 7rem; /* Even smaller heart on very small phones */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- The word "ורד" element -->
+    <div class="rose-word">ורד</div>
+
+    <!-- The heart element -->
+    <div class="heart-icon">&#10084;</div> <!-- Unicode character for a heart -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const roseWord = document.querySelector('.rose-word');
+            const heartIcon = document.querySelector('.heart-icon');
+
+            // The roseMoveSpiral animation is 10s long.
+            // The word "ורד" reaches the center around 80% (8 seconds) mark, and fully fades out at 100%.
+            // We want the heart to appear exactly when the word reaches the center (around 80% mark, 8 seconds).
+            setTimeout(() => {
+                heartIcon.style.display = 'block'; // Make the heart visible
+                // Apply the heartBeat animation: 1.5s duration, infinite, alternating directions, forwards
+                heartIcon.style.animation = 'heartBeat 1.5s ease-in-out infinite alternate forwards';
+            }, 8000); // Heart appears after 8 seconds, when the word "ורד" is at the center.
+        });
+    </script>
+</body>
+</html>
