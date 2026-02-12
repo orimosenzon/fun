@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Search Map</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234285F4' d='M12,2C9.24,2,7,4.24,7,7c0,3.31,2.69,7.55,6,11.5c3.31-3.95,6-8.19,6-11.5C19,4.24,16.76,2,12,2z M12,9.5 C10.62,9.5,9.5,8.38,9.5,7S10.62,4.5,12,4.5S14.5,5.62,14.5,7S13.38,9.5,12,9.5z'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --danger-color: #EA4335;
+            --warning-color: #FBBC05;
+            --surface-color: #ffffff;
+            --background-color: #f8f9fa;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #dadce0;
+            --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --sidebar-width: 400px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Map Container */
+        #map-container {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-speed);
+        }
+
+        html[dir="rtl"] #sidebar {
+            border-right: none;
+            border-left: 1px solid var(--border-color);
+        }
+
+        /* Header */
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 14px 45px 14px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-full);
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: box-shadow 0.2s;
+            background-color: var(--surface-color);
+        }
+
+        html[dir="rtl"] #search-input {
+            padding: 14px 20px 14px 45px;
+        }
+
+        #search-input:focus {
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        #voice-btn {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        html[dir="rtl"] #voice-btn {
+            right: auto;
+            left: 15px;
+        }
+
+        #voice-btn:hover {
+            background-color: #f1f3f4;
+            color: var(--primary-color);
+        }
+
+        #voice-btn.listening {
+            color: var(--danger-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(234, 67, 53, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(234, 67, 53, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(234, 67, 53, 0);
+            }
+        }
+
+        /* Controls */
+        .controls-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .slider-container {
+            padding: 10px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: #f1f3f4;
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: #3367d6;
+            color: white;
+        }
+
+        /* Results List */
+        #results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        /* Scrollbar Styling */
+        #results-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #results-list::-webkit-scrollbar-thumb {
+            background-color: #dadce0;
+            border-radius: 4px;
+        }
+
+        #results-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #dadce0;
+        }
+
+        /* Result Card */
+        .result-card {
+            background: var(--surface-color);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            /* Highlight border */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            display: flex;
+            gap: 15px;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .result-card.active {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        .result-card.perfect-match {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        html[dir="rtl"] .result-card.perfect-match {
+            border-left: none;
+            border-right: 4px solid var(--secondary-color);
+        }
+
+        .result-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #eee;
+            flex-shrink: 0;
+        }
+
+        .result-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 5px;
+        }
+
+        .result-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .result-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rating-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fff8e1;
+            color: #f9a825;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-open {
+            color: var(--secondary-color);
+        }
+
+        .status-closed {
+            color: var(--danger-color);
+        }
+
+        /* Map Markers */
+        .custom-marker {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            border: 2px solid white;
+            transform: scale(1);
+            transition: transform 0.2s;
+        }
+
+        .custom-marker:hover,
+        .custom-marker.active {
+            transform: scale(1.2);
+            background: #D93025;
+            /* Red for active */
+            z-index: 1000;
+        }
+
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            background: #4285F4;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            #sidebar {
+                width: 100%;
+                height: 60%;
+                /* Initially partial height */
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                border-right: none;
+                border-top: 1px solid var(--border-color);
+                border-radius: 20px 20px 0 0;
+                transform: translateY(calc(100% - 180px));
+                /* Show search bar */
+                z-index: 1000;
+            }
+
+            #sidebar.expanded {
+                transform: translateY(0);
+                height: 80%;
+            }
+
+            #sidebar.collapsed {
+                transform: translateY(calc(100% - 80px));
+            }
+
+            #map-container {
+                height: 100%;
+            }
+
+            .handle-bar {
+                width: 40px;
+                height: 4px;
+                background: #dadce0;
+                border-radius: 2px;
+                margin: 10px auto;
+                cursor: grab;
+                display: block;
+                /* Visible on mobile */
+            }
+
+            .sidebar-header {
+                padding-top: 5px;
+            }
+        }
+
+        .handle-bar {
+            display: none;
+        }
+
+        /* Hidden on desktop */
+
+        /* Detail Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            box-shadow: var(--shadow-md);
+        }
+
+        .modal-header {
+            position: relative;
+            height: 200px;
+            background: #eee;
+        }
+
+        .modal-header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        html[dir="rtl"] .modal-close {
+            right: auto;
+            left: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+        }
+
+        .chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .chip {
+            background: #f1f3f4;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+        }
+
+        /* Quick Filters */
+        .quick-filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .quick-filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            white-space: nowrap;
+            border: 1px solid #dadce0;
+            padding: 6px 12px;
+            border-radius: 16px;
+            background: white;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip:hover {
+            background: #f1f3f4;
+        }
+
+        .filter-chip.active {
+            background: #e8f0fe;
+            color: var(--primary-color);
+            border-color: #e8f0fe;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div class="handle-bar" id="mobile-handle"></div>
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-map-location-dot"></i> Smart Map
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search places (e.g., 'Thai food nearby')...">
+                <button id="voice-btn"><i class="fa-solid fa-microphone"></i></button>
+            </div>
+
+            <div class="quick-filters" id="quick-filters">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="controls-area">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span><i class="fa-solid fa-circle-notch"></i> Radius</span>
+                        <span id="radius-value">5 km</span>
+                    </div>
+                    <input type="range" id="radius-slider" min="100" max="50000" step="100" value="5000">
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="search-btn" style="flex: 1"><i class="fa-solid fa-search"></i>
+                        Search</button>
+                    <button class="btn" id="lang-btn"><i class="fa-solid fa-globe"></i> <span
+                            id="lang-label">EN</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-state" id="loading-indicator">
+            <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            <p>Searching for the best spots...</p>
+        </div>
+
+        <div id="results-list">
+            <div class="empty-state">
+                <i class="fa-solid fa-magnifying-glass-location"></i>
+                <p>Move the map or type a search query to explore.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <img src="" id="modal-image" alt="Place image">
+                <button class="modal-close" id="modal-close-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+
+        // --- State & Config ---
+        const state = {
+            lang: localStorage.getItem('app_lang') || 'en',
+            location: { lat: 32.0853, lng: 34.7818 }, // Default TLV
+            zoom: 14,
+            radius: 5000,
+            searchResults: [],
+            markers: [],
+            searchCircle: null,
+            userMarker: null,
+            centerMarker: null
+        };
+
+        const translations = {
+            en: {
+                title: "Smart Map",
+                placeholder: "Search places...",
+                radius: "Radius",
+                search: "Search",
+                empty: "Start by trying a search above!",
+                open: "Open Now",
+                closed: "Closed",
+                loading: "Finding places..."
+            },
+            he: {
+                title: "מפה חכמה",
+                placeholder: "חיפוש מקומות...",
+                radius: "רדיוס",
+                search: "חפש",
+                empty: "התחל בחיפוש למעלה!",
+                open: "פתוח עכשיו",
+                closed: "סגור",
+                loading: "מחפש מקומות..."
+            }
+        };
+
+        const quickFilters = [
+            { id: 'coffee', label: '☕ Coffee', query: 'Coffee shop' },
+            { id: 'food', label: '🍔 Food', query: 'Restaurant' },
+            { id: 'gas', label: '⛽ Gas', query: 'Gas station' },
+            { id: 'hotel', label: '🏨 Hotel', query: 'Hotel' }
+        ];
+
+        // --- Ref's ---
+        let map;
+        let AdvancedMarkerElement;
+
+        // --- Initialization ---
+        async function initApp() {
+            setLanguage(state.lang);
+            loadGoogleMaps();
+            setupEventListeners();
+            renderQuickFilters();
+        }
+
+        function loadGoogleMaps() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker,geometry&callback=initMap&language=${state.lang}`;
+            script.async = true;
+            document.body.appendChild(script);
+        }
+
+        async function initMap() {
+            const { Map } = await google.maps.importLibrary("maps");
+            const { AdvancedMarkerElement: AM } = await google.maps.importLibrary("marker");
+            AdvancedMarkerElement = AM;
+
+            map = new Map(document.getElementById("map"), {
+                center: state.location,
+                zoom: state.zoom,
+                mapId: 'SMART_MAP_V2',
+                disableDefaultUI: true,
+                zoomControl: true,
+            });
+
+            // User Location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    state.location = userPos;
+                    map.setCenter(userPos);
+
+                    // Create User Marker
+                    const userPin = document.createElement('div');
+                    userPin.className = 'user-location-marker';
+                    new AdvancedMarkerElement({ position: userPos, map: map, content: userPin });
+
+                    createCenterMarker(userPos);
+                });
+            } else {
+                createCenterMarker(state.location);
+            }
+
+            map.addListener('click', (e) => {
+                if (state.centerMarker) {
+                    state.centerMarker.position = e.latLng;
+                    updateSearchCircle(e.latLng);
+                }
+            });
+        }
+
+        function createCenterMarker(pos) {
+            const pin = document.createElement('div');
+            pin.innerHTML = '<i class="fa-solid fa-location-dot" style="font-size: 32px; color: #EA4335;"></i>';
+
+            state.centerMarker = new AdvancedMarkerElement({
+                position: pos,
+                map: map,
+                content: pin,
+                gmpDraggable: true
+            });
+
+            state.centerMarker.addListener('dragend', (e) => {
+                updateSearchCircle(e.latLng);
+            });
+
+            updateSearchCircle(pos);
+        }
+
+        function updateSearchCircle(center) {
+            if (state.searchCircle) state.searchCircle.setMap(null);
+            state.searchCircle = new google.maps.Circle({
+                strokeColor: "#4285F4",
+                strokeOpacity: 0.8,
+                strokeWeight: 1,
+                fillColor: "#4285F4",
+                fillOpacity: 0.1,
+                map,
+                center: center,
+                radius: parseFloat(state.radius),
+                clickable: false
+            });
+        }
+
+        // --- UI Logic ---
+        function setLanguage(lang) {
+            state.lang = lang;
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+            document.getElementById('lang-label').textContent = lang.toUpperCase();
+
+            const t = translations[lang];
+            document.getElementById('search-input').placeholder = t.placeholder;
+            document.getElementById('search-btn').innerHTML = `<i class="fa-solid fa-search"></i> ${t.search}`;
+        }
+
+        function toggleLanguage() {
+            setLanguage(state.lang === 'en' ? 'he' : 'en');
+        }
+
+        function renderQuickFilters() {
+            const container = document.getElementById('quick-filters');
+            container.innerHTML = quickFilters.map(f =>
+                `<button class="filter-chip" onclick="executeQuickSearch('${f.query}')">${f.label}</button>`
+            ).join('');
+        }
+
+        function executeQuickSearch(query) {
+            document.getElementById('search-input').value = query;
+            handleSearch();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('radius-slider').addEventListener('input', (e) => {
+                state.radius = e.target.value;
+                document.getElementById('radius-value').textContent =
+                    state.radius >= 1000 ? `${(state.radius / 1000).toFixed(1)} km` : `${state.radius} m`;
+                if (state.centerMarker) updateSearchCircle(state.centerMarker.position);
+            });
+
+            document.getElementById('search-btn').addEventListener('click', handleSearch);
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+
+            document.getElementById('lang-btn').addEventListener('click', toggleLanguage);
+
+            // Mobile Sidebar handling
+            const sidebar = document.getElementById('sidebar');
+            const handle = document.getElementById('mobile-handle');
+            let startY;
+
+            handle.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
+            handle.addEventListener('touchmove', (e) => {
+                const deltaY = e.touches[0].clientY - startY;
+                if (deltaY < -50) sidebar.classList.add('expanded');
+                if (deltaY > 50) sidebar.classList.remove('expanded');
+            });
+
+            // Modal
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+            document.getElementById('details-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'details-modal') closeModal();
+            });
+
+            // Voice Search
+            setupVoiceSearch();
+        }
+
+        function setupVoiceSearch() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { document.getElementById('voice-btn').style.display = 'none'; return; }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = state.lang === 'he' ? 'he-IL' : 'en-US';
+            const btn = document.getElementById('voice-btn');
+
+            btn.addEventListener('click', () => recognition.start());
+            recognition.onstart = () => btn.classList.add('listening');
+            recognition.onend = () => btn.classList.remove('listening');
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                document.getElementById('search-input').value = text;
+                handleSearch();
+            };
+        }
+
+        // --- Core Search Logic ---
+        async function handleSearch() {
+            const query = document.getElementById('search-input').value;
+            if (!query || !state.centerMarker) return;
+
+            setLoading(true);
+            try {
+                let searchPlan = { textQuery: query, minPriceLevel: null };
+
+                // 1. Try to get structured query from Gemini (with fallback)
+                try {
+                    const geminiPlan = await getGeminiPlan(query);
+                    if (geminiPlan && geminiPlan.textQuery) {
+                        searchPlan = geminiPlan;
+                        console.log("Gemini Plan:", searchPlan);
+                    }
+                } catch (geminiError) {
+                    console.warn("Gemini API failed, falling back to basic search:", geminiError);
+                    // Fallback is already set to the raw query
+                }
+
+                // 2. Search Places API
+                const results = await searchPlaces(searchPlan);
+
+                // 3. Render
+                state.searchResults = results;
+                renderResults(results);
+                renderMarkers(results);
+
+            } catch (err) {
+                console.error("Search failed:", err);
+                alert("Search failed. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function getGeminiPlan(text) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const prompt = `You are a helper for Google Places API. Convert user query "${text}" into a JSON object with: { "textQuery": "cleaned string", "minPriceLevel": 1-4 or null }. Only return JSON.`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gemini API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error("Invalid Gemini response format");
+            }
+
+            const cleanText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
+            return JSON.parse(cleanText);
+        }
+
+        async function searchPlaces(plan) {
+            const url = 'https://places.googleapis.com/v1/places:searchText';
+            const location = state.centerMarker.position;
+
+            const body = {
+                textQuery: plan.textQuery,
+                maxResultCount: 15,
+                locationBias: {
+                    circle: {
+                        center: {
+                            latitude: typeof location.lat === 'function' ? location.lat() : location.lat,
+                            longitude: typeof location.lng === 'function' ? location.lng() : location.lng
+                        },
+                        radius: state.radius
+                    }
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+                    'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.photos,places.regularOpeningHours,places.priceLevel'
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+            return data.places || [];
+        }
+
+        // --- Rendering ---
+        function setLoading(isLoading) {
+            const list = document.getElementById('results-list');
+            const loader = document.getElementById('loading-indicator');
+            if (isLoading) {
+                list.style.display = 'none';
+                loader.style.display = 'block';
+            } else {
+                list.style.display = 'block';
+                loader.style.display = 'none';
+            }
+        }
+
+        function renderResults(places) {
+            const list = document.getElementById('results-list');
+            list.innerHTML = '';
+
+            if (places.length === 0) {
+                list.innerHTML = `<div class="empty-state"><p>No results found.</p></div>`;
+                return;
+            }
+
+            places.forEach((place, index) => {
+                const photoUrl = place.photos?.[0] ?
+                    `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=200&maxWidthPx=200&key=${GOOGLE_MAPS_API_KEY}` :
+                    'https://via.placeholder.com/100?text=No+Image';
+
+                const isOpen = place.regularOpeningHours?.openNow;
+                const statusClass = isOpen ? 'status-open' : 'status-closed';
+                const statusText = isOpen ? translations[state.lang].open : translations[state.lang].closed;
+
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <img src="${photoUrl}" class="result-image" loading="lazy">
+                    <div class="result-content">
+                        <div class="result-header">
+                            <h3 class="result-title">${index + 1}. ${place.displayName.text}</h3>
+                        </div>
+                        <div class="result-meta">
+                            <div class="rating-badge">
+                                <i class="fa-solid fa-star"></i> ${place.rating || 'N/A'} (${place.userRatingCount || 0})
+                            </div>
+                            <span>${place.formattedAddress}</span>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    focusPlace(index);
+                    selectCard(card);
+                });
+                card.addEventListener('mouseenter', () => highlightMarker(index, true));
+                card.addEventListener('mouseleave', () => highlightMarker(index, false));
+
+                list.appendChild(card);
+            });
+        }
+
+        function renderMarkers(places) {
+            state.markers.forEach(m => m.map = null);
+            state.markers = [];
+
+            const bounds = new google.maps.LatLngBounds();
+
+            places.forEach((place, index) => {
+                const markerDiv = document.createElement('div');
+                markerDiv.className = 'custom-marker';
+                markerDiv.textContent = index + 1;
+
+                const marker = new AdvancedMarkerElement({
+                    position: { lat: place.location.latitude, lng: place.location.longitude },
+                    map: map,
+                    content: markerDiv,
+                    title: place.displayName.text
+                });
+
+                marker.addListener('click', () => {
+                    focusPlace(index);
+                    openModal(place);
+                });
+
+                state.markers.push(marker);
+                bounds.extend(marker.position);
+            });
+
+            if (places.length > 0) map.fitBounds(bounds);
+        }
+
+        function highlightMarker(index, active) {
+            const marker = state.markers[index];
+            if (marker && marker.content) {
+                if (active) marker.content.classList.add('active');
+                else marker.content.classList.remove('active');
+            }
+        }
+
+        function selectCard(card) {
+            document.querySelectorAll('.result-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+        }
+
+        function focusPlace(index) {
+            const place = state.searchResults[index];
+            map.panTo({ lat: place.location.latitude, lng: place.location.longitude });
+            map.setZoom(16);
+            openModal(place);
+        }
+
+        // --- Modal ---
+        function openModal(place) {
+            const modal = document.getElementById('details-modal');
+            const img = document.getElementById('modal-image');
+            const body = document.getElementById('modal-body-content');
+
+            const photoUrl = place.photos?.[0] ?
+                `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=400&maxWidthPx=600&key=${GOOGLE_MAPS_API_KEY}` :
+                'https://via.placeholder.com/400';
+
+            img.src = photoUrl;
+
+            body.innerHTML = `
+                 <h2 class="modal-title">${place.displayName.text}</h2>
+                 <div class="chips">
+                     ${place.rating ? `<span class="chip"><i class="fa-solid fa-star" style="color:#fbbc05"></i> ${place.rating}</span>` : ''}
+                     <span class="chip"><i class="fa-solid fa-money-bill"></i> ${place.priceLevel ? '$'.repeat(place.priceLevel.length || 1) : '$$'}</span>
+                 </div>
+                 <p><i class="fa-solid fa-location-dot"></i> ${place.formattedAddress}</p>
+                 <div style="margin-top: 20px; display: flex; gap: 10px;">
+                     <a href="https://www.google.com/maps/dir/?api=1&destination_place_id=${place.id}" target="_blank" class="btn btn-primary" style="flex:1; justify-content:center;">
+                         <i class="fa-solid fa-directions"></i> Get Directions
+                     </a>
+                 </div>
+             `;
+
+            modal.classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').classList.remove('open');
+        }
+
+        // Run
+        initApp();
+
+    </script>
+</body>
+
+</html>
