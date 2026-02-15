@@ -2042,12 +2042,7 @@
                 });
             });
 
-            // On mobile selectResult -> collapse sheet to peek
-            const origSelectResult = window.selectResult;
-            window.selectResult = function(index) {
-                origSelectResult(index);
-                if (isMobile()) snapTo(SNAP_PEEK);
-            };
+            // On mobile selectResult -> keep sheet open so user can tap action buttons
 
             // On resize, re-set mobile state
             window.addEventListener('resize', () => {
