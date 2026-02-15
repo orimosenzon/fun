@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חיפוש עסקים חכם</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #4285f4;
+            --primary-dark: #3367d6;
+            --accent: #34a853;
+            --warn: #ea4335;
+            --bg: #f8f9fa;
+            --card-bg: #fff;
+            --text: #202124;
+            --text-secondary: #5f6368;
+            --border: #dadce0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --sidebar-width: 420px;
+        }
+
+        body.dark {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --border: #2a2a4a;
+            --shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--card-bg);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: -2px 0 12px rgba(0,0,0,0.06);
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        #sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        #sidebar-header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        #dark-mode-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        #dark-mode-btn:hover { background: var(--bg); }
+
+        /* Search */
+        .search-container {
+            position: relative;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 11px 44px 11px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            direction: rtl;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        #search-input:focus { border-color: var(--primary); }
+
+        #search-btn {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        #search-btn:hover { background: var(--primary-dark); }
+        #search-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+        /* Search history dropdown */
+        #search-history {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 30;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #search-history.show { display: block; }
+
+        .history-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+
+        .history-item:hover { background: var(--bg); }
+
+        .history-item .remove-history {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0 4px;
+        }
+
+        /* Category chips */
+        .category-chips {
+            display: flex;
+            gap: 6px;
+            padding: 10px 20px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            scrollbar-width: none;
+        }
+
+        .category-chips::-webkit-scrollbar { display: none; }
+
+        .cat-chip {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .cat-chip:hover, .cat-chip.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Controls row */
+        .controls-row {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Radius */
+        .radius-control {
+            padding: 10px 20px;
+            background: var(--bg);
+            flex: 1;
+        }
+
+        .radius-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .radius-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        #radius-slider {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Sort control */
+        .sort-control {
+            padding: 10px 16px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-right: 1px solid var(--border);
+        }
+
+        .sort-control label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        #sort-select {
+            padding: 4px 6px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            background: var(--card-bg);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        /* Results */
+        #results-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #status-msg {
+            text-align: center;
+            padding: 28px 16px;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
+        .result-card:hover {
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+
+        .result-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(66,133,244,0.2);
+        }
+
+        .result-photo {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--bg);
+        }
+
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .result-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .fav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px;
+            opacity: 0.4;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .fav-btn:hover { opacity: 0.7; }
+        .fav-btn.active { opacity: 1; }
+
+        .result-address {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .result-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            color: #f9ab00;
+            font-weight: 500;
+        }
+
+        .rating-count {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .open-status { font-weight: 500; }
+        .open-status.open { color: var(--accent); }
+        .open-status.closed { color: var(--warn); }
+
+        .result-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.72rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        .action-btn.primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .action-btn.primary:hover { background: var(--primary-dark); }
+
+        /* Detail panel */
+        #detail-panel {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            z-index: 25;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #detail-panel.show {
+            display: flex;
+        }
+
+        .detail-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail-back {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--text);
+            padding: 4px;
+        }
+
+        .detail-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .detail-content {
+            padding: 16px 20px;
+            flex: 1;
+        }
+
+        .detail-photo-large {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            background: var(--bg);
+        }
+
+        .detail-section {
+            margin-bottom: 16px;
+        }
+
+        .detail-section h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-row .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .detail-actions .action-btn {
+            padding: 8px 14px;
+            font-size: 0.8rem;
+        }
+
+        /* Street View container */
+        .streetview-container {
+            width: 100%;
+            height: 180px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-top: 8px;
+            background: var(--bg);
+        }
+
+        /* Hours list */
+        .hours-list {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .hours-list .today {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Share menu */
+        .share-menu {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 30;
+            min-width: 160px;
+            margin-bottom: 4px;
+        }
+
+        .share-menu.show { display: block; }
+
+        .share-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            font-family: inherit;
+            color: var(--text);
+        }
+
+        .share-option:hover { background: var(--bg); }
+
+        /* Travel mode selector */
+        .travel-modes {
+            display: flex;
+            gap: 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .travel-mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .travel-mode-btn:not(:last-child) { border-left: 1px solid var(--border); }
+        .travel-mode-btn.active { background: var(--primary); color: #fff; }
+        .travel-mode-btn:hover:not(.active) { background: var(--bg); }
+
+        /* Map */
+        #map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Loading overlay */
+        #loading {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.dark #loading { background: rgba(0,0,0,0.5); }
+
+        #loading.show { display: flex; }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Route info bar */
+        #route-info {
+            display: none;
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            padding: 12px 20px;
+            z-index: 15;
+            font-size: 0.85rem;
+            max-width: 90%;
+        }
+
+        #route-info .close-route {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-right: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Map type toggle */
+        .map-type-toggle {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            display: flex;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .map-type-btn {
+            padding: 8px 14px;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .map-type-btn:not(:last-child) { border-left: 1px solid var(--border); }
+        .map-type-btn.active { background: var(--primary); color: #fff; }
+        .map-type-btn:hover:not(.active) { background: var(--bg); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #323232;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 9999;
+            transition: transform 0.3s;
+            white-space: nowrap;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ── Mobile bottom sheet ── */
+        @media (min-width: 769px) {
+            .sidebar-drag-handle { display: none; }
+            .mobile-search-overlay { display: none !important; }
+            .mobile-tab-bar { display: none !important; }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                position: relative;
+            }
+
+            /* Map takes full screen */
+            #map-container {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                height: 100vh !important;
+                z-index: 1;
+            }
+
+            .map-type-toggle {
+                top: auto;
+                bottom: 12px;
+                right: 12px;
+            }
+
+            /* Floating search bar on top of map */
+            .mobile-search-overlay {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 50;
+                padding: 12px 12px 0;
+                padding-top: max(12px, env(safe-area-inset-top));
+            }
+
+            .mobile-search-overlay .search-bar-mobile {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: var(--card-bg);
+                border-radius: var(--radius);
+                box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+                padding: 6px 8px;
+            }
+
+            .mobile-search-overlay #mobile-search-input {
+                flex: 1;
+                border: none;
+                background: transparent;
+                font-family: inherit;
+                font-size: 0.9rem;
+                color: var(--text);
+                outline: none;
+                padding: 8px 4px;
+                direction: rtl;
+                min-width: 0;
+            }
+
+            .mobile-search-overlay #mobile-search-input::placeholder {
+                color: var(--text-secondary);
+            }
+
+            .mobile-search-overlay .mobile-search-btn {
+                width: 38px;
+                height: 38px;
+                border: none;
+                background: var(--primary);
+                color: #fff;
+                border-radius: 10px;
+                font-size: 1rem;
+                flex-shrink: 0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .mobile-search-overlay .mobile-dark-btn {
+                width: 38px;
+                height: 38px;
+                border: 1px solid var(--border);
+                background: var(--card-bg);
+                color: var(--text);
+                border-radius: 10px;
+                font-size: 1rem;
+                flex-shrink: 0;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Mobile search history */
+            .mobile-search-overlay #mobile-search-history {
+                display: none;
+                background: var(--card-bg);
+                border-radius: 0 0 var(--radius) var(--radius);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                max-height: 200px;
+                overflow-y: auto;
+                margin-top: -4px;
+            }
+
+            .mobile-search-overlay #mobile-search-history.show { display: block; }
+
+            /* Bottom sheet */
+            #sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 44vh;
+                max-height: 90vh;
+                border-left: none;
+                border-top: none;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+                z-index: 40;
+                transition: height 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+                will-change: height;
+            }
+
+            #sidebar.sheet-peek {
+                height: 110px;
+            }
+
+            #sidebar.sheet-half {
+                height: 44vh;
+            }
+
+            #sidebar.sheet-full {
+                height: 90vh;
+            }
+
+            #sidebar.dragging {
+                transition: none;
+            }
+
+            /* Hide desktop header on mobile */
+            #sidebar #sidebar-header {
+                display: none;
+            }
+
+            /* Drag handle */
+            .sidebar-drag-handle {
+                display: block;
+                width: 36px;
+                height: 5px;
+                background: #c4c4c4;
+                border-radius: 3px;
+                margin: 10px auto 6px;
+                cursor: grab;
+                flex-shrink: 0;
+            }
+
+            body.dark .sidebar-drag-handle { background: #555; }
+
+            /* Category chips on mobile */
+            .category-chips {
+                padding: 4px 12px 8px;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            .cat-chip {
+                padding: 8px 14px;
+                font-size: 0.82rem;
+            }
+
+            /* Controls row on mobile */
+            .controls-row {
+                flex-shrink: 0;
+                flex-direction: column;
+            }
+
+            .sort-control {
+                border-right: none;
+                border-top: 1px solid var(--border);
+                padding: 8px 14px;
+            }
+
+            .radius-control {
+                padding: 8px 14px;
+            }
+
+            /* Results on mobile */
+            #results-container {
+                padding: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .result-card {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .result-photo {
+                width: 64px;
+                height: 64px;
+            }
+
+            .result-name { font-size: 0.92rem; }
+
+            .result-actions {
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .action-btn {
+                padding: 8px 12px;
+                font-size: 0.78rem;
+                border-radius: 8px;
+            }
+
+            .fav-btn {
+                font-size: 1.3rem;
+                padding: 4px;
+                min-width: 32px;
+                min-height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Detail panel full screen on mobile */
+            #detail-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 100;
+                border-radius: 0;
+                padding-top: env(safe-area-inset-top);
+            }
+
+            .detail-header {
+                padding: 14px 16px;
+                position: sticky;
+                top: 0;
+                background: var(--card-bg);
+                z-index: 2;
+            }
+
+            .detail-back {
+                font-size: 1.5rem;
+                min-width: 40px;
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .detail-content { padding: 12px 16px 80px; }
+
+            .detail-photo-large { height: 220px; }
+
+            .detail-actions .action-btn {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+
+            .travel-mode-btn {
+                padding: 10px;
+                font-size: 0.95rem;
+            }
+
+            .streetview-container { height: 200px; }
+
+            /* Route info */
+            #route-info {
+                bottom: 60px;
+                font-size: 0.82rem;
+                padding: 10px 14px;
+            }
+
+            /* Loading */
+            #loading { z-index: 35; }
+
+            /* Toast */
+            .toast {
+                bottom: 70px;
+            }
+
+            /* Share menu */
+            .share-menu {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: auto;
+                border-radius: 16px 16px 0 0;
+                padding: 8px 0;
+                padding-bottom: env(safe-area-inset-bottom);
+                z-index: 200;
+                margin-bottom: 0;
+            }
+
+            .share-option {
+                padding: 16px 20px;
+                font-size: 0.9rem;
+            }
+
+            /* Search history */
+            #search-history { display: none !important; }
+
+            .hours-list { font-size: 0.85rem; line-height: 2; }
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="sidebar-drag-handle" id="drag-handle"></div>
+        <div id="sidebar-header">
+            <div class="header-row">
+                <h1>&#128269; חיפוש עסקים חכם</h1>
+                <button id="dark-mode-btn" title="מצב כהה/בהיר">&#9790;</button>
+            </div>
+            <div class="search-container">
+                <input type="text" id="search-input"
+                    placeholder='חפש בשפה חופשית, למשל: "מסעדות איטלקיות פתוחות עכשיו"'>
+                <button id="search-btn" title="חפש">&#8592;</button>
+                <div id="search-history"></div>
+            </div>
+        </div>
+
+        <div class="category-chips" id="category-chips">
+            <button class="cat-chip" data-query="מסעדות">&#127869; מסעדות</button>
+            <button class="cat-chip" data-query="בתי קפה">&#9749; קפה</button>
+            <button class="cat-chip" data-query="סופרמרקט">&#128722; סופר</button>
+            <button class="cat-chip" data-query="בתי מרקחת">&#128138; מרקחת</button>
+            <button class="cat-chip" data-query="בנקים">&#127974; בנקים</button>
+            <button class="cat-chip" data-query="דלק">&#9981; דלק</button>
+            <button class="cat-chip" data-query="חניון">&#127359; חניון</button>
+            <button class="cat-chip" data-query="חדר כושר">&#127947; כושר</button>
+        </div>
+
+        <div class="controls-row">
+            <div class="radius-control">
+                <div class="radius-label">
+                    <span>רדיוס חיפוש</span>
+                    <span class="radius-value" id="radius-display">2 ק"מ</span>
+                </div>
+                <input type="range" id="radius-slider" min="200" max="3800" step="200" value="2000">
+            </div>
+            <div class="sort-control">
+                <label for="sort-select">מיון:</label>
+                <select id="sort-select">
+                    <option value="distance">מרחק</option>
+                    <option value="rating">דירוג</option>
+                    <option value="reviews">ביקורות</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="results-container" style="position:relative;">
+            <div id="status-msg">
+                הזן חיפוש בשפה חופשית כדי למצוא עסקים בסביבתך.<br>
+                ניתן לגרור את הסמן על המפה כדי לשנות את מרכז החיפוש.
+            </div>
+
+            <div id="detail-panel">
+                <div class="detail-header">
+                    <button class="detail-back" id="detail-back-btn">&#8594;</button>
+                    <span class="detail-title" id="detail-title"></span>
+                    <button class="fav-btn" id="detail-fav-btn">&#9734;</button>
+                </div>
+                <div class="detail-content" id="detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile floating search bar -->
+    <div class="mobile-search-overlay" id="mobile-search-overlay">
+        <div class="search-bar-mobile">
+            <button class="mobile-dark-btn" id="mobile-dark-btn" title="מצב כהה/בהיר">&#9790;</button>
+            <input type="text" id="mobile-search-input" placeholder='חפש: "מסעדות", "קפה", "סופר"...'>
+            <button class="mobile-search-btn" id="mobile-search-btn">&#8592;</button>
+        </div>
+        <div id="mobile-search-history"></div>
+    </div>
+
+    <div id="map-container">
+        <div id="map"></div>
+        <div class="map-type-toggle">
+            <button class="map-type-btn active" data-type="roadmap">מפה</button>
+            <button class="map-type-btn" data-type="satellite">לוויין</button>
+        </div>
+        <div id="loading"><div class="spinner"></div></div>
+        <div id="route-info">
+            <button class="close-route" id="close-route-btn">&times;</button>
+            <span id="route-text"></span>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+
+        const TEL_AVIV = { lat: 32.0853, lng: 34.7818 };
+
+        const state = {
+            map: null,
+            center: { ...TEL_AVIV },
+            radius: 2000,
+            centerMarker: null,
+            radiusCircle: null,
+            resultMarkers: [],
+            results: [],
+            directionsRenderer: null,
+            userLocation: null,
+            activeCard: null,
+            markerClusterer: null,
+            currentSort: 'distance',
+            travelMode: 'DRIVING',
+            favorites: JSON.parse(localStorage.getItem('biz_favorites') || '[]'),
+            searchHistory: JSON.parse(localStorage.getItem('biz_history') || '[]')
+        };
+
+        // ── Toast ──
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ── Dark mode ──
+        const darkBtn = document.getElementById('dark-mode-btn');
+        if (localStorage.getItem('biz_dark') === 'true') {
+            document.body.classList.add('dark');
+            darkBtn.textContent = '\u2600';
+        }
+
+        darkBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            darkBtn.textContent = isDark ? '\u2600' : '\u263E';
+            localStorage.setItem('biz_dark', isDark);
+        });
+
+        // ── Favorites ──
+        function isFavorite(placeId) {
+            return state.favorites.some(f => f.id === placeId);
+        }
+
+        function toggleFavorite(place) {
+            const id = place.displayName?.text || '';
+            const idx = state.favorites.findIndex(f => f.id === id);
+            if (idx >= 0) {
+                state.favorites.splice(idx, 1);
+                showToast('הוסר מהמועדפים');
+            } else {
+                state.favorites.push({
+                    id: id,
+                    name: place.displayName?.text,
+                    address: place.formattedAddress,
+                    lat: place._loc?.lat || place.location?.latitude,
+                    lng: place._loc?.lng || place.location?.longitude
+                });
+                showToast('נוסף למועדפים');
+            }
+            localStorage.setItem('biz_favorites', JSON.stringify(state.favorites));
+            renderResults(state.results);
+        }
+
+        // ── Search history ──
+        function addToHistory(query) {
+            state.searchHistory = state.searchHistory.filter(h => h !== query);
+            state.searchHistory.unshift(query);
+            if (state.searchHistory.length > 10) state.searchHistory.pop();
+            localStorage.setItem('biz_history', JSON.stringify(state.searchHistory));
+        }
+
+        function removeFromHistory(query) {
+            state.searchHistory = state.searchHistory.filter(h => h !== query);
+            localStorage.setItem('biz_history', JSON.stringify(state.searchHistory));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const el = document.getElementById('search-history');
+            if (state.searchHistory.length === 0) {
+                el.classList.remove('show');
+                return;
+            }
+            el.innerHTML = state.searchHistory.map(h =>
+                `<div class="history-item">
+                    <span onclick="useHistory('${h.replace(/'/g, "\\'")}')">${h}</span>
+                    <button class="remove-history" onclick="event.stopPropagation(); removeFromHistory('${h.replace(/'/g, "\\'")}')">&times;</button>
+                </div>`
+            ).join('');
+            el.classList.add('show');
+        }
+
+        function useHistory(query) {
+            document.getElementById('search-input').value = query;
+            document.getElementById('search-history').classList.remove('show');
+            doSearch();
+        }
+
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value === '' && state.searchHistory.length > 0) renderHistory();
+        });
+
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value === '' && state.searchHistory.length > 0) renderHistory();
+            else document.getElementById('search-history').classList.remove('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('search-history').classList.remove('show');
+            }
+        });
+
+        // ── Category chips ──
+        document.querySelectorAll('.cat-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                searchInput.value = chip.dataset.query;
+                doSearch();
+            });
+        });
+
+        // ── Sort ──
+        const sortSelect = document.getElementById('sort-select');
+        sortSelect.addEventListener('change', () => {
+            state.currentSort = sortSelect.value;
+            if (state.results.length > 0) {
+                state.results = sortResults(state.results);
+                clearMarkers();
+                renderResults(state.results);
+                placeMarkers(state.results);
+            }
+        });
+
+        function sortResults(results) {
+            const sorted = [...results];
+            switch (state.currentSort) {
+                case 'rating':
+                    sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    break;
+                case 'reviews':
+                    sorted.sort((a, b) => (b.userRatingCount || 0) - (a.userRatingCount || 0));
+                    break;
+                default:
+                    sorted.sort((a, b) => a._dist - b._dist);
+            }
+            return sorted;
+        }
+
+        // ── Map init ──
+        function initMap() {
+            state.map = new google.maps.Map(document.getElementById('map'), {
+                center: state.center,
+                zoom: 13,
+                gestureHandling: 'greedy',
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: false
+            });
+
+            state.centerMarker = new google.maps.Marker({
+                position: state.center,
+                map: state.map,
+                draggable: true,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#4285f4',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 3
+                },
+                title: 'גרור לשינוי מרכז החיפוש',
+                zIndex: 100
+            });
+
+            state.centerMarker.addListener('dragend', (e) => {
+                state.center = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                updateCircle();
+            });
+
+            state.radiusCircle = new google.maps.Circle({
+                map: state.map,
+                center: state.center,
+                radius: state.radius,
+                fillColor: '#4285f4',
+                fillOpacity: 0.08,
+                strokeColor: '#4285f4',
+                strokeOpacity: 0.4,
+                strokeWeight: 2,
+                clickable: false
+            });
+
+            state.directionsRenderer = new google.maps.DirectionsRenderer({
+                map: state.map,
+                suppressMarkers: false,
+                polylineOptions: { strokeColor: '#4285f4', strokeWeight: 5, strokeOpacity: 0.8 }
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        state.center = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        state.userLocation = { ...state.center };
+                        state.map.setCenter(state.center);
+                        state.centerMarker.setPosition(state.center);
+                        updateCircle();
+                    },
+                    () => { console.log('Geolocation denied, using Tel Aviv default'); }
+                );
+            }
+
+            // Load MarkerClusterer
+            const mcScript = document.createElement('script');
+            mcScript.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+            mcScript.onload = () => { console.log('MarkerClusterer loaded'); };
+            document.head.appendChild(mcScript);
+        }
+
+        function updateCircle() {
+            state.radiusCircle.setCenter(state.center);
+            state.radiusCircle.setRadius(state.radius);
+        }
+
+        // ── Radius slider ──
+        const radiusSlider = document.getElementById('radius-slider');
+        const radiusDisplay = document.getElementById('radius-display');
+
+        radiusSlider.addEventListener('input', () => {
+            state.radius = parseInt(radiusSlider.value);
+            radiusDisplay.textContent = state.radius >= 1000
+                ? (state.radius / 1000).toFixed(state.radius % 1000 === 0 ? 0 : 1) + ' ק"מ'
+                : state.radius + ' מ\'';
+            updateCircle();
+        });
+
+        // ── Gemini: parse natural language query ──
+        async function parseQuery(query) {
+            const prompt = `אתה מנתח שאילתות חיפוש עסקים בעברית. קבל את השאילתה הבאה וחלץ ממנה מידע מובנה.
+
+שאילתה: "${query}"
+
+החזר JSON בלבד בפורמט הבא (ללא טקסט נוסף):
+{
+  "textQuery": "מונח החיפוש המרכזי באנגלית או בעברית - הסוג העיקרי של העסק",
+  "openNow": true/false (האם המשתמש מחפש מקומות פתוחים עכשיו),
+  "minRating": null או מספר (אם צוין דירוג מינימלי),
+  "keywords": ["מילות מפתח נוספות"]
+}
+
+דוגמאות:
+- "מסעדות איטלקיות פתוחות עכשיו" -> {"textQuery": "מסעדות איטלקיות", "openNow": true, "minRating": null, "keywords": []}
+- "חנויות נעליים עם דירוג מעל 4" -> {"textQuery": "חנויות נעליים", "openNow": false, "minRating": 4, "keywords": []}
+- "בתי קפה עם wifi שפתוחים בלילה" -> {"textQuery": "בתי קפה", "openNow": true, "minRating": null, "keywords": ["wifi"]}`;
+
+            try {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    }
+                );
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) return JSON.parse(jsonMatch[0]);
+            } catch (err) {
+                console.error('Gemini parse error:', err);
+            }
+            return { textQuery: query, openNow: false, minRating: null, keywords: [] };
+        }
+
+        // ── Places search ──
+        async function searchPlaces(parsedQuery) {
+            const fieldMask = [
+                'places.displayName',
+                'places.formattedAddress',
+                'places.location',
+                'places.rating',
+                'places.userRatingCount',
+                'places.photos',
+                'places.regularOpeningHours',
+                'places.currentOpeningHours',
+                'places.priceLevel',
+                'places.nationalPhoneNumber',
+                'places.websiteUri',
+                'places.googleMapsUri'
+            ].join(',');
+
+            const body = {
+                textQuery: parsedQuery.textQuery,
+                maxResultCount: 20,
+                languageCode: 'he',
+                locationBias: {
+                    circle: {
+                        center: { latitude: state.center.lat, longitude: state.center.lng },
+                        radius: Math.min(state.radius * 1.5, 50000)
+                    }
+                }
+            };
+
+            if (parsedQuery.openNow) body.openNow = true;
+
+            const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+                    'X-Goog-FieldMask': fieldMask
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) throw new Error(`Places API error: ${res.status}`);
+            const data = await res.json();
+            return data.places || [];
+        }
+
+        // ── Distance (Haversine) ──
+        function haversine(p1, p2) {
+            const R = 6371000;
+            const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+            const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 +
+                      Math.cos(p1.lat * Math.PI/180) * Math.cos(p2.lat * Math.PI/180) *
+                      Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // ── Filter & sort results ──
+        function filterResults(places, parsedQuery) {
+            const filtered = places
+                .map(p => {
+                    const loc = { lat: p.location.latitude, lng: p.location.longitude };
+                    const dist = haversine(state.center, loc);
+                    return { ...p, _loc: loc, _dist: dist };
+                })
+                .filter(p => p._dist <= state.radius)
+                .filter(p => !parsedQuery.minRating || (p.rating && p.rating >= parsedQuery.minRating));
+            return sortResults(filtered);
+        }
+
+        // ── Clear markers ──
+        function clearMarkers() {
+            state.resultMarkers.forEach(m => m.setMap(null));
+            state.resultMarkers = [];
+            if (state.markerClusterer) {
+                state.markerClusterer.clearMarkers();
+                state.markerClusterer = null;
+            }
+        }
+
+        // ── Clear results ──
+        function clearResults() {
+            clearMarkers();
+            state.results = [];
+            state.directionsRenderer.setDirections({ routes: [] });
+            document.getElementById('route-info').style.display = 'none';
+        }
+
+        // ── Render results ──
+        function renderResults(results) {
+            const container = document.getElementById('results-container');
+            const detailPanel = document.getElementById('detail-panel');
+
+            if (results.length === 0) {
+                container.innerHTML = '<div id="status-msg">לא נמצאו תוצאות ברדיוס שנבחר. נסה להגדיל את הרדיוס או לשנות את החיפוש.</div>' + detailPanel.outerHTML;
+                return;
+            }
+
+            let html = results.map((place, i) => {
+                const name = place.displayName?.text || 'ללא שם';
+                const address = place.formattedAddress || '';
+                const rating = place.rating ? place.rating.toFixed(1) : null;
+                const ratingCount = place.userRatingCount || 0;
+                const distKm = (place._dist / 1000).toFixed(1);
+                const favActive = isFavorite(name) ? 'active' : '';
+
+                let photoUrl = '';
+                if (place.photos && place.photos.length > 0) {
+                    photoUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=200&maxWidthPx=200&key=${GOOGLE_MAPS_API_KEY}`;
+                }
+
+                const isOpen = place.currentOpeningHours?.openNow ?? place.regularOpeningHours?.openNow;
+                let openLabel = '';
+                if (isOpen === true) openLabel = '<span class="open-status open">פתוח</span>';
+                else if (isOpen === false) openLabel = '<span class="open-status closed">סגור</span>';
+
+                return `
+                <div class="result-card" data-index="${i}" onclick="selectResult(${i})">
+                    ${photoUrl ? `<img class="result-photo" src="${photoUrl}" alt="${name}" loading="lazy">` : '<div class="result-photo" style="display:flex;align-items:center;justify-content:center;color:#aaa;font-size:1.3rem;">&#128205;</div>'}
+                    <div class="result-info">
+                        <div class="result-name-row">
+                            <div class="result-name">${name}</div>
+                            <button class="fav-btn ${favActive}" onclick="event.stopPropagation(); toggleFavorite(state.results[${i}])" title="מועדפים">${favActive ? '&#9733;' : '&#9734;'}</button>
+                        </div>
+                        <div class="result-address">${address}</div>
+                        <div class="result-meta">
+                            ${rating ? `<span class="rating">&#9733; ${rating} <span class="rating-count">(${ratingCount})</span></span>` : ''}
+                            ${openLabel}
+                            <span style="color:var(--text-secondary)">${distKm} ק"מ</span>
+                        </div>
+                        <div class="result-actions">
+                            <button class="action-btn primary" onclick="event.stopPropagation(); showDirections(${i})">&#128663; ניווט</button>
+                            <button class="action-btn" onclick="event.stopPropagation(); openDetail(${i})">&#128196; פרטים</button>
+                            <button class="action-btn" onclick="event.stopPropagation(); sharePlace(${i}, event)">&#128279; שתף</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Keep the detail panel in the DOM
+            const existingDetail = detailPanel.outerHTML;
+            container.innerHTML = html + existingDetail;
+        }
+
+        // ── Detail panel ──
+        function openDetail(index) {
+            const place = state.results[index];
+            if (!place) return;
+
+            const panel = document.getElementById('detail-panel');
+            const title = document.getElementById('detail-title');
+            const content = document.getElementById('detail-content');
+            const favBtn = document.getElementById('detail-fav-btn');
+
+            const name = place.displayName?.text || 'ללא שם';
+            title.textContent = name;
+
+            const favActive = isFavorite(name);
+            favBtn.innerHTML = favActive ? '&#9733;' : '&#9734;';
+            favBtn.className = 'fav-btn' + (favActive ? ' active' : '');
+            favBtn.onclick = () => {
+                toggleFavorite(place);
+                const nowFav = isFavorite(name);
+                favBtn.innerHTML = nowFav ? '&#9733;' : '&#9734;';
+                favBtn.className = 'fav-btn' + (nowFav ? ' active' : '');
+            };
+
+            let photoUrl = '';
+            if (place.photos && place.photos.length > 0) {
+                photoUrl = `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=600&maxWidthPx=600&key=${GOOGLE_MAPS_API_KEY}`;
+            }
+
+            const phone = place.nationalPhoneNumber || '';
+            const website = place.websiteUri || '';
+            const mapsUrl = place.googleMapsUri || '';
+            const address = place.formattedAddress || '';
+            const rating = place.rating ? place.rating.toFixed(1) : null;
+            const ratingCount = place.userRatingCount || 0;
+            const distKm = (place._dist / 1000).toFixed(1);
+
+            const isOpen = place.currentOpeningHours?.openNow ?? place.regularOpeningHours?.openNow;
+            let openLabel = '';
+            if (isOpen === true) openLabel = '<span class="open-status open">פתוח עכשיו</span>';
+            else if (isOpen === false) openLabel = '<span class="open-status closed">סגור</span>';
+
+            // Opening hours
+            let hoursHtml = '';
+            const periods = place.currentOpeningHours?.weekdayDescriptions || place.regularOpeningHours?.weekdayDescriptions;
+            if (periods && periods.length > 0) {
+                const today = new Date().getDay();
+                const dayMap = [6, 0, 1, 2, 3, 4, 5]; // JS Sunday=0 -> Hebrew array
+                const todayIdx = dayMap[today];
+                hoursHtml = '<div class="hours-list">' + periods.map((p, i) =>
+                    `<div class="${i === todayIdx ? 'today' : ''}">${p}</div>`
+                ).join('') + '</div>';
+            }
+
+            content.innerHTML = `
+                ${photoUrl ? `<img class="detail-photo-large" src="${photoUrl}" alt="${name}">` : ''}
+
+                <div class="detail-section">
+                    ${rating ? `<div class="detail-row"><span class="icon">&#9733;</span> <span class="rating" style="font-size:1rem">${rating} <span class="rating-count">(${ratingCount} ביקורות)</span></span></div>` : ''}
+                    ${openLabel ? `<div class="detail-row"><span class="icon">&#128340;</span> ${openLabel}</div>` : ''}
+                    <div class="detail-row"><span class="icon">&#128205;</span> ${address} <span style="color:var(--text-secondary);font-size:0.8rem">(${distKm} ק"מ)</span></div>
+                    ${phone ? `<div class="detail-row"><span class="icon">&#128222;</span> <a href="tel:${phone}" style="color:var(--primary);text-decoration:none">${phone}</a></div>` : ''}
+                    ${website ? `<div class="detail-row"><span class="icon">&#127760;</span> <a href="${website}" target="_blank" style="color:var(--primary);text-decoration:none">אתר האינטרנט</a></div>` : ''}
+                </div>
+
+                ${hoursHtml ? `<div class="detail-section"><h3>שעות פתיחה</h3>${hoursHtml}</div>` : ''}
+
+                <div class="detail-section">
+                    <h3>ניווט</h3>
+                    <div class="travel-modes">
+                        <button class="travel-mode-btn ${state.travelMode === 'DRIVING' ? 'active' : ''}" onclick="setTravelMode('DRIVING', ${index})">&#128663; נהיגה</button>
+                        <button class="travel-mode-btn ${state.travelMode === 'WALKING' ? 'active' : ''}" onclick="setTravelMode('WALKING', ${index})">&#128694; הליכה</button>
+                        <button class="travel-mode-btn ${state.travelMode === 'TRANSIT' ? 'active' : ''}" onclick="setTravelMode('TRANSIT', ${index})">&#128651; תח״צ</button>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="action-btn primary" onclick="showDirections(${index})">&#128663; הוראות הגעה</button>
+                        ${mapsUrl ? `<button class="action-btn" onclick="window.open('${mapsUrl}', '_blank')">&#128506; Google Maps</button>` : ''}
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Street View</h3>
+                    <div class="streetview-container" id="streetview-${index}"></div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>שיתוף</h3>
+                    <div class="detail-actions">
+                        <button class="action-btn" onclick="shareWhatsApp(${index})">&#128172; WhatsApp</button>
+                        <button class="action-btn" onclick="copyLink(${index})">&#128203; העתק קישור</button>
+                    </div>
+                </div>
+            `;
+
+            panel.classList.add('show');
+
+            // On mobile, expand sheet to full when detail opens
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.remove('dragging');
+                sidebar.style.height = (window.innerHeight * 0.9) + 'px';
+            }
+
+            // Initialize Street View
+            setTimeout(() => {
+                const svContainer = document.getElementById(`streetview-${index}`);
+                if (svContainer) {
+                    new google.maps.StreetViewPanorama(svContainer, {
+                        position: place._loc,
+                        pov: { heading: 0, pitch: 0 },
+                        zoom: 1,
+                        addressControl: false,
+                        showRoadLabels: false,
+                        motionTracking: false
+                    });
+                }
+            }, 100);
+        }
+
+        function setTravelMode(mode, index) {
+            state.travelMode = mode;
+            document.querySelectorAll('.travel-mode-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        document.getElementById('detail-back-btn').addEventListener('click', () => {
+            document.getElementById('detail-panel').classList.remove('show');
+            // On mobile, go back to half sheet
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.remove('dragging');
+                sidebar.style.height = (window.innerHeight * 0.44) + 'px';
+            }
+        });
+
+        // ── Share functions ──
+        function sharePlace(index, evt) {
+            const place = state.results[index];
+            if (!place) return;
+            const name = place.displayName?.text || '';
+            const url = place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${place._loc.lat},${place._loc.lng}`;
+
+            // Simple toggle share menu
+            const existing = document.querySelector('.share-menu.show');
+            if (existing) { existing.remove(); return; }
+
+            const menu = document.createElement('div');
+            menu.className = 'share-menu show';
+            menu.innerHTML = `
+                <button class="share-option" onclick="shareWhatsApp(${index}); this.parentElement.remove()">&#128172; WhatsApp</button>
+                <button class="share-option" onclick="copyLink(${index}); this.parentElement.remove()">&#128203; העתק קישור</button>
+            `;
+
+            const btn = evt.target.closest('.action-btn');
+            btn.style.position = 'relative';
+            btn.appendChild(menu);
+
+            setTimeout(() => {
+                document.addEventListener('click', function handler(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', handler);
+                    }
+                });
+            }, 10);
+        }
+
+        function shareWhatsApp(index) {
+            const place = state.results[index];
+            if (!place) return;
+            const name = place.displayName?.text || '';
+            const url = place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${place._loc.lat},${place._loc.lng}`;
+            const text = encodeURIComponent(`${name}\n${place.formattedAddress || ''}\n${url}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+
+        function copyLink(index) {
+            const place = state.results[index];
+            if (!place) return;
+            const url = place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${place._loc.lat},${place._loc.lng}`;
+            navigator.clipboard.writeText(url).then(() => showToast('הקישור הועתק'));
+        }
+
+        // ── Place markers on map ──
+        function placeMarkers(results) {
+            const markers = [];
+            results.forEach((place, i) => {
+                const marker = new google.maps.Marker({
+                    position: place._loc,
+                    map: state.map,
+                    label: { text: String(i + 1), color: '#fff', fontWeight: '600', fontSize: '12px' },
+                    icon: {
+                        path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z',
+                        fillColor: '#ea4335',
+                        fillOpacity: 1,
+                        strokeColor: '#b31412',
+                        strokeWeight: 1,
+                        scale: 1.8,
+                        anchor: new google.maps.Point(12, 22),
+                        labelOrigin: new google.maps.Point(12, 10)
+                    },
+                    title: place.displayName?.text || '',
+                    zIndex: 50
+                });
+                marker.addListener('click', () => selectResult(i));
+                state.resultMarkers.push(marker);
+                markers.push(marker);
+            });
+
+            // Apply clustering if available
+            if (window.markerClusterer && markers.length > 5) {
+                try {
+                    state.markerClusterer = new markerClusterer.MarkerClusterer({
+                        map: state.map,
+                        markers: markers
+                    });
+                } catch (e) { console.log('Clustering not available'); }
+            }
+        }
+
+        // ── Select a result ──
+        function selectResult(index) {
+            const place = state.results[index];
+            if (!place) return;
+
+            document.querySelectorAll('.result-card').forEach(c => c.classList.remove('active'));
+            const card = document.querySelector(`.result-card[data-index="${index}"]`);
+            if (card) {
+                card.classList.add('active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            state.map.panTo(place._loc);
+            state.map.setZoom(16);
+
+            const marker = state.resultMarkers[index];
+            if (marker) {
+                marker.setAnimation(google.maps.Animation.BOUNCE);
+                setTimeout(() => marker.setAnimation(null), 1500);
+            }
+        }
+
+        // ── Directions ──
+        function showDirections(index) {
+            const place = state.results[index];
+            if (!place) return;
+
+            const origin = state.userLocation || state.center;
+            const directionsService = new google.maps.DirectionsService();
+
+            directionsService.route(
+                {
+                    origin: new google.maps.LatLng(origin.lat, origin.lng),
+                    destination: new google.maps.LatLng(place._loc.lat, place._loc.lng),
+                    travelMode: google.maps.TravelMode[state.travelMode]
+                },
+                (result, status) => {
+                    if (status === 'OK') {
+                        state.directionsRenderer.setDirections(result);
+                        const leg = result.routes[0].legs[0];
+                        const modeLabel = { DRIVING: '&#128663;', WALKING: '&#128694;', TRANSIT: '&#128651;' }[state.travelMode];
+                        document.getElementById('route-text').innerHTML =
+                            `${modeLabel} ${place.displayName?.text || ''} — ${leg.duration.text} (${leg.distance.text})`;
+                        document.getElementById('route-info').style.display = 'block';
+                        // On mobile, collapse to peek so route is visible
+                        if (window.innerWidth <= 768) {
+                            const sidebar = document.getElementById('sidebar');
+                            sidebar.classList.remove('dragging');
+                            sidebar.style.height = '110px';
+                            document.getElementById('detail-panel').classList.remove('show');
+                        }
+                    } else {
+                        showToast('לא ניתן לחשב מסלול: ' + status);
+                    }
+                }
+            );
+        }
+
+        // Close route
+        document.getElementById('close-route-btn').addEventListener('click', () => {
+            state.directionsRenderer.setDirections({ routes: [] });
+            document.getElementById('route-info').style.display = 'none';
+        });
+
+        // ── Map type toggle ──
+        document.querySelectorAll('.map-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.map-type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.map.setMapTypeId(btn.dataset.type);
+            });
+        });
+
+        // ── Main search flow ──
+        async function doSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            // Hide detail panel
+            document.getElementById('detail-panel').classList.remove('show');
+            document.getElementById('search-history').classList.remove('show');
+
+            addToHistory(query);
+
+            const searchBtn = document.getElementById('search-btn');
+            const loading = document.getElementById('loading');
+
+            searchBtn.disabled = true;
+            loading.classList.add('show');
+            clearResults();
+            document.getElementById('results-container').innerHTML =
+                '<div id="status-msg">&#128270; מחפש...</div><div id="detail-panel"></div>';
+
+            try {
+                const parsed = await parseQuery(query);
+                console.log('Parsed query:', parsed);
+
+                const places = await searchPlaces(parsed);
+                console.log('Raw results:', places.length);
+
+                const filtered = filterResults(places, parsed);
+                console.log('Filtered results:', filtered.length);
+
+                state.results = filtered;
+
+                renderResults(filtered);
+                placeMarkers(filtered);
+
+                if (filtered.length > 0) {
+                    const bounds = new google.maps.LatLngBounds();
+                    bounds.extend(state.center);
+                    filtered.forEach(p => bounds.extend(p._loc));
+                    state.map.fitBounds(bounds, 60);
+                }
+
+            } catch (err) {
+                console.error('Search error:', err);
+                document.getElementById('results-container').innerHTML =
+                    `<div id="status-msg">&#9888; שגיאה בחיפוש: ${err.message}</div><div id="detail-panel"></div>`;
+            } finally {
+                searchBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        }
+
+        // ── Event listeners ──
+        document.getElementById('search-btn').addEventListener('click', doSearch);
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // ── Mobile bottom sheet with snapping ──
+        (function initMobileSheet() {
+            const isMobile = () => window.innerWidth <= 768;
+            const handle = document.getElementById('drag-handle');
+            const sidebar = document.getElementById('sidebar');
+            let startY, startH, isDragging = false;
+
+            const SNAP_PEEK = 110;
+            const snapHalf = () => window.innerHeight * 0.44;
+            const snapFull = () => window.innerHeight * 0.9;
+
+            function snapTo(target) {
+                sidebar.classList.remove('dragging');
+                sidebar.style.height = target + 'px';
+            }
+
+            function closestSnap(h) {
+                const points = [SNAP_PEEK, snapHalf(), snapFull()];
+                let best = points[0], bestDist = Math.abs(h - best);
+                for (const p of points) {
+                    const d = Math.abs(h - p);
+                    if (d < bestDist) { best = p; bestDist = d; }
+                }
+                return best;
+            }
+
+            // Touch events on handle
+            handle.addEventListener('touchstart', (e) => {
+                if (!isMobile()) return;
+                startY = e.touches[0].clientY;
+                startH = sidebar.offsetHeight;
+                isDragging = true;
+                sidebar.classList.add('dragging');
+                e.preventDefault();
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const dy = startY - e.touches[0].clientY;
+                const newH = Math.max(SNAP_PEEK, Math.min(snapFull(), startH + dy));
+                sidebar.style.height = newH + 'px';
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                const currentH = sidebar.offsetHeight;
+                const velocity = currentH - startH;
+
+                // If fast swipe, snap to direction
+                if (Math.abs(velocity) > 80) {
+                    if (velocity > 0) {
+                        // Swiped up
+                        snapTo(currentH > snapHalf() ? snapFull() : snapHalf());
+                    } else {
+                        // Swiped down
+                        snapTo(currentH < snapHalf() ? SNAP_PEEK : snapHalf());
+                    }
+                } else {
+                    snapTo(closestSnap(currentH));
+                }
+            });
+
+            // Set initial state on mobile
+            if (isMobile()) {
+                sidebar.style.height = snapHalf() + 'px';
+            }
+
+            // ── Mobile search wiring ──
+            const mobileInput = document.getElementById('mobile-search-input');
+            const mobileBtn = document.getElementById('mobile-search-btn');
+            const mobileDarkBtn = document.getElementById('mobile-dark-btn');
+            const mobileHistory = document.getElementById('mobile-search-history');
+
+            if (mobileBtn) {
+                mobileBtn.addEventListener('click', () => {
+                    if (!isMobile()) return;
+                    document.getElementById('search-input').value = mobileInput.value;
+                    doSearch();
+                    snapTo(snapHalf());
+                });
+            }
+
+            if (mobileInput) {
+                mobileInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && isMobile()) {
+                        document.getElementById('search-input').value = mobileInput.value;
+                        doSearch();
+                        mobileInput.blur();
+                        snapTo(snapHalf());
+                    }
+                });
+
+                mobileInput.addEventListener('focus', () => {
+                    if (isMobile() && mobileInput.value === '' && state.searchHistory.length > 0) {
+                        renderMobileHistory();
+                    }
+                });
+
+                mobileInput.addEventListener('input', () => {
+                    if (isMobile() && mobileInput.value === '' && state.searchHistory.length > 0) {
+                        renderMobileHistory();
+                    } else {
+                        mobileHistory.classList.remove('show');
+                    }
+                });
+            }
+
+            if (mobileDarkBtn) {
+                // Sync with main dark mode
+                if (localStorage.getItem('biz_dark') === 'true') {
+                    mobileDarkBtn.textContent = '\u2600';
+                }
+                mobileDarkBtn.addEventListener('click', () => {
+                    document.body.classList.toggle('dark');
+                    const isDark = document.body.classList.contains('dark');
+                    mobileDarkBtn.textContent = isDark ? '\u2600' : '\u263E';
+                    darkBtn.textContent = isDark ? '\u2600' : '\u263E';
+                    localStorage.setItem('biz_dark', isDark);
+                });
+            }
+
+            function renderMobileHistory() {
+                if (state.searchHistory.length === 0) { mobileHistory.classList.remove('show'); return; }
+                mobileHistory.innerHTML = state.searchHistory.map(h =>
+                    `<div class="history-item" onclick="useMobileHistory('${h.replace(/'/g, "\\'")}')">
+                        <span>${h}</span>
+                        <button class="remove-history" onclick="event.stopPropagation(); removeFromHistory('${h.replace(/'/g, "\\'")}'); renderMobileHistoryRefresh()">&times;</button>
+                    </div>`
+                ).join('');
+                mobileHistory.classList.add('show');
+            }
+
+            window.useMobileHistory = function(query) {
+                mobileInput.value = query;
+                mobileHistory.classList.remove('show');
+                document.getElementById('search-input').value = query;
+                doSearch();
+                snapTo(snapHalf());
+            };
+
+            window.renderMobileHistoryRefresh = function() {
+                renderMobileHistory();
+            };
+
+            // Close mobile history on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.mobile-search-overlay')) {
+                    mobileHistory.classList.remove('show');
+                }
+            });
+
+            // Category chips on mobile -> expand sheet to half
+            document.querySelectorAll('.cat-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    if (isMobile()) {
+                        mobileInput.value = chip.dataset.query;
+                        snapTo(snapHalf());
+                    }
+                });
+            });
+
+            // On mobile selectResult -> collapse sheet to peek
+            const origSelectResult = window.selectResult;
+            window.selectResult = function(index) {
+                origSelectResult(index);
+                if (isMobile()) snapTo(SNAP_PEEK);
+            };
+
+            // On resize, re-set mobile state
+            window.addEventListener('resize', () => {
+                if (isMobile()) {
+                    if (sidebar.offsetHeight < SNAP_PEEK) snapTo(snapHalf());
+                } else {
+                    sidebar.style.height = '';
+                }
+            });
+        })();
+
+        // ── Load Google Maps ──
+        window.initMap = initMap;
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initMap&language=he`;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
