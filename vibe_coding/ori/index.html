@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,6 +55,32 @@
             transition: background 0.3s, border-color 0.3s;
         }
 
+        [dir="ltr"] #sidebar {
+            border-left: none;
+            border-right: 1px solid var(--border);
+            box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+        }
+
+        [dir="ltr"] #search-btn {
+            left: auto !important;
+            right: 5px;
+        }
+
+        [dir="ltr"] .sort-control {
+            border-right: none;
+            border-left: 1px solid var(--border);
+        }
+
+        [dir="ltr"] .travel-mode-btn:not(:last-child) {
+            border-left: none;
+            border-right: 1px solid var(--border);
+        }
+
+        [dir="ltr"] .map-type-btn:not(:last-child) {
+            border-left: none;
+            border-right: 1px solid var(--border);
+        }
+
         #sidebar-header {
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
@@ -65,6 +91,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
+            gap: 8px;
         }
 
         #sidebar-header h1 {
@@ -89,6 +116,71 @@
         }
 
         #dark-mode-btn:hover { background: var(--bg); }
+
+        /* Language switcher */
+        .lang-switcher {
+            position: relative;
+        }
+
+        #lang-btn, .mobile-lang-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-family: inherit;
+            text-transform: uppercase;
+        }
+
+        #lang-btn:hover, .mobile-lang-btn:hover { background: var(--bg); }
+
+        .lang-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 50;
+            margin-top: 4px;
+            min-width: 130px;
+            overflow: hidden;
+        }
+
+        [dir="rtl"] .lang-menu {
+            left: auto;
+            right: 0;
+        }
+
+        .lang-menu.show { display: block; }
+
+        .lang-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            font-family: inherit;
+            color: var(--text);
+        }
+
+        .lang-option:hover { background: var(--bg); }
+        .lang-option.active { font-weight: 700; color: var(--primary); }
 
         /* Search */
         .search-container {
@@ -815,6 +907,13 @@
                 justify-content: center;
             }
 
+            .mobile-search-overlay .mobile-lang-btn {
+                width: 38px;
+                height: 38px;
+                border-radius: 10px;
+                font-size: 0.72rem;
+            }
+
             /* Mobile search history */
             .mobile-search-overlay #mobile-search-history {
                 display: none;
@@ -1065,7 +1164,15 @@
         <div class="sidebar-drag-handle" id="drag-handle"></div>
         <div id="sidebar-header">
             <div class="header-row">
-                <h1>&#128269; חיפוש עסקים חכם</h1>
+                <h1 id="header-title">&#128269; חיפוש עסקים חכם</h1>
+                <div class="lang-switcher">
+                    <button id="lang-btn" title="Language">HE</button>
+                    <div class="lang-menu" id="lang-menu">
+                        <button class="lang-option" data-lang="he">🇮🇱 עברית</button>
+                        <button class="lang-option" data-lang="en">🇬🇧 English</button>
+                        <button class="lang-option" data-lang="es">🇪🇸 Español</button>
+                    </div>
+                </div>
                 <button id="dark-mode-btn" title="מצב כהה/בהיר">&#9790;</button>
             </div>
             <div class="search-container">
@@ -1102,7 +1209,7 @@
             <div class="radius-control">
                 <div class="radius-label">
                     <span>רדיוס חיפוש</span>
-                    <span class="radius-value" id="radius-display">2 ק"מ</span>
+                    <span class="radius-value" id="radius-display">2 km</span>
                 </div>
                 <input type="range" id="radius-slider" min="200" max="3800" step="200" value="2000">
             </div>
@@ -1124,7 +1231,7 @@
 
             <div id="detail-panel">
                 <div class="detail-header">
-                    <button class="detail-back" id="detail-back-btn">&#8594;</button>
+                    <button class="detail-back" id="detail-back-btn">&#8592;</button>
                     <span class="detail-title" id="detail-title"></span>
                     <button class="fav-btn" id="detail-fav-btn">&#9734;</button>
                 </div>
@@ -1136,6 +1243,7 @@
     <!-- Mobile floating search bar -->
     <div class="mobile-search-overlay" id="mobile-search-overlay">
         <div class="search-bar-mobile">
+            <button class="mobile-lang-btn" id="mobile-lang-btn" title="Language">HE</button>
             <button class="mobile-dark-btn" id="mobile-dark-btn" title="מצב כהה/בהיר">&#9790;</button>
             <input type="text" id="mobile-search-input" placeholder='חפש: "מסעדות", "קפה", "סופר"...'>
             <button class="mobile-search-btn" id="mobile-search-btn">&#8592;</button>
@@ -1173,6 +1281,346 @@
         const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
 
         const TEL_AVIV = { lat: 32.0853, lng: 34.7818 };
+
+        // ── i18n ──
+        const LANG = localStorage.getItem('biz_lang') || 'en';
+
+        const i18n = {
+            he: {
+                dir: 'rtl',
+                title: 'חיפוש עסקים חכם',
+                headerTitle: '🔍 חיפוש עסקים חכם',
+                searchPlaceholder: 'חפש בשפה חופשית, למשל: "מסעדות איטלקיות פתוחות עכשיו"',
+                searchPlaceholderMobile: 'חפש: "מסעדות", "קפה", "סופר"...',
+                searchBtn: '←',
+                darkModeTitle: 'מצב כהה/בהיר',
+                exampleLabel: '💡 דוגמאות לחיפוש בשפה חופשית...',
+                examples: [
+                    'אני מחפש בית קפה שיהיה פתוח בשעתיים הקרובות',
+                    'אני מחפש חנות שמוכרת נעלי גברים',
+                    'מסעדה עם אוכל טבעוני ודירוג גבוה',
+                    'חנות צעצועים לילדים שפתוחה עכשיו',
+                    'מקום לתקן מסך של טלפון נייד'
+                ],
+                categories: [
+                    { query: 'מסעדות', label: '🍽 מסעדות' },
+                    { query: 'בתי קפה', label: '☕ קפה' },
+                    { query: 'סופרמרקט', label: '🛒 סופר' },
+                    { query: 'בתי מרקחת', label: '💊 מרקחת' },
+                    { query: 'בנקים', label: '🏦 בנקים' },
+                    { query: 'דלק', label: '⛽ דלק' },
+                    { query: 'חניון', label: '🅿 חניון' },
+                    { query: 'חדר כושר', label: '🏋 כושר' }
+                ],
+                radiusLabel: 'רדיוס חיפוש',
+                km: 'ק"מ',
+                m: 'מ\'',
+                sortLabel: 'מיון:',
+                sortDistance: 'מרחק',
+                sortRating: 'דירוג',
+                sortReviews: 'ביקורות',
+                statusDefault: 'הזן חיפוש בשפה חופשית כדי למצוא עסקים בסביבתך.<br>ניתן לגרור את הסמן על המפה כדי לשנות את מרכז החיפוש.',
+                noResults: 'לא נמצאו תוצאות ברדיוס שנבחר. נסה להגדיל את הרדיוס או לשנות את החיפוש.',
+                searching: '🔍 מחפש...',
+                searchError: '⚠ שגיאה בחיפוש: ',
+                dragMarkerTitle: 'גרור לשינוי מרכז החיפוש',
+                noName: 'ללא שם',
+                open: 'פתוח',
+                openNow: 'פתוח עכשיו',
+                closed: 'סגור',
+                navigate: '🚗 ניווט',
+                details: '📄 פרטים',
+                share: '🔗 שתף',
+                favorites: 'מועדפים',
+                addedFav: 'נוסף למועדפים',
+                removedFav: 'הוסר מהמועדפים',
+                reviews: 'ביקורות',
+                website: 'אתר האינטרנט',
+                openingHours: 'שעות פתיחה',
+                navigation: 'ניווט',
+                driving: '🚗 נהיגה',
+                walking: '🚶 הליכה',
+                transit: '🚃 תח״צ',
+                directions: '🚗 הוראות הגעה',
+                googleMaps: '🗺 Google Maps',
+                streetView: 'Street View',
+                shareSection: 'שיתוף',
+                whatsapp: '💬 WhatsApp',
+                copyLink: '📋 העתק קישור',
+                linkCopied: 'הקישור הועתק',
+                routeError: 'לא ניתן לחשב מסלול: ',
+                mapType: 'מפה',
+                satellite: 'לוויין',
+                geminiPrompt: `אתה מנתח שאילתות חיפוש עסקים בעברית. קבל את השאילתה הבאה וחלץ ממנה מידע מובנה.
+
+שאילתה: "__QUERY__"
+
+החזר JSON בלבד בפורמט הבא (ללא טקסט נוסף):
+{
+  "textQuery": "מונח החיפוש המרכזי באנגלית או בעברית - הסוג העיקרי של העסק",
+  "openNow": true/false (האם המשתמש מחפש מקומות פתוחים עכשיו),
+  "minRating": null או מספר (אם צוין דירוג מינימלי),
+  "keywords": ["מילות מפתח נוספות"]
+}
+
+דוגמאות:
+- "מסעדות איטלקיות פתוחות עכשיו" -> {"textQuery": "מסעדות איטלקיות", "openNow": true, "minRating": null, "keywords": []}
+- "חנויות נעליים עם דירוג מעל 4" -> {"textQuery": "חנויות נעליים", "openNow": false, "minRating": 4, "keywords": []}
+- "בתי קפה עם wifi שפתוחים בלילה" -> {"textQuery": "בתי קפה", "openNow": true, "minRating": null, "keywords": ["wifi"]}`
+            },
+            en: {
+                dir: 'ltr',
+                title: 'Smart Business Search',
+                headerTitle: '🔍 Smart Business Search',
+                searchPlaceholder: 'Search freely, e.g.: "Italian restaurants open now"',
+                searchPlaceholderMobile: 'Search: "restaurants", "coffee", "supermarket"...',
+                searchBtn: '→',
+                darkModeTitle: 'Dark/Light mode',
+                exampleLabel: '💡 Free-text search examples...',
+                examples: [
+                    "I'm looking for a coffee shop open in the next two hours",
+                    "I'm looking for a store that sells men's shoes",
+                    'Restaurant with vegan food and high rating',
+                    "Toy store for kids that's open now",
+                    'A place to fix a phone screen'
+                ],
+                categories: [
+                    { query: 'restaurants', label: '🍽 Restaurants' },
+                    { query: 'coffee shops', label: '☕ Coffee' },
+                    { query: 'supermarket', label: '🛒 Supermarket' },
+                    { query: 'pharmacy', label: '💊 Pharmacy' },
+                    { query: 'banks', label: '🏦 Banks' },
+                    { query: 'gas station', label: '⛽ Gas' },
+                    { query: 'parking', label: '🅿 Parking' },
+                    { query: 'gym', label: '🏋 Gym' }
+                ],
+                radiusLabel: 'Search radius',
+                km: 'km',
+                m: 'm',
+                sortLabel: 'Sort:',
+                sortDistance: 'Distance',
+                sortRating: 'Rating',
+                sortReviews: 'Reviews',
+                statusDefault: 'Enter a free-text search to find businesses near you.<br>Drag the marker on the map to change the search center.',
+                noResults: 'No results found in the selected radius. Try increasing the radius or changing the search.',
+                searching: '🔍 Searching...',
+                searchError: '⚠ Search error: ',
+                dragMarkerTitle: 'Drag to change search center',
+                noName: 'No name',
+                open: 'Open',
+                openNow: 'Open now',
+                closed: 'Closed',
+                navigate: '🚗 Navigate',
+                details: '📄 Details',
+                share: '🔗 Share',
+                favorites: 'Favorites',
+                addedFav: 'Added to favorites',
+                removedFav: 'Removed from favorites',
+                reviews: 'reviews',
+                website: 'Website',
+                openingHours: 'Opening Hours',
+                navigation: 'Navigation',
+                driving: '🚗 Driving',
+                walking: '🚶 Walking',
+                transit: '🚃 Transit',
+                directions: '🚗 Directions',
+                googleMaps: '🗺 Google Maps',
+                streetView: 'Street View',
+                shareSection: 'Share',
+                whatsapp: '💬 WhatsApp',
+                copyLink: '📋 Copy link',
+                linkCopied: 'Link copied',
+                routeError: 'Cannot calculate route: ',
+                mapType: 'Map',
+                satellite: 'Satellite',
+                geminiPrompt: `You are a business search query analyzer in English. Parse the following query and extract structured information.
+
+Query: "__QUERY__"
+
+Return JSON only in the following format (no additional text):
+{
+  "textQuery": "the main search term - the primary type of business",
+  "openNow": true/false (is the user looking for places open now),
+  "minRating": null or number (if a minimum rating was specified),
+  "keywords": ["additional keywords"]
+}
+
+Examples:
+- "Italian restaurants open now" -> {"textQuery": "Italian restaurants", "openNow": true, "minRating": null, "keywords": []}
+- "Shoe stores with rating above 4" -> {"textQuery": "shoe stores", "openNow": false, "minRating": 4, "keywords": []}
+- "Coffee shops with wifi open at night" -> {"textQuery": "coffee shops", "openNow": true, "minRating": null, "keywords": ["wifi"]}`
+            },
+            es: {
+                dir: 'ltr',
+                title: 'Búsqueda Inteligente de Negocios',
+                headerTitle: '🔍 Búsqueda Inteligente',
+                searchPlaceholder: 'Busca libremente, ej: "restaurantes italianos abiertos ahora"',
+                searchPlaceholderMobile: 'Buscar: "restaurantes", "café", "súper"...',
+                searchBtn: '→',
+                darkModeTitle: 'Modo oscuro/claro',
+                exampleLabel: '💡 Ejemplos de búsqueda en texto libre...',
+                examples: [
+                    'Busco una cafetería que esté abierta en las próximas dos horas',
+                    'Busco una tienda que venda zapatos de hombre',
+                    'Restaurante con comida vegana y alta calificación',
+                    'Juguetería para niños que esté abierta ahora',
+                    'Un lugar para reparar la pantalla de un teléfono'
+                ],
+                categories: [
+                    { query: 'restaurantes', label: '🍽 Restaurantes' },
+                    { query: 'cafeterías', label: '☕ Café' },
+                    { query: 'supermercado', label: '🛒 Súper' },
+                    { query: 'farmacia', label: '💊 Farmacia' },
+                    { query: 'bancos', label: '🏦 Bancos' },
+                    { query: 'gasolinera', label: '⛽ Gasolina' },
+                    { query: 'estacionamiento', label: '🅿 Parking' },
+                    { query: 'gimnasio', label: '🏋 Gimnasio' }
+                ],
+                radiusLabel: 'Radio de búsqueda',
+                km: 'km',
+                m: 'm',
+                sortLabel: 'Ordenar:',
+                sortDistance: 'Distancia',
+                sortRating: 'Calificación',
+                sortReviews: 'Reseñas',
+                statusDefault: 'Ingresa una búsqueda en texto libre para encontrar negocios cerca de ti.<br>Arrastra el marcador en el mapa para cambiar el centro de búsqueda.',
+                noResults: 'No se encontraron resultados en el radio seleccionado. Intenta aumentar el radio o cambiar la búsqueda.',
+                searching: '🔍 Buscando...',
+                searchError: '⚠ Error de búsqueda: ',
+                dragMarkerTitle: 'Arrastra para cambiar el centro de búsqueda',
+                noName: 'Sin nombre',
+                open: 'Abierto',
+                openNow: 'Abierto ahora',
+                closed: 'Cerrado',
+                navigate: '🚗 Navegar',
+                details: '📄 Detalles',
+                share: '🔗 Compartir',
+                favorites: 'Favoritos',
+                addedFav: 'Añadido a favoritos',
+                removedFav: 'Eliminado de favoritos',
+                reviews: 'reseñas',
+                website: 'Sitio web',
+                openingHours: 'Horario de apertura',
+                navigation: 'Navegación',
+                driving: '🚗 Conducir',
+                walking: '🚶 Caminar',
+                transit: '🚃 Transporte',
+                directions: '🚗 Cómo llegar',
+                googleMaps: '🗺 Google Maps',
+                streetView: 'Street View',
+                shareSection: 'Compartir',
+                whatsapp: '💬 WhatsApp',
+                copyLink: '📋 Copiar enlace',
+                linkCopied: 'Enlace copiado',
+                routeError: 'No se puede calcular la ruta: ',
+                mapType: 'Mapa',
+                satellite: 'Satélite',
+                geminiPrompt: `Eres un analizador de consultas de búsqueda de negocios en español. Analiza la siguiente consulta y extrae información estructurada.
+
+Consulta: "__QUERY__"
+
+Devuelve solo JSON en el siguiente formato (sin texto adicional):
+{
+  "textQuery": "el término de búsqueda principal - el tipo principal de negocio",
+  "openNow": true/false (si el usuario busca lugares abiertos ahora),
+  "minRating": null o número (si se especificó una calificación mínima),
+  "keywords": ["palabras clave adicionales"]
+}
+
+Ejemplos:
+- "Restaurantes italianos abiertos ahora" -> {"textQuery": "restaurantes italianos", "openNow": true, "minRating": null, "keywords": []}
+- "Tiendas de zapatos con calificación superior a 4" -> {"textQuery": "tiendas de zapatos", "openNow": false, "minRating": 4, "keywords": []}
+- "Cafeterías con wifi abiertas de noche" -> {"textQuery": "cafeterías", "openNow": true, "minRating": null, "keywords": ["wifi"]}`
+            }
+        };
+
+        const t = i18n[LANG];
+
+        function switchLang(newLang) {
+            localStorage.setItem('biz_lang', newLang);
+            location.reload();
+        }
+
+        // Apply language on load
+        (function applyLang() {
+            const html = document.getElementById('html-root');
+            html.setAttribute('dir', t.dir);
+            html.setAttribute('lang', LANG);
+            document.title = t.title;
+
+            // Header
+            document.getElementById('header-title').textContent = t.headerTitle;
+            document.getElementById('dark-mode-btn').title = t.darkModeTitle;
+
+            // Search
+            document.getElementById('search-input').placeholder = t.searchPlaceholder;
+            document.getElementById('search-input').style.direction = t.dir === 'rtl' ? 'rtl' : 'ltr';
+            document.getElementById('search-btn').innerHTML = t.searchBtn;
+
+            // Mobile search
+            const mobileInput = document.getElementById('mobile-search-input');
+            if (mobileInput) {
+                mobileInput.placeholder = t.searchPlaceholderMobile;
+                mobileInput.style.direction = t.dir === 'rtl' ? 'rtl' : 'ltr';
+            }
+            const mobileSearchBtn = document.getElementById('mobile-search-btn');
+            if (mobileSearchBtn) mobileSearchBtn.innerHTML = t.searchBtn;
+
+            // Example queries (desktop)
+            const exSelect = document.getElementById('example-queries-select');
+            exSelect.innerHTML = `<option value="" disabled selected>${t.exampleLabel}</option>` +
+                t.examples.map(e => `<option value="${e}">${e}</option>`).join('');
+
+            // Example queries (mobile)
+            const mobExSelect = document.getElementById('mobile-example-queries-select');
+            if (mobExSelect) {
+                mobExSelect.innerHTML = `<option value="" disabled selected>${t.exampleLabel}</option>` +
+                    t.examples.map(e => `<option value="${e}">${e}</option>`).join('');
+            }
+
+            // Category chips
+            const chipsContainer = document.getElementById('category-chips');
+            chipsContainer.innerHTML = t.categories.map(c =>
+                `<button class="cat-chip" data-query="${c.query}">${c.label}</button>`
+            ).join('');
+
+            // Radius
+            document.querySelector('.radius-label span:first-child').textContent = t.radiusLabel;
+            document.getElementById('radius-display').textContent = '2 ' + t.km;
+
+            // Sort
+            document.querySelector('.sort-control label').textContent = t.sortLabel;
+            const sortSel = document.getElementById('sort-select');
+            sortSel.innerHTML = `
+                <option value="distance">${t.sortDistance}</option>
+                <option value="rating">${t.sortRating}</option>
+                <option value="reviews">${t.sortReviews}</option>
+            `;
+
+            // Status message
+            document.getElementById('status-msg').innerHTML = t.statusDefault;
+
+            // Map type buttons
+            document.querySelectorAll('.map-type-btn').forEach(btn => {
+                if (btn.dataset.type === 'roadmap') btn.textContent = t.mapType;
+                else if (btn.dataset.type === 'satellite') btn.textContent = t.satellite;
+            });
+
+            // Lang button labels
+            const langLabel = LANG.toUpperCase();
+            document.getElementById('lang-btn').textContent = langLabel;
+            const mobileLangBtn = document.getElementById('mobile-lang-btn');
+            if (mobileLangBtn) mobileLangBtn.textContent = langLabel;
+
+            // Mark active lang in menu
+            document.querySelectorAll('.lang-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.lang === LANG);
+            });
+
+            // Detail back button direction
+            document.getElementById('detail-back-btn').innerHTML = t.dir === 'rtl' ? '&#8594;' : '&#8592;';
+
+        })();
 
         const state = {
             map: null,
@@ -1214,6 +1662,33 @@
             localStorage.setItem('biz_dark', isDark);
         });
 
+        // ── Language menu ──
+        const langBtn = document.getElementById('lang-btn');
+        const langMenu = document.getElementById('lang-menu');
+
+        langBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langMenu.classList.toggle('show');
+        });
+
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.addEventListener('click', () => switchLang(opt.dataset.lang));
+        });
+
+        // Mobile lang button cycles through languages
+        const mobileLangBtn = document.getElementById('mobile-lang-btn');
+        if (mobileLangBtn) {
+            mobileLangBtn.addEventListener('click', () => {
+                const langs = ['he', 'en', 'es'];
+                const nextIdx = (langs.indexOf(LANG) + 1) % langs.length;
+                switchLang(langs[nextIdx]);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.lang-switcher')) langMenu.classList.remove('show');
+        });
+
         // ── Favorites ──
         function isFavorite(placeId) {
             return state.favorites.some(f => f.id === placeId);
@@ -1224,7 +1699,7 @@
             const idx = state.favorites.findIndex(f => f.id === id);
             if (idx >= 0) {
                 state.favorites.splice(idx, 1);
-                showToast('הוסר מהמועדפים');
+                showToast(t.removedFav);
             } else {
                 state.favorites.push({
                     id: id,
@@ -1233,7 +1708,7 @@
                     lat: place._loc?.lat || place.location?.latitude,
                     lng: place._loc?.lng || place.location?.longitude
                 });
-                showToast('נוסף למועדפים');
+                showToast(t.addedFav);
             }
             localStorage.setItem('biz_favorites', JSON.stringify(state.favorites));
             renderResults(state.results);
@@ -1291,14 +1766,17 @@
         });
 
         // ── Category chips ──
-        document.querySelectorAll('.cat-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                searchInput.value = chip.dataset.query;
-                doSearch();
+        function wireChips() {
+            document.querySelectorAll('.cat-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    searchInput.value = chip.dataset.query;
+                    doSearch();
+                });
             });
-        });
+        }
+        wireChips();
 
         // ── Sort ──
         const sortSelect = document.getElementById('sort-select');
@@ -1350,7 +1828,7 @@
                     strokeColor: '#fff',
                     strokeWeight: 3
                 },
-                title: 'גרור לשינוי מרכז החיפוש',
+                title: t.dragMarkerTitle,
                 zIndex: 100
             });
 
@@ -1409,29 +1887,14 @@
         radiusSlider.addEventListener('input', () => {
             state.radius = parseInt(radiusSlider.value);
             radiusDisplay.textContent = state.radius >= 1000
-                ? (state.radius / 1000).toFixed(state.radius % 1000 === 0 ? 0 : 1) + ' ק"מ'
-                : state.radius + ' מ\'';
+                ? (state.radius / 1000).toFixed(state.radius % 1000 === 0 ? 0 : 1) + ' ' + t.km
+                : state.radius + ' ' + t.m;
             updateCircle();
         });
 
         // ── Gemini: parse natural language query ──
         async function parseQuery(query) {
-            const prompt = `אתה מנתח שאילתות חיפוש עסקים בעברית. קבל את השאילתה הבאה וחלץ ממנה מידע מובנה.
-
-שאילתה: "${query}"
-
-החזר JSON בלבד בפורמט הבא (ללא טקסט נוסף):
-{
-  "textQuery": "מונח החיפוש המרכזי באנגלית או בעברית - הסוג העיקרי של העסק",
-  "openNow": true/false (האם המשתמש מחפש מקומות פתוחים עכשיו),
-  "minRating": null או מספר (אם צוין דירוג מינימלי),
-  "keywords": ["מילות מפתח נוספות"]
-}
-
-דוגמאות:
-- "מסעדות איטלקיות פתוחות עכשיו" -> {"textQuery": "מסעדות איטלקיות", "openNow": true, "minRating": null, "keywords": []}
-- "חנויות נעליים עם דירוג מעל 4" -> {"textQuery": "חנויות נעליים", "openNow": false, "minRating": 4, "keywords": []}
-- "בתי קפה עם wifi שפתוחים בלילה" -> {"textQuery": "בתי קפה", "openNow": true, "minRating": null, "keywords": ["wifi"]}`;
+            const prompt = t.geminiPrompt.replace('__QUERY__', query);
 
             try {
                 const res = await fetch(
@@ -1472,7 +1935,7 @@
             const body = {
                 textQuery: parsedQuery.textQuery,
                 maxResultCount: 20,
-                languageCode: 'he',
+                languageCode: LANG,
                 locationBias: {
                     circle: {
                         center: { latitude: state.center.lat, longitude: state.center.lng },
@@ -1546,12 +2009,12 @@
             const detailPanel = document.getElementById('detail-panel');
 
             if (results.length === 0) {
-                container.innerHTML = '<div id="status-msg">לא נמצאו תוצאות ברדיוס שנבחר. נסה להגדיל את הרדיוס או לשנות את החיפוש.</div>' + detailPanel.outerHTML;
+                container.innerHTML = `<div id="status-msg">${t.noResults}</div>` + detailPanel.outerHTML;
                 return;
             }
 
             let html = results.map((place, i) => {
-                const name = place.displayName?.text || 'ללא שם';
+                const name = place.displayName?.text || t.noName;
                 const address = place.formattedAddress || '';
                 const rating = place.rating ? place.rating.toFixed(1) : null;
                 const ratingCount = place.userRatingCount || 0;
@@ -1565,8 +2028,8 @@
 
                 const isOpen = place.currentOpeningHours?.openNow ?? place.regularOpeningHours?.openNow;
                 let openLabel = '';
-                if (isOpen === true) openLabel = '<span class="open-status open">פתוח</span>';
-                else if (isOpen === false) openLabel = '<span class="open-status closed">סגור</span>';
+                if (isOpen === true) openLabel = `<span class="open-status open">${t.open}</span>`;
+                else if (isOpen === false) openLabel = `<span class="open-status closed">${t.closed}</span>`;
 
                 return `
                 <div class="result-card" data-index="${i}" onclick="selectResult(${i})">
@@ -1574,18 +2037,18 @@
                     <div class="result-info">
                         <div class="result-name-row">
                             <div class="result-name">${name}</div>
-                            <button class="fav-btn ${favActive}" onclick="event.stopPropagation(); toggleFavorite(state.results[${i}])" title="מועדפים">${favActive ? '&#9733;' : '&#9734;'}</button>
+                            <button class="fav-btn ${favActive}" onclick="event.stopPropagation(); toggleFavorite(state.results[${i}])" title="${t.favorites}">${favActive ? '&#9733;' : '&#9734;'}</button>
                         </div>
                         <div class="result-address">${address}</div>
                         <div class="result-meta">
                             ${rating ? `<span class="rating">&#9733; ${rating} <span class="rating-count">(${ratingCount})</span></span>` : ''}
                             ${openLabel}
-                            <span style="color:var(--text-secondary)">${distKm} ק"מ</span>
+                            <span style="color:var(--text-secondary)">${distKm} ${t.km}</span>
                         </div>
                         <div class="result-actions">
-                            <button class="action-btn primary" onclick="event.stopPropagation(); showDirections(${i})">&#128663; ניווט</button>
-                            <button class="action-btn" onclick="event.stopPropagation(); openDetail(${i})">&#128196; פרטים</button>
-                            <button class="action-btn" onclick="event.stopPropagation(); sharePlace(${i}, event)">&#128279; שתף</button>
+                            <button class="action-btn primary" onclick="event.stopPropagation(); showDirections(${i})">${t.navigate}</button>
+                            <button class="action-btn" onclick="event.stopPropagation(); openDetail(${i})">${t.details}</button>
+                            <button class="action-btn" onclick="event.stopPropagation(); sharePlace(${i}, event)">${t.share}</button>
                         </div>
                     </div>
                 </div>`;
@@ -1606,7 +2069,7 @@
             const content = document.getElementById('detail-content');
             const favBtn = document.getElementById('detail-fav-btn');
 
-            const name = place.displayName?.text || 'ללא שם';
+            const name = place.displayName?.text || t.noName;
             title.textContent = name;
 
             const favActive = isFavorite(name);
@@ -1634,8 +2097,8 @@
 
             const isOpen = place.currentOpeningHours?.openNow ?? place.regularOpeningHours?.openNow;
             let openLabel = '';
-            if (isOpen === true) openLabel = '<span class="open-status open">פתוח עכשיו</span>';
-            else if (isOpen === false) openLabel = '<span class="open-status closed">סגור</span>';
+            if (isOpen === true) openLabel = `<span class="open-status open">${t.openNow}</span>`;
+            else if (isOpen === false) openLabel = `<span class="open-status closed">${t.closed}</span>`;
 
             // Opening hours
             let hoursHtml = '';
@@ -1653,38 +2116,38 @@
                 ${photoUrl ? `<img class="detail-photo-large" src="${photoUrl}" alt="${name}">` : ''}
 
                 <div class="detail-section">
-                    ${rating ? `<div class="detail-row"><span class="icon">&#9733;</span> <span class="rating" style="font-size:1rem">${rating} <span class="rating-count">(${ratingCount} ביקורות)</span></span></div>` : ''}
+                    ${rating ? `<div class="detail-row"><span class="icon">&#9733;</span> <span class="rating" style="font-size:1rem">${rating} <span class="rating-count">(${ratingCount} ${t.reviews})</span></span></div>` : ''}
                     ${openLabel ? `<div class="detail-row"><span class="icon">&#128340;</span> ${openLabel}</div>` : ''}
-                    <div class="detail-row"><span class="icon">&#128205;</span> ${address} <span style="color:var(--text-secondary);font-size:0.8rem">(${distKm} ק"מ)</span></div>
+                    <div class="detail-row"><span class="icon">&#128205;</span> ${address} <span style="color:var(--text-secondary);font-size:0.8rem">(${distKm} ${t.km})</span></div>
                     ${phone ? `<div class="detail-row"><span class="icon">&#128222;</span> <a href="tel:${phone}" style="color:var(--primary);text-decoration:none">${phone}</a></div>` : ''}
-                    ${website ? `<div class="detail-row"><span class="icon">&#127760;</span> <a href="${website}" target="_blank" style="color:var(--primary);text-decoration:none">אתר האינטרנט</a></div>` : ''}
+                    ${website ? `<div class="detail-row"><span class="icon">&#127760;</span> <a href="${website}" target="_blank" style="color:var(--primary);text-decoration:none">${t.website}</a></div>` : ''}
                 </div>
 
-                ${hoursHtml ? `<div class="detail-section"><h3>שעות פתיחה</h3>${hoursHtml}</div>` : ''}
+                ${hoursHtml ? `<div class="detail-section"><h3>${t.openingHours}</h3>${hoursHtml}</div>` : ''}
 
                 <div class="detail-section">
-                    <h3>ניווט</h3>
+                    <h3>${t.navigation}</h3>
                     <div class="travel-modes">
-                        <button class="travel-mode-btn ${state.travelMode === 'DRIVING' ? 'active' : ''}" onclick="setTravelMode('DRIVING', ${index})">&#128663; נהיגה</button>
-                        <button class="travel-mode-btn ${state.travelMode === 'WALKING' ? 'active' : ''}" onclick="setTravelMode('WALKING', ${index})">&#128694; הליכה</button>
-                        <button class="travel-mode-btn ${state.travelMode === 'TRANSIT' ? 'active' : ''}" onclick="setTravelMode('TRANSIT', ${index})">&#128651; תח״צ</button>
+                        <button class="travel-mode-btn ${state.travelMode === 'DRIVING' ? 'active' : ''}" onclick="setTravelMode('DRIVING', ${index})">${t.driving}</button>
+                        <button class="travel-mode-btn ${state.travelMode === 'WALKING' ? 'active' : ''}" onclick="setTravelMode('WALKING', ${index})">${t.walking}</button>
+                        <button class="travel-mode-btn ${state.travelMode === 'TRANSIT' ? 'active' : ''}" onclick="setTravelMode('TRANSIT', ${index})">${t.transit}</button>
                     </div>
                     <div class="detail-actions">
-                        <button class="action-btn primary" onclick="showDirections(${index})">&#128663; הוראות הגעה</button>
-                        ${mapsUrl ? `<button class="action-btn" onclick="window.open('${mapsUrl}', '_blank')">&#128506; Google Maps</button>` : ''}
+                        <button class="action-btn primary" onclick="showDirections(${index})">${t.directions}</button>
+                        ${mapsUrl ? `<button class="action-btn" onclick="window.open('${mapsUrl}', '_blank')">${t.googleMaps}</button>` : ''}
                     </div>
                 </div>
 
                 <div class="detail-section">
-                    <h3>Street View</h3>
+                    <h3>${t.streetView}</h3>
                     <div class="streetview-container" id="streetview-${index}"></div>
                 </div>
 
                 <div class="detail-section">
-                    <h3>שיתוף</h3>
+                    <h3>${t.shareSection}</h3>
                     <div class="detail-actions">
-                        <button class="action-btn" onclick="shareWhatsApp(${index})">&#128172; WhatsApp</button>
-                        <button class="action-btn" onclick="copyLink(${index})">&#128203; העתק קישור</button>
+                        <button class="action-btn" onclick="shareWhatsApp(${index})">${t.whatsapp}</button>
+                        <button class="action-btn" onclick="copyLink(${index})">${t.copyLink}</button>
                     </div>
                 </div>
             `;
@@ -1744,8 +2207,8 @@
             const menu = document.createElement('div');
             menu.className = 'share-menu show';
             menu.innerHTML = `
-                <button class="share-option" onclick="shareWhatsApp(${index}); this.parentElement.remove()">&#128172; WhatsApp</button>
-                <button class="share-option" onclick="copyLink(${index}); this.parentElement.remove()">&#128203; העתק קישור</button>
+                <button class="share-option" onclick="shareWhatsApp(${index}); this.parentElement.remove()">${t.whatsapp}</button>
+                <button class="share-option" onclick="copyLink(${index}); this.parentElement.remove()">${t.copyLink}</button>
             `;
 
             const btn = evt.target.closest('.action-btn');
@@ -1775,7 +2238,7 @@
             const place = state.results[index];
             if (!place) return;
             const url = place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${place._loc.lat},${place._loc.lng}`;
-            navigator.clipboard.writeText(url).then(() => showToast('הקישור הועתק'));
+            navigator.clipboard.writeText(url).then(() => showToast(t.linkCopied));
         }
 
         // ── Place markers on map ──
@@ -1867,7 +2330,7 @@
                             document.getElementById('detail-panel').classList.remove('show');
                         }
                     } else {
-                        showToast('לא ניתן לחשב מסלול: ' + status);
+                        showToast(t.routeError + status);
                     }
                 }
             );
@@ -1906,7 +2369,7 @@
             loading.classList.add('show');
             clearResults();
             document.getElementById('results-container').innerHTML =
-                '<div id="status-msg">&#128270; מחפש...</div><div id="detail-panel"></div>';
+                `<div id="status-msg">${t.searching}</div><div id="detail-panel"></div>`;
 
             try {
                 const parsed = await parseQuery(query);
@@ -1933,7 +2396,7 @@
             } catch (err) {
                 console.error('Search error:', err);
                 document.getElementById('results-container').innerHTML =
-                    `<div id="status-msg">&#9888; שגיאה בחיפוש: ${err.message}</div><div id="detail-panel"></div>`;
+                    `<div id="status-msg">${t.searchError}${err.message}</div><div id="detail-panel"></div>`;
             } finally {
                 searchBtn.disabled = false;
                 loading.classList.remove('show');
@@ -2142,7 +2605,7 @@
         // ── Load Google Maps ──
         window.initMap = initMap;
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initMap&language=he`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initMap&language=${LANG}`;
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
