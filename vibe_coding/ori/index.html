@@ -172,6 +172,30 @@
             padding: 0 4px;
         }
 
+        /* Example queries */
+        .example-queries {
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .example-queries select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-family: 'Rubik', sans-serif;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .example-queries select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
         /* Category chips */
         .category-chips {
             display: flex;
@@ -804,6 +828,27 @@
 
             .mobile-search-overlay #mobile-search-history.show { display: block; }
 
+            /* Mobile example queries */
+            .mobile-search-overlay .mobile-example-queries {
+                margin-top: -2px;
+                padding: 6px 12px 8px;
+            }
+
+            .mobile-search-overlay .mobile-example-queries select {
+                width: 100%;
+                padding: 8px 10px;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                background: var(--card-bg);
+                color: var(--text);
+                font-family: 'Rubik', sans-serif;
+                font-size: 0.82rem;
+                cursor: pointer;
+            }
+
+            /* Hide desktop example queries on mobile */
+            .example-queries { display: none !important; }
+
             /* Bottom sheet */
             #sidebar {
                 position: fixed;
@@ -1031,6 +1076,17 @@
             </div>
         </div>
 
+        <div class="example-queries">
+            <select id="example-queries-select">
+                <option value="" disabled selected>&#128161; דוגמאות לחיפוש בשפה חופשית...</option>
+                <option value="אני מחפש בית קפה שיהיה פתוח בשעתיים הקרובות">אני מחפש בית קפה שיהיה פתוח בשעתיים הקרובות</option>
+                <option value="אני מחפש חנות שמוכרת נעלי גברים">אני מחפש חנות שמוכרת נעלי גברים</option>
+                <option value="מסעדה עם אוכל טבעוני ודירוג גבוה">מסעדה עם אוכל טבעוני ודירוג גבוה</option>
+                <option value="חנות צעצועים לילדים שפתוחה עכשיו">חנות צעצועים לילדים שפתוחה עכשיו</option>
+                <option value="מקום לתקן מסך של טלפון נייד">מקום לתקן מסך של טלפון נייד</option>
+            </select>
+        </div>
+
         <div class="category-chips" id="category-chips">
             <button class="cat-chip" data-query="מסעדות">&#127869; מסעדות</button>
             <button class="cat-chip" data-query="בתי קפה">&#9749; קפה</button>
@@ -1085,6 +1141,16 @@
             <button class="mobile-search-btn" id="mobile-search-btn">&#8592;</button>
         </div>
         <div id="mobile-search-history"></div>
+        <div class="mobile-example-queries">
+            <select id="mobile-example-queries-select">
+                <option value="" disabled selected>&#128161; דוגמאות לחיפוש בשפה חופשית...</option>
+                <option value="אני מחפש בית קפה שיהיה פתוח בשעתיים הקרובות">אני מחפש בית קפה שיהיה פתוח בשעתיים הקרובות</option>
+                <option value="אני מחפש חנות שמוכרת נעלי גברים">אני מחפש חנות שמוכרת נעלי גברים</option>
+                <option value="מסעדה עם אוכל טבעוני ודירוג גבוה">מסעדה עם אוכל טבעוני ודירוג גבוה</option>
+                <option value="חנות צעצועים לילדים שפתוחה עכשיו">חנות צעצועים לילדים שפתוחה עכשיו</option>
+                <option value="מקום לתקן מסך של טלפון נייד">מקום לתקן מסך של טלפון נייד</option>
+            </select>
+        </div>
     </div>
 
     <div id="map-container">
@@ -1878,6 +1944,25 @@
         document.getElementById('search-btn').addEventListener('click', doSearch);
         document.getElementById('search-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') doSearch();
+        });
+
+        // ── Example queries dropdowns ──
+        function handleExampleSelect(selectEl) {
+            const query = selectEl.value;
+            if (!query) return;
+            document.getElementById('search-input').value = query;
+            const mobileInput = document.getElementById('mobile-search-input');
+            if (mobileInput) mobileInput.value = query;
+            selectEl.selectedIndex = 0; // reset to placeholder
+            doSearch();
+        }
+
+        document.getElementById('example-queries-select').addEventListener('change', function() {
+            handleExampleSelect(this);
+        });
+
+        document.getElementById('mobile-example-queries-select').addEventListener('change', function() {
+            handleExampleSelect(this);
         });
 
         // ── Mobile bottom sheet with snapping ──
