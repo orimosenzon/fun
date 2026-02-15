@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אימפריות היסטוריות על המפה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Heebo', sans-serif;
+            overflow: hidden;
+        }
+        #map { height: 100%; width: 100%; }
+
+        /* Controls panel */
+        #controls-wrapper {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(100%);
+        }
+        #controls-wrapper.is-open {
+            transform: translateY(0);
+        }
+
+        /* Custom checkboxes */
+        .empire-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .empire-item:hover { background: #f3f4f6; }
+
+        .custom-checkbox {
+            appearance: none; -webkit-appearance: none;
+            height: 22px; width: 22px; min-width: 22px;
+            border: 2px solid #ccc;
+            border-radius: 5px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            outline: none; transition: all 0.2s ease;
+        }
+        .custom-checkbox:after {
+            content: '✔'; font-size: 14px; color: white; display: none;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--empire-color, #666);
+            border-color: var(--empire-color, #666);
+        }
+        .custom-checkbox:checked:after { display: block; }
+
+        .empire-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+        }
+        .empire-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+        .empire-dates {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        /* Map type toggle */
+        .map-type-button {
+            background-color: white; color: #333; padding: 8px 12px;
+            border: 1px solid #ccc; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; font-size: 0.85rem;
+        }
+        .map-type-button.active {
+            background-color: #4285F4; color: white; border-color: #4285F4;
+        }
+        .map-type-button:first-of-type { border-radius: 0 6px 6px 0; }
+        .map-type-button:last-of-type { border-radius: 6px 0 0 6px; }
+
+        /* AI Panel */
+        #ai-panel {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(105%);
+        }
+        #ai-panel.is-visible {
+            transform: translateX(0);
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px; height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Map markers */
+        .custom-marker {
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.4);
+            transition: transform 0.1s ease-in-out;
+            cursor: pointer;
+        }
+        .custom-marker:hover { transform: scale(1.2); }
+        .regular-marker { width: 14px; height: 14px; }
+        .capital-marker { width: 22px; height: 22px; }
+
+        /* AI content formatting */
+        #ai-panel-content { line-height: 1.7; font-size: 0.92rem; }
+        #ai-panel-content strong { color: #1f2937; }
+
+        /* Scrollbar styling */
+        #controls-container::-webkit-scrollbar,
+        #ai-panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        #controls-container::-webkit-scrollbar-thumb,
+        #ai-panel-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Mobile toggle button pulse */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 14px rgba(59,130,246,0.4); }
+            50% { box-shadow: 0 4px 20px rgba(59,130,246,0.7); }
+        }
+        #toggle-controls-btn { animation: pulse 2s infinite; }
+        #toggle-controls-btn.has-selection { animation: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- AI Panel Toggle Button -->
+    <button id="open-ai-btn" class="hidden fixed top-4 right-4 z-30 bg-white text-gray-800 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow" title="תובנות AI">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+    </button>
+
+    <!-- AI Panel -->
+    <div id="ai-panel" class="fixed top-0 right-0 h-full w-full md:w-[380px] lg:w-[420px] bg-white z-40 shadow-2xl flex flex-col">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+            <h2 id="ai-panel-title" class="text-xl font-bold text-gray-800">תובנות על אימפריות</h2>
+            <button id="close-ai-btn" class="text-gray-400 hover:text-gray-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="ai-panel-content" class="flex-grow overflow-y-auto p-5 bg-gray-50 text-gray-700">בחר אימפריה כדי ללמוד עליה.</div>
+        <div id="ai-loader" class="hidden my-4 self-center"><div class="loader"></div></div>
+        <div id="ai-buttons" class="p-4 flex flex-col gap-2 border-t border-gray-200"></div>
+    </div>
+
+    <!-- Empire Selection Panel -->
+    <div id="controls-wrapper" class="fixed bottom-0 left-0 right-0 z-20 md:absolute md:top-4 md:left-4 md:bottom-auto md:right-auto md:transform-none">
+        <div id="controls-container" class="bg-white p-4 rounded-t-2xl md:rounded-xl shadow-lg max-h-[60vh] overflow-y-auto md:w-[300px]">
+            <h3 class="text-lg font-bold text-gray-800 mb-1 text-center">אימפריות היסטוריות</h3>
+            <p class="text-xs text-gray-400 text-center mb-3">בחר אימפריות להצגה על המפה</p>
+            <div id="empire-checkboxes" class="space-y-1"></div>
+        </div>
+    </div>
+
+    <!-- Mobile toggle button -->
+    <button id="toggle-controls-btn" class="md:hidden fixed bottom-4 left-4 z-30 bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg text-2xl">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+    </button>
+
+    <!-- Map type toggle -->
+    <div id="map-type-control" class="absolute top-20 right-4 z-10 flex shadow-md md:top-4">
+        <button id="satellite-btn" class="map-type-button">לוויין</button>
+        <button id="map-btn" class="map-type-button active">מפה</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+        const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
+
+        let map;
+        let infoWindow;
+        const activeElements = {};
+        const selectedEmpires = new Set();
+
+        const empiresData = {
+            roman: {
+                name: "האימפריה הרומית",
+                period: "27 לפנה״ס – 476 לספירה",
+                peakYear: "117 לספירה (טריאנוס)",
+                area: "5 מיליון קמ״ר",
+                color: '#C62828',
+                polygons: [[
+                    // Iberian Peninsula west coast
+                    {lat: 37.0, lng: -9.0}, {lat: 39.5, lng: -9.5}, {lat: 42.0, lng: -8.8},
+                    {lat: 43.5, lng: -8.0}, {lat: 43.8, lng: -3.0},
+                    // Northern coast to Gaul
+                    {lat: 46.0, lng: -1.5}, {lat: 48.5, lng: -4.5},
+                    // Britannia
+                    {lat: 50.5, lng: -5.0}, {lat: 51.5, lng: -3.0},
+                    {lat: 53.5, lng: -3.5}, {lat: 55.0, lng: -2.5},
+                    // Hadrian's Wall area, back to continent
+                    {lat: 55.0, lng: -1.5}, {lat: 53.0, lng: 1.0},
+                    {lat: 51.0, lng: 1.5}, {lat: 50.8, lng: 1.8},
+                    // Northern Gaul / Rhine border
+                    {lat: 51.0, lng: 4.5}, {lat: 50.5, lng: 6.5},
+                    {lat: 49.0, lng: 8.5}, {lat: 48.0, lng: 10.0},
+                    // Danube border
+                    {lat: 48.5, lng: 13.0}, {lat: 48.0, lng: 16.5},
+                    {lat: 47.5, lng: 19.0}, {lat: 45.5, lng: 21.0},
+                    {lat: 44.5, lng: 26.0}, {lat: 44.0, lng: 28.5},
+                    // Black Sea coast
+                    {lat: 43.5, lng: 31.0}, {lat: 42.0, lng: 35.0},
+                    {lat: 41.0, lng: 37.0}, {lat: 40.5, lng: 40.0},
+                    // Eastern border - Mesopotamia under Trajan
+                    {lat: 38.0, lng: 43.5}, {lat: 37.0, lng: 44.0},
+                    {lat: 35.5, lng: 44.5}, {lat: 33.5, lng: 45.5},
+                    {lat: 31.0, lng: 47.5},
+                    // Down to Arabia
+                    {lat: 29.5, lng: 40.0}, {lat: 28.0, lng: 36.5},
+                    {lat: 29.5, lng: 35.0},
+                    // Sinai and Egypt
+                    {lat: 30.0, lng: 33.0}, {lat: 29.0, lng: 32.5},
+                    {lat: 24.0, lng: 33.5},
+                    // Along North Africa
+                    {lat: 24.5, lng: 30.0}, {lat: 30.5, lng: 25.0},
+                    {lat: 31.0, lng: 20.0}, {lat: 30.0, lng: 15.0},
+                    {lat: 32.5, lng: 12.0}, {lat: 33.5, lng: 8.0},
+                    {lat: 35.0, lng: 0.0}, {lat: 35.5, lng: -5.0},
+                    {lat: 36.0, lng: -6.5}
+                ]],
+                cities: [
+                    { name: 'רומא (בירה)', lat: 41.9028, lng: 12.4964, isCapital: true },
+                    { name: 'קונסטנטינופול', lat: 41.0082, lng: 28.9784 },
+                    { name: 'אלכסנדריה', lat: 31.2001, lng: 29.9187 },
+                    { name: 'קרתגו', lat: 36.852, lng: 10.334 },
+                    { name: 'אנטיוכיה', lat: 36.2, lng: 36.15 },
+                    { name: 'לונדיניום (לונדון)', lat: 51.5074, lng: -0.1278 }
+                ]
+            },
+            mongol: {
+                name: "האימפריה המונגולית",
+                period: "1206 – 1368",
+                peakYear: "1279 (קובלאי חאן)",
+                area: "24 מיליון קמ״ר",
+                color: '#2E7D32',
+                polygons: [[
+                    // Eastern Europe (Golden Horde)
+                    {lat: 50.0, lng: 30.0}, {lat: 55.0, lng: 38.0},
+                    {lat: 58.0, lng: 50.0}, {lat: 60.0, lng: 60.0},
+                    // Siberia
+                    {lat: 62.0, lng: 75.0}, {lat: 60.0, lng: 90.0},
+                    {lat: 58.0, lng: 100.0}, {lat: 55.0, lng: 110.0},
+                    {lat: 53.0, lng: 120.0},
+                    // Manchuria / Korea border
+                    {lat: 50.0, lng: 128.0}, {lat: 45.0, lng: 130.0},
+                    {lat: 42.0, lng: 128.0},
+                    // Chinese coast
+                    {lat: 40.0, lng: 122.0}, {lat: 35.0, lng: 120.0},
+                    {lat: 30.0, lng: 122.0}, {lat: 25.0, lng: 118.0},
+                    {lat: 22.0, lng: 110.0}, {lat: 21.5, lng: 108.0},
+                    // Southeast Asia border
+                    {lat: 22.0, lng: 101.0}, {lat: 25.0, lng: 98.0},
+                    // Tibet/India border
+                    {lat: 28.0, lng: 90.0}, {lat: 30.0, lng: 80.0},
+                    {lat: 28.0, lng: 72.0},
+                    // Persia / Middle East
+                    {lat: 26.0, lng: 62.0}, {lat: 25.0, lng: 57.0},
+                    {lat: 28.0, lng: 52.0}, {lat: 30.0, lng: 48.0},
+                    {lat: 33.0, lng: 44.5},
+                    // Anatolia border
+                    {lat: 37.0, lng: 42.0}, {lat: 40.0, lng: 43.0},
+                    // Caucasus
+                    {lat: 42.0, lng: 45.0}, {lat: 44.0, lng: 40.0},
+                    // Back to Eastern Europe
+                    {lat: 47.0, lng: 35.0}, {lat: 48.5, lng: 32.0}
+                ]],
+                cities: [
+                    { name: 'קאראקורום (בירה)', lat: 47.213, lng: 102.846, isCapital: true },
+                    { name: 'חאנבאליק (בייג\'ינג)', lat: 39.9042, lng: 116.4074 },
+                    { name: 'סמרקנד', lat: 39.6542, lng: 66.9758 },
+                    { name: 'תבריז', lat: 38.0962, lng: 46.2738 },
+                    { name: 'סאראי', lat: 48.53, lng: 44.53 },
+                    { name: 'בוכרה', lat: 39.768, lng: 64.422 }
+                ]
+            },
+            persian: {
+                name: "האימפריה הפרסית האחמנית",
+                period: "550 – 330 לפנה״ס",
+                peakYear: "500 לפנה״ס (דריוש הראשון)",
+                area: "5.5 מיליון קמ״ר",
+                color: '#F9A825',
+                polygons: [[
+                    // Thrace / Bosporus
+                    {lat: 41.5, lng: 26.0}, {lat: 41.0, lng: 28.5},
+                    // Anatolia north coast
+                    {lat: 42.0, lng: 33.0}, {lat: 41.5, lng: 40.0},
+                    // Caucasus border
+                    {lat: 42.0, lng: 45.0}, {lat: 41.5, lng: 50.0},
+                    // Central Asia
+                    {lat: 40.0, lng: 55.0}, {lat: 40.5, lng: 61.0},
+                    {lat: 39.0, lng: 67.0}, {lat: 38.5, lng: 71.0},
+                    // Indus valley
+                    {lat: 34.0, lng: 73.0}, {lat: 30.0, lng: 72.0},
+                    {lat: 27.0, lng: 68.0}, {lat: 25.0, lng: 66.0},
+                    // Persian Gulf coast
+                    {lat: 25.5, lng: 61.0}, {lat: 26.0, lng: 57.0},
+                    {lat: 24.5, lng: 56.0},
+                    // Arabian coast
+                    {lat: 23.0, lng: 55.0}, {lat: 27.0, lng: 50.0},
+                    {lat: 29.5, lng: 48.0},
+                    // Mesopotamia south
+                    {lat: 30.0, lng: 47.0}, {lat: 29.0, lng: 43.0},
+                    // Arabia border
+                    {lat: 27.0, lng: 38.0},
+                    // Red Sea / Egypt
+                    {lat: 24.0, lng: 35.0}, {lat: 28.0, lng: 32.0},
+                    {lat: 30.5, lng: 30.0}, {lat: 31.5, lng: 27.0},
+                    // Libya border
+                    {lat: 31.0, lng: 25.0},
+                    // Mediterranean coast
+                    {lat: 33.0, lng: 24.0}, {lat: 35.0, lng: 25.0},
+                    // Aegean
+                    {lat: 37.0, lng: 24.0}, {lat: 39.0, lng: 24.0},
+                    {lat: 41.0, lng: 24.5}
+                ]],
+                cities: [
+                    { name: 'פרספוליס (בירה)', lat: 29.935, lng: 52.891, isCapital: true },
+                    { name: 'שושן', lat: 32.189, lng: 48.243 },
+                    { name: 'בבל', lat: 32.542, lng: 44.421 },
+                    { name: 'אקבטנה (המדאן)', lat: 34.799, lng: 48.515 },
+                    { name: 'פסרגדה', lat: 30.194, lng: 53.167 },
+                    { name: 'סרדיס', lat: 38.468, lng: 28.039 }
+                ]
+            },
+            british: {
+                name: "האימפריה הבריטית",
+                period: "1583 – 1997",
+                peakYear: "1920",
+                area: "35.5 מיליון קמ״ר",
+                color: '#6A1B9A',
+                polygons: [
+                    // British Isles
+                    [{lat: 50.0, lng: -5.7}, {lat: 51.5, lng: 1.3}, {lat: 53.5, lng: 0.0},
+                     {lat: 55.5, lng: -1.5}, {lat: 58.5, lng: -3.0}, {lat: 58.6, lng: -5.0},
+                     {lat: 56.0, lng: -6.5}, {lat: 54.5, lng: -8.0}, {lat: 51.5, lng: -10.0}],
+                    // Canada
+                    [{lat: 49.0, lng: -125.0}, {lat: 54.0, lng: -130.0}, {lat: 60.0, lng: -140.0},
+                     {lat: 70.0, lng: -130.0}, {lat: 75.0, lng: -95.0}, {lat: 73.0, lng: -75.0},
+                     {lat: 63.0, lng: -65.0}, {lat: 52.0, lng: -56.0}, {lat: 47.0, lng: -60.0},
+                     {lat: 45.0, lng: -67.0}, {lat: 42.5, lng: -80.0}, {lat: 49.0, lng: -95.0}],
+                    // India
+                    [{lat: 35.0, lng: 73.0}, {lat: 33.0, lng: 78.0}, {lat: 28.0, lng: 88.0},
+                     {lat: 28.0, lng: 97.0}, {lat: 22.0, lng: 97.0}, {lat: 16.0, lng: 97.0},
+                     {lat: 8.0, lng: 80.0}, {lat: 8.0, lng: 77.0}, {lat: 15.0, lng: 74.0},
+                     {lat: 22.0, lng: 69.0}, {lat: 24.0, lng: 66.0}, {lat: 30.0, lng: 66.0}],
+                    // Australia
+                    [{lat: -12.0, lng: 131.0}, {lat: -12.0, lng: 142.0}, {lat: -18.0, lng: 146.0},
+                     {lat: -28.0, lng: 153.5}, {lat: -37.5, lng: 150.0}, {lat: -39.0, lng: 146.0},
+                     {lat: -35.0, lng: 137.0}, {lat: -34.5, lng: 115.5}, {lat: -22.0, lng: 114.0},
+                     {lat: -14.0, lng: 126.0}],
+                    // Southern + Eastern Africa
+                    [{lat: 5.0, lng: 30.0}, {lat: 0.0, lng: 35.0}, {lat: -1.0, lng: 42.0},
+                     {lat: -10.0, lng: 40.5}, {lat: -15.0, lng: 35.5}, {lat: -22.0, lng: 35.5},
+                     {lat: -30.0, lng: 32.0}, {lat: -34.5, lng: 27.0}, {lat: -34.0, lng: 18.0},
+                     {lat: -28.5, lng: 16.5}, {lat: -18.0, lng: 12.0}, {lat: -5.0, lng: 12.0},
+                     {lat: 4.0, lng: 10.0}, {lat: 6.0, lng: 1.0}, {lat: 11.0, lng: -3.5},
+                     {lat: 12.0, lng: 2.0}, {lat: 12.0, lng: 15.0}],
+                    // Egypt / Sudan
+                    [{lat: 31.5, lng: 25.0}, {lat: 31.5, lng: 32.5}, {lat: 29.5, lng: 35.0},
+                     {lat: 22.0, lng: 37.0}, {lat: 10.0, lng: 35.0}, {lat: 5.0, lng: 30.0},
+                     {lat: 12.0, lng: 25.0}, {lat: 22.0, lng: 25.0}]
+                ],
+                cities: [
+                    { name: 'לונדון (בירה)', lat: 51.5074, lng: -0.1278, isCapital: true },
+                    { name: 'דלהי', lat: 28.6139, lng: 77.2090 },
+                    { name: 'קייפטאון', lat: -33.9249, lng: 18.4241 },
+                    { name: 'סידני', lat: -33.8688, lng: 151.2093 },
+                    { name: 'אוטווה', lat: 45.4215, lng: -75.6972 },
+                    { name: 'קהיר', lat: 30.0444, lng: 31.2357 }
+                ]
+            },
+            ottoman: {
+                name: "האימפריה העות׳מאנית",
+                period: "1299 – 1922",
+                peakYear: "1566 (סולימאן המפואר)",
+                area: "5.2 מיליון קמ״ר",
+                color: '#E65100',
+                polygons: [[
+                    // Hungary
+                    {lat: 48.0, lng: 16.5}, {lat: 48.0, lng: 20.0},
+                    {lat: 47.0, lng: 22.5},
+                    // Wallachia / Moldova
+                    {lat: 47.5, lng: 26.5}, {lat: 46.5, lng: 30.0},
+                    // Black Sea north
+                    {lat: 46.0, lng: 33.0}, {lat: 45.0, lng: 36.0},
+                    // Crimea
+                    {lat: 45.5, lng: 36.5}, {lat: 44.5, lng: 34.0},
+                    // Caucasus
+                    {lat: 43.5, lng: 40.0}, {lat: 42.0, lng: 43.5},
+                    // Eastern border
+                    {lat: 39.0, lng: 46.0}, {lat: 37.0, lng: 45.0},
+                    // Iraq
+                    {lat: 35.0, lng: 46.0}, {lat: 33.0, lng: 47.0},
+                    {lat: 30.0, lng: 48.0},
+                    // Persian Gulf
+                    {lat: 29.0, lng: 48.5},
+                    // Arabia
+                    {lat: 22.0, lng: 43.0}, {lat: 16.0, lng: 42.5},
+                    {lat: 13.0, lng: 43.5},
+                    // Red Sea / Yemen
+                    {lat: 12.5, lng: 43.0},
+                    // Horn of Africa coast
+                    {lat: 15.0, lng: 40.0},
+                    // Egypt
+                    {lat: 22.0, lng: 37.0}, {lat: 24.0, lng: 33.5},
+                    {lat: 30.0, lng: 32.5}, {lat: 31.0, lng: 25.0},
+                    // Libya
+                    {lat: 32.0, lng: 20.0}, {lat: 32.5, lng: 12.0},
+                    // Tunisia
+                    {lat: 37.0, lng: 9.5},
+                    // Algeria coast
+                    {lat: 37.0, lng: 6.0}, {lat: 36.5, lng: 3.0},
+                    // Back across Mediterranean
+                    {lat: 38.0, lng: 1.0},
+                    // Adriatic
+                    {lat: 40.0, lng: 13.0}, {lat: 42.0, lng: 14.0},
+                    {lat: 43.0, lng: 16.0}, {lat: 45.0, lng: 15.0},
+                    // Balkans
+                    {lat: 46.0, lng: 16.0}
+                ]],
+                cities: [
+                    { name: 'קונסטנטינופול / איסטנבול (בירה)', lat: 41.0082, lng: 28.9784, isCapital: true },
+                    { name: 'קהיר', lat: 30.0444, lng: 31.2357 },
+                    { name: 'בגדאד', lat: 33.3152, lng: 44.3661 },
+                    { name: 'דמשק', lat: 33.5138, lng: 36.2765 },
+                    { name: 'ירושלים', lat: 31.7683, lng: 35.2137 },
+                    { name: 'מכה', lat: 21.3891, lng: 39.8579 }
+                ]
+            },
+            macedonian: {
+                name: "האימפריה המוקדונית",
+                period: "336 – 323 לפנה״ס",
+                peakYear: "323 לפנה״ס (אלכסנדר הגדול)",
+                area: "5.2 מיליון קמ״ר",
+                color: '#1565C0',
+                polygons: [[
+                    // Greece / Macedonia
+                    {lat: 42.0, lng: 20.0}, {lat: 41.5, lng: 22.5},
+                    {lat: 41.0, lng: 26.0}, {lat: 41.5, lng: 28.5},
+                    // Anatolia
+                    {lat: 42.0, lng: 32.0}, {lat: 41.5, lng: 36.0},
+                    // Caucasus border
+                    {lat: 40.5, lng: 42.0}, {lat: 39.0, lng: 45.0},
+                    // Central Asia
+                    {lat: 40.0, lng: 55.0}, {lat: 40.0, lng: 62.0},
+                    {lat: 39.0, lng: 68.0}, {lat: 37.0, lng: 72.0},
+                    // Indus
+                    {lat: 34.0, lng: 73.0}, {lat: 30.0, lng: 72.0},
+                    {lat: 26.0, lng: 68.0}, {lat: 24.5, lng: 66.0},
+                    // Makran coast
+                    {lat: 25.0, lng: 62.0}, {lat: 26.0, lng: 57.0},
+                    {lat: 27.0, lng: 52.0},
+                    // Persian Gulf
+                    {lat: 29.0, lng: 48.5}, {lat: 30.0, lng: 47.0},
+                    // Arabia border
+                    {lat: 29.0, lng: 42.0}, {lat: 27.5, lng: 37.0},
+                    // Egypt
+                    {lat: 24.0, lng: 33.5}, {lat: 29.0, lng: 30.0},
+                    {lat: 31.0, lng: 27.0}, {lat: 31.5, lng: 25.0},
+                    // Cyrenaica
+                    {lat: 33.0, lng: 23.0},
+                    // Crete, back to Greece
+                    {lat: 35.0, lng: 24.0}, {lat: 37.0, lng: 23.0},
+                    {lat: 38.5, lng: 21.0}, {lat: 40.0, lng: 20.0}
+                ]],
+                cities: [
+                    { name: 'פלה (בירה מקורית)', lat: 40.760, lng: 22.522, isCapital: true },
+                    { name: 'בבל (בירה מאוחרת)', lat: 32.542, lng: 44.421 },
+                    { name: 'אלכסנדריה', lat: 31.2001, lng: 29.9187 },
+                    { name: 'פרספוליס', lat: 29.935, lng: 52.891 },
+                    { name: 'סמרקנד', lat: 39.6542, lng: 66.9758 },
+                    { name: 'טקסילה', lat: 33.745, lng: 72.834 }
+                ]
+            },
+            byzantine: {
+                name: "האימפריה הביזנטית",
+                period: "330 – 1453",
+                peakYear: "555 (יוסטיניאנוס)",
+                area: "3.5 מיליון קמ״ר",
+                color: '#7B1FA2',
+                polygons: [[
+                    // Iberian coast (Justinian reconquest)
+                    {lat: 37.0, lng: -6.0}, {lat: 36.5, lng: -3.0},
+                    {lat: 37.5, lng: -1.0},
+                    // Southern Spain coast
+                    {lat: 38.0, lng: 0.0},
+                    // Balearic Islands area
+                    {lat: 39.5, lng: 3.0},
+                    // Sardinia / Corsica
+                    {lat: 41.0, lng: 9.0},
+                    // Italy
+                    {lat: 44.5, lng: 12.5}, {lat: 45.5, lng: 13.5},
+                    // Dalmatian coast
+                    {lat: 43.0, lng: 17.0}, {lat: 42.0, lng: 19.0},
+                    // Balkans
+                    {lat: 44.0, lng: 22.5}, {lat: 44.5, lng: 26.0},
+                    // Danube
+                    {lat: 44.0, lng: 28.5},
+                    // Black Sea
+                    {lat: 43.0, lng: 32.0}, {lat: 42.0, lng: 36.0},
+                    // Anatolia
+                    {lat: 41.0, lng: 40.0},
+                    // Armenian border
+                    {lat: 39.0, lng: 43.0}, {lat: 37.5, lng: 42.0},
+                    // Syria
+                    {lat: 36.5, lng: 40.0}, {lat: 35.0, lng: 38.0},
+                    {lat: 33.0, lng: 36.0},
+                    // Palestine / Sinai
+                    {lat: 31.0, lng: 35.0}, {lat: 29.5, lng: 33.0},
+                    // Egypt
+                    {lat: 28.0, lng: 32.5}, {lat: 24.0, lng: 33.5},
+                    {lat: 24.5, lng: 30.0},
+                    // North Africa
+                    {lat: 31.0, lng: 25.0}, {lat: 31.5, lng: 20.0},
+                    {lat: 33.0, lng: 12.0}, {lat: 34.0, lng: 8.0},
+                    {lat: 37.0, lng: 9.0},
+                    // Tunisia coast
+                    {lat: 37.5, lng: 10.0},
+                    // Back to southern Italy
+                    {lat: 38.0, lng: 13.0}, {lat: 38.0, lng: 16.0},
+                    {lat: 40.0, lng: 18.5},
+                    // Southern Italy
+                    {lat: 38.0, lng: 15.5}, {lat: 37.5, lng: 13.0},
+                    // Sicily
+                    {lat: 37.0, lng: 14.0},
+                    // North Africa coast west
+                    {lat: 36.0, lng: 5.0}, {lat: 36.0, lng: -1.0},
+                    {lat: 36.5, lng: -5.0}
+                ]],
+                cities: [
+                    { name: 'קונסטנטינופול (בירה)', lat: 41.0082, lng: 28.9784, isCapital: true },
+                    { name: 'אנטיוכיה', lat: 36.2, lng: 36.15 },
+                    { name: 'אלכסנדריה', lat: 31.2001, lng: 29.9187 },
+                    { name: 'רוונה', lat: 44.4175, lng: 12.1964 },
+                    { name: 'תסלוניקי', lat: 40.6401, lng: 22.9444 },
+                    { name: 'קרתגו', lat: 36.852, lng: 10.334 }
+                ]
+            },
+            umayyad: {
+                name: "הח׳ליפות האומיית",
+                period: "661 – 750",
+                peakYear: "720",
+                area: "11.1 מיליון קמ״ר",
+                color: '#00838F',
+                polygons: [[
+                    // Iberian Peninsula
+                    {lat: 37.0, lng: -9.0}, {lat: 40.0, lng: -9.0},
+                    {lat: 43.5, lng: -8.0}, {lat: 43.5, lng: -2.0},
+                    {lat: 43.0, lng: 1.0},
+                    // Southern France (Narbonne)
+                    {lat: 43.0, lng: 3.0},
+                    // Back through Mediterranean
+                    {lat: 38.0, lng: 5.0},
+                    // North Africa coast
+                    {lat: 37.0, lng: 10.0}, {lat: 37.5, lng: 10.5},
+                    // Skip to Egypt area, covered in polygon
+                    {lat: 33.0, lng: 12.0}, {lat: 32.0, lng: 20.0},
+                    {lat: 31.5, lng: 25.0}, {lat: 30.5, lng: 30.0},
+                    {lat: 24.0, lng: 33.5},
+                    // Red Sea
+                    {lat: 15.0, lng: 40.0},
+                    // Arabian Peninsula
+                    {lat: 12.5, lng: 43.5}, {lat: 13.0, lng: 45.0},
+                    {lat: 15.0, lng: 52.0}, {lat: 20.0, lng: 58.0},
+                    {lat: 23.0, lng: 59.5},
+                    // Persian Gulf
+                    {lat: 26.0, lng: 56.5}, {lat: 27.0, lng: 52.0},
+                    // Persia
+                    {lat: 28.0, lng: 60.0}, {lat: 30.0, lng: 64.0},
+                    // Central Asia / Transoxiana
+                    {lat: 33.0, lng: 70.0}, {lat: 37.0, lng: 72.0},
+                    {lat: 40.0, lng: 70.0}, {lat: 41.0, lng: 66.0},
+                    {lat: 40.0, lng: 60.0},
+                    // Caspian
+                    {lat: 39.0, lng: 55.0}, {lat: 38.0, lng: 50.0},
+                    // Caucasus
+                    {lat: 42.0, lng: 46.0}, {lat: 42.0, lng: 43.0},
+                    // Eastern Anatolia border
+                    {lat: 39.0, lng: 42.0}, {lat: 37.5, lng: 42.0},
+                    // Mesopotamia
+                    {lat: 37.0, lng: 40.0}, {lat: 36.5, lng: 37.0},
+                    {lat: 35.0, lng: 36.0},
+                    // Mediterranean coast
+                    {lat: 35.5, lng: 35.5}, {lat: 33.0, lng: 35.0},
+                    {lat: 31.5, lng: 34.0},
+                    // Sinai
+                    {lat: 29.5, lng: 34.5}, {lat: 28.5, lng: 33.0},
+                    // North Africa
+                    {lat: 30.5, lng: 15.0}, {lat: 35.0, lng: 0.0},
+                    {lat: 35.5, lng: -5.0}, {lat: 36.0, lng: -6.5}
+                ]],
+                cities: [
+                    { name: 'דמשק (בירה)', lat: 33.5138, lng: 36.2765, isCapital: true },
+                    { name: 'קורדובה', lat: 37.8882, lng: -4.7794 },
+                    { name: 'בגדאד', lat: 33.3152, lng: 44.3661 },
+                    { name: 'קהיר / פוסטאט', lat: 30.0444, lng: 31.2357 },
+                    { name: 'סמרקנד', lat: 39.6542, lng: 66.9758 },
+                    { name: 'ירושלים', lat: 31.7683, lng: 35.2137 }
+                ]
+            }
+        };
+
+        async function initMap() {
+            const { Map } = await google.maps.importLibrary("maps");
+            await google.maps.importLibrary("marker");
+
+            map = new Map(document.getElementById("map"), {
+                center: { lat: 30, lng: 40 },
+                zoom: 3,
+                mapTypeId: 'terrain',
+                disableDefaultUI: true,
+                zoomControl: true,
+                zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
+                mapId: 'EMPIRES_MAP_V2'
+            });
+
+            infoWindow = new google.maps.InfoWindow();
+
+            // Build empire checkboxes
+            const container = document.getElementById('empire-checkboxes');
+            Object.keys(empiresData).forEach(key => {
+                const data = empiresData[key];
+                const div = document.createElement('div');
+                div.className = 'empire-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = key;
+                checkbox.value = key;
+                checkbox.className = 'custom-checkbox';
+                checkbox.style.borderColor = data.color;
+                checkbox.style.setProperty('--empire-color', data.color);
+
+                const info = document.createElement('div');
+                info.className = 'empire-info';
+
+                const nameEl = document.createElement('span');
+                nameEl.className = 'empire-name';
+                nameEl.textContent = data.name;
+
+                const datesEl = document.createElement('span');
+                datesEl.className = 'empire-dates';
+                datesEl.textContent = data.period + ' · ' + data.area;
+
+                info.appendChild(nameEl);
+                info.appendChild(datesEl);
+
+                const label = document.createElement('label');
+                label.htmlFor = key;
+                label.className = 'empire-item';
+                label.style.margin = '0';
+                label.style.padding = '0';
+                label.style.gap = '10px';
+                label.appendChild(checkbox);
+                label.appendChild(info);
+
+                div.innerHTML = '';
+                div.appendChild(label);
+                container.appendChild(div);
+
+                checkbox.addEventListener('change', (event) => {
+                    handleEmpireSelection(event.target.value, event.target.checked);
+                });
+            });
+
+            // Map type toggle
+            const mapBtn = document.getElementById('map-btn');
+            const satelliteBtn = document.getElementById('satellite-btn');
+            mapBtn.addEventListener('click', () => {
+                map.setMapTypeId('terrain');
+                mapBtn.classList.add('active');
+                satelliteBtn.classList.remove('active');
+            });
+            satelliteBtn.addEventListener('click', () => {
+                map.setMapTypeId('satellite');
+                satelliteBtn.classList.add('active');
+                mapBtn.classList.remove('active');
+            });
+
+            // Mobile controls
+            const toggleBtn = document.getElementById('toggle-controls-btn');
+            const controlsWrapper = document.getElementById('controls-wrapper');
+            toggleBtn.addEventListener('click', () => {
+                controlsWrapper.classList.toggle('is-open');
+            });
+
+            // AI Panel controls
+            const aiPanel = document.getElementById('ai-panel');
+            const openAiBtn = document.getElementById('open-ai-btn');
+            const closeAiBtn = document.getElementById('close-ai-btn');
+
+            closeAiBtn.addEventListener('click', () => {
+                aiPanel.classList.remove('is-visible');
+                if (selectedEmpires.size > 0) {
+                    openAiBtn.classList.remove('hidden');
+                }
+            });
+            openAiBtn.addEventListener('click', () => {
+                aiPanel.classList.add('is-visible');
+                openAiBtn.classList.add('hidden');
+            });
+
+            map.addListener('click', () => {
+                controlsWrapper.classList.remove('is-open');
+            });
+        }
+
+        function handleEmpireSelection(empireKey, isChecked) {
+            toggleEmpireOnMap(empireKey, isChecked);
+            if (isChecked) { selectedEmpires.add(empireKey); } else { selectedEmpires.delete(empireKey); }
+            updateAiPanel();
+
+            // Update mobile button style
+            const toggleBtn = document.getElementById('toggle-controls-btn');
+            if (selectedEmpires.size > 0) {
+                toggleBtn.classList.add('has-selection');
+            } else {
+                toggleBtn.classList.remove('has-selection');
+            }
+        }
+
+        async function toggleEmpireOnMap(empireKey, isVisible) {
+            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+            if (isVisible) {
+                const data = empiresData[empireKey];
+                activeElements[empireKey] = { polygons: [], markers: [] };
+
+                data.polygons.forEach(path => {
+                    const polygon = new google.maps.Polygon({
+                        paths: path,
+                        strokeColor: data.color,
+                        strokeOpacity: 0.9,
+                        strokeWeight: 2,
+                        fillColor: data.color,
+                        fillOpacity: 0.25,
+                        map: map
+                    });
+                    activeElements[empireKey].polygons.push(polygon);
+                });
+
+                data.cities.forEach(city => {
+                    const markerEl = document.createElement('div');
+                    markerEl.className = city.isCapital ? 'custom-marker capital-marker' : 'custom-marker regular-marker';
+                    markerEl.style.backgroundColor = data.color;
+                    const marker = new AdvancedMarkerElement({
+                        position: { lat: city.lat, lng: city.lng },
+                        map: map,
+                        title: city.name,
+                        content: markerEl
+                    });
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(`<div style="font-family:Heebo,sans-serif;direction:rtl;padding:4px">
+                            <strong style="color:${data.color}">${city.name}</strong><br>
+                            <span style="font-size:0.85em;color:#666">${data.name}</span>
+                        </div>`);
+                        infoWindow.open({ anchor: marker, map });
+                    });
+                    activeElements[empireKey].markers.push(marker);
+                });
+            } else {
+                if (activeElements[empireKey]) {
+                    activeElements[empireKey].polygons.forEach(p => p.setMap(null));
+                    activeElements[empireKey].markers.forEach(m => { m.map = null; });
+                    delete activeElements[empireKey];
+                }
+            }
+        }
+
+        function updateAiPanel() {
+            const aiPanel = document.getElementById('ai-panel');
+            const openAiBtn = document.getElementById('open-ai-btn');
+            const aiTitle = document.getElementById('ai-panel-title');
+            const aiContent = document.getElementById('ai-panel-content');
+            const aiButtons = document.getElementById('ai-buttons');
+            aiButtons.innerHTML = '';
+
+            if (selectedEmpires.size === 0) {
+                aiPanel.classList.remove('is-visible');
+                openAiBtn.classList.add('hidden');
+                aiContent.innerHTML = 'בחר אימפריה כדי ללמוד עליה.';
+                return;
+            }
+
+            if (!aiPanel.classList.contains('is-visible')) {
+                openAiBtn.classList.remove('hidden');
+            } else {
+                openAiBtn.classList.add('hidden');
+            }
+            aiContent.innerHTML = 'בחר פעולה מלמטה כדי לקבל מידע.';
+
+            const btnClass = 'font-bold py-2.5 px-4 rounded-lg transition-colors text-white text-sm';
+
+            if (selectedEmpires.size === 1) {
+                const empireKey = selectedEmpires.values().next().value;
+                const data = empiresData[empireKey];
+                aiTitle.textContent = data.name;
+
+                // Show basic info immediately
+                aiContent.innerHTML = `
+                    <div style="margin-bottom:12px">
+                        <div style="font-size:0.85rem;color:#6b7280;margin-bottom:4px">תקופה</div>
+                        <div style="font-weight:600">${data.period}</div>
+                    </div>
+                    <div style="margin-bottom:12px">
+                        <div style="font-size:0.85rem;color:#6b7280;margin-bottom:4px">שיא</div>
+                        <div style="font-weight:600">${data.peakYear}</div>
+                    </div>
+                    <div style="margin-bottom:12px">
+                        <div style="font-size:0.85rem;color:#6b7280;margin-bottom:4px">שטח בשיא</div>
+                        <div style="font-weight:600">${data.area}</div>
+                    </div>
+                    <hr style="margin:12px 0;border-color:#e5e7eb">
+                    <div style="font-size:0.85rem;color:#9ca3af">לחץ על כפתור למטה לקבלת מידע מפורט</div>
+                `;
+
+                const factsBtn = document.createElement('button');
+                factsBtn.innerHTML = '✨ עובדות מעניינות';
+                factsBtn.className = btnClass + ' bg-blue-500 hover:bg-blue-600';
+                factsBtn.onclick = () => getFunFacts(empireKey);
+                aiButtons.appendChild(factsBtn);
+
+                const historyBtn = document.createElement('button');
+                historyBtn.innerHTML = '📜 סיפור קצר';
+                historyBtn.className = btnClass + ' bg-purple-500 hover:bg-purple-600';
+                historyBtn.onclick = () => getHistory(empireKey);
+                aiButtons.appendChild(historyBtn);
+
+                const legacyBtn = document.createElement('button');
+                legacyBtn.innerHTML = '🏛️ מורשת והשפעה';
+                legacyBtn.className = btnClass + ' bg-teal-500 hover:bg-teal-600';
+                legacyBtn.onclick = () => getLegacy(empireKey);
+                aiButtons.appendChild(legacyBtn);
+
+            } else if (selectedEmpires.size === 2) {
+                const names = Array.from(selectedEmpires).map(k => empiresData[k].name);
+                aiTitle.textContent = 'השוואה: ' + names.join(' מול ');
+
+                const compareBtn = document.createElement('button');
+                compareBtn.innerHTML = '⚖️ השווה אימפריות';
+                compareBtn.className = btnClass + ' bg-green-500 hover:bg-green-600';
+                compareBtn.onclick = () => compareEmpires();
+                aiButtons.appendChild(compareBtn);
+
+                const warBtn = document.createElement('button');
+                warBtn.innerHTML = '⚔️ מי הייתה מנצחת?';
+                warBtn.className = btnClass + ' bg-red-500 hover:bg-red-600';
+                warBtn.onclick = () => getWarScenario();
+                aiButtons.appendChild(warBtn);
+
+                const timelineBtn = document.createElement('button');
+                timelineBtn.innerHTML = '📅 ציר זמן משותף';
+                timelineBtn.className = btnClass + ' bg-indigo-500 hover:bg-indigo-600';
+                timelineBtn.onclick = () => getTimeline();
+                aiButtons.appendChild(timelineBtn);
+
+            } else {
+                const names = Array.from(selectedEmpires).map(k => empiresData[k].name);
+                aiTitle.textContent = `השוואת ${selectedEmpires.size} אימפריות`;
+
+                const compareBtn = document.createElement('button');
+                compareBtn.innerHTML = '⚖️ השווה אימפריות נבחרות';
+                compareBtn.className = btnClass + ' bg-green-500 hover:bg-green-600';
+                compareBtn.onclick = () => compareEmpires();
+                aiButtons.appendChild(compareBtn);
+
+                const rankBtn = document.createElement('button');
+                rankBtn.innerHTML = '🏆 דרג לפי עוצמה';
+                rankBtn.className = btnClass + ' bg-amber-500 hover:bg-amber-600';
+                rankBtn.onclick = () => getRanking();
+                aiButtons.appendChild(rankBtn);
+            }
+        }
+
+        // AI content functions
+        async function getFunFacts(empireKey) {
+            const name = empiresData[empireKey].name;
+            await generateAiContent(`ספר לי 5 עובדות מעניינות ופחות מוכרות על ${name}. הצג בעברית כרשימה ממוספרת עם כותרת קצרה מודגשת לכל עובדה ואחריה הסבר.`);
+        }
+
+        async function getHistory(empireKey) {
+            const name = empiresData[empireKey].name;
+            const data = empiresData[empireKey];
+            await generateAiContent(`ספר בקצרה את סיפורה של ${name} (${data.period}). התחל מייסוד האימפריה, עבור דרך שיאה, ותאר את שקיעתה ונפילתה. כתוב בעברית בסגנון מעניין ומרתק, בערך 200 מילים.`);
+        }
+
+        async function getLegacy(empireKey) {
+            const name = empiresData[empireKey].name;
+            await generateAiContent(`תאר את המורשת וההשפעה של ${name} על העולם המודרני. כלול השפעות בתחומי: חוק ומשפט, תרבות, טכנולוגיה, שפה, וארגון מדיני. כתוב בעברית בצורה תמציתית אך מעניינת.`);
+        }
+
+        async function compareEmpires() {
+            const names = Array.from(selectedEmpires).map(k => empiresData[k].name);
+            const details = Array.from(selectedEmpires).map(k => {
+                const d = empiresData[k];
+                return `${d.name} (${d.period}, שטח: ${d.area})`;
+            }).join(', ');
+            await generateAiContent(`ספק השוואה מפורטת בעברית בין ${details}. השווה בקטגוריות: שטח ואוכלוסיה, כוח צבאי, הישגים תרבותיים, ניהול ומנהל, וסיבות השקיעה. הצג בצורה מסודרת עם כותרות.`);
+        }
+
+        async function getWarScenario() {
+            const names = Array.from(selectedEmpires).map(k => empiresData[k].name);
+            const details = Array.from(selectedEmpires).map(k => {
+                const d = empiresData[k];
+                return `${d.name} בשיאה (${d.peakYear})`;
+            }).join(' מול ');
+            await generateAiContent(`דמיין תרחיש מלחמה בין ${details}. נתח מי הייתה מנצחת ומדוע. התחשב בגודל הצבא, טכנולוגיה צבאית, טקטיקות, לוגיסטיקה, גיאוגרפיה ומוטיבציה. כתוב בעברית בסגנון מרתק עם מסקנה ברורה.`);
+        }
+
+        async function getTimeline() {
+            const names = Array.from(selectedEmpires).map(k => empiresData[k].name);
+            const details = Array.from(selectedEmpires).map(k => {
+                const d = empiresData[k];
+                return `${d.name} (${d.period})`;
+            }).join(', ');
+            await generateAiContent(`צור ציר זמן המשווה בין ${details}. הראה אירועים מרכזיים של כל אחת על ציר הזמן, וסמן נקודות שבהן הן חפפו או השפיעו זו על זו. כתוב בעברית בצורה מסודרת.`);
+        }
+
+        async function getRanking() {
+            const details = Array.from(selectedEmpires).map(k => {
+                const d = empiresData[k];
+                return `${d.name} (${d.period}, שטח: ${d.area})`;
+            }).join(', ');
+            await generateAiContent(`דרג את האימפריות הבאות לפי עוצמתן הכוללת: ${details}. השתמש בקריטריונים: שטח, משך קיום, כוח צבאי, הישגים תרבותיים, והשפעה על ההיסטוריה. הצג דירוג מ-1 ומטה עם הסבר קצר לכל מקום. כתוב בעברית.`);
+        }
+
+        async function generateAiContent(prompt) {
+            const loader = document.getElementById('ai-loader');
+            const contentArea = document.getElementById('ai-panel-content');
+            const buttonsArea = document.getElementById('ai-buttons');
+            const aiPanel = document.getElementById('ai-panel');
+
+            // Ensure panel is visible
+            aiPanel.classList.add('is-visible');
+            document.getElementById('open-ai-btn').classList.add('hidden');
+
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_API_KEY") {
+                contentArea.innerHTML = `<span class="text-red-500">מפתח ה-API של Gemini אינו מוגדר.</span>`;
+                return;
+            }
+
+            loader.style.display = 'block';
+            contentArea.innerHTML = '';
+            buttonsArea.style.display = 'none';
+
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }]
+                };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0) {
+                    let text = result.candidates[0].content.parts[0].text;
+                    // Convert markdown-like formatting to HTML
+                    text = text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/^### (.*$)/gm, '<h4 style="font-size:1rem;font-weight:700;margin:12px 0 4px;color:#1f2937">$1</h4>')
+                        .replace(/^## (.*$)/gm, '<h3 style="font-size:1.1rem;font-weight:700;margin:14px 0 6px;color:#1f2937">$1</h3>')
+                        .replace(/\n/g, '<br>');
+                    contentArea.innerHTML = text;
+                } else {
+                    throw new Error("No content from API.");
+                }
+
+            } catch (error) {
+                console.error("Gemini API error:", error);
+                contentArea.innerHTML = `<span class="text-red-500">אירעה שגיאה בקבלת המידע. נסה שוב.</span>`;
+            } finally {
+                loader.style.display = 'none';
+                buttonsArea.style.display = 'flex';
+            }
+        }
+
+        // Initialize
+        (async () => {
+            if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "YOUR_API_KEY") {
+                document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>שגיאת תצורה</h2><p class='text-gray-700'>אנא הגדר מפתח API של מפות גוגל.</p></div></div>`;
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=marker&callback=initMap&language=he`;
+            script.async = true;
+            script.defer = true;
+            script.onerror = () => {
+                document.getElementById('map').innerHTML = `<div class='w-full h-full flex items-center justify-center bg-gray-200'><div class='text-center p-8 bg-white rounded-lg shadow-md'><h2 class='text-2xl font-bold text-red-600 mb-2'>שגיאה בטעינת המפה</h2><p class='text-gray-700'>לא ניתן לטעון את המפה. בדוק את מפתח ה-API.</p></div></div>`;
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+</body>
+</html>
