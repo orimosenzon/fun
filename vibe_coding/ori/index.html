@@ -1961,7 +1961,7 @@ Ejemplos:
             return data.places || [];
         }
 
-        // ── Distance (Haversine) ──
+        // ── Distance (Haversine) ── (tested in search-utils.test.js)
         function haversine(p1, p2) {
             const R = 6371000;
             const dLat = (p2.lat - p1.lat) * Math.PI / 180;

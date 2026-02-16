@@ -1,0 +1,14 @@
+{
+  "name": "smart-business-search",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "devDependencies": {
+    "@vitest/ui": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}
