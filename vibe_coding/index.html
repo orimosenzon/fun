@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Coding Projects</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .projects {
+            display: grid;
+            gap: 20px;
+        }
+
+        .project-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            border-color: #818cf8;
+            box-shadow: 0 8px 30px rgba(129, 140, 248, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .card-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+
+        .card-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .card-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #818cf8;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #6366f1; }
+
+        .btn-secondary {
+            background: #334155;
+            color: #cbd5e1;
+        }
+        .btn-secondary:hover { background: #475569; }
+
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #64748b;
+            margin-bottom: 16px;
+            margin-top: 32px;
+        }
+
+        /* Color themes per project */
+        .theme-blue .card-icon { background: #1e3a5f; color: #60a5fa; }
+        .theme-blue .card-tag { background: #1e3a5f; color: #60a5fa; }
+
+        .theme-purple .card-icon { background: #3b1f5e; color: #c084fc; }
+        .theme-purple .card-tag { background: #3b1f5e; color: #c084fc; }
+
+        .theme-pink .card-icon { background: #5e1f3b; color: #f472b6; }
+        .theme-pink .card-tag { background: #5e1f3b; color: #f472b6; }
+
+        .theme-green .card-icon { background: #1f5e3b; color: #4ade80; }
+        .theme-green .card-tag { background: #1f5e3b; color: #4ade80; }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #1e293b;
+            color: #475569;
+            font-size: 0.82rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vibe Coding Projects</h1>
+            <p>A collection of apps built with AI-assisted development</p>
+        </header>
+
+        <div class="section-title">Applications</div>
+        <div class="projects">
+
+            <div class="project-card theme-blue">
+                <div class="card-header">
+                    <div class="card-icon">&#128269;</div>
+                    <div>
+                        <div class="card-title">Smart Business Search</div>
+                        <span class="card-tag">Google Maps &bull; Gemini AI &bull; Multilingual</span>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    AI-powered business search on a map. Type natural language queries like
+                    "Italian restaurants open now" and get results with ratings, directions, and details.
+                    Supports English, Hebrew, and Spanish with full RTL support. Also available as a native Android app (Flutter).
+                </div>
+                <div class="card-links">
+                    <a href="ori/index.html" class="btn-primary">&#9654; Open Web App</a>
+                    <a href="ori_android/" class="btn-secondary">&#128241; Android Source (Flutter)</a>
+                </div>
+            </div>
+
+            <div class="project-card theme-purple">
+                <div class="card-header">
+                    <div class="card-icon">&#10024;</div>
+                    <div>
+                        <div class="card-title">Bezier Curve Animation Editor</div>
+                        <span class="card-tag">Canvas &bull; Animation &bull; Interactive</span>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    An interactive Bezier curve animation editor with multiple versions.
+                    Create, edit, and animate curves with control points. Includes a timeline-based version
+                    with keyframe support.
+                </div>
+                <div class="card-links">
+                    <a href="animate/anim9.html" class="btn-primary">&#9654; Latest (Timeline)</a>
+                    <a href="animate/anim8.html" class="btn-secondary">v8 - Enhanced</a>
+                    <a href="animate/anim7.html" class="btn-secondary">v7 - Improved</a>
+                    <a href="animate/anim6.html" class="btn-secondary">v6 - Basic</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="section-title">3D Experiments</div>
+        <div class="projects">
+
+            <div class="project-card theme-pink">
+                <div class="card-header">
+                    <div class="card-icon">&#127801;</div>
+                    <div>
+                        <div class="card-title">3D Rose &amp; Heart</div>
+                        <span class="card-tag">Three.js &bull; 3D &bull; WebGL</span>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    A 3D animated rose and heart rendered with Three.js and WebGL.
+                    Features particle effects and smooth animations on a dark background.
+                </div>
+                <div class="card-links">
+                    <a href="tmp/v.html" class="btn-primary">&#9654; Open</a>
+                </div>
+            </div>
+
+            <div class="project-card theme-green">
+                <div class="card-header">
+                    <div class="card-icon">&#127756;</div>
+                    <div>
+                        <div class="card-title">Mind, Heart, Body, Spirit in Space</div>
+                        <span class="card-tag">Three.js &bull; 3D &bull; Animated</span>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    An animated 3D scene exploring the themes of Mind, Heart, Body, and Spirit
+                    set in a cosmic space environment. Built with Three.js and Tailwind CSS.
+                </div>
+                <div class="card-links">
+                    <a href="tmp/karina.html" class="btn-primary">&#9654; Open</a>
+                </div>
+            </div>
+
+        </div>
+
+        <footer>
+            Built with Claude Code &bull; Vibe Coding
+        </footer>
+    </div>
+</body>
+</html>
