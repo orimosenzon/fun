@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פיפין - הרפתקה בארץ התיכונה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- סרגל עליון -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <h1 class="game-title">פיפין</h1>
+      <span class="topbar-separator">·</span>
+      <span id="topbar-location" class="topbar-location">הוביטון</span>
+    </div>
+    <button id="inventory-btn" class="inventory-btn" title="תרמיל">
+      🎒 <span id="inventory-count">2</span>
+    </button>
+  </header>
+
+  <!-- תוכן ראשי -->
+  <main class="game-layout">
+
+    <!-- עמודה שמאלית - תמונה + שושנת רוחות -->
+    <aside class="left-panel">
+      <div class="location-image-wrapper">
+        <img id="location-image" class="location-image" src="images/locations/hobbiton.webp" alt="תמונת המקום">
+        <div id="location-image-placeholder" class="location-image-placeholder">
+          <span>🗺️</span>
+          <p>תמונת המקום</p>
+        </div>
+      </div>
+
+      <!-- דמויות במקום -->
+      <div id="npcs-bar" class="npcs-bar">
+        <!-- NPC avatars will be injected here -->
+      </div>
+
+      <!-- שושנת רוחות -->
+      <nav class="compass">
+        <button id="compass-n" class="compass-btn compass-n" data-dir="north" disabled>צפון</button>
+        <button id="compass-w" class="compass-btn compass-w" data-dir="west" disabled>מערב</button>
+        <div class="compass-center">●</div>
+        <button id="compass-e" class="compass-btn compass-e" data-dir="east" disabled>מזרח</button>
+        <button id="compass-s" class="compass-btn compass-s" data-dir="south" disabled>דרום</button>
+      </nav>
+    </aside>
+
+    <!-- עמודה ימנית - טקסט + קלט -->
+    <section class="right-panel">
+      <div id="text-panel" class="text-panel">
+        <h2 id="location-name" class="location-name">הוביטון</h2>
+        <p id="location-description" class="location-description"></p>
+        <p id="ambient-text" class="ambient-text"></p>
+
+        <div id="dialogue-area" class="dialogue-area">
+          <!-- dialogue bubbles will be injected here -->
+        </div>
+      </div>
+
+      <!-- הצעות פעולה -->
+      <div id="suggestions" class="suggestions">
+        <!-- suggestion chips will be injected here -->
+      </div>
+
+      <!-- שורת קלט -->
+      <form id="input-form" class="input-form">
+        <input id="user-input" type="text" class="user-input" placeholder="מה תרצה לעשות?" autocomplete="off">
+        <button type="submit" class="send-btn">▶</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- מודל תרמיל -->
+  <div id="inventory-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🎒 תרמיל</h3>
+        <button id="close-inventory" class="modal-close">✕</button>
+      </div>
+      <div id="inventory-list" class="inventory-list">
+        <!-- inventory items will be injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- מסך פתיחה -->
+  <div id="start-screen" class="start-screen">
+    <div class="start-content">
+      <h1 class="start-title">פיפין</h1>
+      <p class="start-subtitle">הרפתקה בארץ התיכונה</p>
+      <div class="start-api-section">
+        <label for="api-key-input" class="api-label">מפתח Gemini API:</label>
+        <input id="api-key-input" type="password" class="api-input" placeholder="הכנס מפתח API...">
+      </div>
+      <button id="start-btn" class="start-btn">התחל הרפתקה</button>
+      <button id="load-btn" class="load-btn hidden">טען משחק שמור</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>

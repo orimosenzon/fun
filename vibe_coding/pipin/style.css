@@ -1,0 +1,807 @@
+/* ═══════════════════════════════════════════
+   פיפין - עיצוב מודרני, בהיר ונקי
+   ═══════════════════════════════════════════ */
+
+:root {
+  --bg: #faf8f4;
+  --bg-panel: #ffffff;
+  --bg-hover: #f5f2ec;
+  --bg-input: #f7f5f0;
+  --text: #2c2416;
+  --text-secondary: #7a6e5d;
+  --text-muted: #a89e8c;
+  --accent: #3d6b4f;
+  --accent-light: #e8f0eb;
+  --accent-hover: #2d5a3e;
+  --gold: #c9a84c;
+  --gold-light: #faf3e0;
+  --border: #e8e3d8;
+  --shadow: 0 2px 12px rgba(44, 36, 22, 0.08);
+  --shadow-lg: 0 8px 32px rgba(44, 36, 22, 0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-round: 50%;
+  --font: 'Heebo', sans-serif;
+  --transition: 0.25s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  direction: rtl;
+}
+
+/* ═══════════════════════════════
+   סרגל עליון
+   ═══════════════════════════════ */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(44, 36, 22, 0.04);
+  z-index: 10;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.game-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.topbar-separator {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.topbar-location {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.inventory-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  color: var(--text);
+  transition: all var(--transition);
+}
+
+.inventory-btn:hover {
+  background: var(--gold-light);
+  border-color: var(--gold);
+}
+
+/* ═══════════════════════════════
+   פריסה ראשית
+   ═══════════════════════════════ */
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: calc(100vh - 53px);
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════
+   עמודה שמאלית
+   ═══════════════════════════════ */
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 16px;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.location-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--bg-hover);
+}
+
+.location-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.5s ease;
+}
+
+.location-image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.location-image-placeholder span {
+  font-size: 2.5rem;
+}
+
+.location-image-placeholder.hidden,
+.location-image.hidden {
+  display: none;
+}
+
+/* ═══════════════════════════════
+   דמויות (NPCs)
+   ═══════════════════════════════ */
+
+.npcs-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  min-height: 0;
+}
+
+.npcs-bar:empty {
+  display: none;
+}
+
+.npc-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+
+.npc-avatar:hover {
+  transform: translateY(-2px);
+}
+
+.npc-avatar-img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-round);
+  border: 2px solid var(--border);
+  object-fit: cover;
+  background: var(--bg-hover);
+  transition: border-color var(--transition);
+}
+
+.npc-avatar:hover .npc-avatar-img {
+  border-color: var(--accent);
+}
+
+.npc-avatar-name {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════
+   שושנת רוחות
+   ═══════════════════════════════ */
+
+.compass {
+  display: grid;
+  grid-template-areas:
+    ". n ."
+    "w c e"
+    ". s .";
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 6px;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto;
+}
+
+.compass-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.compass-btn:not(:disabled):hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.compass-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.compass-n { grid-area: n; }
+.compass-w { grid-area: w; }
+.compass-e { grid-area: e; }
+.compass-s { grid-area: s; }
+
+.compass-center {
+  grid-area: c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════
+   עמודה ימנית
+   ═══════════════════════════════ */
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.text-panel {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+.location-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.location-description {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.ambient-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+/* דיאלוגים */
+.dialogue-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dialogue-bubble {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: fadeIn 0.3s ease;
+}
+
+.dialogue-portrait {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-round);
+  border: 2px solid var(--border);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.dialogue-content {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  max-width: 85%;
+}
+
+.dialogue-speaker {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.dialogue-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* פעולת שחקן */
+.player-action {
+  align-self: flex-start;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  color: var(--accent);
+  animation: fadeIn 0.3s ease;
+}
+
+/* ═══════════════════════════════
+   הצעות פעולה
+   ═══════════════════════════════ */
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 32px;
+  border-top: 1px solid var(--border);
+  min-height: 0;
+}
+
+.suggestions:empty {
+  display: none;
+  padding: 0;
+}
+
+.suggestion-chip {
+  padding: 6px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.suggestion-chip:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ═══════════════════════════════
+   שורת קלט
+   ═══════════════════════════════ */
+
+.input-form {
+  display: flex;
+  gap: 8px;
+  padding: 16px 32px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.user-input {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--transition);
+  direction: rtl;
+}
+
+.user-input:focus {
+  border-color: var(--accent);
+}
+
+.user-input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.send-btn:hover {
+  background: var(--accent-hover);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════
+   מודל תרמיל
+   ═══════════════════════════════ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 36, 22, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal {
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 440px;
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.inventory-list {
+  padding: 12px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inventory-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.inventory-item:hover {
+  background: var(--bg-hover);
+}
+
+.inventory-item-icon {
+  font-size: 1.5rem;
+  width: 36px;
+  text-align: center;
+}
+
+.inventory-item-info {
+  flex: 1;
+}
+
+.inventory-item-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.inventory-item-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.inventory-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ═══════════════════════════════
+   Loading
+   ═══════════════════════════════ */
+
+.loading {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
+.loading.hidden {
+  display: none;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ═══════════════════════════════
+   מסך פתיחה
+   ═══════════════════════════════ */
+
+.start-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #f0ebe1 0%, #e8dfc9 50%, #dfd5bc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.5s ease;
+}
+
+.start-screen.hidden {
+  display: none;
+}
+
+.start-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.start-title {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.start-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.start-api-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+}
+
+.api-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.api-input {
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+  direction: ltr;
+  text-align: left;
+}
+
+.api-input:focus {
+  border-color: var(--accent);
+}
+
+.start-btn {
+  margin-top: 12px;
+  padding: 12px 40px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.start-btn:hover {
+  background: var(--accent-hover);
+}
+
+.load-btn {
+  padding: 8px 24px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.load-btn:hover {
+  background: var(--bg-panel);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.load-btn.hidden {
+  display: none;
+}
+
+/* ═══════════════════════════════
+   אנימציות
+   ═══════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+/* ═══════════════════════════════
+   רספונסיבי
+   ═══════════════════════════════ */
+
+@media (max-width: 768px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .left-panel {
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    max-height: 220px;
+  }
+
+  .location-image-wrapper {
+    width: 140px;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+  }
+
+  .compass {
+    width: 120px;
+    height: 120px;
+  }
+
+  .npcs-bar {
+    flex: 1;
+    justify-content: flex-start;
+  }
+
+  .text-panel {
+    padding: 16px 20px;
+  }
+
+  .input-form {
+    padding: 12px 20px;
+  }
+
+  .suggestions {
+    padding: 8px 20px;
+  }
+}
+
+/* ═══════════════════════════════
+   Scrollbar מותאם
+   ═══════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
