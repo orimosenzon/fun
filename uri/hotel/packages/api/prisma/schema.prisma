@@ -1,0 +1,78 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Rooms ───────────────────────────────────────
+// type: SINGLE, DOUBLE, TWIN, SUITE, FAMILY
+// status: AVAILABLE, OCCUPIED, MAINTENANCE, CLEANING
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  number      String   @unique
+  floor       Int
+  type        String   @default("DOUBLE")
+  status      String   @default("AVAILABLE")
+  basePrice   Float
+  maxGuests   Int      @default(2)
+  description String?
+  amenities   String   @default("[]") // JSON array stored as string
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reservations Reservation[]
+}
+
+// ─── Guests ──────────────────────────────────────
+
+model Guest {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String
+  idNumber  String?
+  idType    String?
+  country   String   @default("IL")
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@index([phone])
+  @@index([lastName])
+}
+
+// ─── Reservations ────────────────────────────────
+// status: PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW
+
+model Reservation {
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  guestId    Int
+  checkIn    DateTime
+  checkOut   DateTime
+  status     String   @default("PENDING")
+  numGuests  Int      @default(1)
+  totalPrice Float
+  notes      String?
+  source     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  room  Room  @relation(fields: [roomId], references: [id])
+  guest Guest @relation(fields: [guestId], references: [id])
+
+  @@index([roomId, checkIn, checkOut])
+  @@index([guestId])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
+}

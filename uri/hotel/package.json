@@ -1,0 +1,25 @@
+{
+  "name": "hotel-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hotel Management System",
+  "scripts": {
+    "dev:api": "pnpm --filter @hotel/api dev",
+    "dev:web": "pnpm --filter @hotel/web dev",
+    "build:shared": "pnpm --filter @hotel/shared build",
+    "build:api": "pnpm --filter @hotel/api build",
+    "build:web": "pnpm --filter @hotel/web build",
+    "build": "pnpm build:shared && pnpm build:api && pnpm build:web",
+    "dev": "pnpm build:shared && concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
+    "db:migrate": "pnpm --filter @hotel/api db:migrate",
+    "db:seed": "pnpm --filter @hotel/api db:seed",
+    "db:studio": "pnpm --filter @hotel/api db:studio"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild"]
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}

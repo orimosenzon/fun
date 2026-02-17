@@ -1,0 +1,26 @@
+{
+  "name": "@hotel/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@hotel/shared": "workspace:*",
+    "@prisma/client": "^6.4.0",
+    "fastify": "^5.2.0",
+    "@fastify/cors": "^11.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
