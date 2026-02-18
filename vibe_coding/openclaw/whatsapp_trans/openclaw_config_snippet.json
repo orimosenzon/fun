@@ -1,0 +1,21 @@
+{
+  "tools": {
+    "media": {
+      "audio": {
+        "enabled": true,
+        "maxBytes": 20971520,
+        "models": [
+          {
+            "type": "cli",
+            "command": "python3",
+            "args": [
+              "/home/ori/fun/vibe_coding/openclaw/whatsapp_trans/transcribe.py",
+              "{{MediaPath}}"
+            ],
+            "timeoutSeconds": 60
+          }
+        ]
+      }
+    }
+  }
+}
