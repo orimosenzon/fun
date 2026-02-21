@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  DROPPED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+  TRANSFERRED
+  ABSENT
+}
+
+enum PaymentType {
+  MONTHLY
+  SESSION
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  image     String?
+  role      Role     @default(STUDENT)
+  password  String?  // null for OAuth users
+
+  accounts      Account[]
+  enrollments   GroupEnrollment[]
+  registrations SessionRegistration[]
+  payments      Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// OAuth accounts (Google, Facebook, etc.)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  maxStudents Int      @default(10)
+  dayOfWeek   Int
+  time        String
+  duration    Int      @default(90)
+  location    String?
+  isActive    Boolean  @default(true)
+
+  enrollments GroupEnrollment[]
+  sessions    Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GroupEnrollment {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  group     Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  status    EnrollmentStatus @default(ACTIVE)
+  startDate DateTime         @default(now())
+
+  @@unique([userId, groupId])
+}
+
+model Session {
+  id      String        @id @default(cuid())
+  group   Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+  date    DateTime
+  status  SessionStatus @default(SCHEDULED)
+  notes   String?
+
+  registrations SessionRegistration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SessionRegistration {
+  id        String             @id @default(cuid())
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  session   Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  status    RegistrationStatus @default(REGISTERED)
+
+  transferredFromId String?
+  transferredToId   String?
+  note              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, sessionId])
+}
+
+model Payment {
+  id          String      @id @default(cuid())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  amount      Float
+  date        DateTime    @default(now())
+  description String
+  type        PaymentType @default(MONTHLY)
+
+  createdAt DateTime @default(now())
+}
