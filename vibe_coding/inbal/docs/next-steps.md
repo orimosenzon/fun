@@ -38,7 +38,28 @@
 
 ---
 
-## Phase B — Missing Features (Important)
+## Phase B — Slots & Scheduling (Core Feature)
+
+### Data model changes
+- [ ] Replace the current `Group` model with a fixed weekly schedule (9 hardcoded sessions — days + times)
+- [ ] Add `Slot` model: `sessionId`, `type` (WHEEL | NO_WHEEL | EXTRA), `position` (1–8)
+- [ ] Add `SlotAssignment`: `slotId`, `userId`, `isDefault` (whether this is the student's default slot)
+
+### Admin features
+- [ ] Full weekly calendar view — all 9 sessions, all 8 slots per session, student names visible
+- [ ] Drag or click to reassign any student to any slot
+- [ ] Set/change a student's default slot (persists across weeks)
+- [ ] Use the 8th (extra) slot to add a student beyond the normal 7
+
+### Student features
+- [ ] Weekly calendar view — same 9 sessions, showing free/taken per slot (no names)
+- [ ] Self-assign to any free slot in any session
+- [ ] See their own default slot highlighted
+- [ ] Cancel their assignment for a specific session
+
+---
+
+## Phase C — Missing Features (Important)
 
 ### Session transfers
 Currently only cancellation is supported. Need to add:
@@ -57,7 +78,7 @@ Currently only cancellation is supported. Need to add:
 
 ---
 
-## Phase C — UX Improvements
+## Phase D — UX Improvements
 
 ### Notifications (important)
 - [ ] **WhatsApp / SMS** — automatic message to student who cancelled (cancellation confirmation)
@@ -81,7 +102,7 @@ Currently only cancellation is supported. Need to add:
 
 ---
 
-## Phase D — Reliability and Security
+## Phase E — Reliability and Security
 
 - [ ] Rate limiting on API routes
 - [ ] Verify a student can only cancel their own sessions
