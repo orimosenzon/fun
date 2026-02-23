@@ -38,6 +38,11 @@ enum PaymentType {
   OTHER
 }
 
+enum SlotType {
+  WHEEL
+  NO_WHEEL
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -95,13 +100,14 @@ model Group {
 }
 
 model GroupEnrollment {
-  id        String           @id @default(cuid())
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  group     Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  groupId   String
-  status    EnrollmentStatus @default(ACTIVE)
-  startDate DateTime         @default(now())
+  id                String           @id @default(cuid())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  group             Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId           String
+  status            EnrollmentStatus @default(ACTIVE)
+  startDate         DateTime         @default(now())
+  preferredSlotType SlotType?
 
   @@unique([userId, groupId])
 }
@@ -127,6 +133,7 @@ model SessionRegistration {
   session   Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId String
   status    RegistrationStatus @default(REGISTERED)
+  slotType  SlotType?
 
   transferredFromId String?
   transferredToId   String?

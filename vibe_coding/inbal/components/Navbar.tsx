@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 
 const adminLinks = [
   { href: "/", label: "ראשי", icon: "🏠" },
+  { href: "/schedule", label: "לוח שיעורים", icon: "📆" },
   { href: "/groups", label: "קבוצות", icon: "👥" },
   { href: "/students", label: "תלמידים", icon: "🎓" },
   { href: "/payments", label: "תשלומים", icon: "💰" },

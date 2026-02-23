@@ -13,6 +13,7 @@ export default function AddStudentToGroup({ groupId }: { groupId: string }) {
   const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<User[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [slotType, setSlotType] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -31,12 +32,13 @@ export default function AddStudentToGroup({ groupId }: { groupId: string }) {
     const res = await fetch("/api/enrollments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: selectedId, groupId }),
+      body: JSON.stringify({ userId: selectedId, groupId, slotType: slotType || null }),
     });
 
     if (res.ok) {
       setOpen(false);
       setSelectedId("");
+      setSlotType("");
       router.refresh();
     } else {
       const data = await res.json();
@@ -70,6 +72,17 @@ export default function AddStudentToGroup({ groupId }: { groupId: string }) {
           </option>
         ))}
       </select>
+
+      <select
+        value={slotType}
+        onChange={(e) => setSlotType(e.target.value)}
+        className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+      >
+        <option value="">סוג עמדה (אופציונלי)</option>
+        <option value="WHEEL">🎡 אובן (pottery wheel)</option>
+        <option value="NO_WHEEL">✋ ללא אובן</option>
+      </select>
+
       <div className="flex gap-2">
         <button
           onClick={handleAdd}
@@ -79,7 +92,7 @@ export default function AddStudentToGroup({ groupId }: { groupId: string }) {
           {loading ? "מוסיף..." : "הוסף"}
         </button>
         <button
-          onClick={() => { setOpen(false); setSelectedId(""); }}
+          onClick={() => { setOpen(false); setSelectedId(""); setSlotType(""); }}
           className="text-stone-500 text-sm px-3 py-1.5 rounded-lg hover:bg-stone-100 transition"
         >
           ביטול

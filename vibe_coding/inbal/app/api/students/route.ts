@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { slotAvailable } from "@/lib/slots";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, email, phone, groupId } = await req.json();
+  const { name, email, phone, groupId, slotType } = await req.json();
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return NextResponse.json({ error: "אימייל כבר קיים" }, { status: 409 });
@@ -42,15 +43,16 @@ export async function POST(req: Request) {
 
   if (groupId) {
     await prisma.groupEnrollment.create({
-      data: { userId: user.id, groupId, status: "ACTIVE" },
+      data: { userId: user.id, groupId, status: "ACTIVE", preferredSlotType: slotType ?? null },
     });
-    // Add to future sessions
     const futureSessions = await prisma.session.findMany({
       where: { groupId, date: { gte: new Date() }, status: "SCHEDULED" },
+      include: { registrations: { select: { slotType: true, status: true } } },
     });
     for (const s of futureSessions) {
+      const canRegister = !slotType || slotAvailable(s.registrations, slotType);
       await prisma.sessionRegistration.create({
-        data: { userId: user.id, sessionId: s.id, status: "REGISTERED" },
+        data: { userId: user.id, sessionId: s.id, status: "REGISTERED", slotType: canRegister ? slotType ?? null : null },
       });
     }
   }

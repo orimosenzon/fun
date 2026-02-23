@@ -54,7 +54,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     for (const enrollment of group.enrollments) {
       await prisma.sessionRegistration.create({
-        data: { sessionId: newSession.id, userId: enrollment.userId, status: "REGISTERED" },
+        data: {
+          sessionId: newSession.id,
+          userId: enrollment.userId,
+          status: "REGISTERED",
+          slotType: enrollment.preferredSlotType ?? null,
+        },
       });
     }
     created.push(newSession);

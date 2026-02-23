@@ -11,7 +11,7 @@ interface Group {
 export default function AddStudentForm() {
   const [open, setOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", groupId: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", groupId: "", slotType: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -32,7 +32,10 @@ export default function AddStudentForm() {
     const res = await fetch("/api/students", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        slotType: form.slotType || null,
+      }),
     });
 
     if (!res.ok) {
@@ -43,7 +46,7 @@ export default function AddStudentForm() {
     }
 
     setOpen(false);
-    setForm({ name: "", email: "", phone: "", groupId: "" });
+    setForm({ name: "", email: "", phone: "", groupId: "", slotType: "" });
     router.refresh();
   }
 
@@ -110,6 +113,21 @@ export default function AddStudentForm() {
               ))}
             </select>
           </div>
+
+          {form.groupId && (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">סוג עמדה</label>
+              <select
+                value={form.slotType}
+                onChange={(e) => set("slotType", e.target.value)}
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="">לא משוייך</option>
+                <option value="WHEEL">🎡 אובן (pottery wheel)</option>
+                <option value="NO_WHEEL">✋ ללא אובן</option>
+              </select>
+            </div>
+          )}
 
           <p className="text-xs text-stone-400">
             הסיסמה הראשונית תהיה: <strong>student123</strong>
