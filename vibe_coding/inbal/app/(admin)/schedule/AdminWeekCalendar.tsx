@@ -28,25 +28,19 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
   const date = new Date(session.date);
   const timeStr = date.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 
-  function SlotList({ names, total, label }: { names: string[]; total: number; label: string }) {
+  function SlotRow({ names, total, label }: { names: string[]; total: number; label: string }) {
     const free = total - names.length;
     return (
       <div>
-        <div className="text-xs text-stone-500 mb-1">{label} ({total})</div>
+        <div className="text-[10px] text-stone-400 mb-0.5">{label}</div>
         <div className="space-y-0.5">
           {names.map((name, i) => (
-            <div
-              key={i}
-              className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded font-medium"
-            >
+            <div key={i} className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium truncate leading-tight">
               {name}
             </div>
           ))}
           {Array.from({ length: free }).map((_, i) => (
-            <div
-              key={`free-${i}`}
-              className="text-xs border border-dashed border-stone-200 text-stone-300 px-2 py-0.5 rounded"
-            >
+            <div key={`f${i}`} className="text-[10px] border border-dashed border-stone-200 text-stone-300 px-1.5 py-0.5 rounded leading-tight">
               פנוי
             </div>
           ))}
@@ -55,41 +49,47 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
     );
   }
 
+  const wheelTaken = session.slots.wheel.length;
+  const noWheelTaken = session.slots.noWheel.length;
+  const totalTaken = wheelTaken + noWheelTaken + session.slots.unassigned.length;
+  const totalSlots = session.slots.wheelTotal + session.slots.noWheelTotal;
+
   return (
     <Link
       href={`/sessions/${session.id}`}
-      className="block bg-white rounded-xl border border-stone-200 shadow-sm hover:border-amber-300 hover:shadow-md transition overflow-hidden"
+      className="block rounded-lg border border-stone-200 bg-white hover:border-amber-300 hover:shadow-sm transition overflow-hidden"
     >
-      <div className="bg-stone-50 px-3 py-2 border-b border-stone-100">
-        <div className="font-semibold text-stone-800 text-sm">{session.groupName}</div>
-        <div className="text-xs text-stone-500">{timeStr}</div>
-        {session.groupLocation && (
-          <div className="text-xs text-stone-400">📍 {session.groupLocation}</div>
-        )}
+      {/* Card header */}
+      <div className="bg-stone-50 border-b border-stone-100 px-2 py-1.5">
+        <div className="font-semibold text-stone-800 text-xs truncate">{session.groupName}</div>
+        <div className="text-[10px] text-stone-400 flex items-center justify-between">
+          <span>{timeStr}</span>
+          <span className={`font-medium ${totalTaken >= totalSlots ? "text-red-500" : "text-green-600"}`}>
+            {totalTaken}/{totalSlots}
+          </span>
+        </div>
       </div>
 
-      <div className="px-3 py-3 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <SlotList
+      {/* Slots */}
+      <div className="p-1.5 space-y-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
+          <SlotRow
             names={session.slots.wheel}
             total={session.slots.wheelTotal}
             label="🎡 אובן"
           />
-          <SlotList
+          <SlotRow
             names={session.slots.noWheel}
             total={session.slots.noWheelTotal}
-            label="✋ ללא אובן"
+            label="✋ ללא"
           />
         </div>
         {session.slots.unassigned.length > 0 && (
           <div>
-            <div className="text-xs text-stone-400 mb-1">לא משוייך</div>
-            <div className="flex flex-wrap gap-1">
+            <div className="text-[10px] text-stone-400 mb-0.5">לא משוייך</div>
+            <div className="flex flex-wrap gap-0.5">
               {session.slots.unassigned.map((name, i) => (
-                <span
-                  key={i}
-                  className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded"
-                >
+                <span key={i} className="text-[10px] bg-stone-100 text-stone-500 px-1 py-0.5 rounded">
                   {name}
                 </span>
               ))}
@@ -104,6 +104,8 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
 export default function AdminWeekCalendar({ sessions, weekStart }: Props) {
   const router = useRouter();
   const weekStartDate = new Date(weekStart);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   function prevWeek() {
     const d = new Date(weekStartDate);
@@ -120,10 +122,15 @@ export default function AdminWeekCalendar({ sessions, weekStart }: Props) {
   const weekLabel = (() => {
     const end = new Date(weekStartDate);
     end.setDate(weekStartDate.getDate() + 6);
-    const fmt = (d: Date) =>
-      d.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
+    const fmt = (d: Date) => d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
     return `${fmt(weekStartDate)} – ${fmt(end)}`;
   })();
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStartDate);
+    d.setDate(weekStartDate.getDate() + i);
+    return d;
+  });
 
   const byDay: AdminSessionData[][] = Array.from({ length: 7 }, () => []);
   for (const s of sessions) {
@@ -131,59 +138,85 @@ export default function AdminWeekCalendar({ sessions, weekStart }: Props) {
     byDay[d.getDay()].push(s);
   }
 
-  const hasAnySessions = sessions.length > 0;
-
   return (
-    <div className="space-y-4" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-stone-800">לוח שיעורים</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-xl px-2 py-1 shadow-sm">
           <button
             onClick={prevWeek}
-            className="p-2 rounded-lg hover:bg-stone-100 transition text-stone-600"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
           >
-            ←
+            &rsaquo;
           </button>
-          <span className="text-sm font-medium text-stone-700 min-w-[140px] text-center">
+          <span className="text-sm font-medium text-stone-700 min-w-[180px] text-center">
             {weekLabel}
           </span>
           <button
             onClick={nextWeek}
-            className="p-2 rounded-lg hover:bg-stone-100 transition text-stone-600"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
           >
-            →
+            &lsaquo;
           </button>
         </div>
       </div>
 
-      {!hasAnySessions ? (
-        <div className="bg-white rounded-xl border border-stone-200 p-10 text-center text-stone-400">
-          <div className="text-4xl mb-2">📅</div>
-          <div>אין שיעורים השבוע</div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {byDay.map((daySessions, idx) => {
-            if (daySessions.length === 0) return null;
-            const dayDate = new Date(weekStartDate);
-            dayDate.setDate(weekStartDate.getDate() + idx);
-
-            return (
-              <div key={idx} className="space-y-3">
-                <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide px-1">
-                  {DAYS_HE[idx]}{" "}
-                  <span className="text-stone-400 font-normal">
-                    {dayDate.toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
-                  </span>
+      {/* Calendar grid */}
+      <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+        <div className="min-w-[600px]">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 border-b border-stone-200">
+            {days.map((day, idx) => {
+              const isToday = day.getTime() === today.getTime();
+              return (
+                <div
+                  key={idx}
+                  className={`px-2 py-3 text-center border-r border-stone-100 last:border-r-0 ${
+                    isToday ? "bg-amber-50" : ""
+                  }`}
+                >
+                  <div className={`text-xs font-semibold ${isToday ? "text-amber-700" : "text-stone-500"}`}>
+                    {DAYS_HE[idx]}
+                  </div>
+                  <div
+                    className={`mt-1 text-sm font-bold inline-flex w-7 h-7 items-center justify-center rounded-full ${
+                      isToday ? "bg-amber-500 text-white" : "text-stone-700"
+                    }`}
+                  >
+                    {day.getDate()}
+                  </div>
                 </div>
-                {daySessions.map((s) => (
-                  <AdminSessionCard key={s.id} session={s} />
-                ))}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Session cells */}
+          <div className="grid grid-cols-7 min-h-[200px]">
+            {days.map((day, idx) => {
+              const isToday = day.getTime() === today.getTime();
+              return (
+                <div
+                  key={idx}
+                  className={`border-r border-stone-100 last:border-r-0 p-1.5 space-y-1.5 ${
+                    isToday ? "bg-amber-50/40" : ""
+                  }`}
+                >
+                  {byDay[idx].length === 0 ? (
+                    <div className="h-full flex items-start justify-center pt-4">
+                      <span className="text-stone-200 text-xs">—</span>
+                    </div>
+                  ) : (
+                    byDay[idx].map((s) => (
+                      <AdminSessionCard key={s.id} session={s} />
+                    ))
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

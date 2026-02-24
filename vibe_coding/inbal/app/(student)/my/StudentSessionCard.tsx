@@ -20,6 +20,8 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
 
   const myReg = session.myRegistration;
   const isRegistered = myReg?.status === "REGISTERED";
+  const isCancelled = myReg?.status === "CANCELLED";
+  const isTransferred = myReg?.status === "TRANSFERRED";
 
   async function handleCancel() {
     if (!myReg) return;
@@ -33,13 +35,6 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
     setShowCancelConfirm(false);
     router.refresh();
   }
-
-  // Registrations I can transfer FROM (same slot type, different session, in the future)
-  const transferSources = myUpcomingRegistrations.filter(
-    (r) =>
-      r.sessionId !== session.id &&
-      (r.slotType === null || r.slotType === transferSlotType)
-  );
 
   async function handleTransfer(fromRegistrationId: string) {
     setLoading(true);
@@ -58,160 +53,139 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
     }
   }
 
+  // Slots for a given type
   function SlotDots({
     total,
     taken,
     type,
-    mySlotType,
-    isMe,
   }: {
     total: number;
     taken: number;
     type: "WHEEL" | "NO_WHEEL";
-    mySlotType: string | null | undefined;
-    isMe: boolean;
   }) {
-    const dots = [];
-    for (let i = 0; i < total; i++) {
-      const isMeSlot = isMe && mySlotType === type && i === 0;
-      const isFilled = isMeSlot || i < taken;
-      const isFree = !isFilled;
+    const mySlot = isRegistered && myReg?.slotType === type;
+    // Adjust taken: if mySlot is included in taken, "me" dot replaces first taken dot
+    const othersTaken = mySlot ? taken - 1 : taken;
+    const free = total - taken;
 
-      if (isMeSlot) {
-        dots.push(
+    const canTransferHere =
+      !isRegistered &&
+      free > 0 &&
+      myUpcomingRegistrations.some(
+        (r) => r.sessionId !== session.id && (r.slotType === null || r.slotType === type)
+      );
+
+    return (
+      <div className="flex gap-0.5 flex-wrap">
+        {mySlot && (
           <span
-            key={i}
             title="המקום שלך"
-            className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] font-bold"
-          >
-            אני
-          </span>
-        );
-      } else if (isFilled) {
-        dots.push(
-          <span
-            key={i}
-            className="inline-block w-6 h-6 rounded-full bg-stone-400"
+            className="inline-block w-4 h-4 rounded-full bg-amber-500 ring-2 ring-amber-300"
           />
-        );
-      } else {
-        // Free slot — clickable for transfer if student has a relevant registration
-        const canTransfer =
-          !isRegistered &&
-          myUpcomingRegistrations.some(
-            (r) => r.sessionId !== session.id && (r.slotType === null || r.slotType === type)
-          );
-
-        dots.push(
+        )}
+        {Array.from({ length: Math.max(0, othersTaken) }).map((_, i) => (
+          <span key={`t${i}`} className="inline-block w-4 h-4 rounded-full bg-stone-300" />
+        ))}
+        {Array.from({ length: free }).map((_, i) => (
           <button
-            key={i}
-            title={canTransfer ? "לחץ להעברה לכאן" : "פנוי"}
-            onClick={() => canTransfer && setTransferSlotType(type)}
-            className={`inline-block w-6 h-6 rounded-full border-2 transition ${
-              canTransfer
-                ? "border-green-400 bg-green-50 hover:bg-green-100 cursor-pointer"
+            key={`f${i}`}
+            onClick={() => canTransferHere && setTransferSlotType(type)}
+            title={canTransferHere ? "לחץ להעברה לכאן" : "פנוי"}
+            className={`inline-block w-4 h-4 rounded-full border-2 transition ${
+              canTransferHere
+                ? "border-green-400 bg-green-50 hover:bg-green-200 cursor-pointer"
                 : "border-stone-200 bg-white cursor-default"
             }`}
           />
-        );
-      }
-    }
-    return <div className="flex gap-1 flex-wrap">{dots}</div>;
+        ))}
+      </div>
+    );
   }
 
+  const cardBorder = isRegistered
+    ? "border-amber-400 bg-amber-50"
+    : isCancelled || isTransferred
+    ? "border-stone-200 bg-stone-50 opacity-60"
+    : "border-stone-200 bg-white hover:border-stone-300";
+
   return (
-    <div
-      className={`bg-white rounded-xl border shadow-sm overflow-hidden ${
-        isRegistered ? "border-amber-300" : "border-stone-200"
-      }`}
-    >
-      {/* Header */}
-      <div
-        className={`px-3 py-2 ${
-          isRegistered ? "bg-amber-50" : "bg-stone-50"
-        }`}
-      >
-        <div className="font-semibold text-stone-800 text-sm">{session.groupName}</div>
-        <div className="text-xs text-stone-500">{timeStr}</div>
-        {session.groupLocation && (
-          <div className="text-xs text-stone-400">📍 {session.groupLocation}</div>
+    <>
+      <div className={`rounded-lg border p-1.5 text-xs space-y-1 transition ${cardBorder}`}>
+        {/* Time + group */}
+        <div className="font-semibold text-stone-800 leading-tight truncate">{session.groupName}</div>
+        <div className="text-stone-400">{timeStr}</div>
+
+        {/* Slot dots */}
+        <div className="space-y-0.5 pt-0.5">
+          <div className="flex items-center gap-1">
+            <span className="text-stone-400" title="אובן">🎡</span>
+            <SlotDots total={session.slots.wheelTotal} taken={session.slots.wheelTaken} type="WHEEL" />
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-stone-400" title="ללא אובן">✋</span>
+            <SlotDots total={session.slots.noWheelTotal} taken={session.slots.noWheelTaken} type="NO_WHEEL" />
+          </div>
+        </div>
+
+        {/* Status badge */}
+        {(isCancelled || isTransferred) && (
+          <div className="text-[10px] text-stone-400">
+            {isCancelled ? "ביטלת" : "הועברת"}
+          </div>
+        )}
+
+        {/* Cancel button */}
+        {isRegistered && (
+          <div className="pt-0.5">
+            {showCancelConfirm ? (
+              <div className="flex gap-1">
+                <button
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="flex-1 bg-red-600 text-white text-[10px] py-1 rounded disabled:opacity-50"
+                >
+                  {loading ? "..." : "אשרי"}
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 border border-stone-200 text-stone-500 text-[10px] py-1 rounded"
+                >
+                  חזרה
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCancelConfirm(true)}
+                className="w-full text-[10px] text-red-500 hover:text-red-700 border border-red-200 py-1 rounded hover:bg-red-50 transition"
+              >
+                ביטול
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Slot grid */}
-      <div className="px-3 py-2 space-y-2">
-        <div>
-          <div className="text-xs text-stone-500 mb-1">🎡 אובן ({session.slots.wheelTotal})</div>
-          <SlotDots
-            total={session.slots.wheelTotal}
-            taken={session.slots.wheelTaken}
-            type="WHEEL"
-            mySlotType={myReg?.slotType}
-            isMe={isRegistered}
-          />
-        </div>
-        <div>
-          <div className="text-xs text-stone-500 mb-1">✋ ללא אובן ({session.slots.noWheelTotal})</div>
-          <SlotDots
-            total={session.slots.noWheelTotal}
-            taken={session.slots.noWheelTaken}
-            type="NO_WHEEL"
-            mySlotType={myReg?.slotType}
-            isMe={isRegistered}
-          />
-        </div>
-      </div>
-
-      {/* Actions for registered students */}
-      {isRegistered && (
-        <div className="px-3 pb-3">
-          {showCancelConfirm ? (
-            <div className="flex gap-2">
-              <button
-                onClick={handleCancel}
-                disabled={loading}
-                className="flex-1 bg-red-600 text-white text-xs py-1.5 rounded-lg disabled:opacity-50"
-              >
-                {loading ? "..." : "אשר ביטול"}
-              </button>
-              <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="flex-1 border border-stone-200 text-stone-600 text-xs py-1.5 rounded-lg"
-              >
-                חזרה
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowCancelConfirm(true)}
-              className="w-full text-xs text-red-600 hover:text-red-800 border border-red-200 py-1.5 rounded-lg hover:bg-red-50 transition"
-            >
-              ביטול שיעור
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Transfer modal overlay */}
+      {/* Transfer modal */}
       {transferSlotType && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" dir="rtl">
           <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl mx-4">
             <h3 className="font-bold text-stone-800 mb-1">העברה לשיעור</h3>
             <p className="text-sm text-stone-500 mb-4">
               {session.groupName} •{" "}
               {new Date(session.date).toLocaleDateString("he-IL", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
+                weekday: "long", day: "numeric", month: "long",
               })}{" "}
               • {timeStr}
             </p>
-            <p className="text-xs text-stone-500 mb-2">בחר/י איזה שיעור לבטל:</p>
-            <div className="space-y-2 mb-4">
-              {transferSources.length === 0 ? (
-                <p className="text-sm text-stone-400">אין שיעורים מתאימים לביטול</p>
-              ) : (
-                transferSources.map((src) => (
+            <p className="text-xs text-stone-500 mb-2">בחרי איזה שיעור לבטל:</p>
+            <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+              {myUpcomingRegistrations
+                .filter(
+                  (r) =>
+                    r.sessionId !== session.id &&
+                    (r.slotType === null || r.slotType === transferSlotType)
+                )
+                .map((src) => (
                   <button
                     key={src.id}
                     onClick={() => handleTransfer(src.id)}
@@ -221,24 +195,21 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
                     <div className="font-medium">{src.groupName}</div>
                     <div className="text-xs text-stone-400">
                       {new Date(src.sessionDate).toLocaleDateString("he-IL", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
+                        weekday: "short", day: "numeric", month: "short",
                       })}
                     </div>
                   </button>
-                ))
-              )}
+                ))}
             </div>
             <button
               onClick={() => setTransferSlotType(null)}
-              className="w-full border border-stone-200 text-stone-600 py-2 rounded-lg text-sm"
+              className="w-full border border-stone-200 text-stone-600 py-2 rounded-lg text-sm hover:bg-stone-50"
             >
               ביטול
             </button>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
