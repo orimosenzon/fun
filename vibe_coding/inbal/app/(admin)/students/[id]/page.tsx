@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import AddPaymentForm from "./AddPaymentForm";
+import EditStudentForm from "./EditStudentForm";
 
 export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -39,7 +40,20 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
         <Link href="/students" className="text-sm text-stone-400 hover:text-stone-600 mb-1 block">
           ← תלמידים
         </Link>
-        <h1 className="text-2xl font-bold text-stone-800">{student.name}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-stone-800">{student.name}</h1>
+          <EditStudentForm
+            studentId={id}
+            name={student.name}
+            phone={student.phone ?? ""}
+            enrollments={student.enrollments.filter((e) => e.status === "ACTIVE").map((e) => ({
+              id: e.id,
+              groupId: e.groupId,
+              preferredSlotType: e.preferredSlotType,
+              group: { name: e.group.name },
+            }))}
+          />
+        </div>
         <div className="text-stone-500 text-sm mt-1 flex gap-4">
           <span>{student.email}</span>
           {student.phone && <span>{student.phone}</span>}

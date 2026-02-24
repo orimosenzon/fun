@@ -34,7 +34,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
-  const { name, phone } = await req.json();
+  const { name, phone, groupId, preferredSlotType } = await req.json();
+
   const user = await prisma.user.update({ where: { id }, data: { name, phone } });
+
+  // Update enrollment slotType if groupId provided
+  if (groupId && preferredSlotType !== undefined) {
+    await prisma.groupEnrollment.update({
+      where: { userId_groupId: { userId: id, groupId } },
+      data: { preferredSlotType: preferredSlotType || null },
+    });
+  }
+
   return NextResponse.json(user);
 }

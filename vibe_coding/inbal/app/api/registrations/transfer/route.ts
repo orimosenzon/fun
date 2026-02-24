@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slotAvailable } from "@/lib/slots";
 
+const CANCEL_HOURS_AHEAD = 48;
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,6 +29,17 @@ export async function POST(req: Request) {
 
   if (fromReg.status !== "REGISTERED") {
     return NextResponse.json({ error: "ניתן להעביר רק רישום פעיל" }, { status: 400 });
+  }
+
+  // 48-hour transfer restriction for students
+  if (!isAdmin) {
+    const hoursUntilSession = (fromReg.session.date.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilSession < CANCEL_HOURS_AHEAD) {
+      return NextResponse.json(
+        { error: `לא ניתן להעביר שיעור פחות מ-${CANCEL_HOURS_AHEAD} שעות לפני מועדו` },
+        { status: 400 }
+      );
+    }
   }
 
   const toSession = await prisma.session.findUnique({
