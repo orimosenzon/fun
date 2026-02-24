@@ -30,76 +30,88 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
   const timeStr = date.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   const isCompleted = session.status === "COMPLETED";
   const isCancelled = session.status === "CANCELLED";
-  const isDimmed = isCompleted || isCancelled;
 
-  function SlotRow({ names, total, label }: { names: string[]; total: number; label: string }) {
-    const free = total - names.length;
-    return (
-      <div>
-        <div className="text-[10px] text-stone-400 mb-0.5">{label}</div>
-        <div className="space-y-0.5">
-          {names.map((name, i) => (
-            <div key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate leading-tight ${isDimmed ? "bg-stone-100 text-stone-400" : "bg-amber-100 text-amber-800"}`}>
-              {name}
-            </div>
-          ))}
-          {Array.from({ length: free }).map((_, i) => (
-            <div key={`f${i}`} className="text-[10px] border border-dashed border-stone-200 text-stone-300 px-1.5 py-0.5 rounded leading-tight">
-              פנוי
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const wheelTaken = session.slots.wheel.length;
-  const noWheelTaken = session.slots.noWheel.length;
-  const totalTaken = wheelTaken + noWheelTaken + session.slots.unassigned.length;
+  const wheelFree = session.slots.wheelTotal - session.slots.wheel.length;
+  const noWheelFree = session.slots.noWheelTotal - session.slots.noWheel.length;
+  const totalTaken = session.slots.wheel.length + session.slots.noWheel.length + session.slots.unassigned.length;
   const totalSlots = session.slots.wheelTotal + session.slots.noWheelTotal;
+  const isFull = totalTaken >= totalSlots;
 
   return (
     <Link
       href={`/sessions/${session.id}`}
-      className={`block rounded-lg border overflow-hidden transition ${isDimmed ? "border-stone-100 bg-stone-50 opacity-60 hover:opacity-80" : "border-stone-200 bg-white hover:border-amber-300 hover:shadow-sm"}`}
+      className={`block rounded-lg border overflow-hidden transition hover:shadow-md ${
+        isCancelled
+          ? "border-red-200 bg-red-50"
+          : isCompleted
+          ? "border-stone-200 bg-stone-50"
+          : "border-stone-200 bg-white hover:border-amber-300"
+      }`}
     >
-      {/* Card header */}
-      <div className={`border-b px-2 py-1.5 ${isDimmed ? "bg-stone-100 border-stone-100" : "bg-stone-50 border-stone-100"}`}>
-        <div className="font-semibold text-stone-800 text-xs truncate">{session.groupName}</div>
-        <div className="text-[10px] text-stone-400 flex items-center justify-between">
-          <span>{timeStr}</span>
+      {/* Header */}
+      <div className={`px-2 py-1.5 border-b ${
+        isCancelled ? "bg-red-100 border-red-200" :
+        isCompleted ? "bg-stone-100 border-stone-200" :
+        "bg-stone-50 border-stone-100"
+      }`}>
+        <div className="text-xs font-bold text-stone-800 leading-tight">{session.groupName}</div>
+        <div className="flex items-center justify-between mt-0.5 gap-1">
+          <span className="text-[11px] text-stone-500">{timeStr}</span>
           <div className="flex items-center gap-1">
-            {isCompleted && <span className="text-stone-400">הושלם</span>}
-            {isCancelled && <span className="text-red-400">בוטל</span>}
-            <span className={`font-medium ${totalTaken >= totalSlots ? "text-red-500" : "text-green-600"}`}>
+            {isCompleted && <span className="text-[10px] bg-stone-200 text-stone-600 px-1 rounded">הושלם</span>}
+            {isCancelled && <span className="text-[10px] bg-red-200 text-red-700 px-1 rounded">בוטל</span>}
+            <span className={`text-[11px] font-semibold ${isFull ? "text-red-500" : "text-green-600"}`}>
               {totalTaken}/{totalSlots}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Slots */}
-      <div className="p-1.5 space-y-1.5">
-        <div className="grid grid-cols-2 gap-1.5">
-          <SlotRow
-            names={session.slots.wheel}
-            total={session.slots.wheelTotal}
-            label="🎡 אובן"
-          />
-          <SlotRow
-            names={session.slots.noWheel}
-            total={session.slots.noWheelTotal}
-            label="✋ ללא"
-          />
+      {/* Slots body */}
+      <div className="p-2 space-y-2">
+        {/* Wheel column */}
+        <div>
+          <div className="text-[10px] font-semibold text-stone-400 mb-1">🎡 אובן ({session.slots.wheelTotal})</div>
+          <div className="space-y-0.5">
+            {session.slots.wheel.map((name, i) => (
+              <div key={i} className="text-xs bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-medium">
+                {name}
+              </div>
+            ))}
+            {wheelFree > 0 && (
+              <div className="text-[10px] text-stone-400 border border-dashed border-stone-200 px-1.5 py-0.5 rounded text-center">
+                {wheelFree} פנויים
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* No-wheel column */}
+        <div>
+          <div className="text-[10px] font-semibold text-stone-400 mb-1">✋ ללא אובן ({session.slots.noWheelTotal})</div>
+          <div className="space-y-0.5">
+            {session.slots.noWheel.map((name, i) => (
+              <div key={i} className="text-xs bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded font-medium">
+                {name}
+              </div>
+            ))}
+            {noWheelFree > 0 && (
+              <div className="text-[10px] text-stone-400 border border-dashed border-stone-200 px-1.5 py-0.5 rounded text-center">
+                {noWheelFree} פנויים
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Unassigned */}
         {session.slots.unassigned.length > 0 && (
           <div>
-            <div className="text-[10px] text-stone-400 mb-0.5">לא משוייך</div>
-            <div className="flex flex-wrap gap-0.5">
+            <div className="text-[10px] font-semibold text-stone-400 mb-1">לא משוייך</div>
+            <div className="space-y-0.5">
               {session.slots.unassigned.map((name, i) => (
-                <span key={i} className="text-[10px] bg-stone-100 text-stone-500 px-1 py-0.5 rounded">
+                <div key={i} className="text-xs bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">
                   {name}
-                </span>
+                </div>
               ))}
             </div>
           </div>
