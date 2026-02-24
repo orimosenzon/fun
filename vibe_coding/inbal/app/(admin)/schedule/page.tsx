@@ -35,7 +35,7 @@ export default async function SchedulePage({
   const { start, end } = getWeekBounds(week);
 
   const sessions = await prisma.session.findMany({
-    where: { date: { gte: start, lte: end }, status: "SCHEDULED" },
+    where: { date: { gte: start, lte: end } },
     include: {
       group: { select: { name: true, location: true } },
       registrations: {
@@ -49,6 +49,7 @@ export default async function SchedulePage({
   const sessionData = sessions.map((s) => ({
     id: s.id,
     date: s.date.toISOString(),
+    status: s.status,
     groupName: s.group.name,
     groupLocation: s.group.location ?? null,
     slots: {

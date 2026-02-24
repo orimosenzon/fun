@@ -8,6 +8,7 @@ const DAYS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי
 type AdminSessionData = {
   id: string;
   date: string;
+  status: string;
   groupName: string;
   groupLocation: string | null;
   slots: {
@@ -27,6 +28,9 @@ interface Props {
 function AdminSessionCard({ session }: { session: AdminSessionData }) {
   const date = new Date(session.date);
   const timeStr = date.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const isCompleted = session.status === "COMPLETED";
+  const isCancelled = session.status === "CANCELLED";
+  const isDimmed = isCompleted || isCancelled;
 
   function SlotRow({ names, total, label }: { names: string[]; total: number; label: string }) {
     const free = total - names.length;
@@ -35,7 +39,7 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
         <div className="text-[10px] text-stone-400 mb-0.5">{label}</div>
         <div className="space-y-0.5">
           {names.map((name, i) => (
-            <div key={i} className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium truncate leading-tight">
+            <div key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-medium truncate leading-tight ${isDimmed ? "bg-stone-100 text-stone-400" : "bg-amber-100 text-amber-800"}`}>
               {name}
             </div>
           ))}
@@ -57,16 +61,20 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
   return (
     <Link
       href={`/sessions/${session.id}`}
-      className="block rounded-lg border border-stone-200 bg-white hover:border-amber-300 hover:shadow-sm transition overflow-hidden"
+      className={`block rounded-lg border overflow-hidden transition ${isDimmed ? "border-stone-100 bg-stone-50 opacity-60 hover:opacity-80" : "border-stone-200 bg-white hover:border-amber-300 hover:shadow-sm"}`}
     >
       {/* Card header */}
-      <div className="bg-stone-50 border-b border-stone-100 px-2 py-1.5">
+      <div className={`border-b px-2 py-1.5 ${isDimmed ? "bg-stone-100 border-stone-100" : "bg-stone-50 border-stone-100"}`}>
         <div className="font-semibold text-stone-800 text-xs truncate">{session.groupName}</div>
         <div className="text-[10px] text-stone-400 flex items-center justify-between">
           <span>{timeStr}</span>
-          <span className={`font-medium ${totalTaken >= totalSlots ? "text-red-500" : "text-green-600"}`}>
-            {totalTaken}/{totalSlots}
-          </span>
+          <div className="flex items-center gap-1">
+            {isCompleted && <span className="text-stone-400">הושלם</span>}
+            {isCancelled && <span className="text-red-400">בוטל</span>}
+            <span className={`font-medium ${totalTaken >= totalSlots ? "text-red-500" : "text-green-600"}`}>
+              {totalTaken}/{totalSlots}
+            </span>
+          </div>
         </div>
       </div>
 
