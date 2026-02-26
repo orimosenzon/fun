@@ -29,7 +29,6 @@ async function main() {
   await prisma.session.deleteMany();
   await prisma.groupEnrollment.deleteMany();
   await prisma.group.deleteMany();
-  // await prisma.account.deleteMany();
   await prisma.user.deleteMany();
 
   console.log("👤 יוצר משתמשים...");
@@ -53,47 +52,99 @@ async function main() {
     prisma.user.create({ data: { name: "רחל גולד",   email: "rachel@example.com",  phone: "052-4444444", role: "STUDENT", password: studentPassword } }),
     prisma.user.create({ data: { name: "נועה שמיר",  email: "noa@example.com",     phone: "052-5555555", role: "STUDENT", password: studentPassword } }),
     prisma.user.create({ data: { name: "דנה ברק",    email: "dana@example.com",    phone: "052-6666666", role: "STUDENT", password: studentPassword } }),
+    prisma.user.create({ data: { name: "תמר כץ",     email: "tamar@example.com",   phone: "052-7777777", role: "STUDENT", password: studentPassword } }),
+    prisma.user.create({ data: { name: "אורית לב",   email: "orit@example.com",    phone: "052-8888888", role: "STUDENT", password: studentPassword } }),
   ]);
+
+  const [s1, s2, s3, s4, s5, s6, s7, s8] = students;
 
   console.log("👥 יוצר קבוצות...");
-  const groups = await Promise.all([
-    prisma.group.create({ data: { name: "קבוצת בוקר ראשון",    description: "מתחילים - בוקר", dayOfWeek: 0, time: "09:30", duration: 90,  location: "סטודיו ראשי", maxStudents: 8  } }),
-    prisma.group.create({ data: { name: "קבוצת צהריים שלישי", description: "מתקדמות",         dayOfWeek: 2, time: "11:00", duration: 120, location: "סטודיו ראשי", maxStudents: 6  } }),
-    prisma.group.create({ data: { name: "קבוצת ערב חמישי",    description: "ערב למבוגרים",    dayOfWeek: 4, time: "18:00", duration: 90,  location: "סטודיו ראשי", maxStudents: 10 } }),
-  ]);
-
-  const [g1, g2, g3] = groups;
-  const [s1, s2, s3, s4, s5, s6] = students;
-
-  // slotType: WHEEL = גלגל אובן (4 עמדות), NO_WHEEL = ללא אובן (3 עמדות)
-  const enrollmentData = [
-    { groupId: g1.id, userId: s1.id, preferredSlotType: "WHEEL"    as const },
-    { groupId: g1.id, userId: s2.id, preferredSlotType: "WHEEL"    as const },
-    { groupId: g1.id, userId: s3.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g2.id, userId: s2.id, preferredSlotType: "WHEEL"    as const },
-    { groupId: g2.id, userId: s4.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g2.id, userId: s5.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g3.id, userId: s3.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g3.id, userId: s4.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g3.id, userId: s5.id, preferredSlotType: "NO_WHEEL" as const },
-    { groupId: g3.id, userId: s6.id, preferredSlotType: "WHEEL"    as const },
+  // dayOfWeek: 0=ראשון, 1=שני, 2=שלישי, 3=רביעי, 4=חמישי, 5=שישי, 6=שבת
+  const groupDefs = [
+    // שני
+    { name: "שני 09:30",  dayOfWeek: 1, time: "09:30", enrollments: [
+      { user: s1, slotType: "WHEEL"    as const },
+      { user: s2, slotType: "WHEEL"    as const },
+      { user: s3, slotType: "NO_WHEEL" as const },
+    ]},
+    { name: "שני 11:45",  dayOfWeek: 1, time: "11:45", enrollments: [
+      { user: s4, slotType: "WHEEL"    as const },
+      { user: s5, slotType: "WHEEL"    as const },
+      { user: s6, slotType: "NO_WHEEL" as const },
+      { user: s7, slotType: "NO_WHEEL" as const },
+    ]},
+    { name: "שני 18:15",  dayOfWeek: 1, time: "18:15", enrollments: [
+      { user: s2, slotType: "WHEEL"    as const },
+      { user: s8, slotType: "WHEEL"    as const },
+      { user: s3, slotType: "NO_WHEEL" as const },
+    ]},
+    { name: "שני 20:30",  dayOfWeek: 1, time: "20:30", enrollments: [
+      { user: s1, slotType: "NO_WHEEL" as const },
+      { user: s6, slotType: "WHEEL"    as const },
+    ]},
+    // חמישי
+    { name: "חמישי 12:15", dayOfWeek: 4, time: "12:15", enrollments: [
+      { user: s4, slotType: "WHEEL"    as const },
+      { user: s7, slotType: "WHEEL"    as const },
+      { user: s8, slotType: "NO_WHEEL" as const },
+    ]},
+    { name: "חמישי 14:30", dayOfWeek: 4, time: "14:30", enrollments: [
+      { user: s5, slotType: "WHEEL"    as const },
+      { user: s6, slotType: "NO_WHEEL" as const },
+      { user: s1, slotType: "NO_WHEEL" as const },
+    ]},
+    { name: "חמישי 18:15", dayOfWeek: 4, time: "18:15", enrollments: [
+      { user: s2, slotType: "WHEEL"    as const },
+      { user: s3, slotType: "WHEEL"    as const },
+      { user: s7, slotType: "NO_WHEEL" as const },
+      { user: s8, slotType: "WHEEL"    as const },
+    ]},
+    { name: "חמישי 20:30", dayOfWeek: 4, time: "20:30", enrollments: [
+      { user: s4, slotType: "NO_WHEEL" as const },
+      { user: s5, slotType: "WHEEL"    as const },
+    ]},
+    // שישי
+    { name: "שישי 09:30",  dayOfWeek: 5, time: "09:30", enrollments: [
+      { user: s1, slotType: "WHEEL"    as const },
+      { user: s2, slotType: "NO_WHEEL" as const },
+      { user: s6, slotType: "WHEEL"    as const },
+      { user: s8, slotType: "NO_WHEEL" as const },
+    ]},
   ];
 
-  await Promise.all(
-    enrollmentData.map((e) =>
-      prisma.groupEnrollment.create({
-        data: { userId: e.userId, groupId: e.groupId, status: "ACTIVE", preferredSlotType: e.preferredSlotType },
-      })
-    )
-  );
-
   console.log("📅 יוצר שיעורים (8 שבועות)...");
-  for (const group of groups) {
-    const groupEnrollments = enrollmentData.filter((e) => e.groupId === group.id);
+  let totalSessions = 0;
 
+  for (const def of groupDefs) {
+    const group = await prisma.group.create({
+      data: {
+        name: def.name,
+        dayOfWeek: def.dayOfWeek,
+        time: def.time,
+        duration: 120,
+        location: "סטודיו ראשי",
+        maxStudents: 7,
+      },
+    });
+
+    // enrollments
+    await Promise.all(
+      def.enrollments.map((e) =>
+        prisma.groupEnrollment.create({
+          data: {
+            userId: e.user.id,
+            groupId: group.id,
+            status: "ACTIVE",
+            preferredSlotType: e.slotType,
+          },
+        })
+      )
+    );
+
+    // 8 weeks of sessions
     for (let week = 0; week < 8; week++) {
-      const baseDate = nextWeekday(group.dayOfWeek, week);
-      const sessionDate = setTime(baseDate, group.time);
+      const baseDate = nextWeekday(def.dayOfWeek, week);
+      const sessionDate = setTime(baseDate, def.time);
       const isPast = week < 2;
 
       const session = await prisma.session.create({
@@ -104,8 +155,8 @@ async function main() {
         },
       });
 
-      for (let i = 0; i < groupEnrollments.length; i++) {
-        const enrollment = groupEnrollments[i];
+      for (let i = 0; i < def.enrollments.length; i++) {
+        const enrollment = def.enrollments[i];
         let status: "REGISTERED" | "ABSENT" | "CANCELLED" = "REGISTERED";
         if (isPast && i === 0 && week === 0) status = "ABSENT";
         if (isPast && i === 1 && week === 1) status = "CANCELLED";
@@ -113,17 +164,19 @@ async function main() {
         await prisma.sessionRegistration.create({
           data: {
             sessionId: session.id,
-            userId: enrollment.userId,
+            userId: enrollment.user.id,
             status,
-            slotType: enrollment.preferredSlotType,
+            slotType: enrollment.slotType,
           },
         });
       }
+
+      totalSessions++;
     }
   }
 
   console.log("💰 יוצר תשלומים...");
-  for (const student of students.slice(0, 4)) {
+  for (const student of students.slice(0, 6)) {
     await prisma.payment.createMany({
       data: [
         { userId: student.id, amount: 350, description: "תשלום ינואר 2026", type: "MONTHLY", date: new Date("2026-01-05") },
@@ -131,7 +184,7 @@ async function main() {
       ],
     });
   }
-  for (const student of students.slice(4)) {
+  for (const student of students.slice(6)) {
     await prisma.payment.create({
       data: { userId: student.id, amount: 350, description: "תשלום ינואר 2026", type: "MONTHLY", date: new Date("2026-01-05") },
     });
@@ -140,7 +193,7 @@ async function main() {
   console.log("\n✅ Seed הושלם!");
   console.log(`👑 מנהלת:  admin@ceramics.co.il  /  admin123`);
   console.log(`🎓 תלמידה: michal@example.com    /  student123`);
-  console.log(`\n📊 ${groups.length} קבוצות, ${students.length} תלמידים, ${8 * groups.length} שיעורים`);
+  console.log(`\n📊 ${groupDefs.length} קבוצות, ${students.length} תלמידים, ${totalSessions} שיעורים`);
 }
 
 main()

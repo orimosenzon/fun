@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx:*)",
+      "Bash(google-chrome:*)",
+      "Bash(pgrep -a openclaw)",
+      "Bash(systemctl --user list-units)",
+      "Bash(systemctl --user restart openclaw-gateway.service)",
+      "Bash(systemctl --user stop openclaw-gateway.service)",
+      "Bash(systemctl --user disable openclaw-gateway.service)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/home/ori/fun/vibe_coding"
+    ]
+  }
+}
