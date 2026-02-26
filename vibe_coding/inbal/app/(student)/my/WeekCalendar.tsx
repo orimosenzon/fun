@@ -39,6 +39,10 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  function goToToday() {
+    router.push("/my");
+  }
+
   function prevWeek() {
     const d = new Date(weekStartDate);
     d.setDate(d.getDate() - 7);
@@ -77,7 +81,14 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
       {/* Header: title + week nav */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-bold text-stone-800">הלוח שלי</h1>
-        <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-xl px-2 py-1 shadow-sm">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToToday}
+            className="px-3 py-1.5 text-sm font-medium bg-white border border-stone-200 rounded-lg hover:bg-stone-50 shadow-sm transition text-stone-600"
+          >
+            היום
+          </button>
+          <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-xl px-2 py-1 shadow-sm">
           <button
             onClick={prevWeek}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold"
@@ -93,6 +104,7 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
           >
             &rsaquo;
           </button>
+          </div>
         </div>
       </div>
 

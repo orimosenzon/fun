@@ -261,6 +261,14 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
   const selectedDayIdx = selectedDayDate.getDay();
   const weekStr = getWeekStartStr(weekStartDate);
 
+  function goToToday() {
+    if (isDayView) {
+      router.push(`/schedule?week=${getWeekStartStr(today)}&view=day&day=${toLocalDateStr(today)}`);
+    } else {
+      router.push(`/schedule?week=${toLocalDateStr(today)}`);
+    }
+  }
+
   function prevWeek() {
     const d = new Date(weekStartDate);
     d.setDate(d.getDate() - 7);
@@ -353,6 +361,14 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
               יומי
             </button>
           </div>
+
+          {/* Today button */}
+          <button
+            onClick={goToToday}
+            className="px-3 py-1.5 text-sm font-medium bg-white border border-stone-200 rounded-lg hover:bg-stone-50 shadow-sm transition text-stone-600"
+          >
+            היום
+          </button>
 
           {/* Navigation */}
           {isDayView ? (
