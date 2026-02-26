@@ -82,7 +82,7 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
             onClick={nextWeek}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold"
           >
-            &rsaquo;
+            &lsaquo;
           </button>
           <span className="text-sm font-medium text-stone-700 min-w-[180px] text-center">
             {weekLabel}
@@ -91,7 +91,7 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
             onClick={prevWeek}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold"
           >
-            &lsaquo;
+            &rsaquo;
           </button>
         </div>
       </div>

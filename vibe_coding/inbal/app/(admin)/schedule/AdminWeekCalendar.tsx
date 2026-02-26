@@ -361,7 +361,7 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
                 onClick={nextDay}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &rsaquo;
+                &lsaquo;
               </button>
               <span className="text-sm font-medium text-stone-700 min-w-[200px] text-center">
                 {dayLabel}
@@ -370,7 +370,7 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
                 onClick={prevDay}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &lsaquo;
+                &rsaquo;
               </button>
             </div>
           ) : (
@@ -379,7 +379,7 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
                 onClick={nextWeek}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &rsaquo;
+                &lsaquo;
               </button>
               <span className="text-sm font-medium text-stone-700 min-w-[180px] text-center">
                 {weekLabel}
@@ -388,7 +388,7 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
                 onClick={prevWeek}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &lsaquo;
+                &rsaquo;
               </button>
             </div>
           )}
