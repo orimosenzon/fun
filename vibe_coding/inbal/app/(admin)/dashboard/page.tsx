@@ -36,30 +36,27 @@ export default async function DashboardPage() {
   if (!session || (session.user as { role?: string })?.role !== "ADMIN") redirect("/my");
 
   const now = new Date();
-
-  // Next 5 upcoming sessions across all groups
-  const upcomingSessions = await prisma.session.findMany({
-    where: { date: { gte: now }, status: "SCHEDULED" },
-    include: {
-      group: { select: { name: true } },
-      registrations: {
-        include: { user: { select: { name: true } } },
-      },
-    },
-    orderBy: { date: "asc" },
-    take: 5,
-  });
-
-  // Stats
-  const totalStudents = await prisma.user.count({ where: { role: "STUDENT" } });
-  const activeGroups = await prisma.group.count({ where: { isActive: true } });
-
-  // This month's revenue
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const payments = await prisma.payment.aggregate({
-    where: { date: { gte: monthStart } },
-    _sum: { amount: true },
-  });
+
+  const [upcomingSessions, totalStudents, activeGroups, payments] = await Promise.all([
+    prisma.session.findMany({
+      where: { date: { gte: now }, status: "SCHEDULED" },
+      include: {
+        group: { select: { name: true } },
+        registrations: {
+          include: { user: { select: { name: true } } },
+        },
+      },
+      orderBy: { date: "asc" },
+      take: 5,
+    }),
+    prisma.user.count({ where: { role: "STUDENT" } }),
+    prisma.group.count({ where: { isActive: true } }),
+    prisma.payment.aggregate({
+      where: { date: { gte: monthStart } },
+      _sum: { amount: true },
+    }),
+  ]);
 
   return (
     <div>

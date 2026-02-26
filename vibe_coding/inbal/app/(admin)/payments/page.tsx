@@ -11,25 +11,24 @@ export default async function PaymentsPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // All students with payment status
-  const students = await prisma.user.findMany({
-    where: { role: "STUDENT" },
-    include: {
-      enrollments: { where: { status: "ACTIVE" } },
-      payments: {
-        where: { date: { gte: monthStart } },
-        orderBy: { date: "desc" },
+  const [students, recentPayments] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: "STUDENT" },
+      include: {
+        enrollments: { where: { status: "ACTIVE" } },
+        payments: {
+          where: { date: { gte: monthStart } },
+          orderBy: { date: "desc" },
+        },
       },
-    },
-    orderBy: { name: "asc" },
-  });
-
-  // Recent payments
-  const recentPayments = await prisma.payment.findMany({
-    include: { user: { select: { id: true, name: true } } },
-    orderBy: { date: "desc" },
-    take: 20,
-  });
+      orderBy: { name: "asc" },
+    }),
+    prisma.payment.findMany({
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { date: "desc" },
+      take: 20,
+    }),
+  ]);
 
   const thisMonthTotal = recentPayments
     .filter((p) => new Date(p.date) >= monthStart)
