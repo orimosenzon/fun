@@ -5,27 +5,32 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import AddPaymentForm from "./AddPaymentForm";
 import EditStudentForm from "./EditStudentForm";
+import ManageEnrollmentsSection from "./ManageEnrollmentsSection";
 
 export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as { role?: string })?.role !== "ADMIN") redirect("/my");
 
   const { id } = await params;
-  const student = await prisma.user.findUnique({
-    where: { id },
-    include: {
-      enrollments: {
-        include: { group: true },
-        orderBy: { startDate: "asc" },
+
+  const [student, allGroups] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id },
+      include: {
+        enrollments: {
+          include: { group: true },
+          orderBy: { startDate: "asc" },
+        },
+        registrations: {
+          include: { session: { include: { group: { select: { name: true } } } } },
+          orderBy: { session: { date: "desc" } },
+          take: 20,
+        },
+        payments: { orderBy: { date: "desc" } },
       },
-      registrations: {
-        include: { session: { include: { group: { select: { name: true } } } } },
-        orderBy: { session: { date: "desc" } },
-        take: 20,
-      },
-      payments: { orderBy: { date: "desc" } },
-    },
-  });
+    }),
+    prisma.group.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
 
   if (!student) notFound();
 
@@ -61,30 +66,17 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Groups */}
-      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100">
-          <h2 className="font-semibold text-stone-800">קבוצות</h2>
-        </div>
-        <div className="divide-y divide-stone-100">
-          {student.enrollments.map((e) => (
-            <div key={e.id} className="px-5 py-3 flex items-center justify-between">
-              <Link href={`/groups/${e.group.id}`} className="font-medium hover:text-amber-700">
-                {e.group.name}
-              </Link>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                e.status === "ACTIVE" ? "bg-green-100 text-green-700" :
-                e.status === "PAUSED" ? "bg-yellow-100 text-yellow-700" :
-                "bg-stone-100 text-stone-500"
-              }`}>
-                {e.status === "ACTIVE" ? "פעיל" : e.status === "PAUSED" ? "מושהה" : "עזב"}
-              </span>
-            </div>
-          ))}
-          {student.enrollments.length === 0 && (
-            <div className="px-5 py-4 text-stone-400 text-sm">לא רשום לקבוצות</div>
-          )}
-        </div>
-      </div>
+      <ManageEnrollmentsSection
+        studentId={id}
+        enrollments={student.enrollments.map((e) => ({
+          id: e.id,
+          groupId: e.groupId,
+          status: e.status,
+          preferredSlotType: e.preferredSlotType,
+          group: { id: e.group.id, name: e.group.name },
+        }))}
+        allGroups={allGroups}
+      />
 
       {/* Payments */}
       <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">

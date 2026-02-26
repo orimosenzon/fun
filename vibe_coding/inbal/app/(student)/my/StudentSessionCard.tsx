@@ -26,12 +26,17 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
   async function handleCancel() {
     if (!myReg) return;
     setLoading(true);
-    await fetch(`/api/registrations/${myReg.id}`, {
+    const res = await fetch(`/api/registrations/${myReg.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "CANCELLED" }),
     });
     setLoading(false);
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "שגיאה בביטול");
+      return;
+    }
     setShowCancelConfirm(false);
     router.refresh();
   }
@@ -68,11 +73,15 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
     const othersTaken = mySlot ? taken - 1 : taken;
     const free = total - taken;
 
+    const now = Date.now();
     const canTransferHere =
       !isRegistered &&
       free > 0 &&
       myUpcomingRegistrations.some(
-        (r) => r.sessionId !== session.id && (r.slotType === null || r.slotType === type)
+        (r) =>
+          r.sessionId !== session.id &&
+          (r.slotType === null || r.slotType === type) &&
+          (new Date(r.sessionDate).getTime() - now) / (1000 * 60 * 60) >= 48
       );
 
     return (

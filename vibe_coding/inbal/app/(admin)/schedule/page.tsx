@@ -26,12 +26,12 @@ function getWeekBounds(weekParam?: string): { start: Date; end: Date } {
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; view?: string; day?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as { role?: string })?.role !== "ADMIN") redirect("/my");
 
-  const { week } = await searchParams;
+  const { week, view, day } = await searchParams;
   const { start, end } = getWeekBounds(week);
 
   const sessions = await prisma.session.findMany({
@@ -71,6 +71,8 @@ export default async function SchedulePage({
     <AdminWeekCalendar
       sessions={sessionData}
       weekStart={start.toISOString()}
+      view={view}
+      day={day}
     />
   );
 }
