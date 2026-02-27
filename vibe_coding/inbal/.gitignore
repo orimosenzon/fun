@@ -42,8 +42,6 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# internal session memory (not part of the project)
-/memory/
 
 # SQLite local dev db
 prisma/*.db
