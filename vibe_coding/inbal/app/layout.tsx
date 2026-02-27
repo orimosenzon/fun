@@ -3,7 +3,7 @@ import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "סטודיו קרמיקה - ניהול",
+  title: "סטודיו קרמיקה",
   description: "מערכת ניהול לסטודיו קרמיקה",
 };
 
