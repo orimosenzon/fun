@@ -1,0 +1,122 @@
+{
+  "app_name": "בדרך להחלמה",
+  "app_subtitle": "מערכת תיאום נסיעות",
+
+  "nav": {
+    "rides": "נסיעות",
+    "reimbursements": "החזרי נסיעה",
+    "users": "משתמשים",
+    "logout": "התנתקות"
+  },
+
+  "roles": {
+    "israeli_coordinator": "רכזת ישראלית",
+    "palestinian_coordinator": "רכז פלסטיני",
+    "driver": "נהג מתנדב"
+  },
+
+  "ride_status": {
+    "pending": "ממתינה לשיבוץ",
+    "assigned": "שובץ נהג",
+    "in_progress": "בביצוע",
+    "completed": "הושלמה",
+    "cancelled": "בוטלה",
+    "return_needed": "נדרשת חזרה"
+  },
+
+  "reimbursement_status": {
+    "pending": "ממתין לאישור",
+    "approved": "אושר",
+    "rejected": "נדחה",
+    "paid": "שולם"
+  },
+
+  "rides": {
+    "title": "נסיעות",
+    "new_ride": "נסיעה חדשה",
+    "no_rides": "אין נסיעות להצגה",
+    "patient_name": "שם המטופל",
+    "patient_phone": "טלפון מטופל",
+    "pickup_address": "כתובת איסוף",
+    "hospital": "בית חולים",
+    "scheduled_at": "תאריך ושעה",
+    "driver": "נהג",
+    "distance": "מרחק",
+    "medical_notes": "הערות רפואיות",
+    "driver_notes": "הערות לנהג",
+    "assign_driver": "שבץ נהג",
+    "take_ride": "קח נסיעה",
+    "cancel_ride": "בטל נסיעה",
+    "start_ride": "התחל נסיעה",
+    "complete_ride": "סיים נסיעה",
+    "is_return_ride": "נסיעת חזרה",
+    "return_ride": "נסיעת חזרה",
+    "create_return_ride": "צור נסיעת חזרה",
+    "outbound_ride": "נסיעת הלוך",
+    "filter_date": "סינון לפי תאריך",
+    "filter_status": "סינון לפי סטטוס",
+    "all_statuses": "כל הסטטוסים",
+    "today": "היום",
+    "tomorrow": "מחר",
+    "km": "ק\"מ",
+    "not_assigned": "לא שובץ",
+    "cancellation_reason": "סיבת ביטול"
+  },
+
+  "reimbursements": {
+    "title": "החזרי נסיעה",
+    "request_reimbursement": "הגש בקשת החזר",
+    "amount": "סכום",
+    "rate_per_km": "תעריף לק\"מ",
+    "approve": "אשר",
+    "reject": "דחה",
+    "rejection_reason": "סיבת דחייה",
+    "ils": "₪",
+    "no_requests": "אין בקשות החזר"
+  },
+
+  "users": {
+    "title": "משתמשים",
+    "new_user": "משתמש חדש",
+    "name": "שם",
+    "email": "אימייל",
+    "phone": "טלפון",
+    "role": "תפקיד",
+    "bank_account": "חשבון בנק",
+    "active": "פעיל",
+    "inactive": "לא פעיל",
+    "notes": "הערות"
+  },
+
+  "notifications": {
+    "title": "התראות",
+    "no_notifications": "אין התראות חדשות",
+    "mark_all_read": "סמן הכל כנקרא"
+  },
+
+  "auth": {
+    "login": "כניסה",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "login_button": "כניסה למערכת",
+    "login_error": "אימייל או סיסמה שגויים"
+  },
+
+  "common": {
+    "save": "שמור",
+    "cancel": "בטל",
+    "confirm": "אישור",
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "success": "בוצע בהצלחה",
+    "yes": "כן",
+    "no": "לא",
+    "back": "חזרה",
+    "close": "סגור",
+    "search": "חיפוש",
+    "edit": "עריכה",
+    "delete": "מחיקה",
+    "add": "הוספה",
+    "actions": "פעולות"
+  }
+}

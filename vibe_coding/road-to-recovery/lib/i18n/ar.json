@@ -1,0 +1,122 @@
+{
+  "app_name": "طريق التعافي",
+  "app_subtitle": "نظام تنسيق الرحلات",
+
+  "nav": {
+    "rides": "الرحلات",
+    "reimbursements": "استرداد بدل السفر",
+    "users": "المستخدمون",
+    "logout": "تسجيل الخروج"
+  },
+
+  "roles": {
+    "israeli_coordinator": "منسقة إسرائيلية",
+    "palestinian_coordinator": "منسق فلسطيني",
+    "driver": "سائق متطوع"
+  },
+
+  "ride_status": {
+    "pending": "بانتظار التعيين",
+    "assigned": "تم تعيين سائق",
+    "in_progress": "جارية",
+    "completed": "مكتملة",
+    "cancelled": "ملغاة",
+    "return_needed": "يلزم رحلة عودة"
+  },
+
+  "reimbursement_status": {
+    "pending": "بانتظار الموافقة",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "paid": "تم الدفع"
+  },
+
+  "rides": {
+    "title": "الرحلات",
+    "new_ride": "رحلة جديدة",
+    "no_rides": "لا توجد رحلات للعرض",
+    "patient_name": "اسم المريض",
+    "patient_phone": "هاتف المريض",
+    "pickup_address": "عنوان الاستلام",
+    "hospital": "المستشفى",
+    "scheduled_at": "التاريخ والوقت",
+    "driver": "السائق",
+    "distance": "المسافة",
+    "medical_notes": "ملاحظات طبية",
+    "driver_notes": "ملاحظات للسائق",
+    "assign_driver": "تعيين سائق",
+    "take_ride": "استلام الرحلة",
+    "cancel_ride": "إلغاء الرحلة",
+    "start_ride": "بدء الرحلة",
+    "complete_ride": "إنهاء الرحلة",
+    "is_return_ride": "رحلة العودة",
+    "return_ride": "رحلة العودة",
+    "create_return_ride": "إنشاء رحلة عودة",
+    "outbound_ride": "رحلة الذهاب",
+    "filter_date": "تصفية حسب التاريخ",
+    "filter_status": "تصفية حسب الحالة",
+    "all_statuses": "جميع الحالات",
+    "today": "اليوم",
+    "tomorrow": "غداً",
+    "km": "كم",
+    "not_assigned": "لم يتم التعيين",
+    "cancellation_reason": "سبب الإلغاء"
+  },
+
+  "reimbursements": {
+    "title": "استرداد بدل السفر",
+    "request_reimbursement": "تقديم طلب استرداد",
+    "amount": "المبلغ",
+    "rate_per_km": "التعرفة لكل كيلومتر",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "rejection_reason": "سبب الرفض",
+    "ils": "₪",
+    "no_requests": "لا توجد طلبات استرداد"
+  },
+
+  "users": {
+    "title": "المستخدمون",
+    "new_user": "مستخدم جديد",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "role": "الدور",
+    "bank_account": "الحساب البنكي",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "notes": "ملاحظات"
+  },
+
+  "notifications": {
+    "title": "الإشعارات",
+    "no_notifications": "لا توجد إشعارات جديدة",
+    "mark_all_read": "تعليم الكل كمقروء"
+  },
+
+  "auth": {
+    "login": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "login_button": "الدخول إلى النظام",
+    "login_error": "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+  },
+
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "success": "تمت العملية بنجاح",
+    "yes": "نعم",
+    "no": "لا",
+    "back": "رجوع",
+    "close": "إغلاق",
+    "search": "بحث",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "add": "إضافة",
+    "actions": "إجراءات"
+  }
+}

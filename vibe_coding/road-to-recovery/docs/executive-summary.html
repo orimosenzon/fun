@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מערכת תיאום נסיעות — בדרך להחלמה</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      margin: 20px auto;
+      padding: 14mm 16mm 14mm 16mm;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ───── HEADER ───── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #2e7d32;
+      margin-bottom: 14px;
+    }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2e7d32;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .logo-placeholder {
+      width: 90px;
+      height: 60px;
+      border: 2px dashed #ccc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-size: 10px;
+      text-align: center;
+      flex-shrink: 0;
+      /* להחליף בתג <img> עם הלוגו האמיתי */
+    }
+
+    /* ───── SUBTITLE BAR ───── */
+    .subtitle-bar {
+      background: #2e7d32;
+      color: white;
+      text-align: center;
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ───── TWO-COLUMN LAYOUT ───── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2e7d32;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card h2 .icon {
+      font-size: 15px;
+    }
+
+    .card p, .card li {
+      font-size: 12px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .card ul {
+      padding-right: 16px;
+    }
+
+    .card ul li::marker {
+      color: #2e7d32;
+    }
+
+    /* ───── PROBLEMS SECTION ───── */
+    .problems {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .problems h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e65100;
+      margin-bottom: 8px;
+    }
+
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 20px;
+    }
+
+    .problem-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 12px;
+      color: #333;
+    }
+
+    .problem-item .dot {
+      color: #e65100;
+      font-size: 16px;
+      line-height: 1.3;
+      flex-shrink: 0;
+    }
+
+    /* ───── SOLUTION SECTION ───── */
+    .solution {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .solution h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1b5e20;
+      margin-bottom: 8px;
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .role-card {
+      background: white;
+      border-radius: 6px;
+      padding: 9px 10px;
+      border: 1px solid #c8e6c9;
+    }
+
+    .role-card h3 {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #2e7d32;
+      margin-bottom: 5px;
+    }
+
+    .role-card p {
+      font-size: 11px;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    /* ───── REIMBURSEMENT HIGHLIGHT ───── */
+    .reimburse {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 11px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .reimburse .big-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .reimburse-text h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0d47a1;
+      margin-bottom: 4px;
+    }
+
+    .reimburse-text p {
+      font-size: 12px;
+      color: #333;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 7px;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      background: #1565c0;
+      color: white;
+      font-size: 10.5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+
+    .flow-arrow {
+      color: #1565c0;
+      font-size: 14px;
+    }
+
+    /* ───── BOTTOM STATS ───── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      text-align: center;
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 10px 6px;
+    }
+
+    .stat .number {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2e7d32;
+      line-height: 1;
+    }
+
+    .stat .label {
+      font-size: 10.5px;
+      color: #555;
+      margin-top: 3px;
+    }
+
+    /* ───── FOOTER ───── */
+    .footer {
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 10.5px;
+      color: #888;
+      margin-top: auto;
+    }
+
+    /* ───── PRINT ───── */
+    @media print {
+      body { background: white; }
+      .page { margin: 0; box-shadow: none; width: 100%; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-text">
+      <h1>מערכת תיאום נסיעות דיגיטלית</h1>
+      <p>הצעת פתרון טכנולוגי לפעילות היומיומית של העמותה — פברואר 2026</p>
+    </div>
+    <div class="logo-placeholder">
+      <!-- הכנס כאן:
+      <img src="logo.png" width="90" /> -->
+      לוגו<br/>העמותה
+    </div>
+  </div>
+
+  <!-- SUBTITLE -->
+  <div class="subtitle-bar">
+    מחברים בין חולים שזקוקים לנסיעה לבין מתנדבים שרוצים לעזור — בלחיצה אחת
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats">
+    <div class="stat">
+      <div class="number">~140</div>
+      <div class="label">נסיעות ביום בשיא הפעילות</div>
+    </div>
+    <div class="stat">
+      <div class="number">700+</div>
+      <div class="label">מתנדבים פעילים בשנה</div>
+    </div>
+    <div class="stat">
+      <div class="number">3</div>
+      <div class="label">רכזים פלסטיניים אזוריים</div>
+    </div>
+    <div class="stat">
+      <div class="number">0</div>
+      <div class="label">הגשות ידניות לאחר הטמעה</div>
+    </div>
+  </div>
+
+  <!-- PROBLEMS -->
+  <div class="problems">
+    <h2>⚠ האתגר: תיאום מבוסס וואטסאפ — שברירי ועמוס</h2>
+    <div class="problems-grid">
+      <div class="problem-item">
+        <span class="dot">•</span>
+        <span>הרכזת עוקבת ידנית אחרי עשרות נסיעות — מי שובץ, מי עוד ממתין</span>
+      </div>
+      <div class="problem-item">
+        <span class="dot">•</span>
+        <span>נסיעת החזרה מטופלת בנפרד, לעיתים עם פיגור — החולה ממתין בבית החולים</span>
+      </div>
+      <div class="problem-item">
+        <span class="dot">•</span>
+        <span>מתנדבים מתחייבים לנסיעות מבלי לדעת מראש את הפרטים המלאים</span>
+      </div>
+      <div class="problem-item">
+        <span class="dot">•</span>
+        <span>החזרי נסיעה דורשים הגשה ידנית — חלק מהמתנדבים פשוט מוותרים</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOLUTION -->
+  <div class="solution">
+    <h2>✓ הפתרון: לוח בקרה אחד לכולם</h2>
+    <div class="roles-grid">
+      <div class="role-card">
+        <h3>🧑‍⚕️ הרכז הפלסטיני</h3>
+        <p>ממשק בערבית להגשת בקשות נסיעה. רואה בזמן אמת אם שובץ נהג ומתי יגיע.</p>
+      </div>
+      <div class="role-card">
+        <h3>🗂 הרכזת הישראלית</h3>
+        <p>לוח בקרה יומי: כל הנסיעות, לפי סטטוס. התראה אוטומטית כשנדרשת נסיעת חזרה. פחות טלפונים, פחות שכחה.</p>
+      </div>
+      <div class="role-card">
+        <h3>🚗 הנהג המתנדב</h3>
+        <p>רשימת נסיעות פתוחות עם כל הפרטים: מרחק, בית חולים, פרטי המטופל. בוחר — ומסיים. המערכת מטפלת בשאר.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REIMBURSEMENT -->
+  <div class="reimburse">
+    <div class="big-icon">💳</div>
+    <div class="reimburse-text">
+      <h2>החזרי נסיעה — אוטומטיים לחלוטין</h2>
+      <p>
+        המערכת מחשבת את המרחק לפי מסלול Google Maps ומציגה לנהג את הסכום המגיע לו — מיד בסיום הנסיעה.
+        לחיצה אחת מגישה את הבקשה. לאחר אישור מהיר של הרכזת, העברה בנקאית יוצאת ישירות לחשבון הנהג.
+      </p>
+      <div class="flow">
+        <span class="flow-step">נסיעה הסתיימה</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">חישוב אוטומטי</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">לחיצת אישור</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">אישור רכזת</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">העברה בנקאית</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWO COLUMNS: TECH + WHY NOW -->
+  <div class="two-col">
+    <div class="card">
+      <h2><span class="icon">⚙️</span> טכנולוגיה</h2>
+      <ul>
+        <li>אפליקציה וובית — עובדת על כל מכשיר, ללא הורדה</li>
+        <li>תמיכה מלאה בעברית וערבית (RTL)</li>
+        <li>Google Maps לחישוב מרחק ועלות בזמן אמת</li>
+        <li>עדכוני סטטוס חיים ללוח הבקרה</li>
+        <li>אבטחה: הרשאות לפי תפקיד, פרטי מטופלים מוגנים</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2><span class="icon">🎯</span> למה עכשיו</h2>
+      <p>
+        כל נסיעה שלא מתואמת בזמן — חולה שלא הגיע לטיפול.
+        כל מתנדב שנשחק מסירבול — מתנדב שיוצא מהמעגל.
+      </p>
+      <br/>
+      <p>
+        מערכת תיאום טובה אינה רק כלי ניהולי —
+        היא <strong>תשתית קריטית</strong> לפעילות ההומניטרית של העמותה,
+        ומאפשרת לה לגדול מבלי לגדול בנטל האדמיניסטרטיבי.
+      </p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    מסמך זה הוכן עבור עמותת "בדרך להחלמה" | Road to Recovery &nbsp;•&nbsp; theroadtorecovery.org.il
+  </div>
+
+</div>
+</body>
+</html>
