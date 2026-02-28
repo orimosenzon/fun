@@ -23,6 +23,10 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
   const isCancelled = myReg?.status === "CANCELLED";
   const isTransferred = myReg?.status === "TRANSFERRED";
 
+  const now = Date.now();
+  const hoursUntilSession = (new Date(session.date).getTime() - now) / (1000 * 60 * 60);
+  const canCancel = hoursUntilSession >= 48;
+
   async function handleCancel() {
     if (!myReg) return;
     setLoading(true);
@@ -73,7 +77,6 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
     const othersTaken = mySlot ? taken - 1 : taken;
     const free = total - taken;
 
-    const now = Date.now();
     const canTransferHere =
       !isRegistered &&
       free > 0 &&
@@ -146,29 +149,35 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
         {/* Cancel button */}
         {isRegistered && (
           <div className="pt-0.5">
-            {showCancelConfirm ? (
-              <div className="flex gap-1">
+            {canCancel ? (
+              showCancelConfirm ? (
+                <div className="flex gap-1">
+                  <button
+                    onClick={handleCancel}
+                    disabled={loading}
+                    className="flex-1 bg-red-600 text-white text-[10px] py-1 rounded disabled:opacity-50"
+                  >
+                    {loading ? "..." : "אשרי"}
+                  </button>
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex-1 border border-stone-200 text-stone-500 text-[10px] py-1 rounded"
+                  >
+                    חזרה
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={handleCancel}
-                  disabled={loading}
-                  className="flex-1 bg-red-600 text-white text-[10px] py-1 rounded disabled:opacity-50"
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="w-full text-[10px] text-red-500 hover:text-red-700 border border-red-200 py-1 rounded hover:bg-red-50 transition"
                 >
-                  {loading ? "..." : "אשרי"}
+                  ביטול
                 </button>
-                <button
-                  onClick={() => setShowCancelConfirm(false)}
-                  className="flex-1 border border-stone-200 text-stone-500 text-[10px] py-1 rounded"
-                >
-                  חזרה
-                </button>
-              </div>
+              )
             ) : (
-              <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="w-full text-[10px] text-red-500 hover:text-red-700 border border-red-200 py-1 rounded hover:bg-red-50 transition"
-              >
-                ביטול
-              </button>
+              <div className="text-[10px] text-stone-400 text-center py-0.5">
+                לא ניתן לבטל (פחות מ-48 שע׳)
+              </div>
             )}
           </div>
         )}
@@ -192,7 +201,8 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
                 .filter(
                   (r) =>
                     r.sessionId !== session.id &&
-                    (r.slotType === null || r.slotType === transferSlotType)
+                    (r.slotType === null || r.slotType === transferSlotType) &&
+                    (new Date(r.sessionDate).getTime() - now) / (1000 * 60 * 60) >= 48
                 )
                 .map((src) => (
                   <button
