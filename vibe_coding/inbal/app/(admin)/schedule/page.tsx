@@ -48,7 +48,7 @@ export default async function SchedulePage({
   const sessions = await prisma.session.findMany({
     where: { date: { gte: start, lte: end } },
     include: {
-      group: { select: { name: true, location: true } },
+      group: { select: { name: true, location: true, duration: true } },
       registrations: {
         where: { status: "REGISTERED" },
         include: { user: { select: { id: true, name: true } } },
