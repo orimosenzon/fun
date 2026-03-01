@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { useRef, useEffect, type RefObject } from "react";
 
 const DAYS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
@@ -22,7 +23,7 @@ type AdminSessionData = {
 
 interface Props {
   sessions: AdminSessionData[];
-  weekStart: string;
+  weekStart: string; // center week
   view?: string;
   day?: string;
 }
@@ -37,7 +38,14 @@ function toLocalDateStr(d: Date): string {
   );
 }
 
-// Compact card for weekly grid
+function getWeekStartStr(date: Date): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return toLocalDateStr(d);
+}
+
+// Compact session card used in vertical weekly view
 function AdminSessionCard({ session }: { session: AdminSessionData }) {
   const date = new Date(session.date);
   const timeStr = date.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
@@ -46,7 +54,8 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
 
   const wheelFree = session.slots.wheelTotal - session.slots.wheel.length;
   const noWheelFree = session.slots.noWheelTotal - session.slots.noWheel.length;
-  const totalTaken = session.slots.wheel.length + session.slots.noWheel.length + session.slots.unassigned.length;
+  const totalTaken =
+    session.slots.wheel.length + session.slots.noWheel.length + session.slots.unassigned.length;
   const totalSlots = session.slots.wheelTotal + session.slots.noWheelTotal;
   const isFull = totalTaken >= totalSlots;
 
@@ -61,18 +70,28 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
           : "border-stone-200 bg-white hover:border-amber-300"
       }`}
     >
-      <div className={`px-2 py-1.5 border-b ${
-        isCancelled ? "bg-red-100 border-red-200" :
-        isCompleted ? "bg-stone-100 border-stone-200" :
-        "bg-stone-50 border-stone-100"
-      }`}>
+      <div
+        className={`px-2 py-1.5 border-b ${
+          isCancelled
+            ? "bg-red-100 border-red-200"
+            : isCompleted
+            ? "bg-stone-100 border-stone-200"
+            : "bg-stone-50 border-stone-100"
+        }`}
+      >
         <div className="text-xs font-bold text-stone-800 leading-tight">{session.groupName}</div>
         <div className="flex items-center justify-between mt-0.5 gap-1">
           <span className="text-[11px] text-stone-500">{timeStr}</span>
           <div className="flex items-center gap-1">
-            {isCompleted && <span className="text-[10px] bg-stone-200 text-stone-600 px-1 rounded">הושלם</span>}
-            {isCancelled && <span className="text-[10px] bg-red-200 text-red-700 px-1 rounded">בוטל</span>}
-            <span className={`text-[11px] font-semibold ${isFull ? "text-red-500" : "text-green-600"}`}>
+            {isCompleted && (
+              <span className="text-[10px] bg-stone-200 text-stone-600 px-1 rounded">הושלם</span>
+            )}
+            {isCancelled && (
+              <span className="text-[10px] bg-red-200 text-red-700 px-1 rounded">בוטל</span>
+            )}
+            <span
+              className={`text-[11px] font-semibold ${isFull ? "text-red-500" : "text-green-600"}`}
+            >
               {totalTaken}/{totalSlots}
             </span>
           </div>
@@ -81,10 +100,15 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
 
       <div className="p-2 space-y-2">
         <div>
-          <div className="text-[10px] font-semibold text-stone-400 mb-1">🎡 אובן ({session.slots.wheelTotal})</div>
+          <div className="text-[10px] font-semibold text-stone-400 mb-1">
+            🎡 אובן ({session.slots.wheelTotal})
+          </div>
           <div className="space-y-0.5">
             {session.slots.wheel.map((name, i) => (
-              <div key={i} className="text-xs bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-medium">
+              <div
+                key={i}
+                className="text-xs bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-medium"
+              >
                 {name}
               </div>
             ))}
@@ -97,10 +121,15 @@ function AdminSessionCard({ session }: { session: AdminSessionData }) {
         </div>
 
         <div>
-          <div className="text-[10px] font-semibold text-stone-400 mb-1">✋ ללא אובן ({session.slots.noWheelTotal})</div>
+          <div className="text-[10px] font-semibold text-stone-400 mb-1">
+            ✋ ללא אובן ({session.slots.noWheelTotal})
+          </div>
           <div className="space-y-0.5">
             {session.slots.noWheel.map((name, i) => (
-              <div key={i} className="text-xs bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded font-medium">
+              <div
+                key={i}
+                className="text-xs bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded font-medium"
+              >
                 {name}
               </div>
             ))}
@@ -138,7 +167,8 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
 
   const wheelFree = session.slots.wheelTotal - session.slots.wheel.length;
   const noWheelFree = session.slots.noWheelTotal - session.slots.noWheel.length;
-  const totalTaken = session.slots.wheel.length + session.slots.noWheel.length + session.slots.unassigned.length;
+  const totalTaken =
+    session.slots.wheel.length + session.slots.noWheel.length + session.slots.unassigned.length;
   const totalSlots = session.slots.wheelTotal + session.slots.noWheelTotal;
   const isFull = totalTaken >= totalSlots;
 
@@ -153,12 +183,15 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
           : "border-stone-200 bg-white hover:border-amber-300"
       }`}
     >
-      {/* Header */}
-      <div className={`px-4 py-3 border-b ${
-        isCancelled ? "bg-red-100 border-red-200" :
-        isCompleted ? "bg-stone-100 border-stone-200" :
-        "bg-stone-50 border-stone-100"
-      }`}>
+      <div
+        className={`px-4 py-3 border-b ${
+          isCancelled
+            ? "bg-red-100 border-red-200"
+            : isCompleted
+            ? "bg-stone-100 border-stone-200"
+            : "bg-stone-50 border-stone-100"
+        }`}
+      >
         <div className="flex items-center justify-between">
           <div>
             <div className="text-base font-bold text-stone-800">{session.groupName}</div>
@@ -169,9 +202,17 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
           <div className="text-right">
             <div className="text-xl font-bold text-stone-700">{timeStr}</div>
             <div className="flex items-center gap-1 justify-end mt-1">
-              {isCompleted && <span className="text-xs bg-stone-200 text-stone-600 px-2 py-0.5 rounded">הושלם</span>}
-              {isCancelled && <span className="text-xs bg-red-200 text-red-700 px-2 py-0.5 rounded">בוטל</span>}
-              <span className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-green-600"}`}>
+              {isCompleted && (
+                <span className="text-xs bg-stone-200 text-stone-600 px-2 py-0.5 rounded">
+                  הושלם
+                </span>
+              )}
+              {isCancelled && (
+                <span className="text-xs bg-red-200 text-red-700 px-2 py-0.5 rounded">בוטל</span>
+              )}
+              <span
+                className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-green-600"}`}
+              >
                 {totalTaken}/{totalSlots} מקומות
               </span>
             </div>
@@ -179,13 +220,17 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
         </div>
       </div>
 
-      {/* Slots */}
       <div className="p-4 grid grid-cols-2 gap-4">
         <div>
-          <div className="text-sm font-semibold text-stone-500 mb-2">🎡 אובן ({session.slots.wheelTotal})</div>
+          <div className="text-sm font-semibold text-stone-500 mb-2">
+            🎡 אובן ({session.slots.wheelTotal})
+          </div>
           <div className="space-y-1">
             {session.slots.wheel.map((name, i) => (
-              <div key={i} className="text-sm bg-amber-100 text-amber-900 px-2 py-1 rounded font-medium">
+              <div
+                key={i}
+                className="text-sm bg-amber-100 text-amber-900 px-2 py-1 rounded font-medium"
+              >
                 {name}
               </div>
             ))}
@@ -198,10 +243,15 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
         </div>
 
         <div>
-          <div className="text-sm font-semibold text-stone-500 mb-2">✋ ללא אובן ({session.slots.noWheelTotal})</div>
+          <div className="text-sm font-semibold text-stone-500 mb-2">
+            ✋ ללא אובן ({session.slots.noWheelTotal})
+          </div>
           <div className="space-y-1">
             {session.slots.noWheel.map((name, i) => (
-              <div key={i} className="text-sm bg-sky-100 text-sky-900 px-2 py-1 rounded font-medium">
+              <div
+                key={i}
+                className="text-sm bg-sky-100 text-sky-900 px-2 py-1 rounded font-medium"
+              >
                 {name}
               </div>
             ))}
@@ -230,20 +280,176 @@ function AdminDaySessionCard({ session }: { session: AdminSessionData }) {
   );
 }
 
-export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp, day: dayProp }: Props) {
+// A single day row within the vertical weekly view
+function DaySection({
+  day,
+  sessions,
+  isToday,
+}: {
+  day: Date;
+  sessions: AdminSessionData[];
+  isToday: boolean;
+}) {
+  if (sessions.length === 0) return null;
+
+  const dayName = DAYS_HE[day.getDay()];
+  const dateStr = day.toLocaleDateString("he-IL", {
+    day: "numeric",
+    month: "numeric",
+    year: "2-digit",
+  });
+
+  // Group sessions in pairs of 2
+  const pairs: AdminSessionData[][] = [];
+  for (let i = 0; i < sessions.length; i += 2) {
+    pairs.push(sessions.slice(i, i + 2));
+  }
+
+  return (
+    <div className={`rounded-lg p-3 ${isToday ? "bg-amber-50/60 ring-1 ring-amber-200" : ""}`}>
+      <div
+        className={`text-sm font-semibold mb-2 ${isToday ? "text-amber-700" : "text-stone-500"}`}
+      >
+        יום {dayName}
+        <span className="font-normal text-stone-400 mr-1">{dateStr}</span>
+        {isToday && (
+          <span className="mr-2 text-[11px] bg-amber-500 text-white px-1.5 py-0.5 rounded">
+            היום
+          </span>
+        )}
+      </div>
+      <div className="space-y-2">
+        {pairs.map((pair, pairIdx) => (
+          <div
+            key={pairIdx}
+            className={`grid gap-2 ${pair.length === 2 ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}
+          >
+            {pair.map((s) => (
+              <AdminSessionCard key={s.id} session={s} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// One week block in the vertical timeline
+function WeekBlock({
+  weekStart,
+  sessions,
+  isCurrentWeek,
+  blockRef,
+}: {
+  weekStart: Date;
+  sessions: AdminSessionData[];
+  isCurrentWeek: boolean;
+  blockRef?: RefObject<HTMLDivElement>;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekLabel = (() => {
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+    return `${fmt(weekStart)} – ${fmt(weekEnd)}`;
+  })();
+
+  // Build 7 days for this week
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
+  });
+
+  // Sessions by day-of-week index
+  const byDay: AdminSessionData[][] = Array.from({ length: 7 }, () => []);
+  for (const s of sessions) {
+    const d = new Date(s.date);
+    // Map to this week's day
+    const dayIdx = d.getDay();
+    byDay[dayIdx].push(s);
+  }
+  // Sort each day's sessions by time
+  for (const arr of byDay) {
+    arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  const hasAnySessions = byDay.some((arr) => arr.length > 0);
+
+  return (
+    <div
+      ref={blockRef}
+      className={`rounded-xl border ${
+        isCurrentWeek
+          ? "border-amber-300 shadow-md"
+          : "border-stone-200 shadow-sm"
+      } bg-white overflow-hidden`}
+    >
+      {/* Week header */}
+      <div
+        className={`px-4 py-2.5 border-b flex items-center gap-2 ${
+          isCurrentWeek
+            ? "bg-amber-500 border-amber-500"
+            : "bg-stone-50 border-stone-200"
+        }`}
+      >
+        <span
+          className={`text-sm font-bold ${
+            isCurrentWeek ? "text-white" : "text-stone-700"
+          }`}
+        >
+          {weekLabel}
+        </span>
+        {isCurrentWeek && (
+          <span className="text-[11px] bg-white/30 text-white px-1.5 py-0.5 rounded">
+            השבוע
+          </span>
+        )}
+      </div>
+
+      {/* Days */}
+      <div className="p-3 space-y-1">
+        {hasAnySessions ? (
+          days.map((day, idx) => (
+            <DaySection
+              key={idx}
+              day={day}
+              sessions={byDay[idx]}
+              isToday={day.getTime() === today.getTime()}
+            />
+          ))
+        ) : (
+          <div className="text-center py-8 text-stone-300 text-sm">אין שיעורים בשבוע זה</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminWeekCalendar({
+  sessions,
+  weekStart,
+  view: viewProp,
+  day: dayProp,
+}: Props) {
   const router = useRouter();
-  const weekStartDate = new Date(weekStart);
+  const currentWeekRef = useRef<HTMLDivElement>(null);
+
+  const centerWeekStart = new Date(weekStart);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const isDayView = viewProp === "day";
 
-  function getWeekStartStr(date: Date): string {
-    const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0, 0, 0, 0);
-    return toLocalDateStr(d);
-  }
+  // Scroll current week into view on load
+  useEffect(() => {
+    if (!isDayView && currentWeekRef.current) {
+      currentWeekRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isDayView]);
 
   // Selected day for daily view
   const selectedDayDate = (() => {
@@ -251,32 +457,32 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
       const d = new Date(dayProp + "T00:00:00");
       if (!isNaN(d.getTime())) return d;
     }
-    // default: today if in current week, else first day of week
-    const weekEnd = new Date(weekStartDate);
-    weekEnd.setDate(weekStartDate.getDate() + 6);
-    if (today >= weekStartDate && today <= weekEnd) return new Date(today);
-    return new Date(weekStartDate);
+    const weekEnd = new Date(centerWeekStart);
+    weekEnd.setDate(centerWeekStart.getDate() + 6);
+    if (today >= centerWeekStart && today <= weekEnd) return new Date(today);
+    return new Date(centerWeekStart);
   })();
 
   const selectedDayIdx = selectedDayDate.getDay();
-  const weekStr = getWeekStartStr(weekStartDate);
 
   function goToToday() {
     if (isDayView) {
-      router.push(`/schedule?week=${getWeekStartStr(today)}&view=day&day=${toLocalDateStr(today)}`);
+      router.push(
+        `/schedule?week=${getWeekStartStr(today)}&view=day&day=${toLocalDateStr(today)}`
+      );
     } else {
       router.push(`/schedule?week=${toLocalDateStr(today)}`);
     }
   }
 
   function prevWeek() {
-    const d = new Date(weekStartDate);
+    const d = new Date(centerWeekStart);
     d.setDate(d.getDate() - 7);
     router.push(`/schedule?week=${toLocalDateStr(d)}`);
   }
 
   function nextWeek() {
-    const d = new Date(weekStartDate);
+    const d = new Date(centerWeekStart);
     d.setDate(d.getDate() + 7);
     router.push(`/schedule?week=${toLocalDateStr(d)}`);
   }
@@ -284,36 +490,32 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
   function prevDay() {
     const d = new Date(selectedDayDate);
     d.setDate(d.getDate() - 1);
-    router.push(`/schedule?week=${getWeekStartStr(d)}&view=day&day=${toLocalDateStr(d)}`);
+    router.push(
+      `/schedule?week=${getWeekStartStr(d)}&view=day&day=${toLocalDateStr(d)}`
+    );
   }
 
   function nextDay() {
     const d = new Date(selectedDayDate);
     d.setDate(d.getDate() + 1);
-    router.push(`/schedule?week=${getWeekStartStr(d)}&view=day&day=${toLocalDateStr(d)}`);
-  }
-
-  function goToDayView(day: Date) {
-    router.push(`/schedule?week=${getWeekStartStr(day)}&view=day&day=${toLocalDateStr(day)}`);
+    router.push(
+      `/schedule?week=${getWeekStartStr(d)}&view=day&day=${toLocalDateStr(d)}`
+    );
   }
 
   function switchToDayView() {
-    const weekEnd = new Date(weekStartDate);
-    weekEnd.setDate(weekStartDate.getDate() + 6);
-    const target = today >= weekStartDate && today <= weekEnd ? today : new Date(weekStartDate);
-    goToDayView(target);
+    const weekEnd = new Date(centerWeekStart);
+    weekEnd.setDate(centerWeekStart.getDate() + 6);
+    const target =
+      today >= centerWeekStart && today <= weekEnd ? today : new Date(centerWeekStart);
+    router.push(
+      `/schedule?week=${getWeekStartStr(target)}&view=day&day=${toLocalDateStr(target)}`
+    );
   }
 
   function goToWeekView() {
-    router.push(`/schedule?week=${weekStr}`);
+    router.push(`/schedule?week=${getWeekStartStr(centerWeekStart)}`);
   }
-
-  const weekLabel = (() => {
-    const end = new Date(weekStartDate);
-    end.setDate(weekStartDate.getDate() + 6);
-    const fmt = (d: Date) => d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
-    return `${fmt(weekStartDate)} – ${fmt(end)}`;
-  })();
 
   const dayLabel = selectedDayDate.toLocaleDateString("he-IL", {
     weekday: "long",
@@ -321,20 +523,47 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
     month: "long",
   });
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStartDate);
-    d.setDate(weekStartDate.getDate() + i);
-    return d;
-  });
+  // Split sessions into 3 week buckets: prev / center / next
+  const prevWeekStart = new Date(centerWeekStart);
+  prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  const nextWeekStart = new Date(centerWeekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
 
-  const byDay: AdminSessionData[][] = Array.from({ length: 7 }, () => []);
-  for (const s of sessions) {
-    const d = new Date(s.date);
-    byDay[d.getDay()].push(s);
+  function getWeekEnd(ws: Date): Date {
+    const d = new Date(ws);
+    d.setDate(d.getDate() + 6);
+    d.setHours(23, 59, 59, 999);
+    return d;
   }
 
-  const daySessions = byDay[selectedDayIdx] ?? [];
-  const isToday = (d: Date) => d.getTime() === today.getTime();
+  const prevWeekEnd = getWeekEnd(prevWeekStart);
+  const centerWeekEnd = getWeekEnd(centerWeekStart);
+  const nextWeekEnd = getWeekEnd(nextWeekStart);
+
+  const prevSessions = sessions.filter((s) => {
+    const t = new Date(s.date).getTime();
+    return t >= prevWeekStart.getTime() && t <= prevWeekEnd.getTime();
+  });
+  const centerSessions = sessions.filter((s) => {
+    const t = new Date(s.date).getTime();
+    return t >= centerWeekStart.getTime() && t <= centerWeekEnd.getTime();
+  });
+  const nextSessions = sessions.filter((s) => {
+    const t = new Date(s.date).getTime();
+    return t >= nextWeekStart.getTime() && t <= nextWeekEnd.getTime();
+  });
+
+  // Day sessions for daily view
+  const daySessions = sessions
+    .filter((s) => {
+      const d = new Date(s.date);
+      return d.getDay() === selectedDayIdx && toLocalDateStr(d) === toLocalDateStr(selectedDayDate);
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Is center week the real current week?
+  const isRealCurrentWeek =
+    getWeekStartStr(today) === getWeekStartStr(centerWeekStart);
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -395,16 +624,13 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
                 onClick={prevWeek}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &lsaquo;
+                &#8593;
               </button>
-              <span className="text-sm font-medium text-stone-700 min-w-[180px] text-center">
-                {weekLabel}
-              </span>
               <button
                 onClick={nextWeek}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition text-stone-600 font-bold text-lg"
               >
-                &rsaquo;
+                &#8595;
               </button>
             </div>
           )}
@@ -412,7 +638,7 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
       </div>
 
       {isDayView ? (
-        /* Daily view */
+        /* Daily view — unchanged */
         <div>
           {daySessions.length === 0 ? (
             <div className="text-center py-20 text-stone-400">
@@ -428,61 +654,24 @@ export default function AdminWeekCalendar({ sessions, weekStart, view: viewProp,
           )}
         </div>
       ) : (
-        /* Weekly view */
-        <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
-          <div className="min-w-[600px]">
-            {/* Day headers — clickable to switch to daily view */}
-            <div className="grid grid-cols-7 border-b border-stone-200">
-              {days.map((day, idx) => {
-                const isTodayDay = isToday(day);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => goToDayView(day)}
-                    className={`px-2 py-3 text-center border-r border-stone-100 last:border-r-0 cursor-pointer hover:bg-amber-50/60 transition ${
-                      isTodayDay ? "bg-amber-50" : ""
-                    }`}
-                  >
-                    <div className={`text-xs font-semibold ${isTodayDay ? "text-amber-700" : "text-stone-500"}`}>
-                      {DAYS_HE[idx]}
-                    </div>
-                    <div
-                      className={`mt-1 text-sm font-bold inline-flex w-7 h-7 items-center justify-center rounded-full ${
-                        isTodayDay ? "bg-amber-500 text-white" : "text-stone-700"
-                      }`}
-                    >
-                      {day.getDate()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Session cells */}
-            <div className="grid grid-cols-7 min-h-[200px]">
-              {days.map((day, idx) => {
-                const isTodayDay = isToday(day);
-                return (
-                  <div
-                    key={idx}
-                    className={`border-r border-stone-100 last:border-r-0 p-1.5 space-y-1.5 ${
-                      isTodayDay ? "bg-amber-50/40" : ""
-                    }`}
-                  >
-                    {byDay[idx].length === 0 ? (
-                      <div className="h-full flex items-start justify-center pt-4">
-                        <span className="text-stone-200 text-xs">—</span>
-                      </div>
-                    ) : (
-                      byDay[idx].map((s) => (
-                        <AdminSessionCard key={s.id} session={s} />
-                      ))
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        /* Vertical weekly view — 3 weeks stacked */
+        <div className="space-y-4">
+          <WeekBlock
+            weekStart={prevWeekStart}
+            sessions={prevSessions}
+            isCurrentWeek={false}
+          />
+          <WeekBlock
+            weekStart={centerWeekStart}
+            sessions={centerSessions}
+            isCurrentWeek={isRealCurrentWeek}
+            blockRef={currentWeekRef as RefObject<HTMLDivElement>}
+          />
+          <WeekBlock
+            weekStart={nextWeekStart}
+            sessions={nextSessions}
+            isCurrentWeek={false}
+          />
         </div>
       )}
     </div>

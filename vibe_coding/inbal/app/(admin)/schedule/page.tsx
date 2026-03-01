@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { WHEEL_SLOTS, NO_WHEEL_SLOTS } from "@/lib/slots";
 import AdminWeekCalendar from "./AdminWeekCalendar";
 
-function getWeekBounds(weekParam?: string): { start: Date; end: Date } {
+function getWeekStart(weekParam?: string): Date {
   let base: Date;
   if (weekParam) {
     base = new Date(weekParam);
@@ -13,14 +13,25 @@ function getWeekBounds(weekParam?: string): { start: Date; end: Date } {
   } else {
     base = new Date();
   }
-  const day = base.getDay();
   const sunday = new Date(base);
-  sunday.setDate(base.getDate() - day);
+  sunday.setDate(base.getDate() - base.getDay());
   sunday.setHours(0, 0, 0, 0);
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
-  saturday.setHours(23, 59, 59, 999);
-  return { start: sunday, end: saturday };
+  return sunday;
+}
+
+function getWeekBounds(weekParam?: string): { start: Date; end: Date; centerStart: Date } {
+  const centerStart = getWeekStart(weekParam);
+
+  // Load 3 weeks: prev, current, next
+  const start = new Date(centerStart);
+  start.setDate(start.getDate() - 7);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(centerStart);
+  end.setDate(end.getDate() + 13); // +6 for current week +7 for next week
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end, centerStart };
 }
 
 export default async function SchedulePage({
@@ -32,7 +43,7 @@ export default async function SchedulePage({
   if (!session || (session.user as { role?: string })?.role !== "ADMIN") redirect("/my");
 
   const { week, view, day } = await searchParams;
-  const { start, end } = getWeekBounds(week);
+  const { start, end, centerStart } = getWeekBounds(week);
 
   const sessions = await prisma.session.findMany({
     where: { date: { gte: start, lte: end } },
@@ -70,7 +81,7 @@ export default async function SchedulePage({
   return (
     <AdminWeekCalendar
       sessions={sessionData}
-      weekStart={start.toISOString()}
+      weekStart={centerStart.toISOString()}
       view={view}
       day={day}
     />
