@@ -63,6 +63,7 @@ export default async function SchedulePage({
     status: s.status,
     groupName: s.group.name,
     groupLocation: s.group.location ?? null,
+    groupDuration: s.group.duration,
     slots: {
       wheelTotal: WHEEL_SLOTS,
       noWheelTotal: NO_WHEEL_SLOTS,
