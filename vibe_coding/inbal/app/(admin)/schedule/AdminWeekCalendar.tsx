@@ -71,13 +71,13 @@ function groupByProximity(
 function SlotSquare({ name, type }: { name?: string; type: "wheel" | "noWheel" }) {
   if (!name) {
     return (
-      <div className="w-[54px] h-[48px] rounded border-2 border-dashed border-stone-200 shrink-0" />
+      <div className="w-11 h-10 sm:w-[54px] sm:h-[48px] rounded border-2 border-dashed border-stone-200 shrink-0" />
     );
   }
   const display = name.split(" ")[0];
   return (
     <div
-      className={`w-[54px] h-[48px] rounded border flex items-center justify-center text-center p-1 shrink-0 ${
+      className={`w-11 h-10 sm:w-[54px] sm:h-[48px] rounded border flex items-center justify-center text-center p-1 shrink-0 ${
         type === "wheel"
           ? "bg-amber-100 border-amber-200 text-amber-900"
           : "bg-sky-100 border-sky-200 text-sky-900"
@@ -108,78 +108,110 @@ function SessionRow({
   const totalSlots = session.slots.wheelTotal + session.slots.noWheelTotal;
   const isFull = totalTaken >= totalSlots;
 
-  return (
-    <div
-      className={`flex items-center gap-3 px-3 py-2 ${
-        hasBorderBottom ? "border-b border-stone-100" : ""
-      } ${isCancelled ? "bg-red-50/50" : isCompleted ? "bg-stone-50/60" : ""}`}
+  const timeLink = (
+    <Link
+      href={`/sessions/${session.id}`}
+      className="flex flex-col items-center w-12 shrink-0 hover:opacity-75 transition"
     >
-      {/* Time + status — clickable */}
-      <Link
-        href={`/sessions/${session.id}`}
-        className="flex flex-col items-center w-12 shrink-0 hover:opacity-75 transition"
+      <span
+        className={`text-sm font-bold ${
+          isCancelled ? "text-red-500" : isCompleted ? "text-stone-400" : "text-stone-700"
+        }`}
       >
-        <span
-          className={`text-sm font-bold ${
-            isCancelled ? "text-red-500" : isCompleted ? "text-stone-400" : "text-stone-700"
-          }`}
-        >
-          {timeStr}
-        </span>
-        {isCancelled && (
-          <span className="text-[9px] text-red-500 leading-none">בוטל</span>
-        )}
-        {isCompleted && (
-          <span className="text-[9px] text-stone-400 leading-none">הושלם</span>
-        )}
-        <span
-          className={`text-[10px] font-semibold mt-0.5 ${
-            isFull ? "text-red-400" : "text-green-500"
-          }`}
-        >
-          {totalTaken}/{totalSlots}
-        </span>
-      </Link>
-
-      {/* Wheel slots */}
-      <div className="flex gap-1">
-        {session.slots.wheel.map((name, i) => (
-          <SlotSquare key={i} name={name} type="wheel" />
-        ))}
-        {Array.from({ length: wheelFree }).map((_, i) => (
-          <SlotSquare key={`we${i}`} type="wheel" />
-        ))}
-      </div>
-
-      {/* Separator between slot types */}
-      <div className="w-px self-stretch bg-stone-100 mx-0.5" />
-
-      {/* No-wheel slots */}
-      <div className="flex gap-1">
-        {session.slots.noWheel.map((name, i) => (
-          <SlotSquare key={i} name={name} type="noWheel" />
-        ))}
-        {Array.from({ length: noWheelFree }).map((_, i) => (
-          <SlotSquare key={`ne${i}`} type="noWheel" />
-        ))}
-      </div>
-
-      {/* Unassigned (edge case) */}
-      {session.slots.unassigned.length > 0 && (
-        <>
-          <div className="w-px self-stretch bg-stone-100 mx-0.5" />
-          <div className="flex flex-wrap gap-1">
-            {session.slots.unassigned.map((name, i) => (
-              <div
-                key={i}
-                className="text-[11px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded self-center"
-              >
-                {name}
-              </div>
-            ))}
-          </div>
-        </>
+        {timeStr}
+      </span>
+      {isCancelled && (
+        <span className="text-[9px] text-red-500 leading-none">בוטל</span>
       )}
+      {isCompleted && (
+        <span className="text-[9px] text-stone-400 leading-none">הושלם</span>
+      )}
+      <span
+        className={`text-[10px] font-semibold mt-0.5 ${
+          isFull ? "text-red-400" : "text-green-500"
+        }`}
+      >
+        {totalTaken}/{totalSlots}
+      </span>
+    </Link>
+  );
+
+  const wheelSquares = (
+    <>
+      {session.slots.wheel.map((name, i) => (
+        <SlotSquare key={i} name={name} type="wheel" />
+      ))}
+      {Array.from({ length: wheelFree }).map((_, i) => (
+        <SlotSquare key={`we${i}`} type="wheel" />
+      ))}
+    </>
+  );
+
+  const noWheelSquares = (
+    <>
+      {session.slots.noWheel.map((name, i) => (
+        <SlotSquare key={i} name={name} type="noWheel" />
+      ))}
+      {Array.from({ length: noWheelFree }).map((_, i) => (
+        <SlotSquare key={`ne${i}`} type="noWheel" />
+      ))}
+    </>
+  );
+
+  const borderClass = hasBorderBottom ? "border-b border-stone-100" : "";
+  const bgClass = isCancelled ? "bg-red-50/50" : isCompleted ? "bg-stone-50/60" : "";
+
+  return (
+    <div className={`px-3 py-2 ${borderClass} ${bgClass}`}>
+      {/* Mobile layout: two stacked rows (wheel / noWheel) */}
+      <div className="flex sm:hidden items-start gap-3">
+        {timeLink}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-amber-500 font-semibold w-5 shrink-0">כד</span>
+            <div className="flex gap-1">{wheelSquares}</div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-sky-500 font-semibold w-5 shrink-0">יד׳</span>
+            <div className="flex gap-1">{noWheelSquares}</div>
+          </div>
+          {session.slots.unassigned.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {session.slots.unassigned.map((name, i) => (
+                <div
+                  key={i}
+                  className="text-[11px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded"
+                >
+                  {name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop layout: single horizontal row */}
+      <div className="hidden sm:flex items-center gap-3">
+        {timeLink}
+        <div className="flex gap-1">{wheelSquares}</div>
+        <div className="w-px self-stretch bg-stone-100 mx-0.5" />
+        <div className="flex gap-1">{noWheelSquares}</div>
+        {session.slots.unassigned.length > 0 && (
+          <>
+            <div className="w-px self-stretch bg-stone-100 mx-0.5" />
+            <div className="flex flex-wrap gap-1">
+              {session.slots.unassigned.map((name, i) => (
+                <div
+                  key={i}
+                  className="text-[11px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded self-center"
+                >
+                  {name}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
