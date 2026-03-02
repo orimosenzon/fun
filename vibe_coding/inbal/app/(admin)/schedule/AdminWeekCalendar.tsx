@@ -144,6 +144,7 @@ function SessionRow({
       </Link>
 
       {/* Single slots row: wheel | noWheel */}
+      <div className="overflow-x-auto">
       <div className="flex items-center gap-1">
         {session.slots.wheel.map((name, i) => (
           <SlotSquare key={i} name={name} type="wheel" />
@@ -172,6 +173,7 @@ function SessionRow({
           </>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -179,7 +181,7 @@ function SessionRow({
 // A block of sessions that are close in time — shown as a table
 function SessionPairBlock({ sessions }: { sessions: AdminSessionData[] }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-lg border border-stone-200 bg-white">
       {sessions.map((session, idx) => (
         <SessionRow
           key={session.id}
