@@ -63,9 +63,26 @@ export default async function MyPage({
     orderBy: { session: { date: "asc" } },
   });
 
+  // Standby entries for this user (for sessions shown this week)
+  const sessionIds = sessions.map((s) => s.id);
+  const myStandbyEntries = await prisma.standbyEntry.findMany({
+    where: { userId: user.id, sessionId: { in: sessionIds } },
+    select: { sessionId: true, slotType: true, notifiedAt: true, expiresAt: true, createdAt: true },
+  });
+
+  // Standby positions — count all entries per session sorted by createdAt
+  const standbyPositionMap: Record<string, number> = {};
+  for (const entry of myStandbyEntries) {
+    const count = await prisma.standbyEntry.count({
+      where: { sessionId: entry.sessionId, createdAt: { lte: entry.createdAt } },
+    });
+    standbyPositionMap[entry.sessionId] = count;
+  }
+
   const sessionData = sessions.map((s) => {
     const activeRegs = s.registrations.filter((r) => r.status === "REGISTERED");
     const myReg = s.registrations.find((r) => r.userId === user.id);
+    const myStandby = myStandbyEntries.find((e) => e.sessionId === s.id);
 
     return {
       id: s.id,
@@ -74,6 +91,14 @@ export default async function MyPage({
       groupLocation: s.group.location ?? null,
       myRegistration: myReg
         ? { id: myReg.id, slotType: myReg.slotType as string | null, status: myReg.status }
+        : null,
+      myStandby: myStandby
+        ? {
+            slotType: myStandby.slotType as string | null,
+            notifiedAt: myStandby.notifiedAt?.toISOString() ?? null,
+            expiresAt: myStandby.expiresAt?.toISOString() ?? null,
+            position: standbyPositionMap[s.id] ?? 1,
+          }
         : null,
       slots: {
         wheelTaken: activeRegs.filter((r) => r.slotType === "WHEEL").length,

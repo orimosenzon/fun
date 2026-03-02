@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import RegistrationActions from "./RegistrationActions";
+import StandbyPanel from "./StandbyPanel";
 
 function statusLabel(status: string) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -25,6 +26,10 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
     include: {
       group: true,
       registrations: {
+        include: { user: { select: { id: true, name: true, phone: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+      standbyEntries: {
         include: { user: { select: { id: true, name: true, phone: true } } },
         orderBy: { createdAt: "asc" },
       },
@@ -116,6 +121,23 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
           })}
         </div>
       </div>
+      {/* Standby list */}
+      {s.standbyEntries.length > 0 && (
+        <StandbyPanel
+          sessionId={s.id}
+          entries={s.standbyEntries.map((e, idx) => ({
+            id: e.id,
+            position: idx + 1,
+            name: e.user.name,
+            phone: e.user.phone ?? null,
+            userId: e.user.id,
+            slotType: e.slotType,
+            notifiedAt: e.notifiedAt?.toISOString() ?? null,
+            expiresAt: e.expiresAt?.toISOString() ?? null,
+            createdAt: e.createdAt.toISOString(),
+          }))}
+        />
+      )}
     </div>
   );
 }

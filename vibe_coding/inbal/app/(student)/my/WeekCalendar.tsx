@@ -5,12 +5,20 @@ import StudentSessionCard from "./StudentSessionCard";
 
 const DAYS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
+export type MyStandby = {
+  slotType: string | null;
+  notifiedAt: string | null;
+  expiresAt: string | null;
+  position: number;
+};
+
 export type SessionData = {
   id: string;
   date: string;
   groupName: string;
   groupLocation: string | null;
   myRegistration: { id: string; slotType: string | null; status: string } | null;
+  myStandby: MyStandby | null;
   slots: {
     wheelTaken: number;
     noWheelTaken: number;
@@ -171,7 +179,7 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-stone-400 px-1">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-stone-400 px-1">
         <span className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 rounded-full bg-amber-500" /> המקום שלך
         </span>
@@ -179,7 +187,7 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
           <span className="inline-block w-3 h-3 rounded-full bg-stone-400" /> תפוס
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-full border-2 border-green-400 bg-green-50" /> פנוי (ניתן להעברה)
+          <span className="inline-block w-3 h-3 rounded-full border-2 border-green-400 bg-green-50" /> פנוי
         </span>
       </div>
     </div>

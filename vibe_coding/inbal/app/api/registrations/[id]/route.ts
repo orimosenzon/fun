@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyNextStandby } from "@/lib/standby";
 
 const CANCEL_HOURS_AHEAD = 48;
 
@@ -39,5 +40,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const updated = await prisma.sessionRegistration.update({ where: { id }, data: body });
+
+  // אם בוטל — הודע לסטנד ביי
+  if (body.status === "CANCELLED") {
+    notifyNextStandby(reg.sessionId).catch((err) =>
+      console.error("notifyNextStandby failed:", err)
+    );
+  }
+
   return NextResponse.json(updated);
 }

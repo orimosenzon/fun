@@ -1,1 +1,9 @@
-{ "regions": ["bom1"] }
+{
+  "regions": ["bom1"],
+  "crons": [
+    {
+      "path": "/api/cron/process-standby",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

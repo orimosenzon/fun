@@ -52,10 +52,11 @@ model User {
   role      Role     @default(STUDENT)
   password  String?  // null for OAuth users
 
-  accounts      Account[]
-  enrollments   GroupEnrollment[]
-  registrations SessionRegistration[]
-  payments      Payment[]
+  accounts        Account[]
+  enrollments     GroupEnrollment[]
+  registrations   SessionRegistration[]
+  payments        Payment[]
+  standbyEntries  StandbyEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -120,7 +121,8 @@ model Session {
   status  SessionStatus @default(SCHEDULED)
   notes   String?
 
-  registrations SessionRegistration[]
+  registrations  SessionRegistration[]
+  standbyEntries StandbyEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,4 +157,19 @@ model Payment {
   type        PaymentType @default(MONTHLY)
 
   createdAt DateTime @default(now())
+}
+
+model StandbyEntry {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId  String
+  slotType   SlotType? // העדפת סוג סלוט (null = כל סוג)
+  notifiedAt DateTime? // מתי נשלחה SMS
+  expiresAt  DateTime? // notifiedAt + 1 שעה
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, sessionId])
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slotAvailable } from "@/lib/slots";
+import { notifyNextStandby } from "@/lib/standby";
 
 const CANCEL_HOURS_AHEAD = 48;
 
@@ -91,6 +92,11 @@ export async function POST(req: Request) {
 
     return [newRegistration];
   });
+
+  // הודע לסטנד ביי של השיעור המקורי שמתפנה מקום
+  notifyNextStandby(fromReg.sessionId).catch((err) =>
+    console.error("notifyNextStandby failed:", err)
+  );
 
   return NextResponse.json(newReg, { status: 201 });
 }
