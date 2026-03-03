@@ -137,19 +137,19 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
       );
 
     return (
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-stone-500 text-[11px]">{label}</span>
+      <div className="space-y-0.5">
+        <div className="text-stone-500 text-[11px]">{label}</div>
         {isMySlot ? (
-          <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+          <div className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-center font-medium">
             המקום שלך ✓
-          </span>
+          </div>
         ) : isRegistered ? (
-          <span className="text-[10px] text-stone-300">תפוס</span>
+          <div className="text-[10px] text-stone-300 text-center">תפוס</div>
         ) : canTransferHere ? (
           <button
             onClick={() => setTransferSlotType(type)}
             disabled={loading}
-            className="text-[10px] bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium hover:bg-amber-600 transition disabled:opacity-50"
+            className="w-full text-[10px] bg-amber-500 text-white py-0.5 rounded font-medium hover:bg-amber-600 transition disabled:opacity-50"
           >
             הרשם
           </button>
@@ -157,14 +157,14 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
           <button
             onClick={() => handleDirectRegister(type)}
             disabled={loading}
-            className="text-[10px] bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium hover:bg-amber-600 transition disabled:opacity-50"
+            className="w-full text-[10px] bg-amber-500 text-white py-0.5 rounded font-medium hover:bg-amber-600 transition disabled:opacity-50"
           >
             {loading ? "..." : "הרשם"}
           </button>
         ) : (
-          <span className="text-[10px] text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+          <div className="text-[10px] text-stone-400 bg-stone-100 py-0.5 rounded text-center">
             תפוס
-          </span>
+          </div>
         )}
       </div>
     );
