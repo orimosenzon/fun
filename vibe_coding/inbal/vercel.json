@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/process-standby",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
