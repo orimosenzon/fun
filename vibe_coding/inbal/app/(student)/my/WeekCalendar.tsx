@@ -180,14 +180,13 @@ export default function WeekCalendar({ sessions, weekStart, myUpcomingRegistrati
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-stone-400 px-1">
+        <span className="flex items-center gap-1">🎡 אובניים</span>
+        <span className="flex items-center gap-1">✋ ידני</span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-full bg-amber-500" /> המקום שלך
+          <span className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full">הרשם</span> = מקום פנוי
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-full bg-stone-400" /> תפוס
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-full border-2 border-green-400 bg-green-50" /> פנוי
+          <span className="bg-stone-100 text-stone-400 text-[10px] px-2 py-0.5 rounded-full">תפוס</span> = אין מקום
         </span>
       </div>
     </div>

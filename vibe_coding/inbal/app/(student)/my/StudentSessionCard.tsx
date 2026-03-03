@@ -119,20 +119,12 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
     if (res.ok) router.refresh();
   }
 
-  // ------ slot dots ------
+  // ------ slot row ------
 
-  function SlotDots({
-    total,
-    taken,
-    type,
-  }: {
-    total: number;
-    taken: number;
-    type: "WHEEL" | "NO_WHEEL";
-  }) {
-    const mySlot = isRegistered && myReg?.slotType === type;
-    const othersTaken = mySlot ? taken - 1 : taken;
-    const free = total - taken;
+  function SlotRow({ type }: { type: "WHEEL" | "NO_WHEEL" }) {
+    const label = type === "WHEEL" ? "🎡 אובניים" : "✋ ידני";
+    const free = type === "WHEEL" ? wheelFree : noWheelFree;
+    const isMySlot = isRegistered && myReg?.slotType === type;
 
     const canTransferHere =
       !isRegistered &&
@@ -144,36 +136,36 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
           (new Date(r.sessionDate).getTime() - now) / (1000 * 60 * 60) >= 48
       );
 
-    const canRegisterDirectly = !isRegistered && free > 0;
-
     return (
-      <div className="flex gap-0.5 flex-wrap">
-        {mySlot && (
-          <span
-            title="המקום שלך"
-            className="inline-block w-4 h-4 rounded-full bg-amber-500 ring-2 ring-amber-300"
-          />
-        )}
-        {Array.from({ length: Math.max(0, othersTaken) }).map((_, i) => (
-          <span key={`t${i}`} className="inline-block w-4 h-4 rounded-full bg-stone-300" />
-        ))}
-        {Array.from({ length: free }).map((_, i) => (
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-stone-500 text-[11px]">{label}</span>
+        {isMySlot ? (
+          <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+            המקום שלך ✓
+          </span>
+        ) : isRegistered ? (
+          <span className="text-[10px] text-stone-300">תפוס</span>
+        ) : canTransferHere ? (
           <button
-            key={`f${i}`}
-            onClick={() => {
-              if (canTransferHere) setTransferSlotType(type);
-              else if (canRegisterDirectly) setShowRegisterModal(true);
-            }}
-            title={canTransferHere ? "לחצי להעברה לכאן" : canRegisterDirectly ? "לחצי להירשם" : "פנוי"}
-            className={`inline-block w-4 h-4 rounded-full border-2 transition ${
-              canTransferHere
-                ? "border-green-400 bg-green-50 hover:bg-green-200 cursor-pointer"
-                : canRegisterDirectly
-                ? "border-green-400 bg-green-50 hover:bg-green-200 cursor-pointer"
-                : "border-stone-200 bg-white cursor-default"
-            }`}
-          />
-        ))}
+            onClick={() => setTransferSlotType(type)}
+            disabled={loading}
+            className="text-[10px] bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium hover:bg-amber-600 transition disabled:opacity-50"
+          >
+            הרשם
+          </button>
+        ) : free > 0 ? (
+          <button
+            onClick={() => handleDirectRegister(type)}
+            disabled={loading}
+            className="text-[10px] bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium hover:bg-amber-600 transition disabled:opacity-50"
+          >
+            {loading ? "..." : "הרשם"}
+          </button>
+        ) : (
+          <span className="text-[10px] text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+            תפוס
+          </span>
+        )}
       </div>
     );
   }
@@ -204,16 +196,10 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
           </div>
         )}
 
-        {/* Slot dots */}
-        <div className="space-y-0.5 pt-0.5">
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400" title="אובן">🎡</span>
-            <SlotDots total={session.slots.wheelTotal} taken={session.slots.wheelTaken} type="WHEEL" />
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400" title="ללא אובן">✋</span>
-            <SlotDots total={session.slots.noWheelTotal} taken={session.slots.noWheelTaken} type="NO_WHEEL" />
-          </div>
+        {/* Slot availability rows */}
+        <div className="space-y-1 pt-0.5">
+          <SlotRow type="WHEEL" />
+          <SlotRow type="NO_WHEEL" />
         </div>
 
         {/* Status / actions */}
@@ -296,15 +282,6 @@ export default function StudentSessionCard({ session, myUpcomingRegistrations }:
           </button>
         )}
 
-        {/* Register button (free slots, not registered, not on standby) */}
-        {!isRegistered && !myStandby && hasAnyFree && !standbyNotified && (
-          <button
-            onClick={() => setShowRegisterModal(true)}
-            className="w-full text-[10px] bg-amber-500 text-white py-1 rounded hover:bg-amber-600 transition"
-          >
-            הירשמי לשיעור
-          </button>
-        )}
       </div>
 
       {/* Register modal */}
