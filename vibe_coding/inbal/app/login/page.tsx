@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -116,6 +117,13 @@ export default function LoginPage() {
             {loading ? "מתחבר..." : "כניסה"}
           </button>
         </form>
+
+        <p className="text-center text-sm text-stone-500 mt-6">
+          עדיין אין לך חשבון?{" "}
+          <Link href="/register" className="text-amber-600 hover:underline font-medium">
+            הרשמה
+          </Link>
+        </p>
       </div>
     </div>
   );
