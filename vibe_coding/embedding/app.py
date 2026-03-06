@@ -35,6 +35,21 @@ def free_ask():
     return jsonify({"results": [{"word": w, "score": round(s, 3)} for w, s in results]})
 
 
+@app.route("/api/visualize", methods=["POST"])
+def visualize():
+    data = request.json
+    n = min(max(int(data.get("n", 20)), 5), 60)
+    method = data.get("method", "pca")
+    category = data.get("category") or None
+    points = engine.get_2d_projection(n, method, category)
+    return jsonify({"points": points})
+
+
+@app.route("/api/visualize/categories")
+def visualize_categories():
+    return jsonify({"categories": list(engine.categories.keys())})
+
+
 @app.route("/api/nearest", methods=["POST"])
 def nearest():
     word = request.json.get("word", "").strip()

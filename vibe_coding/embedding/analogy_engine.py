@@ -91,6 +91,30 @@ class AnalogyEngine:
             similar = self.model.most_similar(answer, topn=20)
         return [w for w, _ in similar if w not in exclude and w.isalpha()]
 
+    def get_2d_projection(self, n: int = 20, method: str = "pca", category: str = None):
+        import numpy as np
+        from sklearn.decomposition import PCA
+        from sklearn.manifold import TSNE
+
+        if category and category in self.categories:
+            pool = list({w for pair in self.categories[category] for w in pair})
+        else:
+            pool = self._word_pool
+
+        n = min(n, len(pool))
+        words = random.sample(pool, n)
+        vectors = np.array([self.model[w] for w in words])
+
+        if method == "tsne":
+            perplexity = min(5, n - 1)
+            reducer = TSNE(n_components=2, random_state=42, perplexity=perplexity)
+        else:
+            reducer = PCA(n_components=2)
+
+        coords = reducer.fit_transform(vectors)
+        return [{"word": w, "x": float(coords[i, 0]), "y": float(coords[i, 1])}
+                for i, w in enumerate(words)]
+
     def nearest_words(self, word: str, topn: int = 7):
         word = word.lower().strip()
         if word not in self.model:

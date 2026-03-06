@@ -9,8 +9,8 @@
 
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
+      background: #130f09;
+      color: #f5e6cc;
       min-height: 100vh;
     }
 
@@ -18,10 +18,10 @@
     .header {
       padding: 2rem 1rem 1.5rem;
       text-align: center;
-      border-bottom: 1px solid #1e293b;
+      border-bottom: 1px solid #1f1710;
     }
-    .header h1 { font-size: 1.9rem; color: #a78bfa; letter-spacing: 0.03em; }
-    .header p  { color: #64748b; margin-top: 0.4rem; font-size: 0.9rem; }
+    .header h1 { font-size: 1.9rem; color: #fbbf24; letter-spacing: 0.03em; }
+    .header p  { color: #a88250; margin-top: 0.4rem; font-size: 0.9rem; }
 
     /* ---- Tabs ---- */
     .tabs {
@@ -34,15 +34,15 @@
       padding: 0.65rem 2rem;
       border-radius: 0.5rem;
       cursor: pointer;
-      border: 2px solid #1e293b;
-      background: #1e293b;
-      color: #64748b;
+      border: 2px solid #1f1710;
+      background: #1f1710;
+      color: #a88250;
       font-size: 0.95rem;
       font-weight: 500;
       transition: all 0.2s;
     }
-    .tab:hover  { border-color: #7c3aed; color: #a78bfa; }
-    .tab.active { border-color: #7c3aed; color: #a78bfa; background: #1e1b4b; }
+    .tab:hover  { border-color: #d97706; color: #fbbf24; }
+    .tab.active { border-color: #d97706; color: #fbbf24; background: #2a1a08; }
 
     /* ---- Panels ---- */
     .panel {
@@ -58,7 +58,7 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: #475569;
+      color: #8a6a40;
       margin-bottom: 0.75rem;
     }
 
@@ -71,11 +71,11 @@
       align-items: center;
       margin-bottom: 1.75rem;
     }
-    .score { font-size: 1.1rem; color: #a78bfa; font-weight: 600; }
+    .score { font-size: 1.1rem; color: #fbbf24; font-weight: 600; }
 
     .btn-primary {
       padding: 0.55rem 1.4rem;
-      background: #7c3aed;
+      background: #d97706;
       color: white;
       border: none;
       border-radius: 0.5rem;
@@ -84,11 +84,11 @@
       font-weight: 500;
       transition: background 0.2s;
     }
-    .btn-primary:hover    { background: #6d28d9; }
-    .btn-primary:disabled { background: #334155; cursor: not-allowed; }
+    .btn-primary:hover    { background: #b45309; }
+    .btn-primary:disabled { background: #4a3520; cursor: not-allowed; }
 
     .question-card {
-      background: #1e293b;
+      background: #1f1710;
       border-radius: 1rem;
       padding: 2.5rem 2rem;
       text-align: center;
@@ -98,10 +98,10 @@
       font-size: 1.9rem;
       font-weight: 700;
       letter-spacing: 0.06em;
-      color: #e2e8f0;
+      color: #f5e6cc;
     }
-    .analogy-text .blank { color: #a78bfa; }
-    .cat-label { color: #475569; font-size: 0.82rem; margin-top: 0.6rem; }
+    .analogy-text .blank { color: #fbbf24; }
+    .cat-label { color: #8a6a40; font-size: 0.82rem; margin-top: 0.6rem; }
 
     .choices {
       display: grid;
@@ -110,17 +110,17 @@
     }
     .choice-btn {
       padding: 1rem;
-      background: #1e293b;
-      border: 2px solid #334155;
+      background: #1f1710;
+      border: 2px solid #4a3520;
       border-radius: 0.75rem;
-      color: #e2e8f0;
+      color: #f5e6cc;
       font-size: 1.05rem;
       font-weight: 600;
       cursor: pointer;
       letter-spacing: 0.05em;
       transition: all 0.15s;
     }
-    .choice-btn:hover:not(:disabled) { border-color: #7c3aed; background: #1e1b4b; }
+    .choice-btn:hover:not(:disabled) { border-color: #d97706; background: #2a1a08; }
     .choice-btn.correct { border-color: #22c55e; background: #14532d; color: #86efac; }
     .choice-btn.wrong   { border-color: #ef4444; background: #7f1d1d; color: #fca5a5; }
     .choice-btn:disabled { cursor: not-allowed; }
@@ -129,9 +129,9 @@
       margin-top: 1.5rem;
       padding: 0.9rem 1.1rem;
       border-radius: 0.75rem;
-      background: #0f172a;
-      border-left: 4px solid #7c3aed;
-      color: #94a3b8;
+      background: #130f09;
+      border-left: 4px solid #d97706;
+      color: #d4aa78;
       font-size: 0.88rem;
       line-height: 1.5;
     }
@@ -148,33 +148,33 @@
     .shuffle-btn {
       padding: 0.35rem 0.9rem;
       background: transparent;
-      border: 1px solid #334155;
-      color: #64748b;
+      border: 1px solid #4a3520;
+      color: #a88250;
       border-radius: 0.5rem;
       cursor: pointer;
       font-size: 0.82rem;
       transition: all 0.2s;
     }
-    .shuffle-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    .shuffle-btn:hover { border-color: #d97706; color: #fbbf24; }
 
     .word-pool {
       display: flex;
       flex-wrap: wrap;
       gap: 0.55rem;
       min-height: 72px;
-      background: #1e293b;
+      background: #1f1710;
       border-radius: 0.75rem;
       padding: 0.9rem;
-      border: 2px dashed #334155;
+      border: 2px dashed #4a3520;
       margin-bottom: 2rem;
       transition: border-color 0.2s;
     }
-    .word-pool.drag-over { border-color: #7c3aed; }
+    .word-pool.drag-over { border-color: #d97706; }
 
     .word-chip {
       padding: 0.38rem 1rem;
-      background: #2e1065;
-      color: #ddd6fe;
+      background: #3b1a05;
+      color: #fde68a;
       border-radius: 2rem;
       cursor: grab;
       font-size: 0.9rem;
@@ -183,7 +183,7 @@
       border: 2px solid transparent;
       transition: all 0.15s;
     }
-    .word-chip:hover   { background: #4c1d95; border-color: #7c3aed; }
+    .word-chip:hover   { background: #92400e; border-color: #d97706; }
     .word-chip.dragging { opacity: 0.35; cursor: grabbing; }
 
     /* Analogy builder row */
@@ -196,25 +196,25 @@
       margin-bottom: 1.75rem;
     }
     .slot-group { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-    .slot-name  { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: #475569; }
+    .slot-name  { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: #8a6a40; }
 
     .drop-slot {
       width: 110px;
       height: 52px;
-      border: 2px dashed #4c1d95;
+      border: 2px dashed #92400e;
       border-radius: 0.75rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #1e1b4b;
+      background: #2a1a08;
       transition: all 0.2s;
       overflow: hidden;
     }
-    .drop-slot.drag-over  { border-color: #a78bfa; background: #2e1065; }
-    .drop-slot .placeholder { color: #4c1d95; font-size: 0.82rem; }
+    .drop-slot.drag-over  { border-color: #fbbf24; background: #3b1a05; }
+    .drop-slot .placeholder { color: #92400e; font-size: 0.82rem; }
     .slot-chip {
       padding: 0.38rem 0.75rem;
-      background: #7c3aed;
+      background: #d97706;
       color: white;
       border-radius: 2rem;
       font-size: 0.88rem;
@@ -228,9 +228,9 @@
     }
     .slot-chip:active { cursor: grabbing; }
 
-    .sep  { font-size: 1.5rem; color: #334155; font-weight: 700; padding-bottom: 1.2rem; }
-    .eq   { font-size: 1.1rem; color: #334155; padding-bottom: 1.2rem; }
-    .qmark{ font-size: 2.2rem; color: #7c3aed; font-weight: 700; padding-bottom: 1.2rem; }
+    .sep  { font-size: 1.5rem; color: #a88250; font-weight: 700; padding-bottom: 1.2rem; }
+    .eq   { font-size: 1.1rem; color: #a88250; padding-bottom: 1.2rem; }
+    .qmark{ font-size: 2.2rem; color: #d97706; font-weight: 700; padding-bottom: 1.2rem; }
 
     .find-btn-wrap { text-align: center; margin-bottom: 1.75rem; }
 
@@ -244,13 +244,13 @@
       font-size: 0.88rem;
     }
     .results-card {
-      background: #1e293b;
+      background: #1f1710;
       border-radius: 0.75rem;
       padding: 1.5rem;
     }
     .results-title {
       font-size: 1.1rem;
-      color: #a78bfa;
+      color: #fbbf24;
       font-weight: 700;
       margin-bottom: 1.25rem;
       letter-spacing: 0.04em;
@@ -266,17 +266,31 @@
     .r-bar-wrap {
       flex: 1;
       height: 16px;
-      background: #0f172a;
+      background: #130f09;
       border-radius: 1rem;
       overflow: hidden;
     }
     .r-bar {
       height: 100%;
-      background: linear-gradient(90deg, #4c1d95, #a78bfa);
+      background: linear-gradient(90deg, #92400e, #fbbf24);
       border-radius: 1rem;
       transition: width 0.6s ease;
     }
-    .r-score { color: #475569; font-size: 0.8rem; min-width: 46px; text-align: right; }
+    .r-score { color: #8a6a40; font-size: 0.8rem; min-width: 46px; text-align: right; }
+
+    .method-btn {
+      padding: 0.45rem 1rem;
+      background: #1f1710;
+      border: 2px solid #4a3520;
+      color: #a88250;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .method-btn:hover  { border-color: #d97706; color: #fbbf24; }
+    .method-btn.active { border-color: #d97706; color: #fbbf24; background: #2a1a08; }
   </style>
 </head>
 <body>
@@ -290,6 +304,7 @@
   <div class="tab active" onclick="switchTab('quiz')">Quiz Mode</div>
   <div class="tab"        onclick="switchTab('free')">Build Your Own</div>
   <div class="tab"        onclick="switchTab('nearest')">Nearest Words</div>
+  <div class="tab"        onclick="switchTab('viz')">Vector Map</div>
 </div>
 
 
@@ -380,8 +395,8 @@
       placeholder="e.g. ocean"
       style="
         flex:1; padding:0.7rem 1rem;
-        background:#1e293b; border:2px solid #334155;
-        border-radius:0.5rem; color:#e2e8f0;
+        background:#1f1710; border:2px solid #4a3520;
+        border-radius:0.5rem; color:#f5e6cc;
         font-size:1rem; outline:none;
       "
       onkeydown="if(event.key==='Enter') findNearest()"
@@ -393,6 +408,58 @@
   <div class="results-card" id="nearest-results" style="display:none"></div>
 </div>
 
+<!-- ===== VECTOR MAP PANEL ===== -->
+<div class="panel" id="panel-viz">
+  <div class="section-label">Project word vectors onto 2D space</div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:1.25rem; margin-bottom:1.75rem; align-items:flex-end;">
+
+    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">
+        Number of words: <span id="n-display">20</span>
+      </label>
+      <input type="range" id="n-slider" min="10" max="60" value="20"
+        oninput="document.getElementById('n-display').textContent=this.value"
+        style="width:160px; accent-color:#d97706;" />
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">Category</label>
+      <select id="viz-category"
+        style="padding:0.5rem 0.75rem; background:#1f1710; border:2px solid #4a3520;
+               border-radius:0.5rem; color:#f5e6cc; font-size:0.9rem;">
+        <option value="">All (random mix)</option>
+      </select>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">Method</label>
+      <div style="display:flex; gap:0.5rem;">
+        <button id="btn-pca"  class="method-btn active" onclick="setMethod('pca')">PCA</button>
+        <button id="btn-tsne" class="method-btn"        onclick="setMethod('tsne')">t-SNE</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="viz-btn" onclick="generateViz()" style="align-self:flex-end;">
+      Generate
+    </button>
+    <button class="shuffle-btn" onclick="resetZoom()" style="align-self:flex-end;">
+      Reset zoom
+    </button>
+  </div>
+
+  <div class="error-box" id="viz-error" style="display:none"></div>
+  <div id="viz-plot" style="width:100%; height:520px; background:#1f1710; border-radius:0.75rem;
+       display:flex; align-items:center; justify-content:center; color:#4a3520; font-size:0.9rem;">
+    Click "Generate" to draw the map
+  </div>
+  <div id="viz-note" style="margin-top:0.6rem; font-size:0.78rem; color:#8a6a40; display:none;">
+    Tip: words that cluster together share semantic meaning.
+    t-SNE preserves local structure better with more words.
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script>
 // ───────────────────────────────────────────
 //  Tab switching
@@ -701,9 +768,104 @@ async function findNearest() {
   resultsEl.style.display = 'block';
 }
 
+// ───────────────────────────────────────────
+//  VECTOR MAP
+// ───────────────────────────────────────────
+let vizMethod = 'pca';
+
+function setMethod(m) {
+  vizMethod = m;
+  document.getElementById('btn-pca').classList.toggle('active',  m === 'pca');
+  document.getElementById('btn-tsne').classList.toggle('active', m === 'tsne');
+}
+
+async function loadVizCategories() {
+  const res  = await fetch('/api/visualize/categories');
+  const data = await res.json();
+  const sel  = document.getElementById('viz-category');
+  data.categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value       = cat;
+    opt.textContent = cat;
+    sel.appendChild(opt);
+  });
+}
+
+async function generateViz() {
+  document.getElementById('viz-error').style.display = 'none';
+  document.getElementById('viz-note').style.display  = 'none';
+  const btn = document.getElementById('viz-btn');
+  btn.textContent = 'Computing...';
+  btn.disabled    = true;
+
+  const n        = parseInt(document.getElementById('n-slider').value);
+  const category = document.getElementById('viz-category').value;
+
+  const res  = await fetch('/api/visualize', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ n, method: vizMethod, category }),
+  });
+  const data = await res.json();
+
+  btn.textContent = 'Generate';
+  btn.disabled    = false;
+
+  if (data.error) {
+    const err = document.getElementById('viz-error');
+    err.textContent   = data.error;
+    err.style.display = 'block';
+    return;
+  }
+
+  const xs     = data.points.map(p => p.x);
+  const ys     = data.points.map(p => p.y);
+  const labels = data.points.map(p => p.word);
+
+  // Reset flex styles that were used for placeholder text
+  const plotEl = document.getElementById('viz-plot');
+  plotEl.style.display         = 'block';
+  plotEl.style.alignItems      = '';
+  plotEl.style.justifyContent  = '';
+
+  Plotly.newPlot('viz-plot', [{
+    x: xs, y: ys,
+    mode: 'markers+text',
+    type: 'scatter',
+    text: labels,
+    textposition: 'top center',
+    textfont: { color: '#fbbf24', size: 22, family: 'Segoe UI, sans-serif' },
+    marker: {
+      size: 10,
+      color: '#d97706',
+      line: { color: '#fbbf24', width: 1.5 },
+    },
+    hovertemplate: '<b>%{text}</b><extra></extra>',
+  }], {
+    paper_bgcolor: '#1f1710',
+    plot_bgcolor:  '#1f1710',
+    font:  { color: '#d4aa78' },
+    xaxis: { showgrid: true, gridcolor: '#4a3520', zeroline: false, showticklabels: false },
+    yaxis: { showgrid: true, gridcolor: '#4a3520', zeroline: false, showticklabels: false },
+    margin: { t: 20, b: 20, l: 20, r: 20 },
+    hovermode: 'closest',
+  }, {
+    responsive: true,
+    displayModeBar: 'hover',
+    modeBarButtonsToRemove: ['toImage', 'lasso2d', 'select2d'],
+  });
+
+  document.getElementById('viz-note').style.display = 'block';
+}
+
+function resetZoom() {
+  Plotly.relayout('viz-plot', { 'xaxis.autorange': true, 'yaxis.autorange': true });
+}
+
 // ── init ──
 loadQuestion();
 loadWords();
+loadVizCategories();
 </script>
 </body>
 </html>
