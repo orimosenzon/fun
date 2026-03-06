@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>האפליקציה שלך — סטטוס ועדכון</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #fdf8f3;
+    color: #3d2c1e;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* ===== כריכה ===== */
+  .cover {
+    background: linear-gradient(145deg, #92400e 0%, #b45309 40%, #d97706 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    top: -150px; left: -150px;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    bottom: -100px; right: -100px;
+  }
+
+  .cover-icon {
+    font-size: 80px;
+    margin-bottom: 30px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+  }
+
+  .cover h1 {
+    font-size: 48px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .cover h2 {
+    font-size: 22px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 50px;
+  }
+
+  .cover-date {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 40px;
+    letter-spacing: 1px;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50px;
+    padding: 8px 24px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+  }
+
+  /* ===== עמוד רגיל ===== */
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 50px;
+    page-break-after: always;
+  }
+
+  .page:last-child { page-break-after: avoid; }
+
+  /* ===== כותרות פרק ===== */
+  .chapter-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 36px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #fde68a;
+  }
+
+  .chapter-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+
+  .chapter-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #92400e;
+  }
+
+  /* ===== קלפים ===== */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(146,64,14,0.08);
+    border-right: 5px solid #d97706;
+  }
+
+  .card.green { border-right-color: #16a34a; }
+  .card.blue  { border-right-color: #2563eb; }
+  .card.red   { border-right-color: #dc2626; }
+  .card.gray  { border-right-color: #9ca3af; }
+
+  .card h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #1c1410;
+  }
+
+  .card p, .card li {
+    font-size: 14.5px;
+    color: #4b3728;
+    line-height: 1.85;
+  }
+
+  .card ul { padding-right: 20px; }
+  .card li { margin-bottom: 4px; }
+
+  /* ===== תגיות סטטוס ===== */
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .status-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .status-emoji { font-size: 28px; flex-shrink: 0; }
+
+  .status-item h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #1c1410;
+  }
+
+  .status-item p {
+    font-size: 13px;
+    color: #6b5344;
+    line-height: 1.6;
+  }
+
+  /* ===== תג ===== */
+  .tag {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .tag.done    { background: #dcfce7; color: #15803d; }
+  .tag.pending { background: #fef9c3; color: #92400e; }
+  .tag.soon    { background: #dbeafe; color: #1d4ed8; }
+
+  /* ===== דיאגרמת תור ===== */
+  .flow-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin: 30px 0;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 22px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border: 2px solid #fde68a;
+  }
+
+  .flow-step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #d97706;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .flow-step-text { font-size: 14px; line-height: 1.5; color: #3d2c1e; }
+  .flow-step-text strong { color: #92400e; }
+
+  .flow-arrow {
+    font-size: 22px;
+    color: #d97706;
+    margin: 4px 0;
+  }
+
+  /* ===== רשימת בדיקות ===== */
+  .check-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+
+  .check-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #fef3c7;
+  }
+
+  .check-item:last-child { border-bottom: none; }
+
+  .check-box {
+    width: 22px; height: 22px;
+    border: 2px solid #d97706;
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .check-text { font-size: 14px; color: #3d2c1e; line-height: 1.6; }
+  .check-tip {
+    font-size: 12.5px;
+    color: #78716c;
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  /* ===== גלעין הודעה ===== */
+  .message-bubble {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 18px 22px;
+    margin: 20px 0;
+    position: relative;
+    font-size: 14px;
+    color: #14532d;
+    line-height: 1.7;
+  }
+
+  .message-bubble::before {
+    content: '💬';
+    position: absolute;
+    top: -14px;
+    right: 16px;
+    font-size: 20px;
+  }
+
+  /* ===== הסבר טכני עטוף ===== */
+  .info-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: #713f12;
+    line-height: 1.7;
+  }
+
+  .info-box strong { color: #92400e; }
+
+  /* ===== לינק ===== */
+  .site-link {
+    display: inline-block;
+    background: #92400e;
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    margin: 10px 0;
+  }
+
+  /* ===== footer ===== */
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #a8917a;
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid #e7d9cc;
+  }
+
+  /* ===== הדפסה ===== */
+  @media print {
+    body { background: #fff; }
+    .page { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== כריכה ========== -->
+<div class="cover">
+  <div class="cover-icon">🏺</div>
+  <h1>האפליקציה שלך</h1>
+  <h2>סטטוס, הישגים, ומה עוד לפנינו</h2>
+  <div class="cover-badge">מסמך עדכון — מרץ 2026</div>
+  <p class="cover-date">הוכן עבור ענבל, בסטודיו לקרמיקה</p>
+</div>
+
+
+<!-- ========== עמוד 1: מה האפליקציה עושה ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">🌟</div>
+    <h2>בשביל מה האפליקציה?</h2>
+  </div>
+
+  <div class="card">
+    <h3>בקצרה</h3>
+    <p>
+      האפליקציה מאפשרת לתלמידות שלך <strong>להירשם לשיעורים בעצמן</strong> — בלי להתקשר אלייך,
+      בלי הודעות בוואטסאפ, ובלי להתעסק בגיליונות אקסל.
+      את, כמנהלת הסטודיו, רואות כל מה שקורה ממסך ניהול ייעודי.
+    </p>
+  </div>
+
+  <div class="status-grid">
+    <div class="status-item">
+      <div class="status-emoji">📅</div>
+      <div>
+        <h4>לוח שיעורים</h4>
+        <p>כל השיעורים מוצגים בפורמט שבועי. תלמידה רואה מה פנוי ומה תפוס.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">✍️</div>
+      <div>
+        <h4>הרשמה בקליק</h4>
+        <p>כפתור "הרשמי" אחד — והתלמידה רשומה. אין טפסים מסובכים.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">⏳</div>
+      <div>
+        <h4>רשימת המתנה</h4>
+        <p>שיעור מלא? התלמידה נכנסת לתור ומקבלת הודעה אוטומטית אם מתפנה מקום.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">👑</div>
+      <div>
+        <h4>ממשק ניהול</h4>
+        <p>את רואה את כל הרשומות, מוסיפה שיעורים, ומנהלת הכל ממקום אחד.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    🔗 <strong>הקישור לאפליקציה:</strong><br>
+    <a href="https://inbal-three.vercel.app" style="color:#92400e;font-weight:600;">https://inbal-three.vercel.app</a>
+    <br><br>
+    <strong>כניסה כמנהלת:</strong> admin@ceramics.co.il / admin123<br>
+    <strong>כניסת תלמידה לדוגמה:</strong> michal@example.com / student123
+  </div>
+</div>
+
+
+<!-- ========== עמוד 2: מה כבר עובד ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">✅</div>
+    <h2>מה כבר בנוי ועובד</h2>
+  </div>
+
+  <div class="card green">
+    <h3>🗓️ לוח שיעורים לתלמידה</h3>
+    <ul>
+      <li>תצוגה שבועית נוחה — שיעורים מסודרים לפי ימים</li>
+      <li>לכל שיעור: ברור מה פנוי ומה תפוס (אובניים / ידני)</li>
+      <li>כפתור "הרשמי" לרישום מידי, בלי להיכנס לעמוד נפרד</li>
+      <li>אפשרות לביטול — עד 48 שעות לפני השיעור</li>
+    </ul>
+  </div>
+
+  <div class="card green">
+    <h3>⏳ רשימת המתנה</h3>
+    <ul>
+      <li>שיעור מלא? התלמידה יכולה להיכנס לתור המתנה</li>
+      <li>כשמתפנה מקום — ישלח הודעה אוטומטית לראשונה בתור</li>
+      <li>לה יש <strong>שעה אחת</strong> להיכנס ולהירשם</li>
+      <li>לא נרשמה? ההודעה עוברת לבאה אחריה בתור</li>
+    </ul>
+  </div>
+
+  <div class="card green">
+    <h3>🔄 העברת שיעור</h3>
+    <ul>
+      <li>תלמידה שלא יכולה להגיע יכולה "להעביר" את מקומה לשיעור אחר</li>
+      <li>המקום הישן מתפנה אוטומטית לתור ההמתנה</li>
+    </ul>
+  </div>
+
+  <div class="card green">
+    <h3>👑 ממשק ניהול</h3>
+    <ul>
+      <li>יצירה ועריכה של שיעורים</li>
+      <li>צפייה ברשומות של כל תלמידה</li>
+      <li>ניהול תלמידים (הוספה / עריכה)</li>
+      <li>צפייה ברשימת המתנה לכל שיעור</li>
+    </ul>
+  </div>
+
+  <div class="footer">עמוד 2</div>
+</div>
+
+
+<!-- ========== עמוד 3: תור המתנה — כיצד עובד ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">⏳</div>
+    <h2>איך עובד תור ההמתנה</h2>
+  </div>
+
+  <p style="margin-bottom:24px;color:#5c3d2a;">
+    זה אחד הדברים הכי חכמים באפליקציה — כל התהליך הזה קורה אוטומטית, בלי שתצטרכי לעשות שום דבר.
+  </p>
+
+  <div class="flow-diagram">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-text">
+        <strong>השיעור מלא</strong><br>
+        תלמידה מנסה להירשם אבל אין מקום
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-text">
+        <strong>היא נכנסת לתור</strong><br>
+        לוחצת "הכנסי לרשימת המתנה" ומקבלת מספר בתור
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-text">
+        <strong>תלמידה אחרת מבטלת</strong><br>
+        מקום מתפנה בשיעור
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-text">
+        <strong>שליחת הודעה אוטומטית</strong><br>
+        הראשונה בתור מקבלת הודעה: "התפנה מקום — יש לך שעה"
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-text">
+        <strong>היא נרשמת (או לא)</strong><br>
+        נרשמה → מזל טוב! לא נרשמה בשעה → ההודעה עוברת לבאה אחריה
+      </div>
+    </div>
+  </div>
+
+  <div class="message-bubble">
+    <strong>דוגמה להודעה שתצא לתלמידה:</strong><br><br>
+    "שלום מיכל! התפנה מקום בשיעור 'חמישי 12:15' ביום חמישי, 12 במרץ.
+    יש לך שעה להירשם באפליקציה. 🏺"
+  </div>
+
+  <div class="info-box">
+    💡 <strong>שים לב:</strong> כרגע ההודעה מוכנה — אבל עוד לא מחוברת לווטסאפ.
+    ברגע שנחבר את שירות הווטסאפ, כל זה יעבוד אוטומטית.
+    הלוגיקה עצמה נבדקה ועובדת מצוין.
+  </div>
+
+  <div class="footer">עמוד 3</div>
+</div>
+
+
+<!-- ========== עמוד 4: מה עוד לפנינו ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">🚀</div>
+    <h2>מה עוד לפנינו</h2>
+  </div>
+
+  <div class="card blue">
+    <h3>💬 הודעות וואטסאפ <span class="tag soon">בקרוב</span></h3>
+    <p>
+      זה הצעד הגדול הבא. ברגע שנבחר ספק (ועוד בוחנים אפשרויות),
+      תלמידות יקבלו הודעות וואטסאפ אוטומטיות כשמתפנה מקום,
+      כתזכורת לפני שיעור, ועוד.
+    </p>
+    <br>
+    <p>הלוגיקה כבר כתובה — רק חיבור השירות נשאר.</p>
+  </div>
+
+  <div class="card">
+    <h3>🎨 עיצוב ולוגו <span class="tag pending">ממתין להחלטה</span></h3>
+    <p>
+      האפליקציה נראית טוב, אבל היא עדיין "גנרית".
+      נשמח להוסיף לוגו של הסטודיו, ולהתאים את הצבעים והפונטים לפי הטעם שלך.
+    </p>
+  </div>
+
+  <div class="card gray">
+    <h3>📱 שיפורים ייתכנו בהמשך</h3>
+    <ul>
+      <li>תזכורות אוטומטיות לפני שיעורים</li>
+      <li>הצגת היסטוריית שיעורים לתלמידה</li>
+      <li>אפשרות לתלמידה לנהל את הפרופיל שלה (שם, טלפון)</li>
+      <li>ממשק קביעת לו"ז קבוע ("שמרי לי את השיעור הזה כל שבוע")</li>
+    </ul>
+  </div>
+
+  <div class="footer">עמוד 4</div>
+</div>
+
+
+<!-- ========== עמוד 5: החלטות שלקחנו ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">💡</div>
+    <h2>החלטות שלקחנו בדרך</h2>
+  </div>
+
+  <p style="margin-bottom:24px;color:#5c3d2a;">
+    כמה דברים שהיו שאלות פתוחות — הנה מה שהחלטנו ולמה.
+  </p>
+
+  <div class="card">
+    <h3>📝 תצוגת מקומות: "הרשמי / תפוס" במקום נקודות</h3>
+    <p>
+      בגרסה הראשונה היו עיגולים קטנים שמייצגים מקומות. הם היו קצת מבלבלים.
+      עברנו לתצוגה של שורות ברורות עם כפתור "הרשמי" או תג "תפוס" — הרבה יותר ברור.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>⏰ ביטול: רק עד 48 שעות לפני השיעור</h3>
+    <p>
+      תלמידה שרוצה לבטל — יכולה לעשות זאת רק עד יומיים לפני.
+      ביטול ב"דקה האחרונה" לא מאפשרת האפליקציה.
+      (אדמין יכולה לבטל בכל עת.)
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>🏺 7 מקומות לשיעור: 4 אובניים + 3 ידני</h3>
+    <p>
+      כל שיעור מחולק לשני "מסלולים" — אובניים (WHEEL) וידני (NO_WHEEL).
+      לא ניתן לקחת מקום אובניים מהמכסה של הידני ולהפך.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>💬 וואטסאפ במקום SMS</h3>
+    <p>
+      בתחילה חשבנו על SMS (הודעות טקסט).
+      אחרי מחקר — החלטנו ללכת על וואטסאפ, כי זה מה שכולן משתמשות בו.
+      עוד לא בחרנו ספק, אבל הכיוון ברור.
+    </p>
+  </div>
+
+  <div class="footer">עמוד 5</div>
+</div>
+
+
+<!-- ========== עמוד 6: מדריך בדיקות לענבל ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">🔍</div>
+    <h2>מדריך בדיקות — מה כדאי לנסות</h2>
+  </div>
+
+  <p style="margin-bottom:28px;color:#5c3d2a;">
+    לפני שמשתמשות אמיתיות נכנסות — כדאי שתסתובבי קצת באפליקציה ותוודאי שהכל
+    נראה ומרגיש טוב. הנה מה לבדוק, עם הסבר קצר לכל בדיקה.
+  </p>
+
+  <div class="check-section">
+    <h3>👑 כאדמין — מה לבדוק</h3>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>יצירת שיעור חדש</strong>
+        <div class="check-tip">לכי לממשק הניהול → "שיעורים" → "שיעור חדש". בדקי שהוא מופיע בלוח.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>הוספת תלמידה חדשה</strong>
+        <div class="check-tip">ניהול → "תלמידים" → "הוסיפי תלמידה". בדקי שהיא יכולה להתחבר.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>ביטול רישום של תלמידה</strong>
+        <div class="check-tip">מצאי תלמידה רשומה לשיעור → בטלי לה את הרישום. בדקי שמקומה מתפנה.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>צפייה ברשימת המתנה</strong>
+        <div class="check-tip">כנסי לשיעור מלא ובדקי שרואה את התור בממשק הניהול.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>איך נראה הכל על הנייד?</strong>
+        <div class="check-tip">פתחי את הקישור מהנייד שלך — וודאי שנוח לקרוא ולנווט.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="check-section">
+    <h3>🎓 כתלמידה — מה לבדוק</h3>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>כניסה ולוח שיעורים</strong>
+        <div class="check-tip">התחברי עם michal@example.com / student123. בדקי שרואה שיעורים.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>הרשמה לשיעור פנוי</strong>
+        <div class="check-tip">לחצי "הרשמי" על שיעור עם מקום. בדקי שמופיע "המקום שלך ✓".</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>ביטול רישום</strong>
+        <div class="check-tip">על שיעור שרשומה אליו — בדקי שיש אפשרות לבטל ושהיא עובדת.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>ניסיון להירשם לשיעור מלא</strong>
+        <div class="check-tip">מצאי שיעור שאין בו מקום — בדקי שמוצג "הכנסי לתור המתנה".</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>ניסיון לבטל מאוחר מדי</strong>
+        <div class="check-tip">אם יש שיעור שמתחיל תוך פחות מיומיים — בדקי שמוסר הסבר ולא מבטל.</div>
+      </div>
+    </div>
+
+    <div class="check-item">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <strong>תחושה כללית — האם ברור? האם נוח?</strong>
+        <div class="check-tip">מה הדבר הראשון שמבלבל? מה הייתה רוצה לראות אחרת?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    💬 <strong>פידבק שלך חשוב מאוד!</strong><br>
+    אם משהו נראה לא טוב, מבלבל, או שחסר משהו — תגידי לאורי.
+    עדיף לתקן עכשיו, לפני שהתלמידות נכנסות.
+  </div>
+
+  <div class="footer">עמוד 6</div>
+</div>
+
+
+<!-- ========== עמוד 7: מצב הטכנולוגיה בפשטות ========== -->
+<div class="page">
+  <div class="chapter-header">
+    <div class="chapter-icon">⚙️</div>
+    <h2>קצת על "המנוע מאחורי הקלעים"</h2>
+  </div>
+
+  <p style="margin-bottom:24px;color:#5c3d2a;">
+    לא צריך להבין את כל זה — אבל כדאי לדעת שהאפליקציה בנויה על שירותים אמינים ומוכחים.
+  </p>
+
+  <div class="status-grid">
+    <div class="status-item">
+      <div class="status-emoji">🌍</div>
+      <div>
+        <h4>אפליקציה — Vercel</h4>
+        <p>שירות אחסון של חברות טכנולוגיה. מבטיח שהאפליקציה תמיד מחוברת ועובדת.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">🗄️</div>
+      <div>
+        <h4>מסד הנתונים — Supabase</h4>
+        <p>כאן נשמרים כל הנתונים — תלמידות, שיעורים, רשומות. מאובטח לחלוטין.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">🔒</div>
+      <div>
+        <h4>התחברות מאובטחת</h4>
+        <p>כל תלמידה נכנסת עם כתובת מייל וסיסמה. אין גישה לנתונים של אחרות.</p>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-emoji">💬</div>
+      <div>
+        <h4>הודעות — בקרוב</h4>
+        <p>בוחנים ספקי וואטסאפ עסקי. ברגע שנחבר, ההודעות ייצאו אוטומטית.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>⚡ מה יכול להיות קצת איטי?</h3>
+    <p>
+      לפעמים הטעינה הראשונה של האפליקציה לוקחת 2–3 שניות.
+      זה קורה כי אנחנו על תוכנית החינמית של שירות האחסון ("Hobby plan").
+      זה לגמרי נורמלי בשלב הזה. אם בעתיד התנועה תגדל, אפשר לשדרג.
+    </p>
+  </div>
+
+  <div class="info-box">
+    🛠️ <strong>יציבות:</strong> הכתבנו בדיקות אוטומטיות שרצות בכל שינוי בקוד.
+    זה אומר שאם משהו מתקלקל בשוגג — אנחנו יודעים לפני שזה מגיע אלייך.
+  </div>
+
+  <div class="footer">
+    הוכן בשיתוף פעולה בין אורי לענבל — מרץ 2026 🏺
+  </div>
+</div>
+
+</body>
+</html>
