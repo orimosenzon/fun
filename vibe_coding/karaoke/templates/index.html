@@ -178,6 +178,7 @@
       starting:     'Starting…',
       downloading:  'Downloading audio…',
       captions:     'Fetching captions…',
+      lrclib:       'Searching lyrics database…',
       transcribing: 'Transcribing with Whisper…',
       cached:       'Loading from cache…',
     };
@@ -265,6 +266,7 @@
 
       if (s.stage === 'downloading')   setProgress(20);
       else if (s.stage === 'captions') setProgress(50);
+      else if (s.stage === 'lrclib')   setProgress(65);
       else if (s.stage === 'transcribing') {
         const pct = Math.min(90, 55 + (s.elapsed || 0) / 120 * 35);
         setProgress(pct);

@@ -3,6 +3,8 @@ import re
 import json
 import hashlib
 import glob as glob_mod
+import urllib.request
+import urllib.parse
 import yt_dlp
 import whisper
 
@@ -49,8 +51,13 @@ def process_url(url: str, on_stage=None):
     if captions:
         segments, source = captions, "youtube_captions"
     else:
-        stage("transcribing")
-        segments, source = _whisper_transcribe(audio_path), "whisper"
+        stage("lrclib")
+        lrc = _try_lrclib(title)
+        if lrc:
+            segments, source = lrc, "lrclib"
+        else:
+            stage("transcribing")
+            segments, source = _whisper_transcribe(audio_path), "whisper"
 
     data = {"id": vid_id, "title": title, "segments": segments, "source": source}
     with open(transcript_path, "w") as f:
@@ -162,6 +169,50 @@ def _ts(s: str) -> float:
     parts = s.split(':')
     h, m, sec = int(parts[0]), int(parts[1]), float(parts[2])
     return h * 3600 + m * 60 + sec
+
+
+def _try_lrclib(title: str):
+    """Search LRClib.net for synced lyrics by song title."""
+    query = urllib.parse.urlencode({"q": title})
+    url = f"https://lrclib.net/api/search?{query}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "KaraokeApp/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            results = json.loads(resp.read())
+    except Exception as e:
+        print(f"LRClib search failed: {e}")
+        return None
+
+    for result in results:
+        lrc = result.get("syncedLyrics")
+        if lrc:
+            segments = _parse_lrc(lrc)
+            if segments:
+                print(f"Using LRClib lyrics ({len(segments)} lines)")
+                return segments
+    return None
+
+
+def _parse_lrc(lrc: str):
+    """Parse LRC format [mm:ss.xx] text into segments."""
+    pattern = re.compile(r'\[(\d{2}):(\d{2}\.\d+)\](.*)')
+    lines = []
+    for m in pattern.finditer(lrc):
+        start = int(m.group(1)) * 60 + float(m.group(2))
+        text = m.group(3).strip()
+        if text:
+            lines.append((start, text))
+
+    segments = []
+    for i, (start, text) in enumerate(lines):
+        end = lines[i + 1][0] if i + 1 < len(lines) else start + 5.0
+        segments.append({
+            "text": text,
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "words": [],
+        })
+    return segments
 
 
 def _whisper_transcribe(audio_path: str):
