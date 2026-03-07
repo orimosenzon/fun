@@ -1,0 +1,58 @@
+import os
+import time
+from flask import Flask, render_template, jsonify, request, send_from_directory
+from transcriber import process_url, url_id, STATIC_DIR
+
+app = Flask(__name__)
+
+_jobs = {}
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/process", methods=["POST"])
+def process():
+    url = request.json.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+    job_id = url_id(url)
+    _jobs[job_id] = {"stage": "starting", "started_at": time.time()}
+
+    def on_stage(stage):
+        _jobs[job_id]["stage"] = stage
+        _jobs[job_id]["elapsed"] = round(time.time() - _jobs[job_id]["started_at"], 1)
+
+    try:
+        data = process_url(url, on_stage)
+        _jobs[job_id]["stage"] = "done"
+        return jsonify(data)
+    except Exception as e:
+        _jobs[job_id]["stage"] = "error"
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/job_id", methods=["POST"])
+def get_job_id():
+    url = request.json.get("url", "").strip()
+    return jsonify({"id": url_id(url)})
+
+
+@app.route("/api/status/<job_id>")
+def job_status(job_id):
+    job = _jobs.get(job_id)
+    if not job:
+        return jsonify({"stage": "unknown"})
+    elapsed = round(time.time() - job["started_at"], 1)
+    return jsonify({"stage": job["stage"], "elapsed": elapsed})
+
+
+@app.route("/audio/<path:filename>")
+def serve_audio(filename):
+    return send_from_directory(STATIC_DIR, filename)
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5001, threaded=True)

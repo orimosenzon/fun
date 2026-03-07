@@ -1,0 +1,203 @@
+import os
+import re
+import json
+import hashlib
+import glob as glob_mod
+import yt_dlp
+import whisper
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+_model = None
+
+
+def get_model():
+    global _model
+    if _model is None:
+        print("Loading Whisper model...")
+        _model = whisper.load_model("base", device="cpu")
+        print("Whisper ready.")
+    return _model
+
+
+def url_id(url: str) -> str:
+    return hashlib.md5(url.encode()).hexdigest()[:12]
+
+
+def process_url(url: str, on_stage=None):
+    def stage(s):
+        if on_stage:
+            on_stage(s)
+
+    vid_id = url_id(url)
+    audio_path = os.path.join(STATIC_DIR, f"{vid_id}.mp3")
+    transcript_path = os.path.join(STATIC_DIR, f"{vid_id}.json")
+
+    if os.path.exists(transcript_path) and os.path.exists(audio_path):
+        stage("cached")
+        with open(transcript_path) as f:
+            return json.load(f)
+
+    # Download audio
+    stage("downloading")
+    title = _download_audio(url, audio_path)
+
+    # Try YouTube captions first, fall back to Whisper
+    stage("captions")
+    captions = _try_youtube_captions(url, vid_id)
+    if captions:
+        segments, source = captions, "youtube_captions"
+    else:
+        stage("transcribing")
+        segments, source = _whisper_transcribe(audio_path), "whisper"
+
+    data = {"id": vid_id, "title": title, "segments": segments, "source": source}
+    with open(transcript_path, "w") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+    return data
+
+
+def _try_youtube_captions(url: str, vid_id: str):
+    """Download YouTube auto-captions (VTT) and parse them. Returns segments or None."""
+    vtt_base = os.path.join(STATIC_DIR, vid_id)
+    ydl_opts = {
+        "writeautomaticsub": True,
+        "writesubtitles": True,
+        "subtitleslangs": ["en", "en-orig"],
+        "subtitlesformat": "vtt",
+        "skip_download": True,
+        "outtmpl": vtt_base,
+        "quiet": True,
+        "extractor_args": {"youtube": {"js_runtimes": ["nodejs"]}},
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    except Exception:
+        return None
+
+    # Find the downloaded VTT file
+    vtt_files = glob_mod.glob(f"{vtt_base}*.vtt")
+    if not vtt_files:
+        return None
+
+    try:
+        segments = _parse_vtt(vtt_files[0])
+        if segments:
+            print(f"Using YouTube captions ({len(segments)} segments)")
+            return segments
+    except Exception as e:
+        print(f"VTT parse failed: {e}")
+    return None
+
+
+def _parse_vtt(path: str):
+    """Parse YouTube VTT with embedded word timestamps."""
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+
+    segments = []
+    # Each cue block: timestamp line + content lines
+    cue_pattern = re.compile(
+        r'(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})[^\n]*\n(.*?)(?=\n\n|\Z)',
+        re.DOTALL
+    )
+
+    seen_texts = set()
+
+    for m in cue_pattern.finditer(content):
+        seg_start = _ts(m.group(1))
+        seg_end = _ts(m.group(2))
+        raw = m.group(3).strip()
+
+        # Remove positioning tags like <c>, keep text and timestamps
+        # YouTube format: <00:00:01.000><c> word</c>
+        text_only = re.sub(r'<[^>]+>', '', raw).strip()
+        if not text_only or text_only in seen_texts:
+            continue
+        seen_texts.add(text_only)
+
+        # Parse word-level timestamps
+        words = _parse_vtt_words(raw, seg_start, seg_end)
+
+        segments.append({
+            "text": text_only,
+            "start": seg_start,
+            "end": seg_end,
+            "words": words,
+        })
+
+    return segments
+
+
+def _parse_vtt_words(raw: str, seg_start: float, seg_end: float):
+    """Extract word-level timing from a YouTube VTT cue line."""
+    # Pattern: optional <timestamp> followed by <c> word </c>
+    # Example: <00:00:02.219><c> Hello</c><00:00:02.459><c> world</c>
+    token_pattern = re.compile(r'(?:(\d{2}:\d{2}:\d{2}[.,]\d{3}))?\s*<c>(.*?)</c>', re.DOTALL)
+
+    words = []
+    tokens = token_pattern.findall(raw)
+
+    for i, (ts_str, word_text) in enumerate(tokens):
+        word = word_text.strip()
+        if not word:
+            continue
+        start = _ts(ts_str) if ts_str else seg_start
+        # End is the next token's start, or seg_end for the last
+        if i + 1 < len(tokens) and tokens[i + 1][0]:
+            end = _ts(tokens[i + 1][0])
+        else:
+            end = seg_end
+        words.append({"word": word, "start": start, "end": end})
+
+    return words
+
+
+def _ts(s: str) -> float:
+    """Parse HH:MM:SS.mmm or HH:MM:SS,mmm to seconds."""
+    s = s.replace(',', '.')
+    parts = s.split(':')
+    h, m, sec = int(parts[0]), int(parts[1]), float(parts[2])
+    return h * 3600 + m * 60 + sec
+
+
+def _whisper_transcribe(audio_path: str):
+    print("Falling back to Whisper transcription...")
+    model = get_model()
+    result = model.transcribe(audio_path, word_timestamps=True)
+    segments = []
+    for seg in result["segments"]:
+        words = []
+        for w in seg.get("words", []):
+            words.append({
+                "word": w["word"].strip(),
+                "start": round(w["start"], 3),
+                "end": round(w["end"], 3),
+            })
+        segments.append({
+            "text": seg["text"].strip(),
+            "start": round(seg["start"], 3),
+            "end": round(seg["end"], 3),
+            "words": words,
+        })
+    return segments
+
+
+def _download_audio(url: str, out_path: str) -> str:
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": out_path.replace(".mp3", ".%(ext)s"),
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }],
+        "quiet": True,
+        "extractor_args": {"youtube": {"js_runtimes": ["nodejs"]}},
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        return info.get("title", "Unknown")

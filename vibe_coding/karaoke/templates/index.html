@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Karaoke</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #e91e8c;
+      letter-spacing: 3px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 20px #e91e8c88;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 2px solid #333;
+      background: #1a1a1a;
+      color: #f0f0f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #e91e8c; }
+
+    button {
+      padding: 14px 26px;
+      border-radius: 10px;
+      border: none;
+      background: #e91e8c;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:hover { background: #c0166e; }
+    button:active { transform: scale(0.97); }
+    button:disabled { background: #555; cursor: default; }
+
+    #status {
+      font-size: 0.95rem;
+      color: #aaa;
+      margin-bottom: 10px;
+      min-height: 1.3em;
+    }
+
+    #progress-wrap {
+      width: 100%;
+      max-width: 700px;
+      height: 6px;
+      background: #222;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #e91e8c;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    #progress-bar.indeterminate {
+      width: 40%;
+      animation: slide 1.4s infinite ease-in-out;
+    }
+
+    @keyframes slide {
+      0%   { transform: translateX(-150%); }
+      100% { transform: translateX(350%); }
+    }
+
+    #title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffd700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    audio {
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    #lyrics {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .segment {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 14px 18px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border-left: 4px solid transparent;
+      transition: border-color 0.3s, background 0.3s;
+      line-height: 1.8;
+    }
+
+    .segment.active {
+      border-left-color: #e91e8c;
+      background: #2a1020;
+    }
+
+    .word {
+      font-size: 1.3rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+      cursor: default;
+    }
+
+    .word.active {
+      background: #e91e8c;
+      color: white;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎤 KARAOKE</h1>
+
+  <div class="input-row">
+    <input type="text" id="urlInput" placeholder="Paste a YouTube URL..." />
+    <button id="goBtn" onclick="start()">Go</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="progress-wrap"><div id="progress-bar"></div></div>
+  <div id="title"></div>
+
+  <audio id="player" controls></audio>
+
+  <div id="lyrics"></div>
+
+  <script>
+    let segments = [];
+    let pollTimer = null;
+
+    const STAGE_LABELS = {
+      starting:     'Starting…',
+      downloading:  'Downloading audio…',
+      captions:     'Fetching captions…',
+      transcribing: 'Transcribing with Whisper…',
+      cached:       'Loading from cache…',
+    };
+
+    async function start() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) return;
+
+      const btn = document.getElementById('goBtn');
+      btn.disabled = true;
+
+      document.getElementById('title').textContent = '';
+      document.getElementById('lyrics').innerHTML = '';
+      document.getElementById('player').style.display = 'none';
+      setProgress('indeterminate');
+      setStatus('Starting…');
+
+      // Step 1: get the job id without blocking
+      let jobId = null;
+      try {
+        const idRes = await fetch('/api/job_id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        jobId = (await idRes.json()).id;
+      } catch (_) {}
+
+      // Step 2: start polling
+      if (jobId) {
+        pollTimer = setInterval(async () => {
+          try {
+            const r = await fetch(`/api/status/${jobId}`);
+            const s = await r.json();
+            updateProgressUI(s);
+          } catch (_) {}
+        }, 800);
+      }
+
+      // Step 3: run the actual processing
+      try {
+        const res = await fetch('/api/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+
+        clearInterval(pollTimer);
+        pollTimer = null;
+
+        if (data.error) {
+          setStatus('Error: ' + data.error);
+          setProgress('hide');
+          btn.disabled = false;
+          return;
+        }
+
+        setProgress('full');
+        setStatus('');
+        segments = data.segments;
+        document.getElementById('title').textContent = data.title;
+        renderLyrics(segments);
+
+        const player = document.getElementById('player');
+        player.src = `/audio/${data.id}.mp3`;
+        player.style.display = 'block';
+        player.addEventListener('timeupdate', onTimeUpdate);
+
+        setTimeout(() => setProgress('hide'), 600);
+      } catch (e) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        setStatus('Error: ' + e.message);
+        setProgress('hide');
+      }
+
+      btn.disabled = false;
+    }
+
+    function updateProgressUI(s) {
+      const label = STAGE_LABELS[s.stage] || '';
+      const elapsed = s.elapsed && s.stage === 'transcribing' ? ` (${s.elapsed}s)` : '';
+      setStatus(label + elapsed);
+
+      if (s.stage === 'downloading')   setProgress(20);
+      else if (s.stage === 'captions') setProgress(50);
+      else if (s.stage === 'transcribing') {
+        const pct = Math.min(90, 55 + (s.elapsed || 0) / 120 * 35);
+        setProgress(pct);
+      }
+    }
+
+    function setProgress(val) {
+      const wrap = document.getElementById('progress-wrap');
+      const bar  = document.getElementById('progress-bar');
+      if (val === 'hide') {
+        wrap.style.display = 'none';
+        bar.className = '';
+        bar.style.width = '0%';
+      } else if (val === 'indeterminate') {
+        wrap.style.display = 'block';
+        bar.className = 'indeterminate';
+      } else if (val === 'full') {
+        wrap.style.display = 'block';
+        bar.className = '';
+        bar.style.width = '100%';
+      } else {
+        wrap.style.display = 'block';
+        bar.className = '';
+        bar.style.width = val + '%';
+      }
+    }
+
+    function renderLyrics(segs) {
+      const container = document.getElementById('lyrics');
+      container.innerHTML = '';
+      segs.forEach((seg, si) => {
+        const div = document.createElement('div');
+        div.className = 'segment';
+        div.id = `seg-${si}`;
+        seg.words.forEach((w, wi) => {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.id = `w-${si}-${wi}`;
+          span.textContent = w.word;
+          div.appendChild(span);
+        });
+        // fallback if no word-level data
+        if (seg.words.length === 0) {
+          div.textContent = seg.text;
+        }
+        container.appendChild(div);
+      });
+    }
+
+    let lastSegIdx = -1;
+    let lastWordIdx = -1;
+
+    function onTimeUpdate() {
+      const t = document.getElementById('player').currentTime;
+
+      // Find active segment
+      let segIdx = -1;
+      for (let i = 0; i < segments.length; i++) {
+        if (t >= segments[i].start && t <= segments[i].end) { segIdx = i; break; }
+      }
+
+      if (segIdx !== lastSegIdx) {
+        if (lastSegIdx >= 0) document.getElementById(`seg-${lastSegIdx}`)?.classList.remove('active');
+        if (segIdx >= 0) {
+          const el = document.getElementById(`seg-${segIdx}`);
+          el?.classList.add('active');
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        lastSegIdx = segIdx;
+        lastWordIdx = -1;
+      }
+
+      if (segIdx < 0) return;
+
+      // Find active word
+      const words = segments[segIdx].words;
+      let wordIdx = -1;
+      for (let i = 0; i < words.length; i++) {
+        if (t >= words[i].start && t <= words[i].end) { wordIdx = i; break; }
+      }
+
+      if (wordIdx !== lastWordIdx) {
+        if (lastWordIdx >= 0) document.getElementById(`w-${segIdx}-${lastWordIdx}`)?.classList.remove('active');
+        if (wordIdx >= 0) document.getElementById(`w-${segIdx}-${wordIdx}`)?.classList.add('active');
+        lastWordIdx = wordIdx;
+      }
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+
+    document.getElementById('urlInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') start();
+    });
+  </script>
+</body>
+</html>
