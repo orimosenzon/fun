@@ -69,6 +69,12 @@
       min-height: 1.3em;
     }
 
+    #status.error {
+      color: #ff4444;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
     #progress-wrap {
       width: 100%;
       max-width: 700px;
@@ -230,7 +236,7 @@
         pollTimer = null;
 
         if (data.error) {
-          setStatus('Error: ' + data.error);
+          setStatus(data.error, true);
           setProgress('hide');
           btn.disabled = false;
           return;
@@ -349,8 +355,10 @@
       }
     }
 
-    function setStatus(msg) {
-      document.getElementById('status').textContent = msg;
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = isError ? 'error' : '';
     }
 
     document.getElementById('urlInput').addEventListener('keydown', e => {
