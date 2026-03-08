@@ -6,21 +6,9 @@ import glob as glob_mod
 import urllib.request
 import urllib.parse
 import yt_dlp
-import whisper
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
-
-_model = None
-
-
-def get_model():
-    global _model
-    if _model is None:
-        print("Loading Whisper model...")
-        _model = whisper.load_model("base", device="cpu")
-        print("Whisper ready.")
-    return _model
 
 
 def url_id(url: str) -> str:
@@ -45,7 +33,7 @@ def process_url(url: str, on_stage=None):
     stage("downloading")
     title = _download_audio(url, audio_path)
 
-    # Try YouTube captions first, fall back to Whisper
+    # Try YouTube captions first, then LRClib
     stage("captions")
     captions = _try_youtube_captions(url, vid_id)
     if captions:
@@ -56,8 +44,7 @@ def process_url(url: str, on_stage=None):
         if lrc:
             segments, source = lrc, "lrclib"
         else:
-            stage("transcribing")
-            segments, source = _whisper_transcribe(audio_path), "whisper"
+            return {"error": "No lyrics found for this song. Try a more popular track."}
 
     data = {"id": vid_id, "title": title, "segments": segments, "source": source}
     with open(transcript_path, "w") as f:
@@ -211,28 +198,6 @@ def _parse_lrc(lrc: str):
             "start": round(start, 3),
             "end": round(end, 3),
             "words": [],
-        })
-    return segments
-
-
-def _whisper_transcribe(audio_path: str):
-    print("Falling back to Whisper transcription...")
-    model = get_model()
-    result = model.transcribe(audio_path, word_timestamps=True)
-    segments = []
-    for seg in result["segments"]:
-        words = []
-        for w in seg.get("words", []):
-            words.append({
-                "word": w["word"].strip(),
-                "start": round(w["start"], 3),
-                "end": round(w["end"], 3),
-            })
-        segments.append({
-            "text": seg["text"].strip(),
-            "start": round(seg["start"], 3),
-            "end": round(seg["end"], 3),
-            "words": words,
         })
     return segments
 

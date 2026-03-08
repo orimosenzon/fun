@@ -1,4 +1,3 @@
 flask
 gunicorn
-openai-whisper
 yt-dlp
