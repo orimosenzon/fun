@@ -3,6 +3,7 @@ import re
 import json
 import hashlib
 import glob as glob_mod
+import threading
 import urllib.request
 import urllib.parse
 import yt_dlp
@@ -13,6 +14,62 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 
 def url_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()[:12]
+
+
+def search_songs(query: str) -> list:
+    """Search YouTube and return songs that have LRClib lyrics."""
+    ydl_opts = {
+        "quiet": True,
+        "extract_flat": True,
+        "no_warnings": True,
+        "extractor_args": {"youtube": {"js_runtimes": ["nodejs"]}},
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"ytsearch10:{query}", download=False)
+    except Exception as e:
+        print(f"YouTube search failed: {e}")
+        return []
+
+    candidates = []
+    for entry in (info.get("entries") or []):
+        if not entry or not entry.get("id"):
+            continue
+        vid_id = entry["id"]
+        candidates.append({
+            "title": entry.get("title", "Unknown"),
+            "url": f"https://www.youtube.com/watch?v={vid_id}",
+            "thumbnail": f"https://img.youtube.com/vi/{vid_id}/mqdefault.jpg",
+        })
+
+    confirmed = []
+    lock = threading.Lock()
+
+    def check_one(c):
+        if _check_lrclib(c["title"]):
+            with lock:
+                confirmed.append(c)
+
+    threads = [threading.Thread(target=check_one, args=(c,)) for c in candidates]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=6)
+
+    return confirmed[:5]
+
+
+def _check_lrclib(title: str) -> bool:
+    """Quick check if LRClib has synced lyrics for this title."""
+    query = urllib.parse.urlencode({"q": title})
+    url = f"https://lrclib.net/api/search?{query}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "KaraokeApp/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            results = json.loads(resp.read())
+        return any(r.get("syncedLyrics") for r in results)
+    except Exception:
+        return False
 
 
 def process_url(url: str, on_stage=None):

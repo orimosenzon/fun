@@ -31,7 +31,7 @@
       gap: 10px;
       width: 100%;
       max-width: 700px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
 
     input[type="text"] {
@@ -62,13 +62,23 @@
     button:active { transform: scale(0.97); }
     button:disabled { background: #555; cursor: default; }
 
+    .back-btn {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #444;
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    .back-btn:hover { background: #1a1a1a; color: #f0f0f0; }
+
     #status {
       font-size: 0.95rem;
       color: #aaa;
       margin-bottom: 10px;
       min-height: 1.3em;
+      text-align: center;
     }
-
     #status.error {
       color: #ff4444;
       font-size: 1.1rem;
@@ -85,7 +95,6 @@
       overflow: hidden;
       display: none;
     }
-
     #progress-bar {
       height: 100%;
       width: 0%;
@@ -93,23 +102,59 @@
       border-radius: 3px;
       transition: width 0.6s ease;
     }
-
     #progress-bar.indeterminate {
       width: 40%;
       animation: slide 1.4s infinite ease-in-out;
     }
-
     @keyframes slide {
       0%   { transform: translateX(-150%); }
       100% { transform: translateX(350%); }
     }
 
-    #title {
+    /* Results grid */
+    #results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    .song-card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      border: 2px solid transparent;
+    }
+    .song-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px #e91e8c44;
+      border-color: #e91e8c;
+    }
+    .song-card img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: #111;
+    }
+    .song-card-title {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      color: #ddd;
+      line-height: 1.4;
+    }
+
+    /* Player */
+    #song-title {
       font-size: 1.4rem;
       font-weight: bold;
       color: #ffd700;
       margin-bottom: 20px;
       text-align: center;
+      max-width: 700px;
     }
 
     audio {
@@ -139,80 +184,164 @@
       transition: border-color 0.3s, background 0.3s;
       line-height: 1.8;
     }
-
     .segment.active {
       border-left-color: #e91e8c;
       background: #2a1020;
     }
-
     .word {
       font-size: 1.3rem;
       padding: 2px 4px;
       border-radius: 4px;
       transition: background 0.15s, color 0.15s;
-      cursor: default;
     }
-
     .word.active {
       background: #e91e8c;
       color: white;
       border-radius: 6px;
     }
+
+    .screen {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <h1>🎤 KARAOKE</h1>
 
-  <div class="input-row">
-    <input type="text" id="urlInput" placeholder="Paste a YouTube URL..." />
-    <button id="goBtn" onclick="start()">Go</button>
-  </div>
-
   <div id="status"></div>
   <div id="progress-wrap"><div id="progress-bar"></div></div>
-  <div id="title"></div>
 
-  <audio id="player" controls></audio>
+  <!-- Search screen -->
+  <div id="screen-search" class="screen">
+    <div class="input-row">
+      <input type="text" id="searchInput" placeholder="Search for a song…" />
+      <button id="searchBtn" onclick="doSearch()">Search</button>
+    </div>
+  </div>
 
-  <div id="lyrics"></div>
+  <!-- Results screen -->
+  <div id="screen-results" class="screen hidden">
+    <div style="width:100%;max-width:700px;margin-bottom:16px">
+      <button class="back-btn" onclick="showSearch()">← Back</button>
+    </div>
+    <div id="results-grid"></div>
+  </div>
+
+  <!-- Player screen -->
+  <div id="screen-player" class="screen hidden">
+    <div style="width:100%;max-width:700px;margin-bottom:16px">
+      <button class="back-btn" onclick="showResults()">← Back to results</button>
+    </div>
+    <div id="song-title"></div>
+    <audio id="player" controls></audio>
+    <div id="lyrics"></div>
+  </div>
 
   <script>
     let segments = [];
     let pollTimer = null;
 
     const STAGE_LABELS = {
-      starting:     'Starting…',
-      downloading:  'Downloading audio…',
-      captions:     'Fetching captions…',
-      lrclib:       'Searching lyrics database…',
-      cached:       'Loading from cache…',
+      starting:    'Starting…',
+      downloading: 'Downloading audio…',
+      captions:    'Fetching captions…',
+      lrclib:      'Searching lyrics database…',
+      cached:      'Loading from cache…',
     };
 
-    async function start() {
-      const url = document.getElementById('urlInput').value.trim();
-      if (!url) return;
+    function showScreen(name) {
+      ['search', 'results', 'player'].forEach(s => {
+        document.getElementById(`screen-${s}`).classList.toggle('hidden', s !== name);
+      });
+    }
 
-      const btn = document.getElementById('goBtn');
+    function showSearch() {
+      setStatus('');
+      setProgress('hide');
+      showScreen('search');
+    }
+
+    function showResults() {
+      setStatus('');
+      setProgress('hide');
+      const player = document.getElementById('player');
+      player.pause();
+      player.src = '';
+      player.style.display = 'none';
+      showScreen('results');
+    }
+
+    async function doSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) return;
+
+      const btn = document.getElementById('searchBtn');
       btn.disabled = true;
-
-      document.getElementById('title').textContent = '';
-      document.getElementById('lyrics').innerHTML = '';
-      document.getElementById('player').style.display = 'none';
+      setStatus('Searching…');
       setProgress('indeterminate');
-      setStatus('Starting…');
 
-      // Step 1: get the job id without blocking
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        setProgress('hide');
+
+        if (!data.results || data.results.length === 0) {
+          setStatus('No songs found with available lyrics. Try a different search.', true);
+          btn.disabled = false;
+          return;
+        }
+
+        renderResults(data.results);
+        setStatus('');
+        showScreen('results');
+      } catch (e) {
+        setStatus('Search failed: ' + e.message, true);
+        setProgress('hide');
+      }
+
+      btn.disabled = false;
+    }
+
+    function renderResults(results) {
+      const grid = document.getElementById('results-grid');
+      grid.innerHTML = '';
+      results.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'song-card';
+        card.innerHTML = `
+          <img src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.background='#222'">
+          <div class="song-card-title">${r.title}</div>
+        `;
+        card.onclick = () => selectSong(r);
+        grid.appendChild(card);
+      });
+    }
+
+    async function selectSong(song) {
+      showScreen('player');
+      document.getElementById('song-title').textContent = '';
+      document.getElementById('lyrics').innerHTML = '';
+      const player = document.getElementById('player');
+      player.style.display = 'none';
+
+      setStatus('Starting…');
+      setProgress('indeterminate');
+
       let jobId = null;
       try {
         const idRes = await fetch('/api/job_id', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url: song.url })
         });
         jobId = (await idRes.json()).id;
       } catch (_) {}
 
-      // Step 2: start polling
       if (jobId) {
         pollTimer = setInterval(async () => {
           try {
@@ -223,12 +352,11 @@
         }, 800);
       }
 
-      // Step 3: run the actual processing
       try {
         const res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url: song.url })
         });
         const data = await res.json();
 
@@ -238,17 +366,15 @@
         if (data.error) {
           setStatus(data.error, true);
           setProgress('hide');
-          btn.disabled = false;
           return;
         }
 
         setProgress('full');
         setStatus('');
         segments = data.segments;
-        document.getElementById('title').textContent = data.title;
+        document.getElementById('song-title').textContent = data.title;
         renderLyrics(segments);
 
-        const player = document.getElementById('player');
         player.src = `/audio/${data.id}.mp3`;
         player.style.display = 'block';
         player.addEventListener('timeupdate', onTimeUpdate);
@@ -257,17 +383,14 @@
       } catch (e) {
         clearInterval(pollTimer);
         pollTimer = null;
-        setStatus('Error: ' + e.message);
+        setStatus('Error: ' + e.message, true);
         setProgress('hide');
       }
-
-      btn.disabled = false;
     }
 
     function updateProgressUI(s) {
       const label = STAGE_LABELS[s.stage] || '';
       setStatus(label);
-
       if (s.stage === 'downloading')   setProgress(20);
       else if (s.stage === 'captions') setProgress(50);
       else if (s.stage === 'lrclib')   setProgress(75);
@@ -301,15 +424,15 @@
         const div = document.createElement('div');
         div.className = 'segment';
         div.id = `seg-${si}`;
-        seg.words.forEach((w, wi) => {
-          const span = document.createElement('span');
-          span.className = 'word';
-          span.id = `w-${si}-${wi}`;
-          span.textContent = w.word;
-          div.appendChild(span);
-        });
-        // fallback if no word-level data
-        if (seg.words.length === 0) {
+        if (seg.words.length > 0) {
+          seg.words.forEach((w, wi) => {
+            const span = document.createElement('span');
+            span.className = 'word';
+            span.id = `w-${si}-${wi}`;
+            span.textContent = w.word;
+            div.appendChild(span);
+          });
+        } else {
           div.textContent = seg.text;
         }
         container.appendChild(div);
@@ -321,13 +444,10 @@
 
     function onTimeUpdate() {
       const t = document.getElementById('player').currentTime;
-
-      // Find active segment
       let segIdx = -1;
       for (let i = 0; i < segments.length; i++) {
         if (t >= segments[i].start && t <= segments[i].end) { segIdx = i; break; }
       }
-
       if (segIdx !== lastSegIdx) {
         if (lastSegIdx >= 0) document.getElementById(`seg-${lastSegIdx}`)?.classList.remove('active');
         if (segIdx >= 0) {
@@ -338,16 +458,12 @@
         lastSegIdx = segIdx;
         lastWordIdx = -1;
       }
-
       if (segIdx < 0) return;
-
-      // Find active word
       const words = segments[segIdx].words;
       let wordIdx = -1;
       for (let i = 0; i < words.length; i++) {
         if (t >= words[i].start && t <= words[i].end) { wordIdx = i; break; }
       }
-
       if (wordIdx !== lastWordIdx) {
         if (lastWordIdx >= 0) document.getElementById(`w-${segIdx}-${lastWordIdx}`)?.classList.remove('active');
         if (wordIdx >= 0) document.getElementById(`w-${segIdx}-${wordIdx}`)?.classList.add('active');
@@ -361,8 +477,8 @@
       el.className = isError ? 'error' : '';
     }
 
-    document.getElementById('urlInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') start();
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
     });
   </script>
 </body>

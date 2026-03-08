@@ -1,7 +1,7 @@
 import os
 import time
 from flask import Flask, render_template, jsonify, request, send_from_directory
-from transcriber import process_url, url_id, STATIC_DIR
+from transcriber import process_url, url_id, STATIC_DIR, search_songs
 
 app = Flask(__name__)
 
@@ -47,6 +47,15 @@ def job_status(job_id):
         return jsonify({"stage": "unknown"})
     elapsed = round(time.time() - job["started_at"], 1)
     return jsonify({"stage": job["stage"], "elapsed": elapsed})
+
+
+@app.route("/api/search")
+def api_search():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"results": []})
+    results = search_songs(q)
+    return jsonify({"results": results})
 
 
 @app.route("/audio/<path:filename>")
