@@ -10,9 +10,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download Whisper base model so first request doesn't timeout
-RUN python -c "import whisper; whisper.load_model('base')"
-
 COPY . .
 
 EXPOSE 8000
