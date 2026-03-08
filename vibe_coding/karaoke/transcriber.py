@@ -72,23 +72,18 @@ def _check_lrclib(title: str) -> bool:
         return False
 
 
-def process_url(url: str, on_stage=None):
+def process_url(url: str, title: str = "", on_stage=None):
     def stage(s):
         if on_stage:
             on_stage(s)
 
     vid_id = url_id(url)
-    audio_path = os.path.join(STATIC_DIR, f"{vid_id}.mp3")
     transcript_path = os.path.join(STATIC_DIR, f"{vid_id}.json")
 
-    if os.path.exists(transcript_path) and os.path.exists(audio_path):
+    if os.path.exists(transcript_path):
         stage("cached")
         with open(transcript_path) as f:
             return json.load(f)
-
-    # Download audio
-    stage("downloading")
-    title = _download_audio(url, audio_path)
 
     # Try YouTube captions first, then LRClib
     stage("captions")
@@ -103,7 +98,7 @@ def process_url(url: str, on_stage=None):
         else:
             return {"error": "No lyrics found for this song. Try a more popular track."}
 
-    data = {"id": vid_id, "title": title, "segments": segments, "source": source}
+    data = {"id": vid_id, "title": title, "url": url, "segments": segments, "source": source}
     with open(transcript_path, "w") as f:
         json.dump(data, f, ensure_ascii=False)
 
@@ -259,18 +254,3 @@ def _parse_lrc(lrc: str):
     return segments
 
 
-def _download_audio(url: str, out_path: str) -> str:
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": out_path.replace(".mp3", ".%(ext)s"),
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }],
-        "quiet": True,
-        "extractor_args": {"youtube": {"js_runtimes": ["nodejs"]}},
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        return info.get("title", "Unknown")

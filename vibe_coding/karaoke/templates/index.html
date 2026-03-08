@@ -157,12 +157,15 @@
       max-width: 700px;
     }
 
-    audio {
+    #yt-player-wrap {
       width: 100%;
       max-width: 700px;
       margin-bottom: 30px;
-      border-radius: 10px;
+      border-radius: 12px;
+      overflow: hidden;
       display: none;
+      aspect-ratio: 16/9;
+      background: #111;
     }
 
     #lyrics {
@@ -237,17 +240,79 @@
       <button class="back-btn" onclick="showResults()">← Back to results</button>
     </div>
     <div id="song-title"></div>
-    <audio id="player" controls></audio>
+    <div id="yt-player-wrap"><div id="yt-player"></div></div>
     <div id="lyrics"></div>
   </div>
 
   <script>
-    let segments = [];
-    let pollTimer = null;
+    // Load YouTube IFrame API dynamically
+    (function() {
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    })();
+
+    var ytPlayer = null;
+    var ytApiReady = false;
+    var pendingVideoId = null;
+    var syncTimer = null;
+    var segments = [];
+    var pollTimer = null;
+
+    window.onYouTubeIframeAPIReady = function() {
+      ytApiReady = true;
+      if (pendingVideoId) {
+        _createOrLoadPlayer(pendingVideoId);
+        pendingVideoId = null;
+      }
+    };
+
+    function loadYTVideo(videoId) {
+      if (!ytApiReady) {
+        pendingVideoId = videoId;
+        return;
+      }
+      _createOrLoadPlayer(videoId);
+    }
+
+    function _createOrLoadPlayer(videoId) {
+      document.getElementById('yt-player-wrap').style.display = 'block';
+      if (ytPlayer && ytPlayer.loadVideoById) {
+        ytPlayer.loadVideoById(videoId);
+        startSync();
+        return;
+      }
+      ytPlayer = new YT.Player('yt-player', {
+        width: '100%',
+        height: '100%',
+        videoId: videoId,
+        playerVars: { autoplay: 1, rel: 0 },
+        events: {
+          onReady: function(e) { e.target.playVideo(); startSync(); }
+        }
+      });
+    }
+
+    function startSync() {
+      stopSync();
+      syncTimer = setInterval(function() {
+        if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+        syncLyrics(ytPlayer.getCurrentTime());
+      }, 100);
+    }
+
+    function stopSync() {
+      if (syncTimer) { clearInterval(syncTimer); syncTimer = null; }
+    }
+
+    function stopPlayer() {
+      stopSync();
+      if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+      document.getElementById('yt-player-wrap').style.display = 'none';
+    }
 
     const STAGE_LABELS = {
       starting:    'Starting…',
-      downloading: 'Downloading audio…',
       captions:    'Fetching captions…',
       lrclib:      'Searching lyrics database…',
       cached:      'Loading from cache…',
@@ -268,10 +333,7 @@
     function showResults() {
       setStatus('');
       setProgress('hide');
-      const player = document.getElementById('player');
-      player.pause();
-      player.src = '';
-      player.style.display = 'none';
+      stopPlayer();
       showScreen('results');
     }
 
@@ -326,8 +388,7 @@
       showScreen('player');
       document.getElementById('song-title').textContent = '';
       document.getElementById('lyrics').innerHTML = '';
-      const player = document.getElementById('player');
-      player.style.display = 'none';
+      stopPlayer();
 
       setStatus('Starting…');
       setProgress('indeterminate');
@@ -356,7 +417,7 @@
         const res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: song.url })
+          body: JSON.stringify({ url: song.url, title: song.title })
         });
         const data = await res.json();
 
@@ -372,12 +433,11 @@
         setProgress('full');
         setStatus('');
         segments = data.segments;
-        document.getElementById('song-title').textContent = data.title;
+        document.getElementById('song-title').textContent = data.title || song.title;
         renderLyrics(segments);
 
-        player.src = `/audio/${data.id}.mp3`;
-        player.style.display = 'block';
-        player.addEventListener('timeupdate', onTimeUpdate);
+        const videoId = ytVideoId(song.url);
+        if (videoId) loadYTVideo(videoId);
 
         setTimeout(() => setProgress('hide'), 600);
       } catch (e) {
@@ -388,12 +448,16 @@
       }
     }
 
+    function ytVideoId(url) {
+      const m = url.match(/[?&]v=([^&]+)/);
+      return m ? m[1] : null;
+    }
+
     function updateProgressUI(s) {
       const label = STAGE_LABELS[s.stage] || '';
       setStatus(label);
-      if (s.stage === 'downloading')   setProgress(20);
-      else if (s.stage === 'captions') setProgress(50);
-      else if (s.stage === 'lrclib')   setProgress(75);
+      if (s.stage === 'captions') setProgress(40);
+      else if (s.stage === 'lrclib') setProgress(70);
     }
 
     function setProgress(val) {
@@ -442,8 +506,7 @@
     let lastSegIdx = -1;
     let lastWordIdx = -1;
 
-    function onTimeUpdate() {
-      const t = document.getElementById('player').currentTime;
+    function syncLyrics(t) {
       let segIdx = -1;
       for (let i = 0; i < segments.length; i++) {
         if (t >= segments[i].start && t <= segments[i].end) { segIdx = i; break; }

@@ -1,6 +1,6 @@
 import os
 import time
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, jsonify, request
 from transcriber import process_url, url_id, STATIC_DIR, search_songs
 
 app = Flask(__name__)
@@ -16,6 +16,7 @@ def index():
 @app.route("/api/process", methods=["POST"])
 def process():
     url = request.json.get("url", "").strip()
+    title = request.json.get("title", "").strip()
     if not url:
         return jsonify({"error": "No URL provided"}), 400
     job_id = url_id(url)
@@ -26,7 +27,7 @@ def process():
         _jobs[job_id]["elapsed"] = round(time.time() - _jobs[job_id]["started_at"], 1)
 
     try:
-        data = process_url(url, on_stage)
+        data = process_url(url, title, on_stage)
         _jobs[job_id]["stage"] = "done"
         return jsonify(data)
     except Exception as e:
@@ -57,10 +58,6 @@ def api_search():
     results = search_songs(q)
     return jsonify({"results": results})
 
-
-@app.route("/audio/<path:filename>")
-def serve_audio(filename):
-    return send_from_directory(STATIC_DIR, filename)
 
 
 if __name__ == "__main__":
