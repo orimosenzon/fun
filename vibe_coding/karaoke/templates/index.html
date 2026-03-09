@@ -72,20 +72,21 @@
     }
     .back-btn:hover { background: #1a1a1a; color: #f0f0f0; }
 
-    #status {
+    #status, #search-status {
       font-size: 0.95rem;
       color: #aaa;
       margin-bottom: 10px;
       min-height: 1.3em;
       text-align: center;
+      width: 100%;
     }
-    #status.error {
+    #status.error, #search-status.error {
       color: #ff4444;
       font-size: 1.1rem;
       font-weight: bold;
     }
 
-    #progress-wrap {
+    #progress-wrap, #search-progress-wrap {
       width: 100%;
       max-width: 700px;
       height: 6px;
@@ -95,7 +96,7 @@
       overflow: hidden;
       display: none;
     }
-    #progress-bar {
+    #progress-bar, #search-progress-bar {
       height: 100%;
       width: 0%;
       background: #e91e8c;
@@ -185,24 +186,49 @@
       text-align: center;
     }
 
+    #screen-player {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #0d0d0d;
+      z-index: 10;
+      overflow: hidden;
+      padding: 12px 20px 0;
+    }
+
+    #player-top {
+      width: 100%;
+      max-width: 700px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     #yt-player-wrap {
       width: 100%;
       max-width: 700px;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       border-radius: 12px;
       overflow: hidden;
       display: none;
       aspect-ratio: 16/9;
       background: #111;
+      max-height: 42vh;
     }
 
     #lyrics {
       width: 100%;
       max-width: 700px;
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0 24px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
+    #lyrics::-webkit-scrollbar { width: 4px; }
+    #lyrics::-webkit-scrollbar-track { background: transparent; }
+    #lyrics::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
     .segment {
       display: flex;
@@ -243,15 +269,14 @@
 <body>
   <h1>🎤 KARAOKE</h1>
 
-  <div id="status"></div>
-  <div id="progress-wrap"><div id="progress-bar"></div></div>
-
   <!-- Search screen -->
   <div id="screen-search" class="screen">
     <div class="input-row">
       <input type="text" id="searchInput" placeholder="Search for a song…" />
       <button id="searchBtn" onclick="doSearch()">Search</button>
     </div>
+    <div id="search-status"></div>
+    <div id="search-progress-wrap"><div id="search-progress-bar"></div></div>
   </div>
 
   <!-- Results screen -->
@@ -264,19 +289,23 @@
 
   <!-- Player screen -->
   <div id="screen-player" class="screen hidden">
-    <div style="width:100%;max-width:700px;margin-bottom:16px">
-      <button class="back-btn" onclick="showResults()">← Back to results</button>
+    <div id="player-top">
+      <div style="width:100%;margin-bottom:6px">
+        <button class="back-btn" onclick="showResults()">← Back to results</button>
+      </div>
+      <div id="status"></div>
+      <div id="progress-wrap"><div id="progress-bar"></div></div>
+      <div id="song-title"></div>
+      <div id="source-label"></div>
+      <div id="offset-controls">
+        <button onclick="adjustOffset(-1)">-1s</button>
+        <button onclick="adjustOffset(-0.5)">-0.5s</button>
+        <span id="offset-display">offset: 0.0s</span>
+        <button onclick="adjustOffset(0.5)">+0.5s</button>
+        <button onclick="adjustOffset(1)">+1s</button>
+      </div>
+      <div id="yt-player-wrap"><div id="yt-player"></div></div>
     </div>
-    <div id="song-title"></div>
-    <div id="source-label"></div>
-    <div id="offset-controls">
-      <button onclick="adjustOffset(-1)">-1s</button>
-      <button onclick="adjustOffset(-0.5)">-0.5s</button>
-      <span id="offset-display">offset: 0.0s</span>
-      <button onclick="adjustOffset(0.5)">+0.5s</button>
-      <button onclick="adjustOffset(1)">+1s</button>
-    </div>
-    <div id="yt-player-wrap"><div id="yt-player"></div></div>
     <div id="lyrics"></div>
   </div>
 
@@ -295,6 +324,7 @@
     var segments = [];
     var pollTimer = null;
     var syncOffset = 0;
+    var currentScreen = 'search';
 
     window.onYouTubeIframeAPIReady = function() {
       ytApiReady = true;
@@ -361,22 +391,23 @@
     };
 
     function showScreen(name) {
+      currentScreen = name;
       ['search', 'results', 'player'].forEach(s => {
         document.getElementById(`screen-${s}`).classList.toggle('hidden', s !== name);
       });
     }
 
     function showSearch() {
+      showScreen('search');
       setStatus('');
       setProgress('hide');
-      showScreen('search');
     }
 
     function showResults() {
-      setStatus('');
-      setProgress('hide');
       stopPlayer();
       showScreen('results');
+      setStatus('');
+      setProgress('hide');
     }
 
     async function doSearch() {
@@ -507,8 +538,10 @@
     }
 
     function setProgress(val) {
-      const wrap = document.getElementById('progress-wrap');
-      const bar  = document.getElementById('progress-bar');
+      const isPlayer = currentScreen === 'player';
+      const wrap = document.getElementById(isPlayer ? 'progress-wrap' : 'search-progress-wrap');
+      const bar  = document.getElementById(isPlayer ? 'progress-bar'  : 'search-progress-bar');
+      if (!wrap || !bar) return;
       if (val === 'hide') {
         wrap.style.display = 'none';
         bar.className = '';
@@ -582,7 +615,9 @@
     }
 
     function setStatus(msg, isError = false) {
-      const el = document.getElementById('status');
+      const id = currentScreen === 'player' ? 'status' : 'search-status';
+      const el = document.getElementById(id);
+      if (!el) return;
       el.textContent = msg;
       el.className = isError ? 'error' : '';
     }
