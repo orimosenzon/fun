@@ -72,6 +72,21 @@
     }
     .back-btn:hover { background: #1a1a1a; color: #f0f0f0; }
 
+    #player-back {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      background: transparent;
+      color: #666;
+      border: 1px solid #333;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 20;
+    }
+    #player-back:hover { color: #aaa; border-color: #555; background: #1a1a1a; }
+
     #status, #search-status {
       font-size: 0.95rem;
       color: #aaa;
@@ -300,10 +315,8 @@
 
   <!-- Player screen -->
   <div id="screen-player" class="screen hidden">
+    <button id="player-back" onclick="showResults()">← Back</button>
     <div id="player-top">
-      <div style="width:100%;margin-bottom:6px">
-        <button class="back-btn" onclick="showResults()">← Back to results</button>
-      </div>
       <div id="status"></div>
       <div id="progress-wrap"><div id="progress-bar"></div></div>
       <div id="song-title"></div>
