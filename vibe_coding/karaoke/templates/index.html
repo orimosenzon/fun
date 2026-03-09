@@ -165,25 +165,37 @@
       text-align: center;
     }
 
+    #video-row {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
     #offset-controls {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      justify-content: center;
+      gap: 6px;
+      flex-shrink: 0;
     }
     #offset-controls button {
-      padding: 6px 14px;
-      font-size: 0.9rem;
+      padding: 5px 10px;
+      font-size: 0.8rem;
       background: #222;
       border: 1px solid #444;
       color: #ccc;
+      width: 52px;
     }
     #offset-controls button:hover { background: #333; color: #fff; }
     #offset-display {
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       color: #aaa;
-      min-width: 80px;
       text-align: center;
+      width: 52px;
     }
 
     #screen-player {
@@ -205,15 +217,14 @@
     }
 
     #yt-player-wrap {
-      width: 100%;
-      max-width: 700px;
-      margin-bottom: 10px;
+      flex: 1;
+      min-width: 0;
       border-radius: 12px;
       overflow: hidden;
       display: none;
       aspect-ratio: 16/9;
       background: #111;
-      max-height: 42vh;
+      max-height: 32vh;
     }
 
     #lyrics {
@@ -297,14 +308,16 @@
       <div id="progress-wrap"><div id="progress-bar"></div></div>
       <div id="song-title"></div>
       <div id="source-label"></div>
-      <div id="offset-controls">
-        <button onclick="adjustOffset(-1)">-1s</button>
-        <button onclick="adjustOffset(-0.5)">-0.5s</button>
-        <span id="offset-display">offset: 0.0s</span>
-        <button onclick="adjustOffset(0.5)">+0.5s</button>
-        <button onclick="adjustOffset(1)">+1s</button>
+      <div id="video-row">
+        <div id="offset-controls">
+          <button onclick="adjustOffset(-1)">-1s</button>
+          <button onclick="adjustOffset(-0.5)">-0.5s</button>
+          <span id="offset-display">+0.0s</span>
+          <button onclick="adjustOffset(0.5)">+0.5s</button>
+          <button onclick="adjustOffset(1)">+1s</button>
+        </div>
+        <div id="yt-player-wrap"><div id="yt-player"></div></div>
       </div>
-      <div id="yt-player-wrap"><div id="yt-player"></div></div>
     </div>
     <div id="lyrics"></div>
   </div>
@@ -370,7 +383,7 @@
 
     function adjustOffset(delta) {
       syncOffset = Math.round((syncOffset + delta) * 10) / 10;
-      document.getElementById('offset-display').textContent = 'offset: ' + (syncOffset >= 0 ? '+' : '') + syncOffset.toFixed(1) + 's';
+      document.getElementById('offset-display').textContent = (syncOffset >= 0 ? '+' : '') + syncOffset.toFixed(1) + 's';
     }
 
     function stopSync() {
@@ -506,7 +519,7 @@
         setProgress('full');
         setStatus('');
         syncOffset = 0;
-        document.getElementById('offset-display').textContent = 'offset: +0.0s';
+        document.getElementById('offset-display').textContent = '+0.0s';
         segments = data.segments;
         document.getElementById('song-title').textContent = data.title || song.title;
         const sourceMap = { youtube_captions: 'YouTube captions', lrclib: 'LRClib', cached: 'cached' };
