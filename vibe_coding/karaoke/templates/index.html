@@ -152,9 +152,37 @@
       font-size: 1.4rem;
       font-weight: bold;
       color: #ffd700;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
       text-align: center;
       max-width: 700px;
+    }
+
+    #source-label {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #offset-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #offset-controls button {
+      padding: 6px 14px;
+      font-size: 0.9rem;
+      background: #222;
+      border: 1px solid #444;
+      color: #ccc;
+    }
+    #offset-controls button:hover { background: #333; color: #fff; }
+    #offset-display {
+      font-size: 0.9rem;
+      color: #aaa;
+      min-width: 80px;
+      text-align: center;
     }
 
     #yt-player-wrap {
@@ -240,6 +268,14 @@
       <button class="back-btn" onclick="showResults()">← Back to results</button>
     </div>
     <div id="song-title"></div>
+    <div id="source-label"></div>
+    <div id="offset-controls">
+      <button onclick="adjustOffset(-1)">-1s</button>
+      <button onclick="adjustOffset(-0.5)">-0.5s</button>
+      <span id="offset-display">offset: 0.0s</span>
+      <button onclick="adjustOffset(0.5)">+0.5s</button>
+      <button onclick="adjustOffset(1)">+1s</button>
+    </div>
     <div id="yt-player-wrap"><div id="yt-player"></div></div>
     <div id="lyrics"></div>
   </div>
@@ -258,6 +294,7 @@
     var syncTimer = null;
     var segments = [];
     var pollTimer = null;
+    var syncOffset = 0;
 
     window.onYouTubeIframeAPIReady = function() {
       ytApiReady = true;
@@ -297,8 +334,13 @@
       stopSync();
       syncTimer = setInterval(function() {
         if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-        syncLyrics(ytPlayer.getCurrentTime());
+        syncLyrics(ytPlayer.getCurrentTime() + syncOffset);
       }, 100);
+    }
+
+    function adjustOffset(delta) {
+      syncOffset = Math.round((syncOffset + delta) * 10) / 10;
+      document.getElementById('offset-display').textContent = 'offset: ' + (syncOffset >= 0 ? '+' : '') + syncOffset.toFixed(1) + 's';
     }
 
     function stopSync() {
@@ -432,8 +474,12 @@
 
         setProgress('full');
         setStatus('');
+        syncOffset = 0;
+        document.getElementById('offset-display').textContent = 'offset: +0.0s';
         segments = data.segments;
         document.getElementById('song-title').textContent = data.title || song.title;
+        const sourceMap = { youtube_captions: 'YouTube captions', lrclib: 'LRClib', cached: 'cached' };
+        document.getElementById('source-label').textContent = data.source ? '(' + (sourceMap[data.source] || data.source) + ')' : '';
         renderLyrics(segments);
 
         const videoId = ytVideoId(song.url);
@@ -509,7 +555,8 @@
     function syncLyrics(t) {
       let segIdx = -1;
       for (let i = 0; i < segments.length; i++) {
-        if (t >= segments[i].start && t <= segments[i].end) { segIdx = i; break; }
+        if (t >= segments[i].start) segIdx = i;
+        else break;
       }
       if (segIdx !== lastSegIdx) {
         if (lastSegIdx >= 0) document.getElementById(`seg-${lastSegIdx}`)?.classList.remove('active');
