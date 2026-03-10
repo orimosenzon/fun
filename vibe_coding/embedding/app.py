@@ -62,4 +62,12 @@ def nearest():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    import socket
+    port = 5000
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("localhost", port)) != 0:
+                break
+        port += 1
+    print(f"Starting server on port {port}")
+    app.run(debug=True, port=port)
