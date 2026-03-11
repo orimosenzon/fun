@@ -7,6 +7,54 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ---- Loading overlay ---- */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #130f09;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      transition: opacity 0.5s ease;
+    }
+    #loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+    #loading-overlay h2 {
+      font-size: 1.6rem;
+      color: #fbbf24;
+      letter-spacing: 0.04em;
+    }
+
+    .loading-bar-wrap {
+      width: 340px;
+      height: 10px;
+      background: #1f1710;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .loading-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #d97706, #fbbf24);
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+    #loading-message {
+      color: #a88250;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+    #loading-error {
+      color: #ef4444;
+      font-size: 0.85rem;
+      display: none;
+      max-width: 340px;
+      text-align: center;
+    }
+
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: #130f09;
@@ -62,17 +110,6 @@
       margin-bottom: 0.75rem;
     }
 
-    /* ==============================
-       QUIZ MODE
-    ============================== */
-    .score-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.75rem;
-    }
-    .score { font-size: 1.1rem; color: #fbbf24; font-weight: 600; }
-
     .btn-primary {
       padding: 0.55rem 1.4rem;
       background: #d97706;
@@ -87,154 +124,6 @@
     .btn-primary:hover    { background: #b45309; }
     .btn-primary:disabled { background: #4a3520; cursor: not-allowed; }
 
-    .question-card {
-      background: #1f1710;
-      border-radius: 1rem;
-      padding: 2.5rem 2rem;
-      text-align: center;
-      margin-bottom: 1.75rem;
-    }
-    .analogy-text {
-      font-size: 1.9rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      color: #f5e6cc;
-    }
-    .analogy-text .blank { color: #fbbf24; }
-    .cat-label { color: #8a6a40; font-size: 0.82rem; margin-top: 0.6rem; }
-
-    .choices {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.9rem;
-    }
-    .choice-btn {
-      padding: 1rem;
-      background: #1f1710;
-      border: 2px solid #4a3520;
-      border-radius: 0.75rem;
-      color: #f5e6cc;
-      font-size: 1.05rem;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.05em;
-      transition: all 0.15s;
-    }
-    .choice-btn:hover:not(:disabled) { border-color: #d97706; background: #2a1a08; }
-    .choice-btn.correct { border-color: #22c55e; background: #14532d; color: #86efac; }
-    .choice-btn.wrong   { border-color: #ef4444; background: #7f1d1d; color: #fca5a5; }
-    .choice-btn:disabled { cursor: not-allowed; }
-
-    .feedback {
-      margin-top: 1.5rem;
-      padding: 0.9rem 1.1rem;
-      border-radius: 0.75rem;
-      background: #130f09;
-      border-left: 4px solid #d97706;
-      color: #d4aa78;
-      font-size: 0.88rem;
-      line-height: 1.5;
-    }
-
-    /* ==============================
-       FREE MODE
-    ============================== */
-    .pool-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
-    }
-    .shuffle-btn {
-      padding: 0.35rem 0.9rem;
-      background: transparent;
-      border: 1px solid #4a3520;
-      color: #a88250;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-size: 0.82rem;
-      transition: all 0.2s;
-    }
-    .shuffle-btn:hover { border-color: #d97706; color: #fbbf24; }
-
-    .word-pool {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem;
-      min-height: 72px;
-      background: #1f1710;
-      border-radius: 0.75rem;
-      padding: 0.9rem;
-      border: 2px dashed #4a3520;
-      margin-bottom: 2rem;
-      transition: border-color 0.2s;
-    }
-    .word-pool.drag-over { border-color: #d97706; }
-
-    .word-chip {
-      padding: 0.38rem 1rem;
-      background: #3b1a05;
-      color: #fde68a;
-      border-radius: 2rem;
-      cursor: grab;
-      font-size: 0.9rem;
-      font-weight: 500;
-      user-select: none;
-      border: 2px solid transparent;
-      transition: all 0.15s;
-    }
-    .word-chip:hover   { background: #92400e; border-color: #d97706; }
-    .word-chip.dragging { opacity: 0.35; cursor: grabbing; }
-
-    /* Analogy builder row */
-    .builder-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.75rem;
-    }
-    .slot-group { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-    .slot-name  { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: #8a6a40; }
-
-    .drop-slot {
-      width: 110px;
-      height: 52px;
-      border: 2px dashed #92400e;
-      border-radius: 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #2a1a08;
-      transition: all 0.2s;
-      overflow: hidden;
-    }
-    .drop-slot.drag-over  { border-color: #fbbf24; background: #3b1a05; }
-    .drop-slot .placeholder { color: #92400e; font-size: 0.82rem; }
-    .slot-chip {
-      padding: 0.38rem 0.75rem;
-      background: #d97706;
-      color: white;
-      border-radius: 2rem;
-      font-size: 0.88rem;
-      font-weight: 700;
-      cursor: grab;
-      max-width: 98px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      letter-spacing: 0.04em;
-    }
-    .slot-chip:active { cursor: grabbing; }
-
-    .sep  { font-size: 1.5rem; color: #a88250; font-weight: 700; padding-bottom: 1.2rem; }
-    .eq   { font-size: 1.1rem; color: #a88250; padding-bottom: 1.2rem; }
-    .qmark{ font-size: 2.2rem; color: #d97706; font-weight: 700; padding-bottom: 1.2rem; }
-
-    .find-btn-wrap { text-align: center; margin-bottom: 1.75rem; }
-
-    /* Results */
     .error-box {
       background: #450a0a;
       color: #fca5a5;
@@ -243,6 +132,8 @@
       margin-bottom: 1rem;
       font-size: 0.88rem;
     }
+
+    /* ---- Results (Nearest Words) ---- */
     .results-card {
       background: #1f1710;
       border-radius: 0.75rem;
@@ -278,19 +169,27 @@
     }
     .r-score { color: #8a6a40; font-size: 0.8rem; min-width: 46px; text-align: right; }
 
-    .method-btn {
-      padding: 0.45rem 1rem;
-      background: #1f1710;
+    /* ---- Explore Mode ---- */
+    .explore-input {
+      flex: 1;
+      min-width: 140px;
+      padding: 0.7rem 1rem;
+      background: #130f09;
       border: 2px solid #4a3520;
-      color: #a88250;
       border-radius: 0.5rem;
-      cursor: pointer;
-      font-size: 0.88rem;
-      font-weight: 500;
-      transition: all 0.2s;
+      color: #f5e6cc;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
     }
-    .method-btn:hover  { border-color: #d97706; color: #fbbf24; }
-    .method-btn.active { border-color: #d97706; color: #fbbf24; background: #2a1a08; }
+    .explore-input:focus { border-color: #d97706; }
+
+    .explore-step-card {
+      background: #1f1710;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
   </style>
 </head>
 <body>
@@ -301,91 +200,13 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('quiz')">Quiz Mode</div>
-  <div class="tab"        onclick="switchTab('free')">Build Your Own</div>
-  <div class="tab"        onclick="switchTab('nearest')">Nearest Words</div>
-  <div class="tab"        onclick="switchTab('viz')">Vector Map</div>
-</div>
-
-
-<!-- ===== QUIZ PANEL ===== -->
-<div class="panel active" id="panel-quiz">
-  <div class="score-bar">
-    <div class="score">Score: <span id="score">0</span> / <span id="total">0</span></div>
-    <button class="btn-primary" onclick="loadQuestion()">New Question</button>
-  </div>
-
-  <div class="question-card">
-    <div class="analogy-text" id="question-text">Loading...</div>
-    <div class="cat-label"    id="cat-label"></div>
-  </div>
-
-  <div class="choices" id="choices"></div>
-  <div class="feedback" id="feedback" style="display:none"></div>
-</div>
-
-
-<!-- ===== FREE MODE PANEL ===== -->
-<div class="panel" id="panel-free">
-
-  <div class="pool-header">
-    <div class="section-label">Word pool — drag words into the slots</div>
-    <button class="shuffle-btn" onclick="loadWords()">Shuffle</button>
-  </div>
-  <div class="word-pool" id="word-pool"
-       ondragover="poolDragOver(event)"
-       ondrop="poolDrop(event)"
-       ondragleave="poolDragLeave(event)">
-  </div>
-
-  <div class="section-label">Build your analogy</div>
-  <div class="builder-row">
-    <div class="slot-group">
-      <div class="slot-name">A</div>
-      <div class="drop-slot" id="slot-a"
-           ondragover="slotDragOver(event)"
-           ondrop="slotDrop(event,'a')"
-           ondragleave="slotDragLeave(event)">
-        <span class="placeholder">drop here</span>
-      </div>
-    </div>
-    <div class="sep">:</div>
-    <div class="slot-group">
-      <div class="slot-name">B</div>
-      <div class="drop-slot" id="slot-b"
-           ondragover="slotDragOver(event)"
-           ondrop="slotDrop(event,'b')"
-           ondragleave="slotDragLeave(event)">
-        <span class="placeholder">drop here</span>
-      </div>
-    </div>
-    <div class="eq">=</div>
-    <div class="slot-group">
-      <div class="slot-name">C</div>
-      <div class="drop-slot" id="slot-c"
-           ondragover="slotDragOver(event)"
-           ondrop="slotDrop(event,'c')"
-           ondragleave="slotDragLeave(event)">
-        <span class="placeholder">drop here</span>
-      </div>
-    </div>
-    <div class="sep">:</div>
-    <div class="qmark">?</div>
-  </div>
-
-  <div class="find-btn-wrap">
-    <button class="btn-primary" id="find-btn" onclick="findAnswer()" disabled>
-      Find Answer
-    </button>
-  </div>
-
-  <div class="error-box"  id="free-error"  style="display:none"></div>
-  <div class="results-card" id="results"   style="display:none"></div>
+  <div class="tab active" onclick="switchTab('nearest')">Nearest Words</div>
+  <div class="tab"        onclick="switchTab('explore')">Vector Steps</div>
 </div>
 
 
 <!-- ===== NEAREST WORDS PANEL ===== -->
-<div class="panel" id="panel-nearest">
+<div class="panel active" id="panel-nearest">
   <div class="section-label">Enter a word to find its 7 nearest neighbors</div>
 
   <div style="display:flex; gap:0.75rem; margin-bottom:1.75rem;">
@@ -408,55 +229,62 @@
   <div class="results-card" id="nearest-results" style="display:none"></div>
 </div>
 
-<!-- ===== VECTOR MAP PANEL ===== -->
-<div class="panel" id="panel-viz">
-  <div class="section-label">Project word vectors onto 2D space</div>
 
-  <div style="display:flex; flex-wrap:wrap; gap:1.25rem; margin-bottom:1.75rem; align-items:flex-end;">
+<!-- ===== VECTOR STEPS PANEL ===== -->
+<div class="panel" id="panel-explore">
 
-    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">
-        Number of words: <span id="n-display">20</span>
-      </label>
-      <input type="range" id="n-slider" min="10" max="60" value="20"
-        oninput="document.getElementById('n-display').textContent=this.value"
-        style="width:160px; accent-color:#d97706;" />
+  <!-- Step 1 -->
+  <div class="explore-step-card">
+    <div class="section-label" style="margin-bottom:1rem;">Step 1 — Pick a transformation</div>
+    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+      <input type="text" id="explore-a" class="explore-input" placeholder="Word A  (e.g. king)"
+             onkeydown="if(event.key==='Enter') exploreStep1()" />
+      <span style="color:#a88250; font-size:1.5rem; font-weight:700; padding-bottom:2px;">→</span>
+      <input type="text" id="explore-b" class="explore-input" placeholder="Word B  (e.g. queen)"
+             onkeydown="if(event.key==='Enter') exploreStep1()" />
+      <button class="btn-primary" id="explore-btn1" onclick="exploreStep1()">Show</button>
     </div>
-
-    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">Category</label>
-      <select id="viz-category"
-        style="padding:0.5rem 0.75rem; background:#1f1710; border:2px solid #4a3520;
-               border-radius:0.5rem; color:#f5e6cc; font-size:0.9rem;">
-        <option value="">All (random mix)</option>
-      </select>
+    <div style="margin-top:0.75rem; font-size:0.82rem; color:#8a6a40;">
+      The arrow A → B represents the vector difference  B − A.
     </div>
-
-    <div style="display:flex; flex-direction:column; gap:0.4rem;">
-      <label style="font-size:0.75rem; color:#8a6a40; text-transform:uppercase; letter-spacing:0.1em;">Method</label>
-      <div style="display:flex; gap:0.5rem;">
-        <button id="btn-pca"  class="method-btn active" onclick="setMethod('pca')">PCA</button>
-        <button id="btn-tsne" class="method-btn"        onclick="setMethod('tsne')">t-SNE</button>
-      </div>
-    </div>
-
-    <button class="btn-primary" id="viz-btn" onclick="generateViz()" style="align-self:flex-end;">
-      Generate
-    </button>
-    <button class="shuffle-btn" onclick="resetZoom()" style="align-self:flex-end;">
-      Reset zoom
-    </button>
   </div>
 
-  <div class="error-box" id="viz-error" style="display:none"></div>
-  <div id="viz-plot" style="width:100%; height:520px; background:#1f1710; border-radius:0.75rem;
+  <!-- Step 2 (hidden until step 1 succeeds) -->
+  <div id="explore-step2" class="explore-step-card" style="display:none;">
+    <div class="section-label" style="margin-bottom:1rem;">Step 2 — Apply the transformation to a new word</div>
+    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+      <input type="text" id="explore-c" class="explore-input" placeholder="Word C  (e.g. dog)"
+             onkeydown="if(event.key==='Enter') exploreStep2()" />
+      <button class="btn-primary" id="explore-btn2" onclick="exploreStep2()">Apply</button>
+    </div>
+    <div style="margin-top:0.75rem; font-size:0.82rem; color:#8a6a40;">
+      C + (B − A) will point to Word D.
+    </div>
+  </div>
+
+  <div class="error-box" id="explore-error" style="display:none;"></div>
+
+  <!-- Analogy result label -->
+  <div id="explore-result" style="display:none; text-align:center; padding:0.9rem 1rem;
+       background:#1f1710; border-radius:0.75rem; margin-bottom:1rem;
+       font-size:1.1rem; letter-spacing:0.05em;"></div>
+
+  <!-- Plot -->
+  <div id="explore-plot" style="width:100%; height:520px; background:#1f1710; border-radius:0.75rem;
        display:flex; align-items:center; justify-content:center; color:#4a3520; font-size:0.9rem;">
-    Click "Generate" to draw the map
+    Enter two words above to begin
   </div>
-  <div id="viz-note" style="margin-top:0.6rem; font-size:0.78rem; color:#8a6a40; display:none;">
-    Tip: words that cluster together share semantic meaning.
-    t-SNE preserves local structure better with more words.
+</div>
+
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div id="loading-overlay">
+  <h2>Word Analogy Explorer</h2>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar-fill" id="loading-bar"></div>
   </div>
+  <div id="loading-message">Starting up...</div>
+  <div id="loading-error"></div>
 </div>
 
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
@@ -469,262 +297,6 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   event.currentTarget.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
-}
-
-// ───────────────────────────────────────────
-//  QUIZ MODE
-// ───────────────────────────────────────────
-let currentQ = null;
-let score = 0, total = 0;
-
-async function loadQuestion() {
-  document.getElementById('feedback').style.display = 'none';
-  document.getElementById('choices').innerHTML = '';
-  document.getElementById('question-text').textContent = 'Loading...';
-
-  const res = await fetch('/api/quiz/question');
-  currentQ = await res.json();
-  const { a, b, c, choices, category } = currentQ;
-
-  document.getElementById('question-text').innerHTML =
-    `${a.toUpperCase()} : ${b.toUpperCase()} &nbsp;=&nbsp; ${c.toUpperCase()} : <span class="blank">?</span>`;
-  document.getElementById('cat-label').textContent = category;
-
-  const container = document.getElementById('choices');
-  choices.forEach(word => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
-    btn.textContent = word.toUpperCase();
-    btn.onclick = () => pickAnswer(word, btn);
-    container.appendChild(btn);
-  });
-}
-
-function pickAnswer(selected, btn) {
-  const { answer, a, b, c } = currentQ;
-  const correct = selected.toLowerCase() === answer.toLowerCase();
-
-  total++;
-  if (correct) score++;
-  document.getElementById('score').textContent = score;
-  document.getElementById('total').textContent = total;
-
-  document.querySelectorAll('.choice-btn').forEach(b => {
-    b.disabled = true;
-    if (b.textContent.toLowerCase() === answer.toLowerCase()) b.classList.add('correct');
-  });
-  if (!correct) btn.classList.add('wrong');
-
-  const fb = document.getElementById('feedback');
-  fb.style.display = 'block';
-  fb.textContent = (correct ? '✓ Correct! ' : `✗ The answer was "${answer.toUpperCase()}". `) +
-    `The model computed: vector(${b}) + vector(${c}) − vector(${a}) ≈ vector(${answer})`;
-}
-
-// ───────────────────────────────────────────
-//  FREE MODE — drag and drop
-// ───────────────────────────────────────────
-let dragWord   = null; // word being dragged
-let dragFrom   = null; // 'pool' | 'a' | 'b' | 'c'
-const slots    = { a: null, b: null, c: null };
-
-async function loadWords() {
-  const res  = await fetch('/api/free/words');
-  const data = await res.json();
-
-  const pool = document.getElementById('word-pool');
-  pool.innerHTML = '';
-
-  // Also return any slotted words back to pool display
-  ['a','b','c'].forEach(s => {
-    slots[s] = null;
-    renderSlot(s, null);
-  });
-  updateFindBtn();
-  document.getElementById('results').style.display   = 'none';
-  document.getElementById('free-error').style.display = 'none';
-
-  data.words.forEach(addChipToPool);
-}
-
-function addChipToPool(word) {
-  const pool = document.getElementById('word-pool');
-  const chip = document.createElement('div');
-  chip.className   = 'word-chip';
-  chip.textContent = word;
-  chip.id          = 'chip-' + word;
-  chip.draggable   = true;
-  chip.ondragstart = e => startDrag(e, word, 'pool');
-  chip.ondragend   = endDrag;
-  pool.appendChild(chip);
-}
-
-function startDrag(e, word, from) {
-  dragWord = word;
-  dragFrom = from;
-  e.dataTransfer.effectAllowed = 'move';
-  if (from === 'pool') {
-    setTimeout(() => {
-      const c = document.getElementById('chip-' + word);
-      if (c) c.classList.add('dragging');
-    }, 0);
-  }
-}
-
-function endDrag() {
-  if (dragFrom === 'pool' && dragWord) {
-    const c = document.getElementById('chip-' + dragWord);
-    if (c) c.classList.remove('dragging');
-  }
-}
-
-/* ---- slot events ---- */
-function slotDragOver(e)  { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function slotDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-
-function slotDrop(e, slotName) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (!dragWord) return;
-
-  const prevWord = slots[slotName];
-
-  // If dragged from another slot, clear that slot
-  if (dragFrom !== 'pool' && dragFrom !== slotName) {
-    slots[dragFrom] = null;
-    renderSlot(dragFrom, null);
-  }
-
-  // Return displaced word to pool (if any)
-  if (prevWord && prevWord !== dragWord) {
-    showChipInPool(prevWord);
-  }
-
-  // Fill the target slot
-  slots[slotName] = dragWord;
-  renderSlot(slotName, dragWord);
-
-  // Hide from pool if coming from pool
-  if (dragFrom === 'pool') {
-    hideChipInPool(dragWord);
-  }
-
-  dragWord = null;
-  dragFrom = null;
-  updateFindBtn();
-}
-
-/* ---- pool as drop target (return chips) ---- */
-function poolDragOver(e)  { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function poolDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-
-function poolDrop(e) {
-  e.preventDefault();
-  document.getElementById('word-pool').classList.remove('drag-over');
-  if (!dragWord || dragFrom === 'pool') return;
-
-  slots[dragFrom] = null;
-  renderSlot(dragFrom, null);
-  showChipInPool(dragWord);
-
-  dragWord = null;
-  dragFrom = null;
-  updateFindBtn();
-}
-
-/* ---- helpers ---- */
-function hideChipInPool(word) {
-  const c = document.getElementById('chip-' + word);
-  if (c) c.style.display = 'none';
-}
-
-function showChipInPool(word) {
-  const c = document.getElementById('chip-' + word);
-  if (c) {
-    c.style.display = '';
-    c.classList.remove('dragging');
-  }
-}
-
-function renderSlot(slotName, word) {
-  const el = document.getElementById('slot-' + slotName);
-  el.innerHTML = '';
-  if (!word) {
-    const ph = document.createElement('span');
-    ph.className   = 'placeholder';
-    ph.textContent = 'drop here';
-    el.appendChild(ph);
-  } else {
-    const chip = document.createElement('div');
-    chip.className   = 'slot-chip';
-    chip.textContent = word.toUpperCase();
-    chip.draggable   = true;
-    chip.ondragstart = e => startDrag(e, word, slotName);
-    chip.ondragend   = endDrag;
-    // double-click to return to pool
-    chip.ondblclick  = () => {
-      slots[slotName] = null;
-      renderSlot(slotName, null);
-      showChipInPool(word);
-      updateFindBtn();
-    };
-    el.appendChild(chip);
-  }
-}
-
-function updateFindBtn() {
-  document.getElementById('find-btn').disabled = !(slots.a && slots.b && slots.c);
-}
-
-/* ---- find answer ---- */
-async function findAnswer() {
-  document.getElementById('free-error').style.display  = 'none';
-  document.getElementById('results').style.display     = 'none';
-
-  const btn = document.getElementById('find-btn');
-  btn.textContent = 'Searching...';
-  btn.disabled    = true;
-
-  const res  = await fetch('/api/free/ask', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ a: slots.a, b: slots.b, c: slots.c }),
-  });
-  const data = await res.json();
-
-  btn.textContent = 'Find Answer';
-  btn.disabled    = !(slots.a && slots.b && slots.c);
-
-  if (data.error) {
-    const err = document.getElementById('free-error');
-    err.textContent    = data.error;
-    err.style.display  = 'block';
-    return;
-  }
-
-  const maxScore = data.results[0]?.score ?? 1;
-  const ranks    = ['', '', '', '4.', '5.'];
-  const resultsEl = document.getElementById('results');
-  resultsEl.innerHTML =
-    `<div class="results-title">
-       ${slots.a.toUpperCase()} : ${slots.b.toUpperCase()}
-       &nbsp;=&nbsp;
-       ${slots.c.toUpperCase()} : ?
-     </div>` +
-    data.results.map((r, i) => {
-      const pct = Math.round(((r.score + 1) / 2) * 100);
-      return `
-        <div class="result-row">
-          <div class="r-rank">${ranks[i]}</div>
-          <div class="r-word">${r.word.toUpperCase()}</div>
-          <div class="r-bar-wrap">
-            <div class="r-bar" style="width:${pct}%"></div>
-          </div>
-          <div class="r-score">${r.score.toFixed(3)}</div>
-        </div>`;
-    }).join('');
-
-  resultsEl.style.display = 'block';
 }
 
 // ───────────────────────────────────────────
@@ -769,103 +341,233 @@ async function findNearest() {
 }
 
 // ───────────────────────────────────────────
-//  VECTOR MAP
+//  VECTOR STEPS (EXPLORE MODE)
 // ───────────────────────────────────────────
-let vizMethod = 'pca';
+let exploreWords = { a: null, b: null };
 
-function setMethod(m) {
-  vizMethod = m;
-  document.getElementById('btn-pca').classList.toggle('active',  m === 'pca');
-  document.getElementById('btn-tsne').classList.toggle('active', m === 'tsne');
-}
+async function exploreStep1() {
+  const a = document.getElementById('explore-a').value.trim().toLowerCase();
+  const b = document.getElementById('explore-b').value.trim().toLowerCase();
+  const errEl = document.getElementById('explore-error');
+  errEl.style.display = 'none';
+  document.getElementById('explore-result').style.display = 'none';
+  if (!a || !b) return;
 
-async function loadVizCategories() {
-  const res  = await fetch('/api/visualize/categories');
-  const data = await res.json();
-  const sel  = document.getElementById('viz-category');
-  data.categories.forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value       = cat;
-    opt.textContent = cat;
-    sel.appendChild(opt);
-  });
-}
+  const btn = document.getElementById('explore-btn1');
+  btn.textContent = 'Loading...';
+  btn.disabled = true;
 
-async function generateViz() {
-  document.getElementById('viz-error').style.display = 'none';
-  document.getElementById('viz-note').style.display  = 'none';
-  const btn = document.getElementById('viz-btn');
-  btn.textContent = 'Computing...';
-  btn.disabled    = true;
-
-  const n        = parseInt(document.getElementById('n-slider').value);
-  const category = document.getElementById('viz-category').value;
-
-  const res  = await fetch('/api/visualize', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ n, method: vizMethod, category }),
-  });
-  const data = await res.json();
-
-  btn.textContent = 'Generate';
-  btn.disabled    = false;
-
-  if (data.error) {
-    const err = document.getElementById('viz-error');
-    err.textContent   = data.error;
-    err.style.display = 'block';
+  let data;
+  try {
+    const res = await fetch('/api/explore', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ a, b }),
+    });
+    if (!res.ok) throw new Error(res.status === 503 ? 'Model is still loading — please wait a moment' : `Server error ${res.status}`);
+    data = await res.json();
+  } catch(e) {
+    btn.textContent = 'Show';
+    btn.disabled = false;
+    errEl.textContent   = e.message;
+    errEl.style.display = 'block';
     return;
   }
 
-  const xs     = data.points.map(p => p.x);
-  const ys     = data.points.map(p => p.y);
-  const labels = data.points.map(p => p.word);
+  btn.textContent = 'Show';
+  btn.disabled = false;
 
-  // Reset flex styles that were used for placeholder text
-  const plotEl = document.getElementById('viz-plot');
-  plotEl.style.display         = 'block';
-  plotEl.style.alignItems      = '';
-  plotEl.style.justifyContent  = '';
+  if (data.error) {
+    errEl.textContent   = data.error;
+    errEl.style.display = 'block';
+    return;
+  }
 
-  Plotly.newPlot('viz-plot', [{
-    x: xs, y: ys,
+  exploreWords = { a, b };
+  drawExplorePlot(data.points, null, null);
+  document.getElementById('explore-step2').style.display = 'block';
+  document.getElementById('explore-c').value = '';
+}
+
+async function exploreStep2() {
+  const c = document.getElementById('explore-c').value.trim().toLowerCase();
+  const errEl = document.getElementById('explore-error');
+  errEl.style.display = 'none';
+  if (!c || !exploreWords.a) return;
+
+  const btn = document.getElementById('explore-btn2');
+  btn.textContent = 'Computing...';
+  btn.disabled = true;
+
+  let data;
+  try {
+    const res = await fetch('/api/explore', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ a: exploreWords.a, b: exploreWords.b, c }),
+    });
+    if (!res.ok) throw new Error(res.status === 503 ? 'Model is still loading — please wait a moment' : `Server error ${res.status}`);
+    data = await res.json();
+  } catch(e) {
+    btn.textContent = 'Apply';
+    btn.disabled = false;
+    errEl.textContent   = e.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Apply';
+  btn.disabled = false;
+
+  if (data.error) {
+    errEl.textContent   = data.error;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  drawExplorePlot(data.points, c, data.result_word);
+}
+
+function drawExplorePlot(points, c, resultWord) {
+  const plotEl = document.getElementById('explore-plot');
+  plotEl.style.display        = 'block';
+  plotEl.style.alignItems     = '';
+  plotEl.style.justifyContent = '';
+
+  const [pA, pB] = points;
+  const traces      = [];
+  const annotations = [];
+
+  // ── A and B ──
+  traces.push({
+    x: [pA.x, pB.x],
+    y: [pA.y, pB.y],
+    text: [pA.word.toUpperCase(), pB.word.toUpperCase()],
     mode: 'markers+text',
     type: 'scatter',
-    text: labels,
     textposition: 'top center',
-    textfont: { color: '#fbbf24', size: 22, family: 'Segoe UI, sans-serif' },
-    marker: {
-      size: 10,
-      color: '#d97706',
-      line: { color: '#fbbf24', width: 1.5 },
-    },
+    textfont: { color: '#fbbf24', size: 14, family: 'Segoe UI, sans-serif' },
+    marker: { size: 13, color: ['#d97706', '#fbbf24'], line: { color: '#fbbf24', width: 1.5 } },
     hovertemplate: '<b>%{text}</b><extra></extra>',
-  }], {
+    showlegend: false,
+  });
+
+  // Arrow A → B
+  annotations.push({
+    ax: pA.x, ay: pA.y, axref: 'x', ayref: 'y',
+    x:  pB.x, y:  pB.y, xref:  'x', yref:  'y',
+    showarrow: true,
+    arrowhead: 3, arrowsize: 1.4, arrowwidth: 2.5,
+    arrowcolor: '#d97706',
+  });
+
+  if (c && points.length >= 4) {
+    const [, , pC, pD] = points;
+
+    // ── C ──
+    traces.push({
+      x: [pC.x], y: [pC.y],
+      text: [pC.word.toUpperCase()],
+      mode: 'markers+text', type: 'scatter',
+      textposition: 'top center',
+      textfont: { color: '#38bdf8', size: 14, family: 'Segoe UI, sans-serif' },
+      marker: { size: 13, color: '#0369a1', line: { color: '#38bdf8', width: 1.5 } },
+      hovertemplate: '<b>%{text}</b><extra></extra>',
+      showlegend: false,
+    });
+
+    // ── D (result) ──
+    const dLabel = resultWord ? resultWord.toUpperCase() : '?';
+    traces.push({
+      x: [pD.x], y: [pD.y],
+      text: [dLabel],
+      mode: 'markers+text', type: 'scatter',
+      textposition: 'top center',
+      textfont: { color: '#4ade80', size: 14, family: 'Segoe UI, sans-serif' },
+      marker: { size: 15, color: '#15803d', symbol: 'diamond', line: { color: '#4ade80', width: 2 } },
+      hovertemplate: '<b>%{text}</b><extra></extra>',
+      showlegend: false,
+    });
+
+    // Arrow C → D
+    annotations.push({
+      ax: pC.x, ay: pC.y, axref: 'x', ayref: 'y',
+      x:  pD.x, y:  pD.y, xref:  'x', yref:  'y',
+      showarrow: true,
+      arrowhead: 3, arrowsize: 1.4, arrowwidth: 2.5,
+      arrowcolor: '#0ea5e9',
+    });
+
+    // Result label
+    const resultEl = document.getElementById('explore-result');
+    if (resultWord) {
+      resultEl.innerHTML =
+        `<span style="color:#8a6a40;">${pA.word.toUpperCase()} : ${pB.word.toUpperCase()} &nbsp;::&nbsp; ${c.toUpperCase()} :</span>` +
+        `&nbsp;<span style="color:#4ade80; font-size:1.4rem; font-weight:700; letter-spacing:0.06em;">${resultWord.toUpperCase()}</span>`;
+      resultEl.style.display = 'block';
+    } else {
+      resultEl.style.display = 'none';
+    }
+  } else {
+    document.getElementById('explore-result').style.display = 'none';
+  }
+
+  Plotly.newPlot('explore-plot', traces, {
     paper_bgcolor: '#1f1710',
     plot_bgcolor:  '#1f1710',
     font:  { color: '#d4aa78' },
     xaxis: { showgrid: true, gridcolor: '#4a3520', zeroline: false, showticklabels: false },
     yaxis: { showgrid: true, gridcolor: '#4a3520', zeroline: false, showticklabels: false },
-    margin: { t: 20, b: 20, l: 20, r: 20 },
+    margin: { t: 30, b: 20, l: 20, r: 20 },
     hovermode: 'closest',
+    showlegend: false,
+    annotations,
   }, {
     responsive: true,
     displayModeBar: 'hover',
     modeBarButtonsToRemove: ['toImage', 'lasso2d', 'select2d'],
   });
-
-  document.getElementById('viz-note').style.display = 'block';
 }
 
-function resetZoom() {
-  Plotly.relayout('viz-plot', { 'xaxis.autorange': true, 'yaxis.autorange': true });
-}
+// ───────────────────────────────────────────
+//  LOADING — poll /api/status until ready
+// ───────────────────────────────────────────
+(function pollStatus() {
+  const bar     = document.getElementById('loading-bar');
+  const msg     = document.getElementById('loading-message');
+  const errEl   = document.getElementById('loading-error');
+  const overlay = document.getElementById('loading-overlay');
 
-// ── init ──
-loadQuestion();
-loadWords();
-loadVizCategories();
+  function check() {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(data => {
+        if (data.progress < 0) {
+          errEl.textContent = data.message;
+          errEl.style.display = 'block';
+          bar.style.background = '#ef4444';
+          bar.style.width = '100%';
+          return;
+        }
+
+        bar.style.width = data.progress + '%';
+        msg.textContent = data.message;
+
+        if (data.ready) {
+          bar.style.width = '100%';
+          setTimeout(() => {
+            overlay.classList.add('fade-out');
+            setTimeout(() => overlay.remove(), 500);
+          }, 400);
+        } else {
+          setTimeout(check, 500);
+        }
+      })
+      .catch(() => setTimeout(check, 1000));
+  }
+
+  check();
+})();
 </script>
 </body>
 </html>
