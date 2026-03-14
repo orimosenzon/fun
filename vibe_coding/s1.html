@@ -618,14 +618,34 @@
             // Convert to simulation seconds (Earth year = BASE_EARTH_ORBIT_DURATION_SECONDS / currentSpeedMultiplier)
             const transferTimeSim = transferRealYears * BASE_EARTH_ORBIT_DURATION_SECONDS / currentSpeedMultiplier;
 
+            // --- Advance to optimal launch window ---
+            // Mars must be (π - ω_mars·T) radians ahead of Earth at launch (~44.4°).
+            // Speed-independent: the currentSpeedMultiplier cancels in the ratio.
+            const omegaEarth = (2 * Math.PI / BASE_EARTH_ORBIT_DURATION_SECONDS) * currentSpeedMultiplier;
+            const omegaMars  = (2 * Math.PI / ((marsData.orbitalPeriodDays / 365.25) * BASE_EARTH_ORBIT_DURATION_SECONDS)) * currentSpeedMultiplier;
+            const phiOptimal = Math.PI - omegaMars * transferTimeSim; // ~0.775 rad = 44.4°
+
+            let phiCurrent = ((marsData.currentAngleRad - earthData.currentAngleRad) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            let phiOpt     = ((phiOptimal % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            let dPhi = phiOpt - phiCurrent;
+            if (dPhi < 0) dPhi += 2 * Math.PI;
+
+            const omegaSyn = omegaEarth - omegaMars; // Earth gains on Mars
+            const deltaT   = dPhi / omegaSyn;
+
+            // Snap both planets to the launch-window configuration
+            earthData.currentAngleRad = (earthData.currentAngleRad + omegaEarth * deltaT) % (2 * Math.PI);
+            marsData.currentAngleRad  = (marsData.currentAngleRad  + omegaMars  * deltaT) % (2 * Math.PI);
+            earth.position.set(Math.cos(earthData.currentAngleRad) * r_e, 0, Math.sin(earthData.currentAngleRad) * r_e);
+            mars.position.set(Math.cos(marsData.currentAngleRad)   * r_m, 0, Math.sin(marsData.currentAngleRad)  * r_m);
+            // --- End launch window snap ---
+
             const earthAngle = earthData.currentAngleRad;
 
             rocketTransferData = { a, b, c, e, r_e, r_m, earthAngle, transferTimeSim, elapsed: 0 };
 
             // Place rocket at Earth
-            rocketMesh.position.set(
-                Math.cos(earthAngle) * r_e, 0, Math.sin(earthAngle) * r_e
-            );
+            rocketMesh.position.set(Math.cos(earthAngle) * r_e, 0, Math.sin(earthAngle) * r_e);
 
             // Build full elliptical path (128 segments) for the path line
             const pathPoints = [];
