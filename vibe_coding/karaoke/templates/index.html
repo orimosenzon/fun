@@ -173,6 +173,14 @@
       max-width: 700px;
     }
 
+    #song-credits {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 4px;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+
     #source-label {
       font-size: 0.8rem;
       color: #666;
@@ -320,6 +328,7 @@
       <div id="status"></div>
       <div id="progress-wrap"><div id="progress-bar"></div></div>
       <div id="song-title"></div>
+      <div id="song-credits"></div>
       <div id="source-label"></div>
       <div id="video-row">
         <div id="offset-controls">
@@ -394,8 +403,17 @@
       }, 100);
     }
 
+    var currentVideoId = null;
+
     function adjustOffset(delta) {
       syncOffset = Math.round((syncOffset + delta) * 10) / 10;
+      document.getElementById('offset-display').textContent = (syncOffset >= 0 ? '+' : '') + syncOffset.toFixed(1) + 's';
+      if (currentVideoId) localStorage.setItem('karaoke_offset_' + currentVideoId, syncOffset);
+    }
+
+    function loadOffset(videoId) {
+      const stored = localStorage.getItem('karaoke_offset_' + videoId);
+      syncOffset = stored !== null ? parseFloat(stored) : 0;
       document.getElementById('offset-display').textContent = (syncOffset >= 0 ? '+' : '') + syncOffset.toFixed(1) + 's';
     }
 
@@ -407,6 +425,37 @@
       stopSync();
       if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
       document.getElementById('yt-player-wrap').style.display = 'none';
+    }
+
+    const CREDITS_LABELS = {
+      he: { lyrics: 'מילים', music: 'לחן',      both: 'מילים ולחן' },
+      en: { lyrics: 'Lyrics', music: 'Music',    both: 'Music & Lyrics' },
+      ar: { lyrics: 'كلمات', music: 'ألحان',     both: 'كلمات وألحان' },
+      ru: { lyrics: 'Слова', music: 'Музыка',    both: 'Слова и музыка' },
+      fr: { lyrics: 'Paroles', music: 'Musique', both: 'Paroles et Musique' },
+      es: { lyrics: 'Letra', music: 'Música',    both: 'Letra y Música' },
+      it: { lyrics: 'Testo', music: 'Musica',    both: 'Testo e Musica' },
+      de: { lyrics: 'Text',  music: 'Musik',     both: 'Text und Musik' },
+      pt: { lyrics: 'Letra', music: 'Música',    both: 'Letra e Música' },
+      ja: { lyrics: '作詞',  music: '作曲',      both: '作詞・作曲' },
+      ko: { lyrics: '작사',  music: '작곡',      both: '작사·작곡' },
+      zh: { lyrics: '词曲',  music: '作曲',      both: '词曲' },
+    };
+
+    function renderCredits(data) {
+      const labels = CREDITS_LABELS[data.lang] || CREDITS_LABELS.en;
+      const lyricist = data.lyricist || null;
+      const composer = data.composer || null;
+      let text = '';
+      if (lyricist && composer && lyricist === composer) {
+        text = `${labels.both}: ${lyricist}`;
+      } else {
+        const parts = [];
+        if (composer) parts.push(`${labels.music}: ${composer}`);
+        if (lyricist) parts.push(`${labels.lyrics}: ${lyricist}`);
+        text = parts.join(' · ');
+      }
+      document.getElementById('song-credits').textContent = text;
     }
 
     const STAGE_LABELS = {
@@ -486,6 +535,7 @@
     async function selectSong(song) {
       showScreen('player');
       document.getElementById('song-title').textContent = '';
+      document.getElementById('song-credits').textContent = '';
       document.getElementById('lyrics').innerHTML = '';
       stopPlayer();
 
@@ -531,15 +581,16 @@
 
         setProgress('full');
         setStatus('');
-        syncOffset = 0;
-        document.getElementById('offset-display').textContent = '+0.0s';
         segments = data.segments;
         document.getElementById('song-title').textContent = data.title || song.title;
+        renderCredits(data);
         const sourceMap = { youtube_captions: 'YouTube captions', lrclib: 'LRClib', cached: 'cached' };
         document.getElementById('source-label').textContent = data.source ? '(' + (sourceMap[data.source] || data.source) + ')' : '';
         renderLyrics(segments);
 
         const videoId = ytVideoId(song.url);
+        currentVideoId = videoId;
+        loadOffset(videoId);
         if (videoId) loadYTVideo(videoId);
 
         setTimeout(() => setProgress('hide'), 600);
