@@ -209,6 +209,7 @@
         let focusedBodyMesh = null; 
         let rocketInFlight = false;
         let rocketTargetPosition = new THREE.Vector3();
+        let rocketTransferData = null; // Hohmann transfer orbit parameters
 
         const simulationClock = new THREE.Clock(); 
         const KM_TO_SCENE_UNIT_REALISTIC = REALISTIC_SUN_TARGET_RADIUS_SCENE / sunData.radiusKm;
@@ -557,52 +558,93 @@
             scene.add(rocketPathLine);
         }
         
-        // --- Handle Rocket Launch ---
+        // --- Kepler's equation solver (Newton-Raphson): M = E - e*sin(E) ---
+        function solveKepler(M, e, iterations = 8) {
+            let E = M;
+            for (let i = 0; i < iterations; i++) {
+                E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+            }
+            return E;
+        }
+
+        // --- Orient rocket so its tip (+Y) points along velocity direction ---
+        function orientRocket(fromPos, toPos) {
+            const dir = new THREE.Vector3(toPos.x - fromPos.x, 0, toPos.z - fromPos.z);
+            if (dir.length() < 0.0001) return;
+            dir.normalize();
+            rocketMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        }
+
+        // --- Compute position on Hohmann ellipse ---
+        // progress: 0 (Earth/perihelion) to 1 (Mars orbit/aphelion)
+        // Returns {x, z} in scene coordinates
+        function hohmannPosition(progress, td) {
+            const M = Math.PI * progress; // mean anomaly: 0 -> π
+            const E = solveKepler(M, td.e);
+            // Position in ellipse frame (Sun at origin, perihelion along +X)
+            const px = td.a * Math.cos(E) - td.c;
+            const pz = td.b * Math.sin(E);
+            // Rotate by launch angle
+            const rx = px * Math.cos(td.earthAngle) - pz * Math.sin(td.earthAngle);
+            const rz = px * Math.sin(td.earthAngle) + pz * Math.cos(td.earthAngle);
+            return { x: rx, z: rz };
+        }
+
+        // --- Handle Rocket Launch (Hohmann Transfer Orbit) ---
         function handleLaunchRocket() {
-            if (rocketInFlight) return; 
+            if (rocketInFlight) return;
 
             const earth = planetMeshes.find(p => p.userData.id === 'Earth');
-            const mars = planetMeshes.find(p => p.userData.id === 'Mars');
+            const mars  = planetMeshes.find(p => p.userData.id === 'Mars');
+            if (!earth || !mars) return;
 
-            if (!earth || !mars) {
-                console.error("Earth or Mars mesh not found for rocket launch.");
-                return;
+            const earthData = earth.userData;
+            const marsData  = mars.userData;
+
+            // Orbital radii in scene units
+            const r_e = earthData.distanceAU * DISTANCE_SCALE_AU_TO_SCENE;
+            const r_m = marsData.distanceAU  * DISTANCE_SCALE_AU_TO_SCENE;
+
+            // Hohmann ellipse parameters
+            const a = (r_e + r_m) / 2;          // semi-major axis
+            const c = a - r_e;                   // focal distance (Sun offset from ellipse center)
+            const b = Math.sqrt(r_e * r_m);      // semi-minor axis
+            const e = c / a;                     // eccentricity
+
+            // Transfer time: half the period of the transfer ellipse
+            // Kepler's 3rd law: T_full (years) = a_AU^1.5, T_transfer = T_full / 2
+            const a_AU = (earthData.distanceAU + marsData.distanceAU) / 2;
+            const transferRealYears = Math.pow(a_AU, 1.5) / 2;
+            // Convert to simulation seconds (Earth year = BASE_EARTH_ORBIT_DURATION_SECONDS / currentSpeedMultiplier)
+            const transferTimeSim = transferRealYears * BASE_EARTH_ORBIT_DURATION_SECONDS / currentSpeedMultiplier;
+
+            const earthAngle = earthData.currentAngleRad;
+
+            rocketTransferData = { a, b, c, e, r_e, r_m, earthAngle, transferTimeSim, elapsed: 0 };
+
+            // Place rocket at Earth
+            rocketMesh.position.set(
+                Math.cos(earthAngle) * r_e, 0, Math.sin(earthAngle) * r_e
+            );
+
+            // Build full elliptical path (128 segments) for the path line
+            const pathPoints = [];
+            const N = 128;
+            for (let i = 0; i <= N; i++) {
+                const pos = hohmannPosition(i / N, rocketTransferData);
+                pathPoints.push(new THREE.Vector3(pos.x, 0, pos.z));
             }
+            rocketPathLine.geometry.dispose();
+            rocketPathLine.geometry = new THREE.BufferGeometry().setFromPoints(pathPoints);
+            rocketPathLine.visible = true;
 
-            const earthPosition = new THREE.Vector3();
-            earth.getWorldPosition(earthPosition);
-            rocketMesh.position.copy(earthPosition);
-            
-            const marsData = mars.userData;
-            const marsOrbitalRadiusScene = marsData.distanceAU * DISTANCE_SCALE_AU_TO_SCENE;
-            
-            const distanceToMarsOrbitApprox = earthPosition.distanceTo(new THREE.Vector3(marsOrbitalRadiusScene, 0, 0)); 
-            let estimatedTravelTimeSeconds = distanceToMarsOrbitApprox / ROCKET_SPEED_SCENE_UNITS_PER_SEC;
-            estimatedTravelTimeSeconds = Math.max(0.5, Math.min(estimatedTravelTimeSeconds, BASE_EARTH_ORBIT_DURATION_SECONDS * 5 / currentSpeedMultiplier));
+            // Orient rocket toward initial velocity (tangent to ellipse at perihelion)
+            const p0 = hohmannPosition(0,    rocketTransferData);
+            const p1 = hohmannPosition(0.01, rocketTransferData);
+            orientRocket(p0, p1);
 
-
-            const baseMarsOrbitDurationSimSeconds = (marsData.orbitalPeriodDays / 365.25) * BASE_EARTH_ORBIT_DURATION_SECONDS;
-            if (baseMarsOrbitDurationSimSeconds > 0) {
-                 const marsAngularSpeedRadPerSec = ((2 * Math.PI) / baseMarsOrbitDurationSimSeconds) * currentSpeedMultiplier;
-                 const marsAngleChange = marsAngularSpeedRadPerSec * estimatedTravelTimeSeconds;
-                 const predictedMarsAngle = (marsData.currentAngleRad + marsAngleChange) % (2 * Math.PI);
-
-                 rocketTargetPosition.set(
-                    Math.cos(predictedMarsAngle) * marsOrbitalRadiusScene,
-                    0, 
-                    Math.sin(predictedMarsAngle) * marsOrbitalRadiusScene
-                 );
-            } else { 
-                mars.getWorldPosition(rocketTargetPosition);
-            }
-            
-            rocketMesh.lookAt(rocketTargetPosition);
             rocketMesh.visible = true;
             rocketInFlight = true;
-
-            rocketPathLine.geometry.setFromPoints([earthPosition.clone(), rocketTargetPosition.clone()]);
-            rocketPathLine.geometry.attributes.position.needsUpdate = true;
-            rocketPathLine.visible = true;
         }
 
 
@@ -750,21 +792,25 @@
                     }
                 }
                 
-                if (rocketInFlight && rocketMesh) {
-                    const direction = new THREE.Vector3().subVectors(rocketTargetPosition, rocketMesh.position).normalize();
-                    rocketMesh.position.add(direction.multiplyScalar(ROCKET_SPEED_SCENE_UNITS_PER_SEC * deltaTime));
-                    
-                    const currentRocketPos = rocketMesh.position.clone();
-                    const launchPosArray = rocketPathLine.geometry.attributes.position.array;
-                    const launchPos = new THREE.Vector3(launchPosArray[0],launchPosArray[1],launchPosArray[2]);
-                    rocketPathLine.geometry.setFromPoints([launchPos , currentRocketPos]); 
-                    rocketPathLine.geometry.attributes.position.needsUpdate = true;
+                if (rocketInFlight && rocketMesh && rocketTransferData) {
+                    rocketTransferData.elapsed += deltaTime;
+                    const progress = Math.min(rocketTransferData.elapsed / rocketTransferData.transferTimeSim, 1.0);
 
+                    // Position on Hohmann ellipse via Kepler's equation
+                    const pos = hohmannPosition(progress, rocketTransferData);
+                    rocketMesh.position.set(pos.x, 0, pos.z);
 
-                    if (rocketMesh.position.distanceTo(rocketTargetPosition) < ROCKET_SPEED_SCENE_UNITS_PER_SEC * deltaTime * 1.1) { 
+                    // Orient rocket along velocity (tangent to ellipse, lookahead by 1%)
+                    if (progress < 0.99) {
+                        const ahead = hohmannPosition(Math.min(progress + 0.01, 1.0), rocketTransferData);
+                        orientRocket(pos, ahead);
+                    }
+
+                    if (progress >= 1.0) {
                         rocketInFlight = false;
                         rocketMesh.visible = false;
-                        rocketPathLine.visible = false; 
+                        rocketPathLine.visible = false;
+                        rocketTransferData = null;
                     }
                 }
 
