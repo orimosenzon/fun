@@ -428,34 +428,36 @@
     }
 
     const CREDITS_LABELS = {
-      he: { lyrics: 'מילים', music: 'לחן',      both: 'מילים ולחן' },
-      en: { lyrics: 'Lyrics', music: 'Music',    both: 'Music & Lyrics' },
-      ar: { lyrics: 'كلمات', music: 'ألحان',     both: 'كلمات وألحان' },
-      ru: { lyrics: 'Слова', music: 'Музыка',    both: 'Слова и музыка' },
-      fr: { lyrics: 'Paroles', music: 'Musique', both: 'Paroles et Musique' },
-      es: { lyrics: 'Letra', music: 'Música',    both: 'Letra y Música' },
-      it: { lyrics: 'Testo', music: 'Musica',    both: 'Testo e Musica' },
-      de: { lyrics: 'Text',  music: 'Musik',     both: 'Text und Musik' },
-      pt: { lyrics: 'Letra', music: 'Música',    both: 'Letra e Música' },
-      ja: { lyrics: '作詞',  music: '作曲',      both: '作詞・作曲' },
-      ko: { lyrics: '작사',  music: '작곡',      both: '작사·작곡' },
-      zh: { lyrics: '词曲',  music: '作曲',      both: '词曲' },
+      he: { lyrics: 'מילים', music: 'לחן', both: 'מילים ולחן', arranger: 'עיבוד', performer: 'מבצע' },
+      en: { lyrics: 'Lyrics', music: 'Music', both: 'Music & Lyrics', arranger: 'Arr.', performer: 'By' },
+      ar: { lyrics: 'كلمات', music: 'ألحان', both: 'كلمات وألحان', arranger: 'توزيع', performer: 'أداء' },
+      ru: { lyrics: 'Слова', music: 'Музыка', both: 'Слова и музыка', arranger: 'Аранж.', performer: 'Исп.' },
+      fr: { lyrics: 'Paroles', music: 'Musique', both: 'Paroles et Musique', arranger: 'Arr.', performer: 'Par' },
+      es: { lyrics: 'Letra', music: 'Música', both: 'Letra y Música', arranger: 'Arr.', performer: 'Por' },
+      it: { lyrics: 'Testo', music: 'Musica', both: 'Testo e Musica', arranger: 'Arr.', performer: 'Perf.' },
+      de: { lyrics: 'Text', music: 'Musik', both: 'Text und Musik', arranger: 'Arr.', performer: 'Von' },
+      pt: { lyrics: 'Letra', music: 'Música', both: 'Letra e Música', arranger: 'Arr.', performer: 'Por' },
+      ja: { lyrics: '作詞', music: '作曲', both: '作詞・作曲', arranger: '編曲', performer: '歌' },
+      ko: { lyrics: '작사', music: '작곡', both: '작사·작곡', arranger: '편곡', performer: '노래' },
+      zh: { lyrics: '词曲', music: '作曲', both: '词曲', arranger: '编曲', performer: '演唱' },
     };
 
     function renderCredits(data) {
       const labels = CREDITS_LABELS[data.lang] || CREDITS_LABELS.en;
-      const lyricist = data.lyricist || null;
-      const composer = data.composer || null;
-      let text = '';
+      const lyricist  = data.lyricist  || null;
+      const composer  = data.composer  || null;
+      const arranger  = data.arranger  || null;
+      const performer = data.performer || null;
+      const parts = [];
+      if (performer) parts.push(`${labels.performer}: ${performer}`);
       if (lyricist && composer && lyricist === composer) {
-        text = `${labels.both}: ${lyricist}`;
+        parts.push(`${labels.both}: ${lyricist}`);
       } else {
-        const parts = [];
         if (composer) parts.push(`${labels.music}: ${composer}`);
         if (lyricist) parts.push(`${labels.lyrics}: ${lyricist}`);
-        text = parts.join(' · ');
       }
-      document.getElementById('song-credits').textContent = text;
+      if (arranger) parts.push(`${labels.arranger}: ${arranger}`);
+      document.getElementById('song-credits').textContent = parts.join(' · ');
     }
 
     const STAGE_LABELS = {

@@ -90,7 +90,18 @@ def process_url(url: str, title: str = "", on_stage=None):
     if os.path.exists(transcript_path):
         stage("cached")
         with open(transcript_path) as f:
-            return json.load(f)
+            cached = json.load(f)
+        # Backfill credits if missing
+        if not cached.get("lyricist") and not cached.get("composer") and not cached.get("performer"):
+            credits = _fetch_credits(cached.get("title", title))
+            cached["lyricist"]  = credits.get("lyricist")
+            cached["composer"]  = credits.get("composer")
+            cached["arranger"]  = credits.get("arranger")
+            cached["performer"] = credits.get("performer")
+            cached["lang"] = _detect_language(_lyrics_text(cached.get("segments", [])))
+            with open(transcript_path, "w") as f:
+                json.dump(cached, f, ensure_ascii=False)
+        return cached
 
     # Try YouTube captions first, then LRClib
     stage("captions")
@@ -105,7 +116,17 @@ def process_url(url: str, title: str = "", on_stage=None):
         else:
             return {"error": "No lyrics found for this song. Try a more popular track."}
 
-    data = {"id": vid_id, "title": title, "url": url, "segments": segments, "source": source}
+    credits = _fetch_credits(title)
+    lang = _detect_language(_lyrics_text(segments))
+    data = {
+        "id": vid_id, "title": title, "url": url,
+        "segments": segments, "source": source,
+        "lyricist":  credits.get("lyricist"),
+        "composer":  credits.get("composer"),
+        "arranger":  credits.get("arranger"),
+        "performer": credits.get("performer"),
+        "lang": lang,
+    }
     with open(transcript_path, "w") as f:
         json.dump(data, f, ensure_ascii=False)
 
@@ -259,5 +280,115 @@ def _parse_lrc(lrc: str):
             "words": [],
         })
     return segments
+
+
+def _lyrics_text(segments: list) -> str:
+    """Concatenate all segment texts for language detection."""
+    return " ".join(s.get("text", "") for s in segments[:20])
+
+
+def _detect_language(text: str) -> str:
+    """Detect language from lyrics text using Unicode script ranges."""
+    if not text:
+        return "en"
+    counts = {
+        "he": sum(1 for c in text if "\u0590" <= c <= "\u05FF"),
+        "ar": sum(1 for c in text if "\u0600" <= c <= "\u06FF"),
+        "ru": sum(1 for c in text if "\u0400" <= c <= "\u04FF"),
+        "ja": sum(1 for c in text if "\u3040" <= c <= "\u30FF" or "\u4E00" <= c <= "\u9FFF"),
+        "ko": sum(1 for c in text if "\uAC00" <= c <= "\uD7AF"),
+        "zh": sum(1 for c in text if "\u4E00" <= c <= "\u9FFF"),
+    }
+    threshold = len(text) * 0.08
+    best = max(counts, key=counts.get)
+    if counts[best] > threshold:
+        return best
+    return "en"
+
+
+def _clean_title(title: str) -> str:
+    """Strip YouTube-style suffixes and 'Artist - ' prefix for cleaner MusicBrainz searches."""
+    cleaned = re.sub(r'\s*[\(\[][^\)\]]*[\)\]]', '', title).strip()
+    if ' - ' in cleaned:
+        cleaned = cleaned.split(' - ', 1)[1].strip()
+    return cleaned or title
+
+
+def _fetch_credits(title: str) -> dict:
+    """Fetch lyricist and composer from MusicBrainz. Returns dict with 'lyricist' and/or 'composer'."""
+    headers = {"User-Agent": "KaraokeApp/1.0 (open-source karaoke project)"}
+    search_title = _clean_title(title)
+    try:
+        # Step 1: search recording
+        query = urllib.parse.urlencode({"query": f'recording:"{search_title}"', "fmt": "json", "limit": "5"})
+        req = urllib.request.Request(
+            f"https://musicbrainz.org/ws/2/recording?{query}", headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            recordings = json.loads(resp.read()).get("recordings", [])
+        if not recordings:
+            return {}
+        rec = recordings[0]
+        mbid = rec["id"]
+
+        # Extract performer from artist-credit in search result
+        artist_credits = rec.get("artist-credit", [])
+        performer_names = [a["artist"]["name"] for a in artist_credits if isinstance(a, dict) and "artist" in a]
+        performer = ", ".join(performer_names) or None
+
+        # Step 2: recording → work-rels + artist-rels (for arranger at recording level)
+        req = urllib.request.Request(
+            f"https://musicbrainz.org/ws/2/recording/{mbid}?inc=work-rels+artist-rels&fmt=json", headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            rec_data = json.loads(resp.read())
+
+        arrangers = []
+        for rel in rec_data.get("relations", []):
+            if rel.get("target-type") == "artist":
+                role = rel.get("type", "").lower()
+                name = rel.get("artist", {}).get("name", "")
+                if role == "arranger" and name:
+                    arrangers.append(name)
+
+        work_mbid = next(
+            (r["work"]["id"] for r in rec_data.get("relations", []) if r.get("target-type") == "work"),
+            None,
+        )
+        if not work_mbid:
+            return {"lyricist": None, "composer": None, "arranger": ", ".join(arrangers) or None, "performer": performer}
+
+        # Step 3: work → artist relations (composer / lyricist / writer / arranger)
+        req = urllib.request.Request(
+            f"https://musicbrainz.org/ws/2/work/{work_mbid}?inc=artist-rels&fmt=json", headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            work_data = json.loads(resp.read())
+
+        lyricists, composers = [], []
+        for rel in work_data.get("relations", []):
+            role = rel.get("type", "").lower()
+            name = rel.get("artist", {}).get("name", "")
+            if not name:
+                continue
+            if role == "lyricist":
+                lyricists.append(name)
+            elif role == "composer":
+                composers.append(name)
+            elif role == "writer":
+                lyricists.append(name)
+                composers.append(name)
+            elif role == "arranger":
+                arrangers.append(name)
+
+        return {
+            "lyricist":  ", ".join(lyricists) or None,
+            "composer":  ", ".join(composers) or None,
+            "arranger":  ", ".join(arrangers) or None,
+            "performer": performer,
+        }
+    except Exception as e:
+        print(f"Credits fetch failed: {e}")
+        return {}
 
 
