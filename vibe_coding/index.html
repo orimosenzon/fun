@@ -1,393 +1,1085 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Coding Projects</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Vibe Coding — פרויקטי AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: #0f172a;
+            font-family: 'Heebo', 'Inter', sans-serif;
+            background: #09111f;
             color: #e2e8f0;
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 40px 20px 60px;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(129,140,248,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(129,140,248,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 960px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
+        /* ── Header ── */
         header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 56px;
+            padding: 48px 24px;
+            position: relative;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px; height: 250px;
+            background: radial-gradient(ellipse, rgba(129,140,248,0.12) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         header h1 {
-            font-size: 2.2rem;
+            font-size: 3rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
         }
 
-        header p {
+        .header-sub {
             color: #94a3b8;
-            font-size: 1rem;
+            font-size: 1.05rem;
+            margin-bottom: 6px;
         }
 
-        .projects {
+        .header-meta {
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
+        .header-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* ── Section headers ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 44px 0 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .section-emoji { font-size: 1.3rem; }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .section-count {
+            font-size: 0.72rem;
+            color: #475569;
+            background: #131e2e;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-inline-start: auto;
+        }
+
+        /* ── Project grid ── */
+        .projects { display: grid; gap: 14px; }
+
+        .projects-mini {
             display: grid;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
         }
 
+        /* ── Project card ── */
         .project-card {
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
             border-radius: 16px;
-            padding: 24px;
+            padding: 20px 22px;
             transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
         }
 
         .project-card:hover {
             transform: translateY(-2px);
-            border-color: #818cf8;
-            box-shadow: 0 8px 30px rgba(129, 140, 248, 0.1);
+            border-color: var(--accent, #818cf8);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
 
+        /* Small cards (3D section) have no illustration column */
+        .card-small {
+            grid-template-columns: 1fr;
+        }
+
+        /* ── Card internals ── */
         .card-header {
             display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 12px;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
         }
 
         .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem;
             flex-shrink: 0;
+            background: var(--icon-bg, rgba(30,50,90,0.6));
         }
 
         .card-title {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 1.05rem;
+            font-weight: 700;
             color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            line-height: 1.3;
+            margin-bottom: 5px;
         }
 
-        .card-tag {
-            display: inline-block;
-            font-size: 0.7rem;
-            font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin-top: 4px;
+        /* Badges */
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.62rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+            background: rgba(74,222,128,0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74,222,128,0.3);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #4ade80;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .wip-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 0.62rem; font-weight: 600;
+            padding: 2px 8px; border-radius: 20px;
+            background: rgba(251,191,36,0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251,191,36,0.2);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .card-tags {
+            display: flex; flex-wrap: wrap; gap: 5px;
+        }
+
+        .tag {
+            font-size: 0.65rem; font-weight: 500;
+            padding: 2px 8px; border-radius: 6px;
+            background: var(--tag-bg, rgba(30,50,90,0.7));
+            color: var(--accent, #818cf8);
         }
 
         .card-desc {
             color: #94a3b8;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            margin-bottom: 16px;
+            font-size: 0.87rem;
+            line-height: 1.7;
+            margin: 10px 0 14px;
         }
 
-        .card-links {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+        /* ── Buttons ── */
+        .card-links { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .card-links a {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            font-weight: 500;
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 15px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 600;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.18s;
+        }
+
+        .btn-live {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #fff;
+            box-shadow: 0 0 18px rgba(16,185,129,0.3);
+        }
+        .btn-live:hover {
+            box-shadow: 0 0 28px rgba(16,185,129,0.5);
+            filter: brightness(1.1);
         }
 
         .btn-primary {
-            background: #818cf8;
+            background: var(--accent, #818cf8);
             color: #fff;
         }
-        .btn-primary:hover { background: #6366f1; }
+        .btn-primary:hover { filter: brightness(1.12); }
 
         .btn-secondary {
-            background: #334155;
-            color: #cbd5e1;
+            background: #131e2e;
+            color: #94a3b8;
+            border: 1px solid #1e2e42;
         }
-        .btn-secondary:hover { background: #475569; }
+        .btn-secondary:hover { background: #1a2840; color: #cbd5e1; }
 
-        .section-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #64748b;
-            margin-bottom: 16px;
-            margin-top: 32px;
+        /* ── Illustration box ── */
+        .card-illus {
+            width: 78px; height: 78px;
+            border-radius: 12px;
+            background: var(--icon-bg, rgba(30,50,90,0.4));
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
         }
 
-        /* Color themes per project */
-        .theme-blue .card-icon { background: #1e3a5f; color: #60a5fa; }
-        .theme-blue .card-tag { background: #1e3a5f; color: #60a5fa; }
+        /* ── Color themes ── */
+        .t-purple  { --accent:#c084fc; --icon-bg:rgba(59,20,90,0.5);  --tag-bg:rgba(59,20,90,0.7); }
+        .t-cyan    { --accent:#22d3ee; --icon-bg:rgba(14,60,80,0.5);  --tag-bg:rgba(14,60,80,0.7); }
+        .t-indigo  { --accent:#818cf8; --icon-bg:rgba(25,25,90,0.5);  --tag-bg:rgba(25,25,90,0.7); }
+        .t-blue    { --accent:#60a5fa; --icon-bg:rgba(20,50,90,0.5);  --tag-bg:rgba(20,50,90,0.7); }
+        .t-teal    { --accent:#2dd4bf; --icon-bg:rgba(10,70,65,0.5);  --tag-bg:rgba(10,70,65,0.7); }
+        .t-amber   { --accent:#fbbf24; --icon-bg:rgba(80,55,10,0.5);  --tag-bg:rgba(80,55,10,0.7); }
+        .t-pink    { --accent:#f472b6; --icon-bg:rgba(90,20,55,0.5);  --tag-bg:rgba(90,20,55,0.7); }
+        .t-green   { --accent:#4ade80; --icon-bg:rgba(20,80,45,0.5);  --tag-bg:rgba(20,80,45,0.7); }
+        .t-red     { --accent:#f87171; --icon-bg:rgba(90,20,20,0.5);  --tag-bg:rgba(90,20,20,0.7); }
+        .t-orange  { --accent:#fb923c; --icon-bg:rgba(90,40,10,0.5);  --tag-bg:rgba(90,40,10,0.7); }
 
-        .theme-purple .card-icon { background: #3b1f5e; color: #c084fc; }
-        .theme-purple .card-tag { background: #3b1f5e; color: #c084fc; }
-
-        .theme-pink .card-icon { background: #5e1f3b; color: #f472b6; }
-        .theme-pink .card-tag { background: #5e1f3b; color: #f472b6; }
-
-        .theme-green .card-icon { background: #1f5e3b; color: #4ade80; }
-        .theme-green .card-tag { background: #1f5e3b; color: #4ade80; }
-
-        .theme-amber .card-icon { background: #5e4b1f; color: #fbbf24; }
-        .theme-amber .card-tag { background: #5e4b1f; color: #fbbf24; }
-
-        .theme-cyan .card-icon { background: #1f4b5e; color: #22d3ee; }
-        .theme-cyan .card-tag { background: #1f4b5e; color: #22d3ee; }
-
-        .theme-red .card-icon { background: #5e1f1f; color: #f87171; }
-        .theme-red .card-tag { background: #5e1f1f; color: #f87171; }
-
-        .theme-indigo .card-icon { background: #1f1f5e; color: #818cf8; }
-        .theme-indigo .card-tag { background: #1f1f5e; color: #818cf8; }
-
+        /* ── Footer ── */
         footer {
             text-align: center;
-            margin-top: 48px;
+            margin-top: 56px;
             padding-top: 24px;
-            border-top: 1px solid #1e293b;
-            color: #475569;
-            font-size: 0.82rem;
+            border-top: 1px solid #1a2840;
+            color: #374151;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Vibe Coding Projects</h1>
-            <p>A collection of apps built with AI-assisted development</p>
-        </header>
+<div class="container">
 
-        <div class="section-title">Applications</div>
-        <div class="projects">
+    <header>
+        <h1>✦ Vibe Coding</h1>
+        <p class="header-sub">פרויקטים שנבנו עם AI — מהרעיון לקוד בשעות</p>
+        <p class="header-meta">Built with Claude Code &bull; אורי מוסנזון</p>
+        <div class="header-stats">
+            <div class="stat"><div class="stat-num">19</div><div class="stat-label">פרויקטים</div></div>
+            <div class="stat"><div class="stat-num">2</div><div class="stat-label">Live Demos</div></div>
+            <div class="stat"><div class="stat-num">6</div><div class="stat-label">AI-Powered</div></div>
+            <div class="stat"><div class="stat-num">5</div><div class="stat-label">קטגוריות</div></div>
+        </div>
+    </header>
 
-            <div class="project-card theme-blue">
+    <!-- ══════════════════════════════════════════
+         1. AI PROJECTS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+        <span class="section-emoji">🤖</span>
+        <span class="section-title">פרויקטי AI</span>
+        <span class="section-count">6 פרויקטים</span>
+    </div>
+    <div class="projects">
+
+        <!-- Karaoke — LIVE -->
+        <div class="project-card t-purple">
+            <div>
                 <div class="card-header">
-                    <div class="card-icon">&#128269;</div>
+                    <div class="card-icon">🎤</div>
+                    <div>
+                        <div class="card-title">
+                            Karaoke — סנכרון מילים
+                            <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Flask</span>
+                            <span class="tag">yt-dlp</span>
+                            <span class="tag">LRClib API</span>
+                            <span class="tag">HTML5 Audio</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    מקלידים שם שיר — האפליקציה מורידה את האודיו מיוטיוב ומציגה מילים מסונכרנות. כל מילה מתהדרת בצבע בדיוק כשהיא נשמעת.
+                </div>
+                <div class="card-links">
+                    <a href="https://fun-production-d221.up.railway.app/" class="btn-live" target="_blank">▶ פתח Live Demo</a>
+                    <a href="karaoke/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Waveform illustration -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <line x1="8"  y1="36" x2="8"  y2="36" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="15" y1="28" x2="15" y2="44" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+                    <line x1="22" y1="20" x2="22" y2="52" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="29" y1="28" x2="29" y2="44" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+                    <line x1="36" y1="16" x2="36" y2="56" stroke="#c084fc" stroke-width="3"   stroke-linecap="round"/>
+                    <line x1="43" y1="24" x2="43" y2="48" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+                    <line x1="50" y1="20" x2="50" y2="52" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="57" y1="28" x2="57" y2="44" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+                    <line x1="64" y1="30" x2="64" y2="42" stroke="#c084fc" stroke-width="2"   stroke-linecap="round" opacity=".4"/>
+                    <text x="25" y="45" font-size="18" fill="#c084fc" opacity=".3">♪</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Word Embeddings -->
+        <div class="project-card t-cyan">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🧠</div>
+                    <div>
+                        <div class="card-title">Word Embeddings — שיכון מילים</div>
+                        <div class="card-tags">
+                            <span class="tag">Flask</span>
+                            <span class="tag">GloVe</span>
+                            <span class="tag">sklearn</span>
+                            <span class="tag">PCA / t-SNE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    <strong style="color:#22d3ee">king − man + woman = queen.</strong><br>
+                    אפליקציית לימוד אינטראקטיבית: מדגימה word embeddings עם אנלוגיות, חיפוש שכנים קרובים, ויזואליזציה 2D וקוויז אוטומטי.
+                </div>
+                <div class="card-links">
+                    <a href="embedding/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Word vector network -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <circle cx="36" cy="36" r="6"   fill="#22d3ee" opacity=".9"/>
+                    <circle cx="14" cy="20" r="3.5" fill="#22d3ee" opacity=".5"/>
+                    <circle cx="58" cy="20" r="3.5" fill="#22d3ee" opacity=".5"/>
+                    <circle cx="14" cy="52" r="3.5" fill="#22d3ee" opacity=".5"/>
+                    <circle cx="58" cy="52" r="3.5" fill="#22d3ee" opacity=".5"/>
+                    <circle cx="36" cy="10" r="2.5" fill="#22d3ee" opacity=".4"/>
+                    <circle cx="36" cy="62" r="2.5" fill="#22d3ee" opacity=".4"/>
+                    <line x1="36" y1="30" x2="14" y2="23" stroke="#22d3ee" stroke-width="1" opacity=".35"/>
+                    <line x1="36" y1="30" x2="58" y2="23" stroke="#22d3ee" stroke-width="1" opacity=".35"/>
+                    <line x1="36" y1="42" x2="14" y2="49" stroke="#22d3ee" stroke-width="1" opacity=".35"/>
+                    <line x1="36" y1="42" x2="58" y2="49" stroke="#22d3ee" stroke-width="1" opacity=".35"/>
+                    <line x1="36" y1="30" x2="36" y2="13" stroke="#22d3ee" stroke-width="1" opacity=".3"/>
+                    <line x1="36" y1="42" x2="36" y2="59" stroke="#22d3ee" stroke-width="1" opacity=".3"/>
+                    <!-- analogy arrow -->
+                    <path d="M 18 36 L 54 36" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3,2" opacity=".6"/>
+                    <path d="M 50 32 L 54 36 L 50 40" stroke="#22d3ee" stroke-width="1.5" fill="none" opacity=".6"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Golem -->
+        <div class="project-card t-indigo">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🤖</div>
+                    <div>
+                        <div class="card-title">
+                            Golem — תוסף VS Code
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">TypeScript</span>
+                            <span class="tag">VS Code API</span>
+                            <span class="tag">Claude API</span>
+                            <span class="tag">RTL</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    תוסף קוד-פתוח ל-VS Code עם עוזר קידוד אגנטי מבוסס Claude. תמיכה מלאה ב-RTL עברית — שיחה עם AI ישירות בתוך סביבת הפיתוח.
+                </div>
+                <div class="card-links">
+                    <a href="golem/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- VS Code window with AI -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="10" y="14" width="52" height="44" rx="6" stroke="#818cf8" stroke-width="1.5" fill="rgba(25,25,90,.15)"/>
+                    <rect x="10" y="14" width="52" height="12" rx="6" fill="rgba(129,140,248,.2)"/>
+                    <rect x="10" y="20" width="52" height="6"  fill="rgba(129,140,248,.2)"/>
+                    <circle cx="18" cy="20" r="2.5" fill="#f87171" opacity=".7"/>
+                    <circle cx="26" cy="20" r="2.5" fill="#fbbf24" opacity=".7"/>
+                    <circle cx="34" cy="20" r="2.5" fill="#4ade80" opacity=".7"/>
+                    <rect x="16" y="33" width="26" height="2.5" rx="1.5" fill="#818cf8" opacity=".5"/>
+                    <rect x="16" y="39" width="18" height="2.5" rx="1.5" fill="#818cf8" opacity=".35"/>
+                    <rect x="16" y="45" width="22" height="2.5" rx="1.5" fill="#818cf8" opacity=".4"/>
+                    <circle cx="53" cy="47" r="9"  fill="rgba(25,25,90,.8)" stroke="#818cf8" stroke-width="1.5"/>
+                    <text x="48.5" y="51" font-size="8.5" fill="#818cf8" font-weight="bold">AI</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Sidekick -->
+        <div class="project-card t-blue">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🔍</div>
+                    <div>
+                        <div class="card-title">
+                            Sidekick — דיבאג אינטגרציות
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Flask</span>
+                            <span class="tag">Selenium</span>
+                            <span class="tag">Claude API</span>
+                            <span class="tag">Pillow</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    כלי קוד-פתוח לדיבאג אינטגרציות: מצלם את הדפדפן ברציפות, שולח ל-AI, מזהה שגיאות אוטומטית ואפילו מגיב עצמאית דרך Selenium.
+                </div>
+                <div class="card-links">
+                    <a href="sidekick/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Browser + magnifying glass with eye -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="8"  y="10" width="46" height="36" rx="5" stroke="#60a5fa" stroke-width="1.5" fill="rgba(20,50,90,.3)"/>
+                    <rect x="14" y="16" width="34" height="7"  rx="3.5" fill="rgba(20,50,90,.5)" stroke="#60a5fa" stroke-width=".8" opacity=".6"/>
+                    <rect x="10" y="28" width="20" height="2" rx="1" fill="#60a5fa" opacity=".3"/>
+                    <rect x="10" y="33" width="14" height="2" rx="1" fill="#60a5fa" opacity=".2"/>
+                    <rect x="10" y="38" width="16" height="2" rx="1" fill="#60a5fa" opacity=".25"/>
+                    <!-- error bubble -->
+                    <circle cx="36" cy="36" r="5" fill="#f87171" opacity=".8"/>
+                    <text x="34.2" y="39.5" font-size="7" fill="white" font-weight="bold">!</text>
+                    <!-- magnifying glass -->
+                    <circle cx="52" cy="52" r="12" fill="rgba(20,50,90,.6)" stroke="#60a5fa" stroke-width="1.5"/>
+                    <circle cx="52" cy="52" r="5"  fill="rgba(96,165,250,.25)"/>
+                    <circle cx="52" cy="52" r="2.5" fill="#60a5fa"/>
+                    <line x1="60" y1="60" x2="67" y2="67" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- WikiVoice -->
+        <div class="project-card t-teal">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🔊</div>
+                    <div>
+                        <div class="card-title">
+                            WikiVoice — ויקיפדיה מדברת
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Python</span>
+                            <span class="tag">Kokoro-82M TTS</span>
+                            <span class="tag">Wikipedia API</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    קורא מאמרי ויקיפדיה בקול — מקומי, חינמי, ובפרוזודיה טבעית. מבוסס על מודל Kokoro-82M שרץ על CPU ללא אינטרנט.
+                </div>
+                <div class="card-links">
+                    <a href="wikivoice/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Book + sound waves -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="10" y="14" width="28" height="42" rx="3" fill="rgba(10,70,65,.5)" stroke="#2dd4bf" stroke-width="1.5"/>
+                    <line x1="24" y1="14" x2="24" y2="56" stroke="#2dd4bf" stroke-width="1" opacity=".4"/>
+                    <rect x="13" y="20" width="8"  height="1.5" rx="1" fill="#2dd4bf" opacity=".4"/>
+                    <rect x="13" y="24" width="10" height="1.5" rx="1" fill="#2dd4bf" opacity=".3"/>
+                    <rect x="13" y="28" width="7"  height="1.5" rx="1" fill="#2dd4bf" opacity=".4"/>
+                    <rect x="13" y="32" width="9"  height="1.5" rx="1" fill="#2dd4bf" opacity=".3"/>
+                    <!-- Sound waves -->
+                    <path d="M 46 32 C 50 30 50 42 46 40" stroke="#2dd4bf" stroke-width="2"   fill="none" stroke-linecap="round"/>
+                    <path d="M 46 27 C 55 23 55 49 46 45" stroke="#2dd4bf" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+                    <path d="M 46 22 C 62 16 62 56 46 50" stroke="#2dd4bf" stroke-width="1"   fill="none" stroke-linecap="round" opacity=".3"/>
+                    <rect x="43" y="32" width="3" height="8" rx="1.5" fill="#2dd4bf" opacity=".8"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Claude Auto -->
+        <div class="project-card t-amber">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🚗</div>
+                    <div>
+                        <div class="card-title">
+                            Claude Auto — עוזר קולי לנהיגה
+                            <span class="wip-badge">⚙ בתכנון</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Android</span>
+                            <span class="tag">Kotlin</span>
+                            <span class="tag">Porcupine</span>
+                            <span class="tag">Vosk STT</span>
+                            <span class="tag">Claude API</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    עוזר AI לנהיגה ידיים-פנויות: שיחות ראש-לרגל, שליחת ווצאפ בקול, ניווט — כל זה מופעל עם מילת גישה בלי לגעת בטלפון.
+                </div>
+                <div class="card-links">
+                    <a href="claude-auto/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Steering wheel + mic -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <circle cx="36" cy="36" r="22" stroke="#fbbf24" stroke-width="2" fill="rgba(80,55,10,.3)" opacity=".8"/>
+                    <circle cx="36" cy="36" r="10" stroke="#fbbf24" stroke-width="1.5" fill="rgba(80,55,10,.5)"/>
+                    <line x1="36" y1="26" x2="36" y2="14" stroke="#fbbf24" stroke-width="2.5"/>
+                    <line x1="27" y1="43" x2="16" y2="52" stroke="#fbbf24" stroke-width="2.5"/>
+                    <line x1="45" y1="43" x2="56" y2="52" stroke="#fbbf24" stroke-width="2.5"/>
+                    <!-- mic -->
+                    <rect x="32" y="29" width="8" height="12" rx="4" fill="#fbbf24" opacity=".7"/>
+                    <path d="M 28 39 C 28 46 44 46 44 39" stroke="#fbbf24" stroke-width="1.5" fill="none"/>
+                    <line x1="36" y1="46" x2="36" y2="50" stroke="#fbbf24" stroke-width="1.5"/>
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /AI projects -->
+
+
+    <!-- ══════════════════════════════════════════
+         2. FULL-STACK APPS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+        <span class="section-emoji">🌐</span>
+        <span class="section-title">אפליקציות מלאות</span>
+        <span class="section-count">3 פרויקטים</span>
+    </div>
+    <div class="projects">
+
+        <!-- Inbal -->
+        <div class="project-card t-pink">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🏺</div>
+                    <div>
+                        <div class="card-title">
+                            Inbal — אתר קרמיקה
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Next.js</span>
+                            <span class="tag">Prisma</span>
+                            <span class="tag">NextAuth</span>
+                            <span class="tag">Twilio</span>
+                            <span class="tag">Tailwind</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    פלטפורמה לאמנית קרמיקה — גלריה, ניהול הזמנות, תקשורת עם לקוחות, ואזור ניהול מאובטח עם אימות משתמשים ו-SMS דרך Twilio.
+                </div>
+                <div class="card-links">
+                    <a href="inbal/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Ceramic vase -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <ellipse cx="36" cy="57" rx="18" ry="4" fill="#f472b6" opacity=".25"/>
+                    <path d="M 22 54 Q 16 42 18 28 Q 20 16 36 13 Q 52 16 54 28 Q 56 42 50 54 Z" fill="rgba(90,20,55,.5)" stroke="#f472b6" stroke-width="1.5"/>
+                    <path d="M 24 36 Q 28 31 32 36 Q 36 41 40 36 Q 44 31 48 36" stroke="#f472b6" stroke-width="1.1" fill="none" opacity=".6"/>
+                    <path d="M 23 44 Q 27 40 31 44 Q 35 48 39 44 Q 43 40 49 44" stroke="#f472b6" stroke-width=".9" fill="none" opacity=".4"/>
+                    <ellipse cx="36" cy="14" rx="10" ry="3.5" fill="rgba(90,20,55,.7)" stroke="#f472b6" stroke-width="1.5"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Road to Recovery -->
+        <div class="project-card t-green">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🚑</div>
+                    <div>
+                        <div class="card-title">
+                            בדרך להחלמה
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">Next.js</span>
+                            <span class="tag">Supabase</span>
+                            <span class="tag">TypeScript</span>
+                            <span class="tag">Tailwind</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    פלטפורמה לתיאום נסיעות התנדבותיות: מחברת בין חולים שזקוקים להסעה לטיפולים (כימותרפיה, דיאליזה) לבין מתנדבים.
+                </div>
+                <div class="card-links">
+                    <a href="road-to-recovery/" class="btn-secondary">📁 קוד מקור</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Car + heart on road -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <path d="M 4 58 Q 36 48 68 58" stroke="#4ade80" stroke-width="1.5" fill="none" opacity=".4"/>
+                    <rect x="14" y="38" width="44" height="18" rx="5" fill="rgba(20,80,45,.6)" stroke="#4ade80" stroke-width="1.5"/>
+                    <path d="M 20 38 Q 24 24 36 22 Q 48 24 52 38 Z" fill="rgba(20,80,45,.4)" stroke="#4ade80" stroke-width="1.5"/>
+                    <circle cx="22" cy="56" r="5.5" fill="rgba(20,80,45,.8)" stroke="#4ade80" stroke-width="1.5"/>
+                    <circle cx="50" cy="56" r="5.5" fill="rgba(20,80,45,.8)" stroke="#4ade80" stroke-width="1.5"/>
+                    <!-- heart -->
+                    <path d="M 32 30 Q 32 26 36 26 Q 40 26 40 30 Q 40 35 36 38 Q 32 35 32 30 Z" fill="#4ade80" opacity=".85"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Smart Business Search -->
+        <div class="project-card t-blue">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🗺️</div>
                     <div>
                         <div class="card-title">Smart Business Search</div>
-                        <span class="card-tag">Google Maps &bull; Gemini AI &bull; Multilingual</span>
+                        <div class="card-tags">
+                            <span class="tag">Google Maps</span>
+                            <span class="tag">Gemini AI</span>
+                            <span class="tag">Flutter</span>
+                            <span class="tag">Multilingual</span>
+                        </div>
                     </div>
                 </div>
                 <div class="card-desc">
-                    AI-powered business search on a map. Type natural language queries like
-                    "Italian restaurants open now" and get results with ratings, directions, and details.
-                    Supports English, Hebrew, and Spanish with full RTL support. Also available as a native Android app (Flutter).
+                    חיפוש עסקים בשפה טבעית על גבי מפה — "מסעדות איטלקיות פתוחות עכשיו". תמיכה בעברית, אנגלית וספרדית. גם כאפליקציית Flutter לאנדרואיד.
                 </div>
                 <div class="card-links">
-                    <a href="ori/index.html" class="btn-primary">&#9654; Open Web App</a>
-                    <a href="ori_android/" class="btn-secondary">&#128241; Android Source (Flutter)</a>
+                    <a href="ori/index.html" class="btn-primary">▶ פתח Web App</a>
+                    <a href="ori_android/" class="btn-secondary">📱 Android (Flutter)</a>
                 </div>
             </div>
-
-            <div class="project-card theme-purple">
-                <div class="card-header">
-                    <div class="card-icon">&#10024;</div>
-                    <div>
-                        <div class="card-title">Bezier Curve Animation Editor</div>
-                        <span class="card-tag">Canvas &bull; Animation &bull; Interactive</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    An interactive Bezier curve animation editor with multiple versions.
-                    Create, edit, and animate curves with control points. Includes a timeline-based version
-                    with keyframe support.
-                </div>
-                <div class="card-links">
-                    <a href="animate/anim9.html" class="btn-primary">&#9654; Latest (Timeline)</a>
-                    <a href="animate/anim8.html" class="btn-secondary">v8 - Enhanced</a>
-                    <a href="animate/anim7.html" class="btn-secondary">v7 - Improved</a>
-                    <a href="animate/anim6.html" class="btn-secondary">v6 - Basic</a>
-                </div>
+            <div class="card-illus">
+                <!-- Map + pin + search -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="8" y="10" width="56" height="52" rx="6" fill="rgba(20,50,90,.4)" stroke="#60a5fa" stroke-width="1" opacity=".6"/>
+                    <line x1="8"  y1="36" x2="64" y2="36" stroke="#60a5fa" stroke-width="1.2" opacity=".25"/>
+                    <line x1="36" y1="10" x2="36" y2="62" stroke="#60a5fa" stroke-width="1.2" opacity=".25"/>
+                    <circle cx="36" cy="32" r="8"   fill="rgba(20,50,90,.8)" stroke="#60a5fa" stroke-width="2"/>
+                    <circle cx="36" cy="32" r="3.5" fill="#60a5fa"/>
+                    <path d="M 36 40 L 36 52" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+                    <circle cx="54" cy="18" r="7"   stroke="#60a5fa" stroke-width="1.5" fill="rgba(20,50,90,.5)" opacity=".7"/>
+                    <line x1="59" y1="24" x2="65" y2="30" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+                </svg>
             </div>
-
         </div>
 
-        <div class="section-title">History &amp; Education</div>
-        <div class="projects">
+    </div><!-- /full-stack -->
 
-            <div class="project-card theme-amber">
+
+    <!-- ══════════════════════════════════════════
+         3. GAMES & ADVENTURES
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+        <span class="section-emoji">🎮</span>
+        <span class="section-title">משחקים והרפתקאות</span>
+        <span class="section-count">4 פרויקטים</span>
+    </div>
+    <div class="projects">
+
+        <!-- Pipin -->
+        <div class="project-card t-amber">
+            <div>
                 <div class="card-header">
-                    <div class="card-icon">&#127760;</div>
+                    <div class="card-icon">🧙</div>
                     <div>
-                        <div class="card-title">Historical Empires on the Map</div>
-                        <span class="card-tag">Maps &bull; History &bull; Multilingual</span>
+                        <div class="card-title">
+                            פיפין — הרפתקה בארץ התיכונה
+                            <span class="wip-badge">⚙ בפיתוח</span>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">HTML/JS</span>
+                            <span class="tag">Gemini API</span>
+                            <span class="tag">Image Gen</span>
+                            <span class="tag">RTL</span>
+                        </div>
                     </div>
                 </div>
                 <div class="card-desc">
-                    Interactive map displaying historical empires with a timeline and filtering controls.
-                    Explore the rise and fall of civilizations across time. Available in English, Hebrew, and Spanish.
+                    משחק הרפתקה טקסטואלי-ויזואלי: משחקים בתפקיד פיפין בתקופת שר הטבעות. נרטיב דינמי מבוסס Gemini, תמונות AI לכל מיקום, 30+ לוקיישנים.
                 </div>
                 <div class="card-links">
-                    <a href="empires.html" class="btn-primary">&#9654; English</a>
-                    <a href="empires_heb.html" class="btn-secondary">&#127470;&#127473; Hebrew</a>
-                    <a href="empires_es.html" class="btn-secondary">&#127466;&#127480; Spanish</a>
+                    <a href="pipin/" class="btn-secondary">📁 קוד מקור</a>
                 </div>
             </div>
-
+            <div class="card-illus">
+                <!-- Mountains + ring + hobbit -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <polygon points="6,62 22,28 38,62"  fill="rgba(80,55,10,.4)" stroke="#fbbf24" stroke-width="1.2" opacity=".7"/>
+                    <polygon points="22,62 44,18 66,62" fill="rgba(80,55,10,.6)" stroke="#fbbf24" stroke-width="1.2"/>
+                    <circle cx="14" cy="14" r="1.5" fill="#fbbf24" opacity=".8"/>
+                    <circle cx="26" cy="8"  r="1"   fill="#fbbf24" opacity=".6"/>
+                    <circle cx="58" cy="12" r="1.5" fill="#fbbf24" opacity=".7"/>
+                    <circle cx="50" cy="6"  r="1"   fill="#fbbf24" opacity=".5"/>
+                    <!-- ring -->
+                    <circle cx="56" cy="28" r="9"  stroke="#fbbf24" stroke-width="1.5" fill="none" opacity=".5"/>
+                    <circle cx="56" cy="28" r="4.5" stroke="#fbbf24" stroke-width="1" fill="rgba(80,55,10,.5)"/>
+                    <!-- hobbit figure -->
+                    <circle cx="20" cy="50" r="3" fill="#fbbf24" opacity=".6"/>
+                    <line x1="20" y1="53" x2="20" y2="63" stroke="#fbbf24" stroke-width="1.5" opacity=".6"/>
+                    <line x1="15" y1="57" x2="25" y2="57" stroke="#fbbf24" stroke-width="1.5" opacity=".6"/>
+                </svg>
+            </div>
         </div>
 
-        <div class="section-title">Math Visualizations</div>
-        <div class="projects">
-
-            <div class="project-card theme-cyan">
+        <!-- Dirt Bike -->
+        <div class="project-card t-red">
+            <div>
                 <div class="card-header">
-                    <div class="card-icon">&#128290;</div>
-                    <div>
-                        <div class="card-title">Prime Number Spirals</div>
-                        <span class="card-tag">Canvas &bull; Math &bull; Interactive</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    Visualizations of prime numbers in spiral patterns. Includes an advanced number spiral
-                    explorer and a large-scale hexagonal prime spiral with interactive zoom and rendering controls.
-                </div>
-                <div class="card-links">
-                    <a href="primes.html" class="btn-primary">&#9654; Number Spirals</a>
-                    <a href="hex_primes.html" class="btn-secondary">Hexagonal Spiral</a>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="section-title">3D Experiments</div>
-        <div class="projects">
-
-            <div class="project-card theme-pink">
-                <div class="card-header">
-                    <div class="card-icon">&#127801;</div>
-                    <div>
-                        <div class="card-title">3D Rose &amp; Heart</div>
-                        <span class="card-tag">Three.js &bull; 3D &bull; WebGL</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    A 3D animated rose and heart rendered with Three.js and WebGL.
-                    Features particle effects and smooth animations on a dark background.
-                </div>
-                <div class="card-links">
-                    <a href="tmp/v.html" class="btn-primary">&#9654; Open</a>
-                </div>
-            </div>
-
-            <div class="project-card theme-green">
-                <div class="card-header">
-                    <div class="card-icon">&#127756;</div>
-                    <div>
-                        <div class="card-title">Mind, Heart, Body, Spirit in Space</div>
-                        <span class="card-tag">Three.js &bull; 3D &bull; Animated</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    An animated 3D scene exploring the themes of Mind, Heart, Body, and Spirit
-                    set in a cosmic space environment. Built with Three.js and Tailwind CSS.
-                </div>
-                <div class="card-links">
-                    <a href="tmp/karina.html" class="btn-primary">&#9654; Open</a>
-                </div>
-            </div>
-
-            <div class="project-card theme-blue">
-                <div class="card-header">
-                    <div class="card-icon">&#128640;</div>
-                    <div>
-                        <div class="card-title">3D Flying Motorcycle</div>
-                        <span class="card-tag">Canvas &bull; WebGL &bull; 3D</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    A 3D flying motorcycle simulation with real-time rendering and controls.
-                    Navigate through a 3D environment with keyboard controls.
-                </div>
-                <div class="card-links">
-                    <a href="t.html" class="btn-primary">&#9654; Open</a>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="section-title">Games &amp; Simulations</div>
-        <div class="projects">
-
-            <div class="project-card theme-red">
-                <div class="card-header">
-                    <div class="card-icon">&#127947;</div>
+                    <div class="card-icon">🏍️</div>
                     <div>
                         <div class="card-title">Dirt Bike Racing</div>
-                        <span class="card-tag">Canvas &bull; Physics &bull; Game</span>
+                        <div class="card-tags">
+                            <span class="tag">Canvas</span>
+                            <span class="tag">Physics</span>
+                            <span class="tag">Game</span>
+                        </div>
                     </div>
                 </div>
                 <div class="card-desc">
-                    A canvas-based dirt bike racing game with 2D physics simulation.
-                    Control your motorcycle through challenging terrain with realistic physics mechanics.
+                    משחק מרוצי אופנועים עם פיזיקת 2D. שולטים באופנוע בשטח מאתגר עם הדמיית פיזיקה ריאליסטית.
                 </div>
                 <div class="card-links">
-                    <a href="mmx.html" class="btn-primary">&#9654; Play</a>
+                    <a href="mmx.html" class="btn-primary">▶ שחק עכשיו</a>
                 </div>
             </div>
-
-            <div class="project-card theme-indigo">
-                <div class="card-header">
-                    <div class="card-icon">&#129513;</div>
-                    <div>
-                        <div class="card-title">Sudoku with Smart Hints</div>
-                        <span class="card-tag">Logic &bull; Puzzle &bull; Interactive</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    An interactive Sudoku puzzle game with an intelligent hint system.
-                    Features input validation, smart hints, and cell highlighting for correct and incorrect entries.
-                </div>
-                <div class="card-links">
-                    <a href="soduku.html" class="btn-primary">&#9654; Play</a>
-                </div>
+            <div class="card-illus">
+                <!-- Motorcycle on terrain -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <path d="M 0 60 Q 18 46 36 56 Q 54 66 72 50" stroke="#f87171" stroke-width="1.5" fill="none" opacity=".5"/>
+                    <path d="M 0 65 Q 18 51 36 61 Q 54 71 72 55 L 72 72 L 0 72 Z" fill="rgba(90,20,20,.3)"/>
+                    <ellipse cx="36" cy="42" rx="17" ry="7" fill="rgba(90,20,20,.5)" stroke="#f87171" stroke-width="1.5" transform="rotate(-8 36 42)"/>
+                    <circle cx="22" cy="51" r="7" stroke="#f87171" stroke-width="2" fill="rgba(90,20,20,.7)"/>
+                    <circle cx="22" cy="51" r="3" fill="#f87171" opacity=".5"/>
+                    <circle cx="50" cy="49" r="7" stroke="#f87171" stroke-width="2" fill="rgba(90,20,20,.7)"/>
+                    <circle cx="50" cy="49" r="3" fill="#f87171" opacity=".5"/>
+                    <circle cx="38" cy="30" r="5" fill="#f87171" opacity=".6"/>
+                    <path d="M 34 35 Q 36 42 42 38" stroke="#f87171" stroke-width="1.5" fill="none" opacity=".7"/>
+                </svg>
             </div>
-
-            <div class="project-card theme-amber">
-                <div class="card-header">
-                    <div class="card-icon">&#9788;</div>
-                    <div>
-                        <div class="card-title">Solar System Simulation</div>
-                        <span class="card-tag">Canvas &bull; Astronomy &bull; Animated</span>
-                    </div>
-                </div>
-                <div class="card-desc">
-                    A real-time simulation of the solar system with planetary orbits.
-                    Adjust simulation parameters and observe the motion of planets around the sun.
-                </div>
-                <div class="card-links">
-                    <a href="s1.html" class="btn-primary">&#9654; Open</a>
-                </div>
-            </div>
-
         </div>
 
-        <footer>
-            Built with Claude Code &bull; Vibe Coding
-        </footer>
+        <!-- Sudoku -->
+        <div class="project-card t-indigo">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <div>
+                        <div class="card-title">סודוקו עם רמזים חכמים</div>
+                        <div class="card-tags">
+                            <span class="tag">Vanilla JS</span>
+                            <span class="tag">Logic</span>
+                            <span class="tag">Puzzle</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.
+                </div>
+                <div class="card-links">
+                    <a href="soduku.html" class="btn-primary">▶ שחק עכשיו</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Sudoku grid -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect x="10" y="10" width="52" height="52" rx="4" stroke="#818cf8" stroke-width="1.5" fill="rgba(25,25,90,.3)"/>
+                    <line x1="27" y1="10" x2="27" y2="62" stroke="#818cf8" stroke-width=".7" opacity=".4"/>
+                    <line x1="44" y1="10" x2="44" y2="62" stroke="#818cf8" stroke-width=".7" opacity=".4"/>
+                    <line x1="10" y1="27" x2="62" y2="27" stroke="#818cf8" stroke-width=".7" opacity=".4"/>
+                    <line x1="10" y1="44" x2="62" y2="44" stroke="#818cf8" stroke-width=".7" opacity=".4"/>
+                    <text x="14" y="23" font-size="10" fill="#818cf8" opacity=".8">4</text>
+                    <text x="31" y="23" font-size="10" fill="#818cf8" opacity=".4">?</text>
+                    <text x="48" y="23" font-size="10" fill="#818cf8" opacity=".8">7</text>
+                    <text x="14" y="40" font-size="10" fill="#818cf8" opacity=".4">?</text>
+                    <text x="31" y="40" font-size="10" fill="#4ade80" opacity=".95">5</text>
+                    <text x="48" y="57" font-size="10" fill="#818cf8" opacity=".8">3</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Solar System -->
+        <div class="project-card t-orange">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🪐</div>
+                    <div>
+                        <div class="card-title">Solar System Simulation</div>
+                        <div class="card-tags">
+                            <span class="tag">Canvas</span>
+                            <span class="tag">Astronomy</span>
+                            <span class="tag">Real-time</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    סימולציה real-time של מערכת השמש עם מסלולים פלנטריים. ניתן לשנות פרמטרים ולצפות בתנועת כוכבי הלכת.
+                </div>
+                <div class="card-links">
+                    <a href="s1.html" class="btn-primary">▶ פתח</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Solar system -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <circle cx="36" cy="36" r="1" fill="white" opacity=".4"/><circle cx="10" cy="8"  r="1" fill="white" opacity=".4"/>
+                    <circle cx="62" cy="10" r="1" fill="white" opacity=".3"/><circle cx="64" cy="62" r="1" fill="white" opacity=".4"/>
+                    <circle cx="8"  cy="60" r="1" fill="white" opacity=".3"/>
+                    <circle cx="36" cy="36" r="9" fill="#fb923c" opacity=".85"/>
+                    <circle cx="36" cy="36" r="12" fill="none" stroke="#fb923c" stroke-width=".5" opacity=".3"/>
+                    <ellipse cx="36" cy="36" rx="22" ry="9"  stroke="#fb923c" stroke-width=".8" fill="none" opacity=".2" transform="rotate(-15 36 36)"/>
+                    <ellipse cx="36" cy="36" rx="30" ry="13" stroke="#fb923c" stroke-width=".8" fill="none" opacity=".15" transform="rotate(20 36 36)"/>
+                    <circle cx="57" cy="29" r="3"   fill="#60a5fa" opacity=".8"/>
+                    <circle cx="12" cy="48" r="4.5" fill="#f87171" opacity=".6"/>
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /games -->
+
+
+    <!-- ══════════════════════════════════════════
+         4. INTERACTIVE TOOLS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+        <span class="section-emoji">🛠️</span>
+        <span class="section-title">כלים אינטראקטיביים</span>
+        <span class="section-count">3 פרויקטים</span>
     </div>
+    <div class="projects">
+
+        <!-- Bezier -->
+        <div class="project-card t-purple">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">✨</div>
+                    <div>
+                        <div class="card-title">Bezier Curve Animation Editor</div>
+                        <div class="card-tags">
+                            <span class="tag">Canvas</span>
+                            <span class="tag">Animation</span>
+                            <span class="tag">Keyframes</span>
+                            <span class="tag">Timeline</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes. כמה גרסאות עם שיפורים הדרגתיים.
+                </div>
+                <div class="card-links">
+                    <a href="animate/anim9.html" class="btn-primary">▶ גרסה אחרונה</a>
+                    <a href="animate/anim8.html" class="btn-secondary">v8</a>
+                    <a href="animate/anim7.html" class="btn-secondary">v7</a>
+                    <a href="animate/anim6.html" class="btn-secondary">v6</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Bezier curve with control handles -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <path d="M 10 58 C 14 12 58 58 62 14" stroke="#c084fc" stroke-width="2.5" fill="none"/>
+                    <circle cx="10" cy="58" r="4"   fill="#c084fc"/>
+                    <circle cx="62" cy="14" r="4"   fill="#c084fc"/>
+                    <circle cx="14" cy="12" r="3"   stroke="#c084fc" stroke-width="1.5" fill="rgba(59,20,90,.6)"/>
+                    <circle cx="58" cy="58" r="3"   stroke="#c084fc" stroke-width="1.5" fill="rgba(59,20,90,.6)"/>
+                    <line x1="10" y1="58" x2="14" y2="12" stroke="#c084fc" stroke-width="1" opacity=".4" stroke-dasharray="3,2"/>
+                    <line x1="62" y1="14" x2="58" y2="58" stroke="#c084fc" stroke-width="1" opacity=".4" stroke-dasharray="3,2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Empires -->
+        <div class="project-card t-amber">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🌍</div>
+                    <div>
+                        <div class="card-title">Historical Empires on the Map</div>
+                        <div class="card-tags">
+                            <span class="tag">Maps</span>
+                            <span class="tag">History</span>
+                            <span class="tag">Multilingual</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    מפה אינטראקטיבית של אימפריות היסטוריות עם ציר זמן. עקבו אחר עלייתן ונפילתן של ציביליזציות — בעברית, אנגלית וספרדית.
+                </div>
+                <div class="card-links">
+                    <a href="empires.html" class="btn-primary">▶ English</a>
+                    <a href="empires_heb.html" class="btn-secondary">🇮🇱 עברית</a>
+                    <a href="empires_es.html" class="btn-secondary">🇪🇸 Español</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Globe with empire regions -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <circle cx="36" cy="36" r="26" stroke="#fbbf24" stroke-width="1.5" fill="rgba(80,55,10,.2)" opacity=".8"/>
+                    <ellipse cx="36" cy="36" rx="26" ry="10" stroke="#fbbf24" stroke-width=".7" fill="none" opacity=".3"/>
+                    <ellipse cx="36" cy="36" rx="26" ry="20" stroke="#fbbf24" stroke-width=".5" fill="none" opacity=".2"/>
+                    <line x1="36" y1="10" x2="36" y2="62" stroke="#fbbf24" stroke-width=".7" opacity=".3"/>
+                    <ellipse cx="28" cy="32" rx="10" ry="7" fill="#f87171" opacity=".35"/>
+                    <ellipse cx="46" cy="27" rx="8"  ry="6" fill="#60a5fa" opacity=".3"/>
+                    <ellipse cx="32" cy="44" rx="7"  ry="5" fill="#4ade80" opacity=".3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Primes -->
+        <div class="project-card t-cyan">
+            <div>
+                <div class="card-header">
+                    <div class="card-icon">🔢</div>
+                    <div>
+                        <div class="card-title">Prime Number Spirals</div>
+                        <div class="card-tags">
+                            <span class="tag">Canvas</span>
+                            <span class="tag">Math</span>
+                            <span class="tag">Interactive</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-desc">
+                    ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה. כולל ספירלת מספרים מתקדמת וספירלה הקסגונלית בגדול עם זום אינטראקטיבי.
+                </div>
+                <div class="card-links">
+                    <a href="primes.html"     class="btn-primary">▶ Number Spirals</a>
+                    <a href="hex_primes.html" class="btn-secondary">Hexagonal</a>
+                </div>
+            </div>
+            <div class="card-illus">
+                <!-- Spiral with prime dots -->
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <path d="M 36 36 Q 36 28 44 28 Q 52 28 52 36 Q 52 50 36 52 Q 20 52 18 36 Q 16 18 36 16 Q 56 16 60 36"
+                          stroke="#22d3ee" stroke-width="1.5" fill="none" opacity=".7"/>
+                    <circle cx="36" cy="30" r="2.5" fill="#22d3ee"/>
+                    <circle cx="44" cy="36" r="2.5" fill="#22d3ee"/>
+                    <circle cx="40" cy="49" r="2.5" fill="#22d3ee" opacity=".9"/>
+                    <circle cx="24" cy="44" r="2"   fill="#22d3ee" opacity=".8"/>
+                    <circle cx="20" cy="30" r="2"   fill="#22d3ee" opacity=".7"/>
+                    <circle cx="30" cy="18" r="2"   fill="#22d3ee" opacity=".7"/>
+                    <circle cx="52" cy="22" r="2"   fill="#22d3ee" opacity=".8"/>
+                    <circle cx="36" cy="36" r="3.5" fill="#22d3ee"/>
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /tools -->
+
+
+    <!-- ══════════════════════════════════════════
+         5. 3D EXPERIMENTS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+        <span class="section-emoji">🌐</span>
+        <span class="section-title">ניסויי 3D</span>
+        <span class="section-count">3 פרויקטים</span>
+    </div>
+    <div class="projects-mini">
+
+        <div class="project-card card-small t-pink">
+            <div class="card-header">
+                <div class="card-icon">🌹</div>
+                <div>
+                    <div class="card-title">3D Rose &amp; Heart</div>
+                    <div class="card-tags">
+                        <span class="tag">Three.js</span><span class="tag">Particles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-desc">ורד ולב תלת-מימדיים עם אפקט חלקיקים ואנימציה חלקה.</div>
+            <div class="card-links"><a href="tmp/v.html" class="btn-primary">▶ פתח</a></div>
+        </div>
+
+        <div class="project-card card-small t-teal">
+            <div class="card-header">
+                <div class="card-icon">🌌</div>
+                <div>
+                    <div class="card-title">Mind · Heart · Body · Spirit</div>
+                    <div class="card-tags">
+                        <span class="tag">Three.js</span><span class="tag">Animated</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-desc">סצנת 3D אנימציה על תמות של נפש, לב, גוף ורוח — בסביבה קוסמית.</div>
+            <div class="card-links"><a href="tmp/karina.html" class="btn-primary">▶ פתח</a></div>
+        </div>
+
+        <div class="project-card card-small t-blue">
+            <div class="card-header">
+                <div class="card-icon">🏍️</div>
+                <div>
+                    <div class="card-title">3D Flying Motorcycle</div>
+                    <div class="card-tags">
+                        <span class="tag">Canvas</span><span class="tag">WebGL</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-desc">סימולציית נהיגת אופנוע תלת-מימדי עם שליטה במקלדת.</div>
+            <div class="card-links"><a href="t.html" class="btn-primary">▶ פתח</a></div>
+        </div>
+
+    </div><!-- /3D -->
+
+    <footer>
+        ✦ Built with Claude Code &nbsp;&bull;&nbsp; Vibe Coding &nbsp;&bull;&nbsp; אורי מוסנזון
+    </footer>
+
+</div>
 </body>
 </html>
