@@ -1,0 +1,6 @@
+langchain
+langchain-anthropic
+langgraph
+langchain-mcp-adapters
+anthropic
+mcp
