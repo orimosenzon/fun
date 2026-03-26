@@ -1,194 +1,202 @@
-# Nudge — Personal Finance Companion
+<div dir="rtl">
 
-> A gentle nudge in the right direction. No judgment, just support.
+# Nudge — עוזר אישי לניהול כספים
 
-## Vision
+> דחיפה עדינה בכיוון הנכון. בלי שיפוטיות, רק תמיכה.
 
-Nudge is an Android app for personal income and expense management, built around a conversational interface. Instead of manually filling forms and spreadsheets, the user simply *talks* to the app — in whatever language feels natural — and Nudge takes care of the rest.
+## חזון
 
-The core philosophy: **supportive, not judgmental**. Most finance apps make you feel guilty. Nudge learns your life — your income, commitments, constraints, and goals — and helps you navigate with empathy and practical advice.
+Nudge היא אפליקציה לאנדרואיד לניהול הכנסות והוצאות אישיות, המבוססת על ממשק שיחה. במקום למלא טפסים וגיליונות אלקטרוניים ידנית, המשתמש פשוט *מדבר* עם האפליקציה — בשפה הנוחה לו — ו-Nudge מטפלת בכל השאר.
 
-This is a multi-user product, not a personal tool.
+הפילוסופיה המרכזית: **תמיכה, לא שיפוטיות**. רוב אפליקציות הפיננסים גורמות לך להרגיש אשמה. Nudge לומדת את חייך — הכנסות, התחייבויות, אילוצים ומטרות — ועוזרת לך להתנהל בעצות מעשיות ואמפתיות.
+
+זהו מוצר מסחרי המיועד לקהל רחב.
 
 ---
 
-## Core Features (Planned)
+## תכונות מתוכננות
 
-### 1. Natural Language Input
+### 1. קלט בשפה טבעית
 - "קניתי קפה ב-20 שקל"
-- "Got paid today, 12,000"
-- "Bought groceries, around 300"
+- "נכנסה משכורת, 12,000"
+- "קניות, בערך 300"
 
-The user speaks or types freely. Nudge parses intent, amount, category, and date automatically.
+המשתמש מדבר או כותב בחופשיות. Nudge מזהה אוטומטית כוונה, סכום, קטגוריה ותאריך.
 
-### 2. Voice Interface
-- Primary input: voice (speech-to-text)
-- Fallback: text input
-- Supports Hebrew, Arabic, Russian, English (and more via Claude)
+### 2. ממשק קולי
+- קלט ראשי: קול (המרת דיבור לטקסט)
+- חלופה: קלט טקסט
+- תמיכה בעברית, ערבית, רוסית, אנגלית ועוד
 
-**Important:** Claude API is text-only. Voice requires a separate STT/TTS pipeline (see Architecture).
+**חשוב:** Claude API הוא טקסט בלבד. שמע מצריך pipeline נפרד של STT/TTS (ראו ארכיטקטורה).
 
-### 3. Contextual Memory
-Nudge learns and remembers:
-- Recurring income (salary dates, freelance patterns)
-- Fixed commitments (rent, mortgage, subscriptions)
-- Personal constraints ("I'm on a tight budget this month")
-- Financial goals ("saving for a trip")
+### 3. זיכרון הקשרי
+Nudge לומדת וזוכרת:
+- הכנסות קבועות (תאריכי משכורת, תבניות פרילנס)
+- התחייבויות קבועות (שכירות, משכנתא, מנויים)
+- אילוצים אישיים ("אני בתקציב מוגבל החודש")
+- מטרות פיננסיות ("חוסך לטיול")
 
-### 4. Supportive AI Advisor
-- Proactive nudges: "You're on track this week"
-- Gentle alerts: "Looks like you're close to your dining budget — here's a way to balance it out"
-- Tone: warm, practical, never shaming
+### 4. יועץ AI תומך
+- עדכונים חיוביים: "אתה בכיוון הנכון השבוע"
+- התראות עדינות: "נראה שאתה קרוב לתקציב האוכל — הנה דרך להתאזן"
+- טון: חם, מעשי, ללא ביקורת
 
-### 5. Financial Overview
-- Monthly summary (income vs. expenses)
-- Category breakdown
-- Trend insights ("Your grocery spend is 20% lower than last month")
-
----
-
-## Tech Stack
-
-| Layer | Technology | Notes |
-|---|---|---|
-| Mobile | Flutter (Dart) | Android-first, iOS-ready later |
-| AI / Conversation | Claude API (Anthropic) | Text-only: NLU, structured extraction, advice |
-| Speech-to-Text (STT) | Android SpeechRecognizer | Built-in, free, good Hebrew support |
-| Text-to-Speech (TTS) | Android TextToSpeech | Built-in, free — upgrade to Google Cloud TTS if quality insufficient |
-| Local Storage | SQLite via `sqflite` | Privacy-first, works offline |
-| Cloud Sync (optional) | Supabase | Auth + DB + edge functions if multi-device needed |
-| Backend (optional) | Supabase Edge Functions | Claude API calls from server side if needed |
-
-### Why Flutter?
-- Single codebase for Android (and iOS later)
-- Rich UI components, smooth animations
-- Large ecosystem, good Claude/Supabase SDKs
-
-### Why Claude API?
-- Best-in-class multilingual understanding (Hebrew, Arabic, Russian, English)
-- Can be precisely instructed with a system prompt for tone and behavior
-- Long context window — can hold financial history in a conversation
-- Excellent at structured extraction (amount, category, date) from casual speech
-
-### STT / TTS alternatives
-
-| Service | Hebrew | Cost |
-|---|---|---|
-| Android SpeechRecognizer | Good | Free |
-| Google Cloud STT | Excellent | Free up to 60 min/month, then ~$0.006/15 sec |
-| OpenAI Whisper API | Very good | ~$0.006/min |
-| Android TextToSpeech | Fair (robotic) | Free |
-| Google Cloud TTS | Good | Free up to 4M chars/month |
-
-**Recommendation:** start with Android built-ins; upgrade to Google Cloud if quality is insufficient.
+### 5. סקירה פיננסית
+- סיכום חודשי (הכנסות מול הוצאות)
+- פירוט לפי קטגוריות
+- תובנות מגמה ("הוצאות המכולת שלך נמוכות ב-20% מהחודש שעבר")
 
 ---
 
-## Architecture Overview
+## ערימת טכנולוגיות
 
-Claude is **text-in, text-out**. Voice requires a three-stage pipeline:
+| שכבה | טכנולוגיה | הערות |
+|---|---|---|
+| מובייל | Flutter (Dart) | אנדרואיד ראשון, מוכן ל-iOS בהמשך |
+| AI / שיחה | Claude API (Anthropic) | טקסט בלבד: הבנת שפה, חילוץ מובנה, עצות |
+| דיבור לטקסט (STT) | Android SpeechRecognizer | מובנה, חינמי, תמיכה טובה בעברית |
+| טקסט לדיבור (TTS) | Android TextToSpeech | מובנה, חינמי — שדרג ל-Google Cloud TTS אם האיכות אינה מספקת |
+| אחסון מקומי | SQLite דרך `sqflite` | פרטיות-ראשון, עובד אופליין |
+| סנכרון ענן (אופציונלי) | Supabase | Auth + DB + Edge Functions לסנכרון בין מכשירים |
+| Backend (אופציונלי) | Supabase Edge Functions | קריאות ל-Claude API מצד שרת אם נדרש |
+
+### למה Flutter?
+- קוד בסיס אחד לאנדרואיד (ו-iOS בהמשך)
+- רכיבי UI עשירים, אנימציות חלקות
+- אקוסיסטם גדול, SDKs טובים ל-Claude ו-Supabase
+
+### למה Claude API?
+- הבנה רב-לשונית ברמה גבוהה (עברית, ערבית, רוסית, אנגלית)
+- ניתן לכוון בדיוק לטון תומך ולא שיפוטי דרך system prompt
+- חלון הקשר ארוך — מחזיק היסטוריה פיננסית בתוך שיחה
+- מצוין בחילוץ מובנה (סכום, קטגוריה, תאריך) מדיבור יומיומי
+
+### אלטרנטיבות STT / TTS
+
+| שירות | עברית | עלות |
+|---|---|---|
+| Android SpeechRecognizer | טובה | חינמי |
+| Google Cloud STT | מצוינת | חינם עד 60 דק'/חודש, אחר כך ~$0.006 / 15 שנ' |
+| OpenAI Whisper API | טובה מאוד | ~$0.006 / דקה |
+| Android TextToSpeech | בינונית (רובוטי) | חינמי |
+| Google Cloud TTS | טובה | חינם עד 4M תווים/חודש |
+
+**המלצה:** להתחיל עם הכלים המובנים של אנדרואיד; לשדרג ל-Google Cloud אם האיכות אינה מספקת.
+
+---
+
+## ארכיטקטורה
+
+Claude הוא **טקסט-נכנס, טקסט-יוצא**. קול מצריך pipeline בשלושה שלבים:
+
+<div dir="ltr">
 
 ```
-User voice
+קול המשתמש
     │
     ▼ [STT — Android SpeechRecognizer]
-  text
+  טקסט
     │
     ▼ [Claude API]
-  structured response + advice text
+  תשובה מובנית + טקסט עצה
     │
-    ├── saves transaction → SQLite
+    ├── שמירת עסקה ← SQLite
     │
     ▼ [TTS — Android TextToSpeech]
-User hears response
+המשתמש שומע את התשובה
 ```
 
-The **system prompt** given to Claude includes:
-- The user's known income sources and amounts
-- Recurring commitments (rent, subscriptions, etc.)
-- Current month budget targets
-- Tone instructions (supportive, practical, no judgment)
-- Recent transaction history (summarized — see Context Management below)
+</div>
+
+ה-**system prompt** שנשלח ל-Claude כולל:
+- מקורות הכנסה ידועים של המשתמש וסכומיהם
+- התחייבויות קבועות (שכירות, מנויים וכד')
+- יעדי תקציב לחודש הנוכחי
+- הוראות טון (תומך, מעשי, ללא שיפוט)
+- היסטוריית עסקאות אחרונה (מסוכמת — ראו ניהול הקשר)
 
 ---
 
-## Cost Analysis
+## ניתוח עלויות
 
-### Per-user monthly estimate
+### הערכה חודשית למשתמש
 
-Assumptions for a typical active user:
-- 5 transactions logged per day
-- 1–2 advice requests per day
-- ~7 Claude API calls/day → ~210 calls/month
-- ~2,500 tokens per call (system prompt + history + message + response)
+הנחות למשתמש פעיל טיפוסי:
+- 5 עסקאות מוקלדות/מדוברות ביום
+- 1–2 בקשות לעצה ביום
+- ~7 קריאות ל-Claude ביום → ~210 קריאות בחודש
+- ~2,500 טוקן לקריאה (system prompt + היסטוריה + הודעה + תשובה)
 
-| Scenario | Cost / user / month |
+| תרחיש | עלות / משתמש / חודש |
 |---|---|
 | Claude Haiku + Android STT | **~$0.45** |
 | Claude Sonnet + Android STT | **~$1.70** |
 | Claude Sonnet + Whisper API | **~$1.80** |
 
-### Business model implication
+### השלכה על מודל עסקי
 
-A subscription of **$3–5/month per user** comfortably covers costs and leaves margin.
+מנוי של **$3–5 לחודש למשתמש** מכסה את העלויות ומשאיר מרווח נאה.
 
-### Claude API pricing reference (verify current rates at console.anthropic.com)
+### תמחור Claude API (לאימות עדכני: console.anthropic.com)
 
-| Model | Input | Output |
+| מודל | קלט | פלט |
 |---|---|---|
-| Claude Haiku | ~$0.80 / 1M tokens | ~$4 / 1M tokens |
-| Claude Sonnet | ~$3 / 1M tokens | ~$15 / 1M tokens |
+| Claude Haiku | ~$0.80 / מיליון טוקן | ~$4 / מיליון טוקן |
+| Claude Sonnet | ~$3 / מיליון טוקן | ~$15 / מיליון טוקן |
 
 ---
 
-## Context Management (Key Technical Challenge)
+## ניהול הקשר — אתגר טכני מרכזי
 
-As a user accumulates months of history, the system prompt grows — and so does the cost per call. Without management, costs could double or triple over time.
+ככל שהמשתמש צובר חודשים של היסטוריה, ה-system prompt גדל — ואיתו העלות לכל קריאה. ללא ניהול, העלויות עלולות להכפיל את עצמן לאורך זמן.
 
-**Strategy:**
-- Summarize old transactions periodically rather than keeping raw history
-- Store only recent transactions (last 30–60 days) in the prompt
-- Keep a compact "financial profile" (commitments, goals, patterns) as a separate summary
-- Use RAG (retrieval-augmented generation) for deeper history if needed
+**אסטרטגיה:**
+- לסכם עסקאות ישנות תקופתית במקום לשמור היסטוריה גולמית
+- לשמור בפרומפט רק עסקאות אחרונות (30–60 יום)
+- לשמור "פרופיל פיננסי" קומפקטי (התחייבויות, מטרות, תבניות) כסיכום נפרד
+- להשתמש ב-RAG לגישה להיסטוריה עמוקה יותר אם יידרש
 
-This is one of the most important architectural decisions in the project.
-
----
-
-## Project Status
-
-- [x] Concept defined
-- [x] Tech stack chosen
-- [x] Project named: **Nudge**
-- [x] Cost analysis completed
-- [ ] Flutter project scaffold
-- [ ] Basic chat UI
-- [ ] Claude API integration
-- [ ] Transaction parsing (NLP → structured data)
-- [ ] Local SQLite storage
-- [ ] Voice input (STT + TTS)
-- [ ] Financial overview screen
-- [ ] User profile / commitments setup
-- [ ] Context management / summarization
-- [ ] Proactive nudges / alerts
+זוהי אחת ההחלטות האדריכליות החשובות ביותר בפרוייקט.
 
 ---
 
-## Design Principles
+## סטטוס פרוייקט
 
-1. **Zero friction** — logging an expense should take under 5 seconds
-2. **Multilingual by default** — the user speaks their language, not the app's
-3. **Privacy-first** — financial data stays on device unless the user opts into sync
-4. **Supportive tone** — every message should feel like a friend, not an accountant
-5. **Progressive disclosure** — simple on the surface, powerful underneath
+- [x] חזון הוגדר
+- [x] ערימת טכנולוגיות נבחרה
+- [x] שם הפרוייקט נקבע: **Nudge**
+- [x] ניתוח עלויות הושלם
+- [ ] scaffold של פרוייקט Flutter
+- [ ] ממשק צ'אט בסיסי
+- [ ] אינטגרציה עם Claude API
+- [ ] פרסור עסקאות (NLP → נתונים מובנים)
+- [ ] אחסון SQLite מקומי
+- [ ] קלט קולי (STT + TTS)
+- [ ] מסך סקירה פיננסית
+- [ ] פרופיל משתמש / הגדרת התחייבויות
+- [ ] ניהול הקשר / סיכום
+- [ ] התראות ועדכונים פרואקטיביים
 
 ---
 
-## Name & Branding Notes
+## עקרונות עיצוב
 
-**Nudge** — a gentle push in the right direction. Reflects:
-- Behavioral economics concept (Thaler & Sunstein's *Nudge* theory)
-- Non-coercive guidance
-- Small actions with big impact over time
+1. **אפס חיכוך** — רישום הוצאה לא ייקח יותר מ-5 שניות
+2. **רב-לשוני כברירת מחדל** — המשתמש מדבר בשפתו, לא בשפת האפליקציה
+3. **פרטיות ראשית** — נתונים פיננסיים נשמרים במכשיר אלא אם המשתמש בחר בסנכרון
+4. **טון תומך** — כל הודעה צריכה להרגיש כמו חבר, לא כמו רואה חשבון
+5. **גילוי הדרגתי** — פשוט על פני השטח, עוצמתי מתחת
 
-Color palette ideas: warm greens and soft neutrals (trust, growth, calm — not the cold blues of banking apps).
+---
+
+## הערות מיתוג ושם
+
+**Nudge** — דחיפה עדינה בכיוון הנכון. משקף:
+- מושג מכלכלה התנהגותית (תיאוריית ה-Nudge של תאלר וסאנסטיין)
+- הנחיה ללא כפייה
+- פעולות קטנות עם השפעה גדולה לאורך זמן
+
+רעיונות לפלטת צבעים: ירוקים חמים וניטרלים רכים (אמון, צמיחה, רוגע — לא כחולים קרים של אפליקציות בנקאיות).
+
+</div>
