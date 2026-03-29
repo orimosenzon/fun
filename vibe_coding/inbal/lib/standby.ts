@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendSms } from "@/lib/twilio";
+import { sendStandbyNotification } from "@/lib/whatsapp";
 import { slotAvailable } from "@/lib/slots";
 
 const STANDBY_EXPIRY_HOURS = 1;
@@ -50,20 +50,10 @@ export async function notifyNextStandby(sessionId: string): Promise<void> {
     data: { notifiedAt: now, expiresAt },
   });
 
-  // שלח SMS אם יש מספר טלפון
+  // שלח WhatsApp אם יש מספר טלפון
   if (candidate.user.phone) {
-    const sessionDate = session.date.toLocaleDateString("he-IL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const msg =
-      `שלום ${candidate.user.name}! התפנה מקום בשיעור "${session.group.name}" ` +
-      `ב-${sessionDate}. יש לך שעה להירשם באפליקציה.`;
-    await sendSms(candidate.user.phone, msg).catch((err) =>
-      console.error("SMS send failed:", err)
+    await sendStandbyNotification(candidate.user.phone).catch((err) =>
+      console.error("WhatsApp send failed:", err)
     );
   }
 }
