@@ -1,7 +1,7 @@
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-export async function sendStandbyNotification(phone: string): Promise<void> {
+export async function sendStandbyNotification(phone: string, name: string): Promise<void> {
   if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
     console.warn("WhatsApp env vars not set — message not sent");
     return;
@@ -25,6 +25,12 @@ export async function sendStandbyNotification(phone: string): Promise<void> {
       template: {
         name: "standby_notification",
         language: { code: "he" },
+        components: [
+          {
+            type: "body",
+            parameters: [{ type: "text", text: name }],
+          },
+        ],
       },
     }),
   });
