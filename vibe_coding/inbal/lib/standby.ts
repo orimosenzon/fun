@@ -52,7 +52,7 @@ export async function notifyNextStandby(sessionId: string): Promise<void> {
 
   // שלח WhatsApp אם יש מספר טלפון
   if (candidate.user.phone) {
-    await sendStandbyNotification(candidate.user.phone).catch((err) =>
+    await sendStandbyNotification(candidate.user.phone, candidate.user.name ?? "").catch((err) =>
       console.error("WhatsApp send failed:", err)
     );
   }
