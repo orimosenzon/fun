@@ -4,5 +4,6 @@ langgraph
 langchain-mcp-adapters
 anthropic
 mcp
-duckduckgo-search
+ddgs
 langgraph-checkpoint-sqlite
+python-dotenv
