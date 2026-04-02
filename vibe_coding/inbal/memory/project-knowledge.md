@@ -59,11 +59,14 @@
   - Cold starts — גורמים לאיטיות (לא ניתן לפתרון ללא שדרוג)
 - **GitHub integration לא אמין** למונורפו — עדיף לפרוס ידנית דרך Vercel API:
   ```bash
-  curl -X POST "https://api.vercel.com/v13/deployments?teamId=TEAM_ID" \
+  curl -X POST "https://api.vercel.com/v13/deployments?teamId=team_7uZ3FN2opNsA7HF9NLf6ZutH" \
     -H "Authorization: Bearer TOKEN" \
-    -d '{"name":"inbal","project":"PROJECT_ID","gitSource":{"type":"github","repoId":10580732,"ref":"master","sha":"COMMIT"}}'
+    -H "Content-Type: application/json" \
+    -d '{"name":"inbal","project":"prj_vI1bHohukOe23SxthRnomBf4dtT9","gitSource":{"type":"github","repoId":10580732,"ref":"master","sha":"COMMIT"}}'
   ```
 - `repoId` של orimosenzon/fun: **10580732**
+- `teamId`: `team_7uZ3FN2opNsA7HF9NLf6ZutH`
+- `projectId`: `prj_vI1bHohukOe23SxthRnomBf4dtT9` (שים לב: האות `O` ולא הספרה `0`)
 - `rootDirectory` בהגדרות Vercel: `vibe_coding/inbal`
 
 ### Supabase / DB
