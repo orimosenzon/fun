@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendStandbyNotification } from "@/lib/whatsapp";
+import { sendStandbyNotification, sendAdminSpotOpened } from "@/lib/whatsapp";
 import { slotAvailable } from "@/lib/slots";
 
 const STANDBY_EXPIRY_HOURS = 1;
@@ -50,10 +50,36 @@ export async function notifyNextStandby(sessionId: string): Promise<void> {
     data: { notifiedAt: now, expiresAt },
   });
 
-  // שלח WhatsApp אם יש מספר טלפון
+  // שלח WhatsApp לתלמיד/ה
   if (candidate.user.phone) {
     await sendStandbyNotification(candidate.user.phone, candidate.user.name ?? "").catch((err) =>
-      console.error("WhatsApp send failed:", err)
+      console.error("WhatsApp send to student failed:", err)
     );
+  }
+
+  // שלח WhatsApp לאדמין (ענבל)
+  const admin = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { phone: true },
+  });
+  if (admin?.phone) {
+    const sessionLabel = `${session.group.name} — ${session.date.toLocaleString("he-IL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+
+    const waitlistText = entries
+      .map((e, i) => `${i + 1}. ${e.user.name ?? e.user.email}`)
+      .join("\n");
+
+    await sendAdminSpotOpened(
+      admin.phone,
+      sessionLabel,
+      waitlistText,
+      candidate.user.name ?? candidate.user.email ?? ""
+    ).catch((err) => console.error("WhatsApp send to admin failed:", err));
   }
 }
