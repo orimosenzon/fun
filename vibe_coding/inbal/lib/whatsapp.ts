@@ -64,7 +64,7 @@ export function sendAdminSpotTaken(
   studentName: string,
   sessionLabel: string
 ): Promise<void> {
-  return sendTemplate(phone, "admin_spot_taken", [
+  return sendTemplate(phone, "_admin_spot_taken", [
     { type: "text", text: studentName },
     { type: "text", text: sessionLabel },
   ]);

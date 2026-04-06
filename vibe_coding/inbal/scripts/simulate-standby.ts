@@ -36,7 +36,7 @@ const ORI_PHONE   = "972508820997";
 const INBAL_EMAIL = "admin@ceramics.co.il";
 const INBAL_PHONE = "972544402058";
 
-function sendTemplate(phone: string, templateName: string, params: string[]): Promise<void> {
+function sendTemplate(phone: string, templateName: string, params: string[], langCode = "he"): Promise<void> {
   let normalized = phone.replace(/\D/g, "");
   if (normalized.startsWith("0")) normalized = "972" + normalized.slice(1);
 
@@ -46,7 +46,7 @@ function sendTemplate(phone: string, templateName: string, params: string[]): Pr
     type: "template",
     template: {
       name: templateName,
-      language: { code: "he" },
+      language: { code: langCode },
       components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text })) }],
     },
   });
@@ -90,7 +90,7 @@ function sendAdminSpotOpened(phone: string, sessionLabel: string, waitlistText: 
 }
 
 function sendAdminSpotTaken(phone: string, studentName: string, sessionLabel: string): Promise<void> {
-  return sendTemplate(phone, "admin_spot_taken", [studentName, sessionLabel]);
+  return sendTemplate(phone, "_admin_spot_taken", [studentName, sessionLabel]);
 }
 
 async function main() {
