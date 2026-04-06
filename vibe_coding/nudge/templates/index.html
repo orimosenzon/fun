@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nudge — ניהול כספים</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f0;
+      color: #2d3a2d;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.5px; }
+    header .tagline { font-size: 0.8rem; opacity: 0.8; }
+    .balance-display {
+      text-align: left;
+      direction: ltr;
+    }
+    .balance-display .label { font-size: 0.75rem; opacity: 0.8; }
+    .balance-display .amount {
+      font-size: 1.5rem;
+      font-weight: 700;
+      transition: all 0.4s;
+    }
+    .balance-display .amount.positive { color: #a5d6a7; }
+    .balance-display .amount.negative { color: #ef9a9a; }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── CHAT PANEL ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      line-height: 1.5;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+    .message.user {
+      background: #2e7d32;
+      color: white;
+      align-self: flex-start;
+      border-bottom-right-radius: 4px;
+    }
+    .message.assistant {
+      background: white;
+      color: #2d3a2d;
+      align-self: flex-end;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .message.system {
+      background: #e8f5e9;
+      color: #388e3c;
+      align-self: center;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+    }
+
+    /* ── INPUT BAR ── */
+    .input-bar {
+      padding: 16px 20px;
+      background: white;
+      border-top: 1px solid #e0e8e0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input-bar input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #c8e6c9;
+      border-radius: 24px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      direction: rtl;
+    }
+    .input-bar input:focus { border-color: #2e7d32; }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .btn-send { background: #2e7d32; color: white; }
+    .btn-send:hover { background: #1b5e20; }
+    .btn-mic { background: #e8f5e9; color: #2e7d32; border: 2px solid #c8e6c9; }
+    .btn-mic:hover { background: #c8e6c9; }
+    .btn-mic.recording { background: #e53935; color: white; border-color: #e53935; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
+
+    /* ── DASHBOARD PANEL ── */
+    .dashboard {
+      width: 300px;
+      background: white;
+      border-right: 1px solid #e0e8e0;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .dash-section h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #81c784;
+      margin-bottom: 12px;
+    }
+
+    /* Fixed vs Occasional */
+    .split-chart {
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 12px;
+      margin-bottom: 10px;
+    }
+    .split-fixed { background: #2e7d32; transition: width 0.5s; }
+    .split-occasional { background: #81c784; transition: width 0.5s; }
+
+    .split-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-left: 5px;
+    }
+
+    /* Categories */
+    .category-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #f1f8f1;
+      font-size: 0.88rem;
+    }
+    .category-row:last-child { border-bottom: none; }
+    .cat-name { display: flex; align-items: center; gap: 6px; }
+    .cat-amount { color: #2e7d32; font-weight: 600; direction: ltr; }
+
+    /* Recent expenses */
+    .expense-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #f1f8f1;
+      font-size: 0.85rem;
+    }
+    .expense-item:last-child { border-bottom: none; }
+    .expense-desc { color: #555; }
+    .expense-amount { color: #c62828; font-weight: 600; direction: ltr; }
+    .expense-badge {
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
+    .empty-state {
+      color: #aaa;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .tab {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      background: #f1f8f1;
+      color: #555;
+      transition: all 0.2s;
+    }
+    .tab.active { background: #2e7d32; color: white; }
+
+    /* Typing indicator */
+    .typing { display: flex; gap: 4px; padding: 14px 16px; }
+    .typing span {
+      width: 8px; height: 8px;
+      background: #c8e6c9;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0);} 40%{transform:translateY(-8px);} }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌱 Nudge</h1>
+    <div class="tagline">דחיפה עדינה בכיוון הנכון</div>
+  </div>
+  <div class="balance-display">
+    <div class="label">יתרה בחשבון</div>
+    <div class="amount" id="balance-amount">₪0</div>
+  </div>
+</header>
+
+<main>
+  <!-- Chat -->
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="message system">
+        שלום! אני Nudge, העוזר הפיננסי שלך 👋<br>
+        תוכל לספר לי על הוצאות שלך, לשאול כמה הוצאת, או לבקש עצה.
+      </div>
+      <div class="message system">
+        דוגמאות: "הוצאתי 50 שקל על קפה" · "שכר דירה 3500 בחודש" · "כמה הוצאתי על אוכל?"
+      </div>
+    </div>
+    <div class="input-bar">
+      <button class="btn btn-mic" id="mic-btn" title="לחץ לדיבור">🎤</button>
+      <input type="text" id="user-input" placeholder="כתוב או דבר..." autocomplete="off">
+      <button class="btn btn-send" id="send-btn" title="שלח">➤</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <!-- Fixed vs Occasional -->
+    <div class="dash-section">
+      <h3>חודש נוכחי</h3>
+      <div class="split-chart">
+        <div class="split-fixed" id="bar-fixed" style="width:50%"></div>
+        <div class="split-occasional" id="bar-occasional" style="width:50%"></div>
+      </div>
+      <div class="split-legend">
+        <span><span class="legend-dot" style="background:#2e7d32"></span>קבועות: <strong id="fixed-amount">₪0</strong></span>
+        <span><span class="legend-dot" style="background:#81c784"></span>מזדמנות: <strong id="occasional-amount">₪0</strong></span>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="dash-section">
+      <h3>לפי קטגוריה</h3>
+      <div id="categories-list">
+        <div class="empty-state">עדיין אין הוצאות החודש</div>
+      </div>
+    </div>
+
+    <!-- Recent -->
+    <div class="dash-section">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('recent')">אחרונות</button>
+        <button class="tab" onclick="switchTab('all')">כל ההוצאות</button>
+      </div>
+      <div id="recent-list">
+        <div class="empty-state">אין הוצאות עדיין</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const CATEGORY_ICONS = {
+  food: '🍕', transport: '🚗', housing: '🏠', health: '💊',
+  entertainment: '🎬', clothing: '👔', utilities: '💡',
+  subscriptions: '📱', other: '📦'
+};
+
+// ── STATE ──
+let currentTab = 'recent';
+let allExpenses = [];
+
+// ── BALANCE ──
+function updateBalanceDisplay(balance) {
+  const el = document.getElementById('balance-amount');
+  el.textContent = '₪' + balance.toLocaleString('he-IL', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+  el.className = 'amount ' + (balance >= 0 ? 'positive' : 'negative');
+}
+
+// ── DASHBOARD ──
+function updateDashboard(summary) {
+  // Fixed vs occasional bar
+  const fixed = summary.fixed || 0;
+  const occasional = summary.occasional || 0;
+  const total = fixed + occasional;
+  const fixedPct = total > 0 ? (fixed / total * 100).toFixed(1) : 50;
+  const occPct = total > 0 ? (occasional / total * 100).toFixed(1) : 50;
+  document.getElementById('bar-fixed').style.width = fixedPct + '%';
+  document.getElementById('bar-occasional').style.width = occPct + '%';
+  document.getElementById('fixed-amount').textContent = '₪' + fixed.toLocaleString('he-IL', {maximumFractionDigits: 0});
+  document.getElementById('occasional-amount').textContent = '₪' + occasional.toLocaleString('he-IL', {maximumFractionDigits: 0});
+
+  // Categories
+  const catList = document.getElementById('categories-list');
+  if (!summary.categories || summary.categories.length === 0) {
+    catList.innerHTML = '<div class="empty-state">עדיין אין הוצאות החודש</div>';
+  } else {
+    catList.innerHTML = summary.categories.map(c => `
+      <div class="category-row">
+        <span class="cat-name">${CATEGORY_ICONS[c.category] || '📦'} ${c.name}</span>
+        <span class="cat-amount">₪${c.total.toLocaleString('he-IL', {maximumFractionDigits: 0})}</span>
+      </div>
+    `).join('');
+  }
+}
+
+async function loadExpenses() {
+  const res = await fetch('/api/expenses');
+  allExpenses = await res.json();
+  renderExpenseList();
+}
+
+function renderExpenseList() {
+  const list = document.getElementById('recent-list');
+  const items = currentTab === 'recent' ? allExpenses.slice(0, 8) : allExpenses;
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty-state">אין הוצאות עדיין</div>';
+    return;
+  }
+  list.innerHTML = items.map(e => `
+    <div class="expense-item">
+      <span class="cat-name">
+        ${CATEGORY_ICONS[e.category] || '📦'}
+        <span class="expense-desc">${e.description || e.category_name}</span>
+        ${e.is_recurring ? '<span class="expense-badge">קבועה</span>' : ''}
+      </span>
+      <span class="expense-amount">-₪${e.amount.toLocaleString('he-IL', {maximumFractionDigits: 2})}</span>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'recent') || (i === 1 && tab === 'all'));
+  });
+  renderExpenseList();
+}
+
+// ── CHAT ──
+function addMessage(text, role) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message assistant typing';
+  div.id = 'typing-indicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage(text) {
+  if (!text.trim()) return;
+  addMessage(text, 'user');
+  showTyping();
+  document.getElementById('user-input').value = '';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text})
+    });
+    const data = await res.json();
+    hideTyping();
+
+    const reply = data.response || 'אוקיי!';
+    addMessage(reply, 'assistant');
+    speak(reply);
+
+    if (data.balance !== undefined) updateBalanceDisplay(data.balance);
+    if (data.summary) updateDashboard(data.summary);
+    if (['add_expense', 'add_income', 'set_balance'].includes(data.action)) loadExpenses();
+
+  } catch (err) {
+    hideTyping();
+    addMessage('שגיאה בחיבור לשרת. נסה שוב.', 'system');
+  }
+}
+
+// ── SEND BUTTON / ENTER ──
+document.getElementById('send-btn').addEventListener('click', () => {
+  sendMessage(document.getElementById('user-input').value);
+});
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMessage(e.target.value);
+});
+
+// ── TTS ──
+let currentAudio = null;
+
+async function speak(text) {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  const res = await fetch('/api/tts', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text})
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  currentAudio = new Audio(url);
+  currentAudio.play();
+}
+
+// ── STT ──
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'he-IL';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  let silenceTimer = null;
+  let finalTranscript = '';
+
+  recognition.onresult = e => {
+    let interim = '';
+    finalTranscript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('user-input').value = finalTranscript || interim;
+
+    // Reset silence timer on every speech event
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      const text = finalTranscript || document.getElementById('user-input').value;
+      if (text.trim()) {
+        stopRecording();
+        sendMessage(text.trim());
+      }
+    }, 1500);
+  };
+  recognition.onerror = e => {
+    console.warn('STT error:', e.error);
+    stopRecording();
+  };
+  recognition.onend = () => {
+    if (isRecording) recognition.start(); // restart if still in recording mode
+  };
+} else {
+  document.getElementById('mic-btn').title = 'הדפדפן לא תומך בזיהוי דיבור';
+  document.getElementById('mic-btn').style.opacity = '0.4';
+}
+
+function startRecording() {
+  if (!recognition) return;
+  isRecording = true;
+  document.getElementById('mic-btn').classList.add('recording');
+  document.getElementById('mic-btn').textContent = '⏹';
+  window.speechSynthesis.cancel(); // stop any TTS
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-btn').textContent = '🎤';
+  try { recognition.stop(); } catch {}
+}
+
+document.getElementById('mic-btn').addEventListener('click', () => {
+  if (isRecording) stopRecording();
+  else startRecording();
+});
+
+// ── INIT ──
+async function init() {
+  const res = await fetch('/api/summary');
+  const data = await res.json();
+  updateBalanceDisplay(data.balance);
+  updateDashboard(data);
+  await loadExpenses();
+  // preload voices
+  window.speechSynthesis && window.speechSynthesis.getVoices();
+}
+
+init();
+</script>
+</body>
+</html>
