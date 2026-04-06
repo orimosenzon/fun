@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slotAvailable } from "@/lib/slots";
+import { sendAdminSpotTaken } from "@/lib/whatsapp";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -52,7 +53,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "אין מקום פנוי בסלוט המבוקש" }, { status: 400 });
   }
 
-  // בדוק אם יש standby entry — אם כן, מחק אותו (נרשם בהצלחה)
+  // בדוק אם יש standby entry לפני המחיקה (כדי לדעת אם לשלוח הודעה לאדמין)
+  const hadStandby = await prisma.standbyEntry.findUnique({
+    where: { userId_sessionId: { userId: targetUserId, sessionId } },
+  });
+
   await prisma.standbyEntry.deleteMany({ where: { userId: targetUserId, sessionId } });
 
   // צור רישום (upsert — אולי יש רישום ישן מבוטל)
@@ -62,8 +67,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     create: { userId: targetUserId, sessionId, status: "REGISTERED", slotType: resolvedSlotType },
   });
 
-  // אחרי שמקום נתפס, בדוק אם יש עוד מקומות לסטנד ביי אחרים (סלוט אחר)
-  // (אין צורך להודיע — המקום שלנו נתפס, לא נפתח)
+  // אם תפסה מקום מרשימת המתנה — הודע לאדמין
+  if (hadStandby) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { name: true },
+    });
+    const admin = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { phone: true },
+    });
+    const fullSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { group: { select: { name: true } } },
+    });
+    if (admin?.phone && fullSession) {
+      const sessionLabel = `${fullSession.group.name} — ${fullSession.date.toLocaleString("he-IL", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+      sendAdminSpotTaken(
+        admin.phone,
+        targetUser?.name ?? user.name ?? "",
+        sessionLabel
+      ).catch((err) => console.error("WhatsApp admin spot-taken failed:", err));
+    }
+  }
 
   return NextResponse.json(reg, { status: 201 });
 }
