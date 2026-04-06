@@ -36,7 +36,7 @@ const ORI_PHONE   = "972508820997";
 const INBAL_EMAIL = "admin@ceramics.co.il";
 const INBAL_PHONE = "972544402058";
 
-function sendWhatsApp(phone: string, name: string): Promise<void> {
+function sendTemplate(phone: string, templateName: string, params: string[]): Promise<void> {
   let normalized = phone.replace(/\D/g, "");
   if (normalized.startsWith("0")) normalized = "972" + normalized.slice(1);
 
@@ -45,9 +45,9 @@ function sendWhatsApp(phone: string, name: string): Promise<void> {
     to: normalized,
     type: "template",
     template: {
-      name: "standby_notification",
+      name: templateName,
       language: { code: "he" },
-      components: [{ type: "body", parameters: [{ type: "text", text: name }] }],
+      components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text })) }],
     },
   });
 
@@ -79,6 +79,18 @@ function sendWhatsApp(phone: string, name: string): Promise<void> {
     req.write(body);
     req.end();
   });
+}
+
+function sendWhatsApp(phone: string, name: string): Promise<void> {
+  return sendTemplate(phone, "standby_notification", [name]);
+}
+
+function sendAdminSpotOpened(phone: string, sessionLabel: string, waitlistText: string, firstPersonName: string): Promise<void> {
+  return sendTemplate(phone, "admin_spot_opened", [sessionLabel, waitlistText, firstPersonName]);
+}
+
+function sendAdminSpotTaken(phone: string, studentName: string, sessionLabel: string): Promise<void> {
+  return sendTemplate(phone, "admin_spot_taken", [studentName, sessionLabel]);
 }
 
 async function main() {
@@ -182,10 +194,21 @@ async function main() {
     data: { notifiedAt: now, expiresAt: new Date(now.getTime() + 60 * 60 * 1000) },
   });
 
-  console.log(`\n📱 שולח WhatsApp ל-${candidate.user.name} (${candidate.user.phone})...`);
+  // 7א. שלח לאורי הודעת standby
+  console.log(`\n📱 [1/3] שולח WhatsApp לאורי (standby_notification)...`);
   await sendWhatsApp(candidate.user.phone!, candidate.user.name ?? "");
 
-  console.log(`\n✅ סימולציה הצליחה! בדוק WhatsApp.`);
+  // 7ב. שלח לענבל שמקום נפתח (admin_spot_opened)
+  const sessionLabel = `${session.group.name} — ${session.date.toLocaleDateString("he-IL")}`;
+  const waitlistText = `${candidate.user.name}`;
+  console.log(`\n📱 [2/3] שולח WhatsApp לענבל (admin_spot_opened)...`);
+  await sendAdminSpotOpened(INBAL_PHONE, sessionLabel, waitlistText, candidate.user.name ?? "");
+
+  // 7ג. סמולציה: אורי אישר → שלח לענבל שמקום נתפס (admin_spot_taken)
+  console.log(`\n📱 [3/3] שולח WhatsApp לענבל (admin_spot_taken — אורי אישר)...`);
+  await sendAdminSpotTaken(INBAL_PHONE, candidate.user.name ?? "", sessionLabel);
+
+  console.log(`\n✅ סימולציה הצליחה! בדוק WhatsApp אצלך ואצל ענבל.`);
   console.log(`\n🧹 לניקוי: npx tsx scripts/cleanup-simulation.ts`);
 }
 
