@@ -277,7 +277,9 @@ def api_summary():
     return jsonify({'balance': get_balance(), **get_monthly_summary()})
 
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
-    print('✓ Nudge is running → http://localhost:5050')
-    app.run(debug=True, port=5050)
+    port = int(os.environ.get('PORT', 5050))
+    print(f'✓ Nudge is running → http://localhost:{port}')
+    app.run(debug=False, host='0.0.0.0', port=port)
