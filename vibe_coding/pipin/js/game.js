@@ -1,7 +1,7 @@
 // game.js - מנוע המשחק הראשי
 
 import { LOCATIONS, ITEMS, NPCS } from './world.js';
-import { initAPI, sendAction, getConversationHistory, setConversationHistory } from './api.js';
+import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory } from './api.js';
 import * as UI from './ui.js';
 
 // ═══════════════════════════════
@@ -58,6 +58,22 @@ function renderCurrentLocation() {
   // Find NPCs at current location
   const npcsHere = getNPCsAtLocation(gameState.currentLocation);
   UI.updateNPCs(npcsHere, handleNPCClick);
+
+  // Load image from cache or generate (non-blocking)
+  loadLocationImage(loc);
+
+  // Update map
+  UI.updateMap(gameState.visitedLocations, gameState.currentLocation);
+}
+
+async function loadLocationImage(loc) {
+  try {
+    const src = await generateLocationImage(loc.id, loc.name, loc.description);
+    UI.setLocationImage(src);
+  } catch (err) {
+    console.warn('Image generation failed:', err);
+    // placeholder stays visible — no crash
+  }
 }
 
 function getNPCsAtLocation(locationId) {
