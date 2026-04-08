@@ -1,6 +1,6 @@
 // ui.js - לוגיקת ממשק
 
-import { ITEMS, NPCS } from './world.js';
+import { ITEMS, NPCS, LOCATIONS } from './world.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -24,6 +24,7 @@ const els = {
   inventoryModal: $('#inventory-modal'),
   closeInventory: $('#close-inventory'),
   inventoryList: $('#inventory-list'),
+  worldMap: $('#world-map'),
   loading: $('#loading'),
   startScreen: $('#start-screen'),
   startBtn: $('#start-btn'),
@@ -39,22 +40,9 @@ function updateLocation(location) {
   // Header
   els.topbarLocation.textContent = location.name;
 
-  // Image
-  const img = els.locationImage;
-  img.classList.add('hidden');
+  // Image — show placeholder until generated image arrives
+  els.locationImage.classList.add('hidden');
   els.imagePlaceholder.classList.remove('hidden');
-
-  const testImg = new Image();
-  testImg.onload = () => {
-    img.src = location.image;
-    img.classList.remove('hidden');
-    els.imagePlaceholder.classList.add('hidden');
-  };
-  testImg.onerror = () => {
-    img.classList.add('hidden');
-    els.imagePlaceholder.classList.remove('hidden');
-  };
-  testImg.src = location.image;
 
   // Text
   els.locationName.textContent = location.name;
@@ -71,6 +59,12 @@ function updateLocation(location) {
     els.locationName.classList.remove('fade-in');
     els.locationDescription.classList.remove('fade-in');
   }, 400);
+}
+
+function setLocationImage(src) {
+  els.locationImage.src = src;
+  els.locationImage.classList.remove('hidden');
+  els.imagePlaceholder.classList.add('hidden');
 }
 
 // ═══════════════════════════════
@@ -255,6 +249,117 @@ function setInputEnabled(enabled) {
 //   Loading
 // ═══════════════════════════════
 
+// ═══════════════════════════════
+//   מפה
+// ═══════════════════════════════
+
+function updateMap(visitedLocations, currentLocationId) {
+  const svg = els.worldMap;
+  svg.innerHTML = '';
+
+  if (!visitedLocations || visitedLocations.length === 0) return;
+
+  // BFS to compute grid coordinates from 'hobbiton'
+  const coords = {};
+  const dirOffset = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+  const queue = [{ id: 'hobbiton', x: 0, y: 0 }];
+  const seen = new Set(['hobbiton']);
+  coords['hobbiton'] = { x: 0, y: 0 };
+
+  while (queue.length) {
+    const { id, x, y } = queue.shift();
+    const loc = LOCATIONS[id];
+    if (!loc) continue;
+    for (const [dir, targetId] of Object.entries(loc.exits)) {
+      if (targetId && !seen.has(targetId)) {
+        seen.add(targetId);
+        const [dx, dy] = dirOffset[dir];
+        coords[targetId] = { x: x + dx, y: y + dy };
+        queue.push({ id: targetId, x: x + dx, y: y + dy });
+      }
+    }
+  }
+
+  const visitedSet = new Set(visitedLocations);
+  const visCoords = visitedLocations.filter(id => coords[id]).map(id => coords[id]);
+  if (visCoords.length === 0) return;
+
+  const minX = Math.min(...visCoords.map(c => c.x));
+  const maxX = Math.max(...visCoords.map(c => c.x));
+  const minY = Math.min(...visCoords.map(c => c.y));
+  const maxY = Math.max(...visCoords.map(c => c.y));
+
+  const W = 180, H = 320, pad = 28, cell = 40;
+  const totalW = Math.max((maxX - minX) * cell + pad * 2, W);
+  const totalH = Math.max((maxY - minY) * cell + pad * 2, H);
+
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+  const toSVG = (gx, gy) => ({
+    x: pad + (gx - minX) * cell,
+    y: pad + (gy - minY) * cell
+  });
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Lines first (behind nodes)
+  visitedLocations.forEach(id => {
+    const loc = LOCATIONS[id];
+    if (!loc || !coords[id]) return;
+    const from = toSVG(coords[id].x, coords[id].y);
+    Object.values(loc.exits).forEach(targetId => {
+      if (targetId && visitedSet.has(targetId) && coords[targetId]) {
+        const to = toSVG(coords[targetId].x, coords[targetId].y);
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+        line.setAttribute('stroke', '#d4cdbf');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      }
+    });
+  });
+
+  // Nodes
+  visitedLocations.forEach(id => {
+    if (!coords[id]) return;
+    const { x, y } = toSVG(coords[id].x, coords[id].y);
+    const isCurrent = id === currentLocationId;
+    const loc = LOCATIONS[id];
+
+    const g = document.createElementNS(ns, 'g');
+
+    if (isCurrent) {
+      const pulse = document.createElementNS(ns, 'circle');
+      pulse.setAttribute('cx', x); pulse.setAttribute('cy', y);
+      pulse.setAttribute('r', 12);
+      pulse.setAttribute('fill', '#e8f0eb');
+      g.appendChild(pulse);
+    }
+
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+    circle.setAttribute('r', isCurrent ? 7 : 5);
+    circle.setAttribute('fill', isCurrent ? '#3d6b4f' : '#c9a84c');
+    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('stroke-width', '1.5');
+    g.appendChild(circle);
+
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', y + (isCurrent ? 22 : 18));
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '8');
+    label.setAttribute('fill', isCurrent ? '#3d6b4f' : '#7a6e5d');
+    label.setAttribute('font-family', 'Heebo, sans-serif');
+    label.setAttribute('font-weight', isCurrent ? '600' : '400');
+    label.textContent = loc ? loc.name : id;
+    g.appendChild(label);
+
+    svg.appendChild(g);
+  });
+}
+
 function showLoading() {
   els.loading.classList.remove('hidden');
 }
@@ -306,6 +411,8 @@ function hideStartScreen() {
 
 export {
   updateLocation,
+  setLocationImage,
+  updateMap,
   updateCompass,
   onCompassClick,
   updateNPCs,

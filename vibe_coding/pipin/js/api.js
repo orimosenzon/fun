@@ -36,7 +36,7 @@ async function sendAction(gameState, action, locationData, npcData) {
     }
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -67,6 +67,38 @@ async function sendAction(gameState, action, locationData, npcData) {
   return parsed;
 }
 
+async function generateLocationImage(locationId, locationName, description) {
+  const cacheKey = `pipin_img_${locationId}`;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+
+  const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, painterly, warm lighting, no text, no people in foreground.`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1 }
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Imagen API error: ${response.status} - ${err}`);
+  }
+
+  const data = await response.json();
+  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('No image returned from Imagen');
+
+  const dataUrl = `data:image/png;base64,${b64}`;
+  localStorage.setItem(cacheKey, dataUrl);
+  return dataUrl;
+}
+
 function getConversationHistory() {
   return conversationHistory;
 }
@@ -75,4 +107,4 @@ function setConversationHistory(history) {
   conversationHistory = history;
 }
 
-export { initAPI, sendAction, getConversationHistory, setConversationHistory };
+export { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory };
