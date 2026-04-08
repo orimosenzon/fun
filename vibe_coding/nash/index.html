@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>שיווי משקל נאש — הדגמה</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f8;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .page-header h1 {
+      font-size: 2rem;
+      color: #1a237e;
+      margin-bottom: 6px;
+    }
+    .page-header p {
+      color: #555;
+      font-size: 1rem;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a237e;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8eaf6;
+    }
+
+    /* ─── Matrix ─── */
+    .matrix-row { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+
+    .matrix-wrap { overflow-x: auto; }
+    table.payoff {
+      border-collapse: collapse;
+      font-size: 1rem;
+      direction: ltr;
+    }
+    table.payoff th, table.payoff td {
+      border: 2px solid #c5cae9;
+      padding: 10px 16px;
+      text-align: center;
+      min-width: 80px;
+    }
+    table.payoff th { background: #e8eaf6; color: #283593; font-weight: 700; }
+    table.payoff td { font-size: 1.1rem; }
+    table.payoff td.ne { background: #e8f5e9; border-color: #66bb6a; }
+
+    .legend {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 10px;
+      line-height: 1.7;
+    }
+    .legend span { font-weight: 700; color: #333; }
+
+    /* ─── NE box ─── */
+    .ne-box {
+      background: #e8eaf6;
+      border-radius: 10px;
+      padding: 18px 22px;
+      flex: 1;
+      min-width: 210px;
+    }
+    .ne-box h3 { font-size: 1rem; color: #283593; margin-bottom: 12px; }
+    .ne-row { margin-bottom: 8px; display: flex; justify-content: space-between; gap: 16px; }
+    .ne-label { color: #555; font-size: 0.95rem; }
+    .ne-val { font-weight: 700; font-size: 1.1rem; color: #1a237e; }
+    .ne-payoff { margin-top: 10px; padding-top: 10px; border-top: 1px solid #c5cae9; font-size: 0.9rem; color: #444; }
+
+    .btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.97rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: #3949ab; color: white; }
+    .btn-primary:hover { background: #283593; }
+
+    /* ─── Charts ─── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .chart-wrap { position: relative; height: 280px; }
+    .chart-label {
+      text-align: center;
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .proof-note {
+      background: #fffde7;
+      border-right: 4px solid #fbc02d;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      direction: rtl;
+    }
+    .proof-note b { color: #e65100; }
+
+    /* ─── BR chart ─── */
+    .br-wrap { position: relative; height: 360px; max-width: 460px; margin: 0 auto; }
+
+    .br-note {
+      background: #f3e5f5;
+      border-right: 4px solid #9c27b0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      margin-top: 16px;
+      direction: rtl;
+    }
+
+    .formula-box {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      line-height: 2;
+      direction: ltr;
+      margin-top: 14px;
+    }
+    .formula-box .highlight { color: #c62828; font-weight: 700; }
+
+    @media (max-width: 620px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .matrix-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>שיווי משקל נאש</h1>
+  <p>הדגמה אינטראקטיבית — משחק שני שחקנים, אסטרטגיות מעורבות</p>
+</div>
+
+<div class="container">
+
+  <!-- ── SECTION 1: Matrix ── -->
+  <div class="card">
+    <div class="card-title">מטריצת התשלומים</div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <p style="font-size:0.93rem;color:#555;">המשחק הוגרל אקראית. כל תא מציג <b>(רווח שחקן 1, רווח שחקן 2)</b>.</p>
+      <button class="btn btn-primary" onclick="newGame()">הגרל משחק חדש ↺</button>
+    </div>
+
+    <div class="matrix-row">
+      <div class="matrix-wrap">
+        <table class="payoff" id="tbl"></table>
+        <div class="legend">
+          <span>p</span> = הסתברות שחקן 1 בוחר שורה 1 &nbsp;·&nbsp;
+          <span>1−p</span> = שורה 2<br>
+          <span>q</span> = הסתברות שחקן 2 בוחר עמודה 1 &nbsp;·&nbsp;
+          <span>1−q</span> = עמודה 2<br>
+          <span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;">ירוק</span> = תאי שיווי המשקל
+        </div>
+      </div>
+
+      <div class="ne-box">
+        <h3>שיווי משקל נאש מעורב</h3>
+        <div class="ne-row">
+          <span class="ne-label">p* (שחקן 1 — שורה 1)</span>
+          <span class="ne-val" id="neP">—</span>
+        </div>
+        <div class="ne-row">
+          <span class="ne-label">q* (שחקן 2 — עמ' 1)</span>
+          <span class="ne-val" id="neQ">—</span>
+        </div>
+        <div class="ne-payoff" id="nePayoffs"></div>
+        <div class="formula-box" id="neFormula" style="margin-top:14px;font-size:0.82rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: Deviation Charts ── -->
+  <div class="card">
+    <div class="card-title">הוכחה: סטייה חד-צדדית לא משפרת</div>
+
+    <div class="proof-note" id="proofNote"></div>
+
+    <div class="charts-grid">
+      <div>
+        <div class="chart-label">שחקן 1 — תשלום צפוי כפונקציה של p</div>
+        <div class="chart-wrap"><canvas id="c1"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-label">שחקן 2 — תשלום צפוי כפונקציה של q</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+    </div>
+
+    <div id="deviationText" style="margin-top:16px; font-size:0.9rem; color:#444; line-height:1.7;"></div>
+  </div>
+
+  <!-- ── SECTION 3: Best Response ── -->
+  <div class="card">
+    <div class="card-title">עקומות תגובה אופטימלית (Best Response)</div>
+
+    <div class="br-wrap"><canvas id="c3"></canvas></div>
+
+    <div class="br-note">
+      <b>איך לקרוא את הגרף:</b><br>
+      הקו הכחול מציג את <b>p*(q)</b> — התגובה האופטימלית של שחקן 1 לכל q של שחקן 2.<br>
+      הקו האדום מציג את <b>q*(p)</b> — התגובה האופטימלית של שחקן 2 לכל p של שחקן 1.<br>
+      <b>נקודת החיתוך</b> (⭐) היא שיווי המשקל: כל שחקן מגיב בצורה אופטימלית לאסטרטגיית השני.
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════
+let A, B, pStar, qStar;
+let ch1, ch2, ch3;
+
+const N = 200; // points per curve
+const fmt2 = n => Number(n.toFixed(2));
+const fmtPct = n => (n * 100).toFixed(1) + '%';
+
+function rnd(lo, hi) { return Math.floor(lo + Math.random() * (hi - lo + 1)); }
+
+// ═══════════════════════════════════════════════════
+// Payoff functions
+// ═══════════════════════════════════════════════════
+function ep1(p, q) {
+  return p * q * A[0][0] + p * (1-q) * A[0][1]
+       + (1-p) * q * A[1][0] + (1-p) * (1-q) * A[1][1];
+}
+function ep2(p, q) {
+  return p * q * B[0][0] + p * (1-q) * B[0][1]
+       + (1-p) * q * B[1][0] + (1-p) * (1-q) * B[1][1];
+}
+
+// ═══════════════════════════════════════════════════
+// Nash equilibrium computation
+// ═══════════════════════════════════════════════════
+function computeMixedNE(a, b) {
+  // P1 indifferent:  a[0][0]*q + a[0][1]*(1-q) = a[1][0]*q + a[1][1]*(1-q)
+  // → q* = (a[1][1]-a[0][1]) / (a[0][0]-a[0][1]-a[1][0]+a[1][1])
+  // P2 indifferent:  b[0][0]*p + b[1][0]*(1-p) = b[0][1]*p + b[1][1]*(1-p)
+  // → p* = (b[1][1]-b[1][0]) / (b[0][0]-b[0][1]-b[1][0]+b[1][1])
+  const dq = a[0][0] - a[0][1] - a[1][0] + a[1][1];
+  const dp = b[0][0] - b[0][1] - b[1][0] + b[1][1];
+  if (Math.abs(dq) < 0.01 || Math.abs(dp) < 0.01) return null;
+  const q = (a[1][1] - a[0][1]) / dq;
+  const p = (b[1][1] - b[1][0]) / dp;
+  if (p < 0.05 || p > 0.95 || q < 0.05 || q > 0.95) return null;
+  return { p, q };
+}
+
+function generateGame() {
+  for (let i = 0; i < 3000; i++) {
+    const a = [[rnd(1,9),rnd(1,9)],[rnd(1,9),rnd(1,9)]];
+    const b = [[rnd(1,9),rnd(1,9)],[rnd(1,9),rnd(1,9)]];
+    const ne = computeMixedNE(a, b);
+    if (ne && ne.p > 0.18 && ne.p < 0.82 && ne.q > 0.18 && ne.q < 0.82) {
+      A = a; B = b; pStar = ne.p; qStar = ne.q;
+      return;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DOM: Matrix Table
+// ═══════════════════════════════════════════════════
+function buildTable() {
+  const tbl = document.getElementById('tbl');
+
+  // Determine which cells are "near" the NE (both rows close to BR)
+  // Mark the entire row/col combination corresponding to NE mixed support (all 4 cells in 2x2)
+  const neStr = (i,j) => {
+    // All four cells are in the support of a mixed-strategy NE
+    return true;
+  };
+
+  let html = `<tr>
+    <th></th>
+    <th>עמודה 1<br><small>q=${fmtPct(qStar)}</small></th>
+    <th>עמודה 2<br><small>1−q=${fmtPct(1-qStar)}</small></th>
+  </tr>`;
+  const rowLabels = [`שורה 1<br><small>p=${fmtPct(pStar)}</small>`, `שורה 2<br><small>1−p=${fmtPct(1-pStar)}</small>`];
+  for (let i = 0; i < 2; i++) {
+    html += `<tr><th>${rowLabels[i]}</th>`;
+    for (let j = 0; j < 2; j++) {
+      html += `<td class="ne">(${A[i][j]}, ${B[i][j]})</td>`;
+    }
+    html += '</tr>';
+  }
+  tbl.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// DOM: NE Info
+// ═══════════════════════════════════════════════════
+function updateNEInfo() {
+  document.getElementById('neP').textContent = fmtPct(pStar);
+  document.getElementById('neQ').textContent = fmtPct(qStar);
+
+  const v1 = ep1(pStar, qStar).toFixed(2);
+  const v2 = ep2(pStar, qStar).toFixed(2);
+  document.getElementById('nePayoffs').innerHTML =
+    `<b>תשלום צפוי בשיווי משקל:</b><br>שחקן 1: ${v1} &nbsp;|&nbsp; שחקן 2: ${v2}`;
+
+  // Derivation formulas
+  const dq = A[0][0] - A[0][1] - A[1][0] + A[1][1];
+  const dp = B[0][0] - B[0][1] - B[1][0] + B[1][1];
+  document.getElementById('neFormula').innerHTML =
+    `<b>חישוב q* (שחקן 2 משוויאר שחקן 1):</b><br>` +
+    `q* = (${A[1][1]}−${A[0][1]}) / (${A[0][0]}−${A[0][1]}−${A[1][0]}+${A[1][1]})<br>` +
+    `q* = ${(A[1][1]-A[0][1]).toFixed(0)} / ${dq.toFixed(0)} = <span class="highlight">${fmtPct(qStar)}</span><br><br>` +
+    `<b>חישוב p* (שחקן 1 משוויאר שחקן 2):</b><br>` +
+    `p* = (${B[1][1]}−${B[1][0]}) / (${B[0][0]}−${B[0][1]}−${B[1][0]}+${B[1][1]})<br>` +
+    `p* = ${(B[1][1]-B[1][0]).toFixed(0)} / ${dp.toFixed(0)} = <span class="highlight">${fmtPct(pStar)}</span>`;
+}
+
+// ═══════════════════════════════════════════════════
+// Proof note
+// ═══════════════════════════════════════════════════
+function updateProofNote() {
+  const v1 = ep1(pStar, qStar).toFixed(2);
+  const v2 = ep2(pStar, qStar).toFixed(2);
+
+  // Alt q values to contrast
+  const qAlt = Math.min(0.95, qStar + 0.25);
+  const pAlt = Math.min(0.95, pStar + 0.25);
+
+  document.getElementById('proofNote').innerHTML =
+    `<b>הטענה המרכזית:</b> ` +
+    `כאשר שחקן 2 משחק <b>q*=${fmtPct(qStar)}</b>, ` +
+    `הרווח הצפוי של שחקן 1 הוא <b>${v1} לכל p</b> — קו שטוח לחלוטין. ` +
+    `שחקן 1 לא יכול לשפר את מצבו בסטייה מ-p*.<br>` +
+    `באופן סימטרי: כאשר שחקן 1 משחק <b>p*=${fmtPct(pStar)}</b>, ` +
+    `הרווח הצפוי של שחקן 2 הוא <b>${v2} לכל q</b>.<br>` +
+    `הקו המקווקו מציג מה היה קורה אם הצד השני <em>היה סוטה</em> מ-NE — ` +
+    `אז היה נוצר <b>תמריץ ברור</b> לאחד מהם לשנות אסטרטגיה.`;
+}
+
+// ═══════════════════════════════════════════════════
+// Charts 1 & 2 — deviation curves
+// ═══════════════════════════════════════════════════
+function pts(n) { return Array.from({length: n+1}, (_,i) => i/n); }
+
+function makeDeviationChart(canvasId, playerIdx, starVal, fixedLabel, fixedStar) {
+  const xs = pts(N);
+  const qAlt = Math.min(0.95, Math.max(0.05, fixedStar + 0.28));
+  const qAlt2 = Math.max(0.05, fixedStar - 0.28);
+
+  let yNE, yAlt1, yAlt2;
+  if (playerIdx === 1) {
+    // x = p, fix q
+    yNE   = xs.map(p => ep1(p, fixedStar));
+    yAlt1 = xs.map(p => ep1(p, qAlt));
+    yAlt2 = xs.map(p => ep1(p, qAlt2));
+  } else {
+    // x = q, fix p
+    yNE   = xs.map(q => ep2(fixedStar, q));
+    yAlt1 = xs.map(q => ep2(qAlt, q));
+    yAlt2 = xs.map(q => ep2(qAlt2, q));
+  }
+
+  const xLabels = xs.map(v => fmt2(v));
+  const starIdx = Math.round(starVal * N);
+
+  // Vertical annotation plugin (drawn manually in afterDraw)
+  const starPlugin = {
+    id: 'starLine',
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.y;
+      const xPx = xScale.getPixelForValue(starVal);
+      ctx.save();
+      ctx.strokeStyle = '#c62828';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPx, yScale.top);
+      ctx.lineTo(xPx, yScale.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Label
+      ctx.fillStyle = '#c62828';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      const varName = playerIdx === 1 ? 'p*' : 'q*';
+      ctx.fillText(varName + '=' + fmtPct(starVal), xPx, yScale.top - 4);
+      ctx.restore();
+    }
+  };
+
+  const canvas = document.getElementById(canvasId);
+  if (ch1 && canvasId === 'c1') { ch1.destroy(); }
+  if (ch2 && canvasId === 'c2') { ch2.destroy(); }
+
+  const cfg = {
+    type: 'line',
+    data: {
+      labels: xLabels,
+      datasets: [
+        {
+          label: `כש${fixedLabel}=${fmtPct(fixedStar)} (NE)`,
+          data: yNE,
+          borderColor: '#1565c0',
+          borderWidth: 3,
+          pointRadius: 0,
+          tension: 0,
+        },
+        {
+          label: `כש${fixedLabel}=${fmtPct(qAlt)} (סטייה +)`,
+          data: yAlt1,
+          borderColor: '#43a047',
+          borderWidth: 1.5,
+          borderDash: [6,4],
+          pointRadius: 0,
+          tension: 0,
+        },
+        {
+          label: `כש${fixedLabel}=${fmtPct(qAlt2)} (סטייה −)`,
+          data: yAlt2,
+          borderColor: '#fb8c00',
+          borderWidth: 1.5,
+          borderDash: [4,4],
+          pointRadius: 0,
+          tension: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 20 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: playerIdx === 1 ? 'p (הסתברות שחקן 1 בוחר שורה 1)' : 'q (הסתברות שחקן 2 בוחר עמ׳ 1)',
+            font: { size: 11 }
+          },
+          ticks: { maxTicksLimit: 6 }
+        },
+        y: {
+          title: { display: true, text: `רווח צפוי — שחקן ${playerIdx}`, font: { size: 11 } }
+        }
+      }
+    },
+    plugins: [starPlugin]
+  };
+
+  const chart = new Chart(canvas, cfg);
+  if (canvasId === 'c1') ch1 = chart;
+  else ch2 = chart;
+}
+
+// ═══════════════════════════════════════════════════
+// Chart 3 — Best Response Correspondence
+// ═══════════════════════════════════════════════════
+function makeBRChart() {
+  if (ch3) ch3.destroy();
+
+  // In (p,q) space:
+  // BR for P1: given q, choose p that maximizes ep1
+  //   p=1 if row1 better: A[0][0]*q+A[0][1]*(1-q) > A[1][0]*q+A[1][1]*(1-q)
+  //   p=0 otherwise
+  //   crossover at q = qStar
+  // BR for P2: given p, choose q that maximizes ep2
+  //   q=1 if col1 better: B[0][0]*p+B[1][0]*(1-p) > B[0][1]*p+B[1][1]*(1-p)
+  //   q=0 otherwise
+  //   crossover at p = pStar
+
+  // Determine directions
+  const row1AtZero = A[0][1] - A[1][1]; // row1 - row2 when q=0
+  const row1AtOne  = A[0][0] - A[1][0]; // row1 - row2 when q=1
+  // If row1AtZero < 0 and row1AtOne > 0: BR p=0 for q<q*, p=1 for q>q*
+  // Regardless of direction, crossover is at qStar
+
+  const p1BetterAbove = row1AtOne > 0; // p=1 is better when q is high
+
+  const col1AtZero = B[0][1] - B[1][1]; // col1-col2 when p=0
+  const col1AtOne  = B[0][0] - B[1][0]; // col1-col2 when p=1
+  const q1BetterAbove = col1AtOne > 0;  // q=1 is better when p is high
+
+  // Build BR for P1 as segments in (p, q) space
+  // x=p, y=q; BR1 gives p as function of q → we need to represent as (p_BR1(q), q) points
+  // Actually: let's build two separate line sets
+
+  // P1's BR: p = f(q)
+  //   for q < qStar: p = p1BetterAbove ? 0 : 1
+  //   for q > qStar: p = p1BetterAbove ? 1 : 0
+  //   at q = qStar: p can be anything (segment from 0 to 1)
+  const p1Low  = p1BetterAbove ? 0 : 1;
+  const p1High = p1BetterAbove ? 1 : 0;
+
+  // P2's BR: q = g(p)
+  //   for p < pStar: q = q1BetterAbove ? 0 : 1
+  //   for p > pStar: q = q1BetterAbove ? 1 : 0
+  const q2Low  = q1BetterAbove ? 0 : 1;
+  const q2High = q1BetterAbove ? 1 : 0;
+
+  // Build P1 BR as scatter/line segments in (p, q) coords
+  // Segment 1: horizontal at p=p1Low, from q=0 to q=qStar
+  // Segment 2: vertical at q=qStar, from p=p1Low to p=p1High
+  // Segment 3: horizontal at p=p1High, from q=qStar to q=1
+  const br1 = [
+    { x: p1Low,  y: 0 },
+    { x: p1Low,  y: qStar },
+    { x: pStar,  y: qStar },  // connect through NE point
+    { x: p1High, y: qStar },
+    { x: p1High, y: 1 },
+  ];
+
+  // Build P2 BR as scatter/line segments
+  // Segment 1: vertical at q=q2Low, from p=0 to p=pStar
+  // Segment 2: horizontal at p=pStar, from q=q2Low to q=q2High
+  // Segment 3: vertical at q=q2High, from p=pStar to p=1
+  const br2 = [
+    { x: 0,     y: q2Low },
+    { x: pStar, y: q2Low },
+    { x: pStar, y: qStar },  // connect through NE point
+    { x: pStar, y: q2High },
+    { x: 1,     y: q2High },
+  ];
+
+  const starPlugin = {
+    id: 'brStar',
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const xs = chart.scales.x;
+      const ys = chart.scales.y;
+      const px = xs.getPixelForValue(pStar);
+      const py = ys.getPixelForValue(qStar);
+      ctx.save();
+      ctx.fillStyle = '#f9a825';
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py, 9, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`NE (${fmtPct(pStar)}, ${fmtPct(qStar)})`, px+13, py+4);
+      ctx.restore();
+    }
+  };
+
+  ch3 = new Chart(document.getElementById('c3'), {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'BR שחקן 1: p*(q)',
+          data: br1,
+          borderColor: '#1565c0',
+          borderWidth: 3,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        },
+        {
+          label: 'BR שחקן 2: q*(p)',
+          data: br2,
+          borderColor: '#c62828',
+          borderWidth: 3,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 12 }, boxWidth: 22 } },
+        tooltip: { enabled: false }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 0, max: 1,
+          title: { display: true, text: 'p — אסטרטגיה מעורבת של שחקן 1', font: { size: 12 } },
+          ticks: { stepSize: 0.1 }
+        },
+        y: {
+          type: 'linear',
+          min: 0, max: 1,
+          title: { display: true, text: 'q — אסטרטגיה מעורבת של שחקן 2', font: { size: 12 } },
+          ticks: { stepSize: 0.1 }
+        }
+      }
+    },
+    plugins: [starPlugin]
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// Deviation text
+// ═══════════════════════════════════════════════════
+function updateDeviationText() {
+  const neV1 = ep1(pStar, qStar).toFixed(3);
+  const neV2 = ep2(pStar, qStar).toFixed(3);
+
+  // Check: does deviating from pStar hurt P1? (should be indifferent, same payoff for all p)
+  const v1At0 = ep1(0, qStar).toFixed(3);
+  const v1At1 = ep1(1, qStar).toFixed(3);
+  const v2At0 = ep2(pStar, 0).toFixed(3);
+  const v2At1 = ep2(pStar, 1).toFixed(3);
+
+  document.getElementById('deviationText').innerHTML =
+    `<b>בדיקה כמותית:</b><br>` +
+    `שחקן 1 כאשר שחקן 2 משחק q*=${fmtPct(qStar)}:<br>` +
+    `&nbsp;&nbsp;• שורה 1 בלבד (p=1): ${v1At1} &nbsp; • שורה 2 בלבד (p=0): ${v1At0} &nbsp; • בשיווי משקל (p*): ${neV1}<br>` +
+    `→ שלושת הערכים זהים — שחקן 1 <b>אדיש</b> לכל אסטרטגיה (זוהי הגדרת ה-NE המעורב).<br><br>` +
+    `שחקן 2 כאשר שחקן 1 משחק p*=${fmtPct(pStar)}:<br>` +
+    `&nbsp;&nbsp;• עמ' 1 בלבד (q=1): ${v2At1} &nbsp; • עמ' 2 בלבד (q=0): ${v2At0} &nbsp; • בשיווי משקל (q*): ${neV2}<br>` +
+    `→ שלושת הערכים זהים — שחקן 2 <b>אדיש</b> לכל אסטרטגיה.`;
+}
+
+// ═══════════════════════════════════════════════════
+// Orchestration
+// ═══════════════════════════════════════════════════
+function render() {
+  buildTable();
+  updateNEInfo();
+  updateProofNote();
+  makeDeviationChart('c1', 1, pStar, 'q', qStar);
+  makeDeviationChart('c2', 2, qStar, 'p', pStar);
+  makeBRChart();
+  updateDeviationText();
+}
+
+function newGame() {
+  generateGame();
+  render();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  generateGame();
+  render();
+});
+</script>
+</body>
+</html>
