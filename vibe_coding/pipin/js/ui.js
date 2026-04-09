@@ -2,6 +2,14 @@
 
 import { ITEMS, NPCS, LOCATIONS } from './world.js';
 
+// fallback גלובלי לתמונות NPC חסרות
+window.npcImgFallback = function(el) {
+  el.onerror = null;
+  const name = el.alt || 'Tolkien character';
+  const prompt = 'Fantasy portrait of ' + name + ', Tolkien character, painterly style, no text';
+  el.src = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=128&height=128&nologo=true';
+};
+
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -109,7 +117,7 @@ function updateNPCs(npcIds, onNPCClick) {
     avatar.className = 'npc-avatar';
     avatar.innerHTML = `
       <img class="npc-avatar-img" src="${npc.portrait}" alt="${npc.name}"
-           onerror="this.style.display='none'">
+           onerror="npcImgFallback(this)">
       <span class="npc-avatar-name">${npc.name}</span>
     `;
     avatar.addEventListener('click', () => onNPCClick(npc));
@@ -127,7 +135,7 @@ function addDialogue(speakerNpcId, text) {
   bubble.className = 'dialogue-bubble';
   bubble.innerHTML = `
     <img class="dialogue-portrait" src="${npc ? npc.portrait : ''}" alt="${npc ? npc.name : ''}"
-         onerror="this.style.display='none'">
+         onerror="npcImgFallback(this)">
     <div class="dialogue-content">
       <div class="dialogue-speaker">${npc ? npc.name : ''}</div>
       <div class="dialogue-text">${text}</div>

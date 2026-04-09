@@ -112,7 +112,11 @@ async function handlePlayerAction(action) {
     applyResponse(response);
   } catch (err) {
     console.error('Error:', err);
-    UI.addNarration('משהו השתבש... נסה שוב.');
+    if (err.message.includes('429')) {
+      UI.addNarration('גנדלף מניח יד על כתפך: "סבלנות, חביבי — הכוחות הקסומים זקוקים לרגע מנוחה. נסה שוב עוד דקה."');
+    } else {
+      UI.addNarration('משהו השתבש... נסה שוב.');
+    }
   }
 
   UI.setInputEnabled(true);

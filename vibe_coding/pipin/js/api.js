@@ -36,17 +36,23 @@ async function sendAction(gameState, action, locationData, npcData) {
     }
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
+  const models = ['gemini-2.0-flash-lite', 'gemini-2.0-flash'];
+  let response, lastErr;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) lastErr = await response.text();
+    if (response.ok) break;
+    if (response.status !== 429) throw new Error(`Gemini API error: ${response.status} - ${lastErr}`);
+  }
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${err}`);
+    throw new Error(`Gemini API error: ${response.status} - ${lastErr}`);
   }
 
   const data = await response.json();
@@ -73,30 +79,12 @@ async function generateLocationImage(locationId, locationName, description) {
   if (cached) return cached;
 
   const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, painterly, warm lighting, no text, no people in foreground.`;
+  const encodedPrompt = encodeURIComponent(prompt);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${locationId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)}`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1 }
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Imagen API error: ${response.status} - ${err}`);
-  }
-
-  const data = await response.json();
-  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('No image returned from Imagen');
-
-  const dataUrl = `data:image/png;base64,${b64}`;
-  localStorage.setItem(cacheKey, dataUrl);
-  return dataUrl;
+  // Return the URL directly — Pollinations serves images as URLs, no need to fetch/b64
+  localStorage.setItem(cacheKey, url);
+  return url;
 }
 
 function getConversationHistory() {
