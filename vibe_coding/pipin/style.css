@@ -770,6 +770,11 @@ body {
   .game-layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    height: calc(100dvh - 53px);
+  }
+
+  .map-panel {
+    display: none;
   }
 
   .left-panel {
