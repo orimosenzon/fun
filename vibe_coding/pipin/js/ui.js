@@ -1,14 +1,7 @@
 // ui.js - לוגיקת ממשק
 
 import { ITEMS, NPCS, LOCATIONS } from './world.js';
-
-// fallback גלובלי לתמונות NPC חסרות
-window.npcImgFallback = function(el) {
-  el.onerror = null;
-  const name = el.alt || 'Tolkien character';
-  const prompt = 'Fantasy portrait of ' + name + ', Tolkien character, painterly style, no text';
-  el.src = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=128&height=128&nologo=true';
-};
+import { generateNPCPortrait } from './api.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -116,10 +109,11 @@ function updateNPCs(npcIds, onNPCClick) {
     const avatar = document.createElement('div');
     avatar.className = 'npc-avatar';
     avatar.innerHTML = `
-      <img class="npc-avatar-img" src="${npc.portrait}" alt="${npc.name}"
-           onerror="npcImgFallback(this)">
+      <img class="npc-avatar-img" src="" alt="${npc.name}">
       <span class="npc-avatar-name">${npc.name}</span>
     `;
+    const img = avatar.querySelector('img');
+    generateNPCPortrait(npc.id, npc.name).then(src => { img.src = src; }).catch(() => {});
     avatar.addEventListener('click', () => onNPCClick(npc));
     els.npcsBar.appendChild(avatar);
   });
@@ -134,13 +128,16 @@ function addDialogue(speakerNpcId, text) {
   const bubble = document.createElement('div');
   bubble.className = 'dialogue-bubble';
   bubble.innerHTML = `
-    <img class="dialogue-portrait" src="${npc ? npc.portrait : ''}" alt="${npc ? npc.name : ''}"
-         onerror="npcImgFallback(this)">
+    <img class="dialogue-portrait" src="" alt="${npc ? npc.name : ''}">
     <div class="dialogue-content">
       <div class="dialogue-speaker">${npc ? npc.name : ''}</div>
       <div class="dialogue-text">${text}</div>
     </div>
   `;
+  if (npc) {
+    const img = bubble.querySelector('img');
+    generateNPCPortrait(npc.id, npc.name).then(src => { img.src = src; }).catch(() => {});
+  }
   els.dialogueArea.appendChild(bubble);
   scrollTextToBottom();
 }

@@ -1,6 +1,7 @@
 // api.js - תקשורת עם Gemini API
 
 import { SYSTEM_PROMPT, buildTurnPrompt } from './prompts.js';
+import { logError, logWarn, logInfo } from './logger.js';
 
 let apiKey = '';
 let conversationHistory = [];
@@ -46,12 +47,16 @@ async function sendAction(gameState, action, locationData, npcData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
-    if (!response.ok) lastErr = await response.text();
+    if (!response.ok) {
+      lastErr = await response.text();
+      logWarn(`Gemini ${model} failed`, { status: response.status, model, body: lastErr.slice(0, 300) });
+    }
     if (response.ok) break;
     if (response.status !== 429) throw new Error(`Gemini API error: ${response.status} - ${lastErr}`);
   }
 
   if (!response.ok) {
+    logError(`All Gemini models failed`, { status: response.status, body: lastErr?.slice(0, 300) });
     throw new Error(`Gemini API error: ${response.status} - ${lastErr}`);
   }
 
@@ -59,6 +64,7 @@ async function sendAction(gameState, action, locationData, npcData) {
 
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
+    logError('No text in Gemini response', { data: JSON.stringify(data).slice(0, 300) });
     throw new Error('No response from Gemini');
   }
 
@@ -73,18 +79,47 @@ async function sendAction(gameState, action, locationData, npcData) {
   return parsed;
 }
 
+// cache in-memory (base64 is too large for localStorage)
+const imageCache = new Map();
+
+async function callImagen(prompt, aspectRatio = '1:1') {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio }
+    })
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    logError('Imagen failed', { status: response.status, body: err.slice(0, 300) });
+    throw new Error(`Imagen error: ${response.status}`);
+  }
+  const data = await response.json();
+  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('No image from Imagen');
+  return `data:image/png;base64,${b64}`;
+}
+
 async function generateLocationImage(locationId, locationName, description) {
-  const cacheKey = `pipin_img_${locationId}`;
-  const cached = localStorage.getItem(cacheKey);
-  if (cached) return cached;
+  if (imageCache.has(locationId)) return imageCache.get(locationId);
 
   const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, painterly, warm lighting, no text, no people in foreground.`;
-  const encodedPrompt = encodeURIComponent(prompt);
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true&seed=${locationId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)}`;
+  const dataUrl = await callImagen(prompt, '1:1');
+  imageCache.set(locationId, dataUrl);
+  return dataUrl;
+}
 
-  // Return the URL directly — Pollinations serves images as URLs, no need to fetch/b64
-  localStorage.setItem(cacheKey, url);
-  return url;
+async function generateNPCPortrait(npcId, npcName) {
+  const cacheKey = `npc_${npcId}`;
+  if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
+
+  const prompt = `Fantasy portrait of ${npcName}, Tolkien character, painterly style, dramatic lighting, no text, close-up face.`;
+  const dataUrl = await callImagen(prompt, '1:1');
+  imageCache.set(cacheKey, dataUrl);
+  return dataUrl;
 }
 
 function getConversationHistory() {
@@ -95,4 +130,4 @@ function setConversationHistory(history) {
   conversationHistory = history;
 }
 
-export { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory };
+export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory };
