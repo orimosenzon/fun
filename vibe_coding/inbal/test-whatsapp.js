@@ -1,11 +1,16 @@
 /**
  * WhatsApp test script — sends hello_world template to a phone number.
- * Usage: node test-whatsapp.js
+ * Usage: WHATSAPP_ACCESS_TOKEN=<token> node test-whatsapp.js
  */
 
 const PHONE_NUMBER_ID = "968039886402071";
-const ACCESS_TOKEN = "EAALGBGGBAksBRPAQaA3rDP1KfWw4HvQVzxb5OXp8rkrRvFqZBbz59SkVkucGeCR4HuVyZCFNxj0Mc1VgK3hbGnM2z78OBcJZALC1Lbc1wqBS8sr6kQkUveDEsIrJoEmXMJB3VcVwZCov3fZA6q5V2PVmW1xR7mawQ7U1D3CVy1S2fAcFJZBlxmcZBFQs9pXAkgft6EeapKKeamdxZA1FsEFIHNkqyc2goRPl5telr7ylOxTBpOD4yXN38xJSr1zLd1z6xFWYlWlSzNButmVfMWY0Hj3DwqcBUNoZD";
+const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const TO = "972508820997";
+
+if (!ACCESS_TOKEN) {
+  console.error("Missing WHATSAPP_ACCESS_TOKEN environment variable");
+  process.exit(1);
+}
 
 async function sendTestMessage() {
   const url = `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`;
