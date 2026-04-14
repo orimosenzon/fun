@@ -1,0 +1,90 @@
+/* esla_vibe — global styles */
+
+body {
+  background: #111827 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Tab bar */
+.custom-tab {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #9ca3af !important;
+  padding: 8px 16px !important;
+  font-size: 0.88rem;
+}
+
+.custom-tab:hover {
+  color: #f0c040 !important;
+  background: #111827 !important;
+}
+
+.custom-tab--selected {
+  background: #111827 !important;
+  border-bottom-color: #111827 !important;
+  color: #f0c040 !important;
+  font-weight: 600 !important;
+}
+
+/* Bootstrap overrides for dark theme */
+.card {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.card-header {
+  background: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.form-control, .form-select {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #f0c040 !important;
+  box-shadow: 0 0 0 2px rgba(240,192,64,0.2) !important;
+}
+
+.btn-outline-secondary {
+  border-color: #374151 !important;
+  color: #9ca3af !important;
+}
+
+.btn-outline-secondary:hover {
+  background: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+.alert {
+  border-radius: 8px !important;
+}
+
+/* Monospace numbers */
+.font-monospace {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace !important;
+}
+
+/* Slider labels */
+.rc-slider-mark-text {
+  color: #9ca3af !important;
+}
+
+/* Nav links */
+.nav-tab-link {
+  color: #9ca3af !important;
+  font-size: 0.85rem;
+}
+
+.nav-tab-link:hover {
+  color: #f0c040 !important;
+}
+
+/* Tab content — dark background */
+.tab-content {
+  background: #111827;
+  min-height: calc(100vh - 120px);
+}
