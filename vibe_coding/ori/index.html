@@ -1276,9 +1276,16 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="api-guard.js"></script>
     <script>
         const GEMINI_API_KEY = "AIzaSyDJOFb9xXjwtHDLMrBIeBRPuSQpWnjTUo4";
         const GOOGLE_MAPS_API_KEY = "AIzaSyD_h40QWZPiY5biRspElBQuV2siVFW4IK4";
+
+        // ── API Guard: configure limits for this app ──
+        ApiGuard.configure({
+            dayLimits:    { places: 50, gemini: 150, maps: 30 },
+            minuteLimits: { places: 8,  gemini: 20,  maps: 5  }
+        });
 
         const TEL_AVIV = { lat: 32.0853, lng: 34.7818 };
 
@@ -1897,6 +1904,7 @@ Ejemplos:
             const prompt = t.geminiPrompt.replace('__QUERY__', query);
 
             try {
+                ApiGuard.check('gemini');
                 const res = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
                     {
@@ -1946,6 +1954,7 @@ Ejemplos:
 
             if (parsedQuery.openNow) body.openNow = true;
 
+            ApiGuard.check('places');
             const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
                 method: 'POST',
                 headers: {
