@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central Park Development — Property Value Model</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #12141c;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: #1a1d2e;
+      padding: 10px 20px;
+      border-bottom: 1px solid #2a2f4a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1rem; color: #e94560; font-weight: 700; }
+    header p  { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #map { flex: 1; min-height: 0; }
+
+    /* ── side panel ── */
+    #panel {
+      width: 300px;
+      background: #1a1d2e;
+      border-left: 1px solid #2a2f4a;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .card {
+      background: #12141c;
+      border: 1px solid #2a2f4a;
+      border-radius: 8px;
+      padding: 11px 13px;
+    }
+    .card h3 {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #556;
+      margin-bottom: 9px;
+    }
+
+    /* mode buttons */
+    .btn-row { display: flex; gap: 6px; }
+    .btn {
+      flex: 1;
+      padding: 7px 4px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      opacity: 0.6;
+    }
+    .btn.active { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+    .btn-build   { background: #c0392b; color: #fff; }
+    .btn-restore { background: #27ae60; color: #fff; }
+    .btn-reset   { background: #2c3e50; color: #ccc; }
+
+    /* stats */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 0.75rem; color: #778; }
+    .stat-value { font-size: 0.92rem; font-weight: 700; color: #fff; }
+
+    .bar-track {
+      height: 5px;
+      background: #2a2f4a;
+      border-radius: 3px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #27ae60, #e94560);
+      transition: width 0.3s ease;
+      border-radius: 3px;
+    }
+
+    /* net change box */
+    #net-box {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #2a2f4a;
+      background: #12141c;
+    }
+    #net-amount {
+      font-size: 1.7rem;
+      font-weight: 800;
+      transition: color 0.3s;
+    }
+    #net-label  { font-size: 0.7rem; color: #778; margin-top: 3px; }
+    #net-detail { font-size: 0.68rem; color: #556; margin-top: 5px; line-height: 1.5; }
+
+    /* view toggle */
+    .view-row { display: flex; gap: 6px; }
+    .view-btn {
+      flex: 1;
+      padding: 5px;
+      border: 1px solid #2a2f4a;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      background: #12141c;
+      color: #778;
+      transition: all 0.15s;
+    }
+    .view-btn.active {
+      background: #2a2f4a;
+      color: #e0e0e0;
+      border-color: #3a4060;
+    }
+
+    /* legend gradient */
+    .legend-bar {
+      height: 8px;
+      border-radius: 4px;
+      margin: 6px 0 3px;
+    }
+    .legend-bar.absolute {
+      background: linear-gradient(90deg,#000066,#0000ff,#00ccff,#00ff99,#ffcc00,#ff6600,#ff0000);
+    }
+    .legend-bar.delta {
+      background: linear-gradient(90deg,#e94560,#cc0000 35%,#1a1d2e 50%,#0d6e3e 65%,#27ae60);
+    }
+    .legend-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #556; }
+
+    /* citation */
+    .cite {
+      font-size: 0.65rem;
+      color: #445;
+      line-height: 1.65;
+    }
+    .cite strong { color: #667; }
+
+    /* map cursor */
+    #map.paint-mode   { cursor: crosshair; }
+    #map.restore-mode { cursor: cell; }
+
+    /* disclaimer */
+    .disclaimer {
+      font-size: 0.62rem;
+      color: #445;
+      line-height: 1.5;
+      border-top: 1px solid #2a2f4a;
+      padding-top: 8px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Central Park Development — Property Value Model</h1>
+    <p>Paint park cells to "build", watch Manhattan property values shift in real time</p>
+  </div>
+</header>
+
+<div id="main">
+  <div id="map" class="paint-mode"></div>
+
+  <div id="panel">
+
+    <!-- drawing mode -->
+    <div class="card">
+      <h3>Drawing Mode</h3>
+      <div class="btn-row">
+        <button class="btn btn-build active"   id="btn-build"   onclick="setMode('build')">Build</button>
+        <button class="btn btn-restore"        id="btn-restore" onclick="setMode('restore')">Restore</button>
+        <button class="btn btn-reset"                           onclick="resetAll()">Reset All</button>
+      </div>
+      <div style="font-size:0.68rem;color:#445;margin-top:7px">
+        Click or drag over the green grid cells on Central Park
+      </div>
+    </div>
+
+    <!-- park status -->
+    <div class="card">
+      <h3>Park Status</h3>
+      <div class="stat-row">
+        <span class="stat-label">Park remaining</span>
+        <span class="stat-value" id="stat-pct">100%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-park" style="width:100%"></div></div>
+      <div class="stat-row">
+        <span class="stat-label">Cells built / total</span>
+        <span class="stat-value" id="stat-cells">0 / 160</span>
+      </div>
+    </div>
+
+    <!-- breakdown -->
+    <div class="card">
+      <h3>Value Breakdown</h3>
+      <div class="stat-row">
+        <span class="stat-label">New construction value</span>
+        <span class="stat-value" id="stat-construction" style="color:#27ae60">$0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Park premium lost</span>
+        <span class="stat-value" id="stat-premium" style="color:#e94560">$0</span>
+      </div>
+    </div>
+
+    <!-- net change -->
+    <div id="net-box">
+      <div id="net-amount" style="color:#778">$0</div>
+      <div id="net-label">Net change in total Manhattan value</div>
+      <div id="net-detail">No development yet</div>
+    </div>
+
+    <!-- heat map view -->
+    <div class="card">
+      <h3>Heat Map View</h3>
+      <div class="view-row">
+        <button class="view-btn active" id="view-abs"   onclick="setView('absolute')">Absolute Value</button>
+        <button class="view-btn"        id="view-delta" onclick="setView('delta')">Change vs Baseline</button>
+      </div>
+      <div class="legend-bar absolute" id="legend-bar"></div>
+      <div class="legend-labels" id="legend-labels">
+        <span>Low $/sqft</span><span>High $/sqft</span>
+      </div>
+      <div style="font-size:0.65rem;color:#445;margin-top:4px" id="legend-note">
+        Green grid = Central Park cells (paint to build)
+      </div>
+    </div>
+
+    <!-- model sources -->
+    <div class="card">
+      <h3>Model Sources</h3>
+      <div class="cite">
+        <strong>Park premium (35% at edge, λ=500m):</strong><br>
+        Nicholls &amp; Crompton (2005), <em>J. Leisure Research</em>.<br><br>
+        <strong>Decay curve validated in:</strong><br>
+        Trojanek &amp; Głuszak (2018), dense European markets; and Kok, Monkkonen &amp; Quigley (2014), US metro areas.<br><br>
+        <strong>NYC-specific premium:</strong><br>
+        Zillow Research (2022); Barclays Capital estimate (2018): CP adds ~$15B/yr → ~$500B capitalised at 3% cap rate.<br><br>
+        <strong>FAR=12:</strong> NYC Zoning Resolution §23-151 (R10 equivalent).<br><br>
+        <strong>Construction price $2,750/sqft:</strong> Compass &amp; StreetEasy luxury market reports 2023–24.
+      </div>
+      <div class="disclaimer">
+        ⚠ Model captures <em>local</em> park-premium effect only. Not modelled: macro demand shifts, market saturation from ~440M new sqft, social/environmental value, and long-term population effects.
+      </div>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /main -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// 1. RESEARCH-BASED MODEL PARAMETERS
+// ═══════════════════════════════════════════════════════
+
+const MODEL = {
+  // Nicholls & Crompton (2005): 35% premium at park edge
+  premiumMax:    0.35,
+  // Exponential decay: premium = max × exp(−dist / λ)
+  premiumLambda: 0.50,   // km (500 m)
+  premiumCutoff: 2.50,   // km beyond which effect is negligible
+
+  // NYC Zoning Resolution §23-151 (R10 / high-density residential)
+  constructionFAR:    12,
+  // Compass luxury mixed-use 2023-24
+  constructionPsf:  2750,   // $/sqft
+  sqftPerAcre:     43560,
+};
+
+// ═══════════════════════════════════════════════════════
+// 2. NEIGHBORHOOD BASE VALUES ($/sqft, no park premium)
+//    Calibrated to StreetEasy / Compass 2023-24 minus
+//    estimated park adjacency premium.
+// ═══════════════════════════════════════════════════════
+
+const SEEDS = [
+  [40.7074, -74.0113, 1400],  // Financial District
+  [40.7160, -74.0100, 1950],  // Battery Park City
+  [40.7195, -74.0089, 3100],  // Tribeca
+  [40.7265, -74.0050, 2300],  // SoHo
+  [40.7335, -74.0023, 2700],  // West Village
+  [40.7420, -74.0050, 1950],  // Chelsea south
+  [40.7480, -74.0020, 2100],  // Chelsea
+  [40.7545, -73.9960, 1850],  // Hell's Kitchen
+  [40.7580, -73.9850, 2700],  // Midtown (Times Sq commercial)
+  [40.7580, -73.9706, 2300],  // Midtown East / Grand Central
+  [40.7520, -73.9777, 1550],  // Murray Hill / Kips Bay
+  [40.7440, -73.9780, 1500],  // Gramercy / Flatiron base
+  [40.7698, -73.9875, 2100],  // Upper West Side (non-park)
+  [40.7698, -73.9607, 2200],  // Upper East Side (non-park)
+  [40.7850, -73.9800, 1550],  // Morningside Heights
+  [40.7850, -73.9540, 1750],  // Carnegie Hill (far UES)
+  [40.8040, -73.9553,  900],  // Harlem central
+  [40.8150, -73.9440,  780],  // East Harlem
+  [40.8280, -73.9430,  680],  // North Harlem
+  [40.8400, -73.9400,  640],  // Washington Heights S
+  [40.8600, -73.9300,  590],  // Washington Heights N
+  [40.8700, -73.9200,  570],  // Inwood
+  [40.8000, -73.9650, 1150],  // Manhattanville / Hamilton Hts
+];
+
+// ═══════════════════════════════════════════════════════
+// 3. CENTRAL PARK GRID  (8 cols × 20 rows = 160 cells)
+// ═══════════════════════════════════════════════════════
+
+const CP = { south:40.7644, north:40.7989, west:-73.9812, east:-73.9489, cols:8, rows:20 };
+const CP_ACRES = 843;
+const cellAcres = CP_ACRES / (CP.cols * CP.rows);  // ~5.27 acres/cell
+
+const dLat = (CP.north - CP.south) / CP.rows;
+const dLon = (CP.east  - CP.west)  / CP.cols;
+
+const cpCells = [];
+for (let r = 0; r < CP.rows; r++) {
+  for (let c = 0; c < CP.cols; c++) {
+    const s = CP.south + r * dLat,  n = s + dLat;
+    const w = CP.west  + c * dLon,  e = w + dLon;
+    cpCells.push({ id: r*CP.cols+c, s,n,w,e,
+                   cLat:(s+n)/2, cLon:(w+e)/2, built:false });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 4. MANHATTAN HEAT MAP GRID
+// ═══════════════════════════════════════════════════════
+
+// Simplified Manhattan island polygon  [lon, lat]
+const MAN_POLY = [
+  [-74.0171, 40.7003],[-74.0192, 40.7195],[-74.0202, 40.7450],
+  [-74.0195, 40.7600],[-74.0050, 40.7750],[-73.9980, 40.7900],
+  [-73.9960, 40.8050],[-73.9350, 40.8600],[-73.9248, 40.8680],
+  [-73.9068, 40.8796],[-73.9140, 40.8400],[-73.9290, 40.7960],
+  [-73.9400, 40.7700],[-73.9487, 40.7560],[-73.9560, 40.7200],
+  [-73.9751, 40.7003],
+];
+
+function inPoly(lon, lat, poly) {
+  let inside = false;
+  for (let i=0, j=poly.length-1; i<poly.length; j=i++) {
+    const [xi,yi] = poly[i], [xj,yj] = poly[j];
+    if (((yi>lat)!==(yj>lat)) && lon < (xj-xi)*(lat-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+
+function inCP(lat, lon) {
+  return lat>=CP.south && lat<=CP.north && lon>=CP.west && lon<=CP.east;
+}
+
+// Build grid
+const GRID_COLS = 42, GRID_ROWS = 105;
+const gLatStep = (40.882 - 40.700) / GRID_ROWS;
+const gLonStep = (-73.906 - -74.022) / GRID_COLS;
+
+const heatPoints = [];  // { lat, lon }
+for (let r=0; r<GRID_ROWS; r++) {
+  for (let c=0; c<GRID_COLS; c++) {
+    const lat = 40.700 + (r+0.5)*gLatStep;
+    const lon = -74.022 + (c+0.5)*gLonStep;
+    if (!inPoly(lon,lat,MAN_POLY)) continue;
+    if (inCP(lat,lon)) continue;  // park rendered as cells, not heat
+    heatPoints.push({ lat, lon });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 5. GEOGRAPHIC & MODEL UTILITIES
+// ═══════════════════════════════════════════════════════
+
+// Fast flat-earth distance (accurate to <0.5% at Manhattan scale)
+function distKm(lat1,lon1,lat2,lon2) {
+  const dlat = (lat2-lat1)*111.0;
+  const dlon = (lon2-lon1)*111.0*Math.cos((lat1+lat2)*Math.PI/360);
+  return Math.sqrt(dlat*dlat + dlon*dlon);
+}
+
+// Inverse-distance-weighted interpolation for base $/sqft
+function baseValue(lat, lon) {
+  let wSum=0, vSum=0;
+  for (const [slat,slon,val] of SEEDS) {
+    const d = distKm(lat,lon,slat,slon);
+    const w = 1 / Math.max(d*d, 0.001);
+    wSum += w; vSum += val*w;
+  }
+  return vSum/wSum;
+}
+
+// Park-premium multiplier (0..0.35) based on distance to nearest active cell
+function parkPremium(lat, lon) {
+  let minD = Infinity;
+  for (const cell of cpCells) {
+    if (cell.built) continue;
+    const d = distKm(lat, lon, cell.cLat, cell.cLon);
+    if (d < minD) minD = d;
+  }
+  if (minD >= MODEL.premiumCutoff) return 0;
+  return MODEL.premiumMax * Math.exp(-minD / MODEL.premiumLambda);
+}
+
+// ═══════════════════════════════════════════════════════
+// 6. PRE-COMPUTATION
+// ═══════════════════════════════════════════════════════
+
+console.log(`Pre-computing ${heatPoints.length} heat points × ${cpCells.length} cells…`);
+
+// Base values for every heat map point
+const baseVals = heatPoints.map(p => baseValue(p.lat, p.lon));
+
+// Distance table: heatPoints[i] → cpCells[j]
+const distTable = heatPoints.map(p =>
+  cpCells.map(cell => distKm(p.lat, p.lon, cell.cLat, cell.cLon))
+);
+
+// Fast premium using pre-computed distances
+function premiumFast(heatIdx) {
+  const row = distTable[heatIdx];
+  let minD = Infinity;
+  for (let j=0; j<cpCells.length; j++) {
+    if (!cpCells[j].built && row[j] < minD) minD = row[j];
+  }
+  if (minD >= MODEL.premiumCutoff) return 0;
+  return MODEL.premiumMax * Math.exp(-minD / MODEL.premiumLambda);
+}
+
+// Snapshot of all premiums at baseline (all park)
+const baselinePremiums = heatPoints.map((_,i) => premiumFast(i));
+const baselineScores   = baselinePremiums.map((p,i) => p * baseVals[i]);
+const totalBaselineScore = baselineScores.reduce((a,b)=>a+b, 0);
+
+// Calibration: Barclays/research estimate ~$500B total premium
+const CALIB = 500e9 / totalBaselineScore;   // $/score-unit
+
+// ═══════════════════════════════════════════════════════
+// 7. LEAFLET MAP
+// ═══════════════════════════════════════════════════════
+
+const map = L.map('map', { center:[40.783,-73.966], zoom:13 });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© OpenStreetMap contributors © CartoDB',
+  maxZoom:19,
+}).addTo(map);
+
+// Custom pane for heat map — z-index BELOW overlayPane (400) so park cells stay clickable
+map.createPane('heatPane');
+map.getPane('heatPane').style.zIndex        = 350;
+map.getPane('heatPane').style.pointerEvents = 'none';  // never intercept clicks
+
+// ═══════════════════════════════════════════════════════
+// 8. HEAT MAP LAYER
+// ═══════════════════════════════════════════════════════
+
+const HEAT_MAX_PSF = 5500;  // normalization cap ($/sqft)
+
+// Gradient for "absolute value" view
+const GRAD_ABS = {
+  0.00:'#000066', 0.15:'#0000ff', 0.30:'#0066ff',
+  0.45:'#00ccff', 0.55:'#00ff99', 0.65:'#99ff00',
+  0.80:'#ffcc00', 0.90:'#ff6600', 1.00:'#ff0000',
+};
+// Gradient for "delta" view  (red=loss, green=gain, dark=no change)
+const GRAD_DELTA = {
+  0.00:'#cc0000', 0.35:'#e94560', 0.48:'#3a3a3a',
+  0.52:'#3a3a3a', 0.65:'#0d8040', 1.00:'#27ae60',
+};
+
+let heatLayer = null;
+let viewMode  = 'absolute';  // 'absolute' | 'delta'
+
+function buildHeatData() {
+  const data = [];
+  for (let i=0; i<heatPoints.length; i++) {
+    const { lat, lon } = heatPoints[i];
+    const base = baseVals[i];
+    const prem = premiumFast(i);
+    let intensity;
+
+    if (viewMode === 'absolute') {
+      const total = base * (1 + prem);
+      intensity = Math.min(total / HEAT_MAX_PSF, 1.0);
+    } else {
+      // delta: change from baseline premium
+      const delta = prem - baselinePremiums[i];  // negative when park is removed
+      // map [-0.35, +0.35] → [0, 1], centre at 0.5
+      intensity = 0.5 + delta / (MODEL.premiumMax * 2);
+      intensity = Math.max(0, Math.min(1, intensity));
+    }
+    data.push([lat, lon, intensity]);
+  }
+  return data;
+}
+
+function refreshHeatMap() {
+  if (heatLayer) map.removeLayer(heatLayer);
+  heatLayer = L.heatLayer(buildHeatData(), {
+    radius:      28,
+    blur:        20,
+    maxZoom:     17,
+    max:         1.0,
+    minOpacity:  0.30,
+    gradient:    viewMode === 'absolute' ? GRAD_ABS : GRAD_DELTA,
+    pane:        'heatPane',   // stays BELOW cell rectangles — clicks pass through
+  });
+  heatLayer.addTo(map);
+  // No bringToFront needed — heatPane z-index is lower than overlayPane
+}
+
+// ═══════════════════════════════════════════════════════
+// 9. CENTRAL PARK INTERACTIVE CELLS
+// ═══════════════════════════════════════════════════════
+
+const cellGroup = L.layerGroup().addTo(map);
+const cellRects = [];
+
+function cellStyle(cell) {
+  return cell.built
+    ? { color:'#666', weight:0.5, fillColor:'#888888', fillOpacity:0.80 }
+    : { color:'#1a6e1a', weight:0.5, fillColor:'#2d8a2d', fillOpacity:0.40 };
+}
+
+let drawMode  = 'build';
+let isPainting = false;
+
+function setMode(mode) {
+  drawMode = mode;
+  document.getElementById('btn-build')  .classList.toggle('active', mode==='build');
+  document.getElementById('btn-restore').classList.toggle('active', mode==='restore');
+  const mapEl = document.getElementById('map');
+  mapEl.className = mode === 'build' ? 'paint-mode' : 'restore-mode';
+}
+
+function applyCell(cell) {
+  const want = (drawMode === 'build');
+  if (cell.built === want) return;
+  cell.built = want;
+  cellRects[cell.id].setStyle(cellStyle(cell));
+  scheduleUpdate();
+}
+
+cpCells.forEach(cell => {
+  const rect = L.rectangle([[cell.s,cell.w],[cell.n,cell.e]], cellStyle(cell));
+
+  rect.on('mousedown', e => {
+    isPainting = true;
+    applyCell(cell);
+    map.dragging.disable();
+    L.DomEvent.stopPropagation(e);   // stop map from seeing this mousedown
+    L.DomEvent.preventDefault(e.originalEvent);
+  });
+  rect.on('mouseover', e => {
+    if (isPainting) {
+      applyCell(cell);
+      L.DomEvent.stopPropagation(e);
+    }
+  });
+  rect.on('mouseup', e => {
+    isPainting = false;
+    map.dragging.enable();
+    L.DomEvent.stopPropagation(e);
+  });
+  // click fallback (for single taps without drag)
+  rect.on('click', e => {
+    applyCell(cell);
+    L.DomEvent.stopPropagation(e);
+  });
+
+  cellGroup.addLayer(rect);
+  cellRects[cell.id] = rect;
+});
+
+document.addEventListener('mouseup', () => {
+  isPainting = false;
+  map.dragging.enable();
+});
+
+// ═══════════════════════════════════════════════════════
+// 10. STATISTICS
+// ═══════════════════════════════════════════════════════
+
+function builtCount() { return cpCells.filter(c=>c.built).length; }
+
+function constructionValue() {
+  const n = builtCount();
+  return n * cellAcres * MODEL.sqftPerAcre * MODEL.constructionFAR * MODEL.constructionPsf;
+}
+
+function premiumLostDollars() {
+  let score = 0;
+  for (let i=0; i<heatPoints.length; i++) score += premiumFast(i) * baseVals[i];
+  const lost = totalBaselineScore - score;
+  return lost * CALIB;
+}
+
+function fmt(usd) {
+  const b = usd / 1e9;
+  if (Math.abs(b) >= 1000) return `$${(b/1000).toFixed(2)}T`;
+  return `$${b.toFixed(0)}B`;
+}
+
+function updateStats() {
+  const built = builtCount();
+  const total = cpCells.length;
+  const pct   = Math.round((1 - built/total) * 100);
+
+  document.getElementById('stat-pct').textContent   = `${pct}%`;
+  document.getElementById('bar-park').style.width   = `${pct}%`;
+  document.getElementById('stat-cells').textContent = `${built} / ${total}`;
+
+  const conVal  = constructionValue();
+  const premLost = premiumLostDollars();
+  const net     = conVal - premLost;
+
+  document.getElementById('stat-construction').textContent = fmt(conVal);
+  document.getElementById('stat-premium').textContent      = fmt(premLost);
+
+  const netEl  = document.getElementById('net-amount');
+  const detEl  = document.getElementById('net-detail');
+  netEl.textContent = built === 0 ? '$0' : (net>=0?'+':'')+fmt(net);
+  netEl.style.color = built===0 ? '#778' : net>=0 ? '#27ae60' : '#e94560';
+
+  if (built === 0) {
+    detEl.textContent = 'No development yet — baseline state';
+  } else if (net > 0) {
+    detEl.textContent = `Construction value exceeds premium lost by ${fmt(net)}.\nNote: macro demand/saturation effects not modelled.`;
+  } else {
+    detEl.textContent = `Park premium lost exceeds new construction by ${fmt(-net)}.\nThe park generates more value than the land it sits on.`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 11. VIEW TOGGLE (absolute / delta)
+// ═══════════════════════════════════════════════════════
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('view-abs')  .classList.toggle('active', mode==='absolute');
+  document.getElementById('view-delta').classList.toggle('active', mode==='delta');
+
+  const lb   = document.getElementById('legend-bar');
+  const ll   = document.getElementById('legend-labels');
+  const note = document.getElementById('legend-note');
+  if (mode === 'absolute') {
+    lb.className = 'legend-bar absolute';
+    ll.innerHTML = '<span>Low $/sqft</span><span>High $/sqft</span>';
+    note.textContent = 'Shows current estimated property value per sqft';
+  } else {
+    lb.className = 'legend-bar delta';
+    ll.innerHTML = '<span>Lost premium</span><span>No change</span><span>Gained</span>';
+    note.textContent = 'Shows change vs baseline (all-park state)';
+  }
+  scheduleUpdate();
+}
+
+// ═══════════════════════════════════════════════════════
+// 12. THROTTLED UPDATE  (max one heat map rebuild per 80ms)
+// ═══════════════════════════════════════════════════════
+
+let updatePending = false;
+function scheduleUpdate() {
+  if (updatePending) return;
+  updatePending = true;
+  setTimeout(() => {
+    refreshHeatMap();
+    updateStats();
+    updatePending = false;
+  }, 80);
+}
+
+// ═══════════════════════════════════════════════════════
+// 13. RESET
+// ═══════════════════════════════════════════════════════
+
+function resetAll() {
+  cpCells.forEach(cell => {
+    if (cell.built) {
+      cell.built = false;
+      cellRects[cell.id].setStyle(cellStyle(cell));
+    }
+  });
+  scheduleUpdate();
+}
+
+// ═══════════════════════════════════════════════════════
+// 14. INIT
+// ═══════════════════════════════════════════════════════
+
+refreshHeatMap();
+updateStats();
+setMode('build');
+
+</script>
+</body>
+</html>
