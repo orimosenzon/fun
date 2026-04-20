@@ -406,7 +406,7 @@
 
     <!-- model parameters sliders -->
     <div class="card">
-      <h3>Model Parameters</h3>
+      <h3>Model Parameters — Local</h3>
       <div class="slider-row">
         <label>Park premium at edge</label>
         <div class="slider-track">
@@ -438,6 +438,49 @@
                  oninput="onSliderChange()">
           <span id="sl-far-val">12×</span>
         </div>
+      </div>
+    </div>
+
+    <!-- macro parameters -->
+    <div class="card">
+      <h3>Model Parameters — Macro</h3>
+      <div class="slider-row">
+        <label>Supply elasticity (Saiz)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-elasticity" min="0.5" max="3.0" step="0.1" value="1.5"
+                 oninput="onSliderChange()">
+          <span id="sl-elasticity-val">1.5</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Luxury stock (M sqft)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-luxury" min="30" max="150" step="5" value="60"
+                 oninput="onSliderChange()">
+          <span id="sl-luxury-val">60M</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Tourism value ($B)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-tourism" min="0" max="600" step="10" value="320"
+                 oninput="onSliderChange()">
+          <span id="sl-tourism-val">$320B</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Env. &amp; health ($B)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-envhealth" min="0" max="400" step="10" value="100"
+                 oninput="onSliderChange()">
+          <span id="sl-envhealth-val">$100B</span>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-reset" onclick="resetParams()">↺ Reset to defaults</button>
+      </div>
+      <div style="font-size:0.63rem;color:#445;margin-top:7px;line-height:1.4">
+        Lower elasticity / larger luxury stock → softer saturation haircut. Zero the externalities to see the "housing-only" view.
       </div>
     </div>
 
@@ -692,7 +735,9 @@ function premiumFast(heatIdx) {
 let baselinePremiums = heatPoints.map((_, i) => premiumFast(i));
 let baselineScores   = baselinePremiums.map((p, i) => p * baseVals[i]);
 let totalBaselineScore = baselineScores.reduce((a, b) => a + b, 0);
-let CALIB = 500e9 / totalBaselineScore;
+// CALIB: one-time calibration from Barclays $500B at default params.
+// Frozen afterwards so slider changes actually move the premium-loss number.
+const CALIB = 500e9 / totalBaselineScore;
 
 function recomputeBaseline() {
   computeDecayWeights();
@@ -701,7 +746,6 @@ function recomputeBaseline() {
   baselinePremiums = heatPoints.map((_, i) => premiumFast(i));
   baselineScores   = baselinePremiums.map((p, i) => p * baseVals[i]);
   totalBaselineScore = baselineScores.reduce((a, b) => a + b, 0);
-  CALIB = 500e9 / totalBaselineScore;
   cpCells.forEach((c, i) => c.built = saved[i]);
 }
 
@@ -1028,8 +1072,8 @@ function updateStats() {
   const premLost = premiumLostDollars();
   const tourLost = tourismLoss();
   const envLost  = envHealthLoss();
-  const totalLost = premLost + satLoss + tourLost + envLost;
-  const net      = conAdj - premLost - tourLost - envLost;
+  const hudLostSum = premLost + tourLost + envLost;
+  const net      = conAdj - hudLostSum;
 
   document.getElementById('stat-construction').textContent = fmt(conAdj);
   document.getElementById('stat-premium').textContent      = fmt(premLost);
@@ -1042,7 +1086,7 @@ function updateStats() {
   const hudLost = document.getElementById('hud-lost');
   const hudNet  = document.getElementById('hud-net');
   hudAdd.textContent  = built === 0 ? '+$0' : '+' + fmt(conAdj);
-  hudLost.textContent = built === 0 ? '−$0' : '−' + fmt(totalLost);
+  hudLost.textContent = built === 0 ? '−$0' : '−' + fmt(hudLostSum);
   if (built === 0) {
     hudNet.textContent = '$0';
     hudNet.className = 'hud-net neu';
@@ -1099,13 +1143,32 @@ function onSliderChange() {
   MODEL.constructionPsf = parseFloat(document.getElementById('sl-psf').value);
   MODEL.constructionFAR = parseFloat(document.getElementById('sl-far').value);
 
+  MACRO.supplyElasticity     = parseFloat(document.getElementById('sl-elasticity').value);
+  MACRO.luxuryStockSqft      = parseFloat(document.getElementById('sl-luxury').value) * 1e6;
+  MACRO.tourismCapitalized   = parseFloat(document.getElementById('sl-tourism').value) * 1e9;
+  MACRO.envHealthCapitalized = parseFloat(document.getElementById('sl-envhealth').value) * 1e9;
+
   document.getElementById('sl-premium-val').textContent = `${Math.round(MODEL.premiumMax*100)}%`;
   document.getElementById('sl-lambda-val').textContent  = `${MODEL.premiumLambda.toFixed(2)} km`;
   document.getElementById('sl-psf-val').textContent     = `$${MODEL.constructionPsf.toLocaleString()}`;
   document.getElementById('sl-far-val').textContent     = `${MODEL.constructionFAR}×`;
 
+  document.getElementById('sl-elasticity-val').textContent = MACRO.supplyElasticity.toFixed(1);
+  document.getElementById('sl-luxury-val').textContent     = `${Math.round(MACRO.luxuryStockSqft/1e6)}M`;
+  document.getElementById('sl-tourism-val').textContent    = `$${Math.round(MACRO.tourismCapitalized/1e9)}B`;
+  document.getElementById('sl-envhealth-val').textContent  = `$${Math.round(MACRO.envHealthCapitalized/1e9)}B`;
+
   recomputeBaseline();
   scheduleUpdate();
+}
+
+function resetParams() {
+  const defaults = {
+    'sl-premium': 0.35, 'sl-lambda': 0.50, 'sl-psf': 2750, 'sl-far': 12,
+    'sl-elasticity': 1.5, 'sl-luxury': 60, 'sl-tourism': 320, 'sl-envhealth': 100,
+  };
+  for (const [id, v] of Object.entries(defaults)) document.getElementById(id).value = v;
+  onSliderChange();
 }
 
 // ═══════════════════════════════════════════════════════
