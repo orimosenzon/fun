@@ -32,7 +32,7 @@
 
     #main { display: flex; flex: 1; overflow: hidden; }
 
-    #map { flex: 1; min-height: 0; }
+    #map { flex: 1; min-height: 0; overflow: hidden; }
 
     /* ── side panel ── */
     #panel {
@@ -45,6 +45,8 @@
       flex-direction: column;
       gap: 10px;
       flex-shrink: 0;
+      position: relative;
+      z-index: 1000;
     }
 
     .card {
@@ -75,6 +77,7 @@
       opacity: 0.6;
     }
     .btn.active { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
     .btn-build   { background: #c0392b; color: #fff; }
     .btn-restore { background: #27ae60; color: #fff; }
     .btn-reset   { background: #2c3e50; color: #ccc; }
@@ -145,12 +148,33 @@
       margin: 6px 0 3px;
     }
     .legend-bar.absolute {
-      background: linear-gradient(90deg,#000066,#0000ff,#00ccff,#00ff99,#ffcc00,#ff6600,#ff0000);
+      background: linear-gradient(90deg,#28005a,#3c00b4,#0050e6,#00c8e6,#50e678,#e6e600,#ff8c00,#ff3200,#c80028);
     }
     .legend-bar.delta {
-      background: linear-gradient(90deg,#e94560,#cc0000 35%,#1a1d2e 50%,#0d6e3e 65%,#27ae60);
+      background: linear-gradient(90deg,#b40000,#ff3c3c 25%,#78685a 48%,#50786a 52%,#27c878 75%,#27ff78);
     }
     .legend-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #556; }
+
+    /* sliders */
+    .slider-row { margin-bottom: 8px; }
+    .slider-row:last-child { margin-bottom: 0; }
+    .slider-row label { font-size: 0.68rem; color: #778; display: block; margin-bottom: 3px; }
+    .slider-track { display: flex; align-items: center; gap: 8px; }
+    .slider-track input[type=range] {
+      flex: 1; accent-color: #e94560; cursor: pointer;
+      -webkit-appearance: none; height: 4px; background: #2a2f4a; border-radius: 2px; outline: none;
+    }
+    .slider-track input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      background: #e94560; border-radius: 50%; cursor: pointer;
+    }
+    .slider-track span { font-size: 0.72rem; color: #e0e0e0; min-width: 42px; text-align: right; font-weight: 600; }
+
+    /* cell tooltip */
+    #cell-info { transition: opacity 0.2s; }
+    #cell-info.hidden { opacity: 0.3; }
+    #cell-info .stat-value.park  { color: #2d8a2d; }
+    #cell-info .stat-value.built { color: #e94560; }
 
     /* citation */
     .cite {
@@ -173,6 +197,62 @@
       padding-top: 8px;
       margin-top: 2px;
     }
+
+    /* big on-map HUD */
+    #hud {
+      position: absolute;
+      top: 70px;
+      left: 20px;
+      z-index: 1000;
+      background: rgba(18,20,28,0.88);
+      border: 1px solid #2a2f4a;
+      border-radius: 10px;
+      padding: 14px 18px;
+      backdrop-filter: blur(6px);
+      min-width: 260px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    #hud .hud-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    #hud .hud-label { font-size: 0.72rem; color: #889; letter-spacing: 0.05em; }
+    #hud .hud-val   { font-size: 1.35rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .pos { color: #34e38a; }
+    .neg { color: #ff4d6d; }
+    .neu { color: #889; }
+    #hud .hud-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #2a2f4a, transparent);
+      margin: 8px 0;
+    }
+    #hud .hud-net-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    #hud .hud-net-label { font-size: 0.7rem; color: #667; text-transform: uppercase; letter-spacing: 0.12em; }
+    #hud .hud-net {
+      font-size: 2.1rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    /* neighborhood labels on map */
+    .nbhd-label {
+      font-size: 0.6rem;
+      color: rgba(220,220,240,0.55);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      pointer-events: none;
+      white-space: nowrap;
+      text-shadow: 0 1px 3px #000, 0 0 6px #000;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -185,7 +265,23 @@
 </header>
 
 <div id="main">
-  <div id="map" class="paint-mode"></div>
+  <div id="map" class="paint-mode">
+    <div id="hud">
+      <div class="hud-row">
+        <span class="hud-label">+ Construction added</span>
+        <span class="hud-val pos" id="hud-add">+$0</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">− Existing value lost</span>
+        <span class="hud-val neg" id="hud-lost">−$0</span>
+      </div>
+      <div class="hud-sep"></div>
+      <div class="hud-net-row">
+        <span class="hud-net-label">Net change</span>
+        <span class="hud-net neu" id="hud-net">$0</span>
+      </div>
+    </div>
+  </div>
 
   <div id="panel">
 
@@ -195,10 +291,47 @@
       <div class="btn-row">
         <button class="btn btn-build active"   id="btn-build"   onclick="setMode('build')">Build</button>
         <button class="btn btn-restore"        id="btn-restore" onclick="setMode('restore')">Restore</button>
-        <button class="btn btn-reset"                           onclick="resetAll()">Reset All</button>
+        <button class="btn btn-reset"                           onclick="resetAll()">Reset</button>
+      </div>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-reset" id="btn-undo" onclick="undo()" disabled>↶ Undo</button>
       </div>
       <div style="font-size:0.68rem;color:#445;margin-top:7px">
-        Click or drag over the green grid cells on Central Park
+        Click or drag over green cells. <kbd style="font-size:0.65rem;background:#12141c;padding:1px 4px;border-radius:3px;border:1px solid #2a2f4a">Z</kbd>=undo, <kbd style="font-size:0.65rem;background:#12141c;padding:1px 4px;border-radius:3px;border:1px solid #2a2f4a">R</kbd>=reset
+      </div>
+    </div>
+
+    <!-- scenarios -->
+    <div class="card">
+      <h3>Scenarios</h3>
+      <div class="btn-row">
+        <button class="btn btn-reset" onclick="preset('edge')">Edge Ring</button>
+        <button class="btn btn-reset" onclick="preset('south')">South Half</button>
+        <button class="btn btn-reset" onclick="preset('all')">Build All</button>
+      </div>
+      <div style="font-size:0.68rem;color:#445;margin-top:7px">
+        Quick comparisons — notice how the edge ring costs more premium than interior builds.
+      </div>
+    </div>
+
+    <!-- cell tooltip -->
+    <div class="card hidden" id="cell-info">
+      <h3>Hovered Cell</h3>
+      <div class="stat-row">
+        <span class="stat-label">Status</span>
+        <span class="stat-value" id="ci-status">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Area</span>
+        <span class="stat-value" id="ci-acres">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Base $/sqft</span>
+        <span class="stat-value" id="ci-psf">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label" id="ci-val-label">—</span>
+        <span class="stat-value" id="ci-val">—</span>
       </div>
     </div>
 
@@ -218,14 +351,30 @@
 
     <!-- breakdown -->
     <div class="card">
-      <h3>Value Breakdown</h3>
+      <h3>Value Breakdown (Realistic)</h3>
       <div class="stat-row">
-        <span class="stat-label">New construction value</span>
+        <span class="stat-label">Construction (post-saturation)</span>
         <span class="stat-value" id="stat-construction" style="color:#27ae60">$0</span>
       </div>
+      <div style="height:1px;background:#2a2f4a;margin:6px 0"></div>
       <div class="stat-row">
-        <span class="stat-label">Park premium lost</span>
+        <span class="stat-label">Local park premium lost</span>
         <span class="stat-value" id="stat-premium" style="color:#e94560">$0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Market-saturation haircut</span>
+        <span class="stat-value" id="stat-saturation" style="color:#e94560">$0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Tourism lost</span>
+        <span class="stat-value" id="stat-tourism" style="color:#e94560">$0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Env. & public health</span>
+        <span class="stat-value" id="stat-envhealth" style="color:#e94560">$0</span>
+      </div>
+      <div style="font-size:0.65rem;color:#445;margin-top:4px;line-height:1.4">
+        Saturation: supply shock crashes $/sqft. Tourism + health: externalities. See sources.
       </div>
     </div>
 
@@ -240,8 +389,8 @@
     <div class="card">
       <h3>Heat Map View</h3>
       <div class="view-row">
-        <button class="view-btn active" id="view-abs"   onclick="setView('absolute')">Absolute Value</button>
-        <button class="view-btn"        id="view-delta" onclick="setView('delta')">Change vs Baseline</button>
+        <button class="view-btn"        id="view-abs"   onclick="setView('absolute')">Absolute Value</button>
+        <button class="view-btn active" id="view-delta" onclick="setView('delta')">Change vs Baseline</button>
       </div>
       <div class="legend-bar absolute" id="legend-bar"></div>
       <div class="legend-labels" id="legend-labels">
@@ -249,6 +398,46 @@
       </div>
       <div style="font-size:0.65rem;color:#445;margin-top:4px" id="legend-note">
         Green grid = Central Park cells (paint to build)
+      </div>
+      <div style="font-size:0.63rem;color:#445;margin-top:5px;border-top:1px solid #1e2236;padding-top:5px">
+        Tip: switch to <em>Change vs Baseline</em> to see how building affects property values across Manhattan.
+      </div>
+    </div>
+
+    <!-- model parameters sliders -->
+    <div class="card">
+      <h3>Model Parameters</h3>
+      <div class="slider-row">
+        <label>Park premium at edge</label>
+        <div class="slider-track">
+          <input type="range" id="sl-premium" min="0.10" max="0.60" step="0.01" value="0.35"
+                 oninput="onSliderChange()">
+          <span id="sl-premium-val">35%</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Premium decay (λ, km)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-lambda" min="0.20" max="1.50" step="0.05" value="0.50"
+                 oninput="onSliderChange()">
+          <span id="sl-lambda-val">0.50 km</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Construction price ($/sqft)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-psf" min="1000" max="5000" step="50" value="2750"
+                 oninput="onSliderChange()">
+          <span id="sl-psf-val">$2750</span>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Floor-Area Ratio (FAR)</label>
+        <div class="slider-track">
+          <input type="range" id="sl-far" min="4" max="20" step="1" value="12"
+                 oninput="onSliderChange()">
+          <span id="sl-far-val">12×</span>
+        </div>
       </div>
     </div>
 
@@ -259,14 +448,20 @@
         <strong>Park premium (35% at edge, λ=500m):</strong><br>
         Nicholls &amp; Crompton (2005), <em>J. Leisure Research</em>.<br><br>
         <strong>Decay curve validated in:</strong><br>
-        Trojanek &amp; Głuszak (2018), dense European markets; and Kok, Monkkonen &amp; Quigley (2014), US metro areas.<br><br>
+        Trojanek &amp; Głuszak (2018); Kok, Monkkonen &amp; Quigley (2014).<br><br>
         <strong>NYC-specific premium:</strong><br>
-        Zillow Research (2022); Barclays Capital estimate (2018): CP adds ~$15B/yr → ~$500B capitalised at 3% cap rate.<br><br>
-        <strong>FAR=12:</strong> NYC Zoning Resolution §23-151 (R10 equivalent).<br><br>
-        <strong>Construction price $2,750/sqft:</strong> Compass &amp; StreetEasy luxury market reports 2023–24.
+        Barclays (2018): CP adds ~$15B/yr → ~$500B capitalised at 3%.<br><br>
+        <strong>Market saturation (elasticity 1.5):</strong><br>
+        Saiz (2010), <em>QJE</em>: Manhattan housing supply elasticity. Adding ~440M sqft (≈8× existing luxury stock of 60M sqft) crashes $/sqft via P = P₀·(1+ΔQ/Q)<sup>−1/ε</sup>.<br><br>
+        <strong>Tourism value ($320B):</strong><br>
+        NYC &amp; Co.: CP draws ~42M visitors/yr; ~15% of NYC's $75B/yr tourism → $12–15B/yr × 4% cap rate.<br><br>
+        <strong>Environment &amp; health ($100B):</strong><br>
+        Urban heat-island mitigation (1–2°F cooler), air-quality, mental-health benefits — Kondo et al. (2018); Gascon et al. (2016); NYC DOHMH.<br><br>
+        <strong>FAR=12:</strong> NYC Zoning §23-151 (R10).<br>
+        <strong>Base $2,750/sqft:</strong> Compass, StreetEasy 2023–24.
       </div>
       <div class="disclaimer">
-        ⚠ Model captures <em>local</em> park-premium effect only. Not modelled: macro demand shifts, market saturation from ~440M new sqft, social/environmental value, and long-term population effects.
+        ⚠ Still not modelled: long-run population growth from cheaper housing, crime/density feedback, construction-phasing time value, option value of preserving a one-of-a-kind asset.
       </div>
     </div>
 
@@ -274,30 +469,35 @@
 </div><!-- /main -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════
 // 1. RESEARCH-BASED MODEL PARAMETERS
 // ═══════════════════════════════════════════════════════
 
 const MODEL = {
-  // Nicholls & Crompton (2005): 35% premium at park edge
   premiumMax:    0.35,
-  // Exponential decay: premium = max × exp(−dist / λ)
-  premiumLambda: 0.50,   // km (500 m)
-  premiumCutoff: 2.50,   // km beyond which effect is negligible
-
-  // NYC Zoning Resolution §23-151 (R10 / high-density residential)
+  premiumLambda: 0.50,   // km
+  premiumCutoff: 3.00,   // km — soft cutoff for performance
   constructionFAR:    12,
-  // Compass luxury mixed-use 2023-24
-  constructionPsf:  2750,   // $/sqft
+  constructionPsf:  2750,
   sqftPerAcre:     43560,
+};
+
+// ─── MACRO-ECONOMIC MODEL ───
+// Adds effects the local premium model misses: supply shock, tourism loss,
+// environmental/health externalities. All calibrated from published research.
+const MACRO = {
+  // Market saturation — Saiz (2010): Manhattan housing supply elasticity
+  luxuryStockSqft: 60e6,        // rough Manhattan luxury high-rise stock
+  supplyElasticity: 1.5,        // long-run; Saiz 2010 estimate ~1.0–2.5
+  // Tourism — NYC & Co. + Barclays: CP draws ~42M visitors/yr
+  tourismCapitalized: 320e9,    // $12–15B/yr × 4% discount → ~$320B
+  // Environment & public health — Kondo et al 2018, UHI studies
+  envHealthCapitalized: 100e9,  // air quality + heat mitigation + mental health
 };
 
 // ═══════════════════════════════════════════════════════
 // 2. NEIGHBORHOOD BASE VALUES ($/sqft, no park premium)
-//    Calibrated to StreetEasy / Compass 2023-24 minus
-//    estimated park adjacency premium.
 // ═══════════════════════════════════════════════════════
 
 const SEEDS = [
@@ -309,99 +509,123 @@ const SEEDS = [
   [40.7420, -74.0050, 1950],  // Chelsea south
   [40.7480, -74.0020, 2100],  // Chelsea
   [40.7545, -73.9960, 1850],  // Hell's Kitchen
-  [40.7580, -73.9850, 2700],  // Midtown (Times Sq commercial)
-  [40.7580, -73.9706, 2300],  // Midtown East / Grand Central
-  [40.7520, -73.9777, 1550],  // Murray Hill / Kips Bay
-  [40.7440, -73.9780, 1500],  // Gramercy / Flatiron base
-  [40.7698, -73.9875, 2100],  // Upper West Side (non-park)
-  [40.7698, -73.9607, 2200],  // Upper East Side (non-park)
+  [40.7580, -73.9850, 2700],  // Midtown (Times Sq)
+  [40.7580, -73.9706, 2300],  // Midtown East
+  [40.7520, -73.9777, 1550],  // Murray Hill
+  [40.7440, -73.9780, 1500],  // Gramercy / Flatiron
+  [40.7698, -73.9875, 2100],  // Upper West Side
+  [40.7698, -73.9607, 2200],  // Upper East Side
   [40.7850, -73.9800, 1550],  // Morningside Heights
-  [40.7850, -73.9540, 1750],  // Carnegie Hill (far UES)
+  [40.7850, -73.9540, 1750],  // Carnegie Hill
   [40.8040, -73.9553,  900],  // Harlem central
   [40.8150, -73.9440,  780],  // East Harlem
   [40.8280, -73.9430,  680],  // North Harlem
   [40.8400, -73.9400,  640],  // Washington Heights S
   [40.8600, -73.9300,  590],  // Washington Heights N
   [40.8700, -73.9200,  570],  // Inwood
-  [40.8000, -73.9650, 1150],  // Manhattanville / Hamilton Hts
+  [40.8000, -73.9650, 1150],  // Manhattanville
 ];
 
 // ═══════════════════════════════════════════════════════
-// 3. CENTRAL PARK GRID  (8 cols × 20 rows = 160 cells)
+// 3. CENTRAL PARK GRID — parallelogram cells aligned
+//    to Manhattan's 29° street grid
 // ═══════════════════════════════════════════════════════
 
-const CP = { south:40.7644, north:40.7989, west:-73.9812, east:-73.9489, cols:8, rows:20 };
-const CP_ACRES = 843;
-const cellAcres = CP_ACRES / (CP.cols * CP.rows);  // ~5.27 acres/cell
+const CP_CORNERS = {
+  SW: [40.7644, -73.9816],  // CPW & 59th St
+  SE: [40.7644, -73.9731],  // 5th Ave & 59th St
+  NE: [40.7983, -73.9490],  // 5th Ave & 110th St
+  NW: [40.7983, -73.9575],  // CPW & 110th St
+};
 
-const dLat = (CP.north - CP.south) / CP.rows;
-const dLon = (CP.east  - CP.west)  / CP.cols;
+const CP_POLY = [
+  [-73.9816, 40.7644], [-73.9731, 40.7644],
+  [-73.9490, 40.7983], [-73.9575, 40.7983],
+];
+
+const CP_COLS = 8, CP_ROWS = 20;
+const CP_ACRES = 843;
+const cellAcres = CP_ACRES / (CP_COLS * CP_ROWS);
+
+function lerp2(a, b, t) {
+  return [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t];
+}
+
+function cpCellCorners(r, c) {
+  const fr0 = r/CP_ROWS, fr1 = (r+1)/CP_ROWS;
+  const fc0 = c/CP_COLS, fc1 = (c+1)/CP_COLS;
+  const s0 = lerp2(CP_CORNERS.SW, CP_CORNERS.SE, fc0);
+  const s1 = lerp2(CP_CORNERS.SW, CP_CORNERS.SE, fc1);
+  const n0 = lerp2(CP_CORNERS.NW, CP_CORNERS.NE, fc0);
+  const n1 = lerp2(CP_CORNERS.NW, CP_CORNERS.NE, fc1);
+  return [lerp2(s0,n0,fr0), lerp2(s1,n1,fr0), lerp2(s1,n1,fr1), lerp2(s0,n0,fr1)];
+}
 
 const cpCells = [];
-for (let r = 0; r < CP.rows; r++) {
-  for (let c = 0; c < CP.cols; c++) {
-    const s = CP.south + r * dLat,  n = s + dLat;
-    const w = CP.west  + c * dLon,  e = w + dLon;
-    cpCells.push({ id: r*CP.cols+c, s,n,w,e,
-                   cLat:(s+n)/2, cLon:(w+e)/2, built:false });
+for (let r = 0; r < CP_ROWS; r++) {
+  for (let c = 0; c < CP_COLS; c++) {
+    const corners = cpCellCorners(r, c);
+    const cLat = (corners[0][0]+corners[1][0]+corners[2][0]+corners[3][0])/4;
+    const cLon = (corners[0][1]+corners[1][1]+corners[2][1]+corners[3][1])/4;
+    cpCells.push({ id: r*CP_COLS+c, corners, cLat, cLon, built: false });
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// 4. MANHATTAN HEAT MAP GRID
+// 4. MANHATTAN HEAT MAP GRID (canvas-based choropleth)
 // ═══════════════════════════════════════════════════════
 
-// Simplified Manhattan island polygon  [lon, lat]
 const MAN_POLY = [
-  [-74.0171, 40.7003],[-74.0192, 40.7195],[-74.0202, 40.7450],
-  [-74.0195, 40.7600],[-74.0050, 40.7750],[-73.9980, 40.7900],
-  [-73.9960, 40.8050],[-73.9350, 40.8600],[-73.9248, 40.8680],
-  [-73.9068, 40.8796],[-73.9140, 40.8400],[-73.9290, 40.7960],
-  [-73.9400, 40.7700],[-73.9487, 40.7560],[-73.9560, 40.7200],
-  [-73.9751, 40.7003],
+  [-74.0171,40.7003],[-74.0192,40.7195],[-74.0202,40.7450],
+  [-74.0195,40.7600],[-74.0050,40.7750],[-73.9980,40.7900],
+  [-73.9960,40.8050],[-73.9350,40.8600],[-73.9248,40.8680],
+  [-73.9068,40.8796],[-73.9140,40.8400],[-73.9290,40.7960],
+  [-73.9400,40.7700],[-73.9487,40.7560],[-73.9560,40.7200],
+  [-73.9751,40.7003],
 ];
 
 function inPoly(lon, lat, poly) {
   let inside = false;
-  for (let i=0, j=poly.length-1; i<poly.length; j=i++) {
-    const [xi,yi] = poly[i], [xj,yj] = poly[j];
-    if (((yi>lat)!==(yj>lat)) && lon < (xj-xi)*(lat-yi)/(yj-yi)+xi) inside=!inside;
+  for (let i=0,j=poly.length-1; i<poly.length; j=i++) {
+    const [xi,yi]=poly[i],[xj,yj]=poly[j];
+    if(((yi>lat)!==(yj>lat))&&lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)inside=!inside;
   }
   return inside;
 }
 
-function inCP(lat, lon) {
-  return lat>=CP.south && lat<=CP.north && lon>=CP.west && lon<=CP.east;
-}
+function inCP(lat, lon) { return inPoly(lon, lat, CP_POLY); }
 
-// Build grid
 const GRID_COLS = 42, GRID_ROWS = 105;
-const gLatStep = (40.882 - 40.700) / GRID_ROWS;
-const gLonStep = (-73.906 - -74.022) / GRID_COLS;
+const G_LAT_MIN = 40.700, G_LAT_MAX = 40.882;
+const G_LON_MIN = -74.022, G_LON_MAX = -73.906;
+const gLatStep = (G_LAT_MAX - G_LAT_MIN) / GRID_ROWS;
+const gLonStep = (G_LON_MAX - G_LON_MIN) / GRID_COLS;
 
-const heatPoints = [];  // { lat, lon }
-for (let r=0; r<GRID_ROWS; r++) {
-  for (let c=0; c<GRID_COLS; c++) {
-    const lat = 40.700 + (r+0.5)*gLatStep;
-    const lon = -74.022 + (c+0.5)*gLonStep;
-    if (!inPoly(lon,lat,MAN_POLY)) continue;
-    if (inCP(lat,lon)) continue;  // park rendered as cells, not heat
+// Build heat points + a 2D lookup grid → heat point index
+const heatPoints = [];
+const gridMap = new Int16Array(GRID_COLS * GRID_ROWS).fill(-1);
+
+for (let r = 0; r < GRID_ROWS; r++) {
+  for (let c = 0; c < GRID_COLS; c++) {
+    const lat = G_LAT_MIN + (r+0.5)*gLatStep;
+    const lon = G_LON_MIN + (c+0.5)*gLonStep;
+    if (!inPoly(lon,lat,MAN_POLY) || inCP(lat,lon)) continue;
+    gridMap[r * GRID_COLS + c] = heatPoints.length;
     heatPoints.push({ lat, lon });
   }
 }
+console.log(`Grid: ${heatPoints.length} heat points, ${cpCells.length} park cells`);
 
 // ═══════════════════════════════════════════════════════
 // 5. GEOGRAPHIC & MODEL UTILITIES
 // ═══════════════════════════════════════════════════════
 
-// Fast flat-earth distance (accurate to <0.5% at Manhattan scale)
 function distKm(lat1,lon1,lat2,lon2) {
   const dlat = (lat2-lat1)*111.0;
   const dlon = (lon2-lon1)*111.0*Math.cos((lat1+lat2)*Math.PI/360);
   return Math.sqrt(dlat*dlat + dlon*dlon);
 }
 
-// Inverse-distance-weighted interpolation for base $/sqft
 function baseValue(lat, lon) {
   let wSum=0, vSum=0;
   for (const [slat,slon,val] of SEEDS) {
@@ -412,25 +636,21 @@ function baseValue(lat, lon) {
   return vSum/wSum;
 }
 
-// Park-premium multiplier (0..0.35) based on distance to nearest active cell
-function parkPremium(lat, lon) {
-  let minD = Infinity;
-  for (const cell of cpCells) {
-    if (cell.built) continue;
-    const d = distKm(lat, lon, cell.cLat, cell.cLon);
-    if (d < minD) minD = d;
-  }
-  if (minD >= MODEL.premiumCutoff) return 0;
-  return MODEL.premiumMax * Math.exp(-minD / MODEL.premiumLambda);
-}
-
 // ═══════════════════════════════════════════════════════
-// 6. PRE-COMPUTATION
+// 6. PRE-COMPUTATION — influence-sum premium model
+//
+//    Instead of nearest-cell distance, each heat point's
+//    premium is proportional to the weighted sum of
+//    influence from ALL non-built park cells:
+//
+//      influence(i) = Σ_j  exp(−d_ij / λ)   for j not built
+//      premium(i)   = premiumMax × min(influence(i) / refInfluence, 1)
+//
+//    refInfluence is the max influence at baseline (all park).
+//    This means building ANY cell reduces premiums, not
+//    just edge cells.
 // ═══════════════════════════════════════════════════════
 
-console.log(`Pre-computing ${heatPoints.length} heat points × ${cpCells.length} cells…`);
-
-// Base values for every heat map point
 const baseVals = heatPoints.map(p => baseValue(p.lat, p.lon));
 
 // Distance table: heatPoints[i] → cpCells[j]
@@ -438,27 +658,84 @@ const distTable = heatPoints.map(p =>
   cpCells.map(cell => distKm(p.lat, p.lon, cell.cLat, cell.cLon))
 );
 
-// Fast premium using pre-computed distances
-function premiumFast(heatIdx) {
-  const row = distTable[heatIdx];
-  let minD = Infinity;
-  for (let j=0; j<cpCells.length; j++) {
-    if (!cpCells[j].built && row[j] < minD) minD = row[j];
+// Decay weights: exp(−d / λ) — recomputed when λ changes
+let decayWeights;   // [heatPoint][cell]
+let fullInfluence;  // [heatPoint] — sum of all weights (baseline)
+let refInfluence;   // max fullInfluence (for normalization)
+
+function computeDecayWeights() {
+  decayWeights = distTable.map(row =>
+    row.map(d => d < MODEL.premiumCutoff ? Math.exp(-d / MODEL.premiumLambda) : 0)
+  );
+  fullInfluence = decayWeights.map(row => {
+    let s = 0; for (let j = 0; j < row.length; j++) s += row[j]; return s;
+  });
+  refInfluence = 0;
+  for (let i = 0; i < fullInfluence.length; i++) {
+    if (fullInfluence[i] > refInfluence) refInfluence = fullInfluence[i];
   }
-  if (minD >= MODEL.premiumCutoff) return 0;
-  return MODEL.premiumMax * Math.exp(-minD / MODEL.premiumLambda);
+}
+computeDecayWeights();
+
+// Current premium for heat point i — influence-sum model
+function premiumFast(heatIdx) {
+  if (refInfluence < 1e-9) return 0;
+  const wts = decayWeights[heatIdx];
+  let sum = 0;
+  for (let j = 0; j < cpCells.length; j++) {
+    if (!cpCells[j].built) sum += wts[j];
+  }
+  return MODEL.premiumMax * Math.min(sum / refInfluence, 1.0);
 }
 
-// Snapshot of all premiums at baseline (all park)
-const baselinePremiums = heatPoints.map((_,i) => premiumFast(i));
-const baselineScores   = baselinePremiums.map((p,i) => p * baseVals[i]);
-const totalBaselineScore = baselineScores.reduce((a,b)=>a+b, 0);
+// Baseline premiums (snapshot at all-park state)
+let baselinePremiums = heatPoints.map((_, i) => premiumFast(i));
+let baselineScores   = baselinePremiums.map((p, i) => p * baseVals[i]);
+let totalBaselineScore = baselineScores.reduce((a, b) => a + b, 0);
+let CALIB = 500e9 / totalBaselineScore;
 
-// Calibration: Barclays/research estimate ~$500B total premium
-const CALIB = 500e9 / totalBaselineScore;   // $/score-unit
+function recomputeBaseline() {
+  computeDecayWeights();
+  const saved = cpCells.map(c => c.built);
+  cpCells.forEach(c => c.built = false);
+  baselinePremiums = heatPoints.map((_, i) => premiumFast(i));
+  baselineScores   = baselinePremiums.map((p, i) => p * baseVals[i]);
+  totalBaselineScore = baselineScores.reduce((a, b) => a + b, 0);
+  CALIB = 500e9 / totalBaselineScore;
+  cpCells.forEach((c, i) => c.built = saved[i]);
+}
 
 // ═══════════════════════════════════════════════════════
-// 7. LEAFLET MAP
+// 7. COLOR INTERPOLATION
+// ═══════════════════════════════════════════════════════
+
+// Gradient stops: [[position, [r,g,b]], ...]
+const GRAD_ABS = [
+  [0.00,[40,0,90]],    [0.12,[60,0,180]],    [0.25,[0,80,230]],
+  [0.38,[0,200,230]],  [0.50,[80,230,120]],  [0.62,[230,230,0]],
+  [0.75,[255,140,0]],  [0.88,[255,50,0]],    [1.00,[200,0,40]],
+];
+const GRAD_DELTA = [
+  [0.00,[120,0,0]],    [0.10,[220,20,20]],   [0.25,[255,80,80]],
+  [0.38,[255,180,120]],[0.47,[90,80,80]],    [0.50,[50,55,80]],   [0.53,[70,90,90]],
+  [0.62,[150,240,180]],[0.75,[60,230,120]],  [0.90,[20,220,80]],  [1.00,[0,255,100]],
+];
+
+function gradColor(t, stops) {
+  t = Math.max(0, Math.min(1, t));
+  if (t <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (t <= stops[i][0]) {
+      const f = (t - stops[i-1][0]) / (stops[i][0] - stops[i-1][0]);
+      const a = stops[i-1][1], b = stops[i][1];
+      return [a[0]+f*(b[0]-a[0])|0, a[1]+f*(b[1]-a[1])|0, a[2]+f*(b[2]-a[2])|0];
+    }
+  }
+  return stops[stops.length-1][1];
+}
+
+// ═══════════════════════════════════════════════════════
+// 8. LEAFLET MAP + CANVAS CHOROPLETH OVERLAY
 // ═══════════════════════════════════════════════════════
 
 const map = L.map('map', { center:[40.783,-73.966], zoom:13 });
@@ -468,68 +745,64 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   maxZoom:19,
 }).addTo(map);
 
-// Custom pane for heat map — z-index BELOW overlayPane (400) so park cells stay clickable
 map.createPane('heatPane');
-map.getPane('heatPane').style.zIndex        = 350;
-map.getPane('heatPane').style.pointerEvents = 'none';  // never intercept clicks
+map.getPane('heatPane').style.zIndex = 350;
+map.getPane('heatPane').style.pointerEvents = 'none';
 
-// ═══════════════════════════════════════════════════════
-// 8. HEAT MAP LAYER
-// ═══════════════════════════════════════════════════════
+// Small canvas: one pixel per grid cell → Leaflet stretches it smoothly
+const gridCanvas = document.createElement('canvas');
+gridCanvas.width  = GRID_COLS;
+gridCanvas.height = GRID_ROWS;
+const gridCtx = gridCanvas.getContext('2d');
 
-const HEAT_MAX_PSF = 5500;  // normalization cap ($/sqft)
+const heatOverlay = L.imageOverlay(gridCanvas.toDataURL(), [
+  [G_LAT_MIN, G_LON_MIN],
+  [G_LAT_MAX, G_LON_MAX],
+], {
+  opacity: 0.78,
+  pane: 'heatPane',
+  interactive: false,
+}).addTo(map);
 
-// Gradient for "absolute value" view
-const GRAD_ABS = {
-  0.00:'#000066', 0.15:'#0000ff', 0.30:'#0066ff',
-  0.45:'#00ccff', 0.55:'#00ff99', 0.65:'#99ff00',
-  0.80:'#ffcc00', 0.90:'#ff6600', 1.00:'#ff0000',
-};
-// Gradient for "delta" view  (red=loss, green=gain, dark=no change)
-const GRAD_DELTA = {
-  0.00:'#cc0000', 0.35:'#e94560', 0.48:'#3a3a3a',
-  0.52:'#3a3a3a', 0.65:'#0d8040', 1.00:'#27ae60',
-};
-
-let heatLayer = null;
-let viewMode  = 'absolute';  // 'absolute' | 'delta'
-
-function buildHeatData() {
-  const data = [];
-  for (let i=0; i<heatPoints.length; i++) {
-    const { lat, lon } = heatPoints[i];
-    const base = baseVals[i];
-    const prem = premiumFast(i);
-    let intensity;
-
-    if (viewMode === 'absolute') {
-      const total = base * (1 + prem);
-      intensity = Math.min(total / HEAT_MAX_PSF, 1.0);
-    } else {
-      // delta: change from baseline premium
-      const delta = prem - baselinePremiums[i];  // negative when park is removed
-      // map [-0.35, +0.35] → [0, 1], centre at 0.5
-      intensity = 0.5 + delta / (MODEL.premiumMax * 2);
-      intensity = Math.max(0, Math.min(1, intensity));
-    }
-    data.push([lat, lon, intensity]);
-  }
-  return data;
-}
+const HEAT_MAX_PSF = 4000;       // tightened so real values span full gradient
+const DELTA_SENSITIVITY = 60;    // amplification: ±~1.7% premium change → full color
+let viewMode = 'delta';          // default to delta view — shows drama immediately
 
 function refreshHeatMap() {
-  if (heatLayer) map.removeLayer(heatLayer);
-  heatLayer = L.heatLayer(buildHeatData(), {
-    radius:      28,
-    blur:        20,
-    maxZoom:     17,
-    max:         1.0,
-    minOpacity:  0.30,
-    gradient:    viewMode === 'absolute' ? GRAD_ABS : GRAD_DELTA,
-    pane:        'heatPane',   // stays BELOW cell rectangles — clicks pass through
-  });
-  heatLayer.addTo(map);
-  // No bringToFront needed — heatPane z-index is lower than overlayPane
+  const imgData = gridCtx.createImageData(GRID_COLS, GRID_ROWS);
+  const buf = imgData.data;
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const hi = gridMap[r * GRID_COLS + c];
+      const py = GRID_ROWS - 1 - r;  // canvas Y flipped
+      const px = (py * GRID_COLS + c) * 4;
+
+      if (hi < 0) { buf[px+3] = 0; continue; }  // transparent
+
+      const base = baseVals[hi];
+      const prem = premiumFast(hi);
+      let rgb;
+
+      if (viewMode === 'absolute') {
+        const totalPsf = base * (1 + prem);
+        const t = Math.min(totalPsf / HEAT_MAX_PSF, 1.0);
+        rgb = gradColor(t, GRAD_ABS);
+      } else {
+        const delta = prem - baselinePremiums[hi];
+        const t = 0.5 + delta * DELTA_SENSITIVITY;
+        rgb = gradColor(t, GRAD_DELTA);
+      }
+
+      buf[px]   = rgb[0];
+      buf[px+1] = rgb[1];
+      buf[px+2] = rgb[2];
+      buf[px+3] = 220;
+    }
+  }
+
+  gridCtx.putImageData(imgData, 0, 0);
+  heatOverlay.setUrl(gridCanvas.toDataURL());
 }
 
 // ═══════════════════════════════════════════════════════
@@ -545,83 +818,199 @@ function cellStyle(cell) {
     : { color:'#1a6e1a', weight:0.5, fillColor:'#2d8a2d', fillOpacity:0.40 };
 }
 
-let drawMode  = 'build';
+let drawMode   = 'build';
 let isPainting = false;
 
 function setMode(mode) {
   drawMode = mode;
   document.getElementById('btn-build')  .classList.toggle('active', mode==='build');
   document.getElementById('btn-restore').classList.toggle('active', mode==='restore');
-  const mapEl = document.getElementById('map');
-  mapEl.className = mode === 'build' ? 'paint-mode' : 'restore-mode';
+  document.getElementById('map').className = mode === 'build' ? 'paint-mode' : 'restore-mode';
 }
+
+// ── Cell tooltip ──
+function updateCellTooltip(cell) {
+  const el = document.getElementById('cell-info');
+  el.classList.remove('hidden');
+  const basePsf  = Math.round(baseValue(cell.cLat, cell.cLon));
+  const statusEl = document.getElementById('ci-status');
+  document.getElementById('ci-acres').textContent = `${cellAcres.toFixed(1)} ac`;
+  document.getElementById('ci-psf').textContent   = `$${basePsf.toLocaleString()}`;
+
+  if (cell.built) {
+    statusEl.textContent = 'Built';
+    statusEl.className = 'stat-value built';
+    document.getElementById('ci-val-label').textContent = 'Cell construction value';
+    const cv = cellAcres * MODEL.sqftPerAcre * MODEL.constructionFAR * MODEL.constructionPsf;
+    document.getElementById('ci-val').textContent = fmt(cv);
+  } else {
+    statusEl.textContent = 'Park';
+    statusEl.className = 'stat-value park';
+    document.getElementById('ci-val-label').textContent = 'Park premium here';
+    // Compute influence ratio for this cell's center
+    const inf = cellInfluenceRatio(cell.cLat, cell.cLon);
+    document.getElementById('ci-val').textContent = `+${(inf * MODEL.premiumMax * 100).toFixed(1)}%`;
+  }
+}
+
+function cellInfluenceRatio(lat, lon) {
+  // Compute influence-sum premium at an arbitrary point
+  let sum = 0, full = 0;
+  for (const cell of cpCells) {
+    const d = distKm(lat, lon, cell.cLat, cell.cLon);
+    const w = d < MODEL.premiumCutoff ? Math.exp(-d / MODEL.premiumLambda) : 0;
+    full += w;
+    if (!cell.built) sum += w;
+  }
+  return full > 0 ? Math.min(sum / refInfluence, 1.0) : 0;
+}
+
+function hideCellTooltip() {
+  document.getElementById('cell-info').classList.add('hidden');
+}
+
+// ── Undo history ──
+const MAX_UNDO = 50;
+const undoStack = [];
+
+function pushUndo() {
+  undoStack.push(cpCells.map(c => c.built));
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  document.getElementById('btn-undo').disabled = false;
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const prev = undoStack.pop();
+  cpCells.forEach((c, i) => {
+    if (c.built !== prev[i]) {
+      c.built = prev[i];
+      cellRects[c.id].setStyle(cellStyle(c));
+    }
+  });
+  if (!undoStack.length) document.getElementById('btn-undo').disabled = true;
+  scheduleUpdate();
+}
+
+let paintStarted = false;
 
 function applyCell(cell) {
   const want = (drawMode === 'build');
   if (cell.built === want) return;
+  if (!paintStarted) { pushUndo(); paintStarted = true; }
   cell.built = want;
   cellRects[cell.id].setStyle(cellStyle(cell));
+  updateCellTooltip(cell);
+  scheduleUpdate();
+}
+
+// ── Preset scenarios ──
+function preset(kind) {
+  pushUndo();
+  cpCells.forEach(cell => cell.built = false);
+  if (kind === 'all') {
+    cpCells.forEach(cell => cell.built = true);
+  } else if (kind === 'edge') {
+    cpCells.forEach(cell => {
+      const r = (cell.id / CP_COLS) | 0;
+      const c = cell.id % CP_COLS;
+      if (r === 0 || r === CP_ROWS-1 || c === 0 || c === CP_COLS-1) cell.built = true;
+    });
+  } else if (kind === 'south') {
+    cpCells.forEach(cell => {
+      const r = (cell.id / CP_COLS) | 0;
+      if (r < CP_ROWS / 2) cell.built = true;
+    });
+  }
+  cpCells.forEach(c => cellRects[c.id].setStyle(cellStyle(c)));
   scheduleUpdate();
 }
 
 cpCells.forEach(cell => {
-  const rect = L.rectangle([[cell.s,cell.w],[cell.n,cell.e]], cellStyle(cell));
-
-  rect.on('mousedown', e => {
+  const poly = L.polygon(cell.corners, cellStyle(cell));
+  poly.on('mousedown', e => {
     isPainting = true;
     applyCell(cell);
     map.dragging.disable();
-    L.DomEvent.stopPropagation(e);   // stop map from seeing this mousedown
+    L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e.originalEvent);
   });
-  rect.on('mouseover', e => {
-    if (isPainting) {
-      applyCell(cell);
-      L.DomEvent.stopPropagation(e);
-    }
+  poly.on('mouseover', e => {
+    updateCellTooltip(cell);
+    if (isPainting) { applyCell(cell); L.DomEvent.stopPropagation(e); }
   });
-  rect.on('mouseup', e => {
-    isPainting = false;
+  poly.on('mouseup', e => {
+    isPainting = false; paintStarted = false;
     map.dragging.enable();
     L.DomEvent.stopPropagation(e);
   });
-  // click fallback (for single taps without drag)
-  rect.on('click', e => {
-    applyCell(cell);
-    L.DomEvent.stopPropagation(e);
-  });
-
-  cellGroup.addLayer(rect);
-  cellRects[cell.id] = rect;
+  poly.on('click', e => { applyCell(cell); L.DomEvent.stopPropagation(e); });
+  cellGroup.addLayer(poly);
+  cellRects[cell.id] = poly;
 });
 
+document.getElementById('map').addEventListener('mouseleave', hideCellTooltip);
 document.addEventListener('mouseup', () => {
-  isPainting = false;
-  map.dragging.enable();
+  isPainting = false; paintStarted = false; map.dragging.enable();
+});
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'z' || e.key === 'Z') { undo(); e.preventDefault(); }
+  else if (e.key === 'r' || e.key === 'R') { resetAll(); e.preventDefault(); }
+  else if (e.key === 'b' || e.key === 'B') setMode('build');
+  else if (e.key === 's' || e.key === 'S') setMode('restore');
 });
 
 // ═══════════════════════════════════════════════════════
 // 10. STATISTICS
 // ═══════════════════════════════════════════════════════
 
-function builtCount() { return cpCells.filter(c=>c.built).length; }
+function builtCount() { return cpCells.filter(c => c.built).length; }
 
-function constructionValue() {
-  const n = builtCount();
-  return n * cellAcres * MODEL.sqftPerAcre * MODEL.constructionFAR * MODEL.constructionPsf;
+function builtSqft() {
+  return builtCount() * cellAcres * MODEL.sqftPerAcre * MODEL.constructionFAR;
+}
+
+// Saturation: flooding the luxury market crashes $/sqft (Saiz 2010 elasticity)
+function saturationMultiplier() {
+  const sqft = builtSqft();
+  if (sqft <= 0) return 1.0;
+  const ratio = 1 + sqft / MACRO.luxuryStockSqft;
+  return Math.pow(ratio, -1 / MACRO.supplyElasticity);
+}
+
+function constructionValueRaw() {
+  return builtSqft() * MODEL.constructionPsf;
+}
+
+function constructionValueAdjusted() {
+  return constructionValueRaw() * saturationMultiplier();
 }
 
 function premiumLostDollars() {
   let score = 0;
-  for (let i=0; i<heatPoints.length; i++) score += premiumFast(i) * baseVals[i];
-  const lost = totalBaselineScore - score;
-  return lost * CALIB;
+  for (let i = 0; i < heatPoints.length; i++) score += premiumFast(i) * baseVals[i];
+  return (totalBaselineScore - score) * CALIB;
+}
+
+function tourismLoss() {
+  const frac = builtCount() / cpCells.length;
+  return MACRO.tourismCapitalized * Math.pow(frac, 1.1);
+}
+
+function envHealthLoss() {
+  const frac = builtCount() / cpCells.length;
+  return MACRO.envHealthCapitalized * frac;
 }
 
 function fmt(usd) {
-  const b = usd / 1e9;
-  if (Math.abs(b) >= 1000) return `$${(b/1000).toFixed(2)}T`;
-  return `$${b.toFixed(0)}B`;
+  const abs = Math.abs(usd);
+  if (abs >= 1e12) return `$${(usd/1e12).toFixed(2)}T`;
+  if (abs >= 1e9)  return `$${(usd/1e9).toFixed(0)}B`;
+  if (abs >= 1e6)  return `$${(usd/1e6).toFixed(0)}M`;
+  return `$${usd.toFixed(0)}`;
 }
 
 function updateStats() {
@@ -633,17 +1022,39 @@ function updateStats() {
   document.getElementById('bar-park').style.width   = `${pct}%`;
   document.getElementById('stat-cells').textContent = `${built} / ${total}`;
 
-  const conVal  = constructionValue();
+  const conRaw   = constructionValueRaw();
+  const conAdj   = constructionValueAdjusted();
+  const satLoss  = conRaw - conAdj;         // market-saturation haircut
   const premLost = premiumLostDollars();
-  const net     = conVal - premLost;
+  const tourLost = tourismLoss();
+  const envLost  = envHealthLoss();
+  const totalLost = premLost + satLoss + tourLost + envLost;
+  const net      = conAdj - premLost - tourLost - envLost;
 
-  document.getElementById('stat-construction').textContent = fmt(conVal);
+  document.getElementById('stat-construction').textContent = fmt(conAdj);
   document.getElementById('stat-premium').textContent      = fmt(premLost);
+  document.getElementById('stat-saturation').textContent   = fmt(satLoss);
+  document.getElementById('stat-tourism').textContent      = fmt(tourLost);
+  document.getElementById('stat-envhealth').textContent    = fmt(envLost);
 
-  const netEl  = document.getElementById('net-amount');
-  const detEl  = document.getElementById('net-detail');
-  netEl.textContent = built === 0 ? '$0' : (net>=0?'+':'')+fmt(net);
-  netEl.style.color = built===0 ? '#778' : net>=0 ? '#27ae60' : '#e94560';
+  // HUD on map — big, colored, signed
+  const hudAdd  = document.getElementById('hud-add');
+  const hudLost = document.getElementById('hud-lost');
+  const hudNet  = document.getElementById('hud-net');
+  hudAdd.textContent  = built === 0 ? '+$0' : '+' + fmt(conAdj);
+  hudLost.textContent = built === 0 ? '−$0' : '−' + fmt(totalLost);
+  if (built === 0) {
+    hudNet.textContent = '$0';
+    hudNet.className = 'hud-net neu';
+  } else {
+    hudNet.textContent = (net >= 0 ? '+' : '−') + fmt(Math.abs(net));
+    hudNet.className = 'hud-net ' + (net >= 0 ? 'pos' : 'neg');
+  }
+
+  const netEl = document.getElementById('net-amount');
+  const detEl = document.getElementById('net-detail');
+  netEl.textContent = built === 0 ? '$0' : (net >= 0 ? '+' : '') + fmt(net);
+  netEl.style.color = built === 0 ? '#778' : net >= 0 ? '#27ae60' : '#e94560';
 
   if (built === 0) {
     detEl.textContent = 'No development yet — baseline state';
@@ -655,14 +1066,14 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════
-// 11. VIEW TOGGLE (absolute / delta)
+// 11. VIEW TOGGLE
 // ═══════════════════════════════════════════════════════
 
 function setView(mode) {
   viewMode = mode;
   document.getElementById('view-abs')  .classList.toggle('active', mode==='absolute');
   document.getElementById('view-delta').classList.toggle('active', mode==='delta');
-
+  document.getElementById('hud').dataset.view = mode;
   const lb   = document.getElementById('legend-bar');
   const ll   = document.getElementById('legend-labels');
   const note = document.getElementById('legend-note');
@@ -679,36 +1090,89 @@ function setView(mode) {
 }
 
 // ═══════════════════════════════════════════════════════
-// 12. THROTTLED UPDATE  (max one heat map rebuild per 80ms)
+// 12. SLIDERS
+// ═══════════════════════════════════════════════════════
+
+function onSliderChange() {
+  MODEL.premiumMax      = parseFloat(document.getElementById('sl-premium').value);
+  MODEL.premiumLambda   = parseFloat(document.getElementById('sl-lambda').value);
+  MODEL.constructionPsf = parseFloat(document.getElementById('sl-psf').value);
+  MODEL.constructionFAR = parseFloat(document.getElementById('sl-far').value);
+
+  document.getElementById('sl-premium-val').textContent = `${Math.round(MODEL.premiumMax*100)}%`;
+  document.getElementById('sl-lambda-val').textContent  = `${MODEL.premiumLambda.toFixed(2)} km`;
+  document.getElementById('sl-psf-val').textContent     = `$${MODEL.constructionPsf.toLocaleString()}`;
+  document.getElementById('sl-far-val').textContent     = `${MODEL.constructionFAR}×`;
+
+  recomputeBaseline();
+  scheduleUpdate();
+}
+
+// ═══════════════════════════════════════════════════════
+// 13. THROTTLED UPDATE
 // ═══════════════════════════════════════════════════════
 
 let updatePending = false;
 function scheduleUpdate() {
   if (updatePending) return;
   updatePending = true;
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     refreshHeatMap();
     updateStats();
     updatePending = false;
-  }, 80);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
-// 13. RESET
+// 14. RESET
 // ═══════════════════════════════════════════════════════
 
 function resetAll() {
+  if (cpCells.some(c => c.built)) pushUndo();
   cpCells.forEach(cell => {
-    if (cell.built) {
-      cell.built = false;
-      cellRects[cell.id].setStyle(cellStyle(cell));
-    }
+    if (cell.built) { cell.built = false; cellRects[cell.id].setStyle(cellStyle(cell)); }
   });
+  hideCellTooltip();
   scheduleUpdate();
 }
 
 // ═══════════════════════════════════════════════════════
-// 14. INIT
+// 15. NEIGHBORHOOD LABELS
+// ═══════════════════════════════════════════════════════
+
+const NEIGHBORHOODS = [
+  { name:'Financial District', lat:40.707, lon:-74.010 },
+  { name:'Tribeca',            lat:40.719, lon:-74.008 },
+  { name:'West Village',       lat:40.735, lon:-74.005 },
+  { name:'Chelsea',            lat:40.748, lon:-74.001 },
+  { name:"Hell's Kitchen",     lat:40.763, lon:-73.991 },
+  { name:'Midtown',            lat:40.758, lon:-73.978 },
+  { name:'Murray Hill',        lat:40.748, lon:-73.977 },
+  { name:'Gramercy',           lat:40.738, lon:-73.983 },
+  { name:'Upper West Side',    lat:40.787, lon:-73.982 },
+  { name:'Upper East Side',    lat:40.773, lon:-73.957 },
+  { name:'Morningside Hts',    lat:40.810, lon:-73.962 },
+  { name:'East Harlem',        lat:40.796, lon:-73.940 },
+  { name:'Harlem',             lat:40.811, lon:-73.946 },
+  { name:'Washington Heights', lat:40.843, lon:-73.940 },
+  { name:'Inwood',             lat:40.868, lon:-73.922 },
+];
+
+NEIGHBORHOODS.forEach(n => {
+  L.marker([n.lat, n.lon], {
+    icon: L.divIcon({
+      html: `<span class="nbhd-label">${n.name}</span>`,
+      className: '',
+      iconSize: [130, 18],
+      iconAnchor: [65, 9],
+    }),
+    interactive: false,
+    zIndexOffset: -1000,
+  }).addTo(map);
+});
+
+// ═══════════════════════════════════════════════════════
+// 16. INIT
 // ═══════════════════════════════════════════════════════
 
 refreshHeatMap();
