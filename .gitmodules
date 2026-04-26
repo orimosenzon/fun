@@ -1,0 +1,3 @@
+[submodule "vibe_coding/letras"]
+	path = vibe_coding/letras
+	url = https://github.com/orimosenzon/letras.git
