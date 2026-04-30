@@ -1,28 +1,36 @@
 # פיפין — ידע כללי על הפרויקט
 
-## מה זה
-משחק הרפתקאות טקסטואלי-ויזואלי בדפדפן. השחקן מגלם את פיפין (פרגרין טוק) בארץ התיכונה.
-Pure frontend — HTML/JS, ללא שרת. רץ מ-localhost עם `python3 -m http.server 8765`.
+## החזון (עודכן 2026-04-30)
+משחק הרפתקאות shared-world בעולם טולקין — סיפורים חדשים שלא היו בספרים.
+המשתמשים בונים את העולם יחד: הביקור הראשון במקום יוצר נרטיב + תמונה עם המפתח של אותו משתמש, ונשמר לכולם.
+כל משתמש מביא מפתח API שלו (Gemini) — אפס עלות LLM מצד המפתח.
+**מודל עסקי:** חינם כרגע, בניית קהילה ועולם עשיר. מונטיזציה — אחרי הצלחה.
 
-## ארכיטקטורה
-- `index.html` + `style.css` — ממשק משתמש RTL
-- `js/game.js` — מנוע משחק ראשי, ניהול state
-- `js/api.js` — תקשורת עם Gemini API (נרטיב + Imagen תמונות)
-- `js/ui.js` — עדכוני ממשק, מפה, תמונות, דיאלוגים
-- `js/world.js` — מבנה נתונים סטטי: ~30 מקומות, דמויות, חפצים
-- `js/prompts.js` — system prompt ל-Gemini, בניית turn prompt
+## מצב נוכחי
+Single-player offline — בתהליך פיבוט ל-shared world.
 
-## עיקרון המפתח: Lazy World Generation
-העולם נבנה תוך כדי משחק:
-- ביקור ראשון במקום → Gemini יוצר נרטיב, Imagen יוצר תמונה → נשמרים ב-localStorage
-- ביקור חוזר → טוען מ-cache, ללא קריאה ל-API
-- cache keys: `pipin_img_{locationId}`, `pipin_save`, `pipin_api_key`
+## מה קיים ועובד
+- מנוע נרטיב: Gemini 2.0 Flash Lite (free tier)
+- תמונות: Imagen 3 (דורש billing)
+- מפה SVG דינמית
+- שמירה/טעינה ב-localStorage
+- `server.py` — Flask עם endpoint /log
 
-## API
-- מודל נרטיב: `gemini-2.0-flash-lite` (free tier)
-- מודל תמונות: `imagen-3.0-generate-002` (ייתכן שדורש billing)
-- API key: מוכנס ידנית במסך פתיחה, נשמר ב-localStorage
+## קבצים
+- `index.html` + `style.css` — ממשק RTL
+- `js/game.js` — מנוע משחק, ניהול state
+- `js/api.js` — Gemini + Imagen
+- `js/ui.js` — ממשק, מפה, תמונות, דיאלוגים
+- `js/world.js` — 30 מקומות, דמויות, חפצים (טולקין)
+- `js/prompts.js` — system prompt ל-Gemini
+- `server.py` — Flask dev server
 
-## מפה
-מפה SVG דינמית בעמודה ימנית (200px). נבנית ב-BFS מ-hobbiton לפי הקשרים ב-world.js.
-צמתים: זהב = ביקרת, ירוק = מיקום נוכחי (עם halo).
+## עיקרון: Lazy World Generation
+- ביקור ראשון במקום → Gemini יוצר נרטיב, Imagen יוצר תמונה
+- ביקור חוזר → טוען מ-cache (localStorage כרגע, עתיד: DB שרת)
+
+## השאלה הפתוחה לסשן הבא
+**מה "משותף" בעולם?**
+- **גרסה A (פשוטה):** הראשון שמגיע למקום יוצר אותו לכולם — Location Canon
+- **גרסה B (עשירה):** כל שחקן יוצר גרסה משלו + World Log של אירועים משמעותיים מכולם
+החלטה זו תקבע את הארכיטקטורה.
