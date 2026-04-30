@@ -368,6 +368,143 @@ Scene saddleScene() {
     return s;
 }
 
+// ─────────────────────────────────────────────────────────────
+// CATENOID
+// ─────────────────────────────────────────────────────────────
+Scene catenoidScene() {
+    Scene s;
+    s.title = "Catenoid — קטנריה שסובבת סביב ציר z";
+
+    const QVector3D O(0,0,0);
+    s.segments.push_back({O, QVector3D(0,0,2.5f), cAxis, 1.2f, false, "z", QVector3D(0,0,2.6f)});
+    s.segments.push_back({O, QVector3D(2.0f,0,0), cAxis, 1.0f, false, "x", QVector3D(2.1f,0,0)});
+    s.segments.push_back({O, QVector3D(0,2.0f,0), cAxis, 1.0f, false, "y", QVector3D(0,2.1f,0)});
+
+    // Catenary curve ρ = cosh(v) in the xz plane: polyline
+    const int N = 80;
+    QVector<QVector3D> pts;
+    pts.reserve(N+1);
+    for (int i = 0; i <= N; ++i) {
+        float v = -2.0f + 4.0f * i / N;
+        float rho = std::cosh(v) * 0.6f;  // scale down so it fits
+        pts.push_back({rho, 0, v * 0.6f});
+    }
+    for (int i = 0; i < N; ++i)
+        s.segments.push_back({pts[i], pts[i+1], cV, 2.2f, false, "", {}});
+
+    // Mirror catenary on left (negative x, dashed)
+    for (int i = 0; i < N; ++i) {
+        QVector3D a(-pts[i].x(),   0, pts[i].z());
+        QVector3D b(-pts[i+1].x(), 0, pts[i+1].z());
+        s.segments.push_back({a, b, cFaint, 1.2f, true, "", {}});
+    }
+
+    // waist circle at v=0 (minimum radius = 0.6)
+    s.circles.push_back({O, QVector3D(0.6f,0,0), QVector3D(0,0.6f,0), cSinU, 1.8f, true});
+
+    // A sample point on the catenary
+    const float vS = 1.0f;
+    QVector3D P(std::cosh(vS)*0.6f, 0, vS*0.6f);
+    s.segments.push_back({QVector3D(0,0,P.z()), P, cSinU, 2.0f, true, "cosh(v)", 0.5f*(QVector3D(0,0,P.z())+P)+QVector3D(0,0,0.1f)});
+    s.points.push_back({P, cPoint, 7.0f, "P"});
+    s.points.push_back({O, cAxis, 5.0f, ""});
+
+    s.boundsRadius = 2.5f;
+    return s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// HELICOID
+// ─────────────────────────────────────────────────────────────
+Scene helicoidScene() {
+    Scene s;
+    s.title = "Helicoid — קטע קו שמסתובב ועולה";
+
+    const QVector3D O(0,0,0);
+    s.segments.push_back({O - QVector3D(0,0,1.4f), O + QVector3D(0,0,2.0f),
+                          cAxis, 1.2f, false, "z", QVector3D(0,0,2.1f)});
+    s.segments.push_back({O, QVector3D(1.6f,0,0), cAxis, 1.0f, false, "x", QVector3D(1.7f,0,0)});
+    s.segments.push_back({O, QVector3D(0,1.6f,0), cAxis, 1.0f, false, "y", QVector3D(0,1.7f,0)});
+
+    // Draw several arms at different (u, z) positions
+    const int arms = 8;
+    for (int i = 0; i < arms; ++i) {
+        float u = 4.0f * kPi * i / arms;
+        float z = (u / kPi) * 0.28f - 1.2f;
+        QVector3D dir(std::cos(u), std::sin(u), 0);
+        QColor col = (i % 2 == 0) ? cU : cFaint;
+        float w = (i % 2 == 0) ? 2.2f : 1.2f;
+        s.segments.push_back({QVector3D(0,0,z), QVector3D(dir.x(), dir.y(), z), col, w});
+        s.segments.push_back({QVector3D(0,0,z), QVector3D(-dir.x(), -dir.y(), z), col, w});
+    }
+
+    // Helix on the edge (v=1)
+    const int M = 100;
+    QVector<QVector3D> pts;
+    for (int i = 0; i <= M; ++i) {
+        float u = 4.0f * kPi * i / M;
+        float z = (u / kPi) * 0.28f - 1.2f;
+        pts.push_back({std::cos(u), std::sin(u), z});
+    }
+    for (int i = 0; i < M; ++i)
+        s.segments.push_back({pts[i], pts[i+1], cV, 1.6f, false, "", {}});
+
+    // v label on a bright arm
+    {
+        float u = 0;
+        float z = -1.2f;
+        QVector3D mid(0.5f, 0, z);
+        s.points.push_back({mid, cV, 5.0f, "v"});
+    }
+
+    s.boundsRadius = 2.6f;
+    return s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENNEPER
+// ─────────────────────────────────────────────────────────────
+Scene enneperScene() {
+    Scene s;
+    s.title = "Enneper — Saddle z=u²−v² + תיקון פולינומי";
+
+    const QVector3D O(0,0,0);
+    s.segments.push_back({O, QVector3D(2.0f,0,0), cAxis, 1.0f, false, "u", QVector3D(2.1f,0,0)});
+    s.segments.push_back({O, QVector3D(0,2.0f,0), cAxis, 1.0f, false, "v", QVector3D(0,2.1f,0)});
+    s.segments.push_back({O, QVector3D(0,0,1.8f), cAxis, 1.0f, false, "z", QVector3D(0,0,1.9f)});
+
+    // Parabola u=v (z=u²): bowl up
+    const int N = 60;
+    QVector3D prev;
+    for (int i = 0; i <= N; ++i) {
+        float t = -1.2f + 2.4f*i/N;
+        float x = t - t*t*t/3.0f + t*t*t;   // u=v=t: x = t-t³/3+t³ = t+2t³/3
+        float y = x;
+        float z = t*t - t*t;                  // z = 0 when u=v? No: u²-v²=0
+        // Actually for u=v: z = u²-v² = 0. Let's draw the u-axis curve (v=0)
+        // For v=0: x=u-u³/3, y=0, z=u²
+        float u = t;
+        QVector3D q(u - u*u*u/3.0f, 0, u*u * 0.6f);
+        if (i > 0) s.segments.push_back({prev, q, cBowlUp, 2.4f, false, "", {}});
+        prev = q;
+    }
+
+    // u=0 curve (v varies): x=v²v-v³/3=v-v³/3+0=v-v³/3, y=v-v³/3, z=-v²
+    for (int i = 0; i <= N; ++i) {
+        float v = -1.2f + 2.4f*i/N;
+        QVector3D q(0, v - v*v*v/3.0f, -v*v * 0.6f);
+        if (i > 0) s.segments.push_back({prev, q, cBowlDn, 2.4f, false, "", {}});
+        prev = q;
+    }
+
+    s.points.push_back({QVector3D(0.8f, 0, 0.38f), cBowlUp, 5.0f, "z = u² (v=0)"});
+    s.points.push_back({QVector3D(0, 0.8f, -0.38f), cBowlDn, 5.0f, "z = −v² (u=0)"});
+    s.points.push_back({O, cSinU, 6.0f, "u=v=0"});
+
+    s.boundsRadius = 2.4f;
+    return s;
+}
+
 }  // namespace
 
 Scene sceneFor(const QString& name) {
@@ -378,6 +515,9 @@ Scene sceneFor(const QString& name) {
     if (name == QStringLiteral("Mobius strip"))      return mobiusScene();
     if (name == QStringLiteral("Klein bottle"))      return kleinScene();
     if (name == QStringLiteral("Saddle (z = u*v)"))  return saddleScene();
+    if (name == QStringLiteral("Catenoid"))           return catenoidScene();
+    if (name == QStringLiteral("Helicoid"))           return helicoidScene();
+    if (name == QStringLiteral("Enneper surface"))    return enneperScene();
     return {};
 }
 

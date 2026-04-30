@@ -50,6 +50,26 @@ QString descriptionFor(const QString& name) {
         return QStringLiteral(
             "f(u,v) = (u, v, u·v)\n"
             "פרבולואיד היפרבולי — דוגמה קלאסית למשטח עם עיקול גאוסי שלילי.");
+    if (name == "Catenoid")
+        return QStringLiteral(
+            "f(u,v) = (cosh(v)·cos u,  cosh(v)·sin u,  v)\n"
+            "u ∈ [0, 2π],   v ∈ [-2, 2]\n\n"
+            "משטח מינימלי — צורת הסבון בין שתי טבעות עגולות.\n"
+            "v — לאורך ציר הסיבוב (קטנריה = עקומת החבל).\n"
+            "u — סיבוב סביב ציר z.");
+    if (name == "Helicoid")
+        return QStringLiteral(
+            "f(u,v) = (v·cos u,  v·sin u,  u/π)\n"
+            "u ∈ [0, 4π],   v ∈ [-1, 1]\n\n"
+            "משטח מינימלי — בורג אינסופי.\n"
+            "u — זווית הסיבוב (ועלייה ב-z יחד).\n"
+            "v — מרחק מציר הסיבוב.");
+    if (name == "Enneper surface")
+        return QStringLiteral(
+            "f(u,v) = (u − u³/3 + u·v²,  v − v³/3 + u²·v,  u² − v²)\n"
+            "u, v ∈ [-1.5, 1.5]\n\n"
+            "משטח מינימלי פולינומי — מגיע מפרמטריזציית ויירשטראס.\n"
+            "z = u²−v² הוא Saddle; x,y מוסיפים תיקון פולינומי.");
     return QString();
 }
 }
