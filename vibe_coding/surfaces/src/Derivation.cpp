@@ -604,6 +604,216 @@ QByteArray saddleSvg() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// CATENOID
+// ─────────────────────────────────────────────────────────────
+QString catenoidText() {
+    return QStringLiteral(R"HTML(
+<h3 style="color:#c084fc;">Catenoid — איך מגיעים לנוסחה</h3>
+<p><b>קטנריה</b> היא עקומת החבל: חבל גמיש שנתלה בשתי נקודות לוקח את הצורה
+<code>ρ = cosh(z)</code>. הקטנואיד נוצר מסיבוב הקטנריה סביב ציר z:</p>
+<pre style="color:#e6e6ea;">ρ(v) = cosh(v)   →   x = cosh(v)·cos u
+                     y = cosh(v)·sin u
+                     z = v</pre>
+<p>הפרמטר <b style="color:#22d3ee;">v</b> הולך לאורך ציר הסיבוב, ו-<b style="color:#e879f9;">u</b>
+סובב סביבו.</p>
+<p>הקטנואיד הוא <b>משטח מינימלי</b>: העקמומיות הממוצעת שלו (H) שווה לאפס בכל
+נקודה. זו בדיוק הצורה שסרט סבון לוקח כשמותחים אותו בין שתי טבעות — הטבע
+"בוחר" את המשטח עם שטח הפנים המינימלי.</p>
+)HTML");
+}
+
+QByteArray catenoidSvg() {
+    return QByteArray(R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" width="100%">
+  <defs>
+    <marker id="arrC" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#cdd0d8"/>
+    </marker>
+  </defs>
+  <text x="260" y="26" fill="#cdd0d8" font-size="15" text-anchor="middle"
+        font-family="sans-serif">Catenoid — קטנריה שסובבת סביב ציר z</text>
+
+  <!-- z axis -->
+  <line x1="160" y1="300" x2="160" y2="40" stroke="#cdd0d8"
+        stroke-width="1.4" marker-end="url(#arrC)"/>
+  <text x="142" y="48" fill="#cdd0d8" font-size="14" font-style="italic">z</text>
+
+  <!-- rho axis -->
+  <line x1="160" y1="170" x2="460" y2="170" stroke="#9da0ab"
+        stroke-width="1" marker-end="url(#arrC)"/>
+  <text x="464" y="178" fill="#9da0ab" font-size="13" font-style="italic">ρ</text>
+
+  <!-- catenary cosh(v), v from -2 to 2, scaled:
+       z maps linearly: v=-2 → y=300, v=2 → y=40 ; Δy/Δv = -65
+       ρ=cosh(v) horizontally from x=160, scale 60px per unit
+       Sample points: v=-2: cosh=3.76 → x=385; v=-1: cosh=1.54 → x=252;
+       v=0: cosh=1 → x=220; v=1: cosh=1.54 → x=252; v=2: cosh=3.76 → x=385 -->
+  <path d="M 385 300
+           C 310 285 240 240 220 170
+           C 240 100 310  55 385  40"
+        fill="none" stroke="#22d3ee" stroke-width="2.6"/>
+
+  <!-- mirror on left (negative x, dashed) -->
+  <path d="M -65 300
+           C 10 285 80 240 100 170
+           C 80 100 10  55 -65  40"
+        fill="none" stroke="#22d3ee" stroke-width="1.4" stroke-dasharray="4 3"
+        transform="translate(320 0) scale(-1 1) translate(-160 0)"/>
+
+  <!-- minimum waist at v=0 -->
+  <line x1="160" y1="170" x2="220" y2="170" stroke="#fbbf24"
+        stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="226" y="168" fill="#fbbf24" font-size="13">cosh(0)=1</text>
+
+  <!-- a sample v value label -->
+  <circle cx="252" cy="105" r="3.5" fill="#e879f9"/>
+  <line x1="160" y1="105" x2="252" y2="105" stroke="#e879f9"
+        stroke-width="1.4" stroke-dasharray="3 3"/>
+  <text x="166" y="100" fill="#e879f9" font-size="13">cosh(v)  (=ρ)</text>
+  <text x="120" y="110" fill="#22d3ee" font-size="13" font-style="italic">v</text>
+
+  <!-- legend -->
+  <text x="40" y="316" fill="#9da0ab" font-size="12">
+    מסובבים את הקטנריה סביב ציר z ⇒ קטנואיד (משטח מינימלי)
+  </text>
+</svg>
+)SVG");
+}
+
+// ─────────────────────────────────────────────────────────────
+// HELICOID
+// ─────────────────────────────────────────────────────────────
+QString helicoidText() {
+    return QStringLiteral(R"HTML(
+<h3 style="color:#c084fc;">Helicoid — איך מגיעים לנוסחה</h3>
+<p><b>הליקואיד</b> נבנה מקטע קו שמסתובב סביב ציר z ובמקביל עולה:</p>
+<pre style="color:#e6e6ea;">x = v·cos u
+y = v·sin u
+z = u / π</pre>
+<p>הפרמטר <b style="color:#e879f9;">u</b> הוא זווית הסיבוב; בכל פעם ש-u
+עולה ב-2π (סיבוב מלא), z עולה ב-2. <b style="color:#22d3ee;">v</b> הוא
+המרחק מציר הסיבוב — v=0 הוא הציר עצמו, |v|=1 הוא הקצה.</p>
+<p>ההליקואיד הוא <b>משטח מינימלי</b>, ויש לו קשר מדהים לקטנואיד: ניתן
+לעבור ביניהם <b>רציפה</b> (isometric deformation) תוך שמירה על תכונת
+המינימליות בכל שלב של המעבר.</p>
+)HTML");
+}
+
+QByteArray helicoidSvg() {
+    return QByteArray(R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" width="100%">
+  <defs>
+    <marker id="arrH" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#cdd0d8"/>
+    </marker>
+  </defs>
+  <text x="260" y="26" fill="#cdd0d8" font-size="15" text-anchor="middle"
+        font-family="sans-serif">Helicoid — קטע קו שסובב ועולה</text>
+
+  <!-- z axis -->
+  <line x1="260" y1="310" x2="260" y2="30" stroke="#cdd0d8"
+        stroke-width="1.4" marker-end="url(#arrH)"/>
+  <text x="268" y="38" fill="#cdd0d8" font-size="14" font-style="italic">z</text>
+
+  <!-- three horizontal arms at different heights, each rotated -->
+  <!-- arm at z=0, angle=0 (along x) -->
+  <line x1="260" y1="270" x2="380" y2="270" stroke="#e879f9" stroke-width="2.6"/>
+  <line x1="260" y1="270" x2="140" y2="270" stroke="#e879f9" stroke-width="2.6"
+        stroke-dasharray="5 4" opacity="0.6"/>
+  <text x="384" y="274" fill="#e879f9" font-size="13">u=0</text>
+
+  <!-- arm at z=1, angle=π (along -x, so flipped) -->
+  <line x1="260" y1="190" x2="140" y2="195" stroke="#e879f9" stroke-width="2.6"/>
+  <line x1="260" y1="190" x2="378" y2="185" stroke="#e879f9" stroke-width="2.6"
+        stroke-dasharray="5 4" opacity="0.6"/>
+  <text x="100" y="198" fill="#e879f9" font-size="13">u=π</text>
+
+  <!-- arm at z=2, angle=2π (back to x) -->
+  <line x1="260" y1="110" x2="380" y2="110" stroke="#e879f9" stroke-width="2.6"/>
+  <line x1="260" y1="110" x2="140" y2="110" stroke="#e879f9" stroke-width="2.6"
+        stroke-dasharray="5 4" opacity="0.6"/>
+  <text x="384" y="114" fill="#e879f9" font-size="13">u=2π</text>
+
+  <!-- v label on one arm -->
+  <text x="296" y="258" fill="#22d3ee" font-size="14" font-style="italic"
+        font-weight="bold">v</text>
+
+  <!-- z increment label -->
+  <line x1="240" y1="270" x2="240" y2="110" stroke="#fbbf24" stroke-width="1.4"
+        stroke-dasharray="3 3"/>
+  <text x="210" y="196" fill="#fbbf24" font-size="13">z↑</text>
+
+  <text x="30" y="316" fill="#9da0ab" font-size="12">
+    כל קומה היא קטע קו. u סובב+עולה, v הוא המרחק מהציר.
+  </text>
+</svg>
+)SVG");
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENNEPER
+// ─────────────────────────────────────────────────────────────
+QString enneperText() {
+    return QStringLiteral(R"HTML(
+<h3 style="color:#c084fc;">Enneper surface — איך מגיעים לנוסחה</h3>
+<p>משטח אנֶפֶּר מגיע מה<b>פרמטריזציה של ויירשטראס</b> למשטחים מינימליים.
+לכל בחירה של פונקציות <i>f</i> ו-<i>g</i>, הפרמטריזציה נותנת משטח מינימלי
+אוטומטית. עבור <code>f(w)=1, g(w)=w</code> מקבלים:</p>
+<pre style="color:#e6e6ea;">x = u − u³/3 + u·v²
+y = v − v³/3 + u²·v
+z = u² − v²</pre>
+<p>שימו לב ש-z בדיוק = <b>Saddle</b>: u²−v². ה-x וה-y הם תיקונים
+פולינומיים לאוכף הבסיסי.</p>
+<p>המשטח הוא <b>סימטרי</b>: אם מחליפים u↔v, x↔y ו-z←−z. יש עצמי-חיתוך
+כשהפרמטרים גדולים מ-1.5 בערך.</p>
+)HTML");
+}
+
+QByteArray enneperSvg() {
+    return QByteArray(R"SVG(
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="100%">
+  <defs>
+    <marker id="arrE" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#cdd0d8"/>
+    </marker>
+  </defs>
+  <text x="260" y="26" fill="#cdd0d8" font-size="15" text-anchor="middle"
+        font-family="sans-serif">Enneper — z=u²−v² (Saddle) + תיקון פולינומי</text>
+
+  <!-- axes -->
+  <line x1="60" y1="160" x2="460" y2="160" stroke="#9da0ab"
+        stroke-width="1" marker-end="url(#arrE)"/>
+  <text x="466" y="164" fill="#9da0ab" font-size="13" font-style="italic">u</text>
+  <line x1="260" y1="50" x2="260" y2="270" stroke="#9da0ab"
+        stroke-width="1" marker-end="url(#arrE)"/>
+  <text x="248" y="48" fill="#9da0ab" font-size="13" font-style="italic">z</text>
+
+  <!-- z = u² (u=v line of saddle): bowl up, cyan -->
+  <path d="M 80 240 Q 260 -30 440 240" fill="none"
+        stroke="#22d3ee" stroke-width="2.4"/>
+  <text x="78" y="260" fill="#22d3ee" font-size="12">z = u² (v=0)</text>
+
+  <!-- z = -v² (u=0 line): bowl down, pink -->
+  <path d="M 80 80 Q 260 350 440 80" fill="none"
+        stroke="#e879f9" stroke-width="2.4"/>
+  <text x="78" y="78" fill="#e879f9" font-size="12">z = −v² (u=0)</text>
+
+  <!-- saddle point at origin -->
+  <circle cx="260" cy="160" r="5" fill="#fbbf24"/>
+  <text x="270" y="184" fill="#fbbf24" font-size="12">נקודת אוכף (u=v=0)</text>
+
+  <!-- annotation: the correction terms -->
+  <text x="310" y="100" fill="#cdd0d8" font-size="12">x = u + u·v² + …</text>
+  <text x="310" y="118" fill="#cdd0d8" font-size="12">y = v + u²·v + …</text>
+  <text x="310" y="136" fill="#fbbf24" font-size="12">z = u² − v²</text>
+</svg>
+)SVG");
+}
+
+// ─────────────────────────────────────────────────────────────
 // Dispatch
 // ─────────────────────────────────────────────────────────────
 struct Entry { QString text; QByteArray svg; };
@@ -623,6 +833,12 @@ Entry entryFor(const QString& name) {
         return { kleinText(),   kleinSvg()   };
     if (name == QStringLiteral("Saddle (z = u*v)"))
         return { saddleText(),  saddleSvg()  };
+    if (name == QStringLiteral("Catenoid"))
+        return { catenoidText(), catenoidSvg() };
+    if (name == QStringLiteral("Helicoid"))
+        return { helicoidText(), helicoidSvg() };
+    if (name == QStringLiteral("Enneper surface"))
+        return { enneperText(), enneperSvg() };
     return {};
 }
 

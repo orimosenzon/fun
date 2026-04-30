@@ -134,5 +134,38 @@ public:
     int vSamples() const override { return 24; }
 };
 
+// Catenoid: surface of revolution of the catenary cosh(v); minimal surface
+class Catenoid : public Surface {
+public:
+    QString name() const override { return QStringLiteral("Catenoid"); }
+    QVector3D evaluate(float u, float v) const override;
+    float uMin() const override { return 0.0f; }
+    float uMax() const override;   // 2π
+    float vMin() const override { return -2.0f; }
+    float vMax() const override { return  2.0f; }
+};
+
+// Helicoid: rotating half-line that also rises — S(u,v) = (v cos u, v sin u, u/π)
+class Helicoid : public Surface {
+public:
+    QString name() const override { return QStringLiteral("Helicoid"); }
+    QVector3D evaluate(float u, float v) const override;
+    float uMin() const override { return 0.0f; }
+    float uMax() const override;   // 4π — two full turns
+    float vMin() const override { return -1.0f; }
+    float vMax() const override { return  1.0f; }
+};
+
+// Enneper surface: polynomial minimal surface with self-intersection
+class Enneper : public Surface {
+public:
+    QString name() const override { return QStringLiteral("Enneper surface"); }
+    QVector3D evaluate(float u, float v) const override;
+    float uMin() const override { return -1.5f; }
+    float uMax() const override { return  1.5f; }
+    float vMin() const override { return -1.5f; }
+    float vMax() const override { return  1.5f; }
+};
+
 // Catalogue of all available surfaces
 QVector<std::shared_ptr<Surface>> allSurfaces();

@@ -141,6 +141,29 @@ QVector3D ConicalSpiral::evaluate(float u, float v) const {
 float ConicalSpiral::uMax() const { return 3.0f * kTwoPi; }
 float ConicalSpiral::vMax() const { return kTwoPi; }
 
+// ---------- Catenoid ----------
+QVector3D Catenoid::evaluate(float u, float v) const {
+    return { std::cosh(v) * std::cos(u),
+             std::cosh(v) * std::sin(u),
+             v };
+}
+float Catenoid::uMax() const { return kTwoPi; }
+
+// ---------- Helicoid ----------
+QVector3D Helicoid::evaluate(float u, float v) const {
+    return { v * std::cos(u),
+             v * std::sin(u),
+             u / kPi };
+}
+float Helicoid::uMax() const { return 4.0f * kPi; }
+
+// ---------- Enneper ----------
+QVector3D Enneper::evaluate(float u, float v) const {
+    return { u - u*u*u/3.0f + u*v*v,
+             v - v*v*v/3.0f + u*u*v,
+             u*u - v*v };
+}
+
 // ---------- Catalogue ----------
 QVector<std::shared_ptr<Surface>> allSurfaces() {
     return {
@@ -151,5 +174,8 @@ QVector<std::shared_ptr<Surface>> allSurfaces() {
         std::make_shared<Mobius>(),
         std::make_shared<Klein>(),
         std::make_shared<Saddle>(),
+        std::make_shared<Catenoid>(),
+        std::make_shared<Helicoid>(),
+        std::make_shared<Enneper>(),
     };
 }
