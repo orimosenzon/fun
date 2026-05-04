@@ -1,7 +1,7 @@
 // game.js - מנוע המשחק הראשי
 
 import { LOCATIONS, ITEMS, NPCS } from './world.js';
-import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory } from './api.js';
+import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory, fetchCanonLocation, saveCanonLocation } from './api.js';
 import * as UI from './ui.js';
 
 // ═══════════════════════════════
@@ -109,7 +109,7 @@ async function handlePlayerAction(action) {
 
   try {
     const response = await sendAction(gameState, action, loc, npcsHere);
-    applyResponse(response);
+    await applyResponse(response);
   } catch (err) {
     console.error('Error:', err);
     if (err.message.includes('429')) {
@@ -130,10 +130,25 @@ async function handlePlayerAction(action) {
 }
 
 // ═══════════════════════════════
+//   Canon location (shared world)
+// ═══════════════════════════════
+
+async function handleFirstVisit(locationId, freshNarrative) {
+  const canon = await fetchCanonLocation(locationId);
+  if (canon?.narrative) {
+    // Another player already canonized this location — show their narrative
+    UI.addNarration(`📜 ${canon.narrative}`);
+  } else if (freshNarrative) {
+    // We are the first! Save our narrative as canon
+    saveCanonLocation(locationId, freshNarrative, null);
+  }
+}
+
+// ═══════════════════════════════
 //   טיפול בתגובת AI
 // ═══════════════════════════════
 
-function applyResponse(response) {
+async function applyResponse(response) {
   // Description
   if (response.description) {
     UI.addNarration(response.description);
@@ -153,9 +168,11 @@ function applyResponse(response) {
   if (changes) {
     // Location change
     if (changes.location && LOCATIONS[changes.location]) {
+      const isNewLocation = !gameState.visitedLocations.includes(changes.location);
       gameState.currentLocation = changes.location;
-      if (!gameState.visitedLocations.includes(changes.location)) {
+      if (isNewLocation) {
         gameState.visitedLocations.push(changes.location);
+        await handleFirstVisit(changes.location, response.description);
       }
       LOCATIONS[changes.location].visited = true;
       renderCurrentLocation();
