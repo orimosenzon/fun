@@ -3,8 +3,42 @@
 import { SYSTEM_PROMPT, buildTurnPrompt } from './prompts.js';
 import { logError, logWarn, logInfo } from './logger.js';
 
+const SERVER_URL = 'http://localhost:8765';
+
 let apiKey = '';
 let conversationHistory = [];
+
+function getPlayerId() {
+  let id = localStorage.getItem('pipin_player_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('pipin_player_id', id);
+  }
+  return id;
+}
+
+// ── Canon location (shared world) ───────────────────────────────────────
+
+async function fetchCanonLocation(locationId) {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/world/location/${locationId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.found) return data;
+    }
+  } catch (_) { /* server unavailable — graceful fallback */ }
+  return null;
+}
+
+async function saveCanonLocation(locationId, narrative, imageData) {
+  try {
+    await fetch(`${SERVER_URL}/api/world/location/${locationId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_id: getPlayerId(), narrative, image_data: imageData }),
+    });
+  } catch (_) { /* server unavailable — silent */ }
+}
 
 function initAPI(key) {
   apiKey = key;
@@ -106,9 +140,21 @@ async function callImagen(prompt, aspectRatio = '1:1') {
 async function generateLocationImage(locationId, locationName, description) {
   if (imageCache.has(locationId)) return imageCache.get(locationId);
 
+  // Check server for canon image
+  const canon = await fetchCanonLocation(locationId);
+  if (canon?.image_data) {
+    imageCache.set(locationId, canon.image_data);
+    return canon.image_data;
+  }
+
+  // Generate new image (first visitor)
   const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, painterly, warm lighting, no text, no people in foreground.`;
   const dataUrl = await callImagen(prompt, '1:1');
   imageCache.set(locationId, dataUrl);
+
+  // Save image to server (fire-and-forget — narrative saved separately by game.js)
+  saveCanonLocation(locationId, null, dataUrl);
+
   return dataUrl;
 }
 
@@ -130,4 +176,4 @@ function setConversationHistory(history) {
   conversationHistory = history;
 }
 
-export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory };
+export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory, getPlayerId, fetchCanonLocation, saveCanonLocation };
