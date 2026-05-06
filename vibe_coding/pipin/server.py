@@ -79,19 +79,35 @@ def get_location(location_id):
 
 @app.route('/api/world/location/<location_id>', methods=['POST'])
 def save_location(location_id):
+    """Idempotent canon save. Narrative and image arrive in separate calls
+    (text is fast, image generation is slow), so we let either field fill an
+    empty slot — but never overwrite a value that's already canonized."""
+    data = request.get_json(force=True, silent=True) or {}
+    new_narrative = data.get('narrative')
+    new_image = data.get('image_data')
     with get_db() as conn:
-        existing = conn.execute(
-            'SELECT location_id FROM locations WHERE location_id=?', (location_id,)
+        row = conn.execute(
+            'SELECT player_id, narrative, image_data FROM locations WHERE location_id=?',
+            (location_id,)
         ).fetchone()
-        if existing:
+        if row is None:
+            conn.execute(
+                'INSERT INTO locations (location_id, player_id, created_at, narrative, image_data) VALUES (?,?,?,?,?)',
+                (location_id, data.get('player_id'), datetime.now().isoformat(),
+                 new_narrative, new_image)
+            )
+            return jsonify({'saved': True, 'created': True})
+
+        updates, params = [], []
+        if new_narrative and not row['narrative']:
+            updates.append('narrative=?'); params.append(new_narrative)
+        if new_image and not row['image_data']:
+            updates.append('image_data=?'); params.append(new_image)
+        if not updates:
             return jsonify({'saved': False, 'reason': 'already_canonized'})
-        data = request.get_json(force=True, silent=True) or {}
-        conn.execute(
-            'INSERT INTO locations (location_id, player_id, created_at, narrative, image_data) VALUES (?,?,?,?,?)',
-            (location_id, data.get('player_id'), datetime.now().isoformat(),
-             data.get('narrative'), data.get('image_data'))
-        )
-    return jsonify({'saved': True})
+        params.append(location_id)
+        conn.execute(f"UPDATE locations SET {', '.join(updates)} WHERE location_id=?", params)
+    return jsonify({'saved': True, 'updated': updates})
 
 
 # ── Logging ─────────────────────────────────────────────────────────────
