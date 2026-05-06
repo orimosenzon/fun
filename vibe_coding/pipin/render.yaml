@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pipin
+    runtime: python
+    rootDir: vibe_coding/pipin
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app
+    disk:
+      name: pipin-db
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DB_FILE
+        value: /data/pipin_world.db

@@ -102,6 +102,20 @@ body {
   border-color: var(--gold);
 }
 
+.player-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 500;
+  margin-left: 8px;
+}
+
 /* ═══════════════════════════════
    פריסה ראשית
    ═══════════════════════════════ */
