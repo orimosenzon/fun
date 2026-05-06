@@ -161,6 +161,15 @@ async function generateNPCPortrait(npcId, npcName) {
   return imageUrl;
 }
 
+// Guest mode — returns Pollinations URL with no server interaction
+function getGuestLocationImage(locationId, locationName, description) {
+  if (imageCache.has(locationId)) return imageCache.get(locationId);
+  const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, Alan Lee watercolor, painterly, warm lighting, no text, no people in foreground.`;
+  const url = buildPollinationsUrl(prompt, 512, 512);
+  imageCache.set(locationId, url);
+  return url;
+}
+
 function getConversationHistory() {
   return conversationHistory;
 }
@@ -169,4 +178,4 @@ function setConversationHistory(history) {
   conversationHistory = history;
 }
 
-export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory, getPlayerId, fetchCanonLocation, saveCanonLocation, fetchPlayerStats };
+export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getGuestLocationImage, getConversationHistory, setConversationHistory, getPlayerId, fetchCanonLocation, saveCanonLocation, fetchPlayerStats };
