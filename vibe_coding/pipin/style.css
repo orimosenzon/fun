@@ -759,6 +759,50 @@ body {
   display: none;
 }
 
+.start-divider {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 4px 0;
+}
+
+.guest-btn {
+  padding: 10px 28px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.guest-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-light);
+}
+
+.guest-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.guest-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--gold-light);
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #8a6d00;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
 /* ═══════════════════════════════
    אנימציות
    ═══════════════════════════════ */

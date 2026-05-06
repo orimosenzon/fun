@@ -1,8 +1,10 @@
 // game.js - מנוע המשחק הראשי
 
 import { LOCATIONS, ITEMS, NPCS } from './world.js';
-import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory, fetchCanonLocation, saveCanonLocation, fetchPlayerStats } from './api.js';
+import { initAPI, sendAction, generateLocationImage, getGuestLocationImage, getConversationHistory, setConversationHistory, fetchCanonLocation, saveCanonLocation, fetchPlayerStats } from './api.js';
 import * as UI from './ui.js';
+
+let isGuest = false;
 
 // ═══════════════════════════════
 //   מצב המשחק
@@ -39,6 +41,13 @@ function init() {
     refreshPlayerStats();
   });
 
+  UI.onGuestStart(() => {
+    isGuest = true;
+    UI.setGuestMode();
+    UI.hideStartScreen();
+    renderGuestLocation();
+  });
+
   UI.onCompassClick(handleDirection);
 
   UI.onSubmit(handlePlayerAction);
@@ -73,7 +82,27 @@ async function loadLocationImage(loc) {
     UI.setLocationImage(src);
   } catch (err) {
     console.warn('Image generation failed:', err);
-    // placeholder stays visible — no crash
+  }
+}
+
+async function renderGuestLocation() {
+  const loc = LOCATIONS[gameState.currentLocation];
+  if (!loc) return;
+
+  UI.updateLocation(loc);
+  UI.updateCompass(loc.exits);
+
+  // Image via Pollinations — no server save
+  UI.setLocationImage(getGuestLocationImage(loc.id, loc.name, loc.description));
+
+  UI.updateMap(gameState.visitedLocations, gameState.currentLocation);
+
+  // Show canon narrative if exists, else unexplored message
+  const canon = await fetchCanonLocation(loc.id);
+  if (canon?.narrative) {
+    UI.addNarration(`📜 ${canon.narrative}`);
+  } else {
+    UI.addNarration('מקום זה טרם נחקר. שחקן עם מפתח Gemini API יוכל לחקור אותו לראשונה.');
   }
 }
 
@@ -91,6 +120,16 @@ function handleDirection(dir) {
   const loc = LOCATIONS[gameState.currentLocation];
   const target = loc.exits[dir];
   if (!target || !LOCATIONS[target]) return;
+
+  if (isGuest) {
+    gameState.currentLocation = target;
+    if (!gameState.visitedLocations.includes(target)) {
+      gameState.visitedLocations.push(target);
+    }
+    LOCATIONS[target].visited = true;
+    renderGuestLocation();
+    return;
+  }
 
   const dirNames = { north: 'צפונה', south: 'דרומה', east: 'מזרחה', west: 'מערבה' };
   handlePlayerAction(`הולך ${dirNames[dir]} אל ${LOCATIONS[target].name}`);

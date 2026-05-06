@@ -30,7 +30,9 @@ const els = {
   startScreen: $('#start-screen'),
   startBtn: $('#start-btn'),
   loadBtn: $('#load-btn'),
+  guestBtn: $('#guest-btn'),
   apiKeyInput: $('#api-key-input'),
+  guestBadge: $('#guest-badge'),
 };
 
 // ═══════════════════════════════
@@ -410,6 +412,17 @@ function onStartGame(callback) {
   }
 }
 
+function onGuestStart(callback) {
+  els.guestBtn.addEventListener('click', callback);
+}
+
+function setGuestMode() {
+  // Hide text input area
+  els.inputForm.classList.add('hidden');
+  // Show guest badge
+  if (els.guestBadge) els.guestBadge.classList.remove('hidden');
+}
+
 function hideStartScreen() {
   els.startScreen.classList.add('hidden');
 }
@@ -433,5 +446,7 @@ export {
   showLoading,
   hideLoading,
   onStartGame,
+  onGuestStart,
+  setGuestMode,
   hideStartScreen,
 };
