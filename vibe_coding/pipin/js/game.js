@@ -1,7 +1,7 @@
 // game.js - מנוע המשחק הראשי
 
 import { LOCATIONS, ITEMS, NPCS } from './world.js';
-import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory, fetchCanonLocation, saveCanonLocation } from './api.js';
+import { initAPI, sendAction, generateLocationImage, getConversationHistory, setConversationHistory, fetchCanonLocation, saveCanonLocation, fetchPlayerStats } from './api.js';
 import * as UI from './ui.js';
 
 // ═══════════════════════════════
@@ -36,6 +36,7 @@ function init() {
     UI.hideStartScreen();
     renderCurrentLocation();
     sendInitialPrompt();
+    refreshPlayerStats();
   });
 
   UI.onCompassClick(handleDirection);
@@ -133,14 +134,25 @@ async function handlePlayerAction(action) {
 //   Canon location (shared world)
 // ═══════════════════════════════
 
+async function refreshPlayerStats() {
+  const stats = await fetchPlayerStats();
+  const count = stats.locations_canonized;
+  const el = document.getElementById('player-stats');
+  const countEl = document.getElementById('player-location-count');
+  if (el && countEl) {
+    countEl.textContent = count;
+    el.classList.toggle('hidden', count === 0);
+    el.title = `${count} מקומות שחקרת בפעם הראשונה`;
+  }
+}
+
 async function handleFirstVisit(locationId, freshNarrative) {
   const canon = await fetchCanonLocation(locationId);
   if (canon?.narrative) {
-    // Another player already canonized this location — show their narrative
     UI.addNarration(`📜 ${canon.narrative}`);
   } else if (freshNarrative) {
-    // We are the first! Save our narrative as canon
     saveCanonLocation(locationId, freshNarrative, null);
+    refreshPlayerStats();
   }
 }
 

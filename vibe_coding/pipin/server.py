@@ -6,10 +6,12 @@ import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 
 app = Flask(__name__, static_folder='.')
+CORS(app)
 LOG_FILE = 'pipin_errors.log'
-DB_FILE = 'pipin_world.db'
+DB_FILE = os.environ.get('DB_FILE', 'pipin_world.db')
 
 
 # ── DB ──────────────────────────────────────────────────────────────────
@@ -43,6 +45,20 @@ def write_log(entry: dict):
     print(f"[{entry['server_time']}] [{level}] {msg}" + (f"  ({src})" if src else ''))
 
 # ── World API ───────────────────────────────────────────────────────────
+
+@app.route('/api/world/player/<player_id>/stats', methods=['GET'])
+def get_player_stats(player_id):
+    with get_db() as conn:
+        rows = conn.execute(
+            'SELECT location_id FROM locations WHERE player_id=? ORDER BY created_at',
+            (player_id,)
+        ).fetchall()
+    return jsonify({
+        'player_id': player_id,
+        'locations_canonized': len(rows),
+        'location_ids': [r['location_id'] for r in rows],
+    })
+
 
 @app.route('/api/world/location/<location_id>', methods=['GET'])
 def get_location(location_id):
@@ -95,9 +111,9 @@ def log_endpoint():
 def serve_static(path):
     return send_from_directory('.', path)
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
-    print(f'Pipin dev server running on http://localhost:8765')
-    print(f'Errors logged to: {os.path.abspath(LOG_FILE)}')
-    print(f'World DB: {os.path.abspath(DB_FILE)}')
-    app.run(port=8765, debug=False)
+    port = int(os.environ.get('PORT', 8765))
+    print(f'Pipin server running on port {port}')
+    app.run(host='0.0.0.0', port=port, debug=False)

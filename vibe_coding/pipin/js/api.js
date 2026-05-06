@@ -3,7 +3,8 @@
 import { SYSTEM_PROMPT, buildTurnPrompt } from './prompts.js';
 import { logError, logWarn, logInfo } from './logger.js';
 
-const SERVER_URL = 'http://localhost:8765';
+// Empty string = relative URLs, works both locally (flask serves the page) and on Render
+const SERVER_URL = '';
 
 let apiKey = '';
 let conversationHistory = [];
@@ -28,6 +29,14 @@ async function fetchCanonLocation(locationId) {
     }
   } catch (_) { /* server unavailable — graceful fallback */ }
   return null;
+}
+
+async function fetchPlayerStats() {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/world/player/${getPlayerId()}/stats`);
+    if (res.ok) return await res.json();
+  } catch (_) { /* server unavailable */ }
+  return { locations_canonized: 0, location_ids: [] };
 }
 
 async function saveCanonLocation(locationId, narrative, imageData) {
@@ -113,28 +122,12 @@ async function sendAction(gameState, action, locationData, npcData) {
   return parsed;
 }
 
-// cache in-memory (base64 is too large for localStorage)
+// cache in-memory
 const imageCache = new Map();
 
-async function callImagen(prompt, aspectRatio = '1:1') {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio }
-    })
-  });
-  if (!response.ok) {
-    const err = await response.text();
-    logError('Imagen failed', { status: response.status, body: err.slice(0, 300) });
-    throw new Error(`Imagen error: ${response.status}`);
-  }
-  const data = await response.json();
-  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('No image from Imagen');
-  return `data:image/png;base64,${b64}`;
+function buildPollinationsUrl(prompt, width = 512, height = 512) {
+  const encoded = encodeURIComponent(prompt);
+  return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true&model=flux`;
 }
 
 async function generateLocationImage(locationId, locationName, description) {
@@ -147,25 +140,25 @@ async function generateLocationImage(locationId, locationName, description) {
     return canon.image_data;
   }
 
-  // Generate new image (first visitor)
-  const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, painterly, warm lighting, no text, no people in foreground.`;
-  const dataUrl = await callImagen(prompt, '1:1');
-  imageCache.set(locationId, dataUrl);
+  // Generate new image via Pollinations (no API key needed)
+  const prompt = `Fantasy illustration of a Middle-earth location: ${locationName}. ${description}. Tolkien style, Alan Lee watercolor, painterly, warm lighting, no text, no people in foreground.`;
+  const imageUrl = buildPollinationsUrl(prompt, 512, 512);
+  imageCache.set(locationId, imageUrl);
 
-  // Save image to server (fire-and-forget — narrative saved separately by game.js)
-  saveCanonLocation(locationId, null, dataUrl);
+  // Save image URL to server (fire-and-forget)
+  saveCanonLocation(locationId, null, imageUrl);
 
-  return dataUrl;
+  return imageUrl;
 }
 
 async function generateNPCPortrait(npcId, npcName) {
   const cacheKey = `npc_${npcId}`;
   if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
 
-  const prompt = `Fantasy portrait of ${npcName}, Tolkien character, painterly style, dramatic lighting, no text, close-up face.`;
-  const dataUrl = await callImagen(prompt, '1:1');
-  imageCache.set(cacheKey, dataUrl);
-  return dataUrl;
+  const prompt = `Fantasy portrait of ${npcName}, Tolkien character, Alan Lee style, painterly, dramatic lighting, no text, close-up face.`;
+  const imageUrl = buildPollinationsUrl(prompt, 256, 256);
+  imageCache.set(cacheKey, imageUrl);
+  return imageUrl;
 }
 
 function getConversationHistory() {
@@ -176,4 +169,4 @@ function setConversationHistory(history) {
   conversationHistory = history;
 }
 
-export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory, getPlayerId, fetchCanonLocation, saveCanonLocation };
+export { initAPI, sendAction, generateLocationImage, generateNPCPortrait, getConversationHistory, setConversationHistory, getPlayerId, fetchCanonLocation, saveCanonLocation, fetchPlayerStats };
