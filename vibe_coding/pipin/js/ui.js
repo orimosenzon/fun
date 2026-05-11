@@ -65,9 +65,16 @@ function updateLocation(location) {
 }
 
 function setLocationImage(src) {
-  els.locationImage.src = src;
-  els.locationImage.classList.remove('hidden');
-  els.imagePlaceholder.classList.add('hidden');
+  const img = els.locationImage;
+  img.onload = () => {
+    img.classList.remove('hidden');
+    els.imagePlaceholder.classList.add('hidden');
+  };
+  img.onerror = () => {
+    img.classList.add('hidden');
+    els.imagePlaceholder.classList.remove('hidden');
+  };
+  img.src = src;
 }
 
 // ═══════════════════════════════
