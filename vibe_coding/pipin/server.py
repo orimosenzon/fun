@@ -125,6 +125,8 @@ def log_endpoint():
 @app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
 def serve_static(path):
+    if path.startswith('api/'):
+        return jsonify({'error': 'not found'}), 404
     return send_from_directory('.', path)
 
 init_db()
