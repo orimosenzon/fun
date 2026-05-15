@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import io
 import json
 
@@ -172,10 +173,74 @@ def process_pdf(pdf_bytes: bytes) -> list[dict]:
     return results
 
 
+def compute_doc_key(pages: list[dict]) -> str:
+    """Stable hash of the line texts — used as localStorage key."""
+    joined = "\n".join(
+        line["text"]
+        for page in pages
+        for line in page.get("lines", [])
+    )
+    return hashlib.sha1(joined.encode("utf-8")).hexdigest()[:16]
+
+
+def render_result(pages: list[dict], filename: str, annotations: dict | None = None):
+    server_data = {
+        "doc_key": compute_doc_key(pages),
+        "filename": filename,
+        "annotations": annotations or {},
+    }
+    return render_template(
+        "index.html",
+        pages=pages,
+        filename=filename,
+        server_data_json=json.dumps(server_data, ensure_ascii=False),
+    )
+
+
+def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict]:
+    """Returns (pages_for_template, filename, annotations_by_line_key).
+
+    Strips annotations out of the per-line dicts (the template doesn't need
+    them inline — they're delivered via server_data_json instead).
+    """
+    data = json.loads(raw.decode("utf-8"))
+    if not isinstance(data, dict) or "pages" not in data:
+        raise ValueError("מבנה JSON לא תקין — חסר שדה 'pages'")
+
+    pages_out = []
+    annotations: dict[str, list] = {}
+    for page in data["pages"]:
+        page_num = page.get("page", len(pages_out) + 1)
+        lines_out = []
+        for line_idx, line in enumerate(page.get("lines", [])):
+            text = line.get("text", "")
+            image_b64 = line.get("image_b64", "")
+            line_key = f"p{page_num}-l{line_idx}"
+            line_annots = line.get("annotations") or []
+            if line_annots:
+                annotations[line_key] = line_annots
+            lines_out.append({"text": text, "image_b64": image_b64})
+        pages_out.append({"page": page_num, "lines": lines_out})
+
+    filename = data.get("filename", "שמור.json")
+    return pages_out, filename, annotations
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         return render_template("index.html")
+
+    saved = request.files.get("saved")
+    if saved and saved.filename:
+        raw = saved.read()
+        if not raw:
+            return render_template("index.html", error="קובץ ה-JSON ריק")
+        try:
+            pages, filename, annotations = parse_saved_json(raw)
+        except (json.JSONDecodeError, ValueError, UnicodeDecodeError) as e:
+            return render_template("index.html", error=f"שגיאה בקריאת JSON: {e}")
+        return render_result(pages, filename, annotations)
 
     file = request.files.get("pdf")
     if not file or not file.filename:
@@ -195,7 +260,7 @@ def index():
     except (json.JSONDecodeError, KeyError) as e:
         return render_template("index.html", error=f"שגיאת פענוח: {e}")
 
-    return render_template("index.html", pages=pages, filename=file.filename)
+    return render_result(pages, file.filename)
 
 
 if __name__ == "__main__":
