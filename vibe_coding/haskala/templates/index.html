@@ -11,6 +11,7 @@
             --accent: #8b5a2b;
             --border: #d0cabc;
             --error: #b54343;
+            --annotation: #c62828;
         }
         * { box-sizing: border-box; }
         body {
@@ -40,12 +41,26 @@
             padding: 1.5rem;
             border-radius: 8px;
             border: 1px solid var(--border);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .upload-row {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .upload-col {
+            flex: 1;
+            min-width: 250px;
+        }
+        .upload-col h3 {
+            margin: 0 0 0.5rem;
+            font-size: 0.95rem;
+            color: var(--accent);
         }
         input[type="file"] {
             display: block;
-            margin-bottom: 1rem;
-            font-size: 1rem;
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
         }
         button {
             background: var(--accent);
@@ -59,6 +74,15 @@
         }
         button:hover { background: #6f4520; }
         button:disabled { background: #aaa; cursor: wait; }
+        button.secondary {
+            background: #ddd;
+            color: var(--fg);
+        }
+        button.secondary:hover { background: #ccc; }
+        button.danger {
+            background: var(--error);
+        }
+        button.danger:hover { background: #8e3535; }
         .error {
             background: #fdecec;
             color: var(--error);
@@ -66,6 +90,22 @@
             border-radius: 4px;
             border-right: 3px solid var(--error);
             margin-bottom: 1rem;
+        }
+        .toolbar {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolbar .hint {
+            color: #888;
+            font-size: 0.85rem;
+            margin-right: auto;
         }
         .page-section {
             background: white;
@@ -109,44 +149,160 @@
             border-radius: 4px;
             margin-bottom: 0.4rem;
         }
+        .line-text-row {
+            display: flex;
+            align-items: flex-start;
+            background: white;
+            border-radius: 4px;
+            padding: 0.4rem 0.6rem;
+        }
+        .line-num {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #999;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+            user-select: none;
+        }
         .line-text {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 1rem;
-            line-height: 1.5;
+            line-height: 1.6;
             white-space: pre-wrap;
             margin: 0;
-            padding: 0.4rem 0.6rem;
-            background: white;
-            border-radius: 4px;
             unicode-bidi: plaintext;
             text-align: start;
             color: #1a1a1a;
+            flex: 1;
         }
-        .line-num {
-            font-size: 0.75rem;
-            color: #999;
-            margin-left: 0.5rem;
+        .line-text .char {
+            cursor: text;
+            border-radius: 2px;
+            transition: background 0.1s;
+        }
+        .line-text .char.annotated {
+            color: var(--annotation);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: var(--annotation);
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+        .line-text .char.annotated:hover {
+            background: #ffebee;
         }
         .loading { display: none; color: #666; margin-top: 0.5rem; }
         form.submitting .loading { display: block; }
+
+        /* Annotation popup */
+        .annotation-popup {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.8rem;
+            width: 280px;
+            z-index: 1000;
+            display: none;
+        }
+        .annotation-popup.visible { display: block; }
+        .annotation-popup textarea {
+            width: 100%;
+            min-height: 70px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.4rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            resize: vertical;
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+        .annotation-popup .popup-actions {
+            display: flex;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+            justify-content: flex-start;
+        }
+        .annotation-popup button {
+            padding: 0.4rem 0.9rem;
+            font-size: 0.85rem;
+        }
+        .annotation-popup .selected-text {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            background: #f5f5f0;
+            padding: 0.3rem 0.5rem;
+            border-radius: 3px;
+            margin-bottom: 0.5rem;
+            color: #555;
+            unicode-bidi: plaintext;
+            max-height: 60px;
+            overflow-y: auto;
+        }
+        .annotation-popup .note-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .annotation-popup .note-item {
+            background: #fff8f8;
+            border: 1px solid #f3d6d6;
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .annotation-popup .note-item .note-text {
+            white-space: pre-wrap;
+            margin-bottom: 0.4rem;
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+        .annotation-popup .note-item .note-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .annotation-popup .note-item .note-actions button {
+            padding: 0.2rem 0.6rem;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>השכלה — OCR לתרגילים בכתב יד</h1>
-        <p class="subtitle">העלה PDF של תרגיל מצולם. תקבל תמלול ורבטים שורה-שורה עם תמונת המקור לצד כל שורה.</p>
+        <p class="subtitle">העלה PDF של תרגיל מצולם, או טען עבודה שמורה. סמן אותיות בעכבר כדי להוסיף הערות.</p>
 
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form method="POST" enctype="multipart/form-data" onsubmit="this.classList.add('submitting'); this.querySelector('button').disabled=true;">
-            <input type="file" name="pdf" accept="application/pdf" required>
-            <button type="submit">תמלל</button>
-            <div class="loading">מתמלל… 15-45 שניות לעמוד.</div>
+        <form method="POST" enctype="multipart/form-data" onsubmit="this.classList.add('submitting'); this.querySelector('button[type=submit]').disabled=true;">
+            <div class="upload-row">
+                <div class="upload-col">
+                    <h3>תמלול PDF חדש</h3>
+                    <input type="file" name="pdf" accept="application/pdf">
+                    <div class="loading">מתמלל… 15-45 שניות לעמוד.</div>
+                </div>
+                <div class="upload-col">
+                    <h3>טעינת עבודה שמורה</h3>
+                    <input type="file" name="saved" accept="application/json,.json">
+                </div>
+            </div>
+            <button type="submit">המשך</button>
         </form>
 
         {% if pages %}
+            <div class="toolbar">
+                <button id="save-json-btn" type="button">שמור עבודה (JSON)</button>
+                <span class="hint">סמן אותיות עם העכבר כדי להוסיף הערה. לחץ על אות אדומה כדי לקרוא/לערוך.</span>
+            </div>
+
             {% for page in pages %}
                 <div class="page-section">
                     <div class="page-header">
@@ -157,12 +313,333 @@
                         {% for line in page.lines %}
                             <div class="line">
                                 <img class="line-image" src="data:image/png;base64,{{ line.image_b64 }}" alt="שורה {{ loop.index }}">
-                                <pre class="line-text"><span class="line-num">{{ loop.index }}.</span>{{ line.text }}</pre>
+                                <div class="line-text-row">
+                                    <span class="line-num">{{ loop.index }}.</span>
+                                    <pre class="line-text" data-line-key="p{{ page.page }}-l{{ loop.index0 }}">{{ line.text }}</pre>
+                                </div>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             {% endfor %}
+
+            <div id="annotation-popup" class="annotation-popup"></div>
+
+            <script id="server-data" type="application/json">{{ server_data_json|safe }}</script>
+            <script>
+            (function () {
+                const serverData = JSON.parse(document.getElementById('server-data').textContent);
+                const STORAGE_KEY = 'haskala-annotations-' + serverData.doc_key;
+
+                // annotations: { lineKey: [ {id, start, end, note} ] }
+                let annotations = loadAnnotations();
+
+                function loadAnnotations() {
+                    if (serverData.annotations && Object.keys(serverData.annotations).length > 0) {
+                        const merged = serverData.annotations;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                        return merged;
+                    }
+                    try {
+                        const raw = localStorage.getItem(STORAGE_KEY);
+                        return raw ? JSON.parse(raw) : {};
+                    } catch (e) { return {}; }
+                }
+
+                function saveAnnotations() {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(annotations));
+                }
+
+                function uid() {
+                    return Math.random().toString(36).slice(2, 10);
+                }
+
+                // Wrap each char of every .line-text in a <span class="char">.
+                // Use Array.from for proper Unicode/grapheme handling.
+                document.querySelectorAll('.line-text').forEach(el => {
+                    const text = el.textContent;
+                    const chars = Array.from(text);
+                    el.textContent = '';
+                    chars.forEach((ch, i) => {
+                        const span = document.createElement('span');
+                        span.className = 'char';
+                        span.dataset.idx = String(i);
+                        span.textContent = ch;
+                        el.appendChild(span);
+                    });
+                });
+
+                // Apply existing annotations to DOM.
+                function applyAnnotations() {
+                    document.querySelectorAll('.line-text').forEach(el => {
+                        const key = el.dataset.lineKey;
+                        const list = annotations[key] || [];
+                        // Build map: char index -> list of annotation ids
+                        const charMap = {};
+                        list.forEach(a => {
+                            for (let i = a.start; i < a.end; i++) {
+                                if (!charMap[i]) charMap[i] = [];
+                                charMap[i].push(a.id);
+                            }
+                        });
+                        el.querySelectorAll('.char').forEach(span => {
+                            const i = parseInt(span.dataset.idx, 10);
+                            const ids = charMap[i];
+                            if (ids && ids.length) {
+                                span.classList.add('annotated');
+                                span.dataset.annotIds = ids.join(',');
+                            } else {
+                                span.classList.remove('annotated');
+                                delete span.dataset.annotIds;
+                            }
+                        });
+                    });
+                }
+
+                applyAnnotations();
+
+                // Popup logic
+                const popup = document.getElementById('annotation-popup');
+                let popupContext = null;  // { mode, lineKey, start, end, annotIds }
+
+                function hidePopup() {
+                    popup.classList.remove('visible');
+                    popup.innerHTML = '';
+                    popupContext = null;
+                }
+
+                function positionPopup(rect) {
+                    const popupW = 280;
+                    const scrollX = window.scrollX;
+                    const scrollY = window.scrollY;
+                    let left = rect.left + scrollX + (rect.width / 2) - (popupW / 2);
+                    left = Math.max(10, Math.min(left, window.innerWidth - popupW - 10));
+                    const top = rect.bottom + scrollY + 8;
+                    popup.style.left = left + 'px';
+                    popup.style.top = top + 'px';
+                    popup.classList.add('visible');
+                }
+
+                function getLineEl(lineKey) {
+                    return document.querySelector(`.line-text[data-line-key="${lineKey}"]`);
+                }
+
+                function getSelectedTextSnippet(lineKey, start, end) {
+                    const el = getLineEl(lineKey);
+                    const chars = Array.from(el.querySelectorAll('.char'));
+                    return chars.slice(start, end).map(c => c.textContent).join('');
+                }
+
+                function showCreatePopup(lineKey, start, end, anchorRect) {
+                    popupContext = { mode: 'create', lineKey, start, end };
+                    const snippet = getSelectedTextSnippet(lineKey, start, end);
+                    popup.innerHTML = `
+                        <div class="selected-text">${escapeHtml(snippet) || '(ריק)'}</div>
+                        <textarea placeholder="כתוב הערה…" autofocus></textarea>
+                        <div class="popup-actions">
+                            <button type="button" data-act="save">שמור</button>
+                            <button type="button" class="secondary" data-act="cancel">בטל</button>
+                        </div>
+                    `;
+                    positionPopup(anchorRect);
+                    popup.querySelector('textarea').focus();
+                }
+
+                function showViewPopup(lineKey, annotIds, anchorRect) {
+                    popupContext = { mode: 'view', lineKey, annotIds };
+                    const list = annotations[lineKey] || [];
+                    const items = annotIds.map(id => list.find(a => a.id === id)).filter(Boolean);
+                    const itemsHtml = items.map(a => `
+                        <div class="note-item" data-id="${a.id}">
+                            <div class="note-text">${escapeHtml(a.note)}</div>
+                            <div class="selected-text">${escapeHtml(getSelectedTextSnippet(lineKey, a.start, a.end)) || '(ריק)'}</div>
+                            <div class="note-actions">
+                                <button type="button" data-act="edit" data-id="${a.id}">ערוך</button>
+                                <button type="button" class="danger" data-act="delete" data-id="${a.id}">מחק</button>
+                            </div>
+                        </div>
+                    `).join('');
+                    popup.innerHTML = `
+                        <div class="note-list">${itemsHtml}</div>
+                        <div class="popup-actions">
+                            <button type="button" class="secondary" data-act="close">סגור</button>
+                        </div>
+                    `;
+                    positionPopup(anchorRect);
+                }
+
+                function showEditPopup(lineKey, annotId, anchorRect) {
+                    const list = annotations[lineKey] || [];
+                    const a = list.find(x => x.id === annotId);
+                    if (!a) return;
+                    popupContext = { mode: 'edit', lineKey, annotId };
+                    const snippet = getSelectedTextSnippet(lineKey, a.start, a.end);
+                    popup.innerHTML = `
+                        <div class="selected-text">${escapeHtml(snippet) || '(ריק)'}</div>
+                        <textarea>${escapeHtml(a.note)}</textarea>
+                        <div class="popup-actions">
+                            <button type="button" data-act="save-edit">שמור</button>
+                            <button type="button" class="secondary" data-act="cancel">בטל</button>
+                        </div>
+                    `;
+                    positionPopup(anchorRect);
+                    const ta = popup.querySelector('textarea');
+                    ta.focus();
+                    ta.setSelectionRange(ta.value.length, ta.value.length);
+                }
+
+                function escapeHtml(s) {
+                    return s.replace(/[&<>"']/g, c => ({
+                        '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                        '"': '&quot;', "'": '&#39;'
+                    })[c]);
+                }
+
+                // Click handlers inside popup
+                popup.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    const act = btn.dataset.act;
+                    if (act === 'cancel' || act === 'close') {
+                        hidePopup();
+                    } else if (act === 'save' && popupContext && popupContext.mode === 'create') {
+                        const note = popup.querySelector('textarea').value.trim();
+                        if (!note) { hidePopup(); return; }
+                        const { lineKey, start, end } = popupContext;
+                        if (!annotations[lineKey]) annotations[lineKey] = [];
+                        annotations[lineKey].push({ id: uid(), start, end, note });
+                        saveAnnotations();
+                        applyAnnotations();
+                        hidePopup();
+                    } else if (act === 'save-edit' && popupContext && popupContext.mode === 'edit') {
+                        const note = popup.querySelector('textarea').value.trim();
+                        const { lineKey, annotId } = popupContext;
+                        const a = (annotations[lineKey] || []).find(x => x.id === annotId);
+                        if (a) {
+                            if (!note) {
+                                annotations[lineKey] = annotations[lineKey].filter(x => x.id !== annotId);
+                            } else {
+                                a.note = note;
+                            }
+                            saveAnnotations();
+                            applyAnnotations();
+                        }
+                        hidePopup();
+                    } else if (act === 'edit') {
+                        const id = btn.dataset.id;
+                        const lineKey = popupContext.lineKey;
+                        const el = getLineEl(lineKey);
+                        const a = (annotations[lineKey] || []).find(x => x.id === id);
+                        if (!a) return;
+                        const charSpan = el.querySelector(`.char[data-idx="${a.start}"]`);
+                        const rect = charSpan ? charSpan.getBoundingClientRect() : popup.getBoundingClientRect();
+                        showEditPopup(lineKey, id, rect);
+                    } else if (act === 'delete') {
+                        const id = btn.dataset.id;
+                        const lineKey = popupContext.lineKey;
+                        annotations[lineKey] = (annotations[lineKey] || []).filter(x => x.id !== id);
+                        if (annotations[lineKey].length === 0) delete annotations[lineKey];
+                        saveAnnotations();
+                        applyAnnotations();
+                        hidePopup();
+                    }
+                });
+
+                // Selection handler — after mouseup, check for selection within a line-text
+                document.addEventListener('mouseup', (e) => {
+                    if (popup.contains(e.target)) return;
+                    setTimeout(() => {
+                        const sel = window.getSelection();
+                        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+                        const range = sel.getRangeAt(0);
+                        const container = range.commonAncestorContainer;
+                        const lineEl = (container.nodeType === 1 ? container : container.parentElement).closest('.line-text');
+                        if (!lineEl) return;
+                        // Verify both anchor and focus are inside the same line
+                        const anchorLine = sel.anchorNode.parentElement.closest('.line-text');
+                        const focusLine = sel.focusNode.parentElement.closest('.line-text');
+                        if (anchorLine !== focusLine) return;
+
+                        // Find all .char spans intersected by the selection.
+                        const chars = Array.from(lineEl.querySelectorAll('.char'));
+                        const indices = [];
+                        chars.forEach((span, i) => {
+                            if (sel.containsNode(span, true)) indices.push(i);
+                        });
+                        if (indices.length === 0) return;
+                        const start = Math.min(...indices);
+                        const end = Math.max(...indices) + 1;
+                        const rect = range.getBoundingClientRect();
+                        sel.removeAllRanges();
+                        showCreatePopup(lineEl.dataset.lineKey, start, end, rect);
+                    }, 0);
+                });
+
+                // Click on annotated char → show view popup
+                document.addEventListener('click', (e) => {
+                    if (popup.contains(e.target)) return;
+                    const span = e.target.closest('.char.annotated');
+                    if (span) {
+                        e.preventDefault();
+                        const lineEl = span.closest('.line-text');
+                        const ids = (span.dataset.annotIds || '').split(',').filter(Boolean);
+                        if (ids.length === 0) return;
+                        const rect = span.getBoundingClientRect();
+                        showViewPopup(lineEl.dataset.lineKey, ids, rect);
+                        return;
+                    }
+                    // Click outside popup → hide
+                    if (popup.classList.contains('visible')) hidePopup();
+                });
+
+                // Hide popup on Escape
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && popup.classList.contains('visible')) hidePopup();
+                });
+
+                // Save JSON button
+                document.getElementById('save-json-btn').addEventListener('click', () => {
+                    const pages = [];
+                    document.querySelectorAll('.page-section').forEach((pageEl, pageIdx) => {
+                        const pageNumText = pageEl.querySelector('.page-header h2').textContent;
+                        const m = pageNumText.match(/\d+/);
+                        const pageNum = m ? parseInt(m[0], 10) : pageIdx + 1;
+                        const lines = [];
+                        pageEl.querySelectorAll('.line').forEach(lineEl => {
+                            const img = lineEl.querySelector('.line-image');
+                            const textEl = lineEl.querySelector('.line-text');
+                            const key = textEl.dataset.lineKey;
+                            const text = Array.from(textEl.querySelectorAll('.char')).map(c => c.textContent).join('');
+                            const imageDataUrl = img.src;
+                            const imageB64 = imageDataUrl.replace(/^data:image\/png;base64,/, '');
+                            lines.push({
+                                text,
+                                image_b64: imageB64,
+                                annotations: annotations[key] || []
+                            });
+                        });
+                        pages.push({ page: pageNum, lines });
+                    });
+                    const out = {
+                        version: 1,
+                        filename: serverData.filename || 'haskala.pdf',
+                        created_at: new Date().toISOString(),
+                        pages
+                    };
+                    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                    const base = (serverData.filename || 'haskala').replace(/\.pdf$/i, '');
+                    a.href = url;
+                    a.download = `haskala-${base}-${stamp}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            })();
+            </script>
         {% endif %}
     </div>
 </body>
