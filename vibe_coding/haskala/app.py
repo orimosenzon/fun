@@ -5,6 +5,7 @@ import json
 
 import anthropic
 import fitz
+import numpy as np
 from dotenv import load_dotenv
 from flask import Flask, render_template, request
 from PIL import Image
@@ -25,22 +26,14 @@ OCR_SYSTEM_PROMPT = """אתה מבצע OCR מדויק על צילום של תר�
 כללי תמלול קריטיים:
 1. תמלל בדיוק את מה שכתוב — אל תתקן שום דבר.
 2. שמור על שגיאות כתיב בדיוק כפי שהן.
-3. כל שורה ויזואלית בתמונה = פריט אחד בפלט.
+3. כל שורה ויזואלית בתמונה = פריט אחד בפלט, מלמעלה למטה לפי הסדר.
 4. שמור על כל סימני הפיסוק בדיוק כפי שנכתבו (כולל פיסוק חסר).
 5. שמור על אותיות גדולות וקטנות באנגלית בדיוק כפי שנכתבו.
 6. אם תו לא ברור, תמלל את מה שהכי דומה לצורה הכתובה.
 7. אם מילה לא קריאה לחלוטין, כתוב במקומה: [לא קריא]
 8. שורות ריקות בתמונה — דלג עליהן (אל תפיק פריט לשורה ריקה).
 
-עבור כל שורה, החזר:
-- text: התמלול המדויק (כולל טעויות)
-- y_top: פיקסל ה-y שבו מתחיל החלק העליון ביותר של הכתב היד (כולל אותיות גבוהות כמו ל, k, b, h, t, וקווים אלכסוניים שעולים מעל אזור האות הרגיל). זה לא הקו המודפס של המחברת מעל השורה — זה איפה שהדיו של התלמיד מתחיל.
-- y_bottom: פיקסל ה-y שבו נגמר החלק הנמוך ביותר של הכתב יד (כולל זנבות יורדים כמו ך, ץ, ן, g, y, p, j). זה לא הקו המודפס של המחברת מתחת לשורה — זה איפה שהדיו של התלמיד נגמר.
-
-חשוב: הטווח [y_top, y_bottom] חייב לכסות את כל הכתב היד של השורה בנדיבות. עדיף לכלול קצת רקע ריק מאשר לחתוך אותיות. בכתב יד עברי עם אנגלית מעורבת, גובה השורה הוא בדרך כלל 80-150 פיקסלים.
-
-החזר את התוצאה כ-JSON תקין במבנה: {"lines": [{"text": "...", "y_top": N, "y_bottom": N}, ...]}.
-הקואורדינטות חייבות להיות במערכת הפיקסלים של התמונה שניתנה לך."""
+החזר את התוצאה כ-JSON תקין במבנה: {"lines": [{"text": "..."}, ...]}."""
 
 OCR_SCHEMA = {
     "type": "object",
@@ -51,10 +44,8 @@ OCR_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "text": {"type": "string"},
-                    "y_top": {"type": "integer"},
-                    "y_bottom": {"type": "integer"},
                 },
-                "required": ["text", "y_top", "y_bottom"],
+                "required": ["text"],
                 "additionalProperties": False,
             },
         }
@@ -111,7 +102,7 @@ def ocr_page(img: Image.Image) -> list[dict]:
                     },
                     {
                         "type": "text",
-                        "text": f"גודל התמונה: {img.width} × {img.height} פיקסלים. תמלל שורה-שורה והחזר JSON.",
+                        "text": "תמלל שורה-שורה והחזר JSON.",
                     },
                 ],
             }
@@ -123,7 +114,7 @@ def ocr_page(img: Image.Image) -> list[dict]:
     return data["lines"]
 
 
-def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 30) -> str:
+def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 0) -> str:
     h = img.height
     top = max(0, y_top - padding)
     bottom = min(h, y_bottom + padding)
@@ -131,44 +122,207 @@ def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 30) ->
     return image_to_b64(strip, "PNG")
 
 
-def normalize_line_heights(lines: list[dict]) -> list[dict]:
-    """If Claude returned a strip much thinner than the page median, expand it."""
-    if not lines:
-        return lines
-    heights = [line["y_bottom"] - line["y_top"] for line in lines]
-    heights = [h for h in heights if h > 0]
-    if not heights:
-        return lines
-    sorted_h = sorted(heights)
-    median = sorted_h[len(sorted_h) // 2]
-    min_height = int(median * 0.6)
-    for line in lines:
-        h = line["y_bottom"] - line["y_top"]
-        if h < min_height:
-            center = (line["y_top"] + line["y_bottom"]) // 2
-            line["y_top"] = center - min_height // 2
-            line["y_bottom"] = center + min_height // 2
-    return lines
+def _smoothed_profile(
+    img: Image.Image,
+    ink_threshold: int = 180,
+    smooth_window: int = 25,
+    solid_row_ratio: float = 0.40,
+    edge_margin_ratio: float = 0.04,
+) -> np.ndarray:
+    """Horizontal-projection ink profile, smoothed, with noise removed.
+
+    solid_row_ratio: any row whose ink covers more than this fraction of the
+        page width is zeroed out. Handwriting strokes are thin and gappy and
+        never cover that much of a row — but a scan bar or heavy underline
+        might.
+    edge_margin_ratio: the top/bottom slice of the page is zeroed. A photo of
+        a bound notebook almost always catches the spiral/clip and the desk
+        shadow at the extreme top edge; its coverage is the *same* as a dense
+        text row, so it can't be told apart by density — but real writing
+        always has a page margin, so anything in the first/last few percent
+        is noise. This was the root cause of the persistent off-by-one: the
+        binding became a phantom first line and shifted every strip down one.
+    """
+    gray = np.asarray(img.convert("L"), dtype=np.uint8)
+    h, w = gray.shape
+    profile = (gray < ink_threshold).astype(np.float32).sum(axis=1)
+    profile[profile > w * solid_row_ratio] = 0.0
+    margin = int(h * edge_margin_ratio)
+    if margin > 0:
+        profile[:margin] = 0.0
+        profile[h - margin:] = 0.0
+    if smooth_window > 1:
+        kernel = np.ones(smooth_window, dtype=np.float32) / smooth_window
+        profile = np.convolve(profile, kernel, mode="same")
+    return profile
+
+
+def deskew_page(img: Image.Image, max_angle: float = 6.0) -> tuple[Image.Image, float]:
+    """Rotate the page so its text lines are horizontal.
+
+    A phone photo of a notebook is almost always shot at a slight angle, so
+    the ruled lines curve across the frame. A horizontal projection of a
+    skewed page smears neighbouring lines into each other (shallow valleys —
+    the root cause of merged/duplicated strips). We find the rotation that
+    maximises profile contrast (std): when lines are level the projection has
+    tall peaks and deep valleys, so its standard deviation peaks too.
+    """
+    def sharpness(angle: float) -> float:
+        rot = img.rotate(
+            angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255)
+        )
+        return float(_smoothed_profile(rot).std())
+
+    best_angle, best = 0.0, -1.0
+    for a in np.arange(-max_angle, max_angle + 0.01, 0.5):
+        s = sharpness(float(a))
+        if s > best:
+            best_angle, best = float(a), s
+    for a in np.arange(best_angle - 0.5, best_angle + 0.51, 0.1):
+        s = sharpness(float(a))
+        if s > best:
+            best_angle, best = float(a), s
+    angle = round(best_angle, 1)
+    if abs(angle) < 0.1:
+        return img, 0.0
+    return img.rotate(angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255)), angle
+
+
+def _writing_region(profile: np.ndarray) -> tuple[int, int]:
+    """First/last row of *sustained* ink — a thin stray mark won't start it."""
+    h = len(profile)
+    if profile.max() <= 0:
+        return 0, h
+    present = profile > profile.max() * 0.10
+    min_run = 30
+    top, bottom = 0, h
+    run = 0
+    for y in range(h):
+        if present[y]:
+            run += 1
+            if run >= min_run:
+                top = y - run + 1
+                break
+        else:
+            run = 0
+    run = 0
+    for y in range(h - 1, -1, -1):
+        if present[y]:
+            run += 1
+            if run >= min_run:
+                bottom = y + run
+                break
+        else:
+            run = 0
+    return top, min(h, bottom)
+
+
+def _prominence(region: np.ndarray, i: int) -> float:
+    """Topographic prominence of peak `i` — how far it rises above the
+    deeper of the two valleys separating it from any taller neighbour."""
+    left = i
+    left_min = region[i]
+    while left > 0 and region[left] <= region[i]:
+        left_min = min(left_min, region[left])
+        left -= 1
+    right = i
+    right_min = region[i]
+    while right < len(region) - 1 and region[right] <= region[i]:
+        right_min = min(right_min, region[right])
+        right += 1
+    return float(region[i] - max(left_min, right_min))
+
+
+def segment_into_lines(img: Image.Image, num_lines: int) -> list[tuple[int, int]]:
+    """Cut the writing region into exactly `num_lines` strips.
+
+    We know the line count from the OCR, so rather than guess it from a
+    threshold (which merges close lines and splits sparse ones), we place one
+    peak per written line in the ink profile and cut at the lowest point
+    between consecutive peaks.
+
+    The first and last lines are *anchored* to the strongest bump in the
+    first/last pitch-window; the middle `num_lines - 2` are the most
+    prominent peaks in between, spaced at least half a pitch apart. Anchoring
+    is what keeps a faint short opening line (a name/signature) or a faint
+    closing line from being out-competed by the dense body lines — without
+    it, a dense line grabs two peaks and a faint edge line gets none, which
+    shifts a whole block of strips by one.
+    """
+    if num_lines <= 0:
+        return []
+    profile = _smoothed_profile(img)
+    top, bottom = _writing_region(profile)
+    if num_lines == 1 or bottom - top < num_lines:
+        return [(top, bottom)]
+
+    region = profile[top:bottom]
+    floor = profile.max() * 0.05
+
+    # Dominant line pitch (notebook ruling) → minimum spacing between peaks.
+    # 0.5 (not higher): some lines are written consecutively with a tight gap,
+    # so a larger guard would merge two real lines and lose one peak.
+    centred = region - region.mean()
+    autocorr = np.correlate(centred, centred, "full")[len(centred) - 1:]
+    pitch = 80 + int(np.argmax(autocorr[80:220])) if len(autocorr) > 220 else 100
+    pitch = min(pitch, len(region))
+    min_dist = max(15, int(pitch * 0.5))
+
+    candidates = [
+        i
+        for i in range(1, len(region) - 1)
+        if region[i] >= region[i - 1] and region[i] > region[i + 1] and region[i] > floor
+    ]
+
+    if num_lines >= 2 and len(candidates) >= num_lines:
+        first = int(np.argmax(region[:pitch]))
+        last = len(region) - pitch + int(np.argmax(region[-pitch:]))
+        middle = sorted(
+            (c for c in candidates if first + min_dist <= c <= last - min_dist),
+            key=lambda i: -_prominence(region, i),
+        )
+        peaks = [first, last]
+        for c in middle:
+            if all(abs(c - p) >= min_dist for p in peaks):
+                peaks.append(c)
+            if len(peaks) == num_lines:
+                break
+        peaks.sort()
+
+    if num_lines < 2 or len(candidates) < num_lines or len(peaks) < num_lines:
+        # Not enough structure — fall back to even spacing in the region.
+        step = (bottom - top) / num_lines
+        return [
+            (int(round(top + k * step)), int(round(top + (k + 1) * step)))
+            for k in range(num_lines)
+        ]
+
+    bounds = [0]
+    for a, b in zip(peaks, peaks[1:]):
+        bounds.append(a + int(np.argmin(region[a:b])))
+    bounds.append(len(region) - 1)
+    segments = [(top + bounds[i], top + bounds[i + 1]) for i in range(num_lines)]
+    heights = [b - a for a, b in segments]
+    print(
+        f"  segment: region=({top},{bottom}) lines={num_lines} pitch={pitch} "
+        f"peaks={len(peaks)} heights min/med/max="
+        f"{min(heights)}/{sorted(heights)[len(heights) // 2]}/{max(heights)}"
+    )
+    return segments
 
 
 def process_pdf(pdf_bytes: bytes) -> list[dict]:
     pages = pdf_to_page_images(pdf_bytes)
     results = []
     for page_idx, img in enumerate(pages):
-        lines = ocr_page(img)
-        lines = normalize_line_heights(lines)
-        line_items = []
-        for line in lines:
-            y_top = max(0, min(img.height, int(line["y_top"])))
-            y_bottom = max(0, min(img.height, int(line["y_bottom"])))
-            if y_bottom <= y_top:
-                continue
-            line_items.append(
-                {
-                    "text": line["text"],
-                    "image_b64": crop_line(img, y_top, y_bottom),
-                }
-            )
+        img, angle = deskew_page(img)
+        texts = [line["text"] for line in ocr_page(img)]
+        print(f"[page {page_idx + 1}] deskew={angle}° {len(texts)} lines transcribed")
+        bands = segment_into_lines(img, len(texts))
+        line_items = [
+            {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
+            for text, (y_top, y_bottom) in zip(texts, bands)
+        ]
         results.append({"page": page_idx + 1, "lines": line_items})
     return results
 
