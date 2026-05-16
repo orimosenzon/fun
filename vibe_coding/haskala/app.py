@@ -2,6 +2,8 @@ import base64
 import hashlib
 import io
 import json
+import logging
+import os
 
 import anthropic
 import fitz
@@ -11,6 +13,16 @@ from flask import Flask, render_template, request
 from PIL import Image
 
 load_dotenv()
+
+# Pipeline diagnostics go to a file (not just stdout) so the segmentation
+# behaviour can be inspected after a run without watching the console.
+LOG_PATH = os.path.join(os.path.dirname(__file__), "haskala.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    handlers=[logging.FileHandler(LOG_PATH, mode="a"), logging.StreamHandler()],
+)
+log = logging.getLogger("haskala")
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
@@ -303,10 +315,15 @@ def segment_into_lines(img: Image.Image, num_lines: int) -> list[tuple[int, int]
     bounds.append(len(region) - 1)
     segments = [(top + bounds[i], top + bounds[i + 1]) for i in range(num_lines)]
     heights = [b - a for a, b in segments]
-    print(
-        f"  segment: region=({top},{bottom}) lines={num_lines} pitch={pitch} "
-        f"peaks={len(peaks)} heights min/med/max="
-        f"{min(heights)}/{sorted(heights)[len(heights) // 2]}/{max(heights)}"
+    ink = [int(profile[a:b].sum()) for a, b in segments]
+    med_ink = sorted(ink)[len(ink) // 2]
+    near_empty = [i + 1 for i, v in enumerate(ink) if v < 0.35 * med_ink]
+    log.info(
+        "segment: region=(%d,%d) lines=%d pitch=%d peaks=%d "
+        "heights min/med/max=%d/%d/%d near_empty_strips=%s",
+        top, bottom, num_lines, pitch, len(peaks),
+        min(heights), sorted(heights)[len(heights) // 2], max(heights),
+        near_empty or "none",
     )
     return segments
 
@@ -317,7 +334,7 @@ def process_pdf(pdf_bytes: bytes) -> list[dict]:
     for page_idx, img in enumerate(pages):
         img, angle = deskew_page(img)
         texts = [line["text"] for line in ocr_page(img)]
-        print(f"[page {page_idx + 1}] deskew={angle}° {len(texts)} lines transcribed")
+        log.info("[page %d] deskew=%s° %d lines transcribed", page_idx + 1, angle, len(texts))
         bands = segment_into_lines(img, len(texts))
         line_items = [
             {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
