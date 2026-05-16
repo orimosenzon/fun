@@ -14,7 +14,7 @@
 
 ## שלבים (חד-פעמי)
 
-1. **מפתח Anthropic ייעודי עם תקרה.** ב-[Anthropic Console](https://console.anthropic.com/) → API Keys → צור מפתח חדש *רק לפרויקט הזה*. ב-Billing/Limits → קבע **תקרת הוצאה חודשית נמוכה** (למשל $10). זה גג הביטחון — גם אם משהו משתבש, ההפסד חסום.
+1. **תקרת הוצאה חודשית.** משתמשים במפתח ה-Anthropic הקיים — ודאו שעל החשבון מוגדרת **תקרת הוצאה חודשית** ב-[Anthropic Console](https://console.anthropic.com/) (Billing/Limits). זו רשת הביטחון: גם אם מישהו עוקף את ה-Basic Auth, ההפסד חסום בתקרה. (מפתח ייעודי נפרד היה מוסיף בידוד ביטול/מעקב, אך לא נדרש כאן.)
 
 2. **צור Space.** ב-[huggingface.co](https://huggingface.co/) (חשבון חינמי) → **New Space** → SDK: **Docker** → Template: **Blank** → Visibility: **Public** (ה-Basic Auth מגן; Private Space דורש לכל מבקר חשבון HF).
 
