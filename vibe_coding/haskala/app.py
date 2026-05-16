@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import hmac
 import io
 import json
 import logging
@@ -36,6 +37,45 @@ log = logging.getLogger("haskala")
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+
+# Set by desktop.py. When true we're a local single-user native app, so the
+# file-path endpoints (reading an arbitrary path off disk) are safe. When
+# false we're a public web server and those endpoints are a file-read hole,
+# so they're refused — the browser-upload paths cover the web case.
+DESKTOP_MODE = os.environ.get("HASKALA_DESKTOP") == "1"
+
+# Public deployments must set HASKALA_USER / HASKALA_PASS so OCR (which
+# spends Anthropic credit) sits behind Basic Auth. Locally / on desktop
+# they're unset and auth is skipped.
+BASIC_USER = os.environ.get("HASKALA_USER")
+BASIC_PASS = os.environ.get("HASKALA_PASS")
+if not DESKTOP_MODE and not (BASIC_USER and BASIC_PASS):
+    logging.getLogger("haskala").warning(
+        "running without Basic Auth — set HASKALA_USER/HASKALA_PASS "
+        "before exposing this publicly"
+    )
+
+
+@app.before_request
+def _require_basic_auth():
+    if DESKTOP_MODE or not (BASIC_USER and BASIC_PASS):
+        return  # local desktop or dev: no gate
+    if request.path.startswith("/static/"):
+        return
+    auth = request.authorization
+    if (
+        auth
+        and auth.type == "basic"
+        and hmac.compare_digest(auth.username or "", BASIC_USER)
+        and hmac.compare_digest(auth.password or "", BASIC_PASS)
+    ):
+        return
+    return Response(
+        "נדרשת הזדהות",
+        401,
+        {"WWW-Authenticate": 'Basic realm="haskala"'},
+    )
+
 
 client = anthropic.Anthropic()
 
@@ -499,6 +539,8 @@ def decode_start():
     progress is streamed from /decode/progress/<job_id>."""
     filename = "document.pdf"
     if request.is_json:
+        if not DESKTOP_MODE:
+            return jsonify(error="לא זמין בגרסת הווב"), 403
         path = (request.get_json(silent=True) or {}).get("path")
         if not path or not os.path.isfile(path):
             return jsonify(error="הקובץ לא נמצא"), 400
@@ -556,7 +598,10 @@ def result_page(job_id):
 
 @app.route("/load")
 def load_saved():
-    """Load a saved JSON by native path (pywebview)."""
+    """Load a saved JSON by native path (pywebview only — reading an
+    arbitrary server path is a file-read hole on a public server)."""
+    if not DESKTOP_MODE:
+        return render_template("index.html", error="לא זמין בגרסת הווב"), 403
     path = request.args.get("path")
     if not path or not os.path.isfile(path):
         return render_template("index.html", error="הקובץ לא נמצא")
