@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+haskala.log
+memory/
+desktop.py
+requirements-desktop.txt
+README.md
+DEPLOY.md
+.git/

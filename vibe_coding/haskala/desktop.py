@@ -15,7 +15,11 @@ import urllib.request
 
 import webview
 
-from app import app
+# Must be set before importing app: it enables the local file-path
+# endpoints (and skips Basic Auth) for this trusted single-user window.
+os.environ["HASKALA_DESKTOP"] = "1"
+
+from app import app  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 5050

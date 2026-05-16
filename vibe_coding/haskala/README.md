@@ -35,6 +35,9 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
+# לאפליקציית הדסקטופ (desktop.py) — תלויות נוספות:
+pip install -r requirements-desktop.txt
+
 # הגדרת מפתח API — העתיקו את .env.example ל-.env והכניסו את המפתח
 cp .env.example .env
 # ערכו את .env והחליפו את sk-ant-... במפתח אמיתי
@@ -59,6 +62,8 @@ python desktop.py
 > **הערה ל-Linux:** pywebview דורש backend של Qt. הוא כבר מותקן ב-venv (`PyQt5`, `PyQtWebEngine`, `qtpy` — מסומנים ב-requirements כתלויות Linux בלבד). ב-Windows/macOS משתמשים ב-webview של מערכת ההפעלה ואין צורך בתלויות האלה.
 
 לחלופין, להרצה כשרת ווב בדפדפן (פיתוח): `python app.py` → [http://localhost:5050](http://localhost:5050). כל שלושת הכפתורים עובדים גם בדפדפן (שמירה יורדת לתיקיית ההורדות במקום דיאלוג שמירה).
+
+**פריסה לענן (כדי שאבישי ישתמש בלי התקנה):** ראו [DEPLOY.md](DEPLOY.md) — פריסה חינמית ל-Hugging Face Spaces עם Basic Auth.
 
 #### שימוש (מסך אחד, שלושה כפתורים)
 
