@@ -4,12 +4,22 @@ import io
 import json
 import logging
 import os
+import queue
+import threading
+import uuid
 
 import anthropic
 import fitz
 import numpy as np
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+)
 from PIL import Image
 
 load_dotenv()
@@ -328,20 +338,84 @@ def segment_into_lines(img: Image.Image, num_lines: int) -> list[tuple[int, int]
     return segments
 
 
-def process_pdf(pdf_bytes: bytes) -> list[dict]:
-    pages = pdf_to_page_images(pdf_bytes)
+# Stage labels shown in the progress bar (one event per stage per page).
+STAGE_LABELS = {
+    "render": "מרנדר עמוד",
+    "deskew": "מיישר הטיה",
+    "ocr": "מתמלל",
+    "segment": "מחתך לשורות",
+    "crop": "חותך שורות",
+}
+_STEPS_PER_PAGE = 5  # render, deskew, ocr, segment, crop
+
+
+def process_pdf_stream(pdf_bytes: bytes):
+    """Run the OCR pipeline, yielding progress as it goes.
+
+    Yields {"type": "progress", page, total_pages, stage, pct} after each
+    pipeline stage (render → deskew → ocr → segment → crop), then a final
+    {"type": "result", pages}. Lets the UI show a real determinate bar
+    instead of a guess.
+    """
+    pages_imgs = pdf_to_page_images(pdf_bytes)
+    total = len(pages_imgs)
+    total_steps = max(1, total * _STEPS_PER_PAGE)
+    done = 0
     results = []
-    for page_idx, img in enumerate(pages):
+
+    def progress(stage: str, page: int):
+        nonlocal done
+        done += 1
+        return {
+            "type": "progress",
+            "page": page,
+            "total_pages": total,
+            "stage": stage,
+            "label": STAGE_LABELS.get(stage, stage),
+            "pct": round(100 * done / total_steps),
+        }
+
+    for page_idx, img in enumerate(pages_imgs):
+        p = page_idx + 1
+        yield progress("render", p)
         img, angle = deskew_page(img)
+        yield progress("deskew", p)
         texts = [line["text"] for line in ocr_page(img)]
-        log.info("[page %d] deskew=%s° %d lines transcribed", page_idx + 1, angle, len(texts))
+        log.info("[page %d] deskew=%s° %d lines transcribed", p, angle, len(texts))
+        yield progress("ocr", p)
         bands = segment_into_lines(img, len(texts))
+        yield progress("segment", p)
         line_items = [
             {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
             for text, (y_top, y_bottom) in zip(texts, bands)
         ]
-        results.append({"page": page_idx + 1, "lines": line_items})
-    return results
+        results.append({"page": p, "lines": line_items})
+        yield progress("crop", p)
+
+    yield {"type": "result", "pages": results}
+
+
+# In-memory job store. Single local user (Avishai), so a dict is enough; a
+# job is short-lived and consumed once by the SSE stream.
+JOBS: dict[str, dict] = {}
+
+
+def run_job(job_id: str, pdf_bytes: bytes):
+    job = JOBS[job_id]
+    q: queue.Queue = job["q"]
+    try:
+        for ev in process_pdf_stream(pdf_bytes):
+            if ev["type"] == "result":
+                job["pages"] = ev["pages"]
+                q.put({"type": "done"})
+            else:
+                q.put(ev)
+    except anthropic.APIError as e:
+        q.put({"type": "error", "message": f"שגיאת API: {e.message}"})
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        q.put({"type": "error", "message": f"שגיאת פענוח: {e}"})
+    finally:
+        q.put({"type": "end"})
 
 
 def compute_doc_key(pages: list[dict]) -> str:
@@ -402,6 +476,8 @@ def index():
     if request.method == "GET":
         return render_template("index.html")
 
+    # Browser fallback for loading a saved JSON (multipart). The pywebview
+    # build uses /load with a native file path instead.
     saved = request.files.get("saved")
     if saved and saved.filename:
         raw = saved.read()
@@ -413,26 +489,85 @@ def index():
             return render_template("index.html", error=f"שגיאה בקריאת JSON: {e}")
         return render_result(pages, filename, annotations)
 
-    file = request.files.get("pdf")
-    if not file or not file.filename:
-        return render_template("index.html", error="לא נבחר קובץ")
+    return render_template("index.html", error="לא נבחר קובץ")
 
-    if not file.filename.lower().endswith(".pdf"):
-        return render_template("index.html", error="חייב להיות קובץ PDF")
 
-    pdf_bytes = file.read()
+@app.route("/decode/start", methods=["POST"])
+def decode_start():
+    """Begin OCR. Accepts either a native file path (pywebview, JSON body)
+    or a multipart 'pdf' upload (plain-browser fallback). Returns a job_id;
+    progress is streamed from /decode/progress/<job_id>."""
+    filename = "document.pdf"
+    if request.is_json:
+        path = (request.get_json(silent=True) or {}).get("path")
+        if not path or not os.path.isfile(path):
+            return jsonify(error="הקובץ לא נמצא"), 400
+        if not path.lower().endswith(".pdf"):
+            return jsonify(error="חייב להיות קובץ PDF"), 400
+        with open(path, "rb") as f:
+            pdf_bytes = f.read()
+        filename = os.path.basename(path)
+    else:
+        file = request.files.get("pdf")
+        if not file or not file.filename:
+            return jsonify(error="לא נבחר קובץ"), 400
+        if not file.filename.lower().endswith(".pdf"):
+            return jsonify(error="חייב להיות קובץ PDF"), 400
+        pdf_bytes = file.read()
+        filename = file.filename
     if not pdf_bytes:
-        return render_template("index.html", error="הקובץ ריק")
+        return jsonify(error="הקובץ ריק"), 400
 
+    job_id = uuid.uuid4().hex[:12]
+    JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
+    threading.Thread(
+        target=run_job, args=(job_id, pdf_bytes), daemon=True
+    ).start()
+    return jsonify(job_id=job_id)
+
+
+@app.route("/decode/progress/<job_id>")
+def decode_progress(job_id):
+    job = JOBS.get(job_id)
+    if not job:
+        return "unknown job", 404
+
+    def stream():
+        while True:
+            ev = job["q"].get()
+            yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+            if ev["type"] in ("end", "error"):
+                break
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.route("/result/<job_id>")
+def result_page(job_id):
+    job = JOBS.get(job_id)
+    if not job or job.get("pages") is None:
+        return redirect("/")
+    return render_result(job["pages"], job["filename"])
+
+
+@app.route("/load")
+def load_saved():
+    """Load a saved JSON by native path (pywebview)."""
+    path = request.args.get("path")
+    if not path or not os.path.isfile(path):
+        return render_template("index.html", error="הקובץ לא נמצא")
     try:
-        pages = process_pdf(pdf_bytes)
-    except anthropic.APIError as e:
-        return render_template("index.html", error=f"שגיאת API: {e.message}")
-    except (json.JSONDecodeError, KeyError) as e:
-        return render_template("index.html", error=f"שגיאת פענוח: {e}")
-
-    return render_result(pages, file.filename)
+        with open(path, "rb") as f:
+            raw = f.read()
+        pages, filename, annotations = parse_saved_json(raw)
+    except (json.JSONDecodeError, ValueError, UnicodeDecodeError, OSError) as e:
+        return render_template("index.html", error=f"שגיאה בקריאת JSON: {e}")
+    return render_result(pages, filename, annotations)
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5050)
+    app.run(debug=True, port=5050, threaded=True)

@@ -271,35 +271,206 @@
             padding: 0.2rem 0.6rem;
             font-size: 0.8rem;
         }
+
+        .actionbar {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .actionbar button { font-size: 1rem; }
+        .actionbar .spacer { flex: 1; }
+        .progress-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .progress-box.visible { display: block; }
+        .progress-label {
+            font-size: 0.95rem;
+            color: var(--fg);
+            margin-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-track {
+            height: 14px;
+            background: #ece7da;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 7px;
+            transition: width 0.3s ease;
+        }
+        .progress-box.error .progress-fill { background: var(--error); }
+        .progress-box.error .progress-label { color: var(--error); }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>השכלה — OCR לתרגילים בכתב יד</h1>
-        <p class="subtitle">העלה PDF של תרגיל מצולם, או טען עבודה שמורה. סמן אותיות בעכבר כדי להוסיף הערות.</p>
+        <p class="subtitle">פענח PDF של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
 
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form method="POST" enctype="multipart/form-data" onsubmit="this.classList.add('submitting'); this.querySelector('button[type=submit]').disabled=true;">
-            <div class="upload-row">
-                <div class="upload-col">
-                    <h3>תמלול PDF חדש</h3>
-                    <input type="file" name="pdf" accept="application/pdf">
-                    <div class="loading">מתמלל… 15-45 שניות לעמוד.</div>
-                </div>
-                <div class="upload-col">
-                    <h3>טעינת עבודה שמורה</h3>
-                    <input type="file" name="saved" accept="application/json,.json">
-                </div>
+        <div class="actionbar">
+            <button id="decode-btn" type="button">פענח קובץ</button>
+            <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
+            <span class="spacer"></span>
+            <button id="save-json-btn" type="button" {% if not pages %}disabled{% endif %}>שמור קובץ מפוענח</button>
+        </div>
+
+        <div id="progress-box" class="progress-box">
+            <div class="progress-label">
+                <span id="progress-text">מתחיל…</span>
+                <span id="progress-pct">0%</span>
             </div>
-            <button type="submit">המשך</button>
+            <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+        </div>
+
+        <!-- Plain-browser fallback (used only when not running under pywebview). -->
+        <input type="file" id="fallback-pdf" accept="application/pdf" style="display:none">
+        <form id="fallback-load-form" method="POST" enctype="multipart/form-data" style="display:none">
+            <input type="file" id="fallback-json" name="saved" accept="application/json,.json">
         </form>
+
+        <script>
+        (function () {
+            // Resolve the pywebview JS API once it is injected (or null in a
+            // plain browser, where we fall back to file inputs / downloads).
+            function getApi(timeout) {
+                return new Promise(resolve => {
+                    if (window.pywebview && window.pywebview.api) {
+                        return resolve(window.pywebview.api);
+                    }
+                    let done = false;
+                    const finish = v => { if (!done) { done = true; resolve(v); } };
+                    window.addEventListener('pywebviewready', () => finish(window.pywebview.api));
+                    setTimeout(() => finish(null), timeout || 1500);
+                });
+            }
+            window.__haskalaGetApi = getApi;
+
+            const box = document.getElementById('progress-box');
+            const fill = document.getElementById('progress-fill');
+            const txt = document.getElementById('progress-text');
+            const pct = document.getElementById('progress-pct');
+
+            function showProgress() {
+                box.classList.remove('error');
+                box.classList.add('visible');
+                fill.style.width = '0%';
+                txt.textContent = 'מתחיל…';
+                pct.textContent = '0%';
+            }
+            function setProgress(label, page, totalPages, percent) {
+                fill.style.width = percent + '%';
+                pct.textContent = percent + '%';
+                txt.textContent = totalPages > 1
+                    ? `עמוד ${page}/${totalPages} — ${label}…`
+                    : `${label}…`;
+            }
+            function progressError(msg) {
+                box.classList.add('error', 'visible');
+                txt.textContent = msg;
+            }
+
+            function streamJob(jobId) {
+                const es = new EventSource('/decode/progress/' + jobId);
+                es.onmessage = (e) => {
+                    const ev = JSON.parse(e.data);
+                    if (ev.type === 'progress') {
+                        setProgress(ev.label, ev.page, ev.total_pages, ev.pct);
+                    } else if (ev.type === 'done') {
+                        fill.style.width = '100%';
+                        pct.textContent = '100%';
+                        txt.textContent = 'מסיים…';
+                        es.close();
+                        window.location = '/result/' + jobId;
+                    } else if (ev.type === 'error') {
+                        progressError(ev.message || 'שגיאה בפענוח');
+                        es.close();
+                    } else if (ev.type === 'end') {
+                        es.close();
+                    }
+                };
+                es.onerror = () => {
+                    progressError('החיבור לשרת נקטע');
+                    es.close();
+                };
+            }
+
+            async function startDecode(body, isJson) {
+                showProgress();
+                try {
+                    const resp = await fetch('/decode/start', {
+                        method: 'POST',
+                        headers: isJson ? { 'Content-Type': 'application/json' } : undefined,
+                        body: body,
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || data.error) {
+                        progressError(data.error || 'שגיאה בהתחלת הפענוח');
+                        return;
+                    }
+                    streamJob(data.job_id);
+                } catch (err) {
+                    progressError('שגיאה בהתחלת הפענוח');
+                }
+            }
+
+            // --- פענח קובץ ---
+            document.getElementById('decode-btn').addEventListener('click', async () => {
+                const api = await getApi();
+                if (api) {
+                    const path = await api.pick_pdf();
+                    if (!path) return;
+                    startDecode(JSON.stringify({ path }), true);
+                } else {
+                    document.getElementById('fallback-pdf').click();
+                }
+            });
+            document.getElementById('fallback-pdf').addEventListener('change', (e) => {
+                const f = e.target.files[0];
+                if (!f) return;
+                const fd = new FormData();
+                fd.append('pdf', f);
+                startDecode(fd, false);
+            });
+
+            // --- העלה קובץ מפוענח ---
+            document.getElementById('load-btn').addEventListener('click', async () => {
+                const api = await getApi();
+                if (api) {
+                    const path = await api.pick_json();
+                    if (!path) return;
+                    window.location = '/load?path=' + encodeURIComponent(path);
+                } else {
+                    document.getElementById('fallback-json').click();
+                }
+            });
+            document.getElementById('fallback-json').addEventListener('change', () => {
+                document.getElementById('fallback-load-form').submit();
+            });
+        })();
+        </script>
 
         {% if pages %}
             <div class="toolbar">
-                <button id="save-json-btn" type="button">שמור עבודה (JSON)</button>
                 <span class="hint">סמן אותיות עם העכבר כדי להוסיף הערה. לחץ על אות אדומה כדי לקרוא/לערוך.</span>
             </div>
 
@@ -598,7 +769,7 @@
                 });
 
                 // Save JSON button
-                document.getElementById('save-json-btn').addEventListener('click', () => {
+                document.getElementById('save-json-btn').addEventListener('click', async () => {
                     const pages = [];
                     document.querySelectorAll('.page-section').forEach((pageEl, pageIdx) => {
                         const pageNumText = pageEl.querySelector('.page-header h2').textContent;
@@ -626,13 +797,28 @@
                         created_at: new Date().toISOString(),
                         pages
                     };
-                    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
+                    const content = JSON.stringify(out, null, 2);
                     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
                     const base = (serverData.filename || 'haskala').replace(/\.pdf$/i, '');
+                    const name = `haskala-${base}-${stamp}.json`;
+
+                    const api = await window.__haskalaGetApi();
+                    if (api) {
+                        const saved = await api.save_json(name, content);
+                        const btn = document.getElementById('save-json-btn');
+                        if (saved) {
+                            const orig = btn.textContent;
+                            btn.textContent = 'נשמר ✓';
+                            setTimeout(() => { btn.textContent = orig; }, 2000);
+                        }
+                        return;
+                    }
+                    // Plain-browser fallback: download to the Downloads folder.
+                    const blob = new Blob([content], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
                     a.href = url;
-                    a.download = `haskala-${base}-${stamp}.json`;
+                    a.download = name;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);

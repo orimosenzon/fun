@@ -4,3 +4,11 @@ python-dotenv>=1.0.0
 pymupdf>=1.27.0
 pillow>=10.0.0
 numpy>=1.26.0
+
+# Native desktop wrapper (desktop.py). On Linux pywebview needs a Qt
+# backend + the qtpy shim; on Windows/macOS it uses the OS webview and
+# the three lines below are unnecessary.
+pywebview>=5.0
+qtpy>=2.4 ; sys_platform == "linux"
+PyQt5>=5.15 ; sys_platform == "linux"
+PyQtWebEngine>=5.15 ; sys_platform == "linux"
