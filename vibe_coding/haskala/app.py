@@ -23,7 +23,10 @@ from flask import (
 )
 from PIL import Image
 
-load_dotenv()
+# override=True: .env is the local source of truth for keys. Without it a
+# stale GEMINI_API_KEY/ANTHROPIC_API_KEY left in the shell shadows the real
+# one. On HF there's no .env, so this is a no-op and the Secret wins.
+load_dotenv(override=True)
 
 # Pipeline diagnostics go to a file (not just stdout) so the segmentation
 # behaviour can be inspected after a run without watching the console.
@@ -162,7 +165,8 @@ def image_to_b64(img: Image.Image, fmt: str = "PNG") -> str:
 OCR_MAX_EDGE = 2400
 
 
-def encode_for_ocr(img: Image.Image) -> str:
+def ocr_jpeg_bytes(img: Image.Image) -> bytes:
+    """Downscaled JPEG bytes — what actually goes to whichever model."""
     long_edge = max(img.size)
     if long_edge > OCR_MAX_EDGE:
         scale = OCR_MAX_EDGE / long_edge
@@ -172,14 +176,48 @@ def encode_for_ocr(img: Image.Image) -> str:
         )
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=90)
-    return base64.standard_b64encode(buf.getvalue()).decode("utf-8")
+    return buf.getvalue()
 
 
-def ocr_page(img: Image.Image) -> list[dict]:
-    img_b64 = encode_for_ocr(img)
+_USER_TURN = "תמלל שורה-שורה והחזר JSON."
 
+# Model picker. Keys are what the UI / request send; values are the human
+# label shown in the dropdown. Adding a provider = one entry + one _ocr_*.
+MODELS = {
+    "claude": "Claude (Opus 4.7)",
+    "gemini": "Gemini (2.5 Flash)",
+}
+DEFAULT_MODEL = "claude"
+
+
+@app.context_processor
+def _inject_models():
+    """Makes the model list available to every index.html render without
+    threading it through each render_template call site."""
+    return {"models": MODELS, "default_model": DEFAULT_MODEL}
+
+
+_ANTHROPIC_MODEL = "claude-opus-4-7"
+_GEMINI_MODEL = "gemini-2.5-flash"
+
+_gemini_client = None
+
+
+def _gemini():
+    """Lazily built so a missing GEMINI_API_KEY only bites if Gemini is
+    actually picked (Claude-only deployments stay unaffected)."""
+    global _gemini_client
+    if _gemini_client is None:
+        from google import genai
+
+        _gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    return _gemini_client
+
+
+def _ocr_anthropic(img: Image.Image) -> list[dict]:
+    img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
     response = client.messages.create(
-        model="claude-opus-4-7",
+        model=_ANTHROPIC_MODEL,
         max_tokens=8000,
         system=[
             {
@@ -203,18 +241,56 @@ def ocr_page(img: Image.Image) -> list[dict]:
                             "data": img_b64,
                         },
                     },
-                    {
-                        "type": "text",
-                        "text": "תמלל שורה-שורה והחזר JSON.",
-                    },
+                    {"type": "text", "text": _USER_TURN},
                 ],
             }
         ],
     )
-
     text = next(b.text for b in response.content if b.type == "text")
-    data = json.loads(text)
-    return data["lines"]
+    return json.loads(text)["lines"]
+
+
+def _ocr_gemini(img: Image.Image) -> list[dict]:
+    from google.genai import types
+
+    # Gemini's response_schema is an OpenAPI subset — it rejects the
+    # additionalProperties key that OCR_SCHEMA carries for Anthropic.
+    gemini_schema = {
+        "type": "object",
+        "properties": {
+            "lines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"text": {"type": "string"}},
+                    "required": ["text"],
+                },
+            }
+        },
+        "required": ["lines"],
+    }
+    response = _gemini().models.generate_content(
+        model=_GEMINI_MODEL,
+        contents=[
+            types.Part.from_bytes(
+                data=ocr_jpeg_bytes(img), mime_type="image/jpeg"
+            ),
+            _USER_TURN,
+        ],
+        config=types.GenerateContentConfig(
+            system_instruction=OCR_SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            response_schema=gemini_schema,
+            max_output_tokens=8000,
+        ),
+    )
+    return json.loads(response.text)["lines"]
+
+
+def ocr_page(img: Image.Image, provider: str = DEFAULT_MODEL) -> list[dict]:
+    if provider == "gemini":
+        return _ocr_gemini(img)
+    return _ocr_anthropic(img)
 
 
 def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 0) -> str:
@@ -430,7 +506,7 @@ STAGE_LABELS = {
 _STEPS_PER_PAGE = 5  # render, deskew, ocr, segment, crop
 
 
-def process_pdf_stream(file_bytes: bytes, ext: str):
+def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
     """Run the OCR pipeline, yielding progress as it goes.
 
     Yields {"type": "progress", page, total_pages, stage, pct} after each
@@ -461,8 +537,11 @@ def process_pdf_stream(file_bytes: bytes, ext: str):
         yield progress("render", p)
         img, angle = deskew_page(img)
         yield progress("deskew", p)
-        texts = [line["text"] for line in ocr_page(img)]
-        log.info("[page %d] deskew=%s° %d lines transcribed", p, angle, len(texts))
+        texts = [line["text"] for line in ocr_page(img, provider)]
+        log.info(
+            "[page %d] model=%s deskew=%s° %d lines transcribed",
+            p, provider, angle, len(texts),
+        )
         yield progress("ocr", p)
         bands = segment_into_lines(img, len(texts))
         yield progress("segment", p)
@@ -481,11 +560,11 @@ def process_pdf_stream(file_bytes: bytes, ext: str):
 JOBS: dict[str, dict] = {}
 
 
-def run_job(job_id: str, file_bytes: bytes, ext: str):
+def run_job(job_id: str, file_bytes: bytes, ext: str, provider: str):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in process_pdf_stream(file_bytes, ext):
+        for ev in process_pdf_stream(file_bytes, ext, provider):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 q.put({"type": "done"})
@@ -495,6 +574,11 @@ def run_job(job_id: str, file_bytes: bytes, ext: str):
         q.put({"type": "error", "message": f"שגיאת API: {e.message}"})
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         q.put({"type": "error", "message": f"שגיאת פענוח: {e}"})
+    except Exception as e:
+        # Gemini (google.genai) raises its own error types; without a
+        # catch-all the worker thread would die silently and the SSE
+        # stream would hang instead of showing the user what failed.
+        q.put({"type": "error", "message": f"שגיאה: {e}"})
     finally:
         q.put({"type": "end"})
 
@@ -583,7 +667,8 @@ def decode_start():
     if request.is_json:
         if not DESKTOP_MODE:
             return jsonify(error="לא זמין בגרסת הווב"), 403
-        path = (request.get_json(silent=True) or {}).get("path")
+        body = request.get_json(silent=True) or {}
+        path = body.get("path")
         if not path or not os.path.isfile(path):
             return jsonify(error="הקובץ לא נמצא"), 400
         if not path.lower().endswith(ACCEPTED_EXTS):
@@ -591,6 +676,7 @@ def decode_start():
         with open(path, "rb") as f:
             file_bytes = f.read()
         filename = os.path.basename(path)
+        provider = body.get("model")
     else:
         file = request.files.get("pdf")
         if not file or not file.filename:
@@ -599,14 +685,17 @@ def decode_start():
             return jsonify(error=bad_type), 400
         file_bytes = file.read()
         filename = file.filename
+        provider = request.form.get("model")
     if not file_bytes:
         return jsonify(error="הקובץ ריק"), 400
+    if provider not in MODELS:
+        provider = DEFAULT_MODEL
 
     ext = os.path.splitext(filename)[1].lower()
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
     threading.Thread(
-        target=run_job, args=(job_id, file_bytes, ext), daemon=True
+        target=run_job, args=(job_id, file_bytes, ext, provider), daemon=True
     ).start()
     return jsonify(job_id=job_id)
 
