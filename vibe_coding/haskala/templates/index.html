@@ -285,6 +285,17 @@
         }
         .actionbar button { font-size: 1rem; }
         .actionbar .spacer { flex: 1; }
+        .actionbar label { font-size: 0.95rem; color: var(--fg); }
+        .actionbar select {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: white;
+            color: var(--fg);
+            cursor: pointer;
+        }
         .progress-box {
             background: white;
             border: 1px solid var(--border);
@@ -329,6 +340,12 @@
 
         <div class="actionbar">
             <button id="decode-btn" type="button">פענח קובץ</button>
+            <label for="model-select">מודל:</label>
+            <select id="model-select">
+                {% for key, label in models.items() %}
+                <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
             <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
             <span class="spacer"></span>
             <button id="save-json-btn" type="button" {% if not pages %}disabled{% endif %}>שמור קובץ מפוענח</button>
@@ -433,13 +450,24 @@
                 }
             }
 
+            // Model picker — remember the tester's choice across reloads.
+            const modelSel = document.getElementById('model-select');
+            const savedModel = localStorage.getItem('haskala-model');
+            if (savedModel && modelSel.querySelector(`option[value="${savedModel}"]`)) {
+                modelSel.value = savedModel;
+            }
+            modelSel.addEventListener('change', () => {
+                localStorage.setItem('haskala-model', modelSel.value);
+            });
+            const currentModel = () => modelSel.value;
+
             // --- פענח קובץ ---
             document.getElementById('decode-btn').addEventListener('click', async () => {
                 const api = await getApi();
                 if (api) {
                     const path = await api.pick_pdf();
                     if (!path) return;
-                    startDecode(JSON.stringify({ path }), true);
+                    startDecode(JSON.stringify({ path, model: currentModel() }), true);
                 } else {
                     document.getElementById('fallback-pdf').click();
                 }
@@ -449,6 +477,7 @@
                 if (!f) return;
                 const fd = new FormData();
                 fd.append('pdf', f);
+                fd.append('model', currentModel());
                 startDecode(fd, false);
             });
 
