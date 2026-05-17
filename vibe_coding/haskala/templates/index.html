@@ -321,7 +321,7 @@
 <body>
     <div class="container">
         <h1>השכלה — OCR לתרגילים בכתב יד</h1>
-        <p class="subtitle">פענח PDF של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
+        <p class="subtitle">פענח קובץ (PDF או תמונה) של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
 
         {% if error %}
             <div class="error">{{ error }}</div>
@@ -343,7 +343,7 @@
         </div>
 
         <!-- Plain-browser fallback (used only when not running under pywebview). -->
-        <input type="file" id="fallback-pdf" accept="application/pdf" style="display:none">
+        <input type="file" id="fallback-pdf" accept="application/pdf,image/jpeg,image/png" style="display:none">
         <form id="fallback-load-form" method="POST" enctype="multipart/form-data" style="display:none">
             <input type="file" id="fallback-json" name="saved" accept="application/json,.json">
         </form>
@@ -799,7 +799,7 @@
                     };
                     const content = JSON.stringify(out, null, 2);
                     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-                    const base = (serverData.filename || 'haskala').replace(/\.pdf$/i, '');
+                    const base = (serverData.filename || 'haskala').replace(/\.(pdf|jpe?g|png)$/i, '');
                     const name = `haskala-${base}-${stamp}.json`;
 
                     const api = await window.__haskalaGetApi();

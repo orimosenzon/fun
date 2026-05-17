@@ -63,12 +63,15 @@ class Api:
         _save_last_dir(path)
 
     def pick_pdf(self):
-        """Native open dialog filtered to PDF. Returns a path or None."""
+        """Native open dialog for an exercise file. Returns a path or None."""
         result = self._window.create_file_dialog(
             webview.OPEN_DIALOG,
             directory=self.last_dir,
             allow_multiple=False,
-            file_types=("קבצי PDF (*.pdf)", "כל הקבצים (*.*)"),
+            file_types=(
+                "קבצי תרגיל (*.pdf;*.jpg;*.jpeg;*.png)",
+                "כל הקבצים (*.*)",
+            ),
         )
         if not result:
             return None
