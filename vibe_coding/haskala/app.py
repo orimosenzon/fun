@@ -85,6 +85,10 @@ RENDER_DPI = 200
 
 OCR_SYSTEM_PROMPT = """אתה מבצע OCR מדויק על צילום של תרגיל כתוב ביד.
 
+הקלט עשוי להיות בעברית, בערבית, באנגלית, או שילוב של כמה שפות באותו דף
+(למשל הוראות בעברית ותשובות באנגלית). זהה את הכתב של כל שורה בנפרד ותמלל
+אותו כפי שהוא — אל תתרגם ואל תמיר בין סקריפטים.
+
 כללי תמלול קריטיים:
 1. תמלל בדיוק את מה שכתוב — אל תתקן שום דבר.
 2. שמור על שגיאות כתיב בדיוק כפי שהן.
@@ -117,6 +121,10 @@ OCR_SCHEMA = {
 }
 
 
+IMAGE_EXTS = (".jpg", ".jpeg", ".png")
+ACCEPTED_EXTS = (".pdf",) + IMAGE_EXTS
+
+
 def pdf_to_page_images(pdf_bytes: bytes) -> list[Image.Image]:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     images = []
@@ -128,14 +136,47 @@ def pdf_to_page_images(pdf_bytes: bytes) -> list[Image.Image]:
     return images
 
 
+def file_to_page_images(data: bytes, ext: str) -> list[Image.Image]:
+    """A PDF → one rendered image per page; a photo (jpg/png) → one page.
+
+    The rest of the pipeline (deskew → ocr → segment → crop) is identical
+    for both — a phone photo is just a single-page document with no render
+    step to do, so it skips straight to the same handling a PDF page gets.
+    """
+    if ext == ".pdf":
+        return pdf_to_page_images(data)
+    return [Image.open(io.BytesIO(data)).convert("RGB")]
+
+
 def image_to_b64(img: Image.Image, fmt: str = "PNG") -> str:
     buf = io.BytesIO()
     img.save(buf, format=fmt)
     return base64.standard_b64encode(buf.getvalue()).decode("utf-8")
 
 
+# Longest edge of the image actually sent to the model. A 200-DPI A4 PDF
+# page is ~2339 px tall, which this pipeline is already tuned for, so a
+# phone photo is brought down to the same ballpark. It also keeps us well
+# under the API's 5 MB-per-image cap — a full-res photo re-encoded as PNG
+# blows past that; downscaling + JPEG keeps it small with no OCR loss.
+OCR_MAX_EDGE = 2400
+
+
+def encode_for_ocr(img: Image.Image) -> str:
+    long_edge = max(img.size)
+    if long_edge > OCR_MAX_EDGE:
+        scale = OCR_MAX_EDGE / long_edge
+        img = img.resize(
+            (round(img.width * scale), round(img.height * scale)),
+            Image.LANCZOS,
+        )
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    return base64.standard_b64encode(buf.getvalue()).decode("utf-8")
+
+
 def ocr_page(img: Image.Image) -> list[dict]:
-    img_b64 = image_to_b64(img, "PNG")
+    img_b64 = encode_for_ocr(img)
 
     response = client.messages.create(
         model="claude-opus-4-7",
@@ -158,7 +199,7 @@ def ocr_page(img: Image.Image) -> list[dict]:
                         "type": "image",
                         "source": {
                             "type": "base64",
-                            "media_type": "image/png",
+                            "media_type": "image/jpeg",
                             "data": img_b64,
                         },
                     },
@@ -389,7 +430,7 @@ STAGE_LABELS = {
 _STEPS_PER_PAGE = 5  # render, deskew, ocr, segment, crop
 
 
-def process_pdf_stream(pdf_bytes: bytes):
+def process_pdf_stream(file_bytes: bytes, ext: str):
     """Run the OCR pipeline, yielding progress as it goes.
 
     Yields {"type": "progress", page, total_pages, stage, pct} after each
@@ -397,7 +438,7 @@ def process_pdf_stream(pdf_bytes: bytes):
     {"type": "result", pages}. Lets the UI show a real determinate bar
     instead of a guess.
     """
-    pages_imgs = pdf_to_page_images(pdf_bytes)
+    pages_imgs = file_to_page_images(file_bytes, ext)
     total = len(pages_imgs)
     total_steps = max(1, total * _STEPS_PER_PAGE)
     done = 0
@@ -440,11 +481,11 @@ def process_pdf_stream(pdf_bytes: bytes):
 JOBS: dict[str, dict] = {}
 
 
-def run_job(job_id: str, pdf_bytes: bytes):
+def run_job(job_id: str, file_bytes: bytes, ext: str):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in process_pdf_stream(pdf_bytes):
+        for ev in process_pdf_stream(file_bytes, ext):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 q.put({"type": "done"})
@@ -537,6 +578,7 @@ def decode_start():
     """Begin OCR. Accepts either a native file path (pywebview, JSON body)
     or a multipart 'pdf' upload (plain-browser fallback). Returns a job_id;
     progress is streamed from /decode/progress/<job_id>."""
+    bad_type = "חייב להיות קובץ PDF או תמונה (jpg/png)"
     filename = "document.pdf"
     if request.is_json:
         if not DESKTOP_MODE:
@@ -544,26 +586,27 @@ def decode_start():
         path = (request.get_json(silent=True) or {}).get("path")
         if not path or not os.path.isfile(path):
             return jsonify(error="הקובץ לא נמצא"), 400
-        if not path.lower().endswith(".pdf"):
-            return jsonify(error="חייב להיות קובץ PDF"), 400
+        if not path.lower().endswith(ACCEPTED_EXTS):
+            return jsonify(error=bad_type), 400
         with open(path, "rb") as f:
-            pdf_bytes = f.read()
+            file_bytes = f.read()
         filename = os.path.basename(path)
     else:
         file = request.files.get("pdf")
         if not file or not file.filename:
             return jsonify(error="לא נבחר קובץ"), 400
-        if not file.filename.lower().endswith(".pdf"):
-            return jsonify(error="חייב להיות קובץ PDF"), 400
-        pdf_bytes = file.read()
+        if not file.filename.lower().endswith(ACCEPTED_EXTS):
+            return jsonify(error=bad_type), 400
+        file_bytes = file.read()
         filename = file.filename
-    if not pdf_bytes:
+    if not file_bytes:
         return jsonify(error="הקובץ ריק"), 400
 
+    ext = os.path.splitext(filename)[1].lower()
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
     threading.Thread(
-        target=run_job, args=(job_id, pdf_bytes), daemon=True
+        target=run_job, args=(job_id, file_bytes, ext), daemon=True
     ).start()
     return jsonify(job_id=job_id)
 
