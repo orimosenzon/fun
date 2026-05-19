@@ -179,6 +179,28 @@ def ocr_jpeg_bytes(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
+# A full-page reference image kept beside the cut strips. It's only a visual
+# aid for the reviewer — when a line cut looks wrong she can glance at the
+# whole page to see where the strip came from — not OCR input, so a smaller
+# JPEG is plenty and keeps the saved JSON from ballooning. This is the *raw*
+# uploaded page, before deskew: what the reviewer actually photographed.
+ORIGINAL_MAX_EDGE = 1800
+
+
+def original_preview_b64(img: Image.Image) -> str:
+    """Downscaled JPEG of the raw page — a reviewing aid, not OCR input."""
+    long_edge = max(img.size)
+    if long_edge > ORIGINAL_MAX_EDGE:
+        scale = ORIGINAL_MAX_EDGE / long_edge
+        img = img.resize(
+            (round(img.width * scale), round(img.height * scale)),
+            Image.LANCZOS,
+        )
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="JPEG", quality=85)
+    return base64.standard_b64encode(buf.getvalue()).decode("utf-8")
+
+
 _USER_TURN = "תמלל שורה-שורה והחזר JSON."
 
 # Model picker. Keys are what the UI / request send; values are the human
@@ -535,6 +557,7 @@ def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
     for page_idx, img in enumerate(pages_imgs):
         p = page_idx + 1
         yield progress("render", p)
+        original_b64 = original_preview_b64(img)
         img, angle = deskew_page(img)
         yield progress("deskew", p)
         texts = [line["text"] for line in ocr_page(img, provider)]
@@ -549,7 +572,9 @@ def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
             {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
             for text, (y_top, y_bottom) in zip(texts, bands)
         ]
-        results.append({"page": p, "lines": line_items})
+        results.append(
+            {"page": p, "lines": line_items, "original_b64": original_b64}
+        )
         yield progress("crop", p)
 
     yield {"type": "result", "pages": results}
@@ -630,7 +655,11 @@ def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict]:
             if line_annots:
                 annotations[line_key] = line_annots
             lines_out.append({"text": text, "image_b64": image_b64})
-        pages_out.append({"page": page_num, "lines": lines_out})
+        pages_out.append({
+            "page": page_num,
+            "lines": lines_out,
+            "original_b64": page.get("original_b64", ""),
+        })
 
     filename = data.get("filename", "שמור.json")
     return pages_out, filename, annotations

@@ -130,6 +130,23 @@
             color: #888;
             font-size: 0.85rem;
         }
+        .page-original-wrap {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .page-original-title {
+            margin: 0 0 0.6rem;
+            font-size: 0.95rem;
+            color: var(--accent);
+        }
+        .page-original {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
         .lines {
             display: flex;
             flex-direction: column;
@@ -348,6 +365,7 @@
             </select>
             <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
             <span class="spacer"></span>
+            <button id="reset-btn" type="button" class="secondary" {% if not pages %}disabled{% endif %}>אתחל</button>
             <button id="save-json-btn" type="button" {% if not pages %}disabled{% endif %}>שמור קובץ מפוענח</button>
         </div>
 
@@ -361,7 +379,7 @@
 
         <!-- Plain-browser fallback (used only when not running under pywebview). -->
         <input type="file" id="fallback-pdf" accept="application/pdf,image/jpeg,image/png" style="display:none">
-        <form id="fallback-load-form" method="POST" enctype="multipart/form-data" style="display:none">
+        <form id="fallback-load-form" action="/" method="POST" enctype="multipart/form-data" style="display:none">
             <input type="file" id="fallback-json" name="saved" accept="application/json,.json">
         </form>
 
@@ -495,6 +513,12 @@
             document.getElementById('fallback-json').addEventListener('change', () => {
                 document.getElementById('fallback-load-form').submit();
             });
+
+            // --- אתחל --- back to the empty opening screen. Annotations are
+            // auto-saved to localStorage by doc key, so nothing is lost.
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                window.location = '/';
+            });
         })();
         </script>
 
@@ -520,6 +544,12 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% if page.original_b64 %}
+                        <div class="page-original-wrap">
+                            <h3 class="page-original-title">העמוד המקורי המלא</h3>
+                            <img class="page-original" src="data:image/jpeg;base64,{{ page.original_b64 }}" alt="עמוד {{ page.page }} מקורי">
+                        </div>
+                    {% endif %}
                 </div>
             {% endfor %}
 
@@ -818,7 +848,14 @@
                                 annotations: annotations[key] || []
                             });
                         });
-                        pages.push({ page: pageNum, lines });
+                        // original_b64 goes last so it sits at the end of
+                        // each page object in the saved JSON, as requested.
+                        const pageObj = { page: pageNum, lines };
+                        const origImg = pageEl.querySelector('.page-original');
+                        if (origImg) {
+                            pageObj.original_b64 = origImg.src.replace(/^data:image\/jpeg;base64,/, '');
+                        }
+                        pages.push(pageObj);
                     });
                     const out = {
                         version: 1,
