@@ -344,6 +344,164 @@
         }
         .progress-box.error .progress-fill { background: var(--error); }
         .progress-box.error .progress-label { color: var(--error); }
+
+        /* Save dropdown menu */
+        .menu-wrap { position: relative; display: inline-block; }
+        .menu-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            min-width: 220px;
+            z-index: 500;
+            display: none;
+            padding: 0.3rem 0;
+        }
+        .menu-list.visible { display: block; }
+        .menu-list button {
+            display: block;
+            width: 100%;
+            background: transparent;
+            color: var(--fg);
+            text-align: start;
+            padding: 0.55rem 1rem;
+            font-size: 0.95rem;
+            border-radius: 0;
+            border: none;
+        }
+        .menu-list button:hover:not(:disabled) { background: #f4eee2; }
+        .menu-list button:disabled { color: #aaa; cursor: not-allowed; background: transparent; }
+        .menu-list .menu-sep { height: 1px; background: var(--border); margin: 0.3rem 0; }
+
+        /* Evaluation section */
+        .eval-section {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .eval-section h2 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+        .eval-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        .eval-overall {
+            background: #faf6ee;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .eval-overall-score {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.4rem;
+        }
+        .eval-overall-text {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .eval-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.5rem;
+        }
+        .eval-table th, .eval-table td {
+            border: 1px solid var(--border);
+            padding: 0.6rem 0.8rem;
+            text-align: start;
+            vertical-align: top;
+        }
+        .eval-table th {
+            background: #faf6ee;
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 0.95rem;
+        }
+        .eval-table td.score-cell {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 1.05rem;
+            white-space: nowrap;
+            font-weight: 600;
+            text-align: center;
+        }
+        .eval-table td.feedback-cell {
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        /* Add-rubric modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-backdrop.visible { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            width: min(720px, 92vw);
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .modal h2 {
+            margin: 0 0 1rem;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+        .modal label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.95rem;
+        }
+        .modal input[type="text"], .modal textarea {
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.5rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+        .modal textarea {
+            min-height: 260px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: flex-start;
+        }
+        .modal-error {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-bottom: 0.6rem;
+            display: none;
+        }
+        .modal-error.visible { display: block; }
+
+        .eval-spinner { display: none; color: #666; font-size: 0.9rem; }
+        .eval-spinner.visible { display: inline; }
     </style>
 </head>
 <body>
@@ -366,8 +524,27 @@
             <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
             <span class="spacer"></span>
             <button id="reset-btn" type="button" class="secondary" {% if not pages %}disabled{% endif %}>אתחל</button>
-            <button id="save-json-btn" type="button" {% if not pages %}disabled{% endif %}>שמור קובץ מפוענח</button>
+            <div class="menu-wrap">
+                <button id="save-menu-btn" type="button" {% if not pages %}disabled{% endif %}>שמור ▾</button>
+                <div id="save-menu" class="menu-list">
+                    <button type="button" data-act="save-decoded">שמור קובץ מפוענח (JSON)</button>
+                    <div class="menu-sep"></div>
+                    <button type="button" data-act="save-eval" disabled>שמור בדיקה (JSON)</button>
+                    <button type="button" data-act="save-eval-docx" disabled>שמור בדיקה כקובץ Word</button>
+                </div>
+            </div>
         </div>
+
+        {% if pages %}
+        <div class="actionbar">
+            <label for="rubric-select">רובריקה:</label>
+            <select id="rubric-select"></select>
+            <button id="add-rubric-btn" type="button" class="secondary">+ הוסף רובריקה</button>
+            <span class="spacer"></span>
+            <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
+            <button id="evaluate-btn" type="button">בדוק תרגיל</button>
+        </div>
+        {% endif %}
 
         <div id="progress-box" class="progress-box">
             <div class="progress-label">
@@ -519,10 +696,44 @@
             document.getElementById('reset-btn').addEventListener('click', () => {
                 window.location = '/';
             });
+
+            // --- שמור ▾ menu --- toggle visibility + outside-click dismissal.
+            // Individual menu items wire their own behaviour later (the "save
+            // decoded" action lives in the pages-only IIFE since it needs the
+            // page DOM to read from; this just controls the menu UI).
+            const saveMenuBtn = document.getElementById('save-menu-btn');
+            const saveMenu = document.getElementById('save-menu');
+            if (saveMenuBtn && saveMenu) {
+                saveMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    saveMenu.classList.toggle('visible');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!saveMenu.contains(e.target) && e.target !== saveMenuBtn) {
+                        saveMenu.classList.remove('visible');
+                    }
+                });
+            }
         })();
         </script>
 
         {% if pages %}
+            <div id="eval-section" class="eval-section" style="display:none">
+                <h2>בדיקת תרגיל</h2>
+                <div id="eval-meta" class="eval-meta"></div>
+                <div id="eval-overall" class="eval-overall"></div>
+                <table class="eval-table">
+                    <thead>
+                        <tr>
+                            <th>קריטריון</th>
+                            <th style="width: 90px">ציון</th>
+                            <th>פידבק</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eval-tbody"></tbody>
+                </table>
+            </div>
+
             <div class="toolbar">
                 <span class="hint">סמן אותיות עם העכבר כדי להוסיף הערה. לחץ על אות אדומה כדי לקרוא/לערוך.</span>
             </div>
@@ -827,8 +1038,14 @@
                     if (e.key === 'Escape' && popup.classList.contains('visible')) hidePopup();
                 });
 
-                // Save JSON button
-                document.getElementById('save-json-btn').addEventListener('click', async () => {
+                // --- Collect current document state from the DOM ---------
+                // The page DOM is the source of truth for saving: text gets
+                // re-read from the .char spans (so user edits would be picked
+                // up if we add editing later), and the per-line annotations
+                // come from `annotations` populated above. evaluation is
+                // pulled from the in-memory `currentEvaluation` set when
+                // /evaluate returns (and seeded from serverData on load).
+                function collectPages() {
                     const pages = [];
                     document.querySelectorAll('.page-section').forEach((pageEl, pageIdx) => {
                         const pageNumText = pageEl.querySelector('.page-header h2').textContent;
@@ -848,8 +1065,6 @@
                                 annotations: annotations[key] || []
                             });
                         });
-                        // original_b64 goes last so it sits at the end of
-                        // each page object in the saved JSON, as requested.
                         const pageObj = { page: pageNum, lines };
                         const origImg = pageEl.querySelector('.page-original');
                         if (origImg) {
@@ -857,29 +1072,22 @@
                         }
                         pages.push(pageObj);
                     });
-                    const out = {
-                        version: 1,
-                        filename: serverData.filename || 'haskala.pdf',
-                        created_at: new Date().toISOString(),
-                        pages
-                    };
-                    const content = JSON.stringify(out, null, 2);
-                    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-                    const base = (serverData.filename || 'haskala').replace(/\.(pdf|jpe?g|png)$/i, '');
-                    const name = `haskala-${base}-${stamp}.json`;
+                    return pages;
+                }
 
+                function nowStamp() {
+                    return new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                }
+
+                function baseName() {
+                    return (serverData.filename || 'haskala').replace(/\.(pdf|jpe?g|png|json)$/i, '');
+                }
+
+                async function downloadOrSaveJson(name, content) {
                     const api = await window.__haskalaGetApi();
                     if (api) {
-                        const saved = await api.save_json(name, content);
-                        const btn = document.getElementById('save-json-btn');
-                        if (saved) {
-                            const orig = btn.textContent;
-                            btn.textContent = 'נשמר ✓';
-                            setTimeout(() => { btn.textContent = orig; }, 2000);
-                        }
-                        return;
+                        return await api.save_json(name, content);
                     }
-                    // Plain-browser fallback: download to the Downloads folder.
                     const blob = new Blob([content], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -889,10 +1097,283 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
+                    return name;
+                }
+
+                // --- Evaluation state ------------------------------------
+                let currentEvaluation = serverData.evaluation || null;
+                let rubrics = (serverData.rubrics || []).slice();
+
+                function renderRubricSelect() {
+                    const sel = document.getElementById('rubric-select');
+                    if (!sel) return;
+                    const prev = sel.value;
+                    sel.innerHTML = '';
+                    rubrics.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.id;
+                        opt.textContent = r.name;
+                        sel.appendChild(opt);
+                    });
+                    if (rubrics.length === 0) {
+                        const opt = document.createElement('option');
+                        opt.value = '';
+                        opt.textContent = '— אין רובריקות —';
+                        sel.appendChild(opt);
+                    }
+                    const saved = localStorage.getItem('haskala-rubric');
+                    if (prev && rubrics.some(r => r.id === prev)) {
+                        sel.value = prev;
+                    } else if (saved && rubrics.some(r => r.id === saved)) {
+                        sel.value = saved;
+                    }
+                }
+
+                renderRubricSelect();
+                const rubricSel = document.getElementById('rubric-select');
+                if (rubricSel) {
+                    rubricSel.addEventListener('change', () => {
+                        localStorage.setItem('haskala-rubric', rubricSel.value);
+                    });
+                }
+
+                function refreshSaveMenu() {
+                    const evalBtns = document.querySelectorAll(
+                        '#save-menu button[data-act="save-eval"], ' +
+                        '#save-menu button[data-act="save-eval-docx"]'
+                    );
+                    evalBtns.forEach(b => { b.disabled = !currentEvaluation; });
+                }
+
+                function renderEvaluation() {
+                    const section = document.getElementById('eval-section');
+                    if (!section) return;
+                    if (!currentEvaluation) {
+                        section.style.display = 'none';
+                        return;
+                    }
+                    section.style.display = 'block';
+                    const meta = document.getElementById('eval-meta');
+                    meta.textContent = currentEvaluation.rubric_name
+                        ? `רובריקה: ${currentEvaluation.rubric_name}`
+                        : '';
+                    const overall = document.getElementById('eval-overall');
+                    overall.innerHTML = `
+                        <div class="eval-overall-score">ציון כללי: ${escapeHtml(currentEvaluation.overall_score || '')}</div>
+                        <div class="eval-overall-text">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
+                    `;
+                    const tbody = document.getElementById('eval-tbody');
+                    tbody.innerHTML = '';
+                    (currentEvaluation.criteria || []).forEach(c => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${escapeHtml(c.name || '')}</td>
+                            <td class="score-cell">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
+                            <td class="feedback-cell">${escapeHtml(c.feedback || '')}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                renderEvaluation();
+                refreshSaveMenu();
+
+                // --- Evaluate button -------------------------------------
+                const evalBtn = document.getElementById('evaluate-btn');
+                const evalSpinner = document.getElementById('eval-spinner');
+                if (evalBtn) {
+                    evalBtn.addEventListener('click', async () => {
+                        const rubricId = rubricSel.value;
+                        if (!rubricId) {
+                            alert('אין רובריקה לבחור. הוסף רובריקה תחילה.');
+                            return;
+                        }
+                        const pages = collectPages();
+                        evalBtn.disabled = true;
+                        evalSpinner.classList.add('visible');
+                        try {
+                            const modelSel = document.getElementById('model-select');
+                            const resp = await fetch('/evaluate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    pages,
+                                    rubric_id: rubricId,
+                                    model: modelSel ? modelSel.value : undefined,
+                                }),
+                            });
+                            const data = await resp.json();
+                            if (!resp.ok || data.error) {
+                                alert(data.error || 'שגיאה בבדיקה');
+                                return;
+                            }
+                            currentEvaluation = data.evaluation;
+                            renderEvaluation();
+                            refreshSaveMenu();
+                            document.getElementById('eval-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        } catch (e) {
+                            alert('שגיאה בבדיקה: ' + e);
+                        } finally {
+                            evalBtn.disabled = false;
+                            evalSpinner.classList.remove('visible');
+                        }
+                    });
+                }
+
+                // --- Add rubric modal ------------------------------------
+                const modal = document.getElementById('rubric-modal');
+                const modalError = document.getElementById('modal-error');
+                const modalName = document.getElementById('modal-rubric-name');
+                const modalContent = document.getElementById('modal-rubric-content');
+                function openModal() {
+                    modalError.classList.remove('visible');
+                    modalError.textContent = '';
+                    modalName.value = '';
+                    modalContent.value = '';
+                    modal.classList.add('visible');
+                    setTimeout(() => modalName.focus(), 50);
+                }
+                function closeModal() { modal.classList.remove('visible'); }
+
+                const addRubricBtn = document.getElementById('add-rubric-btn');
+                if (addRubricBtn) {
+                    addRubricBtn.addEventListener('click', openModal);
+                }
+                document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal();
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && modal.classList.contains('visible')) closeModal();
+                });
+                document.getElementById('modal-save-btn').addEventListener('click', async () => {
+                    const name = modalName.value.trim();
+                    const content = modalContent.value.trim();
+                    if (!name) {
+                        modalError.textContent = 'חסר שם';
+                        modalError.classList.add('visible');
+                        return;
+                    }
+                    if (!content) {
+                        modalError.textContent = 'חסר תוכן';
+                        modalError.classList.add('visible');
+                        return;
+                    }
+                    try {
+                        const resp = await fetch('/rubrics', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, content }),
+                        });
+                        const data = await resp.json();
+                        if (!resp.ok || data.error) {
+                            modalError.textContent = data.error || 'שגיאה בשמירה';
+                            modalError.classList.add('visible');
+                            return;
+                        }
+                        // Refresh rubric list, then select the new one.
+                        const listResp = await fetch('/rubrics');
+                        const listData = await listResp.json();
+                        rubrics = listData.rubrics || [];
+                        renderRubricSelect();
+                        rubricSel.value = data.id;
+                        localStorage.setItem('haskala-rubric', data.id);
+                        closeModal();
+                    } catch (e) {
+                        modalError.textContent = 'שגיאה: ' + e;
+                        modalError.classList.add('visible');
+                    }
+                });
+
+                // --- Save menu actions -----------------------------------
+                document.getElementById('save-menu').addEventListener('click', async (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn || btn.disabled) return;
+                    const act = btn.dataset.act;
+                    document.getElementById('save-menu').classList.remove('visible');
+
+                    if (act === 'save-decoded') {
+                        const pages = collectPages();
+                        const out = {
+                            version: 1,
+                            filename: serverData.filename || 'haskala.pdf',
+                            created_at: new Date().toISOString(),
+                            pages,
+                            evaluation: currentEvaluation || null,
+                        };
+                        const name = `haskala-${baseName()}-${nowStamp()}.json`;
+                        await downloadOrSaveJson(name, JSON.stringify(out, null, 2));
+                    } else if (act === 'save-eval') {
+                        if (!currentEvaluation) return;
+                        const out = {
+                            version: 1,
+                            filename: serverData.filename || 'haskala',
+                            created_at: new Date().toISOString(),
+                            evaluation: currentEvaluation,
+                        };
+                        const name = `haskala-eval-${baseName()}-${nowStamp()}.json`;
+                        await downloadOrSaveJson(name, JSON.stringify(out, null, 2));
+                    } else if (act === 'save-eval-docx') {
+                        if (!currentEvaluation) return;
+                        const resp = await fetch('/evaluation/docx', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                evaluation: currentEvaluation,
+                                filename: serverData.filename || 'תרגיל',
+                                rubric_name: currentEvaluation.rubric_name || '',
+                            }),
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            alert(err.error || 'שגיאה ביצירת קובץ Word');
+                            return;
+                        }
+                        const blob = await resp.blob();
+                        const name = `haskala-eval-${baseName()}-${nowStamp()}.docx`;
+                        const api = await window.__haskalaGetApi();
+                        if (api) {
+                            // Native dialog needs the bytes as base64 — read the
+                            // blob and hand it off. Falls back to browser
+                            // download if save_docx isn't exposed (older bundle).
+                            const ab = await blob.arrayBuffer();
+                            let bin = '';
+                            const bytes = new Uint8Array(ab);
+                            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+                            const b64 = btoa(bin);
+                            if (api.save_docx) {
+                                await api.save_docx(name, b64);
+                                return;
+                            }
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }
                 });
             })();
             </script>
         {% endif %}
+    </div>
+
+    <div id="rubric-modal" class="modal-backdrop">
+        <div class="modal">
+            <h2>הוסף רובריקה חדשה</h2>
+            <div id="modal-error" class="modal-error"></div>
+            <label for="modal-rubric-name">שם הרובריקה</label>
+            <input type="text" id="modal-rubric-name" placeholder="למשל: כיתה ט' ESL — מבחן סוף שנה">
+            <label for="modal-rubric-content">תוכן הרובריקה</label>
+            <textarea id="modal-rubric-content" placeholder="הדבק כאן את הרובריקה (קריטריונים, רמות, ציונים) כטקסט חופשי."></textarea>
+            <div class="modal-actions">
+                <button type="button" id="modal-save-btn">שמור</button>
+                <button type="button" id="modal-cancel-btn" class="secondary">בטל</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>

@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import queue
+import re
 import threading
 import uuid
 
@@ -20,6 +21,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
 )
 from PIL import Image
 
@@ -217,6 +219,13 @@ def _inject_models():
     """Makes the model list available to every index.html render without
     threading it through each render_template call site."""
     return {"models": MODELS, "default_model": DEFAULT_MODEL}
+
+
+@app.context_processor
+def _inject_rubrics():
+    """Initial rubric list for empty-state renders. Result renders pass the
+    list via server_data instead so the UI can refresh after adding one."""
+    return {"initial_rubrics": list_rubrics()}
 
 
 _ANTHROPIC_MODEL = "claude-opus-4-7"
@@ -618,11 +627,18 @@ def compute_doc_key(pages: list[dict]) -> str:
     return hashlib.sha1(joined.encode("utf-8")).hexdigest()[:16]
 
 
-def render_result(pages: list[dict], filename: str, annotations: dict | None = None):
+def render_result(
+    pages: list[dict],
+    filename: str,
+    annotations: dict | None = None,
+    evaluation: dict | None = None,
+):
     server_data = {
         "doc_key": compute_doc_key(pages),
         "filename": filename,
         "annotations": annotations or {},
+        "evaluation": evaluation,
+        "rubrics": list_rubrics(),
     }
     return render_template(
         "index.html",
@@ -632,11 +648,13 @@ def render_result(pages: list[dict], filename: str, annotations: dict | None = N
     )
 
 
-def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict]:
-    """Returns (pages_for_template, filename, annotations_by_line_key).
+def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict, dict | None]:
+    """Returns (pages_for_template, filename, annotations_by_line_key, evaluation).
 
     Strips annotations out of the per-line dicts (the template doesn't need
     them inline — they're delivered via server_data_json instead).
+    `evaluation` is the saved rubric scoring (or None if the file predates
+    the feature or no evaluation was run).
     """
     data = json.loads(raw.decode("utf-8"))
     if not isinstance(data, dict) or "pages" not in data:
@@ -662,7 +680,236 @@ def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict]:
         })
 
     filename = data.get("filename", "שמור.json")
-    return pages_out, filename, annotations
+    evaluation = data.get("evaluation")
+    return pages_out, filename, annotations, evaluation
+
+
+# --- Rubrics ----------------------------------------------------------------
+
+RUBRICS_DIR = os.path.join(os.path.dirname(__file__), "rubrics")
+
+
+def _slugify(name: str) -> str:
+    """Filename-safe slug. Keeps Hebrew/Arabic letters; replaces whitespace
+    and forbidden filesystem chars with '-'."""
+    s = re.sub(r"[\s/\\:*?\"<>|]+", "-", name.strip())
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s or "rubric"
+
+
+def list_rubrics() -> list[dict]:
+    """[{id, name}] for every .json file in rubrics/. id == filename stem."""
+    if not os.path.isdir(RUBRICS_DIR):
+        return []
+    out = []
+    for fname in sorted(os.listdir(RUBRICS_DIR)):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(RUBRICS_DIR, fname)
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            out.append({"id": fname[:-5], "name": data.get("name", fname[:-5])})
+        except (json.JSONDecodeError, OSError):
+            continue
+    return out
+
+
+def load_rubric(rubric_id: str) -> dict | None:
+    """Returns {name, content} or None if not found."""
+    safe = _slugify(rubric_id)
+    path = os.path.join(RUBRICS_DIR, f"{safe}.json")
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+# --- Evaluation -------------------------------------------------------------
+
+EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרובריקה שתינתן לך.
+
+תקבל:
+1. רובריקה — מתארת קריטריונים, רמות וציונים אפשריים.
+2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR.
+
+המשימה:
+- זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
+- העריך את התרגיל לפי הרובריקה — צא מנקודת הנחה שמה שנכתב הוא מה שהתלמיד התכוון אליו (אל תקטף נקודות על שגיאות OCR שנראות כמו טעויות תמלול).
+- לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר בעברית (1-3 משפטים).
+- ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
+- פסקת סיכום בעברית (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
+
+החזר JSON תקין במבנה:
+{
+  "criteria": [
+    {"name": "...", "score": <int>, "max_score": <int>, "feedback": "..."}
+  ],
+  "overall_score": "<string — לדוגמה: B1, או 3.0/4, או 75%>",
+  "overall_feedback": "..."
+}"""
+
+EVAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "criteria": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "score": {"type": "number"},
+                    "max_score": {"type": "number"},
+                    "feedback": {"type": "string"},
+                },
+                "required": ["name", "score", "max_score", "feedback"],
+                "additionalProperties": False,
+            },
+        },
+        "overall_score": {"type": "string"},
+        "overall_feedback": {"type": "string"},
+    },
+    "required": ["criteria", "overall_score", "overall_feedback"],
+    "additionalProperties": False,
+}
+
+
+def pages_to_plain_text(pages: list[dict]) -> str:
+    """Flatten the OCR'd pages into a single transcript for the evaluator."""
+    chunks = []
+    for page in pages:
+        chunks.append(f"--- עמוד {page.get('page', '?')} ---")
+        for line in page.get("lines", []):
+            chunks.append(line.get("text", ""))
+        chunks.append("")
+    return "\n".join(chunks).strip()
+
+
+def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict:
+    """Send transcript + rubric → structured per-criterion scores + feedback."""
+    transcript = pages_to_plain_text(pages)
+    user_turn = (
+        f"רובריקה (שם: {rubric.get('name', '')}):\n\n"
+        f"{rubric.get('content', '')}\n\n"
+        f"--- טקסט התרגיל לבדיקה ---\n\n{transcript}\n\n"
+        "החזר JSON לפי הסכימה."
+    )
+    if provider == "gemini":
+        from google.genai import types
+
+        gemini_schema = {
+            "type": "object",
+            "properties": {
+                "criteria": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "score": {"type": "number"},
+                            "max_score": {"type": "number"},
+                            "feedback": {"type": "string"},
+                        },
+                        "required": ["name", "score", "max_score", "feedback"],
+                    },
+                },
+                "overall_score": {"type": "string"},
+                "overall_feedback": {"type": "string"},
+            },
+            "required": ["criteria", "overall_score", "overall_feedback"],
+        }
+        response = _gemini().models.generate_content(
+            model=_GEMINI_MODEL,
+            contents=[user_turn],
+            config=types.GenerateContentConfig(
+                system_instruction=EVAL_SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                response_schema=gemini_schema,
+                max_output_tokens=4000,
+            ),
+        )
+        return json.loads(response.text)
+
+    response = client.messages.create(
+        model=_ANTHROPIC_MODEL,
+        max_tokens=4000,
+        system=[
+            {
+                "type": "text",
+                "text": EVAL_SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+        output_config={
+            "format": {"type": "json_schema", "schema": EVAL_SCHEMA}
+        },
+        messages=[{"role": "user", "content": user_turn}],
+    )
+    text = next(b.text for b in response.content if b.type == "text")
+    return json.loads(text)
+
+
+# --- DOCX export ------------------------------------------------------------
+
+def build_evaluation_docx(
+    evaluation: dict, filename: str, rubric_name: str
+) -> bytes:
+    """Word document with the evaluation table + overall feedback.
+
+    Hebrew-friendly: paragraphs aligned right; the document is built top-down
+    so existing readers (Google Docs, Word, LibreOffice) all open it cleanly.
+    """
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Pt
+
+    doc = Document()
+
+    title = doc.add_heading("בדיקת תרגיל — השכלה", level=1)
+    title.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    meta = doc.add_paragraph()
+    meta.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    meta.add_run(f"קובץ: {filename}\n").bold = True
+    meta.add_run(f"רובריקה: {rubric_name}\n").bold = True
+    meta.add_run(f"ציון כללי: {evaluation.get('overall_score', '')}").bold = True
+
+    doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    criteria = evaluation.get("criteria") or []
+    table = doc.add_table(rows=1, cols=3)
+    table.style = "Light Grid Accent 1"
+    header = table.rows[0].cells
+    header[0].text = "קריטריון"
+    header[1].text = "ציון"
+    header[2].text = "פידבק"
+    for cell in header:
+        for p in cell.paragraphs:
+            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            for r in p.runs:
+                r.bold = True
+
+    for c in criteria:
+        row = table.add_row().cells
+        row[0].text = str(c.get("name", ""))
+        row[1].text = f"{c.get('score', '')}/{c.get('max_score', '')}"
+        row[2].text = str(c.get("feedback", ""))
+        for cell in row:
+            for p in cell.paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    doc.add_heading("סיכום", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    summary = doc.add_paragraph(evaluation.get("overall_feedback", ""))
+    summary.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    for r in summary.runs:
+        r.font.size = Pt(11)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -678,10 +925,10 @@ def index():
         if not raw:
             return render_template("index.html", error="קובץ ה-JSON ריק")
         try:
-            pages, filename, annotations = parse_saved_json(raw)
+            pages, filename, annotations, evaluation = parse_saved_json(raw)
         except (json.JSONDecodeError, ValueError, UnicodeDecodeError) as e:
             return render_template("index.html", error=f"שגיאה בקריאת JSON: {e}")
-        return render_result(pages, filename, annotations)
+        return render_result(pages, filename, annotations, evaluation)
 
     return render_template("index.html", error="לא נבחר קובץ")
 
@@ -769,10 +1016,101 @@ def load_saved():
     try:
         with open(path, "rb") as f:
             raw = f.read()
-        pages, filename, annotations = parse_saved_json(raw)
+        pages, filename, annotations, evaluation = parse_saved_json(raw)
     except (json.JSONDecodeError, ValueError, UnicodeDecodeError, OSError) as e:
         return render_template("index.html", error=f"שגיאה בקריאת JSON: {e}")
-    return render_result(pages, filename, annotations)
+    return render_result(pages, filename, annotations, evaluation)
+
+
+@app.route("/rubrics", methods=["GET", "POST"])
+def rubrics_endpoint():
+    """GET → list. POST → create a new rubric ({name, content})."""
+    if request.method == "GET":
+        return jsonify(rubrics=list_rubrics())
+
+    body = request.get_json(silent=True) or {}
+    name = (body.get("name") or "").strip()
+    content = (body.get("content") or "").strip()
+    if not name:
+        return jsonify(error="חסר שם רובריקה"), 400
+    if not content:
+        return jsonify(error="חסר תוכן רובריקה"), 400
+
+    os.makedirs(RUBRICS_DIR, exist_ok=True)
+    rubric_id = _slugify(name)
+    path = os.path.join(RUBRICS_DIR, f"{rubric_id}.json")
+    if os.path.exists(path):
+        return jsonify(error="רובריקה בשם הזה כבר קיימת"), 409
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"name": name, "content": content}, f, ensure_ascii=False, indent=2)
+    return jsonify(id=rubric_id, name=name)
+
+
+@app.route("/rubrics/<rubric_id>")
+def get_rubric(rubric_id):
+    rubric = load_rubric(rubric_id)
+    if not rubric:
+        return jsonify(error="רובריקה לא נמצאה"), 404
+    return jsonify(rubric)
+
+
+@app.route("/evaluate", methods=["POST"])
+def evaluate_endpoint():
+    """Evaluate the current transcript against a rubric.
+
+    Body: {pages: [...], rubric_id: "...", model: "claude"|"gemini"}.
+    The browser already has the pages (from the rendered result), so it
+    pushes them back — avoids parking them in JOBS for a separate fetch.
+    """
+    body = request.get_json(silent=True) or {}
+    pages = body.get("pages") or []
+    rubric_id = (body.get("rubric_id") or "").strip()
+    provider = body.get("model") if body.get("model") in MODELS else DEFAULT_MODEL
+
+    if not pages:
+        return jsonify(error="אין טקסט לבדיקה"), 400
+    rubric = load_rubric(rubric_id)
+    if not rubric:
+        return jsonify(error="רובריקה לא נמצאה"), 404
+
+    try:
+        result = evaluate_with_rubric(pages, rubric, provider)
+    except anthropic.APIError as e:
+        return jsonify(error=f"שגיאת API: {e.message}"), 502
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        return jsonify(error=f"שגיאת פענוח: {e}"), 502
+    except Exception as e:
+        return jsonify(error=f"שגיאה: {e}"), 502
+
+    result["rubric_id"] = rubric_id
+    result["rubric_name"] = rubric.get("name", rubric_id)
+    return jsonify(evaluation=result)
+
+
+@app.route("/evaluation/docx", methods=["POST"])
+def evaluation_docx():
+    """Browser fallback: streams a .docx of the evaluation back as a
+    download. Desktop uses the native save_docx dialog instead and posts
+    the same body shape, getting the same bytes."""
+    body = request.get_json(silent=True) or {}
+    evaluation = body.get("evaluation")
+    filename = body.get("filename") or "תרגיל"
+    rubric_name = body.get("rubric_name") or (evaluation or {}).get("rubric_name", "")
+    if not evaluation:
+        return jsonify(error="אין הערכה לייצוא"), 400
+    try:
+        data = build_evaluation_docx(evaluation, filename, rubric_name)
+    except Exception as e:
+        return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
+
+    base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
+    out_name = f"haskala-eval-{base}.docx"
+    return send_file(
+        io.BytesIO(data),
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        as_attachment=True,
+        download_name=out_name,
+    )
 
 
 if __name__ == "__main__":
