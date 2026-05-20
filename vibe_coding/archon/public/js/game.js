@@ -8,6 +8,8 @@ function createInitialGameState() {
     selectedPiece: null,
     legalMoves: null,
     pendingCombat: null,
+    dyingPieces: [],
+    combatFlash: null,
     winner: null,
   };
 }
@@ -90,9 +92,10 @@ function handleCellClick(gameState, row, col) {
 
 function executeMove(gameState, piece, row, col) {
   const occupant = pieceAt(gameState, row, col);
+  const fromRow = piece.row;
+  const fromCol = piece.col;
   if (occupant) {
-    // Enemy on target square — combat (resolved instantly in skeleton)
-    gameState.pendingCombat = { attacker: piece, defender: occupant, row, col };
+    gameState.pendingCombat = { attacker: piece, defender: occupant, row, col, fromRow, fromCol };
     resolveCombatPlaceholder(gameState);
     gameState.selectedPiece = null;
     gameState.legalMoves = null;
@@ -101,6 +104,7 @@ function executeMove(gameState, piece, row, col) {
   }
   piece.row = row;
   piece.col = col;
+  piece.tween = { fromRow, fromCol, startMs: performance.now() };
   gameState.selectedPiece = null;
   gameState.legalMoves = null;
   endTurn(gameState);
@@ -109,10 +113,9 @@ function executeMove(gameState, piece, row, col) {
 
 // Skeleton combat: instant resolve by comparing attack*alignment vs defender HP, no action arena yet.
 function resolveCombatPlaceholder(gameState) {
-  const { attacker, defender, row, col } = gameState.pendingCombat;
+  const { attacker, defender, row, col, fromRow, fromCol } = gameState.pendingCombat;
   const aDef = PIECE_TYPES[attacker.type];
   const dDef = PIECE_TYPES[defender.type];
-  // Coin flip weighted by attack + alignment bonus on the current square
   const tMs = performance.now();
   const lum = squareLuminosity(row, col, tMs);
   const aBonus = alignmentBonus(aDef.side, lum);
@@ -121,11 +124,16 @@ function resolveCombatPlaceholder(gameState) {
   const dScore = dDef.attack + dBonus + Math.random() * 4;
   const attackerWins = aScore >= dScore;
 
+  gameState.combatFlash = { row, col, startMs: tMs };
+
   if (attackerWins) {
+    gameState.dyingPieces.push({ piece: { ...defender }, startMs: tMs });
     gameState.pieces = gameState.pieces.filter(p => p.id !== defender.id);
+    attacker.tween = { fromRow, fromCol, startMs: tMs };
     attacker.row = row;
     attacker.col = col;
   } else {
+    gameState.dyingPieces.push({ piece: { ...attacker, row, col }, startMs: tMs });
     gameState.pieces = gameState.pieces.filter(p => p.id !== attacker.id);
   }
   gameState.pendingCombat = null;
