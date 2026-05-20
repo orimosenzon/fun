@@ -1,0 +1,14 @@
+{
+  "name": "archon",
+  "version": "0.1.0",
+  "description": "Archon: The Light and the Dark — browser remake of the 1983 C64 classic",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
