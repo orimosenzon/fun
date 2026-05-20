@@ -112,6 +112,27 @@ class Api:
         self._remember(path)
         return path
 
+    def save_docx(self, default_name: str, content_b64: str):
+        """Native save dialog for the evaluation .docx. The browser already
+        has the bytes (it called /evaluation/docx and base64'd the result),
+        so we just place them — no separate Python build path."""
+        result = self._window.create_file_dialog(
+            webview.SAVE_DIALOG,
+            directory=self.last_dir,
+            save_filename=default_name,
+            file_types=("קובץ Word (*.docx)",),
+        )
+        if not result:
+            return None
+        path = result[0] if isinstance(result, (list, tuple)) else result
+        if not path.lower().endswith(".docx"):
+            path += ".docx"
+        import base64 as _b64
+        with open(path, "wb") as f:
+            f.write(_b64.b64decode(content_b64))
+        self._remember(path)
+        return path
+
 
 def _run_flask():
     app.run(host=HOST, port=PORT, threaded=True, use_reloader=False)
