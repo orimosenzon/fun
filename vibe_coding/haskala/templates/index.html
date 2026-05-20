@@ -766,6 +766,21 @@
 
             <div id="annotation-popup" class="annotation-popup"></div>
 
+            <div id="rubric-modal" class="modal-backdrop">
+                <div class="modal">
+                    <h2>הוסף רובריקה חדשה</h2>
+                    <div id="modal-error" class="modal-error"></div>
+                    <label for="modal-rubric-name">שם הרובריקה</label>
+                    <input type="text" id="modal-rubric-name" placeholder="למשל: כיתה ט' ESL — מבחן סוף שנה">
+                    <label for="modal-rubric-content">תוכן הרובריקה</label>
+                    <textarea id="modal-rubric-content" placeholder="הדבק כאן את הרובריקה (קריטריונים, רמות, ציונים) כטקסט חופשי."></textarea>
+                    <div class="modal-actions">
+                        <button type="button" id="modal-save-btn">שמור</button>
+                        <button type="button" id="modal-cancel-btn" class="secondary">בטל</button>
+                    </div>
+                </div>
+            </div>
+
             <script id="server-data" type="application/json">{{ server_data_json|safe }}</script>
             <script>
             (function () {
@@ -1359,21 +1374,6 @@
             })();
             </script>
         {% endif %}
-    </div>
-
-    <div id="rubric-modal" class="modal-backdrop">
-        <div class="modal">
-            <h2>הוסף רובריקה חדשה</h2>
-            <div id="modal-error" class="modal-error"></div>
-            <label for="modal-rubric-name">שם הרובריקה</label>
-            <input type="text" id="modal-rubric-name" placeholder="למשל: כיתה ט' ESL — מבחן סוף שנה">
-            <label for="modal-rubric-content">תוכן הרובריקה</label>
-            <textarea id="modal-rubric-content" placeholder="הדבק כאן את הרובריקה (קריטריונים, רמות, ציונים) כטקסט חופשי."></textarea>
-            <div class="modal-actions">
-                <button type="button" id="modal-save-btn">שמור</button>
-                <button type="button" id="modal-cancel-btn" class="secondary">בטל</button>
-            </div>
-        </div>
     </div>
 </body>
 </html>
