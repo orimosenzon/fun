@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archon — The Light and the Dark</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <header id="hud">
+      <div id="turn-indicator">Turn: <span id="turn-side">LIGHT</span></div>
+      <div id="status">Click a piece to see legal moves</div>
+      <div id="luminosity-indicator">
+        Luminosity: <span id="luminosity-phase">—</span>
+      </div>
+    </header>
+    <canvas id="board" width="720" height="720"></canvas>
+    <div id="info-panel">
+      <div id="selected-piece">No piece selected</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/pieces.js"></script>
+  <script src="js/luminosity.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
