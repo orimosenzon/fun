@@ -1,0 +1,70 @@
+name: Sync haskala to HuggingFace Space
+
+# Auto-deploys haskala/ to https://huggingface.co/spaces/orimosenzon/haskala-ocr
+# whenever it changes on master. Mirrors what Render does for our other Flask
+# projects, just over the HF Spaces git remote (which needs a write token —
+# stored as the HF_TOKEN repo secret).
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'vibe_coding/haskala/**'
+      - '.github/workflows/sync-haskala-to-hf.yml'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Push haskala/ contents to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -e
+          if [ -z "$HF_TOKEN" ]; then
+            echo "ERROR: HF_TOKEN secret is not set. See README for setup."
+            exit 1
+          fi
+
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+          # Clone the HF Space (its own git history; we mirror our subdir into it)
+          git clone "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/orimosenzon/haskala-ocr" /tmp/hf-space
+
+          cd /tmp/hf-space
+
+          # Wipe existing content but keep .git and README.md (README.md on HF
+          # has YAML frontmatter that the Space needs — we don't want to clobber
+          # it from the local README, which doesn't have it).
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name 'README.md' \
+            -exec rm -rf {} +
+
+          # Copy haskala contents (rsync excludes dev-only / private files).
+          rsync -a \
+            --exclude 'venv/' \
+            --exclude '__pycache__/' \
+            --exclude 'memory/' \
+            --exclude 'rubrics/__pycache__' \
+            --exclude '*.log' \
+            --exclude '.env' \
+            --exclude 'DEPLOY.md' \
+            --exclude 'desktop.py' \
+            --exclude 'requirements-desktop.txt' \
+            --exclude 'README.md' \
+            "$GITHUB_WORKSPACE/vibe_coding/haskala/" .
+
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to sync."
+            exit 0
+          fi
+
+          git commit -m "sync from github @ ${GITHUB_SHA::7}"
+          git push
