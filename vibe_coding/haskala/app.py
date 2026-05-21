@@ -371,6 +371,79 @@ def _smoothed_profile(
     return profile
 
 
+def _axis_profile(img: Image.Image, axis: int) -> np.ndarray:
+    """Smoothed ink profile along an axis. axis=1 sums per row, axis=0 per col.
+
+    Used by auto_rotate to compare how 'peaky' the projection is along each
+    axis. Unlike _smoothed_profile (which is tuned for upright pages and
+    zeroes out solid rows), this keeps everything — notebook ruling lines
+    appear as solid rows in one orientation and solid columns in the other,
+    so they're the *cleanest* signal of which way the page is facing.
+    """
+    gray = np.asarray(img.convert("L"), dtype=np.uint8)
+    ink = (gray < 180).astype(np.float32)
+    profile = ink.sum(axis=axis)
+    smooth_window = 25
+    if smooth_window > 1:
+        kernel = np.ones(smooth_window, dtype=np.float32) / smooth_window
+        profile = np.convolve(profile, kernel, mode="same")
+    return profile
+
+
+def auto_rotate(img: Image.Image) -> tuple[Image.Image, int]:
+    """Pick the 0/90/180/270° rotation that makes the text horizontal & top-heavy.
+
+    EXIF-based fixup (exif_transpose) misses phones that don't write the
+    Orientation tag and notebook spreads shot in landscape; deskew_page only
+    handles a few degrees. This is the content-based fallback that catches
+    those cases before the rest of the pipeline runs.
+
+    Signal: compare std of the horizontal projection (sum per row) to std of
+    the vertical projection (sum per column). Whichever axis the *line
+    breaks* run perpendicular to has higher std — the projection alternates
+    line→gap→line. So h_std > v_std ⇒ text lines stacked top-to-bottom (the
+    image is already orient-ish); v_std > h_std ⇒ stacked side-to-side (the
+    page is sideways and needs a 90° turn). Then ink-half ratios on the
+    winning axis pick which 180° flip (top vs upside-down, or CW vs CCW).
+    """
+    h_prof = _axis_profile(img, axis=1)
+    v_prof = _axis_profile(img, axis=0)
+    h_std = float(h_prof.std())
+    v_std = float(v_prof.std())
+
+    # Heuristic: the page header (date, name, title) lives at the TOP of a
+    # school exercise — and it's *sparser* than the body of writing below
+    # it. So the side we want to end up at the top is the side with LESS
+    # ink. (Top-heavy = "upside-down body" or "header at bottom".)
+    if h_std >= v_std:
+        total = float(h_prof.sum()) or 1.0
+        top_frac = float(h_prof[: len(h_prof) // 2].sum()) / total
+        angle = 0 if top_frac <= 0.5 else 180
+    else:
+        total = float(v_prof.sum()) or 1.0
+        left_frac = float(v_prof[: len(v_prof) // 2].sum()) / total
+        # rotate(-90) = 90° CW: original LEFT edge becomes the new TOP.
+        # rotate(-270) = 90° CCW: original RIGHT edge becomes the new TOP.
+        # We want the lighter half to become the top.
+        angle = 90 if left_frac <= 0.5 else 270
+
+    rotated = (
+        img
+        if angle == 0
+        else img.rotate(
+            -angle,
+            resample=Image.BILINEAR,
+            expand=True,
+            fillcolor=(255, 255, 255),
+        )
+    )
+    log.info(
+        "auto_rotate: h_std=%.1f v_std=%.1f → picked %d°",
+        h_std, v_std, angle,
+    )
+    return rotated, angle
+
+
 def deskew_page(img: Image.Image, max_angle: float = 6.0) -> tuple[Image.Image, float]:
     """Rotate the page so its text lines are horizontal.
 
@@ -570,13 +643,14 @@ def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
     for page_idx, img in enumerate(pages_imgs):
         p = page_idx + 1
         yield progress("render", p)
+        img, rot_angle = auto_rotate(img)
         original_b64 = original_preview_b64(img)
         img, angle = deskew_page(img)
         yield progress("deskew", p)
         texts = [line["text"] for line in ocr_page(img, provider)]
         log.info(
-            "[page %d] model=%s deskew=%s° %d lines transcribed",
-            p, provider, angle, len(texts),
+            "[page %d] model=%s auto_rotate=%d° deskew=%s° %d lines transcribed",
+            p, provider, rot_angle, angle, len(texts),
         )
         yield progress("ocr", p)
         bands = segment_into_lines(img, len(texts))
