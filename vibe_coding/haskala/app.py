@@ -23,7 +23,7 @@ from flask import (
     request,
     send_file,
 )
-from PIL import Image
+from PIL import Image, ImageOps
 
 # override=True: .env is the local source of truth for keys. Without it a
 # stale GEMINI_API_KEY/ANTHROPIC_API_KEY left in the shell shadows the real
@@ -150,7 +150,11 @@ def file_to_page_images(data: bytes, ext: str) -> list[Image.Image]:
     """
     if ext == ".pdf":
         return pdf_to_page_images(data)
-    return [Image.open(io.BytesIO(data)).convert("RGB")]
+    # Phone cameras store portrait shots as landscape pixels + an EXIF
+    # Orientation tag; PIL ignores the tag by default, so the page comes
+    # out rotated 90° unless we transpose here.
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+    return [img.convert("RGB")]
 
 
 def image_to_b64(img: Image.Image, fmt: str = "PNG") -> str:
