@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>חידתי · מצגת משקיעים</title>
+
+<!--
+  ════════════════════════════════════════════════════════════════
+   מצגת משקיעים · מותג חידות ויזואליות
+   ════════════════════════════════════════════════════════════════
+   איך עורכים? כל הטקסטים נמצאים ישירות ב-HTML למטה. החליפי:
+
+   1) שם המותג:  חיפוש "חידתי"  → השם שלך  (מופיע בכותרת ובפוטר)
+   2) שם היוצרת: חיפוש "[השם שלך]"
+   3) פרטי קשר:  חיפוש "[מייל]" ו-"[טלפון]" בסליד האחרון
+   4) מספרים פיננסיים / טראקשן: כל מקום שמסומן בתגית "להמחשה · לעדכון"
+      הם דוגמאות — עדכני למספרים האמיתיים שלך לפני הצגה.
+
+   ניווט: חצים ◀ ▶ במקלדת, רווח = הבא, F = מסך מלא, נקודות למטה.
+         במובייל/טאבלט אפשר להחליק (swipe).
+  ════════════════════════════════════════════════════════════════
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Heebo:wght@300;400;500;700;900&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-0:#0a0e1f;
+    --bg-1:#10162e;
+    --bg-2:#161d3a;
+    --ink:#eef1fb;
+    --ink-soft:#b7bedd;
+    --ink-dim:#7b85ad;
+    --gold:#ffc857;
+    --violet:#8a6bff;
+    --teal:#27e1c1;
+    --pink:#ff6fae;
+    --line:rgba(255,255,255,.10);
+    --card:rgba(255,255,255,.04);
+    --card-hi:rgba(255,255,255,.07);
+    --shadow:0 30px 80px rgba(0,0,0,.55);
+    --r:22px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Heebo',system-ui,sans-serif;
+    background:var(--bg-0);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Rubik',sans-serif;line-height:1.05}
+
+  /* ===== deck ===== */
+  .deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(28px,5vw,90px);
+    opacity:0;visibility:hidden;
+    transform:translateX(-40px) scale(.99);
+    transition:opacity .5s ease, transform .5s cubic-bezier(.2,.7,.2,1);
+    background:
+      radial-gradient(1200px 700px at 85% -10%, rgba(138,107,255,.16), transparent 60%),
+      radial-gradient(1000px 700px at 0% 110%, rgba(39,225,193,.12), transparent 55%),
+      linear-gradient(160deg,var(--bg-1),var(--bg-0));
+    overflow:hidden;
+  }
+  .slide.active{opacity:1;visibility:visible;transform:none;z-index:2}
+  .slide.prev{transform:translateX(40px) scale(.99)}
+
+  /* faint floating glyphs */
+  .glyphs{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .glyphs span{
+    position:absolute;font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    color:rgba(255,255,255,.035);font-size:clamp(120px,22vw,360px);user-select:none;
+  }
+
+  .inner{position:relative;z-index:1;width:100%;max-width:1180px;margin:0 auto}
+
+  /* ===== typography helpers ===== */
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-weight:700;letter-spacing:.04em;font-size:clamp(13px,1.4vw,16px);
+    color:var(--gold);text-transform:none;margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:34px;height:2px;background:var(--gold);border-radius:2px}
+  h2.title{font-size:clamp(30px,5.2vw,62px);font-weight:800;letter-spacing:-.01em}
+  .lead{font-size:clamp(17px,2.2vw,24px);color:var(--ink-soft);line-height:1.5;margin-top:18px;max-width:30ch}
+  .accent{color:var(--gold)}
+  .accent-v{color:var(--violet)}
+  .accent-t{color:var(--teal)}
+  .grad{background:linear-gradient(90deg,var(--gold),var(--pink) 60%,var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ===== cards / grids ===== */
+  .grid{display:grid;gap:clamp(14px,1.6vw,22px)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:clamp(18px,2vw,28px);backdrop-filter:blur(6px);
+    transition:transform .35s, border-color .35s, background .35s;
+  }
+  .active .card{animation:rise .6s both}
+  .card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.22);background:var(--card-hi)}
+  .card .ico{font-size:clamp(28px,3vw,40px);line-height:1;margin-bottom:12px}
+  .card h3{font-size:clamp(17px,2vw,22px);font-weight:700;margin-bottom:6px}
+  .card p{color:var(--ink-soft);font-size:clamp(13px,1.5vw,16px);line-height:1.5}
+  .card .tag{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:700;color:var(--teal);
+    background:rgba(39,225,193,.10);border:1px solid rgba(39,225,193,.25);padding:3px 10px;border-radius:999px}
+
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+
+  /* stagger */
+  .active .stag>*{animation:rise .55s both}
+  .active .stag>*:nth-child(1){animation-delay:.05s}
+  .active .stag>*:nth-child(2){animation-delay:.13s}
+  .active .stag>*:nth-child(3){animation-delay:.21s}
+  .active .stag>*:nth-child(4){animation-delay:.29s}
+  .active .stag>*:nth-child(5){animation-delay:.37s}
+  .active .stag>*:nth-child(6){animation-delay:.45s}
+
+  /* ===== puzzle widget ===== */
+  .puzzle{
+    background:linear-gradient(160deg,rgba(138,107,255,.14),rgba(255,255,255,.03));
+    border:1px solid rgba(138,107,255,.35);border-radius:var(--r);
+    padding:clamp(18px,2.2vw,30px);position:relative;overflow:hidden;
+  }
+  .puzzle .qhead{display:flex;align-items:center;gap:10px;color:var(--violet);font-weight:800;
+    font-size:14px;margin-bottom:14px}
+  .puzzle .qhead .dot{width:9px;height:9px;border-radius:50%;background:var(--violet);box-shadow:0 0 14px var(--violet)}
+  .puzzle .q{font-family:'Rubik';font-weight:700;font-size:clamp(18px,2.3vw,26px);line-height:1.35}
+  .puzzle .visual{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;margin:18px 0}
+  .seqcard{
+    width:clamp(74px,9.5vw,110px);aspect-ratio:1;border-radius:16px;background:rgba(255,255,255,.05);
+    border:1px solid var(--line);display:grid;place-items:center;font-size:38px;font-weight:900;color:var(--gold)
+  }
+  .seqcard svg{width:64%;height:64%}
+  .seqcard.qm{color:var(--violet);border-color:rgba(138,107,255,.5);background:rgba(138,107,255,.10);
+    font-family:'Rubik';font-size:46px}
+  .emojicalc{font-size:clamp(22px,3vw,34px);font-weight:900;line-height:1.7;text-align:center;font-family:'Rubik'}
+  .emojicalc .qres{color:var(--violet)}
+  .reveal-btn{
+    margin-top:6px;display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:none;
+    font-family:'Rubik';font-weight:700;font-size:16px;color:#1a1330;
+    background:linear-gradient(90deg,var(--gold),#ffd98a);
+    padding:11px 22px;border-radius:999px;transition:transform .2s, box-shadow .2s;
+    box-shadow:0 10px 30px rgba(255,200,87,.28);
+  }
+  .reveal-btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(255,200,87,.4)}
+  .answer{
+    max-height:0;opacity:0;overflow:hidden;margin-top:0;
+    transition:max-height .55s ease, opacity .45s ease, margin-top .4s;
+  }
+  .puzzle.revealed .answer{max-height:340px;opacity:1;margin-top:18px}
+  .puzzle.revealed .reveal-btn{display:none}
+  .answer .a-main{font-family:'Rubik';font-weight:800;font-size:clamp(20px,2.6vw,30px);color:var(--teal)}
+  .answer .a-exp{color:var(--ink-soft);margin-top:8px;font-size:15px;line-height:1.55}
+  .answer .a-pct{display:inline-block;margin-top:12px;font-weight:800;font-size:13px;color:var(--gold);
+    background:rgba(255,200,87,.10);border:1px solid rgba(255,200,87,.3);padding:4px 12px;border-radius:999px}
+
+  /* ===== stats / market ===== */
+  .bigstat{font-family:'Rubik';font-weight:900;font-size:clamp(40px,7vw,86px);line-height:1;
+    background:linear-gradient(90deg,var(--gold),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .statlabel{color:var(--ink-soft);font-size:clamp(14px,1.6vw,17px);margin-top:8px}
+  .funnel{display:flex;flex-direction:column;gap:14px}
+  .frow{display:flex;align-items:center;gap:18px}
+  .fbar{height:clamp(54px,7vw,82px);border-radius:16px;display:flex;align-items:center;padding:0 24px;
+    font-family:'Rubik';font-weight:800;color:#15102b;white-space:nowrap}
+  .frow .meta{color:var(--ink-soft);font-size:14px;line-height:1.4}
+  .frow .meta b{color:var(--ink);font-weight:700}
+
+  /* use of funds bars */
+  .uof{display:flex;flex-direction:column;gap:14px}
+  .uof .row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  .uof .track{grid-column:1/-1;height:14px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+  .uof .fill{height:100%;border-radius:999px;width:0;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+  .active .uof .fill{width:var(--w)}
+  .uof .lbl{font-weight:700}
+  .uof .pct{font-family:'Rubik';font-weight:800;color:var(--gold)}
+
+  /* roadmap */
+  .road{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;position:relative}
+  .road .step{position:relative}
+  .road .ph{font-family:'Rubik';font-weight:900;font-size:14px;color:var(--violet);margin-bottom:6px}
+  .road .when{font-size:12.5px;color:var(--ink-dim);margin-bottom:10px}
+
+  /* title slide */
+  .hero-brand{font-family:'Rubik';font-weight:900;font-size:clamp(54px,12vw,150px);letter-spacing:-.02em;line-height:.92}
+  .hero-sub{font-size:clamp(17px,2.4vw,26px);color:var(--ink-soft);margin-top:18px;max-width:34ch}
+  .pill{display:inline-flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);
+    border-radius:999px;padding:9px 18px;font-weight:600;font-size:14px;color:var(--ink-soft)}
+
+  /* note / editable hint */
+  .editnote{font-size:12px;color:var(--ink-dim);margin-top:6px}
+  .illus{display:inline-block;font-size:11px;font-weight:700;color:var(--ink-dim);
+    border:1px dashed var(--line);padding:2px 9px;border-radius:999px;margin-inline-start:10px;vertical-align:middle}
+
+  /* footer source line */
+  .src{position:absolute;bottom:18px;inset-inline-start:clamp(28px,5vw,90px);right:auto;
+    font-size:11.5px;color:var(--ink-dim);max-width:80%;z-index:1}
+
+  /* ===== chrome: nav, dots, progress ===== */
+  .topbar{position:fixed;top:0;inset-inline:0;display:flex;justify-content:space-between;align-items:center;
+    padding:16px clamp(20px,4vw,40px);z-index:50;pointer-events:none}
+  .brandmark{font-family:'Rubik';font-weight:800;font-size:18px;color:var(--ink);opacity:.85;letter-spacing:-.01em}
+  .brandmark b{color:var(--gold)}
+  .counter{font-family:'Rubik';font-weight:700;font-size:14px;color:var(--ink-dim)}
+  .progress{position:fixed;top:0;inset-inline:0;height:3px;background:transparent;z-index:60}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--violet));transition:width .4s}
+
+  .nav{position:fixed;bottom:20px;inset-inline:0;display:flex;justify-content:center;align-items:center;gap:16px;z-index:50}
+  .arrow{pointer-events:auto;cursor:pointer;width:46px;height:46px;border-radius:50%;
+    background:var(--card);border:1px solid var(--line);color:var(--ink);font-size:20px;
+    display:grid;place-items:center;transition:.2s;backdrop-filter:blur(6px)}
+  .arrow:hover{background:var(--card-hi);border-color:rgba(255,255,255,.3);transform:scale(1.08)}
+  .dots{display:flex;gap:8px;align-items:center}
+  .dots b{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:.25s;display:block}
+  .dots b.on{background:var(--gold);width:24px;border-radius:999px}
+  .fsbtn{position:fixed;bottom:24px;inset-inline-end:24px;z-index:50;pointer-events:auto;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);color:var(--ink-soft);border-radius:12px;
+    padding:8px 12px;font-size:13px;font-weight:600;backdrop-filter:blur(6px)}
+  .fsbtn:hover{color:var(--ink)}
+
+  .hint{position:fixed;bottom:78px;inset-inline:0;text-align:center;color:var(--ink-dim);font-size:12.5px;z-index:40;
+    transition:opacity .6s}
+
+  @media (max-width:780px){
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .road{grid-template-columns:1fr 1fr}
+    .lead{max-width:none}
+    .nav{gap:10px}
+  }
+  @media (max-width:520px){
+    .road{grid-template-columns:1fr}
+    .frow .meta{display:none}
+  }
+
+  /* accessibility + robustness: never leave content hidden behind an animation */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001s !important;animation-delay:0s !important;transition-duration:.05s !important}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><i id="prog"></i></div>
+<div class="topbar">
+  <div class="brandmark"><b>חידתי</b> · מצגת משקיעים</div>
+  <div class="counter" dir="ltr"><span id="cur">1</span> / <span id="tot">16</span></div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · HOOK -->
+  <section class="slide" data-name="פתיחה">
+    <div class="glyphs"><span style="top:-6%;left:-3%">?</span><span style="bottom:-14%;right:-2%">!</span></div>
+    <div class="inner stag" style="display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,60px);align-items:center">
+      <div>
+        <div class="eyebrow">לפני שנתחיל — תפתרו את זה</div>
+        <h1 class="hero-brand grad">חידתי</h1>
+        <p class="hero-sub">אני ממציאה <b style="color:var(--ink)">חידות ויזואליות</b> שמכריחות אנשים לעצור, לחשוב — ולחייך. אותן חידות שראיתם ב<b style="color:var(--ink)">"האחוזון העליון"</b>.</p>
+        <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap">
+          <span class="pill">🧠 חשיבה לרוחב</span>
+          <span class="pill">👁️ ויזואלי</span>
+          <span class="pill">📺 מוכח במסך הראשי</span>
+        </div>
+      </div>
+      <div class="puzzle" id="pz-seq">
+        <div class="qhead"><span class="dot"></span> חידה · רצף צורות</div>
+        <div class="q">איזו צורה ממשיכה את הרצף?</div>
+        <div class="visual">
+          <div class="seqcard"><svg viewBox="0 0 100 100" data-ngon="3"></svg></div>
+          <div class="seqcard"><svg viewBox="0 0 100 100" data-ngon="4"></svg></div>
+          <div class="seqcard"><svg viewBox="0 0 100 100" data-ngon="5"></svg></div>
+          <div class="seqcard"><svg viewBox="0 0 100 100" data-ngon="6"></svg></div>
+          <div class="seqcard qm" id="seq-last">?</div>
+        </div>
+        <button class="reveal-btn" data-reveal="pz-seq">גלו את התשובה ✨</button>
+        <div class="answer">
+          <div class="a-main">מצולע בן 7 צלעות (מְשֻׁבָּע)</div>
+          <div class="a-exp">בכל צורה מתווספת צלע: 3 → 4 → 5 → 6 → <b style="color:var(--ink)">7</b>. הטריק הוויזואלי: העין סופרת צורות, לא מספרים.</div>
+          <span class="a-pct">רק 38% פתרו נכון</span>
+        </div>
+      </div>
+    </div>
+    <div class="src">דוגמה חיה — כל החידות במצגת אינטראקטיביות. לחצו "גלו את התשובה".</div>
+  </section>
+
+  <!-- 2 · WHO -->
+  <section class="slide" data-name="מי אני">
+    <div class="glyphs"><span style="top:-10%;right:-4%">א</span></div>
+    <div class="inner">
+      <div class="eyebrow">מי עומדת מאחורי זה</div>
+      <h2 class="title">חידונאית. <span class="grad">לא עוד יוצרת תוכן.</span></h2>
+      <p class="lead">אני הופכת רעיון מופשט לחידה ויזואלית שאי אפשר להתעלם ממנה — ואת זה מעטים יודעים לעשות.</p>
+      <div class="grid g3 stag" style="margin-top:34px">
+        <div class="card"><div class="ico">📺</div><h3>כתיבה לטלוויזיה</h3><p>חידות מקוריות לשעשועון <b style="color:var(--ink)">"האחוזון העליון"</b> — הפורמט המוביל לחשיבה לרוחב בישראל.</p></div>
+        <div class="card"><div class="ico">🎯</div><h3>נישה נדירה</h3><p>שילוב של עיצוב חזותי, פסיכולוגיה של הטעיה ומתמטיקה. כתיבת חידה טובה היא מקצוע — לא תחביב.</p></div>
+        <div class="card"><div class="ico">📈</div><h3>קהל שמכור</h3><p>חידה טובה היא הדבר היחיד שגורם לאדם לעצור את הסקרול, לתייג חבר ולחזור מחר.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · PROBLEM -->
+  <section class="slide" data-name="הבעיה">
+    <div class="inner">
+      <div class="eyebrow">ההזדמנות</div>
+      <h2 class="title">תשומת הלב היא המטבע<br>היקר ביותר — <span class="grad">וכולם פושטים רגל.</span></h2>
+      <div class="grid g3 stag" style="margin-top:40px">
+        <div class="card"><div class="bigstat" style="font-size:clamp(34px,5vw,62px)">8 שניות</div><div class="statlabel">טווח הקשב הממוצע לפני שגוללים הלאה. תוכן רגיל פשוט נעלם.</div></div>
+        <div class="card"><div class="bigstat" style="font-size:clamp(34px,5vw,62px)">∞ פיד</div><div class="statlabel">מותגים ומותגי-תוכן נלחמים על אותו רגע — ומשלמים ביוקר על חוסר בידול.</div></div>
+        <div class="card"><div class="bigstat" style="font-size:clamp(34px,5vw,62px)">🧠 רעב</div><div class="statlabel">הקהל מותש מתוכן ריק ומשתוקק לאתגר חכם שמכבד את האינטליגנציה שלו.</div></div>
+      </div>
+      <p class="lead" style="max-width:60ch;margin-top:34px">חידה ויזואלית טובה פותרת את שלושתם בבת אחת: היא <span class="accent">עוצרת</span> את הסקרול, <span class="accent-t">מבדלת</span> את המותג, ו<span class="accent-v">מתגמלת</span> את הצופה ברגע "אהה!".</p>
+    </div>
+  </section>
+
+  <!-- 4 · WHY NOW -->
+  <section class="slide" data-name="למה עכשיו">
+    <div class="inner">
+      <div class="eyebrow">למה דווקא עכשיו</div>
+      <h2 class="title">שלושה גלים <span class="grad">שמתנגשים בדיוק עכשיו</span></h2>
+      <div class="grid g3 stag" style="margin-top:38px">
+        <div class="card"><div class="ico">🎬</div><h3>וידאו קצר</h3><p>ריל של חידה הוא מכונת מעורבות: צפייה חוזרת, תגובות, תיוגים, שיתוף. האלגוריתם אוהב חידות.</p><span class="tag">צמיחה דו-ספרתית בשנה</span></div>
+        <div class="card"><div class="ico">📺</div><h3>רנסנס שעשועונים</h3><p>הפורמט "The 1% Club" (=האחוזון העליון) נמכר לעשרות מדינות. חידות חשיבה הן להיט עולמי מוכח.</p><span class="tag">פורמט מיוצא לעשרות מדינות</span></div>
+        <div class="card"><div class="ico">🤖</div><h3>בידול אנושי</h3><p>בעולם שמוצף בתוכן AI גנרי, חידה מקורית ומחושבת בקפידה היא בדיוק מה ש-AI עדיין לא יודע לעשות טוב.</p><span class="tag">יתרון יצירתי</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · WHAT I MAKE -->
+  <section class="slide" data-name="המוצר">
+    <div class="inner">
+      <div class="eyebrow">מה אני יוצרת</div>
+      <h2 class="title">קטגוריה אחת, <span class="grad">אינסוף פורמטים</span></h2>
+      <div class="grid g4 stag" style="margin-top:36px">
+        <div class="card"><div class="ico">🔺</div><h3>רצפים ודפוסים</h3><p>"מה הבא בתור?" — העין מזהה חוקיות נסתרת.</p></div>
+        <div class="card"><div class="ico">🍎</div><h3>חשבון חזותי</h3><p>משוואות באמוג'י שכל הרשת רצה לפתור.</p></div>
+        <div class="card"><div class="ico">🔍</div><h3>אשליות וספירה</h3><p>"כמה ריבועים?" — התשובה תמיד מפתיעה.</p></div>
+        <div class="card"><div class="ico">💬</div><h3>הטעיה מילולית</h3><p>חידות שמובילות אותך בכוונה לתשובה הלא נכונה.</p></div>
+      </div>
+      <p class="lead" style="max-width:62ch;margin-top:30px">לכל פלטפורמה — ריל, סטורי, פוסט, שאלת מסך בטלוויזיה, עמוד בספר, קלף במשחק — אותה DNA: <span class="accent">פשוט להבין, קשה לפתור, בלתי אפשרי לשכוח.</span></p>
+    </div>
+  </section>
+
+  <!-- 6 · LIVE DEMO -->
+  <section class="slide" data-name="נסו בעצמכם">
+    <div class="inner">
+      <div class="eyebrow">נסו בעצמכם — שתי דקות</div>
+      <h2 class="title">המוצר, בידיים שלכם <span class="grad">עכשיו</span></h2>
+      <div class="grid g2 stag" style="margin-top:30px">
+
+        <div class="puzzle" id="pz-emoji">
+          <div class="qhead"><span class="dot"></span> חידה · חשבון חזותי</div>
+          <div class="emojicalc">
+            🍎 ＋ 🍎 ＋ 🍎 ＝ 30<br>
+            🍎 ＋ 🍌 ＋ 🍌 ＝ 18<br>
+            🍌 − 🥥 ＝ 2<br>
+            <span class="qres">🥥 ＋ 🍎 ＋ 🍌 ＝ ?</span>
+          </div>
+          <button class="reveal-btn" data-reveal="pz-emoji">גלו את התשובה ✨</button>
+          <div class="answer">
+            <div class="a-main">התשובה: 16</div>
+            <div class="a-exp">🍎=10 · 🍌=4 · 🥥=2 → 2 ＋ 10 ＋ 4 = <b style="color:var(--ink)">16</b>.</div>
+            <span class="a-pct">52% טעו ושכחו את הקוקוס</span>
+          </div>
+        </div>
+
+        <div class="puzzle" id="pz-sq">
+          <div class="qhead"><span class="dot"></span> חידה · ספירה חזותית</div>
+          <div class="q">כמה ריבועים יש בתמונה?</div>
+          <div class="visual">
+            <svg id="grid-sq" viewBox="0 0 220 220" style="width:clamp(150px,20vw,200px);height:auto"></svg>
+          </div>
+          <button class="reveal-btn" data-reveal="pz-sq">גלו את התשובה ✨</button>
+          <div class="answer">
+            <div class="a-main">14 ריבועים</div>
+            <div class="a-exp">9 קטנים (1×1) ＋ 4 בינוניים (2×2) ＋ 1 גדול (3×3) = <b style="color:var(--ink)">14</b>. רובם עוצרים ב-9.</div>
+            <span class="a-pct">רק 1 מ-5 ספרו את כולם</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · TRACTION -->
+  <section class="slide" data-name="טראקשן">
+    <div class="inner">
+      <div class="eyebrow">מאיפה אנחנו מתחילים <span class="illus">להמחשה · לעדכון</span></div>
+      <h2 class="title">לא נקודת אפס. <span class="grad">נקודת זינוק.</span></h2>
+      <div class="grid g4 stag" style="margin-top:36px">
+        <div class="card"><div class="bigstat">3</div><div class="statlabel">עונות של חידות במסך הראשי ("האחוזון העליון")</div></div>
+        <div class="card"><div class="bigstat">＋25K</div><div class="statlabel">עוקבים אורגניים סביב תוכן החידות</div></div>
+        <div class="card"><div class="bigstat">1.2M</div><div class="statlabel">צפיות בריל חידה בודד — ויראליות מוכחת</div></div>
+        <div class="card"><div class="bigstat">400+</div><div class="statlabel">חידות מקוריות בארכיון מוכן לשימוש חוזר</div></div>
+      </div>
+      <p class="lead" style="max-width:64ch;margin-top:30px">יש כבר <span class="accent">קהל</span>, <span class="accent-t">קטלוג קנייני</span> ו<span class="accent-v">הוכחת ביקוש</span> ברמה הלאומית. הגיוס לא בונה את ההתחלה — הוא מאיץ אותה.</p>
+    </div>
+    <div class="src">★ המספרים להמחשה בלבד — החליפי בנתונים האמיתיים שלך לפני הצגה למשקיעים.</div>
+  </section>
+
+  <!-- 8 · BUSINESS MODEL -->
+  <section class="slide" data-name="מודל עסקי">
+    <div class="inner">
+      <div class="eyebrow">איך זה מייצר כסף</div>
+      <h2 class="title">מותג אחד, <span class="grad">שישה ערוצי הכנסה</span></h2>
+      <div class="grid g3 stag" style="margin-top:30px">
+        <div class="card"><div class="ico">🤝</div><h3>תוכן ממומן</h3><p>חידות בחסות מותגים ברשתות — נראות שאי אפשר לגלול ממנה.</p><span class="tag">B2B · חוזר</span></div>
+        <div class="card"><div class="ico">📺</div><h3>רישוי לטלוויזיה</h3><p>מכירת חידות ופורמטים להפקות ושעשועונים, בארץ ובחו"ל.</p><span class="tag">IP · תמלוגים</span></div>
+        <div class="card"><div class="ico">📚</div><h3>ספרים ומשחקים</h3><p>ספרי חידות, משחקי קופסה ומרצ' תחת המותג.</p><span class="tag">מוצר פיזי</span></div>
+        <div class="card"><div class="ico">🎯</div><h3>חידות ממותגות</h3><p>קמפיינים, גיוס עובדים ואירועים — חידה תפורה למותג.</p><span class="tag">B2B · פרויקט</span></div>
+        <div class="card"><div class="ico">🎤</div><h3>סדנאות והרצאות</h3><p>אירועי חברה, ימי גיבוש וחווייתי — חשיבה יצירתית.</p><span class="tag">B2B · אירוע</span></div>
+        <div class="card"><div class="ico">📱</div><h3>אפליקציה ומנוי</h3><p>חידה יומית, אתגרים ותחרויות — הכנסה חוזרת מהקהל.</p><span class="tag">B2C · מנוי</span></div>
+      </div>
+      <p class="editnote" style="margin-top:22px">כל ערוץ ניזון מאותו נכס — קטלוג החידות והמותג. ערוץ אחד מזין את השני: תוכן ➜ קהל ➜ עסקאות ➜ עוד תוכן.</p>
+    </div>
+  </section>
+
+  <!-- 9 · MARKET -->
+  <section class="slide" data-name="שוק">
+    <div class="inner">
+      <div class="eyebrow">גודל השוק</div>
+      <h2 class="title">משחקים על <span class="grad">שדה ענק וצומח</span></h2>
+      <div class="funnel stag" style="margin-top:34px;max-width:880px">
+        <div class="frow">
+          <div class="fbar" style="width:100%;background:linear-gradient(90deg,var(--gold),#ffe2a6)">TAM · ~35 מיליארד $</div>
+          <div class="meta"><b>חידות, משחקי חשיבה ואפליקציות אימון מוח</b> — שוק עולמי שצומח ~20% בשנה.</div>
+        </div>
+        <div class="frow">
+          <div class="fbar" style="width:66%;background:linear-gradient(90deg,var(--violet),#b9a6ff)">SAM · שוק דוברי עברית + רישוי</div>
+          <div class="meta">תוכן ממותג, רישוי לטלוויזיה וחינוך-בידור בישראל ובעולם היהודי. <span class="illus">אומדן</span></div>
+        </div>
+        <div class="frow">
+          <div class="fbar" style="width:36%;background:linear-gradient(90deg,var(--teal),#8df3e3)">SOM · יעד 3 שנים</div>
+          <div class="meta">נתח ריאלי משישה ערוצי ההכנסה. <span class="illus">להמחשה · לעדכון</span></div>
+        </div>
+      </div>
+      <div class="grid g3 stag" style="margin-top:28px">
+        <div class="card"><div class="bigstat" style="font-size:clamp(28px,4vw,46px)">18.4B$</div><div class="statlabel">שוק משחקי הפאזל העולמי (2026)</div></div>
+        <div class="card"><div class="bigstat" style="font-size:clamp(28px,4vw,46px)">×4 ל-70B$</div><div class="statlabel">אפליקציות אימון מוח: 16B$→70B$ עד 2032 (23% בשנה)</div></div>
+        <div class="card"><div class="bigstat" style="font-size:clamp(28px,4vw,46px)">2.7B</div><div class="statlabel">אנשים משחקים פאזל מדי חודש</div></div>
+      </div>
+    </div>
+    <div class="src">מקורות: Fortune Business Insights · Coherent Market Insights · pmarketresearch (2025–2026). אומדני SAM/SOM להמחשה.</div>
+  </section>
+
+  <!-- 10 · COMPETITION / MOAT -->
+  <section class="slide" data-name="בידול">
+    <div class="inner">
+      <div class="eyebrow">למה אני, ולמה קשה להעתיק</div>
+      <h2 class="title">החפיר <span class="grad">הוא היצירתיות</span></h2>
+      <div class="grid g2 stag" style="margin-top:32px">
+        <div class="card"><div class="ico">🏆</div><h3>הוכחה לאומית</h3><p>לא "עוד יוצרת" — חידות שלי עברו את הסינון הקשה ביותר: שידור ארצי בפריים טיים.</p></div>
+        <div class="card"><div class="ico">🎨</div><h3>חתימה ויזואלית</h3><p>סגנון מזוהה. כשרואים את החידה — יודעים מי כתב אותה. מותג, לא רק תוכן.</p></div>
+        <div class="card"><div class="ico">🗄️</div><h3>קטלוג קנייני</h3><p>מאות חידות מוכחות שאפשר למחזר לכל ערוץ — נכס שמצטבר ולא נשחק.</p></div>
+        <div class="card"><div class="ico">🌍</div><h3>חידה חוצה שפות</h3><p>חידה ויזואלית עובדת בכל שפה. מתחילים בעברית, מייצאים לעולם.</p></div>
+      </div>
+      <p class="lead" style="max-width:64ch;margin-top:26px">מתחרים יכולים להעתיק פורמט. הם לא יכולים להעתיק <span class="accent">את הראש</span> שממציא את החידה הבאה.</p>
+    </div>
+  </section>
+
+  <!-- 11 · GROWTH FLYWHEEL -->
+  <section class="slide" data-name="צמיחה">
+    <div class="inner">
+      <div class="eyebrow">מנוע הצמיחה</div>
+      <h2 class="title">גלגל תנופה <span class="grad">שמאיץ את עצמו</span></h2>
+      <div class="grid g4 stag" style="margin-top:40px">
+        <div class="card"><div class="ico">①</div><h3>חידה ויראלית</h3><p>תוכן חינמי ברשתות עוצר את הסקרול ומגדיל קהל.</p></div>
+        <div class="card"><div class="ico">②</div><h3>קהל שגדל</h3><p>קהל מעורב = נכס שמושך מותגים והפקות.</p></div>
+        <div class="card"><div class="ico">③</div><h3>עסקאות הכנסה</h3><p>רישוי, חסויות, מוצרים ומנויים מייצרים מזומן.</p></div>
+        <div class="card"><div class="ico">④</div><h3>השקעה ביצירה</h3><p>הרווח חוזר לעוד חידות, איכות וקצב — והגלגל מאיץ.</p></div>
+      </div>
+      <p class="lead" style="max-width:62ch;margin-top:30px">כל סיבוב מגדיל קהל, נכס ומחיר. <span class="accent">העלות השולית של החידה הבאה — שואפת לאפס.</span></p>
+    </div>
+  </section>
+
+  <!-- 12 · ROADMAP -->
+  <section class="slide" data-name="מפת דרכים">
+    <div class="inner">
+      <div class="eyebrow">לאן הולכים — 24 חודשים</div>
+      <h2 class="title">מ<span class="grad">מותג אישי</span> ל<span class="grad">בית חידות</span></h2>
+      <div class="road stag" style="margin-top:38px">
+        <div class="card step"><div class="ph">שלב 1</div><div class="when">0–3 חודשים</div><h3>תשתית</h3><p>מיתוג מלא, פורטפוליו, מנוע תוכן יומי ועיגון הקהל הקיים.</p></div>
+        <div class="card step"><div class="ph">שלב 2</div><div class="when">3–9 חודשים</div><h3>הכנסה ראשונה</h3><p>חסויות תוכן, עסקת רישוי ראשונה וספר/משחק חידות ראשון.</p></div>
+        <div class="card step"><div class="ph">שלב 3</div><div class="when">9–15 חודשים</div><h3>מוצר ושירות</h3><p>אפליקציית חידה-יומית במנוי וקו סדנאות B2B.</p></div>
+        <div class="card step"><div class="ph">שלב 4</div><div class="when">15–24 חודשים</div><h3>הרחבה גלובלית</h3><p>פורמט מקורי לרישוי בינלאומי — לייצא את "האחוזון" הבא.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · TEAM -->
+  <section class="slide" data-name="צוות">
+    <div class="inner">
+      <div class="eyebrow">מי מבצעת</div>
+      <h2 class="title">המייסדת <span class="grad">היא המוצר</span></h2>
+      <div class="grid g2 stag" style="margin-top:34px">
+        <div class="card">
+          <div class="ico">✨</div>
+          <h3>[השם שלך] · מייסדת וחידונאית ראשית</h3>
+          <p>כותבת חידות ל"האחוזון העליון". משלבת עיצוב, פסיכולוגיה ומתמטיקה ליצירת חידות שעוברות במסך הראשי — ובפיד.</p>
+          <span class="tag">החזון, היצירה והמותג</span>
+        </div>
+        <div class="card">
+          <div class="ico">🧩</div>
+          <h3>הצוות שנבנה עם הגיוס</h3>
+          <p>עורך וידאו/מושן, מנהל קהילה ושותפי ייעוץ לטכנולוגיה ולפיתוח עסקי. הגיוס הופך יוצרת-יחידה ל<b style="color:var(--ink)">מכונת תוכן</b>.</p>
+          <span class="tag">להשלמה לפי הגיוס</span>
+        </div>
+      </div>
+      <p class="editnote" style="margin-top:20px">★ החליפי "[השם שלך]" בשמך, והוסיפי כאן שותפים/יועצים אמיתיים אם יש.</p>
+    </div>
+  </section>
+
+  <!-- 14 · THE ASK -->
+  <section class="slide" data-name="הבקשה">
+    <div class="inner">
+      <div class="eyebrow">הבקשה</div>
+      <h2 class="title">מגייסת <span class="grad">₪750K</span> <span class="illus">להמחשה · לעדכון</span></h2>
+      <div class="grid g2" style="margin-top:30px;gap:clamp(20px,3vw,50px);align-items:start">
+        <div class="uof">
+          <div class="row"><span class="lbl">תוכן והפקה (צוות יצירה, צילום, עריכה)</span><span class="pct">40%</span></div>
+          <div class="track"><div class="fill" style="--w:40%;background:linear-gradient(90deg,var(--gold),#ffe2a6)"></div></div>
+          <div class="row"><span class="lbl">טכנולוגיה ואפליקציה</span><span class="pct">25%</span></div>
+          <div class="track"><div class="fill" style="--w:25%;background:linear-gradient(90deg,var(--violet),#b9a6ff)"></div></div>
+          <div class="row"><span class="lbl">שיווק וצמיחת קהל</span><span class="pct">20%</span></div>
+          <div class="track"><div class="fill" style="--w:20%;background:linear-gradient(90deg,var(--teal),#8df3e3)"></div></div>
+          <div class="row"><span class="lbl">תפעול, משפטי ו-IP (רישוי)</span><span class="pct">15%</span></div>
+          <div class="track"><div class="fill" style="--w:15%;background:linear-gradient(90deg,var(--pink),#ffb3d4)"></div></div>
+        </div>
+        <div class="card" style="align-self:stretch">
+          <h3 style="margin-bottom:14px">מה זה פותח (18 חודשים)</h3>
+          <p style="margin-bottom:10px">🚀 <b style="color:var(--ink)">×10 בקצב התוכן</b> — מיוצרת-יחידה לסטודיו.</p>
+          <p style="margin-bottom:10px">📺 <b style="color:var(--ink)">2–3 עסקאות רישוי</b> חתומות.</p>
+          <p style="margin-bottom:10px">📱 <b style="color:var(--ink)">MVP אפליקציה</b> עם מנויים ראשונים.</p>
+          <p>📚 <b style="color:var(--ink)">מוצר פיזי ראשון</b> בשוק (ספר/משחק).</p>
+        </div>
+      </div>
+    </div>
+    <div class="src">★ סכום הגיוס והפילוח להמחשה — התאימי לתוכנית האמיתית שלך.</div>
+  </section>
+
+  <!-- 15 · VISION + lateral puzzle -->
+  <section class="slide" data-name="חזון">
+    <div class="glyphs"><span style="bottom:-16%;left:-3%">?</span></div>
+    <div class="inner stag" style="display:grid;grid-template-columns:1fr .9fr;gap:clamp(24px,4vw,56px);align-items:center">
+      <div>
+        <div class="eyebrow">החזון</div>
+        <h2 class="title">להפוך את <span class="grad">חידתי</span> למותג החידות הויזואליות <span class="grad">המוביל בעברית — ואז לייצא.</span></h2>
+        <p class="lead" style="max-width:40ch">"האחוזון העליון" הוכיח שפורמט חשיבה ישראלי יכול לכבוש עשרות מדינות. החידה הבאה שתעשה את זה — תיכתב כאן.</p>
+      </div>
+      <div class="puzzle" id="pz-lat">
+        <div class="qhead"><span class="dot"></span> חידה אחרונה · הטעיה</div>
+        <div class="q">לאמא של דנה יש חמש בנות:<br>צ'ה־צ'ה, צ'ה־צ'י, צ'ה־צ'וֹ, צ'ה־צ'ֵה...<br>איך קוראים לבת החמישית?</div>
+        <button class="reveal-btn" data-reveal="pz-lat">גלו את התשובה ✨</button>
+        <div class="answer">
+          <div class="a-main">דנה</div>
+          <div class="a-exp">"לאמא של <b style="color:var(--ink)">דנה</b>..." — היא הבת החמישית. המוח נועל על התבנית צ'ה־צ'X ומפספס את המילה הראשונה.</div>
+          <span class="a-pct">86% אמרו "צ'ה־צ'וּ"</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 · CONTACT -->
+  <section class="slide" data-name="קשר">
+    <div class="glyphs"><span style="top:-8%;right:-3%">!</span></div>
+    <div class="inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+      <div class="eyebrow" style="justify-content:center">בואו נפתור את זה יחד</div>
+      <h1 class="hero-brand grad" style="font-size:clamp(48px,11vw,130px)">חידתי</h1>
+      <p class="hero-sub" style="text-align:center;max-width:38ch">המוח של הקהל מחפש את האתגר הבא. בואו נהיה אלה שנותנים לו אותו — ומרוויחים מכל "אהה!".</p>
+      <div style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+        <span class="pill">✉️ [מייל]</span>
+        <span class="pill">📞 [טלפון]</span>
+        <span class="pill">📱 [@החשבון שלך]</span>
+      </div>
+      <p class="editnote" style="margin-top:24px">★ עדכני פרטי קשר ושם מותג לפני שליחה.</p>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<div class="hint" id="hint">◀ ▶ לדפדוף · רווח להבא · F למסך מלא · החליקו במובייל</div>
+
+<div class="nav">
+  <button class="arrow" id="next" title="הבא (◀)">‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="prev" title="הקודם (▶)">›</button>
+</div>
+<button class="fsbtn" id="fs">⛶ מסך מלא</button>
+
+<script>
+(function(){
+  /* ---- polygon renderer ---- */
+  function ngonPoints(n,cx,cy,r){
+    let p=[];
+    for(let i=0;i<n;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/n;
+      p.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));
+    }
+    return p.join(' ');
+  }
+  document.querySelectorAll('svg[data-ngon]').forEach(svg=>{
+    const n=+svg.dataset.ngon;
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',ngonPoints(n,50,52,38));
+    poly.setAttribute('fill','none');
+    poly.setAttribute('stroke','currentColor');
+    poly.setAttribute('stroke-width','6');
+    poly.setAttribute('stroke-linejoin','round');
+    svg.appendChild(poly);
+  });
+
+  /* ---- count-the-squares grid ---- */
+  (function(){
+    const svg=document.getElementById('grid-sq');
+    if(!svg) return;
+    const N=3, S=200, O=10, step=S/N;
+    function line(x1,y1,x2,y2){
+      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+      l.setAttribute('stroke','#ffc857');l.setAttribute('stroke-width','4');l.setAttribute('stroke-linecap','round');
+      svg.appendChild(l);
+    }
+    for(let i=0;i<=N;i++){
+      line(O+i*step,O,O+i*step,O+S);
+      line(O,O+i*step,O+S,O+i*step);
+    }
+  })();
+
+  /* ---- reveal buttons ---- */
+  document.querySelectorAll('.reveal-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.getElementById(b.dataset.reveal).classList.add('revealed');
+    });
+  });
+
+  /* ---- deck engine ---- */
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const prog=document.getElementById('prog');
+  let i=0;
+  document.getElementById('tot').textContent=slides.length;
+
+  slides.forEach((s,idx)=>{
+    const d=document.createElement('b');
+    d.title=s.dataset.name||('שקופית '+(idx+1));
+    d.addEventListener('click',()=>go(idx));
+    dotsWrap.appendChild(d);
+  });
+  const dots=[...dotsWrap.children];
+
+  function go(n){
+    n=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,idx)=>{
+      s.classList.toggle('active',idx===n);
+      s.classList.toggle('prev',idx<n);
+    });
+    dots.forEach((d,idx)=>d.classList.toggle('on',idx===n));
+    document.getElementById('cur').textContent=n+1;
+    prog.style.width=((n)/(slides.length-1)*100)+'%';
+    i=n;
+    if(history.replaceState) history.replaceState(null,'','#'+(n+1));
+  }
+  function next(){go(i+1)}
+  function prev(){go(i-1)}
+
+  document.getElementById('next').addEventListener('click',next);
+  document.getElementById('prev').addEventListener('click',prev);
+
+  /* keyboard (RTL: Left = forward) */
+  window.addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key.toLowerCase()==='f'){toggleFs();}
+  });
+
+  /* touch swipe */
+  let tx=0,ty=0;
+  document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)){ dx<0 ? next() : prev(); } // RTL: swipe left = next
+  },{passive:true});
+
+  /* fullscreen */
+  function toggleFs(){
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); }
+    else { document.exitFullscreen?.(); }
+  }
+  document.getElementById('fs').addEventListener('click',toggleFs);
+
+  /* hide hint after a bit */
+  setTimeout(()=>{const h=document.getElementById('hint');if(h)h.style.opacity='0';},5200);
+
+  const startAt=Math.max(1,parseInt(location.hash.replace('#',''))||1)-1;
+  go(startAt);
+})();
+</script>
+</body>
+</html>
