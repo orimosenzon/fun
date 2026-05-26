@@ -439,6 +439,19 @@
             line-height: 1.5;
             white-space: pre-wrap;
         }
+        .eval-table td.criterion-cell {
+            border-inline-start-width: 6px;
+            font-weight: 500;
+        }
+        .criterion-swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-inline-end: 0.5rem;
+            vertical-align: middle;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+        }
 
         /* Add-rubric modal */
         .modal-backdrop {
@@ -1180,9 +1193,12 @@
                     const tbody = document.getElementById('eval-tbody');
                     tbody.innerHTML = '';
                     (currentEvaluation.criteria || []).forEach(c => {
+                        const color = c.color || '#888';
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${escapeHtml(c.name || '')}</td>
+                            <td class="criterion-cell" style="border-inline-start-color:${escapeHtml(color)}">
+                                <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
+                            </td>
                             <td class="score-cell">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
                             <td class="feedback-cell">${escapeHtml(c.feedback || '')}</td>
                         `;
@@ -1337,6 +1353,7 @@
                                 evaluation: currentEvaluation,
                                 filename: serverData.filename || 'תרגיל',
                                 rubric_name: currentEvaluation.rubric_name || '',
+                                pages: collectPages(),
                             }),
                         });
                         if (!resp.ok) {

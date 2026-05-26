@@ -758,7 +758,7 @@ def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict, dict | None]:
         })
 
     filename = data.get("filename", "שמור.json")
-    evaluation = data.get("evaluation")
+    evaluation = attach_colors(data.get("evaluation"))
     return pages_out, filename, annotations, evaluation
 
 
@@ -909,7 +909,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 max_output_tokens=4000,
             ),
         )
-        return json.loads(response.text)
+        return attach_colors(json.loads(response.text))
 
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
@@ -927,22 +927,101 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         messages=[{"role": "user", "content": user_turn}],
     )
     text = next(b.text for b in response.content if b.type == "text")
-    return json.loads(text)
+    return attach_colors(json.loads(text))
+
+
+# --- Criterion colors -------------------------------------------------------
+
+# Curated keyword → color map. Lets the teacher scan an evaluation visually:
+# the same category gets the same color across rubrics (e.g. תחביר/grammar
+# always red), with a deterministic hash fallback for criteria that don't
+# match any keyword.
+_CRITERION_COLOR_RULES: list[tuple[list[str], str]] = [
+    (["תחביר", "דקדוק", "grammar", "syntax"], "#d9534f"),       # red
+    (["איות", "כתיב", "פיסוק", "spelling", "punctuation",
+      "mechanics", "orthography"], "#8e44ad"),                  # purple
+    (["אוצר מילים", "מילים", "vocabulary", "lexical",
+      "lexicon", "word choice"], "#e0a800"),                    # amber
+    (["ניסוח", "קוהרנטיות", "coherence", "phrasing", "wording",
+      "task achievement", "cohesion"], "#337ab7"),              # blue
+    (["מבנה", "ארגון", "structure", "organization"], "#28a745"),  # green
+    (["תוכן", "רעיונות", "content", "ideas"], "#16a085"),        # teal
+    (["שטף", "fluency", "intonation", "אינטונציה"], "#e67e22"),  # orange
+]
+
+_FALLBACK_PALETTE = [
+    "#7f8c8d", "#34495e", "#c0392b", "#27ae60",
+    "#8e44ad", "#2980b9", "#d35400", "#16a085",
+]
+
+
+def color_for_criterion(name: str) -> str:
+    """Hex color for a rubric criterion. Hebrew/English keyword match first;
+    fall back to a deterministic palette indexed by md5 of the name so the
+    same criterion always lands on the same color."""
+    n = (name or "").lower()
+    for keywords, color in _CRITERION_COLOR_RULES:
+        if any(k.lower() in n for k in keywords):
+            return color
+    digest = hashlib.md5(n.encode("utf-8")).hexdigest()
+    return _FALLBACK_PALETTE[int(digest, 16) % len(_FALLBACK_PALETTE)]
+
+
+def attach_colors(evaluation: dict | None) -> dict | None:
+    """Inject a 'color' field into each criterion. Idempotent — preserves
+    any pre-set color so saved files keep their original assignment."""
+    if not evaluation:
+        return evaluation
+    for c in evaluation.get("criteria") or []:
+        if not c.get("color"):
+            c["color"] = color_for_criterion(c.get("name", ""))
+    return evaluation
 
 
 # --- DOCX export ------------------------------------------------------------
 
+def _tint_hex(hex_color: str, mix: float = 0.18) -> str:
+    """Blend hex_color toward white. mix=0.18 → ~82% white tint, light
+    enough to keep black text readable on top."""
+    c = hex_color.lstrip("#")
+    r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+    r = int(r * mix + 255 * (1 - mix))
+    g = int(g * mix + 255 * (1 - mix))
+    b = int(b * mix + 255 * (1 - mix))
+    return f"{r:02x}{g:02x}{b:02x}"
+
+
+def _set_cell_shading(cell, hex_color: str) -> None:
+    """Fill a table cell with a background color. python-docx exposes no
+    helper for this, so we drop to the OOXML layer."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    tc_pr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hex_color.lstrip("#"))
+    tc_pr.append(shd)
+
+
 def build_evaluation_docx(
-    evaluation: dict, filename: str, rubric_name: str
+    evaluation: dict,
+    filename: str,
+    rubric_name: str,
+    pages: list[dict] | None = None,
 ) -> bytes:
-    """Word document with the evaluation table + overall feedback.
+    """Word document with the evaluation table + overall feedback. When
+    `pages` is provided, appends each page's original scan followed by a
+    line-by-line table (cropped line image | transcribed text) so the
+    teacher can verify the OCR alongside the rubric scoring.
 
     Hebrew-friendly: paragraphs aligned right; the document is built top-down
     so existing readers (Google Docs, Word, LibreOffice) all open it cleanly.
     """
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.shared import Pt
+    from docx.shared import Inches, Pt
 
     doc = Document()
 
@@ -957,7 +1036,7 @@ def build_evaluation_docx(
 
     doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
-    criteria = evaluation.get("criteria") or []
+    criteria = attach_colors(evaluation).get("criteria") or []
     table = doc.add_table(rows=1, cols=3)
     table.style = "Light Grid Accent 1"
     header = table.rows[0].cells
@@ -978,12 +1057,69 @@ def build_evaluation_docx(
         for cell in row:
             for p in cell.paragraphs:
                 p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        color = c.get("color") or color_for_criterion(c.get("name", ""))
+        _set_cell_shading(row[0], _tint_hex(color))
+        for p in row[0].paragraphs:
+            for r in p.runs:
+                r.bold = True
 
     doc.add_heading("סיכום", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     summary = doc.add_paragraph(evaluation.get("overall_feedback", ""))
     summary.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     for r in summary.runs:
         r.font.size = Pt(11)
+
+    if pages:
+        doc.add_page_break()
+        doc.add_heading("תרגיל מקורי ופענוח", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+        for page in pages:
+            page_num = page.get("page", "?")
+            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+            orig_b64 = page.get("original_b64") or ""
+            if orig_b64:
+                try:
+                    orig_bytes = base64.b64decode(orig_b64)
+                    pic_para = doc.add_paragraph()
+                    pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    pic_para.add_run().add_picture(
+                        io.BytesIO(orig_bytes), width=Inches(5.5)
+                    )
+                except (ValueError, OSError) as e:
+                    log.warning("page %s original image failed: %s", page_num, e)
+
+            lines = page.get("lines") or []
+            if not lines:
+                continue
+            ltable = doc.add_table(rows=1, cols=2)
+            ltable.style = "Light Grid Accent 1"
+            lhdr = ltable.rows[0].cells
+            lhdr[0].text = "שורה"
+            lhdr[1].text = "טקסט"
+            for cell in lhdr:
+                for p in cell.paragraphs:
+                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                    for r in p.runs:
+                        r.bold = True
+
+            for line in lines:
+                row = ltable.add_row().cells
+                line_b64 = line.get("image_b64") or ""
+                if line_b64:
+                    try:
+                        line_bytes = base64.b64decode(line_b64)
+                        # Clear default empty paragraph before inserting image.
+                        row[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        row[0].paragraphs[0].add_run().add_picture(
+                            io.BytesIO(line_bytes), width=Inches(4.0)
+                        )
+                    except (ValueError, OSError) as e:
+                        log.warning("line image decode failed: %s", e)
+                        row[0].text = "[שגיאת תמונה]"
+                row[1].text = str(line.get("text", ""))
+                for p in row[1].paragraphs:
+                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
     buf = io.BytesIO()
     doc.save(buf)
@@ -1174,10 +1310,11 @@ def evaluation_docx():
     evaluation = body.get("evaluation")
     filename = body.get("filename") or "תרגיל"
     rubric_name = body.get("rubric_name") or (evaluation or {}).get("rubric_name", "")
+    pages = body.get("pages") or None
     if not evaluation:
         return jsonify(error="אין הערכה לייצוא"), 400
     try:
-        data = build_evaluation_docx(evaluation, filename, rubric_name)
+        data = build_evaluation_docx(evaluation, filename, rubric_name, pages=pages)
     except Exception as e:
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
