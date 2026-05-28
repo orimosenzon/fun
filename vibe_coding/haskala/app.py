@@ -1168,12 +1168,13 @@ def _set_run_shading(run, hex_color: str) -> None:
     rPr.append(shd)
 
 
-def _fill_paragraph_with_spans(paragraph, text: str, spans: list[dict]) -> None:
+def _fill_paragraph_with_spans(
+    paragraph, text: str, spans: list[dict], include_notes: bool = True
+) -> None:
     """Empty `paragraph`, then add runs reflecting `spans` as colored
-    highlights over `text`. After every highlighted span, append an
-    inline `(criterion: comment)` run shaded in the same color so the
-    teacher sees the issue right next to the offending text. Spans are
-    assumed sorted, non-overlapping."""
+    highlights over `text`. When `include_notes` is True, append an
+    inline `(criterion: comment)` run shaded in the same color after
+    every highlighted span. Spans are assumed sorted, non-overlapping."""
     from docx.shared import Pt
 
     for r in list(paragraph.runs):
@@ -1188,14 +1189,19 @@ def _fill_paragraph_with_spans(paragraph, text: str, spans: list[dict]) -> None:
         tint = _tint_hex(span["color"], mix=0.35)
         run = paragraph.add_run(text[s:e])
         _set_run_shading(run, tint)
-        comment = span.get("comment", "")
-        criterion = span.get("criterion", "")
-        if comment or criterion:
-            note = f" ({criterion}: {comment})" if criterion and comment else f" ({criterion or comment})"
-            note_run = paragraph.add_run(note)
-            note_run.italic = True
-            note_run.font.size = Pt(9)
-            _set_run_shading(note_run, tint)
+        if include_notes:
+            comment = span.get("comment", "")
+            criterion = span.get("criterion", "")
+            if comment or criterion:
+                note = (
+                    f" ({criterion}: {comment})"
+                    if criterion and comment
+                    else f" ({criterion or comment})"
+                )
+                note_run = paragraph.add_run(note)
+                note_run.italic = True
+                note_run.font.size = Pt(9)
+                _set_run_shading(note_run, tint)
         cursor = e
     if cursor < len(text):
         paragraph.add_run(text[cursor:])
@@ -1267,8 +1273,44 @@ def build_evaluation_docx(
 
     if pages:
         doc.add_page_break()
-        doc.add_heading("תרגיל מקורי ופענוח", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
         spans_by_line = resolve_issue_spans(pages, evaluation)
+
+        def _line_key(page_num, line_idx):
+            try:
+                return (int(page_num), line_idx)
+            except (TypeError, ValueError):
+                return (page_num, line_idx)
+
+        # Section A: clean transcript — exactly what the student wrote, no
+        # marks, so the teacher can read the raw text without distractions.
+        doc.add_heading("תעתיק נקי", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        for page in pages:
+            page_num = page.get("page", "?")
+            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            for line in page.get("lines", []):
+                p = doc.add_paragraph(str(line.get("text", "")))
+                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+        # Section B: same text with the color highlights, but without the
+        # inline `(criterion: comment)` parentheticals — for a scannable
+        # at-a-glance view of where the issues fall.
+        doc.add_heading("תעתיק עם סימונים", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        for page in pages:
+            page_num = page.get("page", "?")
+            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            for line_idx, line in enumerate(page.get("lines", [])):
+                line_text = str(line.get("text", ""))
+                spans = spans_by_line.get(_line_key(page_num, line_idx), [])
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                if spans:
+                    _fill_paragraph_with_spans(p, line_text, spans, include_notes=False)
+                else:
+                    p.add_run(line_text)
+
+        # Section C: the original scan + line-by-line table with image and
+        # transcribed text (with both highlights and inline comments).
+        doc.add_heading("תרגיל מקורי ופענוח", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
         for page in pages:
             page_num = page.get("page", "?")
@@ -1315,11 +1357,7 @@ def build_evaluation_docx(
                         log.warning("line image decode failed: %s", e)
                         row[0].text = "[שגיאת תמונה]"
                 line_text = str(line.get("text", ""))
-                try:
-                    key = (int(page_num), line_idx)
-                except (TypeError, ValueError):
-                    key = (page_num, line_idx)
-                spans = spans_by_line.get(key, [])
+                spans = spans_by_line.get(_line_key(page_num, line_idx), [])
                 target_p = row[1].paragraphs[0]
                 if spans:
                     _fill_paragraph_with_spans(target_p, line_text, spans)
