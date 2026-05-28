@@ -1,4 +1,5 @@
 import base64
+import difflib
 import hashlib
 import hmac
 import io
@@ -716,6 +717,7 @@ def render_result(
         "filename": filename,
         "annotations": annotations or {},
         "evaluation": evaluation,
+        "highlights": _highlights_for_template(pages, evaluation),
         "rubrics": list_rubrics(),
     }
     return render_template(
@@ -724,6 +726,17 @@ def render_result(
         filename=filename,
         server_data_json=json.dumps(server_data, ensure_ascii=False),
     )
+
+
+def _highlights_for_template(
+    pages: list[dict], evaluation: dict | None
+) -> dict[str, list[dict]]:
+    """Convert resolve_issue_spans output to the JSON shape the browser
+    JS consumes: { "p1-l3": [{start, end, color, comment, criterion}] }."""
+    if not evaluation:
+        return {}
+    raw = resolve_issue_spans(pages, attach_colors(evaluation))
+    return {f"p{page}-l{idx}": spans for (page, idx), spans in raw.items()}
 
 
 def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict, dict | None]:
@@ -812,19 +825,39 @@ EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרוב�
 
 תקבל:
 1. רובריקה — מתארת קריטריונים, רמות וציונים אפשריים.
-2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR.
+2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR. כל
+   שורה מתויגת עם מזהה בצורה [p<page>-l<index>] בתחילתה.
 
 המשימה:
 - זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
 - העריך את התרגיל לפי הרובריקה — צא מנקודת הנחה שמה שנכתב הוא מה שהתלמיד התכוון אליו (אל תקטף נקודות על שגיאות OCR שנראות כמו טעויות תמלול).
 - לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר בעברית (1-3 משפטים).
+- לכל קריטריון: רשימת "issues" — דוגמאות ספציפיות לבעיות שמצאת
+  בטקסט. לכל issue:
+    * "line_ref": המזהה של השורה שבה הבעיה (לדוגמה "p1-l3").
+    * "quote": ציטוט מילולי מדויק של הקטע הבעייתי מתוך אותה שורה —
+      בדיוק כפי שהוא מופיע בתמלול (אותו רישיות, פיסוק ורווחים). זה
+      חייב להיות תת-מחרוזת של השורה. ציטוט ברמת משפט/ביטוי, לא
+      מילה בודדת ולא שורה שלמה אם רק חלק ממנה בעייתי.
+    * "comment": הערה קצרה בעברית (3-15 מילים) שמסבירה למה זה בעייתי.
+  אם אין בעיות בקריטריון מסוים, החזר רשימה ריקה.
+  אם אותו משפט בעייתי בכמה קריטריונים — שייך אותו לקריטריון
+  החמור/המהותי ביותר בלבד (לא לכמה במקביל).
 - ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
 - פסקת סיכום בעברית (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
 
 החזר JSON תקין במבנה:
 {
   "criteria": [
-    {"name": "...", "score": <int>, "max_score": <int>, "feedback": "..."}
+    {
+      "name": "...",
+      "score": <int>,
+      "max_score": <int>,
+      "feedback": "...",
+      "issues": [
+        {"line_ref": "p1-l3", "quote": "...", "comment": "..."}
+      ]
+    }
   ],
   "overall_score": "<string — לדוגמה: B1, או 3.0/4, או 75%>",
   "overall_feedback": "..."
@@ -842,8 +875,21 @@ EVAL_SCHEMA = {
                     "score": {"type": "number"},
                     "max_score": {"type": "number"},
                     "feedback": {"type": "string"},
+                    "issues": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "line_ref": {"type": "string"},
+                                "quote": {"type": "string"},
+                                "comment": {"type": "string"},
+                            },
+                            "required": ["line_ref", "quote", "comment"],
+                            "additionalProperties": False,
+                        },
+                    },
                 },
-                "required": ["name", "score", "max_score", "feedback"],
+                "required": ["name", "score", "max_score", "feedback", "issues"],
                 "additionalProperties": False,
             },
         },
@@ -856,12 +902,16 @@ EVAL_SCHEMA = {
 
 
 def pages_to_plain_text(pages: list[dict]) -> str:
-    """Flatten the OCR'd pages into a single transcript for the evaluator."""
+    """Flatten the OCR'd pages into a single transcript for the evaluator.
+
+    Each line is prefixed with its [p<page>-l<idx>] tag so the model can
+    return per-issue references that we map back to highlights later."""
     chunks = []
     for page in pages:
-        chunks.append(f"--- עמוד {page.get('page', '?')} ---")
-        for line in page.get("lines", []):
-            chunks.append(line.get("text", ""))
+        page_num = page.get("page", "?")
+        chunks.append(f"--- עמוד {page_num} ---")
+        for line_idx, line in enumerate(page.get("lines", [])):
+            chunks.append(f"[p{page_num}-l{line_idx}] {line.get('text', '')}")
         chunks.append("")
     return "\n".join(chunks).strip()
 
@@ -890,8 +940,20 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
                             "feedback": {"type": "string"},
+                            "issues": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "line_ref": {"type": "string"},
+                                        "quote": {"type": "string"},
+                                        "comment": {"type": "string"},
+                                    },
+                                    "required": ["line_ref", "quote", "comment"],
+                                },
+                            },
                         },
-                        "required": ["name", "score", "max_score", "feedback"],
+                        "required": ["name", "score", "max_score", "feedback", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
@@ -906,14 +968,14 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 system_instruction=EVAL_SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 response_schema=gemini_schema,
-                max_output_tokens=4000,
+                max_output_tokens=6000,
             ),
         )
         return attach_colors(json.loads(response.text))
 
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
-        max_tokens=4000,
+        max_tokens=6000,
         system=[
             {
                 "type": "text",
@@ -978,6 +1040,93 @@ def attach_colors(evaluation: dict | None) -> dict | None:
     return evaluation
 
 
+# --- Issue span resolution --------------------------------------------------
+
+_LINE_REF_RE = re.compile(r"p(\d+)-l(\d+)")
+# Fuzzy fallback only forgives near-exact drift (punctuation, trailing space,
+# 1-2 OCR slips). The model is instructed to return verbatim quotes, so we
+# don't want to accept loose matches that paint the wrong span.
+_FUZZY_MIN_BLOCK_RATIO = 0.8
+
+
+def _find_span(line_text: str, quote: str) -> tuple[int, int] | None:
+    """Locate `quote` within `line_text`. Tries exact, then case-insensitive,
+    then a difflib longest-block fallback for small punctuation drift.
+    Returns (start, end) on the original string, or None if no good match."""
+    if not quote or not line_text:
+        return None
+    idx = line_text.find(quote)
+    if idx >= 0:
+        return idx, idx + len(quote)
+    lower_line = line_text.lower()
+    lower_quote = quote.lower()
+    idx = lower_line.find(lower_quote)
+    if idx >= 0:
+        return idx, idx + len(lower_quote)
+    matcher = difflib.SequenceMatcher(None, line_text, quote, autojunk=False)
+    block = matcher.find_longest_match(0, len(line_text), 0, len(quote))
+    min_size = max(4, int(len(quote) * _FUZZY_MIN_BLOCK_RATIO))
+    if block.size < min_size:
+        return None
+    return block.a, block.a + block.size
+
+
+def resolve_issue_spans(
+    pages: list[dict], evaluation: dict | None
+) -> dict[tuple[int, int], list[dict]]:
+    """Map every (page, line_idx) to a list of highlight spans built from
+    the evaluation's per-criterion issues. First criterion wins on overlap
+    — a span that intersects an already-marked range is dropped (per the
+    product decision: one color per chunk of text)."""
+    if not evaluation:
+        return {}
+    spans: dict[tuple[int, int], list[dict]] = {}
+    line_text_by_key: dict[tuple[int, int], str] = {}
+    for page in pages:
+        page_num = int(page.get("page", 0)) if str(page.get("page", "")).isdigit() else page.get("page", 0)
+        for line_idx, line in enumerate(page.get("lines", [])):
+            line_text_by_key[(int(page_num), line_idx)] = line.get("text", "")
+
+    for crit in evaluation.get("criteria") or []:
+        color = crit.get("color") or color_for_criterion(crit.get("name", ""))
+        crit_name = crit.get("name", "")
+        for issue in crit.get("issues") or []:
+            ref = issue.get("line_ref", "")
+            m = _LINE_REF_RE.search(ref)
+            if not m:
+                log.warning("issue with unparseable line_ref %r — skipped", ref)
+                continue
+            key = (int(m.group(1)), int(m.group(2)))
+            line_text = line_text_by_key.get(key)
+            if line_text is None:
+                log.warning("issue references missing line %s — skipped", ref)
+                continue
+            quote = issue.get("quote", "")
+            span = _find_span(line_text, quote)
+            if not span:
+                log.warning(
+                    "issue quote not found in %s: %r — skipped", ref, quote[:50]
+                )
+                continue
+            start, end = span
+            existing = spans.setdefault(key, [])
+            if any(not (end <= s["start"] or start >= s["end"]) for s in existing):
+                continue  # first criterion wins on overlap
+            existing.append(
+                {
+                    "start": start,
+                    "end": end,
+                    "color": color,
+                    "comment": issue.get("comment", ""),
+                    "criterion": crit_name,
+                }
+            )
+
+    for key in spans:
+        spans[key].sort(key=lambda s: s["start"])
+    return spans
+
+
 # --- DOCX export ------------------------------------------------------------
 
 def _tint_hex(hex_color: str, mix: float = 0.18) -> str:
@@ -1003,6 +1152,53 @@ def _set_cell_shading(cell, hex_color: str) -> None:
     shd.set(qn("w:color"), "auto")
     shd.set(qn("w:fill"), hex_color.lstrip("#"))
     tc_pr.append(shd)
+
+
+def _set_run_shading(run, hex_color: str) -> None:
+    """Background shade a single run (used for highlighting a substring
+    inside a paragraph). python-docx has no API for run-level shading."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    rPr = run._r.get_or_add_rPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hex_color.lstrip("#"))
+    rPr.append(shd)
+
+
+def _fill_paragraph_with_spans(paragraph, text: str, spans: list[dict]) -> None:
+    """Empty `paragraph`, then add runs reflecting `spans` as colored
+    highlights over `text`. After every highlighted span, append an
+    inline `(criterion: comment)` run shaded in the same color so the
+    teacher sees the issue right next to the offending text. Spans are
+    assumed sorted, non-overlapping."""
+    from docx.shared import Pt
+
+    for r in list(paragraph.runs):
+        r._r.getparent().remove(r._r)
+    if not text:
+        return
+    cursor = 0
+    for span in spans:
+        s, e = span["start"], span["end"]
+        if s > cursor:
+            paragraph.add_run(text[cursor:s])
+        tint = _tint_hex(span["color"], mix=0.35)
+        run = paragraph.add_run(text[s:e])
+        _set_run_shading(run, tint)
+        comment = span.get("comment", "")
+        criterion = span.get("criterion", "")
+        if comment or criterion:
+            note = f" ({criterion}: {comment})" if criterion and comment else f" ({criterion or comment})"
+            note_run = paragraph.add_run(note)
+            note_run.italic = True
+            note_run.font.size = Pt(9)
+            _set_run_shading(note_run, tint)
+        cursor = e
+    if cursor < len(text):
+        paragraph.add_run(text[cursor:])
 
 
 def build_evaluation_docx(
@@ -1072,6 +1268,7 @@ def build_evaluation_docx(
     if pages:
         doc.add_page_break()
         doc.add_heading("תרגיל מקורי ופענוח", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        spans_by_line = resolve_issue_spans(pages, evaluation)
 
         for page in pages:
             page_num = page.get("page", "?")
@@ -1103,7 +1300,7 @@ def build_evaluation_docx(
                     for r in p.runs:
                         r.bold = True
 
-            for line in lines:
+            for line_idx, line in enumerate(lines):
                 row = ltable.add_row().cells
                 line_b64 = line.get("image_b64") or ""
                 if line_b64:
@@ -1117,7 +1314,17 @@ def build_evaluation_docx(
                     except (ValueError, OSError) as e:
                         log.warning("line image decode failed: %s", e)
                         row[0].text = "[שגיאת תמונה]"
-                row[1].text = str(line.get("text", ""))
+                line_text = str(line.get("text", ""))
+                try:
+                    key = (int(page_num), line_idx)
+                except (TypeError, ValueError):
+                    key = (page_num, line_idx)
+                spans = spans_by_line.get(key, [])
+                target_p = row[1].paragraphs[0]
+                if spans:
+                    _fill_paragraph_with_spans(target_p, line_text, spans)
+                else:
+                    target_p.add_run(line_text)
                 for p in row[1].paragraphs:
                     p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
@@ -1298,7 +1505,8 @@ def evaluate_endpoint():
 
     result["rubric_id"] = rubric_id
     result["rubric_name"] = rubric.get("name", rubric_id)
-    return jsonify(evaluation=result)
+    highlights = _highlights_for_template(pages, result)
+    return jsonify(evaluation=result, highlights=highlights)
 
 
 @app.route("/evaluation/docx", methods=["POST"])

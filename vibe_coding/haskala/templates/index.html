@@ -209,6 +209,37 @@
         .line-text .char.annotated:hover {
             background: #ffebee;
         }
+        .line-text .char.highlight {
+            border-radius: 0;
+            padding-top: 1px;
+            padding-bottom: 1px;
+            cursor: help;
+        }
+        /* Custom hover tooltip for issue spans. Shows the criterion name
+           (bolded, in the criterion's hue) and the model's comment. */
+        .highlight-tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border);
+            border-inline-start: 4px solid var(--accent);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.5rem 0.75rem;
+            max-width: 320px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            z-index: 1100;
+            pointer-events: none;
+            display: none;
+            unicode-bidi: plaintext;
+            text-align: start;
+        }
+        .highlight-tooltip.visible { display: block; }
+        .highlight-tooltip .ht-crit {
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+        .highlight-tooltip .ht-comment { color: #333; }
         .loading { display: none; color: #666; margin-top: 0.5rem; }
         form.submitting .loading { display: block; }
 
@@ -778,6 +809,10 @@
             {% endfor %}
 
             <div id="annotation-popup" class="annotation-popup"></div>
+            <div id="highlight-tooltip" class="highlight-tooltip">
+                <div class="ht-crit"></div>
+                <div class="ht-comment"></div>
+            </div>
 
             <div id="rubric-modal" class="modal-backdrop">
                 <div class="modal">
@@ -838,6 +873,106 @@
                     });
                 });
 
+                // Issue highlights: { "p1-l3": [{start, end, color, comment, criterion}] }.
+                // Comes from server on first render and after /evaluate; spans are
+                // resolved server-side, so the JS just paints char-indexed ranges.
+                let highlights = serverData.highlights || {};
+
+                function tintHex(hex, mix) {
+                    const c = hex.replace('#', '');
+                    if (c.length !== 6) return hex;
+                    const r = parseInt(c.slice(0, 2), 16);
+                    const g = parseInt(c.slice(2, 4), 16);
+                    const b = parseInt(c.slice(4, 6), 16);
+                    const tr = Math.round(r * mix + 255 * (1 - mix));
+                    const tg = Math.round(g * mix + 255 * (1 - mix));
+                    const tb = Math.round(b * mix + 255 * (1 - mix));
+                    return `#${tr.toString(16).padStart(2, '0')}${tg.toString(16).padStart(2, '0')}${tb.toString(16).padStart(2, '0')}`;
+                }
+
+                function applyHighlights() {
+                    document.querySelectorAll('.line-text').forEach(el => {
+                        const key = el.dataset.lineKey;
+                        const spans = highlights[key] || [];
+                        const charMap = {};
+                        spans.forEach(s => {
+                            const tint = tintHex(s.color, 0.35);
+                            for (let i = s.start; i < s.end; i++) {
+                                if (!charMap[i]) {
+                                    charMap[i] = {
+                                        bg: tint,
+                                        color: s.color,
+                                        criterion: s.criterion || '',
+                                        comment: s.comment || '',
+                                    };
+                                }
+                            }
+                        });
+                        el.querySelectorAll('.char').forEach(charEl => {
+                            const i = parseInt(charEl.dataset.idx, 10);
+                            const info = charMap[i];
+                            if (info) {
+                                charEl.classList.add('highlight');
+                                charEl.style.background = info.bg;
+                                charEl.dataset.htCrit = info.criterion;
+                                charEl.dataset.htComment = info.comment;
+                                charEl.dataset.htColor = info.color;
+                            } else {
+                                charEl.classList.remove('highlight');
+                                charEl.style.removeProperty('background');
+                                delete charEl.dataset.htCrit;
+                                delete charEl.dataset.htComment;
+                                delete charEl.dataset.htColor;
+                            }
+                            charEl.removeAttribute('title');
+                        });
+                    });
+                }
+
+                // Hover tooltip for highlighted spans. One delegated listener
+                // on the page section reads the criterion + comment off the
+                // .char.highlight under the cursor and positions a floating
+                // tooltip near it.
+                (function () {
+                    const tooltip = document.getElementById('highlight-tooltip');
+                    if (!tooltip) return;
+                    const critEl = tooltip.querySelector('.ht-crit');
+                    const commentEl = tooltip.querySelector('.ht-comment');
+
+                    function showTooltipFor(charEl) {
+                        const crit = charEl.dataset.htCrit || '';
+                        const comment = charEl.dataset.htComment || '';
+                        const color = charEl.dataset.htColor || '#999';
+                        critEl.textContent = crit;
+                        critEl.style.color = color;
+                        commentEl.textContent = comment;
+                        tooltip.style.borderInlineStartColor = color;
+                        const rect = charEl.getBoundingClientRect();
+                        tooltip.style.left = (rect.left + window.scrollX) + 'px';
+                        tooltip.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+                        tooltip.classList.add('visible');
+                    }
+                    function hideTooltip() {
+                        tooltip.classList.remove('visible');
+                    }
+
+                    document.addEventListener('mouseover', (e) => {
+                        const t = e.target;
+                        if (t && t.classList && t.classList.contains('highlight') && t.classList.contains('char')) {
+                            showTooltipFor(t);
+                        }
+                    });
+                    document.addEventListener('mouseout', (e) => {
+                        const t = e.target;
+                        if (t && t.classList && t.classList.contains('highlight') && t.classList.contains('char')) {
+                            const next = e.relatedTarget;
+                            if (!next || !next.classList || !next.classList.contains('highlight')) {
+                                hideTooltip();
+                            }
+                        }
+                    });
+                })();
+
                 // Apply existing annotations to DOM.
                 function applyAnnotations() {
                     document.querySelectorAll('.line-text').forEach(el => {
@@ -866,6 +1001,7 @@
                 }
 
                 applyAnnotations();
+                applyHighlights();
 
                 // Popup logic
                 const popup = document.getElementById('annotation-popup');
@@ -1239,6 +1375,8 @@
                                 return;
                             }
                             currentEvaluation = data.evaluation;
+                            highlights = data.highlights || {};
+                            applyHighlights();
                             renderEvaluation();
                             refreshSaveMenu();
                             document.getElementById('eval-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
