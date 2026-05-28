@@ -64,11 +64,31 @@ pinned: false
 
 6. ה-Space בונה אוטומטית. כשמסיים — שלח לאבישי את ה-URL + שם המשתמש והסיסמה. הדפדפן יבקש אותם פעם אחת.
 
+## עדכון גרסה (אחרי ההתקנה הראשונית)
+
+הסקריפט `deploy.sh` מסנכרן את הקבצים מ-`haskala/` ל-clone המקומי
+של ה-Space (`~/fun/haskala-space/`), עושה commit ו-push דרך SSH.
+
+```bash
+./deploy.sh                       # קומיט אוטומטי לפי הסבג'קט האחרון בריפו
+./deploy.sh "fix RTL on tooltip"  # קומיט עם הודעה מותאמת
+```
+
+מה הסקריפט עושה: `git pull --rebase` מה-Space → rsync של
+`app.py`, `Dockerfile`, `.dockerignore`, `requirements.txt`, `templates/`,
+`rubrics/`, ו-`deploy/space-readme.md` (כ-`README.md`) → commit → push.
+הוא **לא** דוחף `desktop.py`, `run.sh`, `venv/`, `memory/`, `*.log`, או `.env`.
+
+**דרישות חד-פעמיות:**
+- Clone של ה-Space ב-`~/fun/haskala-space/` עם remote SSH:
+  `git clone git@hf.co:spaces/orimosenzon/haskala-ocr ~/fun/haskala-space`
+- מפתח SSH הציבורי (`~/.ssh/id_ed25519.pub`) הועלה ל-https://huggingface.co/settings/keys.
+
 ## הערות תפעול
 
 - **Worker יחיד בכוונה** — תור ה-OCR (`JOBS`) חי בזיכרון התהליך. לטסטר יחיד זה מספיק; אל תעלה workers.
 - **שינה** — Space חינמי נרדם רק אחרי ~48ש' חוסר-פעילות; ההתעוררות הבאה לוקחת ~30ש' פעם אחת.
-- **עדכון גרסה** — דחוף שוב את הקבצים ל-ריפו ה-Space; הוא בונה מחדש לבד.
+- **README של ה-Space** מתוחזק ב-`deploy/space-readme.md` (יש בו frontmatter של HF). אל תערוך אותו ידנית ב-`~/fun/haskala-space/README.md` — הקומיש הבא ידרוס אותו.
 - **אל תדחוף `.env`** ל-Space — הסודות באים מ-Secrets בלבד.
 
 </div>
