@@ -230,7 +230,10 @@ def _inject_models():
 def _inject_rubrics():
     """Initial rubric list for empty-state renders. Result renders pass the
     list via server_data instead so the UI can refresh after adding one."""
-    return {"initial_rubrics": list_rubrics()}
+    return {
+        "initial_rubrics": list_rubrics(),
+        "default_rubric_id": DEFAULT_RUBRIC_ID,
+    }
 
 
 _ANTHROPIC_MODEL = "claude-opus-4-7"
@@ -719,6 +722,7 @@ def render_result(
         "evaluation": evaluation,
         "highlights": _highlights_for_template(pages, evaluation),
         "rubrics": list_rubrics(),
+        "default_rubric_id": DEFAULT_RUBRIC_ID,
     }
     return render_template(
         "index.html",
@@ -778,6 +782,11 @@ def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict, dict | None]:
 # --- Rubrics ----------------------------------------------------------------
 
 RUBRICS_DIR = os.path.join(os.path.dirname(__file__), "rubrics")
+
+# Initial rubric the dropdown should land on for a fresh user (no
+# localStorage). Any previous explicit choice still wins on subsequent
+# loads — this only affects "first visit on this browser" / cleared state.
+DEFAULT_RUBRIC_ID = "ministry-writing-module-c-d"
 
 
 def _slugify(name: str) -> str:
