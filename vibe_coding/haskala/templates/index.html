@@ -1286,10 +1286,13 @@
                         sel.appendChild(opt);
                     }
                     const saved = localStorage.getItem('haskala-rubric');
+                    const fallback = serverData.default_rubric_id;
                     if (prev && rubrics.some(r => r.id === prev)) {
                         sel.value = prev;
                     } else if (saved && rubrics.some(r => r.id === saved)) {
                         sel.value = saved;
+                    } else if (fallback && rubrics.some(r => r.id === fallback)) {
+                        sel.value = fallback;
                     }
                 }
 
