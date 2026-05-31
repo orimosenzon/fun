@@ -853,6 +853,8 @@ EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרוב�
 - זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
 - העריך את התרגיל לפי הרובריקה — צא מנקודת הנחה שמה שנכתב הוא מה שהתלמיד התכוון אליו (אל תקטף נקודות על שגיאות OCR שנראות כמו טעויות תמלול).
 - לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר בעברית (1-3 משפטים).
+- לכל קריטריון: גם פידבק באנגלית ("feedback_en") — תרגום נאמן של הפידבק
+  העברי, באותו אורך ובאותו תוכן (לא להוסיף או להחסיר מידע).
 - לכל קריטריון: רשימת "issues" — דוגמאות ספציפיות לבעיות שמצאת
   בטקסט. לכל issue:
     * "line_ref": המזהה של השורה שבה הבעיה (לדוגמה "p1-l3").
@@ -866,6 +868,8 @@ EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרוב�
   החמור/המהותי ביותר בלבד (לא לכמה במקביל).
 - ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
 - פסקת סיכום בעברית (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
+- גם פסקת סיכום באנגלית ("overall_feedback_en") — תרגום נאמן של פסקת
+  הסיכום העברית, באותו אורך ובאותו תוכן.
 
 החזר JSON תקין במבנה:
 {
@@ -875,13 +879,15 @@ EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרוב�
       "score": <int>,
       "max_score": <int>,
       "feedback": "...",
+      "feedback_en": "...",
       "issues": [
         {"line_ref": "p1-l3", "quote": "...", "comment": "..."}
       ]
     }
   ],
   "overall_score": "<string — לדוגמה: B1, או 3.0/4, או 75%>",
-  "overall_feedback": "..."
+  "overall_feedback": "...",
+  "overall_feedback_en": "..."
 }"""
 
 EVAL_SCHEMA = {
@@ -896,6 +902,7 @@ EVAL_SCHEMA = {
                     "score": {"type": "number"},
                     "max_score": {"type": "number"},
                     "feedback": {"type": "string"},
+                    "feedback_en": {"type": "string"},
                     "issues": {
                         "type": "array",
                         "items": {
@@ -910,14 +917,15 @@ EVAL_SCHEMA = {
                         },
                     },
                 },
-                "required": ["name", "score", "max_score", "feedback", "issues"],
+                "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
                 "additionalProperties": False,
             },
         },
         "overall_score": {"type": "string"},
         "overall_feedback": {"type": "string"},
+        "overall_feedback_en": {"type": "string"},
     },
-    "required": ["criteria", "overall_score", "overall_feedback"],
+    "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
     "additionalProperties": False,
 }
 
@@ -961,6 +969,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
                             "feedback": {"type": "string"},
+                            "feedback_en": {"type": "string"},
                             "issues": {
                                 "type": "array",
                                 "items": {
@@ -974,13 +983,14 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "issues"],
+                        "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
+                "overall_feedback_en": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
         }
         response = _gemini().models.generate_content(
             model=_GEMINI_MODEL,
@@ -993,7 +1003,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 # silently eats most of max_output_tokens on internal
                 # reasoning and the JSON gets truncated mid-string.
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
-                max_output_tokens=8000,
+                max_output_tokens=12000,
             ),
         )
         try:
@@ -1009,7 +1019,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
 
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
-        max_tokens=6000,
+        max_tokens=12000,
         system=[
             {
                 "type": "text",
@@ -1105,6 +1115,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
                             "feedback": {"type": "string"},
+                            "feedback_en": {"type": "string"},
                             "issues": {
                                 "type": "array",
                                 "items": {
@@ -1118,13 +1129,14 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "issues"],
+                        "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
+                "overall_feedback_en": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
         }
         stream = _gemini().models.generate_content_stream(
             model=_GEMINI_MODEL,
@@ -1134,7 +1146,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
                 response_mime_type="application/json",
                 response_schema=gemini_schema,
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
-                max_output_tokens=8000,
+                max_output_tokens=12000,
             ),
         )
         for chunk in stream:
@@ -1145,7 +1157,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
     else:
         with client.messages.stream(
             model=_ANTHROPIC_MODEL,
-            max_tokens=8000,
+            max_tokens=12000,
             system=[
                 {
                     "type": "text",
@@ -1423,15 +1435,17 @@ def build_evaluation_docx(
     doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
     criteria = attach_colors(evaluation).get("criteria") or []
-    table = doc.add_table(rows=1, cols=3)
+    table = doc.add_table(rows=1, cols=4)
     table.style = "Light Grid Accent 1"
     header = table.rows[0].cells
     header[0].text = "קריטריון"
     header[1].text = "ציון"
     header[2].text = "פידבק"
-    for cell in header:
+    header[3].text = "Feedback (EN)"
+    for idx, cell in enumerate(header):
+        align = WD_ALIGN_PARAGRAPH.LEFT if idx == 3 else WD_ALIGN_PARAGRAPH.RIGHT
         for p in cell.paragraphs:
-            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            p.alignment = align
             for r in p.runs:
                 r.bold = True
 
@@ -1440,9 +1454,11 @@ def build_evaluation_docx(
         row[0].text = str(c.get("name", ""))
         row[1].text = f"{c.get('score', '')}/{c.get('max_score', '')}"
         row[2].text = str(c.get("feedback", ""))
-        for cell in row:
+        row[3].text = str(c.get("feedback_en", ""))
+        for idx, cell in enumerate(row):
+            align = WD_ALIGN_PARAGRAPH.LEFT if idx == 3 else WD_ALIGN_PARAGRAPH.RIGHT
             for p in cell.paragraphs:
-                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                p.alignment = align
         color = c.get("color") or color_for_criterion(c.get("name", ""))
         _set_cell_shading(row[0], _tint_hex(color))
         for p in row[0].paragraphs:
@@ -1454,6 +1470,14 @@ def build_evaluation_docx(
     summary.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     for r in summary.runs:
         r.font.size = Pt(11)
+
+    overall_en = evaluation.get("overall_feedback_en", "")
+    if overall_en:
+        doc.add_heading("Summary", level=2).alignment = WD_ALIGN_PARAGRAPH.LEFT
+        summary_en = doc.add_paragraph(overall_en)
+        summary_en.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        for r in summary_en.runs:
+            r.font.size = Pt(11)
 
     if pages:
         doc.add_page_break()
@@ -1467,13 +1491,14 @@ def build_evaluation_docx(
 
         # Section A: clean transcript — exactly what the student wrote, no
         # marks, so the teacher can read the raw text without distractions.
+        # English content is left-aligned per the way English text reads.
         doc.add_heading("תעתיק נקי", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
         for page in pages:
             page_num = page.get("page", "?")
             doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
             for line in page.get("lines", []):
                 p = doc.add_paragraph(str(line.get("text", "")))
-                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         # Section B: same text with the color highlights, but without the
         # inline `(criterion: comment)` parentheticals — for a scannable
@@ -1486,7 +1511,7 @@ def build_evaluation_docx(
                 line_text = str(line.get("text", ""))
                 spans = spans_by_line.get(_line_key(page_num, line_idx), [])
                 p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 if spans:
                     _fill_paragraph_with_spans(p, line_text, spans, include_notes=False)
                 else:
@@ -1548,7 +1573,7 @@ def build_evaluation_docx(
                 else:
                     target_p.add_run(line_text)
                 for p in row[1].paragraphs:
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     buf = io.BytesIO()
     doc.save(buf)
