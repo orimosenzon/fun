@@ -6,40 +6,104 @@
     <title>השכלה — OCR לתרגילים בכתב יד</title>
     <style>
         :root {
-            --bg: #f5f5f0;
+            --bg: #f1e1c2;
+            --paper: #faf3e2;
+            --paper-alt: #f5ecd0;
             --fg: #2a2a2a;
-            --accent: #8b5a2b;
-            --border: #d0cabc;
+            --accent: #1e5145;
+            --accent-hover: #144037;
+            --accent-soft: rgba(30, 81, 69, 0.10);
+            --header-bg-1: #f4a587;
+            --header-bg-2: #d97a5a;
+            --header-fg: #4a1d10;
+            --badge: #5a8d48;
+            --badge-hover: #4a7a3a;
+            --secondary: #b08a52;
+            --secondary-hover: #97743f;
+            --border: #d4bd92;
+            --border-soft: #e6d6b0;
             --error: #b54343;
             --annotation: #c62828;
         }
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at 15% 12%, rgba(255,255,255,0.5) 0, transparent 35%),
+                radial-gradient(circle at 85% 80%, rgba(255,255,255,0.35) 0, transparent 40%),
+                var(--bg);
+            background-attachment: fixed;
             color: var(--fg);
             margin: 0;
-            padding: 2rem 1rem;
+            padding: 1.5rem 1rem 6rem;
             min-height: 100vh;
         }
         .container {
             max-width: 1100px;
             margin: 0 auto;
         }
-        h1 {
-            font-size: 1.8rem;
-            margin: 0 0 0.5rem;
-            color: var(--accent);
+        .hero {
+            position: relative;
+            background:
+                linear-gradient(135deg, var(--header-bg-1) 0%, var(--header-bg-2) 100%);
+            border-radius: 16px;
+            padding: 1.6rem 2rem 1.4rem 7.5rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 4px 14px rgba(180, 90, 50, 0.20);
+            overflow: hidden;
         }
-        .subtitle {
-            color: #666;
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 90% 110%, rgba(255,255,255,0.35) 0, transparent 40%),
+                radial-gradient(circle at 5% -10%, rgba(255,255,255,0.25) 0, transparent 35%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            margin: 0 0 0.3rem;
+            color: var(--header-fg);
+            font-size: 1.9rem;
+            position: relative;
+            z-index: 2;
+        }
+        .hero .subtitle {
+            display: inline-block;
+            margin: 0.7rem 0 0;
+            padding: 0.55rem 0.95rem;
+            background: rgba(253, 246, 224, 0.94);
+            color: #2a1408;
+            font-size: 0.98rem;
+            font-weight: 500;
+            line-height: 1.55;
+            max-width: 720px;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 29, 16, 0.10);
+            box-shadow: 0 2px 6px rgba(120, 60, 30, 0.12);
+            position: relative;
+            z-index: 2;
+        }
+        .hero-art {
+            position: absolute;
+            top: 50%;
+            left: 1.4rem;
+            transform: translateY(-50%);
+            width: 90px;
+            height: 90px;
+            opacity: 0.85;
+            z-index: 1;
+            pointer-events: none;
+        }
+        @media (max-width: 640px) {
+            .hero-art { display: none; }
+            .hero { padding: 1.4rem 1.4rem 1.2rem; }
+            .hero h1 { font-size: 1.5rem; }
         }
         form {
-            background: white;
+            background: var(--paper);
             padding: 1.5rem;
-            border-radius: 8px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             margin-bottom: 1rem;
         }
@@ -66,53 +130,66 @@
             background: var(--accent);
             color: white;
             border: none;
-            padding: 0.6rem 1.5rem;
+            padding: 0.6rem 1.4rem;
             font-size: 1rem;
-            border-radius: 4px;
+            border-radius: 999px;
             cursor: pointer;
             font-family: inherit;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(30, 81, 69, 0.18);
+            transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
         }
-        button:hover { background: #6f4520; }
-        button:disabled { background: #aaa; cursor: wait; }
+        button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 9px rgba(30, 81, 69, 0.25); }
+        button:active { transform: translateY(0); }
+        button:disabled {
+            background: #c0b89c;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         button.secondary {
-            background: #ddd;
-            color: var(--fg);
+            background: var(--secondary);
+            color: white;
+            box-shadow: 0 2px 5px rgba(140, 110, 60, 0.18);
         }
-        button.secondary:hover { background: #ccc; }
+        button.secondary:hover { background: var(--secondary-hover); }
         button.danger {
             background: var(--error);
+            box-shadow: 0 2px 5px rgba(180, 67, 67, 0.18);
         }
         button.danger:hover { background: #8e3535; }
         .error {
             background: #fdecec;
             color: var(--error);
             padding: 0.8rem 1rem;
-            border-radius: 4px;
+            border-radius: 8px;
             border-right: 3px solid var(--error);
             margin-bottom: 1rem;
         }
         .toolbar {
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.8rem 1.2rem;
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            padding: 0.7rem 1.2rem;
+            margin-bottom: 1.2rem;
             display: flex;
             gap: 0.8rem;
             align-items: center;
             flex-wrap: wrap;
         }
         .toolbar .hint {
-            color: #888;
+            color: #7a6a48;
             font-size: 0.85rem;
             margin-right: auto;
+            font-style: italic;
         }
         .page-section {
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
+            border-radius: 14px;
+            padding: 1.4rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(140, 110, 60, 0.08);
         }
         .page-header {
             display: flex;
@@ -120,11 +197,12 @@
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 0.8rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px dashed var(--border);
         }
         .page-header h2 {
             margin: 0;
             font-size: 1.1rem;
+            color: var(--accent);
         }
         .filename {
             color: #888;
@@ -150,37 +228,59 @@
         .lines {
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.7rem;
         }
         .line {
-            border: 1px solid #eae4d4;
-            border-radius: 6px;
-            padding: 0.5rem;
-            background: #faf9f5;
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            padding: 0.5rem 3rem 0.5rem 0.5rem;
+            background: #fdf8e9;
+            position: relative;
+            transition: box-shadow 0.15s;
+        }
+        .line:nth-child(even) {
+            background: #faf1d6;
+        }
+        .line:hover {
+            box-shadow: 0 2px 8px rgba(140, 110, 60, 0.12);
         }
         .line-image {
             display: block;
             max-width: 100%;
             height: auto;
             background: white;
-            border-radius: 4px;
+            border-radius: 6px;
             margin-bottom: 0.4rem;
         }
         .line-text-row {
             display: flex;
             align-items: flex-start;
             background: white;
-            border-radius: 4px;
-            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            padding: 0.45rem 0.7rem;
         }
         .line-num {
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 0.9rem;
-            color: #999;
-            margin-left: 0.5rem;
+            position: absolute;
+            top: 50%;
+            right: 0.6rem;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--badge);
+            color: white;
+            font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 0;
             flex-shrink: 0;
             user-select: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
         }
+        .line-num::after { content: ""; }
         .line-text {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 1rem;
@@ -281,9 +381,9 @@
         .annotation-popup .selected-text {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 0.85rem;
-            background: #f5f5f0;
+            background: #fdf6e0;
             padding: 0.3rem 0.5rem;
-            border-radius: 3px;
+            border-radius: 4px;
             margin-bottom: 0.5rem;
             color: #555;
             unicode-bidi: plaintext;
@@ -321,33 +421,40 @@
         }
 
         .actionbar {
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.2rem 1.5rem;
+            border-radius: 14px;
+            padding: 1rem 1.3rem;
             margin-bottom: 1rem;
             display: flex;
-            gap: 0.8rem;
+            gap: 0.7rem;
             align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 2px 6px rgba(140, 110, 60, 0.08);
         }
         .actionbar button { font-size: 1rem; }
         .actionbar .spacer { flex: 1; }
-        .actionbar label { font-size: 0.95rem; color: var(--fg); }
+        .actionbar label {
+            font-size: 0.95rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
         .actionbar select {
             font-family: inherit;
             font-size: 1rem;
-            padding: 0.55rem 0.7rem;
+            padding: 0.5rem 0.8rem;
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 999px;
             background: white;
             color: var(--fg);
             cursor: pointer;
+            transition: border-color 0.15s;
         }
+        .actionbar select:hover { border-color: var(--accent); }
         .progress-box {
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 1.2rem 1.5rem;
             margin-bottom: 1rem;
             display: none;
@@ -362,7 +469,7 @@
         }
         .progress-track {
             height: 14px;
-            background: #ece7da;
+            background: #ece2c2;
             border-radius: 7px;
             overflow: hidden;
         }
@@ -382,14 +489,15 @@
             position: absolute;
             top: calc(100% + 4px);
             right: 0;
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            min-width: 220px;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+            min-width: 230px;
             z-index: 500;
             display: none;
-            padding: 0.3rem 0;
+            padding: 0.4rem 0;
+            overflow: hidden;
         }
         .menu-list.visible { display: block; }
         .menu-list button {
@@ -398,43 +506,54 @@
             background: transparent;
             color: var(--fg);
             text-align: start;
-            padding: 0.55rem 1rem;
+            padding: 0.6rem 1rem;
             font-size: 0.95rem;
             border-radius: 0;
             border: none;
+            box-shadow: none;
+            font-weight: 400;
         }
-        .menu-list button:hover:not(:disabled) { background: #f4eee2; }
-        .menu-list button:disabled { color: #aaa; cursor: not-allowed; background: transparent; }
+        .menu-list button:hover:not(:disabled) {
+            background: var(--accent-soft);
+            transform: none;
+            box-shadow: none;
+        }
+        .menu-list button:disabled {
+            color: #b5a987;
+            cursor: not-allowed;
+            background: transparent;
+        }
         .menu-list .menu-sep { height: 1px; background: var(--border); margin: 0.3rem 0; }
 
         /* Evaluation section */
         .eval-section {
-            background: white;
+            background: var(--paper);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 14px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(140, 110, 60, 0.10);
         }
         .eval-section h2 {
             margin: 0 0 0.5rem;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--accent);
         }
         .eval-meta {
-            color: #666;
+            color: #7a6a48;
             font-size: 0.9rem;
             margin-bottom: 1rem;
         }
         .eval-overall {
-            background: #faf6ee;
+            background: #fdf6e0;
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
             margin-bottom: 1rem;
         }
         .eval-overall-score {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: var(--accent);
             margin-bottom: 0.4rem;
         }
@@ -446,16 +565,18 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 0.5rem;
+            border-radius: 10px;
+            overflow: hidden;
         }
         .eval-table th, .eval-table td {
             border: 1px solid var(--border);
-            padding: 0.6rem 0.8rem;
+            padding: 0.7rem 0.9rem;
             text-align: start;
             vertical-align: top;
         }
         .eval-table th {
-            background: #faf6ee;
-            font-weight: 600;
+            background: #fdf6e0;
+            font-weight: 700;
             color: var(--accent);
             font-size: 0.95rem;
         }
@@ -496,13 +617,13 @@
         }
         .modal-backdrop.visible { display: flex; }
         .modal {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
+            background: var(--paper);
+            border-radius: 14px;
+            padding: 1.6rem;
             width: min(720px, 92vw);
             max-height: 88vh;
             overflow-y: auto;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.25);
         }
         .modal h2 {
             margin: 0 0 1rem;
@@ -518,9 +639,10 @@
             width: 100%;
             font-family: inherit;
             font-size: 0.95rem;
-            padding: 0.5rem 0.7rem;
+            padding: 0.55rem 0.8rem;
+            background: white;
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 8px;
             margin-bottom: 1rem;
             unicode-bidi: plaintext;
             text-align: start;
@@ -544,14 +666,69 @@
         }
         .modal-error.visible { display: block; }
 
-        .eval-spinner { display: none; color: #666; font-size: 0.9rem; }
+        .eval-spinner { display: none; color: #7a6a48; font-size: 0.9rem; font-style: italic; }
         .eval-spinner.visible { display: inline; }
+
+        /* Floating evaluate button — sticks to bottom-center. */
+        .floating-eval {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 800;
+            display: none;
+            align-items: center;
+            gap: 0.7rem;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.45rem 0.6rem 0.45rem 1rem;
+            box-shadow: 0 10px 28px rgba(30, 81, 69, 0.30);
+        }
+        .floating-eval.visible { display: inline-flex; }
+        .floating-eval button#evaluate-btn {
+            font-size: 1.05rem;
+            padding: 0.7rem 1.6rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .floating-eval .eval-spinner { padding-inline-start: 0.4rem; }
+        .floating-eval .feather-icon {
+            width: 18px;
+            height: 18px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>השכלה — OCR לתרגילים בכתב יד</h1>
-        <p class="subtitle">פענח קובץ (PDF או תמונה) של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
+        <div class="hero">
+            <svg class="hero-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <!-- pole + flag -->
+                <line x1="50" y1="8" x2="50" y2="22" stroke="#4a1d10" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M50 9 L62 13 L50 17 Z" fill="#4a1d10"/>
+                <!-- roof -->
+                <path d="M14 44 L50 22 L86 44 Z" fill="#4a1d10" opacity="0.92"/>
+                <!-- building -->
+                <rect x="20" y="44" width="60" height="44" rx="2" fill="#fdf2dc" stroke="#4a1d10" stroke-width="1.6"/>
+                <!-- door -->
+                <rect x="44" y="60" width="12" height="28" rx="1.5" fill="#4a1d10"/>
+                <circle cx="53" cy="74" r="0.9" fill="#fdf2dc"/>
+                <!-- windows -->
+                <rect x="26" y="52" width="11" height="10" fill="#4a1d10" opacity="0.85"/>
+                <line x1="31.5" y1="52" x2="31.5" y2="62" stroke="#fdf2dc" stroke-width="0.8"/>
+                <line x1="26" y1="57" x2="37" y2="57" stroke="#fdf2dc" stroke-width="0.8"/>
+                <rect x="63" y="52" width="11" height="10" fill="#4a1d10" opacity="0.85"/>
+                <line x1="68.5" y1="52" x2="68.5" y2="62" stroke="#fdf2dc" stroke-width="0.8"/>
+                <line x1="63" y1="57" x2="74" y2="57" stroke="#fdf2dc" stroke-width="0.8"/>
+                <!-- ground line -->
+                <line x1="10" y1="88.5" x2="90" y2="88.5" stroke="#4a1d10" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <h1>השכלה — OCR לתרגילים בכתב יד</h1>
+            <p class="subtitle">פענח קובץ (PDF או תמונה) של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
+        </div>
 
         {% if error %}
             <div class="error">{{ error }}</div>
@@ -584,9 +761,6 @@
             <label for="rubric-select">רובריקה:</label>
             <select id="rubric-select"></select>
             <button id="add-rubric-btn" type="button" class="secondary">+ הוסף רובריקה</button>
-            <span class="spacer"></span>
-            <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
-            <button id="evaluate-btn" type="button">בדוק תרגיל</button>
         </div>
         {% endif %}
 
@@ -792,8 +966,8 @@
                         {% for line in page.lines %}
                             <div class="line">
                                 <img class="line-image" src="data:image/png;base64,{{ line.image_b64 }}" alt="שורה {{ loop.index }}">
+                                <span class="line-num">{{ loop.index }}</span>
                                 <div class="line-text-row">
-                                    <span class="line-num">{{ loop.index }}.</span>
                                     <pre class="line-text" data-line-key="p{{ page.page }}-l{{ loop.index0 }}">{{ line.text }}</pre>
                                 </div>
                             </div>
@@ -812,6 +986,18 @@
             <div id="highlight-tooltip" class="highlight-tooltip">
                 <div class="ht-crit"></div>
                 <div class="ht-comment"></div>
+            </div>
+
+            <div id="floating-eval" class="floating-eval visible">
+                <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
+                <button id="evaluate-btn" type="button">
+                    <svg class="feather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
+                        <line x1="16" y1="8" x2="2" y2="22"/>
+                        <line x1="17.5" y1="15" x2="9" y2="15"/>
+                    </svg>
+                    בדוק תרגיל
+                </button>
             </div>
 
             <div id="rubric-modal" class="modal-backdrop">
