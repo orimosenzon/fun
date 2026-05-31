@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>השכלה — OCR לתרגילים בכתב יד</title>
+    <title>השכלה — מערכת אוטומטית לבדיקת תרגילים</title>
     <style>
         :root {
             --bg: #f1e1c2;
@@ -591,6 +591,21 @@
             line-height: 1.5;
             white-space: pre-wrap;
         }
+        .eval-table td.feedback-en-cell {
+            line-height: 1.5;
+            white-space: pre-wrap;
+            direction: ltr;
+            text-align: left;
+        }
+        .eval-overall-text-en {
+            line-height: 1.6;
+            white-space: pre-wrap;
+            direction: ltr;
+            text-align: left;
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed var(--border);
+        }
         .eval-table td.criterion-cell {
             border-inline-start-width: 6px;
             font-weight: 500;
@@ -704,7 +719,7 @@
                 <!-- ground line -->
                 <line x1="10" y1="88.5" x2="90" y2="88.5" stroke="#4a1d10" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
-            <h1>השכלה — OCR לתרגילים בכתב יד</h1>
+            <h1>השכלה — מערכת אוטומטית לבדיקת תרגילים</h1>
             <p class="subtitle">פענח קובץ (PDF או תמונה) של תרגיל מצולם, סמן הערות על בעיות בפענוח, ושמור. אפשר גם להעלות קובץ מפוענח שמור.</p>
         </div>
 
@@ -934,6 +949,7 @@
                             <th>קריטריון</th>
                             <th style="width: 90px">ציון</th>
                             <th>פידבק</th>
+                            <th>Feedback (EN)</th>
                         </tr>
                     </thead>
                     <tbody id="eval-tbody"></tbody>
@@ -1487,9 +1503,11 @@
                         ? `רובריקה: ${currentEvaluation.rubric_name}`
                         : '';
                     const overall = document.getElementById('eval-overall');
+                    const overallEn = currentEvaluation.overall_feedback_en || '';
                     overall.innerHTML = `
                         <div class="eval-overall-score">ציון כללי: ${escapeHtml(currentEvaluation.overall_score || '')}</div>
                         <div class="eval-overall-text">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
+                        ${overallEn ? `<div class="eval-overall-text-en">${escapeHtml(overallEn)}</div>` : ''}
                     `;
                     const tbody = document.getElementById('eval-tbody');
                     tbody.innerHTML = '';
@@ -1502,6 +1520,7 @@
                             </td>
                             <td class="score-cell">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
                             <td class="feedback-cell">${escapeHtml(c.feedback || '')}</td>
+                            <td class="feedback-en-cell">${escapeHtml(c.feedback_en || '')}</td>
                         `;
                         tbody.appendChild(tr);
                     });

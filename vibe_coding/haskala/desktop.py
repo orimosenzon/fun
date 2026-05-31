@@ -154,7 +154,7 @@ def main():
 
     api = Api()
     window = webview.create_window(
-        "השכלה — בדיקת OCR לתרגילים בכתב יד",
+        "השכלה — מערכת אוטומטית לבדיקת תרגילים",
         BASE_URL,
         js_api=api,
         width=1200,
