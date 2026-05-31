@@ -1513,6 +1513,68 @@
                 // --- Evaluate button -------------------------------------
                 const evalBtn = document.getElementById('evaluate-btn');
                 const evalSpinner = document.getElementById('eval-spinner');
+
+                // Reuse the OCR progress box (#progress-box) for per-criterion
+                // updates so the user sees what the app is doing during the
+                // model call ("בודק 2/4: VOCABULARY"). No real % is available
+                // — we fill the bar proportionally to index/total when total
+                // is known, else nudge it forward each step. The OCR script
+                // has its own showProgress/setProgress helpers in a separate
+                // IIFE scope, so we re-query the DOM here.
+                const progBox = document.getElementById('progress-box');
+                const progFill = document.getElementById('progress-fill');
+                const progTxt = document.getElementById('progress-text');
+                const progPct = document.getElementById('progress-pct');
+                function evalShowProgress(initialText) {
+                    progBox.classList.remove('error');
+                    progBox.classList.add('visible');
+                    progFill.style.width = '0%';
+                    progPct.textContent = '0%';
+                    progTxt.textContent = initialText;
+                }
+                function evalProgressError(msg) {
+                    progBox.classList.add('error', 'visible');
+                    progTxt.textContent = msg;
+                }
+                function streamEvaluation(jobId, onDone) {
+                    evalShowProgress('שולח לבדיקה…');
+                    const es = new EventSource('/evaluate/progress/' + jobId);
+                    let stepCount = 0;
+                    es.onmessage = (e) => {
+                        const ev = JSON.parse(e.data);
+                        if (ev.type === 'progress') {
+                            stepCount = ev.index;
+                            const label = ev.total
+                                ? `בודק ${ev.index}/${ev.total}: ${ev.name}`
+                                : `בודק קריטריון ${ev.index}: ${ev.name}`;
+                            const pctVal = ev.total
+                                ? Math.round((ev.index / ev.total) * 90)
+                                : Math.min(85, 20 + stepCount * 15);
+                            progFill.style.width = pctVal + '%';
+                            progPct.textContent = pctVal + '%';
+                            progTxt.textContent = label;
+                        } else if (ev.type === 'done') {
+                            progFill.style.width = '100%';
+                            progPct.textContent = '100%';
+                            progTxt.textContent = 'מסיים…';
+                            es.close();
+                            onDone(ev);
+                            progBox.classList.remove('visible');
+                        } else if (ev.type === 'error') {
+                            evalProgressError(ev.message || 'שגיאה בבדיקה');
+                            es.close();
+                            onDone(null);
+                        } else if (ev.type === 'end') {
+                            es.close();
+                        }
+                    };
+                    es.onerror = () => {
+                        evalProgressError('החיבור לשרת נקטע');
+                        es.close();
+                        onDone(null);
+                    };
+                }
+
                 if (evalBtn) {
                     evalBtn.addEventListener('click', async () => {
                         const rubricId = rubricSel.value;
@@ -1525,7 +1587,7 @@
                         evalSpinner.classList.add('visible');
                         try {
                             const modelSel = document.getElementById('model-select');
-                            const resp = await fetch('/evaluate', {
+                            const resp = await fetch('/evaluate/start', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -1537,17 +1599,23 @@
                             const data = await resp.json();
                             if (!resp.ok || data.error) {
                                 alert(data.error || 'שגיאה בבדיקה');
+                                evalBtn.disabled = false;
+                                evalSpinner.classList.remove('visible');
                                 return;
                             }
-                            currentEvaluation = data.evaluation;
-                            highlights = data.highlights || {};
-                            applyHighlights();
-                            renderEvaluation();
-                            refreshSaveMenu();
-                            document.getElementById('eval-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            streamEvaluation(data.job_id, (ev) => {
+                                evalBtn.disabled = false;
+                                evalSpinner.classList.remove('visible');
+                                if (!ev) return;
+                                currentEvaluation = ev.evaluation;
+                                highlights = ev.highlights || {};
+                                applyHighlights();
+                                renderEvaluation();
+                                refreshSaveMenu();
+                                document.getElementById('eval-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            });
                         } catch (e) {
                             alert('שגיאה בבדיקה: ' + e);
-                        } finally {
                             evalBtn.disabled = false;
                             evalSpinner.classList.remove('visible');
                         }
