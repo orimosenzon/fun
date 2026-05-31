@@ -320,6 +320,8 @@ def _ocr_gemini(img: Image.Image) -> list[dict]:
             system_instruction=OCR_SYSTEM_PROMPT,
             response_mime_type="application/json",
             response_schema=gemini_schema,
+            # See evaluate path for why thinking is disabled here too.
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
             max_output_tokens=8000,
         ),
     )
@@ -987,7 +989,11 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 system_instruction=EVAL_SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 response_schema=gemini_schema,
-                max_output_tokens=6000,
+                # Gemini 2.5 Flash is a thinking model — without this it
+                # silently eats most of max_output_tokens on internal
+                # reasoning and the JSON gets truncated mid-string.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                max_output_tokens=8000,
             ),
         )
         try:
