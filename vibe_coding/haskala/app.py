@@ -410,6 +410,16 @@ def auto_rotate(img: Image.Image) -> tuple[Image.Image, int]:
     page is sideways and needs a 90° turn). Then ink-half ratios on the
     winning axis pick which 180° flip (top vs upside-down, or CW vs CCW).
     """
+    # If EXIF already brought the photo to portrait, trust it. The heuristic
+    # below gets fooled by background texture parallel to one axis (notebook
+    # photographed on a towel whose ridges run vertically, etc.) — and the
+    # case it was built for (notebook spread shot in landscape, phone with
+    # no EXIF Orientation tag) still triggers because those come through
+    # landscape.
+    if img.height >= img.width:
+        log.info("auto_rotate: image already portrait — skipping")
+        return img, 0
+
     h_prof = _axis_profile(img, axis=1)
     v_prof = _axis_profile(img, axis=0)
     h_std = float(h_prof.std())
@@ -980,7 +990,16 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 max_output_tokens=6000,
             ),
         )
-        return attach_colors(json.loads(response.text))
+        try:
+            parsed = json.loads(response.text)
+        except json.JSONDecodeError as e:
+            log.error(
+                "evaluate (gemini) JSON parse failed: %s | text_len=%d",
+                e, len(response.text),
+            )
+            log.error("evaluate (gemini) raw response text:\n%s", response.text)
+            raise
+        return attach_colors(parsed)
 
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
@@ -998,7 +1017,18 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         messages=[{"role": "user", "content": user_turn}],
     )
     text = next(b.text for b in response.content if b.type == "text")
-    return attach_colors(json.loads(text))
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as e:
+        stop = getattr(response, "stop_reason", "?")
+        usage = getattr(response, "usage", None)
+        log.error(
+            "evaluate JSON parse failed: %s | stop_reason=%s | usage=%s | text_len=%d",
+            e, stop, usage, len(text),
+        )
+        log.error("evaluate raw response text:\n%s", text)
+        raise
+    return attach_colors(parsed)
 
 
 # --- Criterion colors -------------------------------------------------------
