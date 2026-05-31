@@ -1037,6 +1037,145 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
     return attach_colors(parsed)
 
 
+# Matches the criterion `"name": "..."` field in the streaming JSON. Issues
+# don't have a `name` field (line_ref/quote/comment), so this only fires at
+# the criterion level. The escape-aware pattern survives names that contain
+# an escaped quote without prematurely terminating the match.
+_CRITERION_NAME_RE = re.compile(r'"name"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+# Used as a soft hint for "N/total" in progress messages. Both bundled
+# rubrics mark criteria with "CRITERION N" / "Criterion N"; a user rubric
+# that doesn't follow this convention just gets "N" without total.
+_RUBRIC_CRITERION_RE = re.compile(r"(?i)\bcriterion\s+\d+\b")
+
+
+def count_rubric_criteria(content: str) -> int:
+    return len(_RUBRIC_CRITERION_RE.findall(content))
+
+
+def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
+    """Streaming variant of evaluate_with_rubric.
+
+    Yields:
+      {"type": "progress", "index": N, "total": T|0, "name": "..."} as each
+        criterion name is received (lets the UI say "בודק 2/4: VOCABULARY").
+      {"type": "result", "evaluation": {...}} once the stream completes and
+        the full JSON parses.
+
+    On a malformed JSON at the end, logs the raw text and re-raises the
+    JSONDecodeError so the worker emits a normal error event.
+    """
+    transcript = pages_to_plain_text(pages)
+    user_turn = (
+        f"רובריקה (שם: {rubric.get('name', '')}):\n\n"
+        f"{rubric.get('content', '')}\n\n"
+        f"--- טקסט התרגיל לבדיקה ---\n\n{transcript}\n\n"
+        "החזר JSON לפי הסכימה."
+    )
+    total = count_rubric_criteria(rubric.get("content", ""))
+    buffer = ""
+    seen = 0
+
+    def drain_progress():
+        nonlocal seen
+        names = _CRITERION_NAME_RE.findall(buffer)
+        events = []
+        for i in range(seen, len(names)):
+            events.append({
+                "type": "progress",
+                "index": i + 1,
+                "total": total,
+                "name": names[i],
+            })
+        seen = len(names)
+        return events
+
+    if provider == "gemini":
+        from google.genai import types
+
+        gemini_schema = {
+            "type": "object",
+            "properties": {
+                "criteria": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "score": {"type": "number"},
+                            "max_score": {"type": "number"},
+                            "feedback": {"type": "string"},
+                            "issues": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "line_ref": {"type": "string"},
+                                        "quote": {"type": "string"},
+                                        "comment": {"type": "string"},
+                                    },
+                                    "required": ["line_ref", "quote", "comment"],
+                                },
+                            },
+                        },
+                        "required": ["name", "score", "max_score", "feedback", "issues"],
+                    },
+                },
+                "overall_score": {"type": "string"},
+                "overall_feedback": {"type": "string"},
+            },
+            "required": ["criteria", "overall_score", "overall_feedback"],
+        }
+        stream = _gemini().models.generate_content_stream(
+            model=_GEMINI_MODEL,
+            contents=[user_turn],
+            config=types.GenerateContentConfig(
+                system_instruction=EVAL_SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                response_schema=gemini_schema,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                max_output_tokens=8000,
+            ),
+        )
+        for chunk in stream:
+            if chunk.text:
+                buffer += chunk.text
+                for ev in drain_progress():
+                    yield ev
+    else:
+        with client.messages.stream(
+            model=_ANTHROPIC_MODEL,
+            max_tokens=8000,
+            system=[
+                {
+                    "type": "text",
+                    "text": EVAL_SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+            output_config={
+                "format": {"type": "json_schema", "schema": EVAL_SCHEMA}
+            },
+            messages=[{"role": "user", "content": user_turn}],
+        ) as stream:
+            for text_delta in stream.text_stream:
+                buffer += text_delta
+                for ev in drain_progress():
+                    yield ev
+
+    try:
+        parsed = json.loads(buffer)
+    except json.JSONDecodeError as e:
+        log.error(
+            "evaluate (%s, streaming) JSON parse failed: %s | text_len=%d",
+            provider, e, len(buffer),
+        )
+        log.error("evaluate (%s, streaming) raw text:\n%s", provider, buffer)
+        raise
+
+    yield {"type": "result", "evaluation": attach_colors(parsed)}
+
+
 # --- Criterion colors -------------------------------------------------------
 
 # Curated keyword → color map. Lets the teacher scan an evaluation visually:
@@ -1590,6 +1729,93 @@ def evaluate_endpoint():
     result["rubric_name"] = rubric.get("name", rubric_id)
     highlights = _highlights_for_template(pages, result)
     return jsonify(evaluation=result, highlights=highlights)
+
+
+# In-memory store for streaming eval jobs. Same lifecycle as the OCR JOBS
+# dict — created on /evaluate/start, drained by the SSE handler, then dropped.
+EVAL_JOBS: dict[str, dict] = {}
+
+
+def run_evaluate_job(
+    job_id: str, pages: list[dict], rubric: dict, provider: str, rubric_id: str
+):
+    job = EVAL_JOBS[job_id]
+    q: queue.Queue = job["q"]
+    try:
+        for ev in evaluate_with_rubric_stream(pages, rubric, provider):
+            if ev["type"] == "result":
+                evaluation = ev["evaluation"]
+                evaluation["rubric_id"] = rubric_id
+                evaluation["rubric_name"] = rubric.get("name", rubric_id)
+                highlights = _highlights_for_template(pages, evaluation)
+                q.put({
+                    "type": "done",
+                    "evaluation": evaluation,
+                    "highlights": highlights,
+                })
+            else:
+                q.put(ev)
+    except anthropic.APIError as e:
+        q.put({"type": "error", "message": f"שגיאת API: {e.message}"})
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        q.put({"type": "error", "message": f"שגיאת פענוח: {e}"})
+    except Exception as e:
+        # Same belt-and-suspenders catch as run_job — Gemini raises its own
+        # error types that aren't covered above.
+        q.put({"type": "error", "message": f"שגיאה: {e}"})
+    finally:
+        q.put({"type": "end"})
+
+
+@app.route("/evaluate/start", methods=["POST"])
+def evaluate_start():
+    """Streaming variant of /evaluate. Same body shape; returns a job_id and
+    the caller subscribes to /evaluate/progress/<job_id> for per-criterion
+    updates and the final result."""
+    body = request.get_json(silent=True) or {}
+    pages = body.get("pages") or []
+    rubric_id = (body.get("rubric_id") or "").strip()
+    provider = body.get("model") if body.get("model") in MODELS else DEFAULT_MODEL
+
+    if not pages:
+        return jsonify(error="אין טקסט לבדיקה"), 400
+    rubric = load_rubric(rubric_id)
+    if not rubric:
+        return jsonify(error="רובריקה לא נמצאה"), 404
+
+    job_id = uuid.uuid4().hex[:12]
+    EVAL_JOBS[job_id] = {"q": queue.Queue()}
+    threading.Thread(
+        target=run_evaluate_job,
+        args=(job_id, pages, rubric, provider, rubric_id),
+        daemon=True,
+    ).start()
+    return jsonify(job_id=job_id)
+
+
+@app.route("/evaluate/progress/<job_id>")
+def evaluate_progress(job_id):
+    job = EVAL_JOBS.get(job_id)
+    if not job:
+        return "unknown job", 404
+
+    def stream():
+        try:
+            while True:
+                ev = job["q"].get()
+                yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+                if ev["type"] in ("end", "error"):
+                    break
+        finally:
+            # One-shot: drop the job once the stream ends so memory doesn't
+            # grow on repeated evaluations.
+            EVAL_JOBS.pop(job_id, None)
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.route("/evaluation/docx", methods=["POST"])
