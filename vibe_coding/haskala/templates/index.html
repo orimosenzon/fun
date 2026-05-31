@@ -669,36 +669,14 @@
         .eval-spinner { display: none; color: #7a6a48; font-size: 0.9rem; font-style: italic; }
         .eval-spinner.visible { display: inline; }
 
-        /* Floating evaluate button — sticks to bottom-center. */
-        .floating-eval {
-            position: fixed;
-            bottom: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 800;
-            display: none;
-            align-items: center;
-            gap: 0.7rem;
-            background: var(--paper);
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            padding: 0.45rem 0.6rem 0.45rem 1rem;
-            box-shadow: 0 10px 28px rgba(30, 81, 69, 0.30);
-        }
-        .floating-eval.visible { display: inline-flex; }
-        .floating-eval button#evaluate-btn {
-            font-size: 1.05rem;
-            padding: 0.7rem 1.6rem;
-            font-weight: 600;
+        #evaluate-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
         }
-        .floating-eval .eval-spinner { padding-inline-start: 0.4rem; }
-        .floating-eval .feather-icon {
+        #evaluate-btn .feather-icon {
             width: 18px;
             height: 18px;
-            display: inline-block;
         }
     </style>
 </head>
@@ -761,6 +739,16 @@
             <label for="rubric-select">רובריקה:</label>
             <select id="rubric-select"></select>
             <button id="add-rubric-btn" type="button" class="secondary">+ הוסף רובריקה</button>
+            <span class="spacer"></span>
+            <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
+            <button id="evaluate-btn" type="button">
+                <svg class="feather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
+                    <line x1="16" y1="8" x2="2" y2="22"/>
+                    <line x1="17.5" y1="15" x2="9" y2="15"/>
+                </svg>
+                בדוק תרגיל
+            </button>
         </div>
         {% endif %}
 
@@ -986,18 +974,6 @@
             <div id="highlight-tooltip" class="highlight-tooltip">
                 <div class="ht-crit"></div>
                 <div class="ht-comment"></div>
-            </div>
-
-            <div id="floating-eval" class="floating-eval visible">
-                <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
-                <button id="evaluate-btn" type="button">
-                    <svg class="feather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
-                        <line x1="16" y1="8" x2="2" y2="22"/>
-                        <line x1="17.5" y1="15" x2="9" y2="15"/>
-                    </svg>
-                    בדוק תרגיל
-                </button>
             </div>
 
             <div id="rubric-modal" class="modal-backdrop">
