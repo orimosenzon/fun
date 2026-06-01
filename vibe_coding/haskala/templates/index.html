@@ -483,6 +483,64 @@
         .progress-box.error .progress-fill { background: var(--error); }
         .progress-box.error .progress-label { color: var(--error); }
 
+        /* Structured runtime-error banner (quota / auth / parse / unknown).
+           Shown after a humanize_error() event from the server; hides the
+           progress box. The collapsible <details> block keeps the raw
+           exception out of sight unless the user wants it. */
+        .error-banner {
+            background: #fdecec;
+            border: 1px solid #e7c8c8;
+            border-right: 3px solid var(--error);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .error-banner[hidden] { display: none; }
+        .error-banner .error-title {
+            color: var(--error);
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 0.4rem;
+        }
+        .error-banner .error-details {
+            color: #5b3a3a;
+            line-height: 1.55;
+            margin-bottom: 0.6rem;
+        }
+        .error-banner .error-link {
+            display: inline-block;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+        }
+        .error-banner .error-link:hover { text-decoration: underline; }
+        .error-banner details {
+            margin-top: 0.4rem;
+            font-size: 0.85rem;
+        }
+        .error-banner details summary {
+            cursor: pointer;
+            color: #7a5a5a;
+            user-select: none;
+        }
+        .error-banner details pre {
+            background: #fff5f5;
+            border: 1px solid #ecd4d4;
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            margin-top: 0.4rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+            color: #5b3a3a;
+            direction: ltr;
+            text-align: left;
+            max-height: 240px;
+            overflow: auto;
+        }
+
         /* Save dropdown menu */
         .menu-wrap { position: relative; display: inline-block; }
         .menu-list {
@@ -775,6 +833,16 @@
             <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
         </div>
 
+        <div id="error-banner" class="error-banner" hidden>
+            <div class="error-title">⚠️ <span data-role="message"></span></div>
+            <div class="error-details" data-role="details"></div>
+            <a class="error-link" data-role="link" target="_blank" rel="noopener" hidden></a>
+            <details data-role="technical-wrap" hidden>
+                <summary>פרטים טכניים</summary>
+                <pre data-role="technical"></pre>
+            </details>
+        </div>
+
         <!-- Plain-browser fallback (used only when not running under pywebview). -->
         <input type="file" id="fallback-pdf" accept="application/pdf,image/jpeg,image/png" style="display:none">
         <form id="fallback-load-form" action="/" method="POST" enctype="multipart/form-data" style="display:none">
@@ -782,6 +850,62 @@
         </form>
 
         <script>
+        // Shared renderer for structured runtime errors. Both the OCR and the
+        // evaluation IIFEs (later in this file) call this to surface a
+        // server-side humanize_error() payload as a banner with title /
+        // details / link / collapsible technical block. Accepts either the
+        // structured object {message, details, link_url, link_text, technical}
+        // or a plain string for the old call sites.
+        window.haskalaRenderError = function (err, fallbackMessage) {
+            const banner = document.getElementById('error-banner');
+            const progBox = document.getElementById('progress-box');
+            const norm = (typeof err === 'string')
+                ? { message: err }
+                : (err && typeof err === 'object') ? err : {};
+            const msg = norm.message || fallbackMessage || 'תקלה לא צפויה';
+            banner.querySelector('[data-role="message"]').textContent = msg;
+
+            const detailsEl = banner.querySelector('[data-role="details"]');
+            if (norm.details) {
+                detailsEl.textContent = norm.details;
+                detailsEl.hidden = false;
+            } else {
+                detailsEl.textContent = '';
+                detailsEl.hidden = true;
+            }
+
+            const linkEl = banner.querySelector('[data-role="link"]');
+            if (norm.link_url) {
+                linkEl.href = norm.link_url;
+                linkEl.textContent = norm.link_text || norm.link_url;
+                linkEl.hidden = false;
+            } else {
+                linkEl.removeAttribute('href');
+                linkEl.textContent = '';
+                linkEl.hidden = true;
+            }
+
+            const techWrap = banner.querySelector('[data-role="technical-wrap"]');
+            const techPre = banner.querySelector('[data-role="technical"]');
+            if (norm.technical) {
+                techPre.textContent = norm.technical;
+                techWrap.hidden = false;
+                techWrap.open = false;
+            } else {
+                techPre.textContent = '';
+                techWrap.hidden = true;
+            }
+
+            banner.hidden = false;
+            if (progBox) progBox.classList.remove('visible');
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+
+        window.haskalaClearError = function () {
+            const banner = document.getElementById('error-banner');
+            if (banner) banner.hidden = true;
+        };
+
         (function () {
             // Resolve the pywebview JS API once it is injected (or null in a
             // plain browser, where we fall back to file inputs / downloads).
@@ -804,6 +928,7 @@
             const pct = document.getElementById('progress-pct');
 
             function showProgress() {
+                window.haskalaClearError();
                 box.classList.remove('error');
                 box.classList.add('visible');
                 fill.style.width = '0%';
@@ -817,9 +942,8 @@
                     ? `עמוד ${page}/${totalPages} — ${label}…`
                     : `${label}…`;
             }
-            function progressError(msg) {
-                box.classList.add('error', 'visible');
-                txt.textContent = msg;
+            function progressError(errOrMsg, fallback) {
+                window.haskalaRenderError(errOrMsg, fallback || 'שגיאה בפענוח');
             }
 
             function streamJob(jobId) {
@@ -835,7 +959,8 @@
                         es.close();
                         window.location = '/result/' + jobId;
                     } else if (ev.type === 'error') {
-                        progressError(ev.message || 'שגיאה בפענוח');
+                        // ev itself carries {message, details, link_url, link_text, technical}
+                        progressError(ev, 'שגיאה בפענוח');
                         es.close();
                     } else if (ev.type === 'end') {
                         es.close();
@@ -857,7 +982,7 @@
                     });
                     const data = await resp.json();
                     if (!resp.ok || data.error) {
-                        progressError(data.error || 'שגיאה בהתחלת הפענוח');
+                        progressError(data, 'שגיאה בהתחלת הפענוח');
                         return;
                     }
                     streamJob(data.job_id);
@@ -1545,15 +1670,15 @@
                 const progTxt = document.getElementById('progress-text');
                 const progPct = document.getElementById('progress-pct');
                 function evalShowProgress(initialText) {
+                    window.haskalaClearError();
                     progBox.classList.remove('error');
                     progBox.classList.add('visible');
                     progFill.style.width = '0%';
                     progPct.textContent = '0%';
                     progTxt.textContent = initialText;
                 }
-                function evalProgressError(msg) {
-                    progBox.classList.add('error', 'visible');
-                    progTxt.textContent = msg;
+                function evalProgressError(errOrMsg, fallback) {
+                    window.haskalaRenderError(errOrMsg, fallback || 'שגיאה בבדיקה');
                 }
                 function streamEvaluation(jobId, onDone) {
                     evalShowProgress('שולח לבדיקה…');
@@ -1580,7 +1705,7 @@
                             onDone(ev);
                             progBox.classList.remove('visible');
                         } else if (ev.type === 'error') {
-                            evalProgressError(ev.message || 'שגיאה בבדיקה');
+                            evalProgressError(ev, 'שגיאה בבדיקה');
                             es.close();
                             onDone(null);
                         } else if (ev.type === 'end') {
@@ -1617,7 +1742,7 @@
                             });
                             const data = await resp.json();
                             if (!resp.ok || data.error) {
-                                alert(data.error || 'שגיאה בבדיקה');
+                                evalProgressError(data, 'שגיאה בבדיקה');
                                 evalBtn.disabled = false;
                                 evalSpinner.classList.remove('visible');
                                 return;
@@ -1634,7 +1759,11 @@
                                 document.getElementById('eval-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
                             });
                         } catch (e) {
-                            alert('שגיאה בבדיקה: ' + e);
+                            evalProgressError({
+                                message: 'שגיאה בבדיקה',
+                                details: 'הקריאה לשרת נכשלה. ייתכן שהשרת לא זמין או שאין רשת.',
+                                technical: String(e),
+                            });
                             evalBtn.disabled = false;
                             evalSpinner.classList.remove('visible');
                         }
