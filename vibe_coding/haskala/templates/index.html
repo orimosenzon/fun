@@ -95,10 +95,140 @@
             z-index: 1;
             pointer-events: none;
         }
-        @media (max-width: 640px) {
-            .hero-art { display: none; }
+        @media (max-width: 768px) {
+            body { padding: 1rem 0.75rem 4rem; }
             .hero { padding: 1.4rem 1.4rem 1.2rem; }
+            .hero-art { display: none; }
             .hero h1 { font-size: 1.5rem; }
+            .hero .subtitle { font-size: 0.92rem; }
+
+            form { padding: 1.2rem; }
+            .toolbar { padding: 0.6rem 0.9rem; }
+            .toolbar .hint { font-size: 0.8rem; margin-right: 0; }
+            .page-section { padding: 1.1rem; }
+            .actionbar { padding: 0.7rem 0.9rem; gap: 0.5rem; }
+            .actionbar .spacer { display: none; flex: 0; }
+            .actionbar select { font-size: 0.95rem; padding: 0.5rem 0.7rem; }
+
+            .eval-section { padding: 1.1rem; }
+            /* Evaluation table → card layout on small screens. Each <tr>
+               becomes a card; cells stack vertically with a label prefix
+               taken from data-label. Criterion cell keeps its swatch + name
+               only (label is redundant). */
+            .eval-table { border-collapse: separate; border-spacing: 0; }
+            .eval-table thead { display: none; }
+            .eval-table, .eval-table tbody, .eval-table tr, .eval-table td {
+                display: block;
+                width: 100%;
+            }
+            .eval-table tr {
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                margin-bottom: 0.9rem;
+                overflow: hidden;
+                background: white;
+            }
+            .eval-table td {
+                border: none;
+                border-bottom: 1px solid var(--border-soft);
+                padding: 0.75rem 0.9rem;
+            }
+            .eval-table td:last-child { border-bottom: none; }
+            .eval-table td::before {
+                content: attr(data-label);
+                display: block;
+                font-weight: 700;
+                color: var(--accent);
+                font-size: 0.75rem;
+                margin-bottom: 0.3rem;
+                letter-spacing: 0.02em;
+            }
+            .eval-table td.criterion-cell {
+                background: #fdf6e0;
+                font-weight: 700;
+                border-inline-start-width: 6px;
+                border-inline-start-style: solid;
+            }
+            .eval-table td.criterion-cell::before { display: none; }
+            .eval-table td.score-cell {
+                text-align: start;
+                font-size: 1.05rem;
+            }
+
+            .highlight-tooltip { max-width: 88vw; }
+            .annotation-popup { max-width: 92vw; }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 0.75rem 0.55rem 4rem; }
+            .container { padding: 0; }
+            .hero { padding: 1.1rem 1rem 0.95rem; border-radius: 12px; margin-bottom: 0.9rem; }
+            .hero h1 { font-size: 1.2rem; }
+            .hero .subtitle { font-size: 0.85rem; padding: 0.4rem 0.65rem; line-height: 1.45; }
+
+            /* Bigger tap targets — 44px minimum per WCAG/iOS guideline. */
+            button {
+                padding: 0.65rem 1rem;
+                font-size: 0.95rem;
+                min-height: 44px;
+            }
+            .actionbar {
+                padding: 0.6rem 0.65rem;
+                gap: 0.4rem;
+                border-radius: 12px;
+            }
+            .actionbar button { flex: 1 1 auto; }
+            .actionbar label {
+                flex-basis: 100%;
+                margin-bottom: -0.2rem;
+                font-size: 0.9rem;
+            }
+            .actionbar select {
+                flex: 1 1 140px;
+                min-height: 44px;
+                font-size: 0.95rem;
+            }
+            /* Save menu — keep it within viewport on narrow screens. */
+            .menu-list { min-width: 200px; max-width: calc(100vw - 1.5rem); }
+
+            .toolbar { padding: 0.6rem 0.7rem; border-radius: 10px; }
+            .toolbar .hint { font-size: 0.78rem; font-style: normal; }
+
+            .page-section { padding: 0.85rem; border-radius: 12px; margin-bottom: 1rem; }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.2rem;
+                margin-bottom: 0.7rem;
+                padding-bottom: 0.6rem;
+            }
+            .page-header h2 { font-size: 1rem; }
+            .filename { font-size: 0.78rem; word-break: break-all; }
+
+            .line { padding: 0.45rem 2.4rem 0.45rem 0.45rem; }
+            .line-num {
+                width: 26px;
+                height: 26px;
+                font-size: 0.82rem;
+                right: 0.5rem;
+            }
+            .line-text { font-size: 0.95rem; line-height: 1.55; }
+            .line-text-row { padding: 0.4rem 0.55rem; }
+
+            .eval-overall { padding: 0.85rem 0.95rem; }
+            .eval-overall-score { font-size: 1.05rem; }
+
+            .annotation-popup {
+                width: calc(100vw - 1rem);
+                max-width: calc(100vw - 1rem);
+            }
+            .modal { padding: 1.2rem; width: 96vw; max-height: 92vh; }
+            .modal h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+            .modal textarea { min-height: 180px; }
+            .modal-actions button { flex: 1; }
+
+            .error-banner { padding: 0.8rem 0.9rem; }
+            .error-banner .error-title { font-size: 0.98rem; }
         }
         form {
             background: var(--paper);
@@ -1232,15 +1362,18 @@
                     });
                 }
 
-                // Hover tooltip for highlighted spans. One delegated listener
-                // on the page section reads the criterion + comment off the
-                // .char.highlight under the cursor and positions a floating
-                // tooltip near it.
+                // Tooltip for highlighted spans. Desktop: hover over a
+                // highlighted char. Touch: tap a highlighted char to pin the
+                // tooltip; tap elsewhere (or the same char) to dismiss.
+                // Position is clamped to the viewport so the tooltip never
+                // gets clipped — critical on phones where the highlight may
+                // sit near a screen edge.
                 (function () {
                     const tooltip = document.getElementById('highlight-tooltip');
                     if (!tooltip) return;
                     const critEl = tooltip.querySelector('.ht-crit');
                     const commentEl = tooltip.querySelector('.ht-comment');
+                    let stickyEl = null;  // tap-pinned char; locks tooltip until dismissed
 
                     function showTooltipFor(charEl) {
                         const crit = charEl.dataset.htCrit || '';
@@ -1250,22 +1383,43 @@
                         critEl.style.color = color;
                         commentEl.textContent = comment;
                         tooltip.style.borderInlineStartColor = color;
-                        const rect = charEl.getBoundingClientRect();
-                        tooltip.style.left = (rect.left + window.scrollX) + 'px';
-                        tooltip.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+                        // Reset position before measuring so previous offset
+                        // doesn't distort the size on small screens.
+                        tooltip.style.left = '0px';
+                        tooltip.style.top = '0px';
                         tooltip.classList.add('visible');
+                        const rect = charEl.getBoundingClientRect();
+                        const tipRect = tooltip.getBoundingClientRect();
+                        let left = rect.left + window.scrollX;
+                        const minLeft = window.scrollX + 8;
+                        const maxLeft = window.scrollX + window.innerWidth - tipRect.width - 8;
+                        if (left > maxLeft) left = maxLeft;
+                        if (left < minLeft) left = minLeft;
+                        let top = rect.bottom + window.scrollY + 6;
+                        // If tooltip would overflow the bottom of the viewport,
+                        // flip above the highlighted char.
+                        if (top + tipRect.height > window.scrollY + window.innerHeight - 8) {
+                            const above = rect.top + window.scrollY - tipRect.height - 6;
+                            if (above > window.scrollY + 8) top = above;
+                        }
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
                     }
                     function hideTooltip() {
                         tooltip.classList.remove('visible');
+                        stickyEl = null;
                     }
 
+                    // Desktop hover. Skip if a tap has pinned the tooltip.
                     document.addEventListener('mouseover', (e) => {
+                        if (stickyEl) return;
                         const t = e.target;
                         if (t && t.classList && t.classList.contains('highlight') && t.classList.contains('char')) {
                             showTooltipFor(t);
                         }
                     });
                     document.addEventListener('mouseout', (e) => {
+                        if (stickyEl) return;
                         const t = e.target;
                         if (t && t.classList && t.classList.contains('highlight') && t.classList.contains('char')) {
                             const next = e.relatedTarget;
@@ -1273,6 +1427,23 @@
                                 hideTooltip();
                             }
                         }
+                    });
+                    // Tap pins the tooltip. Annotated chars are handled by
+                    // the annotation popup elsewhere — skip those here so
+                    // the two UIs don't fight over the same tap.
+                    document.addEventListener('click', (e) => {
+                        const t = e.target;
+                        const isHighlight = t && t.classList
+                            && t.classList.contains('highlight')
+                            && t.classList.contains('char')
+                            && !t.classList.contains('annotated');
+                        if (isHighlight) {
+                            if (stickyEl === t) { hideTooltip(); return; }
+                            stickyEl = t;
+                            showTooltipFor(t);
+                            return;
+                        }
+                        if (stickyEl && !tooltip.contains(t)) hideTooltip();
                     });
                 })();
 
@@ -1317,15 +1488,32 @@
                 }
 
                 function positionPopup(rect) {
-                    const popupW = 280;
                     const scrollX = window.scrollX;
                     const scrollY = window.scrollY;
+                    // Make the popup visible first so we can measure its
+                    // actual width/height — the CSS allows it to shrink on
+                    // narrow screens (max-width: 92vw at <=768px), so the
+                    // 280px default is a poor estimate on phones.
+                    popup.style.left = '0px';
+                    popup.style.top = '0px';
+                    popup.classList.add('visible');
+                    const popupW = popup.offsetWidth || 280;
+                    const popupH = popup.offsetHeight || 200;
                     let left = rect.left + scrollX + (rect.width / 2) - (popupW / 2);
-                    left = Math.max(10, Math.min(left, window.innerWidth - popupW - 10));
-                    const top = rect.bottom + scrollY + 8;
+                    const minLeft = scrollX + 8;
+                    const maxLeft = scrollX + window.innerWidth - popupW - 8;
+                    if (left > maxLeft) left = maxLeft;
+                    if (left < minLeft) left = minLeft;
+                    let top = rect.bottom + scrollY + 8;
+                    // If the popup would overflow the bottom of the viewport,
+                    // flip above the anchor; if that also doesn't fit, pin to
+                    // the current scroll top so the user can still see it.
+                    if (top + popupH > scrollY + window.innerHeight - 10) {
+                        const above = rect.top + scrollY - popupH - 8;
+                        top = above > scrollY + 10 ? above : scrollY + 10;
+                    }
                     popup.style.left = left + 'px';
                     popup.style.top = top + 'px';
-                    popup.classList.add('visible');
                 }
 
                 function getLineEl(lineKey) {
@@ -1640,12 +1828,12 @@
                         const color = c.color || '#888';
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td class="criterion-cell" style="border-inline-start-color:${escapeHtml(color)}">
+                            <td class="criterion-cell" data-label="קריטריון" style="border-inline-start-color:${escapeHtml(color)}">
                                 <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
                             </td>
-                            <td class="score-cell">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
-                            <td class="feedback-cell">${escapeHtml(c.feedback || '')}</td>
-                            <td class="feedback-en-cell">${escapeHtml(c.feedback_en || '')}</td>
+                            <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
+                            <td class="feedback-cell" data-label="פידבק">${escapeHtml(c.feedback || '')}</td>
+                            <td class="feedback-en-cell" data-label="Feedback (EN)">${escapeHtml(c.feedback_en || '')}</td>
                         `;
                         tbody.appendChild(tr);
                     });
