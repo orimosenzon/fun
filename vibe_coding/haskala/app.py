@@ -683,6 +683,138 @@ def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
     yield {"type": "result", "pages": results}
 
 
+def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
+    """Turn a low-level provider exception into a structured UI error.
+
+    Returns a dict with keys the front-end renders directly:
+      - message   : short Hebrew headline shown in the error banner
+      - details   : longer Hebrew explanation + recommended next step
+      - link_url  : optional URL the user can click to act (quota dash, key page)
+      - link_text : Hebrew label for the link
+      - technical : raw exception text for the collapsible "פרטים טכניים" block
+
+    The "guess by string match" approach is deliberate: provider SDKs don't
+    expose a clean enum for "this is a quota error vs an auth error", and the
+    JSON payload is the most reliable signal we have.
+    """
+    raw = (str(exc) or repr(exc)).strip()
+    technical = raw[:2000]
+
+    # Gemini errors come from google.genai.errors. Imported lazily so a stripped-
+    # down install without google-genai (Claude-only) still loads this module.
+    try:
+        from google.genai import errors as gerrors  # type: ignore
+    except ImportError:
+        gerrors = None  # noqa: N806
+
+    # ---- Gemini: daily/per-minute quota ----
+    if gerrors and isinstance(exc, gerrors.APIError) and getattr(exc, "code", None) == 429:
+        quota_match = re.search(r"['\"]?quotaValue['\"]?\s*[:=]\s*['\"]?(\d+)", raw)
+        per_day = "PerDay" in raw or "free_tier_requests" in raw
+        quota_str = (
+            f"{quota_match.group(1)} בקשות{' ליום' if per_day else ''} ב-Free Tier"
+            if quota_match
+            else "המכסה החינמית"
+        )
+        return {
+            "message": f"חרגת ממכסת Gemini ({quota_str})",
+            "details": (
+                "המכסה היומית של Gemini ב-Free Tier מתאפסת בחצות שעון Pacific — "
+                "כלומר ~10:00 בבוקר שעון ישראל. אפשרויות: לחכות לאיפוס, "
+                "להחליף מודל ל-Claude בתפריט בראש הדף, או להוסיף billing ולעבור "
+                "ל-Tier 1 (תקרה גבוהה משמעותית)."
+            ),
+            "link_url": "https://aistudio.google.com/rate-limit",
+            "link_text": "צפה במכסה האישית שלך ב-AI Studio",
+            "technical": technical,
+        }
+
+    # ---- Gemini: bad / missing API key ----
+    if gerrors and isinstance(exc, gerrors.APIError) and getattr(exc, "code", None) in (401, 403):
+        return {
+            "message": "מפתח Gemini API לא תקף",
+            "details": (
+                "ודא שהמשתנה GEMINI_API_KEY מוגדר נכון (.env מקומית או Secret "
+                "ב-Hugging Face Space) ושהמפתח עדיין פעיל."
+            ),
+            "link_url": "https://aistudio.google.com/apikey",
+            "link_text": "נהל מפתחות ב-Google AI Studio",
+            "technical": technical,
+        }
+
+    # ---- Gemini: server-side outage ----
+    if gerrors and isinstance(exc, gerrors.ServerError):
+        return {
+            "message": "Gemini מחזיר שגיאת שרת",
+            "details": "תקלה זמנית בצד של Google. נסה שוב בעוד דקה, או החלף ל-Claude.",
+            "link_url": "https://status.cloud.google.com",
+            "link_text": "סטטוס שירותי Google",
+            "technical": technical,
+        }
+
+    # ---- Anthropic: rate limit ----
+    if isinstance(exc, anthropic.RateLimitError):
+        return {
+            "message": "חרגת ממכסת Claude לרגע זה",
+            "details": (
+                "Anthropic מגביל בקשות לדקה (RPM) וטוקנים לדקה (TPM). "
+                "נסה שוב בעוד דקה, או החלף ל-Gemini בתפריט המודל."
+            ),
+            "link_url": "https://console.anthropic.com/settings/limits",
+            "link_text": "צפה במכסה ב-Anthropic Console",
+            "technical": technical,
+        }
+
+    # ---- Anthropic: bad / missing API key ----
+    if isinstance(exc, anthropic.AuthenticationError):
+        return {
+            "message": "מפתח Anthropic API לא תקף",
+            "details": (
+                "ודא שהמשתנה ANTHROPIC_API_KEY מוגדר נכון (.env מקומית או Secret "
+                "ב-Hugging Face Space) ושהמפתח עדיין פעיל."
+            ),
+            "link_url": "https://console.anthropic.com/settings/keys",
+            "link_text": "נהל מפתחות ב-Anthropic Console",
+            "technical": technical,
+        }
+
+    # ---- Anthropic: network/timeout ----
+    if isinstance(exc, (anthropic.APITimeoutError, anthropic.APIConnectionError)):
+        return {
+            "message": "החיבור ל-Anthropic נכשל",
+            "details": "ייתכן שיש בעיית רשת או ש-Anthropic לא זמין כרגע. נסה שוב בעוד דקה.",
+            "link_url": "https://status.anthropic.com",
+            "link_text": "סטטוס שירות Anthropic",
+            "technical": technical,
+        }
+
+    # ---- JSON parsing: the model returned malformed output ----
+    if isinstance(exc, (json.JSONDecodeError, KeyError, ValueError)):
+        return {
+            "message": "המודל החזיר תשובה לא תקפה",
+            "details": (
+                f"לא הצלחנו לפענח את התשובה של המודל ({action}). "
+                "זו בדרך כלל בעיה זמנית — נסה שוב, ואם זה נמשך, החלף מודל."
+            ),
+            "technical": technical,
+        }
+
+    # ---- Generic provider 5xx (when not caught above) ----
+    if isinstance(exc, anthropic.APIStatusError):
+        return {
+            "message": f"שגיאת API ({getattr(exc, 'status_code', '?')})",
+            "details": "השירות החזיר תשובה לא תקינה. נסה שוב, ואם זה נמשך החלף מודל.",
+            "technical": technical,
+        }
+
+    # ---- Fallback ----
+    return {
+        "message": "תקלה לא צפויה",
+        "details": "אירעה שגיאה לא מזוהה. נסה שוב; אם זה חוזר, צרף את הפרטים הטכניים בדיווח.",
+        "technical": technical,
+    }
+
+
 # In-memory job store. Single local user (Avishai), so a dict is enough; a
 # job is short-lived and consumed once by the SSE stream.
 JOBS: dict[str, dict] = {}
@@ -698,15 +830,12 @@ def run_job(job_id: str, file_bytes: bytes, ext: str, provider: str):
                 q.put({"type": "done"})
             else:
                 q.put(ev)
-    except anthropic.APIError as e:
-        q.put({"type": "error", "message": f"שגיאת API: {e.message}"})
-    except (json.JSONDecodeError, KeyError, ValueError) as e:
-        q.put({"type": "error", "message": f"שגיאת פענוח: {e}"})
     except Exception as e:
-        # Gemini (google.genai) raises its own error types; without a
-        # catch-all the worker thread would die silently and the SSE
-        # stream would hang instead of showing the user what failed.
-        q.put({"type": "error", "message": f"שגיאה: {e}"})
+        # Catch-all so a worker-thread crash surfaces in the SSE stream
+        # instead of leaving the UI stuck on "מתחיל…". humanize_error sorts
+        # quota / auth / parse / unknown into user-readable messages.
+        log.exception("run_job failed")
+        q.put({"type": "error", **humanize_error(e, action="הפענוח")})
     finally:
         q.put({"type": "end"})
 
@@ -1190,49 +1319,73 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
 
 # --- Criterion colors -------------------------------------------------------
 
-# Curated keyword → color map. Lets the teacher scan an evaluation visually:
-# the same category gets the same color across rubrics (e.g. תחביר/grammar
-# always red), with a deterministic hash fallback for criteria that don't
-# match any keyword.
-_CRITERION_COLOR_RULES: list[tuple[list[str], str]] = [
-    (["תחביר", "דקדוק", "grammar", "syntax"], "#d9534f"),       # red
-    (["איות", "כתיב", "פיסוק", "spelling", "punctuation",
-      "mechanics", "orthography"], "#8e44ad"),                  # purple
-    (["אוצר מילים", "מילים", "vocabulary", "lexical",
-      "lexicon", "word choice"], "#e0a800"),                    # amber
-    (["ניסוח", "קוהרנטיות", "coherence", "phrasing", "wording",
-      "task achievement", "cohesion"], "#337ab7"),              # blue
-    (["מבנה", "ארגון", "structure", "organization"], "#28a745"),  # green
-    (["תוכן", "רעיונות", "content", "ideas"], "#16a085"),        # teal
-    (["שטף", "fluency", "intonation", "אינטונציה"], "#e67e22"),  # orange
+# Fixed palette of 11 highly-distinct colors. Slots 0-3 are reserved for the
+# default ministry-rubric criteria (in descending frequency of inline marks
+# per teacher experience), so they never collide with anything else. Slots
+# 4-10 absorb every other criterion via md5 → so the same criterion name
+# always gets the same color across runs (teachers can train on the mapping).
+_PALETTE: list[str] = [
+    "#d9534f",  # 0 red
+    "#2c7be5",  # 1 blue
+    "#28a745",  # 2 green
+    "#f0a000",  # 3 amber (richer than #e0a800 so it reads on cream paper)
+    "#8e44ad",  # 4 purple
+    "#e67e22",  # 5 orange
+    "#16a085",  # 6 teal
+    "#d63384",  # 7 magenta
+    "#8B4513",  # 8 brown
+    "#1a237e",  # 9 navy
+    "#689f38",  # 10 lime
 ]
 
-_FALLBACK_PALETTE = [
-    "#7f8c8d", "#34495e", "#c0392b", "#27ae60",
-    "#8e44ad", "#2980b9", "#d35400", "#16a085",
+# Top-of-palette pins for the ministry rubric (the current default). Order
+# from most-frequent inline marks (mechanics: every spelling slip) to least
+# (content: a few essay-level notes). Keyword lists tolerate the LLM
+# returning slight renames (e.g. "Content & Organization", or a Hebrew
+# title). To pin a new rubric's criteria, append a tuple here.
+_PINNED_CRITERION_RULES: list[tuple[list[str], int]] = [
+    # Slot 0 (red) — Mechanics / spelling / punctuation
+    (["mechanics", "spelling", "punctuation",
+      "איות", "כתיב", "פיסוק"], 0),
+    # Slot 1 (blue) — Language Use / grammar / syntax
+    (["language use", "grammar", "syntax",
+      "תחביר", "דקדוק"], 1),
+    # Slot 2 (green) — Vocabulary / lexical
+    (["vocabulary", "lexical", "lexicon", "word choice",
+      "אוצר מילים"], 2),
+    # Slot 3 (amber) — Content / Organization / ideas / structure
+    (["content", "organization", "structure", "ideas",
+      "תוכן", "ארגון", "מבנה", "רעיונות"], 3),
 ]
+
+# md5 fallback only picks from slots 4..end, so a non-pinned criterion can
+# never accidentally land on a pinned color.
+_FALLBACK_RANGE = list(range(4, len(_PALETTE)))
 
 
 def color_for_criterion(name: str) -> str:
-    """Hex color for a rubric criterion. Hebrew/English keyword match first;
-    fall back to a deterministic palette indexed by md5 of the name so the
-    same criterion always lands on the same color."""
+    """Hex color for a rubric criterion. Pinned slots first (so the four
+    ministry-rubric criteria always get red/blue/green/amber), else a
+    deterministic md5 → palette slot from the remaining colors so the same
+    criterion name always lands on the same color across runs."""
     n = (name or "").lower()
-    for keywords, color in _CRITERION_COLOR_RULES:
+    for keywords, slot in _PINNED_CRITERION_RULES:
         if any(k.lower() in n for k in keywords):
-            return color
+            return _PALETTE[slot]
     digest = hashlib.md5(n.encode("utf-8")).hexdigest()
-    return _FALLBACK_PALETTE[int(digest, 16) % len(_FALLBACK_PALETTE)]
+    slot = _FALLBACK_RANGE[int(digest, 16) % len(_FALLBACK_RANGE)]
+    return _PALETTE[slot]
 
 
 def attach_colors(evaluation: dict | None) -> dict | None:
-    """Inject a 'color' field into each criterion. Idempotent — preserves
-    any pre-set color so saved files keep their original assignment."""
+    """Re-derive the 'color' field on every criterion from its name. We do
+    NOT preserve a pre-existing color: the fixed palette is the source of
+    truth, so loading an older saved JSON should still surface the current
+    color scheme (teachers train on a stable red/blue/green/amber)."""
     if not evaluation:
         return evaluation
     for c in evaluation.get("criteria") or []:
-        if not c.get("color"):
-            c["color"] = color_for_criterion(c.get("name", ""))
+        c["color"] = color_for_criterion(c.get("name", ""))
     return evaluation
 
 
@@ -1743,12 +1896,12 @@ def evaluate_endpoint():
 
     try:
         result = evaluate_with_rubric(pages, rubric, provider)
-    except anthropic.APIError as e:
-        return jsonify(error=f"שגיאת API: {e.message}"), 502
-    except (json.JSONDecodeError, KeyError, ValueError) as e:
-        return jsonify(error=f"שגיאת פענוח: {e}"), 502
     except Exception as e:
-        return jsonify(error=f"שגיאה: {e}"), 502
+        log.exception("evaluate_endpoint failed")
+        err = humanize_error(e, action="ההערכה")
+        # Keep `error` key for old callers that just read .error; new fields
+        # let the client render the richer banner.
+        return jsonify(error=err["message"], **err), 502
 
     result["rubric_id"] = rubric_id
     result["rubric_name"] = rubric.get("name", rubric_id)
@@ -1780,14 +1933,9 @@ def run_evaluate_job(
                 })
             else:
                 q.put(ev)
-    except anthropic.APIError as e:
-        q.put({"type": "error", "message": f"שגיאת API: {e.message}"})
-    except (json.JSONDecodeError, KeyError, ValueError) as e:
-        q.put({"type": "error", "message": f"שגיאת פענוח: {e}"})
     except Exception as e:
-        # Same belt-and-suspenders catch as run_job — Gemini raises its own
-        # error types that aren't covered above.
-        q.put({"type": "error", "message": f"שגיאה: {e}"})
+        log.exception("run_evaluate_job failed")
+        q.put({"type": "error", **humanize_error(e, action="ההערכה")})
     finally:
         q.put({"type": "end"})
 
