@@ -215,6 +215,7 @@ _USER_TURN = "תמלל שורה-שורה והחזר JSON."
 MODELS = {
     "claude": "Claude (Opus 4.7)",
     "gemini": "Gemini (2.5 Flash)",
+    "gemini-lite": "Gemini (2.5 Flash-Lite)",
 }
 DEFAULT_MODEL = "claude"
 
@@ -237,7 +238,23 @@ def _inject_rubrics():
 
 
 _ANTHROPIC_MODEL = "claude-opus-4-7"
-_GEMINI_MODEL = "gemini-2.5-flash"
+
+# Provider keys → actual Gemini model IDs. The two flavors have INDEPENDENT
+# daily quotas on the Free Tier ("PerModel" in the rate-limit dimension), so
+# offering both gives ~2× the free-tier headroom: 20 RPD each → 40 RPD total
+# when the teacher manually flips models after the first hits its cap.
+_GEMINI_MODEL_IDS: dict[str, str] = {
+    "gemini": "gemini-2.5-flash",
+    "gemini-lite": "gemini-2.5-flash-lite",
+}
+
+
+def _is_gemini(provider: str) -> bool:
+    return provider in _GEMINI_MODEL_IDS
+
+
+def _gemini_model_id(provider: str) -> str:
+    return _GEMINI_MODEL_IDS.get(provider, "gemini-2.5-flash")
 
 _gemini_client = None
 
@@ -289,7 +306,7 @@ def _ocr_anthropic(img: Image.Image) -> list[dict]:
     return json.loads(text)["lines"]
 
 
-def _ocr_gemini(img: Image.Image) -> list[dict]:
+def _ocr_gemini(img: Image.Image, provider: str = "gemini") -> list[dict]:
     from google.genai import types
 
     # Gemini's response_schema is an OpenAPI subset — it rejects the
@@ -309,7 +326,7 @@ def _ocr_gemini(img: Image.Image) -> list[dict]:
         "required": ["lines"],
     }
     response = _gemini().models.generate_content(
-        model=_GEMINI_MODEL,
+        model=_gemini_model_id(provider),
         contents=[
             types.Part.from_bytes(
                 data=ocr_jpeg_bytes(img), mime_type="image/jpeg"
@@ -329,8 +346,8 @@ def _ocr_gemini(img: Image.Image) -> list[dict]:
 
 
 def ocr_page(img: Image.Image, provider: str = DEFAULT_MODEL) -> list[dict]:
-    if provider == "gemini":
-        return _ocr_gemini(img)
+    if _is_gemini(provider):
+        return _ocr_gemini(img, provider)
     return _ocr_anthropic(img)
 
 
@@ -1083,7 +1100,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         f"--- טקסט התרגיל לבדיקה ---\n\n{transcript}\n\n"
         "החזר JSON לפי הסכימה."
     )
-    if provider == "gemini":
+    if _is_gemini(provider):
         from google.genai import types
 
         gemini_schema = {
@@ -1122,7 +1139,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
             "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
         }
         response = _gemini().models.generate_content(
-            model=_GEMINI_MODEL,
+            model=_gemini_model_id(provider),
             contents=[user_turn],
             config=types.GenerateContentConfig(
                 system_instruction=EVAL_SYSTEM_PROMPT,
@@ -1229,7 +1246,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
         seen = len(names)
         return events
 
-    if provider == "gemini":
+    if _is_gemini(provider):
         from google.genai import types
 
         gemini_schema = {
@@ -1268,7 +1285,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
             "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
         }
         stream = _gemini().models.generate_content_stream(
-            model=_GEMINI_MODEL,
+            model=_gemini_model_id(provider),
             contents=[user_turn],
             config=types.GenerateContentConfig(
                 system_instruction=EVAL_SYSTEM_PROMPT,
