@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+data/annotations/
+data/samples/
+data/crops/
+results/
+logs/
+.venv/
+venv/

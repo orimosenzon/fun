@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8">
+  <title>remez — בחירת תמונה</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 30px auto; padding: 0 20px; }
+    h1 { color: #333; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    a { color: #0066cc; text-decoration: none; font-family: monospace; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>remez — תיוג מילים</h1>
+  <p>בחר תמונה כדי לתייג בה מילים:</p>
+  <ul>
+    {% for img in images %}
+      <li><a href="/?image={{ img }}">{{ img }}</a></li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
