@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8">
+  <title>remez — {{ image }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; margin: 0; padding: 14px; background: #f5f5f5; }
+    .top-bar {
+      background: white; padding: 10px 16px; border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px;
+      display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    }
+    .top-bar code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+    #count { font-weight: bold; color: #2e7d32; }
+    #status { color: #666; font-size: 13px; }
+    .help { color: #666; font-size: 13px; margin: 0 0 12px; }
+
+    /* Labeled words row at top — flex-wrap, RTL flow inherited from body */
+    .words-top {
+      background: white; padding: 10px 14px; border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch;
+      min-height: 56px;
+    }
+    .words-top .label-header {
+      font-size: 13px; color: #666; align-self: center;
+      padding-left: 8px; border-left: 1px solid #ddd; margin-left: 4px;
+    }
+    .word-badge {
+      background: #fff8e1; border: 1px solid #f0d480; border-radius: 5px;
+      padding: 4px 6px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .word-badge img { max-height: 32px; max-width: 90px; border: 1px solid #ddd; background: white; display: block; }
+    .word-badge input {
+      font-size: 14px; padding: 2px 5px; border: 1px solid transparent;
+      background: transparent; border-radius: 2px; direction: rtl;
+      font-family: inherit; width: auto; min-width: 60px;
+    }
+    .word-badge input:focus { background: white; border-color: #ccc; outline: none; }
+    .word-badge .del {
+      background: transparent; border: none; color: #999; cursor: pointer;
+      font-size: 16px; padding: 0 2px; line-height: 1;
+    }
+    .word-badge:hover { background: #fff3c4; }
+    .word-badge:hover .del { color: #f44336; }
+    .empty-hint { color: #999; font-size: 13px; align-self: center; }
+
+    /* Two-column layout: image on right (RTL), line-view on left */
+    .layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; align-items: flex-start; }
+
+    #wrapper {
+      position: relative; display: inline-block; background: white;
+      border: 2px solid #999; cursor: crosshair; max-width: 100%;
+    }
+    #img { display: block; max-width: 100%; height: auto; }
+    #overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+    .line-view {
+      background: white; padding: 12px 14px; border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto;
+    }
+    .line-view h3 {
+      margin: 0 0 10px; font-size: 15px; color: #555;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .line-view button { font-size: 12px; padding: 3px 10px; cursor: pointer; }
+    #trans-status { font-size: 12px; color: #999; }
+    .line-row {
+      display: grid; grid-template-columns: 50% 1fr; gap: 10px;
+      align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .line-row:last-child { border-bottom: none; }
+    .line-row .crop {
+      background: #fafafa; border: 1px solid #eee; border-radius: 3px;
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+      min-height: 40px;
+    }
+    .line-row .crop img { max-width: 100%; max-height: 80px; display: block; }
+    .line-row .text { font-size: 15px; color: #222; line-height: 1.4; direction: rtl; }
+    .loading { color: #999; padding: 10px 0; text-align: center; }
+
+    /* Dialog (unchanged styling) */
+    dialog {
+      border: none; border-radius: 8px; padding: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25); min-width: 360px;
+    }
+    dialog::backdrop { background: rgba(0,0,0,0.4); }
+    dialog form { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+    dialog h3 { margin: 0; }
+    dialog input[type=text] {
+      font-size: 20px; padding: 10px; border: 2px solid #ccc;
+      border-radius: 4px; direction: rtl; width: 100%;
+    }
+    dialog .buttons { display: flex; gap: 8px; justify-content: flex-end; }
+    dialog button { padding: 8px 16px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background: white; }
+    dialog button[value="ok"] { background: #4caf50; color: white; border-color: #4caf50; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/">← תמונה אחרת</a>
+    <span>תמונה: <code>{{ image }}</code></span>
+    <span>מתויגות: <span id="count">0</span></span>
+    <span id="status"></span>
+  </div>
+  <p class="help">גרור עכבר סביב מילה ← תיפתח חלונית להקלדת התמלול ← Enter לשמירה.</p>
+
+  <div class="words-top" id="words-top">
+    <span class="label-header">מילים מתויגות:</span>
+    <span class="empty-hint" id="empty-hint">(עדיין אין — סמן מילה בתמונה)</span>
+  </div>
+
+  <div class="layout">
+    <div id="wrapper">
+      <img id="img" src="/api/image/{{ image }}">
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="line-view">
+      <h3>תמלול שורה-שורה
+        <button id="refresh-transcription">רענן בלי רמזים</button>
+        <button id="refresh-with-hints" title="תמלל מחדש כשהמילים שתייגת משמשות כדוגמאות">תמלל עם הרמזים</button>
+        <span id="trans-status"></span>
+      </h3>
+      <div id="line-list" class="loading">...טוען</div>
+    </div>
+  </div>
+
+  <dialog id="dlg">
+    <form method="dialog">
+      <h3>מה כתוב במילה?</h3>
+      <input type="text" id="dlg-input" dir="rtl" placeholder="הקלד וENTER">
+      <div class="buttons">
+        <button value="ok" autofocus>אישור</button>
+        <button value="cancel">ביטול</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const IMAGE = "{{ image }}";
+    const img = document.getElementById('img');
+    const canvas = document.getElementById('overlay');
+    const wordsTop = document.getElementById('words-top');
+    const emptyHint = document.getElementById('empty-hint');
+    const lineList = document.getElementById('line-list');
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
+    const wrapper = document.getElementById('wrapper');
+    const dlg = document.getElementById('dlg');
+    const dlgInput = document.getElementById('dlg-input');
+    const transStatus = document.getElementById('trans-status');
+
+    let ctx;
+    let data = {words: []};
+    let dragStart = null;
+    let currentBox = null;
+    let pendingBox = null;
+
+    function clog(event, extra) {
+      const payload = {event, ...(extra || {})};
+      try { console.log('[remez]', payload); } catch (e) {}
+      fetch('/api/log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
+
+    window.addEventListener('error', (e) => {
+      clog('window-error', {message: e.message, src: e.filename, line: e.lineno});
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      clog('unhandled-rejection', {reason: String(e.reason)});
+    });
+
+    img.addEventListener('load', async () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      syncCanvasSize();
+      ctx = canvas.getContext('2d');
+      ctx.direction = 'ltr';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      clog('img-loaded', {nw: img.naturalWidth, nh: img.naturalHeight});
+
+      const resp = await fetch(`/api/load/${IMAGE}`);
+      const loaded = await resp.json();
+      data.words = loaded.words || [];
+      clog('annotations-loaded', {count: data.words.length});
+      redraw();
+      renderWordsTop();
+      loadTranscription(false);
+    });
+
+    window.addEventListener('resize', syncCanvasSize);
+    function syncCanvasSize() {
+      canvas.style.width = img.clientWidth + 'px';
+      canvas.style.height = img.clientHeight + 'px';
+    }
+
+    function getPos(e) {
+      const rect = img.getBoundingClientRect();
+      const scaleX = img.naturalWidth / rect.width;
+      const scaleY = img.naturalHeight / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    }
+
+    wrapper.addEventListener('mousedown', (e) => {
+      if (dlg.open) { clog('mousedown-blocked-dialog-open'); return; }
+      dragStart = getPos(e);
+      currentBox = null;
+      clog('mousedown', dragStart);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragStart) return;
+      const p = getPos(e);
+      currentBox = {
+        x: Math.min(dragStart.x, p.x),
+        y: Math.min(dragStart.y, p.y),
+        w: Math.abs(p.x - dragStart.x),
+        h: Math.abs(p.y - dragStart.y),
+      };
+      redraw();
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!dragStart) return;
+      const wasDragging = !!currentBox;
+      const finalBox = currentBox;
+      dragStart = null;
+      if (dlg.open) { clog('mouseup-but-dialog-open'); currentBox = null; redraw(); return; }
+      if (wasDragging && finalBox.w > 6 && finalBox.h > 6) {
+        pendingBox = {...finalBox};
+        currentBox = null;
+        redraw();
+        clog('mouseup-opening-dialog', finalBox);
+        openDialog();
+      } else {
+        clog('mouseup-too-small', finalBox || {});
+        currentBox = null;
+        redraw();
+      }
+    });
+
+    function openDialog() {
+      try {
+        if (dlg.open) { clog('openDialog-already-open'); return; }
+        dlgInput.value = '';
+        dlg.showModal();
+        setTimeout(() => dlgInput.focus(), 30);
+        clog('dialog-shown');
+      } catch (e) {
+        clog('openDialog-error', {message: e.message, name: e.name});
+        statusEl.textContent = 'שגיאה בפתיחת חלון: ' + e.message;
+      }
+    }
+
+    dlg.addEventListener('close', () => {
+      const action = dlg.returnValue;
+      const text = dlgInput.value.trim();
+      clog('dialog-closed', {action, text, has_pending: !!pendingBox});
+      if (action === 'ok' && pendingBox && text) {
+        data.words.push({...pendingBox, text});
+        renderWordsTop();
+        autoSave();
+      }
+      pendingBox = null;
+    });
+
+    dlgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); dlg.close('ok'); }
+      else if (e.key === 'Escape') { e.preventDefault(); dlg.close('cancel'); }
+    });
+
+    function redraw() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.direction = 'ltr';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = 'bold 22px sans-serif';
+      data.words.forEach((w) => {
+        ctx.strokeStyle = 'rgba(244, 67, 54, 0.95)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(w.x, w.y, w.w, w.h);
+        const textW = ctx.measureText(w.text).width;
+        const labelW = Math.max(textW + 12, 36);
+        ctx.fillStyle = 'rgba(255, 253, 178, 0.95)';
+        ctx.fillRect(w.x, w.y - 30, labelW, 26);
+        ctx.fillStyle = '#000';
+        ctx.fillText(w.text, w.x + 6, w.y - 27);
+      });
+      if (currentBox) {
+        ctx.strokeStyle = 'rgba(33, 150, 243, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(currentBox.x, currentBox.y, currentBox.w, currentBox.h);
+        ctx.setLineDash([]);
+      }
+    }
+
+    function makeCrop(box, maxEdge) {
+      const scale = Math.min(maxEdge / box.w, maxEdge / box.h, 1);
+      const w = Math.max(1, Math.round(box.w * scale));
+      const h = Math.max(1, Math.round(box.h * scale));
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      c.getContext('2d').drawImage(img, box.x, box.y, box.w, box.h, 0, 0, w, h);
+      return c.toDataURL('image/jpeg', 0.85);
+    }
+
+    function makeLineCrop(y_top, y_bottom) {
+      const pad = 6;
+      const y0 = Math.max(0, y_top - pad);
+      const y1 = Math.min(img.naturalHeight, y_bottom + pad);
+      const w = img.naturalWidth;
+      const h = y1 - y0;
+      const maxH = 80, maxW = 800;
+      const scale = Math.min(maxH / h, maxW / w, 1);
+      const cw = Math.max(1, Math.round(w * scale));
+      const ch = Math.max(1, Math.round(h * scale));
+      const c = document.createElement('canvas');
+      c.width = cw;
+      c.height = ch;
+      c.getContext('2d').drawImage(img, 0, y0, w, h, 0, 0, cw, ch);
+      return c.toDataURL('image/jpeg', 0.85);
+    }
+
+    function renderWordsTop() {
+      countEl.textContent = data.words.length;
+      // remove all word-badge nodes (keep .label-header and #empty-hint)
+      wordsTop.querySelectorAll('.word-badge').forEach(n => n.remove());
+
+      if (data.words.length === 0) {
+        emptyHint.style.display = '';
+      } else {
+        emptyHint.style.display = 'none';
+      }
+
+      data.words.forEach((w, i) => {
+        const badge = document.createElement('span');
+        badge.className = 'word-badge';
+
+        const thumb = document.createElement('img');
+        thumb.src = makeCrop(w, 90);
+        badge.appendChild(thumb);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = w.text;
+        input.dir = 'rtl';
+        input.size = Math.max(4, w.text.length);
+        input.oninput = (e) => {
+          data.words[i].text = e.target.value;
+          input.size = Math.max(4, e.target.value.length);
+          redraw();
+          autoSave();
+        };
+        badge.appendChild(input);
+
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = '✕';
+        del.title = 'מחק';
+        del.onclick = () => {
+          data.words.splice(i, 1);
+          renderWordsTop();
+          redraw();
+          autoSave();
+        };
+        badge.appendChild(del);
+
+        wordsTop.appendChild(badge);
+      });
+    }
+
+    let saveTimer = null;
+    function autoSave() {
+      clearTimeout(saveTimer);
+      statusEl.textContent = '...שומר';
+      saveTimer = setTimeout(save, 500);
+    }
+
+    async function save() {
+      try {
+        const resp = await fetch(`/api/save/${IMAGE}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({words: data.words}),
+        });
+        const r = await resp.json();
+        statusEl.textContent = r.ok ? `✓ נשמר (${r.count})` : '✗ שגיאה';
+        clog('saved', {count: r.count});
+      } catch (e) {
+        statusEl.textContent = '✗ שגיאת רשת';
+        clog('save-error', {message: e.message});
+      }
+    }
+
+    async function loadTranscription(refresh, withHints) {
+      lineList.className = 'loading';
+      lineList.textContent = refresh ? 'מבקש מ-Claude…' : '...טוען';
+      transStatus.textContent = '';
+      const params = new URLSearchParams();
+      if (refresh) params.set('refresh', '1');
+      if (withHints) params.set('hints', '1');
+      const qs = params.toString();
+      const url = `/api/transcribe/${IMAGE}` + (qs ? '?' + qs : '');
+      try {
+        const resp = await fetch(url);
+        const r = await resp.json();
+        const mode = withHints ? `עם ${r.hint_count || 0} רמזים` : 'בלי רמזים';
+        transStatus.textContent = `${mode} ${r.cached ? '(מ-cache)' : '(חדש)'}`;
+        renderLines(r.lines || []);
+        clog('transcription-loaded', {withHints, hint_count: r.hint_count, cached: r.cached, line_count: (r.lines || []).length});
+      } catch (e) {
+        lineList.className = '';
+        lineList.innerHTML = '<div style="color:#c62828;">שגיאה בטעינת תמלול</div>';
+        clog('transcription-error', {message: e.message});
+      }
+    }
+
+    function renderLines(lines) {
+      lineList.className = '';
+      lineList.innerHTML = '';
+      if (!lines.length) {
+        lineList.innerHTML = '<div class="loading">לא התקבלו שורות</div>';
+        return;
+      }
+      lines.forEach((ln, i) => {
+        const row = document.createElement('div');
+        row.className = 'line-row';
+
+        const cropDiv = document.createElement('div');
+        cropDiv.className = 'crop';
+        const cropImg = document.createElement('img');
+        try { cropImg.src = makeLineCrop(ln.y_top, ln.y_bottom); }
+        catch (e) { clog('line-crop-error', {i, message: e.message}); }
+        cropDiv.appendChild(cropImg);
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'text';
+        textDiv.textContent = ln.text;
+
+        row.appendChild(cropDiv);
+        row.appendChild(textDiv);
+        lineList.appendChild(row);
+      });
+    }
+
+    document.getElementById('refresh-transcription').onclick = () => loadTranscription(true, false);
+    document.getElementById('refresh-with-hints').onclick = () => {
+      if (data.words.length === 0) {
+        alert('אין מילים מתויגות. תייג קודם כמה מילים, ואז נסה שוב.');
+        return;
+      }
+      loadTranscription(true, true);
+    };
+  </script>
+</body>
+</html>
