@@ -216,6 +216,7 @@ MODELS = {
     "claude": "Claude (Opus 4.7)",
     "gemini": "Gemini (2.5 Flash)",
     "gemini-lite": "Gemini (2.5 Flash-Lite)",
+    "groq-scout": "Groq (Llama 4 Scout — חינמי)",
 }
 DEFAULT_MODEL = "claude"
 
@@ -268,6 +269,36 @@ def _gemini():
 
         _gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     return _gemini_client
+
+
+# Provider keys → actual Groq model IDs. Free tier offers Llama 4 Scout with
+# vision support at ~30 RPM. Quality on Hebrew handwriting is unproven vs.
+# Claude/Gemini — kept as a fallback for when both quota out.
+_GROQ_MODEL_IDS: dict[str, str] = {
+    "groq-scout": "meta-llama/llama-4-scout-17b-16e-instruct",
+}
+
+
+def _is_groq(provider: str) -> bool:
+    return provider in _GROQ_MODEL_IDS
+
+
+def _groq_model_id(provider: str) -> str:
+    return _GROQ_MODEL_IDS.get(provider, "meta-llama/llama-4-scout-17b-16e-instruct")
+
+
+_groq_client = None
+
+
+def _groq():
+    """Lazily built so a missing GROQ_API_KEY only bites if Groq is actually
+    picked."""
+    global _groq_client
+    if _groq_client is None:
+        from groq import Groq
+
+        _groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+    return _groq_client
 
 
 def _ocr_anthropic(img: Image.Image) -> list[dict]:
@@ -345,9 +376,44 @@ def _ocr_gemini(img: Image.Image, provider: str = "gemini") -> list[dict]:
     return json.loads(response.text)["lines"]
 
 
+def _ocr_groq(img: Image.Image, provider: str = "groq-scout") -> list[dict]:
+    # Groq is OpenAI-compatible; vision takes a data: URL in image_url. The
+    # SDK only supports response_format={"type":"json_object"} (no schema),
+    # so we lean on the prompt to enforce shape and parse defensively.
+    img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
+    response = _groq().chat.completions.create(
+        model=_groq_model_id(provider),
+        messages=[
+            {"role": "system", "content": OCR_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            _USER_TURN
+                            + ' החזר JSON בפורמט הבא בלבד: {"lines":[{"text":"..."},...]}'
+                        ),
+                    },
+                ],
+            },
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=8000,
+        temperature=0,
+    )
+    return json.loads(response.choices[0].message.content)["lines"]
+
+
 def ocr_page(img: Image.Image, provider: str = DEFAULT_MODEL) -> list[dict]:
     if _is_gemini(provider):
         return _ocr_gemini(img, provider)
+    if _is_groq(provider):
+        return _ocr_groq(img, provider)
     return _ocr_anthropic(img)
 
 
@@ -769,6 +835,46 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
             "technical": technical,
         }
 
+    # ---- Groq errors: SDK exposes them under groq module. Imported lazily so
+    # a stripped-down install without groq (Claude/Gemini-only) still loads.
+    try:
+        import groq as _groq_mod  # type: ignore
+    except ImportError:
+        _groq_mod = None  # noqa: N806
+
+    if _groq_mod and isinstance(exc, _groq_mod.RateLimitError):
+        return {
+            "message": "חרגת ממכסת Groq",
+            "details": (
+                "Groq Free Tier מגביל בקשות לדקה ולשעה. נסה שוב בעוד דקה, "
+                "או החלף ל-Claude/Gemini בתפריט המודל."
+            ),
+            "link_url": "https://console.groq.com/settings/limits",
+            "link_text": "צפה במכסה ב-Groq Console",
+            "technical": technical,
+        }
+
+    if _groq_mod and isinstance(exc, _groq_mod.AuthenticationError):
+        return {
+            "message": "מפתח Groq API לא תקף",
+            "details": (
+                "ודא שהמשתנה GROQ_API_KEY מוגדר נכון (.env מקומית או Secret "
+                "ב-Hugging Face Space) ושהמפתח עדיין פעיל."
+            ),
+            "link_url": "https://console.groq.com/keys",
+            "link_text": "נהל מפתחות ב-Groq Console",
+            "technical": technical,
+        }
+
+    if _groq_mod and isinstance(exc, (_groq_mod.APIConnectionError, _groq_mod.APITimeoutError)):
+        return {
+            "message": "החיבור ל-Groq נכשל",
+            "details": "ייתכן שיש בעיית רשת או ש-Groq לא זמין כרגע. נסה שוב בעוד דקה.",
+            "link_url": "https://groqstatus.com",
+            "link_text": "סטטוס שירות Groq",
+            "technical": technical,
+        }
+
     # ---- Anthropic: rate limit ----
     if isinstance(exc, anthropic.RateLimitError):
         return {
@@ -1076,6 +1182,30 @@ EVAL_SCHEMA = {
 }
 
 
+# Groq's chat-completions API supports response_format={"type":"json_object"}
+# but NOT json_schema, so we spell the required shape in the prompt instead.
+_GROQ_EVAL_SHAPE_HINT = (
+    'החזר אך ורק JSON תקין בפורמט הבא:\n'
+    '{\n'
+    '  "criteria": [\n'
+    '    {\n'
+    '      "name": "...",\n'
+    '      "score": 0,\n'
+    '      "max_score": 0,\n'
+    '      "feedback": "...",\n'
+    '      "feedback_en": "...",\n'
+    '      "issues": [\n'
+    '        {"line_ref": "p1-l3", "quote": "...", "comment": "..."}\n'
+    '      ]\n'
+    '    }\n'
+    '  ],\n'
+    '  "overall_score": "...",\n'
+    '  "overall_feedback": "...",\n'
+    '  "overall_feedback_en": "..."\n'
+    '}'
+)
+
+
 def pages_to_plain_text(pages: list[dict]) -> str:
     """Flatten the OCR'd pages into a single transcript for the evaluator.
 
@@ -1160,6 +1290,30 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                 e, len(response.text),
             )
             log.error("evaluate (gemini) raw response text:\n%s", response.text)
+            raise
+        return attach_colors(parsed)
+
+    if _is_groq(provider):
+        # Groq's response_format only supports json_object (no schema), so we
+        # spell the shape out in the user turn and parse defensively.
+        response = _groq().chat.completions.create(
+            model=_groq_model_id(provider),
+            messages=[
+                {"role": "system", "content": EVAL_SYSTEM_PROMPT},
+                {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=12000,
+            temperature=0,
+        )
+        text = response.choices[0].message.content
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as e:
+            log.error(
+                "evaluate (groq) JSON parse failed: %s | text_len=%d", e, len(text),
+            )
+            log.error("evaluate (groq) raw response text:\n%s", text)
             raise
         return attach_colors(parsed)
 
@@ -1298,6 +1452,24 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
         for chunk in stream:
             if chunk.text:
                 buffer += chunk.text
+                for ev in drain_progress():
+                    yield ev
+    elif _is_groq(provider):
+        stream = _groq().chat.completions.create(
+            model=_groq_model_id(provider),
+            messages=[
+                {"role": "system", "content": EVAL_SYSTEM_PROMPT},
+                {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=12000,
+            temperature=0,
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                buffer += delta
                 for ev in drain_progress():
                     yield ev
     else:
