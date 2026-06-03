@@ -1,9 +1,7 @@
 .env
 __pycache__/
 *.pyc
-data/annotations/
-data/samples/
-data/crops/
+data/
 results/
 logs/
 .venv/

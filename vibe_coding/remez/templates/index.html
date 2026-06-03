@@ -6,19 +6,80 @@
   <style>
     body { font-family: sans-serif; max-width: 700px; margin: 30px auto; padding: 0 20px; }
     h1 { color: #333; }
+    h2 { color: #555; font-size: 1.1em; margin-top: 30px; }
     ul { list-style: none; padding: 0; }
     li { padding: 8px 12px; border-bottom: 1px solid #eee; }
     a { color: #0066cc; text-decoration: none; font-family: monospace; }
     a:hover { text-decoration: underline; }
+    .upload-box { background: #f8f9fa; border: 1px dashed #aaa; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+    .upload-box input[type=file] { font-family: inherit; }
+    .upload-box button { background: #0066cc; color: white; border: 0; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-family: inherit; margin-right: 8px; }
+    .upload-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #upload-status { margin-top: 10px; font-size: 0.9em; color: #555; }
+    .empty { color: #999; font-style: italic; }
+    .intro { color: #444; }
   </style>
 </head>
 <body>
   <h1>remez — תיוג מילים</h1>
-  <p>בחר תמונה כדי לתייג בה מילים:</p>
-  <ul>
-    {% for img in images %}
-      <li><a href="/?image={{ img }}">{{ img }}</a></li>
-    {% endfor %}
-  </ul>
+  <p class="intro">העלה צילום של עבודה בכתב יד, סמן 15-20 מילים עם התמלול הנכון, וראה אם הרמזים משפרים את ה-OCR של שאר הדף.</p>
+
+  <div class="upload-box">
+    <form id="upload-form">
+      <input type="file" id="image-input" name="image" accept="image/jpeg,image/png,image/webp" required>
+      <button type="submit" id="upload-btn">העלה</button>
+    </form>
+    <div id="upload-status"></div>
+  </div>
+
+  {% if uploads %}
+    <h2>תמונות שהועלו</h2>
+    <ul>
+      {% for img in uploads %}
+        <li><a href="/?image={{ img }}">{{ img }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if samples %}
+    <h2>דוגמאות מקומיות</h2>
+    <ul>
+      {% for img in samples %}
+        <li><a href="/?image={{ img }}">{{ img }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if not uploads and not samples %}
+    <p class="empty">עדיין אין תמונות. תעלה אחת ונתחיל.</p>
+  {% endif %}
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const status = document.getElementById('upload-status');
+    const btn = document.getElementById('upload-btn');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('image-input').files[0];
+      if (!file) return;
+      btn.disabled = true;
+      status.textContent = 'מעלה…';
+      const fd = new FormData();
+      fd.append('image', file);
+      try {
+        const r = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok || !data.ok) {
+          status.textContent = 'שגיאה: ' + (data.error || r.statusText);
+          btn.disabled = false;
+          return;
+        }
+        window.location.href = '/?image=' + encodeURIComponent(data.image);
+      } catch (err) {
+        status.textContent = 'שגיאת רשת: ' + err.message;
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
