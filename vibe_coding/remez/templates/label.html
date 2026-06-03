@@ -103,6 +103,8 @@
     <a href="/">← תמונה אחרת</a>
     <span>תמונה: <code>{{ image }}</code></span>
     <span>מתויגות: <span id="count">0</span></span>
+    <button id="rotate-ccw" title="סובב 90° נגד כיוון השעון">↺ סובב</button>
+    <button id="rotate-cw" title="סובב 90° עם כיוון השעון">סובב ↻</button>
     <span id="status"></span>
   </div>
   <p class="help">גרור עכבר סביב מילה ← תיפתח חלונית להקלדת התמלול ← Enter לשמירה.</p>
@@ -114,12 +116,17 @@
 
   <div class="layout">
     <div id="wrapper">
-      <img id="img" src="/api/image/{{ image }}">
+      <img id="img" src="/api/image/{{ image }}?v={{ image_version }}">
       <canvas id="overlay"></canvas>
     </div>
 
     <div class="line-view">
       <h3>תמלול שורה-שורה
+        <select id="model-select" title="המודל שיבצע את התמלול">
+          {% for key, label in models.items() %}
+            <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
         <button id="refresh-transcription">רענן בלי רמזים</button>
         <button id="refresh-with-hints" title="תמלל מחדש כשהמילים שתייגת משמשות כדוגמאות">תמלל עם הרמזים</button>
         <span id="trans-status"></span>
@@ -406,28 +413,56 @@
       }
     }
 
+    const modelSelect = document.getElementById('model-select');
+
     async function loadTranscription(refresh, withHints) {
+      const modelKey = modelSelect.value;
+      const modelLabel = modelSelect.options[modelSelect.selectedIndex].text;
       lineList.className = 'loading';
-      lineList.textContent = refresh ? 'מבקש מ-Claude…' : '...טוען';
+      lineList.textContent = refresh ? `מבקש מ-${modelLabel}…` : '...טוען';
       transStatus.textContent = '';
       const params = new URLSearchParams();
       if (refresh) params.set('refresh', '1');
       if (withHints) params.set('hints', '1');
-      const qs = params.toString();
-      const url = `/api/transcribe/${IMAGE}` + (qs ? '?' + qs : '');
+      params.set('model', modelKey);
+      const url = `/api/transcribe/${IMAGE}?` + params.toString();
       try {
         const resp = await fetch(url);
         const r = await resp.json();
         const mode = withHints ? `עם ${r.hint_count || 0} רמזים` : 'בלי רמזים';
-        transStatus.textContent = `${mode} ${r.cached ? '(מ-cache)' : '(חדש)'}`;
+        transStatus.textContent = `[${modelLabel}] ${mode} ${r.cached ? '(מ-cache)' : '(חדש)'}`;
         renderLines(r.lines || []);
-        clog('transcription-loaded', {withHints, hint_count: r.hint_count, cached: r.cached, line_count: (r.lines || []).length});
+        clog('transcription-loaded', {model: modelKey, withHints, hint_count: r.hint_count, cached: r.cached, line_count: (r.lines || []).length});
       } catch (e) {
         lineList.className = '';
         lineList.innerHTML = '<div style="color:#c62828;">שגיאה בטעינת תמלול</div>';
-        clog('transcription-error', {message: e.message});
+        clog('transcription-error', {model: modelKey, message: e.message});
       }
     }
+
+    modelSelect.addEventListener('change', () => {
+      transStatus.textContent = 'מודל שונה — לחץ "רענן" כדי לטעון תמלול חדש';
+    });
+
+    async function rotateImage(direction) {
+      if (data.words.length > 0 || (data.lines && data.lines.length)) {
+        if (!confirm('סיבוב יאפס את כל המילים המתויגות והתמלולים בקאש. להמשיך?')) return;
+      }
+      try {
+        const r = await fetch(`/api/rotate/${IMAGE}?dir=${direction}`, { method: 'POST' });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+          alert('שגיאה בסיבוב: ' + (j.error || r.statusText));
+          return;
+        }
+        clog('rotate', {direction});
+        window.location.reload();
+      } catch (e) {
+        alert('שגיאת רשת בסיבוב: ' + e.message);
+      }
+    }
+    document.getElementById('rotate-cw').onclick = () => rotateImage('cw');
+    document.getElementById('rotate-ccw').onclick = () => rotateImage('ccw');
 
     function renderLines(lines) {
       lineList.className = '';

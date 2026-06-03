@@ -1,0 +1,16 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.log
+logs/
+data/
+memory/
+results/
+annotate.py
+experiment.py
+README.md
+deploy/
+deploy.sh
+.git/
