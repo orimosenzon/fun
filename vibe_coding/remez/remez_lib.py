@@ -74,7 +74,10 @@ def extract_json(text: str) -> dict | list:
 
 
 def client() -> Anthropic:
-    return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    # strip(): an accidentally-pasted trailing newline in the HF Space
+    # secret value makes the Authorization header malformed, which the
+    # SDK surfaces as a generic "Connection error" — strip defensively.
+    return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
 
 
 _gemini_client = None

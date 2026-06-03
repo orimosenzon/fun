@@ -246,7 +246,7 @@ def _friendly_provider_error(exc: Exception, model_key: str) -> tuple[str, int]:
         return ("המודל עמוס כרגע מצד הספק. נסה שוב בעוד מספר שניות.", 503)
     if "timeout" in lower or "timed out" in lower:
         return ("הקריאה למודל ארכה מדי. נסה שוב.", 504)
-    return (f"שגיאה בקריאה למודל: {msg[:300]}", 502)
+    return (f"שגיאה בקריאה למודל ({type(exc).__name__}): {msg[:300]}", 502)
 
 
 @app.route("/api/transcribe/<name>")
