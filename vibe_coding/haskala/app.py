@@ -911,6 +911,42 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
             "technical": technical,
         }
 
+    # ---- Missing API key env var: providers' lazy clients raise KeyError on
+    # os.environ[...] when the key isn't set. Catch this BEFORE the generic
+    # JSON branch below (which also matches KeyError) so the user sees the
+    # real cause instead of "the model returned invalid response".
+    if isinstance(exc, KeyError) and exc.args:
+        key_name = str(exc.args[0])
+        _key_info = {
+            "GROQ_API_KEY": (
+                "Groq",
+                "https://console.groq.com/keys",
+                "צור מפתח חינמי ב-Groq Console",
+            ),
+            "ANTHROPIC_API_KEY": (
+                "Anthropic",
+                "https://console.anthropic.com/settings/keys",
+                "נהל מפתחות ב-Anthropic Console",
+            ),
+            "GEMINI_API_KEY": (
+                "Gemini",
+                "https://aistudio.google.com/apikey",
+                "נהל מפתחות ב-Google AI Studio",
+            ),
+        }
+        if key_name in _key_info:
+            provider_name, url, link_label = _key_info[key_name]
+            return {
+                "message": f"מפתח {provider_name} API חסר",
+                "details": (
+                    f"המשתנה {key_name} לא מוגדר. הוסף אותו ל-.env המקומי או "
+                    f"כ-Secret ב-Hugging Face Space, ואז restart את השרת."
+                ),
+                "link_url": url,
+                "link_text": link_label,
+                "technical": technical,
+            }
+
     # ---- JSON parsing: the model returned malformed output ----
     if isinstance(exc, (json.JSONDecodeError, KeyError, ValueError)):
         return {
