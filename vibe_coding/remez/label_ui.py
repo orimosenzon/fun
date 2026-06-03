@@ -222,6 +222,33 @@ PROMPT_TASK = (
 )
 
 
+def _friendly_provider_error(exc: Exception, model_key: str) -> tuple[str, int]:
+    """Translate a provider exception into (human message, HTTP status).
+
+    The UI shows the message verbatim, so it has to be self-explanatory in
+    Hebrew. Status code lets the JS distinguish "retry will help" from
+    "fix config" cases.
+    """
+    msg = str(exc)
+    lower = msg.lower()
+    # Auth — bad/missing key on this deployment.
+    if "401" in msg or "authentication" in lower or "api key" in lower or "permission_denied" in lower:
+        return (
+            f"שגיאת הזדהות מול ספק המודל ({model_key}). "
+            "ייתכן שמפתח ה-API חסר או שגוי בהגדרות ה-Space.",
+            502,
+        )
+    # Rate limit / quota.
+    if "429" in msg or "rate" in lower or "quota" in lower or "resource_exhausted" in lower:
+        return ("חרגנו ממכסת הקצב של ספק המודל. נסה שוב בעוד דקה.", 429)
+    # Transient server-side busy.
+    if "503" in msg or "unavailable" in lower or "overloaded" in lower or "high demand" in lower:
+        return ("המודל עמוס כרגע מצד הספק. נסה שוב בעוד מספר שניות.", 503)
+    if "timeout" in lower or "timed out" in lower:
+        return ("הקריאה למודל ארכה מדי. נסה שוב.", 504)
+    return (f"שגיאה בקריאה למודל: {msg[:300]}", 502)
+
+
 @app.route("/api/transcribe/<name>")
 def transcribe_route(name):
     use_hints = request.args.get("hints") == "1"
@@ -265,8 +292,14 @@ def transcribe_route(name):
     parts.append(("image", img))
     parts.append(("text", PROMPT_TASK))
 
-    raw = transcribe(parts, model_key=model_key, max_tokens=4000)
-    data = extract_json(raw)
+    try:
+        raw = transcribe(parts, model_key=model_key, max_tokens=4000)
+        data = extract_json(raw)
+    except Exception as exc:
+        logging.getLogger("remez").exception("transcribe failed (model=%s)", model_key)
+        msg, status = _friendly_provider_error(exc, model_key)
+        return jsonify({"ok": False, "error": msg, "model": model_key}), status
+
     data["hint_count"] = hint_count
     data["model"] = model_key
     data["cached"] = False

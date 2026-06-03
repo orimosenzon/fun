@@ -428,15 +428,24 @@
       const url = `/api/transcribe/${IMAGE}?` + params.toString();
       try {
         const resp = await fetch(url);
-        const r = await resp.json();
+        let r = null;
+        try { r = await resp.json(); } catch (_) {}
+        if (!resp.ok || (r && r.ok === false)) {
+          const msg = (r && r.error) ? r.error : `שגיאה ${resp.status}`;
+          lineList.className = '';
+          lineList.innerHTML = `<div style="color:#c62828; white-space:pre-wrap;">${msg}</div>`;
+          transStatus.textContent = `[${modelLabel}] נכשל`;
+          clog('transcription-error', {model: modelKey, status: resp.status, message: msg});
+          return;
+        }
         const mode = withHints ? `עם ${r.hint_count || 0} רמזים` : 'בלי רמזים';
         transStatus.textContent = `[${modelLabel}] ${mode} ${r.cached ? '(מ-cache)' : '(חדש)'}`;
         renderLines(r.lines || []);
         clog('transcription-loaded', {model: modelKey, withHints, hint_count: r.hint_count, cached: r.cached, line_count: (r.lines || []).length});
       } catch (e) {
         lineList.className = '';
-        lineList.innerHTML = '<div style="color:#c62828;">שגיאה בטעינת תמלול</div>';
-        clog('transcription-error', {model: modelKey, message: e.message});
+        lineList.innerHTML = `<div style="color:#c62828;">שגיאת רשת: ${e.message}</div>`;
+        clog('transcription-network-error', {model: modelKey, message: e.message});
       }
     }
 
