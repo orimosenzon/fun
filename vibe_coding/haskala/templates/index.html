@@ -1785,6 +1785,11 @@
                     return (serverData.filename || 'haskala').replace(/\.(pdf|jpe?g|png|json)$/i, '');
                 }
 
+                function currentModel() {
+                    const m = document.getElementById('model-select');
+                    return m ? m.value : '';
+                }
+
                 function docxName(kind) {
                     const base = baseName();
                     const labels = window.__haskalaMfls || {};
