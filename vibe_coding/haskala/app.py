@@ -1927,34 +1927,22 @@ def build_decode_docx(
         lines = page.get("lines") or []
 
         doc.add_heading("שורה-שורה", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        if lines:
-            ltable = doc.add_table(rows=1, cols=2)
-            ltable.style = "Light Grid Accent 1"
-            lhdr = ltable.rows[0].cells
-            lhdr[0].text = "שורה"
-            lhdr[1].text = "טקסט"
-            for cell in lhdr:
-                for p in cell.paragraphs:
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                    for r in p.runs:
-                        r.bold = True
-
-            for line in lines:
-                row = ltable.add_row().cells
-                line_b64 = line.get("image_b64") or ""
-                if line_b64:
-                    try:
-                        line_bytes = base64.b64decode(line_b64)
-                        row[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        row[0].paragraphs[0].add_run().add_picture(
-                            io.BytesIO(line_bytes), width=Inches(4.0)
-                        )
-                    except (ValueError, OSError) as e:
-                        log.warning("line image decode failed: %s", e)
-                        row[0].text = "[שגיאת תמונה]"
-                row[1].text = str(line.get("text", ""))
-                for p in row[1].paragraphs:
-                    p.alignment = text_align
+        for line in lines:
+            line_b64 = line.get("image_b64") or ""
+            if line_b64:
+                try:
+                    line_bytes = base64.b64decode(line_b64)
+                    pic_para = doc.add_paragraph()
+                    pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    pic_para.add_run().add_picture(
+                        io.BytesIO(line_bytes), width=Inches(6.5)
+                    )
+                except (ValueError, OSError) as e:
+                    log.warning("line image decode failed: %s", e)
+            txt_para = doc.add_paragraph(str(line.get("text", "")))
+            txt_para.alignment = text_align
+            for r in txt_para.runs:
+                r.font.size = Pt(11)
 
         doc.add_heading("תמונה מלאה", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
         orig_b64 = page.get("original_b64") or ""
