@@ -942,6 +942,7 @@
                 <button id="save-menu-btn" type="button" {% if not pages %}disabled{% endif %}>שמור ▾</button>
                 <div id="save-menu" class="menu-list">
                     <button type="button" data-act="save-decoded">שמור קובץ מפוענח (JSON)</button>
+                    <button type="button" data-act="save-decode-docx">שמור פענוח כקובץ Word</button>
                     <div class="menu-sep"></div>
                     <button type="button" data-act="save-eval" disabled>שמור בדיקה (JSON)</button>
                     <button type="button" data-act="save-eval-docx" disabled>שמור בדיקה כקובץ Word</button>
@@ -2115,6 +2116,44 @@
                         };
                         const name = `haskala-eval-${baseName()}-${nowStamp()}.json`;
                         await downloadOrSaveJson(name, JSON.stringify(out, null, 2));
+                    } else if (act === 'save-decode-docx') {
+                        const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
+                        const resp = await fetch('/decode/docx', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                pages: collectPages(),
+                                filename: serverData.filename || 'תרגיל',
+                                exercise_lang: langs.exercise_lang,
+                            }),
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({}));
+                            alert(err.error || 'שגיאה ביצירת קובץ Word');
+                            return;
+                        }
+                        const blob = await resp.blob();
+                        const name = `haskala-decode-${baseName()}-${nowStamp()}.docx`;
+                        const api = await window.__haskalaGetApi();
+                        if (api) {
+                            const ab = await blob.arrayBuffer();
+                            let bin = '';
+                            const bytes = new Uint8Array(ab);
+                            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+                            const b64 = btoa(bin);
+                            if (api.save_docx) {
+                                await api.save_docx(name, b64);
+                                return;
+                            }
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
                     } else if (act === 'save-eval-docx') {
                         if (!currentEvaluation) return;
                         const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};

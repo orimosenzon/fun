@@ -1887,6 +1887,100 @@ def _fill_paragraph_with_spans(
         paragraph.add_run(text[cursor:])
 
 
+def build_decode_docx(
+    pages: list[dict],
+    filename: str,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+) -> bytes:
+    """Word document with the OCR result only — no rubric evaluation.
+
+    Per page (so a multi-page exercise stays grouped): first a line-by-line
+    table (cropped line image | transcribed text), then the original full
+    scan, then the full transcribed text. Text alignment follows the
+    exercise language direction (RTL/LTR).
+    """
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Inches, Pt
+
+    lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
+    text_align = (
+        WD_ALIGN_PARAGRAPH.RIGHT if lang["dir"] == "rtl" else WD_ALIGN_PARAGRAPH.LEFT
+    )
+
+    doc = Document()
+
+    title = doc.add_heading("פענוח תרגיל — השכלה", level=1)
+    title.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    meta = doc.add_paragraph()
+    meta.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    meta.add_run(f"קובץ: {filename}\n").bold = True
+    meta.add_run(f"שפת תרגיל: {lang['name_he']}").bold = True
+
+    for page_idx, page in enumerate(pages or []):
+        if page_idx > 0:
+            doc.add_page_break()
+        page_num = page.get("page", page_idx + 1)
+        doc.add_heading(f"עמוד {page_num}", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+        lines = page.get("lines") or []
+
+        doc.add_heading("שורה-שורה", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        if lines:
+            ltable = doc.add_table(rows=1, cols=2)
+            ltable.style = "Light Grid Accent 1"
+            lhdr = ltable.rows[0].cells
+            lhdr[0].text = "שורה"
+            lhdr[1].text = "טקסט"
+            for cell in lhdr:
+                for p in cell.paragraphs:
+                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                    for r in p.runs:
+                        r.bold = True
+
+            for line in lines:
+                row = ltable.add_row().cells
+                line_b64 = line.get("image_b64") or ""
+                if line_b64:
+                    try:
+                        line_bytes = base64.b64decode(line_b64)
+                        row[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        row[0].paragraphs[0].add_run().add_picture(
+                            io.BytesIO(line_bytes), width=Inches(4.0)
+                        )
+                    except (ValueError, OSError) as e:
+                        log.warning("line image decode failed: %s", e)
+                        row[0].text = "[שגיאת תמונה]"
+                row[1].text = str(line.get("text", ""))
+                for p in row[1].paragraphs:
+                    p.alignment = text_align
+
+        doc.add_heading("תמונה מלאה", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        orig_b64 = page.get("original_b64") or ""
+        if orig_b64:
+            try:
+                orig_bytes = base64.b64decode(orig_b64)
+                pic_para = doc.add_paragraph()
+                pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                pic_para.add_run().add_picture(
+                    io.BytesIO(orig_bytes), width=Inches(5.5)
+                )
+            except (ValueError, OSError) as e:
+                log.warning("page %s original image failed: %s", page_num, e)
+
+        doc.add_heading("טקסט מלא", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        for line in lines:
+            p = doc.add_paragraph(str(line.get("text", "")))
+            p.alignment = text_align
+            for r in p.runs:
+                r.font.size = Pt(11)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
 def build_evaluation_docx(
     evaluation: dict,
     filename: str,
@@ -2370,6 +2464,32 @@ def evaluate_progress(job_id):
         stream(),
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.route("/decode/docx", methods=["POST"])
+def decode_docx():
+    """Streams a .docx of the OCR result only (no rubric evaluation).
+    Same delivery shape as /evaluation/docx — desktop uses save_docx with
+    base64 bytes, browser gets a direct download."""
+    body = request.get_json(silent=True) or {}
+    pages = body.get("pages") or []
+    filename = body.get("filename") or "תרגיל"
+    exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
+    if not pages:
+        return jsonify(error="אין פענוח לייצוא"), 400
+    try:
+        data = build_decode_docx(pages, filename, exercise_lang=exercise_lang)
+    except Exception as e:
+        return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
+
+    base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
+    out_name = f"haskala-decode-{base}.docx"
+    return send_file(
+        io.BytesIO(data),
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        as_attachment=True,
+        download_name=out_name,
     )
 
 
