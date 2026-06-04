@@ -1172,6 +1172,8 @@
                 feedback_lang: currentFeedbackLang(),
             });
 
+            window.__haskalaMfls = {{ model_filename_labels | tojson }};
+
             // --- פענח קובץ ---
             document.getElementById('decode-btn').addEventListener('click', async () => {
                 const api = await getApi();
@@ -1783,6 +1785,17 @@
                     return (serverData.filename || 'haskala').replace(/\.(pdf|jpe?g|png|json)$/i, '');
                 }
 
+                function docxName(kind) {
+                    const base = baseName();
+                    const labels = window.__haskalaMfls || {};
+                    const label = labels[currentModel()] || currentModel();
+                    if (base.includes('_')) {
+                        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                        return `${base}_${kind}_${label}_${date}.docx`;
+                    }
+                    return `${base}_${kind}_${label}.docx`;
+                }
+
                 async function downloadOrSaveJson(name, content) {
                     const api = await window.__haskalaGetApi();
                     if (api) {
@@ -2124,6 +2137,7 @@
                             body: JSON.stringify({
                                 pages: collectPages(),
                                 filename: serverData.filename || 'תרגיל',
+                                model: currentModel(),
                                 exercise_lang: langs.exercise_lang,
                             }),
                         });
@@ -2133,7 +2147,7 @@
                             return;
                         }
                         const blob = await resp.blob();
-                        const name = `ocr-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${baseName()}.docx`;
+                        const name = docxName('OCR');
                         const api = await window.__haskalaGetApi();
                         if (api) {
                             const ab = await blob.arrayBuffer();
@@ -2163,6 +2177,7 @@
                             body: JSON.stringify({
                                 evaluation: currentEvaluation,
                                 filename: serverData.filename || 'תרגיל',
+                                model: currentModel(),
                                 rubric_name: currentEvaluation.rubric_name || '',
                                 pages: collectPages(),
                                 exercise_lang: langs.exercise_lang,
@@ -2175,7 +2190,7 @@
                             return;
                         }
                         const blob = await resp.blob();
-                        const name = `eval-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${baseName()}.docx`;
+                        const name = docxName('Eval');
                         const api = await window.__haskalaGetApi();
                         if (api) {
                             // Native dialog needs the bytes as base64 — read the
