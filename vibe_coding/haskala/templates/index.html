@@ -923,6 +923,18 @@
                 <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
+            <label for="exercise-lang-select">שפת תרגיל:</label>
+            <select id="exercise-lang-select" title="השפה שבה כתוב התרגיל בצילום">
+                {% for key, meta in langs.items() %}
+                <option value="{{ key }}" {% if key == default_exercise_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                {% endfor %}
+            </select>
+            <label for="feedback-lang-select">שפת פידבק:</label>
+            <select id="feedback-lang-select" title="השפה של המשוב, ההסברים וההערות לתלמיד">
+                {% for key, meta in langs.items() %}
+                <option value="{{ key }}" {% if key == default_feedback_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                {% endfor %}
+            </select>
             <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
             <span class="spacer"></span>
             <button id="reset-btn" type="button" class="secondary" {% if not pages %}disabled{% endif %}>אתחל</button>
@@ -1132,13 +1144,44 @@
             });
             const currentModel = () => modelSel.value;
 
+            // Two language pickers — exercise (what's on the page) and feedback
+            // (what the model writes back). Same persistence pattern as model.
+            const exerciseLangSel = document.getElementById('exercise-lang-select');
+            const feedbackLangSel = document.getElementById('feedback-lang-select');
+            const savedExLang = localStorage.getItem('haskala-exercise-lang');
+            if (savedExLang && exerciseLangSel.querySelector(`option[value="${savedExLang}"]`)) {
+                exerciseLangSel.value = savedExLang;
+            }
+            const savedFbLang = localStorage.getItem('haskala-feedback-lang');
+            if (savedFbLang && feedbackLangSel.querySelector(`option[value="${savedFbLang}"]`)) {
+                feedbackLangSel.value = savedFbLang;
+            }
+            exerciseLangSel.addEventListener('change', () => {
+                localStorage.setItem('haskala-exercise-lang', exerciseLangSel.value);
+            });
+            feedbackLangSel.addEventListener('change', () => {
+                localStorage.setItem('haskala-feedback-lang', feedbackLangSel.value);
+            });
+            const currentExerciseLang = () => exerciseLangSel.value;
+            const currentFeedbackLang = () => feedbackLangSel.value;
+            // Exposed for the result-screen IIFE further down (the eval call
+            // and the Word export both need to read the current picks).
+            window.__haskalaLangs = () => ({
+                exercise_lang: currentExerciseLang(),
+                feedback_lang: currentFeedbackLang(),
+            });
+
             // --- פענח קובץ ---
             document.getElementById('decode-btn').addEventListener('click', async () => {
                 const api = await getApi();
                 if (api) {
                     const path = await api.pick_pdf();
                     if (!path) return;
-                    startDecode(JSON.stringify({ path, model: currentModel() }), true);
+                    startDecode(JSON.stringify({
+                        path,
+                        model: currentModel(),
+                        exercise_lang: currentExerciseLang(),
+                    }), true);
                 } else {
                     document.getElementById('fallback-pdf').click();
                 }
@@ -1149,6 +1192,7 @@
                 const fd = new FormData();
                 fd.append('pdf', f);
                 fd.append('model', currentModel());
+                fd.append('exercise_lang', currentExerciseLang());
                 startDecode(fd, false);
             });
 
@@ -1204,7 +1248,7 @@
                             <th>קריטריון</th>
                             <th style="width: 90px">ציון</th>
                             <th>פידבק</th>
-                            <th>Feedback (EN)</th>
+                            <th id="eval-feedback-secondary-th">פידבק (שפת תרגיל)</th>
                         </tr>
                     </thead>
                     <tbody id="eval-tbody"></tbody>
@@ -1815,25 +1859,42 @@
                     meta.textContent = currentEvaluation.rubric_name
                         ? `רובריקה: ${currentEvaluation.rubric_name}`
                         : '';
+                    // Pull the current language picks so we can decide whether
+                    // to show the secondary (exercise-language) column at all.
+                    // Older saved evals still carry `feedback_en` — read that
+                    // as a fallback so they render correctly on this UI.
+                    const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
+                    const showSecondary = langs.feedback_lang
+                        && langs.exercise_lang
+                        && langs.feedback_lang !== langs.exercise_lang;
+                    const secondaryTh = document.getElementById('eval-feedback-secondary-th');
+                    if (secondaryTh) secondaryTh.hidden = !showSecondary;
                     const overall = document.getElementById('eval-overall');
-                    const overallEn = currentEvaluation.overall_feedback_en || '';
+                    const overallSecondary = showSecondary
+                        ? (currentEvaluation.overall_feedback_secondary
+                           || currentEvaluation.overall_feedback_en
+                           || '')
+                        : '';
                     overall.innerHTML = `
                         <div class="eval-overall-score">ציון כללי: ${escapeHtml(currentEvaluation.overall_score || '')}</div>
                         <div class="eval-overall-text">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
-                        ${overallEn ? `<div class="eval-overall-text-en">${escapeHtml(overallEn)}</div>` : ''}
+                        ${overallSecondary ? `<div class="eval-overall-text-en">${escapeHtml(overallSecondary)}</div>` : ''}
                     `;
                     const tbody = document.getElementById('eval-tbody');
                     tbody.innerHTML = '';
                     (currentEvaluation.criteria || []).forEach(c => {
                         const color = c.color || '#888';
                         const tr = document.createElement('tr');
+                        const secondary = showSecondary
+                            ? (c.feedback_secondary || c.feedback_en || '')
+                            : '';
                         tr.innerHTML = `
                             <td class="criterion-cell" data-label="קריטריון" style="border-inline-start-color:${escapeHtml(color)}">
                                 <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
                             </td>
                             <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
                             <td class="feedback-cell" data-label="פידבק">${escapeHtml(c.feedback || '')}</td>
-                            <td class="feedback-en-cell" data-label="Feedback (EN)">${escapeHtml(c.feedback_en || '')}</td>
+                            ${showSecondary ? `<td class="feedback-en-cell" data-label="פידבק (שפת תרגיל)">${escapeHtml(secondary)}</td>` : ''}
                         `;
                         tbody.appendChild(tr);
                     });
@@ -1919,6 +1980,7 @@
                         evalSpinner.classList.add('visible');
                         try {
                             const modelSel = document.getElementById('model-select');
+                            const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
                             const resp = await fetch('/evaluate/start', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -1926,6 +1988,8 @@
                                     pages,
                                     rubric_id: rubricId,
                                     model: modelSel ? modelSel.value : undefined,
+                                    exercise_lang: langs.exercise_lang,
+                                    feedback_lang: langs.feedback_lang,
                                 }),
                             });
                             const data = await resp.json();
@@ -2053,6 +2117,7 @@
                         await downloadOrSaveJson(name, JSON.stringify(out, null, 2));
                     } else if (act === 'save-eval-docx') {
                         if (!currentEvaluation) return;
+                        const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
                         const resp = await fetch('/evaluation/docx', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -2061,6 +2126,8 @@
                                 filename: serverData.filename || 'תרגיל',
                                 rubric_name: currentEvaluation.rubric_name || '',
                                 pages: collectPages(),
+                                exercise_lang: langs.exercise_lang,
+                                feedback_lang: langs.feedback_lang,
                             }),
                         });
                         if (!resp.ok) {

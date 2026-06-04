@@ -86,16 +86,36 @@ def _require_basic_auth():
 client = anthropic.Anthropic()
 
 # Render PDF at this DPI. Higher = better OCR but more tokens/cost.
-# 200 DPI gives a good balance — A4 → ~1700×2340 px, well under Opus 4.7's 2576px limit.
+# 200 DPI gives a good balance — A4 → ~1700×2340 px, well under Opus 4.8's 2576px limit.
 RENDER_DPI = 200
 
-OCR_SYSTEM_PROMPT = """אתה מבצע OCR מדויק על צילום של תרגיל כתוב ביד.
+def build_ocr_prompt(exercise_lang: str) -> str:
+    """OCR system prompt parameterized by the exercise's primary language.
 
-הקלט עשוי להיות בעברית, בערבית, באנגלית, או שילוב של כמה שפות באותו דף
-(למשל הוראות בעברית ותשובות באנגלית). זהה את הכתב של כל שורה בנפרד ותמלל
-אותו כפי שהוא — אל תתרגם ואל תמיר בין סקריפטים.
+    The page may still contain other scripts (e.g. printed Hebrew instructions
+    above an English answer), so the prompt keeps the model tolerant of
+    mixed-language input — exercise_lang only signals the *expected* primary
+    script, not an exclusive filter.
 
-כללי תמלול קריטיים:
+    Rule 9 (RTL ordering) is the load-bearing one for Arabic/Hebrew: without
+    it the model has been observed to emit words in *visual* left-to-right
+    order, so what comes out reads back-to-front when the renderer applies
+    the standard BiDi algorithm. Spelling it out fixes the reversal."""
+    lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
+    primary = lang["name_native"]
+    is_rtl_exercise = lang["dir"] == "rtl"
+    rtl_emphasis = (
+        f"השפה העיקרית ({primary}) נכתבת מימין לשמאל. שים לב מיוחד לכלל 9.\n\n"
+        if is_rtl_exercise else ""
+    )
+    return f"""אתה מבצע OCR מדויק על צילום של תרגיל כתוב ביד.
+
+השפה העיקרית של התרגיל היא {primary}. ייתכן שהדף יכיל גם שורות
+בשפות אחרות (למשל הוראות מודפסות בעברית, אנגלית או ערבית מעל תשובות
+בכתב יד). זהה את הכתב של כל שורה בנפרד ותמלל אותו כפי שהוא — אל
+תתרגם ואל תמיר בין סקריפטים.
+
+{rtl_emphasis}כללי תמלול קריטיים:
 1. תמלל בדיוק את מה שכתוב — אל תתקן שום דבר.
 2. שמור על שגיאות כתיב בדיוק כפי שהן.
 3. כל שורה ויזואלית בתמונה = פריט אחד בפלט, מלמעלה למטה לפי הסדר.
@@ -104,8 +124,16 @@ OCR_SYSTEM_PROMPT = """אתה מבצע OCR מדויק על צילום של תר�
 6. אם תו לא ברור, תמלל את מה שהכי דומה לצורה הכתובה.
 7. אם מילה לא קריאה לחלוטין, כתוב במקומה: [לא קריא]
 8. שורות ריקות בתמונה — דלג עליהן (אל תפיק פריט לשורה ריקה).
+9. סדר מילים בשפות RTL (עברית, ערבית): פלט תמיד ב-Unicode "logical
+   order" — הסדר שבו הקורא קורא את הטקסט, לא הסדר התצוגתי. במחרוזת
+   שלך, המילה הראשונה היא המילה הראשונה בקריאה, כלומר זו שמופיעה ימני
+   ביותר על הדף (ולא משמאל). אסור להפוך את סדר המילים. ה-renderer
+   ידאג להציג אותן נכון מימין לשמאל בעצמו.
+   דוגמה (ערבית): שורה שכתוב בה visually "تفاحة على الطاولة" (= תפוח
+   על השולחן) → במחרוזת ה-text שלך כתוב בדיוק "تفاحة على الطاولة",
+   ולא "الطاولة على تفاحة".
 
-החזר את התוצאה כ-JSON תקין במבנה: {"lines": [{"text": "..."}, ...]}."""
+החזר את התוצאה כ-JSON תקין במבנה: {{"lines": [{{"text": "..."}}, ...]}}."""
 
 OCR_SCHEMA = {
     "type": "object",
@@ -213,19 +241,42 @@ _USER_TURN = "תמלל שורה-שורה והחזר JSON."
 # Model picker. Keys are what the UI / request send; values are the human
 # label shown in the dropdown. Adding a provider = one entry + one _ocr_*.
 MODELS = {
-    "claude": "Claude (Opus 4.7)",
+    "claude": "Claude (Opus 4.8)",
     "gemini": "Gemini (2.5 Flash)",
     "gemini-lite": "Gemini (2.5 Flash-Lite)",
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
 }
 DEFAULT_MODEL = "claude"
 
+# Language metadata used by both the OCR/eval prompts (to tell the LLM what
+# language the exercise is in / what language to write feedback in) and the UI
+# (to render the two pickers). `name_he` is what the teacher sees in the picker;
+# `name_native` is what we feed into prompts so the model gets the language
+# named in its own script.
+LANGS: dict[str, dict] = {
+    "he": {"name_he": "עברית",  "name_native": "עברית",   "dir": "rtl"},
+    "en": {"name_he": "אנגלית", "name_native": "English", "dir": "ltr"},
+    "ar": {"name_he": "ערבית",  "name_native": "العربية", "dir": "rtl"},
+}
+DEFAULT_EXERCISE_LANG = "en"
+DEFAULT_FEEDBACK_LANG = "he"
+
+
+def _norm_lang(value: str | None, default: str) -> str:
+    return value if value in LANGS else default
+
 
 @app.context_processor
 def _inject_models():
     """Makes the model list available to every index.html render without
     threading it through each render_template call site."""
-    return {"models": MODELS, "default_model": DEFAULT_MODEL}
+    return {
+        "models": MODELS,
+        "default_model": DEFAULT_MODEL,
+        "langs": LANGS,
+        "default_exercise_lang": DEFAULT_EXERCISE_LANG,
+        "default_feedback_lang": DEFAULT_FEEDBACK_LANG,
+    }
 
 
 @app.context_processor
@@ -238,7 +289,7 @@ def _inject_rubrics():
     }
 
 
-_ANTHROPIC_MODEL = "claude-opus-4-7"
+_ANTHROPIC_MODEL = "claude-opus-4-8"
 
 # Provider keys → actual Gemini model IDs. The two flavors have INDEPENDENT
 # daily quotas on the Free Tier ("PerModel" in the rate-limit dimension), so
@@ -301,7 +352,7 @@ def _groq():
     return _groq_client
 
 
-def _ocr_anthropic(img: Image.Image) -> list[dict]:
+def _ocr_anthropic(img: Image.Image, exercise_lang: str) -> list[dict]:
     img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
@@ -309,7 +360,7 @@ def _ocr_anthropic(img: Image.Image) -> list[dict]:
         system=[
             {
                 "type": "text",
-                "text": OCR_SYSTEM_PROMPT,
+                "text": build_ocr_prompt(exercise_lang),
                 "cache_control": {"type": "ephemeral"},
             }
         ],
@@ -337,7 +388,7 @@ def _ocr_anthropic(img: Image.Image) -> list[dict]:
     return json.loads(text)["lines"]
 
 
-def _ocr_gemini(img: Image.Image, provider: str = "gemini") -> list[dict]:
+def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str) -> list[dict]:
     from google.genai import types
 
     # Gemini's response_schema is an OpenAPI subset — it rejects the
@@ -365,7 +416,7 @@ def _ocr_gemini(img: Image.Image, provider: str = "gemini") -> list[dict]:
             _USER_TURN,
         ],
         config=types.GenerateContentConfig(
-            system_instruction=OCR_SYSTEM_PROMPT,
+            system_instruction=build_ocr_prompt(exercise_lang),
             response_mime_type="application/json",
             response_schema=gemini_schema,
             # See evaluate path for why thinking is disabled here too.
@@ -376,7 +427,7 @@ def _ocr_gemini(img: Image.Image, provider: str = "gemini") -> list[dict]:
     return json.loads(response.text)["lines"]
 
 
-def _ocr_groq(img: Image.Image, provider: str = "groq-scout") -> list[dict]:
+def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> list[dict]:
     # Groq is OpenAI-compatible; vision takes a data: URL in image_url. The
     # SDK only supports response_format={"type":"json_object"} (no schema),
     # so we lean on the prompt to enforce shape and parse defensively.
@@ -384,7 +435,7 @@ def _ocr_groq(img: Image.Image, provider: str = "groq-scout") -> list[dict]:
     response = _groq().chat.completions.create(
         model=_groq_model_id(provider),
         messages=[
-            {"role": "system", "content": OCR_SYSTEM_PROMPT},
+            {"role": "system", "content": build_ocr_prompt(exercise_lang)},
             {
                 "role": "user",
                 "content": [
@@ -409,12 +460,16 @@ def _ocr_groq(img: Image.Image, provider: str = "groq-scout") -> list[dict]:
     return json.loads(response.choices[0].message.content)["lines"]
 
 
-def ocr_page(img: Image.Image, provider: str = DEFAULT_MODEL) -> list[dict]:
+def ocr_page(
+    img: Image.Image,
+    provider: str = DEFAULT_MODEL,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+) -> list[dict]:
     if _is_gemini(provider):
-        return _ocr_gemini(img, provider)
+        return _ocr_gemini(img, provider, exercise_lang)
     if _is_groq(provider):
-        return _ocr_groq(img, provider)
-    return _ocr_anthropic(img)
+        return _ocr_groq(img, provider, exercise_lang)
+    return _ocr_anthropic(img, exercise_lang)
 
 
 def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 0) -> str:
@@ -713,7 +768,12 @@ STAGE_LABELS = {
 _STEPS_PER_PAGE = 5  # render, deskew, ocr, segment, crop
 
 
-def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
+def process_pdf_stream(
+    file_bytes: bytes,
+    ext: str,
+    provider: str,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+):
     """Run the OCR pipeline, yielding progress as it goes.
 
     Yields {"type": "progress", page, total_pages, stage, pct} after each
@@ -746,7 +806,7 @@ def process_pdf_stream(file_bytes: bytes, ext: str, provider: str):
         original_b64 = original_preview_b64(img)
         img, angle = deskew_page(img)
         yield progress("deskew", p)
-        texts = [line["text"] for line in ocr_page(img, provider)]
+        texts = [line["text"] for line in ocr_page(img, provider, exercise_lang)]
         log.info(
             "[page %d] model=%s auto_rotate=%d° deskew=%s° %d lines transcribed",
             p, provider, rot_angle, angle, len(texts),
@@ -979,11 +1039,17 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
 JOBS: dict[str, dict] = {}
 
 
-def run_job(job_id: str, file_bytes: bytes, ext: str, provider: str):
+def run_job(
+    job_id: str,
+    file_bytes: bytes,
+    ext: str,
+    provider: str,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in process_pdf_stream(file_bytes, ext, provider):
+        for ev in process_pdf_stream(file_bytes, ext, provider, exercise_lang):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 q.put({"type": "done"})
@@ -1130,19 +1196,47 @@ def load_rubric(rubric_id: str) -> dict | None:
 
 # --- Evaluation -------------------------------------------------------------
 
-EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרובריקה שתינתן לך.
+def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
+    """Evaluation system prompt parameterized by the two language choices.
+
+    `feedback_lang` is the primary language for `feedback` / `overall_feedback`
+    (what the teacher reads). `exercise_lang` is the language the student
+    worked in — we ask for a parallel `feedback_secondary` / `overall_feedback_secondary`
+    in that language so the student can read the feedback in their own working
+    language. When the two coincide, the secondary fields are returned as
+    empty strings (we drop them in rendering)."""
+    f = LANGS.get(feedback_lang, LANGS[DEFAULT_FEEDBACK_LANG])
+    e = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
+    primary = f["name_native"]
+    secondary = e["name_native"]
+    if feedback_lang == exercise_lang:
+        secondary_block = (
+            f'- לכל קריטריון: השדה "feedback_secondary" — מחרוזת ריקה "" '
+            f"(שפת הפידבק זהה לשפת התרגיל ולכן אין צורך בתרגום).\n"
+            f'- גם "overall_feedback_secondary" — מחרוזת ריקה "".'
+        )
+    else:
+        secondary_block = (
+            f'- לכל קריטריון: גם פידבק ב{secondary} ("feedback_secondary") — '
+            f"תרגום נאמן של הפידבק שב-feedback, באותו אורך ובאותו תוכן "
+            f"(לא להוסיף או להחסיר מידע).\n"
+            f'- גם פסקת סיכום ב{secondary} ("overall_feedback_secondary") — '
+            f"תרגום נאמן של פסקת הסיכום שב-overall_feedback, באותו אורך "
+            f"ובאותו תוכן."
+        )
+    return f"""אתה בודק שיעורי בית בהתאם לרובריקה שתינתן לך.
 
 תקבל:
 1. רובריקה — מתארת קריטריונים, רמות וציונים אפשריים.
 2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR. כל
-   שורה מתויגת עם מזהה בצורה [p<page>-l<index>] בתחילתה.
+   שורה מתויגת עם מזהה בצורה [p<page>-l<index>] בתחילתה. שפת התרגיל
+   העיקרית היא {secondary}.
 
 המשימה:
 - זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
 - העריך את התרגיל לפי הרובריקה — צא מנקודת הנחה שמה שנכתב הוא מה שהתלמיד התכוון אליו (אל תקטף נקודות על שגיאות OCR שנראות כמו טעויות תמלול).
-- לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר בעברית (1-3 משפטים).
-- לכל קריטריון: גם פידבק באנגלית ("feedback_en") — תרגום נאמן של הפידבק
-  העברי, באותו אורך ובאותו תוכן (לא להוסיף או להחסיר מידע).
+- לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר ב{primary} (1-3 משפטים).
+{secondary_block}
 - לכל קריטריון: רשימת "issues" — דוגמאות ספציפיות לבעיות שמצאת
   בטקסט. לכל issue:
     * "line_ref": המזהה של השורה שבה הבעיה (לדוגמה "p1-l3").
@@ -1150,33 +1244,31 @@ EVAL_SYSTEM_PROMPT = """אתה בודק שיעורי בית בהתאם לרוב�
       בדיוק כפי שהוא מופיע בתמלול (אותו רישיות, פיסוק ורווחים). זה
       חייב להיות תת-מחרוזת של השורה. ציטוט ברמת משפט/ביטוי, לא
       מילה בודדת ולא שורה שלמה אם רק חלק ממנה בעייתי.
-    * "comment": הערה קצרה בעברית (3-15 מילים) שמסבירה למה זה בעייתי.
+    * "comment": הערה קצרה ב{primary} (3-15 מילים) שמסבירה למה זה בעייתי.
   אם אין בעיות בקריטריון מסוים, החזר רשימה ריקה.
   אם אותו משפט בעייתי בכמה קריטריונים — שייך אותו לקריטריון
   החמור/המהותי ביותר בלבד (לא לכמה במקביל).
 - ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
-- פסקת סיכום בעברית (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
-- גם פסקת סיכום באנגלית ("overall_feedback_en") — תרגום נאמן של פסקת
-  הסיכום העברית, באותו אורך ובאותו תוכן.
+- פסקת סיכום ב{primary} (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
 
 החזר JSON תקין במבנה:
-{
+{{
   "criteria": [
-    {
+    {{
       "name": "...",
       "score": <int>,
       "max_score": <int>,
       "feedback": "...",
-      "feedback_en": "...",
+      "feedback_secondary": "...",
       "issues": [
-        {"line_ref": "p1-l3", "quote": "...", "comment": "..."}
+        {{"line_ref": "p1-l3", "quote": "...", "comment": "..."}}
       ]
-    }
+    }}
   ],
   "overall_score": "<string — לדוגמה: B1, או 3.0/4, או 75%>",
   "overall_feedback": "...",
-  "overall_feedback_en": "..."
-}"""
+  "overall_feedback_secondary": "..."
+}}"""
 
 EVAL_SCHEMA = {
     "type": "object",
@@ -1190,7 +1282,7 @@ EVAL_SCHEMA = {
                     "score": {"type": "number"},
                     "max_score": {"type": "number"},
                     "feedback": {"type": "string"},
-                    "feedback_en": {"type": "string"},
+                    "feedback_secondary": {"type": "string"},
                     "issues": {
                         "type": "array",
                         "items": {
@@ -1205,15 +1297,15 @@ EVAL_SCHEMA = {
                         },
                     },
                 },
-                "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
+                "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
                 "additionalProperties": False,
             },
         },
         "overall_score": {"type": "string"},
         "overall_feedback": {"type": "string"},
-        "overall_feedback_en": {"type": "string"},
+        "overall_feedback_secondary": {"type": "string"},
     },
-    "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
+    "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
     "additionalProperties": False,
 }
 
@@ -1229,7 +1321,7 @@ _GROQ_EVAL_SHAPE_HINT = (
     '      "score": 0,\n'
     '      "max_score": 0,\n'
     '      "feedback": "...",\n'
-    '      "feedback_en": "...",\n'
+    '      "feedback_secondary": "...",\n'
     '      "issues": [\n'
     '        {"line_ref": "p1-l3", "quote": "...", "comment": "..."}\n'
     '      ]\n'
@@ -1237,7 +1329,7 @@ _GROQ_EVAL_SHAPE_HINT = (
     '  ],\n'
     '  "overall_score": "...",\n'
     '  "overall_feedback": "...",\n'
-    '  "overall_feedback_en": "..."\n'
+    '  "overall_feedback_secondary": "..."\n'
     '}'
 )
 
@@ -1257,7 +1349,13 @@ def pages_to_plain_text(pages: list[dict]) -> str:
     return "\n".join(chunks).strip()
 
 
-def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict:
+def evaluate_with_rubric(
+    pages: list[dict],
+    rubric: dict,
+    provider: str,
+    feedback_lang: str = DEFAULT_FEEDBACK_LANG,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+) -> dict:
     """Send transcript + rubric → structured per-criterion scores + feedback."""
     transcript = pages_to_plain_text(pages)
     user_turn = (
@@ -1266,6 +1364,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         f"--- טקסט התרגיל לבדיקה ---\n\n{transcript}\n\n"
         "החזר JSON לפי הסכימה."
     )
+    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang)
     if _is_gemini(provider):
         from google.genai import types
 
@@ -1281,7 +1380,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
                             "feedback": {"type": "string"},
-                            "feedback_en": {"type": "string"},
+                            "feedback_secondary": {"type": "string"},
                             "issues": {
                                 "type": "array",
                                 "items": {
@@ -1295,20 +1394,20 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
+                        "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
-                "overall_feedback_en": {"type": "string"},
+                "overall_feedback_secondary": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
         }
         response = _gemini().models.generate_content(
             model=_gemini_model_id(provider),
             contents=[user_turn],
             config=types.GenerateContentConfig(
-                system_instruction=EVAL_SYSTEM_PROMPT,
+                system_instruction=eval_prompt,
                 response_mime_type="application/json",
                 response_schema=gemini_schema,
                 # Gemini 2.5 Flash is a thinking model — without this it
@@ -1335,7 +1434,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         response = _groq().chat.completions.create(
             model=_groq_model_id(provider),
             messages=[
-                {"role": "system", "content": EVAL_SYSTEM_PROMPT},
+                {"role": "system", "content": eval_prompt},
                 {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
             ],
             response_format={"type": "json_object"},
@@ -1359,7 +1458,7 @@ def evaluate_with_rubric(pages: list[dict], rubric: dict, provider: str) -> dict
         system=[
             {
                 "type": "text",
-                "text": EVAL_SYSTEM_PROMPT,
+                "text": eval_prompt,
                 "cache_control": {"type": "ephemeral"},
             }
         ],
@@ -1399,7 +1498,13 @@ def count_rubric_criteria(content: str) -> int:
     return len(_RUBRIC_CRITERION_RE.findall(content))
 
 
-def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
+def evaluate_with_rubric_stream(
+    pages: list[dict],
+    rubric: dict,
+    provider: str,
+    feedback_lang: str = DEFAULT_FEEDBACK_LANG,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
+):
     """Streaming variant of evaluate_with_rubric.
 
     Yields:
@@ -1421,6 +1526,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
     total = count_rubric_criteria(rubric.get("content", ""))
     buffer = ""
     seen = 0
+    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang)
 
     def drain_progress():
         nonlocal seen
@@ -1451,7 +1557,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
                             "feedback": {"type": "string"},
-                            "feedback_en": {"type": "string"},
+                            "feedback_secondary": {"type": "string"},
                             "issues": {
                                 "type": "array",
                                 "items": {
@@ -1465,20 +1571,20 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "feedback_en", "issues"],
+                        "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
-                "overall_feedback_en": {"type": "string"},
+                "overall_feedback_secondary": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_en"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
         }
         stream = _gemini().models.generate_content_stream(
             model=_gemini_model_id(provider),
             contents=[user_turn],
             config=types.GenerateContentConfig(
-                system_instruction=EVAL_SYSTEM_PROMPT,
+                system_instruction=eval_prompt,
                 response_mime_type="application/json",
                 response_schema=gemini_schema,
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
@@ -1494,7 +1600,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
         stream = _groq().chat.completions.create(
             model=_groq_model_id(provider),
             messages=[
-                {"role": "system", "content": EVAL_SYSTEM_PROMPT},
+                {"role": "system", "content": eval_prompt},
                 {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
             ],
             response_format={"type": "json_object"},
@@ -1515,7 +1621,7 @@ def evaluate_with_rubric_stream(pages: list[dict], rubric: dict, provider: str):
             system=[
                 {
                     "type": "text",
-                    "text": EVAL_SYSTEM_PROMPT,
+                    "text": eval_prompt,
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
@@ -1786,6 +1892,8 @@ def build_evaluation_docx(
     filename: str,
     rubric_name: str,
     pages: list[dict] | None = None,
+    feedback_lang: str = DEFAULT_FEEDBACK_LANG,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
 ) -> bytes:
     """Word document with the evaluation table + overall feedback. When
     `pages` is provided, appends each page's original scan followed by a
@@ -1813,15 +1921,34 @@ def build_evaluation_docx(
     doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
     criteria = attach_colors(evaluation).get("criteria") or []
-    table = doc.add_table(rows=1, cols=4)
+
+    # Secondary feedback column is dropped entirely when the two language
+    # picks coincide — duplicating the same text just to fill a header is
+    # noise to the teacher. `_en` keys from older saved evaluations still
+    # populate `_secondary` as a fallback.
+    show_secondary = feedback_lang != exercise_lang
+    secondary_lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
+    secondary_header = f"פידבק ({secondary_lang['name_he']})"
+    secondary_align_ltr = secondary_lang["dir"] == "ltr"
+
+    def _secondary_text(c: dict) -> str:
+        return str(c.get("feedback_secondary") or c.get("feedback_en") or "")
+
+    cols = 4 if show_secondary else 3
+    table = doc.add_table(rows=1, cols=cols)
     table.style = "Light Grid Accent 1"
     header = table.rows[0].cells
     header[0].text = "קריטריון"
     header[1].text = "ציון"
     header[2].text = "פידבק"
-    header[3].text = "Feedback (EN)"
+    if show_secondary:
+        header[3].text = secondary_header
     for idx, cell in enumerate(header):
-        align = WD_ALIGN_PARAGRAPH.LEFT if idx == 3 else WD_ALIGN_PARAGRAPH.RIGHT
+        align = (
+            WD_ALIGN_PARAGRAPH.LEFT
+            if idx == 3 and secondary_align_ltr
+            else WD_ALIGN_PARAGRAPH.RIGHT
+        )
         for p in cell.paragraphs:
             p.alignment = align
             for r in p.runs:
@@ -1832,9 +1959,14 @@ def build_evaluation_docx(
         row[0].text = str(c.get("name", ""))
         row[1].text = f"{c.get('score', '')}/{c.get('max_score', '')}"
         row[2].text = str(c.get("feedback", ""))
-        row[3].text = str(c.get("feedback_en", ""))
+        if show_secondary:
+            row[3].text = _secondary_text(c)
         for idx, cell in enumerate(row):
-            align = WD_ALIGN_PARAGRAPH.LEFT if idx == 3 else WD_ALIGN_PARAGRAPH.RIGHT
+            align = (
+                WD_ALIGN_PARAGRAPH.LEFT
+                if idx == 3 and secondary_align_ltr
+                else WD_ALIGN_PARAGRAPH.RIGHT
+            )
             for p in cell.paragraphs:
                 p.alignment = align
         color = c.get("color") or color_for_criterion(c.get("name", ""))
@@ -1849,12 +1981,19 @@ def build_evaluation_docx(
     for r in summary.runs:
         r.font.size = Pt(11)
 
-    overall_en = evaluation.get("overall_feedback_en", "")
-    if overall_en:
-        doc.add_heading("Summary", level=2).alignment = WD_ALIGN_PARAGRAPH.LEFT
-        summary_en = doc.add_paragraph(overall_en)
-        summary_en.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        for r in summary_en.runs:
+    overall_secondary = (
+        evaluation.get("overall_feedback_secondary")
+        or evaluation.get("overall_feedback_en")
+        or ""
+    )
+    if show_secondary and overall_secondary:
+        sec_heading_align = (
+            WD_ALIGN_PARAGRAPH.LEFT if secondary_align_ltr else WD_ALIGN_PARAGRAPH.RIGHT
+        )
+        doc.add_heading(secondary_header, level=2).alignment = sec_heading_align
+        summary_sec = doc.add_paragraph(overall_secondary)
+        summary_sec.alignment = sec_heading_align
+        for r in summary_sec.runs:
             r.font.size = Pt(11)
 
     if pages:
@@ -1999,6 +2138,7 @@ def decode_start():
             file_bytes = f.read()
         filename = os.path.basename(path)
         provider = body.get("model")
+        exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
     else:
         file = request.files.get("pdf")
         if not file or not file.filename:
@@ -2008,6 +2148,7 @@ def decode_start():
         file_bytes = file.read()
         filename = file.filename
         provider = request.form.get("model")
+        exercise_lang = _norm_lang(request.form.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
     if not file_bytes:
         return jsonify(error="הקובץ ריק"), 400
     if provider not in MODELS:
@@ -2017,7 +2158,9 @@ def decode_start():
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
     threading.Thread(
-        target=run_job, args=(job_id, file_bytes, ext, provider), daemon=True
+        target=run_job,
+        args=(job_id, file_bytes, ext, provider, exercise_lang),
+        daemon=True,
     ).start()
     return jsonify(job_id=job_id)
 
@@ -2112,6 +2255,8 @@ def evaluate_endpoint():
     pages = body.get("pages") or []
     rubric_id = (body.get("rubric_id") or "").strip()
     provider = body.get("model") if body.get("model") in MODELS else DEFAULT_MODEL
+    feedback_lang = _norm_lang(body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG)
+    exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
 
     if not pages:
         return jsonify(error="אין טקסט לבדיקה"), 400
@@ -2120,7 +2265,9 @@ def evaluate_endpoint():
         return jsonify(error="רובריקה לא נמצאה"), 404
 
     try:
-        result = evaluate_with_rubric(pages, rubric, provider)
+        result = evaluate_with_rubric(
+            pages, rubric, provider, feedback_lang, exercise_lang
+        )
     except Exception as e:
         log.exception("evaluate_endpoint failed")
         err = humanize_error(e, action="ההערכה")
@@ -2140,12 +2287,20 @@ EVAL_JOBS: dict[str, dict] = {}
 
 
 def run_evaluate_job(
-    job_id: str, pages: list[dict], rubric: dict, provider: str, rubric_id: str
+    job_id: str,
+    pages: list[dict],
+    rubric: dict,
+    provider: str,
+    rubric_id: str,
+    feedback_lang: str = DEFAULT_FEEDBACK_LANG,
+    exercise_lang: str = DEFAULT_EXERCISE_LANG,
 ):
     job = EVAL_JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in evaluate_with_rubric_stream(pages, rubric, provider):
+        for ev in evaluate_with_rubric_stream(
+            pages, rubric, provider, feedback_lang, exercise_lang
+        ):
             if ev["type"] == "result":
                 evaluation = ev["evaluation"]
                 evaluation["rubric_id"] = rubric_id
@@ -2174,6 +2329,8 @@ def evaluate_start():
     pages = body.get("pages") or []
     rubric_id = (body.get("rubric_id") or "").strip()
     provider = body.get("model") if body.get("model") in MODELS else DEFAULT_MODEL
+    feedback_lang = _norm_lang(body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG)
+    exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
 
     if not pages:
         return jsonify(error="אין טקסט לבדיקה"), 400
@@ -2185,7 +2342,7 @@ def evaluate_start():
     EVAL_JOBS[job_id] = {"q": queue.Queue()}
     threading.Thread(
         target=run_evaluate_job,
-        args=(job_id, pages, rubric, provider, rubric_id),
+        args=(job_id, pages, rubric, provider, rubric_id, feedback_lang, exercise_lang),
         daemon=True,
     ).start()
     return jsonify(job_id=job_id)
@@ -2226,10 +2383,17 @@ def evaluation_docx():
     filename = body.get("filename") or "תרגיל"
     rubric_name = body.get("rubric_name") or (evaluation or {}).get("rubric_name", "")
     pages = body.get("pages") or None
+    feedback_lang = _norm_lang(body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG)
+    exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
     if not evaluation:
         return jsonify(error="אין הערכה לייצוא"), 400
     try:
-        data = build_evaluation_docx(evaluation, filename, rubric_name, pages=pages)
+        data = build_evaluation_docx(
+            evaluation, filename, rubric_name,
+            pages=pages,
+            feedback_lang=feedback_lang,
+            exercise_lang=exercise_lang,
+        )
     except Exception as e:
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
