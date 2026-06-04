@@ -613,6 +613,107 @@
         .progress-box.error .progress-fill { background: var(--error); }
         .progress-box.error .progress-label { color: var(--error); }
 
+        /* Preview screen — the user confirms (and adjusts) page orientation
+           before paying for OCR. Shown between /preview success and /decode/start.
+           Per-page card with the auto-rotated thumbnail + 90° flip buttons + a
+           fine-angle slider. The image rotates live via CSS transform so the
+           user sees what they'll get. */
+        .preview-box {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .preview-box.visible { display: block; }
+        .preview-box h3 {
+            margin: 0 0 0.4rem 0;
+            color: var(--accent);
+        }
+        .preview-box .preview-help {
+            margin: 0 0 1rem 0;
+            font-size: 0.92rem;
+            color: #6b5f44;
+        }
+        .preview-page {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #fdfaf0;
+        }
+        .preview-page-title {
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            color: var(--fg);
+        }
+        .preview-stage {
+            background: #ede5cd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 280px;
+            position: relative;
+        }
+        .preview-stage img {
+            max-width: 100%;
+            max-height: 60vh;
+            transition: transform 0.18s ease;
+            transform-origin: center;
+        }
+        .preview-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            margin-top: 0.7rem;
+        }
+        .preview-controls .rot-btn {
+            padding: 0.45rem 0.7rem;
+            font-size: 0.95rem;
+            background: #f0e7c8;
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .preview-controls .rot-btn:hover { background: #e6d9a8; }
+        .preview-controls .rot-btn.reset { background: transparent; color: #6b5f44; }
+        .preview-controls .slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1 1 220px;
+            min-width: 200px;
+        }
+        .preview-controls .slider-wrap input[type=range] {
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+        .preview-controls .angle-readout {
+            font-variant-numeric: tabular-nums;
+            font-size: 0.95rem;
+            color: var(--fg);
+            min-width: 4.2em;
+            text-align: left;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.4rem;
+        }
+        .preview-actions .cancel-btn {
+            background: transparent;
+            color: var(--fg);
+            border: 1px solid var(--border);
+        }
+        .preview-actions .cancel-btn:hover { background: #e6d9a8; }
+
         /* Structured runtime-error banner (quota / auth / parse / unknown).
            Shown after a humanize_error() event from the server; hides the
            progress box. The collapsible <details> block keeps the raw
@@ -976,6 +1077,16 @@
             <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
         </div>
 
+        <div id="preview-box" class="preview-box">
+            <h3>אשר את כיוון העמוד</h3>
+            <p class="preview-help">סובב בכפתורי 90° אם הכיוון לא נכון, וכוונן עדין בסליידר (±15°) להטיה. הצפייה מתעדכנת בזמן אמת.</p>
+            <div id="preview-pages"></div>
+            <div class="preview-actions">
+                <button id="preview-decode-btn" type="button">פענח</button>
+                <button id="preview-cancel-btn" type="button" class="cancel-btn">ביטול</button>
+            </div>
+        </div>
+
         <div id="error-banner" class="error-banner" hidden>
             <div class="error-title">⚠️ <span data-role="message"></span></div>
             <div class="error-details" data-role="details"></div>
@@ -1134,6 +1245,186 @@
                 }
             }
 
+            // --- Preview screen (orientation confirmation) ---
+            // Two-step flow: POST /preview → user adjusts rotation → POST
+            // /decode/start with {preview_id, rotations}. Lets a teacher fix
+            // auto_rotate's wrong 180° guess before paying for OCR.
+            const previewBox = document.getElementById('preview-box');
+            const previewPagesEl = document.getElementById('preview-pages');
+            const previewDecodeBtn = document.getElementById('preview-decode-btn');
+            const previewCancelBtn = document.getElementById('preview-cancel-btn');
+            // Holds the latest preview payload so the decode button can post it.
+            let previewState = null;
+
+            function hidePreview() {
+                previewBox.classList.remove('visible');
+                previewPagesEl.innerHTML = '';
+                previewState = null;
+            }
+
+            function setImgTransform(img, rot90, fine) {
+                img.style.transform = `rotate(${rot90 + fine}deg)`;
+                // Swap max-width / max-height so a 90°/270° rotation fits the
+                // landscape container instead of overflowing it.
+                if (rot90 % 180 === 0) {
+                    img.style.maxWidth = '90%';
+                    img.style.maxHeight = '60vh';
+                } else {
+                    img.style.maxWidth = '60vh';
+                    img.style.maxHeight = '90%';
+                }
+            }
+
+            function buildPreviewPage(p, total) {
+                const card = document.createElement('div');
+                card.className = 'preview-page';
+                card.dataset.page = String(p.page);
+
+                const title = document.createElement('div');
+                title.className = 'preview-page-title';
+                title.textContent = total > 1 ? `עמוד ${p.page} / ${total}` : 'עמוד';
+                card.appendChild(title);
+
+                const stage = document.createElement('div');
+                stage.className = 'preview-stage';
+                const img = document.createElement('img');
+                img.alt = `עמוד ${p.page}`;
+                img.src = 'data:image/jpeg;base64,' + p.image_b64;
+                stage.appendChild(img);
+                card.appendChild(stage);
+
+                const controls = document.createElement('div');
+                controls.className = 'preview-controls';
+
+                const state = {
+                    rotation_90: 0,
+                    fine_angle: p.suggested_fine_angle || 0,
+                };
+                card._state = state;
+
+                const mkRot = (label, delta) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'rot-btn';
+                    b.textContent = label;
+                    b.addEventListener('click', () => {
+                        state.rotation_90 = (state.rotation_90 + delta + 360) % 360;
+                        setImgTransform(img, state.rotation_90, state.fine_angle);
+                    });
+                    return b;
+                };
+                controls.appendChild(mkRot('⟲ 90°', 90));
+                controls.appendChild(mkRot('⟳ 90°', -90));
+                controls.appendChild(mkRot('180°', 180));
+
+                const sliderWrap = document.createElement('div');
+                sliderWrap.className = 'slider-wrap';
+                const sliderLabel = document.createElement('label');
+                sliderLabel.textContent = 'הטיה:';
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '-15';
+                slider.max = '15';
+                slider.step = '0.1';
+                slider.value = String(state.fine_angle.toFixed(1));
+                const readout = document.createElement('span');
+                readout.className = 'angle-readout';
+                const renderReadout = () => {
+                    readout.textContent = (state.fine_angle >= 0 ? '+' : '') + state.fine_angle.toFixed(1) + '°';
+                };
+                renderReadout();
+                slider.addEventListener('input', () => {
+                    state.fine_angle = parseFloat(slider.value);
+                    renderReadout();
+                    setImgTransform(img, state.rotation_90, state.fine_angle);
+                });
+                sliderWrap.appendChild(sliderLabel);
+                sliderWrap.appendChild(slider);
+                sliderWrap.appendChild(readout);
+                controls.appendChild(sliderWrap);
+
+                const reset = document.createElement('button');
+                reset.type = 'button';
+                reset.className = 'rot-btn reset';
+                reset.textContent = 'איפוס';
+                reset.title = 'החזר להמלצת האלגוריתם';
+                reset.addEventListener('click', () => {
+                    state.rotation_90 = 0;
+                    state.fine_angle = p.suggested_fine_angle || 0;
+                    slider.value = String(state.fine_angle.toFixed(1));
+                    renderReadout();
+                    setImgTransform(img, state.rotation_90, state.fine_angle);
+                });
+                controls.appendChild(reset);
+
+                card.appendChild(controls);
+
+                // Apply the initial transform once the image has natural size.
+                if (img.complete) {
+                    setImgTransform(img, state.rotation_90, state.fine_angle);
+                } else {
+                    img.addEventListener('load', () => {
+                        setImgTransform(img, state.rotation_90, state.fine_angle);
+                    });
+                }
+
+                return card;
+            }
+
+            function showPreview(data) {
+                previewState = data;
+                previewPagesEl.innerHTML = '';
+                const total = data.pages.length;
+                for (const p of data.pages) {
+                    previewPagesEl.appendChild(buildPreviewPage(p, total));
+                }
+                box.classList.remove('visible'); // hide progress bar if it was up
+                previewBox.classList.add('visible');
+                previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            async function requestPreview(body, isJson) {
+                showProgress();
+                txt.textContent = 'מכין תצוגה מקדימה…';
+                try {
+                    const resp = await fetch('/preview', {
+                        method: 'POST',
+                        headers: isJson ? { 'Content-Type': 'application/json' } : undefined,
+                        body: body,
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || data.error) {
+                        progressError(data, 'שגיאה בהכנת התצוגה');
+                        return;
+                    }
+                    box.classList.remove('visible');
+                    showPreview(data);
+                } catch (err) {
+                    progressError('שגיאה בהכנת התצוגה');
+                }
+            }
+
+            previewCancelBtn.addEventListener('click', () => {
+                hidePreview();
+            });
+
+            previewDecodeBtn.addEventListener('click', () => {
+                if (!previewState) return;
+                const cards = previewPagesEl.querySelectorAll('.preview-page');
+                const rotations = Array.from(cards).map(c => ({
+                    rotation_90: c._state.rotation_90,
+                    fine_angle: c._state.fine_angle,
+                }));
+                const payload = {
+                    preview_id: previewState.preview_id,
+                    rotations: rotations,
+                    model: currentModel(),
+                    exercise_lang: currentExerciseLang(),
+                };
+                hidePreview();
+                startDecode(JSON.stringify(payload), true);
+            });
+
             // Model picker — remember the tester's choice across reloads.
             const modelSel = document.getElementById('model-select');
             const savedModel = localStorage.getItem('haskala-model');
@@ -1175,16 +1466,15 @@
             window.__haskalaMfls = {{ model_filename_labels | tojson }};
 
             // --- פענח קובץ ---
+            // Always goes through the preview screen — the user confirms the
+            // page orientation before we pay for OCR. From there the preview
+            // UI's "פענח" button POSTs /decode/start with the chosen rotations.
             document.getElementById('decode-btn').addEventListener('click', async () => {
                 const api = await getApi();
                 if (api) {
                     const path = await api.pick_pdf();
                     if (!path) return;
-                    startDecode(JSON.stringify({
-                        path,
-                        model: currentModel(),
-                        exercise_lang: currentExerciseLang(),
-                    }), true);
+                    requestPreview(JSON.stringify({ path }), true);
                 } else {
                     document.getElementById('fallback-pdf').click();
                 }
@@ -1194,9 +1484,7 @@
                 if (!f) return;
                 const fd = new FormData();
                 fd.append('pdf', f);
-                fd.append('model', currentModel());
-                fd.append('exercise_lang', currentExerciseLang());
-                startDecode(fd, false);
+                requestPreview(fd, false);
             });
 
             // --- העלה קובץ מפוענח ---
