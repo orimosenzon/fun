@@ -10,6 +10,7 @@ import os
 import queue
 import re
 import threading
+import time
 import uuid
 
 import anthropic
@@ -617,7 +618,7 @@ def auto_rotate(img: Image.Image) -> tuple[Image.Image, int]:
     return rotated, angle
 
 
-def deskew_page(img: Image.Image, max_angle: float = 6.0) -> tuple[Image.Image, float]:
+def deskew_page(img: Image.Image, max_angle: float = 10.0) -> tuple[Image.Image, float]:
     """Rotate the page so its text lines are horizontal.
 
     A phone photo of a notebook is almost always shot at a slight angle, so
@@ -643,6 +644,16 @@ def deskew_page(img: Image.Image, max_angle: float = 6.0) -> tuple[Image.Image, 
         if s > best:
             best_angle, best = float(a), s
     angle = round(best_angle, 1)
+    # If the optimum lands on the search boundary, the true skew is likely
+    # outside the cap — log it so we can widen `max_angle` if the pattern
+    # repeats. Within 0.5° of the cap counts as "at the boundary" because
+    # the fine search can pull half a step beyond the coarse range.
+    if max_angle - abs(angle) < 0.5:
+        log.warning(
+            "deskew: optimum %.1f° at search boundary (max_angle=%.1f) — "
+            "true skew may be larger; consider widening the cap",
+            angle, max_angle,
+        )
     if abs(angle) < 0.1:
         return img, 0.0
     return img.rotate(angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255)), angle
@@ -764,13 +775,18 @@ def segment_into_lines(img: Image.Image, num_lines: int) -> list[tuple[int, int]
     segments = [(top + bounds[i], top + bounds[i + 1]) for i in range(num_lines)]
     heights = [b - a for a, b in segments]
     ink = [int(profile[a:b].sum()) for a, b in segments]
+    med_height = sorted(heights)[len(heights) // 2]
     med_ink = sorted(ink)[len(ink) // 2]
     near_empty = [i + 1 for i, v in enumerate(ink) if v < 0.35 * med_ink]
+    # edge_seg first/last vs median — if either is much taller than median, the
+    # writing region was over-extended past the first/last peak, so that line's
+    # strip swallows blank page above/below it and the writing looks squeezed.
     log.info(
         "segment: region=(%d,%d) lines=%d pitch=%d peaks=%d "
-        "heights min/med/max=%d/%d/%d near_empty_strips=%s",
+        "heights min/med/max=%d/%d/%d edge_seg first/last=%d/%d near_empty_strips=%s",
         top, bottom, num_lines, pitch, len(peaks),
-        min(heights), sorted(heights)[len(heights) // 2], max(heights),
+        min(heights), med_height, max(heights),
+        heights[0], heights[-1],
         near_empty or "none",
     )
     return segments
@@ -792,6 +808,7 @@ def process_pdf_stream(
     ext: str,
     provider: str,
     exercise_lang: str = DEFAULT_EXERCISE_LANG,
+    rotations: list[dict] | None = None,
 ):
     """Run the OCR pipeline, yielding progress as it goes.
 
@@ -799,6 +816,11 @@ def process_pdf_stream(
     pipeline stage (render → deskew → ocr → segment → crop), then a final
     {"type": "result", pages}. Lets the UI show a real determinate bar
     instead of a guess.
+
+    If `rotations` is given (per-page {rotation_90, fine_angle} from the
+    preview screen), we honour the user's manual choice instead of running
+    auto_rotate + deskew. auto_rotate is still applied first so the user's
+    90° is on top of the same baseline they saw in the preview.
     """
     pages_imgs = file_to_page_images(file_bytes, ext)
     total = len(pages_imgs)
@@ -821,9 +843,29 @@ def process_pdf_stream(
     for page_idx, img in enumerate(pages_imgs):
         p = page_idx + 1
         yield progress("render", p)
-        img, rot_angle = auto_rotate(img)
-        original_b64 = original_preview_b64(img)
-        img, angle = deskew_page(img)
+        override = rotations[page_idx] if rotations and page_idx < len(rotations) else None
+        if override is not None:
+            img, rot_angle = auto_rotate(img)
+            rot90 = int(override.get("rotation_90", 0)) % 360
+            if rot90:
+                img = img.rotate(
+                    -rot90, resample=Image.BILINEAR, expand=True,
+                    fillcolor=(255, 255, 255),
+                )
+            original_b64 = original_preview_b64(img)
+            angle = float(override.get("fine_angle", 0.0))
+            if abs(angle) >= 0.1:
+                img = img.rotate(
+                    angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255),
+                )
+            log.info(
+                "[page %d] manual rotation: auto_rotate=%d° + user_90=%d° + user_fine=%.1f°",
+                p, rot_angle, rot90, angle,
+            )
+        else:
+            img, rot_angle = auto_rotate(img)
+            original_b64 = original_preview_b64(img)
+            img, angle = deskew_page(img)
         yield progress("deskew", p)
         texts = [line["text"] for line in ocr_page(img, provider, exercise_lang)]
         log.info(
@@ -1057,6 +1099,22 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
 # job is short-lived and consumed once by the SSE stream.
 JOBS: dict[str, dict] = {}
 
+# Cached uploads waiting for the user to approve a rotation in the preview
+# screen. Keyed by preview_id, holds the raw bytes + ext + a timestamp so we
+# can evict stale entries (the user may upload but never confirm).
+PREVIEWS: dict[str, dict] = {}
+PREVIEW_TTL_SECONDS = 1800  # 30 min — enough for one teacher reviewing pages
+
+
+def _evict_stale_previews():
+    now = time.time()
+    stale = [
+        pid for pid, p in PREVIEWS.items()
+        if now - p["ts"] > PREVIEW_TTL_SECONDS
+    ]
+    for pid in stale:
+        PREVIEWS.pop(pid, None)
+
 
 def run_job(
     job_id: str,
@@ -1064,11 +1122,12 @@ def run_job(
     ext: str,
     provider: str,
     exercise_lang: str = DEFAULT_EXERCISE_LANG,
+    rotations: list[dict] | None = None,
 ):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in process_pdf_stream(file_bytes, ext, provider, exercise_lang):
+        for ev in process_pdf_stream(file_bytes, ext, provider, exercise_lang, rotations):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 q.put({"type": "done"})
@@ -2219,48 +2278,129 @@ def index():
     return render_template("index.html", error="לא נבחר קובץ")
 
 
-@app.route("/decode/start", methods=["POST"])
-def decode_start():
-    """Begin OCR. Accepts either a native file path (pywebview, JSON body)
-    or a multipart 'pdf' upload (plain-browser fallback). Returns a job_id;
-    progress is streamed from /decode/progress/<job_id>."""
+def _load_upload(*, allow_preview_id: bool = False):
+    """Pull (file_bytes, filename, ext, provider, exercise_lang, extras) off the
+    request. Shared by /preview and /decode/start so the upload contract stays
+    in one place. `extras` is the parsed JSON body or form dict for any extra
+    fields the caller needs (e.g. rotations).
+    """
     bad_type = "חייב להיות קובץ PDF או תמונה (jpg/png)"
     filename = "document.pdf"
+    extras: dict = {}
     if request.is_json:
-        if not DESKTOP_MODE:
-            return jsonify(error="לא זמין בגרסת הווב"), 403
+        if not DESKTOP_MODE and not allow_preview_id:
+            return None, ("לא זמין בגרסת הווב", 403)
         body = request.get_json(silent=True) or {}
-        path = body.get("path")
-        if not path or not os.path.isfile(path):
-            return jsonify(error="הקובץ לא נמצא"), 400
-        if not path.lower().endswith(ACCEPTED_EXTS):
-            return jsonify(error=bad_type), 400
-        with open(path, "rb") as f:
-            file_bytes = f.read()
-        filename = os.path.basename(path)
+        extras = dict(body)
+        # In web mode JSON is also used for "decode using cached preview".
+        preview_id = body.get("preview_id") if allow_preview_id else None
+        if preview_id:
+            entry = PREVIEWS.get(preview_id)
+            if not entry:
+                return None, ("ה-preview פג תוקף — העלה את הקובץ מחדש", 410)
+            file_bytes = entry["bytes"]
+            filename = entry["filename"]
+        else:
+            if not DESKTOP_MODE:
+                return None, ("לא זמין בגרסת הווב", 403)
+            path = body.get("path")
+            if not path or not os.path.isfile(path):
+                return None, ("הקובץ לא נמצא", 400)
+            if not path.lower().endswith(ACCEPTED_EXTS):
+                return None, (bad_type, 400)
+            with open(path, "rb") as f:
+                file_bytes = f.read()
+            filename = os.path.basename(path)
         provider = body.get("model")
         exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
     else:
         file = request.files.get("pdf")
         if not file or not file.filename:
-            return jsonify(error="לא נבחר קובץ"), 400
+            return None, ("לא נבחר קובץ", 400)
         if not file.filename.lower().endswith(ACCEPTED_EXTS):
-            return jsonify(error=bad_type), 400
+            return None, (bad_type, 400)
         file_bytes = file.read()
         filename = file.filename
         provider = request.form.get("model")
         exercise_lang = _norm_lang(request.form.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
+        extras = dict(request.form)
     if not file_bytes:
-        return jsonify(error="הקובץ ריק"), 400
+        return None, ("הקובץ ריק", 400)
     if provider not in MODELS:
         provider = DEFAULT_MODEL
-
     ext = os.path.splitext(filename)[1].lower()
+    return (file_bytes, filename, ext, provider, exercise_lang, extras), None
+
+
+@app.route("/preview", methods=["POST"])
+def preview():
+    """Render uploaded pages so the user can confirm orientation before OCR.
+
+    For each page: apply auto_rotate (best-guess portrait), measure deskew so
+    the slider has a sensible default, return the auto-rotated image as a
+    thumbnail. The raw bytes are cached under a preview_id; /decode/start
+    can later be called with {preview_id, rotations} to skip re-uploading.
+    """
+    loaded, err = _load_upload()
+    if err:
+        msg, code = err
+        return jsonify(error=msg), code
+    file_bytes, filename, ext, _, _, _ = loaded
+
+    try:
+        pages_imgs = file_to_page_images(file_bytes, ext)
+    except Exception as e:
+        log.exception("preview: file_to_page_images failed")
+        return jsonify(error=f"שגיאה בפתיחת הקובץ: {e}"), 400
+
+    previews = []
+    for i, img in enumerate(pages_imgs):
+        rotated, _ = auto_rotate(img)
+        _, suggested_fine = deskew_page(rotated)
+        previews.append({
+            "page": i + 1,
+            "image_b64": original_preview_b64(rotated),
+            "suggested_fine_angle": suggested_fine,
+        })
+
+    _evict_stale_previews()
+    preview_id = uuid.uuid4().hex[:12]
+    PREVIEWS[preview_id] = {
+        "bytes": file_bytes, "filename": filename, "ext": ext, "ts": time.time(),
+    }
+    return jsonify(preview_id=preview_id, filename=filename, pages=previews)
+
+
+@app.route("/decode/start", methods=["POST"])
+def decode_start():
+    """Begin OCR. Accepts either a native file path (pywebview, JSON body),
+    a multipart 'pdf' upload (plain-browser fallback), or a JSON body with
+    `preview_id` referring to a file already uploaded via /preview. Returns
+    a job_id; progress is streamed from /decode/progress/<job_id>.
+
+    Optional `rotations` (JSON array, per page: {rotation_90, fine_angle})
+    overrides auto_rotate + deskew with the user's preview-screen choice.
+    """
+    loaded, err = _load_upload(allow_preview_id=True)
+    if err:
+        msg, code = err
+        return jsonify(error=msg), code
+    file_bytes, filename, ext, provider, exercise_lang, extras = loaded
+
+    rotations = extras.get("rotations") if isinstance(extras, dict) else None
+    if isinstance(rotations, str):
+        try:
+            rotations = json.loads(rotations)
+        except json.JSONDecodeError:
+            rotations = None
+    if rotations is not None and not isinstance(rotations, list):
+        rotations = None
+
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
     threading.Thread(
         target=run_job,
-        args=(job_id, file_bytes, ext, provider, exercise_lang),
+        args=(job_id, file_bytes, ext, provider, exercise_lang, rotations),
         daemon=True,
     ).start()
     return jsonify(job_id=job_id)
