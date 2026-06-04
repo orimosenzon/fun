@@ -249,6 +249,13 @@ MODELS = {
 }
 DEFAULT_MODEL = "claude"
 
+MODEL_FILENAME_LABEL = {
+    "claude":      "claude-opus-4-8",
+    "gemini":      "gemini-2.5-flash",
+    "gemini-lite": "gemini-2.5-flash-lite",
+    "groq-scout":  "llama-4-scout",
+}
+
 # Language metadata used by both the OCR/eval prompts (to tell the LLM what
 # language the exercise is in / what language to write feedback in) and the UI
 # (to render the two pickers). `name_he` is what the teacher sees in the picker;
@@ -274,10 +281,21 @@ def _inject_models():
     return {
         "models": MODELS,
         "default_model": DEFAULT_MODEL,
+        "model_filename_labels": MODEL_FILENAME_LABEL,
         "langs": LANGS,
         "default_exercise_lang": DEFAULT_EXERCISE_LANG,
         "default_feedback_lang": DEFAULT_FEEDBACK_LANG,
     }
+
+
+def _docx_filename(base: str, kind: str, provider: str) -> str:
+    """Build a Word export filename. kind: 'OCR' or 'Eval'.
+    Adds date suffix when the base already contains an underscore."""
+    label = MODEL_FILENAME_LABEL.get(provider, provider)
+    if "_" in base:
+        today = datetime.date.today().strftime("%Y%m%d")
+        return f"{base}_{kind}_{label}_{today}.docx"
+    return f"{base}_{kind}_{label}.docx"
 
 
 @app.context_processor
@@ -2464,6 +2482,7 @@ def decode_docx():
     body = request.get_json(silent=True) or {}
     pages = body.get("pages") or []
     filename = body.get("filename") or "תרגיל"
+    provider = body.get("model") if body.get("model") in MODEL_FILENAME_LABEL else DEFAULT_MODEL
     exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
     if not pages:
         return jsonify(error="אין פענוח לייצוא"), 400
@@ -2473,8 +2492,7 @@ def decode_docx():
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
     base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
-    today = datetime.date.today().strftime("%Y%m%d")
-    out_name = f"ocr-{today}-{base}.docx"
+    out_name = _docx_filename(base, "OCR", provider)
     return send_file(
         io.BytesIO(data),
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -2491,6 +2509,7 @@ def evaluation_docx():
     body = request.get_json(silent=True) or {}
     evaluation = body.get("evaluation")
     filename = body.get("filename") or "תרגיל"
+    provider = body.get("model") if body.get("model") in MODEL_FILENAME_LABEL else DEFAULT_MODEL
     rubric_name = body.get("rubric_name") or (evaluation or {}).get("rubric_name", "")
     pages = body.get("pages") or None
     feedback_lang = _norm_lang(body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG)
@@ -2508,8 +2527,7 @@ def evaluation_docx():
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
     base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
-    today = datetime.date.today().strftime("%Y%m%d")
-    out_name = f"eval-{today}-{base}.docx"
+    out_name = _docx_filename(base, "Eval", provider)
     return send_file(
         io.BytesIO(data),
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
