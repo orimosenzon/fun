@@ -2133,7 +2133,7 @@
                             return;
                         }
                         const blob = await resp.blob();
-                        const name = `haskala-decode-${baseName()}-${nowStamp()}.docx`;
+                        const name = `ocr-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${baseName()}.docx`;
                         const api = await window.__haskalaGetApi();
                         if (api) {
                             const ab = await blob.arrayBuffer();
@@ -2175,7 +2175,7 @@
                             return;
                         }
                         const blob = await resp.blob();
-                        const name = `haskala-eval-${baseName()}-${nowStamp()}.docx`;
+                        const name = `eval-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${baseName()}.docx`;
                         const api = await window.__haskalaGetApi();
                         if (api) {
                             // Native dialog needs the bytes as base64 — read the

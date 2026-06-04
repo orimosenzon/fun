@@ -1,4 +1,5 @@
 import base64
+import datetime
 import difflib
 import hashlib
 import hmac
@@ -2472,7 +2473,8 @@ def decode_docx():
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
     base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
-    out_name = f"haskala-decode-{base}.docx"
+    today = datetime.date.today().strftime("%Y%m%d")
+    out_name = f"ocr-{today}-{base}.docx"
     return send_file(
         io.BytesIO(data),
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -2506,7 +2508,8 @@ def evaluation_docx():
         return jsonify(error=f"שגיאה ביצירת קובץ Word: {e}"), 500
 
     base = re.sub(r"\.(pdf|jpe?g|png|json)$", "", filename, flags=re.I)
-    out_name = f"haskala-eval-{base}.docx"
+    today = datetime.date.today().strftime("%Y%m%d")
+    out_name = f"eval-{today}-{base}.docx"
     return send_file(
         io.BytesIO(data),
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
