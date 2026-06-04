@@ -290,9 +290,9 @@ def _inject_models():
 
 def _docx_filename(base: str, kind: str, provider: str) -> str:
     """Build a Word export filename. kind: 'OCR' or 'Eval'.
-    Adds date suffix when the base already contains an underscore."""
+    Adds date suffix when the base starts with an underscore."""
     label = MODEL_FILENAME_LABEL.get(provider, provider)
-    if "_" in base:
+    if base.startswith("_"):
         today = datetime.date.today().strftime("%Y%m%d")
         return f"{base}_{kind}_{label}_{today}.docx"
     return f"{base}_{kind}_{label}.docx"

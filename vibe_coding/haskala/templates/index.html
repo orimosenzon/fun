@@ -1789,7 +1789,7 @@
                     const base = baseName();
                     const labels = window.__haskalaMfls || {};
                     const label = labels[currentModel()] || currentModel();
-                    if (base.includes('_')) {
+                    if (base.startsWith('_')) {
                         const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
                         return `${base}_${kind}_${label}_${date}.docx`;
                     }
