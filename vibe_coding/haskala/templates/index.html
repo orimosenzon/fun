@@ -982,6 +982,177 @@
             width: 18px;
             height: 18px;
         }
+
+        /* ---- New cleaned-up layout (empty CTA, top toolbar, settings) ---- */
+        .empty-cta {
+            background: var(--paper);
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+            padding: 2.2rem 1.5rem 1.6rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(140, 110, 60, 0.06);
+        }
+        .empty-cta .empty-lang-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.3rem;
+        }
+        .empty-cta .empty-lang-row label {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .empty-cta .empty-lang-row select {
+            font-family: inherit;
+            font-size: 0.98rem;
+            padding: 0.45rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: white;
+            color: var(--fg);
+            cursor: pointer;
+            min-width: 9em;
+        }
+        .empty-cta .empty-lang-row select:hover { border-color: var(--accent); }
+        .empty-cta .big-cta {
+            font-size: 1.15rem;
+            padding: 0.95rem 2.1rem;
+            border-radius: 999px;
+        }
+        .empty-cta .empty-hint {
+            color: #7a6a48;
+            font-size: 0.92rem;
+            margin: 0.9rem 0 0.4rem;
+        }
+        .empty-cta .empty-side {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+        .empty-cta .text-sep { color: #b9a87a; }
+        .text-link {
+            background: transparent;
+            color: var(--accent);
+            box-shadow: none;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .text-link:hover {
+            background: rgba(30, 81, 69, 0.08);
+            color: var(--accent-hover);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .toolbar-main {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.65rem 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            gap: 0.55rem;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 6px rgba(140, 110, 60, 0.08);
+        }
+        .toolbar-status {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .toolbar-status .status-filename {
+            font-weight: 600;
+            color: var(--fg);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 28em;
+        }
+        .toolbar-status .status-meta {
+            color: #7a6a48;
+            font-size: 0.88rem;
+        }
+        .toolbar-main .spacer { flex: 0; }
+        .icon-btn {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--border);
+            box-shadow: none;
+            padding: 0.45rem 0.7rem;
+            font-size: 1.05rem;
+            border-radius: 999px;
+            min-width: 2.5rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .icon-btn:hover {
+            background: rgba(30, 81, 69, 0.08);
+            color: var(--accent-hover);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .workbar { margin-bottom: 1.2rem; }
+
+        .menu-list .menu-sep-label {
+            height: auto;
+            background: transparent;
+            color: #9c8c5e;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 0.45rem 1rem 0.25rem;
+            border-top: 1px solid var(--border);
+            margin-top: 0.25rem;
+            text-align: start;
+        }
+        .menu-list .danger-text { color: var(--error); }
+
+        /* Settings modal — reuses the existing .modal-backdrop / .visible
+           toggle pattern (see rubric modal above). Don't redefine
+           .modal-backdrop here, or the rubric modal would become always-visible. */
+        #settings-modal .modal {
+            width: min(420px, 100%);
+            padding: 1.5rem 1.7rem;
+        }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.85rem;
+        }
+        .settings-row label {
+            min-width: 6.5em;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .settings-row select {
+            flex: 1;
+            font-family: inherit;
+            font-size: 0.98rem;
+            padding: 0.5rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            color: var(--fg);
+        }
+        #settings-modal .modal-actions {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: flex-start;
+        }
     </style>
 </head>
 <body>
@@ -1016,48 +1187,67 @@
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <div class="actionbar">
-            <button id="decode-btn" type="button">פענח קובץ</button>
-            <label for="model-select">מודל:</label>
-            <select id="model-select">
-                {% for key, label in models.items() %}
-                <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-            <label for="exercise-lang-select">שפת תרגיל:</label>
-            <select id="exercise-lang-select" title="השפה שבה כתוב התרגיל בצילום">
-                {% for key, meta in langs.items() %}
-                <option value="{{ key }}" {% if key == default_exercise_lang %}selected{% endif %}>{{ meta.name_he }}</option>
-                {% endfor %}
-            </select>
-            <label for="feedback-lang-select">שפת פידבק:</label>
-            <select id="feedback-lang-select" title="השפה של המשוב, ההסברים וההערות לתלמיד">
-                {% for key, meta in langs.items() %}
-                <option value="{{ key }}" {% if key == default_feedback_lang %}selected{% endif %}>{{ meta.name_he }}</option>
-                {% endfor %}
-            </select>
-            <button id="load-btn" type="button" class="secondary">העלה קובץ מפוענח</button>
+        {% if not pages %}
+        <!-- Empty state: single CTA + exercise-lang picker (required for OCR)
+             + side links for debug actions. Exercise lang lives inline here
+             instead of in ⚙ because it's a per-exercise choice the user needs
+             to set *before* decoding. In loaded state it moves into the modal. -->
+        <div class="empty-cta">
+            <div class="empty-lang-row">
+                <label for="exercise-lang-select">שפת התרגיל:</label>
+                <select id="exercise-lang-select" title="השפה שבה כתוב התרגיל בצילום">
+                    {% for key, meta in langs.items() %}
+                    <option value="{{ key }}" {% if key == default_exercise_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button id="decode-btn" type="button" class="big-cta">פתח תרגיל לבדיקה</button>
+            <p class="empty-hint">PDF או תמונה של תרגיל מצולם</p>
+            <div class="empty-side">
+                <button id="load-btn" type="button" class="text-link">העלה JSON מפוענח</button>
+                <span class="text-sep">·</span>
+                <button type="button" class="text-link settings-trigger">⚙ הגדרות</button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if pages %}
+        <!-- Top toolbar: file status + change-file + settings + more menu. -->
+        <div class="toolbar-main">
+            <div class="toolbar-status">
+                <span class="status-filename" title="{{ filename }}">{{ filename }}</span>
+                <span class="status-meta">{{ pages|length }} עמודים</span>
+            </div>
             <span class="spacer"></span>
-            <button id="reset-btn" type="button" class="secondary" {% if not pages %}disabled{% endif %}>אתחל</button>
+            <button id="decode-btn" type="button" class="secondary">פתח קובץ אחר</button>
+            <button type="button" class="icon-btn settings-trigger" title="הגדרות (מודל, שפות)">⚙</button>
             <div class="menu-wrap">
-                <button id="save-menu-btn" type="button" {% if not pages %}disabled{% endif %}>שמור ▾</button>
-                <div id="save-menu" class="menu-list">
-                    <button type="button" data-act="save-decoded">שמור קובץ מפוענח (JSON)</button>
-                    <button type="button" data-act="save-decode-docx">שמור פענוח כקובץ Word</button>
+                <button id="more-menu-btn" type="button" class="icon-btn" title="עוד פעולות">⋯</button>
+                <div id="more-menu" class="menu-list">
+                    <button type="button" id="load-btn">העלה JSON מפוענח</button>
                     <div class="menu-sep"></div>
-                    <button type="button" data-act="save-eval" disabled>שמור בדיקה (JSON)</button>
-                    <button type="button" data-act="save-eval-docx" disabled>שמור בדיקה כקובץ Word</button>
+                    <button type="button" id="reset-btn" class="danger-text">אתחל</button>
                 </div>
             </div>
         </div>
 
-        {% if pages %}
-        <div class="actionbar">
+        <!-- Work bar: rubric + save + evaluate. -->
+        <div class="actionbar workbar">
             <label for="rubric-select">רובריקה:</label>
             <select id="rubric-select"></select>
-            <button id="add-rubric-btn" type="button" class="secondary">+ הוסף רובריקה</button>
+            <button id="add-rubric-btn" type="button" class="secondary">+ הוסף</button>
             <span class="spacer"></span>
             <span id="eval-spinner" class="eval-spinner">בודק תרגיל…</span>
+            <div class="menu-wrap">
+                <button id="save-menu-btn" type="button" class="secondary">שמור ▾</button>
+                <div id="save-menu" class="menu-list">
+                    <button type="button" data-act="save-decode-docx">שמור פענוח (Word)</button>
+                    <button type="button" data-act="save-eval-docx" disabled>שמור בדיקה (Word)</button>
+                    <div class="menu-sep menu-sep-label">דיבאג</div>
+                    <button type="button" data-act="save-decoded">שמור פענוח (JSON)</button>
+                    <button type="button" data-act="save-eval" disabled>שמור בדיקה (JSON)</button>
+                </div>
+            </div>
             <button id="evaluate-btn" type="button">
                 <svg class="feather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
@@ -1068,6 +1258,45 @@
             </button>
         </div>
         {% endif %}
+
+        <!-- Settings modal: always in DOM so dropdown IDs exist for JS init.
+             Hidden by default via shared .modal-backdrop CSS; .visible toggles. -->
+        <div id="settings-modal" class="modal-backdrop">
+            <div class="modal">
+                <h2>הגדרות</h2>
+                <div class="settings-row">
+                    <label for="model-select">מודל:</label>
+                    <select id="model-select">
+                        {% for key, label in models.items() %}
+                        <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if pages %}
+                <!-- Exercise lang only here in loaded state; in empty state it
+                     lives inline next to the open-CTA so it can't be missed. -->
+                <div class="settings-row">
+                    <label for="exercise-lang-select">שפת תרגיל:</label>
+                    <select id="exercise-lang-select" title="השפה שבה כתוב התרגיל בצילום">
+                        {% for key, meta in langs.items() %}
+                        <option value="{{ key }}" {% if key == default_exercise_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="settings-row">
+                    <label for="feedback-lang-select">שפת פידבק:</label>
+                    <select id="feedback-lang-select" title="השפה של המשוב, ההסברים וההערות לתלמיד">
+                        {% for key, meta in langs.items() %}
+                        <option value="{{ key }}" {% if key == default_feedback_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="settings-close-btn" class="secondary">סגור</button>
+                </div>
+            </div>
+        </div>
 
         <div id="progress-box" class="progress-box">
             <div class="progress-label">
@@ -1383,6 +1612,35 @@
                 previewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
 
+            function streamPreviewJob(jobId) {
+                const es = new EventSource('/preview/progress/' + jobId);
+                es.onmessage = (e) => {
+                    const ev = JSON.parse(e.data);
+                    if (ev.type === 'progress') {
+                        setProgress(ev.label, ev.page, ev.total_pages, ev.pct);
+                    } else if (ev.type === 'done') {
+                        fill.style.width = '100%';
+                        pct.textContent = '100%';
+                        txt.textContent = 'מסיים…';
+                        es.close();
+                        showPreview({
+                            preview_id: ev.preview_id,
+                            filename: ev.filename,
+                            pages: ev.pages,
+                        });
+                    } else if (ev.type === 'error') {
+                        progressError(ev, 'שגיאה בהכנת התצוגה');
+                        es.close();
+                    } else if (ev.type === 'end') {
+                        es.close();
+                    }
+                };
+                es.onerror = () => {
+                    progressError('החיבור לשרת נקטע');
+                    es.close();
+                };
+            }
+
             async function requestPreview(body, isJson) {
                 showProgress();
                 txt.textContent = 'מכין תצוגה מקדימה…';
@@ -1397,8 +1655,7 @@
                         progressError(data, 'שגיאה בהכנת התצוגה');
                         return;
                     }
-                    box.classList.remove('visible');
-                    showPreview(data);
+                    streamPreviewJob(data.job_id);
                 } catch (err) {
                     progressError('שגיאה בהכנת התצוגה');
                 }
@@ -1504,9 +1761,13 @@
 
             // --- אתחל --- back to the empty opening screen. Annotations are
             // auto-saved to localStorage by doc key, so nothing is lost.
-            document.getElementById('reset-btn').addEventListener('click', () => {
-                window.location = '/';
-            });
+            // reset-btn only exists when pages are loaded (lives in ⋯ menu).
+            const resetBtn = document.getElementById('reset-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    window.location = '/';
+                });
+            }
 
             // --- שמור ▾ menu --- toggle visibility + outside-click dismissal.
             // Individual menu items wire their own behaviour later (the "save
@@ -1522,6 +1783,58 @@
                 document.addEventListener('click', (e) => {
                     if (!saveMenu.contains(e.target) && e.target !== saveMenuBtn) {
                         saveMenu.classList.remove('visible');
+                    }
+                });
+            }
+
+            // --- ⋯ more menu --- same pattern as save menu.
+            const moreMenuBtn = document.getElementById('more-menu-btn');
+            const moreMenu = document.getElementById('more-menu');
+            if (moreMenuBtn && moreMenu) {
+                moreMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    moreMenu.classList.toggle('visible');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!moreMenu.contains(e.target) && e.target !== moreMenuBtn) {
+                        moreMenu.classList.remove('visible');
+                    }
+                });
+                // Close the menu when a menu item is clicked (its own handler
+                // still fires because the menu items are #load-btn / #reset-btn
+                // and have their listeners attached above).
+                moreMenu.addEventListener('click', () => {
+                    moreMenu.classList.remove('visible');
+                });
+            }
+
+            // --- ⚙ settings modal --- opens via any .settings-trigger, closes
+            // on the X button or backdrop click. Modal stays in DOM regardless
+            // of `pages` so model/lang dropdowns remain selectable for decode.
+            // Uses the shared .visible toggle pattern (see rubric modal CSS).
+            const settingsModal = document.getElementById('settings-modal');
+            const settingsCloseBtn = document.getElementById('settings-close-btn');
+            if (settingsModal) {
+                document.querySelectorAll('.settings-trigger').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        settingsModal.classList.add('visible');
+                    });
+                });
+                if (settingsCloseBtn) {
+                    settingsCloseBtn.addEventListener('click', () => {
+                        settingsModal.classList.remove('visible');
+                    });
+                }
+                settingsModal.addEventListener('click', (e) => {
+                    // Backdrop click (but not inner modal click) closes it.
+                    if (e.target === settingsModal) {
+                        settingsModal.classList.remove('visible');
+                    }
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && settingsModal.classList.contains('visible')) {
+                        settingsModal.classList.remove('visible');
                     }
                 });
             }
