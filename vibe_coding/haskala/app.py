@@ -1228,6 +1228,11 @@ JOBS: dict[str, dict] = {}
 PREVIEWS: dict[str, dict] = {}
 PREVIEW_TTL_SECONDS = 1800  # 30 min — enough for one teacher reviewing pages
 
+# In-memory preview-prep jobs (file load → auto_rotate → deskew per page).
+# Same pattern as JOBS but for the synchronous preview step, so the UI can
+# stream per-page progress instead of staring at a stuck 0% bar.
+PREVIEW_JOBS: dict[str, dict] = {}
+
 
 def _evict_stale_previews():
     now = time.time()
@@ -2455,43 +2460,102 @@ def _load_upload(*, allow_preview_id: bool = False):
     return (file_bytes, filename, ext, provider, exercise_lang, extras), None
 
 
+def run_preview_job(
+    job_id: str,
+    file_bytes: bytes,
+    filename: str,
+    ext: str,
+):
+    """Background worker for /preview. Streams per-page progress events
+    (file load, then per-page auto_rotate+deskew) so the UI bar advances
+    instead of sitting at 0% until everything finishes."""
+    job = PREVIEW_JOBS[job_id]
+    q: queue.Queue = job["q"]
+    try:
+        q.put({"type": "progress", "label": "פותח את הקובץ",
+               "page": 0, "total_pages": 0, "pct": 2})
+        pages_imgs = file_to_page_images(file_bytes, ext)
+        total = len(pages_imgs) or 1
+        previews = []
+        for i, img in enumerate(pages_imgs):
+            page_num = i + 1
+            # Two stages per page → split the page's slice of the 5..95 band.
+            base = 5 + int((i / total) * 90)
+            mid = 5 + int(((i + 0.5) / total) * 90)
+            after = 5 + int(((i + 1) / total) * 90)
+            q.put({"type": "progress", "label": "מסובב לכיוון נכון",
+                   "page": page_num, "total_pages": total, "pct": base})
+            rotated, _ = auto_rotate(img)
+            q.put({"type": "progress", "label": "מתקן הטיה עדינה",
+                   "page": page_num, "total_pages": total, "pct": mid})
+            _, suggested_fine = deskew_page(rotated)
+            previews.append({
+                "page": page_num,
+                "image_b64": original_preview_b64(rotated),
+                "suggested_fine_angle": suggested_fine,
+            })
+            q.put({"type": "progress", "label": "מוכן",
+                   "page": page_num, "total_pages": total, "pct": after})
+
+        _evict_stale_previews()
+        preview_id = uuid.uuid4().hex[:12]
+        PREVIEWS[preview_id] = {
+            "bytes": file_bytes, "filename": filename, "ext": ext, "ts": time.time(),
+        }
+        q.put({
+            "type": "done",
+            "preview_id": preview_id,
+            "filename": filename,
+            "pages": previews,
+        })
+    except Exception as e:
+        log.exception("run_preview_job failed")
+        q.put({"type": "error", **humanize_error(e, action="הכנת התצוגה")})
+    finally:
+        q.put({"type": "end"})
+
+
 @app.route("/preview", methods=["POST"])
 def preview():
-    """Render uploaded pages so the user can confirm orientation before OCR.
-
-    For each page: apply auto_rotate (best-guess portrait), measure deskew so
-    the slider has a sensible default, return the auto-rotated image as a
-    thumbnail. The raw bytes are cached under a preview_id; /decode/start
-    can later be called with {preview_id, rotations} to skip re-uploading.
-    """
+    """Start a preview-prep job. Returns {job_id} immediately; the actual
+    work (file → pages → auto_rotate → deskew) runs in a background thread
+    and progress is streamed from /preview/progress/<job_id>."""
     loaded, err = _load_upload()
     if err:
         msg, code = err
         return jsonify(error=msg), code
     file_bytes, filename, ext, _, _, _ = loaded
 
-    try:
-        pages_imgs = file_to_page_images(file_bytes, ext)
-    except Exception as e:
-        log.exception("preview: file_to_page_images failed")
-        return jsonify(error=f"שגיאה בפתיחת הקובץ: {e}"), 400
+    job_id = uuid.uuid4().hex[:12]
+    PREVIEW_JOBS[job_id] = {"q": queue.Queue()}
+    threading.Thread(
+        target=run_preview_job,
+        args=(job_id, file_bytes, filename, ext),
+        daemon=True,
+    ).start()
+    return jsonify(job_id=job_id)
 
-    previews = []
-    for i, img in enumerate(pages_imgs):
-        rotated, _ = auto_rotate(img)
-        _, suggested_fine = deskew_page(rotated)
-        previews.append({
-            "page": i + 1,
-            "image_b64": original_preview_b64(rotated),
-            "suggested_fine_angle": suggested_fine,
-        })
 
-    _evict_stale_previews()
-    preview_id = uuid.uuid4().hex[:12]
-    PREVIEWS[preview_id] = {
-        "bytes": file_bytes, "filename": filename, "ext": ext, "ts": time.time(),
-    }
-    return jsonify(preview_id=preview_id, filename=filename, pages=previews)
+@app.route("/preview/progress/<job_id>")
+def preview_progress(job_id):
+    """SSE stream for preview-prep jobs. Mirrors /decode/progress."""
+    job = PREVIEW_JOBS.get(job_id)
+    if not job:
+        return "unknown job", 404
+
+    def stream():
+        while True:
+            ev = job["q"].get()
+            yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+            if ev["type"] in ("end", "error"):
+                break
+        PREVIEW_JOBS.pop(job_id, None)
+
+    return Response(
+        stream(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.route("/decode/start", methods=["POST"])
