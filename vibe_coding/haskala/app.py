@@ -996,12 +996,22 @@ def process_pdf_stream(
             p, provider, rot_angle, angle, len(texts), wr_norm,
         )
         yield progress("ocr", p)
-        bands = segment_into_lines(img, len(texts), writing_region_px)
-        yield progress("segment", p)
-        line_items = [
-            {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
-            for text, (y_top, y_bottom) in zip(texts, bands)
-        ]
+        # English OCR is reliable enough that the teacher no longer needs the
+        # per-line crops to verify against — Avishai asked to drop them for
+        # English and show just the faithful line texts + the full original
+        # scan. Skipping segmentation/cropping also saves work. Line structure
+        # is preserved either way (one entry per transcribed line).
+        skip_line_crops = exercise_lang == "en"
+        if skip_line_crops:
+            yield progress("segment", p)
+            line_items = [{"text": text, "image_b64": ""} for text in texts]
+        else:
+            bands = segment_into_lines(img, len(texts), writing_region_px)
+            yield progress("segment", p)
+            line_items = [
+                {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
+                for text, (y_top, y_bottom) in zip(texts, bands)
+            ]
         results.append(
             {"page": p, "lines": line_items, "original_b64": original_b64}
         )
@@ -1850,6 +1860,34 @@ def evaluate_with_rubric_stream(
         )
         log.error("evaluate (%s, streaming) raw text:\n%s", provider, buffer)
         raise
+
+    # --- DIAG: secondary-feedback column troubleshooting ---------------
+    # The on-screen table shows the second ("פידבק (שפת תרגיל)") column only
+    # when feedback_lang != exercise_lang AND the model actually filled
+    # feedback_secondary. Log both so we can tell which one collapsed it.
+    crits = parsed.get("criteria") or []
+    sec_filled = sum(1 for c in crits if (c.get("feedback_secondary") or "").strip())
+    log.info(
+        "[eval DIAG] feedback_lang=%s exercise_lang=%s same=%s | "
+        "criteria=%d with_secondary=%d | overall_secondary=%s",
+        feedback_lang, exercise_lang, feedback_lang == exercise_lang,
+        len(crits), sec_filled,
+        bool((parsed.get("overall_feedback_secondary") or "").strip()),
+    )
+    if crits and sec_filled < len(crits):
+        # Show the first offending criterion's fields so we can see whether
+        # the model returned "" or omitted the key entirely.
+        first_missing = next(
+            (c for c in crits if not (c.get("feedback_secondary") or "").strip()),
+            None,
+        )
+        if first_missing is not None:
+            log.info(
+                "[eval DIAG] sample criterion '%s': feedback=%r feedback_secondary=%r",
+                first_missing.get("name", "?"),
+                (first_missing.get("feedback") or "")[:60],
+                first_missing.get("feedback_secondary"),
+            )
 
     yield {"type": "result", "evaluation": attach_colors(parsed)}
 
