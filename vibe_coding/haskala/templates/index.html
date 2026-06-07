@@ -1153,9 +1153,34 @@
             display: flex;
             justify-content: flex-start;
         }
+        .global-reset {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 2000;
+            background: #fdf2dc;
+            border: 1px solid #d8c9a0;
+            color: #6b5f44;
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            font: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(74, 29, 16, 0.12);
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .global-reset:hover {
+            background: #f3e6c4;
+            box-shadow: 0 2px 8px rgba(74, 29, 16, 0.18);
+        }
     </style>
 </head>
 <body>
+    <!-- Always-on reset, reachable from every screen (opening / preview /
+         decoding / loaded result). Avishai asked for a one-click "start over"
+         that isn't buried in the ⋯ menu. -->
+    <button type="button" id="global-reset" class="global-reset"
+            title="התחל מחדש — חזרה למסך הפתיחה">⟲ התחל מחדש</button>
     <div class="container">
         <div class="hero">
             <svg class="hero-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1193,6 +1218,14 @@
              instead of in ⚙ because it's a per-exercise choice the user needs
              to set *before* decoding. In loaded state it moves into the modal. -->
         <div class="empty-cta">
+            <div class="empty-lang-row">
+                <label for="model-select">מודל:</label>
+                <select id="model-select" title="מנוע הפענוח (OCR)">
+                    {% for key, label in models.items() %}
+                    <option value="{{ key }}" {% if key == default_model %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="empty-lang-row">
                 <label for="exercise-lang-select">שפת התרגיל:</label>
                 <select id="exercise-lang-select" title="השפה שבה כתוב התרגיל בצילום">
@@ -1264,6 +1297,11 @@
         <div id="settings-modal" class="modal-backdrop">
             <div class="modal">
                 <h2>הגדרות</h2>
+                {% if pages %}
+                <!-- Model lives inline on the opening screen (next to the open
+                     CTA) so it can't be missed; in loaded state it moves here
+                     into ⚙ alongside the language picks. Exactly one
+                     #model-select exists per state so the JS stays simple. -->
                 <div class="settings-row">
                     <label for="model-select">מודל:</label>
                     <select id="model-select">
@@ -1272,6 +1310,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 {% if pages %}
                 <!-- Exercise lang only here in loaded state; in empty state it
                      lives inline next to the open-CTA so it can't be missed. -->
@@ -1769,6 +1808,20 @@
                 });
             }
 
+            // --- global reset --- always visible (every screen). Confirms
+            // only when there's loaded work on screen to lose; on the opening
+            // screen it just returns home without nagging.
+            const globalReset = document.getElementById('global-reset');
+            if (globalReset) {
+                globalReset.addEventListener('click', () => {
+                    const hasWork = !!document.querySelector('.page-section');
+                    if (hasWork && !confirm('להתחיל מחדש? הפענוח הנוכחי ייסגר (הערות נשמרות אוטומטית).')) {
+                        return;
+                    }
+                    window.location = '/';
+                });
+            }
+
             // --- שמור ▾ menu --- toggle visibility + outside-click dismissal.
             // Individual menu items wire their own behaviour later (the "save
             // decoded" action lives in the pages-only IIFE since it needs the
@@ -1872,7 +1925,9 @@
                     <div class="lines">
                         {% for line in page.lines %}
                             <div class="line">
+                                {% if line.image_b64 %}
                                 <img class="line-image" src="data:image/png;base64,{{ line.image_b64 }}" alt="שורה {{ loop.index }}">
+                                {% endif %}
                                 <span class="line-num">{{ loop.index }}</span>
                                 <div class="line-text-row">
                                     <pre class="line-text" data-line-key="p{{ page.page }}-l{{ loop.index0 }}">{{ line.text }}</pre>
@@ -2360,8 +2415,9 @@
                             const textEl = lineEl.querySelector('.line-text');
                             const key = textEl.dataset.lineKey;
                             const text = Array.from(textEl.querySelectorAll('.char')).map(c => c.textContent).join('');
-                            const imageDataUrl = img.src;
-                            const imageB64 = imageDataUrl.replace(/^data:image\/png;base64,/, '');
+                            // English exercises carry no per-line crop (img is
+                            // absent) — saved JSON just omits the image then.
+                            const imageB64 = img ? img.src.replace(/^data:image\/png;base64,/, '') : '';
                             lines.push({
                                 text,
                                 image_b64: imageB64,
