@@ -243,6 +243,27 @@ def ocr_jpeg_bytes(img: Image.Image) -> bytes:
 ORIGINAL_MAX_EDGE = 1800
 
 
+# Long edge of the page image used only for preview-screen prep (auto_rotate +
+# deskew). Those compute an *angle*, which is resolution-independent, so a small
+# copy is enough — and deskew runs ~52 rotations per page, so its cost is
+# O(pixels). The decode path re-renders from raw bytes at full RENDER_DPI, so
+# OCR quality is untouched. The preview is shown at <=60vh with no zoom, so
+# 1200px stays visually sharp for orientation review.
+PREVIEW_WORK_EDGE = 1200
+
+
+def _downscale_to_edge(img: Image.Image, max_edge: int) -> Image.Image:
+    """Return img scaled so its long edge <= max_edge (LANCZOS); no-op if smaller."""
+    long_edge = max(img.size)
+    if long_edge <= max_edge:
+        return img
+    scale = max_edge / long_edge
+    return img.resize(
+        (round(img.width * scale), round(img.height * scale)),
+        Image.LANCZOS,
+    )
+
+
 def original_preview_b64(img: Image.Image) -> str:
     """Downscaled JPEG of the raw page — a reviewing aid, not OCR input."""
     long_edge = max(img.size)
@@ -2517,16 +2538,27 @@ def run_preview_job(
         previews = []
         for i, img in enumerate(pages_imgs):
             page_num = i + 1
+            t0 = time.time()
+            # auto_rotate + deskew only measure an angle (resolution-independent)
+            # and deskew is O(pixels) over ~52 rotations, so we run them on a
+            # small copy. The displayed preview comes from this copy too — it's
+            # review-only; decode re-renders from raw bytes at full RENDER_DPI.
+            work = _downscale_to_edge(img, PREVIEW_WORK_EDGE)
             # Two stages per page → split the page's slice of the 5..95 band.
             base = 5 + int((i / total) * 90)
             mid = 5 + int(((i + 0.5) / total) * 90)
             after = 5 + int(((i + 1) / total) * 90)
             q.put({"type": "progress", "label": "מסובב לכיוון נכון",
                    "page": page_num, "total_pages": total, "pct": base})
-            rotated, _ = auto_rotate(img)
+            rotated, _ = auto_rotate(work)
             q.put({"type": "progress", "label": "מתקן הטיה עדינה",
                    "page": page_num, "total_pages": total, "pct": mid})
             _, suggested_fine = deskew_page(rotated)
+            log.info(
+                "preview page %d: %dx%d -> work %dx%d, prep %.2fs",
+                page_num, img.width, img.height, work.width, work.height,
+                time.time() - t0,
+            )
             previews.append({
                 "page": page_num,
                 "image_b64": original_preview_b64(rotated),
