@@ -287,6 +287,7 @@ MODELS = {
     "gemini": "Gemini (2.5 Flash)",
     "gemini-lite": "Gemini (2.5 Flash-Lite)",
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
+    "azure-gpt41-mini": "GPT-4.1-mini (Azure)",
 }
 DEFAULT_MODEL = "claude"
 
@@ -295,6 +296,7 @@ MODEL_FILENAME_LABEL = {
     "gemini":      "gemini-2.5-flash",
     "gemini-lite": "gemini-2.5-flash-lite",
     "groq-scout":  "llama-4-scout",
+    "azure-gpt41-mini": "gpt-4.1-mini-azure",
 }
 
 # Language metadata used by both the OCR/eval prompts (to tell the LLM what
@@ -410,6 +412,39 @@ def _groq():
 
         _groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
     return _groq_client
+
+
+# Azure OpenAI (Microsoft for Startups credit). gpt-4.1-mini has vision and is
+# OpenAI-compatible, so every call site mirrors Groq. The model is chosen by
+# the *deployment name* (AZURE_OPENAI_DEPLOYMENT), not a fixed model ID — Azure
+# routes by deployment, so swapping the deployed model is an .env edit only.
+# The endpoint is the v1 surface (".../openai/v1"), which the stock OpenAI SDK
+# speaks directly via base_url.
+_AZURE_PROVIDERS = {"azure-gpt41-mini"}
+
+
+def _is_azure(provider: str) -> bool:
+    return provider in _AZURE_PROVIDERS
+
+
+def _azure_deployment() -> str:
+    return os.environ["AZURE_OPENAI_DEPLOYMENT"]
+
+
+_azure_client = None
+
+
+def _azure():
+    """Lazily built so missing AZURE_OPENAI_* only bites if Azure is picked."""
+    global _azure_client
+    if _azure_client is None:
+        from openai import OpenAI
+
+        base = os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/"
+        _azure_client = OpenAI(
+            base_url=base, api_key=os.environ["AZURE_OPENAI_API_KEY"]
+        )
+    return _azure_client
 
 
 def _ocr_anthropic(img: Image.Image, exercise_lang: str) -> dict:
@@ -530,6 +565,40 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> dict:
     return json.loads(response.choices[0].message.content)
 
 
+def _ocr_azure(img: Image.Image, exercise_lang: str) -> dict:
+    # Azure gpt-4.1-mini is OpenAI-compatible — same call shape as Groq, with
+    # response_format=json_object and the JSON contract spelled out in the turn.
+    img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
+    response = _azure().chat.completions.create(
+        model=_azure_deployment(),
+        messages=[
+            {"role": "system", "content": build_ocr_prompt(exercise_lang)},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            _USER_TURN
+                            + ' החזר JSON בפורמט הבא בלבד: '
+                            '{"writing_region":{"top":0.0,"bottom":1.0},'
+                            '"lines":[{"text":"..."},...]}'
+                        ),
+                    },
+                ],
+            },
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=8000,
+        temperature=0,
+    )
+    return json.loads(response.choices[0].message.content)
+
+
 def ocr_page(
     img: Image.Image,
     provider: str = DEFAULT_MODEL,
@@ -546,6 +615,8 @@ def ocr_page(
         return _ocr_gemini(img, provider, exercise_lang)
     if _is_groq(provider):
         return _ocr_groq(img, provider, exercise_lang)
+    if _is_azure(provider):
+        return _ocr_azure(img, exercise_lang)
     return _ocr_anthropic(img, exercise_lang)
 
 
@@ -1689,6 +1760,28 @@ def evaluate_with_rubric(
             raise
         return attach_colors(parsed)
 
+    if _is_azure(provider):
+        response = _azure().chat.completions.create(
+            model=_azure_deployment(),
+            messages=[
+                {"role": "system", "content": eval_prompt},
+                {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=12000,
+            temperature=0,
+        )
+        text = response.choices[0].message.content
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as e:
+            log.error(
+                "evaluate (azure) JSON parse failed: %s | text_len=%d", e, len(text),
+            )
+            log.error("evaluate (azure) raw response text:\n%s", text)
+            raise
+        return attach_colors(parsed)
+
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
         max_tokens=12000,
@@ -1836,6 +1929,24 @@ def evaluate_with_rubric_stream(
     elif _is_groq(provider):
         stream = _groq().chat.completions.create(
             model=_groq_model_id(provider),
+            messages=[
+                {"role": "system", "content": eval_prompt},
+                {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=12000,
+            temperature=0,
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                buffer += delta
+                for ev in drain_progress():
+                    yield ev
+    elif _is_azure(provider):
+        stream = _azure().chat.completions.create(
+            model=_azure_deployment(),
             messages=[
                 {"role": "system", "content": eval_prompt},
                 {"role": "user", "content": user_turn + "\n\n" + _GROQ_EVAL_SHAPE_HINT},
