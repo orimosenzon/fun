@@ -1946,8 +1946,8 @@
 
             <div id="annotation-popup" class="annotation-popup"></div>
             <div id="highlight-tooltip" class="highlight-tooltip">
-                <div class="ht-crit"></div>
-                <div class="ht-comment"></div>
+                <div class="ht-crit" dir="auto"></div>
+                <div class="ht-comment" dir="auto"></div>
             </div>
 
             <div id="rubric-modal" class="modal-backdrop">
@@ -2553,7 +2553,7 @@
                         : '';
                     overall.innerHTML = `
                         <div class="eval-overall-score">ציון כללי: ${escapeHtml(currentEvaluation.overall_score || '')}</div>
-                        <div class="eval-overall-text">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
+                        <div class="eval-overall-text" dir="auto">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
                         ${overallSecondary ? `<div class="eval-overall-text-en">${escapeHtml(overallSecondary)}</div>` : ''}
                     `;
                     const tbody = document.getElementById('eval-tbody');
@@ -2565,11 +2565,11 @@
                             ? (c.feedback_secondary || c.feedback_en || '')
                             : '';
                         tr.innerHTML = `
-                            <td class="criterion-cell" data-label="קריטריון" style="border-inline-start-color:${escapeHtml(color)}">
+                            <td class="criterion-cell" data-label="קריטריון" dir="auto" style="border-inline-start-color:${escapeHtml(color)}">
                                 <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
                             </td>
                             <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
-                            <td class="feedback-cell" data-label="פידבק">${escapeHtml(c.feedback || '')}</td>
+                            <td class="feedback-cell" data-label="פידבק" dir="auto">${escapeHtml(c.feedback || '')}</td>
                             ${showSecondary ? `<td class="feedback-en-cell" data-label="פידבק (שפת תרגיל)">${escapeHtml(secondary)}</td>` : ''}
                         `;
                         tbody.appendChild(tr);
