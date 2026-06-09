@@ -7,7 +7,9 @@
 **מודל עסקי:** חינם כרגע, בניית קהילה ועולם עשיר. מונטיזציה — אחרי הצלחה.
 
 ## מצב נוכחי
-Single-player offline — בתהליך פיבוט ל-shared world.
+Shared world עם **Location Canon (גרסה A)** מיושם — הראשון שמגיע למקום יוצר אותו לכולם.
+שרת Flask + SQLite, endpoints `/api/world/location/<id>` (GET/POST), client integration ב-`api.js`/`game.js`.
+נשאר: deploy ל-Render + פידבק ממשתמשים אמיתיים.
 
 ## מה קיים ועובד
 - מנוע נרטיב: Gemini 2.0 Flash Lite (free tier)
@@ -29,8 +31,6 @@ Single-player offline — בתהליך פיבוט ל-shared world.
 - ביקור ראשון במקום → Gemini יוצר נרטיב, Imagen יוצר תמונה
 - ביקור חוזר → טוען מ-cache (localStorage כרגע, עתיד: DB שרת)
 
-## השאלה הפתוחה לסשן הבא
-**מה "משותף" בעולם?**
-- **גרסה A (פשוטה):** הראשון שמגיע למקום יוצר אותו לכולם — Location Canon
-- **גרסה B (עשירה):** כל שחקן יוצר גרסה משלו + World Log של אירועים משמעותיים מכולם
-החלטה זו תקבע את הארכיטקטורה.
+## החלטה ארכיטקטונית (2026-05-04)
+נבחרה **גרסה A — Location Canon**: הראשון שמגיע למקום יוצר אותו לכולם.
+גרסה B (World Log של אירועים) נדחתה — אולי בעתיד.

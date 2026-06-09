@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ζ — ההמשכה האנליטית של פונקציית זטא</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101714;
+    --panel:rgba(14,22,18,.86);
+    --panel-line:rgba(234,228,211,.13);
+    --ink:#EAE4D3;
+    --muted:#9DAC9E;
+    --amber:#E0A93F;
+    --cyan:#6FC7CF;
+    --shadow:0 10px 34px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:'Heebo',system-ui,sans-serif;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #gl{z-index:0}
+  #ov{z-index:1;cursor:grab}
+  #ov.dragging{cursor:grabbing}
+
+  .panel{
+    position:fixed;top:14px;inset-inline-start:14px;z-index:3;
+    width:min(330px,calc(100vw - 28px));
+    background:var(--panel);backdrop-filter:blur(10px);
+    border:1px solid var(--panel-line);border-radius:14px;
+    box-shadow:var(--shadow);padding:14px 16px 12px;
+  }
+  h1{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    font-size:1.22rem;line-height:1.3;letter-spacing:.01em;
+  }
+  h1 .zeta{color:var(--amber);font-size:1.5em;vertical-align:-2px;margin-inline-end:.25em}
+  .sub{font-size:.8rem;color:var(--muted);margin-top:3px;line-height:1.5}
+
+  .row{margin-top:12px}
+  .lbl{font-size:.78rem;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline}
+  .lbl b{color:var(--amber);font-family:'IBM Plex Mono',monospace;font-weight:500;direction:ltr;unicode-bidi:isolate;font-size:.82rem}
+
+  input[type=range]{
+    width:100%;margin-top:7px;appearance:none;height:4px;border-radius:2px;
+    background:linear-gradient(to left,#2b3a32 0%,#2b3a32 100%);outline:none;direction:ltr;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:17px;height:17px;border-radius:50%;
+    background:var(--amber);border:2px solid #0e1612;
+    box-shadow:0 0 0 1px rgba(224,169,63,.55),0 0 12px rgba(224,169,63,.5);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:15px;height:15px;border-radius:50%;background:var(--amber);
+    border:2px solid #0e1612;box-shadow:0 0 10px rgba(224,169,63,.5);cursor:pointer;
+  }
+
+  .chips{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .chip{
+    font:inherit;font-size:.74rem;font-weight:600;color:var(--ink);
+    background:rgba(234,228,211,.06);border:1px solid var(--panel-line);
+    border-radius:999px;padding:4px 11px;cursor:pointer;transition:all .15s;
+  }
+  .chip:hover{border-color:var(--amber);color:var(--amber)}
+  .chip.hot{background:rgba(224,169,63,.16);border-color:var(--amber);color:var(--amber)}
+
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:10px}
+  .checks label{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .checks input{accent-color:var(--amber);width:14px;height:14px;cursor:pointer}
+
+  details{margin-top:12px;border-top:1px solid var(--panel-line);padding-top:9px}
+  summary{font-size:.8rem;font-weight:600;color:var(--cyan);cursor:pointer;list-style:none}
+  summary::before{content:'◂ ';font-size:.7em}
+  details[open] summary::before{content:'▾ '}
+  .info{font-size:.78rem;color:var(--muted);line-height:1.65;margin-top:7px}
+  .info p+p{margin-top:6px}
+  .formula{
+    direction:ltr;text-align:center;font-family:'IBM Plex Mono',monospace;
+    font-size:.8rem;color:var(--ink);background:rgba(0,0,0,.3);
+    border-radius:8px;padding:7px 6px;margin:7px 0;letter-spacing:.02em;
+  }
+  .formula sup{font-size:.7em}
+
+  .readout{
+    position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:3;
+    background:var(--panel);backdrop-filter:blur(10px);
+    border:1px solid var(--panel-line);border-radius:11px;
+    box-shadow:var(--shadow);padding:8px 16px;
+    font-family:'IBM Plex Mono',monospace;font-size:.8rem;
+    direction:ltr;text-align:left;white-space:nowrap;color:var(--ink);
+    max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis;
+  }
+  .readout .dim{color:var(--muted)}
+  .readout .z{color:var(--amber)}
+
+  .legend{
+    position:fixed;bottom:14px;inset-inline-start:14px;z-index:2;
+    font-size:.72rem;color:var(--muted);line-height:1.55;
+    background:rgba(14,22,18,.6);border-radius:9px;padding:6px 10px;
+    border:1px solid rgba(234,228,211,.07);max-width:240px;
+  }
+  .legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin-inline-start:2px}
+
+  .resetBtn{
+    position:fixed;top:14px;inset-inline-end:14px;z-index:3;
+    font:inherit;font-size:.78rem;font-weight:600;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;
+    padding:7px 13px;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px);
+  }
+  .resetBtn:hover{border-color:var(--amber);color:var(--amber)}
+
+  .err{
+    position:fixed;inset:0;display:none;place-items:center;z-index:9;
+    background:var(--bg);text-align:center;padding:30px;line-height:1.8;
+  }
+
+  @media (max-width:640px){
+    .panel{padding:11px 13px 10px}
+    h1{font-size:1.05rem}
+    .legend{display:none}
+    .readout{font-size:.7rem;padding:6px 10px;bottom:10px}
+    .resetBtn{top:auto;bottom:64px;inset-inline-end:10px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+<canvas id="ov"></canvas>
+
+<div class="panel">
+  <h1><span class="zeta">ζ</span>ההמשכה האנליטית של פונקציית זטא</h1>
+  <div class="sub">גררו לתזוזה · גלגלת או צביטה לזום · רחפו לקריאת ערך</div>
+
+  <div class="row">
+    <div class="lbl"><span>גבול הגילוי</span><b id="curVal">Re(s) = 1.00</b></div>
+    <input type="range" id="curtain" min="-13" max="1" step="0.01" value="1">
+    <div class="chips">
+      <button class="chip" data-c="1">הטור בלבד</button>
+      <button class="chip" data-c="0">הרצועה הקריטית</button>
+      <button class="chip" data-c="-13">לגלות הכול</button>
+    </div>
+  </div>
+
+  <div class="checks">
+    <label><input type="checkbox" id="ckAxes" checked> צירים</label>
+    <label><input type="checkbox" id="ckCrit" checked> הקו הקריטי</label>
+    <label><input type="checkbox" id="ckZeros" checked> אפסים</label>
+    <label><input type="checkbox" id="ckPole" checked> הקוטב</label>
+  </div>
+
+  <details>
+    <summary>מה רואים כאן?</summary>
+    <div class="info">
+      <p>הטור המקורי של אוילר מתכנס רק בחצי־המישור שמימין לקו האנכי של 1:</p>
+      <div class="formula">ζ(s) = Σ 1/n<sup>s</sup>  ,  Re(s) &gt; 1</div>
+      <p>אבל הפונקציה עצמה חיה הרבה מעבר לטור. ההמשכה האנליטית — כאן דרך טור האֶטָא של דיריכלה ומשוואת הרפלקציה של רימן —</p>
+      <div class="formula">ζ(s) = 2<sup>s</sup> π<sup>s−1</sup> sin(πs/2) Γ(1−s) ζ(1−s)</div>
+      <p>פורשת אותה על כל המישור המרוכב, פרט לקוטב יחיד בנקודה 1. גררו את מחוון הגילוי כדי לראות כמה מעט "יודע" הטור — וכמה הרבה מסתתר משמאלו: האפסים הטריוויאליים על הציר הממשי השלילי, והאפסים הלא־טריוויאליים על הקו הקריטי, מושא השערת רימן.</p>
+    </div>
+  </details>
+</div>
+
+<button class="resetBtn" id="reset">איפוס תצוגה</button>
+
+<div class="legend">
+  גוון = פאזה (ארגומנט) · בהירות = ערך מוחלט<br>
+  שחור = אפס · לבן = קוטב ·
+  <span class="sw" style="background:var(--cyan)"></span> הקו הקריטי ·
+  <span class="sw" style="background:var(--amber)"></span> גבול הגילוי
+</div>
+
+<div class="readout" id="readout"><span class="dim">s = </span>—</div>
+
+<div class="err" id="err"><div>
+  הדפדפן הזה לא תומך ב־WebGL2,<br>ולכן אי אפשר להציג את הוויזואליזציה.<br>
+  נסו דפדפן עדכני אחר.
+</div></div>
+
+<script>
+/* ================= Borwein coefficients (shared by GPU & CPU) ================= */
+function borweinE(n){
+  const d = new Float64Array(n+1);
+  let t = 1.0/n, sum = t;
+  d[0] = n*sum;
+  for(let i=1;i<=n;i++){
+    t *= 4.0*(n+i-1)*(n-i+1)/((2*i)*(2*i-1));
+    sum += t;
+    d[i] = n*sum;
+  }
+  const dn = d[n], e = new Float64Array(n);
+  for(let k=0;k<n;k++) e[k] = (dn - d[k])/dn;
+  return e;
+}
+const N_GPU = 40, E_GPU = borweinE(N_GPU);
+const N_CPU = 60, E_CPU = borweinE(N_CPU);
+
+/* ================= CPU zeta (double precision, for the readout) ================= */
+const LN2 = Math.LN2, LNPI = Math.log(Math.PI), PI = Math.PI;
+const cAdd=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+const cSub=(a,b)=>[a[0]-b[0],a[1]-b[1]];
+const cMul=(a,b)=>[a[0]*b[0]-a[1]*b[1], a[0]*b[1]+a[1]*b[0]];
+const cDiv=(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];};
+const cExp=a=>{const e=Math.exp(a[0]);return[e*Math.cos(a[1]),e*Math.sin(a[1])];};
+const cLog=a=>[0.5*Math.log(a[0]*a[0]+a[1]*a[1]),Math.atan2(a[1],a[0])];
+
+function zetaBorwein(s){ // Re(s) >= 0.5
+  let re=0, im=0, sg=1;
+  for(let k=0;k<N_CPU;k++){
+    const lk = Math.log(k+1);
+    const e = Math.exp(-s[0]*lk), ph = -s[1]*lk;
+    re += sg*E_CPU[k]*e*Math.cos(ph);
+    im += sg*E_CPU[k]*e*Math.sin(ph);
+    sg = -sg;
+  }
+  const den = cSub([1,0], cExp([(1-s[0])*LN2, -s[1]*LN2]));
+  return cDiv([re,im], den);
+}
+const LANC=[676.5203681218851,-1259.1392167224028,771.32342877765313,
+ -176.61502916214059,12.507343278686905,-0.13857109526572012,
+ 9.9843695780195716e-6,1.5056327351493116e-7];
+function clnGamma(z){ // Re(z) >= 0.5
+  let a=[0.99999999999980993,0];
+  for(let i=0;i<8;i++) a = cAdd(a, cDiv([LANC[i],0],[z[0]+i,z[1]]));
+  const t=[z[0]+6.5,z[1]];
+  return cAdd(cAdd([0.9189385332046727,0], cMul([z[0]-0.5,z[1]], cLog(t))), cAdd([-t[0],-t[1]], cLog(a)));
+}
+function clogSin(z){
+  if(Math.abs(z[1])<9){
+    const iz=[-z[1],z[0]];
+    return cLog(cDiv(cSub(cExp(iz),cExp([z[1],-z[0]])),[0,2]));
+  }
+  if(z[1]>0){
+    const e2=cExp([-2*z[1],2*z[0]]); // e^{2iz}
+    return cSub(cAdd([z[1],-z[0]], cLog(cSub(e2,[1,0]))),[LN2,PI/2]);
+  }
+  const e2=cExp([2*z[1],-2*z[0]]);   // e^{-2iz}
+  return cSub(cAdd([-z[1],z[0]], cLog(cSub([1,0],e2))),[LN2,PI/2]);
+}
+function zeta(s){
+  if(s[0]*s[0]+s[1]*s[1] < 1e-16) // removable 0/0 at the origin: ζ(0)=−½, ζ′(0)=−½ln2π
+    return [-0.5-0.9189385332046727*s[0], -0.9189385332046727*s[1]];
+  if(s[0] >= 0.5) return zetaBorwein(s);
+  const s1=[1-s[0],-s[1]];
+  const lchi = cAdd(cAdd([s[0]*LN2, s[1]*LN2],[(s[0]-1)*LNPI, s[1]*LNPI]),
+                    cAdd(clogSin([PI*s[0]/2, PI*s[1]/2]), clnGamma(s1)));
+  const z1 = zetaBorwein(s1);
+  return cExp(cAdd(lchi, cLog(z1)));
+}
+
+/* ================= WebGL2 setup ================= */
+const glc = document.getElementById('gl');
+const gl = glc.getContext('webgl2', {antialias:false, depth:false, stencil:false});
+if(!gl){ document.getElementById('err').style.display='grid'; throw new Error('no webgl2'); }
+
+const VSH = `#version 300 es
+in vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+
+const FSH = `#version 300 es
+precision highp float;
+out vec4 frag;
+uniform vec2 uRes;
+uniform vec2 uCenter;
+uniform float uPix;
+uniform float uCurtain;
+uniform float uCurtainOn;
+uniform float uE[${N_GPU}];
+const float PI=3.141592653589793, LN2=0.6931471805599453, LNPI=1.1447298858494002;
+
+vec2 cmul(vec2 a, vec2 b){return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);}
+vec2 cdiv(vec2 a, vec2 b){float d=dot(b,b);return vec2(dot(a,b), a.y*b.x-a.x*b.y)/d;}
+vec2 clg (vec2 z){return vec2(0.5*log(dot(z,z)), atan(z.y,z.x));}
+vec2 cxp (vec2 z){return exp(z.x)*vec2(cos(z.y),sin(z.y));}
+
+vec2 zetaB(vec2 s){
+  vec2 sum=vec2(0.); float sg=1.;
+  for(int k=0;k<${N_GPU};k++){
+    float lk=log(float(k+1));
+    sum += sg*uE[k]*cxp(vec2(-s.x*lk,-s.y*lk));
+    sg=-sg;
+  }
+  vec2 den=vec2(1.,0.)-cxp(vec2((1.-s.x)*LN2,-s.y*LN2));
+  return cdiv(sum,den);
+}
+vec2 clngam(vec2 z){
+  float c[8]=float[8](676.5203681218851,-1259.1392167224028,771.32342877765313,
+   -176.61502916214059,12.507343278686905,-0.13857109526572012,
+   9.9843695780195716e-6,1.5056327351493116e-7);
+  vec2 a=vec2(0.99999999999980993,0.);
+  for(int i=0;i<8;i++) a += cdiv(vec2(c[i],0.), z+vec2(float(i),0.));
+  vec2 t=z+vec2(6.5,0.);
+  return vec2(0.9189385332046727,0.)+cmul(z-vec2(.5,0.),clg(t))-t+clg(a);
+}
+vec2 clogsin(vec2 z){
+  if(abs(z.y)<9.){
+    vec2 s=cdiv(cxp(vec2(-z.y,z.x))-cxp(vec2(z.y,-z.x)), vec2(0.,2.));
+    return clg(s);
+  } else if(z.y>0.){
+    vec2 e2=cxp(vec2(-2.*z.y,2.*z.x));
+    return vec2(z.y,-z.x)+clg(e2-vec2(1.,0.))-vec2(LN2,.5*PI);
+  } else {
+    vec2 e2=cxp(vec2(2.*z.y,-2.*z.x));
+    return vec2(-z.y,z.x)+clg(vec2(1.,0.)-e2)-vec2(LN2,.5*PI);
+  }
+}
+vec2 zeta(vec2 s){
+  if(dot(s,s)<1e-14) return vec2(-.5,0.)-0.9189385*s;
+  if(s.x>=0.5) return zetaB(s);
+  vec2 s1=vec2(1.,0.)-s;
+  vec2 lchi=vec2(s.x*LN2,s.y*LN2)+vec2((s.x-1.)*LNPI,s.y*LNPI)
+           +clogsin(.5*PI*s)+clngam(s1);
+  return cxp(lchi+clg(zetaB(s1)));
+}
+vec3 hsl2rgb(vec3 c){
+  vec3 rgb=clamp(abs(mod(c.x*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);
+  return c.z+c.y*(rgb-.5)*(1.-abs(2.*c.z-1.));
+}
+void main(){
+  vec2 fc=gl_FragCoord.xy;
+  vec2 s=uCenter+(fc-.5*uRes)*uPix;
+  vec2 z=zeta(s);
+  float m=length(z);
+  vec3 col;
+  if(isnan(m)||isinf(m)) col=vec3(1.);
+  else{
+    float h=fract(atan(z.y,z.x)/(2.*PI));
+    float L=(2./PI)*atan(m);
+    float lm=log(max(m,1e-20));
+    float band=.82+.18*fract(lm/LN2);
+    vec3 rgb=hsl2rgb(vec3(h,.85,L));
+    col=rgb*mix(1.,band,clamp(4.*L*(1.-L),0.,1.));
+  }
+  if(uCurtainOn>.5){
+    float dpx=(uCurtain-s.x)/uPix;
+    if(dpx>0.){
+      float hatch=step(.72,.5+.5*sin((fc.x+fc.y)*.5));
+      vec3 veil=mix(vec3(.040,.052,.046),vec3(.066,.080,.072),hatch);
+      col=mix(col,veil,clamp(dpx/3.,0.,1.)*.985);
+    }
+    float glow=exp(-abs(uCurtain-s.x)/(2.6*uPix));
+    col+=vec3(.88,.66,.25)*glow*.7;
+  }
+  frag=vec4(col,1.);
+}`;
+
+function mkShader(type,src){
+  const sh=gl.createShader(type);
+  gl.shaderSource(sh,src); gl.compileShader(sh);
+  if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(sh));
+  return sh;
+}
+const prog=gl.createProgram();
+gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,VSH));
+gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,FSH));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const buf=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 3,-1, -1,3]),gl.STATIC_DRAW);
+const locP=gl.getAttribLocation(prog,'p');
+gl.enableVertexAttribArray(locP);
+gl.vertexAttribPointer(locP,2,gl.FLOAT,false,0,0);
+
+const U={
+  res:gl.getUniformLocation(prog,'uRes'),
+  cen:gl.getUniformLocation(prog,'uCenter'),
+  pix:gl.getUniformLocation(prog,'uPix'),
+  cur:gl.getUniformLocation(prog,'uCurtain'),
+  con:gl.getUniformLocation(prog,'uCurtainOn'),
+  e:gl.getUniformLocation(prog,'uE[0]'),
+};
+gl.uniform1fv(U.e, Float32Array.from(E_GPU));
+
+/* ================= view state ================= */
+const ov=document.getElementById('ov'), ctx=ov.getContext('2d');
+let W=0,H=0,DPR=1;
+const view={cx:-3.0, cy:0.0, pix:0.03}; // complex units per CSS pixel
+const HOME={...view};
+let curtain=1.0, curtainMin=-13;
+let dirty=true;
+
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  glc.width=Math.round(W*DPR); glc.height=Math.round(H*DPR);
+  ov.width=Math.round(W*DPR);  ov.height=Math.round(H*DPR);
+  gl.viewport(0,0,glc.width,glc.height);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  // keep ~18 units across on first load
+  if(!resize.done){ view.pix=18/W; HOME.pix=view.pix; resize.done=true; }
+  dirty=true;
+}
+window.addEventListener('resize',resize);
+resize();
+
+const sx=x=>(x-view.cx)/view.pix + W/2;
+const sy=y=>H/2 - (y-view.cy)/view.pix;
+
+/* ================= overlay drawing ================= */
+const ZEROS_T=[14.134725,21.022040,25.010858,30.424876,32.935062,
+               37.586178,40.918719,43.327073,48.005151,49.773832];
+const ck=id=>document.getElementById(id).checked;
+
+function niceStep(target){
+  const p=Math.pow(10,Math.floor(Math.log10(target)));
+  for(const m of [1,2,5,10]) if(m*p>=target) return m*p;
+  return 10*p;
+}
+function fmtTick(v){ return Math.abs(v)<1e-9?'0':(+v.toFixed(6)).toString(); }
+
+function drawOverlay(){
+  ctx.clearRect(0,0,W,H);
+  const x0=view.cx-(W/2)*view.pix, x1=view.cx+(W/2)*view.pix;
+  const y0=view.cy-(H/2)*view.pix, y1=view.cy+(H/2)*view.pix;
+  ctx.font='11px "IBM Plex Mono",monospace';
+
+  if(ck('ckAxes')){
+    ctx.strokeStyle='rgba(234,228,211,.35)'; ctx.lineWidth=1;
+    // real axis
+    if(y0<0&&y1>0){ctx.beginPath();ctx.moveTo(0,sy(0));ctx.lineTo(W,sy(0));ctx.stroke();}
+    // imaginary axis
+    if(x0<0&&x1>0){ctx.beginPath();ctx.moveTo(sx(0),0);ctx.lineTo(sx(0),H);ctx.stroke();}
+    // ticks
+    const st=niceStep(70*view.pix);
+    ctx.fillStyle='rgba(234,228,211,.55)';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    const yAx=Math.min(Math.max(sy(0),12),H-18);
+    for(let v=Math.ceil(x0/st)*st; v<=x1; v+=st){
+      if(Math.abs(v)<st/2 && x0<0&&x1>0) continue;
+      const X=sx(v);
+      ctx.fillRect(X-.5,yAx-3,1,6);
+      ctx.fillText(fmtTick(v),X,yAx+6);
+    }
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    const xAx=Math.min(Math.max(sx(0),8),W-44);
+    for(let v=Math.ceil(y0/st)*st; v<=y1; v+=st){
+      if(Math.abs(v)<st/2) continue;
+      const Y=sy(v);
+      ctx.fillRect(xAx-3,Y-.5,6,1);
+      ctx.fillText(fmtTick(v)+'i',xAx+7,Y);
+    }
+  }
+
+  if(ck('ckCrit')){
+    const X=sx(0.5);
+    if(X>-20&&X<W+20){
+      ctx.strokeStyle='rgba(111,199,207,.85)'; ctx.lineWidth=1.4;
+      ctx.setLineDash([7,6]);
+      ctx.beginPath();ctx.moveTo(X,0);ctx.lineTo(X,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(111,199,207,.95)';
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText('Re(s) = ½',X,8);
+      ctx.font='12px Heebo,sans-serif';
+      ctx.fillText('הקו הקריטי',X,22);
+      ctx.font='11px "IBM Plex Mono",monospace';
+    }
+  }
+
+  if(ck('ckZeros')){
+    // non-trivial zeros (cyan)
+    ctx.lineWidth=1.6;
+    for(const t of ZEROS_T) for(const s of [t,-t]){
+      const X=sx(0.5),Y=sy(s);
+      if(X<-15||X>W+15||Y<-15||Y>H+15) continue;
+      ctx.strokeStyle='rgba(111,199,207,.95)';
+      ctx.beginPath();ctx.arc(X,Y,5.5,0,7);ctx.stroke();
+      ctx.strokeStyle='rgba(0,0,0,.5)';
+      ctx.beginPath();ctx.arc(X,Y,7,0,7);ctx.stroke();
+      ctx.strokeStyle='rgba(111,199,207,.95)';
+    }
+    // trivial zeros (amber)
+    for(let k=1;k<=12;k++){
+      const X=sx(-2*k),Y=sy(0);
+      if(X<-15||X>W+15||Y<-15||Y>H+15) continue;
+      ctx.strokeStyle='rgba(224,169,63,.95)';
+      ctx.beginPath();ctx.arc(X,Y,5.5,0,7);ctx.stroke();
+      ctx.strokeStyle='rgba(0,0,0,.5)';
+      ctx.beginPath();ctx.arc(X,Y,7,0,7);ctx.stroke();
+    }
+    // one label for trivial zeros if visible
+    const Xl=sx(-2),Yl=sy(0);
+    if(Xl>0&&Xl<W&&Yl>0&&Yl<H){
+      ctx.fillStyle='rgba(224,169,63,.9)';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.font='12px Heebo,sans-serif';
+      ctx.fillText('אפסים טריוויאליים',sx(-6),Yl-12);
+      ctx.font='11px "IBM Plex Mono",monospace';
+    }
+  }
+
+  if(ck('ckPole')){
+    const X=sx(1),Y=sy(0);
+    if(X>-20&&X<W+20&&Y>-20&&Y<H+20){
+      ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.moveTo(X-5,Y-5);ctx.lineTo(X+5,Y+5);
+      ctx.moveTo(X-5,Y+5);ctx.lineTo(X+5,Y-5);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.font='12px Heebo,sans-serif';
+      ctx.fillText('קוטב · s = 1',X,Y-10);
+      ctx.font='11px "IBM Plex Mono",monospace';
+    }
+  }
+
+  // curtain label
+  if(curtain>curtainMin+0.02){
+    const X=sx(curtain);
+    if(X>-30&&X<W+30){
+      ctx.fillStyle='rgba(224,169,63,.95)';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.font='600 12px Heebo,sans-serif';
+      ctx.save();
+      ctx.translate(X,H-30);ctx.rotate(-Math.PI/2);
+      ctx.textBaseline='middle';ctx.textAlign='left';
+      ctx.fillText('גבול הגילוי  Re(s) = '+(+curtain.toFixed(2)),0,-10);
+      ctx.restore();
+    }
+  }
+}
+
+/* ================= render loop ================= */
+function frame(){
+  if(dirty){
+    gl.uniform2f(U.res,glc.width,glc.height);
+    gl.uniform2f(U.cen,view.cx,view.cy);
+    gl.uniform1f(U.pix,view.pix/DPR);
+    gl.uniform1f(U.cur,curtain);
+    gl.uniform1f(U.con,curtain>curtainMin+0.02?1:0);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    drawOverlay();
+    dirty=false;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ================= curtain control ================= */
+const slider=document.getElementById('curtain');
+const curVal=document.getElementById('curVal');
+function setCurtain(v,fromSlider){
+  curtain=Math.max(curtainMin,Math.min(1,v));
+  if(!fromSlider) slider.value=curtain;
+  curVal.textContent = curtain<=curtainMin+0.02 ? 'הכול גלוי' : 'Re(s) = '+curtain.toFixed(2);
+  document.querySelectorAll('.chip').forEach(ch=>{
+    ch.classList.toggle('hot',Math.abs(parseFloat(ch.dataset.c)-curtain)<0.015);
+  });
+  dirty=true;
+}
+slider.addEventListener('input',()=>setCurtain(parseFloat(slider.value),true));
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click',()=>animateCurtain(parseFloat(ch.dataset.c),900));
+});
+['ckAxes','ckCrit','ckZeros','ckPole'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>{dirty=true;});
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  Object.assign(view,HOME); dirty=true;
+});
+
+let animId=0;
+function animateCurtain(target,dur){
+  cancelAnimationFrame(animId);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){setCurtain(target);return;}
+  const from=curtain,t0=performance.now();
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  (function step(now){
+    const t=Math.min(1,(now-t0)/dur);
+    setCurtain(from+(target-from)*ease(t));
+    if(t<1) animId=requestAnimationFrame(step);
+  })(t0);
+}
+
+/* intro: the series knows only Re>1 — then the continuation is revealed */
+setCurtain(1);
+setTimeout(()=>animateCurtain(curtainMin,3200),1100);
+
+/* ================= pan / zoom / readout ================= */
+const ptrs=new Map();
+let lastPinch=0;
+ov.addEventListener('pointerdown',e=>{
+  ov.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  ov.classList.add('dragging');
+});
+ov.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(!ptrs.size)ov.classList.remove('dragging');});
+ov.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);ov.classList.remove('dragging');});
+ov.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)){
+    const p=ptrs.get(e.pointerId);
+    if(ptrs.size===1){
+      view.cx-=(e.clientX-p.x)*view.pix;
+      view.cy+=(e.clientY-p.y)*view.pix;
+      dirty=true;
+    } else if(ptrs.size===2){
+      p.x=e.clientX;p.y=e.clientY;
+      const [a,b]=[...ptrs.values()];
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(lastPinch>0){
+        const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+        zoomAt(mx,my,lastPinch/d);
+      }
+      lastPinch=d;
+    }
+    p.x=e.clientX;p.y=e.clientY;
+  }
+  updateReadout(e.clientX,e.clientY);
+});
+ov.addEventListener('pointerleave',()=>{lastPinch=0;});
+ov.addEventListener('pointerup',()=>{lastPinch=0;});
+
+function zoomAt(mx,my,f){
+  f=Math.max(.2,Math.min(5,f));
+  const wx=view.cx+(mx-W/2)*view.pix;
+  const wy=view.cy-(my-H/2)*view.pix;
+  view.pix=Math.max(2e-4,Math.min(.4,view.pix*f));
+  view.cx=wx-(mx-W/2)*view.pix;
+  view.cy=wy+(my-H/2)*view.pix;
+  dirty=true;
+}
+ov.addEventListener('wheel',e=>{
+  e.preventDefault();
+  zoomAt(e.clientX,e.clientY,Math.exp(e.deltaY*0.0012));
+},{passive:false});
+
+const readout=document.getElementById('readout');
+const fmt=v=>{
+  if(!isFinite(v))return '∞';
+  const a=Math.abs(v);
+  return (a>=1e5||a<1e-4&&a>0)?v.toExponential(3):v.toFixed(4);
+};
+const fmtC=z=>fmt(z[0])+(z[1]<0?' − ':' + ')+fmt(Math.abs(z[1]))+'i';
+let roTimer=0;
+function updateReadout(mx,my){
+  clearTimeout(roTimer);
+  roTimer=setTimeout(()=>{
+    const s=[view.cx+(mx-W/2)*view.pix, view.cy-(my-H/2)*view.pix];
+    let html='<span class="dim">s = </span>'+fmtC(s);
+    if(Math.abs(s[0]-1)<1e-9&&Math.abs(s[1])<1e-9){
+      html+='<span class="dim"> &ensp;·&ensp; ζ(s) = </span><span class="z">קוטב</span>';
+    } else {
+      const z=zeta(s);
+      html+='<span class="dim"> &ensp;·&ensp; ζ(s) = </span><span class="z">'+fmtC(z)+'</span>'
+          +'<span class="dim"> &ensp;·&ensp; |ζ| = </span>'+fmt(Math.hypot(z[0],z[1]));
+    }
+    readout.innerHTML=html;
+  },16);
+}
+</script>
+</body>
+</html>
