@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הגיטרות של יצחק — בעבודת יד</title>
+  <meta name="description" content="מלאי גיטרות בעבודת יד מסדנתו של יצחק, בונה גיטרות (לוּתְיֶיר). כל כלי ייחודי, בנוי באהבה למלאכה. הכלים מוצעים למכירה." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ניווט -->
+  <nav class="nav">
+    <div class="wrap">
+      <div class="brand">הגיטרות של <span>יצחק</span></div>
+      <div class="links">
+        <a href="#catalog">הקטלוג</a>
+        <a href="#story">הסרטון</a>
+        <a href="#memorial">על אבא</a>
+        <a href="#contact">יצירת קשר</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero / הנצחה -->
+  <header class="hero">
+    <div class="wrap">
+      <div class="kicker">בעבודת יד · מהסדנה</div>
+      <h1>הגיטרות של <span class="gold">יצחק</span></h1>
+      <div class="years" id="hero-years"></div>
+      <p class="lead">
+        מלאי הגיטרות שנותר מסדנתו של יצחק, בונה גיטרות (לוּתְיֶיר).
+        כל כלי כאן הוא יצירה ייחודית בעבודת יד — והזדמנות להמשיך את הצליל שאהב.
+      </p>
+      <blockquote class="hero-quote" id="hero-quote"></blockquote>
+      <a href="#catalog" class="cta">לצפייה בקטלוג ←</a>
+    </div>
+  </header>
+
+  <!-- קטלוג -->
+  <section id="catalog">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">הקטלוג</div>
+        <h2>הגיטרות הזמינות</h2>
+        <p>לחצו על גיטרה לצפייה בכל התמונות ובמפרט המלא</p>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <!-- סרטון -->
+  <section id="story" class="story-sec">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">הסרטון</div>
+        <h2 id="video-title">סיפורו של יצחק</h2>
+        <p id="video-caption"></p>
+      </div>
+      <div class="video-frame">
+        <video id="isaac-video" controls preload="none" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- הנצחה -->
+  <section id="memorial" class="memorial">
+    <div class="wrap">
+      <div class="inner">
+        <div class="kicker" style="color: var(--gold); letter-spacing: 0.22em; font-size: 0.78rem;">לזכרו</div>
+        <h2 style="font-size: clamp(1.8rem,4vw,2.6rem); font-weight:800; margin:8px 0 24px;">מילים על אבא</h2>
+        <p id="bio"></p>
+        <blockquote class="memorial-quote" id="memorial-quote"></blockquote>
+        <div id="bio-extra"></div>
+        <div class="divider"></div>
+        <p class="invitation" id="invitation"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- יצירת קשר -->
+  <section id="contact" class="contact">
+    <div class="wrap">
+      <div class="inner">
+        <div class="section-head" style="margin-bottom: 24px;">
+          <div class="kicker">יצירת קשר</div>
+          <h2>מעוניינים בגיטרה?</h2>
+        </div>
+        <p>נשמח לענות על כל שאלה — מפרט, מחיר, או תיאום צפייה בכלי.</p>
+        <div class="btns" id="contact-btns"></div>
+        <div class="note" id="contact-note"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>הגיטרות של <span class="gold">יצחק</span> · בעבודת יד, באהבה</div>
+  </footer>
+
+  <!-- מודאל גיטרה -->
+  <div class="modal" id="modal">
+    <div class="modal-inner">
+      <div class="modal-head">
+        <div>
+          <h2 id="m-name"></h2>
+          <div class="sub" id="m-sub"></div>
+        </div>
+        <button class="modal-close" id="m-close" aria-label="סגור">×</button>
+      </div>
+      <div class="modal-grid">
+        <div class="gallery">
+          <div class="main"><img id="m-main" src="" alt="" /></div>
+          <div class="thumbs" id="m-thumbs"></div>
+        </div>
+        <div class="detail">
+          <p class="story" id="m-story"></p>
+          <ul class="specs" id="m-specs"></ul>
+          <div class="price-box">
+            <div class="label">מחיר</div>
+            <div class="val" id="m-price"></div>
+          </div>
+          <a class="buy" id="m-buy" href="#" target="_blank" rel="noopener">לפנייה לגבי גיטרה זו ←</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" id="lb-close" aria-label="סגור">×</button>
+    <button class="lb-nav lb-prev" id="lb-prev" aria-label="הקודם">‹</button>
+    <img id="lb-img" src="" alt="" />
+    <button class="lb-nav lb-next" id="lb-next" aria-label="הבא">›</button>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
