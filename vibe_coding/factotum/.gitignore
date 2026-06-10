@@ -1,0 +1,19 @@
+# Sensitive — never commit to a public repo.
+# (Comments must be on their own line; inline comments are treated as part of the pattern.)
+
+# subscription/tenant IDs, company address, server IPs, secret locations
+access-inventory.md
+
+# logged-in Azure browser session
+.chrome-profile/
+
+# may contain personal/company data from portal/forms
+screenshots/
+
+# may contain account details
+logs/
+
+# local python env
+venv/
+__pycache__/
+*.pyc
