@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>חוקר קבוצת מנדלברוט</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050c;
+  --panel:rgba(10,14,28,.78);
+  --panel-border:rgba(120,160,255,.18);
+  --text:#e8ecf8;
+  --dim:#8b93ad;
+  --accent:#39d3ff;
+  --accent2:#ff5ec4;
+  --danger:#ff5470;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  overscroll-behavior:none;
+  font-family:'Heebo',system-ui,sans-serif;}
+#glcanvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#glcanvas.dragging{cursor:grabbing}
+
+/* ---------- כותרת ---------- */
+header{position:fixed;top:0;right:0;left:0;padding:14px 22px;display:flex;align-items:baseline;gap:14px;
+  pointer-events:none;z-index:5;
+  background:linear-gradient(to bottom,rgba(4,5,12,.75),transparent)}
+header h1{font-weight:800;font-size:1.15rem;letter-spacing:.02em}
+header .sub{color:var(--dim);font-size:.8rem;font-weight:300}
+
+/* ---------- לוח בקרה ---------- */
+#panel{position:fixed;top:64px;right:16px;width:300px;max-height:calc(100% - 140px);
+  overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--panel-border);border-radius:18px;padding:18px;
+  scrollbar-width:thin;scrollbar-color:rgba(120,160,255,.3) transparent;
+  transition:transform .35s ease,opacity .35s ease}
+#panel.hidden{transform:translateX(120%);opacity:0;pointer-events:none}
+#panel h2{font-size:.72rem;font-weight:600;color:var(--dim);letter-spacing:.14em;margin:18px 0 8px}
+#panel h2:first-child{margin-top:0}
+
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;
+  padding:9px 12px;color:var(--text);font-family:inherit;font-size:.86rem;cursor:pointer;
+  transition:border-color .2s,background .2s;text-align:right;width:100%}
+.preset:hover{border-color:var(--accent);background:rgba(57,211,255,.08)}
+.preset .z{color:var(--dim);font-size:.7rem;direction:ltr}
+
+.palettes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pal{height:30px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:border-color .2s}
+.pal.active{border-color:#fff}
+.pal:nth-child(1){background:linear-gradient(90deg,#001a33,#ff7b00,#ffe66b,#3aa0ff)}
+.pal:nth-child(2){background:linear-gradient(90deg,#1b003a,#00d4c0,#b76bff,#ffd1f0)}
+.pal:nth-child(3){background:linear-gradient(90deg,#140a00,#c98a2c,#ffe9b0,#6b4dff)}
+.pal:nth-child(4){background:linear-gradient(90deg,#0a2e1f,#7be06b,#ff5ec4,#2e90ff)}
+
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:.86rem}
+.row label{color:var(--text)}
+.row output{color:var(--accent);font-size:.78rem;direction:ltr}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+
+.btn{display:block;width:100%;border:none;border-radius:11px;padding:11px;margin-top:8px;
+  font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;
+  color:#03131c;background:linear-gradient(135deg,var(--accent),#6ee8ff);
+  transition:filter .2s, transform .1s}
+.btn:hover{filter:brightness(1.12)}
+.btn:active{transform:scale(.98)}
+.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--panel-border)}
+.btn.rec{background:linear-gradient(135deg,var(--accent2),#ff8fd8);color:#2a0018}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- שורת מצב ---------- */
+#status{position:fixed;bottom:14px;right:16px;left:16px;display:flex;justify-content:space-between;
+  align-items:flex-end;gap:12px;z-index:5;pointer-events:none;font-size:.74rem;color:var(--dim)}
+#coords{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;
+  background:rgba(4,5,12,.55);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+#hint{background:rgba(4,5,12,.55);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+
+#togglePanel{position:fixed;top:14px;left:16px;z-index:7;
+  background:var(--panel);border:1px solid var(--panel-border);color:var(--text);
+  border-radius:10px;padding:8px 14px;font-family:inherit;font-size:.82rem;cursor:pointer;
+  backdrop-filter:blur(10px)}
+
+/* ---------- שכבת הקלטה ---------- */
+#recOverlay{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;
+  justify-content:flex-end;align-items:center;padding-bottom:48px;pointer-events:none}
+#recOverlay.show{display:flex}
+#recCard{pointer-events:auto;background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(14px);border-radius:16px;padding:16px 22px;width:min(420px,90%);
+  display:flex;flex-direction:column;gap:10px;align-items:stretch}
+#recCard .title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.95rem}
+#recCard .dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+#recBar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+#recBar>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#recCard button{align-self:center;width:auto;padding:8px 22px;margin-top:2px}
+
+/* ---------- חלון תוצאה ---------- */
+#resultOverlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+  background:rgba(2,3,8,.7);backdrop-filter:blur(6px)}
+#resultOverlay.show{display:flex}
+#resultCard{background:#0b0f1f;border:1px solid var(--panel-border);border-radius:20px;
+  padding:22px;width:min(560px,92%);display:flex;flex-direction:column;gap:14px}
+#resultCard video{width:100%;border-radius:12px;background:#000}
+#resultCard .actions{display:flex;gap:10px}
+#resultCard .actions .btn{margin-top:0}
+
+/* ---------- התאמה לטלפונים ניידים ---------- */
+@media (max-width:700px), (pointer:coarse) and (max-width:900px){
+  header{padding:10px 14px}
+  header h1{font-size:1rem}
+  header .sub{display:none}
+
+  /* הלוח הופך לגיליון תחתון */
+  #panel{top:auto;bottom:0;right:0;left:0;width:auto;max-height:58dvh;
+    border-radius:22px 22px 0 0;border-bottom:none;
+    padding:10px 18px calc(16px + env(safe-area-inset-bottom));
+    transition:transform .3s ease,opacity .3s ease}
+  #panel.hidden{transform:translateY(110%);opacity:0}
+  #panel::before{content:'';display:block;width:44px;height:5px;border-radius:3px;
+    background:rgba(255,255,255,.25);margin:2px auto 10px}
+
+  /* יעדי מגע גדולים */
+  .preset{padding:13px 14px;font-size:.95rem}
+  .btn{padding:14px;font-size:1rem}
+  .pal{height:38px}
+  input[type=range]{height:30px}
+  input[type=checkbox]{width:20px;height:20px}
+  .row{margin:10px 0;font-size:.95rem}
+
+  #togglePanel{top:auto;left:auto;right:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    padding:12px 18px;font-size:.95rem;font-weight:600;
+    border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+
+  #status{bottom:calc(14px + env(safe-area-inset-bottom));left:14px;right:auto;
+    flex-direction:column;align-items:flex-start;gap:6px}
+  #hint{display:none}
+  #coords{font-size:.62rem;max-width:62vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  #recOverlay{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="glcanvas"></canvas>
+
+<header>
+  <h1>חוקר קבוצת מנדלברוט</h1>
+  <span class="sub">גלילה — זום · גרירה — תנועה · לחיצה כפולה — צלילה</span>
+</header>
+
+<button id="togglePanel">לוח בקרה</button>
+
+<div id="panel">
+  <h2>מקומות מרשימים</h2>
+  <div class="presets" id="presets"></div>
+
+  <h2>צבעוניות</h2>
+  <div class="palettes" id="palettes">
+    <div class="pal active" data-p="0" title="להבה"></div>
+    <div class="pal" data-p="1" title="נאון"></div>
+    <div class="pal" data-p="2" title="זהב עתיק"></div>
+    <div class="pal" data-p="3" title="זוהר צפוני"></div>
+  </div>
+  <div class="row">
+    <label for="cycle">מחזור צבעים חי</label>
+    <input type="checkbox" id="cycle">
+  </div>
+
+  <h2>איכות</h2>
+  <div class="row">
+    <label for="quality">עומק חישוב</label>
+    <input type="range" id="quality" min="0.4" max="2.5" step="0.1" value="1">
+    <output id="qualityOut">×1.0</output>
+  </div>
+
+  <h2>סרטון צלילה</h2>
+  <div class="row">
+    <label for="dur">משך בשניות</label>
+    <input type="range" id="dur" min="5" max="40" step="1" value="14">
+    <output id="durOut">14</output>
+  </div>
+  <div class="row">
+    <label for="fromHome">להתחיל מהמבט המלא</label>
+    <input type="checkbox" id="fromHome" checked>
+  </div>
+  <button class="btn rec" id="recBtn">הקלטת צלילה אל המבט הנוכחי</button>
+
+  <h2>פעולות</h2>
+  <button class="btn secondary" id="snapBtn">שמירת תמונה</button>
+  <button class="btn secondary" id="fsBtn">מסך מלא</button>
+  <button class="btn secondary" id="resetBtn">איפוס תצוגה</button>
+</div>
+
+<div id="status">
+  <span id="hint">בחרו מקום מרשים מהרשימה ולחצו על כפתור ההקלטה כדי ליצור סרטון</span>
+  <span id="coords"></span>
+</div>
+
+<div id="recOverlay">
+  <div id="recCard">
+    <div class="title"><span class="dot"></span><span id="recLabel">מקליט צלילה…</span></div>
+    <div id="recBar"><div></div></div>
+    <button class="btn secondary" id="recCancel">ביטול</button>
+  </div>
+</div>
+
+<div id="resultOverlay">
+  <div id="resultCard">
+    <div style="font-weight:600">הסרטון מוכן</div>
+    <video id="resultVideo" controls loop></video>
+    <div class="actions">
+      <a class="btn" id="dlBtn" download="mandelbrot-dive.webm">הורדת הקובץ</a>
+      <button class="btn secondary" id="closeResult">סגירה</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   חוקר קבוצת מנדלברוט — רינדור במעבד הגרפי
+   דיוק מורחב (זוג מספרים) לזום עמוק עד בערך פי 10^12
+   ============================================================ */
+
+const canvas = document.getElementById('glcanvas');
+const gl = canvas.getContext('webgl2', {
+  antialias:false, preserveDrawingBuffer:true, powerPreference:'high-performance'
+});
+if (!gl) {
+  document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">הדפדפן אינו תומך ברינדור גרפי מתקדם. נסו דפדפן עדכני.</p>';
+  throw new Error('no webgl2');
+}
+
+/* ---------- שיידרים ---------- */
+const VSRC = `#version 300 es
+void main(){
+  vec2 p = vec2((gl_VertexID<<1 & 2), (gl_VertexID & 2));
+  gl_Position = vec4(p*2.0-1.0, 0.0, 1.0);
+}`;
+
+const FSRC = `#version 300 es
+precision highp float;
+out vec4 outColor;
+uniform vec2  u_res;
+uniform vec2  u_centerHi;   // x,y רכיב עליון
+uniform vec2  u_centerLo;   // x,y רכיב תחתון
+uniform vec2  u_scaleDS;    // קנה מידה (עליון, תחתון)
+uniform int   u_iter;
+uniform int   u_useDS;
+uniform int   u_palette;
+uniform float u_colOffset;
+
+/* --- אריתמטיקה בדיוק מורחב: כל מספר מיוצג כזוג (עליון, תחתון) --- */
+vec2 ds(float a){ return vec2(a, 0.0); }
+vec2 ds_add(vec2 a, vec2 b){
+  float t1 = a.x + b.x;
+  float e  = t1 - a.x;
+  float t2 = ((b.x - e) + (a.x - (t1 - e))) + a.y + b.y;
+  vec2 r; r.x = t1 + t2; r.y = t2 - (r.x - t1); return r;
+}
+vec2 ds_mul(vec2 a, vec2 b){
+  const float split = 8193.0;
+  float cona = a.x * split;
+  float conb = b.x * split;
+  float a1 = cona - (cona - a.x);
+  float b1 = conb - (conb - b.x);
+  float a2 = a.x - a1;
+  float b2 = b.x - b1;
+  float c11 = a.x * b.x;
+  float c21 = a2*b2 + (a2*b1 + (a1*b2 + (a1*b1 - c11)));
+  float c2  = a.x*b.y + a.y*b.x;
+  float t1  = c11 + c2;
+  float e   = t1 - c11;
+  float t2  = a.y*b.y + ((c2 - e) + (c11 - (t1 - e))) + c21;
+  vec2 r; r.x = t1 + t2; r.y = t2 - (r.x - t1); return r;
+}
+vec2 ds_neg(vec2 a){ return vec2(-a.x, -a.y); }
+
+vec3 cosPal(float t, vec3 a, vec3 b, vec3 c, vec3 d){
+  return a + b * cos(6.28318530718 * (c * t + d));
+}
+vec3 shade(float sl){
+  float t = sl * 0.0135 + u_colOffset;
+  vec3 col;
+  if      (u_palette == 0) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.00,0.10,0.20));
+  else if (u_palette == 1) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.30,0.20,0.20));
+  else if (u_palette == 2) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0,0.7,0.4), vec3(0.00,0.15,0.20));
+  else                     col = cosPal(t, vec3(0.66,0.56,0.68), vec3(0.718,0.438,0.72), vec3(0.52,0.8,0.3), vec3(-0.43,-0.397,-0.083));
+  /* הדגשת קצוות עדינה */
+  col *= 0.92 + 0.08 * cos(sl * 0.45);
+  return col;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y * 2.0;
+  float sl = -1.0;
+
+  if (u_useDS == 0) {
+    /* מסלול מהיר — דיוק רגיל */
+    vec2 c = u_centerHi + uv * u_scaleDS.x;
+    /* דילוג מהיר על הקרדיואיד והבועה הראשית */
+    float xq = c.x - 0.25;
+    float q  = xq*xq + c.y*c.y;
+    bool interior = (q * (q + xq) < 0.25 * c.y * c.y)
+                 || ((c.x + 1.0)*(c.x + 1.0) + c.y*c.y < 0.0625);
+    if (!interior) {
+      vec2 z = vec2(0.0);
+      int i = 0;
+      for (; i < u_iter; i++) {
+        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+        if (dot(z,z) > 256.0) break;
+      }
+      if (i < u_iter) sl = float(i) - log2(log2(dot(z,z))) + 4.0;
+    }
+  } else {
+    /* מסלול עמוק — דיוק מורחב */
+    vec2 cx = ds_add(vec2(u_centerHi.x, u_centerLo.x), ds_mul(u_scaleDS, ds(uv.x)));
+    vec2 cy = ds_add(vec2(u_centerHi.y, u_centerLo.y), ds_mul(u_scaleDS, ds(uv.y)));
+    vec2 zx = vec2(0.0), zy = vec2(0.0);
+    float zz = 0.0;
+    int i = 0;
+    for (; i < u_iter; i++) {
+      vec2 zx2 = ds_mul(zx, zx);
+      vec2 zy2 = ds_mul(zy, zy);
+      zz = zx2.x + zy2.x;
+      if (zz > 256.0) break;
+      vec2 nzx = ds_add(ds_add(zx2, ds_neg(zy2)), cx);
+      vec2 m   = ds_mul(zx, zy);
+      zy = ds_add(vec2(2.0*m.x, 2.0*m.y), cy);
+      zx = nzx;
+    }
+    if (i < u_iter) sl = float(i) - log2(log2(zz)) + 4.0;
+  }
+
+  vec3 col;
+  if (sl < 0.0) {
+    col = vec3(0.0);
+  } else {
+    float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    col = shade(sl + (n - 0.5) * 0.9);
+  }
+  outColor = vec4(col, 1.0);
+}`;
+
+function makeShader(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, VSRC));
+gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, FSRC));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const U = {};
+['u_res','u_centerHi','u_centerLo','u_scaleDS','u_iter','u_useDS','u_palette','u_colOffset']
+  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+
+/* ---------- מצב התצוגה ---------- */
+const IS_MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
+const DPR_CAP   = IS_MOBILE ? 1.5 : 2;
+let   resScale  = 1.0;            // הפחתת רזולוציה דינמית כשהמכשיר מתקשה
+
+const HOME = { cx:-0.6, cy:0.0, scale:1.35 };   // קנה מידה = חצי גובה במישור המרוכב
+const state  = { ...HOME };                      // מה שמצויר בפועל
+const target = { ...HOME };                      // יעד אליו מחליקים
+let palette = 0, quality = IS_MOBILE ? 0.7 : 1.0, colorCycle = false, colOffset = 0;
+let dirty = true;
+let flight = null;   // אנימציית טיסה {t0,dur, c0x,c0y,s0, c1x,c1y,s1, onDone}
+const MIN_SCALE = 1.5e-13;
+
+function split(v){ const hi = Math.fround(v); return [hi, v - hi]; }
+
+function iterCount(scale){
+  const zoom = Math.max(1, HOME.scale / scale);
+  const n = Math.round((90 + 95 * Math.pow(Math.log10(zoom) + 1, 1.35)) * quality);
+  return Math.min(IS_MOBILE ? 1400 : 2400, Math.max(60, n));
+}
+
+/* ---------- גודל קנבס ---------- */
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP) * resScale;
+  const w = Math.max(2, Math.round(canvas.clientWidth  * dpr));
+  const h = Math.max(2, Math.round(canvas.clientHeight * dpr));
+  if (canvas.width !== w || canvas.height !== h){
+    canvas.width = w; canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    dirty = true;
+  }
+}
+window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+/* ---------- רינדור ---------- */
+function render(){
+  const [chx, clx] = split(state.cx);
+  const [chy, cly] = split(state.cy);
+  const [shi, slo] = split(state.scale);
+  gl.uniform2f(U.u_res, canvas.width, canvas.height);
+  gl.uniform2f(U.u_centerHi, chx, chy);
+  gl.uniform2f(U.u_centerLo, clx, cly);
+  gl.uniform2f(U.u_scaleDS, shi, slo);
+  gl.uniform1i(U.u_iter, iterCount(state.scale));
+  gl.uniform1i(U.u_useDS, state.scale < 1e-5 ? 1 : 0);
+  gl.uniform1i(U.u_palette, palette);
+  gl.uniform1f(U.u_colOffset, colOffset);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ---------- לולאה ראשית ---------- */
+let lastT = performance.now();
+let renderedLast = false, slowFrames = 0, fastFrames = 0;
+
+function adaptResolution(dt){
+  /* מודדים רק פריימים שבהם בוצע רינדור בפועל, ולא בזמן הקלטה */
+  if (!renderedLast || recording) return;
+  if (dt > 0.045) { slowFrames++; fastFrames = 0; }
+  else if (dt < 0.02) { fastFrames++; slowFrames = 0; }
+  if (slowFrames > 15 && resScale > 0.5){
+    resScale = Math.max(0.5, resScale - 0.125);
+    slowFrames = 0; resize();
+  } else if (fastFrames > 150 && resScale < 1){
+    resScale = Math.min(1, resScale + 0.125);
+    fastFrames = 0; resize();
+  }
+}
+
+function frame(now){
+  const dt = Math.min(0.1, (now - lastT) / 1000);
+  lastT = now;
+  adaptResolution(dt);
+
+  if (colorCycle){ colOffset += dt * 0.04; dirty = true; }
+
+  if (flight){
+    const t = Math.min(1, (now - flight.t0) / flight.dur);
+    const e = t * t * (3 - 2 * t);                       // החלקה
+    const s = flight.s0 * Math.pow(flight.s1 / flight.s0, e);
+    const f = (s - flight.s1) / (flight.s0 - flight.s1); // 1 בתחילה, 0 בסוף
+    state.scale = s;
+    state.cx = flight.c1x + (flight.c0x - flight.c1x) * f;
+    state.cy = flight.c1y + (flight.c0y - flight.c1y) * f;
+    Object.assign(target, { cx:state.cx, cy:state.cy, scale:state.scale });
+    dirty = true;
+    if (t >= 1){ const cb = flight.onDone; flight = null; if (cb) cb(); }
+  } else {
+    /* החלקה אקספוננציאלית אל היעד */
+    const k = 1 - Math.exp(-dt * 10);
+    const lz0 = Math.log(state.scale), lz1 = Math.log(target.scale);
+    if (Math.abs(lz1 - lz0) > 1e-6 ||
+        Math.abs(target.cx - state.cx) > state.scale * 1e-6 ||
+        Math.abs(target.cy - state.cy) > state.scale * 1e-6){
+      state.scale = Math.exp(lz0 + (lz1 - lz0) * k);
+      state.cx += (target.cx - state.cx) * k;
+      state.cy += (target.cy - state.cy) * k;
+      dirty = true;
+    } else if (dirty){
+      Object.assign(state, target);
+    }
+  }
+
+  if (dirty){ render(); updateStatus(); dirty = false; renderedLast = true; }
+  else renderedLast = false;
+  requestAnimationFrame(frame);
+}
+
+/* ---------- שורת מצב ---------- */
+const coordsEl = document.getElementById('coords');
+function updateStatus(){
+  const zoom = HOME.scale / state.scale;
+  coordsEl.textContent =
+    `x = ${state.cx.toFixed(15)}   y = ${state.cy.toFixed(15)}   zoom = ${zoom < 1000 ? zoom.toFixed(1) : zoom.toExponential(2)}`;
+}
+
+/* ---------- המרות קואורדינטות ---------- */
+function pixelToComplex(px, py){
+  const r = canvas.getBoundingClientRect();
+  const x = (px - r.left) / r.height * 2 - (r.width / r.height); // יחסית למרכז
+  const y = -((py - r.top) / r.height * 2 - 1);
+  return [ state.cx + x * state.scale, state.cy + y * state.scale ];
+}
+
+/* ---------- אינטראקציה ---------- */
+let pointers = new Map();
+let pinchDist = 0;
+let lastMid = null;
+let lastTap = { t: 0, x: 0, y: 0 };
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY });
+  if (pointers.size === 2){
+    const [a, b] = [...pointers.values()];
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    lastMid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+  }
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId);
+  const cur  = { x:e.clientX, y:e.clientY, sx:prev.sx, sy:prev.sy };
+  pointers.set(e.pointerId, cur);
+  if (flight) return;
+
+  if (pointers.size === 1){
+    const r = canvas.getBoundingClientRect();
+    const dx = (cur.x - prev.x) / r.height * 2 * state.scale;
+    const dy = (cur.y - prev.y) / r.height * 2 * state.scale;
+    target.cx -= dx; target.cy += dy;
+    state.cx = target.cx; state.cy = target.cy;   // גרירה צמודה ללא השהיה
+    dirty = true;
+  } else if (pointers.size === 2){
+    const [a, b] = [...pointers.values()];
+    const d   = Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+    /* תנועת נקודת האמצע = גרירה */
+    if (lastMid){
+      const r = canvas.getBoundingClientRect();
+      const dx = (mid.x - lastMid.x) / r.height * 2 * target.scale;
+      const dy = (mid.y - lastMid.y) / r.height * 2 * target.scale;
+      target.cx -= dx; target.cy += dy;
+    }
+    /* שינוי המרחק בין האצבעות = זום סביב נקודת האמצע */
+    if (pinchDist > 0 && d > 0) zoomAt(mid.x, mid.y, pinchDist / d);
+    pinchDist = d;
+    lastMid = mid;
+  }
+});
+function endPointer(e){
+  const p = pointers.get(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2){ pinchDist = 0; lastMid = null; }
+  if (pointers.size === 0) canvas.classList.remove('dragging');
+
+  /* הקשה כפולה במגע = צלילה פנימה */
+  if (p && e.type === 'pointerup' && e.pointerType === 'touch' && !flight){
+    const moved = Math.hypot(e.clientX - p.sx, e.clientY - p.sy);
+    const now = performance.now();
+    if (moved < 14){
+      if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40){
+        zoomAt(e.clientX, e.clientY, 0.25);
+        lastTap.t = 0;
+      } else {
+        lastTap = { t: now, x: e.clientX, y: e.clientY };
+      }
+    }
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+function zoomAt(px, py, factor){
+  const ns = Math.min(HOME.scale * 2.2, Math.max(MIN_SCALE, target.scale * factor));
+  factor = ns / target.scale;
+  const [wx, wy] = pixelToComplex(px, py);
+  target.cx = wx + (target.cx - wx) * factor;
+  target.cy = wy + (target.cy - wy) * factor;
+  target.scale = ns;
+}
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (flight) return;
+  zoomAt(e.clientX, e.clientY, Math.pow(1.0016, e.deltaY));
+}, { passive:false });
+
+canvas.addEventListener('dblclick', e => {
+  if (flight) return;
+  zoomAt(e.clientX, e.clientY, 0.2);
+});
+
+window.addEventListener('keydown', e => {
+  if (flight) return;
+  const pan = state.scale * 0.12;
+  if      (e.key === '+' || e.key === '=') target.scale = Math.max(MIN_SCALE, target.scale * 0.7);
+  else if (e.key === '-')                  target.scale = Math.min(HOME.scale * 2.2, target.scale / 0.7);
+  else if (e.key === 'ArrowLeft')  target.cx -= pan;
+  else if (e.key === 'ArrowRight') target.cx += pan;
+  else if (e.key === 'ArrowUp')    target.cy += pan;
+  else if (e.key === 'ArrowDown')  target.cy -= pan;
+});
+
+/* ---------- טיסה אל יעד ---------- */
+function flyTo(cx, cy, scale, dur, onDone){
+  flight = {
+    t0: performance.now(), dur: dur,
+    c0x: state.cx, c0y: state.cy, s0: state.scale,
+    c1x: cx, c1y: cy, s1: scale,
+    onDone: onDone || null
+  };
+}
+
+/* ---------- מקומות מרשימים ---------- */
+const PRESETS = [
+  { name:'עמק סוסוני הים',   cx:-0.74453986046, cy: 0.12172377365, scale: 3e-4 },
+  { name:'ספירלת סוסון עמוקה', cx:-0.74364388703, cy: 0.13182590421, scale: 1.2e-9 },
+  { name:'עמק הפילים',        cx: 0.28693186889, cy: 0.01428669390, scale: 2e-6 },
+  { name:'ספירלה משולשת',     cx:-0.08868132570, cy: 0.65450583520, scale: 4e-6 },
+  { name:'מנדלברוט זעיר על המחט', cx:-1.78644025550, cy: 0.0, scale: 4e-9 },
+  { name:'כוכב ים',           cx:-0.37400413900, cy: 0.65979217500, scale: 6e-6 },
+];
+const presetsEl = document.getElementById('presets');
+PRESETS.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'preset';
+  const zoomTxt = (HOME.scale / p.scale).toExponential(0).replace('e+', '×10^');
+  b.innerHTML = `<span>${p.name}</span><span class="z">${zoomTxt}</span>`;
+  b.addEventListener('click', () => {
+    if (recording) return;
+    if (IS_MOBILE) panel.classList.add('hidden');
+    const depth = Math.abs(Math.log10(p.scale / state.scale));
+    flyTo(p.cx, p.cy, p.scale, Math.max(2500, depth * 900));
+  });
+  presetsEl.appendChild(b);
+});
+
+/* ---------- צבעוניות ---------- */
+document.querySelectorAll('.pal').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.pal').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    palette = +el.dataset.p;
+    dirty = true;
+  });
+});
+document.getElementById('cycle').addEventListener('change', e => { colorCycle = e.target.checked; });
+
+/* ---------- איכות ---------- */
+const qualityEl = document.getElementById('quality');
+qualityEl.addEventListener('input', () => {
+  quality = +qualityEl.value;
+  document.getElementById('qualityOut').textContent = '×' + quality.toFixed(1);
+  dirty = true;
+});
+
+/* ---------- כפתורים כלליים ---------- */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (recording) return;
+  flyTo(HOME.cx, HOME.cy, HOME.scale, 2200);
+});
+document.getElementById('fsBtn').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+});
+document.getElementById('snapBtn').addEventListener('click', () => {
+  render();
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mandelbrot.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, 'image/png');
+});
+const panel = document.getElementById('panel');
+document.getElementById('togglePanel').addEventListener('click', () => panel.classList.toggle('hidden'));
+
+/* ---------- הקלטת וידאו ---------- */
+let recording = false, recorder = null, recChunks = [], recCancelled = false, wakeLock = null;
+const recOverlay = document.getElementById('recOverlay');
+const recBarFill = document.querySelector('#recBar > div');
+const recBtn = document.getElementById('recBtn');
+const resultOverlay = document.getElementById('resultOverlay');
+const resultVideo = document.getElementById('resultVideo');
+const dlBtn = document.getElementById('dlBtn');
+let resultURL = null;
+
+function pickMime(){
+  const cands = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  for (const m of cands)
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  return '';
+}
+
+recBtn.addEventListener('click', () => {
+  if (recording || flight) return;
+  const mime = pickMime();
+  if (!mime){ alert('הדפדפן אינו תומך בהקלטת וידאו מהקנבס.'); return; }
+
+  const destC = { cx: target.cx, cy: target.cy, scale: target.scale };
+  const fromHome = document.getElementById('fromHome').checked;
+  const dur = (+document.getElementById('dur').value) * 1000;
+
+  if (fromHome){
+    Object.assign(state, HOME);
+    Object.assign(target, HOME);
+    dirty = true;
+    render();
+  }
+  if (Math.abs(destC.scale - state.scale) < state.scale * 0.01 &&
+      Math.abs(destC.cx - state.cx) < state.scale * 0.01){
+    alert('בחרו תחילה יעד — התקרבו למקום מעניין או בחרו מהרשימה, ואז הפעילו הקלטה.');
+    return;
+  }
+
+  recChunks = [];
+  recCancelled = false;
+  const stream = canvas.captureStream(IS_MOBILE ? 30 : 60);
+  recorder = new MediaRecorder(stream, {
+    mimeType: mime,
+    videoBitsPerSecond: IS_MOBILE ? 8_000_000 : 14_000_000
+  });
+  /* מניעת כיבוי המסך בזמן ההקלטה, אם המכשיר תומך */
+  if (navigator.wakeLock) navigator.wakeLock.request('screen')
+    .then(l => { wakeLock = l; }).catch(() => {});
+  recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+  recorder.onstop = () => {
+    recording = false;
+    if (wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
+    recOverlay.classList.remove('show');
+    recBtn.disabled = false;
+    if (recCancelled || !recChunks.length){ recCancelled = false; return; }
+    const blob = new Blob(recChunks, { type: mime.split(';')[0] });
+    if (resultURL) URL.revokeObjectURL(resultURL);
+    resultURL = URL.createObjectURL(blob);
+    resultVideo.src = resultURL;
+    dlBtn.href = resultURL;
+    dlBtn.download = mime.startsWith('video/mp4') ? 'mandelbrot-dive.mp4' : 'mandelbrot-dive.webm';
+    resultOverlay.classList.add('show');
+  };
+
+  recording = true;
+  if (IS_MOBILE) panel.classList.add('hidden');
+  recBtn.disabled = true;
+  recOverlay.classList.add('show');
+  recBarFill.style.width = '0%';
+  recorder.start(250);
+
+  const t0 = performance.now();
+  const progress = () => {
+    if (!recording) return;
+    recBarFill.style.width = Math.min(100, (performance.now() - t0) / dur * 100) + '%';
+    requestAnimationFrame(progress);
+  };
+  progress();
+
+  /* רגע של שקט בתחילה, ואז טיסה; שנייה של שהות בסוף */
+  setTimeout(() => {
+    if (!recording) return;
+    flyTo(destC.cx, destC.cy, destC.scale, dur - 1600, () => {
+      setTimeout(() => { if (recording && recorder.state !== 'inactive') recorder.stop(); }, 1100);
+    });
+  }, 500);
+});
+
+document.getElementById('recCancel').addEventListener('click', () => {
+  if (recorder && recorder.state !== 'inactive'){
+    recCancelled = true;
+    flight = null;
+    recorder.stop();
+  }
+});
+document.getElementById('closeResult').addEventListener('click', () => {
+  resultOverlay.classList.remove('show');
+  resultVideo.pause();
+});
+
+/* ---------- התנעה ---------- */
+qualityEl.value = quality;
+document.getElementById('qualityOut').textContent = '×' + quality.toFixed(1);
+if (!document.documentElement.requestFullscreen)
+  document.getElementById('fsBtn').style.display = 'none';
+if (IS_MOBILE) panel.classList.add('hidden');   // בנייד הפרקטל קודם; הלוח נפתח בכפתור
+
+resize();
+updateStatus();
+requestAnimationFrame(frame);
+
+/* כניסה דרמטית קטנה: צלילה קלה פנימה בעת הטעינה */
+state.scale = HOME.scale * 3.2;
+flyTo(HOME.cx, HOME.cy, HOME.scale, 1800);
+</script>
+</body>
+</html>
