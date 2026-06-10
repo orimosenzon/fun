@@ -229,8 +229,13 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
 <script>
 'use strict';
 /* ============================================================
-   חוקר קבוצת מנדלברוט — רינדור במעבד הגרפי
-   דיוק מורחב (זוג מספרים) לזום עמוק עד בערך פי 10^12
+   חוקר קבוצת מנדלברוט — מנוע צלילה עמוקה
+   --------------------------------------------------------
+   העיקרון: המרכז נשמר במספרים בדיוק שרירותי (BigInt בנקודה
+   קבועה). פעם בכמה זמן מחושב במעבד "מסלול ייחוס" — רצף
+   האיטרציות המדויק של נקודת המרכז. המעבד הגרפי מצייר כל
+   פיקסל רק כסטייה זעירה (דלתא) מהמסלול הזה, ולכן מספיק לו
+   דיוק רגיל. כך הזום מגיע עד פי 10^32 בלי לאבד חדות.
    ============================================================ */
 
 const canvas = document.getElementById('glcanvas');
@@ -251,41 +256,21 @@ void main(){
 
 const FSRC = `#version 300 es
 precision highp float;
+precision highp int;
+precision highp sampler2D;
 out vec4 outColor;
 uniform vec2  u_res;
-uniform vec2  u_centerHi;   // x,y רכיב עליון
-uniform vec2  u_centerLo;   // x,y רכיב תחתון
-uniform vec2  u_scaleDS;    // קנה מידה (עליון, תחתון)
+uniform vec2  u_center;     // מרכז (למסלול הרדוד בלבד)
+uniform float u_scale;      // קנה מידה: חצי גובה התצוגה
+uniform vec2  u_refOff;     // היסט המרכז ממסלול הייחוס, ביחידות קנה מידה
 uniform int   u_iter;
-uniform int   u_useDS;
+uniform int   u_mode;       // 0 חישוב ישיר, 1 חישוב הפרעות
+uniform int   u_refLen;
 uniform int   u_palette;
 uniform float u_colOffset;
+uniform sampler2D u_orbit;  // מסלול הייחוס
 
-/* --- אריתמטיקה בדיוק מורחב: כל מספר מיוצג כזוג (עליון, תחתון) --- */
-vec2 ds(float a){ return vec2(a, 0.0); }
-vec2 ds_add(vec2 a, vec2 b){
-  float t1 = a.x + b.x;
-  float e  = t1 - a.x;
-  float t2 = ((b.x - e) + (a.x - (t1 - e))) + a.y + b.y;
-  vec2 r; r.x = t1 + t2; r.y = t2 - (r.x - t1); return r;
-}
-vec2 ds_mul(vec2 a, vec2 b){
-  const float split = 8193.0;
-  float cona = a.x * split;
-  float conb = b.x * split;
-  float a1 = cona - (cona - a.x);
-  float b1 = conb - (conb - b.x);
-  float a2 = a.x - a1;
-  float b2 = b.x - b1;
-  float c11 = a.x * b.x;
-  float c21 = a2*b2 + (a2*b1 + (a1*b2 + (a1*b1 - c11)));
-  float c2  = a.x*b.y + a.y*b.x;
-  float t1  = c11 + c2;
-  float e   = t1 - c11;
-  float t2  = a.y*b.y + ((c2 - e) + (c11 - (t1 - e))) + c21;
-  vec2 r; r.x = t1 + t2; r.y = t2 - (r.x - t1); return r;
-}
-vec2 ds_neg(vec2 a){ return vec2(-a.x, -a.y); }
+vec2 refAt(int i){ return texelFetch(u_orbit, ivec2(i & 2047, i >> 11), 0).xy; }
 
 vec3 cosPal(float t, vec3 a, vec3 b, vec3 c, vec3 d){
   return a + b * cos(6.28318530718 * (c * t + d));
@@ -297,7 +282,6 @@ vec3 shade(float sl){
   else if (u_palette == 1) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.30,0.20,0.20));
   else if (u_palette == 2) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0,0.7,0.4), vec3(0.00,0.15,0.20));
   else                     col = cosPal(t, vec3(0.66,0.56,0.68), vec3(0.718,0.438,0.72), vec3(0.52,0.8,0.3), vec3(-0.43,-0.397,-0.083));
-  /* הדגשת קצוות עדינה */
   col *= 0.92 + 0.08 * cos(sl * 0.45);
   return col;
 }
@@ -306,10 +290,9 @@ void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y * 2.0;
   float sl = -1.0;
 
-  if (u_useDS == 0) {
-    /* מסלול מהיר — דיוק רגיל */
-    vec2 c = u_centerHi + uv * u_scaleDS.x;
-    /* דילוג מהיר על הקרדיואיד והבועה הראשית */
+  if (u_mode == 0) {
+    /* ----- מסלול רדוד: חישוב ישיר בדיוק רגיל ----- */
+    vec2 c = u_center + uv * u_scale;
     float xq = c.x - 0.25;
     float q  = xq*xq + c.y*c.y;
     bool interior = (q * (q + xq) < 0.25 * c.y * c.y)
@@ -324,23 +307,30 @@ void main(){
       if (i < u_iter) sl = float(i) - log2(log2(dot(z,z))) + 4.0;
     }
   } else {
-    /* מסלול עמוק — דיוק מורחב */
-    vec2 cx = ds_add(vec2(u_centerHi.x, u_centerLo.x), ds_mul(u_scaleDS, ds(uv.x)));
-    vec2 cy = ds_add(vec2(u_centerHi.y, u_centerLo.y), ds_mul(u_scaleDS, ds(uv.y)));
-    vec2 zx = vec2(0.0), zy = vec2(0.0);
-    float zz = 0.0;
-    int i = 0;
-    for (; i < u_iter; i++) {
-      vec2 zx2 = ds_mul(zx, zx);
-      vec2 zy2 = ds_mul(zy, zy);
-      zz = zx2.x + zy2.x;
-      if (zz > 256.0) break;
-      vec2 nzx = ds_add(ds_add(zx2, ds_neg(zy2)), cx);
-      vec2 m   = ds_mul(zx, zy);
-      zy = ds_add(vec2(2.0*m.x, 2.0*m.y), cy);
-      zx = nzx;
+    /* ----- מסלול עמוק: חישוב הפרעות סביב מסלול הייחוס -----
+       דז הוא הסטייה מהייחוס, מנורמלת בקנה המידה.
+       נוסחת הצעד: דז = 2·Z·דז + s·דז² + דס
+       כאשר ההתבססות מחדש (כשהסטייה גדולה מהערך עצמו) מעבירה
+       את הפיקסל לתחילת מסלול הייחוס — וכך נמנעות תקלות דיוק. */
+    vec2 dc = u_refOff + uv;
+    vec2 dz = vec2(0.0);
+    int  m  = 0;
+    for (int i = 0; i < u_iter; i++) {
+      vec2 Z   = refAt(m);
+      vec2 sdz = dz * u_scale;
+      dz = vec2(
+        2.0*(Z.x*dz.x - Z.y*dz.y) + (sdz.x*dz.x - sdz.y*dz.y) + dc.x,
+        2.0*(Z.x*dz.y + Z.y*dz.x) + (sdz.x*dz.y + sdz.y*dz.x) + dc.y
+      );
+      m++;
+      int mi = min(m, u_refLen - 1);
+      vec2 z = refAt(mi) + dz * u_scale;
+      float zz = dot(z, z);
+      if (zz > 256.0) { sl = float(i) - log2(log2(zz)) + 4.0; break; }
+      float zAbs = max(abs(z.x), abs(z.y));
+      float dAbs = max(abs(dz.x), abs(dz.y)) * u_scale;
+      if (zAbs < dAbs || m >= u_refLen - 1) { dz = z / u_scale; m = 0; }
     }
-    if (i < u_iter) sl = float(i) - log2(log2(zz)) + 4.0;
   }
 
   vec3 col;
@@ -370,28 +360,169 @@ if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
 gl.useProgram(prog);
 
 const U = {};
-['u_res','u_centerHi','u_centerLo','u_scaleDS','u_iter','u_useDS','u_palette','u_colOffset']
+['u_res','u_center','u_scale','u_refOff','u_iter','u_mode','u_refLen','u_palette','u_colOffset','u_orbit']
   .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+gl.uniform1i(U.u_orbit, 0);
+
+/* ============================================================
+   מספרים בדיוק שרירותי: נקודה קבועה על בסיס BigInt
+   כל קואורדינטה היא זוג { x, y, bits } — הערך הוא x / 2^bits
+   ============================================================ */
+function bitsFor(scale){
+  const lg = Math.max(0, -Math.log2(Math.max(scale, 1e-310)));
+  return 96 + Math.ceil(lg / 32) * 32;
+}
+function shiftTo(v, from, to){
+  if (to === from) return v;
+  return to > from ? v << BigInt(to - from) : v >> BigInt(from - to);
+}
+/* המרת מספר כפול רגיל לנקודה קבועה */
+function dToFix(x, bits){
+  if (x === 0 || !isFinite(x)) return 0n;
+  let neg = x < 0; if (neg) x = -x;
+  const e  = Math.floor(Math.log2(x));
+  const mi = BigInt(Math.round(x / 2 ** e * 2 ** 52));
+  const sh = bits + e - 52;
+  let r = sh >= 0 ? mi << BigInt(sh) : mi >> BigInt(-sh);
+  return neg ? -r : r;
+}
+/* המרת נקודה קבועה למספר כפול (כללית, גם לערכים זעירים) */
+function fixToD(v, bits){
+  if (v === 0n) return 0;
+  let neg = v < 0n; if (neg) v = -v;
+  const bl = v.toString(2).length;
+  const sh = bl - 53;
+  const top = sh > 0 ? v >> BigInt(sh) : v << BigInt(-sh);
+  const d = Number(top) * 2 ** (sh - bits);
+  return neg ? -d : d;
+}
+/* פירוק מחרוזת עשרונית לנקודה קבועה */
+function decToFix(s, bits){
+  s = String(s).trim();
+  let neg = s.startsWith('-');
+  if (neg || s.startsWith('+')) s = s.slice(1);
+  const parts = s.split('.');
+  const ip = parts[0] || '0';
+  const fp = parts[1] || '';
+  const n  = BigInt(ip + fp);
+  const den = 10n ** BigInt(fp.length);
+  const r = (n << BigInt(bits)) / den;
+  return neg ? -r : r;
+}
+function fixToDec(v, bits, digits){
+  let neg = v < 0n; if (neg) v = -v;
+  const scaled = (v * 10n ** BigInt(digits)) >> BigInt(bits);
+  let s = scaled.toString().padStart(digits + 1, '0');
+  return (neg ? '-' : '') + s.slice(0, -digits) + '.' + s.slice(-digits);
+}
+
+/* נקודה במישור המרוכב */
+function bp(xStr, yStr, bits){
+  return { x: decToFix(xStr, bits), y: decToFix(yStr, bits), bits };
+}
+function bpAlign(p, bits){
+  if (p.bits === bits) return p;
+  return { x: shiftTo(p.x, p.bits, bits), y: shiftTo(p.y, p.bits, bits), bits };
+}
+function bpAddD(p, dx, dy){
+  return { x: p.x + dToFix(dx, p.bits), y: p.y + dToFix(dy, p.bits), bits: p.bits };
+}
+function bpSubD(a, b){
+  const bits = Math.max(a.bits, b.bits);
+  const A = bpAlign(a, bits), B = bpAlign(b, bits);
+  return [ fixToD(A.x - B.x, bits), fixToD(A.y - B.y, bits) ];
+}
+function bpToD(p){ return [ fixToD(p.x, p.bits), fixToD(p.y, p.bits) ]; }
 
 /* ---------- מצב התצוגה ---------- */
 const IS_MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
 const DPR_CAP   = IS_MOBILE ? 1.5 : 2;
-let   resScale  = 1.0;            // הפחתת רזולוציה דינמית כשהמכשיר מתקשה
+let   resScale  = 1.0;
 
-const HOME = { cx:-0.6, cy:0.0, scale:1.35 };   // קנה מידה = חצי גובה במישור המרוכב
-const state  = { ...HOME };                      // מה שמצויר בפועל
-const target = { ...HOME };                      // יעד אליו מחליקים
+const HOME_SCALE = 1.35;
+const MIN_SCALE  = 1e-32;        // זום של בערך פי 10^32
+const PERTURB_T  = 3e-4;         // מתחת לזה עוברים לחישוב הפרעות
+const HOME = { center: bp('-0.6', '0', 96), scale: HOME_SCALE };
+
+const state  = { center: HOME.center, scale: HOME.scale };
+const target = { center: HOME.center, scale: HOME.scale };
 let palette = 0, quality = IS_MOBILE ? 0.7 : 1.0, colorCycle = false, colOffset = 0;
 let dirty = true;
-let flight = null;   // אנימציית טיסה {t0,dur, c0x,c0y,s0, c1x,c1y,s1, onDone}
-const MIN_SCALE = 1.5e-13;
-
-function split(v){ const hi = Math.fround(v); return [hi, v - hi]; }
+let flight = null;
+let recording = false;
 
 function iterCount(scale){
-  const zoom = Math.max(1, HOME.scale / scale);
+  const zoom = Math.max(1, HOME_SCALE / scale);
   const n = Math.round((90 + 95 * Math.pow(Math.log10(zoom) + 1, 1.35)) * quality);
-  return Math.min(IS_MOBILE ? 1400 : 2400, Math.max(60, n));
+  return Math.min(IS_MOBILE ? 6000 : 12000, Math.max(60, n));
+}
+
+/* ============================================================
+   מסלול הייחוס: איטרציות מדויקות של נקודה אחת, במעבד
+   ============================================================ */
+const ORBIT_W = 2048;
+const orbitTex = gl.createTexture();
+gl.activeTexture(gl.TEXTURE0);
+gl.bindTexture(gl.TEXTURE_2D, orbitTex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+let ref = null;   // { center, arr, len, maxLen, escaped }
+
+function computeReference(centerBP, maxLen){
+  const bits = centerBP.bits;
+  const B    = BigInt(bits);
+  const four = 4n << B;
+  const cx = centerBP.x, cy = centerBP.y;
+  const sh  = B - 53n;
+  const inv = 2 ** -53;
+  const toF = v => Number(v >> sh) * inv;
+
+  const arr = new Float32Array(maxLen * 2);   // האיבר הראשון: אפס
+  let zx = 0n, zy = 0n, zx2 = 0n, zy2 = 0n;
+  let len = 1, escaped = false;
+  for (let n = 1; n < maxLen; n++){
+    const zxy = (zx * zy) >> B;
+    zx = zx2 - zy2 + cx;
+    zy = (zxy << 1n) + cy;
+    arr[2*n]   = toF(zx);
+    arr[2*n+1] = toF(zy);
+    len = n + 1;
+    zx2 = (zx * zx) >> B;
+    zy2 = (zy * zy) >> B;
+    if (zx2 + zy2 > four){ escaped = true; break; }
+  }
+  return { center: centerBP, arr, len, maxLen, escaped };
+}
+
+function uploadOrbit(r){
+  const rows = Math.max(1, Math.ceil(r.len / ORBIT_W));
+  const padded = new Float32Array(ORBIT_W * rows * 2);
+  padded.set(r.arr.subarray(0, r.len * 2));
+  gl.bindTexture(gl.TEXTURE_2D, orbitTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, ORBIT_W, rows, 0, gl.RG, gl.FLOAT, padded);
+}
+
+function buildReference(centerBP, scale, iter){
+  const bits = bitsFor(scale) + 32;
+  const c = bpAlign(centerBP, bits);
+  const maxLen = Math.min(IS_MOBILE ? 8192 : 16384, iter + 1200);
+  ref = computeReference(c, maxLen);
+  uploadOrbit(ref);
+}
+
+function ensureReference(){
+  const needIter = iterCount(state.scale);
+  let ok = !!ref;
+  if (ok){
+    const [ox, oy] = bpSubD(state.center, ref.center);
+    if (Math.max(Math.abs(ox), Math.abs(oy)) > 40 * state.scale) ok = false;
+    else if (ref.center.bits < bitsFor(state.scale)) ok = false;
+    else if (!ref.escaped && ref.len < needIter && ref.len < ref.maxLen) ok = false;
+  }
+  if (!ok) buildReference(state.center, state.scale, needIter);
 }
 
 /* ---------- גודל קנבס ---------- */
@@ -410,17 +541,24 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', resi
 
 /* ---------- רינדור ---------- */
 function render(){
-  const [chx, clx] = split(state.cx);
-  const [chy, cly] = split(state.cy);
-  const [shi, slo] = split(state.scale);
+  const perturb = state.scale < PERTURB_T;
+  if (perturb) ensureReference();
+
+  const [cx, cy] = bpToD(state.center);
   gl.uniform2f(U.u_res, canvas.width, canvas.height);
-  gl.uniform2f(U.u_centerHi, chx, chy);
-  gl.uniform2f(U.u_centerLo, clx, cly);
-  gl.uniform2f(U.u_scaleDS, shi, slo);
+  gl.uniform2f(U.u_center, cx, cy);
+  gl.uniform1f(U.u_scale, state.scale);
   gl.uniform1i(U.u_iter, iterCount(state.scale));
-  gl.uniform1i(U.u_useDS, state.scale < 1e-5 ? 1 : 0);
+  gl.uniform1i(U.u_mode, perturb ? 1 : 0);
   gl.uniform1i(U.u_palette, palette);
   gl.uniform1f(U.u_colOffset, colOffset);
+  if (perturb){
+    const [ox, oy] = bpSubD(state.center, ref.center);
+    gl.uniform2f(U.u_refOff, ox / state.scale, oy / state.scale);
+    gl.uniform1i(U.u_refLen, ref.len);
+  } else {
+    gl.uniform1i(U.u_refLen, 1);
+  }
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
@@ -429,7 +567,6 @@ let lastT = performance.now();
 let renderedLast = false, slowFrames = 0, fastFrames = 0;
 
 function adaptResolution(dt){
-  /* מודדים רק פריימים שבהם בוצע רינדור בפועל, ולא בזמן הקלטה */
   if (!renderedLast || recording) return;
   if (dt > 0.045) { slowFrames++; fastFrames = 0; }
   else if (dt < 0.02) { fastFrames++; slowFrames = 0; }
@@ -451,28 +588,28 @@ function frame(now){
 
   if (flight){
     const t = Math.min(1, (now - flight.t0) / flight.dur);
-    const e = t * t * (3 - 2 * t);                       // החלקה
+    const e = t * t * (3 - 2 * t);
     const s = flight.s0 * Math.pow(flight.s1 / flight.s0, e);
-    const f = (s - flight.s1) / (flight.s0 - flight.s1); // 1 בתחילה, 0 בסוף
+    const f = (s - flight.s1) / (flight.s0 - flight.s1);
     state.scale = s;
-    state.cx = flight.c1x + (flight.c0x - flight.c1x) * f;
-    state.cy = flight.c1y + (flight.c0y - flight.c1y) * f;
-    Object.assign(target, { cx:state.cx, cy:state.cy, scale:state.scale });
+    state.center = bpAddD(bpAlign(flight.c1, bitsFor(s)), flight.dx * f, flight.dy * f);
+    target.scale = state.scale;
+    target.center = state.center;
     dirty = true;
     if (t >= 1){ const cb = flight.onDone; flight = null; if (cb) cb(); }
   } else {
-    /* החלקה אקספוננציאלית אל היעד */
     const k = 1 - Math.exp(-dt * 10);
     const lz0 = Math.log(state.scale), lz1 = Math.log(target.scale);
+    const [dx, dy] = bpSubD(target.center, state.center);
     if (Math.abs(lz1 - lz0) > 1e-6 ||
-        Math.abs(target.cx - state.cx) > state.scale * 1e-6 ||
-        Math.abs(target.cy - state.cy) > state.scale * 1e-6){
-      state.scale = Math.exp(lz0 + (lz1 - lz0) * k);
-      state.cx += (target.cx - state.cx) * k;
-      state.cy += (target.cy - state.cy) * k;
+        Math.abs(dx) > state.scale * 1e-6 ||
+        Math.abs(dy) > state.scale * 1e-6){
+      state.scale  = Math.exp(lz0 + (lz1 - lz0) * k);
+      state.center = bpAddD(bpAlign(state.center, bitsFor(state.scale)), dx * k, dy * k);
       dirty = true;
     } else if (dirty){
-      Object.assign(state, target);
+      state.scale  = target.scale;
+      state.center = target.center;
     }
   }
 
@@ -484,17 +621,12 @@ function frame(now){
 /* ---------- שורת מצב ---------- */
 const coordsEl = document.getElementById('coords');
 function updateStatus(){
-  const zoom = HOME.scale / state.scale;
+  const zoom = HOME_SCALE / state.scale;
+  const dg = Math.min(34, Math.max(12, Math.ceil(-Math.log10(state.scale)) + 4));
+  const x = fixToDec(state.center.x, state.center.bits, dg);
+  const y = fixToDec(state.center.y, state.center.bits, dg);
   coordsEl.textContent =
-    `x = ${state.cx.toFixed(15)}   y = ${state.cy.toFixed(15)}   zoom = ${zoom < 1000 ? zoom.toFixed(1) : zoom.toExponential(2)}`;
-}
-
-/* ---------- המרות קואורדינטות ---------- */
-function pixelToComplex(px, py){
-  const r = canvas.getBoundingClientRect();
-  const x = (px - r.left) / r.height * 2 - (r.width / r.height); // יחסית למרכז
-  const y = -((py - r.top) / r.height * 2 - 1);
-  return [ state.cx + x * state.scale, state.cy + y * state.scale ];
+    `x = ${x}   y = ${y}   zoom = ${zoom < 1000 ? zoom.toFixed(1) : zoom.toExponential(2)}`;
 }
 
 /* ---------- אינטראקציה ---------- */
@@ -502,6 +634,13 @@ let pointers = new Map();
 let pinchDist = 0;
 let lastMid = null;
 let lastTap = { t: 0, x: 0, y: 0 };
+
+function panTargetByPixels(dpx, dpy){
+  const r = canvas.getBoundingClientRect();
+  const dx = -dpx / r.height * 2 * target.scale;
+  const dy =  dpy / r.height * 2 * target.scale;
+  target.center = bpAddD(bpAlign(target.center, bitsFor(target.scale)), dx, dy);
+}
 
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
@@ -521,24 +660,14 @@ canvas.addEventListener('pointermove', e => {
   if (flight) return;
 
   if (pointers.size === 1){
-    const r = canvas.getBoundingClientRect();
-    const dx = (cur.x - prev.x) / r.height * 2 * state.scale;
-    const dy = (cur.y - prev.y) / r.height * 2 * state.scale;
-    target.cx -= dx; target.cy += dy;
-    state.cx = target.cx; state.cy = target.cy;   // גרירה צמודה ללא השהיה
+    panTargetByPixels(cur.x - prev.x, cur.y - prev.y);
+    state.center = target.center;          // גרירה צמודה ללא השהיה
     dirty = true;
   } else if (pointers.size === 2){
     const [a, b] = [...pointers.values()];
     const d   = Math.hypot(a.x - b.x, a.y - b.y);
     const mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
-    /* תנועת נקודת האמצע = גרירה */
-    if (lastMid){
-      const r = canvas.getBoundingClientRect();
-      const dx = (mid.x - lastMid.x) / r.height * 2 * target.scale;
-      const dy = (mid.y - lastMid.y) / r.height * 2 * target.scale;
-      target.cx -= dx; target.cy += dy;
-    }
-    /* שינוי המרחק בין האצבעות = זום סביב נקודת האמצע */
+    if (lastMid) panTargetByPixels(mid.x - lastMid.x, mid.y - lastMid.y);
     if (pinchDist > 0 && d > 0) zoomAt(mid.x, mid.y, pinchDist / d);
     pinchDist = d;
     lastMid = mid;
@@ -550,7 +679,6 @@ function endPointer(e){
   if (pointers.size < 2){ pinchDist = 0; lastMid = null; }
   if (pointers.size === 0) canvas.classList.remove('dragging');
 
-  /* הקשה כפולה במגע = צלילה פנימה */
   if (p && e.type === 'pointerup' && e.pointerType === 'touch' && !flight){
     const moved = Math.hypot(e.clientX - p.sx, e.clientY - p.sy);
     const now = performance.now();
@@ -568,11 +696,14 @@ canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 
 function zoomAt(px, py, factor){
-  const ns = Math.min(HOME.scale * 2.2, Math.max(MIN_SCALE, target.scale * factor));
+  const ns = Math.min(HOME_SCALE * 2.2, Math.max(MIN_SCALE, target.scale * factor));
   factor = ns / target.scale;
-  const [wx, wy] = pixelToComplex(px, py);
-  target.cx = wx + (target.cx - wx) * factor;
-  target.cy = wy + (target.cy - wy) * factor;
+  /* היסט הסמן מהמרכז, ביחידות המישור המרוכב */
+  const r = canvas.getBoundingClientRect();
+  const ox = ((px - r.left) / r.height * 2 - r.width / r.height) * target.scale;
+  const oy = -((py - r.top) / r.height * 2 - 1) * target.scale;
+  /* המרכז זז כך שהנקודה שמתחת לסמן נשארת במקומה */
+  target.center = bpAddD(bpAlign(target.center, bitsFor(ns)), ox * (1 - factor), oy * (1 - factor));
   target.scale = ns;
 }
 canvas.addEventListener('wheel', e => {
@@ -590,43 +721,59 @@ window.addEventListener('keydown', e => {
   if (flight) return;
   const pan = state.scale * 0.12;
   if      (e.key === '+' || e.key === '=') target.scale = Math.max(MIN_SCALE, target.scale * 0.7);
-  else if (e.key === '-')                  target.scale = Math.min(HOME.scale * 2.2, target.scale / 0.7);
-  else if (e.key === 'ArrowLeft')  target.cx -= pan;
-  else if (e.key === 'ArrowRight') target.cx += pan;
-  else if (e.key === 'ArrowUp')    target.cy += pan;
-  else if (e.key === 'ArrowDown')  target.cy -= pan;
+  else if (e.key === '-')                  target.scale = Math.min(HOME_SCALE * 2.2, target.scale / 0.7);
+  else if (e.key === 'ArrowLeft')  target.center = bpAddD(target.center, -pan, 0);
+  else if (e.key === 'ArrowRight') target.center = bpAddD(target.center,  pan, 0);
+  else if (e.key === 'ArrowUp')    target.center = bpAddD(target.center, 0,  pan);
+  else if (e.key === 'ArrowDown')  target.center = bpAddD(target.center, 0, -pan);
 });
 
 /* ---------- טיסה אל יעד ---------- */
-function flyTo(cx, cy, scale, dur, onDone){
+function flyTo(centerBP, scale, dur, onDone){
+  const c1 = bpAlign(centerBP, bitsFor(scale));
+  /* מכינים מראש את מסלול הייחוס של היעד — רפרנס אחד לכל הצלילה */
+  if (scale < PERTURB_T) buildReference(c1, scale, iterCount(scale));
+  const [dx, dy] = bpSubD(state.center, c1);
   flight = {
-    t0: performance.now(), dur: dur,
-    c0x: state.cx, c0y: state.cy, s0: state.scale,
-    c1x: cx, c1y: cy, s1: scale,
+    t0: performance.now(), dur,
+    s0: state.scale, s1: scale,
+    c1, dx, dy,
     onDone: onDone || null
   };
 }
 
 /* ---------- מקומות מרשימים ---------- */
 const PRESETS = [
-  { name:'עמק סוסוני הים',   cx:-0.74453986046, cy: 0.12172377365, scale: 3e-4 },
-  { name:'ספירלת סוסון עמוקה', cx:-0.74364388703, cy: 0.13182590421, scale: 1.2e-9 },
-  { name:'עמק הפילים',        cx: 0.28693186889, cy: 0.01428669390, scale: 2e-6 },
-  { name:'ספירלה משולשת',     cx:-0.08868132570, cy: 0.65450583520, scale: 4e-6 },
-  { name:'מנדלברוט זעיר על המחט', cx:-1.78644025550, cy: 0.0, scale: 4e-9 },
-  { name:'כוכב ים',           cx:-0.37400413900, cy: 0.65979217500, scale: 6e-6 },
+  { name:'עמק סוסוני הים',
+    x:'-0.74453986046', y:'0.12172377365', scale: 3e-4 },
+  { name:'עמק הפילים',
+    x:'0.28693186889', y:'0.01428669390', scale: 2e-6 },
+  { name:'ספירלה משולשת',
+    x:'-0.08868132570', y:'0.65450583520', scale: 4e-6 },
+  { name:'כוכב ים',
+    x:'-0.37400413900', y:'0.65979217500', scale: 6e-6 },
+  { name:'מנדלברוט זעיר על המחט',
+    x:'-1.78644025550', y:'0', scale: 4e-9 },
+  { name:'ספירלת סוסון עמוקה',
+    x:'-0.743643887037158704752191506114774',
+    y:'0.131825904205311970493132056385139', scale: 1.2e-13 },
+  { name:'לב הספירלה — צלילת ענק',
+    x:'-0.743643887037158704752191506114774',
+    y:'0.131825904205311970493132056385139', scale: 1e-26 },
 ];
 const presetsEl = document.getElementById('presets');
+const panel = document.getElementById('panel');
 PRESETS.forEach(p => {
   const b = document.createElement('button');
   b.className = 'preset';
-  const zoomTxt = (HOME.scale / p.scale).toExponential(0).replace('e+', '×10^');
+  const zoomTxt = (HOME_SCALE / p.scale).toExponential(0).replace('e+', '×10^');
   b.innerHTML = `<span>${p.name}</span><span class="z">${zoomTxt}</span>`;
   b.addEventListener('click', () => {
     if (recording) return;
     if (IS_MOBILE) panel.classList.add('hidden');
+    const pt = bp(p.x, p.y, bitsFor(p.scale));
     const depth = Math.abs(Math.log10(p.scale / state.scale));
-    flyTo(p.cx, p.cy, p.scale, Math.max(2500, depth * 900));
+    flyTo(pt, p.scale, Math.max(2500, depth * 900));
   });
   presetsEl.appendChild(b);
 });
@@ -653,7 +800,7 @@ qualityEl.addEventListener('input', () => {
 /* ---------- כפתורים כלליים ---------- */
 document.getElementById('resetBtn').addEventListener('click', () => {
   if (recording) return;
-  flyTo(HOME.cx, HOME.cy, HOME.scale, 2200);
+  flyTo(HOME.center, HOME.scale, 2200);
 });
 document.getElementById('fsBtn').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -669,11 +816,10 @@ document.getElementById('snapBtn').addEventListener('click', () => {
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }, 'image/png');
 });
-const panel = document.getElementById('panel');
 document.getElementById('togglePanel').addEventListener('click', () => panel.classList.toggle('hidden'));
 
 /* ---------- הקלטת וידאו ---------- */
-let recording = false, recorder = null, recChunks = [], recCancelled = false, wakeLock = null;
+let recorder = null, recChunks = [], recCancelled = false, wakeLock = null;
 const recOverlay = document.getElementById('recOverlay');
 const recBarFill = document.querySelector('#recBar > div');
 const recBtn = document.getElementById('recBtn');
@@ -694,18 +840,19 @@ recBtn.addEventListener('click', () => {
   const mime = pickMime();
   if (!mime){ alert('הדפדפן אינו תומך בהקלטת וידאו מהקנבס.'); return; }
 
-  const destC = { cx: target.cx, cy: target.cy, scale: target.scale };
+  const dest = { center: target.center, scale: target.scale };
   const fromHome = document.getElementById('fromHome').checked;
   const dur = (+document.getElementById('dur').value) * 1000;
 
   if (fromHome){
-    Object.assign(state, HOME);
-    Object.assign(target, HOME);
+    state.center = HOME.center; state.scale = HOME.scale;
+    target.center = HOME.center; target.scale = HOME.scale;
     dirty = true;
     render();
   }
-  if (Math.abs(destC.scale - state.scale) < state.scale * 0.01 &&
-      Math.abs(destC.cx - state.cx) < state.scale * 0.01){
+  const [ddx, ddy] = bpSubD(dest.center, state.center);
+  if (Math.abs(dest.scale - state.scale) < state.scale * 0.01 &&
+      Math.abs(ddx) < state.scale * 0.01 && Math.abs(ddy) < state.scale * 0.01){
     alert('בחרו תחילה יעד — התקרבו למקום מעניין או בחרו מהרשימה, ואז הפעילו הקלטה.');
     return;
   }
@@ -717,7 +864,6 @@ recBtn.addEventListener('click', () => {
     mimeType: mime,
     videoBitsPerSecond: IS_MOBILE ? 8_000_000 : 14_000_000
   });
-  /* מניעת כיבוי המסך בזמן ההקלטה, אם המכשיר תומך */
   if (navigator.wakeLock) navigator.wakeLock.request('screen')
     .then(l => { wakeLock = l; }).catch(() => {});
   recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
@@ -754,7 +900,7 @@ recBtn.addEventListener('click', () => {
   /* רגע של שקט בתחילה, ואז טיסה; שנייה של שהות בסוף */
   setTimeout(() => {
     if (!recording) return;
-    flyTo(destC.cx, destC.cy, destC.scale, dur - 1600, () => {
+    flyTo(dest.center, dest.scale, dur - 1600, () => {
       setTimeout(() => { if (recording && recorder.state !== 'inactive') recorder.stop(); }, 1100);
     });
   }, 500);
@@ -777,15 +923,15 @@ qualityEl.value = quality;
 document.getElementById('qualityOut').textContent = '×' + quality.toFixed(1);
 if (!document.documentElement.requestFullscreen)
   document.getElementById('fsBtn').style.display = 'none';
-if (IS_MOBILE) panel.classList.add('hidden');   // בנייד הפרקטל קודם; הלוח נפתח בכפתור
+if (IS_MOBILE) panel.classList.add('hidden');
 
 resize();
 updateStatus();
 requestAnimationFrame(frame);
 
 /* כניסה דרמטית קטנה: צלילה קלה פנימה בעת הטעינה */
-state.scale = HOME.scale * 3.2;
-flyTo(HOME.cx, HOME.cy, HOME.scale, 1800);
+state.scale = HOME_SCALE * 3.2;
+flyTo(HOME.center, HOME_SCALE, 1800);
 </script>
 </body>
 </html>
