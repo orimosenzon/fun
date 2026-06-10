@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>תיכון שמיר | Unit 1 Vocabulary — Option A — School Spirit</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #818cf8;
+    --primary-dark: #3730a3;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --yellow: #ca8a04;
+    --yellow-light: #fef9c3;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.10);
+  }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .app { width: 100%; max-width: 480px; height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; flex: 1; padding: 20px 16px 32px; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--card); box-shadow: var(--shadow); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    flex-shrink: 0;
+  }
+  .screen-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .badge {
+    margin-left: auto; background: var(--primary); color: white;
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  }
+
+  /* ══════ HOME - Option A: School Spirit ══════ */
+  #home { background: #1a1a2e; color: white; justify-content: space-between; }
+  .home-top { padding-top: 28px; }
+  .school-header { display: flex; align-items: flex-start; justify-content: flex-end; gap: 14px; margin-bottom: 18px; }
+  .logo-col { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
+  .school-text { flex: 1; }
+  .school-name-he { font-size: 16px; font-weight: 800; line-height: 1.2; }
+  .school-name-en { font-size: 11px; opacity: .6; margin-top: 2px; }
+  .home-unit { font-size: 12px; opacity: .55; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+  .home-title { font-size: 30px; font-weight: 800; margin: 4px 0 6px; line-height: 1.2; }
+  .home-sub { font-size: 13px; opacity: .65; }
+  .home-motto { display: flex; flex-direction: row-reverse; gap: 5px; }
+  .motto-tag { padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.3px; }
+  .word-count-pill { display:none; }
+  .mode-cards { display: flex; flex-direction: column; gap: 18px; margin-top: 20px; }
+  .mode-card {
+    border-radius: var(--radius); padding: 16px 20px; cursor: pointer;
+    transition: transform .15s, filter .15s;
+    display: flex; align-items: center; gap: 16px;
+    -webkit-user-select: none; user-select: none; border: none;
+  }
+  .mode-card:active { transform: scale(0.97); filter: brightness(1.1); }
+  .mode-card.fc  { background: #3dbfa0; }
+  .mode-card.prac { background: #4184f3; }
+  .mode-card.tst  { background: #e53935; }
+  .mode-emoji { font-size: 28px; }
+  .mode-info { flex: 1; }
+  .mode-name { font-size: 16px; font-weight: 700; color: white; }
+  .mode-desc { font-size: 12px; color: rgba(255,255,255,.75); margin-top: 2px; }
+  .mode-arrow { font-size: 20px; color: rgba(255,255,255,.6); }
+
+  /* ══════════════════════════════ FLASHCARDS ══════════════════════════════ */
+  .progress-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 20px; }
+  .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s; }
+  .card-counter { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+  .flashcard-wrap { flex: 1; display: flex; align-items: center; justify-content: center; perspective: 1000px; }
+  .flashcard {
+    width: 100%; max-width: 360px; aspect-ratio: 1.6;
+    position: relative; cursor: pointer; -webkit-user-select: none; user-select: none;
+  }
+  .flashcard-inner {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d; transition: transform .5s cubic-bezier(.4,0,.2,1);
+  }
+  .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute; inset: 0; border-radius: var(--radius);
+    box-shadow: var(--shadow); backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+  }
+  .flashcard-front { background: var(--card); }
+  .flashcard-back { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; transform: rotateY(180deg); }
+  .card-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; opacity: .45; margin-bottom: 12px; }
+  .card-word { font-size: 32px; font-weight: 800; }
+  .card-def { font-size: 16px; font-weight: 500; line-height: 1.5; }
+  .card-hint { font-size: 12px; opacity: .55; margin-top: 14px; }
+  .card-pos { font-size: 12px; background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 12px; margin-top: 8px; font-style: italic; }
+
+  .fc-actions { display: flex; gap: 12px; margin-top: 20px; justify-content: center; }
+  .fc-btn {
+    flex: 1; max-width: 120px; padding: 14px; border: none; border-radius: var(--radius);
+    font-size: 22px; cursor: pointer; transition: transform .15s, filter .15s;
+    box-shadow: var(--shadow); font-weight: 700;
+  }
+  .fc-btn:active { transform: scale(0.94); }
+  .fc-btn.wrong { background: var(--red-light); color: var(--red); }
+  .fc-btn.correct { background: var(--green-light); color: var(--green); }
+  .fc-btn.skip { background: var(--border); color: var(--muted); font-size: 16px; }
+  .fc-score { display: flex; gap: 10px; justify-content: center; margin-top: 16px; font-size: 14px; font-weight: 600; }
+  .fc-score span { padding: 4px 12px; border-radius: 12px; }
+  .fc-score .s-got { background: var(--green-light); color: var(--green); }
+  .fc-score .s-miss { background: var(--red-light); color: var(--red); }
+
+  /* ══════════════════════════════ PRACTICE (MATCH) ══════════════════════════════ */
+  .match-instructions { background: var(--card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .match-grid { display: flex; flex-direction: column; gap: 10px; }
+  .match-item { display: flex; align-items: stretch; gap: 10px; }
+  .match-word {
+    background: var(--primary); color: white; border-radius: 12px;
+    padding: 10px 14px; font-weight: 700; font-size: 15px;
+    min-width: 110px; display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  .match-select {
+    flex: 1; border: 2px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; font-size: 14px; background: var(--card);
+    color: var(--text); cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .match-select:focus { outline: none; border-color: var(--primary); }
+  .match-select.correct { border-color: var(--green); background-color: var(--green-light); }
+  .match-select.wrong { border-color: var(--red); background-color: var(--red-light); }
+  .check-btn, .next-btn, .retry-btn {
+    width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+    font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 20px;
+    transition: transform .15s, filter .15s; box-shadow: var(--shadow);
+  }
+  .check-btn:active, .next-btn:active, .retry-btn:active { transform: scale(0.97); }
+  .check-btn { background: var(--primary); color: white; }
+  .next-btn { background: var(--green); color: white; }
+  .retry-btn { background: var(--yellow-light); color: var(--yellow); border: 2px solid #fde68a; }
+
+  .match-feedback { text-align: center; margin-top: 12px; font-size: 15px; font-weight: 600; padding: 10px; border-radius: 12px; display: none; }
+  .match-feedback.show { display: block; }
+  .match-feedback.good { background: var(--green-light); color: var(--green); }
+  .match-feedback.bad { background: var(--red-light); color: var(--red); }
+
+  /* ══════════════════════════════ TEST ══════════════════════════════ */
+  .test-section-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--primary); margin-bottom: 12px;
+  }
+  .test-q { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .test-q-num { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .test-q-text { font-size: 15px; font-weight: 600; margin-bottom: 12px; line-height: 1.4; }
+  .test-input {
+    width: 100%; border: 2px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; font-size: 15px; font-family: inherit;
+    transition: border-color .2s; background: var(--bg);
+  }
+  .test-input:focus { outline: none; border-color: var(--primary); background: white; }
+  .test-input.correct { border-color: var(--green); background: var(--green-light); }
+  .test-input.wrong { border-color: var(--red); background: var(--red-light); }
+  .test-answer-reveal { font-size: 13px; color: var(--green); font-weight: 600; margin-top: 6px; display: none; }
+  .test-answer-reveal.show { display: block; }
+
+  /* Word bank */
+  .wb-bank {
+    background: var(--card); border-radius: var(--radius); padding: 14px;
+    margin-bottom: 0; display: flex; flex-wrap: wrap; gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    border-bottom: 2px solid var(--border);
+  }
+  .wb-bank-label { width: 100%; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .wb-chip {
+    padding: 7px 14px; border-radius: 20px; border: 2px solid var(--primary);
+    background: #eef2ff; color: var(--primary); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all .15s; -webkit-user-select: none; user-select: none;
+  }
+  .wb-chip:active { transform: scale(0.95); }
+  .wb-chip.used { background: var(--border); border-color: var(--border); color: var(--muted); text-decoration: line-through; pointer-events: none; }
+  .wb-blank {
+    display: inline-block; min-width: 100px; padding: 3px 10px;
+    border-bottom: 2.5px solid var(--primary); background: #eef2ff;
+    border-radius: 6px; color: var(--primary); font-weight: 700;
+    cursor: pointer; transition: all .15s; text-align: center;
+    vertical-align: middle; margin: 0 4px; font-size: 15px;
+  }
+  .wb-blank.selected { background: var(--primary); color: white; border-color: var(--primary-dark); }
+  .wb-blank.correct { background: var(--green-light); border-color: var(--green); color: var(--green); pointer-events: none; }
+  .wb-blank.wrong { background: var(--red-light); border-color: var(--red); color: var(--red); pointer-events: none; }
+  .wb-blank.empty { color: var(--muted); font-weight: 400; font-style: italic; border-color: var(--border); background: transparent; }
+
+  .mc-options { display: flex; flex-direction: column; gap: 8px; }
+  .mc-option {
+    border: 2px solid var(--border); border-radius: 10px; padding: 11px 14px;
+    font-size: 15px; cursor: pointer; background: var(--card);
+    transition: border-color .15s, background .15s; -webkit-user-select: none; user-select: none;
+  }
+  .mc-option:active { transform: scale(0.98); }
+  .mc-option.selected { border-color: var(--primary); background: #eef2ff; }
+  .mc-option.correct { border-color: var(--green); background: var(--green-light); font-weight: 700; }
+  .mc-option.wrong { border-color: var(--red); background: var(--red-light); }
+
+  .submit-test-btn { background: var(--primary); color: white; }
+
+  /* ══════════════════════════════ RESULTS ══════════════════════════════ */
+  #results { align-items: center; justify-content: center; text-align: center; }
+  .result-emoji { font-size: 72px; margin-bottom: 16px; }
+  .result-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+  .result-sub { font-size: 15px; color: var(--muted); margin-bottom: 24px; }
+  .result-score-circle {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: white; box-shadow: 0 8px 30px rgba(79,70,229,.4); margin: 0 auto 28px;
+  }
+  .result-score-num { font-size: 42px; font-weight: 900; line-height: 1; }
+  .result-score-label { font-size: 13px; font-weight: 600; opacity: .8; }
+  .result-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .res-btn {
+    padding: 15px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700;
+    cursor: pointer; box-shadow: var(--shadow); transition: transform .15s;
+  }
+  .res-btn:active { transform: scale(0.97); }
+  .res-btn.primary { background: var(--primary); color: white; }
+  .res-btn.secondary { background: var(--card); color: var(--text); border: 2px solid var(--border); }
+
+  /* ══════════════════════════════ UTILS ══════════════════════════════ */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .scroll-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════ HOME ══════════════ -->
+<div id="home" class="screen active">
+  <div class="home-top">
+    <div class="school-header">
+      <div class="logo-col">
+        <img src="data:image/png;base64,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" width="60" height="64" style="flex-shrink:0">
+        <div class="home-motto">
+          <span class="motto-tag" style="background:#69C49D;color:#043d29">לחלום</span>
+          <span class="motto-tag" style="background:#FED33B;color:#5a3e00">לתכנן</span>
+          <span class="motto-tag" style="background:#EE3F3F;color:white">לעשות</span>
+        </div>
+        <div class="school-name-he" style="text-align:right; font-size:14px; margin-top:2px;">תיכון שמיר</div>
+      </div>
+    </div>
+    <div class="home-unit">Band 2 · Core 1</div>
+    <div class="home-title">Unit 1<br>Vocabulary</div>
+    <div class="home-sub">English as a Second Language</div>
+
+    <div class="word-count-pill" id="wordCountPill">25 words</div>
+  </div>
+  <div class="mode-cards">
+    <div class="mode-card fc" onclick="startFlashcards()">
+      <div class="mode-emoji">🃏</div>
+      <div class="mode-info">
+        <div class="mode-name">Flashcards</div>
+        <div class="mode-desc">Study every word at your own pace</div>
+      </div>
+      <div class="mode-arrow">›</div>
+    </div>
+    <div class="mode-card prac" onclick="startPractice()">
+      <div class="mode-emoji">🔗</div>
+      <div class="mode-info">
+        <div class="mode-name">Practice</div>
+        <div class="mode-desc">Match words to their definitions</div>
+      </div>
+      <div class="mode-arrow">›</div>
+    </div>
+    <div class="mode-card tst" onclick="startTest()">
+      <div class="mode-emoji">✏️</div>
+      <div class="mode-info">
+        <div class="mode-name">Test</div>
+        <div class="mode-desc">Fill in blanks &amp; multiple choice</div>
+      </div>
+      <div class="mode-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ FLASHCARDS ══════════════ -->
+<div id="flashcards" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="screen-title">Flashcards</span>
+    <span class="badge" id="fcBadge">1 / 25</span>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="fcProgress" style="width:4%"></div></div>
+  <div class="card-counter" id="fcCounter">Tap card to see definition</div>
+  <div class="flashcard-wrap">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="flashcard-inner">
+        <div class="flashcard-face flashcard-front">
+          <div class="card-label">word</div>
+          <div class="card-word" id="fcWord">—</div>
+          <div class="card-hint">Tap to see definition</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="card-label" style="opacity:.55;color:white">definition</div>
+          <div class="card-def" id="fcDef">—</div>
+          <div class="card-trans" id="fcTrans" style="font-size:13px;opacity:.8;margin-top:10px;letter-spacing:0.2px;">—</div>
+          <div class="card-pos" id="fcPos">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="fcActionsWrap">
+    <div class="fc-score">
+      <span class="s-got" id="fcGot">✓ 0</span>
+      <span class="s-miss" id="fcMiss">✗ 0</span>
+    </div>
+    <div class="fc-actions" id="fcActions" style="display:none">
+      <button class="fc-btn wrong" onclick="fcAnswer(false)">✗ Missed</button>
+      <button class="fc-btn skip" onclick="fcAnswer(null)">Skip</button>
+      <button class="fc-btn correct" onclick="fcAnswer(true)">✓ Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PRACTICE ══════════════ -->
+<div id="practice" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="screen-title">Practice</span>
+    <span class="badge" id="pracBadge">Round 1</span>
+  </div>
+  <div class="match-instructions">Match each word on the left to its correct definition on the right. Choose from the dropdown.</div>
+  <div class="scroll-wrap">
+    <div class="match-grid" id="matchGrid"></div>
+    <div class="match-feedback" id="matchFeedback"></div>
+    <button class="check-btn" id="checkBtn" onclick="checkMatch()">Check Answers ✓</button>
+    <button class="next-btn" id="nextRoundBtn" onclick="nextPracticeRound()" style="display:none">Next Round →</button>
+    <button class="retry-btn" id="retryBtn" onclick="retryPractice()" style="display:none">Try Again ↺</button>
+  </div>
+</div>
+
+<!-- ══════════════ TEST ══════════════ -->
+<div id="test" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="screen-title">Test</span>
+    <span class="badge" id="testBadge">0 / 0</span>
+  </div>
+  <div id="wbBankSticky" style="display:none"></div>
+  <div class="scroll-wrap">
+    <div id="testContent"></div>
+    <button class="check-btn submit-test-btn" id="submitTestBtn" onclick="submitTest()">Submit Test ✓</button>
+  </div>
+</div>
+
+<!-- ══════════════ RESULTS ══════════════ -->
+<div id="results" class="screen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title" id="resultTitle">Well done!</div>
+  <div class="result-sub" id="resultSub">You completed the test</div>
+  <div class="result-score-circle">
+    <div class="result-score-num" id="resultPct">—</div>
+    <div class="result-score-label">score</div>
+  </div>
+  <div class="result-actions">
+    <button class="res-btn primary" id="resultRetry" onclick="retryFromResults()">Try Again ↺</button>
+    <button class="res-btn secondary" onclick="goHome()">← Back to Home</button>
+  </div>
+</div>
+
+</div>
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  VOCABULARY DATA  — Band 2 · Core 1 · Unit 1
+// ═══════════════════════════════════════════════════════
+const WORDS = [
+  { word: "achieve",    pos: "verb",       def: "to succeed in doing something after trying hard",            he: "להשיג",      ar: "يُحقِّق" },
+  { word: "adventure",  pos: "noun",       def: "an exciting, unusual, or dangerous experience",              he: "הרפתקה",     ar: "مُغامَرة" },
+  { word: "brave",      pos: "adjective",  def: "willing to do dangerous things; not afraid",                 he: "אמיץ",       ar: "شُجاع" },
+  { word: "celebrate",  pos: "verb",       def: "to do something enjoyable for a special occasion",           he: "לחגוג",      ar: "يَحتفِل" },
+  { word: "challenge",  pos: "noun",       def: "something difficult that needs effort and skill",            he: "אתגר",       ar: "تَحدٍّ" },
+  { word: "curious",    pos: "adjective",  def: "wanting to know or learn about something",                   he: "סקרן",       ar: "فَضولِيّ" },
+  { word: "decision",   pos: "noun",       def: "a choice that you make after thinking carefully",            he: "החלטה",      ar: "قَرار" },
+  { word: "discover",   pos: "verb",       def: "to find or learn something for the first time",              he: "לגלות",      ar: "يَكتشِف" },
+  { word: "encourage",  pos: "verb",       def: "to give someone confidence or support to do something",      he: "לעודד",      ar: "يُشجِّع" },
+  { word: "explore",    pos: "verb",       def: "to travel through a new place to learn about it",            he: "לחקור",      ar: "يَستكشِف" },
+  { word: "fail",       pos: "verb",       def: "to not succeed in doing something you tried to do",          he: "להיכשל",     ar: "يَفشَل" },
+  { word: "goal",       pos: "noun",       def: "something you want to achieve in the future",                he: "מטרה",       ar: "هَدَف" },
+  { word: "helpful",    pos: "adjective",  def: "making things easier or better for someone",                 he: "מועיל",      ar: "مُفيد" },
+  { word: "imagine",    pos: "verb",       def: "to form a picture or idea in your mind",                     he: "לדמיין",     ar: "يَتخيَّل" },
+  { word: "improve",    pos: "verb",       def: "to make something better or become better",                  he: "לשפר",       ar: "يُحسِّن" },
+  { word: "include",    pos: "verb",       def: "to have someone or something as part of a group",            he: "לכלול",      ar: "يَشمَل" },
+  { word: "inspire",    pos: "verb",       def: "to make someone feel they want to do something great",       he: "לעורר השראה", ar: "يُلهِم" },
+  { word: "journey",    pos: "noun",       def: "a long trip from one place to another",                      he: "מסע",        ar: "رِحلة" },
+  { word: "knowledge",  pos: "noun",       def: "facts and information you have learned",                     he: "ידע",        ar: "مَعرِفة" },
+  { word: "overcome",   pos: "verb",       def: "to succeed in dealing with a problem or difficulty",         he: "להתגבר",     ar: "يَتغلَّب" },
+  { word: "prefer",     pos: "verb",       def: "to like one thing more than another",                        he: "להעדיף",     ar: "يُفضِّل" },
+  { word: "realize",    pos: "verb",       def: "to begin to understand something clearly",                   he: "להבין",      ar: "يُدرِك" },
+  { word: "remember",   pos: "verb",       def: "to bring information from the past back to mind",            he: "לזכור",      ar: "يَتذكَّر" },
+  { word: "solve",      pos: "verb",       def: "to find the answer to a problem or question",                he: "לפתור",      ar: "يَحُلّ" },
+  { word: "successful", pos: "adjective",  def: "having achieved what you wanted to achieve",                 he: "מצליח",      ar: "ناجِح" },
+];
+
+// Sentences for test Part A (word bank fill-in-the-blank)
+const WB_SENTENCES = [
+  { sentence: "She worked very hard to ___ her dream of becoming a doctor.", answer: "achieve" },
+  { sentence: "The camping trip was a real ___ — they saw bears and crossed rivers!", answer: "adventure" },
+  { sentence: "You have to be ___ to speak in front of the whole school.", answer: "brave" },
+  { sentence: "We always ___ my grandfather's birthday with a big family dinner.", answer: "celebrate" },
+  { sentence: "Learning to ride a bike was a real ___ at first.", answer: "challenge" },
+  { sentence: "The little girl was very ___ and asked lots of questions.", answer: "curious" },
+  { sentence: "It was a hard ___, but she chose to study medicine.", answer: "decision" },
+  { sentence: "The explorers were the first to ___ that remote island.", answer: "discover" },
+  { sentence: "His coach always tried to ___ him before a big match.", answer: "encourage" },
+  { sentence: "They decided to ___ the old city and take lots of photos.", answer: "explore" },
+  { sentence: "Don't give up if you ___; just try again.", answer: "fail" },
+  { sentence: "Her ___ was to run a marathon before she turned 30.", answer: "goal" },
+  { sentence: "It is ___ to hold the door open for the person behind you.", answer: "helpful" },
+  { sentence: "Can you ___ what it would be like to live on the moon?", answer: "imagine" },
+  { sentence: "Practising every day will help you ___ your English.", answer: "improve" },
+];
+
+// Sentences for test Part B (multiple-choice fill-in-the-blank)
+const MC_SENTENCES = [
+  { sentence: "She worked hard to ___ her dream of becoming a doctor.", answer: "achieve", distractors: ["fail","imagine","prefer"] },
+  { sentence: "The children were very ___ about how butterflies are made.", answer: "curious", distractors: ["brave","helpful","successful"] },
+  { sentence: "He made a difficult ___ to leave his job and travel the world.", answer: "decision", distractors: ["journey","goal","knowledge"] },
+  { sentence: "Scientists ___ new medicines every year.", answer: "discover", distractors: ["overcome","include","solve"] },
+  { sentence: "The coach always tried to ___ his players before a match.", answer: "encourage", distractors: ["fail","realize","prefer"] },
+  { sentence: "Her ___ to climb Mount Everest took six months of preparation.", answer: "goal", distractors: ["adventure","challenge","journey"] },
+  { sentence: "The teacher's kind words ___ the student to keep writing.", answer: "inspired", answer_: "inspire", distractors: ["solved","remembered","included"] },
+  { sentence: "The family went on a long ___ across Europe.", answer: "journey", distractors: ["knowledge","decision","goal"] },
+  { sentence: "Reading many books gives you a lot of ___.", answer: "knowledge", distractors: ["adventure","challenge","goal"] },
+  { sentence: "He was ___ in the competition and won first prize.", answer: "successful", distractors: ["curious","brave","helpful"] },
+];
+
+// ═══════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  document.getElementById('wbBankSticky').style.display = 'none';
+  showScreen('home');
+}
+
+// Update word count pill
+document.getElementById('wordCountPill').textContent = WORDS.length + ' words';
+
+// ═══════════════════════════════════════════════════════
+//  FLASHCARDS
+// ═══════════════════════════════════════════════════════
+let fcQueue, fcIdx, fcGot, fcMiss;
+
+function startFlashcards() {
+  fcQueue = shuffle(WORDS);
+  fcIdx = 0; fcGot = 0; fcMiss = 0;
+  renderFlashcard();
+  showScreen('flashcards');
+}
+
+function renderFlashcard() {
+  if (fcIdx >= fcQueue.length) { showFCResults(); return; }
+  const w = fcQueue[fcIdx];
+  document.getElementById('fcWord').textContent = w.word;
+  document.getElementById('fcDef').textContent = w.def;
+  document.getElementById('fcTrans').textContent = (w.he || '') + ' | ' + (w.ar || '');
+  document.getElementById('fcPos').textContent = w.pos;
+  document.getElementById('fcBadge').textContent = (fcIdx + 1) + ' / ' + fcQueue.length;
+  document.getElementById('fcProgress').style.width = ((fcIdx + 1) / fcQueue.length * 100) + '%';
+  document.getElementById('fcCounter').textContent = 'Tap card to see definition';
+  document.getElementById('fcActions').style.display = 'none';
+  document.getElementById('fcGot').textContent = '✓ ' + fcGot;
+  document.getElementById('fcMiss').textContent = '✗ ' + fcMiss;
+  const card = document.getElementById('flashcard');
+  card.classList.remove('flipped');
+}
+
+let fcFlipped = false;
+function flipCard() {
+  const card = document.getElementById('flashcard');
+  card.classList.toggle('flipped');
+  fcFlipped = card.classList.contains('flipped');
+  if (fcFlipped) {
+    document.getElementById('fcCounter').textContent = 'Did you know this word?';
+    document.getElementById('fcActions').style.display = 'flex';
+  } else {
+    document.getElementById('fcCounter').textContent = 'Tap card to see definition';
+    document.getElementById('fcActions').style.display = 'none';
+  }
+}
+
+function fcAnswer(result) {
+  if (result === true) fcGot++;
+  else if (result === false) fcMiss++;
+  fcIdx++;
+  renderFlashcard();
+}
+
+function showFCResults() {
+  const total = fcGot + fcMiss;
+  const pct = total > 0 ? Math.round(fcGot / total * 100) : 100;
+  showResults('flashcards', pct, fcGot, total || WORDS.length);
+}
+
+// ═══════════════════════════════════════════════════════
+//  PRACTICE (MATCHING)
+// ═══════════════════════════════════════════════════════
+const BATCH_SIZE = 6;
+let pracRound, pracBatches, pracCurrentBatch;
+
+function startPractice() {
+  pracBatches = chunkBatches(shuffle(WORDS), BATCH_SIZE);
+  pracRound = 0;
+  loadPracticeRound();
+  showScreen('practice');
+}
+
+function chunkBatches(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+function loadPracticeRound() {
+  pracCurrentBatch = pracBatches[pracRound];
+  const totalRounds = pracBatches.length;
+  document.getElementById('pracBadge').textContent = 'Round ' + (pracRound + 1) + '/' + totalRounds;
+  document.getElementById('matchFeedback').className = 'match-feedback';
+  document.getElementById('matchFeedback').textContent = '';
+  document.getElementById('checkBtn').style.display = 'block';
+  document.getElementById('nextRoundBtn').style.display = 'none';
+  document.getElementById('retryBtn').style.display = 'none';
+
+  const grid = document.getElementById('matchGrid');
+  grid.innerHTML = '';
+
+  const shuffledDefs = shuffle(pracCurrentBatch.map(w => w.def));
+
+  pracCurrentBatch.forEach((w, i) => {
+    const row = document.createElement('div');
+    row.className = 'match-item';
+
+    const wordBox = document.createElement('div');
+    wordBox.className = 'match-word';
+    wordBox.textContent = w.word;
+
+    const sel = document.createElement('select');
+    sel.className = 'match-select';
+    sel.id = 'match-' + i;
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose definition…';
+    sel.appendChild(placeholder);
+    shuffledDefs.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => syncMatchOptions());
+
+    row.appendChild(wordBox);
+    row.appendChild(sel);
+    grid.appendChild(row);
+  });
+}
+
+// Disable already-chosen definitions in every other dropdown
+function syncMatchOptions() {
+  const n = pracCurrentBatch.length;
+  // Collect currently selected values
+  const chosen = new Set();
+  for (let i = 0; i < n; i++) {
+    const v = document.getElementById('match-' + i)?.value;
+    if (v) chosen.add(v);
+  }
+  // For each select, disable options that are chosen elsewhere
+  for (let i = 0; i < n; i++) {
+    const sel = document.getElementById('match-' + i);
+    if (!sel) continue;
+    const myVal = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      if (!opt.value) return; // keep placeholder always enabled
+      opt.disabled = chosen.has(opt.value) && opt.value !== myVal;
+    });
+  }
+}
+
+function checkMatch() {
+  let correct = 0;
+  pracCurrentBatch.forEach((w, i) => {
+    const sel = document.getElementById('match-' + i);
+    sel.disabled = true;
+    if (sel.value === w.def) {
+      sel.classList.add('correct');
+      correct++;
+    } else {
+      sel.classList.add('wrong');
+    }
+  });
+  const fb = document.getElementById('matchFeedback');
+  const total = pracCurrentBatch.length;
+  fb.className = 'match-feedback show ' + (correct === total ? 'good' : 'bad');
+  if (correct === total) {
+    fb.textContent = '🎉 Perfect! All ' + total + ' correct!';
+    document.getElementById('checkBtn').style.display = 'none';
+    if (pracRound + 1 < pracBatches.length) {
+      document.getElementById('nextRoundBtn').style.display = 'block';
+    } else {
+      fb.textContent = '🏆 All rounds complete! Great work!';
+      setTimeout(() => showResults('practice', Math.round(correct / total * 100), correct, total), 1200);
+    }
+  } else {
+    fb.textContent = '✓ ' + correct + '/' + total + ' correct — check the red ones';
+    document.getElementById('checkBtn').style.display = 'none';
+    document.getElementById('retryBtn').style.display = 'block';
+  }
+}
+
+function nextPracticeRound() {
+  pracRound++;
+  loadPracticeRound();
+}
+
+function retryPractice() {
+  loadPracticeRound();
+}
+
+// ═══════════════════════════════════════════════════════
+//  TEST
+// ═══════════════════════════════════════════════════════
+let testPartA, testPartB, testSubmitted;
+let wbAnswers = [];      // filled answer per blank (null = empty)
+let wbSelectedBlank = null;  // index of currently selected blank
+
+function startTest() {
+  testSubmitted = false;
+  // Part A: 8 random word-bank sentences
+  testPartA = shuffle(WB_SENTENCES).slice(0, 8);
+  wbAnswers = new Array(testPartA.length).fill(null);
+  wbSelectedBlank = null;
+  // Part B: 6 random MC sentences
+  testPartB = shuffle(MC_SENTENCES).slice(0, 6);
+  renderTest();
+  showScreen('test');
+  updateTestBadge();
+  document.getElementById('submitTestBtn').style.display = 'block';
+}
+
+function renderTest() {
+  const content = document.getElementById('testContent');
+  content.innerHTML = '';
+
+  // ── PART A ──
+  const labelA = document.createElement('div');
+  labelA.className = 'test-section-label';
+  labelA.textContent = 'Part A — Fill in the blanks';
+  content.appendChild(labelA);
+
+  const instrA = document.createElement('div');
+  instrA.style.cssText = 'font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5';
+  instrA.textContent = 'Tap a blank, then tap a word from the box to fill it in.';
+  content.appendChild(instrA);
+
+  // Word bank — rendered outside scroll area so it stays visible
+  const bankContainer = document.getElementById('wbBankSticky');
+  bankContainer.style.display = 'block';
+  bankContainer.innerHTML = '';
+  const bank = document.createElement('div');
+  bank.className = 'wb-bank';
+  bank.id = 'wb-bank';
+  const bankLabel = document.createElement('div');
+  bankLabel.className = 'wb-bank-label';
+  bankLabel.textContent = 'Word Bank — tap a blank first, then tap a word';
+  bank.appendChild(bankLabel);
+  const bankWords = shuffle(testPartA.map(s => s.answer));
+  bankWords.forEach(word => {
+    const chip = document.createElement('div');
+    chip.className = 'wb-chip';
+    chip.id = 'wbchip-' + word;
+    chip.textContent = word;
+    chip.onclick = () => wbSelectWord(word);
+    bank.appendChild(chip);
+  });
+  bankContainer.appendChild(bank);
+
+  // Sentences
+  testPartA.forEach((s, i) => {
+    const q = document.createElement('div');
+    q.className = 'test-q';
+    const parts = s.sentence.split('___');
+    q.innerHTML = `
+      <div class="test-q-num">Question ${i + 1}</div>
+      <div class="test-q-text" style="line-height:2">
+        ${parts[0]}<span class="wb-blank empty" id="wbblank-${i}" onclick="wbSelectBlank(${i})">tap to fill</span>${parts[1]}
+      </div>
+      <div class="test-answer-reveal" id="wbrev-${i}">✓ Answer: ${s.answer}</div>
+    `;
+    content.appendChild(q);
+  });
+
+  const divider = document.createElement('div');
+  divider.className = 'divider';
+  content.appendChild(divider);
+
+  // ── PART B ──
+  const labelB = document.createElement('div');
+  labelB.className = 'test-section-label';
+  labelB.textContent = 'Part B — Choose the correct word';
+  content.appendChild(labelB);
+
+  const instrB = document.createElement('div');
+  instrB.style.cssText = 'font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5';
+  instrB.textContent = 'Choose the word that best completes each sentence.';
+  content.appendChild(instrB);
+
+  testPartB.forEach((q, i) => {
+    const options = shuffle([q.answer, ...q.distractors]);
+    const div = document.createElement('div');
+    div.className = 'test-q';
+    const qn = testPartA.length + i + 1;
+    let optHtml = options.map(o =>
+      `<div class="mc-option" id="mc-${i}-${o.replace(/\s/g,'_')}" onclick="selectMC(${i},'${o.replace(/'/g,"\\'")}',this)">${o}</div>`
+    ).join('');
+    div.innerHTML = `
+      <div class="test-q-num">Question ${qn}</div>
+      <div class="test-q-text">${q.sentence.replace('___', '<span style="letter-spacing:2px;color:var(--primary)">___</span>')}</div>
+      <div class="mc-options">${optHtml}</div>
+    `;
+    div.setAttribute('data-answer', q.answer);
+    div.setAttribute('data-selected', '');
+    div.id = 'mc-q-' + i;
+    content.appendChild(div);
+  });
+}
+
+// Tap a blank to select it
+function wbSelectBlank(i) {
+  if (testSubmitted) return;
+  // If already filled, clear it (put word back)
+  if (wbAnswers[i]) {
+    const old = wbAnswers[i];
+    wbAnswers[i] = null;
+    const chip = document.getElementById('wbchip-' + old);
+    if (chip) chip.classList.remove('used');
+    renderBlank(i, false);
+    document.getElementById('wbBankSticky').style.display = 'block';
+  }
+  // Deselect previous
+  if (wbSelectedBlank !== null && wbSelectedBlank !== i) {
+    const prev = document.getElementById('wbblank-' + wbSelectedBlank);
+    if (prev) prev.classList.remove('selected');
+  }
+  wbSelectedBlank = i;
+  const blank = document.getElementById('wbblank-' + i);
+  if (blank) blank.classList.add('selected');
+}
+
+// Tap a word chip to fill selected blank
+function wbSelectWord(word) {
+  if (testSubmitted) return;
+  if (wbSelectedBlank === null) {
+    // Flash bank to hint: select a blank first
+    const bank = document.getElementById('wb-bank');
+    bank.style.outline = '2px solid var(--primary)';
+    setTimeout(() => bank.style.outline = '', 500);
+    return;
+  }
+  const i = wbSelectedBlank;
+  // If blank already had an answer, put old word back
+  if (wbAnswers[i]) {
+    const old = wbAnswers[i];
+    const oldChip = document.getElementById('wbchip-' + old);
+    if (oldChip) oldChip.classList.remove('used');
+  }
+  wbAnswers[i] = word;
+  const chip = document.getElementById('wbchip-' + word);
+  if (chip) chip.classList.add('used');
+  renderBlank(i, false);
+  wbSelectedBlank = null;
+  updateTestBadge();
+  // Hide word bank once all blanks are filled
+  if (wbAnswers.every(a => a !== null)) {
+    document.getElementById('wbBankSticky').style.display = 'none';
+  }
+}
+
+function renderBlank(i, showResult) {
+  const blank = document.getElementById('wbblank-' + i);
+  if (!blank) return;
+  blank.classList.remove('selected', 'empty', 'correct', 'wrong');
+  if (!wbAnswers[i]) {
+    blank.textContent = 'tap to fill';
+    blank.classList.add('empty');
+  } else if (showResult) {
+    blank.textContent = wbAnswers[i];
+    if (wbAnswers[i].toLowerCase() === testPartA[i].answer.toLowerCase()) {
+      blank.classList.add('correct');
+    } else {
+      blank.classList.add('wrong');
+    }
+  } else {
+    blank.textContent = wbAnswers[i];
+  }
+}
+
+function selectMC(qi, val, el) {
+  if (testSubmitted) return;
+  const qDiv = document.getElementById('mc-q-' + qi);
+  qDiv.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  qDiv.setAttribute('data-selected', val);
+  updateTestBadge();
+}
+
+function updateTestBadge() {
+  let answered = wbAnswers.filter(a => a !== null).length;
+  testPartB.forEach((q, i) => {
+    if (document.getElementById('mc-q-' + i)?.getAttribute('data-selected')) answered++;
+  });
+  const total = testPartA.length + testPartB.length;
+  document.getElementById('testBadge').textContent = answered + ' / ' + total;
+}
+
+function submitTest() {
+  testSubmitted = true;
+  wbSelectedBlank = null;
+  let score = 0;
+  const total = testPartA.length + testPartB.length;
+
+  // Check Part A
+  testPartA.forEach((s, i) => {
+    renderBlank(i, true);
+    const rev = document.getElementById('wbrev-' + i);
+    if (wbAnswers[i] && wbAnswers[i].toLowerCase() === s.answer.toLowerCase()) {
+      score++;
+    } else {
+      if (rev) rev.classList.add('show');
+    }
+    // disable chip
+    const chip = document.getElementById('wbchip-' + s.answer);
+    if (chip) chip.style.pointerEvents = 'none';
+  });
+  // Disable all chips
+  document.querySelectorAll('.wb-chip').forEach(c => c.style.pointerEvents = 'none');
+
+  // Check Part B
+  testPartB.forEach((q, i) => {
+    const qDiv = document.getElementById('mc-q-' + i);
+    const selected = qDiv.getAttribute('data-selected');
+    qDiv.querySelectorAll('.mc-option').forEach(opt => {
+      opt.style.pointerEvents = 'none';
+      const optVal = opt.textContent.trim();
+      if (optVal === q.answer) opt.classList.add('correct');
+      else if (optVal === selected && selected !== q.answer) opt.classList.add('wrong');
+    });
+    if (selected === q.answer) score++;
+  });
+
+  document.getElementById('submitTestBtn').style.display = 'none';
+  const pct = Math.round(score / total * 100);
+
+  // Build score banner and inject at top of testContent
+  let emoji = '🎉', msg = 'Excellent!';
+  if (pct < 50)      { emoji = '📖'; msg = 'Keep practising!'; }
+  else if (pct < 70) { emoji = '💪'; msg = 'Good effort!'; }
+  else if (pct < 90) { emoji = '👍'; msg = 'Well done!'; }
+
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white; border-radius: 16px; padding: 20px;
+    text-align: center; margin-bottom: 20px;
+  `;
+  banner.innerHTML = `
+    <div style="font-size:40px;margin-bottom:8px">${emoji}</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:4px">${msg}</div>
+    <div style="font-size:36px;font-weight:900;margin:10px 0">${pct}%</div>
+    <div style="font-size:14px;opacity:.85">${score} out of ${total} correct</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="startTest()" style="flex:1;padding:12px;border:none;border-radius:12px;background:rgba(255,255,255,.2);color:white;font-size:15px;font-weight:700;cursor:pointer">↺ Try Again</button>
+      <button onclick="goHome()" style="flex:1;padding:12px;border:none;border-radius:12px;background:white;color:#4f46e5;font-size:15px;font-weight:700;cursor:pointer">⌂ Home</button>
+    </div>
+  `;
+
+  const content = document.getElementById('testContent');
+  content.insertBefore(banner, content.firstChild);
+
+  // Scroll back to top so score banner is visible first
+  const scrollWrap = content.closest('.scroll-wrap');
+  if (scrollWrap) scrollWrap.scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════════════════
+let lastMode;
+function showResults(mode, pct, correct, total) {
+  lastMode = mode;
+  let emoji = '🎉', title = 'Excellent!', sub;
+  if (pct < 50)      { emoji = '📖'; title = 'Keep practising!'; }
+  else if (pct < 70) { emoji = '💪'; title = 'Good effort!'; }
+  else if (pct < 90) { emoji = '👍'; title = 'Well done!'; }
+
+  sub = correct + ' out of ' + total + ' correct';
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  document.getElementById('resultPct').textContent = pct + '%';
+  showScreen('results');
+}
+
+function retryFromResults() {
+  if (lastMode === 'flashcards') startFlashcards();
+  else if (lastMode === 'practice') startPractice();
+  else if (lastMode === 'test') startTest();
+}
+</script>
+</body>
+</html>
