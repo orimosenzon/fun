@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>תיכון שמיר | Unit 1 Vocabulary — Option A — School Spirit</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -24,8 +24,13 @@
     --radius: 16px;
     --shadow: 0 4px 20px rgba(0,0,0,0.10);
   }
-  html, body {
+  html {
     height: 100%;
+    height: -webkit-fill-available;
+  }
+  body {
+    height: 100%;
+    height: -webkit-fill-available;
     overflow: hidden;
   }
   body {
@@ -36,10 +41,10 @@
     flex-direction: column;
     align-items: center;
   }
-  .app { width: 100%; max-width: 480px; height: 100vh; display: flex; flex-direction: column; }
+  .app { width: 100%; max-width: 480px; height: 100%; height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
 
   /* ── SCREENS ── */
-  .screen { display: none; flex-direction: column; flex: 1; padding: 20px 16px 32px; overflow: hidden; }
+  .screen { display: none; flex-direction: column; flex: 1; padding: 20px 16px 16px; overflow: hidden; }
   .screen.active { display: flex; }
 
   /* ── HEADER ── */
@@ -249,7 +254,7 @@
 
   /* ══════════════════════════════ UTILS ══════════════════════════════ */
   .divider { height: 1px; background: var(--border); margin: 20px 0; }
-  .scroll-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -353,10 +358,10 @@
   <div class="scroll-wrap">
     <div class="match-grid" id="matchGrid"></div>
     <div class="match-feedback" id="matchFeedback"></div>
-    <button class="check-btn" id="checkBtn" onclick="checkMatch()">Check Answers ✓</button>
-    <button class="next-btn" id="nextRoundBtn" onclick="nextPracticeRound()" style="display:none">Next Round →</button>
-    <button class="retry-btn" id="retryBtn" onclick="retryPractice()" style="display:none">Try Again ↺</button>
   </div>
+  <button class="check-btn" id="checkBtn" onclick="checkMatch()" style="flex-shrink:0; margin: 10px 0 4px;">Check Answers ✓</button>
+  <button class="next-btn" id="nextRoundBtn" onclick="nextPracticeRound()" style="display:none; flex-shrink:0; margin: 10px 0 4px;">Next Round →</button>
+  <button class="retry-btn" id="retryBtn" onclick="retryPractice()" style="display:none; flex-shrink:0; margin: 10px 0 4px;">Try Again ↺</button>
 </div>
 
 <!-- ══════════════ TEST ══════════════ -->
@@ -367,10 +372,10 @@
     <span class="badge" id="testBadge">0 / 0</span>
   </div>
   <div id="wbBankSticky" style="display:none"></div>
-  <div class="scroll-wrap">
+  <div class="scroll-wrap" style="padding-bottom: 8px;">
     <div id="testContent"></div>
-    <button class="check-btn submit-test-btn" id="submitTestBtn" onclick="submitTest()">Submit Test ✓</button>
   </div>
+  <button class="check-btn submit-test-btn" id="submitTestBtn" onclick="submitTest()" style="flex-shrink:0; margin: 10px 0 4px;">Submit Test ✓</button>
 </div>
 
 <!-- ══════════════ RESULTS ══════════════ -->
