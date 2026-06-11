@@ -328,6 +328,11 @@ def _inject_models():
         "langs": LANGS,
         "default_exercise_lang": DEFAULT_EXERCISE_LANG,
         "default_feedback_lang": DEFAULT_FEEDBACK_LANG,
+        # Cloud (HF Space) storage is ephemeral — rubrics added via the UI
+        # there vanish on the next rebuild. The template warns only there;
+        # local runs (browser or desktop) write to a real rubrics/ dir.
+        # SPACE_ID is set by the HF Spaces runtime.
+        "cloud_mode": bool(os.environ.get("SPACE_ID")),
     }
 
 
@@ -1221,6 +1226,49 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
             "technical": technical,
         }
 
+    # ---- Azure OpenAI errors: raised by the stock openai SDK. Imported
+    # lazily so a stripped-down install without openai still loads. Checked
+    # after Groq because both SDKs define same-named exception classes —
+    # isinstance keys on the actual module, so the order is just cosmetic.
+    try:
+        import openai as _openai_mod  # type: ignore
+    except ImportError:
+        _openai_mod = None  # noqa: N806
+
+    if _openai_mod and isinstance(exc, _openai_mod.RateLimitError):
+        return {
+            "message": "חרגת ממכסת Azure OpenAI",
+            "details": (
+                "ה-deployment ב-Azure מגביל בקשות/טוקנים לדקה. נסה שוב בעוד "
+                "דקה, או החלף ל-Claude/Gemini בתפריט המודל."
+            ),
+            "link_url": "https://portal.azure.com",
+            "link_text": "נהל את המכסה ב-Azure Portal",
+            "technical": technical,
+        }
+
+    if _openai_mod and isinstance(exc, _openai_mod.AuthenticationError):
+        return {
+            "message": "מפתח Azure OpenAI לא תקף",
+            "details": (
+                "ודא שהמשתנים AZURE_OPENAI_API_KEY / AZURE_OPENAI_ENDPOINT "
+                "מוגדרים נכון (.env מקומית או Secret ב-Hugging Face Space) "
+                "ושהמפתח עדיין פעיל."
+            ),
+            "link_url": "https://portal.azure.com",
+            "link_text": "נהל מפתחות ב-Azure Portal",
+            "technical": technical,
+        }
+
+    if _openai_mod and isinstance(exc, (_openai_mod.APIConnectionError, _openai_mod.APITimeoutError)):
+        return {
+            "message": "החיבור ל-Azure OpenAI נכשל",
+            "details": "ייתכן שיש בעיית רשת או ש-Azure לא זמין כרגע. נסה שוב בעוד דקה.",
+            "link_url": "https://status.azure.com",
+            "link_text": "סטטוס שירותי Azure",
+            "technical": technical,
+        }
+
     # ---- Anthropic: rate limit ----
     if isinstance(exc, anthropic.RateLimitError):
         return {
@@ -1279,6 +1327,21 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
                 "https://aistudio.google.com/apikey",
                 "נהל מפתחות ב-Google AI Studio",
             ),
+            "AZURE_OPENAI_API_KEY": (
+                "Azure OpenAI",
+                "https://portal.azure.com",
+                "נהל מפתחות ב-Azure Portal",
+            ),
+            "AZURE_OPENAI_ENDPOINT": (
+                "Azure OpenAI",
+                "https://portal.azure.com",
+                "נהל את ה-endpoint ב-Azure Portal",
+            ),
+            "AZURE_OPENAI_DEPLOYMENT": (
+                "Azure OpenAI",
+                "https://portal.azure.com",
+                "נהל deployments ב-Azure Portal",
+            ),
         }
         if key_name in _key_info:
             provider_name, url, link_label = _key_info[key_name]
@@ -1321,8 +1384,22 @@ def humanize_error(exc: Exception, *, action: str = "הפעולה") -> dict:
 
 
 # In-memory job store. Single local user (Avishai), so a dict is enough; a
-# job is short-lived and consumed once by the SSE stream.
+# job is short-lived and consumed once by the SSE stream. Entries stay around
+# after completion so /result/<id> can re-render on refresh, but each one
+# holds the full base64 page images (MBs), so stale ones are evicted on a
+# TTL — without it a long-lived server leaks every decode ever run.
 JOBS: dict[str, dict] = {}
+JOB_TTL_SECONDS = 3600  # 1h of result-page refreshability, then evicted
+
+
+def _evict_stale_jobs():
+    now = time.time()
+    stale = [
+        jid for jid, job in JOBS.items()
+        if now - job.get("ts", 0) > JOB_TTL_SECONDS
+    ]
+    for jid in stale:
+        JOBS.pop(jid, None)
 
 # Cached uploads waiting for the user to approve a rotation in the preview
 # screen. Keyed by preview_id, holds the raw bytes + ext + a timestamp so we
@@ -1398,11 +1475,14 @@ def render_result(
         "rubrics": list_rubrics(),
         "default_rubric_id": DEFAULT_RUBRIC_ID,
     }
+    # json.dumps doesn't escape "</script>", so OCR text containing it would
+    # terminate the inline <script> block early (an XSS hole — the text comes
+    # from a student's photographed page). "<\/" is valid JSON for "</".
     return render_template(
         "index.html",
         pages=pages,
         filename=filename,
-        server_data_json=json.dumps(server_data, ensure_ascii=False),
+        server_data_json=json.dumps(server_data, ensure_ascii=False).replace("</", "<\\/"),
     )
 
 
@@ -1594,6 +1674,10 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
 - זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
 - העריך את התרגיל לפי הרובריקה — צא מנקודת הנחה שמה שנכתב הוא מה שהתלמיד התכוון אליו (אל תקטף נקודות על שגיאות OCR שנראות כמו טעויות תמלול).
 - לכל קריטריון: ציון מספרי (1 עד max_score לפי הרובריקה) ופידבק קצר ב{primary} (1-3 משפטים).
+- לכל קריטריון: שדה "level" — הרמה שהתלמיד השיג בקריטריון, אחד מ:
+  "excellent" / "good" / "fair" / "needs_improvement". בחר את הרמה לפי
+  תיאורי הרמות ברובריקה עצמה (אם קיימים), לא לפי חישוב יחס מספרי מהציון.
+  אם הרובריקה לא מגדירה רמות כאלה — החזר מחרוזת ריקה "".
 {secondary_block}
 - לכל קריטריון: רשימת "issues" — דוגמאות ספציפיות לבעיות שמצאת
   בטקסט. לכל issue:
@@ -1616,6 +1700,7 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
       "name": "...",
       "score": <int>,
       "max_score": <int>,
+      "level": "excellent | good | fair | needs_improvement | (ריק אם אין רמות)",
       "feedback": "...",
       "feedback_secondary": "...",
       "issues": [
@@ -1639,6 +1724,11 @@ EVAL_SCHEMA = {
                     "name": {"type": "string"},
                     "score": {"type": "number"},
                     "max_score": {"type": "number"},
+                    # Achieved level per the rubric's own descriptors; "" when
+                    # the rubric defines no levels. Authoritative over any
+                    # score/max ratio (which can't express all 4 levels when
+                    # max_marks is small — e.g. max 2 only ever hits 2 of 4).
+                    "level": {"type": "string"},
                     "feedback": {"type": "string"},
                     "feedback_secondary": {"type": "string"},
                     "issues": {
@@ -1655,7 +1745,7 @@ EVAL_SCHEMA = {
                         },
                     },
                 },
-                "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
+                "required": ["name", "score", "max_score", "level", "feedback", "feedback_secondary", "issues"],
                 "additionalProperties": False,
             },
         },
@@ -1680,6 +1770,7 @@ _GROQ_EVAL_SHAPE_HINT = (
     '      "name": "...",\n'
     '      "score": 0,\n'
     '      "max_score": 0,\n'
+    '      "level": "excellent | good | fair | needs_improvement | (empty string if the rubric has no levels)",\n'
     '      "feedback": "...",\n'
     '      "feedback_secondary": "...",\n'
     '      "issues": [\n'
@@ -1740,6 +1831,7 @@ def evaluate_with_rubric(
                             "name": {"type": "string"},
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
+                            "level": {"type": "string"},
                             "feedback": {"type": "string"},
                             "feedback_secondary": {"type": "string"},
                             "issues": {
@@ -1755,7 +1847,7 @@ def evaluate_with_rubric(
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
+                        "required": ["name", "score", "max_score", "level", "feedback", "feedback_secondary", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
@@ -1940,6 +2032,7 @@ def evaluate_with_rubric_stream(
                             "name": {"type": "string"},
                             "score": {"type": "number"},
                             "max_score": {"type": "number"},
+                            "level": {"type": "string"},
                             "feedback": {"type": "string"},
                             "feedback_secondary": {"type": "string"},
                             "issues": {
@@ -1955,7 +2048,7 @@ def evaluate_with_rubric_stream(
                                 },
                             },
                         },
-                        "required": ["name", "score", "max_score", "feedback", "feedback_secondary", "issues"],
+                        "required": ["name", "score", "max_score", "level", "feedback", "feedback_secondary", "issues"],
                     },
                 },
                 "overall_score": {"type": "string"},
@@ -2842,8 +2935,12 @@ def decode_start():
     if rotations is not None and not isinstance(rotations, list):
         rotations = None
 
+    _evict_stale_jobs()
     job_id = uuid.uuid4().hex[:12]
-    JOBS[job_id] = {"q": queue.Queue(), "pages": None, "filename": filename}
+    JOBS[job_id] = {
+        "q": queue.Queue(), "pages": None, "filename": filename,
+        "ts": time.time(),
+    }
     threading.Thread(
         target=run_job,
         args=(job_id, file_bytes, ext, provider, exercise_lang, rotations),
@@ -2964,6 +3061,13 @@ def evaluate_endpoint():
 
     result["rubric_id"] = rubric_id
     result["rubric_name"] = rubric.get("name", rubric_id)
+    # The languages this evaluation was *run* with — rendering (secondary
+    # feedback column, docx) must follow these, not whatever the pickers say
+    # later. Without them, flipping a picker after the run (or loading the
+    # saved JSON in a browser with different defaults) hides a column the
+    # model actually filled.
+    result["feedback_lang"] = feedback_lang
+    result["exercise_lang"] = exercise_lang
     result["criteria_grid"] = rubric.get("criteria_grid")
     result["question"] = rubric.get("question")
     result["helpful_words_usage"] = helpful_words_usage(pages, rubric.get("helpful_words"))
@@ -2999,6 +3103,10 @@ def run_evaluate_job(
                 evaluation = ev["evaluation"]
                 evaluation["rubric_id"] = rubric_id
                 evaluation["rubric_name"] = rubric.get("name", rubric_id)
+                # See evaluate_endpoint: the run-time language picks ride on
+                # the evaluation so later rendering can't drift from them.
+                evaluation["feedback_lang"] = feedback_lang
+                evaluation["exercise_lang"] = exercise_lang
                 evaluation["criteria_grid"] = rubric.get("criteria_grid")
                 evaluation["question"] = rubric.get("question")
                 evaluation["helpful_words_usage"] = helpful_words_usage(pages, rubric.get("helpful_words"))
@@ -3110,8 +3218,15 @@ def evaluation_docx():
     provider = body.get("model") if body.get("model") in MODEL_FILENAME_LABEL else DEFAULT_MODEL
     rubric_name = body.get("rubric_name") or (evaluation or {}).get("rubric_name", "")
     pages = body.get("pages") or None
-    feedback_lang = _norm_lang(body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG)
-    exercise_lang = _norm_lang(body.get("exercise_lang"), DEFAULT_EXERCISE_LANG)
+    # The languages stored on the evaluation (set when it was run) win over
+    # the current picker values — the docx must match what the model wrote.
+    _ev = evaluation or {}
+    feedback_lang = _norm_lang(
+        _ev.get("feedback_lang") or body.get("feedback_lang"), DEFAULT_FEEDBACK_LANG
+    )
+    exercise_lang = _norm_lang(
+        _ev.get("exercise_lang") or body.get("exercise_lang"), DEFAULT_EXERCISE_LANG
+    )
     if not evaluation:
         return jsonify(error="אין הערכה לייצוא"), 400
     try:
