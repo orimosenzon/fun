@@ -909,6 +909,99 @@
             box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
         }
 
+        /* "Did the student answer the question" line (top of report) */
+        .eval-answered {
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            padding: 0.4rem 0.7rem;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .eval-answered.yes { color: #1e7e34; background: #e8f6ec; }
+        .eval-answered.no  { color: #b02a37; background: #fbeaec; }
+
+        /* Total word count line */
+        .eval-word-count {
+            margin-bottom: 1.2rem;
+            font-size: 1rem;
+        }
+
+        /* Helpful-words usage block */
+        .eval-helpful-words {
+            margin-bottom: 1.2rem;
+            padding: 0.7rem 0.9rem;
+            background: #fdf6e0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .eval-helpful-words .hw-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .eval-helpful-words .hw-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        .hw-chip {
+            display: inline-block;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            border: 1px solid transparent;
+        }
+        .hw-chip.hw-used {
+            background: #e8f6ec;
+            color: #1e7e34;
+            border-color: #b7e0c2;
+        }
+        .hw-chip.hw-unused {
+            background: #f1f1f1;
+            color: #888;
+            text-decoration: line-through;
+        }
+
+        /* Rubric grid table (criteria × levels, achieved cell highlighted) */
+        .eval-rubric-grid-wrap { margin-bottom: 1.2rem; }
+        .eval-rubric-grid {
+            width: 100%;
+            border-collapse: collapse;
+            direction: ltr;            /* English rubric reads left-to-right */
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .eval-rubric-grid th, .eval-rubric-grid td {
+            border: 1px solid var(--border);
+            padding: 0.55rem 0.7rem;
+            vertical-align: top;
+        }
+        .eval-rubric-grid th {
+            background: #fdf6e0;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .eval-rubric-grid td.rg-criterion {
+            font-weight: 600;
+            border-inline-start-width: 6px;
+            white-space: nowrap;
+        }
+        .eval-rubric-grid td.rg-marks {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-weight: 700;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .eval-rubric-grid td.rg-level.achieved {
+            font-weight: 700;
+            box-shadow: inset 0 0 0 2px currentColor;
+        }
+        .eval-rubric-grid td.rg-level.achieved::after {
+            content: " ✓";
+            font-weight: 700;
+        }
+
         /* Add-rubric modal */
         .modal-backdrop {
             position: fixed;
@@ -1898,6 +1991,13 @@
             <div id="eval-section" class="eval-section" style="display:none">
                 <h2>בדיקת תרגיל</h2>
                 <div id="eval-meta" class="eval-meta"></div>
+                <!-- Report order follows the rubric's "Eval Document Structure":
+                     1=grid, 2=answered, 3=word count, 4=helpful words, then the
+                     pages below provide 5=OCR, 6=errors, 7=original image. -->
+                <div id="eval-rubric-grid" class="eval-rubric-grid-wrap" style="display:none"></div>
+                <div id="eval-answered" class="eval-answered-wrap" style="display:none"></div>
+                <div id="eval-word-count" class="eval-word-count" style="display:none"></div>
+                <div id="eval-helpful-words" class="eval-helpful-words" style="display:none"></div>
                 <div id="eval-overall" class="eval-overall"></div>
                 <table class="eval-table">
                     <thead>
@@ -2479,6 +2579,11 @@
                 let currentEvaluation = serverData.evaluation || null;
                 let rubrics = (serverData.rubrics || []).slice();
 
+                // Feature flag: the legacy compact per-criterion table (name |
+                // score | feedback). Hidden for now in favor of the rubric
+                // grid; flip to true to restore it (code stays intact).
+                const SHOW_LEGACY_EVAL_TABLE = false;
+
                 function renderRubricSelect() {
                     const sel = document.getElementById('rubric-select');
                     if (!sel) return;
@@ -2556,24 +2661,158 @@
                         <div class="eval-overall-text" dir="auto">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
                         ${overallSecondary ? `<div class="eval-overall-text-en">${escapeHtml(overallSecondary)}</div>` : ''}
                     `;
+                    // Legacy compact table — hidden behind SHOW_LEGACY_EVAL_TABLE
+                    // (kept so it can be restored by flipping the flag).
+                    const evalTable = document.querySelector('.eval-table');
+                    if (evalTable) evalTable.style.display = SHOW_LEGACY_EVAL_TABLE ? '' : 'none';
                     const tbody = document.getElementById('eval-tbody');
                     tbody.innerHTML = '';
-                    (currentEvaluation.criteria || []).forEach(c => {
-                        const color = c.color || '#888';
-                        const tr = document.createElement('tr');
-                        const secondary = showSecondary
-                            ? (c.feedback_secondary || c.feedback_en || '')
-                            : '';
-                        tr.innerHTML = `
-                            <td class="criterion-cell" data-label="קריטריון" dir="auto" style="border-inline-start-color:${escapeHtml(color)}">
-                                <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
-                            </td>
-                            <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
-                            <td class="feedback-cell" data-label="פידבק" dir="auto">${escapeHtml(c.feedback || '')}</td>
-                            ${showSecondary ? `<td class="feedback-en-cell" data-label="פידבק (שפת תרגיל)">${escapeHtml(secondary)}</td>` : ''}
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                    if (SHOW_LEGACY_EVAL_TABLE) {
+                        (currentEvaluation.criteria || []).forEach(c => {
+                            const color = c.color || '#888';
+                            const tr = document.createElement('tr');
+                            const secondary = showSecondary
+                                ? (c.feedback_secondary || c.feedback_en || '')
+                                : '';
+                            tr.innerHTML = `
+                                <td class="criterion-cell" data-label="קריטריון" dir="auto" style="border-inline-start-color:${escapeHtml(color)}">
+                                    <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
+                                </td>
+                                <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
+                                <td class="feedback-cell" data-label="פידבק" dir="auto">${escapeHtml(c.feedback || '')}</td>
+                                ${showSecondary ? `<td class="feedback-en-cell" data-label="פידבק (שפת תרגיל)">${escapeHtml(secondary)}</td>` : ''}
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    // Render the structured report blocks (DOM order is fixed
+                    // by the markup; these just fill them) — 1=grid, 2=answered,
+                    // 3=word count, 4=helpful words.
+                    renderRubricGrid();
+                    renderAnswered();
+                    renderWordCount();
+                    renderHelpfulWords();
+                }
+
+                // (2) "Did the student answer the question" — informational
+                // line, shown only when the rubric carried a question.
+                function renderAnswered() {
+                    const box = document.getElementById('eval-answered');
+                    if (!box) return;
+                    const qa = String(currentEvaluation.question_answered || '').toLowerCase();
+                    if (qa !== 'yes' && qa !== 'no') {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                        return;
+                    }
+                    box.innerHTML = `<div class="eval-answered ${qa}">${qa === 'yes' ? 'התלמיד ענה על השאלה ✓' : 'התלמיד לא ענה על השאלה ✗'}</div>`;
+                    box.style.display = '';
+                }
+
+                // (3) Total number of words in the exercise (computed server-side).
+                function renderWordCount() {
+                    const box = document.getElementById('eval-word-count');
+                    if (!box) return;
+                    const wc = currentEvaluation.word_count;
+                    if (wc === null || wc === undefined) {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                        return;
+                    }
+                    box.innerHTML = `סך מילים בתרגיל: <strong>${escapeHtml(String(wc))}</strong>`;
+                    box.style.display = '';
+                }
+
+                // (4) Helpful-words usage — how many of the rubric's suggested
+                // words actually appear in the exercise. Shown only when the
+                // rubric carried helpful words (computed server-side).
+                function renderHelpfulWords() {
+                    const box = document.getElementById('eval-helpful-words');
+                    if (!box) return;
+                    const hw = currentEvaluation.helpful_words_usage;
+                    if (!hw || !hw.total) {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                        return;
+                    }
+                    const used = (hw.used || []).map(w =>
+                        `<span class="hw-chip hw-used">${escapeHtml(w)}</span>`).join('');
+                    const unused = (hw.unused || []).map(w =>
+                        `<span class="hw-chip hw-unused">${escapeHtml(w)}</span>`).join('');
+                    box.innerHTML = `
+                        <div class="hw-title">מילות עזר בשימוש: <strong>${hw.count}/${hw.total}</strong></div>
+                        <div class="hw-list" dir="ltr">${used}${unused}</div>`;
+                    box.style.display = '';
+                }
+
+                // Normalize a criterion name for matching grid rows to the
+                // model's evaluated criteria (case/punctuation-insensitive).
+                function normCrit(s) {
+                    return String(s || '').toLowerCase().replace(/[^a-z0-9֐-׿]+/g, '');
+                }
+
+                // Render the rubric grid (criteria × 4 levels) with the
+                // achieved level highlighted in the criterion's own color and
+                // a score column. Only shown when the rubric provides
+                // `criteria_grid`; otherwise the block stays hidden.
+                function renderRubricGrid() {
+                    const wrap = document.getElementById('eval-rubric-grid');
+                    if (!wrap) return;
+                    const grid = currentEvaluation.criteria_grid;
+                    if (!Array.isArray(grid) || grid.length === 0) {
+                        wrap.style.display = 'none';
+                        wrap.innerHTML = '';
+                        return;
+                    }
+                    const LEVELS = [
+                        ['excellent', 'Excellent'],
+                        ['good', 'Good'],
+                        ['fair', 'Fair'],
+                        ['needs_improvement', 'Needs Improvement'],
+                    ];
+                    const evals = currentEvaluation.criteria || [];
+                    const rows = grid.map((g, gi) => {
+                        // Match the evaluated criterion by normalized name, fall
+                        // back to positional index (model is asked to keep order).
+                        let ev = evals.find(c => normCrit(c.name) === normCrit(g.name));
+                        if (!ev) ev = evals[gi];
+                        const color = (ev && ev.color) || '#888';
+                        const max = Number(g.max_marks) || (ev && Number(ev.max_score)) || 0;
+                        const score = ev ? Number(ev.score) : NaN;
+                        // Derive achieved level from the quartile the score lands
+                        // on: ratio 1→Excellent … 0.25→Needs Improvement.
+                        let levelIdx = -1;
+                        if (max > 0 && isFinite(score)) {
+                            levelIdx = Math.round((1 - score / max) / 0.25);
+                            levelIdx = Math.min(3, Math.max(0, levelIdx));
+                        }
+                        const cells = LEVELS.map(([key, _label], li) => {
+                            const txt = (g.levels && g.levels[key]) || '';
+                            if (li === levelIdx) {
+                                const bg = tintHex(color, 0.35);
+                                return `<td class="rg-level achieved" style="color:${escapeHtml(color)};background:${escapeHtml(bg)}">${escapeHtml(txt)}</td>`;
+                            }
+                            return `<td class="rg-level">${escapeHtml(txt)}</td>`;
+                        }).join('');
+                        const marks = (ev && isFinite(score))
+                            ? `${escapeHtml(String(score))}/${escapeHtml(String(max))}`
+                            : `/${escapeHtml(String(max))}`;
+                        return `<tr>
+                            <td class="rg-criterion" style="border-inline-start-color:${escapeHtml(color)}">${escapeHtml(g.name || '')}</td>
+                            ${cells}
+                            <td class="rg-marks">${marks}</td>
+                        </tr>`;
+                    }).join('');
+                    wrap.innerHTML = `
+                        <table class="eval-rubric-grid">
+                            <thead><tr>
+                                <th>Criteria</th>
+                                ${LEVELS.map(([_k, label]) => `<th>${escapeHtml(label)}</th>`).join('')}
+                                <th>Marks</th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>`;
+                    wrap.style.display = '';
                 }
 
                 renderEvaluation();
