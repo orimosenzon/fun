@@ -91,8 +91,11 @@ class WikiClient:
             "url": f"https://pardespedia.info/wiki/{title.replace(' ', '_')}",
         }
 
-    def edit_page(self, title: str, content: str, summary: str = "", minor: bool = False) -> dict:
-        """Edit or create a page. Returns API result."""
+    def edit_page(self, title: str, content: str, summary: str = "", minor: bool = False, create_only: bool = False) -> dict:
+        """Edit or create a page. Returns API result.
+
+        create_only=True refuses to touch an existing page (API createonly flag).
+        """
         if not self.logged_in:
             raise RuntimeError("Must be logged in to edit.")
 
@@ -107,12 +110,16 @@ class WikiClient:
         }
         if minor:
             data["minor"] = "1"
+        if create_only:
+            data["createonly"] = "1"
 
         r = self.session.post(API_URL, data=data)
         r.raise_for_status()
         result = r.json()
 
         if "error" in result:
+            if result["error"].get("code") == "articleexists":
+                raise RuntimeError(f"Page already exists: {title}. Use 'edit' to modify it.")
             raise RuntimeError(f"Edit failed: {result['error']['info']}")
 
         edit_result = result["edit"]
