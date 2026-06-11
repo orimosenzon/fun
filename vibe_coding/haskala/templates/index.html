@@ -1061,6 +1061,16 @@
             margin-bottom: 0.6rem;
             display: none;
         }
+        .modal-hint {
+            background: #fdf6e0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.55rem 0.8rem;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #6b5f44;
+            margin: 0 0 0.8rem;
+        }
         .modal-error.visible { display: block; }
 
         .eval-spinner { display: none; color: #7a6a48; font-size: 0.9rem; font-style: italic; }
@@ -1524,16 +1534,25 @@
         (function () {
             // Resolve the pywebview JS API once it is injected (or null in a
             // plain browser, where we fall back to file inputs / downloads).
+            // The wait-for-ready promise is cached: without it every click in
+            // a plain browser paid the full timeout (1.5s of dead air before
+            // the file dialog opened). The direct window.pywebview check
+            // stays first so a desktop session that took >1.5s to inject the
+            // API isn't stuck with a cached null.
+            let apiWaitPromise = null;
             function getApi(timeout) {
-                return new Promise(resolve => {
-                    if (window.pywebview && window.pywebview.api) {
-                        return resolve(window.pywebview.api);
-                    }
-                    let done = false;
-                    const finish = v => { if (!done) { done = true; resolve(v); } };
-                    window.addEventListener('pywebviewready', () => finish(window.pywebview.api));
-                    setTimeout(() => finish(null), timeout || 1500);
-                });
+                if (window.pywebview && window.pywebview.api) {
+                    return Promise.resolve(window.pywebview.api);
+                }
+                if (!apiWaitPromise) {
+                    apiWaitPromise = new Promise(resolve => {
+                        let done = false;
+                        const finish = v => { if (!done) { done = true; resolve(v); } };
+                        window.addEventListener('pywebviewready', () => finish(window.pywebview.api));
+                        setTimeout(() => finish(null), timeout || 1500);
+                    });
+                }
+                return apiWaitPromise;
             }
             window.__haskalaGetApi = getApi;
 
@@ -2053,6 +2072,13 @@
             <div id="rubric-modal" class="modal-backdrop">
                 <div class="modal">
                     <h2>הוסף רובריקה חדשה</h2>
+                    {% if cloud_mode %}
+                    <!-- HF Space storage is ephemeral: a rubric created here
+                         survives only until the Space rebuilds/restarts. -->
+                    <p class="modal-hint">⚠️ בגרסת הענן רובריקה חדשה נשמרת זמנית בלבד —
+                        עד העדכון או האתחול הבא של השרת. לשמירה קבועה יש להוסיף אותה
+                        לתיקיית <code>rubrics/</code> בפרויקט ולפרוס מחדש.</p>
+                    {% endif %}
                     <div id="modal-error" class="modal-error"></div>
                     <label for="modal-rubric-name">שם הרובריקה</label>
                     <input type="text" id="modal-rubric-name" placeholder="למשל: כיתה ט' ESL — מבחן סוף שנה">
@@ -2640,14 +2666,18 @@
                     meta.textContent = currentEvaluation.rubric_name
                         ? `רובריקה: ${currentEvaluation.rubric_name}`
                         : '';
-                    // Pull the current language picks so we can decide whether
-                    // to show the secondary (exercise-language) column at all.
+                    // Decide whether to show the secondary (exercise-language)
+                    // column from the languages the evaluation was RUN with
+                    // (stored on it server-side). Falling back to the current
+                    // pickers only covers evals saved before that field
+                    // existed — pickers can be flipped after the run, which
+                    // used to hide a column the model actually filled.
                     // Older saved evals still carry `feedback_en` — read that
                     // as a fallback so they render correctly on this UI.
-                    const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
-                    const showSecondary = langs.feedback_lang
-                        && langs.exercise_lang
-                        && langs.feedback_lang !== langs.exercise_lang;
+                    const picks = (window.__haskalaLangs && window.__haskalaLangs()) || {};
+                    const fbLang = currentEvaluation.feedback_lang || picks.feedback_lang;
+                    const exLang = currentEvaluation.exercise_lang || picks.exercise_lang;
+                    const showSecondary = fbLang && exLang && fbLang !== exLang;
                     const secondaryTh = document.getElementById('eval-feedback-secondary-th');
                     if (secondaryTh) secondaryTh.hidden = !showSecondary;
                     const overall = document.getElementById('eval-overall');
@@ -2779,10 +2809,16 @@
                         const color = (ev && ev.color) || '#888';
                         const max = Number(g.max_marks) || (ev && Number(ev.max_score)) || 0;
                         const score = ev ? Number(ev.score) : NaN;
-                        // Derive achieved level from the quartile the score lands
-                        // on: ratio 1→Excellent … 0.25→Needs Improvement.
-                        let levelIdx = -1;
-                        if (max > 0 && isFinite(score)) {
+                        // The model reports the achieved level explicitly
+                        // (judged against the rubric's level descriptors).
+                        // The score-quartile derivation is only a fallback
+                        // for evaluations saved before `level` existed — it
+                        // can't express all 4 levels when max_marks is small
+                        // (max 2 only ever lands on Excellent or Fair).
+                        let levelIdx = ev
+                            ? LEVELS.findIndex(([key]) => key === String(ev.level || '').toLowerCase())
+                            : -1;
+                        if (levelIdx < 0 && max > 0 && isFinite(score)) {
                             levelIdx = Math.round((1 - score / max) / 0.25);
                             levelIdx = Math.min(3, Math.max(0, levelIdx));
                         }
