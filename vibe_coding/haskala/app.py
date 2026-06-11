@@ -1462,6 +1462,11 @@ RUBRICS_DIR = os.path.join(os.path.dirname(__file__), "rubrics")
 # loads — this only affects "first visit on this browser" / cleared state.
 DEFAULT_RUBRIC_ID = "ministry-writing-module-c-d"
 
+# Feature flag: the legacy compact per-criterion score/feedback table.
+# Hidden for now in favor of the rubric grid, but kept in the code (web report
+# AND Word export) so it can be restored by flipping this to True.
+SHOW_LEGACY_EVAL_TABLE = False
+
 
 def _slugify(name: str) -> str:
     """Filename-safe slug. Keeps Hebrew/Arabic letters; replaces whitespace
@@ -1502,9 +1507,34 @@ def load_rubric(rubric_id: str) -> dict | None:
         return None
 
 
+def count_words(pages: list[dict]) -> int:
+    """Total number of words the student wrote across all pages/lines
+    (whitespace-tokenized; the [p-l] line tags are not part of line text)."""
+    n = 0
+    for page in pages:
+        for line in page.get("lines", []):
+            n += len(str(line.get("text", "")).split())
+    return n
+
+
+def helpful_words_usage(pages: list[dict], helpful_words: list[str]) -> dict | None:
+    """Which of the rubric's suggested 'helpful words' actually appear in the
+    student's transcript. Case-insensitive substring match (so inflections
+    like visit→visited and multi-word phrases like "Old City" still count).
+    Returns {used, unused, count, total} or None when the rubric has none."""
+    if not helpful_words:
+        return None
+    text = pages_to_plain_text(pages).lower()
+    used, unused = [], []
+    for w in helpful_words:
+        (used if str(w).lower() in text else unused).append(w)
+    return {"used": used, "unused": unused, "count": len(used), "total": len(helpful_words)}
+
+
 # --- Evaluation -------------------------------------------------------------
 
-def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
+def build_eval_prompt(feedback_lang: str, exercise_lang: str,
+                      question: str | None = None) -> str:
     """Evaluation system prompt parameterized by the two language choices.
 
     `feedback_lang` is the primary language for `feedback` / `overall_feedback`
@@ -1512,7 +1542,12 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
     worked in — we ask for a parallel `feedback_secondary` / `overall_feedback_secondary`
     in that language so the student can read the feedback in their own working
     language. When the two coincide, the secondary fields are returned as
-    empty strings (we drop them in rendering)."""
+    empty strings (we drop them in rendering).
+
+    `question` is an optional task prompt the student was asked to answer.
+    When provided, the model also reports whether the student answered it
+    (`question_answered` = "yes"/"no"); when absent, that field is "" and the
+    UI hides the line."""
     f = LANGS.get(feedback_lang, LANGS[DEFAULT_FEEDBACK_LANG])
     e = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
     primary = f["name_native"]
@@ -1532,6 +1567,21 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
             f"תרגום נאמן של פסקת הסיכום שב-overall_feedback, באותו אורך "
             f"ובאותו תוכן."
         )
+    if question and question.strip():
+        question_block = (
+            f'\n- הרובריקה כוללת שאלה ספציפית שהתלמיד היה אמור לענות עליה:\n'
+            f'  "{question.strip()}"\n'
+            f'  קבע האם התלמיד אכן ענה על השאלה הזו (התייחס לנושא שנדרש), והחזר '
+            f'שדה עליון "question_answered" = "yes" אם ענה, או "no" אם לא ענה / '
+            f'כתב על נושא אחר.'
+        )
+        question_answered_field = '  "question_answered": "yes | no"\n'
+    else:
+        question_block = (
+            '\n- אין שאלה ספציפית ברובריקה — החזר "question_answered": "" '
+            "(מחרוזת ריקה)."
+        )
+        question_answered_field = '  "question_answered": ""\n'
     return f"""אתה בודק שיעורי בית בהתאם לרובריקה שתינתן לך.
 
 תקבל:
@@ -1557,7 +1607,7 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
   אם אותו משפט בעייתי בכמה קריטריונים — שייך אותו לקריטריון
   החמור/המהותי ביותר בלבד (לא לכמה במקביל).
 - ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
-- פסקת סיכום ב{primary} (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.
+- פסקת סיכום ב{primary} (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.{question_block}
 
 החזר JSON תקין במבנה:
 {{
@@ -1575,8 +1625,8 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str) -> str:
   ],
   "overall_score": "<string — לדוגמה: B1, או 3.0/4, או 75%>",
   "overall_feedback": "...",
-  "overall_feedback_secondary": "..."
-}}"""
+  "overall_feedback_secondary": "...",
+{question_answered_field}}}"""
 
 EVAL_SCHEMA = {
     "type": "object",
@@ -1612,8 +1662,10 @@ EVAL_SCHEMA = {
         "overall_score": {"type": "string"},
         "overall_feedback": {"type": "string"},
         "overall_feedback_secondary": {"type": "string"},
+        # "yes"/"no" when the rubric carries a question; "" otherwise.
+        "question_answered": {"type": "string"},
     },
-    "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
+    "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary", "question_answered"],
     "additionalProperties": False,
 }
 
@@ -1637,7 +1689,8 @@ _GROQ_EVAL_SHAPE_HINT = (
     '  ],\n'
     '  "overall_score": "...",\n'
     '  "overall_feedback": "...",\n'
-    '  "overall_feedback_secondary": "..."\n'
+    '  "overall_feedback_secondary": "...",\n'
+    '  "question_answered": "yes | no | (empty string if the rubric has no question)"\n'
     '}'
 )
 
@@ -1672,7 +1725,7 @@ def evaluate_with_rubric(
         f"--- טקסט התרגיל לבדיקה ---\n\n{transcript}\n\n"
         "החזר JSON לפי הסכימה."
     )
-    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang)
+    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang, rubric.get("question"))
     if _is_gemini(provider):
         from google.genai import types
 
@@ -1708,8 +1761,9 @@ def evaluate_with_rubric(
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
                 "overall_feedback_secondary": {"type": "string"},
+                "question_answered": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary", "question_answered"],
         }
         response = _gemini().models.generate_content(
             model=_gemini_model_id(provider),
@@ -1856,7 +1910,7 @@ def evaluate_with_rubric_stream(
     total = count_rubric_criteria(rubric.get("content", ""))
     buffer = ""
     seen = 0
-    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang)
+    eval_prompt = build_eval_prompt(feedback_lang, exercise_lang, rubric.get("question"))
 
     def drain_progress():
         nonlocal seen
@@ -1907,8 +1961,9 @@ def evaluate_with_rubric_stream(
                 "overall_score": {"type": "string"},
                 "overall_feedback": {"type": "string"},
                 "overall_feedback_secondary": {"type": "string"},
+                "question_answered": {"type": "string"},
             },
-            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary"],
+            "required": ["criteria", "overall_score", "overall_feedback", "overall_feedback_secondary", "question_answered"],
         }
         stream = _gemini().models.generate_content_stream(
             model=_gemini_model_id(provider),
@@ -2376,8 +2431,6 @@ def build_evaluation_docx(
     meta.add_run(f"רובריקה: {rubric_name}\n").bold = True
     meta.add_run(f"ציון כללי: {evaluation.get('overall_score', '')}").bold = True
 
-    doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
     criteria = attach_colors(evaluation).get("criteria") or []
 
     # Secondary feedback column is dropped entirely when the two language
@@ -2392,34 +2445,20 @@ def build_evaluation_docx(
     def _secondary_text(c: dict) -> str:
         return str(c.get("feedback_secondary") or c.get("feedback_en") or "")
 
-    cols = 4 if show_secondary else 3
-    table = doc.add_table(rows=1, cols=cols)
-    table.style = "Light Grid Accent 1"
-    header = table.rows[0].cells
-    header[0].text = "קריטריון"
-    header[1].text = "ציון"
-    header[2].text = "פידבק"
-    if show_secondary:
-        header[3].text = secondary_header
-    for idx, cell in enumerate(header):
-        align = (
-            WD_ALIGN_PARAGRAPH.LEFT
-            if idx == 3 and secondary_align_ltr
-            else WD_ALIGN_PARAGRAPH.RIGHT
-        )
-        for p in cell.paragraphs:
-            p.alignment = align
-            for r in p.runs:
-                r.bold = True
-
-    for c in criteria:
-        row = table.add_row().cells
-        row[0].text = str(c.get("name", ""))
-        row[1].text = f"{c.get('score', '')}/{c.get('max_score', '')}"
-        row[2].text = str(c.get("feedback", ""))
+    # Legacy per-criterion score/feedback table — hidden for now behind
+    # SHOW_LEGACY_EVAL_TABLE so it can be restored without rewriting it.
+    if SHOW_LEGACY_EVAL_TABLE:
+        doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        cols = 4 if show_secondary else 3
+        table = doc.add_table(rows=1, cols=cols)
+        table.style = "Light Grid Accent 1"
+        header = table.rows[0].cells
+        header[0].text = "קריטריון"
+        header[1].text = "ציון"
+        header[2].text = "פידבק"
         if show_secondary:
-            row[3].text = _secondary_text(c)
-        for idx, cell in enumerate(row):
+            header[3].text = secondary_header
+        for idx, cell in enumerate(header):
             align = (
                 WD_ALIGN_PARAGRAPH.LEFT
                 if idx == 3 and secondary_align_ltr
@@ -2427,11 +2466,50 @@ def build_evaluation_docx(
             )
             for p in cell.paragraphs:
                 p.alignment = align
-        color = c.get("color") or color_for_criterion(c.get("name", ""))
-        _set_cell_shading(row[0], _tint_hex(color))
-        for p in row[0].paragraphs:
-            for r in p.runs:
-                r.bold = True
+                for r in p.runs:
+                    r.bold = True
+
+        for c in criteria:
+            row = table.add_row().cells
+            row[0].text = str(c.get("name", ""))
+            row[1].text = f"{c.get('score', '')}/{c.get('max_score', '')}"
+            row[2].text = str(c.get("feedback", ""))
+            if show_secondary:
+                row[3].text = _secondary_text(c)
+            for idx, cell in enumerate(row):
+                align = (
+                    WD_ALIGN_PARAGRAPH.LEFT
+                    if idx == 3 and secondary_align_ltr
+                    else WD_ALIGN_PARAGRAPH.RIGHT
+                )
+                for p in cell.paragraphs:
+                    p.alignment = align
+            color = c.get("color") or color_for_criterion(c.get("name", ""))
+            _set_cell_shading(row[0], _tint_hex(color))
+            for p in row[0].paragraphs:
+                for r in p.runs:
+                    r.bold = True
+
+    # Total word count (part of the structured report).
+    wc = evaluation.get("word_count")
+    if wc is not None:
+        wc_p = doc.add_paragraph()
+        wc_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        wc_p.add_run(f"סך מילים בתרגיל: {wc}").bold = True
+
+    # Helpful-words usage — only when the rubric carried helpful words.
+    hw = evaluation.get("helpful_words_usage")
+    if hw and hw.get("total"):
+        doc.add_heading("מילות עזר בשימוש", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        hw_p = doc.add_paragraph()
+        hw_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        hw_p.add_run(f"{hw.get('count', 0)}/{hw.get('total', 0)} מילות עזר נוצלו בתרגיל.").bold = True
+        if hw.get("used"):
+            used_p = doc.add_paragraph(f"נוצלו: {', '.join(hw['used'])}")
+            used_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        if hw.get("unused"):
+            unused_p = doc.add_paragraph(f"לא נוצלו: {', '.join(hw['unused'])}")
+            unused_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     doc.add_heading("סיכום", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
     summary = doc.add_paragraph(evaluation.get("overall_feedback", ""))
@@ -2886,6 +2964,13 @@ def evaluate_endpoint():
 
     result["rubric_id"] = rubric_id
     result["rubric_name"] = rubric.get("name", rubric_id)
+    result["criteria_grid"] = rubric.get("criteria_grid")
+    result["question"] = rubric.get("question")
+    result["helpful_words_usage"] = helpful_words_usage(pages, rubric.get("helpful_words"))
+    # Word count is part of the structured report (only shown for rubrics that
+    # opt into it via a grid/question/helpful-words).
+    _structured = rubric.get("criteria_grid") or rubric.get("question") or rubric.get("helpful_words")
+    result["word_count"] = count_words(pages) if _structured else None
     highlights = _highlights_for_template(pages, result)
     return jsonify(evaluation=result, highlights=highlights)
 
@@ -2914,6 +2999,11 @@ def run_evaluate_job(
                 evaluation = ev["evaluation"]
                 evaluation["rubric_id"] = rubric_id
                 evaluation["rubric_name"] = rubric.get("name", rubric_id)
+                evaluation["criteria_grid"] = rubric.get("criteria_grid")
+                evaluation["question"] = rubric.get("question")
+                evaluation["helpful_words_usage"] = helpful_words_usage(pages, rubric.get("helpful_words"))
+                _structured = rubric.get("criteria_grid") or rubric.get("question") or rubric.get("helpful_words")
+                evaluation["word_count"] = count_words(pages) if _structured else None
                 highlights = _highlights_for_template(pages, evaluation)
                 q.put({
                     "type": "done",
