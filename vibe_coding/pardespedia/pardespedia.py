@@ -32,7 +32,8 @@ def cmd_edit(client, args):
     with open(args.file) as f:
         content = f.read()
     summary = args.summary or ""
-    client.edit_page(args.title, content, summary=summary)
+    create_only = args.command == "create"
+    client.edit_page(args.title, content, summary=summary, create_only=create_only)
 
 
 def cmd_search(client, args):
