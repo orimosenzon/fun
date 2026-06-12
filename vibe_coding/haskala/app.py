@@ -16,6 +16,8 @@ import uuid
 import anthropic
 import fitz
 import numpy as np
+
+import segmentation
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -91,7 +93,7 @@ client = anthropic.Anthropic()
 # 200 DPI gives a good balance — A4 → ~1700×2340 px, well under Opus 4.8's 2576px limit.
 RENDER_DPI = 200
 
-def build_ocr_prompt(exercise_lang: str) -> str:
+def build_ocr_prompt(exercise_lang: str, numbered: bool = True) -> str:
     """OCR system prompt parameterized by the exercise's primary language.
 
     The page may still contain other scripts (e.g. printed Hebrew instructions
@@ -102,7 +104,15 @@ def build_ocr_prompt(exercise_lang: str) -> str:
     Rule 9 (RTL ordering) is the load-bearing one for Arabic/Hebrew: without
     it the model has been observed to emit words in *visual* left-to-right
     order, so what comes out reads back-to-front when the renderer applies
-    the standard BiDi algorithm. Spelling it out fixes the reversal."""
+    the standard BiDi algorithm. Spelling it out fixes the reversal.
+
+    numbered=True means the image carries the numbered-box overlay drawn by
+    segmentation.draw_overlay, and the model must bind every transcribed
+    line to a box number. That binding — done by the one party that sees
+    both the boxes and the text — is what killed the recurring off-by-one
+    between transcriptions and line crops; over-detected boxes are simply
+    never referenced. numbered=False is the clean-page variant used when no
+    crops are needed (English flow)."""
     lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
     primary = lang["name_native"]
     illegible = lang["illegible"]
@@ -111,9 +121,29 @@ def build_ocr_prompt(exercise_lang: str) -> str:
         f"השפה העיקרית ({primary}) נכתבת מימין לשמאל. שים לב מיוחד לכלל 9.\n\n"
         if is_rtl_exercise else ""
     )
+    overlay_intro = (
+        """על התמונה צוירו מלבנים כחולים ממוספרים (המספרים בירוק, משמאל
+לכל מלבן). המלבנים והמספרים הם סימון סינתטי שהוסיפה תוכנה — הם אינם
+חלק מהדף, אל תתמלל אותם.
+
+"""
+        if numbered else ""
+    )
+    overlay_rules = (
+        """
+כללי מיפוי למלבנים הממוספרים:
+ • לכל שורה שתמללת ציין את n — מספר המלבן שמכיל אותה.
+ • מלבן בלי כתב יד (ריק, קו דפוס, כתם, חפץ ברקע) — דלג עליו. אל
+   תמציא טקסט כדי "למלא" מלבן.
+ • שתי שורות כתובות באותו מלבן — החזר שני פריטים עם אותו n.
+ • שורה כתובה שאינה מכוסה על ידי אף מלבן — החזר אותה עם n=null.
+"""
+        if numbered else ""
+    )
+    n_field = '"n": 7, ' if numbered else ""
     return f"""אתה מבצע OCR מדויק על צילום של תרגיל כתוב ביד.
 
-השפה העיקרית של התרגיל היא {primary}. ייתכן שהדף יכיל גם שורות
+{overlay_intro}השפה העיקרית של התרגיל היא {primary}. ייתכן שהדף יכיל גם שורות
 בשפות אחרות (למשל הוראות מודפסות בעברית, אנגלית או ערבית מעל תשובות
 בכתב יד). זהה את הכתב של כל שורה בנפרד ותמלל אותו כפי שהוא — אל
 תתרגם ואל תמיר בין סקריפטים.
@@ -136,36 +166,21 @@ def build_ocr_prompt(exercise_lang: str) -> str:
    דוגמה (ערבית): שורה שכתוב בה visually "تفاحة على الطاولة" (= תפוח
    על השולחן) → במחרוזת ה-text שלך כתוב בדיוק "تفاحة على الطاولة",
    ולא "الطاولة على تفاحة".
-
-בנוסף לתמליל — סמן את גבולות *אזור הכתיבה* בציר האנכי. החזר שני
-ערכים יחסיים בין 0.0 ל-1.0:
- • top — חלק הגובה שמעליו אין כתיבה (רק שוליים, קצה דף מקופל, כתם,
-   קצה מחברת, או רעש אחר).
- • bottom — חלק הגובה שמתחתיו אין כתיבה.
-דוגמה: כתב יד שמתחיל ב-15% מראש התמונה ונגמר ב-85% → top=0.15,
-bottom=0.85. אם לא בטוח — החזר top=0.0, bottom=1.0.
-
+{overlay_rules}
 החזר את התוצאה כ-JSON תקין במבנה:
-{{"writing_region": {{"top": 0.15, "bottom": 0.85}},
-  "lines": [{{"text": "..."}}, ...]}}."""
+{{"lines": [{{{n_field}"text": "..."}}, ...]}}."""
 
+# n is the overlay box number a transcribed line belongs to (null = the
+# line isn't covered by any box). In the un-numbered flow models may omit it.
 OCR_SCHEMA = {
     "type": "object",
     "properties": {
-        "writing_region": {
-            "type": "object",
-            "properties": {
-                "top": {"type": "number"},
-                "bottom": {"type": "number"},
-            },
-            "required": ["top", "bottom"],
-            "additionalProperties": False,
-        },
         "lines": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
+                    "n": {"type": ["integer", "null"]},
                     "text": {"type": "string"},
                 },
                 "required": ["text"],
@@ -173,7 +188,7 @@ OCR_SCHEMA = {
             },
         },
     },
-    "required": ["writing_region", "lines"],
+    "required": ["lines"],
     "additionalProperties": False,
 }
 
@@ -458,7 +473,7 @@ def _azure():
     return _azure_client
 
 
-def _ocr_anthropic(img: Image.Image, exercise_lang: str) -> dict:
+def _ocr_anthropic(img: Image.Image, exercise_lang: str, numbered: bool) -> dict:
     img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
     response = client.messages.create(
         model=_ANTHROPIC_MODEL,
@@ -466,7 +481,7 @@ def _ocr_anthropic(img: Image.Image, exercise_lang: str) -> dict:
         system=[
             {
                 "type": "text",
-                "text": build_ocr_prompt(exercise_lang),
+                "text": build_ocr_prompt(exercise_lang, numbered),
                 "cache_control": {"type": "ephemeral"},
             }
         ],
@@ -494,7 +509,7 @@ def _ocr_anthropic(img: Image.Image, exercise_lang: str) -> dict:
     return json.loads(text)
 
 
-def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str) -> dict:
+def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str, numbered: bool) -> dict:
     from google.genai import types
 
     # Gemini's response_schema is an OpenAPI subset — it rejects the
@@ -502,24 +517,19 @@ def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str) -> dict:
     gemini_schema = {
         "type": "object",
         "properties": {
-            "writing_region": {
-                "type": "object",
-                "properties": {
-                    "top": {"type": "number"},
-                    "bottom": {"type": "number"},
-                },
-                "required": ["top", "bottom"],
-            },
             "lines": {
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "properties": {"text": {"type": "string"}},
+                    "properties": {
+                        "n": {"type": "integer", "nullable": True},
+                        "text": {"type": "string"},
+                    },
                     "required": ["text"],
                 },
             },
         },
-        "required": ["writing_region", "lines"],
+        "required": ["lines"],
     }
     response = _gemini().models.generate_content(
         model=_gemini_model_id(provider),
@@ -530,7 +540,7 @@ def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str) -> dict:
             _USER_TURN,
         ],
         config=types.GenerateContentConfig(
-            system_instruction=build_ocr_prompt(exercise_lang),
+            system_instruction=build_ocr_prompt(exercise_lang, numbered),
             response_mime_type="application/json",
             response_schema=gemini_schema,
             # See evaluate path for why thinking is disabled here too.
@@ -541,7 +551,7 @@ def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str) -> dict:
     return json.loads(response.text)
 
 
-def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> dict:
+def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str, numbered: bool) -> dict:
     # Groq is OpenAI-compatible; vision takes a data: URL in image_url. The
     # SDK only supports response_format={"type":"json_object"} (no schema),
     # so we lean on the prompt to enforce shape and parse defensively.
@@ -549,7 +559,7 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> dict:
     response = _groq().chat.completions.create(
         model=_groq_model_id(provider),
         messages=[
-            {"role": "system", "content": build_ocr_prompt(exercise_lang)},
+            {"role": "system", "content": build_ocr_prompt(exercise_lang, numbered)},
             {
                 "role": "user",
                 "content": [
@@ -562,8 +572,7 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> dict:
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"writing_region":{"top":0.0,"bottom":1.0},'
-                            '"lines":[{"text":"..."},...]}'
+                            '{"lines":[{"n":1,"text":"..."},...]}'
                         ),
                     },
                 ],
@@ -576,14 +585,14 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str) -> dict:
     return json.loads(response.choices[0].message.content)
 
 
-def _ocr_azure(img: Image.Image, exercise_lang: str) -> dict:
+def _ocr_azure(img: Image.Image, exercise_lang: str, numbered: bool) -> dict:
     # Azure gpt-4.1-mini is OpenAI-compatible — same call shape as Groq, with
     # response_format=json_object and the JSON contract spelled out in the turn.
     img_b64 = base64.standard_b64encode(ocr_jpeg_bytes(img)).decode("utf-8")
     response = _azure().chat.completions.create(
         model=_azure_deployment(),
         messages=[
-            {"role": "system", "content": build_ocr_prompt(exercise_lang)},
+            {"role": "system", "content": build_ocr_prompt(exercise_lang, numbered)},
             {
                 "role": "user",
                 "content": [
@@ -596,8 +605,7 @@ def _ocr_azure(img: Image.Image, exercise_lang: str) -> dict:
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"writing_region":{"top":0.0,"bottom":1.0},'
-                            '"lines":[{"text":"..."},...]}'
+                            '{"lines":[{"n":1,"text":"..."},...]}'
                         ),
                     },
                 ],
@@ -614,64 +622,22 @@ def ocr_page(
     img: Image.Image,
     provider: str = DEFAULT_MODEL,
     exercise_lang: str = DEFAULT_EXERCISE_LANG,
+    numbered: bool = True,
 ) -> dict:
-    """Returns {"writing_region": {"top": float, "bottom": float}, "lines": [...]}.
+    """Returns {"lines": [{"n": int|None, "text": str}, ...]}.
 
-    writing_region values are normalised (0.0 = top of image, 1.0 = bottom).
-    The model emits them so we can crop to the actual writing area before the
-    1D profile heuristic runs — otherwise margin bands (page-edge fold, scan
-    shadow, spiral binding) confound peak detection.
+    With numbered=True, img must already carry the numbered-box overlay
+    (segmentation.draw_overlay) and each returned line's n names the box
+    containing it — that binding is what keeps transcriptions and crops
+    aligned. With numbered=False (clean page, no crops needed) n is absent.
     """
     if _is_gemini(provider):
-        return _ocr_gemini(img, provider, exercise_lang)
+        return _ocr_gemini(img, provider, exercise_lang, numbered)
     if _is_groq(provider):
-        return _ocr_groq(img, provider, exercise_lang)
+        return _ocr_groq(img, provider, exercise_lang, numbered)
     if _is_azure(provider):
-        return _ocr_azure(img, exercise_lang)
-    return _ocr_anthropic(img, exercise_lang)
-
-
-def crop_line(img: Image.Image, y_top: int, y_bottom: int, padding: int = 0) -> str:
-    h = img.height
-    top = max(0, y_top - padding)
-    bottom = min(h, y_bottom + padding)
-    strip = img.crop((0, top, img.width, bottom))
-    return image_to_b64(strip, "PNG")
-
-
-def _smoothed_profile(
-    img: Image.Image,
-    ink_threshold: int = 180,
-    smooth_window: int = 25,
-    solid_row_ratio: float = 0.40,
-    edge_margin_ratio: float = 0.04,
-) -> np.ndarray:
-    """Horizontal-projection ink profile, smoothed, with noise removed.
-
-    solid_row_ratio: any row whose ink covers more than this fraction of the
-        page width is zeroed out. Handwriting strokes are thin and gappy and
-        never cover that much of a row — but a scan bar or heavy underline
-        might.
-    edge_margin_ratio: the top/bottom slice of the page is zeroed. A photo of
-        a bound notebook almost always catches the spiral/clip and the desk
-        shadow at the extreme top edge; its coverage is the *same* as a dense
-        text row, so it can't be told apart by density — but real writing
-        always has a page margin, so anything in the first/last few percent
-        is noise. This was the root cause of the persistent off-by-one: the
-        binding became a phantom first line and shifted every strip down one.
-    """
-    gray = np.asarray(img.convert("L"), dtype=np.uint8)
-    h, w = gray.shape
-    profile = (gray < ink_threshold).astype(np.float32).sum(axis=1)
-    profile[profile > w * solid_row_ratio] = 0.0
-    margin = int(h * edge_margin_ratio)
-    if margin > 0:
-        profile[:margin] = 0.0
-        profile[h - margin:] = 0.0
-    if smooth_window > 1:
-        kernel = np.ones(smooth_window, dtype=np.float32) / smooth_window
-        profile = np.convolve(profile, kernel, mode="same")
-    return profile
+        return _ocr_azure(img, exercise_lang, numbered)
+    return _ocr_anthropic(img, exercise_lang, numbered)
 
 
 def _axis_profile(img: Image.Image, axis: int) -> np.ndarray:
@@ -697,8 +663,8 @@ def auto_rotate(img: Image.Image) -> tuple[Image.Image, int]:
     """Pick the 0/90/180/270° rotation that makes the text horizontal & top-heavy.
 
     EXIF-based fixup (exif_transpose) misses phones that don't write the
-    Orientation tag and notebook spreads shot in landscape; deskew_page only
-    handles a few degrees. This is the content-based fallback that catches
+    Orientation tag and notebook spreads shot in landscape; fine deskew only
+    handles a limited range. This is the content-based fallback that catches
     those cases before the rest of the pipeline runs.
 
     Signal: compare std of the horizontal projection (sum per row) to std of
@@ -755,255 +721,6 @@ def auto_rotate(img: Image.Image) -> tuple[Image.Image, int]:
         h_std, v_std, angle,
     )
     return rotated, angle
-
-
-def deskew_page(img: Image.Image, max_angle: float = 10.0) -> tuple[Image.Image, float]:
-    """Rotate the page so its text lines are horizontal.
-
-    A phone photo of a notebook is almost always shot at a slight angle, so
-    the ruled lines curve across the frame. A horizontal projection of a
-    skewed page smears neighbouring lines into each other (shallow valleys —
-    the root cause of merged/duplicated strips). We find the rotation that
-    maximises profile contrast (std): when lines are level the projection has
-    tall peaks and deep valleys, so its standard deviation peaks too.
-    """
-    def sharpness(angle: float) -> float:
-        rot = img.rotate(
-            angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255)
-        )
-        return float(_smoothed_profile(rot).std())
-
-    best_angle, best = 0.0, -1.0
-    for a in np.arange(-max_angle, max_angle + 0.01, 0.5):
-        s = sharpness(float(a))
-        if s > best:
-            best_angle, best = float(a), s
-    for a in np.arange(best_angle - 0.5, best_angle + 0.51, 0.1):
-        s = sharpness(float(a))
-        if s > best:
-            best_angle, best = float(a), s
-    angle = round(best_angle, 1)
-    # If the optimum lands on the search boundary, the true skew is likely
-    # outside the cap — log it so we can widen `max_angle` if the pattern
-    # repeats. Within 0.5° of the cap counts as "at the boundary" because
-    # the fine search can pull half a step beyond the coarse range.
-    if max_angle - abs(angle) < 0.5:
-        log.warning(
-            "deskew: optimum %.1f° at search boundary (max_angle=%.1f) — "
-            "true skew may be larger; consider widening the cap",
-            angle, max_angle,
-        )
-    if abs(angle) < 0.1:
-        return img, 0.0
-    return img.rotate(angle, resample=Image.BILINEAR, fillcolor=(255, 255, 255)), angle
-
-
-def _writing_region(profile: np.ndarray) -> tuple[int, int]:
-    """First/last row of sustained ink, skipping a thin opening/closing band.
-
-    A page-edge fold, shadow, or scan border shows up as a short dark run
-    separated by a blank gap from the real text. If we keep it, peak detection
-    picks it as the first/last "line" and shifts every strip by one. We list
-    all sustained-presence runs and drop a small leading/trailing one when
-    it's clearly isolated from the main mass.
-    """
-    h = len(profile)
-    if profile.max() <= 0:
-        return 0, h
-    present = profile > profile.max() * 0.10
-    min_run = 30
-
-    runs: list[tuple[int, int]] = []
-    in_run = False
-    start = 0
-    for y in range(h):
-        if present[y]:
-            if not in_run:
-                start = y
-                in_run = True
-        elif in_run:
-            if y - start >= min_run:
-                runs.append((start, y))
-            in_run = False
-    if in_run and h - start >= min_run:
-        runs.append((start, h))
-
-    if not runs:
-        return 0, h
-
-    # Drop the first/last run if separated by a real gap from a larger
-    # neighbour — that's a margin band, not a writing line.
-    if len(runs) >= 2:
-        gap = runs[1][0] - runs[0][1]
-        if gap >= min_run and (runs[0][1] - runs[0][0]) < (runs[1][1] - runs[1][0]) * 0.5:
-            runs = runs[1:]
-    if len(runs) >= 2:
-        gap = runs[-1][0] - runs[-2][1]
-        if gap >= min_run and (runs[-1][1] - runs[-1][0]) < (runs[-2][1] - runs[-2][0]) * 0.5:
-            runs = runs[:-1]
-
-    start, end = runs[0][0], runs[-1][1]
-
-    # When the run merged a margin band into the writing (smoothing blurred
-    # the would-be gap below the present-threshold), the profile shows an
-    # anomalously tall peak in the first/last fifth of the run. Detect it by
-    # comparing to the median peak in the body, and advance past it.
-    span = end - start
-    head_end = start + max(50, span // 5)
-    tail_start = end - max(50, span // 5)
-    if head_end < tail_start:
-        body = profile[head_end:tail_start]
-        body_peaks = [
-            float(body[i]) for i in range(1, len(body) - 1)
-            if body[i] > body[i - 1] and body[i] > body[i + 1]
-        ]
-        if body_peaks:
-            med_peak = sorted(body_peaks)[len(body_peaks) // 2]
-            head_max = float(profile[start:head_end].max())
-            tail_max = float(profile[tail_start:end].max())
-            log.info("_writing_region: med_peak=%.0f head_max=%.0f (ratio=%.2f) tail_max=%.0f (ratio=%.2f)",
-                     med_peak, head_max, head_max/med_peak if med_peak else 0,
-                     tail_max, tail_max/med_peak if med_peak else 0)
-            # Search ~one line-pitch around the spike for the band/writing
-            # boundary. Going wider tends to land in an inter-line valley
-            # deep inside the writing, which loses real lines at the edge.
-            search = 100
-            if head_max > 1.25 * med_peak:
-                spike = start + int(np.argmax(profile[start:head_end]))
-                valley_end = min(spike + search, end)
-                start = spike + int(np.argmin(profile[spike:valley_end]))
-            if tail_max > 1.25 * med_peak:
-                spike = tail_start + int(np.argmax(profile[tail_start:end]))
-                valley_start = max(spike - search, start)
-                end = valley_start + int(np.argmin(profile[valley_start:spike]))
-
-    log.info("_writing_region: h=%d runs=%s → top=%d bottom=%d",
-             h, runs[:3] + (["..."] if len(runs) > 3 else []), start, end)
-
-    return start, min(h, end)
-
-
-def _prominence(region: np.ndarray, i: int) -> float:
-    """Topographic prominence of peak `i` — how far it rises above the
-    deeper of the two valleys separating it from any taller neighbour."""
-    left = i
-    left_min = region[i]
-    while left > 0 and region[left] <= region[i]:
-        left_min = min(left_min, region[left])
-        left -= 1
-    right = i
-    right_min = region[i]
-    while right < len(region) - 1 and region[right] <= region[i]:
-        right_min = min(right_min, region[right])
-        right += 1
-    return float(region[i] - max(left_min, right_min))
-
-
-def segment_into_lines(
-    img: Image.Image,
-    num_lines: int,
-    writing_region: tuple[int, int] | None = None,
-) -> list[tuple[int, int]]:
-    """Cut the writing region into exactly `num_lines` strips.
-
-    We know the line count from the OCR, so rather than guess it from a
-    threshold (which merges close lines and splits sparse ones), we place one
-    peak per written line in the ink profile and cut at the lowest point
-    between consecutive peaks.
-
-    The first and last lines are *anchored* to the strongest bump in the
-    first/last pitch-window; the middle `num_lines - 2` are the most
-    prominent peaks in between, spaced at least half a pitch apart. Anchoring
-    is what keeps a faint short opening line (a name/signature) or a faint
-    closing line from being out-competed by the dense body lines — without
-    it, a dense line grabs two peaks and a faint edge line gets none, which
-    shifts a whole block of strips by one.
-    """
-    if num_lines <= 0:
-        return []
-    profile = _smoothed_profile(img)
-    if writing_region is not None:
-        top, bottom = writing_region
-        top = max(0, min(top, len(profile)))
-        bottom = max(top, min(bottom, len(profile)))
-        log.info("segment: using OCR writing_region top=%d bottom=%d", top, bottom)
-    else:
-        top, bottom = _writing_region(profile)
-    if num_lines == 1 or bottom - top < num_lines:
-        return [(top, bottom)]
-
-    region = profile[top:bottom]
-    floor = profile.max() * 0.05
-
-    # Dominant line pitch (notebook ruling) → minimum spacing between peaks.
-    # 0.5 (not higher): some lines are written consecutively with a tight gap,
-    # so a larger guard would merge two real lines and lose one peak.
-    centred = region - region.mean()
-    autocorr = np.correlate(centred, centred, "full")[len(centred) - 1:]
-    pitch = 80 + int(np.argmax(autocorr[80:220])) if len(autocorr) > 220 else 100
-    pitch = min(pitch, len(region))
-    min_dist = max(15, int(pitch * 0.5))
-
-    candidates = [
-        i
-        for i in range(1, len(region) - 1)
-        if region[i] >= region[i - 1] and region[i] > region[i + 1] and region[i] > floor
-    ]
-
-    if num_lines >= 2 and len(candidates) >= num_lines:
-        first = int(np.argmax(region[:pitch]))
-        last = len(region) - pitch + int(np.argmax(region[-pitch:]))
-        middle = sorted(
-            (c for c in candidates if first + min_dist <= c <= last - min_dist),
-            key=lambda i: -_prominence(region, i),
-        )
-        peaks = [first, last]
-        for c in middle:
-            if all(abs(c - p) >= min_dist for p in peaks):
-                peaks.append(c)
-            if len(peaks) == num_lines:
-                break
-        peaks.sort()
-
-    if num_lines < 2 or len(candidates) < num_lines or len(peaks) < num_lines:
-        # Not enough structure — fall back to even spacing in the region.
-        log.info("segment: FALLBACK even-spacing region=(%d,%d) lines=%d candidates=%d peaks=%d",
-                 top, bottom, num_lines, len(candidates),
-                 len(peaks) if 'peaks' in locals() else 0)
-        step = (bottom - top) / num_lines
-        return [
-            (int(round(top + k * step)), int(round(top + (k + 1) * step)))
-            for k in range(num_lines)
-        ]
-
-    # Anchor edge bounds near the first/last peak so an over-extended writing
-    # region (noise above/below the actual head/foot) doesn't make the first
-    # or last strip swallow blank rows. The lead/trail mirrors the local gap
-    # to the next/previous peak — robust when the first or last line is faint.
-    lead = (peaks[1] - peaks[0]) // 2
-    trail = (peaks[-1] - peaks[-2]) // 2
-    bounds = [max(0, peaks[0] - lead)]
-    for a, b in zip(peaks, peaks[1:]):
-        bounds.append(a + int(np.argmin(region[a:b])))
-    bounds.append(min(len(region) - 1, peaks[-1] + trail))
-    segments = [(top + bounds[i], top + bounds[i + 1]) for i in range(num_lines)]
-    heights = [b - a for a, b in segments]
-    ink = [int(profile[a:b].sum()) for a, b in segments]
-    med_height = sorted(heights)[len(heights) // 2]
-    med_ink = sorted(ink)[len(ink) // 2]
-    near_empty = [i + 1 for i, v in enumerate(ink) if v < 0.35 * med_ink]
-    # edge_seg first/last vs median — if either is much taller than median, the
-    # writing region was over-extended past the first/last peak, so that line's
-    # strip swallows blank page above/below it and the writing looks squeezed.
-    log.info(
-        "segment: region=(%d,%d) lines=%d pitch=%d peaks=%d "
-        "heights min/med/max=%d/%d/%d edge_seg first/last=%d/%d near_empty_strips=%s",
-        top, bottom, num_lines, pitch, len(peaks),
-        min(heights), med_height, max(heights),
-        heights[0], heights[-1],
-        near_empty or "none",
-    )
-    return segments
 
 
 # Stage labels shown in the progress bar (one event per stage per page).
@@ -1079,42 +796,43 @@ def process_pdf_stream(
         else:
             img, rot_angle = auto_rotate(img)
             original_b64 = original_preview_b64(img)
-            img, angle = deskew_page(img)
+            img, angle = segmentation.slope_deskew(img)
         yield progress("deskew", p)
-        ocr_result = ocr_page(img, provider, exercise_lang)
-        texts = [line["text"] for line in ocr_result["lines"]]
-        wr_norm = ocr_result.get("writing_region")
-        writing_region_px: tuple[int, int] | None = None
-        if wr_norm and "top" in wr_norm and "bottom" in wr_norm:
-            wr_top = max(0.0, min(1.0, float(wr_norm["top"])))
-            wr_bot = max(0.0, min(1.0, float(wr_norm["bottom"])))
-            if wr_bot > wr_top:
-                writing_region_px = (
-                    int(wr_top * img.height),
-                    int(wr_bot * img.height),
-                )
-        log.info(
-            "[page %d] model=%s auto_rotate=%d° deskew=%s° %d lines transcribed "
-            "writing_region=%s",
-            p, provider, rot_angle, angle, len(texts), wr_norm,
-        )
-        yield progress("ocr", p)
+
         # English OCR is reliable enough that the teacher no longer needs the
         # per-line crops to verify against — Avishai asked to drop them for
         # English and show just the faithful line texts + the full original
-        # scan. Skipping segmentation/cropping also saves work. Line structure
-        # is preserved either way (one entry per transcribed line).
+        # scan. No crops ⇒ no boxes ⇒ the model gets a clean page.
         skip_line_crops = exercise_lang == "en"
-        if skip_line_crops:
-            yield progress("segment", p)
-            line_items = [{"text": text, "image_b64": ""} for text in texts]
-        else:
-            bands = segment_into_lines(img, len(texts), writing_region_px)
-            yield progress("segment", p)
-            line_items = [
-                {"text": text, "image_b64": crop_line(img, y_top, y_bottom)}
-                for text, (y_top, y_bottom) in zip(texts, bands)
-            ]
+        boxes: list[tuple[int, int, int, int]] = []
+        if not skip_line_crops:
+            boxes = segmentation.detect_lines(img)
+        yield progress("segment", p)
+
+        numbered = bool(boxes)
+        ocr_input = segmentation.draw_overlay(img, boxes) if numbered else img
+        ocr_result = ocr_page(ocr_input, provider, exercise_lang, numbered)
+        items = ocr_result["lines"]
+        log.info(
+            "[page %d] model=%s auto_rotate=%d° deskew=%s° boxes=%d "
+            "lines=%d mapped=%d",
+            p, provider, rot_angle, angle, len(boxes), len(items),
+            sum(1 for it in items if isinstance(it.get("n"), int)),
+        )
+        yield progress("ocr", p)
+
+        # Each transcribed line names the overlay box that contains it, so
+        # its crop is exactly that box — over-detected boxes are simply
+        # never referenced, and n=null just means a text-only row.
+        line_items = []
+        for it in items:
+            n = it.get("n")
+            crop_b64 = ""
+            if numbered and isinstance(n, int) and 1 <= n <= len(boxes):
+                crop_b64 = image_to_b64(
+                    segmentation.crop_box(img, boxes[n - 1]), "PNG"
+                )
+            line_items.append({"text": it.get("text", ""), "image_b64": crop_b64})
         results.append(
             {"page": p, "lines": line_items, "original_b64": original_b64}
         )
@@ -2862,7 +2580,9 @@ def run_preview_job(
             rotated, _ = auto_rotate(work)
             q.put({"type": "progress", "label": "מתקן הטיה עדינה",
                    "page": page_num, "total_pages": total, "pct": mid})
-            _, suggested_fine = deskew_page(rotated)
+            # the manual path applies fine_angle via img.rotate(angle), and
+            # slope_deskew rotates by -estimate, so the suggestion is negated
+            suggested_fine = round(-segmentation.estimate_skew_angle(rotated), 1)
             log.info(
                 "preview page %d: %dx%d -> work %dx%d, prep %.2fs",
                 page_num, img.width, img.height, work.width, work.height,

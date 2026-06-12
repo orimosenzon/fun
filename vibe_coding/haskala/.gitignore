@@ -5,3 +5,5 @@ venv/
 .venv/
 uploads/
 haskala.log
+server.log
+segment_lab/out/
