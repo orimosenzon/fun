@@ -8,3 +8,4 @@ pymupdf>=1.27.0
 pillow>=10.0.0
 numpy>=1.26.0
 python-docx>=1.1.0
+scipy>=1.10.0
