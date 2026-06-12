@@ -1388,10 +1388,18 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="empty-lang-row">
+                <label for="feedback-lang-select">שפת הפידבק:</label>
+                <select id="feedback-lang-select" title="השפה של המשוב, ההסברים וההערות לתלמיד">
+                    {% for key, meta in langs.items() %}
+                    <option value="{{ key }}" {% if key == default_feedback_lang %}selected{% endif %}>{{ meta.name_he }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <button id="decode-btn" type="button" class="big-cta">פתח תרגיל לבדיקה</button>
             <p class="empty-hint">PDF או תמונה של תרגיל מצולם</p>
             <div class="empty-side">
-                <button id="load-btn" type="button" class="text-link">העלה JSON מפוענח</button>
+                <button id="load-btn" type="button" class="text-link">העלה תרגיל שמור (JSON / דף ווב)</button>
                 <span class="text-sep">·</span>
                 <button type="button" class="text-link settings-trigger">⚙ הגדרות</button>
             </div>
@@ -1411,7 +1419,7 @@
             <div class="menu-wrap">
                 <button id="more-menu-btn" type="button" class="icon-btn" title="עוד פעולות">⋯</button>
                 <div id="more-menu" class="menu-list">
-                    <button type="button" id="load-btn">העלה JSON מפוענח</button>
+                    <button type="button" id="load-btn">העלה תרגיל שמור (JSON / דף ווב)</button>
                     <div class="menu-sep"></div>
                     <button type="button" id="reset-btn" class="danger-text">אתחל</button>
                 </div>
@@ -1430,6 +1438,7 @@
                 <div id="save-menu" class="menu-list">
                     <button type="button" data-act="save-decode-docx">שמור פענוח (Word)</button>
                     <button type="button" data-act="save-eval-docx" disabled>שמור בדיקה (Word)</button>
+                    <button type="button" data-act="save-eval-html" disabled>שמור בדיקה (דף ווב)</button>
                     <div class="menu-sep menu-sep-label">דיבאג</div>
                     <button type="button" data-act="save-decoded">שמור פענוח (JSON)</button>
                     <button type="button" data-act="save-eval" disabled>שמור בדיקה (JSON)</button>
@@ -1476,7 +1485,9 @@
                         {% endfor %}
                     </select>
                 </div>
-                {% endif %}
+                <!-- Feedback lang only here in loaded state; in empty state it
+                     lives inline under the exercise-lang picker so it can't be
+                     missed. Exactly one #feedback-lang-select exists per state. -->
                 <div class="settings-row">
                     <label for="feedback-lang-select">שפת פידבק:</label>
                     <select id="feedback-lang-select" title="השפה של המשוב, ההסברים וההערות לתלמיד">
@@ -1485,6 +1496,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 <div class="modal-actions">
                     <button type="button" id="settings-close-btn" class="secondary">סגור</button>
                 </div>
@@ -1522,7 +1534,7 @@
         <!-- Plain-browser fallback (used only when not running under pywebview). -->
         <input type="file" id="fallback-pdf" accept="application/pdf,image/jpeg,image/png" style="display:none">
         <form id="fallback-load-form" action="/" method="POST" enctype="multipart/form-data" style="display:none">
-            <input type="file" id="fallback-json" name="saved" accept="application/json,.json">
+            <input type="file" id="fallback-json" name="saved" accept="application/json,.json,text/html,.html,.htm">
         </form>
 
         <script>
@@ -2652,6 +2664,134 @@
                     return name;
                 }
 
+                // Build a self-contained interactive HTML snapshot of the
+                // current evaluation — exactly what's on screen (the
+                // transcribed lines with the AI's issue highlights + the
+                // per-criterion report), minus the editing chrome. Hovering a
+                // highlighted character shows its criterion+comment, driven by
+                // a small standalone copy of the live tooltip script. Every
+                // image is already an inline data: URI, so the file is fully
+                // portable — no server, works offline, double-click to open.
+                function buildEvalHtml() {
+                    const styleCss = Array.from(document.querySelectorAll('style'))
+                        .map(s => s.textContent).join('\n');
+
+                    // Clone the report + the pages. The lines already carry
+                    // their .char spans with data-ht-* baked in by
+                    // applyHighlights, so the clone needs no re-rendering.
+                    const evalClone = document.getElementById('eval-section').cloneNode(true);
+                    evalClone.style.display = '';
+
+                    const pagesWrap = document.createElement('div');
+                    document.querySelectorAll('.page-section').forEach(ps => {
+                        pagesWrap.appendChild(ps.cloneNode(true));
+                    });
+
+                    // Teacher annotations are click-to-edit in the app (no
+                    // hover). The export has no popup, so surface each
+                    // annotation's comment as a native title tooltip instead —
+                    // the info is preserved, read-only.
+                    pagesWrap.querySelectorAll('.line-text').forEach(el => {
+                        const list = annotations[el.dataset.lineKey] || [];
+                        if (!list.length) return;
+                        el.querySelectorAll('.char.annotated').forEach(span => {
+                            const ids = (span.dataset.annotIds || '').split(',');
+                            const comments = list
+                                .filter(a => ids.includes(String(a.id)))
+                                .map(a => a.comment).filter(Boolean);
+                            if (comments.length) span.setAttribute('title', comments.join(' · '));
+                        });
+                    });
+
+                    const filename = serverData.filename || '';
+                    const rubricName = (currentEvaluation && currentEvaluation.rubric_name) || '';
+                    const stamp = new Date().toLocaleString('he-IL');
+                    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                    // Embed the full re-loadable payload (same shape as the
+                    // "save decoded JSON" export) so this single .html file is
+                    // both a viewer AND loadable back into the app. "</" is
+                    // escaped to "<\/" so the student's text can never close the
+                    // script tag early; the server reverses it on load.
+                    const payload = JSON.stringify({
+                        version: 1,
+                        filename: filename,
+                        created_at: new Date().toISOString(),
+                        pages: collectPages(),
+                        evaluation: currentEvaluation || null,
+                    }).replace(/<\//g, '<\\/');
+
+                    // Standalone tooltip — a self-contained copy of the live
+                    // highlight tooltip (hover on desktop, tap-to-pin on touch).
+                    // Depends only on #highlight-tooltip + .char.highlight data
+                    // attributes, so it runs with no app state. Closing tags are
+                    // written <\/script> so the parser of *this* page doesn't end
+                    // the outer script early.
+                    const tooltipScript =
+                        '(function(){' +
+                        'var tip=document.getElementById("highlight-tooltip");if(!tip)return;' +
+                        'var critEl=tip.querySelector(".ht-crit"),commentEl=tip.querySelector(".ht-comment");' +
+                        'var sticky=null;' +
+                        'function show(c){var crit=c.dataset.htCrit||"",comment=c.dataset.htComment||"",color=c.dataset.htColor||"#999";' +
+                        'critEl.textContent=crit;critEl.style.color=color;commentEl.textContent=comment;tip.style.borderInlineStartColor=color;' +
+                        'tip.style.left="0px";tip.style.top="0px";tip.classList.add("visible");' +
+                        'var r=c.getBoundingClientRect(),t=tip.getBoundingClientRect();' +
+                        'var left=r.left+window.scrollX,minL=window.scrollX+8,maxL=window.scrollX+window.innerWidth-t.width-8;' +
+                        'if(left>maxL)left=maxL;if(left<minL)left=minL;' +
+                        'var top=r.bottom+window.scrollY+6;' +
+                        'if(top+t.height>window.scrollY+window.innerHeight-8){var a=r.top+window.scrollY-t.height-6;if(a>window.scrollY+8)top=a;}' +
+                        'tip.style.left=left+"px";tip.style.top=top+"px";}' +
+                        'function hide(){tip.classList.remove("visible");sticky=null;}' +
+                        'function isHl(t){return t&&t.classList&&t.classList.contains("highlight")&&t.classList.contains("char");}' +
+                        'document.addEventListener("mouseover",function(e){if(sticky)return;if(isHl(e.target))show(e.target);});' +
+                        'document.addEventListener("mouseout",function(e){if(sticky)return;if(isHl(e.target)){var n=e.relatedTarget;if(!n||!n.classList||!n.classList.contains("highlight"))hide();}});' +
+                        'document.addEventListener("click",function(e){var t=e.target;if(isHl(t)){if(sticky===t){hide();return;}sticky=t;show(t);return;}if(sticky&&!tip.contains(t))hide();});' +
+                        '})();';
+
+                    return '<!DOCTYPE html>\n' +
+                        '<html lang="he" dir="rtl">\n<head>\n' +
+                        '<meta charset="UTF-8">\n' +
+                        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+                        '<title>בדיקת תרגיל' + (filename ? ' — ' + esc(filename) : '') + '</title>\n' +
+                        '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+                        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+                        '<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n' +
+                        '<style>\n' + styleCss + '\n</style>\n' +
+                        '</head>\n<body>\n<div class="container">\n' +
+                        '<div class="export-header" style="margin:0 0 1rem;padding:0.4rem 0;">' +
+                        '<h1 style="margin:0;font-size:1.4rem;">בדיקת תרגיל</h1>' +
+                        (filename ? '<div style="opacity:0.8;">' + esc(filename) + '</div>' : '') +
+                        (rubricName ? '<div style="opacity:0.8;">רובריקה: ' + esc(rubricName) + '</div>' : '') +
+                        '<div style="opacity:0.6;font-size:0.85rem;">נשמר: ' + esc(stamp) + '</div>' +
+                        '<div style="opacity:0.6;font-size:0.85rem;">העבר עכבר מעל אות מודגשת כדי לראות את הבעיה.</div>' +
+                        '</div>\n' +
+                        evalClone.outerHTML + '\n' +
+                        pagesWrap.innerHTML + '\n' +
+                        '<div id="highlight-tooltip" class="highlight-tooltip">' +
+                        '<div class="ht-crit" dir="auto"></div><div class="ht-comment" dir="auto"></div></div>\n' +
+                        '</div>\n' +
+                        '<script type="application/json" id="haskala-data">' + payload + '<\/script>\n' +
+                        '<script>' + tooltipScript + '<\/script>\n' +
+                        '</body>\n</html>';
+                }
+
+                async function downloadOrSaveHtml(name, content) {
+                    const api = await window.__haskalaGetApi();
+                    if (api && api.save_html) {
+                        return await api.save_html(name, content);
+                    }
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    return name;
+                }
+
                 // --- Evaluation state ------------------------------------
                 let currentEvaluation = serverData.evaluation || null;
                 let rubrics = (serverData.rubrics || []).slice();
@@ -2700,7 +2840,8 @@
                 function refreshSaveMenu() {
                     const evalBtns = document.querySelectorAll(
                         '#save-menu button[data-act="save-eval"], ' +
-                        '#save-menu button[data-act="save-eval-docx"]'
+                        '#save-menu button[data-act="save-eval-docx"], ' +
+                        '#save-menu button[data-act="save-eval-html"]'
                     );
                     evalBtns.forEach(b => { b.disabled = !currentEvaluation; });
                 }
@@ -3156,6 +3297,11 @@
                         a.click();
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
+                    } else if (act === 'save-eval-html') {
+                        if (!currentEvaluation) return;
+                        const html = buildEvalHtml();
+                        const name = `haskala-eval-${baseName()}-${nowStamp()}.html`;
+                        await downloadOrSaveHtml(name, html);
                     } else if (act === 'save-eval-docx') {
                         if (!currentEvaluation) return;
                         const langs = (window.__haskalaLangs && window.__haskalaLangs()) || {};
