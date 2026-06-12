@@ -35,7 +35,7 @@ fi
 # venv/, memory/, *.log, __pycache__/, .env stay local.
 # README.md on the Space is HF-specific (has the title/sdk/port frontmatter)
 # so it lives separately under deploy/space-readme.md and is copied with rename.
-FILES=(app.py Dockerfile .dockerignore requirements.txt)
+FILES=(app.py segmentation.py Dockerfile .dockerignore requirements.txt)
 DIRS=(templates rubrics)
 
 echo "📥 pulling latest from HF Space ($SPACE)…"
@@ -67,7 +67,9 @@ if [[ -f "$SRC/deploy/space-readme.md" ]]; then
 fi
 
 cd "$SPACE"
-if git diff --quiet && git diff --cached --quiet; then
+# --porcelain catches untracked files too; `git diff` alone misses a newly
+# added module and would silently skip deploying it.
+if [[ -z "$(git status --porcelain)" ]]; then
     echo "✅ nothing changed — Space already in sync"
     exit 0
 fi
