@@ -80,12 +80,13 @@ class Api:
         return path
 
     def pick_json(self):
-        """Native open dialog filtered to JSON. Returns a path or None."""
+        """Native open dialog for a saved exercise — a plain .json save or one
+        of our interactive .html exports (both load back). Returns path/None."""
         result = self._window.create_file_dialog(
             webview.OPEN_DIALOG,
             directory=self.last_dir,
             allow_multiple=False,
-            file_types=("קבצים מפוענחים (*.json)", "כל הקבצים (*.*)"),
+            file_types=("תרגילים שמורים (*.json;*.html;*.htm)", "כל הקבצים (*.*)"),
         )
         if not result:
             return None
@@ -107,6 +108,26 @@ class Api:
         path = result[0] if isinstance(result, (list, tuple)) else result
         if not path.lower().endswith(".json"):
             path += ".json"
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        self._remember(path)
+        return path
+
+    def save_html(self, default_name: str, content: str):
+        """Native save dialog for the interactive evaluation web page.
+        The browser already built the self-contained HTML, so we just
+        place the text. Returns the saved path or None if cancelled."""
+        result = self._window.create_file_dialog(
+            webview.SAVE_DIALOG,
+            directory=self.last_dir,
+            save_filename=default_name,
+            file_types=("דף ווב (*.html)",),
+        )
+        if not result:
+            return None
+        path = result[0] if isinstance(result, (list, tuple)) else result
+        if not path.lower().endswith(".html"):
+            path += ".html"
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
         self._remember(path)

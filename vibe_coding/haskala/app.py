@@ -105,6 +105,7 @@ def build_ocr_prompt(exercise_lang: str) -> str:
     the standard BiDi algorithm. Spelling it out fixes the reversal."""
     lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
     primary = lang["name_native"]
+    illegible = lang["illegible"]
     is_rtl_exercise = lang["dir"] == "rtl"
     rtl_emphasis = (
         f"השפה העיקרית ({primary}) נכתבת מימין לשמאל. שים לב מיוחד לכלל 9.\n\n"
@@ -124,7 +125,8 @@ def build_ocr_prompt(exercise_lang: str) -> str:
 4. שמור על כל סימני הפיסוק בדיוק כפי שנכתבו (כולל פיסוק חסר).
 5. שמור על אותיות גדולות וקטנות באנגלית בדיוק כפי שנכתבו.
 6. אם תו לא ברור, תמלל את מה שהכי דומה לצורה הכתובה.
-7. אם מילה לא קריאה לחלוטין, כתוב במקומה: [לא קריא]
+7. אם מילה לא קריאה לחלוטין, כתוב במקומה בדיוק את התווית הזו (בשפת
+   התרגיל): {illegible} — אל תכתוב תווית בעברית בתוך טקסט שאינו עברי.
 8. שורות ריקות בתמונה — דלג עליהן (אל תפיק פריט לשורה ריקה).
 9. סדר מילים בשפות RTL (עברית, ערבית): פלט תמיד ב-Unicode "logical
    order" — הסדר שבו הקורא קורא את הטקסט, לא הסדר התצוגתי. במחרוזת
@@ -304,10 +306,14 @@ MODEL_FILENAME_LABEL = {
 # (to render the two pickers). `name_he` is what the teacher sees in the picker;
 # `name_native` is what we feed into prompts so the model gets the language
 # named in its own script.
+#
+# `illegible` is the placeholder the OCR model writes in place of a word it
+# can't read at all — kept in the exercise's *own* language so an English
+# transcript never gets a Hebrew "[לא קריא]" dropped into the middle of it.
 LANGS: dict[str, dict] = {
-    "he": {"name_he": "עברית",  "name_native": "עברית",   "dir": "rtl"},
-    "en": {"name_he": "אנגלית", "name_native": "English", "dir": "ltr"},
-    "ar": {"name_he": "ערבית",  "name_native": "العربية", "dir": "rtl"},
+    "he": {"name_he": "עברית",  "name_native": "עברית",   "dir": "rtl", "illegible": "[לא קריא]"},
+    "en": {"name_he": "אנגלית", "name_native": "English", "dir": "ltr", "illegible": "[illegible]"},
+    "ar": {"name_he": "ערבית",  "name_native": "العربية", "dir": "rtl", "illegible": "[غير مقروء]"},
 }
 DEFAULT_EXERCISE_LANG = "en"
 DEFAULT_FEEDBACK_LANG = "he"
@@ -1497,15 +1503,36 @@ def _highlights_for_template(
     return {f"p{page}-l{idx}": spans for (page, idx), spans in raw.items()}
 
 
+# The "save as web page" export embeds the re-loadable payload in this
+# script block so one .html file is both a browser-openable viewer and a
+# file the app can load back. The JSON inside has "</" escaped to "<\/"
+# (so student text can't close the tag early) — reversed on extraction.
+_EMBEDDED_DATA_RE = re.compile(
+    rb'<script[^>]*id="haskala-data"[^>]*>(.*?)</script>', re.DOTALL
+)
+
+
+def _unwrap_saved_payload(raw: bytes) -> bytes:
+    """If raw is one of our exported .html reports, return the embedded JSON
+    bytes; otherwise return raw unchanged (a plain .json save)."""
+    m = _EMBEDDED_DATA_RE.search(raw)
+    if not m:
+        return raw
+    return m.group(1).strip().replace(rb'<\/', rb'</')
+
+
 def parse_saved_json(raw: bytes) -> tuple[list[dict], str, dict, dict | None]:
     """Returns (pages_for_template, filename, annotations_by_line_key, evaluation).
+
+    Accepts either a plain saved-JSON file or one of our "save as web page"
+    HTML exports (the JSON is unwrapped from its embedded data block first).
 
     Strips annotations out of the per-line dicts (the template doesn't need
     them inline — they're delivered via server_data_json instead).
     `evaluation` is the saved rubric scoring (or None if the file predates
     the feature or no evaluation was run).
     """
-    data = json.loads(raw.decode("utf-8"))
+    data = json.loads(_unwrap_saved_payload(raw).decode("utf-8"))
     if not isinstance(data, dict) or "pages" not in data:
         raise ValueError("מבנה JSON לא תקין — חסר שדה 'pages'")
 
