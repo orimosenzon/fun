@@ -13,6 +13,7 @@ COPY --chown=user requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt gunicorn
 
 COPY --chown=user app.py .
+COPY --chown=user segmentation.py .
 COPY --chown=user templates/ templates/
 COPY --chown=user rubrics/ rubrics/
 
