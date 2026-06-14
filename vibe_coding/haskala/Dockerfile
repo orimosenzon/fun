@@ -16,6 +16,7 @@ COPY --chown=user app.py .
 COPY --chown=user segmentation.py .
 COPY --chown=user templates/ templates/
 COPY --chown=user rubrics/ rubrics/
+COPY --chown=user static/ static/
 
 EXPOSE 7860
 
