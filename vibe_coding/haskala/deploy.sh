@@ -36,7 +36,7 @@ fi
 # README.md on the Space is HF-specific (has the title/sdk/port frontmatter)
 # so it lives separately under deploy/space-readme.md and is copied with rename.
 FILES=(app.py segmentation.py Dockerfile .dockerignore requirements.txt)
-DIRS=(templates rubrics)
+DIRS=(templates rubrics static)
 
 echo "📥 pulling latest from HF Space ($SPACE)…"
 git -C "$SPACE" pull --rebase --autostash
