@@ -2884,6 +2884,61 @@
                     evalBtns.forEach(b => { b.disabled = !currentEvaluation; });
                 }
 
+                // Report chrome labels follow the FEEDBACK language (the
+                // language of whoever reads the check) — not the app UI, which
+                // stays Hebrew for the teacher operating it. Model-written text
+                // already comes back in the feedback language from the prompt.
+                const REPORT_LABELS = {
+                    he: {
+                        dir: 'rtl',
+                        sectionTitle: 'בדיקת תרגיל',
+                        rubric: 'רובריקה:',
+                        overallScore: 'ציון כללי:',
+                        answeredYes: 'התלמיד ענה על השאלה ✓',
+                        answeredNo: 'התלמיד לא ענה על השאלה ✗',
+                        wordCount: 'סך מילים בתרגיל:',
+                        helpfulWords: 'מילות עזר בשימוש:',
+                        thCriterion: 'קריטריון',
+                        thScore: 'ציון',
+                        thFeedback: 'פידבק',
+                        thFeedbackSecondary: 'פידבק (שפת תרגיל)',
+                    },
+                    en: {
+                        dir: 'ltr',
+                        sectionTitle: 'Exercise Review',
+                        rubric: 'Rubric:',
+                        overallScore: 'Overall score:',
+                        answeredYes: 'The student answered the question ✓',
+                        answeredNo: 'The student did not answer the question ✗',
+                        wordCount: 'Total words:',
+                        helpfulWords: 'Helpful words used:',
+                        thCriterion: 'Criterion',
+                        thScore: 'Score',
+                        thFeedback: 'Feedback',
+                        thFeedbackSecondary: 'Feedback (exercise language)',
+                    },
+                    ar: {
+                        dir: 'rtl',
+                        sectionTitle: 'مراجعة التمرين',
+                        rubric: 'السلّم:',
+                        overallScore: 'التقييم العام:',
+                        answeredYes: 'أجاب الطالب عن السؤال ✓',
+                        answeredNo: 'لم يُجب الطالب عن السؤال ✗',
+                        wordCount: 'عدد الكلمات:',
+                        helpfulWords: 'الكلمات المساعدة المستخدمة:',
+                        thCriterion: 'المعيار',
+                        thScore: 'الدرجة',
+                        thFeedback: 'ملاحظات',
+                        thFeedbackSecondary: 'ملاحظات (لغة التمرين)',
+                    },
+                };
+                function reportLabels() {
+                    const picks = (window.__haskalaLangs && window.__haskalaLangs()) || {};
+                    const lang = (currentEvaluation && currentEvaluation.feedback_lang)
+                        || picks.feedback_lang || 'he';
+                    return REPORT_LABELS[lang] || REPORT_LABELS.he;
+                }
+
                 function renderEvaluation() {
                     const section = document.getElementById('eval-section');
                     if (!section) return;
@@ -2894,7 +2949,7 @@
                     section.style.display = 'block';
                     const meta = document.getElementById('eval-meta');
                     meta.textContent = currentEvaluation.rubric_name
-                        ? `רובריקה: ${currentEvaluation.rubric_name}`
+                        ? `${reportLabels().rubric} ${currentEvaluation.rubric_name}`
                         : '';
                     // Decide whether to show the secondary (exercise-language)
                     // column from the languages the evaluation was RUN with
@@ -2908,6 +2963,23 @@
                     const fbLang = currentEvaluation.feedback_lang || picks.feedback_lang;
                     const exLang = currentEvaluation.exercise_lang || picks.exercise_lang;
                     const showSecondary = fbLang && exLang && fbLang !== exLang;
+                    const L = reportLabels();
+                    // Direction + section title follow the feedback language so an
+                    // English report reads left-to-right (the rubric grid keeps
+                    // its own dir:ltr; the model paragraph uses dir:auto).
+                    const evalSection = document.getElementById('eval-section');
+                    if (evalSection) evalSection.dir = L.dir;
+                    const evalH2 = evalSection && evalSection.querySelector('h2');
+                    if (evalH2) evalH2.textContent = L.sectionTitle;
+                    // Localize the legacy table headers (the new grid has its
+                    // own English headers built in renderRubricGrid).
+                    const ths = document.querySelectorAll('.eval-table thead th');
+                    if (ths.length >= 4) {
+                        ths[0].textContent = L.thCriterion;
+                        ths[1].textContent = L.thScore;
+                        ths[2].textContent = L.thFeedback;
+                        ths[3].textContent = L.thFeedbackSecondary;
+                    }
                     const secondaryTh = document.getElementById('eval-feedback-secondary-th');
                     if (secondaryTh) secondaryTh.hidden = !showSecondary;
                     const overall = document.getElementById('eval-overall');
@@ -2917,7 +2989,7 @@
                            || '')
                         : '';
                     overall.innerHTML = `
-                        <div class="eval-overall-score">ציון כללי: ${escapeHtml(currentEvaluation.overall_score || '')}</div>
+                        <div class="eval-overall-score">${escapeHtml(L.overallScore)} ${escapeHtml(currentEvaluation.overall_score || '')}</div>
                         <div class="eval-overall-text" dir="auto">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
                         ${overallSecondary ? `<div class="eval-overall-text-en">${escapeHtml(overallSecondary)}</div>` : ''}
                     `;
@@ -2940,12 +3012,12 @@
                                 ? (c.feedback_secondary || c.feedback_en || '')
                                 : '';
                             tr.innerHTML = `
-                                <td class="criterion-cell" data-label="קריטריון" dir="auto" style="border-inline-start-color:${escapeHtml(color)}">
+                                <td class="criterion-cell" data-label="${escapeHtml(L.thCriterion)}" dir="auto" style="border-inline-start-color:${escapeHtml(color)}">
                                     <span class="criterion-swatch" style="background:${escapeHtml(color)}"></span>${escapeHtml(c.name || '')}
                                 </td>
-                                <td class="score-cell" data-label="ציון">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
-                                <td class="feedback-cell" data-label="פידבק" dir="auto">${escapeHtml(c.feedback || '')}</td>
-                                ${showSecondary ? `<td class="feedback-en-cell" data-label="פידבק (שפת תרגיל)">${escapeHtml(secondary)}</td>` : ''}
+                                <td class="score-cell" data-label="${escapeHtml(L.thScore)}">${escapeHtml(String(c.score))}/${escapeHtml(String(c.max_score))}</td>
+                                <td class="feedback-cell" data-label="${escapeHtml(L.thFeedback)}" dir="auto">${escapeHtml(c.feedback || '')}</td>
+                                ${showSecondary ? `<td class="feedback-en-cell" data-label="${escapeHtml(L.thFeedbackSecondary)}">${escapeHtml(secondary)}</td>` : ''}
                             `;
                             tbody.appendChild(tr);
                         });
@@ -2970,7 +3042,8 @@
                         box.innerHTML = '';
                         return;
                     }
-                    box.innerHTML = `<div class="eval-answered ${qa}">${qa === 'yes' ? 'התלמיד ענה על השאלה ✓' : 'התלמיד לא ענה על השאלה ✗'}</div>`;
+                    const L = reportLabels();
+                    box.innerHTML = `<div class="eval-answered ${qa}">${qa === 'yes' ? escapeHtml(L.answeredYes) : escapeHtml(L.answeredNo)}</div>`;
                     box.style.display = '';
                 }
 
@@ -2984,7 +3057,7 @@
                         box.innerHTML = '';
                         return;
                     }
-                    box.innerHTML = `סך מילים בתרגיל: <strong>${escapeHtml(String(wc))}</strong>`;
+                    box.innerHTML = `${escapeHtml(reportLabels().wordCount)} <strong>${escapeHtml(String(wc))}</strong>`;
                     box.style.display = '';
                 }
 
@@ -3005,7 +3078,7 @@
                     const unused = (hw.unused || []).map(w =>
                         `<span class="hw-chip hw-unused">${escapeHtml(w)}</span>`).join('');
                     box.innerHTML = `
-                        <div class="hw-title">מילות עזר בשימוש: <strong>${hw.count}/${hw.total}</strong></div>
+                        <div class="hw-title">${escapeHtml(reportLabels().helpfulWords)} <strong>${hw.count}/${hw.total}</strong></div>
                         <div class="hw-list" dir="ltr">${used}${unused}</div>`;
                     box.style.display = '';
                 }
