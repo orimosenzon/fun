@@ -333,6 +333,65 @@ LANGS: dict[str, dict] = {
 DEFAULT_EXERCISE_LANG = "en"
 DEFAULT_FEEDBACK_LANG = "he"
 
+# Static labels for the Word report, keyed by the FEEDBACK language (the
+# language of whoever reads the check). Model-written text already comes back
+# in the feedback language from the prompt; these cover the document chrome so
+# an English-feedback report carries no Hebrew. {} placeholders are filled at
+# build time. `_secondary` takes the exercise language's native name.
+DOCX_LABELS: dict[str, dict] = {
+    "he": {
+        "title": "בדיקת תרגיל — השכלה",
+        "file": "קובץ:", "rubric": "רובריקה:", "overall_score": "ציון כללי:",
+        "answered_yes": "התלמיד ענה על השאלה ✓",
+        "answered_no": "התלמיד לא ענה על השאלה ✗",
+        "per_criterion": "פירוט לפי קריטריון",
+        "th_criterion": "קריטריון", "th_score": "ציון", "th_feedback": "פידבק",
+        "feedback_secondary": "פידבק ({lang})",
+        "word_count": "סך מילים בתרגיל: {n}",
+        "helpful_words": "מילות עזר בשימוש",
+        "helpful_words_line": "{count}/{total} מילות עזר נוצלו בתרגיל.",
+        "used": "נוצלו: {words}", "not_used": "לא נוצלו: {words}",
+        "summary": "סיכום",
+        "clean_transcript": "תעתיק נקי", "marked_transcript": "תעתיק עם סימונים",
+        "original_and_decode": "תרגיל מקורי ופענוח", "page": "עמוד {n}",
+        "th_line": "שורה", "th_text": "טקסט", "image_error": "[שגיאת תמונה]",
+    },
+    "en": {
+        "title": "Exercise Review — Haskala",
+        "file": "File:", "rubric": "Rubric:", "overall_score": "Overall score:",
+        "answered_yes": "The student answered the question ✓",
+        "answered_no": "The student did not answer the question ✗",
+        "per_criterion": "Per-criterion breakdown",
+        "th_criterion": "Criterion", "th_score": "Score", "th_feedback": "Feedback",
+        "feedback_secondary": "Feedback ({lang})",
+        "word_count": "Total words: {n}",
+        "helpful_words": "Helpful words used",
+        "helpful_words_line": "{count}/{total} helpful words were used in the exercise.",
+        "used": "Used: {words}", "not_used": "Not used: {words}",
+        "summary": "Summary",
+        "clean_transcript": "Clean transcript", "marked_transcript": "Marked transcript",
+        "original_and_decode": "Original exercise & transcription", "page": "Page {n}",
+        "th_line": "Line", "th_text": "Text", "image_error": "[image error]",
+    },
+    "ar": {
+        "title": "مراجعة التمرين — هَسكالاه",
+        "file": "الملف:", "rubric": "السلّم:", "overall_score": "التقييم العام:",
+        "answered_yes": "أجاب الطالب عن السؤال ✓",
+        "answered_no": "لم يُجب الطالب عن السؤال ✗",
+        "per_criterion": "تفصيل حسب المعيار",
+        "th_criterion": "المعيار", "th_score": "الدرجة", "th_feedback": "ملاحظات",
+        "feedback_secondary": "ملاحظات ({lang})",
+        "word_count": "عدد الكلمات: {n}",
+        "helpful_words": "الكلمات المساعدة المستخدمة",
+        "helpful_words_line": "{count}/{total} كلمات مساعدة استُخدمت في التمرين.",
+        "used": "استُخدمت: {words}", "not_used": "لم تُستخدم: {words}",
+        "summary": "ملخّص",
+        "clean_transcript": "نسخة نظيفة", "marked_transcript": "نسخة معلّمة",
+        "original_and_decode": "التمرين الأصلي والتفريغ", "page": "صفحة {n}",
+        "th_line": "سطر", "th_text": "نص", "image_error": "[خطأ في الصورة]",
+    },
+}
+
 
 def _norm_lang(value: str | None, default: str) -> str:
     return value if value in LANGS else default
@@ -1377,6 +1436,21 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
     e = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
     primary = f["name_native"]
     secondary = e["name_native"]
+    # The whole prompt is written in Hebrew, which biases the model toward
+    # Hebrew output and makes it ignore an embedded "write in English" clause.
+    # A directive written IN the target language itself anchors the output
+    # language far more reliably, so we lead with one.
+    LANG_DIRECTIVES = {
+        "he": "כל הפידבק (feedback), ההערות (comment) ופסקת הסיכום (overall_feedback) "
+              "ייכתבו בעברית בלבד.",
+        "en": "ALL feedback text — every \"feedback\", \"comment\" and the "
+              "\"overall_feedback\" summary — MUST be written in English only. "
+              "Do NOT write any of this feedback in Hebrew, even though these "
+              "instructions are in Hebrew.",
+        "ar": "يجب كتابة كل الملاحظات (feedback) والتعليقات (comment) وفقرة "
+              "الملخّص (overall_feedback) بالعربية فقط ، وليس بالعبرية.",
+    }
+    lang_directive = LANG_DIRECTIVES.get(feedback_lang, LANG_DIRECTIVES["he"])
     if feedback_lang == exercise_lang:
         secondary_block = (
             f'- לכל קריטריון: השדה "feedback_secondary" — מחרוזת ריקה "" '
@@ -1409,6 +1483,8 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
         question_answered_field = '  "question_answered": ""\n'
     return f"""אתה בודק שיעורי בית בהתאם לרובריקה שתינתן לך.
 
+‼️ שפת הפלט (חובה, גובר על כל השאר): {lang_directive}
+
 תקבל:
 1. רובריקה — מתארת קריטריונים, רמות וציונים אפשריים.
 2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR. כל
@@ -1437,6 +1513,8 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
   החמור/המהותי ביותר בלבד (לא לכמה במקביל).
 - ציון כללי (אם הרובריקה מציינת mapping ל-CEFR/אחוז/אות — השתמש בו, אחרת תן את ממוצע הציונים).
 - פסקת סיכום ב{primary} (2-4 משפטים) — חוזקות, חולשות, ומה כדאי לתלמיד לעבוד עליו.{question_block}
+
+תזכורת אחרונה לפני הפלט — {lang_directive}
 
 החזר JSON תקין במבנה:
 {{
@@ -2258,16 +2336,31 @@ def build_evaluation_docx(
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Inches, Pt
 
+    # Report chrome (headings, labels) follows the feedback language; its
+    # direction sets paragraph alignment so an English report reads left-to-right.
+    LBL = DOCX_LABELS.get(feedback_lang, DOCX_LABELS["he"])
+    fb = LANGS.get(feedback_lang, LANGS[DEFAULT_FEEDBACK_LANG])
+    main_align = (
+        WD_ALIGN_PARAGRAPH.LEFT if fb["dir"] == "ltr" else WD_ALIGN_PARAGRAPH.RIGHT
+    )
+
     doc = Document()
 
-    title = doc.add_heading("בדיקת תרגיל — השכלה", level=1)
-    title.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    title = doc.add_heading(LBL["title"], level=1)
+    title.alignment = main_align
 
     meta = doc.add_paragraph()
-    meta.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    meta.add_run(f"קובץ: {filename}\n").bold = True
-    meta.add_run(f"רובריקה: {rubric_name}\n").bold = True
-    meta.add_run(f"ציון כללי: {evaluation.get('overall_score', '')}").bold = True
+    meta.alignment = main_align
+    meta.add_run(f"{LBL['file']} {filename}\n").bold = True
+    meta.add_run(f"{LBL['rubric']} {rubric_name}\n").bold = True
+    meta.add_run(f"{LBL['overall_score']} {evaluation.get('overall_score', '')}").bold = True
+
+    # Whether the student answered the rubric's question (parity with the web).
+    qa = str(evaluation.get("question_answered", "")).strip().lower()
+    if qa in ("yes", "no"):
+        ans_p = doc.add_paragraph()
+        ans_p.alignment = main_align
+        ans_p.add_run(LBL["answered_yes"] if qa == "yes" else LBL["answered_no"]).bold = True
 
     criteria = attach_colors(evaluation).get("criteria") or []
 
@@ -2277,7 +2370,7 @@ def build_evaluation_docx(
     # populate `_secondary` as a fallback.
     show_secondary = feedback_lang != exercise_lang
     secondary_lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
-    secondary_header = f"פידבק ({secondary_lang['name_he']})"
+    secondary_header = LBL["feedback_secondary"].format(lang=secondary_lang["name_native"])
     secondary_align_ltr = secondary_lang["dir"] == "ltr"
 
     def _secondary_text(c: dict) -> str:
@@ -2286,21 +2379,21 @@ def build_evaluation_docx(
     # Legacy per-criterion score/feedback table — hidden for now behind
     # SHOW_LEGACY_EVAL_TABLE so it can be restored without rewriting it.
     if SHOW_LEGACY_EVAL_TABLE:
-        doc.add_heading("פירוט לפי קריטריון", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        doc.add_heading(LBL["per_criterion"], level=2).alignment = main_align
         cols = 4 if show_secondary else 3
         table = doc.add_table(rows=1, cols=cols)
         table.style = "Light Grid Accent 1"
         header = table.rows[0].cells
-        header[0].text = "קריטריון"
-        header[1].text = "ציון"
-        header[2].text = "פידבק"
+        header[0].text = LBL["th_criterion"]
+        header[1].text = LBL["th_score"]
+        header[2].text = LBL["th_feedback"]
         if show_secondary:
             header[3].text = secondary_header
         for idx, cell in enumerate(header):
             align = (
                 WD_ALIGN_PARAGRAPH.LEFT
                 if idx == 3 and secondary_align_ltr
-                else WD_ALIGN_PARAGRAPH.RIGHT
+                else main_align
             )
             for p in cell.paragraphs:
                 p.alignment = align
@@ -2332,26 +2425,27 @@ def build_evaluation_docx(
     wc = evaluation.get("word_count")
     if wc is not None:
         wc_p = doc.add_paragraph()
-        wc_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        wc_p.add_run(f"סך מילים בתרגיל: {wc}").bold = True
+        wc_p.alignment = main_align
+        wc_p.add_run(LBL["word_count"].format(n=wc)).bold = True
 
     # Helpful-words usage — only when the rubric carried helpful words.
     hw = evaluation.get("helpful_words_usage")
     if hw and hw.get("total"):
-        doc.add_heading("מילות עזר בשימוש", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        doc.add_heading(LBL["helpful_words"], level=2).alignment = main_align
         hw_p = doc.add_paragraph()
-        hw_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        hw_p.add_run(f"{hw.get('count', 0)}/{hw.get('total', 0)} מילות עזר נוצלו בתרגיל.").bold = True
+        hw_p.alignment = main_align
+        hw_p.add_run(LBL["helpful_words_line"].format(
+            count=hw.get("count", 0), total=hw.get("total", 0))).bold = True
         if hw.get("used"):
-            used_p = doc.add_paragraph(f"נוצלו: {', '.join(hw['used'])}")
+            used_p = doc.add_paragraph(LBL["used"].format(words=", ".join(hw["used"])))
             used_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
         if hw.get("unused"):
-            unused_p = doc.add_paragraph(f"לא נוצלו: {', '.join(hw['unused'])}")
+            unused_p = doc.add_paragraph(LBL["not_used"].format(words=", ".join(hw["unused"])))
             unused_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    doc.add_heading("סיכום", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    doc.add_heading(LBL["summary"], level=2).alignment = main_align
     summary = doc.add_paragraph(evaluation.get("overall_feedback", ""))
-    summary.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    summary.alignment = main_align
     for r in summary.runs:
         r.font.size = Pt(11)
 
@@ -2383,10 +2477,10 @@ def build_evaluation_docx(
         # Section A: clean transcript — exactly what the student wrote, no
         # marks, so the teacher can read the raw text without distractions.
         # English content is left-aligned per the way English text reads.
-        doc.add_heading("תעתיק נקי", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        doc.add_heading(LBL["clean_transcript"], level=2).alignment = main_align
         for page in pages:
             page_num = page.get("page", "?")
-            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
             for line in page.get("lines", []):
                 p = doc.add_paragraph(str(line.get("text", "")))
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -2394,10 +2488,10 @@ def build_evaluation_docx(
         # Section B: same text with the color highlights, but without the
         # inline `(criterion: comment)` parentheticals — for a scannable
         # at-a-glance view of where the issues fall.
-        doc.add_heading("תעתיק עם סימונים", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        doc.add_heading(LBL["marked_transcript"], level=2).alignment = main_align
         for page in pages:
             page_num = page.get("page", "?")
-            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
             for line_idx, line in enumerate(page.get("lines", [])):
                 line_text = str(line.get("text", ""))
                 spans = spans_by_line.get(_line_key(page_num, line_idx), [])
@@ -2410,11 +2504,11 @@ def build_evaluation_docx(
 
         # Section C: the original scan + line-by-line table with image and
         # transcribed text (with both highlights and inline comments).
-        doc.add_heading("תרגיל מקורי ופענוח", level=2).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        doc.add_heading(LBL["original_and_decode"], level=2).alignment = main_align
 
         for page in pages:
             page_num = page.get("page", "?")
-            doc.add_heading(f"עמוד {page_num}", level=3).alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
 
             orig_b64 = page.get("original_b64") or ""
             if orig_b64:
@@ -2434,11 +2528,11 @@ def build_evaluation_docx(
             ltable = doc.add_table(rows=1, cols=2)
             ltable.style = "Light Grid Accent 1"
             lhdr = ltable.rows[0].cells
-            lhdr[0].text = "שורה"
-            lhdr[1].text = "טקסט"
+            lhdr[0].text = LBL["th_line"]
+            lhdr[1].text = LBL["th_text"]
             for cell in lhdr:
                 for p in cell.paragraphs:
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                    p.alignment = main_align
                     for r in p.runs:
                         r.bold = True
 
@@ -2455,7 +2549,7 @@ def build_evaluation_docx(
                         )
                     except (ValueError, OSError) as e:
                         log.warning("line image decode failed: %s", e)
-                        row[0].text = "[שגיאת תמונה]"
+                        row[0].text = LBL["image_error"]
                 line_text = str(line.get("text", ""))
                 spans = spans_by_line.get(_line_key(page_num, line_idx), [])
                 target_p = row[1].paragraphs[0]
