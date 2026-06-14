@@ -146,28 +146,48 @@ class WikiClient:
             for item in results
         ]
 
-    def list_pages(self, prefix: str = "", limit: int = 50, namespace: int = 0) -> list:
-        """List pages, optionally filtered by prefix."""
-        params = {
-            "action": "query",
-            "list": "allpages",
-            "aplimit": limit,
-            "apnamespace": namespace,
-            "format": "json",
-        }
-        if prefix:
-            params["apprefix"] = prefix
+    def list_pages(self, prefix: str = "", limit: int = 0, namespace: int = 0) -> list:
+        """List pages, optionally filtered by prefix.
 
-        r = self.session.get(API_URL, params=params)
-        r.raise_for_status()
-        pages = r.json()["query"]["allpages"]
-        return [
-            {
-                "title": p["title"],
-                "url": f"https://pardespedia.info/wiki/{p['title'].replace(' ', '_')}",
+        limit=0 (default) fetches all pages, following apcontinue. A positive
+        limit caps the total number of results returned.
+        """
+        results = []
+        apcontinue = None
+        while True:
+            batch_size = 500
+            if limit:
+                remaining = limit - len(results)
+                if remaining <= 0:
+                    break
+                batch_size = min(batch_size, remaining)
+            params = {
+                "action": "query",
+                "list": "allpages",
+                "aplimit": batch_size,
+                "apnamespace": namespace,
+                "format": "json",
             }
-            for p in pages
-        ]
+            if prefix:
+                params["apprefix"] = prefix
+            if apcontinue:
+                params["apcontinue"] = apcontinue
+
+            r = self.session.get(API_URL, params=params)
+            r.raise_for_status()
+            data = r.json()
+            for p in data["query"]["allpages"]:
+                results.append({
+                    "title": p["title"],
+                    "url": f"https://pardespedia.info/wiki/{p['title'].replace(' ', '_')}",
+                })
+
+            cont = data.get("continue")
+            if not cont:
+                break
+            apcontinue = cont.get("apcontinue")
+
+        return results
 
     def get_categories(self, title: str) -> list:
         """Return list of categories for a page."""
