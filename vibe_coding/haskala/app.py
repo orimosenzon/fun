@@ -2067,6 +2067,43 @@ def attach_colors(evaluation: dict | None) -> dict | None:
     return evaluation
 
 
+# Rubric-grid levels, mirroring the web's renderRubricGrid: four named bands
+# from best to worst, matched against the evaluation's `level` field.
+_GRID_LEVELS = [
+    ("excellent", "Excellent"),
+    ("good", "Good"),
+    ("fair", "Fair"),
+    ("needs_improvement", "Needs Improvement"),
+]
+
+# Same normalization the web (normCrit) uses to match a criteria_grid row to
+# its evaluated criterion: lowercase, keep only ASCII alphanumerics + Hebrew.
+_NORM_CRIT_RE = re.compile(r"[^a-z0-9֐-׿]+")
+
+
+def _norm_crit(s: str) -> str:
+    return _NORM_CRIT_RE.sub("", str(s or "").lower())
+
+
+def _coerce_num(v):
+    """Best-effort numeric coercion; None when the value isn't a number."""
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return v
+    try:
+        return float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_num(v) -> str:
+    """Render a number without a trailing .0 (8.0 → '8', 7.5 → '7.5')."""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
 # --- Issue span resolution --------------------------------------------------
 
 _LINE_REF_RE = re.compile(r"p(\d+)-l(\d+)")
@@ -2376,9 +2413,76 @@ def build_evaluation_docx(
     def _secondary_text(c: dict) -> str:
         return str(c.get("feedback_secondary") or c.get("feedback_en") or "")
 
-    # Legacy per-criterion score/feedback table — hidden for now behind
-    # SHOW_LEGACY_EVAL_TABLE so it can be restored without rewriting it.
-    if SHOW_LEGACY_EVAL_TABLE:
+    # Rubric grid (criteria × 4 levels + marks), mirroring the web's
+    # renderRubricGrid. Only rendered when the rubric carried a structured
+    # `criteria_grid`; the achieved level is shaded in the criterion's color.
+    grid = evaluation.get("criteria_grid")
+    has_grid = isinstance(grid, list) and len(grid) > 0
+    if has_grid:
+        gcols = 1 + len(_GRID_LEVELS) + 1  # criterion | levels… | marks
+        gtable = doc.add_table(rows=1, cols=gcols)
+        gtable.style = "Light Grid Accent 1"
+        ghdr = gtable.rows[0].cells
+        ghdr[0].text = "Criteria"
+        for i, (_key, label) in enumerate(_GRID_LEVELS):
+            ghdr[1 + i].text = label
+        ghdr[gcols - 1].text = "Marks"
+        for cell in ghdr:
+            for p in cell.paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                for r in p.runs:
+                    r.bold = True
+
+        for gi, g in enumerate(grid):
+            # Match the evaluated criterion by normalized name, else by index.
+            gname = _norm_crit(g.get("name"))
+            ev = next((c for c in criteria if _norm_crit(c.get("name")) == gname), None)
+            if ev is None and gi < len(criteria):
+                ev = criteria[gi]
+            color = (ev and ev.get("color")) or color_for_criterion(g.get("name", ""))
+            max_marks = _coerce_num(g.get("max_marks"))
+            if max_marks is None and ev is not None:
+                max_marks = _coerce_num(ev.get("max_score"))
+            score = _coerce_num(ev.get("score")) if ev else None
+
+            # Achieved level: the model's explicit `level` wins; fall back to
+            # a score quartile for evaluations saved before `level` existed.
+            level_idx = -1
+            if ev:
+                lvl = str(ev.get("level") or "").lower()
+                level_idx = next(
+                    (i for i, (k, _l) in enumerate(_GRID_LEVELS) if k == lvl), -1
+                )
+            if level_idx < 0 and max_marks and score is not None:
+                level_idx = round((1 - score / max_marks) / 0.25)
+                level_idx = min(3, max(0, level_idx))
+
+            row = gtable.add_row().cells
+            row[0].text = str(g.get("name") or "")
+            _set_cell_shading(row[0], _tint_hex(color))
+            for p in row[0].paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                for r in p.runs:
+                    r.bold = True
+
+            levels = g.get("levels") or {}
+            for i, (key, _label) in enumerate(_GRID_LEVELS):
+                cell = row[1 + i]
+                cell.text = str(levels.get(key) or "")
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+                if i == level_idx:
+                    _set_cell_shading(cell, _tint_hex(color, 0.35))
+
+            marks_cell = row[gcols - 1]
+            score_txt = "" if score is None else _fmt_num(score)
+            max_txt = "" if max_marks is None else _fmt_num(max_marks)
+            marks_cell.text = f"{score_txt}/{max_txt}"
+            marks_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    # Legacy per-criterion score/feedback table. Shown as a fallback when no
+    # grid is available (parity with the web's showLegacy), or forced on via
+    # SHOW_LEGACY_EVAL_TABLE even when a grid exists.
+    if SHOW_LEGACY_EVAL_TABLE or not has_grid:
         doc.add_heading(LBL["per_criterion"], level=2).alignment = main_align
         cols = 4 if show_secondary else 3
         table = doc.add_table(rows=1, cols=cols)
@@ -2525,11 +2629,23 @@ def build_evaluation_docx(
             lines = page.get("lines") or []
             if not lines:
                 continue
-            ltable = doc.add_table(rows=1, cols=2)
-            ltable.style = "Light Grid Accent 1"
-            lhdr = ltable.rows[0].cells
-            lhdr[0].text = LBL["th_line"]
-            lhdr[1].text = LBL["th_text"]
+            # English exercises carry no per-line crops (the web omits the
+            # image with `{% if line.image_b64 %}`). When no line has an image,
+            # drop the image column entirely instead of leaving it blank.
+            has_line_images = any(line.get("image_b64") for line in lines)
+            if has_line_images:
+                ltable = doc.add_table(rows=1, cols=2)
+                ltable.style = "Light Grid Accent 1"
+                lhdr = ltable.rows[0].cells
+                lhdr[0].text = LBL["th_line"]
+                lhdr[1].text = LBL["th_text"]
+                text_col = 1
+            else:
+                ltable = doc.add_table(rows=1, cols=1)
+                ltable.style = "Light Grid Accent 1"
+                lhdr = ltable.rows[0].cells
+                lhdr[0].text = LBL["th_text"]
+                text_col = 0
             for cell in lhdr:
                 for p in cell.paragraphs:
                     p.alignment = main_align
@@ -2538,26 +2654,27 @@ def build_evaluation_docx(
 
             for line_idx, line in enumerate(lines):
                 row = ltable.add_row().cells
-                line_b64 = line.get("image_b64") or ""
-                if line_b64:
-                    try:
-                        line_bytes = base64.b64decode(line_b64)
-                        # Clear default empty paragraph before inserting image.
-                        row[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        row[0].paragraphs[0].add_run().add_picture(
-                            io.BytesIO(line_bytes), width=Inches(4.0)
-                        )
-                    except (ValueError, OSError) as e:
-                        log.warning("line image decode failed: %s", e)
-                        row[0].text = LBL["image_error"]
+                if has_line_images:
+                    line_b64 = line.get("image_b64") or ""
+                    if line_b64:
+                        try:
+                            line_bytes = base64.b64decode(line_b64)
+                            # Clear default empty paragraph before image.
+                            row[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            row[0].paragraphs[0].add_run().add_picture(
+                                io.BytesIO(line_bytes), width=Inches(4.0)
+                            )
+                        except (ValueError, OSError) as e:
+                            log.warning("line image decode failed: %s", e)
+                            row[0].text = LBL["image_error"]
                 line_text = str(line.get("text", ""))
                 spans = spans_by_line.get(_line_key(page_num, line_idx), [])
-                target_p = row[1].paragraphs[0]
+                target_p = row[text_col].paragraphs[0]
                 if spans:
                     _fill_paragraph_with_spans(target_p, line_text, spans)
                 else:
                     target_p.add_run(line_text)
-                for p in row[1].paragraphs:
+                for p in row[text_col].paragraphs:
                     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     buf = io.BytesIO()
