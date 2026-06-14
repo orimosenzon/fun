@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>השכלה — מערכת אוטומטית לבדיקת תרגילים</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <!-- Heebo: a Hebrew-first family with full Latin support — falls back to
          the system stack offline (desktop build with no network). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -110,6 +112,42 @@
             opacity: 0.95;
             z-index: 1;
             pointer-events: none;
+        }
+        /* Bottom-of-page "stamp" — our mark on the app. */
+        .app-stamp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7rem;
+            margin: 3rem auto 0.5rem;
+            padding-top: 1.6rem;
+            border-top: 1px solid rgba(34, 48, 69, 0.12);
+            opacity: 0.62;
+            transition: opacity 0.2s ease;
+            user-select: none;
+        }
+        .app-stamp:hover { opacity: 0.9; }
+        .app-stamp-logo {
+            width: 46px;
+            height: 46px;
+            object-fit: contain;
+        }
+        .app-stamp-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+        .app-stamp-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #223045;
+            letter-spacing: 0.02em;
+        }
+        .app-stamp-tagline {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: #5a6b82;
+            letter-spacing: 0.04em;
         }
         @media (max-width: 768px) {
             body { padding: 1rem 0.75rem 4rem; }
@@ -2883,13 +2921,18 @@
                         <div class="eval-overall-text" dir="auto">${escapeHtml(currentEvaluation.overall_feedback || '')}</div>
                         ${overallSecondary ? `<div class="eval-overall-text-en">${escapeHtml(overallSecondary)}</div>` : ''}
                     `;
-                    // Legacy compact table — hidden behind SHOW_LEGACY_EVAL_TABLE
-                    // (kept so it can be restored by flipping the flag).
+                    // Legacy compact table — used as a fallback for rubrics
+                    // that don't carry a structured `criteria_grid` (the new
+                    // grid can't render without it). SHOW_LEGACY_EVAL_TABLE
+                    // forces it on even when a grid exists.
+                    const hasGrid = Array.isArray(currentEvaluation.criteria_grid)
+                        && currentEvaluation.criteria_grid.length > 0;
+                    const showLegacy = SHOW_LEGACY_EVAL_TABLE || !hasGrid;
                     const evalTable = document.querySelector('.eval-table');
-                    if (evalTable) evalTable.style.display = SHOW_LEGACY_EVAL_TABLE ? '' : 'none';
+                    if (evalTable) evalTable.style.display = showLegacy ? '' : 'none';
                     const tbody = document.getElementById('eval-tbody');
                     tbody.innerHTML = '';
-                    if (SHOW_LEGACY_EVAL_TABLE) {
+                    if (showLegacy) {
                         (currentEvaluation.criteria || []).forEach(c => {
                             const color = c.color || '#888';
                             const tr = document.createElement('tr');
@@ -3353,6 +3396,14 @@
             })();
             </script>
         {% endif %}
+
+        <footer class="app-stamp">
+            <img class="app-stamp-logo" src="{{ url_for('static', filename='logo.png') }}" alt="" />
+            <div class="app-stamp-text">
+                <span class="app-stamp-name">השכלה</span>
+                <span class="app-stamp-tagline">בדיקת תרגילים חכמה</span>
+            </div>
+        </footer>
     </div>
 </body>
 </html>
