@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>חוקר קבוצת מנדלברוט</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050c;
+  --panel:rgba(10,14,28,.78);
+  --panel-border:rgba(120,160,255,.18);
+  --text:#e8ecf8;
+  --dim:#8b93ad;
+  --accent:#39d3ff;
+  --accent2:#ff5ec4;
+  --danger:#ff5470;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  overscroll-behavior:none;
+  font-family:'Heebo',system-ui,sans-serif;}
+#glcanvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#glcanvas.dragging{cursor:grabbing}
+
+/* ---------- כותרת ---------- */
+header{position:fixed;top:0;right:0;left:0;padding:14px 22px;display:flex;align-items:baseline;gap:14px;
+  pointer-events:none;z-index:5;
+  background:linear-gradient(to bottom,rgba(4,5,12,.75),transparent)}
+header h1{font-weight:800;font-size:1.15rem;letter-spacing:.02em}
+header .sub{color:var(--dim);font-size:.8rem;font-weight:300}
+
+/* ---------- לוח בקרה ---------- */
+#panel{position:fixed;top:64px;right:16px;width:300px;max-height:calc(100% - 140px);
+  overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--panel-border);border-radius:18px;padding:18px;
+  scrollbar-width:thin;scrollbar-color:rgba(120,160,255,.3) transparent;
+  transition:transform .35s ease,opacity .35s ease}
+#panel.hidden{transform:translateX(120%);opacity:0;pointer-events:none}
+#panel h2{font-size:.72rem;font-weight:600;color:var(--dim);letter-spacing:.14em;margin:18px 0 8px}
+#panel h2:first-child{margin-top:0}
+
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;
+  padding:9px 12px;color:var(--text);font-family:inherit;font-size:.86rem;cursor:pointer;
+  transition:border-color .2s,background .2s;text-align:right;width:100%}
+.preset:hover{border-color:var(--accent);background:rgba(57,211,255,.08)}
+.preset .z{color:var(--dim);font-size:.7rem;direction:ltr}
+
+.palettes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pal{height:30px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:border-color .2s}
+.pal.active{border-color:#fff}
+.pal:nth-child(1){background:linear-gradient(90deg,#001a33,#ff7b00,#ffe66b,#3aa0ff)}
+.pal:nth-child(2){background:linear-gradient(90deg,#1b003a,#00d4c0,#b76bff,#ffd1f0)}
+.pal:nth-child(3){background:linear-gradient(90deg,#140a00,#c98a2c,#ffe9b0,#6b4dff)}
+.pal:nth-child(4){background:linear-gradient(90deg,#0a2e1f,#7be06b,#ff5ec4,#2e90ff)}
+
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:.86rem}
+.row label{color:var(--text)}
+.row output{color:var(--accent);font-size:.78rem;direction:ltr}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+
+.btn{display:block;width:100%;border:none;border-radius:11px;padding:11px;margin-top:8px;
+  font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;
+  color:#03131c;background:linear-gradient(135deg,var(--accent),#6ee8ff);
+  transition:filter .2s, transform .1s}
+.btn:hover{filter:brightness(1.12)}
+.btn:active{transform:scale(.98)}
+.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--panel-border)}
+.btn.rec{background:linear-gradient(135deg,var(--accent2),#ff8fd8);color:#2a0018}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- שורת מצב ---------- */
+#status{position:fixed;bottom:14px;right:16px;left:16px;display:flex;justify-content:space-between;
+  align-items:flex-end;gap:12px;z-index:5;pointer-events:none;font-size:.74rem;color:var(--dim)}
+#coords{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;
+  background:rgba(4,5,12,.55);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+#hint{background:rgba(4,5,12,.55);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+
+#togglePanel{position:fixed;top:14px;left:16px;z-index:7;
+  background:var(--panel);border:1px solid var(--panel-border);color:var(--text);
+  border-radius:10px;padding:8px 14px;font-family:inherit;font-size:.82rem;cursor:pointer;
+  backdrop-filter:blur(10px)}
+
+/* ---------- שכבת הקלטה ---------- */
+#recOverlay{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;
+  justify-content:flex-end;align-items:center;padding-bottom:48px;pointer-events:none}
+#recOverlay.show{display:flex}
+#recCard{pointer-events:auto;background:var(--panel);border:1px solid var(--panel-border);
+  backdrop-filter:blur(14px);border-radius:16px;padding:16px 22px;width:min(420px,90%);
+  display:flex;flex-direction:column;gap:10px;align-items:stretch}
+#recCard .title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.95rem}
+#recCard .dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+#recBar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+#recBar>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#recCard button{align-self:center;width:auto;padding:8px 22px;margin-top:2px}
+
+/* ---------- חלון תוצאה ---------- */
+#resultOverlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+  background:rgba(2,3,8,.7);backdrop-filter:blur(6px)}
+#resultOverlay.show{display:flex}
+#resultCard{background:#0b0f1f;border:1px solid var(--panel-border);border-radius:20px;
+  padding:22px;width:min(560px,92%);display:flex;flex-direction:column;gap:14px}
+#resultCard video{width:100%;border-radius:12px;background:#000}
+#resultCard .actions{display:flex;gap:10px}
+#resultCard .actions .btn{margin-top:0}
+
+/* ---------- התאמה לטלפונים ניידים ---------- */
+@media (max-width:700px), (pointer:coarse) and (max-width:900px){
+  header{padding:10px 14px}
+  header h1{font-size:1rem}
+  header .sub{display:none}
+
+  /* הלוח הופך לגיליון תחתון */
+  #panel{top:auto;bottom:0;right:0;left:0;width:auto;max-height:58dvh;
+    border-radius:22px 22px 0 0;border-bottom:none;
+    padding:10px 18px calc(16px + env(safe-area-inset-bottom));
+    transition:transform .3s ease,opacity .3s ease}
+  #panel.hidden{transform:translateY(110%);opacity:0}
+  #panel::before{content:'';display:block;width:44px;height:5px;border-radius:3px;
+    background:rgba(255,255,255,.25);margin:2px auto 10px}
+
+  /* יעדי מגע גדולים */
+  .preset{padding:13px 14px;font-size:.95rem}
+  .btn{padding:14px;font-size:1rem}
+  .pal{height:38px}
+  input[type=range]{height:30px}
+  input[type=checkbox]{width:20px;height:20px}
+  .row{margin:10px 0;font-size:.95rem}
+
+  #togglePanel{top:auto;left:auto;right:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    padding:12px 18px;font-size:.95rem;font-weight:600;
+    border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+
+  #status{bottom:calc(14px + env(safe-area-inset-bottom));left:14px;right:auto;
+    flex-direction:column;align-items:flex-start;gap:6px}
+  #hint{display:none}
+  #coords{font-size:.62rem;max-width:62vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  #recOverlay{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="glcanvas"></canvas>
+
+<header>
+  <h1>חוקר קבוצת מנדלברוט</h1>
+  <span class="sub">גלילה — זום · גרירה — תנועה · לחיצה כפולה — צלילה</span>
+</header>
+
+<button id="togglePanel">לוח בקרה</button>
+
+<div id="panel">
+  <h2>מקומות מרשימים</h2>
+  <div class="presets" id="presets"></div>
+
+  <h2>צבעוניות</h2>
+  <div class="palettes" id="palettes">
+    <div class="pal active" data-p="0" title="להבה"></div>
+    <div class="pal" data-p="1" title="נאון"></div>
+    <div class="pal" data-p="2" title="זהב עתיק"></div>
+    <div class="pal" data-p="3" title="זוהר צפוני"></div>
+  </div>
+  <div class="row">
+    <label for="cycle">מחזור צבעים חי</label>
+    <input type="checkbox" id="cycle">
+  </div>
+
+  <h2>איכות</h2>
+  <div class="row">
+    <label for="quality">עומק חישוב</label>
+    <input type="range" id="quality" min="0.4" max="2.5" step="0.1" value="1">
+    <output id="qualityOut">×1.0</output>
+  </div>
+
+  <h2>סרטון צלילה</h2>
+  <div class="row">
+    <label for="dur">משך בשניות</label>
+    <input type="range" id="dur" min="5" max="40" step="1" value="14">
+    <output id="durOut">14</output>
+  </div>
+  <div class="row">
+    <label for="fromHome">להתחיל מהמבט המלא</label>
+    <input type="checkbox" id="fromHome" checked>
+  </div>
+  <button class="btn rec" id="recBtn">הקלטת צלילה אל המבט הנוכחי</button>
+
+  <h2>פעולות</h2>
+  <button class="btn secondary" id="snapBtn">שמירת תמונה</button>
+  <button class="btn secondary" id="fsBtn">מסך מלא</button>
+  <button class="btn secondary" id="resetBtn">איפוס תצוגה</button>
+</div>
+
+<div id="status">
+  <span id="hint">בחרו מקום מרשים מהרשימה ולחצו על כפתור ההקלטה כדי ליצור סרטון</span>
+  <span id="coords"></span>
+</div>
+
+<div id="recOverlay">
+  <div id="recCard">
+    <div class="title"><span class="dot"></span><span id="recLabel">מקליט צלילה…</span></div>
+    <div id="recBar"><div></div></div>
+    <button class="btn secondary" id="recCancel">ביטול</button>
+  </div>
+</div>
+
+<div id="resultOverlay">
+  <div id="resultCard">
+    <div style="font-weight:600">הסרטון מוכן</div>
+    <video id="resultVideo" controls loop></video>
+    <div class="actions">
+      <a class="btn" id="dlBtn" download="mandelbrot-dive.webm">הורדת הקובץ</a>
+      <button class="btn secondary" id="closeResult">סגירה</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   חוקר קבוצת מנדלברוט — מנוע צלילה עמוקה
+   --------------------------------------------------------
+   העיקרון: המרכז נשמר במספרים בדיוק שרירותי (BigInt בנקודה
+   קבועה). פעם בכמה זמן מחושב במעבד "מסלול ייחוס" — רצף
+   האיטרציות המדויק של נקודת המרכז. המעבד הגרפי מצייר כל
+   פיקסל רק כסטייה זעירה (דלתא) מהמסלול הזה, ולכן מספיק לו
+   דיוק רגיל. כך הזום מגיע עד פי 10^32 בלי לאבד חדות.
+   ============================================================ */
+
+const canvas = document.getElementById('glcanvas');
+const gl = canvas.getContext('webgl2', {
+  antialias:false, preserveDrawingBuffer:true, powerPreference:'high-performance'
+});
+if (!gl) {
+  document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">הדפדפן אינו תומך ברינדור גרפי מתקדם. נסו דפדפן עדכני.</p>';
+  throw new Error('no webgl2');
+}
+
+/* ---------- שיידרים ---------- */
+const VSRC = `#version 300 es
+void main(){
+  vec2 p = vec2((gl_VertexID<<1 & 2), (gl_VertexID & 2));
+  gl_Position = vec4(p*2.0-1.0, 0.0, 1.0);
+}`;
+
+const FSRC = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+out vec4 outColor;
+uniform vec2  u_res;
+uniform vec2  u_center;     // מרכז (למסלול הרדוד בלבד)
+uniform float u_scale;      // קנה מידה: חצי גובה התצוגה
+uniform vec2  u_refOff;     // היסט המרכז ממסלול הייחוס, ביחידות קנה מידה
+uniform int   u_iter;
+uniform int   u_mode;       // 0 חישוב ישיר, 1 חישוב הפרעות
+uniform int   u_refLen;
+uniform int   u_palette;
+uniform float u_colOffset;
+uniform sampler2D u_orbit;  // מסלול הייחוס
+
+vec2 refAt(int i){ return texelFetch(u_orbit, ivec2(i & 2047, i >> 11), 0).xy; }
+
+vec3 cosPal(float t, vec3 a, vec3 b, vec3 c, vec3 d){
+  return a + b * cos(6.28318530718 * (c * t + d));
+}
+vec3 shade(float sl){
+  float t = sl * 0.0135 + u_colOffset;
+  vec3 col;
+  if      (u_palette == 0) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.00,0.10,0.20));
+  else if (u_palette == 1) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.30,0.20,0.20));
+  else if (u_palette == 2) col = cosPal(t, vec3(0.5), vec3(0.5), vec3(1.0,0.7,0.4), vec3(0.00,0.15,0.20));
+  else                     col = cosPal(t, vec3(0.66,0.56,0.68), vec3(0.718,0.438,0.72), vec3(0.52,0.8,0.3), vec3(-0.43,-0.397,-0.083));
+  col *= 0.92 + 0.08 * cos(sl * 0.45);
+  return col;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y * 2.0;
+  float sl = -1.0;
+
+  if (u_mode == 0) {
+    /* ----- מסלול רדוד: חישוב ישיר בדיוק רגיל ----- */
+    vec2 c = u_center + uv * u_scale;
+    float xq = c.x - 0.25;
+    float q  = xq*xq + c.y*c.y;
+    bool interior = (q * (q + xq) < 0.25 * c.y * c.y)
+                 || ((c.x + 1.0)*(c.x + 1.0) + c.y*c.y < 0.0625);
+    if (!interior) {
+      vec2 z = vec2(0.0);
+      int i = 0;
+      for (; i < u_iter; i++) {
+        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+        if (dot(z,z) > 256.0) break;
+      }
+      if (i < u_iter) sl = float(i) - log2(log2(dot(z,z))) + 4.0;
+    }
+  } else {
+    /* ----- מסלול עמוק: חישוב הפרעות סביב מסלול הייחוס -----
+       דז הוא הסטייה מהייחוס, מנורמלת בקנה המידה.
+       נוסחת הצעד: דז = 2·Z·דז + s·דז² + דס
+       כאשר ההתבססות מחדש (כשהסטייה גדולה מהערך עצמו) מעבירה
+       את הפיקסל לתחילת מסלול הייחוס — וכך נמנעות תקלות דיוק. */
+    vec2 dc = u_refOff + uv;
+    vec2 dz = vec2(0.0);
+    int  m  = 0;
+    for (int i = 0; i < u_iter; i++) {
+      vec2 Z   = refAt(m);
+      vec2 sdz = dz * u_scale;
+      dz = vec2(
+        2.0*(Z.x*dz.x - Z.y*dz.y) + (sdz.x*dz.x - sdz.y*dz.y) + dc.x,
+        2.0*(Z.x*dz.y + Z.y*dz.x) + (sdz.x*dz.y + sdz.y*dz.x) + dc.y
+      );
+      m++;
+      int mi = min(m, u_refLen - 1);
+      vec2 z = refAt(mi) + dz * u_scale;
+      float zz = dot(z, z);
+      if (zz > 256.0) { sl = float(i) - log2(log2(zz)) + 4.0; break; }
+      float zAbs = max(abs(z.x), abs(z.y));
+      float dAbs = max(abs(dz.x), abs(dz.y)) * u_scale;
+      if (zAbs < dAbs || m >= u_refLen - 1) { dz = z / u_scale; m = 0; }
+    }
+  }
+
+  vec3 col;
+  if (sl < 0.0) {
+    col = vec3(0.0);
+  } else {
+    float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    col = shade(sl + (n - 0.5) * 0.9);
+  }
+  outColor = vec4(col, 1.0);
+}`;
+
+function makeShader(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, VSRC));
+gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, FSRC));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const U = {};
+['u_res','u_center','u_scale','u_refOff','u_iter','u_mode','u_refLen','u_palette','u_colOffset','u_orbit']
+  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+gl.uniform1i(U.u_orbit, 0);
+
+/* ============================================================
+   מספרים בדיוק שרירותי: נקודה קבועה על בסיס BigInt
+   כל קואורדינטה היא זוג { x, y, bits } — הערך הוא x / 2^bits
+   ============================================================ */
+function bitsFor(scale){
+  const lg = Math.max(0, -Math.log2(Math.max(scale, 1e-310)));
+  return 96 + Math.ceil(lg / 32) * 32;
+}
+function shiftTo(v, from, to){
+  if (to === from) return v;
+  return to > from ? v << BigInt(to - from) : v >> BigInt(from - to);
+}
+/* המרת מספר כפול רגיל לנקודה קבועה */
+function dToFix(x, bits){
+  if (x === 0 || !isFinite(x)) return 0n;
+  let neg = x < 0; if (neg) x = -x;
+  const e  = Math.floor(Math.log2(x));
+  const mi = BigInt(Math.round(x / 2 ** e * 2 ** 52));
+  const sh = bits + e - 52;
+  let r = sh >= 0 ? mi << BigInt(sh) : mi >> BigInt(-sh);
+  return neg ? -r : r;
+}
+/* המרת נקודה קבועה למספר כפול (כללית, גם לערכים זעירים) */
+function fixToD(v, bits){
+  if (v === 0n) return 0;
+  let neg = v < 0n; if (neg) v = -v;
+  const bl = v.toString(2).length;
+  const sh = bl - 53;
+  const top = sh > 0 ? v >> BigInt(sh) : v << BigInt(-sh);
+  const d = Number(top) * 2 ** (sh - bits);
+  return neg ? -d : d;
+}
+/* פירוק מחרוזת עשרונית לנקודה קבועה */
+function decToFix(s, bits){
+  s = String(s).trim();
+  let neg = s.startsWith('-');
+  if (neg || s.startsWith('+')) s = s.slice(1);
+  const parts = s.split('.');
+  const ip = parts[0] || '0';
+  const fp = parts[1] || '';
+  const n  = BigInt(ip + fp);
+  const den = 10n ** BigInt(fp.length);
+  const r = (n << BigInt(bits)) / den;
+  return neg ? -r : r;
+}
+function fixToDec(v, bits, digits){
+  let neg = v < 0n; if (neg) v = -v;
+  const scaled = (v * 10n ** BigInt(digits)) >> BigInt(bits);
+  let s = scaled.toString().padStart(digits + 1, '0');
+  return (neg ? '-' : '') + s.slice(0, -digits) + '.' + s.slice(-digits);
+}
+
+/* נקודה במישור המרוכב */
+function bp(xStr, yStr, bits){
+  return { x: decToFix(xStr, bits), y: decToFix(yStr, bits), bits };
+}
+function bpAlign(p, bits){
+  if (p.bits === bits) return p;
+  return { x: shiftTo(p.x, p.bits, bits), y: shiftTo(p.y, p.bits, bits), bits };
+}
+function bpAddD(p, dx, dy){
+  return { x: p.x + dToFix(dx, p.bits), y: p.y + dToFix(dy, p.bits), bits: p.bits };
+}
+function bpSubD(a, b){
+  const bits = Math.max(a.bits, b.bits);
+  const A = bpAlign(a, bits), B = bpAlign(b, bits);
+  return [ fixToD(A.x - B.x, bits), fixToD(A.y - B.y, bits) ];
+}
+function bpToD(p){ return [ fixToD(p.x, p.bits), fixToD(p.y, p.bits) ]; }
+
+/* ---------- מצב התצוגה ---------- */
+const IS_MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
+const DPR_CAP   = IS_MOBILE ? 1.5 : 2;
+let   resScale  = 1.0;
+
+const HOME_SCALE = 1.35;
+const MIN_SCALE  = 1e-32;        // זום של בערך פי 10^32
+const PERTURB_T  = 3e-4;         // מתחת לזה עוברים לחישוב הפרעות
+const HOME = { center: bp('-0.6', '0', 96), scale: HOME_SCALE };
+
+const state  = { center: HOME.center, scale: HOME.scale };
+const target = { center: HOME.center, scale: HOME.scale };
+let palette = 0, quality = IS_MOBILE ? 0.7 : 1.0, colorCycle = false, colOffset = 0;
+let dirty = true;
+let flight = null;
+let recording = false;
+
+function iterCount(scale){
+  const zoom = Math.max(1, HOME_SCALE / scale);
+  const n = Math.round((90 + 95 * Math.pow(Math.log10(zoom) + 1, 1.35)) * quality);
+  return Math.min(IS_MOBILE ? 6000 : 12000, Math.max(60, n));
+}
+
+/* ============================================================
+   מסלול הייחוס: איטרציות מדויקות של נקודה אחת, במעבד
+   ============================================================ */
+const ORBIT_W = 2048;
+const orbitTex = gl.createTexture();
+gl.activeTexture(gl.TEXTURE0);
+gl.bindTexture(gl.TEXTURE_2D, orbitTex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+let ref = null;   // { center, arr, len, maxLen, escaped }
+
+function computeReference(centerBP, maxLen){
+  const bits = centerBP.bits;
+  const B    = BigInt(bits);
+  const four = 4n << B;
+  const cx = centerBP.x, cy = centerBP.y;
+  const sh  = B - 53n;
+  const inv = 2 ** -53;
+  const toF = v => Number(v >> sh) * inv;
+
+  const arr = new Float32Array(maxLen * 2);   // האיבר הראשון: אפס
+  let zx = 0n, zy = 0n, zx2 = 0n, zy2 = 0n;
+  let len = 1, escaped = false;
+  for (let n = 1; n < maxLen; n++){
+    const zxy = (zx * zy) >> B;
+    zx = zx2 - zy2 + cx;
+    zy = (zxy << 1n) + cy;
+    arr[2*n]   = toF(zx);
+    arr[2*n+1] = toF(zy);
+    len = n + 1;
+    zx2 = (zx * zx) >> B;
+    zy2 = (zy * zy) >> B;
+    if (zx2 + zy2 > four){ escaped = true; break; }
+  }
+  return { center: centerBP, arr, len, maxLen, escaped };
+}
+
+function uploadOrbit(r){
+  const rows = Math.max(1, Math.ceil(r.len / ORBIT_W));
+  const padded = new Float32Array(ORBIT_W * rows * 2);
+  padded.set(r.arr.subarray(0, r.len * 2));
+  gl.bindTexture(gl.TEXTURE_2D, orbitTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, ORBIT_W, rows, 0, gl.RG, gl.FLOAT, padded);
+}
+
+function buildReference(centerBP, scale, iter){
+  const bits = bitsFor(scale) + 32;
+  const c = bpAlign(centerBP, bits);
+  const maxLen = Math.min(IS_MOBILE ? 8192 : 16384, iter + 1200);
+  ref = computeReference(c, maxLen);
+  uploadOrbit(ref);
+}
+
+function ensureReference(){
+  const needIter = iterCount(state.scale);
+  let ok = !!ref;
+  if (ok){
+    const [ox, oy] = bpSubD(state.center, ref.center);
+    if (Math.max(Math.abs(ox), Math.abs(oy)) > 40 * state.scale) ok = false;
+    else if (ref.center.bits < bitsFor(state.scale)) ok = false;
+    else if (!ref.escaped && ref.len < needIter && ref.len < ref.maxLen) ok = false;
+  }
+  if (!ok) buildReference(state.center, state.scale, needIter);
+}
+
+/* ---------- גודל קנבס ---------- */
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP) * resScale;
+  const w = Math.max(2, Math.round(canvas.clientWidth  * dpr));
+  const h = Math.max(2, Math.round(canvas.clientHeight * dpr));
+  if (canvas.width !== w || canvas.height !== h){
+    canvas.width = w; canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    dirty = true;
+  }
+}
+window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+/* ---------- רינדור ---------- */
+function render(){
+  const perturb = state.scale < PERTURB_T;
+  if (perturb) ensureReference();
+
+  const [cx, cy] = bpToD(state.center);
+  gl.uniform2f(U.u_res, canvas.width, canvas.height);
+  gl.uniform2f(U.u_center, cx, cy);
+  gl.uniform1f(U.u_scale, state.scale);
+  gl.uniform1i(U.u_iter, iterCount(state.scale));
+  gl.uniform1i(U.u_mode, perturb ? 1 : 0);
+  gl.uniform1i(U.u_palette, palette);
+  gl.uniform1f(U.u_colOffset, colOffset);
+  if (perturb){
+    const [ox, oy] = bpSubD(state.center, ref.center);
+    gl.uniform2f(U.u_refOff, ox / state.scale, oy / state.scale);
+    gl.uniform1i(U.u_refLen, ref.len);
+  } else {
+    gl.uniform1i(U.u_refLen, 1);
+  }
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ---------- לולאה ראשית ---------- */
+let lastT = performance.now();
+let renderedLast = false, slowFrames = 0, fastFrames = 0;
+
+function adaptResolution(dt){
+  if (!renderedLast || recording) return;
+  if (dt > 0.045) { slowFrames++; fastFrames = 0; }
+  else if (dt < 0.02) { fastFrames++; slowFrames = 0; }
+  if (slowFrames > 15 && resScale > 0.5){
+    resScale = Math.max(0.5, resScale - 0.125);
+    slowFrames = 0; resize();
+  } else if (fastFrames > 150 && resScale < 1){
+    resScale = Math.min(1, resScale + 0.125);
+    fastFrames = 0; resize();
+  }
+}
+
+function frame(now){
+  const dt = Math.min(0.1, (now - lastT) / 1000);
+  lastT = now;
+  adaptResolution(dt);
+
+  if (colorCycle){ colOffset += dt * 0.04; dirty = true; }
+
+  if (flight){
+    const t = Math.min(1, (now - flight.t0) / flight.dur);
+    const e = t * t * (3 - 2 * t);
+    const s = flight.s0 * Math.pow(flight.s1 / flight.s0, e);
+    const f = (s - flight.s1) / (flight.s0 - flight.s1);
+    state.scale = s;
+    state.center = bpAddD(bpAlign(flight.c1, bitsFor(s)), flight.dx * f, flight.dy * f);
+    target.scale = state.scale;
+    target.center = state.center;
+    dirty = true;
+    if (t >= 1){ const cb = flight.onDone; flight = null; if (cb) cb(); }
+  } else {
+    const k = 1 - Math.exp(-dt * 10);
+    const lz0 = Math.log(state.scale), lz1 = Math.log(target.scale);
+    const [dx, dy] = bpSubD(target.center, state.center);
+    if (Math.abs(lz1 - lz0) > 1e-6 ||
+        Math.abs(dx) > state.scale * 1e-6 ||
+        Math.abs(dy) > state.scale * 1e-6){
+      state.scale  = Math.exp(lz0 + (lz1 - lz0) * k);
+      state.center = bpAddD(bpAlign(state.center, bitsFor(state.scale)), dx * k, dy * k);
+      dirty = true;
+    } else if (dirty){
+      state.scale  = target.scale;
+      state.center = target.center;
+    }
+  }
+
+  if (dirty){ render(); updateStatus(); dirty = false; renderedLast = true; }
+  else renderedLast = false;
+  requestAnimationFrame(frame);
+}
+
+/* ---------- שורת מצב ---------- */
+const coordsEl = document.getElementById('coords');
+function updateStatus(){
+  const zoom = HOME_SCALE / state.scale;
+  const dg = Math.min(34, Math.max(12, Math.ceil(-Math.log10(state.scale)) + 4));
+  const x = fixToDec(state.center.x, state.center.bits, dg);
+  const y = fixToDec(state.center.y, state.center.bits, dg);
+  coordsEl.textContent =
+    `x = ${x}   y = ${y}   zoom = ${zoom < 1000 ? zoom.toFixed(1) : zoom.toExponential(2)}`;
+}
+
+/* ---------- אינטראקציה ---------- */
+let pointers = new Map();
+let pinchDist = 0;
+let lastMid = null;
+let lastTap = { t: 0, x: 0, y: 0 };
+
+function panTargetByPixels(dpx, dpy){
+  const r = canvas.getBoundingClientRect();
+  const dx = -dpx / r.height * 2 * target.scale;
+  const dy =  dpy / r.height * 2 * target.scale;
+  target.center = bpAddD(bpAlign(target.center, bitsFor(target.scale)), dx, dy);
+}
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY });
+  if (pointers.size === 2){
+    const [a, b] = [...pointers.values()];
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    lastMid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+  }
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId);
+  const cur  = { x:e.clientX, y:e.clientY, sx:prev.sx, sy:prev.sy };
+  pointers.set(e.pointerId, cur);
+  if (flight) return;
+
+  if (pointers.size === 1){
+    panTargetByPixels(cur.x - prev.x, cur.y - prev.y);
+    state.center = target.center;          // גרירה צמודה ללא השהיה
+    dirty = true;
+  } else if (pointers.size === 2){
+    const [a, b] = [...pointers.values()];
+    const d   = Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+    if (lastMid) panTargetByPixels(mid.x - lastMid.x, mid.y - lastMid.y);
+    if (pinchDist > 0 && d > 0) zoomAt(mid.x, mid.y, pinchDist / d);
+    pinchDist = d;
+    lastMid = mid;
+  }
+});
+function endPointer(e){
+  const p = pointers.get(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2){ pinchDist = 0; lastMid = null; }
+  if (pointers.size === 0) canvas.classList.remove('dragging');
+
+  if (p && e.type === 'pointerup' && e.pointerType === 'touch' && !flight){
+    const moved = Math.hypot(e.clientX - p.sx, e.clientY - p.sy);
+    const now = performance.now();
+    if (moved < 14){
+      if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40){
+        zoomAt(e.clientX, e.clientY, 0.25);
+        lastTap.t = 0;
+      } else {
+        lastTap = { t: now, x: e.clientX, y: e.clientY };
+      }
+    }
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+function zoomAt(px, py, factor){
+  const ns = Math.min(HOME_SCALE * 2.2, Math.max(MIN_SCALE, target.scale * factor));
+  factor = ns / target.scale;
+  /* היסט הסמן מהמרכז, ביחידות המישור המרוכב */
+  const r = canvas.getBoundingClientRect();
+  const ox = ((px - r.left) / r.height * 2 - r.width / r.height) * target.scale;
+  const oy = -((py - r.top) / r.height * 2 - 1) * target.scale;
+  /* המרכז זז כך שהנקודה שמתחת לסמן נשארת במקומה */
+  target.center = bpAddD(bpAlign(target.center, bitsFor(ns)), ox * (1 - factor), oy * (1 - factor));
+  target.scale = ns;
+}
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (flight) return;
+  zoomAt(e.clientX, e.clientY, Math.pow(1.0016, e.deltaY));
+}, { passive:false });
+
+canvas.addEventListener('dblclick', e => {
+  if (flight) return;
+  zoomAt(e.clientX, e.clientY, 0.2);
+});
+
+window.addEventListener('keydown', e => {
+  if (flight) return;
+  const pan = state.scale * 0.12;
+  if      (e.key === '+' || e.key === '=') target.scale = Math.max(MIN_SCALE, target.scale * 0.7);
+  else if (e.key === '-')                  target.scale = Math.min(HOME_SCALE * 2.2, target.scale / 0.7);
+  else if (e.key === 'ArrowLeft')  target.center = bpAddD(target.center, -pan, 0);
+  else if (e.key === 'ArrowRight') target.center = bpAddD(target.center,  pan, 0);
+  else if (e.key === 'ArrowUp')    target.center = bpAddD(target.center, 0,  pan);
+  else if (e.key === 'ArrowDown')  target.center = bpAddD(target.center, 0, -pan);
+});
+
+/* ---------- טיסה אל יעד ---------- */
+function flyTo(centerBP, scale, dur, onDone){
+  const c1 = bpAlign(centerBP, bitsFor(scale));
+  /* מכינים מראש את מסלול הייחוס של היעד — רפרנס אחד לכל הצלילה */
+  if (scale < PERTURB_T) buildReference(c1, scale, iterCount(scale));
+  const [dx, dy] = bpSubD(state.center, c1);
+  flight = {
+    t0: performance.now(), dur,
+    s0: state.scale, s1: scale,
+    c1, dx, dy,
+    onDone: onDone || null
+  };
+}
+
+/* ---------- מקומות מרשימים ---------- */
+const PRESETS = [
+  { name:'עמק סוסוני הים',
+    x:'-0.74453986046', y:'0.12172377365', scale: 3e-4 },
+  { name:'עמק הפילים',
+    x:'0.28693186889', y:'0.01428669390', scale: 2e-6 },
+  { name:'ספירלה משולשת',
+    x:'-0.08868132570', y:'0.65450583520', scale: 4e-6 },
+  { name:'כוכב ים',
+    x:'-0.37400413900', y:'0.65979217500', scale: 6e-6 },
+  { name:'מנדלברוט זעיר על המחט',
+    x:'-1.78644025550', y:'0', scale: 4e-9 },
+  { name:'ספירלת סוסון עמוקה',
+    x:'-0.743643887037158704752191506114774',
+    y:'0.131825904205311970493132056385139', scale: 1.2e-13 },
+  { name:'לב הספירלה — צלילת ענק',
+    x:'-0.743643887037158704752191506114774',
+    y:'0.131825904205311970493132056385139', scale: 1e-26 },
+];
+const presetsEl = document.getElementById('presets');
+const panel = document.getElementById('panel');
+PRESETS.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'preset';
+  const zoomTxt = (HOME_SCALE / p.scale).toExponential(0).replace('e+', '×10^');
+  b.innerHTML = `<span>${p.name}</span><span class="z">${zoomTxt}</span>`;
+  b.addEventListener('click', () => {
+    if (recording) return;
+    if (IS_MOBILE) panel.classList.add('hidden');
+    const pt = bp(p.x, p.y, bitsFor(p.scale));
+    const depth = Math.abs(Math.log10(p.scale / state.scale));
+    flyTo(pt, p.scale, Math.max(2500, depth * 900));
+  });
+  presetsEl.appendChild(b);
+});
+
+/* ---------- צבעוניות ---------- */
+document.querySelectorAll('.pal').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.pal').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    palette = +el.dataset.p;
+    dirty = true;
+  });
+});
+document.getElementById('cycle').addEventListener('change', e => { colorCycle = e.target.checked; });
+
+/* ---------- איכות ---------- */
+const qualityEl = document.getElementById('quality');
+qualityEl.addEventListener('input', () => {
+  quality = +qualityEl.value;
+  document.getElementById('qualityOut').textContent = '×' + quality.toFixed(1);
+  dirty = true;
+});
+
+/* ---------- כפתורים כלליים ---------- */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (recording) return;
+  flyTo(HOME.center, HOME.scale, 2200);
+});
+document.getElementById('fsBtn').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+});
+document.getElementById('snapBtn').addEventListener('click', () => {
+  render();
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mandelbrot.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }, 'image/png');
+});
+document.getElementById('togglePanel').addEventListener('click', () => panel.classList.toggle('hidden'));
+
+/* ---------- הקלטת וידאו ---------- */
+let recorder = null, recChunks = [], recCancelled = false, wakeLock = null;
+const recOverlay = document.getElementById('recOverlay');
+const recBarFill = document.querySelector('#recBar > div');
+const recBtn = document.getElementById('recBtn');
+const resultOverlay = document.getElementById('resultOverlay');
+const resultVideo = document.getElementById('resultVideo');
+const dlBtn = document.getElementById('dlBtn');
+let resultURL = null;
+
+function pickMime(){
+  const cands = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  for (const m of cands)
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  return '';
+}
+
+recBtn.addEventListener('click', () => {
+  if (recording || flight) return;
+  const mime = pickMime();
+  if (!mime){ alert('הדפדפן אינו תומך בהקלטת וידאו מהקנבס.'); return; }
+
+  const dest = { center: target.center, scale: target.scale };
+  const fromHome = document.getElementById('fromHome').checked;
+  const dur = (+document.getElementById('dur').value) * 1000;
+
+  if (fromHome){
+    state.center = HOME.center; state.scale = HOME.scale;
+    target.center = HOME.center; target.scale = HOME.scale;
+    dirty = true;
+    render();
+  }
+  const [ddx, ddy] = bpSubD(dest.center, state.center);
+  if (Math.abs(dest.scale - state.scale) < state.scale * 0.01 &&
+      Math.abs(ddx) < state.scale * 0.01 && Math.abs(ddy) < state.scale * 0.01){
+    alert('בחרו תחילה יעד — התקרבו למקום מעניין או בחרו מהרשימה, ואז הפעילו הקלטה.');
+    return;
+  }
+
+  recChunks = [];
+  recCancelled = false;
+  const stream = canvas.captureStream(IS_MOBILE ? 30 : 60);
+  recorder = new MediaRecorder(stream, {
+    mimeType: mime,
+    videoBitsPerSecond: IS_MOBILE ? 8_000_000 : 14_000_000
+  });
+  if (navigator.wakeLock) navigator.wakeLock.request('screen')
+    .then(l => { wakeLock = l; }).catch(() => {});
+  recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+  recorder.onstop = () => {
+    recording = false;
+    if (wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
+    recOverlay.classList.remove('show');
+    recBtn.disabled = false;
+    if (recCancelled || !recChunks.length){ recCancelled = false; return; }
+    const blob = new Blob(recChunks, { type: mime.split(';')[0] });
+    if (resultURL) URL.revokeObjectURL(resultURL);
+    resultURL = URL.createObjectURL(blob);
+    resultVideo.src = resultURL;
+    dlBtn.href = resultURL;
+    dlBtn.download = mime.startsWith('video/mp4') ? 'mandelbrot-dive.mp4' : 'mandelbrot-dive.webm';
+    resultOverlay.classList.add('show');
+  };
+
+  recording = true;
+  if (IS_MOBILE) panel.classList.add('hidden');
+  recBtn.disabled = true;
+  recOverlay.classList.add('show');
+  recBarFill.style.width = '0%';
+  recorder.start(250);
+
+  const t0 = performance.now();
+  const progress = () => {
+    if (!recording) return;
+    recBarFill.style.width = Math.min(100, (performance.now() - t0) / dur * 100) + '%';
+    requestAnimationFrame(progress);
+  };
+  progress();
+
+  /* רגע של שקט בתחילה, ואז טיסה; שנייה של שהות בסוף */
+  setTimeout(() => {
+    if (!recording) return;
+    flyTo(dest.center, dest.scale, dur - 1600, () => {
+      setTimeout(() => { if (recording && recorder.state !== 'inactive') recorder.stop(); }, 1100);
+    });
+  }, 500);
+});
+
+document.getElementById('recCancel').addEventListener('click', () => {
+  if (recorder && recorder.state !== 'inactive'){
+    recCancelled = true;
+    flight = null;
+    recorder.stop();
+  }
+});
+document.getElementById('closeResult').addEventListener('click', () => {
+  resultOverlay.classList.remove('show');
+  resultVideo.pause();
+});
+
+/* ---------- התנעה ---------- */
+qualityEl.value = quality;
+document.getElementById('qualityOut').textContent = '×' + quality.toFixed(1);
+if (!document.documentElement.requestFullscreen)
+  document.getElementById('fsBtn').style.display = 'none';
+if (IS_MOBILE) panel.classList.add('hidden');
+
+resize();
+updateStatus();
+requestAnimationFrame(frame);
+
+/* כניסה דרמטית קטנה: צלילה קלה פנימה בעת הטעינה */
+state.scale = HOME_SCALE * 3.2;
+flyTo(HOME.center, HOME_SCALE, 1800);
+</script>
+</body>
+</html>
