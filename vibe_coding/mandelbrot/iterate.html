@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מנדלברוט — הפונקציה הפנימית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04050c;
+  --panel: rgba(10,14,28,.88);
+  --panel-border: rgba(120,160,255,.18);
+  --text: #e8ecf8;
+  --dim: #8b93ad;
+  --accent: #39d3ff;
+  --accent2: #ff5ec4;
+  --danger: #ff5470;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Heebo', system-ui, sans-serif;
+  overflow: hidden;
+}
+#app {
+  display: flex;
+  height: 100%;
+}
+#canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-width: 0;
+}
+#plane {
+  border-radius: 14px;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ── Panel ── */
+#panel {
+  width: 310px;
+  min-width: 260px;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 18px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120,160,255,.25) transparent;
+}
+header h1 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .02em;
+}
+header p {
+  font-size: 0.76rem;
+  color: var(--dim);
+  margin-top: 5px;
+  line-height: 1.55;
+}
+.sec {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--dim);
+  letter-spacing: .13em;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+/* ── Iteration counter ── */
+#iter-wrap {
+  text-align: center;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 10px 12px 8px;
+}
+#iter-num {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--accent2);
+  direction: ltr;
+  line-height: 1;
+}
+#iter-sub {
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-top: 2px;
+}
+
+/* ── Coord box ── */
+.coord-box {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.crow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+.clabel { color: var(--dim); }
+.cval {
+  color: var(--accent);
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+}
+.cval.pink { color: var(--accent2); }
+.cval.esc  { color: var(--danger); font-weight: 600; }
+.cval.safe { color: #39ff7b; }
+
+/* ── Formula ── */
+#formula {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(57,211,255,.14);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.74rem;
+  direction: ltr;
+  font-family: 'Courier New', monospace;
+  color: #c8d0e8;
+  line-height: 1.85;
+  min-height: 110px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+#formula .lbl   { color: var(--dim); font-size: 0.66rem; }
+#formula .res   { color: var(--accent2); font-weight: bold; }
+#formula .esc   { color: var(--danger); }
+#formula .safe  { color: #39ff7b; }
+
+/* ── Color swatch ── */
+#swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid var(--panel-border);
+  flex-shrink: 0;
+}
+#swatch-desc {
+  font-size: 0.76rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: block; width: 100%;
+  border: none; border-radius: 11px; padding: 10px;
+  font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  color: #03131c;
+  background: linear-gradient(135deg, var(--accent), #6ee8ff);
+  transition: filter .2s, transform .1s;
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:active { transform: scale(.98); }
+.btn.sec-btn {
+  background: rgba(255,255,255,.07);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+}
+.btn:disabled { opacity: .38; cursor: not-allowed; }
+.controls { display: flex; flex-direction: column; gap: 7px; }
+.row {
+  display: flex; align-items: center; gap: 10px; font-size: .8rem;
+}
+.row label { color: var(--text); white-space: nowrap; }
+input[type=range] { flex: 1; accent-color: var(--accent); }
+
+/* ── Mobile ── */
+@media (max-width: 680px) {
+  #app { flex-direction: column-reverse; }
+  #panel {
+    width: 100%; min-width: 0;
+    border-right: none; border-top: 1px solid var(--panel-border);
+    max-height: 46vh;
+    flex-direction: row; flex-wrap: wrap;
+    padding: 10px 12px; gap: 10px;
+  }
+  #panel > * { min-width: 130px; flex: 1; }
+  #iter-wrap { min-width: 80px; max-width: 120px; }
+  #canvas-wrap { padding: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Complex Plane Canvas ── -->
+  <div id="canvas-wrap">
+    <canvas id="plane"></canvas>
+  </div>
+
+  <!-- ── Info Panel ── -->
+  <div id="panel">
+
+    <header>
+      <h1>הפונקציה הפנימית</h1>
+      <p>
+        לחצו על המישור לבחירת <span style="color:var(--accent)">c</span>.
+        כל שלב מחשב <span dir="ltr">z ← z² + c</span> החל מ-<span dir="ltr">z₀ = 0</span>.
+        הצבע נקבע לפי מספר הצעדים עד שהנקודה בורחת מחוץ למעגל.
+      </p>
+    </header>
+
+    <!-- Iteration counter -->
+    <div id="iter-wrap">
+      <div id="iter-num">0</div>
+      <div id="iter-sub">איטרציות</div>
+    </div>
+
+    <!-- Coordinates -->
+    <div>
+      <div class="sec">ערכים נוכחיים</div>
+      <div class="coord-box">
+        <div class="crow">
+          <span class="clabel">c =</span>
+          <span class="cval" id="c-val">-0.7 + 0.3i</span>
+        </div>
+        <div class="crow">
+          <span class="clabel" id="z-label">z₀ =</span>
+          <span class="cval pink" id="z-val">0</span>
+        </div>
+        <div class="crow">
+          <span class="clabel" id="mod-label">|z₀| =</span>
+          <span class="cval" id="mod-val">0.0000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formula -->
+    <div>
+      <div class="sec">חישוב השלב</div>
+      <div id="formula">לחצו על המישור לבחירת נקודה c</div>
+    </div>
+
+    <!-- Color -->
+    <div>
+      <div class="sec">צבע הפיקסל</div>
+      <div id="swatch-row">
+        <canvas id="swatch" width="44" height="44"></canvas>
+        <div id="swatch-desc">טרם חושב</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="sec">בקרה</div>
+      <div class="row">
+        <label for="speed">מהירות</label>
+        <input type="range" id="speed" min="60" max="980" value="500" step="20">
+      </div>
+      <button class="btn" id="stepBtn">צעד אחד ←</button>
+      <button class="btn sec-btn" id="playBtn">הפעל אוטומטית ▶</button>
+      <button class="btn sec-btn" id="resetBtn">איפוס</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════
+   קבועים
+   ════════════════════════════════════════════════════ */
+const RANGE    = 2.7;   // הטווח הנראה: -RANGE..+RANGE
+const MARGIN   = 38;    // שוליים בפיקסלים
+const ESC_R    = 2;     // רדיוס בריחה
+const MAX_ITER = 300;
+
+/* ════════════════════════════════════════════════════
+   Canvas
+   ════════════════════════════════════════════════════ */
+const canvas = document.getElementById('plane');
+const ctx    = canvas.getContext('2d');
+const swCv   = document.getElementById('swatch');
+const swCtx  = swCv.getContext('2d');
+
+/* ════════════════════════════════════════════════════
+   מצב
+   ════════════════════════════════════════════════════ */
+let c = { x: -0.7, y: 0.3 };
+let traj = [{ x: 0, y: 0 }];  // מסלול: z_0, z_1, ...
+let step = 0;                   // השלב הנוכחי (אינדקס ב-traj)
+let escaped    = false;
+let escapedAt  = -1;
+let playing    = false;
+let playTimer  = null;
+let isDragging = false;
+
+/* ════════════════════════════════════════════════════
+   טרנספורמציות קואורדינטות
+   ════════════════════════════════════════════════════ */
+function plotSz() {
+  return Math.min(canvas.width, canvas.height) - 2 * MARGIN;
+}
+function toCv(cx, cy) {
+  const s  = plotSz();
+  const ox = (canvas.width  - s) / 2;
+  const oy = (canvas.height - s) / 2;
+  return [
+    ox + (cx + RANGE) / (2 * RANGE) * s,
+    oy + (RANGE - cy) / (2 * RANGE) * s
+  ];
+}
+function fromCv(px, py) {
+  const s  = plotSz();
+  const ox = (canvas.width  - s) / 2;
+  const oy = (canvas.height - s) / 2;
+  return [
+    (px - ox) / s * (2 * RANGE) - RANGE,
+    RANGE - (py - oy) / s * (2 * RANGE)
+  ];
+}
+
+/* ════════════════════════════════════════════════════
+   עיצוב מספרים
+   ════════════════════════════════════════════════════ */
+function fmt(v) {
+  if (Math.abs(v) < 1e-10) return '0';
+  const a = Math.abs(v);
+  const d = a >= 100 ? 2 : a >= 10 ? 3 : 4;
+  return v.toFixed(d);
+}
+function fmtC(x, y) {
+  const re  = fmt(x);
+  const aim = fmt(Math.abs(y));
+  if (Math.abs(y) < 1e-10) return re;
+  if (Math.abs(x) < 1e-10) return `${y < 0 ? '-' : ''}${aim}i`;
+  return `${re} ${y < 0 ? '−' : '+'} ${aim}i`;
+}
+
+/* ════════════════════════════════════════════════════
+   פלטת צבעים (זהה ל-mandel.html, פלטה 0)
+   ════════════════════════════════════════════════════ */
+function cosPal(t) {
+  const τ = 2 * Math.PI;
+  return [
+    0.5 + 0.5 * Math.cos(τ * (t + 0.00)),
+    0.5 + 0.5 * Math.cos(τ * (t + 0.10)),
+    0.5 + 0.5 * Math.cos(τ * (t + 0.20))
+  ];
+}
+function iterColor(n, zAbsSq) {
+  if (n < 0) return [0, 0, 0];
+  const sl = n - Math.log2(Math.log2(Math.sqrt(Math.max(1, zAbsSq)))) + 4;
+  return cosPal(sl * 0.0135);
+}
+
+/* ════════════════════════════════════════════════════
+   ציור חץ
+   ════════════════════════════════════════════════════ */
+function arrow(x1, y1, x2, y2, col, lw = 1.8, hl = 11) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 2) return;
+  const ang = Math.atan2(dy, dx);
+  const ah  = Math.min(hl, len * 0.45);
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.fillStyle   = col;
+  ctx.lineWidth   = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ah * Math.cos(ang - 0.42), y2 - ah * Math.sin(ang - 0.42));
+  ctx.lineTo(x2 - ah * Math.cos(ang + 0.42), y2 - ah * Math.sin(ang + 0.42));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/* ════════════════════════════════════════════════════
+   ציור ראשי
+   ════════════════════════════════════════════════════ */
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const [ox, oy] = toCv(0, 0);
+  const sz = plotSz();
+  const mx = (canvas.width  - sz) / 2;
+  const my = (canvas.height - sz) / 2;
+  const fs = Math.max(10, sz * 0.031);
+
+  /* רקע */
+  ctx.fillStyle = '#060810';
+  ctx.beginPath();
+  ctx.roundRect(mx, my, sz, sz, 10);
+  ctx.fill();
+
+  /* קווי רשת */
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(mx, my, sz, sz);
+  ctx.clip();
+
+  ctx.strokeStyle = 'rgba(100,140,255,.07)';
+  ctx.lineWidth = 1;
+  for (let v = -Math.ceil(RANGE); v <= Math.ceil(RANGE); v++) {
+    const [gx] = toCv(v, 0);
+    const [,gy] = toCv(0, v);
+    ctx.beginPath(); ctx.moveTo(gx, my); ctx.lineTo(gx, my + sz); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mx, gy); ctx.lineTo(mx + sz, gy); ctx.stroke();
+  }
+
+  /* צירים */
+  ctx.strokeStyle = 'rgba(150,180,255,.28)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(mx, oy); ctx.lineTo(mx + sz, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, my); ctx.lineTo(ox, my + sz); ctx.stroke();
+
+  /* תוויות ציר */
+  ctx.fillStyle = 'rgba(140,170,255,.4)';
+  ctx.font = `${fs}px Heebo, sans-serif`;
+  for (let v = -2; v <= 2; v++) {
+    if (v === 0) continue;
+    const [gx] = toCv(v, 0);
+    const [,gy] = toCv(0, v);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(v, gx, oy + 5);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(v + 'i', ox - 6, gy);
+  }
+  ctx.fillStyle = 'rgba(140,170,255,.5)';
+  ctx.font = `bold ${fs * 1.1}px Heebo, sans-serif`;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('Re', mx + sz - 2, oy - fs * 0.8);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('Im', ox + fs * 0.9, my + 4);
+
+  /* מעגל |z| של הנקודה הנוכחית (עגול כחול עדין) */
+  const curZ = traj[step];
+  const curMod = Math.sqrt(curZ.x * curZ.x + curZ.y * curZ.y);
+  if (step > 0 && curMod > 0.01) {
+    const [escX] = toCv(ESC_R, 0);
+    const rPx = (escX - ox) * (curMod / ESC_R);
+    ctx.strokeStyle = 'rgba(57,211,255,.13)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ox, oy, rPx, 0, 2 * Math.PI); ctx.stroke();
+  }
+
+  /* מעגל בריחה |z| = 2 */
+  const [escX] = toCv(ESC_R, 0);
+  const escR = escX - ox;
+  ctx.strokeStyle = 'rgba(255,84,112,.45)';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.arc(ox, oy, escR, 0, 2 * Math.PI); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,84,112,.5)';
+  ctx.font = `${fs * 0.92}px Heebo, sans-serif`;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText('|z| = 2', ox + escR + 5, oy - fs);
+
+  /* מסלול — קווים */
+  if (step > 0) {
+    for (let i = 1; i <= step; i++) {
+      const [ax, ay] = toCv(traj[i-1].x, traj[i-1].y);
+      const [bx, by] = toCv(traj[i].x,   traj[i].y);
+      const alpha = 0.2 + 0.55 * (i / traj.length);
+      ctx.strokeStyle = `rgba(255,94,196,${alpha * 0.7})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    }
+  }
+
+  /* מסלול — נקודות קודמות */
+  const dotR = Math.max(2.5, sz * 0.011);
+  for (let i = 1; i < step; i++) {
+    const [px, py] = toCv(traj[i].x, traj[i].y);
+    ctx.fillStyle = 'rgba(255,94,196,.45)';
+    ctx.beginPath(); ctx.arc(px, py, dotR, 0, 2 * Math.PI); ctx.fill();
+  }
+
+  /* וקטור c (כחול) */
+  const [ccx, ccy] = toCv(c.x, c.y);
+  arrow(ox, oy, ccx, ccy, 'rgba(57,211,255,.88)', 2, 13);
+  ctx.fillStyle = '#39d3ff';
+  ctx.beginPath(); ctx.arc(ccx, ccy, sz * 0.018, 0, 2 * Math.PI); ctx.fill();
+  /* תווית c */
+  ctx.fillStyle = '#39d3ff';
+  ctx.font = `bold ${Math.max(11, sz * 0.038)}px Heebo, sans-serif`;
+  const cTxt = `c = ${fmtC(c.x, c.y)}`;
+  const cUp  = ccy > oy;  // c מתחת לציר — שים תווית מעל
+  ctx.textAlign    = ccx > ox ? 'left' : 'right';
+  ctx.textBaseline = cUp ? 'bottom' : 'top';
+  ctx.fillText(cTxt, ccx + (ccx > ox ? 9 : -9), ccy + (cUp ? -6 : 6));
+
+  /* z_0 בראשית */
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath(); ctx.arc(ox, oy, sz * 0.013, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.38)';
+  ctx.font = `${fs}px Heebo, sans-serif`;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('z₀=0', ox + 6, oy - 4);
+
+  /* וקטור z הנוכחי (ורוד) */
+  if (step > 0) {
+    const [zx, zy] = toCv(curZ.x, curZ.y);
+    arrow(ox, oy, zx, zy, 'rgba(255,94,196,.9)', 2.2, 13);
+    /* נקודה */
+    ctx.fillStyle = '#ff5ec4';
+    ctx.beginPath(); ctx.arc(zx, zy, sz * 0.022, 0, 2 * Math.PI); ctx.fill();
+    /* טבעת */
+    ctx.strokeStyle = 'rgba(255,94,196,.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(zx, zy, sz * 0.04, 0, 2 * Math.PI); ctx.stroke();
+    /* תווית */
+    ctx.fillStyle = '#ff5ec4';
+    ctx.font = `bold ${Math.max(11, sz * 0.036)}px Heebo, sans-serif`;
+    ctx.textAlign    = zx < ox ? 'left' : 'right';
+    ctx.textBaseline = zy < oy ? 'bottom' : 'top';
+    ctx.fillText(
+      `z${step} = ${fmtC(curZ.x, curZ.y)}`,
+      zx + (zx < ox ? 9 : -9),
+      zy + (zy < oy ? -6 : 6)
+    );
+  }
+
+  /* סימון בריחה */
+  if (escaped && step >= escapedAt) {
+    const [zx, zy] = toCv(traj[escapedAt].x, traj[escapedAt].y);
+    ctx.strokeStyle = 'rgba(255,84,112,.75)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.arc(zx, zy, sz * 0.058, 0, 2 * Math.PI); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.restore();
+}
+
+/* ════════════════════════════════════════════════════
+   עדכון פאנל
+   ════════════════════════════════════════════════════ */
+function updatePanel() {
+  const z   = traj[step];
+  const mod = Math.sqrt(z.x * z.x + z.y * z.y);
+
+  document.getElementById('c-val').textContent = fmtC(c.x, c.y);
+  document.getElementById('z-label').textContent = `z${step} =`;
+  document.getElementById('mod-label').textContent = `|z${step}| =`;
+  document.getElementById('z-val').textContent = fmtC(z.x, z.y);
+
+  const modEl = document.getElementById('mod-val');
+  modEl.textContent = mod.toFixed(4);
+  modEl.className = 'cval ' + (mod > ESC_R ? 'esc' : mod > 0 ? 'safe' : '');
+
+  document.getElementById('iter-num').textContent = step;
+
+  /* נוסחה */
+  const fbox = document.getElementById('formula');
+  if (step === 0) {
+    fbox.innerHTML =
+      `<span class="lbl">מצב התחלתי</span>\n` +
+      `z₀ = 0\n\n` +
+      `לחצו "צעד אחד" לחישוב\n` +
+      `z₁ = z₀² + c = 0² + c = c`;
+  } else {
+    const prev = traj[step - 1];
+    const sq   = {
+      x: prev.x * prev.x - prev.y * prev.y,
+      y: 2 * prev.x * prev.y
+    };
+    const esc = mod > ESC_R;
+    fbox.innerHTML =
+      `<span class="lbl">שלב ${step}</span>\n` +
+      `z${step} = z${step-1}² + c\n` +
+      `     = (${fmtC(prev.x, prev.y)})²\n` +
+      `       + (${fmtC(c.x, c.y)})\n` +
+      `     = (${fmtC(sq.x, sq.y)})\n` +
+      `       + (${fmtC(c.x, c.y)})\n` +
+      `<span class="res">     = ${fmtC(z.x, z.y)}</span>\n\n` +
+      `|z${step}| = ${mod.toFixed(4)}` +
+      (esc
+        ? `\n<span class="esc">↑ גדול מ-2! הנקודה בורחת</span>`
+        : `\n<span class="safe">✓ קטן מ-2 — עדיין בתוך המעגל</span>`);
+  }
+
+  /* צבע */
+  updateSwatch(mod);
+}
+
+function updateSwatch(mod) {
+  const desc = document.getElementById('swatch-desc');
+  if (step === 0) {
+    swCtx.fillStyle = '#0a0c1a';
+    swCtx.fillRect(0, 0, 44, 44);
+    desc.textContent = 'טרם חושב';
+    return;
+  }
+  if (escaped) {
+    const zE   = traj[escapedAt];
+    const msq  = zE.x * zE.x + zE.y * zE.y;
+    const rgb  = iterColor(escapedAt, msq).map(v => Math.round(Math.max(0, Math.min(1, v)) * 255));
+    swCtx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+    swCtx.fillRect(0, 0, 44, 44);
+    desc.innerHTML = `ברח באיטרציה ${escapedAt}<br>rgb(${rgb.join(', ')})`;
+  } else if (step >= MAX_ITER) {
+    swCtx.fillStyle = '#000';
+    swCtx.fillRect(0, 0, 44, 44);
+    desc.textContent = `לא ברח — הנקודה שייכת לקבוצה (שחור)`;
+  } else {
+    swCtx.fillStyle = '#0a0c1a';
+    swCtx.fillRect(0, 0, 44, 44);
+    desc.textContent = `לא ברח עדיין (${step} שלבים, |z|=${mod.toFixed(3)})`;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   היגיון איטרציות
+   ════════════════════════════════════════════════════ */
+function nextZ() {
+  const last = traj[traj.length - 1];
+  return {
+    x: last.x * last.x - last.y * last.y + c.x,
+    y: 2 * last.x * last.y                + c.y
+  };
+}
+
+function doStep() {
+  if (escaped || step >= MAX_ITER) return false;
+  if (step === traj.length - 1) {
+    const z   = nextZ();
+    traj.push(z);
+    const msq = z.x * z.x + z.y * z.y;
+    if (msq > 4) { escaped = true; escapedAt = traj.length - 1; }
+  }
+  step++;
+  draw();
+  updatePanel();
+  return !escaped && step < MAX_ITER;
+}
+
+function doReset(keepC = true) {
+  traj = [{ x: 0, y: 0 }];
+  step = 0;
+  escaped = false;
+  escapedAt = -1;
+  stopPlay();
+  draw();
+  updatePanel();
+}
+
+/* ════════════════════════════════════════════════════
+   הפעלה אוטומטית
+   ════════════════════════════════════════════════════ */
+function delay() {
+  const raw = +document.getElementById('speed').value;
+  return 1040 - raw;   // slider ימינה = מהיר
+}
+
+function startPlay() {
+  if (playing) return;
+  playing = true;
+  document.getElementById('playBtn').textContent = 'עצור ■';
+  (function tick() {
+    const cont = doStep();
+    if (cont && playing) playTimer = setTimeout(tick, delay());
+    else {
+      playing = false;
+      document.getElementById('playBtn').textContent = 'הפעל אוטומטית ▶';
+    }
+  })();
+}
+
+function stopPlay() {
+  playing = false;
+  if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+  document.getElementById('playBtn').textContent = 'הפעל אוטומטית ▶';
+}
+
+/* ════════════════════════════════════════════════════
+   אינטראקציה עם הקנבס
+   ════════════════════════════════════════════════════ */
+function evToComplex(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width  / rect.width;
+  const sy = canvas.height / rect.height;
+  return fromCv((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy);
+}
+
+canvas.addEventListener('pointerdown', e => {
+  isDragging = true;
+  canvas.setPointerCapture(e.pointerId);
+  const [nx, ny] = evToComplex(e);
+  c = { x: nx, y: ny };
+  doReset();
+});
+canvas.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  const [nx, ny] = evToComplex(e);
+  c = { x: nx, y: ny };
+  doReset();
+});
+canvas.addEventListener('pointerup',     () => { isDragging = false; });
+canvas.addEventListener('pointercancel', () => { isDragging = false; });
+
+/* ════════════════════════════════════════════════════
+   כפתורים
+   ════════════════════════════════════════════════════ */
+document.getElementById('stepBtn').addEventListener('click', () => {
+  stopPlay(); doStep();
+});
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (playing) stopPlay(); else startPlay();
+});
+document.getElementById('resetBtn').addEventListener('click', () => doReset());
+
+/* ════════════════════════════════════════════════════
+   גודל קנבס
+   ════════════════════════════════════════════════════ */
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  const s = Math.min(wrap.clientWidth, wrap.clientHeight) - 6;
+  canvas.width = canvas.height = Math.max(200, s);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+/* ════════════════════════════════════════════════════
+   אתחול
+   ════════════════════════════════════════════════════ */
+resize();
+draw();
+updatePanel();
+</script>
+</body>
+</html>
