@@ -1,5 +1,5 @@
-flask
-anthropic
-python-dotenv
-pymupdf
-pillow
+flask>=3.0.0
+anthropic>=0.92.0
+python-dotenv>=1.0.0
+pymupdf>=1.27.0
+pillow>=10.0.0

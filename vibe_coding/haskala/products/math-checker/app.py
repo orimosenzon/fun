@@ -310,11 +310,10 @@ def humanize_error(exc: Exception) -> dict:
 # ─── streaming job runner ─────────────────────────────────────────────────────
 
 STAGE_LABELS = {
-    "render":  "מרנדר עמוד",
     "orient":  "מזהה סיבוב (Haiku)",
-    "analyze": "מנתח מתמטיקה (Opus)",
+    "analyze": "מנתח מתמטיקה (Opus, ~30 ש')",
 }
-_STEPS_PER_PAGE = 3  # render, orient, analyze
+_STEPS_PER_PAGE = 2  # orient, analyze
 
 
 def _evict_stale_jobs():
@@ -327,32 +326,34 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool):
     """Generator: yields SSE-ready progress dicts, then a final result dict."""
     pages_imgs = file_to_pages(file_bytes, ext)
     total = len(pages_imgs)
-    done = 0
 
-    def progress(stage: str, page: int) -> dict:
-        nonlocal done
-        done += 1
+    def progress(stage: str, page: int, completed: int) -> dict:
+        # Emitted *before* each stage runs, so the label reflects the stage
+        # currently executing (Opus analysis is the slow one, ~30s).
         return {
             "type": "progress",
             "page": page,
             "total_pages": total,
             "stage": stage,
             "label": STAGE_LABELS.get(stage, stage),
-            "pct": round(100 * done / max(1, total * _STEPS_PER_PAGE)),
+            "pct": round(100 * completed / max(1, total * _STEPS_PER_PAGE)),
         }
 
     results = []
+    imgs = []  # oriented analysis-resolution images, kept server-side for re-analysis
     for idx, img in enumerate(pages_imgs):
         p = idx + 1
-        yield progress("render", p)
+        base = idx * _STEPS_PER_PAGE
 
+        yield progress("orient", p, base)
         if auto_orient:
             rotation = detect_rotation(img)
             img = apply_rotation(img, rotation)
         else:
             rotation = 0
-        yield progress("orient", p)
 
+        yield progress("analyze", p, base + 1)
+        img = _downscale(img, MAX_EDGE)
         analysis = analyze_page(img)
         log.info(
             "[page %d] rotation=%d° problems=%d verdicts=%s",
@@ -367,9 +368,9 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool):
             "image_b64": _img_to_b64_jpeg(img, PREVIEW_MAX_EDGE, quality=85),
             "analysis": analysis,
         })
-        yield progress("analyze", p)
+        imgs.append(img)
 
-    yield {"type": "result", "pages": results}
+    yield {"type": "result", "pages": results, "imgs": imgs}
 
 
 def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filename: str):
@@ -379,6 +380,7 @@ def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filena
         for ev in _process_stream(file_bytes, ext, auto_orient):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
+                job["imgs"] = ev["imgs"]
                 job["filename"] = filename
                 q.put({"type": "done"})
             else:
@@ -412,7 +414,7 @@ def analyze_start():
     filename = f.filename or "תרגיל"
 
     job_id = str(uuid.uuid4())
-    JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None, "filename": None}
+    JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None, "imgs": None, "filename": None}
     threading.Thread(
         target=_run_job,
         args=(job_id, file_bytes, ext, auto_orient, filename),
@@ -440,6 +442,49 @@ def analyze_stream(job_id: str):
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.route("/reanalyze", methods=["POST"])
+def reanalyze():
+    """Re-run analysis on a single page after the user manually rotated it.
+
+    Body: {job_id, page, rotate}. `rotate` is extra CW degrees (0/90/180/270)
+    to apply to the page's current orientation before re-analyzing.
+    """
+    data = request.get_json(silent=True) or {}
+    job = JOBS.get(data.get("job_id"))
+    if not job or not job.get("imgs"):
+        return jsonify({"message": "התרגיל לא נמצא", "details": "ייתכן שהזמן הקצוב פג. טען מחדש."}), 404
+
+    try:
+        idx = int(data.get("page", 0)) - 1
+    except (TypeError, ValueError):
+        idx = -1
+    if not (0 <= idx < len(job["imgs"])):
+        return jsonify({"message": "מספר עמוד לא תקין"}), 400
+
+    rotate = int(data.get("rotate", 0)) % 360
+    img = apply_rotation(job["imgs"][idx], rotate) if rotate else job["imgs"][idx]
+
+    try:
+        analysis = analyze_page(img)
+    except Exception as e:
+        log.exception("reanalyze failed")
+        return jsonify(humanize_error(e)), 502
+
+    new_rot = (job["pages"][idx].get("rotation_applied", 0) + rotate) % 360
+    page_data = {
+        "page": idx + 1,
+        "rotation_applied": new_rot,
+        "image_b64": _img_to_b64_jpeg(img, PREVIEW_MAX_EDGE, quality=85),
+        "analysis": analysis,
+    }
+    job["imgs"][idx] = img
+    job["pages"][idx] = page_data
+    job["ts"] = time.time()
+    log.info("[reanalyze page %d] rotate=%d° → rotation=%d° problems=%d",
+             idx + 1, rotate, new_rot, len(analysis.get("problems", [])))
+    return jsonify(page_data)
 
 
 @app.route("/result-data/<job_id>")
