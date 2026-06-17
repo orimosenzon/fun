@@ -1,124 +1,931 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>בדיקת תרגילי מתמטיקה — השכלה</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<style>
-  :root { --bg:#0f1419; --panel:#1a212b; --line:#2c3744; --txt:#e6edf3; --muted:#8b98a5;
-          --ok:#2ea043; --bad:#e5534b; --partial:#d29922; --accent:#388bfd; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font-family:"Segoe UI",Arial,sans-serif; }
-  header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
-  header h1 { font-size:20px; margin:0; }
-  header .sub { color:var(--muted); font-size:13px; }
-  .uploader { padding:20px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;
-              border-bottom:1px solid var(--line); }
-  input[type=file] { color:var(--txt); }
-  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 20px;
-           font-size:15px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:wait; }
-  label.chk { color:var(--muted); font-size:14px; display:flex; gap:6px; align-items:center; }
-  #status { padding:0 24px; color:var(--muted); min-height:22px; }
-  .page { display:grid; grid-template-columns: 1fr 1fr; gap:18px; padding:18px 24px;
-          border-bottom:1px solid var(--line); align-items:start; }
-  .page img { width:100%; border-radius:8px; border:1px solid var(--line); background:#fff; }
-  .pagehead { grid-column:1/-1; color:var(--muted); font-size:14px; }
-  .summary { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
-  .diagram { color:var(--accent); font-size:13px; margin-top:6px; }
-  .prob { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
-  .prob h3 { margin:0 0 8px; font-size:16px; display:flex; gap:8px; align-items:center; }
-  .badge { font-size:12px; padding:2px 8px; border-radius:20px; }
-  .b-correct { background:rgba(46,160,67,.2); color:var(--ok); }
-  .b-partial { background:rgba(210,153,34,.2); color:var(--partial); }
-  .b-incorrect { background:rgba(229,83,75,.2); color:var(--bad); }
-  .b-unclear { background:rgba(139,152,165,.2); color:var(--muted); }
-  .step { padding:6px 10px; margin:4px 0; border-radius:6px; border-right:3px solid var(--line); background:#0d1117; }
-  .step.ok { border-right-color:var(--ok); }
-  .step.bad { border-right-color:var(--bad); }
-  .step .comment { color:var(--bad); font-size:13px; margin-top:4px; }
-  .topic { color:var(--muted); font-size:12px; }
-  .feedback { margin-top:8px; font-size:14px; color:var(--txt); border-top:1px dashed var(--line); padding-top:8px; }
-  .katex { font-size:1.05em; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>השכלה — בדיקת תרגילי מתמטיקה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+            onload="document.dispatchEvent(new Event('katex-ready'))"></script>
+    <style>
+        :root {
+            --bg: #46586d;
+            --paper: #f1ebdb;
+            --paper-alt: #e9e2cd;
+            --fg: #2b3442;
+            --heading: #2c3b50;
+            --accent: #2e7286;
+            --accent-hover: #245c6d;
+            --accent-soft: rgba(46, 114, 134, 0.12);
+            --header-bg-1: #32425a;
+            --header-bg-2: #223045;
+            --header-fg: #f3eedd;
+            --badge: #2c3b50;
+            --secondary: #b3924a;
+            --secondary-hover: #9a7b38;
+            --border: #d8cfb6;
+            --border-soft: #e3dcc6;
+            --error: #b54343;
+            --ok: #1e7e34;
+            --bad: #b54343;
+            --partial: #a0740a;
+            --unclear: #5a6b82;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Heebo', 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+            background:
+                radial-gradient(circle at 15% 8%, rgba(255,255,255,0.07) 0, transparent 38%),
+                radial-gradient(circle at 88% 90%, rgba(10,20,35,0.18) 0, transparent 50%),
+                var(--bg);
+            background-attachment: fixed;
+            color: var(--fg);
+            margin: 0;
+            padding: 1.5rem 1rem 6rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, var(--header-bg-1) 0%, var(--header-bg-2) 100%);
+            border-radius: 18px;
+            padding: 1.8rem 2.2rem 1.6rem 7.5rem;
+            margin-bottom: 1.4rem;
+            box-shadow: 0 10px 30px rgba(10,20,35,0.35), 0 2px 6px rgba(10,20,35,0.25);
+            overflow: hidden;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 90% 115%, rgba(255,255,255,0.14) 0, transparent 42%),
+                radial-gradient(circle at 3% -15%, rgba(255,255,255,0.10) 0, transparent 38%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            margin: 0 0 0.3rem;
+            color: var(--header-fg);
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            position: relative;
+            z-index: 2;
+        }
+        .hero .subtitle {
+            display: inline-block;
+            margin: 0.7rem 0 0;
+            padding: 0.55rem 0.95rem;
+            background: rgba(255,255,255,0.10);
+            color: #ecf3ee;
+            font-size: 0.97rem;
+            line-height: 1.55;
+            max-width: 720px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.16);
+            position: relative;
+            z-index: 2;
+        }
+        .hero-art {
+            position: absolute;
+            top: 50%;
+            left: 1.4rem;
+            transform: translateY(-50%);
+            width: 76px;
+            height: 76px;
+            padding: 14px;
+            background: rgba(243,238,221,0.10);
+            border-radius: 50%;
+            opacity: 0.95;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ── Global reset button ── */
+        .global-reset {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 2000;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            font: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(10,20,35,0.30);
+            transition: background 0.15s;
+        }
+        .global-reset:hover { background: var(--accent-soft); }
+
+        /* ── Buttons ── */
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            font-size: 1rem;
+            border-radius: 999px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(30,81,69,0.18);
+            transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
+        }
+        button:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background: #c3bfb1; cursor: not-allowed; transform: none; box-shadow: none; }
+        button.secondary { background: var(--secondary); box-shadow: 0 2px 5px rgba(140,110,60,0.18); }
+        button.secondary:hover { background: var(--secondary-hover); }
+        button.danger { background: var(--error); }
+        button.danger:hover { background: #8e3535; }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .text-link {
+            background: transparent;
+            color: var(--accent);
+            box-shadow: none;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .text-link:hover { background: rgba(30,81,69,0.08); color: var(--accent-hover); box-shadow: none; transform: none; }
+
+        .icon-btn {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--border);
+            box-shadow: none;
+            padding: 0.45rem 0.7rem;
+            font-size: 1.05rem;
+            border-radius: 999px;
+            min-width: 2.5rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .icon-btn:hover { background: rgba(30,81,69,0.08); box-shadow: none; transform: none; }
+
+        /* ── Empty CTA ── */
+        .empty-cta {
+            background: var(--paper);
+            border: 1px solid var(--border-soft);
+            border-radius: 18px;
+            padding: 2.4rem 1.5rem 1.8rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(10,20,35,0.15), 0 12px 32px rgba(10,20,35,0.22);
+        }
+        .empty-art {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.1rem;
+            display: block;
+            color: var(--accent);
+            opacity: 0.9;
+        }
+        .empty-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.9rem;
+        }
+        .empty-row label {
+            color: var(--heading);
+            font-weight: 600;
+            font-size: 0.95rem;
+            min-width: 9em;
+            text-align: end;
+        }
+        .empty-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .big-cta {
+            font-size: 1.15rem;
+            padding: 0.95rem 2.1rem;
+            border-radius: 999px;
+            margin-bottom: 0.5rem;
+        }
+        .empty-hint {
+            color: #6e6a5c;
+            font-size: 0.92rem;
+            margin: 0.9rem 0 0.4rem;
+        }
+        .empty-side {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+        .text-sep { color: #b8b4a6; }
+
+        /* ── Progress bar ── */
+        .progress-box {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .progress-box.visible { display: block; }
+        .progress-label {
+            font-size: 0.95rem;
+            color: var(--fg);
+            margin-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-track {
+            height: 12px;
+            background: #e9e4d4;
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(40,50,45,0.10);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent) 0%, #3f8ba0 100%);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+        .progress-box.error .progress-fill { background: var(--error); }
+        .progress-box.error .progress-label { color: var(--error); }
+
+        /* ── Error banner ── */
+        .error-banner {
+            background: #fdecec;
+            border: 1px solid #e7c8c8;
+            border-right: 3px solid var(--error);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .error-banner[hidden] { display: none; }
+        .error-banner .error-title {
+            color: var(--error);
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 0.4rem;
+        }
+        .error-banner .error-details { color: #5b3a3a; line-height: 1.55; margin-bottom: 0.4rem; }
+        .error-banner details { margin-top: 0.4rem; font-size: 0.85rem; }
+        .error-banner details summary { cursor: pointer; color: #7a5a5a; user-select: none; }
+        .error-banner details pre {
+            background: #fff5f5;
+            border: 1px solid #ecd4d4;
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            margin-top: 0.4rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 0.8rem;
+            color: #5b3a3a;
+            direction: ltr;
+            text-align: left;
+            max-height: 240px;
+            overflow: auto;
+        }
+
+        /* ── Top toolbar (after load) ── */
+        .toolbar-main {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.65rem 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            gap: 0.55rem;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 10px rgba(10,20,35,0.20);
+        }
+        .toolbar-status {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .toolbar-status .status-filename {
+            font-weight: 600;
+            color: var(--fg);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 28em;
+        }
+        .toolbar-status .status-meta { color: #6e6a5c; font-size: 0.88rem; }
+
+        /* Save menu */
+        .menu-wrap { position: relative; display: inline-block; }
+        .menu-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+            min-width: 210px;
+            z-index: 500;
+            display: none;
+            padding: 0.4rem 0;
+            overflow: hidden;
+        }
+        .menu-list.visible { display: block; }
+        .menu-list button {
+            display: block;
+            width: 100%;
+            background: transparent;
+            color: var(--fg);
+            text-align: start;
+            padding: 0.6rem 1rem;
+            font-size: 0.95rem;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            font-weight: 400;
+        }
+        .menu-list button:hover:not(:disabled) { background: var(--accent-soft); transform: none; box-shadow: none; }
+        .menu-list button:disabled { color: #b8b4a6; cursor: not-allowed; background: transparent; }
+        .menu-list .menu-sep { height: 1px; background: var(--border); margin: 0.3rem 0; }
+        .danger-text { color: var(--error) !important; }
+
+        /* ── Page section ── */
+        .page-section {
+            background: var(--paper);
+            border: 1px solid var(--border-soft);
+            border-radius: 16px;
+            padding: 1.4rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 2px rgba(10,20,35,0.15), 0 10px 28px rgba(10,20,35,0.22);
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px dashed var(--border);
+        }
+        .page-header h2 { margin: 0; font-size: 1.1rem; color: var(--heading); }
+        .page-layout {
+            display: grid;
+            grid-template-columns: minmax(240px, 1fr) 1.5fr;
+            gap: 1.4rem;
+            align-items: start;
+        }
+        .page-img {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            display: block;
+        }
+        .page-summary {
+            background: var(--paper-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .diagram-tag {
+            color: var(--accent);
+            font-size: 0.88rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+        .no-problems {
+            color: #6e6a5c;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        /* ── Problem cards ── */
+        .prob {
+            background: #fdfbf4;
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .prob:last-child { margin-bottom: 0; }
+        .prob-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .prob-id {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--heading);
+        }
+        .topic-tag {
+            font-size: 0.78rem;
+            color: #6e6a5c;
+            background: #ece8db;
+            border-radius: 999px;
+            padding: 0.15rem 0.6rem;
+            font-weight: 500;
+        }
+        .badge {
+            font-size: 0.82rem;
+            padding: 0.18rem 0.7rem;
+            border-radius: 999px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .b-correct  { background: rgba(30,126,52,0.15);  color: var(--ok); }
+        .b-partial  { background: rgba(160,116,10,0.15); color: var(--partial); }
+        .b-incorrect{ background: rgba(181,67,67,0.15);  color: var(--bad); }
+        .b-unclear  { background: rgba(90,107,130,0.15); color: var(--unclear); }
+
+        /* ── Math steps ── */
+        .step {
+            padding: 0.5rem 0.8rem;
+            margin: 0.3rem 0;
+            border-radius: 6px;
+            border-inline-start: 3px solid var(--border);
+            background: #f6f3eb;
+            font-size: 1rem;
+            line-height: 1.6;
+            direction: ltr;
+            text-align: left;
+        }
+        .step.ok   { border-inline-start-color: var(--ok); }
+        .step.bad  { border-inline-start-color: var(--bad); background: #fff0f0; }
+        .step.statement { border-inline-start-color: var(--accent); background: #eef4f7; }
+        .step.final { border-inline-start-color: var(--secondary); background: #faf5e9; font-weight: 600; }
+        .step-comment {
+            color: var(--bad);
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+            direction: rtl;
+            text-align: right;
+            font-weight: 500;
+        }
+        .score-row {
+            color: #6e6a5c;
+            font-size: 0.88rem;
+            margin: 0.6rem 0 0.3rem;
+            font-weight: 500;
+        }
+        .feedback {
+            margin-top: 0.5rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed var(--border);
+            font-size: 0.93rem;
+            line-height: 1.6;
+            color: var(--fg);
+        }
+
+        /* KaTeX size tweak */
+        .katex { font-size: 1.05em; }
+
+        /* ── Stamp footer ── */
+        .app-stamp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7rem;
+            margin: 3rem auto 0.5rem;
+            padding-top: 1.6rem;
+            border-top: 1px solid rgba(34,48,69,0.12);
+            opacity: 0.62;
+            transition: opacity 0.2s;
+            user-select: none;
+        }
+        .app-stamp:hover { opacity: 0.9; }
+        .app-stamp-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .app-stamp-name { font-size: 1.15rem; font-weight: 800; color: #223045; letter-spacing: 0.02em; }
+        .app-stamp-tagline { font-size: 0.72rem; font-weight: 500; color: #5a6b82; letter-spacing: 0.04em; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            body { padding: 1rem 0.75rem 4rem; }
+            .hero { padding: 1.4rem 1.4rem 1.2rem; }
+            .hero-art { display: none; }
+            .hero h1 { font-size: 1.5rem; }
+            .page-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 0.75rem 0.55rem 4rem; }
+            .hero h1 { font-size: 1.2rem; }
+            .page-section { padding: 0.9rem; }
+        }
+
+        /* Sections shown/hidden by JS */
+        [data-view] { display: none; }
+        [data-view].visible { display: block; }
+        .toolbar-main[data-view].visible { display: flex; }
+    </style>
 </head>
 <body>
-<header>
-  <h1>בדיקת תרגילי מתמטיקה</h1>
-  <span class="sub">השכלה · math-checker · הבנה הוליסטית של העמוד (לא שורה-שורה)</span>
-</header>
+<button type="button" id="global-reset" class="global-reset" title="התחל מחדש">⟲ התחל מחדש</button>
 
-<div class="uploader">
-  <input type="file" id="file" accept=".pdf,.jpg,.jpeg,.png">
-  <label class="chk"><input type="checkbox" id="autoOrient" checked> תיקון סיבוב אוטומטי (180°)</label>
-  <button id="go">נתח</button>
+<div class="container">
+    <!-- Hero -->
+    <div class="hero">
+        <svg class="hero-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Sigma / math symbol art -->
+            <text x="12" y="68" font-size="72" fill="#fdf9ef" opacity="0.9" font-family="serif">∑</text>
+        </svg>
+        <h1>השכלה — בדיקת תרגילי מתמטיקה</h1>
+        <p class="subtitle">העלה PDF או תמונה של תרגיל מתמטיקה בכתב יד. המערכת מזהה כיוון, מנתחת כל בעיה, בודקת כל צעד, ומחזירה משוב עם LaTeX.</p>
+    </div>
+
+    <!-- ── Empty state ── -->
+    <div id="view-empty" data-view class="empty-cta visible">
+        <svg class="empty-art" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="14" x2="12" y2="14"/>
+            <line x1="12" y1="11" x2="12" y2="17"/>
+        </svg>
+
+        <div class="empty-row">
+            <label for="auto-orient-chk">תיקון סיבוב אוטומטי:</label>
+            <input type="checkbox" id="auto-orient-chk" checked>
+        </div>
+
+        <button id="open-btn" type="button" class="big-cta">פתח תרגיל לבדיקה</button>
+        <p class="empty-hint">PDF או תמונה של תרגיל מצולם (עד 32 MB)</p>
+        <div class="empty-side">
+            <button id="load-btn" type="button" class="text-link">העלה תרגיל שמור (JSON)</button>
+            <span class="text-sep">·</span>
+            <span style="color:#8a9aa8;font-size:0.85rem">מנוע: Claude Opus 4.8</span>
+        </div>
+    </div>
+
+    <!-- ── Progress ── -->
+    <div id="progress-box" class="progress-box">
+        <div class="progress-label">
+            <span id="progress-text">מתחיל…</span>
+            <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- ── Error banner ── -->
+    <div id="error-banner" class="error-banner" hidden>
+        <div class="error-title">⚠️ <span data-role="message"></span></div>
+        <div class="error-details" data-role="details"></div>
+        <details data-role="technical-wrap" hidden>
+            <summary>פרטים טכניים</summary>
+            <pre data-role="technical"></pre>
+        </details>
+    </div>
+
+    <!-- ── Toolbar (shown after results load) ── -->
+    <div id="toolbar" class="toolbar-main" data-view>
+        <div class="toolbar-status">
+            <span class="status-filename" id="toolbar-filename"></span>
+            <span class="status-meta" id="toolbar-meta"></span>
+        </div>
+        <button id="open-another-btn" type="button" class="secondary">פתח קובץ אחר</button>
+        <div class="menu-wrap">
+            <button id="save-menu-btn" type="button" class="secondary">שמור ▾</button>
+            <div id="save-menu" class="menu-list">
+                <button type="button" id="save-json-btn">שמור JSON</button>
+                <div class="menu-sep"></div>
+                <button type="button" id="load-menu-btn">פתח תרגיל שמור…</button>
+                <div class="menu-sep"></div>
+                <button type="button" id="reset-btn" class="danger-text">אתחל</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Results ── -->
+    <div id="results"></div>
+
+    <!-- Stamp -->
+    <div class="app-stamp" aria-hidden="true">
+        <div class="app-stamp-text">
+            <span class="app-stamp-name">השכלה</span>
+            <span class="app-stamp-tagline">MATH-CHECKER · HASKALA</span>
+        </div>
+    </div>
 </div>
-<div id="status"></div>
-<div id="results"></div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+<input type="file" id="load-input" accept=".json" style="display:none">
 
 <script>
-const $ = s => document.querySelector(s);
-const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-// מתמטיקה: עוטף ב-\( \) כדי ש-KaTeX auto-render יתפוס
+// ── Utilities ──────────────────────────────────────────────────────────────
+const esc = s => (s || "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Wrap LaTeX for KaTeX auto-render (\(...\) for inline display)
 const m = s => s ? '\\(' + s + '\\)' : '';
 
-function renderPage(p) {
-  const a = p.analysis;
-  const rot = p.rotation_applied ? ` · סובב ${p.rotation_applied}°` : '';
-  let html = `<div class="page"><div class="pagehead">עמוד ${p.page}${rot}</div>`;
-  html += `<div><img src="data:image/jpeg;base64,${p.image_b64}"></div><div>`;
-  html += `<div class="summary">${esc(a.page_summary)}`;
-  if (a.has_diagram) html += `<div class="diagram">▣ סרטוט: ${esc(a.diagram_description)}</div>`;
-  html += `</div>`;
-
-  (a.problems||[]).forEach(pr => {
-    html += `<div class="prob"><h3>תרגיל ${esc(pr.id)} <span class="badge b-${pr.verdict}">${verdictHe(pr.verdict)}</span></h3>`;
-    if (pr.topic) html += `<div class="topic">${esc(pr.topic)}</div>`;
-    if (pr.statement_latex) html += `<div class="step">${m(pr.statement_latex)}</div>`;
-    (pr.student_steps||[]).forEach(s => {
-      html += `<div class="step ${s.ok===false?'bad':(s.ok===true?'ok':'')}">${m(s.latex)}`;
-      if (s.comment) html += `<div class="comment">⚠ ${esc(s.comment)}</div>`;
-      html += `</div>`;
-    });
-    if (pr.final_answer_latex) html += `<div class="step"><b>תשובה:</b> ${m(pr.final_answer_latex)}</div>`;
-    if (pr.score_suggestion) html += `<div class="topic">ניקוד מוצע: ${esc(pr.score_suggestion)}</div>`;
-    if (pr.feedback) html += `<div class="feedback">${esc(pr.feedback)}</div>`;
-    html += `</div>`;
-  });
-  if (a.raw) html += `<div class="prob"><b>פלט גולמי (כשל JSON):</b><pre style="white-space:pre-wrap">${esc(a.raw)}</pre></div>`;
-  html += `</div></div>`;
-  return html;
-}
-
 function verdictHe(v) {
-  return {correct:'נכון', partial:'חלקי', incorrect:'שגוי', unclear:'לא ברור'}[v] || v;
+    return {correct:'נכון ✓', partial:'חלקי', incorrect:'שגוי ✗', unclear:'לא ברור'}[v] || esc(v);
 }
 
-$('#go').onclick = async () => {
-  const f = $('#file').files[0];
-  if (!f) { $('#status').textContent = 'בחר קובץ קודם'; return; }
-  $('#go').disabled = true;
-  $('#results').innerHTML = '';
-  $('#status').textContent = 'מנתח… (Opus, ~10ש\' לעמוד)';
-  const fd = new FormData();
-  fd.append('file', f);
-  fd.append('auto_orient', $('#autoOrient').checked ? '1' : '0');
-  try {
-    const r = await fetch('/analyze', {method:'POST', body:fd});
-    const data = await r.json();
-    if (data.error) { $('#status').textContent = 'שגיאה: ' + data.error; return; }
-    $('#status').textContent = `נותחו ${data.pages.length} עמודים.`;
-    $('#results').innerHTML = data.pages.map(renderPage).join('');
-    renderMathInElement($('#results'), {delimiters:[{left:'\\(',right:'\\)',display:false}], throwOnError:false});
-  } catch(e) {
-    $('#status').textContent = 'שגיאה: ' + e.message;
-  } finally {
-    $('#go').disabled = false;
-  }
+function renderMath(el) {
+    if (window.renderMathInElement) {
+        renderMathInElement(el, {
+            delimiters: [
+                {left: '\\(', right: '\\)', display: false},
+                {left: '\\[', right: '\\]', display: true},
+            ],
+            throwOnError: false,
+        });
+    }
+}
+
+// Wait for KaTeX to load then render (it loads async via defer+onload)
+let _katexReady = false;
+document.addEventListener('katex-ready', () => {
+    _katexReady = true;
+    renderMath(document.getElementById('results'));
+});
+function renderMathWhenReady(el) {
+    if (_katexReady) renderMath(el);
+    // else: the katex-ready event will fire and render all of #results
+}
+
+// ── Show / Hide ───────────────────────────────────────────────────────────
+let _currentJobId = null;
+
+function showView(id) {
+    document.querySelectorAll('[data-view]').forEach(el => el.classList.remove('visible'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('visible');
+}
+
+function showEmpty() {
+    showView('view-empty');
+    document.getElementById('progress-box').classList.remove('visible');
+    document.getElementById('error-banner').hidden = true;
+    document.getElementById('toolbar').classList.remove('visible');
+    document.getElementById('results').innerHTML = '';
+    _currentJobId = null;
+}
+
+function showProgress(label, pct) {
+    document.getElementById('view-empty').classList.remove('visible');
+    document.getElementById('error-banner').hidden = true;
+    const box = document.getElementById('progress-box');
+    box.classList.remove('error');
+    box.classList.add('visible');
+    document.getElementById('progress-text').textContent = label;
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function showError(err) {
+    document.getElementById('progress-box').classList.remove('visible');
+    const banner = document.getElementById('error-banner');
+    const norm = (typeof err === 'string') ? {message: err} : (err || {});
+    banner.querySelector('[data-role="message"]').textContent = norm.message || 'תקלה לא צפויה';
+    const det = banner.querySelector('[data-role="details"]');
+    det.textContent = norm.details || '';
+    det.hidden = !norm.details;
+    const tw = banner.querySelector('[data-role="technical-wrap"]');
+    const tp = banner.querySelector('[data-role="technical"]');
+    if (norm.technical) {
+        tp.textContent = norm.technical;
+        tw.hidden = false;
+        tw.open = false;
+    } else {
+        tw.hidden = true;
+    }
+    banner.hidden = false;
+    banner.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+function renderPage(p) {
+    const a = p.analysis || {};
+    const rot = p.rotation_applied ? ` · סובב ${p.rotation_applied}°` : '';
+
+    let html = `
+      <div class="page-section">
+        <div class="page-header">
+          <h2>עמוד ${p.page}${esc(rot)}</h2>
+        </div>
+        <div class="page-layout">
+          <div>
+            <img class="page-img" src="data:image/jpeg;base64,${p.image_b64}" alt="עמוד ${p.page}">
+          </div>
+          <div>`;
+
+    // Page summary
+    html += `<div class="page-summary">${esc(a.page_summary || '')}`;
+    if (a.has_diagram) {
+        html += `<div class="diagram-tag">▣ סרטוט: ${esc(a.diagram_description || '')}</div>`;
+    }
+    html += `</div>`;
+
+    // Problems
+    const problems = a.problems || [];
+    if (problems.length === 0) {
+        html += `<div class="no-problems">לא זוהו תרגילים בעמוד זה.</div>`;
+    }
+    problems.forEach(pr => {
+        html += `<div class="prob">
+          <div class="prob-header">
+            <span class="prob-id">תרגיל ${esc(pr.id || '?')}</span>
+            <span class="topic-tag">${esc(pr.topic || '')}</span>
+            <span class="badge b-${esc(pr.verdict || 'unclear')}">${verdictHe(pr.verdict)}</span>
+          </div>`;
+
+        if (pr.statement_latex) {
+            html += `<div class="step statement" dir="ltr">${m(pr.statement_latex)}</div>`;
+        }
+
+        (pr.student_steps || []).forEach(s => {
+            const cls = s.ok === false ? 'bad' : (s.ok === true ? 'ok' : '');
+            html += `<div class="step ${cls}" dir="ltr">${m(s.latex || '')}`;
+            if (s.comment) {
+                html += `<div class="step-comment">⚠ ${esc(s.comment)}</div>`;
+            }
+            html += `</div>`;
+        });
+
+        if (pr.final_answer_latex) {
+            html += `<div class="step final" dir="ltr"><b>תשובה:</b> ${m(pr.final_answer_latex)}</div>`;
+        }
+        if (pr.score_suggestion) {
+            html += `<div class="score-row">ניקוד מוצע: ${esc(pr.score_suggestion)}</div>`;
+        }
+        if (pr.feedback) {
+            html += `<div class="feedback">${esc(pr.feedback)}</div>`;
+        }
+        html += `</div>`;
+    });
+
+    html += `</div></div></div>`;
+    return html;
+}
+
+function renderResult(data) {
+    const pages = data.pages || [];
+    const filename = data.filename || '';
+    document.getElementById('progress-box').classList.remove('visible');
+    document.getElementById('error-banner').hidden = true;
+
+    document.getElementById('results').innerHTML = pages.map(renderPage).join('');
+    renderMathWhenReady(document.getElementById('results'));
+
+    document.getElementById('toolbar-filename').textContent = filename;
+    document.getElementById('toolbar-meta').textContent = `${pages.length} עמוד${pages.length !== 1 ? 'ים' : ''}`;
+    document.getElementById('toolbar').classList.add('visible');
+}
+
+// ── File analysis via SSE ─────────────────────────────────────────────────
+async function startAnalysis(file) {
+    showProgress('מכין…', 0);
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('auto_orient', document.getElementById('auto-orient-chk').checked ? '1' : '0');
+
+    let startResp;
+    try {
+        startResp = await fetch('/analyze/start', {method: 'POST', body: fd});
+        if (!startResp.ok) {
+            const err = await startResp.json().catch(() => ({}));
+            showError(err.error || `שגיאת שרת ${startResp.status}`);
+            return;
+        }
+    } catch (e) {
+        showError('לא הצלחנו להתחבר לשרת: ' + e.message);
+        return;
+    }
+
+    const {job_id} = await startResp.json();
+    _currentJobId = job_id;
+
+    const es = new EventSource(`/analyze/stream/${job_id}`);
+    es.onmessage = async (e) => {
+        const ev = JSON.parse(e.data);
+
+        if (ev.type === 'progress') {
+            const pageInfo = ev.total_pages > 1 ? ` (עמוד ${ev.page}/${ev.total_pages})` : '';
+            showProgress(`${ev.label}${pageInfo}`, ev.pct);
+        } else if (ev.type === 'done') {
+            es.close();
+            // Fetch the result data for client-side rendering
+            try {
+                const r = await fetch(`/result-data/${job_id}`);
+                const data = await r.json();
+                if (data.error) { showError(data.error); return; }
+                renderResult(data);
+            } catch (err) {
+                showError('שגיאה בטעינת התוצאות: ' + err.message);
+            }
+        } else if (ev.type === 'error') {
+            es.close();
+            showError(ev);
+        }
+    };
+    es.onerror = () => {
+        es.close();
+        showError('החיבור ל-SSE נקטע.');
+    };
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────────
+async function saveJson() {
+    if (!_currentJobId) return;
+    window.location.href = `/save/${_currentJobId}`;
+}
+
+async function loadFromFile(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+        const r = await fetch('/load', {method: 'POST', body: fd});
+        const data = await r.json();
+        if (data.error) { showError(data.error); return; }
+        renderResult(data);
+    } catch (e) {
+        showError('שגיאה בטעינת הקובץ: ' + e.message);
+    }
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────
+const fileInput = document.getElementById('file-input');
+const loadInput = document.getElementById('load-input');
+
+document.getElementById('open-btn').onclick = () => fileInput.click();
+document.getElementById('open-another-btn').onclick = () => fileInput.click();
+
+fileInput.onchange = () => {
+    if (fileInput.files[0]) startAnalysis(fileInput.files[0]);
+    fileInput.value = '';
 };
+
+document.getElementById('load-btn').onclick = () => loadInput.click();
+document.getElementById('load-menu-btn').onclick = () => {
+    document.getElementById('save-menu').classList.remove('visible');
+    loadInput.click();
+};
+
+loadInput.onchange = () => {
+    if (loadInput.files[0]) loadFromFile(loadInput.files[0]);
+    loadInput.value = '';
+};
+
+document.getElementById('save-json-btn').onclick = () => {
+    document.getElementById('save-menu').classList.remove('visible');
+    saveJson();
+};
+
+// Save menu toggle
+document.getElementById('save-menu-btn').onclick = (e) => {
+    e.stopPropagation();
+    document.getElementById('save-menu').classList.toggle('visible');
+};
+document.addEventListener('click', () => {
+    document.getElementById('save-menu').classList.remove('visible');
+});
+
+// Reset buttons
+function doReset() {
+    document.getElementById('save-menu').classList.remove('visible');
+    showEmpty();
+}
+document.getElementById('global-reset').onclick = doReset;
+document.getElementById('reset-btn').onclick = doReset;
+
+// Drag-and-drop on empty state
+const emptyCta = document.getElementById('view-empty');
+emptyCta.addEventListener('dragover', e => { e.preventDefault(); emptyCta.style.borderColor = 'var(--accent)'; });
+emptyCta.addEventListener('dragleave', () => { emptyCta.style.borderColor = ''; });
+emptyCta.addEventListener('drop', e => {
+    e.preventDefault();
+    emptyCta.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (file.name.endsWith('.json')) {
+        loadFromFile(file);
+    } else {
+        startAnalysis(file);
+    }
+});
 </script>
 </body>
 </html>
