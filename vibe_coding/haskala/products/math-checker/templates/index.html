@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>בדיקת תרגילי מתמטיקה — השכלה</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root { --bg:#0f1419; --panel:#1a212b; --line:#2c3744; --txt:#e6edf3; --muted:#8b98a5;
+          --ok:#2ea043; --bad:#e5534b; --partial:#d29922; --accent:#388bfd; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:"Segoe UI",Arial,sans-serif; }
+  header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
+  header h1 { font-size:20px; margin:0; }
+  header .sub { color:var(--muted); font-size:13px; }
+  .uploader { padding:20px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+              border-bottom:1px solid var(--line); }
+  input[type=file] { color:var(--txt); }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 20px;
+           font-size:15px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  label.chk { color:var(--muted); font-size:14px; display:flex; gap:6px; align-items:center; }
+  #status { padding:0 24px; color:var(--muted); min-height:22px; }
+  .page { display:grid; grid-template-columns: 1fr 1fr; gap:18px; padding:18px 24px;
+          border-bottom:1px solid var(--line); align-items:start; }
+  .page img { width:100%; border-radius:8px; border:1px solid var(--line); background:#fff; }
+  .pagehead { grid-column:1/-1; color:var(--muted); font-size:14px; }
+  .summary { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
+  .diagram { color:var(--accent); font-size:13px; margin-top:6px; }
+  .prob { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .prob h3 { margin:0 0 8px; font-size:16px; display:flex; gap:8px; align-items:center; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:20px; }
+  .b-correct { background:rgba(46,160,67,.2); color:var(--ok); }
+  .b-partial { background:rgba(210,153,34,.2); color:var(--partial); }
+  .b-incorrect { background:rgba(229,83,75,.2); color:var(--bad); }
+  .b-unclear { background:rgba(139,152,165,.2); color:var(--muted); }
+  .step { padding:6px 10px; margin:4px 0; border-radius:6px; border-right:3px solid var(--line); background:#0d1117; }
+  .step.ok { border-right-color:var(--ok); }
+  .step.bad { border-right-color:var(--bad); }
+  .step .comment { color:var(--bad); font-size:13px; margin-top:4px; }
+  .topic { color:var(--muted); font-size:12px; }
+  .feedback { margin-top:8px; font-size:14px; color:var(--txt); border-top:1px dashed var(--line); padding-top:8px; }
+  .katex { font-size:1.05em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>בדיקת תרגילי מתמטיקה</h1>
+  <span class="sub">השכלה · math-checker · הבנה הוליסטית של העמוד (לא שורה-שורה)</span>
+</header>
+
+<div class="uploader">
+  <input type="file" id="file" accept=".pdf,.jpg,.jpeg,.png">
+  <label class="chk"><input type="checkbox" id="autoOrient" checked> תיקון סיבוב אוטומטי (180°)</label>
+  <button id="go">נתח</button>
+</div>
+<div id="status"></div>
+<div id="results"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+// מתמטיקה: עוטף ב-\( \) כדי ש-KaTeX auto-render יתפוס
+const m = s => s ? '\\(' + s + '\\)' : '';
+
+function renderPage(p) {
+  const a = p.analysis;
+  const rot = p.rotation_applied ? ` · סובב ${p.rotation_applied}°` : '';
+  let html = `<div class="page"><div class="pagehead">עמוד ${p.page}${rot}</div>`;
+  html += `<div><img src="data:image/jpeg;base64,${p.image_b64}"></div><div>`;
+  html += `<div class="summary">${esc(a.page_summary)}`;
+  if (a.has_diagram) html += `<div class="diagram">▣ סרטוט: ${esc(a.diagram_description)}</div>`;
+  html += `</div>`;
+
+  (a.problems||[]).forEach(pr => {
+    html += `<div class="prob"><h3>תרגיל ${esc(pr.id)} <span class="badge b-${pr.verdict}">${verdictHe(pr.verdict)}</span></h3>`;
+    if (pr.topic) html += `<div class="topic">${esc(pr.topic)}</div>`;
+    if (pr.statement_latex) html += `<div class="step">${m(pr.statement_latex)}</div>`;
+    (pr.student_steps||[]).forEach(s => {
+      html += `<div class="step ${s.ok===false?'bad':(s.ok===true?'ok':'')}">${m(s.latex)}`;
+      if (s.comment) html += `<div class="comment">⚠ ${esc(s.comment)}</div>`;
+      html += `</div>`;
+    });
+    if (pr.final_answer_latex) html += `<div class="step"><b>תשובה:</b> ${m(pr.final_answer_latex)}</div>`;
+    if (pr.score_suggestion) html += `<div class="topic">ניקוד מוצע: ${esc(pr.score_suggestion)}</div>`;
+    if (pr.feedback) html += `<div class="feedback">${esc(pr.feedback)}</div>`;
+    html += `</div>`;
+  });
+  if (a.raw) html += `<div class="prob"><b>פלט גולמי (כשל JSON):</b><pre style="white-space:pre-wrap">${esc(a.raw)}</pre></div>`;
+  html += `</div></div>`;
+  return html;
+}
+
+function verdictHe(v) {
+  return {correct:'נכון', partial:'חלקי', incorrect:'שגוי', unclear:'לא ברור'}[v] || v;
+}
+
+$('#go').onclick = async () => {
+  const f = $('#file').files[0];
+  if (!f) { $('#status').textContent = 'בחר קובץ קודם'; return; }
+  $('#go').disabled = true;
+  $('#results').innerHTML = '';
+  $('#status').textContent = 'מנתח… (Opus, ~10ש\' לעמוד)';
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('auto_orient', $('#autoOrient').checked ? '1' : '0');
+  try {
+    const r = await fetch('/analyze', {method:'POST', body:fd});
+    const data = await r.json();
+    if (data.error) { $('#status').textContent = 'שגיאה: ' + data.error; return; }
+    $('#status').textContent = `נותחו ${data.pages.length} עמודים.`;
+    $('#results').innerHTML = data.pages.map(renderPage).join('');
+    renderMathInElement($('#results'), {delimiters:[{left:'\\(',right:'\\)',display:false}], throwOnError:false});
+  } catch(e) {
+    $('#status').textContent = 'שגיאה: ' + e.message;
+  } finally {
+    $('#go').disabled = false;
+  }
+};
+</script>
+</body>
+</html>
