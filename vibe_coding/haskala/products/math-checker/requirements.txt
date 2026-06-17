@@ -1,0 +1,5 @@
+flask
+anthropic
+python-dotenv
+pymupdf
+pillow
