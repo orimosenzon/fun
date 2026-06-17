@@ -260,7 +260,19 @@
             background: linear-gradient(90deg, var(--accent) 0%, #3f8ba0 100%);
             border-radius: 999px;
             transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+        /* moving shimmer so a long stage (Opus ~30s) never looks frozen */
+        .progress-fill::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%);
+            transform: translateX(-100%);
+            animation: shimmer 1.3s ease-in-out infinite;
+        }
+        @keyframes shimmer { to { transform: translateX(100%); } }
         .progress-box.error .progress-fill { background: var(--error); }
         .progress-box.error .progress-label { color: var(--error); }
 
@@ -382,6 +394,19 @@
             border-bottom: 1px dashed var(--border);
         }
         .page-header h2 { margin: 0; font-size: 1.1rem; color: var(--heading); }
+        .page-tools { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .page-tools .icon-btn { font-size: 1.15rem; padding: 0.35rem 0.6rem; min-width: 2.3rem; }
+        .page-tools .recheck-btn { font-size: 0.88rem; padding: 0.4rem 0.95rem; }
+        .page-tools .rot-hint { color: var(--secondary); font-size: 0.82rem; font-weight: 600; }
+        .page-section.rechecking { opacity: 0.55; pointer-events: none; }
+        .page-img-wrap { position: relative; }
+        .page-img-wrap .reanalyze-spin {
+            position: absolute; inset: 0; display: none;
+            align-items: center; justify-content: center;
+            background: rgba(241,235,219,0.78); border-radius: 8px;
+            color: var(--accent); font-weight: 600; font-size: 0.92rem; text-align: center;
+        }
+        .page-section.rechecking .reanalyze-spin { display: flex; }
         .page-layout {
             display: grid;
             grid-template-columns: minmax(240px, 1fr) 1.5fr;
@@ -667,6 +692,7 @@ function renderMathWhenReady(el) {
 
 // ── Show / Hide ───────────────────────────────────────────────────────────
 let _currentJobId = null;
+let _pages = [];
 
 function showView(id) {
     document.querySelectorAll('[data-view]').forEach(el => el.classList.remove('visible'));
@@ -721,13 +747,20 @@ function renderPage(p) {
     const rot = p.rotation_applied ? ` · סובב ${p.rotation_applied}°` : '';
 
     let html = `
-      <div class="page-section">
+      <div class="page-section" data-page="${p.page}" data-pending-rot="0">
         <div class="page-header">
-          <h2>עמוד ${p.page}${esc(rot)}</h2>
+          <h2>עמוד ${p.page}<span class="page-rot-label">${esc(rot)}</span></h2>
+          <div class="page-tools">
+            <span class="rot-hint" hidden>סובב — לחץ "בדוק מחדש"</span>
+            <button type="button" class="icon-btn rot-left" title="סובב נגד כיוון השעון">↺</button>
+            <button type="button" class="icon-btn rot-right" title="סובב עם כיוון השעון">↻</button>
+            <button type="button" class="recheck-btn secondary" title="נתח את העמוד מחדש בכיוון הנוכחי">בדוק מחדש</button>
+          </div>
         </div>
         <div class="page-layout">
-          <div>
+          <div class="page-img-wrap">
             <img class="page-img" src="data:image/jpeg;base64,${p.image_b64}" alt="עמוד ${p.page}">
+            <div class="reanalyze-spin">מנתח מחדש…<br>(Opus, ~10 ש')</div>
           </div>
           <div>`;
 
@@ -782,6 +815,7 @@ function renderPage(p) {
 
 function renderResult(data) {
     const pages = data.pages || [];
+    _pages = pages;
     const filename = data.filename || '';
     document.getElementById('progress-box').classList.remove('visible');
     document.getElementById('error-banner').hidden = true;
@@ -793,6 +827,74 @@ function renderResult(data) {
     document.getElementById('toolbar-meta').textContent = `${pages.length} עמוד${pages.length !== 1 ? 'ים' : ''}`;
     document.getElementById('toolbar').classList.add('visible');
 }
+
+// ── Manual rotation + re-analyze ──────────────────────────────────────────
+// Rotate the page preview locally (canvas) for instant feedback. The actual
+// re-analysis is server-side, rotating the stored high-res page by the
+// accumulated delta and re-running Opus.
+function rotateImgEl(img, deg) {
+    return new Promise(resolve => {
+        const tmp = new Image();
+        tmp.onload = () => {
+            const canvas = document.createElement('canvas');
+            const swap = (deg === 90 || deg === 270);
+            canvas.width = swap ? tmp.height : tmp.width;
+            canvas.height = swap ? tmp.width : tmp.height;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(deg * Math.PI / 180);
+            ctx.drawImage(tmp, -tmp.width / 2, -tmp.height / 2);
+            img.src = canvas.toDataURL('image/jpeg', 0.85);
+            resolve();
+        };
+        tmp.src = img.src;
+    });
+}
+
+async function recheckPage(section) {
+    if (!_currentJobId) {
+        showError('אין תרגיל פעיל לבדיקה מחדש. טען קובץ מחדש.');
+        return;
+    }
+    const page = parseInt(section.dataset.page, 10);
+    const rotate = ((parseInt(section.dataset.pendingRot || '0', 10)) % 360 + 360) % 360;
+    section.classList.add('rechecking');
+    try {
+        const r = await fetch('/reanalyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({job_id: _currentJobId, page, rotate}),
+        });
+        const data = await r.json();
+        if (!r.ok) { showError(data); section.classList.remove('rechecking'); return; }
+
+        const idx = _pages.findIndex(pp => pp.page === page);
+        if (idx >= 0) _pages[idx] = data;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = renderPage(data);
+        const newSection = wrap.firstElementChild;
+        section.replaceWith(newSection);
+        renderMathWhenReady(newSection);
+    } catch (err) {
+        showError('שגיאה בניתוח מחדש: ' + err.message);
+        section.classList.remove('rechecking');
+    }
+}
+
+document.getElementById('results').addEventListener('click', async (e) => {
+    const section = e.target.closest('.page-section');
+    if (!section) return;
+    if (e.target.classList.contains('rot-left') || e.target.classList.contains('rot-right')) {
+        const deg = e.target.classList.contains('rot-right') ? 90 : 270;
+        const img = section.querySelector('.page-img');
+        await rotateImgEl(img, deg);
+        const pending = ((parseInt(section.dataset.pendingRot || '0', 10) + deg) % 360 + 360) % 360;
+        section.dataset.pendingRot = pending;
+        section.querySelector('.rot-hint').hidden = (pending === 0);
+    } else if (e.target.classList.contains('recheck-btn')) {
+        await recheckPage(section);
+    }
+});
 
 // ── File analysis via SSE ─────────────────────────────────────────────────
 async function startAnalysis(file) {
