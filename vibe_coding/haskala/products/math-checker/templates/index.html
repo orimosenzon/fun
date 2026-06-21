@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>השכלה — בדיקת תרגילי מתמטיקה</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -569,8 +571,25 @@
     <!-- Hero -->
     <div class="hero">
         <svg class="hero-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <!-- Sigma / math symbol art -->
-            <text x="12" y="68" font-size="72" fill="#fdf9ef" opacity="0.9" font-family="serif">∑</text>
+            <!-- schoolhouse in cream line-art over the deep-blue hero -->
+            <line x1="50" y1="8" x2="50" y2="22" stroke="#fdf9ef" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M50 9 L62 13 L50 17 Z" fill="#fdf9ef"/>
+            <!-- roof -->
+            <path d="M14 44 L50 22 L86 44 Z" fill="#fdf9ef" opacity="0.92"/>
+            <!-- building -->
+            <rect x="20" y="44" width="60" height="44" rx="2" fill="rgba(253,249,239,0.12)" stroke="#fdf9ef" stroke-width="1.6"/>
+            <!-- door -->
+            <rect x="44" y="60" width="12" height="28" rx="1.5" fill="#fdf9ef"/>
+            <circle cx="53" cy="74" r="0.9" fill="#223045"/>
+            <!-- windows -->
+            <rect x="26" y="52" width="11" height="10" fill="#fdf9ef" opacity="0.85"/>
+            <line x1="31.5" y1="52" x2="31.5" y2="62" stroke="#223045" stroke-width="0.8"/>
+            <line x1="26" y1="57" x2="37" y2="57" stroke="#223045" stroke-width="0.8"/>
+            <rect x="63" y="52" width="11" height="10" fill="#fdf9ef" opacity="0.85"/>
+            <line x1="68.5" y1="52" x2="68.5" y2="62" stroke="#223045" stroke-width="0.8"/>
+            <line x1="63" y1="57" x2="74" y2="57" stroke="#223045" stroke-width="0.8"/>
+            <!-- ground line -->
+            <line x1="10" y1="88.5" x2="90" y2="88.5" stroke="#fdf9ef" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
         <h1>השכלה — בדיקת תרגילי מתמטיקה</h1>
         <p class="subtitle">העלה PDF או תמונה של תרגיל מתמטיקה בכתב יד. המערכת מזהה כיוון, מנתחת כל בעיה, בודקת כל צעד, ומחזירה משוב עם LaTeX.</p>

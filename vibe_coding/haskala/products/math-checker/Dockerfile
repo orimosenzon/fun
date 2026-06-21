@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt gunicorn
 
 COPY --chown=user app.py .
 COPY --chown=user templates/ templates/
+COPY --chown=user static/ static/
 
 EXPOSE 7860
 
