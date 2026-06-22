@@ -211,6 +211,16 @@
             text-align: end;
         }
         .empty-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .empty-row select {
+            background: var(--paper);
+            color: var(--fg);
+            border: 1px solid var(--secondary);
+            border-radius: 8px;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
         .big-cta {
             font-size: 1.15rem;
             padding: 0.95rem 2.1rem;
@@ -401,7 +411,7 @@
         .page-tools .recheck-btn { font-size: 0.88rem; padding: 0.4rem 0.95rem; }
         .page-tools .rot-hint { color: var(--secondary); font-size: 0.82rem; font-weight: 600; }
         .page-section.rechecking { opacity: 0.55; pointer-events: none; }
-        .page-img-wrap { position: relative; }
+        .page-img-wrap { position: relative; overflow: hidden; border-radius: 8px; }
         .page-img-wrap .reanalyze-spin {
             position: absolute; inset: 0; display: none;
             align-items: center; justify-content: center;
@@ -421,7 +431,56 @@
             border: 1px solid var(--border);
             background: white;
             display: block;
+            cursor: zoom-in;
+            transition: transform 0.08s ease-out;
+            will-change: transform;
         }
+        /* ── Fullscreen lightbox ── */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 1000;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(18,24,34,0.92);
+            overflow: hidden; cursor: zoom-out;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            position: relative; z-index: 1;
+            max-width: 96vw; max-height: 88vh;
+            border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            cursor: crosshair;
+            transition: transform 0.06s ease-out;
+            will-change: transform;
+        }
+        .lightbox-bar {
+            position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+            z-index: 10;
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(44,59,80,0.92); color: #f3eedd;
+            padding: 7px 16px; border-radius: 999px;
+            font-size: 0.88rem; pointer-events: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        }
+        .lightbox-bar kbd {
+            background: #f3eedd; color: #2c3b50; font-weight: 700;
+            border-radius: 5px; padding: 1px 7px; font-size: 0.8rem;
+            font-family: inherit;
+        }
+        .lightbox-close {
+            position: fixed; top: 12px; right: 16px;
+            z-index: 10;
+            width: 40px; height: 40px; border-radius: 50%;
+            border: none; background: rgba(44,59,80,0.88); color: #f3eedd;
+            font-size: 1.4rem; line-height: 1; cursor: pointer;
+        }
+        .lightbox-close:hover { background: rgba(181,67,67,0.9); }
+        .zoom-hint {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(44,59,80,0.78); color: #f3eedd;
+            font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+            pointer-events: none; opacity: 0; transition: opacity 0.2s;
+        }
+        .page-img-wrap:hover .zoom-hint { opacity: 1; }
+        .page-img.zoomed ~ .zoom-hint { opacity: 0; }
         .page-summary {
             background: var(--paper-alt);
             border: 1px solid var(--border);
@@ -606,8 +665,17 @@
         </svg>
 
         <div class="empty-row">
-            <label for="auto-orient-chk">תיקון סיבוב אוטומטי:</label>
-            <input type="checkbox" id="auto-orient-chk" checked>
+            <label for="model-select">מנוע בדיקה:</label>
+            <select id="model-select">
+                <option value="opus" selected>Claude Opus 4.8 · איכות מרבית</option>
+                <option value="sonnet">Claude Sonnet 4.6 · מהיר וזול ~5×</option>
+                <option value="haiku">Claude Haiku 4.5 · הכי זול</option>
+            </select>
+        </div>
+
+        <div class="empty-row">
+            <label for="auto-orient-chk">תיקון סיבוב אוטומטי (לסריקות הפוכות):</label>
+            <input type="checkbox" id="auto-orient-chk">
         </div>
 
         <button id="open-btn" type="button" class="big-cta">פתח תרגיל לבדיקה</button>
@@ -615,7 +683,7 @@
         <div class="empty-side">
             <button id="load-btn" type="button" class="text-link">העלה תרגיל שמור (JSON)</button>
             <span class="text-sep">·</span>
-            <span style="color:#8a9aa8;font-size:0.85rem">מנוע: Claude Opus 4.8</span>
+            <span style="color:#8a9aa8;font-size:0.85rem">הסריקה מוצגת כפי שהיא — אם הפוכה, סובב ידנית או הפעל תיקון אוטומטי</span>
         </div>
     </div>
 
@@ -669,6 +737,17 @@
             <span class="app-stamp-tagline">MATH-CHECKER · HASKALA</span>
         </div>
     </div>
+</div>
+
+<!-- Fullscreen image lightbox -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="תצוגת עמוד מוגדלת">
+    <div class="lightbox-bar">
+        <span>🖱️ גלגלת = זום</span>
+        <span>·</span>
+        <span><kbd>ESC</kbd> ליציאה</span>
+    </div>
+    <button type="button" class="lightbox-close" title="סגור (ESC)" aria-label="סגור">×</button>
+    <img id="lightbox-img" alt="עמוד מוגדל">
 </div>
 
 <!-- Hidden file inputs -->
@@ -735,8 +814,38 @@ function showProgress(label, pct) {
     box.classList.remove('error');
     box.classList.add('visible');
     document.getElementById('progress-text').textContent = label;
-    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-pct').textContent = Math.round(pct) + '%';
     document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ── Creep animation for the slow analysis step ────────────────────────────
+// A single LLM call is a black box — no sub-progress. To prove the app is
+// alive, ease the bar from `from` toward `to` (never reaching it) while
+// showing an elapsed-seconds counter, until the next real event arrives.
+let _creepTimer = null;
+function stopCreep() {
+    if (_creepTimer) { clearInterval(_creepTimer); _creepTimer = null; }
+}
+function startCreep(from, to, label) {
+    stopCreep();
+    let shown = from;
+    const start = Date.now();
+    const txt = document.getElementById('progress-text');
+    const pctEl = document.getElementById('progress-pct');
+    const fill = document.getElementById('progress-fill');
+    document.getElementById('view-empty').classList.remove('visible');
+    const box = document.getElementById('progress-box');
+    box.classList.remove('error');
+    box.classList.add('visible');
+    fill.style.width = from + '%';
+    _creepTimer = setInterval(() => {
+        shown += (to - shown) * 0.06;          // asymptotic ease-out
+        const secs = Math.round((Date.now() - start) / 1000);
+        const mmss = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+        txt.textContent = label;
+        pctEl.textContent = `${Math.round(shown)}% · ${mmss}`;
+        fill.style.width = shown + '%';
+    }, 250);
 }
 
 function showError(err) {
@@ -779,6 +888,7 @@ function renderPage(p) {
         <div class="page-layout">
           <div class="page-img-wrap">
             <img class="page-img" src="data:image/jpeg;base64,${p.image_b64}" alt="עמוד ${p.page}">
+            <span class="zoom-hint">🔍 לחץ להגדלה</span>
             <div class="reanalyze-spin">מנתח מחדש…<br>(Opus, ~10 ש')</div>
           </div>
           <div>`;
@@ -915,6 +1025,67 @@ document.getElementById('results').addEventListener('click', async (e) => {
     }
 });
 
+// ── Fullscreen lightbox + wheel-zoom toward the cursor ────────────────────
+// Click a scanned page to open it fullscreen. There the wheel zooms in/out
+// toward the pointer (transform-origin tracks the cursor), so faint handwriting
+// can be inspected. ESC / the × button / clicking the backdrop closes it.
+const ZOOM_MIN = 1, ZOOM_MAX = 8, ZOOM_STEP = 0.4;
+const _lb     = document.getElementById('lightbox');
+const _lbImg  = document.getElementById('lightbox-img');
+
+function setOriginToCursor(img, e) {
+    const r = img.getBoundingClientRect();
+    const x = Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100));
+    const y = Math.min(100, Math.max(0, (e.clientY - r.top) / r.height * 100));
+    img.style.transformOrigin = `${x}% ${y}%`;
+}
+
+function applyZoom(img, scale) {
+    scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, scale));
+    img.dataset.zoom = scale;
+    img.style.transform = scale > 1 ? `scale(${scale})` : '';
+    img.classList.toggle('zoomed', scale > 1);
+}
+
+function openLightbox(src) {
+    _lbImg.src = src;
+    _lbImg.style.transform = '';
+    _lbImg.style.transformOrigin = 'center center';
+    _lbImg.dataset.zoom = '1';
+    _lbImg.classList.remove('zoomed');
+    _lb.classList.add('open');
+    document.body.style.overflow = 'hidden';   // freeze page scroll behind overlay
+}
+
+function closeLightbox() {
+    _lb.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Open on click of any scanned page image.
+document.getElementById('results').addEventListener('click', (e) => {
+    const img = e.target.closest('.page-img');
+    if (img) openLightbox(img.src);
+});
+
+// Wheel zooms toward the pointer; mousemove keeps the focused area under it.
+_lb.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setOriginToCursor(_lbImg, e);
+    applyZoom(_lbImg, parseFloat(_lbImg.dataset.zoom || '1') + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+}, { passive: false });
+_lb.addEventListener('mousemove', (e) => {
+    if (parseFloat(_lbImg.dataset.zoom || '1') > 1) setOriginToCursor(_lbImg, e);
+});
+
+// Close: ESC, × button, or clicking the dark backdrop (not the image itself).
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && _lb.classList.contains('open')) closeLightbox();
+});
+_lb.addEventListener('click', (e) => {
+    if (e.target === _lb || e.target.classList.contains('lightbox-close')) closeLightbox();
+});
+
 // ── File analysis via SSE ─────────────────────────────────────────────────
 async function startAnalysis(file) {
     showProgress('מכין…', 0);
@@ -922,6 +1093,7 @@ async function startAnalysis(file) {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('auto_orient', document.getElementById('auto-orient-chk').checked ? '1' : '0');
+    fd.append('model', document.getElementById('model-select').value);
 
     let startResp;
     try {
@@ -945,8 +1117,18 @@ async function startAnalysis(file) {
 
         if (ev.type === 'progress') {
             const pageInfo = ev.total_pages > 1 ? ` (עמוד ${ev.page}/${ev.total_pages})` : '';
-            showProgress(`${ev.label}${pageInfo}`, ev.pct);
+            const label = `${ev.label}${pageInfo}`;
+            if (ev.stage === 'analyze') {
+                // Creep across this page's analyze slice toward (but not reaching)
+                // the next milestone, so the bar visibly advances during the wait.
+                const step = 100 / Math.max(1, ev.total_pages * 2);
+                startCreep(ev.pct, ev.pct + step * 0.9, label);
+            } else {
+                stopCreep();
+                showProgress(label, ev.pct);
+            }
         } else if (ev.type === 'done') {
+            stopCreep();
             es.close();
             // Fetch the result data for client-side rendering
             try {

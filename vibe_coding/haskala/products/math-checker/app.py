@@ -76,8 +76,29 @@ MAX_EDGE = 2200           # longest edge sent to Opus for analysis
 ORIENT_MAX_EDGE = 900     # longest edge sent to Haiku for fast orientation check
 PREVIEW_MAX_EDGE = 1400   # longest edge stored in result for display in browser
 
-ANALYSIS_MODEL = "claude-opus-4-8"
+# Analysis models the teacher can pick in the UI. Opus is the quality
+# default; Sonnet is the cost/quality sweet spot (~5× cheaper) recommended
+# for routine rubric scoring; Haiku is cheapest for quick passes.
+MODELS = {
+    "opus":   "Claude Opus 4.8 · איכות מרבית",
+    "sonnet": "Claude Sonnet 4.6 · מהיר וזול ~5×",
+    "haiku":  "Claude Haiku 4.5 · הכי זול",
+}
+MODEL_IDS = {
+    "opus":   "claude-opus-4-8",
+    "sonnet": "claude-sonnet-4-6",
+    "haiku":  "claude-haiku-4-5-20251001",
+}
+DEFAULT_MODEL = "opus"
+
+ANALYSIS_MODEL = MODEL_IDS[DEFAULT_MODEL]   # fallback when no model is supplied
 ORIENT_MODEL   = "claude-haiku-4-5-20251001"
+
+
+def resolve_model(key: str | None) -> tuple[str, str]:
+    """Map a UI model key to (model_id, hebrew_label). Falls back to default."""
+    k = key if key in MODEL_IDS else DEFAULT_MODEL
+    return MODEL_IDS[k], MODELS[k]
 
 ACCEPTED_EXTS = (".pdf", ".jpg", ".jpeg", ".png")
 
@@ -232,10 +253,10 @@ ANALYSIS_SCHEMA = {
 }
 
 
-def analyze_page(img: Image.Image) -> dict:
-    """Send a full page to Opus for holistic math analysis. Returns structured JSON."""
+def analyze_page(img: Image.Image, model_id: str = ANALYSIS_MODEL) -> dict:
+    """Send a full page to the chosen model for holistic math analysis. Returns structured JSON."""
     response = client.messages.create(
-        model=ANALYSIS_MODEL,
+        model=model_id,
         max_tokens=6000,
         system=[{
             "type": "text",
@@ -311,7 +332,7 @@ def humanize_error(exc: Exception) -> dict:
 
 STAGE_LABELS = {
     "orient":  "מזהה סיבוב (Haiku)",
-    "analyze": "מנתח מתמטיקה (Opus, ~30 ש')",
+    "analyze": "מנתח מתמטיקה",
 }
 _STEPS_PER_PAGE = 2  # orient, analyze
 
@@ -322,20 +343,25 @@ def _evict_stale_jobs():
         JOBS.pop(jid, None)
 
 
-def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool):
+def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
+                    model_id: str = ANALYSIS_MODEL, model_label: str = ""):
     """Generator: yields SSE-ready progress dicts, then a final result dict."""
     pages_imgs = file_to_pages(file_bytes, ext)
     total = len(pages_imgs)
+    short_label = (model_label.split("·")[0].strip() or "מודל")
 
     def progress(stage: str, page: int, completed: int) -> dict:
         # Emitted *before* each stage runs, so the label reflects the stage
-        # currently executing (Opus analysis is the slow one, ~30s).
+        # currently executing (the analysis pass is the slow one).
+        label = STAGE_LABELS.get(stage, stage)
+        if stage == "analyze":
+            label = f"{label} ({short_label})"
         return {
             "type": "progress",
             "page": page,
             "total_pages": total,
             "stage": stage,
-            "label": STAGE_LABELS.get(stage, stage),
+            "label": label,
             "pct": round(100 * completed / max(1, total * _STEPS_PER_PAGE)),
         }
 
@@ -354,10 +380,10 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool):
 
         yield progress("analyze", p, base + 1)
         img = _downscale(img, MAX_EDGE)
-        analysis = analyze_page(img)
+        analysis = analyze_page(img, model_id)
         log.info(
-            "[page %d] rotation=%d° problems=%d verdicts=%s",
-            p, rotation,
+            "[page %d] model=%s rotation=%d° problems=%d verdicts=%s",
+            p, model_id, rotation,
             len(analysis.get("problems", [])),
             [pr.get("verdict") for pr in analysis.get("problems", [])],
         )
@@ -373,11 +399,12 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool):
     yield {"type": "result", "pages": results, "imgs": imgs}
 
 
-def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filename: str):
+def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filename: str,
+             model_id: str = ANALYSIS_MODEL, model_label: str = ""):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in _process_stream(file_bytes, ext, auto_orient):
+        for ev in _process_stream(file_bytes, ext, auto_orient, model_id, model_label):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 job["imgs"] = ev["imgs"]
@@ -396,7 +423,12 @@ def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filena
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # no-store: the UI markup changes often during development and a stale
+    # cached index.html silently sends old form values (e.g. auto_orient
+    # defaulting on). Force the browser to always fetch fresh HTML.
+    resp = Response(render_template("index.html"))
+    resp.headers["Cache-Control"] = "no-store, max-age=0"
+    return resp
 
 
 @app.route("/analyze/start", methods=["POST"])
@@ -410,14 +442,16 @@ def analyze_start():
         return jsonify({"error": f"סוג קובץ לא נתמך: {ext}"}), 400
 
     file_bytes = f.read()
-    auto_orient = request.form.get("auto_orient", "1") == "1"
+    auto_orient = request.form.get("auto_orient", "0") == "1"
+    model_id, model_label = resolve_model(request.form.get("model"))
     filename = f.filename or "תרגיל"
 
     job_id = str(uuid.uuid4())
-    JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None, "imgs": None, "filename": None}
+    JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None,
+                    "imgs": None, "filename": None, "model": model_id}
     threading.Thread(
         target=_run_job,
-        args=(job_id, file_bytes, ext, auto_orient, filename),
+        args=(job_id, file_bytes, ext, auto_orient, filename, model_id, model_label),
         daemon=True,
     ).start()
     return jsonify({"job_id": job_id})
@@ -466,8 +500,9 @@ def reanalyze():
     rotate = int(data.get("rotate", 0)) % 360
     img = apply_rotation(job["imgs"][idx], rotate) if rotate else job["imgs"][idx]
 
+    model_id = job.get("model", ANALYSIS_MODEL)
     try:
-        analysis = analyze_page(img)
+        analysis = analyze_page(img, model_id)
     except Exception as e:
         log.exception("reanalyze failed")
         return jsonify(humanize_error(e)), 502
