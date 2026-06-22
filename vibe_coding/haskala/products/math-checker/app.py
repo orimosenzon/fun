@@ -76,29 +76,48 @@ MAX_EDGE = 2200           # longest edge sent to Opus for analysis
 ORIENT_MAX_EDGE = 900     # longest edge sent to Haiku for fast orientation check
 PREVIEW_MAX_EDGE = 1400   # longest edge stored in result for display in browser
 
-# Analysis models the teacher can pick in the UI. Opus is the quality
-# default; Sonnet is the cost/quality sweet spot (~5× cheaper) recommended
-# for routine rubric scoring; Haiku is cheapest for quick passes.
+# Analysis models the teacher can pick in the UI. Holistic math/geometry
+# grading is a hard reasoning task (proofs, 2D diagrams, multi-step algebra),
+# so only strong reasoners do it well. The full provider line-up from
+# products/checker is exposed for the current testing phase, but the cheap /
+# mini / free tiers are flagged "(לא מומלץ)" — empirically they miss real
+# calculation/logic errors on math pages. Opus is the quality default.
+#
+# Each UI key maps to (provider, model_id) so analyze_page can dispatch across
+# Anthropic / Google / Groq / Azure (mirrors products/checker's abstraction).
 MODELS = {
-    "opus":   "Claude Opus 4.8 · איכות מרבית",
-    "sonnet": "Claude Sonnet 4.6 · מהיר וזול ~5×",
-    "haiku":  "Claude Haiku 4.5 · הכי זול",
+    "opus":             "Claude Opus 4.8 · איכות מרבית",
+    "sonnet":           "Claude Sonnet 4.6 · מהיר וזול ~5×",
+    "gemini-flash":     "Gemini 2.5 Flash · מהיר וזול",
+    "haiku":            "Claude Haiku 4.5 · הכי זול (לא מומלץ)",
+    "gemini-lite":      "Gemini 2.5 Flash-Lite · זול מאוד (לא מומלץ)",
+    "groq-scout":       "Groq Llama 4 Scout · חינמי (לא מומלץ)",
+    "azure-gpt41-mini": "GPT-4.1-mini · Azure (לא מומלץ)",
 }
-MODEL_IDS = {
+
+# provider kind + concrete model id per UI key
+_ANTHROPIC_IDS = {
     "opus":   "claude-opus-4-8",
     "sonnet": "claude-sonnet-4-6",
     "haiku":  "claude-haiku-4-5-20251001",
 }
-DEFAULT_MODEL = "opus"
+_GEMINI_IDS = {
+    "gemini-flash": "gemini-2.5-flash",
+    "gemini-lite":  "gemini-2.5-flash-lite",
+}
+_GROQ_IDS = {
+    "groq-scout": "meta-llama/llama-4-scout-17b-16e-instruct",
+}
+_AZURE_KEYS = {"azure-gpt41-mini"}
 
-ANALYSIS_MODEL = MODEL_IDS[DEFAULT_MODEL]   # fallback when no model is supplied
-ORIENT_MODEL   = "claude-haiku-4-5-20251001"
+DEFAULT_MODEL = "opus"
+ORIENT_MODEL  = "claude-haiku-4-5-20251001"  # orientation check is always Haiku (cheap)
 
 
 def resolve_model(key: str | None) -> tuple[str, str]:
-    """Map a UI model key to (model_id, hebrew_label). Falls back to default."""
-    k = key if key in MODEL_IDS else DEFAULT_MODEL
-    return MODEL_IDS[k], MODELS[k]
+    """Map a UI model key to (canonical_key, hebrew_label). Falls back to default."""
+    k = key if key in MODELS else DEFAULT_MODEL
+    return k, MODELS[k]
 
 ACCEPTED_EXTS = (".pdf", ".jpg", ".jpeg", ".png")
 
@@ -136,12 +155,47 @@ def _downscale(img: Image.Image, max_edge: int) -> Image.Image:
     )
 
 
-def _img_to_b64_jpeg(img: Image.Image, max_edge: int | None = None, quality: int = 90) -> str:
+def _jpeg_bytes(img: Image.Image, max_edge: int | None = None, quality: int = 90) -> bytes:
     if max_edge:
         img = _downscale(img, max_edge)
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="JPEG", quality=quality)
-    return base64.standard_b64encode(buf.getvalue()).decode()
+    return buf.getvalue()
+
+
+def _img_to_b64_jpeg(img: Image.Image, max_edge: int | None = None, quality: int = 90) -> str:
+    return base64.standard_b64encode(_jpeg_bytes(img, max_edge, quality)).decode()
+
+
+# ─── optional non-Claude providers (lazy: a missing key only bites if picked) ──
+_gemini_client = None
+_groq_client = None
+_azure_client = None
+
+
+def _gemini():
+    global _gemini_client
+    if _gemini_client is None:
+        from google import genai
+        _gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    return _gemini_client
+
+
+def _groq():
+    global _groq_client
+    if _groq_client is None:
+        from groq import Groq
+        _groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+    return _groq_client
+
+
+def _azure():
+    global _azure_client
+    if _azure_client is None:
+        from openai import OpenAI
+        base = os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/"
+        _azure_client = OpenAI(base_url=base, api_key=os.environ["AZURE_OPENAI_API_KEY"])
+    return _azure_client
 
 
 def _image_block(img: Image.Image, max_edge: int) -> dict:
@@ -253,8 +307,48 @@ ANALYSIS_SCHEMA = {
 }
 
 
-def analyze_page(img: Image.Image, model_id: str = ANALYSIS_MODEL) -> dict:
-    """Send a full page to the chosen model for holistic math analysis. Returns structured JSON."""
+def _strip_additional_props(node):
+    """Gemini's response_schema is an OpenAPI subset that rejects the
+    additionalProperties key our Anthropic schema carries. Drop it recursively."""
+    if isinstance(node, dict):
+        return {k: _strip_additional_props(v) for k, v in node.items()
+                if k != "additionalProperties"}
+    if isinstance(node, list):
+        return [_strip_additional_props(v) for v in node]
+    return node
+
+
+_GEMINI_SCHEMA = _strip_additional_props(ANALYSIS_SCHEMA)
+
+# Groq / Azure are OpenAI-compatible and only support response_format=
+# json_object (no schema), so the JSON shape is spelled out in the user turn.
+_JSON_CONTRACT = (
+    " החזר JSON בלבד, ללא טקסט נוסף, במבנה: "
+    '{"page_summary":"...","has_diagram":true,"diagram_description":"...",'
+    '"problems":[{"id":"1","topic":"אלגברה","statement_latex":"...",'
+    '"student_steps":[{"latex":"...","ok":true,"comment":"..."}],'
+    '"final_answer_latex":"...","verdict":"correct|partial|incorrect|unclear",'
+    '"score_suggestion":"...","feedback":"..."}]}'
+)
+
+_ANALYSIS_USER_TURN = "נתח את עמוד הפתרון וחזור JSON."
+
+
+def analyze_page(img: Image.Image, model_key: str = DEFAULT_MODEL) -> dict:
+    """Holistic full-page math analysis. Dispatches to the chosen provider;
+    every backend returns the same structured JSON (ANALYSIS_SCHEMA shape)."""
+    if model_key in _ANTHROPIC_IDS:
+        return _analyze_anthropic(img, _ANTHROPIC_IDS[model_key])
+    if model_key in _GEMINI_IDS:
+        return _analyze_gemini(img, _GEMINI_IDS[model_key])
+    if model_key in _GROQ_IDS:
+        return _analyze_groq(img, _GROQ_IDS[model_key])
+    if model_key in _AZURE_KEYS:
+        return _analyze_azure(img)
+    return _analyze_anthropic(img, _ANTHROPIC_IDS[DEFAULT_MODEL])
+
+
+def _analyze_anthropic(img: Image.Image, model_id: str) -> dict:
     response = client.messages.create(
         model=model_id,
         max_tokens=6000,
@@ -270,12 +364,60 @@ def analyze_page(img: Image.Image, model_id: str = ANALYSIS_MODEL) -> dict:
             "role": "user",
             "content": [
                 _image_block(img, MAX_EDGE),
-                {"type": "text", "text": "נתח את עמוד הפתרון וחזור JSON."},
+                {"type": "text", "text": _ANALYSIS_USER_TURN},
             ],
         }],
     )
     text = next(b.text for b in response.content if b.type == "text")
     return json.loads(text)
+
+
+def _analyze_gemini(img: Image.Image, model_id: str) -> dict:
+    from google.genai import types
+    response = _gemini().models.generate_content(
+        model=model_id,
+        contents=[
+            types.Part.from_bytes(data=_jpeg_bytes(img, MAX_EDGE), mime_type="image/jpeg"),
+            _ANALYSIS_USER_TURN,
+        ],
+        config=types.GenerateContentConfig(
+            system_instruction=ANALYSIS_PROMPT,
+            response_mime_type="application/json",
+            response_schema=_GEMINI_SCHEMA,
+            # Gemini 2.5 thinking tokens count against this budget; keep it
+            # generous or the JSON gets truncated mid-string before it closes.
+            max_output_tokens=24000,
+        ),
+    )
+    return json.loads(response.text)
+
+
+def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image) -> dict:
+    """Shared call shape for Groq and Azure (both OpenAI-compatible vision)."""
+    b64 = base64.standard_b64encode(_jpeg_bytes(img, MAX_EDGE)).decode()
+    response = client_obj.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": ANALYSIS_PROMPT},
+            {"role": "user", "content": [
+                {"type": "image_url",
+                 "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+                {"type": "text", "text": "נתח את עמוד הפתרון." + _JSON_CONTRACT},
+            ]},
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=8000,
+        temperature=0,
+    )
+    return json.loads(response.choices[0].message.content)
+
+
+def _analyze_groq(img: Image.Image, model_id: str) -> dict:
+    return _analyze_openai_compatible(_groq(), model_id, img)
+
+
+def _analyze_azure(img: Image.Image) -> dict:
+    return _analyze_openai_compatible(_azure(), os.environ["AZURE_OPENAI_DEPLOYMENT"], img)
 
 
 # ─── error handling ───────────────────────────────────────────────────────────
@@ -344,7 +486,7 @@ def _evict_stale_jobs():
 
 
 def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
-                    model_id: str = ANALYSIS_MODEL, model_label: str = ""):
+                    model_key: str = DEFAULT_MODEL, model_label: str = ""):
     """Generator: yields SSE-ready progress dicts, then a final result dict."""
     pages_imgs = file_to_pages(file_bytes, ext)
     total = len(pages_imgs)
@@ -380,10 +522,10 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
 
         yield progress("analyze", p, base + 1)
         img = _downscale(img, MAX_EDGE)
-        analysis = analyze_page(img, model_id)
+        analysis = analyze_page(img, model_key)
         log.info(
             "[page %d] model=%s rotation=%d° problems=%d verdicts=%s",
-            p, model_id, rotation,
+            p, model_key, rotation,
             len(analysis.get("problems", [])),
             [pr.get("verdict") for pr in analysis.get("problems", [])],
         )
@@ -400,11 +542,11 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
 
 
 def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filename: str,
-             model_id: str = ANALYSIS_MODEL, model_label: str = ""):
+             model_key: str = DEFAULT_MODEL, model_label: str = ""):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in _process_stream(file_bytes, ext, auto_orient, model_id, model_label):
+        for ev in _process_stream(file_bytes, ext, auto_orient, model_key, model_label):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 job["imgs"] = ev["imgs"]
@@ -443,15 +585,15 @@ def analyze_start():
 
     file_bytes = f.read()
     auto_orient = request.form.get("auto_orient", "0") == "1"
-    model_id, model_label = resolve_model(request.form.get("model"))
+    model_key, model_label = resolve_model(request.form.get("model"))
     filename = f.filename or "תרגיל"
 
     job_id = str(uuid.uuid4())
     JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None,
-                    "imgs": None, "filename": None, "model": model_id}
+                    "imgs": None, "filename": None, "model": model_key}
     threading.Thread(
         target=_run_job,
-        args=(job_id, file_bytes, ext, auto_orient, filename, model_id, model_label),
+        args=(job_id, file_bytes, ext, auto_orient, filename, model_key, model_label),
         daemon=True,
     ).start()
     return jsonify({"job_id": job_id})
@@ -500,9 +642,9 @@ def reanalyze():
     rotate = int(data.get("rotate", 0)) % 360
     img = apply_rotation(job["imgs"][idx], rotate) if rotate else job["imgs"][idx]
 
-    model_id = job.get("model", ANALYSIS_MODEL)
+    model_key = job.get("model", DEFAULT_MODEL)
     try:
-        analysis = analyze_page(img, model_id)
+        analysis = analyze_page(img, model_key)
     except Exception as e:
         log.exception("reanalyze failed")
         return jsonify(humanize_error(e)), 502
