@@ -36,7 +36,7 @@ fi
 # memory/, *.log, __pycache__/, .env stay local. README.md on the Space is
 # HF-specific (title/sdk/port frontmatter), kept under deploy/space-readme.md.
 FILES=(app.py Dockerfile .dockerignore requirements.txt)
-DIRS=(templates)
+DIRS=(templates static)
 
 echo "📥 pulling latest from HF Space ($SPACE)…"
 git -C "$SPACE" pull --rebase --autostash
