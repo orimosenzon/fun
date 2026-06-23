@@ -722,7 +722,9 @@
         <div class="menu-wrap">
             <button id="save-menu-btn" type="button" class="secondary">שמור ▾</button>
             <div id="save-menu" class="menu-list">
-                <button type="button" id="save-json-btn">שמור JSON</button>
+                <button type="button" id="save-html-btn">שמור HTML (לצפייה/הדפסה)</button>
+                <button type="button" id="save-docx-btn">שמור Word (.docx)</button>
+                <button type="button" id="save-json-btn">שמור JSON (לטעינה חוזרת)</button>
                 <div class="menu-sep"></div>
                 <button type="button" id="load-menu-btn">פתח תרגיל שמור…</button>
                 <div class="menu-sep"></div>
@@ -1160,6 +1162,11 @@ async function saveJson() {
     window.location.href = `/save/${_currentJobId}`;
 }
 
+function saveAs(fmt) {
+    if (!_currentJobId) return;
+    window.location.href = `/save/${fmt}/${_currentJobId}`;
+}
+
 async function loadFromFile(file) {
     const fd = new FormData();
     fd.append('file', file);
@@ -1196,6 +1203,14 @@ loadInput.onchange = () => {
     loadInput.value = '';
 };
 
+document.getElementById('save-html-btn').onclick = () => {
+    document.getElementById('save-menu').classList.remove('visible');
+    saveAs('html');
+};
+document.getElementById('save-docx-btn').onclick = () => {
+    document.getElementById('save-menu').classList.remove('visible');
+    saveAs('docx');
+};
 document.getElementById('save-json-btn').onclick = () => {
     document.getElementById('save-menu').classList.remove('visible');
     saveJson();

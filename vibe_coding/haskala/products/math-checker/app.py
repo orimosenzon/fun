@@ -491,6 +491,8 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
     pages_imgs = file_to_pages(file_bytes, ext)
     total = len(pages_imgs)
     short_label = (model_label.split("·")[0].strip() or "מודל")
+    log.info("[job] rendered %d page(s) at %d DPI; model=%s auto_orient=%s",
+             total, RENDER_DPI, model_key, auto_orient)
 
     def progress(stage: str, page: int, completed: int) -> dict:
         # Emitted *before* each stage runs, so the label reflects the stage
@@ -515,19 +517,23 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
 
         yield progress("orient", p, base)
         if auto_orient:
+            t0 = time.time()
             rotation = detect_rotation(img)
             img = apply_rotation(img, rotation)
+            log.info("[page %d] orient → %d° (%.1fs)", p, rotation, time.time() - t0)
         else:
             rotation = 0
 
         yield progress("analyze", p, base + 1)
         img = _downscale(img, MAX_EDGE)
+        t0 = time.time()
         analysis = analyze_page(img, model_key)
         log.info(
-            "[page %d] model=%s rotation=%d° problems=%d verdicts=%s",
+            "[page %d] model=%s rotation=%d° problems=%d verdicts=%s (%.1fs)",
             p, model_key, rotation,
             len(analysis.get("problems", [])),
             [pr.get("verdict") for pr in analysis.get("problems", [])],
+            time.time() - t0,
         )
 
         results.append({
@@ -589,6 +595,10 @@ def analyze_start():
     filename = f.filename or "תרגיל"
 
     job_id = str(uuid.uuid4())
+    log.info(
+        "[upload] job=%s file=%r ext=%s size=%.1fKB model=%s auto_orient=%s",
+        job_id[:8], filename, ext, len(file_bytes) / 1024, model_key, auto_orient,
+    )
     JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None,
                     "imgs": None, "filename": None, "model": model_key}
     threading.Thread(
@@ -673,6 +683,222 @@ def result_data(job_id: str):
     return jsonify({"pages": job["pages"], "filename": job.get("filename", "")})
 
 
+# ─── export builders (HTML + Word) ──────────────────────────────────────────
+
+VERDICT_HE = {"correct": "נכון ✓", "partial": "חלקי", "incorrect": "שגוי ✗", "unclear": "לא ברור"}
+VERDICT_COLOR = {"correct": "1e7e34", "partial": "a0740a", "incorrect": "b54343", "unclear": "5a6b82"}
+
+
+def build_result_html(pages: list[dict], filename: str) -> str:
+    """Standalone, self-contained HTML report. KaTeX is pulled from a CDN and
+    auto-renders \\(...\\) so the LaTeX shows as real math; the scan images are
+    embedded as base64 so the file opens anywhere with no server. Mirrors the
+    web UI layout (verdict badges, ok/bad step coloring, comments, feedback)."""
+    import html as _html
+
+    def esc(s) -> str:
+        return _html.escape(str(s if s is not None else ""))
+
+    def math(latex) -> str:
+        # KaTeX auto-render reads textContent, so escaping is safe (and needed
+        # for inequalities like a<b). Wrapped in \( \) inline delimiters.
+        return r"\(" + esc(latex) + r"\)"
+
+    body: list[str] = []
+    for p in pages or []:
+        a = p.get("analysis") or {}
+        rot = p.get("rotation_applied") or 0
+        rot_lbl = f" · סובב {rot}°" if rot else ""
+        body.append(f'<section class="page"><h2>עמוד {esc(p.get("page", "?"))}'
+                    f'<span class="rot">{esc(rot_lbl)}</span></h2><div class="layout">')
+        if p.get("image_b64"):
+            body.append(f'<div class="imgwrap"><img src="data:image/jpeg;base64,'
+                        f'{p["image_b64"]}" alt="עמוד {esc(p.get("page", ""))}"></div>')
+        body.append('<div class="analysis">')
+        if a.get("page_summary"):
+            body.append(f'<div class="summary">{esc(a["page_summary"])}</div>')
+        if a.get("has_diagram"):
+            body.append(f'<div class="diagram">▣ סרטוט: {esc(a.get("diagram_description", ""))}</div>')
+        problems = a.get("problems") or []
+        if not problems:
+            body.append('<div class="noprob">לא זוהו תרגילים בעמוד זה.</div>')
+        for pr in problems:
+            v = pr.get("verdict", "unclear")
+            body.append('<div class="prob"><div class="prob-head">'
+                        f'<span class="prob-id">תרגיל {esc(pr.get("id", "?"))}</span>'
+                        f'<span class="topic">{esc(pr.get("topic", ""))}</span>'
+                        f'<span class="badge b-{esc(v)}">{esc(VERDICT_HE.get(v, v))}</span></div>')
+            if pr.get("statement_latex"):
+                body.append(f'<div class="step statement" dir="ltr">{math(pr["statement_latex"])}</div>')
+            for s in pr.get("student_steps") or []:
+                cls = "bad" if s.get("ok") is False else ("ok" if s.get("ok") is True else "")
+                body.append(f'<div class="step {cls}" dir="ltr">{math(s.get("latex", ""))}')
+                if s.get("comment"):
+                    body.append(f'<div class="step-comment">⚠ {esc(s["comment"])}</div>')
+                body.append('</div>')
+            if pr.get("final_answer_latex"):
+                body.append(f'<div class="step final" dir="ltr"><b>תשובה:</b> {math(pr["final_answer_latex"])}</div>')
+            if pr.get("score_suggestion"):
+                body.append(f'<div class="score-row">ניקוד מוצע: {esc(pr["score_suggestion"])}</div>')
+            if pr.get("feedback"):
+                body.append(f'<div class="feedback">{esc(pr["feedback"])}</div>')
+            body.append('</div>')
+        body.append('</div></div></section>')
+
+    head = """<!DOCTYPE html>
+<html dir="rtl" lang="he"><head><meta charset="utf-8">
+<title>בדיקת מתמטיקה — __TITLE__</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\\\(',right:'\\\\)',display:false},{left:'\\\\[',right:'\\\\]',display:true}],throwOnError:false});"></script>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#2b3442;background:#f4f1ea;margin:0;padding:2rem;line-height:1.5}
+  .doc-title{font-size:1.5rem;font-weight:800;color:#2e7286;margin:0 0 0.3rem}
+  .doc-meta{color:#6e6a5c;margin:0 0 1.5rem;font-size:0.9rem}
+  .page{background:#fff;border:1px solid #d8cfb6;border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .page h2{margin:0 0 1rem;color:#2e7286;font-size:1.2rem}
+  .rot{color:#6e6a5c;font-size:0.85rem;font-weight:400}
+  .layout{display:flex;gap:1.4rem;align-items:flex-start;flex-wrap:wrap}
+  .imgwrap{flex:0 0 320px;max-width:340px}
+  .imgwrap img{width:100%;border:1px solid #d8cfb6;border-radius:8px}
+  .analysis{flex:1;min-width:300px}
+  .summary{font-size:0.95rem;color:#3a4250;margin-bottom:0.6rem}
+  .diagram{font-size:0.85rem;color:#2e7286;background:#eef4f7;border-radius:6px;padding:0.3rem 0.6rem;margin-bottom:0.6rem;display:inline-block}
+  .noprob{color:#6e6a5c;font-style:italic}
+  .prob{border:1px solid #e7e0cd;border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.9rem}
+  .prob-head{display:flex;gap:0.6rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap}
+  .prob-id{font-weight:700}
+  .topic{font-size:0.78rem;color:#6e6a5c;background:#ece8db;border-radius:999px;padding:0.15rem 0.6rem}
+  .badge{font-size:0.82rem;padding:0.18rem 0.7rem;border-radius:999px;font-weight:700}
+  .b-correct{background:rgba(30,126,52,.15);color:#1e7e34}
+  .b-partial{background:rgba(160,116,10,.15);color:#a0740a}
+  .b-incorrect{background:rgba(181,67,67,.15);color:#b54343}
+  .b-unclear{background:rgba(90,107,130,.15);color:#5a6b82}
+  .step{padding:0.5rem 0.8rem;margin:0.3rem 0;border-radius:6px;border-inline-start:3px solid #d8cfb6;background:#f6f3eb;direction:ltr;text-align:left}
+  .step.ok{border-inline-start-color:#1e7e34}
+  .step.bad{border-inline-start-color:#b54343;background:#fff0f0}
+  .step.statement{border-inline-start-color:#2e7286;background:#eef4f7}
+  .step.final{border-inline-start-color:#b3924a;background:#faf5e9;font-weight:600}
+  .step-comment{color:#b54343;font-size:0.85rem;margin-top:0.3rem;direction:rtl;text-align:right;font-weight:500}
+  .score-row{color:#6e6a5c;font-size:0.88rem;margin:0.6rem 0 0.3rem;font-weight:500}
+  .feedback{margin-top:0.5rem;padding-top:0.6rem;border-top:1px dashed #d8cfb6;font-size:0.93rem}
+  @media print{body{background:#fff;padding:0}.page{box-shadow:none;break-inside:avoid}}
+</style></head><body>
+<div class="doc-title">בדיקת מתמטיקה — השכלה</div>
+<div class="doc-meta">קובץ: __TITLE__ · __NPAGES__ עמודים</div>
+"""
+    npages = len(pages or [])
+    head = (head.replace("__TITLE__", _html.escape(filename))
+                .replace("__NPAGES__", str(npages)))
+    return head + "\n".join(body) + "\n</body></html>"
+
+
+def build_result_docx(pages: list[dict], filename: str) -> bytes:
+    """Word (.docx) report. python-docx can't typeset LaTeX, so math is kept as
+    monospace LTR text (the strings are simple, e.g. x^2-6x+10) — honest and
+    editable. Each page carries its scan image, verdicts, comments, score and
+    feedback. Hebrew paragraphs are right-aligned + bidi for correct RTL flow."""
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt, RGBColor
+
+    def rtl(par):
+        par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        pPr = par._p.get_or_add_pPr()
+        bidi = OxmlElement("w:bidi")
+        pPr.append(bidi)
+        return par
+
+    def mono(run):
+        run.font.name = "Consolas"
+        run.font.size = Pt(10.5)
+        return run
+
+    doc = Document()
+    rtl(doc.add_heading("בדיקת מתמטיקה — השכלה", level=1))
+    meta = rtl(doc.add_paragraph())
+    meta.add_run(f"קובץ: {filename}").bold = True
+
+    for idx, p in enumerate(pages or []):
+        if idx > 0:
+            doc.add_page_break()
+        a = p.get("analysis") or {}
+        rot = p.get("rotation_applied") or 0
+        rot_lbl = f"  (סובב {rot}°)" if rot else ""
+        rtl(doc.add_heading(f"עמוד {p.get('page', idx + 1)}{rot_lbl}", level=2))
+
+        if p.get("image_b64"):
+            try:
+                pic = doc.add_paragraph()
+                pic.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                pic.add_run().add_picture(
+                    io.BytesIO(base64.b64decode(p["image_b64"])), width=Inches(3.2))
+            except Exception:
+                log.warning("docx: failed to embed image for page %s", p.get("page"))
+
+        if a.get("page_summary"):
+            rtl(doc.add_paragraph(a["page_summary"]))
+        if a.get("has_diagram"):
+            d = rtl(doc.add_paragraph())
+            r = d.add_run(f"▣ סרטוט: {a.get('diagram_description', '')}")
+            r.italic = True
+            r.font.color.rgb = RGBColor(0x2E, 0x72, 0x86)
+
+        problems = a.get("problems") or []
+        if not problems:
+            ip = rtl(doc.add_paragraph())
+            ip.add_run("לא זוהו תרגילים בעמוד זה.").italic = True
+
+        for pr in problems:
+            v = pr.get("verdict", "unclear")
+            h = rtl(doc.add_heading(level=3))
+            hr = h.add_run(f"תרגיל {pr.get('id', '?')}  ·  {pr.get('topic', '')}  ·  "
+                           f"{VERDICT_HE.get(v, v)}")
+            hr.font.color.rgb = RGBColor.from_string(VERDICT_COLOR.get(v, "5a6b82"))
+
+            if pr.get("statement_latex"):
+                sp = doc.add_paragraph()
+                sp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                sp.add_run("נתון: ").bold = True
+                mono(sp.add_run(pr["statement_latex"]))
+
+            for s in pr.get("student_steps") or []:
+                mark = "✗ " if s.get("ok") is False else ("✓ " if s.get("ok") is True else "• ")
+                stp = doc.add_paragraph()
+                stp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                mk = stp.add_run(mark)
+                mk.bold = True
+                mk.font.color.rgb = RGBColor(0xB5, 0x43, 0x43) if s.get("ok") is False \
+                    else (RGBColor(0x1E, 0x7E, 0x34) if s.get("ok") is True else RGBColor(0x5A, 0x6B, 0x82))
+                mono(stp.add_run(s.get("latex", "")))
+                if s.get("comment"):
+                    cp = rtl(doc.add_paragraph())
+                    cr = cp.add_run(f"⚠ {s['comment']}")
+                    cr.italic = True
+                    cr.font.size = Pt(9.5)
+                    cr.font.color.rgb = RGBColor(0xB5, 0x43, 0x43)
+
+            if pr.get("final_answer_latex"):
+                fp = doc.add_paragraph()
+                fp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                fp.add_run("תשובה: ").bold = True
+                mono(fp.add_run(pr["final_answer_latex"]))
+
+            if pr.get("score_suggestion"):
+                rtl(doc.add_paragraph()).add_run(
+                    f"ניקוד מוצע: {pr['score_suggestion']}").bold = True
+            if pr.get("feedback"):
+                fb = rtl(doc.add_paragraph())
+                fb.add_run(pr["feedback"]).italic = True
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
 @app.route("/save/<job_id>")
 def save_json(job_id: str):
     """Download the analysis result as a JSON file."""
@@ -692,6 +918,42 @@ def save_json(job_id: str):
         payload,
         mimetype="application/json",
         headers={"Content-Disposition": f'attachment; filename="{save_name}"'},
+    )
+
+
+def _export_basename(job: dict) -> str:
+    base = os.path.splitext(job.get("filename", "תרגיל") or "תרגיל")[0]
+    today = datetime.date.today().strftime("%Y%m%d")
+    return f"{base}_math_{today}"
+
+
+@app.route("/save/html/<job_id>")
+def save_html(job_id: str):
+    """Download the analysis result as a standalone HTML report (KaTeX math)."""
+    job = JOBS.get(job_id)
+    if not job or not job.get("pages"):
+        return "תוצאה לא נמצאה", 404
+    html_doc = build_result_html(job["pages"], job.get("filename", "תרגיל"))
+    return Response(
+        html_doc,
+        mimetype="text/html",
+        headers={"Content-Disposition":
+                 f'attachment; filename="{_export_basename(job)}.html"'},
+    )
+
+
+@app.route("/save/docx/<job_id>")
+def save_docx(job_id: str):
+    """Download the analysis result as a Word (.docx) document."""
+    job = JOBS.get(job_id)
+    if not job or not job.get("pages"):
+        return "תוצאה לא נמצאה", 404
+    docx_bytes = build_result_docx(job["pages"], job.get("filename", "תרגיל"))
+    return Response(
+        docx_bytes,
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition":
+                 f'attachment; filename="{_export_basename(job)}.docx"'},
     )
 
 
