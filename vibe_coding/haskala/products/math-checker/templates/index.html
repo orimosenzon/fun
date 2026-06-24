@@ -568,18 +568,109 @@
             font-weight: 500;
         }
         .score-row {
-            color: #6e6a5c;
-            font-size: 0.88rem;
+            color: #3a4250;
+            font-size: 0.9rem;
             margin: 0.6rem 0 0.3rem;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .score-row label { color: #6e6a5c; }
+        .score-row input[type="number"] {
+            width: 4rem;
+            padding: 0.25rem 0.4rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #2e7286;
+            text-align: center;
+        }
+        .score-row input.pts-max { color: #6e6a5c; font-weight: 600; }
+        .score-row .pts-sep { color: #6e6a5c; }
+        .score-row .score-note {
+            color: #6e6a5c;
+            font-size: 0.83rem;
+            font-weight: 400;
+            margin-inline-start: 0.4rem;
         }
         .feedback {
             margin-top: 0.5rem;
-            padding-top: 0.6rem;
+            padding: 0.5rem 0.6rem 0.2rem;
             border-top: 1px dashed var(--border);
             font-size: 0.93rem;
             line-height: 1.6;
             color: var(--fg);
+            border-radius: 0 0 6px 6px;
+            outline: none;
+        }
+        .feedback[contenteditable="true"]:hover,
+        .feedback[contenteditable="true"]:focus {
+            background: #fffdf6;
+            box-shadow: inset 0 0 0 1px var(--border);
+        }
+        .feedback[contenteditable="true"]:empty::before {
+            content: attr(data-placeholder);
+            color: #b3aa97;
+        }
+        /* ── Grade bar (total + approval) ── */
+        .grade-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            margin: 0 0 1.2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            position: sticky;
+            top: 0.5rem;
+            z-index: 5;
+        }
+        .grade-total { font-size: 1.25rem; font-weight: 800; color: #2e7286; }
+        .grade-approve { display: flex; align-items: center; gap: 0.8rem; }
+        .approve-state { font-size: 0.9rem; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 999px; }
+        .approve-state.draft { background: rgba(160,116,10,.15); color: #a0740a; }
+        .approve-state.approved { background: rgba(30,126,52,.15); color: #1e7e34; }
+        .approve-btn {
+            background: #1e7e34;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.45rem 1rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .approve-btn:hover { background: #176a2c; }
+        /* ── Rubric input (upload form) ── */
+        .rubric-box {
+            width: 100%;
+            max-width: 520px;
+            margin: 0.2rem auto 0.4rem;
+            text-align: start;
+            background: #fffdf6;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.6rem 0.9rem;
+        }
+        .rubric-box summary { cursor: pointer; font-weight: 600; color: #2e7286; }
+        .rubric-hint { color: #6e6a5c; font-size: 0.83rem; margin: 0.5rem 0; line-height: 1.5; }
+        #rubric-input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.7rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
         }
 
         /* KaTeX size tweak */
@@ -682,6 +773,14 @@
             <input type="checkbox" id="auto-orient-chk">
         </div>
 
+        <details class="rubric-box">
+            <summary>רובריקה / מחוון ניקוד (אופציונלי)</summary>
+            <p class="rubric-hint">הדבק מחוון, מפתח תשובות או חלוקת ניקוד. הבודק ינקד לפיו.
+               אם תשאיר ריק — הניקוד ייגזר מהניקוד המודפס בדף.</p>
+            <textarea id="rubric-input" rows="5"
+                placeholder="למשל:&#10;תרגיל 1 (25 נק'): פתיחת סוגריים נכונה 10, פתרון המשוואה 10, תשובה סופית 5&#10;תרגיל 2 (25 נק'): שרטוט נכון 5, הוכחת חפיפה 15, נימוק 5"></textarea>
+        </details>
+
         <button id="open-btn" type="button" class="big-cta">פתח תרגיל לבדיקה</button>
         <p class="empty-hint">PDF או תמונה של תרגיל מצולם (עד 32 MB)</p>
         <div class="empty-side">
@@ -734,6 +833,15 @@
     </div>
 
     <!-- ── Results ── -->
+    <!-- ── Grade bar (total + teacher approval) ── -->
+    <div id="grade-bar" class="grade-bar" hidden>
+        <div class="grade-total">ציון כולל: <span id="grade-value">—</span></div>
+        <div class="grade-approve">
+            <span id="approve-state" class="approve-state draft">טיוטה — טרם אושר</span>
+            <button id="approve-btn" type="button" class="approve-btn">אשר בדיקה ✓</button>
+        </div>
+    </div>
+
     <div id="results"></div>
 
     <!-- Stamp -->
@@ -797,6 +905,8 @@ function renderMathWhenReady(el) {
 // ── Show / Hide ───────────────────────────────────────────────────────────
 let _currentJobId = null;
 let _pages = [];
+let _approved = false;
+let _persistTimer = null;
 
 function showView(id) {
     document.querySelectorAll('[data-view]').forEach(el => el.classList.remove('visible'));
@@ -809,8 +919,10 @@ function showEmpty() {
     document.getElementById('progress-box').classList.remove('visible');
     document.getElementById('error-banner').hidden = true;
     document.getElementById('toolbar').classList.remove('visible');
+    document.getElementById('grade-bar').hidden = true;
     document.getElementById('results').innerHTML = '';
     _currentJobId = null;
+    _approved = false;
 }
 
 function showProgress(label, pct) {
@@ -911,7 +1023,7 @@ function renderPage(p) {
     if (problems.length === 0) {
         html += `<div class="no-problems">לא זוהו תרגילים בעמוד זה.</div>`;
     }
-    problems.forEach(pr => {
+    problems.forEach((pr, qi) => {
         html += `<div class="prob">
           <div class="prob-header">
             <span class="prob-id">תרגיל ${esc(pr.id || '?')}</span>
@@ -935,12 +1047,20 @@ function renderPage(p) {
         if (pr.final_answer_latex) {
             html += `<div class="step final" dir="ltr"><b>תשובה:</b> ${m(pr.final_answer_latex)}</div>`;
         }
-        if (pr.score_suggestion) {
-            html += `<div class="score-row">ניקוד מוצע: ${esc(pr.score_suggestion)}</div>`;
+        const hasPts = pr.points_max !== undefined && pr.points_max !== null && pr.points_max !== '';
+        if (hasPts) {
+            html += `<div class="score-row" data-page="${p.page}" data-q="${qi}">
+              <label>ניקוד:</label>
+              <input type="number" class="pts-earned" step="0.5" min="0" value="${esc(pr.points_earned ?? '')}">
+              <span class="pts-sep">/</span>
+              <input type="number" class="pts-max" step="0.5" min="0" value="${esc(pr.points_max ?? '')}">
+              ${pr.score_suggestion ? `<span class="score-note">${esc(pr.score_suggestion)}</span>` : ''}
+            </div>`;
+        } else if (pr.score_suggestion) {
+            html += `<div class="score-row">${esc(pr.score_suggestion)}</div>`;
         }
-        if (pr.feedback) {
-            html += `<div class="feedback">${esc(pr.feedback)}</div>`;
-        }
+        html += `<div class="feedback" contenteditable="true" data-page="${p.page}" data-q="${qi}"
+              data-placeholder="משוב לתלמיד… (ניתן לעריכה)">${esc(pr.feedback || '')}</div>`;
         html += `</div>`;
     });
 
@@ -951,6 +1071,7 @@ function renderPage(p) {
 function renderResult(data) {
     const pages = data.pages || [];
     _pages = pages;
+    _approved = !!data.approved;
     const filename = data.filename || '';
     document.getElementById('progress-box').classList.remove('visible');
     document.getElementById('error-banner').hidden = true;
@@ -961,7 +1082,106 @@ function renderResult(data) {
     document.getElementById('toolbar-filename').textContent = filename;
     document.getElementById('toolbar-meta').textContent = `${pages.length} עמוד${pages.length !== 1 ? 'ים' : ''}`;
     document.getElementById('toolbar').classList.add('visible');
+    recomputeTotals();
+    renderApproveState();
 }
+
+// ── Numeric grading: totals, teacher edits, approval ───────────────────────
+function asNum(v) {
+    if (v === '' || v === null || v === undefined) return null;
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+}
+
+function fmtPts(n) {
+    if (n === null || n === undefined) return '—';
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
+function recomputeTotals() {
+    let earned = 0, total = 0, hasAny = false;
+    (_pages || []).forEach(p => {
+        ((p.analysis && p.analysis.problems) || []).forEach(pr => {
+            const mx = asNum(pr.points_max);
+            if (mx === null) return;
+            hasAny = true;
+            total += mx;
+            earned += asNum(pr.points_earned) || 0;
+        });
+    });
+    const bar = document.getElementById('grade-bar');
+    if (!hasAny) { bar.hidden = true; return; }
+    bar.hidden = false;
+    document.getElementById('grade-value').textContent = `${fmtPts(earned)} / ${fmtPts(total)}`;
+}
+
+function renderApproveState() {
+    const st = document.getElementById('approve-state');
+    const btn = document.getElementById('approve-btn');
+    if (_approved) {
+        st.textContent = '✓ אושר ע"י המורה';
+        st.className = 'approve-state approved';
+        btn.textContent = 'בטל אישור';
+    } else {
+        st.textContent = 'טיוטה — טרם אושר';
+        st.className = 'approve-state draft';
+        btn.textContent = 'אשר בדיקה ✓';
+    }
+}
+
+// Editing the grade after approval invalidates the approval until re-confirmed.
+function markDirty() {
+    if (_approved) { _approved = false; renderApproveState(); }
+    schedulePersist();
+}
+
+function schedulePersist() {
+    clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(flushEdits, 600);
+}
+
+async function flushEdits() {
+    clearTimeout(_persistTimer);
+    if (!_currentJobId) return;
+    try {
+        await fetch(`/update/${_currentJobId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({pages: _pages, approved: _approved}),
+        });
+    } catch (e) { /* best-effort autosave; export flush will retry */ }
+}
+
+function probAt(page, qi) {
+    const p = (_pages || []).find(pp => pp.page === page);
+    if (!p || !p.analysis || !p.analysis.problems) return null;
+    return p.analysis.problems[qi] || null;
+}
+
+// Live edits within #results (points + feedback) → update model → autosave.
+document.getElementById('results').addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.classList.contains('pts-earned') || t.classList.contains('pts-max')) {
+        const row = t.closest('.score-row');
+        const pr = probAt(parseInt(row.dataset.page, 10), parseInt(row.dataset.q, 10));
+        if (!pr) return;
+        const field = t.classList.contains('pts-earned') ? 'points_earned' : 'points_max';
+        pr[field] = asNum(t.value);
+        recomputeTotals();
+        markDirty();
+    } else if (t.classList.contains('feedback') && t.isContentEditable) {
+        const pr = probAt(parseInt(t.dataset.page, 10), parseInt(t.dataset.q, 10));
+        if (!pr) return;
+        pr.feedback = t.textContent.trim();
+        markDirty();
+    }
+});
+
+document.getElementById('approve-btn').onclick = async () => {
+    _approved = !_approved;
+    renderApproveState();
+    await flushEdits();
+};
 
 // ── Manual rotation + re-analyze ──────────────────────────────────────────
 // Rotate the page preview locally (canvas) for instant feedback. The actual
@@ -1010,6 +1230,8 @@ async function recheckPage(section) {
         const newSection = wrap.firstElementChild;
         section.replaceWith(newSection);
         renderMathWhenReady(newSection);
+        recomputeTotals();
+        if (_approved) { _approved = false; renderApproveState(); flushEdits(); }
     } catch (err) {
         showError('שגיאה בניתוח מחדש: ' + err.message);
         section.classList.remove('rechecking');
@@ -1100,6 +1322,7 @@ async function startAnalysis(file) {
     fd.append('file', file);
     fd.append('auto_orient', document.getElementById('auto-orient-chk').checked ? '1' : '0');
     fd.append('model', document.getElementById('model-select').value);
+    fd.append('rubric', (document.getElementById('rubric-input').value || '').trim());
 
     let startResp;
     try {
@@ -1159,11 +1382,13 @@ async function startAnalysis(file) {
 // ── Save / Load ───────────────────────────────────────────────────────────
 async function saveJson() {
     if (!_currentJobId) return;
+    await flushEdits();
     window.location.href = `/save/${_currentJobId}`;
 }
 
-function saveAs(fmt) {
+async function saveAs(fmt) {
     if (!_currentJobId) return;
+    await flushEdits();
     window.location.href = `/save/${fmt}/${_currentJobId}`;
 }
 

@@ -258,9 +258,17 @@ ANALYSIS_PROMPT = r"""אתה בודק מבחנים במתמטיקה וגאומט
 • אם משהו לא קריא — כתוב "[לא קריא]" באותו שדה.
 • verdict לפי הפתרון כולו: correct / partial / incorrect / unclear.
 • feedback: משוב קצר ובונה לתלמיד בעברית (2-3 משפטים). כלול מה טוב ומה צריך שיפור.
-• score_suggestion: הצעת ניקוד טקסטואלית, למשל "מלא (10/10)" / "חלקי — טעות חישוב (7/10)" / "לא ענה (0)".
+• ניקוד מספרי:
+  – points_max: הניקוד המקסימלי לתרגיל. אם סופקה רובריקה/מחוון — לפיה בדיוק.
+    אחרת לפי הניקוד המודפס ליד התרגיל בדף, ואם אין — הערך סביר (ברירת מחדל 10).
+  – points_earned: הניקוד שמגיע לתלמיד לפי איכות הפתרון. מספר בין 0 ל-points_max,
+    חצאי נקודות מותרים. תן ניקוד חלקי הוגן לפתרון חלקי (אל תאפס בגלל טעות אחת).
+• score_suggestion: נימוק קצר בעברית לניקוד שנתת, למשל "טעות חישוב בצעד האחרון (-3)"
+  / "פתרון מלא ומנומק" / "לא ענה". זה נימוק, לא חובה לכלול בו מספר.
 • id: מספר/אות התרגיל בדיוק כפי שמופיע בדף (למשל "1", "2א", "ב"). אם לא ברור — "?".
-• topic: אחת מ: אלגברה / גאומטריה / חשבון / הסתברות / טריגונומטריה / מש"ב / אחר."""
+• topic: אחת מ: אלגברה / גאומטריה / חשבון / הסתברות / טריגונומטריה / מש"ב / אחר.
+
+הניקוד שאתה מציע הוא **הצעה לבדיקת המורה** — המורה יאשר או יתקן. היה הוגן ועקבי."""
 
 ANALYSIS_SCHEMA = {
     "type": "object",
@@ -291,12 +299,15 @@ ANALYSIS_SCHEMA = {
                     },
                     "final_answer_latex": {"type": "string"},
                     "verdict":            {"type": "string"},
+                    "points_max":         {"type": "number"},
+                    "points_earned":      {"type": "number"},
                     "score_suggestion":   {"type": "string"},
                     "feedback":           {"type": "string"},
                 },
                 "required": [
                     "id", "topic", "statement_latex", "student_steps",
-                    "final_answer_latex", "verdict", "score_suggestion", "feedback",
+                    "final_answer_latex", "verdict", "points_max", "points_earned",
+                    "score_suggestion", "feedback",
                 ],
                 "additionalProperties": False,
             },
@@ -328,27 +339,42 @@ _JSON_CONTRACT = (
     '"problems":[{"id":"1","topic":"אלגברה","statement_latex":"...",'
     '"student_steps":[{"latex":"...","ok":true,"comment":"..."}],'
     '"final_answer_latex":"...","verdict":"correct|partial|incorrect|unclear",'
-    '"score_suggestion":"...","feedback":"..."}]}'
+    '"points_max":10,"points_earned":7,"score_suggestion":"...","feedback":"..."}]}'
 )
 
 _ANALYSIS_USER_TURN = "נתח את עמוד הפתרון וחזור JSON."
 
 
-def analyze_page(img: Image.Image, model_key: str = DEFAULT_MODEL) -> dict:
+def _rubric_block(rubric: str) -> str:
+    """Per-request rubric text, appended to the user turn (not the cached system
+    prompt) so the teacher's grading key conditions scoring without busting the
+    prompt cache."""
+    rubric = (rubric or "").strip()
+    if not rubric:
+        return ""
+    return (
+        "\n\nרובריקה / מחוון מהמורה — נקד לפיה בדיוק (points_max ו-points_earned "
+        "לכל תרגיל יתאימו לה):\n" + rubric
+    )
+
+
+def analyze_page(img: Image.Image, model_key: str = DEFAULT_MODEL,
+                 rubric: str = "") -> dict:
     """Holistic full-page math analysis. Dispatches to the chosen provider;
-    every backend returns the same structured JSON (ANALYSIS_SCHEMA shape)."""
+    every backend returns the same structured JSON (ANALYSIS_SCHEMA shape).
+    An optional rubric conditions the numeric scoring."""
     if model_key in _ANTHROPIC_IDS:
-        return _analyze_anthropic(img, _ANTHROPIC_IDS[model_key])
+        return _analyze_anthropic(img, _ANTHROPIC_IDS[model_key], rubric)
     if model_key in _GEMINI_IDS:
-        return _analyze_gemini(img, _GEMINI_IDS[model_key])
+        return _analyze_gemini(img, _GEMINI_IDS[model_key], rubric)
     if model_key in _GROQ_IDS:
-        return _analyze_groq(img, _GROQ_IDS[model_key])
+        return _analyze_groq(img, _GROQ_IDS[model_key], rubric)
     if model_key in _AZURE_KEYS:
-        return _analyze_azure(img)
-    return _analyze_anthropic(img, _ANTHROPIC_IDS[DEFAULT_MODEL])
+        return _analyze_azure(img, rubric)
+    return _analyze_anthropic(img, _ANTHROPIC_IDS[DEFAULT_MODEL], rubric)
 
 
-def _analyze_anthropic(img: Image.Image, model_id: str) -> dict:
+def _analyze_anthropic(img: Image.Image, model_id: str, rubric: str = "") -> dict:
     response = client.messages.create(
         model=model_id,
         max_tokens=6000,
@@ -364,7 +390,7 @@ def _analyze_anthropic(img: Image.Image, model_id: str) -> dict:
             "role": "user",
             "content": [
                 _image_block(img, MAX_EDGE),
-                {"type": "text", "text": _ANALYSIS_USER_TURN},
+                {"type": "text", "text": _ANALYSIS_USER_TURN + _rubric_block(rubric)},
             ],
         }],
     )
@@ -372,13 +398,13 @@ def _analyze_anthropic(img: Image.Image, model_id: str) -> dict:
     return json.loads(text)
 
 
-def _analyze_gemini(img: Image.Image, model_id: str) -> dict:
+def _analyze_gemini(img: Image.Image, model_id: str, rubric: str = "") -> dict:
     from google.genai import types
     response = _gemini().models.generate_content(
         model=model_id,
         contents=[
             types.Part.from_bytes(data=_jpeg_bytes(img, MAX_EDGE), mime_type="image/jpeg"),
-            _ANALYSIS_USER_TURN,
+            _ANALYSIS_USER_TURN + _rubric_block(rubric),
         ],
         config=types.GenerateContentConfig(
             system_instruction=ANALYSIS_PROMPT,
@@ -392,7 +418,8 @@ def _analyze_gemini(img: Image.Image, model_id: str) -> dict:
     return json.loads(response.text)
 
 
-def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image) -> dict:
+def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image,
+                               rubric: str = "") -> dict:
     """Shared call shape for Groq and Azure (both OpenAI-compatible vision)."""
     b64 = base64.standard_b64encode(_jpeg_bytes(img, MAX_EDGE)).decode()
     response = client_obj.chat.completions.create(
@@ -402,7 +429,8 @@ def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image) -> d
             {"role": "user", "content": [
                 {"type": "image_url",
                  "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
-                {"type": "text", "text": "נתח את עמוד הפתרון." + _JSON_CONTRACT},
+                {"type": "text",
+                 "text": "נתח את עמוד הפתרון." + _rubric_block(rubric) + _JSON_CONTRACT},
             ]},
         ],
         response_format={"type": "json_object"},
@@ -412,12 +440,13 @@ def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image) -> d
     return json.loads(response.choices[0].message.content)
 
 
-def _analyze_groq(img: Image.Image, model_id: str) -> dict:
-    return _analyze_openai_compatible(_groq(), model_id, img)
+def _analyze_groq(img: Image.Image, model_id: str, rubric: str = "") -> dict:
+    return _analyze_openai_compatible(_groq(), model_id, img, rubric)
 
 
-def _analyze_azure(img: Image.Image) -> dict:
-    return _analyze_openai_compatible(_azure(), os.environ["AZURE_OPENAI_DEPLOYMENT"], img)
+def _analyze_azure(img: Image.Image, rubric: str = "") -> dict:
+    return _analyze_openai_compatible(
+        _azure(), os.environ["AZURE_OPENAI_DEPLOYMENT"], img, rubric)
 
 
 # ─── error handling ───────────────────────────────────────────────────────────
@@ -486,7 +515,8 @@ def _evict_stale_jobs():
 
 
 def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
-                    model_key: str = DEFAULT_MODEL, model_label: str = ""):
+                    model_key: str = DEFAULT_MODEL, model_label: str = "",
+                    rubric: str = ""):
     """Generator: yields SSE-ready progress dicts, then a final result dict."""
     pages_imgs = file_to_pages(file_bytes, ext)
     total = len(pages_imgs)
@@ -527,7 +557,7 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
         yield progress("analyze", p, base + 1)
         img = _downscale(img, MAX_EDGE)
         t0 = time.time()
-        analysis = analyze_page(img, model_key)
+        analysis = analyze_page(img, model_key, rubric)
         log.info(
             "[page %d] model=%s rotation=%d° problems=%d verdicts=%s (%.1fs)",
             p, model_key, rotation,
@@ -548,11 +578,12 @@ def _process_stream(file_bytes: bytes, ext: str, auto_orient: bool,
 
 
 def _run_job(job_id: str, file_bytes: bytes, ext: str, auto_orient: bool, filename: str,
-             model_key: str = DEFAULT_MODEL, model_label: str = ""):
+             model_key: str = DEFAULT_MODEL, model_label: str = "", rubric: str = ""):
     job = JOBS[job_id]
     q: queue.Queue = job["q"]
     try:
-        for ev in _process_stream(file_bytes, ext, auto_orient, model_key, model_label):
+        for ev in _process_stream(file_bytes, ext, auto_orient, model_key,
+                                  model_label, rubric):
             if ev["type"] == "result":
                 job["pages"] = ev["pages"]
                 job["imgs"] = ev["imgs"]
@@ -592,18 +623,22 @@ def analyze_start():
     file_bytes = f.read()
     auto_orient = request.form.get("auto_orient", "0") == "1"
     model_key, model_label = resolve_model(request.form.get("model"))
+    rubric = (request.form.get("rubric") or "").strip()
     filename = f.filename or "תרגיל"
 
     job_id = str(uuid.uuid4())
     log.info(
-        "[upload] job=%s file=%r ext=%s size=%.1fKB model=%s auto_orient=%s",
+        "[upload] job=%s file=%r ext=%s size=%.1fKB model=%s auto_orient=%s rubric=%dch",
         job_id[:8], filename, ext, len(file_bytes) / 1024, model_key, auto_orient,
+        len(rubric),
     )
     JOBS[job_id] = {"q": queue.Queue(), "ts": time.time(), "pages": None,
-                    "imgs": None, "filename": None, "model": model_key}
+                    "imgs": None, "filename": None, "model": model_key,
+                    "rubric": rubric}
     threading.Thread(
         target=_run_job,
-        args=(job_id, file_bytes, ext, auto_orient, filename, model_key, model_label),
+        args=(job_id, file_bytes, ext, auto_orient, filename, model_key,
+              model_label, rubric),
         daemon=True,
     ).start()
     return jsonify({"job_id": job_id})
@@ -654,7 +689,7 @@ def reanalyze():
 
     model_key = job.get("model", DEFAULT_MODEL)
     try:
-        analysis = analyze_page(img, model_key)
+        analysis = analyze_page(img, model_key, job.get("rubric", ""))
     except Exception as e:
         log.exception("reanalyze failed")
         return jsonify(humanize_error(e)), 502
@@ -674,13 +709,52 @@ def reanalyze():
     return jsonify(page_data)
 
 
+# fields the teacher may edit; everything else (image, latex, steps) stays as
+# the model produced it and is never overwritten by a client update.
+_EDITABLE_FIELDS = ("points_earned", "points_max", "verdict",
+                    "score_suggestion", "feedback")
+
+
+@app.route("/update/<job_id>", methods=["POST"])
+def update_result(job_id: str):
+    """Persist the teacher's edits (per-problem scores/feedback + approval) back
+    onto the job so the exports reflect what the teacher confirmed, not the raw
+    AI suggestion. Merges only whitelisted fields by position; the scan image
+    and the model's transcription/steps are left intact."""
+    job = JOBS.get(job_id)
+    if not job or not job.get("pages"):
+        return jsonify({"error": "תוצאה לא נמצאה"}), 404
+
+    data = request.get_json(silent=True) or {}
+    incoming = data.get("pages") or []
+    for pi, page in enumerate(job["pages"]):
+        if pi >= len(incoming):
+            break
+        in_problems = ((incoming[pi] or {}).get("analysis") or {}).get("problems") or []
+        problems = (page.get("analysis") or {}).get("problems") or []
+        for qi, pr in enumerate(problems):
+            if qi >= len(in_problems):
+                break
+            src = in_problems[qi] or {}
+            for fld in _EDITABLE_FIELDS:
+                if fld in src:
+                    pr[fld] = src[fld]
+
+    if "approved" in data:
+        job["approved"] = bool(data["approved"])
+    job["ts"] = time.time()
+    log.info("[update] job=%s approved=%s", job_id[:8], job.get("approved"))
+    return jsonify({"ok": True, "approved": job.get("approved", False)})
+
+
 @app.route("/result-data/<job_id>")
 def result_data(job_id: str):
     """Return the analysis result as JSON (for client-side rendering after SSE)."""
     job = JOBS.get(job_id)
     if not job or not job.get("pages"):
         return jsonify({"error": "תוצאה לא נמצאה"}), 404
-    return jsonify({"pages": job["pages"], "filename": job.get("filename", "")})
+    return jsonify({"pages": job["pages"], "filename": job.get("filename", ""),
+                    "approved": job.get("approved", False)})
 
 
 # ─── export builders (HTML + Word) ──────────────────────────────────────────
@@ -689,7 +763,38 @@ VERDICT_HE = {"correct": "נכון ✓", "partial": "חלקי", "incorrect": "ש
 VERDICT_COLOR = {"correct": "1e7e34", "partial": "a0740a", "incorrect": "b54343", "unclear": "5a6b82"}
 
 
-def build_result_html(pages: list[dict], filename: str) -> str:
+def _num(v):
+    """Coerce a points value to a number, or None if missing/blank/non-numeric."""
+    if v is None or v == "":
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_pts(v) -> str:
+    """Render a points number without a trailing .0 (7.0 → "7", 7.5 → "7.5")."""
+    n = _num(v)
+    if n is None:
+        return "—"
+    return str(int(n)) if n == int(n) else str(n)
+
+
+def compute_totals(pages: list[dict]) -> tuple[float, float]:
+    """Sum (earned, max) points across every problem on every page."""
+    earned = total = 0.0
+    for p in pages or []:
+        for pr in ((p.get("analysis") or {}).get("problems") or []):
+            mx = _num(pr.get("points_max"))
+            if mx is None:
+                continue
+            total += mx
+            earned += _num(pr.get("points_earned")) or 0
+    return earned, total
+
+
+def build_result_html(pages: list[dict], filename: str, approved: bool = False) -> str:
     """Standalone, self-contained HTML report. KaTeX is pulled from a CDN and
     auto-renders \\(...\\) so the LaTeX shows as real math; the scan images are
     embedded as base64 so the file opens anywhere with no server. Mirrors the
@@ -738,8 +843,16 @@ def build_result_html(pages: list[dict], filename: str) -> str:
                 body.append('</div>')
             if pr.get("final_answer_latex"):
                 body.append(f'<div class="step final" dir="ltr"><b>תשובה:</b> {math(pr["final_answer_latex"])}</div>')
-            if pr.get("score_suggestion"):
-                body.append(f'<div class="score-row">ניקוד מוצע: {esc(pr["score_suggestion"])}</div>')
+            if _num(pr.get("points_max")) is not None:
+                body.append(
+                    '<div class="score-row"><span class="pts">ניקוד: '
+                    f'{_fmt_pts(pr.get("points_earned"))} / {_fmt_pts(pr.get("points_max"))}'
+                    '</span>'
+                    + (f'<span class="score-note">{esc(pr["score_suggestion"])}</span>'
+                       if pr.get("score_suggestion") else "")
+                    + '</div>')
+            elif pr.get("score_suggestion"):
+                body.append(f'<div class="score-row">{esc(pr["score_suggestion"])}</div>')
             if pr.get("feedback"):
                 body.append(f'<div class="feedback">{esc(pr["feedback"])}</div>')
             body.append('</div>')
@@ -781,20 +894,40 @@ def build_result_html(pages: list[dict], filename: str) -> str:
   .step.statement{border-inline-start-color:#2e7286;background:#eef4f7}
   .step.final{border-inline-start-color:#b3924a;background:#faf5e9;font-weight:600}
   .step-comment{color:#b54343;font-size:0.85rem;margin-top:0.3rem;direction:rtl;text-align:right;font-weight:500}
-  .score-row{color:#6e6a5c;font-size:0.88rem;margin:0.6rem 0 0.3rem;font-weight:500}
+  .score-row{color:#3a4250;font-size:0.9rem;margin:0.6rem 0 0.3rem;display:flex;gap:0.6rem;align-items:baseline;flex-wrap:wrap}
+  .score-row .pts{font-weight:700;color:#2e7286}
+  .score-row .score-note{color:#6e6a5c;font-size:0.85rem}
   .feedback{margin-top:0.5rem;padding-top:0.6rem;border-top:1px dashed #d8cfb6;font-size:0.93rem}
+  .total-box{background:#fff;border:1px solid #d8cfb6;border-radius:12px;padding:1rem 1.4rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem}
+  .total-grade{font-size:1.3rem;font-weight:800;color:#2e7286}
+  .approve-badge{font-size:0.9rem;font-weight:700;padding:0.3rem 0.9rem;border-radius:999px}
+  .approve-yes{background:rgba(30,126,52,.15);color:#1e7e34}
+  .approve-no{background:rgba(160,116,10,.15);color:#a0740a}
   @media print{body{background:#fff;padding:0}.page{box-shadow:none;break-inside:avoid}}
 </style></head><body>
 <div class="doc-title">בדיקת מתמטיקה — השכלה</div>
 <div class="doc-meta">קובץ: __TITLE__ · __NPAGES__ עמודים</div>
+__TOTAL_BOX__
 """
     npages = len(pages or [])
+    earned, total = compute_totals(pages)
+    if total > 0:
+        badge = ('<span class="approve-badge approve-yes">✓ אושר ע"י המורה</span>'
+                 if approved else
+                 '<span class="approve-badge approve-no">טיוטה — טרם אושר</span>')
+        total_box = (
+            '<div class="total-box">'
+            f'<span class="total-grade">ציון כולל: {_fmt_pts(earned)} / {_fmt_pts(total)}</span>'
+            f'{badge}</div>')
+    else:
+        total_box = ""
     head = (head.replace("__TITLE__", _html.escape(filename))
-                .replace("__NPAGES__", str(npages)))
+                .replace("__NPAGES__", str(npages))
+                .replace("__TOTAL_BOX__", total_box))
     return head + "\n".join(body) + "\n</body></html>"
 
 
-def build_result_docx(pages: list[dict], filename: str) -> bytes:
+def build_result_docx(pages: list[dict], filename: str, approved: bool = False) -> bytes:
     """Word (.docx) report. python-docx can't typeset LaTeX, so math is kept as
     monospace LTR text (the strings are simple, e.g. x^2-6x+10) — honest and
     editable. Each page carries its scan image, verdicts, comments, score and
@@ -821,6 +954,18 @@ def build_result_docx(pages: list[dict], filename: str) -> bytes:
     rtl(doc.add_heading("בדיקת מתמטיקה — השכלה", level=1))
     meta = rtl(doc.add_paragraph())
     meta.add_run(f"קובץ: {filename}").bold = True
+
+    earned, total = compute_totals(pages)
+    if total > 0:
+        tp = rtl(doc.add_paragraph())
+        tr = tp.add_run(f"ציון כולל: {_fmt_pts(earned)} / {_fmt_pts(total)}")
+        tr.bold = True
+        tr.font.size = Pt(14)
+        tr.font.color.rgb = RGBColor(0x2E, 0x72, 0x86)
+        sp = rtl(doc.add_paragraph())
+        sr = sp.add_run('✓ אושר ע"י המורה' if approved else "טיוטה — טרם אושר ע\"י המורה")
+        sr.bold = True
+        sr.font.color.rgb = RGBColor(0x1E, 0x7E, 0x34) if approved else RGBColor(0xA0, 0x74, 0x0A)
 
     for idx, p in enumerate(pages or []):
         if idx > 0:
@@ -887,9 +1032,18 @@ def build_result_docx(pages: list[dict], filename: str) -> bytes:
                 fp.add_run("תשובה: ").bold = True
                 mono(fp.add_run(pr["final_answer_latex"]))
 
-            if pr.get("score_suggestion"):
-                rtl(doc.add_paragraph()).add_run(
-                    f"ניקוד מוצע: {pr['score_suggestion']}").bold = True
+            if _num(pr.get("points_max")) is not None:
+                scp = rtl(doc.add_paragraph())
+                scp.add_run(
+                    f"ניקוד: {_fmt_pts(pr.get('points_earned'))} / "
+                    f"{_fmt_pts(pr.get('points_max'))}").bold = True
+                if pr.get("score_suggestion"):
+                    note = scp.add_run(f"   ({pr['score_suggestion']})")
+                    note.italic = True
+                    note.font.size = Pt(9.5)
+                    note.font.color.rgb = RGBColor(0x6E, 0x6A, 0x5C)
+            elif pr.get("score_suggestion"):
+                rtl(doc.add_paragraph()).add_run(pr["score_suggestion"]).bold = True
             if pr.get("feedback"):
                 fb = rtl(doc.add_paragraph())
                 fb.add_run(pr["feedback"]).italic = True
@@ -933,7 +1087,8 @@ def save_html(job_id: str):
     job = JOBS.get(job_id)
     if not job or not job.get("pages"):
         return "תוצאה לא נמצאה", 404
-    html_doc = build_result_html(job["pages"], job.get("filename", "תרגיל"))
+    html_doc = build_result_html(job["pages"], job.get("filename", "תרגיל"),
+                                 job.get("approved", False))
     return Response(
         html_doc,
         mimetype="text/html",
@@ -948,7 +1103,8 @@ def save_docx(job_id: str):
     job = JOBS.get(job_id)
     if not job or not job.get("pages"):
         return "תוצאה לא נמצאה", 404
-    docx_bytes = build_result_docx(job["pages"], job.get("filename", "תרגיל"))
+    docx_bytes = build_result_docx(job["pages"], job.get("filename", "תרגיל"),
+                                   job.get("approved", False))
     return Response(
         docx_bytes,
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
