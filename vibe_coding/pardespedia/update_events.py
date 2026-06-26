@@ -408,6 +408,51 @@ def build_main_block(rows: list) -> str:
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
 
 
+# --- statistics (manual numbers in the main-page stats table) ---------------
+
+STATS_NOTE = ("''כל הנתונים מתעדכנים אוטומטית (יחד עם לוח האירועים). "
+              "לסטטיסטיקה מלאה: [[מיוחד:סטטיסטיקות]].''")
+
+
+def compute_stats(client) -> tuple:
+    """Return (talk_pages, articles_with_table).
+
+    Both are figures the wiki magic words can't express, so the stats table on
+    the main page used to carry them as hand-updated numbers. Here we recompute
+    them from the live wiki on every run:
+      * talk_pages — pages in the שיחה namespace (1).
+      * articles_with_table — content pages (namespace 0) whose wikitext
+        contains a wiki-table (``{|``).
+    """
+    talk = len(client.list_pages(namespace=1))
+    titles = [p["title"] for p in client.list_pages(namespace=0)]
+    tables = 0
+    for i in range(0, len(titles), 50):
+        chunk = titles[i:i + 50]
+        r = client.session.get(API_URL, params={
+            "action": "query", "titles": "|".join(chunk),
+            "prop": "revisions", "rvprop": "content", "rvslots": "main",
+            "format": "json"})
+        for pg in r.json()["query"]["pages"].values():
+            revs = pg.get("revisions")
+            if revs and "{|" in revs[0]["slots"]["main"]["*"]:
+                tables += 1
+    return talk, tables
+
+
+def update_stats_block(text: str, talk: int, tables: int, today: dt.date) -> str:
+    """Refresh the manual numbers + 'as of' date in the main-page stats table."""
+    text = re.sub(r"(נכון ל־)[^)]*(\))",
+                  lambda m: m.group(1) + he_date(today) + m.group(2), text, count=1)
+    text = re.sub(r"(\|\s*דפי שיחה\s*\|\|\s*)\d+", r"\g<1>" + str(talk), text, count=1)
+    text = re.sub(r"(\|\s*ערכים שמכילים טבלה\s*\|\|\s*)\d+",
+                  r"\g<1>" + str(tables), text, count=1)
+    # the old footnote called these numbers manual — they are automatic now
+    text = re.sub(r"''דפי תוכן, סך כל הדפים.*?\[\[מיוחד:סטטיסטיקות\]\]\.''",
+                  STATS_NOTE, text, count=1, flags=re.S)
+    return text
+
+
 def update_main_page(client, rows: list, dry_run: bool) -> None:
     page = client.get_page(MAIN_TITLE)
     if not page["exists"]:
@@ -423,6 +468,13 @@ def update_main_page(client, rows: list, dry_run: bool) -> None:
             new = existing.replace(MAIN_ANCHOR, section + MAIN_ANCHOR, 1)
         else:
             new = existing.rstrip() + "\n\n" + section
+    # refresh the statistics table in the same edit
+    try:
+        talk, tables = compute_stats(client)
+        new = update_stats_block(new, talk, tables, dt.date.today())
+        print(f"  stats: {talk} talk pages, {tables} articles with a table", file=sys.stderr)
+    except Exception as exc:
+        print(f"  stats update skipped: {exc}", file=sys.stderr)
     if dry_run:
         print("--- DRY RUN (עמוד ראשי) ---\n" + new[:1500])
         return
@@ -430,7 +482,7 @@ def update_main_page(client, rows: list, dry_run: bool) -> None:
         print("Main page summary — no change.")
         return
     client.edit_page(MAIN_TITLE, new,
-                     summary="עדכון אוטומטי: תקציר אירועי תרבות ובילוי בעמוד הראשי")
+                     summary="עדכון אוטומטי: תקציר אירועי תרבות ובילוי + סטטיסטיקה בעמוד הראשי")
 
 
 def build_auto_block(rows: list, today: dt.date, days: int) -> str:
