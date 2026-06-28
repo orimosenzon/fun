@@ -870,10 +870,12 @@
 
 <script>
 // ── Utilities ──────────────────────────────────────────────────────────────
-const esc = s => (s || "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // Wrap LaTeX for KaTeX auto-render (\(...\) for inline display)
-const m = s => s ? '\\(' + s + '\\)' : '';
+// esc() so a '<x' in the LaTeX isn't parsed as an HTML tag when inserted via
+// innerHTML; the browser decodes &lt; back to '<' in the text node before KaTeX runs.
+const m = s => s ? '\\(' + esc(s) + '\\)' : '';
 
 function verdictHe(v) {
     return {correct:'נכון ✓', partial:'חלקי', incorrect:'שגוי ✗', unclear:'לא ברור'}[v] || esc(v);
