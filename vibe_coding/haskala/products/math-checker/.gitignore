@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 *.log
 uploads/
+# Google Classroom POC (pull.py) — OAuth secrets + downloaded submissions
+credentials.json
+token.json
+downloads/
