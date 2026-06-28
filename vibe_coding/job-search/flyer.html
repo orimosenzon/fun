@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>פלייר — שיעורי קלוד קוד לילדים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Heebo', system-ui, sans-serif;
+    background: #0b0f1a;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .flyer {
+    width: 1080px;
+    height: 1350px;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 800px at 80% -10%, rgba(124,58,237,0.45), transparent 60%),
+      radial-gradient(1000px 700px at -10% 110%, rgba(20,184,166,0.40), transparent 55%),
+      linear-gradient(160deg, #0e1326 0%, #131a33 55%, #0b1020 100%);
+    color: #f5f7ff;
+    padding: 64px 76px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* decorative code glyphs */
+  .glyph {
+    position: absolute;
+    font-family: 'Courier New', monospace;
+    color: rgba(255,255,255,0.05);
+    font-weight: 700;
+    user-select: none;
+  }
+  .g1 { top: 220px; left: -10px; font-size: 180px; }
+  .g2 { bottom: 120px; right: -20px; font-size: 220px; }
+  .g3 { top: 540px; right: 60px; font-size: 90px; color: rgba(124,58,237,0.10); }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    align-self: flex-start;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    backdrop-filter: blur(6px);
+    padding: 14px 26px;
+    border-radius: 100px;
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .eyebrow .dot { width: 12px; height: 12px; border-radius: 50%; background: #34d399; box-shadow: 0 0 14px #34d399; }
+
+  h1 {
+    margin-top: 44px;
+    font-size: 98px;
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+  h1 .accent {
+    background: linear-gradient(90deg, #a78bfa, #34d399);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sub {
+    margin-top: 30px;
+    font-size: 43px;
+    font-weight: 500;
+    color: #c7cfee;
+    line-height: 1.3;
+  }
+  .sub b { color: #fff; font-weight: 800; }
+
+  .features {
+    margin-top: 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .feat {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 22px;
+    padding: 24px 28px;
+    font-size: 36px;
+    font-weight: 500;
+  }
+  .feat .ic {
+    flex: 0 0 72px;
+    width: 72px; height: 72px;
+    display: grid; place-items: center;
+    font-size: 42px;
+    background: linear-gradient(145deg, rgba(167,139,250,0.30), rgba(52,211,153,0.30));
+    border-radius: 18px;
+  }
+
+  .spacer { flex: 1; }
+
+  .cta {
+    margin-top: 30px;
+    background: linear-gradient(95deg, #7c3aed, #14b8a6);
+    border-radius: 28px;
+    padding: 34px 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 24px 60px rgba(124,58,237,0.35);
+  }
+  .cta .label { font-size: 40px; font-weight: 700; }
+  .cta .who { font-size: 30px; font-weight: 500; opacity: 0.92; margin-top: 6px; }
+  .cta .contact {
+    text-align: left;
+    font-size: 52px;
+    font-weight: 900;
+    direction: ltr;
+  }
+  .cta .contact small { display: block; font-size: 26px; font-weight: 600; opacity: 0.9; }
+
+  .teacher {
+    margin-top: 22px;
+    font-size: 29px;
+    color: #aeb7da;
+    font-weight: 500;
+  }
+  .teacher b { color: #e7ebff; font-weight: 800; }
+
+  .fineprint {
+    margin-top: 18px;
+    font-size: 24px;
+    color: #8d96bd;
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+  <div class="flyer">
+    <div class="glyph g1">&lt;/&gt;</div>
+    <div class="glyph g2">{ }</div>
+    <div class="glyph g3">$_</div>
+
+    <div class="eyebrow"><span class="dot"></span>פרדס חנה–כרכור · שיעורים פרטיים בבית</div>
+
+    <h1>הילד שלך יבנה<br><span class="accent">אפליקציה משלו</span></h1>
+
+    <div class="sub">לימוד <b>קלוד קוד (Claude Code)</b> לילדים ונוער —<br>בונים תוכנה אמיתית בעזרת בינה מלאכותית</div>
+
+    <div class="features">
+      <div class="feat"><div class="ic">🚀</div>בונים פרויקט אמיתי — משחק, אתר או אפליקציה</div>
+      <div class="feat"><div class="ic">🏠</div>שיעורים פרטיים בבית — ביחידים או בקבוצות קטנות</div>
+      <div class="feat"><div class="ic">💻</div>מגיעים עם לאפטופ, יוצאים עם מוצר גמור</div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="cta">
+      <div>
+        <div class="label">לפרטים והרשמה</div>
+        <div class="who">מתאים לגילאי 12–16</div>
+      </div>
+      <div class="contact">050-000-0000<small>וואטסאפ / טלפון</small></div>
+    </div>
+
+    <div class="teacher">בהדרכת <b>אורי מוסנזון</b> — מפתח שבונה תוכנה עם בינה מלאכותית</div>
+    <div class="fineprint">* נדרש מנוי קלוד קוד בעלות 20$ לחודש, בנפרד משכר הלימוד (שקיפות מלאה).</div>
+  </div>
+</body>
+</html>
