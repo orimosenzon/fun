@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Update the "אירועי תרבות ובילוי בפרדס חנה-כרכור" guide on pardespedia.
+"""Update the events board on the pardespedia main page ("עמוד ראשי").
 
 Pulls events from several structured sources in the moshava, keeps the ones in
-the next N days, merges + de-duplicates them, and rebuilds an auto-managed
-section of the wiki page. Content outside the AUTO markers is preserved.
+the next N days, merges + de-duplicates them, and rebuilds the auto-managed
+events board inside the "אירועי תרבות ובילוי קרובים" section of the main page
+(between the AUTO markers). Content outside the AUTO markers is preserved.
+
+The board is the full table — image and video columns included — and is
+rendered collapsible-but-*open* (``mw-collapsible`` without ``mw-collapsed``),
+so a visitor sees the whole board on arrival and can fold it with "הסתר".
+(The old standalone page "אירועי תרבות ובילוי בפרדס חנה-כרכור" was retired in
+favour of showing the board directly on the main page.)
 
 Each row gets, where possible:
   * an image (first column) — the event's flyer, downloaded + uploaded to the
@@ -42,10 +49,9 @@ VIDEO_MAP_FILE = os.path.join(HERE, "event_videos.json")
 MANUAL_FILE = os.path.join(HERE, "manual_events.json")
 MANUAL_HORIZON_DAYS = 70  # how far ahead to expand recurring manual events
 
-PAGE_TITLE = "אירועי תרבות ובילוי בפרדס חנה-כרכור"
 MAIN_TITLE = "עמוד ראשי"
 MAIN_HEADING = "אירועי תרבות ובילוי קרובים"
-MAIN_ANCHOR = "== מידע עירוני =="  # the summary section is inserted just before this
+MAIN_ANCHOR = "== מידע עירוני =="  # fallback: insert the section just before this
 
 ES_FEED_URL = "https://pardeshanna.eventschedule.com/api/calendar-events"
 ES_LABEL = "[https://pardeshanna.eventschedule.com לוח האירועים של פרדס חנה-כרכור (eventschedule)]"
@@ -360,11 +366,16 @@ def attach_videos(rows: list) -> None:
 
 # --- rendering -------------------------------------------------------------
 
-def build_table(rows: list) -> str:
+def build_table(rows: list, collapsible: bool = False) -> str:
     if not rows:
         return "''אין כרגע אירועים מתוזמנים בטווח הקרוב. בדקו שוב בקרוב.''"
-    lines = ['{| class="wikitable" style="width:100%"',
-             "! תמונה !! תאריך !! שעה !! אירוע !! קטגוריה !! מקום !! כניסה !! סרטון"]
+    # mw-collapsible (without mw-collapsed) → the table starts *open*; the
+    # "הסתר" toggle in the caption lets a reader fold it away.
+    cls = "wikitable mw-collapsible" if collapsible else "wikitable"
+    lines = [f'{{| class="{cls}" style="width:100%"']
+    if collapsible:
+        lines.append('|+ אירועי השבועיים הקרובים — לחצו על "הסתר" כדי לקפל את הלוח')
+    lines.append("! תמונה !! תאריך !! שעה !! אירוע !! קטגוריה !! מקום !! כניסה !! סרטון")
     for r in rows:
         when = f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
         name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
@@ -380,30 +391,19 @@ def build_table(rows: list) -> str:
     return "\n".join(lines)
 
 
-def _when(r: dict) -> str:
-    return f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
+def build_main_block(rows: list, today: dt.date, days: int) -> str:
+    """The full events board (image + video columns) for the main page.
 
-
-def build_compact_table(rows: list) -> str:
-    """Collapsed summary table for the main page — no image/video columns."""
-    if not rows:
-        return "''אין כרגע אירועים מתוזמנים בטווח הקרוב.''"
-    lines = ['{| class="wikitable mw-collapsible mw-collapsed" style="width:100%"',
-             '|+ אירועי השבועיים הקרובים — הקליקו להצגה / הסתרה',
-             "! תאריך !! שעה !! אירוע !! קטגוריה !! מקום !! כניסה"]
-    for r in rows:
-        name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
-        lines += ["|-", f"| {_when(r)} || {r['time'] or '—'} || {name} || "
-                  f"{r['category']} || {r['venue']} || {r['entry']}"]
-    lines.append("|}")
-    return "\n".join(lines)
-
-
-def build_main_block(rows: list) -> str:
+    Lives between the AUTO markers inside the "אירועי תרבות ובילוי קרובים"
+    section. The table is collapsible but starts *open*, per the user's wish:
+    a reader sees the whole board on arrival and can fold it with "הסתר".
+    """
+    end = today + dt.timedelta(days=days)
     body = (
-        f"מה קורה במושבה — אירועי תרבות ובילוי בשבועיים הקרובים. "
-        f"ל[[{PAGE_TITLE}|טבלה המלאה]] (עם תמונות וסרטונים).\n\n"
-        f"{build_compact_table(rows)}"
+        f"מה קורה במושבה — '''אירועי תרבות ובילוי''' בשבועיים הקרובים, עם תמונות וסרטונים. "
+        f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
+        f"{build_table(rows, collapsible=True)}\n\n"
+        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
 
@@ -453,13 +453,13 @@ def update_stats_block(text: str, talk: int, tables: int, today: dt.date) -> str
     return text
 
 
-def update_main_page(client, rows: list, dry_run: bool) -> None:
+def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     page = client.get_page(MAIN_TITLE)
     if not page["exists"]:
-        print("  main page missing — skipping summary", file=sys.stderr)
+        print("  main page missing — skipping events board", file=sys.stderr)
         return
     existing = page["wikitext"]
-    block = build_main_block(rows)
+    block = build_main_block(rows, dt.date.today(), days)
     if AUTO_START in existing and AUTO_END in existing:
         new = splice_auto(existing, block)
     else:
@@ -482,27 +482,7 @@ def update_main_page(client, rows: list, dry_run: bool) -> None:
         print("Main page summary — no change.")
         return
     client.edit_page(MAIN_TITLE, new,
-                     summary="עדכון אוטומטי: תקציר אירועי תרבות ובילוי + סטטיסטיקה בעמוד הראשי")
-
-
-def build_auto_block(rows: list, today: dt.date, days: int) -> str:
-    end = today + dt.timedelta(days=days)
-    body = (
-        f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
-        f"{build_table(rows)}\n\n"
-        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
-    )
-    return f"{AUTO_START}\n{body}\n{AUTO_END}"
-
-
-def initial_page(auto_block: str) -> str:
-    return (
-        "דף זה מרכז '''אירועי תרבות ובילוי הקרובים''' בפרדס חנה-כרכור — מופעים, "
-        "הופעות, סדנאות, מסיבות ופסטיבלים. הוא '''מתעדכן אוטומטית''' מתוך לוחות האירועים "
-        "המקומיים, כך שתמיד אפשר לראות מה קורה במושבה בשבועיים הקרובים.\n\n"
-        f"== אירועים קרובים ==\n{auto_block}\n\n"
-        "[[קטגוריה: תרבות מקומית]]\n"
-    )
+                     summary="עדכון אוטומטי: לוח אירועי תרבות ובילוי + סטטיסטיקה בעמוד הראשי")
 
 
 def splice_auto(existing: str, auto_block: str) -> str:
@@ -532,27 +512,9 @@ def main():
     if not args.no_images:
         ensure_images(client, rows)
 
-    auto_block = build_auto_block(rows, today, args.days)
-    page = client.get_page(PAGE_TITLE)
-    if page["exists"]:
-        new_content = splice_auto(page["wikitext"], auto_block)
-    else:
-        new_content = initial_page(auto_block)
-
-    if args.dry_run:
-        print(f"--- DRY RUN ---\n{new_content}")
-        update_main_page(client, rows, dry_run=True)
-        return
-    if page["exists"] and new_content == page["wikitext"]:
-        print("No change — skipping edit.")
-    else:
-        client.edit_page(
-            PAGE_TITLE, new_content,
-            summary=f"עדכון אוטומטי של אירועי תרבות ובילוי ({len(rows)} אירועים, חלון {args.days} ימים)",
-        )
-
-    # keep the compact summary on the main page in sync too
-    update_main_page(client, rows, dry_run=False)
+    # The events board lives directly on the main page now (the old standalone
+    # page was retired). All publishing happens through update_main_page.
+    update_main_page(client, rows, args.days, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
