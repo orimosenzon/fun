@@ -255,6 +255,7 @@ def fetch_manual() -> list:
                      f"{d}T{t or '00:00'}", key, ev.get("image_url"))
             r["image_file"] = ev.get("image_file")  # reference an existing wiki file
             r["video_id"] = ev.get("video")          # inline curated video
+            r["pin"] = bool(ev.get("pin"))           # show even if beyond the window
             rows.append(r)
     return rows
 
@@ -272,7 +273,10 @@ def collect(start: dt.date, end: dt.date) -> list:
             print(f"  source {name}: {len(rows)} events", file=sys.stderr)
         except Exception as exc:
             print(f"  source {name}: FAILED ({exc})", file=sys.stderr)
-    windowed = [r for r in all_rows if start <= r["date"] <= end]
+    # events inside the window, plus any pinned manual event still in the future
+    # (pinned events show regardless of the window, up to MANUAL_HORIZON_DAYS).
+    windowed = [r for r in all_rows
+                if (start <= r["date"] <= end) or (r.get("pin") and r["date"] >= start)]
     seen, deduped = set(), []
     for r in sorted(windowed, key=lambda r: r["sort"]):
         k = (norm(r["name"]), r["date"])
@@ -371,22 +375,24 @@ def build_table(rows: list, collapsible: bool = False) -> str:
         return "''אין כרגע אירועים מתוזמנים בטווח הקרוב. בדקו שוב בקרוב.''"
     # mw-collapsible (without mw-collapsed) → the table starts *open*; the
     # "הסתר" toggle in the caption lets a reader fold it away.
-    cls = "wikitable mw-collapsible" if collapsible else "wikitable"
+    cls = "wikitable sortable mw-collapsible" if collapsible else "wikitable sortable"
     lines = [f'{{| class="{cls}" style="width:100%"']
     if collapsible:
-        lines.append('|+ אירועי השבועיים הקרובים — לחצו על "הסתר" כדי לקפל את הלוח')
-    lines.append("! תמונה !! תאריך !! שעה !! אירוע !! קטגוריה !! מקום !! כניסה !! סרטון")
+        lines.append('|+ אירועי השבועיים הקרובים — לחצו על "הסתר" כדי לקפל את הלוח (ומיינו לפי "סוג" כדי למצוא סוג אירוע)')
+    # עמודת התמונה אינה ניתנת למיון (חסר-משמעות). התאריך ממוין כרונולוגית דרך
+    # data-sort-value בפורמט ISO בכל תא (אחרת המחרוזת העברית תמוין אלפביתית).
+    lines.append('! class="unsortable" | תמונה !! תאריך !! class="unsortable" | שעה !! אירוע !! סוג !! מקום !! כניסה')
     for r in rows:
         when = f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
+        iso = r["date"].isoformat()
         name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
         if r["image_file"]:
             link = f"|link={r['url']}" if r["url"] else ""
             img = f"[[קובץ:{r['image_file']}|90px{link}]]"
         else:
             img = "—"
-        vid = f"<youtube width=\"200\" height=\"120\">{r['video_id']}</youtube>" if r["video_id"] else "—"
-        lines += ["|-", f"| {img} || {when} || {r['time'] or '—'} || {name} || "
-                  f"{r['category']} || {r['venue']} || {r['entry']} || {vid}"]
+        lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
+                  f'{r["category"]} || {r["venue"]} || {r["entry"]}']
     lines.append("|}")
     return "\n".join(lines)
 
