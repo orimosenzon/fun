@@ -1,6 +1,5 @@
 // The jet bike mesh, built from primitives. Body frame matches physics.js:
-// X = right, Y = up, Z = forward. Exhaust flames are additive cones whose
-// length tracks each jet's thrust.
+// X = right, Y = up, Z = forward. Exhaust flames live in jetfx.js.
 import * as THREE from 'three';
 
 export function buildBike() {
@@ -62,36 +61,5 @@ export function buildBike() {
   rearNoz.position.set(0, 0, -1.5);
   g.add(rearNoz);
 
-  // flame cone: wide base at the nozzle (local y=0), tapers to y=-1
-  function flame(color, w) {
-    const geo = new THREE.ConeGeometry(w, 1, 10, 1, true);
-    geo.translate(0, 0.5, 0);
-    geo.rotateX(Math.PI);
-    return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-      color, transparent: true, opacity: 0.85,
-      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
-    }));
-  }
-  const fRear = flame(0xffa540, 0.24);
-  fRear.rotation.x = Math.PI / 2; // point backward (-Z)
-  fRear.position.set(0, 0, -1.75);
-  g.add(fRear);
-  const fL = flame(0x7fd0ff, 0.16); fL.position.set(-0.75, -0.5, 0); g.add(fL);
-  const fR = flame(0x7fd0ff, 0.16); fR.position.set(0.75, -0.5, 0); g.add(fR);
-  const fC = flame(0x7fd0ff, 0.2); fC.position.set(0, -0.6, 0); g.add(fC);
-
-  // j = { rear, left, right, center } in ~0..2
-  function setJets(j) {
-    const t = performance.now() * 0.02;
-    let k = 0;
-    for (const [mesh, v, len] of [[fRear, j.rear, 2.6], [fL, j.left, 1.5], [fR, j.right, 1.5], [fC, j.center, 1.7]]) {
-      k++;
-      mesh.visible = v > 0.03;
-      if (!mesh.visible) continue;
-      const flicker = 0.85 + 0.3 * Math.abs(Math.sin(t * 1.7 + k * 2.1));
-      mesh.scale.set(0.8 + 0.4 * Math.min(v, 1.5), v * len * flicker, 0.8 + 0.4 * Math.min(v, 1.5));
-    }
-  }
-
-  return { group: g, setJets };
+  return { group: g };
 }
