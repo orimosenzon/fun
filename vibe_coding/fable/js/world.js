@@ -85,8 +85,42 @@ export function terrainNormal(x, z, target) {
   return target.set(-hx / (2 * e), 1, -hz / (2 * e)).normalize();
 }
 
+// High-frequency near-white detail map, multiplied with the terrain's vertex
+// colors: random speckle + short dark strokes that read as grass/soil texture
+// when flying low. Tiled ~14 m, so tiling is invisible in the speckle.
+function detailTexture() {
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  const rnd = mulberry32(99);
+  const img = ctx.createImageData(S, S);
+  for (let i = 0; i < S * S; i++) {
+    const v = 225 + (rnd() * 2 - 1) * 24;
+    img.data[i * 4] = v - 4;
+    img.data[i * 4 + 1] = v;
+    img.data[i * 4 + 2] = v - 10;
+    img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  for (let i = 0; i < 2400; i++) {
+    const x = rnd() * S, y = rnd() * S, l = 2 + rnd() * 4;
+    ctx.strokeStyle = rnd() < 0.6 ? 'rgba(30,50,20,0.16)' : 'rgba(255,255,235,0.13)';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (rnd() - 0.5) * 2, y - l);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(300, 300);
+  tex.anisotropy = 8;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function buildTerrain(scene) {
-  const size = WORLD_HALF * 2, seg = 240;
+  const size = WORLD_HALF * 2, seg = 300;
   const geo = new THREE.PlaneGeometry(size, size, seg, seg);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
@@ -111,7 +145,7 @@ function buildTerrain(scene) {
     colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, map: detailTexture() }));
   scene.add(mesh);
 }
 
@@ -143,81 +177,230 @@ function buildPad(scene) {
 
 function buildTrees(scene) {
   const rand = mulberry32(2026);
-  const pts = [];
+  const conifers = [], broadleafs = [];
   const n = new THREE.Vector3();
-  for (let t = 0; t < 12000 && pts.length < 900; t++) {
+  for (let t = 0; t < 20000 && conifers.length + broadleafs.length < 1500; t++) {
     const x = (rand() * 2 - 1) * 1900, z = (rand() * 2 - 1) * 1900;
     const h = terrainHeight(x, z);
     if (h < WATER_Y + 2 || h > 150) continue;
     if (Math.hypot(x - SPAWN.x, z - SPAWN.z) < 45) continue;
     terrainNormal(x, z, n);
     if (n.y < 0.86) continue;
-    pts.push([x, h, z, 0.7 + rand() * 0.9, rand()]);
+    // conifers dominate up high, broadleafs in the valleys
+    const pConifer = 0.35 + smoothstep(40, 110, h) * 0.55;
+    (rand() < pConifer ? conifers : broadleafs).push([x, h, z, 0.7 + rand() * 0.9, rand()]);
   }
-  const trunkGeo = new THREE.CylinderGeometry(0.22, 0.4, 3);
-  trunkGeo.translate(0, 1.5, 0);
-  const canopyGeo = new THREE.ConeGeometry(2.1, 6, 7);
-  canopyGeo.translate(0, 5.5, 0);
-  const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshLambertMaterial({ color: 0x6b4a2f }), pts.length);
-  const canopies = new THREE.InstancedMesh(canopyGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), pts.length);
-  const dummy = new THREE.Object3D();
-  const c = new THREE.Color();
-  for (let i = 0; i < pts.length; i++) {
-    const [x, h, z, s, r] = pts[i];
-    dummy.position.set(x, h - 0.2, z);
-    dummy.scale.setScalar(s);
-    dummy.rotation.y = r * Math.PI * 2;
-    dummy.updateMatrix();
-    trunks.setMatrixAt(i, dummy.matrix);
-    canopies.setMatrixAt(i, dummy.matrix);
-    c.setHSL(0.28 + r * 0.07, 0.5, 0.28 + r * 0.12);
-    canopies.setColorAt(i, c);
+
+  function forest(list, trunkGeo, canopyGeo, hue0, hueSpan) {
+    if (!list.length) return;
+    const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshLambertMaterial({ color: 0x6b4a2f }), list.length);
+    const canopies = new THREE.InstancedMesh(canopyGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length);
+    const dummy = new THREE.Object3D();
+    const c = new THREE.Color();
+    for (let i = 0; i < list.length; i++) {
+      const [x, h, z, s, r] = list[i];
+      dummy.position.set(x, h - 0.2, z);
+      dummy.scale.setScalar(s);
+      dummy.rotation.y = r * Math.PI * 2;
+      dummy.updateMatrix();
+      trunks.setMatrixAt(i, dummy.matrix);
+      canopies.setMatrixAt(i, dummy.matrix);
+      c.setHSL(hue0 + r * hueSpan, 0.5, 0.26 + r * 0.13);
+      canopies.setColorAt(i, c);
+    }
+    scene.add(trunks, canopies);
   }
-  scene.add(trunks, canopies);
+
+  const pineTrunk = new THREE.CylinderGeometry(0.22, 0.4, 3);
+  pineTrunk.translate(0, 1.5, 0);
+  const pineCanopy = new THREE.ConeGeometry(2.1, 6, 7);
+  pineCanopy.translate(0, 5.5, 0);
+  forest(conifers, pineTrunk, pineCanopy, 0.28, 0.07);
+
+  const oakTrunk = new THREE.CylinderGeometry(0.28, 0.5, 3.6);
+  oakTrunk.translate(0, 1.8, 0);
+  const oakCanopy = new THREE.IcosahedronGeometry(2.6, 1);
+  oakCanopy.scale(1, 0.82, 1);
+  oakCanopy.translate(0, 4.9, 0);
+  forest(broadleafs, oakTrunk, oakCanopy, 0.23, 0.09);
 }
 
-function buildVillages(scene) {
+// Unit gable-roof prism: 1x1 base centered at origin, ridge along Z at y=1.
+// Non-indexed so computeVertexNormals gives flat-shaded slopes.
+function gableGeo() {
+  const A = [-0.5, 0, -0.5], B = [0.5, 0, -0.5], C = [0.5, 0, 0.5], D = [-0.5, 0, 0.5];
+  const R1 = [0, 1, -0.5], R2 = [0, 1, 0.5];
+  const tris = [
+    A, D, R2, A, R2, R1,   // left slope
+    B, R1, R2, B, R2, C,   // right slope
+    A, R1, B,              // front gable
+    D, C, R2,              // back gable
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(), 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+// Villages laid out along streets, plus lone farms. Every building is
+// assembled from shared instanced parts: unit boxes (walls, flat roofs,
+// chimneys, towers), gable prisms, cylinders and cones (silos, steeples).
+function buildSettlements(scene) {
   const rand = mulberry32(555);
   const n = new THREE.Vector3();
-  const houses = [];
-  let villages = 0;
-  for (let t = 0; t < 4000 && villages < 6; t++) {
-    const cx = (rand() * 2 - 1) * 1500, cz = (rand() * 2 - 1) * 1500;
-    const h = terrainHeight(cx, cz);
-    if (h < WATER_Y + 2.5 || h > 90) continue;
-    terrainNormal(cx, cz, n);
-    if (n.y < 0.95) continue;
-    if (Math.hypot(cx - SPAWN.x, cz - SPAWN.z) < 120) continue;
-    villages++;
-    const count = 8 + (rand() * 10) | 0;
-    for (let k = 0; k < count; k++) {
-      const x = cx + (rand() * 2 - 1) * 70, z = cz + (rand() * 2 - 1) * 70;
-      const hh = terrainHeight(x, z);
-      terrainNormal(x, z, n);
-      if (n.y < 0.92 || hh < WATER_Y + 1.5) continue;
-      houses.push([x, hh, z, rand() * Math.PI * 2, rand()]);
+  const boxes = [], gables = [], cyls = [], cones = [];
+  const wallPal = [0xf2ede2, 0xe8dcc8, 0xd9c7a8, 0xd3dade, 0xead9d0, 0xcfd8c6, 0xf4e6c0];
+  const roofPal = [0xa8473a, 0x7d3324, 0x9c5a3c, 0x4a4e57, 0x6d7178, 0x8a6b42];
+  const pick = (pal) => pal[(rand() * pal.length) | 0];
+
+  function groundAt(x, z) {
+    const h = terrainHeight(x, z);
+    if (h < WATER_Y + 1.8 || h > 110) return null;
+    terrainNormal(x, z, n);
+    return n.y > 0.93 ? h : null;
+  }
+
+  // part pushers: [x, y, z, ry, sx, sy, sz, color]
+  const box = (x, y, z, ry, sx, sy, sz, c) => boxes.push([x, y, z, ry, sx, sy, sz, c]);
+  const gable = (x, y, z, ry, sx, sy, sz, c) => gables.push([x, y, z, ry, sx, sy, sz, c]);
+
+  function chimney(x, y, z, ry, w, d, hWall, hRoof) {
+    // sits astride the ridge, offset along the house length
+    const off = (rand() - 0.5) * d * 0.5;
+    const cx = x + Math.sin(ry) * off, cz = z + Math.cos(ry) * off;
+    box(cx, y + hWall + hRoof * 0.55, cz, ry, 0.45, 1.15, 0.45, 0x9a8f85);
+  }
+
+  function addHouse(x, y, z, ry, kind) {
+    const r = rand();
+    const wall = pick(wallPal), roof = pick(roofPal);
+    if (kind === 'cottage') {
+      const w = 4.2 + r * 1.8, d = 5 + rand() * 2.2, h = 2.7;
+      box(x, y, z, ry, w, h, d, wall);
+      gable(x, y + h, z, ry, w + 0.55, 1.35 + rand() * 0.8, d + 0.7, roof);
+      if (rand() < 0.6) chimney(x, y, z, ry, w, d, h, 1.5);
+    } else if (kind === 'two-story') {
+      const w = 4.8 + r * 1.4, d = 5.6 + rand() * 1.6, h = 5.3;
+      box(x, y, z, ry, w, h, d, wall);
+      gable(x, y + h, z, ry, w + 0.55, 1.5 + rand() * 0.7, d + 0.7, roof);
+      chimney(x, y, z, ry, w, d, h, 1.7);
+    } else if (kind === 'flat') {
+      const w = 4.4 + r * 2.4, d = 4.2 + rand() * 2.2, h = 2.9 + rand() * 0.8;
+      box(x, y, z, ry, w, h, d, wall);
+      box(x, y + h, z, ry, w + 0.5, 0.25, d + 0.5, 0xb9b1a4);   // roof slab
+      if (rand() < 0.45) box(x + Math.cos(ry) * 1.2, y + h + 0.25, z - Math.sin(ry) * 1.2, ry, 1.5, 1.0, 1.8, wall);
+    } else if (kind === 'barn') {
+      const w = 5.4 + r, d = 9 + rand() * 3.5, h = 3.6;
+      box(x, y, z, ry, w, h, d, 0x8a3b2c);
+      gable(x, y + h, z, ry, w + 0.5, 2.1 + rand() * 0.5, d + 0.6, 0x55595f);
+    } else if (kind === 'church') {
+      const w = 5.6, d = 8.5, h = 4.2;
+      box(x, y, z, ry, w, h, d, 0xf3efe6);
+      gable(x, y + h, z, ry, w + 0.5, 2.3, d + 0.6, 0x8a4438);
+      // bell tower at the front, topped with a steeple
+      const fx = x + Math.sin(ry) * (d / 2 + 1.2), fz = z + Math.cos(ry) * (d / 2 + 1.2);
+      box(fx, y, fz, ry, 2.3, 7.2, 2.3, 0xf3efe6);
+      cones.push([fx, y + 7.2, fz, ry, 1.7, 2.9, 1.7, 0x6d4a35]);
     }
   }
-  const wallGeo = new THREE.BoxGeometry(5.5, 3.2, 4.5);
-  wallGeo.translate(0, 1.4, 0);
-  const roofGeo = new THREE.ConeGeometry(3.9, 2.1, 4);
-  roofGeo.rotateY(Math.PI / 4);
-  roofGeo.translate(0, 4.0, 0);
-  const walls = new THREE.InstancedMesh(wallGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), houses.length);
-  const roofs = new THREE.InstancedMesh(roofGeo, new THREE.MeshLambertMaterial({ color: 0xa8473a }), houses.length);
-  const dummy = new THREE.Object3D();
-  const palette = [0xf2ede2, 0xe8dcc8, 0xd9c7a8, 0xd3dade].map(h => new THREE.Color(h));
-  for (let i = 0; i < houses.length; i++) {
-    const [x, h, z, ry, r] = houses[i];
-    dummy.position.set(x, h - 0.3, z);
-    dummy.rotation.y = ry;
-    dummy.scale.setScalar(0.8 + r * 0.5);
-    dummy.updateMatrix();
-    walls.setMatrixAt(i, dummy.matrix);
-    roofs.setMatrixAt(i, dummy.matrix);
-    walls.setColorAt(i, palette[(r * palette.length) | 0]);
+
+  function addFarm(x, y, z, ry) {
+    addHouse(x, y, z, ry, 'barn');
+    const cx = x + Math.cos(ry) * 11, cz = z - Math.sin(ry) * 11;
+    const ch = groundAt(cx, cz);
+    if (ch !== null) addHouse(cx, ch - 0.35, cz, ry + rand() - 0.5, 'cottage');
+    if (rand() < 0.65) {
+      const sx = x - Math.cos(ry) * 6.5, sz = z + Math.sin(ry) * 6.5;
+      const sh = groundAt(sx, sz);
+      if (sh !== null) {
+        cyls.push([sx, sh - 0.3, sz, 0, 1.5, 5.6, 1.5, 0xb6bcc4]);
+        cones.push([sx, sh + 5.3, sz, 0, 1.62, 1.5, 1.62, 0x88553a]);
+      }
+    }
   }
-  scene.add(walls, roofs);
+
+  function houseKind(r) {
+    if (r < 0.42) return 'cottage';
+    if (r < 0.62) return 'two-story';
+    if (r < 0.85) return 'flat';
+    return 'barn';
+  }
+
+  // one street (or two) per village, houses facing the street
+  const centers = [];
+  let villages = 0;
+  for (let t = 0; t < 8000 && villages < 12; t++) {
+    const cx = (rand() * 2 - 1) * 1600, cz = (rand() * 2 - 1) * 1600;
+    if (groundAt(cx, cz) === null) continue;
+    if (Math.hypot(cx - SPAWN.x, cz - SPAWN.z) < 130) continue;
+    if (centers.some(([ox, oz]) => Math.hypot(cx - ox, cz - oz) < 320)) continue;
+    centers.push([cx, cz]);
+    villages++;
+    const big = rand() < 0.45;
+    const streets = big ? 2 : 1;
+    let churchPlaced = !big;
+    for (let st = 0; st < streets; st++) {
+      const ang = rand() * Math.PI + st * Math.PI / 2;
+      const ux = Math.sin(ang), uz = Math.cos(ang);
+      const len = 50 + rand() * 65;
+      for (let s = -len; s <= len; s += 13 + rand() * 6) {
+        for (const side of [-1, 1]) {
+          if (rand() < 0.22) continue;   // leave gaps
+          const off = side * (8 + rand() * 4);
+          const x = cx + ux * s - uz * off + (rand() - 0.5) * 3;
+          const z = cz + uz * s + ux * off + (rand() - 0.5) * 3;
+          const h = groundAt(x, z);
+          if (h === null) continue;
+          const face = ang + (side > 0 ? -Math.PI / 2 : Math.PI / 2) + (rand() - 0.5) * 0.12;
+          if (!churchPlaced && Math.abs(s) < 15) {
+            addHouse(x, h - 0.35, z, face, 'church');
+            churchPlaced = true;
+          } else {
+            addHouse(x, h - 0.35, z, face, houseKind(rand()));
+          }
+        }
+      }
+    }
+  }
+
+  // scattered lone farms
+  let farms = 0;
+  for (let t = 0; t < 4000 && farms < 16; t++) {
+    const x = (rand() * 2 - 1) * 1750, z = (rand() * 2 - 1) * 1750;
+    if (groundAt(x, z) === null) continue;
+    if (Math.hypot(x - SPAWN.x, z - SPAWN.z) < 100) continue;
+    if (centers.some(([ox, oz]) => Math.hypot(x - ox, z - oz) < 200)) continue;
+    farms++;
+    addFarm(x, terrainHeight(x, z) - 0.35, z, rand() * Math.PI * 2);
+  }
+
+  function inst(geo, list, opts = {}) {
+    if (!list.length) return;
+    const mesh = new THREE.InstancedMesh(
+      geo, new THREE.MeshLambertMaterial({ color: 0xffffff, ...opts }), list.length);
+    const dummy = new THREE.Object3D();
+    const c = new THREE.Color();
+    list.forEach((e, i) => {
+      dummy.position.set(e[0], e[1], e[2]);
+      dummy.rotation.y = e[3];
+      dummy.scale.set(e[4], e[5], e[6]);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, c.setHex(e[7]));
+    });
+    scene.add(mesh);
+  }
+
+  const unitBox = new THREE.BoxGeometry(1, 1, 1);
+  unitBox.translate(0, 0.5, 0);
+  const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 12);
+  unitCyl.translate(0, 0.5, 0);
+  const unitCone = new THREE.ConeGeometry(1, 1, 10);
+  unitCone.translate(0, 0.5, 0);
+  inst(unitBox, boxes);
+  inst(gableGeo(), gables, { side: THREE.DoubleSide });
+  inst(unitCyl, cyls);
+  inst(unitCone, cones);
 }
 
 function buildRings(scene) {
@@ -306,7 +489,7 @@ export function buildWorld(scene) {
   buildWater(scene);
   buildPad(scene);
   buildTrees(scene);
-  buildVillages(scene);
+  buildSettlements(scene);
   buildClouds(scene);
   const rings = buildRings(scene);
   return { rings };

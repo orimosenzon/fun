@@ -122,5 +122,36 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
     'pos=(' + p.pos.toArray().map(v => v.toFixed(0)).join(',') + ') v=' + p.vel.length().toFixed(1) + ' crashed=' + p.crashed);
 }
 
+// 10. Angular momentum conservation: torque-free tumbling in a vacuum-like
+// setup must keep the WORLD-frame angular momentum vector constant.
+{
+  const gust0 = TUNE.gust, damp0 = TUNE.rotDamp;
+  TUNE.gust = 0;                           // isolate the integrator from gusts
+  TUNE.rotDamp = 0;                        // anisotropic damping would rotate L physically
+  const p = new BikePhysics();
+  p.pos.y = SPAWN.y + 3000;               // far from ground
+  p.collective = 0;
+  p.assist = false;                        // no controller torques
+  p.vel.set(0, 0, 0);
+  p.angMom.set(120, 260, 90);              // arbitrary tumble
+  p.angVel.set(120 / p.I.x, 260 / p.I.y, 90 / p.I.z);
+  // strip air: zero drag/damping isn't exposed, so measure over a short window
+  // where aero torques are tiny (v=0 -> no weathervane; only spin damping).
+  const L0 = p.angMom.clone().applyQuaternion(p.quat);
+  const steps = Math.round(0.5 / STEP);
+  for (let i = 0; i < steps; i++) {
+    p.vel.set(0, 0, 0);                    // hold airspeed at zero
+    p.step(STEP);
+  }
+  const L1 = p.angMom.clone().applyQuaternion(p.quat);
+  // spin damping bleeds magnitude; direction drift is the integrator's error
+  const drift = L0.clone().normalize().angleTo(L1.clone().normalize());
+  check('angular momentum conserved (<0.5deg, <1% magnitude over 0.5s tumble)',
+    drift < 0.009 && Math.abs(L1.length() - L0.length()) / L0.length() < 0.01,
+    'drift=' + (drift * 180 / Math.PI).toFixed(3) + 'deg |L| ' + L0.length().toFixed(1) + '->' + L1.length().toFixed(1));
+  TUNE.gust = gust0;
+  TUNE.rotDamp = damp0;
+}
+
 console.log(failures === 0 ? '\nALL TESTS PASSED' : '\n' + failures + ' FAILURES');
 process.exit(failures ? 1 : 0);

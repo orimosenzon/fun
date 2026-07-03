@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { buildWorld, terrainHeight, terrainNormal, WATER_Y, SPAWN } from './world.js';
 import { buildBike } from './bike.js';
 import { BikePhysics, TUNE } from './physics.js';
+import { makeJetFX } from './jetfx.js';
+import { makeGrass } from './grass.js';
 import { HUD } from './hud.js';
 import { JetAudio } from './audio.js';
 
@@ -19,6 +21,8 @@ const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 90
 const world = buildWorld(scene);
 const bike = buildBike();
 scene.add(bike.group);
+const fx = makeJetFX(scene, bike.group, camera, renderer);
+const grass = makeGrass(scene);
 const phys = new BikePhysics();
 const hud = new HUD();
 const audio = new JetAudio();
@@ -41,10 +45,32 @@ let camMode = 0; // 0 = chase, 1 = onboard
 let started = false;
 
 // ?demo — auto-takeoff, for headless smoke tests and screenshots
-const DEMO = new URLSearchParams(location.search).has('demo');
+// ?pose=cruise — start mid-air at cruise speed with full afterburner (visual debug)
+const PARAMS = new URLSearchParams(location.search);
+const DEMO = PARAMS.has('demo') || PARAMS.has('pose');
+const POSE = PARAMS.get('pose');
 if (DEMO) {
   started = true;
   setTimeout(() => hud.hideStart(), 0);
+}
+if (POSE === 'cruise') {
+  phys.pos.set(SPAWN.x, SPAWN.y + 55, SPAWN.z + 120);
+  phys.vel.set(0, 0, 52);
+  phys.throttle = 1;
+  phys.collective = 0.55;
+}
+
+// ?pose=show — bike pinned mid-air with everything firing, close static camera
+function holdShowPose() {
+  phys.pos.set(SPAWN.x, SPAWN.y + 8, SPAWN.z);
+  phys.vel.set(0, 0, 0);
+  phys.quat.identity();
+  phys.angVel.set(0, 0, 0);
+  phys.angMom.set(0, 0, 0);
+  phys.throttle = 1;
+  phys.collective = 0.9;
+  phys.input.boostRear = true;
+  phys.input.boostC = true;
 }
 let ringIndex = 0, runStart = 0, finished = false, finishTimer = 0, bestTime = null, lastRunMs = 0;
 const totalRings = world.rings.length;
@@ -92,8 +118,14 @@ function resetCourse() {
 
 function applyInput(dt) {
   if (DEMO) {
-    phys.throttle = 0.65;
-    phys.collective = 0.8;
+    if (POSE === 'cruise') {
+      phys.throttle = 1;
+      phys.collective = 0.55;
+      phys.input.boostRear = true;
+    } else {
+      phys.throttle = 0.65;
+      phys.collective = 0.8;
+    }
     return;
   }
   if (keys['ArrowUp']) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
@@ -114,6 +146,13 @@ const FLIP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0),
 camera.position.set(SPAWN.x, SPAWN.y + 4, SPAWN.z - 14);
 
 function updateCamera(dt) {
+  if (POSE === 'show') {
+    camera.position.set(phys.pos.x + 5.5, phys.pos.y + 1.0, phys.pos.z - 6.5);
+    camera.lookAt(phys.pos.x, phys.pos.y - 0.6, phys.pos.z - 1);
+    camera.fov = 55;
+    camera.updateProjectionMatrix();
+    return;
+  }
   const speed = phys.vel.length();
   if (camMode === 0) {
     _fh.set(0, 0, 1).applyQuaternion(phys.quat);
@@ -185,6 +224,7 @@ function animate() {
   if (started) applyInput(dt);
   acc += dt;
   while (acc > STEP) { phys.step(STEP); acc -= STEP; }
+  if (POSE === 'show') holdShowPose();
 
   const crashReason = phys.consumeCrashEvent();
   if (crashReason) hud.showCrash(crashReason);
@@ -193,16 +233,22 @@ function animate() {
 
   bike.group.position.copy(phys.pos);
   bike.group.quaternion.copy(phys.quat);
-  bike.setJets({
-    rear: phys.throttle + (phys.input.boostRear ? 0.9 : 0),
-    left: phys.collective * 0.7 + (phys.input.boostL ? 0.9 : 0) + Math.max(0, phys.steer) * 0.25,
-    right: phys.collective * 0.7 + (phys.input.boostR ? 0.9 : 0) + Math.max(0, -phys.steer) * 0.25,
-    center: phys.collective * 0.7 + (phys.input.boostC ? 0.9 : 0),
-  });
 
   // blob shadow
   const gh = Math.max(terrainHeight(phys.pos.x, phys.pos.z), WATER_Y);
   const agl = phys.pos.y - gh;
+
+  fx.update(dt, {
+    jets: {
+      rear: phys.throttle + (phys.input.boostRear ? 0.9 : 0),
+      left: phys.collective * 0.7 + (phys.input.boostL ? 0.9 : 0) + Math.max(0, phys.steer) * 0.25,
+      right: phys.collective * 0.7 + (phys.input.boostR ? 0.9 : 0) + Math.max(0, -phys.steer) * 0.25,
+      center: phys.collective * 0.7 + (phys.input.boostC ? 0.9 : 0),
+    },
+    pos: phys.pos, quat: phys.quat, vel: phys.vel,
+    agl, groundY: gh,
+  });
+  grass.update(phys.pos, dt);
   terrainNormal(phys.pos.x, phys.pos.z, _n);
   shadow.position.set(phys.pos.x, gh + 0.08, phys.pos.z);
   shadow.quaternion.setFromUnitVectors(_Z, _n);

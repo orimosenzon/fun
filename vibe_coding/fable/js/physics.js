@@ -32,6 +32,11 @@ export const TUNE = {
   boostSide: 1400,         // N, Z / X on one side nozzle
   boostCenter: 2800,       // N, S on the center nozzle
   cdaX: 1.8, cdaY: 2.6, cdaZ: 0.55, // drag area (m^2) per body axis
+  liftSlope: 2.4,          // lifting-body CL per rad of angle of attack
+  liftArea: 0.62,          // 0.5 * rho * S for the body lift term
+  clMax: 0.95,             // stall limit on the lift coefficient
+  gust: 70,                // N, atmospheric turbulence amplitude
+  rotDamp: 1,              // scale on aerodynamic spin damping (0 in tests)
   clearance: 0.55,         // m, skids below center of mass
   crashSpeed: 11,          // m/s into the ground = crash
 };
@@ -63,8 +68,10 @@ export class BikePhysics {
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.quat = new THREE.Quaternion();
-    this.angVel = new THREE.Vector3();               // body frame, rad/s
+    this.angVel = new THREE.Vector3();               // body frame, rad/s (derived from angMom)
+    this.angMom = new THREE.Vector3();               // body frame angular momentum L = I*w
     this.I = new THREE.Vector3(170, 155, 48);        // pitch, yaw, roll inertia
+    this.time = 0;                                   // sim time, drives gust noise
     this.throttle = 0;                               // rear jet, 0..1
     this.collective = 0.5;                           // lift nozzles, 0..1.25
     this.steer = 0;                                  // -1..1 (left..right)
@@ -84,6 +91,7 @@ export class BikePhysics {
     this.vel.set(0, 0, 0);
     this.quat.identity();
     this.angVel.set(0, 0, 0);
+    this.angMom.set(0, 0, 0);
     this.throttle = 0;
     // low enough to rest on the pad even with ground effect
     this.collective = 0.35;
@@ -104,6 +112,7 @@ export class BikePhysics {
     this._crashEvent = reason;
     this.vel.multiplyScalar(0.1);
     this.angVel.multiplyScalar(0.2);
+    this.angMom.multiplyScalar(0.2);
   }
 
   step(dt) {
@@ -153,12 +162,43 @@ export class BikePhysics {
     );
     F.add(_v4.copy(_f).applyQuaternion(q));
 
+    // --- lifting-body aerodynamics: angle of attack turns speed into climb ---
+    // The hull acts as a crude wing. Pitch the nose above the flight path and
+    // dynamic pressure converts forward speed into body-up lift (plus induced
+    // drag), so dives build speed and pull-ups swoop — real flying feel.
+    if (vB.z > 5) {
+      const aoa = Math.atan2(-vB.y, vB.z);
+      const cl = clamp(aoa * TUNE.liftSlope, -TUNE.clMax, TUNE.clMax);
+      const qS = (vB.z * vB.z + vB.y * vB.y) * TUNE.liftArea;
+      _f.set(0, cl * qS, -0.35 * cl * cl * qS);
+      F.add(_f.applyQuaternion(q));
+    }
+
+    // --- gentle atmospheric turbulence (deterministic gusts) ---
+    // Faded out near the ground and at low HORIZONTAL airspeed: in hover or a
+    // vertical climb the weathervane would chase a gust-driven crosswind and
+    // slowly spin the nose around. Fast cruise gets a light buffet.
+    const hSpeed = Math.hypot(this.vel.x, this.vel.z);
+    if (agl > 4 && hSpeed > 15) {
+      const t = this.time;
+      const gs = TUNE.gust * clamp((agl - 4) / 10, 0, 1) * clamp((hSpeed - 15) / 15, 0, 1);
+      F.x += gs * (Math.sin(t * 0.9 + 1.7) + 0.6 * Math.sin(t * 2.3));
+      F.y += gs * 0.7 * (Math.sin(t * 1.3 + 4.0) + 0.5 * Math.sin(t * 3.1 + 2.2));
+      F.z += gs * (Math.sin(t * 0.7 + 2.9) + 0.6 * Math.sin(t * 1.9 + 5.1));
+      T.z += gs * 0.25 * Math.sin(t * 1.1 + 0.6);
+      T.x += gs * 0.18 * Math.sin(t * 1.6 + 3.3);
+    }
+
     // --- weathervane: nose follows the airflow ---
     if (speed > 3) {
       _v4.copy(vB).normalize();
       // axis to rotate body +Z toward velocity: z_hat x v_hat = (-vy, vx, 0)
       const q2 = speed * speed;
-      T.x += clamp(-_v4.y * q2 * 0.55, -1200, 1200);
+      // pitch channel scaled by how forward the flow is: in a vertical climb
+      // the flow comes from above and an unscaled vane pitches the nose up
+      // until the bike slides backwards and swaps ends (old bug).
+      const fz = clamp(Math.max(0, _v4.z), 0, 1);
+      T.x += clamp(-_v4.y * q2 * 0.55, -1200, 1200) * fz;
       T.y += clamp(_v4.x * q2 * 0.9, -1500, 1500);
     }
 
@@ -168,15 +208,15 @@ export class BikePhysics {
     if (this.assist && !rawSide) {
       T.z += clamp(-((eRoll - wantBank) * 1500 + this.angVel.z * 280), -950, 950);
     } else {
-      T.z += -this.steer * 750 - this.angVel.z * 50;
+      T.z += -this.steer * 750 - this.angVel.z * 50 * TUNE.rotDamp;
     }
     if (this.assist) {
       // +X torque pitches the nose down, so nose-up (ePitch > 0) needs +torque
-      T.x += clamp(ePitch * 950 - this.angVel.x * 320, -900, 900);
+      T.x += clamp(ePitch * 2200 - this.angVel.x * 650, -1600, 1600);
     }
 
     // --- rotational damping (air resistance to spin) ---
-    const ad = 1 + speed * 0.012;
+    const ad = (1 + speed * 0.012) * TUNE.rotDamp;
     T.x -= this.angVel.x * 130 * ad;
     T.y -= this.angVel.y * 160 * ad;
     T.z -= this.angVel.z * 40 * ad;
@@ -206,27 +246,34 @@ export class BikePhysics {
     }
 
     // --- integrate: semi-implicit Euler ---
+    this.time += dt;
     this.vel.addScaledVector(F, dt / TUNE.mass);
     this.pos.addScaledVector(this.vel, dt);
 
-    const w = this.angVel, I = this.I;
-    _v4.set(
-      (T.x - w.y * w.z * (I.z - I.y)) / I.x,
-      (T.y - w.z * w.x * (I.x - I.z)) / I.y,
-      (T.z - w.x * w.y * (I.y - I.x)) / I.z
-    );
-    w.addScaledVector(_v4, dt);
+    // Rotational state is the body-frame angular momentum L = I*w (w = I^-1 L).
+    // Applied torques add T*dt; then both the orientation update and the
+    // body-frame transport of L use the exact rotation exp(w*dt) instead of a
+    // first-order Euler step. In torque-free motion the world-frame angular
+    // momentum R*L is conserved to machine precision at any spin rate.
+    const w = this.angVel, I = this.I, L = this.angMom;
+    L.x += T.x * dt;
+    L.y += T.y * dt;
+    L.z += T.z * dt;
+    const wn = w.length();
+    if (wn > 1e-9) {
+      const half = 0.5 * wn * dt;
+      const s = Math.sin(half) / wn;
+      _q2.set(w.x * s, w.y * s, w.z * s, Math.cos(half));
+      q.multiply(_q2);           // q <- q * exp(dt/2 * (w, 0))
+      q.normalize();
+      L.applyQuaternion(_q2.conjugate());  // L in the newly rotated body frame
+    }
+    w.set(L.x / I.x, L.y / I.y, L.z / I.z);
     const wl = w.length();
-    if (wl > 9) w.multiplyScalar(9 / wl);
-
-    // q_dot = 0.5 * q (x) (w, 0)   [body-frame angular velocity]
-    _q2.set(w.x, w.y, w.z, 0);
-    _q2.multiplyQuaternions(q, _q2);
-    q.x += 0.5 * _q2.x * dt;
-    q.y += 0.5 * _q2.y * dt;
-    q.z += 0.5 * _q2.z * dt;
-    q.w += 0.5 * _q2.w * dt;
-    q.normalize();
+    if (wl > 9) {
+      w.multiplyScalar(9 / wl);
+      L.set(w.x * I.x, w.y * I.y, w.z * I.z);
+    }
 
     // hard floor safety net (never tunnel through terrain)
     const g2 = Math.max(terrainHeight(this.pos.x, this.pos.z), WATER_Y);
