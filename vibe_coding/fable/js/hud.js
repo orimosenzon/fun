@@ -33,7 +33,7 @@ export class HUD {
     this.help.innerHTML = `
       <b>שליטה</b>
       <div>← / → — הטיה ופנייה</div>
-      <div>↑ / ↓ — הרמת / הורדת האף (עלרוד)</div>
+      <div>↓ / ↑ — הרמת / הורדת האף (עלרוד, כמו במטוס)</div>
       <div>W / S — מצערת הסילון האחורי</div>
       <div>E / D — עוצמת צינורות העילוי</div>
       <div>רווח — בוסט לסילון האחורי</div>
@@ -49,7 +49,7 @@ export class HUD {
         <p>מנוע סילון אחורי דוחף קדימה, שלושה צינורות מופנים מטה מרחפים אותך באוויר.<br>
         טוס דרך כל <span class="orange-t">הטבעות הכתומות</span> מהר ככל האפשר — ואל תתרסק.</p>
         <div class="keys">
-          <div>←→ היגוי &nbsp;·&nbsp; ↑↓ עלרוד (אף) &nbsp;·&nbsp; WS מצערת &nbsp;·&nbsp; ED עילוי</div>
+          <div>←→ היגוי &nbsp;·&nbsp; ↓↑ עלרוד (אף) &nbsp;·&nbsp; WS מצערת &nbsp;·&nbsp; ED עילוי</div>
           <div>רווח בוסט &nbsp;·&nbsp; Shift עילוי־בוסט &nbsp;·&nbsp; Z/X גלגול</div>
         </div>
         <p class="press">לחץ על מקש כלשהו כדי להמריא</p>
@@ -60,6 +60,28 @@ export class HUD {
 
   hideStart() { this.start.style.display = 'none'; }
   toggleHelp() { this.help.style.display = this.help.style.display === 'none' ? '' : 'none'; }
+
+  setTouchMode(isTouch) {
+    if (!isTouch) return;
+    this.help.style.display = 'none'; // hidden until the '?' button toggles it — little screen room on a phone
+    this.help.innerHTML = `
+      <b>שליטה</b>
+      <div>ג'ויסטיק — היגוי ועלרוד (משוך מטה כדי להרים את האף)</div>
+      <div>▲/▼ מצערת ועילוי — מחזיקים</div>
+      <div>🔥 — בוסט לסילון האחורי · ⬆ — בוסט עילוי מרכזי</div>
+      <div>↺ / ↻ — גלגול (בוסט צד)</div>
+      <div>📷 מצלמה · T מייצב · ⟲ איפוס · 🔊 שקט · ? עזרה</div>`;
+    this.start.querySelector('.keys').innerHTML =
+      `<div>ג'ויסטיק שמאלי — היגוי ועלרוד</div>
+       <div>מימין — מצערת, עילוי, בוסטים</div>`;
+    this.start.querySelector('.press').textContent = 'גע במסך כדי להמריא';
+    if (innerWidth < innerHeight) {
+      const note = document.createElement('p');
+      note.style.cssText = 'font-size:13px;color:#ffc36b;margin-top:10px;';
+      note.textContent = 'מומלץ לשחק במצב אופקי (לרוחב) לחוויה הטובה ביותר';
+      this.start.querySelector('.card').appendChild(note);
+    }
+  }
 
   setStats(s) {
     this.$('hud-speed').textContent = Math.round(s.speedKmh);

@@ -2,12 +2,13 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>FABLE — אופנוע סילון מעופף</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0e14;
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
-  canvas { display: block; }
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+  canvas { display: block; touch-action: none; }
   #err { display: none; position: fixed; top: 8px; left: 8px; right: 8px; z-index: 99;
     background: #8b1a1a; color: #fff; padding: 10px 14px; border-radius: 8px;
     font-family: monospace; direction: ltr; white-space: pre-wrap; }
@@ -57,6 +58,43 @@
     background: rgba(255,255,255,0.06); border-radius: 10px; padding: 8px; }
   .start .press { margin-top: 20px; font-size: 17px; color: #7fd0ff; animation: pulse 1.6s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* --- touch controls (mobile) --- */
+  /* both anchored bottom-center, above the joystick/buttons, out of the way regardless of viewport height */
+  body.touch-mode .bars { bottom: 8px; left: 50%; right: auto; transform: translateX(-50%); min-width: 190px; }
+  body.touch-mode .help { bottom: 84px; left: 50%; right: auto; transform: translateX(-50%);
+    max-width: 260px; font-size: 10.5px; line-height: 1.45; text-align: center; }
+  body.touch-mode .stats { min-width: 150px; padding: 8px 10px; }
+  body.touch-mode .stats b { font-size: 16px; }
+  body.touch-mode .start .card { padding: 24px 28px; max-width: 90vw; }
+  body.touch-mode .start h1 { font-size: 38px; }
+
+  .touch-ui { position: fixed; inset: 0; z-index: 15; pointer-events: none;
+    touch-action: none; user-select: none; -webkit-user-select: none; }
+  .touch-ui button { pointer-events: auto; touch-action: none; -webkit-tap-highlight-color: transparent; }
+
+  .tjoy { position: absolute; left: 22px; bottom: 22px; width: 116px; height: 116px;
+    border-radius: 50%; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.25);
+    pointer-events: auto; touch-action: none; }
+  .tjoy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
+    border-radius: 50%; background: rgba(255, 179, 71, 0.55); border: 2px solid rgba(255,255,255,0.5); }
+
+  .tside { position: absolute; right: 14px; bottom: 20px; display: flex; align-items: flex-end; gap: 10px; }
+  .tvert-pair { display: flex; gap: 8px; }
+  .tvert { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tvert .tlabel { font-size: 10px; color: #eef3f8; opacity: 0.8; order: 1; }
+  .tbtn { width: 46px; height: 46px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(20, 26, 36, 0.6); color: #eef3f8; font-size: 18px; }
+  .tbtn.active, .tbtn:active { background: rgba(255, 179, 71, 0.55); }
+  .tbtn.tsmall { width: 38px; height: 38px; font-size: 15px; }
+  .troll { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+  .tboost { width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,150,60,0.7);
+    background: rgba(255, 100, 30, 0.35); color: #fff; font-size: 26px; }
+  .tboost.active, .tboost:active { background: rgba(255, 120, 30, 0.75); }
+
+  .tmenu { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; pointer-events: auto; }
+  .tmenu .tbtn { background: rgba(10, 16, 26, 0.5); }
 </style>
 <script>
   window.addEventListener('error', e => {
