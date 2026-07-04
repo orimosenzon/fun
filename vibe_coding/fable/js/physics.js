@@ -12,8 +12,10 @@
 // Jets:
 //   - Rear jet at REAR_POS pushing along +Z (throttle + Space boost).
 //   - Three downward nozzles (left / right / center) pushing along body +Y.
-//     Z / X boost the left / right nozzle -> raw roll torque.
-//     S boosts the center nozzle -> lift along the bike's tilted up axis.
+//     Z / X / Shift fire RCS-style PULSES on the side / center nozzles: a
+//     fixed-duration burst with a fixed thrust = a repeatable "minimum
+//     impulse bit" per press (like spacecraft reaction thrusters), with a
+//     short refractory gap so mashing can't blend into a continuous burn.
 //   - Arrow left/right command a bank angle; the flight controller achieves
 //     it by differential thrust on the side nozzles (clamped, so it is
 //     physically honest). T toggles the controller off for raw flying.
@@ -25,25 +27,39 @@
 // into coordinated turns. Ground effect adds lift cushion below ~5 m.
 import * as THREE from 'three';
 import { terrainHeight, terrainNormal, WATER_Y, SPAWN } from './world.js';
+import { Wind } from './wind.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 export const TUNE = {
   mass: 280,               // kg, bike + rider
   g: 9.81,
-  maxRear: 3000,           // N, rear jet at full throttle
-  boostRear: 2600,         // N, Space
+  maxRear: 4600,           // N, rear jet at full throttle
+  boostRear: 3800,         // N, Space (afterburner)
   maxLift: 5200,           // N, all three nozzles at collective = 1
-  boostSide: 1400,         // N, Z / X on one side nozzle
-  boostCenter: 2800,       // N, S on the center nozzle
+  pulseSide: 480,          // N, RCS pulse on a side nozzle (Z / X)
+  pulseCenter: 1800,       // N, RCS pulse on the center nozzle (Shift)
+  pulseDur: 0.12,          // s, pulse burn time -> impulse bit = F * dur
+  pulseGap: 0.1,           // s, refractory gap between pulses per nozzle
   cdaX: 1.8, cdaY: 2.6, cdaZ: 0.55, // drag area (m^2) per body axis
   liftSlope: 2.4,          // lifting-body CL per rad of angle of attack
   liftArea: 0.62,          // 0.5 * rho * S for the body lift term
   clMax: 0.95,             // stall limit on the lift coefficient
-  gust: 70,                // N, atmospheric turbulence amplitude
+  gust: 70,                // Dryden turbulence gain (70 = nominal, 0 = calm/tests)
+  windSpeed: 4.5,          // m/s, prevailing wind (0 disables the whole wind field)
   rotDamp: 1,              // scale on aerodynamic spin damping (0 in tests)
   clearance: 0.55,         // m, skids below center of mass
   crashSpeed: 11,          // m/s into the ground = crash
+  rotorH: 60,              // kg m^2/s, turbine rotor angular momentum at full spool
+  spoolUp: 0.8,            // s, rear turbine spool-up time constant (JT9D~1.5, F/A-18~0.6)
+  spoolDown: 0.5,          // s, spool-down is quicker
+  spoolAB: 0.25,           // s, afterburner light-up (fuel into hot exhaust, no rotor inertia)
+  spoolLiftTau: 0.3,       // s, small lift turbines answer faster
+  turnRateMax: 0.45,       // rad/s, commanded turn rate at full steer (fly-by-wire)
+  bankMax: 1.13,           // rad (~65 deg), bank angle limit
+  vecMax: 0.26,            // rad (~15 deg), rear nozzle yaw vectoring range
+  vecTau: 0.15,            // s, nozzle actuator first-order lag
+  pitchRange: 1.05,        // rad (~60 deg), commanded pitch attitude at full stick
 };
 
 // The three lift nozzles sit so their combined thrust line passes through the
@@ -55,7 +71,7 @@ const NOZ_R = new THREE.Vector3(0.75, -0.25, 0);
 const NOZ_C = new THREE.Vector3(0, -0.3, 0);
 
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
-const _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3(), _f = new THREE.Vector3();
+const _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3(), _v6 = new THREE.Vector3(), _f = new THREE.Vector3();
 const _F = new THREE.Vector3(), _T = new THREE.Vector3(), _fw = new THREE.Vector3();
 const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
 
@@ -77,11 +93,18 @@ export class BikePhysics {
     this.angMom = new THREE.Vector3();               // body frame angular momentum L = I*w
     this.I = new THREE.Vector3(170, 155, 48);        // pitch, yaw, roll inertia
     this.time = 0;                                   // sim time, drives gust noise
-    this.throttle = 0;                               // rear jet, 0..1
-    this.collective = 0.5;                           // lift nozzles, 0..1.25
+    this.throttle = 0;                               // rear jet COMMAND, 0..1
+    this.collective = 0.5;                           // lift nozzle COMMAND, 0..1.25
+    this.spoolRear = 0;                              // rear turbine actual state (first-order lag)
+    this.spoolLift = 0;                              // lift turbines actual state
+    this.ab = 0;                                     // afterburner actual state, 0..1
     this.steer = 0;                                  // -1..1 (left..right on screen)
     this.pitch = 0;                                  // -1..1 (nose down..nose up)
-    this.input = { boostRear: false, boostL: false, boostR: false, boostC: false };
+    this.nozzle = 0;                                 // rad, rear nozzle yaw deflection (actuator state)
+    this.input = { boostRear: false };
+    this.pulses = { L: 0, R: 0, C: 0 };             // s of burn remaining per RCS nozzle
+    this.pulseWait = { L: 0, R: 0, C: 0 };          // refractory time remaining
+    this.pulseGrace = 0;                             // s, roll controller stands down after a side pulse
     this.assist = true;                              // flight controller on/off
     this.crashed = false;
     this.crashTimer = 0;
@@ -89,6 +112,9 @@ export class BikePhysics {
     this.grounded = false;
     this.jetRear = 0;
     this.jetLift = 0;
+    this.wind = new Wind(9917, { speed: TUNE.windSpeed });
+    this.windVec = new THREE.Vector3();
+    this.airSpeed = 0;
     this.reset();
   }
 
@@ -101,9 +127,24 @@ export class BikePhysics {
     this.throttle = 0;
     // low enough to rest on the pad even with ground effect
     this.collective = 0.35;
+    this.spoolRear = 0;
+    this.spoolLift = this.collective;   // idling at the resting command
+    this.ab = 0;
     this.steer = 0;
     this.pitch = 0;
+    this.nozzle = 0;
+    this.pulses = { L: 0, R: 0, C: 0 };
+    this.pulseWait = { L: 0, R: 0, C: 0 };
+    this.pulseGrace = 0;
     this.crashed = false;
+  }
+
+  // Fire one RCS pulse ('L' | 'R' | 'C'). Returns true if the nozzle was free.
+  firePulse(which) {
+    if (this.crashed || this.pulses[which] > 0 || this.pulseWait[which] > 0) return false;
+    this.pulses[which] = TUNE.pulseDur;
+    if (which !== 'C') this.pulseGrace = 0.35;
+    return true;
   }
 
   consumeCrashEvent() {
@@ -112,6 +153,7 @@ export class BikePhysics {
     return e;
   }
 
+  // reason is a code ('water' | 'ground' | 'flip') — the HUD localizes it
   crash(reason) {
     if (this.crashed) return;
     this.crashed = true;
@@ -143,25 +185,76 @@ export class BikePhysics {
     const airFactor = clamp(1 - (this.pos.y - 500) / 400, 0.25, 1); // thin air up high
     const groundEffect = 1 + 0.35 * clamp(1 - agl / 5, 0, 1);
 
-    // --- rear jet ---
-    const rearT = (this.throttle * TUNE.maxRear + (this.input.boostRear ? TUNE.boostRear : 0)) * airFactor;
-    addForceBody(F, T, q, _f.set(0, 0, rearT), REAR_POS);
+    // --- engine spool: thrust answers the levers through first-order lags ---
+    // dS/dt = (cmd - S)/tau; rotor inertia makes spool-up slower than down,
+    // the afterburner lights faster (no rotor to accelerate), and the small
+    // lift turbines respond quickest. The player commands, the machine obeys
+    // on its own schedule.
+    const tauR = this.throttle > this.spoolRear ? TUNE.spoolUp : TUNE.spoolDown;
+    const spool0 = this.spoolRear;
+    this.spoolRear += (this.throttle - this.spoolRear) * Math.min(1, dt / tauR);
+    this.ab += ((this.input.boostRear ? 1 : 0) - this.ab) * Math.min(1, dt / TUNE.spoolAB);
+    this.spoolLift += (this.collective - this.spoolLift) * Math.min(1, dt / TUNE.spoolLiftTau);
+
+    // --- turbine rotor gyroscopics ---
+    // The spinning rotor carries angular momentum h along its axis (body +Z),
+    // proportional to spool. Rotating the airframe drags that axis around, and
+    // the reaction torque -w x h couples pitch into yaw: haul the nose up at
+    // full spool and it also swings sideways — the machine has a character.
+    // Spooling up/down reacts on the frame around the spin axis (-dh/dt).
+    const hRot = TUNE.rotorH * this.spoolRear;
+    T.x -= this.angVel.y * hRot;
+    T.y += this.angVel.x * hRot;
+    T.z -= TUNE.rotorH * (this.spoolRear - spool0) / dt;
+
+    // --- rear jet, with yaw thrust vectoring for hover steering ---
+    // The nozzle swivels toward body +X with a first-order actuator lag; the
+    // deflected thrust at REAR_POS yields yaw torque via r x F. steer > 0
+    // (screen-right) needs yaw toward -X, i.e. deflection toward +X.
+    const rearT = (this.spoolRear * TUNE.maxRear + this.ab * TUNE.boostRear) * airFactor;
+    const vecCmd = this.steer * TUNE.vecMax;
+    this.nozzle += (vecCmd - this.nozzle) * Math.min(1, dt / TUNE.vecTau);
+    addForceBody(F, T, q, _f.set(Math.sin(this.nozzle) * rearT, 0, Math.cos(this.nozzle) * rearT), REAR_POS);
     this.jetRear = rearT;
 
-    // --- downward nozzles ---
+    // --- downward nozzles + RCS pulses ---
+    // Pulses deliver an exact impulse bit F * pulseDur regardless of frame
+    // subdivision (the final partial step applies a prorated force), and are
+    // NOT scaled by air density / ground effect: they model a separate
+    // high-pressure cold-gas system, so a press is always the same nudge.
+    const pu = {};
+    for (const k of ['L', 'R', 'C']) {
+      const on = Math.min(dt, Math.max(0, this.pulses[k]));
+      pu[k] = on > 0 ? (k === 'C' ? TUNE.pulseCenter : TUNE.pulseSide) * (on / dt) : 0;
+      if (this.pulses[k] > 0) {
+        this.pulses[k] -= dt;
+        if (this.pulses[k] <= 0) this.pulseWait[k] = TUNE.pulseGap;
+      } else if (this.pulseWait[k] > 0) this.pulseWait[k] -= dt;
+    }
+    if (this.pulseGrace > 0) this.pulseGrace -= dt;
     const liftScale = airFactor * groundEffect;
-    const per = this.collective * TUNE.maxLift / 3;
-    const fl = (per + (this.input.boostL ? TUNE.boostSide : 0)) * liftScale;
-    const fr = (per + (this.input.boostR ? TUNE.boostSide : 0)) * liftScale;
-    const fc = (per + (this.input.boostC ? TUNE.boostCenter : 0)) * liftScale;
+    const per = this.spoolLift * TUNE.maxLift / 3;
+    const fl = per * liftScale + pu.L;
+    const fr = per * liftScale + pu.R;
+    const fc = per * liftScale + pu.C;
     addForceBody(F, T, q, _f.set(0, fl, 0), NOZ_L);
     addForceBody(F, T, q, _f.set(0, fr, 0), NOZ_R);
     addForceBody(F, T, q, _f.set(0, fc, 0), NOZ_C);
     this.jetLift = fl + fr + fc;
 
+    // --- wind field: everything aerodynamic below uses AIR-relative velocity ---
+    // Dryden gust filters advance here (stochastic ODEs at the physics rate);
+    // the prevailing wind + gusts + ridge lift shift the airflow the body sees,
+    // so hovering drifts downwind, the vane noses into the wind, and windward
+    // slopes carry a gliding bike upward.
+    this.wind.gustGain = TUNE.gust / 70;
+    this.windVec.copy(this.wind.update(dt, this.airSpeed, this.pos.x, this.pos.z, agl));
+    const vAir = _v6.copy(this.vel).sub(this.windVec);
+
     // --- aerodynamic drag, quadratic per body axis ---
-    const vB = _v3.copy(this.vel).applyQuaternion(inv);
-    const speed = this.vel.length();
+    const vB = _v3.copy(vAir).applyQuaternion(inv);
+    const speed = vAir.length();
+    this.airSpeed = speed;
     _f.set(
       -0.6 * TUNE.cdaX * Math.abs(vB.x) * vB.x,
       -0.6 * TUNE.cdaY * Math.abs(vB.y) * vB.y,
@@ -181,21 +274,6 @@ export class BikePhysics {
       F.add(_f.applyQuaternion(q));
     }
 
-    // --- gentle atmospheric turbulence (deterministic gusts) ---
-    // Faded out near the ground and at low HORIZONTAL airspeed: in hover or a
-    // vertical climb the weathervane would chase a gust-driven crosswind and
-    // slowly spin the nose around. Fast cruise gets a light buffet.
-    const hSpeed = Math.hypot(this.vel.x, this.vel.z);
-    if (agl > 4 && hSpeed > 15) {
-      const t = this.time;
-      const gs = TUNE.gust * clamp((agl - 4) / 10, 0, 1) * clamp((hSpeed - 15) / 15, 0, 1);
-      F.x += gs * (Math.sin(t * 0.9 + 1.7) + 0.6 * Math.sin(t * 2.3));
-      F.y += gs * 0.7 * (Math.sin(t * 1.3 + 4.0) + 0.5 * Math.sin(t * 3.1 + 2.2));
-      F.z += gs * (Math.sin(t * 0.7 + 2.9) + 0.6 * Math.sin(t * 1.9 + 5.1));
-      T.z += gs * 0.25 * Math.sin(t * 1.1 + 0.6);
-      T.x += gs * 0.18 * Math.sin(t * 1.6 + 3.3);
-    }
-
     // --- weathervane: nose follows the airflow ---
     if (speed > 3) {
       _v4.copy(vB).normalize();
@@ -205,24 +283,34 @@ export class BikePhysics {
       // the flow comes from above and an unscaled vane pitches the nose up
       // until the bike slides backwards and swaps ends (old bug).
       const fz = clamp(Math.max(0, _v4.z), 0, 1);
-      T.x += clamp(-_v4.y * q2 * 0.55, -1200, 1200) * fz;
+      // pilot pitch authority: a held pitch command relaxes the vane so the
+      // airflow doesn't steal the nose back at large angles of attack
+      T.x += clamp(-_v4.y * q2 * 0.55, -1200, 1200) * fz * (1 - 0.75 * Math.abs(this.pitch));
       T.y += clamp(_v4.x * q2 * 0.9, -1500, 1500);
     }
 
     // --- flight controller (differential nozzle thrust, clamped) ---
+    // Fly-by-wire steering: steer commands a TURN RATE, and the bank needed
+    // follows the coordinated-turn relation tan(phi) = V*omega/g — the same
+    // stick input turns tight when slow and gently when fast. At hover the
+    // bank fades to zero and the vectored rear nozzle does the turning.
     // steer > 0 must turn SCREEN-right = toward world -X at spawn, which needs
     // body +X (rider's left) up: wantBank has the same sign as steer.
-    const wantBank = this.steer * 0.75;
-    const rawSide = this.input.boostL || this.input.boostR;
+    const hSpd = Math.hypot(this.vel.x, this.vel.z);
+    const bankAng = Math.min(Math.atan2(hSpd * Math.abs(this.steer) * TUNE.turnRateMax, TUNE.g), TUNE.bankMax);
+    const wantBank = Math.sin(bankAng) * Math.sign(this.steer);
+    const rawSide = this.pulses.L > 0 || this.pulses.R > 0 || this.pulseGrace > 0;
     if (this.assist && !rawSide) {
       T.z += clamp(-((eRoll - wantBank) * 1500 + this.angVel.z * 280), -950, 950);
+      T.y -= this.angVel.y * 220;   // yaw damper: kills dutch-roll wagging
     } else {
       T.z += this.steer * 750 - this.angVel.z * 50 * TUNE.rotDamp;
     }
     // +X torque pitches the nose down, so the controller drives ePitch toward
-    // the commanded attitude (pitch = 1 -> nose up ~30 deg).
+    // the commanded attitude (pitch = 1 -> nose up ~60 deg).
     if (this.assist) {
-      T.x += clamp((ePitch - this.pitch * 0.55) * 2200 - this.angVel.x * 650, -1600, 1600);
+      const wantPitch = Math.sin(this.pitch * TUNE.pitchRange);
+      T.x += clamp((ePitch - wantPitch) * 2200 - this.angVel.x * 650, -2200, 2200);
     } else {
       T.x += -this.pitch * 1100;
     }
@@ -239,12 +327,12 @@ export class BikePhysics {
       this.grounded = true;
       const hReal = terrainHeight(this.pos.x, this.pos.z);
       const overWater = hReal < WATER_Y - 0.35;
-      if (overWater) { this.crash('שכשוך! נחתת במים'); return; }
+      if (overWater) { this.crash('water'); return; }
       const n = terrainNormal(this.pos.x, this.pos.z, _v5);
       const vn = this.vel.dot(n);
       const upDot = _v4.set(0, 1, 0).applyQuaternion(q).y;
-      if (vn < -TUNE.crashSpeed) { this.crash('ריסוק! פגיעה חזקה מדי בקרקע'); return; }
-      if (upDot < 0.25 && speed > 6) { this.crash('התהפכות!'); return; }
+      if (vn < -TUNE.crashSpeed) { this.crash('ground'); return; }
+      if (upDot < 0.25 && speed > 6) { this.crash('flip'); return; }
       const pen = TUNE.clearance - agl;
       const fn = Math.max(0, pen * 42000 + Math.max(0, -vn) * 5200);
       F.addScaledVector(n, fn);

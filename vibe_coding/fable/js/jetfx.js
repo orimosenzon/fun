@@ -122,7 +122,12 @@ export function makeJetFX(scene, bikeGroup, camera, renderer) {
   function makeJet(cfg) {
     const grp = new THREE.Group();
     grp.position.copy(cfg.pos);
-    if (cfg.axis === 'z') grp.rotation.x = Math.PI / 2; // local -Y -> -Z
+    if (cfg.axis === 'z') {
+      // local -Y -> -Z; YXZ order so rotation.y later swings the plume with
+      // the vectored nozzle (R = Ry(vec) * Rx(pi/2))
+      grp.rotation.order = 'YXZ';
+      grp.rotation.x = Math.PI / 2;
+    }
     const core = new THREE.Mesh(geo, plumeMaterial(cfg.colors[0], cfg.colors[1], cfg.colors[2], cfg.diamonds, 1.35));
     const sheath = new THREE.Mesh(geo, plumeMaterial(cfg.colors[1], cfg.colors[2], cfg.colors[3], 0, 0.8));
     core.renderOrder = sheath.renderOrder = 20;
@@ -261,6 +266,7 @@ export function makeJetFX(scene, bikeGroup, camera, renderer) {
     const px = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360));
 
     // --- plumes, glow, lights ---
+    jets.rear.grp.rotation.y = o.vec || 0;   // plume follows the vectored nozzle
     for (const key of ['rear', 'left', 'right', 'center']) {
       const j = jets[key], v = o.jets[key];
       // smooth the visual response a touch (turbine-ish lag)

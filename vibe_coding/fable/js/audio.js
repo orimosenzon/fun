@@ -62,6 +62,58 @@ export class JetAudio {
     o.stop(t + 0.3);
   }
 
+  // RCS pulse: a short pressurized-gas "chuff"
+  pulse() {
+    if (!this.ok || this.muted) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    const dur = 0.16;
+    const buf = ctx.createBuffer(1, dur * ctx.sampleRate, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.frequency.value = 1900;
+    f.Q.value = 0.8;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(f).connect(g).connect(ctx.destination);
+    src.start(t);
+  }
+
+  // crash explosion: filtered noise burst sweeping down + a sub-bass thump
+  boom() {
+    if (!this.ok || this.muted) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    const dur = 1.3;
+    const buf = ctx.createBuffer(1, dur * ctx.sampleRate, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(950, t);
+    f.frequency.exponentialRampToValueAtTime(55, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.85, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(f).connect(g).connect(ctx.destination);
+    src.start(t);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(72, t);
+    o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.5, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+    o.connect(og).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + 0.7);
+  }
+
   toggleMute() {
     this.muted = !this.muted;
     if (this.ok && this.muted) {
