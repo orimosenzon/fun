@@ -9,7 +9,7 @@ export function makeTouchControls(actions) {
     steer: 0, pitch: 0,
     throttleUp: false, throttleDown: false,
     collUp: false, collDown: false,
-    boostRear: false, boostL: false, boostR: false, boostC: false,
+    boostRear: false,
   };
 
   const el = (cls, parent, tag = 'div') => {
@@ -32,8 +32,10 @@ export function makeTouchControls(actions) {
     const d = Math.hypot(dx, dy);
     if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
     joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-    state.steer = clamp(dx / JOY_R, -1, 1);
-    state.pitch = clamp(dy / JOY_R, -1, 1);
+    // gentle expo curve: fine authority near center, full deflection at the rim
+    const expo = v => 0.4 * v + 0.6 * v * Math.abs(v);
+    state.steer = expo(clamp(dx / JOY_R, -1, 1));
+    state.pitch = expo(clamp(dy / JOY_R, -1, 1));
   }
   function joyReset() {
     state.steer = 0; state.pitch = 0;
@@ -80,10 +82,22 @@ export function makeTouchControls(actions) {
   holdBtn('tbtn', colBox, '▲', () => state.collUp = true, () => state.collUp = false);
   holdBtn('tbtn', colBox, '▼', () => state.collDown = true, () => state.collDown = false);
 
+  // RCS pulse buttons: a tap = one metered impulse (handled in physics)
+  function pulseBtn(parent, label, which) {
+    const b = el('tbtn tsmall', parent, 'button');
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('pointerdown', e => {
+      actions.onPulse(which);
+      b.classList.add('active');
+      setTimeout(() => b.classList.remove('active'), 160);
+      e.preventDefault();
+    });
+  }
   const rollRow = el('troll', side);
-  holdBtn('tbtn tsmall', rollRow, '↺', () => state.boostL = true, () => state.boostL = false);
-  holdBtn('tbtn tsmall', rollRow, '⬆', () => state.boostC = true, () => state.boostC = false);
-  holdBtn('tbtn tsmall', rollRow, '↻', () => state.boostR = true, () => state.boostR = false);
+  pulseBtn(rollRow, '↺', 'L');
+  pulseBtn(rollRow, '⬆', 'C');
+  pulseBtn(rollRow, '↻', 'R');
 
   holdBtn('tboost', side, '🔥', () => state.boostRear = true, () => state.boostRear = false);
 
@@ -100,6 +114,7 @@ export function makeTouchControls(actions) {
   tapBtn('⟲', actions.onReset);
   tapBtn('🔊', actions.onMute);
   tapBtn('?', actions.onHelp);
+  if (actions.onLang) tapBtn('א/A', actions.onLang);
 
   return state;
 }
