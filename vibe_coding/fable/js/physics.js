@@ -1,6 +1,9 @@
 // Rigid-body physics for the jet bike.
 //
-// Body frame: X = right, Y = up, Z = forward (nose).
+// Body frame: Y = up, Z = forward (nose). NOTE: in a right-handed system with
+// these choices body +X is the RIDER'S LEFT (screen-left in the chase camera,
+// which sits behind the bike looking along +Z). Steering signs below account
+// for this; getting it wrong mirrors the controls (that bug shipped once).
 // Orientation quaternion maps body -> world. Angular velocity is kept in the
 // BODY frame and integrated with Euler's equations (including the gyroscopic
 // w x Iw term). Every jet is a force applied at its nozzle position, so
@@ -14,6 +17,8 @@
 //   - Arrow left/right command a bank angle; the flight controller achieves
 //     it by differential thrust on the side nozzles (clamped, so it is
 //     physically honest). T toggles the controller off for raw flying.
+//   - Arrow up/down command a pitch attitude (nose up / down); the controller
+//     holds it, which also sets the angle of attack of the lifting body.
 //
 // Aerodynamics: quadratic drag per body axis + a weathervane torque that
 // aligns the nose with the airflow (like a fin), which turns banked lift
@@ -74,7 +79,8 @@ export class BikePhysics {
     this.time = 0;                                   // sim time, drives gust noise
     this.throttle = 0;                               // rear jet, 0..1
     this.collective = 0.5;                           // lift nozzles, 0..1.25
-    this.steer = 0;                                  // -1..1 (left..right)
+    this.steer = 0;                                  // -1..1 (left..right on screen)
+    this.pitch = 0;                                  // -1..1 (nose down..nose up)
     this.input = { boostRear: false, boostL: false, boostR: false, boostC: false };
     this.assist = true;                              // flight controller on/off
     this.crashed = false;
@@ -96,6 +102,7 @@ export class BikePhysics {
     // low enough to rest on the pad even with ground effect
     this.collective = 0.35;
     this.steer = 0;
+    this.pitch = 0;
     this.crashed = false;
   }
 
@@ -125,7 +132,7 @@ export class BikePhysics {
     const inv = _q1.copy(q).invert();
     const fwd = _v1.set(0, 0, 1).applyQuaternion(q);
     const right = _v2.set(1, 0, 0).applyQuaternion(q);
-    const eRoll = right.y;   // >0 = banked left
+    const eRoll = right.y;   // body +X (rider's left) up => banked screen-right
     const ePitch = fwd.y;    // >0 = nose up
 
     const F = _F.set(0, -TUNE.g * TUNE.mass, 0);     // gravity, world frame
@@ -203,16 +210,21 @@ export class BikePhysics {
     }
 
     // --- flight controller (differential nozzle thrust, clamped) ---
-    const wantBank = -this.steer * 0.75;
+    // steer > 0 must turn SCREEN-right = toward world -X at spawn, which needs
+    // body +X (rider's left) up: wantBank has the same sign as steer.
+    const wantBank = this.steer * 0.75;
     const rawSide = this.input.boostL || this.input.boostR;
     if (this.assist && !rawSide) {
       T.z += clamp(-((eRoll - wantBank) * 1500 + this.angVel.z * 280), -950, 950);
     } else {
-      T.z += -this.steer * 750 - this.angVel.z * 50 * TUNE.rotDamp;
+      T.z += this.steer * 750 - this.angVel.z * 50 * TUNE.rotDamp;
     }
+    // +X torque pitches the nose down, so the controller drives ePitch toward
+    // the commanded attitude (pitch = 1 -> nose up ~30 deg).
     if (this.assist) {
-      // +X torque pitches the nose down, so nose-up (ePitch > 0) needs +torque
-      T.x += clamp(ePitch * 2200 - this.angVel.x * 650, -1600, 1600);
+      T.x += clamp((ePitch - this.pitch * 0.55) * 2200 - this.angVel.x * 650, -1600, 1600);
+    } else {
+      T.x += -this.pitch * 1100;
     }
 
     // --- rotational damping (air resistance to spin) ---

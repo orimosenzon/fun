@@ -139,28 +139,28 @@ export function makeJetFX(scene, bikeGroup, camera, renderer) {
 
   const jets = {
     rear: makeJet({
-      pos: new THREE.Vector3(0, 0, -1.72), axis: 'z',
+      pos: new THREE.Vector3(0, -0.16, -1.8), axis: 'z',
       dir: new THREE.Vector3(0, 0, -1),
-      r: 0.21, len: 2.8, diamonds: 5,
+      r: 0.23, len: 2.8, diamonds: 5,
       colors: [0xf8fbff, 0x9cc8ff, 0xff9a3c, 0xb43a10],
       sparks: 130,
     }),
     left: makeJet({
-      pos: new THREE.Vector3(-0.75, -0.42, 0), axis: 'y',
+      pos: new THREE.Vector3(-0.75, -0.5, 0), axis: 'y',
       dir: new THREE.Vector3(0, -1, 0),
       r: 0.13, len: 1.55, diamonds: 3,
       colors: [0xf2f8ff, 0x9cc8ff, 0x5f8fe8, 0x27458f],
       sparks: 36,
     }),
     right: makeJet({
-      pos: new THREE.Vector3(0.75, -0.42, 0), axis: 'y',
+      pos: new THREE.Vector3(0.75, -0.5, 0), axis: 'y',
       dir: new THREE.Vector3(0, -1, 0),
       r: 0.13, len: 1.55, diamonds: 3,
       colors: [0xf2f8ff, 0x9cc8ff, 0x5f8fe8, 0x27458f],
       sparks: 36,
     }),
     center: makeJet({
-      pos: new THREE.Vector3(0, -0.52, 0), axis: 'y',
+      pos: new THREE.Vector3(0, -0.6, 0), axis: 'y',
       dir: new THREE.Vector3(0, -1, 0),
       r: 0.16, len: 1.85, diamonds: 3,
       colors: [0xf2f8ff, 0x9cc8ff, 0x5f8fe8, 0x27458f],

@@ -225,6 +225,78 @@ function buildTrees(scene) {
   forest(broadleafs, oakTrunk, oakCanopy, 0.23, 0.09);
 }
 
+// Boulders on the rocky slopes and high ground, a few strays in the valleys.
+function buildBoulders(scene) {
+  const rand = mulberry32(4444);
+  const n = new THREE.Vector3();
+  const list = [];
+  for (let t = 0; t < 14000 && list.length < 320; t++) {
+    const x = (rand() * 2 - 1) * 1950, z = (rand() * 2 - 1) * 1950;
+    const h = terrainHeight(x, z);
+    if (h < WATER_Y + 1) continue;
+    if (Math.hypot(x - SPAWN.x, z - SPAWN.z) < 60) continue;
+    terrainNormal(x, z, n);
+    const rocky = n.y < 0.88 || h > 130;
+    if (!rocky && rand() < 0.85) continue;
+    list.push([x, h, z, 0.5 + rand() * 1.9, rand()]);
+  }
+  const mesh = new THREE.InstancedMesh(
+    new THREE.DodecahedronGeometry(1, 0),
+    new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length);
+  const dummy = new THREE.Object3D();
+  const c = new THREE.Color();
+  list.forEach(([x, h, z, s, r], i) => {
+    dummy.position.set(x, h + s * 0.12, z);
+    dummy.rotation.set(r * 3, r * 7, r * 5);
+    dummy.scale.set(s * (0.8 + r * 0.5), s * (0.55 + r * 0.4), s);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    c.setHSL(0.08 + r * 0.04, 0.08, 0.3 + r * 0.22);
+    mesh.setColorAt(i, c);
+  });
+  scene.add(mesh);
+}
+
+// Flower patches: clusters of tiny colored blobs that read as wildflower
+// meadows when flying low.
+function buildFlowers(scene) {
+  const rand = mulberry32(9090);
+  const n = new THREE.Vector3();
+  const palette = [0xf2f2e8, 0xf2cf2e, 0x9a6fd0, 0xd05348, 0xe88fb0];
+  const list = [];
+  let patches = 0;
+  for (let t = 0; t < 9000 && patches < 70; t++) {
+    const cx = (rand() * 2 - 1) * 1600, cz = (rand() * 2 - 1) * 1600;
+    const h = terrainHeight(cx, cz);
+    if (h < WATER_Y + 2 || h > 110) continue;
+    terrainNormal(cx, cz, n);
+    if (n.y < 0.93) continue;
+    if (Math.hypot(cx - SPAWN.x, cz - SPAWN.z) < 40) continue;
+    patches++;
+    const color = palette[(rand() * palette.length) | 0];
+    const cnt = 14 + (rand() * 14 | 0);
+    for (let i = 0; i < cnt; i++) {
+      const x = cx + (rand() * 2 - 1) * 9, z = cz + (rand() * 2 - 1) * 9;
+      list.push([x, terrainHeight(x, z), z, 0.09 + rand() * 0.1, color, rand()]);
+    }
+  }
+  const mesh = new THREE.InstancedMesh(
+    new THREE.OctahedronGeometry(1, 0),
+    new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length);
+  const dummy = new THREE.Object3D();
+  const c = new THREE.Color();
+  list.forEach(([x, h, z, s, color, r], i) => {
+    dummy.position.set(x, h + 0.16, z);
+    dummy.rotation.y = r * 3;
+    dummy.scale.set(s, s * 1.3, s);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    c.setHex(color).offsetHSL(0, 0, (r - 0.5) * 0.12);
+    mesh.setColorAt(i, c);
+  });
+  scene.add(mesh);
+}
+
 // Unit gable-roof prism: 1x1 base centered at origin, ridge along Z at y=1.
 // Non-indexed so computeVertexNormals gives flat-shaded slopes.
 function gableGeo() {
@@ -304,6 +376,35 @@ function buildSettlements(scene) {
     }
   }
 
+  // wooden paddock: posts every ~2.3 m around a rectangle, one rail between
+  function addPaddock(cx, cz, ang, w, d) {
+    const ux = Math.sin(ang), uz = Math.cos(ang);
+    const vx = Math.cos(ang), vz = -Math.sin(ang);
+    const corners = [
+      [cx + ux * w / 2 + vx * d / 2, cz + uz * w / 2 + vz * d / 2],
+      [cx - ux * w / 2 + vx * d / 2, cz - uz * w / 2 + vz * d / 2],
+      [cx - ux * w / 2 - vx * d / 2, cz - uz * w / 2 - vz * d / 2],
+      [cx + ux * w / 2 - vx * d / 2, cz + uz * w / 2 - vz * d / 2],
+    ];
+    for (let s = 0; s < 4; s++) {
+      const [ax, az] = corners[s], [bx, bz] = corners[(s + 1) % 4];
+      const len = Math.hypot(bx - ax, bz - az);
+      const steps = Math.max(1, Math.round(len / 2.3));
+      const segAng = Math.atan2(bx - ax, bz - az);
+      let px = ax, pz = az, ph = terrainHeight(ax, az);
+      for (let k = 0; k <= steps; k++) {
+        const qx = ax + (bx - ax) * k / steps, qz = az + (bz - az) * k / steps;
+        const qh = terrainHeight(qx, qz);
+        boxes.push([qx, qh - 0.1, qz, segAng, 0.09, 0.95, 0.09, 0x6f5438]);
+        if (k > 0) {
+          const seg = Math.hypot(qx - px, qz - pz);
+          boxes.push([(px + qx) / 2, (ph + qh) / 2 + 0.52, (pz + qz) / 2, segAng, 0.05, 0.07, seg * 0.98, 0x86684a]);
+        }
+        px = qx; pz = qz; ph = qh;
+      }
+    }
+  }
+
   function addFarm(x, y, z, ry) {
     addHouse(x, y, z, ry, 'barn');
     const cx = x + Math.cos(ry) * 11, cz = z - Math.sin(ry) * 11;
@@ -316,6 +417,18 @@ function buildSettlements(scene) {
         cyls.push([sx, sh - 0.3, sz, 0, 1.5, 5.6, 1.5, 0xb6bcc4]);
         cones.push([sx, sh + 5.3, sz, 0, 1.62, 1.5, 1.62, 0x88553a]);
       }
+    }
+    // paddock behind the barn + a few round hay bales
+    const pang = ry + (rand() - 0.5) * 0.5;
+    const pcx = x + Math.sin(pang) * -14, pcz = z + Math.cos(pang) * -14;
+    if (groundAt(pcx, pcz) !== null) {
+      addPaddock(pcx, pcz, pang, 13 + rand() * 6, 9 + rand() * 5);
+    }
+    const bales = 2 + (rand() * 3 | 0);
+    for (let b = 0; b < bales; b++) {
+      const bx = x + (rand() * 2 - 1) * 9, bz = z + (rand() * 2 - 1) * 9;
+      const bh = groundAt(bx, bz);
+      if (bh !== null) cyls.push([bx, bh - 0.08, bz, 0, 0.72, 0.85, 0.72, 0xc9a84c]);
     }
   }
 
@@ -490,6 +603,8 @@ export function buildWorld(scene) {
   buildPad(scene);
   buildTrees(scene);
   buildSettlements(scene);
+  buildBoulders(scene);
+  buildFlowers(scene);
   buildClouds(scene);
   const rings = buildRings(scene);
   return { rings };

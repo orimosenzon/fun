@@ -49,29 +49,48 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
   check('moves along +Z', p.pos.z - SPAWN.z > 500, 'dz=' + (p.pos.z - SPAWN.z).toFixed(0));
 }
 
-// 4. Steering right should bank right and curve the path right (x increases).
+// 4. Steering right (screen-right). Body +X is the rider's LEFT in this frame,
+// so a screen-right turn lifts +X (x-axis .y > 0) and curves toward world -X.
 {
   const p = new BikePhysics();
   run(p, 6, () => { p.collective = 0.85; p.throttle = 0.8; });
-  const zBefore = p.pos.z;
+  const xBefore = p.pos.x;
   run(p, 6, () => { p.steer = 1; p.collective = 0.95; });
-  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
-  check('banks right when steering right', right.y < -0.3, 'right.y=' + right.y.toFixed(2));
-  check('turns right (x grows)', p.pos.x > 30, 'x=' + p.pos.x.toFixed(0) + ' z=' + p.pos.z.toFixed(0));
+  const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(p.quat);
+  check('banks screen-right when steering right', xAxis.y > 0.3, 'xAxis.y=' + xAxis.y.toFixed(2));
+  check('turns screen-right (x shrinks)', p.pos.x < xBefore - 30,
+    'dx=' + (p.pos.x - xBefore).toFixed(0) + ' z=' + p.pos.z.toFixed(0));
   check('no crash during turn', !p.crashed);
 }
 
-// 5. Z boost = raw roll torque: a short tap must spin the bike rolling right
-// (negative body-frame roll rate). Long holds do full barrel rolls by design.
+// 5. Z boost = raw roll torque: a short tap must spin the bike (screen-left
+// roll = +X side down = negative body roll rate). Long holds barrel-roll.
 {
   const p = new BikePhysics();
   run(p, 6, () => { p.collective = 0.75; });
   run(p, 0.25, () => { p.input.boostL = true; });
-  check('Z boost rolls right (roll rate)', p.angVel.z < -1, 'wz=' + p.angVel.z.toFixed(2));
+  check('Z boost rolls screen-left (roll rate)', p.angVel.z < -1, 'wz=' + p.angVel.z.toFixed(2));
   const p2 = new BikePhysics();
   run(p2, 6, () => { p2.collective = 0.75; });
   run(p2, 0.25, () => { p2.input.boostR = true; });
-  check('X boost rolls left (roll rate)', p2.angVel.z > 1, 'wz=' + p2.angVel.z.toFixed(2));
+  check('X boost rolls screen-right (roll rate)', p2.angVel.z > 1, 'wz=' + p2.angVel.z.toFixed(2));
+}
+
+// 5b. Pitch command: nose-up must raise the nose and convert speed to climb;
+// nose-down must drop the nose.
+{
+  const p = new BikePhysics();
+  run(p, 6, () => { p.collective = 0.85; p.throttle = 1; });
+  run(p, 8, () => { p.collective = 0.6; p.throttle = 1; });
+  const y0 = p.pos.y, vy0 = p.vel.y;
+  run(p, 3, () => { p.pitch = 1; });
+  const fwdUp = new THREE.Vector3(0, 0, 1).applyQuaternion(p.quat).y;
+  check('pitch up raises the nose', fwdUp > 0.25, 'fwd.y=' + fwdUp.toFixed(2));
+  check('pitch up climbs', p.vel.y > vy0 + 2 || p.pos.y > y0 + 10,
+    'vy ' + vy0.toFixed(1) + ' -> ' + p.vel.y.toFixed(1) + ', dy=' + (p.pos.y - y0).toFixed(1));
+  run(p, 2.5, () => { p.pitch = -1; });
+  const fwdDown = new THREE.Vector3(0, 0, 1).applyQuaternion(p.quat).y;
+  check('pitch down drops the nose', fwdDown < -0.1, 'fwd.y=' + fwdDown.toFixed(2));
 }
 
 // 6. S boost adds lift along body up: from hover, vertical speed should jump.

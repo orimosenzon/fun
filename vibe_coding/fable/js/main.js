@@ -4,6 +4,7 @@ import { buildBike } from './bike.js';
 import { BikePhysics, TUNE } from './physics.js';
 import { makeJetFX } from './jetfx.js';
 import { makeGrass } from './grass.js';
+import { makeAnimals } from './animals.js';
 import { HUD } from './hud.js';
 import { JetAudio } from './audio.js';
 
@@ -23,6 +24,7 @@ const bike = buildBike();
 scene.add(bike.group);
 const fx = makeJetFX(scene, bike.group, camera, renderer);
 const grass = makeGrass(scene);
+const animals = makeAnimals(scene);
 const phys = new BikePhysics();
 const hud = new HUD();
 const audio = new JetAudio();
@@ -128,16 +130,18 @@ function applyInput(dt) {
     }
     return;
   }
-  if (keys['ArrowUp']) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
-  if (keys['ArrowDown']) phys.throttle = clamp(phys.throttle - dt * 0.8, 0, 1);
+  if (keys['KeyW']) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
+  if (keys['KeyS']) phys.throttle = clamp(phys.throttle - dt * 0.8, 0, 1);
   if (keys['KeyE']) phys.collective = clamp(phys.collective + dt * 0.55, 0, 1.25);
   if (keys['KeyD']) phys.collective = clamp(phys.collective - dt * 0.55, 0, 1.25);
   const steerTarget = (keys['ArrowRight'] ? 1 : 0) - (keys['ArrowLeft'] ? 1 : 0);
   phys.steer += (steerTarget - phys.steer) * Math.min(1, dt * 8);
+  const pitchTarget = (keys['ArrowUp'] ? 1 : 0) - (keys['ArrowDown'] ? 1 : 0);
+  phys.pitch += (pitchTarget - phys.pitch) * Math.min(1, dt * 6);
   phys.input.boostRear = !!keys['Space'];
   phys.input.boostL = !!keys['KeyZ'];
   phys.input.boostR = !!keys['KeyX'];
-  phys.input.boostC = !!keys['KeyS'];
+  phys.input.boostC = !!(keys['ShiftLeft'] || keys['ShiftRight']);
 }
 
 const _fh = new THREE.Vector3(), _look = new THREE.Vector3(), _tmp = new THREE.Vector3();
@@ -146,6 +150,24 @@ const FLIP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0),
 camera.position.set(SPAWN.x, SPAWN.y + 4, SPAWN.z - 14);
 
 function updateCamera(dt) {
+  // debug cameras for the living scenery: park on the first herd / flock
+  if (POSE === 'horses' && animals.horses.length) {
+    const h = animals.horses[0];
+    const hy = terrainHeight(h.hx, h.hz);
+    camera.position.set(h.hx + 14, hy + 4, h.hz + 14);
+    camera.lookAt(h.hx, hy + 1, h.hz);
+    camera.fov = 55;
+    camera.updateProjectionMatrix();
+    return;
+  }
+  if (POSE === 'birds' && animals.flocks.length) {
+    const f = animals.flocks[0];
+    camera.position.set(f.cx - Math.sin(f.heading) * 16, f.y + 3, f.cz - Math.cos(f.heading) * 16);
+    camera.lookAt(f.cx, f.y, f.cz);
+    camera.fov = 60;
+    camera.updateProjectionMatrix();
+    return;
+  }
   if (POSE === 'show') {
     camera.position.set(phys.pos.x + 5.5, phys.pos.y + 1.0, phys.pos.z - 6.5);
     camera.lookAt(phys.pos.x, phys.pos.y - 0.6, phys.pos.z - 1);
@@ -241,14 +263,16 @@ function animate() {
   fx.update(dt, {
     jets: {
       rear: phys.throttle + (phys.input.boostRear ? 0.9 : 0),
-      left: phys.collective * 0.7 + (phys.input.boostL ? 0.9 : 0) + Math.max(0, phys.steer) * 0.25,
-      right: phys.collective * 0.7 + (phys.input.boostR ? 0.9 : 0) + Math.max(0, -phys.steer) * 0.25,
+      // steer > 0 (screen-right) lifts the body +X side, i.e. the 'right' jet at x=+0.75
+      left: phys.collective * 0.7 + (phys.input.boostL ? 0.9 : 0) + Math.max(0, -phys.steer) * 0.25,
+      right: phys.collective * 0.7 + (phys.input.boostR ? 0.9 : 0) + Math.max(0, phys.steer) * 0.25,
       center: phys.collective * 0.7 + (phys.input.boostC ? 0.9 : 0),
     },
     pos: phys.pos, quat: phys.quat, vel: phys.vel,
     agl, groundY: gh,
   });
   grass.update(phys.pos, dt);
+  animals.update(dt, phys.pos);
   terrainNormal(phys.pos.x, phys.pos.z, _n);
   shadow.position.set(phys.pos.x, gh + 0.08, phys.pos.z);
   shadow.quaternion.setFromUnitVectors(_Z, _n);
