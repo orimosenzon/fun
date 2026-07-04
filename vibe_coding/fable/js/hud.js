@@ -32,12 +32,13 @@ export class HUD {
     this.help = el('hud panel help');
     this.help.innerHTML = `
       <b>שליטה</b>
-      <div>↑ / ↓ — מצערת הסילון האחורי</div>
+      <div>← / → — הטיה ופנייה</div>
+      <div>↑ / ↓ — הרמת / הורדת האף (עלרוד)</div>
+      <div>W / S — מצערת הסילון האחורי</div>
       <div>E / D — עוצמת צינורות העילוי</div>
-      <div>← / → — הטיה והיגוי</div>
       <div>רווח — בוסט לסילון האחורי</div>
-      <div>Z / X — בוסט לצינור שמאלי / ימני (גלגול!)</div>
-      <div>S — בוסט לצינור המרכזי (עילוי בכיוון הגוף)</div>
+      <div>Shift — בוסט לצינור המרכזי (עילוי בכיוון הגוף)</div>
+      <div>Z / X — גלגול שמאלה / ימינה (בוסט צד!)</div>
       <div>C — מצלמה · R — איפוס · T — מייצב · M — שקט · H — עזרה</div>`;
 
     this.start = el('hud start');
@@ -48,8 +49,8 @@ export class HUD {
         <p>מנוע סילון אחורי דוחף קדימה, שלושה צינורות מופנים מטה מרחפים אותך באוויר.<br>
         טוס דרך כל <span class="orange-t">הטבעות הכתומות</span> מהר ככל האפשר — ואל תתרסק.</p>
         <div class="keys">
-          <div>↑↓ מצערת &nbsp;·&nbsp; ED עילוי &nbsp;·&nbsp; ←→ היגוי</div>
-          <div>רווח בוסט &nbsp;·&nbsp; Z/X גלגול &nbsp;·&nbsp; S עילוי־בוסט</div>
+          <div>←→ היגוי &nbsp;·&nbsp; ↑↓ עלרוד (אף) &nbsp;·&nbsp; WS מצערת &nbsp;·&nbsp; ED עילוי</div>
+          <div>רווח בוסט &nbsp;·&nbsp; Shift עילוי־בוסט &nbsp;·&nbsp; Z/X גלגול</div>
         </div>
         <p class="press">לחץ על מקש כלשהו כדי להמריא</p>
       </div>`;
