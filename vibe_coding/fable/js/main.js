@@ -7,6 +7,7 @@ import { makeGrass } from './grass.js';
 import { makeAnimals } from './animals.js';
 import { HUD } from './hud.js';
 import { JetAudio } from './audio.js';
+import { makeTouchControls } from './touch.js';
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
@@ -48,9 +49,56 @@ let started = false;
 
 // ?demo — auto-takeoff, for headless smoke tests and screenshots
 // ?pose=cruise — start mid-air at cruise speed with full afterburner (visual debug)
+// ?touch=1 — force the mobile touch controls on a desktop browser
+// ?selftest=touch — headless check that the touch controls actually move phys state
 const PARAMS = new URLSearchParams(location.search);
 const DEMO = PARAMS.has('demo') || PARAMS.has('pose');
 const POSE = PARAMS.get('pose');
+const TOUCH_MODE = matchMedia('(pointer: coarse)').matches || PARAMS.has('touch');
+document.body.classList.toggle('touch-mode', TOUCH_MODE);
+hud.setTouchMode(TOUCH_MODE);
+
+// shared so both the keyboard shortcuts and the touch menu buttons trigger the same actions
+function toggleCamera() { camMode = (camMode + 1) % 2; }
+function doReset() { phys.reset(); hud.message('איפוס', 900); }
+function toggleAssist() {
+  phys.assist = !phys.assist;
+  hud.message(phys.assist ? 'מייצב טיסה: פועל' : 'מייצב טיסה: כבוי — טיסה חופשית!', 1600);
+}
+function toggleMute() { hud.message(audio.toggleMute() ? 'שקט' : 'סאונד פועל', 1000); }
+function toggleHelp() { hud.toggleHelp(); }
+
+const touch = TOUCH_MODE ? makeTouchControls({
+  onCamera: toggleCamera, onReset: doReset, onAssist: toggleAssist, onMute: toggleMute, onHelp: toggleHelp,
+}) : null;
+
+if (PARAMS.has('selftest') && touch) {
+  const dispatch = (el, type, id, x, y) => el.dispatchEvent(new PointerEvent(type, {
+    pointerId: id, clientX: x, clientY: y, bubbles: true, cancelable: true,
+  }));
+  setTimeout(() => {
+    dispatch(document.body, 'pointerdown', 1, 5, 5); // first tap: start the game
+    setTimeout(() => {
+      const joy = document.querySelector('.tjoy');
+      const r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      dispatch(joy, 'pointerdown', 2, cx, cy);
+      dispatch(joy, 'pointermove', 2, cx + 40, cy + 40); // right + down -> steer>0, pitch>0
+      const boost = document.querySelector('.tboost');
+      dispatch(boost, 'pointerdown', 3, 1, 1);
+      setTimeout(() => {
+        document.body.dataset.ttSteer = touch.steer.toFixed(2);
+        document.body.dataset.ttPitch = touch.pitch.toFixed(2);
+        document.body.dataset.ttBoost = String(touch.boostRear);
+        document.body.dataset.ttStarted = String(started);
+        document.body.dataset.ttHelpBefore = hud.help.style.display;
+        document.querySelectorAll('.tmenu button')[4].click(); // '?' help toggle
+        document.body.dataset.ttHelpAfter = hud.help.style.display;
+        document.body.dataset.ttDone = '1';
+      }, 100);
+    }, 100);
+  }, 300);
+}
+
 if (DEMO) {
   started = true;
   setTimeout(() => hud.hideStart(), 0);
@@ -89,18 +137,23 @@ addEventListener('keydown', e => {
   }
   keys[e.code] = true;
   switch (e.code) {
-    case 'KeyR': phys.reset(); hud.message('איפוס', 900); break;
-    case 'KeyC': camMode = (camMode + 1) % 2; break;
-    case 'KeyH': hud.toggleHelp(); break;
-    case 'KeyM': hud.message(audio.toggleMute() ? 'שקט' : 'סאונד פועל', 1000); break;
-    case 'KeyT':
-      phys.assist = !phys.assist;
-      hud.message(phys.assist ? 'מייצב טיסה: פועל' : 'מייצב טיסה: כבוי — טיסה חופשית!', 1600);
-      break;
+    case 'KeyR': doReset(); break;
+    case 'KeyC': toggleCamera(); break;
+    case 'KeyH': toggleHelp(); break;
+    case 'KeyM': toggleMute(); break;
+    case 'KeyT': toggleAssist(); break;
   }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+if (TOUCH_MODE) {
+  addEventListener('pointerdown', () => {
+    if (started) return;
+    started = true;
+    hud.hideStart();
+    audio.init();
+  });
+}
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -130,18 +183,19 @@ function applyInput(dt) {
     }
     return;
   }
-  if (keys['KeyW']) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
-  if (keys['KeyS']) phys.throttle = clamp(phys.throttle - dt * 0.8, 0, 1);
-  if (keys['KeyE']) phys.collective = clamp(phys.collective + dt * 0.55, 0, 1.25);
-  if (keys['KeyD']) phys.collective = clamp(phys.collective - dt * 0.55, 0, 1.25);
-  const steerTarget = (keys['ArrowRight'] ? 1 : 0) - (keys['ArrowLeft'] ? 1 : 0);
+  if (keys['KeyW'] || touch?.throttleUp) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
+  if (keys['KeyS'] || touch?.throttleDown) phys.throttle = clamp(phys.throttle - dt * 0.8, 0, 1);
+  if (keys['KeyE'] || touch?.collUp) phys.collective = clamp(phys.collective + dt * 0.55, 0, 1.25);
+  if (keys['KeyD'] || touch?.collDown) phys.collective = clamp(phys.collective - dt * 0.55, 0, 1.25);
+  const steerTarget = clamp((keys['ArrowRight'] ? 1 : 0) - (keys['ArrowLeft'] ? 1 : 0) + (touch?.steer || 0), -1, 1);
   phys.steer += (steerTarget - phys.steer) * Math.min(1, dt * 8);
-  const pitchTarget = (keys['ArrowUp'] ? 1 : 0) - (keys['ArrowDown'] ? 1 : 0);
+  // airplane-yoke convention: pull back (arrow down / joystick down) raises the nose
+  const pitchTarget = clamp((keys['ArrowDown'] ? 1 : 0) - (keys['ArrowUp'] ? 1 : 0) + (touch?.pitch || 0), -1, 1);
   phys.pitch += (pitchTarget - phys.pitch) * Math.min(1, dt * 6);
-  phys.input.boostRear = !!keys['Space'];
-  phys.input.boostL = !!keys['KeyZ'];
-  phys.input.boostR = !!keys['KeyX'];
-  phys.input.boostC = !!(keys['ShiftLeft'] || keys['ShiftRight']);
+  phys.input.boostRear = !!keys['Space'] || !!touch?.boostRear;
+  phys.input.boostL = !!keys['KeyZ'] || !!touch?.boostL;
+  phys.input.boostR = !!keys['KeyX'] || !!touch?.boostR;
+  phys.input.boostC = !!(keys['ShiftLeft'] || keys['ShiftRight']) || !!touch?.boostC;
 }
 
 const _fh = new THREE.Vector3(), _look = new THREE.Vector3(), _tmp = new THREE.Vector3();
