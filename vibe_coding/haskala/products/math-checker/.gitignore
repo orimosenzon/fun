@@ -9,3 +9,7 @@ uploads/
 credentials.json
 token.json
 downloads/
+# poller — ledger מקומי, תצורה אמיתית ותוצרים
+poller_ledger.json
+poller_config.json
+graded/
