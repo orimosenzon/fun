@@ -1,0 +1,19 @@
+# רשת ביטחון לכל תת-פרויקט של השכלה (מוצרים + infra).
+# gitignore-ים פר-מוצר עדיין קיימים; כאן רק הדפוסים המסוכנים/הגנריים.
+
+# סודות
+.env
+credentials.json
+token.json
+service-account*.json
+
+# סביבות והרצה
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# תוצרים מקומיים
+downloads/
+uploads/
