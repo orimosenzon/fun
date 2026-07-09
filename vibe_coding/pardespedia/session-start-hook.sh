@@ -21,3 +21,11 @@ elif echo "$out" | grep -q "No change"; then
 else
   echo "לוח אירועי התרבות: ההרצה הושלמה."
 fi
+
+# בדיקת הודעות ממפעילי מערכת שטרם נענו בדף השיחה של הבוט (ראה check_bot_talk.py).
+# רק דגל בשלב זה — הטיפול בפועל נעשה ע"י הסשן החי (Claude), לא ע"י ה-hook.
+talk_out="$(cd "$DIR" && timeout 30 python3 check_bot_talk.py 2>&1)" || talk_out=""
+if echo "$talk_out" | grep -q "^SYSOP_USER="; then
+  sysop="$(echo "$talk_out" | sed -n 's/^SYSOP_USER=//p' | tail -1)"
+  echo "יש הודעה ממתינה ממפעיל המערכת '${sysop}' בדף השיחה של הבוט — טרם נענתה."
+fi
