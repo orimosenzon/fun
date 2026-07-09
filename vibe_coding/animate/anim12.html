@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עורך אנימציית עקומות בזייה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --toolbar-bg: #ffffff;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --sky: #0ea5e9;
+            --sky-light: #e0f2fe;
+            --btn-bg: #f8fafc;
+            --btn-border: #e2e8f0;
+            --btn-text: #374151;
+            --btn-hover: #e9eef5;
+            --border: #e5e7eb;
+            --text-muted: #6b7280;
+            --timeline-bg: #0f172a;
+            --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-full: 999px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.09);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding-bottom: 48px; }
+
+        /* TOOLBAR */
+        #toolbar {
+            width: 100%; background: var(--toolbar-bg); border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm); padding: 0 14px; display: flex; align-items: center;
+            height: 50px; direction: rtl; gap: 2px; position: sticky; top: 0; z-index: 100;
+        }
+        .toolbar-section { display: flex; align-items: center; gap: 2px; }
+        .toolbar-divider { width: 1px; height: 24px; background: var(--border); margin: 0 5px; flex-shrink: 0; }
+        .toolbar-flexible-spacer { flex: 1; }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+            border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--btn-text);
+            font-family: inherit; font-size: 12px; font-weight: 500; padding: 5px 9px;
+            border-radius: var(--radius-sm); cursor: pointer;
+            transition: background .13s, color .13s, border-color .13s, transform .08s;
+            white-space: nowrap; user-select: none; text-decoration: none; line-height: 1;
+        }
+        .btn i { font-size: 12px; flex-shrink: 0; }
+        .btn:hover:not(:disabled) { background: var(--btn-hover); border-color: #c8d3e0; }
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+        .btn-icon { padding: 5px 7px; }
+        .btn-mode { padding: 5px 11px; }
+        .btn-mode.active { background: var(--success); color: #fff; border-color: var(--success); }
+        .btn-mode.active:hover:not(:disabled) { background: #047857; border-color: #047857; }
+        .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+        #saveMovieButton { color: var(--success); }
+        #saveMovieButton:hover:not(:disabled) { background: var(--success-light); border-color: #a7f3d0; color: var(--success); }
+        .file-input-label { color: var(--accent); }
+        .file-input-label:hover { background: #ede9fe; border-color: #c4b5fd; }
+        .file-input-label input[type="file"] { display: none; }
+        #exportButton { color: #7c3aed; }
+        #exportButton:hover:not(:disabled) { background: #ede9fe; border-color: #c4b5fd; }
+        #playMovieButton {
+            background: var(--sky-light); color: var(--sky); border-color: #bae6fd;
+            padding: 5px 7px 5px 4px; gap: 0;
+        }
+        #playMovieButton:hover:not(:disabled) { background: #bae6fd; border-color: var(--sky); }
+        #playMovieButton.playing { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+        #playMovieButton.playing:hover:not(:disabled) { background: #fecaca; border-color: var(--danger); }
+        .play-action-group { display: flex; align-items: center; gap: 4px; padding: 0 4px; }
+        .checkbox-in-button-container {
+            display: flex; align-items: center; gap: 3px; border-right: 1px solid currentColor;
+            opacity: .6; padding-right: 7px; margin-right: 2px; cursor: pointer; font-size: 11px;
+        }
+        .checkbox-in-button-container input[type="checkbox"] { accent-color: currentColor; width: 11px; height: 11px; cursor: pointer; }
+        .btn-danger-subtle { color: var(--danger); background: transparent; border-color: transparent; }
+        .btn-danger-subtle:hover:not(:disabled) { background: var(--danger-light); border-color: #fecaca; }
+        #frameIndicator {
+            font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 3px 7px;
+            background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            min-width: 40px; text-align: center;
+        }
+        #zoomIndicator {
+            font-size: 11px; font-weight: 500; color: var(--text-muted); padding: 3px 5px;
+            background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            min-width: 36px; text-align: center;
+        }
+
+        /* RECORDING INDICATOR */
+        #recordingBadge {
+            display: none; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+            color: var(--danger); background: var(--danger-light); border: 1px solid #fecaca;
+            padding: 3px 8px; border-radius: var(--radius-full);
+        }
+        #recordingBadge.visible { display: flex; }
+        #recordingDot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); animation: blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+        /* DRAWING TOOLS BAR */
+        #drawingToolsBar {
+            width: 100%; background: #fafafa; border-bottom: 1px solid var(--border);
+            padding: 4px 14px; display: flex; align-items: center; min-height: 42px;
+            direction: rtl; gap: 2px; transition: opacity .2s; flex-wrap: wrap;
+        }
+        #drawingToolsBar.hidden-bar { opacity: 0.3; pointer-events: none; }
+        .tools-select {
+            font-family: inherit; font-size: 11px; padding: 3px 6px; border: 1px solid var(--btn-border);
+            border-radius: var(--radius-sm); background: var(--btn-bg); color: var(--btn-text); cursor: pointer;
+        }
+        .btn-toggle.active { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+        .loop-check {
+            display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500;
+            color: var(--text-muted); cursor: pointer; white-space: nowrap; margin-right: 4px;
+        }
+        .loop-check input { accent-color: var(--accent); cursor: pointer; }
+        .sel-only { display: none !important; }
+        #drawingToolsBar.has-selection .sel-only { display: inline-flex !important; }
+        #drawingToolsBar.has-selection .sel-only.tools-divider,
+        #drawingToolsBar.has-selection .sel-only.tools-label { display: inline-block !important; }
+        .tools-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 6px; white-space: nowrap; }
+        .tools-divider { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
+
+        /* Color swatches */
+        .color-swatches { display: flex; align-items: center; gap: 4px; }
+        .color-swatch {
+            width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+            cursor: pointer; padding: 0; transition: transform .1s, border-color .1s;
+            outline: none;
+        }
+        .color-swatch:hover { transform: scale(1.2); }
+        .color-swatch.active { border-color: #1e293b; transform: scale(1.15); }
+        #customColorInput {
+            width: 22px; height: 22px; padding: 0; border: 2px solid var(--border);
+            border-radius: 50%; cursor: pointer; background: none; outline: none;
+        }
+        #customColorInput::-webkit-color-swatch-wrapper { padding: 0; }
+        #customColorInput::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+        /* Stroke buttons */
+        .stroke-btn {
+            display: flex; align-items: center; justify-content: center; width: 32px; height: 24px;
+            border: 1px solid var(--btn-border); background: var(--btn-bg); border-radius: var(--radius-sm);
+            cursor: pointer; padding: 0; transition: background .13s; flex-shrink: 0;
+        }
+        .stroke-btn:hover { background: var(--btn-hover); }
+        .stroke-btn.active { background: #ede9fe; border-color: #c4b5fd; }
+        .stroke-line { background: #374151; border-radius: 2px; width: 18px; }
+
+        /* Speed */
+        #speedSlider {
+            width: 80px; height: 4px; accent-color: var(--accent); cursor: pointer;
+            direction: ltr; margin: 0 4px;
+        }
+        #speedLabel { font-size: 11px; font-weight: 600; color: var(--text-muted); min-width: 30px; text-align: left; }
+
+        /* STATUS BAR */
+        #statusBar {
+            width: calc(100% - 40px); max-width: 840px; display: flex; align-items: center;
+            gap: 10px; padding: 6px 4px 2px; direction: rtl;
+        }
+        .mode-pill {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+            padding: 3px 10px; border-radius: var(--radius-full); border: 1px solid var(--border);
+            transition: background .2s, color .2s;
+        }
+        #statusBar.status-idle .mode-pill     { background: #f1f5f9; color: var(--text-muted); }
+        #statusBar.status-drawing .mode-pill  { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+        #statusBar.status-editing .mode-pill  { background: var(--success-light); color: #065f46; border-color: #a7f3d0; }
+        #statusBar.status-playing .mode-pill  { background: var(--sky-light); color: #0369a1; border-color: #bae6fd; }
+        #statusBar.status-selected .mode-pill { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .mode-hint { font-size: 11px; color: var(--text-muted); }
+
+        /* CANVAS */
+        #drawingCanvas {
+            background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+            max-width: calc(100vw - 40px); display: block; border: 1px solid var(--border);
+        }
+
+        /* TIMELINE */
+        #timelineContainer {
+            width: calc(100% - 40px); max-width: 840px; background: var(--timeline-bg);
+            border-radius: var(--radius-md); padding: 10px; margin-top: 10px;
+            overflow-x: auto; white-space: nowrap; direction: rtl; min-height: 100px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .timeline-frame-wrapper { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; position: relative; }
+        .timeline-frame-wrapper.dragging { opacity: 0.4; }
+        .timeline-frame-wrapper.drag-over .timeline-frame-canvas { border-color: #f59e0b; }
+        .thumb-actions { position: absolute; top: 3px; left: 3px; display: none; gap: 3px; z-index: 5; }
+        .timeline-frame-wrapper:hover .thumb-actions { display: flex; }
+        .thumb-btn {
+            width: 20px; height: 20px; border: none; border-radius: 4px; cursor: pointer;
+            background: rgba(15,23,42,0.75); color: #e2e8f0; font-size: 10px;
+            display: flex; align-items: center; justify-content: center; padding: 0;
+        }
+        .thumb-btn:hover { background: var(--accent); color: #fff; }
+        .thumb-btn.thumb-del:hover { background: var(--danger); }
+        .timeline-frame-canvas { border: 2px solid #1e3a5f; border-radius: 5px; background: #fff; display: block; transition: border-color .15s, box-shadow .15s; }
+        .timeline-frame-canvas:hover { border-color: #4a6fa5; }
+        .timeline-frame-canvas.active-timeline-frame { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99,102,241,.4); }
+        .timeline-frame-label { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: .3px; }
+
+        /* HELP */
+        #helpToggle {
+            position: fixed; bottom: 24px; left: 24px; width: 38px; height: 38px;
+            border-radius: 50%; background: var(--accent); color: #fff; border: none;
+            font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow-md); transition: background .2s, transform .15s; z-index: 200;
+        }
+        #helpToggle:hover { background: var(--accent-hover); transform: scale(1.07); }
+        #helpPanel {
+            position: fixed; bottom: 74px; left: 24px; width: 290px; max-height: 65vh;
+            overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg); padding: 16px; direction: rtl; text-align: right;
+            z-index: 200; font-size: 13px; line-height: 1.75;
+        }
+        #helpPanel.hidden { display: none; }
+        #helpPanel h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        #helpPanel ul { list-style: none; padding: 0; }
+        #helpPanel li { padding: 3px 16px 3px 0; position: relative; color: #374151; }
+        #helpPanel li::before { content: "›"; position: absolute; right: 0; color: var(--accent); font-weight: 700; }
+        #helpPanel code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+        #helpClose { margin-top: 12px; width: 100%; padding: 7px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; cursor: pointer; }
+        #helpClose:hover { background: var(--accent-hover); }
+
+        @media (max-width: 600px) {
+            .btn span { display: none; } .btn-icon { padding: 5px 7px; }
+            #toolbar { padding: 0 6px; } .toolbar-divider { margin: 0 2px; }
+            #drawingToolsBar { padding: 0 8px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main toolbar -->
+    <div id="toolbar">
+        <div class="toolbar-section">
+            <button id="editButton" class="btn btn-mode" title="מצב עריכה">
+                <i class="fas fa-pen-nib"></i><span>עריכה</span>
+            </button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+            <button id="undoButton" class="btn btn-icon" title="בטל (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+            <button id="redoButton" class="btn btn-icon" title="בצע שוב (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+            <button id="prevFrameButton" class="btn btn-icon" title="פריים קודם"><i class="fas fa-chevron-right"></i></button>
+            <span id="frameIndicator">1/1</span>
+            <button id="nextFrameButton" class="btn btn-icon" title="פריים הבא"><i class="fas fa-chevron-left"></i></button>
+            <button id="addFrameButton" class="btn btn-primary" title="הוסף פריים">
+                <i class="fas fa-plus"></i><span>פריים</span>
+            </button>
+            <button id="deleteFrameButton" class="btn btn-icon" title="מחק פריים נוכחי" style="color:#ef4444">
+                <i class="fas fa-minus"></i>
+            </button>
+            <span id="zoomIndicator">100%</span>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+            <button id="saveMovieButton" class="btn btn-icon" title="שמור (.clp)"><i class="fas fa-download"></i></button>
+            <label for="loadMovieInput" class="btn btn-icon file-input-label" title="פתח (.clp)">
+                <i class="fas fa-folder-open"></i>
+                <input type="file" id="loadMovieInput" accept=".clp">
+            </label>
+            <button id="exportButton" class="btn btn-icon" title="ייצא כ-WebM">
+                <i class="fas fa-film"></i>
+            </button>
+            <div id="recordingBadge"><div id="recordingDot"></div>מקליט</div>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+            <button id="playMovieButton" class="btn" title="נגן/עצור">
+                <span class="play-action-group">
+                    <i class="fas fa-play"></i>
+                    <span class="button-text">נגן</span>
+                </span>
+                <label for="showControlsCheckbox" class="checkbox-in-button-container" title="הצג נקודות בקרה">
+                    <input type="checkbox" id="showControlsCheckbox">
+                    <span class="checkbox-text">נקודות</span>
+                </label>
+            </button>
+        </div>
+        <div class="toolbar-flexible-spacer"></div>
+        <div class="toolbar-section">
+            <button id="clearCanvasButton" class="btn btn-danger-subtle btn-icon" title="נקה הכל">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Drawing tools bar -->
+    <div id="drawingToolsBar">
+        <span class="tools-label">צבע</span>
+        <div class="color-swatches" id="colorSwatches"></div>
+        <input type="color" id="customColorInput" value="#6366f1" title="צבע מותאם אישית">
+
+        <div class="tools-divider"></div>
+        <span class="tools-label">עובי</span>
+        <button class="stroke-btn active" data-width="1.5" title="דק"><span class="stroke-line" style="height:1.5px"></span></button>
+        <button class="stroke-btn" data-width="2.5" title="בינוני"><span class="stroke-line" style="height:2.5px"></span></button>
+        <button class="stroke-btn" data-width="4.5" title="עבה"><span class="stroke-line" style="height:4px"></span></button>
+
+        <div class="tools-divider"></div>
+        <span class="tools-label">מהירות</span>
+        <span style="font-size:11px;color:var(--text-muted)">🐇</span>
+        <input type="range" id="speedSlider" min="250" max="3000" step="50" value="1000">
+        <span style="font-size:11px;color:var(--text-muted)">🐢</span>
+        <span id="speedLabel">1.0×</span>
+
+        <div class="tools-divider"></div>
+        <span class="tools-label" title="הצגת פריימים שכנים ברקע (Onion Skin)">שקפי רקע</span>
+        <button id="onionPrevBtn" class="btn btn-icon btn-toggle active" title="הצג את הפריים הקודם ברקע (אדמדם)">-1</button>
+        <button id="onionNextBtn" class="btn btn-icon btn-toggle" title="הצג את הפריים הבא ברקע (ירקרק)">+1</button>
+        <input type="range" id="onionOpacitySlider" min="0.1" max="0.7" step="0.05" value="0.35" style="width:56px;height:4px;accent-color:var(--accent);direction:ltr" title="שקיפות שקפי הרקע">
+
+        <div class="tools-divider"></div>
+        <span class="tools-label" title="אופי המעבר בין פריימים">ריכוך</span>
+        <select id="easingSelect" class="tools-select" title="ריכוך תנועה (Easing)">
+            <option value="linear">לינארי</option>
+            <option value="easeInOut">רך</option>
+            <option value="easeOut">האטה</option>
+            <option value="easeIn">האצה</option>
+        </select>
+        <label class="loop-check" title="מעבר רציף מהפריים האחרון חזרה לראשון">
+            <input type="checkbox" id="seamlessLoopCheckbox"> לולאה חלקה
+        </label>
+
+        <div class="tools-divider sel-only"></div>
+        <span class="tools-label sel-only">רצף נבחר</span>
+        <button id="seqDupButton" class="btn btn-icon sel-only" title="שכפל רצף (בכל הפריימים)"><i class="fas fa-clone"></i></button>
+        <button id="seqFrontButton" class="btn btn-icon sel-only" title="הבא קדימה"><i class="fas fa-arrow-up"></i></button>
+        <button id="seqBackButton" class="btn btn-icon sel-only" title="שלח אחורה"><i class="fas fa-arrow-down"></i></button>
+        <button id="seqDelButton" class="btn btn-icon sel-only btn-danger-subtle" title="מחק רצף (Delete)"><i class="fas fa-trash"></i></button>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusBar" class="status-bar status-idle">
+        <span id="modeLabel" class="mode-pill"><i class="fas fa-mouse-pointer"></i> המתנה</span>
+        <span id="modeHint" class="mode-hint">לחץ על הקנבס להתחיל ציור</span>
+    </div>
+
+    <canvas id="drawingCanvas" width="800" height="500"></canvas>
+    <div id="timelineContainer"></div>
+
+    <button id="helpToggle" title="עזרה"><i class="fas fa-question"></i></button>
+    <div id="helpPanel" class="hidden">
+        <h3><i class="fas fa-info-circle"></i> הוראות שימוש</h3>
+        <ul>
+            <li>לחץ על הקנבס להוסיף נקודות ולצייר עקומות (בכל פריים)</li>
+            <li><strong>רווח</strong> — סיים רצף | <strong>Escape</strong> — בטל ציור</li>
+            <li>ציור ליד הנקודה הראשונה — סגור עקומה</li>
+            <li>עקומה חדשה מתווספת אוטומטית לכל הפריימים</li>
+            <li><strong>Space+גרירה</strong> — פאן | גלגלת — זום</li>
+            <li><strong>עריכה</strong> — גרור נקודות עגינה, בקרה ורצפים</li>
+            <li>דאבל-קליק על עקומה — הוסף נקודת עיגון</li>
+            <li><strong>Alt+קליק</strong> על נקודה — מחק אותה</li>
+            <li>לחיצה על עקומה — בחר | <strong>Delete</strong> — מחק</li>
+            <li>רצף נבחר: שכפול, קדימה/אחורה, צבע ועובי</li>
+            <li>ציר זמן: גרור לסידור מחדש, ריחוף — שכפול/מחיקה</li>
+            <li><strong>←/→</strong> — ניווט פריימים | <strong>Enter</strong> — נגן/עצור</li>
+            <li><code>Ctrl+Z</code> / <code>Ctrl+Y</code> — בטל / בצע שוב</li>
+            <li>העבודה נשמרת אוטומטית בדפדפן</li>
+        </ul>
+        <button id="helpClose">הבנתי</button>
+    </div>
+
+    <script>
+        // anim12 — bezier animation editor: non-destructive propagation, autosave,
+        // draw-in-any-frame, onion skin (prev+next), easing, seamless loop,
+        // anchor insert/delete, sequence duplicate/z-order, responsive HiDPI canvas
+
+        // DOM refs
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const editButton = document.getElementById('editButton');
+        const addFrameButton = document.getElementById('addFrameButton');
+        const deleteFrameButton = document.getElementById('deleteFrameButton');
+        const prevFrameButton = document.getElementById('prevFrameButton');
+        const nextFrameButton = document.getElementById('nextFrameButton');
+        const frameIndicator = document.getElementById('frameIndicator');
+        const zoomIndicator = document.getElementById('zoomIndicator');
+        const playMovieButton = document.getElementById('playMovieButton');
+        const saveMovieButton = document.getElementById('saveMovieButton');
+        const loadMovieInput = document.getElementById('loadMovieInput');
+        const exportButton = document.getElementById('exportButton');
+        const recordingBadge = document.getElementById('recordingBadge');
+        const undoButton = document.getElementById('undoButton');
+        const redoButton = document.getElementById('redoButton');
+        const clearCanvasButton = document.getElementById('clearCanvasButton');
+        const showControlsCheckbox = document.getElementById('showControlsCheckbox');
+        const timelineContainer = document.getElementById('timelineContainer');
+        const statusBar = document.getElementById('statusBar');
+        const modeLabel = document.getElementById('modeLabel');
+        const modeHint = document.getElementById('modeHint');
+        const drawingToolsBar = document.getElementById('drawingToolsBar');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedLabel = document.getElementById('speedLabel');
+        const customColorInput = document.getElementById('customColorInput');
+        const onionPrevBtn = document.getElementById('onionPrevBtn');
+        const onionNextBtn = document.getElementById('onionNextBtn');
+        const onionOpacitySlider = document.getElementById('onionOpacitySlider');
+        const easingSelect = document.getElementById('easingSelect');
+        const seamlessLoopCheckbox = document.getElementById('seamlessLoopCheckbox');
+        const seqDupButton = document.getElementById('seqDupButton');
+        const seqFrontButton = document.getElementById('seqFrontButton');
+        const seqBackButton = document.getElementById('seqBackButton');
+        const seqDelButton = document.getElementById('seqDelButton');
+
+        // --- State ---
+        let animationFrames = [];
+        let currentFrameIndex = 0;
+        let activeCurve = { id: 'active_initial', anchors: [], segments: [], showAnchorsInEdit: true };
+        let isDrawingMode = false;
+        let isEditModeActive = false;
+        let draggedPointInfo = null;
+        let isDragging = false;
+        let dragMoved = false;
+        let dragStartCanvasPos = null;
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_UNDO_STEPS = 50;
+        let scaleFactor = 1.0;
+        let originX = 0, originY = 0;
+        const ZOOM_INTENSITY = 0.1;
+        const MIN_SCALE = 0.001, MAX_SCALE = 1000.0;
+        let isAnimating = false;
+        let animationRequestID;
+        let anim_sourceFrameIdx, anim_targetFrameIdx, anim_startTime;
+        let anim_currentInterpolatedSequences = [];
+        let animDuration = 1000; // ms per frame (was const)
+        let selectedSequenceId = null;
+        let currentDrawColor = '#6366f1';
+        let currentDrawStrokeWidth = 1.5;
+        let isPanning = false;
+        let isSpaceHeld = false;
+        let panStartCanvasPos = null;
+        let isClosingCurve = false;
+        let isExporting = false;
+        let onionShowPrev = true;
+        let onionShowNext = false;
+        let onionOpacity = 0.35;
+        let easingName = 'linear';
+        let loopSeamless = false;
+        let autosaveTimer = null;
+        let cssW = 800, cssH = 500, dpr = 1;
+        const AUTOSAVE_KEY = 'bezierAnimateAutosaveV12';
+
+        const EASINGS = {
+            linear: t => t,
+            easeInOut: t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2,
+            easeIn: t => t*t,
+            easeOut: t => 1 - (1-t)*(1-t)
+        };
+
+        // --- Drawing Constants ---
+        const TENSION = 0.33;
+        const VISUAL_ANCHOR_RADIUS_ON_SCREEN = 5;
+        const VISUAL_CONTROL_RADIUS_ON_SCREEN = 4;
+        const HIT_RADIUS_ON_SCREEN = 8;
+        const CURVE_HIT_THRESHOLD_ON_SCREEN = 5;
+        const DEFAULT_CURVE_COLOR = '#6366f1';
+        const ONION_SKIN_COLOR = 'rgba(150,150,180,0.35)';
+        const EDIT_ANCHOR_POINT_COLOR = '#1e293b';
+        const EDIT_CONTROL_POINT_COLOR = '#93c5fd';
+        const HELPER_LINE_COLOR = 'rgba(120,120,150,0.3)';
+        const DRAW_MODE_FIRST_ANCHOR_COLOR = '#ef4444';
+        const DRAW_MODE_OTHER_ANCHORS_COLOR = '#1e293b';
+        const TIMELINE_CANVAS_WIDTH = 100;
+        const TIMELINE_CANVAS_HEIGHT = 68;
+
+        const COLOR_PALETTE = ['#6366f1','#ef4444','#10b981','#f59e0b','#0ea5e9','#ec4899','#f97316','#1e293b'];
+
+        // --- Color palette init ---
+        function initColorPalette() {
+            const container = document.getElementById('colorSwatches');
+            COLOR_PALETTE.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = 'color-swatch' + (color === currentDrawColor ? ' active' : '');
+                btn.dataset.color = color;
+                btn.style.background = color;
+                btn.title = color;
+                btn.addEventListener('click', () => applyColor(color));
+                container.appendChild(btn);
+            });
+            customColorInput.value = currentDrawColor;
+            customColorInput.addEventListener('input', () => applyColor(customColorInput.value, true));
+        }
+
+        function applyColor(color, fromCustom = false) {
+            currentDrawColor = color;
+            if (!fromCustom) customColorInput.value = color;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+            // Update selected sequence in all frames
+            if (selectedSequenceId && !isAnimating) {
+                saveStateForUndo();
+                animationFrames.forEach(frame => {
+                    const seq = frame.find(s => s.id === selectedSequenceId);
+                    if (seq) seq.color = color;
+                });
+                redrawCanvas(); updateTimelineDisplay();
+            }
+        }
+
+        function applyStrokeWidth(width) {
+            currentDrawStrokeWidth = width;
+            document.querySelectorAll('.stroke-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.width) === width));
+            if (selectedSequenceId && !isAnimating) {
+                saveStateForUndo();
+                animationFrames.forEach(frame => {
+                    const seq = frame.find(s => s.id === selectedSequenceId);
+                    if (seq) seq.strokeWidth = width;
+                });
+                redrawCanvas(); updateTimelineDisplay();
+            }
+        }
+
+        document.querySelectorAll('.stroke-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyStrokeWidth(parseFloat(btn.dataset.width)));
+        });
+
+        speedSlider.addEventListener('input', () => {
+            animDuration = parseInt(speedSlider.value);
+            updateSpeedLabel();
+        });
+        function updateSpeedLabel() {
+            speedLabel.textContent = `${(1000 / animDuration).toFixed(1)}×`;
+        }
+
+        // --- Modal ---
+        function showModal(message, type = 'info', onConfirmCallback = null, showCancelButton = false) {
+            const existingModal = document.getElementById('simpleModal');
+            if (existingModal) existingModal.remove();
+            const overlay = document.createElement('div');
+            overlay.id = 'simpleModal';
+            Object.assign(overlay.style, { position:'fixed', left:'0', top:'0', width:'100%', height:'100%', backgroundColor:'rgba(0,0,0,0.4)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:'10000', direction:'rtl' });
+            const box = document.createElement('div');
+            Object.assign(box.style, { backgroundColor:'#fff', padding:'22px 26px', borderRadius:'12px', boxShadow:'0 20px 40px rgba(0,0,0,0.15)', textAlign:'center', maxWidth:'360px', width:'90%' });
+            const msg = document.createElement('p');
+            msg.textContent = message;
+            Object.assign(msg.style, { marginBottom:'18px', fontSize:'14px', color:'#1e293b', lineHeight:'1.5' });
+            box.appendChild(msg);
+            const btns = document.createElement('div');
+            btns.style.cssText = 'display:flex;justify-content:center;gap:8px';
+            const ok = document.createElement('button');
+            ok.textContent = 'אישור';
+            Object.assign(ok.style, { padding:'7px 18px', backgroundColor:'#6366f1', color:'#fff', border:'none', borderRadius:'6px', cursor:'pointer', fontSize:'13px', fontFamily:'inherit', fontWeight:'500' });
+            ok.onclick = () => { if (onConfirmCallback) onConfirmCallback(); overlay.remove(); };
+            btns.appendChild(ok);
+            if (showCancelButton) {
+                const cancel = document.createElement('button');
+                cancel.textContent = 'ביטול';
+                Object.assign(cancel.style, { padding:'7px 18px', backgroundColor:'#f1f5f9', color:'#374151', border:'1px solid #e2e8f0', borderRadius:'6px', cursor:'pointer', fontSize:'13px', fontFamily:'inherit' });
+                cancel.onclick = () => overlay.remove();
+                btns.appendChild(cancel);
+            }
+            box.appendChild(btns);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+        }
+
+        // --- Vector Math ---
+        function vecAdd(v1,v2){return{x:v1.x+v2.x,y:v1.y+v2.y};}
+        function vecSub(v1,v2){return{x:v1.x-v2.x,y:v1.y-v2.y};}
+        function vecScale(v,s){return{x:v.x*s,y:v.y*s};}
+        function vecLength(v){return Math.sqrt(v.x*v.x+v.y*v.y);}
+        function vecNormalize(v){const l=vecLength(v);if(l===0)return{x:0,y:0};return vecScale(v,1/l);}
+        function interpolatePoint(p1,p2,t){return{x:p1.x+(p2.x-p1.x)*t,y:p1.y+(p2.y-p1.y)*t};}
+
+        // --- Bezier Calculation ---
+        function calculateAllBezierSegments(points, tension) {
+            const segments = [], n = points.length;
+            if (n < 2) return [];
+            const a0=points[0], a1=points[1];
+            let cp01 = vecAdd(a0, vecScale(vecSub(a1,a0), tension));
+            if (n === 2) {
+                segments.push({p0_obj:a0, cp1:cp01, cp2:vecSub(a1,vecScale(vecSub(a1,a0),tension)), p1_obj:a1});
+                return segments;
+            }
+            const a2=points[2];
+            let t1dir = vecNormalize(vecSub(a2,a0));
+            if(t1dir.x===0&&t1dir.y===0) t1dir=vecNormalize(vecSub(a1,a0));
+            segments.push({p0_obj:a0, cp1:cp01, cp2:vecSub(a1,vecScale(t1dir,vecLength(vecSub(a1,a0))*tension)), p1_obj:a1});
+            for(let i=1;i<n-1;i++){
+                const cs=points[i], ce=points[i+1];
+                const cp1=vecSub(vecScale(cs,2),segments[i-1].cp2);
+                let cp2;
+                if(i<n-2){
+                    let d=vecNormalize(vecSub(points[i+2],cs));
+                    if(d.x===0&&d.y===0) d=vecNormalize(vecSub(ce,cs));
+                    cp2=vecSub(ce,vecScale(d,vecLength(vecSub(ce,cs))*tension));
+                } else {
+                    cp2=vecSub(ce,vecScale(vecSub(ce,cs),tension));
+                }
+                segments.push({p0_obj:cs, cp1, cp2, p1_obj:ce});
+            }
+            return segments;
+        }
+
+        // --- Clone/Undo ---
+        function cloneSingleSequence(seq) {
+            if(!seq||!seq.anchors) return{id:'empty_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:false,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+            const na=seq.anchors.map(a=>({...a}));
+            const ns=(seq.segments&&Array.isArray(seq.segments))?seq.segments.map(seg=>{
+                const p0i=seq.anchors.indexOf(seg.p0_obj), p1i=seq.anchors.indexOf(seg.p1_obj);
+                return{cp1:{...seg.cp1},cp2:{...seg.cp2},p0_obj:p0i!==-1?na[p0i]:null,p1_obj:p1i!==-1?na[p1i]:null};
+            }):[];
+            return{id:seq.id||'cloned_'+Date.now(),anchors:na,segments:ns,showAnchorsInEdit:seq.showAnchorsInEdit,color:seq.color||currentDrawColor,strokeWidth:seq.strokeWidth||currentDrawStrokeWidth};
+        }
+        function cloneSingleFrame(f){if(!f||!Array.isArray(f))return[];return f.map(s=>cloneSingleSequence(s));}
+        function cloneAllFrames(fs){if(!fs||!Array.isArray(fs))return[];return fs.map(f=>cloneSingleFrame(f));}
+        function saveStateForUndo(){
+            if(isAnimating&&draggedPointInfo===null)return;
+            const state={animationFrames:cloneAllFrames(animationFrames),currentFrameIndex,activeCurve:cloneSingleSequence(activeCurve),isDrawingMode,isEditModeActive,scaleFactor,originX,originY,selectedSequenceId};
+            undoStack.push(state);
+            if(undoStack.length>MAX_UNDO_STEPS)undoStack.shift();
+            redoStack=[];
+            updateUndoRedoButtons();
+            scheduleAutosave();
+        }
+
+        // --- Autosave (localStorage) ---
+        function scheduleAutosave(){
+            clearTimeout(autosaveTimer);
+            autosaveTimer=setTimeout(()=>{
+                try{
+                    localStorage.setItem(AUTOSAVE_KEY,JSON.stringify({animationFrames,meta:{animDuration,easing:easingName,seamless:loopSeamless}}));
+                }catch(err){/* quota exceeded — skip silently */}
+            },600);
+        }
+        function applyMeta(meta){
+            if(!meta)return;
+            if(meta.animDuration){animDuration=meta.animDuration;speedSlider.value=animDuration;updateSpeedLabel();}
+            if(meta.easing&&EASINGS[meta.easing]){easingName=meta.easing;easingSelect.value=easingName;}
+            if(typeof meta.seamless==='boolean'){loopSeamless=meta.seamless;seamlessLoopCheckbox.checked=loopSeamless;}
+        }
+        function tryRestoreAutosave(){
+            try{
+                const raw=localStorage.getItem(AUTOSAVE_KEY);
+                if(!raw)return false;
+                const data=JSON.parse(raw);
+                if(!data||!Array.isArray(data.animationFrames)||data.animationFrames.length===0)return false;
+                if(!data.animationFrames.some(f=>f&&f.length>0))return false;
+                animationFrames=rehydrateFrameData(data.animationFrames);
+                applyMeta(data.meta);
+                currentFrameIndex=0;selectedSequenceId=null;
+                undoStack=[];redoStack=[];
+                saveStateForUndo();
+                updateFrameUI();redrawCanvas();updateTimelineDisplay();
+                modeHint.textContent='העבודה שוחזרה אוטומטית מהפעם הקודמת';
+                return true;
+            }catch(err){return false;}
+        }
+        function restoreState(state){
+            animationFrames=state.animationFrames;
+            currentFrameIndex=state.currentFrameIndex;
+            activeCurve=state.activeCurve;
+            isDrawingMode=state.isDrawingMode;
+            isEditModeActive=state.isEditModeActive;
+            scaleFactor=state.scaleFactor;
+            originX=state.originX;
+            originY=state.originY;
+            selectedSequenceId=state.selectedSequenceId||null;
+            if(animationFrames[currentFrameIndex]) animationFrames[currentFrameIndex].forEach(s=>s.showAnchorsInEdit=isEditModeActive);
+        }
+        function performUndo(){
+            if(undoStack.length<=1||(isAnimating&&draggedPointInfo===null))return;
+            pushToStack(redoStack,getCurrentState());
+            restoreState(undoStack.pop());
+            updateUndoRedoButtons();updateFrameUI();redrawCanvas();updateTimelineDisplay();highlightCurrentTimelineFrame();
+            scheduleAutosave();
+        }
+        function performRedo(){
+            if(redoStack.length===0||(isAnimating&&draggedPointInfo===null))return;
+            pushToStack(undoStack,getCurrentState());
+            restoreState(redoStack.pop());
+            updateUndoRedoButtons();updateFrameUI();redrawCanvas();updateTimelineDisplay();highlightCurrentTimelineFrame();
+            scheduleAutosave();
+        }
+        function getCurrentState(){
+            return{animationFrames:cloneAllFrames(animationFrames),currentFrameIndex,activeCurve:cloneSingleSequence(activeCurve),isDrawingMode,isEditModeActive,scaleFactor,originX,originY,selectedSequenceId};
+        }
+        function pushToStack(stack,state){stack.push(state);if(stack.length>MAX_UNDO_STEPS)stack.shift();}
+        function updateUndoRedoButtons(){
+            undoButton.disabled=undoStack.length<=1||(isAnimating&&draggedPointInfo===null);
+            redoButton.disabled=redoStack.length===0||(isAnimating&&draggedPointInfo===null);
+        }
+
+        // --- Delete sequence ---
+        function deleteSelectedSequence(){
+            if(!selectedSequenceId||isAnimating)return;
+            saveStateForUndo();
+            animationFrames.forEach(frame=>{
+                const idx=frame.findIndex(s=>s.id===selectedSequenceId);
+                if(idx!==-1)frame.splice(idx,1);
+            });
+            selectedSequenceId=null;
+            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        }
+
+        // --- Duplicate selected sequence (across all frames, preserving per-frame animation) ---
+        function duplicateSelectedSequence(){
+            if(!selectedSequenceId||isAnimating)return;
+            saveStateForUndo();
+            const newId='dup_'+Date.now();
+            const OFF=16;
+            animationFrames.forEach(frame=>{
+                const src=frame.find(s=>s.id===selectedSequenceId);
+                if(!src)return;
+                const c=cloneSingleSequence(src);
+                c.id=newId;
+                c.anchors.forEach(a=>{a.x+=OFF;a.y+=OFF;});
+                c.segments.forEach(sg=>{sg.cp1.x+=OFF;sg.cp1.y+=OFF;sg.cp2.x+=OFF;sg.cp2.y+=OFF;});
+                c.showAnchorsInEdit=src.showAnchorsInEdit;
+                frame.push(c);
+            });
+            selectedSequenceId=newId;
+            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        }
+
+        // --- Z-order (consistent across all frames) ---
+        function moveSelectedSequenceZ(dir){
+            if(!selectedSequenceId||isAnimating)return;
+            saveStateForUndo();
+            animationFrames.forEach(frame=>{
+                const i=frame.findIndex(s=>s.id===selectedSequenceId);
+                if(i===-1)return;
+                const j=i+dir;
+                if(j<0||j>=frame.length)return;
+                const[s]=frame.splice(i,1);
+                frame.splice(j,0,s);
+            });
+            redrawCanvas();updateTimelineDisplay();
+        }
+
+        // --- Anchor insert/delete on existing curves ---
+        // De Casteljau split: preserves the curve shape exactly, per frame
+        function splitBezierAt(seg,t){
+            const p0=seg.p0_obj,p1=seg.p1_obj;
+            const q0=interpolatePoint(p0,seg.cp1,t),q1=interpolatePoint(seg.cp1,seg.cp2,t),q2=interpolatePoint(seg.cp2,p1,t);
+            const r0=interpolatePoint(q0,q1,t),r1=interpolatePoint(q1,q2,t);
+            const s=interpolatePoint(r0,r1,t);
+            return{newAnchor:s,aCp1:q0,aCp2:r0,bCp1:r1,bCp2:q2};
+        }
+        function findNearestPointOnCurves(mw,thr){
+            const seqs=animationFrames[currentFrameIndex];
+            if(!seqs)return null;
+            let best=null;
+            for(const seq of seqs){
+                if(!seq.segments)continue;
+                for(let si=0;si<seq.segments.length;si++){
+                    const sg=seq.segments[si];
+                    if(!sg.p0_obj||!sg.p1_obj)continue;
+                    for(let k=0;k<=50;k++){
+                        const t=k/50;
+                        const d=vecLength(vecSub(mw,getPointOnBezier(sg.p0_obj,sg.cp1,sg.cp2,sg.p1_obj,t)));
+                        if(d<thr&&(!best||d<best.dist))best={seqId:seq.id,segIndex:si,t,dist:d};
+                    }
+                }
+            }
+            return best;
+        }
+        function insertAnchorAcrossFrames(seqId,segIndex,t){
+            animationFrames.forEach(frame=>{
+                const seq=frame.find(s=>s.id===seqId);
+                if(!seq||!seq.segments||!seq.segments[segIndex])return;
+                const sg=seq.segments[segIndex];
+                if(!sg.p0_obj||!sg.p1_obj)return;
+                const sp=splitBezierAt(sg,t);
+                const na={x:sp.newAnchor.x,y:sp.newAnchor.y};
+                seq.anchors.splice(segIndex+1,0,na);
+                seq.segments.splice(segIndex,1,
+                    {p0_obj:sg.p0_obj,cp1:sp.aCp1,cp2:sp.aCp2,p1_obj:na},
+                    {p0_obj:na,cp1:sp.bCp1,cp2:sp.bCp2,p1_obj:sg.p1_obj});
+            });
+        }
+        function deleteAnchorAcrossFrames(seqId,anchorIndex){
+            animationFrames.forEach(frame=>{
+                const idx=frame.findIndex(s=>s.id===seqId);
+                if(idx===-1)return;
+                const seq=frame[idx];
+                if(seq.anchors.length<=2){frame.splice(idx,1);return;}
+                if(anchorIndex===0){seq.anchors.shift();seq.segments.shift();}
+                else if(anchorIndex===seq.anchors.length-1){seq.anchors.pop();seq.segments.pop();}
+                else{
+                    const merged={p0_obj:seq.anchors[anchorIndex-1],cp1:seq.segments[anchorIndex-1].cp1,cp2:seq.segments[anchorIndex].cp2,p1_obj:seq.anchors[anchorIndex+1]};
+                    seq.segments.splice(anchorIndex-1,2,merged);
+                    seq.anchors.splice(anchorIndex,1);
+                }
+            });
+            if(selectedSequenceId===seqId&&!animationFrames[currentFrameIndex].some(s=>s.id===seqId))selectedSequenceId=null;
+        }
+
+        // --- Delete frame ---
+        function deleteFrameAt(index){
+            if(animationFrames.length<=1){showModal('לא ניתן למחוק את הפריים היחיד.','info');return;}
+            showModal(`למחוק את פריים ${index+1}?`,'confirm',()=>{
+                saveStateForUndo();
+                animationFrames.splice(index,1);
+                if(currentFrameIndex>index)currentFrameIndex--;
+                if(currentFrameIndex>=animationFrames.length)currentFrameIndex=animationFrames.length-1;
+                selectedSequenceId=null;
+                updateFrameUI();redrawCanvas();updateTimelineDisplay();
+            },true);
+        }
+        function deleteCurrentFrame(){deleteFrameAt(currentFrameIndex);}
+
+        // --- Duplicate frame ---
+        function duplicateFrameAt(index){
+            if(isAnimating)return;
+            saveStateForUndo();
+            animationFrames.splice(index+1,0,cloneSingleFrame(animationFrames[index]));
+            if(currentFrameIndex>index)currentFrameIndex++;
+            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        }
+
+        // --- Frame navigation ---
+        function gotoFrame(index){
+            if(isAnimating)stopAnimation();
+            index=Math.max(0,Math.min(animationFrames.length-1,index));
+            if(index===currentFrameIndex)return;
+            if(isDrawingMode&&activeCurve.anchors.length>0){saveStateForUndo();finalizeActiveCurve('nav_'+Date.now());}
+            currentFrameIndex=index;
+            handleFrameNavigation(false);
+        }
+
+        // --- App state ---
+        function resetApplicationToInitialState(){
+            animationFrames=[[]];currentFrameIndex=0;
+            activeCurve={id:'active_reset_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+            isDrawingMode=false;isEditModeActive=false;
+            scaleFactor=1.0;originX=0;originY=0;
+            undoStack=[];redoStack=[];
+            selectedSequenceId=null;isClosingCurve=false;
+            saveStateForUndo();updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        }
+        function initializeAppOnLoad(){
+            initColorPalette();
+            resizeCanvas();
+            resetApplicationToInitialState();
+            tryRestoreAutosave();
+            updateSpeedLabel();
+            const checkboxContainer=playMovieButton.querySelector('.checkbox-in-button-container');
+            if(checkboxContainer) checkboxContainer.addEventListener('click',e=>{e.stopPropagation();if(!isAnimating)redrawCanvas();});
+            document.getElementById('helpToggle').addEventListener('click',()=>document.getElementById('helpPanel').classList.toggle('hidden'));
+            document.getElementById('helpClose').addEventListener('click',()=>document.getElementById('helpPanel').classList.add('hidden'));
+            // Onion skin controls
+            onionPrevBtn.addEventListener('click',()=>{onionShowPrev=!onionShowPrev;onionPrevBtn.classList.toggle('active',onionShowPrev);redrawCanvas();});
+            onionNextBtn.addEventListener('click',()=>{onionShowNext=!onionShowNext;onionNextBtn.classList.toggle('active',onionShowNext);redrawCanvas();});
+            onionOpacitySlider.addEventListener('input',()=>{onionOpacity=parseFloat(onionOpacitySlider.value);redrawCanvas();});
+            // Easing + loop
+            easingSelect.addEventListener('change',()=>{easingName=easingSelect.value;scheduleAutosave();});
+            seamlessLoopCheckbox.addEventListener('change',()=>{loopSeamless=seamlessLoopCheckbox.checked;scheduleAutosave();});
+            // Selected-sequence tools
+            seqDupButton.addEventListener('click',duplicateSelectedSequence);
+            seqFrontButton.addEventListener('click',()=>moveSelectedSequenceZ(1));
+            seqBackButton.addEventListener('click',()=>moveSelectedSequenceZ(-1));
+            seqDelButton.addEventListener('click',deleteSelectedSequence);
+        }
+
+        function updateZoomIndicator(){zoomIndicator.textContent=`${Math.round(scaleFactor*100)}%`;}
+
+        // --- Status bar ---
+        function updateStatusBar(){
+            if(!statusBar||!modeLabel)return;
+            statusBar.className='status-bar';
+            if(isAnimating){
+                modeLabel.innerHTML='<i class="fas fa-play"></i> מנגן';
+                statusBar.classList.add('status-playing');
+                if(modeHint)modeHint.textContent='לחץ "עצור" לחזרה לעריכה';
+            } else if(selectedSequenceId&&isEditModeActive){
+                modeLabel.innerHTML='<i class="fas fa-mouse-pointer"></i> רצף נבחר';
+                statusBar.classList.add('status-selected');
+                if(modeHint)modeHint.textContent='Delete — מחק | שנה צבע/עובי בסרגל | Escape — בטל בחירה';
+            } else if(isEditModeActive){
+                modeLabel.innerHTML='<i class="fas fa-arrows-alt"></i> עריכה';
+                statusBar.classList.add('status-editing');
+                if(modeHint)modeHint.textContent='גרור נקודות • לחץ על עקומה לבחירה • דאבל-קליק להוספת נקודה • Alt+קליק למחיקתה';
+            } else if(isDrawingMode){
+                modeLabel.innerHTML='<i class="fas fa-pencil-alt"></i> ציור';
+                statusBar.classList.add('status-drawing');
+                if(modeHint)modeHint.textContent=isClosingCurve?'לחץ לסגירת העקומה':'לחץ להוסיף נקודה • רווח לסיים • Escape לבטל • קרב לנקודה ראשונה לסגור';
+            } else {
+                modeLabel.innerHTML='<i class="fas fa-mouse-pointer"></i> המתנה';
+                statusBar.classList.add('status-idle');
+                if(modeHint)modeHint.textContent='לחץ על הקנבס כדי לצייר • העקומה תתווסף לכל הפריימים';
+            }
+            drawingToolsBar.classList.toggle('has-selection',!!selectedSequenceId&&isEditModeActive&&!isAnimating);
+        }
+
+        function updateFrameUI(){
+            frameIndicator.textContent=`${currentFrameIndex+1}/${animationFrames.length}`;
+            updateZoomIndicator();
+            const busy=isAnimating&&draggedPointInfo===null;
+            prevFrameButton.disabled=busy||currentFrameIndex===0;
+            nextFrameButton.disabled=busy||currentFrameIndex===animationFrames.length-1;
+            addFrameButton.disabled=busy;
+            deleteFrameButton.disabled=busy||animationFrames.length<=1;
+            editButton.classList.toggle('active',isEditModeActive);
+            editButton.disabled=busy;
+            playMovieButton.disabled=animationFrames.length<2;
+            playMovieButton.classList.toggle('playing',isAnimating);
+            const pag=playMovieButton.querySelector('.play-action-group');
+            const pi=pag?pag.querySelector('i'):null;
+            const pt=pag?pag.querySelector('.button-text'):null;
+            if(isAnimating){if(pi)pi.className='fas fa-stop';if(pt)pt.textContent='עצור';playMovieButton.title='עצור';}
+            else{if(pi)pi.className='fas fa-play';if(pt)pt.textContent='נגן';playMovieButton.title='נגן';}
+            saveMovieButton.disabled=busy||animationFrames.length===0||(animationFrames.length===1&&(!animationFrames[0]||animationFrames[0].length===0));
+            loadMovieInput.disabled=busy;
+            exportButton.disabled=busy||animationFrames.length<2;
+            drawingToolsBar.classList.toggle('hidden-bar',isAnimating);
+            updateUndoRedoButtons();
+            updateStatusBar();
+        }
+
+        // --- Rehydrate ---
+        function rehydrateFrameData(loadedFrames){
+            return loadedFrames.map(frame=>frame.map(seq=>{
+                const ra=seq.anchors.map(a=>({...a}));
+                const rs=seq.segments.map(seg=>{
+                    let p0=null,p1=null;
+                    if(seg.p0_obj&&seg.p0_obj.x!==undefined)p0=ra.find(a=>a.x===seg.p0_obj.x&&a.y===seg.p0_obj.y);
+                    if(seg.p1_obj&&seg.p1_obj.x!==undefined)p1=ra.find(a=>a.x===seg.p1_obj.x&&a.y===seg.p1_obj.y);
+                    return{...seg,p0_obj:p0||seg.p0_obj,p1_obj:p1||seg.p1_obj};
+                });
+                return{...seq,anchors:ra,segments:rs,color:seq.color||DEFAULT_CURVE_COLOR,strokeWidth:seq.strokeWidth||2.5};
+            }));
+        }
+
+        // --- Timeline ---
+        function getFrameBoundingBox(seqs){
+            if(!seqs||seqs.length===0)return null;
+            let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,has=false;
+            seqs.forEach(seq=>{
+                if(seq.anchors&&seq.anchors.length>0){has=true;seq.anchors.forEach(p=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);});}
+                if(seq.segments)seq.segments.forEach(seg=>[seg.cp1,seg.cp2].forEach(p=>{if(p){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}}));
+            });
+            if(!has)return null;
+            const pad=20;
+            return{minX:minX-pad,minY:minY-pad,maxX:maxX+pad,maxY:maxY+pad,width:(maxX-minX)+2*pad,height:(maxY-minY)+2*pad};
+        }
+        function drawSingleSeqForTimeline(tc,seq,lineWidth){
+            const color=seq.color||DEFAULT_CURVE_COLOR;
+            if(seq.segments&&seq.segments.length>0){
+                tc.strokeStyle=color;tc.lineWidth=lineWidth;tc.beginPath();
+                seq.segments.forEach(s=>{if(!s.p0_obj||!s.p1_obj)return;tc.moveTo(s.p0_obj.x,s.p0_obj.y);tc.bezierCurveTo(s.cp1.x,s.cp1.y,s.cp2.x,s.cp2.y,s.p1_obj.x,s.p1_obj.y);});
+                tc.stroke();
+            }
+        }
+        // Union bbox of all frames — thumbnails share one scale so motion is visible
+        function getGlobalBoundingBox(){
+            let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,has=false;
+            animationFrames.forEach(f=>{
+                const b=getFrameBoundingBox(f);
+                if(!b)return;
+                has=true;
+                minX=Math.min(minX,b.minX);minY=Math.min(minY,b.minY);
+                maxX=Math.max(maxX,b.maxX);maxY=Math.max(maxY,b.maxY);
+            });
+            if(!has)return null;
+            return{minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
+        }
+        function drawFrameOnTimelineCanvas(frameData,tlCanvas,bbox){
+            const tc=tlCanvas.getContext('2d'),tw=tlCanvas.width,th=tlCanvas.height;
+            tc.clearRect(0,0,tw,th);
+            if(!frameData||frameData.length===0){tc.fillStyle='#f8fafc';tc.fillRect(0,0,tw,th);return;}
+            if(bbox===undefined)bbox=getGlobalBoundingBox();
+            tc.save();
+            if(bbox&&bbox.width>0&&bbox.height>0){
+                const sf=Math.min(tw/bbox.width,th/bbox.height)*0.9;
+                tc.translate((tw-bbox.width*sf)/2-bbox.minX*sf,(th-bbox.height*sf)/2-bbox.minY*sf);
+                tc.scale(sf,sf);
+                frameData.forEach(seq=>drawSingleSeqForTimeline(tc,seq,1.5/sf));
+            } else {
+                frameData.forEach(seq=>drawSingleSeqForTimeline(tc,seq,1.5));
+            }
+            tc.restore();
+        }
+        function updateTimelineDisplay(){
+            timelineContainer.innerHTML='';
+            const bbox=getGlobalBoundingBox();
+            animationFrames.forEach((frameData,index)=>{
+                const wrap=document.createElement('div');
+                wrap.classList.add('timeline-frame-wrapper');
+                wrap.draggable=true;
+                const tlCanvas=document.createElement('canvas');
+                tlCanvas.width=TIMELINE_CANVAS_WIDTH;tlCanvas.height=TIMELINE_CANVAS_HEIGHT;
+                tlCanvas.classList.add('timeline-frame-canvas');
+                tlCanvas.dataset.frameIndex=index;
+                wrap.addEventListener('click',e=>{e.stopPropagation();gotoFrame(index);});
+                // Hover actions: duplicate / delete
+                const actions=document.createElement('div');
+                actions.className='thumb-actions';
+                const dupBtn=document.createElement('button');
+                dupBtn.className='thumb-btn';dupBtn.title='שכפל פריים';
+                dupBtn.innerHTML='<i class="fas fa-clone"></i>';
+                dupBtn.addEventListener('click',e=>{e.stopPropagation();duplicateFrameAt(index);});
+                actions.appendChild(dupBtn);
+                if(animationFrames.length>1){
+                    const delBtn=document.createElement('button');
+                    delBtn.className='thumb-btn thumb-del';delBtn.title='מחק פריים';
+                    delBtn.innerHTML='<i class="fas fa-times"></i>';
+                    delBtn.addEventListener('click',e=>{e.stopPropagation();deleteFrameAt(index);});
+                    actions.appendChild(delBtn);
+                }
+                // Drag to reorder
+                wrap.addEventListener('dragstart',e=>{
+                    e.dataTransfer.setData('text/plain',String(index));
+                    e.dataTransfer.effectAllowed='move';
+                    wrap.classList.add('dragging');
+                });
+                wrap.addEventListener('dragend',()=>wrap.classList.remove('dragging'));
+                wrap.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';wrap.classList.add('drag-over');});
+                wrap.addEventListener('dragleave',()=>wrap.classList.remove('drag-over'));
+                wrap.addEventListener('drop',e=>{
+                    e.preventDefault();wrap.classList.remove('drag-over');
+                    const from=parseInt(e.dataTransfer.getData('text/plain'),10);
+                    if(isNaN(from)||from===index)return;
+                    saveStateForUndo();
+                    const[moved]=animationFrames.splice(from,1);
+                    animationFrames.splice(index,0,moved);
+                    currentFrameIndex=index;
+                    updateFrameUI();redrawCanvas();updateTimelineDisplay();
+                });
+                const lbl=document.createElement('div');
+                lbl.classList.add('timeline-frame-label');
+                lbl.textContent=index+1;
+                wrap.appendChild(tlCanvas);wrap.appendChild(actions);wrap.appendChild(lbl);
+                timelineContainer.appendChild(wrap);
+                drawFrameOnTimelineCanvas(frameData,tlCanvas,bbox);
+            });
+            highlightCurrentTimelineFrame();
+        }
+        function redrawSingleTimelineFrame(index){
+            if(index<0||index>=animationFrames.length)return;
+            const tc=timelineContainer.querySelector(`.timeline-frame-canvas[data-frame-index="${index}"]`);
+            if(tc)drawFrameOnTimelineCanvas(animationFrames[index],tc);
+        }
+        function highlightCurrentTimelineFrame(){
+            const canvases=timelineContainer.querySelectorAll('.timeline-frame-canvas');
+            const hi=isAnimating?(anim_sourceFrameIdx!==undefined?anim_sourceFrameIdx:currentFrameIndex):currentFrameIndex;
+            canvases.forEach(c=>c.classList.toggle('active-timeline-frame',parseInt(c.dataset.frameIndex)===hi));
+        }
+
+        // --- Draw canvas ---
+        function drawCurveSequence(sequences, defaultColor, defaultLineWidth, drawEditPoints=false, forceColor=false){
+            sequences.forEach(seq=>{
+                const seqColor=forceColor?defaultColor:(seq.color||defaultColor);
+                const seqW=forceColor?defaultLineWidth:(seq.strokeWidth||defaultLineWidth);
+                const isSelected=!isAnimating&&isEditModeActive&&!forceColor&&seq.id===selectedSequenceId;
+
+                const drawPath=(lw,style,alpha=1)=>{
+                    if(!seq.segments||seq.segments.length===0)return;
+                    ctx.save();
+                    ctx.strokeStyle=style;ctx.lineWidth=lw/scaleFactor;ctx.globalAlpha=alpha;
+                    ctx.beginPath();
+                    seq.segments.forEach(sd=>{if(!sd.p0_obj||!sd.p1_obj)return;ctx.moveTo(sd.p0_obj.x,sd.p0_obj.y);ctx.bezierCurveTo(sd.cp1.x,sd.cp1.y,sd.cp2.x,sd.cp2.y,sd.p1_obj.x,sd.p1_obj.y);});
+                    ctx.stroke();ctx.restore();
+                };
+
+                if(isSelected){drawPath(seqW+10,seqColor,0.18);drawPath(seqW+2,seqColor,0.9);}
+                else drawPath(seqW,seqColor);
+
+                if(drawEditPoints){
+                    let show=isAnimating||(isEditModeActive&&seq.showAnchorsInEdit);
+                    if(show){
+                        const ar=VISUAL_ANCHOR_RADIUS_ON_SCREEN/scaleFactor;
+                        const cr=VISUAL_CONTROL_RADIUS_ON_SCREEN/scaleFactor;
+                        if(seq.anchors)seq.anchors.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,ar,0,2*Math.PI);ctx.fillStyle=EDIT_ANCHOR_POINT_COLOR;ctx.fill();});
+                        if(seq.segments){
+                            ctx.save();ctx.strokeStyle=HELPER_LINE_COLOR;ctx.lineWidth=1/scaleFactor;
+                            seq.segments.forEach(sd=>{
+                                if(!sd.p0_obj||!sd.p1_obj)return;
+                                ctx.beginPath();ctx.moveTo(sd.p0_obj.x,sd.p0_obj.y);ctx.lineTo(sd.cp1.x,sd.cp1.y);ctx.stroke();
+                                ctx.beginPath();ctx.arc(sd.cp1.x,sd.cp1.y,cr,0,2*Math.PI);ctx.fillStyle=EDIT_CONTROL_POINT_COLOR;ctx.fill();
+                                ctx.beginPath();ctx.moveTo(sd.p1_obj.x,sd.p1_obj.y);ctx.lineTo(sd.cp2.x,sd.cp2.y);ctx.stroke();
+                                ctx.beginPath();ctx.arc(sd.cp2.x,sd.cp2.y,cr,0,2*Math.PI);ctx.fillStyle=EDIT_CONTROL_POINT_COLOR;ctx.fill();
+                            });
+                            ctx.restore();
+                        }
+                    }
+                }
+            });
+        }
+
+        function redrawCanvas(){
+            ctx.setTransform(1,0,0,1,0,0);
+            ctx.fillStyle='#fff';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            ctx.save();ctx.translate(originX,originY);ctx.scale(scaleFactor,scaleFactor);
+            if(isAnimating){
+                drawCurveSequence(anim_currentInterpolatedSequences,DEFAULT_CURVE_COLOR,2.5,showControlsCheckbox.checked);
+            } else {
+                if(onionShowPrev&&currentFrameIndex>0&&animationFrames[currentFrameIndex-1])
+                    drawCurveSequence(animationFrames[currentFrameIndex-1],`rgba(239,68,68,${onionOpacity})`,2,false,true);
+                if(onionShowNext&&currentFrameIndex<animationFrames.length-1&&animationFrames[currentFrameIndex+1])
+                    drawCurveSequence(animationFrames[currentFrameIndex+1],`rgba(16,185,129,${onionOpacity})`,2,false,true);
+                if(animationFrames[currentFrameIndex])
+                    drawCurveSequence(animationFrames[currentFrameIndex],DEFAULT_CURVE_COLOR,2.5,true);
+                // Active curve (being drawn)
+                if(isDrawingMode&&activeCurve.segments&&activeCurve.segments.length>0){
+                    ctx.strokeStyle=currentDrawColor;ctx.lineWidth=currentDrawStrokeWidth/scaleFactor;
+                    ctx.beginPath();
+                    activeCurve.segments.forEach(seg=>{if(!seg.p0_obj||!seg.p1_obj)return;ctx.moveTo(seg.p0_obj.x,seg.p0_obj.y);ctx.bezierCurveTo(seg.cp1.x,seg.cp1.y,seg.cp2.x,seg.cp2.y,seg.p1_obj.x,seg.p1_obj.y);});
+                    ctx.stroke();
+                }
+                if(isDrawingMode&&activeCurve.anchors){
+                    const ar=VISUAL_ANCHOR_RADIUS_ON_SCREEN/scaleFactor;
+                    activeCurve.anchors.forEach((p,i)=>{
+                        ctx.beginPath();ctx.arc(p.x,p.y,ar,0,2*Math.PI);
+                        ctx.fillStyle=(i===0)?DRAW_MODE_FIRST_ANCHOR_COLOR:DRAW_MODE_OTHER_ANCHORS_COLOR;
+                        ctx.fill();
+                    });
+                    // Close curve indicator
+                    if(isClosingCurve&&activeCurve.anchors.length>0){
+                        const fp=activeCurve.anchors[0];
+                        ctx.save();
+                        ctx.beginPath();ctx.arc(fp.x,fp.y,(ar+4),0,2*Math.PI);
+                        ctx.strokeStyle=DRAW_MODE_FIRST_ANCHOR_COLOR;ctx.lineWidth=1.5/scaleFactor;
+                        ctx.setLineDash([3/scaleFactor,3/scaleFactor]);ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        // --- Canvas sizing (responsive + HiDPI) ---
+        function resizeCanvas(){
+            dpr=window.devicePixelRatio||1;
+            cssW=Math.max(600,Math.min(window.innerWidth-40,1400));
+            cssH=Math.max(380,window.innerHeight-330);
+            canvas.style.width=cssW+'px';
+            canvas.style.height=cssH+'px';
+            canvas.width=Math.round(cssW*dpr);
+            canvas.height=Math.round(cssH*dpr);
+            statusBar.style.maxWidth=cssW+'px';
+            timelineContainer.style.maxWidth=cssW+'px';
+            redrawCanvas();
+        }
+        window.addEventListener('resize',resizeCanvas);
+
+        // --- Mouse helpers (CSS-pixel coordinates) ---
+        function getMouseCanvasPos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+        function getMouseWorldPos(e){const c=getMouseCanvasPos(e);return{x:(c.x-originX)/scaleFactor,y:(c.y-originY)/scaleFactor};}
+        function getPointOnBezier(p0,cp1,cp2,p1,t){const mt=1-t,mt2=mt*mt,mt3=mt2*mt,t2=t*t,t3=t2*t;return{x:mt3*p0.x+3*mt2*t*cp1.x+3*mt*t2*cp2.x+t3*p1.x,y:mt3*p0.y+3*mt2*t*cp1.y+3*mt*t2*cp2.y+t3*p1.y};}
+        function isPointNearBezier(mp,p0,cp1,cp2,p1,thr){for(let i=0;i<=20;i++){if(vecLength(vecSub(mp,getPointOnBezier(p0,cp1,cp2,p1,i/20)))<thr)return true;}return false;}
+
+        // --- Merge (applied per frame, using each frame's own coordinates) ---
+        function mergeAndReplaceSequences(curFrame,seqA,dAIdx,seqB,tBIdx){
+            saveStateForUndo();
+            const as=dAIdx===0,bs=tBIdx===0;
+            const newId='merged_'+Date.now();
+            let ok=false;
+            animationFrames.forEach((frame,fi)=>{
+                const sA=frame.find(s=>s.id===seqA.id),sB=frame.find(s=>s.id===seqB.id);
+                if(!sA||!sB)return;
+                const aA=[...sA.anchors],aB=[...sB.anchors];
+                let fa;
+                if(!as&&bs)fa=[...aA,...aB.slice(1)];
+                else if(as&&!bs)fa=[...aB.reverse(),...aA.slice(1)];
+                else if(as&&bs)fa=[...aA.reverse(),...aB.slice(1)];
+                else fa=[...aA,...aB.reverse().slice(1)];
+                if(fa.length<2)return;
+                const iA=frame.indexOf(sA);if(iA>-1)frame.splice(iA,1);
+                const iB=frame.indexOf(sB);if(iB>-1)frame.splice(iB,1);
+                frame.push({id:newId,anchors:fa,segments:calculateAllBezierSegments(fa,TENSION),showAnchorsInEdit:fi===currentFrameIndex,color:sA.color||currentDrawColor,strokeWidth:sA.strokeWidth||currentDrawStrokeWidth});
+                ok=true;
+            });
+            if(ok)updateTimelineDisplay();
+            return ok;
+        }
+
+        // --- Interpolation ---
+        function interpolateSequences(seqsA,seqsB,t){
+            if(!seqsA||!seqsB||seqsA.length!==seqsB.length)return seqsA?cloneSingleFrame(seqsA):[];
+            return seqsA.map((sA,si)=>{
+                const sB=seqsB.find(s=>s.id===sA.id)||seqsB[si];
+                if(!sB||sA.anchors.length!==sB.anchors.length||sA.segments.length!==sB.segments.length)return cloneSingleSequence(sA);
+                const ia=sA.anchors.map((a,ai)=>interpolatePoint(a,sB.anchors[ai],t));
+                const is2=sA.segments.map((sg,sgi)=>{
+                    const sgB=sB.segments[sgi];
+                    const p0i=sA.anchors.indexOf(sg.p0_obj),p1i=sA.anchors.indexOf(sg.p1_obj);
+                    if(!sgB||p0i===-1||p1i===-1)return{p0_obj:ia[p0i]||sg.p0_obj,cp1:{...sg.cp1},cp2:{...sg.cp2},p1_obj:ia[p1i]||sg.p1_obj};
+                    return{p0_obj:ia[p0i],cp1:interpolatePoint(sg.cp1,sgB.cp1,t),cp2:interpolatePoint(sg.cp2,sgB.cp2,t),p1_obj:ia[p1i]};
+                });
+                return{id:sA.id,anchors:ia,segments:is2,showAnchorsInEdit:false,color:sA.color,strokeWidth:sA.strokeWidth};
+            });
+        }
+
+        // --- Animation ---
+        function animationLoop(timestamp){
+            if(!isAnimating)return;
+            if(!anim_startTime)anim_startTime=timestamp;
+            let t=(timestamp-anim_startTime)/animDuration;
+            if(t>=1){
+                t=1;
+                anim_currentInterpolatedSequences=animationFrames[anim_targetFrameIdx]?cloneSingleFrame(animationFrames[anim_targetFrameIdx]):cloneSingleFrame(animationFrames[anim_sourceFrameIdx]||[]);
+                redrawCanvas();
+                anim_sourceFrameIdx=anim_targetFrameIdx;anim_targetFrameIdx++;anim_startTime=timestamp;
+                if(anim_targetFrameIdx>=animationFrames.length){
+                    if(animationFrames.length<2){stopAnimation();return;}
+                    if(loopSeamless){anim_targetFrameIdx=0;}
+                    else{anim_sourceFrameIdx=0;anim_targetFrameIdx=1;}
+                }
+                if(!animationFrames[anim_sourceFrameIdx]||(animationFrames.length>1&&!animationFrames[anim_targetFrameIdx])){stopAnimation();return;}
+                t=0;
+            }
+            const src=animationFrames[anim_sourceFrameIdx],tgt=animationFrames[anim_targetFrameIdx];
+            const te=(EASINGS[easingName]||EASINGS.linear)(Math.min(1,Math.max(0,t)));
+            anim_currentInterpolatedSequences=(!src||!tgt)?cloneSingleFrame(src||[]):interpolateSequences(src,tgt,te);
+            redrawCanvas();highlightCurrentTimelineFrame();
+            animationRequestID=requestAnimationFrame(animationLoop);
+        }
+        function startAnimation(){
+            if(animationFrames.length<2)return;
+            saveStateForUndo();
+            if(isDrawingMode&&activeCurve.anchors.length>0)finalizeActiveCurve('fin_'+Date.now());
+            isAnimating=true;isEditModeActive=false;selectedSequenceId=null;
+            anim_sourceFrameIdx=0;anim_targetFrameIdx=1;
+            if(!animationFrames[0]||!animationFrames[1]){stopAnimation();return;}
+            anim_startTime=null;anim_currentInterpolatedSequences=cloneSingleFrame(animationFrames[0]);
+            updateFrameUI();animationRequestID=requestAnimationFrame(animationLoop);
+        }
+        function stopAnimation(){
+            isAnimating=false;cancelAnimationFrame(animationRequestID);
+            currentFrameIndex=anim_sourceFrameIdx!==undefined?anim_sourceFrameIdx:currentFrameIndex;
+            anim_currentInterpolatedSequences=[];
+            updateFrameUI();redrawCanvas();highlightCurrentTimelineFrame();
+        }
+
+        // --- Export WebM ---
+        function exportWebM(){
+            if(animationFrames.length<2){showModal('צריך לפחות 2 פריימים לייצוא.','info');return;}
+            if(!window.MediaRecorder||!canvas.captureStream){showModal('הדפדפן אינו תומך בייצוא וידאו.','info');return;}
+            if(isExporting)return;
+            isExporting=true;
+            recordingBadge.classList.add('visible');
+            // Start animation internally
+            isAnimating=true;isEditModeActive=false;
+            anim_sourceFrameIdx=0;anim_targetFrameIdx=1;
+            anim_startTime=null;anim_currentInterpolatedSequences=cloneSingleFrame(animationFrames[0]);
+            updateFrameUI();
+            const stream=canvas.captureStream(30);
+            const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
+            const recorder=new MediaRecorder(stream,{mimeType});
+            const chunks=[];
+            recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+            recorder.onstop=()=>{
+                isExporting=false;recordingBadge.classList.remove('visible');
+                stopAnimation();
+                const blob=new Blob(chunks,{type:'video/webm'});
+                const url=URL.createObjectURL(blob);
+                const a=document.createElement('a');a.href=url;a.download='animation.webm';
+                document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+            };
+            recorder.start();
+            animationRequestID=requestAnimationFrame(animationLoop);
+            const cycleMs=(loopSeamless?animationFrames.length:animationFrames.length-1)*animDuration;
+            setTimeout(()=>{if(recorder.state==='recording')recorder.stop();},cycleMs+400);
+        }
+
+        // --- Event Listeners ---
+        playMovieButton.addEventListener('click',()=>{if(isAnimating)stopAnimation();else startAnimation();});
+        exportButton.addEventListener('click',exportWebM);
+        deleteFrameButton.addEventListener('click',deleteCurrentFrame);
+
+        function handleFrameNavigation(fullUpdate=true){
+            saveStateForUndo();
+            const seqs=animationFrames[currentFrameIndex];
+            if(seqs)seqs.forEach(s=>s.showAnchorsInEdit=isEditModeActive);
+            updateFrameUI();redrawCanvas();
+            if(fullUpdate)updateTimelineDisplay();else highlightCurrentTimelineFrame();
+        }
+
+        // Finalize the curve being drawn: add to current frame and append a clone
+        // to every other frame WITHOUT touching their existing sequences.
+        function finalizeActiveCurve(id,closed=false){
+            if(activeCurve.anchors.length<2){
+                activeCurve={id:'active_fresh_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+                isDrawingMode=false;isClosingCurve=false;
+                return;
+            }
+            let anchors=[...activeCurve.anchors];
+            let segments=activeCurve.segments;
+            if(closed){
+                anchors=[...activeCurve.anchors,{...activeCurve.anchors[0]}];
+                segments=calculateAllBezierSegments(anchors,TENSION);
+            }
+            const seq={id,anchors,segments,showAnchorsInEdit:isEditModeActive,color:activeCurve.color||currentDrawColor,strokeWidth:activeCurve.strokeWidth||currentDrawStrokeWidth};
+            animationFrames[currentFrameIndex].push(seq);
+            animationFrames.forEach((frame,i)=>{
+                if(i===currentFrameIndex)return;
+                const c=cloneSingleSequence(seq);
+                c.showAnchorsInEdit=false;
+                frame.push(c);
+            });
+            activeCurve={id:'active_fresh_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+            isDrawingMode=false;isClosingCurve=false;
+            updateTimelineDisplay();
+        }
+
+        addFrameButton.addEventListener('click',()=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            saveStateForUndo();
+            if(isDrawingMode&&activeCurve.anchors.length>0)finalizeActiveCurve('af_'+Date.now());
+            const ni=currentFrameIndex+1;
+            animationFrames.splice(ni,0,cloneSingleFrame(animationFrames[currentFrameIndex]||[]));
+            currentFrameIndex=ni;isEditModeActive=true;
+            if(animationFrames[currentFrameIndex])animationFrames[currentFrameIndex].forEach(s=>s.showAnchorsInEdit=true);
+            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        });
+        prevFrameButton.addEventListener('click',()=>{
+            if(!(isAnimating&&draggedPointInfo===null))gotoFrame(currentFrameIndex-1);
+        });
+        nextFrameButton.addEventListener('click',()=>{
+            if(!(isAnimating&&draggedPointInfo===null))gotoFrame(currentFrameIndex+1);
+        });
+        editButton.addEventListener('click',()=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            saveStateForUndo();
+            isEditModeActive=!isEditModeActive;
+            const seqs=animationFrames[currentFrameIndex];
+            if(isEditModeActive){
+                if(isDrawingMode&&activeCurve.anchors.length>1)finalizeActiveCurve('et_'+Date.now());
+                isDrawingMode=false;
+                if(seqs)seqs.forEach(s=>s.showAnchorsInEdit=true);
+            } else {
+                if(seqs)seqs.forEach(s=>s.showAnchorsInEdit=false);
+                isDragging=false;draggedPointInfo=null;selectedSequenceId=null;
+            }
+            updateFrameUI();redrawCanvas();redrawSingleTimelineFrame(currentFrameIndex);highlightCurrentTimelineFrame();
+        });
+
+        canvas.addEventListener('mousedown',e=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            // Pan
+            if(isSpaceHeld){
+                isPanning=true;panStartCanvasPos=getMouseCanvasPos(e);
+                canvas.style.cursor='grabbing';return;
+            }
+            const mw=getMouseWorldPos(e);
+            const phr=HIT_RADIUS_ON_SCREEN/scaleFactor;
+            const chr=CURVE_HIT_THRESHOLD_ON_SCREEN/scaleFactor;
+            const seqs=animationFrames[currentFrameIndex];
+
+            if(isEditModeActive&&seqs){
+                let hit=false;
+                // Check anchors + control points
+                for(let si=seqs.length-1;si>=0;si--){
+                    const seq=seqs[si];if(!seq.showAnchorsInEdit)continue;
+                    for(let i=0;i<seq.anchors.length;i++){
+                        if(vecLength(vecSub(mw,seq.anchors[i]))<phr){
+                            if(e.altKey){
+                                saveStateForUndo();
+                                deleteAnchorAcrossFrames(seq.id,i);
+                                updateFrameUI();redrawCanvas();updateTimelineDisplay();
+                                return;
+                            }
+                            saveStateForUndo();isDragging=true;dragMoved=false;dragStartCanvasPos=getMouseCanvasPos(e);
+                            draggedPointInfo={type:'anchor',seqId:seq.id,anchorIndex:i,pointObject:seq.anchors[i],cp2_incoming_offset:null,cp1_outgoing_offset:null};
+                            if(i>0&&seq.segments&&seq.segments[i-1])draggedPointInfo.cp2_incoming_offset=vecSub(seq.segments[i-1].cp2,seq.anchors[i]);
+                            if(i<seq.anchors.length-1&&seq.segments&&seq.segments[i])draggedPointInfo.cp1_outgoing_offset=vecSub(seq.segments[i].cp1,seq.anchors[i]);
+                            canvas.style.cursor='grabbing';hit=true;break;
+                        }
+                    }
+                    if(hit)break;
+                    if(seq.segments){
+                        for(let i=0;i<seq.segments.length;i++){
+                            const sg=seq.segments[i];
+                            if(vecLength(vecSub(mw,sg.cp1))<phr){saveStateForUndo();isDragging=true;dragMoved=false;dragStartCanvasPos=getMouseCanvasPos(e);draggedPointInfo={type:'control',seqId:seq.id,segmentIndex:i,pointType:'cp1',pointObject:sg.cp1};canvas.style.cursor='grabbing';hit=true;break;}
+                            if(vecLength(vecSub(mw,sg.cp2))<phr){saveStateForUndo();isDragging=true;dragMoved=false;dragStartCanvasPos=getMouseCanvasPos(e);draggedPointInfo={type:'control',seqId:seq.id,segmentIndex:i,pointType:'cp2',pointObject:sg.cp2};canvas.style.cursor='grabbing';hit=true;break;}
+                        }
+                    }
+                    if(hit)break;
+                }
+                if(hit)return;
+                // Check sequence body
+                let bodyHit=false;
+                for(let si=seqs.length-1;si>=0;si--){
+                    const seq=seqs[si];if(!seq.showAnchorsInEdit||!seq.segments)continue;
+                    for(const sg of seq.segments){
+                        if(!sg.p0_obj||!sg.p1_obj)continue;
+                        if(isPointNearBezier(mw,sg.p0_obj,sg.cp1,sg.cp2,sg.p1_obj,chr)){
+                            saveStateForUndo();isDragging=true;dragMoved=false;dragStartCanvasPos=getMouseCanvasPos(e);
+                            draggedPointInfo={type:'sequence',seqId:seq.id,initialMousePos:{...mw}};
+                            canvas.style.cursor='move';bodyHit=true;break;
+                        }
+                    }
+                    if(bodyHit)break;
+                }
+                if(!bodyHit){selectedSequenceId=null;updateStatusBar();redrawCanvas();}
+            } else if(!isEditModeActive){
+                saveStateForUndo();
+                // Close curve check
+                if(isDrawingMode&&activeCurve.anchors.length>=3){
+                    const closeR=HIT_RADIUS_ON_SCREEN*1.8/scaleFactor;
+                    if(vecLength(vecSub(mw,activeCurve.anchors[0]))<closeR){
+                        finalizeActiveCurve('closed_'+Date.now(),true);
+                        updateFrameUI();redrawCanvas();return;
+                    }
+                }
+                if(!isDrawingMode){
+                    isDrawingMode=true;
+                    activeCurve={id:'active_drawing_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+                    updateStatusBar();
+                }
+                activeCurve.anchors.push({x:mw.x,y:mw.y});
+                if(activeCurve.anchors.length>=2)activeCurve.segments=calculateAllBezierSegments(activeCurve.anchors,TENSION);
+                redrawCanvas();
+            }
+        });
+
+        canvas.addEventListener('mousemove',e=>{
+            if(isAnimating&&draggedPointInfo===null&&!isEditModeActive&&!isPanning)return;
+            const mw=getMouseWorldPos(e);
+            const phr=HIT_RADIUS_ON_SCREEN/scaleFactor;
+            const chr=CURVE_HIT_THRESHOLD_ON_SCREEN/scaleFactor;
+            const seqs=animationFrames[currentFrameIndex];
+
+            // Pan
+            if(isPanning&&panStartCanvasPos){
+                const cur=getMouseCanvasPos(e);
+                originX+=cur.x-panStartCanvasPos.x;originY+=cur.y-panStartCanvasPos.y;
+                panStartCanvasPos=cur;redrawCanvas();return;
+            }
+
+            if(isDragging&&draggedPointInfo&&seqs){
+                // Track if moved
+                if(!dragMoved&&dragStartCanvasPos){
+                    const cur=getMouseCanvasPos(e);
+                    if(Math.hypot(cur.x-dragStartCanvasPos.x,cur.y-dragStartCanvasPos.y)>3)dragMoved=true;
+                }
+                const tgt=seqs.find(s=>s.id===draggedPointInfo.seqId);
+                if(!tgt){isDragging=false;draggedPointInfo=null;return;}
+                if(draggedPointInfo.type==='anchor'){
+                    draggedPointInfo.pointObject.x=mw.x;draggedPointInfo.pointObject.y=mw.y;
+                    const ai=draggedPointInfo.anchorIndex;
+                    if(draggedPointInfo.cp2_incoming_offset&&ai>0&&tgt.segments&&tgt.segments[ai-1]){const np=vecAdd(draggedPointInfo.pointObject,draggedPointInfo.cp2_incoming_offset);tgt.segments[ai-1].cp2.x=np.x;tgt.segments[ai-1].cp2.y=np.y;}
+                    if(draggedPointInfo.cp1_outgoing_offset&&ai<tgt.anchors.length-1&&tgt.segments&&tgt.segments[ai]){const np=vecAdd(draggedPointInfo.pointObject,draggedPointInfo.cp1_outgoing_offset);tgt.segments[ai].cp1.x=np.x;tgt.segments[ai].cp1.y=np.y;}
+                } else if(draggedPointInfo.type==='control'){
+                    draggedPointInfo.pointObject.x=mw.x;draggedPointInfo.pointObject.y=mw.y;
+                    const si=draggedPointInfo.segmentIndex,pt=draggedPointInfo.pointType;
+                    if(pt==='cp1'&&si>0&&tgt.anchors[si]){const pv=tgt.anchors[si],dc=tgt.segments[si].cp1;tgt.segments[si-1].cp2=vecSub(vecScale(pv,2),dc);}
+                    else if(pt==='cp2'&&si<tgt.segments.length-1&&tgt.anchors[si+1]){const pv=tgt.anchors[si+1],dc=tgt.segments[si].cp2;tgt.segments[si+1].cp1=vecSub(vecScale(pv,2),dc);}
+                } else if(draggedPointInfo.type==='sequence'){
+                    const d=vecSub(mw,draggedPointInfo.initialMousePos);
+                    tgt.anchors.forEach(a=>{a.x+=d.x;a.y+=d.y;});
+                    tgt.segments.forEach(sg=>{sg.cp1.x+=d.x;sg.cp1.y+=d.y;sg.cp2.x+=d.x;sg.cp2.y+=d.y;});
+                    draggedPointInfo.initialMousePos={...mw};
+                }
+                redrawCanvas();
+            } else if(isEditModeActive&&seqs){
+                let cur='default';
+                for(const seq of seqs){
+                    if(!seq.showAnchorsInEdit)continue;
+                    for(const a of seq.anchors){if(vecLength(vecSub(mw,a))<phr){cur='grab';break;}}
+                    if(cur!=='default')break;
+                    if(seq.segments){for(const sg of seq.segments){if(vecLength(vecSub(mw,sg.cp1))<phr||vecLength(vecSub(mw,sg.cp2))<phr){cur='grab';break;}}}
+                    if(cur!=='default')break;
+                    if(seq.segments){for(const sg of seq.segments){if(!sg.p0_obj||!sg.p1_obj)continue;if(isPointNearBezier(mw,sg.p0_obj,sg.cp1,sg.cp2,sg.p1_obj,chr)){cur='pointer';break;}}}
+                    if(cur!=='default')break;
+                }
+                canvas.style.cursor=cur;
+            } else if(!isEditModeActive){
+                if(isDrawingMode&&activeCurve.anchors.length>=3){
+                    const closeR=HIT_RADIUS_ON_SCREEN*1.8/scaleFactor;
+                    const newClosing=vecLength(vecSub(mw,activeCurve.anchors[0]))<closeR;
+                    if(newClosing!==isClosingCurve){
+                        isClosingCurve=newClosing;
+                        canvas.style.cursor=isClosingCurve?'pointer':'crosshair';
+                        updateStatusBar();redrawCanvas();
+                    }
+                } else {
+                    isClosingCurve=false;
+                    canvas.style.cursor=isSpaceHeld?'grab':'crosshair';
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup',e=>{
+            if(isPanning){isPanning=false;panStartCanvasPos=null;canvas.style.cursor=isSpaceHeld?'grab':'default';return;}
+            const seqs=animationFrames[currentFrameIndex];
+            // Sequence click-select (no drag)
+            if(isDragging&&draggedPointInfo&&draggedPointInfo.type==='sequence'&&!dragMoved){
+                selectedSequenceId=draggedPointInfo.seqId;
+                isDragging=false;draggedPointInfo=null;dragMoved=false;
+                updateFrameUI();redrawCanvas();return;
+            }
+            // Anchor drag → check merge
+            if(isDragging&&draggedPointInfo&&draggedPointInfo.type==='anchor'&&seqs){
+                const ds=seqs.find(s=>s.id===draggedPointInfo.seqId);
+                const dai=draggedPointInfo.anchorIndex;
+                if(ds&&(dai===0||dai===ds.anchors.length-1)){
+                    const dap=ds.anchors[dai];
+                    const whr=HIT_RADIUS_ON_SCREEN/scaleFactor;
+                    let merged=false;
+                    for(const other of seqs){
+                        if(other.id===ds.id||other.anchors.length===0)continue;
+                        if(vecLength(vecSub(dap,other.anchors[0]))<whr){if(mergeAndReplaceSequences(seqs,ds,dai,other,0))merged=true;break;}
+                        if(other.anchors.length>1&&vecLength(vecSub(dap,other.anchors[other.anchors.length-1]))<whr){if(mergeAndReplaceSequences(seqs,ds,dai,other,other.anchors.length-1))merged=true;break;}
+                    }
+                    if(merged){isDragging=false;draggedPointInfo=null;dragMoved=false;canvas.style.cursor='grab';redrawCanvas();updateTimelineDisplay();return;}
+                }
+            }
+            if(isDragging){redrawSingleTimelineFrame(currentFrameIndex);scheduleAutosave();}
+            isDragging=false;draggedPointInfo=null;dragMoved=false;
+            if(canvas.style.cursor==='grabbing')canvas.style.cursor=isEditModeActive?'grab':'crosshair';
+            else if(!isEditModeActive&&!isAnimating)canvas.style.cursor=isSpaceHeld?'grab':'crosshair';
+            redrawCanvas();
+        });
+
+        canvas.addEventListener('mouseleave',()=>{
+            if(isDragging){isDragging=false;draggedPointInfo=null;dragMoved=false;redrawCanvas();redrawSingleTimelineFrame(currentFrameIndex);}
+            if(isPanning){isPanning=false;panStartCanvasPos=null;}
+            if(!isAnimating)canvas.style.cursor='default';
+            if(isClosingCurve){isClosingCurve=false;updateStatusBar();redrawCanvas();}
+        });
+
+        window.addEventListener('keydown',e=>{
+            const tag=e.target&&e.target.tagName;
+            if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||tag==='BUTTON')return;
+            if(e.code==='Space'){
+                e.preventDefault();
+                if(isDrawingMode&&activeCurve.anchors.length>1&&!isEditModeActive){
+                    saveStateForUndo();
+                    finalizeActiveCurve('space_'+Date.now());
+                    updateFrameUI();redrawCanvas();
+                    return;
+                }
+                if(!isDrawingMode||activeCurve.anchors.length<=1){
+                    isSpaceHeld=true;
+                    if(!isDragging)canvas.style.cursor='grab';
+                }
+                return;
+            }
+            if(isAnimating&&draggedPointInfo===null){
+                if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();stopAnimation();}
+                return;
+            }
+            if(e.ctrlKey&&(e.key==='z'||e.key==='Z')&&!e.shiftKey){e.preventDefault();performUndo();}
+            else if(e.ctrlKey&&(e.key==='y'||((e.key==='z'||e.key==='Z')&&e.shiftKey))){e.preventDefault();performRedo();}
+            else if((e.key==='Delete'||e.key==='Backspace')&&isEditModeActive&&selectedSequenceId){
+                e.preventDefault();deleteSelectedSequence();
+            } else if(e.key==='Escape'){
+                if(selectedSequenceId){selectedSequenceId=null;updateStatusBar();redrawCanvas();}
+                else if(isDrawingMode){
+                    activeCurve={id:'active_cancel_'+Date.now(),anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+                    isDrawingMode=false;isClosingCurve=false;
+                    updateFrameUI();redrawCanvas();
+                }
+            } else if(e.key==='ArrowRight'){e.preventDefault();gotoFrame(currentFrameIndex-1);}
+            else if(e.key==='ArrowLeft'){e.preventDefault();gotoFrame(currentFrameIndex+1);}
+            else if(e.key==='Home'){e.preventDefault();gotoFrame(0);}
+            else if(e.key==='End'){e.preventDefault();gotoFrame(animationFrames.length-1);}
+            else if(e.key==='Enter'){e.preventDefault();if(animationFrames.length>=2)startAnimation();}
+        });
+
+        // Double-click on a curve in edit mode → insert an anchor point (all frames, shape-preserving)
+        canvas.addEventListener('dblclick',e=>{
+            if(!isEditModeActive||isAnimating)return;
+            const mw=getMouseWorldPos(e);
+            const hit=findNearestPointOnCurves(mw,CURVE_HIT_THRESHOLD_ON_SCREEN*1.6/scaleFactor);
+            if(!hit)return;
+            saveStateForUndo();
+            insertAnchorAcrossFrames(hit.seqId,hit.segIndex,hit.t);
+            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+        });
+
+        window.addEventListener('keyup',e=>{
+            if(e.code==='Space'){
+                isSpaceHeld=false;isPanning=false;panStartCanvasPos=null;
+                if(!isAnimating)canvas.style.cursor=isEditModeActive?'default':'crosshair';
+            }
+        });
+
+        canvas.addEventListener('wheel',e=>{
+            e.preventDefault();
+            const mc=getMouseCanvasPos(e);
+            const wx=(mc.x-originX)/scaleFactor,wy=(mc.y-originY)/scaleFactor;
+            let ns=e.deltaY<0?scaleFactor*(1+ZOOM_INTENSITY):scaleFactor/(1+ZOOM_INTENSITY);
+            ns=Math.max(MIN_SCALE,Math.min(MAX_SCALE,ns));
+            if(ns!==scaleFactor){
+                scaleFactor=ns;originX=mc.x-wx*scaleFactor;originY=mc.y-wy*scaleFactor;
+                updateZoomIndicator();redrawCanvas();
+            }
+        });
+
+        saveMovieButton.addEventListener('click',()=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            if(isDrawingMode&&activeCurve.anchors.length>0){
+                saveStateForUndo();
+                finalizeActiveCurve('save_fin_'+Date.now());
+                updateFrameUI();redrawCanvas();
+            }
+            const json=JSON.stringify({animationFrames,meta:{animDuration,easing:easingName,seamless:loopSeamless}});
+            const blob=new Blob([json],{type:'application/json'});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a');a.href=url;a.download='animation.clp';
+            document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+        });
+
+        loadMovieInput.addEventListener('change',e=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            const file=e.target.files[0];
+            if(file){
+                const reader=new FileReader();
+                reader.onload=ev=>{
+                    try{
+                        const data=JSON.parse(ev.target.result);
+                        if(data&&data.animationFrames){
+                            animationFrames=rehydrateFrameData(data.animationFrames);
+                            applyMeta(data.meta);
+                            currentFrameIndex=0;selectedSequenceId=null;isClosingCurve=false;
+                            activeCurve={id:'active_loaded',anchors:[],segments:[],showAnchorsInEdit:true,color:currentDrawColor,strokeWidth:currentDrawStrokeWidth};
+                            isDrawingMode=false;isEditModeActive=false;
+                            scaleFactor=1;originX=0;originY=0;undoStack=[];redoStack=[];
+                            saveStateForUndo();if(isAnimating)stopAnimation();
+                            updateFrameUI();redrawCanvas();updateTimelineDisplay();
+                            scheduleAutosave();
+                        } else showModal('קובץ לא תקין.','error');
+                    }catch(err){showModal('שגיאה בטעינה: '+err.message,'error');}
+                    finally{loadMovieInput.value='';}
+                };
+                reader.onerror=()=>{showModal('שגיאה בקריאת הקובץ.','error');loadMovieInput.value='';};
+                reader.readAsText(file);
+            }
+        });
+
+        clearCanvasButton.addEventListener('click',()=>{
+            if(isAnimating&&draggedPointInfo===null)return;
+            showModal('לנקות הכל ולהתחיל מחדש? (גם השמירה האוטומטית תימחק)','confirm',()=>{
+                try{localStorage.removeItem(AUTOSAVE_KEY);}catch(err){}
+                saveStateForUndo();resetApplicationToInitialState();
+            },true);
+        });
+        undoButton.addEventListener('click',performUndo);
+        redoButton.addEventListener('click',performRedo);
+
+        initializeAppOnLoad();
+    </script>
+</body>
+</html>
