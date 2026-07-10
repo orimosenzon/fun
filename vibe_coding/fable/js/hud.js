@@ -33,6 +33,7 @@ export class HUD {
       <div class="row"><span>${t('speed')}</span><b id="hud-speed">0</b><span class="u">${t('kmh')}</span></div>
       <div class="row"><span>${t('agl')}</span><b id="hud-agl">0</b><span class="u">${t('m')}</span></div>
       <div class="row"><span>${t('alt')}</span><b id="hud-alt">0</b><span class="u">${t('m')}</span></div>
+      <div class="row"><span>${t('vspd')}</span><b id="hud-vspd">0</b><span class="u">${t('ms')}</span></div>
       <div class="row small"><span id="hud-wind"></span></div>
       <div class="row small"><span id="hud-assist"></span></div>`;
 
@@ -97,6 +98,7 @@ export class HUD {
     this.$('hud-speed').textContent = Math.round(s.speedKmh);
     this.$('hud-agl').textContent = Math.max(0, s.agl).toFixed(0);
     this.$('hud-alt').textContent = s.alt.toFixed(0);
+    this.$('hud-vspd').textContent = (s.vspd > 0 ? '+' : '') + (s.vspd ?? 0).toFixed(1);
     this.$('hud-assist').textContent = s.assist ? t('assistOn') : t('assistOff');
     this.$('hud-wind').textContent = s.wind || '';
     this.$('hud-thr').style.width = (Math.min(1, s.spoolRear ?? s.throttle) * 100).toFixed(0) + '%';

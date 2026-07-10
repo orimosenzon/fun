@@ -21,6 +21,9 @@
 //     physically honest). T toggles the controller off for raw flying.
 //   - Arrow up/down command a pitch attitude (nose up / down); the controller
 //     holds it, which also sets the angle of attack of the lifting body.
+//   - The collective is normally flown by the vertical autopilot (auto-lift):
+//     the rider leans and works the throttle; the computer commands the lift
+//     nozzles so the flight path follows the nose (E / D add climb/descend).
 //
 // Aerodynamics: quadratic drag per body axis + a weathervane torque that
 // aligns the nose with the airflow (like a fin), which turns banked lift
@@ -60,6 +63,8 @@ export const TUNE = {
   vecMax: 0.26,            // rad (~15 deg), rear nozzle yaw vectoring range
   vecTau: 0.15,            // s, nozzle actuator first-order lag
   pitchRange: 1.05,        // rad (~60 deg), commanded pitch attitude at full stick
+  climbRate: 8,            // m/s, vertical speed commanded by E/D at full input
+  vyGain: 1.6,             // 1/s, auto-lift vertical-speed loop gain
 };
 
 // The three lift nozzles sit so their combined thrust line passes through the
@@ -95,6 +100,9 @@ export class BikePhysics {
     this.time = 0;                                   // sim time, drives gust noise
     this.throttle = 0;                               // rear jet COMMAND, 0..1
     this.collective = 0.5;                           // lift nozzle COMMAND, 0..1.25
+    this.vert = 0;                                   // -1..1 climb/descend command (auto-lift)
+    this.autoLift = true;                            // flight computer flies the collective
+    this.liftAeroY = 0;                              // N, last step's aero lift (world up)
     this.spoolRear = 0;                              // rear turbine actual state (first-order lag)
     this.spoolLift = 0;                              // lift turbines actual state
     this.ab = 0;                                     // afterburner actual state, 0..1
@@ -127,6 +135,8 @@ export class BikePhysics {
     this.throttle = 0;
     // low enough to rest on the pad even with ground effect
     this.collective = 0.35;
+    this.vert = 0;
+    this.liftAeroY = 0;
     this.spoolRear = 0;
     this.spoolLift = this.collective;   // idling at the resting command
     this.ab = 0;
@@ -184,6 +194,28 @@ export class BikePhysics {
     const agl = this.pos.y - groundH;
     const airFactor = clamp(1 - (this.pos.y - 500) / 400, 0.25, 1); // thin air up high
     const groundEffect = 1 + 0.35 * clamp(1 - agl / 5, 0, 1);
+
+    // --- vertical autopilot (auto-lift): the rider never flies the nozzles ---
+    // Like a drone's altitude hold, the flight computer commands the
+    // collective so vertical speed tracks a target. The target makes the bike
+    // GO WHERE THE NOSE POINTS — flight path follows the pitch attitude
+    // (hSpd * sin(pitch)) — plus a direct climb/descend command (E / D keys).
+    // Feedforward: weight minus last step's aero lift, over nozzle
+    // effectiveness (thrust * air * tilt); the spool lag smooths the rest.
+    // Manual mode (T toggles assist, or autoLift=false) restores raw control.
+    if (this.assist && this.autoLift) {
+      const upY = 1 - 2 * (q.x * q.x + q.z * q.z);   // body-up, world y component
+      const hSpd0 = Math.hypot(this.vel.x, this.vel.z);
+      if (this.grounded && this.vert <= 0.05 && hSpd0 < 4 && this.throttle < 0.15) {
+        // parked: idle the nozzles instead of fighting the ground spring
+        this.collective += (0.3 - this.collective) * Math.min(1, dt * 3);
+      } else {
+        const vyT = clamp(hSpd0 * ePitch, -28, 28) + this.vert * TUNE.climbRate;
+        const aCmd = TUNE.g + clamp((vyT - this.vel.y) * TUNE.vyGain, -14, 14);
+        const eff = TUNE.maxLift * airFactor * groundEffect * Math.max(upY, 0.3);
+        this.collective = clamp((TUNE.mass * aCmd - this.liftAeroY) / eff, 0, 1.25);
+      }
+    }
 
     // --- engine spool: thrust answers the levers through first-order lags ---
     // dS/dt = (cmd - S)/tau; rotor inertia makes spool-up slower than down,
@@ -266,12 +298,14 @@ export class BikePhysics {
     // The hull acts as a crude wing. Pitch the nose above the flight path and
     // dynamic pressure converts forward speed into body-up lift (plus induced
     // drag), so dives build speed and pull-ups swoop — real flying feel.
+    this.liftAeroY = 0;
     if (vB.z > 5) {
       const aoa = Math.atan2(-vB.y, vB.z);
       const cl = clamp(aoa * TUNE.liftSlope, -TUNE.clMax, TUNE.clMax);
       const qS = (vB.z * vB.z + vB.y * vB.y) * TUNE.liftArea;
-      _f.set(0, cl * qS, -0.35 * cl * cl * qS);
-      F.add(_f.applyQuaternion(q));
+      _f.set(0, cl * qS, -0.35 * cl * cl * qS).applyQuaternion(q);
+      this.liftAeroY = _f.y;   // remembered for the auto-lift feedforward
+      F.add(_f);
     }
 
     // --- weathervane: nose follows the airflow ---

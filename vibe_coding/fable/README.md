@@ -50,25 +50,27 @@ Then open **http://localhost:8791/**. Any static file server works equally well 
 
 ## Controls
 
+The control model is **rider-centric**: you lean your body and work the throttle grip; the flight computer flies the three lift nozzles for you (see [auto-lift](#the-physics-model-physicsjs--windjs)). The bike goes where the nose points — nose level means altitude is held automatically.
+
 **Keyboard (desktop):**
 
 | Key(s) | Action |
 |---|---|
-| `←` / `→` | Steer (fly-by-wire: commands turn *rate*, the controller banks automatically) |
-| `↓` / `↑` | Pitch (airplane-yoke convention — **down = nose up**) |
-| `W` / `S` | Throttle (rear jet) up / down |
-| `E` / `D` | Collective (lift jets) up / down |
+| `←` / `→` | Lean into the turn (fly-by-wire: commands turn *rate*, the controller banks automatically) |
+| `↑` / `↓` | Lean forward = nose down & dive · lean back = nose up & climb |
+| `W` / `S` | Throttle grip (rear jet) up / down |
+| `E` / `D` | Climb / descend (vertical-speed command — the computer works the lift nozzles) |
 | `Space` | Rear afterburner boost |
-| `Shift` | RCS pulse — center (down) nozzle |
+| `Shift` | RCS pulse — center (down) nozzle ("hop") |
 | `Z` / `X` | RCS pulse — left / right nozzle (roll) |
 | `C` | Toggle camera (chase / onboard) |
 | `R` | Reset / respawn |
-| `T` | Toggle flight assist |
+| `T` | Toggle the flight computer (manual mode: `E`/`D` become raw collective) |
 | `M` | Mute |
 | `L` | Toggle language (Hebrew ⇄ English) |
 | `H` | Toggle help panel |
 
-**Touch (mobile):** left-side virtual joystick (steer + pitch), right-side hold-buttons for throttle/collective, a big red boost button, three small pulse buttons, and a top menu for camera/assist/reset/mute/help/language. Touch mode is auto-detected via `matchMedia('(pointer: coarse)')`, or forced with `?touch=1`.
+**Touch (mobile):** left-side virtual joystick (body lean: steer + pitch), right-side hold-buttons for throttle and climb/descend, a big red boost button, three small pulse buttons, and a top menu for camera/assist/reset/mute/help/language. Touch mode is auto-detected via `matchMedia('(pointer: coarse)')`, or forced with `?touch=1`.
 
 ## Debug / URL flags
 
@@ -116,6 +118,7 @@ This is the part of the codebase worth actually reading if you want to understan
 - **Rigid body, 6 degrees of freedom.** Position + velocity in world space; orientation as a quaternion; angular momentum `L = Iω` kept in the *body* frame and evolved via Euler's rigid-body equations, including the gyroscopic `ω × Iω` term. The rotation update uses the **exact exponential map**, not a first-order Euler step — angular momentum drifts by less than 0.02° over half a second of free rotation, which the test suite checks directly.
 - **Body-frame convention — read this before touching the code:** `Y` = up, `Z` = forward. In this right-handed setup, body **`+X` is the rider's *left*** (not their right) — the opposite of the naive intuition, and a bug that shipped once already. It's documented at the top of `physics.js` for exactly that reason.
 - **Fly-by-wire steering.** The stick commands a *turn rate*, not a fixed bank angle; the flight controller derives the bank angle from coordinated-turn geometry (`φ = atan(V·ω / g)`), so steering feels consistent at any speed instead of getting twitchier as you slow down.
+- **Auto-lift (vertical autopilot).** The rider never flies the lift nozzles directly. The flight computer commands the collective so the vertical speed tracks a target of `hSpd · sin(pitch)` — i.e. **the flight path follows the nose** — plus a direct climb/descend command from `E`/`D` (±8 m/s). Feedforward is weight minus the previous step's aerodynamic lift, divided by nozzle effectiveness (max thrust × air density × ground effect × tilt); a P loop on vertical speed (`vyGain`) closes the rest, and the turbine spool lag smooths the response. On the ground with no input it idles the nozzles instead of fighting the landing-gear spring. At hover this behaves like a drone in altitude-hold: lean forward and the bike accelerates forward while altitude is kept. `T` disables it for fully manual flying.
 - **Thrust vectoring.** The rear nozzle yaws up to ±15° through a first-order actuator model (`τ = 0.15s`), giving pitch authority even while hovering, whenever there's throttle.
 - **Extended roll authority.** Roll (aileron) travel is ±60° (was ±33° in an earlier iteration); a weathervane term yields authority back to the pilot proportional to how hard they're commanding it.
 - **RCS-style pulses** (`Z` / `X` / `Shift`) fire a fixed impulse — 0.12s burn + 0.10s refractory gap — on the side/center downward nozzles, modeled on spacecraft reaction-control thrusters rather than a sustained force.
