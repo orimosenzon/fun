@@ -78,7 +78,7 @@ export function makeTouchControls(actions) {
   holdBtn('tbtn', thrBox, '▲', () => state.throttleUp = true, () => state.throttleUp = false);
   holdBtn('tbtn', thrBox, '▼', () => state.throttleDown = true, () => state.throttleDown = false);
   const colBox = el('tvert', thrCol);
-  el('tlabel', colBox).textContent = 'עילוי';
+  el('tlabel', colBox).textContent = 'גובה';
   holdBtn('tbtn', colBox, '▲', () => state.collUp = true, () => state.collUp = false);
   holdBtn('tbtn', colBox, '▼', () => state.collDown = true, () => state.collDown = false);
 

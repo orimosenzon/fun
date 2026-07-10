@@ -30,6 +30,7 @@ const boomFx = makeExplosion(scene, camera, renderer);
 const grass = makeGrass(scene);
 const animals = makeAnimals(scene);
 const phys = new BikePhysics();
+window.__phys = phys;   // debug/console access (headless tests read state here)
 const hud = new HUD();
 const audio = new JetAudio();
 
@@ -107,6 +108,7 @@ if (PARAMS.has('selftest') && touch) {
 
 if (DEMO) {
   started = true;
+  phys.autoLift = false;   // poses drive the collective directly
   setTimeout(() => hud.hideStart(), 0);
 }
 if (POSE === 'cruise') {
@@ -206,10 +208,17 @@ function applyInput(dt) {
     }
     return;
   }
-  if (keys['KeyW'] || touch?.throttleUp) phys.throttle = clamp(phys.throttle + dt * 0.6, 0, 1);
-  if (keys['KeyS'] || touch?.throttleDown) phys.throttle = clamp(phys.throttle - dt * 0.8, 0, 1);
-  if (keys['KeyE'] || touch?.collUp) phys.collective = clamp(phys.collective + dt * 0.55, 0, 1.25);
-  if (keys['KeyD'] || touch?.collDown) phys.collective = clamp(phys.collective - dt * 0.55, 0, 1.25);
+  if (keys['KeyW'] || touch?.throttleUp) phys.throttle = clamp(phys.throttle + dt * 1.1, 0, 1);
+  if (keys['KeyS'] || touch?.throttleDown) phys.throttle = clamp(phys.throttle - dt * 1.5, 0, 1);
+  // E/D: with the flight computer on they command climb/descend (the computer
+  // flies the lift nozzles); in manual mode they move the collective directly.
+  const upDown = (keys['KeyE'] || touch?.collUp ? 1 : 0) - (keys['KeyD'] || touch?.collDown ? 1 : 0);
+  if (phys.assist && phys.autoLift) {
+    phys.vert += (upDown - phys.vert) * Math.min(1, dt * 6);
+  } else {
+    phys.vert = 0;
+    if (upDown) phys.collective = clamp(phys.collective + upDown * dt * 0.55, 0, 1.25);
+  }
   const steerTarget = clamp((keys['ArrowRight'] ? 1 : 0) - (keys['ArrowLeft'] ? 1 : 0) + (touch?.steer || 0), -1, 1);
   phys.steer += (steerTarget - phys.steer) * Math.min(1, dt * 8);
   // airplane-yoke convention: pull back (arrow down / joystick down) raises the nose
@@ -419,6 +428,7 @@ function animate() {
       speedKmh: speed * 3.6,
       agl,
       alt: phys.pos.y,
+      vspd: phys.vel.y,
       throttle: phys.throttle,
       collective: phys.collective,
       spoolRear: phys.spoolRear + phys.ab * 0.2,

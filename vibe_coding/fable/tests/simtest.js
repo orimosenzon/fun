@@ -18,12 +18,18 @@ function run(phys, seconds, perStep) {
   const n = Math.round(seconds / STEP);
   for (let i = 0; i < n; i++) { if (perStep) perStep(i * STEP); phys.step(STEP); }
 }
+// legacy tests drive the collective by hand -> flight computer off
+function mk() {
+  const p = new BikePhysics();
+  p.autoLift = false;
+  return p;
+}
 
 console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
 
 // 1. Rest on pad: no input, should settle and stay put.
 {
-  const p = new BikePhysics();
+  const p = mk();
   p.collective = 0;
   run(p, 5);
   const agl = p.pos.y - terrainHeight(p.pos.x, p.pos.z);
@@ -33,7 +39,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
 
 // 2. Hover: collective at hover point should climb then roughly hold.
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 8, () => { p.collective = 0.75; });
   const upDot = new THREE.Vector3(0, 1, 0).applyQuaternion(p.quat).y;
   check('climbs with high collective', !p.crashed && p.pos.y > SPAWN.y + 5, 'y=' + p.pos.y.toFixed(1));
@@ -44,7 +50,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
 // speed. Peak speed is tracked because the stronger jet now covers enough
 // ground in 25 s to reach the world-rim mountains and scrub off speed there.
 {
-  const p = new BikePhysics();
+  const p = mk();
   // climb above the highest peaks, then cruise at the hover-balance collective
   run(p, 16, () => { p.collective = p.pos.y < SPAWN.y + 300 ? 0.9 : 0.53; });
   let vPeak = 0;
@@ -58,7 +64,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
 // 4. Steering right (screen-right). Body +X is the rider's LEFT in this frame,
 // so a screen-right turn lifts +X (x-axis .y > 0) and curves toward world -X.
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.85; p.throttle = 0.8; });
   const xBefore = p.pos.x;
   run(p, 6, () => { p.steer = 1; p.collective = 0.95; });
@@ -76,7 +82,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
   const expectedW = TUNE.pulseSide * TUNE.pulseDur * 0.75 / 48; // torque impulse / Iz
   const damp0 = TUNE.rotDamp;
   TUNE.rotDamp = 0;   // isolate the impulse from spin damping
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.75; });
   p.assist = false;
   p.firePulse('L');
@@ -85,7 +91,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
     'wz=' + p.angVel.z.toFixed(3) + ' expected=' + (-expectedW).toFixed(3));
 
   // same impulse at 3x finer steps -> same roll rate (framerate independence)
-  const p2 = new BikePhysics();
+  const p2 = mk();
   run(p2, 6, () => { p2.collective = 0.75; });
   p2.assist = false;
   p2.firePulse('L');
@@ -96,14 +102,14 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
     'coarse=' + p.angVel.z.toFixed(3) + ' fine=' + p2.angVel.z.toFixed(3));
 
   // mashing: at most ceil(T / (dur+gap)) pulses can fire in T seconds
-  const p3 = new BikePhysics();
+  const p3 = mk();
   let fired = 0;
   run(p3, 0.5, () => { if (p3.firePulse('R')) fired++; });
   const maxPulses = Math.ceil(0.5 / (TUNE.pulseDur + TUNE.pulseGap));
   check('pulse spam is rate-limited', fired > 0 && fired <= maxPulses, 'fired=' + fired + ' max=' + maxPulses);
   TUNE.rotDamp = damp0;
 
-  const p4 = new BikePhysics();
+  const p4 = mk();
   run(p4, 6, () => { p4.collective = 0.75; });
   p4.assist = false;
   p4.firePulse('R');
@@ -114,7 +120,7 @@ console.log('SPAWN:', SPAWN.toArray().map(v => v.toFixed(1)).join(', '));
 // 5b. Pitch command: nose-up must raise the nose well past 30 deg (expanded
 // range) and convert speed to climb; nose-down must drop the nose.
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.85; p.throttle = 1; });
   run(p, 8, () => { p.collective = 0.6; p.throttle = 1; });
   const y0 = p.pos.y, vy0 = p.vel.y;
@@ -135,7 +141,7 @@ function headingOf(p) {
   return Math.atan2(f.x, f.z);
 }
 function turnRateAtThrottle(thr) {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.85; p.throttle = thr; });
   run(p, 3, () => { p.throttle = thr; p.collective = 0.85; p.steer = 0.6; }); // settle into the turn
   const h0 = headingOf(p);
@@ -160,14 +166,14 @@ function turnRateAtThrottle(thr) {
 // 5d. Hover yaw via thrust vectoring: with some rear thrust the vectored
 // nozzle turns the nose even at near-zero speed; with no thrust it barely does.
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.72; });
   const h0 = headingOf(p);
   run(p, 4, () => { p.collective = 0.72; p.throttle = 0.3; p.steer = 1; });
   let d1 = headingOf(p) - h0;
   while (d1 > Math.PI) d1 -= 2 * Math.PI;
   while (d1 < -Math.PI) d1 += 2 * Math.PI;
-  const p2 = new BikePhysics();
+  const p2 = mk();
   run(p2, 6, () => { p2.collective = 0.72; });
   const g0 = headingOf(p2);
   run(p2, 4, () => { p2.collective = 0.72; p2.throttle = 0; p2.steer = 1; });
@@ -182,7 +188,7 @@ function turnRateAtThrottle(thr) {
 // 6. Center pulse adds lift along body up: from hover, one pulse kicks the
 // vertical speed by ~F*dur/m.
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, 6, () => { p.collective = 0.72; });
   const vy0 = p.vel.y;
   p.firePulse('C');
@@ -195,7 +201,7 @@ function turnRateAtThrottle(thr) {
 // 6b. Turbine spool: a throttle step reaches ~63% after one time constant and
 // converges without ever exceeding the command (first-order lag).
 {
-  const p = new BikePhysics();
+  const p = mk();
   run(p, TUNE.spoolUp, () => { p.throttle = 1; });
   check('spool reaches ~63% after tau', Math.abs(p.spoolRear - 0.632) < 0.07,
     'spool=' + p.spoolRear.toFixed(3));
@@ -209,7 +215,7 @@ function turnRateAtThrottle(thr) {
 // yaw (T.y = wx * h, wx < 0 nose-up => yaw right); without spool, almost none.
 {
   function yawFromPitch(thr) {
-    const p = new BikePhysics();
+    const p = mk();
     p.pos.y = SPAWN.y + 2500;
     p.assist = false;
     p.collective = 0;
@@ -237,7 +243,7 @@ function turnRateAtThrottle(thr) {
   const gust0 = TUNE.gust, damp0 = TUNE.rotDamp;
   TUNE.gust = 0;
   TUNE.rotDamp = 0;
-  const p = new BikePhysics();
+  const p = mk();
   p.pos.y = SPAWN.y + 3000;
   p.assist = false;
   p.collective = 0;
@@ -261,7 +267,7 @@ function turnRateAtThrottle(thr) {
 
 // 7. Free fall from height must crash.
 {
-  const p = new BikePhysics();
+  const p = mk();
   p.pos.y = SPAWN.y + 60;
   p.collective = 0;
   let crashMsg = null;
@@ -272,7 +278,7 @@ function turnRateAtThrottle(thr) {
 
 // 8. Crash auto-respawns at pad (horizontal position; may drift up on ground effect).
 {
-  const p = new BikePhysics();
+  const p = mk();
   p.pos.y = SPAWN.y + 60;
   p.collective = 0;
   run(p, 12);
@@ -283,7 +289,7 @@ function turnRateAtThrottle(thr) {
 
 // 9. Long stress flight: random-ish inputs, physics must stay finite.
 {
-  const p = new BikePhysics();
+  const p = mk();
   let t = 0;
   run(p, 60, () => {
     t += STEP;
@@ -305,7 +311,7 @@ function turnRateAtThrottle(thr) {
   const gust0 = TUNE.gust, damp0 = TUNE.rotDamp;
   TUNE.gust = 0;                           // isolate the integrator from gusts
   TUNE.rotDamp = 0;                        // anisotropic damping would rotate L physically
-  const p = new BikePhysics();
+  const p = mk();
   p.pos.y = SPAWN.y + 3000;               // far from ground
   p.collective = 0;
   p.assist = false;                        // no controller torques
@@ -351,7 +357,7 @@ function turnRateAtThrottle(thr) {
 // 12. Prevailing wind: a hovering bike drifts downwind (aero uses air-relative flow).
 {
   TUNE.windSpeed = 5;
-  const p = new BikePhysics();
+  const p = mk();
   p.pos.y = SPAWN.y + 60;
   const x0 = p.pos.x, z0 = p.pos.z;
   run(p, 15, () => { p.collective = 0.62; });
@@ -359,6 +365,60 @@ function turnRateAtThrottle(thr) {
   const drift = (p.pos.x - x0) * Wd.x + (p.pos.z - z0) * Wd.z;
   check('hovering bike drifts downwind', !p.crashed && drift > 3, 'drift=' + drift.toFixed(1) + ' m');
   TUNE.windSpeed = 0;
+}
+
+// ---- auto-lift flight computer (default mode: autoLift = true) ----
+
+// 13. Hands-off altitude hold: parked mid-air with no input, the computer
+// flies the collective so the bike neither sinks nor balloons.
+{
+  const p = new BikePhysics();
+  p.pos.y = SPAWN.y + 120;
+  run(p, 4);                       // settle the loop
+  const y0 = p.pos.y;
+  run(p, 8);
+  check('auto-lift holds altitude hands-off', !p.crashed && Math.abs(p.pos.y - y0) < 5 && Math.abs(p.vel.y) < 1.5,
+    'dy=' + (p.pos.y - y0).toFixed(1) + ' vy=' + p.vel.y.toFixed(2));
+}
+
+// 14. E/D vertical-speed command: vert=+1 climbs near climbRate, -1 descends.
+{
+  const p = new BikePhysics();
+  p.pos.y = SPAWN.y + 120;
+  run(p, 4);
+  run(p, 4, () => { p.vert = 1; });
+  check('vert=+1 climbs at ~climbRate', p.vel.y > TUNE.climbRate * 0.6 && p.vel.y < TUNE.climbRate * 1.6,
+    'vy=' + p.vel.y.toFixed(1) + ' target=' + TUNE.climbRate);
+  run(p, 5, () => { p.vert = -1; });
+  check('vert=-1 descends', p.vel.y < -TUNE.climbRate * 0.5, 'vy=' + p.vel.y.toFixed(1));
+}
+
+// 15. Flight path follows the nose: level attitude at speed = level flight;
+// a slight forward lean turns into a dive.
+{
+  const p = new BikePhysics();
+  p.pos.y = SPAWN.y + 300;
+  run(p, 4);
+  run(p, 10, () => { p.throttle = 1; });
+  check('level nose -> level flight at speed', !p.crashed && Math.abs(p.vel.y) < 3.5 && p.vel.length() > 50,
+    'vy=' + p.vel.y.toFixed(1) + ' v=' + p.vel.length().toFixed(0));
+  const y1 = p.pos.y;
+  run(p, 2.5, () => { p.throttle = 1; p.pitch = -0.25; });
+  check('slight forward lean dives', p.vel.y < -4 && p.pos.y < y1 - 5,
+    'vy=' + p.vel.y.toFixed(1) + ' dy=' + (p.pos.y - y1).toFixed(1));
+}
+
+// 16. Pad discipline: with no input the computer idles on the ground (no
+// self-takeoff); holding E lifts off and climbs.
+{
+  const p = new BikePhysics();
+  run(p, 5);
+  const aglRest = p.pos.y - terrainHeight(p.pos.x, p.pos.z);
+  check('flight computer idles on the pad', !p.crashed && aglRest < 1.2 && p.vel.length() < 0.5,
+    'agl=' + aglRest.toFixed(2) + ' v=' + p.vel.length().toFixed(2));
+  run(p, 4, () => { p.vert = 1; });
+  const aglUp = p.pos.y - terrainHeight(p.pos.x, p.pos.z);
+  check('E takes off from the pad', !p.crashed && aglUp > 4, 'agl=' + aglUp.toFixed(1));
 }
 
 console.log(failures === 0 ? '\nALL TESTS PASSED' : '\n' + failures + ' FAILURES');
