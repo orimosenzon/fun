@@ -7,3 +7,6 @@ enrich_cron.log
 bot_talk_cron.log
 enrich_state.json
 enrich_reports/
+contributor_cron.log
+contributor_state.json
+contributor_reports/
