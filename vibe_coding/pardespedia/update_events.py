@@ -106,11 +106,11 @@ def norm(s: str) -> str:
     return re.sub(r"[^0-9a-zא-ת]", "", (s or "").lower())
 
 
-def _row(d, time, name, url, category, venue, entry, sort, key, image_url) -> dict:
+def _row(d, time, name, url, category, venue, entry, sort, key, image_url, date_label=None) -> dict:
     return {"date": d, "time": time, "name": wiki_escape(name), "url": url or "",
             "category": category or "", "venue": wiki_escape(venue), "entry": entry,
             "sort": sort, "key": key, "image_url": image_url or "",
-            "image_file": None, "video_id": None}
+            "image_file": None, "video_id": None, "date_label": date_label}
 
 
 # --- sources ---------------------------------------------------------------
@@ -207,12 +207,19 @@ def _nth_weekday(year, month, weekday, ordinal):
 
 
 def _expand_recurrence(rec: str, start: dt.date, end: dt.date) -> list:
-    """rec like 'first_friday' / 'last_friday' -> matching dates within window."""
+    """rec like 'first_friday' / 'last_friday' / 'every_wednesday' -> matching dates within window."""
     try:
         ordinal, wd_name = rec.split("_", 1)
         weekday = _WD[wd_name]
     except (ValueError, KeyError):
         return []
+    if ordinal == "every":
+        out, d = [], start
+        while d <= end:
+            if d.weekday() == weekday:
+                out.append(d)
+            d += dt.timedelta(days=1)
+        return out
     out, y, m = [], start.year, start.month
     for _ in range(4):  # cover up to ~4 months ahead
         day = _nth_weekday(y, m, weekday, ordinal)
@@ -224,6 +231,14 @@ def _expand_recurrence(rec: str, start: dt.date, end: dt.date) -> list:
         if m > 12:
             m, y = 1, y + 1
     return out
+
+
+def _format_date_range(dates: list) -> str:
+    """['2026-07-13','2026-07-14'] -> '13-14.7' (or '13.7, 15.7' if not consecutive)."""
+    consecutive = all((dates[i + 1] - dates[i]).days == 1 for i in range(len(dates) - 1))
+    if consecutive and dates[0].month == dates[-1].month:
+        return f"{dates[0].day}-{dates[-1].day}.{dates[0].month}"
+    return ", ".join(f"{d.day}.{d.month}" for d in dates)
 
 
 def fetch_manual() -> list:
@@ -238,7 +253,27 @@ def fetch_manual() -> list:
         name = ev.get("name")
         if not name:
             continue
-        # resolve dates: explicit one-off or a monthly recurrence
+        t = ev.get("time", "")
+        # "dates": [...] -> multiple nights of the same event, merged into one row
+        # (e.g. a play running two consecutive evenings) rather than one row per date.
+        if ev.get("dates"):
+            try:
+                dl = sorted(dt.date.fromisoformat(x) for x in ev["dates"])
+            except ValueError:
+                dl = []
+            if dl:
+                d0 = dl[0]
+                key = "man-" + hashlib.md5(f"{name}{d0}".encode()).hexdigest()[:8]
+                r = _row(d0, t, name, ev.get("url"), ev.get("category", ""),
+                         ev.get("venue", ""), ev.get("entry", "חינם"),
+                         f"{d0}T{t or '00:00'}", key, ev.get("image_url"),
+                         date_label=_format_date_range(dl))
+                r["image_file"] = ev.get("image_file")
+                r["video_id"] = ev.get("video")
+                r["pin"] = bool(ev.get("pin"))
+                rows.append(r)
+            continue
+        # resolve dates: explicit one-off or a monthly/weekly recurrence
         dates = []
         if ev.get("date"):
             try:
@@ -247,7 +282,6 @@ def fetch_manual() -> list:
                 dates = []
         elif ev.get("recurrence"):
             dates = _expand_recurrence(ev["recurrence"], today, horizon)
-        t = ev.get("time", "")
         for d in dates:
             key = "man-" + hashlib.md5(f"{name}{d}".encode()).hexdigest()[:8]
             r = _row(d, t, name, ev.get("url"), ev.get("category", ""),
@@ -260,8 +294,13 @@ def fetch_manual() -> list:
     return rows
 
 
-SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
-           ("ידני", fetch_manual)]
+
+# "ידני" (manual) runs first so that, when a manual entry collides on
+# (normalized name, date) with an auto-fetched one, the curated manual
+# version — with its wiki link, correct Hebrew category, right price —
+# wins the de-dup instead of being silently dropped in favor of the raw feed.
+SOURCES = [("ידני", fetch_manual), ("eventschedule", fetch_eventschedule),
+           ("מתנ\"ס", fetch_matnas)]
 
 
 def collect(start: dt.date, end: dt.date) -> list:
@@ -277,14 +316,17 @@ def collect(start: dt.date, end: dt.date) -> list:
     # (pinned events show regardless of the window, up to MANUAL_HORIZON_DAYS).
     windowed = [r for r in all_rows
                 if (start <= r["date"] <= end) or (r.get("pin") and r["date"] >= start)]
-    seen, deduped = set(), []
-    for r in sorted(windowed, key=lambda r: r["sort"]):
+    # De-dup by SOURCES priority order (manual "ידני" first — see SOURCES above),
+    # not by chronological sort value: the two sources format r["sort"] differently
+    # ("YYYY-MM-DD HH:MM:SS" vs "YYYY-MM-DDTHH:MM"), and " " < "T" in ASCII, so
+    # sorting first would let an auto-fetched row win a same-event tie purely by
+    # accident of string formatting, silently dropping the curated manual entry.
+    seen = {}
+    for r in windowed:
         k = (norm(r["name"]), r["date"])
-        if k in seen:
-            continue
-        seen.add(k)
-        deduped.append(r)
-    return deduped
+        if k not in seen:
+            seen[k] = r
+    return sorted(seen.values(), key=lambda r: r["sort"])
 
 
 # --- images (download + upload, fair use) ----------------------------------
@@ -383,7 +425,7 @@ def build_table(rows: list, collapsible: bool = False) -> str:
     # data-sort-value בפורמט ISO בכל תא (אחרת המחרוזת העברית תמוין אלפביתית).
     lines.append('! class="unsortable" | תמונה !! תאריך !! class="unsortable" | שעה !! אירוע !! סוג !! מקום !! כניסה')
     for r in rows:
-        when = f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
+        when = r.get("date_label") or f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
         iso = r["date"].isoformat()
         name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
         if r["image_file"]:
