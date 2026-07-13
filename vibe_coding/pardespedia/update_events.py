@@ -293,14 +293,19 @@ def fetch_manual() -> list:
             rows.append(r)
     return rows
 
+SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
+           ("ידני", fetch_manual)]
 
 
-# "ידני" (manual) runs first so that, when a manual entry collides on
-# (normalized name, date) with an auto-fetched one, the curated manual
-# version — with its wiki link, correct Hebrew category, right price —
-# wins the de-dup instead of being silently dropped in favor of the raw feed.
-SOURCES = [("ידני", fetch_manual), ("eventschedule", fetch_eventschedule),
-           ("מתנ\"ס", fetch_matnas)]
+def _same_event(a, b) -> bool:
+    """Same date, no conflicting times, and one name contains the other
+    (e.g. feed's "מעגל מתנות קהילתי" vs. the manual "מעגל מתנות")."""
+    if a["date"] != b["date"]:
+        return False
+    if a["time"] and b["time"] and a["time"] != b["time"]:
+        return False
+    na, nb = norm(a["name"]), norm(b["name"])
+    return bool(na and nb) and (na in nb or nb in na)
 
 
 def collect(start: dt.date, end: dt.date) -> list:
@@ -316,17 +321,14 @@ def collect(start: dt.date, end: dt.date) -> list:
     # (pinned events show regardless of the window, up to MANUAL_HORIZON_DAYS).
     windowed = [r for r in all_rows
                 if (start <= r["date"] <= end) or (r.get("pin") and r["date"] >= start)]
-    # De-dup by SOURCES priority order (manual "ידני" first — see SOURCES above),
-    # not by chronological sort value: the two sources format r["sort"] differently
-    # ("YYYY-MM-DD HH:MM:SS" vs "YYYY-MM-DDTHH:MM"), and " " < "T" in ASCII, so
-    # sorting first would let an auto-fetched row win a same-event tie purely by
-    # accident of string formatting, silently dropping the curated manual entry.
-    seen = {}
-    for r in windowed:
-        k = (norm(r["name"]), r["date"])
-        if k not in seen:
-            seen[k] = r
-    return sorted(seen.values(), key=lambda r: r["sort"])
+    deduped = []
+    for r in sorted(windowed, key=lambda r: r["sort"]):
+        dup = next((i for i, kept in enumerate(deduped) if _same_event(r, kept)), None)
+        if dup is None:
+            deduped.append(r)
+        elif r["key"].startswith("man-") and not deduped[dup]["key"].startswith("man-"):
+            deduped[dup] = r  # the manual entry carries curated details + wiki link
+    return deduped
 
 
 # --- images (download + upload, fair use) ----------------------------------
