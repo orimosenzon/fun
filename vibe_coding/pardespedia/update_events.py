@@ -264,6 +264,17 @@ SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
            ("ידני", fetch_manual)]
 
 
+def _same_event(a, b) -> bool:
+    """Same date, no conflicting times, and one name contains the other
+    (e.g. feed's "מעגל מתנות קהילתי" vs. the manual "מעגל מתנות")."""
+    if a["date"] != b["date"]:
+        return False
+    if a["time"] and b["time"] and a["time"] != b["time"]:
+        return False
+    na, nb = norm(a["name"]), norm(b["name"])
+    return bool(na and nb) and (na in nb or nb in na)
+
+
 def collect(start: dt.date, end: dt.date) -> list:
     all_rows = []
     for name, fn in SOURCES:
@@ -277,13 +288,13 @@ def collect(start: dt.date, end: dt.date) -> list:
     # (pinned events show regardless of the window, up to MANUAL_HORIZON_DAYS).
     windowed = [r for r in all_rows
                 if (start <= r["date"] <= end) or (r.get("pin") and r["date"] >= start)]
-    seen, deduped = set(), []
+    deduped = []
     for r in sorted(windowed, key=lambda r: r["sort"]):
-        k = (norm(r["name"]), r["date"])
-        if k in seen:
-            continue
-        seen.add(k)
-        deduped.append(r)
+        dup = next((i for i, kept in enumerate(deduped) if _same_event(r, kept)), None)
+        if dup is None:
+            deduped.append(r)
+        elif r["key"].startswith("man-") and not deduped[dup]["key"].startswith("man-"):
+            deduped[dup] = r  # the manual entry carries curated details + wiki link
     return deduped
 
 
