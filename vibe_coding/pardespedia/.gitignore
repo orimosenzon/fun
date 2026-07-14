@@ -5,6 +5,7 @@ __pycache__/
 events_cron.log
 enrich_cron.log
 bot_talk_cron.log
+all_bot_talk_cron.log
 enrich_state.json
 enrich_reports/
 contributor_cron.log
