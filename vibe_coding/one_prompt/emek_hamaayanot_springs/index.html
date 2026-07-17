@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעיינות עמק המעיינות — לאן היום?</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Heebo', sans-serif;
+        background: linear-gradient(180deg, #f3faf6 0%, #eef7f0 40%, #eaf4ee 100%);
+        color: #1e3a2f;
+        min-height: 100vh;
+        padding: 32px 16px 60px;
+    }
+
+    .container { max-width: 980px; margin: 0 auto; }
+
+    header {
+        text-align: center;
+        margin-bottom: 28px;
+        padding: 8px 12px 4px;
+    }
+
+    header .eyebrow {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #0f766e;
+        background: #d1fae5;
+        padding: 5px 14px;
+        border-radius: 999px;
+        margin-bottom: 14px;
+        letter-spacing: 0.3px;
+    }
+
+    header h1 {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: #0f3d2e;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+
+    header .sub {
+        color: #4b6a5c;
+        font-size: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.65;
+    }
+
+    #today-line {
+        margin-top: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #ffffff;
+        border: 1px solid #d7ece1;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-size: 0.9rem;
+        color: #1e3a2f;
+        box-shadow: 0 2px 10px rgba(15,61,46,0.05);
+    }
+    #today-line b { color: #0f766e; }
+
+    .heat-note {
+        margin-top: 10px;
+        font-size: 0.82rem;
+        color: #92400e;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 8px 16px;
+        display: inline-block;
+        max-width: 620px;
+        line-height: 1.6;
+    }
+
+    /* Recommended hero */
+    .hero {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1.5px solid #6ee7b7;
+        border-radius: 20px;
+        padding: 24px 26px;
+        margin: 28px 0 32px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 28px rgba(16,185,129,0.14);
+    }
+    .hero::before {
+        content: '🌿';
+        position: absolute;
+        left: -10px; top: -18px;
+        font-size: 7rem;
+        opacity: 0.12;
+        transform: rotate(-12deg);
+    }
+    .hero-label {
+        font-size: 0.78rem; font-weight: 800; color: #047857;
+        text-transform: none; letter-spacing: 0.3px; margin-bottom: 6px;
+    }
+    .hero-title { font-size: 1.5rem; font-weight: 800; color: #064e3b; margin-bottom: 6px; }
+    .hero-why { color: #065f46; font-size: 0.92rem; line-height: 1.7; max-width: 640px; }
+
+    /* Filters */
+    .filters {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        margin-bottom: 22px;
+        background: #ffffff;
+        border: 1px solid #dcece3;
+        border-radius: 14px;
+        padding: 14px 16px;
+    }
+    .filters .filters-label { font-size: 0.82rem; font-weight: 700; color: #3f5c4f; align-self: center; margin-left: 4px; }
+    .filter-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 0.83rem; color: #2f4d3f;
+        background: #f3faf6; border: 1px solid #d7ece1; border-radius: 999px;
+        padding: 7px 13px; cursor: pointer; user-select: none;
+        transition: all 0.15s;
+    }
+    .filter-chip:hover { background: #e6f6ec; }
+    .filter-chip input { accent-color: #0f766e; cursor: pointer; }
+    .filter-chip.active { background: #0f766e; border-color: #0f766e; color: #fff; }
+
+    /* Time of day */
+    .time-select {
+        display: flex; gap: 8px; margin-bottom: 26px; flex-wrap: wrap;
+        align-items: center;
+    }
+    .time-select .lbl { font-size: 0.85rem; font-weight: 700; color: #3f5c4f; }
+    .time-btn {
+        font-size: 0.83rem; font-weight: 600; color: #2f4d3f;
+        background: #fff; border: 1px solid #d7ece1; border-radius: 10px;
+        padding: 8px 16px; cursor: pointer; transition: all 0.15s;
+    }
+    .time-btn.active { background: #134e39; border-color: #134e39; color: #fff; }
+
+    /* Cards */
+    .spots { display: grid; gap: 18px; }
+
+    .spot-card {
+        background: #ffffff;
+        border: 1px solid #dcece3;
+        border-radius: 18px;
+        padding: 22px 24px;
+        box-shadow: 0 3px 14px rgba(15,61,46,0.05);
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .spot-card:hover { box-shadow: 0 10px 28px rgba(15,61,46,0.1); transform: translateY(-1px); }
+
+    .spot-top {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        gap: 14px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .spot-name-wrap { display: flex; align-items: center; gap: 10px; }
+    .spot-icon { font-size: 1.6rem; }
+    .spot-name { font-size: 1.22rem; font-weight: 800; color: #0f3d2e; }
+    .spot-subtitle { font-size: 0.83rem; color: #6b8677; margin-top: 2px; }
+
+    .crowd-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 0.78rem; font-weight: 700;
+        padding: 6px 13px; border-radius: 999px; white-space: nowrap;
+    }
+    .crowd-quiet    { background: #dcfce7; color: #15803d; }
+    .crowd-moderate { background: #fef3c7; color: #b45309; }
+    .crowd-busy     { background: #fee2e2; color: #b91c1c; }
+
+    .spot-desc { color: #3f5c4f; font-size: 0.92rem; line-height: 1.75; margin: 10px 0 14px; }
+
+    .spot-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .spot-tag {
+        font-size: 0.72rem; font-weight: 600; color: #0f766e;
+        background: #f0fdf9; border: 1px solid #ccf3e6;
+        padding: 3px 10px; border-radius: 8px;
+    }
+
+    .spot-map-wrap {
+        border-radius: 12px; overflow: hidden; border: 1px solid #dcece3;
+        margin-bottom: 14px; background: #f3faf6;
+    }
+    .spot-map-wrap iframe { display: block; width: 100%; height: 230px; border: 0; }
+
+    .spot-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .spot-actions a {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 0.84rem; font-weight: 700; text-decoration: none;
+        padding: 9px 16px; border-radius: 10px; transition: all 0.15s;
+    }
+    .btn-nav { background: #0f766e; color: #fff; }
+    .btn-nav:hover { background: #0d5d56; }
+    .btn-info { background: #f3faf6; color: #0f766e; border: 1px solid #ccf3e6; }
+    .btn-info:hover { background: #e6f6ec; }
+
+    .empty-state {
+        text-align: center; padding: 40px 20px; color: #6b8677; font-size: 0.9rem;
+        background: #fff; border: 1px dashed #cbe4d8; border-radius: 16px;
+    }
+
+    footer {
+        text-align: center; margin-top: 44px; padding-top: 20px;
+        border-top: 1px solid #dcece3; color: #7a9587; font-size: 0.78rem; line-height: 1.9;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <span class="eyebrow">עמק המעיינות · צפון הארץ</span>
+        <h1>💧 לאן היום? מעיינות שקטים בעמק המעיינות</h1>
+        <p class="sub">דירוג עומס משוער לפי היום, החודש והשעה שבחרתם — כדי לעזור לכם למצוא מעיין רגוע, ולא את זה שכולם כבר שם.</p>
+        <div id="today-line"></div>
+        <div class="heat-note" id="heat-note"></div>
+    </header>
+
+    <div class="hero" id="hero"></div>
+
+    <div class="filters" id="filters">
+        <span class="filters-label">סינון:</span>
+        <label class="filter-chip"><input type="checkbox" data-filter="freeOnly"> בלי דמי כניסה</label>
+        <label class="filter-chip"><input type="checkbox" data-filter="familyOnly"> מתאים למשפחות עם ילדים</label>
+        <label class="filter-chip"><input type="checkbox" data-filter="noHike"> בלי הליכה ארוכה</label>
+        <label class="filter-chip"><input type="checkbox" data-filter="shadeOnly"> יש צל</label>
+    </div>
+
+    <div class="time-select" id="time-select">
+        <span class="lbl">מתי יוצאים?</span>
+        <button class="time-btn" data-time="-1">🌅 בוקר מוקדם</button>
+        <button class="time-btn active" data-time="0">☀️ צהריים</button>
+        <button class="time-btn" data-time="0.5">🌇 אחר הצהריים</button>
+    </div>
+
+    <div class="spots" id="spots"></div>
+
+    <footer>
+        הציון "רמת עומס" הוא הערכה היוריסטית (יום בשבוע + עונה + שעה) — לא נתון חי מהשטח.<br>
+        בדקו שעות פתיחה, מחירי כניסה ותנאים עדכניים לפני היציאה — אתרים בשמורות טבע/גנים לאומיים דורשים כרטיס כניסה בתשלום.<br>
+        קיץ בעמק = חם מאוד גם בבוקר — קחו הרבה מים, כובע וקרם הגנה.
+    </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// מאגר האתרים. baseline: 1 (שקט תמיד) עד 5 (אטרקציית דגל עמוסה).
+// ═══════════════════════════════════════════════════════════════
+const SPOTS = [
+    {
+        id: "sachne",
+        name: "גן השלושה (סחנה)",
+        icon: "🏞️",
+        subtitle: "הפארק הלאומי המפורסם ליד ניר דוד",
+        baseline: 5,
+        fee: true,
+        family: true,
+        hike: "none",
+        shade: true,
+        tags: ["פארק לאומי", "בריכות טבעיות גדולות", "מתקני שירותים מלאים", "נגיש לעגלות"],
+        desc: "המעיין הכי מוכר בעמק — בריכות ענק בין עצי אקליפטוס ענקיים, מים צלולים כל השנה. יפהפה, אבל בדיוק בגלל זה גם המקום הכי סביר להיות עמוס היום — ובמיוחד בסופ״ש של הקיץ.",
+        maps: "גן השלושה סחנה"
+    },
+    {
+        id: "gordon",
+        name: "גן גורדון — ניר דוד",
+        icon: "🌳",
+        subtitle: "בריכות המעיין הפרטיות של קיבוץ ניר דוד, צמוד לסחנה",
+        baseline: 4,
+        fee: true,
+        family: true,
+        hike: "none",
+        shade: true,
+        tags: ["מנוהל ע\"י הקיבוץ", "בריכות מדורגות", "נגיש לעגלות"],
+        desc: "אותה מערכת מים כמו סחנה, בשטח נפרד המנוהל ע\"י הקיבוץ. פחות מוכר לתיירים מרחוק, אבל עדיין יעד פופולרי לישראלים — עומס גבוה בסופי שבוע ובחגים.",
+        maps: "גן גורדון ניר דוד"
+    },
+    {
+        id: "harod",
+        name: "מעיין חרוד (גדעון)",
+        icon: "⛰️",
+        subtitle: "פארק לאומי מעיין חרוד, למרגלות הגלבוע",
+        baseline: 3,
+        fee: true,
+        family: true,
+        hike: "short",
+        shade: true,
+        tags: ["היסטורי — סיפור גדעון בתנ\"ך", "בריכה קטנה ואינטימית", "נוף להר הגלבוע"],
+        desc: "המעיין המקראי שבו גדעון מיין את לוחמיו. בריכה קטנה יותר ופחות מוכרת מסחנה, מוקפת סלעים ונוף ההרים — בדרך כלל שקט משמעותית יותר, גם בסופ״ש.",
+        maps: "מעיין חרוד גדעון פארק לאומי"
+    },
+    {
+        id: "bezek",
+        name: "עין הבזק",
+        icon: "🌊",
+        subtitle: "מעיין חבוי בתוך העיר בית שאן עצמה",
+        baseline: 2,
+        fee: false,
+        family: true,
+        hike: "none",
+        shade: false,
+        tags: ["כניסה חופשית", "לא ידוע לרוב המטיילים", "בריכה טבעית קטנה"],
+        desc: "מעיין זורם בתוך שכונת מגורים בבית שאן — הסוד שרוב המטיילים מפספסים כי הוא לא נראה כמו אתר תיירות. בריכה קטנה ומקומית, בלי תשתיות גדולות, ולכן כמעט תמיד רגוע.",
+        maps: "עין הבזק בית שאן"
+    },
+    {
+        id: "amal",
+        name: "נחל עמל",
+        icon: "🥾",
+        subtitle: "מסלול הליכה ובריכות טבעיות לאורך הנחל",
+        baseline: 2,
+        fee: false,
+        family: false,
+        hike: "moderate",
+        shade: true,
+        tags: ["כניסה חופשית", "דורש הליכה", "טבע פראי יותר"],
+        desc: "נחל זורם עם כמה בורות מים טבעיים לאורך המסלול, פחות מטופח ופחות מוכר. דורש קצת הליכה כדי להגיע לבורות הכי יפים — מה שבדרך כלל שומר עליו שקט יחסית.",
+        maps: "נחל עמל עמק המעיינות"
+    },
+];
+
+const DAY_NAMES = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+
+let activeFilters = { freeOnly: false, familyOnly: false, noHike: false, shadeOnly: false };
+let timeOffset = 0;
+
+function crowdScoreFor(spot, date) {
+    let score = spot.baseline;
+    const day = date.getDay();
+    if (day === 5 || day === 6) score += 1.5; // שישי/שבת
+    const month = date.getMonth(); // 0-11
+    if (month >= 5 && month <= 7) score += 1; // חופש גדול: יוני-אוגוסט
+    score += timeOffset;
+    return Math.max(1, Math.min(8, score));
+}
+
+function bandFor(score) {
+    if (score <= 3.2) return { key: "quiet", label: "שקט", icon: "🟢" };
+    if (score <= 5.2) return { key: "moderate", label: "עומס בינוני", icon: "🟡" };
+    return { key: "busy", label: "צפוי להיות עמוס", icon: "🔴" };
+}
+
+function passesFilters(spot) {
+    if (activeFilters.freeOnly && spot.fee) return false;
+    if (activeFilters.familyOnly && !spot.family) return false;
+    if (activeFilters.noHike && spot.hike !== "none") return false;
+    if (activeFilters.shadeOnly && !spot.shade) return false;
+    return true;
+}
+
+function renderToday() {
+    const now = new Date();
+    const dayName = DAY_NAMES[now.getDay()];
+    const dateStr = now.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('today-line').innerHTML =
+        `📅 היום: <b>יום ${dayName}, ${dateStr}</b>`;
+
+    const month = now.getMonth();
+    const isSummer = month >= 5 && month <= 7;
+    const isWeekend = now.getDay() === 5 || now.getDay() === 6;
+    let note = "";
+    if (isSummer && isWeekend) {
+        note = "🔥 שילוב של קיץ + סוף שבוע — צפו לעומס גבוה במיוחד באתרים המוכרים. שווה לצאת מוקדם או לבחור אתר פחות ידוע.";
+    } else if (isSummer) {
+        note = "🔥 חופש גדול — גם באמצע השבוע האתרים המוכרים עלולים להיות עמוסים ממשפחות.";
+    } else if (isWeekend) {
+        note = "📌 סוף שבוע — האתרים המוכרים בעמק נוטים להתמלא מהר.";
+    } else {
+        note = "✅ יום חול מחוץ לעונת החופש הגדול — בדרך כלל התנאים הכי טובים לשקט.";
+    }
+    document.getElementById('heat-note').textContent = note;
+}
+
+function renderHero() {
+    const now = new Date();
+    const scored = SPOTS
+        .filter(passesFilters)
+        .map(s => ({ spot: s, score: crowdScoreFor(s, now) }))
+        .sort((a, b) => a.score - b.score);
+
+    const hero = document.getElementById('hero');
+    if (scored.length === 0) {
+        hero.innerHTML = `<div class="hero-title">אין תוצאות עם הסינון הנוכחי</div><div class="hero-why">נסו להסיר סינון אחד או יותר למעלה.</div>`;
+        return;
+    }
+    const top = scored[0].spot;
+    hero.innerHTML = `
+        <div class="hero-label">✨ המומלץ להיום</div>
+        <div class="hero-title">${top.icon} ${top.name}</div>
+        <div class="hero-why">${top.desc}</div>
+    `;
+}
+
+function renderSpots() {
+    const now = new Date();
+    const container = document.getElementById('spots');
+    const scored = SPOTS
+        .filter(passesFilters)
+        .map(s => ({ spot: s, score: crowdScoreFor(s, now) }))
+        .sort((a, b) => a.score - b.score);
+
+    if (scored.length === 0) {
+        container.innerHTML = `<div class="empty-state">אף מעיין לא עונה על כל הסינונים שנבחרו כרגע.</div>`;
+        return;
+    }
+
+    container.innerHTML = scored.map(({ spot, score }) => {
+        const band = bandFor(score);
+        const mapQuery = encodeURIComponent(spot.maps);
+        return `
+        <div class="spot-card">
+            <div class="spot-top">
+                <div class="spot-name-wrap">
+                    <span class="spot-icon">${spot.icon}</span>
+                    <div>
+                        <div class="spot-name">${spot.name}</div>
+                        <div class="spot-subtitle">${spot.subtitle}</div>
+                    </div>
+                </div>
+                <span class="crowd-badge crowd-${band.key}">${band.icon} ${band.label}</span>
+            </div>
+            <div class="spot-desc">${spot.desc}</div>
+            <div class="spot-tags">
+                ${spot.tags.map(t => `<span class="spot-tag">${t}</span>`).join('')}
+                <span class="spot-tag">${spot.fee ? '💰 בתשלום' : '🆓 כניסה חופשית'}</span>
+            </div>
+            <div class="spot-map-wrap">
+                <iframe src="https://www.google.com/maps?q=${mapQuery}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            <div class="spot-actions">
+                <a class="btn-nav" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">🧭 ניווט בגוגל מפות</a>
+                <a class="btn-info" href="https://www.google.com/search?q=${encodeURIComponent(spot.maps + ' שעות פתיחה מחיר')}" target="_blank" rel="noopener">ℹ️ שעות פתיחה ומחיר עדכני</a>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderAll() {
+    renderToday();
+    renderHero();
+    renderSpots();
+}
+
+document.querySelectorAll('#filters input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+        activeFilters[e.target.dataset.filter] = e.target.checked;
+        e.target.closest('.filter-chip').classList.toggle('active', e.target.checked);
+        renderAll();
+    });
+});
+
+document.querySelectorAll('#time-select .time-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#time-select .time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        timeOffset = parseFloat(btn.dataset.time);
+        renderAll();
+    });
+});
+
+renderAll();
+</script>
+</body>
+</html>
