@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כיוונים למחשבה — שאלון היכרות עצמית</title>
+<style>
+  .viz-root {
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f2f0ea;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --hairline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --card:           #ffffff;
+
+    --slot-1: #2a78d6; /* מצב רוח */
+    --slot-2: #1baf7a; /* חרדה */
+    --slot-3: #c98500; /* קלאסטר A — קידוד כהה יותר מהצהוב הבהיר, לקריאות טקסט */
+    --slot-4: #008300; /* קלאסטר B */
+    --slot-5: #4a3aa7; /* קלאסטר C */
+
+    --good: #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    .viz-root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --hairline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --card:           #211f1e;
+
+      --slot-1: #3987e5;
+      --slot-2: #199e70;
+      --slot-3: #c98500;
+      --slot-4: #008300;
+      --slot-5: #9085e9;
+
+      --good: #0ca30c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .viz-root { min-height: 100vh; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ── Sticky disclaimer strip ── */
+  .disclaimer-strip {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--hairline);
+    padding: 10px 20px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .disclaimer-strip b { color: var(--text-secondary); }
+
+  h1 { font-size: 1.7rem; margin: 28px 0 6px; }
+  h2 { font-size: 1.25rem; margin: 0 0 10px; }
+  p  { color: var(--text-secondary); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 16px 0;
+  }
+
+  .disclaimer-box {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-right: 4px solid #d03b3b;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 18px 0;
+  }
+  .disclaimer-box h3 { margin: 0 0 8px; font-size: 1rem; color: var(--text-primary); }
+  .disclaimer-box p { margin: 4px 0; font-size: 0.9rem; }
+
+  .consent-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 18px 0; font-size: 0.92rem; color: var(--text-secondary);
+  }
+  .consent-row input { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; }
+
+  button.primary {
+    display: block; width: 100%;
+    padding: 15px; margin-top: 8px;
+    border: none; border-radius: 10px;
+    background: var(--slot-1);
+    color: white; font-size: 1.02rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary:not(:disabled):hover { filter: brightness(1.08); }
+  button.primary:not(:disabled):active { transform: translateY(1px); }
+
+  button.secondary {
+    display: block; width: 100%;
+    padding: 13px; margin-top: 10px;
+    border: 1px solid var(--hairline); border-radius: 10px;
+    background: transparent; color: var(--text-secondary);
+    font-size: 0.92rem; cursor: pointer;
+  }
+  button.secondary:hover { background: var(--surface-1); }
+
+  /* ── Quiz ── */
+  .progress-wrap {
+    position: sticky; top: 37px; z-index: 19;
+    background: var(--page-plane);
+    padding: 10px 0 6px;
+  }
+  .progress-track {
+    height: 6px; border-radius: 3px; background: var(--hairline); overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--slot-1); border-radius: 3px;
+    transition: width 0.2s;
+  }
+  .progress-label {
+    font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: center;
+  }
+
+  .category-heading {
+    display: flex; align-items: center; gap: 8px;
+    margin: 30px 0 4px; font-size: 0.85rem; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .category-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .question { padding: 16px 0; border-bottom: 1px solid var(--hairline); }
+  .question:last-child { border-bottom: none; }
+  .question-text { font-size: 0.98rem; margin-bottom: 12px; }
+
+  .likert { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .likert label {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 2px; border-radius: 8px;
+    border: 1px solid var(--hairline);
+    cursor: pointer; text-align: center;
+    font-size: 0.66rem; color: var(--text-muted);
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .likert input { display: none; }
+  .likert .dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--hairline);
+  }
+  .likert input:checked + .dot { background: var(--slot-1); border-color: var(--slot-1); }
+  .likert label:has(input:checked) {
+    background: color-mix(in srgb, var(--slot-1) 12%, transparent);
+    border-color: var(--slot-1);
+    color: var(--text-primary);
+  }
+
+  #quiz-submit { margin-top: 24px; }
+
+  /* ── Results ── */
+  .bar-row { margin: 18px 0; }
+  .bar-row-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px; font-size: 0.9rem;
+  }
+  .bar-row-head .name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .bar-row-head .band { font-size: 0.78rem; color: var(--text-muted); }
+  .bar-track {
+    height: 20px; border-radius: 6px; background: var(--hairline);
+    overflow: hidden; position: relative;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 6px 0 0 6px;
+    display: flex; align-items: center;
+    padding-inline-end: 8px;
+    justify-content: flex-end;
+    color: white; font-size: 0.72rem; font-weight: 700;
+    min-width: 32px;
+    transition: width 0.5s ease;
+  }
+
+  .cat-block { border-top: 1px solid var(--hairline); padding-top: 16px; margin-top: 16px; }
+  .cat-block-title { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 6px; }
+  .cat-block p { font-size: 0.88rem; margin: 4px 0; }
+  .clinical-note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+
+  .resources-box {
+    background: var(--card); border: 1px solid var(--hairline);
+    border-right: 4px solid var(--good);
+    border-radius: 10px; padding: 18px 20px; margin: 20px 0;
+  }
+  .resources-box h3 { margin: 0 0 8px; font-size: 1rem; }
+  .resources-box p { font-size: 0.88rem; margin: 4px 0; }
+
+  footer { text-align: center; margin-top: 40px; color: var(--text-muted); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+
+  <div class="disclaimer-strip">
+    <b>זהו לא כלי אבחון קליני.</b> התוצאות אינן תחליף לפגישה עם איש/אשת מקצוע בבריאות הנפש.
+  </div>
+
+  <div class="wrap">
+
+    <!-- ═══════════ מסך 1: פתיחה ═══════════ -->
+    <div id="screen-intro">
+      <h1>כיוונים למחשבה 🧭</h1>
+      <p>שאלון קצר לרפלקציה עצמית, בהשראת קטגוריות רחבות מתוך ה-DSM-5 (מדריך האבחון הפסיכיאטרי האמריקאי). הוא <b>לא</b> אבחון, ולא מחליף שיחה עם איש/אשת מקצוע.</p>
+
+      <div class="disclaimer-box">
+        <h3>⚠️ לפני שמתחילים — חשוב לקרוא</h3>
+        <p>זהו שאלון <b>גס מאוד</b>, לא ולידי מבחינה קלינית, ולא נועד לספק אבחנה. שאלוני מיון אמיתיים דורשים ראיון עם איש/אשת מקצוע מוסמכ/ת, ולא רק שאלון עצמי.</p>
+        <p>התוצאות עלולות להיות שגויות, מטעות, או פשוט לא רלוונטיות אליך. אל תתייחסו לתוצאה כאל "יש לי X" — לכל היותר, כאל נקודה למחשבה או לשיחה.</p>
+        <p>אם אתם במצוקה נפשית, מרגישים סכנה לעצמכם או לאחרים, או פשוט רוצים לדבר עם מישהו — פנו לעזרה מקצועית. פרטי קווי סיוע מופיעים גם בסוף השאלון.</p>
+        <p><b>הפרטיות שלך:</b> כל השאלון רץ בדפדפן שלך בלבד. שום תשובה לא נשלחת, נשמרת או מועברת לשום שרת.</p>
+      </div>
+
+      <div class="consent-row">
+        <input type="checkbox" id="consent-check">
+        <label for="consent-check">אני מבין/ה שזה לא אבחון קליני, לא מחליף איש/אשת מקצוע, ושהתוצאות עשויות להיות שגויות. אני ממשיך/ה מתוך סקרנות בלבד.</label>
+      </div>
+
+      <button class="primary" id="btn-start" disabled>התחל/י את השאלון</button>
+    </div>
+
+    <!-- ═══════════ מסך 2: שאלון ═══════════ -->
+    <div id="screen-quiz" style="display:none">
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="progress-label">0 מתוך 0 נענו</div>
+      </div>
+      <div id="questions-container"></div>
+      <button class="primary" id="quiz-submit" disabled>הצג/י תוצאות</button>
+      <p style="font-size:0.78rem; text-align:center;">הכפתור ייפתח אחרי שתענו על כל השאלות.</p>
+    </div>
+
+    <!-- ═══════════ מסך 3: תוצאות ═══════════ -->
+    <div id="screen-results" style="display:none">
+      <h1>התוצאות שלך</h1>
+      <p>אלה לא אבחנות — אלה דפוסים יחסיים בתוך התשובות שלך <b>שלך בלבד</b>, ללא השוואה לנתונים קליניים או לאוכלוסייה כלשהי. קראו את זה כהזמנה לחשוב, לא כפסק דין.</p>
+
+      <div class="card" id="results-chart"></div>
+      <div class="card" id="results-detail"></div>
+
+      <div class="resources-box">
+        <h3>💬 רוצים לדבר עם מישהו?</h3>
+        <p><b>ער"ן — עזרה ראשונה נפשית:</b> 1201, זמין 24/7, אנונימי וחסוי.</p>
+        <p>במצב חירום מיידי (סכנה לחיים): פנו לחדר מיון קרוב או התקשרו 100.</p>
+        <p>מומלץ גם לחפש "קווי סיוע נפשי בישראל" למידע מעודכן על שירותים נוספים באזורכם.</p>
+      </div>
+
+      <button class="secondary" id="btn-restart">התחל/י מחדש</button>
+    </div>
+
+    <footer>נבנה כדוגמה חינוכית ל"תוכנה מפרומפט בודד". לא כלי רפואי, לא תחליף לייעוץ מקצועי.</footer>
+
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  {
+    key: 'mood', label: 'מצב רוח ותחושת דיכאון', color: 'var(--slot-1)',
+    intro: 'שאלות אלה בוחנות עצב מתמשך, אובדן עניין ותחושות שקשורות לרוב למצב רוח ירוד.',
+    clinicalNote: 'דפוסים כאלה נבחנים, בין היתר, בהערכות לקראת אבחנות כמו דיכאון מאז\'ורי (Major Depressive Disorder) או דיסתימיה. ציון גבוה כאן לא אומר שיש לך דיכאון — הוא אומר שכדאי לשוחח על זה עם איש/אשת מקצוע.',
+  },
+  {
+    key: 'anxiety', label: 'חרדה ומתח מתמשך', color: 'var(--slot-2)',
+    intro: 'שאלות אלה בוחנות דאגה מוגזמת, מתח פיזי והימנעות ממצבים מעוררי חרדה.',
+    clinicalNote: 'דפוסים כאלה נבחנים בהערכות לקראת אבחנות כמו הפרעת חרדה כללית (GAD), הפרעת פאניקה או פוביות ספציפיות. גם כאן — ציון גבוה הוא כיוון למחשבה, לא אבחנה.',
+  },
+  {
+    key: 'clusterA', label: 'ריחוק וחשדנות (קלאסטר A)', color: 'var(--slot-3)',
+    intro: 'שאלות אלה בוחנות נטייה לחשדנות כלפי אחרים, העדפה חזקה לבדידות, וחוויות יוצאות דופן.',
+    clinicalNote: 'ב-DSM-5, קלאסטר A כולל הפרעות אישיות פרנואידית, סכיזואידית וסכיזוטיפלית. אלה תבניות נדירות יחסית, וציון גבוה בשאלון קצר כזה לרוב לא משקף אותן — אבל אם התבנית מכבידה עליך, שווה לדבר על זה.',
+  },
+  {
+    key: 'clusterB', label: 'אימפולסיביות ועוצמה רגשית (קלאסטר B)', color: 'var(--slot-4)',
+    intro: 'שאלות אלה בוחנות יחסים אינטנסיביים ולא יציבים, אימפולסיביות, פחד מנטישה ותנודתיות בזהות העצמית.',
+    clinicalNote: 'ב-DSM-5, קלאסטר B כולל הפרעות אישיות גבולית (Borderline), נרקיסיסטית, היסטריונית ואנטי-חברתית. תבניות אלה שכיחות יותר ומגוונות מאוד בעוצמתן — שאלון קצר לא יכול להבחין ביניהן.',
+  },
+  {
+    key: 'clusterC', label: 'חרדתיות והימנעות (קלאסטר C)', color: 'var(--slot-5)',
+    intro: 'שאלות אלה בוחנות הימנעות חברתית מפחד מדחייה, תלות רגשית באחרים, ונוקשות או פרפקציוניזם.',
+    clinicalNote: 'ב-DSM-5, קלאסטר C כולל הפרעות אישיות נמנעת (Avoidant), תלותית (Dependent) וטורדנית-כפייתית (OCPD). דפוסים כאלה נפוצים בדרגות שונות ולא בהכרח מהווים הפרעה.',
+  },
+];
+
+const QUESTIONS = [
+  // מצב רוח
+  { cat: 'mood', text: 'בשבועות האחרונים הרגשתי עצוב/ה או חסר/ת תקווה רוב הזמן.' },
+  { cat: 'mood', text: 'איבדתי עניין או הנאה בדברים שבעבר אהבתי לעשות.' },
+  { cat: 'mood', text: 'אני מרגיש/ה עייף/ה או חסר/ת אנרגיה כמעט כל יום.' },
+  { cat: 'mood', text: 'קשה לי להתרכז או לקבל החלטות פשוטות.' },
+  { cat: 'mood', text: 'אני מרגיש/ה שאני חסר/ת ערך, או שאני מאכזב/ת את עצמי או אחרים.' },
+  { cat: 'mood', text: 'השינה שלי (יותר מדי או פחות מדי) השתנתה משמעותית לאחרונה.' },
+  // חרדה
+  { cat: 'anxiety', text: 'אני מוצא/ת את עצמי מודאג/ת כמעט כל הזמן, גם בלי סיבה ברורה.' },
+  { cat: 'anxiety', text: 'קשה לי "לכבות" את הדאגות שלי גם כשאני מנסה במודע.' },
+  { cat: 'anxiety', text: 'אני חווה תסמינים גופניים כמו דופק מהיר, מתח שרירים או קוצר נשימה כשאני חרד/ה.' },
+  { cat: 'anxiety', text: 'אני נמנע/ת ממצבים מסוימים כי הם מעוררים בי חרדה.' },
+  { cat: 'anxiety', text: 'אני חסר/ת מנוחה או מתוח/ה כמעט כל הזמן.' },
+  { cat: 'anxiety', text: 'אני מצפה שדברים רעים יקרו, גם כשאין לכך סיבה ממשית.' },
+  // קלאסטר A
+  { cat: 'clusterA', text: 'אני נוטה לחשוד בכוונות של אנשים אחרים, גם קרובים אליי.' },
+  { cat: 'clusterA', text: 'אני מעדיף/ה להיות לבד על פני לבלות עם אחרים.' },
+  { cat: 'clusterA', text: 'קשה לי לבטא רגשות כלפי אחרים, ואומרים לי שאני נראה/ית "קר/ה".' },
+  { cat: 'clusterA', text: 'יש לי חוויות, תחושות או אמונות יוצאות דופן שרוב האנשים סביבי לא חולקים.' },
+  { cat: 'clusterA', text: 'אני מרגיש/ה שאנשים מנסים לפגוע בי או לנצל אותי, גם בלי הוכחה ברורה.' },
+  // קלאסטר B
+  { cat: 'clusterB', text: 'מערכות היחסים שלי נוטות להיות אינטנסיביות אך לא יציבות — מהתאהבות עזה לניתוק מהיר.' },
+  { cat: 'clusterB', text: 'אני פועל/ת באימפולסיביות במצבים כמו הוצאות כספים, אוכל, נהיגה או מין.' },
+  { cat: 'clusterB', text: 'יש לי פחד עז מנטישה, ואני עושה מאמצים גדולים כדי למנוע אותה.' },
+  { cat: 'clusterB', text: 'תחושת הזהות או הערך העצמי שלי משתנה בצורה דרמטית מיום ליום.' },
+  { cat: 'clusterB', text: 'אני זקוק/ה לתשומת לב ולהערכה מאחרים כדי להרגיש טוב עם עצמי.' },
+  { cat: 'clusterB', text: 'קשה לי להזדהות עם רגשות של אחרים כשהם לא משרתים אותי באותו רגע.' },
+  // קלאסטר C
+  { cat: 'clusterC', text: 'אני נמנע/ת ממצבים חברתיים מחשש לביקורת או דחייה.' },
+  { cat: 'clusterC', text: 'אני זקוק/ה לעידוד וחיזוק מתמיד מאחרים לפני שאני מקבל/ת החלטות.' },
+  { cat: 'clusterC', text: 'קשה לי להביע חוסר הסכמה מפחד לאבד תמיכה או אישור.' },
+  { cat: 'clusterC', text: 'אני עסוק/ה מאוד בסדר, כללים ופרטים — עד כדי כך שזה פוגע ביעילות שלי.' },
+  { cat: 'clusterC', text: 'קשה לי להיפטר מחפצים חסרי ערך, או להאציל משימות לאחרים.' },
+  { cat: 'clusterC', text: 'אני נוטה למושלמות בצורה שמקשה עליי לסיים משימות.' },
+];
+
+const LIKERT_LABELS = ['לא מסכים/ה בכלל', 'לא ממש', 'באמצע', 'די מסכים/ה', 'מסכים/ה מאוד'];
+
+const answers = {}; // index -> 1..5
+
+// ── מסך פתיחה ──
+const consentCheck = document.getElementById('consent-check');
+const btnStart = document.getElementById('btn-start');
+consentCheck.addEventListener('change', () => { btnStart.disabled = !consentCheck.checked; });
+btnStart.addEventListener('click', () => {
+  document.getElementById('screen-intro').style.display = 'none';
+  document.getElementById('screen-quiz').style.display = 'block';
+  buildQuiz();
+});
+
+// ── בניית השאלון ──
+function buildQuiz() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+  let currentCat = null;
+
+  QUESTIONS.forEach((q, i) => {
+    if (q.cat !== currentCat) {
+      currentCat = q.cat;
+      const catMeta = CATEGORIES.find(c => c.key === q.cat);
+      const heading = document.createElement('div');
+      heading.className = 'category-heading';
+      heading.innerHTML = `<span class="category-dot" style="background:${catMeta.color}"></span>${catMeta.label}`;
+      container.appendChild(heading);
+    }
+
+    const div = document.createElement('div');
+    div.className = 'question';
+    const likertHtml = LIKERT_LABELS.map((lbl, val) => `
+      <label>
+        <input type="radio" name="q${i}" value="${val + 1}" onchange="onAnswer(${i}, ${val + 1})">
+        <span class="dot"></span>
+        <span>${lbl}</span>
+      </label>
+    `).join('');
+    div.innerHTML = `<div class="question-text">${i + 1}. ${q.text}</div><div class="likert">${likertHtml}</div>`;
+    container.appendChild(div);
+  });
+
+  updateProgress();
+}
+
+function onAnswer(i, val) {
+  answers[i] = val;
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = Object.keys(answers).length;
+  const total = QUESTIONS.length;
+  document.getElementById('progress-fill').style.width = `${(answered / total) * 100}%`;
+  document.getElementById('progress-label').textContent = `${answered} מתוך ${total} נענו`;
+  document.getElementById('quiz-submit').disabled = answered < total;
+}
+
+document.getElementById('quiz-submit').addEventListener('click', showResults);
+
+// ── תוצאות ──
+function bandFor(pct) {
+  if (pct < 40) return { label: 'נמוך', };
+  if (pct < 65) return { label: 'בינוני' };
+  return { label: 'גבוה יחסית' };
+}
+
+function showResults() {
+  const scores = CATEGORIES.map(cat => {
+    const qs = QUESTIONS.map((q, i) => ({ q, i })).filter(x => x.q.cat === cat.key);
+    const sum = qs.reduce((s, x) => s + (answers[x.i] || 0), 0);
+    const max = qs.length * 5;
+    const pct = Math.round((sum / max) * 100);
+    return { cat, pct };
+  });
+
+  const chartEl = document.getElementById('results-chart');
+  chartEl.innerHTML = '<h2>סיכום לפי תחום</h2>' + scores.map(s => {
+    const band = bandFor(s.pct);
+    return `
+      <div class="bar-row">
+        <div class="bar-row-head">
+          <span class="name"><span class="category-dot" style="background:${s.cat.color}"></span>${s.cat.label}</span>
+          <span class="band">${band.label}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${Math.max(s.pct,8)}%; background:${s.cat.color}">${s.pct}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const detailEl = document.getElementById('results-detail');
+  detailEl.innerHTML = '<h2>קצת הקשר לכל תחום</h2>' + scores
+    .slice()
+    .sort((a, b) => b.pct - a.pct)
+    .map(s => `
+      <div class="cat-block">
+        <div class="cat-block-title"><span class="category-dot" style="background:${s.cat.color}"></span>${s.cat.label} — ${s.pct}%</div>
+        <p>${s.cat.intro}</p>
+        <p class="clinical-note">${s.cat.clinicalNote}</p>
+      </div>
+    `).join('');
+
+  document.getElementById('screen-quiz').style.display = 'none';
+  document.getElementById('screen-results').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  Object.keys(answers).forEach(k => delete answers[k]);
+  document.getElementById('screen-results').style.display = 'none';
+  document.getElementById('screen-intro').style.display = 'block';
+  consentCheck.checked = false;
+  btnStart.disabled = true;
+  window.scrollTo(0, 0);
+});
+</script>
+</body>
+</html>

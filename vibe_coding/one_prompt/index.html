@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Prompt — פרויקטים משורת פרומפט אחת</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Heebo', 'Inter', sans-serif;
+        background: #09111f;
+        color: #e2e8f0;
+        min-height: 100vh;
+        padding: 40px 20px 60px;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(129,140,248,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(129,140,248,0.03) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+
+    header { text-align: center; margin-bottom: 48px; padding: 44px 20px; position: relative; }
+
+    header::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 500px; height: 250px;
+        background: radial-gradient(ellipse, rgba(129,140,248,0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    header h1 {
+        font-size: 2.6rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+        letter-spacing: -1px;
+    }
+
+    .header-sub { color: #94a3b8; font-size: 1.02rem; max-width: 560px; margin: 0 auto 4px; line-height: 1.6; }
+    .header-meta { color: #475569; font-size: 0.8rem; margin-top: 10px; }
+
+    .header-stats { display: flex; justify-content: center; gap: 32px; margin-top: 26px; }
+    .stat { text-align: center; }
+    .stat-num {
+        font-size: 1.6rem; font-weight: 700;
+        background: linear-gradient(135deg, #818cf8, #c084fc);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-label { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+
+    .projects { display: grid; gap: 16px; }
+
+    .project-card {
+        background: #0e1a2b;
+        border: 1px solid #1a2840;
+        border-radius: 16px;
+        padding: 22px 24px;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .project-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent, #818cf8);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .card-icon {
+        width: 42px; height: 42px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+        background: var(--icon-bg, rgba(30,50,90,0.6));
+    }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 5px; }
+    .card-date { font-size: 0.72rem; color: #475569; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .tag {
+        font-size: 0.65rem; font-weight: 500; padding: 2px 8px; border-radius: 6px;
+        background: var(--tag-bg, rgba(30,50,90,0.7)); color: var(--accent, #818cf8);
+    }
+
+    .card-prompt {
+        position: relative;
+        background: #0a1420;
+        border-right: 3px solid var(--accent, #818cf8);
+        border-radius: 6px;
+        padding: 10px 16px 10px 12px;
+        margin: 12px 0;
+        font-size: 0.85rem;
+        color: #b6c2d9;
+        line-height: 1.6;
+        font-style: italic;
+    }
+    .card-prompt::before { content: '“'; }
+    .card-prompt::after { content: '”'; }
+
+    .card-desc { color: #94a3b8; font-size: 0.87rem; line-height: 1.7; margin-bottom: 14px; }
+
+    .card-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .card-links a {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 7px 15px; border-radius: 8px;
+        font-size: 0.8rem; font-weight: 600;
+        text-decoration: none; transition: all 0.18s;
+    }
+    .btn-live {
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: #fff; box-shadow: 0 0 18px rgba(16,185,129,0.3);
+    }
+    .btn-live:hover { box-shadow: 0 0 28px rgba(16,185,129,0.5); filter: brightness(1.1); }
+    .btn-secondary { background: #131e2e; color: #94a3b8; border: 1px solid #1e2e42; }
+    .btn-secondary:hover { background: #1a2840; color: #cbd5e1; }
+
+    .t-purple  { --accent:#c084fc; --icon-bg:rgba(59,20,90,0.5);  --tag-bg:rgba(59,20,90,0.7); }
+    .t-cyan    { --accent:#22d3ee; --icon-bg:rgba(14,60,80,0.5);  --tag-bg:rgba(14,60,80,0.7); }
+    .t-amber   { --accent:#fbbf24; --icon-bg:rgba(80,55,10,0.5);  --tag-bg:rgba(80,55,10,0.7); }
+    .t-red     { --accent:#f87171; --icon-bg:rgba(90,20,20,0.5);  --tag-bg:rgba(90,20,20,0.7); }
+    .t-teal    { --accent:#2dd4bf; --icon-bg:rgba(10,70,65,0.5);  --tag-bg:rgba(10,70,65,0.7); }
+    .t-green   { --accent:#4ade80; --icon-bg:rgba(20,80,45,0.5);  --tag-bg:rgba(20,80,45,0.7); }
+
+    footer {
+        text-align: center; margin-top: 48px; padding-top: 22px;
+        border-top: 1px solid #1a2840; color: #374151; font-size: 0.78rem; line-height: 1.8;
+    }
+    footer code {
+        background: #0e1a2b; border: 1px solid #1a2840; border-radius: 4px;
+        padding: 1px 6px; color: #94a3b8; font-size: 0.75rem;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>⚡ One Prompt</h1>
+        <p class="header-sub">אוסף תוכנה שנוצרה על ידי Claude Code משורת פרומפט אחת בלבד — בלי איטרציות, בלי תיקונים, מה שיצא זה מה שיש.</p>
+        <p class="header-meta">Built with Claude Code &bull; אורי מוסנזון</p>
+        <div class="header-stats">
+            <div class="stat"><div class="stat-num" id="stat-count">0</div><div class="stat-label">דוגמאות</div></div>
+        </div>
+    </header>
+
+    <div class="projects" id="projects"></div>
+
+    <footer>
+        כדי להוסיף דוגמה חדשה: תיקייה חדשה עם <code>PROMPT.md</code> + התוכנה שנוצרה ממנו,<br>
+        ואובייקט חדש במערך <code>PROJECTS</code> בתחתית הקובץ הזה.
+    </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// להוספת דוגמה חדשה: הוסיפו אובייקט למערך הזה. אין צורך לגעת ב-HTML/CSS.
+//   slug        - שם התיקייה תחת one_prompt/
+//   title       - כותרת קצרה
+//   icon        - אימוג'י לאייקון
+//   theme       - אחד מ: purple, cyan, amber, red, teal, green
+//   tags        - מערך תגיות טכנולוגיה
+//   prompt      - הפרומפט המקורי, כלשונו (מ-PROMPT.md)
+//   description - תיאור קצר של מה שנוצר
+//   date        - תאריך יצירה (YYYY-MM-DD)
+//   demo        - (אופציונלי) נתיב יחסי לדמו רץ בדפדפן, למשל "tic_tac_toe/index.html"
+// ═══════════════════════════════════════════════════════════════
+const PROJECTS = [
+    {
+        slug: "tic_tac_toe",
+        title: "איקס עיגול",
+        icon: "⭕",
+        theme: "cyan",
+        tags: ["HTML/CSS/JS", "Minimax AI"],
+        prompt: "צור אפליקציית ווב של משחק איקס עיגול. המשחק יאפשר משחק נגד המחשב ולשני אנשים, אחד נגד השני. נגד המחשב, המחשב ישחק בכמה רמות: דביל, חכם ומושלם.",
+        description: "משחק דפדפן בקובץ יחיד: שני שחקנים, או נגד מחשב בשלוש רמות — כולל AI מינימקס בלתי-מנוצח ברמה \"מושלם\".",
+        date: "2026-07-14",
+        demo: "tic_tac_toe/index.html",
+    },
+    {
+        slug: "car_race_3d",
+        title: "מרוץ מכוניות תלת־ממדי",
+        icon: "🏎️",
+        theme: "red",
+        tags: ["C++", "Qt6", "OpenGL", "CMake"],
+        prompt: "צור משחק תלת ממדי מרשים ב C++ שירוץ ע המחשב שלי.\nהמשחק יהיה מרוץ מכוניות על מסלול מעגלי, עם נוף של עצים ובתים. בהצלחה.",
+        description: "משחק נהיגה תלת־ממדי לדסקטופ: מסלול מעגלי, עצים ובתים פרוצדורליים, תאורה ופיזיקת נהיגה, מצלמה עוקבת ומונה הקפות.",
+        date: "2026-07-14",
+    },
+    {
+        slug: "rise_of_nazism_lesson",
+        title: "עליית הנאציזם — שיעור אינטראקטיבי",
+        icon: "📜",
+        theme: "amber",
+        tags: ["Jupyter", "Python", "matplotlib", "ipywidgets"],
+        prompt: "צור דף ג'ופיטר פייטוני, שיהווה שיעור אינטראקטיבי על עליית הנאציזם בגרמניה בשנות השלושים של המאה הקודמת. הדף יתאר אירועים מרכזיים כמו הבחירות הדמוקטיות בהן ניצח היטלר, פעולות של החולצות החומות, ליל הסכינים הארוכות, ליל הבדולח, שריפת הרייכסטג, חוק ההסמכה וכ'. נסה שהמסמך יהיה כמה שיותר גרפי ואינטראקטיבי. עם עברית שמוצגת טוב והפעלות של הקורא",
+        description: "מחברת Jupyter בעברית מלאה (RTL): גרפים אינטראקטיביים, ציר זמן, ושאלוני בדיקה עצמית לאורך אירועי המפתח 1930–1939.",
+        date: "2026-07-14",
+    },
+    {
+        slug: "personality_screening",
+        title: "כיוונים למחשבה — שאלון היכרות עצמית",
+        icon: "🧭",
+        theme: "teal",
+        tags: ["HTML/CSS/JS", "DSM-5 (השראה)"],
+        prompt: "צור אתר ווב אינטראקטיבי, שיעשה איבחון אישיותי לאדם. לפי DSM, יקבע אילו הפרעות אישיות יש לאדם, או אילו בעיות מנטליות עיקריות יש לו. זה אבחון מאוד גס, ועם דיסקליימר חריף שזה לא מחליף מומחה. פשוט משהו שנותן לאדם כיוונים למחשבה.",
+        description: "שאלון רפלקציה עצמית של 29 שאלות, בהשראת DSM-5 — עם שער הסכמה מפורש, דיסקליימר תלוי לאורך כל הדרך, קווי סיוע נפשי בתוצאות, ואפס תקשורת רשת (הכל רץ בדפדפן).",
+        date: "2026-07-15",
+        demo: "personality_screening/index.html",
+    },
+    {
+        slug: "emek_hamaayanot_springs",
+        title: "לאן היום? — מעיינות שקטים בעמק המעיינות",
+        icon: "💧",
+        theme: "green",
+        tags: ["HTML/CSS/JS", "Google Maps Embed"],
+        prompt: "בוקר טוב, אני רוצה לנסוע היום לעמק מהעיינות ולטבול במעיין סודי או כזה שלא עמוס בהרבה אנשים. אנא הכן לי דף html אינטראקטיבי עם הרבה אפשרויות. הדף יכלול מפות של גוגל מפס, הסברים ואפשרויות. אנא קח בחשבון את התאריך ונסה למצוא משהוא שלא יהיה עמוס בהרבה אנשים. בהצלחה.",
+        description: "מתכנן טיול למעיינות עמק המעיינות: מדרג עומס משוער לכל אתר לפי היום/העונה/השעה בזמן אמת, ממליץ על האפשרות השקטה ביותר להיום, עם מפות גוגל משובצות ופילטרים (חינם, משפחות, בלי הליכה, צל).",
+        date: "2026-07-17",
+        demo: "emek_hamaayanot_springs/index.html",
+    },
+];
+
+function renderProjects() {
+    const container = document.getElementById('projects');
+    document.getElementById('stat-count').textContent = PROJECTS.length;
+
+    container.innerHTML = PROJECTS.map(p => `
+        <div class="project-card t-${p.theme}">
+            <div class="card-header">
+                <div class="card-icon">${p.icon}</div>
+                <div>
+                    <div class="card-title">${p.title}</div>
+                    <div class="card-date">${p.date}</div>
+                    <div class="card-tags">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                </div>
+            </div>
+            <div class="card-prompt">${p.prompt.replace(/\n/g, '<br>')}</div>
+            <div class="card-desc">${p.description}</div>
+            <div class="card-links">
+                ${p.demo ? `<a href="${p.demo}" class="btn-live" target="_blank">▶ פתח דמו</a>` : ''}
+                <a href="https://github.com/orimosenzon/fun/tree/master/vibe_coding/one_prompt/${p.slug}" class="btn-secondary" target="_blank">📁 קוד + README</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+renderProjects();
+</script>
+</body>
+</html>

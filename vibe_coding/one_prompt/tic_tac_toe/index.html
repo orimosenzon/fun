@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>איקס עיגול</title>
+<style>
+  :root {
+    --bg: #1a1c2b;
+    --panel: #24273a;
+    --accent: #7c6cf0;
+    --accent2: #f0716c;
+    --text: #eef0fb;
+    --muted: #9296b3;
+    --cell-bg: #2e3148;
+    --cell-hover: #383c5c;
+    --win: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 0%, #2a2d45, var(--bg) 70%);
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+    color: var(--text);
+  }
+  .app {
+    width: 100%;
+    max-width: 460px;
+    padding: 24px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 2rem;
+    margin: 0 0 4px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 14px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .btn:hover {
+    background: var(--cell-hover);
+    transform: translateY(-2px);
+  }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent), #5a4bd6);
+  }
+  .btn.primary:hover {
+    box-shadow: 0 4px 14px rgba(124,108,240,0.45);
+  }
+  .btn.selected {
+    outline: 2px solid var(--accent);
+    background: var(--cell-hover);
+  }
+  .row-btns {
+    display: flex;
+    gap: 10px;
+  }
+  .row-btns .btn { margin: 10px 0; }
+
+  .diff-desc {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: -2px;
+    margin-bottom: 18px;
+    min-height: 1.2em;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px auto;
+    max-width: 320px;
+  }
+  .cell {
+    aspect-ratio: 1;
+    background: var(--cell-bg);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .cell:hover:not(.taken) {
+    background: var(--cell-hover);
+  }
+  .cell.taken { cursor: default; }
+  .cell.x { color: var(--accent); }
+  .cell.o { color: var(--accent2); }
+  .cell.win { background: rgba(74, 222, 128, 0.18); box-shadow: inset 0 0 0 2px var(--win); }
+
+  .status {
+    font-size: 1.1rem;
+    min-height: 1.6em;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .status.win-msg { color: var(--win); }
+  .status.draw-msg { color: var(--muted); }
+
+  .scoreboard {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin: 10px 0 18px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .scoreboard span b { color: var(--text); }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .controls .btn { flex: 1; margin: 0; padding: 12px; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>איקס עיגול ⭕✕</h1>
+  <div class="subtitle" id="subtitle">בחר מצב משחק</div>
+
+  <!-- מסך 1: בחירת מצב -->
+  <div class="screen active" id="screen-mode">
+    <button class="btn primary" data-mode="vs-computer">שחקן נגד המחשב</button>
+    <button class="btn primary" data-mode="two-players">שני שחקנים</button>
+  </div>
+
+  <!-- מסך 2: בחירת רמת קושי -->
+  <div class="screen" id="screen-difficulty">
+    <button class="btn" data-diff="dumb">דביל</button>
+    <div class="diff-desc" id="desc-dumb">המחשב משחק לגמרי באקראי</div>
+    <button class="btn" data-diff="smart">חכם</button>
+    <div class="diff-desc" id="desc-smart">המחשב מנצח וחוסם כשאפשר, אחרת משחק בחוכמה חלקית</div>
+    <button class="btn" data-diff="perfect">מושלם</button>
+    <div class="diff-desc" id="desc-perfect">המחשב משחק אופטימלית — בלתי אפשרי לנצח אותו</div>
+    <button class="btn" id="back-to-mode">חזרה</button>
+  </div>
+
+  <!-- מסך 3: המשחק -->
+  <div class="screen" id="screen-game">
+    <div class="status" id="status"></div>
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="board" id="board"></div>
+    <div class="controls">
+      <button class="btn" id="new-round">סבב חדש</button>
+      <button class="btn" id="back-to-menu">תפריט ראשי</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const screenMode = document.getElementById('screen-mode');
+  const screenDifficulty = document.getElementById('screen-difficulty');
+  const screenGame = document.getElementById('screen-game');
+  const subtitle = document.getElementById('subtitle');
+  const statusEl = document.getElementById('status');
+  const scoreboardEl = document.getElementById('scoreboard');
+  const boardEl = document.getElementById('board');
+
+  let mode = null;       // 'vs-computer' | 'two-players'
+  let difficulty = null; // 'dumb' | 'smart' | 'perfect'
+  let board = Array(9).fill(null);
+  let current = 'X';     // whose turn
+  let gameOver = false;
+  let humanSymbol = 'X'; // in vs-computer mode, human is always X, computer O
+  const score = { X: 0, O: 0, draw: 0 };
+
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function showScreen(el) {
+    [screenMode, screenDifficulty, screenGame].forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // --- מסך 1: מצב משחק ---
+  screenMode.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mode = btn.dataset.mode;
+      if (mode === 'vs-computer') {
+        subtitle.textContent = 'בחר רמת קושי';
+        showScreen(screenDifficulty);
+      } else {
+        difficulty = null;
+        startGame();
+      }
+    });
+  });
+
+  // --- מסך 2: רמת קושי ---
+  screenDifficulty.querySelectorAll('[data-diff]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.diff;
+      startGame();
+    });
+  });
+  document.getElementById('back-to-mode').addEventListener('click', () => {
+    subtitle.textContent = 'בחר מצב משחק';
+    showScreen(screenMode);
+  });
+
+  // --- מסך 3: המשחק ---
+  document.getElementById('back-to-menu').addEventListener('click', () => {
+    score.X = 0; score.O = 0; score.draw = 0;
+    subtitle.textContent = 'בחר מצב משחק';
+    showScreen(screenMode);
+  });
+  document.getElementById('new-round').addEventListener('click', resetRound);
+
+  function startGame() {
+    score.X = 0; score.O = 0; score.draw = 0;
+    subtitle.textContent = mode === 'vs-computer'
+      ? 'אתה (✕) נגד המחשב (⭕) — רמה: ' + diffLabel(difficulty)
+      : 'שני שחקנים — שחקן 1 (✕) נגד שחקן 2 (⭕)';
+    buildBoard();
+    resetRound();
+    showScreen(screenGame);
+  }
+
+  function diffLabel(d) {
+    return { dumb: 'דביל', smart: 'חכם', perfect: 'מושלם' }[d] || '';
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.addEventListener('click', () => onCellClick(i));
+      boardEl.appendChild(cell);
+    }
+  }
+
+  function resetRound() {
+    board = Array(9).fill(null);
+    current = 'X';
+    gameOver = false;
+    renderBoard();
+    updateStatus();
+    updateScoreboard();
+    // אם מדובר במחשב שמתחיל (לא רלוונטי כרגע כי אדם תמיד X ומתחיל)
+  }
+
+  function renderBoard() {
+    boardEl.querySelectorAll('.cell').forEach((cell, i) => {
+      cell.classList.remove('x', 'o', 'taken', 'win');
+      cell.textContent = '';
+      if (board[i]) {
+        cell.textContent = board[i] === 'X' ? '✕' : '⭕';
+        cell.classList.add('taken', board[i].toLowerCase());
+      }
+    });
+  }
+
+  function updateStatus(message, cls) {
+    if (message) {
+      statusEl.textContent = message;
+      statusEl.className = 'status' + (cls ? ' ' + cls : '');
+      return;
+    }
+    if (mode === 'vs-computer') {
+      statusEl.textContent = current === humanSymbol ? 'תורך' : 'המחשב חושב...';
+    } else {
+      statusEl.textContent = 'תור שחקן ' + (current === 'X' ? '1 (✕)' : '2 (⭕)');
+    }
+    statusEl.className = 'status';
+  }
+
+  function updateScoreboard() {
+    const p1 = mode === 'vs-computer' ? 'אתה' : 'שחקן 1';
+    const p2 = mode === 'vs-computer' ? 'המחשב' : 'שחקן 2';
+    scoreboardEl.innerHTML =
+      '<span>' + p1 + ' (✕): <b>' + score.X + '</b></span>' +
+      '<span>תיקו: <b>' + score.draw + '</b></span>' +
+      '<span>' + p2 + ' (⭕): <b>' + score.O + '</b></span>';
+  }
+
+  function onCellClick(i) {
+    if (gameOver || board[i]) return;
+    if (mode === 'vs-computer' && current !== humanSymbol) return;
+    playMove(i, current);
+  }
+
+  function playMove(i, symbol) {
+    board[i] = symbol;
+    renderBoard();
+
+    const winLine = checkWin(board, symbol);
+    if (winLine) {
+      endGame(symbol, winLine);
+      return;
+    }
+    if (board.every(c => c)) {
+      endGame(null);
+      return;
+    }
+
+    current = current === 'X' ? 'O' : 'X';
+    updateStatus();
+
+    if (mode === 'vs-computer' && current !== humanSymbol && !gameOver) {
+      setTimeout(computerMove, 400);
+    }
+  }
+
+  function endGame(winner, winLine) {
+    gameOver = true;
+    if (winLine) {
+      winLine.forEach(idx => boardEl.children[idx].classList.add('win'));
+    }
+    if (winner) {
+      score[winner]++;
+      let who;
+      if (mode === 'vs-computer') {
+        who = winner === humanSymbol ? 'ניצחת! 🎉' : 'המחשב ניצח';
+      } else {
+        who = 'שחקן ' + (winner === 'X' ? '1 (✕)' : '2 (⭕)') + ' ניצח! 🎉';
+      }
+      updateStatus(who, 'win-msg');
+    } else {
+      score.draw++;
+      updateStatus('תיקו!', 'draw-msg');
+    }
+    updateScoreboard();
+  }
+
+  function checkWin(b, symbol) {
+    for (const line of WIN_LINES) {
+      if (line.every(idx => b[idx] === symbol)) return line;
+    }
+    return null;
+  }
+
+  // --- מנוע המחשב ---
+  function computerMove() {
+    if (gameOver) return;
+    const compSymbol = current;
+    let move;
+    if (difficulty === 'dumb') {
+      move = dumbMove(board);
+    } else if (difficulty === 'smart') {
+      move = smartMove(board, compSymbol);
+    } else {
+      move = perfectMove(board, compSymbol);
+    }
+    if (move !== null && move !== undefined) {
+      playMove(move, compSymbol);
+    }
+  }
+
+  function emptyCells(b) {
+    const cells = [];
+    b.forEach((v, i) => { if (!v) cells.push(i); });
+    return cells;
+  }
+
+  function dumbMove(b) {
+    const empties = emptyCells(b);
+    return empties[Math.floor(Math.random() * empties.length)];
+  }
+
+  function otherSymbol(s) { return s === 'X' ? 'O' : 'X'; }
+
+  // חכם: מנצח אם אפשר, חוסם אם צריך, אחרת מעדיף מרכז/פינות, אחרת אקראי
+  function smartMove(b, symbol) {
+    const opp = otherSymbol(symbol);
+    const empties = emptyCells(b);
+
+    // 1. נצח אם אפשר
+    for (const i of empties) {
+      const copy = b.slice(); copy[i] = symbol;
+      if (checkWin(copy, symbol)) return i;
+    }
+    // 2. חסום ניצחון של היריב
+    for (const i of empties) {
+      const copy = b.slice(); copy[i] = opp;
+      if (checkWin(copy, opp)) return i;
+    }
+    // 3. חלק מהזמן משחק בטיפשות (כדי שלא יהיה בלתי אפשרי לנצח)
+    if (Math.random() < 0.35) {
+      return dumbMove(b);
+    }
+    // 4. עדיפות למרכז, אז פינות, אז צדדים
+    const priority = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+    for (const i of priority) {
+      if (empties.includes(i)) return i;
+    }
+    return dumbMove(b);
+  }
+
+  // מושלם: מינימקס מלא — בלתי אפשרי לנצח אותו
+  function perfectMove(b, symbol) {
+    const opp = otherSymbol(symbol);
+    let bestScore = -Infinity;
+    let bestMove = null;
+    for (const i of emptyCells(b)) {
+      const copy = b.slice();
+      copy[i] = symbol;
+      const s = minimax(copy, 0, false, symbol, opp);
+      if (s > bestScore) {
+        bestScore = s;
+        bestMove = i;
+      }
+    }
+    return bestMove;
+  }
+
+  function minimax(b, depth, isMaximizing, aiSymbol, humanSym) {
+    const winA = checkWin(b, aiSymbol);
+    if (winA) return 10 - depth;
+    const winH = checkWin(b, humanSym);
+    if (winH) return depth - 10;
+    if (b.every(c => c)) return 0;
+
+    if (isMaximizing) {
+      let best = -Infinity;
+      for (const i of emptyCells(b)) {
+        const copy = b.slice(); copy[i] = aiSymbol;
+        best = Math.max(best, minimax(copy, depth + 1, false, aiSymbol, humanSym));
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (const i of emptyCells(b)) {
+        const copy = b.slice(); copy[i] = humanSym;
+        best = Math.min(best, minimax(copy, depth + 1, true, aiSymbol, humanSym));
+      }
+      return best;
+    }
+  }
+})();
+</script>
+</body>
+</html>
