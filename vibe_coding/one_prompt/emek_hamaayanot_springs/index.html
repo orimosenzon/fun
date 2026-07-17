@@ -429,11 +429,11 @@ function renderSpots() {
                 <span class="spot-tag">${spot.fee ? '💰 בתשלום' : '🆓 כניסה חופשית'}</span>
             </div>
             <div class="spot-map-wrap">
-                <iframe src="https://www.google.com/maps?q=${mapQuery}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <iframe src="https://www.google.com/maps?q=${mapQuery}&hl=iw&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
             <div class="spot-actions">
-                <a class="btn-nav" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">🧭 ניווט בגוגל מפות</a>
-                <a class="btn-info" href="https://www.google.com/search?q=${encodeURIComponent(spot.maps + ' שעות פתיחה מחיר')}" target="_blank" rel="noopener">ℹ️ שעות פתיחה ומחיר עדכני</a>
+                <a class="btn-nav" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}&hl=iw" target="_blank" rel="noopener">🧭 ניווט בגוגל מפות</a>
+                <a class="btn-info" href="https://www.google.com/search?q=${encodeURIComponent(spot.maps + ' שעות פתיחה מחיר')}&hl=iw" target="_blank" rel="noopener">ℹ️ שעות פתיחה ומחיר עדכני</a>
             </div>
         </div>`;
     }).join('');
