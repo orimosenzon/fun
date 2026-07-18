@@ -39,6 +39,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 
 import requests
 
@@ -86,6 +87,12 @@ def wiki_escape(text: str) -> str:
 
 def clean_venue(name: str) -> str:
     return name.split("|")[0].strip() if name else ""
+
+
+def maps_link(venue: str) -> str:
+    """Google Maps search link for a venue, forced to Hebrew UI (hl=iw)."""
+    query = urllib.parse.quote(f"{venue}, פרדס חנה-כרכור")
+    return f"https://www.google.com/maps/search/?api=1&query={query}&hl=iw"
 
 
 def price_label(price, is_free: bool = False) -> str:
@@ -435,8 +442,9 @@ def build_table(rows: list, collapsible: bool = False) -> str:
             img = f"[[קובץ:{r['image_file']}|90px{link}]]"
         else:
             img = "—"
+        venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
         lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
-                  f'{r["category"]} || {r["venue"]} || {r["entry"]}']
+                  f'{r["category"]} || {venue} || {r["entry"]}']
     lines.append("|}")
     return "\n".join(lines)
 
