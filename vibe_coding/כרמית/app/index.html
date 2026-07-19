@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>חידות לכרמית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>🎉 חידות לכרמית 🎉</h1>
+    </header>
+
+    <section id="start-screen" class="screen">
+      <p class="intro">11 חידות מחכות לכם.<br>מוכנים לפתור?</p>
+      <button id="start-btn" class="primary-btn">בואו נתחיל!</button>
+    </section>
+
+    <section id="quiz-screen" class="screen hidden">
+      <div class="progress"><span id="progress-text"></span></div>
+      <div class="riddle-card">
+        <img id="riddle-image" src="" alt="חידה">
+        <p id="riddle-question" class="question"></p>
+        <div id="hint-box" class="hint-box hidden"></div>
+        <input type="text" id="answer-input" placeholder="הקלידו את התשובה כאן" autocomplete="off">
+        <div class="buttons-row">
+          <button id="hint-btn" class="secondary-btn">💡 רמז</button>
+          <button id="submit-btn" class="primary-btn">בדיקת תשובה</button>
+        </div>
+        <div id="feedback" class="feedback hidden"></div>
+        <button id="next-btn" class="primary-btn hidden">לחידה הבאה ←</button>
+      </div>
+    </section>
+
+    <section id="report-screen" class="screen hidden">
+      <h2 id="score-headline"></h2>
+      <p id="score-sub" class="score-sub"></p>
+      <div class="table-wrap">
+        <table id="report-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>שאלה</th>
+              <th>תשובתכם</th>
+              <th>התשובה הנכונה</th>
+              <th>רמז?</th>
+              <th>תוצאה</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button id="restart-btn" class="primary-btn">לשחק שוב</button>
+    </section>
+  </div>
+
+  <script src="riddles.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
