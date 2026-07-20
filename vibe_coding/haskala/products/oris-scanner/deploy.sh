@@ -45,6 +45,7 @@ git push
 echo "🚀 deploying to Cloud Run ($SERVICE, project=$PROJECT, region=$REGION)…"
 gcloud run deploy "$SERVICE" \
     --source . \
+    --function=process_my_drive_files \
     --project "$PROJECT" \
     --region "$REGION" \
     --no-allow-unauthenticated \
