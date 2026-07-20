@@ -90,9 +90,10 @@ def get_workspace_credentials():
     return delegated_creds
 
 
-# TODO: כרגע אותה תיקיית תוצאות של scan2 (מתמטיקה) — שווה לשקול תיקייה נפרדת
-# לדוחות שפה כדי לא לערבב את הדוחות של שני המקצועות אצל ירון.
-RESULTS_FOLDER_ID = '1kkHROa7DlrehNOFvqkwAEQtvTsWKwNS8'
+# תיקיית תוצאות ייעודית ל-oris-scanner (לא עוד ה-folder הארד-קודד המשותף עם
+# scan2/מתמטיקה) — עודכן לפי בקשת אורי, 2026-07-20:
+# https://drive.google.com/drive/folders/1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3
+RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 
 # הקורס "integration" הוא קורס-בדיקה משותף ובו גם מטלת אנגלית וגם מטלת גאומטריה
 # (נבדק ב-2026-07-20 מול Classroom האמיתי — אין שם רובריקה מובנית, רק description
