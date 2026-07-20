@@ -47,10 +47,15 @@ def _merge_pages(page_lists):
     return merged
 
 
-def check_hw(service, file_ids, folder_id):
+def check_hw(service, file_ids, folder_id, rubric=""):
     """Downloads each attached Drive file, runs it through the language-checker
     core pipeline, merges the pages into one report, and uploads the result
-    as a Word document into folder_id."""
+    as a Word document into folder_id.
+
+    rubric: free-text grading guidance for this assignment (e.g. the
+    courseWork description + maxPoints, built by main.py from live Classroom
+    data). Empty string if the teacher didn't provide one — the model then
+    falls back to its own default point scale (see core.ANALYSIS_PROMPT)."""
     page_lists = []
     first_name = None
     _, model_label = core.resolve_model(core.DEFAULT_MODEL)
@@ -64,7 +69,8 @@ def check_hw(service, file_ids, folder_id):
         data = _download_bytes(service, fid)
         for ev in core.process_stream(data, ext, auto_orient=True,
                                        model_key=core.DEFAULT_MODEL,
-                                       model_label=model_label, keep_imgs=False):
+                                       model_label=model_label, rubric=rubric,
+                                       keep_imgs=False):
             if ev["type"] == "result":
                 page_lists.append(ev["pages"])
 
