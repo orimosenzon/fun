@@ -1,7 +1,8 @@
-"""report.py — בוני הדוחות של oris-scanner (HTML עצמאי + Word).
+"""report.py — report builders for oris-scanner (standalone HTML + Word).
 
-מבוסס על report.py של math-checker, מותאם לשדות בדיקת-שפה (אין LaTeX/KaTeX —
-כל הטקסט הוא עברית/שפה רגילה, זורם RTL רגיל, לא LTR כפוי כמו נוסחאות).
+Based on math-checker's report.py, adapted to language-checking fields (no
+LaTeX/KaTeX — all text is Hebrew/plain language, regular RTL flow, not the
+forced LTR used for formulas).
 """
 from __future__ import annotations
 

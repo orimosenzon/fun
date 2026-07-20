@@ -12,15 +12,17 @@ from googleapiclient.discovery import build
 import checker
 
 # ─── dedup ledger (Firestore) ──────────────────────────────────────────────────
-# זו התיקון הארכיטקטוני המרכזי מול scan2: שם, run_workspace_scan() עיבד מחדש
-# את כל ההגשות בכל טריגר (אין דה-דופליקציה), וכל redelivery של Pub/Sub (בגלל
-# ack deadline קצר מדי) הריץ סריקה מלאה נוספת — שרשרת שרפה מאות אלפי בקשות.
+# This is the main architectural fix versus scan2: there, run_workspace_scan()
+# reprocessed every submission on every trigger (no dedup), and every Pub/Sub
+# redelivery (because the ack deadline was too short) ran another full scan —
+# a chain that burned hundreds of thousands of requests.
 #
-# כאן: לפני עיבוד הגשה, "תופסים" אותה אטומית ב-Firestore (create נכשל אם כבר
-# קיימת). אם היא כבר "done" — מדלגים (זה ה-dedup עצמו). אם היא "in_progress"
-# וטרייה — כנראה instance אחר כבר מטפל בה עכשיו, מדלגים. אם "in_progress" אבל
-# ישנה (claim תקוע מריצה שקרסה) — לוקחים אותה מחדש כדי לאפשר retry אמיתי.
-_STALE_CLAIM_MINUTES = 20  # מעבר לזה, claim תקוע נחשב נטוש וניתן לתפיסה מחדש
+# Here: before processing a submission, atomically "claim" it in Firestore
+# (create fails if it already exists). If it's already "done" — skip (this is
+# the dedup itself). If it's "in_progress" and fresh — another instance is
+# probably handling it right now, skip. If "in_progress" but stale (a claim
+# stuck from a crashed run) — reclaim it to allow a genuine retry.
+_STALE_CLAIM_MINUTES = 20  # beyond this, a stuck claim is considered abandoned and reclaimable
 
 _db = None
 
@@ -33,8 +35,9 @@ def _firestore():
 
 
 def _try_claim_submission(subm_id: str) -> bool:
-    """מחזיר True אם יש לעבד את ההגשה עכשיו (או שהיא לא טופלה, או ש-claim ישן
-    ננטש), False אם יש לדלג (כבר done, או instance אחר עובד עליה כרגע)."""
+    """Returns True if the submission should be processed now (either it
+    wasn't handled yet, or an old claim was abandoned), False if it should be
+    skipped (already done, or another instance is working on it right now)."""
     doc_ref = _firestore().collection("oris_scanner_submissions").document(subm_id)
     now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -51,8 +54,8 @@ def _try_claim_submission(subm_id: str) -> bool:
         if claimed_at is not None:
             age_minutes = (now - claimed_at).total_seconds() / 60
             if age_minutes < _STALE_CLAIM_MINUTES:
-                return False  # instance אחר עובד על זה עכשיו, לא נטוש
-        # claim ישן/נטוש — תופסים מחדש כדי לאפשר retry אמיתי
+                return False  # another instance is working on it now, not abandoned
+        # stale/abandoned claim — reclaim it to allow a genuine retry
         transaction.set(doc_ref, {"status": "in_progress", "claimed_at": now})
         return True
 
@@ -67,7 +70,7 @@ def _mark_done(subm_id: str):
     }, merge=True)
 
 
-# ─── Google Workspace access (זהה ל-scan2: אותו service account + האצלה) ──────
+# ─── Google Workspace access (same as scan2: same service account + delegation) ──
 
 def get_workspace_credentials():
     SCOPES = [
@@ -90,22 +93,25 @@ def get_workspace_credentials():
     return delegated_creds
 
 
-# תיקיית תוצאות ייעודית ל-oris-scanner (לא עוד ה-folder הארד-קודד המשותף עם
-# scan2/מתמטיקה) — עודכן לפי בקשת אורי, 2026-07-20:
+# Dedicated results folder for oris-scanner (no longer the hardcoded folder
+# shared with scan2/math) — updated per Ori's request, 2026-07-20:
 # https://drive.google.com/drive/folders/1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3
 RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 
-# הקורס "integration" הוא קורס-בדיקה משותף ובו גם מטלת אנגלית וגם מטלת גאומטריה
-# (נבדק ב-2026-07-20 מול Classroom האמיתי — אין שם רובריקה מובנית, רק description
-# חופשי + maxPoints). oris-scanner אמור לטפל רק במטלת השפה — לא בגאומטריה (זה
-# תפקידו של scan2/math-checker). להוסיף לכאן כל courseWork id חדש של מטלת שפה.
+# The "integration" course is a shared test course with both an English
+# assignment and a geometry assignment (verified 2026-07-20 against real
+# Classroom data — no native rubric there, just a free-text description +
+# maxPoints). oris-scanner should only handle the language assignment — not
+# geometry (that's scan2/math-checker's job). Add any new language courseWork
+# id here.
 TARGET_COURSEWORK_IDS = {"868721516278"}  # "English Homework"
 
 
 def _rubric_for(cw: dict) -> str:
-    """בונה טקסט-רובריקה מנתוני ה-courseWork בפועל (description + maxPoints).
-    אם ירון עדיין לא צירף רובריקה מפורטת, ה-description החופשי (למשל "Write a
-    short essay about your summer vacation") לפחות נותן למודל את הקשר המטלה."""
+    """Builds rubric text from the real courseWork data (description +
+    maxPoints). If Yaron hasn't attached a detailed rubric yet, the free-text
+    description (e.g. "Write a short essay about your summer vacation") at
+    least gives the model the assignment's context."""
     parts = []
     description = (cw.get('description') or '').strip()
     if description:
@@ -128,7 +134,7 @@ def run_workspace_scan():
         course_work = res_cw.get('courseWork', [])
         for cw in course_work:
             if cw.get('id') not in TARGET_COURSEWORK_IDS:
-                continue  # לא מטלת שפה — לא בתחום oris-scanner
+                continue  # not a language assignment — outside oris-scanner's scope
 
             rubric = _rubric_for(cw)
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
@@ -137,7 +143,7 @@ def run_workspace_scan():
             for subm in subms:
                 subm_id = subm.get('id')
                 if not _try_claim_submission(subm_id):
-                    continue  # dedup: כבר טופלה, או instance אחר מטפל בה כרגע
+                    continue  # dedup: already handled, or another instance is on it right now
 
                 file_ids = []
                 attachments = (subm.get('assignmentSubmission') or {}).get('attachments', [])
