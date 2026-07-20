@@ -1,11 +1,13 @@
-"""core.py — ליבת הבדיקה של oris-scanner (בדיקת-שפה), ללא Flask.
+"""core.py — the checking core of oris-scanner (language checking), no Flask.
 
-מבוסס על אותה ארכיטקטורת pipeline של math-checker/scan2 (רינדור עמודים →
-תיקון אוריינטציה → ניתוח הוליסטי → JSON מובנה), עם שני שינויים מהותיים:
-1. תוכן הבדיקה הוא שפה (טקסט כתוב, שגיאות איות/דקדוק/תחביר/ניסוח) ולא מתמטיקה.
-2. מודל ברירת המחדל הוא Gemini, לא Claude — גם לניתוח וגם לזיהוי אוריינטציה,
-   כדי לא להיות תלוי במפתח Anthropic בכלל (זו הייתה נקודת הכשל בסבב הקודם:
-   כשנגמר קרדיט Anthropic, כל קריאה נכשלה ונספרה כ-500 מול Pub/Sub).
+Based on the same pipeline architecture as math-checker/scan2 (render pages →
+fix orientation → holistic analysis → structured JSON), with two key changes:
+1. The checking content is language (written text, spelling/grammar/syntax/
+   phrasing errors) instead of math.
+2. The default model is Gemini, not Claude — for both analysis and
+   orientation detection — so it never depends on an Anthropic key at all
+   (that was the failure point last time: when Anthropic credit ran out,
+   every call failed and counted as a 500 against Pub/Sub).
 """
 from __future__ import annotations
 
@@ -29,8 +31,9 @@ MAX_EDGE = 2200           # longest edge sent to the model for analysis
 ORIENT_MAX_EDGE = 900     # longest edge sent for fast orientation check
 PREVIEW_MAX_EDGE = 1400   # longest edge stored in result for display/report
 
-# מודל ברירת מחדל: Gemini (דורש רק GEMINI_API_KEY, לא ANTHROPIC_API_KEY).
-# אפשרויות אחרות נשארות זמינות (כמו ב-math-checker) למקרה שנרצה להשוות איכות.
+# Default model: Gemini (only requires GEMINI_API_KEY, not ANTHROPIC_API_KEY).
+# Other options remain available (as in math-checker) in case we want to
+# compare quality.
 MODELS = {
     "gemini-flash":     "Gemini 2.5 Flash · ברירת מחדל",
     "gemini-lite":      "Gemini 2.5 Flash-Lite · זול וזריז יותר",
@@ -50,7 +53,7 @@ _GEMINI_IDS = {
 }
 
 DEFAULT_MODEL = "gemini-flash"
-ORIENT_MODEL_KEY = "gemini-flash"  # אוריינטציה גם היא ב-Gemini (לא Haiku/Anthropic)
+ORIENT_MODEL_KEY = "gemini-flash"  # orientation is also on Gemini (not Haiku/Anthropic)
 
 
 def resolve_model(key: str | None) -> tuple[str, str]:
@@ -60,7 +63,7 @@ def resolve_model(key: str | None) -> tuple[str, str]:
 ACCEPTED_EXTS = (".pdf", ".jpg", ".jpeg", ".png")
 
 
-# ─── file handling (זהה ל-math-checker) ───────────────────────────────────────
+# ─── file handling (same as math-checker) ─────────────────────────────────────
 
 def pdf_to_pages(pdf_bytes: bytes) -> list[Image.Image]:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
