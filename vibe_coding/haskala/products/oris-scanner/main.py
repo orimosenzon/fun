@@ -94,6 +94,26 @@ def get_workspace_credentials():
 # לדוחות שפה כדי לא לערבב את הדוחות של שני המקצועות אצל ירון.
 RESULTS_FOLDER_ID = '1kkHROa7DlrehNOFvqkwAEQtvTsWKwNS8'
 
+# הקורס "integration" הוא קורס-בדיקה משותף ובו גם מטלת אנגלית וגם מטלת גאומטריה
+# (נבדק ב-2026-07-20 מול Classroom האמיתי — אין שם רובריקה מובנית, רק description
+# חופשי + maxPoints). oris-scanner אמור לטפל רק במטלת השפה — לא בגאומטריה (זה
+# תפקידו של scan2/math-checker). להוסיף לכאן כל courseWork id חדש של מטלת שפה.
+TARGET_COURSEWORK_IDS = {"868721516278"}  # "English Homework"
+
+
+def _rubric_for(cw: dict) -> str:
+    """בונה טקסט-רובריקה מנתוני ה-courseWork בפועל (description + maxPoints).
+    אם ירון עדיין לא צירף רובריקה מפורטת, ה-description החופשי (למשל "Write a
+    short essay about your summer vacation") לפחות נותן למודל את הקשר המטלה."""
+    parts = []
+    description = (cw.get('description') or '').strip()
+    if description:
+        parts.append(f"הנחיית המטלה מהמורה: {description}")
+    max_points = cw.get('maxPoints')
+    if max_points:
+        parts.append(f"הניקוד המקסימלי הכולל למטלה זו הוא {max_points}.")
+    return "\n".join(parts)
+
 
 def run_workspace_scan():
     creds = get_workspace_credentials()
@@ -106,6 +126,10 @@ def run_workspace_scan():
         res_cw = classroom_service.courses().courseWork().list(courseId=course.get('id')).execute()
         course_work = res_cw.get('courseWork', [])
         for cw in course_work:
+            if cw.get('id') not in TARGET_COURSEWORK_IDS:
+                continue  # לא מטלת שפה — לא בתחום oris-scanner
+
+            rubric = _rubric_for(cw)
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
             subms = res_sub.get('studentSubmissions', [])
@@ -121,7 +145,7 @@ def run_workspace_scan():
                     if drive_file:
                         file_ids.append(drive_file.get('id'))
 
-                checker.check_hw(drive_service, file_ids, RESULTS_FOLDER_ID)
+                checker.check_hw(drive_service, file_ids, RESULTS_FOLDER_ID, rubric=rubric)
                 _mark_done(subm_id)
 
 
