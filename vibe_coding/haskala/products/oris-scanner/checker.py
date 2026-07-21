@@ -37,28 +37,17 @@ def _download_bytes(service, file_id):
     return buf.getvalue()
 
 
-def _merge_pages(page_lists):
-    merged = []
-    for pages in page_lists:
-        for p in pages:
-            p = dict(p)
-            p["page"] = len(merged) + 1
-            merged.append(p)
-    return merged
+def check_hw(service, file_ids, folder_id):
+    """Downloads each attached Drive file, runs them through the checking
+    pipeline (OCR every page → evaluate the merged transcript against the
+    default rubric), and uploads the resulting Word report into folder_id.
 
-
-def check_hw(service, file_ids, folder_id, rubric=""):
-    """Downloads each attached Drive file, runs it through the language-checker
-    core pipeline, merges the pages into one report, and uploads the result
-    as a Word document into folder_id.
-
-    rubric: free-text grading guidance for this assignment (e.g. the
-    courseWork description + maxPoints, built by main.py from live Classroom
-    data). Empty string if the teacher didn't provide one — the model then
-    falls back to its own default point scale (see core.ANALYSIS_PROMPT)."""
-    page_lists = []
+    Model and rubric are currently fixed to core.DEFAULT_MODEL /
+    core.DEFAULT_RUBRIC_ID; both check_pages() and evaluate_with_rubric()
+    already take them as parameters, so a future entry point can expose them
+    without further plumbing changes."""
+    file_bytes_list = []
     first_name = None
-    _, model_label = core.resolve_model(core.DEFAULT_MODEL)
     for fid in file_ids:
         meta = service.files().get(fileId=fid, fields="mimeType, name").execute()
         first_name = first_name or meta.get("name")
@@ -67,23 +56,23 @@ def check_hw(service, file_ids, folder_id, rubric=""):
             log.info("skipping %s - unsupported type %s", meta.get("name"), meta.get("mimeType"))
             continue
         data = _download_bytes(service, fid)
-        for ev in core.process_stream(data, ext, auto_orient=True,
-                                       model_key=core.DEFAULT_MODEL,
-                                       model_label=model_label, rubric=rubric,
-                                       keep_imgs=False):
-            if ev["type"] == "result":
-                page_lists.append(ev["pages"])
+        file_bytes_list.append((data, ext))
 
-    if not page_lists:
+    if not file_bytes_list:
         log.info("no supported attachments among %s - nothing to upload", file_ids)
         return
 
-    pages = _merge_pages(page_lists)
+    pages, evaluation = core.check_pages(file_bytes_list)
+    rubric_name = (core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}).get("name", core.DEFAULT_RUBRIC_ID)
+
     stem = os.path.splitext(first_name or "report")[0]
     ts = time.strftime("%Y%m%d-%H%M%S")
     out_name = f"{stem}_report_{ts}.docx"
 
-    docx_bytes = report.build_result_docx(pages, out_name)
+    docx_bytes = report.build_evaluation_docx(
+        evaluation, out_name, rubric_name, pages=pages,
+        feedback_lang=core.DEFAULT_FEEDBACK_LANG, exercise_lang=core.DEFAULT_EXERCISE_LANG,
+    )
 
     file_metadata = {"name": out_name, "parents": [folder_id]}
     media = MediaIoBaseUpload(
