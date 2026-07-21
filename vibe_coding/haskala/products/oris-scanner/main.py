@@ -100,26 +100,16 @@ RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 
 # The "integration" course is a shared test course with both an English
 # assignment and a geometry assignment (verified 2026-07-20 against real
-# Classroom data — no native rubric there, just a free-text description +
-# maxPoints). oris-scanner should only handle the language assignment — not
-# geometry (that's scan2/math-checker's job). Add any new language courseWork
-# id here.
-TARGET_COURSEWORK_IDS = {"868721516278"}  # "English Homework"
-
-
-def _rubric_for(cw: dict) -> str:
-    """Builds rubric text from the real courseWork data (description +
-    maxPoints). If Yaron hasn't attached a detailed rubric yet, the free-text
-    description (e.g. "Write a short essay about your summer vacation") at
-    least gives the model the assignment's context."""
-    parts = []
-    description = (cw.get('description') or '').strip()
-    if description:
-        parts.append(f"הנחיית המטלה מהמורה: {description}")
-    max_points = cw.get('maxPoints')
-    if max_points:
-        parts.append(f"הניקוד המקסימלי הכולל למטלה זו הוא {max_points}.")
-    return "\n".join(parts)
+# Classroom data). oris-scanner should only handle the language assignment —
+# not geometry (that's scan2/math-checker's job). Add any new language
+# courseWork id here.
+#
+# Grading always uses core.DEFAULT_RUBRIC_ID (a fixed bundled rubric, not the
+# courseWork's free-text description/maxPoints) — see core.check_pages.
+TARGET_COURSEWORK_IDS = {
+    "868721516278",  # "English Homework"
+    "870920336515",  # "משימת האנטגרציה שלנו" — new test assignment, 2026-07-21
+}
 
 
 def run_workspace_scan():
@@ -136,7 +126,6 @@ def run_workspace_scan():
             if cw.get('id') not in TARGET_COURSEWORK_IDS:
                 continue  # not a language assignment — outside oris-scanner's scope
 
-            rubric = _rubric_for(cw)
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
             subms = res_sub.get('studentSubmissions', [])
@@ -152,7 +141,7 @@ def run_workspace_scan():
                     if drive_file:
                         file_ids.append(drive_file.get('id'))
 
-                checker.check_hw(drive_service, file_ids, RESULTS_FOLDER_ID, rubric=rubric)
+                checker.check_hw(drive_service, file_ids, RESULTS_FOLDER_ID)
                 _mark_done(subm_id)
 
 
