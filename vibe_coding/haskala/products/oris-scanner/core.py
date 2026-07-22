@@ -163,9 +163,13 @@ def _image_block_anthropic(img: Image.Image, max_edge: int) -> dict:
 
 
 # ─── model / provider registry (mirrors checker/app.py MODELS) ─────────────
-# Same 5 provider keys as checker; default flipped to Gemini (oris-scanner
-# never depends on ANTHROPIC_API_KEY unless a caller explicitly asks for it —
-# that was the failure point that burned the original scan2 pipeline).
+# Same 5 provider keys as checker. All 4 providers' credentials are now wired
+# into Cloud Run (Secret Manager: gemini-api-key, anthropic-api-key,
+# groq-api-key, azure-openai-api-key), so switching is just this one constant.
+# Temporarily set to groq-scout 2026-07-22: Gemini free-tier daily quota was
+# exhausted (resets midnight) and the Anthropic account is out of balance —
+# Groq is the only currently-usable provider. No parameter/UI to pick a model
+# yet; revisit DEFAULT_MODEL by hand until that's built.
 MODELS = {
     "claude": "Claude (Opus 4.8)",
     "gemini": "Gemini (2.5 Flash)",
@@ -173,7 +177,7 @@ MODELS = {
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
     "azure-gpt41-mini": "GPT-4.1-mini (Azure)",
 }
-DEFAULT_MODEL = "gemini"
+DEFAULT_MODEL = "groq-scout"
 
 MODEL_FILENAME_LABEL = {
     "claude":      "claude-opus-4-8",
@@ -233,7 +237,11 @@ DEFAULT_EXERCISE_LANG = "en"
 DEFAULT_FEEDBACK_LANG = "he"
 
 
-# ─── orientation detection (Gemini by default — oris-scanner's own, kept) ──
+# ─── orientation detection ──────────────────────────────────────────────────
+# Follows the same model_key as OCR/eval (passed in from check_pages) rather
+# than a separately hardcoded provider — previously this always called Gemini
+# regardless of DEFAULT_MODEL, so switching providers to work around a Gemini
+# outage still silently hit Gemini here. Fixed 2026-07-22.
 
 _ORIENT_PROMPT = (
     "זהו עמוד סרוק של תרגיל שפה בכתב יד. "
@@ -242,10 +250,9 @@ _ORIENT_PROMPT = (
 )
 
 ORIENT_MAX_EDGE = 900
-ORIENT_MODEL_KEY = "gemini"
 
 
-def detect_rotation(img: Image.Image, model_key: str = ORIENT_MODEL_KEY) -> int:
+def detect_rotation(img: Image.Image, model_key: str = DEFAULT_MODEL) -> int:
     if _is_gemini(model_key):
         from google.genai import types
         response = _gemini().models.generate_content(
@@ -257,6 +264,36 @@ def detect_rotation(img: Image.Image, model_key: str = ORIENT_MODEL_KEY) -> int:
             config=types.GenerateContentConfig(max_output_tokens=10),
         )
         txt = response.text or ""
+    elif _is_groq(model_key):
+        response = _groq().chat.completions.create(
+            model=_groq_model_id(model_key),
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:image/jpeg;base64,{_img_to_b64_jpeg(img, ORIENT_MAX_EDGE)}"}},
+                    {"type": "text", "text": _ORIENT_PROMPT},
+                ],
+            }],
+            max_tokens=10,
+            temperature=0,
+        )
+        txt = response.choices[0].message.content or ""
+    elif _is_azure(model_key):
+        response = _azure().chat.completions.create(
+            model=_azure_deployment(),
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:image/jpeg;base64,{_img_to_b64_jpeg(img, ORIENT_MAX_EDGE)}"}},
+                    {"type": "text", "text": _ORIENT_PROMPT},
+                ],
+            }],
+            max_tokens=10,
+            temperature=0,
+        )
+        txt = response.choices[0].message.content or ""
     else:
         msg = _anthropic().messages.create(
             model=_ANTHROPIC_MODEL,
@@ -1006,7 +1043,7 @@ def check_pages(
     for data, ext in file_bytes_list:
         for img in iter_file_pages(data, ext):
             if auto_orient:
-                rotation = detect_rotation(img)
+                rotation = detect_rotation(img, model_key)
                 img = apply_rotation(img, rotation)
             img = _downscale(img, MAX_EDGE)
             ocr = ocr_page(img, model_key, exercise_lang, numbered=False)
