@@ -1,5 +1,4 @@
 import datetime
-import logging
 
 import functions_framework
 
@@ -11,8 +10,6 @@ from google.cloud import firestore
 from googleapiclient.discovery import build
 
 import checker
-
-log = logging.getLogger("oris-scanner")
 
 # ─── dedup ledger (Firestore) ──────────────────────────────────────────────────
 # This is the main architectural fix versus scan2: there, run_workspace_scan()
@@ -73,6 +70,33 @@ def _mark_done(subm_id: str):
     }, merge=True)
 
 
+def _get_or_create_coursework_folder(drive_service, cw_id: str, folder_name: str) -> str:
+    """Returns the Drive folder id for this assignment's results — a
+    subfolder of RESULTS_FOLDER_ID created once per courseWork and reused on
+    every later run, so all reports for the same assignment land together.
+    The mapping is kept in Firestore (mirrors the submission dedup ledger)
+    so every instance/run agrees on the same folder.
+
+    Not fully race-proof: two overlapping runs discovering the same brand
+    new assignment for the first time could each create a folder. Accepted —
+    worst case is a harmless duplicate folder, not a correctness bug, and it
+    only matters once per assignment's lifetime."""
+    doc_ref = _firestore().collection("oris_scanner_coursework_folders").document(cw_id)
+    snap = doc_ref.get()
+    if snap.exists:
+        return snap.to_dict()["folder_id"]
+
+    metadata = {
+        "name": folder_name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [RESULTS_FOLDER_ID],
+    }
+    folder = drive_service.files().create(body=metadata, fields="id").execute()
+    folder_id = folder["id"]
+    doc_ref.set({"folder_id": folder_id, "name": folder_name})
+    return folder_id
+
+
 # ─── Google Workspace access (same as scan2: same service account + delegation) ──
 
 def get_workspace_credentials():
@@ -101,39 +125,33 @@ def get_workspace_credentials():
 # https://drive.google.com/drive/folders/1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3
 RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 
-# The "integration" course is a shared test course with both an English
-# assignment and a geometry assignment (verified 2026-07-20 against real
-# Classroom data). oris-scanner should only handle the language assignment —
-# not geometry (that's scan2/math-checker's job). Add any new language
-# courseWork id here.
-#
 # Grading always uses core.DEFAULT_RUBRIC_ID (a fixed bundled rubric, not the
 # courseWork's free-text description/maxPoints) — see core.check_pages.
-TARGET_COURSEWORK_IDS = {
-    "868721516278",  # "English Homework"
-    "870920336515",  # "משימת האנטגרציה שלנו" — new test assignment, 2026-07-21
-}
-
-
+#
+# Scope: every courseWork item in every course where the delegated account
+# (teacher_email above) is the teacher — no per-assignment allowlist. This
+# means a non-language assignment in one of those courses (e.g. geometry)
+# gets language-graded too — accepted tradeoff, decided 2026-07-22.
 def run_workspace_scan():
     creds = get_workspace_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
     classroom_service = build('classroom', 'v1', credentials=creds)
 
-    res_courses = classroom_service.courses().list(pageSize=100).execute()
+    res_courses = classroom_service.courses().list(pageSize=100, teacherId='me').execute()
     courses = res_courses.get('courses', [])
     for course in courses:
         res_cw = classroom_service.courses().courseWork().list(courseId=course.get('id')).execute()
         course_work = res_cw.get('courseWork', [])
         for cw in course_work:
-            if cw.get('id') not in TARGET_COURSEWORK_IDS:
-                log.info("skipping courseWork not in TARGET_COURSEWORK_IDS: id=%s title=%r",
-                          cw.get('id'), cw.get('title'))
-                continue  # not a language assignment — outside oris-scanner's scope
-
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
             subms = res_sub.get('studentSubmissions', [])
+            if not subms:
+                continue  # no submissions yet — don't create a results folder for nothing
+
+            cw_folder_id = _get_or_create_coursework_folder(
+                drive_service, cw.get('id'), f"{course.get('name')} — {cw.get('title')}")
+
             for subm in subms:
                 subm_id = subm.get('id')
                 if not _try_claim_submission(subm_id):
@@ -146,7 +164,7 @@ def run_workspace_scan():
                     if drive_file:
                         file_ids.append(drive_file.get('id'))
 
-                checker.check_hw(drive_service, file_ids, RESULTS_FOLDER_ID)
+                checker.check_hw(drive_service, file_ids, cw_folder_id)
                 _mark_done(subm_id)
 
 
