@@ -70,12 +70,14 @@ def _mark_done(subm_id: str):
     }, merge=True)
 
 
-def _get_or_create_coursework_folder(drive_service, cw_id: str, folder_name: str) -> str:
-    """Returns the Drive folder id for this assignment's results — a
-    subfolder of RESULTS_FOLDER_ID created once per courseWork and reused on
-    every later run, so all reports for the same assignment land together.
-    The mapping is kept in Firestore (mirrors the submission dedup ledger)
-    so every instance/run agrees on the same folder.
+def _get_or_create_checked_folder(drive_service, cw_id: str, anchor_file_id: str) -> str:
+    """Returns the Drive folder id for this assignment's checked reports — a
+    subfolder named CHECKED_FOLDER_NAME created once per courseWork, nested
+    inside the submission's own folder (the one Classroom already created for
+    this assignment, found via anchor_file_id's parent), and reused on every
+    later run so all reports for the same assignment land together. The
+    mapping is kept in Firestore (mirrors the submission dedup ledger) so
+    every instance/run agrees on the same folder.
 
     Not fully race-proof: two overlapping runs discovering the same brand
     new assignment for the first time could each create a folder. Accepted —
@@ -86,14 +88,17 @@ def _get_or_create_coursework_folder(drive_service, cw_id: str, folder_name: str
     if snap.exists:
         return snap.to_dict()["folder_id"]
 
+    anchor = drive_service.files().get(fileId=anchor_file_id, fields="parents").execute()
+    parents = anchor.get("parents") or [FALLBACK_RESULTS_FOLDER_ID]
+
     metadata = {
-        "name": folder_name,
+        "name": CHECKED_FOLDER_NAME,
         "mimeType": "application/vnd.google-apps.folder",
-        "parents": [RESULTS_FOLDER_ID],
+        "parents": [parents[0]],
     }
     folder = drive_service.files().create(body=metadata, fields="id").execute()
     folder_id = folder["id"]
-    doc_ref.set({"folder_id": folder_id, "name": folder_name})
+    doc_ref.set({"folder_id": folder_id, "name": CHECKED_FOLDER_NAME})
     return folder_id
 
 
@@ -120,10 +125,17 @@ def get_workspace_credentials():
     return delegated_creds
 
 
-# Dedicated results folder for oris-scanner (no longer the hardcoded folder
-# shared with scan2/math) — updated per Ori's request, 2026-07-20:
+# Checked reports now nest inside the assignment's own submission folder
+# (resolved per-courseWork from a submitted file's parent — see
+# _get_or_create_checked_folder), not a separate shared results tree.
+# Updated per Ori's request, 2026-07-22.
+CHECKED_FOLDER_NAME = "תרגילים בדוקים"
+
+# Fallback parent, used only if a submitted file has no resolvable parent
+# (unexpected for Classroom attachments, but cheap to guard against so a
+# report is never silently dropped). Previously the sole results root:
 # https://drive.google.com/drive/folders/1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3
-RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
+FALLBACK_RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 
 # Grading always uses core.DEFAULT_RUBRIC_ID (a fixed bundled rubric, not the
 # courseWork's free-text description/maxPoints) — see core.check_pages.
@@ -154,9 +166,6 @@ def run_workspace_scan():
             if not subms:
                 continue  # no submissions yet — don't create a results folder for nothing
 
-            cw_folder_id = _get_or_create_coursework_folder(
-                drive_service, cw.get('id'), f"{course.get('name')} — {cw.get('title')}")
-
             for subm in subms:
                 subm_id = subm.get('id')
                 if not _try_claim_submission(subm_id):
@@ -169,6 +178,11 @@ def run_workspace_scan():
                     if drive_file:
                         file_ids.append(drive_file.get('id'))
 
+                if not file_ids:
+                    _mark_done(subm_id)
+                    continue  # nothing to check, and no attachment to anchor a folder on
+
+                cw_folder_id = _get_or_create_checked_folder(drive_service, cw.get('id'), file_ids[0])
                 checker.check_hw(drive_service, file_ids, cw_folder_id)
                 _mark_done(subm_id)
 
