@@ -166,10 +166,13 @@ def _image_block_anthropic(img: Image.Image, max_edge: int) -> dict:
 # Same 5 provider keys as checker. All 4 providers' credentials are now wired
 # into Cloud Run (Secret Manager: gemini-api-key, anthropic-api-key,
 # groq-api-key, azure-openai-api-key), so switching is just this one constant.
-# Temporarily set to groq-scout 2026-07-22: Gemini free-tier daily quota was
-# exhausted (resets midnight) and the Anthropic account is out of balance —
-# Groq is the only currently-usable provider. No parameter/UI to pick a model
-# yet; revisit DEFAULT_MODEL by hand until that's built.
+# Temporarily set to azure-gpt41-mini 2026-07-22: Gemini free-tier daily
+# quota was exhausted (resets midnight), Anthropic account is out of
+# balance, and Groq turned out to have removed llama-4-scout (its only
+# vision-capable model) from this key's available models entirely — 404
+# model_not_found on every real attempt (see Cloud Run logs ~16:30-17:30).
+# Confirmed Azure's gpt-4.1-mini deployment responds. No parameter/UI to
+# pick a model yet; revisit DEFAULT_MODEL by hand until that's built.
 MODELS = {
     "claude": "Claude (Opus 4.8)",
     "gemini": "Gemini (2.5 Flash)",
@@ -177,7 +180,7 @@ MODELS = {
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
     "azure-gpt41-mini": "GPT-4.1-mini (Azure)",
 }
-DEFAULT_MODEL = "groq-scout"
+DEFAULT_MODEL = "azure-gpt41-mini"
 
 MODEL_FILENAME_LABEL = {
     "claude":      "claude-opus-4-8",
