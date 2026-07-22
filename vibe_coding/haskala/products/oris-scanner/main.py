@@ -84,7 +84,7 @@ def get_workspace_credentials():
     source_creds, project_id = google.auth.default()
     source_creds.refresh(Request())
     sa_email = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
-    teacher_email = "yaron@bdika.net"
+    teacher_email = "ori@bdika.net"
     signer = iam.Signer(Request(), source_creds, sa_email)
     delegated_creds = service_account.Credentials(
         signer,
