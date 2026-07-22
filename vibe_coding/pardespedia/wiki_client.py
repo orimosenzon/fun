@@ -126,6 +126,33 @@ class WikiClient:
         print(f"{'Created' if edit_result.get('new') else 'Edited'}: {title} (rev {edit_result.get('newrevid')})")
         return edit_result
 
+    def move_page(self, from_title: str, to_title: str, reason: str = "", leave_redirect: bool = True) -> dict:
+        """Rename/move a page. Returns API result."""
+        if not self.logged_in:
+            raise RuntimeError("Must be logged in to move.")
+
+        token = self._csrf_token()
+        data = {
+            "action": "move",
+            "from": from_title,
+            "to": to_title,
+            "reason": reason,
+            "token": token,
+            "format": "json",
+        }
+        if not leave_redirect:
+            data["noredirect"] = "1"
+
+        r = self.session.post(API_URL, data=data)
+        r.raise_for_status()
+        result = r.json()
+
+        if "error" in result:
+            raise RuntimeError(f"Move failed: {result['error']['info']}")
+
+        print(f"Moved: {from_title} -> {to_title}")
+        return result["move"]
+
     def search(self, query: str, limit: int = 10) -> list:
         """Search pages. Returns list of {title, snippet, url}."""
         r = self.session.get(API_URL, params={

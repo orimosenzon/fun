@@ -52,6 +52,7 @@ MANUAL_HORIZON_DAYS = 70  # how far ahead to expand recurring manual events
 
 MAIN_TITLE = "עמוד ראשי"
 MAIN_HEADING = "אירועי תרבות ובילוי קרובים"
+TODAY_HEADING = "היום במושבה"
 MAIN_ANCHOR = "== מידע עירוני =="  # fallback: insert the section just before this
 
 ES_FEED_URL = "https://pardeshanna.eventschedule.com/api/calendar-events"
@@ -59,9 +60,15 @@ ES_LABEL = "[https://pardeshanna.eventschedule.com לוח האירועים של 
 MATNAS_URL = "https://live.tickchak.co.il/matans-pardes-hana"
 MATNAS_LABEL = "[https://live.tickchak.co.il/matans-pardes-hana מרכז אמנויות הבמה — מתנ\"ס פרדס חנה]"
 MATNAS_VENUE = "מרכז אמנויות הבמה (מתנ\"ס)"
+HAULAM_URL = "https://haulam-phk.smarticket.co.il/"
+HAULAM_LABEL = "[https://haulam-phk.smarticket.co.il האולם — בית תרבות מקומי פרכו\"ר]"
+HAULAM_VENUE = "האולם — בית תרבות מקומי פרכו\"ר"
 
 AUTO_START = "<!-- AUTO:START — אזור מתעדכן אוטומטית, אל תערוך ידנית -->"
 AUTO_END = "<!-- AUTO:END -->"
+TODAY_AUTO_START = "<!-- AUTO:TODAY:START — אזור מתעדכן אוטומטית, אל תערוך ידנית -->"
+TODAY_AUTO_END = "<!-- AUTO:TODAY:END -->"
+TODAY_MAX = 3  # at most this many events surfaced in the "today" highlight box
 
 HE_WEEKDAYS = {0: "שני", 1: "שלישי", 2: "רביעי", 3: "חמישי", 4: "שישי", 5: "שבת", 6: "ראשון"}
 HE_MONTHS = {
@@ -197,6 +204,44 @@ def fetch_matnas() -> list:
     return rows
 
 
+def fetch_haulam() -> list:
+    """האולם sells tickets directly (not through the מתנ"ס/tickchak feed) — its
+    own site lists upcoming shows on the homepage, each with schema.org
+    Event JSON-LD on its own /event/<id> page."""
+    headers = {"User-Agent": "Mozilla/5.0 Pardespedia-Bot"}
+    r = requests.get(HAULAM_URL, timeout=30, headers=headers)
+    r.raise_for_status()
+    ids = sorted(set(re.findall(r"\?id=(\d+)", r.text)), key=int)
+    rows = []
+    for eid in ids:
+        try:
+            er = requests.get(f"{HAULAM_URL}event/{eid}", timeout=30, headers=headers)
+            er.raise_for_status()
+        except requests.RequestException:
+            continue
+        for it in _ldjson_nodes(er.text):
+            if it.get("@type") != "Event" or not it.get("startDate"):
+                continue
+            try:
+                sd = dt.datetime.fromisoformat(it["startDate"])
+            except ValueError:
+                continue
+            offers = it.get("offers") or {}
+            if isinstance(offers, list):
+                offers = offers[0] if offers else {}
+            img = it.get("image")
+            if isinstance(img, list):
+                img = img[0] if img else ""
+            url = offers.get("url") or f"{HAULAM_URL}event/{eid}"
+            rows.append(_row(
+                sd.date(), sd.strftime("%H:%M") if (sd.hour or sd.minute) else "",
+                it.get("name"), url, "מופעים והופעות",
+                HAULAM_VENUE, price_label(offers.get("price")), sd.isoformat(),
+                f"hl-{eid}", img,
+            ))
+    return rows
+
+
 # --- manual events (community/Facebook events the feeds miss) ---------------
 
 _WD = {"sunday": 6, "monday": 0, "tuesday": 1, "wednesday": 2,
@@ -301,7 +346,7 @@ def fetch_manual() -> list:
     return rows
 
 SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
-           ("ידני", fetch_manual)]
+           ("האולם", fetch_haulam), ("ידני", fetch_manual)]
 
 
 def _same_event(a, b) -> bool:
@@ -449,6 +494,50 @@ def build_table(rows: list, collapsible: bool = False) -> str:
     return "\n".join(lines)
 
 
+def build_today_block(today_rows: list, today: dt.date) -> str:
+    """Compact highlight box for events happening *today* (at most TODAY_MAX),
+    meant to sit above the fold so a visitor immediately sees what's on today.
+    Lives between the TODAY_AUTO markers, near the top of the main page.
+    """
+    heading = f"📅 קורה היום, {he_date(today)}"
+    if not today_rows:
+        body = (
+            f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
+            f'padding:10px 16px; margin:0 0 16px;">\n'
+            f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
+            f'<div style="font-size:94%; margin-top:4px;">אין כרגע אירועים מתוזמנים להיום. '
+            f'למה שקורה בשבועיים הקרובים ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים המלא]] בהמשך הדף.</div>\n'
+            f'</div>'
+        )
+        return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
+
+    cards = []
+    for r in today_rows:
+        name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
+        venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
+        if r["image_file"]:
+            link = f"|link={r['url']}" if r["url"] else ""
+            img = f"[[קובץ:{r['image_file']}|46px{link}]]"
+        else:
+            img = ""
+        time_part = f"'''{r['time']}''' — " if r["time"] else ""
+        cards.append(
+            f'<div style="display:flex; align-items:center; gap:8px; background:#fff; '
+            f'border-radius:6px; padding:5px 8px; margin-top:6px; font-size:92%;">'
+            f'{img}<div>{time_part}{name} <span style="color:#888;">· {venue}</span>'
+            f'{" · " + r["entry"] if r["entry"] else ""}</div></div>'
+        )
+
+    body = (
+        f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
+        f'padding:10px 16px; margin:0 0 16px;">\n'
+        f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
+        + "\n".join(cards) +
+        f'\n</div>'
+    )
+    return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
+
+
 def build_main_block(rows: list, today: dt.date, days: int) -> str:
     """The full events board (image + video columns) for the main page.
 
@@ -461,7 +550,7 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
         f"מה קורה במושבה — '''אירועי תרבות ובילוי''' בשבועיים הקרובים, עם תמונות וסרטונים. "
         f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
         f"{build_table(rows, collapsible=True)}\n\n"
-        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
+        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
 
@@ -517,19 +606,41 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
         print("  main page missing — skipping events board", file=sys.stderr)
         return
     existing = page["wikitext"]
-    block = build_main_block(rows, dt.date.today(), days)
-    if AUTO_START in existing and AUTO_END in existing:
-        new = splice_auto(existing, block)
+    today = dt.date.today()
+
+    # rows are already chronologically sorted (collect() sorts by "sort").
+    # Pull out at most TODAY_MAX of today's events for the top highlight box;
+    # the full board below shows everything else (no duplication).
+    today_shown = [r for r in rows if r["date"] == today][:TODAY_MAX]
+    shown_keys = {r["key"] for r in today_shown}
+    rest_rows = [r for r in rows if r["key"] not in shown_keys]
+
+    today_block = build_today_block(today_shown, today)
+    main_block = build_main_block(rest_rows, today, days)
+
+    if TODAY_AUTO_START in existing and TODAY_AUTO_END in existing:
+        new = splice_marked(existing, TODAY_AUTO_START, TODAY_AUTO_END, today_block)
     else:
-        section = f"== {MAIN_HEADING} ==\n{block}\n\n"
-        if MAIN_ANCHOR in existing:
-            new = existing.replace(MAIN_ANCHOR, section + MAIN_ANCHOR, 1)
+        # first-ever run: no dedicated slot yet — insert right before the main
+        # events heading (or at the end, as a last resort).
+        section = f"== {TODAY_HEADING} ==\n{today_block}\n\n"
+        marker = f"== {MAIN_HEADING} =="
+        new = existing.replace(marker, section + marker, 1) if marker in existing \
+            else existing.rstrip() + "\n\n" + section
+
+    if AUTO_START in new and AUTO_END in new:
+        new = splice_marked(new, AUTO_START, AUTO_END, main_block)
+    else:
+        section = f"== {MAIN_HEADING} ==\n{main_block}\n\n"
+        if MAIN_ANCHOR in new:
+            new = new.replace(MAIN_ANCHOR, section + MAIN_ANCHOR, 1)
         else:
-            new = existing.rstrip() + "\n\n" + section
+            new = new.rstrip() + "\n\n" + section
+
     # refresh the statistics table in the same edit
     try:
         talk, tables = compute_stats(client)
-        new = update_stats_block(new, talk, tables, dt.date.today())
+        new = update_stats_block(new, talk, tables, today)
         print(f"  stats: {talk} talk pages, {tables} articles with a table", file=sys.stderr)
     except Exception as exc:
         print(f"  stats update skipped: {exc}", file=sys.stderr)
@@ -543,12 +654,12 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
                      summary="עדכון אוטומטי: לוח אירועי תרבות ובילוי + סטטיסטיקה בעמוד הראשי")
 
 
-def splice_auto(existing: str, auto_block: str) -> str:
-    s = existing.find(AUTO_START)
-    e = existing.find(AUTO_END)
+def splice_marked(existing: str, start_marker: str, end_marker: str, block: str) -> str:
+    s = existing.find(start_marker)
+    e = existing.find(end_marker)
     if s != -1 and e != -1 and e > s:
-        return existing[:s] + auto_block + existing[e + len(AUTO_END):]
-    return existing.rstrip() + f"\n\n== אירועים קרובים ==\n{auto_block}\n"
+        return existing[:s] + block + existing[e + len(end_marker):]
+    return existing.rstrip() + f"\n\n{block}\n"
 
 
 def main():
