@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import functions_framework
 
@@ -10,6 +11,8 @@ from google.cloud import firestore
 from googleapiclient.discovery import build
 
 import checker
+
+log = logging.getLogger("oris-scanner")
 
 # ─── dedup ledger (Firestore) ──────────────────────────────────────────────────
 # This is the main architectural fix versus scan2: there, run_workspace_scan()
@@ -124,6 +127,8 @@ def run_workspace_scan():
         course_work = res_cw.get('courseWork', [])
         for cw in course_work:
             if cw.get('id') not in TARGET_COURSEWORK_IDS:
+                log.info("skipping courseWork not in TARGET_COURSEWORK_IDS: id=%s title=%r",
+                          cw.get('id'), cw.get('title'))
                 continue  # not a language assignment — outside oris-scanner's scope
 
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
