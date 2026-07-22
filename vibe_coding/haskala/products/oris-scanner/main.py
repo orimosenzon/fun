@@ -128,17 +128,22 @@ RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 # Grading always uses core.DEFAULT_RUBRIC_ID (a fixed bundled rubric, not the
 # courseWork's free-text description/maxPoints) — see core.check_pages.
 #
-# Scope: every courseWork item in every course where the delegated account
-# (teacher_email above) is the teacher — no per-assignment allowlist. This
-# means a non-language assignment in one of those courses (e.g. geometry)
-# gets language-graded too — accepted tradeoff, decided 2026-07-22.
+# Scope: every courseWork item in the "integration" course only, where the
+# delegated account (teacher_email above) is the teacher. Temporary
+# narrowing (2026-07-22) — that course mixes language and non-language
+# (geometry) assignments with no subject metadata to tell them apart yet, so
+# for now we cap the blast radius to this one known course instead of every
+# course the teacher has. TODO: real subject/language filter, then drop this.
+TARGET_COURSE_NAME = "integration"
+
+
 def run_workspace_scan():
     creds = get_workspace_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
     classroom_service = build('classroom', 'v1', credentials=creds)
 
     res_courses = classroom_service.courses().list(pageSize=100, teacherId='me').execute()
-    courses = res_courses.get('courses', [])
+    courses = [c for c in res_courses.get('courses', []) if c.get('name') == TARGET_COURSE_NAME]
     for course in courses:
         res_cw = classroom_service.courses().courseWork().list(courseId=course.get('id')).execute()
         course_work = res_cw.get('courseWork', [])
