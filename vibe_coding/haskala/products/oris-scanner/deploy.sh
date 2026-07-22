@@ -49,6 +49,7 @@ gcloud run deploy "$SERVICE" \
     --project "$PROJECT" \
     --region "$REGION" \
     --no-allow-unauthenticated \
-    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
+    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,GROQ_API_KEY=groq-api-key:latest,AZURE_OPENAI_API_KEY=azure-openai-api-key:latest" \
+    --set-env-vars="AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1,AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini"
 
 echo "✅ deployed. Run setup_infra.sh once (first deploy only) to wire the Cloud Scheduler trigger."
