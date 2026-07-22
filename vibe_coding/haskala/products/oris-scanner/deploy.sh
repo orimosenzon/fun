@@ -9,8 +9,8 @@
 #   3. gcloud run deploy oris-scanner --source .
 #
 # NOTE: this only (re)deploys the Cloud Run service/code. It does NOT touch
-# Pub/Sub topics/subscriptions — see setup_infra.sh for the one-time trigger
-# wiring (topic, hardened push subscription, dead-letter, IAM).
+# the Cloud Scheduler trigger — see setup_infra.sh for the one-time trigger
+# wiring (scheduler job, IAM).
 #
 # Usage (run from Cloud Shell, inside the `fun` clone):
 #   ./deploy.sh                          # auto commit msg
@@ -51,4 +51,4 @@ gcloud run deploy "$SERVICE" \
     --no-allow-unauthenticated \
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
 
-echo "✅ deployed. Run setup_infra.sh once (first deploy only) to wire the Pub/Sub trigger."
+echo "✅ deployed. Run setup_infra.sh once (first deploy only) to wire the Cloud Scheduler trigger."
