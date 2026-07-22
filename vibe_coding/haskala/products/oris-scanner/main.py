@@ -145,9 +145,10 @@ def run_workspace_scan():
                 _mark_done(subm_id)
 
 
-@functions_framework.cloud_event
-def process_my_drive_files(cloud_event):
+@functions_framework.http
+def process_my_drive_files(request):
     run_workspace_scan()
+    return ("ok", 200)
 
 
 if __name__ == '__main__':
