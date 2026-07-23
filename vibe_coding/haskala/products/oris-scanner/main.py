@@ -108,6 +108,7 @@ def get_workspace_credentials():
     SCOPES = [
         'https://www.googleapis.com/auth/classroom.courses.readonly',
         'https://www.googleapis.com/auth/classroom.coursework.students',
+        'https://www.googleapis.com/auth/classroom.topics.readonly',
         'https://www.googleapis.com/auth/drive'
     ]
     source_creds, project_id = google.auth.default()
@@ -140,13 +141,24 @@ FALLBACK_RESULTS_FOLDER_ID = '1zzlOq6_UKZJUz33LvzRDqu5F9H-NCmE3'
 # Grading always uses core.DEFAULT_RUBRIC_ID (a fixed bundled rubric, not the
 # courseWork's free-text description/maxPoints) — see core.check_pages.
 #
-# Scope: every courseWork item in the "integration" course only, where the
-# delegated account (teacher_email above) is the teacher. Temporary
-# narrowing (2026-07-22) — that course mixes language and non-language
-# (geometry) assignments with no subject metadata to tell them apart yet, so
-# for now we cap the blast radius to this one known course instead of every
-# course the teacher has. TODO: real subject/language filter, then drop this.
-TARGET_COURSE_NAME = "integration"
+# Scope: every courseWork item, in any course the delegated account
+# (teacher_email above) teaches, whose Classroom "topic" is named
+# TARGET_TOPIC_NAME. Replaces the earlier TARGET_COURSE_NAME course-level
+# restriction (2026-07-22 stopgap, since the "integration" course mixed
+# language and geometry assignments with no other way to tell them apart) —
+# this is the real subject/language filter that stopgap's TODO called for.
+TARGET_TOPIC_NAME = "English Assignment"
+
+
+def _get_target_topic_id(classroom_service, course_id: str):
+    """Returns the topicId of TARGET_TOPIC_NAME within this course, or None
+    if the course has no topic by that name (in which case none of its
+    courseWork can match, so the caller skips the course entirely)."""
+    res = classroom_service.courses().topics().list(courseId=course_id).execute()
+    for topic in res.get('topic', []):
+        if topic.get('name') == TARGET_TOPIC_NAME:
+            return topic.get('topicId')
+    return None
 
 
 def run_workspace_scan():
@@ -155,10 +167,14 @@ def run_workspace_scan():
     classroom_service = build('classroom', 'v1', credentials=creds)
 
     res_courses = classroom_service.courses().list(pageSize=100, teacherId='me').execute()
-    courses = [c for c in res_courses.get('courses', []) if c.get('name') == TARGET_COURSE_NAME]
+    courses = res_courses.get('courses', [])
     for course in courses:
+        target_topic_id = _get_target_topic_id(classroom_service, course.get('id'))
+        if target_topic_id is None:
+            continue  # this course has no "English Assignment" topic at all
+
         res_cw = classroom_service.courses().courseWork().list(courseId=course.get('id')).execute()
-        course_work = res_cw.get('courseWork', [])
+        course_work = [cw for cw in res_cw.get('courseWork', []) if cw.get('topicId') == target_topic_id]
         for cw in course_work:
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
