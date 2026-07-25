@@ -183,6 +183,17 @@ def run_workspace_scan():
                 continue  # no submissions yet — don't create a results folder for nothing
 
             for subm in subms:
+                # Attachments show up on the submission (and land in the
+                # assignment's Drive folder) as soon as the student attaches
+                # a file — well before they press "Hand in". Only TURNED_IN
+                # (and RETURNED, e.g. a resubmission after the teacher
+                # reopened it) reflects an actual formal submission; NEW/
+                # CREATED/RECLAIMED_BY_STUDENT are drafts. Skip without
+                # claiming, so once the student does submit, the next poll
+                # picks it up normally.
+                if subm.get('state') not in ('TURNED_IN', 'RETURNED'):
+                    continue
+
                 subm_id = subm.get('id')
                 if not _try_claim_submission(subm_id):
                     continue  # dedup: already handled, or another instance is on it right now
