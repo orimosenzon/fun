@@ -161,6 +161,18 @@ def _get_target_topic_id(classroom_service, course_id: str):
     return None
 
 
+def _get_classroom_rubric(classroom_service, course_id: str, cw_id: str) -> dict | None:
+    """Returns the Rubric object (courses.courseWork.rubrics) attached to
+    this assignment, or None if the teacher didn't attach one. Classroom
+    allows at most one rubric per courseWork. No extra scope needed —
+    rubrics.list is covered by the classroom.coursework.students scope
+    already requested in get_workspace_credentials()."""
+    res = classroom_service.courses().courseWork().rubrics().list(
+        courseId=course_id, courseWorkId=cw_id).execute()
+    rubrics = res.get('rubrics', [])
+    return rubrics[0] if rubrics else None
+
+
 def run_workspace_scan():
     creds = get_workspace_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
@@ -176,6 +188,11 @@ def run_workspace_scan():
         res_cw = classroom_service.courses().courseWork().list(courseId=course.get('id')).execute()
         course_work = [cw for cw in res_cw.get('courseWork', []) if cw.get('topicId') == target_topic_id]
         for cw in course_work:
+            # Same for every student on this assignment — fetched once per
+            # courseWork, not per submission.
+            classroom_rubric = _get_classroom_rubric(classroom_service, course.get('id'), cw.get('id'))
+            assignment_description = cw.get('description')
+
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
             subms = res_sub.get('studentSubmissions', [])
@@ -210,7 +227,12 @@ def run_workspace_scan():
                     continue  # nothing to check, and no attachment to anchor a folder on
 
                 cw_folder_id = _get_or_create_checked_folder(drive_service, cw.get('id'), file_ids[0])
-                checker.check_hw(drive_service, file_ids, cw_folder_id)
+                checker.check_hw(
+                    drive_service, file_ids, cw_folder_id,
+                    classroom_rubric=classroom_rubric,
+                    assignment_description=assignment_description,
+                    assignment_name=cw.get('title'),
+                )
                 _mark_done(subm_id)
 
 

@@ -627,6 +627,33 @@ def load_rubric(rubric_id: str) -> dict | None:
         return None
 
 
+def rubric_from_classroom(classroom_rubric: dict, assignment_name: str = "") -> dict:
+    """Converts a Classroom API Rubric object (courses.courseWork.rubrics —
+    criteria[].levels[], each with title/description/points) into the same
+    {name, content} shape as the bundled rubrics/*.json files, so it can be
+    handed to evaluate_with_rubric like any other rubric."""
+    lines = []
+    for criterion in classroom_rubric.get("criteria", []):
+        title = (criterion.get("title") or "").strip()
+        c_desc = (criterion.get("description") or "").strip()
+        header = f"Criterion — {title}" if title else "Criterion"
+        if c_desc:
+            header += f": {c_desc}"
+        lines.append(header)
+        levels = sorted(criterion.get("levels", []), key=lambda lv: lv.get("points") or 0, reverse=True)
+        for level in levels:
+            l_title = (level.get("title") or "").strip()
+            l_desc = (level.get("description") or "").strip()
+            points = level.get("points")
+            points_str = f" ({points} pts)" if points is not None else ""
+            line = f"  {l_title}{points_str}"
+            if l_desc:
+                line += f": {l_desc}"
+            lines.append(line)
+        lines.append("")
+    return {"name": assignment_name or "Classroom rubric", "content": "\n".join(lines).strip()}
+
+
 def count_words(pages: list[dict]) -> int:
     """Total number of words the student wrote across all pages/lines."""
     n = 0
@@ -1028,6 +1055,8 @@ def humanize_error(exc: Exception) -> dict:
 def check_pages(
     file_bytes_list: list[tuple[bytes, str]],
     rubric_id: str = DEFAULT_RUBRIC_ID,
+    rubric_override: dict | None = None,
+    question: str | None = None,
     model_key: str = DEFAULT_MODEL,
     feedback_lang: str = DEFAULT_FEEDBACK_LANG,
     exercise_lang: str = DEFAULT_EXERCISE_LANG,
@@ -1038,9 +1067,17 @@ def check_pages(
     evaluate_with_rubric call over the merged transcript.
 
     file_bytes_list: [(file_bytes, ext), ...] — ext one of ACCEPTED_EXTS.
+    rubric_override: a ready-made {name, content} rubric dict (e.g. from
+    rubric_from_classroom) that takes priority over rubric_id — used when
+    the assignment has its own Classroom-attached rubric.
+    question: the task/assignment description as the teacher wrote it in
+    Classroom, if any — merged into the rubric so the model is evaluated
+    against the actual assignment, not just the rubric's generic criteria.
     Returns (pages, evaluation).
     """
-    rubric = load_rubric(rubric_id) or load_rubric(DEFAULT_RUBRIC_ID)
+    rubric = rubric_override or load_rubric(rubric_id) or load_rubric(DEFAULT_RUBRIC_ID)
+    if question:
+        rubric = {**rubric, "question": question}
 
     pages: list[dict] = []
     for data, ext in file_bytes_list:
