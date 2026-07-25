@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>אופנוע סילון — עמק אלפיני</title>
+<style>
+  :root{
+    --glacier:#7fd4d8;
+    --amber:#ffb454;
+    --ink:#0b1418;
+    --panel:rgba(10,22,27,.55);
+    --line:rgba(127,212,216,.35);
+    --text:#e8f4f5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#0b1418}
+  body{
+    font-family:"Heebo","Assistant","Segoe UI",system-ui,sans-serif;
+    color:var(--text);
+    -webkit-user-select:none;user-select:none;
+    touch-action:none;
+  }
+  canvas{display:block}
+
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+
+  .panel{
+    position:absolute;background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    padding:10px 14px;
+  }
+
+  /* מדדים */
+  #gauges{bottom:18px;inset-inline-start:18px;display:flex;gap:20px;align-items:flex-end}
+  .gauge{text-align:center;min-width:78px}
+  .gauge .num{
+    font-family:"SF Mono",ui-monospace,"Consolas",monospace;
+    font-size:30px;line-height:1;letter-spacing:-1px;font-weight:600;
+    color:var(--glacier);text-shadow:0 0 14px rgba(127,212,216,.35)
+  }
+  .gauge .lbl{font-size:11px;opacity:.65;margin-top:4px;letter-spacing:.5px}
+
+  /* מדי הנעה */
+  #bars{bottom:18px;inset-inline-end:18px;width:180px}
+  .bar{margin:7px 0}
+  .bar .top{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-bottom:4px}
+  .bar .track{height:7px;background:rgba(255,255,255,.09);border-radius:99px;overflow:hidden}
+  .bar .fill{height:100%;width:0%;border-radius:99px;transition:width .06s linear}
+  #powerFill{background:linear-gradient(90deg,#3e8f96,var(--glacier))}
+  #boostFill{background:linear-gradient(90deg,#a3541a,var(--amber))}
+
+  /* יעד */
+  #target{top:18px;inset-inline-start:50%;transform:translateX(50%);text-align:center;min-width:190px}
+  #target .t1{font-size:12px;opacity:.7}
+  #target .t2{font-family:ui-monospace,monospace;font-size:22px;color:var(--amber);margin-top:2px}
+  #arrow{width:34px;height:34px;margin:6px auto 0;transition:transform .08s linear}
+  #arrow svg{display:block}
+
+  /* מצב */
+  #status{top:18px;inset-inline-end:18px;text-align:start;font-size:12px;line-height:1.9;min-width:150px}
+  #status b{color:var(--glacier);font-weight:600}
+  .tag{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;border:1px solid var(--line)}
+  .on{color:#8ef0a0;border-color:rgba(142,240,160,.4)}
+  .off{color:#ff9a8b;border-color:rgba(255,154,139,.4)}
+
+  /* הודעות */
+  #toast{
+    position:absolute;top:38%;inset-inline-start:0;width:100%;text-align:center;
+    font-size:34px;font-weight:700;letter-spacing:1px;
+    text-shadow:0 4px 24px rgba(0,0,0,.6);opacity:0;transition:opacity .35s
+  }
+  #flash{position:fixed;inset:0;background:#ff3b1e;opacity:0;pointer-events:none;z-index:6;transition:opacity .5s}
+
+  /* פתיחה */
+  #intro{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 100% at 50% 0%,#1b3a45 0%,#0b1418 70%);
+  }
+  #introCard{max-width:560px;padding:34px 38px;text-align:center}
+  #introCard h1{
+    font-size:40px;font-weight:800;letter-spacing:-.5px;line-height:1.15;
+    background:linear-gradient(90deg,var(--glacier),var(--amber));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  #introCard p.sub{opacity:.75;margin-top:10px;font-size:15px;line-height:1.6}
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:22px 0 6px;text-align:start;font-size:13px}
+  .keys div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.09)}
+  kbd{
+    font-family:ui-monospace,monospace;font-size:11px;background:rgba(127,212,216,.13);
+    border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--glacier);white-space:nowrap
+  }
+  #startBtn{
+    margin-top:24px;pointer-events:auto;cursor:pointer;
+    font-family:inherit;font-size:17px;font-weight:700;color:var(--ink);
+    background:linear-gradient(90deg,var(--glacier),#a8e6c9);
+    border:0;border-radius:99px;padding:14px 46px;
+    box-shadow:0 10px 30px rgba(127,212,216,.25)
+  }
+  #startBtn:hover{filter:brightness(1.08)}
+  #startBtn:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+  #err{display:none;color:#ffb3a7;font-size:15px;line-height:1.7;max-width:460px;text-align:center}
+
+  /* מגע */
+  #touch{position:fixed;inset:0;z-index:7;display:none}
+  #stick{position:absolute;bottom:26px;inset-inline-start:26px;width:132px;height:132px;
+    border:1px solid var(--line);border-radius:50%;background:rgba(10,22,27,.4);pointer-events:auto}
+  #knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
+    background:rgba(127,212,216,.35);border:1px solid var(--line)}
+  .tbtn{position:absolute;width:66px;height:66px;border-radius:50%;pointer-events:auto;
+    background:rgba(10,22,27,.5);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:13px;font-weight:700}
+  #tUp{bottom:118px;inset-inline-end:110px}
+  #tDown{bottom:26px;inset-inline-end:110px}
+  #tBoost{bottom:72px;inset-inline-end:26px;background:rgba(255,180,84,.22);border-color:rgba(255,180,84,.45)}
+  @media (max-width:720px){
+    #introCard{padding:22px}
+    #introCard h1{font-size:29px}
+    .keys{grid-template-columns:1fr;font-size:12px}
+    .gauge .num{font-size:22px}
+    #gauges{gap:12px}
+    #bars{width:130px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="panel" id="gauges">
+    <div class="gauge"><div class="num" id="gSpeed">0</div><div class="lbl">קמ״ש</div></div>
+    <div class="gauge"><div class="num" id="gAlt">0</div><div class="lbl">גובה (מ׳)</div></div>
+    <div class="gauge"><div class="num" id="gRings">0/0</div><div class="lbl">טבעות</div></div>
+    <div class="gauge"><div class="num" id="gTime">0.0</div><div class="lbl">זמן</div></div>
+  </div>
+
+  <div class="panel" id="bars">
+    <div class="bar"><div class="top"><span>עוצמת מנוע</span><span id="powerTxt">0%</span></div>
+      <div class="track"><div class="fill" id="powerFill"></div></div></div>
+    <div class="bar"><div class="top"><span>מאיץ</span><span id="boostTxt">100%</span></div>
+      <div class="track"><div class="fill" id="boostFill"></div></div></div>
+  </div>
+
+  <div class="panel" id="target">
+    <div class="t1">הטבעת הבאה</div>
+    <div class="t2" id="tDist">—</div>
+    <div id="arrow"><svg viewBox="0 0 34 34" width="34" height="34">
+      <path d="M17 3 L27 29 L17 23 L7 29 Z" fill="#ffb454" opacity=".9"/></svg></div>
+  </div>
+
+  <div class="panel" id="status">
+    <div>מייצב אוטומטי <span class="tag on" id="sStab">פעיל</span></div>
+    <div>שמע <span class="tag on" id="sSound">פעיל</span></div>
+    <div>מצלמה <b id="sCam">רדיפה</b></div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<div id="flash"></div>
+
+<div id="touch">
+  <div id="stick"><div id="knob"></div></div>
+  <button class="tbtn" id="tUp">מנוע ▲</button>
+  <button class="tbtn" id="tDown">מנוע ▼</button>
+  <button class="tbtn" id="tBoost">מאיץ</button>
+</div>
+
+<div id="intro">
+  <div id="introCard">
+    <h1>אופנוע סילון<br>מעל העמק האלפיני</h1>
+    <p class="sub">אופנוע עם מנוע סילון מרכזי וארבעה זרבובי הסטה: שניים כלפי מטה לעילוי, שניים לאחור לדחף, ושניים קטנים בצדדים לסיבוב. עוף דרך שתים־עשרה הטבעות שפזורות מעל האגם, הכפר והרכסים.</p>
+
+    <div class="keys">
+      <div><span>הגברת עוצמת המנוע</span><kbd>W</kbd></div>
+      <div><span>הפחתת עוצמה</span><kbd>S</kbd></div>
+      <div><span>חרטום למטה / למעלה</span><kbd>↑ ↓</kbd></div>
+      <div><span>הטיה לצדדים</span><kbd>← →</kbd></div>
+      <div><span>סיבוב סביב הציר</span><kbd>A</kbd> <kbd>D</kbd></div>
+      <div><span>מאיץ אחורי</span><kbd>Shift</kbd></div>
+      <div><span>מייצב אוטומטי</span><kbd>Space</kbd></div>
+      <div><span>החלפת מצלמה</span><kbd>C</kbd></div>
+      <div><span>היפוך ציר החרטום</span><kbd>I</kbd></div>
+      <div><span>שמע</span><kbd>M</kbd></div>
+      <div><span>איפוס מיקום</span><kbd>R</kbd></div>
+      <div><span>השהיה</span><kbd>P</kbd></div>
+    </div>
+
+    <button id="startBtn">התנעה</button>
+    <div id="err">טעינת מנוע התלת־ממד נכשלה. הקובץ מושך את הספרייה מהרשת — צריך חיבור אינטרנט בפתיחה הראשונה.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+if(!window.THREE){
+  document.getElementById('err').style.display='block';
+  document.getElementById('startBtn').style.display='none';
+  return;
+}
+
+/* ============================================================
+   כלי עזר מתמטיים
+   ============================================================ */
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+function smoothstep(e0,e1,x){const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);}
+function hash2(x,y){const n=Math.sin(x*127.1+y*311.7)*43758.5453123;return n-Math.floor(n);}
+function vnoise(x,y){
+  const xi=Math.floor(x), yi=Math.floor(y);
+  const xf=x-xi, yf=y-yi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  const a=hash2(xi,yi), b=hash2(xi+1,yi), c=hash2(xi,yi+1), d=hash2(xi+1,yi+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+function fbm(x,y,oct){
+  let s=0,amp=0.5,f=1;
+  for(let i=0;i<oct;i++){ s+=amp*vnoise(x*f,y*f); f*=2.03; amp*=0.5; }
+  return s;
+}
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+/* ============================================================
+   פרמטרים של העולם
+   ============================================================ */
+const WORLD=9000, SEG=300;
+const VALLEY_HALF=520, MOUNT_SPAN=1900;
+const WATER_Y=34;
+const LAKE={x:900,z:-40,rx:1150,rz:330};
+
+function lakeMask(x,z){
+  const dx=(x-LAKE.x)/LAKE.rx, dz=(z-LAKE.z)/LAKE.rz;
+  let r=Math.sqrt(dx*dx+dz*dz);
+  r+=0.10*(fbm(x*0.0018,z*0.0018,3)-0.5);
+  return 1-smoothstep(0.72,1.05,r);
+}
+function mountainMask(x,z){
+  const mz=smoothstep(VALLEY_HALF,VALLEY_HALF+MOUNT_SPAN,Math.abs(z));
+  const mx=smoothstep(2700,4300,Math.abs(x));
+  return Math.max(mz,mx);
+}
+function terrainHeight(x,z){
+  const n1=fbm(x*0.00042,z*0.00042,5)-0.5;
+  const n2=fbm(x*0.0021+13.7,z*0.0021-4.2,4)-0.5;
+  const n3=fbm(x*0.0095-7.1,z*0.0095+2.3,3)-0.5;
+  const m=mountainMask(x+300*n1,z+260*n2);
+  const mm=m*m;
+  let h=42+26*n1+11*n2+3*n3;
+  h+=mm*(1420+1450*n1+520*n2);
+  h+=mm*360*(1-Math.abs(n3*2));
+  h+=m*90*Math.abs(n2*2);
+  const lk=lakeMask(x,z);
+  if(lk>0.001) h=lerp(h,15+8*n3,lk);
+  return h;
+}
+function terrainSlope(x,z){
+  const d=6;
+  const hx=terrainHeight(x+d,z)-terrainHeight(x-d,z);
+  const hz=terrainHeight(x,z+d)-terrainHeight(x,z-d);
+  return Math.sqrt(hx*hx+hz*hz)/(2*d);
+}
+
+/* ============================================================
+   סצנה, מצלמה, רנדרר
+   ============================================================ */
+const scene=new THREE.Scene();
+const SKY_COL=0xa9c9de;
+scene.fog=new THREE.Fog(SKY_COL,1200,7600);
+
+const camera=new THREE.PerspectiveCamera(64,innerWidth/innerHeight,0.5,14000);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+/* ---------- שמיים ---------- */
+const skyGeo=new THREE.SphereGeometry(11000,32,20);
+const skyMat=new THREE.ShaderMaterial({
+  side:THREE.BackSide, depthWrite:false, fog:false,
+  uniforms:{
+    top:{value:new THREE.Color(0x2f6ea8)},
+    mid:{value:new THREE.Color(0x9fc4dd)},
+    bot:{value:new THREE.Color(0xdfe7e2)},
+    sun:{value:new THREE.Vector3(0.42,0.55,-0.72)}
+  },
+  vertexShader:`varying vec3 vW; void main(){ vW=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+  fragmentShader:`
+    varying vec3 vW; uniform vec3 top,mid,bot,sun;
+    void main(){
+      float h=clamp(vW.y*1.15+0.08,-1.0,1.0);
+      vec3 c = h>0.0 ? mix(mid,top,pow(h,0.75)) : mix(mid,bot,pow(-h,0.6));
+      float s=max(dot(normalize(vW),normalize(sun)),0.0);
+      c += vec3(1.0,0.85,0.62)*pow(s,180.0)*2.2;
+      c += vec3(1.0,0.9,0.72)*pow(s,7.0)*0.16;
+      gl_FragColor=vec4(c,1.0);
+    }`
+});
+scene.add(new THREE.Mesh(skyGeo,skyMat));
+
+/* ---------- תאורה ---------- */
+const sunDir=new THREE.Vector3(0.42,0.55,-0.72).normalize();
+const sun=new THREE.DirectionalLight(0xfff2dd,2.1);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.near=1; sun.shadow.camera.far=1400;
+sun.shadow.camera.left=-190; sun.shadow.camera.right=190;
+sun.shadow.camera.top=190; sun.shadow.camera.bottom=-190;
+sun.shadow.bias=-0.0009;
+scene.add(sun); scene.add(sun.target);
+
+scene.add(new THREE.HemisphereLight(0xbcd9f0,0x53603f,0.75));
+scene.add(new THREE.AmbientLight(0xffffff,0.12));
+
+/* ============================================================
+   קרקע
+   ============================================================ */
+const tGeo=new THREE.PlaneGeometry(WORLD,WORLD,SEG,SEG);
+tGeo.rotateX(-Math.PI/2);
+const tPos=tGeo.attributes.position;
+for(let i=0;i<tPos.count;i++){
+  tPos.setY(i,terrainHeight(tPos.getX(i),tPos.getZ(i)));
+}
+tGeo.computeVertexNormals();
+
+const tNorm=tGeo.attributes.normal;
+const cols=new Float32Array(tPos.count*3);
+const cA=new THREE.Color(), cB=new THREE.Color();
+const MEADOW=0x6d9040, MEADOW2=0x4f7431, FOREST=0x30512b,
+      ROCK=0x7b7367, ROCKD=0x554f47, SNOW=0xeff5f8, SHORE=0xa89877;
+for(let i=0;i<tPos.count;i++){
+  const x=tPos.getX(i), z=tPos.getZ(i), h=tPos.getY(i);
+  const slope=1-clamp(tNorm.getY(i),0,1);
+  const n=vnoise(x*0.011,z*0.011);
+  const n2=vnoise(x*0.0016+9,z*0.0016-3);
+
+  cA.setHex(MEADOW); cB.setHex(MEADOW2); cA.lerp(cB,n);
+  cB.setHex(FOREST); cA.lerp(cB,smoothstep(160,460,h)*0.85);
+  cB.setHex(ROCK);   cA.lerp(cB,Math.max(smoothstep(680,1150,h),smoothstep(0.42,0.72,slope)));
+  cB.setHex(ROCKD);  cA.lerp(cB,smoothstep(0.55,0.9,slope)*0.55*n2);
+  cB.setHex(SNOW);
+  const snowT=smoothstep(1180,1520,h+300*(n2-0.5))*(1-smoothstep(0.62,0.9,slope));
+  cA.lerp(cB,snowT);
+  cB.setHex(SHORE);  cA.lerp(cB,(1-smoothstep(WATER_Y+1,WATER_Y+9,h))*0.8);
+
+  cA.convertSRGBToLinear();
+  cols[i*3]=cA.r; cols[i*3+1]=cA.g; cols[i*3+2]=cA.b;
+}
+tGeo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+
+const terrain=new THREE.Mesh(tGeo,new THREE.MeshStandardMaterial({
+  vertexColors:true, roughness:0.96, metalness:0.0, flatShading:false
+}));
+terrain.receiveShadow=true;
+scene.add(terrain);
+
+/* ---------- אגם ---------- */
+const wGeo=new THREE.PlaneGeometry(LAKE.rx*2.1,LAKE.rz*2.2,60,26);
+wGeo.rotateX(-Math.PI/2);
+const water=new THREE.Mesh(wGeo,new THREE.MeshPhongMaterial({
+  color:0x1d4f70, specular:0xcfe9ff, shininess:180,
+  transparent:true, opacity:0.86, reflectivity:1
+}));
+water.position.set(LAKE.x,WATER_Y,LAKE.z);
+water.receiveShadow=false;
+scene.add(water);
+const wBase=wGeo.attributes.position.array.slice();
+
+/* ---------- עצים ---------- */
+function makeTrees(){
+  const N=4200;
+  const trunkG=new THREE.CylinderGeometry(0.32,0.55,4.2,5); trunkG.translate(0,2.1,0);
+  const coneG=new THREE.ConeGeometry(2.5,10.5,7); coneG.translate(0,8.2,0);
+  const ballG=new THREE.SphereGeometry(3.1,7,6); ballG.translate(0,6.4,0);
+
+  const trunkM=new THREE.MeshStandardMaterial({color:0x4a382a,roughness:0.95});
+  const pineM=new THREE.MeshStandardMaterial({color:0x2c4a2a,roughness:0.9});
+  const leafM=new THREE.MeshStandardMaterial({color:0x51742f,roughness:0.9});
+
+  const trunks=new THREE.InstancedMesh(trunkG,trunkM,N);
+  const pines=new THREE.InstancedMesh(coneG,pineM,N);
+  const leaves=new THREE.InstancedMesh(ballG,leafM,Math.floor(N*0.35));
+  trunks.castShadow=pines.castShadow=leaves.castShadow=true;
+  trunks.receiveShadow=pines.receiveShadow=leaves.receiveShadow=true;
+
+  const m=new THREE.Matrix4(), q=new THREE.Quaternion(),
+        p=new THREE.Vector3(), s=new THREE.Vector3(), col=new THREE.Color();
+  let i=0,j=0,guard=0;
+  while(i<N && guard<220000){
+    guard++;
+    const x=rnd(-4200,4200), z=rnd(-2600,2600);
+    const h=terrainHeight(x,z);
+    if(h<WATER_Y+4 || h>900) continue;
+    if(lakeMask(x,z)>0.02) continue;
+    const sl=terrainSlope(x,z);
+    if(sl>0.62) continue;
+    const dens=vnoise(x*0.0022+5,z*0.0022-2);
+    if(Math.random()>dens*1.25) continue;
+
+    const sc=rnd(0.62,1.75)*(1-smoothstep(600,900,h)*0.45);
+    p.set(x,h-0.4,z); s.set(sc,sc*rnd(0.85,1.3),sc);
+    q.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.random()*6.283);
+    m.compose(p,q,s);
+    trunks.setMatrixAt(i,m);
+
+    if(h<210 && j<leaves.count && Math.random()<0.4){
+      leaves.setMatrixAt(j,m);
+      col.setHSL(0.24+Math.random()*0.06,0.42,0.26+Math.random()*0.1).convertSRGBToLinear();
+      if(leaves.setColorAt) leaves.setColorAt(j,col);
+      // אין אצטרובל לעץ נשיר — מצמצמים אותו למינימלי
+      const m2=new THREE.Matrix4().compose(p,q,new THREE.Vector3(0.001,0.001,0.001));
+      pines.setMatrixAt(i,m2);
+      j++;
+    }else{
+      pines.setMatrixAt(i,m);
+      col.setHSL(0.30+Math.random()*0.05,0.33,0.15+Math.random()*0.09).convertSRGBToLinear();
+      if(pines.setColorAt) pines.setColorAt(i,col);
+    }
+    i++;
+  }
+  for(;i<N;i++){
+    const m3=new THREE.Matrix4().makeScale(0.001,0.001,0.001);
+    trunks.setMatrixAt(i,m3); pines.setMatrixAt(i,m3);
+  }
+  for(;j<leaves.count;j++) leaves.setMatrixAt(j,new THREE.Matrix4().makeScale(0.001,0.001,0.001));
+  trunks.instanceMatrix.needsUpdate=pines.instanceMatrix.needsUpdate=leaves.instanceMatrix.needsUpdate=true;
+  scene.add(trunks,pines,leaves);
+}
+makeTrees();
+
+/* ---------- סלעים ---------- */
+function makeRocks(){
+  const N=700;
+  const g=new THREE.IcosahedronGeometry(3.2,0);
+  const mat=new THREE.MeshStandardMaterial({color:0x6b6459,roughness:1,flatShading:true});
+  const im=new THREE.InstancedMesh(g,mat,N);
+  im.castShadow=im.receiveShadow=true;
+  const m=new THREE.Matrix4(), q=new THREE.Quaternion(), p=new THREE.Vector3(), s=new THREE.Vector3();
+  let i=0,guard=0;
+  while(i<N && guard<60000){
+    guard++;
+    const x=rnd(-4300,4300), z=rnd(-3000,3000);
+    const h=terrainHeight(x,z);
+    if(h<WATER_Y+2) continue;
+    if(h<300 && Math.random()<0.85) continue;
+    const sc=rnd(0.6,4.2);
+    p.set(x,h-sc*0.6,z); s.set(sc,sc*rnd(0.5,1.1),sc*rnd(0.7,1.3));
+    q.setFromEuler(new THREE.Euler(Math.random()*3,Math.random()*6,Math.random()*3));
+    m.compose(p,q,s); im.setMatrixAt(i,m); i++;
+  }
+  for(;i<N;i++) im.setMatrixAt(i,new THREE.Matrix4().makeScale(0.001,0.001,0.001));
+  im.instanceMatrix.needsUpdate=true;
+  scene.add(im);
+}
+makeRocks();
+
+/* ---------- בתים בסגנון שוויצרי ---------- */
+function prismGeometry(w,h,d){
+  const hw=w/2,hd=d/2;
+  const v=[
+    -hw,0,-hd, -hw,0,hd, -hw,h,0,
+     hw,0,hd,   hw,0,-hd, hw,h,0,
+    -hw,0,hd,   hw,0,hd,  hw,h,0,
+    -hw,0,hd,   hw,h,0,  -hw,h,0,
+     hw,0,-hd, -hw,0,-hd,-hw,h,0,
+     hw,0,-hd, -hw,h,0,   hw,h,0
+  ];
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(v),3));
+  g.computeVertexNormals();
+  return g;
+}
+function makeVillage(){
+  const N=64;
+  const wallG=new THREE.BoxGeometry(9,5.4,7); wallG.translate(0,2.7,0);
+  const bandG=new THREE.BoxGeometry(9.3,0.6,7.3); bandG.translate(0,4.5,0);
+  const roofG=prismGeometry(11.4,3.6,9.4); roofG.translate(0,5.4,0);
+  const baseG=new THREE.BoxGeometry(9.6,1.6,7.6); baseG.translate(0,0.8,0);
+
+  const wallM=new THREE.MeshStandardMaterial({color:0xe8ddc6,roughness:0.9});
+  const bandM=new THREE.MeshStandardMaterial({color:0x6b4526,roughness:0.85});
+  const roofM=new THREE.MeshStandardMaterial({color:0x6d3a2c,roughness:0.8});
+  const baseM=new THREE.MeshStandardMaterial({color:0x8b8377,roughness:1});
+
+  const parts=[new THREE.InstancedMesh(wallG,wallM,N),
+               new THREE.InstancedMesh(bandG,bandM,N),
+               new THREE.InstancedMesh(roofG,roofM,N),
+               new THREE.InstancedMesh(baseG,baseM,N)];
+  parts.forEach(p=>{p.castShadow=true;p.receiveShadow=true;});
+
+  const m=new THREE.Matrix4(), q=new THREE.Quaternion(),
+        p=new THREE.Vector3(), s=new THREE.Vector3();
+  let i=0,guard=0;
+  while(i<N && guard<80000){
+    guard++;
+    let x,z;
+    if(i<34){ x=rnd(-500,300); z=rnd(-300,300); }   // כפר מרוכז
+    else    { x=rnd(-2600,2600); z=rnd(-460,460); } // חוות מפוזרות
+    const h=terrainHeight(x,z);
+    if(h<WATER_Y+5 || h>150) continue;
+    if(lakeMask(x,z)>0.001) continue;
+    if(terrainSlope(x,z)>0.18) continue;
+    const sc=rnd(0.8,1.35);
+    p.set(x,h-0.6,z); s.set(sc,sc*rnd(0.9,1.2),sc);
+    q.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.random()*6.283);
+    m.compose(p,q,s);
+    parts.forEach(pt=>pt.setMatrixAt(i,m));
+    i++;
+  }
+  const hide=new THREE.Matrix4().makeScale(0.001,0.001,0.001);
+  for(;i<N;i++) parts.forEach(pt=>pt.setMatrixAt(i,hide));
+  parts.forEach(pt=>{pt.instanceMatrix.needsUpdate=true;scene.add(pt);});
+}
+makeVillage();
+
+/* ---------- עננים ---------- */
+function puffTexture(){
+  const c=document.createElement('canvas'); c.width=c.height=128;
+  const g=c.getContext('2d');
+  const rg=g.createRadialGradient(64,64,4,64,64,62);
+  rg.addColorStop(0,'rgba(255,255,255,0.95)');
+  rg.addColorStop(0.45,'rgba(255,255,255,0.45)');
+  rg.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=rg; g.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+const puffTex=puffTexture();
+function makeClouds(){
+  for(let i=0;i<90;i++){
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:puffTex, transparent:true, opacity:rnd(0.3,0.62), depthWrite:false, fog:true
+    }));
+    const sc=rnd(260,760);
+    s.scale.set(sc,sc*rnd(0.4,0.65),1);
+    s.position.set(rnd(-4500,4500),rnd(750,1900),rnd(-3200,3200));
+    scene.add(s);
+  }
+}
+makeClouds();
+
+/* ============================================================
+   האופנוע הסילוני + הרוכב
+   ============================================================ */
+function tube(a,b,r,mat){
+  const dir=new THREE.Vector3().subVectors(b,a);
+  const len=dir.length();
+  const g=new THREE.CylinderGeometry(r,r,len,8);
+  const mesh=new THREE.Mesh(g,mat);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+  mesh.castShadow=true;
+  return mesh;
+}
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+const matDark  =new THREE.MeshStandardMaterial({color:0x232a31,metalness:0.85,roughness:0.4});
+const matChrome=new THREE.MeshStandardMaterial({color:0xc3cbd2,metalness:1.0,roughness:0.18});
+const matRed   =new THREE.MeshStandardMaterial({color:0xc02a20,metalness:0.35,roughness:0.35});
+const matHot   =new THREE.MeshStandardMaterial({color:0x3a2622,metalness:0.9,roughness:0.55,
+                  emissive:0xff5a1e,emissiveIntensity:0.35});
+const matSuit  =new THREE.MeshStandardMaterial({color:0xb32a1e,roughness:0.7});
+const matPants =new THREE.MeshStandardMaterial({color:0x27303a,roughness:0.85});
+const matHelmet=new THREE.MeshStandardMaterial({color:0xf0f2f4,metalness:0.2,roughness:0.3});
+const matVisor =new THREE.MeshStandardMaterial({color:0x101a22,metalness:0.9,roughness:0.05});
+const matSkin  =new THREE.MeshStandardMaterial({color:0xd9a179,roughness:0.8});
+
+function makeFlame(len,rad,inner,outer){
+  const g=new THREE.Group();
+  const mk=(r,l,c,o)=>{
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(r,l,12,1,true),
+      new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    cone.rotation.x=Math.PI;
+    cone.position.y=-l/2;
+    return cone;
+  };
+  g.add(mk(rad*1.25,len*1.75,outer,0.35));
+  g.add(mk(rad*0.75,len*1.0,inner,0.85));
+  g.scale.set(1,0.001,1);
+  return g;
+}
+
+const bike=new THREE.Group();
+scene.add(bike);
+
+// מנוע סילון מרכזי
+const engine=new THREE.Mesh(new THREE.CylinderGeometry(0.46,0.5,2.7,20),matDark);
+engine.rotation.x=Math.PI/2; engine.castShadow=true;
+bike.add(engine);
+const shell=new THREE.Mesh(new THREE.CylinderGeometry(0.53,0.53,1.5,20,1,true),matChrome);
+shell.rotation.x=Math.PI/2; shell.position.z=-0.2;
+bike.add(shell);
+const intake=new THREE.Mesh(new THREE.TorusGeometry(0.52,0.08,10,26),matChrome);
+intake.position.z=-1.36; bike.add(intake);
+const fan=new THREE.Mesh(new THREE.CircleGeometry(0.45,18),
+  new THREE.MeshStandardMaterial({color:0x8f9aa3,metalness:1,roughness:0.25,side:THREE.DoubleSide}));
+fan.position.z=-1.3; fan.rotation.y=Math.PI; bike.add(fan);
+const blades=new THREE.Group();
+for(let i=0;i<7;i++){
+  const b=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.42,0.03),matChrome);
+  b.position.set(Math.cos(i/7*6.283)*0.24,Math.sin(i/7*6.283)*0.24,0);
+  b.rotation.z=i/7*6.283; blades.add(b);
+}
+blades.position.z=-1.24; bike.add(blades);
+
+// זרבובי עילוי (למטה)
+function liftNozzle(z){
+  const g=new THREE.Group();
+  const elbow=new THREE.Mesh(new THREE.TorusGeometry(0.22,0.13,8,14,Math.PI/2),matHot);
+  elbow.rotation.y=Math.PI/2; elbow.position.y=-0.05;
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.23,0.55,12),matHot);
+  pipe.position.y=-0.42;
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(0.23,0.04,8,16),matChrome);
+  lip.rotation.x=Math.PI/2; lip.position.y=-0.68;
+  g.add(elbow,pipe,lip);
+  g.position.set(0,-0.32,z);
+  const fl=makeFlame(1.9,0.22,0xbfe9ff,0xff9a3c);
+  fl.position.y=-0.7; g.add(fl); g.userData.flame=fl;
+  bike.add(g);
+  return g;
+}
+const nozFront=liftNozzle(-0.95);
+const nozRear =liftNozzle(0.98);
+
+// זרבובי דחף (לאחור)
+function thrustNozzle(x){
+  const g=new THREE.Group();
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.25,0.7,14),matHot);
+  pipe.rotation.x=Math.PI/2; pipe.position.z=0.35;
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.045,8,16),matChrome);
+  lip.position.z=0.7;
+  g.add(pipe,lip);
+  g.position.set(x,-0.02,1.25);
+  const fl=makeFlame(3.4,0.26,0xd8f2ff,0xff7a24);
+  fl.rotation.x=-Math.PI/2; fl.position.z=0.72; g.add(fl); g.userData.flame=fl;
+  bike.add(g);
+  return g;
+}
+const thrL=thrustNozzle(-0.36), thrR=thrustNozzle(0.36);
+
+// זרבובי היגוי (צדדיים)
+function yawNozzle(side){
+  const g=new THREE.Group();
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.4,10),matHot);
+  pipe.rotation.z=Math.PI/2; pipe.position.x=side*0.2;
+  g.add(pipe);
+  g.position.set(side*0.5,0.05,-0.75);
+  const fl=makeFlame(1.1,0.11,0xcdeaff,0xffa53c);
+  fl.rotation.z=side*Math.PI/2; fl.position.x=side*0.4; g.add(fl); g.userData.flame=fl;
+  bike.add(g);
+  return g;
+}
+const yawL=yawNozzle(-1), yawR=yawNozzle(1);
+
+// שלדה, מושב, כידון
+bike.add(tube(V(-0.28,0.28,-1.1),V(-0.3,0.42,0.9),0.055,matChrome));
+bike.add(tube(V( 0.28,0.28,-1.1),V( 0.3,0.42,0.9),0.055,matChrome));
+bike.add(tube(V(0,0.5,-1.15),V(0,0.86,-1.05),0.07,matDark));
+const tank=new THREE.Mesh(new THREE.SphereGeometry(0.36,16,12),matRed);
+tank.scale.set(1,0.72,1.6); tank.position.set(0,0.5,-0.4); tank.castShadow=true;
+bike.add(tank);
+const seat=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.16,0.95),matDark);
+seat.position.set(0,0.56,0.42); seat.rotation.x=-0.08; seat.castShadow=true;
+bike.add(seat);
+const tail=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.5,0.5),matRed);
+tail.position.set(0,0.62,0.95); tail.rotation.x=0.25; bike.add(tail);
+
+const bars=new THREE.Group();
+const barTube=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.94,10),matChrome);
+barTube.rotation.z=Math.PI/2; bars.add(barTube);
+[-1,1].forEach(s=>{
+  const grip=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.22,10),matDark);
+  grip.rotation.z=Math.PI/2; grip.position.x=s*0.36; bars.add(grip);
+});
+bars.position.set(0,0.9,-1.05);
+bike.add(bars);
+
+const nose=new THREE.Mesh(new THREE.ConeGeometry(0.24,0.7,12),matRed);
+nose.rotation.x=-Math.PI/2; nose.position.set(0,0.42,-1.55); bike.add(nose);
+const lampMat=new THREE.MeshBasicMaterial({color:0xfff0c0});
+const lamp=new THREE.Mesh(new THREE.CircleGeometry(0.14,14),lampMat);
+lamp.position.set(0,0.42,-1.88); lamp.rotation.y=Math.PI; bike.add(lamp);
+
+// כנפונים (מתכווננים עם ההיגוי)
+const winglets=[-1,1].map(s=>{
+  const w=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.05,0.42),matRed);
+  w.position.set(s*0.78,0.06,0.5); w.castShadow=true;
+  bike.add(w); return w;
+});
+
+// מגלשי נחיתה
+[-1,1].forEach(s=>{
+  bike.add(tube(V(s*0.5,-0.92,-0.9),V(s*0.5,-0.92,1.0),0.05,matChrome));
+  bike.add(tube(V(s*0.32,-0.35,-0.7),V(s*0.5,-0.92,-0.6),0.04,matChrome));
+  bike.add(tube(V(s*0.32,-0.3,0.75),V(s*0.5,-0.92,0.7),0.04,matChrome));
+  const peg=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.28,8),matDark);
+  peg.rotation.z=Math.PI/2; peg.position.set(s*0.42,-0.12,0.28); bike.add(peg);
+});
+
+// הרוכב
+const rider=new THREE.Group();
+bike.add(rider);
+const hips=V(0,0.66,0.34), neck=V(0,1.24,-0.06);
+const torso=tube(hips,neck,0.2,matSuit); rider.add(torso);
+const chest=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.34,0.3),matSuit);
+chest.position.set(0,1.08,-0.02); chest.rotation.x=0.42; chest.castShadow=true; rider.add(chest);
+
+const head=new THREE.Group();
+head.position.copy(neck).add(V(0,0.15,-0.04));
+const skull=new THREE.Mesh(new THREE.SphereGeometry(0.17,16,12),matSkin);
+const helmet=new THREE.Mesh(new THREE.SphereGeometry(0.2,18,14),matHelmet);
+helmet.castShadow=true;
+const visor=new THREE.Mesh(new THREE.SphereGeometry(0.205,18,14),matVisor);
+visor.scale.set(1.0,0.42,1.0); visor.position.set(0,0.02,-0.01);
+head.add(skull,helmet,visor);
+rider.add(head);
+
+[-1,1].forEach(s=>{
+  const sh=V(s*0.21,1.12,-0.02), el=V(s*0.34,0.98,-0.52), hd=V(s*0.36,0.9,-1.0);
+  rider.add(tube(sh,el,0.075,matSuit));
+  rider.add(tube(el,hd,0.065,matSuit));
+  const hip=V(s*0.17,0.62,0.3), kn=V(s*0.4,0.42,-0.24), ft=V(s*0.42,-0.05,0.24);
+  rider.add(tube(hip,kn,0.11,matPants));
+  rider.add(tube(kn,ft,0.09,matPants));
+  const boot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.12,0.3),matDark);
+  boot.position.copy(ft).add(V(0,-0.02,-0.05)); rider.add(boot);
+});
+rider.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+
+// זוהר תחתון
+const glow=new THREE.PointLight(0xff8a3c,0,26,2);
+glow.position.set(0,-0.9,0); bike.add(glow);
+
+/* ---------- חלקיקי פליטה ---------- */
+const PN=520;
+const pPos=new Float32Array(PN*3), pVel=new Float32Array(PN*3), pAge=new Float32Array(PN);
+for(let i=0;i<PN;i++){pPos[i*3+1]=-99999;pAge[i]=-1;}
+const pGeo=new THREE.BufferGeometry();
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+const pMat=new THREE.PointsMaterial({
+  size:2.6, map:puffTex, transparent:true, opacity:0.34,
+  depthWrite:false, blending:THREE.AdditiveBlending, color:0xffc48a
+});
+const particles=new THREE.Points(pGeo,pMat);
+particles.frustumCulled=false;
+scene.add(particles);
+let pIdx=0;
+function emit(x,y,z,vx,vy,vz){
+  const i=pIdx=(pIdx+1)%PN;
+  pPos[i*3]=x; pPos[i*3+1]=y; pPos[i*3+2]=z;
+  pVel[i*3]=vx+rnd(-2,2); pVel[i*3+1]=vy+rnd(-1,1); pVel[i*3+2]=vz+rnd(-2,2);
+  pAge[i]=rnd(0.7,1.5);
+}
+function updateParticles(dt){
+  for(let i=0;i<PN;i++){
+    if(pAge[i]<=0){ if(pPos[i*3+1]>-9000){pPos[i*3+1]=-99999;} continue; }
+    pAge[i]-=dt;
+    pPos[i*3]+=pVel[i*3]*dt;
+    pPos[i*3+1]+=pVel[i*3+1]*dt;
+    pPos[i*3+2]+=pVel[i*3+2]*dt;
+    pVel[i*3+1]+=6*dt;
+    pVel[i*3]*=0.97; pVel[i*3+2]*=0.97;
+    if(pAge[i]<=0) pPos[i*3+1]=-99999;
+  }
+  pGeo.attributes.position.needsUpdate=true;
+}
+
+/* ============================================================
+   טבעות מסלול
+   ============================================================ */
+const RINGR=21;
+const ringMatIdle=new THREE.MeshStandardMaterial({color:0x2b6f78,emissive:0x0e3b42,
+  emissiveIntensity:1,metalness:0.6,roughness:0.35});
+const ringMatNext=new THREE.MeshStandardMaterial({color:0xffb454,emissive:0xff8a1e,
+  emissiveIntensity:1.6,metalness:0.4,roughness:0.3});
+const ringMatDone=new THREE.MeshStandardMaterial({color:0x2a3a3e,emissive:0x000000,
+  metalness:0.5,roughness:0.7,transparent:true,opacity:0.35});
+
+const waypoints=[
+  [-1500, 150,  200],[-900, 210, -260],[-300, 130,  180],
+  [ 300,  95,  -120],[ 900,  70,  -40],[1500, 120,  240],
+  [2100, 260,  520],[2450, 520,  900],[1800, 640,  760],
+  [ 900, 430,  400],[   0, 300, -420],[-800, 240, -700]
+];
+const rings=[];
+waypoints.forEach((w,i)=>{
+  const g=new THREE.Group();
+  const torus=new THREE.Mesh(new THREE.TorusGeometry(RINGR,1.5,10,40),ringMatIdle.clone());
+  g.add(torus);
+  const y=Math.max(w[1],terrainHeight(w[0],w[2])+34);
+  g.position.set(w[0],y,w[2]);
+  const nxt=waypoints[(i+1)%waypoints.length];
+  g.lookAt(nxt[0],y,nxt[2]);
+  g.userData={torus:torus,done:false};
+  scene.add(g); rings.push(g);
+});
+let ringIdx=0, ringsDone=0, raceTime=0, raceRunning=false, raceFinished=false;
+function refreshRings(){
+  rings.forEach((r,i)=>{
+    r.userData.torus.material = r.userData.done ? ringMatDone :
+      (i===ringIdx ? ringMatNext : ringMatIdle);
+  });
+}
+refreshRings();
+
+/* ============================================================
+   שמע סילוני
+   ============================================================ */
+const audio={ctx:null,on:true,ready:false};
+function initAudio(){
+  if(audio.ready) return;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC) return;
+  const ctx=new AC(); audio.ctx=ctx;
+  const len=ctx.sampleRate*2;
+  const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  const noise=ctx.createBufferSource(); noise.buffer=buf; noise.loop=true;
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=700; bp.Q.value=0.9;
+  const ng=ctx.createGain(); ng.gain.value=0;
+  noise.connect(bp).connect(ng).connect(ctx.destination); noise.start();
+
+  const osc=ctx.createOscillator(); osc.type='sawtooth'; osc.frequency.value=180;
+  const og=ctx.createGain(); og.gain.value=0;
+  const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2200;
+  osc.connect(lp).connect(og).connect(ctx.destination); osc.start();
+
+  audio.bp=bp; audio.ng=ng; audio.osc=osc; audio.og=og; audio.ready=true;
+}
+function updateAudio(power,boost,speed){
+  if(!audio.ready) return;
+  const t=audio.ctx.currentTime;
+  const g=audio.on?1:0;
+  audio.bp.frequency.setTargetAtTime(400+power*2200+boost*1400,t,0.08);
+  audio.ng.gain.setTargetAtTime(g*(0.02+power*0.16+boost*0.14+speed*0.0009),t,0.1);
+  audio.osc.frequency.setTargetAtTime(150+power*760+boost*380,t,0.1);
+  audio.og.gain.setTargetAtTime(g*(0.006+power*0.032),t,0.12);
+}
+
+/* ============================================================
+   קלט
+   ============================================================ */
+const keys={};
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0) e.preventDefault();
+  if(e.code==='KeyC') cycleCamera();
+  if(e.code==='KeyR') respawn(true);
+  if(e.code==='KeyM'){ audio.on=!audio.on; setTag('sSound',audio.on); }
+  if(e.code==='KeyP'){ paused=!paused; toast(paused?'השהיה':'',paused?9:0.01); }
+  if(e.code==='KeyI'){ invertPitch=!invertPitch; toast(invertPitch?'ציר חרטום הפוך':'ציר חרטום רגיל',1.2); }
+  if(e.code==='Space'){ stabilizer=!stabilizer; setTag('sStab',stabilizer); }
+});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+addEventListener('blur',()=>{for(const k in keys) keys[k]=false;});
+
+let touchPitch=0,touchRoll=0,touchUp=false,touchDown=false,touchBoost=false;
+const isTouch=matchMedia('(pointer:coarse)').matches;
+if(isTouch){
+  document.getElementById('touch').style.display='block';
+  const stick=document.getElementById('stick'), knob=document.getElementById('knob');
+  let sid=null,cx=0,cy=0;
+  stick.addEventListener('touchstart',e=>{
+    const r=stick.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2;
+    sid=e.changedTouches[0].identifier; e.preventDefault();
+  },{passive:false});
+  stick.addEventListener('touchmove',e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier!==sid) continue;
+      const dx=clamp((t.clientX-cx)/52,-1,1), dy=clamp((t.clientY-cy)/52,-1,1);
+      touchRoll=dx; touchPitch=dy;
+      knob.style.transform='translate('+(dx*40)+'px,'+(dy*40)+'px)';
+    }
+    e.preventDefault();
+  },{passive:false});
+  const end=()=>{sid=null;touchRoll=0;touchPitch=0;knob.style.transform='';};
+  stick.addEventListener('touchend',end); stick.addEventListener('touchcancel',end);
+  const bind=(id,set)=>{
+    const el=document.getElementById(id);
+    el.addEventListener('touchstart',e=>{set(true);e.preventDefault();},{passive:false});
+    el.addEventListener('touchend',e=>{set(false);e.preventDefault();},{passive:false});
+  };
+  bind('tUp',v=>touchUp=v); bind('tDown',v=>touchDown=v); bind('tBoost',v=>touchBoost=v);
+}
+
+/* ============================================================
+   פיזיקה
+   ============================================================ */
+const GRAV=13.0, LIFT_MAX=34, BOOST_ACC=42;
+const DRAG_F=0.0055, DRAG_S=0.075, DRAG_U=0.055;
+const PITCH_RATE=1.45, ROLL_RATE=2.4, YAW_RATE=0.95, BANK_TURN=0.95;
+
+const START=new THREE.Vector3(-2100,0,0);
+START.y=terrainHeight(START.x,START.z)+3;
+
+const pos=START.clone();
+const vel=new THREE.Vector3();
+const quat=new THREE.Quaternion();
+let power=0, boostFuel=1, boosting=false;
+let pitchIn=0, rollIn=0, yawIn=0;
+let stabilizer=true, invertPitch=false, paused=false;
+let onGround=true, crashTimer=0, started=false;
+
+const up=new THREE.Vector3(), fwd=new THREE.Vector3(), right=new THREE.Vector3();
+const tmpV=new THREE.Vector3(), tmpQ=new THREE.Quaternion();
+const WORLD_UP=new THREE.Vector3(0,1,0);
+
+function respawn(manual){
+  pos.copy(START); pos.y=terrainHeight(START.x,START.z)+3;
+  if(ringsDone>0 && !manual){
+    const r=rings[Math.max(0,ringIdx-1)];
+    pos.copy(r.position); pos.y+=6;
+  }
+  vel.set(0,0,0);
+  quat.identity();
+  power=0; onGround=true; crashTimer=0;
+}
+
+function step(dt){
+  // --- קלט ---
+  const kUp=keys['ArrowUp']||false, kDn=keys['ArrowDown']||false;
+  let pIn=(kUp?1:0)-(kDn?1:0);
+  if(isTouch) pIn+=touchPitch;
+  pIn=clamp(pIn,-1,1);
+  if(invertPitch) pIn=-pIn;
+
+  let rIn=((keys['ArrowRight']?1:0)-(keys['ArrowLeft']?1:0));
+  if(isTouch) rIn+=touchRoll;
+  rIn=clamp(rIn,-1,1);
+
+  const yIn=clamp((keys['KeyD']?1:0)-(keys['KeyA']?1:0),-1,1);
+
+  pitchIn=lerp(pitchIn,pIn,1-Math.exp(-9*dt));
+  rollIn =lerp(rollIn ,rIn,1-Math.exp(-9*dt));
+  yawIn  =lerp(yawIn  ,yIn,1-Math.exp(-7*dt));
+
+  const wantUp=(keys['KeyW']||touchUp), wantDn=(keys['KeyS']||touchDown);
+  if(wantUp) power=clamp(power+0.75*dt,0,1);
+  if(wantDn) power=clamp(power-0.85*dt,0,1);
+
+  boosting=(keys['ShiftLeft']||keys['ShiftRight']||touchBoost)&&boostFuel>0.02;
+  if(boosting) boostFuel=clamp(boostFuel-0.24*dt,0,1);
+  else boostFuel=clamp(boostFuel+0.11*dt,0,1);
+
+  // --- סיבוב ---
+  up.set(0,1,0).applyQuaternion(quat);
+  fwd.set(0,0,-1).applyQuaternion(quat);
+  right.set(1,0,0).applyQuaternion(quat);
+
+  const rollAng=Math.asin(clamp(-right.y,-1,1));
+  const pitchAng=Math.asin(clamp(fwd.y,-1,1));
+
+  let pr=pitchIn*PITCH_RATE;
+  let rr=-rollIn*ROLL_RATE;
+  let yr=yawIn*YAW_RATE;
+
+  if(stabilizer){
+    if(Math.abs(rollIn)<0.05) rr+=rollAng*2.0;
+    if(Math.abs(pitchIn)<0.05) pr+=-pitchAng*0.9;
+  }
+  if(onGround){ rr+=rollAng*3.5; pr+=-pitchAng*3.5; }
+
+  tmpQ.setFromEuler(new THREE.Euler(pr*dt,yr*dt,rr*dt,'XYZ'));
+  quat.multiply(tmpQ).normalize();
+
+  // סיבוב מתואם: הטיה גוררת פנייה
+  const spd=vel.length();
+  const turn=-rollAng*BANK_TURN*smoothstep(4,45,spd);
+  tmpQ.setFromAxisAngle(WORLD_UP,turn*dt);
+  quat.premultiply(tmpQ).normalize();
+
+  up.set(0,1,0).applyQuaternion(quat);
+  fwd.set(0,0,-1).applyQuaternion(quat);
+  right.set(1,0,0).applyQuaternion(quat);
+
+  // --- כוחות ---
+  const acc=new THREE.Vector3(0,-GRAV,0);
+  acc.addScaledVector(up,power*LIFT_MAX);
+  if(boosting) acc.addScaledVector(fwd,BOOST_ACC);
+
+  // גרר אנאיזוטרופי — האופנוע "הולך לאן שהוא מצביע"
+  const vf=vel.dot(fwd), vr=vel.dot(right), vu=vel.dot(up);
+  acc.addScaledVector(fwd,-DRAG_F*vf*Math.abs(vf));
+  acc.addScaledVector(right,-DRAG_S*vr*Math.abs(vr)-vr*0.7);
+  acc.addScaledVector(up,-DRAG_U*vu*Math.abs(vu)-vu*0.35);
+
+  vel.addScaledVector(acc,dt);
+  pos.addScaledVector(vel,dt);
+
+  // --- קרקע ---
+  const gh=terrainHeight(pos.x,pos.z);
+  const water=lakeMask(pos.x,pos.z)>0.15;
+  const surface=Math.max(gh,water?WATER_Y:-9999);
+  const clearance=pos.y-surface;
+
+  if(clearance<1.35){
+    const impact=-vel.y;
+    const flat=up.y;
+    if(crashTimer<=0 && (impact>24 || spd>36 || flat<0.4)){
+      crash();
+    }else{
+      pos.y=surface+1.35;
+      if(vel.y<0) vel.y=0;
+      vel.x*=Math.pow(0.06,dt); vel.z*=Math.pow(0.06,dt);
+      onGround=true;
+    }
+  }else if(clearance>1.6){
+    onGround=false;
+  }
+
+  if(pos.y>3200){ pos.y=3200; if(vel.y>0) vel.y=0; }
+  pos.x=clamp(pos.x,-4400,4400);
+  pos.z=clamp(pos.z,-3200,3200);
+
+  bike.position.copy(pos);
+  bike.quaternion.copy(quat);
+
+  // --- טבעות ---
+  if(!raceFinished){
+    const r=rings[ringIdx];
+    if(r && !r.userData.done){
+      const local=r.worldToLocal(pos.clone());
+      const prev=r.worldToLocal(prevPos.clone());
+      const radial=Math.sqrt(local.x*local.x+local.y*local.y);
+      if(radial<RINGR && ((local.z<=0&&prev.z>0)||(local.z>=0&&prev.z<0))){
+        r.userData.done=true; ringsDone++;
+        if(!raceRunning){raceRunning=true;raceTime=0;}
+        ringIdx=(ringIdx+1)%rings.length;
+        while(rings[ringIdx].userData.done && ringsDone<rings.length) ringIdx=(ringIdx+1)%rings.length;
+        refreshRings();
+        if(ringsDone>=rings.length){
+          raceFinished=true; raceRunning=false;
+          toast('סיימת את המסלול! '+raceTime.toFixed(1)+' שניות',5);
+        }else{
+          toast('טבעת '+ringsDone+' מתוך '+rings.length,1.1);
+        }
+      }
+    }
+  }
+  prevPos.copy(pos);
+  if(raceRunning) raceTime+=dt;
+
+  // --- אנימציה של האופנוע ---
+  blades.rotation.z+=(6+power*70)*dt;
+  const lift=power;
+  nozFront.userData.flame.scale.y=lift*(0.9+Math.random()*0.25)*(1+pitchIn*0.2);
+  nozRear .userData.flame.scale.y=lift*(0.9+Math.random()*0.25)*(1-pitchIn*0.2);
+  const bth=boosting?1:(power*0.16);
+  thrL.userData.flame.scale.y=bth*(0.9+Math.random()*0.3);
+  thrR.userData.flame.scale.y=bth*(0.9+Math.random()*0.3);
+  yawL.userData.flame.scale.y=Math.max(0,-yawIn)*1.1*(0.8+Math.random()*0.4);
+  yawR.userData.flame.scale.y=Math.max(0, yawIn)*1.1*(0.8+Math.random()*0.4);
+  nozFront.rotation.x= pitchIn*0.28;
+  nozRear .rotation.x=-pitchIn*0.28;
+  winglets[0].rotation.x= rollIn*0.5;
+  winglets[1].rotation.x=-rollIn*0.5;
+  bars.rotation.y=-yawIn*0.22;
+  rider.rotation.z=rollIn*0.14;
+  rider.rotation.x=-pitchIn*0.09;
+  head.rotation.z=-rollIn*0.1;
+  glow.intensity=power*5.5+(boosting?4:0);
+
+  // חלקיקים
+  if(power>0.15){
+    const n=Math.random()<power?2:1;
+    for(let k=0;k<n;k++){
+      const src=Math.random()<0.5?nozFront:nozRear;
+      src.getWorldPosition(tmpV);
+      emit(tmpV.x,tmpV.y-1.5,tmpV.z,-up.x*24*power,-up.y*24*power,-up.z*24*power);
+    }
+  }
+  if(boosting){
+    thrL.getWorldPosition(tmpV); emit(tmpV.x,tmpV.y,tmpV.z,-fwd.x*40,-fwd.y*40,-fwd.z*40);
+    thrR.getWorldPosition(tmpV); emit(tmpV.x,tmpV.y,tmpV.z,-fwd.x*40,-fwd.y*40,-fwd.z*40);
+  }
+}
+const prevPos=pos.clone();
+
+function crash(){
+  crashTimer=1.4;
+  const f=document.getElementById('flash');
+  f.style.opacity='0.55';
+  setTimeout(()=>f.style.opacity='0',90);
+  toast('התרסקות',1.3);
+  for(let i=0;i<70;i++){
+    emit(pos.x,pos.y,pos.z,rnd(-24,24),rnd(-6,30),rnd(-24,24));
+  }
+  vel.set(0,0,0);
+}
+
+/* ============================================================
+   מצלמה
+   ============================================================ */
+let camMode=0;
+const CAM_NAMES=['רדיפה','תא נהג','קולנועית'];
+const camPos=new THREE.Vector3(), followQ=new THREE.Quaternion(), lookAt=new THREE.Vector3();
+let orbitA=0;
+function cycleCamera(){
+  camMode=(camMode+1)%3;
+  document.getElementById('sCam').textContent=CAM_NAMES[camMode];
+}
+function updateCamera(dt){
+  const spd=vel.length();
+  if(camMode===1){
+    bike.updateMatrixWorld();
+    camera.position.copy(bike.localToWorld(new THREE.Vector3(0,1.32,-0.28)));
+    camera.quaternion.copy(quat);
+    camera.rotateX(-0.06);
+  }else if(camMode===2){
+    orbitA+=dt*0.28;
+    const d=22+spd*0.16;
+    camera.position.set(pos.x+Math.cos(orbitA)*d,pos.y+7,pos.z+Math.sin(orbitA)*d);
+    camera.up.set(0,1,0);
+    camera.lookAt(pos);
+  }else{
+    followQ.slerp(quat,1-Math.exp(-5*dt));
+    followQ.normalize();
+    const off=new THREE.Vector3(0,2.7,9.2+spd*0.05).applyQuaternion(followQ);
+    const desired=tmpV.copy(pos).add(off);
+    const gh=terrainHeight(desired.x,desired.z)+3;
+    if(desired.y<gh) desired.y=gh;
+    camPos.lerp(desired,1-Math.exp(-9*dt));
+    // רעד מנוע
+    const sh=(power*0.05+(boosting?0.09:0));
+    camera.position.set(camPos.x+rnd(-sh,sh),camPos.y+rnd(-sh,sh),camPos.z+rnd(-sh,sh));
+    const cu=new THREE.Vector3(0,1,0).applyQuaternion(followQ).lerp(WORLD_UP,0.45).normalize();
+    camera.up.copy(cu);
+    lookAt.copy(pos).addScaledVector(fwd,7).addScaledVector(up,0.9);
+    camera.lookAt(lookAt);
+  }
+  const targetFov=camMode===1?74:(62+clamp(spd*0.22,0,24));
+  camera.fov+= (targetFov-camera.fov)*(1-Math.exp(-4*dt));
+  camera.updateProjectionMatrix();
+}
+
+/* ============================================================
+   ממשק
+   ============================================================ */
+const el=id=>document.getElementById(id);
+let toastT=0;
+function toast(txt,secs){
+  el('toast').textContent=txt;
+  el('toast').style.opacity=txt?'1':'0';
+  toastT=secs||1;
+}
+function setTag(id,on){
+  const t=el(id);
+  t.textContent=on?'פעיל':'כבוי';
+  t.className='tag '+(on?'on':'off');
+}
+function updateHUD(dt){
+  if(toastT>0){ toastT-=dt; if(toastT<=0) el('toast').style.opacity='0'; }
+  const spd=vel.length()*3.6;
+  el('gSpeed').textContent=Math.round(spd);
+  el('gAlt').textContent=Math.round(pos.y-terrainHeight(pos.x,pos.z));
+  el('gRings').textContent=ringsDone+'/'+rings.length;
+  el('gTime').textContent=raceTime.toFixed(1);
+  el('powerFill').style.width=(power*100).toFixed(0)+'%';
+  el('powerTxt').textContent=Math.round(power*100)+'%';
+  el('boostFill').style.width=(boostFuel*100).toFixed(0)+'%';
+  el('boostTxt').textContent=Math.round(boostFuel*100)+'%';
+
+  if(raceFinished){ el('tDist').textContent='הושלם'; return; }
+  const r=rings[ringIdx];
+  const d=pos.distanceTo(r.position);
+  el('tDist').textContent=Math.round(d)+' מ׳';
+  const dir=tmpV.copy(r.position).sub(pos);
+  const camF=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  const a1=Math.atan2(dir.x,-dir.z), a2=Math.atan2(camF.x,-camF.z);
+  let ang=(a1-a2);
+  while(ang>Math.PI) ang-=6.283185; while(ang<-Math.PI) ang+=6.283185;
+  el('arrow').style.transform='rotate('+(ang*180/Math.PI)+'deg)';
+}
+
+/* ============================================================
+   לולאה ראשית
+   ============================================================ */
+let last=performance.now(), wt=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=(now-last)/1000; last=now;
+  dt=Math.min(dt,0.05);
+  if(!started){ renderer.render(scene,camera); return; }
+
+  if(!paused){
+    if(crashTimer>0){
+      crashTimer-=dt;
+      if(crashTimer<=0) respawn(false);
+    }else{
+      step(dt);
+    }
+    updateParticles(dt);
+
+    // גלי אגם
+    wt+=dt;
+    const wp=wGeo.attributes.position;
+    for(let i=0;i<wp.count;i++){
+      const x=wBase[i*3], z=wBase[i*3+2];
+      wp.setY(i,Math.sin(x*0.02+wt*1.4)*0.55+Math.sin(z*0.035-wt*1.1)*0.4);
+    }
+    wp.needsUpdate=true;
+    wGeo.computeVertexNormals();
+
+    // טבעת פועמת
+    if(!raceFinished){
+      const s=1+Math.sin(wt*3.2)*0.035;
+      rings[ringIdx].scale.set(s,s,1);
+      rings.forEach((r,i)=>{ if(i!==ringIdx) r.scale.set(1,1,1); });
+    }
+
+    updateCamera(dt);
+    updateHUD(dt);
+    updateAudio(power,boosting?1:0,vel.length());
+  }
+
+  // צל עוקב
+  sun.position.copy(pos).addScaledVector(sunDir,420);
+  sun.target.position.copy(pos);
+  sun.target.updateMatrixWorld();
+
+  renderer.render(scene,camera);
+}
+
+/* ============================================================
+   התחלה
+   ============================================================ */
+respawn(true);
+bike.position.copy(pos);
+camPos.copy(pos).add(new THREE.Vector3(0,4,14));
+camera.position.copy(camPos);
+camera.lookAt(pos);
+prevPos.copy(pos);
+requestAnimationFrame(frame);
+
+el('startBtn').addEventListener('click',()=>{
+  initAudio();
+  if(audio.ctx && audio.ctx.state==='suspended') audio.ctx.resume();
+  el('intro').style.display='none';
+  started=true;
+  power=0.42;
+  toast('הגבר עוצמה עם W והטה את החרטום קדימה',3.2);
+});
+})();
+</script>
+</body>
+</html>
