@@ -37,15 +37,22 @@ def _download_bytes(service, file_id):
     return buf.getvalue()
 
 
-def check_hw(service, file_ids, folder_id):
+def check_hw(service, file_ids, folder_id, classroom_rubric=None,
+             assignment_description=None, assignment_name=None):
     """Downloads each attached Drive file, runs them through the checking
-    pipeline (OCR every page → evaluate the merged transcript against the
-    default rubric), and uploads the resulting Word report into folder_id.
+    pipeline (OCR every page → evaluate the merged transcript against a
+    rubric), and uploads the resulting Word report into folder_id.
 
-    Model and rubric are currently fixed to core.DEFAULT_MODEL /
-    core.DEFAULT_RUBRIC_ID; both check_pages() and evaluate_with_rubric()
-    already take them as parameters, so a future entry point can expose them
-    without further plumbing changes."""
+    classroom_rubric: the assignment's own Rubric object from the Classroom
+    API (courses.courseWork.rubrics), if the teacher attached one — takes
+    priority over the bundled default rubric. assignment_description: the
+    assignment's free-text definition as the teacher wrote it in Classroom,
+    passed through as the rubric's "question" so the model evaluates against
+    the actual task, not just generic criteria.
+
+    Model is currently fixed to core.DEFAULT_MODEL; check_pages() already
+    takes it as a parameter, so a future entry point can expose it without
+    further plumbing changes."""
     file_bytes_list = []
     first_name = None
     for fid in file_ids:
@@ -62,8 +69,19 @@ def check_hw(service, file_ids, folder_id):
         log.info("no supported attachments among %s - nothing to upload", file_ids)
         return
 
-    pages, evaluation = core.check_pages(file_bytes_list)
-    rubric_name = (core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}).get("name", core.DEFAULT_RUBRIC_ID)
+    rubric_override = None
+    if classroom_rubric and classroom_rubric.get("criteria"):
+        rubric_override = core.rubric_from_classroom(classroom_rubric, assignment_name or "")
+
+    pages, evaluation = core.check_pages(
+        file_bytes_list,
+        rubric_override=rubric_override,
+        question=assignment_description,
+    )
+    rubric_name = (
+        rubric_override["name"] if rubric_override
+        else (core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}).get("name", core.DEFAULT_RUBRIC_ID)
+    )
 
     stem = os.path.splitext(first_name or "report")[0]
     ts = time.strftime("%Y%m%d-%H%M%S")
