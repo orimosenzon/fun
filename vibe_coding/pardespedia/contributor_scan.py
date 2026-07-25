@@ -49,6 +49,15 @@ MIN_EDITS = 2
 MAX_USERS_PER_RUN = 5
 LOOKBACK_DAYS = 10  # comfortably > the 3-day cron cycle, so one missed run doesn't drop edits
 
+# Policy (2026-07-25, Ori): the bot may only INITIATE talk-page contact with
+# new contributors — encouragement/praise/gentle tips. Veteran editors are
+# left alone here entirely; the bot only responds if THEY start a thread
+# (that's cron_all_bot_talk.sh's job, not this script's). A user's total
+# edit count (lifetime, not just this window) is the proxy for "new"; sysops
+# are excluded outright regardless of count, since account age/edit count
+# alone doesn't capture seniority for an operator.
+NEW_USER_MAX_EDITS = 20
+
 
 def now_iso():
     return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -90,6 +99,31 @@ def recent_changes_since(since_iso):
     return out
 
 
+def filter_new_users(usernames):
+    """Return the subset of usernames that qualify as 'new' — lifetime edit
+    count <= NEW_USER_MAX_EDITS and not a sysop. Queries in one batched call
+    (MediaWiki allows multiple ususers separated by '|')."""
+    if not usernames:
+        return set()
+    params = {
+        "action": "query", "list": "users",
+        "ususers": "|".join(usernames),
+        "usprop": "groups|editcount", "format": "json",
+    }
+    d = requests.get(API, params=params, headers=H, timeout=40).json()
+    new_users = set()
+    for u in d.get("query", {}).get("users", []):
+        name = u.get("name")
+        if not name:
+            continue
+        if "sysop" in u.get("groups", []):
+            continue
+        if u.get("editcount", 0) > NEW_USER_MAX_EDITS:
+            continue
+        new_users.add(name)
+    return new_users
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-state", action="store_true")
@@ -126,6 +160,11 @@ def main():
             continue
         new_edits.sort(key=lambda e: e["timestamp"])
         candidates.append((user, new_edits))
+
+    # Only new contributors get proactive praise/tips (see NEW_USER_MAX_EDITS
+    # above) — veteran editors are dropped here entirely, not just capped.
+    new_user_names = filter_new_users([user for user, _ in candidates])
+    candidates = [(user, edits) for user, edits in candidates if user in new_user_names]
 
     # Most-active first; cap how many we touch in one run (cost + pacing).
     candidates.sort(key=lambda t: -len(t[1]))
