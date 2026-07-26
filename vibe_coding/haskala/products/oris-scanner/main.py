@@ -74,6 +74,18 @@ log = logging.getLogger("oris-scanner-scan")
 # the dedup itself). If it's "in_progress" and fresh — another instance is
 # probably handling it right now, skip. If "in_progress" but stale (a claim
 # stuck from a crashed run) — reclaim it to allow a genuine retry.
+#
+# The ledger is keyed on the submission id, which Classroom keeps *stable*
+# across unsubmit/resubmit. Marking an id "done" forever therefore meant a
+# student who reworked and handed in again was never regraded — silently, and
+# in direct contradiction of the RETURNED case this scan explicitly accepts.
+# So "done" is recorded together with the submission's updateTime, and a
+# changed updateTime reopens it for grading.
+#
+# Hazard to remember if draftGrade writing is ever added: writing a grade back
+# to a submission bumps its updateTime, which would look like a resubmission
+# and regrade it — a feedback loop that costs a model call each turn. Whatever
+# writes the grade must record the resulting updateTime in the ledger.
 _STALE_CLAIM_MINUTES = 20  # beyond this, a stuck claim is considered abandoned and reclaimable
 
 _db = None
@@ -86,44 +98,66 @@ def _firestore():
     return _db
 
 
-def _try_claim_submission(subm_id: str) -> bool:
-    """Returns True if the submission should be processed now (either it
-    wasn't handled yet, or an old claim was abandoned), False if it should be
-    skipped (already done, or another instance is working on it right now)."""
+def _try_claim_submission(subm_id: str, update_time: str | None) -> bool:
+    """Returns True if the submission should be processed now — never handled,
+    changed since it was last graded, or an abandoned claim to retry — and
+    False if it should be skipped.
+
+    update_time: the submission's Classroom updateTime, used as the version
+    marker that distinguishes a genuine resubmission from the same submission
+    seen again on the next poll."""
     doc_ref = _firestore().collection("oris_scanner_submissions").document(subm_id)
     now = datetime.datetime.now(datetime.timezone.utc)
 
+    # Decided inside the transaction, logged outside it: a transaction body may
+    # be retried on contention, which would emit the line more than once.
     @firestore.transactional
     def _txn(transaction):
         snap = doc_ref.get(transaction=transaction)
+        claim = {"status": "in_progress", "claimed_at": now, "update_time": update_time}
         if not snap.exists:
-            transaction.set(doc_ref, {"status": "in_progress", "claimed_at": now})
-            return True
+            transaction.set(doc_ref, claim)
+            return True, None
         data = snap.to_dict() or {}
         if data.get("status") == "done":
-            log.debug("[subm %s] skip — already graded at %s", subm_id, data.get("completed_at"))
-            return False
+            graded_version = data.get("update_time")
+            if graded_version is None:
+                # Written before the ledger tracked versions. Treat as current
+                # and backfill, rather than regrading every already-graded
+                # submission in the collection the moment this ships.
+                transaction.set(doc_ref, {"update_time": update_time}, merge=True)
+                return False, ("debug", "already graded at %s (recording its version)"
+                               % data.get("completed_at"))
+            if graded_version == update_time:
+                return False, ("debug", "already graded at %s" % data.get("completed_at"))
+            transaction.set(doc_ref, claim)
+            return True, ("info", "changed since it was graded (%s → %s) — regrading"
+                          % (graded_version, update_time))
         claimed_at = data.get("claimed_at")
         if claimed_at is not None:
             age_minutes = (now - claimed_at).total_seconds() / 60
             if age_minutes < _STALE_CLAIM_MINUTES:
-                log.debug("[subm %s] skip — another run claimed it %.1f min ago",
-                          subm_id, age_minutes)
-                return False  # another instance is working on it now, not abandoned
-            log.info("[subm %s] reclaiming abandoned claim (%.1f min old, stale after %d)",
-                     subm_id, age_minutes, _STALE_CLAIM_MINUTES)
+                return False, ("debug", "another run claimed it %.1f min ago" % age_minutes)
+            transaction.set(doc_ref, claim)
+            return True, ("info", "reclaiming abandoned claim (%.1f min old, stale after %d)"
+                          % (age_minutes, _STALE_CLAIM_MINUTES))
         # stale/abandoned claim — reclaim it to allow a genuine retry
-        transaction.set(doc_ref, {"status": "in_progress", "claimed_at": now})
-        return True
+        transaction.set(doc_ref, claim)
+        return True, None
 
-    return _txn(_firestore().transaction())
+    should_process, note = _txn(_firestore().transaction())
+    if note:
+        level, message = note
+        getattr(log, level)("[subm %s] %s", subm_id, message)
+    return should_process
 
 
-def _mark_done(subm_id: str):
+def _mark_done(subm_id: str, update_time: str | None = None):
     doc_ref = _firestore().collection("oris_scanner_submissions").document(subm_id)
     doc_ref.set({
         "status": "done",
         "completed_at": datetime.datetime.now(datetime.timezone.utc),
+        "update_time": update_time,
     }, merge=True)
 
 
@@ -325,13 +359,14 @@ def run_workspace_scan():
                     continue
 
                 subm_id = subm.get('id')
-                if not _try_claim_submission(subm_id):
+                update_time = subm.get('updateTime')
+                if not _try_claim_submission(subm_id, update_time):
                     continue  # dedup: already handled, or another instance is on it right now
 
                 tag = f"[subm {subm_id}]"
-                log.info("%s detected: course=%r assignment=%r state=%s student=%s late=%s",
+                log.info("%s detected: course=%r assignment=%r state=%s student=%s late=%s updated=%s",
                          tag, course_name, cw.get('title'), subm.get('state'),
-                         subm.get('userId'), subm.get('late', False))
+                         subm.get('userId'), subm.get('late', False), update_time)
 
                 file_ids = []
                 attachments = (subm.get('assignmentSubmission') or {}).get('attachments', [])
@@ -343,7 +378,7 @@ def run_workspace_scan():
                 if not file_ids:
                     log.info("%s no Drive attachments (%d attachment(s) of other kinds) — "
                              "marking done, nothing to grade", tag, len(attachments))
-                    _mark_done(subm_id)
+                    _mark_done(subm_id, update_time)
                     continue  # nothing to check, and no attachment to anchor a folder on
 
                 log.info("%s %d attachment(s) to check — starting", tag, len(file_ids))
@@ -366,7 +401,7 @@ def run_workspace_scan():
                     tag=tag,
                     material_rubric=material_rubric,
                 )
-                _mark_done(subm_id)
+                _mark_done(subm_id, update_time)
                 graded += 1
                 log.info("%s done", tag)
 
