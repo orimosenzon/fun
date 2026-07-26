@@ -286,6 +286,18 @@ def run_workspace_scan():
             if model_warning:
                 log.warning("assignment %r: %s", cw.get('title'), model_warning)
 
+            # A rubric may instead be attached as an ordinary document. Only
+            # identified here (a name match, no network); actually downloading
+            # and reading it is deferred until there is a submission to grade,
+            # because this scan runs every minute and the vast majority of
+            # runs have nothing to do.
+            rubric_material, assignment_description, rubric_warning = core.resolve_rubric_material(
+                assignment_description, cw.get('materials'))
+            if rubric_warning:
+                log.warning("assignment %r: %s", cw.get('title'), rubric_warning)
+            material_rubric = None
+            material_rubric_loaded = False
+
             res_sub = classroom_service.courses().courseWork().studentSubmissions().list(
                 courseId=course.get('id'), courseWorkId=cw.get('id')).execute()
             subms = res_sub.get('studentSubmissions', [])
@@ -335,6 +347,15 @@ def run_workspace_scan():
                     continue  # nothing to check, and no attachment to anchor a folder on
 
                 log.info("%s %d attachment(s) to check — starting", tag, len(file_ids))
+
+                # Read once per assignment per scan, not once per student:
+                # the rubric document is identical for all of them, and
+                # reading it can cost a vision call per page.
+                if rubric_material and not material_rubric_loaded:
+                    material_rubric = checker.load_material_rubric(
+                        drive_service, rubric_material, model_key, tag)
+                    material_rubric_loaded = True
+
                 cw_folder_id = _get_or_create_checked_folder(drive_service, cw.get('id'), file_ids[0])
                 checker.check_hw(
                     drive_service, file_ids, cw_folder_id,
@@ -343,6 +364,7 @@ def run_workspace_scan():
                     assignment_name=cw.get('title'),
                     model_key=model_key,
                     tag=tag,
+                    material_rubric=material_rubric,
                 )
                 _mark_done(subm_id)
                 graded += 1
