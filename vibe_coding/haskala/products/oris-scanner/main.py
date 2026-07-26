@@ -53,8 +53,13 @@ _handler.setFormatter(_CloudLoggingFormatter())
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
                     handlers=[_handler], force=True)
 
-# Chatty at INFO and says nothing useful — two lines every single poll.
-logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.WARNING)
+# Third-party loggers that drown out our own trace. discovery_cache alone
+# prints two useless lines per poll at INFO; the rest only bite at DEBUG,
+# where every HTTP request and connection gets a line and the scan's own
+# story becomes unreadable — which would defeat the point of LOG_LEVEL=DEBUG.
+for _noisy in ("googleapiclient.discovery_cache", "googleapiclient.discovery",
+               "urllib3.connectionpool", "google.auth", "google_auth_httplib2"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 log = logging.getLogger("oris-scanner-scan")
 
