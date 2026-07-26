@@ -21,6 +21,8 @@ import io
 import json
 import logging
 import os
+import re
+import time
 
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
@@ -166,13 +168,18 @@ def _image_block_anthropic(img: Image.Image, max_edge: int) -> dict:
 # Same 5 provider keys as checker. All 4 providers' credentials are now wired
 # into Cloud Run (Secret Manager: gemini-api-key, anthropic-api-key,
 # groq-api-key, azure-openai-api-key), so switching is just this one constant.
-# Temporarily set to azure-gpt41-mini 2026-07-22: Gemini free-tier daily
-# quota was exhausted (resets midnight), Anthropic account is out of
-# balance, and Groq turned out to have removed llama-4-scout (its only
-# vision-capable model) from this key's available models entirely — 404
-# model_not_found on every real attempt (see Cloud Run logs ~16:30-17:30).
-# Confirmed Azure's gpt-4.1-mini deployment responds. No parameter/UI to
-# pick a model yet; revisit DEFAULT_MODEL by hand until that's built.
+#
+# DEFAULT_MODEL applies when the assignment carries no [model: …] tag — see
+# resolve_model below, which is how a teacher overrides it per assignment.
+#
+# Back to gemini on 2026-07-26: its free-tier daily quota has refilled. The
+# 2026-07-22 switch to azure-gpt41-mini was a workaround for that quota being
+# exhausted, alongside two provider problems that may well still stand —
+# the Anthropic account was out of balance, and Groq had dropped
+# llama-4-scout (its only vision-capable model) from this key entirely, 404
+# model_not_found on every attempt. So [model: claude] / [model: groq-scout]
+# are the two tags most likely to fail; azure-gpt41-mini is the known-good
+# fallback if Gemini's quota runs dry again.
 MODELS = {
     "claude": "Claude (Opus 4.8)",
     "gemini": "Gemini (2.5 Flash)",
@@ -180,7 +187,7 @@ MODELS = {
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
     "azure-gpt41-mini": "GPT-4.1-mini (Azure)",
 }
-DEFAULT_MODEL = "azure-gpt41-mini"
+DEFAULT_MODEL = "gemini"
 
 MODEL_FILENAME_LABEL = {
     "claude":      "claude-opus-4-8",
@@ -189,6 +196,86 @@ MODEL_FILENAME_LABEL = {
     "groq-scout":  "llama-4-scout",
     "azure-gpt41-mini": "gpt-4.1-mini-azure",
 }
+
+# ─── teacher-selectable model (tag inside the assignment description) ───────
+# Classroom's API exposes no free metadata field on a courseWork, so the only
+# place a teacher can hand us a per-assignment setting through the normal
+# Classroom UI is text they already type. The convention: a tag anywhere in
+# the assignment description —
+#
+#     [model: claude]        (or [מודל: claude], [model=claude])
+#
+# parsed out here, then *removed* from the text before the description is
+# passed on as the rubric's "question", so the model never sees the tag and
+# the evaluation isn't polluted by it. The tag stays visible to students in
+# Classroom itself; that's the price of using the description as the channel.
+#
+# An unrecognised model name does NOT fall through silently — resolve_model()
+# reports it so the caller can log a warning, because quietly grading with the
+# wrong model is worse than grading with the default and saying so.
+# The value must start with a non-space character, so a bracketed phrase that
+# merely happens to read like "[model: ]" isn't mistaken for a tag and deleted
+# out of the assignment text.
+_MODEL_TAG_RE = re.compile(
+    r"\[\s*(?:model|מודל)\s*[:=]\s*([^\]\n\s][^\]\n]*?)\s*\]",
+    re.IGNORECASE,
+)
+
+# Spellings a teacher might plausibly type, mapped onto MODELS keys. Keys of
+# MODELS itself are always accepted; this is only for the aliases.
+_MODEL_ALIASES = {
+    "claude-opus": "claude",
+    "opus": "claude",
+    "anthropic": "claude",
+    "gemini-flash": "gemini",
+    "gemini-2.5-flash": "gemini",
+    "flash-lite": "gemini-lite",
+    "gemini-flash-lite": "gemini-lite",
+    "groq": "groq-scout",
+    "llama": "groq-scout",
+    "scout": "groq-scout",
+    "azure": "azure-gpt41-mini",
+    "gpt": "azure-gpt41-mini",
+    "gpt-4.1-mini": "azure-gpt41-mini",
+    "gpt41-mini": "azure-gpt41-mini",
+}
+
+
+def resolve_model(description: str | None) -> tuple[str, str | None, str | None]:
+    """Reads a [model: …] tag out of an assignment description.
+
+    Returns (model_key, cleaned_description, warning):
+      model_key   — a valid MODELS key; DEFAULT_MODEL when no usable tag.
+      cleaned_description — the description with every model tag removed
+                    (None stays None), ready to be used as the question.
+      warning     — None on success, otherwise a human-readable reason the
+                    tag was ignored, for the caller to log.
+    """
+    if not description:
+        return DEFAULT_MODEL, description, None
+
+    matches = _MODEL_TAG_RE.findall(description)
+    cleaned = _MODEL_TAG_RE.sub("", description)
+    # collapse the blank lines the removed tag leaves behind
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip() or None
+
+    if not matches:
+        return DEFAULT_MODEL, description, None
+
+    raw = matches[0].strip()
+    key = raw.lower().replace("_", "-")
+    key = _MODEL_ALIASES.get(key, key)
+    if key not in MODELS:
+        return DEFAULT_MODEL, cleaned, (
+            f"unknown model {raw!r} in assignment description — "
+            f"falling back to {DEFAULT_MODEL}. Valid: {', '.join(sorted(MODELS))}"
+        )
+    if len(matches) > 1:
+        return key, cleaned, (
+            f"{len(matches)} model tags in the description — using the first ({key})"
+        )
+    return key, cleaned, None
+
 
 _ANTHROPIC_MODEL = "claude-opus-4-8"
 
@@ -1079,6 +1166,11 @@ def check_pages(
     if question:
         rubric = {**rubric, "question": question}
 
+    t0 = time.monotonic()
+    log.info("[check] start: files=%d model=%s rubric=%r auto_orient=%s langs=%s/%s",
+             len(file_bytes_list), model_key, rubric.get("name"),
+             auto_orient, exercise_lang, feedback_lang)
+
     pages: list[dict] = []
     for data, ext in file_bytes_list:
         for img in iter_file_pages(data, ext):
@@ -1106,4 +1198,5 @@ def check_pages(
     log.info("[eval] model=%s rubric=%s criteria=%d overall=%s",
               model_key, rubric.get("name"), len(evaluation.get("criteria", [])),
               evaluation.get("overall_score"))
+    log.info("[check] done in %.1fs: pages=%d words=%d", time.monotonic() - t0, len(pages), wc)
     return pages, evaluation

@@ -15,6 +15,13 @@
 # Usage (run from Cloud Shell, inside the `fun` clone):
 #   ./deploy.sh                          # auto commit msg
 #   ./deploy.sh "tune language rubric prompt"
+#
+# Log verbosity: INFO by default (the trace of submissions actually graded).
+# Deploy with ORIS_SCANNER_LOG_LEVEL=DEBUG to also get the once-a-minute
+# polling chatter. Note --set-env-vars replaces the whole env block, so a
+# LOG_LEVEL set by hand via `gcloud run services update` is reset on the next
+# deploy — that's why it's pinned here rather than left out. Read the logs
+# with ./logs.sh.
 
 set -euo pipefail
 
@@ -50,6 +57,6 @@ gcloud run deploy "$SERVICE" \
     --region "$REGION" \
     --no-allow-unauthenticated \
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,GROQ_API_KEY=groq-api-key:latest,AZURE_OPENAI_API_KEY=azure-openai-api-key:latest" \
-    --set-env-vars="AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1,AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini"
+    --set-env-vars="AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1,AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini,LOG_LEVEL=${ORIS_SCANNER_LOG_LEVEL:-INFO}"
 
 echo "✅ deployed. Run setup_infra.sh once (first deploy only) to wire the Cloud Scheduler trigger."
