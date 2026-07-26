@@ -51,9 +51,59 @@ def _preview(text, limit):
     return flat
 
 
+# Google-native formats carry no bytes to download; they have to be exported.
+# A Doc becomes plain text directly, which is exactly what a rubric needs.
+_GOOGLE_EXPORTS = {
+    "application/vnd.google-apps.document": ("text/plain", ".txt"),
+}
+
+
+def load_material_rubric(service, material, model_key=None, tag=""):
+    """Turns a rubric attached to the assignment as an ordinary document into
+    the same {name, content} shape as a bundled rubric.
+
+    material: {id, title} as picked by core.resolve_rubric_material. Returns
+    None if the attachment can't be read as a rubric, so the caller falls
+    back to the bundled default rather than grading against nothing."""
+    model_key = model_key or core.DEFAULT_MODEL
+    fid, title = material["id"], material.get("title") or "rubric"
+    try:
+        meta = service.files().get(fileId=fid, fields="mimeType, name").execute()
+        mime, name = meta.get("mimeType"), meta.get("name") or title
+
+        if mime in _GOOGLE_EXPORTS:
+            export_mime, ext = _GOOGLE_EXPORTS[mime]
+            data = service.files().export(fileId=fid, mimeType=export_mime).execute()
+            text, method = data.decode("utf-8", "replace").strip(), "Google Doc export"
+        else:
+            ext = _ext_for(mime, name)
+            if not ext:
+                log.warning("%s rubric attachment %r is a %s — cannot read it as a rubric, "
+                            "falling back to the bundled default", tag, name, mime)
+                return None
+            data = _download_bytes(service, fid)
+            text, method = core.rubric_text_from_document(data, ext, model_key)
+
+        if not text.strip():
+            log.warning("%s rubric attachment %r produced no text (%s) — "
+                        "falling back to the bundled default", tag, name, method)
+            return None
+
+        log.info("%s rubric read from attachment %r via %s (%d chars)",
+                 tag, name, method, len(text))
+        return {"name": name, "content": text}
+    except Exception as e:
+        # A rubric we cannot read must never take the whole submission down;
+        # grading with the bundled default is a far better outcome.
+        log.warning("%s failed to read rubric attachment %r (%s: %s) — "
+                    "falling back to the bundled default",
+                    tag, title, type(e).__name__, str(e)[:200])
+        return None
+
+
 def check_hw(service, file_ids, folder_id, classroom_rubric=None,
              assignment_description=None, assignment_name=None,
-             model_key=None, tag=""):
+             model_key=None, tag="", material_rubric=None):
     """Downloads each attached Drive file, runs them through the checking
     pipeline (OCR every page → evaluate the merged transcript against a
     rubric), and uploads the resulting Word report into folder_id.
@@ -92,18 +142,26 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
         log.info("%s no supported attachments among %s — nothing to upload", tag, file_ids)
         return
 
+    # Precedence: Classroom's own structured rubric wins, because it is the
+    # most explicit statement of intent and is what the teacher sees in the
+    # grading UI. An attached rubric document is the next best signal. Only
+    # with neither does the bundled generic rubric apply.
     rubric_override = None
     if classroom_rubric and classroom_rubric.get("criteria"):
         rubric_override = core.rubric_from_classroom(classroom_rubric, assignment_name or "")
+        rubric_source = "Classroom rubric attached to the assignment"
+    elif material_rubric:
+        rubric_override = material_rubric
+        rubric_source = f"document attached to the assignment ({material_rubric['name']!r})"
+    else:
+        rubric_source = (f"bundled default ({core.DEFAULT_RUBRIC_ID}) — "
+                         "no Classroom rubric and no rubric document attached")
 
-    rubric_name = (
-        rubric_override["name"] if rubric_override
-        else (core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}).get("name", core.DEFAULT_RUBRIC_ID)
-    )
-    rubric_content = (
-        rubric_override["content"] if rubric_override
-        else (core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}).get("content", "")
-    )
+    _default = core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}
+    rubric_name = (rubric_override["name"] if rubric_override
+                   else _default.get("name", core.DEFAULT_RUBRIC_ID))
+    rubric_content = (rubric_override["content"] if rubric_override
+                      else _default.get("content", ""))
 
     # The whole point of this block: everything that determines the grade is
     # visible in the log *before* the slow model calls start, so a surprising
@@ -112,11 +170,10 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     log.info("%s   assignment : %r", tag, assignment_name)
     log.info("%s   model      : %s (%s)", tag, model_key,
              core.MODELS.get(model_key, "unknown key"))
-    log.info("%s   rubric src : %s", tag,
-             "Classroom rubric attached to the assignment" if rubric_override
-             else f"bundled default ({core.DEFAULT_RUBRIC_ID})")
-    log.info("%s   rubric name: %r (%d criteria)", tag, rubric_name,
-             len(classroom_rubric.get("criteria", [])) if rubric_override else 0)
+    log.info("%s   rubric src : %s", tag, rubric_source)
+    log.info("%s   rubric name: %r%s", tag, rubric_name,
+             f" ({len(classroom_rubric['criteria'])} criteria)"
+             if classroom_rubric and classroom_rubric.get("criteria") else "")
     log.info("%s   question   : %s", tag, _preview(assignment_description, 1200))
     log.info("%s   rubric text: %s", tag, _preview(rubric_content, 2000))
     log.info("%s   files      : %d page-source file(s)", tag, len(file_bytes_list))

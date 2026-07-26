@@ -714,6 +714,131 @@ def load_rubric(rubric_id: str) -> dict | None:
         return None
 
 
+# ─── rubric attached as a plain document ────────────────────────────────────
+# Classroom's native rubric (courses.courseWork.rubrics) is a structured
+# object, but teachers naturally reach for "attach a file" instead — that
+# lands in courseWork.materials[] as an ordinary document with no special
+# status, which is why an attached rubric PDF was previously ignored outright.
+#
+# Identifying *which* attachment is the rubric is the whole difficulty: an
+# assignment may equally carry a worksheet or a reading. Two ways, checked in
+# this order:
+#   1. an explicit [rubric: <text>] tag in the description, matched against
+#      attachment names — unambiguous, and mirrors the [model: …] convention;
+#   2. otherwise, an attachment whose name looks like a rubric.
+# If neither matches, nothing is guessed — a wrong rubric is worse than the
+# bundled default, because it would silently grade against the wrong criteria.
+_RUBRIC_NAME_HINTS = ("rubric", "רובריקה", "מחוון")
+
+_RUBRIC_TAG_RE = re.compile(
+    r"\[\s*(?:rubric|רובריקה|מחוון)\s*[:=]\s*([^\]\n\s][^\]\n]*?)\s*\]",
+    re.IGNORECASE,
+)
+
+# Below this many characters, a PDF's text layer is treated as absent (a
+# scanned rubric, or one drawn entirely inside images) and vision OCR is used.
+# Deliberately low: a scanned page yields 0-ish characters, while even a
+# terse three-criterion rubric clears 100 comfortably. Set too high, compact
+# but perfectly readable rubrics get sent for a needless — and billable —
+# vision pass.
+_MIN_RUBRIC_TEXT_LAYER = 100
+
+# A rubric far longer than this is almost certainly the wrong attachment; keep
+# the prompt bounded either way.
+_MAX_RUBRIC_CHARS = 20000
+
+
+def _material_files(materials: list[dict] | None) -> list[dict]:
+    """The Drive-file attachments of a courseWork, as [{id, title}]. Links,
+    YouTube videos and Forms are skipped — none can carry a rubric."""
+    out = []
+    for material in materials or []:
+        drive_file = (material.get("driveFile") or {}).get("driveFile")
+        if drive_file and drive_file.get("id"):
+            out.append({"id": drive_file["id"], "title": drive_file.get("title") or ""})
+    return out
+
+
+def resolve_rubric_material(description: str | None,
+                            materials: list[dict] | None) -> tuple[dict | None, str | None, str | None]:
+    """Picks the attachment to use as the rubric.
+
+    Returns (material, cleaned_description, warning) where material is
+    {id, title} or None, and cleaned_description has any [rubric: …] tag
+    removed so it never reaches the grader as part of the question."""
+    files = _material_files(materials)
+
+    cleaned = description
+    wanted = None
+    if description:
+        matches = _RUBRIC_TAG_RE.findall(description)
+        if matches:
+            wanted = matches[0].strip()
+            cleaned = _RUBRIC_TAG_RE.sub("", description)
+            cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip() or None
+
+    if wanted:
+        # Whole-word matches first, plain substring only as a fallback. A bare
+        # [rubric: B] must select "rubric B.pdf" and not "rubric A.pdf", where
+        # the letter b merely happens to sit inside the word "rubric".
+        needle = wanted.lower()
+        word = re.compile(rf"\b{re.escape(needle)}\b")
+        for hits in ([f for f in files if word.search(f["title"].lower())],
+                     [f for f in files if needle in f["title"].lower()]):
+            if len(hits) == 1:
+                return hits[0], cleaned, None
+            if len(hits) > 1:
+                return hits[0], cleaned, (
+                    f"[rubric: {wanted}] matches {len(hits)} attachments "
+                    f"({', '.join(repr(f['title']) for f in hits)}) — using the first; "
+                    f"name it more precisely to disambiguate"
+                )
+        return None, cleaned, (
+            f"[rubric: {wanted}] matches none of the attachments "
+            f"({', '.join(repr(f['title']) for f in files) or 'none'}) — ignoring it"
+        )
+
+    hits = [f for f in files
+            if any(h in f["title"].lower() for h in _RUBRIC_NAME_HINTS)]
+    if len(hits) == 1:
+        return hits[0], cleaned, None
+    if len(hits) > 1:
+        return hits[0], cleaned, (
+            f"{len(hits)} attachments look like a rubric "
+            f"({', '.join(repr(f['title']) for f in hits)}) — using the first; "
+            f"add [rubric: <name>] to the description to choose explicitly"
+        )
+    return None, cleaned, None
+
+
+def pdf_text_layer(pdf_bytes: bytes) -> str:
+    """The PDF's embedded text, empty for a purely scanned document."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        return "\n".join(page.get_text() for page in doc).strip()
+    finally:
+        doc.close()
+
+
+def rubric_text_from_document(data: bytes, ext: str, model_key: str = DEFAULT_MODEL,
+                              exercise_lang: str = DEFAULT_EXERCISE_LANG) -> tuple[str, str]:
+    """Extracts the rubric text from an attached document.
+
+    Returns (text, method). A digital PDF is read straight off its text layer
+    — free, instant and exact. Only a scanned one falls back to vision OCR,
+    which costs a model call per page."""
+    if ext == ".pdf":
+        text = pdf_text_layer(data)
+        if len(text) >= _MIN_RUBRIC_TEXT_LAYER:
+            return text[:_MAX_RUBRIC_CHARS], "pdf text layer"
+
+    lines = []
+    for img in iter_file_pages(data, ext):
+        ocr = ocr_page(_downscale(img, MAX_EDGE), model_key, exercise_lang, numbered=False)
+        lines += [ln.get("text", "") for ln in ocr.get("lines", [])]
+    return "\n".join(lines).strip()[:_MAX_RUBRIC_CHARS], f"vision OCR ({model_key})"
+
+
 def rubric_from_classroom(classroom_rubric: dict, assignment_name: str = "") -> dict:
     """Converts a Classroom API Rubric object (courses.courseWork.rubrics —
     criteria[].levels[], each with title/description/points) into the same
