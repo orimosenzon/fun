@@ -4,7 +4,7 @@
 #
 # The service logs two levels. INFO is the story of a submission actually
 # being graded (detected → parameters → per-page OCR → report uploaded), and
-# stays quiet the rest of the time. DEBUG is the once-a-minute background
+# stays quiet the rest of the time. DEBUG is the every-5-minutes background
 # chatter (polls that found nothing, drafts, already-graded submissions).
 # DEBUG is only emitted at all if the service runs with LOG_LEVEL=DEBUG —
 # see "enabling debug" at the bottom.
@@ -73,7 +73,7 @@ done
 
 # Restricted to the app's own stdout/stderr: cloud_run_revision also carries
 # run.googleapis.com/requests, one access-log entry per poll with no message
-# body at all, which at a 1-minute interval is pure noise.
+# body at all, which on a polling schedule is pure noise.
 FILTER="resource.type=cloud_run_revision
 resource.labels.service_name=${SERVICE}
 resource.labels.location=${REGION}

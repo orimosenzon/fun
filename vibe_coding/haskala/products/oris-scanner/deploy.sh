@@ -17,7 +17,7 @@
 #   ./deploy.sh "tune language rubric prompt"
 #
 # Log verbosity: INFO by default (the trace of submissions actually graded).
-# Deploy with ORIS_SCANNER_LOG_LEVEL=DEBUG to also get the once-a-minute
+# Deploy with ORIS_SCANNER_LOG_LEVEL=DEBUG to also get the every-5-minutes
 # polling chatter. Note --set-env-vars replaces the whole env block, so a
 # LOG_LEVEL set by hand via `gcloud run services update` is reset on the next
 # deploy — that's why it's pinned here rather than left out. Read the logs
