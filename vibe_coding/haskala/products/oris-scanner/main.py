@@ -320,11 +320,13 @@ def run_workspace_scan():
             if model_warning:
                 log.warning("assignment %r: %s", cw.get('title'), model_warning)
 
-            # A rubric may instead be attached as an ordinary document. Only
-            # identified here (a name match, no network); actually downloading
-            # and reading it is deferred until there is a submission to grade,
-            # because this scan runs every minute and the vast majority of
-            # runs have nothing to do.
+            # A rubric may instead be attached as an ordinary document — named
+            # as one, or simply the assignment's lone attachment. Only picked
+            # here (names and counts, no network); downloading it, reading it
+            # and deciding whether it is a rubric or an assignment brief is
+            # deferred until there is a submission to grade, because this scan
+            # runs every minute and the vast majority of runs have nothing to
+            # do.
             rubric_material, assignment_description, rubric_warning = core.resolve_rubric_material(
                 assignment_description, cw.get('materials'))
             if rubric_warning:
