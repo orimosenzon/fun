@@ -59,12 +59,18 @@ _GOOGLE_EXPORTS = {
 
 
 def load_material_rubric(service, material, model_key=None, tag=""):
-    """Turns a rubric attached to the assignment as an ordinary document into
-    the same {name, content} shape as a bundled rubric.
+    """Reads a document attached to the assignment into the same {name,
+    content} shape as a bundled rubric, plus a "kind" saying how to use it.
 
-    material: {id, title} as picked by core.resolve_rubric_material. Returns
-    None if the attachment can't be read as a rubric, so the caller falls
-    back to the bundled default rather than grading against nothing."""
+    material: {id, title, certain} as picked by core.resolve_rubric_material.
+    Returns None if the attachment can't be read at all, so the caller falls
+    back to the bundled default rather than grading against nothing.
+
+    kind is "rubric" when the document states grading criteria — it then
+    replaces the bundled rubric — or "assignment" when it is a brief for the
+    student, which is handed to the grader as extra context with the bundled
+    rubric left in place. An attachment the teacher explicitly marked as a
+    rubric (certain=True) is taken at their word and never classified."""
     model_key = model_key or core.DEFAULT_MODEL
     fid, title = material["id"], material.get("title") or "rubric"
     try:
@@ -85,17 +91,24 @@ def load_material_rubric(service, material, model_key=None, tag=""):
             text, method = core.rubric_text_from_document(data, ext, model_key)
 
         if not text.strip():
-            log.warning("%s rubric attachment %r produced no text (%s) — "
+            log.warning("%s attachment %r produced no text (%s) — "
                         "falling back to the bundled default", tag, name, method)
             return None
 
-        log.info("%s rubric read from attachment %r via %s (%d chars)",
-                 tag, name, method, len(text))
-        return {"name": name, "content": text}
+        if material.get("certain"):
+            kind = "rubric"
+            why = "named as a rubric by the teacher"
+        else:
+            kind = core.classify_document(text, model_key)
+            why = f"classified as {kind} by {model_key}"
+
+        log.info("%s attachment %r read via %s (%d chars) — using it as %s (%s)",
+                 tag, name, method, len(text), kind, why)
+        return {"name": name, "content": text, "kind": kind}
     except Exception as e:
         # A rubric we cannot read must never take the whole submission down;
         # grading with the bundled default is a far better outcome.
-        log.warning("%s failed to read rubric attachment %r (%s: %s) — "
+        log.warning("%s failed to read attachment %r (%s: %s) — "
                     "falling back to the bundled default",
                     tag, title, type(e).__name__, str(e)[:200])
         return None
@@ -141,6 +154,22 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     if not file_bytes_list:
         log.info("%s no supported attachments among %s — nothing to upload", tag, file_ids)
         return
+
+    # An attached document that turned out to be an assignment brief rather
+    # than a rubric never touches the rubric slot — it is appended to the
+    # question, so the grader sees the actual task the student was set while
+    # still scoring against a real rubric. This is the whole point of
+    # classifying it: adopting a brief as the rubric would drop the score
+    # scale and the criteria entirely.
+    if material_rubric and material_rubric.get("kind") == "assignment":
+        brief = material_rubric["content"]
+        assignment_description = (
+            f"{assignment_description}\n\n{brief}" if assignment_description else brief
+        )
+        log.info("%s attachment %r folded into the question as assignment context "
+                 "(%d chars); rubric selection unaffected",
+                 tag, material_rubric["name"], len(brief))
+        material_rubric = None
 
     # Precedence: Classroom's own structured rubric wins, because it is the
     # most explicit statement of intent and is what the teacher sees in the

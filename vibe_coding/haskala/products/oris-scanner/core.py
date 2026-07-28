@@ -721,13 +721,27 @@ def load_rubric(rubric_id: str) -> dict | None:
 # status, which is why an attached rubric PDF was previously ignored outright.
 #
 # Identifying *which* attachment is the rubric is the whole difficulty: an
-# assignment may equally carry a worksheet or a reading. Two ways, checked in
+# assignment may equally carry a worksheet or a reading. Three ways, checked in
 # this order:
 #   1. an explicit [rubric: <text>] tag in the description, matched against
 #      attachment names — unambiguous, and mirrors the [model: …] convention;
-#   2. otherwise, an attachment whose name looks like a rubric.
-# If neither matches, nothing is guessed — a wrong rubric is worse than the
-# bundled default, because it would silently grade against the wrong criteria.
+#   2. otherwise, an attachment whose name looks like a rubric;
+#   3. otherwise, a lone attachment is picked up anyway, but only as a
+#      *candidate* (certain=False) — teachers do not rename their files to
+#      "מחוון", so requiring the naming convention meant the feature almost
+#      never fired in practice.
+#
+# A candidate is never trusted on its name alone. Its text is classified by
+# classify_document() before use: only a document that really states grading
+# criteria replaces the bundled rubric; an assignment brief is passed to the
+# grader as context instead, leaving the bundled rubric in place. That routing
+# is what makes step 3 safe — adopting an assignment brief *as* the rubric
+# would silently throw away the score scale and the criteria, which is worse
+# than ignoring the attachment altogether.
+#
+# With more than one unnamed attachment nothing is guessed: picking among
+# several is exactly the ambiguity the naming convention exists to resolve, so
+# the caller is warned to name one or add a [rubric: …] tag.
 _RUBRIC_NAME_HINTS = ("rubric", "רובריקה", "מחוון")
 
 _RUBRIC_TAG_RE = re.compile(
@@ -764,8 +778,14 @@ def resolve_rubric_material(description: str | None,
     """Picks the attachment to use as the rubric.
 
     Returns (material, cleaned_description, warning) where material is
-    {id, title} or None, and cleaned_description has any [rubric: …] tag
-    removed so it never reaches the grader as part of the question."""
+    {id, title, certain} or None, and cleaned_description has any [rubric: …]
+    tag removed so it never reaches the grader as part of the question.
+
+    certain=True means the teacher said so — an explicit [rubric: …] tag, or a
+    filename that names itself a rubric — and the document is used as the
+    rubric outright. certain=False is a lone unnamed attachment picked up on
+    spec; the caller must run its text through classify_document() to decide
+    whether it is a rubric or an assignment brief."""
     files = _material_files(materials)
 
     cleaned = description
@@ -786,9 +806,9 @@ def resolve_rubric_material(description: str | None,
         for hits in ([f for f in files if word.search(f["title"].lower())],
                      [f for f in files if needle in f["title"].lower()]):
             if len(hits) == 1:
-                return hits[0], cleaned, None
+                return {**hits[0], "certain": True}, cleaned, None
             if len(hits) > 1:
-                return hits[0], cleaned, (
+                return {**hits[0], "certain": True}, cleaned, (
                     f"[rubric: {wanted}] matches {len(hits)} attachments "
                     f"({', '.join(repr(f['title']) for f in hits)}) — using the first; "
                     f"name it more precisely to disambiguate"
@@ -801,14 +821,105 @@ def resolve_rubric_material(description: str | None,
     hits = [f for f in files
             if any(h in f["title"].lower() for h in _RUBRIC_NAME_HINTS)]
     if len(hits) == 1:
-        return hits[0], cleaned, None
+        return {**hits[0], "certain": True}, cleaned, None
     if len(hits) > 1:
-        return hits[0], cleaned, (
+        return {**hits[0], "certain": True}, cleaned, (
             f"{len(hits)} attachments look like a rubric "
             f"({', '.join(repr(f['title']) for f in hits)}) — using the first; "
             f"add [rubric: <name>] to the description to choose explicitly"
         )
+
+    # Nothing named itself a rubric. A single attachment is still worth
+    # reading — but only as a candidate, to be classified before it is
+    # allowed anywhere near the rubric slot.
+    if len(files) == 1:
+        return {**files[0], "certain": False}, cleaned, None
+    if len(files) > 1:
+        return None, cleaned, (
+            f"{len(files)} attachments and none named like a rubric "
+            f"({', '.join(repr(f['title']) for f in files)}) — not guessing which "
+            f"one it is; add [rubric: <name>] to the description, or put "
+            f"'מחוון' in the filename"
+        )
     return None, cleaned, None
+
+
+# ─── what kind of document did the teacher attach? ──────────────────────────
+# Only reached for an attachment that did not name itself a rubric (see
+# resolve_rubric_material step 3). The two outcomes are routed very
+# differently — RUBRIC replaces the bundled rubric, ASSIGNMENT is appended to
+# the question — so the prompt is written to make the distinction the model's
+# only job, and the fallback on any doubt is ASSIGNMENT: adding context to the
+# question can only inform the grade, while a wrong rubric silently destroys
+# the score scale.
+_DOC_KIND_PROMPT = (
+    "לפניך טקסט של מסמך שמורה צירף למשימה בכיתה. קבע מה הוא:\n"
+    "RUBRIC — מסמך שמגדיר כיצד להעריך ולנקד עבודה: קריטריונים להערכה, "
+    "רמות ביצוע, טווחי ניקוד, סולם ציונים, תיאור מה נחשב תשובה טובה מול חלשה.\n"
+    "ASSIGNMENT — כל דבר אחר: הגדרת התרגיל עצמו, הוראות לתלמיד, השאלה, "
+    "טקסט קריאה, דף עבודה, רשימת מילים, דוגמאות.\n"
+    "שים לב: מסמך שמסביר למורה כיצד לבנות מחוון הוא ASSIGNMENT, לא RUBRIC — "
+    "הוא לא מכיל קריטריונים לתרגיל הזה.\n"
+    "אם אינך בטוח — ענה ASSIGNMENT.\n"
+    "ענה במילה אחת בלבד: RUBRIC או ASSIGNMENT."
+)
+
+# Enough to judge the document's nature; the full text is what actually gets
+# used downstream. Keeps this classification call cheap and fast.
+_DOC_KIND_SAMPLE_CHARS = 4000
+
+
+def classify_document(text: str, model_key: str = DEFAULT_MODEL) -> str:
+    """'rubric' if the text states grading criteria, otherwise 'assignment'.
+
+    One short text-only call — no images — so it is far cheaper than the OCR
+    and evaluation passes that follow, and it runs only when there is a
+    submission actually being graded."""
+    sample = (text or "").strip()[:_DOC_KIND_SAMPLE_CHARS]
+    if not sample:
+        return "assignment"
+
+    user_turn = f"{_DOC_KIND_PROMPT}\n\n--- המסמך ---\n\n{sample}"
+
+    if _is_gemini(model_key):
+        from google.genai import types
+        response = _gemini().models.generate_content(
+            model=_gemini_model_id(model_key),
+            contents=[user_turn],
+            config=types.GenerateContentConfig(
+                max_output_tokens=10,
+                # Same reason as in evaluate_with_rubric: without this the
+                # thinking budget eats the whole output and text comes back
+                # empty, which here would silently mean "assignment".
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+        txt = response.text or ""
+    elif _is_groq(model_key):
+        response = _groq().chat.completions.create(
+            model=_groq_model_id(model_key),
+            messages=[{"role": "user", "content": user_turn}],
+            max_tokens=10,
+            temperature=0,
+        )
+        txt = response.choices[0].message.content or ""
+    elif _is_azure(model_key):
+        response = _azure().chat.completions.create(
+            model=_azure_deployment(),
+            messages=[{"role": "user", "content": user_turn}],
+            max_tokens=10,
+            temperature=0,
+        )
+        txt = response.choices[0].message.content or ""
+    else:
+        msg = _anthropic().messages.create(
+            model=_ANTHROPIC_MODEL,
+            max_tokens=10,
+            messages=[{"role": "user", "content": user_turn}],
+        )
+        txt = "".join(b.text for b in msg.content if b.type == "text")
+
+    return "rubric" if "RUBRIC" in (txt or "").upper() else "assignment"
 
 
 def pdf_text_layer(pdf_bytes: bytes) -> str:
