@@ -23,10 +23,10 @@ import core
 #
 # Two levels, deliberately: INFO is the story of a submission actually being
 # picked up and graded, and stays quiet in steady state. DEBUG is the
-# once-a-minute background chatter — polls that found nothing new, drafts not
+# every-5-minutes background chatter — polls that found nothing new, drafts not
 # yet handed in, submissions already graded and skipped by the dedup ledger.
-# At a 1-minute polling interval that chatter would otherwise bury the one
-# trace worth reading. Set LOG_LEVEL=DEBUG on the service to see it all.
+# At the polling interval this runs on, that chatter would otherwise bury the
+# one trace worth reading. Set LOG_LEVEL=DEBUG on the service to see it all.
 
 
 class _CloudLoggingFormatter(logging.Formatter):
@@ -325,7 +325,7 @@ def run_workspace_scan():
             # here (names and counts, no network); downloading it, reading it
             # and deciding whether it is a rubric or an assignment brief is
             # deferred until there is a submission to grade, because this scan
-            # runs every minute and the vast majority of runs have nothing to
+            # runs every 5 minutes and the vast majority of runs have nothing to
             # do.
             rubric_material, assignment_description, rubric_warning = core.resolve_rubric_material(
                 assignment_description, cw.get('materials'))
