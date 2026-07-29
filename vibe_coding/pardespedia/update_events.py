@@ -120,10 +120,25 @@ def norm(s: str) -> str:
     return re.sub(r"[^0-9a-zא-ת]", "", (s or "").lower())
 
 
-def _row(d, time, name, url, category, venue, entry, sort, key, image_url, date_label=None) -> dict:
+def _sort_key(d, time) -> str:
+    """Canonical "<ISO date>T<HH:MM>" ordering key.
+
+    Sources hand us different shapes for the same instant — eventschedule emits
+    "2026-07-28 18:00:00", the others "2026-07-28T17:30" — and since " " < "T",
+    string-sorting the raw values put every space-form event ahead of every
+    T-form one on the same day, whatever the hour. Rebuild the key from the
+    date and the leading HH:MM so ordering is time-based. Events with no time
+    ("all day") sort to the end of their day.
+    """
+    m = re.match(r"\s*(\d{1,2}):(\d{2})", time or "")
+    hhmm = f"{int(m.group(1)):02d}:{m.group(2)}" if m else "99:99"
+    return f"{d.isoformat()}T{hhmm}"
+
+
+def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None) -> dict:
     return {"date": d, "time": time, "name": wiki_escape(name), "url": url or "",
             "category": category or "", "venue": wiki_escape(venue), "entry": entry,
-            "sort": sort, "key": key, "image_url": image_url or "",
+            "sort": _sort_key(d, time), "key": key, "image_url": image_url or "",
             "image_file": None, "video_id": None, "date_label": date_label}
 
 
@@ -152,7 +167,7 @@ def fetch_eventschedule() -> list:
             CATEGORY_HE.get(e.get("category_name"), e.get("category_name") or ""),
             clean_venue(e.get("venue_name")),
             price_label(e.get("ticket_price"), e.get("is_free")),
-            lsa or ds, f"es-{e.get('id')}",
+            f"es-{e.get('id')}",
             e.get("image_url") or e.get("flyer_url"),
         ))
     return rows
@@ -198,7 +213,7 @@ def fetch_matnas() -> list:
         rows.append(_row(
             sd.date(), sd.strftime("%H:%M") if (sd.hour or sd.minute) else "",
             it.get("name"), url, CATEGORY_HE.get(cat_key, "מופעים והופעות"),
-            MATNAS_VENUE, price_label(offers.get("price")), sd.isoformat(),
+            MATNAS_VENUE, price_label(offers.get("price")),
             f"mt-{hashlib.md5((url or it.get('name','')).encode()).hexdigest()[:8]}", img,
         ))
     return rows
@@ -233,10 +248,14 @@ def fetch_haulam() -> list:
             if isinstance(img, list):
                 img = img[0] if img else ""
             url = offers.get("url") or f"{HAULAM_URL}event/{eid}"
+            # האולם opens a separate event page per showtime and bakes the hour
+            # into the title ("אסתר 09:30"). Drop it — the שעה column carries it,
+            # and the bare name lets merge_showtimes() fold the showings together.
+            name = re.sub(r"[\s,-]*\d{1,2}:\d{2}\s*$", "", it.get("name") or "")
             rows.append(_row(
                 sd.date(), sd.strftime("%H:%M") if (sd.hour or sd.minute) else "",
-                it.get("name"), url, "מופעים והופעות",
-                HAULAM_VENUE, price_label(offers.get("price")), sd.isoformat(),
+                name, url, "מופעים והופעות",
+                HAULAM_VENUE, price_label(offers.get("price")),
                 f"hl-{eid}", img,
             ))
     return rows
@@ -318,7 +337,7 @@ def fetch_manual() -> list:
                 key = "man-" + hashlib.md5(f"{name}{d0}".encode()).hexdigest()[:8]
                 r = _row(d0, t, name, ev.get("url"), ev.get("category", ""),
                          ev.get("venue", ""), ev.get("entry", "חינם"),
-                         f"{d0}T{t or '00:00'}", key, ev.get("image_url"),
+                         key, ev.get("image_url"),
                          date_label=_format_date_range(dl))
                 r["image_file"] = ev.get("image_file")
                 r["video_id"] = ev.get("video")
@@ -338,7 +357,7 @@ def fetch_manual() -> list:
             key = "man-" + hashlib.md5(f"{name}{d}".encode()).hexdigest()[:8]
             r = _row(d, t, name, ev.get("url"), ev.get("category", ""),
                      ev.get("venue", ""), ev.get("entry", "חינם"),
-                     f"{d}T{t or '00:00'}", key, ev.get("image_url"))
+                     key, ev.get("image_url"))
             r["image_file"] = ev.get("image_file")  # reference an existing wiki file
             r["video_id"] = ev.get("video")          # inline curated video
             r["pin"] = bool(ev.get("pin"))           # show even if beyond the window
@@ -358,6 +377,27 @@ def _same_event(a, b) -> bool:
         return False
     na, nb = norm(a["name"]), norm(b["name"])
     return bool(na and nb) and (na in nb or nb in na)
+
+
+def merge_showtimes(rows: list) -> list:
+    """Fold several showings of the same show, same day, same venue into one
+    row ("09:30, 14:00"). _same_event() deliberately keeps events with
+    conflicting times apart — two different shows at one venue are two rows —
+    but an identical name at the same venue is one show playing twice, and two
+    near-identical rows with the same poster read as a bug to a visitor."""
+    merged = []
+    index = {}
+    for r in rows:
+        gid = (r["date"], norm(r["name"]), norm(r["venue"]))
+        if not r["time"] or gid not in index:
+            index.setdefault(gid, len(merged))
+            merged.append(r)
+            continue
+        kept = merged[index[gid]]
+        times = [t for t in kept["time"].split(", ") if t]
+        if r["time"] not in times:
+            kept["time"] = ", ".join(sorted(times + [r["time"]]))
+    return merged
 
 
 def collect(start: dt.date, end: dt.date) -> list:
@@ -380,7 +420,7 @@ def collect(start: dt.date, end: dt.date) -> list:
             deduped.append(r)
         elif r["key"].startswith("man-") and not deduped[dup]["key"].startswith("man-"):
             deduped[dup] = r  # the manual entry carries curated details + wiki link
-    return deduped
+    return merge_showtimes(deduped)
 
 
 # --- images (download + upload, fair use) ----------------------------------

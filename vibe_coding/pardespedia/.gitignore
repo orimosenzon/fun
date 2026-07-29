@@ -11,3 +11,4 @@ enrich_reports/
 contributor_cron.log
 contributor_state.json
 contributor_reports/
+audit_reports/
