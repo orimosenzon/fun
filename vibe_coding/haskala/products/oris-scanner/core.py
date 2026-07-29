@@ -224,9 +224,16 @@ _MODEL_TAG_RE = re.compile(
 # Spellings a teacher might plausibly type, mapped onto MODELS keys. Keys of
 # MODELS itself are always accepted; this is only for the aliases.
 _MODEL_ALIASES = {
-    "claude-opus": "claude",
-    "opus": "claude",
+    "sonnet": "claude",
+    "sonnet-5": "claude",
+    "claude-sonnet": "claude",
     "anthropic": "claude",
+    # Deliberately no "opus"/"claude-opus" alias. The `claude` key pointed at
+    # Opus 4.8 until 2026-07-29 and now points at Sonnet 5, so mapping "opus"
+    # onto it would hand a teacher who asked for Opus a different model without
+    # a word — exactly the silent-wrong-model failure this module is written to
+    # avoid. Left unmapped, [model: opus] produces an "unknown model" warning
+    # and grades with the default, which is visible in the log.
     "gemini-flash": "gemini",
     "gemini-2.5-flash": "gemini",
     "flash-lite": "gemini-lite",
