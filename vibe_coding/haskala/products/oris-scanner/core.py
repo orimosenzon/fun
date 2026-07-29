@@ -172,25 +172,25 @@ def _image_block_anthropic(img: Image.Image, max_edge: int) -> dict:
 # DEFAULT_MODEL applies when the assignment carries no [model: …] tag — see
 # resolve_model below, which is how a teacher overrides it per assignment.
 #
-# Back to gemini on 2026-07-26: its free-tier daily quota has refilled. The
-# 2026-07-22 switch to azure-gpt41-mini was a workaround for that quota being
-# exhausted, alongside two provider problems that may well still stand —
-# the Anthropic account was out of balance, and Groq had dropped
-# llama-4-scout (its only vision-capable model) from this key entirely, 404
-# model_not_found on every attempt. So [model: claude] / [model: groq-scout]
-# are the two tags most likely to fail; azure-gpt41-mini is the known-good
-# fallback if Gemini's quota runs dry again.
+# Default is `claude` (Claude Sonnet 5) as of 2026-07-29, after Ori topped the
+# Anthropic account up to $5. That balance is the real constraint: Claude is
+# the only paid-per-token provider here, so a runaway loop costs money rather
+# than just quota. Roughly $0.04–0.06 per single-page submission at Sonnet 5
+# rates — see the cost note above _ANTHROPIC_MODEL. `gemini` remains the free
+# fallback (its daily quota refills), and `azure-gpt41-mini` the other verified
+# paid one. `groq-scout` still cannot work: Groq dropped llama-4-scout, its
+# only vision-capable model, from this key (404 model_not_found).
 MODELS = {
-    "claude": "Claude (Opus 4.8)",
+    "claude": "Claude (Sonnet 5)",
     "gemini": "Gemini (2.5 Flash)",
     "gemini-lite": "Gemini (2.5 Flash-Lite)",
     "groq-scout": "Groq (Llama 4 Scout — חינמי)",
     "azure-gpt41-mini": "GPT-4.1-mini (Azure)",
 }
-DEFAULT_MODEL = "gemini"
+DEFAULT_MODEL = "claude"
 
 MODEL_FILENAME_LABEL = {
-    "claude":      "claude-opus-4-8",
+    "claude":      "claude-sonnet-5",
     "gemini":      "gemini-2.5-flash",
     "gemini-lite": "gemini-2.5-flash-lite",
     "groq-scout":  "llama-4-scout",
@@ -277,7 +277,22 @@ def resolve_model(description: str | None) -> tuple[str, str | None, str | None]
     return key, cleaned, None
 
 
-_ANTHROPIC_MODEL = "claude-opus-4-8"
+_ANTHROPIC_MODEL = "claude-sonnet-5"
+
+# Every Anthropic call below passes thinking={"type": "disabled"} explicitly,
+# and that is load-bearing rather than tidiness. On Sonnet 5 adaptive thinking
+# is ON when the `thinking` field is omitted (it was OFF on Opus 4.8), and
+# max_tokens caps thinking *plus* response text together. Omitting it here
+# would silently break the two max_tokens=10 calls — detect_rotation and
+# classify_document — because thinking would consume the whole budget and the
+# response text would come back empty: rotation would always read 0, and every
+# unnamed attachment would classify as "assignment". Disabling also keeps the
+# token bill predictable, which matters because Claude is the only provider
+# here billed per token rather than against a free quota.
+#
+# Sonnet 5 rejects temperature/top_p/top_k and thinking budget_tokens with a
+# 400; none of the call sites use them, which is why this migration is only
+# the model id plus these thinking flags.
 
 _GEMINI_MODEL_IDS: dict[str, str] = {
     "gemini": "gemini-2.5-flash",
@@ -388,6 +403,7 @@ def detect_rotation(img: Image.Image, model_key: str = DEFAULT_MODEL) -> int:
         msg = _anthropic().messages.create(
             model=_ANTHROPIC_MODEL,
             max_tokens=10,
+            thinking={"type": "disabled"},
             messages=[{
                 "role": "user",
                 "content": [_image_block_anthropic(img, ORIENT_MAX_EDGE),
@@ -511,6 +527,7 @@ def _ocr_anthropic(img: Image.Image, exercise_lang: str, numbered: bool) -> dict
     response = _anthropic().messages.create(
         model=_ANTHROPIC_MODEL,
         max_tokens=8000,
+        thinking={"type": "disabled"},
         system=[
             {
                 "type": "text",
@@ -915,6 +932,7 @@ def classify_document(text: str, model_key: str = DEFAULT_MODEL) -> str:
         msg = _anthropic().messages.create(
             model=_ANTHROPIC_MODEL,
             max_tokens=10,
+            thinking={"type": "disabled"},
             messages=[{"role": "user", "content": user_turn}],
         )
         txt = "".join(b.text for b in msg.content if b.type == "text")
@@ -1324,6 +1342,7 @@ def evaluate_with_rubric(
     response = _anthropic().messages.create(
         model=_ANTHROPIC_MODEL,
         max_tokens=12000,
+        thinking={"type": "disabled"},
         system=[
             {
                 "type": "text",
