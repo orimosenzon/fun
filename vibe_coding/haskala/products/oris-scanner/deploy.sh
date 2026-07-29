@@ -16,6 +16,14 @@
 #   ./deploy.sh                          # auto commit msg
 #   ./deploy.sh "tune language rubric prompt"
 #
+# Memory is pinned here, not left to the service's existing setting. 512Mi —
+# the Cloud Run default — is not enough: on 2026-07-28 a single-page submission
+# (a 2.1MB PDF whose page renders large at 200 DPI) pushed the container past
+# 900MiB and got it OOM-killed mid-check, ~40 times overnight, because the
+# dedup ledger kept reclaiming the abandoned claim. 2Gi cleared it on the first
+# try. Keeping it in this script means a rebuild from scratch can't silently
+# regress to 512Mi.
+#
 # Log verbosity: INFO by default (the trace of submissions actually graded).
 # Deploy with ORIS_SCANNER_LOG_LEVEL=DEBUG to also get the every-5-minutes
 # polling chatter. Note --set-env-vars replaces the whole env block, so a
@@ -56,6 +64,7 @@ gcloud run deploy "$SERVICE" \
     --project "$PROJECT" \
     --region "$REGION" \
     --no-allow-unauthenticated \
+    --memory=2Gi \
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,GROQ_API_KEY=groq-api-key:latest,AZURE_OPENAI_API_KEY=azure-openai-api-key:latest" \
     --set-env-vars="AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1,AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini,LOG_LEVEL=${ORIS_SCANNER_LOG_LEVEL:-INFO}"
 

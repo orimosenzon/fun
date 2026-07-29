@@ -88,6 +88,23 @@ log = logging.getLogger("oris-scanner-scan")
 # writes the grade must record the resulting updateTime in the ledger.
 _STALE_CLAIM_MINUTES = 20  # beyond this, a stuck claim is considered abandoned and reclaimable
 
+# Reclaiming a stale claim is what lets a genuine transient failure retry. With
+# no ceiling it also makes a *permanent* failure retry forever: a submission
+# that kills the container every time is reclaimed every 20 minutes for as long
+# as it stays handed in. That is exactly what happened on 2026-07-28/29 —
+# one submission OOM-killed the container ~40 times overnight, each attempt
+# paying for a full OCR pass and never producing a report.
+#
+# On the free Gemini tier that only burned quota. On a metered provider it
+# burns money: at Claude Sonnet 5 rates (~$0.04 per attempt) those 40 attempts
+# would have been ~$1.70 — a third of the account balance, on one file, unattended.
+#
+# So attempts are counted, and past this ceiling the submission is parked as
+# "failed" instead of being reclaimed again. A student resubmitting (a changed
+# updateTime) resets the counter and reopens it, so this is a circuit breaker
+# on a specific broken version, not a permanent blacklist on the submission.
+_MAX_GRADING_ATTEMPTS = 3
+
 _db = None
 
 
@@ -114,11 +131,23 @@ def _try_claim_submission(subm_id: str, update_time: str | None) -> bool:
     @firestore.transactional
     def _txn(transaction):
         snap = doc_ref.get(transaction=transaction)
-        claim = {"status": "in_progress", "claimed_at": now, "update_time": update_time}
+
+        def claim_at(attempt: int) -> dict:
+            return {"status": "in_progress", "claimed_at": now,
+                    "update_time": update_time, "attempts": attempt}
+
         if not snap.exists:
-            transaction.set(doc_ref, claim)
+            transaction.set(doc_ref, claim_at(1))
             return True, None
         data = snap.to_dict() or {}
+
+        # A version this scanner already gave up on. Only a resubmission (a
+        # changed updateTime) reopens it — otherwise it stays parked, which is
+        # the whole point of the ceiling.
+        if data.get("status") == "failed" and data.get("update_time") == update_time:
+            return False, ("debug", "parked after %d failed attempt(s) — waiting for a resubmission"
+                           % (data.get("attempts") or _MAX_GRADING_ATTEMPTS))
+
         if data.get("status") == "done":
             graded_version = data.get("update_time")
             if graded_version is None:
@@ -130,19 +159,44 @@ def _try_claim_submission(subm_id: str, update_time: str | None) -> bool:
                                % data.get("completed_at"))
             if graded_version == update_time:
                 return False, ("debug", "already graded at %s" % data.get("completed_at"))
-            transaction.set(doc_ref, claim)
+            transaction.set(doc_ref, claim_at(1))
             return True, ("info", "changed since it was graded (%s → %s) — regrading"
                           % (graded_version, update_time))
+
+        # An in_progress claim. A resubmission while an attempt is in flight is
+        # a fresh version: reset the counter rather than spending the old
+        # version's budget on it.
+        attempts = data.get("attempts") or 1
+        if data.get("update_time") != update_time:
+            attempts = 0
+
         claimed_at = data.get("claimed_at")
         if claimed_at is not None:
             age_minutes = (now - claimed_at).total_seconds() / 60
             if age_minutes < _STALE_CLAIM_MINUTES:
                 return False, ("debug", "another run claimed it %.1f min ago" % age_minutes)
-            transaction.set(doc_ref, claim)
-            return True, ("info", "reclaiming abandoned claim (%.1f min old, stale after %d)"
-                          % (age_minutes, _STALE_CLAIM_MINUTES))
-        # stale/abandoned claim — reclaim it to allow a genuine retry
-        transaction.set(doc_ref, claim)
+            if attempts >= _MAX_GRADING_ATTEMPTS:
+                transaction.set(doc_ref, {"status": "failed", "failed_at": now,
+                                          "update_time": update_time,
+                                          "attempts": attempts}, merge=True)
+                return False, ("error",
+                               "giving up after %d attempt(s) that never completed — parking it. "
+                               "Something makes this submission fail every time (check for an "
+                               "out-of-memory kill); it will be retried only if the student "
+                               "hands in again." % attempts)
+            transaction.set(doc_ref, claim_at(attempts + 1))
+            return True, ("info",
+                          "reclaiming abandoned claim (%.1f min old, stale after %d) — attempt %d of %d"
+                          % (age_minutes, _STALE_CLAIM_MINUTES, attempts + 1, _MAX_GRADING_ATTEMPTS))
+        # A claim with no timestamp (written before claimed_at existed) — treat
+        # as abandoned and retry, still under the same ceiling.
+        if attempts >= _MAX_GRADING_ATTEMPTS:
+            transaction.set(doc_ref, {"status": "failed", "failed_at": now,
+                                      "update_time": update_time,
+                                      "attempts": attempts}, merge=True)
+            return False, ("error", "giving up after %d attempt(s) that never completed — parking it"
+                           % attempts)
+        transaction.set(doc_ref, claim_at(attempts + 1))
         return True, None
 
     should_process, note = _txn(_firestore().transaction())
