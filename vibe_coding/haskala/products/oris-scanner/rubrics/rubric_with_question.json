@@ -2,10 +2,22 @@
   "name": "Staycation in Jerusalem — Composition (with question)",
   "question": "This year, you are on a staycation with your family in the Old City of Jerusalem. Write about the famous places you want to visit there and explain why you want to visit them.",
   "helpful_words": [
-    "Jerusalem", "holy places", "beautiful", "ancient",
-    "history", "Al-Aqsa Mosque", "Dome of the Rock", "Old City",
-    "Western Wall", "markets", "family trip", "visit",
-    "amazing view", "enjoy", "tourists", "culture"
+    "Jerusalem",
+    "holy places",
+    "beautiful",
+    "ancient",
+    "history",
+    "Al-Aqsa Mosque",
+    "Dome of the Rock",
+    "Old City",
+    "Western Wall",
+    "markets",
+    "family trip",
+    "visit",
+    "amazing view",
+    "enjoy",
+    "tourists",
+    "culture"
   ],
   "criteria_grid": [
     {
@@ -49,5 +61,5 @@
       }
     }
   ],
-  "content": "Composition Rubric (10 Marks total) — for an English writing exercise.\n\nThe student was given this QUESTION to answer:\n\"This year, you are on a staycation with your family in the Old City of Jerusalem. Write about the famous places you want to visit there and explain why you want to visit them.\"\n\nHelpful Words the student could use (16): Jerusalem, holy places, beautiful, ancient, history, Al-Aqsa Mosque, Dome of the Rock, Old City, Western Wall, markets, family trip, visit, amazing view, enjoy, tourists, culture.\n\nEvaluate the composition against the four criteria below. Each criterion has four levels: Excellent, Good, Fair, Needs Improvement. IMPORTANT scoring rule — the score for each criterion must land on one of four quarter-steps of its maximum, matching the chosen level:\n  Excellent = max marks, Good = 3/4 of max, Fair = 1/2 of max, Needs Improvement = 1/4 of max.\nFor a /4 criterion that means 4 / 3 / 2 / 1. For a /2 criterion that means 2 / 1.5 / 1 / 0.5. Do not return any other score values.\n\nCriterion 1 — Content & Ideas (/4)\n  Excellent (4): Writes clearly about famous places in Jerusalem and explains reasons well.\n  Good (3): Mentions places and gives some reasons.\n  Fair (2): Mentions a few places with limited explanation.\n  Needs Improvement (1): Ideas are unclear or incomplete.\n\nCriterion 2 — Grammar & Sentence Structure (/2)\n  Excellent (2): Uses correct grammar and complete sentences.\n  Good (1.5): Few grammar mistakes.\n  Fair (1): Several grammar mistakes that affect meaning.\n  Needs Improvement (0.5): Many grammar mistakes and unclear sentences.\n\nCriterion 3 — Vocabulary (/2)\n  Excellent (2): Uses suitable vocabulary and helpful words correctly.\n  Good (1.5): Uses some suitable vocabulary.\n  Fair (1): Limited vocabulary with repetition.\n  Needs Improvement (0.5): Very limited or incorrect vocabulary.\n\nCriterion 4 — Organization & Mechanics (/2)\n  Excellent (2): Writing is organized with correct spelling and punctuation.\n  Good (1.5): Mostly organized with a few spelling/punctuation mistakes.\n  Fair (1): Some organizational problems and several mistakes.\n  Needs Improvement (0.5): Disorganized with many spelling/punctuation mistakes.\n\nReturn the four criteria in this exact order. Overall score is the sum out of 10. Give per-criterion feedback in Hebrew and an overall feedback paragraph in Hebrew."
+  "content": "Composition Rubric (10 Marks total) — for an English writing exercise.\n\nThe student was given this QUESTION to answer:\n\"This year, you are on a staycation with your family in the Old City of Jerusalem. Write about the famous places you want to visit there and explain why you want to visit them.\"\n\nHelpful Words the student could use (16): Jerusalem, holy places, beautiful, ancient, history, Al-Aqsa Mosque, Dome of the Rock, Old City, Western Wall, markets, family trip, visit, amazing view, enjoy, tourists, culture.\n\nEvaluate the composition against the four criteria below. Each criterion has four levels: Excellent, Good, Fair, Needs Improvement. IMPORTANT scoring rule — the score for each criterion must land on one of four quarter-steps of its maximum, matching the chosen level:\n  Excellent = max marks, Good = 3/4 of max, Fair = 1/2 of max, Needs Improvement = 1/4 of max.\nFor a /4 criterion that means 4 / 3 / 2 / 1. For a /2 criterion that means 2 / 1.5 / 1 / 0.5. Do not return any other score values.\n\nCriterion 1 — Content & Ideas (/4)\n  Excellent (4): Writes clearly about famous places in Jerusalem and explains reasons well.\n  Good (3): Mentions places and gives some reasons.\n  Fair (2): Mentions a few places with limited explanation.\n  Needs Improvement (1): Ideas are unclear or incomplete.\n\nCriterion 2 — Grammar & Sentence Structure (/2)\n  Excellent (2): Uses correct grammar and complete sentences.\n  Good (1.5): Few grammar mistakes.\n  Fair (1): Several grammar mistakes that affect meaning.\n  Needs Improvement (0.5): Many grammar mistakes and unclear sentences.\n\nCriterion 3 — Vocabulary (/2)\n  Excellent (2): Uses suitable vocabulary and helpful words correctly.\n  Good (1.5): Uses some suitable vocabulary.\n  Fair (1): Limited vocabulary with repetition.\n  Needs Improvement (0.5): Very limited or incorrect vocabulary.\n\nCriterion 4 — Organization & Mechanics (/2)\n  Excellent (2): Writing is organized with correct spelling and punctuation.\n  Good (1.5): Mostly organized with a few spelling/punctuation mistakes.\n  Fair (1): Some organizational problems and several mistakes.\n  Needs Improvement (0.5): Disorganized with many spelling/punctuation mistakes.\n\nReturn the four criteria in this exact order. Overall score is the sum out of 10. Give per-criterion feedback and an overall feedback paragraph in the language of the exercise."
 }

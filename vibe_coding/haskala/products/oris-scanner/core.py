@@ -346,7 +346,11 @@ LANGS: dict[str, dict] = {
     "ar": {"name_he": "ערבית",  "name_native": "العربية", "dir": "rtl", "illegible": "[غير مقروء]"},
 }
 DEFAULT_EXERCISE_LANG = "en"
-DEFAULT_FEEDBACK_LANG = "he"
+# Feedback is written in the language of the exercise itself — Avishai's rule
+# (2026-07-30): an English exercise gets English feedback only. Keeping the two
+# in step also collapses the report's parallel second-language column and its
+# translated summary, since those only render when the languages differ.
+DEFAULT_FEEDBACK_LANG = DEFAULT_EXERCISE_LANG
 
 
 # ─── orientation detection ──────────────────────────────────────────────────
@@ -1011,6 +1015,139 @@ def count_words(pages: list[dict]) -> int:
     return n
 
 
+# A ministry length table as it appears in the rubric text, e.g.
+#   Module C (required 70–90 words):
+#     60–69 → -1   |   50–59 → -3   |   40–49 → -6
+#     30–39 → -10  |   25–29 → -15  |   <25  → -30
+_WC_TABLE_RE = re.compile(
+    r"Module\s+([A-Z])\s*\(\s*required\s*(\d+)\s*[–—-]\s*(\d+)\s*words\s*\)\s*:"
+    r"(?P<body>(?:[^\n]*\n?){1,4}?)(?=\n\s*(?:Module\s+[A-Z]\s*\(|\Z|=====))",
+    re.IGNORECASE,
+)
+_WC_BAND_RE = re.compile(r"(\d+)\s*[–—-]\s*(\d+)\s*(?:→|->)\s*-\s*(\d+)")
+_WC_UNDER_RE = re.compile(r"<\s*(\d+)\s*(?:→|->)\s*-\s*(\d+)")
+
+
+def parse_word_count_rule(content: str, hint: str = "") -> dict | None:
+    """Extract a length-deduction rule from a rubric's *text*.
+
+    The bundled rubrics carry `word_count_rule` as a JSON field, but the live
+    path rarely uses them: teachers attach the ministry rubric as a document,
+    which reaches us as plain text with no structure at all. Parsing the table
+    out of that text is what makes the length row work in production.
+
+    `hint` (assignment/rubric name) picks the module when the text carries more
+    than one table — the ministry sheet lists both C and D. With no usable hint
+    the first table wins, which is Module C on the ministry sheet.
+    """
+    if not content:
+        return None
+    tables = []
+    for m in _WC_TABLE_RE.finditer(content):
+        module, lo, hi = m.group(1).upper(), int(m.group(2)), int(m.group(3))
+        body = m.group("body")
+        bands = [[int(a), int(b), int(p)] for a, b, p in _WC_BAND_RE.findall(body)]
+        for ceiling, points in _WC_UNDER_RE.findall(body):
+            bands.append([0, int(ceiling) - 1, int(points)])
+        if bands:
+            tables.append({"module": module, "min": lo, "max": hi,
+                           "required": f"{lo}–{hi}", "deductions": bands})
+    if not tables:
+        return None
+
+    chosen = tables[0]
+    if len(tables) > 1:
+        h = (hint or "").upper()
+        for t in tables:
+            if re.search(rf"\bMODULE\s+{t['module']}\b", h):
+                chosen = t
+                break
+        log.info("[length] %d length tables in rubric (%s) — using module %s",
+                 len(tables), ", ".join(t["module"] for t in tables),
+                 chosen["module"])
+    return chosen
+
+
+def resolve_word_count_rule(rubric: dict, hint: str = "") -> dict | None:
+    """The rubric's length rule: its explicit JSON field first, else whatever
+    can be parsed out of its text."""
+    rule = rubric.get("word_count_rule")
+    if rule:
+        return rule
+    return parse_word_count_rule(rubric.get("content") or "", hint)
+
+
+def apply_length_deduction(evaluation: dict, counted: int,
+                           rule: dict | None) -> dict | None:
+    """Score the exercise's length against the rubric's own word-count rule and
+    fold the result into `evaluation`.
+
+    The deduction is computed here rather than asked of the model (Ori's call,
+    2026-07-30): the ministry's length table is a lookup, and a lookup done in
+    code is reproducible, auditable and free. The model still grades the four
+    content criteria; this only applies the length penalty on top, exactly as
+    the rubric instructs ("first evaluate the task on merit as if it were the
+    right length, then apply the length deduction").
+
+    `rule` shape, from the rubric JSON:
+        {"min": 70, "max": 90,
+         "deductions": [[60, 69, 1], [50, 59, 3], ...]}   # [lo, hi, points]
+
+    Returns the `length` dict stored on the evaluation, or None when the rubric
+    declares no rule (nothing to deduct — the row degrades to a plain count).
+    """
+    if not rule or not rule.get("deductions"):
+        return None
+
+    deduction = 0
+    for band in rule["deductions"]:
+        try:
+            lo, hi, points = band[0], band[1], band[2]
+        except (IndexError, TypeError):
+            log.warning("[length] malformed deduction band %r — skipped", band)
+            continue
+        if lo <= counted <= hi:
+            deduction = points
+            break
+
+    required = rule.get("required")
+    if not required and rule.get("min") and rule.get("max"):
+        required = f"{rule['min']}–{rule['max']}"
+
+    length = {"counted": counted, "required": required, "deduction": deduction}
+    evaluation["length"] = length
+
+    if deduction:
+        before = evaluation.get("overall_score")
+        after = _deduct_from_score(before, deduction)
+        if after is not None:
+            evaluation["overall_score"] = after
+            log.info("[length] %d words vs %s → -%s; overall %s → %s",
+                     counted, required, deduction, before, after)
+        else:
+            log.warning("[length] %d words → -%s, but overall_score %r is not "
+                        "in 'X/Y' form — score left untouched",
+                        counted, deduction, before)
+    else:
+        log.info("[length] %d words vs %s → no deduction", counted, required)
+    return length
+
+
+_SCORE_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)\s*$")
+
+
+def _deduct_from_score(overall_score, deduction: float) -> str | None:
+    """Subtract `deduction` from an "X/Y" overall score, floored at 0.
+    Returns None when the score isn't in that form (nothing safe to do)."""
+    m = _SCORE_RE.match(str(overall_score or ""))
+    if not m:
+        return None
+    got, total = float(m.group(1)), float(m.group(2))
+    got = max(0.0, got - float(deduction))
+    fmt = lambda v: str(int(v)) if float(v).is_integer() else str(v)
+    return f"{fmt(got)}/{fmt(total)}"
+
+
 def helpful_words_usage(pages: list[dict], helpful_words: list[str]) -> dict | None:
     """Which of the rubric's suggested 'helpful words' actually appear in the
     student's transcript. Returns {used, unused, count, total} or None when
@@ -1452,6 +1589,11 @@ def check_pages(
     evaluation = evaluate_with_rubric(pages, rubric, model_key, feedback_lang, exercise_lang)
     wc = count_words(pages)
     evaluation["word_count"] = wc
+    wc_rule = resolve_word_count_rule(rubric, f"{rubric.get('name', '')} {question or ''}")
+    if wc_rule is None:
+        log.info("[length] rubric %r declares no word-count rule — "
+                 "the report shows the count without a deduction", rubric.get("name"))
+    apply_length_deduction(evaluation, wc, wc_rule)
     hw = helpful_words_usage(pages, rubric.get("helpful_words") or [])
     if hw is not None:
         evaluation["helpful_words_usage"] = hw
