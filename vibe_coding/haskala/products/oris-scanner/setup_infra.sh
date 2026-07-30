@@ -13,8 +13,9 @@
 # two stacked ones.
 #
 # Polling frequency (measured 2026-07-27; moved from */1 to */5 on 2026-07-28
-# to bring the bill to zero). An idle scan takes ~6.0s and makes 15 Classroom
-# API calls, so per month at */5:
+# to bring the bill to zero, then back to */1 on 2026-07-30 at Ori's request —
+# responsiveness over the ~$2/month of CPU overage; see the numbers below). An
+# idle scan takes ~6.0s and makes 15 Classroom API calls, so per month at */5:
 #   - 8,766 requests, ~52,600 vCPU-s, ~26,300 GiB-s
 #   - all three inside the Cloud Run free tier (2M requests, 180,000 vCPU-s,
 #     360,000 GiB-s) => $0. At */1 it was ~263,000 vCPU-s, i.e. ~$2/month of
@@ -26,10 +27,11 @@
 # */15 buys nothing over */5 — both are free — it only triples the wait, which
 # is why 5 minutes is the floor worth taking.
 #
-# One consequence of polling less often: a scan that dies partway (Classroom
-# 503s do happen — three on 2026-07-28) now leaves a gap of 5 minutes rather
-# than 1 before anything is retried, and the whole scan is lost, including
-# courses it had not reached yet. There is no per-call retry inside the scan;
+# A point that argued for the shorter interval: a scan that dies partway
+# (Classroom 503s do happen — three on 2026-07-28) is only recovered by the
+# next poll — the whole scan is lost, including courses it had not reached yet.
+# At */1 that gap is a minute; at */5 it was five. There is no per-call retry
+# inside the scan;
 # Scheduler's own retry is configured below but its 600s backoff means the
 # next scheduled run almost always beats it.
 #
@@ -46,7 +48,7 @@ PROJECT="${ORIS_SCANNER_PROJECT:-master-gecko-500709-t0}"
 REGION="${ORIS_SCANNER_REGION:-europe-west1}"
 SERVICE="oris-scanner"
 JOB="oris-scanner-poll"
-SCHEDULE="${ORIS_SCANNER_SCHEDULE:-*/5 * * * *}"  # every 5 minutes — see the cost note above
+SCHEDULE="${ORIS_SCANNER_SCHEDULE:-*/1 * * * *}"  # every minute — see the cost note above (~$2/month CPU overage)
 PROJECT_NUMBER="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 INVOKER_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
@@ -57,7 +59,7 @@ echo "=== IAM: invoker service account may call the private Cloud Run service ==
 gcloud run services add-iam-policy-binding "$SERVICE" --project="$PROJECT" --region="$REGION" \
   --member="serviceAccount:${INVOKER_SA}" --role="roles/run.invoker"
 
-echo "=== Cloud Scheduler job (polls every 5 minutes, hardened retry config) ==="
+echo "=== Cloud Scheduler job (polls every minute, hardened retry config) ==="
 gcloud scheduler jobs create http "$JOB" \
   --project="$PROJECT" \
   --location="$REGION" \
