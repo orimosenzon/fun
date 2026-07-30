@@ -9,6 +9,7 @@ import functions_framework
 
 import google.auth
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from google.oauth2 import service_account
 from google.auth import iam
 from google.cloud import firestore
@@ -257,34 +258,89 @@ def _get_or_create_checked_folder(drive_service, cw_id: str, anchor_file_id: str
 
 # ─── Google Workspace access (same as scan2: same service account + delegation) ──
 
-def get_workspace_credentials():
-    # NOTE: rosters.readonly + profile.emails were added 2026-07-30 so the
-    # report filename can name the student who handed the work in. Adding them
-    # here is only half the job — the same scopes must also be listed on the
-    # service account's domain-wide-delegation entry in the Workspace admin
-    # console, or every userProfiles.get returns 403. _student_label() degrades
-    # to the Classroom userId in that case rather than failing a scan.
-    SCOPES = [
-        'https://www.googleapis.com/auth/classroom.courses.readonly',
-        'https://www.googleapis.com/auth/classroom.coursework.students',
-        'https://www.googleapis.com/auth/classroom.topics.readonly',
-        'https://www.googleapis.com/auth/classroom.rosters.readonly',
-        'https://www.googleapis.com/auth/classroom.profile.emails',
-        'https://www.googleapis.com/auth/drive'
-    ]
-    source_creds, project_id = google.auth.default()
+# Scopes the scanner cannot do its job without.
+BASE_SCOPES = [
+    'https://www.googleapis.com/auth/classroom.courses.readonly',
+    'https://www.googleapis.com/auth/classroom.coursework.students',
+    'https://www.googleapis.com/auth/classroom.topics.readonly',
+    'https://www.googleapis.com/auth/drive',
+]
+
+# Scopes that only buy a nicer report filename: the student's name instead of
+# their raw Classroom userId. Kept separate from BASE_SCOPES because domain-wide
+# delegation is ALL-OR-NOTHING — see get_workspace_credentials.
+PROFILE_SCOPES = [
+    'https://www.googleapis.com/auth/classroom.rosters.readonly',
+    'https://www.googleapis.com/auth/classroom.profile.emails',
+]
+
+SA_EMAIL = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
+TEACHER_EMAIL = "ori@bdika.net"
+
+# Per-instance memo of whether the delegation entry actually grants
+# PROFILE_SCOPES. None = not yet determined. A fresh instance re-probes, so
+# adding the scopes in the admin console takes effect on its own without a
+# redeploy.
+_profile_scopes_granted: bool | None = None
+
+
+def _delegated_credentials(scopes):
+    source_creds, _project_id = google.auth.default()
     source_creds.refresh(Request())
-    sa_email = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
-    teacher_email = "ori@bdika.net"
-    signer = iam.Signer(Request(), source_creds, sa_email)
-    delegated_creds = service_account.Credentials(
+    signer = iam.Signer(Request(), source_creds, SA_EMAIL)
+    return service_account.Credentials(
         signer,
-        sa_email,
+        SA_EMAIL,
         token_uri="https://oauth2.googleapis.com/token",
-        subject=teacher_email,
-        scopes=SCOPES
+        subject=TEACHER_EMAIL,
+        scopes=scopes,
     )
-    return delegated_creds
+
+
+def get_workspace_credentials():
+    """Delegated credentials for the teacher's Workspace account.
+
+    Requests PROFILE_SCOPES on top of BASE_SCOPES, and drops them if the
+    domain-wide-delegation entry does not grant them.
+
+    That fallback is the whole point of this function. Domain-wide delegation is
+    all-or-nothing per token request: if the service account's entry in the
+    Workspace admin console does not list *every* scope asked for, the token
+    endpoint rejects the entire request with `unauthorized_client` — it does not
+    hand back the authorized subset. So simply listing the two profile scopes
+    took the whole scanner down on 2026-07-30 (revision 00030): no token, no
+    Classroom call, nothing graded, and the Cloud Scheduler job wedged in a
+    10-minute retry backoff. A filename nicety must never be able to do that,
+    hence the two-tier request.
+    """
+    global _profile_scopes_granted
+
+    if _profile_scopes_granted is not False:
+        creds = _delegated_credentials(BASE_SCOPES + PROFILE_SCOPES)
+        try:
+            # Refresh eagerly: the failure has to surface here, where it can be
+            # retried without the profile scopes, rather than at whichever API
+            # call happens to be first.
+            creds.refresh(Request())
+        except RefreshError as e:
+            log.warning(
+                "delegation does not grant the student-profile scopes (%s) — "
+                "continuing without them; reports will be named by Classroom "
+                "userId instead of the student's name. To fix, add %s to the "
+                "service account's domain-wide delegation in the Workspace "
+                "admin console; no redeploy needed.",
+                str(e)[:200], ", ".join(PROFILE_SCOPES))
+            _profile_scopes_granted = False
+        else:
+            if _profile_scopes_granted is None:
+                log.info("delegation grants the student-profile scopes — "
+                         "reports will be named by student name")
+            _profile_scopes_granted = True
+            return creds
+
+    creds = _delegated_credentials(BASE_SCOPES)
+    creds.refresh(Request())
+    return creds
 
 
 # Resolved student labels, keyed by Classroom userId. A class's worth of
@@ -303,6 +359,11 @@ def _student_label(classroom_service, user_id: str, tag: str = "") -> str | None
     fullName needs only classroom.rosters.readonly; emailAddress is what
     additionally needs classroom.profile.emails."""
     if not user_id:
+        return None
+    if _profile_scopes_granted is False:
+        # get_workspace_credentials already said why, once, at token time.
+        # Calling userProfiles.get anyway would just be a guaranteed 403 per
+        # student per scan.
         return None
     if user_id in _STUDENT_LABEL_CACHE:
         return _STUDENT_LABEL_CACHE[user_id]
