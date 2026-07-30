@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הבודק — מדריך למורה</title>
+<meta name="description" content="איך להגיש משימת כתיבה באנגלית דרך גוגל קלאסרום ולקבל דוח בדיקה מפורט לכל תלמיד, אוטומטית.">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   הבודק — מדריך למורה
+   כיוון עיצובי: דף שורות ושוליים. עמודת קריאה אחת, ורצועת
+   שוליים שנושאת מספור ותוויות — כמו הערות מורה בשולי המחברת.
+   דיו כחול־שחור על נייר קריר, אינדיגו לכותרות, אוכרה להדגשה.
+   ───────────────────────────────────────────────────────────── */
+
+:root{
+  color-scheme: light dark;
+
+  --paper:      #F4F6FA;
+  --surface:    #FFFFFF;
+  --ink:        #16202E;
+  --ink-soft:   #5C6879;
+  --ink-faint:  #8A94A3;
+  --rule:       #DCE2EB;
+  --rule-soft:  #E9EDF3;
+
+  --accent:     #2C4C93;   /* אינדיגו — דיו */
+  --accent-bg:  #E9EEF9;
+  --mark:       #B25E24;   /* אוכרה — מדגש */
+  --mark-bg:    #FBF0E5;
+  --good:       #156B57;   /* ירוק בדוק */
+  --good-bg:    #E5F2EE;
+
+  --measure: 63ch;
+  --rail: 4.25rem;
+
+  --step-1: .78rem;
+  --step0:  1.0rem;
+  --step1:  1.16rem;
+  --step2:  1.42rem;
+  --step3:  1.85rem;
+  --step4:  2.6rem;
+
+  --font-text: "Assistant","Heebo","Noto Sans Hebrew","Segoe UI","Arial Hebrew",system-ui,-apple-system,sans-serif;
+  --font-mono: ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,"Courier New",monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:     #0D131B;
+    --surface:   #141C27;
+    --ink:       #E3EAF3;
+    --ink-soft:  #98A5B7;
+    --ink-faint: #6B7A8D;
+    --rule:      #24303F;
+    --rule-soft: #1B2531;
+    --accent:    #93B2F2;
+    --accent-bg: #182640;
+    --mark:      #E09257;
+    --mark-bg:   #2E2118;
+    --good:      #4FC0A2;
+    --good-bg:   #122A25;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D131B; --surface:#141C27; --ink:#E3EAF3; --ink-soft:#98A5B7;
+  --ink-faint:#6B7A8D; --rule:#24303F; --rule-soft:#1B2531;
+  --accent:#93B2F2; --accent-bg:#182640; --mark:#E09257; --mark-bg:#2E2118;
+  --good:#4FC0A2; --good-bg:#122A25;
+}
+:root[data-theme="light"]{
+  --paper:#F4F6FA; --surface:#FFFFFF; --ink:#16202E; --ink-soft:#5C6879;
+  --ink-faint:#8A94A3; --rule:#DCE2EB; --rule-soft:#E9EDF3;
+  --accent:#2C4C93; --accent-bg:#E9EEF9; --mark:#B25E24; --mark-bg:#FBF0E5;
+  --good:#156B57; --good-bg:#E5F2EE;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-text);
+  font-size:var(--step0);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{
+  max-width:52rem;
+  margin-inline:auto;
+  padding:clamp(1.25rem,4vw,3rem) clamp(1.1rem,5vw,2.5rem) 5rem;
+}
+
+/* ── קוד ותגיות: תמיד משמאל לימין, מבודד מהזרימה העברית ── */
+code, .tag, .mono{
+  font-family:var(--font-mono);
+  direction:ltr;
+  unicode-bidi:isolate;
+  font-size:.87em;
+}
+code{
+  background:var(--accent-bg);
+  color:var(--accent);
+  padding:.12em .42em;
+  border-radius:4px;
+  white-space:nowrap;
+}
+.path{
+  background:none;
+  color:var(--ink-soft);
+  padding:0;
+}
+
+/* ── כותרת הדף ── */
+.masthead{
+  padding-block:clamp(1.5rem,5vw,3.25rem) clamp(1.75rem,4vw,2.75rem);
+  border-bottom:2px solid var(--ink);
+}
+.eyebrow{
+  font-size:var(--step-1);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  font-weight:700;
+  margin:0 0 .9rem;
+}
+.masthead h1{
+  font-size:clamp(2rem,7vw,var(--step4));
+  line-height:1.08;
+  letter-spacing:-.02em;
+  font-weight:800;
+  text-wrap:balance;
+  margin:0 0 .85rem;
+}
+.standfirst{
+  font-size:var(--step1);
+  line-height:1.62;
+  color:var(--ink-soft);
+  max-width:var(--measure);
+  margin:0;
+  text-wrap:pretty;
+}
+
+/* ── תקציר הזרימה ── */
+.flow{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));
+  gap:1px;
+  background:var(--rule);
+  border:1px solid var(--rule);
+  border-radius:10px;
+  overflow:hidden;
+  margin-block:2.5rem;
+}
+.flow > div{
+  background:var(--surface);
+  padding:1.1rem 1.15rem 1.2rem;
+}
+.flow b{
+  display:block;
+  font-size:var(--step-1);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  font-weight:700;
+  margin-bottom:.45rem;
+}
+.flow p{ margin:0; font-size:.95rem; line-height:1.6; }
+
+/* ── סעיפים ורצועת השוליים ── */
+section{ padding-block:clamp(2rem,5vw,3rem) 0; }
+section + section{ border-top:1px solid var(--rule-soft); margin-top:2.5rem; }
+
+.sec-head{ display:flex; gap:1rem; align-items:baseline; margin-bottom:1.4rem; }
+.sec-num{
+  flex:none;
+  width:var(--rail);
+  font-family:var(--font-mono);
+  direction:ltr;
+  unicode-bidi:isolate;
+  text-align:start;
+  font-size:var(--step-1);
+  letter-spacing:.08em;
+  color:var(--mark);
+  font-weight:700;
+  padding-top:.55rem;
+}
+h2{
+  font-size:clamp(1.5rem,4.5vw,var(--step3));
+  line-height:1.2;
+  letter-spacing:-.015em;
+  font-weight:800;
+  margin:0;
+  text-wrap:balance;
+}
+h3{
+  font-size:var(--step2);
+  line-height:1.32;
+  font-weight:700;
+  letter-spacing:-.008em;
+  margin:2.25rem 0 .7rem;
+  text-wrap:balance;
+}
+p, li{ max-width:var(--measure); text-wrap:pretty; }
+p{ margin:0 0 1.05rem; }
+a{ color:var(--accent); text-underline-offset:3px; }
+a:focus-visible, summary:focus-visible{
+  outline:2.5px solid var(--mark);
+  outline-offset:3px;
+  border-radius:3px;
+}
+
+ul,ol{ padding-inline-start:1.35rem; margin:0 0 1.15rem; }
+li{ margin-bottom:.5rem; }
+li::marker{ color:var(--ink-faint); }
+
+/* ── רשימת שלבים ממוספרת ── */
+.steps{ list-style:none; padding:0; margin:0; counter-reset:s; }
+.steps > li{
+  counter-increment:s;
+  display:flex;
+  gap:1rem;
+  max-width:none;
+  padding-block:1.15rem;
+  border-top:1px solid var(--rule-soft);
+  margin:0;
+}
+.steps > li:first-child{ border-top:none; padding-top:.35rem; }
+.steps > li::before{
+  content:counter(s);
+  flex:none;
+  width:var(--rail);
+  font-family:var(--font-mono);
+  direction:ltr;
+  font-size:1.6rem;
+  line-height:1;
+  font-weight:700;
+  color:var(--rule);
+  padding-top:.15rem;
+}
+.steps .body{ max-width:var(--measure); }
+.steps .body > :last-child{ margin-bottom:0; }
+.steps strong{ display:block; font-size:var(--step1); margin-bottom:.3rem; }
+
+/* ── הערות צד ── */
+.note{
+  border-inline-start:3px solid var(--accent);
+  background:var(--accent-bg);
+  padding:.95rem 1.15rem;
+  border-radius:0 8px 8px 0;
+  margin:1.4rem 0;
+  max-width:var(--measure);
+}
+.note.warn{ border-color:var(--mark); background:var(--mark-bg); }
+.note.tip{ border-color:var(--good); background:var(--good-bg); }
+.note > :last-child{ margin-bottom:0; }
+.note b{ display:block; margin-bottom:.25rem; }
+
+/* ── דוגמאות "כך זה נראה בקלאסרום" ── */
+.screen{
+  border:1px solid var(--rule);
+  border-radius:10px;
+  background:var(--surface);
+  margin:1.4rem 0;
+  overflow:hidden;
+  max-width:var(--measure);
+}
+.screen .bar{
+  font-size:var(--step-1);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--ink-faint);
+  padding:.55rem 1rem;
+  border-bottom:1px solid var(--rule-soft);
+  background:var(--paper);
+}
+.screen .field{ padding:1rem 1.15rem; }
+.screen .label{
+  font-size:var(--step-1);
+  color:var(--ink-faint);
+  margin-bottom:.3rem;
+}
+.screen .value{ line-height:1.65; }
+.screen .value.ltr{ direction:ltr; text-align:left; }
+.screen .field + .field{ border-top:1px solid var(--rule-soft); }
+.hl{
+  background:var(--mark-bg);
+  color:var(--mark);
+  font-family:var(--font-mono);
+  direction:ltr;
+  unicode-bidi:isolate;
+  font-size:.87em;
+  padding:.12em .42em;
+  border-radius:4px;
+  font-weight:600;
+  box-decoration-break:clone;
+}
+
+/* ── טבלאות ── */
+.tablewrap{ overflow-x:auto; margin:1.35rem 0; }
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:26rem;
+  font-size:.95rem;
+}
+th,td{
+  text-align:start;
+  padding:.7rem .85rem;
+  border-bottom:1px solid var(--rule-soft);
+  vertical-align:top;
+}
+thead th{
+  font-size:var(--step-1);
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  border-bottom:1.5px solid var(--rule);
+  white-space:nowrap;
+}
+tbody tr:last-child td{ border-bottom:none; }
+
+/* ── שאלות נפוצות ── */
+details{
+  border-top:1px solid var(--rule-soft);
+  padding-block:.35rem;
+}
+details:last-of-type{ border-bottom:1px solid var(--rule-soft); }
+summary{
+  cursor:pointer;
+  padding:.85rem 0;
+  font-weight:700;
+  list-style:none;
+  display:flex;
+  gap:.7rem;
+  align-items:baseline;
+}
+summary::-webkit-details-marker{ display:none; }
+summary::before{
+  content:"+";
+  font-family:var(--font-mono);
+  color:var(--mark);
+  font-weight:700;
+  flex:none;
+}
+details[open] summary::before{ content:"–"; }
+details .answer{ padding:0 0 1rem 0; }
+details .answer > :last-child{ margin-bottom:0; }
+details .answer p, details .answer li{ color:var(--ink-soft); }
+
+footer{
+  margin-top:4rem;
+  padding-top:1.5rem;
+  border-top:2px solid var(--ink);
+  color:var(--ink-faint);
+  font-size:.9rem;
+}
+footer p{ margin:0 0 .4rem; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+@media (max-width:34rem){
+  :root{ --rail:2.4rem; }
+  .steps > li::before{ font-size:1.25rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">מדריך למורה</p>
+  <h1>הבודק — בדיקה אוטומטית של תרגילי כתיבה באנגלית</h1>
+  <p class="standfirst">
+    התלמידים מגישים בגוגל קלאסרום כרגיל. תוך כמה דקות מופיע בדרייב דוח מפורט לכל
+    תלמיד: תמלול של מה שכתב, ציון לפי מחוון, והערות נקודתיות מסומנות על הטקסט.
+    אתם לא צריכים להתקין כלום ולא להיכנס לשום מערכת חדשה — הכל קורה מתוך קלאסרום.
+  </p>
+</header>
+
+<div class="flow">
+  <div>
+    <b>אתם</b>
+    <p>יוצרים משימה בקלאסרום ומצרפים מחוון, אם יש לכם.</p>
+  </div>
+  <div>
+    <b>התלמיד</b>
+    <p>מצלם או סורק את העבודה, מצרף אותה ולוחץ «הגשה».</p>
+  </div>
+  <div>
+    <b>המערכת</b>
+    <p>בודקת את התיקייה כל חמש דקות ומזהה הגשה חדשה.</p>
+  </div>
+  <div>
+    <b>התוצאה</b>
+    <p>דוח Word בתיקייה «תרגילים בדוקים», ליד ההגשות.</p>
+  </div>
+</div>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2>ליצור משימה שתיבדק</h2>
+  </div>
+
+  <p>
+    המערכת לא בודקת כל משימה בקלאסרום — רק כאלה שעומדות בארבעה תנאים.
+    שלושה מהם נעשים פעם אחת, והרביעי תלוי בתלמיד.
+  </p>
+
+  <ol class="steps">
+    <li>
+      <div class="body">
+        <strong>הקורס משותף עם חשבון הבדיקה</strong>
+        <p>
+          חשבון הבדיקה צריך להיות רשום כמורה בקורס. זו פעולה חד-פעמית לכל קורס,
+          ואחריה אין צורך לחזור עליה. אם אינכם בטוחים שהקורס מחובר — פנו למי
+          שהגדיר לכם את המערכת.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="body">
+        <strong>המשימה יושבת תחת נושא בשם English Assignment</strong>
+        <p>
+          זהו המתג המרכזי, והסיבה השכיחה ביותר שהגשה לא נבדקת. בקלאסרום, בעת
+          יצירת המשימה, בשדה «נושא» בוחרים או יוצרים נושא בשם:
+        </p>
+        <div class="screen">
+          <div class="bar">גוגל קלאסרום · יצירת משימה</div>
+          <div class="field">
+            <div class="label">נושא</div>
+            <div class="value ltr"><span class="hl">English Assignment</span></div>
+          </div>
+        </div>
+        <p>
+          השם חייב להיות מדויק — באנגלית, בדיוק שתי המילים האלה. משימות תחת נושא
+          אחר, או בלי נושא כלל, פשוט לא נסרקות.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="body">
+        <strong>התלמיד מצרף קובץ מסוג נתמך</strong>
+        <p>
+          המערכת קוראת <code>PDF</code>, <code>JPG</code> ו-<code>PNG</code> —
+          כלומר צילום מהטלפון, סריקה, או מסמך שהומר. קובץ מסוג אחר מדולג, ואם
+          זה הקובץ היחיד שהוגש לא ייווצר דוח.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="body">
+        <strong>התלמיד לוחץ «הגשה»</strong>
+        <p>
+          זו הנקודה שהכי הרבה תלמידים נופלים בה. ברגע שתלמיד מצרף קובץ, הקובץ כבר
+          נמצא בדרייב ואתם רואים אותו — אבל <b>ההגשה עדיין לא בוצעה</b>. המערכת
+          מחכה בכוונה ללחיצה על «הגשה», כדי לא לבדוק טיוטות באמצע העבודה.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="note tip">
+    <b>שווה להגיד לכיתה מראש</b>
+    <p>«לצרף את הקובץ, ואז ללחוץ על הכפתור הכחול. אם הכפתור עוד כתוב עליו «הגשה» — לא הגשתם.»</p>
+  </div>
+
+  <h3>מה שתכתבו בתיאור הוא מה שייבדק</h3>
+  <p>
+    תיאור המשימה אינו קישוט. הוא נשלח למערכת כשאלה שמולה נבחנת העבודה, ולכן
+    כדאי לנסח אותו כמו שהייתם מנסחים לתלמיד: מה המשימה, מה האורך הרצוי, ולאילו
+    נקודות להתייחס. ככל שהתיאור מדויק יותר, כך המשוב רלוונטי יותר.
+  </p>
+
+  <div class="screen">
+    <div class="bar">גוגל קלאסרום · תיאור המשימה</div>
+    <div class="field">
+      <div class="value ltr">
+        Describe the summer vacation you had this year. Write about 120 words.<br>
+        Answer these questions: where did you go, who with, and what was the most
+        interesting thing you did?
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2>להוסיף מחוון</h2>
+  </div>
+
+  <p>
+    המחוון קובע לפי מה ניתן הציון. אתם לא חייבים לצרף אחד — יש מחוון ברירת מחדל
+    שעובד לכל מטלת כתיבה — אבל אם יש לכם מחוון משלכם, כדאי מאוד להשתמש בו.
+    יש שלוש דרכים, והמערכת בודקת אותן <b>בסדר הזה</b>:
+  </p>
+
+  <ol class="steps">
+    <li>
+      <div class="body">
+        <strong>מחוון של קלאסרום</strong>
+        <p>
+          אם צירפתם למשימה מחוון דרך קלאסרום עצמו (הכפתור «מחוון» במסך יצירת
+          המשימה), הוא גובר על כל השאר. זו ההצהרה המפורשת ביותר, וזה גם המחוון
+          שאתם רואים במסך מתן הציונים.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="body">
+        <strong>מסמך שאתם מצרפים למשימה</strong>
+        <p>
+          מחוון שקיים אצלכם כקובץ — <code>PDF</code> או Google&nbsp;Doc — פשוט
+          מצורף למשימה כמו כל חומר עזר. המערכת תזהה אותו באחת משלוש דרכים:
+        </p>
+        <ul>
+          <li>
+            <b>לפי שם הקובץ</b> — אם השם מכיל «מחוון», «רובריקה» או
+            <code>rubric</code>.
+          </li>
+          <li>
+            <b>לפי תגית בתיאור</b> — אם יש כמה קבצים ואתם רוצים להצביע על אחד
+            מהם, כתבו בתיאור
+            <span class="hl">[מחוון: שם הקובץ]</span>.
+          </li>
+          <li>
+            <b>לבד</b> — אם צירפתם קובץ אחד בלבד, המערכת תקרא אותו ותחליט
+            בעצמה אם זה מחוון או דף הוראות לתלמיד. מסמך שהוא באמת מחוון ישמש
+            כמחוון; דף הוראות יצורף לשאלה כהקשר, ומחוון ברירת המחדל יישאר.
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li>
+      <div class="body">
+        <strong>מחוון ברירת המחדל</strong>
+        <p>
+          אם לא צירפתם כלום, הבדיקה נעשית לפי מחוון כתיבה לכיתה ט' המבוסס על
+          סולם <span class="mono">CEFR</span> ברמות A1–B2, בארבעה קריטריונים:
+          עמידה במשימה וקוהרנטיות, עושר אוצר מילים, דיוק ומורכבות דקדוקית,
+          וארגון.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="note">
+    <b>מה קורה עם כמה קבצים מצורפים</b>
+    <p>
+      אם צירפתם שני קבצים או יותר ואף אחד מהם לא נקרא «מחוון», המערכת
+      <b>לא מנחשת</b> — היא משתמשת בברירת המחדל. לנחש בין שניים זו בדיוק
+      הטעות שעלולה לבדוק את הכיתה לפי הקריטריונים הלא נכונים. במקרה כזה,
+      או שתשנו את שם הקובץ, או שתוסיפו את התגית
+      <span class="hl">[מחוון: שם הקובץ]</span>.
+    </p>
+  </div>
+
+  <div class="note tip">
+    <b>מחוון דיגיטלי נקרא מיד, סרוק לוקח קצת יותר</b>
+    <p>
+      אם המחוון הוא מסמך דיגיטלי — כזה שאפשר לסמן בו טקסט ולהעתיק — המערכת
+      קוראת אותו מיידית וללא עלות. אם הוא צילום או סריקה, היא מפעילה עליו זיהוי
+      תווים, וזה לוקח עוד כמה שניות. שתי הדרכים עובדות.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2>לבחור מי יבדוק</h2>
+  </div>
+
+  <p>
+    מאחורי הבדיקה עומד מודל בינה מלאכותית, ואתם יכולים לבחור אותו לכל משימה
+    בנפרד. כותבים תגית בתוך תיאור המשימה — בשורה נפרדת, בדרך כלל בסוף:
+  </p>
+
+  <div class="screen">
+    <div class="bar">גוגל קלאסרום · תיאור המשימה</div>
+    <div class="field">
+      <div class="value ltr">
+        Describe the summer vacation you had this year. Write about 120 words.
+      </div>
+    </div>
+    <div class="field">
+      <div class="value ltr"><span class="hl">[model: gemini]</span></div>
+    </div>
+  </div>
+
+  <p>אלה הערכים שאפשר לכתוב:</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>מה כותבים</th>
+          <th>מי בודק</th>
+          <th>מתי כדאי</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>[model: claude]</code></td>
+          <td>Claude Sonnet&nbsp;5</td>
+          <td>ברירת המחדל. המשוב האיכותי ביותר — זה מה שירוץ אם לא תכתבו כלום.</td>
+        </tr>
+        <tr>
+          <td><code>[model: gemini]</code></td>
+          <td>Gemini 2.5 Flash</td>
+          <td>איכות טובה, ללא עלות. מתאים לכיתה שלמה או לניסויים.</td>
+        </tr>
+        <tr>
+          <td><code>[model: gemini-lite]</code></td>
+          <td>Gemini 2.5 Flash-Lite</td>
+          <td>המהיר ביותר, גם ללא עלות. לבדיקות קצרות ופשוטות.</td>
+        </tr>
+        <tr>
+          <td><code>[model: gpt]</code></td>
+          <td>GPT-4.1-mini</td>
+          <td>חלופה נוספת, למקרה שתרצו להשוות בין מודלים.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    אפשר לכתוב את התגית גם בעברית — <span class="hl">[מודל: gemini]</span> —
+    וגם עם סימן שווה במקום נקודתיים. אותיות גדולות או קטנות לא משנות.
+    במקום <code>claude</code> אפשר לכתוב <code>sonnet</code>, ובמקום
+    <code>gpt</code> אפשר <code>azure</code>.
+  </p>
+
+  <h3>שלושה דברים שכדאי לדעת על התגית</h3>
+  <ul>
+    <li>
+      <b>היא נמחקת לפני הבדיקה.</b> המודל לא רואה את התגית ולא מתייחס אליה
+      כחלק מהשאלה, כך שהיא לא משפיעה על הציון.
+    </li>
+    <li>
+      <b>אבל התלמידים רואים אותה.</b> התגית נשארת גלויה בתיאור המשימה
+      בקלאסרום. אם זה מפריע, אפשר פשוט לא להשתמש בה ולהסתמך על ברירת המחדל.
+    </li>
+    <li>
+      <b>שם שגוי לא עובר בשקט.</b> אם תכתבו שם שאינו מוכר, הבדיקה תתבצע עם
+      ברירת המחדל ותירשם על כך הודעה ביומן המערכת — עדיף מאשר לבדוק בשקט עם
+      משהו אחר ממה שביקשתם.
+    </li>
+  </ul>
+
+  <div class="note warn">
+    <b>סוגריים רגילים בטקסט — אין בעיה</b>
+    <p>
+      רק תגית שמתחילה במפורש במילה <code>model</code> או «מודל» נחשבת תגית.
+      משפט כמו
+      <span class="mono">Read the text [see page 4] and answer</span>
+      נשאר בדיוק כפי שכתבתם.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2>לקרוא את הדוח</h2>
+  </div>
+
+  <p>
+    הדוח מגיע כקובץ Word, ונשמר בדרייב בתוך תיקיית ההגשות של אותה משימה,
+    בתת-תיקייה בשם:
+  </p>
+
+  <div class="screen">
+    <div class="bar">Google Drive</div>
+    <div class="field">
+      <div class="value">
+        <span class="path mono">…/</span>
+        תיקיית ההגשות של המשימה
+        <span class="path mono">/</span>
+        <b>תרגילים בדוקים</b>
+        <span class="path mono">/</span>
+      </div>
+      <div class="value" style="margin-top:.5rem;color:var(--ink-soft)">
+        <span class="mono">שם-הקובץ-של-התלמיד_report_20260729-093033.docx</span>
+      </div>
+    </div>
+  </div>
+
+  <p>התיקייה נוצרת אוטומטית בפעם הראשונה, וכל הדוחות של אותה משימה נאספים אליה. בתוך הדוח תמצאו:</p>
+
+  <ul>
+    <li><b>תמלול</b> של מה שהתלמיד כתב, שורה אחר שורה.</li>
+    <li><b>ציון לכל קריטריון</b> במחוון, עם רמה מילולית והסבר קצר בעברית.</li>
+    <li><b>הערות נקודתיות</b> — ציטוט מהעבודה עצמה עם ההערה עליו.</li>
+    <li><b>ספירת מילים</b>, ותמונת העמוד המקורי לצד הבדיקה.</li>
+  </ul>
+
+  <div class="note">
+    <b>כמה זמן זה לוקח</b>
+    <p>
+      המערכת סורקת כל חמש דקות, והבדיקה עצמה אורכת בין חצי דקה לדקה. בפועל:
+      דוח מופיע בדרך כלל תוך <b>עד חמש דקות</b> מרגע שהתלמיד לחץ «הגשה».
+    </p>
+  </div>
+
+  <h3>אם התלמיד מתקן ומגיש שוב</h3>
+  <p>
+    זה נתמך במלואו ואינו דורש מכם דבר. אם תלמיד מבטל הגשה, מתקן ומגיש מחדש,
+    המערכת מזהה שזו גרסה חדשה ובודקת אותה מההתחלה. הדוח החדש נוסף לתיקייה לצד
+    הישן — שניהם נשמרים, עם חותמת זמן בשם הקובץ, כך שאפשר לראות את ההתקדמות.
+  </p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2>כשמשהו לא עובד</h2>
+  </div>
+
+  <details>
+    <summary>תלמיד הגיש, ואין דוח</summary>
+    <div class="answer">
+      <p>לפי הסבירות, מהשכיח לנדיר:</p>
+      <ul>
+        <li>
+          <b>הוא לא באמת הגיש.</b> הקובץ מצורף אבל הכפתור לא נלחץ. זה נראה
+          כמעט זהה במסך שלכם — בדקו שמצב ההגשה הוא «הוגש».
+        </li>
+        <li>
+          <b>המשימה לא תחת הנושא הנכון.</b> ודאו שהיא יושבת תחת
+          <span class="hl">English Assignment</span>, בדיוק בשם הזה.
+        </li>
+        <li>
+          <b>סוג הקובץ לא נתמך.</b> מסמך Word או קובץ טקסט לא ייבדקו —
+          רק <code>PDF</code>, <code>JPG</code> ו-<code>PNG</code>.
+        </li>
+        <li>
+          <b>עברו פחות מחמש דקות.</b> שווה לחכות עוד סבב סריקה אחד.
+        </li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>הבדיקה נעשתה לפי המחוון הלא נכון</summary>
+    <div class="answer">
+      <p>
+        כנראה צירפתם כמה קבצים ואף אחד מהם לא נקרא «מחוון», ולכן המערכת השתמשה
+        בברירת המחדל. הפתרון: שנו את שם קובץ המחוון כך שיכיל את המילה «מחוון»,
+        או הוסיפו לתיאור את התגית <span class="hl">[מחוון: שם הקובץ]</span>.
+        אחרי השינוי, בקשו מהתלמיד לבטל הגשה ולהגיש שוב.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>הערה שהמערכת כתבה לא מופיעה בדוח</summary>
+    <div class="answer">
+      <p>
+        קורה לפעמים שהערה נקודתית מושמטת, כאשר הציטוט שהמודל בחר לא תואם
+        מילה-במילה את מה שזוהה בכתב היד. <b>הציון עצמו לא נפגע</b> — רק אותה
+        הערה בודדת יורדת. אם זה חוזר על עצמו בכיתה, כדאי לבקש מהתלמידים לצלם
+        בתאורה טובה ובזווית ישרה.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>אותה הגשה נכשלת שוב ושוב</summary>
+    <div class="answer">
+      <p>
+        המערכת מנסה עד שלוש פעמים, ואם כולן נכשלות היא מפסיקה ומסמנת את ההגשה.
+        זה מכוון: עדיף לעצור מאשר לנסות בלולאה. ברוב המקרים הסיבה היא קובץ
+        גדול או פגום במיוחד. מה לעשות: בקשו מהתלמיד לצלם מחדש (או לייצא ל-PDF
+        קטן יותר) ולהגיש שוב — הגשה חדשה מאפסת את המונה והבדיקה תרוץ מחדש.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>איך אני מוודא שהמשימה מוגדרת נכון, לפני שהכיתה מגישה</summary>
+    <div class="answer">
+      <p>
+        הדרך הבטוחה: הגישו בעצמכם. צרו את המשימה, הגישו אליה קובץ לדוגמה
+        מחשבון תלמיד או מהחשבון שלכם, וראו שהדוח מופיע. עדיף לגלות בעיה על
+        עבודה אחת מאשר על שלושים.
+      </p>
+    </div>
+  </details>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2>בקצרה, לשמור ליד המסך</h2>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>מה אני רוצה</th>
+          <th>מה לעשות</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>שהמשימה תיבדק</td>
+          <td>לשים אותה תחת נושא <span class="hl">English Assignment</span></td>
+        </tr>
+        <tr>
+          <td>שהבדיקה תתייחס למשימה שלי</td>
+          <td>לכתוב את המטלה בתיאור המשימה</td>
+        </tr>
+        <tr>
+          <td>מחוון משלי</td>
+          <td>לצרף אותו, עם המילה «מחוון» בשם הקובץ</td>
+        </tr>
+        <tr>
+          <td>לבחור בין כמה קבצים מצורפים</td>
+          <td>להוסיף לתיאור <span class="hl">[מחוון: שם הקובץ]</span></td>
+        </tr>
+        <tr>
+          <td>מודל אחר</td>
+          <td>להוסיף לתיאור <span class="hl">[model: gemini]</span></td>
+        </tr>
+        <tr>
+          <td>לבדוק שוב אחרי תיקון</td>
+          <td>התלמיד מבטל הגשה ומגיש מחדש</td>
+        </tr>
+        <tr>
+          <td>למצוא את הדוחות</td>
+          <td>תיקיית ההגשות של המשימה, בתוך «תרגילים בדוקים»</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note tip">
+    <b>ודבר אחרון</b>
+    <p>
+      המערכת נותנת משוב, לא ציון סופי. היא מתמללת, מודדת מול המחוון ומצביעה על
+      נקודות לשיפור — ההחלטה מה לעשות עם זה נשארת אצלכם. הכי טוב היא עובדת
+      כשלב ראשון: היא עוברת על שלושים עבודות, ואתם מגיעים לכל אחת כשכבר ידוע
+      מה קורה בה.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p>הבודק — מערכת לבדיקת תרגילי כתיבה באנגלית · חברת השכלה</p>
+  <p>עודכן ביולי 2026</p>
+</footer>
+
+</div>
+</body>
+</html>
