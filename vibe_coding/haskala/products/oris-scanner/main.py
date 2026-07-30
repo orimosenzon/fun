@@ -259,11 +259,11 @@ def _get_or_create_checked_folder(drive_service, cw_id: str, anchor_file_id: str
 
 def get_workspace_credentials():
     # NOTE: rosters.readonly + profile.emails were added 2026-07-30 so the
-    # report filename can carry the student's email (Avishai's request). Adding
-    # them here is only half the job — the same two scopes must also be listed
-    # on the service account's domain-wide-delegation entry in the Workspace
-    # admin console, or every userProfiles.get returns 403. _student_email()
-    # degrades to the Classroom userId in that case rather than failing a scan.
+    # report filename can name the student who handed the work in. Adding them
+    # here is only half the job — the same scopes must also be listed on the
+    # service account's domain-wide-delegation entry in the Workspace admin
+    # console, or every userProfiles.get returns 403. _student_label() degrades
+    # to the Classroom userId in that case rather than failing a scan.
     SCOPES = [
         'https://www.googleapis.com/auth/classroom.courses.readonly',
         'https://www.googleapis.com/auth/classroom.coursework.students',
@@ -287,36 +287,44 @@ def get_workspace_credentials():
     return delegated_creds
 
 
-# Resolved student emails, keyed by Classroom userId. A class's worth of
+# Resolved student labels, keyed by Classroom userId. A class's worth of
 # submissions in one scan would otherwise re-request the same few profiles.
-_STUDENT_EMAIL_CACHE: dict[str, str] = {}
+_STUDENT_LABEL_CACHE: dict[str, str] = {}
 
 
-def _student_email(classroom_service, user_id: str, tag: str = "") -> str | None:
-    """The student's email address for the report filename, or None when it
-    cannot be resolved — a missing email must never cost us a grading run, so
-    every failure here is logged and swallowed."""
+def _student_label(classroom_service, user_id: str, tag: str = "") -> str | None:
+    """Who handed this in, as a human reads it: the student's full name, for the
+    report filename (Ori, 2026-07-30 — a teacher recognises "ori_mosenzon", not
+    an address). Falls back to the local part of the email when the profile
+    carries no name, and to None when nothing can be resolved — a missing name
+    must never cost us a grading run, so every failure here is logged and
+    swallowed.
+
+    fullName needs only classroom.rosters.readonly; emailAddress is what
+    additionally needs classroom.profile.emails."""
     if not user_id:
         return None
-    if user_id in _STUDENT_EMAIL_CACHE:
-        return _STUDENT_EMAIL_CACHE[user_id]
+    if user_id in _STUDENT_LABEL_CACHE:
+        return _STUDENT_LABEL_CACHE[user_id]
     try:
         profile = classroom_service.userProfiles().get(userId=user_id).execute()
-        email = profile.get('emailAddress')
+        label = (profile.get('name') or {}).get('fullName')
+        if not label:
+            label = (profile.get('emailAddress') or "").split("@")[0] or None
     except Exception as e:
         # Overwhelmingly the 403 from a delegation entry that has not been
-        # given the two profile scopes yet — say so explicitly, because the
-        # fix is one admin-console edit and the log is where it gets noticed.
-        log.warning("%s could not resolve the email for student %s (%s: %s) — "
+        # given the profile scopes yet — say so explicitly, because the fix is
+        # one admin-console edit and the log is where it gets noticed.
+        log.warning("%s could not resolve the name for student %s (%s: %s) — "
                     "falling back to the userId in the report filename. If this "
                     "is a 403, add classroom.rosters.readonly and "
                     "classroom.profile.emails to the service account's "
                     "domain-wide delegation in the Workspace admin console.",
                     tag, user_id, type(e).__name__, str(e)[:200])
         return None
-    if email:
-        _STUDENT_EMAIL_CACHE[user_id] = email
-    return email
+    if label:
+        _STUDENT_LABEL_CACHE[user_id] = label
+    return label
 
 
 # Checked reports now nest inside the assignment's own submission folder
@@ -497,7 +505,7 @@ def run_workspace_scan():
                     model_key=model_key,
                     tag=tag,
                     material_rubric=material_rubric,
-                    student_email=_student_email(classroom_service, student_id, tag),
+                    student_label=_student_label(classroom_service, student_id, tag),
                     student_id=student_id,
                 )
                 _mark_done(subm_id, update_time)
