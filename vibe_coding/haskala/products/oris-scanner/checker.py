@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+import re
 import time
 
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
@@ -114,9 +115,35 @@ def load_material_rubric(service, material, model_key=None, tag=""):
         return None
 
 
+_FILENAME_UNSAFE_RE = re.compile(r'[\\/:*?"<>|\r\n\t]+')
+
+
+def _report_filename(student_email, student_id, assignment_name, fallback_stem):
+    """The report's name in Drive: the student's email and the assignment,
+    so a teacher scanning the "תרגילים בדוקים" folder can tell whose work a
+    report is without opening it (Avishai, 2026-07-30).
+
+    Falls back to the Classroom userId when the email could not be resolved,
+    and to the student's own uploaded filename when there is no id either —
+    the old behaviour, which identified nobody but at least never collided.
+    """
+    clean = lambda s: _FILENAME_UNSAFE_RE.sub("-", str(s)).strip()
+    who = clean(student_email or student_id or fallback_stem or "report")[:120]
+    parts = [who]
+    if assignment_name:
+        # Only the assignment name is truncated. The timestamp has to survive
+        # intact: it is what keeps a resubmission from overwriting the first
+        # report, and Drive's 255-char cap is well within reach of a verbose
+        # assignment title.
+        parts.append(clean(assignment_name)[:80])
+    parts.append(time.strftime("%Y%m%d-%H%M%S"))
+    return "_".join(parts) + ".docx"
+
+
 def check_hw(service, file_ids, folder_id, classroom_rubric=None,
              assignment_description=None, assignment_name=None,
-             model_key=None, tag="", material_rubric=None):
+             model_key=None, tag="", material_rubric=None,
+             student_email=None, student_id=None):
     """Downloads each attached Drive file, runs them through the checking
     pipeline (OCR every page → evaluate the merged transcript against a
     rubric), and uploads the resulting Word report into folder_id.
@@ -132,7 +159,11 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
 
     tag: a short correlation prefix (submission id etc.) stamped onto every
     log line, so one submission's trace can be followed through interleaved
-    concurrent runs."""
+    concurrent runs.
+
+    student_email / student_id: who handed this in — used to name the report
+    in Drive (see _report_filename). Both are optional; the report is still
+    produced when neither can be resolved."""
     model_key = model_key or core.DEFAULT_MODEL
     t0 = time.monotonic()
 
@@ -197,6 +228,9 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     # result can be traced back to the inputs that produced it.
     log.info("%s ── checking parameters ──", tag)
     log.info("%s   assignment : %r", tag, assignment_name)
+    log.info("%s   student    : %s", tag,
+             student_email or (f"id {student_id} (email unresolved)"
+                               if student_id else "unidentified"))
     log.info("%s   model      : %s (%s)", tag, model_key,
              core.MODELS.get(model_key, "unknown key"))
     log.info("%s   rubric src : %s", tag, rubric_source)
@@ -216,8 +250,7 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     )
 
     stem = os.path.splitext(first_name or "report")[0]
-    ts = time.strftime("%Y%m%d-%H%M%S")
-    out_name = f"{stem}_report_{ts}.docx"
+    out_name = _report_filename(student_email, student_id, assignment_name, stem)
 
     docx_bytes = report.build_evaluation_docx(
         evaluation, out_name, rubric_name, pages=pages,

@@ -20,7 +20,8 @@ log = logging.getLogger("oris-scanner")
 # ─── languages / labels (mirrors checker/app.py DOCX_LABELS) ───────────────
 
 DEFAULT_EXERCISE_LANG = "en"
-DEFAULT_FEEDBACK_LANG = "he"
+# Mirrors core.DEFAULT_FEEDBACK_LANG: feedback follows the exercise language.
+DEFAULT_FEEDBACK_LANG = DEFAULT_EXERCISE_LANG
 
 LANGS: dict[str, dict] = {
     "he": {"name_he": "עברית",  "name_native": "עברית",   "dir": "rtl", "illegible": "[לא קריא]"},
@@ -45,6 +46,10 @@ DOCX_LABELS: dict[str, dict] = {
         "clean_transcript": "תעתיק נקי", "marked_transcript": "תעתיק עם סימונים",
         "original_and_decode": "תרגיל מקורי ופענוח", "page": "עמוד {n}",
         "th_line": "שורה", "th_text": "טקסט", "image_error": "[שגיאת תמונה]",
+        "text_analysis": "ניתוח טקסט",
+        "wc_criterion": "ספירת מילים",
+        "wc_detail": "נספרו {counted} מילים (נדרש {required}).",
+        "wc_detail_no_rule": "נספרו {counted} מילים.",
     },
     "en": {
         "title": "Exercise Review — Haskala",
@@ -62,6 +67,10 @@ DOCX_LABELS: dict[str, dict] = {
         "clean_transcript": "Clean transcript", "marked_transcript": "Marked transcript",
         "original_and_decode": "Original exercise & transcription", "page": "Page {n}",
         "th_line": "Line", "th_text": "Text", "image_error": "[image error]",
+        "text_analysis": "Text analysis",
+        "wc_criterion": "Word count",
+        "wc_detail": "{counted} words counted (required {required}).",
+        "wc_detail_no_rule": "{counted} words counted.",
     },
     "ar": {
         "title": "مراجعة التمرين — هَسكالاه",
@@ -79,6 +88,10 @@ DOCX_LABELS: dict[str, dict] = {
         "clean_transcript": "نسخة نظيفة", "marked_transcript": "نسخة معلّمة",
         "original_and_decode": "التمرين الأصلي والتفريغ", "page": "صفحة {n}",
         "th_line": "سطر", "th_text": "نص", "image_error": "[خطأ في الصورة]",
+        "text_analysis": "تحليل النص",
+        "wc_criterion": "عدد الكلمات",
+        "wc_detail": "احتُسبت {counted} كلمة (المطلوب {required}).",
+        "wc_detail_no_rule": "احتُسبت {counted} كلمة.",
     },
 }
 
@@ -334,21 +347,129 @@ def _fill_paragraph_with_spans(
         run = paragraph.add_run(text[s:e])
         _set_run_shading(run, tint)
         if include_notes:
-            comment = span.get("comment", "")
-            criterion = span.get("criterion", "")
-            if comment or criterion:
-                note = (
-                    f" ({criterion}: {comment})"
-                    if criterion and comment
-                    else f" ({criterion or comment})"
-                )
-                note_run = paragraph.add_run(note)
+            # The span's color already identifies the criterion, so the note
+            # carries only the problem itself — Avishai's rule (2026-07-30).
+            # The criterion name is kept as a fallback for the (rare) issue the
+            # model returned with no comment at all.
+            comment = span.get("comment", "") or span.get("criterion", "")
+            if comment:
+                note_run = paragraph.add_run(f" ({comment})")
                 note_run.italic = True
                 note_run.font.size = Pt(9)
                 _set_run_shading(note_run, tint)
         cursor = e
     if cursor < len(text):
         paragraph.add_run(text[cursor:])
+
+
+def _word_count_cells(evaluation: dict, LBL: dict) -> tuple[str, str] | None:
+    """The word-count row's (detail, marks) text, or None when the evaluation
+    carries no word count at all.
+
+    `length` is filled in by core.apply_length_deduction from the rubric's own
+    word_count_rule; when a rubric declares no rule there is no deduction to
+    show and the row degrades to a plain count.
+    """
+    length = evaluation.get("length") or {}
+    counted = length.get("counted", evaluation.get("word_count"))
+    if counted is None:
+        return None
+    required = length.get("required")
+    detail = (
+        LBL["wc_detail"].format(counted=counted, required=required)
+        if required
+        else LBL["wc_detail_no_rule"].format(counted=counted)
+    )
+    deduction = _coerce_num(length.get("deduction")) or 0
+    marks = f"-{_fmt_num(deduction)}" if deduction else "0"
+    return detail, marks
+
+
+def _add_word_count_row(table, evaluation: dict, LBL: dict, ncols: int,
+                        detail_col: int, marks_col: int, align) -> None:
+    """Append the word-count row to whichever criterion table was rendered.
+    Avishai's rule (2026-07-30): the length check is a row of the table like
+    any other criterion, not a loose paragraph underneath it."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    cells = _word_count_cells(evaluation, LBL)
+    if cells is None:
+        return
+    detail, marks = cells
+    row = table.add_row().cells
+    row[0].text = LBL["wc_criterion"]
+    for i in range(1, ncols):
+        row[i].text = ""
+    row[detail_col].text = detail
+    row[marks_col].text = marks
+    for cell in row:
+        for p in cell.paragraphs:
+            p.alignment = align
+    _set_cell_shading(row[0], "e8e8e8")
+    for p in row[0].paragraphs:
+        for r in p.runs:
+            r.bold = True
+    for p in row[marks_col].paragraphs:
+        for r in p.runs:
+            r.bold = True
+
+
+def _add_text_analysis(doc, pages: list[dict], spans_by_line: dict,
+                       LBL: dict, main_align) -> None:
+    """The annotated exercise: each page's original scan followed by a
+    line-by-line table carrying the color highlights and the inline note on
+    every marked span. Placed at the top of the report (Avishai, 2026-07-30) —
+    it is what a teacher reads first; the criterion table below is the
+    justification for the score."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Inches
+
+    doc.add_heading(LBL["text_analysis"], level=2).alignment = main_align
+
+    for page in pages:
+        page_num = page.get("page", "?")
+        doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
+
+        orig_b64 = page.get("original_b64") or ""
+        if orig_b64:
+            try:
+                orig_bytes = base64.b64decode(orig_b64)
+                pic_para = doc.add_paragraph()
+                pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                pic_para.add_run().add_picture(io.BytesIO(orig_bytes), width=Inches(5.5))
+            except (ValueError, OSError) as e:
+                log.warning("page %s original image failed: %s", page_num, e)
+
+        lines = page.get("lines") or []
+        if not lines:
+            continue
+        # oris-scanner never carries per-line crops (English flow, no
+        # numbered-box overlay) — always a single text column.
+        ltable = doc.add_table(rows=1, cols=1)
+        ltable.style = "Light Grid Accent 1"
+        lhdr = ltable.rows[0].cells
+        lhdr[0].text = LBL["th_text"]
+        for cell in lhdr:
+            for p in cell.paragraphs:
+                p.alignment = main_align
+                for r in p.runs:
+                    r.bold = True
+
+        for line_idx, line in enumerate(lines):
+            row = ltable.add_row().cells
+            line_text = str(line.get("text", ""))
+            try:
+                key = (int(page_num), line_idx)
+            except (TypeError, ValueError):
+                key = (page_num, line_idx)
+            spans = spans_by_line.get(key, [])
+            target_p = row[0].paragraphs[0]
+            if spans:
+                _fill_paragraph_with_spans(target_p, line_text, spans)
+            else:
+                target_p.add_run(line_text)
+            for p in row[0].paragraphs:
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
 def build_evaluation_docx(
@@ -369,7 +490,6 @@ def build_evaluation_docx(
     """
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.shared import Inches, Pt
 
     LBL = DOCX_LABELS.get(feedback_lang, DOCX_LABELS["he"])
     fb = LANGS.get(feedback_lang, LANGS[DEFAULT_FEEDBACK_LANG])
@@ -395,6 +515,11 @@ def build_evaluation_docx(
         ans_p.add_run(LBL["answered_yes"] if qa == "yes" else LBL["answered_no"]).bold = True
 
     criteria = attach_colors(evaluation).get("criteria") or []
+
+    # Text analysis first — the annotated exercise, then the scoring tables.
+    spans_by_line = resolve_issue_spans(pages, evaluation) if pages else {}
+    if pages:
+        _add_text_analysis(doc, pages, spans_by_line, LBL, main_align)
 
     show_secondary = feedback_lang != exercise_lang
     secondary_lang = LANGS.get(exercise_lang, LANGS[DEFAULT_EXERCISE_LANG])
@@ -466,6 +591,10 @@ def build_evaluation_docx(
             marks_cell.text = f"{score_txt}/{max_txt}"
             marks_cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
 
+        _add_word_count_row(gtable, evaluation, LBL, gcols,
+                            detail_col=1, marks_col=gcols - 1,
+                            align=WD_ALIGN_PARAGRAPH.LEFT)
+
     # Legacy per-criterion score/feedback table. Shown when no grid is
     # available, or forced on via SHOW_LEGACY_EVAL_TABLE even when a grid
     # exists.
@@ -512,11 +641,11 @@ def build_evaluation_docx(
                 for r in p.runs:
                     r.bold = True
 
-    wc = evaluation.get("word_count")
-    if wc is not None:
-        wc_p = doc.add_paragraph()
-        wc_p.alignment = main_align
-        wc_p.add_run(LBL["word_count"].format(n=wc)).bold = True
+        # Bottom row of the criterion table: words counted under the rubric's
+        # rules and the points the length cost. Replaces the loose word-count
+        # paragraph that used to sit below the table.
+        _add_word_count_row(table, evaluation, LBL, cols,
+                            detail_col=2, marks_col=1, align=main_align)
 
     hw = evaluation.get("helpful_words_usage")
     if hw and hw.get("total"):
@@ -532,30 +661,13 @@ def build_evaluation_docx(
             unused_p = doc.add_paragraph(LBL["not_used"].format(words=", ".join(hw["unused"])))
             unused_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    doc.add_heading(LBL["summary"], level=2).alignment = main_align
-    summary = doc.add_paragraph(evaluation.get("overall_feedback", ""))
-    summary.alignment = main_align
-    for r in summary.runs:
-        r.font.size = Pt(11)
-
-    overall_secondary = (
-        evaluation.get("overall_feedback_secondary")
-        or evaluation.get("overall_feedback_en")
-        or ""
-    )
-    if show_secondary and overall_secondary:
-        sec_heading_align = (
-            WD_ALIGN_PARAGRAPH.LEFT if secondary_align_ltr else WD_ALIGN_PARAGRAPH.RIGHT
-        )
-        doc.add_heading(secondary_header, level=2).alignment = sec_heading_align
-        summary_sec = doc.add_paragraph(overall_secondary)
-        summary_sec.alignment = sec_heading_align
-        for r in summary_sec.runs:
-            r.font.size = Pt(11)
+    # The prose summary ("סיכום" / overall_feedback) is deliberately not
+    # rendered — Avishai's rule (2026-07-30). The model still produces it and
+    # it is still logged, so it stays available for debugging a surprising
+    # score without occupying space in the teacher-facing report.
 
     if pages:
         doc.add_page_break()
-        spans_by_line = resolve_issue_spans(pages, evaluation)
 
         def _line_key(page_num, line_idx):
             try:
@@ -589,53 +701,6 @@ def build_evaluation_docx(
                     _fill_paragraph_with_spans(p, line_text, spans, include_notes=False)
                 else:
                     p.add_run(line_text)
-
-        # Section C: the original scan + line-by-line table with text (with
-        # both highlights and inline comments).
-        doc.add_heading(LBL["original_and_decode"], level=2).alignment = main_align
-
-        for page in pages:
-            page_num = page.get("page", "?")
-            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
-
-            orig_b64 = page.get("original_b64") or ""
-            if orig_b64:
-                try:
-                    orig_bytes = base64.b64decode(orig_b64)
-                    pic_para = doc.add_paragraph()
-                    pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    pic_para.add_run().add_picture(
-                        io.BytesIO(orig_bytes), width=Inches(5.5)
-                    )
-                except (ValueError, OSError) as e:
-                    log.warning("page %s original image failed: %s", page_num, e)
-
-            lines = page.get("lines") or []
-            if not lines:
-                continue
-            # oris-scanner never carries per-line crops (English flow, no
-            # numbered-box overlay) — always a single text column.
-            ltable = doc.add_table(rows=1, cols=1)
-            ltable.style = "Light Grid Accent 1"
-            lhdr = ltable.rows[0].cells
-            lhdr[0].text = LBL["th_text"]
-            for cell in lhdr:
-                for p in cell.paragraphs:
-                    p.alignment = main_align
-                    for r in p.runs:
-                        r.bold = True
-
-            for line_idx, line in enumerate(lines):
-                row = ltable.add_row().cells
-                line_text = str(line.get("text", ""))
-                spans = spans_by_line.get(_line_key(page_num, line_idx), [])
-                target_p = row[0].paragraphs[0]
-                if spans:
-                    _fill_paragraph_with_spans(target_p, line_text, spans)
-                else:
-                    target_p.add_run(line_text)
-                for p in row[0].paragraphs:
-                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     buf = io.BytesIO()
     doc.save(buf)
