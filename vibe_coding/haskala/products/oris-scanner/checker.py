@@ -118,32 +118,40 @@ def load_material_rubric(service, material, model_key=None, tag=""):
 _FILENAME_UNSAFE_RE = re.compile(r'[\\/:*?"<>|\r\n\t]+')
 
 
-def _report_filename(student_email, student_id, assignment_name, fallback_stem):
-    """The report's name in Drive: the student's email and the assignment,
-    so a teacher scanning the "תרגילים בדוקים" folder can tell whose work a
-    report is without opening it (Avishai, 2026-07-30).
+def _slug(s):
+    """One filename component: no path-hostile characters, no runs of
+    whitespace, lower case. Non-Latin scripts pass through untouched — a Hebrew
+    assignment title is exactly what the teacher named it."""
+    s = _FILENAME_UNSAFE_RE.sub("-", str(s))
+    return re.sub(r"\s+", "_", s.strip()).strip("_").lower()
 
-    Falls back to the Classroom userId when the email could not be resolved,
-    and to the student's own uploaded filename when there is no id either —
-    the old behaviour, which identified nobody but at least never collided.
+
+def _report_filename(student_label, student_id, assignment_name, fallback_stem):
+    """The report's name in Drive: who handed it in, then the assignment, so a
+    teacher scanning the "תרגילים בדוקים" folder can tell whose work a report is
+    without opening it (Avishai 2026-07-30; name rather than email, Ori
+    2026-07-30) — e.g. ori_mosenzon_מטלה_יפיפיה_ליום_חמישי_בבוקר_20260730-093109.
+
+    Falls back to the Classroom userId when the name could not be resolved, and
+    to the student's own uploaded filename when there is no id either — the old
+    behaviour, which identified nobody but at least never collided.
     """
-    clean = lambda s: _FILENAME_UNSAFE_RE.sub("-", str(s)).strip()
-    who = clean(student_email or student_id or fallback_stem or "report")[:120]
+    who = _slug(student_label or student_id or fallback_stem or "report")[:120]
     parts = [who]
     if assignment_name:
         # Only the assignment name is truncated. The timestamp has to survive
         # intact: it is what keeps a resubmission from overwriting the first
         # report, and Drive's 255-char cap is well within reach of a verbose
         # assignment title.
-        parts.append(clean(assignment_name)[:80])
+        parts.append(_slug(assignment_name)[:80])
     parts.append(time.strftime("%Y%m%d-%H%M%S"))
-    return "_".join(parts) + ".docx"
+    return "_".join(p for p in parts if p) + ".docx"
 
 
 def check_hw(service, file_ids, folder_id, classroom_rubric=None,
              assignment_description=None, assignment_name=None,
              model_key=None, tag="", material_rubric=None,
-             student_email=None, student_id=None):
+             student_label=None, student_id=None):
     """Downloads each attached Drive file, runs them through the checking
     pipeline (OCR every page → evaluate the merged transcript against a
     rubric), and uploads the resulting Word report into folder_id.
@@ -161,7 +169,7 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     log line, so one submission's trace can be followed through interleaved
     concurrent runs.
 
-    student_email / student_id: who handed this in — used to name the report
+    student_label / student_id: who handed this in — used to name the report
     in Drive (see _report_filename). Both are optional; the report is still
     produced when neither can be resolved."""
     model_key = model_key or core.DEFAULT_MODEL
@@ -229,7 +237,7 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     log.info("%s ── checking parameters ──", tag)
     log.info("%s   assignment : %r", tag, assignment_name)
     log.info("%s   student    : %s", tag,
-             student_email or (f"id {student_id} (email unresolved)"
+             student_label or (f"id {student_id} (name unresolved)"
                                if student_id else "unidentified"))
     log.info("%s   model      : %s (%s)", tag, model_key,
              core.MODELS.get(model_key, "unknown key"))
@@ -250,7 +258,7 @@ def check_hw(service, file_ids, folder_id, classroom_rubric=None,
     )
 
     stem = os.path.splitext(first_name or "report")[0]
-    out_name = _report_filename(student_email, student_id, assignment_name, stem)
+    out_name = _report_filename(student_label, student_id, assignment_name, stem)
 
     docx_bytes = report.build_evaluation_docx(
         evaluation, out_name, rubric_name, pages=pages,
