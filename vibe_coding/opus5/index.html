@@ -12,6 +12,7 @@
     --panel:rgba(10,22,27,.55);
     --line:rgba(127,212,216,.35);
     --text:#e8f4f5;
+    --warn:#ff6a4d;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#0b1418}
@@ -33,7 +34,7 @@
     padding:10px 14px;
   }
 
-  /* מדדים */
+  /* מדדים ראשיים */
   #gauges{bottom:18px;inset-inline-start:18px;display:flex;gap:20px;align-items:flex-end}
   .gauge{text-align:center;min-width:78px}
   .gauge .num{
@@ -43,14 +44,23 @@
   }
   .gauge .lbl{font-size:11px;opacity:.65;margin-top:4px;letter-spacing:.5px}
 
+  /* נתוני טיסה */
+  #flight{bottom:104px;inset-inline-start:18px;display:flex;gap:16px;padding:8px 14px}
+  .fd{text-align:center;min-width:56px}
+  .fd .n{font-family:ui-monospace,monospace;font-size:17px;line-height:1;font-weight:600}
+  .fd .l{font-size:10px;opacity:.6;margin-top:3px}
+  .fd.hot .n{color:var(--warn)}
+
   /* מדי הנעה */
-  #bars{bottom:18px;inset-inline-end:18px;width:180px}
+  #bars{bottom:18px;inset-inline-end:18px;width:190px}
   .bar{margin:7px 0}
   .bar .top{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-bottom:4px}
   .bar .track{height:7px;background:rgba(255,255,255,.09);border-radius:99px;overflow:hidden}
   .bar .fill{height:100%;width:0%;border-radius:99px;transition:width .06s linear}
   #powerFill{background:linear-gradient(90deg,#3e8f96,var(--glacier))}
+  #n1Fill{background:linear-gradient(90deg,#5c6f2c,#c9e36a)}
   #boostFill{background:linear-gradient(90deg,#a3541a,var(--amber))}
+  #vecFill{background:linear-gradient(90deg,#5a3f7a,#c39bff)}
 
   /* יעד */
   #target{top:18px;inset-inline-start:50%;transform:translateX(50%);text-align:center;min-width:190px}
@@ -60,11 +70,21 @@
   #arrow svg{display:block}
 
   /* מצב */
-  #status{top:18px;inset-inline-end:18px;text-align:start;font-size:12px;line-height:1.9;min-width:150px}
+  #status{top:18px;inset-inline-end:18px;text-align:start;font-size:12px;line-height:1.9;min-width:158px}
   #status b{color:var(--glacier);font-weight:600}
   .tag{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;border:1px solid var(--line)}
   .on{color:#8ef0a0;border-color:rgba(142,240,160,.4)}
   .off{color:#ff9a8b;border-color:rgba(255,154,139,.4)}
+
+  /* אזהרות */
+  #warns{top:96px;inset-inline-start:50%;transform:translateX(50%);display:flex;gap:8px;
+    position:absolute;pointer-events:none}
+  .warn{
+    padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.5px;
+    background:rgba(120,26,10,.55);border:1px solid rgba(255,106,77,.55);color:#ffd0c2;
+    opacity:0;transition:opacity .12s
+  }
+  .warn.show{opacity:1}
 
   /* הודעות */
   #toast{
@@ -72,14 +92,14 @@
     font-size:34px;font-weight:700;letter-spacing:1px;
     text-shadow:0 4px 24px rgba(0,0,0,.6);opacity:0;transition:opacity .35s
   }
-  #flash{position:fixed;inset:0;background:#ff3b1e;opacity:0;pointer-events:none;z-index:6;transition:opacity .5s}
 
   /* פתיחה */
   #intro{
     position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(120% 100% at 50% 0%,#1b3a45 0%,#0b1418 70%);
+    overflow:auto;
   }
-  #introCard{max-width:560px;padding:34px 38px;text-align:center}
+  #introCard{max-width:600px;padding:34px 38px;text-align:center}
   #introCard h1{
     font-size:40px;font-weight:800;letter-spacing:-.5px;line-height:1.15;
     background:linear-gradient(90deg,var(--glacier),var(--amber));
@@ -121,7 +141,8 @@
     .keys{grid-template-columns:1fr;font-size:12px}
     .gauge .num{font-size:22px}
     #gauges{gap:12px}
-    #bars{width:130px}
+    #flight{display:none}
+    #bars{width:132px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -136,10 +157,23 @@
     <div class="gauge"><div class="num" id="gTime">0.0</div><div class="lbl">זמן</div></div>
   </div>
 
+  <div class="panel" id="flight">
+    <div class="fd" id="fAoa"><div class="n">0°</div><div class="l">זווית התקפה</div></div>
+    <div class="fd" id="fG"><div class="n">1.0</div><div class="l">עומס G</div></div>
+    <div class="fd" id="fVs"><div class="n">0</div><div class="l">נסיקה מ׳/ש׳</div></div>
+    <div class="fd" id="fMach"><div class="n">0.00</div><div class="l">מאך</div></div>
+    <div class="fd" id="fRho"><div class="n">1.22</div><div class="l">צפיפות אוויר</div></div>
+    <div class="fd" id="fWind"><div class="n">0</div><div class="l">רוח קשר</div></div>
+  </div>
+
   <div class="panel" id="bars">
-    <div class="bar"><div class="top"><span>עוצמת מנוע</span><span id="powerTxt">0%</span></div>
+    <div class="bar"><div class="top"><span>מצערת</span><span id="powerTxt">0%</span></div>
       <div class="track"><div class="fill" id="powerFill"></div></div></div>
-    <div class="bar"><div class="top"><span>מאיץ</span><span id="boostTxt">100%</span></div>
+    <div class="bar"><div class="top"><span>סיבובי מנוע N1</span><span id="n1Txt">0%</span></div>
+      <div class="track"><div class="fill" id="n1Fill"></div></div></div>
+    <div class="bar"><div class="top"><span>זווית זרבובית</span><span id="vecTxt">70°</span></div>
+      <div class="track"><div class="fill" id="vecFill"></div></div></div>
+    <div class="bar"><div class="top"><span>מבער אחורי</span><span id="boostTxt">100%</span></div>
       <div class="track"><div class="fill" id="boostFill"></div></div></div>
   </div>
 
@@ -151,41 +185,50 @@
   </div>
 
   <div class="panel" id="status">
-    <div>מייצב אוטומטי <span class="tag on" id="sStab">פעיל</span></div>
+    <div>בקרת טיסה <span class="tag on" id="sStab">פעילה</span></div>
     <div>שמע <span class="tag on" id="sSound">פעיל</span></div>
     <div>מצלמה <b id="sCam">רדיפה</b></div>
+    <div>מצב <b id="sMode">ריחוף</b></div>
+  </div>
+
+  <div id="warns">
+    <div class="warn" id="wStall">הזדקרות</div>
+    <div class="warn" id="wSink">שקיעה</div>
+    <div class="warn" id="wG">עומס יתר</div>
   </div>
 
   <div id="toast"></div>
 </div>
 
-<div id="flash"></div>
-
 <div id="touch">
   <div id="stick"><div id="knob"></div></div>
-  <button class="tbtn" id="tUp">מנוע ▲</button>
-  <button class="tbtn" id="tDown">מנוע ▼</button>
-  <button class="tbtn" id="tBoost">מאיץ</button>
+  <button class="tbtn" id="tUp">מצערת ▲</button>
+  <button class="tbtn" id="tDown">מצערת ▼</button>
+  <button class="tbtn" id="tBoost">מבער</button>
 </div>
 
 <div id="intro">
   <div id="introCard">
     <h1>אופנוע סילון<br>מעל העמק האלפיני</h1>
-    <p class="sub">אופנוע עם מנוע סילון מרכזי וארבעה זרבובי הסטה: שניים כלפי מטה לעילוי, שניים לאחור לדחף, ושניים קטנים בצדדים לסיבוב. עוף דרך שתים־עשרה הטבעות שפזורות מעל האגם, הכפר והרכסים.</p>
+    <p class="sub">מנוע סילון יחיד מזין ארבע זרבוביות מוסטות־כיוון: בזווית 90° הן מכוונות מטה והאופנוע מרחף,
+      בזווית 0° הן מכוונות לאחור והוא טס כמו מטוס על כנפוניו. הפיזיקה היא גוף קשיח מלא —
+      טנזור התמד, שימור תנע זוויתי, פרצסיה גירוסקופית מרוטור המנוע, הזדקרות אמיתית וצפיפות אוויר משתנה עם הגובה.</p>
 
     <div class="keys">
-      <div><span>הגברת עוצמת המנוע</span><kbd>W</kbd></div>
-      <div><span>הפחתת עוצמה</span><kbd>S</kbd></div>
+      <div><span>הגברת מצערת</span><kbd>W</kbd></div>
+      <div><span>הפחתת מצערת</span><kbd>S</kbd></div>
       <div><span>חרטום למטה / למעלה</span><kbd>↑ ↓</kbd></div>
       <div><span>הטיה לצדדים</span><kbd>← →</kbd></div>
-      <div><span>סיבוב סביב הציר</span><kbd>A</kbd> <kbd>D</kbd></div>
-      <div><span>מאיץ אחורי</span><kbd>Shift</kbd></div>
-      <div><span>מייצב אוטומטי</span><kbd>Space</kbd></div>
+      <div><span>סרן (סיבוב אופקי)</span><kbd>A</kbd> <kbd>D</kbd></div>
+      <div><span>זרבוביות לאחור / מטה</span><kbd>Q</kbd> <kbd>E</kbd></div>
+      <div><span>מבער אחורי</span><kbd>Shift</kbd></div>
+      <div><span>בקרת טיסה (מייצב)</span><kbd>Space</kbd></div>
       <div><span>החלפת מצלמה</span><kbd>C</kbd></div>
       <div><span>היפוך ציר החרטום</span><kbd>I</kbd></div>
       <div><span>שמע</span><kbd>M</kbd></div>
       <div><span>איפוס מיקום</span><kbd>R</kbd></div>
       <div><span>השהיה</span><kbd>P</kbd></div>
+      <div><span>אפקטים מלאים</span><kbd>O</kbd></div>
     </div>
 
     <button id="startBtn">התנעה</button>
@@ -224,6 +267,23 @@ function fbm(x,y,oct){
   return s;
 }
 const rnd=(a,b)=>a+Math.random()*(b-a);
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+/* ============================================================
+   אטמוספירה תקנית (ISA) — טרופוספירה
+   ρ יורדת עם הגובה, ולכן העילוי, הגרר, הדחף וצורת הסילון
+   כולם משתנים כשמטפסים.
+   ============================================================ */
+const RHO0=1.225, P0=101325, T0=288.15, LAPSE=0.0065;
+const atmo={T:T0,rho:RHO0,p:P0,a:340.29,ratio:1};
+function updateAtmo(h){
+  const T=T0-LAPSE*clamp(h,0,11000);
+  atmo.T=T;
+  atmo.rho=RHO0*Math.pow(T/T0,4.2559);
+  atmo.p=P0*Math.pow(T/T0,5.2559);
+  atmo.a=20.0468*Math.sqrt(T);
+  atmo.ratio=atmo.rho/RHO0;
+}
 
 /* ============================================================
    פרמטרים של העולם
@@ -264,6 +324,23 @@ function terrainSlope(x,z){
   const hz=terrainHeight(x,z+d)-terrainHeight(x,z-d);
   return Math.sqrt(hx*hx+hz*hz)/(2*d);
 }
+function terrainNormal(x,z,out){
+  const d=5;
+  const hx=terrainHeight(x+d,z)-terrainHeight(x-d,z);
+  const hz=terrainHeight(x,z+d)-terrainHeight(x,z-d);
+  return out.set(-hx/(2*d),1,-hz/(2*d)).normalize();
+}
+
+/* רוח: שדה fbm שנע לאט, מתחזק עם הגובה ומתפרץ בגלים */
+function windAt(x,y,z,t,out){
+  const s=0.00034;
+  const a=fbm(x*s+t*0.011, z*s-t*0.009, 3)-0.5;
+  const b=fbm(x*s+31.7-t*0.008, z*s+11.3+t*0.012, 3)-0.5;
+  const gust=0.7+1.1*(fbm(x*0.0016+t*0.20, z*0.0016-t*0.17,2));
+  const alt=0.45+clamp(y/1500,0,1)*1.55;
+  const vy=(fbm(x*0.0011+7.3,z*0.0011-2.1,2)-0.5)*3.2*alt;
+  return out.set(a*11*gust*alt, vy, b*11*gust*alt);
+}
 
 /* ============================================================
    סצנה, מצלמה, רנדרר
@@ -277,18 +354,13 @@ const camera=new THREE.PerspectiveCamera(64,innerWidth/innerHeight,0.5,14000);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
-renderer.outputEncoding=THREE.sRGBEncoding;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.05;
+/* הטון־מאפינג וקידוד ה־sRGB נעשים בשלב ההרכבה הסופי (composite),
+   כדי שה־render target יישאר לינארי ו־HDR ויאפשר bloom נכון. */
+renderer.outputEncoding=THREE.LinearEncoding;
+renderer.toneMapping=THREE.NoToneMapping;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
-
-addEventListener('resize',()=>{
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
-});
 
 /* ---------- שמיים ---------- */
 const skyGeo=new THREE.SphereGeometry(11000,32,20);
@@ -307,7 +379,7 @@ const skyMat=new THREE.ShaderMaterial({
       float h=clamp(vW.y*1.15+0.08,-1.0,1.0);
       vec3 c = h>0.0 ? mix(mid,top,pow(h,0.75)) : mix(mid,bot,pow(-h,0.6));
       float s=max(dot(normalize(vW),normalize(sun)),0.0);
-      c += vec3(1.0,0.85,0.62)*pow(s,180.0)*2.2;
+      c += vec3(1.0,0.85,0.62)*pow(s,180.0)*9.0;
       c += vec3(1.0,0.9,0.72)*pow(s,7.0)*0.16;
       gl_FragColor=vec4(c,1.0);
     }`
@@ -373,13 +445,13 @@ scene.add(terrain);
 /* ---------- אגם ---------- */
 const wGeo=new THREE.PlaneGeometry(LAKE.rx*2.1,LAKE.rz*2.2,60,26);
 wGeo.rotateX(-Math.PI/2);
-const water=new THREE.Mesh(wGeo,new THREE.MeshPhongMaterial({
+const lakeMesh=new THREE.Mesh(wGeo,new THREE.MeshPhongMaterial({
   color:0x1d4f70, specular:0xcfe9ff, shininess:180,
   transparent:true, opacity:0.86, reflectivity:1
 }));
-water.position.set(LAKE.x,WATER_Y,LAKE.z);
-water.receiveShadow=false;
-scene.add(water);
+lakeMesh.position.set(LAKE.x,WATER_Y,LAKE.z);
+lakeMesh.receiveShadow=false;
+scene.add(lakeMesh);
 const wBase=wGeo.attributes.position.array.slice();
 
 /* ---------- עצים ---------- */
@@ -423,7 +495,6 @@ function makeTrees(){
       leaves.setMatrixAt(j,m);
       col.setHSL(0.24+Math.random()*0.06,0.42,0.26+Math.random()*0.1).convertSRGBToLinear();
       if(leaves.setColorAt) leaves.setColorAt(j,col);
-      // אין אצטרובל לעץ נשיר — מצמצמים אותו למינימלי
       const m2=new THREE.Matrix4().compose(p,q,new THREE.Vector3(0.001,0.001,0.001));
       pines.setMatrixAt(i,m2);
       j++;
@@ -510,8 +581,8 @@ function makeVillage(){
   while(i<N && guard<80000){
     guard++;
     let x,z;
-    if(i<34){ x=rnd(-500,300); z=rnd(-300,300); }   // כפר מרוכז
-    else    { x=rnd(-2600,2600); z=rnd(-460,460); } // חוות מפוזרות
+    if(i<34){ x=rnd(-500,300); z=rnd(-300,300); }
+    else    { x=rnd(-2600,2600); z=rnd(-460,460); }
     const h=terrainHeight(x,z);
     if(h<WATER_Y+5 || h>150) continue;
     if(lakeMask(x,z)>0.001) continue;
@@ -529,7 +600,7 @@ function makeVillage(){
 }
 makeVillage();
 
-/* ---------- עננים ---------- */
+/* ---------- טקסטורות של אדים ועשן ---------- */
 function puffTexture(){
   const c=document.createElement('canvas'); c.width=c.height=128;
   const g=c.getContext('2d');
@@ -541,6 +612,34 @@ function puffTexture(){
   return new THREE.CanvasTexture(c);
 }
 const puffTex=puffTexture();
+
+/* עשן אמיתי צריך מרקם — לא כדור מטושטש. מייצרים fbm על קנבס
+   וכופלים במסכה רדיאלית רכה. */
+function smokeTexture(){
+  const S=192;
+  const c=document.createElement('canvas'); c.width=c.height=S;
+  const g=c.getContext('2d');
+  const img=g.createImageData(S,S);
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+    const u=x/S*7, v=y/S*7;
+    let n=fbm(u,v,4);
+    n=clamp((n-0.28)*1.9,0,1);
+    const dx=(x/S-0.5)*2, dy=(y/S-0.5)*2;
+    const r=Math.sqrt(dx*dx+dy*dy);
+    const mask=Math.pow(clamp(1-r,0,1),1.35);
+    const a=clamp(n*0.55+0.45,0,1)*mask;
+    const i=(y*S+x)*4;
+    img.data[i]=255; img.data[i+1]=255; img.data[i+2]=255;
+    img.data[i+3]=Math.round(a*255);
+  }
+  g.putImageData(img,0,0);
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
+  return t;
+}
+const smokeTex=smokeTexture();
+
+/* ---------- עננים ---------- */
 function makeClouds(){
   for(let i=0;i<90;i++){
     const s=new THREE.Sprite(new THREE.SpriteMaterial({
@@ -555,6 +654,372 @@ function makeClouds(){
 makeClouds();
 
 /* ============================================================
+   מערכת חלקיקים כללית
+   שני מאגרים: אחד חיבורי (אש, ניצוצות) ואחד רגיל (עשן, אבק).
+   כל חלקיק: מיקום, מהירות, גודל, צבע, שקיפות, ציפה, גרר.
+   ============================================================ */
+function makeParticlePool(capacity, additive, tex, sizeScale){
+  const pos=new Float32Array(capacity*3);
+  const col=new Float32Array(capacity*3);
+  const siz=new Float32Array(capacity);
+  const alp=new Float32Array(capacity);
+  const rot=new Float32Array(capacity);
+  for(let i=0;i<capacity;i++){ pos[i*3+1]=-99999; alp[i]=0; }
+
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aColor',new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aSize',new THREE.BufferAttribute(siz,1));
+  geo.setAttribute('aAlpha',new THREE.BufferAttribute(alp,1));
+  geo.setAttribute('aRot',new THREE.BufferAttribute(rot,1));
+
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{
+      uTex:{value:tex},
+      uScale:{value:600},
+      uFogColor:{value:new THREE.Color(SKY_COL).convertSRGBToLinear()},
+      uFogNear:{value:1200}, uFogFar:{value:7600},
+      uFogAmount:{value:additive?0.0:1.0}
+    },
+    vertexShader:`
+      attribute vec3 aColor; attribute float aSize; attribute float aAlpha; attribute float aRot;
+      uniform float uScale;
+      varying vec3 vCol; varying float vAlpha; varying float vRot; varying float vDepth;
+      void main(){
+        vCol=aColor; vAlpha=aAlpha; vRot=aRot;
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        vDepth=-mv.z;
+        gl_Position=projectionMatrix*mv;
+        gl_PointSize=clamp(aSize*uScale/max(vDepth,1.0),1.0,420.0);
+      }`,
+    fragmentShader:`
+      uniform sampler2D uTex; uniform vec3 uFogColor;
+      uniform float uFogNear,uFogFar,uFogAmount;
+      varying vec3 vCol; varying float vAlpha; varying float vRot; varying float vDepth;
+      void main(){
+        vec2 uv=gl_PointCoord-0.5;
+        float s=sin(vRot), c=cos(vRot);
+        uv=vec2(uv.x*c-uv.y*s, uv.x*s+uv.y*c)+0.5;
+        if(uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) discard;
+        float a=texture2D(uTex,uv).a*vAlpha;
+        if(a<0.004) discard;
+        float f=smoothstep(uFogNear,uFogFar,vDepth)*uFogAmount;
+        vec3 col=mix(vCol,uFogColor,f);
+        gl_FragColor=vec4(col,a);
+      }`,
+    transparent:true, depthWrite:false, depthTest:true,
+    blending: additive?THREE.AdditiveBlending:THREE.NormalBlending
+  });
+
+  const points=new THREE.Points(geo,mat);
+  points.frustumCulled=false;
+  points.renderOrder = additive?12:10;
+  scene.add(points);
+
+  return {
+    capacity, geo, mat, points, pos, col, siz, alp, rot,
+    life:new Float32Array(capacity), maxLife:new Float32Array(capacity),
+    vel:new Float32Array(capacity*3),
+    grow:new Float32Array(capacity), buoy:new Float32Array(capacity),
+    drag:new Float32Array(capacity), kind:new Int8Array(capacity),
+    seed:new Float32Array(capacity), spin:new Float32Array(capacity),
+    baseSize:new Float32Array(capacity), sizeScale, cursor:0, live:0
+  };
+}
+
+const fireP =makeParticlePool(1100,true ,puffTex ,1);
+const smokeP=makeParticlePool(2600,false,smokeTex,1);
+
+function spawn(P,x,y,z,vx,vy,vz,size,grow,life,r,g,b,alpha,buoy,drag,kind){
+  let i=-1;
+  for(let k=0;k<24;k++){
+    const c=(P.cursor+k)%P.capacity;
+    if(P.life[c]<=0){ i=c; P.cursor=(c+1)%P.capacity; break; }
+  }
+  if(i<0){ i=P.cursor; P.cursor=(P.cursor+1)%P.capacity; }
+  P.pos[i*3]=x; P.pos[i*3+1]=y; P.pos[i*3+2]=z;
+  P.vel[i*3]=vx; P.vel[i*3+1]=vy; P.vel[i*3+2]=vz;
+  P.baseSize[i]=size; P.siz[i]=size; P.grow[i]=grow;
+  P.life[i]=life; P.maxLife[i]=life;
+  P.col[i*3]=r; P.col[i*3+1]=g; P.col[i*3+2]=b;
+  P.alp[i]=alpha;
+  P.buoy[i]=buoy; P.drag[i]=drag; P.kind[i]=kind||0;
+  P.seed[i]=Math.random()*6.283;
+  P.rot[i]=Math.random()*6.283;
+  P.spin[i]=rnd(-0.7,0.7);
+  return i;
+}
+
+/* עדכון פיזיקלי של החלקיקים.
+   kind 0 = כללי, 1 = אש (מתקרר ומתעמעם מהר), 2 = עשן פטרייה
+   (מתקרר לאט, ממשיך לגדול), 3 = אבק קרקע (נצמד לקרקע) */
+function updatePool(P,dt,t){
+  const {pos,vel,col,siz,alp,life,maxLife,grow,buoy,drag,kind,baseSize,seed,rot,spin}=P;
+  for(let i=0;i<P.capacity;i++){
+    if(life[i]<=0){ if(pos[i*3+1]>-9000) pos[i*3+1]=-99999; continue; }
+    life[i]-=dt;
+    if(life[i]<=0){ alp[i]=0; pos[i*3+1]=-99999; continue; }
+    const age=1-life[i]/maxLife[i];
+
+    // גרר של אוויר: מאט את החלקיק כלפי הרוח המקומית
+    const d=Math.exp(-drag[i]*dt);
+    vel[i*3]  *=d;
+    vel[i*3+1]*=d;
+    vel[i*3+2]*=d;
+
+    // ציפה: הפרש צפיפות בין גז חם לאוויר סביב, נחלש כשמתערבב
+    vel[i*3+1]+=buoy[i]*(1-age*0.85)*dt;
+    if(kind[i]!==3) vel[i*3+1]-=1.6*dt;
+
+    // סחיפה ברוח + טורבולנציה
+    const sw=Math.sin(t*1.3+seed[i]), cw=Math.cos(t*0.9+seed[i]*1.7);
+    vel[i*3]  +=sw*0.9*dt*(1+age*2);
+    vel[i*3+2]+=cw*0.9*dt*(1+age*2);
+
+    pos[i*3]  +=vel[i*3]*dt;
+    pos[i*3+1]+=vel[i*3+1]*dt;
+    pos[i*3+2]+=vel[i*3+2]*dt;
+
+    // אבק קרקע לא חודר את הקרקע
+    if(kind[i]===3){
+      const gh=terrainHeight(pos[i*3],pos[i*3+2]);
+      if(pos[i*3+1]<gh+0.4){ pos[i*3+1]=gh+0.4; if(vel[i*3+1]<0) vel[i*3+1]*=-0.15; }
+    }
+
+    siz[i]=baseSize[i]*(1+grow[i]*age);
+    rot[i]+=spin[i]*dt;
+
+    if(kind[i]===1){
+      // אש: מתקררת לאורך זמן — לבן-חם → כתום → אדום עמוק → שקוף
+      const T=1-age;
+      col[i*3]  =2.6*T+0.25;
+      col[i*3+1]=1.55*T*T+0.05;
+      col[i*3+2]=0.85*T*T*T;
+      alp[i]=Math.pow(1-age,1.5)*0.9;
+    }else if(kind[i]===2){
+      // עשן פטרייה: זוהר בהתחלה (עדיין חם), מתקרר לאפור, ואז מתפוגג
+      const hot=Math.max(0,1-age*3.4);
+      const grey=0.20+0.34*Math.pow(age,0.6);
+      col[i*3]  =grey+hot*1.45;
+      col[i*3+1]=grey*0.94+hot*0.55;
+      col[i*3+2]=grey*0.88+hot*0.13;
+      alp[i]=smoothstep(0,0.06,age)*(1-smoothstep(0.62,1,age))*0.62;
+    }else if(kind[i]===3){
+      // אבק/רסס: הצבע נקבע בלידה (עפר או תרסיס מים)
+      alp[i]=smoothstep(0,0.1,age)*(1-smoothstep(0.4,1,age))*0.75;
+    }else{
+      alp[i]=Math.pow(1-age,1.2)*0.5;
+    }
+  }
+  P.geo.attributes.position.needsUpdate=true;
+  P.geo.attributes.aColor.needsUpdate=true;
+  P.geo.attributes.aSize.needsUpdate=true;
+  P.geo.attributes.aAlpha.needsUpdate=true;
+  P.geo.attributes.aRot.needsUpdate=true;
+}
+/* ============================================================
+   פוסט־פרוססינג: bloom + עיוות חום + הבזק
+   הסצנה נרנדרת ל־render target לינארי (HDR), ורק בשלב ההרכבה
+   הסופי מופעלים טון־מאפינג ACES וקידוד sRGB. בלי זה אי אפשר
+   לקבל זוהר אמין ללהבות ולפיצוץ.
+   ============================================================ */
+/* הסף גבוה בכוונה: רק מה שבאמת פולט אור — סילונים, פיצוץ, שמש,
+   טבעות זוהרות — עובר את הסף. משטחים מוארים רגילים נשארים מתחתיו
+   ולכן התמונה לא מתמסמסת. */
+const post={bloom:true, strength:0.85, threshold:2.4, knee:0.7};
+const LOWPOWER=matchMedia('(pointer:coarse)').matches;
+
+const quadScene=new THREE.Scene();
+const quadCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const quadMesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),null);
+quadMesh.frustumCulled=false;
+quadScene.add(quadMesh);
+function blit(mat,target){
+  quadMesh.material=mat;
+  renderer.setRenderTarget(target||null);
+  renderer.clear();
+  renderer.render(quadScene,quadCam);
+}
+
+const blackData=new Uint8Array([0,0,0,255]);
+const blackTex=new THREE.DataTexture(blackData,1,1,THREE.RGBAFormat);
+blackTex.needsUpdate=true;
+
+function makeRT(w,h,depth){
+  const rt=new THREE.WebGLRenderTarget(Math.max(2,Math.round(w)),Math.max(2,Math.round(h)),{
+    minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter,
+    format:THREE.RGBAFormat, type:THREE.HalfFloatType,
+    depthBuffer:!!depth, stencilBuffer:false
+  });
+  return rt;
+}
+let rtScene=null, rtHalf=null, rtQ1=null, rtQ2=null;
+const _sz=new THREE.Vector2();
+function buildTargets(){
+  renderer.getDrawingBufferSize(_sz);
+  const w=_sz.x, h=_sz.y;
+  const bd=LOWPOWER?6:4;   // רזולוציית ה-bloom
+  [rtScene,rtHalf,rtQ1,rtQ2].forEach(rt=>{if(rt)rt.dispose();});
+  rtScene=makeRT(w,h,true);
+  rtHalf =makeRT(w/2,h/2,false);
+  rtQ1   =makeRT(w/bd,h/bd,false);
+  rtQ2   =makeRT(w/bd,h/bd,false);
+}
+buildTargets();
+
+const VERT_QUAD=`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
+
+const brightMat=new THREE.ShaderMaterial({
+  uniforms:{tSrc:{value:null},uThresh:{value:post.threshold},uKnee:{value:post.knee},
+            uTexel:{value:new THREE.Vector2()}},
+  vertexShader:VERT_QUAD,
+  fragmentShader:`
+    varying vec2 vUv; uniform sampler2D tSrc; uniform float uThresh,uKnee; uniform vec2 uTexel;
+    vec3 fetch(vec2 o){ return texture2D(tSrc,vUv+o*uTexel).rgb; }
+    void main(){
+      vec3 c=(fetch(vec2(-1.0,-1.0))+fetch(vec2(1.0,-1.0))+
+              fetch(vec2(-1.0, 1.0))+fetch(vec2(1.0, 1.0)))*0.25;
+      float br=max(c.r,max(c.g,c.b));
+      float soft=clamp(br-uThresh+uKnee,0.0,2.0*uKnee);
+      soft=soft*soft/(4.0*uKnee+1e-4);
+      float w=max(soft,br-uThresh)/max(br,1e-4);
+      gl_FragColor=vec4(c*w,1.0);
+    }`,
+  depthTest:false, depthWrite:false
+});
+
+const blurMat=new THREE.ShaderMaterial({
+  uniforms:{tSrc:{value:null},uDir:{value:new THREE.Vector2(1,0)},uTexel:{value:new THREE.Vector2()}},
+  vertexShader:VERT_QUAD,
+  fragmentShader:`
+    varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 uDir,uTexel;
+    void main(){
+      vec2 d=uDir*uTexel;
+      vec3 c=texture2D(tSrc,vUv).rgb*0.2270270270;
+      c+=texture2D(tSrc,vUv+d*1.3846153846).rgb*0.3162162162;
+      c+=texture2D(tSrc,vUv-d*1.3846153846).rgb*0.3162162162;
+      c+=texture2D(tSrc,vUv+d*3.2307692308).rgb*0.0702702703;
+      c+=texture2D(tSrc,vUv-d*3.2307692308).rgb*0.0702702703;
+      gl_FragColor=vec4(c,1.0);
+    }`,
+  depthTest:false, depthWrite:false
+});
+
+const MAX_HEAT=6;
+const heatArr=[]; for(let i=0;i<MAX_HEAT;i++) heatArr.push(new THREE.Vector4(0,0,0,0));
+const compMat=new THREE.ShaderMaterial({
+  uniforms:{
+    tScene:{value:null}, tBloom:{value:blackTex},
+    uBloom:{value:post.strength}, uExposure:{value:1.05},
+    uTime:{value:0}, uAspect:{value:1},
+    uHeat:{value:heatArr}, uHeatN:{value:0},
+    uShock:{value:new THREE.Vector4(0,0,0,0)},
+    uFlash:{value:new THREE.Vector3(0,0,0)},
+    uVignette:{value:0.30}
+  },
+  vertexShader:VERT_QUAD,
+  fragmentShader:`
+    varying vec2 vUv;
+    uniform sampler2D tScene,tBloom;
+    uniform float uBloom,uExposure,uTime,uAspect,uVignette;
+    uniform vec4 uHeat[${MAX_HEAT}];
+    uniform int uHeatN;
+    uniform vec4 uShock;
+    uniform vec3 uFlash;
+
+    float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float n2(vec2 p){
+      vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+      return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),
+                 mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y);
+    }
+    vec3 aces(vec3 x){
+      const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;
+      return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.0,1.0);
+    }
+    vec3 lin2srgb(vec3 c){
+      return mix(c*12.92, 1.055*pow(max(c,vec3(0.0)),vec3(0.4166667))-0.055, step(vec3(0.0031308),c));
+    }
+    void main(){
+      vec2 uv=vUv;
+      vec2 warp=vec2(0.0);
+
+      // אדוות חום מעל הזרבוביות — אוויר חם שובר את האור
+      for(int i=0;i<${MAX_HEAT};i++){
+        if(i>=uHeatN) break;
+        vec4 H=uHeat[i];
+        if(H.w<=0.0) continue;
+        vec2 d=vec2((uv.x-H.x)*uAspect,uv.y-H.y);
+        float r=length(d)/max(H.z,1e-4);
+        if(r>1.0) continue;
+        float fall=(1.0-r)*(1.0-r);
+        float t=uTime*3.4;
+        float nx=n2(vec2(uv.x*70.0, uv.y*70.0-t))-0.5;
+        float ny=n2(vec2(uv.x*70.0+17.0, uv.y*70.0-t*1.3))-0.5;
+        warp+=vec2(nx,ny+0.35)*fall*H.w*0.016;
+      }
+      // גל ההדף של הפיצוץ — טבעת עיוות שמתרחבת
+      if(uShock.w>0.0){
+        vec2 d=vec2((uv.x-uShock.x)*uAspect,uv.y-uShock.y);
+        float r=length(d);
+        float ring=exp(-pow((r-uShock.z)/max(uShock.z*0.16,0.004),2.0));
+        warp+=normalize(d+1e-5)*ring*uShock.w*0.05;
+      }
+      uv+=warp;
+
+      vec3 col=texture2D(tScene,uv).rgb;
+      col+=texture2D(tBloom,uv).rgb*uBloom;
+      col+=uFlash;
+
+      // ויניאט עדין
+      vec2 q=vUv-0.5;
+      col*=1.0-uVignette*dot(q,q)*1.6;
+
+      col*=uExposure;
+      col=aces(col);
+      gl_FragColor=vec4(lin2srgb(col),1.0);
+    }`,
+  depthTest:false, depthWrite:false
+});
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  buildTargets();
+});
+
+function renderFrame(){
+  renderer.setRenderTarget(rtScene);
+  renderer.clear();
+  renderer.render(scene,camera);
+
+  let bloomTex=blackTex;
+  if(post.bloom){
+    brightMat.uniforms.tSrc.value=rtScene.texture;
+    brightMat.uniforms.uTexel.value.set(1/rtScene.width,1/rtScene.height);
+    blit(brightMat,rtHalf);
+
+    const tx=1/rtQ1.width, ty=1/rtQ1.height;
+    blurMat.uniforms.uTexel.value.set(tx,ty);
+    blurMat.uniforms.tSrc.value=rtHalf.texture;
+    blurMat.uniforms.uDir.value.set(1,0); blit(blurMat,rtQ1);
+    blurMat.uniforms.tSrc.value=rtQ1.texture;
+    blurMat.uniforms.uDir.value.set(0,1); blit(blurMat,rtQ2);
+    blurMat.uniforms.tSrc.value=rtQ2.texture;
+    blurMat.uniforms.uDir.value.set(2.4,0); blit(blurMat,rtQ1);
+    blurMat.uniforms.tSrc.value=rtQ1.texture;
+    blurMat.uniforms.uDir.value.set(0,2.4); blit(blurMat,rtQ2);
+    bloomTex=rtQ2.texture;
+  }
+
+  compMat.uniforms.tScene.value=rtScene.texture;
+  compMat.uniforms.tBloom.value=bloomTex;
+  compMat.uniforms.uAspect.value=rtScene.width/rtScene.height;
+  blit(compMat,null);
+}
+
+/* ============================================================
    האופנוע הסילוני + הרוכב
    ============================================================ */
 function tube(a,b,r,mat){
@@ -567,7 +1032,6 @@ function tube(a,b,r,mat){
   mesh.castShadow=true;
   return mesh;
 }
-const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 
 const matDark  =new THREE.MeshStandardMaterial({color:0x232a31,metalness:0.85,roughness:0.4});
 const matChrome=new THREE.MeshStandardMaterial({color:0xc3cbd2,metalness:1.0,roughness:0.18});
@@ -580,20 +1044,171 @@ const matHelmet=new THREE.MeshStandardMaterial({color:0xf0f2f4,metalness:0.2,rou
 const matVisor =new THREE.MeshStandardMaterial({color:0x101a22,metalness:0.9,roughness:0.05});
 const matSkin  =new THREE.MeshStandardMaterial({color:0xd9a179,roughness:0.8});
 
-function makeFlame(len,rad,inner,outer){
-  const g=new THREE.Group();
-  const mk=(r,l,c,o)=>{
-    const cone=new THREE.Mesh(new THREE.ConeGeometry(r,l,12,1,true),
-      new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,
-        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
-    cone.rotation.x=Math.PI;
-    cone.position.y=-l/2;
-    return cone;
-  };
-  g.add(mk(rad*1.25,len*1.75,outer,0.35));
-  g.add(mk(rad*0.75,len*1.0,inner,0.85));
-  g.scale.set(1,0.001,1);
+/* ---------- הסילון: shader עם תאי הלם ----------
+   הגאומטריה היא צינור פרמטרי; רדיוס כל טבעת מחושב ב-vertex shader:
+     • התנפחות מיידית ביציאה מהזרבובית (סילון תת־מורחב, underexpanded)
+     • תאי הלם מחזוריים — התכווצות והתרחבות לסירוגין
+     • התפשטות טורבולנטית עם המרחק
+   אורך תא ההלם הראשון לפי הנוסחה האמפירית  x = 0.67·D·√(P0/P1),
+   ולכן בגובה רב (P1 נמוך) התאים מתארכים והסילון מתרחב — בדיוק
+   כמו בסילוני מנועים אמיתיים.
+   ============================================================ */
+function plumeGeometry(segT,segR){
+  const g=new THREE.BufferGeometry();
+  const nv=(segT+1)*(segR+1);
+  const pos=new Float32Array(nv*3), at=new Float32Array(nv), ath=new Float32Array(nv);
+  let k=0;
+  for(let i=0;i<=segT;i++){
+    const t=i/segT;
+    for(let j=0;j<=segR;j++){
+      pos[k*3]=0; pos[k*3+1]=0; pos[k*3+2]=t;
+      at[k]=t; ath[k]=j/segR*Math.PI*2; k++;
+    }
+  }
+  const idx=[];
+  for(let i=0;i<segT;i++)for(let j=0;j<segR;j++){
+    const a=i*(segR+1)+j, b=a+1, c=a+segR+1, d=c+1;
+    idx.push(a,c,b, b,c,d);
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aT',new THREE.BufferAttribute(at,1));
+  g.setAttribute('aTheta',new THREE.BufferAttribute(ath,1));
+  g.setIndex(idx);
+  g.computeBoundingSphere();
+  g.boundingSphere.radius=40;
   return g;
+}
+const PLUME_GEO=plumeGeometry(46,16);
+const PLUME_GEO_S=plumeGeometry(26,12);
+
+const PLUME_VERT=`
+  attribute float aT; attribute float aTheta;
+  uniform float uLen,uR0,uSpread,uCells,uCellAmp,uUnder,uTurb,uTime,uSeed;
+  varying float vT,vShock,vTh;
+  varying vec3 vNrm,vView;
+  float h11(float p){ return fract(sin(p*127.1)*43758.5453); }
+  float n1d(float x){ float i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f); return mix(h11(i),h11(i+1.0),f); }
+  float pr(float t,float th){
+    float bell=1.0+uUnder*sin(3.14159265*clamp(t*2.4,0.0,1.0));
+    float spread=1.0+uSpread*pow(max(t,0.0),1.45);
+    float cell=cos(6.2831853*t*uCells);
+    float dec=exp(-2.3*t);
+    float cells=1.0-uCellAmp*cell*dec;
+    float w=n1d(th*2.0+uSeed+t*6.0-uTime*4.5)-0.5;
+    return uR0*bell*spread*cells*(1.0+uTurb*pow(max(t,0.0),1.7)*w*2.2);
+  }
+  void main(){
+    float t=aT; vT=t; vTh=aTheta;
+    float cell=cos(6.2831853*t*uCells);
+    vShock=pow(max(0.0,-cell),7.0)*exp(-2.0*t);
+    float r=pr(t,aTheta);
+    float r2=pr(t+0.02,aTheta);
+    vec3 p=vec3(cos(aTheta)*r,sin(aTheta)*r,t*uLen);
+    vec3 n=normalize(vec3(cos(aTheta),sin(aTheta),-(r2-r)/(0.02*uLen)));
+    vec4 mv=modelViewMatrix*vec4(p,1.0);
+    vNrm=normalMatrix*n;
+    vView=-mv.xyz;
+    gl_Position=projectionMatrix*mv;
+  }`;
+
+const PLUME_FRAG=`
+  varying float vT,vShock,vTh;
+  varying vec3 vNrm,vView;
+  uniform float uThrottle,uFade,uCore;
+  uniform vec3 uHot,uMid,uCool;
+  void main(){
+    float t=vT;
+    // פרופיל טמפרטורה לאורך הציר: ליבה על-קולית חמה, התקררות במורד,
+    // וצמתי ההלם מדליקים מחדש את הדלק העודף ומבהיקים
+    float temp=exp(-2.1*t)+vShock*1.6;
+    temp=clamp(temp,0.0,2.2);
+    vec3 c=mix(uCool,uMid,smoothstep(0.06,0.55,temp));
+    c=mix(c,uHot,smoothstep(0.55,1.30,temp));
+    float a=(0.035+0.26*exp(-1.7*t))*uThrottle;
+    a*=1.0-smoothstep(0.62,1.0,t);
+    /* אורך המסלול של קרן הראייה בתוך הגז: מרבי כשמסתכלים דרך מרכז
+       הצינור (הנורמל מקביל למבט) ושואף לאפס בקצה הצללית. בלי זה
+       מקבלים קו מתאר קשיח במקום גז. */
+    float depth=abs(dot(normalize(vNrm),normalize(vView)));
+    a*=mix(0.06,1.0,depth*depth);
+    a*=uFade;
+    gl_FragColor=vec4(c*(0.45+temp*0.95+uCore),a);
+  }`;
+
+function plumeMaterial(opts){
+  return new THREE.ShaderMaterial({
+    uniforms:{
+      uLen:{value:opts.len}, uR0:{value:opts.r0}, uSpread:{value:opts.spread},
+      uCells:{value:4}, uCellAmp:{value:0.26}, uUnder:{value:0.2},
+      uTurb:{value:opts.turb}, uTime:{value:0}, uSeed:{value:Math.random()*20},
+      uThrottle:{value:0}, uFade:{value:1}, uCore:{value:opts.core||0},
+      uHot:{value:opts.hot}, uMid:{value:opts.mid}, uCool:{value:opts.cool}
+    },
+    vertexShader:PLUME_VERT, fragmentShader:PLUME_FRAG,
+    transparent:true, depthWrite:false, side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending
+  });
+}
+
+/* יוצר סילון שלם: מעטפת חיצונית + ליבה בהירה + זוהר בפתח */
+function makePlume(cfg){
+  const grp=new THREE.Group();
+  const outer=new THREE.Mesh(PLUME_GEO,plumeMaterial({
+    len:cfg.len, r0:cfg.r0, spread:cfg.spread, turb:cfg.turb,
+    hot :V(1.35,1.75,2.60),
+    mid :V(2.30,1.05,0.28),
+    cool:V(0.60,0.11,0.04)
+  }));
+  outer.frustumCulled=false;
+  const core=new THREE.Mesh(PLUME_GEO_S,plumeMaterial({
+    len:cfg.len*0.46, r0:cfg.r0*0.46, spread:cfg.spread*0.40, turb:cfg.turb*0.5, core:0.30,
+    hot :V(2.20,2.70,3.60),
+    mid :V(2.60,2.10,1.30),
+    cool:V(1.10,0.55,0.22)
+  }));
+  core.frustumCulled=false;
+  const glowSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:puffTex, color:0xffd6a8, transparent:true, opacity:0,
+    blending:THREE.AdditiveBlending, depthWrite:false, fog:false
+  }));
+  glowSprite.scale.setScalar(cfg.r0*5);
+  grp.add(outer,core,glowSprite);
+  grp.userData={outer,core,glow:glowSprite,cfg,
+    D:cfg.r0*2, baseLen:cfg.len, coreLen:cfg.len*0.48};
+  return grp;
+}
+
+/* מעדכן סילון לפי מצערת, לחץ בתא הבערה ולחץ אטמוספרי */
+function setPlume(grp,throttle,lenMul,chamberK){
+  const u=grp.userData;
+  const om=u.outer.material.uniforms, cm=u.core.material.uniforms;
+  const th=clamp(throttle,0,1);
+  grp.visible = th>0.008;
+  if(!grp.visible) return;
+
+  // יחס לחצים: תא הבערה מול הלחץ החיצוני. בגובה רב היחס גדל.
+  const PR=1+chamberK*th*(P0/atmo.p);
+  // אורך תא ההלם הראשון — הנוסחה האמפירית
+  const x1=0.67*u.D*Math.sqrt(Math.max(PR,1));
+  const len=u.baseLen*lenMul*(0.45+0.55*th);
+  om.uLen.value=len;
+  cm.uLen.value=len*0.48;
+  om.uCells.value=clamp(len/Math.max(x1,0.05),1.2,14);
+  cm.uCells.value=om.uCells.value*2.08;
+  const amp=0.36/(1+0.085*PR);
+  om.uCellAmp.value=amp;
+  cm.uCellAmp.value=amp*1.45;
+  om.uUnder.value=clamp((PR-2)/16,0,1)*0.62;
+  cm.uUnder.value=om.uUnder.value*0.6;
+  om.uThrottle.value=th;
+  cm.uThrottle.value=th*th;
+  u.glow.material.opacity=th*th*0.42;
+  u.glow.scale.setScalar(u.cfg.r0*(3.4+th*3.4));
+}
+function tickPlume(grp,t){
+  if(!grp.visible) return;
+  grp.userData.outer.material.uniforms.uTime.value=t;
+  grp.userData.core.material.uniforms.uTime.value=t;
 }
 
 const bike=new THREE.Group();
@@ -619,7 +1234,8 @@ for(let i=0;i<7;i++){
 }
 blades.position.z=-1.24; bike.add(blades);
 
-// זרבובי עילוי (למטה)
+// זרבוביות עילוי (מוסטות כיוון)
+const NOZ_F_Z=-0.95, NOZ_R_Z=0.98, NOZ_Y=-0.32;
 function liftNozzle(z){
   const g=new THREE.Group();
   const elbow=new THREE.Mesh(new THREE.TorusGeometry(0.22,0.13,8,14,Math.PI/2),matHot);
@@ -629,16 +1245,22 @@ function liftNozzle(z){
   const lip=new THREE.Mesh(new THREE.TorusGeometry(0.23,0.04,8,16),matChrome);
   lip.rotation.x=Math.PI/2; lip.position.y=-0.68;
   g.add(elbow,pipe,lip);
-  g.position.set(0,-0.32,z);
-  const fl=makeFlame(1.9,0.22,0xbfe9ff,0xff9a3c);
-  fl.position.y=-0.7; g.add(fl); g.userData.flame=fl;
+  g.position.set(0,NOZ_Y,z);
+  const swivel=new THREE.Group();      // הזרבובית מסתובבת סביב ציר הרוחב
+  swivel.position.y=-0.68;
+  const pl=makePlume({len:5.2,r0:0.19,spread:1.50,turb:0.34});
+  pl.rotation.x=Math.PI/2;             // הסילון יוצא כלפי מטה
+  swivel.add(pl);
+  g.add(swivel);
+  g.userData={plume:pl,swivel};
   bike.add(g);
   return g;
 }
-const nozFront=liftNozzle(-0.95);
-const nozRear =liftNozzle(0.98);
+const nozFront=liftNozzle(NOZ_F_Z);
+const nozRear =liftNozzle(NOZ_R_Z);
 
-// זרבובי דחף (לאחור)
+// זרבוביות דחף אחוריות
+const THR_Z=1.25, THR_X=0.36, THR_Y=-0.02;
 function thrustNozzle(x){
   const g=new THREE.Group();
   const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.25,0.7,14),matHot);
@@ -646,27 +1268,53 @@ function thrustNozzle(x){
   const lip=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.045,8,16),matChrome);
   lip.position.z=0.7;
   g.add(pipe,lip);
-  g.position.set(x,-0.02,1.25);
-  const fl=makeFlame(3.4,0.26,0xd8f2ff,0xff7a24);
-  fl.rotation.x=-Math.PI/2; fl.position.z=0.72; g.add(fl); g.userData.flame=fl;
+  g.position.set(x,THR_Y,THR_Z);
+  const pl=makePlume({len:7.0,r0:0.21,spread:1.35,turb:0.30});
+  pl.position.z=0.72;
+  g.add(pl);
+  g.userData={plume:pl};
   bike.add(g);
   return g;
 }
-const thrL=thrustNozzle(-0.36), thrR=thrustNozzle(0.36);
+const thrL=thrustNozzle(-THR_X), thrR=thrustNozzle(THR_X);
 
-// זרבובי היגוי (צדדיים)
+// זרבוביות סרן
+const YAW_Z=-0.75, YAW_X=0.5;
 function yawNozzle(side){
   const g=new THREE.Group();
   const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.4,10),matHot);
   pipe.rotation.z=Math.PI/2; pipe.position.x=side*0.2;
   g.add(pipe);
-  g.position.set(side*0.5,0.05,-0.75);
-  const fl=makeFlame(1.1,0.11,0xcdeaff,0xffa53c);
-  fl.rotation.z=side*Math.PI/2; fl.position.x=side*0.4; g.add(fl); g.userData.flame=fl;
+  g.position.set(side*YAW_X,0.05,YAW_Z);
+  const pl=makePlume({len:1.5,r0:0.085,spread:1.8,turb:0.4});
+  pl.rotation.y=side*Math.PI/2;
+  pl.position.x=side*0.4;
+  g.add(pl);
+  g.userData={plume:pl};
   bike.add(g);
   return g;
 }
 const yawL=yawNozzle(-1), yawR=yawNozzle(1);
+
+// זרבוביות גלגול בקצות הכנפונים
+const ROLL_X=0.95;
+function rollNozzle(side){
+  const g=new THREE.Group();
+  const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,0.22,8),matHot);
+  g.add(pipe);
+  g.position.set(side*ROLL_X,0.02,0.5);
+  const up=makePlume({len:1.0,r0:0.06,spread:1.8,turb:0.45});
+  up.rotation.x=-Math.PI/2;   // כלפי מעלה
+  up.position.y=0.12;
+  const dn=makePlume({len:1.0,r0:0.06,spread:1.8,turb:0.45});
+  dn.rotation.x=Math.PI/2;    // כלפי מטה
+  dn.position.y=-0.12;
+  g.add(up,dn);
+  g.userData={up,dn};
+  bike.add(g);
+  return g;
+}
+const rollL=rollNozzle(-1), rollR=rollNozzle(1);
 
 // שלדה, מושב, כידון
 bike.add(tube(V(-0.28,0.28,-1.1),V(-0.3,0.42,0.9),0.055,matChrome));
@@ -680,6 +1328,9 @@ seat.position.set(0,0.56,0.42); seat.rotation.x=-0.08; seat.castShadow=true;
 bike.add(seat);
 const tail=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.5,0.5),matRed);
 tail.position.set(0,0.62,0.95); tail.rotation.x=0.25; bike.add(tail);
+// מייצב אנכי — מקור היציבות הכיוונית
+const fin=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.62,0.72),matRed);
+fin.position.set(0,0.95,1.05); fin.rotation.x=0.2; fin.castShadow=true; bike.add(fin);
 
 const bars=new THREE.Group();
 const barTube=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.94,10),matChrome);
@@ -697,7 +1348,7 @@ const lampMat=new THREE.MeshBasicMaterial({color:0xfff0c0});
 const lamp=new THREE.Mesh(new THREE.CircleGeometry(0.14,14),lampMat);
 lamp.position.set(0,0.42,-1.88); lamp.rotation.y=Math.PI; bike.add(lamp);
 
-// כנפונים (מתכווננים עם ההיגוי)
+// כנפונים — הם גם המשטחים האווירודינמיים וגם נושאי זרבוביות הגלגול
 const winglets=[-1,1].map(s=>{
   const w=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.05,0.42),matRed);
   w.position.set(s*0.78,0.06,0.5); w.castShadow=true;
@@ -747,38 +1398,420 @@ rider.traverse(o=>{if(o.isMesh)o.castShadow=true;});
 const glow=new THREE.PointLight(0xff8a3c,0,26,2);
 glow.position.set(0,-0.9,0); bike.add(glow);
 
-/* ---------- חלקיקי פליטה ---------- */
-const PN=520;
-const pPos=new Float32Array(PN*3), pVel=new Float32Array(PN*3), pAge=new Float32Array(PN);
-for(let i=0;i<PN;i++){pPos[i*3+1]=-99999;pAge[i]=-1;}
-const pGeo=new THREE.BufferGeometry();
-pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
-const pMat=new THREE.PointsMaterial({
-  size:2.6, map:puffTex, transparent:true, opacity:0.34,
-  depthWrite:false, blending:THREE.AdditiveBlending, color:0xffc48a
-});
-const particles=new THREE.Points(pGeo,pMat);
-particles.frustumCulled=false;
-scene.add(particles);
-let pIdx=0;
-function emit(x,y,z,vx,vy,vz){
-  const i=pIdx=(pIdx+1)%PN;
-  pPos[i*3]=x; pPos[i*3+1]=y; pPos[i*3+2]=z;
-  pVel[i*3]=vx+rnd(-2,2); pVel[i*3+1]=vy+rnd(-1,1); pVel[i*3+2]=vz+rnd(-2,2);
-  pAge[i]=rnd(0.7,1.5);
-}
-function updateParticles(dt){
-  for(let i=0;i<PN;i++){
-    if(pAge[i]<=0){ if(pPos[i*3+1]>-9000){pPos[i*3+1]=-99999;} continue; }
-    pAge[i]-=dt;
-    pPos[i*3]+=pVel[i*3]*dt;
-    pPos[i*3+1]+=pVel[i*3+1]*dt;
-    pPos[i*3+2]+=pVel[i*3+2]*dt;
-    pVel[i*3+1]+=6*dt;
-    pVel[i*3]*=0.97; pVel[i*3+2]*=0.97;
-    if(pAge[i]<=0) pPos[i*3+1]=-99999;
+/* ============================================================
+   פיצוץ, גל הדף, רסיסים וענן פטרייה
+   ============================================================ */
+// --- רסיסים ---
+const debris=[];
+(function makeDebris(){
+  const mats=[matDark,matRed,matChrome];
+  for(let i=0;i<36;i++){
+    const t=i%3;
+    const g = t===0 ? new THREE.BoxGeometry(rnd(0.18,0.5),rnd(0.12,0.38),rnd(0.2,0.62))
+            : t===1 ? new THREE.CylinderGeometry(rnd(0.05,0.13),rnd(0.05,0.13),rnd(0.35,0.95),6)
+            :         new THREE.TetrahedronGeometry(rnd(0.2,0.46));
+    const m=new THREE.Mesh(g,mats[i%3]);
+    m.castShadow=true; m.visible=false;
+    scene.add(m);
+    debris.push({mesh:m,vel:new THREE.Vector3(),spin:new THREE.Vector3(),life:0,burn:0});
   }
-  pGeo.attributes.position.needsUpdate=true;
+})();
+
+// --- גל ההדף: כדור דק + טבעת אבק על הקרקע ---
+const shockMat=new THREE.ShaderMaterial({
+  uniforms:{uOpacity:{value:0}},
+  vertexShader:`varying vec3 vN,vV;
+    void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0);
+      vN=normalMatrix*normal; vV=-mv.xyz; gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`varying vec3 vN,vV; uniform float uOpacity;
+    void main(){
+      float f=1.0-abs(dot(normalize(vN),normalize(vV)));
+      float e=pow(f,5.0);
+      gl_FragColor=vec4(vec3(1.4,1.25,1.05)*e,e*uOpacity);
+    }`,
+  transparent:true, depthWrite:false, side:THREE.DoubleSide,
+  blending:THREE.AdditiveBlending
+});
+const shockMesh=new THREE.Mesh(new THREE.SphereGeometry(1,30,20),shockMat);
+shockMesh.visible=false; shockMesh.frustumCulled=false;
+scene.add(shockMesh);
+
+const ringGeo=new THREE.RingGeometry(0.80,1.0,84); ringGeo.rotateX(-Math.PI/2);
+const groundRingMat=new THREE.MeshBasicMaterial({
+  color:0xd8c39a, transparent:true, opacity:0, depthWrite:false,
+  blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
+const groundRing=new THREE.Mesh(ringGeo,groundRingMat);
+groundRing.visible=false;
+scene.add(groundRing);
+
+const flashLight=new THREE.PointLight(0xffd9a0,0,600,2);
+flashLight.visible=false;
+scene.add(flashLight);
+
+// --- ענן פטרייה ---
+/* המבנה הפיזיקלי: גז חם קל עולה בציפה, נוצרת אי-יציבות
+   ריילי־טיילור, והגזירה מול האוויר הסובב מגלגלת את ראש העמוד
+   לטבעת מערבולת טורואידלית. החומר עולה במרכז, מתפשט החוצה בראש
+   ויורד בהיקף. הרדיוס גדל ליניארית עם הגובה (קבוע סחיפה ≈0.3)
+   ומהירות העלייה דועכת ככל שנכנס אוויר קר. */
+const CLOUD_SLOTS=3, CLOUD_PER=460;
+const CAP_N=250, STEM_N=150, SURGE_N=60;
+const cloudPool=makeParticlePool(CLOUD_SLOTS*CLOUD_PER,false,smokeTex,1);
+const cloudP={
+  theta:new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  phi  :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  rr   :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  hu   :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  jx   :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  jy   :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  jz   :new Float32Array(CLOUD_SLOTS*CLOUD_PER),
+  sz   :new Float32Array(CLOUD_SLOTS*CLOUD_PER)
+};
+const clouds=[];   // {slot,ox,oy,oz,t,life,phiAdv,scale,steam,drift}
+let cloudSlotNext=0;
+
+function startCloud(x,y,z,scale,steam,grounded){
+  const slot=cloudSlotNext%CLOUD_SLOTS; cloudSlotNext++;
+  // מנקים את הענן הישן שישב בתא הזה
+  for(let i=clouds.length-1;i>=0;i--) if(clouds[i].slot===slot) clouds.splice(i,1);
+  const base=slot*CLOUD_PER;
+  for(let k=0;k<CLOUD_PER;k++){
+    const i=base+k;
+    cloudP.theta[i]=Math.random()*Math.PI*2;
+    cloudP.phi[i]=Math.random()*Math.PI*2;
+    cloudP.rr[i]=Math.pow(Math.random(),0.55);
+    cloudP.hu[i]=Math.pow(Math.random(),0.8);
+    cloudP.jx[i]=rnd(-1,1); cloudP.jy[i]=rnd(-1,1); cloudP.jz[i]=rnd(-1,1);
+    cloudP.sz[i]=rnd(0.6,1.5);
+    cloudPool.seed[i]=Math.random()*6.283;
+    cloudPool.rot[i]=Math.random()*6.283;
+    cloudPool.spin[i]=rnd(-0.25,0.25);
+  }
+  clouds.push({slot,ox:x,oy:y,oz:z,t:0,life:34,phiAdv:0,scale:scale||1,
+               steam:!!steam,grounded:grounded!==false,dx:0,dz:0});
+  return clouds[clouds.length-1];
+}
+
+const W0=30, TAU_RISE=1.0, ENTRAIN=0.30;
+function updateClouds(dt,wind){
+  const {pos,col,siz,alp,rot,spin}=cloudPool;
+  for(let ci=clouds.length-1;ci>=0;ci--){
+    const C=clouds[ci];
+    C.t+=dt;
+    if(C.t>C.life){
+      const b=C.slot*CLOUD_PER;
+      for(let k=0;k<CLOUD_PER;k++){ alp[b+k]=0; pos[(b+k)*3+1]=-99999; }
+      clouds.splice(ci,1); continue;
+    }
+    const t=C.t, S=C.scale;
+    // גובה ראש הענן — אינטגרל של מהירות ציפה דועכת
+    const capH=W0*TAU_RISE*Math.log(1+t/TAU_RISE)*S;
+    const R=(7.5+ENTRAIN*capH)*S;         // רדיוס ראשי של טבעת המערבולת
+    const rMin=R*0.44;                     // רדיוס משני
+    const omg=2.7/(1+t*0.5);               // קצב הסיבוב הפולואידלי
+    C.phiAdv+=omg*dt;
+    // סחיפה ברוח, חזקה יותר בגובה
+    C.dx+=wind.x*dt*0.55; C.dz+=wind.z*dt*0.55;
+    const shearX=wind.x*capH*0.010, shearZ=wind.z*capH*0.010;
+
+    const fade=1-smoothstep(C.life*0.62,C.life,t);
+    const hot=Math.max(0,1-t*0.62);
+    const age=clamp(t/C.life,0,1);
+    const base=C.slot*CLOUD_PER;
+
+    for(let k=0;k<CLOUD_PER;k++){
+      const i=base+k;
+      let x,y,z,size,a,r,g,b;
+      const puff=Math.sin(t*1.6+cloudPool.seed[i])*0.5+Math.cos(t*1.1+cloudPool.seed[i]*2.3)*0.4;
+
+      if(k<CAP_N){
+        // --- הכובע: טבעת מערבולת טורואידלית ---
+        const ph=cloudP.phi[i]-C.phiAdv;          // החומר עולה בפנים ויורד בחוץ
+        const rr=cloudP.rr[i];
+        const rad=R+Math.cos(ph)*rMin*rr;
+        const hh=capH+Math.sin(ph)*rMin*rr*0.92 - rMin*0.15;
+        x=C.ox+C.dx+shearX+Math.cos(cloudP.theta[i])*rad+cloudP.jx[i]*rMin*0.22;
+        y=C.oy+hh+cloudP.jy[i]*rMin*0.18+puff*0.6;
+        z=C.oz+C.dz+shearZ+Math.sin(cloudP.theta[i])*rad+cloudP.jz[i]*rMin*0.22;
+        size=(3.4+R*0.20)*cloudP.sz[i]*S;
+        a=0.55*fade;
+      }else if(k<CAP_N+STEM_N){
+        // --- הגזע: עמוד סוחף שנמשך מאחורי הכובע ---
+        const u=cloudP.hu[i];
+        const hh=u*capH*0.95;
+        const rs=(2.2+0.085*hh)*(0.55+0.6*cloudP.rr[i])*S;
+        const sw=cloudP.theta[i]+t*0.55*(1-u*0.6);
+        x=C.ox+C.dx+shearX*u*u+Math.cos(sw)*rs+cloudP.jx[i]*rs*0.3;
+        y=C.oy+hh+puff*0.5;
+        z=C.oz+C.dz+shearZ*u*u+Math.sin(sw)*rs+cloudP.jz[i]*rs*0.3;
+        size=(2.6+rs*0.55)*cloudP.sz[i];
+        a=0.36*fade*(0.4+0.6*(1-u));
+      }else if(C.grounded){
+        // --- סחף הבסיס: ענן שנמרח על הקרקע החוצה ---
+        const sr=(46*(1-Math.exp(-t/1.7))*(0.5+cloudP.rr[i]))*S;
+        x=C.ox+C.dx+Math.cos(cloudP.theta[i])*sr;
+        z=C.oz+C.dz+Math.sin(cloudP.theta[i])*sr;
+        y=terrainHeight(x,z)+2.5+cloudP.hu[i]*7+puff*0.8;
+        size=(6+sr*0.10)*cloudP.sz[i];
+        a=0.30*fade*(1-smoothstep(0.35,0.9,age));
+      }else{
+        // פיצוץ באוויר: במקום סחף בסיס — טבעת אדים שנשארת מאחור
+        const sr=(16+9*t)*(0.5+cloudP.rr[i])*S;
+        x=C.ox+C.dx+Math.cos(cloudP.theta[i])*sr;
+        y=C.oy-4-cloudP.hu[i]*10+puff*0.7;
+        z=C.oz+C.dz+Math.sin(cloudP.theta[i])*sr;
+        size=(3.5+sr*0.10)*cloudP.sz[i];
+        a=0.20*fade*(1-smoothstep(0.25,0.75,age));
+      }
+
+      if(C.steam){
+        // אדים מעל מים — בהיר, מתפוגג מהר
+        const w=0.72+0.22*(1-age);
+        r=w; g=w*1.02; b=w*1.05;
+        a*=0.9;
+      }else{
+        const grey=0.19+0.36*Math.pow(age,0.55);
+        const h2=hot*(k<CAP_N?1:0.55);
+        r=grey+h2*1.7; g=grey*0.93+h2*0.62; b=grey*0.86+h2*0.15;
+      }
+
+      pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+      col[i*3]=r; col[i*3+1]=g; col[i*3+2]=b;
+      siz[i]=size; alp[i]=a*smoothstep(0,0.35,t);
+      rot[i]+=spin[i]*dt;
+    }
+  }
+  cloudPool.geo.attributes.position.needsUpdate=true;
+  cloudPool.geo.attributes.aColor.needsUpdate=true;
+  cloudPool.geo.attributes.aSize.needsUpdate=true;
+  cloudPool.geo.attributes.aAlpha.needsUpdate=true;
+  cloudPool.geo.attributes.aRot.needsUpdate=true;
+}
+
+// --- כתם חריכה על הקרקע ---
+const scorches=[];
+function makeScorch(x,z,radius){
+  const N=20;
+  const g=new THREE.BufferGeometry();
+  const verts=[], idx=[], al=[];
+  verts.push(x,terrainHeight(x,z)+0.35,z); al.push(1);
+  for(let r=1;r<=N;r++){
+    const rad=radius*r/N;
+    for(let a=0;a<28;a++){
+      const th=a/28*Math.PI*2;
+      const px=x+Math.cos(th)*rad, pz=z+Math.sin(th)*rad;
+      verts.push(px,terrainHeight(px,pz)+0.35,pz);
+      al.push(Math.pow(1-r/N,0.8));
+    }
+  }
+  for(let a=0;a<28;a++) idx.push(0,1+a,1+((a+1)%28));
+  for(let r=0;r<N-1;r++){
+    const b0=1+r*28, b1=1+(r+1)*28;
+    for(let a=0;a<28;a++){
+      const an=(a+1)%28;
+      idx.push(b0+a,b1+a,b0+an, b0+an,b1+a,b1+an);
+    }
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(verts),3));
+  g.setAttribute('aA',new THREE.BufferAttribute(new Float32Array(al),1));
+  g.setIndex(idx);
+  const m=new THREE.ShaderMaterial({
+    uniforms:{uOp:{value:0}},
+    vertexShader:`attribute float aA; varying float vA;
+      void main(){ vA=aA; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`varying float vA; uniform float uOp;
+      void main(){ gl_FragColor=vec4(0.03,0.025,0.02,vA*uOp); }`,
+    transparent:true, depthWrite:false
+  });
+  const mesh=new THREE.Mesh(g,m);
+  mesh.renderOrder=1;
+  scene.add(mesh);
+  const rec={mesh,mat:m,t:0};
+  scorches.push(rec);
+  if(scorches.length>4){
+    const old=scorches.shift();
+    scene.remove(old.mesh); old.mesh.geometry.dispose(); old.mat.dispose();
+  }
+  return rec;
+}
+
+// --- אירוע פיצוץ ---
+const blasts=[];
+function detonate(x,y,z,vx,vy,vz,intoWater,energy){
+  const E=energy||1;
+  const B={x,y,z,t:0,life:7,E,water:!!intoWater};
+  blasts.push(B);
+  if(blasts.length>3) blasts.shift();
+
+  // הבזק ראשוני
+  flashLight.visible=true;
+  flashLight.position.set(x,y+2,z);
+  flashLight.intensity=2600*E;
+  flashLight.color.setRGB(1,0.86,0.62);
+  flashScreen=1.0;
+
+  // כדור האש: פליטה מהירה לכל הכיוונים
+  const NF=intoWater?60:150;
+  for(let i=0;i<NF;i++){
+    const th=Math.random()*Math.PI*2;
+    const ph=Math.acos(rnd(-0.35,1));       // מוטה כלפי מעלה
+    const sp=rnd(9,46)*E;
+    const dx=Math.sin(ph)*Math.cos(th), dy=Math.cos(ph), dz=Math.sin(ph)*Math.sin(th);
+    if(intoWater){
+      spawn(smokeP,x+dx*2,y+dy*2,z+dz*2, dx*sp*0.7+vx*0.2, Math.abs(dy)*sp*1.1+6, dz*sp*0.7+vz*0.2,
+        rnd(1.5,4), 3.2, rnd(1.4,2.8), 0.9,0.94,0.98, 0.7, 3.5, 0.55, 0);
+    }else{
+      spawn(fireP,x+dx*2,y+dy*2,z+dz*2, dx*sp+vx*0.25, dy*sp+4+vy*0.25, dz*sp+vz*0.25,
+        rnd(2.2,6.5)*E, 2.6, rnd(0.5,1.25), 3,1.6,0.6, 1, 9, 1.5, 1);
+    }
+  }
+  // ניצוצות
+  for(let i=0;i<(intoWater?0:70);i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(rnd(-0.6,1));
+    const sp=rnd(28,95);
+    spawn(fireP,x,y,z,
+      Math.sin(ph)*Math.cos(th)*sp, Math.cos(ph)*sp+8, Math.sin(ph)*Math.sin(th)*sp,
+      rnd(0.25,0.8), -0.4, rnd(0.7,1.9), 3,1.9,0.9, 1, -2, 0.5, 1);
+  }
+  // עשן ראשוני סביב כדור האש
+  for(let i=0;i<(intoWater?70:110);i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(rnd(-1,1));
+    const sp=rnd(5,26);
+    spawn(smokeP,x,y,z,
+      Math.sin(ph)*Math.cos(th)*sp, Math.cos(ph)*sp+7, Math.sin(ph)*Math.sin(th)*sp,
+      rnd(2.5,6.5), 3.4, rnd(2.2,4.6),
+      0.5,0.44,0.4, 0.6, 5.5, 0.9, 2);
+  }
+  // אבק שנעקר מהקרקע — רק אם הפיצוץ באמת נגע באדמה
+  const agl=y-terrainHeight(x,z);
+  const nearGround=agl<14;
+  if(!intoWater && nearGround){
+    for(let i=0;i<120;i++){
+      const th=Math.random()*Math.PI*2;
+      const sp=rnd(14,52);
+      spawn(smokeP,x+Math.cos(th)*3,y-0.5,z+Math.sin(th)*3,
+        Math.cos(th)*sp, rnd(1,7), Math.sin(th)*sp,
+        rnd(2,5.5), 4.0, rnd(1.6,3.4), 0.55,0.49,0.4, 0.5, 1.2, 0.8, 3);
+    }
+    makeScorch(x,z,15*E);
+  }
+  // רסיסים
+  const nd=intoWater?10:26;
+  for(let i=0;i<nd;i++){
+    const d=debris[(i*7+((Math.random()*36)|0))%debris.length];
+    const th=Math.random()*Math.PI*2, ph=Math.acos(rnd(-0.2,1));
+    const sp=rnd(16,52)*E;
+    d.vel.set(Math.sin(ph)*Math.cos(th)*sp+vx*0.4, Math.cos(ph)*sp+rnd(4,20)+vy*0.4,
+              Math.sin(ph)*Math.sin(th)*sp+vz*0.4);
+    d.spin.set(rnd(-14,14),rnd(-14,14),rnd(-14,14));
+    d.mesh.position.set(x,y,z);
+    d.mesh.visible=true;
+    d.life=rnd(4.5,8);
+    d.burn=intoWater?0:rnd(1.2,3.2);
+  }
+  // ענן הפטרייה עולה מיד אחרי כדור האש; פיצוץ באוויר אינו יוצר
+  // סחף בסיס על הקרקע, ולכן העמוד שלו קצר יותר
+  startCloud(x,y+(intoWater?1:3),z, intoWater?0.75:1.0, intoWater, nearGround);
+
+  // גל ההדף
+  shockMesh.visible=true;
+  shockMesh.position.set(x,y,z);
+  groundRing.visible=!intoWater;
+  groundRing.position.set(x,0,z);
+
+  // האור מגיע מיד, הקול מפגר במרחק חלקי מהירות הקול
+  boom(Math.min(camera.position.distanceTo(V(x,y,z))/343,3.0), clamp(E,0.5,1.4));
+  shakeAmp=Math.max(shakeAmp,1.6*E);
+}
+
+let flashScreen=0, shakeAmp=0;
+function updateBlasts(dt){
+  // הבזק המסך והאור
+  flashScreen*=Math.exp(-9*dt);
+  if(flashLight.visible){
+    flashLight.intensity*=Math.exp(-7.5*dt);
+    if(flashLight.intensity<3) flashLight.visible=false;
+  }
+  compMat.uniforms.uFlash.value.setScalar(flashScreen*0.9);
+
+  let shockSet=false;
+  for(let i=blasts.length-1;i>=0;i--){
+    const B=blasts[i];
+    B.t+=dt;
+    if(B.t>B.life){ blasts.splice(i,1); continue; }
+    const t=B.t;
+    // התפשטות טיילור־סדוב:  R ∝ t^(2/5)
+    const R=Math.min(26*B.E*Math.pow(Math.max(t,0.001),0.4),150*B.E);
+    if(i===blasts.length-1){
+      shockMesh.position.set(B.x,B.y,B.z);
+      shockMesh.scale.setScalar(R);
+      shockMat.uniforms.uOpacity.value=Math.max(0,1-t/0.85)*0.9;
+      shockMesh.visible=t<0.85;
+      if(!B.water){
+        groundRing.position.set(B.x,terrainHeight(B.x,B.z)+1.2,B.z);
+        groundRing.scale.set(R*1.35,1,R*1.35);
+        groundRingMat.opacity=Math.max(0,1-t/1.5)*0.55;
+        groundRing.visible=t<1.5;
+      }
+      // מקור עיוות לגל ההדף במסך
+      if(t<0.9){
+        const p=_proj.copy(V(B.x,B.y,B.z)).project(camera);
+        if(p.z<1){
+          const dist=camera.position.distanceTo(V(B.x,B.y,B.z));
+          const rUv=R/Math.max(dist*Math.tan(camera.fov*Math.PI/360),0.001)*0.5;
+          compMat.uniforms.uShock.value.set(p.x*0.5+0.5,p.y*0.5+0.5,rUv,(1-t/0.9)*0.9);
+          shockSet=true;
+        }
+      }
+    }
+    // המשך פליטת עשן חם מהמוקד בשניות הראשונות
+    if(t<1.3 && !B.water && Math.random()<0.7){
+      spawn(smokeP,B.x+rnd(-4,4),B.y+rnd(-1,5),B.z+rnd(-4,4),
+        rnd(-6,6),rnd(6,17),rnd(-6,6),
+        rnd(3,7),3.0,rnd(2.4,4.5),0.45,0.4,0.36,0.6,6.5,0.8,2);
+    }
+  }
+  if(!shockSet) compMat.uniforms.uShock.value.w=0;
+  if(blasts.length===0){ shockMesh.visible=false; groundRing.visible=false; }
+
+  // רסיסים
+  for(let i=0;i<debris.length;i++){
+    const d=debris[i];
+    if(d.life<=0) continue;
+    d.life-=dt;
+    if(d.life<=0){ d.mesh.visible=false; continue; }
+    const v=d.vel;
+    const sp=v.length();
+    const k=0.5*atmo.rho*0.9*0.09/2.2;   // ½ρ·Cd·A/m
+    v.addScaledVector(v,-k*sp*dt);
+    v.y-=GRAV*dt;
+    d.mesh.position.addScaledVector(v,dt);
+    _dq.setFromEuler(new THREE.Euler(d.spin.x*dt,d.spin.y*dt,d.spin.z*dt));
+    d.mesh.quaternion.multiply(_dq).normalize();
+    const gh=terrainHeight(d.mesh.position.x,d.mesh.position.z);
+    if(d.mesh.position.y<gh+0.2){
+      d.mesh.position.y=gh+0.2;
+      if(v.y<0){ v.y*=-0.32; v.x*=0.55; v.z*=0.55; d.spin.multiplyScalar(0.5); }
+      d.burn*=0.4;
+    }
+    if(d.burn>0){
+      d.burn-=dt;
+      if(Math.random()<0.75){
+        spawn(smokeP,d.mesh.position.x,d.mesh.position.y,d.mesh.position.z,
+          rnd(-1.5,1.5),rnd(0.5,3),rnd(-1.5,1.5),
+          rnd(0.5,1.4),4.5,rnd(0.9,2.0),0.32,0.29,0.27,0.5,2.2,1.1,2);
+      }
+      if(Math.random()<0.4){
+        spawn(fireP,d.mesh.position.x,d.mesh.position.y,d.mesh.position.z,
+          rnd(-2,2),rnd(0,3),rnd(-2,2),rnd(0.3,0.9),1.2,rnd(0.15,0.4),3,1.5,0.6,1,3,2,1);
+      }
+    }
+  }
+  // כתמי חריכה נצרבים בהדרגה
+  for(const s of scorches){
+    s.t+=dt;
+    s.mat.uniforms.uOp.value=Math.min(0.82,s.t*2.4);
+  }
 }
 
 /* ============================================================
@@ -788,7 +1821,7 @@ const RINGR=21;
 const ringMatIdle=new THREE.MeshStandardMaterial({color:0x2b6f78,emissive:0x0e3b42,
   emissiveIntensity:1,metalness:0.6,roughness:0.35});
 const ringMatNext=new THREE.MeshStandardMaterial({color:0xffb454,emissive:0xff8a1e,
-  emissiveIntensity:1.6,metalness:0.4,roughness:0.3});
+  emissiveIntensity:2.4,metalness:0.4,roughness:0.3});
 const ringMatDone=new THREE.MeshStandardMaterial({color:0x2a3a3e,emissive:0x000000,
   metalness:0.5,roughness:0.7,transparent:true,opacity:0.35});
 
@@ -820,7 +1853,7 @@ function refreshRings(){
 refreshRings();
 
 /* ============================================================
-   שמע סילוני
+   שמע
    ============================================================ */
 const audio={ctx:null,on:true,ready:false};
 function initAudio(){
@@ -828,30 +1861,71 @@ function initAudio(){
   const AC=window.AudioContext||window.webkitAudioContext;
   if(!AC) return;
   const ctx=new AC(); audio.ctx=ctx;
+
+  const master=ctx.createGain(); master.gain.value=1; master.connect(ctx.destination);
+  audio.master=master;
+
   const len=ctx.sampleRate*2;
   const buf=ctx.createBuffer(1,len,ctx.sampleRate);
   const d=buf.getChannelData(0);
   for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  audio.noiseBuf=buf;
+
+  // רעש הסילון
   const noise=ctx.createBufferSource(); noise.buffer=buf; noise.loop=true;
   const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=700; bp.Q.value=0.9;
   const ng=ctx.createGain(); ng.gain.value=0;
-  noise.connect(bp).connect(ng).connect(ctx.destination); noise.start();
+  noise.connect(bp).connect(ng).connect(master); noise.start();
 
+  // שריקת המדחס
   const osc=ctx.createOscillator(); osc.type='sawtooth'; osc.frequency.value=180;
   const og=ctx.createGain(); og.gain.value=0;
   const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2200;
-  osc.connect(lp).connect(og).connect(ctx.destination); osc.start();
+  osc.connect(lp).connect(og).connect(master); osc.start();
 
-  audio.bp=bp; audio.ng=ng; audio.osc=osc; audio.og=og; audio.ready=true;
+  // רעש זרימת אוויר סביב הרוכב
+  const wn=ctx.createBufferSource(); wn.buffer=buf; wn.loop=true;
+  const wf=ctx.createBiquadFilter(); wf.type='bandpass'; wf.frequency.value=420; wf.Q.value=0.55;
+  const wg=ctx.createGain(); wg.gain.value=0;
+  wn.connect(wf).connect(wg).connect(master); wn.start();
+
+  audio.bp=bp; audio.ng=ng; audio.osc=osc; audio.og=og;
+  audio.wf=wf; audio.wg=wg; audio.ready=true;
 }
-function updateAudio(power,boost,speed){
+function updateAudio(n1,boost,airspeed,stall){
   if(!audio.ready) return;
   const t=audio.ctx.currentTime;
   const g=audio.on?1:0;
-  audio.bp.frequency.setTargetAtTime(400+power*2200+boost*1400,t,0.08);
-  audio.ng.gain.setTargetAtTime(g*(0.02+power*0.16+boost*0.14+speed*0.0009),t,0.1);
-  audio.osc.frequency.setTargetAtTime(150+power*760+boost*380,t,0.1);
-  audio.og.gain.setTargetAtTime(g*(0.006+power*0.032),t,0.12);
+  audio.bp.frequency.setTargetAtTime(400+n1*2200+boost*1400,t,0.08);
+  audio.ng.gain.setTargetAtTime(g*(0.02+n1*0.16+boost*0.14),t,0.1);
+  audio.osc.frequency.setTargetAtTime(150+n1*760+boost*380,t,0.1);
+  audio.og.gain.setTargetAtTime(g*(0.006+n1*0.032),t,0.12);
+  const w=clamp(airspeed/95,0,1);
+  audio.wf.frequency.setTargetAtTime(300+airspeed*7,t,0.15);
+  audio.wg.gain.setTargetAtTime(g*(w*w*0.16+stall*0.11),t,0.12);
+}
+function boom(delay,mag){
+  if(!audio.ready||!audio.on) return;
+  const ctx=audio.ctx, t0=ctx.currentTime+Math.max(delay,0);
+  const src=ctx.createBufferSource(); src.buffer=audio.noiseBuf; src.loop=true;
+  const lp=ctx.createBiquadFilter(); lp.type='lowpass';
+  lp.frequency.setValueAtTime(2200*mag,t0);
+  lp.frequency.exponentialRampToValueAtTime(80,t0+2.4);
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.75*mag,t0+0.035);
+  g.gain.exponentialRampToValueAtTime(0.0008,t0+2.8);
+  src.connect(lp).connect(g).connect(audio.master);
+  src.start(t0); src.stop(t0+3.0);
+
+  const o=ctx.createOscillator(); o.type='sine';
+  o.frequency.setValueAtTime(90,t0);
+  o.frequency.exponentialRampToValueAtTime(22,t0+1.0);
+  const og=ctx.createGain();
+  og.gain.setValueAtTime(0.0001,t0);
+  og.gain.exponentialRampToValueAtTime(0.6*mag,t0+0.02);
+  og.gain.exponentialRampToValueAtTime(0.0005,t0+1.4);
+  o.connect(og).connect(audio.master); o.start(t0); o.stop(t0+1.5);
 }
 
 /* ============================================================
@@ -866,6 +1940,7 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyM'){ audio.on=!audio.on; setTag('sSound',audio.on); }
   if(e.code==='KeyP'){ paused=!paused; toast(paused?'השהיה':'',paused?9:0.01); }
   if(e.code==='KeyI'){ invertPitch=!invertPitch; toast(invertPitch?'ציר חרטום הפוך':'ציר חרטום רגיל',1.2); }
+  if(e.code==='KeyO'){ post.bloom=!post.bloom; toast(post.bloom?'אפקטים מלאים':'אפקטים מופחתים',1.2); }
   if(e.code==='Space'){ stabilizer=!stabilizer; setTag('sStab',stabilizer); }
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -901,11 +1976,45 @@ if(isTouch){
 }
 
 /* ============================================================
-   פיזיקה
+   פיזיקה — גוף קשיח מלא
+   ------------------------------------------------------------
+   מצב: מיקום ומהירות בעולם, קווטרניון, ומהירות זוויתית ω
+   בצירי הגוף. הסיבוב נפתר ממשוואות אוילר של גוף קשיח:
+
+        I·ω̇  +  ω × (I·ω + L_rotor)  +  dL_rotor/dt  =  τ
+
+   האיבר  ω × Iω  הוא בדיוק שימור התנע הזוויתי: הוא יוצר צימוד
+   בין הצירים (סיבוב סביב ציר הביניים אינו יציב — אפקט
+   ג׳ניבקוב), והאיבר  ω × L_rotor  הוא הפרצסיה הגירוסקופית של
+   רוטור המנוע — משיכת אף מייצרת סטייה בסרן.
    ============================================================ */
-const GRAV=13.0, LIFT_MAX=34, BOOST_ACC=42;
-const DRAG_F=0.0055, DRAG_S=0.075, DRAG_U=0.055;
-const PITCH_RATE=1.45, ROLL_RATE=2.4, YAW_RATE=0.95, BANK_TURN=0.95;
+const GRAV=9.81;
+const MASS=420;
+const Ixx=250, Iyy=300, Izz=118;    // גלגול הוא הקל, סרן הכבד
+
+const T_MAX=13000;                  // דחף ליבה מלא בגובה פני הים (N)
+const T_AB=6200;                    // מבער אחורי
+const LIFT_SHARE=0.90, AFT_SHARE=0.10;  // פיצול זרימת הליבה בין הזרבוביות
+const L_ROTOR_MAX=115;              // תנע זוויתי של רוטור המנוע
+const SPOOL_UP=1/0.95, SPOOL_DN=1/1.45;
+
+const S_REF=2.2, SPAN=1.9, CHORD=1.55;
+const AR=SPAN*SPAN/S_REF;
+const CLA=2.25, A_STALL=0.28, CD0=0.33, OSW=0.72;
+const S_SIDE=1.5, CYB=1.15;
+const CLP=0.55;
+const CM_ELEV=0.32, CL_AIL=0.115, CN_RUD=0.085;
+const R_COP=V(0,0.10,0.45);         // מרכז לחץ — מאחורי ומעל מרכז המסה
+const RCS_ROLL=430, RCS_YAW=620, PITCH_DIFF=0.22;
+const VEC_MIN=0, VEC_MAX=1.745;     // 0°–100°  (מעל 90° = דחף בלימה)
+const VEC_HOVER=1.5359;             // 88° — הזווית שממנה מתחילים
+const THRUST_Y=-0.16;               // קו הדחף מעט מתחת למרכז המסה
+
+const SKIDS=[V(-0.5,-0.95,-0.9),V(0.5,-0.95,-0.9),V(-0.5,-0.95,1.0),V(0.5,-0.95,1.0)];
+const HULL =[V(0,0.42,-1.85),V(0,0.5,-0.4),V(0,1.39,0.0),
+             V(-0.95,0.06,0.5),V(0.95,0.06,0.5),V(0,0.62,0.95)];
+const K_CONTACT=52000, C_CONTACT=5200, MU=0.62;
+const CRASH_VN=11.5;
 
 const START=new THREE.Vector3(-2100,0,0);
 START.y=terrainHeight(START.x,START.z)+3;
@@ -913,14 +2022,46 @@ START.y=terrainHeight(START.x,START.z)+3;
 const pos=START.clone();
 const vel=new THREE.Vector3();
 const quat=new THREE.Quaternion();
-let power=0, boostFuel=1, boosting=false;
-let pitchIn=0, rollIn=0, yawIn=0;
+const omega=new THREE.Vector3();     // בצירי הגוף
+let power=0, n1=0, boostFuel=1, boosting=false, vecAng=VEC_HOVER;
 let stabilizer=true, invertPitch=false, paused=false;
-let onGround=true, crashTimer=0, started=false;
+let onGround=true, crashed=false, crashTimer=0, started=false;
 
-const up=new THREE.Vector3(), fwd=new THREE.Vector3(), right=new THREE.Vector3();
-const tmpV=new THREE.Vector3(), tmpQ=new THREE.Quaternion();
+// גדלים שנמדדים לתצוגה
+let AoA=0, sideslip=0, airspeed=0, qbar=0, gLoad=1, vSpeed=0, machNo=0;
+let stallAmt=0, clearance=99, groundY=0;
+
+const ex=new THREE.Vector3(1,0,0), ey=new THREE.Vector3(0,1,0), ez=new THREE.Vector3(0,0,1);
+const Fw=new THREE.Vector3(), Tb=new THREE.Vector3();
+const wind=new THREE.Vector3(), gN=new THREE.Vector3(0,1,0);
+const cmd=new THREE.Vector3();       // דרישות הבקרה: x=חרטום, y=סרן, z=גלגול
+const _v1=new THREE.Vector3(), _v2=new THREE.Vector3(), _v3=new THREE.Vector3();
+const _dq=new THREE.Quaternion(), _proj=new THREE.Vector3();
 const WORLD_UP=new THREE.Vector3(0,1,0);
+const prevPos=pos.clone();
+let specForce=new THREE.Vector3();
+
+function addBodyForce(fx,fy,fz,rx,ry,rz){
+  Tb.x+=ry*fz-rz*fy;
+  Tb.y+=rz*fx-rx*fz;
+  Tb.z+=rx*fy-ry*fx;
+  Fw.x+=ex.x*fx+ey.x*fy+ez.x*fz;
+  Fw.y+=ex.y*fx+ey.y*fy+ez.y*fz;
+  Fw.z+=ex.z*fx+ey.z*fy+ez.z*fz;
+}
+function addWorldForceAt(fx,fy,fz,rBody){
+  Fw.x+=fx; Fw.y+=fy; Fw.z+=fz;
+  const bx=fx*ex.x+fy*ex.y+fz*ex.z;
+  const by=fx*ey.x+fy*ey.y+fz*ey.z;
+  const bz=fx*ez.x+fy*ez.y+fz*ez.z;
+  Tb.x+=rBody.y*bz-rBody.z*by;
+  Tb.y+=rBody.z*bx-rBody.x*bz;
+  Tb.z+=rBody.x*by-rBody.y*bx;
+}
+let gPx=0, gPz=0;         // נקודת העיגון של המישור המשיק
+function groundAt(x,z){   // מישור משיק מקומי — זול ומדויק דיו במגע
+  return groundY-((x-gPx)*gN.x+(z-gPz)*gN.z)/Math.max(gN.y,0.2);
+}
 
 function respawn(manual){
   pos.copy(START); pos.y=terrainHeight(START.x,START.z)+3;
@@ -928,13 +2069,219 @@ function respawn(manual){
     const r=rings[Math.max(0,ringIdx-1)];
     pos.copy(r.position); pos.y+=6;
   }
-  vel.set(0,0,0);
+  vel.set(0,0,0); omega.set(0,0,0);
   quat.identity();
-  power=0; onGround=true; crashTimer=0;
+  power=0.62; n1=0.55; vecAng=VEC_HOVER;
+  onGround=false; crashed=false; crashTimer=0;
+  bike.visible=true;
+  prevPos.copy(pos);
 }
 
-function step(dt){
-  // --- קלט ---
+let crashLock=0;
+function crash(reason){
+  if(crashed||crashLock>0) return;
+  crashed=true; crashTimer=7.0; crashLock=1;
+  const overWater=lakeMask(pos.x,pos.z)>0.15 && pos.y<WATER_Y+6;
+  const E=clamp(0.75+vel.length()/70,0.7,1.5);
+  detonate(pos.x,pos.y,pos.z,vel.x,vel.y,vel.z,overWater,E);
+  bike.visible=false;
+  toast(overWater?'נחיתת מים':'התרסקות',2.0);
+  vel.set(0,0,0); omega.set(0,0,0);
+  crashCamSetup();
+}
+
+/* --- שלב פיזיקלי אחד (תת-צעד קבוע) --- */
+function physStep(h){
+  ex.set(1,0,0).applyQuaternion(quat);
+  ey.set(0,1,0).applyQuaternion(quat);
+  ez.set(0,0,1).applyQuaternion(quat);
+
+  Fw.set(0,-MASS*GRAV,0);
+  Tb.set(0,0,0);
+
+  /* ---- זרימת אוויר יחסית במרכז הלחץ ---- */
+  // מהירות הנקודה = מהירות מרכז המסה + ω × r
+  _v1.set(R_COP.x,R_COP.y,R_COP.z);
+  const rwx=ex.x*_v1.x+ey.x*_v1.y+ez.x*_v1.z;
+  const rwy=ex.y*_v1.x+ey.y*_v1.y+ez.y*_v1.z;
+  const rwz=ex.z*_v1.x+ey.z*_v1.y+ez.z*_v1.z;
+  // ω בצירי עולם
+  const owx=ex.x*omega.x+ey.x*omega.y+ez.x*omega.z;
+  const owy=ex.y*omega.x+ey.y*omega.y+ez.y*omega.z;
+  const owz=ex.z*omega.x+ey.z*omega.y+ez.z*omega.z;
+  const vcx=vel.x-wind.x+(owy*rwz-owz*rwy);
+  const vcy=vel.y-wind.y+(owz*rwx-owx*rwz);
+  const vcz=vel.z-wind.z+(owx*rwy-owy*rwx);
+  // לצירי הגוף
+  const vbx=vcx*ex.x+vcy*ex.y+vcz*ex.z;
+  const vby=vcx*ey.x+vcy*ey.y+vcz*ey.z;
+  const vbz=vcx*ez.x+vcy*ez.y+vcz*ez.z;
+  const Vt=Math.sqrt(vbx*vbx+vby*vby+vbz*vbz);
+
+  const u=-vbz;                       // מהירות קדימה
+  const alpha=Math.atan2(-vby,u);     // זווית התקפה
+  const beta=Vt>0.3?Math.asin(clamp(vbx/Vt,-1,1)):0;
+  qbar=0.5*atmo.rho*Vt*Vt;
+  AoA=alpha; sideslip=beta; airspeed=Vt;
+
+  if(Vt>0.6){
+    /* מודל הזדקרות: אזור ליניארי מעורבב עם לוח שטוח אחרי ההזדקרות
+       (Viterna / flat-plate) — CL = 2·sinα·cosα ,  CD = 2·sin²α */
+    const sig=smoothstep(A_STALL,A_STALL+0.20,Math.abs(alpha));
+    stallAmt=sig;
+    const CLlin=CLA*alpha;
+    const CL=(1-sig)*CLlin+sig*2*Math.sin(alpha)*Math.cos(alpha)*0.95;
+    const CDi=(1-sig)*CLlin*CLlin/(Math.PI*OSW*AR);
+    const sa=Math.sin(alpha);
+    const CD=CD0+CDi+sig*2*sa*sa;
+    const sigB=smoothstep(0.32,0.62,Math.abs(beta));
+    const CY=-((1-sigB)*CYB*beta+sigB*Math.sin(2*beta)*0.95);
+
+    const inv=1/Vt;
+    const hx=vbx*inv, hy=vby*inv, hz=vbz*inv;   // כיוון הזרימה בצירי הגוף
+    // כיוון העילוי: מאונך לזרימה, במישור שמכיל את ציר ה"מעלה" של הגוף
+    let lx=-hx*hy, ly=1-hy*hy, lz=-hz*hy;
+    let ln=Math.sqrt(lx*lx+ly*ly+lz*lz);
+    if(ln<1e-4){ lx=0; ly=1; lz=0; ln=1; }
+    lx/=ln; ly/=ln; lz/=ln;
+    // כיוון כוח הצד: מאונך לזרימה, במישור שמכיל את ציר הרוחב
+    let sx=1-hx*hx, sy=-hy*hx, sz=-hz*hx;
+    let sn=Math.sqrt(sx*sx+sy*sy+sz*sz);
+    if(sn<1e-4){ sx=1; sy=0; sz=0; sn=1; }
+    sx/=sn; sy/=sn; sz/=sn;
+
+    const L=qbar*S_REF*CL, D=qbar*S_REF*CD, Y=qbar*S_SIDE*CY;
+    const fx=lx*L-hx*D+sx*Y;
+    const fy=ly*L-hy*D+sy*Y;
+    const fz=lz*L-hz*D+sz*Y;
+    addBodyForce(fx,fy,fz,R_COP.x,R_COP.y,R_COP.z);
+
+    // ריסון גלגול — מפרש הכנף לאורך המוט, לא נלכד בנקודת לחץ יחידה
+    Tb.z-=CLP*qbar*S_REF*SPAN*SPAN*omega.z/(2*Math.max(Vt,6));
+  }else{
+    stallAmt=0;
+  }
+
+  /* ---- הנעה ----
+     זרימת הליבה מתחלקת בין שתי הזרבוביות המוסטות (שמסתובבות
+     בזווית vecAng: 90° = מטה לריחוף, 0° = לאחור לטיסת כנף)
+     לבין זוג זרבוביות אחוריות קבועות. המבער האחורי מוסיף דחף
+     טהור לאחור. הכוח מופעל בנקודות האמיתיות, ולכן המומנטים
+     נובעים מעצמם — כולל משיכת אף כשהדחף עובר מתחת למרכז המסה. */
+  const thrustFrac=n1*n1*0.85+n1*0.15;
+  const Tcore=thrustFrac*T_MAX*Math.pow(atmo.ratio,0.85);
+  const sN=Math.sin(vecAng), cN=Math.cos(vecAng);
+  // אפקט קרקע: הסילון נבלם מול הקרקע ומייצר כרית לחץ
+  const ge=1+0.32*Math.exp(-Math.max(clearance,0)/2.4)*Math.max(sN,0);
+  const Tvec=Tcore*LIFT_SHARE*ge;
+  const aftT=Tcore*AFT_SHARE+(boosting?T_AB*atmo.ratio:0);
+
+  // חלוקה קדמית/אחורית משוקללת כך שבפיקוד אפס המומנט מתאפס
+  const dF=clamp(cmd.x,-1,1)*PITCH_DIFF;
+  const wF=0.5078+dF, wR=0.4922-dF;
+  addBodyForce(0,Tvec*sN*wF,-Tvec*cN*wF, 0,THRUST_Y,NOZ_F_Z);
+  addBodyForce(0,Tvec*sN*wR,-Tvec*cN*wR, 0,THRUST_Y,NOZ_R_Z);
+  addBodyForce(0,0,-aftT*0.5, -THR_X,THR_Y,THR_Z);
+  addBodyForce(0,0,-aftT*0.5,  THR_X,THR_Y,THR_Z);
+
+  // בקרת תנוחה בסילון — עוצמתה תלויה בהספק המנוע (אוויר דחוס)
+  const auth=0.25+0.75*n1;
+  const fRoll=cmd.z*RCS_ROLL*auth;
+  addBodyForce(0, fRoll,0,  ROLL_X,0.02,0.5);
+  addBodyForce(0,-fRoll,0, -ROLL_X,0.02,0.5);
+  const fYaw=cmd.y*RCS_YAW*auth;
+  addBodyForce(fYaw,0,0, 0,0.05,YAW_Z);
+
+  // משטחי היגוי אווירודינמיים — עוצמתם תלויה בלחץ הדינמי
+  const qS=qbar*S_REF;
+  Tb.x+=cmd.x*CM_ELEV*qS*CHORD;
+  Tb.z+=cmd.z*CL_AIL *qS*SPAN;
+  Tb.y-=cmd.y*CN_RUD *qS*SPAN;
+
+  /* ---- מגע עם הקרקע: קפיץ־בולם בארבע נקודות ---- */
+  let touching=false;
+  if(pos.y-groundY<7){
+    const overWater=lakeMask(pos.x,pos.z)>0.15;
+    for(let i=0;i<SKIDS.length;i++){
+      const r=SKIDS[i];
+      const px=pos.x+ex.x*r.x+ey.x*r.y+ez.x*r.z;
+      const py=pos.y+ex.y*r.x+ey.y*r.y+ez.y*r.z;
+      const pz=pos.z+ex.z*r.x+ey.z*r.y+ez.z*r.z;
+      const sy=overWater?Math.max(WATER_Y,groundAt(px,pz)):groundAt(px,pz);
+      const pen=sy-py;
+      if(pen<=0) continue;
+      touching=true;
+      const nx=overWater?0:gN.x, ny=overWater?1:gN.y, nz=overWater?0:gN.z;
+      // מהירות הנקודה
+      const orx=px-pos.x, ory=py-pos.y, orz=pz-pos.z;
+      const pvx=vel.x+(owy*orz-owz*ory);
+      const pvy=vel.y+(owz*orx-owx*orz);
+      const pvz=vel.z+(owx*ory-owy*orx);
+      const vn=pvx*nx+pvy*ny+pvz*nz;
+      if(vn<-CRASH_VN){ crash('impact'); return; }
+      const kk=overWater?K_CONTACT*0.35:K_CONTACT;
+      const cc=overWater?C_CONTACT*2.2:C_CONTACT;
+      let Fn=kk*Math.min(pen,1.2)-cc*vn;
+      if(Fn<0) Fn=0;
+      if(Fn>MASS*GRAV*14) Fn=MASS*GRAV*14;
+      // חיכוך: מנוגד למהירות המשיקית, חסום בחוק קולומב
+      const tvx=pvx-nx*vn, tvy=pvy-ny*vn, tvz=pvz-nz*vn;
+      const ts=Math.sqrt(tvx*tvx+tvy*tvy+tvz*tvz);
+      let ffx=0,ffy=0,ffz=0;
+      if(ts>0.01){
+        const mag=Math.min(MU*Fn, ts*MASS*3.0);
+        ffx=-tvx/ts*mag; ffy=-tvy/ts*mag; ffz=-tvz/ts*mag;
+      }
+      addWorldForceAt(nx*Fn+ffx, ny*Fn+ffy, nz*Fn+ffz, r);
+    }
+    // מגע של הגוף עצמו = התרסקות
+    for(let i=0;i<HULL.length;i++){
+      const r=HULL[i];
+      const px=pos.x+ex.x*r.x+ey.x*r.y+ez.x*r.z;
+      const py=pos.y+ex.y*r.x+ey.y*r.y+ez.y*r.z;
+      const pz=pos.z+ex.z*r.x+ey.z*r.y+ez.z*r.z;
+      const sy=overWater?Math.max(WATER_Y,groundAt(px,pz)):groundAt(px,pz);
+      if(py<sy){ crash('hull'); return; }
+    }
+  }
+  onGround=touching;
+
+  /* ---- אינטגרציה ---- */
+  specForce.set(Fw.x,Fw.y+MASS*GRAV,Fw.z).multiplyScalar(1/MASS);
+
+  // משוואות אוילר עם תנע זוויתי של הרוטור
+  const Lrot=L_ROTOR_MAX*n1;
+  const Hx=Ixx*omega.x, Hy=Iyy*omega.y, Hz=Izz*omega.z+Lrot;
+  const gx=omega.y*Hz-omega.z*Hy;
+  const gy=omega.z*Hx-omega.x*Hz;
+  const gz=omega.x*Hy-omega.y*Hx;
+  const dLrot=(Lrot-lastLrot)/h; lastLrot=Lrot;
+  omega.x+=(Tb.x-gx)/Ixx*h;
+  omega.y+=(Tb.y-gy)/Iyy*h;
+  omega.z+=(Tb.z-gz-dLrot)/Izz*h;
+  // חסם בטיחות מספרי
+  const om=omega.length();
+  if(om>18) omega.multiplyScalar(18/om);
+
+  // q̇ = ½·q⊗(0,ω)
+  const qx=quat.x,qy=quat.y,qz=quat.z,qw=quat.w;
+  const hx2=0.5*h;
+  quat.set(
+    qx+hx2*( qw*omega.x+qy*omega.z-qz*omega.y),
+    qy+hx2*( qw*omega.y+qz*omega.x-qx*omega.z),
+    qz+hx2*( qw*omega.z+qx*omega.y-qy*omega.x),
+    qw+hx2*(-qx*omega.x-qy*omega.y-qz*omega.z)
+  ).normalize();
+
+  vel.x+=Fw.x/MASS*h;
+  vel.y+=Fw.y/MASS*h;
+  vel.z+=Fw.z/MASS*h;
+  pos.x+=vel.x*h; pos.y+=vel.y*h; pos.z+=vel.z*h;
+}
+let lastLrot=0;
+
+/* --- שלב הבקרה והלוגיקה, פעם אחת למסגרת --- */
+function control(dt,t){
   const kUp=keys['ArrowUp']||false, kDn=keys['ArrowDown']||false;
   let pIn=(kUp?1:0)-(kDn?1:0);
   if(isTouch) pIn+=touchPitch;
@@ -944,165 +2291,164 @@ function step(dt){
   let rIn=((keys['ArrowRight']?1:0)-(keys['ArrowLeft']?1:0));
   if(isTouch) rIn+=touchRoll;
   rIn=clamp(rIn,-1,1);
-
   const yIn=clamp((keys['KeyD']?1:0)-(keys['KeyA']?1:0),-1,1);
 
-  pitchIn=lerp(pitchIn,pIn,1-Math.exp(-9*dt));
-  rollIn =lerp(rollIn ,rIn,1-Math.exp(-9*dt));
-  yawIn  =lerp(yawIn  ,yIn,1-Math.exp(-7*dt));
-
-  const wantUp=(keys['KeyW']||touchUp), wantDn=(keys['KeyS']||touchDown);
-  if(wantUp) power=clamp(power+0.75*dt,0,1);
-  if(wantDn) power=clamp(power-0.85*dt,0,1);
+  if(keys['KeyW']||touchUp)   power=clamp(power+0.62*dt,0,1);
+  if(keys['KeyS']||touchDown) power=clamp(power-0.72*dt,0,1);
+  if(keys['KeyQ']) vecAng=clamp(vecAng-1.0*dt,VEC_MIN,VEC_MAX);
+  if(keys['KeyE']) vecAng=clamp(vecAng+1.0*dt,VEC_MIN,VEC_MAX);
 
   boosting=(keys['ShiftLeft']||keys['ShiftRight']||touchBoost)&&boostFuel>0.02;
-  if(boosting) boostFuel=clamp(boostFuel-0.24*dt,0,1);
-  else boostFuel=clamp(boostFuel+0.11*dt,0,1);
+  if(boosting) boostFuel=clamp(boostFuel-0.22*dt,0,1);
+  else boostFuel=clamp(boostFuel+0.10*dt,0,1);
 
-  // --- סיבוב ---
-  up.set(0,1,0).applyQuaternion(quat);
-  fwd.set(0,0,-1).applyQuaternion(quat);
-  right.set(1,0,0).applyQuaternion(quat);
+  // ספול המנוע: תגובה איטית, כמו טורבינה אמיתית
+  const tgt=Math.max(power,started?0.07:0);
+  const k=tgt>n1?SPOOL_UP:SPOOL_DN;
+  n1+=(tgt-n1)*(1-Math.exp(-k*dt));
 
-  const rollAng=Math.asin(clamp(-right.y,-1,1));
-  const pitchAng=Math.asin(clamp(fwd.y,-1,1));
-
-  let pr=pitchIn*PITCH_RATE;
-  let rr=-rollIn*ROLL_RATE;
-  let yr=yawIn*YAW_RATE;
+  // תנוחה נוכחית
+  ex.set(1,0,0).applyQuaternion(quat);
+  ey.set(0,1,0).applyQuaternion(quat);
+  ez.set(0,0,1).applyQuaternion(quat);
+  const fwdY=-ez.y;
+  const rollAng=Math.asin(clamp(-ex.y,-1,1));
+  const pitchAng=Math.asin(clamp(fwdY,-1,1));
 
   if(stabilizer){
-    if(Math.abs(rollIn)<0.05) rr+=rollAng*2.0;
-    if(Math.abs(pitchIn)<0.05) pr+=-pitchAng*0.9;
-  }
-  if(onGround){ rr+=rollAng*3.5; pr+=-pitchAng*3.5; }
-
-  tmpQ.setFromEuler(new THREE.Euler(pr*dt,yr*dt,rr*dt,'XYZ'));
-  quat.multiply(tmpQ).normalize();
-
-  // סיבוב מתואם: הטיה גוררת פנייה
-  const spd=vel.length();
-  const turn=-rollAng*BANK_TURN*smoothstep(4,45,spd);
-  tmpQ.setFromAxisAngle(WORLD_UP,turn*dt);
-  quat.premultiply(tmpQ).normalize();
-
-  up.set(0,1,0).applyQuaternion(quat);
-  fwd.set(0,0,-1).applyQuaternion(quat);
-  right.set(1,0,0).applyQuaternion(quat);
-
-  // --- כוחות ---
-  const acc=new THREE.Vector3(0,-GRAV,0);
-  acc.addScaledVector(up,power*LIFT_MAX);
-  if(boosting) acc.addScaledVector(fwd,BOOST_ACC);
-
-  // גרר אנאיזוטרופי — האופנוע "הולך לאן שהוא מצביע"
-  const vf=vel.dot(fwd), vr=vel.dot(right), vu=vel.dot(up);
-  acc.addScaledVector(fwd,-DRAG_F*vf*Math.abs(vf));
-  acc.addScaledVector(right,-DRAG_S*vr*Math.abs(vr)-vr*0.7);
-  acc.addScaledVector(up,-DRAG_U*vu*Math.abs(vu)-vu*0.35);
-
-  vel.addScaledVector(acc,dt);
-  pos.addScaledVector(vel,dt);
-
-  // --- קרקע ---
-  const gh=terrainHeight(pos.x,pos.z);
-  const water=lakeMask(pos.x,pos.z)>0.15;
-  const surface=Math.max(gh,water?WATER_Y:-9999);
-  const clearance=pos.y-surface;
-
-  if(clearance<1.35){
-    const impact=-vel.y;
-    const flat=up.y;
-    if(crashTimer<=0 && (impact>24 || spd>36 || flat<0.4)){
-      crash();
-    }else{
-      pos.y=surface+1.35;
-      if(vel.y<0) vel.y=0;
-      vel.x*=Math.pow(0.06,dt); vel.z*=Math.pow(0.06,dt);
-      onGround=true;
-    }
-  }else if(clearance>1.6){
-    onGround=false;
-  }
-
-  if(pos.y>3200){ pos.y=3200; if(vel.y>0) vel.y=0; }
-  pos.x=clamp(pos.x,-4400,4400);
-  pos.z=clamp(pos.z,-3200,3200);
-
-  bike.position.copy(pos);
-  bike.quaternion.copy(quat);
-
-  // --- טבעות ---
-  if(!raceFinished){
-    const r=rings[ringIdx];
-    if(r && !r.userData.done){
-      const local=r.worldToLocal(pos.clone());
-      const prev=r.worldToLocal(prevPos.clone());
-      const radial=Math.sqrt(local.x*local.x+local.y*local.y);
-      if(radial<RINGR && ((local.z<=0&&prev.z>0)||(local.z>=0&&prev.z<0))){
-        r.userData.done=true; ringsDone++;
-        if(!raceRunning){raceRunning=true;raceTime=0;}
-        ringIdx=(ringIdx+1)%rings.length;
-        while(rings[ringIdx].userData.done && ringsDone<rings.length) ringIdx=(ringIdx+1)%rings.length;
-        refreshRings();
-        if(ringsDone>=rings.length){
-          raceFinished=true; raceRunning=false;
-          toast('סיימת את המסלול! '+raceTime.toFixed(1)+' שניות',5);
-        }else{
-          toast('טבעת '+ringsDone+' מתוך '+rings.length,1.1);
-        }
-      }
-    }
-  }
-  prevPos.copy(pos);
-  if(raceRunning) raceTime+=dt;
-
-  // --- אנימציה של האופנוע ---
-  blades.rotation.z+=(6+power*70)*dt;
-  const lift=power;
-  nozFront.userData.flame.scale.y=lift*(0.9+Math.random()*0.25)*(1+pitchIn*0.2);
-  nozRear .userData.flame.scale.y=lift*(0.9+Math.random()*0.25)*(1-pitchIn*0.2);
-  const bth=boosting?1:(power*0.16);
-  thrL.userData.flame.scale.y=bth*(0.9+Math.random()*0.3);
-  thrR.userData.flame.scale.y=bth*(0.9+Math.random()*0.3);
-  yawL.userData.flame.scale.y=Math.max(0,-yawIn)*1.1*(0.8+Math.random()*0.4);
-  yawR.userData.flame.scale.y=Math.max(0, yawIn)*1.1*(0.8+Math.random()*0.4);
-  nozFront.rotation.x= pitchIn*0.28;
-  nozRear .rotation.x=-pitchIn*0.28;
-  winglets[0].rotation.x= rollIn*0.5;
-  winglets[1].rotation.x=-rollIn*0.5;
-  bars.rotation.y=-yawIn*0.22;
-  rider.rotation.z=rollIn*0.14;
-  rider.rotation.x=-pitchIn*0.09;
-  head.rotation.z=-rollIn*0.1;
-  glow.intensity=power*5.5+(boosting?4:0);
-
-  // חלקיקים
-  if(power>0.15){
-    const n=Math.random()<power?2:1;
-    for(let k=0;k<n;k++){
-      const src=Math.random()<0.5?nozFront:nozRear;
-      src.getWorldPosition(tmpV);
-      emit(tmpV.x,tmpV.y-1.5,tmpV.z,-up.x*24*power,-up.y*24*power,-up.z*24*power);
-    }
-  }
-  if(boosting){
-    thrL.getWorldPosition(tmpV); emit(tmpV.x,tmpV.y,tmpV.z,-fwd.x*40,-fwd.y*40,-fwd.z*40);
-    thrR.getWorldPosition(tmpV); emit(tmpV.x,tmpV.y,tmpV.z,-fwd.x*40,-fwd.y*40,-fwd.z*40);
+    // בקרת טיסה: פיקוד קצב + החזרה לאופק כשהמוט במרכז
+    let rcx=pIn*1.6, rcy=yIn*1.0, rcz=-rIn*3.0;
+    if(Math.abs(pIn)<0.06) rcx+=-pitchAng*1.3;
+    if(Math.abs(rIn)<0.06) rcz+= rollAng*2.6;
+    if(onGround){ rcx+=-pitchAng*2.5; rcz+=rollAng*3.5; }
+    cmd.set(clamp((rcx-omega.x)*1.1,-1,1),
+            clamp((rcy-omega.y)*1.4,-1,1),
+            clamp((rcz-omega.z)*0.9,-1,1));
+  }else{
+    cmd.set(pIn,yIn,-rIn);
   }
 }
-const prevPos=pos.clone();
 
-function crash(){
-  crashTimer=1.4;
-  const f=document.getElementById('flash');
-  f.style.opacity='0.55';
-  setTimeout(()=>f.style.opacity='0',90);
-  toast('התרסקות',1.3);
-  for(let i=0;i<70;i++){
-    emit(pos.x,pos.y,pos.z,rnd(-24,24),rnd(-6,30),rnd(-24,24));
+/* ============================================================
+   אפקטים נלווים לאופנוע
+   ============================================================ */
+function updateBikeFx(dt,t){
+  const th=n1*n1*0.85+n1*0.15;
+  const sN=Math.sin(vecAng), cN=Math.cos(vecAng);
+  const liftFrac=clamp(th*sN,0,1), aftFrac=clamp(th*Math.abs(cN)+(boosting?0.85:0),0,1.4);
+  const dF=clamp(cmd.x,-1,1)*PITCH_DIFF;
+
+  nozFront.userData.swivel.rotation.x=-(Math.PI/2-vecAng);
+  nozRear .userData.swivel.rotation.x=-(Math.PI/2-vecAng);
+
+  setPlume(nozFront.userData.plume, liftFrac*(0.5+dF)*2, 1, 9);
+  setPlume(nozRear .userData.plume, liftFrac*(0.5-dF)*2, 1, 9);
+  setPlume(thrL.userData.plume, Math.min(aftFrac,1), boosting?1.75:1, boosting?14:9);
+  setPlume(thrR.userData.plume, Math.min(aftFrac,1), boosting?1.75:1, boosting?14:9);
+  const auth=0.25+0.75*n1;
+  setPlume(yawL.userData.plume, Math.max(0,-cmd.y)*auth, 1, 6);
+  setPlume(yawR.userData.plume, Math.max(0, cmd.y)*auth, 1, 6);
+  setPlume(rollL.userData.up, Math.max(0,-cmd.z)*auth*0.9, 1, 6);
+  setPlume(rollL.userData.dn, Math.max(0, cmd.z)*auth*0.9, 1, 6);
+  setPlume(rollR.userData.up, Math.max(0, cmd.z)*auth*0.9, 1, 6);
+  setPlume(rollR.userData.dn, Math.max(0,-cmd.z)*auth*0.9, 1, 6);
+
+  [nozFront.userData.plume,nozRear.userData.plume,thrL.userData.plume,thrR.userData.plume,
+   yawL.userData.plume,yawR.userData.plume,
+   rollL.userData.up,rollL.userData.dn,rollR.userData.up,rollR.userData.dn]
+   .forEach(p=>tickPlume(p,t));
+
+  blades.rotation.z+=(6+n1*95)*dt;
+  winglets[0].rotation.x= cmd.z*0.45;
+  winglets[1].rotation.x=-cmd.z*0.45;
+  bars.rotation.y=-cmd.y*0.20;
+  rider.rotation.z=clamp(-cmd.z*0.12,-0.2,0.2);
+  rider.rotation.x=clamp(-cmd.x*0.09,-0.2,0.2);
+  head.rotation.z=clamp(cmd.z*0.09,-0.2,0.2);
+  glow.intensity=liftFrac*7+(boosting?5:0);
+  matHot.emissiveIntensity=0.2+th*1.1;
+
+  if(!bike.visible) return;
+
+  // חלקיקי פליטה: עשן דק שנסחף מהזרבוביות
+  if(liftFrac>0.12 && Math.random()<liftFrac*1.4){
+    const src=Math.random()<0.5?nozFront:nozRear;
+    src.getWorldPosition(_v1);
+    const dwn=_v2.set(0,-1,0).applyQuaternion(quat);
+    const sp=26*liftFrac;
+    spawn(smokeP,_v1.x+dwn.x*3.2,_v1.y+dwn.y*3.2,_v1.z+dwn.z*3.2,
+      vel.x*0.35+dwn.x*sp+rnd(-2,2), vel.y*0.35+dwn.y*sp+rnd(-2,2), vel.z*0.35+dwn.z*sp+rnd(-2,2),
+      rnd(0.5,1.2),4.5,rnd(0.5,1.1),0.62,0.6,0.58,0.22,1.5,1.4,0);
   }
-  vel.set(0,0,0);
+  if(boosting){
+    const f=_v2.set(0,0,1).applyQuaternion(quat);
+    [thrL,thrR].forEach(n=>{
+      n.getWorldPosition(_v1);
+      spawn(smokeP,_v1.x+f.x*5,_v1.y+f.y*5,_v1.z+f.z*5,
+        vel.x*0.3+f.x*45+rnd(-3,3), vel.y*0.3+f.y*45+rnd(-3,3), vel.z*0.3+f.z*45+rnd(-3,3),
+        rnd(0.8,1.9),5.0,rnd(0.6,1.4),0.30,0.28,0.27,0.30,2.0,1.3,0);
+    });
+  }
+  // שטיפת קרקע: הסילון מתפרש רדיאלית ומרים אבק
+  if(clearance<16 && liftFrac>0.2){
+    const strength=(1-clearance/16)*liftFrac;
+    const n=Math.random()<strength*1.6?2:0;
+    for(let i=0;i<n;i++){
+      const th2=Math.random()*Math.PI*2;
+      const r0=rnd(1,5);
+      const gx=pos.x+Math.cos(th2)*r0, gz=pos.z+Math.sin(th2)*r0;
+      const gy=terrainHeight(gx,gz);
+      const sp=rnd(9,26)*strength;
+      const overW=lakeMask(gx,gz)>0.15;
+      spawn(smokeP,gx,Math.max(gy,overW?WATER_Y:gy)+0.5,gz,
+        Math.cos(th2)*sp+vel.x*0.3, rnd(0.6,4.5), Math.sin(th2)*sp+vel.z*0.3,
+        rnd(1.2,3.2),4.5,rnd(0.8,1.8),
+        overW?0.85:0.55, overW?0.87:0.49, overW?0.9:0.4,
+        overW?0.34:0.30, overW?2.5:0.9, 1.0, 3);
+    }
+  }
+  // עיבוי בקצות הכנפונים בעומס G גבוה ולחות — קו לבן דק
+  if(Math.abs(gLoad)>2.6 && airspeed>55 && Math.random()<0.6){
+    [-1,1].forEach(s=>{
+      _v1.set(s*ROLL_X,0.06,0.5).applyQuaternion(quat).add(pos);
+      spawn(smokeP,_v1.x,_v1.y,_v1.z,vel.x*0.85,vel.y*0.85,vel.z*0.85,
+        rnd(0.25,0.6),3.0,rnd(0.25,0.6),0.95,0.97,1.0,0.30,0.4,1.5,0);
+    });
+  }
+}
+
+/* מקורות עיוות החום שמוזנים ל-shader ההרכבה */
+function updateHeatSources(){
+  let n=0;
+  const list=[];
+  if(bike.visible){
+    const th=n1*n1*0.85+n1*0.15;
+    const sN=Math.sin(vecAng);
+    if(th*sN>0.1){ list.push([nozFront,th*sN*1.1,2.2]); list.push([nozRear,th*sN*1.1,2.2]); }
+    const aft=th*Math.abs(Math.cos(vecAng))+(boosting?0.9:0);
+    if(aft>0.1){ list.push([thrL,aft*1.3,3.0]); }
+  }
+  for(const B of blasts){
+    if(B.t<2.2){
+      list.push([{getWorldPosition:v=>v.set(B.x,B.y,B.z)}, (1-B.t/2.2)*2.4, 14*B.E]);
+    }
+  }
+  for(let i=0;i<MAX_HEAT;i++){
+    if(i<list.length){
+      const [obj,strength,worldR]=list[i];
+      obj.getWorldPosition(_v1);
+      const dist=camera.position.distanceTo(_v1);
+      _proj.copy(_v1).project(camera);
+      if(_proj.z<1 && dist>1){
+        const rUv=worldR/Math.max(dist*Math.tan(camera.fov*Math.PI/360),1e-4)*0.5;
+        heatArr[i].set(_proj.x*0.5+0.5,_proj.y*0.5+0.5,clamp(rUv,0.005,0.9),strength);
+        n=i+1;
+        continue;
+      }
+    }
+    heatArr[i].set(0,0,0,0);
+  }
+  compMat.uniforms.uHeatN.value=n;
 }
 
 /* ============================================================
@@ -1112,15 +2458,47 @@ let camMode=0;
 const CAM_NAMES=['רדיפה','תא נהג','קולנועית'];
 const camPos=new THREE.Vector3(), followQ=new THREE.Quaternion(), lookAt=new THREE.Vector3();
 let orbitA=0;
+const crashCam={pos:new THREE.Vector3(),target:new THREE.Vector3(),active:false};
 function cycleCamera(){
   camMode=(camMode+1)%3;
   document.getElementById('sCam').textContent=CAM_NAMES[camMode];
 }
+function crashCamSetup(){
+  crashCam.active=true;
+  crashCam.target.copy(pos);
+  orbitA=Math.random()*Math.PI*2;
+  crashCam.pos.set(pos.x+Math.cos(orbitA)*140,
+                   Math.max(pos.y+30,terrainHeight(pos.x,pos.z)+42),
+                   pos.z+Math.sin(orbitA)*140);
+}
+let camOverride=null;   // לבדיקות בלבד
 function updateCamera(dt){
   const spd=vel.length();
-  if(camMode===1){
+  if(camOverride){
+    camera.position.copy(camOverride.p);
+    camera.up.set(0,1,0);
+    camera.lookAt(camOverride.t);
+    camera.fov=55; camera.updateProjectionMatrix();
+    return;
+  }
+  if(crashCam.active){
+    // מצלמה קולנועית שמסתובבת סביב מוקד הפיצוץ ונסוגה ככל שהפטרייה גדלה
+    orbitA+=dt*0.11;
+    const capH=clouds.length
+      ? Math.min(90,W0*TAU_RISE*Math.log(1+clouds[clouds.length-1].t/TAU_RISE)) : 0;
+    const d=130+capH*1.05;
+    const gy=terrainHeight(crashCam.target.x,crashCam.target.z);
+    let cy=crashCam.target.y+18+capH*0.45;
+    if(cy<gy+18) cy=gy+18;
+    crashCam.pos.lerp(_v1.set(crashCam.target.x+Math.cos(orbitA)*d, cy,
+                              crashCam.target.z+Math.sin(orbitA)*d),1-Math.exp(-1.6*dt));
+    camera.position.copy(crashCam.pos);
+    camera.up.set(0,1,0);
+    _v2.copy(crashCam.target); _v2.y+=capH*0.5;
+    camera.lookAt(_v2);
+  }else if(camMode===1){
     bike.updateMatrixWorld();
-    camera.position.copy(bike.localToWorld(new THREE.Vector3(0,1.32,-0.28)));
+    camera.position.copy(bike.localToWorld(_v1.set(0,1.32,-0.28)));
     camera.quaternion.copy(quat);
     camera.rotateX(-0.06);
   }else if(camMode===2){
@@ -1132,21 +2510,32 @@ function updateCamera(dt){
   }else{
     followQ.slerp(quat,1-Math.exp(-5*dt));
     followQ.normalize();
-    const off=new THREE.Vector3(0,2.7,9.2+spd*0.05).applyQuaternion(followQ);
-    const desired=tmpV.copy(pos).add(off);
+    const off=_v1.set(0,2.7,9.2+spd*0.05).applyQuaternion(followQ);
+    const desired=_v2.copy(pos).add(off);
     const gh=terrainHeight(desired.x,desired.z)+3;
     if(desired.y<gh) desired.y=gh;
     camPos.lerp(desired,1-Math.exp(-9*dt));
-    // רעד מנוע
-    const sh=(power*0.05+(boosting?0.09:0));
-    camera.position.set(camPos.x+rnd(-sh,sh),camPos.y+rnd(-sh,sh),camPos.z+rnd(-sh,sh));
-    const cu=new THREE.Vector3(0,1,0).applyQuaternion(followQ).lerp(WORLD_UP,0.45).normalize();
+    camera.position.copy(camPos);
+    const cu=_v3.set(0,1,0).applyQuaternion(followQ).lerp(WORLD_UP,0.45).normalize();
     camera.up.copy(cu);
-    lookAt.copy(pos).addScaledVector(fwd,7).addScaledVector(up,0.9);
+    lookAt.copy(pos).addScaledVector(_v1.set(0,0,-1).applyQuaternion(quat),7)
+                    .addScaledVector(_v3.set(0,1,0).applyQuaternion(quat),0.9);
     camera.lookAt(lookAt);
   }
-  const targetFov=camMode===1?74:(62+clamp(spd*0.22,0,24));
-  camera.fov+= (targetFov-camera.fov)*(1-Math.exp(-4*dt));
+
+  // רעידות: מנוע, לחץ דינמי, ורעד ההדף אחרי פיצוץ
+  shakeAmp*=Math.exp(-2.6*dt);
+  const engShake=(n1*0.045+(boosting?0.09:0))*(camMode===1?0.5:1);
+  const aeroShake=stallAmt*0.09+clamp(qbar/9000,0,0.10);
+  const s=engShake+aeroShake+shakeAmp;
+  if(s>0.001){
+    camera.position.x+=rnd(-s,s);
+    camera.position.y+=rnd(-s,s);
+    camera.position.z+=rnd(-s,s);
+  }
+
+  const targetFov=crashCam.active?58:(camMode===1?74:(62+clamp(spd*0.22,0,24)));
+  camera.fov+=(targetFov-camera.fov)*(1-Math.exp(-4*dt));
   camera.updateProjectionMatrix();
 }
 
@@ -1163,26 +2552,53 @@ function toast(txt,secs){
 function setTag(id,on){
   const t=el(id);
   t.textContent=on?'פעיל':'כבוי';
+  if(id==='sStab') t.textContent=on?'פעילה':'כבויה';
   t.className='tag '+(on?'on':'off');
 }
+function setWarn(id,on){
+  el(id).className='warn'+(on?' show':'');
+}
+const KT=1.94384;
 function updateHUD(dt){
   if(toastT>0){ toastT-=dt; if(toastT<=0) el('toast').style.opacity='0'; }
-  const spd=vel.length()*3.6;
-  el('gSpeed').textContent=Math.round(spd);
-  el('gAlt').textContent=Math.round(pos.y-terrainHeight(pos.x,pos.z));
+  el('gSpeed').textContent=Math.round(vel.length()*3.6);
+  el('gAlt').textContent=Math.round(clearance);
   el('gRings').textContent=ringsDone+'/'+rings.length;
   el('gTime').textContent=raceTime.toFixed(1);
+
   el('powerFill').style.width=(power*100).toFixed(0)+'%';
   el('powerTxt').textContent=Math.round(power*100)+'%';
+  el('n1Fill').style.width=(n1*100).toFixed(0)+'%';
+  el('n1Txt').textContent=Math.round(n1*100)+'%';
+  el('vecFill').style.width=(vecAng/VEC_MAX*100).toFixed(0)+'%';
+  el('vecTxt').textContent=Math.round(vecAng*180/Math.PI)+'°';
   el('boostFill').style.width=(boostFuel*100).toFixed(0)+'%';
   el('boostTxt').textContent=Math.round(boostFuel*100)+'%';
+
+  const aoaDeg=AoA*180/Math.PI;
+  el('fAoa').firstElementChild.textContent=(airspeed>4?aoaDeg.toFixed(0):'—')+'°';
+  el('fAoa').className='fd'+(stallAmt>0.25?' hot':'');
+  el('fG').firstElementChild.textContent=gLoad.toFixed(1);
+  el('fG').className='fd'+(Math.abs(gLoad)>5?' hot':'');
+  el('fVs').firstElementChild.textContent=(vSpeed>=0?'+':'')+vSpeed.toFixed(0);
+  el('fMach').firstElementChild.textContent=machNo.toFixed(2);
+  el('fRho').firstElementChild.textContent=atmo.rho.toFixed(2);
+  el('fWind').firstElementChild.textContent=Math.round(Math.hypot(wind.x,wind.z)*KT);
+
+  setWarn('wStall',stallAmt>0.3&&airspeed>10);
+  setWarn('wSink',vSpeed<-16&&clearance<120&&!crashed);
+  setWarn('wG',Math.abs(gLoad)>5.5);
+
+  const mode = vecAng>1.05 ? (vel.length()<28?'ריחוף':'מעבר')
+             : vecAng<0.55 ? 'כנפיים' : 'מעבר';
+  el('sMode').textContent=crashed?'—':mode;
 
   if(raceFinished){ el('tDist').textContent='הושלם'; return; }
   const r=rings[ringIdx];
   const d=pos.distanceTo(r.position);
   el('tDist').textContent=Math.round(d)+' מ׳';
-  const dir=tmpV.copy(r.position).sub(pos);
-  const camF=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  const dir=_v1.copy(r.position).sub(pos);
+  const camF=_v2.set(0,0,-1).applyQuaternion(camera.quaternion);
   const a1=Math.atan2(dir.x,-dir.z), a2=Math.atan2(camF.x,-camF.z);
   let ang=(a1-a2);
   while(ang>Math.PI) ang-=6.283185; while(ang<-Math.PI) ang+=6.283185;
@@ -1192,24 +2608,91 @@ function updateHUD(dt){
 /* ============================================================
    לולאה ראשית
    ============================================================ */
-let last=performance.now(), wt=0;
+const H=1/200;                 // תת-צעד פיזיקלי קבוע
+let acc=0, last=performance.now(), wt=0, simT=0;
+
 function frame(now){
   requestAnimationFrame(frame);
   let dt=(now-last)/1000; last=now;
   dt=Math.min(dt,0.05);
-  if(!started){ renderer.render(scene,camera); return; }
+  if(!started){ renderFrame(); return; }
 
   if(!paused){
-    if(crashTimer>0){
-      crashTimer-=dt;
-      if(crashTimer<=0) respawn(false);
+    simT+=dt; wt+=dt;
+    compMat.uniforms.uTime.value=simT;
+
+    updateAtmo(pos.y);
+    groundY=terrainHeight(pos.x,pos.z);
+    terrainNormal(pos.x,pos.z,gN);
+    gPx=pos.x; gPz=pos.z;
+    const overWater=lakeMask(pos.x,pos.z)>0.15;
+    const surf=overWater?Math.max(groundY,WATER_Y):groundY;
+    clearance=pos.y-surf;
+    windAt(pos.x,pos.y,pos.z,simT,wind);
+
+    if(crashLock>0) crashLock=Math.max(0,crashLock-dt);
+
+    if(!crashed){
+      control(dt,simT);
+      acc+=dt;
+      let guard=0;
+      while(acc>=H && guard<14){
+        physStep(H);
+        acc-=H; guard++;
+        if(crashed) break;
+      }
+      if(acc>H*14) acc=0;
+
+      // גבולות העולם
+      if(pos.y>3400){ pos.y=3400; if(vel.y>0) vel.y=0; }
+      if(pos.x<-4400||pos.x>4400){ pos.x=clamp(pos.x,-4400,4400); vel.x*=-0.3; }
+      if(pos.z<-3200||pos.z>3200){ pos.z=clamp(pos.z,-3200,3200); vel.z*=-0.3; }
+
+      bike.position.copy(pos);
+      bike.quaternion.copy(quat);
+
+      vSpeed=vel.y;
+      machNo=vel.length()/atmo.a;
+      // עומס G לאורך ציר ה"מעלה" של הגוף
+      ey.set(0,1,0).applyQuaternion(quat);
+      gLoad=specForce.dot(ey)/GRAV;
+
+      // --- טבעות ---
+      if(!raceFinished){
+        const r=rings[ringIdx];
+        if(r && !r.userData.done){
+          const local=r.worldToLocal(_v1.copy(pos));
+          const prev=r.worldToLocal(_v2.copy(prevPos));
+          const radial=Math.sqrt(local.x*local.x+local.y*local.y);
+          if(radial<RINGR && ((local.z<=0&&prev.z>0)||(local.z>=0&&prev.z<0))){
+            r.userData.done=true; ringsDone++;
+            if(!raceRunning){raceRunning=true;raceTime=0;}
+            ringIdx=(ringIdx+1)%rings.length;
+            while(rings[ringIdx].userData.done && ringsDone<rings.length) ringIdx=(ringIdx+1)%rings.length;
+            refreshRings();
+            if(ringsDone>=rings.length){
+              raceFinished=true; raceRunning=false;
+              toast('סיימת את המסלול! '+raceTime.toFixed(1)+' שניות',5);
+            }else{
+              toast('טבעת '+ringsDone+' מתוך '+rings.length,1.1);
+            }
+          }
+        }
+      }
+      prevPos.copy(pos);
+      if(raceRunning) raceTime+=dt;
     }else{
-      step(dt);
+      crashTimer-=dt;
+      if(crashTimer<=0){ crashCam.active=false; respawn(false); }
     }
-    updateParticles(dt);
+
+    updateBikeFx(dt,simT);
+    updateBlasts(dt);
+    updatePool(fireP,dt,simT);
+    updatePool(smokeP,dt,simT);
+    updateClouds(dt,wind);
 
     // גלי אגם
-    wt+=dt;
     const wp=wGeo.attributes.position;
     for(let i=0;i<wp.count;i++){
       const x=wBase[i*3], z=wBase[i*3+2];
@@ -1227,35 +2710,62 @@ function frame(now){
 
     updateCamera(dt);
     updateHUD(dt);
-    updateAudio(power,boosting?1:0,vel.length());
+    updateAudio(n1,boosting?1:0,airspeed,stallAmt);
   }
 
+  // גודל נקודות החלקיקים תלוי בפתח העדשה
+  const psc=innerHeight/(2*Math.tan(camera.fov*Math.PI/360));
+  fireP.mat.uniforms.uScale.value=psc;
+  smokeP.mat.uniforms.uScale.value=psc;
+  cloudPool.mat.uniforms.uScale.value=psc;
+
   // צל עוקב
-  sun.position.copy(pos).addScaledVector(sunDir,420);
-  sun.target.position.copy(pos);
+  const shadowTarget=crashed&&blasts.length?blasts[blasts.length-1]:pos;
+  sun.position.set(shadowTarget.x,shadowTarget.y,shadowTarget.z).addScaledVector(sunDir,420);
+  sun.target.position.set(shadowTarget.x,shadowTarget.y,shadowTarget.z);
   sun.target.updateMatrixWorld();
 
-  renderer.render(scene,camera);
+  updateHeatSources();
+  renderFrame();
 }
 
 /* ============================================================
    התחלה
    ============================================================ */
 respawn(true);
+power=0; n1=0;
 bike.position.copy(pos);
-camPos.copy(pos).add(new THREE.Vector3(0,4,14));
+camPos.copy(pos).add(V(0,4,14));
 camera.position.copy(camPos);
 camera.lookAt(pos);
 prevPos.copy(pos);
+updateAtmo(pos.y);
+groundY=terrainHeight(pos.x,pos.z);
 requestAnimationFrame(frame);
+
+/* ווים לבדיקות אוטומטיות (לא נוגעים במשחק עצמו) */
+window.__jb={
+  crash:()=>crash('manual'),
+  detonate,
+  teleport:(x,y,z,vx,vy,vz)=>{pos.set(x,y,z);vel.set(vx||0,vy||0,vz||0);omega.set(0,0,0);prevPos.copy(pos);},
+  freeCam:(px,py,pz,tx,ty,tz)=>{camOverride=px===null?null:{p:V(px,py,pz),t:V(tx,ty,tz)};},
+  terrainAt:(x,z)=>terrainHeight(x,z),
+  read:()=>({pos:pos.toArray(),vel:vel.toArray(),omega:omega.toArray(),
+             n1,power,vecAng,AoA,beta:sideslip,gLoad,airspeed,qbar,
+             clearance,stallAmt,onGround,crashed,
+             fire:fireP.geo.attributes.aAlpha.array.reduce((a,b)=>a+(b>0.01?1:0),0),
+             smoke:smokeP.geo.attributes.aAlpha.array.reduce((a,b)=>a+(b>0.01?1:0),0),
+             cloudParts:cloudPool.geo.attributes.aAlpha.array.reduce((a,b)=>a+(b>0.01?1:0),0),
+             clouds:clouds.length, blasts:blasts.length})
+};
 
 el('startBtn').addEventListener('click',()=>{
   initAudio();
   if(audio.ctx && audio.ctx.state==='suspended') audio.ctx.resume();
   el('intro').style.display='none';
   started=true;
-  power=0.42;
-  toast('הגבר עוצמה עם W והטה את החרטום קדימה',3.2);
+  power=0.62; n1=0.45;
+  toast('W להגברת מצערת · Q מסובב את הזרבוביות לאחור למעבר לטיסת כנף',4.2);
 });
 })();
 </script>
