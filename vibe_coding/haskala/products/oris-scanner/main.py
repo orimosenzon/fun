@@ -276,12 +276,23 @@ PROFILE_SCOPES = [
 
 SA_EMAIL = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
 TEACHER_EMAIL = "ori@bdika.net"
+# The service account's OAuth client id — the key the Workspace admin console's
+# domain-wide-delegation entry is filed under. Logged with the scope warning so
+# whoever reads it can go straight to the right row.
+SA_CLIENT_ID = "114647217076557059736"
 
 # Per-instance memo of whether the delegation entry actually grants
-# PROFILE_SCOPES. None = not yet determined. A fresh instance re-probes, so
-# adding the scopes in the admin console takes effect on its own without a
-# redeploy.
+# PROFILE_SCOPES. None = not yet determined.
+#
+# A denial is remembered only for PROFILE_RECHECK_SECONDS, not forever. That
+# expiry is what makes the admin-console fix land on its own: without it, an
+# instance that probed once while the scopes were missing would keep naming
+# reports by userId for as long as it stayed warm, and only a redeploy would
+# shake it loose. The cost of being wrong is one extra failed token request
+# every ten minutes.
 _profile_scopes_granted: bool | None = None
+_profile_scopes_checked_at: float = 0.0
+PROFILE_RECHECK_SECONDS = 600
 
 
 def _delegated_credentials(scopes):
@@ -313,29 +324,38 @@ def get_workspace_credentials():
     10-minute retry backoff. A filename nicety must never be able to do that,
     hence the two-tier request.
     """
-    global _profile_scopes_granted
+    global _profile_scopes_granted, _profile_scopes_checked_at
 
-    if _profile_scopes_granted is not False:
+    stale = (time.monotonic() - _profile_scopes_checked_at) >= PROFILE_RECHECK_SECONDS
+    if _profile_scopes_granted is not False or stale:
         creds = _delegated_credentials(BASE_SCOPES + PROFILE_SCOPES)
+        was = _profile_scopes_granted
         try:
             # Refresh eagerly: the failure has to surface here, where it can be
             # retried without the profile scopes, rather than at whichever API
             # call happens to be first.
             creds.refresh(Request())
         except RefreshError as e:
-            log.warning(
-                "delegation does not grant the student-profile scopes (%s) — "
-                "continuing without them; reports will be named by Classroom "
-                "userId instead of the student's name. To fix, add %s to the "
-                "service account's domain-wide delegation in the Workspace "
-                "admin console; no redeploy needed.",
-                str(e)[:200], ", ".join(PROFILE_SCOPES))
             _profile_scopes_granted = False
+            _profile_scopes_checked_at = time.monotonic()
+            if was is not False:
+                # Only on a change of state: at one scan a minute this would
+                # otherwise repeat the same paragraph into the log all day.
+                log.warning(
+                    "delegation does not grant the student-profile scopes (%s) — "
+                    "continuing without them; reports will be named by Classroom "
+                    "userId instead of the student's email. To fix, add %s to "
+                    "the service account's domain-wide delegation in the "
+                    "Workspace admin console (client id %s). Rechecked every "
+                    "%ds, so no redeploy is needed once it is there.",
+                    str(e)[:200], ", ".join(PROFILE_SCOPES), SA_CLIENT_ID,
+                    PROFILE_RECHECK_SECONDS)
         else:
-            if _profile_scopes_granted is None:
-                log.info("delegation grants the student-profile scopes — "
-                         "reports will be named by student name")
             _profile_scopes_granted = True
+            _profile_scopes_checked_at = time.monotonic()
+            if was is not True:
+                log.info("delegation grants the student-profile scopes — "
+                         "reports will be named by student email")
             return creds
 
     creds = _delegated_credentials(BASE_SCOPES)
