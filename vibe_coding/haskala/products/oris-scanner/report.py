@@ -43,8 +43,7 @@ DOCX_LABELS: dict[str, dict] = {
         "helpful_words_line": "{count}/{total} מילות עזר נוצלו בתרגיל.",
         "used": "נוצלו: {words}", "not_used": "לא נוצלו: {words}",
         "summary": "סיכום",
-        "clean_transcript": "תעתיק נקי", "marked_transcript": "תעתיק עם סימונים",
-        "original_and_decode": "תרגיל מקורי ופענוח", "page": "עמוד {n}",
+        "original_document": "המסמך המקורי", "page": "עמוד {n}",
         "th_line": "שורה", "th_text": "טקסט", "image_error": "[שגיאת תמונה]",
         "text_analysis": "ניתוח טקסט",
         "wc_criterion": "ספירת מילים",
@@ -64,8 +63,7 @@ DOCX_LABELS: dict[str, dict] = {
         "helpful_words_line": "{count}/{total} helpful words were used in the exercise.",
         "used": "Used: {words}", "not_used": "Not used: {words}",
         "summary": "Summary",
-        "clean_transcript": "Clean transcript", "marked_transcript": "Marked transcript",
-        "original_and_decode": "Original exercise & transcription", "page": "Page {n}",
+        "original_document": "Original document", "page": "Page {n}",
         "th_line": "Line", "th_text": "Text", "image_error": "[image error]",
         "text_analysis": "Text analysis",
         "wc_criterion": "Word count",
@@ -85,8 +83,7 @@ DOCX_LABELS: dict[str, dict] = {
         "helpful_words_line": "{count}/{total} كلمات مساعدة استُخدمت في التمرين.",
         "used": "استُخدمت: {words}", "not_used": "لم تُستخدم: {words}",
         "summary": "ملخّص",
-        "clean_transcript": "نسخة نظيفة", "marked_transcript": "نسخة معلّمة",
-        "original_and_decode": "التمرين الأصلي والتفريغ", "page": "صفحة {n}",
+        "original_document": "المستند الأصلي", "page": "صفحة {n}",
         "th_line": "سطر", "th_text": "نص", "image_error": "[خطأ في الصورة]",
         "text_analysis": "تحليل النص",
         "wc_criterion": "عدد الكلمات",
@@ -416,29 +413,21 @@ def _add_word_count_row(table, evaluation: dict, LBL: dict, ncols: int,
 
 def _add_text_analysis(doc, pages: list[dict], spans_by_line: dict,
                        LBL: dict, main_align) -> None:
-    """The annotated exercise: each page's original scan followed by a
-    line-by-line table carrying the color highlights and the inline note on
-    every marked span. Placed at the top of the report (Avishai, 2026-07-30) —
-    it is what a teacher reads first; the criterion table below is the
-    justification for the score."""
+    """The annotated exercise: a line-by-line table carrying the color
+    highlights and the inline note on every marked span. Opens the report
+    (Avishai, 2026-07-30) — it is what a teacher reads first; the criterion
+    table below is the justification for the score.
+
+    The original scan is deliberately NOT here. It goes at the end of the
+    report (Ori, 2026-07-31): a full-width image between the heading and the
+    analysis pushed the actual findings off the first screen."""
     from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.shared import Inches
 
     doc.add_heading(LBL["text_analysis"], level=2).alignment = main_align
 
     for page in pages:
         page_num = page.get("page", "?")
         doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
-
-        orig_b64 = page.get("original_b64") or ""
-        if orig_b64:
-            try:
-                orig_bytes = base64.b64decode(orig_b64)
-                pic_para = doc.add_paragraph()
-                pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                pic_para.add_run().add_picture(io.BytesIO(orig_bytes), width=Inches(5.5))
-            except (ValueError, OSError) as e:
-                log.warning("page %s original image failed: %s", page_num, e)
 
         lines = page.get("lines") or []
         if not lines:
@@ -470,6 +459,31 @@ def _add_text_analysis(doc, pages: list[dict], spans_by_line: dict,
                 target_p.add_run(line_text)
             for p in row[0].paragraphs:
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
+def _add_original_pages(doc, pages: list[dict], LBL: dict, main_align) -> None:
+    """The student's own scan, one image per page, closing the report (Ori,
+    2026-07-31). It is the evidence a teacher turns to when they doubt a
+    finding, not something they read first — so it sits after the analysis and
+    the criterion table rather than ahead of them."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Inches
+
+    with_images = [p for p in pages if p.get("original_b64")]
+    if not with_images:
+        return
+
+    doc.add_heading(LBL["original_document"], level=2).alignment = main_align
+    for page in with_images:
+        page_num = page.get("page", "?")
+        doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
+        try:
+            orig_bytes = base64.b64decode(page["original_b64"])
+            pic_para = doc.add_paragraph()
+            pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            pic_para.add_run().add_picture(io.BytesIO(orig_bytes), width=Inches(5.5))
+        except (ValueError, OSError) as e:
+            log.warning("page %s original image failed: %s", page_num, e)
 
 
 def build_evaluation_docx(
@@ -666,41 +680,16 @@ def build_evaluation_docx(
     # it is still logged, so it stays available for debugging a surprising
     # score without occupying space in the teacher-facing report.
 
+    # The "clean transcript" and "marked transcript" sections that used to
+    # follow are gone (Ori, 2026-07-31). Between them and the text analysis at
+    # the top, the report carried the same transcript three times over; the
+    # analysis is the one that carries the findings, so it is the one that
+    # stayed.
+
     if pages:
         doc.add_page_break()
-
-        def _line_key(page_num, line_idx):
-            try:
-                return (int(page_num), line_idx)
-            except (TypeError, ValueError):
-                return (page_num, line_idx)
-
-        # Section A: clean transcript — exactly what the student wrote, no
-        # marks. English content is left-aligned per the way English text reads.
-        doc.add_heading(LBL["clean_transcript"], level=2).alignment = main_align
-        for page in pages:
-            page_num = page.get("page", "?")
-            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
-            for line in page.get("lines", []):
-                p = doc.add_paragraph(str(line.get("text", "")))
-                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-        # Section B: same text with the color highlights, but without the
-        # inline `(criterion: comment)` parentheticals — for a scannable
-        # at-a-glance view of where the issues fall.
-        doc.add_heading(LBL["marked_transcript"], level=2).alignment = main_align
-        for page in pages:
-            page_num = page.get("page", "?")
-            doc.add_heading(LBL["page"].format(n=page_num), level=3).alignment = main_align
-            for line_idx, line in enumerate(page.get("lines", [])):
-                line_text = str(line.get("text", ""))
-                spans = spans_by_line.get(_line_key(page_num, line_idx), [])
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                if spans:
-                    _fill_paragraph_with_spans(p, line_text, spans, include_notes=False)
-                else:
-                    p.add_run(line_text)
+        # Last of all: the student's own scan.
+        _add_original_pages(doc, pages, LBL, main_align)
 
     buf = io.BytesIO()
     doc.save(buf)

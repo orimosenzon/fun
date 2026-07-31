@@ -349,15 +349,14 @@ _STUDENT_LABEL_CACHE: dict[str, str] = {}
 
 
 def _student_label(classroom_service, user_id: str, tag: str = "") -> str | None:
-    """Who handed this in, as a human reads it: the student's full name, for the
-    report filename (Ori, 2026-07-30 — a teacher recognises "ori_mosenzon", not
-    an address). Falls back to the local part of the email when the profile
-    carries no name, and to None when nothing can be resolved — a missing name
-    must never cost us a grading run, so every failure here is logged and
-    swallowed.
+    """Who handed this in, for the report filename: the student's full email
+    address (Ori, 2026-07-31 — it is unique, where two students can share a
+    name). Falls back to their full name when the profile carries no address,
+    and to None when nothing can be resolved — a missing label must never cost
+    us a grading run, so every failure here is logged and swallowed.
 
-    fullName needs only classroom.rosters.readonly; emailAddress is what
-    additionally needs classroom.profile.emails."""
+    emailAddress needs classroom.profile.emails; fullName needs only
+    classroom.rosters.readonly."""
     if not user_id:
         return None
     if _profile_scopes_granted is False:
@@ -369,9 +368,7 @@ def _student_label(classroom_service, user_id: str, tag: str = "") -> str | None
         return _STUDENT_LABEL_CACHE[user_id]
     try:
         profile = classroom_service.userProfiles().get(userId=user_id).execute()
-        label = (profile.get('name') or {}).get('fullName')
-        if not label:
-            label = (profile.get('emailAddress') or "").split("@")[0] or None
+        label = profile.get('emailAddress') or (profile.get('name') or {}).get('fullName')
     except Exception as e:
         # Overwhelmingly the 403 from a delegation entry that has not been
         # given the profile scopes yet — say so explicitly, because the fix is

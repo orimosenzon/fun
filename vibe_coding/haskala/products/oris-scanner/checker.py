@@ -120,32 +120,37 @@ _FILENAME_UNSAFE_RE = re.compile(r'[\\/:*?"<>|\r\n\t]+')
 
 def _slug(s):
     """One filename component: no path-hostile characters, no runs of
-    whitespace, lower case. Non-Latin scripts pass through untouched — a Hebrew
-    assignment title is exactly what the teacher named it."""
+    whitespace. Case is preserved and so is every other character — the
+    address and the title are meant to read back exactly as the teacher and
+    Classroom spell them, Hebrew and '@' included."""
     s = _FILENAME_UNSAFE_RE.sub("-", str(s))
-    return re.sub(r"\s+", "_", s.strip()).strip("_").lower()
+    return re.sub(r"\s+", "_", s.strip()).strip("_")
+
+
+# Drive's own limit is 255 characters. Stopping short of it leaves room for the
+# " (1)" Drive appends when a name repeats within a folder.
+_MAX_FILENAME = 240
 
 
 def _report_filename(student_label, student_id, assignment_name, fallback_stem):
-    """The report's name in Drive: who handed it in, then the assignment, so a
-    teacher scanning the "תרגילים בדוקים" folder can tell whose work a report is
-    without opening it (Avishai 2026-07-30; name rather than email, Ori
-    2026-07-30) — e.g. ori_mosenzon_מטלה_יפיפיה_ליום_חמישי_בבוקר_20260730-093109.
+    """The report's name in Drive: the submitter's full email address, an
+    underscore, then the full name of the assignment they handed in to
+    (Ori, 2026-07-31) — e.g.
 
-    Falls back to the Classroom userId when the name could not be resolved, and
-    to the student's own uploaded filename when there is no id either — the old
-    behaviour, which identified nobody but at least never collided.
+        ori@bdika.net_מטלה מהממת לחמישי בצהריים.docx
+
+    with spaces turned into underscores. Falls back to the Classroom userId
+    when the address could not be resolved, and to the student's own uploaded
+    filename when there is no id either.
+
+    No timestamp: Ori asked for exactly these two parts. A resubmission
+    therefore produces the same name again — Drive keeps both files rather than
+    overwriting, so nothing is lost, but the two are told apart by their
+    modification time rather than by their name.
     """
-    who = _slug(student_label or student_id or fallback_stem or "report")[:120]
-    parts = [who]
-    if assignment_name:
-        # Only the assignment name is truncated. The timestamp has to survive
-        # intact: it is what keeps a resubmission from overwriting the first
-        # report, and Drive's 255-char cap is well within reach of a verbose
-        # assignment title.
-        parts.append(_slug(assignment_name)[:80])
-    parts.append(time.strftime("%Y%m%d-%H%M%S"))
-    return "_".join(p for p in parts if p) + ".docx"
+    who = _slug(student_label or student_id or fallback_stem or "report")
+    name = "_".join(p for p in (who, _slug(assignment_name or "")) if p)
+    return name[:_MAX_FILENAME] + ".docx"
 
 
 def check_hw(service, file_ids, folder_id, classroom_rubric=None,
