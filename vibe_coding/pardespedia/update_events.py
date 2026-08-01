@@ -81,7 +81,28 @@ CATEGORY_HE = {
     "Personal Growth": "התפתחות אישית", "Sports": "ספורט", "Workshops": "סדנאות",
     "MusicEvent": "מופעים והופעות", "ComedyEvent": "סטנדאפ וקומדיה",
     "TheaterEvent": "תיאטרון", "Event": "מופעים והופעות",
+    "Community": "קהילה", "קהילה": "קהילה",
 }
+
+
+def category_he(name) -> str:
+    """Hebrew label for a feed category, warning once about ones we don't know.
+
+    An unmapped category reaches the board in English and then sorts away from
+    its Hebrew twin in the "סוג" column — which is how "Community" sat there
+    unnoticed. The venues register themselves, so new categories will keep
+    appearing; the log line is what makes the next one visible.
+    """
+    name = (name or "").strip()
+    if not name:
+        return ""
+    if name not in CATEGORY_HE and name not in _SEEN_UNKNOWN_CATEGORIES:
+        _SEEN_UNKNOWN_CATEGORIES.add(name)
+        print(f"  category not mapped to Hebrew: {name!r}", file=sys.stderr)
+    return CATEGORY_HE.get(name, name)
+
+
+_SEEN_UNKNOWN_CATEGORIES = set()
 
 
 def he_date(d: dt.date) -> str:
@@ -103,9 +124,19 @@ def maps_link(venue: str) -> str:
 
 
 def price_label(price, is_free: bool = False) -> str:
+    """Entry-fee label — "" when the source simply did not say.
+
+    A feed that sends is_free=false with ticket_price=null is withholding the
+    price, not declaring one: eventschedule sends exactly that for every Torah
+    Learning Center class. Returning "בתשלום" there made the board assert that
+    free community classes cost money, so silence now stays silence and
+    build_table() renders it as "—".
+    """
     if is_free:
         return "חינם"
-    if price not in (None, "", "0.00", "0", 0):
+    if price in (None, ""):
+        return ""
+    if price not in ("0.00", "0", 0):
         try:
             val = float(price)
             if val > 0:
@@ -139,7 +170,12 @@ def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=
     return {"date": d, "time": time, "name": wiki_escape(name), "url": url or "",
             "category": category or "", "venue": wiki_escape(venue), "entry": entry,
             "sort": _sort_key(d, time), "key": key, "image_url": image_url or "",
-            "image_file": None, "video_id": None, "date_label": date_label}
+            "image_file": None, "video_id": None, "date_label": date_label,
+            # set by merge_venue_day() when several events at one venue on one
+            # day are folded into this row: "parts" keeps the originals (the
+            # "today" cards still show one card per event), "name_markup" is the
+            # pre-rendered multi-line cell for the board.
+            "parts": None, "name_markup": None}
 
 
 # --- sources ---------------------------------------------------------------
@@ -164,7 +200,7 @@ def fetch_eventschedule() -> list:
                 t = hm
         rows.append(_row(
             d, t, e.get("name"), e.get("guest_url"),
-            CATEGORY_HE.get(e.get("category_name"), e.get("category_name") or ""),
+            category_he(e.get("category_name")),
             clean_venue(e.get("venue_name")),
             price_label(e.get("ticket_price"), e.get("is_free")),
             f"es-{e.get('id')}",
@@ -400,6 +436,95 @@ def merge_showtimes(rows: list) -> list:
     return merged
 
 
+VENUE_MAX_EVENTS = 3
+
+
+def cap_per_venue(rows: list, limit: int = VENUE_MAX_EVENTS) -> list:
+    """Keep at most `limit` events per venue, dropping the LATEST ones.
+
+    A venue can publish a standing weekly programme with no end date — the
+    Torah Learning Center registered on the eventschedule hub on 2026-07-31
+    with twelve entries, seven of them weekly-forever, and instantly owned a
+    third of a board meant to show the whole moshava.
+
+    Cutting from the far end rather than the near one is what keeps this fair
+    over time: the events nearest today always survive, and as each one passes
+    out of the window the next in line takes its place. Nothing is suppressed
+    permanently — it simply waits its turn.
+
+    Pinned manual events are exempt; they are curated by hand and are pinned
+    precisely because they must show. Rows with no venue are never pooled
+    together, since "unknown" is not a place.
+    """
+    seen, out = {}, []
+    for r in sorted(rows, key=lambda r: r["sort"]):
+        venue = norm(r["venue"])
+        if not venue or r.get("pin"):
+            out.append(r)
+            continue
+        seen[venue] = seen.get(venue, 0) + 1
+        if seen[venue] <= limit:
+            out.append(r)
+    dropped = len(rows) - len(out)
+    if dropped:
+        over = {v: n for v, n in seen.items() if n > limit}
+        print(f"  venue cap: dropped {dropped} later event(s) from {len(over)} "
+              f"over-full venue(s)", file=sys.stderr)
+    return sorted(out, key=lambda r: r["sort"])
+
+
+def _covered_keys(r) -> set:
+    """Every source event a (possibly merged) row stands for."""
+    return {p["key"] for p in (r.get("parts") or [r])}
+
+
+def merge_venue_day(rows: list) -> list:
+    """Fold everything one venue holds on one day into a single row.
+
+    merge_showtimes() only folds *the same* event playing twice. That leaves a
+    venue running a daily programme with one near-identical row per session —
+    the Torah Learning Center posts nine classes a fortnight under one logo, so
+    the board showed three consecutive rows carrying the same blue TLC image
+    and reading, to a visitor, like a rendering bug.
+
+    These really are different events, so nothing is dropped: the row lists
+    every session behind its own hour ("'''10:00''' שם האירוע"), and the hour
+    column carries the full list. The originals stay on "parts" so the
+    "קורה היום" box can still render one card per session.
+    """
+    groups, order = {}, []
+    for i, r in enumerate(rows):
+        # an unknown venue is not a venue — never group those together
+        gid = (r["date"], norm(r["venue"])) if norm(r["venue"]) else ("solo", i)
+        if gid not in groups:
+            groups[gid] = []
+            order.append(gid)
+        groups[gid].append(r)
+
+    out = []
+    for gid in order:
+        g = sorted(groups[gid], key=lambda r: r["sort"])
+        if len(g) == 1:
+            out.append(g[0])
+            continue
+        head = dict(g[0])
+        head["parts"] = g
+        labels = []
+        for r in g:
+            name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
+            labels.append(f"'''{r['time']}''' {name}" if r["time"] else name)
+        head["name_markup"] = "<br />".join(labels)
+        head["time"] = ", ".join(dict.fromkeys(r["time"] for r in g if r["time"]))
+        for field, sep in (("category", " · "), ("entry", " · ")):
+            vals = [v for v in dict.fromkeys(r[field] for r in g) if v]
+            head[field] = sep.join(vals)
+        # one poster for the row: the first session that has one
+        for field in ("image_url", "image_file", "video_id"):
+            head[field] = next((r[field] for r in g if r[field]), head[field])
+        out.append(head)
+    return out
+
+
 def collect(start: dt.date, end: dt.date) -> list:
     all_rows = []
     for name, fn in SOURCES:
@@ -420,7 +545,8 @@ def collect(start: dt.date, end: dt.date) -> list:
             deduped.append(r)
         elif r["key"].startswith("man-") and not deduped[dup]["key"].startswith("man-"):
             deduped[dup] = r  # the manual entry carries curated details + wiki link
-    return merge_showtimes(deduped)
+    # cap before merge_venue_day so the limit counts events, not table rows
+    return merge_venue_day(cap_per_venue(merge_showtimes(deduped)))
 
 
 # --- images (download + upload, fair use) ----------------------------------
@@ -521,7 +647,7 @@ def build_table(rows: list, collapsible: bool = False) -> str:
     for r in rows:
         when = r.get("date_label") or f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
         iso = r["date"].isoformat()
-        name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
+        name = r.get("name_markup") or (f"[{r['url']} {r['name']}]" if r["url"] else r["name"])
         if r["image_file"]:
             link = f"|link={r['url']}" if r["url"] else ""
             img = f"[[קובץ:{r['image_file']}|90px{link}]]"
@@ -529,7 +655,7 @@ def build_table(rows: list, collapsible: bool = False) -> str:
             img = "—"
         venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
         lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
-                  f'{r["category"]} || {venue} || {r["entry"]}']
+                  f'{r["category"]} || {venue} || {r["entry"] or "—"}']
     lines.append("|}")
     return "\n".join(lines)
 
@@ -651,9 +777,14 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     # rows are already chronologically sorted (collect() sorts by "sort").
     # Pull out at most TODAY_MAX of today's events for the top highlight box;
     # the full board below shows everything else (no duplication).
-    today_shown = [r for r in rows if r["date"] == today][:TODAY_MAX]
+    # The box shows one card per event, so a venue-day row is expanded back into
+    # its sessions here (merging is a board-layout concern, not a today concern).
+    today_events = [p for r in rows if r["date"] == today
+                    for p in (r["parts"] or [r])]
+    today_shown = today_events[:TODAY_MAX]
     shown_keys = {r["key"] for r in today_shown}
-    rest_rows = [r for r in rows if r["key"] not in shown_keys]
+    # drop a row from the board only once *all* of its events made the box
+    rest_rows = [r for r in rows if not _covered_keys(r) <= shown_keys]
 
     today_block = build_today_block(today_shown, today)
     main_block = build_main_block(rest_rows, today, days)

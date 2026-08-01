@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Hourly check across ALL user-talk pages the bot has participated in (not
 # just the bot's own talk page) for unanswered replies, then invokes an agent
-# to respond. Supersedes cron_bot_talk.sh / check_bot_talk.py, which only
-# ever watched שיחת_משתמש:אורי מוסנזון בוט and missed replies posted on other
+# to respond. Replaced an earlier cron (deleted 2026-08-01) that only ever
+# watched שיחת_משתמש:אורי מוסנזון בוט and so missed replies posted on other
 # users' own talk pages (e.g. after cron_contributor_comments.sh starts a
 # thread there). See check_all_bot_talk.py docstring for the detection logic.
+# check_bot_talk.py survives for that single-page check — session-start-hook.sh
+# still uses it to flag a waiting sysop message at the start of a session.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
