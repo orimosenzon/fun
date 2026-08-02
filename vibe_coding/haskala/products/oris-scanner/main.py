@@ -16,7 +16,7 @@ from google.cloud import firestore
 from googleapiclient.discovery import build
 
 import checker
-import core
+from haskala_grading import core
 
 # ─── logging ───────────────────────────────────────────────────────────────
 # Everything lands on stdout, which Cloud Run forwards to Cloud Logging —

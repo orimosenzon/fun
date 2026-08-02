@@ -1,18 +1,28 @@
-"""core.py — the checking core of oris-scanner (language checking), no Flask.
+"""core.py — the shared language-checking core, no Flask.
 
-This is a direct port of the checking pipeline from haskala/products/checker/app.py
-(deployed at HF Space orimosenzon/haskala-ocr): OCR each page to line-tagged text,
-then evaluate the merged transcript against a structured JSON rubric in one call.
-Ported near-verbatim, minus everything that only exists to support checker's
+Used by every product that grades written work: OCR each page to line-tagged
+text, then evaluate the merged transcript against a structured JSON rubric in
+one call. Consumers today are products/oris-scanner (Classroom intake) and
+products/form-checker (Google Form intake); both import it as
+`from haskala_grading import core`.
+
+This module lives in haskala/lib/ and is vendored into a product directory by
+that product's deploy.sh (`gcloud run deploy --source .` only uploads the
+product dir). The single source of truth is lib/ — never edit a vendored copy,
+it is overwritten on every deploy and gitignored.
+
+It began as a direct port of the checking pipeline from
+haskala/products/checker/app.py (deployed at HF Space orimosenzon/haskala-ocr),
+near-verbatim minus everything that only exists to support checker's
 interactive browser UI:
   - the numbered-box overlay OCR mode (segmentation.py) — checker's own code
     documents numbered=False as "the clean-page variant used when no crops are
     needed (English flow)", which is exactly this product's case.
   - SSE streaming / progress events — this runs as a batch Cloud Function, not
     behind a live progress bar.
-Rotation detection stays oris-scanner's own (Gemini-vision based, already
-verified end-to-end) rather than checker's pixel-projection auto_rotate —
-that's a different, unrelated preprocessing step, not "the checking" itself.
+Rotation detection is the vision-based one oris-scanner verified end-to-end,
+rather than checker's pixel-projection auto_rotate — that's a different,
+unrelated preprocessing step, not "the checking" itself.
 """
 from __future__ import annotations
 
@@ -30,7 +40,7 @@ from PIL import Image, ImageOps
 
 load_dotenv(override=True)
 
-log = logging.getLogger("oris-scanner")
+log = logging.getLogger("haskala-grading")
 
 RENDER_DPI = 200          # A4 @ 200 DPI → ~1654×2339 px
 
@@ -1363,7 +1373,7 @@ def evaluate_with_rubric(
     exercise_lang: str = DEFAULT_EXERCISE_LANG,
 ) -> dict:
     """Send transcript + rubric → structured per-criterion scores + feedback."""
-    import report  # local import: report imports nothing from core, no cycle
+    from . import report  # local import: report imports nothing from core, no cycle
 
     transcript = pages_to_plain_text(pages)
     user_turn = (

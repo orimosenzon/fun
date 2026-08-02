@@ -3,10 +3,15 @@
 # Mirrors products/scan2/deploy.sh (same reasoning: no code-only-in-Cloud-Shell).
 #
 # Workflow:
-#   1. Commit any local changes under this directory (msg from CLI arg,
+#   1. Vendor haskala/lib/haskala_grading/ into this directory (see below).
+#   2. Commit any local changes under this directory (msg from CLI arg,
 #      otherwise a default message).
-#   2. Push to GitHub (git@github.com:orimosenzon/fun.git).
-#   3. gcloud run deploy oris-scanner --source .
+#   3. Push to GitHub (git@github.com:orimosenzon/fun.git).
+#   4. gcloud run deploy oris-scanner --source .
+#
+# Vendoring runs first, and deliberately so: a change to the shared library is
+# then already in place when the commit step runs, so what gets deployed and
+# what is in git describe the same code.
 #
 # NOTE: this only (re)deploys the Cloud Run service/code. It does NOT touch
 # the Cloud Scheduler trigger — see setup_infra.sh for the one-time trigger
@@ -35,6 +40,25 @@ set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")" && pwd)"
 cd "$SRC"
+
+# Vendor the shared grading library into this directory before deploying.
+#
+# core.py and report.py live in haskala/lib/haskala_grading/ and are shared with
+# form-checker. `gcloud run deploy --source .` uploads only this directory, so a
+# sibling lib/ is simply absent from the build — the container would start and
+# then fail on `from haskala_grading import core`. Copying it in here is what
+# makes the shared library reach the container at all.
+#
+# The copy is gitignored (see haskala/.gitignore): git's copy of the library is
+# lib/, and only lib/. --delete matters — without it a module deleted upstream
+# lingers here forever and the container keeps running code that no longer
+# exists in git.
+#
+# Note --source respects .gcloudignore, not .gitignore, so being gitignored does
+# not stop it being uploaded. If a .gcloudignore is ever added to this
+# directory, it must not exclude haskala_grading/.
+echo "📦 vendoring shared library haskala_grading/…"
+rsync -a --delete --exclude='__pycache__' "$SRC/../../lib/haskala_grading/" "$SRC/haskala_grading/"
 
 PROJECT="${ORIS_SCANNER_PROJECT:-master-gecko-500709-t0}"
 REGION="${ORIS_SCANNER_REGION:-europe-west1}"

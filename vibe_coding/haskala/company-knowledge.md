@@ -16,6 +16,10 @@
 ## לקוחות
 - **בית ספר שמיר, תל אביב** — לקוח/אתר פיילוט ראשון, דרך אבישי. חשבון מורה הושג ב-2026-06.
   - לבדוק: האם החשבון הוא Google Workspace for Education (משפיע על הרשאות Classroom API).
+- **`bdika.net`** — ה-Workspace של ירון, וזה מה ש-oris-scanner ו-form-checker באמת
+  רצים מולו. הערה מבצעית: הגשה מחשבון Gmail פרטי לכיתה ב-bdika.net לא ניתנת
+  לביטול-הגשה, כי Drive לא מעביר בעלות בין דומיינים. זו לא באג אצלנו ואין
+  הגדרת אדמין שמתקנת אותה — בדיקות צריכות להיעשות מחשבון bdika.net.
 
 ## היסטוריה
 - **גרסה ראשונה (≈2024):** התחלנו את הרעיון. עבדנו כחודשיים ואז זנחנו — זמינות אישית של
@@ -24,24 +28,59 @@
   Claude Code כשותף פיתוח, ו-Google Classroom שהבשיל כשער לשוק החינוך הישראלי.
 
 ## תשתית משותפת (חוצת-מוצרים)
-- **AI:** Claude Vision/Opus (caching מופעל לחיסכון ~90% על system prompt).
-- **אינטגרציה חינוכית:** Google Classroom API + Google Drive API (OAuth 2.0).
-- **סטאק backend:** Flask (תואם לשאר פרויקטי המפתח).
-- **פריסה:** HF Spaces / Render. דפוס "קמס" = git commit/push + deploy.sh.
+- **AI:** Claude Vision/Sonnet 5 כברירת מחדל, עם Gemini / Groq / Azure GPT כחלופות
+  לכל מוצר. caching מופעל לחיסכון ~90% על system prompt.
+- **אינטגרציה חינוכית:** Google Classroom API + Google Drive API. בענן —
+  service account עם domain-wide delegation (בלי קובץ מפתח); מקומית — OAuth שולחני.
+- **ספרייה משותפת:** `lib/haskala_grading/` — `core.py` (OCR + הערכה מול רובריקה)
+  ו-`report.py` (בניית docx). חולצה מ-oris-scanner ב-2026-08-02, כשform-checker
+  עמד להיות ההעתק החמישי. **מקור אמת יחיד ב-lib/**; ה-deploy.sh של כל מוצר
+  מעתיק אותה לתיקיית המוצר לפני הפריסה, כי `gcloud run deploy --source .`
+  מעלה רק את תיקיית המוצר. העותק בתיקיית המוצר הוא תוצר בנייה ו-gitignored.
+  `checker` ו-`math-checker` **טרם הועברו** אליה — שניהם רדומים.
+- **סטאק backend:** Flask למוצרים אינטראקטיביים, functions-framework על Cloud Run
+  לשירותים מתוזמנים.
+- **פריסה:** HF Spaces (Flask) או Cloud Run (מתוזמן). דפוס "קמס" = git commit/push
+  + deploy.sh. פריסה תמיד ממצב שנדחף ל-git, כדי שלא יהיה קוד שקיים רק בענן.
+- **פרויקט GCP:** `master-gecko-500709-t0`, אזור `europe-west1`. service account
+  `sainter@…`, מתחזה ל-`ori@bdika.net`. client id ל-DWD: `114647217076557059736`.
 
 ## תיק המוצרים (Product Portfolio)
 
-### מוצר #1 — בודק תרגילים (checker) — **פעיל, POC עובד**
-- **מה:** תלמיד כותב על נייר, מצלם, מעלה ל-Classroom → המערכת מתמללת כתב יד (Claude Vision),
-  בודקת מול רובריקה, ומחזירה משוב (אוטומטי לוודאי / סקירת מורה למורכב).
-- **מצב:** OCR + alignment שורה-שורה + הערכה מול רובריקה + ייצוא Word — בנוי ועובד.
-  חסר: אינטגרציית Classroom API, OAuth, ממשק מורה, פריסת production.
-- **deployment ראשון:** שמיר — **מתמטיקה** (שכבה ט'). דורש מודול בדיקת-מתמטיקה ייעודי
-  (אימות צעדי פתרון, ניקוד חלקי, נוטציה, תיקון אוריינטציית סריקה).
+### מוצר #1 — בודק תרגילים (checker) — **רדום**
+- **מה:** אפליקציית Flask להעלאה ידנית: תמלול כתב יד + alignment שורה-שורה + הערכה
+  מול רובריקה + ייצוא Word. אין בו Classroom — הקלט הוא העלאה בדפדפן בלבד.
+- **מצב:** פרוס ב-HF Space `orimosenzon/haskala-ocr` (מאחורי Basic Auth), אבל לא נגע
+  בו אף אחד מאז 2026-06-16. זה האב הקדמון של כל שאר המוצרים.
 - **ידע:** `products/checker/memory/project-knowledge.md`
 
-### מוצרים עתידיים
-- _(placeholders — להוסיף ככל שמתגבשים)_
+### מוצר #2 — בודק מתמטיקה (math-checker) — **תקוע**
+- **מה:** בדיקת תרגילי מתמטיקה כשלם (דיאגרמות, הוכחות גיאומטריות) ולא שורה-שורה.
+  Flask + KaTeX. כולל את האינטגרציה המקומית היחידה ל-Classroom (`gclass.py` עם
+  OAuth שולחני, `poller.py` עם ledger בקובץ JSON).
+- **מצב:** פרוס ב-HF Space `orimosenzon/haskala-math` (ה-Space ישן). חסום כי
+  `credentials.json` מעולם לא הושג, אז ה-poller לא רץ באמת.
+
+### מוצר #3 — scan2 — **מת, מוחלף**
+האב הקדמון של oris-scanner: Cloud Run + Pub/Sub, בלי ledger. חוסר ה-dedup הוא
+שייצר את סופת ה-retry (~585 אלף בקשות בשישה ימים, ~$26). הקוד שוחזר מתוך
+ה-container לגיט ב-2026-07-20 ואז הוחלף. **החלטה פתוחה: למחוק או לשמור.**
+
+### מוצר #4 — oris-scanner — **פעיל בייצור**
+- **מה:** סורק את Google Classroom של המורה, בודק כל הגשה חדשה תחת הנושא
+  "English Assignment", וכותב דוח Word לתיקיית "תרגילים בדוקים" ב-Drive.
+- **מצב:** Cloud Run + Cloud Scheduler (`*/1`), ledger ב-Firestore, revision
+  `00033-tm8` נכון ל-2026-07-31.
+- **ידע:** `products/oris-scanner/memory/`
+
+### מוצר #5 — form-checker — **נכתב, טרם נפרס** (2026-08-02)
+- **מה:** מורה ממלא **טופס גוגל** — מעלה סריקה של תרגיל + בוחר רובריקה, שכבת גיל,
+  בית ספר — והדוח חוזר אליו במייל. אותו מנוע בדיקה כמו oris-scanner, קלט ופלט אחרים.
+  הטופס נכתב ע"י אבישי ומיועד למורים לאנגלית, גם מחוץ לשמיר.
+- **תנאי מוקדם קריטי:** טפסי גוגל שומרים קבצים שהועלו ב-Drive של **בעל הטופס**,
+  ולכן הטופס חייב להיות בבעלות חשבון bdika.net. טופס שנבנה בחשבון אחר — אין תיקון
+  חוץ מבנייה מחדש.
+- **ידע:** `products/form-checker/memory/project-knowledge.md`
 
 ## מודל עסקי
 - _(לגיבוש)_

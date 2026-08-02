@@ -6,8 +6,7 @@ import time
 
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
-import core
-import report
+from haskala_grading import core, report
 
 # No basicConfig here on purpose — main.py owns logging setup (structured
 # JSON for Cloud Run, level from LOG_LEVEL). Configuring it at import time

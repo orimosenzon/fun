@@ -1,4 +1,11 @@
-"""report.py — Word report builder for oris-scanner.
+"""report.py — the shared Word report builder.
+
+Takes an evaluation dict (the shape core.EVAL_SCHEMA describes) plus the page
+list, returns .docx bytes. Deliberately imports nothing from core, so the two
+modules have no cycle and this one can be used on its own.
+
+Lives in haskala/lib/ and is vendored into a product directory at deploy time —
+see core.py's module docstring. The single source of truth is lib/.
 
 Ported near-verbatim from haskala/products/checker/app.py's build_evaluation_docx
 and its helpers (colored per-criterion highlighting, issue-span resolution,
@@ -14,7 +21,7 @@ import io
 import logging
 import re
 
-log = logging.getLogger("oris-scanner")
+log = logging.getLogger("haskala-grading")
 
 
 # ─── languages / labels (mirrors checker/app.py DOCX_LABELS) ───────────────
