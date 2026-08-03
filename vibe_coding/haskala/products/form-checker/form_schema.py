@@ -123,7 +123,9 @@ FIELDS: dict[str, dict] = {
     },
     "instructions": {
         "aliases": ["הוראות המשימה", "תיאור התרגיל", "מה התלמידים התבקשו",
-                    "המשימה", "הוראות", "assignment", "instructions", "task"],
+                    "המשימה", "הוראות", "assignment", "instructions", "task",
+                    "the task", "writing task", "question", "the question",
+                    "what were the students asked", "prompt"],
         "required": False,
         "hint": "Paragraph. What the students were actually asked to do — this "
                 "is what the model grades the answer against.",
@@ -150,6 +152,36 @@ FIELDS: dict[str, dict] = {
 # The rubric dropdown option that means "the rubric is one of the files I
 # uploaded" rather than one of the bundled ones.
 RUBRIC_FROM_UPLOAD = "מחוון שצירפתי בקבצים"
+
+# ─── grading with no task in hand ───────────────────────────────────────────
+# The form asks for the assignment, and the folder is read for an exam paper,
+# but a submission can still arrive with neither. The work is graded anyway —
+# language, vocabulary and mechanics do not depend on knowing the topic.
+#
+# What must not happen is a silent guess. Without this notice the model infers a
+# topic from the composition itself and then scores the composition as perfectly
+# on-topic against its own inference, which produces a confident, unearned
+# Content mark. Saying so explicitly is what converts an invisible wrong answer
+# into a visible "cannot be determined" — and the teacher, who does know the
+# task, can supply the judgement we cannot.
+NO_TASK_NOTICE = """\
+NOTE — THE ASSIGNMENT WAS NOT SUPPLIED.
+The teacher did not describe the task on the form, and no document in the folder
+described it either. You are therefore grading without knowing what the student
+was asked to write. Accordingly:
+
+• Do NOT judge, reward or penalise topic relevance. You cannot know the topic,
+  and you must NOT infer it from the composition and then score the composition
+  against your own inference.
+• Score CONTENT AND ORGANIZATION on what can still be judged without the task:
+  development of ideas, coherence, structure, introduction and conclusion.
+• In the CONTENT AND ORGANIZATION feedback, state plainly, as the first
+  sentence: "Cannot determine whether the student answered the question — the
+  assignment was not supplied."
+• Repeat that limitation in the overall feedback, so the teacher knows the mark
+  is incomplete rather than final.
+• Every other criterion — vocabulary, language use, mechanics — is unaffected by
+  the missing task and should be scored normally."""
 
 # ─── Bagrut module codes → bundled rubric ───────────────────────────────────
 # Avishai's form labels its dropdown options the way the Ministry names the
@@ -479,6 +511,8 @@ def build_question(params: dict) -> str:
     parts = []
     if params.get("instructions"):
         parts.append(params["instructions"])
+    else:
+        parts.append(NO_TASK_NOTICE)
     context = []
     if params.get("module"):
         # The module is the single most useful thing we know about the

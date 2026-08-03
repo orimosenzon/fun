@@ -349,8 +349,25 @@ def test_build_question_instructions_only():
     assert fs.build_question({"instructions": "Write a letter."}) == "Write a letter."
 
 
-def test_build_question_empty():
-    assert fs.build_question({}) == ""
+def test_build_question_without_a_task_says_so():
+    """בלי המשימה, המודל ינחש נושא מתוך החיבור ואז ייתן ציון תוכן מלא מול
+    הניחוש של עצמו. ההודעה הזו היא מה שהופך תשובה שגויה בלתי-נראית
+    ל'אי אפשר לדעת' גלוי."""
+    q = fs.build_question({})
+    assert "ASSIGNMENT WAS NOT SUPPLIED" in q
+    assert "Cannot determine whether the student answered the question" in q
+
+
+def test_build_question_with_a_task_has_no_notice():
+    q = fs.build_question({"instructions": "Write a letter."})
+    assert "NOT SUPPLIED" not in q
+
+
+def test_build_question_notice_survives_other_context():
+    """גם כשיש מודול והערות, היעדר המשימה עדיין חייב להיאמר."""
+    q = fs.build_question({"module": "g", "comments": "be gentle"})
+    assert "ASSIGNMENT WAS NOT SUPPLIED" in q
+    assert "מודול G" in q
 
 
 # ─── הפרדת עבודות תלמידים ממסמכי רקע ────────────────────────────────────────

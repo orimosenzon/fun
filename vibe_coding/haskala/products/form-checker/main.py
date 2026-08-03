@@ -121,15 +121,32 @@ FALLBACK_RESULTS_FOLDER_ID = os.environ.get("FALLBACK_RESULTS_FOLDER_ID", "")
 # evaluation call, roughly $0.04–0.06 per page on Claude Sonnet 5. So the page
 # cap, not the file cap, is the one that actually bounds the bill.
 #
-# Raised from 10/20 when the form moved to shared folders, because one response
-# stopped meaning one exercise and started meaning a whole class. 40 pages is
-# roughly $2 worst case — enough for a class of fifteen one-page compositions —
-# and it is a *ceiling*, not a budget: the common case is far below it.
+# THE ONE THAT BOUNDS THE BILL, while we are still testing.
 #
-# Enforced against what is actually in the folder, before a single page is
-# rendered. A teacher who shares the wrong folder, or a folder that later grows
-# a hundred files, gets an email explaining the cap and costs us nothing.
-MAX_FILES_PER_RESPONSE = int(os.environ.get("MAX_FILES_PER_RESPONSE", "15"))
+# At most this many pieces of student work are graded per folder — the rest are
+# left for later and the teacher is told so. A *limit*, not a refusal: a teacher
+# who shares a class of thirty gets three reports and an explanation, not a
+# rejection. Refusing would be the wrong shape now that one folder is a whole
+# class, since there is nothing for them to fix.
+#
+# Set to 3 for the pilot. Raise it once the grades have been eyeballed and the
+# cost per work is known for real rather than estimated.
+#
+# It composes with the per-file ledger to give a useful property for free:
+# resubmitting the same folder grades the NEXT three, because the first three
+# are already recorded as done. So a class of thirty can be worked through
+# deliberately, three at a time, without any extra machinery.
+MAX_WORKS_PER_FOLDER = int(os.environ.get("MAX_WORKS_PER_FOLDER", "3"))
+
+# These two are sanity bounds, not cost bounds — MAX_WORKS_PER_FOLDER above is
+# what actually limits spend now. Listing and downloading cost bandwidth and a
+# few seconds, not model calls, so the file limit is set where "this is not a
+# class folder, something is wrong" becomes true rather than where the money is.
+# Keeping it at a class-sized 15 would refuse a real class of thirty outright,
+# which is the one thing this design is supposed to make unnecessary.
+MAX_FILES_PER_RESPONSE = int(os.environ.get("MAX_FILES_PER_RESPONSE", "60"))
+# Applied to the works actually selected for grading, so it never refuses a
+# folder over pages we were not going to read anyway.
 MAX_PAGES_PER_RESPONSE = int(os.environ.get("MAX_PAGES_PER_RESPONSE", "40"))
 
 # Rows processed in one invocation. A backlog is drained over several polls
@@ -547,19 +564,39 @@ def _collect_folder(drive_service, params, tag):
             "מחוון) ולא כעבודות תלמידים בכתב יד. יש להוסיף לתיקייה את הסריקות "
             "של העבודות." % meta.get("name"))
 
-    # After the split, so the exam paper's pages are not charged against the
-    # students' budget.
-    if pages > MAX_PAGES_PER_RESPONSE:
-        raise drive_folder.FolderError(
-            "העבודות בתיקייה %r מכילות %d עמודים, והמערכת בודקת עד %d בכל שליחה. "
-            "אפשר לפצל אותן לכמה תיקיות ולשלוח את הטופס פעם אחת לכל תיקייה."
-            % (meta.get("name"), pages, MAX_PAGES_PER_RESPONSE))
-
     log.info("%s folder %r: %d work file(s) / %d page(s), %d context document(s), "
              "%d file(s) in unsupported formats",
              tag, meta.get("name"), len(work), pages, len(context_docs),
              len(wrong_format))
     return meta, work, context_docs, wrong_format
+
+
+def _select_works(work, params, tag):
+    """(works to grade now, already graded, deferred to a later submission).
+
+    Order of operations matters and is not obvious. The ledger filter runs
+    BEFORE the MAX_WORKS_PER_FOLDER cut, so the cap applies to what is still
+    outstanding rather than to the folder as a whole. Cutting first would mean a
+    resubmission re-selects the same three files, finds all three already done,
+    and grades nothing — the folder would be permanently stuck at three.
+    """
+    pending, already = [], 0
+    for entry in work:
+        if _file_already_graded(file_key(params, entry)):
+            log.debug("%s %r already graded — skipping", tag, entry["name"])
+            already += 1
+        else:
+            pending.append(entry)
+
+    deferred = []
+    if MAX_WORKS_PER_FOLDER and len(pending) > MAX_WORKS_PER_FOLDER:
+        deferred = pending[MAX_WORKS_PER_FOLDER:]
+        pending = pending[:MAX_WORKS_PER_FOLDER]
+        log.info("%s grading %d of %d outstanding work file(s) — "
+                 "MAX_WORKS_PER_FOLDER is %d; the rest are left for a "
+                 "resubmission", tag, len(pending), len(pending) + len(deferred),
+                 MAX_WORKS_PER_FOLDER)
+    return pending, already, deferred
 
 
 def _process_folder(drive_service, gmail_service, params, tag) -> str:
@@ -570,6 +607,16 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
     and the teacher is told exactly which file failed in the summary mail.
     """
     meta, work, context_docs, wrong_format = _collect_folder(drive_service, params, tag)
+    pending, already, deferred = _select_works(work, params, tag)
+
+    # Counted over the selected works only, so a big folder is never refused
+    # over pages we were never going to read.
+    pages = sum(drive_folder.page_count(e["data"], e["ext"]) for e in pending)
+    if pages > MAX_PAGES_PER_RESPONSE:
+        raise drive_folder.FolderError(
+            "העבודות שנבחרו לבדיקה בתיקייה %r מכילות %d עמודים, והמערכת בודקת "
+            "עד %d בכל שליחה. אפשר לפצל אותן לכמה תיקיות ולשלוח את הטופס פעם "
+            "אחת לכל תיקייה." % (meta.get("name"), pages, MAX_PAGES_PER_RESPONSE))
 
     ctx = checker.build_context(params, context_docs, tag=tag)
     question = checker.build_question(params, ctx)
@@ -577,17 +624,15 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
         drive_service, params["folder_id"])
 
     results = {
-        "graded": [], "failed": [], "already": 0,
+        "graded": [], "failed": [], "already": already,
+        "deferred": [e["name"] for e in deferred],
         "skipped": [(f["name"], f["reason"]) for f in wrong_format],
         "context": ctx.context_docs,
+        "task_known": bool(ctx.instructions or params.get("instructions")),
     }
 
-    for entry in work:
+    for entry in pending:
         fkey = file_key(params, entry)
-        if _file_already_graded(fkey):
-            log.debug("%s %r already graded — skipping", tag, entry["name"])
-            results["already"] += 1
-            continue
         try:
             docx_bytes, title = checker.check_file(entry, params, ctx, question, tag=tag)
         except Exception as e:
@@ -616,9 +661,10 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
         log.warning("%s no mail scope — %d report(s) are in the teacher's folder but "
                     "they have not been told", tag, len(results["graded"]))
 
-    log.info("%s done: %d graded, %d already done, %d failed, %d skipped",
+    log.info("%s done: %d graded, %d already done, %d deferred, %d failed, %d skipped",
              tag, len(results["graded"]), results["already"],
-             len(results["failed"]), len(results["skipped"]))
+             len(results["deferred"]), len(results["failed"]),
+             len(results["skipped"]))
     if results["graded"]:
         return "graded"
     return "nothing-new" if results["already"] else "no-results"
