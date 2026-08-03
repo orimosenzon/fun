@@ -58,17 +58,52 @@ FIELDS: dict[str, dict] = {
         "hint": "Turn on 'Collect email addresses' in the form settings; "
                 "this is where the report is sent.",
     },
+    "folder_link": {
+        "aliases": ["link to folder", "קישור לתיקייה", "קישור לתיקיה",
+                    "shared folder", "drive folder", "folder link", "תיקייה",
+                    "תיקיה", "folder"],
+        "required": True,
+        "hint": "Short answer or paragraph. The teacher pastes a Drive folder "
+                "link; the folder must be shared with the service account (see "
+                "SHARE_WITH below) with EDITOR access, because results are "
+                "written back into it.",
+    },
     "files": {
         "aliases": ["התרגיל לבדיקה", "העלאת קבצים", "קבצים", "סריקות",
                     "upload", "files", "exercise files", "צרף", "צרפו"],
-        "required": True,
-        "hint": "Must be a File upload question. Allow multiple files "
-                "(a scan per page) and restrict to PDF/JPG/PNG.",
+        "required": False,
+        "hint": "Optional. A File upload question still works and is graded "
+                "alongside the folder, but folder sharing is the primary path — "
+                "it is what lets results be written back where the teacher can "
+                "see them, and what makes a whole class one submission.",
+    },
+    "first_name": {
+        "aliases": ["first name", "שם פרטי"],
+        "required": False,
+        "hint": "Short answer.",
+    },
+    "last_name": {
+        "aliases": ["last name", "שם משפחה"],
+        "required": False,
+        "hint": "Short answer.",
     },
     "teacher_name": {
         "aliases": ["שם המורה", "שם מלא", "שמך", "teacher name", "your name", "שם"],
         "required": False,
-        "hint": "Short answer.",
+        "hint": "Short answer. Only needed if the form asks for the name as one "
+                "field instead of first_name + last_name.",
+    },
+    "comments": {
+        # Deliberately not a bare "הערות". A responses sheet grows human-added
+        # columns — "הערות פנימיות", "ציון ידני" — and a one-word alias claims
+        # them, which would quietly feed our own notes to the model as though the
+        # teacher had written them.
+        "aliases": ["comments and requests", "comments", "requests",
+                    "הערות ובקשות", "הערות מהמורה"],
+        "required": False,
+        "hint": "Paragraph. Free text from the teacher — passed to the model as "
+                "context alongside the task instructions, so a request like "
+                "'these are weak students, be gentle' actually reaches it.",
     },
     "school": {
         "aliases": ["בית הספר", "בית ספר", "מוסד", "school"],
@@ -115,6 +150,55 @@ FIELDS: dict[str, dict] = {
 # The rubric dropdown option that means "the rubric is one of the files I
 # uploaded" rather than one of the bundled ones.
 RUBRIC_FROM_UPLOAD = "מחוון שצירפתי בקבצים"
+
+# ─── Bagrut module codes → bundled rubric ───────────────────────────────────
+# Avishai's form labels its dropdown options the way the Ministry names the
+# exams — "Module G 16582" — and neither half of that matches a bundled rubric's
+# name or id. Matching on the *code* is what makes the mapping unambiguous:
+# 16582 is Module G and nothing else, whereas the letter alone is one character
+# that appears all over a label.
+#
+# This is not cosmetic. Before this map existed every one of the four options
+# fell through resolve_rubric_choice to core.DEFAULT_RUBRIC_ID, an ESL 9th-grade
+# CEFR rubric — so a Module G composition worth 40 points was graded out of a
+# completely different scale, with only a log warning to say so.
+_MODULE_RUBRICS: dict[str, str] = {
+    "c": "moe-writing-module-c",
+    "d": "moe-writing-module-d",
+    "f": "moe-writing-module-f",
+    "g": "moe-writing-module-g",
+}
+
+# The leading zero is optional in practice — the Ministry writes 016382 on some
+# sheets and 16382 on others, and teachers copy whichever they saw.
+_MODULE_CODES: dict[str, str] = {
+    "16382": "c",
+    "16484": "d",
+    "16584": "f",
+    "16582": "g",
+}
+
+_MODULE_CODE_RE = re.compile(r"\b0?(\d{5})\b")
+_MODULE_LETTER_RE = re.compile(r"(?:\bmodule|מודול)\s+([cdfg])\b")
+
+
+def resolve_module(label: str) -> str | None:
+    """Bagrut module letter ('c'/'d'/'f'/'g') for a rubric dropdown label.
+
+    Code first, letter second: the code is unique, the letter is not — a label
+    reading "Module G 16582" would also match a naive search for "d" inside the
+    word "Module". Returns None when the label names no module at all, which is
+    the normal case for a form that offers our own rubrics instead.
+    """
+    if not label:
+        return None
+    m = _MODULE_CODE_RE.search(str(label))
+    if m and m.group(1) in _MODULE_CODES:
+        return _MODULE_CODES[m.group(1)]
+    m = _MODULE_LETTER_RE.search(normalise(label))
+    if m:
+        return m.group(1)
+    return None
 
 # Exercise-language dropdown labels → core.LANGS keys. Accepts the Hebrew name,
 # the native name and the ISO code, since all three show up in practice.
@@ -237,6 +321,37 @@ def extract_file_ids(cell: str) -> list[str]:
     return ids
 
 
+_FOLDER_ID_PATTERNS = [
+    re.compile(r"/folders/([\w-]{15,})"),
+    re.compile(r"/drive/u/\d+/folders/([\w-]{15,})"),
+    re.compile(r"[?&]id=([\w-]{15,})"),
+]
+
+
+def extract_folder_id(cell: str) -> str:
+    """Drive folder id out of whatever the teacher pasted, "" if there is none.
+
+    Teachers paste a share link, a browser address-bar URL (which carries the
+    /u/0/ account index), or occasionally the bare id. All three are accepted;
+    the trailing ?usp=sharing is ignored because the patterns stop at the id.
+
+    Only the first id found is returned. A teacher who pastes two links has
+    given us an ambiguous answer, and grading the first one silently is better
+    than grading both — the second would be someone else's folder, and writing
+    results into it is not a mistake worth making automatically.
+    """
+    if not cell:
+        return ""
+    text = str(cell).strip()
+    for pat in _FOLDER_ID_PATTERNS:
+        m = pat.search(text)
+        if m:
+            return m.group(1)
+    if re.fullmatch(r"[\w-]{15,}", text):
+        return text          # a bare id
+    return ""
+
+
 def resolve_rubric_choice(label: str) -> tuple[str | None, bool]:
     """(bundled rubric id, use_uploaded_rubric).
 
@@ -249,6 +364,19 @@ def resolve_rubric_choice(label: str) -> tuple[str | None, bool]:
         return None, False
     if normalise(RUBRIC_FROM_UPLOAD) in norm or "צירפתי" in label or "attached" in norm:
         return None, True
+
+    # Before any name matching: a Bagrut module code names exactly one rubric.
+    module = resolve_module(label)
+    if module:
+        rubric_id = _MODULE_RUBRICS[module]
+        if core.load_rubric(rubric_id):
+            return rubric_id, False
+        log.error("rubric choice %r is Bagrut module %s, but %s is not bundled — "
+                  "falling back to %s, which grades on a different scale. Add the "
+                  "rubric JSON to haskala_grading/rubrics/.",
+                  label, module.upper(), rubric_id, core.DEFAULT_RUBRIC_ID)
+        return None, False
+
     for r in core.list_rubrics():
         if normalise(r["name"]) == norm or normalise(r["id"]) == norm:
             return r["id"], False
@@ -309,10 +437,24 @@ def parse_row(row: list[str], colmap: dict[str, int]) -> dict:
 
     rubric_id, rubric_from_upload = resolve_rubric_choice(cell("rubric"))
 
+    # One name field, however the form spells it. A form asking First + Last
+    # gives us two columns; an older one gives a single "שם המורה". Joining here
+    # means everything downstream — the greeting, the report filename — reads
+    # one key and does not care which form produced the row.
+    name = " ".join(p for p in (cell("first_name"), cell("last_name")) if p)
+    if not name:
+        name = cell("teacher_name")
+
     return {
         "timestamp": cell("timestamp"),
         "email": cell("email"),
-        "teacher_name": cell("teacher_name"),
+        "teacher_name": name,
+        "first_name": cell("first_name"),
+        "last_name": cell("last_name"),
+        "comments": cell("comments"),
+        "folder_id": extract_folder_id(cell("folder_link")),
+        "folder_link": cell("folder_link"),
+        "module": resolve_module(cell("rubric")),
         "school": cell("school"),
         "grade_level": cell("grade_level"),
         "instructions": cell("instructions"),
@@ -338,12 +480,22 @@ def build_question(params: dict) -> str:
     if params.get("instructions"):
         parts.append(params["instructions"])
     context = []
+    if params.get("module"):
+        # The module is the single most useful thing we know about the
+        # expectation level: a Module C task and a Module G task are the same
+        # genre written by students two Bagrut levels apart.
+        context.append(f"בחינת בגרות באנגלית, מודול {params['module'].upper()}")
     if params.get("grade_level"):
         context.append(f"שכבת גיל: {params['grade_level']}")
     if params.get("school"):
         context.append(f"בית ספר: {params['school']}")
     if context:
         parts.append("הקשר כיתתי (לא חלק מהוראות המשימה):\n" + "\n".join(context))
+    if params.get("comments"):
+        # Kept last and clearly fenced. It is free text a teacher was *required*
+        # to fill in, so it is as likely to say "thanks!" as anything useful —
+        # labelling it stops the model reading a pleasantry as task instructions.
+        parts.append("הערות מהמורה (לא חלק מהוראות המשימה):\n" + params["comments"])
     return "\n\n".join(parts)
 
 
@@ -370,7 +522,15 @@ def print_form_template() -> None:
         print()
 
     print("=" * 60)
-    print("Dropdown options for the rubric question — copy these verbatim:\n")
+    print("Dropdown options for the rubric question.\n")
+    print("Bagrut modules — matched on the exam CODE, so the wording around it")
+    print("is free ('Module G 16582', 'מודול G — 16582' and '16582' all work):\n")
+    for letter, rubric_id in _MODULE_RUBRICS.items():
+        code = next(c for c, l in _MODULE_CODES.items() if l == letter)
+        rubric = core.load_rubric(rubric_id)
+        status = "" if rubric else "   ← NOT BUNDLED, would fall back to the default"
+        print(f"   • Module {letter.upper()} {code}{status}")
+    print("\nOr any of our own rubrics, matched on the name:\n")
     for r in core.list_rubrics():
         print(f"   • {r['name']}")
     print(f"   • {RUBRIC_FROM_UPLOAD}")
