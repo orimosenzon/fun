@@ -173,11 +173,17 @@ class WikiClient:
             for item in results
         ]
 
-    def list_pages(self, prefix: str = "", limit: int = 0, namespace: int = 0) -> list:
+    def list_pages(self, prefix: str = "", limit: int = 0, namespace: int = 0,
+                   redirects: str = "all") -> list:
         """List pages, optionally filtered by prefix.
 
         limit=0 (default) fetches all pages, following apcontinue. A positive
         limit caps the total number of results returned.
+
+        redirects: "all" (default), "redirects", or "nonredirects". Callers
+        that treat every title as an article want "nonredirects" — a redirect
+        has no content of its own, so it reaches such a caller as a page with
+        no description.
         """
         results = []
         apcontinue = None
@@ -193,6 +199,7 @@ class WikiClient:
                 "list": "allpages",
                 "aplimit": batch_size,
                 "apnamespace": namespace,
+                "apfilterredir": redirects,
                 "format": "json",
             }
             if prefix:
