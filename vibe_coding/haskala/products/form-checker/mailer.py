@@ -60,6 +60,7 @@ def send_summary(gmail_service, sender: str, params: dict, results: dict,
     failed = results.get("failed") or []
     skipped = results.get("skipped") or []
     context = results.get("context") or []
+    deferred = results.get("deferred") or []
     already = results.get("already", 0)
 
     msg = EmailMessage()
@@ -84,6 +85,30 @@ def send_summary(gmail_service, sender: str, params: dict, results: dict,
         ] + [f"    ✓ {name}" for name in graded]
     else:
         lines += ["עברנו על התיקייה ששיתפת, אבל לא היה בה משהו חדש לבדוק."]
+
+    if not results.get("task_known", True) and graded:
+        # Said before the file lists, not buried after them: it changes how the
+        # whole batch should be read, and a teacher who misses it will take an
+        # incomplete Content mark for a final one.
+        lines += [
+            "",
+            "⚠️  לא ידענו מה הייתה המשימה — לא תוארה בטופס ולא נמצא בתיקייה דף "
+            "משימה. לכן לא בדקנו אם התלמידים ענו על השאלה שנשאלה, וזה נאמר "
+            "במפורש בכל דוח. שאר הקריטריונים — אוצר מילים, שימוש בשפה ותקינות — "
+            "נבדקו כרגיל.",
+            "כדי לקבל גם את זה: אפשר לתאר את המשימה בטופס, או פשוט לשים את דף "
+            "הבחינה בתיקייה.",
+        ]
+
+    if deferred:
+        lines += [
+            "",
+            "נשארו לבדיקה בהמשך (%d) — אנחנו בשלב הרצה ובודקים עד %d עבודות "
+            "בכל שליחה:" % (len(deferred), len(graded) + len(failed)),
+        ] + [f"    · {name}" for name in deferred] + [
+            "כדי לבדוק את הבאות בתור, פשוט שלחו את הטופס שוב עם אותה תיקייה — "
+            "מה שכבר נבדק לא ייבדק שוב.",
+        ]
 
     if already:
         lines += ["", "כבר נבדקו בעבר ולכן דילגנו עליהן (%d):" % already,
