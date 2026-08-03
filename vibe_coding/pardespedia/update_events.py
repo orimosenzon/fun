@@ -56,7 +56,8 @@ TODAY_HEADING = "היום במושבה"
 MAIN_ANCHOR = "== מידע עירוני =="  # fallback: insert the section just before this
 
 ES_FEED_URL = "https://pardeshanna.eventschedule.com/api/calendar-events"
-ES_LABEL = "[https://pardeshanna.eventschedule.com לוח האירועים של פרדס חנה-כרכור (eventschedule)]"
+ES_HUB_URL = "https://pardeshanna.eventschedule.com"
+ES_LABEL = f"[{ES_HUB_URL} לוח האירועים של פרדס חנה-כרכור (eventschedule)]"
 MATNAS_URL = "https://live.tickchak.co.il/matans-pardes-hana"
 MATNAS_LABEL = "[https://live.tickchak.co.il/matans-pardes-hana מרכז אמנויות הבמה — מתנ\"ס פרדס חנה]"
 MATNAS_VENUE = "מרכז אמנויות הבמה (מתנ\"ס)"
@@ -75,32 +76,73 @@ HE_MONTHS = {
     1: "ינואר", 2: "פברואר", 3: "מרץ", 4: "אפריל", 5: "מאי", 6: "יוני",
     7: "יולי", 8: "אוגוסט", 9: "ספטמבר", 10: "אוקטובר", 11: "נובמבר", 12: "דצמבר",
 }
+# The closed vocabulary of the board's "סוג" column. That column is sortable,
+# which is the whole reason it must be closed: a reader sorting it to find the
+# community events should land on one block, not on four — "קהילה",
+# "פעילות קהילתית", "שוק קהילתי" and "ספורט וקהילה" all sorted apart while
+# meaning nearly the same thing, because the feeds and manual_events.json each
+# invented their own wording. Everything now passes through canonical_category()
+# in _row(), so there is exactly one place where a label can enter the board.
+#
+# Keep this list short. A type with one member is not a type — the event's own
+# name already says "שוק קהילתי"; the column only has to answer "what kind".
+CATEGORIES = [
+    "מופעים והופעות", "תיאטרון", "סטנדאפ וקומדיה", "מסיבות ופסטיבלים",
+    "אמנות ותרבות", "הרצאות וסדנאות", "ספורט", "קהילה", "משפחה וילדים",
+    "רוחניות והתפתחות אישית",
+]
+
+# alias -> canonical. English keys are matched case-insensitively.
 CATEGORY_HE = {
-    "Art & Culture": "אמנות ותרבות", "אמנות ותרבות": "אמנות ותרבות",
-    "Concerts": "מופעים והופעות", "Parties & Festivals": "מסיבות ופסטיבלים",
-    "Personal Growth": "התפתחות אישית", "Sports": "ספורט", "Workshops": "סדנאות",
-    "MusicEvent": "מופעים והופעות", "ComedyEvent": "סטנדאפ וקומדיה",
-    "TheaterEvent": "תיאטרון", "Event": "מופעים והופעות",
-    "Community": "קהילה", "קהילה": "קהילה",
+    "Concerts": "מופעים והופעות", "MusicEvent": "מופעים והופעות",
+    "Event": "מופעים והופעות", "מופע": "מופעים והופעות",
+    "מוזיקה": "מופעים והופעות",
+    "TheaterEvent": "תיאטרון",
+    "ComedyEvent": "סטנדאפ וקומדיה", "סטנד-אפ": "סטנדאפ וקומדיה",
+    "סטנדאפ": "סטנדאפ וקומדיה",
+    "Parties & Festivals": "מסיבות ופסטיבלים", "מסיבה": "מסיבות ופסטיבלים",
+    "פסטיבל": "מסיבות ופסטיבלים",
+    "Art & Culture": "אמנות ותרבות", "תערוכה": "אמנות ותרבות",
+    "אמנות": "אמנות ותרבות",
+    "Workshops": "הרצאות וסדנאות", "סדנאות": "הרצאות וסדנאות",
+    "סדנה": "הרצאות וסדנאות", "הרצאה": "הרצאות וסדנאות",
+    "Sports": "ספורט", "ספורט וקהילה": "ספורט",
+    "Community": "קהילה", "פעילות קהילתית": "קהילה",
+    "שוק קהילתי": "קהילה", "שוק": "קהילה",
+    "מופע ילדים": "משפחה וילדים", "פעילות משפחתית": "משפחה וילדים",
+    "ילדים": "משפחה וילדים", "משפחה": "משפחה וילדים",
+    "Personal Growth": "רוחניות והתפתחות אישית",
+    "התפתחות אישית": "רוחניות והתפתחות אישית",
+    "צמיחה אישית": "רוחניות והתפתחות אישית",
+    "Spirituality": "רוחניות והתפתחות אישית",
+    "רוחניות": "רוחניות והתפתחות אישית",
 }
+_CATEGORY_LOOKUP = {k.casefold(): v for k, v in CATEGORY_HE.items()}
+_CATEGORY_LOOKUP.update({c.casefold(): c for c in CATEGORIES})  # canonical is its own alias
 
 
-def category_he(name) -> str:
-    """Hebrew label for a feed category, warning once about ones we don't know.
+def canonical_category(name) -> str:
+    """Fold a source's category wording into the board's vocabulary.
 
-    An unmapped category reaches the board in English and then sorts away from
-    its Hebrew twin in the "סוג" column — which is how "Community" sat there
-    unnoticed. The venues register themselves, so new categories will keep
-    appearing; the log line is what makes the next one visible.
+    Warns once per unknown label. The venues register themselves on the
+    eventschedule hub and pick their own categories, so new wordings keep
+    arriving — this log line is what makes the next one visible instead of
+    letting it quietly open an eleventh column value.
     """
     name = (name or "").strip()
     if not name:
         return ""
-    if name not in CATEGORY_HE and name not in _SEEN_UNKNOWN_CATEGORIES:
+    canon = _CATEGORY_LOOKUP.get(name.casefold())
+    if canon:
+        return canon
+    if name not in _SEEN_UNKNOWN_CATEGORIES:
         _SEEN_UNKNOWN_CATEGORIES.add(name)
-        print(f"  category not mapped to Hebrew: {name!r}", file=sys.stderr)
-    return CATEGORY_HE.get(name, name)
+        print(f"  category outside the vocabulary, passed through as-is: "
+              f"{name!r}", file=sys.stderr)
+    return name
 
+
+category_he = canonical_category  # older call sites
 
 _SEEN_UNKNOWN_CATEGORIES = set()
 
@@ -168,14 +210,19 @@ def _sort_key(d, time) -> str:
 
 def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None) -> dict:
     return {"date": d, "time": time, "name": wiki_escape(name), "url": url or "",
-            "category": category or "", "venue": wiki_escape(venue), "entry": entry,
+            # every source funnels its category wording through one gate here,
+            # so the sortable "סוג" column keeps a single vocabulary
+            "category": canonical_category(category),
+            "venue": wiki_escape(venue), "entry": entry,
             "sort": _sort_key(d, time), "key": key, "image_url": image_url or "",
             "image_file": None, "video_id": None, "date_label": date_label,
             # set by merge_venue_day() when several events at one venue on one
             # day are folded into this row: "parts" keeps the originals (the
             # "today" cards still show one card per event), "name_markup" is the
             # pre-rendered multi-line cell for the board.
-            "parts": None, "name_markup": None}
+            # set by cap_per_venue() on the last surviving row of an over-full
+            # venue: how many of that venue's later events the cap held back.
+            "parts": None, "name_markup": None, "more_count": 0}
 
 
 # --- sources ---------------------------------------------------------------
@@ -455,8 +502,13 @@ def cap_per_venue(rows: list, limit: int = VENUE_MAX_EVENTS) -> list:
     Pinned manual events are exempt; they are curated by hand and are pinned
     precisely because they must show. Rows with no venue are never pooled
     together, since "unknown" is not a place.
+
+    A cut leaves a trace: the last surviving row of an over-full venue carries
+    "more_count", which build_table() renders as "ועוד N אירועים במקום זה".
+    A reader who wants that venue's full programme should be told it exists
+    rather than shown a board that quietly pretends it doesn't.
     """
-    seen, out = {}, []
+    seen, out, last = {}, [], {}
     for r in sorted(rows, key=lambda r: r["sort"]):
         venue = norm(r["venue"])
         if not venue or r.get("pin"):
@@ -465,9 +517,13 @@ def cap_per_venue(rows: list, limit: int = VENUE_MAX_EVENTS) -> list:
         seen[venue] = seen.get(venue, 0) + 1
         if seen[venue] <= limit:
             out.append(r)
+            last[venue] = r
+    over = {v: n - limit for v, n in seen.items() if n > limit}
+    for venue, extra in over.items():
+        if venue in last:          # always true: a capped venue kept `limit` rows
+            last[venue]["more_count"] = extra
     dropped = len(rows) - len(out)
     if dropped:
-        over = {v: n for v, n in seen.items() if n > limit}
         print(f"  venue cap: dropped {dropped} later event(s) from {len(over)} "
               f"over-full venue(s)", file=sys.stderr)
     return sorted(out, key=lambda r: r["sort"])
@@ -521,6 +577,8 @@ def merge_venue_day(rows: list) -> list:
         # one poster for the row: the first session that has one
         for field in ("image_url", "image_file", "video_id"):
             head[field] = next((r[field] for r in g if r[field]), head[field])
+        # the venue-cap note rides on the group's last session, not its first
+        head["more_count"] = max(r.get("more_count", 0) for r in g)
         out.append(head)
     return out
 
@@ -654,6 +712,10 @@ def build_table(rows: list, collapsible: bool = False) -> str:
         else:
             img = "—"
         venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
+        if r.get("more_count"):
+            n = r["more_count"]
+            what = "אירוע אחד" if n == 1 else f"{n} אירועים"
+            venue += f'<br /><small>[{ES_HUB_URL} ועוד {what} במקום זה]</small>'
         lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
                   f'{r["category"]} || {venue} || {r["entry"] or "—"}']
     lines.append("|}")
@@ -712,10 +774,19 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
     a reader sees the whole board on arrival and can fold it with "הסתר".
     """
     end = today + dt.timedelta(days=days)
+    # say the cap out loud, but only when it actually bit — a rule stated on a
+    # board it isn't affecting just reads as noise.
+    capped = sum(1 for r in rows if r.get("more_count"))
+    cap_note = (
+        f"כדי שהלוח ייצג את כל המושבה ולא מקום אחד, הוא מציג עד {VENUE_MAX_EVENTS} אירועים "
+        f"לכל מקום; מה שמעבר לכך ממתין לתורו ועולה ללוח ככל שהתאריכים מתקרבים. "
+        if capped else ""
+    )
     body = (
         f"מה קורה במושבה — '''אירועי תרבות ובילוי''' בשבועיים הקרובים, עם תמונות וסרטונים. "
         f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
         f"{build_table(rows, collapsible=True)}\n\n"
+        f"{cap_note}"
         f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"

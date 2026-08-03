@@ -138,7 +138,9 @@ def main():
     _, existing_rows, _ = parse_table(idx_wt)
     indexed = {t for t, _ in existing_rows}
 
-    all_pages = [p["title"] for p in c.list_pages(namespace=0)]
+    # redirects are not entries: they carry no text, so they would land in the
+    # index as "(דף ללא תיאור עדיין)" rows pointing at a page already listed
+    all_pages = [p["title"] for p in c.list_pages(namespace=0, redirects="nonredirects")]
     missing = [t for t in all_pages if t not in indexed and t != INDEX_TITLE]
 
     if not missing:
