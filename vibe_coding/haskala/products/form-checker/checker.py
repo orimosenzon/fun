@@ -1,26 +1,29 @@
-"""checker.py — one Form response → a graded Word report.
+"""checker.py — one file from a shared folder → a graded Word report.
 
-The glue layer. Downloads the files the teacher uploaded, decides which rubric
-applies, runs the shared grading pipeline, and returns the .docx bytes for
-main.py to deliver.
+The glue layer. Decides which rubric applies to a folder, what the task was,
+and then grades one student's work against both.
 
 Deliberately narrower than oris-scanner's equivalent: there is no Classroom
 here, so no structured Classroom rubric and no assignment materials to sift
-through. The rubric comes from a dropdown the teacher answered, and the only
-ambiguous case is "the rubric is one of the files I uploaded", which is settled
-by core.classify_document exactly as oris-scanner settles it.
+through. The rubric comes from a dropdown the teacher answered, and the harder
+question — what were the students actually asked to do? — is answered by the
+typed documents sitting in the folder next to the scans.
+
+WHY THE CONTEXT PASS EXISTS
+───────────────────────────
+The form has no "describe the task" question, and the grade depends on the task:
+"fully on topic" is unscoreable without knowing the topic. But a teacher who
+shares a folder of a class's compositions almost always shares the exam paper
+with them. Reading the folder's typed documents once, before grading anything,
+recovers the instructions the form never asked for — and costs two text-only
+model calls per typed document, not per student.
 """
 from __future__ import annotations
 
-import io
 import logging
-import os
-import re
 import time
 
-import fitz  # PyMuPDF — page counting only; core.py owns the rendering
-from googleapiclient.http import MediaIoBaseDownload
-
+import drive_folder
 import form_schema
 from haskala_grading import core, report
 
@@ -28,31 +31,6 @@ from haskala_grading import core, report
 # Run, level from LOG_LEVEL). Configuring it from a module main.py imports would
 # install a plain-text handler first and make main's own call a silent no-op.
 log = logging.getLogger("form-checker-checker")
-
-_MIME_EXT = {
-    "application/pdf": ".pdf",
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-}
-
-
-def _ext_for(mime_type, name):
-    if mime_type in _MIME_EXT:
-        return _MIME_EXT[mime_type]
-    ext = os.path.splitext(name or "")[1].lower()
-    if ext == ".jpeg":
-        ext = ".jpg"
-    return ext if ext in (".pdf", ".jpg", ".png") else None
-
-
-def _download_bytes(service, file_id):
-    request = service.files().get_media(fileId=file_id)
-    buf = io.BytesIO()
-    downloader = MediaIoBaseDownload(buf, request)
-    done = False
-    while not done:
-        _, done = downloader.next_chunk()
-    return buf.getvalue()
 
 
 def _preview(text, limit):
@@ -66,212 +44,153 @@ def _preview(text, limit):
     return flat
 
 
-_FILENAME_UNSAFE_RE = re.compile(r'[\\/:*?"<>|\r\n\t]+')
+# ─── folder context: the rubric and the task ────────────────────────────────
 
+class FolderContext:
+    """What a folder's typed documents tell us, computed once per submission.
 
-def _slug(s):
-    """One filename component: no path-hostile characters, no runs of
-    whitespace. Case and every other character are preserved — the address and
-    the school name are meant to read back exactly as the teacher spells them,
-    Hebrew and '@' included."""
-    s = _FILENAME_UNSAFE_RE.sub("-", str(s))
-    return re.sub(r"\s+", "_", s.strip()).strip("_")
-
-
-# Drive's own limit is 255. Stopping short leaves room for the " (1)" Drive
-# appends when a name repeats within a folder.
-_MAX_FILENAME = 240
-
-
-def report_filename(params: dict) -> str:
-    """<teacher email>_<school>_<timestamp>.docx
-
-    The timestamp is here on purpose, and this is where form-checker diverges
-    from oris-scanner (which drops it by explicit request). A Classroom
-    submission is one student's one attempt at one assignment, so a name
-    collision is a resubmission and the two are told apart by date modified.
-    A teacher trying the form out submits the same exercise repeatedly within
-    minutes, and a mailbox with four identically-named attachments is unusable.
+    Held as an object rather than passed as four arguments because every field
+    is derived together and every one of them is logged together — a surprising
+    grade is diagnosed by reading this whole block at once, not one value at a
+    time.
     """
-    stamp = _slug(params.get("timestamp") or time.strftime("%Y-%m-%d_%H-%M"))
-    parts = [params.get("email"), params.get("school"), stamp]
-    name = "_".join(_slug(p) for p in parts if p)
-    return name[:_MAX_FILENAME] + ".docx"
+
+    def __init__(self, rubric_override, rubric_source, rubric_name,
+                 instructions, context_docs):
+        self.rubric_override = rubric_override
+        self.rubric_source = rubric_source
+        self.rubric_name = rubric_name
+        self.instructions = instructions
+        self.context_docs = context_docs      # [(name, kind)] for the summary
 
 
-def _resolve_rubric(service, params, downloaded, tag):
-    """(rubric_override | None, human description of where it came from).
+def build_context(params: dict, typed_docs: list[dict], tag: str = "") -> FolderContext:
+    """Resolve the rubric and the task description for one submission.
 
-    Precedence, highest first:
-      1. the teacher said the rubric is one of the uploaded files — find it;
-      2. the teacher picked a bundled rubric from the dropdown;
-      3. neither — the bundled default.
+    Rubric precedence, highest first:
+      1. the teacher said on the form that the rubric is among the files;
+      2. the module they picked from the dropdown — an explicit, required answer;
+      3. a document in the folder that reads as a rubric;
+      4. the bundled default.
 
-    A rubric that cannot be read never takes the response down; falling back to
-    the bundled default and grading is strictly better than returning nothing,
-    and the log line says which happened.
+    The dropdown outranks the folder on purpose. A folder rubric is a guess about
+    a file the teacher never said anything about; the dropdown is an answer they
+    were required to give. When they disagree, the answer wins.
+
+    Never raises. A folder whose context cannot be read still grades against the
+    module rubric, which is the thing that actually determines the score.
     """
-    if params.get("rubric_from_upload"):
-        rubric = _rubric_from_uploads(service, params, downloaded, tag)
-        if rubric:
-            return rubric, f"a file the teacher uploaded ({rubric['name']!r})"
-        log.warning("%s teacher chose %r but no uploaded file reads as a rubric — "
-                    "falling back to the bundled default",
-                    tag, form_schema.RUBRIC_FROM_UPLOAD)
-
-    if params.get("rubric_id"):
-        rubric = core.load_rubric(params["rubric_id"])
-        if rubric:
-            return rubric, f"the form's dropdown ({params['rubric_id']})"
-        log.warning("%s rubric id %r resolved to no bundled rubric — using the default",
-                    tag, params["rubric_id"])
-
-    return None, (f"bundled default ({core.DEFAULT_RUBRIC_ID}) — "
-                  "no rubric chosen on the form")
-
-
-def _rubric_from_uploads(service, params, downloaded, tag):
-    """Find the rubric among the files the teacher uploaded.
-
-    Every uploaded file is a candidate: teachers do not name files "מחוון", so
-    requiring the naming convention would mean the feature almost never fires —
-    the same lesson core.resolve_rubric_material records for Classroom
-    attachments. Each candidate's text is read and classified, and the first one
-    that classifies as a rubric wins. That file is then dropped from the pages
-    to grade, so the rubric is not also OCR'd as if it were student work.
-    """
-    for entry in list(downloaded):
-        data, ext, name = entry["data"], entry["ext"], entry["name"]
+    read: list[tuple[dict, str, str]] = []       # (doc, text, kind)
+    for doc in typed_docs:
         try:
-            text, method = core.rubric_text_from_document(data, ext, params["model_key"])
+            text, method = core.rubric_text_from_document(
+                doc["data"], doc["ext"], params["model_key"])
         except Exception as e:
-            log.warning("%s could not read %r as a document (%s: %s) — "
-                        "treating it as student work",
-                        tag, name, type(e).__name__, str(e)[:200])
+            log.warning("%s could not read context document %r (%s: %s) — ignoring it",
+                        tag, doc["name"], type(e).__name__, str(e)[:200])
             continue
         if not text.strip():
             continue
         kind = core.classify_document(text, params["model_key"])
-        log.info("%s upload %r read via %s (%d chars) — classified as %s",
-                 tag, name, method, len(text), kind)
-        if kind == "rubric":
-            downloaded.remove(entry)   # not student work — do not OCR it as pages
-            return {"name": name, "content": text}
-    return None
+        log.info("%s context document %r read via %s (%d chars) — classified as %s",
+                 tag, doc["name"], method, len(text), kind)
+        read.append((doc, text, kind))
+
+    folder_rubric = next(((d, t) for d, t, k in read if k == "rubric"), None)
+
+    rubric_override, rubric_source = None, None
+    if params.get("rubric_from_upload") and folder_rubric:
+        doc, text = folder_rubric
+        rubric_override = {"name": doc["name"], "content": text}
+        rubric_source = f"a document in the folder ({doc['name']!r}), as the form asked"
+    elif params.get("rubric_id"):
+        loaded = core.load_rubric(params["rubric_id"])
+        if loaded:
+            rubric_override = loaded
+            rubric_source = f"the form's dropdown ({params['rubric_id']})"
+        else:
+            log.error("%s rubric id %r resolved to no bundled rubric", tag,
+                      params["rubric_id"])
+    if rubric_override is None and folder_rubric:
+        doc, text = folder_rubric
+        rubric_override = {"name": doc["name"], "content": text}
+        rubric_source = f"a document in the folder ({doc['name']!r})"
+    if rubric_override is None:
+        rubric_override = core.load_rubric(core.DEFAULT_RUBRIC_ID)
+        rubric_source = (f"bundled default ({core.DEFAULT_RUBRIC_ID}) — no usable "
+                         "rubric on the form or in the folder")
+
+    # Everything that is not a rubric describes the task. Concatenated rather
+    # than picking one: a folder may hold the exam paper and a separate page of
+    # instructions, and there is no reliable way to rank them.
+    instructions = "\n\n".join(t.strip() for _d, t, k in read
+                               if k != "rubric" and t.strip())
+
+    return FolderContext(
+        rubric_override=rubric_override,
+        rubric_source=rubric_source,
+        rubric_name=(rubric_override or {}).get("name", core.DEFAULT_RUBRIC_ID),
+        instructions=instructions,
+        context_docs=[(d["name"], k) for d, _t, k in read],
+    )
 
 
-def _count_pages(entry) -> int:
-    """Pages this file will render to, without rendering any of them.
+def build_question(params: dict, ctx: FolderContext) -> str:
+    """The 'question' passed to core.check_pages.
 
-    fitz reads a PDF's page count from its catalogue, so this costs a parse and
-    no rasterisation — which is the point. The page count has to be known
-    *before* core.check_pages starts, because by the time it is rendering
-    page 300 the money is already being spent."""
-    if entry["ext"] != ".pdf":
-        return 1
-    try:
-        with fitz.open(stream=entry["data"], filetype="pdf") as doc:
-            return doc.page_count
-    except Exception:
-        # Unreadable here means unreadable later too; let check_pages produce
-        # the real error rather than guessing at one now.
-        return 1
+    form_schema owns the shape of this; the folder's instructions are merged in
+    as though the teacher had typed them into the form, because from the model's
+    point of view that is exactly what they are."""
+    merged = dict(params)
+    existing = (params.get("instructions") or "").strip()
+    if ctx.instructions:
+        merged["instructions"] = "\n\n".join(p for p in (existing, ctx.instructions) if p)
+    return form_schema.build_question(merged)
 
 
-def check_form_response(service, params: dict, tag: str = "",
-                        max_pages: int | None = None) -> tuple[bytes, str, dict]:
-    """Grade one Form response.
+# ─── grading one file ───────────────────────────────────────────────────────
 
-    Returns (docx bytes, filename, evaluation) — main.py owns delivery, so
-    nothing here writes to Drive or sends mail.
+def check_file(entry: dict, params: dict, ctx: FolderContext, question: str,
+               tag: str = "") -> tuple[bytes, str]:
+    """Grade one student's file. Returns (docx bytes, report title).
 
-    max_pages bounds what one response can cost. Every page is a rotation call
-    plus an OCR call plus its share of the evaluation, so a 300-page PDF is a
-    three-figure bill from a single form submission.
-
-    Raises ValueError when there is nothing gradable, or when the submission is
-    over the page cap — main.py turns that into an explanation emailed to the
-    teacher. Every other failure mode degrades: an unreadable rubric falls back
-    to the default, an unreadable single file is skipped.
+    Raises ValueError when the file yields nothing gradable — main.py records
+    that against this file alone, so one unreadable scan does not take the rest
+    of the class down with it.
     """
     t0 = time.monotonic()
 
-    downloaded = []
-    for fid in params["file_ids"]:
-        meta = service.files().get(fileId=fid, fields="mimeType, name, size").execute()
-        ext = _ext_for(meta.get("mimeType"), meta.get("name"))
-        if not ext:
-            log.info("%s skipping upload %r — unsupported type %s",
-                     tag, meta.get("name"), meta.get("mimeType"))
-            continue
-        data = _download_bytes(service, fid)
-        log.info("%s downloaded %r (%s, %s, %.0f KB, id=%s)",
-                 tag, meta.get("name"), meta.get("mimeType"), ext, len(data) / 1024, fid)
-        downloaded.append({"data": data, "ext": ext, "name": meta.get("name") or fid})
-
-    # These messages are emailed verbatim to the teacher (main.py turns a
-    # ValueError into mailer.send_failure), so they are written in Hebrew and
-    # say what to do about it — not phrased as log text.
-    if not downloaded:
-        raise ValueError(
-            "אף אחד מ-%d הקבצים שצורפו אינו בפורמט שאפשר לבדוק. "
-            "המערכת קוראת PDF, JPG ו-PNG. אם צילמת באייפון, הקובץ כנראה בפורמט "
-            "HEIC — אפשר לשמור אותו כ-JPG ולשלוח שוב." % len(params["file_ids"]))
-
-    rubric_override, rubric_source = _resolve_rubric(service, params, downloaded, tag)
-    if not downloaded:
-        # Everything uploaded turned out to be the rubric.
-        raise ValueError("הקובץ היחיד שצורף הוא המחוון — לא צורפה עבודת תלמיד לבדיקה.")
-
-    # After rubric resolution, so a rubric PDF's pages are not counted against
-    # the student work's budget.
-    if max_pages is not None:
-        total = sum(_count_pages(d) for d in downloaded)
-        if total > max_pages:
-            raise ValueError(
-                "התרגיל מכיל %d עמודים, והמערכת בודקת עד %d בכל שליחה. "
-                "אפשר לפצל אותו לכמה שליחות." % (total, max_pages))
-        log.info("%s %d page(s) to grade (cap %d)", tag, total, max_pages)
-
-    _default = core.load_rubric(core.DEFAULT_RUBRIC_ID) or {}
-    rubric_name = (rubric_override["name"] if rubric_override
-                   else _default.get("name", core.DEFAULT_RUBRIC_ID))
-    rubric_content = (rubric_override["content"] if rubric_override
-                      else _default.get("content", ""))
-    question = form_schema.build_question(params)
-
-    # Everything that determines the grade, visible in the log *before* the slow
-    # model calls start, so a surprising result can be traced to its inputs.
-    # Ported from oris-scanner/checker.py, where it has repeatedly been the
-    # difference between diagnosing a bad grade and guessing at it.
     log.info("%s ── checking parameters ──", tag)
+    log.info("%s   file       : %r (%s, %.0f KB)", tag, entry["name"], entry["ext"],
+             len(entry["data"]) / 1024)
     log.info("%s   teacher    : %s%s", tag, params.get("email") or "(no address)",
              f" ({params['teacher_name']})" if params.get("teacher_name") else "")
-    log.info("%s   school     : %s", tag, params.get("school") or "(not given)")
-    log.info("%s   grade level: %s", tag, params.get("grade_level") or "(not given)")
+    log.info("%s   module     : %s", tag,
+             (params.get("module") or "(not given)").upper())
     log.info("%s   model      : %s (%s)", tag, params["model_key"],
              core.MODELS.get(params["model_key"], "unknown key"))
     log.info("%s   language   : %s", tag, params["exercise_lang"])
-    log.info("%s   rubric src : %s", tag, rubric_source)
-    log.info("%s   rubric name: %r", tag, rubric_name)
+    log.info("%s   rubric src : %s", tag, ctx.rubric_source)
+    log.info("%s   rubric name: %r", tag, ctx.rubric_name)
     log.info("%s   question   : %s", tag, _preview(question, 1200))
-    log.info("%s   rubric text: %s", tag, _preview(rubric_content, 2000))
-    log.info("%s   files      : %d page-source file(s)", tag, len(downloaded))
+    log.info("%s   rubric text: %s", tag,
+             _preview((ctx.rubric_override or {}).get("content"), 2000))
     log.info("%s ─────────────────────────", tag)
 
     pages, evaluation = core.check_pages(
-        [(d["data"], d["ext"]) for d in downloaded],
-        rubric_override=rubric_override,
+        [(entry["data"], entry["ext"])],
+        rubric_override=ctx.rubric_override,
         question=question,
         model_key=params["model_key"],
     )
 
-    out_name = report_filename(params)
+    title = drive_folder.report_name(entry["name"])
     docx_bytes = report.build_evaluation_docx(
-        evaluation, out_name, rubric_name, pages=pages,
+        evaluation, title, ctx.rubric_name, pages=pages,
         feedback_lang=params["exercise_lang"],
         exercise_lang=params["exercise_lang"],
     )
-    log.info("%s graded %d page(s) → %r (%.0f KB) in %.1fs",
-             tag, len(pages), out_name, len(docx_bytes) / 1024, time.monotonic() - t0)
-    return docx_bytes, out_name, evaluation
+    log.info("%s graded %d page(s) of %r → %r (%.0f KB) in %.1fs",
+             tag, len(pages), entry["name"], title,
+             len(docx_bytes) / 1024, time.monotonic() - t0)
+    return docx_bytes, title

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# connect — log in to Google Cloud as the haskala work account.
+#
+# Run this when anything gcloud-shaped starts failing with "Reauthentication
+# required" or "invalid_grant". It is safe to run at any time: if the
+# credentials are still good it says so and exits without opening a browser.
+#
+#   ./connect          # log in if needed
+#   ./connect --force  # log in again even if the current token still works
+#
+# WHY THIS KEEPS HAPPENING
+# ────────────────────────
+# The credentials expire roughly every 16 hours, which is the Workspace default
+# for Google Cloud session control. It is not a bug and not something a longer
+# token fixes — it is a policy on the bdika.net domain, and it will keep
+# expiring until someone changes it at:
+#
+#   admin.google.com → Security → Access and data control
+#                    → Google Cloud session control
+#
+# Until then, this script is the workaround.
+#
+# TWO LOGINS, NOT ONE
+# ───────────────────
+# `gcloud auth login` authorises the gcloud CLI — that is what deploy.sh and
+# logs.sh need. `gcloud auth application-default login` writes a separate
+# credentials file that Python's google.auth.default() reads — that is what
+# running main.py or oris-scanner locally needs. They expire independently, so
+# this script checks and refreshes both.
+set -euo pipefail
+
+ACCOUNT="${HASKALA_ACCOUNT:-ori@bdika.net}"
+PROJECT="${HASKALA_PROJECT:-master-gecko-500709-t0}"
+GCLOUD="$HOME/google-cloud-sdk/bin/gcloud"
+
+[[ -x "$GCLOUD" ]] || GCLOUD="$(command -v gcloud || true)"
+if [[ -z "$GCLOUD" ]]; then
+    echo "❌ gcloud not found. Expected it at ~/google-cloud-sdk/bin/gcloud." >&2
+    exit 1
+fi
+
+FORCE=0
+[[ "${1:-}" == "--force" ]] && FORCE=1
+
+# A token request is the only honest test. `gcloud auth list` happily shows an
+# account whose refresh token expired hours ago, which is exactly the failure
+# this script exists to catch — so checking that instead would report success
+# right up until the deploy fails.
+cli_ok() {
+    "$GCLOUD" auth print-access-token --account="$ACCOUNT" >/dev/null 2>&1
+}
+
+adc_ok() {
+    "$GCLOUD" auth application-default print-access-token >/dev/null 2>&1
+}
+
+echo "🔑 account : $ACCOUNT"
+echo "   project : $PROJECT"
+echo
+
+if [[ $FORCE -eq 0 ]] && cli_ok; then
+    echo "✅ gcloud CLI credentials are valid."
+else
+    echo "→ opening a browser to log in the gcloud CLI…"
+    "$GCLOUD" auth login "$ACCOUNT"
+fi
+
+if [[ $FORCE -eq 0 ]] && adc_ok; then
+    echo "✅ application-default credentials are valid."
+else
+    echo
+    echo "→ opening a browser again for application-default credentials"
+    echo "  (this is the separate one Python reads — see the comment above)…"
+    "$GCLOUD" auth application-default login
+fi
+
+"$GCLOUD" config set account "$ACCOUNT" >/dev/null
+"$GCLOUD" config set project "$PROJECT" >/dev/null
+
+echo
+if cli_ok; then
+    echo "✅ connected as $ACCOUNT on $PROJECT."
+    echo "   Expires in ~16h — rerun ./connect when things start failing."
+else
+    echo "❌ still not authenticated. If the browser flow completed but this" >&2
+    echo "   still fails, the account may be blocked by an admin policy." >&2
+    exit 1
+fi

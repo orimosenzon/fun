@@ -1,27 +1,34 @@
-"""main.py — form-checker: grade exercises submitted through a Google Form.
+"""main.py — form-checker: grade a shared folder of exercises via a Google Form.
 
-A teacher fills in a Google Form — uploading a scan of an exercise plus the
-context needed to grade it (rubric, age group, school, their name) — and gets a
-Word report back by email. This service is what happens in between.
+A teacher fills in a Google Form — naming the Bagrut module and pasting a link
+to a Drive folder of scanned work — and the reports appear back inside that same
+folder, in a subfolder called Bdika. This service is what happens in between.
 
 Cloud Scheduler calls this every 5 minutes. Each run reads the Form's responses
-spreadsheet, claims any row it has not already handled, grades it with the
-shared haskala_grading pipeline, and mails the report to the address on the row.
+spreadsheet, claims any row it has not already handled, grades every piece of
+student work in the linked folder with the shared haskala_grading pipeline, and
+writes one Google Doc per file back into the folder.
 
-WHY THE RESPONSES SHEET AND NOT THE FORMS API
-─────────────────────────────────────────────
-The Sheet is the same data plus an audit surface: when a teacher says "I sent it
-and got nothing", the row is right there to look at, and Avishai can read it
-without a console. The cost is that column *positions* are unstable, which is
-why form_schema matches on header text — see that module.
+WHY A SHARED FOLDER AND NOT FILE UPLOADS
+────────────────────────────────────────
+Both reasons are the teacher's. Results land where they already keep the work
+rather than in an inbox they have to file by hand, and a whole class is one
+submission instead of thirty. It also sidesteps the prerequisite that used to
+sink this design: Forms stores uploads in the *form owner's* Drive, so a form
+built in the wrong Workspace put every file somewhere this service could not
+see, with no fix short of rebuilding the form. A folder shared directly with our
+service account has no such constraint — it works no matter who owns the form.
 
-WHERE THE UPLOADED FILES LIVE — THE ONE HARD PREREQUISITE
-─────────────────────────────────────────────────────────
-Google Forms stores file-upload answers in the *form owner's* Drive. This
-service reads Drive as TEACHER_EMAIL via domain-wide delegation, so the form
-must be owned by that account (or by someone who has shared the upload folder
-with it). A form built in another Workspace puts every upload somewhere this
-service cannot see, and there is no fix short of recreating the form.
+What it costs is control over the input. An upload question restricted to
+PDF/JPG/PNG guaranteed the shape of what arrived; a folder guarantees nothing,
+which is why drive_folder classifies before anything is graded and why the caps
+below are enforced against the folder rather than trusted from it.
+
+THE ONE HARD PREREQUISITE
+─────────────────────────
+The folder must be shared with WORKSPACE_SUBJECT as an EDITOR — Viewer is not
+enough, because results are written back in. drive_folder.check_access checks
+this before any page is paid for and mails the teacher if it fails.
 
 The form also needs "allow responses from outside the organization" turned on,
 or teachers at other schools cannot submit at all.
@@ -47,9 +54,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
 import checker
+import drive_folder
 import form_schema
 import mailer
-from haskala_grading import core
 
 # ─── logging ───────────────────────────────────────────────────────────────
 # Ported from oris-scanner. Everything lands on stdout, which Cloud Run
@@ -98,9 +105,10 @@ log = logging.getLogger("form-checker")
 # long token in the sheet's URL between /d/ and /edit.
 RESPONSES_SHEET_ID = os.environ.get("RESPONSES_SHEET_ID", "")
 
-# Where reports go when mail cannot be sent (see mailer.py). Not the primary
-# path — a report nobody is told about is barely better than no report — but it
-# means a graded result is never simply discarded.
+# Where reports go when the teacher's own folder cannot be written to. Almost
+# never used now that results go back into the shared folder — check_access
+# rejects a read-only folder up front rather than grading it and then looking
+# for somewhere to put the results — but a graded result is never discarded.
 FALLBACK_RESULTS_FOLDER_ID = os.environ.get("FALLBACK_RESULTS_FOLDER_ID", "")
 
 # ─── cost guardrails ───────────────────────────────────────────────────────
@@ -112,8 +120,17 @@ FALLBACK_RESULTS_FOLDER_ID = os.environ.get("FALLBACK_RESULTS_FOLDER_ID", "")
 # The dominant cost is per page: rotation detection + OCR + a share of the
 # evaluation call, roughly $0.04–0.06 per page on Claude Sonnet 5. So the page
 # cap, not the file cap, is the one that actually bounds the bill.
-MAX_FILES_PER_RESPONSE = int(os.environ.get("MAX_FILES_PER_RESPONSE", "10"))
-MAX_PAGES_PER_RESPONSE = int(os.environ.get("MAX_PAGES_PER_RESPONSE", "20"))
+#
+# Raised from 10/20 when the form moved to shared folders, because one response
+# stopped meaning one exercise and started meaning a whole class. 40 pages is
+# roughly $2 worst case — enough for a class of fifteen one-page compositions —
+# and it is a *ceiling*, not a budget: the common case is far below it.
+#
+# Enforced against what is actually in the folder, before a single page is
+# rendered. A teacher who shares the wrong folder, or a folder that later grows
+# a hundred files, gets an email explaining the cap and costs us nothing.
+MAX_FILES_PER_RESPONSE = int(os.environ.get("MAX_FILES_PER_RESPONSE", "15"))
+MAX_PAGES_PER_RESPONSE = int(os.environ.get("MAX_PAGES_PER_RESPONSE", "40"))
 
 # Rows processed in one invocation. A backlog is drained over several polls
 # rather than in one run that blows the Scheduler's 600s attempt deadline and
@@ -172,9 +189,50 @@ def row_key(params: dict) -> str:
     material = "|".join([
         params.get("timestamp", ""),
         params.get("email", "").lower(),
+        params.get("folder_id", ""),
         ",".join(params.get("file_ids", [])),
     ])
     return hashlib.sha256(material.encode("utf-8")).hexdigest()[:32]
+
+
+def file_key(params: dict, f: dict) -> str:
+    """Stable id for "this file, graded this way".
+
+    The row ledger alone is not enough once a response is a folder. A folder is
+    live: the teacher adds five more scans on Sunday and submits the form again,
+    which is a new row with a new timestamp and therefore a new row key. Without
+    a second ledger at file level, that second submission re-grades and re-pays
+    for all thirty of the originals to produce five new reports.
+
+    Keyed on the file's own id and modifiedTime, so an edited or rescanned file
+    is correctly treated as new work — and on the rubric, so a teacher who
+    realises they picked Module C instead of Module G can fix the dropdown,
+    resubmit, and actually get regraded. Deliberately NOT keyed on the row: the
+    whole point is that it survives across submissions of the same folder.
+    """
+    material = "|".join([
+        params.get("folder_id", ""),
+        f.get("id", ""),
+        f.get("modifiedTime", ""),
+        params.get("rubric_id") or "",
+        params.get("module") or "",
+    ])
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:32]
+
+
+def _file_already_graded(key: str) -> bool:
+    snap = _firestore().collection("form_checker_files").document(key).get()
+    return bool(snap.exists and (snap.to_dict() or {}).get("status") == "done")
+
+
+def _mark_file_done(key: str, folder_id: str, file_id: str, report_id: str = ""):
+    _firestore().collection("form_checker_files").document(key).set({
+        "status": "done",
+        "folder_id": folder_id,
+        "file_id": file_id,
+        "report_id": report_id,
+        "completed_at": datetime.datetime.now(datetime.timezone.utc),
+    })
 
 
 def _try_claim_row(key: str) -> bool:
@@ -264,7 +322,25 @@ EXTRA_SCOPES = [
 ]
 
 SA_EMAIL = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
-TEACHER_EMAIL = "ori@bdika.net"
+
+# The Workspace user this service impersonates: whose Drive it reads, and who
+# outgoing mail is from. It is also the address teachers must share their folder
+# with, which is why it is worth having a dedicated account rather than a
+# person's — the address ends up printed on the form, in every error message,
+# and in whatever teachers write down. A personal address there is impossible to
+# change later without breaking every form already in circulation.
+#
+# Overridable so the switch to that dedicated account is a redeploy rather than
+# a code change; until it is provisioned in Workspace, the default keeps the
+# existing delegation working. Whatever it is set to must be listed as the
+# subject the service account may impersonate.
+WORKSPACE_SUBJECT = os.environ.get("WORKSPACE_SUBJECT", "ori@bdika.net")
+
+# What teachers are told to share with. Normally the same address; kept separate
+# because a Workspace alias or group can front the real mailbox. drive_folder
+# reads it from the environment so its teacher-facing messages name it too.
+SHARE_WITH = os.environ.get("SHARE_WITH", WORKSPACE_SUBJECT)
+os.environ["SHARE_WITH"] = SHARE_WITH
 # The service account's OAuth client id — the key the Workspace admin console's
 # domain-wide-delegation entry is filed under. Logged with the scope warning so
 # whoever reads it can go straight to the right row.
@@ -287,7 +363,7 @@ def _delegated_credentials(scopes):
         signer,
         SA_EMAIL,
         token_uri="https://oauth2.googleapis.com/token",
-        subject=TEACHER_EMAIL,
+        subject=WORKSPACE_SUBJECT,
         scopes=scopes,
     )
 
@@ -374,13 +450,15 @@ def _admit(params: dict, tag: str) -> str | None:
         log.warning("%s rejecting %s — wrong or missing passphrase", tag, params["email"])
         return "__silent__ bad passphrase"
 
-    if not params.get("file_ids"):
-        return "לא צורפו קבצים לטופס."
-
-    if len(params["file_ids"]) > MAX_FILES_PER_RESPONSE:
-        return ("צורפו %d קבצים, והמערכת בודקת עד %d בכל שליחה. "
-                "אפשר לשלוח את השאר בטופס נוסף."
-                % (len(params["file_ids"]), MAX_FILES_PER_RESPONSE))
+    if not params.get("folder_id"):
+        if params.get("folder_link"):
+            return ("לא הצלחנו לזהות קישור לתיקייה בתשובה %r. "
+                    "יש להעתיק את הקישור מכפתור השיתוף של התיקייה ב-Drive, "
+                    "בצורה https://drive.google.com/drive/folders/…"
+                    % params["folder_link"][:120])
+        return ("לא צוין קישור לתיקייה בטופס, ולכן אין מה לבדוק. "
+                "יש לשתף תיקייה עם %s בהרשאת עריכה ולהדביק את הקישור אליה."
+                % SHARE_WITH)
 
     return None
 
@@ -402,31 +480,148 @@ def _read_responses(sheets_service) -> tuple[list[str], list[list[str]]]:
     return values[0], values[1:]
 
 
-def _deliver(drive_service, gmail_service, params, docx_bytes, out_name,
-             rubric_name, tag) -> str:
-    """Email the report; fall back to Drive if mail is unavailable.
+def _fallback_write(drive_service, name, docx_bytes, tag) -> str:
+    """Last resort when the teacher's own folder cannot be written to.
 
-    Returns what happened, for the ledger."""
-    if gmail_service is not None:
-        if mailer.send_report(gmail_service, TEACHER_EMAIL, params, docx_bytes,
-                              out_name, rubric_name, tag):
-            return "emailed"
-
+    Rare by construction — check_access rejects a read-only folder before
+    anything is graded — so this is for the case where the sharing is revoked
+    mid-run. The report is already paid for; parking it somewhere we control
+    costs nothing and keeps it recoverable by hand.
+    """
     if not FALLBACK_RESULTS_FOLDER_ID:
-        log.error("%s report %r could not be emailed and no FALLBACK_RESULTS_FOLDER_ID "
-                  "is configured — the report is lost. Set that env var.", tag, out_name)
-        return "lost"
-
-    media = MediaIoBaseUpload(
-        io.BytesIO(docx_bytes),
-        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        log.error("%s report %r could not be written to the teacher's folder and no "
+                  "FALLBACK_RESULTS_FOLDER_ID is configured — the report is lost. "
+                  "Set that env var.", tag, name)
+        return ""
+    media = MediaIoBaseUpload(io.BytesIO(docx_bytes), mimetype=drive_folder.DOCX_MIME)
     uploaded = drive_service.files().create(
-        body={"name": out_name, "parents": [FALLBACK_RESULTS_FOLDER_ID]},
+        body={"name": name, "parents": [FALLBACK_RESULTS_FOLDER_ID]},
         media_body=media, fields="id").execute()
-    log.warning("%s report %r written to Drive (id=%s) because it could not be emailed — "
-                "the teacher has not been told it is ready",
-                tag, out_name, uploaded["id"])
-    return "drive-fallback"
+    log.warning("%s report %r parked in the fallback folder (id=%s) — the teacher "
+                "cannot see it there", tag, name, uploaded["id"])
+    return uploaded["id"]
+
+
+def _collect_folder(drive_service, params, tag):
+    """Download and sort one folder's contents into (student work, context docs).
+
+    Downloading before classifying is deliberate: the text-layer test needs the
+    bytes, and a download is cents-free next to a page of OCR. What it must not
+    do is download an unbounded folder, so the file cap is applied to the listing
+    first — before any bytes move.
+
+    Raises drive_folder.FolderError with a teacher-readable message.
+    """
+    meta = drive_folder.check_access(drive_service, params["folder_id"])
+    candidates, wrong_format = drive_folder.list_candidates(
+        drive_service, params["folder_id"])
+
+    if not candidates:
+        raise drive_folder.FolderError(
+            "התיקייה %r לא מכילה קבצים שאפשר לבדוק. המערכת קוראת PDF, JPG ו-PNG. "
+            "אם צילמת באייפון, הקבצים כנראה בפורמט HEIC — אפשר לשמור אותם כ-JPG "
+            "ולשתף שוב." % meta.get("name"))
+
+    if len(candidates) > MAX_FILES_PER_RESPONSE:
+        raise drive_folder.FolderError(
+            "בתיקייה %r יש %d קבצים, והמערכת בודקת עד %d בכל שליחה. "
+            "אפשר לפצל אותם לכמה תיקיות ולשלוח את הטופס פעם אחת לכל תיקייה."
+            % (meta.get("name"), len(candidates), MAX_FILES_PER_RESPONSE))
+
+    work, context_docs, pages = [], [], 0
+    for f in candidates:
+        data = drive_folder.download(drive_service, f["id"])
+        entry = {**f, "data": data}
+        typed, why = drive_folder.looks_typed(data, f["ext"])
+        if typed:
+            log.info("%s %r is a context document, not student work — %s",
+                     tag, f["name"], why)
+            context_docs.append(entry)
+            continue
+        pages += drive_folder.page_count(data, f["ext"])
+        work.append(entry)
+
+    if not work:
+        raise drive_folder.FolderError(
+            "כל הקבצים בתיקייה %r נראים כמסמכים מודפסים (דף הבחינה, הוראות או "
+            "מחוון) ולא כעבודות תלמידים בכתב יד. יש להוסיף לתיקייה את הסריקות "
+            "של העבודות." % meta.get("name"))
+
+    # After the split, so the exam paper's pages are not charged against the
+    # students' budget.
+    if pages > MAX_PAGES_PER_RESPONSE:
+        raise drive_folder.FolderError(
+            "העבודות בתיקייה %r מכילות %d עמודים, והמערכת בודקת עד %d בכל שליחה. "
+            "אפשר לפצל אותן לכמה תיקיות ולשלוח את הטופס פעם אחת לכל תיקייה."
+            % (meta.get("name"), pages, MAX_PAGES_PER_RESPONSE))
+
+    log.info("%s folder %r: %d work file(s) / %d page(s), %d context document(s), "
+             "%d file(s) in unsupported formats",
+             tag, meta.get("name"), len(work), pages, len(context_docs),
+             len(wrong_format))
+    return meta, work, context_docs, wrong_format
+
+
+def _process_folder(drive_service, gmail_service, params, tag) -> str:
+    """Grade one submission's folder end to end. Returns an outcome for the ledger.
+
+    Every per-file failure is caught and recorded rather than raised: one corrupt
+    scan in a class of thirty must not cost the other twenty-nine their reports,
+    and the teacher is told exactly which file failed in the summary mail.
+    """
+    meta, work, context_docs, wrong_format = _collect_folder(drive_service, params, tag)
+
+    ctx = checker.build_context(params, context_docs, tag=tag)
+    question = checker.build_question(params, ctx)
+    out_folder_id = drive_folder.ensure_output_folder(
+        drive_service, params["folder_id"])
+
+    results = {
+        "graded": [], "failed": [], "already": 0,
+        "skipped": [(f["name"], f["reason"]) for f in wrong_format],
+        "context": ctx.context_docs,
+    }
+
+    for entry in work:
+        fkey = file_key(params, entry)
+        if _file_already_graded(fkey):
+            log.debug("%s %r already graded — skipping", tag, entry["name"])
+            results["already"] += 1
+            continue
+        try:
+            docx_bytes, title = checker.check_file(entry, params, ctx, question, tag=tag)
+        except Exception as e:
+            log.exception("%s could not grade %r", tag, entry["name"])
+            results["failed"].append((entry["name"], f"{type(e).__name__}: {str(e)[:200]}"))
+            continue
+
+        try:
+            report_id = drive_folder.write_report(
+                drive_service, out_folder_id, title, docx_bytes)
+        except Exception as e:
+            log.warning("%s could not write %r into the teacher's folder (%s: %s)",
+                        tag, title, type(e).__name__, str(e)[:200])
+            report_id = _fallback_write(drive_service, title, docx_bytes, tag)
+            if not report_id:
+                results["failed"].append((entry["name"], "הדוח נוצר אך לא ניתן היה לשמור אותו"))
+                continue
+        results["graded"].append(entry["name"])
+        _mark_file_done(fkey, params["folder_id"], entry["id"], report_id)
+
+    if gmail_service is not None:
+        mailer.send_summary(gmail_service, WORKSPACE_SUBJECT, params, results,
+                            ctx.rubric_name, drive_folder.folder_link(out_folder_id),
+                            tag)
+    else:
+        log.warning("%s no mail scope — %d report(s) are in the teacher's folder but "
+                    "they have not been told", tag, len(results["graded"]))
+
+    log.info("%s done: %d graded, %d already done, %d failed, %d skipped",
+             tag, len(results["graded"]), results["already"],
+             len(results["failed"]), len(results["skipped"]))
+    if results["graded"]:
+        return "graded"
+    return "nothing-new" if results["already"] else "no-results"
 
 
 def run_form_scan(dry_run: bool = False):
@@ -469,10 +664,9 @@ def run_form_scan(dry_run: bool = False):
 
         if dry_run:
             print(f"\n── sheet row {row_num}  key={key[:8]} ──")
-            for k in ("timestamp", "email", "teacher_name", "school", "grade_level",
-                      "exercise_lang", "model_key", "rubric_id", "rubric_from_upload"):
+            for k in ("timestamp", "email", "teacher_name", "module", "rubric_id",
+                      "folder_id", "exercise_lang", "model_key", "comments"):
                 print(f"   {k:18}: {params.get(k)!r}")
-            print(f"   {'file_ids':18}: {params['file_ids']}")
             print(f"   {'question':18}: {form_schema.build_question(params)[:200]!r}")
             refusal = _admit(params, tag)
             print(f"   {'admitted':18}: {'yes' if refusal is None else refusal}")
@@ -489,27 +683,24 @@ def run_form_scan(dry_run: bool = False):
             else:
                 log.info("%s not graded: %s", tag, refusal)
                 if gmail_service is not None:
-                    mailer.send_failure(gmail_service, TEACHER_EMAIL, params, refusal, tag)
+                    mailer.send_failure(gmail_service, WORKSPACE_SUBJECT, params, refusal, tag)
             _mark_done(key, outcome="rejected")
             continue
 
-        log.info("%s grading response from %s (sheet row %d)", tag, params["email"], row_num)
+        log.info("%s grading folder %s from %s (sheet row %d)",
+                 tag, params["folder_id"], params["email"], row_num)
         try:
-            docx_bytes, out_name, _evaluation = checker.check_form_response(
-                drive_service, params, tag=tag, max_pages=MAX_PAGES_PER_RESPONSE)
-        except ValueError as e:
-            # A response we understand but cannot grade — the teacher's problem
-            # to fix, so tell them rather than retrying it three times.
+            outcome = _process_folder(drive_service, gmail_service, params, tag)
+        except drive_folder.FolderError as e:
+            # A submission we understand but cannot use — a folder shared
+            # read-only, the wrong link, nothing gradable inside. The teacher's
+            # problem to fix, so tell them rather than retrying it three times.
             log.info("%s not graded: %s", tag, e)
             if gmail_service is not None:
-                mailer.send_failure(gmail_service, TEACHER_EMAIL, params, str(e), tag)
+                mailer.send_failure(gmail_service, WORKSPACE_SUBJECT, params, str(e), tag)
             _mark_done(key, outcome="rejected")
             continue
 
-        rubric_name = (core.load_rubric(params["rubric_id"] or core.DEFAULT_RUBRIC_ID)
-                       or {}).get("name", core.DEFAULT_RUBRIC_ID)
-        outcome = _deliver(drive_service, gmail_service, params, docx_bytes,
-                           out_name, rubric_name, tag)
         _mark_done(key, outcome=outcome)
 
     log.debug("scan finished — %d row(s) processed this run", processed)
