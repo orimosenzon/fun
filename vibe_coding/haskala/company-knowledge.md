@@ -37,7 +37,8 @@
   עמד להיות ההעתק החמישי. **מקור אמת יחיד ב-lib/**; ה-deploy.sh של כל מוצר
   מעתיק אותה לתיקיית המוצר לפני הפריסה, כי `gcloud run deploy --source .`
   מעלה רק את תיקיית המוצר. העותק בתיקיית המוצר הוא תוצר בנייה ו-gitignored.
-  `checker` ו-`math-checker` **טרם הועברו** אליה — שניהם רדומים.
+  `math-checker` **הועבר** אליה ב-2026-08-05 (`math_core.py` + `math_report.py`,
+  ה-core.py/report.py שלו הם shims). `checker` בלבד טרם הועבר — הוא רדום.
 - **סטאק backend:** Flask למוצרים אינטראקטיביים, functions-framework על Cloud Run
   לשירותים מתוזמנים.
 - **פריסה:** HF Spaces (Flask) או Cloud Run (מתוזמן). דפוס "קמס" = git commit/push
@@ -81,6 +82,19 @@
   ולכן הטופס חייב להיות בבעלות חשבון bdika.net. טופס שנבנה בחשבון אחר — אין תיקון
   חוץ מבנייה מחדש.
 - **ידע:** `products/form-checker/memory/project-knowledge.md`
+
+### מוצר #6 — math-form-checker — **נכתב, טרם נפרס** (2026-08-05)
+- **מה:** אותה זרימה כמו form-checker — טופס גוגל + תיקיית Drive משותפת — אבל
+  ל**מבחני מתמטיקה**. התשתית של form-checker עם המנוע של math-checker.
+- **שלושה הבדלים נושאי-משקל:** ניתוח הוליסטי של העמוד במקום OCR שורה-שורה;
+  הדוח נשאר `.docx` ולא מומר ל-Google Doc (ה-importer של Drive הופך LaTeX בתוך
+  מסמך RTL); קולקציות Firestore נפרדות (`math_form_checker_*`) — שיתוף היה גורם
+  לכל שירות לדלג על השורות של השני.
+- **מחוון:** טקסט חופשי בטופס, לא רשימה נפתחת — למתמטיקה אין סקאלה ארצית.
+- **ברירת מחדל Sonnet 5** (בדיקה ללא אדם בלולאה), Opus 4.8 זמין בבורר.
+- **אילוץ:** ~55 שניות לעמוד → `--timeout=3600`, `--attempt-deadline=1800s`,
+  `MAX_ROWS_PER_RUN=1`, `MAX_PAGES_PER_RESPONSE=12`.
+- **ידע:** `products/math-form-checker/memory/project-knowledge.md`
 
 ## מודל עסקי
 - _(לגיבוש)_

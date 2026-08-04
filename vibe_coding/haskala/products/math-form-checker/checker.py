@@ -1,0 +1,188 @@
+"""checker.py — grading one submission's worth of maths files.
+
+Sits between main.py (which owns Google, the ledger and the guardrails) and
+haskala_grading.math_core (which owns the model calls). main.py hands it one
+downloaded file at a time; it returns the .docx bytes and a report title.
+
+WHAT THIS DOES DIFFERENTLY FROM form-checker's checker.py
+─────────────────────────────────────────────────────────
+The English product resolves a *bundled* rubric — four Ministry JSON files,
+picked by Bagrut module code — and merges the teacher's task description into a
+"question" that the evaluation is measured against. Neither idea transfers:
+
+  • The maths rubric is free text. math_core appends it to the user turn, so
+    there is nothing to load and nothing to match. build_context's only job is
+    to find a מחוון *document* when the teacher said it was in the folder.
+  • There is no "question" to grade against. The problems are printed on the
+    scan; the model reads them from the page. Class context and the teacher's
+    comments still condition the grade, and form_schema.build_rubric folds
+    those into the rubric string.
+
+So this file is much smaller than its English sibling, and that asymmetry is
+the point rather than an omission.
+"""
+from __future__ import annotations
+
+import logging
+import time
+from dataclasses import dataclass, field
+
+import drive_folder
+import form_schema
+from haskala_grading import core as en_core
+from haskala_grading import math_core, math_report
+
+log = logging.getLogger("math-form-checker")
+
+
+def _preview(text, limit: int) -> str:
+    s = (text or "").strip()
+    return s if len(s) <= limit else s[:limit] + f"… (+{len(s) - limit} chars)"
+
+
+@dataclass
+class FolderContext:
+    """What the folder told us, resolved once per submission rather than per file."""
+    rubric_text: str = ""
+    rubric_source: str = ""
+    rubric_name: str = "מחוון חופשי"
+    context_docs: list = field(default_factory=list)   # [(name, kind)] for the summary
+
+
+def build_context(params: dict, typed_docs: list[dict], tag: str = "") -> FolderContext:
+    """Resolve the מחוון for one submission.
+
+    Precedence, highest first:
+      1. the scheme the teacher pasted into the form;
+      2. a typed document in the folder, when the form answer pointed there;
+      3. nothing — math_core then scores by the points printed on the page.
+
+    The form outranks the folder deliberately. A folder document is a guess
+    about a file nobody described; the form answer is what the teacher actually
+    wrote down. When they disagree, the answer wins.
+
+    Never raises. A folder whose מחוון cannot be read still grades — it just
+    grades against the printed points, which is the documented default.
+    """
+    pasted = (params.get("rubric_text") or "").strip()
+    if pasted:
+        return FolderContext(
+            rubric_text=pasted,
+            rubric_source="the form's מחוון field",
+            rubric_name="מחוון מהטופס",
+            context_docs=[],
+        )
+
+    if not params.get("rubric_in_folder"):
+        return FolderContext(
+            rubric_text="",
+            rubric_source="none — scoring by the points printed on the page",
+            rubric_name="ללא מחוון",
+            context_docs=[],
+        )
+
+    read: list[tuple[dict, str]] = []
+    for doc in typed_docs:
+        try:
+            # Typed documents only — main.py has already split scans from text
+            # documents, so this hits the PDF text layer and costs nothing. The
+            # English default model is passed for the vision fallback that a
+            # typed document should never reach; math model keys are not valid
+            # for en_core.ocr_page and would raise if it ever did.
+            text, method = en_core.rubric_text_from_document(
+                doc["data"], doc["ext"], en_core.DEFAULT_MODEL)
+        except Exception as e:
+            log.warning("%s could not read מחוון document %r (%s: %s) — ignoring it",
+                        tag, doc["name"], type(e).__name__, str(e)[:200])
+            continue
+        if not text.strip():
+            continue
+        log.info("%s מחוון document %r read via %s (%d chars)",
+                 tag, doc["name"], method, len(text))
+        read.append((doc, text))
+
+    if not read:
+        log.warning("%s teacher said the מחוון is in the folder, but no readable "
+                    "typed document was found — scoring by the printed points", tag)
+        return FolderContext(
+            rubric_text="",
+            rubric_source="the teacher said the מחוון is in the folder, but none "
+                          "could be read — scoring by the points printed on the page",
+            rubric_name="ללא מחוון",
+            context_docs=[],
+        )
+
+    # Concatenated rather than picking one: a folder may hold a marking scheme
+    # and a separate page of instructions, and there is no reliable way to rank
+    # them without asking the model, which costs a call per file.
+    doc_names = [d["name"] for d, _t in read]
+    return FolderContext(
+        rubric_text="\n\n".join(t.strip() for _d, t in read),
+        rubric_source=f"document(s) in the folder ({', '.join(doc_names)})",
+        rubric_name=doc_names[0],
+        context_docs=[(n, "מחוון") for n in doc_names],
+    )
+
+
+def build_rubric(params: dict, ctx: FolderContext) -> str:
+    """The full rubric string for math_core: the resolved scheme plus the class
+    context. form_schema owns the shape; the folder's text is merged in as
+    though the teacher had pasted it, because from the model's point of view
+    that is exactly what it is."""
+    merged = dict(params)
+    merged["rubric_text"] = ctx.rubric_text
+    return form_schema.build_rubric(merged)
+
+
+def check_file(entry: dict, params: dict, ctx: FolderContext, rubric: str,
+               tag: str = "") -> tuple[bytes, str]:
+    """Grade one student's file. Returns (docx bytes, report title).
+
+    Raises ValueError when the file yields nothing gradable — main.py records
+    that against this file alone, so one unreadable scan does not take the rest
+    of the class down with it.
+    """
+    t0 = time.monotonic()
+
+    model_key, model_label = math_core.resolve_model(params.get("model_key"))
+
+    log.info("%s ── checking parameters ──", tag)
+    log.info("%s   file       : %r (%s, %.0f KB)", tag, entry["name"], entry["ext"],
+             len(entry["data"]) / 1024)
+    log.info("%s   teacher    : %s%s", tag, params.get("email") or "(no address)",
+             f" ({params['teacher_name']})" if params.get("teacher_name") else "")
+    log.info("%s   model      : %s (%s)", tag, model_key, model_label)
+    log.info("%s   rubric src : %s", tag, ctx.rubric_source)
+    log.info("%s   rubric     : %s", tag, _preview(rubric, 2000))
+    log.info("%s ─────────────────────────", tag)
+
+    pages = math_core.check_file(entry["data"], entry["ext"],
+                                 rubric=rubric, model_key=model_key)
+    if not pages:
+        raise ValueError("no pages could be rendered from this file")
+
+    problems = sum(len((p.get("analysis") or {}).get("problems") or []) for p in pages)
+    if not problems:
+        # Not an error: a blank or unreadable page is a legitimate result the
+        # teacher needs to see. The report says so, rather than the submission
+        # vanishing with only a log line to explain it.
+        log.warning("%s no problems detected in %r — writing the report anyway",
+                    tag, entry["name"])
+
+    title = drive_folder.report_name(entry["name"])
+    docx_bytes = math_report.build_result_docx(
+        pages, entry["name"],
+        # Always False. math-checker's UI has a flow where the teacher edits the
+        # suggested points and confirms them; a form submission has no such
+        # screen, so every report produced here is by definition unapproved and
+        # says so on its first page.
+        approved=False,
+    )
+
+    earned, total = math_report.compute_totals(pages)
+    log.info("%s graded %d page(s), %d problem(s) of %r → %r "
+             "(%s/%s pts, %.0f KB) in %.1fs",
+             tag, len(pages), problems, entry["name"], title,
+             math_report._fmt_pts(earned), math_report._fmt_pts(total),
+             len(docx_bytes) / 1024, time.monotonic() - t0)
+    return docx_bytes, title

@@ -35,8 +35,24 @@ fi
 # Files that actually need to be on the Space. run.sh, deploy.sh, venv/,
 # memory/, *.log, __pycache__/, .env stay local. README.md on the Space is
 # HF-specific (title/sdk/port frontmatter), kept under deploy/space-readme.md.
-FILES=(app.py Dockerfile .dockerignore requirements.txt)
-DIRS=(templates static)
+#
+# core.py and report.py were part of app.py until the 2026-07-03 refactor and
+# were missing from this list until 2026-08-05 — deploying in between would
+# have pushed an app.py whose imports were not on the Space.
+FILES=(app.py core.py report.py Dockerfile .dockerignore requirements.txt)
+DIRS=(templates static haskala_grading)
+
+# Vendor the shared grading library into this directory before deploying.
+# core.py/report.py here are thin shims over haskala_grading.math_core /
+# .math_report, which live in haskala/lib/ and are shared with
+# math-form-checker. Only this directory is synced to the Space, so a sibling
+# lib/ would simply be absent and the container would die on import.
+#
+# The copy is gitignored (haskala/.gitignore: products/*/haskala_grading/).
+# Never edit the vendored copy — it is overwritten here on every deploy.
+echo "📦 vendoring shared library haskala_grading/…"
+rsync -a --delete --exclude='__pycache__' \
+      "$SRC/../../lib/haskala_grading/" "$SRC/haskala_grading/"
 
 echo "📥 pulling latest from HF Space ($SPACE)…"
 git -C "$SPACE" pull --rebase --autostash
