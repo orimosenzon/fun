@@ -12,7 +12,14 @@ WORKDIR /home/user/app
 COPY --chown=user requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt gunicorn
 
-COPY --chown=user app.py .
+# app.py was a monolith until the 2026-07-03 refactor split it into
+# core.py + report.py, and this COPY list was never updated to match — so an
+# image built between then and 2026-08-05 would start and die on
+# `from core import ...`. core.py/report.py are now thin shims over the shared
+# haskala_grading package, which deploy.sh vendors into this directory before
+# the push (it is gitignored — source of truth is haskala/lib/).
+COPY --chown=user app.py core.py report.py ./
+COPY --chown=user haskala_grading/ haskala_grading/
 COPY --chown=user templates/ templates/
 COPY --chown=user static/ static/
 

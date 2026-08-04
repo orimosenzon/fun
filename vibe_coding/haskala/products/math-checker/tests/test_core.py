@@ -14,9 +14,17 @@ import core  # noqa: E402
 # ─── resolve_model ────────────────────────────────────────────────────────────
 
 def test_resolve_model_known_key():
-    key, label = core.resolve_model("sonnet")
-    assert key == "sonnet"
+    key, label = core.resolve_model("sonnet46")
+    assert key == "sonnet46"
     assert "Sonnet" in label
+
+
+def test_bare_sonnet_is_no_longer_a_key():
+    """The 4.6 entry was renamed sonnet -> sonnet46 when Sonnet 5 joined the
+    table. A bare "sonnet" is ambiguous between the two, so it must fall back
+    to the product default and be visible in the log, not silently select 4.6."""
+    key, _ = core.resolve_model("sonnet")
+    assert key == core.DEFAULT_MODEL
 
 
 def test_resolve_model_unknown_falls_back_to_default():
