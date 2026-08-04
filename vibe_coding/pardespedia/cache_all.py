@@ -12,7 +12,7 @@ cache_dir = sys.argv[1] if len(sys.argv) > 1 else "/tmp/pardes_cache"
 os.makedirs(cache_dir, exist_ok=True)
 
 c = WikiClient()
-pages = c.list_pages(namespace=0)
+pages = c.list_pages(namespace=0, redirects="nonredirects")
 index = []
 for i, p in enumerate(pages):
     title = p["title"]

@@ -809,7 +809,8 @@ def compute_stats(client) -> tuple:
         contains a wiki-table (``{|``).
     """
     talk = len(client.list_pages(namespace=1))
-    titles = [p["title"] for p in client.list_pages(namespace=0)]
+    titles = [p["title"] for p in client.list_pages(namespace=0,
+                                                    redirects="nonredirects")]
     tables = 0
     for i in range(0, len(titles), 50):
         chunk = titles[i:i + 50]

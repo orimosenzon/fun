@@ -139,7 +139,8 @@ def main():
 
     client = WikiClient()
     client.login()
-    titles = [p["title"] for p in client.list_pages()]
+    titles = [p["title"] for p in client.list_pages(namespace=0,
+                                                    redirects="nonredirects")]
     print(f"{len(titles)} articles in ns0", file=sys.stderr)
     raw = fetch_all(client, titles)
 
