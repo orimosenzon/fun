@@ -582,10 +582,22 @@ def _collect_folder(drive_service, params, tag):
             "אפשר לפצל אותם לכמה תיקיות ולשלוח את הטופס פעם אחת לכל תיקייה."
             % (meta.get("name"), len(candidates), MAX_FILES_PER_RESPONSE))
 
-    work, context_docs, pages = [], [], 0
+    work, context_docs, solution_docs, pages = [], [], [], 0
     for f in candidates:
         data = drive_folder.download(drive_service, f["id"])
         entry = {**f, "data": data}
+
+        # The name test runs BEFORE the typed/handwritten one, and the order is
+        # the whole point. A school solution is very often handwritten, so
+        # looks_typed puts it on the student-work side and we would grade the
+        # teacher's own answers as a pupil's — a perfect score filed under
+        # somebody's name, with nothing in the logs looking wrong.
+        if form_schema.looks_like_solution(f["name"]):
+            log.info("%s %r looks like the school's solution, not student work",
+                     tag, f["name"])
+            solution_docs.append(entry)
+            continue
+
         typed, why = drive_folder.looks_typed(data, f["ext"])
         if typed:
             log.info("%s %r is a context document, not student work — %s",
@@ -597,15 +609,39 @@ def _collect_folder(drive_service, params, tag):
 
     if not work:
         raise drive_folder.FolderError(
-            "כל הקבצים בתיקייה %r נראים כמסמכים מודפסים (דף הבחינה, הוראות או "
-            "מחוון) ולא כעבודות תלמידים בכתב יד. יש להוסיף לתיקייה את הסריקות "
-            "של העבודות." % meta.get("name"))
+            "כל הקבצים בתיקייה %r נראים כמסמכים מודפסים (דף הבחינה, הוראות, "
+            "מחוון או פתרון בית הספר) ולא כעבודות תלמידים בכתב יד. יש להוסיף "
+            "לתיקייה את הסריקות של העבודות." % meta.get("name"))
 
     log.info("%s folder %r: %d work file(s) / %d page(s), %d context document(s), "
-             "%d file(s) in unsupported formats",
+             "%d solution file(s), %d file(s) in unsupported formats",
              tag, meta.get("name"), len(work), pages, len(context_docs),
-             len(wrong_format))
-    return meta, work, context_docs, wrong_format
+             len(solution_docs), len(wrong_format))
+    return meta, work, context_docs, solution_docs, wrong_format
+
+
+def _form_solution_files(drive_service, params, tag) -> list[dict]:
+    """Download whatever the teacher attached to the school-solution question.
+
+    Silent on the empty case — most submissions will not attach one, and the
+    question is optional by design.
+    """
+    ids = params.get("solution_file_ids") or []
+    if not ids:
+        return []
+    files = []
+    for fid in ids:
+        entry = drive_folder.fetch_by_id(drive_service, fid)
+        if entry:
+            files.append(entry)
+    if not files:
+        log.warning("%s the school-solution question had %d attachment(s) but "
+                    "none could be read — grading without a reference solution",
+                    tag, len(ids))
+    else:
+        log.info("%s school solution attached to the form: %s", tag,
+                 ", ".join(f["name"] for f in files))
+    return files
 
 
 def _select_works(work, params, tag):
@@ -643,7 +679,8 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
     scan in a class of thirty must not cost the other twenty-nine their reports,
     and the teacher is told exactly which file failed in the summary mail.
     """
-    meta, work, context_docs, wrong_format = _collect_folder(drive_service, params, tag)
+    meta, work, context_docs, solution_docs, wrong_format = _collect_folder(
+        drive_service, params, tag)
     pending, already, deferred = _select_works(work, params, tag)
 
     # Counted over the selected works only, so a big folder is never refused
@@ -655,7 +692,13 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
             "עד %d בכל שליחה. אפשר לפצל אותן לכמה תיקיות ולשלוח את הטופס פעם "
             "אחת לכל תיקייה." % (meta.get("name"), pages, MAX_PAGES_PER_RESPONSE))
 
-    ctx = checker.build_context(params, context_docs, tag=tag)
+    # Form attachments outrank folder files: the question asked for the solution
+    # explicitly, so an answer to it is a statement, while a folder file matched
+    # by its name is an inference. Only when nobody answered does the folder get
+    # a say.
+    solution_files = _form_solution_files(drive_service, params, tag) or solution_docs
+
+    ctx = checker.build_context(params, context_docs, solution_files, tag=tag)
     rubric = checker.build_rubric(params, ctx)
     out_folder_id = drive_folder.ensure_output_folder(
         drive_service, params["folder_id"])
@@ -664,7 +707,13 @@ def _process_folder(drive_service, gmail_service, params, tag) -> str:
         "graded": [], "failed": [], "already": already,
         "deferred": [e["name"] for e in deferred],
         "skipped": [(f["name"], f["reason"]) for f in wrong_format],
-        "context": ctx.context_docs,
+        # The reference solution is listed alongside the מחוון documents rather
+        # than in a field of its own. A teacher who attached one and got a
+        # summary that never mentions it has no way to tell whether it reached
+        # the model or was silently dropped for a permission they cannot see.
+        "context": ctx.context_docs + (
+            [(n, "פתרון בית הספר") for n in
+             (f["name"] for f in solution_files)] if ctx.solution_imgs else []),
         # For maths this reports whether a marking scheme was found, not whether
         # the task was described: the problems are printed on the scan, so a
         # missing task costs context rather than correctness. Without a scheme

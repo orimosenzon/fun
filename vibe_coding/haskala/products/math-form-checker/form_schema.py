@@ -36,6 +36,11 @@ them, because math grading takes a different shape of input:
     rubrics by Bagrut module code. Maths has no such national scale, and
     math_core takes a **free-text** מחוון instead — so the form asks for the
     מחוון as a paragraph, or the teacher drops it in the folder as a file.
+  • A school-solution question the English form has no equivalent of. Avishai
+    added it to the maths form on 2026-08-05: the teacher attaches the school's
+    own worked solution, so the model knows what the expected answer and method
+    look like instead of re-deriving every problem itself. An English
+    composition has no such artefact.
   • No exercise-language question. The maths prompt and its feedback are Hebrew.
   • A missing task description is far less damaging here. An English composition
     graded without knowing the prompt gets an invented Content score; a maths
@@ -85,8 +90,16 @@ FIELDS: dict[str, dict] = {
                 "written back into it.",
     },
     "files": {
+        # "פתרונות התלמידים" is listed here, not under `solution`, and the two
+        # are separated by alias length rather than by luck: this phrase is
+        # sixteen characters and beats every solution alias, so a form that
+        # words the student-upload question that way still maps to the work
+        # files. "העלאת" is here for the same family of titles, which say
+        # "upload" without ever saying "files".
         "aliases": ["המבחנים לבדיקה", "התרגיל לבדיקה", "העלאת קבצים", "קבצים",
-                    "סריקות", "upload", "files", "exercise files", "צרף", "צרפו"],
+                    "פתרונות התלמידים", "עבודות התלמידים", "מחברות",
+                    "סריקות", "העלאת", "upload", "files", "exercise files",
+                    "צרף", "צרפו"],
         "required": False,
         "hint": "Optional. A File upload question still works and is graded "
                 "alongside the folder, but folder sharing is the primary path — "
@@ -143,6 +156,31 @@ FIELDS: dict[str, dict] = {
                 "points_earned per problem. Left empty, the model scores by the "
                 "points printed on the page, defaulting to 10 per problem.",
     },
+    "solution": {
+        # Deliberately NOT a bare "פתרון". The student-upload question is very
+        # plausibly worded "העלאת פתרונות התלמידים", and "פתרון" is a substring
+        # of "פתרונות" — a bare alias would win that column on length and hand
+        # the entire class's work to the model as the reference solution, which
+        # would mark every student correct. Every alias here is qualified.
+        # The first three are the title Avishai actually used, confirmed
+        # 2026-08-05 from the Drive folder Forms created for the question
+        # ("התרגיל והפתרון המוצע (File responses)"). Note it bundles the
+        # exercise *and* the proposed solution into one upload, which is why
+        # the prompt calls the attachment "the exam and its solution" rather
+        # than "the solution" — see math_core._SOLUTION_INTRO.
+        "aliases": ["התרגיל והפתרון המוצע", "הפתרון המוצע", "פתרון מוצע",
+                    "פתרון בית הספר", "פתרון בית ספר", "פתרון בית־ספר",
+                    "הפתרון של בית הספר", "פתרון המורה", "פתרון מורה",
+                    "פתרון לדוגמה", "פתרון מלא", "הפתרון הרשמי",
+                    "school solution", "reference solution", "model solution",
+                    "answer key", "official solution"],
+        "required": False,
+        "hint": "File upload (preferred) or paragraph. The school's own worked "
+                "solution, optionally together with the exam paper. Either "
+                "question type works — the answer is inspected at parse time: "
+                "Drive links become solution files, prose becomes solution "
+                "text, and 'מצורף בתיקייה' sends us to the folder.",
+    },
     "instructions": {
         "aliases": ["הוראות המשימה", "תיאור התרגיל", "מה התלמידים התבקשו",
                     "המשימה", "הוראות", "נושא המבחן", "assignment",
@@ -174,15 +212,46 @@ FIELDS: dict[str, dict] = {
 RUBRIC_IN_FOLDER_HINTS = ("צירפתי", "מצורף", "בתיקייה", "בתיקיה", "בקבצים",
                           "attached", "in the folder", "see folder")
 
+# Filename fragments that mark a file in the shared folder as the school's
+# reference solution rather than a student's work.
+#
+# This list earns its keep twice. Feeding the reference to the model as though
+# it were student work would score the teacher's own answers — a perfect grade
+# under some student's name — and it is not a hypothetical: a *handwritten*
+# school solution is exactly what a maths teacher scans, and nothing else in the
+# pipeline can tell that handwriting apart from a pupil's.
+#
+# Here a bare "פתרון" IS wanted, unlike in the field aliases above: these match
+# filenames the teacher chose for one file, not question titles, and "פתרון.pdf"
+# is the overwhelmingly common name for exactly this file.
+SOLUTION_NAME_HINTS = ("פתרון", "פיתרון", "תשובות", "מחברת המורה",
+                       "solution", "answers", "answer key", "teacher")
+
+
+def looks_like_solution(name: str) -> bool:
+    """True when a folder filename names the school's reference solution.
+
+    Deliberately not applied to the מחוון: a marking scheme is read as text and
+    a solution is read as pages, and a file called 'מחוון ופתרון' is better
+    treated as the solution — the scheme survives in the pages either way."""
+    return any(normalise(h) in normalise(name) for h in SOLUTION_NAME_HINTS)
+
+
+def points_to_folder(label: str) -> bool:
+    """True when a free-text answer says 'it's attached' rather than containing
+    the thing itself. Shared by the מחוון and the school-solution questions —
+    teachers answer both the same way, and there is no reason for two lists."""
+    if not label:
+        return False
+    norm = normalise(label)
+    return any(normalise(h) in norm for h in RUBRIC_IN_FOLDER_HINTS)
+
 
 def rubric_is_in_folder(label: str) -> bool:
     """True when the מחוון answer points at the folder instead of containing the
     scheme. The caller then looks for a typed document in the folder and uses
     its text as the rubric."""
-    if not label:
-        return False
-    norm = normalise(label)
-    return any(normalise(h) in norm for h in RUBRIC_IN_FOLDER_HINTS)
+    return points_to_folder(label)
 
 
 # ─── grading with no מחוון ───────────────────────────────────────────────────
@@ -445,7 +514,29 @@ def parse_row(row: list[str], colmap: dict[str, int]) -> dict:
         return (row[idx] or "").strip()
 
     rubric_answer = cell("rubric")
-    in_folder = rubric_is_in_folder(rubric_answer)
+    in_folder = points_to_folder(rubric_answer)
+
+    # The school-solution question is read without caring which *type* of
+    # question Avishai built, because both are reasonable and we do not control
+    # the form. A File-upload answer is a list of Drive links; a paragraph
+    # answer is either the solution itself or a note that it is attached. Asking
+    # the cell what it contains handles all three, and means a teacher who
+    # switches the question from upload to paragraph next term breaks nothing.
+    solution_answer = cell("solution")
+    solution_ids = extract_file_ids(solution_answer)
+    solution_in_folder = points_to_folder(solution_answer) and not solution_ids
+
+    # "Assignment description" is a *File upload* question on Avishai's maths
+    # form, not the paragraph the English form uses (confirmed 2026-08-05 from
+    # the folder Forms created for it). Read as text, its answer is a Drive URL,
+    # and build_rubric would paste "על המבחן: https://drive.google.com/..." into
+    # the marking scheme — a line of noise presented to the model as context
+    # about the exam. Nothing would error and no log would look wrong.
+    instructions_answer = cell("instructions")
+    instructions_ids = extract_file_ids(instructions_answer)
+    if instructions_ids:
+        log.info("the task-description answer is %d uploaded file(s), not text — "
+                 "keeping the link(s) out of the rubric", len(instructions_ids))
 
     # One name field, however the form spells it. A form asking First + Last
     # gives us two columns; an older one gives a single "שם המורה". Joining here
@@ -466,7 +557,11 @@ def parse_row(row: list[str], colmap: dict[str, int]) -> dict:
         "folder_link": cell("folder_link"),
         "school": cell("school"),
         "grade_level": cell("grade_level"),
-        "instructions": cell("instructions"),
+        "instructions": "" if instructions_ids else instructions_answer,
+        # Parsed and carried, but deliberately not fed to the model yet: whether
+        # the exam paper should join the reference pages is Avishai's call, not
+        # a default we should pick silently. Available the moment that is decided.
+        "instructions_file_ids": instructions_ids,
         "passphrase": cell("passphrase"),
         # An answer that merely points at the folder is not itself a scheme —
         # keeping it out of rubric_text stops "מצורף בתיקייה" being handed to
@@ -476,6 +571,18 @@ def parse_row(row: list[str], colmap: dict[str, int]) -> dict:
         "rubric_label": rubric_answer,
         "model_key": resolve_model_choice(cell("model")),
         "file_ids": extract_file_ids(cell("files")),
+        # The school's reference solution. Exactly one of these three is
+        # meaningful per submission, and all three are carried so the caller can
+        # say in the summary mail which one it used — "no solution was found" and
+        # "the solution file could not be read" are different problems for the
+        # teacher, and indistinguishable if we collapse them here.
+        "solution_file_ids": solution_ids,
+        # A note that the solution is attached is not itself a solution. Keeping
+        # it out of solution_text stops "מצורף בתיקייה" being shown to the model
+        # as the school's worked answer — the same trap the מחוון field has.
+        "solution_text": "" if (solution_ids or solution_in_folder) else solution_answer,
+        "solution_in_folder": solution_in_folder,
+        "solution_label": solution_answer,
     }
 
 
@@ -514,6 +621,23 @@ def print_form_template() -> None:
     print("and use its text instead.\n")
     print("(no answer → the model scores by the points printed beside each")
     print(" problem on the page, defaulting to 10 per problem)\n")
+
+    print("=" * 62)
+    print("The פתרון בית הספר question accepts EITHER question type.")
+    print("File upload is preferred — a maths solution is diagrams and")
+    print("derivations, and its pages are sent to the model as images.")
+    print("A paragraph answer works too and is sent as text.\n")
+    print("Whatever the teacher attaches is shown to the model as the school's")
+    print("solution, explicitly not as the pupil's work, with the rule that a")
+    print("different valid method still earns full marks.\n")
+    print("A file in the shared folder is used when the question went")
+    print("unanswered, matched on its name:")
+    print(f"   {', '.join(SOLUTION_NAME_HINTS)}")
+    print("Those names are also excluded from the student-work pile — a")
+    print("handwritten school solution would otherwise be graded as a pupil's.\n")
+    print("NOTE — form file uploads land in the FORM OWNER's Drive, so the form")
+    print("must be owned by the same Workspace as the service account or the")
+    print("attachment cannot be read at all.\n")
 
     print("Dropdown options for the model question, if you expose it at all:\n")
     for key, human in math_core.MODELS.items():
