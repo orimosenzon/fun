@@ -158,6 +158,49 @@ def list_candidates(drive, folder_id: str) -> tuple[list[dict], list[dict]]:
     return files, skipped
 
 
+def fetch_by_id(drive, file_id: str) -> dict | None:
+    """One file by id → {id, name, ext, data}, or None if we cannot use it.
+
+    Needed because form *file-upload* answers are not in the teacher's shared
+    folder at all — Forms puts them in the form owner's Drive, under a folder
+    it creates itself. So list_candidates never sees them and the id from the
+    responses sheet is the only handle we have.
+
+    Returns None rather than raising for both failure modes, because both are
+    ordinary: an unsupported format (the teacher attached a .docx solution) and
+    no permission (the form is owned outside our Workspace, so the upload landed
+    in a Drive we cannot read). Neither should cost the teacher their reports —
+    the caller logs it and grades without the attachment.
+    """
+    try:
+        # supportsAllDrives only — files().get rejects includeItemsFromAllDrives,
+        # which is a *list* parameter, so **_SHARED would TypeError here.
+        meta = drive.files().get(
+            fileId=file_id, fields="id, name, mimeType, size",
+            supportsAllDrives=True).execute()
+    except Exception as e:
+        log.warning("cannot read uploaded file %s (%s: %s) — if the form is not "
+                    "owned by a %s account, its uploads land in a Drive this "
+                    "service cannot see",
+                    file_id, type(e).__name__, str(e)[:200],
+                    os.environ.get("SHARE_WITH", "Workspace"))
+        return None
+
+    ext = _ext_for(meta.get("mimeType"), meta.get("name"))
+    if ext is None:
+        log.warning("uploaded file %r is a %s — only PDF, JPG and PNG can be read",
+                    meta.get("name"), meta.get("mimeType"))
+        return None
+
+    try:
+        data = download(drive, file_id)
+    except Exception as e:
+        log.warning("could not download uploaded file %r (%s: %s)",
+                    meta.get("name"), type(e).__name__, str(e)[:200])
+        return None
+    return {**meta, "ext": ext, "data": data}
+
+
 def download(drive, file_id: str) -> bytes:
     request = drive.files().get_media(fileId=file_id, **{"supportsAllDrives": True})
     buf = io.BytesIO()

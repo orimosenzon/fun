@@ -4,7 +4,7 @@
 הוליסטית: סרטוטים, הוכחות גאומטריות ומעברים אלגבריים פרושים על פני הדף. לכן
 ה-pipeline כאן שונה מזה של core.py:
 
-    רינדור עמוד → תיקון אוריינטציה (Haiku) → ניתוח הוליסטי של העמוד → JSON מובנה
+    רינדור עמוד → תיקון אוריינטציה → ניתוח הוליסטי של העמוד → JSON מובנה
 
 ומה שמשותף ל-core.py — רינדור PDF, downscale, JPEG, סיבוב, שגיאות — מיובא ממנו
 ולא משוכפל. ההעתקה היחידה שנשארה בכוונה היא `detect_rotation`, כי הפרומפט כאן
@@ -94,7 +94,28 @@ _AZURE_KEYS = {"azure-gpt41-mini"}
 # schema — only the model differs — so grades are NOT guaranteed identical to
 # the Space's. Opus stays one dropdown value away for anything that needs it.
 DEFAULT_MODEL = "sonnet5"
-ORIENT_MODEL = "claude-haiku-4-5-20251001"  # orientation is always Haiku (cheap)
+
+# Orientation was Haiku until 2026-08-05, on the reasoning that a four-way
+# choice is easy enough for the cheapest model. Measured against the five sample
+# exam pages in /home/ori/avish/, Haiku got **0 of 5 right** — and the pages are
+# all already upright, so every answer it gave rotated a perfectly readable page
+# into an unreadable one. Worse, it was not even consistently wrong: the same
+# page came back 90 on one call and 270 on the next, at both 900px and 1600px.
+#
+# That single step was responsible for most of what looked like grading quality
+# problems. The analysis model was being handed sideways pages, which is why
+# reports filled up with "לא קריא" and "קשה לעקוב", why scores sat at 3-4/10,
+# and why re-running the same file produced 3.5 then 7 — the variance was the
+# rotation lottery, not the grader.
+#
+# Sonnet 5 answered 0 on all five. It costs roughly $0.002 per page here against
+# ~$0.06 for the analysis call, so this is a rounding error on the bill and the
+# difference between a usable report and a worthless one.
+#
+# If this is ever revisited: measure against real pages before trusting a
+# cheaper model, and remember that "no rotation needed" is the common case, so a
+# detector that guesses is strictly worse than one that does nothing.
+ORIENT_MODEL = "claude-sonnet-5"
 
 # Adaptive thinking is ON by default on Sonnet 5 and Opus 5 (it was OFF on
 # Opus 4.8, which is what this pipeline was tuned against), and max_tokens caps
@@ -123,13 +144,72 @@ def detect_rotation(img: Image.Image) -> int:
 
     core.py's equivalent asks about a handwritten composition; this one says
     "math exam" so the model weighs formulas and diagrams rather than prose
-    baselines. Always Haiku — cheap enough to run per page, and reliable for
-    a four-way choice. 180° flips are common in scanned exam stacks and a
-    portrait/landscape heuristic misses them entirely.
+    baselines. 180° flips are common in scanned exam stacks and a
+    portrait/landscape heuristic misses them entirely, so this stays a model
+    call — but see ORIENT_MODEL for why it is emphatically not the cheapest
+    model. Getting this wrong corrupts every downstream stage silently.
+
+    The answer is verified rather than trusted. Measured on 2026-08-05, the raw
+    ask gets 0° and 180° right but confuses the two 90s — a page rotated 90°
+    clockwise comes back "90" when the correction needed is 270°. That is the
+    classic "which way is the question asking" ambiguity, and no rewording of
+    the prompt reliably settles it, so instead the candidate is applied and the
+    result checked. An upright page (the overwhelmingly common case) still costs
+    exactly one call, because verification is skipped when the answer is 0.
     """
+    deg = _ask_rotation(img)
+    if deg == 0:
+        return 0
+    if _looks_upright(apply_rotation(img, deg)):
+        return deg
+    # Only the 90s get a second chance: 180 has no counterpart to confuse it
+    # with, so a failed check there means the page defeated the detector and
+    # trying 180 again would just cost another call.
+    if deg in (90, 270):
+        alt = 360 - deg
+        if _looks_upright(apply_rotation(img, alt)):
+            log.info("orientation: %d° failed verification, using %d° instead", deg, alt)
+            return alt
+    log.warning("orientation: could not verify %d° — applying it anyway", deg)
+    return deg
+
+
+def _looks_upright(img: Image.Image) -> bool:
+    """Yes/no check on an already-rotated page. Deliberately a different
+    question from _ask_rotation: 'is this readable' has no direction to get
+    backwards, which is the exact failure being corrected for."""
     msg = _anthropic().messages.create(
         model=ORIENT_MODEL,
-        max_tokens=10,
+        max_tokens=16,
+        thinking={"type": "disabled"},
+        messages=[{
+            "role": "user",
+            "content": [
+                _image_block_anthropic(img, ORIENT_MAX_EDGE),
+                {"type": "text", "text": (
+                    "האם הטקסט בעמוד הסרוק הזה זקוף וקריא בכיוון הרגיל "
+                    "(כלומר אפשר לקרוא אותו בלי להטות את הראש או להפוך את הדף)? "
+                    "ענה מילה אחת בלבד: כן או לא."
+                )},
+            ],
+        }],
+    )
+    txt = "".join(b.text for b in msg.content if b.type == "text")
+    return "כן" in txt
+
+
+def _ask_rotation(img: Image.Image) -> int:
+    """The raw model answer, unverified. Split out so detect_rotation reads as
+    the policy and this stays the single place the question is worded."""
+    msg = _anthropic().messages.create(
+        model=ORIENT_MODEL,
+        max_tokens=16,
+        # Same reason as the analysis call: adaptive thinking is on by default on
+        # Sonnet 5, and max_tokens caps thinking and text together. A budget this
+        # small would be swallowed whole, the text would come back empty, and the
+        # fallback below would silently return 0 for every page — turning the fix
+        # this model was chosen for back into a no-op that looks like it works.
+        thinking={"type": "disabled"},
         messages=[{
             "role": "user",
             "content": [
@@ -261,23 +341,123 @@ def _rubric_block(rubric: str) -> str:
     )
 
 
+# ─── the school's reference solution ─────────────────────────────────────────
+# Added 2026-08-05 for Avishai's maths form, which offers "צירוף פתרון בית ספר":
+# the teacher attaches the school's own worked solution so the model knows what
+# the expected answer and method look like.
+#
+# The instruction below is longer than it looks like it needs to be, and every
+# clause is load-bearing. Handed a worked solution with no framing, a vision
+# model treats it as the definition of correctness and marks down any student
+# who took a different route — which is precisely the failure mode a maths
+# teacher will not forgive, because alternative valid methods are the norm in
+# algebra and near-universal in geometry proofs. The reference is authoritative
+# about the *answer*, advisory about the *path*.
+#
+# It also has to survive the mundane case where the reference covers problems
+# this particular page does not (a solution sheet for the whole exam, one page
+# of student work), which would otherwise invite the model to invent problems
+# the student never attempted.
+
+# "התרגיל והפתרון המוצע" is the wording of Avishai's question, and the intro
+# matches it: what arrives may be the worked solution alone or the exam paper
+# together with it. Saying "the exam and/or its proposed solution" covers both
+# without ever describing a blank exam paper as a solution — which would invite
+# the model to mark the student against an empty page.
+_SOLUTION_INTRO = (
+    "חומר עזר מהמורה — התרגיל ו/או הפתרון המוצע של בית הספר. לעיונך בלבד, "
+    "הוא **לא** חלק מעבודת התלמיד:"
+)
+
+_SOLUTION_RULES = (
+    "\n\nכיצד להשתמש בחומר הזה:\n"
+    "• אם יש בו פתרון — הוא קובע מהי **התשובה הנכונה** ומהי הדרך המצופה.\n"
+    "• אם יש בו רק את דף התרגיל בלי פתרון — השתמש בו כדי לקרוא את ניסוח "
+    "התרגילים ואת הניקוד המודפס, ואל תתייחס אליו כאל תשובות.\n"
+    "• הוא **דרך אחת** ולא היחידה. תלמיד שהגיע לתשובה נכונה בדרך אחרת ותקפה "
+    "מקבל ניקוד מלא — אל תוריד נקודות על עצם הסטייה מהדרך שבפתרון.\n"
+    "• נתח רק את התרגילים שמופיעים בדף התלמיד. אם הפתרון מכסה תרגילים שאינם "
+    "בדף — התעלם מהם, ואל תמציא עבורם ערכים ב-problems.\n"
+    "• אם ניסוח התרגיל בפתרון סותר את המודפס בדף התלמיד — הדף קובע.\n"
+    "• אל תצטט את הפתרון ב-feedback כאילו התלמיד כתב אותו."
+)
+
+
+def _solution_text_block(solution_text: str) -> str:
+    """The typed reference solution, as a labelled fence in the user turn.
+
+    Fenced and labelled for the same reason build_rubric fences its blocks: an
+    unlabelled wall of worked maths dropped next to the rubric reads as more
+    marking criteria, and the model starts scoring the student against the
+    rubric's *wording* rather than against the solution's answers."""
+    solution_text = (solution_text or "").strip()
+    if not solution_text:
+        return ""
+    return f"\n\n{_SOLUTION_INTRO}\n{solution_text}{_SOLUTION_RULES}"
+
+
+def _solution_note_for_images(n: int) -> str:
+    """The text that explains the solution *images* that precede the student's
+    page in the same turn. Without it the model sees several pages and no way to
+    tell whose handwriting is being graded — and the reference, being neat and
+    correct, is the one it will happily award full marks to."""
+    if n <= 0:
+        return ""
+    which = "התמונה הראשונה" if n == 1 else f"{n} התמונות הראשונות"
+    return (f"\n\n{which} {'היא' if n == 1 else 'הן'} {_SOLUTION_INTRO} "
+            f"עמוד התלמיד לבדיקה הוא **התמונה האחרונה**.{_SOLUTION_RULES}")
+
+
 def analyze_page(img: Image.Image, model_key: str = DEFAULT_MODEL,
-                 rubric: str = "") -> dict:
+                 rubric: str = "", solution_text: str = "",
+                 solution_imgs: list | None = None) -> dict:
     """Holistic full-page math analysis. Dispatches to the chosen provider;
     every backend returns the same structured JSON (ANALYSIS_SCHEMA shape).
-    An optional rubric conditions the numeric scoring."""
+
+    An optional rubric conditions the numeric scoring. An optional reference
+    solution — typed text, scanned pages, or both — tells the model what the
+    expected answer and method are; see _SOLUTION_RULES for how it is framed.
+    """
+    solution_imgs = list(solution_imgs or [])
     if model_key in _ANTHROPIC_IDS:
-        return _analyze_anthropic(img, _ANTHROPIC_IDS[model_key], rubric)
+        return _analyze_anthropic(img, _ANTHROPIC_IDS[model_key], rubric,
+                                  solution_text, solution_imgs)
     if model_key in _GEMINI_IDS:
-        return _analyze_gemini(img, _GEMINI_IDS[model_key], rubric)
+        return _analyze_gemini(img, _GEMINI_IDS[model_key], rubric,
+                               solution_text, solution_imgs)
     if model_key in _GROQ_IDS:
-        return _analyze_groq(img, _GROQ_IDS[model_key], rubric)
+        return _analyze_groq(img, _GROQ_IDS[model_key], rubric,
+                             solution_text, solution_imgs)
     if model_key in _AZURE_KEYS:
-        return _analyze_azure(img, rubric)
-    return _analyze_anthropic(img, _ANTHROPIC_IDS[DEFAULT_MODEL], rubric)
+        return _analyze_azure(img, rubric, solution_text, solution_imgs)
+    return _analyze_anthropic(img, _ANTHROPIC_IDS[DEFAULT_MODEL], rubric,
+                              solution_text, solution_imgs)
 
 
-def _analyze_anthropic(img: Image.Image, model_id: str, rubric: str = "") -> dict:
+def _analyze_anthropic(img: Image.Image, model_id: str, rubric: str = "",
+                       solution_text: str = "",
+                       solution_imgs: list | None = None) -> dict:
+    solution_imgs = list(solution_imgs or [])
+
+    # The reference pages go FIRST, and the last of them carries a cache
+    # breakpoint. Every page of every student in one submission shares the same
+    # reference, so this turns a per-page cost into a per-submission one — on a
+    # class of thirty that is the difference between paying for the solution
+    # once and paying for it thirty times. It only works because the blocks
+    # before the breakpoint are byte-identical across those calls, which is why
+    # the student's page must come after it and not before.
+    content: list = [_image_block_anthropic(s, MAX_EDGE) for s in solution_imgs]
+    if content:
+        content[-1] = {**content[-1], "cache_control": {"type": "ephemeral"}}
+    content.append(_image_block_anthropic(img, MAX_EDGE))
+    content.append({
+        "type": "text",
+        "text": (_ANALYSIS_USER_TURN
+                 + _solution_note_for_images(len(solution_imgs))
+                 + _solution_text_block(solution_text)
+                 + _rubric_block(rubric)),
+    })
+
     response = _anthropic().messages.create(
         model=model_id,
         max_tokens=_ANALYSIS_MAX_TOKENS,
@@ -290,26 +470,29 @@ def _analyze_anthropic(img: Image.Image, model_id: str, rubric: str = "") -> dic
         output_config={
             "format": {"type": "json_schema", "schema": ANALYSIS_SCHEMA}
         },
-        messages=[{
-            "role": "user",
-            "content": [
-                _image_block_anthropic(img, MAX_EDGE),
-                {"type": "text", "text": _ANALYSIS_USER_TURN + _rubric_block(rubric)},
-            ],
-        }],
+        messages=[{"role": "user", "content": content}],
     )
     text = next(b.text for b in response.content if b.type == "text")
     return json.loads(text)
 
 
-def _analyze_gemini(img: Image.Image, model_id: str, rubric: str = "") -> dict:
+def _analyze_gemini(img: Image.Image, model_id: str, rubric: str = "",
+                    solution_text: str = "",
+                    solution_imgs: list | None = None) -> dict:
     from google.genai import types
+    solution_imgs = list(solution_imgs or [])
+    parts = [types.Part.from_bytes(data=_jpeg_bytes(s, MAX_EDGE),
+                                   mime_type="image/jpeg")
+             for s in solution_imgs]
+    parts.append(types.Part.from_bytes(data=_jpeg_bytes(img, MAX_EDGE),
+                                       mime_type="image/jpeg"))
+    parts.append(_ANALYSIS_USER_TURN
+                 + _solution_note_for_images(len(solution_imgs))
+                 + _solution_text_block(solution_text)
+                 + _rubric_block(rubric))
     response = _gemini().models.generate_content(
         model=model_id,
-        contents=[
-            types.Part.from_bytes(data=_jpeg_bytes(img, MAX_EDGE), mime_type="image/jpeg"),
-            _ANALYSIS_USER_TURN + _rubric_block(rubric),
-        ],
+        contents=parts,
         config=types.GenerateContentConfig(
             system_instruction=ANALYSIS_PROMPT,
             response_mime_type="application/json",
@@ -323,19 +506,31 @@ def _analyze_gemini(img: Image.Image, model_id: str, rubric: str = "") -> dict:
 
 
 def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image,
-                               rubric: str = "") -> dict:
+                               rubric: str = "", solution_text: str = "",
+                               solution_imgs: list | None = None) -> dict:
     """Shared call shape for Groq and Azure (both OpenAI-compatible vision)."""
-    b64 = base64.standard_b64encode(_jpeg_bytes(img, MAX_EDGE)).decode()
+    solution_imgs = list(solution_imgs or [])
+
+    def image_url(im):
+        b64 = base64.standard_b64encode(_jpeg_bytes(im, MAX_EDGE)).decode()
+        return {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+
+    parts = [image_url(s) for s in solution_imgs]
+    parts.append(image_url(img))
+    parts.append({
+        "type": "text",
+        "text": ("נתח את עמוד הפתרון."
+                 + _solution_note_for_images(len(solution_imgs))
+                 + _solution_text_block(solution_text)
+                 + _rubric_block(rubric)
+                 + _JSON_CONTRACT),
+    })
+
     response = client_obj.chat.completions.create(
         model=model_id,
         messages=[
             {"role": "system", "content": ANALYSIS_PROMPT},
-            {"role": "user", "content": [
-                {"type": "image_url",
-                 "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
-                {"type": "text",
-                 "text": "נתח את עמוד הפתרון." + _rubric_block(rubric) + _JSON_CONTRACT},
-            ]},
+            {"role": "user", "content": parts},
         ],
         response_format={"type": "json_object"},
         max_tokens=8000,
@@ -344,38 +539,83 @@ def _analyze_openai_compatible(client_obj, model_id: str, img: Image.Image,
     return json.loads(response.choices[0].message.content)
 
 
-def _analyze_groq(img: Image.Image, model_id: str, rubric: str = "") -> dict:
-    return _analyze_openai_compatible(_groq(), model_id, img, rubric)
+def _analyze_groq(img: Image.Image, model_id: str, rubric: str = "",
+                  solution_text: str = "",
+                  solution_imgs: list | None = None) -> dict:
+    return _analyze_openai_compatible(_groq(), model_id, img, rubric,
+                                      solution_text, solution_imgs)
 
 
-def _analyze_azure(img: Image.Image, rubric: str = "") -> dict:
+def _analyze_azure(img: Image.Image, rubric: str = "", solution_text: str = "",
+                   solution_imgs: list | None = None) -> dict:
     return _analyze_openai_compatible(
-        _azure(), _azure_deployment(), img, rubric)
+        _azure(), _azure_deployment(), img, rubric, solution_text, solution_imgs)
 
 
 # ─── page pipeline ────────────────────────────────────────────────────────────
 
 STAGE_LABELS = {
-    "orient":  "מזהה סיבוב (Haiku)",
+    "orient":  "מזהה סיבוב",
     "analyze": "מנתח מתמטיקה",
 }
 _STEPS_PER_PAGE = 2  # orient, analyze
 
 
+MAX_SOLUTION_PAGES = 6
+
+
+def solution_pages(file_bytes: bytes, ext: str, auto_orient: bool = True
+                   ) -> list[Image.Image]:
+    """Render one reference-solution file into analysis-resolution page images.
+
+    Rendered once per submission rather than once per student page: the images
+    are then reused verbatim across every analyze_page call, which is both what
+    makes Anthropic prompt caching hit and what keeps a thirty-student folder
+    from re-rendering the same solution thirty times.
+
+    Orientation is corrected here for the same reason — one detection call
+    per solution page for the whole submission. A sideways reference is worse than
+    no reference: the model reads it badly and marks the student against a
+    misread answer.
+
+    Capped at MAX_SOLUTION_PAGES. A teacher who attaches the whole answer
+    booklet would otherwise add its full page count to *every* student page's
+    input, and the cost is multiplied by the class size.
+    """
+    imgs: list[Image.Image] = []
+    for idx, img in enumerate(iter_file_pages(file_bytes, ext)):
+        if idx >= MAX_SOLUTION_PAGES:
+            log.warning("reference solution has more than %d pages — the rest "
+                        "are ignored", MAX_SOLUTION_PAGES)
+            break
+        if auto_orient:
+            img = apply_rotation(img, detect_rotation(img))
+        imgs.append(_downscale(img, MAX_EDGE))
+    return imgs
+
+
 def process_stream(file_bytes: bytes, ext: str, auto_orient: bool = True,
                    model_key: str = DEFAULT_MODEL, model_label: str = "",
-                   rubric: str = "", keep_imgs: bool = True):
+                   rubric: str = "", keep_imgs: bool = True,
+                   solution_text: str = "", solution_imgs: list | None = None):
     """Generator: yields SSE-ready progress dicts, then a final result dict.
 
     keep_imgs=False (CLI / form-checker): לא צוברים את תמונות העמודים לטובת
-    re-analysis — חוסך ~10MB לעמוד בזיכרון. ה-UI צריך אותן (סיבוב ידני), ה-batch לא."""
+    re-analysis — חוסך ~10MB לעמוד בזיכרון. ה-UI צריך אותן (סיבוב ידני), ה-batch לא.
+
+    solution_text / solution_imgs: the school's reference solution, already
+    resolved by the caller (see solution_pages). Passed through unchanged to
+    every page's analyze_page call."""
     # רינדור עצל: עמוד אחד ב-200 DPI מוחזק בזיכרון בכל רגע (חשוב ל-PDF ארוך
     # על instance קטן). total נקרא ממבנה ה-PDF בלי לרנדר.
     total = count_pages(file_bytes, ext)
     pages_imgs = iter_file_pages(file_bytes, ext)
+    solution_imgs = list(solution_imgs or [])
     short_label = (model_label.split("·")[0].strip() or "מודל")
-    log.info("[job] %d page(s) to render at %d DPI; model=%s auto_orient=%s",
-             total, RENDER_DPI, model_key, auto_orient)
+    log.info("[job] %d page(s) to render at %d DPI; model=%s auto_orient=%s "
+             "solution=%s",
+             total, RENDER_DPI, model_key, auto_orient,
+             _describe_solution(solution_text, solution_imgs))
 
     def progress(stage: str, page: int, completed: int) -> dict:
         # Emitted *before* each stage runs, so the label reflects the stage
@@ -410,7 +650,8 @@ def process_stream(file_bytes: bytes, ext: str, auto_orient: bool = True,
         yield progress("analyze", p, base + 1)
         img = _downscale(img, MAX_EDGE)
         t0 = time.time()
-        analysis = analyze_page(img, model_key, rubric)
+        analysis = analyze_page(img, model_key, rubric,
+                                solution_text, solution_imgs)
         log.info(
             "[page %d] model=%s rotation=%d° problems=%d verdicts=%s (%.1fs)",
             p, model_key, rotation,
@@ -431,13 +672,32 @@ def process_stream(file_bytes: bytes, ext: str, auto_orient: bool = True,
     yield {"type": "result", "pages": results, "imgs": imgs}
 
 
+def _describe_solution(solution_text: str, solution_imgs: list | None) -> str:
+    """One-line log summary of what reference solution a run actually had.
+
+    Worth its own function because "the grade looks wrong" is nearly always
+    answered by whether the solution reached the model at all, and a folder that
+    silently produced no reference looks identical in the logs otherwise."""
+    bits = []
+    if solution_imgs:
+        bits.append(f"{len(solution_imgs)} page(s)")
+    text = (solution_text or "").strip()
+    if text:
+        bits.append(f"{len(text)} chars of text")
+    return " + ".join(bits) if bits else "none"
+
+
 def check_file(file_bytes: bytes, ext: str, rubric: str = "",
-               model_key: str = DEFAULT_MODEL, auto_orient: bool = True) -> list[dict]:
+               model_key: str = DEFAULT_MODEL, auto_orient: bool = True,
+               solution_text: str = "", solution_imgs: list | None = None
+               ) -> list[dict]:
     """One-shot wrapper for non-streaming callers (form-checker, CLI): runs the
     whole pipeline and returns just the page list that math_report expects."""
     _key, label = resolve_model(model_key)
     for ev in process_stream(file_bytes, ext, auto_orient, _key, label,
-                             rubric, keep_imgs=False):
+                             rubric, keep_imgs=False,
+                             solution_text=solution_text,
+                             solution_imgs=solution_imgs):
         if ev["type"] == "result":
             return ev["pages"]
     raise RuntimeError("process_stream ended without a result event")

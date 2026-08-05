@@ -17,6 +17,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import re
 
 log = logging.getLogger("haskala.math")
 
@@ -190,14 +191,208 @@ __TOTAL_BOX__
     return head + "\n".join(body) + "\n</body></html>"
 
 
+# ─── LaTeX → Unicode, for the Word report ────────────────────────────────────
+# The docx used to print the model's LaTeX verbatim, on the stated assumption
+# that "the strings are simple, e.g. x^2-6x+10". That holds for algebra and
+# collapses on geometry, which is most of what Avishai's classes actually
+# submit: a real report line came out as
+#
+#     \triangle A_1=\triangle A_2,\ \triangle BLA \cong \triangle BLA
+#
+# which a teacher cannot read. The HTML report never had the problem because it
+# renders with KaTeX; only the Word path is affected.
+#
+# Unicode rather than images or Word's own equation format (OMML), for three
+# reasons that all point the same way:
+#   • The maths in these reports is symbol-heavy but structurally flat —
+#     congruences, angles, subscripts — which Unicode represents exactly.
+#   • The text stays selectable and editable, which is the point of shipping
+#     .docx at all: the teacher corrects the report before passing it on.
+#   • LaTeX→OMML needs an XSLT that ships with Microsoft Office and is not
+#     redistributable, and an image per step would bloat the file and lose the
+#     ability to edit. Neither is worth it for △ and ≅.
+
+_LATEX_SYMBOLS = {
+    r"\triangle": "△", r"\angle": "∠", r"\measuredangle": "∡",
+    r"\cong": "≅", r"\sim": "∼", r"\simeq": "≃", r"\equiv": "≡",
+    r"\perp": "⊥", r"\parallel": "∥", r"\nparallel": "∦",
+    r"\cdot": "·", r"\times": "×", r"\div": "÷", r"\pm": "±", r"\mp": "∓",
+    r"\neq": "≠", r"\ne": "≠", r"\leq": "≤", r"\le": "≤",
+    r"\geq": "≥", r"\ge": "≥", r"\approx": "≈", r"\propto": "∝",
+    r"\infty": "∞", r"\degree": "°", r"\circ": "°",
+    r"\alpha": "α", r"\beta": "β", r"\gamma": "γ", r"\delta": "δ",
+    r"\theta": "θ", r"\lambda": "λ", r"\mu": "μ", r"\pi": "π",
+    r"\sigma": "σ", r"\phi": "φ", r"\omega": "ω",
+    r"\Delta": "Δ", r"\Sigma": "Σ", r"\Omega": "Ω",
+    r"\rightarrow": "→", r"\to": "→", r"\leftarrow": "←",
+    r"\Rightarrow": "⇒", r"\Leftrightarrow": "⇔", r"\implies": "⇒",
+    r"\in": "∈", r"\notin": "∉", r"\subset": "⊂", r"\subseteq": "⊆",
+    r"\cup": "∪", r"\cap": "∩", r"\emptyset": "∅", r"\varnothing": "∅",
+    r"\forall": "∀", r"\exists": "∃", r"\therefore": "∴", r"\because": "∵",
+    r"\ldots": "…", r"\dots": "…", r"\cdots": "⋯",
+    r"\overline": "", r"\bar": "", r"\vec": "",
+    r"\sum": "Σ", r"\prod": "∏", r"\int": "∫",
+    r"\%": "%", r"\$": "$", r"\&": "&", r"\#": "#",
+}
+
+# Spacing and grouping commands that carry no glyph. Order matters: the longer
+# names must be tried before their own prefixes ("\quad" before "\q...").
+_LATEX_BLANKS = [r"\qquad", r"\quad", r"\left", r"\right", r"\displaystyle",
+                 r"\limits", r"\,", r"\;", r"\:", r"\!", r"\ "]
+
+_SUP = str.maketrans("0123456789+-=()aeionx", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵉⁱᵒⁿˣ")
+_SUB = str.maketrans("0123456789+-=()aeiox", "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑᵢₒₓ")
+
+
+def _brace_arg(s: str, i: int) -> tuple[str, int]:
+    """The {...} group starting at s[i], and the index just past it.
+
+    Falls back to the single character at s[i] when there is no brace, which is
+    how LaTeX itself reads x^2 — and the model writes both forms."""
+    if i >= len(s):
+        return "", i
+    if s[i] == "\\":
+        # A command as the argument, e.g. 90^\circ or x^\alpha. Without this the
+        # backslash alone is taken as the whole argument and the command name
+        # spills into the surrounding text — a real report line came out as
+        # "∠ALM = 90^circ".
+        j = i + 1
+        while j < len(s) and s[j].isalpha():
+            j += 1
+        return s[i:j], j
+    if s[i] != "{":
+        return s[i], i + 1
+    depth, j = 0, i
+    while j < len(s):
+        if s[j] == "{":
+            depth += 1
+        elif s[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return s[i + 1:j], j + 1
+        j += 1
+    return s[i + 1:], len(s)      # unbalanced — take the rest rather than fail
+
+
+def _script(body: str, table, fallback: str) -> str:
+    """A super/subscript as Unicode when every character maps, else a readable
+    ASCII form. Half-translated scripts are worse than none: 'x²ʸ' next to
+    'x^(2y)' in the same report reads as two different expressions."""
+    inner = latex_to_unicode(body)
+    # "90^\circ" is how LaTeX spells 90°, and the degree sign is already raised —
+    # emitting "90^°" would be both wrong and uglier than the source.
+    if inner == "°":
+        return "°"
+    if inner and all(c in table for c in map(ord, inner)):
+        return inner.translate(table)
+    return f"{fallback}({inner})" if len(inner) > 1 else f"{fallback}{inner}"
+
+
+def latex_to_unicode(latex: str) -> str:
+    """Readable plain text for a LaTeX fragment produced by the analysis model.
+
+    Not a general LaTeX engine and not trying to be — it covers what
+    ANALYSIS_PROMPT actually asks for ("תוכן בלבד, ללא $"): relations, geometry
+    symbols, scripts, fractions and roots. Anything unrecognised degrades to its
+    own name without the backslash, which is still strictly more readable than
+    the raw source and never raises.
+    """
+    if not latex:
+        return ""
+    s = str(latex)
+    out: list[str] = []
+    i = 0
+    while i < len(s):
+        ch = s[i]
+
+        if ch == "\\":
+            # \text{...} — the model uses it for Hebrew words inside formulas,
+            # so the content passes through untouched rather than being parsed
+            # as maths.
+            for cmd in (r"\text", r"\mathrm", r"\mbox", r"\textrm"):
+                if s.startswith(cmd + "{", i):
+                    body, i = _brace_arg(s, i + len(cmd))
+                    out.append(body)
+                    break
+            else:
+                if s.startswith(r"\frac", i) or s.startswith(r"\dfrac", i):
+                    skip = 5 if s.startswith(r"\frac", i) else 6
+                    num, i = _brace_arg(s, i + skip)
+                    den, i = _brace_arg(s, i)
+                    num_u, den_u = latex_to_unicode(num), latex_to_unicode(den)
+                    num_s = num_u if len(num_u) <= 1 else f"({num_u})"
+                    den_s = den_u if len(den_u) <= 1 else f"({den_u})"
+                    out.append(f"{num_s}/{den_s}")
+                elif s.startswith(r"\sqrt", i):
+                    body, i = _brace_arg(s, i + 5)
+                    body_u = latex_to_unicode(body)
+                    out.append("√" + (body_u if len(body_u) <= 1 else f"({body_u})"))
+                else:
+                    for blank in _LATEX_BLANKS:
+                        if s.startswith(blank, i):
+                            out.append(" ")
+                            i += len(blank)
+                            break
+                    else:
+                        # Longest symbol name first, so \le does not shadow \leq.
+                        for name in sorted(_LATEX_SYMBOLS, key=len, reverse=True):
+                            if s.startswith(name, i):
+                                out.append(_LATEX_SYMBOLS[name])
+                                i += len(name)
+                                # LaTeX ends a command name at the first space,
+                                # and that space is a delimiter rather than
+                                # something to print — without dropping it,
+                                # "\triangle ABC" comes out as "△ ABC".
+                                if i < len(s) and s[i] == " ":
+                                    i += 1
+                                break
+                        else:
+                            j = i + 1
+                            while j < len(s) and s[j].isalpha():
+                                j += 1
+                            out.append(s[i + 1:j])   # unknown command, minus the \
+                            i = j if j > i + 1 else i + 1
+                            if i < len(s) and s[i] == " ":
+                                i += 1
+            continue
+
+        if ch == "^":
+            body, i = _brace_arg(s, i + 1)
+            out.append(_script(body, _SUP, "^"))
+            continue
+        if ch == "_":
+            body, i = _brace_arg(s, i + 1)
+            out.append(_script(body, _SUB, "_"))
+            continue
+        if ch in "{}":
+            i += 1
+            continue
+
+        out.append(ch)
+        i += 1
+
+    text = " ".join("".join(out).split())
+
+    # Dropping the command-terminating space above is right for prefixes (△ABC)
+    # and wrong for relations, which would come out as "△ABC ≅△DEF" — spaced on
+    # one side only. Restoring a single space around the relation glyphs, and
+    # only those, gives "△ABC ≅ △DEF". "=" is deliberately untouched: it is
+    # typed literally, so whatever spacing the model chose is intentional.
+    for glyph in "≅∥⊥≠≤≥≈≡∼→⇒⇔∈∉⊂⊆∪∩±∓×÷∝":
+        text = re.sub(rf"\s*{re.escape(glyph)}\s*", f" {glyph} ", text)
+    return " ".join(text.split())
+
+
 def build_result_docx(pages: list[dict], filename: str, approved: bool = False) -> bytes:
-    """Word (.docx) report. python-docx can't typeset LaTeX, so math is kept as
-    monospace LTR text (the strings are simple, e.g. x^2-6x+10) — honest and
-    editable. Each page carries its scan image, verdicts, comments, score and
-    feedback. Hebrew paragraphs are right-aligned + bidi for correct RTL flow."""
+    """Word (.docx) report. Math is converted from the model's LaTeX to Unicode
+    by latex_to_unicode — see the note above it for why not images or OMML —
+    and set LTR so it flows correctly inside the RTL document. Each page carries
+    its scan image, verdicts, comments, score and feedback. Hebrew paragraphs
+    are right-aligned + bidi for correct RTL flow."""
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
     from docx.shared import Inches, Pt, RGBColor
 
     def rtl(par):
@@ -207,9 +402,25 @@ def build_result_docx(pages: list[dict], filename: str, approved: bool = False) 
         pPr.append(bidi)
         return par
 
-    def mono(run):
-        run.font.name = "Consolas"
-        run.font.size = Pt(10.5)
+    def math_run(par, latex):
+        """One converted formula, marked explicitly as left-to-right.
+
+        The w:rtl=0 is not decoration. Word inherits paragraph direction into
+        runs, and inside an RTL document a bare formula gets reordered — the
+        Drive importer doing exactly this is why these reports are .docx and not
+        Google Docs in the first place. Marking the run LTR pins it.
+
+        Cambria Math rather than Consolas: it carries △ ∠ ≅ ⊥ ∥ and the
+        sub/superscript digits, which a code font renders as boxes on many
+        machines — a report full of tofu is worse than the raw LaTeX was.
+        """
+        run = par.add_run(latex_to_unicode(latex))
+        run.font.name = "Cambria Math"
+        run.font.size = Pt(11)
+        rPr = run._r.get_or_add_rPr()
+        rtl_el = OxmlElement("w:rtl")
+        rtl_el.set(qn("w:val"), "0")
+        rPr.append(rtl_el)
         return run
 
     doc = Document()
@@ -270,7 +481,7 @@ def build_result_docx(pages: list[dict], filename: str, approved: bool = False) 
                 sp = doc.add_paragraph()
                 sp.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 sp.add_run("נתון: ").bold = True
-                mono(sp.add_run(pr["statement_latex"]))
+                math_run(sp, pr["statement_latex"])
 
             for s in pr.get("student_steps") or []:
                 mark = "✗ " if s.get("ok") is False else ("✓ " if s.get("ok") is True else "• ")
@@ -280,7 +491,7 @@ def build_result_docx(pages: list[dict], filename: str, approved: bool = False) 
                 mk.bold = True
                 mk.font.color.rgb = RGBColor(0xB5, 0x43, 0x43) if s.get("ok") is False \
                     else (RGBColor(0x1E, 0x7E, 0x34) if s.get("ok") is True else RGBColor(0x5A, 0x6B, 0x82))
-                mono(stp.add_run(s.get("latex", "")))
+                math_run(stp, s.get("latex", ""))
                 if s.get("comment"):
                     cp = rtl(doc.add_paragraph())
                     cr = cp.add_run(f"⚠ {s['comment']}")
@@ -292,7 +503,7 @@ def build_result_docx(pages: list[dict], filename: str, approved: bool = False) 
                 fp = doc.add_paragraph()
                 fp.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 fp.add_run("תשובה: ").bold = True
-                mono(fp.add_run(pr["final_answer_latex"]))
+                math_run(fp, pr["final_answer_latex"])
 
             if _num(pr.get("points_max")) is not None:
                 scp = rtl(doc.add_paragraph())
