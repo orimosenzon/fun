@@ -1,0 +1,32 @@
+/* ===== תצוגה בטלפון: מניעת גלילה אופקית (RTL) ===== */
+
+/* 1. תמונות והטמעות לא יחרגו מרוחב המסך */
+.mw-parser-output img,
+.mw-parser-output .mw-file-element {
+	max-width: 100%;
+	height: auto;
+}
+.mw-parser-output iframe {
+	max-width: 100%;
+}
+
+@media (max-width: 800px) {
+	/* 2. טבלאות פריסה (עמוד ראשי) — עמודה אחת מתחת לשנייה */
+	.mw-parser-output > table:not(.wikitable),
+	.mw-parser-output > table:not(.wikitable) > tbody,
+	.mw-parser-output > table:not(.wikitable) > tbody > tr,
+	.mw-parser-output > table:not(.wikitable) > tbody > tr > td {
+		display: block !important;
+		width: auto !important;
+	}
+	.mw-parser-output > table:not(.wikitable) > tbody > tr > td {
+		margin-bottom: 10px;
+	}
+
+	/* 3. טבלאות נתונים — גלילה בתוך הטבלה, לא בכל הדף */
+	.mw-parser-output .wikitable {
+		display: block;
+		overflow-x: auto;
+		max-width: 100%;
+	}
+}
