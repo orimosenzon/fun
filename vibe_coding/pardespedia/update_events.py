@@ -719,7 +719,10 @@ def build_table(rows: list, collapsible: bool = False) -> str:
         lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
                   f'{r["category"]} || {venue} || {r["entry"] or "—"}']
     lines.append("|}")
-    return "\n".join(lines)
+    # מעטפת גלילה: הלוח רחב מדי למסך טלפון. בלי המעטפת הטבלה דוחפת את כל הדף
+    # הצידה, ובדף RTL זה מסתיר את כל הטקסט מחוץ למסך (המבקר חושב שהאתר ריק).
+    # עם המעטפת הטבלה גוללת בתוך עצמה והדף נשאר במקומו.
+    return '<div style="overflow-x:auto;">\n' + "\n".join(lines) + "\n</div>"
 
 
 def build_today_block(today_rows: list, today: dt.date) -> str:
