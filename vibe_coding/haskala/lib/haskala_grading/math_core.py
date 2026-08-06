@@ -231,6 +231,28 @@ def _ask_rotation(img: Image.Image) -> int:
 
 # ─── holistic math analysis ───────────────────────────────────────────────────
 
+# Two rules below are load-bearing and were added 6/8/2026 after the first valid
+# variance measurement (products/math-form-checker/variance_check.py). Both are
+# there to make the *same page* produce the *same report* twice, which matters
+# more to a teacher than any single grade being right.
+#
+# 1. "יחידת הבדיקה". The prompt never said what one entry in `problems` is, and
+#    the id example listed "1" and "2א" side by side — both granularities were
+#    legal. A six-page algebra exam came back with 17 problems on one run and 11
+#    on the next two: sub-parts counted separately, then folded into their
+#    parent exercise. That is not a score wobbling, it is a structurally
+#    different document.
+#
+# 2. points_max when nothing is printed. The old wording said "הערך סביר
+#    (ברירת מחדל 10)" — an estimate and a fixed default in the same breath. One
+#    geometry page scored 6/10, 9/15, 6/10 across three runs: the same judgement
+#    (60%) with an invented denominator. Pinning it to exactly 10 removes a
+#    whole axis of variation for free.
+#
+# Measured noise floor before these rules, Sonnet 5, five real exam files, three
+# runs: ~7 percentage points average, 10 worst. Re-measure before assuming any
+# prompt change here helped.
+
 ANALYSIS_PROMPT = r"""אתה בודק מבחנים במתמטיקה וגאומטריה (שכבת חטיבה/תיכון) בישראל.
 לפניך עמוד סרוק של פתרון תלמיד בכתב יד. נתח את העמוד כיחידה שלמה — אל תחתוך לשורות.
 שים לב לסרטוטים, הוכחות גאומטריות ומעברים אלגבריים שפרושים על פני הדף.
@@ -241,14 +263,22 @@ ANALYSIS_PROMPT = r"""אתה בודק מבחנים במתמטיקה וגאומט
 • אם משהו לא קריא — כתוב "[לא קריא]" באותו שדה.
 • verdict לפי הפתרון כולו: correct / partial / incorrect / unclear.
 • feedback: משוב קצר ובונה לתלמיד בעברית (2-3 משפטים). כלול מה טוב ומה צריך שיפור.
+• יחידת הבדיקה — מה נחשב פריט אחד ברשימת problems:
+  פריט אחד לכל **יחידה שנענית בנפרד**. אם לתרגיל יש סעיפים (א, ב, ג) — כל סעיף
+  הוא פריט נפרד ו-id שלו הוא "3א", "3ב" וכולי. אם אין סעיפים — התרגיל כולו
+  פריט אחד. אל תאחד סעיפים לפריט אחד, ואל תפצל סעיף יחיד לכמה פריטים.
+  החלוקה חייבת להיות עקבית: אותו דף בדיוק חייב להניב את אותה רשימת פריטים בכל
+  בדיקה, גם אם היא נעשית שוב מחר.
 • ניקוד מספרי:
-  – points_max: הניקוד המקסימלי לתרגיל. אם סופקה רובריקה/מחוון — לפיה בדיוק.
-    אחרת לפי הניקוד המודפס ליד התרגיל בדף, ואם אין — הערך סביר (ברירת מחדל 10).
+  – points_max: הניקוד המקסימלי לפריט. אם סופקה רובריקה/מחוון — לפיה בדיוק.
+    אחרת לפי הניקוד המודפס ליד התרגיל או הסעיף בדף. אם אין ניקוד מודפס —
+    **10 בדיוק**, ולא הערכה משלך.
   – points_earned: הניקוד שמגיע לתלמיד לפי איכות הפתרון. מספר בין 0 ל-points_max,
     חצאי נקודות מותרים. תן ניקוד חלקי הוגן לפתרון חלקי (אל תאפס בגלל טעות אחת).
 • score_suggestion: נימוק קצר בעברית לניקוד שנתת, למשל "טעות חישוב בצעד האחרון (-3)"
   / "פתרון מלא ומנומק" / "לא ענה". זה נימוק, לא חובה לכלול בו מספר.
-• id: מספר/אות התרגיל בדיוק כפי שמופיע בדף (למשל "1", "2א", "ב"). אם לא ברור — "?".
+• id: מספר הפריט בדיוק כפי שמופיע בדף, כולל אות הסעיף אם יש (למשל "1", "3א",
+  "3ב"). אם לא ברור — "?".
 • topic: אחת מ: אלגברה / גאומטריה / חשבון / הסתברות / טריגונומטריה / מש"ב / אחר.
 
 הניקוד שאתה מציע הוא **הצעה לבדיקת המורה** — המורה יאשר או יתקן. היה הוגן ועקבי."""
