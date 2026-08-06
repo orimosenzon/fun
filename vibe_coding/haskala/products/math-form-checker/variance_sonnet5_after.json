@@ -1,0 +1,205 @@
+{
+  "model": "Claude Sonnet 5 · ברירת המחדל",
+  "runs": 3,
+  "results": {
+    "Scanned_20260616-1344.pdf": [
+      {
+        "run": 1,
+        "earned": 134.0,
+        "max": 240.0,
+        "verdicts": [
+          "partial",
+          "partial",
+          "correct",
+          "partial",
+          "correct",
+          "partial",
+          "incorrect",
+          "unclear",
+          "unclear",
+          "incorrect",
+          "unclear",
+          "unclear",
+          "unclear",
+          "partial",
+          "partial",
+          "unclear",
+          "correct",
+          "correct",
+          "unclear",
+          "unclear",
+          "unclear",
+          "correct",
+          "unclear",
+          "unclear"
+        ]
+      },
+      {
+        "run": 2,
+        "earned": 134.5,
+        "max": 240.0,
+        "verdicts": [
+          "partial",
+          "partial",
+          "partial",
+          "partial",
+          "correct",
+          "partial",
+          "unclear",
+          "unclear",
+          "unclear",
+          "incorrect",
+          "unclear",
+          "correct",
+          "correct",
+          "partial",
+          "partial",
+          "correct",
+          "correct",
+          "correct",
+          "partial",
+          "unclear",
+          "unclear",
+          "incorrect",
+          "unclear",
+          "unclear"
+        ]
+      },
+      {
+        "run": 3,
+        "earned": 143.0,
+        "max": 240.0,
+        "verdicts": [
+          "partial",
+          "correct",
+          "correct",
+          "unclear",
+          "correct",
+          "partial",
+          "partial",
+          "unclear",
+          "incorrect",
+          "incorrect",
+          "unclear",
+          "correct",
+          "correct",
+          "partial",
+          "partial",
+          "unclear",
+          "correct",
+          "correct",
+          "correct",
+          "unclear",
+          "unclear",
+          "correct",
+          "unclear",
+          "unclear"
+        ]
+      }
+    ],
+    "Scanned_20260616-1340(1).pdf": [
+      {
+        "run": 1,
+        "earned": 4.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 2,
+        "earned": 4.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 3,
+        "earned": 4.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      }
+    ],
+    "Scanned_20260616-1340(2).pdf": [
+      {
+        "run": 1,
+        "earned": 6.5,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 2,
+        "earned": 6.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 3,
+        "earned": 6.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      }
+    ],
+    "Scanned_20260616-1340(3).pdf": [
+      {
+        "run": 1,
+        "earned": 7.5,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 2,
+        "earned": 9.0,
+        "max": 10.0,
+        "verdicts": [
+          "correct"
+        ]
+      },
+      {
+        "run": 3,
+        "earned": 7.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      }
+    ],
+    "Scanned_20260616-1340.pdf": [
+      {
+        "run": 1,
+        "earned": 8.0,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 2,
+        "earned": 6.5,
+        "max": 10.0,
+        "verdicts": [
+          "partial"
+        ]
+      },
+      {
+        "run": 3,
+        "earned": 9.0,
+        "max": 10.0,
+        "verdicts": [
+          "correct"
+        ]
+      }
+    ]
+  }
+}
