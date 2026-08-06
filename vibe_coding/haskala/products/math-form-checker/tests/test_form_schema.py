@@ -119,6 +119,40 @@ def test_map_columns_missing_required_raises():
         raise AssertionError("expected ValueError")
 
 
+def test_live_math_form_header_maps():
+    """שורת הכותרות האמיתית של 'Bdika - Math (Responses)', כפי שנקראה מהגיליון
+    ב-5/8/2026. הועתקה, לא נוסחה מחדש.
+
+    עד לתאריך הזה המיפוי נפל עליה עם ValueError: השאלה כתובה 'קישור לתקייה'
+    בלי יו״ד, ואף אליאס לא תפס אותה. כלומר כל תשובה בטופס הייתה נדחית לפני
+    הבדיקה. הטסט הזה קיים כדי שכתיב הכותרת בטופס החי לא יישבר שוב בשקט."""
+    live = [
+        "Timestamp",
+        "Email Address",
+        "שם פרטי",
+        "שם משפחה",
+        "התרגיל והפתרון המוצע",
+        "קישור לתקייה בגוגל דרייב בה נמצאים התרגילים שיש לבדוק",
+        "Comments and requests",
+    ]
+    cm = fs.map_columns(live)
+    assert cm["timestamp"] == 0
+    assert cm["email"] == 1
+    assert cm["first_name"] == 2
+    assert cm["last_name"] == 3
+    assert cm["solution"] == 4
+    assert cm["folder_link"] == 5
+    assert cm["comments"] == 6
+
+
+def test_folder_link_matches_both_spellings():
+    """'תיקייה' ו'תקייה' — שני הכתיבים, כי מורים כותבים את שניהם."""
+    for title in ("קישור לתיקייה משותפת", "קישור לתקייה משותפת",
+                  "קישור לתיקיה משותפת", "קישור לתקיה משותפת"):
+        cm = fs.map_columns(["חותמת זמן", "כתובת אימייל", title])
+        assert cm["folder_link"] == 2, title
+
+
 def test_map_columns_ignores_unknown_columns():
     """גיליון תשובות צובר עמודות שאדם הוסיף ביד. הן לא אמורות להתפרש כשדות."""
     cm = fs.map_columns(HEADER + ["ציון ידני", "טופל ע\"י"])

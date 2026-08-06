@@ -80,9 +80,17 @@ FIELDS: dict[str, dict] = {
                 "this is where the report is sent.",
     },
     "folder_link": {
+        # "תקייה"/"תקיה" are the yod-less misspelling, and they are here because
+        # the live math form actually uses it: the question is titled
+        # "קישור לתקייה בגוגל דרייב בה נמצאים התרגילים שיש לבדוק" (confirmed
+        # 2026-08-05 from the responses sheet header). Without these two the
+        # required-column check fails and every single response is rejected
+        # before grading — the loudest possible failure for the most common
+        # Hebrew typo in the word. Match on the bare word rather than the full
+        # phrase, since teachers reword the sentence around it freely.
         "aliases": ["link to folder", "קישור לתיקייה", "קישור לתיקיה",
                     "shared folder", "drive folder", "folder link", "תיקייה",
-                    "תיקיה", "folder"],
+                    "תיקיה", "תקייה", "תקיה", "folder"],
         "required": True,
         "hint": "Short answer or paragraph. The teacher pastes a Drive folder "
                 "link; the folder must be shared with the service account (see "
@@ -209,7 +217,9 @@ FIELDS: dict[str, dict] = {
 
 # A מחוון answer that says "it's in the folder" rather than pasting the scheme
 # itself. Matched loosely — teachers phrase this a dozen ways.
-RUBRIC_IN_FOLDER_HINTS = ("צירפתי", "מצורף", "בתיקייה", "בתיקיה", "בקבצים",
+RUBRIC_IN_FOLDER_HINTS = ("צירפתי", "מצורף", "בתיקייה", "בתיקיה",
+                          "בתקייה", "בתקיה",  # same yod-less spelling as folder_link
+                          "בקבצים",
                           "attached", "in the folder", "see folder")
 
 # Filename fragments that mark a file in the shared folder as the school's
