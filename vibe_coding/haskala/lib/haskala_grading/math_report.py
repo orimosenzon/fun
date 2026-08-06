@@ -315,9 +315,16 @@ def latex_to_unicode(latex: str) -> str:
                     out.append(body)
                     break
             else:
-                if s.startswith(r"\frac", i) or s.startswith(r"\dfrac", i):
-                    skip = 5 if s.startswith(r"\frac", i) else 6
-                    num, i = _brace_arg(s, i + skip)
+                # \tfrac and \cfrac are here because the model does use them and
+                # they are not cosmetic variants to us: an unhandled one falls
+                # through to the strip-the-backslash branch, so a real report
+                # line read "BC = tfrac12 AN" instead of "BC = 1/2 AN"
+                # (production, 6/8/2026). All four render identically in plain
+                # text — the display/inline distinction has no meaning here.
+                frac = next((c for c in (r"\dfrac", r"\tfrac", r"\cfrac", r"\frac")
+                             if s.startswith(c, i)), None)
+                if frac:
+                    num, i = _brace_arg(s, i + len(frac))
                     den, i = _brace_arg(s, i)
                     num_u, den_u = latex_to_unicode(num), latex_to_unicode(den)
                     num_s = num_u if len(num_u) <= 1 else f"({num_u})"
