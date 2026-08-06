@@ -69,6 +69,18 @@ def test_fractions_and_roots():
     assert u(r"\sqrt{2}") == "√2"
 
 
+def test_all_fraction_variants():
+    """`\\tfrac` הופיע בדוח ייצור אמיתי (6/8/2026) ויצא "BC = tfrac12 AN" —
+    רק `\\frac` ו-`\\dfrac` היו מטופלים, והשאר נפל לענף שמסיר את הלוכסן.
+
+    ארבע הווריאציות נראות זהות בטקסט רגיל; ההבדל בין display ל-inline הוא
+    עניין של רינדור ואין לו משמעות כאן."""
+    assert u(r"BC = \tfrac{1}{2} AN") == "BC = 1/2 AN"
+    assert u(r"BC = \tfrac12 AN") == "BC = 1/2 AN"      # בלי סוגריים, כמו ש-LaTeX קורא
+    assert u(r"\dfrac{a+b}{c}") == "(a+b)/c"
+    assert u(r"\cfrac{1}{2}") == "1/2"
+
+
 def test_scripts_are_all_or_nothing():
     """תת-כתיב מתורגם רק אם כל התווים ניתנים להמרה.
 
