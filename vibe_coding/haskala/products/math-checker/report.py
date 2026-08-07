@@ -5,11 +5,15 @@
 from __future__ import annotations
 
 from haskala_grading.math_report import (  # noqa: F401
+    DEFAULT_POINTS_MAX,
+    GRADE_SCALE,
     VERDICT_COLOR,
     VERDICT_HE,
     _fmt_pts,
     _num,
     build_result_docx,
     build_result_html,
+    compute_grade,
     compute_totals,
+    grade_basis_note,
 )

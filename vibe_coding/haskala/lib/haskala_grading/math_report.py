@@ -58,6 +58,55 @@ def compute_totals(pages: list[dict]) -> tuple[float, float]:
     return earned, total
 
 
+# The per-item default in math_core's prompt when a page has no printed points
+# and no rubric was supplied. Kept in sync by `test_default_points_max_matches`.
+DEFAULT_POINTS_MAX = 10.0
+
+# Every report states the overall grade on this scale, whatever the raw sum was.
+GRADE_SCALE = 100.0
+
+
+def compute_grade(pages: list[dict]) -> tuple[float | None, bool]:
+    """The overall grade rescaled to GRADE_SCALE, and whether we chose the
+    denominator ourselves.
+
+    The raw sum is not a grade. Pinning the grading unit to the sub-part turned
+    a six-page algebra exam into 24 items worth 240 points without a single
+    judgement changing — and a teacher who set that exam out of 100 has no way
+    to read "134/240". Rescaling puts the number back on the scale teachers
+    actually use.
+
+    The second value is True when every points_max is the prompt's 10-point
+    default, i.e. no rubric was supplied and no points were printed on the page.
+    The grade is then a percentage of a scale we invented, and the report says
+    so rather than presenting our convention as the teacher's."""
+    earned, total = compute_totals(pages)
+    if total <= 0:
+        return None, False
+    maxes = [m for m in (_num(pr.get("points_max"))
+                         for p in pages or []
+                         for pr in ((p.get("analysis") or {}).get("problems") or []))
+             if m is not None]
+    ours = bool(maxes) and all(m == DEFAULT_POINTS_MAX for m in maxes)
+    # Half points, because that is the finest granularity the model may award.
+    return round(earned / total * GRADE_SCALE * 2) / 2, ours
+
+
+def grade_basis_note(pages: list[dict], ours: bool) -> str:
+    """One line under the grade saying what it was computed from.
+
+    Without it the grade reads as the teacher's own scale in every case. The
+    item count is part of the note because it is the number a teacher can check
+    against the exam in front of them — if we split 12 exercises into 24, that
+    is visible here and not only in a grade that looks slightly off."""
+    n = sum(len((p.get("analysis") or {}).get("problems") or []) for p in pages or [])
+    _, total = compute_totals(pages)
+    if ours:
+        return (f"מבוסס על {n} סעיפים בניקוד אחיד — לא סופק מחוון ולא נמצא ניקוד "
+                f"מודפס בדף, ולכן משקל הסעיפים נקבע על ידינו.")
+    return f"מבוסס על {n} סעיפים, {_fmt_pts(total)} נקודות לפי המחוון/הניקוד שבדף."
+
+
 def build_result_html(pages: list[dict], filename: str, approved: bool = False) -> str:
     """Standalone, self-contained HTML report. KaTeX is pulled from a CDN and
     auto-renders \\(...\\) so the LaTeX shows as real math; the scan images are
@@ -164,6 +213,7 @@ def build_result_html(pages: list[dict], filename: str, approved: bool = False) 
   .feedback{margin-top:0.5rem;padding-top:0.6rem;border-top:1px dashed #d8cfb6;font-size:0.93rem}
   .total-box{background:#fff;border:1px solid #d8cfb6;border-radius:12px;padding:1rem 1.4rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem}
   .total-grade{font-size:1.3rem;font-weight:800;color:#2e7286}
+  .total-basis{display:block;margin:-1rem 0 1.5rem;font-size:0.85rem;color:#6b6459}
   .approve-badge{font-size:0.9rem;font-weight:700;padding:0.3rem 0.9rem;border-radius:999px}
   .approve-yes{background:rgba(30,126,52,.15);color:#1e7e34}
   .approve-no{background:rgba(160,116,10,.15);color:#a0740a}
@@ -174,15 +224,16 @@ def build_result_html(pages: list[dict], filename: str, approved: bool = False) 
 __TOTAL_BOX__
 """
     npages = len(pages or [])
-    earned, total = compute_totals(pages)
-    if total > 0:
+    grade, ours = compute_grade(pages)
+    if grade is not None:
         badge = ('<span class="approve-badge approve-yes">✓ אושר ע"י המורה</span>'
                  if approved else
                  '<span class="approve-badge approve-no">טיוטה — טרם אושר</span>')
+        basis = (f'<span class="total-basis">{_html.escape(grade_basis_note(pages, ours))}</span>')
         total_box = (
             '<div class="total-box">'
-            f'<span class="total-grade">ציון כולל: {_fmt_pts(earned)} / {_fmt_pts(total)}</span>'
-            f'{badge}</div>')
+            f'<span class="total-grade">ציון כולל: {_fmt_pts(grade)} / {_fmt_pts(GRADE_SCALE)}</span>'
+            f'{badge}</div>{basis}')
     else:
         total_box = ""
     head = (head.replace("__TITLE__", _html.escape(filename))
@@ -435,13 +486,17 @@ def build_result_docx(pages: list[dict], filename: str, approved: bool = False) 
     meta = rtl(doc.add_paragraph())
     meta.add_run(f"קובץ: {filename}").bold = True
 
-    earned, total = compute_totals(pages)
-    if total > 0:
+    grade, ours = compute_grade(pages)
+    if grade is not None:
         tp = rtl(doc.add_paragraph())
-        tr = tp.add_run(f"ציון כולל: {_fmt_pts(earned)} / {_fmt_pts(total)}")
+        tr = tp.add_run(f"ציון כולל: {_fmt_pts(grade)} / {_fmt_pts(GRADE_SCALE)}")
         tr.bold = True
         tr.font.size = Pt(14)
         tr.font.color.rgb = RGBColor(0x2E, 0x72, 0x86)
+        bp = rtl(doc.add_paragraph())
+        br = bp.add_run(grade_basis_note(pages, ours))
+        br.font.size = Pt(9)
+        br.font.color.rgb = RGBColor(0x6B, 0x64, 0x59)
         sp = rtl(doc.add_paragraph())
         sr = sp.add_run('✓ אושר ע"י המורה' if approved else "טיוטה — טרם אושר ע\"י המורה")
         sr.bold = True

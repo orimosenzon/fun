@@ -89,9 +89,13 @@ def main() -> int:
     os.makedirs(args.out, exist_ok=True)
     stem = os.path.join(args.out, f"{base}_math_{today}")
 
-    earned, total = report.compute_totals(pages)
-    print(f"\nניקוד כולל: {report._fmt_pts(earned)} / {report._fmt_pts(total)}",
-          file=sys.stderr)
+    grade, ours = report.compute_grade(pages)
+    if grade is not None:
+        earned, total = report.compute_totals(pages)
+        print(f"\nציון כולל: {report._fmt_pts(grade)} / {report._fmt_pts(report.GRADE_SCALE)}"
+              f"  (גולמי: {report._fmt_pts(earned)}/{report._fmt_pts(total)})",
+              file=sys.stderr)
+        print(report.grade_basis_note(pages, ours), file=sys.stderr)
 
     written: list[str] = []
     fmts = ["html", "docx", "json"] if args.format == "all" else [args.format]
