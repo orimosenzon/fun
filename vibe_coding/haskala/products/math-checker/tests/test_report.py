@@ -54,6 +54,75 @@ def test_compute_totals_empty():
     assert report.compute_totals(None) == (0.0, 0.0)
 
 
+# ─── compute_grade — always on a 100 scale ───────────────────────────────────
+
+def _multi(*maxes):
+    """One page holding one problem per given points_max, each fully earned."""
+    probs = [dict(_pages()[0]["analysis"]["problems"][0],
+                  id=str(i + 1), points_max=m, points_earned=m)
+             for i, m in enumerate(maxes)]
+    page = _pages()[0]
+    page["analysis"]["problems"] = probs
+    return [page]
+
+
+def _production_case():
+    """24 sub-parts at the 10-point default, 134 earned — the report a teacher
+    who set the exam out of 100 actually received."""
+    pages = _multi(*([10] * 24))
+    probs = pages[0]["analysis"]["problems"]
+    for i, pr in enumerate(probs):
+        pr["points_earned"] = 10 if i < 13 else (4 if i == 13 else 0)
+    return pages
+
+
+def test_compute_grade_rescales_to_100():
+    grade, ours = report.compute_grade(_production_case())
+    assert grade == 56.0          # 134/240, not "134 out of 240"
+    assert ours is True
+
+
+def test_compute_grade_flags_a_teacher_supplied_scale():
+    grade, ours = report.compute_grade(_multi(20, 30, 50))
+    assert (grade, ours) == (100.0, False)
+
+
+def test_compute_grade_uniform_default_is_flagged():
+    _, ours = report.compute_grade(_multi(10, 10, 10))
+    assert ours is True
+
+
+def test_compute_grade_empty_is_none():
+    assert report.compute_grade([]) == (None, False)
+    assert report.compute_grade(_pages(points_max=None)) == (None, False)
+
+
+def test_compute_grade_allows_half_points():
+    grade, _ = report.compute_grade(_pages(points_max=10, points_earned=8.55))
+    assert grade == 85.5
+
+
+def test_grade_basis_note_says_who_chose_the_scale():
+    pages = _multi(10, 10)
+    assert "לא סופק מחוון" in report.grade_basis_note(pages, True)
+    assert "2 סעיפים" in report.grade_basis_note(pages, True)
+    assert "לא סופק מחוון" not in report.grade_basis_note(pages, False)
+
+
+def test_default_points_max_matches_the_prompt():
+    """The flag is only honest while the constant tracks math_core's rule."""
+    from haskala_grading import math_core
+    assert "**10 בדיוק**" in math_core.ANALYSIS_PROMPT
+    assert report.DEFAULT_POINTS_MAX == 10.0
+
+
+def test_reports_show_the_scaled_grade_not_the_raw_sum():
+    """The regression that sent 134/240 to a teacher who set the exam out of 100."""
+    html = report.build_result_html(_production_case(), "מבחן.pdf")
+    assert "ציון כולל: 56 / 100" in html
+    assert "/ 240" not in html
+
+
 # ─── build_result_html ───────────────────────────────────────────────────────
 
 def test_html_handles_numeric_points():
