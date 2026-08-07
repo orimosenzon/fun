@@ -12,3 +12,7 @@ contributor_cron.log
 contributor_state.json
 contributor_reports/
 audit_reports/
+enrich_candidates/
+dash_cache/
+dash_report.json
+enrich_plans/
