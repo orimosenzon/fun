@@ -79,6 +79,13 @@ echo "🚀 deploying to Cloud Run ($SERVICE, project=$PROJECT, region=$REGION)�
 # has to be listed here — a value set by hand with `gcloud run services update`
 # is wiped on the next deploy. That is why the guardrails are pinned in this
 # script rather than left to whatever the service currently has.
+#
+# The leading ^|^ picks | as the separator instead of the default comma. Without
+# it a value that itself contains a comma is split into two env vars and the
+# deploy dies on "Bad syntax for dict arg" — which is exactly what happens the
+# first time ALLOWED_DOMAINS lists more than one domain, i.e. the first time a
+# second school is let in. | was chosen because @ appears in the subject
+# addresses and : and / appear in the Azure endpoint.
 gcloud run deploy "$SERVICE" \
     --source . \
     --function=process_form_responses \
@@ -89,7 +96,7 @@ gcloud run deploy "$SERVICE" \
     --cpu=2 \
     --timeout=3600 \
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,GROQ_API_KEY=groq-api-key:latest,AZURE_OPENAI_API_KEY=azure-openai-api-key:latest" \
-    --set-env-vars="RESPONSES_SHEET_ID=${RESPONSES_SHEET_ID},WORKSPACE_SUBJECT=${WORKSPACE_SUBJECT:-ori@bdika.net},SHARE_WITH=${SHARE_WITH:-${WORKSPACE_SUBJECT:-ori@bdika.net}},OUTPUT_FOLDER_NAME=${OUTPUT_FOLDER_NAME:-Bdika},FALLBACK_RESULTS_FOLDER_ID=${FALLBACK_RESULTS_FOLDER_ID:-},MATH_FORM_CHECKER_ALLOWED_DOMAINS=${MATH_FORM_CHECKER_ALLOWED_DOMAINS:-},MAX_WORKS_PER_FOLDER=${MAX_WORKS_PER_FOLDER:-3},MAX_FILES_PER_RESPONSE=${MAX_FILES_PER_RESPONSE:-60},MAX_PAGES_PER_RESPONSE=${MAX_PAGES_PER_RESPONSE:-12},MAX_ROWS_PER_RUN=${MAX_ROWS_PER_RUN:-1},AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1,AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini,LOG_LEVEL=${MATH_FORM_CHECKER_LOG_LEVEL:-INFO}"
+    --set-env-vars="^|^RESPONSES_SHEET_ID=${RESPONSES_SHEET_ID}|WORKSPACE_SUBJECT=${WORKSPACE_SUBJECT:-ori@bdika.net}|SHARE_WITH=${SHARE_WITH:-${WORKSPACE_SUBJECT:-ori@bdika.net}}|OUTPUT_FOLDER_NAME=${OUTPUT_FOLDER_NAME:-Bdika}|FALLBACK_RESULTS_FOLDER_ID=${FALLBACK_RESULTS_FOLDER_ID:-}|MATH_FORM_CHECKER_ALLOWED_DOMAINS=${MATH_FORM_CHECKER_ALLOWED_DOMAINS:-}|MAX_WORKS_PER_FOLDER=${MAX_WORKS_PER_FOLDER:-3}|MAX_FILES_PER_RESPONSE=${MAX_FILES_PER_RESPONSE:-60}|MAX_PAGES_PER_RESPONSE=${MAX_PAGES_PER_RESPONSE:-12}|MAX_ROWS_PER_RUN=${MAX_ROWS_PER_RUN:-1}|AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1|AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini|LOG_LEVEL=${MATH_FORM_CHECKER_LOG_LEVEL:-INFO}"
 
 echo "✅ deployed."
 echo "   First deploy only: run ./setup_infra.sh to wire the Cloud Scheduler trigger."
