@@ -19,21 +19,35 @@ step where a demo gets abandoned.
 from __future__ import annotations
 
 import base64
+import html
 import logging
 import os
 from email.message import EmailMessage
 
 log = logging.getLogger("demo-checker-mailer")
 
+
+def _esc(s: str) -> str:
+    """Escape for HTML. The teacher's own name goes into the body, and it comes
+    from a form anyone on the internet can fill in."""
+    return html.escape(s or "", quote=True)
+
 _DOCX_MIME = ("application", "vnd.openxmlformats-officedocument.wordprocessingml.document")
 
-# Avishai's "Feedback to Bdika Demo- English" survey, in the bdika.net Workspace.
-# Overridable so a test run can point somewhere harmless — a live outreach link
-# in a smoke test is a real response in the real sheet.
-FEEDBACK_FORM_URL = os.environ.get(
-    "FEEDBACK_FORM_URL",
+_DEFAULT_FEEDBACK_URL = (
     "https://docs.google.com/forms/d/e/"
     "1FAIpQLSfiVGuDf1xNdwcpVoZNAESLbb6kqmxQq-INS44KubQAB_lo1Q/viewform")
+
+# `or`, not os.environ.get's default argument. deploy.sh emits
+# FEEDBACK_FORM_URL=${FEEDBACK_FORM_URL:-}, so on Cloud Run the key EXISTS with
+# an empty value — and get() only falls back when the key is absent. The default
+# therefore never applied in production, and three teachers were sent a mail
+# whose "Your Feedback:" heading was followed by a blank line.
+FEEDBACK_FORM_URL = os.environ.get("FEEDBACK_FORM_URL") or _DEFAULT_FEEDBACK_URL
+
+# Points at Avishai's "Feedback to Bdika Demo- English" survey. Overridable so a
+# test run can point somewhere harmless — a live outreach link in a smoke test is
+# a real response in the real sheet.
 
 
 def _send(gmail_service, message: EmailMessage, tag: str) -> bool:
@@ -65,71 +79,83 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
                 doc_link: str = "") -> bool:
     """Mail the graded report back, .docx attached, and ask for feedback.
 
-    The wording is Avishai's, from the "Bdika demo form" tab of the plan doc —
-    he owns the teacher relationship and signs the mail, so the copy is his and
-    changes to it should come from him. Two things were added on top of his
-    draft, both marked below: a line naming the attachment, because his text
-    assumes the Doc link is the delivery and that fails for a submitter with no
-    Google account, and the missing-assignment note.
+    The wording is Avishai's, from the "Bdika demo form" tab of the plan doc. He
+    owns the teacher relationship and signs the mail, so the copy is his and
+    changes to it should come from him. Exactly two sentences are ours —
+    ATTACHMENT_NOTE and NO_TASK_NOTE below, kept as named constants at the top
+    of the body so the difference between his text and ours stays visible.
 
-    The feedback link is the reason the demo exists at all — a graded report we
-    never hear back about tells us nothing."""
+    SENT AS HTML, NOT PLAIN TEXT
+    ────────────────────────────
+    His draft is written with hyperlinks: "Click here to open your checked
+    document", "Click here to share your feedback". set_content() alone cannot
+    carry those — it produced bare URLs, silently dropped his emoji, and turned
+    his layout into something that reads like a machine wrote it. A plain-text
+    alternative still goes out for clients that want one, so this is an addition
+    rather than a swap."""
     name = params.get("teacher_name") or "there"
     msg = EmailMessage()
     msg["To"] = params["email"]
     msg["From"] = sender
     msg["Subject"] = f"Your checked document is ready + quick feedback, {name}!"
 
-    lines = [
-        f"Dear {name},",
-        "",
-        "We've reviewed your submission, and your checked document is ready for you.",
-    ]
+    no_task = not (params.get("instructions") or "").strip()
+
+    # ── the two additions to Avishai's draft, in one place so they are easy to
+    # find and easy to drop if he would rather they were not there ────────────
+    ATTACHMENT_NOTE = ("The same report is attached to this email as a Word "
+                       "document, in case you would rather not open Drive.")
+    NO_TASK_NOTE = ("One note: you did not describe the assignment on the form, "
+                    "so we could not judge whether the student answered the "
+                    "question. Everything else \u2014 vocabulary, language use, "
+                    "mechanics \u2014 was graded normally.")
+
+    plain = [f"Dear {name},", "",
+             "We've reviewed your submission, and your checked document is "
+             "ready for you."]
     if doc_link:
-        lines += [
-            "",
-            "View Your Checked Document:",
-            doc_link,
-        ]
-    # Not in Avishai's draft, and added rather than left out: his text assumes
-    # the Doc link is the delivery. A submitter with no Google account cannot
-    # open it at all, and the attachment is what makes this product work with no
-    # permission prompt — so it is mentioned rather than silently attached.
-    lines += [
-        "",
-        "The same report is attached to this email as a Word document, in case "
-        "you would rather not open Drive.",
-    ]
-    if not (params.get("instructions") or "").strip():
-        # Say it here too, not only inside the report. A teacher who skipped the
-        # assignment field has no reason to expect the content score to be
-        # qualified, and will read a hedged Content mark as the tool being vague.
-        lines += [
-            "",
-            "One note: you did not describe the assignment on the form, so we "
-            "could not judge whether the student answered the question. "
-            "Everything else — vocabulary, language use, mechanics — was graded "
-            "normally.",
-        ]
-    lines += [
-        "",
-        "Since we're tweaking this process to fit your personal teaching needs, "
-        "your thoughts mean the world to us:",
-        "",
-        "Your Feedback:",
-        FEEDBACK_FORM_URL,
-        "",
-        "Thanks again for testing this out with us. We'd love to see you use "
-        "this tool in the coming school year, so let's definitely stay in touch! "
-        "If you ever have ideas, questions, or just want to chat about how it's "
-        "working for you, hit reply anytime.",
-        "",
-        "Best,",
-        "",
-        "Avishai Chelouche",
-        "Bdika team member",
-    ]
-    msg.set_content("\n".join(lines))
+        plain += ["", "\U0001F4C4 View Your Checked Document:", doc_link]
+    plain += ["", ATTACHMENT_NOTE]
+    if no_task:
+        plain += ["", NO_TASK_NOTE]
+    plain += ["",
+              "Since we're tweaking this process to fit your personal teaching "
+              "needs, your thoughts mean the world to us:",
+              "", "\U0001F4DD Your Feedback:", FEEDBACK_FORM_URL, "",
+              "Thanks again for testing this out with us. We'd love to see you "
+              "use this tool in the coming school year, so let's definitely stay "
+              "in touch! If you ever have ideas, questions, or just want to chat "
+              "about how it's working for you, hit reply anytime.",
+              "", "Best,", "", "Avishai Chelouche", "Bdika team member"]
+
+    doc_html = (f'<p>\U0001F4C4 <b>View Your Checked Document:</b><br>'
+                f'<a href="{_esc(doc_link)}">Click here to open your checked '
+                f'document</a></p>' if doc_link else "")
+    note_html = f"<p>{_esc(NO_TASK_NOTE)}</p>" if no_task else ""
+    html = (
+        "<div style=\"font-family:Arial,sans-serif;font-size:14px;"
+        "line-height:1.5;color:#202124\">"
+        f"<p>Dear {_esc(name)},</p>"
+        "<p>We&rsquo;ve reviewed your submission, and your checked document is "
+        "ready for you.</p>"
+        f"{doc_html}"
+        f"<p>{_esc(ATTACHMENT_NOTE)}</p>"
+        f"{note_html}"
+        "<p>Since we&rsquo;re tweaking this process to fit your personal "
+        "teaching needs, your thoughts mean the world to us:</p>"
+        "<p>\U0001F4DD <b>Your Feedback:</b><br>"
+        f'<a href="{_esc(FEEDBACK_FORM_URL)}">Click here to share your '
+        "feedback</a></p>"
+        "<p>Thanks again for testing this out with us. We&rsquo;d love to see "
+        "you use this tool in the coming school year, so let&rsquo;s definitely "
+        "stay in touch! If you ever have ideas, questions, or just want to chat "
+        "about how it&rsquo;s working for you, hit reply anytime.</p>"
+        "<p>Best,</p>"
+        "<p>Avishai Chelouche<br>Bdika team member</p>"
+        "</div>")
+
+    msg.set_content("\n".join(plain))
+    msg.add_alternative(html, subtype="html")
     msg.add_attachment(docx_bytes, maintype=_DOCX_MIME[0], subtype=_DOCX_MIME[1],
                        filename=filename)
     return _send(gmail_service, msg, tag)
