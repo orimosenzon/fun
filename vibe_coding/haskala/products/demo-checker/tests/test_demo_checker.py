@@ -260,6 +260,43 @@ def test_mail_uses_avishais_wording():
     assert body.rstrip().endswith("Avishai Chelouche\nBdika team member")
 
 
+def test_feedback_url_survives_an_empty_env_var():
+    """deploy.sh emits FEEDBACK_FORM_URL=${FEEDBACK_FORM_URL:-}, so on Cloud Run
+    the key exists with an empty value and os.environ.get's default never fires.
+    Three teachers got a mail whose "Your Feedback:" heading led to nothing."""
+    assert mailer.FEEDBACK_FORM_URL.startswith("https://docs.google.com/forms/")
+    _, msg = _send(_PARAMS)
+    assert mailer.FEEDBACK_FORM_URL in _text(msg)
+
+
+def test_mail_is_html_with_avishais_hyperlinks():
+    """His draft says "Click here to share your feedback", not a bare URL."""
+    gmail = _FakeGmail()
+    mailer.send_report(gmail, "exam@bdika.net", _PARAMS, b"PK\x03\x04", "r.docx",
+                       "MoE Module G", tag="[t]", doc_link="http://doc/1")
+    msg = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
+                             policy=_email_policy)
+    html = msg.get_body(preferencelist=("html",)).get_content()
+    assert '<a href="http://doc/1">Click here to open your checked document</a>' in html
+    assert "Click here to share your feedback</a>" in html
+    # A plain-text alternative still goes out.
+    assert msg.get_body(preferencelist=("plain",)) is not None
+    # And the attachment survives being wrapped in multipart/alternative.
+    assert [p.get_filename() for p in msg.walk() if p.get_filename()] == ["r.docx"]
+
+
+def test_teacher_name_is_escaped_in_the_html():
+    """The name comes from a form anyone on the internet can fill in."""
+    gmail = _FakeGmail()
+    mailer.send_report(gmail, "exam@bdika.net",
+                       {**_PARAMS, "teacher_name": "<script>x</script>"},
+                       b"PK\x03\x04", "r.docx", "R", tag="[t]")
+    html = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
+                              policy=_email_policy
+                              ).get_body(preferencelist=("html",)).get_content()
+    assert "<script>" not in html and "&lt;script&gt;" in html
+
+
 def test_mail_names_the_attachment():
     """Added on top of Avishai's draft: his text assumes the Doc link is the
     delivery, which fails outright for a submitter with no Google account."""
