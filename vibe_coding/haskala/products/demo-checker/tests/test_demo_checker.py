@@ -16,6 +16,7 @@ import fitz  # noqa: E402
 
 import form_schema as fs  # noqa: E402
 import mailer  # noqa: E402
+import sheet_link  # noqa: E402
 import upload  # noqa: E402
 
 
@@ -263,6 +264,163 @@ def test_failure_mail_says_what_to_do_next():
     body = _text(message_from_bytes(
         base64.urlsafe_b64decode(gmail.sent[0]["raw"]), policy=_email_policy))
     assert "HEIC" in body and "submit the form again" in body
+
+
+# ─── writing back to Drive and the sheet ────────────────────────────────────
+
+class _RecordingDrive:
+    """Records create/list/permission calls so the write path can be asserted
+    without touching Drive."""
+
+    def __init__(self, existing_folder=None):
+        self.created, self.permissions_granted = [], []
+        self._existing = existing_folder
+        self._pending = None
+
+    def files(self):
+        return self
+
+    def permissions(self):
+        return _RecordingPermissions(self)
+
+    def list(self, **kw):
+        self._pending = ("list", kw)
+        return self
+
+    def create(self, body=None, media_body=None, **kw):
+        self._pending = ("create", body)
+        return self
+
+    def execute(self):
+        kind, payload = self._pending
+        if kind == "list":
+            files = [{"id": self._existing, "name": upload.OUTPUT_FOLDER_NAME}] \
+                if self._existing else []
+            return {"files": files}
+        self.created.append(payload)
+        return {"id": f"new-{len(self.created)}", "webViewLink": "http://x"}
+
+
+class _RecordingPermissions:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def create(self, fileId=None, body=None, **kw):
+        self._call = (fileId, body, kw)
+        return self
+
+    def execute(self):
+        self.parent.permissions_granted.append(self._call)
+        return {"id": "perm1"}
+
+
+def test_output_folder_is_reused_not_recreated():
+    """A new "Bdika (1)" per submission would bury the uploads folder."""
+    drive = _RecordingDrive(existing_folder="existing-folder-id")
+    assert upload.ensure_output_folder(drive, "parent") == "existing-folder-id"
+    assert drive.created == []
+
+
+def test_output_folder_is_created_when_absent():
+    drive = _RecordingDrive()
+    upload.ensure_output_folder(drive, "parent-id")
+    assert drive.created[0]["name"] == "Bdika"
+    assert drive.created[0]["mimeType"] == upload.FOLDER_MIME
+    assert drive.created[0]["parents"] == ["parent-id"]
+
+
+def test_report_is_written_as_an_editable_google_doc():
+    """A .docx in Drive opens read-only until explicitly converted, and the
+    whole point of sharing it is that the teacher can correct the grade."""
+    drive = _RecordingDrive()
+    upload.write_report(drive, "folder", "essay_bdika_2026-08-10_1015.docx", b"PK\x03\x04")
+    body = drive.created[0]
+    assert body["mimeType"] == upload.GDOC_MIME
+    assert body["name"] == "essay_bdika_2026-08-10_1015"   # no .docx suffix
+
+
+def test_share_grants_editor_without_a_drive_notification():
+    """Drive's own notification would arrive alongside ours, for one submission."""
+    drive = _RecordingDrive()
+    assert upload.share(drive, "doc1", "teacher@x.org", role="writer") is True
+    file_id, body, kw = drive.permissions_granted[0]
+    assert (file_id, body["role"], body["emailAddress"]) == ("doc1", "writer", "teacher@x.org")
+    assert kw["sendNotificationEmail"] is False
+
+
+def test_share_failure_never_raises():
+    """Usually just an address with no Google account behind it. A graded report
+    already in the folder must not be lost over that."""
+    class _Boom(_RecordingDrive):
+        def permissions(self):
+            raise RuntimeError("no such user")
+    assert upload.share(_Boom(), "doc1", "nobody@nowhere", role="writer") is False
+
+
+class _FakeSheets:
+    def __init__(self, fail=False):
+        self.writes, self.fail = [], fail
+
+    def spreadsheets(self):
+        return self
+
+    def values(self):
+        return self
+
+    def update(self, spreadsheetId=None, range=None, body=None, **kw):
+        self._call = (range, body)
+        return self
+
+    def execute(self):
+        if self.fail:
+            raise RuntimeError("403 insufficient scope")
+        self.writes.append(self._call)
+        return {}
+
+
+def test_link_column_is_found_by_header_not_by_position():
+    """Everything else maps by header text for a reason: Avishai keeps editing
+    the form, and a fixed index I would start overwriting a real answer column
+    the first time he inserts a question."""
+    header = LIVE_HEADER + ["Something new", "Bdika report"]
+    assert sheet_link.find_or_create_column(_FakeSheets(), "sid", header) == 9
+
+
+def test_link_column_defaults_to_I_on_the_first_run():
+    sheets = _FakeSheets()
+    assert sheet_link.find_or_create_column(sheets, "sid", LIVE_HEADER) == 8
+    assert sheets.writes[0] == ("I1", {"values": [["Bdika report"]]})
+
+
+def test_link_column_returns_none_without_the_write_scope():
+    """Grading must carry on; a missing spreadsheet link is not worth failing a
+    submission over."""
+    assert sheet_link.find_or_create_column(_FakeSheets(fail=True), "sid", LIVE_HEADER) is None
+
+
+def test_write_link_targets_the_row_a_person_would_see():
+    sheets = _FakeSheets()
+    assert sheet_link.write_link(sheets, "sid", 7, 8, "http://doc", tag="[t]") is True
+    assert sheets.writes[0][0] == "I7"
+
+
+def test_write_link_failure_never_raises():
+    assert sheet_link.write_link(_FakeSheets(fail=True), "sid", 7, 8, "http://doc") is False
+
+
+def test_mail_carries_the_doc_link_when_there_is_one():
+    _, without = _send(_PARAMS)
+    assert "Google Doc you can edit" not in _text(without)
+    gmail = _FakeGmail()
+    mailer.send_report(gmail, "ori@bdika.net", _PARAMS, b"PK\x03\x04", "r.docx",
+                       "MoE Module G", tag="[t]", doc_link="http://doc/1")
+    body = _text(message_from_bytes(
+        base64.urlsafe_b64decode(gmail.sent[0]["raw"]), policy=_email_policy))
+    assert "http://doc/1" in body
+    # Both, not either — the attachment is the no-friction path.
+    msg = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
+                             policy=_email_policy)
+    assert [p.get_filename() for p in msg.walk() if p.get_filename()] == ["r.docx"]
 
 
 if __name__ == "__main__":

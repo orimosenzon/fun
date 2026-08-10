@@ -61,7 +61,8 @@ def _send(gmail_service, message: EmailMessage, tag: str) -> bool:
 
 
 def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
-                filename: str, rubric_name: str, tag: str = "") -> bool:
+                filename: str, rubric_name: str, tag: str = "",
+                doc_link: str = "") -> bool:
     """Mail the graded report back, .docx attached, and ask for feedback.
 
     Written in English, unlike form-checker's Hebrew mail. This form goes to
@@ -104,6 +105,20 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
         "",
         "The report gives a score per criterion, marks corrections in the body "
         "of the text, and includes the original scan at the end.",
+    ]
+    if doc_link:
+        # Both, not either. The attachment is what a teacher who has never heard
+        # of us can open with no clicks and no permission prompt; the Doc is the
+        # copy they can actually correct, which matters because the grade is a
+        # suggestion. Sending only the link would reintroduce the friction this
+        # product exists to remove.
+        lines += [
+            "",
+            "The same report is also in your Drive as a Google Doc you can edit — "
+            "corrections you make there are yours to keep:",
+            doc_link,
+        ]
+    lines += [
         "",
         "This was graded automatically and is a recommendation — the judgement "
         "stays yours.",
