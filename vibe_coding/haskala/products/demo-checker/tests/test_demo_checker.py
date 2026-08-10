@@ -128,6 +128,15 @@ def test_report_name_is_readable_and_sorts_by_time():
     which is unreadable and ambiguous about where the date ends."""
     n = upload.report_name("Vacation essay.pdf", "8/8/2026 10:15:00")
     assert n == "Vacation essay_bdika_2026-08-08_1015.docx"
+
+
+def test_report_name_reads_the_sheet_as_day_first():
+    """Real values from the responses sheet, checked against the ledger's own
+    claimed_at. Month-first dated Avishai's 10 August report 8 October."""
+    assert upload.report_name("w.pdf", "10/08/2026 09:40:27") == \
+        "w_bdika_2026-08-10_0940.docx"
+    assert upload.report_name("w.pdf", "09/08/2026 10:13:40") == \
+        "w_bdika_2026-08-09_1013.docx"
     assert upload.report_name("a.pdf", "") == "a_bdika.docx"
     assert upload.report_name("", "") == "work_bdika.docx"
 
