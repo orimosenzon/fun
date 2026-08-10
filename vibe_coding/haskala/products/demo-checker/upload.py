@@ -235,7 +235,13 @@ def doc_link(file_id: str) -> str:
     return f"https://docs.google.com/document/d/{file_id}/edit"
 
 
-_FORM_TS_FORMATS = ("%m/%d/%Y %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S")
+# Day-first, because that is what this sheet demonstrably writes: the response
+# stamped "10/08/2026 09:40:27" was submitted on 10 August, confirmed against
+# the ledger's own claimed_at. Forms renders the timestamp in the spreadsheet's
+# locale, and month-first was an assumption that silently dated a report
+# 8 October. Order matters — both patterns match, so whichever is tried first
+# wins on every ambiguous date.
+_FORM_TS_FORMATS = ("%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %H:%M:%S")
 
 
 def report_name(source_name: str, timestamp: str = "") -> str:
