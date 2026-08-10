@@ -241,6 +241,23 @@ def test_mail_carries_the_feedback_link():
     assert mailer.FEEDBACK_FORM_URL in body
 
 
+def test_mail_uses_avishais_wording():
+    """The copy is Avishai's, from the plan doc. He signs it; changes to it
+    should come from him, so the distinctive lines are pinned."""
+    _, msg = _send(_PARAMS)
+    body = _text(msg)
+    assert msg["Subject"] == "Your checked document is ready + quick feedback, Dana Levi!"
+    assert "your thoughts mean the world to us" in body
+    assert body.rstrip().endswith("Avishai Chelouche\nBdika team member")
+
+
+def test_mail_names_the_attachment():
+    """Added on top of Avishai's draft: his text assumes the Doc link is the
+    delivery, which fails outright for a submitter with no Google account."""
+    _, msg = _send(_PARAMS)
+    assert "attached to this email as a Word document" in _text(msg)
+
+
 def test_mail_flags_a_missing_assignment():
     """The report hedges the content score when the task is unknown; if the
     mail does not say why, that hedge reads as the tool being vague."""
@@ -410,7 +427,7 @@ def test_write_link_failure_never_raises():
 
 def test_mail_carries_the_doc_link_when_there_is_one():
     _, without = _send(_PARAMS)
-    assert "Google Doc you can edit" not in _text(without)
+    assert "View Your Checked Document" not in _text(without)
     gmail = _FakeGmail()
     mailer.send_report(gmail, "ori@bdika.net", _PARAMS, b"PK\x03\x04", "r.docx",
                        "MoE Module G", tag="[t]", doc_link="http://doc/1")

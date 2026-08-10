@@ -331,13 +331,25 @@ SA_EMAIL = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
 # a code change; until it is provisioned in Workspace, the default keeps the
 # existing delegation working. Whatever it is set to must be listed as the
 # subject the service account may impersonate.
-WORKSPACE_SUBJECT = os.environ.get("WORKSPACE_SUBJECT", "ori@bdika.net")
+#
+# exam@bdika.net rather than ori@ for this product, on two counts. Avishai's
+# spec says the mail comes from exam@, which is the address printed on the form
+# and the one a teacher would reply to — a personal address there is impossible
+# to change later without breaking every form in circulation. And exam@ is the
+# account that OWNS the form, so it owns the uploads outright rather than
+# reaching them through a folder share that breaks silently if the form is ever
+# moved. Verified impersonable on 2026-08-10.
+WORKSPACE_SUBJECT = os.environ.get("WORKSPACE_SUBJECT", "exam@bdika.net")
 
 # What teachers are told to share with. Normally the same address; kept separate
 # because a Workspace alias or group can front the real mailbox. drive_folder
 # reads it from the environment so its teacher-facing messages name it too.
 SHARE_WITH = os.environ.get("SHARE_WITH", WORKSPACE_SUBJECT)
 os.environ["SHARE_WITH"] = SHARE_WITH
+
+# Every report is also shared with this whole domain as editor. Set empty to
+# turn that off.
+TEAM_DOMAIN = os.environ.get("TEAM_DOMAIN", "bdika.net").strip()
 # The service account's OAuth client id — the key the Workspace admin console's
 # domain-wide-delegation entry is filed under. Logged with the scope warning so
 # whoever reads it can go straight to the right row.
@@ -588,11 +600,11 @@ def _publish_report(drive_service, entry, filename, docx_bytes, params, tag) -> 
     # The submitter first: this is the copy they are meant to correct.
     if params.get("email"):
         upload.share(drive_service, doc_id, params["email"], role="writer")
-    # Then ourselves, so a report can be looked at when a teacher writes in
-    # about it. SHARE_WITH is normally the same account that just created the
-    # doc, in which case this is a no-op that costs one call.
-    if SHARE_WITH and SHARE_WITH != WORKSPACE_SUBJECT:
-        upload.share(drive_service, doc_id, SHARE_WITH, role="writer")
+    # Then the whole team, per Avishai's spec — the domain rather than one
+    # mailbox, so anyone here can open a report a teacher writes in about, not
+    # only the account that happened to create it.
+    if TEAM_DOMAIN:
+        upload.share_with_domain(drive_service, doc_id, TEAM_DOMAIN, role="writer")
     return upload.doc_link(doc_id)
 
 
