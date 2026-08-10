@@ -32,7 +32,6 @@ def _esc(s: str) -> str:
     from a form anyone on the internet can fill in."""
     return html.escape(s or "", quote=True)
 
-_DOCX_MIME = ("application", "vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 _DEFAULT_FEEDBACK_URL = (
     "https://docs.google.com/forms/d/e/"
@@ -74,16 +73,28 @@ def _send(gmail_service, message: EmailMessage, tag: str) -> bool:
         return False
 
 
-def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
-                filename: str, rubric_name: str, tag: str = "",
-                doc_link: str = "") -> bool:
-    """Mail the graded report back, .docx attached, and ask for feedback.
+def send_report(gmail_service, sender: str, params: dict, doc_link: str,
+                tag: str = "") -> bool:
+    """Mail the teacher a link to their checked document, and ask for feedback.
 
     The wording is Avishai's, from the "Bdika demo form" tab of the plan doc. He
     owns the teacher relationship and signs the mail, so the copy is his and
-    changes to it should come from him. Exactly two sentences are ours —
-    ATTACHMENT_NOTE and NO_TASK_NOTE below, kept as named constants at the top
-    of the body so the difference between his text and ours stays visible.
+    changes to it should come from him. ONE sentence is ours — NO_TASK_NOTE
+    below, kept as a named constant at the top of the body so the line between
+    his text and ours stays visible.
+
+    NO ATTACHMENT
+    ─────────────
+    The .docx used to be attached as well. It was dropped after Avishai's own
+    demo mail landed in his spam folder: a first-ever message from an address
+    with no sending reputation, carrying an Office attachment, is close to the
+    textbook profile filters are built to catch, and the attachment is the only
+    part of that profile we control.
+
+    The cost is real and worth stating: a submitter with no Google account can
+    no longer read their report at all. That is why main.py refuses to send this
+    mail when the Drive copy could not be written — a mail announcing a document
+    that does not exist is worse than no mail.
 
     SENT AS HTML, NOT PLAIN TEXT
     ────────────────────────────
@@ -101,10 +112,8 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
 
     no_task = not (params.get("instructions") or "").strip()
 
-    # ── the two additions to Avishai's draft, in one place so they are easy to
-    # find and easy to drop if he would rather they were not there ────────────
-    ATTACHMENT_NOTE = ("The same report is attached to this email as a Word "
-                       "document, in case you would rather not open Drive.")
+    # ── the one addition to Avishai's draft, kept here so it is easy to find
+    # and easy to drop if he would rather it were not there ───────────────────
     NO_TASK_NOTE = ("One note: you did not describe the assignment on the form, "
                     "so we could not judge whether the student answered the "
                     "question. Everything else \u2014 vocabulary, language use, "
@@ -113,9 +122,7 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
     plain = [f"Dear {name},", "",
              "We've reviewed your submission, and your checked document is "
              "ready for you."]
-    if doc_link:
-        plain += ["", "\U0001F4C4 View Your Checked Document:", doc_link]
-    plain += ["", ATTACHMENT_NOTE]
+    plain += ["", "\U0001F4C4 View Your Checked Document:", doc_link]
     if no_task:
         plain += ["", NO_TASK_NOTE]
     plain += ["",
@@ -130,7 +137,7 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
 
     doc_html = (f'<p>\U0001F4C4 <b>View Your Checked Document:</b><br>'
                 f'<a href="{_esc(doc_link)}">Click here to open your checked '
-                f'document</a></p>' if doc_link else "")
+                f'document</a></p>')
     note_html = f"<p>{_esc(NO_TASK_NOTE)}</p>" if no_task else ""
     html = (
         "<div style=\"font-family:Arial,sans-serif;font-size:14px;"
@@ -139,7 +146,6 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
         "<p>We&rsquo;ve reviewed your submission, and your checked document is "
         "ready for you.</p>"
         f"{doc_html}"
-        f"<p>{_esc(ATTACHMENT_NOTE)}</p>"
         f"{note_html}"
         "<p>Since we&rsquo;re tweaking this process to fit your personal "
         "teaching needs, your thoughts mean the world to us:</p>"
@@ -156,8 +162,6 @@ def send_report(gmail_service, sender: str, params: dict, docx_bytes: bytes,
 
     msg.set_content("\n".join(plain))
     msg.add_alternative(html, subtype="html")
-    msg.add_attachment(docx_bytes, maintype=_DOCX_MIME[0], subtype=_DOCX_MIME[1],
-                       filename=filename)
     return _send(gmail_service, msg, tag)
 
 

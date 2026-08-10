@@ -214,10 +214,9 @@ class _FakeGmail:
         return {"id": "msg1"}
 
 
-def _send(params, gmail=None, docx=b"PK\x03\x04fake-docx"):
+def _send(params, gmail=None, doc_link="https://docs.google.com/document/d/D1/edit"):
     gmail = gmail or _FakeGmail()
-    ok = mailer.send_report(gmail, "ori@bdika.net", params, docx,
-                            "report.docx", "MoE Module G", tag="[t]")
+    ok = mailer.send_report(gmail, "exam@bdika.net", params, doc_link, tag="[t]")
     if not gmail.sent:
         return ok, None
     raw = base64.urlsafe_b64decode(gmail.sent[0]["raw"])
@@ -234,13 +233,13 @@ _PARAMS = {"email": "teacher@someschool.org.il", "teacher_name": "Dana Levi",
            "instructions": "Write about a place you love."}
 
 
-def test_report_is_attached_not_linked():
-    """The demo's whole delivery model: a teacher who has never heard of us
-    should not have to click through a Drive permission prompt."""
+def test_no_attachment_is_sent():
+    """Dropped after Avishai's demo mail landed in spam: an Office attachment
+    from an address with no sending reputation is the part of that profile we
+    control."""
     ok, msg = _send(_PARAMS)
     assert ok
-    names = [p.get_filename() for p in msg.walk() if p.get_filename()]
-    assert names == ["report.docx"]
+    assert [p.get_filename() for p in msg.walk() if p.get_filename()] == []
 
 
 def test_mail_carries_the_feedback_link():
@@ -271,37 +270,33 @@ def test_feedback_url_survives_an_empty_env_var():
 
 def test_mail_is_html_with_avishais_hyperlinks():
     """His draft says "Click here to share your feedback", not a bare URL."""
-    gmail = _FakeGmail()
-    mailer.send_report(gmail, "exam@bdika.net", _PARAMS, b"PK\x03\x04", "r.docx",
-                       "MoE Module G", tag="[t]", doc_link="http://doc/1")
-    msg = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
-                             policy=_email_policy)
+    _, msg = _send(_PARAMS, doc_link="http://doc/1")
     html = msg.get_body(preferencelist=("html",)).get_content()
     assert '<a href="http://doc/1">Click here to open your checked document</a>' in html
     assert "Click here to share your feedback</a>" in html
     # A plain-text alternative still goes out.
     assert msg.get_body(preferencelist=("plain",)) is not None
-    # And the attachment survives being wrapped in multipart/alternative.
-    assert [p.get_filename() for p in msg.walk() if p.get_filename()] == ["r.docx"]
 
 
 def test_teacher_name_is_escaped_in_the_html():
     """The name comes from a form anyone on the internet can fill in."""
-    gmail = _FakeGmail()
-    mailer.send_report(gmail, "exam@bdika.net",
-                       {**_PARAMS, "teacher_name": "<script>x</script>"},
-                       b"PK\x03\x04", "r.docx", "R", tag="[t]")
-    html = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
-                              policy=_email_policy
-                              ).get_body(preferencelist=("html",)).get_content()
+    _, msg = _send({**_PARAMS, "teacher_name": "<script>x</script>"})
+    html = msg.get_body(preferencelist=("html",)).get_content()
     assert "<script>" not in html and "&lt;script&gt;" in html
 
 
-def test_mail_names_the_attachment():
-    """Added on top of Avishai's draft: his text assumes the Doc link is the
-    delivery, which fails outright for a submitter with no Google account."""
+def test_only_one_sentence_is_not_avishais():
+    """His copy, start to finish, apart from NO_TASK_NOTE. Pinned so the next
+    edit to this mail is a deliberate one."""
     _, msg = _send(_PARAMS)
-    assert "attached to this email as a Word document" in _text(msg)
+    body = _text(msg)
+    assert "attached to this email" not in body
+    for line in ("We've reviewed your submission, and your checked document is "
+                 "ready for you.",
+                 "\U0001F4C4 View Your Checked Document:",
+                 "\U0001F4DD Your Feedback:",
+                 "Avishai Chelouche"):
+        assert line in body, line
 
 
 def test_mail_flags_a_missing_assignment():
@@ -471,19 +466,12 @@ def test_write_link_failure_never_raises():
     assert sheet_link.write_link(_FakeSheets(fail=True), "sid", 7, 8, "http://doc") is False
 
 
-def test_mail_carries_the_doc_link_when_there_is_one():
-    _, without = _send(_PARAMS)
-    assert "View Your Checked Document" not in _text(without)
-    gmail = _FakeGmail()
-    mailer.send_report(gmail, "ori@bdika.net", _PARAMS, b"PK\x03\x04", "r.docx",
-                       "MoE Module G", tag="[t]", doc_link="http://doc/1")
-    body = _text(message_from_bytes(
-        base64.urlsafe_b64decode(gmail.sent[0]["raw"]), policy=_email_policy))
-    assert "http://doc/1" in body
-    # Both, not either — the attachment is the no-friction path.
-    msg = message_from_bytes(base64.urlsafe_b64decode(gmail.sent[0]["raw"]),
-                             policy=_email_policy)
-    assert [p.get_filename() for p in msg.walk() if p.get_filename()] == ["r.docx"]
+def test_the_doc_link_is_the_delivery():
+    """With the attachment gone the link is the only thing carrying a result,
+    so it must be in both alternatives, not just the pretty one."""
+    _, msg = _send(_PARAMS, doc_link="http://doc/1")
+    assert "http://doc/1" in _text(msg)
+    assert "http://doc/1" in msg.get_body(preferencelist=("html",)).get_content()
 
 
 if __name__ == "__main__":
