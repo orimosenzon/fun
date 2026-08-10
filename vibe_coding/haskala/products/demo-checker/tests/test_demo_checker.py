@@ -16,7 +16,7 @@ import fitz  # noqa: E402
 
 import form_schema as fs  # noqa: E402
 import mailer  # noqa: E402
-import sheet_link  # noqa: E402
+import mirror  # noqa: E402
 import upload  # noqa: E402
 
 
@@ -436,36 +436,6 @@ class _FakeSheets:
         return {}
 
 
-def test_link_column_is_found_by_header_not_by_position():
-    """Everything else maps by header text for a reason: Avishai keeps editing
-    the form, and a fixed index I would start overwriting a real answer column
-    the first time he inserts a question."""
-    header = LIVE_HEADER + ["Something new", "Bdika report"]
-    assert sheet_link.find_or_create_column(_FakeSheets(), "sid", header) == 9
-
-
-def test_link_column_defaults_to_I_on_the_first_run():
-    sheets = _FakeSheets()
-    assert sheet_link.find_or_create_column(sheets, "sid", LIVE_HEADER) == 8
-    assert sheets.writes[0] == ("I1", {"values": [["Bdika report"]]})
-
-
-def test_link_column_returns_none_without_the_write_scope():
-    """Grading must carry on; a missing spreadsheet link is not worth failing a
-    submission over."""
-    assert sheet_link.find_or_create_column(_FakeSheets(fail=True), "sid", LIVE_HEADER) is None
-
-
-def test_write_link_targets_the_row_a_person_would_see():
-    sheets = _FakeSheets()
-    assert sheet_link.write_link(sheets, "sid", 7, 8, "http://doc", tag="[t]") is True
-    assert sheets.writes[0][0] == "I7"
-
-
-def test_write_link_failure_never_raises():
-    assert sheet_link.write_link(_FakeSheets(fail=True), "sid", 7, 8, "http://doc") is False
-
-
 def test_the_doc_link_is_the_delivery():
     """With the attachment gone the link is the only thing carrying a result,
     so it must be in both alternatives, not just the pretty one."""
@@ -486,3 +456,107 @@ if __name__ == "__main__":
                 print(f"  FAIL {name}: {type(e).__name__}: {e}")
     print(f"\n{failures} failure(s)")
     sys.exit(1 if failures else 0)
+
+
+# ─── the "checked files" mirror ─────────────────────────────────────────────
+
+class _MirrorSheets:
+    """Records clear/update and serves a canned current state of the tab."""
+
+    def __init__(self, current=None, fail=False):
+        self.current = current or []
+        self.cleared, self.written, self.fail = [], [], fail
+
+    def spreadsheets(self):
+        return self
+
+    def values(self):
+        return self
+
+    def get(self, spreadsheetId=None, range=None, **kw):
+        self._call = ("get", range, None)
+        return self
+
+    def clear(self, spreadsheetId=None, range=None, body=None, **kw):
+        self._call = ("clear", range, None)
+        return self
+
+    def update(self, spreadsheetId=None, range=None, body=None, **kw):
+        self._call = ("update", range, body)
+        return self
+
+    def execute(self):
+        kind, rng, body = self._call
+        if self.fail:
+            raise RuntimeError("403 insufficient scope")
+        if kind == "get":
+            return {"values": self.current}
+        if kind == "clear":
+            self.cleared.append(rng)
+            return {}
+        self.written.append((rng, body["values"]))
+        return {}
+
+
+_MIRROR_HEADER = LIVE_HEADER + ["link to analyzed Doc"]
+
+
+def _rows_oldest_first():
+    return [_row(Timestamp="09/08/2026 10:13:40", **{"Email Address": "a@x.org"}),
+            _row(Timestamp="10/08/2026 09:36:30", **{"Email Address": "b@x.org"}),
+            _row(Timestamp="10/08/2026 09:40:27", **{"Email Address": "c@x.org"})]
+
+
+def test_mirror_is_newest_first():
+    """Forms only ever appends to the bottom of its own tab; the whole point of
+    this second tab is that the newest submission is the first thing seen."""
+    sheets = _MirrorSheets(current=[_MIRROR_HEADER])
+    rows = _rows_oldest_first()
+    assert mirror.rebuild(sheets, "sid", rows, fs.map_columns(LIVE_HEADER), {}, fs)
+    written = sheets.written[0][1]
+    assert [r[0] for r in written] == ["10/08/2026 09:40:27",
+                                       "10/08/2026 09:36:30",
+                                       "09/08/2026 10:13:40"]
+
+
+def test_mirror_writes_below_avishais_header():
+    """Row 1 is his, formatting and all."""
+    sheets = _MirrorSheets(current=[_MIRROR_HEADER])
+    mirror.rebuild(sheets, "sid", _rows_oldest_first(), fs.map_columns(LIVE_HEADER), {}, fs)
+    assert sheets.written[0][0] == "'checked files'!A2"
+    assert sheets.cleared == ["'checked files'!A2:Z1000"]
+
+
+def test_mirror_puts_the_link_in_column_I():
+    rows = _rows_oldest_first()
+    key = "|".join(["10/08/2026 09:40:27", "c@x.org", FILE_ID])
+    sheets = _MirrorSheets(current=[_MIRROR_HEADER])
+    mirror.rebuild(sheets, "sid", rows, fs.map_columns(LIVE_HEADER),
+                   {key: "http://doc/newest"}, fs)
+    written = sheets.written[0][1]
+    assert written[0][mirror.LINK_COL] == "http://doc/newest"
+    assert written[1][mirror.LINK_COL] == ""
+
+
+def test_rebuild_does_not_lose_links_from_earlier_runs():
+    """The tab is its own memory. A rebuild that dropped previously-written
+    links would erase them a few minutes after they were added."""
+    rows = _rows_oldest_first()
+    old_key_row = list(rows[0]) + ["http://doc/old"]
+    sheets = _MirrorSheets(current=[_MIRROR_HEADER, old_key_row])
+    mirror.rebuild(sheets, "sid", rows, fs.map_columns(LIVE_HEADER), {}, fs)
+    written = sheets.written[0][1]
+    assert written[-1][mirror.LINK_COL] == "http://doc/old"   # oldest row, last
+
+
+def test_mirror_refuses_a_tab_whose_column_I_is_not_ours():
+    """If Avishai reworks the layout, writing into column I would overwrite a
+    column of his. Reordering still happens; only the links are withheld."""
+    wrong = LIVE_HEADER + ["Teacher's own notes"]
+    sheets = _MirrorSheets(current=[wrong, list(_rows_oldest_first()[0]) + ["keep me"]])
+    assert mirror.read_known_links(sheets, "sid", fs.map_columns(LIVE_HEADER), fs) == {}
+
+
+def test_mirror_failure_never_raises():
+    assert mirror.rebuild(_MirrorSheets(fail=True), "sid", _rows_oldest_first(),
+                          fs.map_columns(LIVE_HEADER), {}, fs) is False

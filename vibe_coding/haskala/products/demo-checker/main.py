@@ -61,7 +61,7 @@ from googleapiclient.http import MediaIoBaseUpload
 import checker
 import form_schema
 import mailer
-import sheet_link
+import mirror
 import upload
 
 # ─── logging ───────────────────────────────────────────────────────────────
@@ -283,10 +283,18 @@ def _try_claim_row(key: str) -> bool:
     return should_process
 
 
-def _mark_done(key: str, outcome: str = "graded"):
+def _mark_done(key: str, outcome: str = "graded", link: str = ""):
+    """Record the outcome, and the report link alongside it.
+
+    The link is not read back by anything today — the mirror harvests links from
+    its own tab, which keeps that feature self-contained. It is stored because
+    it is free to store here and it is the only durable record connecting a
+    submission to what we produced for it: if the tab is ever cleared by hand,
+    this is what makes the links recoverable."""
     _firestore().collection("demo_checker_responses").document(key).set({
         "status": "done",
         "outcome": outcome,
+        "report_link": link,
         "completed_at": datetime.datetime.now(datetime.timezone.utc),
     }, merge=True)
 
@@ -690,10 +698,11 @@ def run_form_scan(dry_run: bool = False):
     log.debug("column map: %s", colmap)
     log.debug("%d response row(s) in the sheet", len(rows))
 
-    # Located once per scan rather than per row: it is the same column for every
-    # row, and on the first ever run it also writes the header.
-    link_col = (sheet_link.find_or_create_column(sheets_write, RESPONSES_SHEET_ID, header)
-                if sheets_write else None)
+    # Links learned in this run, keyed the same way the mirror keys its rows.
+    # Collected rather than written per row: the mirror is rebuilt once at the
+    # end of the scan, so writing it per row would rewrite the whole tab as many
+    # times as there are graded rows.
+    new_links: dict[str, str] = {}
 
     processed = 0
     for row_num, row in enumerate(rows, start=2):   # +2: header is row 1
@@ -757,11 +766,19 @@ def run_form_scan(dry_run: bool = False):
             log.error("%s graded but not delivered — leaving the row for retry", tag)
             continue
 
-        if link and sheets_write and link_col is not None:
-            sheet_link.write_link(sheets_write, RESPONSES_SHEET_ID, row_num,
-                                  link_col, link, tag)
+        if link:
+            new_links["|".join([params.get("timestamp", ""),
+                                params.get("email", "").lower(),
+                                ",".join(params.get("file_ids", []))])] = link
 
-        _mark_done(key, outcome=outcome)
+        _mark_done(key, outcome=outcome, link=link)
+
+    # Once per scan, and unconditionally — the tab has to be reordered even on a
+    # run that graded nothing, because a response submitted while we were idle
+    # still arrived at the bottom of the Forms tab.
+    if sheets_write:
+        mirror.rebuild(sheets_write, RESPONSES_SHEET_ID, rows, colmap,
+                       new_links, form_schema)
 
     log.debug("scan finished — %d row(s) processed this run", processed)
 
