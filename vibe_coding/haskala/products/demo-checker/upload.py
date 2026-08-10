@@ -206,6 +206,31 @@ def share(drive, file_id: str, email: str, role: str = "writer") -> bool:
         return False
 
 
+def share_with_domain(drive, file_id: str, domain: str, role: str = "writer") -> bool:
+    """Give everyone in `domain` access to the report. True if it stuck.
+
+    Avishai's spec asks for the Doc to be "shared with bdika.net as editor" —
+    the domain, not one mailbox. That is the difference between the team being
+    able to look at a report when a teacher writes in about it, and only
+    whichever account happened to create it being able to.
+
+    Same never-raises contract as share(): a graded report already in the folder
+    must not be lost to a sharing policy."""
+    try:
+        drive.permissions().create(
+            fileId=file_id,
+            body={"type": "domain", "role": role, "domain": domain},
+            sendNotificationEmail=False,
+            **_SHARED).execute()
+        log.info("shared %s with the %s domain as %s", file_id, domain, role)
+        return True
+    except Exception as e:
+        # Typically a Workspace sharing policy that forbids domain-wide links.
+        log.warning("could not share %s with the %s domain (%s: %s)",
+                    file_id, domain, type(e).__name__, str(e)[:200])
+        return False
+
+
 def doc_link(file_id: str) -> str:
     return f"https://docs.google.com/document/d/{file_id}/edit"
 
