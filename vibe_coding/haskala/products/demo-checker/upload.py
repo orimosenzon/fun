@@ -25,11 +25,21 @@ import logging
 import os
 
 import fitz
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 log = logging.getLogger("demo-checker")
 
 _SHARED = {"supportsAllDrives": True}
+
+FOLDER_MIME = "application/vnd.google-apps.folder"
+GDOC_MIME = "application/vnd.google-apps.document"
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# The subfolder graded work is written into, created beside the uploads. Named
+# to match form-checker and math-form-checker rather than described ("checked
+# exercises") — a teacher who later uses more than one of these products should
+# find the same folder name in all of them.
+OUTPUT_FOLDER_NAME = os.environ.get("OUTPUT_FOLDER_NAME", "Bdika")
 
 # What core.check_pages can rasterise. Anything else is refused before it costs
 # anything — notably HEIC, which is what an iPhone produces by default and the
@@ -70,13 +80,18 @@ def ext_for(mime_type: str, name: str) -> str | None:
 
 
 def fetch(drive, file_id: str) -> dict:
-    """{id, name, ext, data} for one uploaded file.
+    """{id, name, ext, parent, data} for one uploaded file.
+
+    `parent` is the Forms "(File responses)" folder — where every upload from
+    this question is collected — and is what the graded report's folder is
+    created beside. Read here rather than configured, because Forms creates that
+    folder itself and its id is not something anyone types in.
 
     Raises UploadError with teacher-readable text for the two things that
     actually happen: a format we cannot read, and a file we cannot see."""
     try:
         meta = drive.files().get(
-            fileId=file_id, fields="id,name,mimeType,size", **_SHARED).execute()
+            fileId=file_id, fields="id,name,mimeType,size,parents", **_SHARED).execute()
     except Exception as e:
         log.warning("cannot read uploaded file %s (%s: %s)",
                     file_id, type(e).__name__, str(e)[:200])
@@ -95,9 +110,11 @@ def fetch(drive, file_id: str) -> dict:
             "Please upload a PDF, JPG or PNG and submit the form again.")
 
     data = _download(drive, file_id)
-    log.info("fetched upload %s %r (%s, %.0f KB)",
-             file_id, name, ext, len(data) / 1024)
-    return {"id": file_id, "name": name, "ext": ext, "data": data}
+    parents = meta.get("parents") or []
+    log.info("fetched upload %s %r (%s, %.0f KB, parent=%s)",
+             file_id, name, ext, len(data) / 1024, parents[0] if parents else "?")
+    return {"id": file_id, "name": name, "ext": ext, "data": data,
+            "parent": parents[0] if parents else ""}
 
 
 def _download(drive, file_id: str) -> bytes:
@@ -120,6 +137,77 @@ def page_count(data: bytes, ext: str) -> int:
             return doc.page_count or 1
     except Exception:
         return 1
+
+
+# ─── writing the graded report back ─────────────────────────────────────────
+
+def ensure_output_folder(drive, parent_id: str, name: str = OUTPUT_FOLDER_NAME) -> str:
+    """Id of the results subfolder beside the uploads, reusing an existing one.
+
+    Find-or-create rather than create: this runs once per submission, and a new
+    "Bdika (1)" every time a teacher tries the demo would bury the uploads
+    folder in near-identical directories."""
+    q = (f"'{parent_id}' in parents and name = '{name}' and "
+         f"mimeType = '{FOLDER_MIME}' and trashed = false")
+    found = drive.files().list(q=q, fields="files(id,name)", pageSize=10,
+                               includeItemsFromAllDrives=True, **_SHARED).execute()
+    for f in found.get("files", []):
+        log.info("reusing output folder %r (%s)", name, f["id"])
+        return f["id"]
+
+    created = drive.files().create(
+        body={"name": name, "mimeType": FOLDER_MIME, "parents": [parent_id]},
+        fields="id", **_SHARED).execute()
+    log.info("created output folder %r (%s) under %s", name, created["id"], parent_id)
+    return created["id"]
+
+
+def write_report(drive, folder_id: str, name: str, docx_bytes: bytes) -> str:
+    """Upload the .docx and let Drive convert it to a native Google Doc.
+
+    Converted rather than left as a .docx because the point is that the teacher
+    can *edit* it — the grade is a suggestion, and a Word file in Drive opens
+    read-only in a viewer until it is explicitly converted. This is safe here in
+    a way it is not in math-form-checker, whose reports carry LaTeX that Drive's
+    importer mangles inside an RTL document."""
+    media = MediaIoBaseUpload(io.BytesIO(docx_bytes), mimetype=DOCX_MIME,
+                              resumable=False)
+    created = drive.files().create(
+        body={"name": os.path.splitext(name)[0], "parents": [folder_id],
+              "mimeType": GDOC_MIME},
+        media_body=media, fields="id,webViewLink", **_SHARED).execute()
+    log.info("wrote report %r as a Google Doc (%s)", name, created["id"])
+    return created["id"]
+
+
+def share(drive, file_id: str, email: str, role: str = "writer") -> bool:
+    """Grant one address access to the report. True if it stuck.
+
+    Never raises. A share that fails must not lose a report that is already
+    graded and already in the folder — the mail still carries the .docx, so the
+    teacher gets their result either way and the log says what to fix.
+
+    sendNotificationEmail is off: our own mail is already on its way and says
+    more than Drive's would, and two arrivals for one submission reads as a
+    system that has lost track of itself."""
+    try:
+        drive.permissions().create(
+            fileId=file_id,
+            body={"type": "user", "role": role, "emailAddress": email},
+            sendNotificationEmail=False,
+            **_SHARED).execute()
+        log.info("shared %s with %s as %s", file_id, email, role)
+        return True
+    except Exception as e:
+        # Overwhelmingly: the address has no Google account, so there is nobody
+        # to grant a permission to. Not worth failing a submission over.
+        log.warning("could not share %s with %s as %s (%s: %s)",
+                    file_id, email, role, type(e).__name__, str(e)[:200])
+        return False
+
+
+def doc_link(file_id: str) -> str:
+    return f"https://docs.google.com/document/d/{file_id}/edit"
 
 
 _FORM_TS_FORMATS = ("%m/%d/%Y %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S")

@@ -61,6 +61,7 @@ from googleapiclient.http import MediaIoBaseUpload
 import checker
 import form_schema
 import mailer
+import sheet_link
 import upload
 
 # ─── logging ───────────────────────────────────────────────────────────────
@@ -307,6 +308,16 @@ EXTRA_SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
 ]
 
+# Writing the report link back into the responses sheet. Its OWN tier, not
+# folded into EXTRA_SCOPES, and that separation is the whole point: delegation
+# is all-or-nothing per token request, so bundling an ungranted write scope with
+# gmail.send would take mail down with it — and mail is the only channel that
+# reaches the teacher. Asking separately means a missing write scope costs a
+# link in a spreadsheet and nothing else.
+SHEET_WRITE_SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+]
+
 SA_EMAIL = "sainter@master-gecko-500709-t0.iam.gserviceaccount.com"
 
 # The Workspace user this service impersonates: whose Drive it reads, and who
@@ -411,6 +422,49 @@ def get_workspace_credentials():
     return creds
 
 
+_sheet_write_granted: bool | None = None
+_sheet_write_checked_at: float = 0.0
+
+
+def get_sheet_write_credentials():
+    """Credentials that may write the responses sheet, or None if not granted.
+
+    Deliberately a separate token request from get_workspace_credentials — see
+    SHEET_WRITE_SCOPES. Same recheck-on-a-timer shape as the mail scope, so an
+    admin adding the scope takes effect without a redeploy."""
+    global _sheet_write_granted, _sheet_write_checked_at
+
+    stale = (time.monotonic() - _sheet_write_checked_at) >= EXTRA_RECHECK_SECONDS
+    if _sheet_write_granted is False and not stale:
+        return None
+
+    creds = _delegated_credentials(BASE_SCOPES + SHEET_WRITE_SCOPES)
+    was = _sheet_write_granted
+    try:
+        creds.refresh(Request())
+    except RefreshError as e:
+        _sheet_write_granted = False
+        _sheet_write_checked_at = time.monotonic()
+        if was is not False:
+            log.warning(
+                "delegation does not grant the sheet-write scope (%s) — grading, "
+                "Drive and mail are unaffected; the only thing missing is the "
+                "report link in the responses sheet. To enable it, add %s to the "
+                "service account's domain-wide delegation in the Workspace admin "
+                "console (client id %s). Rechecked every %ds, so no redeploy is "
+                "needed once it is there.",
+                str(e)[:200], ", ".join(SHEET_WRITE_SCOPES), SA_CLIENT_ID,
+                EXTRA_RECHECK_SECONDS)
+        return None
+
+    _sheet_write_granted = True
+    _sheet_write_checked_at = time.monotonic()
+    if was is not True:
+        log.info("delegation grants the sheet-write scope — report links will be "
+                 "written to the responses sheet")
+    return creds
+
+
 # ─── admission control ─────────────────────────────────────────────────────
 
 def _admit(params: dict, tag: str) -> str | None:
@@ -511,13 +565,45 @@ def _collect_upload(drive_service, params, tag) -> dict:
     return entry
 
 
-def _process_upload(drive_service, gmail_service, params, tag) -> str:
-    """Grade one uploaded file and mail it back. Returns a ledger outcome.
+def _publish_report(drive_service, entry, filename, docx_bytes, params, tag) -> str:
+    """Put the graded report in Drive as an editable Doc and share it.
 
-    Raises upload.UploadError for anything the teacher can fix, and returns
-    "undelivered" when grading worked but the mail did not — the caller leaves
-    such a row unfinished so the next poll retries it, because an ungraded
-    submission and an undelivered one look identical from the teacher's side.
+    Returns its link, or "" if Drive could not be written at all. Nothing here
+    is allowed to fail the submission: the report is already graded and the mail
+    still carries the .docx, so a Drive problem costs the editable copy and not
+    the result."""
+    parent = entry.get("parent")
+    if not parent:
+        log.warning("%s the uploaded file reports no parent folder — skipping the "
+                    "Drive copy; the teacher still gets the attachment", tag)
+        return ""
+    try:
+        out_folder = upload.ensure_output_folder(drive_service, parent)
+        doc_id = upload.write_report(drive_service, out_folder, filename, docx_bytes)
+    except Exception as e:
+        log.warning("%s could not write the report into Drive (%s: %s) — the "
+                    "attachment still goes out", tag, type(e).__name__, str(e)[:200])
+        return ""
+
+    # The submitter first: this is the copy they are meant to correct.
+    if params.get("email"):
+        upload.share(drive_service, doc_id, params["email"], role="writer")
+    # Then ourselves, so a report can be looked at when a teacher writes in
+    # about it. SHARE_WITH is normally the same account that just created the
+    # doc, in which case this is a no-op that costs one call.
+    if SHARE_WITH and SHARE_WITH != WORKSPACE_SUBJECT:
+        upload.share(drive_service, doc_id, SHARE_WITH, role="writer")
+    return upload.doc_link(doc_id)
+
+
+def _process_upload(drive_service, gmail_service, params, tag) -> tuple[str, str]:
+    """Grade one uploaded file, publish it, and mail it back.
+
+    Returns (ledger outcome, report link). Raises upload.UploadError for
+    anything the teacher can fix. The outcome is "undelivered" when grading
+    worked but the mail did not — the caller leaves such a row unfinished so the
+    next poll retries it, because an ungraded submission and an undelivered one
+    look identical from the teacher's side.
     """
     entry = _collect_upload(drive_service, params, tag)
 
@@ -531,22 +617,27 @@ def _process_upload(drive_service, gmail_service, params, tag) -> str:
     docx_bytes, _title = checker.check_file(entry, params, ctx, question, tag=tag)
     filename = upload.report_name(entry["name"], params.get("timestamp", ""))
 
+    link = _publish_report(drive_service, entry, filename, docx_bytes, params, tag)
+
     if gmail_service is None:
         log.error("%s graded %r but there is no mail scope, and mail is the only "
                   "way anything reaches this teacher. Add gmail.send to the "
                   "domain-wide delegation entry.", tag, entry["name"])
-        _park_report(drive_service, filename, docx_bytes, tag)
-        return "undelivered"
+        if not link:
+            _park_report(drive_service, filename, docx_bytes, tag)
+        return "undelivered", link
 
     sent = mailer.send_report(gmail_service, WORKSPACE_SUBJECT, params, docx_bytes,
-                              filename, ctx.rubric_name, tag)
+                              filename, ctx.rubric_name, tag, doc_link=link)
     if not sent:
-        _park_report(drive_service, filename, docx_bytes, tag)
-        return "undelivered"
+        if not link:
+            _park_report(drive_service, filename, docx_bytes, tag)
+        return "undelivered", link
 
-    log.info("%s graded %r (%d page(s)) and emailed %s",
-             tag, entry["name"], entry.get("pages", 1), params["email"])
-    return "graded"
+    log.info("%s graded %r (%d page(s)), emailed %s%s",
+             tag, entry["name"], entry.get("pages", 1), params["email"],
+             " and published to Drive" if link else "")
+    return "graded", link
 
 
 
@@ -570,6 +661,9 @@ def run_form_scan(dry_run: bool = False):
     gmail_service = (build('gmail', 'v1', credentials=creds)
                      if _extra_scopes_granted else None)
 
+    write_creds = get_sheet_write_credentials()
+    sheets_write = build('sheets', 'v4', credentials=write_creds) if write_creds else None
+
     header, rows = _read_responses(sheets_service)
     if not header:
         log.info("responses sheet is empty — nothing to do")
@@ -577,6 +671,11 @@ def run_form_scan(dry_run: bool = False):
     colmap = form_schema.map_columns(header)
     log.debug("column map: %s", colmap)
     log.debug("%d response row(s) in the sheet", len(rows))
+
+    # Located once per scan rather than per row: it is the same column for every
+    # row, and on the first ever run it also writes the header.
+    link_col = (sheet_link.find_or_create_column(sheets_write, RESPONSES_SHEET_ID, header)
+                if sheets_write else None)
 
     processed = 0
     for row_num, row in enumerate(rows, start=2):   # +2: header is row 1
@@ -618,7 +717,7 @@ def run_form_scan(dry_run: bool = False):
         log.info("%s grading upload from %s (sheet row %d)",
                  tag, params["email"], row_num)
         try:
-            outcome = _process_upload(drive_service, gmail_service, params, tag)
+            outcome, link = _process_upload(drive_service, gmail_service, params, tag)
         except upload.UploadError as e:
             # A submission we understand but cannot use — a format we cannot
             # read, too many pages, a file that has since been deleted. All of
@@ -639,6 +738,10 @@ def run_form_scan(dry_run: bool = False):
             # teacher who submitted and heard nothing back.
             log.error("%s graded but not delivered — leaving the row for retry", tag)
             continue
+
+        if link and sheets_write and link_col is not None:
+            sheet_link.write_link(sheets_write, RESPONSES_SHEET_ID, row_num,
+                                  link_col, link, tag)
 
         _mark_done(key, outcome=outcome)
 
