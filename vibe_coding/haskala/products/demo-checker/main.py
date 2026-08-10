@@ -580,21 +580,22 @@ def _collect_upload(drive_service, params, tag) -> dict:
 def _publish_report(drive_service, entry, filename, docx_bytes, params, tag) -> str:
     """Put the graded report in Drive as an editable Doc and share it.
 
-    Returns its link, or "" if Drive could not be written at all. Nothing here
-    is allowed to fail the submission: the report is already graded and the mail
-    still carries the .docx, so a Drive problem costs the editable copy and not
-    the result."""
+    Returns its link, or "" if Drive could not be written at all. Since the mail
+    stopped carrying an attachment this link IS the delivery, so an empty return
+    is a failed submission rather than a degraded one — the caller treats it as
+    such. The sharing calls below are still best-effort: a report the teacher
+    cannot open is worth retrying, a report they can open but we cannot is not."""
     parent = entry.get("parent")
     if not parent:
-        log.warning("%s the uploaded file reports no parent folder — skipping the "
-                    "Drive copy; the teacher still gets the attachment", tag)
+        log.warning("%s the uploaded file reports no parent folder — nowhere to "
+                    "put the report", tag)
         return ""
     try:
         out_folder = upload.ensure_output_folder(drive_service, parent)
         doc_id = upload.write_report(drive_service, out_folder, filename, docx_bytes)
     except Exception as e:
-        log.warning("%s could not write the report into Drive (%s: %s) — the "
-                    "attachment still goes out", tag, type(e).__name__, str(e)[:200])
+        log.warning("%s could not write the report into Drive (%s: %s)",
+                    tag, type(e).__name__, str(e)[:200])
         return ""
 
     # The submitter first: this is the copy they are meant to correct.
@@ -631,19 +632,24 @@ def _process_upload(drive_service, gmail_service, params, tag) -> tuple[str, str
 
     link = _publish_report(drive_service, entry, filename, docx_bytes, params, tag)
 
+    if not link:
+        # Since the attachment was dropped, the link IS the delivery. Sending
+        # Avishai's "your checked document is ready" over a document that was
+        # never written would be worse than silence — the teacher would click
+        # into nothing and conclude the tool is broken. Park it and retry.
+        log.error("%s graded %r but the Drive copy could not be written, and the "
+                  "mail has nothing to point at — not sending", tag, entry["name"])
+        _park_report(drive_service, filename, docx_bytes, tag)
+        return "undelivered", ""
+
     if gmail_service is None:
         log.error("%s graded %r but there is no mail scope, and mail is the only "
                   "way anything reaches this teacher. Add gmail.send to the "
                   "domain-wide delegation entry.", tag, entry["name"])
-        if not link:
-            _park_report(drive_service, filename, docx_bytes, tag)
         return "undelivered", link
 
-    sent = mailer.send_report(gmail_service, WORKSPACE_SUBJECT, params, docx_bytes,
-                              filename, ctx.rubric_name, tag, doc_link=link)
+    sent = mailer.send_report(gmail_service, WORKSPACE_SUBJECT, params, link, tag)
     if not sent:
-        if not link:
-            _park_report(drive_service, filename, docx_bytes, tag)
         return "undelivered", link
 
     log.info("%s graded %r (%d page(s)), emailed %s%s",
