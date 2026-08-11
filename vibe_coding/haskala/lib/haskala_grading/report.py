@@ -205,6 +205,11 @@ def _fmt_num(v) -> str:
 # ─── issue span resolution (mirrors checker/app.py:2107-2191) ──────────────
 
 _LINE_REF_RE = re.compile(r"p(\d+)-l(\d+)")
+
+# Text the student should remove is shaded this yellow instead of its
+# criterion's colour, per Avishai (2026-08-11). Softer than pure FFFF00, which
+# is unreadable behind black text at report font sizes.
+DELETE_HIGHLIGHT = "FFF176"
 # Fuzzy fallback only forgives near-exact drift (punctuation, trailing space,
 # 1-2 OCR slips). The model is instructed to return verbatim quotes, so loose
 # matches that would paint the wrong span are rejected.
@@ -280,6 +285,7 @@ def resolve_issue_spans(
                     "color": color,
                     "comment": issue.get("comment", ""),
                     "criterion": crit_name,
+                    "delete": bool(issue.get("delete")),
                 }
             )
 
@@ -347,8 +353,19 @@ def _fill_paragraph_with_spans(
         s, e = span["start"], span["end"]
         if s > cursor:
             paragraph.add_run(text[cursor:s])
-        tint = _tint_hex(span["color"], mix=0.35)
-        run = paragraph.add_run(text[s:e])
+        # A deletion is marked in one fixed way regardless of which criterion
+        # raised it — brackets, a strikethrough and yellow — because it is an
+        # instruction to the student rather than a category of mistake.
+        # Avishai's rule (2026-08-11): yellow REPLACES the criterion colour.
+        # Two shades over one span is unreadable, and the criterion is still
+        # named in the note that follows.
+        if span.get("delete"):
+            tint = DELETE_HIGHLIGHT
+            run = paragraph.add_run(f"[{text[s:e]}]")
+            run.font.strike = True
+        else:
+            tint = _tint_hex(span["color"], mix=0.35)
+            run = paragraph.add_run(text[s:e])
         _set_run_shading(run, tint)
         if include_notes:
             # The span's color already identifies the criterion, so the note

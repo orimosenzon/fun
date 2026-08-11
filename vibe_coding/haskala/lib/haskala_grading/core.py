@@ -512,9 +512,17 @@ def build_ocr_prompt(exercise_lang: str, numbered: bool = True) -> str:
    דוגמה (ערבית): שורה שכתוב בה visually "تفاحة على الطاولة" (= תפוח
    על השולחן) → במחרוזת ה-text שלך כתוב בדיוק "تفاحة على الطاولة",
    ולא "الطاولة على تفاحة".
+10. לכל שורה קבע גם `printed`:
+    • `true`  — השורה **מודפסת**: נוסח השאלה, הוראות, כותרת הבחינה, שם
+      בית הספר, מספר השאלון, טקסט שהמורה הדפיס מראש.
+    • `false` — השורה **בכתב ידו של התלמיד**, כולל תשובה שהתלמיד העתיק
+      מהשאלה בכתב ידו.
+    ההבחנה חזותית בלבד — צורת האותיות — ואינה תלויה בשפה או בתוכן.
+    בספק, החזר `false`: שורה בכתב יד שסומנה בטעות כמודפסת נעלמת מספירת
+    המילים ומורידה לתלמיד נקודות שמגיעות לו, וזו הטעות היקרה מבין השתיים.
 {overlay_rules}
 החזר את התוצאה כ-JSON תקין במבנה:
-{{"lines": [{{{n_field}"text": "..."}}, ...]}}."""
+{{"lines": [{{{n_field}"text": "...", "printed": false}}, ...]}}."""
 
 
 OCR_SCHEMA = {
@@ -527,6 +535,7 @@ OCR_SCHEMA = {
                 "properties": {
                     "n": {"type": ["integer", "null"]},
                     "text": {"type": "string"},
+                    "printed": {"type": "boolean"},
                 },
                 "required": ["text"],
                 "additionalProperties": False,
@@ -595,6 +604,7 @@ def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str, numbered: b
                     "properties": {
                         "n": {"type": "integer", "nullable": True},
                         "text": {"type": "string"},
+                        "printed": {"type": "boolean"},
                     },
                     "required": ["text"],
                 },
@@ -639,7 +649,7 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str, numbered: boo
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"lines":[{"n":1,"text":"..."},...]}'
+                            '{"lines":[{"n":1,"text":"...","printed":false},...]}'
                         ),
                     },
                 ],
@@ -670,7 +680,7 @@ def _ocr_azure(img: Image.Image, exercise_lang: str, numbered: bool) -> dict:
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"lines":[{"n":1,"text":"..."},...]}'
+                            '{"lines":[{"n":1,"text":"...","printed":false},...]}'
                         ),
                     },
                 ],
@@ -1017,10 +1027,26 @@ def rubric_from_classroom(classroom_rubric: dict, assignment_name: str = "") -> 
 
 
 def count_words(pages: list[dict]) -> int:
-    """Total number of words the student wrote across all pages/lines."""
+    """Words the student actually wrote, excluding printed lines.
+
+    This used to sum every transcribed line, which meant the exam's own
+    printed question, its heading and the school's name were counted as the
+    student's writing. That is not cosmetic: the length deduction is
+    deterministic and comes straight off the overall score, so a printed prompt
+    worth forty words could lift a sixty-word answer over a seventy-word
+    threshold and cancel a deduction the student had earned. It inflated marks
+    silently, and most for the weakest answers, where the printed text is the
+    largest share of the page.
+
+    Lines with no `printed` key are counted. Every page produced by check_pages
+    now carries the flag; treating its absence as handwriting keeps older stored
+    results, and any caller that builds pages by hand, reading as they did
+    before rather than losing text to a field they never set."""
     n = 0
     for page in pages:
         for line in page.get("lines", []):
+            if line.get("printed"):
+                continue
             n += len(str(line.get("text", "")).split())
     return n
 
@@ -1269,6 +1295,12 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
       חייב להיות תת-מחרוזת של השורה. ציטוט ברמת משפט/ביטוי, לא
       מילה בודדת ולא שורה שלמה אם רק חלק ממנה בעייתי.
     * "comment": הערה קצרה ב{primary} (3-15 מילים) שמסבירה למה זה בעייתי.
+    * "delete": true רק כאשר התיקון הוא **להשמיט את הקטע**, ולא לשנות
+      אותו — מילה שחוזרת פעמיים, מילת קישור מיותרת, משפט שאינו שייך
+      לנושא, סימן פיסוק עודף. אם הקטע צריך להיכתב אחרת (איות, זמן,
+      אוצר מילים, סדר מילים) — false. בספק, false: הדוח מציג קטע עם
+      delete=true כטקסט מחוק, וסימון מוטעה אומר לתלמיד למחוק משפט
+      שכל מה שהוא צריך הוא תיקון.
   אם אין בעיות בקריטריון מסוים, החזר רשימה ריקה.
   אם אותו משפט בעייתי בכמה קריטריונים — שייך אותו לקריטריון
   החמור/המהותי ביותר בלבד (לא לכמה במקביל).
@@ -1288,7 +1320,7 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
       "feedback": "...",
       "feedback_secondary": "...",
       "issues": [
-        {{"line_ref": "p1-l3", "quote": "...", "comment": "..."}}
+        {{"line_ref": "p1-l3", "quote": "...", "comment": "...", "delete": false}}
       ]
     }}
   ],
@@ -1320,6 +1352,7 @@ EVAL_SCHEMA = {
                                 "line_ref": {"type": "string"},
                                 "quote": {"type": "string"},
                                 "comment": {"type": "string"},
+                                "delete": {"type": "boolean"},
                             },
                             "required": ["line_ref", "quote", "comment"],
                             "additionalProperties": False,
@@ -1353,7 +1386,7 @@ _GROQ_EVAL_SHAPE_HINT = (
     '      "feedback": "...",\n'
     '      "feedback_secondary": "...",\n'
     '      "issues": [\n'
-    '        {"line_ref": "p1-l3", "quote": "...", "comment": "..."}\n'
+    '        {"line_ref": "p1-l3", "quote": "...", "comment": "...", "delete": false}\n'
     '      ]\n'
     '    }\n'
     '  ],\n'
@@ -1409,6 +1442,7 @@ def evaluate_with_rubric(
                                         "line_ref": {"type": "string"},
                                         "quote": {"type": "string"},
                                         "comment": {"type": "string"},
+                                        "delete": {"type": "boolean"},
                                     },
                                     "required": ["line_ref", "quote", "comment"],
                                 },
@@ -1591,7 +1625,9 @@ def check_pages(
             page_num = len(pages) + 1
             pages.append({
                 "page": page_num,
-                "lines": [{"text": ln.get("text", "")} for ln in ocr.get("lines", [])],
+                "lines": [{"text": ln.get("text", ""),
+                           "printed": bool(ln.get("printed", False))}
+                          for ln in ocr.get("lines", [])],
                 "original_b64": original_preview_b64(img),
             })
             log.info("[page %d] ocr'd, model=%s, lines=%d", page_num, model_key, len(pages[-1]["lines"]))
@@ -1599,6 +1635,15 @@ def check_pages(
     evaluation = evaluate_with_rubric(pages, rubric, model_key, feedback_lang, exercise_lang)
     wc = count_words(pages)
     evaluation["word_count"] = wc
+    # Logged because the exclusion is invisible in the final number and it moves
+    # scores. If this ever reads "0 printed" on a scan that plainly includes the
+    # question, the OCR classification has stopped working and marks are being
+    # inflated again with nothing else to show it.
+    printed_lines = [ln for p in pages for ln in p.get("lines", []) if ln.get("printed")]
+    if printed_lines:
+        printed_words = sum(len(str(ln.get("text", "")).split()) for ln in printed_lines)
+        log.info("[length] %d word(s) on %d printed line(s) excluded from the count",
+                 printed_words, len(printed_lines))
     wc_rule = resolve_word_count_rule(rubric, f"{rubric.get('name', '')} {question or ''}")
     if wc_rule is None:
         log.info("[length] rubric %r declares no word-count rule — "
