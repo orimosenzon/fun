@@ -94,6 +94,11 @@ def make_row(title: str, wikitext: str, cats: list[str]) -> str:
     return f"| [[{title}]] || {desc} || [[קובץ:{img}|ממוזער|120px]]"
 
 
+def norm(title: str) -> str:
+    """MediaWiki title as the index and the API would both spell it."""
+    return title.replace("_", " ").strip()
+
+
 def parse_table(wikitext: str):
     """Return (preamble, rows, postamble).
 
@@ -118,8 +123,10 @@ def parse_table(wikitext: str):
     return preamble, rows, postamble
 
 
-def build(wikitext: str, new_rows: list[tuple[str, str]]) -> str:
+def build(wikitext: str, new_rows: list[tuple[str, str]], drop: set[str] | None = None) -> str:
     preamble, rows, postamble = parse_table(wikitext)
+    if drop:
+        rows = [(t, b) for t, b in rows if t not in drop]
     for title, block in sorted(new_rows):
         pos = len(rows)
         for i, (t, _) in enumerate(rows):
@@ -141,11 +148,22 @@ def main():
     # redirects are not entries: they carry no text, so they would land in the
     # index as "(דף ללא תיאור עדיין)" rows pointing at a page already listed
     all_pages = [p["title"] for p in c.list_pages(namespace=0, redirects="nonredirects")]
-    missing = [t for t in all_pages if t not in indexed and t != INDEX_TITLE]
+    live = {norm(t) for t in all_pages}
+    missing = [t for t in all_pages if norm(t) not in {norm(x) for x in indexed} and t != INDEX_TITLE]
 
-    if not missing:
-        print("האינדקס מעודכן — אין דפים חסרים.")
+    # ...and a row whose target stopped being an article (renamed, so now a
+    # redirect, or deleted) has to come back out. Adding without removing is how
+    # the index accumulated 68 dead rows out of 707 by August 2026.
+    stale = {t for t in indexed if norm(t) not in live and norm(t) != norm(INDEX_TITLE)}
+
+    if not missing and not stale:
+        print("האינדקס מעודכן: אין דפים חסרים ואין שורות מתות.")
         return
+
+    if stale:
+        print(f"שורות מתות להסרה ({len(stale)}):")
+        for t in sorted(stale):
+            print("  - " + t)
 
     print(f"דפים חסרים ({len(missing)}):")
     new_rows = []
@@ -161,12 +179,14 @@ def main():
         return
 
     c.login()
-    new_wt = build(idx_wt, new_rows)
-    c.edit_page(
-        INDEX_TITLE, new_wt,
-        summary=f"עדכון אוטומטי: הוספת {len(new_rows)} דפים חדשים לאינדקס",
-    )
-    print(f"\nנוספו {len(new_rows)} שורות לאינדקס.")
+    new_wt = build(idx_wt, new_rows, drop=stale)
+    bits = []
+    if new_rows:
+        bits.append(f"הוספת {len(new_rows)} דפים חדשים")
+    if stale:
+        bits.append(f"הסרת {len(stale)} שורות שאינן מצביעות עוד על ערך")
+    c.edit_page(INDEX_TITLE, new_wt, summary="עדכון אוטומטי: " + ", ".join(bits))
+    print(f"\nנוספו {len(new_rows)} שורות, הוסרו {len(stale)}.")
 
 
 if __name__ == "__main__":
