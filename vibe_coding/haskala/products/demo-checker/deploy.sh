@@ -117,6 +117,14 @@ echo "🚀 deploying to Cloud Run ($SERVICE, project=$PROJECT, region=$REGION)�
 # has to be listed here — a value set by hand with `gcloud run services update`
 # is wiped on the next deploy. That is why the guardrails are pinned in this
 # script rather than left to whatever the service currently has.
+#
+# WORKSPACE_SUBJECT's default here must track main.py's. It was left at
+# ori@bdika.net when the code moved to exam@bdika.net on 2026-08-10, so every
+# deploy that did not name it silently pointed the service back at a personal
+# account — mail from the wrong address, uploads reached through a folder share
+# instead of owned outright. A default that disagrees with the code's own is
+# worse than no default: the code's is never reached, because this line always
+# sets the variable.
 gcloud run deploy "$SERVICE" \
     --source . \
     --function=process_form_responses \
@@ -125,7 +133,7 @@ gcloud run deploy "$SERVICE" \
     --no-allow-unauthenticated \
     --memory=2Gi \
     --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest,GROQ_API_KEY=groq-api-key:latest,AZURE_OPENAI_API_KEY=azure-openai-api-key:latest" \
-    --set-env-vars="^|^RESPONSES_SHEET_ID=${RESPONSES_SHEET_ID}|WORKSPACE_SUBJECT=${WORKSPACE_SUBJECT:-ori@bdika.net}|FALLBACK_RESULTS_FOLDER_ID=${FALLBACK_RESULTS_FOLDER_ID:-}|DEMO_CHECKER_ALLOWED_DOMAINS=${DEMO_CHECKER_ALLOWED_DOMAINS:-}|MAX_FILES_PER_RESPONSE=${MAX_FILES_PER_RESPONSE:-1}|MAX_PAGES_PER_RESPONSE=${MAX_PAGES_PER_RESPONSE:-4}|MAX_ROWS_PER_RUN=${MAX_ROWS_PER_RUN:-5}|AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1|AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini|LOG_LEVEL=${DEMO_CHECKER_LOG_LEVEL:-INFO}"
+    --set-env-vars="^|^RESPONSES_SHEET_ID=${RESPONSES_SHEET_ID}|WORKSPACE_SUBJECT=${WORKSPACE_SUBJECT:-exam@bdika.net}|FALLBACK_RESULTS_FOLDER_ID=${FALLBACK_RESULTS_FOLDER_ID:-}|DEMO_CHECKER_ALLOWED_DOMAINS=${DEMO_CHECKER_ALLOWED_DOMAINS:-}|MAX_FILES_PER_RESPONSE=${MAX_FILES_PER_RESPONSE:-1}|MAX_PAGES_PER_RESPONSE=${MAX_PAGES_PER_RESPONSE:-4}|MAX_ROWS_PER_RUN=${MAX_ROWS_PER_RUN:-5}|AZURE_OPENAI_ENDPOINT=https://haskala-foundry-resource.openai.azure.com/openai/v1|AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini|LOG_LEVEL=${DEMO_CHECKER_LOG_LEVEL:-INFO}"
 
 echo "✅ deployed."
 echo "   First deploy only: run ./setup_infra.sh to wire the Cloud Scheduler trigger."
