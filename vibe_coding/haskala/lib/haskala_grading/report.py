@@ -54,6 +54,7 @@ DOCX_LABELS: dict[str, dict] = {
         "th_line": "שורה", "th_text": "טקסט", "image_error": "[שגיאת תמונה]",
         "text_analysis": "ניתוח טקסט",
         "wc_criterion": "ספירת מילים",
+        "erased_text": "טקסט מחוק",
         "wc_detail": "נספרו {counted} מילים (נדרש {required}).",
         "wc_detail_no_rule": "נספרו {counted} מילים.",
     },
@@ -74,6 +75,7 @@ DOCX_LABELS: dict[str, dict] = {
         "th_line": "Line", "th_text": "Text", "image_error": "[image error]",
         "text_analysis": "Text analysis",
         "wc_criterion": "Word count",
+        "erased_text": "erased text",
         "wc_detail": "{counted} words counted (required {required}).",
         "wc_detail_no_rule": "{counted} words counted.",
     },
@@ -94,6 +96,7 @@ DOCX_LABELS: dict[str, dict] = {
         "th_line": "سطر", "th_text": "نص", "image_error": "[خطأ في الصورة]",
         "text_analysis": "تحليل النص",
         "wc_criterion": "عدد الكلمات",
+        "erased_text": "نص ممحو",
         "wc_detail": "احتُسبت {counted} كلمة (المطلوب {required}).",
         "wc_detail_no_rule": "احتُسبت {counted} كلمة.",
     },
@@ -294,6 +297,51 @@ def resolve_issue_spans(
     return spans
 
 
+def resolve_erased_spans(pages: list[dict]) -> dict[tuple[int, int], list[dict]]:
+    """Map every (page, line_idx) to the spans the student crossed out.
+
+    Unlike issue spans these come off the page itself, not off the evaluation:
+    the transcriber is the only stage that can see a pen struck through a word.
+    Each fragment is located by plain find, never fuzzily — core.erased_fragments
+    has already discarded anything that is not a verbatim substring, so a miss
+    here would mean a bug rather than model drift."""
+    spans: dict[tuple[int, int], list[dict]] = {}
+    for page in pages:
+        raw = page.get("page", 0)
+        page_num = int(raw) if str(raw).isdigit() else raw
+        for line_idx, line in enumerate(page.get("lines", [])):
+            text = str(line.get("text", ""))
+            cursor = 0
+            found = []
+            for frag in line.get("erased") or []:
+                start = text.find(str(frag), cursor)
+                if start < 0:
+                    continue
+                found.append({"start": start, "end": start + len(frag),
+                              "color": DELETE_HIGHLIGHT, "comment": "",
+                              "criterion": "", "delete": True, "erased": True})
+                cursor = start + len(frag)
+            if found:
+                spans[(page_num, line_idx)] = found
+    return spans
+
+
+def merge_erased_spans(issue_spans: dict, erased_spans: dict) -> dict:
+    """Combine both span sources, erasures winning every overlap.
+
+    An issue that quotes text the student had already crossed out is dropped
+    rather than drawn: it is a correction to writing that is not part of the
+    answer, and showing it tells a student to fix something they already
+    withdrew."""
+    merged = {k: list(v) for k, v in issue_spans.items()}
+    for key, erased in erased_spans.items():
+        kept = [s for s in merged.get(key, [])
+                if not any(not (s["end"] <= e["start"] or s["start"] >= e["end"])
+                           for e in erased)]
+        merged[key] = sorted(kept + erased, key=lambda s: s["start"])
+    return merged
+
+
 # ─── DOCX export (mirrors checker/app.py:2196-2682) ─────────────────────────
 
 def _tint_hex(hex_color: str, mix: float = 0.18) -> str:
@@ -336,7 +384,8 @@ def _set_run_shading(run, hex_color: str) -> None:
 
 
 def _fill_paragraph_with_spans(
-    paragraph, text: str, spans: list[dict], include_notes: bool = True
+    paragraph, text: str, spans: list[dict], include_notes: bool = True,
+    erased_label: str = "erased text",
 ) -> None:
     """Empty `paragraph`, then add runs reflecting `spans` as colored
     highlights over `text`. When `include_notes` is True, append an
@@ -359,6 +408,20 @@ def _fill_paragraph_with_spans(
         # Avishai's rule (2026-08-11): yellow REPLACES the criterion colour.
         # Two shades over one span is unreadable, and the criterion is still
         # named in the note that follows.
+        # Text the student crossed out on the page is not reproduced. It is
+        # replaced by the fixed short label, struck through and yellow, and
+        # carries no note — Avishai/Ori's rule (2026-08-13). What the student
+        # cancelled is usually an unreadable half-word or a garbled draft, and
+        # reprinting it with a sentence explaining what it was turns a mark the
+        # teacher reads at a glance into a paragraph they have to decode. The
+        # label says the one thing worth saying: something was erased here.
+        if span.get("erased"):
+            tint = DELETE_HIGHLIGHT
+            run = paragraph.add_run(erased_label)
+            run.font.strike = True
+            _set_run_shading(run, tint)
+            cursor = e
+            continue
         if span.get("delete"):
             tint = DELETE_HIGHLIGHT
             run = paragraph.add_run(f"[{text[s:e]}]")
@@ -478,7 +541,8 @@ def _add_text_analysis(doc, pages: list[dict], spans_by_line: dict,
             spans = spans_by_line.get(key, [])
             target_p = row[0].paragraphs[0]
             if spans:
-                _fill_paragraph_with_spans(target_p, line_text, spans)
+                _fill_paragraph_with_spans(target_p, line_text, spans,
+                                           erased_label=LBL["erased_text"])
             else:
                 target_p.add_run(line_text)
             for p in row[0].paragraphs:
@@ -555,7 +619,11 @@ def build_evaluation_docx(
     criteria = attach_colors(evaluation).get("criteria") or []
 
     # Text analysis first — the annotated exercise, then the scoring tables.
-    spans_by_line = resolve_issue_spans(pages, evaluation) if pages else {}
+    spans_by_line = (
+        merge_erased_spans(resolve_issue_spans(pages, evaluation),
+                           resolve_erased_spans(pages))
+        if pages else {}
+    )
     if pages:
         _add_text_analysis(doc, pages, spans_by_line, LBL, main_align)
 

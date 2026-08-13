@@ -520,9 +520,16 @@ def build_ocr_prompt(exercise_lang: str, numbered: bool = True) -> str:
     ההבחנה חזותית בלבד — צורת האותיות — ואינה תלויה בשפה או בתוכן.
     בספק, החזר `false`: שורה בכתב יד שסומנה בטעות כמודפסת נעלמת מספירת
     המילים ומורידה לתלמיד נקודות שמגיעות לו, וזו הטעות היקרה מבין השתיים.
+11. תמלל גם טקסט שהתלמיד מחק, ורשום ב-`erased` את המקטעים המחוקים של
+    אותה שורה — מה שהתלמיד העביר עליו קו, שרבט עליו או ביטל אותו בדרך
+    אחרת. כל פריט ברשימה חייב להיות תת-מחרוזת **מדויקת** של ה-`text`
+    של אותה שורה, מועתקת ממנו תו-תו. אין מחיקות בשורה → רשימה ריקה.
+    הקפה בעיגול, קו תחתון, חץ או תיקון שנכתב מעל השורה אינם מחיקה.
+    בספק, אל תסמן: טקסט תקין שסומן בטעות כמחוק נעלם מספירת המילים
+    ומוריד לתלמיד נקודות שמגיעות לו, וזו הטעות היקרה מבין השתיים.
 {overlay_rules}
 החזר את התוצאה כ-JSON תקין במבנה:
-{{"lines": [{{{n_field}"text": "...", "printed": false}}, ...]}}."""
+{{"lines": [{{{n_field}"text": "...", "printed": false, "erased": []}}, ...]}}."""
 
 
 OCR_SCHEMA = {
@@ -536,6 +543,7 @@ OCR_SCHEMA = {
                     "n": {"type": ["integer", "null"]},
                     "text": {"type": "string"},
                     "printed": {"type": "boolean"},
+                    "erased": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["text"],
                 "additionalProperties": False,
@@ -605,6 +613,7 @@ def _ocr_gemini(img: Image.Image, provider: str, exercise_lang: str, numbered: b
                         "n": {"type": "integer", "nullable": True},
                         "text": {"type": "string"},
                         "printed": {"type": "boolean"},
+                        "erased": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": ["text"],
                 },
@@ -649,7 +658,7 @@ def _ocr_groq(img: Image.Image, provider: str, exercise_lang: str, numbered: boo
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"lines":[{"n":1,"text":"...","printed":false},...]}'
+                            '{"lines":[{"n":1,"text":"...","printed":false,"erased":[]},...]}'
                         ),
                     },
                 ],
@@ -680,7 +689,7 @@ def _ocr_azure(img: Image.Image, exercise_lang: str, numbered: bool) -> dict:
                         "text": (
                             _USER_TURN
                             + ' החזר JSON בפורמט הבא בלבד: '
-                            '{"lines":[{"n":1,"text":"...","printed":false},...]}'
+                            '{"lines":[{"n":1,"text":"...","printed":false,"erased":[]},...]}'
                         ),
                     },
                 ],
@@ -1026,6 +1035,41 @@ def rubric_from_classroom(classroom_rubric: dict, assignment_name: str = "") -> 
     return {"name": assignment_name or "Classroom rubric", "content": "\n".join(lines).strip()}
 
 
+def erased_fragments(line: dict) -> list[str]:
+    """The line's crossed-out fragments, keeping only those that really are
+    substrings of its text.
+
+    The OCR model is told to copy each fragment character-for-character out of
+    `text`, and mostly does, but it sometimes hands back its own reading of the
+    scribble instead ('anywage' for a line reading 'anyway'). Such a fragment
+    cannot be located, so it cannot be excluded from the count or marked in the
+    report; keeping it would only let callers subtract words that are not
+    there. Dropping it means one missed erasure, which is the same behaviour as
+    before erasures were detected at all."""
+    text = str(line.get("text", ""))
+    out = []
+    for frag in line.get("erased") or []:
+        frag = str(frag)
+        if frag.strip() and frag in text:
+            out.append(frag)
+        elif frag.strip():
+            log.warning("erased fragment not found in its line: %r — ignored",
+                        frag[:50])
+    return out
+
+
+def strip_erased(line: dict) -> str:
+    """The line's text with its crossed-out fragments removed.
+
+    Each fragment becomes a space rather than nothing, so that deleting a word
+    from the middle of a line cannot fuse its neighbours into one ('to,Trave
+    Travel' → 'to, Travel', not 'to,Travel')."""
+    text = str(line.get("text", ""))
+    for frag in erased_fragments(line):
+        text = text.replace(frag, " ", 1)
+    return text
+
+
 def count_words(pages: list[dict]) -> int:
     """Words the student actually wrote, excluding printed lines.
 
@@ -1038,16 +1082,24 @@ def count_words(pages: list[dict]) -> int:
     silently, and most for the weakest answers, where the printed text is the
     largest share of the page.
 
+    Text the student crossed out is excluded too, for the same reason and with
+    the same effect on the score. A discarded draft the student struck through
+    and rewrote is counted twice otherwise — Avishai's 2026-08-12 submission
+    read 143 words against a composition of 127, and eleven of those sixteen
+    were words the student had visibly cancelled.
+
     Lines with no `printed` key are counted. Every page produced by check_pages
     now carries the flag; treating its absence as handwriting keeps older stored
     results, and any caller that builds pages by hand, reading as they did
-    before rather than losing text to a field they never set."""
+    before rather than losing text to a field they never set. `erased` is
+    absent on the same older results and means the same thing there: nothing
+    was cancelled, count the line whole."""
     n = 0
     for page in pages:
         for line in page.get("lines", []):
             if line.get("printed"):
                 continue
-            n += len(str(line.get("text", "")).split())
+            n += len(strip_erased(line).split())
     return n
 
 
@@ -1201,13 +1253,23 @@ def pages_to_plain_text(pages: list[dict]) -> str:
     """Flatten the OCR'd pages into a single transcript for the evaluator.
 
     Each line is prefixed with its [p<page>-l<idx>] tag so the model can
-    return per-issue references that we map back to highlights later."""
+    return per-issue references that we map back to highlights later.
+
+    A line the student crossed out part of carries its cancelled fragments in a
+    ⟨מחוק: …⟩ suffix. The suffix is appended rather than cut out of the text
+    because the report resolves every quote against the untouched line: editing
+    the transcript would make the evaluator quote a string that no longer
+    exists on the page, and the highlight would land nowhere. The prompt tells
+    the evaluator to ignore what the suffix names."""
     chunks = []
     for page in pages:
         page_num = page.get("page", "?")
         chunks.append(f"--- עמוד {page_num} ---")
         for line_idx, line in enumerate(page.get("lines", [])):
-            chunks.append(f"[p{page_num}-l{line_idx}] {line.get('text', '')}")
+            text = line.get("text", "")
+            erased = erased_fragments(line)
+            suffix = f"   ⟨מחוק: {' | '.join(erased)}⟩" if erased else ""
+            chunks.append(f"[p{page_num}-l{line_idx}] {text}{suffix}")
         chunks.append("")
     return "\n".join(chunks).strip()
 
@@ -1277,6 +1339,12 @@ def build_eval_prompt(feedback_lang: str, exercise_lang: str,
 2. טקסט תרגיל של תלמיד — תמלול של כתב יד, יתכן עם שגיאות OCR. כל
    שורה מתויגת עם מזהה בצורה [p<page>-l<index>] בתחילתה. שפת התרגיל
    העיקרית היא {secondary}.
+   שורה שמסתיימת ב-⟨מחוק: ...⟩ — המקטעים המפורטים שם הם טקסט שהתלמיד
+   **מחק בעצמו** על הדף (העביר עליו קו). התלמיד חזר בו מהם, ולכן הם
+   אינם חלק מהתשובה: אל תעריך אותם, אל תוריד עליהם נקודות ואל תצטט
+   אותם ב-issues. טיוטה מגומגמת שהתלמיד מחק ואז כתב מחדש היא סימן
+   לתלמיד ששם לב לעצמו, לא שגיאה. התעלם גם מהסימון ⟨מחוק: ...⟩ עצמו —
+   הוא הערת מערכת ולא טקסט שהתלמיד כתב.
 
 המשימה:
 - זהה את כל הקריטריונים שמופיעים ברובריקה (השמות שלהם, והציון המקסימלי בכל אחד).
@@ -1626,7 +1694,8 @@ def check_pages(
             pages.append({
                 "page": page_num,
                 "lines": [{"text": ln.get("text", ""),
-                           "printed": bool(ln.get("printed", False))}
+                           "printed": bool(ln.get("printed", False)),
+                           "erased": erased_fragments(ln)}
                           for ln in ocr.get("lines", [])],
                 "original_b64": original_preview_b64(img),
             })
@@ -1644,6 +1713,18 @@ def check_pages(
         printed_words = sum(len(str(ln.get("text", "")).split()) for ln in printed_lines)
         log.info("[length] %d word(s) on %d printed line(s) excluded from the count",
                  printed_words, len(printed_lines))
+    # Same reason as the printed line above: the exclusion is invisible in the
+    # final number and it moves scores. A page full of crossings-out that logs
+    # nothing here means the OCR stopped reporting them and the count is back
+    # to charging the student for a draft they threw away.
+    erased_lines = [ln for p in pages for ln in p.get("lines", [])
+                    if not ln.get("printed") and erased_fragments(ln)]
+    if erased_lines:
+        erased_words = sum(
+            len(str(ln.get("text", "")).split()) - len(strip_erased(ln).split())
+            for ln in erased_lines)
+        log.info("[length] %d word(s) crossed out on %d line(s) excluded from the count",
+                 erased_words, len(erased_lines))
     wc_rule = resolve_word_count_rule(rubric, f"{rubric.get('name', '')} {question or ''}")
     if wc_rule is None:
         log.info("[length] rubric %r declares no word-count rule — "
