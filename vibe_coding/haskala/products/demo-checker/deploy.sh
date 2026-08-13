@@ -46,11 +46,42 @@ PROJECT="${DEMO_CHECKER_PROJECT:-master-gecko-500709-t0}"
 REGION="${DEMO_CHECKER_REGION:-europe-west1}"
 SERVICE="demo-checker"
 
+# Same fallback logs.sh carries: the SDK is installed under $HOME rather than
+# system-wide, and its PATH entry only exists in interactive shells that source
+# the profile. Without this the script does everything — vendors, commits,
+# pushes — and only then dies on `gcloud: command not found`, leaving a commit
+# pushed for a deploy that never happened.
+if ! command -v gcloud >/dev/null 2>&1 && [[ -x "$HOME/google-cloud-sdk/bin/gcloud" ]]; then
+    PATH="$HOME/google-cloud-sdk/bin:$PATH"
+fi
+if ! command -v gcloud >/dev/null 2>&1; then
+    echo "❌ gcloud not found on PATH (looked in \$HOME/google-cloud-sdk/bin too)" >&2
+    exit 1
+fi
+
 # The Form's linked responses spreadsheet — the id between /d/ and /edit in its
 # URL. The service cannot do anything without it, so fail here with an
 # explanation rather than deploying something that only fails at the first poll.
+# Already deployed once? Then the id the service is running with is the answer,
+# and asking for it again is a trap: --set-env-vars replaces the block
+# wholesale, so a redeploy that omits it does not keep the old value, it wipes
+# it. Recovering it from the live service makes a routine redeploy a one-word
+# command and keeps the error below for what it is really about — the first
+# deploy, when there is nothing to recover it from.
 if [[ -z "${RESPONSES_SHEET_ID:-}" ]]; then
-    echo "❌ RESPONSES_SHEET_ID is not set." >&2
+    # The filter yields a one-element list and gcloud prints it as ['…'];
+    # no --format spelling coaxes a bare scalar out of it, hence the tr.
+    RESPONSES_SHEET_ID="$(gcloud run services describe "$SERVICE" \
+        --project "$PROJECT" --region "$REGION" \
+        --format='value(spec.template.spec.containers[0].env.filter("name:RESPONSES_SHEET_ID").extract(value))' \
+        2>/dev/null | tr -d "[]' " || true)"
+    if [[ -n "$RESPONSES_SHEET_ID" ]]; then
+        echo "📄 reusing RESPONSES_SHEET_ID from the deployed service: ${RESPONSES_SHEET_ID:0:12}…"
+    fi
+fi
+
+if [[ -z "${RESPONSES_SHEET_ID:-}" ]]; then
+    echo "❌ RESPONSES_SHEET_ID is not set and no deployed service to read it from." >&2
     echo "   Open the Form → Responses → the Sheets icon, and take the id from the" >&2
     echo "   spreadsheet URL (the long token between /d/ and /edit). Then:" >&2
     echo "     RESPONSES_SHEET_ID=1AbC…xyz ./deploy.sh" >&2
