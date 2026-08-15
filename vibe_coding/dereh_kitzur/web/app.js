@@ -6,39 +6,85 @@
  */
 'use strict';
 
-/* Swapping the base map is a one-line change here. When a Google Maps key
- * arrives, this is the seam it plugs into. */
+/* Elevation for the tilted view. Terrarium tiles are free and need no key.
+ * Local relief is only about 46 m across the whole moshava and 4 m along a
+ * typical trail, so it needs exaggerating to read as anything at all. */
+const DEM = {
+  type: 'raster-dem',
+  tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+  tileSize: 256,
+  encoding: 'terrarium',
+  maxzoom: 14,
+  attribution: 'Elevation: Mapzen / AWS Open Data'
+};
+const TERRAIN_X = 2.5;
+const TILTED = 58;
+
 const BASEMAPS = [
-  {
-    name: 'רחובות',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    opts: { maxZoom: 19, attribution: '&copy; OpenStreetMap' }
-  },
+  { name: 'רחובות', style: 'https://tiles.openfreemap.org/styles/liberty' },
   {
     name: 'לוויין',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    opts: { maxZoom: 19, attribution: 'Esri, Maxar, Earthstar Geographics' }
+    style: {
+      version: 8,
+      sources: {
+        sat: {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: 'Esri, Maxar, Earthstar Geographics'
+        }
+      },
+      layers: [{ id: 'sat', type: 'raster', source: 'sat' }]
+    }
   }
 ];
 
-const LINE = { weight: 5, opacity: 0.82 };
-const LINE_ON = { weight: 8, opacity: 1 };
-// Unselected trails stay clearly visible and clickable: picking one trail
-// should not stop you browsing to the next one straight from the map.
-const LINE_DIM = { weight: 4.5, opacity: 0.6 };
-
 const el = (id) => document.getElementById(id);
-const map = L.map('map', { zoomControl: false, attributionControl: true });
-L.control.zoom({ position: 'topleft' }).addTo(map);
+
+/* The tilted view is drawn with WebGL, which a handful of old phones lack.
+ * Everything that is not the map - list, search, photos, Street View links -
+ * works without it, so the map is optional rather than fatal. */
+function webglAvailable() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext &&
+      (c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl')));
+  } catch (err) {
+    return false;
+  }
+}
+
+// Probe the canvas directly. maplibregl.supported() looks like the obvious
+// check but was removed in MapLibre v3, so calling it silently reports "no
+// WebGL" on every browser and the map never gets built.
+const hasGL = !!window.maplibregl && webglAvailable();
+
+const map = hasGL ? new maplibregl.Map({
+  container: 'map',
+  style: BASEMAPS[0].style,
+  center: [34.966, 32.4755],
+  zoom: 13.5,
+  pitch: 0,
+  maxPitch: 80,
+  attributionControl: { compact: true }
+}) : null;
+
+if (map) {
+  // visualizePitch gives the compass-and-tilt puck, the same control Google
+  // offers for looking at the map from an angle.
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
+  window.__map = map;   // handle for debugging and for the browser tests
+}
 
 let DATA = null;
 let baseIndex = 0;
-let baseLayer = null;
 let here = null;          // {lat, lng} once geolocation succeeds
 let hereMarker = null;
 let selectedId = null;
 let sortMode = 'length';
-const shapes = new Map();  // id -> leaflet layer
+const wpMarkers = [];      // waypoint pins, kept across style changes
+const featureIndex = new Map();  // our id -> numeric feature id, for feature-state
 
 /* ---------- helpers ---------- */
 
@@ -84,34 +130,106 @@ const I_WALK = 'M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v
 /* ---------- map layers ---------- */
 
 function setBasemap(i) {
-  const spec = BASEMAPS[i];
-  if (baseLayer) map.removeLayer(baseLayer);
-  baseLayer = L.tileLayer(spec.url, spec.opts).addTo(map);
-  baseLayer.bringToBack();
+  if (!map) return;
+  baseIndex = i;
   el('basemap').classList.toggle('on', i > 0);
-  el('basemap').title = 'רקע: ' + spec.name;
+  el('basemap').title = 'רקע: ' + BASEMAPS[i].name;
+  // setStyle drops every source and layer we added, so applyOverlays runs
+  // again on the style.load that follows.
+  map.setStyle(BASEMAPS[i].style);
+}
+
+/* Everything we add on top of whichever base style is loaded. Re-run on every
+ * style change, because a style swap wipes custom sources and layers. */
+function applyOverlays() {
+  if (!map) return;
+  if (!map.getSource('dem')) map.addSource('dem', DEM);
+  map.setTerrain({ source: 'dem', exaggeration: TERRAIN_X });
+
+  // The vector style extrudes buildings at high zoom, but only 1 of 400
+  // buildings here carries a height in OSM, so they all come out the same
+  // default box. That is noise, not information - the relief is the point.
+  for (const layer of map.getStyle().layers) {
+    if (layer.type === 'fill-extrusion') {
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+    }
+  }
+
+  if (DATA) addTrailLayers();
+}
+
+function trailGeoJSON() {
+  return {
+    type: 'FeatureCollection',
+    features: DATA.segments.map((seg, i) => {
+      featureIndex.set(seg.id, i);
+      return {
+        type: 'Feature',
+        id: i,
+        properties: { id: seg.id, name: seg.name, color: seg.color },
+        geometry: {
+          type: 'LineString',
+          coordinates: seg.path.map(([lat, lng]) => [lng, lat])
+        }
+      };
+    })
+  };
+}
+
+function addTrailLayers() {
+  if (!map || map.getSource('trails')) return;
+  map.addSource('trails', { type: 'geojson', data: trailGeoJSON() });
+
+  const selected = ['boolean', ['feature-state', 'sel'], false];
+  const anySelected = ['boolean', ['feature-state', 'dim'], false];
+
+  map.addLayer({
+    id: 'trails',
+    type: 'line',
+    source: 'trails',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['case', selected, 8, 5],
+      // Unselected trails stay clearly visible: picking one should not stop
+      // you browsing straight on to the next one from the map.
+      'line-opacity': ['case', selected, 1, anySelected, 0.6, 0.82]
+    }
+  });
+
+  // A fat transparent line on top, so a fingertip does not have to land on
+  // the 5px stroke itself.
+  map.addLayer({
+    id: 'trails-hit',
+    type: 'line',
+    source: 'trails',
+    paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 22 }
+  });
+
+  map.on('click', 'trails-hit', (e) => {
+    if (e.features && e.features.length) select(e.features[0].properties.id, false);
+  });
+  map.on('mouseenter', 'trails-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'trails-hit', () => { map.getCanvas().style.cursor = ''; });
 }
 
 function drawAll() {
-  DATA.segments.forEach((seg) => {
-    // Without stopping propagation the click also reaches the map, whose own
-    // handler clears the selection we just made.
-    const line = L.polyline(seg.path, { color: seg.color, ...LINE })
-      .addTo(map)
-      .on('click', (e) => { L.DomEvent.stopPropagation(e); select(seg.id, false); });
-    line.bindTooltip(seg.name, { sticky: true, direction: 'top' });
-    shapes.set(seg.id, line);
-  });
+  if (!map) return;
+  addTrailLayers();
 
+  // Waypoints are HTML markers rather than a symbol layer: markers use the
+  // browser's own font, which sidesteps the whole question of whether the
+  // style's glyph set covers Hebrew.
   DATA.waypoints.forEach((wp) => {
-    const marker = L.marker([wp.lat, wp.lng], {
-      icon: L.divIcon({
-        className: '',
-        html: `<div class="pin"><i></i><b>${escapeHtml(wp.name)}</b></div>`,
-        iconSize: null
-      })
-    }).addTo(map).on('click', (e) => { L.DomEvent.stopPropagation(e); select(wp.id, false); });
-    shapes.set(wp.id, marker);
+    const node = document.createElement('div');
+    node.className = 'pin';
+    node.innerHTML = `<i></i><b>${escapeHtml(wp.name)}</b>`;
+    node.addEventListener('click', (e) => { e.stopPropagation(); select(wp.id, false); });
+    wpMarkers.push(
+      new maplibregl.Marker({ element: node, anchor: 'left' })
+        .setLngLat([wp.lng, wp.lat])
+        .addTo(map)
+    );
   });
 }
 
@@ -128,13 +246,11 @@ function byId(id) {
 }
 
 function highlight(id) {
-  shapes.forEach((layer, key) => {
-    if (!layer.setStyle) return;              // markers have no stroke style
-    if (!id) layer.setStyle(LINE);
-    else layer.setStyle(key === id ? LINE_ON : LINE_DIM);
+  if (!map || !map.getSource('trails')) return;
+  featureIndex.forEach((fid, ourId) => {
+    map.setFeatureState({ source: 'trails', id: fid },
+      { sel: ourId === id, dim: id != null && ourId !== id });
   });
-  const on = id && shapes.get(id);
-  if (on && on.bringToFront) on.bringToFront();
 }
 
 /* `fit` recentres the map on the item. Picking from the list should do that,
@@ -147,11 +263,13 @@ function select(id, fit = true) {
   if (!item) return;
 
   highlight(id);
-  if (fit) {
+  if (fit && map) {
     if (item.path) {
-      map.fitBounds(L.polyline(item.path).getBounds(), { padding: [50, 50], maxZoom: 18 });
+      const b = new maplibregl.LngLatBounds();
+      item.path.forEach(([lat, lng]) => b.extend([lng, lat]));
+      map.fitBounds(b, { padding: 60, maxZoom: 18, duration: 700 });
     } else {
-      map.setView([item.lat, item.lng], 18);
+      map.easeTo({ center: [item.lng, item.lat], zoom: 18, duration: 700 });
     }
   }
   showDetail(item);
@@ -416,7 +534,7 @@ function startNav(item) {
   nav.watchId = navigator.geolocation.watchPosition(
     (pos) => {
       here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      drawMe(pos.coords.accuracy);
+      drawMe();
       // While moving, GPS course is a better "which way am I facing" than a
       // compass the user may never have granted.
       if (pos.coords.speed > 0.6 && pos.coords.heading != null) facing = pos.coords.heading;
@@ -522,18 +640,14 @@ function askForCompass() {
 
 /* ---------- geolocation ---------- */
 
-function drawMe(accuracy) {
-  if (hereMarker) map.removeLayer(hereMarker);
-  hereMarker = L.layerGroup([
-    L.circle([here.lat, here.lng], {
-      radius: Math.min(accuracy || 0, 60), stroke: false,
-      fillColor: '#1a73e8', fillOpacity: 0.12, interactive: false
-    }),
-    L.marker([here.lat, here.lng], {
-      icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }),
-      interactive: false
-    })
-  ]).addTo(map);
+function drawMe() {
+  if (!map) return;
+  if (!hereMarker) {
+    const node = document.createElement('div');
+    node.className = 'me';
+    hereMarker = new maplibregl.Marker({ element: node });
+  }
+  hereMarker.setLngLat([here.lng, here.lat]).addTo(map);
 }
 
 function locate() {
@@ -544,8 +658,8 @@ function locate() {
   el('locate').classList.add('on');
   navigator.geolocation.getCurrentPosition((pos) => {
     here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    drawMe(pos.coords.accuracy);
-    map.setView([here.lat, here.lng], 17);
+    drawMe();
+    if (map) map.easeTo({ center: [here.lng, here.lat], zoom: 17, duration: 700 });
 
     sortMode = 'near';
     document.querySelectorAll('.sort').forEach((b) =>
@@ -574,7 +688,7 @@ function wireGrip() {
       Math.max(90, startH + (startY - y)));
     document.documentElement.style.setProperty('--panel-h', h + 'px');
   };
-  const end = () => { dragging = false; map.invalidateSize(); };
+  const end = () => { dragging = false; if (map) map.resize(); };
 
   grip.addEventListener('pointerdown', (e) => { begin(e.clientY); grip.setPointerCapture(e.pointerId); });
   grip.addEventListener('pointermove', (e) => move(e.clientY));
@@ -583,7 +697,7 @@ function wireGrip() {
   grip.addEventListener('click', () => {
     const collapsed = el('panel').getBoundingClientRect().height < 140;
     document.documentElement.style.setProperty('--panel-h', collapsed ? '45vh' : '96px');
-    setTimeout(() => map.invalidateSize(), 260);
+    setTimeout(() => { if (map) map.resize(); }, 260);
   });
 }
 
@@ -604,12 +718,18 @@ function wireSwipe() {
 /* ---------- boot ---------- */
 
 async function boot() {
-  setBasemap(0);
+  el('basemap').title = 'רקע: ' + BASEMAPS[0].name;
+  // Fires for the initial style and again after every setBasemap.
+  if (map) map.on('style.load', applyOverlays);
 
   const res = await fetch('data/trails.json');
   DATA = await res.json();
 
-  map.fitBounds(DATA.bounds, { padding: [20, 20] });
+  if (map) {
+    await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
+    const [[s1, s2], [n1, n2]] = DATA.bounds;
+    map.fitBounds([[s2, s1], [n2, n1]], { padding: 24, duration: 0 });
+  }
   drawAll();
   renderList();
 
@@ -622,9 +742,19 @@ async function boot() {
   el('nav-stop').addEventListener('click', stopNav);
   el('locate').addEventListener('click', locate);
   el('basemap').addEventListener('click', () => {
-    baseIndex = (baseIndex + 1) % BASEMAPS.length;
-    setBasemap(baseIndex);
+    setBasemap((baseIndex + 1) % BASEMAPS.length);
   });
+
+  if (map) {
+    el('tilt').addEventListener('click', () => {
+      const flat = map.getPitch() < 10;
+      map.easeTo({ pitch: flat ? TILTED : 0, duration: 700 });
+      el('tilt').classList.toggle('on', flat);
+    });
+    map.on('pitchend', () => el('tilt').classList.toggle('on', map.getPitch() >= 10));
+  } else {
+    el('tilt').hidden = el('basemap').hidden = true;
+  }
 
   document.querySelectorAll('.sort').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -642,10 +772,23 @@ async function boot() {
     if (e.target.id === 'lightbox' || e.target.classList.contains('lb-stage')) closeLightbox();
   });
 
-  map.on('click', () => { if (selectedId) deselect(); });
+  // A click on a trail also reaches the map, so only clear the selection when
+  // the tap actually landed on empty ground.
+  if (map) map.on('click', (e) => {
+    if (!selectedId) return;
+    const onTrail = map.getLayer('trails-hit') &&
+      map.queryRenderedFeatures(e.point, { layers: ['trails-hit'] }).length;
+    if (!onTrail) deselect();
+  });
 
   wireGrip();
   wireSwipe();
+}
+
+if (!hasGL) {
+  el('map').innerHTML =
+    '<p class="no-gl">הדפדפן הזה לא תומך בתצוגת המפה (WebGL).<br>' +
+    'הרשימה, התמונות והסטריט ויו עובדים כרגיל.</p>';
 }
 
 boot().catch((err) => {
