@@ -7,7 +7,7 @@
 <meta name="description" content="מדריך שבילי ההליכה וקיצורי הדרך של פרדס חנה-כרכור, עם תמונות וסטריט ויו לכל כניסה.">
 <meta name="theme-color" content="#1b5e20">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🥾</text></svg>">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -20,6 +20,10 @@
 
 <button id="basemap" class="fab fab-2" title="החלף רקע מפה" aria-label="החלף רקע מפה">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zm0 11.5L4.2 9.6 2 10.7l10 5 10-5-2.2-1.1L12 13.5zm0 4.4L4.2 14 2 15.1l10 5 10-5-2.2-1.1-7.8 3.9z"/></svg>
+</button>
+
+<button id="tilt" class="fab fab-3" title="מבט מהצד" aria-label="מבט מהצד">
+  <span class="fab-3d">3D</span>
 </button>
 
 <div id="nav" class="nav" hidden role="status" aria-live="polite">
@@ -75,7 +79,7 @@
   <p class="lb-cap"><span id="lb-cap-text"></span> <span id="lb-count" class="lb-count"></span></p>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

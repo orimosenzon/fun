@@ -32,20 +32,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: #eef1ef;
 }
 
-.leaflet-container { font: inherit; }
+.maplibregl-map { font: inherit; }
 
-.leaflet-control-attribution {
-  font-size: 10px;
-  direction: ltr;
-}
+.maplibregl-ctrl-attrib { font-size: 10px; direction: ltr; }
+.maplibregl-ctrl-attrib-inner { direction: ltr; }
 
-/* Waypoint pins are drawn as divIcons so they can carry a label. */
+/* Attribution is required, so keep it visible but clear of the floating
+ * buttons rather than letting the two overlap. */
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right { margin-inline-end: 64px; }
+
+/* Waypoint pins are HTML markers, so the label uses the browser's own font
+ * and Hebrew renders regardless of the map style's glyph set. */
 .pin {
   display: flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
-  transform: translate(-9px, -9px);
+  cursor: pointer;
 }
 
 .pin i {
@@ -95,9 +99,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .fab-2 { bottom: calc(var(--panel-h) + 66px); }
+.fab-3 { bottom: calc(var(--panel-h) + 118px); }
 
 .fab svg { width: 22px; height: 22px; fill: #3c4a45; }
 .fab.on svg { fill: var(--accent); }
+
+.fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
+.fab.on .fab-3d { color: var(--accent); }
 
 /* ---------- in-app navigation bar ---------- */
 
@@ -105,8 +113,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   position: absolute;
   top: 10px;
   inset-inline: 10px;
-  /* Leaflet's own controls sit at z-index 1000, so anything lower is not just
-   * painted under them, it stops receiving clicks. */
+  /* The map's own controls sit high in the stack, so anything lower is not
+   * just painted under them, it stops receiving clicks. */
   z-index: 1100;
   display: flex;
   align-items: center;
@@ -149,8 +157,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .nav.on-trail { background: #0f4c1a; }
 .nav.stale { background: #6b7a72; }
 
-/* Push the zoom buttons clear of the bar while navigating. */
-.nav-active .leaflet-top.leaflet-left { margin-top: 62px; }
+/* Push the zoom/compass puck clear of the bar while navigating. */
+.nav-active .maplibregl-ctrl-top-left { margin-top: 62px; }
 
 #nav-stop {
   flex: none;
@@ -581,4 +589,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .panel-head { padding-top: 16px; }
   .fab { bottom: 20px; inset-inline-end: auto; inset-inline-start: 400px; }
   .fab-2 { bottom: 72px; }
+  .fab-3 { bottom: 124px; }
+}
+
+.no-gl {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
