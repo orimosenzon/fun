@@ -273,13 +273,13 @@
             "Gemma 4",
             "Local LLM"
           ],
-          "desc": "צ'אטבוט מקומי מבוסס Google Gemma 4 E2B דרך Ollama. ממשק ווב עם RTL, סטרימינג, Markdown ו-LaTeX. רץ על GTX 1060 6GB ללא אינטרנט.",
+          "desc": "צ'אטבוט מקומי מבוסס Google Gemma 4 E2B דרך Ollama. ממשק ווב עם RTL, סטרימינג, Markdown ו-LaTeX. רץ על GTX 1060 6GB ללא אינטרנט. רץ מקומית בלבד, מול Ollama על המכונה.",
           "links": [
             {
-              "href": "http://localhost:5000",
-              "style": "primary",
-              "label": "▶ פתח (מקומי)",
-              "external": false
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/g4",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
             }
           ],
           "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"28\" stroke=\"#4ade80\" stroke-width=\"1.5\" opacity=\".3\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"18\" stroke=\"#4ade80\" stroke-width=\"1.5\" opacity=\".5\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"8\"  fill=\"#4ade80\" opacity=\".8\"/>\n                    <circle cx=\"36\" cy=\"14\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"36\" cy=\"58\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"14\" cy=\"36\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"58\" cy=\"36\" r=\"3\"  fill=\"#4ade80\"/>\n                </svg>",
@@ -607,10 +607,10 @@
               "external": false
             },
             {
-              "href": "ori_android/",
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/ori_android",
               "style": "secondary",
-              "label": "📱 Android (Flutter)",
-              "external": false
+              "label": "📱 מקור Android (Flutter)",
+              "external": true
             }
           ],
           "illus": "                <!-- Map + pin + search -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"8\" y=\"10\" width=\"56\" height=\"52\" rx=\"6\" fill=\"rgba(20,50,90,.4)\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".6\"/>\n                    <line x1=\"8\"  y1=\"36\" x2=\"64\" y2=\"36\" stroke=\"#60a5fa\" stroke-width=\"1.2\" opacity=\".25\"/>\n                    <line x1=\"36\" y1=\"10\" x2=\"36\" y2=\"62\" stroke=\"#60a5fa\" stroke-width=\"1.2\" opacity=\".25\"/>\n                    <circle cx=\"36\" cy=\"32\" r=\"8\"   fill=\"rgba(20,50,90,.8)\" stroke=\"#60a5fa\" stroke-width=\"2\"/>\n                    <circle cx=\"36\" cy=\"32\" r=\"3.5\" fill=\"#60a5fa\"/>\n                    <path d=\"M 36 40 L 36 52\" stroke=\"#60a5fa\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".6\"/>\n                    <circle cx=\"54\" cy=\"18\" r=\"7\"   stroke=\"#60a5fa\" stroke-width=\"1.5\" fill=\"rgba(20,50,90,.5)\" opacity=\".7\"/>\n                    <line x1=\"59\" y1=\"24\" x2=\"65\" y2=\"30\" stroke=\"#60a5fa\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".7\"/>\n                </svg>\n            "
@@ -854,7 +854,7 @@
               "external": false
             },
             {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/כרמית",
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA",
               "style": "secondary",
               "label": "📁 קוד מקור",
               "external": true
