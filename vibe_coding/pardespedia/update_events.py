@@ -155,14 +155,106 @@ def wiki_escape(text: str) -> str:
     return (text or "").replace("|", "‖").strip()
 
 
+# eventschedule venue strings are pipe-separated and end with the locality:
+#   "מרכז ללימוד תורה | פרדס חנה-כרכור"
+#   "סוזן דלל | אולם אריסון | תל אביב-יפו"
+# The board is a moshava board, but the hub is open to self-registration and
+# performers list out-of-town dates on it too — a Suzanne Dellal show in Tel
+# Aviv reached the main page this way. So the locality decides inclusion.
+# HOME localities render as before (bare venue name, maps link into the
+# moshava); NEARBY ones are kept but must say where they are, or a reader
+# assumes the moshava. Anything else is dropped and logged, never silently.
+HOME_LOCALITIES = {
+    "פרדס חנה-כרכור", "פרדס חנה כרכור", "פרדס חנה", "כרכור",
+    "pardes hanna-karkur", "pardes hanna karkur", "pardes hanna", "karkur",
+}
+NEARBY_LOCALITIES = {
+    "חדרה": "חדרה", "מעיין צבי": "מעיין צבי", "maayan tzvi": "מעיין צבי",
+    "בנימינה": "בנימינה", "בנימינה-גבעת עדה": "בנימינה", "גבעת עדה": "גבעת עדה",
+    "כפר פינס": "כפר פינס", "עין שמר": "עין שמר", "גן שמואל": "גן שמואל",
+    "משמרות": "משמרות", "תלמי אלעזר": "תלמי אלעזר", "מנשה": "מנשה",
+    "אור עקיבא": "אור עקיבא", "זכרון יעקב": "זכרון יעקב", "קיסריה": "קיסריה",
+}
+_SEEN_UNKNOWN_LOCALITIES = set()
+
+
+def split_venue(name: str):
+    """Split an eventschedule venue string into (display name, locality).
+
+    Locality is "" when the string carries no pipe and is not itself a bare
+    locality — the caller then has nothing to judge by.
+    """
+    parts = [p.strip() for p in (name or "").split("|") if p.strip()]
+    if not parts:
+        return "", ""
+    if len(parts) == 1:
+        only = parts[0]
+        return ("", only) if only.casefold() in HOME_LOCALITIES else (only, "")
+    return " ".join(parts[:-1]).strip(), parts[-1]
+
+
+def locality_kind(locality: str) -> str:
+    """"home" / "nearby" / "away" / "unknown" for a locality string."""
+    key = (locality or "").strip().casefold()
+    if not key:
+        return "unknown"
+    if key in HOME_LOCALITIES:
+        return "home"
+    if key in NEARBY_LOCALITIES:
+        return "nearby"
+    return "away"
+
+
 def clean_venue(name: str) -> str:
-    return name.split("|")[0].strip() if name else ""
+    """Display name for a venue: bare in the moshava, "(town)" outside it."""
+    venue, locality = split_venue(name)
+    kind = locality_kind(locality)
+    if kind == "nearby":
+        town = NEARBY_LOCALITIES[locality.strip().casefold()]
+        return f"{venue} ({town})" if venue else town
+    return venue
+
+
+def in_area(name: str) -> bool:
+    """Whether an event at this venue belongs on a Pardes Hanna-Karkur board.
+
+    An unparseable or missing venue is kept: the hub is the moshava's own, so
+    a nameless venue is far more likely to be local than not — but it is
+    logged, so a wrong guess is visible in the cron log rather than invisible.
+    """
+    _, locality = split_venue(name)
+    kind = locality_kind(locality)
+    if kind in ("home", "nearby"):
+        return True
+    if kind == "away":
+        print(f"  מחוץ לאזור, האירוע לא נכלל: {name!r}", file=sys.stderr)
+        return False
+    if name and name not in _SEEN_UNKNOWN_LOCALITIES:
+        _SEEN_UNKNOWN_LOCALITIES.add(name)
+        print(f"  יישוב לא מזוהה בשם המקום, האירוע נכלל בכל זאת: {name!r}",
+              file=sys.stderr)
+    return True
 
 
 def maps_link(venue: str) -> str:
-    """Google Maps search link for a venue, forced to Hebrew UI (hl=iw)."""
-    query = urllib.parse.quote(f"{venue}, פרדס חנה-כרכור")
-    return f"https://www.google.com/maps/search/?api=1&query={query}&hl=iw"
+    """Google Maps search link for a venue, forced to Hebrew UI (hl=iw).
+
+    `venue` is a display name from clean_venue(), so an out-of-town one already
+    carries its town in parentheses — searching that verbatim beats appending
+    "פרדס חנה-כרכור" to a venue that is not there. Only a known town counts:
+    plenty of venue names end in an ordinary parenthetical (מרכז אמנויות הבמה
+    (מתנ"ס)) that must not be mistaken for a locality.
+    """
+    venue = (venue or "").strip()
+    towns = set(NEARBY_LOCALITIES.values())
+    m = re.search(r"^(.*?)\s*\(([^()]+)\)$", venue)
+    if m and m.group(2).strip() in towns:
+        query = f"{m.group(1).strip()}, {m.group(2).strip()}"
+    elif any(venue.casefold().endswith(loc) for loc in HOME_LOCALITIES):
+        query = venue  # the venue string already names the moshava
+    else:
+        query = f"{venue}, פרדס חנה-כרכור"
+    return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}&hl=iw"
 
 
 def price_label(price, is_free: bool = False) -> str:
@@ -234,6 +326,8 @@ def fetch_eventschedule() -> list:
     for e in r.json().get("events", []):
         ds = e.get("local_date")
         if not ds:
+            continue
+        if not in_area(e.get("venue_name")):
             continue
         try:
             d = dt.date.fromisoformat(ds)
@@ -891,7 +985,14 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     except Exception as exc:
         print(f"  stats update skipped: {exc}", file=sys.stderr)
     if dry_run:
+        # A 1500-char preview stops short of the events table itself, which is
+        # the part a dry run exists to check. Write the whole page next to the
+        # script so it can be diffed, and keep the short preview on stdout.
+        out = os.path.join(HERE, "dry_run_main_page.txt")
+        with open(out, "w", encoding="utf-8") as fh:
+            fh.write(new)
         print("--- DRY RUN (עמוד ראשי) ---\n" + new[:1500])
+        print(f"\n... [הדף המלא נכתב אל {out}]")
         return
     if new == existing:
         print("Main page summary — no change.")
