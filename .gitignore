@@ -12,3 +12,11 @@
 ofer/myenv/cred5.json
 .vercel
 vibe_coding/nudge/.env
+
+# haskala moved to its own PRIVATE repo on 2026-08-15:
+#   git@github.com:orimosenzon/haskala.git
+# It still lives at this path and is a standalone clone with its own history
+# (all 194 commits came across). Ignored here so the public repo never picks it
+# up again — the company's business knowledge, customer names and grading
+# prompts do not belong in a repo anyone can read.
+vibe_coding/haskala/
