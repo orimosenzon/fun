@@ -6,6 +6,10 @@
 
 הפרויקט הזה הוא צד התוכנה של היוזמה: שליפת המפה, ניתוח שלה, והפקת חומרים שמישים ממנה.
 
+## חי באוויר
+https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/
+(פורס 15/8/2026 מ-GitHub Pages של ריפו `fun`, ענף master. אין צעד בנייה.)
+
 ## מקורות
 - מפת My Maps (mid): `19q4SgSScTh3pW3lRqQO9dQ8kw8z2wTg`
 - KML: `https://www.google.com/maps/d/kml?mid=<mid>&forcekml=1`
