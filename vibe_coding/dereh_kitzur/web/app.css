@@ -1,0 +1,508 @@
+:root {
+  --bg: #ffffff;
+  --ink: #1c2321;
+  --muted: #667571;
+  --line: #e2e8e5;
+  --accent: #1b5e20;
+  --accent-soft: #e8f2e9;
+  --shadow: 0 -2px 24px rgba(20, 40, 30, .16);
+  --panel-h: 45vh;
+  --safe: env(safe-area-inset-bottom, 0px);
+  font-family: system-ui, "Segoe UI", Rubik, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---------- map ---------- */
+
+#map {
+  position: absolute;
+  inset: 0 0 var(--panel-h) 0;
+  background: #eef1ef;
+}
+
+.leaflet-container { font: inherit; }
+
+.leaflet-control-attribution {
+  font-size: 10px;
+  direction: ltr;
+}
+
+/* Waypoint pins are drawn as divIcons so they can carry a label. */
+.pin {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transform: translate(-9px, -9px);
+}
+
+.pin i {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: #8d6e63;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+}
+
+.pin b {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
+
+.me {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1a73e8;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgba(26, 115, 232, .22);
+}
+
+/* ---------- floating buttons ---------- */
+
+.fab {
+  position: absolute;
+  inset-inline-end: 12px;
+  bottom: calc(var(--panel-h) + 14px);
+  z-index: 500;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+  transition: bottom .25s ease;
+}
+
+.fab-2 { bottom: calc(var(--panel-h) + 66px); }
+
+.fab svg { width: 22px; height: 22px; fill: #3c4a45; }
+.fab.on svg { fill: var(--accent); }
+
+/* ---------- panel ---------- */
+
+.panel {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--panel-h);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--shadow);
+  padding-bottom: var(--safe);
+  transition: height .25s ease;
+}
+
+.grip {
+  flex: none;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.grip::before {
+  content: "";
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #cdd6d2;
+}
+
+#list-view, #detail-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `display: flex` beats the hidden attribute's own display:none, so the two
+ * views would otherwise stack on top of each other. */
+#list-view[hidden], #detail-view[hidden] { display: none; }
+
+.panel-head { flex: none; padding: 0 14px 8px; }
+
+.panel-head h1 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -.2px;
+}
+
+.stats {
+  margin: 2px 0 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+#search {
+  flex: 1 1 170px;
+  min-width: 0;
+  font-size: 15px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7faf9;
+  outline-offset: 2px;
+}
+
+.sorts { display: flex; gap: 6px; }
+
+.sort {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sort.on {
+  background: var(--accent-soft);
+  border-color: #bcd8bf;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- list ---------- */
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  margin: 0;
+  padding: 0 8px calc(14px + var(--safe));
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.row:hover { background: #f4f8f6; }
+.row.on { background: var(--accent-soft); }
+
+.row .swatch {
+  flex: none;
+  width: 4px;
+  align-self: stretch;
+  min-height: 38px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.row .thumb {
+  flex: none;
+  width: 54px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #eceeed;
+}
+
+.row .thumb.empty {
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  opacity: .45;
+}
+
+.row .txt { flex: 1; min-width: 0; }
+
+.row .nm {
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row .sub {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-msg {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- detail ---------- */
+
+.detail-head {
+  flex: none;
+  padding: 0 10px 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.detail-head .tip {
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+.back svg { width: 18px; height: 18px; fill: currentColor; transform: scaleX(-1); }
+
+.detail {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 14px calc(20px + var(--safe));
+}
+
+.detail h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chip {
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #f0f4f2;
+  color: #48564f;
+}
+
+.chip.accent { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.note {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #33403b;
+  padding-inline-start: 10px;
+  border-inline-start: 3px solid var(--accent-soft);
+}
+
+.detail h3 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 6px;
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 9px;
+  background: #eceeed;
+  cursor: zoom-in;
+}
+
+.acts { display: grid; gap: 7px; }
+
+.act {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+}
+
+.act:hover { background: #f6faf8; }
+
+/* Access points far from any road, where Google may have no panorama. */
+.act.weak { border-style: dashed; }
+.act.weak svg { fill: #a0aaa5; }
+.act.weak .lbl { color: #6a7671; }
+
+.act svg { flex: none; width: 20px; height: 20px; fill: var(--accent); }
+.act .lbl { flex: 1; font-size: 14px; font-weight: 600; }
+.act .hint { font-size: 11.5px; color: var(--muted); font-weight: 400; display: block; }
+
+.src {
+  display: block;
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- lightbox ---------- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(8, 14, 11, .99);
+  display: flex;
+  flex-direction: column;
+}
+
+.lightbox[hidden] { display: none; }
+
+/* The tracks must be minmax(0, 1fr), not auto. An auto row is sized by its
+ * content, which leaves the image's max-height:100% resolving against an
+ * indefinite height - so it is ignored and tall photos overflow off-screen
+ * with only the top visible. Definite tracks make the percentage work. */
+.lb-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  padding: 44px 12px 4px;
+}
+
+#lb-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  grid-area: 1 / 1;
+}
+
+#lb-img.loading { opacity: 0; }
+
+.lb-spin {
+  grid-area: 1 / 1;
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(255, 255, 255, .25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+.lb-spin[hidden] { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.lb-close, .lb-nav {
+  position: absolute;
+  border: 0;
+  background: rgba(255, 255, 255, .13);
+  color: #fff;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.lb-close {
+  top: 10px;
+  inset-inline-end: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.lb-nav {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.lb-prev { inset-inline-start: 8px; }
+.lb-next { inset-inline-end: 8px; }
+.lb-nav[hidden] { display: none; }
+
+.lb-cap {
+  flex: none;
+  margin: 0;
+  padding: 10px 16px calc(16px + var(--safe));
+  text-align: center;
+  color: #dfe6e2;
+  font-size: 13.5px;
+}
+
+.lb-count { color: #8c9a94; font-size: 12px; }
+
+/* ---------- desktop ---------- */
+
+@media (min-width: 860px) {
+  :root { --panel-h: 100%; }
+
+  /* Logical insets keep the panel on the reading-start side (right, in RTL). */
+  #map { inset: 0; inset-inline-start: 380px; }
+
+  .panel {
+    inset: 0;
+    inset-inline-end: auto;
+    width: 380px;
+    height: 100%;
+    border-radius: 0;
+    box-shadow: 2px 0 20px rgba(20, 40, 30, .12);
+  }
+
+  .grip { display: none; }
+  .panel-head { padding-top: 16px; }
+  .fab { bottom: 20px; inset-inline-end: auto; inset-inline-start: 400px; }
+  .fab-2 { bottom: 72px; }
+}

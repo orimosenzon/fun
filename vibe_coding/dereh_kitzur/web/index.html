@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>דרך קיצור · שבילי פרדס חנה-כרכור</title>
+<meta name="description" content="מדריך שבילי ההליכה וקיצורי הדרך של פרדס חנה-כרכור, עם תמונות וסטריט ויו לכל כניסה.">
+<meta name="theme-color" content="#1b5e20">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🥾</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div id="map" role="application" aria-label="מפת השבילים"></div>
+
+<button id="locate" class="fab" title="איפה אני" aria-label="איפה אני">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.94 3A9 9 0 0013 3.06V1h-2v2.06A9 9 0 003.06 11H1v2h2.06A9 9 0 0011 20.94V23h2v-2.06A9 9 0 0020.94 13H23v-2h-2.06zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg>
+</button>
+
+<button id="basemap" class="fab fab-2" title="החלף רקע מפה" aria-label="החלף רקע מפה">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zm0 11.5L4.2 9.6 2 10.7l10 5 10-5-2.2-1.1L12 13.5zm0 4.4L4.2 14 2 15.1l10 5 10-5-2.2-1.1-7.8 3.9z"/></svg>
+</button>
+
+<section id="panel" class="panel" aria-label="רשימת השבילים">
+  <div class="grip" id="grip" role="button" tabindex="0" aria-label="הרחב או כווץ את הרשימה"></div>
+
+  <!-- List view -->
+  <div id="list-view">
+    <header class="panel-head">
+      <h1>דרך קיצור</h1>
+      <p id="stats" class="stats">טוען…</p>
+      <div class="controls">
+        <input id="search" type="search" placeholder="חיפוש שביל או רחוב…" autocomplete="off" aria-label="חיפוש">
+        <div class="sorts" role="group" aria-label="מיון">
+          <button class="sort on" data-sort="length">הארוכים</button>
+          <button class="sort" data-sort="near">הקרובים</button>
+          <button class="sort" data-sort="photos">עם תמונות</button>
+        </div>
+      </div>
+    </header>
+    <ul id="list" class="list"></ul>
+  </div>
+
+  <!-- Detail view -->
+  <div id="detail-view" hidden>
+    <header class="detail-head">
+      <button id="back" class="back" aria-label="חזרה לרשימה">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L4 12l6 6 1.4-1.4L7.8 13H20v-2H7.8l3.6-3.6z"/></svg>
+        <span>לרשימה</span>
+      </button>
+      <span class="tip">או פשוט לחץ על שביל אחר במפה</span>
+    </header>
+    <div id="detail" class="detail"></div>
+  </div>
+</section>
+
+<div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="תמונה בגודל מלא">
+  <button class="lb-close" aria-label="סגירה">&times;</button>
+  <button class="lb-nav lb-prev" aria-label="הקודמת">&rsaquo;</button>
+  <button class="lb-nav lb-next" aria-label="הבאה">&lsaquo;</button>
+  <div class="lb-stage">
+    <div class="lb-spin" id="lb-spin"></div>
+    <img id="lb-img" alt="">
+  </div>
+  <p class="lb-cap"><span id="lb-cap-text"></span> <span id="lb-count" class="lb-count"></span></p>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
