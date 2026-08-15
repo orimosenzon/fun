@@ -22,6 +22,15 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zm0 11.5L4.2 9.6 2 10.7l10 5 10-5-2.2-1.1L12 13.5zm0 4.4L4.2 14 2 15.1l10 5 10-5-2.2-1.1-7.8 3.9z"/></svg>
 </button>
 
+<div id="nav" class="nav" hidden role="status" aria-live="polite">
+  <div class="nav-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 19-7-4-7 4z"/></svg></div>
+  <div class="nav-txt">
+    <strong id="nav-dist">—</strong>
+    <span id="nav-state">מחפש מיקום…</span>
+  </div>
+  <button id="nav-stop" aria-label="עצור ניווט">&times;</button>
+</div>
+
 <section id="panel" class="panel" aria-label="רשימת השבילים">
   <div class="grip" id="grip" role="button" tabindex="0" aria-label="הרחב או כווץ את הרשימה"></div>
 
