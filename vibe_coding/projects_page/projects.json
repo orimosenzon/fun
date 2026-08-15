@@ -1,0 +1,1239 @@
+{
+  "site": {
+    "title": "✦ Vibe Coding",
+    "subtitle": "פרויקטים שנבנו עם AI — מהרעיון לקוד בשעות",
+    "meta": "Built with Claude Code &bull; אורי מוסנזון"
+  },
+  "sections": [
+    {
+      "emoji": "🤖",
+      "title": "פרויקטי AI",
+      "grid": "projects",
+      "projects": [
+        {
+          "title": "Letras — מילות שירים",
+          "icon": "🎤",
+          "theme": "t-purple",
+          "tags": [
+            "Flask",
+            "yt-dlp",
+            "LRClib API",
+            "MyMemory"
+          ],
+          "desc": "מחפשים שיר — האפליקציה מציגה מילים מסונכרנות עם הסרטון. כל מילה מתהדרת בצבע בדיוק כשהיא נשמעת, עם אפשרות תרגום לכל שפה.",
+          "links": [
+            {
+              "href": "https://fun-production-d221.up.railway.app/",
+              "style": "live",
+              "label": "▶ פתח Live Demo",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/letras",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ],
+          "illus": "                <!-- Waveform illustration -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <line x1=\"8\"  y1=\"36\" x2=\"8\"  y2=\"36\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                    <line x1=\"15\" y1=\"28\" x2=\"15\" y2=\"44\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\" opacity=\".6\"/>\n                    <line x1=\"22\" y1=\"20\" x2=\"22\" y2=\"52\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                    <line x1=\"29\" y1=\"28\" x2=\"29\" y2=\"44\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\" opacity=\".7\"/>\n                    <line x1=\"36\" y1=\"16\" x2=\"36\" y2=\"56\" stroke=\"#c084fc\" stroke-width=\"3\"   stroke-linecap=\"round\"/>\n                    <line x1=\"43\" y1=\"24\" x2=\"43\" y2=\"48\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\" opacity=\".8\"/>\n                    <line x1=\"50\" y1=\"20\" x2=\"50\" y2=\"52\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                    <line x1=\"57\" y1=\"28\" x2=\"57\" y2=\"44\" stroke=\"#c084fc\" stroke-width=\"2.5\" stroke-linecap=\"round\" opacity=\".6\"/>\n                    <line x1=\"64\" y1=\"30\" x2=\"64\" y2=\"42\" stroke=\"#c084fc\" stroke-width=\"2\"   stroke-linecap=\"round\" opacity=\".4\"/>\n                    <text x=\"25\" y=\"45\" font-size=\"18\" fill=\"#c084fc\" opacity=\".3\">♪</text>\n                </svg>\n            ",
+          "dir": "letras"
+        },
+        {
+          "title": "שיווי משקל נאש — הדגמה",
+          "icon": "⚖️",
+          "theme": "t-green",
+          "tags": [
+            "תורת משחקים",
+            "HTML/JS",
+            "Chart.js"
+          ],
+          "desc": "<strong style=\"color:#4ade80\">אסטרטגיות מעורבות.</strong><br> הגרלת מטריצת תשלומים אקראית, חישוב שיווי משקל נאש מעורב, והדגמה ויזואלית שסטייה חד-צדדית לא משתלמת.",
+          "links": [
+            {
+              "href": "nash/index.html",
+              "style": "primary",
+              "label": "▶ גרסה אחרונה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/nash",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"10\" width=\"24\" height=\"24\" rx=\"4\" fill=\"#4ade80\" opacity=\".25\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <rect x=\"38\" y=\"10\" width=\"24\" height=\"24\" rx=\"4\" fill=\"#4ade80\" opacity=\".12\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <rect x=\"10\" y=\"38\" width=\"24\" height=\"24\" rx=\"4\" fill=\"#4ade80\" opacity=\".12\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <rect x=\"38\" y=\"38\" width=\"24\" height=\"24\" rx=\"4\" fill=\"#4ade80\" opacity=\".25\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <circle cx=\"22\" cy=\"22\" r=\"5\" fill=\"#4ade80\" opacity=\".8\"/>\n                    <circle cx=\"50\" cy=\"50\" r=\"5\" fill=\"#4ade80\" opacity=\".8\"/>\n                    <line x1=\"22\" y1=\"22\" x2=\"50\" y2=\"50\" stroke=\"#4ade80\" stroke-width=\"1.5\" stroke-dasharray=\"3,3\" opacity=\".5\"/>\n                </svg>"
+        },
+        {
+          "title": "Word Embeddings — שיכון מילים",
+          "icon": "🧠",
+          "theme": "t-cyan",
+          "tags": [
+            "Flask",
+            "GloVe",
+            "sklearn",
+            "PCA / t-SNE"
+          ],
+          "desc": "<strong style=\"color:#22d3ee\">king − man + woman = queen.</strong><br> אפליקציית לימוד אינטראקטיבית: מדגימה word embeddings עם אנלוגיות, חיפוש שכנים קרובים, ויזואליזציה 2D וקוויז אוטומטי.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/embedding",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- Word vector network -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"6\"   fill=\"#22d3ee\" opacity=\".9\"/>\n                    <circle cx=\"14\" cy=\"20\" r=\"3.5\" fill=\"#22d3ee\" opacity=\".5\"/>\n                    <circle cx=\"58\" cy=\"20\" r=\"3.5\" fill=\"#22d3ee\" opacity=\".5\"/>\n                    <circle cx=\"14\" cy=\"52\" r=\"3.5\" fill=\"#22d3ee\" opacity=\".5\"/>\n                    <circle cx=\"58\" cy=\"52\" r=\"3.5\" fill=\"#22d3ee\" opacity=\".5\"/>\n                    <circle cx=\"36\" cy=\"10\" r=\"2.5\" fill=\"#22d3ee\" opacity=\".4\"/>\n                    <circle cx=\"36\" cy=\"62\" r=\"2.5\" fill=\"#22d3ee\" opacity=\".4\"/>\n                    <line x1=\"36\" y1=\"30\" x2=\"14\" y2=\"23\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".35\"/>\n                    <line x1=\"36\" y1=\"30\" x2=\"58\" y2=\"23\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".35\"/>\n                    <line x1=\"36\" y1=\"42\" x2=\"14\" y2=\"49\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".35\"/>\n                    <line x1=\"36\" y1=\"42\" x2=\"58\" y2=\"49\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".35\"/>\n                    <line x1=\"36\" y1=\"30\" x2=\"36\" y2=\"13\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".3\"/>\n                    <line x1=\"36\" y1=\"42\" x2=\"36\" y2=\"59\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".3\"/>\n                    <!-- analogy arrow -->\n                    <path d=\"M 18 36 L 54 36\" stroke=\"#22d3ee\" stroke-width=\"1.5\" stroke-dasharray=\"3,2\" opacity=\".6\"/>\n                    <path d=\"M 50 32 L 54 36 L 50 40\" stroke=\"#22d3ee\" stroke-width=\"1.5\" fill=\"none\" opacity=\".6\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Golem — תוסף VS Code",
+          "icon": "🤖",
+          "theme": "t-indigo",
+          "tags": [
+            "TypeScript",
+            "VS Code API",
+            "Claude API",
+            "RTL"
+          ],
+          "desc": "תוסף קוד-פתוח ל-VS Code עם עוזר קידוד אגנטי מבוסס Claude. תמיכה מלאה ב-RTL עברית — שיחה עם AI ישירות בתוך סביבת הפיתוח.",
+          "links": [],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- VS Code window with AI -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"14\" width=\"52\" height=\"44\" rx=\"6\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"rgba(25,25,90,.15)\"/>\n                    <rect x=\"10\" y=\"14\" width=\"52\" height=\"12\" rx=\"6\" fill=\"rgba(129,140,248,.2)\"/>\n                    <rect x=\"10\" y=\"20\" width=\"52\" height=\"6\"  fill=\"rgba(129,140,248,.2)\"/>\n                    <circle cx=\"18\" cy=\"20\" r=\"2.5\" fill=\"#f87171\" opacity=\".7\"/>\n                    <circle cx=\"26\" cy=\"20\" r=\"2.5\" fill=\"#fbbf24\" opacity=\".7\"/>\n                    <circle cx=\"34\" cy=\"20\" r=\"2.5\" fill=\"#4ade80\" opacity=\".7\"/>\n                    <rect x=\"16\" y=\"33\" width=\"26\" height=\"2.5\" rx=\"1.5\" fill=\"#818cf8\" opacity=\".5\"/>\n                    <rect x=\"16\" y=\"39\" width=\"18\" height=\"2.5\" rx=\"1.5\" fill=\"#818cf8\" opacity=\".35\"/>\n                    <rect x=\"16\" y=\"45\" width=\"22\" height=\"2.5\" rx=\"1.5\" fill=\"#818cf8\" opacity=\".4\"/>\n                    <circle cx=\"53\" cy=\"47\" r=\"9\"  fill=\"rgba(25,25,90,.8)\" stroke=\"#818cf8\" stroke-width=\"1.5\"/>\n                    <text x=\"48.5\" y=\"51\" font-size=\"8.5\" fill=\"#818cf8\" font-weight=\"bold\">AI</text>\n                </svg>\n            ",
+          "dir": "golem",
+          "pending_publish": true
+        },
+        {
+          "title": "Sidekick — דיבאג אינטגרציות",
+          "icon": "🔍",
+          "theme": "t-blue",
+          "tags": [
+            "Flask",
+            "Selenium",
+            "Claude API",
+            "Pillow"
+          ],
+          "desc": "כלי קוד-פתוח לדיבאג אינטגרציות: מצלם את הדפדפן ברציפות, שולח ל-AI, מזהה שגיאות אוטומטית ואפילו מגיב עצמאית דרך Selenium.",
+          "links": [],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Browser + magnifying glass with eye -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"8\"  y=\"10\" width=\"46\" height=\"36\" rx=\"5\" stroke=\"#60a5fa\" stroke-width=\"1.5\" fill=\"rgba(20,50,90,.3)\"/>\n                    <rect x=\"14\" y=\"16\" width=\"34\" height=\"7\"  rx=\"3.5\" fill=\"rgba(20,50,90,.5)\" stroke=\"#60a5fa\" stroke-width=\".8\" opacity=\".6\"/>\n                    <rect x=\"10\" y=\"28\" width=\"20\" height=\"2\" rx=\"1\" fill=\"#60a5fa\" opacity=\".3\"/>\n                    <rect x=\"10\" y=\"33\" width=\"14\" height=\"2\" rx=\"1\" fill=\"#60a5fa\" opacity=\".2\"/>\n                    <rect x=\"10\" y=\"38\" width=\"16\" height=\"2\" rx=\"1\" fill=\"#60a5fa\" opacity=\".25\"/>\n                    <!-- error bubble -->\n                    <circle cx=\"36\" cy=\"36\" r=\"5\" fill=\"#f87171\" opacity=\".8\"/>\n                    <text x=\"34.2\" y=\"39.5\" font-size=\"7\" fill=\"white\" font-weight=\"bold\">!</text>\n                    <!-- magnifying glass -->\n                    <circle cx=\"52\" cy=\"52\" r=\"12\" fill=\"rgba(20,50,90,.6)\" stroke=\"#60a5fa\" stroke-width=\"1.5\"/>\n                    <circle cx=\"52\" cy=\"52\" r=\"5\"  fill=\"rgba(96,165,250,.25)\"/>\n                    <circle cx=\"52\" cy=\"52\" r=\"2.5\" fill=\"#60a5fa\"/>\n                    <line x1=\"60\" y1=\"60\" x2=\"67\" y2=\"67\" stroke=\"#60a5fa\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                </svg>\n            ",
+          "dir": "sidekick",
+          "pending_publish": true
+        },
+        {
+          "title": "WikiVoice — ויקיפדיה מדברת",
+          "icon": "🔊",
+          "theme": "t-teal",
+          "tags": [
+            "Python",
+            "Kokoro-82M TTS",
+            "Wikipedia API"
+          ],
+          "desc": "קורא מאמרי ויקיפדיה בקול — מקומי, חינמי, ובפרוזודיה טבעית. מבוסס על מודל Kokoro-82M שרץ על CPU ללא אינטרנט.",
+          "links": [],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Book + sound waves -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"14\" width=\"28\" height=\"42\" rx=\"3\" fill=\"rgba(10,70,65,.5)\" stroke=\"#2dd4bf\" stroke-width=\"1.5\"/>\n                    <line x1=\"24\" y1=\"14\" x2=\"24\" y2=\"56\" stroke=\"#2dd4bf\" stroke-width=\"1\" opacity=\".4\"/>\n                    <rect x=\"13\" y=\"20\" width=\"8\"  height=\"1.5\" rx=\"1\" fill=\"#2dd4bf\" opacity=\".4\"/>\n                    <rect x=\"13\" y=\"24\" width=\"10\" height=\"1.5\" rx=\"1\" fill=\"#2dd4bf\" opacity=\".3\"/>\n                    <rect x=\"13\" y=\"28\" width=\"7\"  height=\"1.5\" rx=\"1\" fill=\"#2dd4bf\" opacity=\".4\"/>\n                    <rect x=\"13\" y=\"32\" width=\"9\"  height=\"1.5\" rx=\"1\" fill=\"#2dd4bf\" opacity=\".3\"/>\n                    <!-- Sound waves -->\n                    <path d=\"M 46 32 C 50 30 50 42 46 40\" stroke=\"#2dd4bf\" stroke-width=\"2\"   fill=\"none\" stroke-linecap=\"round\"/>\n                    <path d=\"M 46 27 C 55 23 55 49 46 45\" stroke=\"#2dd4bf\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\" opacity=\".6\"/>\n                    <path d=\"M 46 22 C 62 16 62 56 46 50\" stroke=\"#2dd4bf\" stroke-width=\"1\"   fill=\"none\" stroke-linecap=\"round\" opacity=\".3\"/>\n                    <rect x=\"43\" y=\"32\" width=\"3\" height=\"8\" rx=\"1.5\" fill=\"#2dd4bf\" opacity=\".8\"/>\n                </svg>\n            ",
+          "dir": "wikivoice",
+          "pending_publish": true
+        },
+        {
+          "title": "Claude Auto — עוזר קולי לנהיגה",
+          "icon": "🚗",
+          "theme": "t-amber",
+          "tags": [
+            "Android",
+            "Kotlin",
+            "Porcupine",
+            "Vosk STT",
+            "Claude API"
+          ],
+          "desc": "עוזר AI לנהיגה ידיים-פנויות: שיחות ראש-לרגל, שליחת ווצאפ בקול, ניווט — כל זה מופעל עם מילת גישה בלי לגעת בטלפון.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/claude-auto",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בתכנון"
+            }
+          ],
+          "illus": "                <!-- Steering wheel + mic -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"22\" stroke=\"#fbbf24\" stroke-width=\"2\" fill=\"rgba(80,55,10,.3)\" opacity=\".8\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"10\" stroke=\"#fbbf24\" stroke-width=\"1.5\" fill=\"rgba(80,55,10,.5)\"/>\n                    <line x1=\"36\" y1=\"26\" x2=\"36\" y2=\"14\" stroke=\"#fbbf24\" stroke-width=\"2.5\"/>\n                    <line x1=\"27\" y1=\"43\" x2=\"16\" y2=\"52\" stroke=\"#fbbf24\" stroke-width=\"2.5\"/>\n                    <line x1=\"45\" y1=\"43\" x2=\"56\" y2=\"52\" stroke=\"#fbbf24\" stroke-width=\"2.5\"/>\n                    <!-- mic -->\n                    <rect x=\"32\" y=\"29\" width=\"8\" height=\"12\" rx=\"4\" fill=\"#fbbf24\" opacity=\".7\"/>\n                    <path d=\"M 28 39 C 28 46 44 46 44 39\" stroke=\"#fbbf24\" stroke-width=\"1.5\" fill=\"none\"/>\n                    <line x1=\"36\" y1=\"46\" x2=\"36\" y2=\"50\" stroke=\"#fbbf24\" stroke-width=\"1.5\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Agents 101 — LangChain, LangGraph & MCP",
+          "icon": "🤖",
+          "theme": "t-indigo",
+          "tags": [
+            "Python",
+            "Jupyter",
+            "LangChain",
+            "LangGraph",
+            "MCP"
+          ],
+          "desc": "מחברת לימוד אינטראקטיבית שמסבירה את הקשר בין LangChain, LangGraph ו-MCP — כיצד בונים סוכני AI מודרניים עם כלים, מצב, לולאות ופרוטוקול כלים סטנדרטי.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/agents-101",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Agent loop diagram -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"20\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"rgba(30,27,75,.4)\" stroke-dasharray=\"4 2\"/>\n                    <circle cx=\"36\" cy=\"20\" r=\"6\" fill=\"rgba(30,27,75,.6)\" stroke=\"#818cf8\" stroke-width=\"1.5\"/>\n                    <circle cx=\"52\" cy=\"44\" r=\"6\" fill=\"rgba(30,27,75,.6)\" stroke=\"#818cf8\" stroke-width=\"1.5\"/>\n                    <circle cx=\"20\" cy=\"44\" r=\"6\" fill=\"rgba(30,27,75,.6)\" stroke=\"#818cf8\" stroke-width=\"1.5\"/>\n                    <text x=\"33\" y=\"23\" font-size=\"6\" fill=\"#818cf8\" font-family=\"monospace\">🧠</text>\n                    <text x=\"49\" y=\"47\" font-size=\"6\" fill=\"#818cf8\" font-family=\"monospace\">⚙</text>\n                    <text x=\"17\" y=\"47\" font-size=\"6\" fill=\"#818cf8\" font-family=\"monospace\">👁</text>\n                    <path d=\"M 41 25 C 52 28 54 36 52 38\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"none\" marker-end=\"url(#arr)\"/>\n                    <path d=\"M 46 50 C 36 58 26 54 22 50\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"none\" marker-end=\"url(#arr)\"/>\n                    <path d=\"M 20 38 C 22 28 28 22 30 21\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"none\" marker-end=\"url(#arr)\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Nudge — ניהול כספים קולי",
+          "icon": "🌱",
+          "theme": "t-green",
+          "tags": [
+            "Flask",
+            "Claude Haiku",
+            "SQLite",
+            "Web Speech API",
+            "gTTS"
+          ],
+          "desc": "דחיפה עדינה בכיוון הנכון — עוזר פיננסי שמאזין לך בעברית, מבין מה קנית ובכמה, מנהל את היתרה שלך ומציג סיכום הוצאות לפי קטגוריות.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/nudge",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"22\" stroke=\"#4ade80\" stroke-width=\"1.5\" fill=\"rgba(20,80,45,.3)\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"14\" stroke=\"#4ade80\" stroke-width=\"1\" fill=\"rgba(20,80,45,.4)\" stroke-dasharray=\"3 2\"/>\n                    <text x=\"29\" y=\"41\" font-size=\"18\" fill=\"#4ade80\">₪</text>\n                    <line x1=\"36\" y1=\"8\"  x2=\"36\" y2=\"14\" stroke=\"#4ade80\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                    <line x1=\"36\" y1=\"58\" x2=\"36\" y2=\"64\" stroke=\"#4ade80\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                    <line x1=\"8\"  y1=\"36\" x2=\"14\" y2=\"36\" stroke=\"#4ade80\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                    <line x1=\"58\" y1=\"36\" x2=\"64\" y2=\"36\" stroke=\"#4ade80\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                </svg>"
+        },
+        {
+          "title": "Deep Course — קורס למידה עמוקה",
+          "icon": "🎓",
+          "theme": "t-green",
+          "tags": [
+            "Python",
+            "Jupyter",
+            "NumPy",
+            "matplotlib",
+            "ipywidgets"
+          ],
+          "desc": "קורס אינטראקטיבי על רשתות נוירונים מהבסיס: SGD עם ויזואליזציה אינטראקטיבית, backpropagation, גרפים חישוביים — שיעור אחר שיעור.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/deepcourse",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <!-- Neural net nodes -->\n                    <circle cx=\"14\" cy=\"24\" r=\"5\" fill=\"rgba(52,211,153,.25)\" stroke=\"#34d399\" stroke-width=\"1.5\"/>\n                    <circle cx=\"14\" cy=\"48\" r=\"5\" fill=\"rgba(52,211,153,.25)\" stroke=\"#34d399\" stroke-width=\"1.5\"/>\n                    <circle cx=\"36\" cy=\"16\" r=\"5\" fill=\"rgba(52,211,153,.35)\" stroke=\"#34d399\" stroke-width=\"1.5\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"5\" fill=\"rgba(52,211,153,.35)\" stroke=\"#34d399\" stroke-width=\"1.5\"/>\n                    <circle cx=\"36\" cy=\"56\" r=\"5\" fill=\"rgba(52,211,153,.35)\" stroke=\"#34d399\" stroke-width=\"1.5\"/>\n                    <circle cx=\"58\" cy=\"36\" r=\"5\" fill=\"rgba(52,211,153,.5)\"  stroke=\"#34d399\" stroke-width=\"2\"/>\n                    <!-- Connections -->\n                    <line x1=\"19\" y1=\"24\" x2=\"31\" y2=\"17\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".5\"/>\n                    <line x1=\"19\" y1=\"24\" x2=\"31\" y2=\"36\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".5\"/>\n                    <line x1=\"19\" y1=\"24\" x2=\"31\" y2=\"56\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".3\"/>\n                    <line x1=\"19\" y1=\"48\" x2=\"31\" y2=\"17\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".3\"/>\n                    <line x1=\"19\" y1=\"48\" x2=\"31\" y2=\"36\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".5\"/>\n                    <line x1=\"19\" y1=\"48\" x2=\"31\" y2=\"56\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".5\"/>\n                    <line x1=\"41\" y1=\"16\" x2=\"53\" y2=\"36\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".4\"/>\n                    <line x1=\"41\" y1=\"36\" x2=\"53\" y2=\"36\" stroke=\"#34d399\" stroke-width=\"1.5\" opacity=\".7\"/>\n                    <line x1=\"41\" y1=\"56\" x2=\"53\" y2=\"36\" stroke=\"#34d399\" stroke-width=\"1\" opacity=\".4\"/>\n                </svg>\n            ",
+          "ai": true
+        },
+        {
+          "title": "g4 — Gemma 4 מקומי",
+          "icon": "🟢",
+          "theme": "t-green",
+          "tags": [
+            "Flask",
+            "Ollama",
+            "Gemma 4",
+            "Local LLM"
+          ],
+          "desc": "צ'אטבוט מקומי מבוסס Google Gemma 4 E2B דרך Ollama. ממשק ווב עם RTL, סטרימינג, Markdown ו-LaTeX. רץ על GTX 1060 6GB ללא אינטרנט.",
+          "links": [
+            {
+              "href": "http://localhost:5000",
+              "style": "primary",
+              "label": "▶ פתח (מקומי)",
+              "external": false
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"28\" stroke=\"#4ade80\" stroke-width=\"1.5\" opacity=\".3\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"18\" stroke=\"#4ade80\" stroke-width=\"1.5\" opacity=\".5\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"8\"  fill=\"#4ade80\" opacity=\".8\"/>\n                    <circle cx=\"36\" cy=\"14\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"36\" cy=\"58\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"14\" cy=\"36\" r=\"3\"  fill=\"#4ade80\"/>\n                    <circle cx=\"58\" cy=\"36\" r=\"3\"  fill=\"#4ade80\"/>\n                </svg>",
+          "dir": "g4"
+        },
+        {
+          "title": "Dragon Cloud — LLM סיני בענן",
+          "icon": "🐉",
+          "theme": "t-red",
+          "tags": [
+            "Python",
+            "vLLM",
+            "HuggingFace",
+            "GPU Cloud"
+          ],
+          "desc": "פריסת מודלי LLM סיניים בקוד פתוח (GLM-5, Kimi K2.5, Qwen3.5) על קלאסטר GPU בענן — inference עצמאי, עלות-תועלת, ללא תלות ב-OpenAI.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/dragon-cloud",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בתכנון"
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <ellipse cx=\"36\" cy=\"44\" rx=\"24\" ry=\"13\" fill=\"rgba(90,20,20,.35)\" stroke=\"#f87171\" stroke-width=\"1.5\"/>\n                    <ellipse cx=\"24\" cy=\"36\" rx=\"12\" ry=\"9\"  fill=\"rgba(90,20,20,.4)\"  stroke=\"#f87171\" stroke-width=\"1\"/>\n                    <ellipse cx=\"48\" cy=\"36\" rx=\"12\" ry=\"9\"  fill=\"rgba(90,20,20,.4)\"  stroke=\"#f87171\" stroke-width=\"1\"/>\n                    <text x=\"25\" y=\"48\" font-size=\"20\" fill=\"#f87171\" opacity=\".85\">龙</text>\n                </svg>"
+        },
+        {
+          "title": "Archon — שחזור משחק קומודור 64",
+          "icon": "⚔️",
+          "theme": "t-amber",
+          "tags": [
+            "HTML5 Canvas",
+            "Vanilla JS",
+            "Node.js",
+            "Socket.IO",
+            "Multiplayer"
+          ],
+          "desc": "שחזור Archon: The Light and the Dark (1983) כמשחק דפדפן — לוח אסטרטגי 9×9 עם מחזור אור/חושך, 18 כלי קסם לכל צד, קרבות action ומולטיפלייר אונליין. רץ לוקאלית כרגע.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/archon",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"6\"  y=\"6\"  width=\"20\" height=\"20\" fill=\"rgba(245,158,11,.18)\" stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"26\" y=\"6\"  width=\"20\" height=\"20\" fill=\"rgba(30,30,40,.7)\"    stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"46\" y=\"6\"  width=\"20\" height=\"20\" fill=\"rgba(245,158,11,.18)\" stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"6\"  y=\"26\" width=\"20\" height=\"20\" fill=\"rgba(30,30,40,.7)\"    stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"26\" y=\"26\" width=\"20\" height=\"20\" fill=\"rgba(245,158,11,.35)\" stroke=\"#fbbf24\" stroke-width=\"2\"/>\n                    <rect x=\"46\" y=\"26\" width=\"20\" height=\"20\" fill=\"rgba(30,30,40,.7)\"    stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"6\"  y=\"46\" width=\"20\" height=\"20\" fill=\"rgba(245,158,11,.18)\" stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"26\" y=\"46\" width=\"20\" height=\"20\" fill=\"rgba(30,30,40,.7)\"    stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <rect x=\"46\" y=\"46\" width=\"20\" height=\"20\" fill=\"rgba(245,158,11,.18)\" stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"5\" fill=\"#fbbf24\"/>\n                </svg>"
+        },
+        {
+          "title": "Haskala — אדמיניסטרציה של כיתה",
+          "icon": "📝",
+          "theme": "t-teal",
+          "tags": [
+            "Flask",
+            "Claude Vision",
+            "Gemini",
+            "Google Classroom",
+            "OCR כתב יד",
+            "בדיקת מתמטיקה"
+          ],
+          "desc": "תלמידים כותבים שיעורי בית על נייר, מצלמים בטלפון ומעלים ל-Google Classroom. Claude Vision מתמלל את כתב היד, בודק את התשובות, ומחזיר משוב — אוטומטית או דרך סקירת מורה.",
+          "links": [
+            {
+              "href": "https://orimosenzon-haskala-ocr.hf.space",
+              "style": "primary",
+              "label": "▶ בודק תרגילים (OCR)",
+              "external": true
+            },
+            {
+              "href": "https://orimosenzon-haskala-math.hf.space",
+              "style": "secondary",
+              "label": "🔒 בדיקת מתמטיקה (מוגן בסיסמה)",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"14\" y=\"10\" width=\"40\" height=\"52\" rx=\"3\" fill=\"rgba(10,70,65,.4)\" stroke=\"#2dd4bf\" stroke-width=\"1.5\"/>\n                    <line x1=\"20\" y1=\"22\" x2=\"48\" y2=\"22\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <line x1=\"20\" y1=\"30\" x2=\"44\" y2=\"30\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <line x1=\"20\" y1=\"38\" x2=\"46\" y2=\"38\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <line x1=\"20\" y1=\"46\" x2=\"40\" y2=\"46\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".5\"/>\n                    <path d=\"M 42 52 L 47 57 L 56 46\" stroke=\"#2dd4bf\" stroke-width=\"2.5\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n                </svg>",
+          "dir": "haskala",
+          "private": true
+        },
+        {
+          "title": "Remez — רמזים ל-OCR עברי",
+          "icon": "💡",
+          "theme": "t-teal",
+          "tags": [
+            "Flask",
+            "Claude Opus 4.8",
+            "in-context learning",
+            "פרויקט-בת ל-Haskala"
+          ],
+          "desc": "ניסוי קצר לבדוק האם מספר רמזים של (חיתוך מילה בכתב יד, התמלול הנכון) משפרים את ה-OCR של שאר הדף של אותו תלמיד. לא ML — רק in-context examples. ממשק גרפי לתיוג מילים, השוואת מודלים (Claude / Gemini), ודמו חי של תמלול עם/בלי רמזים.",
+          "links": [
+            {
+              "href": "https://orimosenzon-remez-hints.hf.space",
+              "style": "primary",
+              "label": "🔒 דמו רמזים (מוגן בסיסמה)",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/remez",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"14\" width=\"52\" height=\"44\" rx=\"3\" fill=\"rgba(10,70,65,.4)\" stroke=\"#2dd4bf\" stroke-width=\"1.5\"/>\n                    <rect x=\"16\" y=\"22\" width=\"14\" height=\"8\" fill=\"rgba(253,224,71,.5)\" stroke=\"#fde047\" stroke-width=\"1\"/>\n                    <rect x=\"34\" y=\"22\" width=\"10\" height=\"8\" fill=\"rgba(253,224,71,.5)\" stroke=\"#fde047\" stroke-width=\"1\"/>\n                    <rect x=\"48\" y=\"22\" width=\"8\" height=\"8\" fill=\"rgba(253,224,71,.5)\" stroke=\"#fde047\" stroke-width=\"1\"/>\n                    <line x1=\"16\" y1=\"38\" x2=\"56\" y2=\"38\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <line x1=\"16\" y1=\"44\" x2=\"50\" y2=\"44\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".5\"/>\n                    <line x1=\"16\" y1=\"50\" x2=\"46\" y2=\"50\" stroke=\"#2dd4bf\" stroke-width=\"1.2\" opacity=\".5\"/>\n                    <circle cx=\"36\" cy=\"8\" r=\"3\" fill=\"#fde047\"/>\n                </svg>"
+        },
+        {
+          "title": "OpenClaw — סוכן קולי",
+          "icon": "🦾",
+          "theme": "t-purple",
+          "tags": [
+            "Python",
+            "Faster-Whisper",
+            "Gemini API",
+            "gTTS"
+          ],
+          "desc": "סוכן AI קולי מבוסס Gemini — מאזין דרך מיקרופון, מתמלל עם Faster-Whisper (אופליין), עונה בטקסט-לדיבור. ידיים פנויות, תמלול ווצאפ.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/openclaw",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"20\" stroke=\"#c084fc\" stroke-width=\"1.5\" fill=\"rgba(60,20,90,.3)\"/>\n                    <rect x=\"32\" y=\"22\" width=\"8\" height=\"14\" rx=\"4\" fill=\"#c084fc\" opacity=\".8\"/>\n                    <path d=\"M 26 34 C 26 44 46 44 46 34\" stroke=\"#c084fc\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/>\n                    <line x1=\"36\" y1=\"44\" x2=\"36\" y2=\"50\" stroke=\"#c084fc\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                    <line x1=\"28\" y1=\"50\" x2=\"44\" y2=\"50\" stroke=\"#c084fc\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                    <!-- sound waves -->\n                    <path d=\"M 14 28 C 10 32 10 40 14 44\" stroke=\"#c084fc\" stroke-width=\"1.5\" fill=\"none\" opacity=\".5\" stroke-linecap=\"round\"/>\n                    <path d=\"M 58 28 C 62 32 62 40 58 44\" stroke=\"#c084fc\" stroke-width=\"1.5\" fill=\"none\" opacity=\".5\" stroke-linecap=\"round\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "פרדספדיה — ויקי קהילתי",
+          "icon": "🌳",
+          "theme": "t-green",
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ],
+          "tags": [
+            "Python",
+            "MediaWiki API",
+            "Claude API",
+            "בוט אוטומטי"
+          ],
+          "desc": "הוויקי של פרדס חנה-כרכור, ובוט שמתחזק אותו: כותב ערכים חדשים, מעבה קיימים ממקורות, מאתר תמונות ברישיון חופשי, ומרענן לוח אירועי תרבות שמתעדכן לבד.",
+          "links": [
+            {
+              "href": "https://pardespedia.info",
+              "style": "live",
+              "label": "▶ פתח את הוויקי",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/pardespedia",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        },
+        {
+          "title": "One Prompt — תוכנה מפרומפט אחד",
+          "icon": "✦",
+          "theme": "t-purple",
+          "tags": [
+            "Claude Code",
+            "פרומפט יחיד",
+            "HTML/JS"
+          ],
+          "desc": "אוסף תוכנות שכל אחת נכתבה מפרומפט בודד, בלי סבב תיקונים. הפרומפט המקורי שמור לצד התוצאה, כך שאפשר לראות בדיוק מה נדרש כדי לקבל מה.",
+          "links": [
+            {
+              "href": "one_prompt/index.html",
+              "style": "primary",
+              "label": "▶ פתח את האוסף"
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/one_prompt",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "emoji": "🌐",
+      "title": "אפליקציות מלאות",
+      "grid": "projects",
+      "projects": [
+        {
+          "title": "דרך קיצור — שבילי פרדס חנה-כרכור",
+          "icon": "🥾",
+          "theme": "t-green",
+          "tags": [
+            "MapLibre GL",
+            "My Maps KML",
+            "OpenStreetMap",
+            "ניווט GPS"
+          ],
+          "desc": "מדריך לרשת קיצורי הדרך של המושבה, מעל שכבת Google My Maps חיה של היוזמה. 49 שבילים עם חיפוש ומיון לפי קרבה, 84 תמונות בגודל מלא, וסטריט ויו לכל כניסה שמכוון מהרחוב אל פתח השביל. 83% מהשבילים לא קיימים בשום מנוע ניווט, ולכן הניווט פנימי ורץ על גיאומטריית השביל עצמה. תצוגה מוטה עם תבליט שטח. בלי שום מפתח API.",
+          "links": [
+            {
+              "href": "dereh_kitzur/",
+              "style": "primary",
+              "label": "🗺️ פתח מפה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/dereh_kitzur",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- A path threading between two blocks, with a viewpoint pin -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"4\" y=\"12\" width=\"20\" height=\"26\" rx=\"2\" fill=\"rgba(6,60,30,.55)\" stroke=\"#34d399\" stroke-width=\"1.1\"/>\n                    <rect x=\"48\" y=\"18\" width=\"20\" height=\"30\" rx=\"2\" fill=\"rgba(6,60,30,.55)\" stroke=\"#34d399\" stroke-width=\"1.1\"/>\n                    <path d=\"M30 68 C 34 52, 30 40, 36 28 C 40 20, 38 12, 42 4\" stroke=\"#34d399\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-dasharray=\"5 4\"/>\n                    <circle cx=\"42\" cy=\"6\" r=\"4.5\" fill=\"#34d399\" opacity=\".9\"/>\n                    <circle cx=\"30\" cy=\"66\" r=\"3\" fill=\"rgba(52,211,153,.5)\" stroke=\"#34d399\" stroke-width=\"1\"/>\n                </svg>\n            ",
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
+          "title": "Inbal — אתר קרמיקה",
+          "icon": "🏺",
+          "theme": "t-pink",
+          "tags": [
+            "Next.js",
+            "Prisma",
+            "NextAuth",
+            "Twilio",
+            "Tailwind"
+          ],
+          "desc": "פלטפורמה לאמנית קרמיקה — גלריה, ניהול הזמנות, תקשורת עם לקוחות, ואזור ניהול מאובטח עם אימות משתמשים ו-SMS דרך Twilio.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/inbal",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Ceramic vase -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <ellipse cx=\"36\" cy=\"57\" rx=\"18\" ry=\"4\" fill=\"#f472b6\" opacity=\".25\"/>\n                    <path d=\"M 22 54 Q 16 42 18 28 Q 20 16 36 13 Q 52 16 54 28 Q 56 42 50 54 Z\" fill=\"rgba(90,20,55,.5)\" stroke=\"#f472b6\" stroke-width=\"1.5\"/>\n                    <path d=\"M 24 36 Q 28 31 32 36 Q 36 41 40 36 Q 44 31 48 36\" stroke=\"#f472b6\" stroke-width=\"1.1\" fill=\"none\" opacity=\".6\"/>\n                    <path d=\"M 23 44 Q 27 40 31 44 Q 35 48 39 44 Q 43 40 49 44\" stroke=\"#f472b6\" stroke-width=\".9\" fill=\"none\" opacity=\".4\"/>\n                    <ellipse cx=\"36\" cy=\"14\" rx=\"10\" ry=\"3.5\" fill=\"rgba(90,20,55,.7)\" stroke=\"#f472b6\" stroke-width=\"1.5\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "בדרך להחלמה",
+          "icon": "🚑",
+          "theme": "t-green",
+          "tags": [
+            "Next.js",
+            "Supabase",
+            "TypeScript",
+            "Tailwind"
+          ],
+          "desc": "פלטפורמה לתיאום נסיעות התנדבותיות: מחברת בין חולים שזקוקים להסעה לטיפולים (כימותרפיה, דיאליזה) לבין מתנדבים.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/road-to-recovery",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Car + heart on road -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <path d=\"M 4 58 Q 36 48 68 58\" stroke=\"#4ade80\" stroke-width=\"1.5\" fill=\"none\" opacity=\".4\"/>\n                    <rect x=\"14\" y=\"38\" width=\"44\" height=\"18\" rx=\"5\" fill=\"rgba(20,80,45,.6)\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <path d=\"M 20 38 Q 24 24 36 22 Q 48 24 52 38 Z\" fill=\"rgba(20,80,45,.4)\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <circle cx=\"22\" cy=\"56\" r=\"5.5\" fill=\"rgba(20,80,45,.8)\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <circle cx=\"50\" cy=\"56\" r=\"5.5\" fill=\"rgba(20,80,45,.8)\" stroke=\"#4ade80\" stroke-width=\"1.5\"/>\n                    <!-- heart -->\n                    <path d=\"M 32 30 Q 32 26 36 26 Q 40 26 40 30 Q 40 35 36 38 Q 32 35 32 30 Z\" fill=\"#4ade80\" opacity=\".85\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Smart Business Search",
+          "icon": "🗺️",
+          "theme": "t-blue",
+          "tags": [
+            "Google Maps",
+            "Gemini AI",
+            "Flutter",
+            "Multilingual"
+          ],
+          "desc": "חיפוש עסקים בשפה טבעית על גבי מפה — \"מסעדות איטלקיות פתוחות עכשיו\". תמיכה בעברית, אנגלית וספרדית. גם כאפליקציית Flutter לאנדרואיד.",
+          "links": [
+            {
+              "href": "ori/index.html",
+              "style": "primary",
+              "label": "▶ פתח Web App",
+              "external": false
+            },
+            {
+              "href": "ori_android/",
+              "style": "secondary",
+              "label": "📱 Android (Flutter)",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Map + pin + search -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"8\" y=\"10\" width=\"56\" height=\"52\" rx=\"6\" fill=\"rgba(20,50,90,.4)\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".6\"/>\n                    <line x1=\"8\"  y1=\"36\" x2=\"64\" y2=\"36\" stroke=\"#60a5fa\" stroke-width=\"1.2\" opacity=\".25\"/>\n                    <line x1=\"36\" y1=\"10\" x2=\"36\" y2=\"62\" stroke=\"#60a5fa\" stroke-width=\"1.2\" opacity=\".25\"/>\n                    <circle cx=\"36\" cy=\"32\" r=\"8\"   fill=\"rgba(20,50,90,.8)\" stroke=\"#60a5fa\" stroke-width=\"2\"/>\n                    <circle cx=\"36\" cy=\"32\" r=\"3.5\" fill=\"#60a5fa\"/>\n                    <path d=\"M 36 40 L 36 52\" stroke=\"#60a5fa\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".6\"/>\n                    <circle cx=\"54\" cy=\"18\" r=\"7\"   stroke=\"#60a5fa\" stroke-width=\"1.5\" fill=\"rgba(20,50,90,.5)\" opacity=\".7\"/>\n                    <line x1=\"59\" y1=\"24\" x2=\"65\" y2=\"30\" stroke=\"#60a5fa\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".7\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Bloom — מצא את הפרחים שלך",
+          "icon": "🌸",
+          "theme": "t-pink",
+          "tags": [
+            "HTML/JS",
+            "RTL",
+            "Vanilla"
+          ],
+          "desc": "\"הפרחים הנכונים, לאדם הנכון, עכשיו\" — פלטפורמת פרחים לחיפוש לפי אירוע ותקציב, פרופיל ספק, והמלצות מותאמות אישית.",
+          "links": [
+            {
+              "href": "bloom/index.html",
+              "style": "primary",
+              "label": "▶ פתח",
+              "external": false
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"8\" fill=\"#f472b6\" opacity=\".9\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(0   36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(60  36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(120 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(180 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(240 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(300 36 36)\"/>\n                    <line x1=\"36\" y1=\"44\" x2=\"36\" y2=\"62\" stroke=\"#4ade80\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                </svg>"
+        },
+        {
+          "title": "הגיטרות של יצחק",
+          "icon": "🎸",
+          "theme": "t-amber",
+          "tags": [
+            "HTML/CSS/JS",
+            "RTL",
+            "אתר סטטי",
+            "גלריית תמונות"
+          ],
+          "desc": "אתר מכירה והנצחה לגיטרות בעבודת יד שנותרו מסדנתו של בונה גיטרות שנפטר. קטלוג עם מפרט ותמונות לכל כלי, לצד סיפורו של הבונה.",
+          "links": [
+            {
+              "href": "alon/index.html",
+              "style": "primary",
+              "label": "▶ פתח את האתר"
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/alon",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        },
+        {
+          "title": "חידתי — מצגת משקיעים",
+          "icon": "🎤",
+          "theme": "t-pink",
+          "tags": [
+            "HTML יחיד",
+            "RTL",
+            "16 שקופיות"
+          ],
+          "desc": "מצגת משקיעים לחידתי, בקובץ HTML אחד עם ניווט מקלדת — במקום PowerPoint שצריך לשלוח כקובץ.",
+          "links": [
+            {
+              "href": "chidonait/index.html",
+              "style": "primary",
+              "label": "▶ פתח את המצגת"
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/chidonait",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "emoji": "🎮",
+      "title": "משחקים והרפתקאות",
+      "grid": "projects",
+      "projects": [
+        {
+          "title": "Fable — אופנוע סילון מעופף",
+          "icon": "🚀",
+          "theme": "t-cyan",
+          "tags": [
+            "Three.js",
+            "Rigid Body Physics",
+            "Procedural World",
+            "WebAudio"
+          ],
+          "desc": "משחק טיסה תלת־ממדי עם פיזיקת גוף קשיח אמיתית: מנוע סילון אחורי, שלושה צינורות עילוי שמטים ומגלגלים את האופנוע, עולם פרוצדורלי של הרים ועמקים, ומסלול 16 טבעות נגד השעון.",
+          "links": [
+            {
+              "href": "fable/index.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/fable",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- Mountains + flight path through a ring -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <polygon points=\"4,62 20,30 36,62\"  fill=\"rgba(8,60,70,.5)\" stroke=\"#22d3ee\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <polygon points=\"26,62 46,20 66,62\" fill=\"rgba(8,60,70,.7)\" stroke=\"#22d3ee\" stroke-width=\"1.2\"/>\n                    <ellipse cx=\"36\" cy=\"30\" rx=\"9\" ry=\"11\" stroke=\"#fbbf24\" stroke-width=\"2\" fill=\"none\"/>\n                    <path d=\"M6 40 C 20 34, 28 32, 36 30 S 56 24, 68 16\" stroke=\"#22d3ee\" stroke-width=\"1.5\" stroke-dasharray=\"3 3\" fill=\"none\"/>\n                    <circle cx=\"36\" cy=\"30\" r=\"2.5\" fill=\"#22d3ee\"/>\n                    <line x1=\"31\" y1=\"33\" x2=\"27\" y2=\"36\" stroke=\"#f97316\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "אופנוע סילון — עמק אלפיני",
+          "icon": "🏔️",
+          "theme": "t-cyan",
+          "tags": [
+            "Three.js",
+            "Euler Rigid Body",
+            "GLSL Shaders",
+            "HDR Bloom"
+          ],
+          "desc": "גרסה עם פיזיקה מלאה: משוואות אוילר לגוף קשיח עם טנזור התמד, שימור תנע זוויתי, פרצסיה גירוסקופית מרוטור המנוע, מודל הזדקרות אמיתי וצפיפות אוויר לפי גובה. זרבוביות מוסטות־כיוון למעבר בין ריחוף לטיסת כנף, סילון עם תאי הלם, ופיצוץ עם ענן פטרייה של טבעת מערבולת. בקרת טיסה עם ריסון קצב מובנה ומוסכמת סטיק, והקלטת וידאו וטלמטריה מובנית (V).",
+          "links": [
+            {
+              "href": "opus5/index.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/opus5",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- Mushroom cloud over a ridge -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <polygon points=\"2,64 22,38 42,64\" fill=\"rgba(8,60,70,.5)\" stroke=\"#22d3ee\" stroke-width=\"1.1\" opacity=\".7\"/>\n                    <polygon points=\"30,64 50,32 70,64\" fill=\"rgba(8,60,70,.7)\" stroke=\"#22d3ee\" stroke-width=\"1.1\"/>\n                    <ellipse cx=\"36\" cy=\"18\" rx=\"16\" ry=\"8\" fill=\"rgba(249,115,22,.28)\" stroke=\"#f97316\" stroke-width=\"1.6\"/>\n                    <path d=\"M32 26 C 31 38, 33 46, 34 56\" stroke=\"#f97316\" stroke-width=\"2.4\" stroke-linecap=\"round\" opacity=\".8\"/>\n                    <path d=\"M40 26 C 41 38, 39 46, 38 56\" stroke=\"#f97316\" stroke-width=\"2.4\" stroke-linecap=\"round\" opacity=\".8\"/>\n                    <path d=\"M22 20 C 26 12, 46 12, 50 20\" stroke=\"#fbbf24\" stroke-width=\"1.3\" fill=\"none\" opacity=\".7\"/>\n                    <circle cx=\"36\" cy=\"57\" r=\"3\" fill=\"#fbbf24\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "פיפין — הרפתקה בארץ התיכונה",
+          "icon": "🧙",
+          "theme": "t-amber",
+          "tags": [
+            "HTML/JS",
+            "Gemini API",
+            "Image Gen",
+            "RTL"
+          ],
+          "desc": "משחק הרפתקה טקסטואלי-ויזואלי: משחקים בתפקיד פיפין בתקופת שר הטבעות. נרטיב דינמי מבוסס Gemini, תמונות AI לכל מיקום, 30+ לוקיישנים.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/pipin",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <!-- Mountains + ring + hobbit -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <polygon points=\"6,62 22,28 38,62\"  fill=\"rgba(80,55,10,.4)\" stroke=\"#fbbf24\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <polygon points=\"22,62 44,18 66,62\" fill=\"rgba(80,55,10,.6)\" stroke=\"#fbbf24\" stroke-width=\"1.2\"/>\n                    <circle cx=\"14\" cy=\"14\" r=\"1.5\" fill=\"#fbbf24\" opacity=\".8\"/>\n                    <circle cx=\"26\" cy=\"8\"  r=\"1\"   fill=\"#fbbf24\" opacity=\".6\"/>\n                    <circle cx=\"58\" cy=\"12\" r=\"1.5\" fill=\"#fbbf24\" opacity=\".7\"/>\n                    <circle cx=\"50\" cy=\"6\"  r=\"1\"   fill=\"#fbbf24\" opacity=\".5\"/>\n                    <!-- ring -->\n                    <circle cx=\"56\" cy=\"28\" r=\"9\"  stroke=\"#fbbf24\" stroke-width=\"1.5\" fill=\"none\" opacity=\".5\"/>\n                    <circle cx=\"56\" cy=\"28\" r=\"4.5\" stroke=\"#fbbf24\" stroke-width=\"1\" fill=\"rgba(80,55,10,.5)\"/>\n                    <!-- hobbit figure -->\n                    <circle cx=\"20\" cy=\"50\" r=\"3\" fill=\"#fbbf24\" opacity=\".6\"/>\n                    <line x1=\"20\" y1=\"53\" x2=\"20\" y2=\"63\" stroke=\"#fbbf24\" stroke-width=\"1.5\" opacity=\".6\"/>\n                    <line x1=\"15\" y1=\"57\" x2=\"25\" y2=\"57\" stroke=\"#fbbf24\" stroke-width=\"1.5\" opacity=\".6\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Dirt Bike Racing",
+          "icon": "🏍️",
+          "theme": "t-red",
+          "tags": [
+            "Canvas",
+            "Physics",
+            "Game"
+          ],
+          "desc": "משחק מרוצי אופנועים עם פיזיקת 2D. שולטים באופנוע בשטח מאתגר עם הדמיית פיזיקה ריאליסטית.",
+          "links": [
+            {
+              "href": "mmx.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Motorcycle on terrain -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <path d=\"M 0 60 Q 18 46 36 56 Q 54 66 72 50\" stroke=\"#f87171\" stroke-width=\"1.5\" fill=\"none\" opacity=\".5\"/>\n                    <path d=\"M 0 65 Q 18 51 36 61 Q 54 71 72 55 L 72 72 L 0 72 Z\" fill=\"rgba(90,20,20,.3)\"/>\n                    <ellipse cx=\"36\" cy=\"42\" rx=\"17\" ry=\"7\" fill=\"rgba(90,20,20,.5)\" stroke=\"#f87171\" stroke-width=\"1.5\" transform=\"rotate(-8 36 42)\"/>\n                    <circle cx=\"22\" cy=\"51\" r=\"7\" stroke=\"#f87171\" stroke-width=\"2\" fill=\"rgba(90,20,20,.7)\"/>\n                    <circle cx=\"22\" cy=\"51\" r=\"3\" fill=\"#f87171\" opacity=\".5\"/>\n                    <circle cx=\"50\" cy=\"49\" r=\"7\" stroke=\"#f87171\" stroke-width=\"2\" fill=\"rgba(90,20,20,.7)\"/>\n                    <circle cx=\"50\" cy=\"49\" r=\"3\" fill=\"#f87171\" opacity=\".5\"/>\n                    <circle cx=\"38\" cy=\"30\" r=\"5\" fill=\"#f87171\" opacity=\".6\"/>\n                    <path d=\"M 34 35 Q 36 42 42 38\" stroke=\"#f87171\" stroke-width=\"1.5\" fill=\"none\" opacity=\".7\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "סודוקו עם רמזים חכמים",
+          "icon": "🎯",
+          "theme": "t-indigo",
+          "tags": [
+            "Vanilla JS",
+            "Logic",
+            "Puzzle"
+          ],
+          "desc": "פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.",
+          "links": [
+            {
+              "href": "soduku.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Sudoku grid -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"10\" width=\"52\" height=\"52\" rx=\"4\" stroke=\"#818cf8\" stroke-width=\"1.5\" fill=\"rgba(25,25,90,.3)\"/>\n                    <line x1=\"27\" y1=\"10\" x2=\"27\" y2=\"62\" stroke=\"#818cf8\" stroke-width=\".7\" opacity=\".4\"/>\n                    <line x1=\"44\" y1=\"10\" x2=\"44\" y2=\"62\" stroke=\"#818cf8\" stroke-width=\".7\" opacity=\".4\"/>\n                    <line x1=\"10\" y1=\"27\" x2=\"62\" y2=\"27\" stroke=\"#818cf8\" stroke-width=\".7\" opacity=\".4\"/>\n                    <line x1=\"10\" y1=\"44\" x2=\"62\" y2=\"44\" stroke=\"#818cf8\" stroke-width=\".7\" opacity=\".4\"/>\n                    <text x=\"14\" y=\"23\" font-size=\"10\" fill=\"#818cf8\" opacity=\".8\">4</text>\n                    <text x=\"31\" y=\"23\" font-size=\"10\" fill=\"#818cf8\" opacity=\".4\">?</text>\n                    <text x=\"48\" y=\"23\" font-size=\"10\" fill=\"#818cf8\" opacity=\".8\">7</text>\n                    <text x=\"14\" y=\"40\" font-size=\"10\" fill=\"#818cf8\" opacity=\".4\">?</text>\n                    <text x=\"31\" y=\"40\" font-size=\"10\" fill=\"#4ade80\" opacity=\".95\">5</text>\n                    <text x=\"48\" y=\"57\" font-size=\"10\" fill=\"#818cf8\" opacity=\".8\">3</text>\n                </svg>\n            "
+        },
+        {
+          "title": "Solar System Simulation",
+          "icon": "🪐",
+          "theme": "t-orange",
+          "tags": [
+            "Canvas",
+            "Astronomy",
+            "Real-time"
+          ],
+          "desc": "סימולציה real-time של מערכת השמש עם מסלולים פלנטריים. ניתן לשנות פרמטרים ולצפות בתנועת כוכבי הלכת.",
+          "links": [
+            {
+              "href": "solar.html",
+              "style": "primary",
+              "label": "▶ גרסה משודרגת"
+            },
+            {
+              "href": "s1.html",
+              "style": "secondary",
+              "label": "גרסה ראשונה",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Solar system -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"1\" fill=\"white\" opacity=\".4\"/><circle cx=\"10\" cy=\"8\"  r=\"1\" fill=\"white\" opacity=\".4\"/>\n                    <circle cx=\"62\" cy=\"10\" r=\"1\" fill=\"white\" opacity=\".3\"/><circle cx=\"64\" cy=\"62\" r=\"1\" fill=\"white\" opacity=\".4\"/>\n                    <circle cx=\"8\"  cy=\"60\" r=\"1\" fill=\"white\" opacity=\".3\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"9\" fill=\"#fb923c\" opacity=\".85\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"12\" fill=\"none\" stroke=\"#fb923c\" stroke-width=\".5\" opacity=\".3\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"22\" ry=\"9\"  stroke=\"#fb923c\" stroke-width=\".8\" fill=\"none\" opacity=\".2\" transform=\"rotate(-15 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"30\" ry=\"13\" stroke=\"#fb923c\" stroke-width=\".8\" fill=\"none\" opacity=\".15\" transform=\"rotate(20 36 36)\"/>\n                    <circle cx=\"57\" cy=\"29\" r=\"3\"   fill=\"#60a5fa\" opacity=\".8\"/>\n                    <circle cx=\"12\" cy=\"48\" r=\"4.5\" fill=\"#f87171\" opacity=\".6\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "חידות לכרמית",
+          "icon": "🧩",
+          "theme": "t-pink",
+          "tags": [
+            "HTML/CSS/JS",
+            "Word Riddles"
+          ],
+          "desc": "משחק חידות מילים בעברית ואנגלית מתמונות בכתב יד, עם רמזים, משוב לכל תשובה, ודוח סופי מפורט וציון.",
+          "links": [
+            {
+              "href": "כרמית/app/index.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/כרמית",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "small": true,
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "emoji": "🛠️",
+      "title": "כלים אינטראקטיביים",
+      "grid": "projects",
+      "projects": [
+        {
+          "title": "Central Park Development Model",
+          "icon": "🗽",
+          "theme": "t-orange",
+          "tags": [
+            "Leaflet.js",
+            "Heat Map",
+            "Real Estate Economics"
+          ],
+          "desc": "מה יקרה לערך הנדל\"ן של מנהטן אם יבנו מגדלים על סנטרל פארק? ציירו על הפארק, ראו בזמן אמת איך מפת החום זזה. מודל ריאליסטי: פרימיום לוקאלי + רוויית שוק (Saiz 2010) + תיירות + בריאות/סביבה.",
+          "links": [
+            {
+              "href": "manhattan_project/index.html",
+              "style": "primary",
+              "label": "🗺️ פתח מודל",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/manhattan_project",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <!-- Manhattan island outline -->\n                    <path d=\"M36 8 L28 12 L22 22 L20 35 L22 48 L28 58 L36 64 L44 58 L50 48 L52 35 L50 22 L44 12 Z\"\n                          fill=\"none\" stroke=\"#f6ad55\" stroke-width=\"1.5\" opacity=\".4\"/>\n                    <!-- Central Park green rect -->\n                    <rect x=\"29\" y=\"24\" width=\"14\" height=\"22\" rx=\"2\" fill=\"#27ae60\" opacity=\".7\"/>\n                    <!-- Heat dots around park -->\n                    <circle cx=\"20\" cy=\"30\" r=\"3\" fill=\"#ff6600\" opacity=\".8\"/>\n                    <circle cx=\"52\" cy=\"30\" r=\"3\" fill=\"#ff6600\" opacity=\".8\"/>\n                    <circle cx=\"20\" cy=\"40\" r=\"2.5\" fill=\"#ffcc00\" opacity=\".7\"/>\n                    <circle cx=\"52\" cy=\"40\" r=\"2.5\" fill=\"#ffcc00\" opacity=\".7\"/>\n                    <circle cx=\"36\" cy=\"14\" r=\"2\" fill=\"#ff0000\" opacity=\".6\"/>\n                    <circle cx=\"36\" cy=\"58\" r=\"2\" fill=\"#0066ff\" opacity=\".6\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "esla_vibe — אלגברה לינארית",
+          "icon": "📐",
+          "theme": "t-blue",
+          "tags": [
+            "Dash",
+            "Plotly",
+            "NumPy",
+            "SymPy"
+          ],
+          "desc": "תכנות מחדש של כלי הוויזואליזציה מ-2009. חמישה tabs אינטראקטיביים: טרנספורמציות לינאריות 2D עם אנימציה, שורות ועמודות, אלימינציה גאוסית שלב-שלב, span וקטורים ב-3D ופונקציות 3D.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/esla_vibe",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <!-- Grid lines before transform -->\n                    <line x1=\"12\" y1=\"20\" x2=\"60\" y2=\"20\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".25\" stroke-dasharray=\"3,3\"/>\n                    <line x1=\"12\" y1=\"36\" x2=\"60\" y2=\"36\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".25\" stroke-dasharray=\"3,3\"/>\n                    <line x1=\"12\" y1=\"52\" x2=\"60\" y2=\"52\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".25\" stroke-dasharray=\"3,3\"/>\n                    <!-- Grid lines after transform (sheared) -->\n                    <line x1=\"10\" y1=\"58\" x2=\"40\" y2=\"14\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".4\"/>\n                    <line x1=\"26\" y1=\"58\" x2=\"56\" y2=\"14\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".4\"/>\n                    <line x1=\"8\"  y1=\"40\" x2=\"64\" y2=\"40\" stroke=\"#60a5fa\" stroke-width=\"1\" opacity=\".3\"/>\n                    <!-- Basis vectors -->\n                    <line x1=\"36\" y1=\"36\" x2=\"55\" y2=\"22\" stroke=\"#f6ad55\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                    <polygon points=\"55,22 49,23 52,29\" fill=\"#f6ad55\"/>\n                    <line x1=\"36\" y1=\"36\" x2=\"50\" y2=\"56\" stroke=\"#68d391\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                    <polygon points=\"50,56 44,51 51,49\" fill=\"#68d391\"/>\n                    <!-- Origin dot -->\n                    <circle cx=\"36\" cy=\"36\" r=\"3\" fill=\"#60a5fa\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Bezier Curve Animation Editor",
+          "icon": "✨",
+          "theme": "t-purple",
+          "tags": [
+            "Canvas",
+            "Animation",
+            "Keyframes",
+            "Timeline"
+          ],
+          "desc": "עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes. כמה גרסאות עם שיפורים הדרגתיים.",
+          "links": [
+            {
+              "href": "animate/animate.html",
+              "style": "primary",
+              "label": "▶ פתח את העורך",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Bezier curve with control handles -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <path d=\"M 10 58 C 14 12 58 58 62 14\" stroke=\"#c084fc\" stroke-width=\"2.5\" fill=\"none\"/>\n                    <circle cx=\"10\" cy=\"58\" r=\"4\"   fill=\"#c084fc\"/>\n                    <circle cx=\"62\" cy=\"14\" r=\"4\"   fill=\"#c084fc\"/>\n                    <circle cx=\"14\" cy=\"12\" r=\"3\"   stroke=\"#c084fc\" stroke-width=\"1.5\" fill=\"rgba(59,20,90,.6)\"/>\n                    <circle cx=\"58\" cy=\"58\" r=\"3\"   stroke=\"#c084fc\" stroke-width=\"1.5\" fill=\"rgba(59,20,90,.6)\"/>\n                    <line x1=\"10\" y1=\"58\" x2=\"14\" y2=\"12\" stroke=\"#c084fc\" stroke-width=\"1\" opacity=\".4\" stroke-dasharray=\"3,2\"/>\n                    <line x1=\"62\" y1=\"14\" x2=\"58\" y2=\"58\" stroke=\"#c084fc\" stroke-width=\"1\" opacity=\".4\" stroke-dasharray=\"3,2\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Historical Empires on the Map",
+          "icon": "🌍",
+          "theme": "t-amber",
+          "tags": [
+            "Maps",
+            "History",
+            "Multilingual"
+          ],
+          "desc": "מפה אינטראקטיבית של אימפריות היסטוריות עם ציר זמן. עקבו אחר עלייתן ונפילתן של ציביליזציות — בעברית, אנגלית וספרדית.",
+          "links": [
+            {
+              "href": "empires.html",
+              "style": "primary",
+              "label": "▶ English",
+              "external": false
+            },
+            {
+              "href": "empires_heb.html",
+              "style": "secondary",
+              "label": "🇮🇱 עברית",
+              "external": false
+            },
+            {
+              "href": "empires_es.html",
+              "style": "secondary",
+              "label": "🇪🇸 Español",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Globe with empire regions -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"26\" stroke=\"#fbbf24\" stroke-width=\"1.5\" fill=\"rgba(80,55,10,.2)\" opacity=\".8\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" stroke=\"#fbbf24\" stroke-width=\".7\" fill=\"none\" opacity=\".3\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"20\" stroke=\"#fbbf24\" stroke-width=\".5\" fill=\"none\" opacity=\".2\"/>\n                    <line x1=\"36\" y1=\"10\" x2=\"36\" y2=\"62\" stroke=\"#fbbf24\" stroke-width=\".7\" opacity=\".3\"/>\n                    <ellipse cx=\"28\" cy=\"32\" rx=\"10\" ry=\"7\" fill=\"#f87171\" opacity=\".35\"/>\n                    <ellipse cx=\"46\" cy=\"27\" rx=\"8\"  ry=\"6\" fill=\"#60a5fa\" opacity=\".3\"/>\n                    <ellipse cx=\"32\" cy=\"44\" rx=\"7\"  ry=\"5\" fill=\"#4ade80\" opacity=\".3\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "Prime Number Spirals",
+          "icon": "🔢",
+          "theme": "t-cyan",
+          "tags": [
+            "Canvas",
+            "Math",
+            "Interactive"
+          ],
+          "desc": "ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה. כולל ספירלת מספרים מתקדמת וספירלה הקסגונלית בגדול עם זום אינטראקטיבי.",
+          "links": [
+            {
+              "href": "primes.html",
+              "style": "primary",
+              "label": "▶ Number Spirals",
+              "external": false
+            },
+            {
+              "href": "hex_primes.html",
+              "style": "secondary",
+              "label": "Hexagonal",
+              "external": false
+            }
+          ],
+          "illus": "                <!-- Spiral with prime dots -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <path d=\"M 36 36 Q 36 28 44 28 Q 52 28 52 36 Q 52 50 36 52 Q 20 52 18 36 Q 16 18 36 16 Q 56 16 60 36\"\n                          stroke=\"#22d3ee\" stroke-width=\"1.5\" fill=\"none\" opacity=\".7\"/>\n                    <circle cx=\"36\" cy=\"30\" r=\"2.5\" fill=\"#22d3ee\"/>\n                    <circle cx=\"44\" cy=\"36\" r=\"2.5\" fill=\"#22d3ee\"/>\n                    <circle cx=\"40\" cy=\"49\" r=\"2.5\" fill=\"#22d3ee\" opacity=\".9\"/>\n                    <circle cx=\"24\" cy=\"44\" r=\"2\"   fill=\"#22d3ee\" opacity=\".8\"/>\n                    <circle cx=\"20\" cy=\"30\" r=\"2\"   fill=\"#22d3ee\" opacity=\".7\"/>\n                    <circle cx=\"30\" cy=\"18\" r=\"2\"   fill=\"#22d3ee\" opacity=\".7\"/>\n                    <circle cx=\"52\" cy=\"22\" r=\"2\"   fill=\"#22d3ee\" opacity=\".8\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"3.5\" fill=\"#22d3ee\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "PGN2Study — פאזלים לשחמט",
+          "icon": "♟",
+          "theme": "t-amber",
+          "tags": [
+            "Python",
+            "Stockfish",
+            "Lichess",
+            "Chess"
+          ],
+          "desc": "מנתח משחקי שחמט (PGN) עם Stockfish ומייצר שיעורים אינטראקטיביים ל-Lichess — מזהה מט ב-1/2, חלקים תלויים, ופרומושן.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/pgn2study",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"10\" y=\"10\" width=\"52\" height=\"52\" rx=\"3\" fill=\"rgba(80,55,10,.2)\" stroke=\"#fbbf24\" stroke-width=\"1.5\"/>\n                    <rect x=\"10\" y=\"10\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"36\" y=\"10\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"23\" y=\"23\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"49\" y=\"23\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"10\" y=\"36\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"36\" y=\"36\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"23\" y=\"49\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <rect x=\"49\" y=\"49\" width=\"13\" height=\"13\" fill=\"#fbbf24\" opacity=\".3\"/>\n                    <text x=\"26\" y=\"46\" font-size=\"22\" fill=\"#fbbf24\" opacity=\".9\">♞</text>\n                </svg>"
+        },
+        {
+          "title": "surfaces — משטחים פרמטריים",
+          "icon": "🌐",
+          "theme": "t-cyan",
+          "tags": [
+            "C++",
+            "Qt6",
+            "OpenGL 3.3",
+            "Differential Geometry"
+          ],
+          "desc": "הדגמה אינטראקטיבית של המושג <em>משטח</em> — העתקה f: R² → R³. קטלוג של פרמטריזציות קלאסיות: כדור, ספירלה תלת-ממדית, טורוס, רצועת מביוס, בקבוק קליין, אוכף וספירלה חרוטית. סיבוב, זום ותאורת Phong עם השיידרים שכתובים ב-GLSL.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/surfaces",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "🖥 דסקטופ"
+            }
+          ],
+          "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <!-- Torus-like wireframe -->\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1.4\" opacity=\".85\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"18\" ry=\"6\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1.2\" opacity=\".55\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".4\" transform=\"rotate(20 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".4\" transform=\"rotate(-20 36 36)\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"2.2\" fill=\"#22d3ee\"/>\n                </svg>\n            "
+        },
+        {
+          "title": "חוקר קבוצת מנדלברוט",
+          "icon": "🌀",
+          "theme": "t-indigo",
+          "tags": [
+            "Canvas",
+            "פרקטלים",
+            "זום עמוק"
+          ],
+          "desc": "זום אינטראקטיבי לתוך קבוצת מנדלברוט, עם מסך נלווה שמראה את מסלול האיטרציות של כל נקודה שבוחרים — למה היא בורחת לאינסוף או נשארת בפנים.",
+          "links": [
+            {
+              "href": "mandelbrot/index.html",
+              "style": "primary",
+              "label": "▶ פתח את החוקר"
+            },
+            {
+              "href": "mandelbrot/iterate.html",
+              "style": "secondary",
+              "label": "מסלול איטרציות"
+            },
+            {
+              "href": "mandel.html",
+              "style": "secondary",
+              "label": "גרסה מוקדמת"
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/mandelbrot",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        },
+        {
+          "title": "ζ — ההמשכה האנליטית של זטא",
+          "icon": "🔮",
+          "theme": "t-purple",
+          "tags": [
+            "Canvas",
+            "אנליזה מרוכבת",
+            "Math"
+          ],
+          "desc": "איך פונקציה שמוגדרת רק מימין לקו אחד מקבלת ערכים בכל המישור המרוכב. ויזואליזציה של ההמשכה האנליטית של פונקציית זטא של רימן ושל האפסים על הקו הקריטי.",
+          "links": [
+            {
+              "href": "zeta.html",
+              "style": "primary",
+              "label": "▶ פתח"
+            }
+          ]
+        },
+        {
+          "title": "תרגול אוצר מילים — תיכון שמיר",
+          "icon": "📚",
+          "theme": "t-teal",
+          "tags": [
+            "HTML יחיד",
+            "אנגלית",
+            "תרגול אינטראקטיבי"
+          ],
+          "desc": "יחידת אוצר מילים באנגלית לכיתה, עם תרגול מיידי ומשוב לכל תשובה. נבנתה לתיכון שמיר לצד פרויקט השכלה.",
+          "links": [
+            {
+              "href": "vocab_optionA.html",
+              "style": "primary",
+              "label": "▶ פתח את התרגול"
+            }
+          ]
+        },
+        {
+          "title": "צפיפות אנרגטית של מצברים",
+          "icon": "🔋",
+          "theme": "t-amber",
+          "tags": [
+            "HTML יחיד",
+            "ויזואליזציה",
+            "Chart"
+          ],
+          "desc": "כמה אנרגיה נדחסה לקילוגרם סוללה, מעופרת-חומצה של המאה ה-19 ועד ליתיום-יון של היום — וכמה איטית העלייה הזאת באמת.",
+          "links": [
+            {
+              "href": "battery_density_chart.html",
+              "style": "primary",
+              "label": "▶ פתח את הגרף"
+            }
+          ]
+        },
+        {
+          "title": "screen capture — צילום מסך מהמגש",
+          "icon": "📸",
+          "theme": "t-blue",
+          "dir": "ירדן",
+          "tags": [
+            "Python",
+            "X11",
+            "System Tray"
+          ],
+          "desc": "כלי קטן למגש המערכת בלינוקס: בוחרים מקש כלשהו מהתפריט, ומאותו רגע לחיצה עליו בכל מקום מצלמת את המסך המלא.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/%D7%99%D7%A8%D7%93%D7%9F",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "emoji": "🌐",
+      "title": "ניסויי 3D",
+      "grid": "projects-mini",
+      "projects": [
+        {
+          "title": "3D Rose &amp; Heart",
+          "icon": "🌹",
+          "theme": "t-pink",
+          "tags": [
+            "Three.js",
+            "Particles"
+          ],
+          "desc": "ורד ולב תלת-מימדיים עם אפקט חלקיקים ואנימציה חלקה.",
+          "links": [
+            {
+              "href": "tmp/v.html",
+              "style": "primary",
+              "label": "▶ פתח",
+              "external": false
+            }
+          ],
+          "small": true
+        },
+        {
+          "title": "Mind · Heart · Body · Spirit",
+          "icon": "🌌",
+          "theme": "t-teal",
+          "tags": [
+            "Three.js",
+            "Animated"
+          ],
+          "desc": "סצנת 3D אנימציה על תמות של נפש, לב, גוף ורוח — בסביבה קוסמית.",
+          "links": [
+            {
+              "href": "tmp/karina.html",
+              "style": "primary",
+              "label": "▶ פתח",
+              "external": false
+            }
+          ],
+          "small": true
+        },
+        {
+          "title": "3D Flying Motorcycle",
+          "icon": "🏍️",
+          "theme": "t-blue",
+          "tags": [
+            "Canvas",
+            "WebGL"
+          ],
+          "desc": "סימולציית נהיגת אופנוע תלת-מימדי עם שליטה במקלדת.",
+          "links": [
+            {
+              "href": "t.html",
+              "style": "primary",
+              "label": "▶ פתח",
+              "external": false
+            }
+          ],
+          "small": true
+        }
+      ]
+    }
+  ]
+}

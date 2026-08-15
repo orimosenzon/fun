@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloom — מצא את הפרחים שלך</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rose:    #e8748a;
+      --rose-l:  #f7d0d8;
+      --green:   #6daa6d;
+      --green-l: #d4edda;
+      --cream:   #fdf5ee;
+      --sand:    #f0e6d3;
+      --text:    #3a2e2e;
+      --muted:   #9e8e8e;
+      --white:   #ffffff;
+      --radius:  16px;
+      --shadow:  0 4px 20px rgba(60,30,30,.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      background: var(--white);
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.6rem; font-weight: 800; color: var(--rose); letter-spacing: -1px; }
+    .logo span { color: var(--green); }
+    .nav-links { display: flex; gap: 12px; }
+    .nav-links button {
+      background: none; border: none; cursor: pointer;
+      font-size: .95rem; color: var(--muted); padding: 6px 14px; border-radius: 20px;
+      transition: all .2s;
+    }
+    .nav-links button:hover, .nav-links button.active {
+      background: var(--rose-l); color: var(--rose); font-weight: 600;
+    }
+
+    /* ─── SCREENS ─── */
+    .screen { display: none; animation: fadeIn .35s ease; }
+    .screen.visible { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+
+    /* ─── HERO ─── */
+    #screen-hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+    }
+    .hero-emoji { font-size: 5rem; display: block; margin-bottom: 20px; }
+    .hero-title { font-size: 2.8rem; font-weight: 900; line-height: 1.2; margin-bottom: 16px; }
+    .hero-title em { color: var(--rose); font-style: normal; }
+    .hero-sub { font-size: 1.15rem; color: var(--muted); max-width: 460px; margin: 0 auto 48px; line-height: 1.6; }
+    .hero-cards {
+      display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+    }
+    .hero-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 40px;
+      cursor: pointer;
+      width: 260px;
+      transition: transform .2s, box-shadow .2s;
+      border: 2px solid transparent;
+    }
+    .hero-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 32px rgba(60,30,30,.15);
+      border-color: var(--rose-l);
+    }
+    .hero-card .card-icon { font-size: 3rem; margin-bottom: 14px; display: block; }
+    .hero-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
+    .hero-card p { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+    /* ─── QUIZ ─── */
+    #screen-quiz { max-width: 620px; margin: 0 auto; padding: 48px 24px; }
+
+    .progress-bar {
+      background: var(--sand);
+      border-radius: 99px;
+      height: 8px;
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--rose), #c45a74);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+
+    .quiz-step { display: none; }
+    .quiz-step.active { display: block; animation: fadeIn .3s ease; }
+    .quiz-step h2 { font-size: 1.7rem; margin-bottom: 8px; }
+    .quiz-step .sub { color: var(--muted); margin-bottom: 28px; font-size: .95rem; }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .opt-btn {
+      background: var(--white);
+      border: 2px solid var(--sand);
+      border-radius: var(--radius);
+      padding: 18px 14px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--text);
+      transition: all .2s;
+    }
+    .opt-btn .opt-icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+    .opt-btn:hover { border-color: var(--rose); background: var(--rose-l); }
+    .opt-btn.selected { border-color: var(--rose); background: var(--rose-l); font-weight: 700; }
+
+    .quiz-nav {
+      margin-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-back {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: .95rem; font-family: inherit;
+      padding: 10px 0;
+    }
+    .btn-back:hover { color: var(--text); }
+    .btn-next {
+      background: var(--rose);
+      color: var(--white);
+      border: none;
+      border-radius: 99px;
+      padding: 13px 36px;
+      font-size: 1rem;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-next:hover { background: #d0607a; transform: scale(1.03); }
+    .btn-next:disabled { background: var(--sand); color: var(--muted); cursor: default; transform: none; }
+
+    /* ─── RESULTS ─── */
+    #screen-results { max-width: 900px; margin: 0 auto; padding: 48px 24px; }
+    .results-title { font-size: 2rem; font-weight: 900; margin-bottom: 6px; }
+    .results-sub { color: var(--muted); margin-bottom: 36px; }
+
+    .section-label {
+      font-size: .8rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* flower cards */
+    .flowers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .flower-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: transform .2s;
+    }
+    .flower-card:hover { transform: translateY(-4px); }
+    .flower-hero {
+      height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem;
+    }
+    .flower-body { padding: 16px; }
+    .flower-name { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+    .flower-desc { color: var(--muted); font-size: .85rem; line-height: 1.5; margin-bottom: 10px; }
+    .match-badge {
+      display: inline-block;
+      background: var(--green-l);
+      color: var(--green);
+      font-size: .8rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .allergy-tag {
+      display: inline-block;
+      background: #fff3cd; color: #856404;
+      font-size: .75rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 99px; margin-right: 6px;
+    }
+
+    /* supplier cards */
+    .suppliers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .supplier-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .supplier-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .supplier-name { font-size: 1.1rem; font-weight: 800; }
+    .supplier-type {
+      font-size: .75rem; background: var(--sand);
+      padding: 3px 10px; border-radius: 99px; color: var(--muted);
+    }
+    .supplier-region { font-size: .85rem; color: var(--muted); }
+    .supplier-desc { font-size: .88rem; line-height: 1.5; }
+    .supplier-flowers { display: flex; flex-wrap: wrap; gap: 6px; }
+    .flower-tag {
+      font-size: .8rem; background: var(--rose-l);
+      color: var(--rose); padding: 2px 10px; border-radius: 99px; font-weight: 600;
+    }
+    .supplier-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .rating { font-size: .9rem; color: #e6a817; font-weight: 700; }
+    .btn-quote {
+      background: var(--rose);
+      color: var(--white);
+      border: none;
+      border-radius: 99px;
+      padding: 9px 20px;
+      font-size: .9rem;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-quote:hover { background: #d0607a; transform: scale(1.04); }
+
+    .btn-restart {
+      background: none; border: 2px solid var(--sand);
+      border-radius: 99px; padding: 12px 28px;
+      font-size: .95rem; font-family: inherit;
+      cursor: pointer; color: var(--muted); transition: all .2s;
+    }
+    .btn-restart:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ─── SUPPLIER PAGE ─── */
+    #screen-supplier { max-width: 600px; margin: 0 auto; padding: 48px 24px; }
+    #screen-supplier h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
+    #screen-supplier .sub { color: var(--muted); margin-bottom: 36px; font-size: .95rem; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 700; margin-bottom: 6px; font-size: .95rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      border: 2px solid var(--sand);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--white);
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--rose);
+    }
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+    .checkbox-group label {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--white); border: 2px solid var(--sand);
+      border-radius: 10px; padding: 8px 14px;
+      cursor: pointer; font-weight: 400; font-size: .9rem;
+      transition: all .2s;
+    }
+    .checkbox-group label:has(input:checked) {
+      border-color: var(--rose); background: var(--rose-l); font-weight: 600;
+    }
+    .checkbox-group input { width: auto; }
+
+    .btn-submit {
+      background: var(--rose); color: var(--white);
+      border: none; border-radius: 99px;
+      padding: 14px 40px; font-size: 1rem; font-family: inherit;
+      font-weight: 700; cursor: pointer; width: 100%;
+      transition: background .2s;
+    }
+    .btn-submit:hover { background: #d0607a; }
+
+    .success-box {
+      background: var(--green-l); border-radius: var(--radius);
+      padding: 24px; text-align: center; display: none;
+    }
+    .success-box.visible { display: block; animation: fadeIn .3s ease; }
+    .success-box .big { font-size: 2.5rem; margin-bottom: 10px; }
+    .success-box h3 { font-size: 1.2rem; font-weight: 800; color: var(--green); }
+    .success-box p { color: #3a6e3a; font-size: .9rem; margin-top: 6px; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      z-index: 200; display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn .25s ease; }
+    .modal {
+      background: var(--white); border-radius: 20px;
+      padding: 36px; width: 100%; max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; left: 16px;
+      background: var(--sand); border: none; border-radius: 50%;
+      width: 36px; height: 36px; font-size: 1.2rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .modal-close:hover { background: var(--rose-l); }
+    .modal h3 { font-size: 1.4rem; font-weight: 900; margin-bottom: 6px; }
+    .modal .modal-to { color: var(--rose); font-weight: 700; font-size: 1rem; margin-bottom: 24px; }
+    .modal .success-box { margin-top: 16px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 600px) {
+      .hero-title { font-size: 2rem; }
+      .hero-cards { flex-direction: column; align-items: center; }
+      .hero-card { width: 100%; max-width: 320px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Blo<span>om</span> 🌸</div>
+  <div class="nav-links">
+    <button onclick="showScreen('hero')" id="nav-home">בית</button>
+    <button onclick="showScreen('supplier')" id="nav-supplier">אני ספק / עסק</button>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<div id="screen-hero" class="screen">
+  <span class="hero-emoji">🌺</span>
+  <h1 class="hero-title">הפרחים הנכונים,<br>לאדם הנכון, <em>עכשיו</em></h1>
+  <p class="hero-sub">שאלון קצר שמבין מה מתאים לך — ומחבר אותך ישירות לספקים.</p>
+  <div class="hero-cards">
+    <div class="hero-card" onclick="startQuiz()">
+      <span class="card-icon">🌷</span>
+      <h3>אני מחפש פרחים</h3>
+      <p>בשביל מישהו מיוחד, לאירוע, או סתם כי בא לי.</p>
+    </div>
+    <div class="hero-card" onclick="showScreen('supplier')">
+      <span class="card-icon">🏪</span>
+      <h3>אני ספק / עסק</h3>
+      <p>חנות פרחים, משתלה, אולם אירועים — הצטרף לרשת.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ QUIZ ══════════ -->
+<div id="screen-quiz" class="screen">
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:20%"></div>
+  </div>
+
+  <!-- Step 1: For who -->
+  <div class="quiz-step active" id="step-1">
+    <h2>עבור מי הפרחים? 👤</h2>
+    <p class="sub">זה יעזור לנו למצוא את ההתאמה הטובה ביותר.</p>
+    <div class="options-grid" id="q1-opts">
+      <button class="opt-btn" data-val="partner"><span class="opt-icon">💑</span>בן / בת זוג</button>
+      <button class="opt-btn" data-val="mom"><span class="opt-icon">👩</span>אמא / אבא</button>
+      <button class="opt-btn" data-val="friend"><span class="opt-icon">🤝</span>חבר / חברה</button>
+      <button class="opt-btn" data-val="colleague"><span class="opt-icon">💼</span>עמית לעבודה</button>
+      <button class="opt-btn" data-val="kids"><span class="opt-icon">🧒</span>ילדים</button>
+      <button class="opt-btn" data-val="self"><span class="opt-icon">🙋</span>לעצמי</button>
+    </div>
+    <div class="quiz-nav">
+      <span></span>
+      <button class="btn-next" id="next-1" disabled onclick="goStep(2)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Occasion -->
+  <div class="quiz-step" id="step-2">
+    <h2>מה האירוע? 🎉</h2>
+    <p class="sub">כל אירוע מתחבר לאווירה שונה של פרחים.</p>
+    <div class="options-grid" id="q2-opts">
+      <button class="opt-btn" data-val="wedding"><span class="opt-icon">💍</span>חתונה / אירוסין</button>
+      <button class="opt-btn" data-val="birthday"><span class="opt-icon">🎂</span>יום הולדת</button>
+      <button class="opt-btn" data-val="anniversary"><span class="opt-icon">❤️</span>יום נישואין</button>
+      <button class="opt-btn" data-val="justbecause"><span class="opt-icon">🌈</span>כי בא לי</button>
+      <button class="opt-btn" data-val="home"><span class="opt-icon">🏠</span>עיצוב הבית</button>
+      <button class="opt-btn" data-val="sympathy"><span class="opt-icon">🕊️</span>תמיכה / מחלה</button>
+      <button class="opt-btn" data-val="business"><span class="opt-icon">🏢</span>עסק / אירוע</button>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-back" onclick="goStep(1)">← חזור</button>
+      <button class="btn-next" id="next-2" disabled onclick="goStep(3)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Free text -->
+  <div class="quiz-step" id="step-3">
+    <h2>ספר לנו בחופשיות ✍️</h2>
+    <p class="sub">מה בדיוק אתם מחפשים? כמה פרחים, תקציב, תאריך, כל מה שחשוב לכם.</p>
+    <div class="form-group">
+      <textarea id="free-text" rows="6"
+        style="width:100%;border:2px solid var(--sand);border-radius:12px;padding:14px;font-size:1rem;font-family:inherit;background:var(--white);color:var(--text);outline:none;resize:vertical;transition:border-color .2s;"
+        placeholder="למשל: אני צריכה זר לחתונה של אחותי ב-15 באפריל. מחפשת משהו עם ורדים ורודים ואדמוניות, אין אלרגיות, תקציב כ-600 ₪. גם שואלת אם אפשר להוסיף ירוקים מיוחדים."></textarea>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-back" onclick="goStep(2)">← חזור</button>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button class="btn-back" onclick="goStep(4)" style="color:var(--rose);">דלג ←</button>
+        <button class="btn-next" id="next-3" onclick="saveFreeTextAndContinue()">הבא ←</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Allergies -->
+  <div class="quiz-step" id="step-4">
+    <h2>יש אלרגיות לדעת? 🤧</h2>
+    <p class="sub">חשוב לנו שהמתנה לא תגרום אי נוחות.</p>
+    <div class="options-grid" id="q4-opts">
+      <button class="opt-btn" data-val="none"><span class="opt-icon">✅</span>אין אלרגיות</button>
+      <button class="opt-btn" data-val="scent"><span class="opt-icon">👃</span>רגישות לריח חזק</button>
+      <button class="opt-btn" data-val="pollen"><span class="opt-icon">🌿</span>אלרגיה לאבקה</button>
+      <button class="opt-btn" data-val="both"><span class="opt-icon">⚠️</span>שניהם / לא בטוח</button>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-back" onclick="goStep(3)">← חזור</button>
+      <button class="btn-next" id="next-4" disabled onclick="goStep(5)">הבא ←</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Color preference -->
+  <div class="quiz-step" id="step-5">
+    <h2>העדפת צבע? 🎨</h2>
+    <p class="sub">הצבע מעביר את הרגש הנכון.</p>
+    <div class="options-grid" id="q5-opts">
+      <button class="opt-btn" data-val="warm"><span class="opt-icon">❤️🧡</span>חם — אדום / כתום</button>
+      <button class="opt-btn" data-val="soft"><span class="opt-icon">🌸💗</span>רך — ורוד / לבן</button>
+      <button class="opt-btn" data-val="bright"><span class="opt-icon">🌻💛</span>בהיר — צהוב / ירוק</button>
+      <button class="opt-btn" data-val="purple"><span class="opt-icon">💜🔵</span>קריר — סגול / כחול</button>
+      <button class="opt-btn" data-val="any"><span class="opt-icon">🎲</span>הפתיעו אותי!</button>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-back" onclick="goStep(4)">← חזור</button>
+      <button class="btn-next" id="next-5" disabled onclick="showResults()">צור המלצות 🌸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RESULTS ══════════ -->
+<div id="screen-results" class="screen">
+  <h2 class="results-title">הפרחים שלך 🌺</h2>
+  <p class="results-sub" id="results-sub"></p>
+
+  <p class="section-label">פרחים מומלצים</p>
+  <div class="flowers-grid" id="flowers-grid"></div>
+
+  <p class="section-label">ספקים מתאימים</p>
+  <div class="suppliers-grid" id="suppliers-grid"></div>
+
+  <button class="btn-restart" onclick="startQuiz()">🔄 שאלון מחדש</button>
+</div>
+
+<!-- ══════════ SUPPLIER ══════════ -->
+<div id="screen-supplier" class="screen">
+  <h2>הצטרף כספק 🌿</h2>
+  <p class="sub">חנות פרחים, משתלה, ספק סיטוני, אולם אירועים — כולם מוזמנים.</p>
+
+  <div id="supplier-form">
+    <div class="form-group">
+      <label>שם העסק</label>
+      <input type="text" id="s-name" placeholder="למשל: פרחי גן עדן" />
+    </div>
+    <div class="form-group">
+      <label>סוג עסק</label>
+      <select id="s-type">
+        <option value="">בחר...</option>
+        <option>חנות פרחים</option>
+        <option>משתלה</option>
+        <option>ספק סיטוני</option>
+        <option>אולם אירועים</option>
+        <option>גידול ישיר</option>
+        <option>אחר</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>אזור פעילות</label>
+      <select id="s-region">
+        <option value="">בחר...</option>
+        <option>תל אביב וגוש דן</option>
+        <option>ירושלים</option>
+        <option>חיפה והצפון</option>
+        <option>השרון</option>
+        <option>הדרום</option>
+        <option>כל הארץ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>פרחים שאתם מוכרים / מגדלים</label>
+      <div class="checkbox-group" id="s-flowers">
+        <label><input type="checkbox" value="rose" />🌹 ורד</label>
+        <label><input type="checkbox" value="tulip" />🌷 צבעוני</label>
+        <label><input type="checkbox" value="sunflower" />🌻 חמנייה</label>
+        <label><input type="checkbox" value="lily" />🌸 שושן</label>
+        <label><input type="checkbox" value="orchid" />🌺 סחלב</label>
+        <label><input type="checkbox" value="lavender" />💜 לבנדר</label>
+        <label><input type="checkbox" value="peony" />🌸 אדמונית</label>
+        <label><input type="checkbox" value="daisy" />🌼 חיננית</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>מספר טלפון ליצירת קשר</label>
+      <input type="tel" id="s-phone" placeholder="05X-XXXXXXX" />
+    </div>
+    <div class="form-group">
+      <label>קצת עלינו (אופציונלי)</label>
+      <textarea id="s-desc" rows="3" placeholder="ספרו ללקוחות מה מיוחד בכם..."></textarea>
+    </div>
+    <button class="btn-submit" onclick="submitSupplier()">הוסף אותנו לרשת 🌿</button>
+  </div>
+  <div class="success-box" id="supplier-success">
+    <div class="big">🎉</div>
+    <h3>נרשמתם בהצלחה!</h3>
+    <p>נציג שלנו יצור איתכם קשר לאישור הפרטים תוך יום עסקים.</p>
+  </div>
+</div>
+
+<!-- ══════════ QUOTE MODAL ══════════ -->
+<div class="modal-overlay" id="quote-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>בקשת הצעת מחיר 💌</h3>
+    <p class="modal-to" id="modal-supplier-name"></p>
+
+    <div class="form-group">
+      <label>שם מלא</label>
+      <input type="text" id="q-name" placeholder="השם שלך" />
+    </div>
+    <div class="form-group">
+      <label>טלפון</label>
+      <input type="tel" id="q-phone" placeholder="05X-XXXXXXX" />
+    </div>
+    <div class="form-group">
+      <label>מה אתם מחפשים?</label>
+      <textarea id="q-msg" rows="4"
+        placeholder="למשל: 3 זרים לחתונה ב-20.4, תקציב 800 ₪. מעדיפים ורדים ואדמוניות בגוונים ורודים."></textarea>
+    </div>
+    <button class="btn-submit" onclick="submitQuote()">שלח בקשה →</button>
+
+    <div class="success-box" id="quote-success">
+      <div class="big">✅</div>
+      <h3>הבקשה נשלחה!</h3>
+      <p id="quote-success-text"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────
+const FLOWERS = [
+  {
+    id: 'rose', name: 'ורד', emoji: '🌹',
+    bg: '#fde8ef',
+    scent: 2, allergyRisk: 1,
+    occasions: ['wedding','anniversary','birthday','justbecause','sympathy'],
+    forWho: ['partner','mom','friend','self'],
+    colors: ['warm','soft','any'],
+    desc: 'המלך הקלאסי — סמל אהבה, תשוקה ויופי נצחי.'
+  },
+  {
+    id: 'tulip', name: 'צבעוני', emoji: '🌷',
+    bg: '#fde0f0',
+    scent: 1, allergyRisk: 1,
+    occasions: ['birthday','justbecause','anniversary'],
+    forWho: ['friend','colleague','kids','self'],
+    colors: ['soft','bright','warm','purple','any'],
+    desc: 'שמח, קליל וצבעוני — מביא חיוך מיידי.'
+  },
+  {
+    id: 'sunflower', name: 'חמנייה', emoji: '🌻',
+    bg: '#fff7d6',
+    scent: 1, allergyRisk: 2,
+    occasions: ['birthday','justbecause','home'],
+    forWho: ['friend','kids','self'],
+    colors: ['bright','any'],
+    desc: 'אנרגיה טהורה של אושר — שמחה גדולה בגובה גדול.'
+  },
+  {
+    id: 'lily', name: 'שושן', emoji: '🌸',
+    bg: '#fce4f4',
+    scent: 3, allergyRisk: 3,
+    occasions: ['wedding','sympathy','anniversary','business'],
+    forWho: ['partner','mom','colleague'],
+    colors: ['soft','warm','any'],
+    desc: 'אלגנטי ומרשים, עם ניחוח עוצמתי.',
+    warning: 'אלרגני — אבקה חזקה'
+  },
+  {
+    id: 'orchid', name: 'סחלב', emoji: '🌺',
+    bg: '#f3e6ff',
+    scent: 1, allergyRisk: 1,
+    occasions: ['home','business','birthday','justbecause'],
+    forWho: ['self','colleague','partner'],
+    colors: ['purple','soft','any'],
+    desc: 'מינימליסטי, מרשים, ומחזיק שבועות — מתנה שנשארת.'
+  },
+  {
+    id: 'lavender', name: 'לבנדר', emoji: '💜',
+    bg: '#ede8ff',
+    scent: 3, allergyRisk: 1,
+    occasions: ['home','justbecause','sympathy'],
+    forWho: ['self','mom','friend'],
+    colors: ['purple','any'],
+    desc: 'מרגיע, מבשם ומרפא — ניחוח ים-תיכוני קסום.'
+  },
+  {
+    id: 'peony', name: 'אדמונית', emoji: '🌸',
+    bg: '#ffe0ec',
+    scent: 2, allergyRisk: 1,
+    occasions: ['wedding','anniversary','justbecause'],
+    forWho: ['partner','mom'],
+    colors: ['soft','warm','purple','any'],
+    desc: 'מלכותי ורומנטי — פרח הכלות האהוב.'
+  },
+  {
+    id: 'daisy', name: 'חיננית', emoji: '🌼',
+    bg: '#fffde0',
+    scent: 1, allergyRisk: 2,
+    occasions: ['birthday','justbecause','home'],
+    forWho: ['kids','friend','self'],
+    colors: ['bright','soft','any'],
+    desc: 'פשוט, חמוד ומאושר — אביב בתוך בית.'
+  },
+];
+
+const SUPPLIERS = [
+  {
+    id: 1, name: 'גן עדן פרחים', type: 'חנות פרחים', region: 'תל אביב',
+    flowers: ['rose','tulip','lily','peony'],
+    phone: '03-1234567', rating: 4.8,
+    desc: 'בוטיק פרחים במרכז ת"א, מומחים בזרי חתונה ועיצוב.'
+  },
+  {
+    id: 2, name: 'משתלת הצפון', type: 'משתלה', region: 'חיפה',
+    flowers: ['orchid','lavender','sunflower','daisy'],
+    phone: '04-7654321', rating: 4.6,
+    desc: 'משתלה גדולה עם מחירים סיטוניים — אידיאלי לעסקים.'
+  },
+  {
+    id: 3, name: 'פרחי שרון', type: 'חנות פרחים', region: 'השרון',
+    flowers: ['rose','sunflower','tulip','daisy','lily'],
+    phone: '09-9876543', rating: 4.7,
+    desc: 'משלוחים מהירים לכל אזור השרון, שבעה ימים בשבוע.'
+  },
+  {
+    id: 4, name: 'אורכידאה', type: 'מומחי סחלבים', region: 'ירושלים',
+    flowers: ['orchid'],
+    phone: '02-1112233', rating: 4.9,
+    desc: 'הספקים המובילים לסחלבים נדירים ומיוחדים בישראל.'
+  },
+  {
+    id: 5, name: 'Premium Blooms', type: 'ספק אירועים', region: 'מרכז',
+    flowers: ['rose','lily','peony','tulip','orchid'],
+    phone: '050-1234567', rating: 5.0,
+    desc: 'ספק בלעדי לאולמות ומלונות — עיצוב פרחוני מלא לאירועים.'
+  },
+  {
+    id: 6, name: 'החווה הירוקה', type: 'גידול ישיר', region: 'הדרום',
+    flowers: ['sunflower','lavender','daisy','tulip','rose'],
+    phone: '08-3334444', rating: 4.5,
+    desc: 'ישירות מהשדה — טרי ומשתלם, עם אפשרות לקטיף עצמי.'
+  },
+];
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let answers = { q1: null, q2: null, q3: null, q4: null, q5: null, freeText: '' };
+let currentQuoteSupplier = null;
+
+// ─────────────────────────────────────────
+// NAV
+// ─────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById('screen-' + name).classList.add('visible');
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  if (name === 'hero') document.getElementById('nav-home').classList.add('active');
+  if (name === 'supplier') document.getElementById('nav-supplier').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────
+// QUIZ
+// ─────────────────────────────────────────
+function startQuiz() {
+  answers = { q1: null, q2: null, q3: null, q4: null, q5: null, freeText: '' };
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.btn-next').forEach(b => b.disabled = true);
+  const ft = document.getElementById('free-text');
+  if (ft) ft.value = '';
+  goStep(1);
+  showScreen('quiz');
+}
+
+function goStep(n) {
+  document.querySelectorAll('.quiz-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('progress-fill').style.width = (n * 20) + '%';
+}
+
+function saveFreeTextAndContinue() {
+  answers.freeText = document.getElementById('free-text').value.trim();
+  goStep(4);
+}
+
+// wire option buttons (steps 1, 2, 4, 5 — step 3 is free text)
+[
+  { id: 'q1-opts', qKey: 'q1', nextId: 'next-1' },
+  { id: 'q2-opts', qKey: 'q2', nextId: 'next-2' },
+  { id: 'q4-opts', qKey: 'q4', nextId: 'next-4' },
+  { id: 'q5-opts', qKey: 'q5', nextId: 'next-5' },
+].forEach(({ id, qKey, nextId }) => {
+  document.getElementById(id).addEventListener('click', e => {
+    const btn = e.target.closest('.opt-btn');
+    if (!btn) return;
+    document.querySelectorAll('#' + id + ' .opt-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    answers[qKey] = btn.dataset.val;
+    document.getElementById(nextId).disabled = false;
+  });
+});
+
+// ─────────────────────────────────────────
+// SCORING
+// ─────────────────────────────────────────
+function scoreFlowers() {
+  return FLOWERS.map(f => {
+    let score = 0;
+
+    // who
+    if (f.forWho.includes(answers.q1)) score += 30;
+
+    // occasion
+    if (f.occasions.includes(answers.q2)) score += 30;
+
+    // allergy filter — penalise hard
+    if (answers.q4 === 'scent' && f.scent >= 3) score -= 60;
+    if (answers.q4 === 'pollen' && f.allergyRisk >= 2) score -= 60;
+    if (answers.q4 === 'both' && (f.scent >= 3 || f.allergyRisk >= 2)) score -= 60;
+
+    // color
+    if (answers.q5 !== 'any' && f.colors.includes(answers.q5)) score += 25;
+    if (answers.q5 === 'any') score += 10;
+
+    // small bonus for "always safe" flowers when allergies
+    if (answers.q4 !== 'none' && f.allergyRisk === 1 && f.scent <= 1) score += 10;
+
+    return { flower: f, score };
+  })
+  .sort((a,b) => b.score - a.score)
+  .filter(x => x.score > 0);
+}
+
+function matchSuppliers(topFlowerIds) {
+  return SUPPLIERS.filter(s =>
+    s.flowers.some(fid => topFlowerIds.includes(fid))
+  ).sort((a,b) => b.rating - a.rating);
+}
+
+// ─────────────────────────────────────────
+// RESULTS
+// ─────────────────────────────────────────
+const FLOWER_NAMES = {
+  rose:'ורד', tulip:'צבעוני', sunflower:'חמנייה',
+  lily:'שושן', orchid:'סחלב', lavender:'לבנדר',
+  peony:'אדמונית', daisy:'חיננית'
+};
+
+function showResults() {
+  const ranked = scoreFlowers();
+  const top3 = ranked.slice(0, 3);
+  const topIds = top3.map(r => r.flower.id);
+  const suppliers = matchSuppliers(topIds);
+
+  // subtitle
+  const whoMap = { partner:'לבן/בת הזוג', mom:'להורים', friend:'לחבר/ה',
+                   colleague:'לעמית', kids:'לילדים', self:'לעצמך' };
+  document.getElementById('results-sub').textContent =
+    `ההמלצות שלנו ${whoMap[answers.q1] || ''} — מותאמות אישית לפי הבחירות שלך.`;
+
+  // flowers
+  const fg = document.getElementById('flowers-grid');
+  fg.innerHTML = top3.map(({flower, score}) => {
+    const pct = Math.min(100, Math.round((score / 85) * 100));
+    return `
+      <div class="flower-card">
+        <div class="flower-hero" style="background:${flower.bg}">${flower.emoji}</div>
+        <div class="flower-body">
+          <div class="flower-name">${flower.name}</div>
+          <div class="flower-desc">${flower.desc}</div>
+          ${flower.warning ? `<span class="allergy-tag">⚠️ ${flower.warning}</span>` : ''}
+          <span class="match-badge">התאמה ${pct}%</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // suppliers
+  const sg = document.getElementById('suppliers-grid');
+  if (suppliers.length === 0) {
+    sg.innerHTML = '<p style="color:var(--muted)">לא נמצאו ספקים מתאימים כרגע.</p>';
+  } else {
+    sg.innerHTML = suppliers.map(s => {
+      const matchFlowers = s.flowers.filter(fid => topIds.includes(fid));
+      const stars = '★'.repeat(Math.floor(s.rating)) + (s.rating % 1 >= .5 ? '½' : '');
+      return `
+        <div class="supplier-card">
+          <div class="supplier-top">
+            <span class="supplier-name">${s.name}</span>
+            <span class="supplier-type">${s.type}</span>
+          </div>
+          <div class="supplier-region">📍 ${s.region}</div>
+          <div class="supplier-desc">${s.desc}</div>
+          <div class="supplier-flowers">
+            ${matchFlowers.map(fid => `<span class="flower-tag">${FLOWER_NAMES[fid]}</span>`).join('')}
+          </div>
+          <div class="supplier-footer">
+            <span class="rating">${stars} ${s.rating}</span>
+            <button class="btn-quote" onclick="openQuoteModal(${s.id})">בקש הצעת מחיר</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  showScreen('results');
+}
+
+// ─────────────────────────────────────────
+// QUOTE MODAL
+// ─────────────────────────────────────────
+function openQuoteModal(supplierId) {
+  currentQuoteSupplier = SUPPLIERS.find(s => s.id === supplierId);
+  document.getElementById('modal-supplier-name').textContent = '→ ' + currentQuoteSupplier.name;
+  document.getElementById('quote-success').classList.remove('visible');
+  document.getElementById('q-name').value = '';
+  document.getElementById('q-phone').value = '';
+  document.getElementById('q-msg').value = answers.freeText || '';
+  document.getElementById('quote-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('quote-modal').classList.remove('open');
+}
+
+document.getElementById('quote-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('quote-modal')) closeModal();
+});
+
+function submitQuote() {
+  const name = document.getElementById('q-name').value.trim();
+  const phone = document.getElementById('q-phone').value.trim();
+  if (!name || !phone) { alert('נא למלא שם וטלפון.'); return; }
+  // simulate send
+  document.getElementById('quote-success-text').textContent =
+    `${currentQuoteSupplier.name} יחזרו אליך בהקדם (${currentQuoteSupplier.phone}).`;
+  document.getElementById('quote-success').classList.add('visible');
+  setTimeout(closeModal, 3000);
+}
+
+// ─────────────────────────────────────────
+// SUPPLIER FORM
+// ─────────────────────────────────────────
+function submitSupplier() {
+  const name = document.getElementById('s-name').value.trim();
+  const type = document.getElementById('s-type').value;
+  const region = document.getElementById('s-region').value;
+  const phone = document.getElementById('s-phone').value.trim();
+  if (!name || !type || !region || !phone) {
+    alert('נא למלא שם עסק, סוג, אזור וטלפון.'); return;
+  }
+  document.getElementById('supplier-form').style.display = 'none';
+  document.getElementById('supplier-success').classList.add('visible');
+}
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+showScreen('hero');
+</script>
+</body>
+</html>
