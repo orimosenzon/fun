@@ -312,8 +312,47 @@ def check() -> int:
     return 1
 
 
+LIVE_BASE = "https://orimosenzon.github.io/fun/vibe_coding/"
+
+
+def check_links() -> int:
+    """Fetch every link on the published page and report what does not answer.
+    Needs network; slower than --check, so it is a separate flag."""
+    import subprocess
+    from urllib.parse import quote
+
+    data = json.loads(DATA.read_text(encoding="utf-8"))
+    seen, bad = {}, []
+    for s in data["sections"]:
+        for p in s["projects"]:
+            for l in p["links"]:
+                seen.setdefault(l["href"], p["title"])
+
+    for href, title in seen.items():
+        url = href if href.startswith("http") else LIVE_BASE + quote(href)
+        code = subprocess.run(
+            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "20", "-L", url],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        # 403 is what some hosts answer a bare curl; not a broken link
+        if code not in ("200", "403"):
+            bad.append((code, title, href))
+
+    print(f"נבדקו {len(seen)} קישורים")
+    if not bad:
+        print("✓ כולם עונים")
+        return 0
+    for code, title, href in bad:
+        note = "  (401 = Space פרטי)" if code == "401" else ""
+        print(f"  {code}  {title} → {href}{note}")
+    return 1
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--check", action="store_true", help="audit instead of building")
+    ap.add_argument("--check", action="store_true", help="audit the data against the repo")
+    ap.add_argument("--links", action="store_true", help="fetch every link on the live page")
     args = ap.parse_args()
+    if args.links:
+        raise SystemExit(check_links())
     raise SystemExit(check() if args.check else print(build()) or 0)
