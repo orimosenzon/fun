@@ -266,10 +266,18 @@ function showDetail(it) {
     </a>`;
   }).join('');
 
-  const walk = `<a class="act" href="${walkUrl(entries[0].lat, entries[0].lng)}" target="_blank" rel="noopener">
-    ${icon(I_WALK)}
-    <span class="lbl">ניווט רגלי לכאן<span class="hint">נפתח בגוגל מפות</span></span>
-  </a>`;
+  // In-app first: Google would route around the shortcut, since it does not
+  // know the trail exists. The hand-off stays as a secondary option for
+  // getting to the neighbourhood.
+  const walk = `<button class="act act-nav" id="go">
+      ${icon(I_WALK)}
+      <span class="lbl">נווט אליי לכאן
+        <span class="hint">ניווט בתוך האפליקציה, לפי מסלול השביל עצמו</span></span>
+    </button>
+    <a class="act act-sub" href="${walkUrl(entries[0].lat, entries[0].lng)}" target="_blank" rel="noopener">
+      <span class="lbl">פתח בגוגל מפות
+        <span class="hint">מנווט עד השכונה, לא דרך השביל</span></span>
+    </a>`;
 
   const gallery = it.photos.length ? `
     <h3>תמונות (${it.photos.length})</h3>
@@ -289,6 +297,8 @@ function showDetail(it) {
   el('detail').querySelectorAll('.gallery img').forEach((img) => {
     img.addEventListener('click', () => openLightbox(it, +img.dataset.i));
   });
+  const go = el('go');
+  if (go) go.addEventListener('click', () => startNav(it));
 
   el('detail').scrollTop = 0;
   el('list-view').hidden = true;
@@ -343,7 +353,188 @@ function lbKeys(e) {
   else if (e.key === 'ArrowRight') step(-1);
 }
 
+/* ---------- in-app navigation ----------
+ *
+ * 83% of these shortcuts do not exist in OpenStreetMap, and they are not in
+ * Google's network either - that is the whole reason the initiative exists.
+ * So no routing service can guide you along one. We have the geometry, so we
+ * navigate off it directly: walk you to the nearest entrance, then count down
+ * the trail itself. No key, no network calls, works with no signal.
+ */
+
+let nav = null;      // {item, watchId, target}
+let facing = null;   // compass heading in degrees, when the device reports one
+
+function bearingTo(from, to) {
+  const rad = Math.PI / 180;
+  const dLng = (to.lng - from.lng) * rad;
+  const y = Math.sin(dLng) * Math.cos(to.lat * rad);
+  const x = Math.cos(from.lat * rad) * Math.sin(to.lat * rad) -
+    Math.sin(from.lat * rad) * Math.cos(to.lat * rad) * Math.cos(dLng);
+  return (Math.atan2(y, x) / rad + 360) % 360;
+}
+
+/** Closest point on a trail, plus how far it is and how much trail remains
+ *  in each direction. Distances are along the path, not straight lines. */
+function projectOnPath(pos, path) {
+  let best = { d: Infinity, i: 0, t: 0, point: null };
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = { lat: path[i][0], lng: path[i][1] };
+    const b = { lat: path[i + 1][0], lng: path[i + 1][1] };
+    const my = 111320, mx = 111320 * Math.cos(pos.lat * Math.PI / 180);
+    const px = (pos.lng - a.lng) * mx, py = (pos.lat - a.lat) * my;
+    const bx = (b.lng - a.lng) * mx, by = (b.lat - a.lat) * my;
+    const len = bx * bx + by * by;
+    const t = len === 0 ? 0 : Math.max(0, Math.min(1, (px * bx + py * by) / len));
+    const d = Math.hypot(px - t * bx, py - t * by);
+    if (d < best.d) {
+      best = { d, i, t,
+        point: { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t } };
+    }
+  }
+  let before = 0, after = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const seg = distance({ lat: path[i][0], lng: path[i][1] },
+                         { lat: path[i + 1][0], lng: path[i + 1][1] });
+    if (i < best.i) before += seg;
+    else if (i > best.i) after += seg;
+    else { before += seg * best.t; after += seg * (1 - best.t); }
+  }
+  return { ...best, before, after };
+}
+
+function startNav(item) {
+  if (!navigator.geolocation) { alert('הדפדפן לא תומך באיתור מיקום.'); return; }
+  stopNav();
+  nav = { item, watchId: null, endIdx: null };
+  document.body.classList.add('nav-active');
+  el('nav').hidden = false;
+  el('nav-dist').textContent = '—';
+  el('nav-state').textContent = 'מחפש מיקום…';
+  askForCompass();
+
+  nav.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      drawMe(pos.coords.accuracy);
+      // While moving, GPS course is a better "which way am I facing" than a
+      // compass the user may never have granted.
+      if (pos.coords.speed > 0.6 && pos.coords.heading != null) facing = pos.coords.heading;
+      paintNav();
+    },
+    () => {
+      el('nav').classList.add('stale');
+      el('nav-state').textContent = 'אין גישה למיקום. צריך לאשר, ורק מעל https.';
+    },
+    { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+  );
+}
+
+function stopNav() {
+  if (nav && nav.watchId != null) navigator.geolocation.clearWatch(nav.watchId);
+  nav = null;
+  document.body.classList.remove('nav-active');
+  el('nav').hidden = true;
+  el('nav').classList.remove('on-trail', 'stale');
+}
+
+function paintNav() {
+  if (!nav || !here) return;
+  const item = nav.item;
+  const bar = el('nav');
+  bar.classList.remove('stale');
+
+  let target, label, state, onTrail = false;
+
+  if (item.path) {
+    const p = projectOnPath(here, item.path);
+    if (p.d < 25) {
+      onTrail = true;
+      // Lock the exit the first time we find ourselves on the trail, and keep
+      // it. Re-deciding on every fix makes the arrow spin around near the
+      // midpoint, and sends you back the way you came.
+      if (nav.endIdx == null) {
+        const last = item.path.length - 1;
+        if (facing != null) {
+          // Best signal: pick whichever end lies ahead of where we are walking.
+          const toLast = bearingTo(here, { lat: item.path[last][0], lng: item.path[last][1] });
+          const diff = Math.abs(((toLast - facing + 540) % 360) - 180);
+          nav.endIdx = diff < 90 ? last : 0;
+        } else {
+          nav.endIdx = p.after >= p.before ? last : 0;
+        }
+      }
+      const end = item.path[nav.endIdx];
+      target = { lat: end[0], lng: end[1] };
+      label = fmt(nav.endIdx === item.path.length - 1 ? p.after : p.before);
+      state = 'על השביל · עד היציאה';
+    } else {
+      nav.endIdx = null;    // off the trail again; decide afresh on re-entry
+      const ends = item.entries.map((e) => ({ lat: e.lat, lng: e.lng }));
+      target = ends.reduce((a, b) => distance(here, a) <= distance(here, b) ? a : b);
+      label = fmt(distance(here, target));
+      state = 'אל הכניסה לשביל';
+    }
+  } else {
+    target = { lat: item.lat, lng: item.lng };
+    label = fmt(distance(here, target));
+    state = item.name;
+  }
+
+  bar.classList.toggle('on-trail', onTrail);
+  el('nav-dist').textContent = label;
+  el('nav-state').textContent = state;
+
+  const course = bearingTo(here, target);
+  // With a heading we can point where to actually walk; without one the arrow
+  // is north-up, so say so rather than sending someone the wrong way.
+  if (facing == null) {
+    el('nav-state').textContent = state + ' · ' + compass(course) + ' (חץ לפי צפון)';
+  }
+  document.querySelector('.nav-arrow').style.transform =
+    `rotate(${course - (facing || 0)}deg)`;
+}
+
+const fmt = (m) => (m >= 1000 ? (m / 1000).toFixed(1) + ' ק"מ' : Math.round(m) + ' מ׳');
+
+function compass(deg) {
+  const names = ['צפון', 'צפון-מזרח', 'מזרח', 'דרום-מזרח',
+                 'דרום', 'דרום-מערב', 'מערב', 'צפון-מערב'];
+  return names[Math.round(deg / 45) % 8];
+}
+
+function askForCompass() {
+  const use = (e) => {
+    const h = e.webkitCompassHeading != null ? e.webkitCompassHeading
+      : (e.absolute && e.alpha != null ? 360 - e.alpha : null);
+    if (h != null) { facing = h; }
+  };
+  const attach = () => {
+    window.addEventListener('deviceorientationabsolute', use, true);
+    window.addEventListener('deviceorientation', use, true);
+  };
+  const req = window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission;
+  if (typeof req === 'function') req.call(DeviceOrientationEvent).then((s) => {
+    if (s === 'granted') attach();
+  }).catch(() => {});
+  else attach();
+}
+
 /* ---------- geolocation ---------- */
+
+function drawMe(accuracy) {
+  if (hereMarker) map.removeLayer(hereMarker);
+  hereMarker = L.layerGroup([
+    L.circle([here.lat, here.lng], {
+      radius: Math.min(accuracy || 0, 60), stroke: false,
+      fillColor: '#1a73e8', fillOpacity: 0.12, interactive: false
+    }),
+    L.marker([here.lat, here.lng], {
+      icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }),
+      interactive: false
+    })
+  ]).addTo(map);
+}
 
 function locate() {
   if (!navigator.geolocation) {
@@ -353,11 +544,7 @@ function locate() {
   el('locate').classList.add('on');
   navigator.geolocation.getCurrentPosition((pos) => {
     here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    if (hereMarker) map.removeLayer(hereMarker);
-    hereMarker = L.marker([here.lat, here.lng], {
-      icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }),
-      interactive: false
-    }).addTo(map);
+    drawMe(pos.coords.accuracy);
     map.setView([here.lat, here.lng], 17);
 
     sortMode = 'near';
@@ -432,6 +619,7 @@ async function boot() {
 
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
+  el('nav-stop').addEventListener('click', stopNav);
   el('locate').addEventListener('click', locate);
   el('basemap').addEventListener('click', () => {
     baseIndex = (baseIndex + 1) % BASEMAPS.length;
