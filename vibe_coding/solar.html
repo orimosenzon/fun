@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת השמש בתלת-ממד - הגרסה המשודרגת</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020208;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(5, 5, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+            padding: 20px;
+            border-radius: 16px;
+            width: 280px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+            z-index: 10;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #ff9f00;
+            padding-bottom: 8px;
+            color: #ff9f00;
+            text-shadow: 0 0 10px rgba(255,160,0,0.5);
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #ff9f00;
+            background: #222;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .btn {
+            background: #111;
+            color: #ccc;
+            border: 1px solid #333;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            margin-bottom: 8px;
+        }
+
+        .btn:hover {
+            background: #222;
+            border-color: #ff9f00;
+            color: #fff;
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, #ffaa00, #ff5500);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 0 15px rgba(255,110,0,0.4);
+        }
+
+        .planet-label {
+            position: absolute;
+            z-index: 5;
+            transform: translate(-50%, -100%);
+            color: #fff;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(5, 5, 10, 0.8);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,160,0,0.3);
+            pointer-events: none;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(5, 5, 10, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 168, 255, 0.3);
+            padding: 20px;
+            border-radius: 16px;
+            max-width: 320px;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        }
+
+        #info-panel h3 {
+            margin: 0 0 10px 0;
+            color: #00a8ff;
+            font-size: 1.3rem;
+        }
+
+        #info-panel p {
+            margin: 6px 0;
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.4;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            color: #666;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            border-radius: 8px;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="control-panel">
+        <h2>מערכת השמש הסימולטור</h2>
+        
+        <div class="control-group">
+            <label>מצב קנה מידה:</label>
+            <button id="btn-visual" class="btn active" onclick="setScaleMode(false)">תצוגה ויזואלית מודגשת</button>
+            <button id="btn-real" class="btn" onclick="setScaleMode(true)">מרחקים וגדלים ריאליים</button>
+        </div>
+
+        <div class="control-group">
+            <label id="speed-label">מהירות זרימת הזמן: 1.0x</label>
+            <input type="range" id="speed-slider" min="0" max="8" step="0.1" value="1">
+        </div>
+
+        <div class="control-group">
+            <button id="btn-labels" class="btn active" onclick="toggleLabels()">כותרות שמות: מוצגות</button>
+            <button class="btn" onclick="resetCamera()">חזרה למבט על (מרכז)</button>
+        </div>
+    </div>
+
+    <div id="info-panel">
+        <h3 id="info-name">פלנטה</h3>
+        <p id="info-size"></p>
+        <p id="info-dist"></p>
+        <p id="info-period"></p>
+        <p id="info-fact" style="color: #aaa; font-style: italic; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px;"></p>
+        <button class="btn" style="margin-top:12px; padding:6px;" onclick="focusPlanet(null)">נתק מצלמה</button>
+    </div>
+
+    <div id="instructions">
+        <strong>ניווט במרחב:</strong><br>
+        קליק שמאלי + גרירה: סיבוב קוסמי<br>
+        גלגלת: זום אין / אאוט<br>
+        קליק ימני + גרירה: הזזת המצלמה (Pan)<br>
+        * לחץ על כוכב לכת כלשהו כדי להיכנס למסלול שלו.
+    </div>
+
+    <div id="labels-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- מחולל טקסטורות דינמיות (Procedural Textures) כדי להבטיח גרפיקה עשירה ללא תלות בקבצים חיצוניים ---
+        function createSunTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 512);
+            grad.addColorStop(0, '#ffcc00'); grad.addColorStop(0.3, '#ff3300');
+            grad.addColorStop(0.7, '#ff6600'); grad.addColorStop(1, '#ffcc00');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 1024, 512);
+            // אפקט סערות שמש / לבה
+            for(let i=0; i<80; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#ff1100';
+                ctx.beginPath(); ctx.arc(Math.random()*1024, Math.random()*512, Math.random()*40+10, 0, Math.PI*2); ctx.fill();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createEarthTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0d2b45'; ctx.fillRect(0, 0, 1024, 512); // אוקיינוס
+            ctx.fillStyle = '#1b4d3e'; // יבשות גנריות
+            for(let i=0; i<12; i++) {
+                ctx.beginPath(); ctx.ellipse(Math.random()*1024, Math.random()*512, Math.random()*200+80, Math.random()*150+60, Math.random(), 0, Math.PI*2); ctx.fill();
+            }
+            // קטבים מושלגים
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 1024, 40); ctx.fillRect(0, 472, 1024, 40);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createJupiterTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            for(let y=0; y<256; y++) {
+                ctx.fillStyle = (y % 40 < 15) ? '#b07f35' : (y % 40 < 28) ? '#d4a373' : '#fefae0';
+                ctx.fillRect(0, y, 512, 1);
+            }
+            // הכתם האדום הגדול
+            ctx.fillStyle = '#cc3333'; ctx.beginPath(); ctx.ellipse(350, 170, 25, 12, 0, 0, Math.PI*2); ctx.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createSaturnRingTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 512, 0);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(0.2, 'rgba(195, 171, 129, 0.8)');
+            grad.addColorStop(0.4, 'rgba(139, 115, 85, 0.3)'); // מרווח קאסיני
+            grad.addColorStop(0.7, 'rgba(238, 220, 130, 0.9)');
+            grad.addColorStop(0.9, 'rgba(165, 141, 99, 0.4)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 512, 16);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- בסיס נתונים מעודכן של מערכת השמש ---
+        const planetData = [
+            { id: "mercury", name: "כוכב חמה (מרקורי)", color: 0x888888, visualRadius: 0.35, realRadius: 0.035, visualDist: 18, realDist: 57.9*1.5, speed: 0.03, fact: "כוכב הלכת הקרוב ביותר לשמש. אין לו אטמוספירה שתשמור על החום." },
+            { id: "venus", name: "נוגה (ונוס)", color: 0xe3bb76, visualRadius: 0.75, realRadius: 0.085, visualDist: 26, realDist: 108.2*1.5, speed: 0.02, fact: "כוכב הלכת החם ביותר במערכת בשל אפקט חממה קיצוני." },
+            { id: "earth", name: "כדור הארץ", color: 0x2277ff, visualRadius: 0.85, realRadius: 0.09, visualDist: 36, realDist: 149.6*1.5, speed: 0.015, isEarth: true, fact: "הבית שלנו. המקום היחיד ביקונו הידוע כבעל חיים ומים נוזליים." },
+            { id: "mars", name: "מאדים (מארס)", color: 0xc1440e, visualRadius: 0.55, realRadius: 0.048, visualDist: 46, realDist: 227.9*1.5, speed: 0.012, fact: "מכונה 'כוכב הלכת האדום' בשל תחמוצת הברזל (חלודה) על פניו." },
+            { id: "jupiter", name: "צדק (ג׳ופיטר)", color: 0xb07f35, visualRadius: 2.2, realRadius: 1.0, visualDist: 64, realDist: 778.5*1.5, speed: 0.007, isJupiter: true, fact: "ענק הגזים. המסה שלו גדולה פי 2.5 מכל שאר הפלנטות ביחד." },
+            { id: "saturn", name: "שבתאי (סאטורן)", color: 0xe2bf7d, visualRadius: 1.8, realRadius: 0.83, visualDist: 84, realDist: 1434*1.2, speed: 0.005, hasRings: true, fact: "מפורסם בזכות מערכת הטבעות המפוארת שלו, העשויה בעיקר מקרח ומאבק קוסמי." },
+            { id: "uranus", name: "אורנוס", color: 0x73c7e6, visualRadius: 1.2, realRadius: 0.36, visualDist: 106, realDist: 2871*1.0, speed: 0.003, fact: "ענק קרח שמסלול הסיבוב העצמי שלו נטוי לחלוטין על צידו." },
+            { id: "neptune", name: "נפטון", color: 0x274687, visualRadius: 1.1, realRadius: 0.35, visualDist: 124, realDist: 4495*0.9, speed: 0.002, fact: "כוכב הלכת המרוחק ביותר. מנשבות בו הרוחות החזקות ביותר במערכת השמש." }
+        ];
+
+        let scene, camera, renderer, controls;
+        let sunMesh, sunGlow;
+        let planets = [];
+        let isRealScale = false;
+        let showLabels = true;
+        let timeScale = 1;
+        let scaleProgress = 0;
+        let focusedPlanet = null;
+        let raycaster, mouse;
+        let moonMesh; // אובייקט הירח
+
+        init();
+        animate();
+
+        function init() {
+            // 1. סצינה ומצלמה
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100000);
+            camera.position.set(0, 60, 130);
+
+            // 2. רנדרר
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // 3. בקרת מצלמה
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 8000;
+
+            // 4. תאורה ריאליסטית: האור בוקע אך ורק מהשמש החוצה
+            const ambientLight = new THREE.AmbientLight(0x111116); // אור רקע קוסמי עמום מאוד
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.PointLight(0xffffff, 2.5, 50000);
+            scene.add(sunLight);
+
+            // 5. בניית השמש הבוערת
+            const sunGeo = new THREE.SphereGeometry(7, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ map: createSunTexture() });
+            sunMesh = new THREE.Mesh(sunGeo, sunMat);
+            scene.add(sunMesh);
+
+            // אפקט הילה (Glow) לשמש
+            const glowGeo = new THREE.SphereGeometry(8.2, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0xff4500,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending
+            });
+            sunGlow = new THREE.Mesh(glowGeo, glowMat);
+            sunMesh.add(sunGlow);
+
+            // 6. שדה כוכבי רקע עשיר
+            const starsGeo = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(4000 * 3);
+            for(let i=0; i<4000*3; i++) {
+                starPositions[i] = (Math.random() - 0.5) * 15000;
+            }
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, transparent: true, opacity: 0.9 });
+            scene.add(new THREE.Points(starsGeo, starsMat));
+
+            // 7. בניית הפלנטות
+            planetData.forEach((data) => {
+                const planetGroup = new THREE.Group();
+                let mat;
+
+                // יצירת חומרים וטקסטורות מותאמות
+                if(data.isEarth) {
+                    mat = new THREE.MeshStandardMaterial({ map: createEarthTexture(), roughness: 0.6, metalness: 0.1 });
+                } else if(data.isJupiter) {
+                    mat = new THREE.MeshStandardMaterial({ map: createJupiterTexture(), roughness: 0.9 });
+                } else {
+                    mat = new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.8, metalness: 0.1 });
+                }
+
+                const geo = new THREE.SphereGeometry(1, 32, 32);
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.userData = { id: data.id };
+                planetGroup.add(mesh);
+
+                // בניית מערכת הטבעות של שבתאי
+                if(data.hasRings) {
+                    const ringGeo = new THREE.RingGeometry(1.4, 2.8, 64);
+                    ringGeo.rotateX(Math.PI / 2.2); // זווית נטייה אלגנטית
+                    const ringMat = new THREE.MeshStandardMaterial({ 
+                        map: createSaturnRingTexture(), 
+                        side: THREE.DoubleSide, 
+                        transparent: true, 
+                        opacity: 0.85
+                    });
+                    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                    ringMesh.name = "rings";
+                    planetGroup.add(ringMesh);
+                }
+
+                // הוספת הירח לכדור הארץ
+                if(data.isEarth) {
+                    const moonGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                    const moonMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 });
+                    moonMesh = new THREE.Mesh(moonGeo, moonMat);
+                    moonMesh.position.x = 2; // מרחק בסיסי מהארץ
+                    planetGroup.add(moonMesh);
+                }
+
+                scene.add(planetGroup);
+
+                // קווי מסלול
+                const orbitGeo = new THREE.BufferGeometry();
+                const points = [];
+                for(let i=0; i<=180; i++) {
+                    const theta = (i / 180) * Math.PI * 2;
+                    points.push(new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta)));
+                }
+                orbitGeo.setFromPoints(points);
+                const orbitMat = new THREE.LineBasicMaterial({ color: data.color, transparent: true, opacity: 0.15 });
+                const orbitLine = new THREE.Line(orbitGeo, orbitMat);
+                scene.add(orbitLine);
+
+                // תוויות טקסט
+                const label = document.createElement('div');
+                label.className = 'planet-label';
+                label.id = `label-${data.id}`;
+                label.innerText = data.name.split(' ')[0];
+                document.getElementById('labels-container').appendChild(label);
+
+                planets.push({
+                    id: data.id, name: data.name, group: planetGroup, mesh: mesh, orbit: orbitLine, data: data,
+                    angle: Math.random() * Math.PI * 2, currentRadius: data.visualRadius, currentDist: data.visualDist
+                });
+            });
+
+            // מאזינים
+            window.addEventListener('resize', onWindowResize);
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            window.addEventListener('click', onSceneClick);
+
+            document.getElementById('speed-slider').addEventListener('input', (e) => {
+                timeScale = parseFloat(e.target.value);
+                document.getElementById('speed-label').innerText = `מהירות זרימת הזמן: ${timeScale.toFixed(1)}x`;
+            });
+        }
+
+        function setScaleMode(mode) {
+            isRealScale = mode;
+            document.getElementById('btn-visual').classList.toggle('active', !mode);
+            document.getElementById('btn-real').classList.toggle('active', mode);
+        }
+
+        function toggleLabels() {
+            showLabels = !showLabels;
+            document.getElementById('btn-labels').classList.toggle('active', showLabels);
+            document.getElementById('btn-labels').innerText = `כותרות שמות: ${showLabels ? 'מוצגות' : 'כבויות'}`;
+            if(!showLabels) {
+                document.querySelectorAll('.planet-label').forEach(l => l.style.opacity = '0');
+            }
+        }
+
+        function resetCamera() {
+            focusedPlanet = null;
+            focusPlanet(null);
+            controls.target.set(0,0,0);
+            camera.position.set(0, 70, 150);
+        }
+
+        function focusPlanet(planet) {
+            focusedPlanet = planet;
+            const panel = document.getElementById('info-panel');
+            if(planet) {
+                document.getElementById('info-name').innerText = planet.name;
+                document.getElementById('info-size').innerText = `גודל יחסי במערכת: ${planet.data.visualRadius * 100}%`;
+                document.getElementById('info-dist').innerText = `מרחק ממוצע מהשמש: ${planet.data.data.dist}`;
+                document.getElementById('info-period').innerText = `זמן הקפה (שנה): ${planet.data.data.period}`;
+                document.getElementById('info-fact').innerText = `עובדה מעניינת: ${planet.data.fact}`;
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        function onSceneClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
+            if (intersects.length > 0) {
+                const hitPlanet = planets.find(p => p.id === intersects[0].object.userData.id);
+                if(hitPlanet) focusPlanet(hitPlanet);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- לולאת הרנדור והתנועה הקוסמית ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // אנימציית מעבר חלקה בין מצבי קנה מידה
+            const targetScale = isRealScale ? 1 : 0;
+            scaleProgress = THREE.MathUtils.lerp(scaleProgress, targetScale, 0.04);
+
+            // סיבוב השמש סביב עצמה ואפקט פעימת לבה קל
+            sunMesh.rotation.y += 0.002;
+            const pulse = 1 + Math.sin(Date.now() * 0.001) * 0.01;
+            sunMesh.scale.set(pulse, pulse, pulse);
+
+            planets.forEach((p) => {
+                // הקפה סביב השמש
+                p.angle += p.data.speed * timeScale * 0.25;
+
+                // מעבר דינמי בין המרחקים והגדלים
+                p.currentDist = THREE.MathUtils.lerp(p.data.visualDist, p.data.realDist, scaleProgress);
+                p.currentRadius = THREE.MathUtils.lerp(p.data.visualRadius, p.data.realRadius, scaleProgress);
+
+                // עדכון מיקום הקבוצה במרחב
+                p.group.position.x = Math.cos(p.angle) * p.currentDist;
+                p.group.position.z = Math.sin(p.angle) * p.currentDist;
+
+                // עדכון גודל כוכב הלכת
+                p.mesh.scale.set(p.currentRadius, p.currentRadius, p.currentRadius);
+
+                // סיבוב הפלנטה סביב צירה (ליצירת יום ולילה)
+                p.mesh.rotation.y += 0.01;
+
+                // התאמת קווי המסלול והטבעות
+                p.orbit.scale.set(p.currentDist, p.currentDist, p.currentDist);
+                if(p.data.hasRings) {
+                    const rings = p.group.getObjectByName("rings");
+                    if(rings) rings.scale.set(p.currentRadius, p.currentRadius, p.currentRadius);
+                }
+
+                // תנועת הירח סביב כדור הארץ (אם זה כדור הארץ)
+                if(p.data.isEarth && moonMesh) {
+                    const moonAngle = Date.now() * 0.002 * timeScale;
+                    const moonDist = p.currentRadius + 1.2; // מרחק דינמי מהקליפה
+                    moonMesh.position.x = Math.cos(moonAngle) * moonDist;
+                    moonMesh.position.z = Math.sin(moonAngle) * moonDist;
+                }
+
+                // עדכון כותרות הדו-ממד על המסך
+                const label = document.getElementById(`label-${p.id}`);
+                if (showLabels) {
+                    const tempV = new THREE.Vector3();
+                    p.mesh.getWorldPosition(tempV);
+                    tempV.y += p.currentRadius + 1.8;
+                    tempV.project(camera);
+
+                    const x = (tempV.x * .5 + .5) * window.innerWidth;
+                    const y = (tempV.y * -.5 + .5) * window.innerHeight;
+
+                    if(tempV.z < 1 && x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
+                        label.style.opacity = '1';
+                        label.style.left = `${x}px`;
+                        label.style.top = `${y}px`;
+                    } else {
+                        label.style.opacity = '0';
+                    }
+                }
+            });
+
+            // מיקוד מצלמה חלק על כוכב לכת נבחר
+            if (focusedPlanet) {
+                const targetPos = new THREE.Vector3();
+                focusedPlanet.mesh.getWorldPosition(targetPos);
+                controls.target.lerp(targetPos, 0.08);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

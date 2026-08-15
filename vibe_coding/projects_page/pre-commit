@@ -1,0 +1,25 @@
+#!/bin/sh
+# Keeps vibe_coding/index.html in sync with projects_page/projects.json.
+#
+# Install:
+#   ln -sf ../../vibe_coding/projects_page/pre-commit /home/ori/fun/.git/hooks/pre-commit
+#
+# On every commit it rebuilds the landing page and stages the result, so the
+# page can never drift from the data. It also runs the audit; a new project
+# with no card is reported but does NOT block the commit.
+
+set -e
+REPO=$(git rev-parse --show-toplevel)
+PAGE="$REPO/vibe_coding/projects_page"
+
+[ -f "$PAGE/build.py" ] || exit 0
+
+python3 "$PAGE/build.py" >/dev/null
+git add "$REPO/vibe_coding/index.html"
+
+if ! python3 "$PAGE/build.py" --check; then
+    echo ""
+    echo "(דף הפרויקטים נבנה מחדש ונוסף לקומיט. ההערות למעלה הן תזכורת בלבד.)"
+fi
+
+exit 0

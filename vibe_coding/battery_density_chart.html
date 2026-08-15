@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>צפיפות אנרגטית של מצברים לאורך השנים</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: #0f1419;
+    color: #e6e6e6;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { text-align: center; font-size: 22px; margin-bottom: 4px; }
+  .sub { text-align: center; color: #9aa4b2; margin-bottom: 24px; font-size: 14px; }
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #161b22;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  }
+  .legend-note {
+    margin-top: 18px;
+    font-size: 13px;
+    color: #9aa4b2;
+    line-height: 1.7;
+  }
+  .legend-note b { color: #e6e6e6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>צפיפות אנרגטית של מצברים — האופטימום בייצור / פרוטוטיפ לאורך השנים</h1>
+  <div class="sub">Wh/kg ברמת התא (cell-level) — מבוסס על נתוני ייצור, פרוטוטיפים מובילים והכרזות יצרנים</div>
+  <canvas id="chart" height="120"></canvas>
+  <div class="legend-note">
+    <b>קווים מלאים</b> = טכנולוגיות בייצור מסחרי. &nbsp;
+    <b>קווים מקווקווים</b> = פרוטוטיפים / הכרזות. <br>
+    <b>נקודות ציון:</b> 1991 — Sony משיקה את הליתיום-יון המסחרי הראשון (~80 Wh/kg). &nbsp;
+    2017 — Tesla 2170 (~250 Wh/kg). &nbsp;
+    2023 — CATL Qilin (~255 Wh/kg). &nbsp;
+    2024 — NIO/WeLion semi-solid (~360 Wh/kg). &nbsp;
+    2026 — Chery SSB prototype (~600 Wh/kg).
+  </div>
+</div>
+
+<script>
+const years = [1991, 1995, 2000, 2005, 2010, 2015, 2020, 2023, 2025, 2026, 2028, 2030, 2032];
+
+const liion =       [80, 100, 130, 150, 170, 200, 240, 260, 280, 290, 300, 310, 320];
+const semisolid =   [null, null, null, null, null, null, null, 320, 350, 380, 420, 450, 480];
+const ssbProto =    [null, null, null, null, null, null, 350, 450, 500, 600, 700, 800, 900];
+const ssbProd =     [null, null, null, null, null, null, null, null, null, null, 350, 450, 550];
+const sodium =      [null, null, null, null, null, null, 120, 150, 165, 175, 200, 220, 240];
+
+const ctx = document.getElementById('chart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [
+      {
+        label: 'ליתיום-יון (ייצור מסחרי)',
+        data: liion,
+        borderColor: '#4fc3f7',
+        backgroundColor: 'rgba(79,195,247,0.1)',
+        tension: 0.3,
+        borderWidth: 3,
+      },
+      {
+        label: 'Semi-Solid (ייצור)',
+        data: semisolid,
+        borderColor: '#81c784',
+        backgroundColor: 'rgba(129,199,132,0.1)',
+        tension: 0.3,
+        borderWidth: 3,
+      },
+      {
+        label: 'Solid-State (פרוטוטיפ)',
+        data: ssbProto,
+        borderColor: '#ff8a65',
+        backgroundColor: 'rgba(255,138,101,0.1)',
+        tension: 0.3,
+        borderWidth: 3,
+        borderDash: [8, 4],
+      },
+      {
+        label: 'Solid-State (ייצור צפוי)',
+        data: ssbProd,
+        borderColor: '#ba68c8',
+        backgroundColor: 'rgba(186,104,200,0.1)',
+        tension: 0.3,
+        borderWidth: 3,
+        borderDash: [8, 4],
+      },
+      {
+        label: 'סודיום-יון',
+        data: sodium,
+        borderColor: '#ffd54f',
+        backgroundColor: 'rgba(255,213,79,0.1)',
+        tension: 0.3,
+        borderWidth: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { color: '#e6e6e6', font: { size: 13 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} Wh/kg`
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'שנה', color: '#9aa4b2' },
+        ticks: { color: '#9aa4b2' },
+        grid: { color: 'rgba(255,255,255,0.05)' }
+      },
+      y: {
+        title: { display: true, text: 'צפיפות אנרגטית (Wh/kg)', color: '#9aa4b2' },
+        ticks: { color: '#9aa4b2' },
+        grid: { color: 'rgba(255,255,255,0.08)' },
+        beginAtZero: true,
+        suggestedMax: 1000
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
