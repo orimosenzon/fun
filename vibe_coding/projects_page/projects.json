@@ -634,55 +634,6 @@
             }
           ],
           "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"8\" fill=\"#f472b6\" opacity=\".9\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(0   36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(60  36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(120 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(180 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(240 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"20\" rx=\"6\" ry=\"9\" fill=\"#f472b6\" opacity=\".45\" transform=\"rotate(300 36 36)\"/>\n                    <line x1=\"36\" y1=\"44\" x2=\"36\" y2=\"62\" stroke=\"#4ade80\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n                </svg>"
-        },
-        {
-          "title": "הגיטרות של יצחק",
-          "icon": "🎸",
-          "theme": "t-amber",
-          "tags": [
-            "HTML/CSS/JS",
-            "RTL",
-            "אתר סטטי",
-            "גלריית תמונות"
-          ],
-          "desc": "אתר מכירה והנצחה לגיטרות בעבודת יד שנותרו מסדנתו של בונה גיטרות שנפטר. קטלוג עם מפרט ותמונות לכל כלי, לצד סיפורו של הבונה.",
-          "links": [
-            {
-              "href": "alon/index.html",
-              "style": "primary",
-              "label": "▶ פתח את האתר"
-            },
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/alon",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
-            }
-          ]
-        },
-        {
-          "title": "חידתי — מצגת משקיעים",
-          "icon": "🎤",
-          "theme": "t-pink",
-          "tags": [
-            "HTML יחיד",
-            "RTL",
-            "16 שקופיות"
-          ],
-          "desc": "מצגת משקיעים לחידתי, בקובץ HTML אחד עם ניווט מקלדת — במקום PowerPoint שצריך לשלוח כקובץ.",
-          "links": [
-            {
-              "href": "chidonait/index.html",
-              "style": "primary",
-              "label": "▶ פתח את המצגת"
-            },
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/chidonait",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
-            }
-          ]
         }
       ]
     },
@@ -836,37 +787,6 @@
             }
           ],
           "illus": "                <!-- Solar system -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"36\" cy=\"36\" r=\"1\" fill=\"white\" opacity=\".4\"/><circle cx=\"10\" cy=\"8\"  r=\"1\" fill=\"white\" opacity=\".4\"/>\n                    <circle cx=\"62\" cy=\"10\" r=\"1\" fill=\"white\" opacity=\".3\"/><circle cx=\"64\" cy=\"62\" r=\"1\" fill=\"white\" opacity=\".4\"/>\n                    <circle cx=\"8\"  cy=\"60\" r=\"1\" fill=\"white\" opacity=\".3\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"9\" fill=\"#fb923c\" opacity=\".85\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"12\" fill=\"none\" stroke=\"#fb923c\" stroke-width=\".5\" opacity=\".3\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"22\" ry=\"9\"  stroke=\"#fb923c\" stroke-width=\".8\" fill=\"none\" opacity=\".2\" transform=\"rotate(-15 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"30\" ry=\"13\" stroke=\"#fb923c\" stroke-width=\".8\" fill=\"none\" opacity=\".15\" transform=\"rotate(20 36 36)\"/>\n                    <circle cx=\"57\" cy=\"29\" r=\"3\"   fill=\"#60a5fa\" opacity=\".8\"/>\n                    <circle cx=\"12\" cy=\"48\" r=\"4.5\" fill=\"#f87171\" opacity=\".6\"/>\n                </svg>\n            "
-        },
-        {
-          "title": "חידות לכרמית",
-          "icon": "🧩",
-          "theme": "t-pink",
-          "tags": [
-            "HTML/CSS/JS",
-            "Word Riddles"
-          ],
-          "desc": "משחק חידות מילים בעברית ואנגלית מתמונות בכתב יד, עם רמזים, משוב לכל תשובה, ודוח סופי מפורט וציון.",
-          "links": [
-            {
-              "href": "כרמית/app/index.html",
-              "style": "primary",
-              "label": "▶ שחק עכשיו",
-              "external": false
-            },
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
-            }
-          ],
-          "small": true,
-          "badges": [
-            {
-              "type": "live",
-              "label": "LIVE"
-            }
-          ]
         }
       ]
     },
@@ -1114,24 +1034,6 @@
           ]
         },
         {
-          "title": "תרגול אוצר מילים — תיכון שמיר",
-          "icon": "📚",
-          "theme": "t-teal",
-          "tags": [
-            "HTML יחיד",
-            "אנגלית",
-            "תרגול אינטראקטיבי"
-          ],
-          "desc": "יחידת אוצר מילים באנגלית לכיתה, עם תרגול מיידי ומשוב לכל תשובה. נבנתה לתיכון שמיר לצד פרויקט השכלה.",
-          "links": [
-            {
-              "href": "vocab_optionA.html",
-              "style": "primary",
-              "label": "▶ פתח את התרגול"
-            }
-          ]
-        },
-        {
           "title": "צפיפות אנרגטית של מצברים",
           "icon": "🔋",
           "theme": "t-amber",
@@ -1146,26 +1048,6 @@
               "href": "battery_density_chart.html",
               "style": "primary",
               "label": "▶ פתח את הגרף"
-            }
-          ]
-        },
-        {
-          "title": "screen capture — צילום מסך מהמגש",
-          "icon": "📸",
-          "theme": "t-blue",
-          "dir": "ירדן",
-          "tags": [
-            "Python",
-            "X11",
-            "System Tray"
-          ],
-          "desc": "כלי קטן למגש המערכת בלינוקס: בוחרים מקש כלשהו מהתפריט, ומאותו רגע לחיצה עליו בכל מקום מצלמת את המסך המלא.",
-          "links": [
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/%D7%99%D7%A8%D7%93%D7%9F",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
             }
           ]
         }
