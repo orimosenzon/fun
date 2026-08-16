@@ -179,8 +179,31 @@ def render_header(data: dict) -> str:
 """
 
 
+def assert_not_excluded(data: dict) -> None:
+    """EXCLUDED projects must never reach the published page. Fail the build
+    loudly rather than quietly publishing one that slipped back in."""
+    from urllib.parse import unquote
+
+    for s in data["sections"]:
+        for p in s["projects"]:
+            targets = {p.get("dir", "")}
+            for l in p["links"]:
+                path = unquote(l["href"]).replace(
+                    "https://github.com/orimosenzon/fun/tree/master/vibe_coding/", ""
+                )
+                if not re.match(r"https?:", path):
+                    targets.add(path.split("/")[0])
+            hit = targets & EXCLUDED
+            if hit:
+                raise SystemExit(
+                    f'הפרויקט "{p["title"]}" ({", ".join(sorted(hit))}) מוחרג מהדף '
+                    f"לבקשת אורי (16.8.2026). הסר אותו מ-projects.json."
+                )
+
+
 def build() -> str:
     data = json.loads(DATA.read_text(encoding="utf-8"))
+    assert_not_excluded(data)
     sections = "\n\n".join(
         render_section(s, i + 1) for i, s in enumerate(data["sections"])
     )
@@ -193,9 +216,19 @@ def build() -> str:
 
 
 # ── audit ────────────────────────────────────────────────────────────────────
+# Ori asked on 16.8.2026 that these never appear on the public landing page.
+# Do not add cards for them, and do not report them as missing.
+EXCLUDED = {
+    "chidonait",          # חידתי — מצגת משקיעים
+    "alon",               # הגיטרות של יצחק
+    "כרמית",              # חידות לכרמית
+    "vocab_optionA.html",  # תרגול אוצר מילים — תיכון שמיר
+    "ירדן",               # screen capture — צילום מסך מהמגש
+}
+
 # Deliberately off the page: infrastructure, private work, and superseded
 # iterations of a project that already has a card.
-SKIP = {
+SKIP = EXCLUDED | {
     "projects_page", "tmp", "memory", "billing-check", "job-search", "factotum",
     "ori_android",
     # earlier iterations of "Smart Business Search" (ori/index.html)
