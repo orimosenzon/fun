@@ -1,0 +1,96 @@
+/* ===== מפת שכונות לחיצה + תיקוני תצוגה =====
+   להדבקה ב'מדיה ויקי:Common.css' (לבוט אין הרשאת editinterface).
+   מחליף את common-mobile-fix.css הישן וכולל אותו. */
+
+/* --- 1. תמונות מתכווצות לרוחב המסך ---
+   קריטי למפת השכונות: המפה היא 1000px קבוע, ואזורי הלחיצה ממוקמים באחוזים
+   ביחס למכל. בלי הכלל הזה, במסך צר מ-1000px התמונה חורגת מהמכל, האחוזים
+   מתייחסים לרוחב אחר מזה של התמונה, וכל אזורי הלחיצה זזים. זו הסיבה
+   שהלחיצה "לפעמים עובדת ולפעמים לא" — זה תלוי ברוחב החלון. */
+.mw-parser-output img,
+.mw-parser-output .mw-file-element {
+	max-width: 100%;
+	height: auto;
+}
+.mw-parser-output iframe {
+	max-width: 100%;
+}
+
+/* --- 2. אזורי הלחיצה במפת השכונות --- */
+.hoodmap {
+	touch-action: manipulation;
+}
+
+/* כל אזור גזור ב-clip-path לצורת השכונה, כך שהצביעה ממלאת בדיוק את השכונה */
+.hoodmap .hood {
+	transition: background-color 0.12s ease-in;
+	cursor: pointer;
+}
+.hoodmap .hood:hover {
+	background-color: rgba(255, 235, 59, 0.55);   /* צהוב חזק, נראה מעל כל צבעי המפה */
+}
+.hoodmap .hood-nolink:hover {
+	background-color: rgba(150, 150, 150, 0.45);  /* אפור: מסומן אך אין ערך */
+	cursor: default;
+}
+
+/* שם השכונה מופיע במרכז האזור בזמן ריחוף.
+   הערה: clip-path גוזר גם את התווית, כך שבשכונות בצורת L היא עלולה
+   להיחתך. במקרה כזה עדיין יש tooltip של הדפדפן על התג title. */
+.hoodmap .hood::after {
+	content: attr(data-hood);
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	padding: 3px 10px;
+	background: rgba(0, 0, 0, 0.78);
+	color: #fff;
+	font-size: 15px;
+	line-height: 1.4;
+	font-weight: bold;
+	white-space: nowrap;
+	border-radius: 4px;
+	opacity: 0;
+	transition: opacity 0.12s ease-in;
+	pointer-events: none;                          /* שלא יחסום את הלחיצה */
+}
+.hoodmap .hood:hover::after {
+	opacity: 1;
+}
+
+/* --- 3. תצוגה בטלפון: מניעת גלילה אופקית (RTL) --- */
+@media (max-width: 800px) {
+	/* טבלאות פריסה (עמוד ראשי) — עמודה אחת מתחת לשנייה.
+	   :not(.infobox) חשוב! בלעדיו הכלל משטח את תבנית "מידע שכונה"
+	   של חוה ומפרק אותה לשורות נפרדות בטלפון. */
+	.mw-parser-output > table:not(.wikitable):not(.infobox),
+	.mw-parser-output > table:not(.wikitable):not(.infobox) > tbody,
+	.mw-parser-output > table:not(.wikitable):not(.infobox) > tbody > tr,
+	.mw-parser-output > table:not(.wikitable):not(.infobox) > tbody > tr > td {
+		display: block !important;
+		width: auto !important;
+	}
+	.mw-parser-output > table:not(.wikitable):not(.infobox) > tbody > tr > td {
+		margin-bottom: 10px;
+	}
+
+	/* טבלאות נתונים — גלילה בתוך הטבלה, לא בכל הדף */
+	.mw-parser-output .wikitable {
+		display: block;
+		overflow-x: auto;
+		max-width: 100%;
+	}
+
+	/* תיבת מידע ברוחב מלא בטלפון במקום 260px צפים */
+	.mw-parser-output table.infobox {
+		float: none !important;
+		width: 100% !important;
+		margin: 0 0 1em !important;
+	}
+
+	/* התווית קטנה מדי במסך קטן */
+	.hoodmap .hood::after {
+		font-size: 13px;
+	}
+}
