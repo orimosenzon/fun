@@ -546,12 +546,23 @@ SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
            ("האולם", fetch_haulam), ("ידני", fetch_manual)]
 
 
+def _clock_times(s: str) -> set:
+    """The HH:MM instants in a time string, however it is punctuated."""
+    return set(re.findall(r"\d{1,2}:\d{2}", s or ""))
+
+
 def _same_event(a, b) -> bool:
     """Same date, no conflicting times, and one name contains the other
-    (e.g. feed's "מעגל מתנות קהילתי" vs. the manual "מעגל מתנות")."""
+    (e.g. feed's "מעגל מתנות קהילתי" vs. the manual "מעגל מתנות").
+
+    Times are compared as the SET of clock readings, not as raw strings: the
+    feed writes two showings as "09:30, 14:00" while a hand-written entry may
+    say "09:30 ו-14:00". Comparing the strings made those look like different
+    events, and the pre-premiere screening of "עצמאות" was listed twice."""
     if a["date"] != b["date"]:
         return False
-    if a["time"] and b["time"] and a["time"] != b["time"]:
+    ta, tb = _clock_times(a["time"]), _clock_times(b["time"])
+    if ta and tb and not (ta & tb):        # no shared showing -> different events
         return False
     na, nb = norm(a["name"]), norm(b["name"])
     return bool(na and nb) and (na in nb or nb in na)
