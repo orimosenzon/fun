@@ -61,7 +61,10 @@
   <!-- List view -->
   <div id="list-view">
     <header class="panel-head">
-      <h1>דרך קיצור</h1>
+      <div class="title-row">
+        <h1>דרך קיצור</h1>
+        <button id="editor-btn" class="editor-btn">מצב עורך</button>
+      </div>
       <p id="stats" class="stats">טוען…</p>
       <div class="controls">
         <input id="search" type="search" placeholder="חיפוש שביל או רחוב…" autocomplete="off" aria-label="חיפוש">
@@ -116,9 +119,14 @@
   <div class="sheet-card" id="draft-card"></div>
 </div>
 
+<div id="editor-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="מצב עורך">
+  <div class="sheet-card" id="editor-card"></div>
+</div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<!-- Plain scripts sharing one global scope, no bundler. layers.js and draft.js
-     define their modules; app.js is loaded last and drives both. -->
+<!-- Plain scripts sharing one global scope, no bundler. store.js, layers.js and
+     draft.js define their modules; app.js is loaded last and drives all three. -->
+<script src="store.js"></script>
 <script src="layers.js"></script>
 <script src="draft.js"></script>
 <script src="app.js"></script>

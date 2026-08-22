@@ -400,7 +400,15 @@ function showDetail(it) {
       <div class="acts">
         ${panoActs(it, names, 'מבט 360° מהרחוב אל הכניסה')}
         ${navActs(it, 'ניווט בתוך האפליקציה, לפי מסלול השביל עצמו')}
-      </div>`;
+      </div>
+      ${Store.isEditor() ? `
+        <h3>עריכה</h3>
+        <div class="acts">
+          <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה</span></button>
+          <button class="act danger" data-pub="remove"><span class="lbl">הסרה מהמסד
+            <span class="hint">נשמר בהיסטוריה, אפשר לשחזר</span></span></button>
+        </div>
+        <p id="pub-msg" class="pub-msg" hidden></p>` : ''}`;
   }
 
   const photos = it.photos || [];
@@ -426,10 +434,48 @@ function showDetail(it) {
   const go = el('go');
   if (go) go.addEventListener('click', () => startNav(it));
   if (it.draft) Drafts.wireDetail(it, el('detail'));
+  wirePublished(it);
 
   el('detail').scrollTop = 0;
   el('list-view').hidden = true;
   el('detail-view').hidden = false;
+}
+
+/** Editing a trail that is already in the shared dataset. */
+function wirePublished(it) {
+  el('detail').querySelectorAll('[data-pub]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const msg = el('pub-msg');
+      const say = (text, bad) => {
+        msg.hidden = false;
+        msg.textContent = text;
+        msg.className = 'pub-msg' + (bad ? ' bad' : '');
+      };
+
+      try {
+        if (btn.dataset.pub === 'rename') {
+          const name = prompt('שם השביל:', it.name);
+          if (name == null) return;
+          const note = prompt('הערה (אפשר להשאיר ריק):', it.note || '');
+          if (note == null) return;
+          btn.disabled = true;
+          say('שומר…');
+          await reloadShared(await Store.rename(it.id, name.trim() || it.name, note.trim()));
+          select(it.id, false);
+        } else {
+          if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
+                       'השינוי נשמר בהיסטוריה ואפשר לשחזר אותו.')) return;
+          btn.disabled = true;
+          say('מסיר…');
+          await reloadShared(await Store.remove(it.id, it.name));
+          deselect();
+        }
+      } catch (err) {
+        btn.disabled = false;
+        say('נכשל: ' + err.message, true);
+      }
+    });
+  });
 }
 
 /* ---------- lightbox ---------- */
@@ -728,9 +774,16 @@ function wireSwipe() {
 
 function paintStats() {
   const s = Layers.stats();
-  el('stats').textContent = s.segments
-    ? `${s.segments} מקטעים · ${metres(s.length)} · ${s.waypoints} נקודות ציון · ${s.photos} תמונות`
-    : 'אין שכבה דלוקה';
+  const bits = s.segments
+    ? [`${s.segments} מקטעים`, metres(s.length), `${s.waypoints} נקודות ציון`,
+       `${s.photos} תמונות`]
+    : ['אין שכבה דלוקה'];
+  if (Store.offline) bits.push('לא מחובר, מציג עותק שמור');
+  el('stats').textContent = bits.join(' · ');
+
+  const who = Store.editor();
+  el('editor-btn').textContent = who ? `עורך: ${who}` : 'מצב עורך';
+  el('editor-btn').classList.toggle('on', !!who);
 }
 
 /** Everything that has to happen after a layer is toggled or a draft changes.
@@ -753,11 +806,7 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const [trails, network] = await Promise.all([
-    fetch('data/trails.json').then((r) => r.json()),
-    // The cycling plan is a bonus layer; the app still works without the file.
-    fetch('data/layers.json').then((r) => (r.ok ? r.json() : null)).catch(() => null)
-  ]);
+  const { trails, network } = await Store.load();
   DATA = trails;
   Layers.init(trails, network);
   Layers.onChange = repaint;
@@ -769,6 +818,9 @@ async function boot() {
   paintStats();
   Drafts.init();
   wireControls();
+  // Confirming the stored token needs the network, so it must not hold up the
+  // list. The editor badge and the publish buttons appear a moment later.
+  Store.resume().then((who) => { if (who) repaint(); });
 
   if (map) {
     await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
@@ -779,7 +831,97 @@ async function boot() {
   }
 }
 
+/** Show the shared dataset again after a write, so the trail reappears as an
+ *  ordinary trail of the initiative rather than merely vanishing from drafts.
+ *
+ *  A write hands back the document it just stored; use that rather than
+ *  fetching, which would go through a CDN that has not caught up yet. */
+async function reloadShared(doc) {
+  try {
+    const trails = doc || (await Store.load()).trails;
+    DATA = trails;
+    const layer = Layers.byId('trails');
+    layer.segments = trails.segments;
+    layer.waypoints = trails.waypoints;
+    Layers.refresh('trails');
+  } catch (err) {
+    console.error('refresh failed', err);
+  }
+}
+
+/* ---------- editor mode ----------
+ *
+ * Reading needs nothing. Publishing needs a token, pasted once per device and
+ * scoped to the data repo alone, which is the whole reason the data sits in a
+ * repo of its own: a token that leaks off someone's phone can touch published
+ * trail data and nothing else, and every change it makes is a commit.
+ */
+
+function editorSheet() {
+  const who = Store.editor();
+  el('editor-card').innerHTML = who ? `
+    <header class="sheet-head">
+      <h2>מצב עורך</h2>
+      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">מחובר בתור <b>${escapeHtml(who)}</b>. שביל שתפרסם ייכנס
+      למסד המשותף מיד, וכל מי שיפתח את האפליקציה יראה אותו.</p>
+    <button class="big-act" data-act="out"><b>התנתק מהמכשיר הזה</b>
+      <span>המפתח יימחק מהדפדפן. הטיוטות המקומיות נשארות.</span></button>` : `
+    <header class="sheet-head">
+      <h2>מצב עורך</h2>
+      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">כדי לפרסם שבילים למסד המשותף צריך מפתח אישי. זה חד פעמי
+      למכשיר. בלי מפתח האפליקציה עובדת רגיל, והשבילים שתקליט נשארים אצלך ואפשר
+      לשלוח אותם ליוזמה כקובץ.</p>
+    <ol class="steps">
+      <li><a href="${Store.TOKEN_HELP}" target="_blank" rel="noopener">יצירת מפתח בגיטהאב ↗</a></li>
+      <li>מגבילים לריפו אחד בלבד:
+        <code>Repository access › Only select repositories</code>
+        <code>${Store.REPO}</code></li>
+      <li>נותנים הרשאת כתיבה לתוכן:
+        <code>Permissions › Contents › Read and write</code></li>
+      <li>מייצרים, מעתיקים, ומדביקים כאן</li>
+    </ol>
+    <label class="fld"><span>המפתח</span>
+      <input id="tok" type="password" autocomplete="off" spellcheck="false"
+             placeholder="github_pat_…"></label>
+    <p id="tok-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="in"><b>התחבר</b></button>`;
+
+  el('editor-sheet').hidden = false;
+}
+
+async function editorAction(act, btn) {
+  if (act === 'close') { el('editor-sheet').hidden = true; return; }
+  if (act === 'out') { Store.signOut(); editorSheet(); repaint(); return; }
+  if (act !== 'in') return;
+
+  const err = el('tok-err');
+  err.hidden = true;
+  btn.disabled = true;
+  btn.querySelector('b').textContent = 'בודק…';
+  try {
+    await Store.signIn(el('tok').value);
+    el('editor-sheet').hidden = true;
+    repaint();
+  } catch (e) {
+    err.textContent = e.message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.querySelector('b').textContent = 'התחבר';
+  }
+}
+
 function wireControls() {
+  el('editor-btn').addEventListener('click', editorSheet);
+  el('editor-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'editor-sheet') { el('editor-sheet').hidden = true; return; }
+    const btn = e.target.closest('[data-act]');
+    if (btn) editorAction(btn.dataset.act, btn);
+  });
+
   el('layers').addEventListener('click', Layers.openSheet);
   el('layer-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'layer-sheet' || e.target.closest('[data-act="close"]')) {

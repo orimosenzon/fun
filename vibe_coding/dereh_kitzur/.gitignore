@@ -1,2 +1,5 @@
 # Overpass road download, re-fetched on demand
 .cache/
+
+# Generated for import into My Maps
+derech_kitzur.kml

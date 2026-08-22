@@ -24,6 +24,12 @@ const Drafts = (() => {
   const MIN_STEP_M = 4;             // GPS noise below this is not movement
   const MAX_ACC_M = 30;             // a fix vaguer than this is not a position
 
+  const MODE_TEXT = {
+    walk: 'הוקלט בהליכה',
+    draw: 'שורטט על המפה',
+    import: 'התקבל כקובץ'
+  };
+
   let db = null;
   let rows = [];                    // raw records, newest first
   let urls = [];                    // object URLs to revoke on rebuild
@@ -314,7 +320,7 @@ const Drafts = (() => {
     const places = segs.map((s) => `  <Placemark>
     <name>${xml(s.name)}</name>
     <description>${xml([s.note, `אורך ${s.length} מ׳`,
-      s.mode === 'walk' ? 'הוקלט בהליכה' : 'שורטט על המפה',
+      MODE_TEXT[s.mode] || MODE_TEXT.draw,
       'נוסף דרך אפליקציית דרך קיצור'].filter(Boolean).join(' · '))}</description>
     <styleUrl>#dk</styleUrl>
     <LineString><tessellate>1</tessellate><coordinates>
@@ -396,8 +402,14 @@ ${tracks}
         <b>ציור על המפה</b>
         <span>סמן את התוואי בלחיצות. מתאים לשביל שאתה כבר מכיר, מהבית.</span>
       </button>
-      <p class="sheet-credit">השביל נשמר במכשיר הזה בלבד. כדי שייכנס למפה של
-        היוזמה צריך לייצא אותו ולייבא ל-My Maps, ואת זה אפשר לעשות מסך הפרטים.</p>`);
+      <label class="big-act ghost" style="cursor:pointer">
+        <b>פתיחת קובץ שקיבלת</b>
+        <span>שביל ששלח לך מישהו, ב-KML או GPX. נפתח לבדיקה על המפה לפני פרסום.</span>
+        <input type="file" accept=".kml,.gpx,.json,application/xml,text/xml" hidden id="d-import">
+      </label>
+      <p class="sheet-credit">${Store.isEditor()
+        ? 'אתה במצב עורך, אז אפשר לפרסם ישירות למסד המשותף מסך הפרטים.'
+        : 'השביל נשמר במכשיר הזה בלבד, ומסך הפרטים אפשר לשלוח אותו ליוזמה.'}</p>`);
   }
 
   function askDetails() {
@@ -454,16 +466,28 @@ ${tracks}
 
   function detailExtras(seg) {
     const done = landed(seg);
+
+    // An editor publishes straight into the shared dataset. Everyone else
+    // sends the trail as a file, and an editor reviews it before it lands -
+    // which is the same queue, just carried by WhatsApp instead of a server.
+    const publish = Store.isEditor() ? `
+      <button class="act act-nav" data-draft="publish"><span class="lbl">פרסם למסד המשותף
+        <span class="hint">ייכנס מיד לכל מי שפותח את האפליקציה</span></span></button>` : `
+      <button class="act act-nav" data-draft="kml"><span class="lbl">שלח ליוזמה
+        <span class="hint">נשלח כקובץ, ואחד מהעורכים יוסיף אותו למפה</span></span></button>`;
+
     return `
-      ${done ? `<p class="landed">השביל הזה כבר מופיע במפה של היוזמה, אז אפשר
+      ${done ? `<p class="landed">השביל הזה כבר מופיע במסד המשותף, אז אפשר
         למחוק את הטיוטה.</p>` : ''}
-      <h3>לשלוח למפה של היוזמה</h3>
+      <h3>${Store.isEditor() ? 'פרסום' : 'לשלוח ליוזמה'}</h3>
       <div class="acts">
-        <button class="act act-nav" data-draft="kml"><span class="lbl">ייצוא KML ושליחה
-          <span class="hint">במפה של היוזמה בוחרים שכבה, ואז "ייבוא", ומעלים את הקובץ</span></span></button>
+        ${publish}
+        ${Store.isEditor() ? `<button class="act act-sub" data-draft="kml">
+          <span class="lbl">ייצוא KML<span class="hint">קובץ, לייבוא ידני ל-My Maps</span></span></button>` : ''}
         <button class="act act-sub" data-draft="gpx"><span class="lbl">ייצוא GPX
           <span class="hint">לאפליקציות הליכה וניווט</span></span></button>
       </div>
+      <p id="pub-msg" class="pub-msg" hidden></p>
       <h3>עריכה</h3>
       <div class="acts">
         <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
@@ -475,7 +499,104 @@ ${tracks}
         <button class="act danger" data-draft="delete"><span class="lbl">מחיקת הטיוטה</span></button>
       </div>
       <p class="src">נוצר ${new Date(seg.created).toLocaleDateString('he-IL')} ·
-        ${seg.mode === 'walk' ? 'הוקלט בהליכה' : 'שורטט על המפה'} · שמור במכשיר הזה בלבד</p>`;
+        ${MODE_TEXT[seg.mode] || MODE_TEXT.draw} · שמור במכשיר הזה בלבד</p>`;
+  }
+
+  /** Send a draft into the shared dataset, then retire the local copy.
+   *
+   *  Deleting only after the write has come back means a failed publish leaves
+   *  the trail exactly where it was, rather than losing a walk. */
+  async function publish(seg, btn) {
+    const msg = el('pub-msg');
+    const rec = rows.find((r) => r.id === seg.id);
+    const say = (text) => { msg.hidden = false; msg.textContent = text; msg.className = 'pub-msg'; };
+
+    btn.disabled = true;
+    say('מפרסם…');
+    try {
+      const { id, doc } = await Store.publish(seg, (rec && rec.photos) || [], say);
+      await drop(seg.id);
+      await reload();
+      await reloadShared(doc);
+      select(id);            // open it in its new life as a published trail
+    } catch (err) {
+      btn.disabled = false;
+      msg.className = 'pub-msg bad';
+      msg.hidden = false;
+      msg.textContent = 'הפרסום נכשל: ' + err.message + ' הטיוטה נשארה אצלך.';
+    }
+  }
+
+  /* ---------- importing a trail somebody sent ---------- */
+
+  function parseIncoming(text, filename) {
+    const trails = [];
+
+    if (/^\s*\{/.test(text)) {                     // our own JSON export
+      const doc = JSON.parse(text);
+      (doc.segments || [doc]).forEach((s) => {
+        if (s.path && s.path.length > 1) trails.push({ name: s.name, note: s.note, path: s.path });
+      });
+      return trails;
+    }
+
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('הקובץ לא נקרא כ-KML או GPX תקין.');
+
+    // KML: <Placemark><LineString><coordinates>lng,lat,alt ...
+    doc.querySelectorAll('Placemark').forEach((pm) => {
+      const coords = pm.querySelector('LineString > coordinates');
+      if (!coords) return;
+      const path = coords.textContent.trim().split(/\s+/).map((t) => {
+        const [lng, lat] = t.split(',').map(Number);
+        return [lat, lng];
+      }).filter(([lat, lng]) => isFinite(lat) && isFinite(lng));
+      if (path.length > 1) {
+        trails.push({
+          name: (pm.querySelector('name') || {}).textContent || filename,
+          note: (pm.querySelector('description') || {}).textContent || '',
+          path
+        });
+      }
+    });
+
+    // GPX: <trk><trkseg><trkpt lat lon>
+    doc.querySelectorAll('trk').forEach((trk) => {
+      const path = [...trk.querySelectorAll('trkpt')]
+        .map((p) => [+p.getAttribute('lat'), +p.getAttribute('lon')]);
+      if (path.length > 1) {
+        trails.push({ name: (trk.querySelector('name') || {}).textContent || filename, note: '', path });
+      }
+    });
+
+    if (!trails.length) throw new Error('לא מצאתי בקובץ אף תוואי.');
+    return trails;
+  }
+
+  /** Bring a received file in as ordinary drafts, so an editor can look at it
+   *  on the map, fix the name, and publish or discard it. */
+  async function importFile(file) {
+    const text = await file.text();
+    const found = parseIncoming(text, file.name.replace(/\.[^.]+$/, ''));
+    let last = null;
+    for (const t of found) {
+      const rec = {
+        id: 'draft-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+        name: (t.name || '').trim() || 'שביל שהתקבל',
+        note: (t.note || '').trim(),
+        path: t.path,
+        mode: 'import',
+        created: Date.now(),
+        updated: Date.now(),
+        photos: []
+      };
+      await put(rec);
+      last = rec.id;
+    }
+    await reload();
+    closeSheet();
+    if (last) select(last);
+    return found.length;
   }
 
   /** Wire the buttons detailExtras() just wrote. */
@@ -493,6 +614,7 @@ ${tracks}
       }
       node.addEventListener('click', async () => {
         if (act === 'kml' || act === 'gpx') return share([seg], act);
+        if (act === 'publish') return publish(seg, node);
         if (act === 'edit') {
           deselect();
           startEditor(seg.mode === 'walk' ? 'draw' : seg.mode, seg);
@@ -517,6 +639,16 @@ ${tracks}
 
   function wire() {
     el('add').addEventListener('click', askMode);
+
+    el('draft-sheet').addEventListener('change', async (e) => {
+      if (e.target.id !== 'd-import' || !e.target.files.length) return;
+      try {
+        const n = await importFile(e.target.files[0]);
+        if (n > 1) alert(`נפתחו ${n} תוואים מהקובץ. כולם ברשימה תחת הטיוטות שלך.`);
+      } catch (err) {
+        alert('לא הצלחתי לקרוא את הקובץ. ' + err.message);
+      }
+    });
 
     el('draft-sheet').addEventListener('click', async (e) => {
       if (e.target.id === 'draft-sheet') { closeSheet(); return; }

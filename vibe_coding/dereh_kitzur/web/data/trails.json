@@ -1,4 +1,6 @@
 {
+ "version": 2,
+ "updated": "2026-08-22T06:02:25Z",
  "source": "https://www.google.com/maps/d/viewer?hl=iw&mid=19q4SgSScTh3pW3lRqQO9dQ8kw8z2wTg",
  "segments": [
   {
@@ -30,7 +32,7 @@
     ]
    ],
    "length": 479,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "קיר הרעש"
    ],
@@ -58,7 +60,9 @@
      "road": 34,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p16",
@@ -141,7 +145,9 @@
      "road": 7,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p23",
@@ -272,7 +278,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p38",
@@ -307,7 +315,7 @@
     ]
    ],
    "length": 224,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "עמל",
     "קק\"ל",
@@ -337,7 +345,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p15",
@@ -364,7 +374,7 @@
     ]
    ],
    "length": 217,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "חרמון"
    ],
@@ -392,7 +402,9 @@
      "road": 6,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p30",
@@ -497,7 +509,9 @@
      "road": 27,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p11",
@@ -524,7 +538,7 @@
     ]
    ],
    "length": 182,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הדקלים",
     "גפן"
@@ -553,7 +567,9 @@
      "road": 4,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p37",
@@ -633,7 +649,9 @@
      "road": 21,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p24",
@@ -704,7 +722,9 @@
      "road": 16,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p59",
@@ -792,7 +812,9 @@
      "road": 3,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p28",
@@ -815,7 +837,7 @@
     ]
    ],
    "length": 132,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המייסדים",
     "לשטח פתוח לכיוון המושב"
@@ -844,7 +866,9 @@
      "road": 36,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p27",
@@ -919,7 +943,9 @@
      "road": 37,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p4",
@@ -942,7 +968,7 @@
     ]
    ],
    "length": 120,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הנשיא",
     "השופטים"
@@ -971,7 +997,9 @@
      "road": 5,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p0",
@@ -989,7 +1017,7 @@
     ]
    ],
    "length": 89,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שקמה",
     "דרך הים"
@@ -1018,7 +1046,9 @@
      "road": 9,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p7",
@@ -1041,7 +1071,7 @@
     ]
    ],
    "length": 89,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שבזי",
     "השופטים"
@@ -1070,7 +1100,9 @@
      "road": 5,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p22",
@@ -1154,7 +1186,9 @@
      "road": 48,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p5",
@@ -1177,7 +1211,7 @@
     ]
    ],
    "length": 76,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "פעמוני הכפר"
    ],
@@ -1205,7 +1239,9 @@
      "road": 11,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p40",
@@ -1261,7 +1297,9 @@
      "road": 6,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p33",
@@ -1284,7 +1322,7 @@
     ]
    ],
    "length": 69,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הדקלים",
     "ההסתדרות"
@@ -1313,7 +1351,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p46",
@@ -1340,7 +1380,7 @@
     ]
    ],
    "length": 69,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "זכריה",
     "מלאכי"
@@ -1369,7 +1409,9 @@
      "road": 3,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p39",
@@ -1392,7 +1434,7 @@
     ]
    ],
    "length": 68,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "חצר אחורית אבן גבירול"
    ],
@@ -1420,7 +1462,9 @@
      "road": 24,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p48",
@@ -1443,7 +1487,7 @@
     ]
    ],
    "length": 68,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "גן בגן החשמל"
    ],
@@ -1471,7 +1515,9 @@
      "road": 35,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p10",
@@ -1494,7 +1540,7 @@
     ]
    ],
    "length": 67,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "מייסדים",
     "תלפיות"
@@ -1523,7 +1569,9 @@
      "road": 8,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p9",
@@ -1546,7 +1594,7 @@
     ]
    ],
    "length": 66,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "אחוזה",
     "טלפיות"
@@ -1575,7 +1623,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p8",
@@ -1598,7 +1648,7 @@
     ]
    ],
    "length": 65,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שבזי אלחריזי"
    ],
@@ -1626,7 +1676,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p54",
@@ -1693,7 +1745,9 @@
      "road": 12,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p51",
@@ -1716,7 +1770,7 @@
     ]
    ],
    "length": 58,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "אדנים",
     "המסילה"
@@ -1745,7 +1799,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p44",
@@ -1768,7 +1824,7 @@
     ]
    ],
    "length": 56,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "כורש",
     "גן"
@@ -1797,7 +1853,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p20",
@@ -1865,7 +1923,9 @@
      "road": 0,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p3",
@@ -1888,7 +1948,7 @@
     ]
    ],
    "length": 52,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שופטים",
     "עמק החובזות"
@@ -1917,7 +1977,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p34",
@@ -1940,7 +2002,7 @@
     ]
    ],
    "length": 50,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "ההסתדרות",
     "חבצלת"
@@ -1969,7 +2031,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p2",
@@ -1992,7 +2056,7 @@
     ]
    ],
    "length": 48,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הנשיא",
     "עמק החובזות"
@@ -2021,7 +2085,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p6",
@@ -2044,7 +2110,7 @@
     ]
    ],
    "length": 47,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הנשיא",
     "עמק החובזות (דרום"
@@ -2073,7 +2139,9 @@
      "road": 51,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p29",
@@ -2096,7 +2164,7 @@
     ]
    ],
    "length": 47,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המושב",
     "שטח פתוח לכיוון המייסדים"
@@ -2125,7 +2193,9 @@
      "road": 1,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p42",
@@ -2148,7 +2218,7 @@
     ]
    ],
    "length": 45,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שיטה",
     "החורש"
@@ -2177,7 +2247,9 @@
      "road": 3,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p43",
@@ -2200,7 +2272,7 @@
     ]
    ],
    "length": 40,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "מלאכי",
     "גן"
@@ -2229,7 +2301,9 @@
      "road": 5,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p32",
@@ -2252,7 +2326,7 @@
     ]
    ],
    "length": 38,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שושן",
     "הצפירה"
@@ -2281,7 +2355,9 @@
      "road": 11,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p56",
@@ -2304,7 +2380,7 @@
     ]
    ],
    "length": 35,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "סמטת רותם",
     "שכונת המסילה"
@@ -2333,7 +2409,9 @@
      "road": 3,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p25",
@@ -2356,7 +2434,7 @@
     ]
    ],
    "length": 33,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הכינרת",
     "שטח ציבורי"
@@ -2385,7 +2463,9 @@
      "road": 34,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p55",
@@ -2408,7 +2488,7 @@
     ]
    ],
    "length": 33,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המסילה",
     "שכונת המסילה"
@@ -2437,7 +2517,9 @@
      "road": 12,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p19",
@@ -2460,7 +2542,7 @@
     ]
    ],
    "length": 32,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המעלה",
     "דרך למרחב"
@@ -2489,7 +2571,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p58",
@@ -2512,7 +2596,7 @@
     ]
    ],
    "length": 28,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "מלאכי",
     "גן החשמל"
@@ -2541,7 +2625,9 @@
      "road": 7,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p47",
@@ -2564,7 +2650,7 @@
     ]
    ],
    "length": 27,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "זכריה",
     "גאולה"
@@ -2593,7 +2679,9 @@
      "road": 0,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p26",
@@ -2616,7 +2704,7 @@
     ]
    ],
    "length": 26,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המייסדים",
     "קציר"
@@ -2645,7 +2733,9 @@
      "road": 6,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p12",
@@ -2672,7 +2762,7 @@
     ]
    ],
    "length": 25,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "הגפן",
     "דרך הים"
@@ -2701,7 +2791,9 @@
      "road": 5,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p53",
@@ -2724,7 +2816,7 @@
     ]
    ],
    "length": 25,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "המסילה",
     "קיר הרעש"
@@ -2753,7 +2845,9 @@
      "road": 27,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p13",
@@ -2776,7 +2870,7 @@
     ]
    ],
    "length": 24,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "אשל"
    ],
@@ -2804,7 +2898,9 @@
      "road": 2,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p35",
@@ -2859,7 +2955,9 @@
      "road": 5,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p1",
@@ -2881,7 +2979,7 @@
     ]
    ],
    "length": 13,
-   "detour": 1.0,
+   "detour": 1,
    "connects": [
     "שימשון",
     "המייסדים"
@@ -2910,7 +3008,9 @@
      "road": 3,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   }
  ],
  "waypoints": [
@@ -2938,7 +3038,9 @@
      "road": 43,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p17",
@@ -2972,7 +3074,9 @@
      "road": 25,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p18",
@@ -3010,7 +3114,9 @@
      "road": 80,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p21",
@@ -3036,7 +3142,9 @@
      "road": 0,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p31",
@@ -3062,7 +3170,9 @@
      "road": 62,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p36",
@@ -3092,7 +3202,9 @@
      "road": 23,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p41",
@@ -3118,7 +3230,9 @@
      "road": 21,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p45",
@@ -3144,7 +3258,9 @@
      "road": 11,
      "likely": true
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p49",
@@ -3170,7 +3286,9 @@
      "road": 48,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p50",
@@ -3196,7 +3314,9 @@
      "road": 58,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   },
   {
    "id": "p57",
@@ -3222,7 +3342,9 @@
      "road": 39,
      "likely": false
     }
-   ]
+   ],
+   "origin": "mymaps",
+   "added": "2026-08-22T05:46:42+00:00"
   }
  ],
  "stats": {
