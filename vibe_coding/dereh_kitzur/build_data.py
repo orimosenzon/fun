@@ -382,11 +382,49 @@ def build(kml_bytes, mirror_images=True, use_roads=True):
     return segments, waypoints, bounds, stats
 
 
+GUARD = """
+עצור. הקובץ web/data/trails.json כבר אינו התוצר של הסקריפט הזה.
+
+מאז 22/8/2026 מקור האמת הוא ריפו הנתונים:
+    https://github.com/orimosenzon/derech-kitzur-data
+והקובץ המקומי הוא רק עותק לא מקוון שהאפליקציה נופלת אליו כשאין רשת.
+הרצה רגילה כאן הייתה דורסת שבילים שנוספו מהאפליקציה.
+
+    python3 build_data.py --seed          רענון העותק הלא מקוון מריפו הנתונים
+    python3 build_data.py --from-mymaps   משיכה חוזרת מ-My Maps לקובץ נפרד, לבדיקה
+"""
+
+SEED_URL = ("https://raw.githubusercontent.com/orimosenzon/"
+            "derech-kitzur-data/main/data/trails.json")
+
+
+def seed():
+    """Refresh the offline copy the app ships with, from the canonical repo."""
+    res = requests.get(SEED_URL, headers=H, timeout=60)
+    res.raise_for_status()
+    data = res.json()
+    with open(DEFAULT_OUT, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=1)
+    s = data["stats"]
+    print(f"seeded {DEFAULT_OUT} from the data repo: {s['segments']} segments, "
+          f"{s['waypoints']} waypoints, {s['photos']} photos")
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     mirror_images = "--no-photos" not in sys.argv
     use_roads = "--no-roads" not in sys.argv
-    out = args[0] if args else DEFAULT_OUT
+
+    if "--seed" in sys.argv:
+        seed()
+        return
+    if args:
+        out = args[0]
+    elif "--from-mymaps" in sys.argv:
+        out = "mymaps_snapshot.json"
+    else:
+        print(GUARD, file=sys.stderr)
+        sys.exit(1)
 
     res = requests.get(KML_URL, headers=H, timeout=60)
     res.raise_for_status()
