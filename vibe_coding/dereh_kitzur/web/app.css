@@ -1043,6 +1043,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   margin-top: 2px;
 }
 
+/* Sits directly under the places row and carries that layer's colour, so it
+ * reads as an action on the layer above it rather than a stray control. */
+.lay-add.places {
+  border-style: solid;
+  border-color: #d8bde3;
+  background: #f7f0fa;
+  color: #6a1b9a;
+  margin: -4px 0 10px;
+}
+
 /* ---------- removable photos ---------- */
 
 .gallery .shot { position: relative; display: inline-flex; }
