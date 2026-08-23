@@ -203,7 +203,7 @@ const Drafts = (() => {
   function startEditor(mode, existing) {
     stopEditor(true);
     stopNav();          // the three share the top bar, and a tap on the map
-    stopPinning();
+    Arrange.close(true);
     deselect();         // the panel shrinks away; leave nothing stale behind it
     ed = {
       mode,
@@ -720,5 +720,6 @@ ${tracks}
     }
   }
 
-  return { init, detailExtras, wireDetail, share, isDrafting: () => !!ed, paintEditor };
+  return { init, detailExtras, wireDetail, share, isDrafting: () => !!ed, paintEditor,
+           stop: () => stopEditor() };
 })();

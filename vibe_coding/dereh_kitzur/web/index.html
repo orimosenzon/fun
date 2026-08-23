@@ -46,17 +46,23 @@
   <button id="draft-cancel" aria-label="ביטול">&times;</button>
 </div>
 
-<!-- Dropping a pardespedia place onto the map. The wiki has no coordinates, so
-     for a good half of the places this bar is the only way one ever gets a
-     position, and it wants to be as close to one tap as possible. -->
-<div id="pin-bar" class="nav pin-bar" hidden role="status" aria-live="polite">
-  <div class="pin-dot">📌</div>
-  <div class="nav-txt">
-    <strong id="pin-name">—</strong>
-    <span id="pin-state">לחץ על המפה במקום המדויק</span>
+<!-- Correcting where the pardespedia places sit. The wiki has no coordinates at
+     all, so most of these positions were guessed and a lot of them are wrong.
+     This bar belongs to a session of fixing many of them, not one. -->
+<div id="arrange-bar" class="nav arrange-bar" hidden role="status" aria-live="polite">
+  <div class="arrange-row">
+    <div class="pin-dot">📌</div>
+    <div class="nav-txt">
+      <strong id="arrange-name">גרור סיכה למקום הנכון</strong>
+      <span id="arrange-links" class="arrange-links"></span>
+    </div>
+    <button id="arrange-save" class="draft-btn strong" disabled>שמור</button>
+    <button id="arrange-done" aria-label="סיום">&times;</button>
   </div>
-  <button id="pin-save" class="draft-btn strong" disabled>שמור כאן</button>
-  <button id="pin-cancel" aria-label="ביטול">&times;</button>
+  <div class="arrange-row second">
+    <button id="arrange-next" class="draft-btn" hidden>הנח מקום חסר</button>
+    <span id="arrange-count" class="arrange-count"></span>
+  </div>
 </div>
 
 <div id="nav" class="nav" hidden role="status" aria-live="polite">
@@ -148,6 +154,7 @@
 <script src="store.js"></script>
 <script src="layers.js"></script>
 <script src="draft.js"></script>
+<script src="arrange.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

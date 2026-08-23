@@ -484,6 +484,7 @@ function placeBody(it) {
 
 const GEO_SOURCE = {
   manual: 'מיקום שנקבע ידנית',
+  google: 'לפי גוגל מפות',
   osm: 'זוהה לפי שם ב-OpenStreetMap',
   address: 'פוענח מכתובת שבערך',
   street: 'רמת רחוב בלבד, לא מספר בית',
@@ -910,84 +911,20 @@ async function formAction(act, btn) {
   }
 }
 
-/* ---------- pinning a place ----------
+/* ---------- placing a place ----------
  *
  * Pardespedia knows what a place is and what it looks like, and has never
- * known where it is. Roughly two hundred of its articles could not be placed
- * automatically, and each of those is a few seconds of work for somebody who
- * lives here - which is the one qualification the script does not have.
+ * known where it is. The whole tool lives in arrange.js, because correcting
+ * these is bulk work: most of the derived positions are wrong, and the only
+ * way to fix one is for somebody who lives here to look at the map.
+ *
+ * The panel gets out of the way first. A tap on the map means something else
+ * entirely while the tool is open, and the map has to be the thing you see.
  */
-
-let pinning = null;         // {item, marker, onClick}
-
 function startPinning(it) {
-  if (!map) { alert('נעיצה דורשת את המפה, והדפדפן הזה לא מציג אותה.'); return; }
-  stopPinning();
-  stopNav();
-
-  pinning = { item: it, marker: null, onClick: null };
-  document.body.classList.add('pinning');
-  el('pin-bar').hidden = false;
-  el('pin-name').textContent = it.name;
-  el('pin-state').textContent = 'לחץ על המפה במקום המדויק';
-  el('pin-save').disabled = true;
-
-  // Get the map out from behind the panel, and start where the current guess
-  // is, so correcting a wrong pin is a nudge rather than a search.
-  document.documentElement.style.setProperty('--panel-h', '96px');
-  setTimeout(() => map.resize(), 60);
-  if (it.lat != null) map.easeTo({ center: [it.lng, it.lat], zoom: 17.5, duration: 600 });
-
-  pinning.onClick = (e) => dropPin(e.lngLat.lat, e.lngLat.lng);
-  map.on('click', pinning.onClick);
-}
-
-function dropPin(lat, lng) {
-  if (!pinning) return;
-  if (!pinning.marker) {
-    const node = document.createElement('div');
-    node.className = 'pin-drop';
-    node.textContent = '📌';
-    pinning.marker = new maplibregl.Marker({ element: node, draggable: true, anchor: 'bottom' })
-      .setLngLat([lng, lat]).addTo(map);
-    // Dragging is the natural correction once a pin is down, and it means a
-    // near-miss does not need the whole thing doing again.
-    pinning.marker.on('dragend', () => {
-      el('pin-state').textContent = 'אפשר לגרור לדיוק, ואז לשמור';
-    });
-  } else {
-    pinning.marker.setLngLat([lng, lat]);
-  }
-  el('pin-state').textContent = 'אפשר לגרור לדיוק, ואז לשמור';
-  el('pin-save').disabled = false;
-}
-
-function stopPinning() {
-  if (!pinning) return;
-  if (pinning.onClick && map) map.off('click', pinning.onClick);
-  if (pinning.marker) pinning.marker.remove();
-  pinning = null;
-  document.body.classList.remove('pinning');
-  el('pin-bar').hidden = true;
-}
-
-async function savePin() {
-  if (!pinning || !pinning.marker) return;
-  const { lat, lng } = pinning.marker.getLngLat();
-  const it = pinning.item;
-  el('pin-save').disabled = true;
-  el('pin-state').textContent = 'שומר…';
-  try {
-    const doc = await Store.pinPlace(it.id, lat, lng, it.name);
-    stopPinning();
-    reloadPlaces(doc);
-    document.documentElement.style.setProperty('--panel-h', '45vh');
-    setTimeout(() => map.resize(), 60);
-    select(it.id);
-  } catch (err) {
-    el('pin-save').disabled = false;
-    el('pin-state').textContent = 'לא נשמר: ' + err.message;
-  }
+  document.documentElement.style.setProperty('--panel-h', '128px');
+  setTimeout(() => { if (map) map.resize(); }, 60);
+  Arrange.open(it);
 }
 
 /* ---------- lightbox ---------- */
@@ -1466,6 +1403,11 @@ function wireControls() {
       return;
     }
     if (e.target.closest('[data-newlayer]')) { layerForm(null); return; }
+    if (e.target.closest('[data-arrange]')) {
+      Layers.closeSheet();
+      startPinning(null);
+      return;
+    }
     const edit = e.target.closest('[data-edit]');
     if (edit) layerForm(Layers.byId(edit.dataset.edit));
   });
@@ -1490,12 +1432,7 @@ function wireControls() {
   });
   LinkRows.wire(el('form-sheet'));
 
-  el('pin-save').addEventListener('click', savePin);
-  el('pin-cancel').addEventListener('click', () => {
-    stopPinning();
-    document.documentElement.style.setProperty('--panel-h', '45vh');
-    setTimeout(() => { if (map) map.resize(); }, 60);
-  });
+  Arrange.wire();
 
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
@@ -1536,9 +1473,9 @@ function wireControls() {
   // the tap actually landed on empty ground - and never while drafting, where
   // a tap on the map is how you place a point.
   if (map) map.on('click', (e) => {
-    // While pinning, a tap on the map is where the pin goes, not a request to
-    // close the pane it was started from.
-    if (!selectedId || Drafts.isDrafting() || pinning) return;
+    // While drafting or arranging, a tap on the map means something other than
+    // "clear the selection".
+    if (!selectedId || Drafts.isDrafting() || Arrange.isOn()) return;
     const hits = Layers.list
       .map((l) => `hit-${l.id}`)
       .filter((id) => map.getLayer(id));

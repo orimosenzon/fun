@@ -12,6 +12,9 @@ This script works the position out from what the articles do contain, in
 descending order of trust:
 
     manual    a pin an editor dropped in the app. Never overwritten.
+    google    Google Places, behind --google and a key you supply. The only
+              source that actually knows where a small business is. Free in
+              practice: see GooglePlaces for the arithmetic and the guard rails.
     osm       the article title matches a named feature in OpenStreetMap
               exactly. Precise when it hits, which is mostly for the places
               somebody bothered to map.
@@ -47,6 +50,7 @@ the photos and leaves every position alone unless --regeocode is passed.
     python3 build_places.py              # refresh text, geocode what is new
     python3 build_places.py --regeocode  # throw away derived positions, redo
     python3 build_places.py --no-net     # wiki only, no Overpass, no Nominatim
+    GOOGLE_MAPS_API_KEY=... python3 build_places.py --google   # the accurate pass
 """
 
 import argparse
@@ -359,7 +363,7 @@ def spread(places):
     piles = {}
     for place in places:
         geo = place.get("geo")
-        if geo and geo["source"] != "manual":
+        if geo and geo["source"] not in ("manual", "google", "osm"):
             piles.setdefault((geo["lat"], geo["lng"]), []).append(place)
 
     for (lat, lng), pile in piles.items():
@@ -425,6 +429,110 @@ out center tags;"""
             if value:
                 target.setdefault(normalise(value), (point["lat"], point["lon"]))
     return pois, roads
+
+
+class GooglePlaces:
+    """Positions from Google, which is the only source that actually has them.
+
+    OpenStreetMap knows 442 named points in this whole town and no house
+    numbers at all, so for a cafe on a side street there is no free answer.
+    Google's own position for the same cafe is usually right.
+
+    Cost, because this is the one part of the project that can charge money:
+    a Text Search asking for `places.location` bills against the Places API
+    Pro tier, whose free allowance is 5,000 calls a month. This project has
+    about 450 places to ask about, once. Every answer is cached, so a rerun
+    costs nothing. The realistic bill is zero, and it stays zero as long as
+    nothing turns this into a loop - which is what MAX_CALLS is for.
+
+    Even so, before enabling billing on a Google Cloud project, set a hard
+    daily quota on the Places API in the console (APIs & Services > Quotas).
+    A budget alert only tells you afterwards; a quota is what actually stops.
+
+    The key is read from the environment and never written anywhere.
+    """
+
+    ENDPOINT = "https://places.googleapis.com/v1/places:searchText"
+    FIELDS = "places.location,places.displayName,places.formattedAddress"
+    MAX_CALLS = 600                # a ceiling a bug cannot spend past
+
+    def __init__(self, key, cache_path=".cache/google_places.json"):
+        self.key = key
+        self.path = cache_path
+        self.cache = load_json(cache_path, {})
+        self.calls = 0
+        self.stopped = False
+
+    def save(self):
+        save_json(self.path, self.cache)
+
+    def find(self, name):
+        """{'lat','lng','name','address'} or None."""
+        if name in self.cache:
+            hit = self.cache[name]
+            return hit or None
+        if self.stopped:
+            return None
+        if self.calls >= self.MAX_CALLS:
+            print(f"  ! עצירה: {self.MAX_CALLS} קריאות לגוגל בריצה אחת", file=sys.stderr)
+            self.stopped = True
+            return None
+
+        body = {
+            "textQuery": f"{name} פרדס חנה כרכור",
+            "languageCode": "he",
+            "regionCode": "IL",
+            "maxResultCount": 3,
+            # A bias, not a filter: a wrong-town result is still thrown out
+            # below, but biasing means the right one usually comes first.
+            "locationBias": {"circle": {
+                "center": {"latitude": 32.4755, "longitude": 34.966},
+                "radius": 6000.0
+            }},
+        }
+        headers = {**UA, "Content-Type": "application/json",
+                   "X-Goog-Api-Key": self.key, "X-Goog-FieldMask": self.FIELDS}
+        self.calls += 1
+        try:
+            res = requests.post(self.ENDPOINT, json=body, headers=headers, timeout=40)
+            if res.status_code in (401, 403):
+                print(f"  ! גוגל דחתה את המפתח ({res.status_code}). עוצר.", file=sys.stderr)
+                self.stopped = True
+                return None
+            res.raise_for_status()
+            results = res.json().get("places", [])
+        except Exception as err:
+            print(f"  ! google {name}: {err}", file=sys.stderr)
+            return None
+
+        found = None
+        for place in results:
+            loc = place.get("location") or {}
+            lat, lng = loc.get("latitude"), loc.get("longitude")
+            if lat is None or not inside(lat, lng):
+                continue
+            title = (place.get("displayName") or {}).get("text", "")
+            # Text search answers something for almost any string. Requiring a
+            # word in common with what we asked for is what stops a bakery in
+            # Hadera from becoming the position of a bakery here.
+            if not (toks(title) & toks(name)):
+                continue
+            found = {"lat": lat, "lng": lng, "name": title,
+                     "address": place.get("formattedAddress", "")}
+            break
+
+        self.cache[name] = found
+        if self.calls % 20 == 0:
+            self.save()
+        return found
+
+
+def toks(text):
+    """Words worth comparing: the generic half of a Hebrew business name is
+    shared by half the businesses in town."""
+    drop = {"בית", "בתי", "גן", "מרכז", "חנות", "סטודיו", "קפה", "בר", "של",
+            "מסעדה", "מסעדת", "פרדס", "חנה", "כרכור", "the", "and", "of"}
+    return {w for w in normalise(text).split() if len(w) > 2 and w not in drop}
 
 
 class Geocoder:
@@ -560,14 +668,50 @@ def build(args):
         place["photos"] = [image] if image else []
 
     # -- positions
-    stats = {"manual": 0, "osm": 0, "address": 0, "street": 0, "nearby": 0, "none": 0}
+    stats = {"manual": 0, "google": 0, "osm": 0, "address": 0, "street": 0,
+             "nearby": 0, "none": 0}
+
+    google = None
+    if args.google:
+        key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+        if not key:
+            print("  ! --google בלי GOOGLE_MAPS_API_KEY בסביבה. מדלג.", file=sys.stderr)
+        else:
+            google = GooglePlaces(key)
+            print("  שואל את גוגל על מקומות שאין להם מיקום מדויק…", file=sys.stderr)
+
     for place in places:
         old = previous.get(place["id"], {})
-        if old.get("geo") and (old["geo"]["source"] == "manual" or not args.regeocode):
+        keep = old.get("geo") and (
+            old["geo"]["source"] == "manual"          # a person put it there
+            or (not args.regeocode
+                # Google beats anything this script can derive, so with --google
+                # a derived guess is worth replacing - but a Google answer we
+                # already have is not worth paying for twice.
+                and not (google and old["geo"]["source"] not in ("google",))))
+        if keep:
             place["geo"] = old["geo"]
             stats[old["geo"]["source"]] = stats.get(old["geo"]["source"], 0) + 1
             place.pop("_address", None)
             continue
+
+        if google:
+            hit = google.find(place["name"])
+            if hit:
+                place["geo"] = {"lat": round(hit["lat"], 6), "lng": round(hit["lng"], 6),
+                                "source": "google"}
+                if hit["address"]:
+                    place["address"] = hit["address"][:90]
+                stats["google"] += 1
+                place.pop("_address", None)
+                continue
+            # No answer from Google either. Fall through to the free sources
+            # rather than leaving it unplaced.
+            if old.get("geo") and not args.regeocode:
+                place["geo"] = old["geo"]
+                stats[old["geo"]["source"]] = stats.get(old["geo"]["source"], 0) + 1
+                place.pop("_address", None)
+                continue
 
         key = normalise(place["name"])
         hit = pois.get(key) or (roads.get(key) if place["group"] == "שכונות" else None)
@@ -603,6 +747,9 @@ def build(args):
         else:
             place["_text"] = strip_markup(pages[place["name"]])[:1200]
     geo.save()
+    if google:
+        google.save()
+        print(f"  גוגל: {google.calls} קריאות בפועל (השאר מהמטמון)", file=sys.stderr)
 
     # -- a place that names a compound we already found sits roughly where it does
     #
@@ -676,6 +823,11 @@ def main():
                         help="derive every position afresh; hand-placed pins still survive")
     parser.add_argument("--no-net", action="store_true",
                         help="wiki only: no Overpass, no Nominatim, cached lookups only")
+    parser.add_argument("--google", action="store_true",
+                        help="ask Google Places for the positions the free sources cannot "
+                             "give. Needs GOOGLE_MAPS_API_KEY in the environment. "
+                             "~450 calls against a 5,000/month free allowance, cached, "
+                             "capped at 600 per run. Never overwrites a hand-placed pin.")
     build(parser.parse_args())
 
 

@@ -597,6 +597,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
   .sheet { align-items: center; }
   .sheet-card { max-width: 460px; border-radius: 16px; margin: 0 16px; }
+
+  /* The bars are positioned against the window, not the map, so at this width
+   * they would lie across the panel. Inline-start is the panel's side. */
+  .nav { inset-inline: 390px 10px; }
 }
 
 .no-gl {
@@ -1077,11 +1081,58 @@ button { font: inherit; color: inherit; cursor: pointer; }
   line-height: 1.55;
 }
 
-.pin-bar { background: #7b1fa2; }
-.pin-bar .draft-btn.strong { color: #7b1fa2; }
+/* ---------- arranging places ---------- */
+
+.arrange-bar {
+  background: #7b1fa2;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.arrange-bar .draft-btn.strong { color: #7b1fa2; }
+.arrange-row { display: flex; align-items: center; gap: 10px; }
+.arrange-row.second { gap: 8px; }
 .pin-dot { flex: none; font-size: 20px; line-height: 1; }
 
-#pin-cancel {
+/* `.nav-txt span` makes every span a full-width block with an ellipsis, which
+ * is right for the navigation bar's one line of status and wrong for a row of
+ * links and flags - the flag stretched across the whole bar. */
+.nav-txt .arrange-links,
+.nav-txt .arrange-links > * {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  overflow: visible;
+  opacity: 1;
+}
+
+.arrange-links {
+  gap: 10px;
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+.arrange-links a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 11.5px;
+}
+
+.am-hint { font-size: 11.5px; color: rgba(255, 255, 255, .78); }
+
+.am-flag {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .22);
+}
+
+.am-flag.warn { background: rgba(255, 214, 0, .3); }
+.arrange-count { font-size: 11px; color: rgba(255, 255, 255, .78); }
+
+#arrange-done {
   flex: none;
   width: 30px;
   height: 30px;
@@ -1093,14 +1144,82 @@ button { font: inherit; color: inherit; cursor: pointer; }
   line-height: 1;
 }
 
-/* Same reasoning as .drafting: while a tap on the map means "the place is
- * here", the map has to be the thing you can see. */
-.pinning { --panel-h: 96px; }
-.pinning .maplibregl-ctrl-top-left { margin-top: 62px; }
+/* Same reasoning as .drafting: while the map is what you are working on, it
+ * has to be the thing you can see. */
+.arranging { --panel-h: 128px; }
+.arranging .maplibregl-ctrl-top-left { margin-top: 96px; }
 
-.pin-drop {
-  font-size: 30px;
-  line-height: 1;
-  cursor: grab;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .4));
+/* ---------- a draggable place marker ---------- */
+
+.am {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  /* The element is as wide as the dot plus the name beside it. Only the dot
+   * should be grabbable: these pins sit very close together, and a label wide
+   * enough to read covers the dot of the pin next door. */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
+
+.am i {
+  position: relative;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+  pointer-events: auto;
+  cursor: grab;
+  /* Without this the browser claims the gesture for scrolling and the pin
+   * never receives a pointermove on a touchscreen. */
+  touch-action: none;
+}
+
+/* A fingertip is far bigger than fifteen pixels, so the dot reaches further
+ * than it looks - but still nothing like as far as the label. */
+.am i::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+}
+
+.am b {
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #23282b;
+  background: rgba(255, 255, 255, .88);
+  padding: 1px 5px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+  pointer-events: none;
+}
+
+/* A guessed position is the one most likely to be wrong, so it is the one that
+ * should catch the eye of whoever is fixing them. */
+.am.approx i { border-style: dashed; border-color: #ffd54f; }
+
+.am.moved i { background: #7b1fa2; box-shadow: 0 0 0 4px rgba(123, 31, 162, .3); }
+.am.moved b { background: #7b1fa2; color: #fff; }
+.am.on i { transform: scale(1.25); }
+.am.on b { outline: 2px solid #7b1fa2; }
+
+.am.drag { z-index: 5; }
+.am.drag i { cursor: grabbing; }
+.am.drag i { transform: scale(1.4); box-shadow: 0 3px 10px rgba(0, 0, 0, .5); }
+
+.am.fresh i { animation: drop 1.2s ease-out; }
+
+@keyframes drop {
+  0% { transform: scale(2.2); }
+  60% { transform: scale(1); }
+}
+
+/* Nothing else on the map should react while a pin is being carried. */
+.am-dragging .maplibregl-canvas { cursor: grabbing; }
+.am-dragging .am:not(.drag) i { pointer-events: none; opacity: .75; }

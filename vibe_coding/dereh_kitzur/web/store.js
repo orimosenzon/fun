@@ -531,13 +531,29 @@ const Store = (() => {
     if (place) delete place.geo;
   }, `ביטול מיקום: ${name}`));
 
+  /** Many pins at once, in one commit.
+   *
+   *  Correcting these positions is bulk work - most of them are wrong and only
+   *  a person who lives here can say where they belong. A write per drag would
+   *  mean a round trip per drag and a commit log of several hundred entries for
+   *  one afternoon's work. */
+  const movePlaces = async (changes) => absolutise(await withPlaces((doc) => {
+    const at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    const byId = new Map(doc.places.map((p) => [p.id, p]));
+    changes.forEach(({ id, lat, lng }) => {
+      const place = byId.get(id);
+      if (!place) return;
+      place.geo = { lat, lng, source: 'manual', by: state.editor || '', at };
+    });
+  }, `עדכון מיקומים: ${changes.length} מקומות`));
+
   return {
     RAW, OWNER, REPO, TOKEN_HELP,
     load, asset, cleanLinks,
     isEditor, editor, signIn, signOut, resume,
     publish, remove, rename, setLinks, addPhotos, removePhoto,
     addLayer, editLayer, removeLayer, setLayer,
-    pinPlace, unpinPlace,
+    pinPlace, unpinPlace, movePlaces,
     get offline() { return state.offline; }
   };
 })();
