@@ -1,4 +1,4 @@
-/* Store - where the trails actually live.
+/* Store - where the trails and the places actually live.
  *
  * Until 22/8/2026 the initiative's Google My Maps layer was the source of
  * truth, and this app was a read-only view of it. Google offers no way to
@@ -8,6 +8,16 @@
  * So the direction is reversed. The dataset lives in its own public repo,
  * this app reads it and writes to it, and My Maps now receives a generated
  * copy instead of feeding us.
+ *
+ * Three documents in that repo:
+ *   data/trails.json   the initiative's trails, its waypoints, and the trail
+ *                      layers an editor has created. Written from the app.
+ *   data/layers.json   the moshava's cycling plan. Written by build_network.py.
+ *   data/places.json   places drawn from pardespedia. Written by
+ *                      build_places.py, except for the positions, which an
+ *                      editor pins by hand from the map - the wiki has no
+ *                      coordinates at all, so a good half of them can only be
+ *                      placed by someone who knows where the place is.
  *
  * A visitor needs nothing to read. An editor pastes a fine-grained token once
  * per device; it is scoped to the data repo alone, so the worst a leaked one
@@ -26,24 +36,31 @@ const Store = (() => {
   const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
   const TOKEN_HELP = `https://github.com/settings/personal-access-tokens/new`;
 
+  const TRAILS = 'data/trails.json';
+  const PLACES = 'data/places.json';
+
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
+  const K_PLACES = 'dk.cache.places.v1';
   const K_TOKEN = 'dk.token.v1';
 
   const state = { offline: false, editor: null };
 
   /* Photo paths are stored relative to the data repo, so they resolve the same
    * whether the app is served from Pages, from localhost, or from a file the
-   * editor is reviewing before publishing. */
+   * editor is reviewing before publishing. Pardespedia photos arrive as
+   * absolute URLs and pass straight through. */
   const asset = (p) => (!p || /^(https?:|blob:|data:)/.test(p) ? p : RAW + p);
 
   function absolutise(doc) {
-    [...(doc.segments || []), ...(doc.waypoints || [])].forEach((it) => {
-      (it.photos || []).forEach((ph) => {
-        ph.thumb = asset(ph.thumb);
-        ph.full = asset(ph.full);
+    if (!doc) return doc;
+    [...(doc.segments || []), ...(doc.waypoints || []), ...(doc.places || [])]
+      .forEach((it) => {
+        (it.photos || []).forEach((ph) => {
+          ph.thumb = asset(ph.thumb);
+          ph.full = asset(ph.full);
+        });
       });
-    });
     return doc;
   }
 
@@ -76,16 +93,16 @@ const Store = (() => {
    *  is fine for a visitor and wrong for the person who just published: their
    *  own trail would disappear for five minutes. An editor already holds a
    *  token, so read through the API, which is always current. */
-  async function canonical() {
+  async function canonical(path) {
     if (isEditor()) {
       try {
-        const { json } = await getFile('data/trails.json');
+        const { json } = await getFile(path);
         if (json) return json;
       } catch (err) {
         /* token expired or offline; the public copy still works */
       }
     }
-    return fetchJson('data/trails.json');
+    return fetchJson(path);
   }
 
   /** The canonical data, with three fallbacks so the app opens on a dead
@@ -94,26 +111,40 @@ const Store = (() => {
   async function load() {
     let trails = null;
     let network = null;
+    let places = null;
     try {
-      [trails, network] = await Promise.all([
-        canonical(),
-        fetchJson('data/layers.json').catch(() => null)
+      [trails, network, places] = await Promise.all([
+        canonical(TRAILS),
+        fetchJson('data/layers.json').catch(() => null),
+        // The places file is younger than the repo, and a copy also ships with
+        // the app, so a miss here is ordinary rather than a failure.
+        canonical(PLACES).catch(() => bundled('data/places.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
+      if (places) cache(K_PLACES, places);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
       network = cached(K_NET);
+      places = cached(K_PLACES);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
-        trails = await fetch('data/trails.json').then((r) => r.json());
-        network = await fetch('data/layers.json').then((r) => r.json()).catch(() => null);
+        trails = await bundled('data/trails.json');
+        network = await bundled('data/layers.json');
+        places = await bundled('data/places.json');
       }
     }
-    return { trails: absolutise(trails), network, offline: state.offline };
+    return {
+      trails: absolutise(trails),
+      network,
+      places: absolutise(places),
+      offline: state.offline
+    };
   }
+
+  const bundled = (path) => fetch(path).then((r) => r.json()).catch(() => null);
 
   /* ---------- the editor's token ---------- */
 
@@ -220,21 +251,27 @@ const Store = (() => {
     return res.json();
   }
 
-  /** Read trails.json, let the caller change it, write it back.
+  /** Read a document, let the caller change it, write it back.
    *
    *  Two editors publishing at the same second would otherwise have the second
    *  write silently drop the first trail, so a rejected sha is retried against
    *  freshly read content rather than forced through. */
-  async function withTrails(mutate, message) {
+  async function withDoc(path, key, mutate, message, after) {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const { sha, json } = await getFile('data/trails.json');
+      let { sha, json } = await getFile(path);
+      if (!json) {
+        // The file is not in the repo yet. The copy shipped with the app is
+        // the right starting point: it is what every reader is already seeing.
+        json = await bundled(path.replace(/^data\//, 'data/'));
+        if (!json) throw new Error(`${path} חסר בריפו הנתונים.`);
+      }
       const doc = json;
       mutate(doc);
-      restat(doc);
+      if (after) after(doc);
       doc.updated = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
       try {
-        await putFile('data/trails.json', b64text(JSON.stringify(doc)), message, sha);
-        cache(K_TRAILS, doc);
+        await putFile(path, b64text(JSON.stringify(doc)), message, sha);
+        cache(key, doc);
         return doc;
       } catch (err) {
         if (!err.conflict || attempt === 2) throw err;
@@ -242,6 +279,18 @@ const Store = (() => {
     }
     return null;
   }
+
+  const withTrails = (mutate, message) =>
+    withDoc(TRAILS, K_TRAILS, mutate, message, restat);
+
+  const withPlaces = (mutate, message) =>
+    withDoc(PLACES, K_PLACES, mutate, message, (doc) => {
+      doc.stats = {
+        places: doc.places.length,
+        located: doc.places.filter((p) => p.geo).length,
+        photos: doc.places.reduce((n, p) => n + (p.photos || []).length, 0)
+      };
+    });
 
   function restat(doc) {
     const segs = doc.segments;
@@ -258,6 +307,11 @@ const Store = (() => {
       [Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))]
     ];
   }
+
+  /** The one item with this id, wherever it is in the document. */
+  const find = (doc, id) =>
+    (doc.segments || []).find((s) => s.id === id) ||
+    (doc.waypoints || []).find((w) => w.id === id);
 
   /* ---------- photos ---------- */
 
@@ -302,14 +356,45 @@ const Store = (() => {
     return rel;
   }
 
+  async function uploadAll(blobs, name, onStep) {
+    const photos = [];
+    let n = 0;
+    for (const blob of blobs || []) {
+      n++;
+      if (onStep && (blobs.length > 1)) onStep(`מעלה תמונה ${n} מתוך ${blobs.length}…`);
+      photos.push(await uploadPhoto(blob, name, onStep));
+    }
+    return photos;
+  }
+
+  /* ---------- links ---------- */
+
+  /** Only http(s) survives. A javascript: or data: URL in a shared dataset is
+   *  a script anyone can run in everybody else's browser, and this is a file
+   *  several people write to. */
+  function cleanLinks(links) {
+    return (links || []).map((l) => {
+      let url = String(l.url || '').trim();
+      if (!url) return null;
+      if (!/^https?:\/\//i.test(url)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return null;   // some other scheme
+        url = 'https://' + url;
+      }
+      let host = '';
+      try {
+        host = new URL(url).hostname.replace(/^www\./, '');
+      } catch (err) {
+        return null;
+      }
+      return { url, title: String(l.title || '').trim().slice(0, 60) || host };
+    }).filter(Boolean).slice(0, 8);
+  }
+
   /* ---------- the operations the app offers ---------- */
 
   /** Publish a local draft into the shared dataset. */
   async function publish(draft, blobs, onStep) {
-    const photos = [];
-    for (const blob of blobs || []) {
-      photos.push(await uploadPhoto(blob, draft.name, onStep));
-    }
+    const photos = await uploadAll(blobs, draft.name, onStep);
     if (onStep) onStep('מוסיף למסד…');
 
     const seg = {
@@ -317,6 +402,7 @@ const Store = (() => {
       name: draft.name,
       note: draft.note || '',
       photos,
+      links: cleanLinks(draft.links),
       path: draft.path,
       length: draft.length,
       color: '#097138',
@@ -330,6 +416,7 @@ const Store = (() => {
       added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       by: state.editor || ''
     };
+    if (draft.layer) seg.layer = draft.layer;
 
     // Hand the caller the document we just wrote. Re-reading it would go
     // through the CDN and come back without the trail that was just added.
@@ -343,14 +430,114 @@ const Store = (() => {
     `הסרת שביל: ${name}`));
 
   const rename = async (id, name, note) => absolutise(await withTrails((doc) => {
-    const seg = doc.segments.find((s) => s.id === id);
-    if (seg) { seg.name = name; seg.note = note; }
+    const it = find(doc, id);
+    if (it) { it.name = name; it.note = note; }
   }, `עדכון שביל: ${name}`));
+
+  /** Links on an existing trail or waypoint. */
+  const setLinks = async (id, links, name) => absolutise(await withTrails((doc) => {
+    const it = find(doc, id);
+    if (it) it.links = cleanLinks(links);
+  }, `קישורים: ${name}`));
+
+  /** Photos onto an existing trail or waypoint. */
+  async function addPhotos(id, blobs, name, onStep) {
+    const photos = await uploadAll(blobs, name, onStep);
+    if (onStep) onStep('משייך לשביל…');
+    return absolutise(await withTrails((doc) => {
+      const it = find(doc, id);
+      if (it) it.photos = [...(it.photos || []), ...photos];
+    }, `תמונות לשביל ${name}`));
+  }
+
+  /** Drop a photo from a trail.
+   *
+   *  The file itself stays in the repo. Names are a hash of the bytes, so the
+   *  same photo published twice is one file, and deleting it here could blank
+   *  it somewhere else. An orphan webp costs a few hundred kilobytes; a
+   *  missing one costs a photo. */
+  const removePhoto = async (id, index, name) => absolutise(await withTrails((doc) => {
+    const it = find(doc, id);
+    if (it && it.photos) it.photos.splice(index, 1);
+  }, `הסרת תמונה: ${name}`));
+
+  /* ---------- trail layers ----------
+   *
+   * Every trail used to land in one layer. A layer here is just a named,
+   * coloured bucket recorded in trails.json, and a trail carries the id of its
+   * bucket - so making one and moving trails into it are ordinary edits to the
+   * same file, in the same commit stream, rather than a second thing to keep
+   * in sync.
+   */
+
+  const addLayer = async (layer) => absolutise(await withTrails((doc) => {
+    doc.layers = doc.layers || [];
+    doc.layers.push({
+      id: 'tl-' + Date.now().toString(36),
+      name: layer.name,
+      short: layer.short || layer.name.split(' ')[0].slice(0, 10),
+      color: layer.color,
+      note: layer.note || '',
+      dash: !!layer.dash,
+      added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      by: state.editor || ''
+    });
+  }, `שכבה חדשה: ${layer.name}`));
+
+  const editLayer = async (id, patch) => absolutise(await withTrails((doc) => {
+    const layer = (doc.layers || []).find((l) => l.id === id);
+    if (layer) Object.assign(layer, patch);
+  }, `עדכון שכבה: ${patch.name || id}`));
+
+  /** Remove a layer. Its trails move back to the initiative's own layer rather
+   *  than disappearing with it - deleting a bucket should never delete walks. */
+  const removeLayer = async (id, name) => absolutise(await withTrails((doc) => {
+    doc.layers = (doc.layers || []).filter((l) => l.id !== id);
+    doc.segments.forEach((s) => { if (s.layer === id) delete s.layer; });
+    (doc.waypoints || []).forEach((w) => { if (w.layer === id) delete w.layer; });
+  }, `הסרת שכבה: ${name}`));
+
+  const setLayer = async (id, layerId, name) => absolutise(await withTrails((doc) => {
+    const it = find(doc, id);
+    if (!it) return;
+    if (layerId) it.layer = layerId;
+    else delete it.layer;
+  }, `העברת ${name} לשכבה אחרת`));
+
+  /* ---------- places ---------- */
+
+  /** Pin a pardespedia place onto the map, or move a pin that is off.
+   *
+   *  build_places.py marks how it derived a position - a name that matched
+   *  OpenStreetMap, an address it geocoded, a neighbour it borrowed from - and
+   *  never touches one marked manual. So a pin dropped here is permanent, and
+   *  a rebuild that would otherwise re-guess leaves it alone. */
+  const pinPlace = async (id, lat, lng, name) => absolutise(await withPlaces((doc) => {
+    const place = doc.places.find((p) => p.id === id);
+    if (place) {
+      place.geo = {
+        lat: +lat.toFixed(6),
+        lng: +lng.toFixed(6),
+        source: 'manual',
+        by: state.editor || '',
+        at: new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+      };
+    }
+  }, `מיקום ידני: ${name}`));
+
+  /** Take a pin off, back to whatever the next rebuild works out. */
+  const unpinPlace = async (id, name) => absolutise(await withPlaces((doc) => {
+    const place = doc.places.find((p) => p.id === id);
+    if (place) delete place.geo;
+  }, `ביטול מיקום: ${name}`));
 
   return {
     RAW, OWNER, REPO, TOKEN_HELP,
-    load, asset, isEditor, editor, signIn, signOut, resume,
-    publish, remove, rename,
+    load, asset, cleanLinks,
+    isEditor, editor, signIn, signOut, resume,
+    publish, remove, rename, setLinks, addPhotos, removePhoto,
+    addLayer, editLayer, removeLayer, setLayer,
+    pinPlace, unpinPlace,
     get offline() { return state.offline; }
   };
 })();
