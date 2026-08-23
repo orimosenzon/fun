@@ -425,10 +425,16 @@ const Layers = (() => {
     applyVisibility();
   }
 
+  /* While the arrange tool is open it draws its own draggable marker for every
+   * place, and the layer's dots would sit underneath every one of them. */
+  let arranging = false;
+  const setArranging = (value) => { arranging = value; applyVisibility(); };
+
   function applyVisibility() {
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
-      const v = layer.on ? 'visible' : 'none';
+      const hide = arranging && layer.kind === 'places';
+      const v = layer.on && !hide ? 'visible' : 'none';
       drawnIds(layer).forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
       });
@@ -491,6 +497,8 @@ const Layers = (() => {
         </label>
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
+        ${editable && layer.kind === 'places' ? `<button class="lay-edit" data-arrange="1"
+          aria-label="סידור מיקומי המקומות">סידור<br>מיקומים</button>` : ''}
       </div>`).join('') + (editable ? `
       <button class="lay-add" data-newlayer="1">+ שכבת שבילים חדשה</button>` : '');
 
@@ -520,7 +528,7 @@ const Layers = (() => {
   return {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, highlight,
+    addToMap, applyVisibility, refresh, highlight, setArranging,
     openSheet, closeSheet, render,
     TRAILS_ID, PLACES_ID,
     set onChange(fn) { onChange = fn; }
