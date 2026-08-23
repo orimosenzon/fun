@@ -2,4 +2,4 @@
 .cache/
 
 # Generated for import into My Maps
-derech_kitzur.kml
+derech_kitzur*.kml

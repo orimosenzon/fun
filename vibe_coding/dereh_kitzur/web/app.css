@@ -244,7 +244,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   outline-offset: 2px;
 }
 
-.sorts { display: flex; gap: 6px; }
+/* Five buttons no longer fit one phone-width row, and an overflowing row
+ * scrolls the whole document sideways rather than only itself. */
+.sorts { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .sort {
   border: 1px solid var(--line);
@@ -897,3 +899,208 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tok-err { background: #fdecea; color: #b3261e; }
 .pub-msg.bad { background: #fdecea; color: #b3261e; }
 .tok-err[hidden], .pub-msg[hidden] { display: none; }
+
+/* ---------- links on an item ---------- */
+
+.act-link { align-items: center; }
+.act-link .lbl { font-weight: 600; }
+
+/* A URL is left-to-right inside a right-to-left line, and without an explicit
+ * direction the bidi algorithm drags the scheme and the path apart. */
+.act-link .hint {
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+.link-rows { display: grid; gap: 8px; margin-bottom: 8px; }
+
+.link-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.link-row input {
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7faf9;
+  min-width: 0;
+}
+
+.link-row .l-url { direction: ltr; text-align: left; }
+
+.link-x {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f4f2;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.add-row {
+  border: 1px dashed var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+/* Two text fields side by side stop being fillable somewhere around here. */
+@media (max-width: 420px) {
+  .link-row { grid-template-columns: 1fr auto; }
+  .link-row .l-title { grid-column: 1; }
+  .link-row .link-x { grid-row: 1 / span 2; }
+}
+
+/* ---------- colour picker and radio picks ---------- */
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+.sw {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--c);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--ink); }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #3a4741;
+}
+
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.picks { display: grid; gap: 7px; margin-bottom: 12px; }
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pick.on { border-color: #bcd8bf; background: #f7fbf8; }
+.pick input { width: 18px; height: 18px; accent-color: var(--accent); }
+.pick .lay-swatch { min-height: 20px; }
+
+/* ---------- layer management ---------- */
+
+.lay-row { display: flex; align-items: stretch; gap: 6px; }
+.lay-row .lay { flex: 1; min-width: 0; }
+
+.lay-edit {
+  flex: none;
+  align-self: center;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.lay-add {
+  display: block;
+  width: 100%;
+  border: 1px dashed #bcd8bf;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  padding: 11px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+/* ---------- removable photos ---------- */
+
+.gallery .shot { position: relative; display: inline-flex; }
+
+.shot-x {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 25, 22, .62);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  backdrop-filter: blur(2px);
+}
+
+/* ---------- places ---------- */
+
+.addr {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.unplaced {
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #7a5b12;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pin-bar { background: #7b1fa2; }
+.pin-bar .draft-btn.strong { color: #7b1fa2; }
+.pin-dot { flex: none; font-size: 20px; line-height: 1; }
+
+#pin-cancel {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .17);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Same reasoning as .drafting: while a tap on the map means "the place is
+ * here", the map has to be the thing you can see. */
+.pinning { --panel-h: 96px; }
+.pinning .maplibregl-ctrl-top-left { margin-top: 62px; }
+
+.pin-drop {
+  font-size: 30px;
+  line-height: 1;
+  cursor: grab;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .4));
+}

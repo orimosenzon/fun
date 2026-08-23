@@ -29,6 +29,10 @@ const BASEMAPS = [
     name: 'לוויין',
     style: {
       version: 8,
+      // Hand-built styles carry no glyphs, and without them the place labels
+      // silently render as nothing. Point at the same font endpoint the street
+      // style uses, whose Noto Sans covers the Hebrew range.
+      glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       sources: {
         sat: {
           type: 'raster',
@@ -63,6 +67,35 @@ function webglAvailable() {
 // WebGL" on every browser and the map never gets built.
 const hasGL = !!window.maplibregl && webglAvailable();
 
+/* Hebrew in a GL label is laid out glyph by glyph in logical order, which
+ * renders it backwards: דרך הנדיב comes out בידנה ךרד. WebGL has no bidi of
+ * its own, so the reordering has to be loaded in.
+ *
+ * This was invisible until now only because the app drew every label of its
+ * own as an HTML marker, where the browser does the reordering. The basemap's
+ * own street names have been mirrored the whole time. Four hundred places are
+ * too many for HTML markers - they need the collision handling a symbol layer
+ * has - so the plugin goes in and the street names come out right as well.
+ *
+ * It is served from here rather than from a CDN. The plugin runs inside
+ * MapLibre's worker, which is built from a blob URL, and a cross-origin
+ * importScripts into a blob worker fails with nothing but "failed to import
+ * scripts" - no status, no way to retry. Local also means the labels are still
+ * the right way round with no signal, which is the situation on a trail. */
+const RTL_PLUGIN = 'vendor/mapbox-gl-rtl-text.min.js';
+
+if (hasGL) {
+  try {
+    // Signatures differ across MapLibre majors: older ones take a callback,
+    // newer ones return a promise. Tolerate either, and carry on without it -
+    // mirrored labels are bad, a blank map is worse.
+    const pending = maplibregl.setRTLTextPlugin(RTL_PLUGIN, () => {}, false);
+    if (pending && pending.catch) pending.catch(() => {});
+  } catch (err) {
+    console.warn('RTL text plugin unavailable', err);
+  }
+}
+
 const map = hasGL ? new maplibregl.Map({
   container: 'map',
   style: BASEMAPS[0].style,
@@ -80,7 +113,8 @@ if (map) {
   window.__map = map;   // handle for debugging and for the browser tests
 }
 
-let DATA = null;          // the trails layer's own file, for its source link
+let DATA = null;          // the trails document, for its source link and bounds
+let PLACES = null;        // the pardespedia document, kept for rebuilds
 let baseIndex = 0;
 let here = null;          // {lat, lng} once geolocation succeeds
 let hereMarker = null;
@@ -91,6 +125,9 @@ let wpMarkers = [];       // waypoint pins, rebuilt when layers are toggled
 /* ---------- helpers ---------- */
 
 const metres = (m) => (m >= 1000 ? (m / 1000).toFixed(2) + ' ק"מ' : m + ' מ׳');
+
+/* Hebrew says "קישור אחד" and "2 קישורים", never "1 קישורים". */
+const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 
 function distance(a, b) {
   const R = 6371000, rad = Math.PI / 180;
@@ -108,7 +145,10 @@ function anchors(item) {
 }
 
 function nearestMetres(item) {
-  if (!here) return Infinity;
+  // A pardespedia place with no pin yet has no position to measure from, and
+  // an unguarded distance() would sort it to the top of "nearest to me" on a
+  // NaN rather than dropping it to the bottom.
+  if (!here || item.lat == null && !item.entries) return Infinity;
   return Math.min(...anchors(item).map((a) => distance(here, a)));
 }
 
@@ -172,7 +212,7 @@ function drawWaypoints() {
   // Waypoints are HTML markers rather than a symbol layer: markers use the
   // browser's own font, which sidesteps the whole question of whether the
   // style's glyph set covers Hebrew.
-  Layers.visibleWaypoints().forEach((wp) => {
+  Layers.markerWaypoints().forEach((wp) => {
     const node = document.createElement('div');
     node.className = 'pin';
     node.innerHTML = `<i></i><b>${escapeHtml(wp.name)}</b>`;
@@ -209,9 +249,11 @@ function select(id, fit = true) {
       const b = new maplibregl.LngLatBounds();
       item.path.forEach(([lat, lng]) => b.extend([lng, lat]));
       map.fitBounds(b, { padding: 60, maxZoom: 18, duration: 700 });
-    } else {
+    } else if (item.lat != null) {
       map.easeTo({ center: [item.lng, item.lat], zoom: 18, duration: 700 });
     }
+    // A place with no pin yet has nowhere to fly to. The detail pane opens
+    // anyway, which is where the editor drops one.
   }
   showDetail(item);
 }
@@ -232,10 +274,18 @@ function items() {
   const q = el('search').value.trim();
   let all = [...Layers.visibleSegments(), ...Layers.visibleWaypoints()];
 
+  // A place nobody has pinned yet is not on the map, so for a reader it is a
+  // row that goes nowhere. An editor is exactly the person who can fix that,
+  // so for an editor it stays, and the "לא ממוקמים" sort gathers them up.
+  if (!Store.isEditor() && sortMode !== 'unplaced') {
+    all = all.filter((it) => !it.unplaced);
+  }
+
   if (q) {
     const needle = q.toLowerCase();
     all = all.filter((it) =>
-      [it.name, it.note, (it.connects || []).join(' '), (it.streets || []).join(' ')]
+      [it.name, it.note, it.group, it.address,
+       (it.connects || []).join(' '), (it.streets || []).join(' ')]
         .join(' ').toLowerCase().includes(needle));
   }
 
@@ -246,6 +296,9 @@ function items() {
     all.sort((a, b) => b.photos.length - a.photos.length);
   } else if (sortMode === 'near') {
     all.sort((a, b) => nearestMetres(a) - nearestMetres(b));
+  } else if (sortMode === 'unplaced') {
+    all = all.filter((it) => it.unplaced);
+    all.sort((a, b) => a.name.localeCompare(b.name, 'he'));
   }
   return all;
 }
@@ -253,7 +306,10 @@ function items() {
 function subtitle(it) {
   const bits = [];
   if (it.length) bits.push(metres(it.length));
+  else if (it.place) bits.push(it.group || 'מקום');
   else bits.push('נקודת ציון');
+  if (it.unplaced) bits.push('עוד לא ממוקם על המפה');
+  else if (it.approx) bits.push('מיקום מקורב');
   if (here) {
     const d = nearestMetres(it);
     if (isFinite(d)) bits.push(d < 1000 ? `${Math.round(d)} מ׳ ממך` : `${(d / 1000).toFixed(1)} ק"מ ממך`);
@@ -268,8 +324,13 @@ function subtitle(it) {
  * a row came from. Only tag the rows that are not the initiative's own. */
 function badge(it) {
   const layer = Layers.layerOf(it.id);
-  if (!layer || layer.kind === 'trails') return '';
-  return `<span class="tag" style="--c:${layer.color}">${escapeHtml(layer.short)}</span>`;
+  if (!layer || layer.id === Layers.TRAILS_ID) return '';
+  // Places all sit in one layer but come in groups, and "בית קפה" says far
+  // more on a row than the layer's own name repeated four hundred times.
+  const [text, colour] = it.place
+    ? [it.group || layer.short, it.color]
+    : [layer.short, layer.color];
+  return `<span class="tag" style="--c:${colour}">${escapeHtml(text)}</span>`;
 }
 
 function renderList() {
@@ -277,16 +338,19 @@ function renderList() {
   const rows = items();
 
   if (!rows.length) {
-    list.innerHTML = Layers.visible().length
-      ? '<li class="empty-msg">לא נמצא שביל תואם.</li>'
-      : '<li class="empty-msg">כל השכבות כבויות.<br>פתח את כפתור השכבות והדלק אחת.</li>';
+    list.innerHTML = !Layers.visible().length
+      ? '<li class="empty-msg">כל השכבות כבויות.<br>פתח את כפתור השכבות והדלק אחת.</li>'
+      : sortMode === 'unplaced'
+        ? '<li class="empty-msg">כל המקומות ממוקמים. 🎉</li>'
+        : '<li class="empty-msg">לא נמצא שביל תואם.</li>';
     return;
   }
 
   list.innerHTML = rows.map((it) => {
+    const glyph = it.place ? (it.unplaced ? '📌' : '🏛️') : (it.path ? (it.draft ? '✏️' : '🥾') : '📍');
     const thumb = it.photos && it.photos.length
       ? `<img class="thumb" src="${it.photos[0].thumb}" alt="" loading="lazy">`
-      : `<div class="thumb empty">${it.path ? (it.draft ? '✏️' : '🥾') : '📍'}</div>`;
+      : `<div class="thumb empty">${glyph}</div>`;
     return `<li class="row${it.id === selectedId ? ' on' : ''}" data-id="${it.id}"
               style="color:${it.color || '#8d6e63'}">
       <span class="swatch"></span>
@@ -351,15 +415,117 @@ function navActs(it, hint) {
     </a>`;
 }
 
+/** Whatever the item links out to: the wiki article behind a place, plus any
+ *  link an editor attached. Rendered for everybody, not only editors - a link
+ *  nobody can follow is not a link. */
+function linksBlock(it) {
+  const links = [];
+  if (it.place && it.url) {
+    links.push({ url: it.url, title: 'הערך המלא בפרדספדיה', lead: true });
+  }
+  (it.links || []).forEach((l) => links.push(l));
+  if (!links.length) return '';
+
+  return `
+    <h3>קישורים</h3>
+    <div class="acts">
+      ${links.map((l) => `<a class="act act-link${l.lead ? ' act-nav' : ''}"
+          href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
+        <span class="lbl">${escapeHtml(l.title)}
+          <span class="hint">${escapeHtml(hostOf(l.url))}</span></span>
+      </a>`).join('')}
+    </div>`;
+}
+
+function hostOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch (err) {
+    return '';
+  }
+}
+
+/** A pardespedia place. The wiki wrote the words and took the photo; this pane
+ *  adds the two things a map can offer on top - where it is, and how to walk
+ *  there. */
+function placeBody(it) {
+  if (it.unplaced) {
+    return `
+      <p class="unplaced">המקום הזה עוד לא מוקם על המפה. בפרדספדיה אין קואורדינטות,
+        ולערך הזה לא נמצאה כתובת שאפשר לפענח אוטומטית.</p>
+      ${Store.isEditor() ? `
+        <div class="acts">
+          <button class="act act-nav" data-place="pin"><span class="lbl">נעץ על המפה
+            <span class="hint">לחיצה אחת על המקום המדויק, ונשמר לכולם</span></span></button>
+        </div>
+        <p id="pub-msg" class="pub-msg" hidden></p>` : ''}
+      ${linksBlock(it)}`;
+  }
+
+  return `
+    ${it.address ? `<p class="addr">${escapeHtml(it.address)}</p>` : ''}
+    <h3>הגעה</h3>
+    <div class="acts">
+      ${panoActs(it, ['המקום'], 'מבט 360° מהרחוב')}
+      ${navActs(it, 'ניווט בתוך האפליקציה, גם דרך קיצורי הדרך')}
+    </div>
+    ${linksBlock(it)}
+    ${Store.isEditor() ? `
+      <h3>מיקום</h3>
+      <div class="acts">
+        <button class="act" data-place="pin"><span class="lbl">הזזת הסיכה
+          <span class="hint">${escapeHtml(GEO_SOURCE[it.geoSource] || '')}</span></span></button>
+        ${it.geoSource === 'manual' ? `<button class="act act-sub" data-place="unpin">
+          <span class="lbl">ביטול המיקום הידני
+            <span class="hint">יחזור להשערה האוטומטית בבנייה הבאה</span></span></button>` : ''}
+      </div>
+      <p id="pub-msg" class="pub-msg" hidden></p>` : ''}`;
+}
+
+const GEO_SOURCE = {
+  manual: 'מיקום שנקבע ידנית',
+  osm: 'זוהה לפי שם ב-OpenStreetMap',
+  address: 'פוענח מכתובת שבערך',
+  street: 'רמת רחוב בלבד, לא מספר בית',
+  nearby: 'מקורב, לפי מקום סמוך שמוזכר בערך'
+};
+
+/** What an editor can change about a trail that is already published. */
+function editorBlock(it, layer) {
+  if (!Store.isEditor()) return '';
+  const others = Layers.trailLayers().filter((l) => l.id !== layer.id);
+  return `
+    <h3>עריכה</h3>
+    <div class="acts">
+      <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה</span></button>
+      <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
+        <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
+        <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
+      <button class="act" data-pub="links"><span class="lbl">קישורים
+        <span class="hint">${(it.links || []).length
+          ? plural(it.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
+      ${others.length ? `<button class="act" data-pub="move"><span class="lbl">העברה לשכבה אחרת
+        <span class="hint">כרגע ב"${escapeHtml(layer.name)}"</span></span></button>` : ''}
+      <button class="act danger" data-pub="remove"><span class="lbl">הסרה מהמסד
+        <span class="hint">נשמר בהיסטוריה, אפשר לשחזר</span></span></button>
+    </div>
+    <p id="pub-msg" class="pub-msg" hidden></p>`;
+}
+
 function showDetail(it) {
   const layer = Layers.layerOf(it.id) || {};
   const chips = [];
 
   if (it.length) chips.push(`<span class="chip accent">${metres(it.length)}</span>`);
+  else if (it.place) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group || 'מקום')}</span>`);
   else chips.push('<span class="chip accent">נקודת ציון</span>');
-  if (layer.kind !== 'trails') {
+  if (layer.kind !== 'trails' && !it.place) {
     chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
   }
+  if (layer.kind === 'trails' && layer.id !== Layers.TRAILS_ID) {
+    chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
+  }
+  if (it.approx) chips.push('<span class="chip">מיקום מקורב</span>');
   if (it.status) chips.push(`<span class="chip">${escapeHtml(it.status)}</span>`);
   if (it.grade) chips.push(`<span class="chip">רשת ${escapeHtml(it.grade)}</span>`);
   if (it.kind) chips.push(`<span class="chip">${escapeHtml(it.kind)}</span>`);
@@ -371,11 +537,16 @@ function showDetail(it) {
     }
   }
 
-  const entries = it.entries || [{ lat: it.lat, lng: it.lng, heading: 0, view: null }];
+  // An unpinned place has no position at all, and an entry built from nothing
+  // would send Street View to the middle of the Atlantic.
+  const entries = it.entries || (it.lat == null ? []
+    : [{ lat: it.lat, lng: it.lng, heading: 0, view: null }]);
   it = { ...it, entries };
 
   let body;
-  if (layer.kind === 'network') {
+  if (it.place) {
+    body = placeBody(it);
+  } else if (layer.kind === 'network') {
     const labels = ['תחילת המקטע', 'סוף המקטע'];
     body = `
       ${it.streets && it.streets.length
@@ -385,11 +556,13 @@ function showDetail(it) {
         ${panoActs(it, labels, 'מבט 360° לאורך המקטע')}
         ${navActs(it, 'ניווט בתוך האפליקציה, לאורך תוואי המקטע')}
       </div>
+      ${linksBlock(it)}
       <p class="src">${escapeHtml(layer.credit || '')}</p>`;
   } else if (it.draft) {
     body = `
       <h3>הגעה</h3>
       <div class="acts">${navActs(it, 'ניווט לפי התוואי שהקלטת')}</div>
+      ${linksBlock(it)}
       ${Drafts.detailExtras(it)}`;
   } else {
     const names = it.connects && it.connects.length === entries.length
@@ -401,21 +574,23 @@ function showDetail(it) {
         ${panoActs(it, names, 'מבט 360° מהרחוב אל הכניסה')}
         ${navActs(it, 'ניווט בתוך האפליקציה, לפי מסלול השביל עצמו')}
       </div>
-      ${Store.isEditor() ? `
-        <h3>עריכה</h3>
-        <div class="acts">
-          <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה</span></button>
-          <button class="act danger" data-pub="remove"><span class="lbl">הסרה מהמסד
-            <span class="hint">נשמר בהיסטוריה, אפשר לשחזר</span></span></button>
-        </div>
-        <p id="pub-msg" class="pub-msg" hidden></p>` : ''}`;
+      ${linksBlock(it)}
+      ${editorBlock(it, layer)}`;
   }
 
+  // Photos can be removed only where this app owns them: the initiative's own
+  // trails. A pardespedia photo belongs to the wiki article and is changed
+  // there, not here.
+  const canEditPhotos = Store.isEditor() && !it.place && !it.draft && layer.kind === 'trails';
   const photos = it.photos || [];
   const gallery = photos.length ? `
     <h3>תמונות (${photos.length})</h3>
-    <div class="gallery">
-      ${photos.map((p, i) => `<img src="${p.thumb}" data-i="${i}" alt="${escapeHtml(it.name)}" loading="lazy">`).join('')}
+    <div class="gallery${canEditPhotos ? ' editable' : ''}">
+      ${photos.map((p, i) => `<span class="shot">
+        <img src="${p.thumb}" data-i="${i}" alt="${escapeHtml(it.name)}" loading="lazy">
+        ${canEditPhotos ? `<button class="shot-x" data-drop="${i}"
+          aria-label="הסרת התמונה">&times;</button>` : ''}
+      </span>`).join('')}
     </div>` : '';
 
   el('detail').innerHTML = `
@@ -424,9 +599,12 @@ function showDetail(it) {
     ${it.note ? `<p class="note">${escapeHtml(it.note)}</p>` : ''}
     ${body}
     ${gallery}
-    ${layer.kind === 'trails'
-      ? `<a class="src" href="${DATA.source}" target="_blank" rel="noopener">המפה המקורית ב-Google My Maps ↗</a>`
-      : ''}`;
+    ${it.place
+      ? `<a class="src" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">
+           הטקסט והתמונה מתוך פרדספדיה, הוויקי של המושבה ↗</a>`
+      : layer.kind === 'trails'
+        ? `<a class="src" href="${DATA.source}" target="_blank" rel="noopener">המפה המקורית ב-Google My Maps ↗</a>`
+        : ''}`;
 
   el('detail').querySelectorAll('.gallery img').forEach((img) => {
     img.addEventListener('click', () => openLightbox(it, +img.dataset.i));
@@ -441,41 +619,375 @@ function showDetail(it) {
   el('detail-view').hidden = false;
 }
 
-/** Editing a trail that is already in the shared dataset. */
-function wirePublished(it) {
-  el('detail').querySelectorAll('[data-pub]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const msg = el('pub-msg');
-      const say = (text, bad) => {
-        msg.hidden = false;
-        msg.textContent = text;
-        msg.className = 'pub-msg' + (bad ? ' bad' : '');
-      };
+/** A status line inside the detail pane, shared by every editing action. */
+function detailSay() {
+  const msg = el('pub-msg');
+  return (text, bad) => {
+    if (!msg) return;
+    msg.hidden = false;
+    msg.textContent = text;
+    msg.className = 'pub-msg' + (bad ? ' bad' : '');
+  };
+}
 
+/** Editing an item that is already in the shared dataset: a published trail,
+ *  or the position of a pardespedia place. */
+function wirePublished(it) {
+  const say = detailSay();
+
+  el('detail').querySelectorAll('[data-drop]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('להסיר את התמונה הזאת מהשביל?')) return;
+      btn.disabled = true;
+      say('מסיר תמונה…');
       try {
-        if (btn.dataset.pub === 'rename') {
-          const name = prompt('שם השביל:', it.name);
-          if (name == null) return;
-          const note = prompt('הערה (אפשר להשאיר ריק):', it.note || '');
-          if (note == null) return;
-          btn.disabled = true;
-          say('שומר…');
-          await reloadShared(await Store.rename(it.id, name.trim() || it.name, note.trim()));
-          select(it.id, false);
-        } else {
-          if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
-                       'השינוי נשמר בהיסטוריה ואפשר לשחזר אותו.')) return;
-          btn.disabled = true;
-          say('מסיר…');
-          await reloadShared(await Store.remove(it.id, it.name));
-          deselect();
-        }
+        await reloadShared(await Store.removePhoto(it.id, +btn.dataset.drop, it.name));
+        select(it.id, false);
       } catch (err) {
         btn.disabled = false;
         say('נכשל: ' + err.message, true);
       }
     });
   });
+
+  el('detail').querySelectorAll('[data-place]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (btn.dataset.place === 'pin') { startPinning(it); return; }
+      if (!confirm(`לבטל את המיקום הידני של "${it.name}"?`)) return;
+      btn.disabled = true;
+      say('מבטל…');
+      try {
+        await reloadPlaces(await Store.unpinPlace(it.id, it.name));
+        select(it.id, false);
+      } catch (err) {
+        btn.disabled = false;
+        say('נכשל: ' + err.message, true);
+      }
+    });
+  });
+
+  el('detail').querySelectorAll('[data-pub]').forEach((node) => {
+    const act = node.dataset.pub;
+
+    if (act === 'photos') {
+      node.addEventListener('change', async () => {
+        if (!node.files || !node.files.length) return;
+        say('מעלה…');
+        try {
+          await reloadShared(await Store.addPhotos(it.id, [...node.files], it.name, say));
+          select(it.id, false);
+        } catch (err) {
+          say('העלאה נכשלה: ' + err.message, true);
+        }
+      });
+      return;
+    }
+
+    node.addEventListener('click', async () => {
+      try {
+        if (act === 'links') { linksForm(it); return; }
+        if (act === 'move') { moveForm(it); return; }
+
+        if (act === 'rename') {
+          const name = prompt('שם השביל:', it.name);
+          if (name == null) return;
+          const note = prompt('הערה (אפשר להשאיר ריק):', it.note || '');
+          if (note == null) return;
+          node.disabled = true;
+          say('שומר…');
+          await reloadShared(await Store.rename(it.id, name.trim() || it.name, note.trim()));
+          select(it.id, false);
+        } else if (act === 'remove') {
+          if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
+                       'השינוי נשמר בהיסטוריה ואפשר לשחזר אותו.')) return;
+          node.disabled = true;
+          say('מסיר…');
+          await reloadShared(await Store.remove(it.id, it.name));
+          deselect();
+        }
+      } catch (err) {
+        node.disabled = false;
+        say('נכשל: ' + err.message, true);
+      }
+    });
+  });
+}
+
+/* ---------- the small editor forms ----------
+ *
+ * Links, a new trail layer, moving a trail between layers. All three are a few
+ * fields and a save button, so they share one sheet rather than each growing
+ * its own markup in index.html.
+ */
+
+const openForm = (html) => {
+  el('form-card').innerHTML = html;
+  el('form-sheet').hidden = false;
+};
+
+const closeForm = () => { el('form-sheet').hidden = true; };
+
+/** A repeating url/title pair, used both here and by draft.js when a trail is
+ *  first written, so a link can be attached before the trail even exists. */
+const LinkRows = {
+  row(link) {
+    return `<div class="link-row">
+      <input class="l-url" type="url" inputmode="url" spellcheck="false"
+             placeholder="https://…" value="${escapeHtml((link && link.url) || '')}">
+      <input class="l-title" type="text" maxlength="60"
+             placeholder="איך לקרוא לקישור" value="${escapeHtml((link && link.title) || '')}">
+      <button type="button" class="link-x" aria-label="הסרת הקישור">&times;</button>
+    </div>`;
+  },
+
+  html(links) {
+    const rows = (links && links.length ? links : [null]).map((l) => LinkRows.row(l)).join('');
+    return `<div class="link-rows">${rows}</div>
+      <button type="button" class="add-row" data-act="add-link">+ עוד קישור</button>`;
+  },
+
+  read(root) {
+    return [...root.querySelectorAll('.link-row')].map((row) => ({
+      url: row.querySelector('.l-url').value.trim(),
+      title: row.querySelector('.l-title').value.trim()
+    })).filter((l) => l.url);
+  },
+
+  /** One delegated listener covers rows that do not exist yet. */
+  wire(root) {
+    root.addEventListener('click', (e) => {
+      if (e.target.closest('[data-act="add-link"]')) {
+        root.querySelector('.link-rows').insertAdjacentHTML('beforeend', LinkRows.row(null));
+        root.querySelector('.link-rows').lastElementChild.querySelector('.l-url').focus();
+        return;
+      }
+      const x = e.target.closest('.link-x');
+      if (!x) return;
+      const rows = root.querySelector('.link-rows');
+      if (rows.children.length > 1) x.closest('.link-row').remove();
+      else x.closest('.link-row').querySelectorAll('input').forEach((i) => { i.value = ''; });
+    });
+  }
+};
+
+function linksForm(it) {
+  openForm(`
+    <header class="sheet-head">
+      <h2>קישורים</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">קישורים שיופיעו במסך של "${escapeHtml(it.name)}": אתר, כתבה,
+      ערך בפרדספדיה, אלבום תמונות. השאר שורה ריקה כדי למחוק אותה.</p>
+    ${LinkRows.html(it.links)}
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-links"><b>שמור קישורים</b></button>`);
+  formTarget = it;
+}
+
+/* The palette a new layer picks from. Free colour entry on a phone is a colour
+ * wheel nobody can hit precisely, and eight distinguishable colours is what a
+ * map can carry anyway. */
+const LAYER_COLOURS = ['#0b7285', '#c2255c', '#5f3dc4', '#e8590c',
+                       '#2b8a3e', '#1864ab', '#a61e4d', '#495057'];
+
+function layerForm(layer) {
+  const now = layer || { name: '', color: LAYER_COLOURS[0], note: '', dash: false };
+  openForm(`
+    <header class="sheet-head">
+      <h2>${layer ? 'עריכת שכבה' : 'שכבת שבילים חדשה'}</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">${layer ? 'השינוי חל על כל השבילים בשכבה.'
+      : 'שכבה היא קבוצה של שבילים שאפשר להדליק ולכבות יחד. אחרי שתיווצר, כל שביל שתפרסם יוכל להיכנס אליה.'}</p>
+    <label class="fld"><span>שם השכבה</span>
+      <input id="lay-name" type="text" maxlength="40" value="${escapeHtml(now.name)}"
+             placeholder="למשל: מסלולי בוקר, שבילים לעגלה"></label>
+    <label class="fld"><span>תיאור (לא חובה)</span>
+      <textarea id="lay-note" rows="2" maxlength="160"
+                placeholder="מה נכנס לשכבה הזאת">${escapeHtml(now.note || '')}</textarea></label>
+    <div class="fld"><span>צבע</span>
+      <div class="swatches" id="lay-colours">
+        ${LAYER_COLOURS.map((c) => `<button type="button" class="sw${c === now.color ? ' on' : ''}"
+          data-colour="${c}" style="--c:${c}" aria-label="צבע ${c}"></button>`).join('')}
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="lay-dash" ${now.dash ? 'checked' : ''}>
+      <span>קו מקווקו, לשבילים שעוד לא קיימים בשטח</span></label>
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-layer"><b>${layer ? 'שמור' : 'צור שכבה'}</b></button>
+    ${layer ? `<button class="big-act ghost danger" data-act="drop-layer"><b>מחיקת השכבה</b>
+      <span>השבילים שבתוכה יחזרו לשכבת שבילי היוזמה, ולא יימחקו</span></button>` : ''}`);
+  formTarget = layer || null;
+  formColour = now.color;
+}
+
+function moveForm(it) {
+  const layers = Layers.trailLayers();
+  const current = Layers.layerOf(it.id) || {};
+  openForm(`
+    <header class="sheet-head">
+      <h2>העברה לשכבה</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">לאיזו שכבה "${escapeHtml(it.name)}" שייך.</p>
+    <div class="picks" id="layer-pick">
+      ${layers.map((l) => `<label class="pick${l.id === current.id ? ' on' : ''}">
+        <input type="radio" name="target" value="${l.id}" ${l.id === current.id ? 'checked' : ''}>
+        <span class="lay-swatch" style="--c:${l.color}"></span>
+        <span>${escapeHtml(l.name)}</span>
+      </label>`).join('')}
+    </div>
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-move"><b>העבר</b></button>`);
+  formTarget = it;
+}
+
+let formTarget = null;      // what the open form is about
+let formColour = null;      // the swatch picked in the layer form
+
+function formError(err) {
+  const box = el('form-err');
+  if (!box) return;
+  box.textContent = err;
+  box.hidden = false;
+}
+
+async function formAction(act, btn) {
+  if (act === 'close-form') { closeForm(); return; }
+  if (act === 'colour') return;
+
+  const label = btn.querySelector('b');
+  const was = label ? label.textContent : '';
+  if (label) label.textContent = 'שומר…';
+  btn.disabled = true;
+
+  try {
+    if (act === 'save-links') {
+      const links = LinkRows.read(el('form-card'));
+      await reloadShared(await Store.setLinks(formTarget.id, links, formTarget.name));
+      closeForm();
+      select(formTarget.id, false);
+
+    } else if (act === 'save-layer') {
+      const name = el('lay-name').value.trim();
+      if (!name) throw new Error('צריך שם לשכבה.');
+      const patch = {
+        name,
+        note: el('lay-note').value.trim(),
+        color: formColour,
+        dash: el('lay-dash').checked
+      };
+      await reloadShared(formTarget
+        ? await Store.editLayer(formTarget.id, patch)
+        : await Store.addLayer(patch));
+      closeForm();
+      Layers.render();
+
+    } else if (act === 'drop-layer') {
+      if (!confirm(`למחוק את השכבה "${formTarget.name}"?\n` +
+                   'השבילים שבתוכה יעברו לשכבת שבילי היוזמה ולא יימחקו.')) {
+        btn.disabled = false;
+        if (label) label.textContent = was;
+        return;
+      }
+      await reloadShared(await Store.removeLayer(formTarget.id, formTarget.name));
+      closeForm();
+      Layers.render();
+
+    } else if (act === 'save-move') {
+      const picked = el('form-card').querySelector('input[name=target]:checked');
+      if (!picked) throw new Error('צריך לבחור שכבה.');
+      const target = picked.value === Layers.TRAILS_ID ? null : picked.value;
+      await reloadShared(await Store.setLayer(formTarget.id, target, formTarget.name));
+      closeForm();
+      select(formTarget.id, false);
+    }
+  } catch (err) {
+    formError(err.message);
+    btn.disabled = false;
+    if (label) label.textContent = was;
+  }
+}
+
+/* ---------- pinning a place ----------
+ *
+ * Pardespedia knows what a place is and what it looks like, and has never
+ * known where it is. Roughly two hundred of its articles could not be placed
+ * automatically, and each of those is a few seconds of work for somebody who
+ * lives here - which is the one qualification the script does not have.
+ */
+
+let pinning = null;         // {item, marker, onClick}
+
+function startPinning(it) {
+  if (!map) { alert('נעיצה דורשת את המפה, והדפדפן הזה לא מציג אותה.'); return; }
+  stopPinning();
+  stopNav();
+
+  pinning = { item: it, marker: null, onClick: null };
+  document.body.classList.add('pinning');
+  el('pin-bar').hidden = false;
+  el('pin-name').textContent = it.name;
+  el('pin-state').textContent = 'לחץ על המפה במקום המדויק';
+  el('pin-save').disabled = true;
+
+  // Get the map out from behind the panel, and start where the current guess
+  // is, so correcting a wrong pin is a nudge rather than a search.
+  document.documentElement.style.setProperty('--panel-h', '96px');
+  setTimeout(() => map.resize(), 60);
+  if (it.lat != null) map.easeTo({ center: [it.lng, it.lat], zoom: 17.5, duration: 600 });
+
+  pinning.onClick = (e) => dropPin(e.lngLat.lat, e.lngLat.lng);
+  map.on('click', pinning.onClick);
+}
+
+function dropPin(lat, lng) {
+  if (!pinning) return;
+  if (!pinning.marker) {
+    const node = document.createElement('div');
+    node.className = 'pin-drop';
+    node.textContent = '📌';
+    pinning.marker = new maplibregl.Marker({ element: node, draggable: true, anchor: 'bottom' })
+      .setLngLat([lng, lat]).addTo(map);
+    // Dragging is the natural correction once a pin is down, and it means a
+    // near-miss does not need the whole thing doing again.
+    pinning.marker.on('dragend', () => {
+      el('pin-state').textContent = 'אפשר לגרור לדיוק, ואז לשמור';
+    });
+  } else {
+    pinning.marker.setLngLat([lng, lat]);
+  }
+  el('pin-state').textContent = 'אפשר לגרור לדיוק, ואז לשמור';
+  el('pin-save').disabled = false;
+}
+
+function stopPinning() {
+  if (!pinning) return;
+  if (pinning.onClick && map) map.off('click', pinning.onClick);
+  if (pinning.marker) pinning.marker.remove();
+  pinning = null;
+  document.body.classList.remove('pinning');
+  el('pin-bar').hidden = true;
+}
+
+async function savePin() {
+  if (!pinning || !pinning.marker) return;
+  const { lat, lng } = pinning.marker.getLngLat();
+  const it = pinning.item;
+  el('pin-save').disabled = true;
+  el('pin-state').textContent = 'שומר…';
+  try {
+    const doc = await Store.pinPlace(it.id, lat, lng, it.name);
+    stopPinning();
+    reloadPlaces(doc);
+    document.documentElement.style.setProperty('--panel-h', '45vh');
+    setTimeout(() => map.resize(), 60);
+    select(it.id);
+  } catch (err) {
+    el('pin-save').disabled = false;
+    el('pin-state').textContent = 'לא נשמר: ' + err.message;
+  }
 }
 
 /* ---------- lightbox ---------- */
@@ -774,16 +1286,30 @@ function wireSwipe() {
 
 function paintStats() {
   const s = Layers.stats();
-  const bits = s.segments
-    ? [`${s.segments} מקטעים`, metres(s.length), `${s.waypoints} נקודות ציון`,
-       `${s.photos} תמונות`]
-    : ['אין שכבה דלוקה'];
+  const bits = [];
+  if (s.segments) bits.push(`${s.segments} מקטעים`, metres(s.length));
+  if (s.waypoints) bits.push(`${s.waypoints} נקודות ציון`);
+  if (s.places) bits.push(`${s.places} מקומות`);
+  if (s.photos) bits.push(`${s.photos} תמונות`);
+  if (!bits.length) bits.push('אין שכבה דלוקה');
   if (Store.offline) bits.push('לא מחובר, מציג עותק שמור');
   el('stats').textContent = bits.join(' · ');
 
   const who = Store.editor();
   el('editor-btn').textContent = who ? `עורך: ${who}` : 'מצב עורך';
   el('editor-btn').classList.toggle('on', !!who);
+
+  // Only an editor can do anything about an unplaced place, so the shortcut to
+  // them only appears for one - and only while there are any left.
+  const sortUnplaced = el('sort-unplaced');
+  const worth = !!who && s.unplaced > 0;
+  sortUnplaced.hidden = !worth;
+  sortUnplaced.textContent = `לא ממוקמים (${s.unplaced})`;
+  if (!worth && sortMode === 'unplaced') {
+    sortMode = 'length';
+    document.querySelectorAll('.sort').forEach((b) =>
+      b.classList.toggle('on', b.dataset.sort === 'length'));
+  }
 }
 
 /** Everything that has to happen after a layer is toggled or a draft changes.
@@ -806,9 +1332,10 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network } = await Store.load();
+  const { trails, network, places } = await Store.load();
   DATA = trails;
-  Layers.init(trails, network);
+  PLACES = places;
+  Layers.init(trails, network, places);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.
@@ -840,12 +1367,22 @@ async function reloadShared(doc) {
   try {
     const trails = doc || (await Store.load()).trails;
     DATA = trails;
-    const layer = Layers.byId('trails');
-    layer.segments = trails.segments;
-    layer.waypoints = trails.waypoints;
-    Layers.refresh('trails');
+    // resetTrails rather than refresh: a write can create a layer or move a
+    // trail between layers, so which layer holds what has to be worked out
+    // again, not only the geometry inside one of them.
+    Layers.resetTrails(trails);
   } catch (err) {
     console.error('refresh failed', err);
+  }
+}
+
+/** Same, for the pardespedia layer after a pin is dropped or cleared. */
+function reloadPlaces(doc) {
+  try {
+    PLACES = doc || PLACES;
+    Layers.resetPlaces(PLACES);
+  } catch (err) {
+    console.error('places refresh failed', err);
   }
 }
 
@@ -926,7 +1463,38 @@ function wireControls() {
   el('layer-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'layer-sheet' || e.target.closest('[data-act="close"]')) {
       Layers.closeSheet();
+      return;
     }
+    if (e.target.closest('[data-newlayer]')) { layerForm(null); return; }
+    const edit = e.target.closest('[data-edit]');
+    if (edit) layerForm(Layers.byId(edit.dataset.edit));
+  });
+
+  el('form-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'form-sheet') { closeForm(); return; }
+    const swatch = e.target.closest('[data-colour]');
+    if (swatch) {
+      formColour = swatch.dataset.colour;
+      el('lay-colours').querySelectorAll('.sw').forEach((s) =>
+        s.classList.toggle('on', s === swatch));
+      return;
+    }
+    const pick = e.target.closest('.pick');
+    if (pick) {
+      el('layer-pick').querySelectorAll('.pick').forEach((p) =>
+        p.classList.toggle('on', p === pick));
+      return;
+    }
+    const btn = e.target.closest('[data-act]');
+    if (btn) formAction(btn.dataset.act, btn);
+  });
+  LinkRows.wire(el('form-sheet'));
+
+  el('pin-save').addEventListener('click', savePin);
+  el('pin-cancel').addEventListener('click', () => {
+    stopPinning();
+    document.documentElement.style.setProperty('--panel-h', '45vh');
+    setTimeout(() => { if (map) map.resize(); }, 60);
   });
 
   el('search').addEventListener('input', renderList);
@@ -968,7 +1536,9 @@ function wireControls() {
   // the tap actually landed on empty ground - and never while drafting, where
   // a tap on the map is how you place a point.
   if (map) map.on('click', (e) => {
-    if (!selectedId || Drafts.isDrafting()) return;
+    // While pinning, a tap on the map is where the pin goes, not a request to
+    // close the pane it was started from.
+    if (!selectedId || Drafts.isDrafting() || pinning) return;
     const hits = Layers.list
       .map((l) => `hit-${l.id}`)
       .filter((id) => map.getLayer(id));

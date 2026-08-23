@@ -6,13 +6,11 @@
  *            there is nothing on screen to trace over.
  *   drawing  tap the corners on the map, for a trail you already know.
  *
- * Drafts live in IndexedDB on this device only. Nothing is uploaded anywhere -
- * the app has no server and no key. To publish one you export KML and import
- * it into the initiative's My Maps, which is still the source of truth; the
- * next build_data.py run then picks it up as an ordinary trail.
- *
- * Google offers no write API for My Maps, so that hand-off is deliberate
- * rather than a shortcut we failed to take.
+ * Drafts live in IndexedDB on this device only, with their photos and links,
+ * until somebody does something with them. An editor publishes one straight
+ * into the shared dataset; everyone else sends it as a KML or GPX file and an
+ * editor opens it here and publishes it. That is the same review queue either
+ * way, carried by WhatsApp rather than by a server this app does not have.
  */
 'use strict';
 
@@ -87,6 +85,8 @@ const Drafts = (() => {
       name: rec.name,
       note: rec.note || '',
       photos,
+      links: rec.links || [],
+      layer: rec.layer || '',
       path,
       length: pathLength(path),
       color: '#8e24aa',
@@ -202,7 +202,8 @@ const Drafts = (() => {
 
   function startEditor(mode, existing) {
     stopEditor(true);
-    stopNav();          // the two share the top bar, and the phone's GPS
+    stopNav();          // the three share the top bar, and a tap on the map
+    stopPinning();
     deselect();         // the panel shrinks away; leave nothing stale behind it
     ed = {
       mode,
@@ -415,6 +416,18 @@ ${tracks}
   function askDetails() {
     const cur = ed.editing || {};
     const len = pathLength(ed.path);
+
+    // A layer to publish into is only worth asking about once an editor has
+    // made one, and only to somebody who can publish at all.
+    const targets = Store.isEditor() ? Layers.trailLayers() : [];
+    const picker = targets.length > 1 ? `
+      <label class="fld"><span>שכבה</span>
+        <select id="d-layer">
+          ${targets.map((l) => `<option value="${l.id === Layers.TRAILS_ID ? '' : l.id}"
+            ${l.id === (cur.layer || Layers.TRAILS_ID) ? 'selected' : ''}
+            >${escapeHtml(l.name)}</option>`).join('')}
+        </select></label>` : '';
+
     openSheet(`
       <header class="sheet-head">
         <h2>${cur.id ? 'עדכון השביל' : 'שביל חדש'}</h2>
@@ -428,6 +441,9 @@ ${tracks}
       <label class="fld"><span>הערה (לא חובה)</span>
         <textarea id="d-note" rows="2" maxlength="240"
                   placeholder="מדרגות בקצה, חסום בחורף, מתאים לעגלה…">${escapeHtml(cur.note || '')}</textarea></label>
+      ${picker}
+      <div class="fld"><span>קישורים (לא חובה)</span>
+        ${LinkRows.html(cur.links)}</div>
       <button class="big-act primary" data-act="save"><b>שמור שביל</b></button>
       <button class="big-act ghost" data-act="resume"><b>חזרה לתוואי</b>
         <span>להוסיף עוד נקודות או להמשיך להקליט</span></button>`);
@@ -443,6 +459,8 @@ ${tracks}
 
     rec.name = name;
     rec.note = el('d-note').value.trim();
+    rec.links = LinkRows.read(el('draft-card'));
+    rec.layer = el('d-layer') ? el('d-layer').value : (rec.layer || '');
     rec.path = ed.path;
     rec.mode = ed.mode;
     rec.updated = Date.now();
@@ -495,7 +513,9 @@ ${tracks}
           <input type="file" accept="image/*" multiple hidden data-draft="photos"></label>
         <button class="act" data-draft="edit"><span class="lbl">עריכת התוואי
           <span class="hint">להוסיף או להסיר נקודות</span></span></button>
-        <button class="act" data-draft="rename"><span class="lbl">שינוי שם והערה</span></button>
+        <button class="act" data-draft="rename"><span class="lbl">שם, הערה וקישורים
+          <span class="hint">${(seg.links || []).length
+            ? plural(seg.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
         <button class="act danger" data-draft="delete"><span class="lbl">מחיקת הטיוטה</span></button>
       </div>
       <p class="src">נוצר ${new Date(seg.created).toLocaleDateString('he-IL')} ·
@@ -639,6 +659,7 @@ ${tracks}
 
   function wire() {
     el('add').addEventListener('click', askMode);
+    LinkRows.wire(el('draft-sheet'));
 
     el('draft-sheet').addEventListener('change', async (e) => {
       if (e.target.id !== 'd-import' || !e.target.files.length) return;

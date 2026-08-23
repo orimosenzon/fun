@@ -46,6 +46,19 @@
   <button id="draft-cancel" aria-label="ביטול">&times;</button>
 </div>
 
+<!-- Dropping a pardespedia place onto the map. The wiki has no coordinates, so
+     for a good half of the places this bar is the only way one ever gets a
+     position, and it wants to be as close to one tap as possible. -->
+<div id="pin-bar" class="nav pin-bar" hidden role="status" aria-live="polite">
+  <div class="pin-dot">📌</div>
+  <div class="nav-txt">
+    <strong id="pin-name">—</strong>
+    <span id="pin-state">לחץ על המפה במקום המדויק</span>
+  </div>
+  <button id="pin-save" class="draft-btn strong" disabled>שמור כאן</button>
+  <button id="pin-cancel" aria-label="ביטול">&times;</button>
+</div>
+
 <div id="nav" class="nav" hidden role="status" aria-live="polite">
   <div class="nav-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 19-7-4-7 4z"/></svg></div>
   <div class="nav-txt">
@@ -72,6 +85,7 @@
           <button class="sort on" data-sort="length">הארוכים</button>
           <button class="sort" data-sort="near">הקרובים</button>
           <button class="sort" data-sort="photos">עם תמונות</button>
+          <button class="sort" data-sort="unplaced" id="sort-unplaced" hidden>לא ממוקמים</button>
           <button id="add" class="sort add">+ שביל חדש</button>
         </div>
       </div>
@@ -121,6 +135,11 @@
 
 <div id="editor-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="מצב עורך">
   <div class="sheet-card" id="editor-card"></div>
+</div>
+
+<!-- Shared by the small editor forms: links, a new layer, moving a trail. -->
+<div id="form-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="טופס">
+  <div class="sheet-card" id="form-card"></div>
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
