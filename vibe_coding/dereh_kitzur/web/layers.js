@@ -497,9 +497,12 @@ const Layers = (() => {
         </label>
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
-        ${editable && layer.kind === 'places' ? `<button class="lay-edit" data-arrange="1"
-          aria-label="סידור מיקומי המקומות">סידור<br>מיקומים</button>` : ''}
-      </div>`).join('') + (editable ? `
+      </div>
+      ${editable && layer.kind === 'places' ? `
+        <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
+          layer.waypoints.filter((p) => p.unplaced).length
+            ? ` · ${layer.waypoints.filter((p) => p.unplaced).length} עוד לא ממוקמים` : ''}
+        </button>` : ''}`).join('') + (editable ? `
       <button class="lay-add" data-newlayer="1">+ שכבת שבילים חדשה</button>` : '');
 
     box.querySelectorAll('.lay input').forEach((box2) => {
