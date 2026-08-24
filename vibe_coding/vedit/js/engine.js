@@ -72,6 +72,12 @@ export class Engine {
         routeFailed: !!p.routeFailed,
         gain: p.gain ? +p.gain.gain.value.toFixed(3) : null,
         framesDrawn: p.framesDrawn,
+        framesPresented: p.presented ?? 'rVFC-unavailable',
+        decoded: p.el?.getVideoPlaybackQuality?.()?.totalVideoFrames,
+        dropped: p.el?.getVideoPlaybackQuality?.()?.droppedVideoFrames,
+        buffered: p.el ? bufferedStr(p.el) : null,
+        playbackRate: p.el?.playbackRate,
+        playRejected: p.playRejected || null,
         broken: !!p.broken,
         errorCode: p.el?.error?.code ?? null,
         srcSet: !!p.el?.currentSrc,
@@ -219,6 +225,20 @@ export class Engine {
       this.onMediaError?.(media, err);
     });
 
+    // rVFC מודיע בדיוק מתי פריים חדש הוצג. זה גם הסימן הכי אמין לשאלה
+    // "האם הווידאו בכלל מתקדם", וגם טריגר טוב לרענון התצוגה כשעצורים.
+    if (media.type === 'video' && el.requestVideoFrameCallback) {
+      const onFrame = (_ts, meta) => {
+        p.presented = (p.presented || 0) + 1;
+        p.mediaTime = meta?.mediaTime;
+        if (!this.playing) this.render(state.playhead);
+        if (this.players.get(clip.id) === p) {
+          try { el.requestVideoFrameCallback(onFrame); } catch {}
+        }
+      };
+      try { el.requestVideoFrameCallback(onFrame); } catch {}
+    }
+
     el.src = r.url;
     try { el.load(); } catch (e) { L.warn('load() threw', { err: String(e) }); }
 
@@ -323,17 +343,26 @@ export class Engine {
         if (Math.abs(drift) > 0.012) { el.pause(); el.currentTime = want; }
         continue;
       }
-      if (hard || Math.abs(drift) > HARD_SYNC || el.readyState < 2) {
+      // חשוב: לא מבקשים דילוג חדש בזמן שדילוג קודם עוד באוויר, ולא יותר
+      // מפעם ברבע שנייה. אחרת כל פריים דורס את הדילוג הקודם, הוא לעולם לא
+      // מסתיים, והתמונה קופאת.
+      const busySeeking = el.seeking || (now - (p.lastSeekAt || 0) < 250);
+      if ((hard || Math.abs(drift) > HARD_SYNC) && !busySeeking) {
+        p.lastSeekAt = now;
         el.currentTime = want;
         el.playbackRate = (clip.speed || 1) * this.rate;
-      } else if (Math.abs(drift) > SOFT_SYNC) {
+        L.every(`hardsync:${clip.id}`, 2000, 'debug', 'hard sync', {
+          clipId: clip.id, drift: +drift.toFixed(3), want: +want.toFixed(2),
+        });
+      } else if (!el.seeking && Math.abs(drift) > SOFT_SYNC) {
         // תיקון עדין: מאיצים/מאטים קצת עד שמתיישרים
         const corr = clamp(-drift * 0.6, -0.06, 0.06);
         el.playbackRate = clamp((clip.speed || 1) * this.rate * (1 + corr), 0.25, 4);
-      } else {
+      } else if (!el.seeking) {
         el.playbackRate = clamp((clip.speed || 1) * this.rate, 0.25, 4);
       }
-      if (el.paused) el.play().catch(() => {});
+      if (el.paused) this.tryPlay(p, clip);
+      this.watchProgress(p, clip, now);
     }
 
     // הכנה מראש
@@ -356,6 +385,47 @@ export class Engine {
 
     this.applyGains(act, t);
     this.gc(now);
+  }
+
+  /** הפעלת אלמנט, עם רישום של סירוב. סירוב שקט כאן היה מסתיר את הסיבה
+   *  האמיתית לכך שהתמונה לא זזה. */
+  tryPlay(p, clip) {
+    if (p.playPending) return;
+    p.playPending = true;
+    const pr = p.el.play();
+    if (!pr || !pr.catch) { p.playPending = false; return; }
+    pr.then(() => { p.playPending = false; p.playRejected = null; })
+      .catch((e) => {
+        p.playPending = false;
+        p.playRejected = e.name;
+        L.every(`playfail:${clip.id}`, 3000, 'error', 'video.play() was rejected', {
+          clipId: clip.id, name: clip.name, error: e.name, message: e.message,
+          muted: p.el.muted, routed: !!p.src,
+        });
+        if (e.name === 'NotAllowedError') this.onAutoplayBlocked?.();
+      });
+  }
+
+  /** שומר: השעון רץ אבל האלמנט לא מתקדם */
+  watchProgress(p, clip, now) {
+    const ct = p.el.currentTime;
+    if (p.lastCt === undefined || Math.abs(ct - p.lastCt) > 0.008) {
+      p.lastCt = ct; p.lastCtAt = now; p.stuckReported = false;
+      return;
+    }
+    if (p.stuckReported || now - (p.lastCtAt || now) < 1200) return;
+    p.stuckReported = true;
+    const q = p.el.getVideoPlaybackQuality?.();
+    L.error('video is not advancing during playback', {
+      clipId: clip.id, name: clip.name,
+      currentTime: +ct.toFixed(3), stuckForMs: Math.round(now - p.lastCtAt),
+      paused: p.el.paused, seeking: p.el.seeking, ended: p.el.ended,
+      readyState: p.el.readyState, networkState: p.el.networkState,
+      playbackRate: p.el.playbackRate, playRejected: p.playRejected || null,
+      totalFrames: q?.totalVideoFrames, droppedFrames: q?.droppedVideoFrames,
+      buffered: bufferedStr(p.el),
+    });
+    this.onStuck?.(clip, p);
   }
 
   applyGains(act, t) {
@@ -489,12 +559,21 @@ export class Engine {
     // במקום להבהב בשחור מציירים את הפריים הטוב האחרון ששמרנו.
     const usable = p.kind === 'image' || el.readyState >= 2;
     let source = el;
+    let stale = false;
     if (!usable) {
       if (p.cache) {
         source = p.cache;
         sw = p.cache.width; sh = p.cache.height;
-        L.every(`held:${clip.id}`, 3000, 'debug', 'holding last frame while seeking',
-          { clipId: clip.id, readyState: el.readyState, seeking: el.seeking });
+        // מציגים את הפריים השמור, אבל אם הוא כבר לא טרי זה לא באמת "פריים חי":
+        // מסמנים אותו כתקוע, אחרת תמונה קפואה נראית בדיוק כמו ניגון תקין.
+        const staleMs = performance.now() - (p.cacheAt || 0);
+        stale = staleMs > 1000;
+        if (stale) {
+          L.every(`frozen:${clip.id}`, 3000, 'warn', 'showing a stale frame', {
+            clipId: clip.id, staleMs: Math.round(staleMs), readyState: el.readyState,
+            seeking: el.seeking, paused: el.paused, currentTime: +el.currentTime.toFixed(2),
+          });
+        }
       } else {
         ctx.restore();
         skip('not-ready', {
@@ -538,14 +617,20 @@ export class Engine {
     }
     try {
       ctx.drawImage(source, -dw / 2, -dh / 2, dw, dh);
-      this.painted++;
       p.framesDrawn++;
+      // פריים קפוא נראה על המסך, אבל לא נחשב "צויר": כך המשתמש מקבל הסבר
+      if (stale) { this.lastSkip = 'frozen'; this.scheduleRetry(); }
+      else { this.painted++; }
       if (usable) this._retries = 0;
       L.once(`firstframe:${clip.id}`, 'info', 'first frame drawn', {
         clipId: clip.id, name: clip.name, src: `${sw}x${sh}`,
         ms: Math.round(performance.now() - p.born),
       });
-      if (usable && p.kind === 'video') this.cacheFrame(p, el);
+      // בזמן ניגון אין טעם להעתיק כל פריים, זה עותק מלא של התמונה
+      if (usable && p.kind === 'video'
+        && (!this.playing || performance.now() - (p.cacheAt || 0) > 250)) {
+        this.cacheFrame(p, el);
+      }
     } catch (e) {
       skip('drawImage-threw', { err: String(e), readyState: el.readyState });
     }
@@ -582,6 +667,7 @@ export class Engine {
     try {
       p.cacheCtx.drawImage(el, 0, 0, cw, ch);
       p.cacheTime = el.currentTime;
+      p.cacheAt = performance.now();
     } catch { /* אין פריים זמין, נשמור בפעם הבאה */ }
   }
 
@@ -675,6 +761,14 @@ export class Engine {
 }
 
 /* ─────────── עזרים ─────────── */
+
+function bufferedStr(el) {
+  try {
+    const b = el.buffered;
+    if (!b.length) return 'none';
+    return [...Array(b.length)].map((_, i) => `${b.start(i).toFixed(1)}-${b.end(i).toFixed(1)}`).join(',');
+  } catch { return '?'; }
+}
 
 export function srcTimeOf(clip, t) {
   return clip.inPoint + (t - clip.start) * (clip.speed || 1);
