@@ -503,6 +503,8 @@ export class Engine {
           broken: !!p.broken, errCode: el.error?.code,
           ageMs: Math.round(performance.now() - p.born),
         });
+        // חגורה ושלייקס: גם אם שום אירוע לא יגיע, ננסה לצייר שוב עוד רגע
+        if (!p.broken) this.scheduleRetry();
         return;
       }
     }
@@ -538,6 +540,7 @@ export class Engine {
       ctx.drawImage(source, -dw / 2, -dh / 2, dw, dh);
       this.painted++;
       p.framesDrawn++;
+      if (usable) this._retries = 0;
       L.once(`firstframe:${clip.id}`, 'info', 'first frame drawn', {
         clipId: clip.id, name: clip.name, src: `${sw}x${sh}`,
         ms: Math.round(performance.now() - p.born),
@@ -547,6 +550,21 @@ export class Engine {
       skip('drawImage-threw', { err: String(e), readyState: el.readyState });
     }
     ctx.restore();
+  }
+
+  /** ניסיון ציור חוזר כשאין עדיין פריים. חלק מהמצבים לא מייצרים שום אירוע,
+   *  ובלי זה המסך היה נשאר שחור לנצח. */
+  scheduleRetry() {
+    if (this.playing || this._retryTimer) return;
+    this._retries = (this._retries || 0) + 1;
+    if (this._retries > 40) {          // בערך 6 שניות, ואז מוותרים
+      L.once('retry-exhausted', 'warn', 'gave up waiting for a frame');
+      return;
+    }
+    this._retryTimer = setTimeout(() => {
+      this._retryTimer = null;
+      if (!this.playing) this.render(state.playhead);
+    }, 150);
   }
 
   /** שומר עותק של הפריים האחרון, כדי שיהיה מה להציג בזמן דילוג */
