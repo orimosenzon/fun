@@ -275,6 +275,17 @@ input[type=range]::-moz-range-thumb{ width:12px; height:12px; background:var(--f
 .track.video{ background:#1a1d23; }
 .track.audio{ background:#181c1a; }
 .track.drop{ background:#20303f; }
+/* ערוץ מוסתר: פסים אלכסוניים, כדי שברור שהוא לא מגיע לתצוגה */
+.track.is-hidden{
+  background:repeating-linear-gradient(45deg,#1a1d23 0 7px,#20242c 7px 14px);
+}
+.track.is-hidden::after{
+  content:"הערוץ מוסתר"; position:sticky; left:8px; top:0; float:left;
+  font-size:10px; color:var(--warn); background:rgba(20,22,28,.85);
+  border:1px solid #4a4636; border-radius:3px; padding:1px 6px; margin:3px;
+  pointer-events:none; direction:rtl;
+}
+.track.is-locked{ background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 2px,transparent 2px 6px); }
 
 .clip{
   position:absolute; top:2px; bottom:2px; border-radius:4px; overflow:hidden;

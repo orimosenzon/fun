@@ -10,6 +10,9 @@ import {
   transitionName, TRANSITIONS, addTrack, removeTrack, makeClip, findFreeTrack,
 } from './state.js';
 import { rt } from './media.js';
+import { log } from './logger.js';
+
+const L = log.tag('timeline');
 
 const SNAP_PX = 8;
 const RULER_H = 26;          // חייב להתאים ל---ruler-h שב-CSS
@@ -113,7 +116,10 @@ function renderHeads() {
       ${t.kind === 'video' ? `<button data-act="hide" class="${t.hidden ? 'on' : ''}" title="הסתרת הערוץ">${t.hidden ? '🚫' : '👁'}</button>` : ''}
       <button data-act="mute" class="${t.muted ? 'on' : ''}" title="השתקה">${t.muted ? '🔇' : '🔊'}</button>
       <button data-act="lock" class="${t.locked ? 'on' : ''}" title="נעילה">${t.locked ? '🔒' : '🔓'}</button>`;
-    d.addEventListener('pointerdown', () => { state.activeTrack = t.id; renderHeads(); });
+    // חשוב: לא לבנות מחדש את הכותרות כאן. בנייה מחדש בתוך pointerdown מוחקת
+    // את הכפתור שנלחץ לפני שאירוע ה-click שלו מספיק לצאת, וכך העין, ההשתקה
+    // והנעילה פשוט לא הגיבו. במקום זה מעדכנים רק את הסימון הפעיל.
+    d.addEventListener('pointerdown', () => setActiveTrack(t.id));
     d.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       openMenu(e.clientX, e.clientY, [
@@ -128,18 +134,29 @@ function renderHeads() {
       ]);
     });
     d.querySelectorAll('button').forEach((b) => {
-      b.addEventListener('click', (e) => {
+      // pointerdown ולא click: כך זה עובד גם אם משהו יבנה את הכותרות מחדש
+      b.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
-        beginChange();
+        e.preventDefault();
         const a = b.dataset.act;
+        beginChange();
         if (a === 'mute') t.muted = !t.muted;
         if (a === 'hide') t.hidden = !t.hidden;
         if (a === 'lock') t.locked = !t.locked;
         commit('track-flag');
+        L.info('track flag toggled', { track: t.name, flag: a, value: t[a === 'hide' ? 'hidden' : a === 'mute' ? 'muted' : 'locked'] });
+        engine?.render(state.playhead);
       });
     });
     host.appendChild(d);
   }
+}
+
+/** עדכון הערוץ הפעיל בלי לבנות מחדש את ה-DOM */
+function setActiveTrack(id) {
+  if (state.activeTrack === id) return;
+  state.activeTrack = id;
+  $$('.thead', els.heads).forEach((el) => el.classList.toggle('active', el.dataset.track === id));
 }
 
 function renderTracks() {
@@ -149,7 +166,8 @@ function renderTracks() {
 
   for (const t of proj().tracks) {
     const tr = document.createElement('div');
-    tr.className = `track ${t.kind}`;
+    // ערוץ מוסתר או נעול חייב להיראות שונה, אחרת "הסרטון נעלם" נשאר תעלומה
+    tr.className = `track ${t.kind}${t.hidden ? ' is-hidden' : ''}${t.locked ? ' is-locked' : ''}`;
     tr.style.height = `${t.height}px`;
     tr.dataset.track = t.id;
     for (const c of t.clips) tr.appendChild(buildClip(c, t));
@@ -166,6 +184,10 @@ function buildClip(c, track) {
   d.style.left = `${t2x(c.start)}px`;
   d.style.width = `${Math.max(2, t2x(c.duration))}px`;
   if (track.locked) d.style.opacity = '.6';
+  if (track.hidden) {
+    d.style.opacity = '.32';
+    d.title = `הערוץ ${track.name} מוסתר, ולכן הקליפ לא מופיע בתצוגה. לחצו על 👁 בכותרת הערוץ.`;
+  }
 
   const w = Math.max(2, t2x(c.duration));
   const h = track.height - 4;
@@ -640,7 +662,6 @@ function onTracksPointerDown(e) {
   }
   if (!e.shiftKey) clearSelection();
   startMarquee(e);
-  renderHeads();
 }
 
 function onTracksDblClick(e) {
