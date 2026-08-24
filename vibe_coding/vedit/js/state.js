@@ -6,6 +6,23 @@
  */
 
 import { Emitter, uid, clamp, snapFrame } from './util.js';
+import { log } from './logger.js';
+
+const L = log.tag('edit');
+
+/** קליפים שנמחקו לאחרונה, כדי שאפשר יהיה להסביר לאן הם נעלמו */
+export const lastRemoved = [];
+function noteRemoved(clips, reason) {
+  if (!clips.length) return;
+  for (const c of clips) {
+    lastRemoved.push({ name: c.name, start: +c.start.toFixed(2), dur: +c.duration.toFixed(2), reason, at: Date.now() });
+  }
+  while (lastRemoved.length > 20) lastRemoved.shift();
+  L.warn('clips removed', {
+    reason, count: clips.length,
+    clips: clips.map((c) => `${c.name}@${c.start.toFixed(2)}+${c.duration.toFixed(2)}`),
+  });
+}
 
 export const EPS = 1e-4;                 // סובלנות להשוואת זמנים
 export const MIN_CLIP = 0.04;            // אורך קליפ מינימלי (שניות)
@@ -219,11 +236,12 @@ export function sourceRoom(clip) {
 /** פינוי מקום בערוץ: חותך/מקצר/מוחק כל מה שחופף לתחום [a,b), בהתנהגות "דריסה" */
 export function carve(track, a, b, exceptId = null) {
   const out = [];
+  const swallowed = [];
   for (const c of track.clips) {
     if (c.id === exceptId) { out.push(c); continue; }
     const s = c.start, e = clipEnd(c);
     if (e <= a + EPS || s >= b - EPS) { out.push(c); continue; }        // אין חפיפה
-    if (s >= a - EPS && e <= b + EPS) continue;                          // נבלע לגמרי → נמחק
+    if (s >= a - EPS && e <= b + EPS) { swallowed.push(c); continue; }  // נבלע לגמרי → נמחק
     if (s < a - EPS && e > b + EPS) {                                    // הקטע נופל באמצע → פיצול
       const right = JSON.parse(JSON.stringify(c));
       right.id = uid('clip');
@@ -245,8 +263,12 @@ export function carve(track, a, b, exceptId = null) {
     c.tin = null;
     out.push(c);
   }
+  const slivers = out.filter((c) => c.duration <= MIN_CLIP / 2);
   track.clips = out.filter((c) => c.duration > MIN_CLIP / 2);
   sortTrack(track);
+  noteRemoved(swallowed, 'overwritten');       // נדרס על ידי קליפ שהונח מעליו
+  noteRemoved(slivers, 'too-short');
+  if (swallowed.length) emitter.emit('overwrote', swallowed.length);
 }
 
 /** הוספת קליפ לערוץ בדריסה */
@@ -293,11 +315,14 @@ export function splitAll(t, onlySelected = false) {
 
 export function removeClips(ids) {
   const set = new Set(ids);
+  const gone = [];
   for (const t of state.proj.tracks) {
     if (t.locked) continue;
+    gone.push(...t.clips.filter((c) => set.has(c.id)));
     t.clips = t.clips.filter((c) => !set.has(c.id));
     validateTransitions(t);
   }
+  noteRemoved(gone, 'deleted');
   ids.forEach((id) => state.selection.delete(id));
 }
 
@@ -307,6 +332,7 @@ export function rippleDelete(ids) {
   for (const t of state.proj.tracks) {
     if (t.locked) continue;
     const doomed = t.clips.filter((c) => set.has(c.id)).sort((a, b) => b.start - a.start);
+    noteRemoved(doomed, 'ripple-deleted');
     for (const d of doomed) {
       const gap = d.duration, after = clipEnd(d);
       t.clips = t.clips.filter((c) => c.id !== d.id);

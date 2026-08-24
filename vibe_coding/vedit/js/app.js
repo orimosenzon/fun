@@ -59,6 +59,10 @@ function boot() {
     engine.render(state.playhead);
     autosave();
   });
+  // דריסה של קליפ בגרירה היא הדרך הכי קלה לאבד עבודה בלי לשים לב
+  emitter.on('overwrote', (n) => {
+    toast(`${n === 1 ? 'קליפ נדרס' : `${n} קליפים נדרסו`} על ידי מה שהנחתם מעליו. Ctrl+Z מחזיר.`, 'err', 5000);
+  });
   emitter.on('history', updateHistoryButtons);
   emitter.on('media', refreshMediaPool);
   emitter.on('assets', debounce(() => { refreshMediaPool(); renderInspector(); }, 350));
@@ -95,12 +99,20 @@ function wireMediaPool() {
 
 async function doImport(files) {
   toast(`מייבא ${files.length} קבצים…`);
+  const wasEmpty = !allClips().length;
   const added = await importFiles(files);
   if (!added.length) return;
   added.forEach((m) => idbSaveFile(m));
-  toast(`נוספו ${added.length} פריטים למאגר`, 'ok');
-  // אם הטיימליין ריק, מכניסים אליו אוטומטית את הפריט הראשון שנוסף
-  if (!allClips().length) appendMedia(added[0]);
+
+  // בטיימליין ריק מכניסים את *כל* מה שיובא, בזה אחר זה. קודם נכנס רק הראשון,
+  // וזה נראה בדיוק כאילו אחד הסרטונים נעלם.
+  if (wasEmpty) {
+    added.forEach((m) => appendMedia(m, null, true));
+    toast(`נוספו ${added.length} קליפים לטיימליין`, 'ok');
+    zoomToFit();
+  } else {
+    toast(`${added.length} פריטים נוספו למאגר. גררו אותם לטיימליין, או לחצו עליהם פעמיים.`, 'ok', 4500);
+  }
 }
 
 function refreshMediaPool() {
@@ -188,8 +200,8 @@ function relinkPrompt(m) {
   inp.click();
 }
 
-/** הוספת פריט מדיה לטיימליין */
-function appendMedia(m, at = null) {
+/** הוספת פריט מדיה לטיימליין. quiet מדכא את ההודעה, לייבוא מרובה */
+function appendMedia(m, at = null, quiet = false) {
   const kind = m.type === 'audio' ? 'audio' : 'video';
   const dur = m.type === 'image' ? 5 : m.duration;
   let track = proj().tracks.find((t) => t.id === state.activeTrack && t.kind === kind && !t.locked);
@@ -205,7 +217,10 @@ function appendMedia(m, at = null) {
   commit('append');
   select(clip.id);
   state.activeTrack = track.id;
-  toast(`"${m.name}" נוסף לטיימליין`, 'ok', 1600);
+  L.info('media appended to timeline', {
+    name: m.name, track: track.name, start: +start.toFixed(2), dur: +clip.duration.toFixed(2),
+  });
+  if (!quiet) toast(`"${m.name}" נוסף לטיימליין`, 'ok', 1600);
 }
 
 /* ═══════════════ פאנל המעברים ═══════════════ */
