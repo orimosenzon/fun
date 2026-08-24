@@ -22,9 +22,11 @@ import {
 import { initInspector, render as renderInspector } from './inspector.js';
 import { initExportUI, isExporting } from './export.js';
 import { paintPreview } from './transitions.js';
+import { log } from './logger.js';
 
+const L = log.tag('app');
 const engine = new Engine($('#stage'));
-window.__vedit = { state, engine, proj, rt };   // נוח לניפוי שגיאות מהקונסולה
+window.__vedit = { state, engine, proj, rt, log };   // נוח לניפוי שגיאות מהקונסולה
 
 /* ═══════════════ אתחול ═══════════════ */
 
@@ -43,6 +45,7 @@ function boot() {
   wireKeyboard();
   wireGlobalDrop();
   wireHelp();
+  wireDiagnostics();
 
   engine.onTick = (t) => {
     updatePlayhead();
@@ -640,6 +643,7 @@ function wireKeyboard() {
     }
     if (ctrl && (k === 'y' || k === 'Y')) { e.preventDefault(); redo(); afterHistory(); return; }
     if (ctrl && (k === 'a' || k === 'A')) { e.preventDefault(); select(allClips().map((c) => c.id)); return; }
+    if (ctrl && e.shiftKey && (k === 'd' || k === 'D')) { e.preventDefault(); openDiag(); return; }
     if (ctrl && (k === 'd' || k === 'D')) { e.preventDefault(); duplicateSelection(); return; }
     if (ctrl && (k === 'k' || k === 'K')) { e.preventDefault(); doSplit(); return; }
     if (ctrl && (k === 'c' || k === 'C')) { e.preventDefault(); copySelection(false); return; }
@@ -703,6 +707,144 @@ function wireKeyboard() {
   window.addEventListener('keyup', (e) => {
     if (e.key === 'l' || e.key === 'L') { /* השארת המהירות עד ללחיצה על K/רווח */ }
   });
+}
+
+/* ═══════════════ אבחון ═══════════════ */
+
+/** הסבר בעברית לכל סיבה שבגללה פריים לא צויר */
+const SKIP_TEXT = {
+  'not-ready': ['הדפדפן עוד לא פענח את הפריים הזה',
+    'אם זה נתקע ככה, כנראה שהקודק של הקובץ לא נתמך בדפדפן הזה (למשל HEVC/H.265 או ProRes). נסו קובץ MP4/H.264.'],
+  'no-size': ['אין לפריים מידות',
+    'הדפדפן לא הצליח לקרוא את גודל התמונה מהקובץ.'],
+  'no-player': ['הקובץ של הקליפ לא זמין',
+    'אולי הוא הוסר מהמאגר. לחצו על הפריט במאגר כדי לקשר אותו מחדש.'],
+  'media-missing': ['פריט המדיה נמחק', 'הקליפ מצביע על קובץ שכבר לא קיים בפרויקט.'],
+  'drawImage-threw': ['הציור על הקנבס נכשל', 'זו כנראה תקלה בדפדפן או בזיכרון הגרפי.'],
+  'alpha-zero': ['הקליפ שקוף לגמרי', 'בדקו את השקיפות או את הדעיכות באינספקטור.'],
+  'no-element': ['לא נוצר נגן לקליפ', ''],
+};
+
+/* ההודעה מופיעה רק אם הפריים נשאר ריק יותר משנייה, כדי לא להבהב בכל דילוג קצר */
+let blankTimer = null;
+
+function showStageStatus(reason) {
+  clearTimeout(blankTimer);
+  if (!reason) {
+    const ov0 = $('#stageOverlay');
+    if (ov0.dataset.mode === 'status') { ov0.innerHTML = ''; delete ov0.dataset.mode; updateTotals(); }
+    return;
+  }
+  blankTimer = setTimeout(() => paintStageStatus(reason), 1100);
+}
+
+function paintStageStatus(reason) {
+  const ov = $('#stageOverlay');
+  if (ov.dataset.mode === 'status' && ov.dataset.reason === reason) return;
+  const [title, body] = SKIP_TEXT[reason] || ['אי אפשר להציג את הפריים', ''];
+  ov.dataset.mode = 'status';
+  ov.dataset.reason = reason;
+  ov.innerHTML = `<div class="stage-status">
+    <div class="st-title">⚠ ${title}</div>
+    <div class="st-body">${body}<br>לחצו על 🩺 בסרגל העליון כדי לראות דוח אבחון מלא.</div>
+    <div class="st-code">reason: ${reason}</div>
+  </div>`;
+}
+
+/** מסקנה אוטומטית בראש הדוח, כדי שאפשר יהיה לקרוא אותו במבט אחד */
+function verdict() {
+  const d = engine.diagnostics();
+  const notes = [];
+  if (!proj().media.length) notes.push('לא יובאו קבצים.');
+  for (const p of d.players) {
+    if (p.errorCode) notes.push(`שגיאת פענוח בקובץ "${p.media}" (code ${p.errorCode}). הקודק כנראה לא נתמך בדפדפן הזה.`);
+    else if (p.readyState < 2 && p.ageMs > 3000) notes.push(`"${p.media}" לא הגיע לפריים ראשון תוך ${(p.ageMs / 1000).toFixed(1)} שניות (readyState=${p.readyState}). חשד לקודק לא נתמך.`);
+    else if (p.videoSize === '0x0' && p.kind === 'video') notes.push(`"${p.media}" נטען בלי מסלול וידאו קריא.`);
+  }
+  if (d.blankFrame) notes.push(`הפריים האחרון יצא ריק (סיבה: ${d.lastSkip}).`);
+  if (d.audio !== 'not-created' && d.audio.state !== 'running') notes.push(`הקשר האודיו במצב ${d.audio.state}.`);
+  const errs = log.entries().filter((e) => e.lvl === 'error');
+  if (errs.length) notes.push(`${errs.length} שגיאות ביומן, הראשונה: ${errs[0].msg}`);
+  return notes;
+}
+
+function openDiag() {
+  const notes = verdict();
+  const v = $('#diagVerdict');
+  v.className = `note ${notes.length ? 'verdict-bad' : 'verdict-ok'}`;
+  v.textContent = notes.length ? `נמצאו סימנים: ${notes.join(' ')}` : 'לא נמצאו תקלות בולטות.';
+  $('#diagText').value = log.report();
+  $('#modalDiag').classList.remove('hidden');
+}
+
+function wireDiagnostics() {
+  // ספקי מידע לדוח
+  log.provider('project', () => ({
+    name: proj().name,
+    resolution: `${proj().width}x${proj().height}@${proj().fps}`,
+    duration: +duration().toFixed(2),
+    zoom: state.zoom, tool: state.tool, snap: state.snap,
+    selection: state.selection.size,
+    tracks: proj().tracks.map((t) => ({
+      name: t.name, kind: t.kind, clips: t.clips.length,
+      muted: t.muted, hidden: t.hidden, locked: t.locked,
+    })),
+  }));
+  log.provider('media', () => proj().media.map((m) => {
+    const r = rt(m.id);
+    return {
+      name: m.name, type: m.type, sizeBytes: m.size,
+      duration: +Number(m.duration || 0).toFixed(2),
+      pixels: `${m.width}x${m.height}`, hasAudio: m.hasAudio,
+      fileLinked: !!r?.url, thumbs: r?.thumbs?.length ?? 0, peaks: r?.peaks?.length ?? 0,
+    };
+  }));
+  log.provider('clips', () => allClips().map((c) => ({
+    name: c.name, kind: c.kind, start: +c.start.toFixed(2), dur: +c.duration.toFixed(2),
+    in: +c.inPoint.toFixed(2), speed: c.speed, opacity: c.opacity,
+    fit: c.fit || 'contain', transition: c.tin ? `${c.tin.type}/${c.tin.dur.toFixed(2)}` : null,
+  })));
+
+  engine.onBlank = showStageStatus;
+  engine.onMediaError = (media, err) => {
+    toast(`הדפדפן לא הצליח לפענח את "${media.name}" (קוד ${err?.code ?? '?'}). כנראה קודק לא נתמך.`, 'err', 7000);
+  };
+
+  $('#btnDiag').addEventListener('click', openDiag);
+  $('#diagClose').addEventListener('click', () => $('#modalDiag').classList.add('hidden'));
+  $('#diagRefresh').addEventListener('click', openDiag);
+  $('#diagDownload').addEventListener('click', () => {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    download(new Blob([$('#diagText').value], { type: 'text/plain;charset=utf-8' }), `vedit-diagnostics-${stamp}.txt`);
+  });
+  $('#diagCopy').addEventListener('click', async () => {
+    const text = $('#diagText').value;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('הדוח הועתק ללוח', 'ok');
+    } catch {
+      $('#diagText').select();
+      document.execCommand?.('copy');
+      toast('הדוח נבחר, הקישו Ctrl+C', '', 4000);
+    }
+  });
+  $('#diagClear').addEventListener('click', () => { log.clear(); openDiag(); toast('היומן נוקה'); });
+  $('#modalDiag').addEventListener('click', (e) => {
+    if (e.target.id === 'modalDiag') $('#modalDiag').classList.add('hidden');
+  });
+
+  // מחווה ראשונה של המשתמש: משחררים את גרף האודיו. חייב לקרות אחרי אינטראקציה,
+  // ואלמנט וידאו שמחובר להקשר מושהה עלול לא לפענח פריימים בכלל.
+  const unlock = () => {
+    engine.unlockAudio();
+    L.info('first user gesture');
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+
+  L.info('app booted', { href: location.href });
 }
 
 function wireHelp() {
