@@ -6,6 +6,9 @@
 
 import { uid, toast, once, baseName } from './util.js';
 import { state, proj, emitter, beginChange, commit } from './state.js';
+import { log } from './logger.js';
+
+const L = log.tag('media');
 
 /** mediaId → { file, url, thumbs:[ImageBitmap], peaks:Float32Array, ready:Promise } */
 const registry = new Map();
@@ -35,12 +38,27 @@ export async function importFiles(fileList) {
   const added = [];
   for (const file of files) {
     const type = kindOf(file);
-    if (!type) { toast(`דילגתי על "${file.name}": סוג קובץ לא נתמך`, 'err'); continue; }
+    L.info('import start', { name: file.name, mime: file.type || '(none)', size: file.size, detected: type });
+    if (!type) {
+      L.warn('unsupported file type', { name: file.name, mime: file.type });
+      toast(`דילגתי על "${file.name}": סוג קובץ לא נתמך`, 'err');
+      continue;
+    }
+    // מה הדפדפן חושב על הפורמט הזה עוד לפני שניסינו
+    if (type === 'video' && file.type) {
+      const v = document.createElement('video');
+      const verdict = v.canPlayType(file.type);
+      if (verdict !== 'probably') L.warn('browser is unsure about this format', { mime: file.type, canPlayType: verdict || 'no' });
+    }
     try {
       const item = await probe(file, type);
+      L.info('import ok', {
+        name: item.name, type: item.type, duration: +item.duration.toFixed(2),
+        size: `${item.width}x${item.height}`,
+      });
       added.push(item);
     } catch (err) {
-      console.error(err);
+      L.error('import failed', { name: file.name, err: String(err?.message || err) });
       toast(`לא הצלחתי לפתוח את "${file.name}"`, 'err');
     }
   }
@@ -79,9 +97,13 @@ async function probe(file, type) {
 
   const el = document.createElement(type === 'audio' ? 'audio' : 'video');
   el.preload = 'metadata';
-  el.src = url;
   el.muted = true;
+  el.src = url;
+  el.addEventListener('error', () => L.warn('probe element error', {
+    name: file.name, code: el.error?.code, message: el.error?.message,
+  }));
   const ok = await once(el, 'loadedmetadata', 15000);
+  if (!ok) L.warn('loadedmetadata timed out', { name: file.name, readyState: el.readyState, networkState: el.networkState });
   if (!ok || !isFinite(el.duration) || el.duration <= 0) {
     // חלק מהקבצים (למשל webm מהקלטה) לא מדווחים duration עד שמדלגים לסוף
     el.currentTime = 1e6;
@@ -131,6 +153,8 @@ async function buildThumbs(item) {
   r.thumbs = thumbs;
   r.thumbAspect = THUMB_W / h;
   v.src = '';
+  L.info('filmstrip built', { name: item.name, thumbs: thumbs.length, wanted: n });
+  if (!thumbs.length) L.warn('no thumbnails could be produced', { name: item.name });
   emitter.emit('assets', item.id);
 }
 
@@ -158,8 +182,9 @@ async function buildPeaks(item) {
   let audio;
   try {
     audio = await getAudioCtx().decodeAudioData(buf);
-  } catch {
+  } catch (e) {
     // אין פס קול או שהדפדפן לא יודע לפענח אותו
+    L.info('no decodable audio track', { name: item.name, err: String(e?.message || e) });
     if (item.type === 'video') { item.hasAudio = false; emitter.emit('assets', item.id); }
     return;
   }

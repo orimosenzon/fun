@@ -46,6 +46,7 @@
     </select>
   </div>
 
+  <button id="btnDiag" class="tb" title="דוח אבחון (Ctrl+Shift+D)">🩺</button>
   <button id="btnHelp" class="tb" title="קיצורי מקלדת (?)">?</button>
   <button id="btnExport" class="primary" title="ייצוא הסרט">⬇ ייצוא</button>
 </header>
@@ -263,8 +264,26 @@
       <div><kbd>Shift</kbd>+<kbd>Z</kbd> התאמת הטיימליין למסך</div>
       <div><kbd>M</kbd> השתקת הערוץ הנבחר</div>
       <div><kbd>?</kbd> החלון הזה</div>
+      <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> דוח אבחון</div>
     </div>
     <div class="modal-actions"><button id="helpClose" class="primary">סגור</button></div>
+  </div>
+</div>
+
+<div id="modalDiag" class="modal hidden">
+  <div class="modal-box widest">
+    <h3>דוח אבחון</h3>
+    <p class="note" id="diagVerdict"></p>
+    <textarea id="diagText" class="diag-text" readonly spellcheck="false"></textarea>
+    <p class="note">הדוח מכיל את פרטי הדפדפן, מצב המנוע ויומן האירועים. אין בו תוכן של
+      הווידאו עצמו, רק שמות הקבצים והמאפיינים הטכניים שלהם.</p>
+    <div class="modal-actions">
+      <button id="diagCopy" class="primary">העתק ללוח</button>
+      <button id="diagDownload" class="tb">הורד כקובץ</button>
+      <button id="diagRefresh" class="tb">רענן</button>
+      <button id="diagClear" class="tb">נקה יומן</button>
+      <button id="diagClose" class="tb">סגור</button>
+    </div>
   </div>
 </div>
 

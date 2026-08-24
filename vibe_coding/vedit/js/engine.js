@@ -11,6 +11,9 @@ import {
 } from './state.js';
 import { rt, getAudioCtx } from './media.js';
 import { drawTransition } from './transitions.js';
+import { log } from './logger.js';
+
+const L = log.tag('engine');
 
 const HARD_SYNC = 0.22;    // סטייה שמעליה עושים seek
 const SOFT_SYNC = 0.02;    // סטייה שמעליה מתקנים במהירות הניגון
@@ -33,6 +36,48 @@ export class Engine {
     this.audio = null;
     this.needsRender = true;
     this._dirtySeek = false;
+    this.painted = 0;
+    this.lastSkip = null;
+    log.provider('engine', () => this.diagnostics());
+  }
+
+  /** צילום מצב לדוח האבחון */
+  diagnostics() {
+    const cv = this.canvas;
+    return {
+      playing: this.playing,
+      playhead: +state.playhead.toFixed(3),
+      rate: this.rate,
+      canvas: `${cv.width}x${cv.height}`,
+      cssSize: `${Math.round(cv.clientWidth)}x${Math.round(cv.clientHeight)}`,
+      paintedLastFrame: this.painted,
+      blankFrame: !!this.blankFrame,
+      lastSkipReason: this.lastSkip,
+      audio: this.audio
+        ? { state: this.audio.ac.state, sampleRate: this.audio.ac.sampleRate, baseLatency: this.audio.ac.baseLatency }
+        : 'not-created',
+      players: [...this.players.entries()].map(([clipId, p]) => ({
+        clipId,
+        kind: p.kind,
+        media: mediaById(p.mediaId)?.name,
+        readyState: p.el?.readyState,
+        networkState: p.el?.networkState,
+        videoSize: p.el ? `${p.el.videoWidth || 0}x${p.el.videoHeight || 0}` : null,
+        currentTime: p.el ? +(p.el.currentTime || 0).toFixed(2) : null,
+        paused: p.el?.paused,
+        seeking: p.el?.seeking,
+        volume: p.el ? +(p.el.volume ?? 1).toFixed(2) : null,
+        muted: p.el?.muted,
+        routed: !!p.src,
+        routeFailed: !!p.routeFailed,
+        gain: p.gain ? +p.gain.gain.value.toFixed(3) : null,
+        framesDrawn: p.framesDrawn,
+        broken: !!p.broken,
+        errorCode: p.el?.error?.code ?? null,
+        srcSet: !!p.el?.currentSrc,
+        ageMs: Math.round(performance.now() - (p.born || performance.now())),
+      })),
+    };
   }
 
   /* ─────────── אודיו ─────────── */
@@ -44,7 +89,48 @@ export class Engine {
     master.gain.value = 1;
     master.connect(ac.destination);
     this.audio = { ac, master, stream: null };
+    L.info('audio graph created', { state: ac.state, sampleRate: ac.sampleRate });
+    ac.addEventListener?.('statechange', () => {
+      L.info(`audio context → ${ac.state}`);
+      if (ac.state === 'running') this.routePending();
+    });
     return this.audio;
+  }
+
+  /** מנסה להפעיל את גרף האודיו אחרי מחווה של המשתמש */
+  async unlockAudio() {
+    const a = this.initAudio();
+    if (a.ac.state === 'suspended') {
+      try { await a.ac.resume(); L.info('audio resumed by gesture', { state: a.ac.state }); }
+      catch (e) { L.warn('audio resume failed', { err: String(e) }); }
+    }
+    this.routePending();
+  }
+
+  /** חיבור נגנים שממתינים לניתוב אודיו (נעשה רק כשההקשר פעיל) */
+  routePending() {
+    if (!this.audio || this.audio.ac.state !== 'running') return;
+    for (const [id, p] of this.players) {
+      if (p.kind === 'image' || p.src || !p.wantsAudio) continue;
+      this.routeAudio(p, id);
+    }
+  }
+
+  /** ניתוב אלמנט מדיה לגרף האודיו. נעשה רק כשההקשר פעיל, כי אלמנט שמחובר
+   *  להקשר מושהה עלול להיתקע ולא לפענח פריימים בכלל. */
+  routeAudio(p, clipId) {
+    try {
+      const a = this.audio;
+      p.src = a.ac.createMediaElementSource(p.el);
+      p.gain = a.ac.createGain();
+      p.gain.gain.value = 0;
+      p.src.connect(p.gain).connect(a.master);
+      p.el.volume = 1;
+      L.info('audio routed', { clipId, state: a.ac.state });
+    } catch (e) {
+      p.routeFailed = true;
+      L.warn('audio routing failed', { clipId, err: String(e) });
+    }
   }
 
   /** יעד הקלטה לייצוא: מחזיר MediaStream של המיקס */
@@ -76,30 +162,78 @@ export class Engine {
     }
 
     const el = document.createElement(media.type === 'audio' ? 'audio' : 'video');
-    el.src = r.url;
+    // מגדירים הכול לפני src, ובלי crossOrigin: מדובר ב-blob מקומי, וסימון
+    // crossOrigin עלול לגרום לדפדפן לטעון מחדש או להיכשל בלי סיבה.
     el.preload = 'auto';
     el.playsInline = true;
-    el.crossOrigin = 'anonymous';
-    el.volume = 1;
     el.muted = false;
+    el.volume = 1;
+    el.disableRemotePlayback = true;
 
-    p = { kind: media.type, el, mediaId: media.id, lastUse: performance.now(), ready: false, wantPlay: false };
+    p = {
+      kind: media.type, el, mediaId: media.id, lastUse: performance.now(),
+      ready: false, framesDrawn: 0, wantsAudio: !!media.hasAudio, born: performance.now(),
+    };
+
     // כשמגיע פריים חדש ואנחנו לא בניגון, מרעננים את התצוגה
-    const refresh = () => { p.ready = true; if (!this.playing) this.render(state.playhead); };
-    el.addEventListener('loadeddata', refresh);
-    el.addEventListener('canplay', refresh);
-    el.addEventListener('seeked', refresh);
-    el.addEventListener('error', () => { p.broken = true; });
+    const refresh = (why) => {
+      p.ready = el.readyState >= 2;
+      if (!this.playing) this.render(state.playhead);
+      L.once(`ready:${clip.id}`, 'info', 'player has data', {
+        clipId: clip.id, why, readyState: el.readyState,
+        size: `${el.videoWidth}x${el.videoHeight}`, ms: Math.round(performance.now() - p.born),
+      });
+    };
+    el.addEventListener('loadedmetadata', () => refresh('loadedmetadata'));
+    el.addEventListener('loadeddata', () => refresh('loadeddata'));
+    el.addEventListener('canplay', () => refresh('canplay'));
+    el.addEventListener('seeked', () => {
+      p.seeking = false;
+      clearTimeout(p.seekWatch);
+      refresh('seeked');
+    });
+    el.addEventListener('seeking', () => {
+      p.seeking = true;
+      // שומר: אם דילוג לא מסתיים, זה בדיוק המצב שמשאיר את המסך שחור
+      clearTimeout(p.seekWatch);
+      const target = el.currentTime;
+      p.seekWatch = setTimeout(() => {
+        if (!p.seeking) return;
+        L.error('seek did not complete', {
+          clipId: clip.id, name: media.name, target: +target.toFixed(2),
+          readyState: el.readyState, networkState: el.networkState,
+          buffered: el.buffered.length ? `${el.buffered.start(0).toFixed(1)}-${el.buffered.end(el.buffered.length - 1).toFixed(1)}` : 'none',
+        });
+      }, 3000);
+    });
+    el.addEventListener('stalled', () => L.every(`stalled:${clip.id}`, 4000, 'warn', 'media stalled', { clipId: clip.id, readyState: el.readyState }));
+    el.addEventListener('waiting', () => L.every(`waiting:${clip.id}`, 4000, 'warn', 'media waiting for data', { clipId: clip.id, readyState: el.readyState }));
+    el.addEventListener('error', () => {
+      p.broken = true;
+      const err = el.error;
+      L.error('media element error', {
+        clipId: clip.id, name: media.name,
+        code: err?.code, message: err?.message,
+        networkState: el.networkState, readyState: el.readyState,
+      });
+      this.onMediaError?.(media, err);
+    });
 
-    // ניתוב אודיו
+    el.src = r.url;
+    try { el.load(); } catch (e) { L.warn('load() threw', { err: String(e) }); }
+
+    L.info('player created', {
+      clipId: clip.id, media: media.name, type: media.type,
+      hasAudio: media.hasAudio, players: this.players.size + 1,
+    });
+
+    // ניתוב אודיו רק אם הקשר האודיו כבר פעיל. אחרת ממתינים למחווה של המשתמש:
+    // אלמנט וידאו שמחובר ל-AudioContext מושהה עלול לא לפענח פריימים כלל.
     if (media.hasAudio) {
-      try {
-        const a = this.initAudio();
-        p.src = a.ac.createMediaElementSource(el);
-        p.gain = a.ac.createGain();
-        p.gain.gain.value = 0;
-        p.src.connect(p.gain).connect(a.master);
-      } catch (e) { console.warn('audio route failed', e); }
+      const a = this.audio;
+      if (a && a.ac.state === 'running') this.routeAudio(p, clip.id);
+      else L.once(`audiodefer:${clip.id}`, 'info', 'audio routing deferred (context not running)',
+        { clipId: clip.id, state: a ? a.ac.state : 'no-context' });
     }
 
     this.players.set(clip.id, p);
@@ -225,18 +359,24 @@ export class Engine {
   }
 
   applyGains(act, t) {
-    if (!this.audio) return;
-    const ac = this.audio.ac;
-    const now = ac.currentTime;
+    const ac = this.audio?.ac;
+    const now = ac?.currentTime ?? 0;
     for (const a of act) {
       const p = this.players.get(a.clip.id);
-      if (!p?.gain) continue;
+      if (!p || p.kind === 'image') continue;
       const g = this.playing ? clipGain(a.clip, a.track, t, a.role === 'prev') * a.mix : 0;
-      const cur = p.gain.gain.value;
-      if (Math.abs(cur - g) > 0.001) {
-        p.gain.gain.cancelScheduledValues(now);
-        p.gain.gain.setValueAtTime(cur, now);
-        p.gain.gain.linearRampToValueAtTime(g, now + 0.03);
+
+      if (p.gain) {
+        const cur = p.gain.gain.value;
+        if (Math.abs(cur - g) > 0.001) {
+          p.gain.gain.cancelScheduledValues(now);
+          p.gain.gain.setValueAtTime(cur, now);
+          p.gain.gain.linearRampToValueAtTime(g, now + 0.03);
+        }
+      } else {
+        // לא מנותב לגרף (למשל לפני מחווה של המשתמש): נופלים לעוצמה של האלמנט
+        const v = clamp(g, 0, 1);
+        if (Math.abs(p.el.volume - v) > 0.01) p.el.volume = v;
       }
     }
   }
@@ -247,6 +387,7 @@ export class Engine {
     const W = proj().width, H = proj().height;
     if (this.canvas.width !== W || this.canvas.height !== H) {
       this.canvas.width = W; this.canvas.height = H;
+      L.info('canvas resized', { W, H });
     }
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -256,11 +397,26 @@ export class Engine {
     ctx.fillRect(0, 0, W, H);
 
     // ערוצי וידאו: מציירים מלמטה למעלה (הראשון במערך הוא העליון)
+    this.painted = 0;
+    this.lastSkip = null;
     const vTracks = proj().tracks.filter((tr) => tr.kind === 'video' && !tr.hidden);
     for (let i = vTracks.length - 1; i >= 0; i--) {
       this.renderTrack(ctx, vTracks[i], t, W, H);
     }
     this.needsRender = false;
+
+    // אבחון: מסך שחור למרות שיש קליפ מתחת לסמן
+    const expected = proj().tracks.some((tr) => tr.kind === 'video' && !tr.hidden && clipAt(tr, t));
+    this.blankFrame = expected && this.painted === 0;
+    if (this.blankFrame) {
+      L.every('blank', 1500, 'warn', 'frame is blank although a clip is under the playhead', {
+        t: +t.toFixed(2), reason: this.lastSkip, playing: this.playing,
+      });
+      this.onBlank?.(this.lastSkip);
+    } else if (this.painted) {
+      this.onBlank?.(null);
+    }
+    return this.painted;
   }
 
   renderTrack(ctx, track, t, W, H) {
@@ -295,7 +451,13 @@ export class Engine {
         if (toEnd < clip.vFadeOut) alpha *= clamp(toEnd / clip.vFadeOut, 0, 1);
       }
     }
-    if (alpha <= 0.001) return;
+    const skip = (reason, extra) => {
+      this.lastSkip = reason;
+      L.every(`skip:${clip.id}:${reason}`, 2000, 'warn', `clip not drawn: ${reason}`,
+        { clipId: clip.id, name: clip.name, t: +t.toFixed(2), ...extra });
+    };
+
+    if (alpha <= 0.001) { if (!tail) skip('alpha-zero', { alpha }); return; }
 
     ctx.save();
     ctx.globalAlpha = base * alpha;
@@ -303,20 +465,47 @@ export class Engine {
     if (clip.kind === 'title') {
       drawTitle(ctx, clip, W, H);
       ctx.restore();
+      this.painted++;
       return;
     }
 
     const p = this.player(clip);
-    if (!p) { ctx.restore(); return; }
+    if (!p) { ctx.restore(); skip('no-player', { mediaId: clip.mediaId, hasFile: !!rt(clip.mediaId)?.url }); return; }
     const el = p.el;
     const media = mediaById(clip.mediaId);
-    if (!media || media.type === 'audio') { ctx.restore(); return; }
+    if (!media) { ctx.restore(); skip('media-missing', { mediaId: clip.mediaId }); return; }
+    if (media.type === 'audio') { ctx.restore(); return; }   // אודיו לא מצויר, זה תקין
+    if (!el) { ctx.restore(); skip('no-element'); return; }
 
-    let sw = media.width || el?.videoWidth || 0;
-    let sh = media.height || el?.videoHeight || 0;
+    let sw = media.width || el.videoWidth || 0;
+    let sh = media.height || el.videoHeight || 0;
     if (p.kind === 'image') { sw = el.naturalWidth; sh = el.naturalHeight; }
-    if (!sw || !sh) { ctx.restore(); return; }
-    if (p.kind !== 'image' && el.readyState < 2) { ctx.restore(); return; }
+    if (!sw || !sh) {
+      ctx.restore();
+      skip('no-size', { mediaW: media.width, mediaH: media.height, videoW: el.videoWidth, videoH: el.videoHeight });
+      return;
+    }
+    // בזמן דילוג (seek) האלמנט יורד ל-readyState 1 ואין לו פריים לצייר.
+    // במקום להבהב בשחור מציירים את הפריים הטוב האחרון ששמרנו.
+    const usable = p.kind === 'image' || el.readyState >= 2;
+    let source = el;
+    if (!usable) {
+      if (p.cache) {
+        source = p.cache;
+        sw = p.cache.width; sh = p.cache.height;
+        L.every(`held:${clip.id}`, 3000, 'debug', 'holding last frame while seeking',
+          { clipId: clip.id, readyState: el.readyState, seeking: el.seeking });
+      } else {
+        ctx.restore();
+        skip('not-ready', {
+          readyState: el.readyState, networkState: el.networkState,
+          currentTime: +el.currentTime.toFixed(2), seeking: el.seeking,
+          broken: !!p.broken, errCode: el.error?.code,
+          ageMs: Math.round(performance.now() - p.born),
+        });
+        return;
+      }
+    }
 
     const f = clip.filters || {};
     const parts = [];
@@ -345,8 +534,37 @@ export class Engine {
       ctx.rect(-W / (2 * sc), -H / (2 * sc), W / sc, H / sc);
       ctx.clip();
     }
-    try { ctx.drawImage(el, -dw / 2, -dh / 2, dw, dh); } catch {}
+    try {
+      ctx.drawImage(source, -dw / 2, -dh / 2, dw, dh);
+      this.painted++;
+      p.framesDrawn++;
+      L.once(`firstframe:${clip.id}`, 'info', 'first frame drawn', {
+        clipId: clip.id, name: clip.name, src: `${sw}x${sh}`,
+        ms: Math.round(performance.now() - p.born),
+      });
+      if (usable && p.kind === 'video') this.cacheFrame(p, el);
+    } catch (e) {
+      skip('drawImage-threw', { err: String(e), readyState: el.readyState });
+    }
     ctx.restore();
+  }
+
+  /** שומר עותק של הפריים האחרון, כדי שיהיה מה להציג בזמן דילוג */
+  cacheFrame(p, el) {
+    const vw = el.videoWidth, vh = el.videoHeight;
+    if (!vw || !vh) return;
+    // מגבילים את הרזולוציה של המטמון, אין טעם לשמור 4K בשביל תמונת ביניים
+    const scale = Math.min(1, 1280 / vw);
+    const cw = Math.max(2, Math.round(vw * scale)), ch = Math.max(2, Math.round(vh * scale));
+    if (!p.cache) {
+      p.cache = document.createElement('canvas');
+      p.cacheCtx = p.cache.getContext('2d', { alpha: false });
+    }
+    if (p.cache.width !== cw || p.cache.height !== ch) { p.cache.width = cw; p.cache.height = ch; }
+    try {
+      p.cacheCtx.drawImage(el, 0, 0, cw, ch);
+      p.cacheTime = el.currentTime;
+    } catch { /* אין פריים זמין, נשמור בפעם הבאה */ }
   }
 
   /* ─────────── שליטה ─────────── */
@@ -359,10 +577,10 @@ export class Engine {
   async play() {
     if (this.playing) return;
     const total = duration();
-    if (total <= 0) return;
+    if (total <= 0) { L.warn('play ignored: empty timeline'); return; }
     if (state.playhead >= total - 1 / fps()) state.playhead = 0;
-    this.initAudio();
-    if (this.audio.ac.state === 'suspended') { try { await this.audio.ac.resume(); } catch {} }
+    await this.unlockAudio();
+    L.info('play', { from: +state.playhead.toFixed(2), total: +total.toFixed(2), rate: this.rate });
     this.playing = true;
     state.playing = true;
     this.clockBase = state.playhead;
