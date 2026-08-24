@@ -501,6 +501,39 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "vedit: עורך וידאו בדפדפן",
+          "icon": "🎬",
+          "theme": "t-indigo",
+          "tags": [
+            "Canvas",
+            "WebAudio",
+            "MediaRecorder",
+            "IndexedDB",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#818cf8\">עריכת וידאו בלי להתקין כלום.</strong><br> טיימליין רב-ערוצי, חיתוך וגרירה של קטעים, 12 מעברים בין סצנות, כותרות, דעיכות ובקרת צבע ואודיו. הכול נשמר במחשב שלכם ולא עולה לשום שרת. בסוף מייצאים MP4.",
+          "links": [
+            {
+              "href": "vedit/index.html",
+              "style": "live",
+              "label": "▶ פתח את העורך",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/vedit",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "דרך קיצור — שבילי פרדס חנה-כרכור",
           "icon": "🥾",
           "theme": "t-green",

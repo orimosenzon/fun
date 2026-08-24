@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="he" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vedit: עורך וידאו בדפדפן</title>
+<meta name="description" content="עורך וידאו מקוון שרץ כולו בדפדפן: טיימליין, חיתוך, מעברים וייצוא. שום קובץ לא עוזב את המחשב.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════ שורת כלים עליונה ══════════════ -->
+<header id="topbar">
+  <div class="brand"><span class="logo">🎬</span><span class="name">vedit</span></div>
+
+  <input id="projectName" class="proj-name" value="פרויקט חדש" spellcheck="false" title="שם הפרויקט">
+
+  <div class="topgroup">
+    <button id="btnUndo" class="tb" title="בטל (Ctrl+Z)" disabled>↶</button>
+    <button id="btnRedo" class="tb" title="בצע שוב (Ctrl+Shift+Z)" disabled>↷</button>
+  </div>
+
+  <div class="topgroup">
+    <button id="btnSaveProj" class="tb" title="שמירת הפרויקט לקובץ">שמור</button>
+    <button id="btnOpenProj" class="tb" title="פתיחת פרויקט מקובץ">פתח</button>
+    <button id="btnNewProj" class="tb" title="פרויקט חדש">חדש</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="topgroup res-group">
+    <label class="mini">רזולוציה</label>
+    <select id="projRes" class="mini-select">
+      <option value="1920x1080">1080p</option>
+      <option value="1280x720">720p</option>
+      <option value="854x480">480p</option>
+      <option value="1080x1920">1080×1920 (אנכי)</option>
+      <option value="1080x1080">1080×1080 (ריבוע)</option>
+    </select>
+    <select id="projFps" class="mini-select" title="פריימים לשנייה">
+      <option value="24">24 fps</option>
+      <option value="25">25 fps</option>
+      <option value="30" selected>30 fps</option>
+      <option value="60">60 fps</option>
+    </select>
+  </div>
+
+  <button id="btnHelp" class="tb" title="קיצורי מקלדת (?)">?</button>
+  <button id="btnExport" class="primary" title="ייצוא הסרט">⬇ ייצוא</button>
+</header>
+
+<!-- ══════════════ גוף האפליקציה ══════════════ -->
+<main id="workspace">
+
+  <div id="upper">
+    <!-- ─────── פאנל שמאלי: מדיה / מעברים / טקסט ─────── -->
+    <section id="leftPanel" class="panel">
+      <nav class="tabs">
+        <button class="tab active" data-tab="media">מדיה</button>
+        <button class="tab" data-tab="transitions">מעברים</button>
+        <button class="tab" data-tab="titles">כותרות</button>
+      </nav>
+
+      <div class="tabpage active" data-page="media">
+        <div class="pool-actions">
+          <button id="btnImport" class="wide">＋ ייבוא קבצים</button>
+          <input type="file" id="fileInput" accept="video/*,audio/*,image/*" multiple hidden>
+        </div>
+        <div id="mediaPool" class="pool">
+          <div class="pool-empty">
+            <div class="big">🎞️</div>
+            <p>גררו לכאן וידאו, אודיו או תמונות</p>
+            <p class="dim">או לחצו על "ייבוא קבצים"</p>
+          </div>
+        </div>
+        <div class="pool-hint">גררו פריט אל הטיימליין, או לחצו פעמיים כדי להוסיף לסוף</div>
+      </div>
+
+      <div class="tabpage" data-page="transitions">
+        <p class="page-hint">גררו מעבר אל הגבול שבין שני קליפים בטיימליין.</p>
+        <div id="transitionList" class="trans-list"></div>
+      </div>
+
+      <div class="tabpage" data-page="titles">
+        <p class="page-hint">הוספת כיתוב שיופיע מעל הווידאו.</p>
+        <div class="titles-form">
+          <label>טקסט</label>
+          <textarea id="titleText" rows="2" placeholder="הכניסו כאן טקסט…">כותרת</textarea>
+          <div class="row2">
+            <div><label>גודל</label><input type="number" id="titleSize" value="72" min="8" max="400"></div>
+            <div><label>צבע</label><input type="color" id="titleColor" value="#ffffff"></div>
+          </div>
+          <label>סגנון</label>
+          <select id="titleStyle">
+            <option value="plain">רגיל</option>
+            <option value="shadow" selected>עם צל</option>
+            <option value="box">על רקע כהה</option>
+            <option value="lower-third">כותרת תחתונה</option>
+          </select>
+          <button id="btnAddTitle" class="wide">＋ הוספת כותרת לטיימליין</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="vsplit" data-split="left"></div>
+
+    <!-- ─────── מוניטור התצוגה ─────── -->
+    <section id="monitor" class="panel">
+      <div class="monitor-head">
+        <span class="mon-title">תצוגה</span>
+        <span id="monInfo" class="dim"></span>
+        <div class="spacer"></div>
+        <select id="zoomFit" class="mini-select" title="גודל תצוגה">
+          <option value="fit">התאמה</option>
+          <option value="1">100%</option>
+          <option value="0.5">50%</option>
+          <option value="0.25">25%</option>
+        </select>
+      </div>
+
+      <div id="stageWrap">
+        <canvas id="stage" width="1920" height="1080"></canvas>
+        <div id="stageOverlay"></div>
+        <div id="spinner" class="hidden"><div class="ring"></div></div>
+      </div>
+
+      <div class="transport">
+        <span id="tcCur" class="tc">00:00:00:00</span>
+        <div class="tbtns">
+          <button id="btnStart" class="tb" title="לתחילת הסרט (Home)">⏮</button>
+          <button id="btnPrevFrame" class="tb" title="פריים אחורה (←)">◀|</button>
+          <button id="btnPlay" class="tb play" title="נגן / עצור (רווח)">▶</button>
+          <button id="btnNextFrame" class="tb" title="פריים קדימה (→)">|▶</button>
+          <button id="btnEnd" class="tb" title="לסוף הסרט (End)">⏭</button>
+          <span class="sep"></span>
+          <button id="btnSplitT" class="tb" title="חיתוך בנקודת הסמן (S)">✂</button>
+          <button id="btnMarkIn" class="tb" title="סימון נקודת כניסה (I)">[</button>
+          <button id="btnMarkOut" class="tb" title="סימון נקודת יציאה (O)">]</button>
+          <button id="btnClearMarks" class="tb" title="ניקוי סימונים">⌫</button>
+          <span class="sep"></span>
+          <button id="btnSnapshot" class="tb" title="שמירת הפריים הנוכחי כתמונה">📷</button>
+        </div>
+        <span id="tcTotal" class="tc dim">00:00:00:00</span>
+      </div>
+    </section>
+
+    <div class="vsplit" data-split="right"></div>
+
+    <!-- ─────── אינספקטור ─────── -->
+    <section id="inspector" class="panel">
+      <div class="insp-head">מאפיינים</div>
+      <div id="inspBody" class="insp-body">
+        <div class="insp-empty">בחרו קליפ בטיימליין<br><span class="dim">כדי לערוך את מאפייניו</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hsplit"></div>
+
+  <!-- ─────── טיימליין ─────── -->
+  <section id="timelinePanel" class="panel">
+    <div class="tl-toolbar">
+      <div class="toolgroup" id="toolModes">
+        <button class="tool active" data-tool="select" title="בחירה (V)">➤</button>
+        <button class="tool" data-tool="razor" title="סכין חיתוך (C)">✂</button>
+        <button class="tool" data-tool="hand" title="גרירת התצוגה (H)">✋</button>
+      </div>
+      <span class="sep"></span>
+      <button id="btnSplit" class="tool" title="חיתוך הקליפ בנקודת הסמן (S)">⎸✂⎸</button>
+      <button id="btnDelete" class="tool" title="מחיקת הנבחר (Delete)">🗑</button>
+      <button id="btnRipple" class="tool" title="מחיקה עם סגירת החור (Shift+Delete)">⇤🗑</button>
+      <button id="btnDup" class="tool" title="שכפול (Ctrl+D)">⧉</button>
+      <span class="sep"></span>
+      <button id="btnCutSel" class="tool" title="הסרת הקטע שבין הסימונים (Shift+X)">✂ הוצא קטע</button>
+      <span class="sep"></span>
+      <button id="btnAddVideoTrack" class="tool" title="הוספת ערוץ וידאו">＋ ערוץ וידאו</button>
+      <button id="btnAddAudioTrack" class="tool" title="הוספת ערוץ אודיו">＋ ערוץ אודיו</button>
+      <div class="spacer"></div>
+      <label class="chk"><input type="checkbox" id="chkSnap" checked> הצמדה</label>
+      <span class="sep"></span>
+      <button id="btnZoomOut" class="tool" title="הקטנת התצוגה (-)">－</button>
+      <input type="range" id="zoomRange" min="0" max="100" value="40" title="מרחק מבט">
+      <button id="btnZoomIn" class="tool" title="הגדלת התצוגה (+)">＋</button>
+      <button id="btnZoomFitTl" class="tool" title="התאמה למסך (Shift+Z)">⇔</button>
+    </div>
+
+    <div class="tl-body">
+      <div class="tl-heads">
+        <div class="tl-heads-corner"></div>
+        <div id="trackHeads"></div>
+      </div>
+      <div class="tl-scroll" id="tlScroll">
+        <div class="tl-inner" id="tlInner">
+          <canvas id="ruler" height="26"></canvas>
+          <div id="tracks"></div>
+          <div id="playhead"><div class="ph-head"></div></div>
+          <div id="inoutBand" class="hidden"></div>
+          <div id="dropGhost" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ══════════════ שכבות-על ══════════════ -->
+<div id="dropZone" class="hidden"><div class="dz-inner">🎞️<br>שחררו כדי לייבא</div></div>
+
+<div id="modalExport" class="modal hidden">
+  <div class="modal-box">
+    <h3>ייצוא הסרט</h3>
+    <div class="form">
+      <label>רזולוציית ייצוא</label>
+      <select id="expRes">
+        <option value="1">מלאה (כמו הפרויקט)</option>
+        <option value="0.75">75%</option>
+        <option value="0.5">50%</option>
+      </select>
+      <label>איכות</label>
+      <select id="expQuality">
+        <option value="16000000">גבוהה (16 Mbps)</option>
+        <option value="8000000" selected>בינונית (8 Mbps)</option>
+        <option value="4000000">נמוכה (4 Mbps)</option>
+      </select>
+      <label>פורמט</label>
+      <select id="expFormat"></select>
+      <label class="chk"><input type="checkbox" id="expRange"> לייצא רק את הקטע שבין הסימונים</label>
+      <p id="expNote" class="note"></p>
+    </div>
+    <div id="expProgress" class="hidden">
+      <div class="bar"><div id="expBar"></div></div>
+      <p id="expStatus" class="dim">מתחיל…</p>
+    </div>
+    <div class="modal-actions">
+      <button id="expCancel" class="tb">ביטול</button>
+      <button id="expStart" class="primary">התחל ייצוא</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalHelp" class="modal hidden">
+  <div class="modal-box wide">
+    <h3>קיצורי מקלדת</h3>
+    <div class="keys">
+      <div><kbd>רווח</kbd> נגן / עצור</div>
+      <div><kbd>K</kbd> עצירה</div>
+      <div><kbd>J</kbd> / <kbd>L</kbd> אחורה / קדימה (לחיצות חוזרות = מהר יותר)</div>
+      <div><kbd>←</kbd> <kbd>→</kbd> פריים אחורה / קדימה</div>
+      <div><kbd>Shift</kbd>+<kbd>←→</kbd> קפיצה של שנייה</div>
+      <div><kbd>Home</kbd> / <kbd>End</kbd> לתחילת / סוף הסרט</div>
+      <div><kbd>S</kbd> או <kbd>Ctrl</kbd>+<kbd>K</kbd> חיתוך בנקודת הסמן</div>
+      <div><kbd>V</kbd> / <kbd>C</kbd> / <kbd>H</kbd> כלי בחירה / סכין / יד</div>
+      <div><kbd>Delete</kbd> מחיקת הנבחר</div>
+      <div><kbd>Shift</kbd>+<kbd>Delete</kbd> מחיקה וסגירת החור</div>
+      <div><kbd>Ctrl</kbd>+<kbd>D</kbd> שכפול קליפ</div>
+      <div><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd> העתקה / הדבקה בנקודת הסמן</div>
+      <div><kbd>Ctrl</kbd>+<kbd>X</kbd> גזירה</div>
+      <div><kbd>Ctrl</kbd>+<kbd>A</kbd> בחירת הכל</div>
+      <div><kbd>I</kbd> / <kbd>O</kbd> סימון כניסה / יציאה</div>
+      <div><kbd>Shift</kbd>+<kbd>X</kbd> הוצאת הקטע שבין הסימונים</div>
+      <div><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> בטל / בצע שוב</div>
+      <div><kbd>+</kbd> / <kbd>−</kbd> זום בטיימליין</div>
+      <div><kbd>Shift</kbd>+<kbd>Z</kbd> התאמת הטיימליין למסך</div>
+      <div><kbd>M</kbd> השתקת הערוץ הנבחר</div>
+      <div><kbd>?</kbd> החלון הזה</div>
+    </div>
+    <div class="modal-actions"><button id="helpClose" class="primary">סגור</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="ctxMenu" class="ctx hidden"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
