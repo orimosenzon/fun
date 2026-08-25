@@ -45,6 +45,24 @@ const Arrange = (() => {
 
   const layer = () => Layers.byId(Layers.PLACES_ID);
 
+  /** The places still waiting for a position, best first.
+   *
+   *  There are around two hundred of them and no automatic source left that
+   *  can place any more, so this is a queue somebody works through by hand -
+   *  and it will realistically be worked through in sittings, not in one go.
+   *  Ordering it by how much the article actually offers means the pins that
+   *  earn their place on the map get done first, and a run of thin stubs at
+   *  the end can be abandoned without losing anything that mattered. */
+  function pending() {
+    const worth = (p) =>
+      (p.photos && p.photos.length ? 1000 : 0) +
+      (p.links && p.links.length ? 120 : 0) +
+      Math.min(400, (p.note || '').length);
+    return layer().waypoints
+      .filter((p) => p.unplaced)
+      .sort((a, b) => worth(b) - worth(a) || a.name.localeCompare(b.name, 'he'));
+  }
+
   /* ---------- entering and leaving ---------- */
 
   function open(place) {
@@ -64,7 +82,7 @@ const Arrange = (() => {
     Layers.setArranging(true);
     if (!layer().on) { layer().on = true; Layers.applyVisibility(); }
 
-    queue = layer().waypoints.filter((p) => p.unplaced);
+    queue = pending();
     map.on('moveend', render);
     window.addEventListener('keydown', onKey);
 
@@ -384,7 +402,7 @@ const Arrange = (() => {
       moves.clear();
       dropped = 0;
       reloadPlaces(doc);
-      queue = layer().waypoints.filter((p) => p.unplaced);
+      queue = pending();
       clearMarkers();
       render();
       focus(null, false);
