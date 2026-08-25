@@ -403,7 +403,8 @@ function panoActs(it, labels, hint) {
 /* In-app navigation first: Google would route *around* a shortcut it does not
  * know exists. The hand-off stays as a secondary way to reach the area. */
 function navActs(it, hint) {
-  const first = it.entries ? it.entries[0] : it;
+  const first = (it.entries && it.entries[0]) || it;
+  if (first.lat == null) return '';
   return `<button class="act act-nav" id="go">
       ${icon(I_WALK)}
       <span class="lbl">נווט אליי לכאן
@@ -538,10 +539,19 @@ function showDetail(it) {
     }
   }
 
-  // An unpinned place has no position at all, and an entry built from nothing
-  // would send Street View to the middle of the Atlantic.
-  const entries = it.entries || (it.lat == null ? []
-    : [{ lat: it.lat, lng: it.lng, heading: 0, view: null }]);
+  // Entries are the two ends you can walk to. Trails from the dataset carry
+  // them worked out properly; anything else - a queued submission, a segment
+  // from the cycling plan - has only a line, so take its ends.
+  //
+  // An unpinned place has neither, and an entry built from nothing would send
+  // Street View to the middle of the Atlantic.
+  const ends = (path) => [
+    { lat: path[0][0], lng: path[0][1] },
+    { lat: path[path.length - 1][0], lng: path[path.length - 1][1] }
+  ];
+  const entries = it.entries
+    || (it.path && it.path.length > 1 ? ends(it.path)
+      : it.lat == null ? [] : [{ lat: it.lat, lng: it.lng, heading: 0, view: null }]);
   it = { ...it, entries };
 
   let body;
@@ -559,6 +569,23 @@ function showDetail(it) {
       </div>
       ${linksBlock(it)}
       <p class="src">${escapeHtml(layer.credit || '')}</p>`;
+  } else if (it.pending) {
+    body = `
+      <p class="unplaced">שביל שהתקבל ועוד לא אושר. הוא לא מופיע למי שרק פותח
+        את האפליקציה.</p>
+      <h3>הגעה</h3>
+      <div class="acts">${navActs(it, 'ניווט לפי התוואי שנשלח')}</div>
+      ${linksBlock(it)}
+      <h3>אישור</h3>
+      <div class="acts">
+        <button class="act act-nav" data-queue="approve"><span class="lbl">אשר והוסף למפה
+          <span class="hint">ייכנס מיד לכל מי שפותח את האפליקציה</span></span></button>
+        <button class="act danger" data-queue="reject"><span class="lbl">דחה
+          <span class="hint">יוסר מהתור. נשמר בהיסטוריה</span></span></button>
+      </div>
+      <p id="pub-msg" class="pub-msg" hidden></p>
+      <p class="src">${it.by ? `נשלח על ידי ${escapeHtml(it.by)} · ` : ''}${
+        it.submitted ? new Date(it.submitted).toLocaleDateString('he-IL') : ''}</p>`;
   } else if (it.draft) {
     body = `
       <h3>הגעה</h3>
@@ -645,6 +672,30 @@ function wirePublished(it) {
       try {
         await reloadShared(await Store.removePhoto(it.id, +btn.dataset.drop, it.name));
         select(it.id, false);
+      } catch (err) {
+        btn.disabled = false;
+        say('נכשל: ' + err.message, true);
+      }
+    });
+  });
+
+  el('detail').querySelectorAll('[data-queue]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const ok = btn.dataset.queue === 'approve';
+      if (!ok && !confirm(`לדחות את "${it.name}"?\nהוא יוסר מהתור.`)) return;
+      btn.disabled = true;
+      say(ok ? 'מאשר…' : 'מסיר…');
+      try {
+        if (ok) {
+          const { id, doc } = await Store.approve(it.id);
+          await reloadShared(doc);
+          await refreshQueue();
+          select(id);
+        } else {
+          await Store.reject(it.id, it.name);
+          deselect();
+          await refreshQueue();
+        }
       } catch (err) {
         btn.disabled = false;
         say('נכשל: ' + err.message, true);
@@ -1228,12 +1279,14 @@ function paintStats() {
   if (s.waypoints) bits.push(`${s.waypoints} נקודות ציון`);
   if (s.places) bits.push(`${s.places} מקומות`);
   if (s.photos) bits.push(`${s.photos} תמונות`);
+  if (s.waiting) bits.push(plural(s.waiting, 'שביל אחד ממתין לאישור', 'שבילים ממתינים לאישור'));
   if (!bits.length) bits.push('אין שכבה דלוקה');
   if (Store.offline) bits.push('לא מחובר, מציג עותק שמור');
   el('stats').textContent = bits.join(' · ');
 
   const who = Store.editor();
-  el('editor-btn').textContent = who ? `עורך: ${who}` : 'מצב עורך';
+  el('editor-btn').textContent = who ? (who === 'עורך' ? 'עריכה דלוקה' : `עריכה · ${who}`)
+    : 'מצב עריכה';
   el('editor-btn').classList.toggle('on', !!who);
 
   // Only an editor can do anything about an unplaced place, so the shortcut to
@@ -1284,7 +1337,7 @@ async function boot() {
   wireControls();
   // Confirming the stored token needs the network, so it must not hold up the
   // list. The editor badge and the publish buttons appear a moment later.
-  Store.resume().then((who) => { if (who) repaint(); });
+  Store.resume().then(() => { repaint(); refreshQueue(); });
 
   if (map) {
     await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
@@ -1313,6 +1366,21 @@ async function reloadShared(doc) {
   }
 }
 
+/** Pull the review queue and hand it to the layer registry.
+ *
+ *  Only worth a request while edit mode is on: for everybody else the queue is
+ *  invisible by design, and asking for it would be a round trip that changes
+ *  nothing on screen. */
+async function refreshQueue() {
+  if (!Store.isEditor()) { Layers.setPending([]); return; }
+  try {
+    const doc = await Store.queue();
+    Layers.setPending(doc.items || []);
+  } catch (err) {
+    console.error('queue unavailable', err);
+  }
+}
+
 /** Same, for the pardespedia layer after a pin is dropped or cleared. */
 function reloadPlaces(doc) {
   try {
@@ -1323,68 +1391,83 @@ function reloadPlaces(doc) {
   }
 }
 
-/* ---------- editor mode ----------
+/* ---------- edit mode ----------
  *
- * Reading needs nothing. Publishing needs a token, pasted once per device and
- * scoped to the data repo alone, which is the whole reason the data sits in a
- * repo of its own: a token that leaks off someone's phone can touch published
- * trail data and nothing else, and every change it makes is a commit.
+ * Nothing here is a permission. Writing goes through the worker, which takes no
+ * credential from anyone, so this switch guards nothing that a determined
+ * person could not get past by ignoring the app entirely.
+ *
+ * It earns its place anyway: most people opening this are looking for a way
+ * through a block of houses, not editing a dataset, and a screen full of
+ * "remove from the map" buttons is worse for them than one extra tap is for
+ * the handful who contribute.
  */
 
 function editorSheet() {
-  const who = Store.editor();
-  el('editor-card').innerHTML = who ? `
+  const on = Store.editing();
+  const head = `
     <header class="sheet-head">
-      <h2>מצב עורך</h2>
+      <h2>מצב עריכה</h2>
       <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
-    </header>
-    <p class="sheet-lead">מחובר בתור <b>${escapeHtml(who)}</b>. שביל שתפרסם ייכנס
-      למסד המשותף מיד, וכל מי שיפתח את האפליקציה יראה אותו.</p>
-    <button class="big-act" data-act="out"><b>התנתק מהמכשיר הזה</b>
-      <span>המפתח יימחק מהדפדפן. הטיוטות המקומיות נשארות.</span></button>` : `
-    <header class="sheet-head">
-      <h2>מצב עורך</h2>
-      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
-    </header>
-    <p class="sheet-lead">כדי לפרסם שבילים למסד המשותף צריך מפתח אישי. זה חד פעמי
-      למכשיר. בלי מפתח האפליקציה עובדת רגיל, והשבילים שתקליט נשארים אצלך ואפשר
-      לשלוח אותם ליוזמה כקובץ.</p>
-    <ol class="steps">
-      <li><a href="${Store.TOKEN_HELP}" target="_blank" rel="noopener">יצירת מפתח בגיטהאב ↗</a></li>
-      <li>מגבילים לריפו אחד בלבד:
-        <code>Repository access › Only select repositories</code>
-        <code>${Store.REPO}</code></li>
-      <li>נותנים הרשאת כתיבה לתוכן:
-        <code>Permissions › Contents › Read and write</code></li>
-      <li>מייצרים, מעתיקים, ומדביקים כאן</li>
-    </ol>
-    <label class="fld"><span>המפתח</span>
-      <input id="tok" type="password" autocomplete="off" spellcheck="false"
-             placeholder="github_pat_…"></label>
-    <p id="tok-err" class="tok-err" hidden></p>
-    <button class="big-act primary" data-act="in"><b>התחבר</b></button>`;
+    </header>`;
+
+  if (!Store.WORKER) {
+    el('editor-card').innerHTML = `${head}
+      <p class="sheet-lead">שרת הכתיבה עוד לא נפרס, ולכן האפליקציה במצב קריאה בלבד.
+        כל השאר עובד: המפה, הרשימה, החיפוש, הניווט, וגם הקלטת שביל חדש, שנשמר
+        במכשיר שלך עד שאפשר יהיה לשלוח אותו.</p>
+      <p class="sheet-credit">ההוראות ב-<code>worker/README.md</code> בריפו.</p>`;
+    el('editor-sheet').hidden = false;
+    return;
+  }
+
+  if (Store.writable() === false) {
+    el('editor-card').innerHTML = `${head}
+      <p class="sheet-lead">העריכה לא זמינה כרגע. או שאין חיבור לרשת, או שהכתיבה
+        הושהתה זמנית. הרשימה, המפה, התמונות והניווט עובדים כרגיל, ושביל שתקליט
+        נשמר במכשיר שלך וממתין.</p>`;
+    el('editor-sheet').hidden = false;
+    return;
+  }
+
+  el('editor-card').innerHTML = on ? `${head}
+    <p class="sheet-lead">מצב עריכה דלוק. שביל שתפרסם נכנס למפה מיד וכל מי שיפתח
+      את האפליקציה יראה אותו.</p>
+    <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
+      <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
+             placeholder="השם שיירשם ליד השינויים שלך"></label>
+    <button class="big-act primary" data-act="save-name"><b>שמור שם</b></button>
+    <button class="big-act" data-act="out"><b>כבה מצב עריכה</b>
+      <span>הכפתורים ייעלמו מהמסך. הטיוטות שלך נשארות.</span></button>` : `${head}
+    <p class="sheet-lead">כל מי שמכיר שביל יכול להוסיף אותו. אין הרשמה ואין סיסמה,
+      רק מתג. אנחנו מבקשים אותו כדי שמי שרק מחפש דרך לא יראה כפתורי מחיקה, ולא
+      ימחק שביל בטעות.</p>
+    <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
+      <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
+             placeholder="השם שיירשם ליד השינויים שלך"></label>
+    <p class="sheet-credit">כל שינוי נשמר בהיסטוריה, אז אפשר לשחזר כל דבר.</p>
+    <button class="big-act primary" data-act="in"><b>הדלק מצב עריכה</b></button>`;
 
   el('editor-sheet').hidden = false;
 }
 
-async function editorAction(act, btn) {
+function editorAction(act) {
+  const name = el('ed-name') ? el('ed-name').value : null;
   if (act === 'close') { el('editor-sheet').hidden = true; return; }
-  if (act === 'out') { Store.signOut(); editorSheet(); repaint(); return; }
-  if (act !== 'in') return;
-
-  const err = el('tok-err');
-  err.hidden = true;
-  btn.disabled = true;
-  btn.querySelector('b').textContent = 'בודק…';
-  try {
-    await Store.signIn(el('tok').value);
+  if (act === 'in') {
+    Store.enable(name);
     el('editor-sheet').hidden = true;
     repaint();
-  } catch (e) {
-    err.textContent = e.message;
-    err.hidden = false;
-    btn.disabled = false;
-    btn.querySelector('b').textContent = 'התחבר';
+    refreshQueue();
+    return;
+  }
+  if (act === 'save-name') { Store.enable(name); editorSheet(); repaint(); return; }
+  if (act === 'out') {
+    Store.disable();
+    Arrange.close(true);
+    Layers.setPending([]);
+    editorSheet();
+    repaint();
   }
 }
 
@@ -1393,7 +1476,7 @@ function wireControls() {
   el('editor-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'editor-sheet') { el('editor-sheet').hidden = true; return; }
     const btn = e.target.closest('[data-act]');
-    if (btn) editorAction(btn.dataset.act, btn);
+    if (btn) editorAction(btn.dataset.act);
   });
 
   el('layers').addEventListener('click', Layers.openSheet);

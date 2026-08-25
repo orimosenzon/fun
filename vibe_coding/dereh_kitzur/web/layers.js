@@ -34,6 +34,7 @@ const Layers = (() => {
 
   const TRAILS_ID = 'trails';
   const PLACES_ID = 'places';
+  const PENDING_ID = 'pending';
 
   /* Stored per browser, so a visitor who turns the cycling plan on keeps it on.
    * Only the on/off flags are stored - never the data itself, which is rebuilt
@@ -158,6 +159,21 @@ const Layers = (() => {
       });
     }
 
+    // Populated from the worker, and only while edit mode is on: a trail nobody
+    // has looked at yet is not something to show a visitor as if it were part
+    // of the map.
+    add({
+      id: PENDING_ID,
+      kind: 'pending',
+      name: 'ממתינים לאישור',
+      short: 'ממתין',
+      color: '#f9a825',
+      dash: true,
+      note: 'שבילים שתושבים שלחו ועוד לא אושרו. גלוי רק במצב עריכה.',
+      on: true,
+      segments: []
+    });
+
     // Populated by draft.js once IndexedDB answers.
     add({
       id: 'drafts',
@@ -177,7 +193,7 @@ const Layers = (() => {
     reindex();
   }
 
-  const RANK = { network: 0, places: 1, trails: 2, drafts: 3 };
+  const RANK = { network: 0, places: 1, trails: 2, pending: 3, drafts: 4 };
   const order = (l) => RANK[l.kind];
 
   /** Rebuild the trail layers after a write, without disturbing the drafts
@@ -197,6 +213,21 @@ const Layers = (() => {
     onChange();
   }
 
+  /** Fill the review queue layer from what the worker holds. */
+  function setPending(items) {
+    const layer = byId(PENDING_ID);
+    if (!layer) return;
+    layer.segments = (items || [])
+      .filter((it) => it.path && it.path.length > 1)
+      .map((it) => ({ ...it, color: '#f9a825', pending: true }));
+    reindex();
+    if (typeof map !== 'undefined' && map && map.getSource(srcId(PENDING_ID))) {
+      map.getSource(srcId(PENDING_ID)).setData(geojson(layer));
+    }
+    applyVisibility();
+    onChange();
+  }
+
   /** Rebuild the places layer in place, after a pin is dropped or removed. */
   function resetPlaces(places) {
     const layer = byId(PLACES_ID);
@@ -213,7 +244,8 @@ const Layers = (() => {
 
   /* ---------- what the rest of the app sees ---------- */
 
-  const visible = () => list.filter((l) => l.on);
+  const shown = (l) => l.on && !(l.kind === 'pending' && !Store.isEditor());
+  const visible = () => list.filter(shown);
   const visibleSegments = () => visible().flatMap((l) => l.segments);
   const visibleWaypoints = () => visible().flatMap((l) => l.waypoints);
 
@@ -225,12 +257,17 @@ const Layers = (() => {
   const trailLayers = () => list.filter((l) => l.kind === 'trails' && l.id !== 'drafts');
 
   function stats() {
-    const segs = visibleSegments();
+    // The queue is not part of the map yet, so it gets its own number rather
+    // than inflating the count of what is actually out there.
+    const segs = visible().filter((l) => l.kind !== 'pending').flatMap((l) => l.segments);
+    const waiting = visible().filter((l) => l.kind === 'pending')
+      .reduce((n, l) => n + l.segments.length, 0);
     const wps = visible().filter((l) => l.kind !== 'places').flatMap((l) => l.waypoints);
     const places = visible().filter((l) => l.kind === 'places').flatMap((l) => l.waypoints);
     return {
       segments: segs.length,
       length: segs.reduce((sum, s) => sum + (s.length || 0), 0),
+      waiting,
       waypoints: wps.length,
       places: places.length,
       unplaced: places.filter((p) => p.unplaced).length,
@@ -433,7 +470,8 @@ const Layers = (() => {
   function applyVisibility() {
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
-      const hide = arranging && layer.kind === 'places';
+      const hide = (arranging && layer.kind === 'places')
+        || (layer.kind === 'pending' && !Store.isEditor());
       const v = layer.on && !hide ? 'visible' : 'none';
       drawnIds(layer).forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
@@ -483,7 +521,9 @@ const Layers = (() => {
     const box = document.getElementById('layer-list');
     const editable = Store.isEditor();
 
-    box.innerHTML = list.slice().reverse().map((layer) => `
+    box.innerHTML = list.slice().reverse()
+      .filter((layer) => layer.kind !== 'pending' || Store.isEditor())
+      .map((layer) => `
       <div class="lay-row">
         <label class="lay${layer.on ? ' on' : ''}" data-id="${layer.id}">
           <input type="checkbox" ${layer.on ? 'checked' : ''}>
@@ -531,9 +571,9 @@ const Layers = (() => {
   return {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, highlight, setArranging,
+    addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
-    TRAILS_ID, PLACES_ID,
+    TRAILS_ID, PLACES_ID, PENDING_ID,
     set onChange(fn) { onChange = fn; }
   };
 })();

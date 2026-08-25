@@ -19,10 +19,17 @@
  *                      coordinates at all, so a good half of them can only be
  *                      placed by someone who knows where the place is.
  *
- * A visitor needs nothing to read. An editor pastes a fine-grained token once
- * per device; it is scoped to the data repo alone, so the worst a leaked one
- * can do is edit trail data that is public anyway - and every write is a
- * commit, which means nothing is ever really lost.
+ * Reading needs nothing at all: the files are public and come straight off a
+ * CDN. Writing goes through a small Cloudflare worker that holds the only
+ * GitHub credential involved.
+ *
+ * There is no login. Until 25/8/2026 each editor pasted their own fine-grained
+ * token, which worked and meant every editor needed a GitHub account - so in
+ * practice there was one editor and there was only ever going to be one. The
+ * point of a community map is that the community can edit it, so the credential
+ * moved to the worker and the barrier came down. What the worker will and will
+ * not accept is in worker/README.md; every write is still a commit, so nothing
+ * is ever really lost.
  */
 'use strict';
 
@@ -33,8 +40,22 @@ const Store = (() => {
   const BRANCH = 'main';
 
   const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/`;
-  const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
-  const TOKEN_HELP = `https://github.com/settings/personal-access-tokens/new`;
+
+  /* Every write goes through here. The app carries no GitHub credential at
+   * all: it cannot, because everything shipped to a browser is public. The
+   * worker holds one and checks what may be written. See worker/README.md for
+   * what that protects and what it deliberately does not.
+   *
+   * ---------------------------------------------------------------------
+   *  PASTE THE WORKER URL HERE after `npx wrangler deploy` prints it.
+   *  Until then this is empty, and the app is read-only for everyone.
+   * ---------------------------------------------------------------------
+   *
+   * `window.DK_WORKER` points this at a `wrangler dev` on localhost while
+   * working on the write path. It is not a way in: the worker accepts no
+   * credential from anyone, so choosing a different one grants nothing that
+   * curl would not. */
+  const WORKER = (typeof window !== 'undefined' && window.DK_WORKER) || '';
 
   const TRAILS = 'data/trails.json';
   const PLACES = 'data/places.json';
@@ -42,9 +63,10 @@ const Store = (() => {
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
   const K_PLACES = 'dk.cache.places.v1';
-  const K_TOKEN = 'dk.token.v1';
+  const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
+  const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
 
-  const state = { offline: false, editor: null };
+  const state = { offline: false, writable: null, checked: false };
 
   /* Photo paths are stored relative to the data repo, so they resolve the same
    * whether the app is served from Pages, from localhost, or from a file the
@@ -91,15 +113,15 @@ const Store = (() => {
 
   /** raw.githubusercontent serves from a CDN with a five minute cache, which
    *  is fine for a visitor and wrong for the person who just published: their
-   *  own trail would disappear for five minutes. An editor already holds a
-   *  token, so read through the API, which is always current. */
+   *  own trail would disappear for five minutes. Somebody with editing switched
+   *  on reads through the worker instead, which is always current. */
   async function canonical(path) {
     if (isEditor()) {
       try {
         const { json } = await getFile(path);
         if (json) return json;
       } catch (err) {
-        /* token expired or offline; the public copy still works */
+        /* worker down or offline; the public copy still works */
       }
     }
     return fetchJson(path);
@@ -146,58 +168,57 @@ const Store = (() => {
 
   const bundled = (path) => fetch(path).then((r) => r.json()).catch(() => null);
 
-  /* ---------- the editor's token ---------- */
+  /* ---------- editing ----------
+   *
+   * There is no login. Anyone who opens the app may contribute, which is the
+   * whole point: a resident who walked a shortcut should not need a GitHub
+   * account to put it on the map.
+   *
+   * What remains is a plain switch, off by default. It is not a permission -
+   * flipping it takes one tap and asks for nothing - it just keeps the editing
+   * controls out of the way of somebody who only wants to find a path, and
+   * keeps a stray tap from removing a trail.
+   *
+   * The name is optional and unverified. It goes in the commit and in `by`,
+   * so a change has a face rather than being anonymous by default.
+   */
 
-  const token = () => localStorage.getItem(K_TOKEN) || '';
-  const isEditor = () => !!token();
-  const editor = () => state.editor;
+  const editing = () => localStorage.getItem(K_ON) === 'yes';
+  const named = () => localStorage.getItem(K_NAME) || '';
 
-  const auth = (extra) => ({
-    Authorization: `Bearer ${token()}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    ...extra
-  });
+  /** Can this app write at all: the switch is on and a worker exists. */
+  const isEditor = () => editing() && !!WORKER && state.writable !== false;
+  const editor = () => (isEditor() ? (named() || 'עורך') : null);
 
-  /** Check a token before storing it, so a typo fails at the settings screen
-   *  rather than halfway through a publish. */
-  async function signIn(value) {
-    const probe = await fetch(API, {
-      headers: {
-        Authorization: `Bearer ${value.trim()}`,
-        Accept: 'application/vnd.github+json'
-      }
-    });
-    if (probe.status === 401) throw new Error('המפתח לא תקף או פג תוקפו.');
-    if (!probe.ok) throw new Error('אין למפתח הזה גישה לריפו הנתונים.');
-    const repo = await probe.json();
-    if (!repo.permissions || !repo.permissions.push) {
-      throw new Error('המפתח קורא אבל לא כותב. צריך הרשאת Contents: Read and write.');
-    }
-    localStorage.setItem(K_TOKEN, value.trim());
-
-    const me = await fetch('https://api.github.com/user', { headers: auth() });
-    state.editor = me.ok ? (await me.json()).login : 'עורך';
-    return state.editor;
+  function enable(name) {
+    localStorage.setItem(K_ON, 'yes');
+    if (name != null) localStorage.setItem(K_NAME, String(name).trim().slice(0, 40));
+    return editor();
   }
 
-  function signOut() {
-    localStorage.removeItem(K_TOKEN);
-    state.editor = null;
+  function disable() {
+    localStorage.removeItem(K_ON);
   }
 
-  /** Restore the editor's name on boot without blocking anything. */
+  /** Ask the worker whether it is alive and accepting writes.
+   *
+   *  A worker that is down, or switched to read-only, should present as "you
+   *  cannot publish right now" rather than letting somebody record a walk and
+   *  discover at the last step that it cannot be saved. */
   async function resume() {
-    if (!isEditor()) return null;
+    if (!WORKER) { state.writable = false; state.checked = true; return null; }
     try {
-      const me = await fetch('https://api.github.com/user', { headers: auth() });
-      if (me.status === 401) { signOut(); return null; }
-      state.editor = me.ok ? (await me.json()).login : 'עורך';
+      const res = await fetch(`${WORKER}/health`, { cache: 'no-store' });
+      const body = res.ok ? await res.json() : null;
+      state.writable = !!body && body.ok && !body.readOnly;
     } catch (err) {
-      state.editor = 'עורך';        // offline; the token is still probably fine
+      state.writable = false;         // offline, or no worker deployed yet
     }
-    return state.editor;
+    state.checked = true;
+    return editor();
   }
+
+  const writable = () => state.writable;
 
   /* ---------- writing ---------- */
 
@@ -218,36 +239,45 @@ const Store = (() => {
       .map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
+  /** Read a file through the worker, which reads it through the GitHub API and
+   *  so always answers with the current version.
+   *
+   *  raw.githubusercontent is a CDN with a five minute cache, which is right
+   *  for a visitor and wrong for somebody who is about to merge an edit into
+   *  what they just read. */
   async function getFile(path) {
-    // The read has to be fresh, or a publish merges into a stale file and
-    // drops whatever was added meanwhile. A Cache-Control header would be the
-    // obvious way to say so, but GitHub does not list it in
-    // Access-Control-Allow-Headers, so sending one fails the CORS preflight
-    // and the whole request never leaves the browser. A throwaway query
-    // parameter changes the cache key instead, and the API ignores it.
-    const res = await fetch(`${API}/contents/${path}?ref=${BRANCH}&t=${Date.now()}`, {
-      headers: auth()
-    });
-    if (res.status === 404) return { sha: null, json: null };
+    if (!WORKER) throw new Error('אין שרת כתיבה מוגדר.');
+    const res = await fetch(`${WORKER}/file?path=${encodeURIComponent(path)}`,
+                            { cache: 'no-store' });
     if (!res.ok) throw new Error(`קריאה נכשלה (${res.status})`);
     const body = await res.json();
+    if (!body.content) return { sha: null, json: null };
     const text = new TextDecoder().decode(
       Uint8Array.from(atob(body.content.replace(/\n/g, '')), (c) => c.charCodeAt(0)));
     return { sha: body.sha, json: JSON.parse(text) };
   }
 
   async function putFile(path, base64, message, sha) {
-    const res = await fetch(`${API}/contents/${path}`, {
+    if (!WORKER) throw new Error('אין שרת כתיבה מוגדר.');
+    const res = await fetch(`${WORKER}/file`, {
       method: 'PUT',
-      headers: auth({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ message, content: base64, branch: BRANCH, ...(sha ? { sha } : {}) })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path, content: base64, sha: sha || null,
+        message: `${message}${named() ? ` (${named()})` : ''}`
+      })
     });
-    if (res.status === 409 || res.status === 422) {
+    if (res.status === 409) {
       const err = new Error('conflict');
       err.conflict = true;
       throw err;
     }
-    if (!res.ok) throw new Error(`כתיבה נכשלה (${res.status})`);
+    if (!res.ok) {
+      // The worker explains its refusals in Hebrew - too big, too fast, does
+      // not look like the document it replaces - and those are worth showing.
+      const body = await res.json().catch(() => null);
+      throw new Error((body && body.error) || `כתיבה נכשלה (${res.status})`);
+    }
     return res.json();
   }
 
@@ -256,13 +286,13 @@ const Store = (() => {
    *  Two editors publishing at the same second would otherwise have the second
    *  write silently drop the first trail, so a rejected sha is retried against
    *  freshly read content rather than forced through. */
-  async function withDoc(path, key, mutate, message, after) {
+  async function withDoc(path, key, mutate, message, after, seed) {
     for (let attempt = 0; attempt < 3; attempt++) {
       let { sha, json } = await getFile(path);
       if (!json) {
         // The file is not in the repo yet. The copy shipped with the app is
         // the right starting point: it is what every reader is already seeing.
-        json = await bundled(path.replace(/^data\//, 'data/'));
+        json = await bundled(path) || seed;
         if (!json) throw new Error(`${path} חסר בריפו הנתונים.`);
       }
       const doc = json;
@@ -347,8 +377,8 @@ const Store = (() => {
     const rel = { thumb: `img/${key}_t.webp`, full: `img/${key}.webp` };
 
     // An identical photo published before already sits there under this name.
-    const exists = await fetch(`${API}/contents/${rel.full}?ref=${BRANCH}`, { headers: auth() });
-    if (exists.ok) return rel;
+    const exists = await getFile(rel.full).catch(() => ({ sha: null }));
+    if (exists.sha) return rel;
 
     if (onStep) onStep(`מעלה תמונה…`);
     await putFile(rel.full, b64(fullBytes), `תמונה לשביל ${name}`);
@@ -414,7 +444,7 @@ const Store = (() => {
       origin: 'app',
       mode: draft.mode,
       added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-      by: state.editor || ''
+      by: named()
     };
     if (draft.layer) seg.layer = draft.layer;
 
@@ -480,7 +510,7 @@ const Store = (() => {
       note: layer.note || '',
       dash: !!layer.dash,
       added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-      by: state.editor || ''
+      by: named()
     });
   }, `שכבה חדשה: ${layer.name}`));
 
@@ -519,7 +549,7 @@ const Store = (() => {
         lat: +lat.toFixed(6),
         lng: +lng.toFixed(6),
         source: 'manual',
-        by: state.editor || '',
+        by: named(),
         at: new Date().toISOString().replace(/\.\d+Z$/, 'Z')
       };
     }
@@ -537,23 +567,113 @@ const Store = (() => {
    *  a person who lives here can say where they belong. A write per drag would
    *  mean a round trip per drag and a commit log of several hundred entries for
    *  one afternoon's work. */
+  /* ---------- the queue ----------
+   *
+   * A trail somebody sent in, not yet on the map. Before the worker this queue
+   * ran on WhatsApp: export a file, send it, and an editor imported it by hand.
+   * That worked and it lost trails, because a file in a chat is a thing
+   * somebody has to remember.
+   *
+   * Approving is deliberately two writes rather than one, in this order: add
+   * to trails first, drop from pending second. If the second fails the trail is
+   * on the map twice over, which somebody will notice and can fix. The other
+   * order loses a walk.
+   */
+
+  const PENDING = 'data/pending.json';
+  const K_PENDING = 'dk.cache.pending.v1';
+  const emptyQueue = () => ({ version: 1, updated: '', items: [] });
+
+  const withPending = (mutate, message) =>
+    withDoc(PENDING, K_PENDING, mutate, message, null, emptyQueue());
+
+  async function queue() {
+    if (!WORKER) return emptyQueue();
+    try {
+      const { json } = await getFile(PENDING);
+      return json || emptyQueue();
+    } catch (err) {
+      return emptyQueue();
+    }
+  }
+
+  /** Send a trail in for review. Needs nothing from the sender. */
+  async function submit(draft, blobs, onStep) {
+    const photos = await uploadAll(blobs, draft.name, onStep);
+    if (onStep) onStep('שולח…');
+    const item = {
+      id: 'sub-' + Date.now().toString(36),
+      name: draft.name,
+      note: draft.note || '',
+      photos,
+      links: cleanLinks(draft.links),
+      path: draft.path,
+      length: draft.length,
+      color: '#f9a825',
+      mode: draft.mode,
+      submitted: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      by: named()
+    };
+    await withPending((doc) => { doc.items.push(item); },
+      `שביל שהתקבל: ${draft.name}`);
+    return item.id;
+  }
+
+  /** Move a queued trail onto the map. */
+  async function approve(id) {
+    const doc = await queue();
+    const item = (doc.items || []).find((i) => i.id === id);
+    if (!item) throw new Error('השביל כבר לא בתור.');
+
+    const seg = {
+      id: 'app-' + Date.now().toString(36),
+      name: item.name,
+      note: item.note || '',
+      photos: item.photos || [],
+      links: item.links || [],
+      path: item.path,
+      length: item.length,
+      color: '#097138',
+      connects: [],
+      entries: [
+        { lat: item.path[0][0], lng: item.path[0][1] },
+        { lat: item.path[item.path.length - 1][0], lng: item.path[item.path.length - 1][1] }
+      ],
+      origin: 'app',
+      mode: item.mode,
+      added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      by: item.by || '',
+      approved_by: named()
+    };
+    const trails = await withTrails((d) => { d.segments.push(seg); },
+      `אישור שביל: ${item.name}`);
+    await withPending((d) => { d.items = d.items.filter((i) => i.id !== id); },
+      `הוסר מהתור: ${item.name}`);
+    return { id: seg.id, doc: absolutise(trails) };
+  }
+
+  const reject = (id, name) => withPending(
+    (d) => { d.items = d.items.filter((i) => i.id !== id); },
+    `נדחה מהתור: ${name}`);
+
   const movePlaces = async (changes) => absolutise(await withPlaces((doc) => {
     const at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     const byId = new Map(doc.places.map((p) => [p.id, p]));
     changes.forEach(({ id, lat, lng }) => {
       const place = byId.get(id);
       if (!place) return;
-      place.geo = { lat, lng, source: 'manual', by: state.editor || '', at };
+      place.geo = { lat, lng, source: 'manual', by: named(), at };
     });
   }, `עדכון מיקומים: ${changes.length} מקומות`));
 
   return {
-    RAW, OWNER, REPO, TOKEN_HELP,
+    RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks,
-    isEditor, editor, signIn, signOut, resume,
+    isEditor, editor, editing, named, enable, disable, resume, writable,
     publish, remove, rename, setLinks, addPhotos, removePhoto,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
+    queue, submit, approve, reject,
     get offline() { return state.offline; }
   };
 })();
