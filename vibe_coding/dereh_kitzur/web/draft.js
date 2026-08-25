@@ -485,14 +485,18 @@ ${tracks}
   function detailExtras(seg) {
     const done = landed(seg);
 
-    // An editor publishes straight into the shared dataset. Everyone else
-    // sends the trail as a file, and an editor reviews it before it lands -
-    // which is the same queue, just carried by WhatsApp instead of a server.
+    // With edit mode on, a trail goes straight onto the map. Without it, it
+    // goes into the queue - which needs nothing from the sender, no account
+    // and no key. Until the worker existed this hand-off was a file sent over
+    // WhatsApp, and a file in a chat is a thing somebody has to remember.
     const publish = Store.isEditor() ? `
-      <button class="act act-nav" data-draft="publish"><span class="lbl">פרסם למסד המשותף
+      <button class="act act-nav" data-draft="publish"><span class="lbl">פרסם למפה
         <span class="hint">ייכנס מיד לכל מי שפותח את האפליקציה</span></span></button>` : `
-      <button class="act act-nav" data-draft="kml"><span class="lbl">שלח ליוזמה
-        <span class="hint">נשלח כקובץ, ואחד מהעורכים יוסיף אותו למפה</span></span></button>`;
+      <button class="act act-nav" data-draft="submit"${Store.writable() === false ? ' disabled' : ''}>
+        <span class="lbl">שלח ליוזמה
+        <span class="hint">${Store.writable() === false
+          ? 'אין חיבור כרגע. השביל נשמר אצלך ואפשר לשלוח אחר כך'
+          : 'נכנס לתור, ומישהו מהיוזמה יאשר אותו למפה'}</span></span></button>`;
 
     return `
       ${done ? `<p class="landed">השביל הזה כבר מופיע במסד המשותף, אז אפשר
@@ -500,8 +504,8 @@ ${tracks}
       <h3>${Store.isEditor() ? 'פרסום' : 'לשלוח ליוזמה'}</h3>
       <div class="acts">
         ${publish}
-        ${Store.isEditor() ? `<button class="act act-sub" data-draft="kml">
-          <span class="lbl">ייצוא KML<span class="hint">קובץ, לייבוא ידני ל-My Maps</span></span></button>` : ''}
+        <button class="act act-sub" data-draft="kml">
+          <span class="lbl">ייצוא KML<span class="hint">קובץ, לייבוא ידני ל-My Maps</span></span></button>
         <button class="act act-sub" data-draft="gpx"><span class="lbl">ייצוא GPX
           <span class="hint">לאפליקציות הליכה וניווט</span></span></button>
       </div>
@@ -544,6 +548,32 @@ ${tracks}
       msg.className = 'pub-msg bad';
       msg.hidden = false;
       msg.textContent = 'הפרסום נכשל: ' + err.message + ' הטיוטה נשארה אצלך.';
+    }
+  }
+
+  /** Send a draft into the review queue.
+   *
+   *  Same care as publish(): the local copy is only dropped once the write has
+   *  come back, so a failed send leaves the walk exactly where it was. */
+  async function send(seg, btn) {
+    const msg = el('pub-msg');
+    const rec = rows.find((r) => r.id === seg.id);
+    const say = (text) => { msg.hidden = false; msg.textContent = text; msg.className = 'pub-msg'; };
+
+    btn.disabled = true;
+    say('שולח…');
+    try {
+      await Store.submit(seg, (rec && rec.photos) || [], say);
+      await drop(seg.id);
+      deselect();
+      await reload();
+      await refreshQueue();
+      alert('נשלח, תודה. השביל ממתין לאישור ויופיע על המפה בקרוב.');
+    } catch (err) {
+      btn.disabled = false;
+      msg.className = 'pub-msg bad';
+      msg.hidden = false;
+      msg.textContent = 'השליחה נכשלה: ' + err.message + ' הטיוטה נשארה אצלך.';
     }
   }
 
@@ -635,6 +665,7 @@ ${tracks}
       node.addEventListener('click', async () => {
         if (act === 'kml' || act === 'gpx') return share([seg], act);
         if (act === 'publish') return publish(seg, node);
+        if (act === 'submit') return send(seg, node);
         if (act === 'edit') {
           deselect();
           startEditor(seg.mode === 'walk' ? 'draw' : seg.mode, seg);
