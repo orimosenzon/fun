@@ -30,6 +30,16 @@ BOT_NAME = "אורי מוסנזון בוט"
 USER_TALK_NS = 3
 
 
+# Edit-summary prefixes of the bot's own maintenance edits. These touch a talk
+# page without saying anything to anybody, so they must not count as "the bot
+# had the last word". Keep in sync with archive_bot_talk.py's summaries.
+HOUSEKEEPING_PREFIXES = ("ארכוב אוטומטי", "רענון תיבת הארכיונים")
+
+
+def is_housekeeping(comment):
+    return comment.strip().startswith(HOUSEKEEPING_PREFIXES)
+
+
 def recent_talk_pages(hours):
     """Titles of User-talk pages touched in the last `hours`, most-recent first, deduped."""
     r = requests.get(API, params={
@@ -53,19 +63,30 @@ def recent_talk_pages(hours):
 
 
 def page_revisions_user_check(title):
-    """Return (latest_user, latest_ts, latest_revid, bot_has_prior_revision)."""
+    """Return (latest_user, latest_ts, latest_revid, bot_has_prior_revision).
+
+    Housekeeping edits by the bot are skipped when deciding who spoke last.
+    archive_bot_talk.py edits the bot's own talk page daily, and such an edit
+    lands *after* a question without answering it — which used to make the
+    bot look like the last speaker and hid the pending question entirely.
+    (That happened on 2026-08-26: a question at 08:25 was masked by an
+    archiving edit 13 minutes later and never got picked up.)
+    """
     r = requests.get(API, params={
         "action": "query", "titles": title,
-        "prop": "revisions", "rvprop": "user|timestamp|ids", "rvlimit": 50,
+        "prop": "revisions", "rvprop": "user|timestamp|ids|comment", "rvlimit": 50,
         "format": "json",
     }, headers=H, timeout=40).json()
     page = next(iter(r["query"]["pages"].values()))
     if "missing" in page or "revisions" not in page:
         return None, None, None, False
     revs = page["revisions"]
-    latest = revs[0]
     bot_has_prior = any(rv["user"] == BOT_NAME for rv in revs)
-    return latest["user"], latest["timestamp"], latest["revid"], bot_has_prior
+    for rv in revs:                       # newest first
+        if rv["user"] == BOT_NAME and is_housekeeping(rv.get("comment", "")):
+            continue
+        return rv["user"], rv["timestamp"], rv["revid"], bot_has_prior
+    return None, None, None, bot_has_prior
 
 
 def main():
