@@ -375,9 +375,23 @@ def main():
         print("  שלבים בשכבה המתוכננת: " +
               ", ".join(f"{k}={v}" for k, v in unknown.most_common()))
 
+    # This script owns exactly the layers in LAYERS. Anything else in the file
+    # arrived from somewhere else - import_offroad.py writes recorded tracks
+    # here too - so it is read back and kept, above ours, rather than dropped
+    # on every rebuild.
+    owned = {spec["id"] for spec in LAYERS}
+    foreign = []
+    if os.path.exists(OUT):
+        with open(OUT, encoding="utf-8") as fh:
+            foreign = [l for l in json.load(fh).get("layers", [])
+                       if l.get("id") not in owned]
+    if foreign:
+        print("שכבות שנשמרו כפי שהן: " +
+              ", ".join(l.get("name", l.get("id", "?")) for l in foreign))
+
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh:
-        json.dump({"credit": CREDIT, "layers": out_layers}, fh,
+        json.dump({"credit": CREDIT, "layers": out_layers + foreign}, fh,
                   ensure_ascii=False, separators=(",", ":"))
     print(f"wrote {OUT} ({os.path.getsize(OUT) / 1024:.0f} KB)")
 
