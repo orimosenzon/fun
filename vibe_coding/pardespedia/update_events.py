@@ -812,11 +812,11 @@ def build_table(rows: list, collapsible: bool = False) -> str:
         when = r.get("date_label") or f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
         iso = r["date"].isoformat()
         name = r.get("name_markup") or (f"[{r['url']} {r['name']}]" if r["url"] else r["name"])
-        if r["image_file"]:
-            link = f"|link={r['url']}" if r["url"] else ""
-            img = f"[[קובץ:{r['image_file']}|90px{link}]]"
-        else:
-            img = "—"
+        # בלי |link=: לחיצה על הכרזה פותחת את דף הקובץ, שם היא מוצגת בגדול
+        # ולצידה המקור והרישיון. קודם הלחיצה קפצה לאתר האירוע, וזה הפריע —
+        # מי שלוחץ על תמונה מצפה לראות אותה, לא לעזוב את הדף. הקישור לאירוע
+        # עצמו לא אבד: הוא נשאר על שם האירוע בעמודת "אירוע".
+        img = f"[[קובץ:{r['image_file']}|90px]]" if r["image_file"] else "—"
         venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
         if r.get("more_count"):
             n = r["more_count"]
@@ -852,11 +852,8 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
     for r in today_rows:
         name = f"[{r['url']} {r['name']}]" if r["url"] else r["name"]
         venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
-        if r["image_file"]:
-            link = f"|link={r['url']}" if r["url"] else ""
-            img = f"[[קובץ:{r['image_file']}|46px{link}]]"
-        else:
-            img = ""
+        # כמו בטבלה: התמונה מובילה לדף הקובץ ולא לאתר האירוע.
+        img = f"[[קובץ:{r['image_file']}|46px]]" if r["image_file"] else ""
         time_part = f"'''{r['time']}''' — " if r["time"] else ""
         cards.append(
             f'<div style="display:flex; align-items:center; gap:8px; background:#fff; '
