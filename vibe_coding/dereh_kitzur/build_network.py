@@ -2,8 +2,14 @@
 """Turn the moshava's cycling-network shapefiles into a layer file for the app.
 
 The source is the planning package for the Pardes Hanna-Karkur cycling network
-(IOA Engineering, project 1102): two ESRI shapefiles, one for what exists today
-and one for what is proposed. They live zipped in ``network_src/``.
+(IOA Engineering, project 1102), as ESRI shapefiles zipped in ``network_src/``.
+
+**The files are not organised the way the app's layers are, and their names
+lie.** The 27/8/2026 pair is called "ראשית" and "משנית" - primary and secondary
+- but each holds a mix of both, and 38 of their segments are identical
+duplicates of one another. So everything is pooled, deduplicated by geometry,
+and split by the ``סטטוס`` field into what exists and what does not. Trust the
+fields, never the file names.
 
 Output is ``web/data/layers.json``, which the app loads alongside
 ``data/trails.json``. The two pipelines are deliberately separate:
@@ -14,6 +20,7 @@ offline apart from an optional, cached street-name lookup.
     python3 build_network.py
 """
 
+import collections
 import io
 import json
 import math
@@ -28,20 +35,40 @@ SRC_DIR = "network_src"
 OUT = "web/data/layers.json"
 NAME_CACHE = ".cache/named_roads.json"
 
-# How each source file becomes a layer. Order here is drawing order, bottom
-# first, so the proposed network sits under the network that already exists.
+# Which files to read. Everything in them is pooled and then split by status,
+# because the planners' files are not organised the way the app's layers are:
+# the 27/8/2026 pair is named "ראשית" and "משנית" but each holds a mix of both,
+# and 38 of their segments are byte-identical duplicates of each other. Trust
+# the סטטוס and רשת fields, not the file names.
+#
+# The two files from 8/2026 are left in place and unused. The newer pair covers
+# every one of their segments - checked, none further than 40 m from a new
+# counterpart - and adds 23 more.
+SOURCES = [
+    "רשת ראשית מעודכנת.zip",
+    "רשת משנית מעודכנת.zip",
+]
+
+# What a rider actually wants to know is whether they can ride it today. So the
+# split is by that, and the precise stage - proposed, being promoted, under
+# construction - rides along as `status` and shows as a chip in the app.
+#
+# An unrecognised or blank status counts as not-yet: claiming a path is ridable
+# when the data does not say so is the worse of the two mistakes.
+EXISTING = "קיים"
+
+# Order here is drawing order, bottom first, so the planned network sits under
+# the network that already exists.
 LAYERS = [
     {
-        "zip": "מוצעת מאוחד.zip",
         "id": "bike-proposed",
-        "name": "רשת רכיבה מוצעת",
-        "short": "מוצעת",
+        "name": "רשת רכיבה מתוכננת",
+        "short": "מתוכננת",
         "color": "#e07b00",
         "dash": True,
-        "note": "התוואי המתוכנן בתוכנית רשת הרכיבה של המושבה. עדיין לא בשטח.",
+        "note": "מה שעוד לא בשטח: מוצע, מקודם, או בביצוע. השלב המדויק מופיע בפרטי המקטע.",
     },
     {
-        "zip": "רשת קיימת מאוחד.zip",
         "id": "bike-existing",
         "name": "רשת רכיבה קיימת",
         "short": "קיימת",
@@ -219,9 +246,13 @@ def street_names(path, roads):
 
 # ------------------------------------------------------------------ the build
 
-def read_layer(spec, roads):
-    """One shapefile zip -> a layer dict ready for the app."""
-    path = os.path.join(SRC_DIR, spec["zip"])
+def read_source(filename):
+    """One shapefile zip -> [(attrs, path as [[lat, lng], ...]), ...].
+
+    A record may hold several disjoint lines; each becomes its own entry, so a
+    row in the app's list is always one continuous stretch.
+    """
+    path = os.path.join(SRC_DIR, filename)
     with open(path, "rb") as fh:
         archive = zipfile.ZipFile(io.BytesIO(fh.read()))
 
@@ -248,55 +279,43 @@ def read_layer(spec, roads):
     )
     keys = [alias(f[0]) for f in reader.fields[1:]]
 
-    segments = []
-    for i, sr in enumerate(reader.iterShapeRecords()):
+    out = []
+    for sr in reader.iterShapeRecords():
         attrs = {k: v for k, v in zip(keys, sr.record) if k}
-
-        # A shapefile record may hold several disjoint lines. Splitting them
-        # keeps each list row a single walkable stretch.
         bounds = list(sr.shape.parts) + [len(sr.shape.points)]
-        for part, (start, end) in enumerate(zip(bounds, bounds[1:])):
+        for start, end in zip(bounds, bounds[1:]):
             pts = sr.shape.points[start:end]
             if len(pts) < 2:
                 continue
             path_ll = [(project(x, y) if project else (y, x)) for x, y in pts]
-            path_ll = [[round(lat, 6), round(lng, 6)] for lat, lng in path_ll]
+            out.append((attrs, [[round(lat, 6), round(lng, 6)] for lat, lng in path_ll]))
+    return out
 
-            streets = street_names(path_ll, roads)
-            grade = (attrs.get("grade") or "").strip()
-            label = f"רשת {grade}" if grade else spec["short"]
-            name = f"{label} · {' / '.join(streets)}" if streets \
-                else f"{label} · מקטע {len(segments) + 1}"
 
-            segments.append({
-                "id": f'{spec["id"]}-{i}-{part}',
-                "name": name,
-                "note": (attrs.get("note") or "").strip(),
-                "photos": [],
-                "path": path_ll,
-                "length": round(path_length(path_ll)),
-                "color": spec["color"],
-                "layer": spec["id"],
-                "grade": grade,                          # ראשית / משנית
-                "kind": (attrs.get("kind") or "").strip(),   # מופרד / משולב / בדיון
-                "status": (attrs.get("status") or "").strip(),
-                "streets": streets,
-                "entries": [
-                    {"lat": path_ll[0][0], "lng": path_ll[0][1]},
-                    {"lat": path_ll[-1][0], "lng": path_ll[-1][1]},
-                ],
-            })
+def build_segment(spec, attrs, path_ll, roads, index):
+    streets = street_names(path_ll, roads)
+    grade = (attrs.get("grade") or "").strip()
+    label = f"רשת {grade}" if grade else spec["short"]
+    name = f"{label} · {' / '.join(streets)}" if streets \
+        else f"{label} · מקטע {index}"
 
     return {
-        "id": spec["id"],
-        "name": spec["name"],
-        "short": spec["short"],
+        "id": f'{spec["id"]}-{index}',
+        "name": name,
+        "note": (attrs.get("note") or "").strip(),
+        "photos": [],
+        "path": path_ll,
+        "length": round(path_length(path_ll)),
         "color": spec["color"],
-        "dash": spec["dash"],
-        "note": spec["note"],
-        "credit": CREDIT,
-        "on": False,          # off by default: the initiative's trails come first
-        "segments": segments,
+        "layer": spec["id"],
+        "grade": grade,                              # ראשית / משנית
+        "kind": (attrs.get("kind") or "").strip(),   # מופרד / משולב / בדיון
+        "status": (attrs.get("status") or "").strip(),
+        "streets": streets,
+        "entries": [
+            {"lat": path_ll[0][0], "lng": path_ll[0][1]},
+            {"lat": path_ll[-1][0], "lng": path_ll[-1][1]},
+        ],
     }
 
 
@@ -304,14 +323,57 @@ def main():
     roads = named_roads()
     print(f"named road segments: {len(roads)}")
 
+    # Pool every source, then drop exact geometric duplicates. The two files
+    # overlap heavily by design - each is one planner's view of the same
+    # network - and the shared segments carry identical attributes, so keeping
+    # whichever arrives first loses nothing.
+    pool = {}
+    dupes = 0
+    for filename in SOURCES:
+        rows = read_source(filename)
+        print(f"  {filename}: {len(rows)} מקטעים")
+        for attrs, path_ll in rows:
+            key = tuple(map(tuple, path_ll))
+            if key in pool:
+                dupes += 1
+                continue
+            pool[key] = (attrs, path_ll)
+    print(f"  אחרי איחוד כפילויות: {len(pool)} מקטעים ({dupes} כפולים הוסרו)")
+
+    by_layer = {spec["id"]: [] for spec in LAYERS}
+    unknown = collections.Counter()
+    for attrs, path_ll in pool.values():
+        status = (attrs.get("status") or "").strip()
+        target = "bike-existing" if status == EXISTING else "bike-proposed"
+        if status and status != EXISTING:
+            unknown[status] += 1
+        elif not status:
+            unknown["(ריק)"] += 1
+        by_layer[target].append((attrs, path_ll))
+
     out_layers = []
     for spec in LAYERS:
-        layer = read_layer(spec, roads)
-        total = sum(s["length"] for s in layer["segments"])
-        named = sum(1 for s in layer["segments"] if s["streets"])
-        print(f'{layer["name"]}: {len(layer["segments"])} מקטעים, '
-              f'{total} מ׳, {named} עם שם רחוב')
-        out_layers.append(layer)
+        rows = by_layer[spec["id"]]
+        segments = [build_segment(spec, attrs, path_ll, roads, i)
+                    for i, (attrs, path_ll) in enumerate(rows)]
+        total = sum(s["length"] for s in segments)
+        named = sum(1 for s in segments if s["streets"])
+        print(f'{spec["name"]}: {len(segments)} מקטעים, {total} מ׳, {named} עם שם רחוב')
+        out_layers.append({
+            "id": spec["id"],
+            "name": spec["name"],
+            "short": spec["short"],
+            "color": spec["color"],
+            "dash": spec["dash"],
+            "note": spec["note"],
+            "credit": CREDIT,
+            "on": False,      # off by default: the initiative's trails come first
+            "segments": segments,
+        })
+
+    if unknown:
+        print("  שלבים בשכבה המתוכננת: " +
+              ", ".join(f"{k}={v}" for k, v in unknown.most_common()))
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh:
