@@ -39,7 +39,25 @@ const Store = (() => {
   const REPO = 'derech-kitzur-data';
   const BRANCH = 'main';
 
-  const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/`;
+  /* Reading the data that sits next to the app instead of the published repo
+   * is the only way to look at a data change - a new layer, a rebuilt network -
+   * before pushing it. Two ways in, because a console-only switch is no use
+   * when you just want to open a link: `?local` on the URL, or `window.DK_RAW`
+   * for a script driving the page.
+   *
+   * Read side only, and it grants nothing: everything it can reach is already
+   * public. It also refuses to engage off localhost, so a `?local` link that
+   * escapes into the wild shows the real data rather than a stale copy. */
+  const onLocalhost = typeof location !== 'undefined' &&
+    /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const askedLocal = typeof location !== 'undefined' &&
+    new URLSearchParams(location.search).has('local');
+
+  const RAW = (typeof window !== 'undefined' && window.DK_RAW) ||
+    (askedLocal && onLocalhost ? './' :
+      `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/`);
+
+  if (RAW === './') console.info('דרך קיצור: נתונים מקומיים, לא מהריפו המפורסם');
 
   /* Every write goes through here. The app carries no GitHub credential at
    * all: it cannot, because everything shipped to a browser is public. The
