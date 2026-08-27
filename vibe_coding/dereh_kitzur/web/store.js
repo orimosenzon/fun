@@ -46,16 +46,15 @@ const Store = (() => {
    * worker holds one and checks what may be written. See worker/README.md for
    * what that protects and what it deliberately does not.
    *
-   * ---------------------------------------------------------------------
-   *  PASTE THE WORKER URL HERE after `npx wrangler deploy` prints it.
-   *  Until then this is empty, and the app is read-only for everyone.
-   * ---------------------------------------------------------------------
+   * Deployed 27/8/2026. Empty here would mean read-only for everyone, which is
+   * what the app did between the rewrite and the deploy.
    *
    * `window.DK_WORKER` points this at a `wrangler dev` on localhost while
    * working on the write path. It is not a way in: the worker accepts no
    * credential from anyone, so choosing a different one grants nothing that
    * curl would not. */
-  const WORKER = (typeof window !== 'undefined' && window.DK_WORKER) || '';
+  const WORKER = (typeof window !== 'undefined' && window.DK_WORKER) ||
+    'https://derech-kitzur.orimosenzon.workers.dev';
 
   const TRAILS = 'data/trails.json';
   const PLACES = 'data/places.json';
