@@ -493,6 +493,22 @@ const GEO_SOURCE = {
 };
 
 /** What an editor can change about a trail that is already published. */
+/** Who put this on the map.
+ *
+ *  `by` is written on publish and carried through approval, so it names the
+ *  person who walked or drew the trail rather than whoever waved it through.
+ *  It is shown to everybody: a shortcut on this map exists because a neighbour
+ *  went and mapped it, and that should be visible without opening a commit log.
+ *
+ *  The trails imported from My Maps carry no name at all, so those fall back to
+ *  the date alone rather than claiming an author nobody recorded. */
+function creditLine(it) {
+  const bits = [];
+  if (it.by) bits.push(`מופה בידי ${escapeHtml(it.by)}`);
+  if (it.added) bits.push(`נוסף ${new Date(it.added).toLocaleDateString('he-IL')}`);
+  return bits.length ? `<p class="src">${bits.join(' · ')}</p>` : '';
+}
+
 function editorBlock(it, layer) {
   if (!Store.isEditor()) return '';
   const others = Layers.trailLayers().filter((l) => l.id !== layer.id);
@@ -603,6 +619,7 @@ function showDetail(it) {
         ${navActs(it, 'ניווט בתוך האפליקציה, לפי מסלול השביל עצמו')}
       </div>
       ${linksBlock(it)}
+      ${creditLine(it)}
       ${editorBlock(it, layer)}`;
   }
 
@@ -869,7 +886,7 @@ function layerForm(layer) {
     <p id="form-err" class="tok-err" hidden></p>
     <button class="big-act primary" data-act="save-layer"><b>${layer ? 'שמור' : 'צור שכבה'}</b></button>
     ${layer ? `<button class="big-act ghost danger" data-act="drop-layer"><b>מחיקת השכבה</b>
-      <span>השבילים שבתוכה יחזרו לשכבת שבילי היוזמה, ולא יימחקו</span></button>` : ''}`);
+      <span>השבילים שבתוכה יחזרו לשכבת "דרכי קיצור", ולא יימחקו</span></button>` : ''}`);
   formTarget = layer || null;
   formColour = now.color;
 }
@@ -938,7 +955,7 @@ async function formAction(act, btn) {
 
     } else if (act === 'drop-layer') {
       if (!confirm(`למחוק את השכבה "${formTarget.name}"?\n` +
-                   'השבילים שבתוכה יעברו לשכבת שבילי היוזמה ולא יימחקו.')) {
+                   'השבילים שבתוכה יעברו לשכבת "דרכי קיצור" ולא יימחקו.')) {
         btn.disabled = false;
         if (label) label.textContent = was;
         return;
@@ -1393,18 +1410,19 @@ function reloadPlaces(doc) {
 
 /* ---------- edit mode ----------
  *
- * Nothing here is a permission. Writing goes through the worker, which takes no
- * credential from anyone, so this switch guards nothing that a determined
- * person could not get past by ignoring the app entirely.
+ * Two different things, and they are worth keeping apart.
  *
- * It earns its place anyway: most people opening this are looking for a way
- * through a block of houses, not editing a dataset, and a screen full of
- * "remove from the map" buttons is worse for them than one extra tap is for
- * the handful who contribute.
+ * Adding to the map is open to everybody: record a walk, send it in, done. No
+ * account and no password, because a resident who knows a shortcut is exactly
+ * who this app wants to hear from.
+ *
+ * Deciding what the map *says* takes the editor's password, checked by the
+ * worker. That is the switch below. Without it, publishing a trail, approving
+ * one out of the queue and removing one were all a tap away for anyone who
+ * opened the app.
  */
 
 function editorSheet() {
-  const on = Store.editing();
   const head = `
     <header class="sheet-head">
       <h2>מצב עריכה</h2>
@@ -1430,7 +1448,7 @@ function editorSheet() {
     return;
   }
 
-  el('editor-card').innerHTML = on ? `${head}
+  el('editor-card').innerHTML = Store.isEditor() ? `${head}
     <p class="sheet-lead">מצב עריכה דלוק. שביל שתפרסם נכנס למפה מיד וכל מי שיפתח
       את האפליקציה יראה אותו.</p>
     <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
@@ -1438,30 +1456,44 @@ function editorSheet() {
              placeholder="השם שיירשם ליד השינויים שלך"></label>
     <button class="big-act primary" data-act="save-name"><b>שמור שם</b></button>
     <button class="big-act" data-act="out"><b>כבה מצב עריכה</b>
-      <span>הכפתורים ייעלמו מהמסך. הטיוטות שלך נשארות.</span></button>` : `${head}
-    <p class="sheet-lead">כל מי שמכיר שביל יכול להוסיף אותו. אין הרשמה ואין סיסמה,
-      רק מתג. אנחנו מבקשים אותו כדי שמי שרק מחפש דרך לא יראה כפתורי מחיקה, ולא
-      ימחק שביל בטעות.</p>
+      <span>הכפתורים ייעלמו מהמסך והסיסמה תישכח במכשיר. הטיוטות שלך נשארות.</span></button>` : `${head}
+    <p class="sheet-lead">כדי להוסיף שביל למפה לא צריך שום דבר מכאן: מקליטים אותו
+      במסך הטיוטות ושולחים ליוזמה. מצב עריכה הוא משהו אחר, והוא מיועד למי שמאשר
+      מה נכנס למפה.</p>
+    <label class="fld"><span>סיסמת עריכה</span>
+      <input id="ed-key" type="password" autocomplete="current-password"
+             placeholder="הסיסמה שנשמרת בשרת"></label>
     <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
       <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
              placeholder="השם שיירשם ליד השינויים שלך"></label>
+    <p id="ed-msg" class="pub-msg" hidden></p>
     <p class="sheet-credit">כל שינוי נשמר בהיסטוריה, אז אפשר לשחזר כל דבר.</p>
     <button class="big-act primary" data-act="in"><b>הדלק מצב עריכה</b></button>`;
 
   el('editor-sheet').hidden = false;
 }
 
-function editorAction(act) {
+async function editorAction(act) {
   const name = el('ed-name') ? el('ed-name').value : null;
   if (act === 'close') { el('editor-sheet').hidden = true; return; }
   if (act === 'in') {
-    Store.enable(name);
+    const msg = el('ed-msg');
+    const key = el('ed-key') ? el('ed-key').value : '';
+    const say = (text) => { if (msg) { msg.textContent = text; msg.hidden = !text; } };
+    if (!key.trim()) { say('צריך סיסמה.'); return; }
+    say('בודק…');
+    // Refused covers both a wrong password and a worker that did not answer,
+    // because from here the two look the same and neither lets you edit.
+    if (!(await Store.enable(name, key))) {
+      say('הסיסמה לא התקבלה. בדוק אותה, ואת החיבור לרשת.');
+      return;
+    }
     el('editor-sheet').hidden = true;
     repaint();
     refreshQueue();
     return;
   }
-  if (act === 'save-name') { Store.enable(name); editorSheet(); repaint(); return; }
+  if (act === 'save-name') { await Store.enable(name); editorSheet(); repaint(); return; }
   if (act === 'out') {
     Store.disable();
     Arrange.close(true);

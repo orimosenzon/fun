@@ -112,8 +112,8 @@ const Layers = (() => {
     add({
       id: TRAILS_ID,
       kind: 'trails',
-      name: 'שבילי היוזמה',
-      short: 'שבילים',
+      name: 'דרכי קיצור',
+      short: 'קיצור',
       color: '#1b5e20',
       note: 'קיצורי הדרך שמופו על ידי יוזמת דרך קיצור.',
       source: trails.source,
@@ -169,7 +169,8 @@ const Layers = (() => {
       short: 'ממתין',
       color: '#f9a825',
       dash: true,
-      note: 'שבילים שתושבים שלחו ועוד לא אושרו. גלוי רק במצב עריכה.',
+      note: 'תור: שבילים שתושבים שלחו דרך "שלח ליוזמה" וממתינים שתאשר אותם. '
+        + 'שביל שאתה מפרסם בעצמך לא עובר דרך כאן. גלוי רק במצב עריכה.',
       on: true,
       segments: []
     });
@@ -509,7 +510,13 @@ const Layers = (() => {
       return `${n} מקומות` + (missing ? ` · ${missing} עוד לא ממוקמים` : '');
     }
     const n = layer.segments.length + layer.waypoints.length;
-    if (!n) return layer.kind === 'drafts' ? 'אין עדיין. הקלט או צייר שביל.' : 'ריק';
+    if (!n) {
+      if (layer.kind === 'drafts') return 'אין עדיין. הקלט או צייר שביל.';
+      // "ריק" on the queue reads like something is broken. It is the ordinary
+      // state: nobody has sent a trail in since the last one was dealt with.
+      if (layer.kind === 'pending') return 'אין שביל שממתין כרגע.';
+      return 'ריק';
+    }
     const metres = layer.segments.reduce((sum, s) => sum + (s.length || 0), 0);
     const bits = [`${layer.segments.length} מקטעים`];
     if (metres) bits.push(metres >= 1000 ? (metres / 1000).toFixed(1) + ' ק"מ' : metres + ' מ׳');

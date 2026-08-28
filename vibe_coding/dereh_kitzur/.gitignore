@@ -3,3 +3,7 @@
 
 # Generated for import into My Maps
 derech_kitzur*.kml
+
+# wrangler leaves a cache wherever it is run from, and it names the
+# Cloudflare account. This repo is public.
+.wrangler/

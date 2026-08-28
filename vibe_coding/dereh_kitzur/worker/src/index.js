@@ -17,6 +17,8 @@
  *   allowlist    only three data files and content-addressed webp images can
  *                be written. Nothing else in the repo is reachable, not
  *                workflows, not the app's own code.
+ *   editor key   the two files that *are* the map - the trails and the places -
+ *                need a shared secret. See GATED below.
  *   schema       a document has to still look like the document it replaces,
  *                with a sane number of items, or the write is refused.
  *   size         a hard cap per request and per file.
@@ -24,8 +26,7 @@
  *   git          every write is a commit by a bot account. Nothing is ever
  *                really destroyed, and `git revert` undoes a bad day.
  *
- * There is deliberately no login. See README for what that does and does not
- * protect, and for the kill switch when it stops being a good trade.
+ * See README for the kill switch and for what this does and does not protect.
  */
 
 const REPO_API = 'https://api.github.com/repos';
@@ -38,6 +39,27 @@ const ALLOWED = [
   /^data\/places\.json$/,
   /^data\/pending\.json$/,
   /^img\/[0-9a-f]{14}(_t)?\.webp$/
+];
+
+/* The files an editor's key is needed for.
+ *
+ * Approving a submitted trail is exactly a write to data/trails.json, so this
+ * list is what makes "only an editor decides what goes on the map" true rather
+ * than a convention. The two paths left out are left out on purpose:
+ *
+ *   data/pending.json   a resident sending a trail in writes here, and asking
+ *                       them for a secret first would mean nobody ever sends
+ *                       one. The queue is a waiting room, not the map.
+ *   img/*.webp          those submissions carry photos. Names are the hash of
+ *                       the bytes, so a write here can only ever add a file
+ *                       nobody is pointing at yet.
+ *
+ * The cost of that: somebody who finds this URL can flood the queue or empty
+ * it. Both are visible, neither reaches the map, and every one is a commit.
+ */
+const GATED = [
+  /^data\/trails\.json$/,
+  /^data\/places\.json$/
 ];
 
 const MAX_BODY = 6 * 1024 * 1024;        // one photo, comfortably
@@ -55,7 +77,7 @@ const RATE_WINDOW = 300;                 // seconds
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-DK-Key',
   'Access-Control-Max-Age': '86400'
 };
 
@@ -82,6 +104,30 @@ const gh = (env, path, init = {}) => fetch(
 /* ---------- guards ---------- */
 
 const allowed = (path) => ALLOWED.some((re) => re.test(path));
+const gated = (path) => GATED.some((re) => re.test(path));
+
+/** Compare without letting the time taken say how much of the key was right.
+ *  Both sides are hashed first so the comparison runs over a fixed length
+ *  whatever the two strings were. */
+async function sameSecret(a, b) {
+  const digest = async (s) => new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+  const [x, y] = await Promise.all([digest(a), digest(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
+/** Is this request carrying the editor's key?
+ *
+ *  With no EDITOR_KEY configured this answers no, and the gated paths become
+ *  unwritable by anybody. That direction is deliberate: a worker deployed
+ *  without its secret should refuse edits rather than accept every one. */
+async function isEditor(env, request) {
+  const given = request.headers.get('X-DK-Key') || '';
+  if (!env.EDITOR_KEY || !given) return false;
+  return sameSecret(given, env.EDITOR_KEY);
+}
 
 /** Rate limit per IP. Without KV bound the worker still runs - losing the
  *  limiter should not take the whole write path down with it. */
@@ -178,6 +224,12 @@ async function write(env, request, ip) {
   }
   if (!allowed(path)) return json({ error: 'path not allowed' }, 403);
 
+  // Checked after the allowlist and before anything is parsed, so a wrong key
+  // never gets as far as a schema opinion about the body it sent.
+  if (gated(path) && !(await isEditor(env, request))) {
+    return json({ error: 'רק עורך יכול לשנות את המפה עצמה. הזן סיסמת עריכה.' }, 401);
+  }
+
   if (path.endsWith('.json')) {
     let text;
     try {
@@ -217,9 +269,13 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
+    // `editor` is how the app finds out whether the key it is holding is the
+    // right one, so that a wrong password is refused when it is typed rather
+    // than an hour later at the end of a walk.
     if (url.pathname === '/health') {
       return json({ ok: true, repo: `${env.OWNER}/${env.REPO}`,
-                    readOnly: env.READ_ONLY === 'true' });
+                    readOnly: env.READ_ONLY === 'true',
+                    editor: await isEditor(env, request) });
     }
 
     if (url.pathname === '/file') {
