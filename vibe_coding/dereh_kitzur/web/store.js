@@ -82,8 +82,11 @@ const Store = (() => {
   const K_PLACES = 'dk.cache.places.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
+  const K_KEY = 'dk.key.v1';            // the editor's password, once verified
 
-  const state = { offline: false, writable: null, checked: false };
+  // `approved` starts false and only the worker can turn it true, so every
+  // path that asks "may this browser edit" is closed until it has answered.
+  const state = { offline: false, writable: null, checked: false, approved: false };
 
   /* Photo paths are stored relative to the data repo, so they resolve the same
    * whether the app is served from Pages, from localhost, or from a file the
@@ -187,34 +190,72 @@ const Store = (() => {
 
   /* ---------- editing ----------
    *
-   * There is no login. Anyone who opens the app may contribute, which is the
-   * whole point: a resident who walked a shortcut should not need a GitHub
-   * account to put it on the map.
+   * Contributing needs nothing: a resident who walked a shortcut records it and
+   * sends it in, with no account, no password and no GitHub. That path is the
+   * point of the whole app and it stays wide open.
    *
-   * What remains is a plain switch, off by default. It is not a permission -
-   * flipping it takes one tap and asks for nothing - it just keeps the editing
-   * controls out of the way of somebody who only wants to find a path, and
-   * keeps a stray tap from removing a trail.
+   * Deciding what goes *on the map* is a different act, and since 28/8/2026 it
+   * takes a password. Until then edit mode was a switch in localStorage, which
+   * meant anybody who opened the app could publish, approve and delete - and
+   * the worker, taking no credential at all, accepted the same from curl.
    *
-   * The name is optional and unverified. It goes in the commit and in `by`,
+   * The password is held by the worker as a secret and never travels except as
+   * a header on a write. This app only ever learns whether the one it holds is
+   * the right one, from /health.
+   *
+   * The name stays optional and unverified. It goes in the commit and in `by`,
    * so a change has a face rather than being anonymous by default.
    */
 
   const editing = () => localStorage.getItem(K_ON) === 'yes';
   const named = () => localStorage.getItem(K_NAME) || '';
+  const keyed = () => localStorage.getItem(K_KEY) || '';
 
-  /** Can this app write at all: the switch is on and a worker exists. */
-  const isEditor = () => editing() && !!WORKER && state.writable !== false;
+  /** May this browser change the map: the switch is on, a worker is up, and it
+   *  has confirmed the password this browser holds. */
+  const isEditor = () => editing() && !!WORKER && state.writable !== false
+    && state.approved;
   const editor = () => (isEditor() ? (named() || 'עורך') : null);
 
-  function enable(name) {
-    localStorage.setItem(K_ON, 'yes');
-    if (name != null) localStorage.setItem(K_NAME, String(name).trim().slice(0, 40));
-    return editor();
+  /** Ask the worker about a password without storing it. */
+  async function verify(key) {
+    if (!WORKER || !key) return false;
+    try {
+      const res = await fetch(`${WORKER}/health`,
+        { cache: 'no-store', headers: { 'X-DK-Key': key } });
+      const body = res.ok ? await res.json() : null;
+      return !!body && body.editor === true;
+    } catch (err) {
+      return false;                     // offline: not a wrong password, but
+    }                                   // not something we can act on either
   }
 
+  /** Turn edit mode on, or just update the name once it is already on.
+   *
+   *  Async, and false means refused: the password is checked with the worker
+   *  before anything is stored, so a typo is caught here rather than at the end
+   *  of a walk when there is a trail to publish. */
+  async function enable(name, key) {
+    if (name != null) localStorage.setItem(K_NAME, String(name).trim().slice(0, 40));
+    if (key != null && String(key).trim()) {
+      const trimmed = String(key).trim();
+      if (!(await verify(trimmed))) return false;
+      localStorage.setItem(K_KEY, trimmed);
+      state.approved = true;
+    }
+    if (!state.approved) return false;
+    localStorage.setItem(K_ON, 'yes');
+    return true;
+  }
+
+  /** Leaving edit mode forgets the password too.
+   *
+   *  This is a phone that goes out on trails, so "off" should mean the next
+   *  person holding it cannot turn it back on. Getting back in is one paste. */
   function disable() {
     localStorage.removeItem(K_ON);
+    localStorage.removeItem(K_KEY);
+    state.approved = false;
   }
 
   /** Ask the worker whether it is alive and accepting writes.
@@ -225,9 +266,14 @@ const Store = (() => {
   async function resume() {
     if (!WORKER) { state.writable = false; state.checked = true; return null; }
     try {
-      const res = await fetch(`${WORKER}/health`, { cache: 'no-store' });
+      const res = await fetch(`${WORKER}/health`,
+        { cache: 'no-store', ...(keyed() ? { headers: { 'X-DK-Key': keyed() } } : {}) });
       const body = res.ok ? await res.json() : null;
       state.writable = !!body && body.ok && !body.readOnly;
+      state.approved = !!body && body.editor === true;
+      // A key the worker no longer recognises - rotated, or typed into a phone
+      // that has since been handed on - should stop presenting as edit mode.
+      if (keyed() && body && body.editor === false) disable();
     } catch (err) {
       state.writable = false;         // offline, or no worker deployed yet
     }
@@ -278,7 +324,12 @@ const Store = (() => {
     if (!WORKER) throw new Error('אין שרת כתיבה מוגדר.');
     const res = await fetch(`${WORKER}/file`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Sent whenever this browser holds one. Submitting a trail needs no key
+        // and the worker asks for none on that path, so one code serves both.
+        ...(keyed() ? { 'X-DK-Key': keyed() } : {})
+      },
       body: JSON.stringify({
         path, content: base64, sha: sha || null,
         message: `${message}${named() ? ` (${named()})` : ''}`
