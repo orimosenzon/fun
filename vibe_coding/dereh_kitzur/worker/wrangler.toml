@@ -13,10 +13,10 @@ BRANCH = "main"
 # for everyone without touching the token, the data or the app itself.
 READ_ONLY = "false"
 
-# Per-IP rate limiting. The worker runs without it, so a first deployment can
-# skip this and add it later:
+# Per-IP rate limiting, for writes and for password guesses alike. Without this
+# binding the worker still runs, but both budgets become unlimited - and the
+# password check is an oracle anyone can hammer. Created 28/8/2026 with
 #   wrangler kv namespace create RATE
-# then paste the id it prints here and uncomment.
-# [[kv_namespaces]]
-# binding = "RATE"
-# id = "paste-the-id-here"
+[[kv_namespaces]]
+binding = "RATE"
+id = "3e525627ec39406083b5dc59e12a9a2a"

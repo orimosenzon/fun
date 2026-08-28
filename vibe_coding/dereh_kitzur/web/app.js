@@ -1273,6 +1273,157 @@ function wireGrip() {
   });
 }
 
+/* ---------- panel width (desktop) ----------
+ *
+ * On a wide screen the list is a column beside the map, and 380px is a guess
+ * that suits nobody exactly: reading trail notes wants it wider, looking at
+ * where the paths actually run wants it gone. So the edge is draggable and the
+ * tab folds it away entirely.
+ *
+ * Everything reads from one custom property, `--panel-w`, which is also what
+ * the map, the floating buttons and the navigation bar are positioned against.
+ * Setting it is the whole implementation; nothing else has to be told.
+ */
+
+const PANEL_PREF = 'dk.panel.v1';
+const PANEL_MIN = 280;                 // narrower than this and names wrap badly
+const PANEL_FOLD = 200;                // drag past here and it folds instead
+
+function panelMax() {
+  return Math.min(window.innerWidth * 0.6, 720);
+}
+
+function setPanelWidth(w) {
+  document.documentElement.style.setProperty('--panel-w', Math.round(w) + 'px');
+}
+
+function foldPanel(off, animate) {
+  document.body.classList.toggle('panel-anim', !!animate);
+  document.body.classList.toggle('panel-off', off);
+  el('panel-fold').setAttribute('aria-label', off ? 'הצגת הרשימה' : 'הסתרת הרשימה');
+  el('panel').setAttribute('aria-hidden', off ? 'true' : 'false');
+  savePanel();
+  // The map only learns its new size when told, and only after the transition
+  // has actually moved the edge.
+  setTimeout(() => { if (map) map.resize(); }, animate ? 240 : 0);
+}
+
+function savePanel() {
+  try {
+    localStorage.setItem(PANEL_PREF, JSON.stringify({
+      w: parseInt(document.documentElement.style.getPropertyValue('--panel-w'), 10) || 380,
+      off: document.body.classList.contains('panel-off')
+    }));
+  } catch (err) {
+    /* private mode: the panel simply opens at its default next time */
+  }
+}
+
+function wirePanelWidth() {
+  const grip = el('grip-v');
+  const fold = el('panel-fold');
+
+  let pref = {};
+  try {
+    pref = JSON.parse(localStorage.getItem(PANEL_PREF) || '{}');
+  } catch (err) {
+    pref = {};
+  }
+  if (pref.w) setPanelWidth(Math.min(Math.max(pref.w, PANEL_MIN), panelMax()));
+  if (pref.off) foldPanel(true, false);
+
+  let startX = 0, startW = 0, toRight = true, dragging = false, queued = false;
+  // A drag ends with a synthetic click on the same element. Without this,
+  // dragging the edge shut folds the panel and the click that follows opens it
+  // straight back up.
+  let dragged = false;
+
+  // Which way the panel grows depends on the writing direction, so ask the
+  // element where it is rather than assuming RTL.
+  const begin = (e) => {
+    if (document.body.classList.contains('panel-off')) return;
+    const rect = el('panel').getBoundingClientRect();
+    dragging = true;
+    startX = e.clientX;
+    startW = rect.width;
+    dragged = false;
+    toRight = rect.right >= window.innerWidth - 2;
+    grip.classList.add('dragging');
+    document.body.classList.remove('panel-anim');
+    grip.setPointerCapture(e.pointerId);
+  };
+
+  const move = (e) => {
+    if (!dragging) return;
+    const delta = e.clientX - startX;
+    if (Math.abs(delta) > 3) dragged = true;
+    const raw = startW + (toRight ? -delta : delta);
+    setPanelWidth(Math.min(Math.max(raw, PANEL_FOLD - 60), panelMax()));
+    // Resizing the map on every pointer event outruns the frame; one per frame
+    // is what the eye gets anyway.
+    if (!queued && map) {
+      queued = true;
+      requestAnimationFrame(() => { queued = false; map.resize(); });
+    }
+  };
+
+  const end = () => {
+    if (!dragging) return;
+    dragging = false;
+    grip.classList.remove('dragging');
+    const w = el('panel').getBoundingClientRect().width;
+    if (w < PANEL_FOLD) {
+      setPanelWidth(380);              // what it reopens to
+      foldPanel(true, true);
+      return;
+    }
+    setPanelWidth(Math.max(w, PANEL_MIN));
+    savePanel();
+    if (map) map.resize();
+  };
+
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.target === fold) return;     // the tab is a button, not a handle
+    begin(e);
+  });
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+
+  // Folded, the strip is the only thing left on screen, so the whole of it
+  // reopens rather than only the 26px tab.
+  grip.addEventListener('click', (e) => {
+    if (dragged) { dragged = false; return; }
+    if (!document.body.classList.contains('panel-off') && e.target !== fold) return;
+    foldPanel(!document.body.classList.contains('panel-off'), true);
+  });
+
+  grip.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 60 : 20;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      foldPanel(!document.body.classList.contains('panel-off'), true);
+      return;
+    }
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const rect = el('panel').getBoundingClientRect();
+    const grow = (e.key === 'ArrowLeft') === (rect.right >= window.innerWidth - 2);
+    setPanelWidth(Math.min(Math.max(rect.width + (grow ? step : -step),
+                                    PANEL_MIN), panelMax()));
+    savePanel();
+    if (map) map.resize();
+  });
+
+  // A window narrowed after the fact must not leave the panel wider than the
+  // window allows.
+  window.addEventListener('resize', () => {
+    const w = parseInt(
+      document.documentElement.style.getPropertyValue('--panel-w'), 10);
+    if (w && w > panelMax()) { setPanelWidth(panelMax()); savePanel(); }
+  });
+}
+
 /* ---------- swipe on the lightbox ---------- */
 
 function wireSwipe() {
@@ -1598,6 +1749,7 @@ function wireControls() {
   });
 
   wireGrip();
+  wirePanelWidth();
   wireSwipe();
 }
 

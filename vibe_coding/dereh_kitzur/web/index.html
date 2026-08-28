@@ -112,6 +112,15 @@
   </div>
 </section>
 
+<!-- The panel's edge, on wide screens only. Drag it to set the width, or use
+     the tab to fold the list away and leave the map on its own. It sits beside
+     the panel rather than inside it so that folding can clip the panel's
+     contents without clipping the handle that brings them back. -->
+<div id="grip-v" class="grip-v" role="separator" aria-orientation="vertical"
+     aria-label="רוחב הרשימה" tabindex="0">
+  <button id="panel-fold" class="grip-btn" aria-label="הסתרת הרשימה"></button>
+</div>
+
 <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="תמונה בגודל מלא">
   <button class="lb-close" aria-label="סגירה">&times;</button>
   <button class="lb-nav lb-prev" aria-label="הקודמת">&rsaquo;</button>

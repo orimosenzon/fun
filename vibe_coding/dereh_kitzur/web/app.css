@@ -206,6 +206,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: #cdd6d2;
 }
 
+/* The vertical edge is a desktop affair: on a phone the panel is a sheet the
+ * full width of the screen, and there is no width to argue about. */
+.grip-v { display: none; }
+
 #list-view, #detail-view {
   flex: 1;
   min-height: 0;
@@ -574,23 +578,105 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ---------- desktop ---------- */
 
 @media (min-width: 860px) {
-  :root { --panel-h: 100%; }
+  /* One number drives the whole desktop layout: the panel's width, the map's
+   * inset, and everything floating over the map. Dragging the edge writes to
+   * it, and folding the panel away sets it to zero. */
+  :root { --panel-h: 100%; --panel-w: 380px; }
 
   /* Logical insets keep the panel on the reading-start side (right, in RTL). */
-  #map { inset: 0; inset-inline-start: 380px; }
+  #map { inset: 0; inset-inline-start: var(--panel-w); }
 
   .panel {
     inset: 0;
     inset-inline-end: auto;
-    width: 380px;
+    width: var(--panel-w);
     height: 100%;
     border-radius: 0;
     box-shadow: 2px 0 20px rgba(20, 40, 30, .12);
+    overflow: hidden;            /* folded to zero, the list must not spill out */
   }
 
   .grip { display: none; }
+
+  .grip-v {
+    display: block;
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--panel-w);
+    margin-inline-start: -6px;   /* straddle the seam rather than sit beside it */
+    width: 12px;
+    z-index: 700;
+    cursor: ew-resize;
+    touch-action: none;
+  }
+
+  .grip-v::before {              /* the seam itself, lit on hover */
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 5px;
+    width: 2px;
+    background: transparent;
+    transition: background .15s ease;
+  }
+
+  .grip-v:hover::before,
+  .grip-v:focus-visible::before,
+  .grip-v.dragging::before { background: var(--accent); }
+
+  /* The tab is the discoverable half: a person who never thinks to drag an
+   * edge still sees something to press, and when the panel is folded away
+   * this is the only thing left to bring it back. */
+  /* The tab hangs off the seam into the map, never into the list, so that when
+   * the panel is folded to nothing the tab is still fully on screen. */
+  .grip-btn {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: -20px;
+    width: 26px;
+    height: 46px;
+    margin-top: -23px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px 0 0 8px;   /* rounded on the side facing the map (RTL) */
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(20, 40, 30, .16);
+    cursor: pointer;
+  }
+
+  /* Two borders of a square, rotated: the arrowhead. The angles are physical
+   * because a rotation cannot be expressed logically, and this layout puts the
+   * map to the left of the panel. */
+  .grip-btn::before {
+    content: "";
+    display: block;
+    width: 7px;
+    height: 7px;
+    margin: 0 auto;
+    border-top: 2px solid #55635e;
+    border-inline-start: 2px solid #55635e;
+    transform: rotate(-135deg);   /* points at the map: "fold this away" */
+  }
+
+  .grip-v:hover .grip-btn { border-color: var(--accent); }
+  .grip-v:hover .grip-btn::before { border-color: var(--accent); }
+
+  /* Folded: no panel and nothing to drag, only the tab pointing back at where
+   * the list went. The seam stops straddling the edge so the tab stays inside
+   * the window. */
+  .panel-off { --panel-w: 0px; }
+  .panel-off .panel { box-shadow: none; }
+  .panel-off .grip-v { cursor: pointer; margin-inline-start: 0; }
+  .panel-off .grip-btn::before { transform: rotate(45deg); }
+
+  /* Dragging a width while the map animates its own is a fight nobody wins. */
+  .panel, #map, .fab, .nav { transition: none; }
+  .panel-anim .panel, .panel-anim #map,
+  .panel-anim .fab, .panel-anim .grip-v { transition: all .22s ease; }
+
   .panel-head { padding-top: 16px; }
-  .fab { bottom: 20px; inset-inline-end: auto; inset-inline-start: 400px; }
+  .fab { bottom: 20px; inset-inline-end: auto;
+         inset-inline-start: calc(var(--panel-w) + 20px); }
   .fab-2 { bottom: 72px; }
   .fab-3 { bottom: 124px; }
   .fab-4 { bottom: 176px; }
@@ -600,7 +686,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
   /* The bars are positioned against the window, not the map, so at this width
    * they would lie across the panel. Inline-start is the panel's side. */
-  .nav { inset-inline: 390px 10px; }
+  .nav { inset-inline: calc(var(--panel-w) + 10px) 10px; }
 }
 
 .no-gl {
