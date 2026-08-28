@@ -66,6 +66,14 @@ const MAX_BODY = 6 * 1024 * 1024;        // one photo, comfortably
 const RATE_MAX = 40;                     // writes per window, per IP
 const RATE_WINDOW = 300;                 // seconds
 
+/* Wrong passwords per window, per IP.
+ *
+ * Checking a key is the one operation here that answers a question worth
+ * asking repeatedly, so without this the endpoint is a free oracle and the
+ * password is only as good as the number of guesses per second allows. A
+ * correct key costs nothing from this budget; only a wrong one does. */
+const AUTH_MAX = 10;
+
 /* The app is served from GitHub Pages and this worker lives on a different
  * host, so every call is cross-origin.
  *
@@ -123,17 +131,26 @@ async function sameSecret(a, b) {
  *  With no EDITOR_KEY configured this answers no, and the gated paths become
  *  unwritable by anybody. That direction is deliberate: a worker deployed
  *  without its secret should refuse edits rather than accept every one. */
-async function isEditor(env, request) {
+async function isEditor(env, request, ip) {
   const given = request.headers.get('X-DK-Key') || '';
   if (!env.EDITOR_KEY || !given) return false;
-  return sameSecret(given, env.EDITOR_KEY);
+  // Spent budget means stop answering, right or wrong: an oracle that still
+  // replies once the limit is hit is not limited at all.
+  if (await overRate(env, 'a', ip, AUTH_MAX, false)) return false;
+  if (await sameSecret(given, env.EDITOR_KEY)) return true;
+  await overRate(env, 'a', ip, AUTH_MAX, true);
+  return false;
 }
 
-/** Rate limit per IP. Without KV bound the worker still runs - losing the
- *  limiter should not take the whole write path down with it. */
-async function overRate(env, ip) {
+/** Count one event against a per-IP budget, and say whether it is spent.
+ *
+ *  Without KV bound the worker still runs - losing the limiter should not take
+ *  the whole write path down with it. `bump: false` reads the budget without
+ *  spending any of it, which is how a correct password avoids being charged
+ *  for the guesses somebody else made from the same address. */
+async function overRate(env, bucket, ip, max, bump = true) {
   if (!env.RATE) return false;
-  const key = `w:${ip}`;
+  const key = `${bucket}:${ip}`;
   const now = Math.floor(Date.now() / 1000);
   let state;
   try {
@@ -144,13 +161,14 @@ async function overRate(env, ip) {
   if (!state || now - state.since > RATE_WINDOW) {
     state = { since: now, n: 0 };
   }
+  if (!bump) return state.n > max;
   state.n += 1;
   try {
     await env.RATE.put(key, JSON.stringify(state), { expirationTtl: RATE_WINDOW * 2 });
   } catch (err) {
     /* a failed write to the limiter is not a reason to refuse the edit */
   }
-  return state.n > RATE_MAX;
+  return state.n > max;
 }
 
 /** A replacement document has to still be the kind of document it replaces.
@@ -205,7 +223,7 @@ async function write(env, request, ip) {
   if (env.READ_ONLY === 'true') {
     return json({ error: 'הכתיבה מושהית זמנית.' }, 503);
   }
-  if (await overRate(env, ip)) {
+  if (await overRate(env, 'w', ip, RATE_MAX)) {
     return json({ error: 'יותר מדי שינויים בזמן קצר. נסה בעוד כמה דקות.' }, 429);
   }
 
@@ -226,7 +244,7 @@ async function write(env, request, ip) {
 
   // Checked after the allowlist and before anything is parsed, so a wrong key
   // never gets as far as a schema opinion about the body it sent.
-  if (gated(path) && !(await isEditor(env, request))) {
+  if (gated(path) && !(await isEditor(env, request, ip))) {
     return json({ error: 'רק עורך יכול לשנות את המפה עצמה. הזן סיסמת עריכה.' }, 401);
   }
 
@@ -275,7 +293,7 @@ export default {
     if (url.pathname === '/health') {
       return json({ ok: true, repo: `${env.OWNER}/${env.REPO}`,
                     readOnly: env.READ_ONLY === 'true',
-                    editor: await isEditor(env, request) });
+                    editor: await isEditor(env, request, ip) });
     }
 
     if (url.pathname === '/file') {
