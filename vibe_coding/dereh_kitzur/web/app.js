@@ -217,8 +217,10 @@ function drawWaypoints() {
     node.className = 'pin';
     node.innerHTML = `<i></i><b>${escapeHtml(wp.name)}</b>`;
     node.addEventListener('click', (e) => { e.stopPropagation(); select(wp.id, false); });
+    // Centre anchoring, because the element is a point with no size of its own
+    // and the dot is drawn around it. See .pin in app.css.
     wpMarkers.push(
-      new maplibregl.Marker({ element: node, anchor: 'left' })
+      new maplibregl.Marker({ element: node })
         .setLngLat([wp.lng, wp.lat])
         .addTo(map)
     );
@@ -351,8 +353,11 @@ function renderList() {
     const thumb = it.photos && it.photos.length
       ? `<img class="thumb" src="${it.photos[0].thumb}" alt="" loading="lazy">`
       : `<div class="thumb empty">${glyph}</div>`;
+    // A trail carrying no colour of its own is drawn in its layer's, on the
+    // map and so in the list beside it too.
+    const colour = it.color || (Layers.layerOf(it.id) || {}).color || '#8d6e63';
     return `<li class="row${it.id === selectedId ? ' on' : ''}" data-id="${it.id}"
-              style="color:${it.color || '#8d6e63'}">
+              style="color:${colour}">
       <span class="swatch"></span>
       ${thumb}
       <span class="txt">
@@ -519,6 +524,9 @@ function editorBlock(it, layer) {
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
+      <button class="act" data-pub="colour"><span class="lbl">צבע השביל
+        <span class="hint"><span class="dot" style="--c:${it.color || layer.color}"></span>
+          איך הקו נראה על המפה</span></span></button>
       <button class="act" data-pub="links"><span class="lbl">קישורים
         <span class="hint">${(it.links || []).length
           ? plural(it.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
@@ -757,6 +765,7 @@ function wirePublished(it) {
       try {
         if (act === 'links') { linksForm(it); return; }
         if (act === 'move') { moveForm(it); return; }
+        if (act === 'colour') { colourForm(it); return; }
 
         if (act === 'rename') {
           const name = prompt('שם השביל:', it.name);
@@ -860,6 +869,53 @@ function linksForm(it) {
 const LAYER_COLOURS = ['#0b7285', '#c2255c', '#5f3dc4', '#e8590c',
                        '#2b8a3e', '#1864ab', '#a61e4d', '#495057'];
 
+/* And the one a single trail picks from. It opens with the initiative's own
+ * green, and carries the colours the trails imported from My Maps already use,
+ * so recolouring one to match its neighbour is a matter of picking the same
+ * swatch rather than guessing at a hex. */
+const TRAIL_COLOURS = ['#097138', '#0b7285', '#1864ab', '#1a237e', '#5f3dc4',
+                       '#880e4f', '#a52714', '#e65100', '#f57c00', '#817717',
+                       '#495057'];
+
+/** A row of colour buttons, shared by the layer form, the trail form and the
+ *  sheet where a trail is first written.
+ *
+ *  Which one is picked lives in the DOM rather than in a variable, the way the
+ *  link rows below do it, so a form can be opened and thrown away without
+ *  leaving a stale choice behind it. */
+const Swatches = {
+  /** `inherit` adds a first, colourless swatch meaning "whatever the layer
+   *  is". A colour already in use that is not in the palette is added too,
+   *  so opening the form on such a trail cannot quietly recolour it. */
+  html(colours, current, inherit) {
+    const all = current && !colours.includes(current) ? [current, ...colours] : colours;
+    const one = (c, on) => `<button type="button"
+      class="sw${c ? '' : ' none'}${on ? ' on' : ''}" data-colour="${c}"
+      style="--c:${c || 'transparent'}"
+      aria-label="${c ? 'צבע ' + c : 'צבע השכבה'}"></button>`;
+    return `<div class="swatches">
+      ${inherit ? one('', !current) : ''}
+      ${all.map((c) => one(c, c === current)).join('')}
+    </div>`;
+  },
+
+  /** The colour picked inside `root`, or '' for the layer's own. */
+  read(root) {
+    const on = root.querySelector('.swatches .sw.on');
+    return on ? on.dataset.colour : '';
+  },
+
+  /** One delegated listener, so a picker rendered later still works. */
+  wire(root) {
+    root.addEventListener('click', (e) => {
+      const sw = e.target.closest('[data-colour]');
+      if (!sw) return;
+      sw.parentElement.querySelectorAll('.sw').forEach((s) =>
+        s.classList.toggle('on', s === sw));
+    });
+  }
+};
+
 function layerForm(layer) {
   const now = layer || { name: '', color: LAYER_COLOURS[0], note: '', dash: false };
   openForm(`
@@ -876,10 +932,7 @@ function layerForm(layer) {
       <textarea id="lay-note" rows="2" maxlength="160"
                 placeholder="מה נכנס לשכבה הזאת">${escapeHtml(now.note || '')}</textarea></label>
     <div class="fld"><span>צבע</span>
-      <div class="swatches" id="lay-colours">
-        ${LAYER_COLOURS.map((c) => `<button type="button" class="sw${c === now.color ? ' on' : ''}"
-          data-colour="${c}" style="--c:${c}" aria-label="צבע ${c}"></button>`).join('')}
-      </div>
+      ${Swatches.html(LAYER_COLOURS, now.color, false)}
     </div>
     <label class="check"><input type="checkbox" id="lay-dash" ${now.dash ? 'checked' : ''}>
       <span>קו מקווקו, לשבילים שעוד לא קיימים בשטח</span></label>
@@ -888,7 +941,23 @@ function layerForm(layer) {
     ${layer ? `<button class="big-act ghost danger" data-act="drop-layer"><b>מחיקת השכבה</b>
       <span>השבילים שבתוכה יחזרו לשכבת "דרכי קיצור", ולא יימחקו</span></button>` : ''}`);
   formTarget = layer || null;
-  formColour = now.color;
+}
+
+/** The colour one trail is drawn in, over and above its layer's. */
+function colourForm(it) {
+  const layer = Layers.layerOf(it.id) || {};
+  openForm(`
+    <header class="sheet-head">
+      <h2>צבע השביל</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">באיזה צבע "${escapeHtml(it.name)}" ייראה על המפה, אצל כל
+      מי שפותח את האפליקציה. הריק שבהתחלה הוא צבע השכבה עצמה${
+        layer.name ? `, "${escapeHtml(layer.name)}"` : ''}.</p>
+    ${Swatches.html(TRAIL_COLOURS, it.color || '', true)}
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-colour"><b>שמור צבע</b></button>`);
+  formTarget = it;
 }
 
 function moveForm(it) {
@@ -913,7 +982,6 @@ function moveForm(it) {
 }
 
 let formTarget = null;      // what the open form is about
-let formColour = null;      // the swatch picked in the layer form
 
 function formError(err) {
   const box = el('form-err');
@@ -924,7 +992,6 @@ function formError(err) {
 
 async function formAction(act, btn) {
   if (act === 'close-form') { closeForm(); return; }
-  if (act === 'colour') return;
 
   const label = btn.querySelector('b');
   const was = label ? label.textContent : '';
@@ -944,7 +1011,7 @@ async function formAction(act, btn) {
       const patch = {
         name,
         note: el('lay-note').value.trim(),
-        color: formColour,
+        color: Swatches.read(el('form-card')) || LAYER_COLOURS[0],
         dash: el('lay-dash').checked
       };
       await reloadShared(formTarget
@@ -969,6 +1036,12 @@ async function formAction(act, btn) {
       if (!picked) throw new Error('צריך לבחור שכבה.');
       const target = picked.value === Layers.TRAILS_ID ? null : picked.value;
       await reloadShared(await Store.setLayer(formTarget.id, target, formTarget.name));
+      closeForm();
+      select(formTarget.id, false);
+
+    } else if (act === 'save-colour') {
+      await reloadShared(await Store.setColor(
+        formTarget.id, Swatches.read(el('form-card')), formTarget.name));
       closeForm();
       select(formTarget.id, false);
     }
@@ -1599,7 +1672,15 @@ function editorSheet() {
     return;
   }
 
-  el('editor-card').innerHTML = Store.isEditor() ? `${head}
+  // `?local` reads the files next to the app and writes to the live dataset
+  // all the same, which is a combination worth saying out loud: a save lands
+  // in the repo and then the screen goes back to showing the older copy.
+  const localData = Store.RAW === './' ? `
+    <p class="pub-msg bad">האפליקציה קוראת נתונים מקומיים (<code>?local</code>),
+      אבל כותבת למסד האמיתי. מה שתשמור ייכתב לריפו ואחרי רענון המסך יראה שוב את
+      העותק הישן. להורדת <code>?local</code> מהכתובת יש מסד אחד בלבד.</p>` : '';
+
+  el('editor-card').innerHTML = Store.isEditor() ? `${head}${localData}
     <p class="sheet-lead">מצב עריכה דלוק. שביל שתפרסם נכנס למפה מיד וכל מי שיפתח
       את האפליקציה יראה אותו.</p>
     <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
@@ -1680,13 +1761,7 @@ function wireControls() {
 
   el('form-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'form-sheet') { closeForm(); return; }
-    const swatch = e.target.closest('[data-colour]');
-    if (swatch) {
-      formColour = swatch.dataset.colour;
-      el('lay-colours').querySelectorAll('.sw').forEach((s) =>
-        s.classList.toggle('on', s === swatch));
-      return;
-    }
+    if (e.target.closest('[data-colour]')) return;   // Swatches.wire has it
     const pick = e.target.closest('.pick');
     if (pick) {
       el('layer-pick').querySelectorAll('.pick').forEach((p) =>
@@ -1697,6 +1772,7 @@ function wireControls() {
     if (btn) formAction(btn.dataset.act, btn);
   });
   LinkRows.wire(el('form-sheet'));
+  Swatches.wire(el('form-sheet'));
 
   Arrange.wire();
 
