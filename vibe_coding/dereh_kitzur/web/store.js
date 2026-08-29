@@ -134,9 +134,20 @@ const Store = (() => {
   /** raw.githubusercontent serves from a CDN with a five minute cache, which
    *  is fine for a visitor and wrong for the person who just published: their
    *  own trail would disappear for five minutes. Somebody with editing switched
-   *  on reads through the worker instead, which is always current. */
+   *  on reads through the worker instead, which is always current.
+   *
+   *  Two things this asks that look wrong and are not:
+   *
+   *  `editing()` and not `isEditor()`, because the worker has not answered yet
+   *  when the app first loads - approval arrives a moment later - so the first
+   *  read of the session, the one right after a save, would be the stale one.
+   *  That is the exact case this function exists for. Reading through the
+   *  worker is ungated, so it needs no approval to ask.
+   *
+   *  And `?local` wins over both, because it is an explicit request to look at
+   *  the files sitting next to the app rather than at the published dataset. */
   async function canonical(path) {
-    if (isEditor()) {
+    if (RAW !== './' && editing()) {
       try {
         const { json } = await getFile(path);
         if (json) return json;
@@ -503,7 +514,9 @@ const Store = (() => {
       links: cleanLinks(draft.links),
       path: draft.path,
       length: draft.length,
-      color: '#097138',
+      // No colour means "draw me in my layer's colour", so the field is left
+      // out rather than written empty.
+      ...(draft.color ? { color: draft.color } : {}),
       connects: [],
       entries: [
         { lat: draft.path[0][0], lng: draft.path[0][1] },
@@ -531,6 +544,24 @@ const Store = (() => {
     const it = find(doc, id);
     if (it) { it.name = name; it.note = note; }
   }, `עדכון שביל: ${name}`));
+
+  /** The colour one trail is drawn in.
+   *
+   *  Empty removes the field, and the trail then takes its layer's colour -
+   *  which is what a trail that carries no colour at all has always done.
+   *
+   *  The value is checked rather than trusted: it ends up inside a style
+   *  attribute in everyone's browser, and this file is one several people
+   *  write to. */
+  const setColor = async (id, color, name) => {
+    if (color && !/^#[0-9a-f]{6}$/i.test(color)) throw new Error('צבע לא תקין.');
+    return absolutise(await withTrails((doc) => {
+      const it = find(doc, id);
+      if (!it) return;
+      if (color) it.color = color;
+      else delete it.color;
+    }, `צבע השביל: ${name}`));
+  };
 
   /** Links on an existing trail or waypoint. */
   const setLinks = async (id, links, name) => absolutise(await withTrails((doc) => {
@@ -677,7 +708,10 @@ const Store = (() => {
       links: cleanLinks(draft.links),
       path: draft.path,
       length: draft.length,
-      color: '#f9a825',
+      // The colour the sender picked, carried through to approval. The queue
+      // draws every item in its own yellow regardless, so this is not what it
+      // looks like while it waits.
+      ...(draft.color ? { color: draft.color } : {}),
       mode: draft.mode,
       submitted: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       by: named()
@@ -701,7 +735,9 @@ const Store = (() => {
       links: item.links || [],
       path: item.path,
       length: item.length,
-      color: '#097138',
+      // Items queued before a sender could pick a colour were stamped with the
+      // queue's own yellow, which was never a statement about the map.
+      ...(item.color && item.color !== '#f9a825' ? { color: item.color } : {}),
       connects: [],
       entries: [
         { lat: item.path[0][0], lng: item.path[0][1] },
@@ -738,7 +774,7 @@ const Store = (() => {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks,
     isEditor, editor, editing, named, enable, disable, resume, writable,
-    publish, remove, rename, setLinks, addPhotos, removePhoto,
+    publish, remove, rename, setLinks, setColor, addPhotos, removePhoto,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,

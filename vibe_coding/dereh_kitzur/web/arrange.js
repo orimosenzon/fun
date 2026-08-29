@@ -183,7 +183,10 @@ const Arrange = (() => {
       lngLat: { lat: at.lat, lng: at.lng }, marker: null
     };
     entry.dot.addEventListener('pointerdown', (e) => beginDrag(entry, e));
-    entry.marker = new maplibregl.Marker({ element: node, anchor: 'left' })
+    // Centre anchoring: the element is a point with no size and the dot is
+    // drawn around it, so the dot lands exactly on the coordinate - which is
+    // also what makes a dragged pin stay under the finger. See .am in app.css.
+    entry.marker = new maplibregl.Marker({ element: node })
       .setLngLat([at.lng, at.lat]).addTo(map);
     return entry;
   }

@@ -89,7 +89,9 @@ const Drafts = (() => {
       layer: rec.layer || '',
       path,
       length: pathLength(path),
-      color: '#8e24aa',
+      // Empty leaves it to the drafts layer's own purple, which is how a draft
+      // recorded before a colour could be picked still looks.
+      color: rec.color || '',
       draft: true,
       mode: rec.mode,
       created: rec.created,
@@ -442,6 +444,9 @@ ${tracks}
         <textarea id="d-note" rows="2" maxlength="240"
                   placeholder="מדרגות בקצה, חסום בחורף, מתאים לעגלה…">${escapeHtml(cur.note || '')}</textarea></label>
       ${picker}
+      <div class="fld"><span>צבע השביל</span>
+        ${Swatches.html(TRAIL_COLOURS, cur.color || '#097138', true)}
+      </div>
       <div class="fld"><span>קישורים (לא חובה)</span>
         ${LinkRows.html(cur.links)}</div>
       <button class="big-act primary" data-act="save"><b>שמור שביל</b></button>
@@ -460,6 +465,7 @@ ${tracks}
     rec.name = name;
     rec.note = el('d-note').value.trim();
     rec.links = LinkRows.read(el('draft-card'));
+    rec.color = Swatches.read(el('draft-card'));
     rec.layer = el('d-layer') ? el('d-layer').value : (rec.layer || '');
     rec.path = ed.path;
     rec.mode = ed.mode;
@@ -691,6 +697,7 @@ ${tracks}
   function wire() {
     el('add').addEventListener('click', askMode);
     LinkRows.wire(el('draft-sheet'));
+    Swatches.wire(el('draft-sheet'));
 
     el('draft-sheet').addEventListener('change', async (e) => {
       if (e.target.id !== 'd-import' || !e.target.files.length) return;

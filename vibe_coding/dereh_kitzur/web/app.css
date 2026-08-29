@@ -43,17 +43,30 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .maplibregl-ctrl-bottom-right { margin-inline-end: 64px; }
 
 /* Waypoint pins are HTML markers, so the label uses the browser's own font
- * and Hebrew renders regardless of the map style's glyph set. */
+ * and Hebrew renders regardless of the map style's glyph set.
+ *
+ * The element itself is a point with no size, and both the dot and the label
+ * hang off it. MapLibre places a marker by its own box, so a pin built as an
+ * ordinary row of [dot][label] gets anchored by an edge of that row - and in
+ * RTL the dot sits at the far end of it, a label's width from the coordinate.
+ * That is a fixed offset in *screen* pixels, so the pin slid further from its
+ * real place the further you zoomed out, and a long name slid further than a
+ * short one. Anchoring the point itself is what keeps it still.
+ *
+ * `absolute` is what MapLibre's own marker class sets, and it has to stay that
+ * way: anything else drops the element back into the flow of the map container
+ * and the transform then moves it from wherever that put it. */
 .pin {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+  position: absolute;
+  width: 0;
+  height: 0;
   cursor: pointer;
 }
 
 .pin i {
-  flex: none;
+  position: absolute;
+  top: -7px;                  /* half the dot: border-box, so 14px in all */
+  left: -7px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -63,6 +76,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .pin b {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 11px;   /* beside the dot, on the reading side */
+  transform: translateY(-50%);
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 600;
   padding: 1px 5px;
@@ -1070,6 +1088,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--ink); }
 
+/* "whatever the layer is": a swatch with no colour of its own. */
+.sw.none {
+  background:
+    linear-gradient(45deg, transparent 45%, var(--line) 45%,
+                    var(--line) 55%, transparent 55%), #fff;
+}
+
+/* The colour a trail is currently drawn in, shown on the button that opens
+ * the picker so the choice is visible before it is opened. */
+.hint .dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c);
+  vertical-align: baseline;
+  margin-inline-end: 3px;
+}
+
 .check {
   display: flex;
   align-items: center;
@@ -1247,21 +1284,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- a draggable place marker ---------- */
 
+/* Built like .pin above, and for the same reason: the element is the point,
+ * and the dot sits on it rather than a label's width away. Here it matters
+ * twice over, because a drag stores wherever the pointer was - so a dot drawn
+ * off to one side would pin the place somewhere nobody aimed at. */
 .am {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  /* The element is as wide as the dot plus the name beside it. Only the dot
-   * should be grabbable: these pins sit very close together, and a label wide
-   * enough to read covers the dot of the pin next door. */
+  position: absolute;      /* MapLibre's own; see .pin */
+  width: 0;
+  height: 0;
+  /* Only the dot should be grabbable: these pins sit very close together, and
+   * a label wide enough to read covers the dot of the pin next door. */
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .am i {
-  position: relative;
-  flex: none;
+  position: absolute;
+  top: -7.5px;                /* half the dot: border-box, so 15px in all */
+  left: -7.5px;
   width: 15px;
   height: 15px;
   border-radius: 50%;
@@ -1285,6 +1326,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .am b {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 12px;   /* beside the dot, on the reading side */
+  transform: translateY(-50%);
   font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
