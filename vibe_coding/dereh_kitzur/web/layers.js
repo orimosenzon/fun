@@ -36,10 +36,21 @@ const Layers = (() => {
   const PLACES_ID = 'places';
   const PENDING_ID = 'pending';
 
+  /* The circular route around the moshava, imported from off-road.io. Unlike
+   * the rest of that file it is not a plan on paper but a marked route people
+   * walk, so it belongs in the opening view rather than behind a toggle. */
+  const SOVEV_ID = 'offroad-6177368023236608';
+
   /* Stored per browser, so a visitor who turns the cycling plan on keeps it on.
    * Only the on/off flags are stored - never the data itself, which is rebuilt
-   * from the JSON on every load. */
-  const PREF = 'dk.layers.v1';
+   * from the JSON on every load.
+   *
+   * The version in the key is how a change of defaults reaches somebody who has
+   * been here before: savePrefs writes a flag for every layer at once, so an
+   * earlier visitor carries an explicit `false` for a layer that has since
+   * become one of the defaults and would never see the change. Bumped 29/8/2026,
+   * when the circular route joined the opening view. */
+  const PREF = 'dk.layers.v2';
 
   function loadPrefs() {
     try {
@@ -132,14 +143,24 @@ const Layers = (() => {
     }));
   }
 
+  /* What a visitor sees on arrival, before touching anything: the initiative's
+   * own shortcuts and the circular route. The cycling plan and the several
+   * hundred pardespedia pins are a tap away in the layer sheet, and putting
+   * them all on the map at once buries the shortcuts under them. */
   function init(trails, network, places) {
     const prefs = loadPrefs();
-    buildTrailLayers(trails, (id) => prefs[id] !== false);
+    /** What this browser chose, or the default for a layer nobody has touched. */
+    const isOn = (id, byDefault) =>
+      (typeof prefs[id] === 'boolean' ? prefs[id] : byDefault);
+
+    // The shortcuts are the point of the app, and a trail layer an editor makes
+    // later is the same content sorted into buckets, so both arrive on.
+    buildTrailLayers(trails, (id) => isOn(id, true));
 
     (network ? network.layers : []).forEach((l) => add({
       ...l,
       kind: 'network',
-      on: prefs[l.id] === true             // planning data is opt-in
+      on: isOn(l.id, l.id === SOVEV_ID)    // the rest is planning data, opt-in
     }));
 
     if (places && places.places && places.places.length) {
@@ -154,7 +175,7 @@ const Layers = (() => {
         note: 'בתי קפה, גנים, מוסדות ואתרי הנצחה, עם התקציר והתמונה מהערך בוויקי.',
         credit: 'pardespedia.info',
         groups: places.groups || [],
-        on: prefs[PLACES_ID] === true,     // hundreds of pins; opt-in
+        on: isOn(PLACES_ID, false),        // hundreds of pins; opt-in
         waypoints: places.places.map((p) => toPlace(p, colours))
       });
     }
@@ -184,7 +205,9 @@ const Layers = (() => {
       color: '#8e24aa',
       dash: true,
       note: 'שבילים שהקלטת או ציירת במכשיר הזה. נשמרים כאן בלבד, עד שתשלח אותם.',
-      on: prefs.drafts !== false,
+      // Somebody's own recording, on their own device. Hiding it by default
+      // would mean walking a trail and not seeing it come out on the map.
+      on: isOn('drafts', true),
       segments: []
     });
 
