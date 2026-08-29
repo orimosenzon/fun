@@ -273,8 +273,17 @@ async function write(env, request, ip) {
 
   // A rejected sha means somebody else wrote first. The app knows how to read
   // again and retry, so this has to come back distinguishable.
-  if (res.status === 409 || res.status === 422) return json({ error: 'conflict' }, 409);
-  if (!res.ok) return json({ error: `github ${res.status}` }, 502);
+  //
+  // GitHub says far more than the status does - a rejected sha, a ruleset, a
+  // blocked push and a body it did not like all arrive as 409 or 422 - and
+  // swallowing that leaves an editor staring at the word "conflict" with no way
+  // to find out which. It goes to the log, where `wrangler tail` picks it up.
+  if (!res.ok) {
+    const why = await res.text().catch(() => '');
+    console.log(`github ${res.status} on PUT ${path}: ${why.slice(0, 400)}`);
+    if (res.status === 409 || res.status === 422) return json({ error: 'conflict' }, 409);
+    return json({ error: `github ${res.status}` }, 502);
+  }
   return json({ ok: true });
 }
 
