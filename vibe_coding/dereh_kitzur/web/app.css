@@ -524,6 +524,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   padding: 44px 12px 4px;
+  /* A magnified photo is bigger than the stage by definition, and without this
+   * it would spill over the caption and out past the close button. */
+  overflow: hidden;
 }
 
 #lb-img {
@@ -532,7 +535,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   object-fit: contain;
   border-radius: 4px;
   grid-area: 1 / 1;
+  /* The wheel handler scales about the centre, and works out its offsets on
+   * that assumption. */
+  transform-origin: center center;
+  cursor: zoom-in;
 }
+
+/* Enlarged, the picture is something to move about rather than to magnify
+ * further, and the cursor should say so before the drag starts. */
+#lb-img.zoomed { cursor: grab; }
+#lb-img.zoomed:active { cursor: grabbing; }
 
 #lb-img.loading { opacity: 0; }
 
