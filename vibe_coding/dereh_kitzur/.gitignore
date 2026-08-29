@@ -12,3 +12,6 @@ derech_kitzur*.kml
 !.dev.vars.example
 .env*
 !.env.example
+
+# build_art.py imports build_places.py for its spread()
+__pycache__/

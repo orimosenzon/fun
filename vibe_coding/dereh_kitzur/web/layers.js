@@ -5,8 +5,9 @@
  *            editor has made. A trail carries the id of its layer; the ones
  *            that carry none belong to the initiative's original layer.
  *   network  the moshava's cycling-network plan, existing and proposed
- *   places   places drawn from pardespedia, each with the wiki's own summary,
- *            photo and a link back to the article
+ *   places   points somebody else already wrote up, each carrying that source's
+ *            own words, photos and a link back. Two of them: the pardespedia
+ *            articles, and the אמנות במושבה festival map.
  *   drafts   trails recorded on this device, held by draft.js
  *
  * Everything downstream - the list, the search, the detail pane, navigation -
@@ -35,6 +36,7 @@ const Layers = (() => {
   const TRAILS_ID = 'trails';
   const PLACES_ID = 'places';
   const PENDING_ID = 'pending';
+  const ART_ID = 'art2026';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -87,8 +89,8 @@ const Layers = (() => {
     });
   }
 
-  /** A pardespedia article turned into something the list and the detail pane
-   *  can treat like any other point on the map.
+  /** An article or a festival entry turned into something the list and the
+   *  detail pane can treat like any other point on the map.
    *
    *  The position lives under `geo` in the file, because build_places.py has to
    *  tell a hand-dropped pin from one it guessed off an address, and only ever
@@ -100,11 +102,40 @@ const Layers = (() => {
       lat: geo ? geo.lat : null,
       lng: geo ? geo.lng : null,
       unplaced: !geo,
-      approx: !!geo && (geo.source === 'nearby' || geo.source === 'street'),
+      // `spread` means the builder nudged this off a pile it shared with its
+      // neighbours so that all of them stay clickable. The pin is then a few
+      // metres from where its source put it, and saying so is the honest thing:
+      // "מיקום מקורב" is exactly what it now is.
+      approx: !!geo && (geo.source === 'nearby' || geo.source === 'street' || !!geo.spread),
       geoSource: geo ? geo.source : null,
       place: true,
       color: colours[raw.group] || '#6a1b9a'
     };
+  }
+
+  /** One layer of places, from a document shaped like places.json.
+   *
+   *  Two of these exist and they differ in one way that matters: whose map it
+   *  is. The pardespedia places have no coordinates in the wiki at all, so this
+   *  app is where their positions are decided and an editor may drag them. The
+   *  festival placed its own pins on its own map, and those are not ours to
+   *  move - hence `pinnable`, which gates every editing affordance the detail
+   *  pane and the layer sheet offer for places.
+   *
+   *  Each caller also names its source twice over: `linkTitle` for the link at
+   *  the head of the detail pane, `sourceLine` for the credit at the foot. */
+  function addPlaceLayer(id, doc, opts) {
+    if (!doc || !doc.places || !doc.places.length) return null;
+    const colours = {};
+    (doc.groups || []).forEach((g) => { colours[g.name] = g.color; });
+    return add({
+      ...opts,
+      id,
+      kind: 'places',
+      pinnable: !!opts.pinnable,
+      groups: doc.groups || [],
+      waypoints: doc.places.map((p) => toPlace(p, colours))
+    });
   }
 
   /** The trail layers, rebuilt from the document.
@@ -147,7 +178,7 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places) {
+  function init(trails, network, places, art) {
     const prefs = loadPrefs();
     /** What this browser chose, or the default for a layer nobody has touched. */
     const isOn = (id, byDefault) =>
@@ -163,22 +194,37 @@ const Layers = (() => {
       on: isOn(l.id, l.id === SOVEV_ID)    // the rest is planning data, opt-in
     }));
 
-    if (places && places.places && places.places.length) {
-      const colours = {};
-      (places.groups || []).forEach((g) => { colours[g.name] = g.color; });
-      add({
-        id: PLACES_ID,
-        kind: 'places',
-        name: 'מקומות מפרדספדיה',
-        short: 'מקום',
-        color: '#7b1fa2',
-        note: 'בתי קפה, גנים, מוסדות ואתרי הנצחה, עם התקציר והתמונה מהערך בוויקי.',
-        credit: 'pardespedia.info',
-        groups: places.groups || [],
-        on: isOn(PLACES_ID, false),        // hundreds of pins; opt-in
-        waypoints: places.places.map((p) => toPlace(p, colours))
-      });
-    }
+    addPlaceLayer(PLACES_ID, places, {
+      name: 'מקומות מפרדספדיה',
+      short: 'מקום',
+      color: '#7b1fa2',
+      note: 'בתי קפה, גנים, מוסדות ואתרי הנצחה, עם התקציר והתמונה מהערך בוויקי.',
+      credit: 'pardespedia.info',
+      sourceName: 'פרדספדיה, הוויקי של המושבה',
+      sourceLine: 'הטקסט והתמונה מתוך פרדספדיה, הוויקי של המושבה',
+      linkTitle: 'הערך המלא בפרדספדיה',
+      pinnable: true,                      // the wiki holds no coordinates
+      on: isOn(PLACES_ID, false)           // hundreds of pins; opt-in
+    });
+
+    // The festival's own map, read once a year by build_art.py. It is a
+    // fortnight in the life of the moshava rather than part of its furniture,
+    // so it is off until somebody asks for it - but everything in it is within
+    // walking distance of everything else, which is the whole point of pairing
+    // it with the shortcuts.
+    addPlaceLayer(ART_ID, art, {
+      name: (art && art.name) || 'אמנות במושבה 2026',
+      short: 'אמנות',
+      color: '#c2185b',
+      note: 'סטודיואים פתוחים, תערוכות, מוזיקה ואוכל בפסטיבל אמנות במושבה. '
+        + 'הטקסט, התמונות ופרטי הקשר מגיעים מהמפה של הפסטיבל.',
+      credit: 'אמנות במושבה · pardesart.co.il',
+      sourceName: 'אמנות במושבה',
+      sourceLine: 'הטקסט והתמונות מתוך המפה של אמנות במושבה',
+      linkTitle: 'הדף המלא באתר הפסטיבל',
+      pinnable: false,                     // the festival placed these itself
+      on: isOn(ART_ID, false)
+    });
 
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
@@ -494,7 +540,7 @@ const Layers = (() => {
   function applyVisibility() {
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
-      const hide = (arranging && layer.kind === 'places')
+      const hide = (arranging && layer.pinnable)
         || (layer.kind === 'pending' && !Store.isEditor());
       const v = layer.on && !hide ? 'visible' : 'none';
       drawnIds(layer).forEach((id) => {
@@ -568,7 +614,7 @@ const Layers = (() => {
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
       </div>
-      ${editable && layer.kind === 'places' ? `
+      ${editable && layer.pinnable ? `
         <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
           layer.waypoints.filter((p) => p.unplaced).length
             ? ` · ${layer.waypoints.filter((p) => p.unplaced).length} עוד לא ממוקמים` : ''}
@@ -603,7 +649,7 @@ const Layers = (() => {
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
-    TRAILS_ID, PLACES_ID, PENDING_ID,
+    TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID,
     set onChange(fn) { onChange = fn; }
   };
 })();

@@ -101,7 +101,11 @@ const map = hasGL ? new maplibregl.Map({
   style: BASEMAPS[0].style,
   center: [34.966, 32.4755],
   zoom: 13.5,
-  pitch: 0,
+  // Opens tilted. The moshava sits on the western slope of the Carmel foothills
+  // and a shortcut is very often a way through a dip that a flat map draws as
+  // an ordinary gap between two streets. The relief is the reason to have a map
+  // here at all, so it is what you see on arrival rather than a mode to find.
+  pitch: TILTED,
   maxPitch: 80,
   attributionControl: { compact: true }
 }) : null;
@@ -286,7 +290,10 @@ function items() {
   if (q) {
     const needle = q.toLowerCase();
     all = all.filter((it) =>
-      [it.name, it.note, it.group, it.address,
+      // The craft and the wiki's own categories are what somebody actually
+      // types: "קרמיקה", "ברים ופאבים". Neither is drawn in the list, so
+      // without this they were the one thing on a place you could not search.
+      [it.name, it.note, it.group, it.address, it.craft, (it.cats || []).join(' '),
        (it.connects || []).join(' '), (it.streets || []).join(' ')]
         .join(' ').toLowerCase().includes(needle));
   }
@@ -421,13 +428,18 @@ function navActs(it, hint) {
     </a>`;
 }
 
-/** Whatever the item links out to: the wiki article behind a place, plus any
- *  link an editor attached. Rendered for everybody, not only editors - a link
- *  nobody can follow is not a link. */
+/** Whatever the item links out to: the write-up behind a place, plus any link
+ *  an editor attached. Rendered for everybody, not only editors - a link
+ *  nobody can follow is not a link.
+ *
+ *  What the first link is called comes from the layer, because a place here is
+ *  always somebody else's write-up and the two sources call theirs different
+ *  things: an article in the wiki, a page on the festival's site. */
 function linksBlock(it) {
+  const layer = Layers.layerOf(it.id) || {};
   const links = [];
   if (it.place && it.url) {
-    links.push({ url: it.url, title: 'הערך המלא בפרדספדיה', lead: true });
+    links.push({ url: it.url, title: layer.linkTitle || 'הערך המלא', lead: true });
   }
   (it.links || []).forEach((l) => links.push(l));
   if (!links.length) return '';
@@ -451,15 +463,22 @@ function hostOf(url) {
   }
 }
 
-/** A pardespedia place. The wiki wrote the words and took the photo; this pane
- *  adds the two things a map can offer on top - where it is, and how to walk
- *  there. */
+/** A place somebody else wrote up. They wrote the words and took the photo;
+ *  this pane adds the two things a map can offer on top - where it is, and how
+ *  to walk there.
+ *
+ *  Only a layer marked `pinnable` gets the positioning controls. The wiki holds
+ *  no coordinates, so this app is where a pardespedia place's position is
+ *  decided; the festival placed its own pins on its own map, and offering to
+ *  drag those would be offering to be wrong about somebody else's data. */
 function placeBody(it) {
+  const layer = Layers.layerOf(it.id) || {};
+
   if (it.unplaced) {
     return `
       <p class="unplaced">המקום הזה עוד לא מוקם על המפה. בפרדספדיה אין קואורדינטות,
         ולערך הזה לא נמצאה כתובת שאפשר לפענח אוטומטית.</p>
-      ${Store.isEditor() ? `
+      ${Store.isEditor() && layer.pinnable ? `
         <div class="acts">
           <button class="act act-nav" data-place="pin"><span class="lbl">נעץ על המפה
             <span class="hint">לחיצה אחת על המקום המדויק, ונשמר לכולם</span></span></button>
@@ -470,13 +489,14 @@ function placeBody(it) {
 
   return `
     ${it.address ? `<p class="addr">${escapeHtml(it.address)}</p>` : ''}
+    ${contactBlock(it)}
     <h3>הגעה</h3>
     <div class="acts">
       ${panoActs(it, ['המקום'], 'מבט 360° מהרחוב')}
       ${navActs(it, 'ניווט בתוך האפליקציה, גם דרך קיצורי הדרך')}
     </div>
     ${linksBlock(it)}
-    ${Store.isEditor() ? `
+    ${Store.isEditor() && layer.pinnable ? `
       <h3>מיקום</h3>
       <div class="acts">
         <button class="act" data-place="pin"><span class="lbl">הזזת הסיכה
@@ -486,6 +506,26 @@ function placeBody(it) {
             <span class="hint">יחזור להשערה האוטומטית בבנייה הבאה</span></span></button>` : ''}
       </div>
       <p id="pub-msg" class="pub-msg" hidden></p>` : ''}`;
+}
+
+/** The practical half of a festival entry: whom to ring, and whether you can
+ *  get in. The pardespedia places carry none of this, so the block simply does
+ *  not appear for them. */
+function contactBlock(it) {
+  const rows = [];
+  if (it.phone) {
+    rows.push(`<a class="act act-link" href="tel:${escapeHtml(it.phone.replace(/[^\d+]/g, ''))}">
+      <span class="lbl">${escapeHtml(it.phone)}<span class="hint">חיוג</span></span></a>`);
+  }
+  if (it.access) {
+    rows.push(`<span class="act act-sub"><span class="lbl">${escapeHtml(it.access)}
+      <span class="hint">נגישות</span></span></span>`);
+  }
+  if (it.saturday) {
+    rows.push(`<span class="act act-sub"><span class="lbl">${escapeHtml(it.saturday)}
+      <span class="hint">פתיחה בשבת</span></span></span>`);
+  }
+  return rows.length ? `<h3>פרטים</h3><div class="acts">${rows.join('')}</div>` : '';
 }
 
 const GEO_SOURCE = {
@@ -545,6 +585,9 @@ function showDetail(it) {
   if (it.length) chips.push(`<span class="chip accent">${metres(it.length)}</span>`);
   else if (it.place) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group || 'מקום')}</span>`);
   else chips.push('<span class="chip accent">נקודת ציון</span>');
+  // "אמנות | ציור" - the festival's own two-level labelling of what somebody
+  // makes, which is the first thing a visitor picking a studio wants to know.
+  if (it.craft) chips.push(`<span class="chip">${escapeHtml(it.craft)}</span>`);
   if (layer.kind !== 'trails' && !it.place) {
     chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
   }
@@ -654,7 +697,7 @@ function showDetail(it) {
     ${gallery}
     ${it.place
       ? `<a class="src" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">
-           הטקסט והתמונה מתוך פרדספדיה, הוויקי של המושבה ↗</a>`
+           ${escapeHtml(layer.sourceLine || 'המקור')} ↗</a>`
       : layer.kind === 'trails'
         ? `<a class="src" href="${DATA.source}" target="_blank" rel="noopener">המפה המקורית ב-Google My Maps ↗</a>`
         : ''}`;
@@ -1563,10 +1606,10 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network, places } = await Store.load();
+  const { trails, network, places, art } = await Store.load();
   DATA = trails;
   PLACES = places;
-  Layers.init(trails, network, places);
+  Layers.init(trails, network, places, art);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.
@@ -1785,6 +1828,10 @@ function wireControls() {
   });
 
   if (map) {
+    // The map opens tilted, and `pitchend` only ever fires after somebody has
+    // moved it - so without this the button would sit unlit over a tilted map
+    // until the first drag.
+    el('tilt').classList.toggle('on', map.getPitch() >= 10);
     el('tilt').addEventListener('click', () => {
       const flat = map.getPitch() < 10;
       map.easeTo({ pitch: flat ? TILTED : 0, duration: 700 });
