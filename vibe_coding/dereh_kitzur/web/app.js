@@ -1127,12 +1127,14 @@ function openLightbox(item, index) {
 function closeLightbox() {
   el('lightbox').hidden = true;
   el('lb-img').src = '';
+  lbReset();
   document.removeEventListener('keydown', lbKeys);
 }
 
 function paintLightbox() {
   const img = el('lb-img');
   const photo = lbPhotos[lbIndex];
+  lbReset();                                  // a new photo arrives fitted
   img.classList.add('loading');
   el('lb-spin').hidden = false;
   img.src = photo.full;                       // full resolution, not the thumb
@@ -1157,6 +1159,144 @@ function lbKeys(e) {
   // In RTL the visual "next" arrow points left, so the keys are mirrored.
   else if (e.key === 'ArrowLeft') step(1);
   else if (e.key === 'ArrowRight') step(-1);
+}
+
+/* ---------- zooming inside the lightbox ----------
+ *
+ * A photo is stored 1600px wide, and what somebody wants to see in it is often
+ * a few dozen of those pixels: which gate, which sign, where exactly the path
+ * leaves the road. Fitted to the screen that detail is unreadable, so the wheel
+ * magnifies towards the pointer and drag moves the picture underneath it.
+ *
+ * The scale and the offset live here rather than on the element, because every
+ * change needs the previous values to work out the next ones.
+ */
+
+const LB_MAX = 8;                             // beyond this a 1600px photo is mush
+let lbScale = 1, lbTx = 0, lbTy = 0, lbDragged = false;
+
+function lbApply() {
+  const img = el('lb-img');
+  img.style.transform = `translate(${lbTx}px, ${lbTy}px) scale(${lbScale})`;
+  img.classList.toggle('zoomed', lbScale > 1);
+}
+
+function lbReset() {
+  lbScale = 1;
+  lbTx = 0;
+  lbTy = 0;
+  lbApply();
+}
+
+/** Keep the picture over the stage: it may be moved exactly as far as it
+ *  overhangs, and no further, so no edge ever shows a black gap and the photo
+ *  can never be pushed off into the dark and lost.
+ *
+ *  An axis the picture does not yet fill has no overhang, so it is held in the
+ *  middle. That is not a compromise: with nothing cut off in that direction
+ *  there is nothing there to move to, and the centre is the only honest place
+ *  for it. Aiming with the wheel therefore takes hold in each axis exactly when
+ *  that axis starts hiding something - immediately in the one the fitted photo
+ *  already fills, and from the moment it overflows in the other. */
+function lbClamp(fit) {
+  const box = lbStageBox();
+  const overX = Math.max(0, (fit.w * lbScale - box.w) / 2);
+  const overY = Math.max(0, (fit.h * lbScale - box.h) / 2);
+  lbTx = Math.min(overX, Math.max(-overX, lbTx));
+  lbTy = Math.min(overY, Math.max(-overY, lbTy));
+}
+
+/** How big the picture is on screen when it is not magnified, to sub-pixel
+ *  accuracy, worked back out of what is currently drawn.
+ *
+ *  offsetWidth would read the same number more simply, but it is rounded to
+ *  whole pixels, and half a pixel of rounding becomes four pixels of black at
+ *  the edge once the photo is eight times its fitted size.
+ *
+ *  Only meaningful while what is on screen still matches lbScale: before a
+ *  change, or after lbApply has drawn one. */
+function lbFitted() {
+  const r = el('lb-img').getBoundingClientRect();
+  return { w: r.width / lbScale, h: r.height / lbScale };
+}
+
+/** The area a photo is allowed to occupy: the stage minus its padding.
+ *
+ *  Not the stage's full rectangle. It is padded at the top to keep a fitted
+ *  photo clear of the close button, and that band is meant to stay dark. The
+ *  picture rests centred in the area inside the padding, so measuring the same
+ *  area here is what keeps the limits symmetrical around where it sits. */
+function lbStageBox() {
+  const stage = document.querySelector('.lb-stage');
+  const cs = getComputedStyle(stage);
+  return {
+    w: stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+    h: stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+  };
+}
+
+/** Scale by `factor`, holding still whatever sits under the pointer.
+ *
+ *  Without that anchoring the wheel would zoom the middle of the screen and the
+ *  thing being examined would slide away exactly when it got interesting. */
+function lbZoomAt(factor, cx, cy) {
+  const r = el('lb-img').getBoundingClientRect();
+  if (!r.width) return;                       // nothing loaded yet
+  const next = Math.min(LB_MAX, Math.max(1, lbScale * factor));
+  if (next === lbScale) return;
+
+  const fit = { w: r.width / lbScale, h: r.height / lbScale };
+  const fx = (cx - r.left) / r.width;
+  const fy = (cy - r.top) / r.height;
+  // The element scales about its own centre, so a point at fraction f of it
+  // moves by size*(Δscale)*(f - ½); cancelling that is what pins it down.
+  lbTx += fit.w * (next - lbScale) * (0.5 - fx);
+  lbTy += fit.h * (next - lbScale) * (0.5 - fy);
+  lbScale = next;
+
+  if (lbScale === 1) { lbTx = 0; lbTy = 0; } else lbClamp(fit);
+  lbApply();
+}
+
+function wireLightboxZoom() {
+  const stage = document.querySelector('.lb-stage');
+
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();                       // no page behind this to scroll
+    // A mouse wheel sends one large delta per notch and a trackpad a stream of
+    // small ones; a browser may also report lines instead of pixels. Through an
+    // exponent both end up moving the same amount per unit scrolled.
+    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+    lbZoomAt(Math.exp(-dy * 0.0015), e.clientX, e.clientY);
+  }, { passive: false });
+
+  // Dragging is only meaningful once there is more picture than screen. Touch
+  // is left alone: there a horizontal drag already means "next photo".
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => {
+    if (lbScale === 1 || e.pointerType === 'touch') return;
+    drag = { x: e.clientX, y: e.clientY };
+    lbDragged = false;
+    stage.setPointerCapture(e.pointerId);
+  });
+
+  stage.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    lbTx += e.clientX - drag.x;
+    lbTy += e.clientY - drag.y;
+    if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 0) lbDragged = true;
+    drag = { x: e.clientX, y: e.clientY };
+    lbClamp(lbFitted());
+    lbApply();
+  });
+
+  const release = (e) => {
+    if (!drag) return;
+    drag = null;
+    if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
+  };
+  stage.addEventListener('pointerup', release);
+  stage.addEventListener('pointercancel', release);
 }
 
 /* ---------- in-app navigation ----------
@@ -1855,6 +1995,9 @@ function wireControls() {
   document.querySelector('.lb-prev').addEventListener('click', () => step(-1));
   document.querySelector('.lb-next').addEventListener('click', () => step(1));
   el('lightbox').addEventListener('click', (e) => {
+    // A pan that ended over the dark surround is still a click on it, and
+    // closing there would throw away the very view being framed.
+    if (lbDragged) { lbDragged = false; return; }
     if (e.target.id === 'lightbox' || e.target.classList.contains('lb-stage')) closeLightbox();
   });
 
@@ -1874,6 +2017,7 @@ function wireControls() {
   wireGrip();
   wirePanelWidth();
   wireSwipe();
+  wireLightboxZoom();
 }
 
 if (!hasGL) {
