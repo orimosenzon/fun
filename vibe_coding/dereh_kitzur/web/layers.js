@@ -62,6 +62,45 @@ const Layers = (() => {
     }
   }
 
+  /* A link is the second place a layer choice lives. The address bar always
+   * names the layers currently switched on, so copying whatever is up there and
+   * sending it to somebody opens the map on that exact combination instead of
+   * on their own - which is the only way to say "look at the shortcuts together
+   * with the festival" in a message.
+   *
+   * Only the layers everybody has are named. The drafts on this device and the
+   * review queue mean nothing to whoever opens the link, and a link that
+   * switched somebody's own recordings off would be a nasty surprise. */
+  const URL_KEY = 'layers';
+  const shareable = (l) => l.kind === 'trails' || l.kind === 'network'
+    || l.kind === 'places';
+
+  /** The layers a link asks for, or null when the URL says nothing about them -
+   *  which is the difference between "show none of these" and "use whatever
+   *  this browser chose last time". */
+  function urlPrefs() {
+    const raw = new URLSearchParams(location.search).get(URL_KEY);
+    return raw === null ? null : new Set(raw.split(',').filter(Boolean));
+  }
+
+  /** Put the current choice back in the address bar, replacing the entry rather
+   *  than adding one: the back button belongs to the map, not to a checkbox. */
+  function syncUrl() {
+    const params = new URLSearchParams(location.search);
+    params.set(URL_KEY, list.filter((l) => l.on && shareable(l))
+      .map((l) => l.id).join(','));
+    // A comma is legal in a query string and URLSearchParams escapes it anyway,
+    // which turns a link somebody is about to paste into a message into a wall
+    // of %2C. Ours are the only commas here, so it is safe to put them back.
+    const query = params.toString().replace(/%2C/g, ',');
+    try {
+      history.replaceState(null, '', `${location.pathname}?${query}${location.hash}`);
+    } catch (err) {
+      /* opened straight off the filesystem; the toggles still work */
+    }
+  }
+
+  /** Both places the choice is kept: this browser, and the link. */
   function savePrefs() {
     const on = {};
     list.forEach((l) => { on[l.id] = l.on; });
@@ -70,6 +109,7 @@ const Layers = (() => {
     } catch (err) {
       /* private mode: the toggles simply do not persist */
     }
+    syncUrl();
   }
 
   /* ---------- registry ---------- */
@@ -180,9 +220,16 @@ const Layers = (() => {
    * them all on the map at once buries the shortcuts under them. */
   function init(trails, network, places, art) {
     const prefs = loadPrefs();
-    /** What this browser chose, or the default for a layer nobody has touched. */
-    const isOn = (id, byDefault) =>
-      (typeof prefs[id] === 'boolean' ? prefs[id] : byDefault);
+    const link = urlPrefs();
+    /** What the link asks for, else what this browser chose, else the default
+     *  for a layer nobody has touched.
+     *
+     *  A link names its layers in full, so it decides both halves: a layer it
+     *  leaves out is off even if this browser had it on. `fromLink` is false
+     *  for the layers that live on this device only, which no link may touch. */
+    const isOn = (id, byDefault, fromLink = true) => (
+      link && fromLink ? link.has(id)
+        : typeof prefs[id] === 'boolean' ? prefs[id] : byDefault);
 
     // The shortcuts are the point of the app, and a trail layer an editor makes
     // later is the same content sorted into buckets, so both arrive on.
@@ -252,8 +299,9 @@ const Layers = (() => {
       dash: true,
       note: 'שבילים שהקלטת או ציירת במכשיר הזה. נשמרים כאן בלבד, עד שתשלח אותם.',
       // Somebody's own recording, on their own device. Hiding it by default
-      // would mean walking a trail and not seeing it come out on the map.
-      on: isOn('drafts', true),
+      // would mean walking a trail and not seeing it come out on the map, and
+      // a link somebody else sent has no business hiding it either.
+      on: isOn('drafts', true, false),
       segments: []
     });
 
@@ -261,6 +309,9 @@ const Layers = (() => {
     // trails on the map, so the map order is the reverse of the panel order.
     list.sort((a, b) => order(a) - order(b));
     reindex();
+    // From here on the address bar is a truthful copy of what is on screen,
+    // including on a first visit that arrived with a bare URL.
+    syncUrl();
   }
 
   const RANK = { network: 0, places: 1, trails: 2, pending: 3, drafts: 4 };

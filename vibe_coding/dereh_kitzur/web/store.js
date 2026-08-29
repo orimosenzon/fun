@@ -332,16 +332,35 @@ const Store = (() => {
    *  raw.githubusercontent is a CDN with a five minute cache, which is right
    *  for a visitor and wrong for somebody who is about to merge an edit into
    *  what they just read. */
-  async function getFile(path) {
+  async function readFile(path) {
     if (!WORKER) throw new Error('אין שרת כתיבה מוגדר.');
     const res = await fetch(`${WORKER}/file?path=${encodeURIComponent(path)}`,
                             { cache: 'no-store' });
     if (!res.ok) throw new Error(`קריאה נכשלה (${res.status})`);
-    const body = await res.json();
+    return res.json();
+  }
+
+  async function getFile(path) {
+    const body = await readFile(path);
     if (!body.content) return { sha: null, json: null };
     const text = new TextDecoder().decode(
       Uint8Array.from(atob(body.content.replace(/\n/g, '')), (c) => c.charCodeAt(0)));
     return { sha: body.sha, json: JSON.parse(text) };
+  }
+
+  /** Is this file already in the repo, and under which sha?
+   *
+   *  Deliberately not getFile: that one parses what it read as JSON, which is
+   *  right for the three data documents and throws on the bytes of a photo. A
+   *  caller asking only whether a file exists would read that throw as "no",
+   *  try to create a file that is already there, and be told - by GitHub, then
+   *  by the worker, then by the app - "conflict", forever. */
+  async function fileSha(path) {
+    try {
+      return (await readFile(path)).sha || null;
+    } catch (err) {
+      return null;
+    }
   }
 
   async function putFile(path, base64, message, sha) {
@@ -360,7 +379,10 @@ const Store = (() => {
       })
     });
     if (res.status === 409) {
-      const err = new Error('conflict');
+      // `conflict` is the flag withDoc retries on. The wording is for the one
+      // case that reaches a person: three retries that all lost the race, or a
+      // write outside withDoc, where the bare English word said nothing.
+      const err = new Error('מישהו אחר כתב באותו רגע.');
       err.conflict = true;
       throw err;
     }
@@ -468,13 +490,18 @@ const Store = (() => {
 
     const rel = { thumb: `img/${key}_t.webp`, full: `img/${key}.webp` };
 
-    // An identical photo published before already sits there under this name.
-    const exists = await getFile(rel.full).catch(() => ({ sha: null }));
-    if (exists.sha) return rel;
+    // An identical photo published before already sits there under these names,
+    // and its bytes are these bytes - the name is their hash - so there is
+    // nothing to write. The two are asked about separately because a publish
+    // that died between them left the full image in the repo and no thumbnail,
+    // and this is where that heals.
+    const [hasFull, hasThumb] = await Promise.all(
+      [fileSha(rel.full), fileSha(rel.thumb)]);
+    if (hasFull && hasThumb) return rel;
 
     if (onStep) onStep(`מעלה תמונה…`);
-    await putFile(rel.full, b64(fullBytes), `תמונה לשביל ${name}`);
-    await putFile(rel.thumb, b64(thumbBytes), `תמונה ממוזערת לשביל ${name}`);
+    if (!hasFull) await putFile(rel.full, b64(fullBytes), `תמונה לשביל ${name}`);
+    if (!hasThumb) await putFile(rel.thumb, b64(thumbBytes), `תמונה ממוזערת לשביל ${name}`);
     return rel;
   }
 

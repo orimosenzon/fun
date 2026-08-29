@@ -748,8 +748,27 @@ ${tracks}
     });
   }
 
+  /** Ask the browser to stop treating this storage as disposable.
+   *
+   *  Without this, IndexedDB is "best effort": a browser under disk pressure
+   *  may clear it, and a trail somebody walked and photographed is gone with
+   *  no warning and no copy anywhere. Chrome grants the request silently to a
+   *  site the person actually uses, and refusing costs nothing - the drafts
+   *  keep working either way, they are merely evictable again. */
+  async function keepStorage() {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        const already = await navigator.storage.persisted();
+        if (!already) await navigator.storage.persist();
+      }
+    } catch (err) {
+      /* not offered here; the drafts still save */
+    }
+  }
+
   async function init() {
     wire();
+    keepStorage();                    // not awaited: the drafts must not wait on it
     try {
       db = await open();
       await reload();
