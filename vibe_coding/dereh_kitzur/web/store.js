@@ -21,6 +21,9 @@
  *   data/art2026.json  the אמנות במושבה festival map. Written by build_art.py,
  *                      positions included: the festival placed its own pins and
  *                      this app never writes to this file.
+ *   data/shimur.json   the conservation appendix of the master plan, and
+ *   data/makom_shamur.json  the מקום שמור documentation project. Both written
+ *                      by build_shimur.py; neither is written from the app.
  *
  * Reading needs nothing at all: the files are public and come straight off a
  * CDN. Writing goes through a small Cloudflare worker that holds the only
@@ -80,11 +83,15 @@ const Store = (() => {
   const TRAILS = 'data/trails.json';
   const PLACES = 'data/places.json';
   const ART = 'data/art2026.json';
+  const SHIMUR = 'data/shimur.json';
+  const MAKOM = 'data/makom_shamur.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
   const K_PLACES = 'dk.cache.places.v1';
   const K_ART = 'dk.cache.art.v1';
+  const K_SHIMUR = 'dk.cache.shimur.v1';
+  const K_MAKOM = 'dk.cache.makom.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
   const K_KEY = 'dk.key.v1';            // the editor's password, once verified
@@ -171,8 +178,10 @@ const Store = (() => {
     let network = null;
     let places = null;
     let art = null;
+    let shimur = null;
+    let makom = null;
     try {
-      [trails, network, places, art] = await Promise.all([
+      [trails, network, places, art, shimur, makom] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -180,18 +189,26 @@ const Store = (() => {
         canonical(PLACES).catch(() => bundled('data/places.json')),
         // Nothing writes to the festival file from here, so it never needs the
         // worker's always-current read - the CDN copy is the current one.
-        fetchJson(ART).catch(() => bundled('data/art2026.json'))
+        fetchJson(ART).catch(() => bundled('data/art2026.json')),
+        // Same for the two conservation layers: build_shimur.py writes them,
+        // the app only reads them.
+        fetchJson(SHIMUR).catch(() => bundled('data/shimur.json')),
+        fetchJson(MAKOM).catch(() => bundled('data/makom_shamur.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
       if (places) cache(K_PLACES, places);
       if (art) cache(K_ART, art);
+      if (shimur) cache(K_SHIMUR, shimur);
+      if (makom) cache(K_MAKOM, makom);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
       network = cached(K_NET);
       places = cached(K_PLACES);
       art = cached(K_ART);
+      shimur = cached(K_SHIMUR);
+      makom = cached(K_MAKOM);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
@@ -199,6 +216,8 @@ const Store = (() => {
         network = await bundled('data/layers.json');
         places = await bundled('data/places.json');
         art = await bundled('data/art2026.json');
+        shimur = await bundled('data/shimur.json');
+        makom = await bundled('data/makom_shamur.json');
       }
     }
     return {
@@ -206,6 +225,8 @@ const Store = (() => {
       network,
       places: absolutise(places),
       art: absolutise(art),
+      shimur: absolutise(shimur),
+      makom: absolutise(makom),
       offline: state.offline
     };
   }
