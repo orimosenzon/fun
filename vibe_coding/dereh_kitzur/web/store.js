@@ -85,6 +85,7 @@ const Store = (() => {
   const ART = 'data/art2026.json';
   const SHIMUR = 'data/shimur.json';
   const MAKOM = 'data/makom_shamur.json';
+  const PLANS = 'data/plans.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
@@ -92,6 +93,7 @@ const Store = (() => {
   const K_ART = 'dk.cache.art.v1';
   const K_SHIMUR = 'dk.cache.shimur.v1';
   const K_MAKOM = 'dk.cache.makom.v1';
+  const K_PLANS = 'dk.cache.plans.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
   const K_KEY = 'dk.key.v1';            // the editor's password, once verified
@@ -180,8 +182,9 @@ const Store = (() => {
     let art = null;
     let shimur = null;
     let makom = null;
+    let plans = null;
     try {
-      [trails, network, places, art, shimur, makom] = await Promise.all([
+      [trails, network, places, art, shimur, makom, plans] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -193,7 +196,9 @@ const Store = (() => {
         // Same for the two conservation layers: build_shimur.py writes them,
         // the app only reads them.
         fetchJson(SHIMUR).catch(() => bundled('data/shimur.json')),
-        fetchJson(MAKOM).catch(() => bundled('data/makom_shamur.json'))
+        fetchJson(MAKOM).catch(() => bundled('data/makom_shamur.json')),
+        // And the planning schemes, which build_plans.py writes.
+        fetchJson(PLANS).catch(() => bundled('data/plans.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
@@ -201,6 +206,7 @@ const Store = (() => {
       if (art) cache(K_ART, art);
       if (shimur) cache(K_SHIMUR, shimur);
       if (makom) cache(K_MAKOM, makom);
+      if (plans) cache(K_PLANS, plans);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
@@ -209,6 +215,7 @@ const Store = (() => {
       art = cached(K_ART);
       shimur = cached(K_SHIMUR);
       makom = cached(K_MAKOM);
+      plans = cached(K_PLANS);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
@@ -218,6 +225,7 @@ const Store = (() => {
         art = await bundled('data/art2026.json');
         shimur = await bundled('data/shimur.json');
         makom = await bundled('data/makom_shamur.json');
+        plans = await bundled('data/plans.json');
       }
     }
     return {
@@ -227,6 +235,7 @@ const Store = (() => {
       art: absolutise(art),
       shimur: absolutise(shimur),
       makom: absolutise(makom),
+      plans: absolutise(plans),
       offline: state.offline
     };
   }
