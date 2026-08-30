@@ -540,6 +540,7 @@ const GEO_SOURCE = {
   // a fifth of its parcels no longer exist in today's cadastre.
   parcel: 'מרכז החלקה שבנספח, לא המבנה עצמו',
   neighbour: 'החלקה שבנספח כבר לא קיימת, לפי חלקה סמוכה במספור',
+  plan: 'מרכז שטח התכנית, לפי הקו הכחול',
   pardespedia: 'לפי המיקום של אותו מקום בפרדספדיה',
   shimur: 'לפי אותו אתר בנספח השימור',
   festival: 'הסיכה שהפסטיבל עצמו הניח'
@@ -1754,10 +1755,10 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network, places, art, shimur, makom } = await Store.load();
+  const { trails, network, places, art, shimur, makom, plans } = await Store.load();
   DATA = trails;
   PLACES = places;
-  Layers.init(trails, network, places, art, shimur, makom);
+  Layers.init(trails, network, places, art, shimur, makom, plans);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.

@@ -25,6 +25,7 @@ const Layers = (() => {
   const list = [];                    // draw order, bottom first
   const index = new Map();            // segment/waypoint id -> {layer, item}
   const feature = new Map();          // item id -> {src, fid} for feature-state
+  const shapeFeature = new Map();     // the same, for the layers drawn as areas
   const wired = new Set();            // layer ids whose map handlers are bound
 
   let onChange = () => {};            // set by app.js, re-renders the list
@@ -39,6 +40,7 @@ const Layers = (() => {
   const ART_ID = 'art2026';
   const SHIMUR_ID = 'shimur';
   const MAKOM_ID = 'makom-shamur';
+  const PLANS_ID = 'plans';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -227,7 +229,7 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places, art, shimur, makom) {
+  function init(trails, network, places, art, shimur, makom, plans) {
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -320,6 +322,30 @@ const Layers = (() => {
       on: isOn(MAKOM_ID, false)
     });
 
+    // What somebody is trying to build here. Unlike everything else on this map
+    // it is about the future rather than the ground, and unlike the conservation
+    // layers it changes every few weeks - a plan moves from one stage to the
+    // next, and the fortnight it spends open to objections is the only stretch
+    // when a resident can do anything about it. Drawn as areas, because a plan
+    // is an area: the blue line is most of what it says.
+    addPlaceLayer(PLANS_ID, plans, {
+      name: 'תכניות בתהליך',
+      short: 'תכנית',
+      unit: 'תכניות',
+      labels: false,                       // see addPlaceLayers
+      color: '#01579b',
+      note: 'תכניות בנייה שנמצאות בהליך תכנוני בפרדס חנה-כרכור, מהגשה ועד '
+        + 'אישור, לפי מאגר מנהל התכנון. הצבע לפי השלב, והכהה שבהם הוא ההפקדה, '
+        + 'התקופה שבה אפשר להגיש התנגדות. הגבול הוא הקו הכחול של התכנית. '
+        + 'תכניות שכבר אושרו ותיקים שנסגרו אינם בשכבה הזאת.',
+      credit: 'מנהל התכנון · Xplan',
+      sourceName: 'מנהל התכנון',
+      sourceLine: 'מתוך מאגר התכניות המקוונות של מנהל התכנון',
+      linkTitle: 'התכנית המלאה במבא"ת',
+      pinnable: false,                     // the boundary comes off the register
+      on: isOn(PLANS_ID, false)
+    });
+
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
     // of the map.
@@ -366,7 +392,10 @@ const Layers = (() => {
   }
 
   const RANK = { network: 0, places: 1, trails: 2, pending: 3, drafts: 4 };
-  const order = (l) => RANK[l.kind];
+  // The plans are a places layer that draws areas, and an area belongs under
+  // every dot on the map rather than washing the colour out of the ones that
+  // happen to fall inside it.
+  const order = (l) => (l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
 
   /** Rebuild the trail layers after a write, without disturbing the drafts
    *  layer or anyone's on/off choices. */
@@ -455,9 +484,19 @@ const Layers = (() => {
   const dotId = (id) => `pt-${id}`;
   const labelId = (id) => `lb-${id}`;
   const hitId = (id) => `hit-${id}`;
+  const shapeSrc = (id) => `shp-${id}`;
+  const fillId = (id) => `fl-${id}`;
+  const edgeId = (id) => `eg-${id}`;
+
+  /** Whether a places layer also carries an outline for each of its points.
+   *  Only the planning schemes do: a plan is an area, and its boundary - the
+   *  blue line - is most of what it says. */
+  const hasShapes = (layer) => layer.kind === 'places'
+    && layer.waypoints.some((p) => p.shape && p.shape.length);
 
   const drawnIds = (layer) => (layer.kind === 'places'
-    ? [dotId(layer.id), labelId(layer.id), hitId(layer.id)]
+    ? (hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
+      .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
     : [lineId(layer.id), hitId(layer.id)]);
 
   function geojson(layer) {
@@ -493,6 +532,72 @@ const Layers = (() => {
     };
   }
 
+  /** The outlines of a layer that has them, as their own source.
+   *
+   *  A second source rather than polygons in the first, because the dots are
+   *  drawn from `geojson` and a circle layer over a polygon source would draw
+   *  nothing. The feature ids are kept in their own map for the same reason:
+   *  one item is now two features in two sources, and highlighting has to reach
+   *  both. */
+  function shapeGeojson(layer) {
+    let i = 0;
+    return {
+      type: 'FeatureCollection',
+      features: layer.waypoints.filter((p) => p.shape && p.shape.length).map((p) => {
+        shapeFeature.set(p.id, { src: shapeSrc(layer.id), fid: i });
+        return {
+          type: 'Feature',
+          id: i++,
+          properties: { id: p.id, color: p.color },
+          geometry: { type: 'Polygon', coordinates: p.shape }
+        };
+      })
+    };
+  }
+
+  function addShapeLayers(layer) {
+    const src = shapeSrc(layer.id);
+    const sel = ['boolean', ['feature-state', 'sel'], false];
+    const dim = ['boolean', ['feature-state', 'dim'], false];
+
+    if (map.getSource(src)) map.getSource(src).setData(shapeGeojson(layer));
+    else map.addSource(src, { type: 'geojson', data: shapeGeojson(layer) });
+
+    // Faint enough that ninety-five overlapping plans still leave the streets
+    // underneath readable, and that the pile where a dozen of them sit on the
+    // same block does not go solid.
+    map.addLayer({
+      id: fillId(layer.id),
+      type: 'fill',
+      source: src,
+      paint: {
+        'fill-color': ['get', 'color'],
+        'fill-opacity': ['case', sel, 0.32, dim, 0.05, 0.14]
+      }
+    });
+
+    map.addLayer({
+      id: edgeId(layer.id),
+      type: 'line',
+      source: src,
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': ['case', sel, 3.5, 1.6],
+        'line-opacity': ['case', sel, 1, dim, 0.25, 0.8]
+      }
+    });
+
+    // Tapping anywhere inside a plan selects it, which is how you ask "what is
+    // planned for my street" without having to find its centre dot.
+    if (wired.has(fillId(layer.id))) return;
+    wired.add(fillId(layer.id));
+    map.on('click', fillId(layer.id), (e) => {
+      if (e.features && e.features.length) select(e.features[0].properties.id, false);
+    });
+    map.on('mouseenter', fillId(layer.id), () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', fillId(layer.id), () => { map.getCanvas().style.cursor = ''; });
+  }
+
   function addPlaceLayers(layer) {
     const src = srcId(layer.id);
     const sel = ['boolean', ['feature-state', 'sel'], false];
@@ -525,7 +630,13 @@ const Layers = (() => {
     // Hebrew labels need the style's glyph set to carry the Hebrew range.
     // OpenFreeMap's Noto Sans does, and the satellite style in app.js points
     // its `glyphs` at the same endpoint so both look the same.
-    map.addLayer({
+    //
+    // The planning layer asks for none, and it is right to. Its names are
+    // sentences - "תוספת זכויות בניה ויח״ד בגוש 10105 חלקה 203, רח' הנדיב" -
+    // and forty of them across the middle of the moshava bury the streets under
+    // text that is nearly the same on every one. The outline says where, the
+    // colour says which stage, and a tap says the rest.
+    if (layer.labels !== false) map.addLayer({
       id: labelId(layer.id),
       type: 'symbol',
       source: src,
@@ -621,6 +732,8 @@ const Layers = (() => {
       }
       if (map.getLayer(hitId(layer.id))) return;
 
+      // Areas first, so the dots and their labels land on top of them.
+      if (hasShapes(layer)) addShapeLayers(layer);
       if (layer.kind === 'places') addPlaceLayers(layer);
       else addLineLayers(layer);
 
@@ -673,10 +786,12 @@ const Layers = (() => {
   /** Highlight one item and dim the rest, across every layer. */
   function highlight(id) {
     if (typeof map === 'undefined' || !map) return;
-    feature.forEach(({ src, fid }, ourId) => {
-      if (!map.getSource(src)) return;
-      map.setFeatureState({ source: src, id: fid },
-        { sel: ourId === id, dim: id != null && ourId !== id });
+    [feature, shapeFeature].forEach((where) => {
+      where.forEach(({ src, fid }, ourId) => {
+        if (!map.getSource(src)) return;
+        map.setFeatureState({ source: src, id: fid },
+          { sel: ourId === id, dim: id != null && ourId !== id });
+      });
     });
   }
 
@@ -785,7 +900,8 @@ const Layers = (() => {
     if (layer.kind === 'places') {
       const n = layer.waypoints.length;
       const missing = layer.waypoints.filter((p) => p.unplaced).length;
-      return `${n} מקומות` + (missing ? ` · ${missing} עוד לא ממוקמים` : '');
+      return `${n} ${layer.unit || 'מקומות'}`
+        + (missing ? ` · ${missing} עוד לא ממוקמים` : '');
     }
     const n = layer.segments.length + layer.waypoints.length;
     if (!n) {
@@ -862,7 +978,7 @@ const Layers = (() => {
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
-    TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID,
+    TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     set onChange(fn) { onChange = fn; }
   };
 })();
