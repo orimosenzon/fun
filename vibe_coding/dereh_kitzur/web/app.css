@@ -850,7 +850,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   /* The bars are positioned against the window, not the map, so at this width
    * they would lie across the panel. Inline-start is the panel's side. */
   .nav { inset-inline: calc(var(--panel-w) + 10px) 10px; }
-  .legend { inset-inline-start: calc(var(--panel-w) + 10px); }
+
+  /* Clear of the fold tab, which hangs 26px off the seam into the map at the
+   * height an open legend reaches. At +10px the legend swallowed the only
+   * control that brings a folded panel back. */
+  .legend { inset-inline-start: calc(var(--panel-w) + 38px); }
 }
 
 .no-gl {
