@@ -86,6 +86,7 @@ const Store = (() => {
   const SHIMUR = 'data/shimur.json';
   const MAKOM = 'data/makom_shamur.json';
   const PLANS = 'data/plans.json';
+  const BLOCKS = 'data/blocks.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
@@ -94,6 +95,7 @@ const Store = (() => {
   const K_SHIMUR = 'dk.cache.shimur.v1';
   const K_MAKOM = 'dk.cache.makom.v1';
   const K_PLANS = 'dk.cache.plans.v1';
+  const K_BLOCKS = 'dk.cache.blocks.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
   const K_KEY = 'dk.key.v1';            // the editor's password, once verified
@@ -183,8 +185,9 @@ const Store = (() => {
     let shimur = null;
     let makom = null;
     let plans = null;
+    let blocks = null;
     try {
-      [trails, network, places, art, shimur, makom, plans] = await Promise.all([
+      [trails, network, places, art, shimur, makom, plans, blocks] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -198,7 +201,9 @@ const Store = (() => {
         fetchJson(SHIMUR).catch(() => bundled('data/shimur.json')),
         fetchJson(MAKOM).catch(() => bundled('data/makom_shamur.json')),
         // And the planning schemes, which build_plans.py writes.
-        fetchJson(PLANS).catch(() => bundled('data/plans.json'))
+        fetchJson(PLANS).catch(() => bundled('data/plans.json')),
+        // The cadastral blocks, which build_cadastre.py writes.
+        fetchJson(BLOCKS).catch(() => bundled('data/blocks.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
@@ -207,6 +212,7 @@ const Store = (() => {
       if (shimur) cache(K_SHIMUR, shimur);
       if (makom) cache(K_MAKOM, makom);
       if (plans) cache(K_PLANS, plans);
+      if (blocks) cache(K_BLOCKS, blocks);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
@@ -216,6 +222,7 @@ const Store = (() => {
       shimur = cached(K_SHIMUR);
       makom = cached(K_MAKOM);
       plans = cached(K_PLANS);
+      blocks = cached(K_BLOCKS);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
@@ -226,6 +233,7 @@ const Store = (() => {
         shimur = await bundled('data/shimur.json');
         makom = await bundled('data/makom_shamur.json');
         plans = await bundled('data/plans.json');
+        blocks = await bundled('data/blocks.json');
       }
     }
     return {
@@ -236,6 +244,7 @@ const Store = (() => {
       shimur: absolutise(shimur),
       makom: absolutise(makom),
       plans: absolutise(plans),
+      blocks: absolutise(blocks),
       offline: state.offline
     };
   }
