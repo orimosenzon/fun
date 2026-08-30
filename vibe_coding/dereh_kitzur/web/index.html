@@ -33,6 +33,23 @@
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5zm0 7.9l6.2-3.4L21 9l-9 5-9-5 2.8-1.5L12 10.9zm0 4.2l6.2-3.4L21 13.2l-9 5-9-5 2.8-1.6 6.2 3.5z"/></svg>
 </button>
 
+<!-- What the colours on the map mean. Each places layer paints its points by the
+     group its source sorted them into - seven narratives in the conservation
+     appendix, eight kinds of place in pardespedia - and until this existed the
+     map was a scatter of colours with nothing to read them by.
+
+     Collapsed to a chip by default: the map is the point, and a legend is
+     something you consult once and then stop looking at. The choice is kept per
+     browser. It sits under the top bars rather than beside them, so recording a
+     trail or navigating simply covers it. -->
+<div id="legend" class="legend" hidden>
+  <button id="legend-btn" class="legend-btn" aria-expanded="false" aria-controls="legend-body">
+    <span class="legend-ic" aria-hidden="true"></span>
+    <span>מקרא</span>
+  </button>
+  <div id="legend-body" class="legend-body" hidden></div>
+</div>
+
 <!-- Live readout while a trail is being recorded or drawn. -->
 <div id="draft-bar" class="nav draft-bar" hidden role="status" aria-live="polite">
   <div class="draft-dot"></div>

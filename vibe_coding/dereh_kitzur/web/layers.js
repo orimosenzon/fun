@@ -149,6 +149,13 @@ const Layers = (() => {
       // metres from where its source put it, and saying so is the honest thing:
       // "מיקום מקורב" is exactly what it now is.
       approx: !!geo && (geo.source === 'nearby' || geo.source === 'street' || !!geo.spread),
+      // A narrower claim than `approx`, and the one the map draws. `spread`
+      // moves a pin a few metres and covers half of some layers, so drawing on
+      // it would empty out the festival and most of pardespedia over what is a
+      // drawing device. These four are the sources that do not know where the
+      // place is at all: a street with no house number, a spot mentioned
+      // alongside it, a neighbouring parcel. That is worth showing.
+      vague: !!geo && ['nearby', 'street', 'neighbour'].includes(geo.source),
       geoSource: geo ? geo.source : null,
       place: true,
       color: colours[raw.group] || '#6a1b9a'
@@ -287,7 +294,9 @@ const Layers = (() => {
       color: '#ef6c00',
       note: 'האתרים שנקבעו לשימור בנספח השימור של תוכנית המתאר הכוללנית: '
         + 'מבנים, מגדלי מים, שדרות עצים ומתחמים היסטוריים. לכל אתר דרגת השימור '
-        + 'שנקבעה לו. הצבעים לפי הנרטיב שאליו האתר משויך בנספח.',
+        + 'שנקבעה לו. הצבעים לפי הנרטיב שאליו האתר משויך בנספח. '
+        + 'הנספח מוסר גוש וחלקה ולא נקודה, ולכן כל נקודה כאן היא מרכז החלקה '
+        + 'ולא המבנה עצמו.',
       credit: 'נספח השימור, תכנית 353-0138586',
       sourceName: 'נספח השימור של תוכנית המתאר הכוללנית',
       sourceLine: 'מתוך נספח השימור של תוכנית המתאר הכוללנית (ד"ר הדס שדר, 2017)',
@@ -350,6 +359,10 @@ const Layers = (() => {
     // From here on the address bar is a truthful copy of what is on screen,
     // including on a first visit that arrived with a bare URL.
     syncUrl();
+
+    const legendBtn = document.getElementById('legend-btn');
+    if (legendBtn) legendBtn.addEventListener('click', toggleLegend);
+    renderLegend();
   }
 
   const RANK = { network: 0, places: 1, trails: 2, pending: 3, drafts: 4 };
@@ -457,7 +470,7 @@ const Layers = (() => {
           return {
             type: 'Feature',
             id: i++,
-            properties: { id: p.id, color: p.color, name: p.name },
+            properties: { id: p.id, color: p.color, name: p.name, vague: !!p.vague },
             geometry: { type: 'Point', coordinates: [p.lng, p.lat] }
           };
         })
@@ -484,6 +497,11 @@ const Layers = (() => {
     const src = srcId(layer.id);
     const sel = ['boolean', ['feature-state', 'sel'], false];
     const dim = ['boolean', ['feature-state', 'dim'], false];
+    // A point the builder could not put on its own spot - it went to a
+    // neighbouring parcel, or to the street the address names. Drawn hollow:
+    // pale fill, the group's colour moved out to the ring. Same hue, so it
+    // still reads as its group, and visibly less certain than the rest.
+    const soft = ['boolean', ['get', 'vague'], false];
 
     map.addLayer({
       id: dotId(layer.id),
@@ -498,9 +516,9 @@ const Layers = (() => {
           12, ['case', sel, 7, 3.5],
           15, ['case', sel, 9, 5.5],
           18, ['case', sel, 12, 8]],
-        'circle-opacity': ['case', dim, 0.45, 0.9],
-        'circle-stroke-color': '#fff',
-        'circle-stroke-width': ['case', sel, 3, 1.5]
+        'circle-opacity': ['case', dim, 0.45, soft, 0.3, 0.9],
+        'circle-stroke-color': ['case', soft, ['get', 'color'], '#fff'],
+        'circle-stroke-width': ['case', sel, 3, soft, 2, 1.5]
       }
     });
 
@@ -627,6 +645,9 @@ const Layers = (() => {
   const setArranging = (value) => { arranging = value; applyVisibility(); };
 
   function applyVisibility() {
+    // Ahead of the map guard: the legend is HTML, and it has to be right on a
+    // first load that reaches here before the style has finished loading.
+    renderLegend();
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
       const hide = (arranging && layer.pinnable)
@@ -657,6 +678,105 @@ const Layers = (() => {
       map.setFeatureState({ source: src, id: fid },
         { sel: ourId === id, dim: id != null && ourId !== id });
     });
+  }
+
+  /* ---------- the legend ---------- */
+
+  /* A layer is drawn in one colour only when its source has nothing to sort its
+   * points by. The four places layers all do have something - the appendix's
+   * seven narratives, pardespedia's eight kinds of place - and the layer sheet
+   * showed a single swatch for each, so the colours on the map meant nothing to
+   * anybody who had not read the builder. This is the key to them. */
+
+  const LEGEND_PREF = 'dk.legend.open.v1';
+
+  let legendOpen = (() => {
+    try {
+      return localStorage.getItem(LEGEND_PREF) === '1';
+    } catch (err) {
+      return false;
+    }
+  })();
+
+  /** What one layer contributes: its groups when its source sorts its points
+   *  into any, otherwise the single colour it is drawn in.
+   *
+   *  Only groups with a point actually on the map are listed. A group whose
+   *  places are all still unplaced - most of מקום שמור - would otherwise be a
+   *  colour in the key that appears nowhere on the map. */
+  function legendRows(layer) {
+    const placed = layer.waypoints.filter((p) => !p.unplaced);
+    if (layer.kind === 'places' && (layer.groups || []).length) {
+      return layer.groups
+        .map((g) => ({
+          name: g.name,
+          color: g.color,
+          n: placed.filter((p) => p.group === g.name).length
+        }))
+        .filter((r) => r.n);
+    }
+    if (!layer.segments.length && !placed.length) return [];
+    // A trail is a line on the map and a place is a dot, and the key has to be
+    // the same shape as the thing it stands for.
+    return [{
+      name: layer.name,
+      color: layer.color,
+      line: layer.kind !== 'places',
+      dash: layer.dash,
+      whole: true
+    }];
+  }
+
+  function renderLegend() {
+    const box = document.getElementById('legend');
+    if (!box) return;
+
+    const all = list.slice().reverse().filter(shown)
+      .map((layer) => ({ layer, rows: legendRows(layer) }))
+      .filter((s) => s.rows.length);
+
+    // Lines first, then the layers that break into groups. Interleaved by draw
+    // order they read as a jumble: a bare row, a heading and its seven colours,
+    // then another bare row with nothing to say which layer it belonged to.
+    const sections = [...all.filter((s) => s.rows[0].whole),
+      ...all.filter((s) => !s.rows[0].whole)];
+
+    box.hidden = !sections.length;
+    if (!sections.length) return;
+
+    const approx = sections.some((s) =>
+      s.layer.waypoints.some((p) => p.vague && !p.unplaced));
+
+    document.getElementById('legend-body').innerHTML = sections.map(({ layer, rows }) => {
+      // A one-colour layer names itself in its only row, so a heading above it
+      // would just say the same thing twice.
+      const head = rows[0].whole ? ''
+        : `<p class="lg-layer">${escapeHtml(layer.name)}</p>`;
+      return head + `<ul class="lg-rows">${rows.map((r) => `<li>
+        <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}"
+              style="--c:${r.color}"></span>
+        <span class="lg-nm">${escapeHtml(r.name)}</span>
+        ${r.n ? `<span class="lg-n">${r.n}</span>` : ''}
+      </li>`).join('')}</ul>`;
+    }).join('') + (approx ? `<p class="lg-foot">
+      <span class="lg-dot approx" style="--c:#667571"></span>
+      עיגול חיוור בטבעת צבעונית: מיקום מקורב, לפי הרחוב בלבד, לפי מקום סמוך או
+      לפי חלקה שכנה. הנקודה בסביבה הנכונה ולא על המקום עצמו.</p>` : '');
+
+    document.getElementById('legend-body').hidden = !legendOpen;
+    document.getElementById('legend-btn')
+      .setAttribute('aria-expanded', legendOpen ? 'true' : 'false');
+    box.classList.toggle('open', legendOpen);
+  }
+
+  function toggleLegend() {
+    legendOpen = !legendOpen;
+    try {
+      localStorage.setItem(LEGEND_PREF, legendOpen ? '1' : '0');
+    } catch (err) {
+      /* private mode: it simply opens closed next time */
+    }
+    renderLegend();
   }
 
   /* ---------- the layer sheet ---------- */
@@ -703,6 +823,10 @@ const Layers = (() => {
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
       </div>
+      ${layer.on && legendRows(layer).length && !legendRows(layer)[0].whole ? `
+        <ul class="lay-legend">${legendRows(layer).map((r) => `<li>
+          <span class="lg-dot" style="--c:${r.color}"></span>${escapeHtml(r.name)}
+        </li>`).join('')}</ul>` : ''}
       ${editable && layer.pinnable ? `
         <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
           layer.waypoints.filter((p) => p.unplaced).length

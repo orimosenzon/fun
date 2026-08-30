@@ -126,6 +126,139 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
 
+/* ---------- the legend ---------- */
+
+/* Top corner opposite the buttons, and a step below the nav and draft bars in
+ * the stack: those cover the whole width when they are up, and while you are
+ * recording a trail the colours of the conservation layer are not the point. */
+.legend {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 900;
+  max-width: min(62vw, 260px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .22);
+  overflow: hidden;
+}
+
+.legend-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 11px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Three stacked bars, which is what a legend looks like at 12px. */
+.legend-ic {
+  flex: none;
+  width: 13px;
+  height: 11px;
+  background:
+    linear-gradient(var(--accent) 0 0) 0 0 / 100% 3px no-repeat,
+    linear-gradient(#8aa694 0 0) 0 4px / 100% 3px no-repeat,
+    linear-gradient(#c2d0c6 0 0) 0 8px / 100% 3px no-repeat;
+}
+
+.legend.open .legend-btn { border-bottom: 1px solid var(--line); }
+
+.legend-body {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding: 8px 11px 10px;
+}
+
+.lg-layer {
+  margin: 9px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.lg-layer:first-child { margin-top: 1px; }
+
+.lg-rows { margin: 0; padding: 0; list-style: none; }
+
+.lg-rows li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0;
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.lg-dot {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
+}
+
+/* The same swatches the map draws: a bar for a layer of trails, dashed when the
+ * route is only planned, and a hollow dot for a point whose position is
+ * approximate. */
+.lg-dot.line {
+  width: 15px;
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.lg-dot.line.dash {
+  background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px);
+}
+
+.lg-dot.approx { background: color-mix(in srgb, var(--c) 30%, #fff); border-color: var(--c); }
+
+.lg-nm { flex: 1; min-width: 0; }
+.lg-n { flex: none; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.lg-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.lg-foot .lg-dot { margin-top: 2px; }
+
+/* The same key inside the layer sheet, under the layer it belongs to: that is
+ * where somebody switches a layer on, and the first moment they can wonder
+ * what its colours mean. Only for a layer that is on, or the sheet becomes a
+ * wall of twenty-one chips. */
+.lay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: -2px 0 8px;
+  padding: 0 26px 0 0;
+  list-style: none;
+}
+
+.lay-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 /* ---------- in-app navigation bar ---------- */
 
 .nav {
@@ -717,6 +850,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   /* The bars are positioned against the window, not the map, so at this width
    * they would lie across the panel. Inline-start is the panel's side. */
   .nav { inset-inline: calc(var(--panel-w) + 10px) 10px; }
+  .legend { inset-inline-start: calc(var(--panel-w) + 10px); }
 }
 
 .no-gl {
