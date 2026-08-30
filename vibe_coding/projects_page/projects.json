@@ -355,8 +355,14 @@
           "desc": "תלמידים כותבים שיעורי בית על נייר, מצלמים בטלפון ומעלים ל-Google Classroom. Claude Vision מתמלל את כתב היד, בודק את התשובות, ומחזיר משוב — אוטומטית או דרך סקירת מורה.",
           "links": [
             {
-              "href": "https://orimosenzon-haskala-ocr.hf.space",
+              "href": "https://orimosenzon.github.io/bdika-site/",
               "style": "primary",
+              "label": "▶ Bdika — אתר הנחיתה",
+              "external": true
+            },
+            {
+              "href": "https://orimosenzon-haskala-ocr.hf.space",
+              "style": "secondary",
               "label": "▶ בודק תרגילים (OCR)",
               "external": true
             },
