@@ -41,6 +41,7 @@ const Layers = (() => {
   const SHIMUR_ID = 'shimur';
   const MAKOM_ID = 'makom-shamur';
   const PLANS_ID = 'plans';
+  const BLOCKS_ID = 'blocks';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -139,7 +140,7 @@ const Layers = (() => {
    *  The position lives under `geo` in the file, because build_places.py has to
    *  tell a hand-dropped pin from one it guessed off an address, and only ever
    *  overwrite the guesses. The rest of the app just wants lat and lng. */
-  function toPlace(raw, colours) {
+  function toPlace(raw, colours, fallback) {
     const geo = raw.geo || null;
     return {
       ...raw,
@@ -160,7 +161,11 @@ const Layers = (() => {
       vague: !!geo && ['nearby', 'street', 'neighbour'].includes(geo.source),
       geoSource: geo ? geo.source : null,
       place: true,
-      color: colours[raw.group] || '#6a1b9a'
+      // A source that sorts its places into groups colours them by group. One
+      // that does not - the cadastral blocks are all the same kind of thing -
+      // takes the layer's own colour, and the purple is the last resort for a
+      // place whose group is not in the document's list at all.
+      color: colours[raw.group] || fallback || '#6a1b9a'
     };
   }
 
@@ -185,7 +190,7 @@ const Layers = (() => {
       kind: 'places',
       pinnable: !!opts.pinnable,
       groups: doc.groups || [],
-      waypoints: doc.places.map((p) => toPlace(p, colours))
+      waypoints: doc.places.map((p) => toPlace(p, colours, opts.color))
     });
   }
 
@@ -229,7 +234,7 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places, art, shimur, makom, plans) {
+  function init(trails, network, places, art, shimur, makom, plans, blocks) {
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -346,6 +351,29 @@ const Layers = (() => {
       on: isOn(PLANS_ID, false)
     });
 
+    // The reference grid the planning layer's names are written in. Every plan
+    // is called after a block and a parcel - "תוספת זכויות בניה בגוש 10105
+    // חלקה 203" - and without this there is no way to find out from the map
+    // which block you are standing in. Dashed, because a block boundary is a
+    // line in a register and not a thing you can walk into.
+    addPlaceLayer(BLOCKS_ID, blocks, {
+      name: 'גושים',
+      short: 'גוש',
+      unit: 'גושים',
+      color: '#8d6e63',
+      dash: true,                          // drawn as a grid: outline, no fill
+      dots: false,                         // the outline is the block, not a point
+      note: 'גבולות הגושים של הקדסטר הארצי, עם מספר הגוש. שמות התכניות בשכבת '
+        + 'התכניות מפנים לגוש ולחלקה, וזו הדרך למצוא אותם על הקרקע. '
+        + 'החלקות עצמן אינן כאן: יש מעל עשרת אלפים מהן במושבה.',
+      credit: 'הקדסטר הארצי · govmap',
+      sourceName: 'הקדסטר הארצי',
+      sourceLine: 'גבולות הגושים מתוך הקדסטר הארצי, govmap',
+      linkTitle: 'govmap',
+      pinnable: false,                     // the boundary comes off the cadastre
+      on: isOn(BLOCKS_ID, false)
+    });
+
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
     // of the map.
@@ -395,7 +423,8 @@ const Layers = (() => {
   // The plans are a places layer that draws areas, and an area belongs under
   // every dot on the map rather than washing the colour out of the ones that
   // happen to fall inside it.
-  const order = (l) => (l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
+  const order = (l) => (l.id === BLOCKS_ID ? 0.25
+    : l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
 
   /** Rebuild the trail layers after a write, without disturbing the drafts
    *  layer or anyone's on/off choices. */
@@ -563,16 +592,22 @@ const Layers = (() => {
     if (map.getSource(src)) map.getSource(src).setData(shapeGeojson(layer));
     else map.addSource(src, { type: 'geojson', data: shapeGeojson(layer) });
 
-    // Faint enough that ninety-five overlapping plans still leave the streets
-    // underneath readable, and that the pile where a dozen of them sit on the
-    // same block does not go solid.
+    // A dashed area is a reference grid rather than something on the ground -
+    // the cadastral blocks - and it draws as an outline with no fill at all,
+    // because sixty of them tile the entire town and any fill would tint every
+    // other layer through it. A solid one is content: a plan, faint enough that
+    // ninety-five overlapping ones still leave the streets underneath readable.
+    const grid = !!layer.dash;
+
     map.addLayer({
       id: fillId(layer.id),
       type: 'fill',
       source: src,
       paint: {
         'fill-color': ['get', 'color'],
-        'fill-opacity': ['case', sel, 0.32, dim, 0.05, 0.14]
+        'fill-opacity': grid
+          ? ['case', sel, 0.14, 0]
+          : ['case', sel, 0.32, dim, 0.05, 0.14]
       }
     });
 
@@ -580,11 +615,11 @@ const Layers = (() => {
       id: edgeId(layer.id),
       type: 'line',
       source: src,
-      paint: {
+      paint: Object.assign({
         'line-color': ['get', 'color'],
-        'line-width': ['case', sel, 3.5, 1.6],
-        'line-opacity': ['case', sel, 1, dim, 0.25, 0.8]
-      }
+        'line-width': ['case', sel, 3.5, grid ? 1 : 1.6],
+        'line-opacity': ['case', sel, 1, dim, 0.25, grid ? 0.5 : 0.8]
+      }, grid ? { 'line-dasharray': [3, 2] } : {})
     });
 
     // Tapping anywhere inside a plan selects it, which is how you ask "what is
@@ -608,7 +643,10 @@ const Layers = (() => {
     // still reads as its group, and visibly less certain than the rest.
     const soft = ['boolean', ['get', 'vague'], false];
 
-    map.addLayer({
+    // A dot at the centre of a cadastral block means nothing - the block is its
+    // outline, and the point is only there to hang the number on. The invisible
+    // hit circle below stays, so the number is still something you can tap.
+    if (layer.dots !== false) map.addLayer({
       id: dotId(layer.id),
       type: 'circle',
       source: src,
@@ -831,12 +869,13 @@ const Layers = (() => {
         .filter((r) => r.n);
     }
     if (!layer.segments.length && !placed.length) return [];
-    // A trail is a line on the map and a place is a dot, and the key has to be
-    // the same shape as the thing it stands for.
+    // A trail is a line on the map, a place is a dot, and a layer drawn as
+    // areas is the edge of one. The key has to be the same shape as the thing
+    // it stands for.
     return [{
       name: layer.name,
       color: layer.color,
-      line: layer.kind !== 'places',
+      line: layer.kind !== 'places' || hasShapes(layer),
       dash: layer.dash,
       whole: true
     }];
@@ -979,6 +1018,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
+    BLOCKS_ID,
     set onChange(fn) { onChange = fn; }
   };
 })();
