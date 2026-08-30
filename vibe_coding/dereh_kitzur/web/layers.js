@@ -37,6 +37,8 @@ const Layers = (() => {
   const PLACES_ID = 'places';
   const PENDING_ID = 'pending';
   const ART_ID = 'art2026';
+  const SHIMUR_ID = 'shimur';
+  const MAKOM_ID = 'makom-shamur';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -218,7 +220,7 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places, art) {
+  function init(trails, network, places, art, shimur, makom) {
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -271,6 +273,42 @@ const Layers = (() => {
       linkTitle: 'הדף המלא באתר הפסטיבל',
       pinnable: false,                     // the festival placed these itself
       on: isOn(ART_ID, false)
+    });
+
+    // What the moshava has decided is worth keeping. Two lists rather than
+    // one, because they do not mean the same thing: the appendix is the law
+    // and מקום שמור is an argument, and merging them would quietly promote
+    // somebody's proposal into a statutory grade. Both are off by default -
+    // walking routes are what the app is for - and both pair naturally with
+    // the shortcuts, which is how you end up walking past a water tower.
+    addPlaceLayer(SHIMUR_ID, shimur, {
+      name: 'אתרים לשימור: תוכנית המתאר',
+      short: 'שימור',
+      color: '#ef6c00',
+      note: 'האתרים שנקבעו לשימור בנספח השימור של תוכנית המתאר הכוללנית: '
+        + 'מבנים, מגדלי מים, שדרות עצים ומתחמים היסטוריים. לכל אתר דרגת השימור '
+        + 'שנקבעה לו. הצבעים לפי הנרטיב שאליו האתר משויך בנספח.',
+      credit: 'נספח השימור, תכנית 353-0138586',
+      sourceName: 'נספח השימור של תוכנית המתאר הכוללנית',
+      sourceLine: 'מתוך נספח השימור של תוכנית המתאר הכוללנית (ד"ר הדס שדר, 2017)',
+      linkTitle: 'נספח השימור המלא באתר מנהל התכנון',
+      pinnable: false,                     // positions come off the cadastre
+      on: isOn(SHIMUR_ID, false)
+    });
+
+    addPlaceLayer(MAKOM_ID, makom, {
+      name: 'מקום שמור',
+      short: 'מקום שמור',
+      color: '#ad1457',
+      note: 'רשימת האתרים של פרויקט מקום שמור, פרויקט התיעוד של אילנה פלדה. '
+        + 'הרשימה היא הצעה ואין לה מעמד סטטוטורי, והיא כוללת גם מבנים שלא נכללו '
+        + 'בנספח השימור. רוב האתרים עוד לא מוקמו.',
+      credit: 'מקום שמור · makomshamur.com',
+      sourceName: 'מקום שמור',
+      sourceLine: 'מתוך פרויקט מקום שמור, אילנה פלדה',
+      linkTitle: 'הדף באתר מקום שמור',
+      pinnable: false,                     // no arrange tool for this one yet
+      on: isOn(MAKOM_ID, false)
     });
 
     // Populated from the worker, and only while edit mode is on: a trail nobody
@@ -700,7 +738,7 @@ const Layers = (() => {
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
-    TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID,
+    TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID,
     set onChange(fn) { onChange = fn; }
   };
 })();
