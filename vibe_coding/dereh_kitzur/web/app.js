@@ -534,7 +534,15 @@ const GEO_SOURCE = {
   osm: 'זוהה לפי שם ב-OpenStreetMap',
   address: 'פוענח מכתובת שבערך',
   street: 'רמת רחוב בלבד, לא מספר בית',
-  nearby: 'מקורב, לפי מקום סמוך שמוזכר בערך'
+  nearby: 'מקורב, לפי מקום סמוך שמוזכר בערך',
+  // The two the conservation appendix produces. It gives a block and a parcel
+  // rather than a point, so even the exact ones are the middle of a plot; and
+  // a fifth of its parcels no longer exist in today's cadastre.
+  parcel: 'מרכז החלקה שבנספח, לא המבנה עצמו',
+  neighbour: 'החלקה שבנספח כבר לא קיימת, לפי חלקה סמוכה במספור',
+  pardespedia: 'לפי המיקום של אותו מקום בפרדספדיה',
+  shimur: 'לפי אותו אתר בנספח השימור',
+  festival: 'הסיכה שהפסטיבל עצמו הניח'
 };
 
 /** What an editor can change about a trail that is already published. */
