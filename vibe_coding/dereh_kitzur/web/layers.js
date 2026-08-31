@@ -992,6 +992,7 @@ const Layers = (() => {
   let arranging = false;
   const setArranging = (value) => { arranging = value; applyVisibility(); };
 
+
   function applyVisibility() {
     // Ahead of the map guard: the legend is HTML, and it has to be right on a
     // first load that reaches here before the style has finished loading.

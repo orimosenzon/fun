@@ -126,6 +126,38 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
 
+/* ---------- tap acknowledgement ---------- */
+
+/* Confirmation that a tap landed, painted immediately and independently of the
+ * map's own render loop. See `ping` in draft.js for why it is not enough to let
+ * the point speak for itself. */
+.tap-ping {
+  position: absolute;
+  z-index: 450;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: rgba(27, 94, 32, .25);
+  pointer-events: none;
+  animation: tap-ping .42s ease-out forwards;
+}
+
+@keyframes tap-ping {
+  from { transform: scale(.35); opacity: .95; }
+  to   { transform: scale(1.9); opacity: 0; }
+}
+
+/* Somebody who has asked for less motion still gets the answer, held still. */
+@media (prefers-reduced-motion: reduce) {
+  .tap-ping { animation: tap-hold .42s linear forwards; }
+  @keyframes tap-hold {
+    from { opacity: .95; }
+    to   { opacity: 0; }
+  }
+}
+
 /* ---------- trips ---------- */
 
 /* What a walk is made of, in the order it walks it. Numbered, because the
