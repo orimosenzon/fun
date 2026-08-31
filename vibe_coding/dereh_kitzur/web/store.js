@@ -479,6 +479,7 @@ const Store = (() => {
     const segs = doc.segments;
     doc.stats = {
       segments: segs.length,
+      trips: (doc.trips || []).length,
       waypoints: doc.waypoints.length,
       total_length: segs.reduce((n, s) => n + (s.length || 0), 0),
       photos: [...segs, ...doc.waypoints].reduce((n, s) => n + s.photos.length, 0)
@@ -491,10 +492,16 @@ const Store = (() => {
     ];
   }
 
-  /** The one item with this id, wherever it is in the document. */
+  /** The one item with this id, wherever it is in the document.
+   *
+   *  Trips are the third array, and they belong here for the same reason as
+   *  the other two: renaming, recolouring, adding a link or a photo and
+   *  deleting all reach an item through this, and a trip that could be
+   *  published and then never touched again would be a dead end. */
   const find = (doc, id) =>
     (doc.segments || []).find((s) => s.id === id) ||
-    (doc.waypoints || []).find((w) => w.id === id);
+    (doc.waypoints || []).find((w) => w.id === id) ||
+    (doc.trips || []).find((t) => t.id === id);
 
   /* ---------- photos ---------- */
 
@@ -615,9 +622,17 @@ const Store = (() => {
     return { id: seg.id, doc: absolutise(doc) };
   }
 
-  const remove = async (id, name) => absolutise(await withTrails(
-    (doc) => { doc.segments = doc.segments.filter((s) => s.id !== id); },
-    `הסרת שביל: ${name}`));
+  /** Delete a trail or a trip. Both arrays are filtered rather than the caller
+   *  having to say which kind it was; an id lives in exactly one of them.
+   *
+   *  Deleting a *trail* that trips walk along is allowed and leaves them each
+   *  short of a piece, which their own page then says out loud. The place to
+   *  stop somebody doing that by accident is the trail's page, which lists the
+   *  trips that pass through it, not here. */
+  const remove = async (id, name) => absolutise(await withTrails((doc) => {
+    doc.segments = doc.segments.filter((s) => s.id !== id);
+    if (doc.trips) doc.trips = doc.trips.filter((t) => t.id !== id);
+  }, `הסרת שביל: ${name}`));
 
   const rename = async (id, name, note) => absolutise(await withTrails((doc) => {
     const it = find(doc, id);
@@ -775,6 +790,34 @@ const Store = (() => {
     }
   }
 
+  /** A trip straight onto the map. Only an editor gets here.
+   *
+   *  What is written is the recipe and not the line: which shortcut, which way
+   *  round, which drawn points. `trips` is a second array in the same document
+   *  as the shortcuts it names, so a trail and the trips built on it are always
+   *  written and read together and can never disagree about what exists. */
+  async function publishTrip(draft, blobs, onStep) {
+    const photos = await uploadAll(blobs, draft.name, onStep);
+    if (onStep) onStep('מוסיף למסד…');
+
+    const trip = {
+      id: 'trip-' + Date.now().toString(36),
+      name: draft.name,
+      note: draft.note || '',
+      photos,
+      links: cleanLinks(draft.links),
+      parts: draft.parts,
+      ...(draft.difficulty ? { difficulty: draft.difficulty } : {}),
+      ...(draft.minutes ? { minutes: draft.minutes } : {}),
+      origin: 'app',
+      added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      by: named()
+    };
+    const doc = await withTrails((d) => { (d.trips = d.trips || []).push(trip); },
+      `טיול חדש: ${draft.name}`);
+    return { id: trip.id, doc: absolutise(doc) };
+  }
+
   /** Send a trail in for review. Needs nothing from the sender. */
   async function submit(draft, blobs, onStep) {
     const photos = await uploadAll(blobs, draft.name, onStep);
@@ -785,7 +828,13 @@ const Store = (() => {
       note: draft.note || '',
       photos,
       links: cleanLinks(draft.links),
-      path: draft.path,
+      // A trip goes into the queue as its recipe, a trail as its line. The
+      // reviewer sees both drawn the same way; only the approval differs.
+      ...(draft.parts
+        ? { parts: draft.parts,
+            ...(draft.difficulty ? { difficulty: draft.difficulty } : {}),
+            ...(draft.minutes ? { minutes: draft.minutes } : {}) }
+        : { path: draft.path }),
       length: draft.length,
       // The colour the sender picked, carried through to approval. The queue
       // draws every item in its own yellow regardless, so this is not what it
@@ -796,7 +845,7 @@ const Store = (() => {
       by: named()
     };
     await withPending((doc) => { doc.items.push(item); },
-      `שביל שהתקבל: ${draft.name}`);
+      `${draft.parts ? 'טיול' : 'שביל'} שהתקבל: ${draft.name}`);
     return item.id;
   }
 
@@ -805,6 +854,31 @@ const Store = (() => {
     const doc = await queue();
     const item = (doc.items || []).find((i) => i.id === id);
     if (!item) throw new Error('השביל כבר לא בתור.');
+
+    // A queued trip is approved into the trips array. Everything else about
+    // the queue - who sent it, its photos, dropping it afterwards - is the
+    // same, so only the shape of what is appended differs.
+    if (item.parts) {
+      const trip = {
+        id: 'trip-' + Date.now().toString(36),
+        name: item.name,
+        note: item.note || '',
+        photos: item.photos || [],
+        links: item.links || [],
+        parts: item.parts,
+        ...(item.difficulty ? { difficulty: item.difficulty } : {}),
+        ...(item.minutes ? { minutes: item.minutes } : {}),
+        origin: 'app',
+        added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+        by: item.by || '',
+        approved_by: named()
+      };
+      const withTrip = await withTrails((d) => { (d.trips = d.trips || []).push(trip); },
+        `אישור טיול: ${item.name}`);
+      await withPending((d) => { d.items = d.items.filter((i) => i.id !== id); },
+        `הוסר מהתור: ${item.name}`);
+      return { id: trip.id, doc: absolutise(withTrip) };
+    }
 
     const seg = {
       id: 'app-' + Date.now().toString(36),
@@ -853,7 +927,7 @@ const Store = (() => {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks,
     isEditor, editor, editing, named, enable, disable, resume, writable,
-    publish, remove, rename, setLinks, setColor, addPhotos, removePhoto,
+    publish, publishTrip, remove, rename, setLinks, setColor, addPhotos, removePhoto,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,

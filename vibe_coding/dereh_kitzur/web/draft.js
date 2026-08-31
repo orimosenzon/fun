@@ -25,8 +25,70 @@ const Drafts = (() => {
   const MODE_TEXT = {
     walk: 'הוקלט בהליכה',
     draw: 'שורטט על המפה',
-    import: 'התקבל כקובץ'
+    import: 'התקבל כקובץ',
+    trip: 'טיול משורשר'
   };
+
+  /* How near a tap has to land on a shortcut to mean it. The hit line under
+   * each trail is 22px wide, and a finger is wider than a tap point. */
+  const TAP_PX = 10;
+
+  /* How far the pointer may travel between press and release and still be a
+   * tap rather than a pan.
+   *
+   * MapLibre's own `click` allows three pixels, and cancels the event outright
+   * beyond that. Measured on this map: six taps with 3px of drift produced six
+   * pointer-downs and *zero* clicks. That is not a slow tap, it is a lost one -
+   * nothing appears, so the person taps again, and again. A fingertip drifts
+   * more than three pixels nearly every time, and so does a trackpad.
+   *
+   * These are the ordinary platform figures instead: about ten pixels for a
+   * mouse, and the wider touch slop for a finger. The cost is that a very
+   * short deliberate pan now also drops a point, which "בטל נקודה" takes back
+   * immediately - much the better way round. */
+  const SLOP_MOUSE = 10;
+  const SLOP_TOUCH = 18;
+
+  /** Taps on the map, bound ourselves rather than through MapLibre's `click`.
+   *  Returns the function that unbinds them.
+   *
+   *  A second finger means a pinch and never a tap, so any pointer arriving
+   *  while one is already down abandons the gesture. */
+  function onMapTap(handler) {
+    const canvas = map.getCanvas();
+    let start = null;
+    let down = 0;
+
+    const press = (e) => {
+      down += 1;
+      if (down > 1 || (e.button != null && e.button !== 0)) { start = null; return; }
+      start = { x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch' };
+    };
+
+    const release = (e) => {
+      down = Math.max(0, down - 1);
+      const from = start;
+      start = null;
+      if (!from || down) return;
+      const slop = from.touch ? SLOP_TOUCH : SLOP_MOUSE;
+      if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > slop) return;
+      const box = canvas.getBoundingClientRect();
+      // A plain {x, y} is a PointLike everywhere this is passed on to.
+      const point = { x: e.clientX - box.left, y: e.clientY - box.top };
+      handler({ point, lngLat: map.unproject([point.x, point.y]) });
+    };
+
+    const abandon = () => { down = 0; start = null; };
+
+    canvas.addEventListener('pointerdown', press);
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', abandon);
+    return () => {
+      canvas.removeEventListener('pointerdown', press);
+      canvas.removeEventListener('pointerup', release);
+      canvas.removeEventListener('pointercancel', abandon);
+    };
+  }
 
   let db = null;
   let rows = [];                    // raw records, newest first
@@ -79,7 +141,22 @@ const Drafts = (() => {
       urls.push(url);
       return { thumb: url, full: url };
     });
-    const path = rec.path;
+    // A trip draft holds its recipe and not its line, exactly like a published
+    // one, so it is resolved here against whatever the shortcuts look like now.
+    //
+    // That resolution can come back empty - every shortcut it names is gone, or
+    // the trails index is not populated at this instant - and this function
+    // used to reach straight into path[0] for its entries. One such record threw,
+    // `sync` threw with it, and *every* draft on the device vanished from the
+    // list at once. A draft is somebody's unrepeatable afternoon: nothing here
+    // may throw, and a record that cannot be drawn still has to be listed so
+    // its owner can see it and decide what to do with it.
+    const built = rec.parts ? Layers.resolveTrip(rec.parts) : null;
+    const path = (built ? built.path : rec.path) || [];
+    const ends = path.length
+      ? [{ lat: path[0][0], lng: path[0][1] },
+         { lat: path[path.length - 1][0], lng: path[path.length - 1][1] }]
+      : [];
     return {
       id: rec.id,
       name: rec.name,
@@ -88,6 +165,16 @@ const Drafts = (() => {
       links: rec.links || [],
       layer: rec.layer || '',
       path,
+      ...(rec.parts ? {
+        trip: true,
+        parts: rec.parts,
+        uses: built.uses,
+        missing: built.missing,
+        difficulty: rec.difficulty || '',
+        group: rec.difficulty || '',
+        minutes: rec.minutes || Math.round((pathLength(path) / 1000) * 15),
+        loop: Layers.isLoop(path)
+      } : {}),
       length: pathLength(path),
       // Empty leaves it to the drafts layer's own purple, which is how a draft
       // recorded before a colour could be picked still looks.
@@ -95,27 +182,122 @@ const Drafts = (() => {
       draft: true,
       mode: rec.mode,
       created: rec.created,
-      entries: [
-        { lat: path[0][0], lng: path[0][1] },
-        { lat: path[path.length - 1][0], lng: path[path.length - 1][1] }
-      ]
+      entries: ends
     };
   }
 
-  /** Rebuild the drafts layer from storage and tell the app to repaint. */
+  /** Rebuild the drafts layer from storage and tell the app to repaint.
+   *
+   *  Every record is converted inside its own try, so that one that cannot be
+   *  converted costs its owner that one draft rather than all of them. A record
+   *  that fails is left in storage untouched and reported to the console; it is
+   *  never dropped from IndexedDB on the strength of a rendering error. */
   function sync() {
     urls.forEach(URL.revokeObjectURL);
     urls = [];
     const layer = Layers.byId('drafts');
-    layer.segments = rows
-      .filter((r) => r.path && r.path.length > 1)
-      .map(toSegment);
+    layer.segments = rows.map((rec) => {
+      try {
+        return toSegment(rec);
+      } catch (err) {
+        console.error('דרך קיצור: טיוטה שלא ניתן להציג', rec && rec.id, err);
+        return null;
+      }
+    }).filter(Boolean);
     Layers.refresh('drafts');
   }
 
   async function reload() {
     rows = (await readAll()).sort((a, b) => b.created - a.created);
     sync();
+  }
+
+  /* ---------- building a trip ----------
+   *
+   * A trip is a continuous route that chains shortcuts already on the map with
+   * pieces drawn between them, so the editor has to tell two taps apart on the
+   * same map: one that means "walk along this shortcut" and one that means
+   * "the route goes through here". A tap that lands on a visible shortcut is
+   * the first; everything else is the second.
+   *
+   * What is kept is the recipe - which shortcut, which way round, which drawn
+   * points - and never the line it produces. layers.js resolves it. */
+
+  /** The shortcut under a tap, if the tap was on one. */
+  function trailUnder(point) {
+    const layers = Layers.trailHitLayers();
+    // An empty list would ask MapLibre for every layer on the map, which would
+    // make a tap on a plan or a cadastral block chain something absurd.
+    if (!layers.length) return null;
+    const box = [[point.x - TAP_PX, point.y - TAP_PX],
+                 [point.x + TAP_PX, point.y + TAP_PX]];
+    const hits = map.queryRenderedFeatures(box, { layers });
+    return hits.length ? hits[0].properties.id : null;
+  }
+
+  /** Re-resolve the recipe into the line the bar and the map are showing. */
+  function rebuildTrip() {
+    const built = Layers.resolveTrip(ed.parts);
+    ed.path = built.path;
+    ed.uses = built.uses;
+    paintEditor();
+  }
+
+  function pushDrawn(pt) {
+    ed.gap = null;
+    const last = ed.parts[ed.parts.length - 1];
+    // Consecutive taps extend the same drawn run rather than each becoming a
+    // part of its own, so that undo takes back a point and not a whole piece.
+    if (last && last.draw) last.draw.push(pt);
+    else ed.parts.push({ draw: [pt] });
+    rebuildTrip();
+  }
+
+  /** Add a shortcut to the end of the trip, whichever way round it has to go.
+   *
+   *  A trail carries a direction - the order its path was recorded in - and a
+   *  trip almost never wants all of them the same way. The end nearer to where
+   *  the trip currently stops is the end it joins by, and if that is the far
+   *  end of the trail then the trail goes in reversed. */
+  function chainTrail(id) {
+    const seg = Layers.item(id);
+    if (!seg || !seg.path || seg.path.length < 2) return;
+
+    if (!ed.path.length) {
+      ed.gap = null;
+      ed.parts.push({ trail: id });
+      rebuildTrip();
+      return;
+    }
+
+    const end = ed.path[ed.path.length - 1];
+    const toStart = Layers.metres(end, seg.path[0]);
+    const toEnd = Layers.metres(end, seg.path[seg.path.length - 1]);
+    const reversed = toEnd < toStart;
+    const gap = Math.min(toStart, toEnd);
+
+    // Beyond the threshold this is ground nobody has walked, and joining it
+    // with a straight line would draw a trip through back gardens. Say what is
+    // missing and let the person draw it.
+    if (gap > Layers.TRIP_GAP_M) {
+      ed.gap = { name: seg.name, m: Math.round(gap) };
+      paintBar();
+      return;
+    }
+    ed.gap = null;
+    ed.parts.push(reversed ? { trail: id, reversed: true } : { trail: id });
+    rebuildTrip();
+  }
+
+  /** Take back the last thing added: a point from the run being drawn, or the
+   *  whole shortcut that was chained. */
+  function undoTrip() {
+    const last = ed.parts[ed.parts.length - 1];
+    if (!last) return;
+    if (last.draw && last.draw.length > 1) last.draw.pop();
+    else ed.parts.pop();
+    ed.gap = null;
+    rebuildTrip();
   }
 
   /* ---------- the editor ---------- */
@@ -187,6 +369,15 @@ const Drafts = (() => {
       state = ed.paused ? 'מושהה. לחץ המשך כדי לחזור להקליט.'
         : (ed.path.length ? `מקליט · ${ed.path.length} נקודות` : 'מחפש מיקום מדויק…');
       if (ed.weak && !ed.paused) state = 'הקליטה פועלת, אבל הדיוק חלש כרגע…';
+    } else if (ed.mode === 'trip') {
+      const n = (ed.uses || []).length;
+      state = ed.gap
+        ? `פער ${ed.gap.m} מ׳ עד "${ed.gap.name}". צייר אותו קודם.`
+        : !ed.path.length
+          ? 'לחץ על דרך קיצור לשרשור, או על המפה לציור'
+          : n
+            ? `${n} ${n === 1 ? 'שביל משורשר' : 'שבילים משורשרים'}`
+            : 'קטע מצויר. אפשר לשרשר עכשיו דרך קיצור.';
     } else {
       // The bar shares its width with three buttons, so the wording stays
       // short enough not to be cut off on a narrow phone.
@@ -195,8 +386,10 @@ const Drafts = (() => {
         : `${ed.path.length} נקודות סומנו`;
     }
     el('draft-state').textContent = state;
-    bar.classList.toggle('paused', !!ed.paused);
-    el('draft-undo').hidden = ed.mode !== 'draw';
+    // A gap is not an error state, but it is the one thing in the bar that
+    // wants to be noticed, and `paused` is already the bar's "look here".
+    bar.classList.toggle('paused', !!ed.paused || !!(ed.gap));
+    el('draft-undo').hidden = ed.mode !== 'draw' && ed.mode !== 'trip';
     el('draft-pause').hidden = ed.mode !== 'walk';
     el('draft-pause').textContent = ed.paused ? 'המשך' : 'השהה';
     el('draft-done').disabled = ed.path.length < 2;
@@ -209,23 +402,45 @@ const Drafts = (() => {
     deselect();         // the panel shrinks away; leave nothing stale behind it
     ed = {
       mode,
-      path: existing ? existing.path.slice() : [],
+      path: existing && existing.path ? existing.path.slice() : [],
       editing: existing || null,
       paused: false,
       watch: null,
-      weak: false
+      weak: false,
+      offTap: null,
+      parts: [],
+      uses: [],
+      gap: null
     };
     document.body.classList.add('drafting');
     el('draft-bar').hidden = false;
     paintEditor();
 
     if (mode === 'draw') {
-      ed.onClick = (e) => {
+      if (map) ed.offTap = onMapTap((e) => {
         ed.path.push([+e.lngLat.lat.toFixed(6), +e.lngLat.lng.toFixed(6)]);
         paintEditor();
-      };
-      if (map) map.on('click', ed.onClick);
+      });
       if (map && existing && existing.path.length) fitTo(existing.path);
+      return;
+    }
+
+    if (mode === 'trip') {
+      // You cannot chain what you cannot see, so the shortcuts come on whether
+      // or not this browser had them on. Nothing is turned off again at the
+      // end: having switched them on is a choice the person can now unmake.
+      Layers.turnOn(Layers.TRAILS_ID);
+      ed.parts = existing && existing.parts
+        ? existing.parts.map((part) => ({ ...part,
+            ...(part.draw ? { draw: part.draw.map((pt) => pt.slice()) } : {}) }))
+        : [];
+      rebuildTrip();
+      if (map) ed.offTap = onMapTap((e) => {
+        const id = trailUnder(e.point);
+        if (id) chainTrail(id);
+        else pushDrawn([+e.lngLat.lat.toFixed(6), +e.lngLat.lng.toFixed(6)]);
+      });
+      if (map && ed.path.length) fitTo(ed.path);
       return;
     }
 
@@ -261,7 +476,7 @@ const Drafts = (() => {
 
   function stopEditor(quiet) {
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);
-    if (ed && ed.onClick && map) map.off('click', ed.onClick);
+    if (ed && ed.offTap) ed.offTap();
     ed = null;
     clearEditorLayers();
     document.body.classList.remove('drafting');
@@ -405,6 +620,11 @@ ${tracks}
         <b>ציור על המפה</b>
         <span>סמן את התוואי בלחיצות. מתאים לשביל שאתה כבר מכיר, מהבית.</span>
       </button>
+      <button class="big-act" data-act="trip">
+        <b>טיול חדש</b>
+        <span>מסלול רציף שמשרשר קיצורי דרך קיימים. לוחצים על שביל כדי לצרף
+          אותו, ועל המפה כדי לצייר את מה שביניהם.</span>
+      </button>
       <label class="big-act ghost" style="cursor:pointer">
         <b>פתיחת קובץ שקיבלת</b>
         <span>שביל ששלח לך מישהו, ב-KML או GPX. נפתח לבדיקה על המפה לפני פרסום.</span>
@@ -415,9 +635,67 @@ ${tracks}
         : 'השביל נשמר במכשיר הזה בלבד, ומסך הפרטים אפשר לשלוח אותו ליוזמה.'}</p>`);
   }
 
+  /** The extra three a trip carries and a trail does not: how far and how long,
+   *  how hard, and whether it brings you back to where you left the car.
+   *
+   *  The minutes are pre-filled from the distance at a flat-ground pace and are
+   *  a suggestion, not a claim: the field is editable and whatever is typed
+   *  wins. Circular or point-to-point is not asked at all - the two ends either
+   *  meet or they do not, and asking somebody to confirm what the map already
+   *  knows is a question with a right answer. */
+  function tripFields(cur) {
+    const len = pathLength(ed.path);
+    const uses = ed.uses || [];
+    const loop = Layers.isLoop(ed.path, len);
+    const mins = cur.minutes || Math.round((len / 1000) * 15);
+    const hard = cur.difficulty || 'קל';
+
+    return `
+      <p class="sheet-lead">${len >= 1000 ? (len / 1000).toFixed(2) + ' ק"מ' : len + ' מ׳'}
+        · ${loop ? 'מסלול מעגלי' : 'מקצה לקצה'}${uses.length
+          ? ` · עובר ב-${uses.length} ${uses.length === 1 ? 'דרך קיצור' : 'דרכי קיצור'}`
+          : ' · מצויר ביד'}</p>
+      ${uses.length ? `<p class="sheet-credit trip-uses">${
+        uses.map((u) => escapeHtml(u.name)).join(' ← ')}</p>` : ''}
+      <div class="fld"><span>דרגת קושי</span>
+        <div class="picks tight" id="d-hard-pick">
+          ${Layers.DIFFICULTY.map((d) => `<label class="pick${d.name === hard ? ' on' : ''}">
+            <input type="radio" name="hard" value="${d.name}" ${d.name === hard ? 'checked' : ''}>
+            <span class="lay-swatch" style="--c:${d.color}"></span>
+            <span>${d.name}</span></label>`).join('')}
+        </div>
+        <input type="hidden" id="d-hard" value="${escapeHtml(hard)}">
+      </div>
+      <label class="fld"><span>זמן הליכה משוער (דקות)</span>
+        <input id="d-mins" type="number" min="1" max="900" value="${mins}"></label>`;
+  }
+
   function askDetails() {
     const cur = ed.editing || {};
     const len = pathLength(ed.path);
+
+    if (ed.mode === 'trip') {
+      openSheet(`
+        <header class="sheet-head">
+          <h2>${cur.id ? 'עדכון הטיול' : 'טיול חדש'}</h2>
+          <button class="sheet-x" data-act="back" aria-label="חזרה">&times;</button>
+        </header>
+        ${tripFields(cur)}
+        <label class="fld"><span>שם הטיול</span>
+          <input id="d-name" type="text" maxlength="60" value="${escapeHtml(cur.name || '')}"
+                 placeholder="למשל: סובב שמורת החורש"></label>
+        <label class="fld"><span>הערה (לא חובה)</span>
+          <textarea id="d-note" rows="2" maxlength="240"
+                    placeholder="מתאים לעגלה, צל רוב הדרך, יש ברזייה באמצע…"
+                    >${escapeHtml(cur.note || '')}</textarea></label>
+        <div class="fld"><span>קישורים (לא חובה)</span>
+          ${LinkRows.html(cur.links)}</div>
+        <button class="big-act primary" data-act="save"><b>שמור טיול</b></button>
+        <button class="big-act ghost" data-act="resume"><b>חזרה למסלול</b>
+          <span>לשרשר עוד שביל או להוסיף קטע מצויר</span></button>`);
+      setTimeout(() => el('d-name').focus(), 60);
+      return;
+    }
 
     // A layer to publish into is only worth asking about once an editor has
     // made one, and only to somebody who can publish at all.
@@ -467,7 +745,15 @@ ${tracks}
     rec.links = LinkRows.read(el('draft-card'));
     rec.color = Swatches.read(el('draft-card'));
     rec.layer = el('d-layer') ? el('d-layer').value : (rec.layer || '');
-    rec.path = ed.path;
+    if (ed.mode === 'trip') {
+      rec.parts = ed.parts;
+      delete rec.path;                 // the recipe is the record; the line is not
+      rec.difficulty = (el('d-hard') || {}).value || '';
+      const typed = parseInt((el('d-mins') || {}).value, 10);
+      rec.minutes = Number.isFinite(typed) && typed > 0 ? typed : 0;
+    } else {
+      rec.path = ed.path;
+    }
     rec.mode = ed.mode;
     rec.updated = Date.now();
 
@@ -544,7 +830,9 @@ ${tracks}
     btn.disabled = true;
     say('מפרסם…');
     try {
-      const { id, doc } = await Store.publish(seg, (rec && rec.photos) || [], say);
+      const { id, doc } = seg.trip
+        ? await Store.publishTrip(seg, (rec && rec.photos) || [], say)
+        : await Store.publish(seg, (rec && rec.photos) || [], say);
       await drop(seg.id);
       await reload();
       await reloadShared(doc);
@@ -574,7 +862,9 @@ ${tracks}
       deselect();
       await reload();
       await refreshQueue();
-      alert('נשלח, תודה. השביל ממתין לאישור ויופיע על המפה בקרוב.');
+      alert(seg.trip
+        ? 'נשלח, תודה. הטיול ממתין לאישור ויופיע על המפה בקרוב.'
+        : 'נשלח, תודה. השביל ממתין לאישור ויופיע על המפה בקרוב.');
     } catch (err) {
       btn.disabled = false;
       msg.className = 'pub-msg bad';
@@ -715,17 +1005,31 @@ ${tracks}
       if (!btn) return;
       const act = btn.dataset.act;
       if (act === 'close') closeSheet();
-      else if (act === 'walk' || act === 'draw') { closeSheet(); startEditor(act); }
+      else if (act === 'walk' || act === 'draw' || act === 'trip') {
+        closeSheet(); startEditor(act);
+      }
       else if (act === 'save') save();
       else if (act === 'resume' || act === 'back') {
         closeSheet();
         // Coming back from the rename form, there is no live editor to return to.
-        if (ed && ed.paused && ed.editing && !ed.watch && ed.mode !== 'draw') stopEditor(true);
+        if (ed && ed.paused && ed.editing && !ed.watch
+            && ed.mode !== 'draw' && ed.mode !== 'trip') stopEditor(true);
       }
+    });
+
+    // The difficulty picker writes into the hidden field the save reads, and
+    // paints the chosen one, the same way the colour swatches do.
+    el('draft-sheet').addEventListener('change', (e) => {
+      if (e.target.name !== 'hard') return;
+      el('d-hard').value = e.target.value;
+      el('d-hard-pick').querySelectorAll('.pick').forEach((p) => {
+        p.classList.toggle('on', p.contains(e.target));
+      });
     });
 
     el('draft-undo').addEventListener('click', () => {
       if (!ed) return;
+      if (ed.mode === 'trip') { undoTrip(); return; }
       ed.path.pop();
       paintEditor();
     });
