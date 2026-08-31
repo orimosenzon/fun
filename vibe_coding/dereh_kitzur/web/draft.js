@@ -49,6 +49,34 @@ const Drafts = (() => {
   const SLOP_MOUSE = 10;
   const SLOP_TOUCH = 18;
 
+  /** Acknowledge a tap where the finger landed, straight away.
+   *
+   *  The point itself is drawn by MapLibre, into WebGL, on the map's own render
+   *  loop - so how fast it appears is not this app's to decide. Measured on a
+   *  machine falling back to software rendering, a single map frame took about
+   *  a second and blocked the main thread, and the new point trailed the tap by
+   *  a second or two. Somebody watching that has no way to tell a slow tap from
+   *  a lost one, so they tap again, and again, and end up with four points they
+   *  did not ask for.
+   *
+   *  This is an ordinary DOM element instead. It costs nothing, it does not
+   *  wait for a map frame, and it paints on the compositor as soon as the main
+   *  thread yields - always sooner than the point it is promising. It says one
+   *  thing only, and it is the thing that was missing: "your tap landed". */
+  function ping(point) {
+    const host = document.getElementById('map');
+    if (!host) return;
+    const dot = document.createElement('span');
+    dot.className = 'tap-ping';
+    dot.style.left = point.x + 'px';
+    dot.style.top = point.y + 'px';
+    host.appendChild(dot);
+    // Belt and braces: animationend does not fire if the animation is skipped
+    // for a person who asked for reduced motion.
+    dot.addEventListener('animationend', () => dot.remove());
+    setTimeout(() => dot.remove(), 900);
+  }
+
   /** Taps on the map, bound ourselves rather than through MapLibre's `click`.
    *  Returns the function that unbinds them.
    *
@@ -75,6 +103,7 @@ const Drafts = (() => {
       const box = canvas.getBoundingClientRect();
       // A plain {x, y} is a PointLike everywhere this is passed on to.
       const point = { x: e.clientX - box.left, y: e.clientY - box.top };
+      ping(point);
       handler({ point, lngLat: map.unproject([point.x, point.y]) });
     };
 
