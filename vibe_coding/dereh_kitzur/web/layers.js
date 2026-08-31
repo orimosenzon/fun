@@ -78,7 +78,7 @@ const Layers = (() => {
    * switched somebody's own recordings off would be a nasty surprise. */
   const URL_KEY = 'layers';
   const shareable = (l) => l.kind === 'trails' || l.kind === 'network'
-    || l.kind === 'places';
+    || l.kind === 'places' || l.kind === 'trips';
 
   /** The layers a link asks for, or null when the URL says nothing about them -
    *  which is the difference between "show none of these" and "use whatever
@@ -194,6 +194,156 @@ const Layers = (() => {
     });
   }
 
+  /* ---------- trips ----------
+   *
+   * A trip is a continuous route through the moshava that chains shortcuts
+   * already on the map together with pieces drawn between them. It is stored
+   * as what it is made of and never as what it looks like:
+   *
+   *     parts: [ {trail:'p52', reversed:true}, {draw:[[lat,lng],…]}, {trail:'p13'} ]
+   *
+   * so that correcting a shortcut's geometry corrects every trip that walks
+   * through it, and so that a trip can say which shortcuts it uses and a
+   * shortcut can say which trips pass along it. The price is that a shortcut
+   * somebody deletes leaves a hole in every trip built on it, and a hole has
+   * to be visible rather than quietly closed with a straight line - hence
+   * `missing`, which the detail pane says out loud.
+   */
+
+  const TRIPS_ID = 'trips';
+
+  /** How far apart two ends may be and still count as the same place. Below
+   *  this it is the imprecision of where somebody stopped recording; above it,
+   *  it is ground nobody has walked, and the trip editor makes you draw it. */
+  const TRIP_GAP_M = 25;
+
+  /** Whether a walk brings you back to where you left the car, which is the
+   *  first thing somebody choosing one wants to know.
+   *
+   *  The threshold has to scale with the walk or it says silly things at both
+   *  ends: a flat 150 m calls a 165 m stroll circular because its ends happen
+   *  to be near, and would call a twelve-kilometre round trip point-to-point
+   *  over a couple of streets. A quarter of the distance, capped, is the rule -
+   *  "the ends are close compared to how far you walked". */
+  const LOOP_M = 150;
+  const isLoop = (path, length) => path.length > 1
+    && metres(path[0], path[path.length - 1])
+       <= Math.min(LOOP_M, (length != null ? length : pathLength(path)) / 4);
+
+  const DIFFICULTY = [
+    { name: 'קל', color: '#2e7d32' },
+    { name: 'בינוני', color: '#ef6c00' },
+    { name: 'מאתגר', color: '#c62828' }
+  ];
+
+  const metres = (a, b) => distance({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });
+  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+
+  function pathLength(path) {
+    let sum = 0;
+    for (let i = 1; i < path.length; i++) sum += metres(path[i - 1], path[i]);
+    return Math.round(sum);
+  }
+
+  /** A recipe turned into a line, plus what it turned out to be made of.
+   *
+   *  `lookup` is passed in because this runs against three different sets of
+   *  trails: the published ones for a trip on the map, the same for a draft on
+   *  this device, and the document being written for one going through the
+   *  queue. */
+  function resolveTrip(parts, lookup) {
+    const find = lookup || ((id) => {
+      const it = item(id);
+      return it && it.path ? it : null;
+    });
+    const path = [];
+    const uses = [];
+    const missing = [];
+
+    (parts || []).forEach((part) => {
+      let piece;
+      if (part.trail) {
+        const seg = find(part.trail);
+        if (!seg || !seg.path || seg.path.length < 2) { missing.push(part.trail); return; }
+        piece = part.reversed ? seg.path.slice().reverse() : seg.path;
+        uses.push({ id: part.trail, name: seg.name, reversed: !!part.reversed });
+      } else {
+        piece = part.draw || [];
+      }
+      if (!piece.length) return;
+      // Two parts that meet at a point would otherwise store it twice: harmless
+      // on the map, wrong in every count and in the length.
+      const last = path[path.length - 1];
+      const from = last && same(last, piece[0]) ? 1 : 0;
+      for (let i = from; i < piece.length; i++) path.push(piece[i]);
+    });
+
+    return { path, uses, missing };
+  }
+
+  /** One stored trip, presented the way the rest of the app expects a segment. */
+  function toTrip(raw, lookup) {
+    const { path, uses, missing } = resolveTrip(raw.parts, lookup);
+    const length = pathLength(path);
+    const colours = {};
+    DIFFICULTY.forEach((d) => { colours[d.name] = d.color; });
+    return {
+      ...raw,
+      path,
+      uses,
+      missing,
+      length,
+      trip: true,
+      group: raw.difficulty || '',
+      // A number the walker can plan around. Four km/h is a flat-ground pace
+      // and the moshava is flat; anybody who knows better types their own.
+      minutes: raw.minutes || Math.round((length / 1000) * 15),
+      loop: isLoop(path, length),
+      color: raw.color || colours[raw.difficulty] || '#00695c',
+      entries: path.length > 1
+        ? [{ lat: path[0][0], lng: path[0][1] },
+           { lat: path[path.length - 1][0], lng: path[path.length - 1][1] }]
+        : []
+    };
+  }
+
+  /** Every trip in the trails document, resolved against that same document's
+   *  shortcuts rather than against the index, which is not built yet. */
+  function buildTrips(trails) {
+    const segs = new Map((trails.segments || []).map((s) => [s.id, s]));
+    return (trails.trips || [])
+      .map((t) => toTrip(t, (id) => segs.get(id)))
+      .filter((t) => t.path.length > 1);
+  }
+
+  /** The map layers a tap can land on and mean "this shortcut" - what the trip
+   *  editor asks before deciding a tap was a point it should draw. Drafts are
+   *  left out: a trip may only be built out of what is actually on the map. */
+  const trailHitLayers = () => list
+    .filter((l) => l.kind === 'trails' && l.on && l.id !== 'drafts')
+    .map((l) => hitId(l.id))
+    .filter((id) => typeof map !== 'undefined' && map && map.getLayer(id));
+
+  /** Switch a layer on from code, as the trip editor does with the shortcuts:
+   *  you cannot chain what you cannot see. */
+  function turnOn(id) {
+    const layer = byId(id);
+    if (!layer || layer.on) return false;
+    layer.on = true;
+    savePrefs();
+    applyVisibility();
+    onChange();
+    return true;
+  }
+
+  /** The trips that walk along one shortcut, for its detail pane. Deleting a
+   *  shortcut is not a local act once a trip is built on it. */
+  const tripsUsing = (trailId) => {
+    const layer = byId(TRIPS_ID);
+    return layer ? layer.segments.filter(
+      (t) => (t.uses || []).some((u) => u.id === trailId)) : [];
+  };
+
   /** The trail layers, rebuilt from the document.
    *
    *  `on` comes from a lookup rather than a stored map so the same code serves
@@ -250,6 +400,25 @@ const Layers = (() => {
     // The shortcuts are the point of the app, and a trail layer an editor makes
     // later is the same content sorted into buckets, so both arrive on.
     buildTrailLayers(trails, (id) => isOn(id, true));
+
+    // Walks made of those shortcuts. Off by default like everything else that
+    // is not a shortcut, and drawn under them as a wide band rather than over,
+    // so that turning it on shows you which shortcuts a walk threads together
+    // instead of covering them up.
+    add({
+      id: TRIPS_ID,
+      kind: 'trips',
+      name: 'טיולים',
+      short: 'טיול',
+      unit: 'טיולים',
+      color: '#00695c',
+      groups: DIFFICULTY,
+      note: 'מסלולי הליכה רציפים, שרובם משרשרים קיצורי דרך שכבר על המפה עם '
+        + 'קטעים מצוירים ביניהם. הצבע לפי דרגת הקושי. כדי להוסיף טיול צריך '
+        + 'ששכבת דרכי הקיצור תהיה דלוקה, כי משרשרים בלחיצה עליהן.',
+      on: isOn(TRIPS_ID, false),
+      segments: buildTrips(trails)
+    });
 
     (network ? network.layers : []).forEach((l) => add({
       ...l,
@@ -419,7 +588,7 @@ const Layers = (() => {
     renderLegend();
   }
 
-  const RANK = { network: 0, places: 1, trails: 2, pending: 3, drafts: 4 };
+  const RANK = { network: 0, places: 1, trips: 1.5, trails: 2, pending: 3, drafts: 4 };
   // The plans are a places layer that draws areas, and an area belongs under
   // every dot on the map rather than washing the colour out of the ones that
   // happen to fall inside it.
@@ -436,6 +605,17 @@ const Layers = (() => {
     list.length = 0;
     buildTrailLayers(trails, (id) => was[id] !== false);
     others.forEach((l) => list.push(l));
+
+    // A trip is a recipe over these very shortcuts, so a write that moves one
+    // of them moves every trip that walks along it. Rebuilding the lines here
+    // is what makes "fix the shortcut, fix the trips" true.
+    const trips = byId(TRIPS_ID);
+    if (trips) {
+      trips.segments = buildTrips(trails);
+      if (typeof map !== 'undefined' && map && map.getSource(srcId(TRIPS_ID))) {
+        map.getSource(srcId(TRIPS_ID)).setData(geojson(trips));
+      }
+    }
     list.sort((a, b) => order(a) - order(b));
     reindex();
     savePrefs();
@@ -448,6 +628,7 @@ const Layers = (() => {
     const layer = byId(PENDING_ID);
     if (!layer) return;
     layer.segments = (items || [])
+      .map((it) => (it.parts ? toTrip(it) : it))
       .filter((it) => it.path && it.path.length > 1)
       .map((it) => ({ ...it, color: '#f9a825', pending: true }));
     reindex();
@@ -546,7 +727,11 @@ const Layers = (() => {
     }
     return {
       type: 'FeatureCollection',
-      features: layer.segments.map((seg, i) => {
+      // A line needs two points. A trip whose shortcuts have all gone missing
+      // has none, and it still belongs in the list and the detail pane - it is
+      // only the map that cannot show it. Filtering here rather than upstream
+      // is what keeps those two facts from fighting.
+      features: layer.segments.filter((s) => s.path && s.path.length > 1).map((seg, i) => {
         feature.set(seg.id, { src: srcId(layer.id), fid: i });
         return {
           type: 'Feature',
@@ -709,13 +894,25 @@ const Layers = (() => {
     const src = srcId(layer.id);
     const sel = ['boolean', ['feature-state', 'sel'], false];
     const dim = ['boolean', ['feature-state', 'dim'], false];
+    // A trip is a band under the shortcuts it threads together, not another
+    // line among them: the point of turning it on is to see which shortcuts a
+    // walk strings together, so it has to be wide enough to show either side
+    // of a five-pixel trail at every zoom, and pale enough to read through.
+    // A fixed nine pixels is wider than a trail at z18 and invisible under one
+    // at z13, which is where the first attempt at this went wrong.
+    const band = layer.kind === 'trips';
     const paint = {
       'line-color': ['get', 'color'],
-      'line-width': ['case', sel, 8, layer.kind === 'network' ? 3.5 : 5],
+      'line-width': band
+        ? ['interpolate', ['linear'], ['zoom'],
+            12, ['case', sel, 10, 7],
+            15, ['case', sel, 16, 12],
+            18, ['case', sel, 26, 20]]
+        : ['case', sel, 8, layer.kind === 'network' ? 3.5 : 5],
       // Unselected lines stay clearly readable: picking one trail should not
       // stop you browsing straight on to the next one from the map.
-      'line-opacity': ['case', sel, 1, dim, 0.55,
-        layer.kind === 'network' ? 0.75 : 0.82]
+      'line-opacity': ['case', sel, band ? 0.75 : 1, dim, band ? 0.22 : 0.55,
+        layer.kind === 'network' ? 0.75 : band ? 0.55 : 0.82]
     };
     // A dashed line reads as "not there yet" for the proposed network, and as
     // "not published yet" for a draft.
@@ -859,14 +1056,21 @@ const Layers = (() => {
    *  colour in the key that appears nowhere on the map. */
   function legendRows(layer) {
     const placed = layer.waypoints.filter((p) => !p.unplaced);
-    if (layer.kind === 'places' && (layer.groups || []).length) {
-      return layer.groups
+    // Segments as well as places, because trips are sorted into groups too -
+    // by how hard they are - and they are lines.
+    const members = placed.concat(layer.segments);
+    if ((layer.groups || []).length) {
+      const rows = layer.groups
         .map((g) => ({
           name: g.name,
           color: g.color,
-          n: placed.filter((p) => p.group === g.name).length
+          line: layer.kind !== 'places',
+          n: members.filter((m) => m.group === g.name).length
         }))
         .filter((r) => r.n);
+      // A grouped layer whose members have all been left ungrouped still has
+      // to appear, or the colour on the map answers to nothing.
+      if (rows.length) return rows;
     }
     if (!layer.segments.length && !placed.length) return [];
     // A trail is a line on the map, a place is a dot, and a layer drawn as
@@ -942,6 +1146,16 @@ const Layers = (() => {
       return `${n} ${layer.unit || 'מקומות'}`
         + (missing ? ` · ${missing} עוד לא ממוקמים` : '');
     }
+    // A trip is one walk, not a run of segments, so it is counted as itself.
+    if (layer.kind === 'trips') {
+      const metresTotal = layer.segments.reduce((sum, t) => sum + (t.length || 0), 0);
+      const broken = layer.segments.filter((t) => (t.missing || []).length).length;
+      if (!layer.segments.length) return 'אין עדיין טיולים. אפשר להוסיף אחד.';
+      return `${layer.segments.length} ${layer.unit || 'טיולים'}`
+        + (metresTotal ? ` · ${(metresTotal / 1000).toFixed(1)} ק"מ סך הכל` : '')
+        + (broken ? ` · ${broken} עם שביל חסר` : '');
+    }
+
     const n = layer.segments.length + layer.waypoints.length;
     if (!n) {
       if (layer.kind === 'drafts') return 'אין עדיין. הקלט או צייר שביל.';
@@ -1018,7 +1232,9 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID,
+    BLOCKS_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    resolveTrip, toTrip, pathLength, metres, isLoop,
+    trailHitLayers, turnOn, tripsUsing,
     set onChange(fn) { onChange = fn; }
   };
 })();

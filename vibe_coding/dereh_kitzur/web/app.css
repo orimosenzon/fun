@@ -126,6 +126,39 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
 
+/* ---------- trips ---------- */
+
+/* What a walk is made of, in the order it walks it. Numbered, because the
+ * order is the route: these are not tags on a trip, they are the trip. */
+.trip-chain {
+  margin: 6px 0 12px;
+  padding-inline-start: 22px;
+  list-style: decimal;
+}
+
+.trip-chain li { margin: 3px 0; color: var(--muted); font-size: 12.5px; }
+
+.chain-link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: start;
+}
+
+.chain-link .rev { font-weight: 400; font-size: 12px; color: var(--muted); }
+
+/* The trip form's difficulty picker: the same swatch rows the colour and layer
+ * pickers use, packed onto one line because there are only ever three. */
+.picks.tight { display: flex; gap: 6px; }
+.picks.tight .pick { flex: 1; justify-content: center; padding: 7px 4px; }
+.picks.tight .lay-swatch { min-height: 16px; }
+
+/* The chain of shortcuts, read back in the form before saving. */
+.trip-uses { margin-top: -4px; line-height: 1.6; }
+
 /* ---------- the legend ---------- */
 
 /* Top corner opposite the buttons, and a step below the nav and draft bars in

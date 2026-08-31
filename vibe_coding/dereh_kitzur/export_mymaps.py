@@ -15,7 +15,10 @@ Ten layers is the ceiling per map.
 
 One file comes out per trail layer, because that is the shape My Maps wants
 anyway: one import, one layer. A dataset with no extra layers produces the one
-file it always did.
+file it always did. Trips get a file of their own: they are stored as recipes
+over the shortcuts rather than as lines, so they are resolved here into the
+lines My Maps needs - the only place in this repo that has to do that in
+Python rather than in the browser.
 """
 
 import json
@@ -30,6 +33,11 @@ APP = "https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/"
 BASE = "derech_kitzur"
 
 MAIN = {"id": None, "name": "דרך קיצור · שבילי פרדס חנה-כרכור"}
+TRIPS = {"id": "trips", "name": "דרך קיצור · טיולים"}
+
+# The colour a trip is drawn in, by how hard it is. Kept in step with
+# DIFFICULTY in web/layers.js; three constants are not worth a shared file.
+DIFFICULTY = {"קל": "#2e7d32", "בינוני": "#ef6c00", "מאתגר": "#c62828"}
 
 
 def esc(text):
@@ -128,6 +136,64 @@ def write(layer, items, updated):
     return name
 
 
+def resolve_trips(data):
+    """Trips turned into ordinary line items, so the exporter can treat them
+    like any other trail.
+
+    A trip stores which shortcut, which way round, and the points drawn in
+    between. A shortcut that has since been deleted is skipped and named in the
+    description: a My Maps layer cannot show a hole, so the honest thing left
+    is to say the line is short of one.
+    """
+    segs = {s["id"]: s for s in data.get("segments", [])}
+    out = []
+
+    for trip in data.get("trips", []):
+        path, uses, missing = [], [], 0
+        for part in trip.get("parts", []):
+            if part.get("trail"):
+                seg = segs.get(part["trail"])
+                if not seg:
+                    missing += 1
+                    continue
+                piece = list(reversed(seg["path"])) if part.get("reversed") else seg["path"]
+                uses.append(seg["name"])
+            else:
+                piece = part.get("draw") or []
+            if not piece:
+                continue
+            # Two parts meeting at a point would repeat it.
+            start = 1 if path and path[-1] == list(piece[0]) else 0
+            path += [list(p) for p in piece[start:]]
+
+        if len(path) < 2:
+            continue
+
+        bits = []
+        if trip.get("difficulty"):
+            bits.append(f'דרגת קושי: {trip["difficulty"]}')
+        if trip.get("minutes"):
+            bits.append(f'כ-{trip["minutes"]} דקות הליכה')
+        if uses:
+            bits.append("עובר דרך: " + " ← ".join(uses))
+        if missing == 1:
+            bits.append("שביל אחד שהטיול עבר בו כבר לא קיים, והמסלול כאן קטוע")
+        elif missing:
+            bits.append(f"{missing} שבילים שהטיול עבר בהם כבר לא קיימים, והמסלול כאן קטוע")
+
+        # The note is somebody's own sentence and may or may not end in a stop.
+        note = (trip.get("note") or "").strip()
+        if note and not note.endswith((".", "!", "?")):
+            note += "."
+
+        out.append({**trip,
+                    "path": path,
+                    "layer": TRIPS["id"],
+                    "note": " ".join(([note] if note else []) + [". ".join(bits)]).strip(),
+                    "color": trip.get("color") or DIFFICULTY.get(trip.get("difficulty"), "#00695c")})
+    return out
+
+
 def main():
     with urllib.request.urlopen(DATA, timeout=60) as res:
         data = json.load(res)
@@ -137,16 +203,22 @@ def main():
     # file rather than being silently dropped from every file.
     home = lambda it: it.get("layer") if it.get("layer") in known else None
 
-    everything = data["segments"] + data["waypoints"]
+    trips = resolve_trips(data)
+    everything = data["segments"] + data["waypoints"] + trips
     updated = data.get("updated", "")
 
+    # A trip already names its own layer, so it never falls through to the main
+    # file the way a trail with a stale layer id does.
+    known.add(TRIPS["id"])
+
     print("נכתבו:")
-    for layer in [MAIN] + data.get("layers", []):
+    for layer in [MAIN] + data.get("layers", []) + [TRIPS]:
         items = [it for it in everything if home(it) == layer["id"]]
         if items or layer["id"] is None:
             write(layer, items, updated)
 
-    print(f"\nסך הכול {len(data['segments'])} שבילים ו-{len(data['waypoints'])} נקודות ציון.")
+    print(f"\nסך הכול {len(data['segments'])} שבילים, {len(trips)} טיולים"
+          f" ו-{len(data['waypoints'])} נקודות ציון.")
     print("ב-My Maps: לכל קובץ, הוספת שכבה, ייבוא, בחירת הקובץ, ומחיקת השכבה הישנה.")
 
 

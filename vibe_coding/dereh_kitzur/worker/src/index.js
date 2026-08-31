@@ -195,7 +195,11 @@ function sane(path, text) {
   };
 
   if (path === 'data/trails.json') {
-    return check('segments', 1, 3000) || check('waypoints', 0, 3000);
+    // `trips` is only checked once it exists. A document written before trips
+    // were a thing has no such key, and demanding one here would lock every
+    // write out of an older dataset the moment this is deployed.
+    return check('segments', 1, 3000) || check('waypoints', 0, 3000)
+      || (doc.trips === undefined ? null : check('trips', 0, 1000));
   }
   if (path === 'data/places.json') {
     return check('places', 50, 5000);

@@ -588,6 +588,49 @@ function editorBlock(it, layer) {
     <p id="pub-msg" class="pub-msg" hidden></p>`;
 }
 
+/** The shortcuts a trip threads together, in the order it walks them.
+ *
+ *  This is the half of a trip that a flat copy of its coordinates could never
+ *  show, and the reason it is stored as a recipe: the walk is an argument for
+ *  those particular shortcuts, and each one is a tap away.
+ *
+ *  A shortcut somebody has since deleted leaves a hole. Saying so is the whole
+ *  point of keeping the reference - the alternative is a trip that quietly
+ *  jumps a few hundred metres and looks fine. */
+function tripParts(it) {
+  // The other direction, on a shortcut's own page: which walks come through
+  // here. Deleting a shortcut stops being a local act once a trip is built on
+  // it, and this is where that becomes visible before somebody does it.
+  if (!it.trip && !it.place && !it.draft) {
+    const walks = Layers.tripsUsing(it.id);
+    if (!walks.length) return '';
+    return `
+      <h3>טיולים שעוברים כאן</h3>
+      <ol class="trip-chain">
+        ${walks.map((t) => `<li><button class="chain-link" data-goto="${escapeHtml(t.id)}">
+          ${escapeHtml(t.name)}<span class="rev"> · ${
+            t.length >= 1000 ? (t.length / 1000).toFixed(1) + ' ק"מ' : t.length + ' מ׳'
+          }</span></button></li>`).join('')}
+      </ol>`;
+  }
+
+  if (!it.trip) return '';
+  const uses = it.uses || [];
+  const missing = (it.missing || []).length;
+  if (!uses.length && !missing) return '';
+  return `
+    <h3>עובר דרך</h3>
+    <ol class="trip-chain">
+      ${uses.map((u) => `<li><button class="chain-link" data-goto="${escapeHtml(u.id)}">
+        ${escapeHtml(u.name)}${u.reversed ? '<span class="rev"> (בכיוון ההפוך)</span>' : ''}
+      </button></li>`).join('')}
+    </ol>
+    ${missing ? `<p class="unplaced">${missing === 1
+      ? 'שביל אחד שהטיול עבר בו כבר לא קיים במפה, והמסלול כאן קטוע.'
+      : `${missing} שבילים שהטיול עבר בהם כבר לא קיימים במפה, והמסלול כאן קטוע.`}
+      </p>` : ''}`;
+}
+
 function showDetail(it) {
   const layer = Layers.layerOf(it.id) || {};
   const chips = [];
@@ -603,6 +646,15 @@ function showDetail(it) {
   }
   if (layer.kind === 'trails' && layer.id !== Layers.TRAILS_ID) {
     chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
+  }
+  if (it.trip) {
+    if (it.group) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group)}</span>`);
+    chips.push(`<span class="chip">${it.loop ? 'מעגלי' : 'מקצה לקצה'}</span>`);
+    if (it.minutes) chips.push(`<span class="chip">כ-${it.minutes} דק׳ הליכה</span>`);
+    if (it.uses && it.uses.length) {
+      chips.push(`<span class="chip">${it.uses.length} ${
+        it.uses.length === 1 ? 'דרך קיצור' : 'דרכי קיצור'}</span>`);
+    }
   }
   if (it.approx) chips.push('<span class="chip">מיקום מקורב</span>');
   if (it.status) chips.push(`<span class="chip">${escapeHtml(it.status)}</span>`);
@@ -703,6 +755,7 @@ function showDetail(it) {
     <h2>${escapeHtml(it.name)}</h2>
     <div class="chips">${chips.join('')}</div>
     ${it.note ? `<p class="note">${escapeHtml(it.note)}</p>` : ''}
+    ${tripParts(it)}
     ${body}
     ${gallery}
     ${it.place
@@ -714,6 +767,9 @@ function showDetail(it) {
 
   el('detail').querySelectorAll('.gallery img').forEach((img) => {
     img.addEventListener('click', () => openLightbox(it, +img.dataset.i));
+  });
+  el('detail').querySelectorAll('[data-goto]').forEach((btn) => {
+    btn.addEventListener('click', () => select(btn.dataset.goto, true));
   });
   const go = el('go');
   if (go) go.addEventListener('click', () => startNav(it));
