@@ -24,8 +24,9 @@ const TERRAIN_X = 2.5;
 const TILTED = 58;
 
 const BASEMAPS = [
-  { name: 'רחובות', style: 'https://tiles.openfreemap.org/styles/liberty' },
+  { id: 'streets', name: 'רחובות', style: 'https://tiles.openfreemap.org/styles/liberty' },
   {
+    id: 'sat',
     name: 'לוויין',
     style: {
       version: 8,
@@ -48,6 +49,88 @@ const BASEMAPS = [
 ];
 
 const el = (id) => document.getElementById(id);
+
+/* ---------- the view, in the address bar ----------
+ *
+ * The layer switches have lived in the URL since the layer sheet existed, so
+ * that "look at the shortcuts together with the festival" is a link. Everything
+ * else about what is on screen did not, which made that half a promise: the
+ * person opening the link got your layers over their own position, their own
+ * zoom, their own flat-or-tilted, their own street-or-satellite.
+ *
+ *     ?map=32.47410,34.96980,15.2,0,58&bg=sat&sel=p52&layers=trails,trips
+ *
+ * `map` is where the camera is: latitude, longitude, zoom, bearing, pitch. The
+ * 3D button is not a separate flag because it never was one - it sets the
+ * pitch, and the pitch is in there. `bg` names the base style and is left out
+ * for the default one. `sel` is the open item, which dims every other line on
+ * the map and opens the detail pane, so it is part of the picture too.
+ *
+ * Written with replaceState after the map settles, never during a drag: the
+ * back button belongs to the map, and Safari throttles history writes. */
+
+const VIEW_KEY = 'map';
+const BG_KEY = 'bg';
+const SEL_KEY = 'sel';
+
+/** The camera the URL asks for, or null when it says nothing about it. */
+function urlView() {
+  const raw = new URLSearchParams(location.search).get(VIEW_KEY);
+  if (!raw) return null;
+  const n = raw.split(',').map(Number);
+  if (n.length < 3 || n.slice(0, 3).some((v) => !isFinite(v))) return null;
+  const [lat, lng, zoom, bearing, pitch] = n;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return {
+    center: [lng, lat],
+    zoom: Math.min(Math.max(zoom, 0), 22),
+    bearing: isFinite(bearing) ? bearing : 0,
+    pitch: Math.min(Math.max(isFinite(pitch) ? pitch : 0, 0), 80)
+  };
+}
+
+/** The base style the URL asks for, as an index, or null. */
+function urlBasemap() {
+  const raw = new URLSearchParams(location.search).get(BG_KEY);
+  if (!raw) return null;
+  const i = BASEMAPS.findIndex((b) => b.id === raw);
+  return i < 0 ? null : i;
+}
+
+let syncTimer = null;
+
+/** Put the camera, the base style and the open item back in the address bar.
+ *
+ *  Layers.syncUrl owns the `layers` parameter and this owns the other three;
+ *  both read whatever is currently there and rewrite the whole query, so the
+ *  two never erase each other. */
+function syncView() {
+  if (!map) return;
+  const params = new URLSearchParams(location.search);
+  const c = map.getCenter();
+  const round = (v, d) => +v.toFixed(d);
+  params.set(VIEW_KEY, [round(c.lat, 5), round(c.lng, 5), round(map.getZoom(), 2),
+    Math.round(map.getBearing()), Math.round(map.getPitch())].join(','));
+
+  if (baseIndex > 0) params.set(BG_KEY, BASEMAPS[baseIndex].id);
+  else params.delete(BG_KEY);
+
+  if (selectedId) params.set(SEL_KEY, selectedId);
+  else params.delete(SEL_KEY);
+
+  const query = params.toString().replace(/%2C/g, ',');
+  try {
+    history.replaceState(null, '', `${location.pathname}?${query}${location.hash}`);
+  } catch (err) {
+    /* opened straight off the filesystem; everything still works */
+  }
+}
+
+/** Coalesce a drag, a zoom and a rotate that all end at once into one write. */
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncView, 250);
+}
 
 /* The tilted view is drawn with WebGL, which a handful of old phones lack.
  * Everything that is not the map - list, search, photos, Street View links -
@@ -262,6 +345,10 @@ function select(id, fit = true) {
     // anyway, which is where the editor drops one.
   }
   showDetail(item);
+  // A `fit` flies the camera, and `moveend` will sync once it lands. Selecting
+  // without moving - from the list, or a link that already framed the shot -
+  // has no move to wait for.
+  if (!fit) scheduleSync();
 }
 
 function deselect() {
@@ -270,6 +357,7 @@ function deselect() {
   el('detail-view').hidden = true;
   el('list-view').hidden = false;
   renderList();
+  scheduleSync();
 }
 
 /* ---------- list ---------- */
@@ -1808,7 +1896,9 @@ function repaint() {
 }
 
 async function boot() {
-  el('basemap').title = 'רקע: ' + BASEMAPS[0].name;
+  const wantedBg = urlBasemap();
+  if (wantedBg) setBasemap(wantedBg);
+  el('basemap').title = 'רקע: ' + BASEMAPS[baseIndex].name;
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
@@ -1831,10 +1921,29 @@ async function boot() {
 
   if (map) {
     await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
-    const [[s1, s2], [n1, n2]] = DATA.bounds;
-    map.fitBounds([[s2, s1], [n2, n1]], { padding: 24, duration: 0 });
+    // A link that carries a camera is somebody saying "look at this". It wins
+    // over the opening view, which is only ever a guess at where to start.
+    const view = urlView();
+    if (view) map.jumpTo(view);
+    else {
+      const [[s1, s2], [n1, n2]] = DATA.bounds;
+      map.fitBounds([[s2, s1], [n2, n1]], { padding: 24, duration: 0 });
+    }
     Layers.addToMap();
     drawWaypoints();
+    el('tilt').classList.toggle('on', map.getPitch() >= 10);
+
+    // Read what the link asked for *before* writing anything back: syncView
+    // rewrites the whole query from the live state, and with nothing selected
+    // yet that erases the very parameter naming what to select.
+    const wanted = new URLSearchParams(location.search).get(SEL_KEY);
+
+    // From here the address bar tracks the map. `moveend` covers panning,
+    // zooming, rotating and tilting alike.
+    ['moveend', 'pitchend', 'rotateend'].forEach((ev) => map.on(ev, scheduleSync));
+
+    if (wanted && Layers.item(wanted)) select(wanted, !view);
+    syncView();
   }
 }
 
@@ -2031,6 +2140,7 @@ function wireControls() {
   el('locate').addEventListener('click', locate);
   el('basemap').addEventListener('click', () => {
     setBasemap((baseIndex + 1) % BASEMAPS.length);
+    syncView();
   });
 
   if (map) {
@@ -2042,6 +2152,7 @@ function wireControls() {
       const flat = map.getPitch() < 10;
       map.easeTo({ pitch: flat ? TILTED : 0, duration: 700 });
       el('tilt').classList.toggle('on', flat);
+      scheduleSync();
     });
     map.on('pitchend', () => el('tilt').classList.toggle('on', map.getPitch() >= 10));
   } else {
