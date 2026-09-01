@@ -82,7 +82,10 @@ def placemarks(items):
 
     for seg in items:
         if seg.get("path"):
-            colour = seg.get("color") or "#097138"
+            # The shortcuts carry no colour of their own any more - they are
+            # all one purple - so this default is the layer's colour rather
+            # than the green the first import happened to use.
+            colour = seg.get("color") or "#4a148c"
             sid = "s" + colour.lstrip("#")
             if sid not in seen:
                 seen.add(sid)

@@ -78,7 +78,7 @@ const Layers = (() => {
    * switched somebody's own recordings off would be a nasty surprise. */
   const URL_KEY = 'layers';
   const shareable = (l) => l.kind === 'trails' || l.kind === 'network'
-    || l.kind === 'places' || l.kind === 'trips';
+    || l.kind === 'places' || l.kind === 'trips' || l.kind === 'waypoints';
 
   /** The layers a link asks for, or null when the URL says nothing about them -
    *  which is the difference between "show none of these" and "use whatever
@@ -211,6 +211,7 @@ const Layers = (() => {
    */
 
   const TRIPS_ID = 'trips';
+  const SPOTS_ID = 'kitzur-spots';
 
   /** How far apart two ends may be and still count as the same place. Below
    *  this it is the imprecision of where somebody stopped recording; above it,
@@ -363,11 +364,35 @@ const Layers = (() => {
       category: 'trails',
       name: 'דרכי קיצור',
       short: 'קיצור',
-      color: '#1b5e20',
+      // One colour for all of them. They arrived from My Maps in seven, which
+      // was that map's own sorting and meant nothing here, and a shortcut is a
+      // shortcut. A trail may still be given a colour of its own from its page,
+      // and that stays an exception rather than the rule.
+      color: '#4a148c',
       note: 'קיצורי הדרך שמופו על ידי יוזמת דרך קיצור.',
       source: trails.source,
       on: isOn(TRAILS_ID),                 // the point of the app; on unless muted
       segments: trails.segments.filter((s) => home(s) === TRAILS_ID),
+      waypoints: []                        // they have their own layer, below
+    });
+
+    // The initiative's own waypoints, which are not shortcuts at all: a tree, a
+    // shelter, a bench, a gap in a fence. They sat inside the shortcuts layer
+    // because they arrived in the same file, and that made "show me the
+    // shortcuts" mean "show me the shortcuts and eleven other things". Their own
+    // layer, switched on by default because that is where they already were.
+    add({
+      id: SPOTS_ID,
+      kind: 'waypoints',
+      category: 'places',
+      name: 'מקומות של דרך קיצור',
+      short: 'מקום קיצור',
+      unit: 'מקומות',
+      color: '#8d6e63',                    // the colour the pins are drawn in
+      note: 'נקודות שהיוזמה סימנה בדרך: עצים, מקלטים, ספסלים, מעברים חסומים. '
+        + 'לא שבילים, ולכן לא בשכבת דרכי הקיצור.',
+      on: isOn(SPOTS_ID, true),
+      segments: [],
       waypoints: trails.waypoints.filter((w) => home(w) === TRAILS_ID)
     });
 
@@ -600,7 +625,8 @@ const Layers = (() => {
     renderLegend();
   }
 
-  const RANK = { network: 0, places: 1, trips: 1.5, trails: 2, pending: 3, drafts: 4 };
+  const RANK = { network: 0, places: 1, trips: 1.5, trails: 2,
+                 waypoints: 2.5, pending: 3, drafts: 4 };
   // The plans are a places layer that draws areas, and an area belongs under
   // every dot on the map rather than washing the colour out of the ones that
   // happen to fall inside it.
@@ -716,7 +742,8 @@ const Layers = (() => {
   const hasShapes = (layer) => layer.kind === 'places'
     && layer.waypoints.some((p) => p.shape && p.shape.length);
 
-  const drawnIds = (layer) => (layer.kind === 'places'
+  const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
+    : layer.kind === 'places'
     ? (hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
       .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
     : [lineId(layer.id), hitId(layer.id)]);
@@ -971,6 +998,12 @@ const Layers = (() => {
     });
 
     list.forEach((layer) => {
+      // Nothing of a waypoints layer is drawn through WebGL - its pins are HTML
+      // markers that app.js places from markerWaypoints - so it wants neither a
+      // source nor a layer, and an empty line layer would only sit there
+      // collecting click handlers for features that never exist.
+      if (layer.kind === 'waypoints') return;
+
       const src = srcId(layer.id);
       if (map.getSource(src)) {
         map.getSource(src).setData(geojson(layer));
@@ -1213,6 +1246,14 @@ const Layers = (() => {
         : `${layer.segments.length} ${layer.unit || 'טיולים'}`)
         + (metresTotal ? ` · ${(metresTotal / 1000).toFixed(1)} ק"מ סך הכל` : '')
         + (broken ? ` · ${broken} עם שביל חסר` : '');
+    }
+
+    if (layer.kind === 'waypoints') {
+      const n = layer.waypoints.length;
+      const shot = layer.waypoints.reduce((sum, w) => sum + (w.photos || []).length, 0);
+      if (!n) return 'ריק';
+      return `${n === 1 ? 'מקום אחד' : `${n} ${layer.unit || 'מקומות'}`}`
+        + (shot ? ` · ${shot} תמונות` : '');
     }
 
     const n = layer.segments.length + layer.waypoints.length;
