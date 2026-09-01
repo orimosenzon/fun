@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-08-30T13:27:45Z",
+ "updated": "2026-09-01T07:05:12Z",
  "source": "https://makomshamur.com/",
  "name": "מקום שמור",
  "groups": [
@@ -23,8 +23,20 @@
     "מיועדים לשימור"
    ],
    "url": "http://makomshamur.com/2010/10/25/%d7%90%d7%97%d7%95%d7%96%d7%aa-%d7%9c%d7%95%d7%a0%d7%93%d7%95%d7%9f/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. כשעוברים ברחוב הראשי של כרכור, (מרחוב המייסדים פינת אחוזה בדרום עד רחוב דגניה בצפון, מערבה עד רחוב הנשיא) אפשר עדיין להבחין בבתי האחוזה שנותרו מפוזרים לאורך הרחוב, כל בית שונה מחברו, בתים הדורים בסגנונות אקלקטים מדור ומקום אחר, כאן אפשר להרגיש כמו ליידי אנגליה בשמלה כבדה שלובת זרוע עם האדון במגבעת ומקל בטיול שבת אחה\"צ [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TLONRRWdT-I/AAAAAAAAAHc/FIU9-RSRgF0/s400/ka%20rkur%20%282%29.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TLONRRWdT-I/AAAAAAAAAHc/FIU9-RSRgF0/s1600/ka%20rkur%20%282%29.jpg",
+     "page": "http://makomshamur.com/2010/10/25/%d7%90%d7%97%d7%95%d7%96%d7%aa-%d7%9c%d7%95%d7%a0%d7%93%d7%95%d7%9f/",
+     "cap": "בית אחוזה במאורעות תרפ”ט בכרכור *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TLONNI2kYhI/AAAAAAAAAHs/0ugDtrKO7io/s400/%D7%91%D7%99%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94%202009%20%282%29.JPG",
+     "full": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TLONNI2kYhI/AAAAAAAAAHs/0ugDtrKO7io/s1600/%D7%91%D7%99%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94%202009%20%282%29.JPG",
+     "page": "http://makomshamur.com/2010/10/25/%d7%90%d7%97%d7%95%d7%96%d7%aa-%d7%9c%d7%95%d7%a0%d7%93%d7%95%d7%9f/"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. כשעוברים ברחוב הראשי של כרכור, (מרחוב המייסדים פינת אחוזה בדרום עד רחוב דגניה בצפון, מערבה עד רחוב הנשיא) אפשר עדיין להבחין בבתי האחוזה שנותרו מפוזרים לאורך הרחוב, כל בית שונה מחברו, בתים הדורים בסגנונות אקלקטים מדור ומקום אחר, כאן אפשר להרגיש כמו ליידי אנגליה בשמלה כבדה שלובת זרוע עם האדון במגבעת ומקל בטיול שבת אחה”צ […]"
   },
   {
    "id": "makom-בית-אופנהנדין",
@@ -150,14 +162,51 @@
     "מיועדים לשימור"
    ],
    "url": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
-   "photos": [],
+   "photos": [
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TLONO5aAeBI/AAAAAAAAAHQ/Ud5dahc2BCc/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%90%D7%A8%D7%99%D7%A1%20%D7%91%D7%91%D7%99%D7%AA%D7%9D.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TLONO5aAeBI/AAAAAAAAAHQ/Ud5dahc2BCc/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%90%D7%A8%D7%99%D7%A1%20%D7%91%D7%91%D7%99%D7%AA%D7%9D.jpg",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "* דוד ואסתר הריס עם ילדיהם, סוף שנות ה 20, צילום: פוטו סוניה, חדרה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/Tbx5flLsDtI/AAAAAAAABPw/vmyUHkdFORY/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%90%D7%A8%D7%99%D7%A1%202009%20%2817%29.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/Tbx5flLsDtI/AAAAAAAABPw/vmyUHkdFORY/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%90%D7%A8%D7%99%D7%A1%202009%20%2817%29.jpg",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "בית הריס 2009, צילום: גיא רז"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/Tbx6xCriFBI/AAAAAAAABQA/bCAMJOvDbL4/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%201994.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/Tbx6xCriFBI/AAAAAAAABQA/bCAMJOvDbL4/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%201994.jpg",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "בית הריס, 1994. *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/Tbx6vOSpiMI/AAAAAAAABP0/nfiFo_DBN_k/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%201.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/Tbx6vOSpiMI/AAAAAAAABP0/nfiFo_DBN_k/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%201.jpg",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "בית הריס, שנות ה-50′ * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/Tbx5VW6ugbI/AAAAAAAABPY/igM4a3f-K5E/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%202009%20%286%29.jpg",
+     "full": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/Tbx5VW6ugbI/AAAAAAAABPY/igM4a3f-K5E/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%A8%D7%99%D7%A1%202009%20%286%29.jpg",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "בית הריס 2009, צילום: גיא רז"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TO2F3NiuThI/AAAAAAAAAhU/M7fX4W2lTi4/s400/%D7%91%D7%99%D7%AA%20%D7%97%D7%A0%D7%94%20%D7%94%D7%A8%D7%99%D7%A1%20%2810%29.JPG",
+     "full": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TO2F3NiuThI/AAAAAAAAAhU/M7fX4W2lTi4/s1600/%D7%91%D7%99%D7%AA%20%D7%97%D7%A0%D7%94%20%D7%94%D7%A8%D7%99%D7%A1%20%2810%29.JPG",
+     "page": "http://makomshamur.com/2010/12/21/%d7%91%d7%99%d7%aa-%d7%94%d7%a8%d7%99%d7%a1/",
+     "cap": "חנה הריס בפתח ביתה, 2009"
+    }
+   ],
    "geo": {
     "lat": 32.475655,
     "lng": 34.991074,
     "source": "shimur",
     "spread": true
    },
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית מגורים פרטי כתובת: כיכר כרכור שנת הקמה: 1925 אדריכל: לא ידוע סגנון אדריכלי: אקלקטי עם שאיפה ייצוגית שימוש היום: בית מגורים פרטי הבית אחד מארבעה בתים מסביב ככר כרכור שנותנות לה את האווירה הקולונילית המיוחדת של פעם. בית הריס הוא בית אותנטי לחלוטין, עומד עד היום בדיוק כמו שנראה פעם, אחוזה אנגלית אקלקטית [&hellip;] המיקום לפי אתר 3.4.2 בנספח השימור של תוכנית המתאר (\"בית הריס כרכור\")."
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית מגורים פרטי כתובת: כיכר כרכור שנת הקמה: 1925 אדריכל: לא ידוע סגנון אדריכלי: אקלקטי עם שאיפה ייצוגית שימוש היום: בית מגורים פרטי הבית אחד מארבעה בתים מסביב ככר כרכור שנותנות לה את האווירה הקולונילית המיוחדת של פעם. בית הריס הוא בית אותנטי לחלוטין, עומד עד היום בדיוק כמו שנראה פעם, אחוזה אנגלית אקלקטית […] המיקום לפי אתר 3.4.2 בנספח השימור של תוכנית המתאר (\"בית הריס כרכור\")."
   },
   {
    "id": "makom-ביה-כ-אהל-שלום",
@@ -178,14 +227,39 @@
     "מיועדים לשימור"
    ],
    "url": "http://makomshamur.com/2010/12/26/%d7%91%d7%aa%d7%99-%d7%9b%d7%a0%d7%a1%d7%aa/",
-   "photos": [],
+   "photos": [
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TPUUjgZJMlI/AAAAAAAAA7Y/0rK_b4R4CXE/s400/%D7%91%D7%A0%D7%99%D7%99%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TPUUjgZJMlI/AAAAAAAAA7Y/0rK_b4R4CXE/s1600/%D7%91%D7%A0%D7%99%D7%99%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94.jpg",
+     "page": "http://makomshamur.com/2010/12/26/%d7%91%d7%aa%d7%99-%d7%9b%d7%a0%d7%a1%d7%aa/",
+     "cap": "בית הכנסת ‘אחוזה’ בעת בנייתו. צילום: סוניה קולודני *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TPUUhTSrQqI/AAAAAAAAA5A/npOJgCYFzFY/s400/%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TPUUhTSrQqI/AAAAAAAAA5A/npOJgCYFzFY/s1600/%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%D7%90%D7%97%D7%95%D7%96%D7%94.jpg",
+     "page": "http://makomshamur.com/2010/12/26/%d7%91%d7%aa%d7%99-%d7%9b%d7%a0%d7%a1%d7%aa/",
+     "cap": "בית הכנסת שנות החמישים עם תוספות *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TPUS6zGxepI/AAAAAAAAA4Q/yPuKxq7BUZs/s400/%D7%9B%D7%A8%D7%9B%D7%95%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%2814%29.JPG",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TPUS6zGxepI/AAAAAAAAA4Q/yPuKxq7BUZs/s1600/%D7%9B%D7%A8%D7%9B%D7%95%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%2814%29.JPG",
+     "page": "http://makomshamur.com/2010/12/26/%d7%91%d7%aa%d7%99-%d7%9b%d7%a0%d7%a1%d7%aa/",
+     "cap": "בית הכנסת 2009, צילום: גיא רז"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TPUS3Va9L6I/AAAAAAAAA4E/Nr_rfLLZlKg/s400/%D7%9B%D7%A8%D7%9B%D7%95%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%2811%29.JPG",
+     "full": "https://lh4.googleusercontent.com/_nqv2E7zLPe0/TPUS3Va9L6I/AAAAAAAAA4E/Nr_rfLLZlKg/s1600/%D7%9B%D7%A8%D7%9B%D7%95%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%9B%D7%A0%D7%A1%D7%AA%20%2811%29.JPG",
+     "page": "http://makomshamur.com/2010/12/26/%d7%91%d7%aa%d7%99-%d7%9b%d7%a0%d7%a1%d7%aa/",
+     "cap": "פנים בית הכנסת 2009, צילום: גיא רז"
+    }
+   ],
    "geo": {
     "lat": 32.475947,
     "lng": 34.989586,
     "source": "shimur",
     "spread": true
    },
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית כנסת כתובת: דרך הבנים שנת הקמה: 1930 אדריכל: לא ידוע סגנון אדריכלי: בין אקלקטי למודרניסטי משמש היום: בית כנסת אליהו-דוד בדש מבניה בוניה הראשונים של כרכור, &#8216;המוכתר', היה בין מקימי בית הכנסת אחוזה. את האדמה תרם דוד הריס \"&#8230;ניצל קשריו עם בני &#8216;אחוזת לונדון' העשירים, נטל מעשר והחל בבנית בית כנסת במרכז המושבה. &#8230;גם הוא עצמו [&hellip;] המיקום לפי אתר 3.3.1 בנספח השימור של תוכנית המתאר (\"בית הכנסת הגדול \"אחוזה\" בכרכור\")."
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית כנסת כתובת: דרך הבנים שנת הקמה: 1930 אדריכל: לא ידוע סגנון אדריכלי: בין אקלקטי למודרניסטי משמש היום: בית כנסת אליהו-דוד בדש מבניה בוניה הראשונים של כרכור, ‘המוכתר’, היה בין מקימי בית הכנסת אחוזה. את האדמה תרם דוד הריס “…ניצל קשריו עם בני ‘אחוזת לונדון’ העשירים, נטל מעשר והחל בבנית בית כנסת במרכז המושבה. …גם הוא עצמו […] המיקום לפי אתר 3.3.1 בנספח השימור של תוכנית המתאר (\"בית הכנסת הגדול \"אחוזה\" בכרכור\")."
   },
   {
    "id": "makom-בית-סאלם",
@@ -206,12 +280,25 @@
     "סיפורים"
    ],
    "url": "http://makomshamur.com/2011/02/20/%d7%91%d7%99%d7%aa-%d7%a1%d7%9e%d7%a1%d7%95%d7%9f/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית מגורים פרטי כתובת: רחוב הנשיא, כרכור שנת הקמה: 1932 אדריכל: לא ידוע סגנון אדריכלי: קובייתי בסגנון בינלאומי משמש היום: בית מגורים *משה סמסון, 1873- 1963, נדבן ועסקן ציוני נלהב, הגיע בשנת 1920 לראשונה לפלשתינה כדי לקדם את ההתישבות בכרכור על אדמות שרכש עוד ב 1913 עם חברי אחוזת לונדון. באנגליה נשארה משפחתו לנהל את עסקיו. רק בשנת 1932 [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TLGtq_lhA_I/AAAAAAAAAGo/_So5bG9xmfc/s400/%D7%91%D7%99%D7%AA%20%D7%9E%D7%A9%D7%94%20%D7%A1%D7%9E%D7%A1%D7%95%D7%9F%20%D7%95%D7%90%D7%A9%D7%AA%D7%95.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TLGtq_lhA_I/AAAAAAAAAGo/_So5bG9xmfc/s1600/%D7%91%D7%99%D7%AA%20%D7%9E%D7%A9%D7%94%20%D7%A1%D7%9E%D7%A1%D7%95%D7%9F%20%D7%95%D7%90%D7%A9%D7%AA%D7%95.jpg",
+     "page": "http://makomshamur.com/2011/02/20/%d7%91%d7%99%d7%aa-%d7%a1%d7%9e%d7%a1%d7%95%d7%9f/",
+     "cap": "משה סמסון ורעייתו בגן ביתם *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TLGtrgHhIFI/AAAAAAAAAGs/_c3pIEdtwvY/s400/%D7%91%D7%99%D7%AA%20%D7%A1%D7%9E%D7%A1%D7%95%D7%9F.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TLGtrgHhIFI/AAAAAAAAAGs/_c3pIEdtwvY/s1600/%D7%91%D7%99%D7%AA%20%D7%A1%D7%9E%D7%A1%D7%95%D7%9F.jpg",
+     "page": "http://makomshamur.com/2011/02/20/%d7%91%d7%99%d7%aa-%d7%a1%d7%9e%d7%a1%d7%95%d7%9f/",
+     "cap": "1938 בית סמסון כמפקדה של הבריטים צילום: סוניה קולודני *ארכיון בית הראשונים"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בית מגורים פרטי כתובת: רחוב הנשיא, כרכור שנת הקמה: 1932 אדריכל: לא ידוע סגנון אדריכלי: קובייתי בסגנון בינלאומי משמש היום: בית מגורים *משה סמסון, 1873- 1963, נדבן ועסקן ציוני נלהב, הגיע בשנת 1920 לראשונה לפלשתינה כדי לקדם את ההתישבות בכרכור על אדמות שרכש עוד ב 1913 עם חברי אחוזת לונדון. באנגליה נשארה משפחתו לנהל את עסקיו. רק בשנת 1932 […]"
   },
   {
    "id": "makom-בית-פונר-צ-צקס",
-   "name": "בית פונר-צ'צקס",
+   "name": "בית פונר-צ’צקס",
    "group": "כרכור",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -238,7 +325,7 @@
   },
   {
    "id": "makom-בית-צוותא-מפ-ם",
-   "name": "בית צוותא-מפ\"ם",
+   "name": "בית צוותא-מפ”ם",
    "group": "כרכור",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -258,13 +345,10 @@
    "id": "makom-בניין-מועצה-כרכור",
    "name": "בניין מועצה כרכור",
    "group": "כרכור",
-   "cats": [
-    "אדריכלים",
-    "מבני ציבור"
-   ],
-   "url": "http://makomshamur.com/2011/08/30/%d7%91%d7%a0%d7%99%d7%99%d7%9f-%d7%9e%d7%95%d7%a2%d7%a6%d7%94-%d7%9e%d7%a7%d7%95%d7%9e%d7%99%d7%aa-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8/",
+   "cats": [],
+   "url": "https://makomshamur.com/",
    "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: בניין ציבורי כתובת: דרך הבנים, פרדס חנה שנת הקמה: 1970 אדריכל: יוסף חי-אלפרד נוימן סגנון אדריכלי: מודרניסטי ברוטליסטי משמש היום: מועצה מקומית פרדס חנה-כרכור ,,,,,,, כאשר התושב יעקב תבורי תרם לסידור הרחבה והתאורה בכניסה לבניין החדש של המועצה, כנראה לא תיאר לעצמו שהיא תהפך לכיכר העם ותארח את עיר האהלים של המהפכה החברתית בקיץ 2011. משרדי [&hellip;]"
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
   },
   {
    "id": "makom-בריכות-בלום",
@@ -292,7 +376,7 @@
   },
   {
    "id": "makom-גן-ילדים-ע-ש-סמסון",
-   "name": "גן ילדים ע\"ש סמסון",
+   "name": "גן ילדים ע”ש סמסון",
    "group": "כרכור",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -312,14 +396,37 @@
    "id": "makom-המחלבה-של-אירמה",
    "name": "המחלבה של אירמה",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "כרכור",
+    "מבני מסחר",
+    "סיפורים"
+   ],
+   "url": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+   "photos": [
+    {
+     "thumb": "https://lh5.googleusercontent.com/-jcBjaQEpHPk/UDjFYvbGz_I/AAAAAAAACJo/huZFi5fO2jw/s400/img039%255E00071_B_6074_.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-jcBjaQEpHPk/UDjFYvbGz_I/AAAAAAAACJo/huZFi5fO2jw/s1600/img039%255E00071_B_6074_.jpg?gl=IL",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "1947 – מחלבה של אירמה ולך, *אוסף חוה גילון (גילסון)"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-wX7GDy5csPQ/UDjFYdkMGJI/AAAAAAAACJk/80FUwpjJjxQ/s400/img038%255E00061_B_6074_.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-wX7GDy5csPQ/UDjFYdkMGJI/AAAAAAAACJk/80FUwpjJjxQ/s1600/img038%255E00061_B_6074_.jpg?gl=IL",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "שנות ה-40′- כנראה, אירמה וולך במחלבה, *אוסף חוה גילון (גילסון)"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-9xTmXppWkGQ/Th5JWgoQKEI/AAAAAAAABcI/mgGmaxB3FIo/s400/%2525D7%2525A7%2525D7%252599%2525D7%252595%2525D7%2525A1%2525D7%2525A7%252520%2525D7%2525A9%2525D7%25259C%252520%2525D7%25259C%2525D7%252595%2525D7%2525A0%2525D7%252593%2525D7%252599%252520%2525281%252529.jpg",
+     "full": "https://lh5.googleusercontent.com/-9xTmXppWkGQ/Th5JWgoQKEI/AAAAAAAABcI/mgGmaxB3FIo/s1600/%2525D7%2525A7%2525D7%252599%2525D7%252595%2525D7%2525A1%2525D7%2525A7%252520%2525D7%2525A9%2525D7%25259C%252520%2525D7%25259C%2525D7%252595%2525D7%2525A0%2525D7%252593%2525D7%252599%252520%2525281%252529.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "2011, המחלבה והקיוסק של לונדי בדרך הבנים"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. מאז שנות ה-60′ לא היתה פריחה כזו בפרדס חנה כרכור. החודש נפתחו 4 בתי קפה חדשים ומתוכננים עוד כמה בקניונים שנבנים. לכבוד גל הפריחה המבורך הזה, החלטתי להרכיב את הפאזל של בתי הקפה, המסעדות ובתי המלון שפעלו כאן פעם. הפוסט הזה מתארך כבר זמן רב מדי. גם כי הייתי עסוקה ב”קפיצת ראש” וגם כי כל רגע צצים עוד […]"
   },
   {
-   "id": "makom-המרפאה-של-דר-קושנֶר",
-   "name": "המרפאה של דר' קושנֶר",
+   "id": "makom-המרפאה-של-דר-קושנר",
+   "name": "המרפאה של דר’ קושנֶר",
    "group": "כרכור",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -339,10 +446,51 @@
    "id": "makom-השוק-הקטן-סמטת-כרכור",
    "name": "השוק הקטן -סמטת כרכור",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "אי שימור",
+    "כרכור",
+    "מבני מסחר",
+    "שוק בכרכור"
+   ],
+   "url": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/",
+   "photos": [
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d790d79ed7a0d795d79f-d794d7a8d7a8d799-d795d790d799d799d79c-d79bd792d79f-d79ed7aad799d799d792d799d79d-d790d7a0d7a9d799d79d-d791d7a6d799d79cd795d79ed799d79d-d791d7aad7a2d7a8d795d79bd794-d.webp?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d790d79ed7a0d795d79f-d794d7a8d7a8d799-d795d790d799d799d79c-d79bd792d79f-d79ed7aad799d799d792d799d79d-d790d7a0d7a9d799d79d-d791d7a6d799d79cd795d79ed799d79d-d791d7aad7a2d7a8d795d79bd794-d.webp?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/mapa.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/mapa.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a9d795d7a7-d79bd7a8d79bd795d7a8-1.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a9d795d7a7-d79bd7a8d79bd795d7a8-1.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d79ed7a4d7a0d799d7a0d794-d7a4d7a8d7a7d7a9.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d79ed7a4d7a0d799d7a0d794-d7a4d7a8d7a7d7a9.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d790d799d79cd7aa-d7a6d7a8d799.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d790d799d79cd7aa-d7a6d7a8d799.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a1d79ed798d7aa-d79bd7a8d79bd795d7a8-12.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a1d79ed798d7aa-d79bd7a8d79bd795d7a8-12.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a1d79ed798d7aa-d79bd7a8d79bd795d7a8-3.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2024/03/d7a1d79ed798d7aa-d79bd7a8d79bd795d7a8-3.jpg?w=1600",
+     "page": "http://makomshamur.com/2024/03/23/%d7%9e%d7%a8%d7%9b%d7%96-%d7%9e%d7%a1%d7%97%d7%a8%d7%99-%d7%95%d7%a9%d7%95%d7%a7/"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. לפני שהתמקמנו בפרדס חנה (1994) טיילנו לעיירה לעשות הכרות, באחד מהסיבובים הגענו למבנה צדדי שוק קטן ישן די מוזנח ועליו שלט אנה לוטן! מה אנה לוטן? כאן בעיירה מה קשורהכרתי את הקוסמטיקה שלה בתל אביב דרך חברה עם מספרה מגניבה בבזל היא מכרה אותה מפה לאוזן והנה באמצע מה שהתברר כרכור, שלט שלה על המבנה. […]"
   },
   {
    "id": "makom-יובלים-שכונת-צבא-קבע",
@@ -399,32 +547,190 @@
     "מרחבי מחיה"
    ],
    "url": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: מועדון קליעה אולימפי כתובת: רח' ירושלים, כרכור שנת הקמה: 1974 אדריכל: שרייבמן קפלן אדריכלים, ת-א סגנון אדריכלי: בטון חשוף, ברוטליסטי משמש היום: גינה קהילתית בשנת 2010 יזמה התושבת עמליה זנד בעזרת חברת המועצה-יו\"ר ועדת איכות הסביבה, דר' נורית השמשוני יֹפה, ובברכתו הנלהבת של ראש המועצה חיים געש, את הקמת הגינה הקהילתית הראשונה במושבה, במתחם של המטווח השומם בכרכור. בסיור המקדים שהתלוותי אליו"
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/-CxPlt3gWGcE/UHRHGNchs9I/AAAAAAAACOA/kriwYCeNjQw/s400/%25D7%25A2%25D7%259E%25D7%259C%25D7%259E%25D7%2595%25D7%259C%25D7%2594%2520%25D7%2594%25D7%25A0%25D7%259E%25D7%259C%25D7%2594%2520%25D7%2594%25D7%25A2%25D7%259E%25D7%259C%25D7%2594.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-CxPlt3gWGcE/UHRHGNchs9I/AAAAAAAACOA/kriwYCeNjQw/s1600/%25D7%25A2%25D7%259E%25D7%259C%25D7%259E%25D7%2595%25D7%259C%25D7%2594%2520%25D7%2594%25D7%25A0%25D7%259E%25D7%259C%25D7%2594%2520%25D7%2594%25D7%25A2%25D7%259E%25D7%259C%25D7%2594.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "2012, עמליה זנד בגינה הקהילתית במטווח כרכור"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-1fWYb_Hs_LQ/UCrk66emX0I/AAAAAAAACHQ/YPLloyD_TUc/s400/%25D7%2599%25D7%25A9%25D7%2599%25D7%2591%25D7%2594%25201968.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-1fWYb_Hs_LQ/UCrk66emX0I/AAAAAAAACHQ/YPLloyD_TUc/s1600/%25D7%2599%25D7%25A9%25D7%2599%25D7%2591%25D7%2594%25201968.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1968, ישיבה חגיגית עם ראש המועצה ש”ץ (עומד) והתורם דב לפידות בלחיצת יד חגיגית *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-P8XYufQx4Uk/UCrkkyhJMlI/AAAAAAAACNU/c1jAPuMDCHI/s400/%25D7%259E%25D7%2591%25D7%25A0%25D7%25941.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-P8XYufQx4Uk/UCrkkyhJMlI/AAAAAAAACNU/c1jAPuMDCHI/s1600/%25D7%259E%25D7%2591%25D7%25A0%25D7%25941.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1971, תוכנית המטווח, שרטוט אדריכלי *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-6PmIbnxYjCI/UCrkk3BLReI/AAAAAAAACNQ/bqxOkHkKrk4/s400/%25D7%2597%25D7%25AA%25D7%259A%2520%25D7%25A8%25D7%2595%25D7%2597%25D7%2591.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-6PmIbnxYjCI/UCrkk3BLReI/AAAAAAAACNQ/bqxOkHkKrk4/s1600/%25D7%2597%25D7%25AA%25D7%259A%2520%25D7%25A8%25D7%2595%25D7%2597%25D7%2591.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1971, פרט מהתוכנית חתך רוחב *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-JBKttiYrYJI/UDOD7Ki1Y1I/AAAAAAAACJI/7SFPumDQEjs/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25201972-3.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-JBKttiYrYJI/UDOD7Ki1Y1I/AAAAAAAACJI/7SFPumDQEjs/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25201972-3.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1974-5, מטווח אולימפי בכרכור, צילום: לא ידוע *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-dSs6ZacjWjU/UDOD7tahNbI/AAAAAAAACJM/vaL7upEpv90/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2597%2520%25D7%2591%25D7%25A8.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-dSs6ZacjWjU/UDOD7tahNbI/AAAAAAAACJM/vaL7upEpv90/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2597%2520%25D7%2591%25D7%25A8.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1974-5, מטווח אולימפי בכרכור, צילום: לא ידוע *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-OEvDRyHZLhs/UGdzIw_v8qI/AAAAAAAACLQ/b87Q90qrIes/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25203%2520%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%25202012.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-OEvDRyHZLhs/UGdzIw_v8qI/AAAAAAAACLQ/b87Q90qrIes/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25203%2520%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%25202012.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "2012, בשערי הכניסה למטווח כרכור פרדס חנה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-VZ0QhuGTTkc/UGTB450NxaI/AAAAAAAACKs/AWppD5Baxuc/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25201.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-VZ0QhuGTTkc/UGTB450NxaI/AAAAAAAACKs/AWppD5Baxuc/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25201.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "1975- ענת אוסטר(לוינץ) אלופת נוער בקליעה במטווח *אוסף משפ’ לוינץ"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-6wSB4Gn9IJs/UGTBHfk7DII/AAAAAAAACKI/TeivAsmChlo/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25202.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-6wSB4Gn9IJs/UGTBHfk7DII/AAAAAAAACKI/TeivAsmChlo/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25202.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "יקי לוינץ (מימין) עם ראש המועצה יצחק סלע (משמאל) בטקס במטווח. *אוסף משפ’ לוינץ"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-vg_eShHflvg/UDC7TnMZdtI/AAAAAAAACH8/hYYpz9HuHO8/s400/IMG_0660%2520copy.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-vg_eShHflvg/UDC7TnMZdtI/AAAAAAAACH8/hYYpz9HuHO8/s1600/IMG_0660%2520copy.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "2010, המטווח לאחר שנים ללא שימוש"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-3vyi3kDiqSA/UGdzIrTz7bI/AAAAAAAACLM/WINQngFE2pk/s400/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25202%2520%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%25202012.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-3vyi3kDiqSA/UGdzIrTz7bI/AAAAAAAACLM/WINQngFE2pk/s1600/%25D7%259E%25D7%2598%25D7%2595%25D7%2595%25D7%2597%25202%2520%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%25202012.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "2012, מטווח גינה קהילתית מבט על הכניסה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-AaF6j4bRsck/UHP4_cLSZ5I/AAAAAAAACNc/fuIw8jJhuOI/s400/385936_10150466332488254_1536432203_n.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-AaF6j4bRsck/UHP4_cLSZ5I/AAAAAAAACNc/fuIw8jJhuOI/s1600/385936_10150466332488254_1536432203_n.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/08/19/%d7%9e%d7%95%d7%a2%d7%93%d7%95%d7%9f-%d7%a7%d7%9c%d7%99%d7%a2%d7%94-%d7%9e%d7%98%d7%95%d7%95%d7%97-%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-%d7%92%d7%99%d7%a0%d7%94-%d7%a7%d7%94%d7%99%d7%9c%d7%aa%d7%99%d7%aa/",
+     "cap": "2012, גינה קהילתית במטווח כרכור"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: מועדון קליעה אולימפי כתובת: רח’ ירושלים, כרכור שנת הקמה: 1974 אדריכל: שרייבמן קפלן אדריכלים, ת-א סגנון אדריכלי: בטון חשוף, ברוטליסטי משמש היום: גינה קהילתית בשנת 2010 יזמה התושבת עמליה זנד בעזרת חברת המועצה-יו”ר ועדת איכות הסביבה, דר’ נורית השמשוני יֹפה, ובברכתו הנלהבת של ראש המועצה חיים געש, את הקמת הגינה הקהילתית הראשונה במושבה, במתחם של המטווח השומם בכרכור. בסיור המקדים שהתלוותי אליו"
   },
   {
    "id": "makom-מלון-פרוינד",
    "name": "מלון פרוינד",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
+   "cats": [
+    "כרכור",
+    "מבני מסחר",
+    "סיפורים"
+   ],
+   "url": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+   "photos": [
+    {
+     "thumb": "https://lh5.googleusercontent.com/-1sawUn2HYbk/ThWzZORLXZI/AAAAAAAABZY/HioJIpOLZ74/s400/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%252591%2525D7%2525A2%2525D7%252591%2525D7%2525A8%252520%2525D7%252595%2525D7%252599%2525D7%2525A6%2525D7%252595%252520%2525D7%25259B%2525D7%252599%2525D7%252595%2525D7%25259D%252520%2525D7%252591%2525D7%25259B%2525D7%2525A8%2525D7%25259B%2525D7%252595%2525D7%2525A8.jpg",
+     "full": "https://lh5.googleusercontent.com/-1sawUn2HYbk/ThWzZORLXZI/AAAAAAAABZY/HioJIpOLZ74/s1600/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%252591%2525D7%2525A2%2525D7%252591%2525D7%2525A8%252520%2525D7%252595%2525D7%252599%2525D7%2525A6%2525D7%252595%252520%2525D7%25259B%2525D7%252599%2525D7%252595%2525D7%25259D%252520%2525D7%252591%2525D7%25259B%2525D7%2525A8%2525D7%25259B%2525D7%252595%2525D7%2525A8.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "הצריף של משפ’ פרוינד. תחילת שנות ה-30′. * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-1IYLgFi2IsQ/ThWXmVUFs9I/AAAAAAAABZM/-5rjhXc30gI/s400/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%2525A4%2525D7%2525A8%2525D7%252595%2525D7%252599%2525D7%2525A0%2525D7%252593%2525201936.jpg",
+     "full": "https://lh4.googleusercontent.com/-1IYLgFi2IsQ/ThWXmVUFs9I/AAAAAAAABZM/-5rjhXc30gI/s1600/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%2525A4%2525D7%2525A8%2525D7%252595%2525D7%252599%2525D7%2525A0%2525D7%252593%2525201936.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "1937, מלון פרוינד * אוסף עדינה פרוינד-קוטנר"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-vMM2XhaDM-Q/ThoJNuQ_dgI/AAAAAAAABZs/p5mYO59XEdU/s400/%2525D7%2525A4%2525D7%2525A8%2525D7%252595%2525D7%252599%2525D7%2525A0%2525D7%252593%252520%2525D7%252594%2525D7%252599%2525D7%252595%2525D7%25259D%2525202011%252520%2525283%252529.jpg",
+     "full": "https://lh4.googleusercontent.com/-vMM2XhaDM-Q/ThoJNuQ_dgI/AAAAAAAABZs/p5mYO59XEdU/s1600/%2525D7%2525A4%2525D7%2525A8%2525D7%252595%2525D7%252599%2525D7%2525A0%2525D7%252593%252520%2525D7%252594%2525D7%252599%2525D7%252595%2525D7%25259D%2525202011%252520%2525283%252529.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "2011, מבנה מלון פרויד. היום בית מגורים ומועדון ויצ”ו כרכור"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-I7w8mXOeNfY/Th4dLeTz6qI/AAAAAAAABbk/ciRAs5sTs6U/s400/hotel-froind-karkur.jpg",
+     "full": "https://lh3.googleusercontent.com/-I7w8mXOeNfY/Th4dLeTz6qI/AAAAAAAABbk/ciRAs5sTs6U/s1600/hotel-froind-karkur.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-srZ-6HlomPs/Th4oQ8TYaNI/AAAAAAAABb4/iUjW9U5-CX8/s400/adina-froind.jpg",
+     "full": "https://lh6.googleusercontent.com/-srZ-6HlomPs/Th4oQ8TYaNI/AAAAAAAABb4/iUjW9U5-CX8/s1600/adina-froind.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/"
+    }
+   ],
    "geo": {
     "lat": 32.471338,
     "lng": 34.994623,
     "source": "pardespedia",
     "spread": true
    },
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. המיקום לפי הערך \"מלון פרוינד\" בשכבת המקומות מפרדספדיה."
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. מאז שנות ה-60′ לא היתה פריחה כזו בפרדס חנה כרכור. החודש נפתחו 4 בתי קפה חדשים ומתוכננים עוד כמה בקניונים שנבנים. לכבוד גל הפריחה המבורך הזה, החלטתי להרכיב את הפאזל של בתי הקפה, המסעדות ובתי המלון שפעלו כאן פעם. הפוסט הזה מתארך כבר זמן רב מדי. גם כי הייתי עסוקה ב”קפיצת ראש” וגם כי כל רגע צצים עוד […] המיקום לפי הערך \"מלון פרוינד\" בשכבת המקומות מפרדספדיה."
   },
   {
    "id": "makom-מרחב-המחיה-של-מש-בנימין",
-   "name": "מרחב המחיה של מש' בנימין",
+   "name": "מרחב המחיה של מש’ בנימין",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "כרכור",
+    "מרחבי מחיה"
+   ],
+   "url": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+   "photos": [
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TdpQv5OZOsI/AAAAAAAABV8/__joQhIrIDo/s400/hershcell%20shirley%201975.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TdpQv5OZOsI/AAAAAAAABV8/__joQhIrIDo/s1600/hershcell%20shirley%201975.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "שירלי והרשל בנימין 1976 * אוסף ג'רמי רוז"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TdpQukgk7MI/AAAAAAAABV4/p5DTQTlUXGE/s400/herschell%20danny%20kay.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TdpQukgk7MI/AAAAAAAABV4/p5DTQTlUXGE/s1600/herschell%20danny%20kay.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "1959, הרשל בנימין עם דני קיי במגרשי הגולף * אוסף ג'רמי רוז"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TdpQnHR4jyI/AAAAAAAABVc/qsXWSorKujw/s400/benjamins.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TdpQnHR4jyI/AAAAAAAABVc/qsXWSorKujw/s1600/benjamins.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "שירלי עם אחד מנכדיה בחצר הבית שנות ה-80' * אוסף ג'רמי רוז"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/Tdq0-LGGTfI/AAAAAAAABWg/FfrDGJqDIMI/s400/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%2818%29.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/Tdq0-LGGTfI/AAAAAAAABWg/FfrDGJqDIMI/s1600/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%2818%29.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "מרחב מחיה בחצר של משפ' בנימין 2011"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TdpQwUQGq5I/AAAAAAAABWA/uFvIXDECvL8/s400/hershel.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TdpQwUQGq5I/AAAAAAAABWA/uFvIXDECvL8/s1600/hershel.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "הרשל בגנו שנות ה-80' * אוסף ג'רמי רוז"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/Tdq02AIO6pI/AAAAAAAABWQ/uUxtGl2JKME/s400/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%283%29.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/Tdq02AIO6pI/AAAAAAAABWQ/uUxtGl2JKME/s1600/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%283%29.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "איסוף מים 2011, החביות עוד מימי שירלי והרשל"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TdpQqkNdOYI/AAAAAAAABVo/Z_29cE_gWzA/s400/benjamins5.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TdpQqkNdOYI/AAAAAAAABVo/Z_29cE_gWzA/s1600/benjamins5.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "הגן בימי הזוהר * אוסף ג'רמי רוז"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/Tdq09--0biI/AAAAAAAABWc/OFF6-Q4flHQ/s400/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%2824%29.jpg",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/Tdq09--0biI/AAAAAAAABWc/OFF6-Q4flHQ/s1600/%D7%9E%D7%A8%D7%97%D7%91%20%D7%9E%D7%97%D7%99%D7%94%20%D7%91%D7%A0%D7%92%D7%9E%D7%99%D7%A0%D7%A1%20%2824%29.jpg",
+     "page": "http://makomshamur.com/2011/05/24/%d7%9e%d7%a8%d7%97%d7%91-%d7%94%d7%9e%d7%97%d7%99%d7%99%d7%94-%d7%a9%d7%9c-%d7%a9%d7%99%d7%a8%d7%9c%d7%99-%d7%95%d7%94%d7%a8%d7%a9%d7%9c-%d7%91%d7%a0%d7%99%d7%9e%d7%99%d7%9f/",
+     "cap": "2011, החווה בכרכור"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. שירלי רוז בנימין 1913-2010, הרשל י. בנימין 1926-2010 – Shirley Rose Benyamin and Herschell Benyamin בני הזוג רוז-בנימין היו מחלוצי איכות הסביבה בישראל. והחל מאמצע שנות ה 80 של המאה הקודמת עד שנת 2001 התגוררו ופעלו מביתם בכרכור. הם נמנים עם חלוצי האירגונים הסביבתיים הלא ממשלתיים בישראל, הקימו ועמדו בראש אירגון אשר התנגד להקמת תחנות כח גרעיניות בישראל. […]"
   },
   {
    "id": "makom-משק-הררי",
@@ -501,8 +807,85 @@
     "סרטים"
    ],
    "url": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. הסיפור על קולנוע אוריון הוא הסיפור על חיי החברה, חיי הלילה וחיי התרבות הענפים שהיו בכרכור בשנות ה-30&#8242; , 40&#8242; ועד סוף שנות ה-60&#8242;. מבעד לחלוציות בערה פה חיות ותשוקה לחיים. בתי הקפה שקקו צעירים ובתי הקולנוע אוריון – כן, היו שניים באותו שם, אחד ליד השני אחד חורפי ואחד קיצי, כיכבו במייסדים פינת אחוזה עד שדעכו. בעוד [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh4.googleusercontent.com/-DABZ8cD_yaE/UXG-hD6yY9I/AAAAAAAACg4/gXjWmvEL82I/s400/__%25C2%25A0__%2520______%25C2%25A0___%2520_________%252061.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-DABZ8cD_yaE/UXG-hD6yY9I/AAAAAAAACg4/gXjWmvEL82I/s1600/__%25C2%25A0__%2520______%25C2%25A0___%2520_________%252061.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-myHFjs68iqw/UXHFs7E7GTI/AAAAAAAACh4/NVDLRk6FX6A/s400/%25D7%2599%25D7%25A2%25D7%25A7%25D7%2591%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%25A0%25D7%2594%25D7%25A0%25D7%2593%25D7%2599%25D7%259F%25201929.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-myHFjs68iqw/UXHFs7E7GTI/AAAAAAAACh4/NVDLRk6FX6A/s1600/%25D7%2599%25D7%25A2%25D7%25A7%25D7%2591%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%25A0%25D7%2594%25D7%25A0%25D7%2593%25D7%2599%25D7%259F%25201929.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1929, יעקב אופנהנדין. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-h3LToB-c6Tg/UXG-e8GW25I/AAAAAAAACec/btWm2mwI9Xg/s400/___%25C2%25A0___%2520_____%25C2%25A0___%25201965.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-h3LToB-c6Tg/UXG-e8GW25I/AAAAAAAACec/btWm2mwI9Xg/s1600/___%25C2%25A0___%2520_____%25C2%25A0___%25201965.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1962, המאפייה כ ‘פוטו אופיר’, צולם מגג הקולנוע, מאחור בנק הלואה וחסכון, אחוזה פינת המייסדים. צילום: שמעון אופיר *אוסף טלי אופיר הורוביץ"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-6U1f1sgOAJg/UXnPM69iQ1I/AAAAAAAACiE/SeQdyZ1y0B0/s400/%25D7%2590%25D7%2595%25D7%25A8%25D7%2599%25D7%2595%25D7%259F--%25D7%2599%25D7%2595%25D7%25A7%25D7%2599.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-6U1f1sgOAJg/UXnPM69iQ1I/AAAAAAAACiE/SeQdyZ1y0B0/s1600/%25D7%2590%25D7%2595%25D7%25A8%25D7%2599%25D7%2595%25D7%259F--%25D7%2599%25D7%2595%25D7%25A7%25D7%2599.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "2013, פנים הקולנוע עם יוקי אופיר, הנכד של אופנהנדין. צילום: אילת צורי"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-brNlYcFU60M/UXHFf8U3JfI/AAAAAAAACfo/wm19q9yrWWM/s400/image_1360434037461425.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-brNlYcFU60M/UXHFf8U3JfI/AAAAAAAACfo/wm19q9yrWWM/s1600/image_1360434037461425.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-k_Os4fAzW4Y/UXHF50ZRSaI/AAAAAAAACi4/IyxoaXC8NrM/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A9%25D7%259E%25D7%25A2%25D7%2595%25D7%259F%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%2599%25D7%25A8.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-k_Os4fAzW4Y/UXHF50ZRSaI/AAAAAAAACi4/IyxoaXC8NrM/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A9%25D7%259E%25D7%25A2%25D7%2595%25D7%259F%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%2599%25D7%25A8.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1995, הקולנוע והשלולית בציור מפורט של שמעון אופיר, מתוך ‘כרכור בטעם של פעם’."
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-VpPicE3Cl9E/UX-0m_xBOkI/AAAAAAAACjU/hDi8hYi_XHs/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%259E%25D7%25A1%25D7%259E%25D7%259A%25203.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-VpPicE3Cl9E/UX-0m_xBOkI/AAAAAAAACjU/hDi8hYi_XHs/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%259E%25D7%25A1%25D7%259E%25D7%259A%25203.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1938, חלק מתוכנית קולנוע בכרכור, עמדת הקרנה (מימין) ואולם. *אוסף משפ’ אופיר הורוביץ"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-78a8dU1zQTg/UXG-Fc32sGI/AAAAAAAACd0/Kt4rIHhg1_Y/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520S.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-78a8dU1zQTg/UXG-Fc32sGI/AAAAAAAACd0/Kt4rIHhg1_Y/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520S.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "שנות ה-50′, קולנוע קיצי אוריון. צילוםף לא ידוע. *אוסף גילה יעקובסון"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-1iH2_2etb2I/UXG9-JGEslI/AAAAAAAAChI/RdJWWeJ7220/s400/%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%2520%25D7%2599%25D7%25A6%25D7%2597%25D7%25A7%2520%25D7%2595%25D7%2599%25D7%259E%25D7%25A8%2520%25284%2529.JPG?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-1iH2_2etb2I/UXG9-JGEslI/AAAAAAAAChI/RdJWWeJ7220/s1600/%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%2520%25D7%2599%25D7%25A6%25D7%2597%25D7%25A7%2520%25D7%2595%25D7%2599%25D7%259E%25D7%25A8%2520%25284%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "שנות ה-40′, קולנוע קיץ כקולנוע אסטוריה. *אוסף יצחק וימר"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-19a0LeuLf4I/UXG9_g3fhzI/AAAAAAAACiw/-T6DfQq5ZNk/s400/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25285%2529.JPG?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-19a0LeuLf4I/UXG9_g3fhzI/AAAAAAAACiw/-T6DfQq5ZNk/s1600/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25285%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1942, חלק מתוכנית שיפוץ לקולנוע קיץ. *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-eUzlpDjbL3E/UXG-exiRDUI/AAAAAAAACi0/ZENNZBAZMCE/s400/__%25C2%25A0__%2520______%25C2%25A0___%2520_______%2520_________%252061.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-eUzlpDjbL3E/UXG-exiRDUI/AAAAAAAACi0/ZENNZBAZMCE/s1600/__%25C2%25A0__%2520______%25C2%25A0___%2520_______%2520_________%252061.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1961, מקרר ראשון בשביל בין הבית לקולנוע (משמאל). צילום: שמעון אופיר. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-uHhf49S9NFU/UXG-e99gxHI/AAAAAAAAChE/gc_F6qqLBd4/s400/___%25C2%25A0___%2520_____%25C2%25A0___%2520_____%252062.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-uHhf49S9NFU/UXG-e99gxHI/AAAAAAAAChE/gc_F6qqLBd4/s1600/___%25C2%25A0___%2520_____%25C2%25A0___%2520_____%252062.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1962, שיפוץ המאפיה לפוטו אופיר. שמעון אופיר מימין. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-CpZrQEuUW9s/UXG-JtuJvpI/AAAAAAAACeE/LGBuxz0gXxY/s400/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25287%2529.JPG?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-CpZrQEuUW9s/UXG-JtuJvpI/AAAAAAAACeE/LGBuxz0gXxY/s1600/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25287%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1942, מפת קולנוע קיץ. *ארכיון בית הראשונים"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. הסיפור על קולנוע אוריון הוא הסיפור על חיי החברה, חיי הלילה וחיי התרבות הענפים שהיו בכרכור בשנות ה-30′ , 40′ ועד סוף שנות ה-60′. מבעד לחלוציות בערה פה חיות ותשוקה לחיים. בתי הקפה שקקו צעירים ובתי הקולנוע אוריון – כן, היו שניים באותו שם, אחד ליד השני אחד חורפי ואחד קיצי, כיכבו במייסדים פינת אחוזה עד שדעכו. בעוד […]"
   },
   {
    "id": "makom-קולנוע-קיצי",
@@ -516,32 +899,143 @@
     "סרטים"
    ],
    "url": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. הסיפור על קולנוע אוריון הוא הסיפור על חיי החברה, חיי הלילה וחיי התרבות הענפים שהיו בכרכור בשנות ה-30&#8242; , 40&#8242; ועד סוף שנות ה-60&#8242;. מבעד לחלוציות בערה פה חיות ותשוקה לחיים. בתי הקפה שקקו צעירים ובתי הקולנוע אוריון – כן, היו שניים באותו שם, אחד ליד השני אחד חורפי ואחד קיצי, כיכבו במייסדים פינת אחוזה עד שדעכו. בעוד [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh4.googleusercontent.com/-DABZ8cD_yaE/UXG-hD6yY9I/AAAAAAAACg4/gXjWmvEL82I/s400/__%25C2%25A0__%2520______%25C2%25A0___%2520_________%252061.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-DABZ8cD_yaE/UXG-hD6yY9I/AAAAAAAACg4/gXjWmvEL82I/s1600/__%25C2%25A0__%2520______%25C2%25A0___%2520_________%252061.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-myHFjs68iqw/UXHFs7E7GTI/AAAAAAAACh4/NVDLRk6FX6A/s400/%25D7%2599%25D7%25A2%25D7%25A7%25D7%2591%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%25A0%25D7%2594%25D7%25A0%25D7%2593%25D7%2599%25D7%259F%25201929.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-myHFjs68iqw/UXHFs7E7GTI/AAAAAAAACh4/NVDLRk6FX6A/s1600/%25D7%2599%25D7%25A2%25D7%25A7%25D7%2591%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%25A0%25D7%2594%25D7%25A0%25D7%2593%25D7%2599%25D7%259F%25201929.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1929, יעקב אופנהנדין. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-h3LToB-c6Tg/UXG-e8GW25I/AAAAAAAACec/btWm2mwI9Xg/s400/___%25C2%25A0___%2520_____%25C2%25A0___%25201965.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-h3LToB-c6Tg/UXG-e8GW25I/AAAAAAAACec/btWm2mwI9Xg/s1600/___%25C2%25A0___%2520_____%25C2%25A0___%25201965.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1962, המאפייה כ ‘פוטו אופיר’, צולם מגג הקולנוע, מאחור בנק הלואה וחסכון, אחוזה פינת המייסדים. צילום: שמעון אופיר *אוסף טלי אופיר הורוביץ"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-6U1f1sgOAJg/UXnPM69iQ1I/AAAAAAAACiE/SeQdyZ1y0B0/s400/%25D7%2590%25D7%2595%25D7%25A8%25D7%2599%25D7%2595%25D7%259F--%25D7%2599%25D7%2595%25D7%25A7%25D7%2599.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-6U1f1sgOAJg/UXnPM69iQ1I/AAAAAAAACiE/SeQdyZ1y0B0/s1600/%25D7%2590%25D7%2595%25D7%25A8%25D7%2599%25D7%2595%25D7%259F--%25D7%2599%25D7%2595%25D7%25A7%25D7%2599.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "2013, פנים הקולנוע עם יוקי אופיר, הנכד של אופנהנדין. צילום: אילת צורי"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-brNlYcFU60M/UXHFf8U3JfI/AAAAAAAACfo/wm19q9yrWWM/s400/image_1360434037461425.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-brNlYcFU60M/UXHFf8U3JfI/AAAAAAAACfo/wm19q9yrWWM/s1600/image_1360434037461425.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-k_Os4fAzW4Y/UXHF50ZRSaI/AAAAAAAACi4/IyxoaXC8NrM/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A9%25D7%259E%25D7%25A2%25D7%2595%25D7%259F%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%2599%25D7%25A8.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-k_Os4fAzW4Y/UXHF50ZRSaI/AAAAAAAACi4/IyxoaXC8NrM/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A9%25D7%259E%25D7%25A2%25D7%2595%25D7%259F%2520%25D7%2590%25D7%2595%25D7%25A4%25D7%2599%25D7%25A8.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1995, הקולנוע והשלולית בציור מפורט של שמעון אופיר, מתוך ‘כרכור בטעם של פעם’."
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-VpPicE3Cl9E/UX-0m_xBOkI/AAAAAAAACjU/hDi8hYi_XHs/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%259E%25D7%25A1%25D7%259E%25D7%259A%25203.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-VpPicE3Cl9E/UX-0m_xBOkI/AAAAAAAACjU/hDi8hYi_XHs/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%259E%25D7%25A1%25D7%259E%25D7%259A%25203.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1938, חלק מתוכנית קולנוע בכרכור, עמדת הקרנה (מימין) ואולם. *אוסף משפ’ אופיר הורוביץ"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-78a8dU1zQTg/UXG-Fc32sGI/AAAAAAAACd0/Kt4rIHhg1_Y/s400/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520S.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-78a8dU1zQTg/UXG-Fc32sGI/AAAAAAAACd0/Kt4rIHhg1_Y/s1600/%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520S.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "שנות ה-50′, קולנוע קיצי אוריון. צילוםף לא ידוע. *אוסף גילה יעקובסון"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-1iH2_2etb2I/UXG9-JGEslI/AAAAAAAAChI/RdJWWeJ7220/s400/%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%2520%25D7%2599%25D7%25A6%25D7%2597%25D7%25A7%2520%25D7%2595%25D7%2599%25D7%259E%25D7%25A8%2520%25284%2529.JPG?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-1iH2_2etb2I/UXG9-JGEslI/AAAAAAAAChI/RdJWWeJ7220/s1600/%25D7%259B%25D7%25A8%25D7%259B%25D7%2595%25D7%25A8%2520%25D7%2599%25D7%25A6%25D7%2597%25D7%25A7%2520%25D7%2595%25D7%2599%25D7%259E%25D7%25A8%2520%25284%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "שנות ה-40′, קולנוע קיץ כקולנוע אסטוריה. *אוסף יצחק וימר"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-19a0LeuLf4I/UXG9_g3fhzI/AAAAAAAACiw/-T6DfQq5ZNk/s400/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25285%2529.JPG?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-19a0LeuLf4I/UXG9_g3fhzI/AAAAAAAACiw/-T6DfQq5ZNk/s1600/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25285%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1942, חלק מתוכנית שיפוץ לקולנוע קיץ. *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-eUzlpDjbL3E/UXG-exiRDUI/AAAAAAAACi0/ZENNZBAZMCE/s400/__%25C2%25A0__%2520______%25C2%25A0___%2520_______%2520_________%252061.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-eUzlpDjbL3E/UXG-exiRDUI/AAAAAAAACi0/ZENNZBAZMCE/s1600/__%25C2%25A0__%2520______%25C2%25A0___%2520_______%2520_________%252061.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1961, מקרר ראשון בשביל בין הבית לקולנוע (משמאל). צילום: שמעון אופיר. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-uHhf49S9NFU/UXG-e99gxHI/AAAAAAAAChE/gc_F6qqLBd4/s400/___%25C2%25A0___%2520_____%25C2%25A0___%2520_____%252062.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-uHhf49S9NFU/UXG-e99gxHI/AAAAAAAAChE/gc_F6qqLBd4/s1600/___%25C2%25A0___%2520_____%25C2%25A0___%2520_____%252062.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1962, שיפוץ המאפיה לפוטו אופיר. שמעון אופיר מימין. *אוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-CpZrQEuUW9s/UXG-JtuJvpI/AAAAAAAACeE/LGBuxz0gXxY/s400/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25287%2529.JPG?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-CpZrQEuUW9s/UXG-JtuJvpI/AAAAAAAACeE/LGBuxz0gXxY/s1600/%25D7%259E%25D7%25A4%25D7%2595%25D7%25AA%2520%25D7%25A7%25D7%2595%25D7%259C%25D7%25A0%25D7%2595%25D7%25A2%2520%25D7%25A7%25D7%2599%25D7%25A5%2520%25287%2529.JPG?gl=IL",
+     "page": "http://makomshamur.com/2013/04/30/%d7%a7%d7%95%d7%9c%d7%a0%d7%95%d7%a2-%d7%90%d7%95%d7%a8%d7%99%d7%95%d7%9f-%d7%97%d7%95%d7%a8%d7%a4%d7%99-%d7%95%d7%a7%d7%99%d7%a6%d7%99/",
+     "cap": "1942, מפת קולנוע קיץ. *ארכיון בית הראשונים"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. הסיפור על קולנוע אוריון הוא הסיפור על חיי החברה, חיי הלילה וחיי התרבות הענפים שהיו בכרכור בשנות ה-30′ , 40′ ועד סוף שנות ה-60′. מבעד לחלוציות בערה פה חיות ותשוקה לחיים. בתי הקפה שקקו צעירים ובתי הקולנוע אוריון – כן, היו שניים באותו שם, אחד ליד השני אחד חורפי ואחד קיצי, כיכבו במייסדים פינת אחוזה עד שדעכו. בעוד […]"
   },
   {
    "id": "makom-קפה-טיצ-ר",
-   "name": "קפה טיצ'ר",
+   "name": "קפה טיצ’ר",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
+   "cats": [
+    "כרכור",
+    "מבני מסחר",
+    "סיפורים"
+   ],
+   "url": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/-OAjNHfcjBbw/Tg5L8o3hkhI/AAAAAAAABX4/IJ43TrzUZF0/s400/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%252598%2525D7%252599%2525D7%2525A6%2525D7%2525A8.jpg",
+     "full": "https://lh6.googleusercontent.com/-OAjNHfcjBbw/Tg5L8o3hkhI/AAAAAAAABX4/IJ43TrzUZF0/s1600/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%252598%2525D7%252599%2525D7%2525A6%2525D7%2525A8.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "1928, תושבי כרכור בהנחת אבן פינה לבית וקפה טיצ’ר (טיצ’ר כורע מימין) * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-7iD835enEU8/Th7kw9fvSCI/AAAAAAAABcQ/8wPrxT2uzZM/s400/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%252598%2525D7%252599%2525D7%2525A6%2525D7%2525A8%252520%2525D7%2525A2%2525D7%25259D%252520%2525D7%252594%2525D7%2525A6%2525D7%252595%2525D7%252595%2525D7%2525AA.jpg",
+     "full": "https://lh5.googleusercontent.com/-7iD835enEU8/Th7kw9fvSCI/AAAAAAAABcQ/8wPrxT2uzZM/s1600/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%252598%2525D7%252599%2525D7%2525A6%2525D7%2525A8%252520%2525D7%2525A2%2525D7%25259D%252520%2525D7%252594%2525D7%2525A6%2525D7%252595%2525D7%252595%2525D7%2525AA.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "סוף שנות ה-30′ בפתח TEACHER’S GARDEN בכרכור. טיצ’ר עם משפחתו * אוסף יצחק וימר"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-HjsK_WbnCkQ/ThMckIAw-yI/AAAAAAAABZI/VXRyBA_gn68/s400/%2525D7%2525A4%2525D7%2525A8%2525D7%252593%2525D7%2525A1%252520%2525D7%252597%2525D7%2525A0%2525D7%252594%252520067.jpg",
+     "full": "https://lh4.googleusercontent.com/-HjsK_WbnCkQ/ThMckIAw-yI/AAAAAAAABZI/VXRyBA_gn68/s1600/%2525D7%2525A4%2525D7%2525A8%2525D7%252593%2525D7%2525A1%252520%2525D7%252597%2525D7%2525A0%2525D7%252594%252520067.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "2011, מבנה בית הקפה של טיצ’ר, מאחוריו קולנוע אוריון"
+    }
+   ],
    "geo": {
     "lat": 32.473784,
     "lng": 34.990894,
     "source": "pardespedia",
     "spread": true
    },
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. המיקום לפי הערך \"בית קפה טיצ'ר\" בשכבת המקומות מפרדספדיה."
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. מאז שנות ה-60′ לא היתה פריחה כזו בפרדס חנה כרכור. החודש נפתחו 4 בתי קפה חדשים ומתוכננים עוד כמה בקניונים שנבנים. לכבוד גל הפריחה המבורך הזה, החלטתי להרכיב את הפאזל של בתי הקפה, המסעדות ובתי המלון שפעלו כאן פעם. הפוסט הזה מתארך כבר זמן רב מדי. גם כי הייתי עסוקה ב”קפיצת ראש” וגם כי כל רגע צצים עוד […] המיקום לפי הערך \"בית קפה טיצ'ר\" בשכבת המקומות מפרדספדיה."
   },
   {
    "id": "makom-קפה-פינתי",
    "name": "קפה פינתי",
    "group": "כרכור",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "כרכור",
+    "מבני מסחר",
+    "סיפורים"
+   ],
+   "url": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/-VJQybtLgRFs/Th9ubIiufuI/AAAAAAAABcg/By5fLI4SuEM/s400/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%2525A4%2525D7%252599%2525D7%2525A0%2525D7%2525AA%2525D7%252599%2525202011.jpg",
+     "full": "https://lh6.googleusercontent.com/-VJQybtLgRFs/Th9ubIiufuI/AAAAAAAABcg/By5fLI4SuEM/s1600/%2525D7%2525A7%2525D7%2525A4%2525D7%252594%252520%2525D7%2525A4%2525D7%252599%2525D7%2525A0%2525D7%2525AA%2525D7%252599%2525202011.jpg",
+     "page": "http://makomshamur.com/2011/07/15/%d7%91%d7%aa%d7%99-%d7%a7%d7%a4%d7%94-%d7%91%d7%9b%d7%a8%d7%9b%d7%95%d7%a8-colony-of-love/",
+     "cap": "2011, מבנה קפה פינתי אחרי שיפוץ"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. מאז שנות ה-60′ לא היתה פריחה כזו בפרדס חנה כרכור. החודש נפתחו 4 בתי קפה חדשים ומתוכננים עוד כמה בקניונים שנבנים. לכבוד גל הפריחה המבורך הזה, החלטתי להרכיב את הפאזל של בתי הקפה, המסעדות ובתי המלון שפעלו כאן פעם. הפוסט הזה מתארך כבר זמן רב מדי. גם כי הייתי עסוקה ב”קפיצת ראש” וגם כי כל רגע צצים עוד […]"
   },
   {
    "id": "makom-שכונת-נוה-עובד",
@@ -574,10 +1068,33 @@
    "id": "makom-אמפיתיאטרון-שמורת-הוואדי",
    "name": "אמפיתיאטרון- שמורת הוואדי",
    "group": "פרדס חנה",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "מבני ציבור",
+    "מיועדים לשימור",
+    "פרדס חנה"
+   ],
+   "url": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+   "photos": [
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK321kujy6I/AAAAAAAAABw/5R8b3FBnnGQ/s400/916.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK321kujy6I/AAAAAAAAABw/5R8b3FBnnGQ/s1600/916.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "בית העם בבניה * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK32yiNLHBI/AAAAAAAAABg/-WVYCuVqdRk/s400/makom%20%282%29.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK32yiNLHBI/AAAAAAAAABg/-WVYCuVqdRk/s1600/makom%20%282%29.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "בית העם ואמפיתיאטרון * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5jI_cN7I/AAAAAAAABoo/OWjmDTs84Wk/s400/913.jpg",
+     "full": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5jI_cN7I/AAAAAAAABoo/OWjmDTs84Wk/s1600/913.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "האמפי של בית העם בבניה. * ארכיון בית הראשונים"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. שם המבנה: בית העם – אמפיתיאטרון כתובת: רחוב המעלה שנת הקמה: 1935-1937 אדריכל: הרי רוזנטל, השלמות: פרץ בר גבור סגנון אדריכלי: בניה מקומית עם השפעות הסגנון הבינלאומי* שימוש היום: בית ללהקות “הורה אביב פרדס חנה כרכור” ב 1933 התקיימה תחרות אדריכלים לתכנון בית העם שיזם ועד המושבה פרדס חנה. בתחרות השתתפו אדריכלים שפעלו ברחבי הארץ […]"
   },
   {
    "id": "makom-בארות-מים-פוטו-ארצי",
@@ -597,7 +1114,7 @@
   },
   {
    "id": "makom-ביה-ס-החקלאי-מבנים-מגדל-מים",
-   "name": "ביה\"ס החקלאי- מבנים מגדל מים,",
+   "name": "ביה”ס החקלאי- מבנים מגדל מים,",
    "group": "פרדס חנה",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -614,8 +1131,41 @@
     "פרדס חנה"
    ],
    "url": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: מסחר ומגורים כתובת: רחוב הדקלים 117 שנת הקמה: 1969 אדריכל: אורי לפובסקי סגנון אדריכלי: בניה מקומית עם השפעות הסגנון הבינלאומי יזם: בן ציון ורמי ברוזה (בר עוז) שימוש היום: חנויות ומשרדים הבניין הזה לא השתנה מאז בנייתו , הזמן רק מיטיב איתו. תמיד משמח אותי לעבור לידו, משהו בתכנון והאופי והפונקציונאלי שלו, הנקיון יוצא [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TVGnDFW_I0I/AAAAAAAAA-I/5y2Brcw3M3s/s400/beit%20broza.jpg",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TVGnDFW_I0I/AAAAAAAAA-I/5y2Brcw3M3s/s1600/beit%20broza.jpg",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/",
+     "cap": "בית ברוזה בשנת 1990 *צילום רמי בר עוז"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVQrTm3r9XI/AAAAAAAAA_o/OfWmXPI7knc/s400/%D7%A8%D7%9E%D7%99%20%D7%91%D7%A8%20%D7%A2%D7%95%D7%96%20%283%29.JPG",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVQrTm3r9XI/AAAAAAAAA_o/OfWmXPI7knc/s1600/%D7%A8%D7%9E%D7%99%20%D7%91%D7%A8%20%D7%A2%D7%95%D7%96%20%283%29.JPG",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/",
+     "cap": "רמי בר עוז (ברוזה) 2011"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVQrQYyYLvI/AAAAAAAAA_c/oNbUbn3v26c/s400/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%284%29.JPG",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVQrQYyYLvI/AAAAAAAAA_c/oNbUbn3v26c/s1600/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%284%29.JPG",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TVQrRZsJdEI/AAAAAAAAA_g/etFXbiB3Ars/s400/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%287%29.JPG",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TVQrRZsJdEI/AAAAAAAAA_g/etFXbiB3Ars/s1600/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%287%29.JPG",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TVQrSgOyb8I/AAAAAAAAA_k/HTd5qSgRr-o/s400/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%2810%29.JPG",
+     "full": "https://lh5.googleusercontent.com/_nqv2E7zLPe0/TVQrSgOyb8I/AAAAAAAAA_k/HTd5qSgRr-o/s1600/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%2810%29.JPG",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVRyo2QaLsI/AAAAAAAABAo/wSon45fuoyo/s400/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%282%29.JPG",
+     "full": "https://lh6.googleusercontent.com/_nqv2E7zLPe0/TVRyo2QaLsI/AAAAAAAABAo/wSon45fuoyo/s1600/%D7%91%D7%99%D7%AA%D7%91%D7%A8%D7%95%D7%96%D7%94%20%282%29.JPG",
+     "page": "http://makomshamur.com/2011/02/21/%d7%91%d7%99%d7%aa-%d7%91%d7%a8%d7%95%d7%96%d7%94-2/"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: מסחר ומגורים כתובת: רחוב הדקלים 117 שנת הקמה: 1969 אדריכל: אורי לפובסקי סגנון אדריכלי: בניה מקומית עם השפעות הסגנון הבינלאומי יזם: בן ציון ורמי ברוזה (בר עוז) שימוש היום: חנויות ומשרדים הבניין הזה לא השתנה מאז בנייתו , הזמן רק מיטיב איתו. תמיד משמח אותי לעבור לידו, משהו בתכנון והאופי והפונקציונאלי שלו, הנקיון יוצא […]"
   },
   {
    "id": "makom-בית-האיכר-מרכז-המושבה",
@@ -645,10 +1195,89 @@
    "id": "makom-בית-פעם-מרכז-במושבה",
    "name": "בית פעם – מרכז במושבה",
    "group": "פרדס חנה",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "מבני ציבור",
+    "מיועדים לשימור",
+    "פרדס חנה"
+   ],
+   "url": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+   "photos": [
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK321kujy6I/AAAAAAAAABw/5R8b3FBnnGQ/s400/916.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK321kujy6I/AAAAAAAAABw/5R8b3FBnnGQ/s1600/916.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "בית העם בבניה * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK32yiNLHBI/AAAAAAAAABg/-WVYCuVqdRk/s400/makom%20%282%29.jpg",
+     "full": "https://lh3.googleusercontent.com/_nqv2E7zLPe0/TK32yiNLHBI/AAAAAAAAABg/-WVYCuVqdRk/s1600/makom%20%282%29.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "בית העם ואמפיתיאטרון * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5jI_cN7I/AAAAAAAABoo/OWjmDTs84Wk/s400/913.jpg",
+     "full": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5jI_cN7I/AAAAAAAABoo/OWjmDTs84Wk/s1600/913.jpg",
+     "page": "http://makomshamur.com/2010/08/10/%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/",
+     "cap": "האמפי של בית העם בבניה. * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGK5KzSqNQI/AAAAAAAABmo/2-iEp-jCHso/s400/makom%20%283%29.jpg",
+     "full": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGK5KzSqNQI/AAAAAAAABmo/2-iEp-jCHso/s1600/makom%20%283%29.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "* ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGK5Ovq3g-I/AAAAAAAABnA/2ShDkA3P_ps/s400/makom%20%287%29.jpg",
+     "full": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGK5Ovq3g-I/AAAAAAAABnA/2ShDkA3P_ps/s1600/makom%20%287%29.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "1938- תרצ\"ח, ילדי בי\"ס אלונים בונים באמפי *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5N8izyJI/AAAAAAAABm8/oRR1-Qz5sZg/s400/makom%20%285%29.jpg",
+     "full": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5N8izyJI/AAAAAAAABm8/oRR1-Qz5sZg/s1600/makom%20%285%29.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5JNpEg-I/AAAAAAAABmc/IIzc4uIDeSE/s400/makom%20%286%29.jpg",
+     "full": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5JNpEg-I/AAAAAAAABmc/IIzc4uIDeSE/s1600/makom%20%286%29.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "צילום: פוטו ארצי *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5G4JxIBI/AAAAAAAABmQ/KPw_bQSOBJY/s400/753.jpg",
+     "full": "https://lh3.googleusercontent.com/_BYBZqoBAOBA/TGK5G4JxIBI/AAAAAAAABmQ/KPw_bQSOBJY/s1600/753.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "1945, ביקור הנשיא ויצמן. צילום:פוטו ארצי *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGPTxoHmITI/AAAAAAAABsE/BSrXOTx-QHY/s400/%D7%90%D7%9E%D7%A4%D7%99%20%D7%9E%D7%97%D7%95%D7%93%D7%A9.jpg",
+     "full": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TGPTxoHmITI/AAAAAAAABsE/BSrXOTx-QHY/s1600/%D7%90%D7%9E%D7%A4%D7%99%20%D7%9E%D7%97%D7%95%D7%93%D7%A9.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "1985, האמפי לאחר השיפוץ מתוך דו\"ח המועצה *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5LU6VjWI/AAAAAAAABms/fi9d1piG1BE/s400/874.jpg",
+     "full": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5LU6VjWI/AAAAAAAABms/fi9d1piG1BE/s1600/874.jpg",
+     "page": "http://makomshamur.com/2010/08/22/119/",
+     "cap": "1985- בית העם לאחר השיפוץ *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5jlnsegI/AAAAAAAABrg/vZwBXu8gOf8/s400/%D7%91%D7%99%D7%AA%20%D7%94%D7%A2%D7%9D.jpg",
+     "full": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TGK5jlnsegI/AAAAAAAABrg/vZwBXu8gOf8/s1600/%D7%91%D7%99%D7%AA%20%D7%94%D7%A2%D7%9D.jpg",
+     "page": "http://makomshamur.com/2010/08/22/%d7%90%d7%99%d7%a8%d7%95%d7%a2%d7%99%d7%9d-%d7%91%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/THEiLdnKTkI/AAAAAAAABu4/0EzJFqPoGMs/s400/tarbut%20ampi3.jpg",
+     "full": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/THEiLdnKTkI/AAAAAAAABu4/0EzJFqPoGMs/s1600/tarbut%20ampi3.jpg",
+     "page": "http://makomshamur.com/2010/08/22/%d7%90%d7%99%d7%a8%d7%95%d7%a2%d7%99%d7%9d-%d7%91%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/_BYBZqoBAOBA/THEiMNg8geI/AAAAAAAABu8/Xd1A1Hc3Igk/s400/tarbut%20ampi4.jpg",
+     "full": "https://lh6.googleusercontent.com/_BYBZqoBAOBA/THEiMNg8geI/AAAAAAAABu8/Xd1A1Hc3Igk/s1600/tarbut%20ampi4.jpg",
+     "page": "http://makomshamur.com/2010/08/22/%d7%90%d7%99%d7%a8%d7%95%d7%a2%d7%99%d7%9d-%d7%91%d7%91%d7%99%d7%aa-%d7%94%d7%a2%d7%9d/"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. שם המבנה: בית העם – אמפיתיאטרון כתובת: רחוב המעלה שנת הקמה: 1935-1937 אדריכל: הרי רוזנטל, השלמות: פרץ בר גבור סגנון אדריכלי: בניה מקומית עם השפעות הסגנון הבינלאומי* שימוש היום: בית ללהקות “הורה אביב פרדס חנה כרכור” ב 1933 התקיימה תחרות אדריכלים לתכנון בית העם שיזם ועד המושבה פרדס חנה. בתחרות השתתפו אדריכלים שפעלו ברחבי הארץ […]"
   },
   {
    "id": "makom-בית-תבורי-מרכז-המושבה",
@@ -679,7 +1308,7 @@
   },
   {
    "id": "makom-בתי-פיק-א-כת-ריאליבקה",
-   "name": "בתי פיק\"א- כת'ריאליבקה",
+   "name": "בתי פיק”א- כת’ריאליבקה",
    "group": "פרדס חנה",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -690,10 +1319,122 @@
    "id": "makom-בתי-קפה-ופנסיונים",
    "name": "בתי קפה ופנסיונים",
    "group": "פרדס חנה",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "מבני מסחר",
+    "סיפורים",
+    "פרדס חנה"
+   ],
+   "url": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+   "photos": [
+    {
+     "thumb": "https://lh3.googleusercontent.com/-UECFeRli9dg/TjbTS6wJGfI/AAAAAAAABnI/s2oDJinP1I0/s400/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%25259C%2525D7%252595%2525D7%252592%2525D7%252595.jpg",
+     "full": "https://lh3.googleusercontent.com/-UECFeRli9dg/TjbTS6wJGfI/AAAAAAAABnI/s2oDJinP1I0/s1600/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%25259C%2525D7%252595%2525D7%252592%2525D7%252595.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-2sBIWYiYqOk/TpcN6mfzCUI/AAAAAAAABkI/_7l8h4ZNHhg/s400/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525284%252529.jpg",
+     "full": "https://lh5.googleusercontent.com/-2sBIWYiYqOk/TpcN6mfzCUI/AAAAAAAABkI/_7l8h4ZNHhg/s1600/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525284%252529.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "1939, מלון מושצינסקי, צילום: פוטו זיס-תל שלום *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-dl_eZDY5s_8/TpcN3HPONmI/AAAAAAAABjc/2fVbxWLoMAI/s400/beit%252520kafe4.jpg",
+     "full": "https://lh6.googleusercontent.com/-dl_eZDY5s_8/TpcN3HPONmI/AAAAAAAABjc/2fVbxWLoMAI/s1600/beit%252520kafe4.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "1940, חזית בית מלון וגלידה מושצינסקי. * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-Qa2OkNESekU/Tjba35zxiQI/AAAAAAAABd8/2oalIWG6CUc/s400/%2525D7%25259E%2525D7%2525A9%2525D7%2525A4%252520%2525D7%252599%2525D7%252595%2525D7%2525A0%2525D7%2525A8%252520%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599.jpg",
+     "full": "https://lh3.googleusercontent.com/-Qa2OkNESekU/Tjba35zxiQI/AAAAAAAABd8/2oalIWG6CUc/s1600/%2525D7%25259E%2525D7%2525A9%2525D7%2525A4%252520%2525D7%252599%2525D7%252595%2525D7%2525A0%2525D7%2525A8%252520%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "1936, משפ’ דונינג בצילום פרידה מדודים מגרמניה בחזית המלון *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-D9KA89COvks/TpcN7smKM8I/AAAAAAAABkk/WdlCuRO4Bec/s400/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%2525A8%2525D7%25259E%2525D7%252595%2525D7%25259F.jpg",
+     "full": "https://lh4.googleusercontent.com/-D9KA89COvks/TpcN7smKM8I/AAAAAAAABkk/WdlCuRO4Bec/s1600/%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%2525A8%2525D7%25259E%2525D7%252595%2525D7%25259F.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "1950. שלג בפרדס חנה על רקע מלון רמון *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-LNh6vsaLfno/TpcN6mnUkGI/AAAAAAAABkU/nxB4UcVwDR0/s400/061.jpg",
+     "full": "https://lh6.googleusercontent.com/-LNh6vsaLfno/TpcN6mnUkGI/AAAAAAAABkU/nxB4UcVwDR0/s1600/061.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "מודעה בעיתונות * ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-oNctlFHnj7A/Tq3JMKGcWsI/AAAAAAAABnw/Sls_Mc3R3hg/s400/RimonHotel055.jpg",
+     "full": "https://lh6.googleusercontent.com/-oNctlFHnj7A/Tq3JMKGcWsI/AAAAAAAABnw/Sls_Mc3R3hg/s1600/RimonHotel055.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "מבט לסלון והמטבח במלון *ארכיון בית הראשונים, עיבוד צבע: דר’ ווין מנקוס"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-DVE_uSRaZGA/Tq3JKUk0NYI/AAAAAAAABnY/jybo8_OzxtQ/s400/RimonHotel006.jpg",
+     "full": "https://lh3.googleusercontent.com/-DVE_uSRaZGA/Tq3JKUk0NYI/AAAAAAAABnY/jybo8_OzxtQ/s1600/RimonHotel006.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "חדר אורחים במלון *ארכיון בית הראשונים, עיבוד צבע: דר’ ווין מנקוס"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-NCos24VFgRA/Tq3JJ4sSh0I/AAAAAAAABnU/t39bDL4L7Ds/s400/RimonHotel009.jpg",
+     "full": "https://lh3.googleusercontent.com/-NCos24VFgRA/Tq3JJ4sSh0I/AAAAAAAABnU/t39bDL4L7Ds/s1600/RimonHotel009.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "מטבח המלון *ארכיון בית הראשונים, עיבוד צבע: דר’ ווין מנקוס"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-BBewtM7c1fo/Tq3JL8Q72FI/AAAAAAAABns/RH9mVsD3aeY/s400/RimonHotel025.jpg",
+     "full": "https://lh4.googleusercontent.com/-BBewtM7c1fo/Tq3JL8Q72FI/AAAAAAAABns/RH9mVsD3aeY/s1600/RimonHotel025.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "יוסף מושצינסקי במרפסת. מלון רמון סוף שנות ה-50′ *ארכיון בית הראשונים, עיבוד צבע: דר’ ווין מנקוס"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-pAXYTk1nOFc/Tq3JKXwiWfI/AAAAAAAABnc/7wAvdmPNGC8/s400/RimonHotel018.jpg",
+     "full": "https://lh5.googleusercontent.com/-pAXYTk1nOFc/Tq3JKXwiWfI/AAAAAAAABnc/7wAvdmPNGC8/s1600/RimonHotel018.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "מלון רמון סוף שנות ה-50′ *ארכיון בית הראשונים, עיבוד צבע: דר’ ווין מנקוס"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-T_Mfsm6ij4g/Tq6EX_hLZYI/AAAAAAAABps/4eSvEztkboI/s400/%2525D7%25259E%2525D7%252591%2525D7%25259F%252520%2525D7%252593%2525D7%252595%2525D7%252593%252520%2525D7%252596%2525D7%25259B%2525D7%2525A8%2525D7%252599%2525D7%252594%2525202009.jpg",
+     "full": "https://lh5.googleusercontent.com/-T_Mfsm6ij4g/Tq6EX_hLZYI/AAAAAAAABps/4eSvEztkboI/s1600/%2525D7%25259E%2525D7%252591%2525D7%25259F%252520%2525D7%252593%2525D7%252595%2525D7%252593%252520%2525D7%252596%2525D7%25259B%2525D7%2525A8%2525D7%252599%2525D7%252594%2525202009.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2008, נלון מושצינסקי, הדקלים פינת החרובים. צילום: זכריה בן דוד *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-ciuF8nUKqto/TpcN9Mh-E7I/AAAAAAAABlM/CbpUoG9Iot0/s400/%2525D7%2525A4%2525D7%2525A8%2525D7%252593%2525D7%2525A1%252520%2525D7%252597%2525D7%2525A0%2525D7%252594%252520042.jpg",
+     "full": "https://lh6.googleusercontent.com/-ciuF8nUKqto/TpcN9Mh-E7I/AAAAAAAABlM/CbpUoG9Iot0/s1600/%2525D7%2525A4%2525D7%2525A8%2525D7%252593%2525D7%2525A1%252520%2525D7%252597%2525D7%2525A0%2525D7%252594%252520042.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2011, בית המלון ובית וכטל מימין"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-4urhJ1j7Rog/TpcN2IG1XwI/AAAAAAAABjM/HkJO1bGG34Y/s400/5.jpg",
+     "full": "https://lh5.googleusercontent.com/-4urhJ1j7Rog/TpcN2IG1XwI/AAAAAAAABjM/HkJO1bGG34Y/s1600/5.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2008, מבט על הפינה מרחוב החרובים על בית פרידמן ואחריו מושצינסקי. צילום: זכריה בן דוד *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-VXOW4lXxcoQ/TrFpGONvwLI/AAAAAAAABrU/Df1Un8pT5M4/s400/IMG_3190.jpg",
+     "full": "https://lh5.googleusercontent.com/-VXOW4lXxcoQ/TrFpGONvwLI/AAAAAAAABrU/Df1Un8pT5M4/s1600/IMG_3190.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2011, מבט מרחוב החרובים מערבה לפינת רחוב הדקלים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-TMJE1DIDRog/Tq_wrqdvldI/AAAAAAAABqQ/x_BeRk9ZQ5U/s400/%2525D7%252591%2525D7%25259F%252520%2525D7%252593%2525D7%252595%2525D7%252593%252520008.jpg",
+     "full": "https://lh5.googleusercontent.com/-TMJE1DIDRog/Tq_wrqdvldI/AAAAAAAABqQ/x_BeRk9ZQ5U/s1600/%2525D7%252591%2525D7%25259F%252520%2525D7%252593%2525D7%252595%2525D7%252593%252520008.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2008, לשעבר, מלון מושצינסקי. צילום: זכריה בן דוד *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-bIocZ3vBHKA/Tq5-Np-6rtI/AAAAAAAABoQ/_2vM7fjp7P4/s400/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%252594%2525D7%252599%2525D7%252595%2525D7%25259D.jpg",
+     "full": "https://lh3.googleusercontent.com/-bIocZ3vBHKA/Tq5-Np-6rtI/AAAAAAAABoQ/_2vM7fjp7P4/s1600/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6%2525D7%252599%2525D7%2525A0%2525D7%2525A1%2525D7%2525A7%2525D7%252599%252520%2525D7%252594%2525D7%252599%2525D7%252595%2525D7%25259D.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2011, פנים הבית, התקרה המתעגלת מקורית"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-oKe-P6Z_fvk/Tq5-NzaYSkI/AAAAAAAABoU/o4Y02l55yvg/s400/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6.jpg",
+     "full": "https://lh6.googleusercontent.com/-oKe-P6Z_fvk/Tq5-NzaYSkI/AAAAAAAABoU/o4Y02l55yvg/s1600/%2525D7%25259E%2525D7%25259C%2525D7%252595%2525D7%25259F%252520%2525D7%25259E%2525D7%252595%2525D7%2525A9%2525D7%2525A6.jpg",
+     "page": "http://makomshamur.com/2011/11/02/%d7%9e%d7%9c%d7%95%d7%9f-%d7%95%d7%a7%d7%a4%d7%94-%d7%9e%d7%95%d7%a9%d7%a6%d7%99%d7%a0%d7%a1%d7%a7%d7%99-%d7%9e%d7%9c%d7%95%d7%9f-%d7%a8%d7%9e%d7%95%d7%9f/",
+     "cap": "2011, פנים הבית. גרם המדרגות מקומה שניה"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. מה שהופך את השם מושצינסקי למיתולוגיה מקומית, היא העובדה שכל הילדים של אז עוד זוכרים את הפינה של מלון מושצינסקי- רמון עם דלפק הגזוז והגלידה, זוכרים איך אהבו להציק לאיש שכינה את עצמו “ראשון הראשונים”. גם היום, 65 שנים אחרי, הם מספרים איך זרקו אבנים ופיצצו לו את הבלונים של הגזוז אחרי מסיבות כיתה, איך זרקו קפצונים […]"
   },
   {
    "id": "makom-בתים-פרטיים",
@@ -708,10 +1449,79 @@
    "id": "makom-הידית-מפעל-נגרות-היסטורי",
    "name": "הידית – מפעל נגרות היסטורי",
    "group": "פרדס חנה",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."
+   "cats": [
+    "מבני מסחר",
+    "סיפורים",
+    "פרדס חנה",
+    "תעשייה"
+   ],
+   "url": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+   "photos": [
+    {
+     "thumb": "https://lh6.googleusercontent.com/-Je7KCicGpgQ/Um527wVAJ8I/AAAAAAAACpc/v88n6vIJHo0/s400/%25D7%2599%25D7%2593%25D7%2599%25D7%25AA%25202.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-Je7KCicGpgQ/Um527wVAJ8I/AAAAAAAACpc/v88n6vIJHo0/s1600/%25D7%2599%25D7%2593%25D7%2599%25D7%25AA%25202.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "1951, מבנה תעשייה של מפעל הידית. צילום: פוטו ארצי. *מאוסף בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-YKiFsVMOf-w/UooctQPWwhI/AAAAAAAACt4/BD04YaTeCr4/s400/2013-11-17%252015.38.21.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-YKiFsVMOf-w/UooctQPWwhI/AAAAAAAACt4/BD04YaTeCr4/s1600/2013-11-17%252015.38.21.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "2005, מתתיהו אפל מתוך הסרט. צילום: נתי מלחי"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-dOYpvfFJlak/UnuepzWyFMI/AAAAAAAACro/AMJv1Voa1u4/s400/Hayadith%2520KOL.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-dOYpvfFJlak/UnuepzWyFMI/AAAAAAAACro/AMJv1Voa1u4/s1600/Hayadith%2520KOL.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "סוף שנות ה 60′, שר התיירות משה קול מבקר במפעל הידית, צילום: פוטו ארצי. * מאוסף הידית"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-EGz8ZJuD7vk/Un-lOyTfXPI/AAAAAAAACsE/RVEySZcxYcQ/s400/Hayadith%252044.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-EGz8ZJuD7vk/Un-lOyTfXPI/AAAAAAAACsE/RVEySZcxYcQ/s1600/Hayadith%252044.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "מתרשמים ממוצרי המפעל. צילום: פוטו ארצי. * מאוסף הידית"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-jLotqWS9sB8/Ul54K8pICzI/AAAAAAAACo4/6pfoPXu5LR0/s400/Hayadith%252014.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-jLotqWS9sB8/Ul54K8pICzI/AAAAAAAACo4/6pfoPXu5LR0/s1600/Hayadith%252014.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "מאיר וילף (במרכז) עם נהגי השר על רקע המפעל. צילום: פוטו ארצי, * מאוסף הידית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-_XQ3b1xnF38/Ul54Hm2-U0I/AAAAAAAACoY/U6AsIyGAyVg/s400/HAYADIT.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-_XQ3b1xnF38/Ul54Hm2-U0I/AAAAAAAACoY/U6AsIyGAyVg/s1600/HAYADIT.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "המדריך המיתולוגי אריה גרוסמן עם תייר במפעל. מאוסף אילנה וליאורה גרוסמן"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-8XYr2T-0GLU/Ul54K0OGlyI/AAAAAAAACow/0dI-XfvIdHM/s400/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-8XYr2T-0GLU/Ul54K0OGlyI/AAAAAAAACow/0dI-XfvIdHM/s1600/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "שנות ה-70′, עטיפת קטלוג מוצרים של הידית. * אוספים שונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-R7psiZAvyJw/Uo5EojD59CI/AAAAAAAACwo/OLeD0ei5Ozk/s400/4.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-R7psiZAvyJw/Uo5EojD59CI/AAAAAAAACwo/OLeD0ei5Ozk/s1600/4.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/",
+     "cap": "דף מקטלוג, משחק ‘ירושלים’"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-xdXHZr6mMrs/Unuepyi1RBI/AAAAAAAACrs/X-n9Ogz2UjQ/s400/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592%252066.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-xdXHZr6mMrs/Unuepyi1RBI/AAAAAAAACrs/X-n9Ogz2UjQ/s1600/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592%252066.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-zDkvvTTHq1s/UnubvFSKZfI/AAAAAAAACqc/3xocJwf44qw/s400/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592%25D7%25A7%25205.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-zDkvvTTHq1s/UnubvFSKZfI/AAAAAAAACqc/3xocJwf44qw/s1600/%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%2592%25D7%25A7%25205.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-eO4_GWCU0e8/Unubx8GHU7I/AAAAAAAACqk/1vUu05hPZS0/s400/%25D7%25A7%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%25922.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-eO4_GWCU0e8/Unubx8GHU7I/AAAAAAAACqk/1vUu05hPZS0/s1600/%25D7%25A7%25D7%25A7%25D7%2598%25D7%259C%25D7%2595%25D7%25922.jpg?gl=IL",
+     "page": "http://makomshamur.com/2013/11/20/%d7%94%d7%99%d7%93%d7%99%d7%aa-%d7%a2%d7%a5-%d7%94%d7%96%d7%99%d7%aa-%d7%9e%d7%a4%d7%a2%d7%9c-%d7%97%d7%a8%d7%98%d7%95%d7%aa/"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. סוג המבנה: תעשייה כתובת: החרושת 1, פרדס חנה שנת הקמה: 1951 אדריכל: המחלקה הטכנית של המועצה משמש היום: מפעל ‘הידית’ ומתחם תיאטרון ואמנות לפני שקראו לזה עיצוב היו אלה חפצי חן, בדרך כלל חפצים שנוצרו כמזכרות לתיירים שפקדו את ישראל אחרי 67′, מזכרת עשויה עץ זית מקומי, שתעמוד על המדף לצד אוסף הבובות מהטיולים בעולם. היום, במרחק של כחצי […]"
   },
   {
    "id": "makom-השוק-הישן-מרכז-המושבה",
@@ -723,7 +1533,293 @@
     "פרדס חנה"
    ],
    "url": "http://makomshamur.com/2010/11/17/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7/",
-   "photos": [],
+   "photos": [
+    {
+     "thumb": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TJjz7v_F5eI/AAAAAAAAB5A/cv9D9PWUoRk/s400/%D7%91%20%D7%A8%D7%90%D7%A9%D7%95%D7%A0%D7%99%D7%9D%20%288%29.JPG",
+     "full": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TJjz7v_F5eI/AAAAAAAAB5A/cv9D9PWUoRk/s1600/%D7%91%20%D7%A8%D7%90%D7%A9%D7%95%D7%A0%D7%99%D7%9D%20%288%29.JPG",
+     "page": "http://makomshamur.com/2010/11/17/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7/",
+     "cap": "* 6 למאי 1954, הנחת אבן פינה לשוק. צילום: עמנואל מישר *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TJkIjBzmWwI/AAAAAAAAB5Y/28RFlwIWTLg/s400/%D7%A1%D7%A8%D7%99%D7%A7%D7%95%D7%AA%20019.JPG",
+     "full": "https://lh4.googleusercontent.com/_BYBZqoBAOBA/TJkIjBzmWwI/AAAAAAAAB5Y/28RFlwIWTLg/s1600/%D7%A1%D7%A8%D7%99%D7%A7%D7%95%D7%AA%20019.JPG",
+     "page": "http://makomshamur.com/2010/11/17/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7/",
+     "cap": "והיום"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TJkIY7nIqII/AAAAAAAAB5U/fJzi7FQPmmQ/s400/prat.jpg",
+     "full": "https://lh5.googleusercontent.com/_BYBZqoBAOBA/TJkIY7nIqII/AAAAAAAAB5U/fJzi7FQPmmQ/s1600/prat.jpg",
+     "page": "http://makomshamur.com/2010/11/17/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7/",
+     "cap": "שלטים של בעלי המלאכה בשוק, 2009"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-cVh24a8gTB0/VH8WFaOEdUI/AAAAAAAADNw/npZdFZSNrR4/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25941.jpg",
+     "full": "https://lh5.googleusercontent.com/-cVh24a8gTB0/VH8WFaOEdUI/AAAAAAAADNw/npZdFZSNrR4/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25941.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "2012, פינה דרום מערב, צילום: בן דוד"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-C8WMOc5wdlM/TMW3oyD06TI/AAAAAAAAAKM/uFk_UB0fxaQ/s400/shook.jpg",
+     "full": "https://lh5.googleusercontent.com/-C8WMOc5wdlM/TMW3oyD06TI/AAAAAAAAAKM/uFk_UB0fxaQ/s1600/shook.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "השוק בשנות ה-60′, צילום: אברהם ארצי *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-mvPT4CXu844/VIRATn6mVMI/AAAAAAAADT8/OzicHHDXHWg/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25943.jpg",
+     "full": "https://lh5.googleusercontent.com/-mvPT4CXu844/VIRATn6mVMI/AAAAAAAADT8/OzicHHDXHWg/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25943.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "2010, זיהוי המבנה על גבי תצלום אויר, מקור: אתר הועדה המרחבית לתכנון ולבניה השומרון מממממממ"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-XrX2npiP37c/VIRAcCJmTAI/AAAAAAAADUE/7pYPOXux_BQ/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25944.jpg",
+     "full": "https://lh3.googleusercontent.com/-XrX2npiP37c/VIRAcCJmTAI/AAAAAAAADUE/7pYPOXux_BQ/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25944.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "זיהוי המבנה על גבי מפה עדכנית, מקור: Google Maps"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-iqD1MJuouW4/VH8WWaATZEI/AAAAAAAADSk/OPf7L_OQrrU/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25945.jpg",
+     "full": "https://lh4.googleusercontent.com/-iqD1MJuouW4/VH8WWaATZEI/AAAAAAAADSk/OPf7L_OQrrU/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25945.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-0FuQGMX_yYw/VISirjXDctI/AAAAAAAADUk/17sGRLFsUkA/s400/51.jpg",
+     "full": "https://lh6.googleusercontent.com/-0FuQGMX_yYw/VISirjXDctI/AAAAAAAADUk/17sGRLFsUkA/s1600/51.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-rzRTfA8E0zI/VH8WXL73k9I/AAAAAAAADSw/_haf0Uo2dkA/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25946.jpg",
+     "full": "https://lh3.googleusercontent.com/-rzRTfA8E0zI/VH8WXL73k9I/AAAAAAAADSw/_haf0Uo2dkA/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25946.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "1949, מבט על המושבה פרדס חנה, צלם: לא ידוע, *אוסף ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-DR9ZhYC2eB0/VITcc72jo4I/AAAAAAAADU8/DFrnLmukUTk/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25947.jpg",
+     "full": "https://lh3.googleusercontent.com/-DR9ZhYC2eB0/VITcc72jo4I/AAAAAAAADU8/DFrnLmukUTk/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25947.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-U5Q_tdzz_Z8/VITgRV55dSI/AAAAAAAADVQ/bGqYj5gs8pI/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25948.jpg",
+     "full": "https://lh3.googleusercontent.com/-U5Q_tdzz_Z8/VITgRV55dSI/AAAAAAAADVQ/bGqYj5gs8pI/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25948.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "תצלום אויר"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-QP9gINiLr_E/VH8WZWFEyoI/AAAAAAAADTc/3qPhurssmcs/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25949.jpg",
+     "full": "https://lh5.googleusercontent.com/-QP9gINiLr_E/VH8WZWFEyoI/AAAAAAAADTc/3qPhurssmcs/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%25949.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "סקיצה ראשונית של תכנון השוק (צבע, לא מקורי), תאריך: לא ידוע מקור: אוסף נודל (אורי עידן) ממממממממממממממממממממממממממממממממממממממממממממממממממממממממ"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-LQmVb6W-dVs/VH8WFCGbN9I/AAAAAAAADTo/iAY0pKfaXEM/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259411.jpg",
+     "full": "https://lh3.googleusercontent.com/-LQmVb6W-dVs/VH8WFCGbN9I/AAAAAAAADTo/iAY0pKfaXEM/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259411.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "פרספקטיבה של השוק"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-aVbJvUTNSyQ/VRMod1Jwp3I/AAAAAAAADYg/j52FjFLaTN0/s400/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%252011.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-aVbJvUTNSyQ/VRMod1Jwp3I/AAAAAAAADYg/j52FjFLaTN0/s1600/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%252011.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-PmdVWGfm4RI/VH8WFnsnQlI/AAAAAAAADNo/l59j0ZZrZYA/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259412.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-PmdVWGfm4RI/VH8WFnsnQlI/AAAAAAAADNo/l59j0ZZrZYA/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259412.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "1. מבט אל החלק המזרחי של החזית הצפונית"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-z9gKrl-s8Jg/VH8WF7adrPI/AAAAAAAADOU/WSiseL9fcEU/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259413.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-z9gKrl-s8Jg/VH8WF7adrPI/AAAAAAAADOU/WSiseL9fcEU/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259413.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "2. מבט אל משטח הפריקה והטעינה בחזית הצפונית."
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-HMEDhxTtfNw/VH8WGy7P7gI/AAAAAAAADOA/-0KdB8SUlA4/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259415.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-HMEDhxTtfNw/VH8WGy7P7gI/AAAAAAAADOA/-0KdB8SUlA4/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259415.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "3. מבט אל הפינה המערבית של הבניין"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-NsIMk3EHCRI/VH8WGFvEWKI/AAAAAAAADOY/5W-RbpsGVNU/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259414.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-NsIMk3EHCRI/VH8WGFvEWKI/AAAAAAAADOY/5W-RbpsGVNU/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259414.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4. מבט אל הקצה המזרחי המערבי של הבניין."
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-0tWmrIAn_ow/VRModlObLlI/AAAAAAAADYY/E1_07ovCiDg/s400/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%252022.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-0tWmrIAn_ow/VRModlObLlI/AAAAAAAADYY/E1_07ovCiDg/s1600/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%252022.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-im5BRqFlzvs/VH8WHdMDPYI/AAAAAAAADPk/Soh1afQsV0c/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259417.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-im5BRqFlzvs/VH8WHdMDPYI/AAAAAAAADPk/Soh1afQsV0c/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259417.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "1. מבט אל דלת חסומה בבלוקים בחזית הדרומית."
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-a5oJG27CtL4/VH8WHuUR4AI/AAAAAAAADOQ/XlWzid3tg3Q/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259418.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-a5oJG27CtL4/VH8WHuUR4AI/AAAAAAAADOQ/XlWzid3tg3Q/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259418.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "2. מבט אל דלת חנותו הישנה של הפחח בחזית הדרומית."
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-iVh6ek0Mba0/VH8WIOZuP1I/AAAAAAAADOk/KbCL6Dj9xb4/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259419.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-iVh6ek0Mba0/VH8WIOZuP1I/AAAAAAAADOk/KbCL6Dj9xb4/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259419.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "3. החזית הדרומית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-3FKe_izB-i0/VRMoeVTqb5I/AAAAAAAADYk/rv3WeJ9AfwM/s400/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%25203.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-3FKe_izB-i0/VRMoeVTqb5I/AAAAAAAADYk/rv3WeJ9AfwM/s1600/%25D7%25A9%25D7%25A8%25D7%2598%25D7%2595%25D7%2598%25203.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-kO0PiyOsHEw/VH8WJ-IgOsI/AAAAAAAADPM/HzRhtkYd5Uo/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259423.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-kO0PiyOsHEw/VH8WJ-IgOsI/AAAAAAAADPM/HzRhtkYd5Uo/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259423.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "2. מבט במשחטת העופות הישנה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-IqLswWEJBS8/VH8WK98AydI/AAAAAAAADPU/QoxY7Kxt6q4/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259426.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-IqLswWEJBS8/VH8WK98AydI/AAAAAAAADPU/QoxY7Kxt6q4/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259426.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "3. מבט מצפון מזרח אל איזור ההטענה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-M5xtX61Dltw/VH8WKtiT_8I/AAAAAAAADPY/cojWlSvZIU4/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259425.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-M5xtX61Dltw/VH8WKtiT_8I/AAAAAAAADPY/cojWlSvZIU4/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259425.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4. מבט דרומה בחנות אופיינית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-1jNbsuNbFhw/VH8WKMMbY-I/AAAAAAAADPE/qZZYY-ZnqUU/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259424.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-1jNbsuNbFhw/VH8WKMMbY-I/AAAAAAAADPE/qZZYY-ZnqUU/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259424.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5. פרט משרביית בטון בפתח עליון אפייני"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-gQprrQbNYm4/VH8WL_LAppI/AAAAAAAADPo/8NL7wq10Nvw/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259427.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-gQprrQbNYm4/VH8WL_LAppI/AAAAAAAADPo/8NL7wq10Nvw/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259427.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.1 קומת קרקע"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-rSl_3mGJGPI/VH8WMVZsrlI/AAAAAAAADQA/0jBftmqFfoA/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259428.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-rSl_3mGJGPI/VH8WMVZsrlI/AAAAAAAADQA/0jBftmqFfoA/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259428.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.2 קומת מרתף"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-C4uKflD8-8E/VH8WNLloH3I/AAAAAAAADQw/_-9NibmEqnc/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259429.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-C4uKflD8-8E/VH8WNLloH3I/AAAAAAAADQw/_-9NibmEqnc/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259429.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.3 חזית צפונית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-RqtGIvAfyaY/VH8WNxa0WfI/AAAAAAAADQI/l_Cm6WPyCSY/s400/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259430.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-RqtGIvAfyaY/VH8WNxa0WfI/AAAAAAAADQI/l_Cm6WPyCSY/s1600/%25D7%25AA%25D7%259E%25D7%2595%25D7%25A0%25D7%259430.jpg?gl=IL",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.3 חזית דרומית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-B3dG7eJ3z50/VdHCoAymWvI/AAAAAAAADaQ/oZFezbJf0kA/s400-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%2525D7%252595%2525D7%2525AA%2525202.jpg",
+     "full": "https://lh3.googleusercontent.com/-B3dG7eJ3z50/VdHCoAymWvI/AAAAAAAADaQ/oZFezbJf0kA/s1600-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%2525D7%252595%2525D7%2525AA%2525202.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.3 מזרחית ומערבית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-b8FnRoGi8h8/VdHCoagFBjI/AAAAAAAADaU/zHtZ77TZbG4/s400-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%2525D7%252595%2525D7%2525AA%2525203.jpg",
+     "full": "https://lh3.googleusercontent.com/-b8FnRoGi8h8/VdHCoagFBjI/AAAAAAAADaU/zHtZ77TZbG4/s1600-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%2525D7%252595%2525D7%2525AA%2525203.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.3 מזרחית ומערבית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-TR1aWAUp798/VdHCoW8NK4I/AAAAAAAADag/sXLpE26meXw/s400-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%25259E%2525D7%252596%2525D7%2525A8%2525D7%252597.jpg",
+     "full": "https://lh3.googleusercontent.com/-TR1aWAUp798/VdHCoW8NK4I/AAAAAAAADag/sXLpE26meXw/s1600-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%25259E%2525D7%252596%2525D7%2525A8%2525D7%252597.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "4.3 מזרחית ומערבית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-7r9rCzbsBGo/VdHG6aXR9jI/AAAAAAAADb8/5m8HuIJNcNg/s400-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%2525A6%2525D7%2525A4%2525D7%252595%2525D7%2525A0%2525D7%252599%2525D7%2525AA%2525203.jpg",
+     "full": "https://lh3.googleusercontent.com/-7r9rCzbsBGo/VdHG6aXR9jI/AAAAAAAADb8/5m8HuIJNcNg/s1600-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%2525A6%2525D7%2525A4%2525D7%252595%2525D7%2525A0%2525D7%252599%2525D7%2525AA%2525203.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5.1 צפונית ודרומית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-3GY9DtGZaWE/VdHG6bo1ZDI/AAAAAAAADcA/iLAlZ7PJu5g/s400-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%252593%2525D7%2525A8%2525D7%252595%2525D7%25259E%2525D7%252599%2525D7%2525AA%2525201.jpg",
+     "full": "https://lh3.googleusercontent.com/-3GY9DtGZaWE/VdHG6bo1ZDI/AAAAAAAADcA/iLAlZ7PJu5g/s1600-Ic42/%2525D7%252597%2525D7%252596%2525D7%252599%2525D7%2525AA%252520%2525D7%252593%2525D7%2525A8%2525D7%252595%2525D7%25259E%2525D7%252599%2525D7%2525AA%2525201.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5.1 דרומית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-WTHfAvcdNXM/VH8WODcErRI/AAAAAAAADQ4/cSpkXMeLdDQ/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259431.jpg",
+     "full": "https://lh3.googleusercontent.com/-WTHfAvcdNXM/VH8WODcErRI/AAAAAAAADQ4/cSpkXMeLdDQ/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259431.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5.1 מזרחית ומערבית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-m0J8SYpNy8s/VH8WOeL5nbI/AAAAAAAADQg/phm5-luTycU/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259432.jpg",
+     "full": "https://lh3.googleusercontent.com/-m0J8SYpNy8s/VH8WOeL5nbI/AAAAAAAADQg/phm5-luTycU/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259432.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5.1 מזרחית"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-k2F9_RKsQPQ/VdHRggg8M8I/AAAAAAAADcs/Lgs1QW7IoFI/s400-Ic42/%2525D7%252597%2525D7%2525AA%2525D7%25259A%252520%2525D7%25259E%2525D7%2525A9%2525D7%252595%2525D7%252597%2525D7%252596%2525D7%2525A8.jpg",
+     "full": "https://lh3.googleusercontent.com/-k2F9_RKsQPQ/VdHRggg8M8I/AAAAAAAADcs/Lgs1QW7IoFI/s1600-Ic42/%2525D7%252597%2525D7%2525AA%2525D7%25259A%252520%2525D7%25259E%2525D7%2525A9%2525D7%252595%2525D7%252597%2525D7%252596%2525D7%2525A8.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "5.2 חתך אורכי"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-kUxlBVsv00E/VdJjbf6lMVI/AAAAAAAADgA/b4IWV1IVEXw/s400-Ic42/Untitled-1.jpg",
+     "full": "https://lh3.googleusercontent.com/-kUxlBVsv00E/VdJjbf6lMVI/AAAAAAAADgA/b4IWV1IVEXw/s1600-Ic42/Untitled-1.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-n86R5FjSeuA/VH8WP-eDnQI/AAAAAAAADS8/bYvCUYyAB3g/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259435.png",
+     "full": "https://lh3.googleusercontent.com/-n86R5FjSeuA/VH8WP-eDnQI/AAAAAAAADS8/bYvCUYyAB3g/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259435.png",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "6.1 קליגרפיה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-6IWztGkkuDc/VH8WQq0HJiI/AAAAAAAADRI/e5cTc9BT54E/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259437.jpg",
+     "full": "https://lh3.googleusercontent.com/-6IWztGkkuDc/VH8WQq0HJiI/AAAAAAAADRI/e5cTc9BT54E/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259437.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-7p4tPxcNgiM/VdHr0VRf6zI/AAAAAAAADfM/V2XZa4Zi4zY/s400-Ic42/%2525D7%2525A9%2525D7%25259C%2525D7%252598%2525D7%252599%2525D7%25259D.jpg",
+     "full": "https://lh3.googleusercontent.com/-7p4tPxcNgiM/VdHr0VRf6zI/AAAAAAAADfM/V2XZa4Zi4zY/s1600-Ic42/%2525D7%2525A9%2525D7%25259C%2525D7%252598%2525D7%252599%2525D7%25259D.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-hQKiRHbs8VY/VH8WRWL-3WI/AAAAAAAADRA/9GPPJvLGy3U/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259438.jpg",
+     "full": "https://lh3.googleusercontent.com/-hQKiRHbs8VY/VH8WRWL-3WI/AAAAAAAADRA/9GPPJvLGy3U/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259438.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "6.1 קליגרפיה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-qg2Ds4PgohY/VH8WVo9xMdI/AAAAAAAADSU/raie1LZvzO8/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259449.jpg",
+     "full": "https://lh3.googleusercontent.com/-qg2Ds4PgohY/VH8WVo9xMdI/AAAAAAAADSU/raie1LZvzO8/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259449.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "6.1 קליגרפיה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-a3kPF8J-Guo/VdHdSKIoMBI/AAAAAAAADes/AQHrt2OkB6o/s400-Ic42/%2525D7%2525A9%2525D7%25259C%2525D7%252598.png",
+     "full": "https://lh3.googleusercontent.com/-a3kPF8J-Guo/VdHdSKIoMBI/AAAAAAAADes/AQHrt2OkB6o/s1600-Ic42/%2525D7%2525A9%2525D7%25259C%2525D7%252598.png",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "6.1 קליגרפיה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-WxXSePyzCJ0/VH8WW5RJmVI/AAAAAAAADSo/-gAyE3FvDfI/s400-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259450.jpg",
+     "full": "https://lh3.googleusercontent.com/-WxXSePyzCJ0/VH8WW5RJmVI/AAAAAAAADSo/-gAyE3FvDfI/s1600-Ic42/%2525D7%2525AA%2525D7%25259E%2525D7%252595%2525D7%2525A0%2525D7%25259450.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "6.1 קליגרפיה"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-Iaetk4po04E/VdJWrU8boUI/AAAAAAAADfo/02oeRATkzsE/s400-Ic42/%2525D7%2525A9%2525D7%252595%2525D7%2525A7%252520%2525D7%252594%2525D7%252593%2525D7%25259E%2525D7%252599%2525D7%252594.jpg",
+     "full": "https://lh3.googleusercontent.com/-Iaetk4po04E/VdJWrU8boUI/AAAAAAAADfo/02oeRATkzsE/s1600-Ic42/%2525D7%2525A9%2525D7%252595%2525D7%2525A7%252520%2525D7%252594%2525D7%252593%2525D7%25259E%2525D7%252599%2525D7%252594.jpg",
+     "page": "http://makomshamur.com/2015/09/09/%d7%9e%d7%91%d7%a0%d7%94-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f-%d7%aa%d7%99%d7%a7-%d7%aa%d7%99%d7%a2%d7%95%d7%93-%d7%9c%d7%a4%d7%a0%d7%99-%d7%a9%d7%99%d7%a4%d7%95%d7%a5/",
+     "cap": "7.1 סיכום והערכת אתר"
+    }
+   ],
    "geo": {
     "lat": 32.476951,
     "lng": 34.969527,
@@ -733,19 +1829,94 @@
    "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. כהמשך לפיתוח המסחר במרכז המושבה פרדס חנה , בשנת 1946 נערכה תחרות פנימית לתכנון מבנה שוק במרכז המושבה, בין המשתתפים היה גם פרץ בר גיבור. בפרס הראשון זכה עמנואל ליבוביץ. רק בשנת 1954 לכבוד חגיגות 25 למושבה ו-6 למדינת ישראל, הונחה אבן הפינה למבנה. מקורות: ארכיון בית הראשונים המיקום לפי הערך \"השוק הישן\" בשכבת המקומות מפרדספדיה."
   },
   {
-   "id": "makom-חוּרבת-סוּפסאפִי-מחנה-הפרדות",
+   "id": "makom-חורבת-סופסאפי-מחנה-הפרדות",
    "name": "חוּרבת סוּפסאפִי- מחנה הפרדות",
    "group": "פרדס חנה",
-   "cats": [],
-   "url": "https://makomshamur.com/",
-   "photos": [],
+   "cats": [
+    "מיועדים לשימור",
+    "סיפורים",
+    "פרדס חנה"
+   ],
+   "url": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+   "photos": [
+    {
+     "thumb": "https://lh5.googleusercontent.com/-dII8FaqkjlM/T71yySBmnNI/AAAAAAAACEU/pyT_4MZCLg0/s400/%25D7%25A1%25D7%25A4%25D7%25A1%25D7%2595%25D7%25A4%25D7%2590%25202012.jpg",
+     "full": "https://lh5.googleusercontent.com/-dII8FaqkjlM/T71yySBmnNI/AAAAAAAACEU/pyT_4MZCLg0/s1600/%25D7%25A1%25D7%25A4%25D7%25A1%25D7%2595%25D7%25A4%25D7%2590%25202012.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "2012, חורבת סופסאפי"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-dUZpPIXWKJM/T73xU1ytsTI/AAAAAAAACEw/fBqCJrab6aM/s400/%25D7%2590%25D7%2597%25D7%259E%25D7%2593%2520%25D7%2591%25D7%25A7.jpg",
+     "full": "https://lh6.googleusercontent.com/-dUZpPIXWKJM/T73xU1ytsTI/AAAAAAAACEw/fBqCJrab6aM/s1600/%25D7%2590%25D7%2597%25D7%259E%25D7%2593%2520%25D7%2591%25D7%25A7.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "איור מס’ 1- אחמד בק"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-CvsG-3DlhKw/T7VY1JBD4NI/AAAAAAAACBA/nkR4NMMXHa0/s400/02_chidot.jpg",
+     "full": "https://lh5.googleusercontent.com/-CvsG-3DlhKw/T7VY1JBD4NI/AAAAAAAACBA/nkR4NMMXHa0/s1600/02_chidot.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "איור מס’ 2- הבניין של אחמד בק בחורבת חידות"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-ACHzY20HqYw/T7VYp010KLI/AAAAAAAACAQ/s5y-2xeZfXI/s400/03_map01.jpg",
+     "full": "https://lh5.googleusercontent.com/-ACHzY20HqYw/T7VYp010KLI/AAAAAAAACAQ/s5y-2xeZfXI/s1600/03_map01.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "איור מס’ 3- חורבת חידות וחורבת צף מופיעות בפינה הימנית למטה"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-bzAEzG_mv6k/T7VYuOHcvWI/AAAAAAAACAg/ZWtO97HYgac/s400/01_mashkof.jpg",
+     "full": "https://lh6.googleusercontent.com/-bzAEzG_mv6k/T7VYuOHcvWI/AAAAAAAACAg/ZWtO97HYgac/s1600/01_mashkof.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "איור מס’ 4"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-FW7ktL4RI30/T7lqRE5_tqI/AAAAAAAACDQ/3akgaNuPn0I/s400/%25D7%259C%25D7%259C%25D7%2590%2520%25D7%25A9%25D7%259D.jpg",
+     "full": "https://lh5.googleusercontent.com/-FW7ktL4RI30/T7lqRE5_tqI/AAAAAAAACDQ/3akgaNuPn0I/s1600/%25D7%259C%25D7%259C%25D7%2590%2520%25D7%25A9%25D7%259D.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "מפה מס’ 1"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-_zeCJWAWkng/T73xSFfAvRI/AAAAAAAACEo/qW4GLovVYBo/s400/07_map04%2520S.jpg",
+     "full": "https://lh6.googleusercontent.com/-_zeCJWAWkng/T73xSFfAvRI/AAAAAAAACEo/qW4GLovVYBo/s1600/07_map04%2520S.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "מפה מס’ 2"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-XKpnNKoxeNQ/T73xVH4w9lI/AAAAAAAACGY/7lrTtLLMZX0/s400/_map_3.jpg",
+     "full": "https://lh6.googleusercontent.com/-XKpnNKoxeNQ/T73xVH4w9lI/AAAAAAAACGY/7lrTtLLMZX0/s1600/_map_3.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "מפה מס’ 3 תתתתתתתתתתת"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-uqvwhdKuXa4/T7YOkeebixI/AAAAAAAACCc/8qsZcdth-RE/s400/P1010036%2520S.jpg",
+     "full": "https://lh3.googleusercontent.com/-uqvwhdKuXa4/T7YOkeebixI/AAAAAAAACCc/8qsZcdth-RE/s1600/P1010036%2520S.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "2004, חורבת סופסאפי, מחנה הפרדות, צילום: ליאור ויתקון"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-m0uhZKbYBKg/T7VYu712bRI/AAAAAAAACAk/zoi9u7ZG2TE/s400/Idan_02.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-m0uhZKbYBKg/T7VYu712bRI/AAAAAAAACAk/zoi9u7ZG2TE/s1600/Idan_02.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/",
+     "cap": "תרשים המבנה"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-hG-jUvlFWXo/T74dIaJewmI/AAAAAAAACF4/T7RUKtmqT-0/s400/%25D7%2597%25D7%2595%25D7%259E%25D7%25A8%25D7%2599%25D7%259D.jpg",
+     "full": "https://lh6.googleusercontent.com/-hG-jUvlFWXo/T74dIaJewmI/AAAAAAAACF4/T7RUKtmqT-0/s1600/%25D7%2597%25D7%2595%25D7%259E%25D7%25A8%25D7%2599%25D7%259D.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-Qb_iCF_Cx_Y/T74IRZOGY6I/AAAAAAAACFg/h5MtxuUqtTY/s400/%25D7%25AA%25D7%2590%25D7%25A8%25D7%2599%25D7%259A%2520copy.jpg",
+     "full": "https://lh6.googleusercontent.com/-Qb_iCF_Cx_Y/T74IRZOGY6I/AAAAAAAACFg/h5MtxuUqtTY/s1600/%25D7%25AA%25D7%2590%25D7%25A8%25D7%2599%25D7%259A%2520copy.jpg",
+     "page": "http://makomshamur.com/2012/06/03/%d7%97%d7%95%d6%bc%d7%a8%d7%91%d7%aa-%d7%a1%d7%95%d6%bc%d7%a4%d7%a1%d7%90%d7%a4%d6%b4%d7%99-%d7%a4%d7%95%d7%a1%d7%98-%d7%90%d7%95%d7%a8%d7%97/"
+    }
+   ],
    "geo": {
     "lat": 32.499767,
     "lng": 34.967016,
     "source": "shimur",
     "spread": true
    },
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. המיקום לפי אתר 5.4 בנספח השימור של תוכנית המתאר (\"מחנה הפרדות\")."
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. ביציאה הצפונית מפרדס חנה, בראש גבעה, מזרחה לשדרת הנדיב המפוארת, עומד מבנה גדול עם באר מים לידו. לא פעם שאלתי את עצמי מה הסיפור של המקום הזה. אותה שדרת הנדיב- עד השבוע השדרה היפה בארץ, מעט חשוכה ומסתורית הפכה לעוד הייווי המואר בהגזמה (זיהום תאורה, נושא בוער לפוסט נפרד) ובלי שום רגישות והתייחסות לסביבה. ליאור ויתקון, אדריכל, […] המיקום לפי אתר 5.4 בנספח השימור של תוכנית המתאר (\"מחנה הפרדות\")."
   },
   {
    "id": "makom-חצר-דרוקר-שיכונים",
@@ -779,15 +1950,66 @@
    "url": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/",
    "photos": [
     {
-     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2012/08/d79ed793d7a8d7a9d799d794-d791d799d7aa-d79bd7a0d7a1d7aa.jpg",
-     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2012/08/d79ed793d7a8d7a9d799d794-d791d799d7aa-d79bd7a0d7a1d7aa.jpg"
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d792d79cd795d799d794-d79ed795d7a2d7a6d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d792d79cd795d799d794-d79ed795d7a2d7a6d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d793d795d797-d79ed795d7a2d7a6d794-d79ed793d7a8d7a9d799d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d793d795d797-d79ed795d7a2d7a6d794-d79ed793d7a8d7a9d799d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d790d791d79f-d7a4d799d7a0d794-d79ed793d7a8d7a9d799d794-1953.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d790d791d79f-d7a4d799d7a0d794-d79ed793d7a8d7a9d799d794-1953.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/maps-genya-2.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/maps-genya-2.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d791d799d7aa-d794d79bd7a0d7a1d7aa-d791d791d7a0d799d7aad795-2-d791d79ed793d7a8d7a9d799d794-1960-d794d7aad79ed795d7a0d794-d79ed793d795d797-d794d79ed795d7a2d7a6d794-d79cd7a9d7a0d799d79d-59-1-1.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d791d799d7aa-d794d79bd7a0d7a1d7aa-d791d791d7a0d799d7aad795-2-d791d79ed793d7a8d7a9d799d794-1960-d794d7aad79ed795d7a0d794-d79ed793d795d797-d794d79ed795d7a2d7a6d794-d79cd7a9d7a0d799d79d-59-1-1.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.05.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.05.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.39-d7a4d7a0d799d79ed799d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.39-d7a4d7a0d799d79ed799d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.3bd79ed793d7a8d7a9d799d7aa-d7a0d7a2d79d-d790d7a8d79bd799d795d79f-d794d79ed793d799d7a0d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/00071706.81.d8.77.3bd79ed793d7a8d7a9d799d7aa-d7a0d7a2d79d-d790d7a8d79bd799d795d79f-d794d79ed793d799d7a0d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d790d795d795d7a8d791d795d79a-d795d791d7a8d795d79f-2.png?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d790d795d795d7a8d791d795d79a-d795d791d7a8d795d79f-2.png?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d7a9d79cd798-d791d79ed793d7a8d7a9d799d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d7a9d79cd798-d791d79ed793d7a8d7a9d799d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
+    },
+    {
+     "thumb": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d7a9d79cd798-d79ed7a4d794.jpg?w=400",
+     "full": "https://makomshamur.wordpress.com/wp-content/uploads/2020/06/d7a9d79cd798-d79ed7a4d794.jpg?w=1600",
+     "page": "http://makomshamur.com/2020/06/19/%d7%9e%d7%93%d7%a8%d7%a9%d7%99%d7%aa-%d7%a0%d7%a2%d7%9d-%d7%a4%d7%a8%d7%93%d7%a1-%d7%97%d7%a0%d7%94/"
     }
    ],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. לאחרונה נמכרה מדרשית נעם ליזמים פרטיים ואתם יודעים מה זה אומר,שכל הגבעה ההיסטורית שניתנה לחינוך ומלאה באדריכלות יוצאת דופן תהפך לעוד חלומותפרדס חנה במקום להמשיך כקריית חינוך כפי שנועדה מתחילתה וכצוואתה בית הכנסת וקריית מדרשית נעםסוג המבנה בית כנסת, פנימיה ואולם ספורטכתובת דרך למרחב, פרדס חנה שנת הקמת המדרשיה 1945בנייני הקריה 1956-1977בית הכנסת 1961אדריכל ג'ניה אוורבוך והמהנדס זלמן ברוןסגנון בינלאו"
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. לאחרונה נמכרה מדרשית נעם ליזמים פרטיים ואתם יודעים מה זה אומר,שכל הגבעה ההיסטורית שניתנה לחינוך ומלאה באדריכלות יוצאת דופן תהפך לעוד חלומותפרדס חנה במקום להמשיך כקריית חינוך כפי שנועדה מתחילתה וכצוואתה בית הכנסת וקריית מדרשית נעםסוג המבנה בית כנסת, פנימיה ואולם ספורטכתובת דרך למרחב, פרדס חנה שנת הקמת המדרשיה 1945בנייני הקריה 1956-1977בית הכנסת 1961אדריכל ג’ניה אוורבוך והמהנדס זלמן ברוןסגנון בינלאו"
   },
   {
    "id": "makom-מחנות-אנגלים-מרכז-שהם",
-   "name": "מחנות אנגלים – מרכז \"שהם\"",
+   "name": "מחנות אנגלים – מרכז “שהם”",
    "group": "פרדס חנה",
    "cats": [],
    "url": "https://makomshamur.com/",
@@ -916,13 +2138,75 @@
     "פרדס חנה"
    ],
    "url": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
-   "photos": [],
-   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. כתובת: תל אלון, פרדס חנה שנת הקמה: 1928 אדריכל: שמואל רוזוב סגנון אדריכלי: בנייה מקומית עם השפעות הסגנון הבנינלאומי משמש היום: מגורים כשהגענו לפרדס חנה והילדים הלכו לדמוקרטי בחדרה, חצי מהילדים בהסעות היו של משפחת שליט המורחבת. לקח לי שנים עד שהבנתי את כל המשפחתולוגיה שלהם. 4 דורות שחיים כאן, ועם רבים מהם חיי מצטלבים [&hellip;]"
+   "photos": [
+    {
+     "thumb": "https://lh4.googleusercontent.com/-mC9pK-YrfTI/To4z4jIPmtI/AAAAAAAABwI/SWUviLw2c3I/s400/%25D7%25A9%25D7%259C%25D7%25A9%25D7%2594%2520%25D7%2591%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-mC9pK-YrfTI/To4z4jIPmtI/AAAAAAAABwI/SWUviLw2c3I/s1600/%25D7%25A9%25D7%259C%25D7%25A9%25D7%2594%2520%25D7%2591%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "1928, קסלר שליט וקאופמן בביתם החדש *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-cggTqyDA_zU/TyaLTWTCOXI/AAAAAAAAB6c/cY8rpC82sQg/s400/2%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-cggTqyDA_zU/TyaLTWTCOXI/AAAAAAAAB6c/cY8rpC82sQg/s1600/2%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "סביבות 1935, דינה שליט בחצר על רקע הבית *מאוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-aRikmsmHiCk/TyXSdsFwjvI/AAAAAAAAB6g/xjJmX0VEFRM/s400/4%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-aRikmsmHiCk/TyXSdsFwjvI/AAAAAAAAB6g/xjJmX0VEFRM/s1600/4%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "בשדות תל אלון, משמאל בית המגורים, מימין בניין הפועלים * מאוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh5.googleusercontent.com/-imMrm2Vb0T4/To4zzWQBuBI/AAAAAAAABvY/RUYJ7_bELNw/s400/%25D7%2591%25D7%2599%25D7%25AA%2520%25D7%2590%25D7%25A8%25D7%2599%25D7%2596%25D7%2594%2520%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F.jpg?gl=IL",
+     "full": "https://lh5.googleusercontent.com/-imMrm2Vb0T4/To4zzWQBuBI/AAAAAAAABvY/RUYJ7_bELNw/s1600/%25D7%2591%25D7%2599%25D7%25AA%2520%25D7%2590%25D7%25A8%25D7%2599%25D7%2596%25D7%2594%2520%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "סוף שנות ה-30' ה\"בייקה\" בית אריזה של תל אלון, על כביש 65 היום. צילום: צלמונית 'קריסטל' חדרה *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-0DVNhMlRMYc/To4z5AQ0kEI/AAAAAAAABwM/B7FLmprgQVo/s400/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%25203.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-0DVNhMlRMYc/To4z5AQ0kEI/AAAAAAAABwM/B7FLmprgQVo/s1600/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%25203.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "3 חברים יצאו לדרך. משמאל הבית מימין הצריף. *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-uoCChquJ37g/TzJZ28rpu7I/AAAAAAAAB7E/9_CNKbKUIbg/s400/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%25283%2529.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-uoCChquJ37g/TzJZ28rpu7I/AAAAAAAAB7E/9_CNKbKUIbg/s1600/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%25283%2529.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "2012, דודי שליט על רקע הבית של האדריכל שמואל רוזוב"
+    },
+    {
+     "thumb": "https://lh4.googleusercontent.com/-z_KEUA9wPAE/TzJZ1SNAqHI/AAAAAAAAB6w/2o6Ed1ch8Hc/s400/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%252815%2529.jpg?gl=IL",
+     "full": "https://lh4.googleusercontent.com/-z_KEUA9wPAE/TzJZ1SNAqHI/AAAAAAAAB6w/2o6Ed1ch8Hc/s1600/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%252815%2529.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "2012, שדרות הדקלים לביתו של קאופמן"
+    },
+    {
+     "thumb": "https://lh3.googleusercontent.com/-KXa6qPODjkY/To4zzVtjELI/AAAAAAAABvU/jFn-C6TKYDs/s400/1945.jpg?gl=IL",
+     "full": "https://lh3.googleusercontent.com/-KXa6qPODjkY/To4zzVtjELI/AAAAAAAABvU/jFn-C6TKYDs/s1600/1945.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "1945, מולה שליט (משמאל) וחבר בפרדס על רקע בית הפועלים של תל אלון *ארכיון בית הראשונים"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-noDYjvdcQIE/TyXSehNOb6I/AAAAAAAAB7g/Aydi17dTP9k/s400/10%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-noDYjvdcQIE/TyXSehNOb6I/AAAAAAAAB7g/Aydi17dTP9k/s1600/10%2520%25D7%259E%25D7%25A8%25D7%2595%25D7%25A0%25D7%2599.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "הצריף ששימש למגורים עד בניית הבית * מאוסף המשפחה"
+    },
+    {
+     "thumb": "https://lh6.googleusercontent.com/-BvLup5d5DEQ/TzJZ1VxKWKI/AAAAAAAAB6o/q7CX94lbQPk/s400/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%252812%2529.jpg?gl=IL",
+     "full": "https://lh6.googleusercontent.com/-BvLup5d5DEQ/TzJZ1VxKWKI/AAAAAAAAB6o/q7CX94lbQPk/s1600/%25D7%25AA%25D7%259C%2520%25D7%2590%25D7%259C%25D7%2595%25D7%259F%2520%252812%2529.jpg?gl=IL",
+     "page": "http://makomshamur.com/2012/02/16/%d7%aa%d7%9c-%d7%90%d7%9c%d7%95%d7%9f-%d7%91%d7%99%d7%aa-%d7%9e%d7%a9%d7%a4%d7%97%d7%aa-%d7%a9%d7%9c%d7%99%d7%98/",
+     "cap": "2012, בית האריזה של תל אלון"
+    }
+   ],
+   "note": "אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי. כתובת: תל אלון, פרדס חנה שנת הקמה: 1928 אדריכל: שמואל רוזוב סגנון אדריכלי: בנייה מקומית עם השפעות הסגנון הבנינלאומי משמש היום: מגורים כשהגענו לפרדס חנה והילדים הלכו לדמוקרטי בחדרה, חצי מהילדים בהסעות היו של משפחת שליט המורחבת. לקח לי שנים עד שהבנתי את כל המשפחתולוגיה שלהם. 4 דורות שחיים כאן, ועם רבים מהם חיי מצטלבים […]"
   }
  ],
  "stats": {
   "places": 82,
   "located": 18,
-  "documented": 12
+  "documented": 22,
+  "photos": 212
  }
 }

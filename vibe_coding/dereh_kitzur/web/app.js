@@ -446,7 +446,8 @@ function renderList() {
   list.innerHTML = rows.map((it) => {
     const glyph = it.place ? (it.unplaced ? '📌' : '🏛️') : (it.path ? (it.draft ? '✏️' : '🥾') : '📍');
     const thumb = it.photos && it.photos.length
-      ? `<img class="thumb" src="${it.photos[0].thumb}" alt="" loading="lazy">`
+      ? `<img class="thumb" src="${it.photos[0].thumb}" alt="" loading="lazy"
+          referrerpolicy="no-referrer">`
       : `<div class="thumb empty">${glyph}</div>`;
     // A trail carrying no colour of its own is drawn in its layer's, on the
     // map and so in the list beside it too.
@@ -827,13 +828,21 @@ function showDetail(it) {
   // Photos can be removed only where this app owns them: the initiative's own
   // trails. A pardespedia photo belongs to the wiki article and is changed
   // there, not here.
+  // Photos that live on somebody else's host are asked for without a referrer.
+  // Google's image hosting, which is where fifteen years of מקום שמור sit,
+  // answers 429 to a request that says it comes from an origin it does not
+  // know - localhost above all - and Chrome then blocks the reply for having
+  // arrived as HTML where an image was expected. Nothing here needs to say
+  // where it is asking from.
   const canEditPhotos = Store.isEditor() && !it.place && !it.draft && layer.kind === 'trails';
   const photos = it.photos || [];
   const gallery = photos.length ? `
     <h3>תמונות (${photos.length})</h3>
     <div class="gallery${canEditPhotos ? ' editable' : ''}">
       ${photos.map((p, i) => `<span class="shot">
-        <img src="${p.thumb}" data-i="${i}" alt="${escapeHtml(it.name)}" loading="lazy">
+        <img src="${p.thumb}" data-i="${i}" title="${escapeHtml(p.cap || it.name)}"
+          alt="${escapeHtml(p.cap || it.name)}" loading="lazy"
+          referrerpolicy="no-referrer">
         ${canEditPhotos ? `<button class="shot-x" data-drop="${i}"
           aria-label="הסרת התמונה">&times;</button>` : ''}
       </span>`).join('')}
@@ -1292,11 +1301,25 @@ function paintLightbox() {
   img.classList.add('loading');
   el('lb-spin').hidden = false;
   img.src = photo.full;                       // full resolution, not the thumb
-  img.alt = lbTitle;
+  img.alt = photo.cap || lbTitle;
   img.onload = () => { img.classList.remove('loading'); el('lb-spin').hidden = true; };
-  img.onerror = () => { el('lb-spin').hidden = true; img.classList.remove('loading'); };
 
-  el('lb-cap-text').textContent = lbTitle;
+  // A photo that lives on somebody else's host can refuse the big rendition
+  // while still serving the small one: both מקום שמור hosts throttle by the
+  // hour, and the thumbnail is already in this browser's cache because the
+  // gallery just drew it. Showing the small version beats showing the broken
+  // picture glyph over a caption, so falling back is the last thing tried
+  // before giving up.
+  img.onerror = () => {
+    el('lb-spin').hidden = true;
+    img.classList.remove('loading');
+    if (photo.thumb && img.src !== photo.thumb) img.src = photo.thumb;
+  };
+
+  // The caption a photo arrives with says more than the name of the place: the
+  // year, the photographer, the archive the print came from. Where מקום שמור
+  // wrote one it is shown instead of the name, credit and all.
+  el('lb-cap-text').textContent = photo.cap || lbTitle;
   el('lb-count').textContent = lbPhotos.length > 1 ? `(${lbIndex + 1}/${lbPhotos.length})` : '';
   const many = lbPhotos.length > 1;
   document.querySelector('.lb-prev').hidden = !many;

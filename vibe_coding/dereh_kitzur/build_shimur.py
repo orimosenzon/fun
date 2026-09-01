@@ -54,12 +54,23 @@ and show up in the app's list of places waiting to be pinned - which is not a
 failure of the matching but the shape of the list: most of what is left is
 private houses known only by a family name, and no index anywhere holds them.
 
+The pictures
+------------
+מקום שמור is first of all a photo archive: family albums, the collection of
+בית הראשונים, and the project's own 2011 survey of what was still standing.
+Every picture in an article is carried into the layer with the caption the
+project wrote under it, which is where the credit lives - "צילום: גיא רז",
+"* ארכיון בית הראשונים" - so the caption travels with the picture rather than
+being dropped on the way. They are linked from the project's own hosting, not
+copied, exactly as the pardespedia layer links the wiki's images.
+
     python3 build_shimur.py                 # both layers
     python3 build_shimur.py --no-net        # cached parcel lookups only
     python3 build_shimur.py --refresh-cache # re-fetch the parcel geometry
 """
 
 import argparse
+import html
 import json
 import math
 import os
@@ -69,12 +80,14 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "shimur_src", "nispach_shimur.tsv")
 OUT_SHIMUR = os.path.join(HERE, "web", "data", "shimur.json")
 OUT_MAKOM = os.path.join(HERE, "web", "data", "makom_shamur.json")
 CACHE = os.path.join(HERE, ".cache", "parcels.json")
+PHOTO_CACHE = os.path.join(HERE, ".cache", "makom_photos.json")
 
 WFS = "https://open.govmap.gov.il/geoserver/opendata/ows"
 WP = "https://public-api.wordpress.com/rest/v1.1/sites/makomshamur.com"
@@ -146,9 +159,11 @@ def normalise(name):
     The appendix writes ביה"כ where the blog writes בית הכנסת, and both are
     inconsistent about geresh and gershayim. Abbreviations are expanded before
     the punctuation is stripped, because stripping first turns ביה"ס into
-    ביהס and loses the join.
+    ביהס and loses the join. Vowel points go too: מקום שמור writes
+    חוּרבת סוּפסאפִי with them and everything else writes it without.
     """
     name = unicodedata.normalize("NFKC", name)
+    name = re.sub(r"[֑-ׇ]", "", name)         # niqqud and cantillation
     name = (name.replace("־", "-").replace("–", "-")
                 .replace("“", '"').replace("”", '"').replace("״", '"')
                 .replace("’", "'").replace("׳", "'"))
@@ -161,12 +176,16 @@ def normalise(name):
 
 
 def strip_html(text):
+    """The words of a fragment of WordPress HTML, entities and all.
+
+    html.unescape rather than a list of the entities seen so far: the captions
+    are fifteen years of other people's typing, and the list was already one
+    short - every excerpt ended in a literal &hellip; where the blog had put an
+    ellipsis.
+    """
     text = re.sub(r"<(script|style).*?</\1>", " ", text or "", flags=re.S)
     text = re.sub(r"<[^>]+>", " ", text)
-    text = (text.replace("&nbsp;", " ").replace("&amp;", "&").replace("&#8211;", "–")
-                .replace("&#8217;", "'").replace("&quot;", '"').replace("&#8220;", '"')
-                .replace("&#8221;", '"').replace("&lt;", "<").replace("&gt;", ">"))
-    return " ".join(text.split())
+    return " ".join(html.unescape(text).split())
 
 
 # ------------------------------------------------------------ parcel lookup
@@ -459,13 +478,223 @@ def makom_posts():
     posts, page = [], 0
     while True:
         doc = get(f"{WP}/posts/?number=100&offset={page * 100}"
-                  "&fields=ID,title,URL,date,categories,excerpt,featured_image")
+                  "&fields=ID,title,URL,date,categories,excerpt,featured_image,content")
         batch = doc.get("posts", [])
         posts.extend(batch)
         page += 1
         if len(batch) < 100 or page > 5:
             break
     return posts
+
+
+# ------------------------------------------------------- pictures in a post
+
+# One picture and, where WordPress wrapped it in a caption block, the line
+# written under it. The caption is worth as much as the picture: it carries the
+# year, the photographer and the archive the print came from.
+IMG_IN_POST = re.compile(
+    r'<img[^>]+?src="([^"]+)"[^>]*>'
+    r'(?:\s*<p class="wp-caption-text">(.*?)</p>)?', re.S)
+
+# Pictures that are furniture rather than documentation.
+NOT_A_PHOTO = ("gravatar.com", "/smilies/", "s.w.org", "pixel.wp.com",
+               "stats.wordpress.com", "/wp-includes/")
+
+# The gallery shows a strip of thumbnails and the lightbox shows the picture
+# full size, so each one is asked for twice at two widths. Both hosts resize on
+# demand, which is why nothing here is downloaded or re-hosted.
+THUMB_PX, FULL_PX = 400, 1600
+
+# The size segment of a Picasa-descended URL: s512, and sometimes s912-Ic42,
+# where what follows the size is not decoration - drop it and the host answers
+# 400. Only the number is rewritten, and only in place: a second size segment
+# beside one already there is a 400 too.
+SIZE_SEGMENT = re.compile(r"^[swh]\d{2,4}((?:-[A-Za-z0-9]+)*)$")
+HEX_RUN = re.compile(r"(?:[0-9a-f]{2}){4,}")
+
+
+def unproxy(url):
+    """The picture's own address, out of any WordPress image proxy.
+
+    Old posts point at i0.wp.com wrapping a lh<n>.ggpht.com address. The proxy
+    stopped answering for those years ago; the same path on
+    lh<n>.googleusercontent.com still does, because that is where Picasa's
+    images moved.
+    """
+    parts = urllib.parse.urlsplit(url)
+    if parts.netloc != "i0.wp.com":
+        return url
+    host, _, path = parts.path.lstrip("/").partition("/")
+    host = host.replace("ggpht.com", "googleusercontent.com")
+    return urllib.parse.urlunsplit(("https", host, "/" + path, parts.query, ""))
+
+
+def rendition(url, width):
+    """The same picture at a given width, asked for the way its host asks.
+
+    Picasa-descended URLs carry the size as a path segment before the file
+    name; wordpress.com takes a `w` query. A host that does neither is returned
+    untouched and simply serves whatever it has.
+    """
+    parts = urllib.parse.urlsplit(url)
+    if parts.netloc.endswith("googleusercontent.com"):
+        segs = parts.path.split("/")
+        size = SIZE_SEGMENT.match(segs[-2]) if len(segs) > 2 else None
+        if size:
+            segs[-2] = f"s{width}" + size.group(1)
+        else:
+            segs.insert(-1, f"s{width}")
+        return urllib.parse.urlunsplit(parts._replace(path="/".join(segs)))
+    if parts.netloc.endswith("wordpress.com"):
+        query = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query) if k != "w"]
+        query.append(("w", str(width)))
+        return urllib.parse.urlunsplit(
+            parts._replace(query=urllib.parse.urlencode(query)))
+    return url
+
+
+def file_words(url):
+    """The file name as readable text, for the pictures with no caption.
+
+    Half of these files are named after what is in them, and the name survives
+    two different manglings on the way into the page: percent-encoding, applied
+    once or twice over, and WordPress's own slug form, which spells Hebrew out
+    as the hex of its bytes (d7a9d795d7a7 is שוק). Both are undone here so that
+    a caption-less picture can still be recognised.
+    """
+    name = url.rsplit("/", 1)[-1].split("?")[0]
+    for _ in range(3):
+        unquoted = urllib.parse.unquote(name)
+        if unquoted == name:
+            break
+        name = unquoted
+    name = os.path.splitext(name)[0]
+
+    def unhex(match):
+        try:
+            return " " + bytes.fromhex(match.group(0)).decode("utf-8") + " "
+        except (ValueError, UnicodeDecodeError):
+            return match.group(0)
+
+    name = HEX_RUN.sub(unhex, name)
+    return re.sub(r"[-_.]+", " ", name)
+
+
+def post_images(post):
+    """Every documentary picture in one article, in the order it appears."""
+    out, seen = [], set()
+    for match in IMG_IN_POST.finditer(post.get("content", "")):
+        url = unproxy(match.group(1))
+        if url in seen or any(bit in url for bit in NOT_A_PHOTO):
+            continue
+        seen.add(url)
+        caption = strip_html(match.group(2) or "")
+        out.append({"src": url, "cap": caption,
+                    "words": normalise(caption + " " + file_words(url))})
+    if not out and post.get("featured_image"):
+        url = unproxy(post["featured_image"])
+        out.append({"src": url, "cap": "", "words": ""})
+    return out
+
+
+def live(urls, offline=False):
+    """Which of these addresses still answer, remembered between runs.
+
+    Fifteen years of a blog is fifteen years of images moving hosts, and three
+    of these are gone: a photo borrowed from a German broadcaster, a house in
+    Vienna, one print. A dead thumbnail in the gallery is worse than no
+    thumbnail, so the set is checked once and cached.
+    """
+    known = {}
+    if os.path.exists(PHOTO_CACHE):
+        with open(PHOTO_CACHE, encoding="utf-8") as handle:
+            known = json.load(handle)
+    missing = [u for u in urls if u not in known]
+    if missing and not offline:
+        def probe(url):
+            for method in ("HEAD", "GET"):          # a few hosts refuse HEAD
+                try:
+                    req = urllib.request.Request(
+                        url, method=method,
+                        headers={"User-Agent": "derech-kitzur/1.0"})
+                    with urllib.request.urlopen(req, timeout=45) as handle:
+                        return url, handle.status == 200
+                except Exception:                    # noqa: BLE001 - any failure
+                    continue
+            return url, False
+
+        with ThreadPoolExecutor(12) as pool:
+            for url, ok in pool.map(probe, missing):
+                known[url] = ok
+        save_json(PHOTO_CACHE, known)
+    return {u for u in urls if known.get(u)}
+
+
+# ------------------------------------------------------------- מקום שמור
+
+# Articles the list's own wording cannot reach. The list is thirty-one lines of
+# prose per half of the town and the articles were titled years apart, so a few
+# of the pairs only a reader can see: "בית פעם" on the list is בית העם,
+# "הידית" has an article called after the factory's product, and the four
+# cafes of כרכור share one article between them.
+EXTRA_POSTS = {
+    "אמפיתיאטרון- שמורת הוואדי": (68,),
+    "בית פעם – מרכז במושבה": (68, 119, 127),
+    "בתי קפה ופנסיונים": (2091,),
+    "הידית – מפעל נגרות היסטורי": (3885,),
+    "המחלבה של אירמה": (1869,),
+    "השוק הישן – מרכז המושבה": (4860,),
+    "השוק הקטן -סמטת כרכור": (6146,),
+    "חוּרבת סוּפסאפִי- מחנה הפרדות": (3240,),
+    "מלון פרוינד": (1869,),
+    "מרחב המחיה של מש' בנימין": (1111,),
+    "קפה טיצ'ר": (1869,),
+    "קפה פינתי": (1869,),
+}
+
+# The one article the name matching reaches and should not. "בניין מועצה" on
+# the כרכור list is the council כרכור had until the merger; the article of that
+# name is the 1970 building on דרך הבנים in פרדס חנה, which is a different
+# building in a different town from a different decade.
+BLOCKED_POSTS = {"בניין מועצה כרכור": {2115}}
+
+# The one article that has to be divided rather than shared. Most articles two
+# entries both claim are two halves of one site - the winter hall and the summer
+# hall of קולנוע אוריון, בית העם and its amphitheatre - and every picture in
+# them is about both. "בתי קפה בכרכור" is not: it is four different buildings in
+# one piece, and each of them is its own line on the list.
+SPLIT_POSTS = {1869}
+
+# Words that say what kind of place something is rather than which one, and so
+# cannot tell two sites of a shared article apart. Written the way tokens()
+# leaves them, with the one-letter prefixes already gone.
+GENERIC = {"בית", "בתי", "גן", "גני", "קפה", "מלון", "שכונת", "שכונה", "רחוב",
+           "שדרות", "סמטת", "סמטה", "מגדל", "מים", "משק", "מרכז", "מושבה",
+           "קולנוע", "מפעל", "מבנה", "אתר", "חצר", "פרדס", "חנה", "כרכור",
+           "של", "היסטורי", "ישן", "חדש", "צפוני", "קטן"}
+
+# What else a caption may call the place, where the list's name for it and the
+# project's own are not the same word.
+ALSO_CALLED = {
+    "אמפיתיאטרון- שמורת הוואדי": "אמפי",
+    "בית פעם – מרכז במושבה": "בית העם",
+    "מלון פרוינד": "פרויד froind",
+    "קפה טיצ'ר": "teacher",
+}
+
+
+def also_called(key):
+    """The other words a caption may use for this place, if any."""
+    for name, words in ALSO_CALLED.items():
+        if normalise(name) == key:
+            return words
+    return ""
+
+
+def distinctive(key, extra=""):
+    """The words of a name that point at one particular place."""
+    return {w for w in tokens(key + " " + normalise(extra))
+            if len(w) > 1 and w not in GENERIC}
 
 
 def anchor_sources(shimur_doc, offline=False):
@@ -518,24 +747,75 @@ def anchor_sources(shimur_doc, offline=False):
     return sources
 
 
+def articles_of(keys, by_name):
+    """Which articles belong to each entry of the list.
+
+    An entry takes the article its own name reaches, plus any the wording
+    cannot (EXTRA_POSTS), minus the one it must not (BLOCKED_POSTS).
+    """
+    extra = {normalise(k): v for k, v in EXTRA_POSTS.items()}
+    blocked = {normalise(k): v for k, v in BLOCKED_POSTS.items()}
+    claimed = {}
+
+    for key in keys:
+        found = []
+        post = by_name.get(key) or partial_post(key, by_name)
+        if post and post["ID"] not in blocked.get(key, ()):
+            found.append(post["ID"])
+        for post_id in extra.get(key, ()):
+            if post_id not in found:
+                found.append(post_id)
+        claimed[key] = found
+    return claimed
+
+
+def pictures_for(key, post, images):
+    """The pictures of one article that belong to one place.
+
+    Nearly always that is all of them. Only for an article that documents
+    several separate buildings at once does a place take just the pictures its
+    own name is in - read off the caption, and off the file name for the ones
+    the project left uncaptioned. The pictures such an article has of a building
+    that is not on the list at all - קפה פנורמה in תל שלום - then belong to no
+    place here, and are left where they are.
+    """
+    if post["ID"] not in SPLIT_POSTS:
+        return images
+    words = distinctive(key, also_called(key))
+    return [im for im in images if words & tokens(im["words"])]
+
+
 def build_makom(shimur_doc, offline=False):
     """The מקום שמור layer, positioned off whatever already knows the place."""
     sources = anchor_sources(shimur_doc, offline)
 
     posts = makom_posts()
+    by_id = {post["ID"]: post for post in posts}
     by_name = {}
     for post in posts:
         by_name.setdefault(normalise(strip_html(post["title"])), post)
 
-    places, seen = [], set()
-    stats = {"located": 0, "unplaced": 0, "documented": 0}
-
+    entries, seen = [], set()
     for name, half in makom_names():
         key = normalise(name)
         if not key or key in seen:
             continue
         seen.add(key)
+        entries.append((name, half, key))
 
+    claimed = articles_of([key for _, _, key in entries], by_name)
+
+    # Every picture of every article that some entry claims, checked once for
+    # whether it still loads before any of it reaches the layer.
+    wanted = {post_id for found in claimed.values() for post_id in found}
+    gallery = {post_id: post_images(by_id[post_id]) for post_id in wanted}
+    alive = live(sorted({im["src"] for ims in gallery.values() for im in ims}),
+                 offline)
+
+    places = []
+    stats = {"located": 0, "unplaced": 0, "documented": 0, "photos": 0}
+
+    for name, half, key in entries:
         place = {
             "id": "makom-" + re.sub(r"\s+", "-", key)[:60],
             "name": name,
@@ -547,18 +827,26 @@ def build_makom(shimur_doc, offline=False):
         note = ["אתר מרשימת פרויקט מקום שמור. הרשימה היא הצעה, ואינה מעמד סטטוטורי."]
 
         # The project wrote a full article about some of its sites; those carry
-        # the article's own words, its photo and a link straight to it.
-        post = by_name.get(key) or partial_post(key, by_name)
-        if post:
-            place["url"] = post["URL"]
-            place["cats"] = sorted(post.get("categories", {}).keys())
-            excerpt = strip_html(post.get("excerpt", ""))
+        # the article's own words, its pictures and a link straight to it.
+        articles = [by_id[post_id] for post_id in claimed[key]]
+        if articles:
+            lead = articles[0]
+            place["url"] = lead["URL"]
+            place["cats"] = sorted(lead.get("categories", {}).keys())
+            excerpt = strip_html(lead.get("excerpt", ""))
             if excerpt:
                 note.append(excerpt[:400])
-            if post.get("featured_image"):
-                place["photos"] = [{"thumb": post["featured_image"],
-                                    "full": post["featured_image"]}]
             stats["documented"] += 1
+            for post in articles:
+                images = [im for im in gallery[post["ID"]] if im["src"] in alive]
+                for image in pictures_for(key, post, images):
+                    place["photos"].append({
+                        "thumb": rendition(image["src"], THUMB_PX),
+                        "full": rendition(image["src"], FULL_PX),
+                        "page": post["URL"],
+                        **({"cap": image["cap"]} if image["cap"] else {}),
+                    })
+            stats["photos"] += len(place["photos"])
 
         for kind, index in sources:
             if kind == "street":
@@ -595,7 +883,7 @@ def build_makom(shimur_doc, offline=False):
                    {"name": "כרכור", "color": "#00838f"}],
         "places": places,
         "stats": {"places": len(places), "located": stats["located"],
-                  "documented": stats["documented"]},
+                  "documented": stats["documented"], "photos": stats["photos"]},
     }
     save_json(OUT_MAKOM, doc)
     return doc, stats
@@ -689,11 +977,14 @@ def main():
     parser.add_argument("--no-net", action="store_true",
                         help="use the cached parcel geometry and skip מקום שמור")
     parser.add_argument("--refresh-cache", action="store_true",
-                        help="throw away the cached parcel centroids and re-fetch")
+                        help="throw away the cached parcel centroids and the "
+                             "record of which pictures still load, and re-fetch")
     args = parser.parse_args()
 
-    if args.refresh_cache and os.path.exists(CACHE):
-        os.remove(CACHE)
+    if args.refresh_cache:
+        for path in (CACHE, PHOTO_CACHE):
+            if os.path.exists(path):
+                os.remove(path)
 
     parcels = Parcels(offline=args.no_net)
     shimur, stats = build_shimur(parcels)
@@ -716,6 +1007,9 @@ def main():
     print(f"\nנכתב {OUT_MAKOM}", file=sys.stderr)
     print(f"  {makom['stats']['places']} אתרים, {mstats['located']} עם מיקום, "
           f"{mstats['documented']} עם ערך באתר הפרויקט", file=sys.stderr)
+    with_photos = sum(1 for p in makom["places"] if p["photos"])
+    print(f"  {mstats['photos']} תמונות מהאתר, ב-{with_photos} אתרים",
+          file=sys.stderr)
     for kind in ("shimur", "pardespedia", "osm", "street"):
         if mstats.get(kind):
             print(f"    {kind}: {mstats[kind]}", file=sys.stderr)
