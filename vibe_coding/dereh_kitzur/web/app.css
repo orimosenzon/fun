@@ -126,6 +126,49 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
 
+/* ---------- folding layer sections ---------- */
+
+.lay-cat { border-top: 1px solid var(--line); }
+.lay-cat:first-child { border-top: 0; }
+
+.cat-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 2px;
+  border: 0;
+  background: none;
+  text-align: start;
+}
+
+/* The disclosure triangle, pointing along the reading direction when folded
+ * and down when open - the same gesture a file tree makes. */
+.cat-tw {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-block: 5px solid transparent;
+  border-inline-end: 7px solid var(--muted);
+  transition: transform .16s ease;
+}
+
+.cat-head.open .cat-tw {
+  transform: rotate(-90deg);
+  transform-origin: 40% 50%;
+}
+
+.cat-txt { flex: 1; min-width: 0; }
+.cat-nm { display: block; font-size: 15px; font-weight: 700; }
+.cat-sub { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+/* What is switched on inside a folded section, at a glance. */
+.cat-dots { flex: none; display: flex; align-items: center; gap: 3px; }
+.cat-dots .lg-dot { width: 9px; height: 9px; }
+.cat-dots .lg-dot.line { width: 12px; height: 3px; }
+
+.cat-body { padding-bottom: 6px; }
+
 /* ---------- tap acknowledgement ---------- */
 
 /* Confirmation that a tap landed, painted immediately and independently of the

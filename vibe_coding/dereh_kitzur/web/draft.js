@@ -865,6 +865,12 @@ ${tracks}
       await drop(seg.id);
       await reload();
       await reloadShared(doc);
+      // Publishing consumes the draft, and a trip lands in a layer that is off
+      // by default - so without this the thing you just published vanishes from
+      // the screen at the moment you publish it. That is exactly what it looks
+      // like when work is lost, and it is how the first published trip was
+      // mistaken for a trip that had been eaten.
+      if (seg.trip) Layers.turnOn(Layers.TRIPS_ID);
       select(id);            // open it in its new life as a published trail
     } catch (err) {
       btn.disabled = false;

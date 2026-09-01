@@ -360,6 +360,7 @@ const Layers = (() => {
     add({
       id: TRAILS_ID,
       kind: 'trails',
+      category: 'trails',
       name: 'דרכי קיצור',
       short: 'קיצור',
       color: '#1b5e20',
@@ -373,6 +374,7 @@ const Layers = (() => {
     custom.forEach((l) => add({
       ...l,
       kind: 'trails',
+      category: 'trails',
       own: true,                           // made in the app, so it can be edited here
       on: isOn(l.id),
       segments: trails.segments.filter((s) => home(s) === l.id),
@@ -408,6 +410,7 @@ const Layers = (() => {
     add({
       id: TRIPS_ID,
       kind: 'trips',
+      category: 'trails',
       name: 'טיולים',
       short: 'טיול',
       unit: 'טיולים',
@@ -423,11 +426,13 @@ const Layers = (() => {
     (network ? network.layers : []).forEach((l) => add({
       ...l,
       kind: 'network',
+      category: 'trails',
       on: isOn(l.id, l.id === SOVEV_ID)    // the rest is planning data, opt-in
     }));
 
     addPlaceLayer(PLACES_ID, places, {
       name: 'מקומות מפרדספדיה',
+      category: 'places',
       short: 'מקום',
       color: '#7b1fa2',
       note: 'בתי קפה, גנים, מוסדות ואתרי הנצחה, עם התקציר והתמונה מהערך בוויקי.',
@@ -446,6 +451,7 @@ const Layers = (() => {
     // it with the shortcuts.
     addPlaceLayer(ART_ID, art, {
       name: (art && art.name) || 'אמנות במושבה 2026',
+      category: 'places',
       short: 'אמנות',
       color: '#c2185b',
       note: 'סטודיואים פתוחים, תערוכות, מוזיקה ואוכל בפסטיבל אמנות במושבה. '
@@ -466,6 +472,7 @@ const Layers = (() => {
     // the shortcuts, which is how you end up walking past a water tower.
     addPlaceLayer(SHIMUR_ID, shimur, {
       name: 'אתרים לשימור: תוכנית המתאר',
+      category: 'places',
       short: 'שימור',
       color: '#ef6c00',
       note: 'האתרים שנקבעו לשימור בנספח השימור של תוכנית המתאר הכוללנית: '
@@ -483,6 +490,7 @@ const Layers = (() => {
 
     addPlaceLayer(MAKOM_ID, makom, {
       name: 'מקום שמור',
+      category: 'places',
       short: 'מקום שמור',
       color: '#ad1457',
       note: 'רשימת האתרים של פרויקט מקום שמור, פרויקט התיעוד של אילנה פלדה. '
@@ -504,6 +512,7 @@ const Layers = (() => {
     // is an area: the blue line is most of what it says.
     addPlaceLayer(PLANS_ID, plans, {
       name: 'תכניות בתהליך',
+      category: 'other',
       short: 'תכנית',
       unit: 'תכניות',
       labels: false,                       // see addPlaceLayers
@@ -527,6 +536,7 @@ const Layers = (() => {
     // line in a register and not a thing you can walk into.
     addPlaceLayer(BLOCKS_ID, blocks, {
       name: 'גושים',
+      category: 'other',
       short: 'גוש',
       unit: 'גושים',
       color: '#8d6e63',
@@ -549,6 +559,7 @@ const Layers = (() => {
     add({
       id: PENDING_ID,
       kind: 'pending',
+      category: 'trails',
       name: 'ממתינים לאישור',
       short: 'ממתין',
       color: '#f9a825',
@@ -563,6 +574,7 @@ const Layers = (() => {
     add({
       id: 'drafts',
       kind: 'drafts',
+      category: 'trails',
       name: 'הטיוטות שלי',
       short: 'טיוטות',
       color: '#8e24aa',
@@ -1031,6 +1043,51 @@ const Layers = (() => {
     });
   }
 
+  /* ---------- categories ----------
+   *
+   * Eleven layers is more than a flat list can carry, and they are not eleven
+   * of the same thing: the walking layers are what the app is for, the places
+   * are things somebody else wrote up, and the planning and cadastre layers are
+   * reference material you consult and put away. Three sections that fold, the
+   * way a file tree folds.
+   *
+   * Only the walking one is open on arrival. Somebody who opens the sheet is
+   * usually there to turn a shortcut layer on or off, and the other eight are
+   * one tap away rather than eight rows of scrolling. */
+
+  const CATEGORIES = [
+    { id: 'trails', name: 'שבילים', note: 'מה שהולכים בו' },
+    { id: 'places', name: 'מקומות', note: 'מה שיש בדרך' },
+    { id: 'other', name: 'אחרים', note: 'תכנון וקדסטר' }
+  ];
+
+  const CAT_PREF = 'dk.cats.v1';
+
+  /* Open on arrival: the walking layers only, exactly as the other two are
+   * remembered per browser once somebody has folded or unfolded them. */
+  const catOpen = (() => {
+    const fresh = { trails: true, places: false, other: false };
+    try {
+      const kept = JSON.parse(localStorage.getItem(CAT_PREF) || 'null');
+      return kept && typeof kept === 'object' ? { ...fresh, ...kept } : fresh;
+    } catch (err) {
+      return fresh;
+    }
+  })();
+
+  function saveCats() {
+    try {
+      localStorage.setItem(CAT_PREF, JSON.stringify(catOpen));
+    } catch (err) {
+      /* private mode: the sections simply open at their defaults next time */
+    }
+  }
+
+  /** Which section a layer belongs to. A layer that names none of them is a
+   *  walking layer, because that is what a new trail layer always is. */
+  const catOf = (layer) => (
+    CATEGORIES.some((c) => c.id === layer.category) ? layer.category : 'trails');
+
   /* ---------- the legend ---------- */
 
   /* A layer is drawn in one colour only when its source has nothing to sort its
@@ -1152,7 +1209,8 @@ const Layers = (() => {
       const metresTotal = layer.segments.reduce((sum, t) => sum + (t.length || 0), 0);
       const broken = layer.segments.filter((t) => (t.missing || []).length).length;
       if (!layer.segments.length) return 'אין עדיין טיולים. אפשר להוסיף אחד.';
-      return `${layer.segments.length} ${layer.unit || 'טיולים'}`
+      return (layer.segments.length === 1 ? 'טיול אחד'
+        : `${layer.segments.length} ${layer.unit || 'טיולים'}`)
         + (metresTotal ? ` · ${(metresTotal / 1000).toFixed(1)} ק"מ סך הכל` : '')
         + (broken ? ` · ${broken} עם שביל חסר` : '');
     }
@@ -1172,13 +1230,10 @@ const Layers = (() => {
     return bits.join(' · ');
   }
 
-  function render() {
-    const box = document.getElementById('layer-list');
-    const editable = Store.isEditor();
-
-    box.innerHTML = list.slice().reverse()
-      .filter((layer) => layer.kind !== 'pending' || Store.isEditor())
-      .map((layer) => `
+  /** One layer's row, and whatever hangs off it. */
+  function layerRow(layer, editable) {
+    const rows = legendRows(layer);
+    return `
       <div class="lay-row">
         <label class="lay${layer.on ? ' on' : ''}" data-id="${layer.id}">
           <input type="checkbox" ${layer.on ? 'checked' : ''}>
@@ -1193,25 +1248,83 @@ const Layers = (() => {
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
       </div>
-      ${layer.on && legendRows(layer).length && !legendRows(layer)[0].whole ? `
-        <ul class="lay-legend">${legendRows(layer).map((r) => `<li>
+      ${layer.on && rows.length && !rows[0].whole ? `
+        <ul class="lay-legend">${rows.map((r) => `<li>
           <span class="lg-dot" style="--c:${r.color}"></span>${escapeHtml(r.name)}
         </li>`).join('')}</ul>` : ''}
       ${editable && layer.pinnable ? `
         <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
           layer.waypoints.filter((p) => p.unplaced).length
             ? ` · ${layer.waypoints.filter((p) => p.unplaced).length} עוד לא ממוקמים` : ''}
-        </button>` : ''}`).join('') + (editable ? `
-      <button class="lay-add" data-newlayer="1">+ שכבת שבילים חדשה</button>` : '');
+        </button>` : ''}`;
+  }
 
-    box.querySelectorAll('.lay input').forEach((box2) => {
-      box2.addEventListener('change', () => {
-        const layer = byId(box2.closest('.lay').dataset.id);
-        layer.on = box2.checked;
-        box2.closest('.lay').classList.toggle('on', layer.on);
+  /** What a folded section says about itself.
+   *
+   *  The count and the swatches matter more than they look: without them,
+   *  somebody switches a layer on, folds the section, and has no way to tell
+   *  from the sheet why the map is covered in pins. */
+  function catHead(cat, members) {
+    const on = members.filter((l) => l.on);
+    const open = !!catOpen[cat.id];
+    return `
+      <button class="cat-head${open ? ' open' : ''}" data-cat="${cat.id}"
+              aria-expanded="${open}" aria-controls="cat-${cat.id}">
+        <span class="cat-tw" aria-hidden="true"></span>
+        <span class="cat-txt">
+          <span class="cat-nm">${escapeHtml(cat.name)}</span>
+          <span class="cat-sub">${on.length
+            ? `${on.length} מתוך ${members.length} דלוקות`
+            : `${members.length} שכבות · ${escapeHtml(cat.note)}`}</span>
+        </span>
+        <span class="cat-dots" aria-hidden="true">${on.slice(0, 6).map((l) =>
+          `<span class="lg-dot${l.dash ? ' line dash' : ''}" style="--c:${l.color}"></span>`
+        ).join('')}</span>
+      </button>`;
+  }
+
+  function render() {
+    const box = document.getElementById('layer-list');
+    const editable = Store.isEditor();
+
+    const shownLayers = list.slice().reverse()
+      .filter((layer) => layer.kind !== 'pending' || editable);
+
+    box.innerHTML = CATEGORIES.map((cat) => {
+      const members = shownLayers.filter((l) => catOf(l) === cat.id);
+      if (!members.length) return '';
+      const open = !!catOpen[cat.id];
+      return `<section class="lay-cat${open ? ' open' : ''}">
+        ${catHead(cat, members)}
+        <div class="cat-body" id="cat-${cat.id}"${open ? '' : ' hidden'}>
+          ${members.map((l) => layerRow(l, editable)).join('')}
+          ${editable && cat.id === 'trails'
+            ? '<button class="lay-add" data-newlayer="1">+ שכבת שבילים חדשה</button>'
+            : ''}
+        </div>
+      </section>`;
+    }).join('');
+
+    // The headers summarise what is on inside them, so they go stale the moment
+    // a checkbox moves. Repainting only the headers leaves the row somebody is
+    // still looking at, and the scroll position, exactly where they were.
+    const paintHeads = () => {
+      box.querySelectorAll('.lay-cat').forEach((section) => {
+        const head = section.querySelector('.cat-head');
+        const cat = CATEGORIES.find((c) => c.id === head.dataset.cat);
+        head.outerHTML = catHead(cat, shownLayers.filter((l) => catOf(l) === cat.id));
+      });
+    };
+
+    box.querySelectorAll('.lay input').forEach((tick) => {
+      tick.addEventListener('change', () => {
+        const layer = byId(tick.closest('.lay').dataset.id);
+        layer.on = tick.checked;
+        tick.closest('.lay').classList.toggle('on', layer.on);
         savePrefs();
         applyVisibility();
         onChange();
+        paintHeads();
       });
     });
 
@@ -1220,7 +1333,23 @@ const Layers = (() => {
       credits.length ? 'מקורות: ' + credits.join(' · ') : '';
   }
 
+  /* Bound once on the container, so repainting a header - which replaces the
+   * element - never costs it its click handler. */
+  let foldWired = false;
+  function wireFolding() {
+    if (foldWired) return;
+    foldWired = true;
+    document.getElementById('layer-list').addEventListener('click', (e) => {
+      const head = e.target.closest('.cat-head');
+      if (!head) return;
+      catOpen[head.dataset.cat] = !catOpen[head.dataset.cat];
+      saveCats();
+      render();
+    });
+  }
+
   function openSheet() {
+    wireFolding();
     render();
     document.getElementById('layer-sheet').hidden = false;
   }
