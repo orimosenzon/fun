@@ -98,6 +98,58 @@ button { font: inherit; color: inherit; cursor: pointer; }
   box-shadow: 0 0 0 6px rgba(26, 115, 232, .22);
 }
 
+/* ---------- the ring around what is selected ----------
+ *
+ * Choosing a row used to grow that dot a little and fade the others to 45%.
+ * That is enough when you already know which dot to look for, and useless in
+ * the one case that matters: you tapped the row *because* you cannot find it,
+ * and the map answers with forty dots of which one is slightly larger.
+ *
+ * The ring is white with a dark edge on both sides rather than a colour of its
+ * own. Every layer here already owns a hue - purple shortcuts, pink מקום שמור,
+ * teal, orange - and a coloured ring would read as one more category. White
+ * outlined in near-black belongs to no layer and stays legible over the street
+ * map and over the satellite photo alike.
+ */
+.sel-ring {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;         /* the dot underneath stays tappable */
+}
+
+.sel-ring::before,
+.sel-ring::after {
+  content: '';
+  position: absolute;
+  /* 42 ולא 36: הסיכה הנבחרת עצמה היא 24 פיקסלים ועוד מסגרת, ובטבעת צרה יותר
+   * היא נוגעת בה משני הצדדים ושתיהן נקראות ככתם אחד. הרווח הוא מה שהופך את
+   * הטבעת לסימון של הסיכה במקום לחלק ממנה. */
+  top: -21px;
+  left: -21px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px rgba(20, 20, 20, .8), inset 0 0 0 2px rgba(20, 20, 20, .8);
+}
+
+/* Two pulses and then still, rather than a ring that beats for ever. The point
+ * is to catch the eye on arrival; a permanent animation on the map is a thing
+ * you end up wanting to switch off. */
+.sel-ring::after {
+  animation: sel-pulse 1.3s ease-out 2;
+}
+
+@keyframes sel-pulse {
+  from { transform: scale(1);   opacity: .85; }
+  to   { transform: scale(2.7); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sel-ring::after { animation: none; opacity: 0; }
+}
+
 /* ---------- floating buttons ---------- */
 
 .fab {

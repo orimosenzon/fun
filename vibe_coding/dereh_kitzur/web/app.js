@@ -208,6 +208,7 @@ let hereMarker = null;
 let selectedId = null;
 let sortMode = 'length';
 let wpMarkers = [];       // waypoint pins, rebuilt when layers are toggled
+let selMarker = null;     // the ring around the selected point, see markSelection
 
 /* ---------- helpers ---------- */
 
@@ -327,19 +328,44 @@ const byId = (id) => Layers.item(id);
  * because you have no idea where the trail is. Tapping a trail already drawn
  * on the map should not: you are looking straight at it, and yanking the
  * viewport around makes browsing from one trail to the next impossible. */
+/** A ring around the selected point, drawn over every layer.
+ *
+ *  An HTML marker rather than another circle layer, for two reasons: it sits
+ *  above everything without having to be reinserted whenever a layer is added
+ *  or the basemap changes, and the arrival pulse is then three lines of CSS
+ *  instead of an animation loop driven from JavaScript.
+ *
+ *  Only points get one. A trail or a trip is a line, and framing the line is
+ *  already unambiguous - a ring on top of it would say less, not more. */
+function markSelection(item) {
+  if (selMarker) { selMarker.remove(); selMarker = null; }
+  if (!map || !item || item.path || item.lat == null || item.lng == null) return;
+  const node = document.createElement('div');
+  node.className = 'sel-ring';
+  selMarker = new maplibregl.Marker({ element: node })
+    .setLngLat([item.lng, item.lat])
+    .addTo(map);
+}
+
 function select(id, fit = true) {
   selectedId = id;
   const item = byId(id);
   if (!item) return;
 
   Layers.highlight(id);
+  markSelection(item);
   if (fit && map) {
     if (item.path) {
       const b = new maplibregl.LngLatBounds();
       item.path.forEach(([lat, lng]) => b.extend([lng, lat]));
       map.fitBounds(b, { padding: 60, maxZoom: 18, duration: 700 });
     } else if (item.lat != null) {
-      map.easeTo({ center: [item.lng, item.lat], zoom: 18, duration: 700 });
+      // Never zoom *out* to arrive. Somebody who has already zoomed to a
+      // street knows where they are, and dropping them back to 18 undoes that
+      // for no reason. The floor is what matters: close enough that the ring
+      // and the name are both readable.
+      map.easeTo({ center: [item.lng, item.lat],
+                   zoom: Math.max(map.getZoom(), 18), duration: 700 });
     }
     // A place with no pin yet has nowhere to fly to. The detail pane opens
     // anyway, which is where the editor drops one.
@@ -354,6 +380,7 @@ function select(id, fit = true) {
 function deselect() {
   selectedId = null;
   Layers.highlight(null);
+  markSelection(null);
   el('detail-view').hidden = true;
   el('list-view').hidden = false;
   renderList();
@@ -1914,7 +1941,13 @@ function repaint() {
   paintStats();
   const layer = selectedId ? Layers.layerOf(selectedId) : null;
   if (selectedId && (!layer || !layer.on)) deselect();   // deselect repaints the list
-  else if (selectedId) showDetail(byId(selectedId));
+  else if (selectedId) {
+    // The ring is re-hung rather than left where it was: a repaint follows a
+    // pin being dragged or a layer being rebuilt, and the selected place may
+    // not be where the ring is any more.
+    markSelection(byId(selectedId));
+    showDetail(byId(selectedId));
+  }
   else renderList();
 }
 
