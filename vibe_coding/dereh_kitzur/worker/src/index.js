@@ -84,7 +84,7 @@ const AUTH_MAX = 10;
  * and the rate limit. */
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, X-DK-Key',
   'Access-Control-Max-Age': '86400'
 };
@@ -291,6 +291,82 @@ async function write(env, request, ip) {
   return json({ ok: true });
 }
 
+/* ---------- counting ----------
+ *
+ * Whether anybody uses this is a question the project could not answer at all,
+ * and every decision about what to build next was being made without it.
+ *
+ * What is stored is one integer per day per event, and nothing else. No IP, no
+ * cookie, no user agent, no session id, no path, no referrer - there is nothing
+ * in this store that could be traced to a person even by whoever holds the keys
+ * to it, which is the only version of counting worth having on a map that shows
+ * where residents walk. The counts live in the project's own Cloudflare account
+ * and reach no third party.
+ *
+ * Read-modify-write, so two visits landing in the same instant can cost a
+ * count. That is the right trade here: this is a village-scale number used to
+ * tell "nobody" from "a few dozen", and an occasional lost tick does not change
+ * that answer. It is not billing.
+ */
+
+const STAT_EVENTS = new Set([
+  'open',      // the app was opened
+  'draft',     // somebody started recording or drawing a trail
+  'trip',      // somebody started building a trip
+  'send'       // somebody sent a trail in for review
+]);
+
+const STAT_TTL = 120 * 24 * 60 * 60;     // four months, then the day drops out
+const STAT_MAX = 60;                     // events per window, per IP
+
+const statKey = (event) => `d:${new Date().toISOString().slice(0, 10)}|${event}`;
+
+async function count(env, request, ip) {
+  // Counting is optional by construction: without the binding the endpoint
+  // answers politely and the app carries on, so a worker deployed without the
+  // namespace is degraded rather than broken.
+  if (!env.STATS) return json({ ok: true, counted: false });
+  if (await overRate(env, 's', ip, STAT_MAX)) return json({ ok: true, counted: false });
+
+  let event = '';
+  try {
+    // text/plain rather than a JSON content type, so the beacon the app sends
+    // stays a simple request and needs no preflight it cannot make.
+    event = String(JSON.parse(await request.text()).event || '');
+  } catch (err) {
+    return json({ error: 'bad body' }, 400);
+  }
+  // A fixed list, so nobody can turn this into free storage of their own.
+  if (!STAT_EVENTS.has(event)) return json({ error: 'unknown event' }, 400);
+
+  const key = statKey(event);
+  const now = parseInt(await env.STATS.get(key), 10) || 0;
+  await env.STATS.put(key, String(now + 1), { expirationTtl: STAT_TTL });
+  return json({ ok: true, counted: true });
+}
+
+/** Every day counted, newest first. Open in a browser and read it.
+ *
+ *  Deliberately ungated: these are aggregate numbers about a public map, and
+ *  the point of measuring is that the answer is one tap away on a phone. */
+async function stats(env) {
+  if (!env.STATS) return json({ error: 'המדידה כבויה' }, 503);
+  const { keys } = await env.STATS.list({ prefix: 'd:' });
+  const days = {};
+  await Promise.all(keys.map(async ({ name }) => {
+    const [date, event] = name.slice(2).split('|');
+    const n = parseInt(await env.STATS.get(name), 10) || 0;
+    days[date] = days[date] || { date };
+    days[date][event] = n;
+  }));
+  const rows = Object.values(days).sort((a, b) => b.date.localeCompare(a.date));
+  const sum = (event) => rows.reduce((n, d) => n + (d[event] || 0), 0);
+  return json({
+    days: rows,
+    total: { open: sum('open'), draft: sum('draft'), trip: sum('trip'), send: sum('send') }
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -316,6 +392,14 @@ export default {
       if (request.method === 'PUT') {
         return write(env, request, ip);
       }
+    }
+
+    if (url.pathname === '/stat' && request.method === 'POST') {
+      return count(env, request, ip);
+    }
+
+    if (url.pathname === '/stats') {
+      return stats(env);
     }
 
     return json({ error: 'not found' }, 404);

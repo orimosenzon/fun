@@ -20,3 +20,11 @@ READ_ONLY = "false"
 [[kv_namespaces]]
 binding = "RATE"
 id = "3e525627ec39406083b5dc59e12a9a2a"
+
+# ספירת שימוש. מונה אחד ליום לכל סוג אירוע, בלי IP, בלי עוגייה ובלי שום דבר
+# שאפשר לייחס לאדם. בלי הקישור הזה נקודת /stat עונה בנימוס ולא סופרת, כלומר
+# worker בלי המרחב הזה מאבד את הספירה ולא נשבר. נוצר 2/9/2026 עם
+#   wrangler kv namespace create STATS
+[[kv_namespaces]]
+binding = "STATS"
+id = "92c43fc2decc46e383e7b84e68b438b4"

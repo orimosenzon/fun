@@ -1936,6 +1936,7 @@ async function boot() {
   // connection, which is exactly the connection you have out on a trail.
   renderList();
   paintStats();
+  Store.statVisit();
   Drafts.init();
   wireControls();
   // Confirming the stored token needs the network, so it must not hold up the
@@ -1968,6 +1969,11 @@ async function boot() {
     if (wanted && Layers.item(wanted)) select(wanted, !view);
     syncView();
   }
+
+  // Last, and outside the `if (map)`: reopening an interrupted recording draws
+  // on the map, so it has to come after the style and the layers are up, and it
+  // still has to happen on a browser that never got a map at all.
+  Drafts.restore();
 }
 
 /** Show the shared dataset again after a write, so the trail reappears as an

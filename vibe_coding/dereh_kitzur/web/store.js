@@ -760,6 +760,49 @@ const Store = (() => {
    *  a person who lives here can say where they belong. A write per drag would
    *  mean a round trip per drag and a commit log of several hundred entries for
    *  one afternoon's work. */
+  /* ---------- counting ----------
+   *
+   * Whether anybody out there opens this was a question the project had no way
+   * to answer, and every argument about what to build next was being settled
+   * without it.
+   *
+   * One beacon per event, sent and forgotten - no reply is read and a failure
+   * is ignored. What leaves the browser is the name of the event and nothing
+   * else: one of four fixed words. The worker keeps a tally per day and stores
+   * no address, no cookie and no identifier of any kind, which is the only
+   * version of this worth having on a map of where residents walk.
+   */
+
+  const COUNTED = 'dk.counted.v1';
+
+  function stat(event) {
+    // `?local` is somebody reading files off their own disk, and `editing` is
+    // the editor at work rather than a visit. Ori opens this app more often
+    // than anyone in the moshava does, and a number he dominates answers a
+    // different question from the one being asked.
+    if (!WORKER || RAW === './' || editing()) return;
+    try {
+      // text/plain keeps the beacon a simple request, which is the only kind
+      // sendBeacon can make cross-origin without a preflight.
+      const body = new Blob([JSON.stringify({ event })], { type: 'text/plain' });
+      if (navigator.sendBeacon) navigator.sendBeacon(`${WORKER}/stat`, body);
+      else fetch(`${WORKER}/stat`, { method: 'POST', body, keepalive: true });
+    } catch (err) {
+      /* counting is never allowed to be why the app misbehaves */
+    }
+  }
+
+  /** The visit itself: once per tab, not once per reload of the layer list. */
+  function statVisit() {
+    try {
+      if (sessionStorage.getItem(COUNTED)) return;
+      sessionStorage.setItem(COUNTED, '1');
+    } catch (err) {
+      /* private mode: counted once per load, which is close enough */
+    }
+    stat('open');
+  }
+
   /* ---------- the queue ----------
    *
    * A trail somebody sent in, not yet on the map. Before the worker this queue
@@ -846,6 +889,7 @@ const Store = (() => {
     };
     await withPending((doc) => { doc.items.push(item); },
       `${draft.parts ? 'טיול' : 'שביל'} שהתקבל: ${draft.name}`);
+    stat('send');
     return item.id;
   }
 
@@ -925,7 +969,7 @@ const Store = (() => {
 
   return {
     RAW, OWNER, REPO, WORKER,
-    load, asset, cleanLinks,
+    load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, enable, disable, resume, writable,
     publish, publishTrip, remove, rename, setLinks, setColor, addPhotos, removePhoto,
     addLayer, editLayer, removeLayer, setLayer,
