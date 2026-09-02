@@ -123,6 +123,7 @@ const Drafts = (() => {
   let rows = [];                    // raw records, newest first
   let urls = [];                    // object URLs to revoke on rebuild
   let ed = null;                    // the live editor, see startEditor()
+  let ready = null;                 // init()'s promise, awaited by restore()
 
   /* ---------- storage ---------- */
 
@@ -329,6 +330,112 @@ const Drafts = (() => {
     rebuildTrip();
   }
 
+  /* ---------- surviving a reload ----------
+   *
+   * Everything above this line lives in `ed`, which is memory and nothing else.
+   * A saved draft is safe in IndexedDB, but the stretch *before* the first save
+   * was not safe anywhere: a phone that locks and drops the tab, a refresh, a
+   * browser reclaiming memory from a backgrounded page, and an afternoon of
+   * walking or a trip chained shortcut by shortcut is gone with no trace.
+   *
+   * That stretch is also the longest one. Recording a walk means holding the
+   * page open for the whole walk, and building a trip means tapping twenty
+   * shortcuts in a row - both are far more exposed than the seconds between
+   * pressing "סיום" and typing a name.
+   *
+   * So the live editor is mirrored into localStorage on every change and the
+   * app offers it back on the next load. localStorage and not IndexedDB on
+   * purpose: this write happens on every GPS fix and every tap, and it has to
+   * be synchronous and cheap. What is stored is small - a recipe or a list of
+   * points - and it is a mirror, never the record itself. `save()` still writes
+   * the draft to IndexedDB exactly as before, and clears this on the way out.
+   */
+
+  const LIVE = 'dk.editor.v1';
+
+  /** Older than this and the offer is noise rather than a rescue: whatever it
+   *  was, the person has moved on and does not want to be asked about it. */
+  const LIVE_MAX_MS = 24 * 60 * 60 * 1000;
+
+  function saveLive() {
+    try {
+      if (!ed) { localStorage.removeItem(LIVE); return; }
+      localStorage.setItem(LIVE, JSON.stringify({
+        mode: ed.mode,
+        path: ed.mode === 'trip' ? [] : ed.path,
+        parts: ed.mode === 'trip' ? ed.parts : [],
+        // Only the id: the record itself is in IndexedDB and re-read on restore,
+        // so a name typed and a photo attached are not duplicated here.
+        editingId: (ed.editing && ed.editing.id) || '',
+        at: Date.now()
+      }));
+    } catch (err) {
+      /* private mode or a full quota: the editor still works, unmirrored */
+    }
+  }
+
+  /** The mirrored session, if there is one worth offering back. */
+  function liveRecord() {
+    try {
+      const rec = JSON.parse(localStorage.getItem(LIVE) || 'null');
+      if (!rec || !rec.mode) return null;
+      const size = rec.mode === 'trip'
+        ? (rec.parts || []).length : (rec.path || []).length;
+      // Nothing was drawn yet, so there is nothing to lose and nothing to ask
+      // about - the editor was merely open. Dropped rather than left behind,
+      // or an empty record from a tab that opened the editor and closed it
+      // would sit in storage for good.
+      if (!size) { localStorage.removeItem(LIVE); return null; }
+      if (Date.now() - (rec.at || 0) > LIVE_MAX_MS) {
+        localStorage.removeItem(LIVE);
+        return null;
+      }
+      return rec;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function liveDescription(rec) {
+    if (rec.mode === 'trip') {
+      const trails = rec.parts.filter((p) => p.trail).length;
+      const drawn = rec.parts.filter((p) => p.draw).length;
+      const bits = [];
+      if (trails) bits.push(`${trails} ${trails === 1 ? 'דרך קיצור' : 'דרכי קיצור'}`);
+      if (drawn) bits.push(`${drawn} ${drawn === 1 ? 'קטע מצויר' : 'קטעים מצוירים'}`);
+      return `טיול עם ${bits.join(' ו')}`;
+    }
+    const n = rec.path.length;
+    return rec.mode === 'walk'
+      ? `הקלטה בהליכה עם ${n} נקודות` : `תוואי מצויר עם ${n} נקודות`;
+  }
+
+  /** Offer an interrupted session back. Called by the app once the map is up,
+   *  and not from init(): reopening the editor touches the map, and at the
+   *  moment the drafts load the style may not be there to touch. */
+  async function restore() {
+    await ready;
+    const rec = liveRecord();
+    if (!rec || ed) return;
+    const when = new Date(rec.at).toLocaleTimeString('he-IL',
+      { hour: '2-digit', minute: '2-digit' });
+    if (!confirm(`נשארה עבודה שלא נשמרה מ-${when}: ${liveDescription(rec)}.\n\n`
+               + 'להמשיך מאיפה שהפסקת?')) {
+      localStorage.removeItem(LIVE);
+      return;
+    }
+    // The draft being edited comes back from IndexedDB, so the name, the note
+    // and the photos already on it are all still there; only the geometry is
+    // taken from the mirror, because the mirror is the newer of the two.
+    const base = rec.editingId ? rows.find((r) => r.id === rec.editingId) : null;
+    startEditor(rec.mode, {
+      ...(base || {}),
+      ...(rec.editingId ? { id: rec.editingId } : {}),
+      path: rec.path || [],
+      parts: rec.parts || []
+    });
+  }
+
   /* ---------- the editor ---------- */
 
   const EDIT_SRC = 'src-editor';
@@ -349,6 +456,11 @@ const Drafts = (() => {
   }
 
   function paintEditor() {
+    // Ahead of the map check on purpose. Every change to the editor funnels
+    // through here - a GPS fix, a tap, an undo, a chained shortcut - which
+    // makes this the one place the mirror has to be written, and a browser
+    // without WebGL still has work in `ed` that is worth not losing.
+    saveLive();
     if (!map) return;
     if (!map.getSource(EDIT_SRC)) {
       map.addSource(EDIT_SRC, { type: 'geojson', data: editorGeoJSON() });
@@ -444,6 +556,10 @@ const Drafts = (() => {
     document.body.classList.add('drafting');
     el('draft-bar').hidden = false;
     paintEditor();
+    // Counted when the editor opens rather than when it is saved, because the
+    // gap between the two is the thing worth knowing: people who start and do
+    // not finish are the ones the app is failing.
+    if (!existing) Store.stat(mode === 'trip' ? 'trip' : 'draft');
 
     if (mode === 'draw') {
       if (map) ed.offTap = onMapTap((e) => {
@@ -507,6 +623,7 @@ const Drafts = (() => {
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);
     if (ed && ed.offTap) ed.offTap();
     ed = null;
+    saveLive();          // no editor, so this drops the mirror
     clearEditorLayers();
     document.body.classList.remove('drafting');
     const bar = el('draft-bar');
@@ -1105,17 +1222,22 @@ ${tracks}
     }
   }
 
-  async function init() {
+  function init() {
     wire();
     keepStorage();                    // not awaited: the drafts must not wait on it
-    try {
-      db = await open();
-      await reload();
-    } catch (err) {
-      console.error('drafts unavailable', err);
-    }
+    // Held so that restore(), which the app calls later and from outside, can
+    // wait for the stored drafts rather than race them.
+    ready = (async () => {
+      try {
+        db = await open();
+        await reload();
+      } catch (err) {
+        console.error('drafts unavailable', err);
+      }
+    })();
+    return ready;
   }
 
-  return { init, detailExtras, wireDetail, share, isDrafting: () => !!ed, paintEditor,
-           stop: () => stopEditor() };
+  return { init, restore, detailExtras, wireDetail, share, isDrafting: () => !!ed,
+           paintEditor, stop: () => stopEditor() };
 })();

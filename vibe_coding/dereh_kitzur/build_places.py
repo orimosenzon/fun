@@ -392,6 +392,55 @@ def save_json(path, doc):
         json.dump(doc, handle, ensure_ascii=False, indent=1)
 
 
+# The app writes to places.json as well as reading it: dragging a pin in the
+# arrange tool stores a `manual` position straight into the published copy.
+# Those pins survive a rebuild only because `previous` carries them over - so
+# `previous` has to be read from the published document and not from
+# web/data/, which is an offline mirror and goes stale the moment somebody
+# pins a place from their phone.
+#
+# Measured 2/9/2026: the mirror was six days behind the published copy and one
+# place further short. A rebuild from it would have dropped that place with no
+# error and no way to notice.
+PUBLISHED_PLACES = ("https://raw.githubusercontent.com/orimosenzon/"
+                    "derech-kitzur-data/main/data/places.json")
+
+
+def published_places(offline=False):
+    """The places document the app is actually serving, for `previous`.
+
+    Falls back to the local mirror when the network is not there, and says so
+    out loud: building offline is fine, building offline without knowing it is
+    how a pin gets lost.
+    """
+    local = load_json(OUT, {})
+    if offline:
+        print("  --no-net: הבסיס נלקח מהעותק המקומי", file=sys.stderr)
+        return local
+
+    try:
+        # raw sits behind a five minute CDN cache, which is exactly long enough
+        # to serve a copy from before the pin that prompted this rebuild.
+        res = requests.get(PUBLISHED_PLACES, params={"t": int(time.time())},
+                           timeout=20)
+        res.raise_for_status()
+        remote = res.json()
+    except Exception as err:                       # noqa: BLE001 - any failure
+        print(f"  אזהרה: לא הצלחתי לקרוא את places.json המפורסם ({err})",
+              file=sys.stderr)
+        print("  ממשיך מהעותק המקומי. מיקומים שנעצו מהאפליקציה עלולים ללכת לאיבוד.",
+              file=sys.stderr)
+        return local
+
+    pinned = lambda doc: {p["id"] for p in doc.get("places", [])          # noqa: E731
+                          if (p.get("geo") or {}).get("source") == "manual"}
+    gained = pinned(remote) - pinned(local)
+    if gained:
+        print(f"  {len(gained)} מיקומים נעצו מהאפליקציה מאז העותק המקומי, "
+              "והם נשמרים", file=sys.stderr)
+    return remote
+
+
 def osm_index(offline=False):
     """Every named node and way in the moshava, keyed by normalised name.
 
@@ -637,7 +686,7 @@ def build(args):
 
     pages = fetch_pages(titles)
 
-    previous = {p["id"]: p for p in load_json(OUT, {}).get("places", [])}
+    previous = {p["id"]: p for p in published_places(args.no_net).get("places", [])}
     pois, roads = osm_index(args.no_net)
     geo = Geocoder(args.no_net)
 
