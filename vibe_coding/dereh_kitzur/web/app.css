@@ -754,6 +754,33 @@ button { font: inherit; color: inherit; cursor: pointer; }
   cursor: zoom-in;
 }
 
+/* ---------- a video among the photos ----------
+ *
+ * A YouTube thumbnail is a photo like any other, and without a mark on it the
+ * only way to find out that a tile plays rather than enlarges is to press it.
+ * The play triangle is the one symbol nobody has to be taught. */
+.shot { position: relative; display: block; }
+
+.shot.video img { cursor: pointer; }
+
+.shot.video::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(17, 17, 17, .62) center/13px 15px no-repeat;
+  /* The triangle is inlined rather than fetched: it is eleven bytes of path,
+   * and an external request for it could fail while the tile it explains
+   * loaded fine. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fff'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+  pointer-events: none;             /* the press belongs to the tile */
+}
+
 .acts { display: grid; gap: 7px; }
 
 .act {
@@ -844,6 +871,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #lb-img.zoomed:active { cursor: grabbing; }
 
 #lb-img.loading { opacity: 0; }
+
+/* The player takes the stage the same way a photo does, at 16:9 and as large
+ * as fits. `aspect-ratio` with both maxima is what keeps it from being letter-
+ * boxed on a wide screen and cropped on a narrow one. */
+.lb-video {
+  grid-area: 1 / 1;
+  width: 100%;
+  max-width: min(100%, calc((100vh - 130px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: #000;
+}
+
+.lb-video[hidden] { display: none; }
 
 .lb-spin {
   grid-area: 1 / 1;

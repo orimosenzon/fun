@@ -591,8 +591,31 @@ function hostOf(url) {
  *  no coordinates, so this app is where a pardespedia place's position is
  *  decided; the festival placed its own pins on its own map, and offering to
  *  drag those would be offering to be wrong about somebody else's data. */
+/** Adding a video to a place.
+ *
+ *  Only the pardespedia layer. Every other place layer is a file some script
+ *  builds and the app only reads, and the worker will not write to any of them
+ *  anyway - offering the button there would be offering something that fails.
+ *
+ *  The pictures on a place come from the wiki and the video does not, which is
+ *  why `build_places.py` carries `yt` entries across a rebuild the same way it
+ *  carries a hand-dropped pin. Without that, the next rebuild would quietly
+ *  erase every video anybody had added. */
+function placeVideoActs(it, layer) {
+  if (!Store.isEditor() || layer.id !== Layers.PLACES_ID) return '';
+  return `
+    <h3>סרטון</h3>
+    <div class="acts">
+      <button class="act" data-place="video"><span class="lbl">הוספת סרטון יוטיוב
+        <span class="hint">יוצג יחד עם התמונות של הערך</span></span></button>
+    </div>`;
+}
+
 function placeBody(it) {
   const layer = Layers.layerOf(it.id) || {};
+  // One per detail pane and never two: `detailSay` finds it by id, and a second
+  // element with the same id is one that never shows a word.
+  const msg = Store.isEditor() ? '<p id="pub-msg" class="pub-msg" hidden></p>' : '';
 
   if (it.unplaced) {
     return `
@@ -602,8 +625,9 @@ function placeBody(it) {
         <div class="acts">
           <button class="act act-nav" data-place="pin"><span class="lbl">נעץ על המפה
             <span class="hint">לחיצה אחת על המקום המדויק, ונשמר לכולם</span></span></button>
-        </div>
-        <p id="pub-msg" class="pub-msg" hidden></p>` : ''}
+        </div>` : ''}
+      ${placeVideoActs(it, layer)}
+      ${msg}
       ${linksBlock(it)}`;
   }
 
@@ -624,8 +648,9 @@ function placeBody(it) {
         ${it.geoSource === 'manual' ? `<button class="act act-sub" data-place="unpin">
           <span class="lbl">ביטול המיקום הידני
             <span class="hint">יחזור להשערה האוטומטית בבנייה הבאה</span></span></button>` : ''}
-      </div>
-      <p id="pub-msg" class="pub-msg" hidden></p>` : ''}`;
+      </div>` : ''}
+    ${placeVideoActs(it, layer)}
+    ${msg}`;
 }
 
 /** The practical half of a festival entry: whom to ring, and whether you can
@@ -694,6 +719,8 @@ function editorBlock(it, layer) {
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
+      <button class="act" data-pub="video"><span class="lbl">הוספת סרטון יוטיוב
+        <span class="hint">יוצג יחד עם התמונות, ונפתח בגדול בדפדוף</span></span></button>
       <button class="act" data-pub="colour"><span class="lbl">צבע השביל
         <span class="hint"><span class="dot" style="--c:${it.color || layer.color}"></span>
           איך הקו נראה על המפה</span></span></button>
@@ -865,17 +892,32 @@ function showDetail(it) {
   // know - localhost above all - and Chrome then blocks the reply for having
   // arrived as HTML where an image was expected. Nothing here needs to say
   // where it is asking from.
-  const canEditPhotos = Store.isEditor() && !it.place && !it.draft && layer.kind === 'trails';
   const photos = it.photos || [];
+  const clips = photos.filter((p) => p.yt).length;
+
+  // What this app may remove. A trail is the initiative's own, so all of it.
+  // On a pardespedia place only the video: the pictures came from the wiki and
+  // the next build would bring them back anyway, so a delete button over them
+  // would promise something it cannot keep.
+  const wikiPlace = !!it.place && layer.id === Layers.PLACES_ID;
+  const editable = Store.isEditor() && !it.draft
+    && (layer.kind === 'trails' || wikiPlace);
+  const canDrop = (p) => editable && (!wikiPlace || !!p.yt);
+
+  const heading = !clips ? 'תמונות'
+    : clips === photos.length ? (clips === 1 ? 'סרטון' : 'סרטונים')
+      : 'תמונות וסרטונים';
+
   const gallery = photos.length ? `
-    <h3>תמונות (${photos.length})</h3>
-    <div class="gallery${canEditPhotos ? ' editable' : ''}">
-      ${photos.map((p, i) => `<span class="shot">
-        <img src="${p.thumb}" data-i="${i}" title="${escapeHtml(p.cap || it.name)}"
+    <h3>${heading} (${photos.length})</h3>
+    <div class="gallery${editable ? ' editable' : ''}">
+      ${photos.map((p, i) => `<span class="shot${p.yt ? ' video' : ''}">
+        <img src="${p.thumb}" data-i="${i}"
+          title="${escapeHtml(p.cap || (p.yt ? 'סרטון · ' + it.name : it.name))}"
           alt="${escapeHtml(p.cap || it.name)}" loading="lazy"
           referrerpolicy="no-referrer">
-        ${canEditPhotos ? `<button class="shot-x" data-drop="${i}"
-          aria-label="הסרת התמונה">&times;</button>` : ''}
+        ${canDrop(p) ? `<button class="shot-x" data-drop="${i}"
+          aria-label="${p.yt ? 'הסרת הסרטון' : 'הסרת התמונה'}">&times;</button>` : ''}
       </span>`).join('')}
     </div>` : '';
 
@@ -922,17 +964,46 @@ function detailSay() {
 
 /** Editing an item that is already in the shared dataset: a published trail,
  *  or the position of a pardespedia place. */
+/** Ask for a YouTube address and file it with the pictures.
+ *
+ *  One function for both kinds of item, because the only difference is which
+ *  document is written and which one is re-read afterwards.
+ *
+ *  `prompt` and not a form: this is one field, pasted from a phone's share
+ *  sheet nine times out of ten, and every other single-field action in this app
+ *  asks the same way. The address is checked in the store rather than here, so
+ *  that whatever paths reach it get the same answer. */
+async function addVideoTo(it, onPlace, say) {
+  const url = prompt('כתובת של סרטון יוטיוב:\n(אפשר גם קישור קצר של youtu.be)');
+  if (url == null || !url.trim()) return;
+  say('משבץ סרטון…');
+  try {
+    const doc = await Store.addVideo(it.id, url, it.name, onPlace);
+    if (onPlace) reloadPlaces(doc); else await reloadShared(doc);
+    select(it.id, false);
+  } catch (err) {
+    say('נכשל: ' + err.message, true);
+  }
+}
+
 function wirePublished(it) {
   const say = detailSay();
+
+  const onPlace = !!it.place;
 
   el('detail').querySelectorAll('[data-drop]').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('להסיר את התמונה הזאת מהשביל?')) return;
+      const clip = !!btn.closest('.shot.video');
+      if (!confirm(clip ? 'להסיר את הסרטון הזה?' : 'להסיר את התמונה הזאת מהשביל?')) return;
       btn.disabled = true;
-      say('מסיר תמונה…');
+      say(clip ? 'מסיר סרטון…' : 'מסיר תמונה…');
       try {
-        await reloadShared(await Store.removePhoto(it.id, +btn.dataset.drop, it.name));
+        const doc = await Store.removePhoto(it.id, +btn.dataset.drop, it.name, onPlace);
+        // Two documents, two ways back: a place lives in places.json and a
+        // trail in trails.json, and refreshing the wrong one leaves the pane
+        // showing what was just removed.
+        if (onPlace) reloadPlaces(doc); else await reloadShared(doc);
         select(it.id, false);
       } catch (err) {
         btn.disabled = false;
@@ -968,6 +1039,7 @@ function wirePublished(it) {
   el('detail').querySelectorAll('[data-place]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       if (btn.dataset.place === 'pin') { startPinning(it); return; }
+      if (btn.dataset.place === 'video') { addVideoTo(it, true, say); return; }
       if (!confirm(`לבטל את המיקום הידני של "${it.name}"?`)) return;
       btn.disabled = true;
       say('מבטל…');
@@ -983,6 +1055,11 @@ function wirePublished(it) {
 
   el('detail').querySelectorAll('[data-pub]').forEach((node) => {
     const act = node.dataset.pub;
+
+    if (act === 'video') {
+      node.addEventListener('click', () => addVideoTo(it, false, say));
+      return;
+    }
 
     if (act === 'photos') {
       node.addEventListener('change', async () => {
@@ -1320,15 +1397,58 @@ function openLightbox(item, index) {
 
 function closeLightbox() {
   el('lightbox').hidden = true;
-  el('lb-img').src = '';
+  // Dropped rather than set to '', for the reason spelled out in
+  // showPhotoStage: an empty src is not empty, it is this page.
+  el('lb-img').removeAttribute('src');
+  showPhotoStage();                           // and with it, silence the player
   lbReset();
   document.removeEventListener('keydown', lbKeys);
+}
+
+/** Put the stage back to showing pictures.
+ *
+ *  Silencing the player is the part that matters, and it is why this is a
+ *  function rather than two lines repeated: a player left loaded goes on
+ *  playing behind a closed lightbox, and the sound comes from nowhere with
+ *  nothing on screen to stop it.
+ *
+ *  `src = ''` is the obvious way to do that and it is wrong. An empty string is
+ *  resolved against the document, so the frame does not go blank - it loads
+ *  *this app* inside itself, a second full copy running invisibly behind the
+ *  map. Measured: closing the lightbox fetched index.html again. about:blank is
+ *  a real navigation away from YouTube, which is what actually stops the sound,
+ *  and dropping the attribute afterwards keeps the next read from resolving to
+ *  the page URL all over again. */
+function showPhotoStage() {
+  const video = el('lb-video');
+  if (video.getAttribute('src')) video.src = 'about:blank';
+  video.removeAttribute('src');
+  video.hidden = true;
+  el('lb-img').hidden = false;
 }
 
 function paintLightbox() {
   const img = el('lb-img');
   const photo = lbPhotos[lbIndex];
   lbReset();                                  // a new photo arrives fitted
+
+  if (photo.yt) {
+    img.hidden = true;
+    img.removeAttribute('src');
+    img.onerror = null;                       // the photo's fallback is not this one's
+    el('lb-spin').hidden = true;
+    const video = el('lb-video');
+    video.hidden = false;
+    // autoplay, because getting here already took a deliberate press; rel=0 so
+    // what follows comes from the same channel; nocookie so that opening the
+    // lightbox does not set a tracking cookie for somebody who never pressed play.
+    video.src = 'https://www.youtube-nocookie.com/embed/'
+      + encodeURIComponent(photo.yt) + '?autoplay=1&rel=0';
+    paintLightboxCaption(photo);
+    return;
+  }
+
+  showPhotoStage();
   img.classList.add('loading');
   el('lb-spin').hidden = false;
   img.src = photo.full;                       // full resolution, not the thumb
@@ -1347,9 +1467,15 @@ function paintLightbox() {
     if (photo.thumb && img.src !== photo.thumb) img.src = photo.thumb;
   };
 
-  // The caption a photo arrives with says more than the name of the place: the
-  // year, the photographer, the archive the print came from. Where מקום שמור
-  // wrote one it is shown instead of the name, credit and all.
+  paintLightboxCaption(photo);
+}
+
+/** The caption and the counter, shared by both kinds of item.
+ *
+ *  The caption a photo arrives with says more than the name of the place: the
+ *  year, the photographer, the archive the print came from. Where מקום שמור
+ *  wrote one it is shown instead of the name, credit and all. */
+function paintLightboxCaption(photo) {
   el('lb-cap-text').textContent = photo.cap || lbTitle;
   el('lb-count').textContent = lbPhotos.length > 1 ? `(${lbIndex + 1}/${lbPhotos.length})` : '';
   const many = lbPhotos.length > 1;

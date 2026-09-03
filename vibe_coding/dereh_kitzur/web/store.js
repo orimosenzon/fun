@@ -673,16 +673,90 @@ const Store = (() => {
     }, `תמונות לשביל ${name}`));
   }
 
-  /** Drop a photo from a trail.
+  /* ---------- video ----------
    *
-   *  The file itself stays in the repo. Names are a hash of the bytes, so the
-   *  same photo published twice is one file, and deleting it here could blank
-   *  it somewhere else. An orphan webp costs a few hundred kilobytes; a
+   * A video is filed inside `photos`, as `{yt, thumb}` with no `full`, rather
+   * than in a `videos` array of its own.
+   *
+   * That is the whole design decision, and it is what makes the feature small:
+   * the gallery, the counter, the browsing arrows, the swipe and the keyboard
+   * all walk one list, and a video dropped into that list is browsed with the
+   * photos for free. A second array would have meant a second strip, a second
+   * index and a second set of arrows, and the one thing asked for - reach the
+   * video by paging through the pictures - would have been the hard part.
+   *
+   * Only the id is kept. Not the title, not the channel, not the duration:
+   * those live on YouTube, they change, and a stale copy of somebody else's
+   * metadata is worse than none. The thumbnail is derived from the id.
+   */
+
+  /** The video id out of whatever was pasted, or '' if that was not a video.
+   *
+   *  Accepts what people actually paste: a watch link with the id in `v`, a
+   *  youtu.be short link, an embed or shorts or live path, a link carrying a
+   *  playlist or a `t=` timestamp, and the bare id. */
+  function youtubeId(input) {
+    const text = String(input || '').trim();
+    if (/^[\w-]{11}$/.test(text)) return text;
+
+    let url;
+    try {
+      url = new URL(text.includes('://') ? text : 'https://' + text);
+    } catch (err) {
+      return '';
+    }
+    const host = url.hostname.replace(/^(www|m|music)\./, '');
+    const ok = (id) => (/^[\w-]{11}$/.test(id || '') ? id : '');
+
+    if (host === 'youtu.be') return ok(url.pathname.slice(1).split('/')[0]);
+    if (host !== 'youtube.com' && host !== 'youtube-nocookie.com') return '';
+
+    const v = url.searchParams.get('v');
+    if (v) return ok(v);
+    const path = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/);
+    return path ? ok(path[1]) : '';
+  }
+
+  /* i.ytimg.com serves the thumbnail with no key and no referrer check.
+   * `hqdefault` and not `maxresdefault`: the high-resolution one exists only
+   * for videos uploaded above a certain size and 404s for the rest, which in a
+   * gallery is a broken tile rather than a missing nicety. */
+  const youtubeThumb = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+
+  /** File a video with the pictures, on a trail or on a pardespedia place. */
+  const addVideo = async (id, url, name, place) => {
+    const yt = youtubeId(url);
+    if (!yt) throw new Error('זו לא כתובת של סרטון יוטיוב.');
+    const attach = (it) => {
+      if (!it) return;
+      if ((it.photos || []).some((p) => p.yt === yt)) {
+        throw new Error('הסרטון הזה כבר משובץ כאן.');
+      }
+      it.photos = [...(it.photos || []), { yt, thumb: youtubeThumb(yt) }];
+    };
+    const message = `סרטון: ${name}`;
+    if (place) {
+      return absolutise(await withPlaces(
+        (doc) => attach(doc.places.find((p) => p.id === id)), message));
+    }
+    return absolutise(await withTrails((doc) => attach(find(doc, id)), message));
+  };
+
+  /** Drop a photo or a video from a trail or from a place.
+   *
+   *  The image file itself stays in the repo. Names are a hash of the bytes, so
+   *  the same photo published twice is one file, and deleting it here could
+   *  blank it somewhere else. An orphan webp costs a few hundred kilobytes; a
    *  missing one costs a photo. */
-  const removePhoto = async (id, index, name) => absolutise(await withTrails((doc) => {
-    const it = find(doc, id);
-    if (it && it.photos) it.photos.splice(index, 1);
-  }, `הסרת תמונה: ${name}`));
+  const removePhoto = async (id, index, name, place) => {
+    const cut = (it) => { if (it && it.photos) it.photos.splice(index, 1); };
+    const message = `הסרת תמונה: ${name}`;
+    if (place) {
+      return absolutise(await withPlaces(
+        (doc) => cut(doc.places.find((p) => p.id === id)), message));
+    }
+    return absolutise(await withTrails((doc) => cut(find(doc, id)), message));
+  };
 
   /* ---------- trail layers ----------
    *
@@ -972,6 +1046,7 @@ const Store = (() => {
     load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, enable, disable, resume, writable,
     publish, publishTrip, remove, rename, setLinks, setColor, addPhotos, removePhoto,
+    addVideo, youtubeId, youtubeThumb,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,

@@ -68,8 +68,14 @@ def describe(item):
         bits.append("נוסף מאפליקציית דרך קיצור")
 
     # Photos travel with the map rather than being left behind in the repo.
+    # A video is filed among the photos and has no `full`, so it goes out as a
+    # link: My Maps will not play one inside a place's bubble, and reaching for
+    # `full` on it used to raise KeyError and take the whole export down.
     for photo in item.get("photos", [])[:4]:
-        bits.append(f'<img src="{IMG}{photo["full"]}" width="400">')
+        if photo.get("yt"):
+            bits.append(f'<a href="https://youtu.be/{photo["yt"]}">סרטון ביוטיוב</a>')
+        elif photo.get("full"):
+            bits.append(f'<img src="{IMG}{photo["full"]}" width="400">')
     for link in item.get("links", [])[:4]:
         bits.append(f'<a href="{esc(link["url"])}">{esc(link.get("title") or link["url"])}</a>')
     bits.append(f'<a href="{APP}">פתיחה באפליקציה</a>')

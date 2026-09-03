@@ -714,7 +714,13 @@ def build(args):
     images = image_urls(files) if files else {}
     for place in places:
         image = images.get(place.pop("_file") or "")
-        place["photos"] = [image] if image else []
+        # סרטון שמישהו שיבץ מהאפליקציה נשמר בתוך photos, אבל הוא לא מגיע מהוויקי
+        # ולכן הבנייה הזאת לא יודעת עליו כלום. בלי לשמר אותו כאן, כל בנייה מחדש
+        # הייתה מוחקת בשקט כל סרטון שהתווסף. אותו היגיון בדיוק כמו שימור המיקום
+        # הידני שכמה שורות מתחת: מה שהאפליקציה יצרה, הוויקי לא יכול להחזיר.
+        clips = [p for p in (previous.get(place["id"], {}).get("photos") or [])
+                 if p.get("yt")]
+        place["photos"] = ([image] if image else []) + clips
 
     # -- positions
     stats = {"manual": 0, "google": 0, "osm": 0, "address": 0, "street": 0,

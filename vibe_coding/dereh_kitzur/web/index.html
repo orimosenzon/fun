@@ -145,6 +145,12 @@
   <div class="lb-stage">
     <div class="lb-spin" id="lb-spin"></div>
     <img id="lb-img" alt="" referrerpolicy="no-referrer">
+    <!-- A video sits in the same stage as the photos and takes its turn in the
+         same browsing order. The src is set only while it is showing and blanked
+         on the way out, or the sound carries on after the lightbox is closed. -->
+    <iframe id="lb-video" class="lb-video" hidden title="סרטון"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   </div>
   <p class="lb-cap"><span id="lb-cap-text"></span> <span id="lb-count" class="lb-count"></span></p>
 </div>
