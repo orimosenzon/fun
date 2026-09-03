@@ -289,6 +289,10 @@ function applyOverlays() {
     Layers.addToMap();
     drawWaypoints();
     if (Drafts.isDrafting()) Drafts.paintEditor();
+    // Changing the basemap throws away every source on the style, the
+    // navigation line included. Without this, switching to satellite mid-walk
+    // silently loses the one thing telling you where you are heading.
+    if (nav && here) paintNav();
   }
 }
 
@@ -1553,10 +1557,97 @@ function projectOnPath(pos, path) {
   return { ...best, before, after };
 }
 
+/* ---------- the line you are meant to walk ----------
+ *
+ * The bar alone was a distance, a compass word and an arrow, and somebody
+ * seeing it for the first time had no way in: nothing on the map said where
+ * the target was, so there was nothing for the number to be a number *of*.
+ * The arrow made it worse rather than better, because without a compass in the
+ * device it points to north rather than to where you are looking.
+ *
+ * A dashed line from where you are to where you are going answers all of it at
+ * once, with no wording at all. It is deliberately straight: this is a bearing
+ * and a distance, not a route, and drawing it as a route would promise a way
+ * through that nobody has checked.
+ */
+
+const NAV_SRC = 'src-nav';
+
+function navGeoJSON(target) {
+  return {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature',
+        geometry: { type: 'LineString',
+                    coordinates: [[here.lng, here.lat], [target.lng, target.lat]] },
+        properties: {} },
+      { type: 'Feature',
+        geometry: { type: 'Point', coordinates: [target.lng, target.lat] },
+        properties: {} }
+    ]
+  };
+}
+
+function paintNavLine(target) {
+  if (!map || !nav || !here || !target || !map.isStyleLoaded()) return;
+  const data = navGeoJSON(target);
+  if (map.getSource(NAV_SRC)) { map.getSource(NAV_SRC).setData(data); return; }
+
+  map.addSource(NAV_SRC, { type: 'geojson', data });
+  map.addLayer({
+    id: 'nav-line',
+    type: 'line',
+    source: NAV_SRC,
+    filter: ['==', ['geometry-type'], 'LineString'],
+    layout: { 'line-cap': 'round' },
+    paint: {
+      'line-color': '#0f4c1a',
+      'line-width': 4,
+      'line-opacity': 0.9,
+      // Dashes rather than a solid line, for the same reason it is straight:
+      // a solid line on a map of walking routes reads as one more route.
+      'line-dasharray': [1.6, 1.4]
+    }
+  });
+  map.addLayer({
+    id: 'nav-target',
+    type: 'circle',
+    source: NAV_SRC,
+    filter: ['==', ['geometry-type'], 'Point'],
+    paint: {
+      'circle-radius': 9,
+      'circle-color': '#0f4c1a',
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 3
+    }
+  });
+}
+
+function clearNavLine() {
+  if (!map) return;
+  ['nav-line', 'nav-target'].forEach((id) => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  if (map.getSource(NAV_SRC)) map.removeSource(NAV_SRC);
+}
+
+/** Put both ends on screen, once, when the first fix arrives.
+ *
+ *  Once and not on every fix: after this the map is the person's to pan, and
+ *  a viewport that re-frames itself every few seconds cannot be read. */
+function frameNav(target) {
+  if (!map || nav.framed) return;
+  nav.framed = true;
+  const b = new maplibregl.LngLatBounds();
+  b.extend([here.lng, here.lat]);
+  b.extend([target.lng, target.lat]);
+  map.fitBounds(b, { padding: 90, maxZoom: 17, duration: 800 });
+}
+
 function startNav(item) {
   if (!navigator.geolocation) { alert('הדפדפן לא תומך באיתור מיקום.'); return; }
   stopNav();
-  nav = { item, watchId: null, endIdx: null };
+  nav = { item, watchId: null, endIdx: null, framed: false };
   document.body.classList.add('nav-active');
   el('nav').hidden = false;
   el('nav-dist').textContent = '—';
@@ -1583,6 +1674,7 @@ function startNav(item) {
 function stopNav() {
   if (nav && nav.watchId != null) navigator.geolocation.clearWatch(nav.watchId);
   nav = null;
+  clearNavLine();
   document.body.classList.remove('nav-active');
   el('nav').hidden = true;
   el('nav').classList.remove('on-trail', 'stale');
@@ -1633,16 +1725,23 @@ function paintNav() {
 
   bar.classList.toggle('on-trail', onTrail);
   el('nav-dist').textContent = label;
-  el('nav-state').textContent = state;
 
   const course = bearingTo(here, target);
   // With a heading we can point where to actually walk; without one the arrow
-  // is north-up, so say so rather than sending someone the wrong way.
-  if (facing == null) {
-    el('nav-state').textContent = state + ' · ' + compass(course) + ' (חץ לפי צפון)';
-  }
+  // is north-up, so say so rather than sending someone the wrong way. The
+  // wording is spelled out because "(חץ לפי צפון)" told the truth to somebody
+  // who already knew what it meant, and nothing to anybody else.
+  el('nav-state').textContent = facing == null
+    ? `${state} · ${compass(course)} · החץ מיושר לצפון`
+    : `${state} · ${compass(course)}`;
+
   document.querySelector('.nav-arrow').style.transform =
     `rotate(${course - (facing || 0)}deg)`;
+
+  // The line is the part that actually explains the bar, so it is drawn on
+  // every fix and the framing happens once, on the first.
+  paintNavLine(target);
+  frameNav(target);
 }
 
 const fmt = (m) => (m >= 1000 ? (m / 1000).toFixed(1) + ' ק"מ' : Math.round(m) + ' מ׳');
@@ -2199,6 +2298,15 @@ function wireControls() {
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
   el('nav-stop').addEventListener('click', stopNav);
+
+  // Tapping the bar frames both ends again. Walking with the map open means
+  // panning it, and after a couple of pans neither you nor the target is on
+  // screen; without this the only way back was to stop and start again.
+  el('nav').addEventListener('click', (e) => {
+    if (e.target.closest('#nav-stop') || !nav || !here) return;
+    nav.framed = false;
+    paintNav();
+  });
   el('locate').addEventListener('click', locate);
   el('basemap').addEventListener('click', () => {
     setBasemap((baseIndex + 1) % BASEMAPS.length);

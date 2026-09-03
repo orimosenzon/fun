@@ -469,6 +469,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .nav.on-trail { background: #0f4c1a; }
 .nav.stale { background: #6b7a72; }
 
+/* The whole bar re-frames both ends, so it has to look like something you can
+ * press. The stop button keeps its own cursor from the button rule above. */
+#nav { cursor: pointer; }
+
 /* Push the zoom/compass puck clear of the bar while navigating. */
 .nav-active .maplibregl-ctrl-top-left { margin-top: 62px; }
 
