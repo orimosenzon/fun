@@ -65,6 +65,10 @@ UA = {"User-Agent": "derech-kitzur-trips/1.0 "
 PUBLISHED = ("https://raw.githubusercontent.com/orimosenzon/"
              "derech-kitzur-data/main/data/trails.json")
 
+# השם שנרשם כמי שהוסיף, כדי שיהיה אפשר להבדיל בין מה שאדם הלך וסימן לבין מה
+# שנבנה כאן. מופיע במסך הטיול תחת "מופה בידי".
+BOT = "בוטי"
+
 BOX = (32.435, 34.925, 32.515, 35.005)          # south, west, north, east
 WALK_CACHE = ".cache/walk_network.json"
 
@@ -563,7 +567,10 @@ def dress(best, plan):
             "origin": "build_trips",
             "added": entry.get("added") or datetime.now(timezone.utc)
             .strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "by": entry.get("by", ""),
+            # מי שהוסיף. חמשת הראשונים נדחפו בלי השדה הזה, והם נראו באפליקציה
+            # בדיוק כמו טיול שתושב הוסיף, עד שאורי שאל מי הוסיף אותם. מסלול
+            # שנבנה בכלי צריך להגיד את זה בעצמו, במסך, ולא רק ביומן הקומיטים.
+            "by": entry.get("by") or BOT,
         })
     return out
 
