@@ -744,6 +744,24 @@ function editorBlock(it, layer) {
  *  A shortcut somebody has since deleted leaves a hole. Saying so is the whole
  *  point of keeping the reference - the alternative is a trip that quietly
  *  jumps a few hundred metres and looks fine. */
+/** The caveat on a trip nobody has walked yet.
+ *
+ *  `build_trips.py` chains shortcuts that are on the map and routes between
+ *  them over OpenStreetMap, so the line is plausible everywhere and verified
+ *  nowhere: a gate that is locked, a fence that went up last spring and a
+ *  stretch that is knee-deep in mud after rain all look identical to it.
+ *
+ *  A flag on the trip and not a sentence pasted into `note`, so that clearing
+ *  it once somebody has actually walked the route is deleting a field rather
+ *  than editing prose - which is the difference between a promise that gets
+ *  kept and one that does not. */
+function unwalkedNote(it) {
+  if (!it.trip || !it.unwalked) return '';
+  return `<p class="unplaced">המסלול הזה נבנה אוטומטית מדרכי קיצור שכבר על המפה,
+    ועדיין לא הלכו בו מקצה לקצה. הקטעים עצמם ממופים, אבל אף אחד עוד לא בדק
+    שהמעבר ביניהם פתוח בפועל. הלכתם בו? ספרו ליוזמה ונוריד את השורה הזאת.</p>`;
+}
+
 function tripParts(it) {
   // The other direction, on a shortcut's own page: which walks come through
   // here. Deleting a shortcut stops being a local act once a trip is built on
@@ -925,6 +943,7 @@ function showDetail(it) {
     <h2>${escapeHtml(it.name)}</h2>
     <div class="chips">${chips.join('')}</div>
     ${it.note ? `<p class="note">${escapeHtml(it.note)}</p>` : ''}
+    ${unwalkedNote(it)}
     ${tripParts(it)}
     ${body}
     ${gallery}
