@@ -350,7 +350,20 @@ const Layers = (() => {
    *  `on` comes from a lookup rather than a stored map so the same code serves
    *  the first load, where it reads the browser's preferences, and a reload
    *  after a write, where it reads whatever is currently switched on. */
+  /** The layers that come out of trails.json, rebuilt whenever it is rewritten.
+   *
+   *  Everything added here is stamped `built`, and `resetTrails` throws away
+   *  exactly what carries that stamp. It used to throw away `kind === 'trails'`
+   *  instead, which is not the same set: the waypoints layer is built here and
+   *  is not of that kind, so it survived the cull *and* was created again, and
+   *  every publish or photo upload left one more copy of "מקומות של דרך קיצור"
+   *  in the sheet. Three uploads, three layers, and switching one off left the
+   *  pins on the map because the other two were still drawing them.
+   *
+   *  A stamp rather than a list of ids, so that a layer added here later cannot
+   *  quietly reintroduce the same bug. */
   function buildTrailLayers(trails, isOn) {
+    const before = list.length;
     const custom = trails.layers || [];
     const mine = new Set(custom.map((l) => l.id));
 
@@ -405,6 +418,8 @@ const Layers = (() => {
       segments: trails.segments.filter((s) => home(s) === l.id),
       waypoints: trails.waypoints.filter((w) => home(w) === l.id)
     }));
+
+    for (let i = before; i < list.length; i++) list[i].built = true;
   }
 
   /* What a visitor sees on arrival, before touching anything: the initiative's
@@ -639,9 +654,9 @@ const Layers = (() => {
    *  layer or anyone's on/off choices. */
   function resetTrails(trails) {
     const was = {};
-    list.forEach((l) => { if (l.kind === 'trails') was[l.id] = l.on; });
+    list.forEach((l) => { if (l.built) was[l.id] = l.on; });
 
-    const others = list.filter((l) => l.kind !== 'trails');
+    const others = list.filter((l) => !l.built);
     list.length = 0;
     buildTrailLayers(trails, (id) => was[id] !== false);
     others.forEach((l) => list.push(l));

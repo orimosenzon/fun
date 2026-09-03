@@ -110,15 +110,27 @@ const Store = (() => {
    * absolute URLs and pass straight through. */
   const asset = (p) => (!p || /^(https?:|blob:|data:)/.test(p) ? p : RAW + p);
 
+  /* Every array in the document that can hold photos, and `trips` is one of
+   * them. It was missing here until 3/9/2026, so a photo published onto a trip
+   * kept its repo-relative path, the browser resolved it against the app's own
+   * address, and every picture on that trip came out broken - while the file
+   * itself sat in the data repo, uploaded correctly, answering 200.
+   *
+   * It stayed hidden because the only trip on the map had no photos, and
+   * because a video's thumbnail is an absolute URL that passes through `asset`
+   * untouched: on a trip carrying both, the videos worked and the photos did
+   * not, which reads like a problem with the upload and is not one. */
+  const withPhotos = (doc) => [...(doc.segments || []), ...(doc.waypoints || []),
+                               ...(doc.places || []), ...(doc.trips || [])];
+
   function absolutise(doc) {
     if (!doc) return doc;
-    [...(doc.segments || []), ...(doc.waypoints || []), ...(doc.places || [])]
-      .forEach((it) => {
-        (it.photos || []).forEach((ph) => {
-          ph.thumb = asset(ph.thumb);
-          ph.full = asset(ph.full);
-        });
+    withPhotos(doc).forEach((it) => {
+      (it.photos || []).forEach((ph) => {
+        ph.thumb = asset(ph.thumb);
+        ph.full = asset(ph.full);
       });
+    });
     return doc;
   }
 
@@ -482,7 +494,11 @@ const Store = (() => {
       trips: (doc.trips || []).length,
       waypoints: doc.waypoints.length,
       total_length: segs.reduce((n, s) => n + (s.length || 0), 0),
-      photos: [...segs, ...doc.waypoints].reduce((n, s) => n + s.photos.length, 0)
+      // Trips counted here too, and for the same reason they belong in
+      // `absolutise`: a photo on a trip is a photo on the map. Leaving them out
+      // was the same omission, and it made the count quietly too low.
+      photos: [...segs, ...doc.waypoints, ...(doc.trips || [])]
+        .reduce((n, s) => n + (s.photos || []).length, 0)
     };
     const pts = [...segs.flatMap((s) => s.path),
                  ...doc.waypoints.map((w) => [w.lat, w.lng])];
