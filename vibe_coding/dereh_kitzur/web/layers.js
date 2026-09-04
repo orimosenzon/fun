@@ -42,6 +42,7 @@ const Layers = (() => {
   const MAKOM_ID = 'makom-shamur';
   const PLANS_ID = 'plans';
   const BLOCKS_ID = 'blocks';
+  const PUBLIC_ID = 'public-land';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -426,7 +427,8 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places, art, shimur, makom, plans, blocks) {
+  function init(trails, network, places, art, shimur, makom, plans, blocks,
+                publicLand) {
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -595,6 +597,35 @@ const Layers = (() => {
       on: isOn(BLOCKS_ID, false)
     });
 
+    // Which ground is public, which is the question every shortcut eventually
+    // runs into: a path across a שצ"פ is a path across land set aside for it,
+    // and the same line across somebody's plot lasts as long as they put up
+    // with it. Areas with no dots and no labels - the polygon *is* the answer,
+    // and three hundred and seventy-seven names across the moshava would bury
+    // the streets under text.
+    addPlaceLayer(PUBLIC_ID, publicLand, {
+      name: 'שטחים ציבוריים',
+      category: 'other',
+      short: 'ייעוד',
+      unit: 'תאי שטח',
+      labels: false,
+      dots: false,
+      color: '#2e7d32',
+      note: 'ייעודי הקרקע הציבוריים לפי התכניות המאושרות במאגר מנהל התכנון: '
+        + 'שצ"פ, מבני ציבור, דרכים ושבילים, שמורות וחניונים. הכתום הוא ההפך - '
+        + 'שטח פרטי פתוח, שנראה כמו שצ"פ ואיננו. '
+        + 'ייעוד הוא מה שהתכנית קובעת שהקרקע מיועדת לו, ולא מי הבעלים שלה '
+        + 'ולא היתר להיכנס אליה. '
+        + 'שטח שאינו צבוע אינו בהכרח פרטי: על חלק גדול מהמושבה חלות תכניות '
+        + 'ישנות שאינן במאגר המקוון, ושם פשוט אין תשובה.',
+      credit: 'מנהל התכנון · ייעודי קרקע',
+      sourceName: 'מנהל התכנון',
+      sourceLine: 'ייעודי קרקע מאושרים, מתוך מאגר התכניות המקוונות של מנהל התכנון',
+      linkTitle: 'התכנית שקבעה את הייעוד, במבא"ת',
+      pinnable: false,                     // the outline comes off the register
+      on: isOn(PUBLIC_ID, false)
+    });
+
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
     // of the map.
@@ -646,8 +677,11 @@ const Layers = (() => {
                  waypoints: 2.5, pending: 3, drafts: 4 };
   // The plans are a places layer that draws areas, and an area belongs under
   // every dot on the map rather than washing the colour out of the ones that
-  // happen to fall inside it.
-  const order = (l) => (l.id === BLOCKS_ID ? 0.25
+  // happen to fall inside it. The land uses go below even the blocks: they are
+  // the only layer here that tints the ground itself, and everything else on
+  // the map is something standing on it.
+  const order = (l) => (l.id === PUBLIC_ID ? 0.1
+    : l.id === BLOCKS_ID ? 0.25
     : l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
 
   /** Rebuild the trail layers after a write, without disturbing the drafts
@@ -1420,7 +1454,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PUBLIC_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing,
     set onChange(fn) { onChange = fn; }
