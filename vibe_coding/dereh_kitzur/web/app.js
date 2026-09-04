@@ -2202,10 +2202,11 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network, places, art, shimur, makom, plans, blocks } = await Store.load();
+  const { trails, network, places, art, shimur, makom, plans, blocks, publicLand }
+    = await Store.load();
   DATA = trails;
   PLACES = places;
-  Layers.init(trails, network, places, art, shimur, makom, plans, blocks);
+  Layers.init(trails, network, places, art, shimur, makom, plans, blocks, publicLand);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.
