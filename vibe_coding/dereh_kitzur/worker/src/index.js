@@ -34,11 +34,13 @@ const REPO_API = 'https://api.github.com/repos';
 /* Exactly what may be written, and nothing else. Image names are the first
  * fourteen hex characters of the SHA-1 of the file's own bytes, which is how
  * the app and build_data.py both name them. */
+const IMAGE = /^img\/[0-9a-f]{14}(_t)?\.webp$/;
+
 const ALLOWED = [
   /^data\/trails\.json$/,
   /^data\/places\.json$/,
   /^data\/pending\.json$/,
-  /^img\/[0-9a-f]{14}(_t)?\.webp$/
+  IMAGE
 ];
 
 /* The files an editor's key is needed for.
@@ -62,7 +64,8 @@ const GATED = [
   /^data\/places\.json$/
 ];
 
-const MAX_BODY = 6 * 1024 * 1024;        // one photo, comfortably
+const MAX_BODY = 6 * 1024 * 1024;        // both renditions of one photo, comfortably
+const BATCH_MAX = 8;                     // files in one commit
 const RATE_MAX = 40;                     // writes per window, per IP
 const RATE_WINDOW = 300;                 // seconds
 
@@ -223,6 +226,72 @@ async function read(env, path) {
   return json({ sha: body.sha, content: body.content, encoding: body.encoding });
 }
 
+/** Several files in one commit, through the git data API.
+ *
+ *  The contents API this file otherwise uses writes one file per call, and a
+ *  photo is two files - the full image and its thumbnail. That made every photo
+ *  two commits and, more to the point, two writes against the rate limit: a
+ *  resident adding a dozen photos to a trail spent twenty-five of the forty
+ *  writes in the window and the upload died partway through, telling them there
+ *  had been too many changes too fast. There had been one person adding photos.
+ *
+ *  Only content-addressed images may come this way. A document needs the
+ *  contents API's `sha` check to notice that somebody else wrote first, and
+ *  there is no such check here; an image is named after a hash of its own bytes,
+ *  so two writers racing to create one are writing the same file anyway.
+ *
+ *  Six calls to GitHub instead of two, and that is the trade: GitHub's own
+ *  limit is thousands per hour and is not what anybody here runs into.
+ */
+async function writeTree(env, files, message) {
+  const branch = env.BRANCH || 'main';
+
+  const step = async (path, init) => {
+    const res = await gh(env, path, init);
+    if (!res.ok) {
+      const why = await res.text().catch(() => '');
+      console.log(`github ${res.status} on ${path}: ${why.slice(0, 400)}`);
+      throw new Error(`github ${res.status}`);
+    }
+    return res.json();
+  };
+  const post = (path, body) => step(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  const ref = await step(`git/ref/heads/${branch}`);
+  const head = ref.object.sha;
+  const parent = await step(`git/commits/${head}`);
+
+  const blobs = await Promise.all(files.map(
+    (file) => post('git/blobs', { content: file.content, encoding: 'base64' })));
+
+  const tree = await post('git/trees', {
+    base_tree: parent.tree.sha,
+    tree: files.map((file, i) => ({
+      path: file.path, mode: '100644', type: 'blob', sha: blobs[i].sha
+    }))
+  });
+
+  const commit = await post('git/commits', {
+    message: String(message || 'עדכון מהאפליקציה').slice(0, 200),
+    tree: tree.sha,
+    parents: [head]
+  });
+
+  // Not forced. A ref that moved under us means somebody committed in the
+  // meantime, and the right answer is to let the app read again and retry
+  // rather than to drop their commit on the floor.
+  await step(`git/refs/heads/${branch}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sha: commit.sha })
+  });
+}
+
+
 async function write(env, request, ip) {
   if (env.READ_ONLY === 'true') {
     return json({ error: 'הכתיבה מושהית זמנית.' }, 503);
@@ -240,7 +309,27 @@ async function write(env, request, ip) {
   } catch (err) {
     return json({ error: 'bad request' }, 400);
   }
-  const { path, content, message, sha } = body;
+  const { path, content, message, sha, files } = body;
+
+  // A batch: images only, and every one of them checked before any is written.
+  if (files !== undefined) {
+    if (!Array.isArray(files) || !files.length || files.length > BATCH_MAX) {
+      return json({ error: 'bad request' }, 400);
+    }
+    for (const file of files) {
+      if (!file || typeof file.path !== 'string' || typeof file.content !== 'string') {
+        return json({ error: 'bad request' }, 400);
+      }
+      if (!IMAGE.test(file.path)) return json({ error: 'path not allowed' }, 403);
+    }
+    try {
+      await writeTree(env, files, message);
+    } catch (err) {
+      return json({ error: String(err.message || 'github') }, 502);
+    }
+    return json({ ok: true });
+  }
+
   if (typeof path !== 'string' || typeof content !== 'string') {
     return json({ error: 'bad request' }, 400);
   }
