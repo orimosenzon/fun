@@ -425,7 +425,8 @@ const Store = (() => {
     }
   }
 
-  async function putFile(path, base64, message, sha) {
+  /** One PUT to the worker, whatever shape of write it carries. */
+  async function send(body) {
     if (!WORKER) throw new Error('אין שרת כתיבה מוגדר.');
     const res = await fetch(`${WORKER}/file`, {
       method: 'PUT',
@@ -436,8 +437,8 @@ const Store = (() => {
         ...(keyed() ? { 'X-DK-Key': keyed() } : {})
       },
       body: JSON.stringify({
-        path, content: base64, sha: sha || null,
-        message: `${message}${named() ? ` (${named()})` : ''}`
+        ...body,
+        message: `${body.message}${named() ? ` (${named()})` : ''}`
       })
     });
     if (res.status === 409) {
@@ -451,10 +452,38 @@ const Store = (() => {
     if (!res.ok) {
       // The worker explains its refusals in Hebrew - too big, too fast, does
       // not look like the document it replaces - and those are worth showing.
-      const body = await res.json().catch(() => null);
-      throw new Error((body && body.error) || `כתיבה נכשלה (${res.status})`);
+      const info = await res.json().catch(() => null);
+      const err = new Error((info && info.error) || `כתיבה נכשלה (${res.status})`);
+      err.malformed = res.status === 400;
+      throw err;
     }
     return res.json();
+  }
+
+  const putFile = (path, base64, message, sha) =>
+    send({ path, content: base64, sha: sha || null, message });
+
+  /** Several files in one commit, and - the point of it - one write.
+   *
+   *  The worker's rate limit counts writes and not files, and a photo is two
+   *  files: the full image and its thumbnail. At two writes each, a dozen
+   *  photos on one trail spent twenty-five of the forty writes the window
+   *  allows, and the upload died partway through with "יותר מדי שינויים בזמן
+   *  קצר" - which reads like a flood and was one person adding photos.
+   *
+   *  The fallback is for the minutes after a deploy, when this page is the new
+   *  one and the worker answering it is not yet: a worker that predates batch
+   *  writes sees a body with no `path` and calls it malformed. Two single
+   *  writes still work there, at the old price. */
+  async function putFiles(files, message) {
+    if (!files.length) return null;
+    try {
+      return await send({ files, message });
+    } catch (err) {
+      if (!err.malformed) throw err;
+      for (const file of files) await putFile(file.path, file.content, message);
+      return null;
+    }
   }
 
   /** Read a document, let the caller change it, write it back.
@@ -573,8 +602,13 @@ const Store = (() => {
     if (hasFull && hasThumb) return rel;
 
     if (onStep) onStep(`מעלה תמונה…`);
-    if (!hasFull) await putFile(rel.full, b64(fullBytes), `תמונה לשביל ${name}`);
-    if (!hasThumb) await putFile(rel.thumb, b64(thumbBytes), `תמונה ממוזערת לשביל ${name}`);
+    // Both renditions in one commit, so that a photo costs one write and not
+    // two - and so that the half-written state the paragraph above heals cannot
+    // be created here in the first place.
+    const files = [];
+    if (!hasFull) files.push({ path: rel.full, content: b64(fullBytes) });
+    if (!hasThumb) files.push({ path: rel.thumb, content: b64(thumbBytes) });
+    await putFiles(files, `תמונה לשביל ${name}`);
     return rel;
   }
 
