@@ -1,0 +1,41 @@
+/* ===== כפתור "העתק קישור" שמתחת לכותרת הערך =====
+   מלווה את הסקריפט ב'מדיה ויקי:Common.js'. הכפתור נועד להיות שם
+   כשמחפשים אותו ולא למשוך תשומת לב כשקוראים, ולכן הוא קטן, בצבעי
+   הטקסט המשני, ומקבל צבע רק במעבר עכבר. */
+.pp-copy-link-wrap {
+	margin: -2px 0 10px;
+}
+
+#pp-copy-link {
+	font: inherit;
+	font-size: 85%;
+	line-height: 1.6;
+	color: #666;
+	background: #f8f8f8;
+	border: 1px solid #ddd;
+	border-radius: 999px;
+	padding: 2px 12px;
+	cursor: pointer;
+	transition: background .15s, border-color .15s, color .15s;
+}
+
+#pp-copy-link:hover:not(:disabled) {
+	background: #f0ece3;
+	border-color: #b08968;
+	color: #7a5c3e;
+}
+
+#pp-copy-link:disabled {
+	cursor: default;
+	color: #3d7a3d;
+	border-color: #b6d7b6;
+	background: #f1f8f1;
+}
+
+/* במסך צר הכתובת עצמה עלולה להופיע בכפתור (אם ההעתקה נכשלה),
+   ואז עדיף שתישבר ולא תדחוף את הדף הצידה. */
+#pp-copy-link {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	text-align: start;
+}
