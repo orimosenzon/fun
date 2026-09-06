@@ -44,6 +44,7 @@ import urllib.parse
 import requests
 
 from wiki_client import WikiClient, API_URL
+import archive_events
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VIDEO_MAP_FILE = os.path.join(HERE, "event_videos.json")
@@ -893,6 +894,7 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
         f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
         f"{build_table(rows, collapsible=True)}\n\n"
         f"{cap_note}"
+        f"אירועים שכבר התקיימו נשמרים ב[[ארכיון אירועי התרבות]]. "
         f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
@@ -1023,6 +1025,8 @@ def main():
     ap.add_argument("--days", type=int, default=14)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-images", action="store_true", help="skip image upload (faster dry runs)")
+    ap.add_argument("--no-archive", action="store_true",
+                    help="skip the historical archive of past events")
     args = ap.parse_args()
 
     today = dt.date.today()
@@ -1040,6 +1044,17 @@ def main():
     # The events board lives directly on the main page now (the old standalone
     # page was retired). All publishing happens through update_main_page.
     update_main_page(client, rows, args.days, dry_run=args.dry_run)
+
+    # The board is a two-week window, so an event that happens falls off it and
+    # would otherwise leave no trace. Keep every row in the ledger and rebuild
+    # the archive page, so pardespedia also records what already took place.
+    if not args.dry_run and not args.no_archive:
+        try:
+            added = archive_events.record(rows, today)
+            print(f"  archive: {added} new events recorded", file=sys.stderr)
+            archive_events.publish(client, archive_events.load_ledger(), today)
+        except Exception as exc:                      # never fail the board over the archive
+            print(f"  archive: FAILED ({exc})", file=sys.stderr)
 
 
 if __name__ == "__main__":
