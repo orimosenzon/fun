@@ -98,9 +98,14 @@ curl -sL "https://drive.google.com/uc?export=download&id=<FILE_ID>" -o f # הו�
 
 - `memory/session-*.md` — סיכומי סשנים, החלטות ומצב פתוח. הקובץ האחרון הוא
   התמונה העדכנית ביותר.
-- `site_css/` — קוד שמיועד ל-`מדיה ויקי:Common.css` ו-`Common.js` וממתין
-  להדבקה ידנית (`common-hoodmap.css` כבר הודבק; `common-copylink.js` +
-  `common-copylink.css` ממתינים, עם `test_copylink.py` שבודק אותם ב-Playwright).
+- `site_css/` — קוד שמיועד ל-`מדיה ויקי:Common.css` ו-`Common.js`. הבוט אינו
+  יכול לכתוב לשם (ראו ההרשאות למעלה), ולכן הנוהל הוא: לבנות כאן את הקובץ
+  **המלא** (קיים + תוספת), להכניס לקליפבורד עם `xclip -selection clipboard`,
+  לפתוח לאורי את דף העריכה ב-`xdg-open`, והוא מדביק ב-Ctrl+A/Ctrl+V.
+  קובץ מלא ולא קטע, כדי שהדבקה שגויה לא תמחק קוד קיים.
+  כל הקבצים שם הודבקו (`common-hoodmap.css`, `common-copylink.js` +
+  `common-copylink.css`, 6/9/2026). `verify_live.py` בודק ב-Playwright
+  שהכפתור עובד מול האתר החי, בלי הזרקת קוד.
 
 ## ארכיון אירועי התרבות
 
