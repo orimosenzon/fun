@@ -19,10 +19,16 @@
 - חיפוש ברשת, הורדת קבצים, עיבוד תמונות (PIL, OpenCV), PDF (`pdftotext`)
 - **מחיקה ושחזור** (`delete` / `undelete`) — **מאז 4/9/2026 החשבון הוא מפעיל
   מערכת (sysop).** כל מחיקה הפיכה דרך `action=undelete`.
-- **עריכת `מדיה ויקי:`** (`editinterface`), כולל `Common.css` ו-`Common.js`.
+- **עריכת הודעות במרחב `מדיה ויקי:`** (`editinterface`).
 
 **אין לך:**
 - `suppressredirect` — העברה תמיד משאירה הפניה (זה בדרך כלל רצוי).
+- **`editsitejs` / `editsitecss`** — **אי אפשר לערוך `מדיה ויקי:Common.js`
+  ו-`מדיה ויקי:Common.css`.** מ-MediaWiki 1.32 ההרשאות האלה שייכות לקבוצה
+  `interface-admin` ולא ל-`sysop`, ולכן הרשאת מפעיל המערכת אינה מספיקה
+  (נבדק בפועל 6/9/2026: `editinterface` דלוק, השניים האלה כבויים).
+  קוד ל-Common.js/Common.css נכתב אל `site_css/` ומחכה להדבקה ידנית, או
+  שביורוקרט יצרף את החשבון ל-`interface-admin`.
 
 ## מחיקות — מה מותר בלי לשאול
 
@@ -92,8 +98,9 @@ curl -sL "https://drive.google.com/uc?export=download&id=<FILE_ID>" -o f # הו�
 
 - `memory/session-*.md` — סיכומי סשנים, החלטות ומצב פתוח. הקובץ האחרון הוא
   התמונה העדכנית ביותר.
-- `site_css/common-hoodmap.css` — ה-CSS של מפת השכונות. הודבק ל-`מדיה ויקי:Common.css`,
-  ומאז הרשאת ה-sysop אפשר לערוך אותו ישירות דרך ה-API.
+- `site_css/` — קוד שמיועד ל-`מדיה ויקי:Common.css` ו-`Common.js` וממתין
+  להדבקה ידנית (`common-hoodmap.css` כבר הודבק; `common-copylink.js` +
+  `common-copylink.css` ממתינים, עם `test_copylink.py` שבודק אותם ב-Playwright).
 
 ## ארכיון אירועי התרבות
 
