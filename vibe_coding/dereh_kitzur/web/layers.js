@@ -43,6 +43,7 @@ const Layers = (() => {
   const PLANS_ID = 'plans';
   const BLOCKS_ID = 'blocks';
   const PUBLIC_ID = 'public-land';
+  const HOUTEN_ID = 'houten';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -428,7 +429,7 @@ const Layers = (() => {
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
   function init(trails, network, places, art, shimur, makom, plans, blocks,
-                publicLand) {
+                publicLand, houten) {
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -625,6 +626,27 @@ const Layers = (() => {
       pinnable: false,                     // the outline comes off the register
       on: isOn(PUBLIC_ID, false)
     });
+
+    // Houten, and it is the only thing on this map that is not the moshava.
+    //
+    // A Dutch town of fifty thousand, laid out from 1979 on one rule: the bike
+    // goes through the middle, the car goes around the outside. Every
+    // neighbourhood hangs off a ring road a driver has to come back out to in
+    // order to reach the next one, while the bike paths run straight across. So
+    // inside the town the bike is not the virtuous way to travel, it is the
+    // short one - which is this app's own name, applied to a whole town at once.
+    //
+    // It carries the car ring road as well as the bike network, because the mesh
+    // on its own is just a mesh: the point is only visible in the contrast.
+    //
+    // build_houten.py writes it straight from OpenStreetMap, so unlike every
+    // other layer here nobody edits it and nothing is ever published back.
+    (houten ? houten.layers : []).forEach((l) => add({
+      ...l,
+      kind: 'network',            // a reference mesh, drawn thin and underneath
+      category: 'world',
+      on: isOn(l.id, false)
+    }));
 
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
@@ -1142,7 +1164,12 @@ const Layers = (() => {
   const CATEGORIES = [
     { id: 'trails', name: 'שבילים', note: 'מה שהולכים בו' },
     { id: 'places', name: 'מקומות', note: 'מה שיש בדרך' },
-    { id: 'other', name: 'אחרים', note: 'תכנון וקדסטר' }
+    { id: 'other', name: 'אחרים', note: 'תכנון וקדסטר' },
+    // The one section that is not about the moshava. It has to be its own,
+    // because every other layer here answers "what is around me" and this one
+    // answers "how did somebody else solve this" - and because a layer three
+    // thousand kilometres away sitting among the local ones reads as a bug.
+    { id: 'world', name: 'מהעולם', note: 'ערים ללמוד מהן' }
   ];
 
   const CAT_PREF = 'dk.cats.v1';
@@ -1150,7 +1177,7 @@ const Layers = (() => {
   /* Open on arrival: the walking layers only, exactly as the other two are
    * remembered per browser once somebody has folded or unfolded them. */
   const catOpen = (() => {
-    const fresh = { trails: true, places: false, other: false };
+    const fresh = { trails: true, places: false, other: false, world: false };
     try {
       const kept = JSON.parse(localStorage.getItem(CAT_PREF) || 'null');
       return kept && typeof kept === 'object' ? { ...fresh, ...kept } : fresh;
@@ -1339,6 +1366,8 @@ const Layers = (() => {
         </label>
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
           aria-label="עריכת השכבה ${escapeHtml(layer.name)}">עריכה</button>` : ''}
+        ${layer.on && layer.bounds ? `<button class="lay-edit" data-fly="${layer.id}"
+          aria-label="הצג את ${escapeHtml(layer.name)} על המפה">טוס לשם</button>` : ''}
       </div>
       ${layer.on && rows.length && !rows[0].whole ? `
         <ul class="lay-legend">${rows.map((r) => `<li>
@@ -1417,6 +1446,9 @@ const Layers = (() => {
         applyVisibility();
         onChange();
         paintHeads();
+        // A layer that lives somewhere else is nothing at all until the map
+        // goes there. Switching it on is the request to look at it.
+        if (layer.on && layer.bounds) frameLayer(layer, false);
       });
     });
 
