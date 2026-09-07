@@ -24,6 +24,11 @@
  *   data/shimur.json   the conservation appendix of the master plan, and
  *   data/makom_shamur.json  the מקום שמור documentation project. Both written
  *                      by build_shimur.py; neither is written from the app.
+ *   data/houten.json   the bike network of Houten in the Netherlands, from
+ *                      OpenStreetMap via build_houten.py. The one document here
+ *                      that is not about the moshava at all: a worked example
+ *                      of the idea this whole app is named after, kept for
+ *                      comparison.
  *
  * Reading needs nothing at all: the files are public and come straight off a
  * CDN. Writing goes through a small Cloudflare worker that holds the only
@@ -88,6 +93,7 @@ const Store = (() => {
   const PLANS = 'data/plans.json';
   const BLOCKS = 'data/blocks.json';
   const PUBLIC = 'data/public.json';
+  const HOUTEN = 'data/houten.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
@@ -98,6 +104,7 @@ const Store = (() => {
   const K_PLANS = 'dk.cache.plans.v1';
   const K_BLOCKS = 'dk.cache.blocks.v1';
   const K_PUBLIC = 'dk.cache.public.v1';
+  const K_HOUTEN = 'dk.cache.houten.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
   const K_KEY = 'dk.key.v1';            // the editor's password, once verified
@@ -202,9 +209,10 @@ const Store = (() => {
     let blocks = null;
     // `publicLand` and not `public`, which is a reserved word under 'use strict'.
     let publicLand = null;
+    let houten = null;
     try {
-      [trails, network, places, art, shimur, makom, plans, blocks, publicLand]
-          = await Promise.all([
+      [trails, network, places, art, shimur, makom, plans, blocks, publicLand,
+       houten] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -222,7 +230,9 @@ const Store = (() => {
         // The cadastral blocks, which build_cadastre.py writes.
         fetchJson(BLOCKS).catch(() => bundled('data/blocks.json')),
         // And the land the approved plans designate public, from build_public.py.
-        fetchJson(PUBLIC).catch(() => bundled('data/public.json'))
+        fetchJson(PUBLIC).catch(() => bundled('data/public.json')),
+        // Houten, which build_houten.py writes off OpenStreetMap.
+        fetchJson(HOUTEN).catch(() => bundled('data/houten.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
@@ -233,6 +243,7 @@ const Store = (() => {
       if (plans) cache(K_PLANS, plans);
       if (blocks) cache(K_BLOCKS, blocks);
       if (publicLand) cache(K_PUBLIC, publicLand);
+      if (houten) cache(K_HOUTEN, houten);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
@@ -244,6 +255,7 @@ const Store = (() => {
       plans = cached(K_PLANS);
       blocks = cached(K_BLOCKS);
       publicLand = cached(K_PUBLIC);
+      houten = cached(K_HOUTEN);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
@@ -256,6 +268,7 @@ const Store = (() => {
         plans = await bundled('data/plans.json');
         blocks = await bundled('data/blocks.json');
         publicLand = await bundled('data/public.json');
+        houten = await bundled('data/houten.json');
       }
     }
     return {
@@ -268,6 +281,7 @@ const Store = (() => {
       plans: absolutise(plans),
       blocks: absolutise(blocks),
       publicLand: absolutise(publicLand),
+      houten,
       offline: state.offline
     };
   }

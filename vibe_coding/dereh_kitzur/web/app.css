@@ -178,6 +178,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
 
+/* ---------- the way back from somewhere else ----------
+ *
+ * Opposite corner from the legend, which is the only other thing living at the
+ * top of the map. Hidden unless the map has actually left the moshava, so on an
+ * ordinary visit it never exists. */
+
+.go-home {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  z-index: 900;
+  max-width: min(62vw, 260px);
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+}
+
 /* ---------- folding layer sections ---------- */
 
 .lay-cat { border-top: 1px solid var(--line); }

@@ -1776,6 +1776,58 @@ function clearNavLine() {
   if (map.getSource(NAV_SRC)) map.removeSource(NAV_SRC);
 }
 
+/* ---------- leaving the moshava, and coming back ----------
+ *
+ * Every layer here used to be within a few kilometres of every other one, so
+ * the map's own view was always roughly the right view. The האוטן layer broke
+ * that: it is a town in the Netherlands, and switching it on while looking at
+ * Pardes Hanna turns a layer on that is three thousand kilometres off screen -
+ * which is indistinguishable from a layer that does not work.
+ *
+ * So a layer may carry `bounds`, and turning it on flies there. That is the
+ * only reason to tick that particular box, and doing it silently would be the
+ * surprising choice rather than the polite one.
+ */
+
+/** Frame a layer that lives somewhere else.
+ *
+ *  Switching it on does not re-frame when the map is already looking at it:
+ *  somebody who has zoomed into one Dutch street and toggles the layer off and
+ *  on to compare should not be yanked back out to the whole town. Asking for it
+ *  by name - the "טוס לשם" button - always flies, because from a street that is
+ *  what "show me the layer" has to mean. */
+function frameLayer(layer, force = true) {
+  if (!map || !layer || !layer.bounds) return;
+  const [[s, w], [n, e]] = layer.bounds;
+  const here = map.getCenter();
+  const inside = here.lat > s && here.lat < n && here.lng > w && here.lng < e;
+  if (inside && !force) return;
+  map.fitBounds([[w, s], [e, n]], { padding: 40, duration: 1200 });
+}
+
+/** The way back. Shown only once the map has actually left the area, which is
+ *  the only time it means anything - and it is measured against the trails'
+ *  own bounds rather than a hardcoded point, so it stays true if the dataset
+ *  ever grows past the moshava. */
+function updateHomeButton() {
+  const btn = el('go-home');
+  if (!btn || !map || !DATA || !DATA.bounds) return;
+  const [[s1, s2], [n1, n2]] = DATA.bounds;
+  const here = map.getCenter();
+  // A degree of latitude is about 111 km, so a fifth of a degree outside the
+  // dataset is roughly twenty kilometres away: far enough that nothing on this
+  // map is on screen, near enough that a drive up the coast does not trigger it.
+  const pad = 0.2;
+  btn.hidden = here.lat > s1 - pad && here.lat < n1 + pad
+    && here.lng > s2 - pad && here.lng < n2 + pad;
+}
+
+function goHome() {
+  if (!map || !DATA || !DATA.bounds) return;
+  const [[s1, s2], [n1, n2]] = DATA.bounds;
+  map.fitBounds([[s2, s1], [n2, n1]], { padding: 24, duration: 1200 });
+}
+
 /** Put both ends on screen, once, when the first fix arrives.
  *
  *  Once and not on every fix: after this the map is the person's to pan, and
@@ -2202,11 +2254,12 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network, places, art, shimur, makom, plans, blocks, publicLand }
-    = await Store.load();
+  const { trails, network, places, art, shimur, makom, plans, blocks, publicLand,
+          houten } = await Store.load();
   DATA = trails;
   PLACES = places;
-  Layers.init(trails, network, places, art, shimur, makom, plans, blocks, publicLand);
+  Layers.init(trails, network, places, art, shimur, makom, plans, blocks,
+              publicLand, houten);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.
@@ -2243,6 +2296,11 @@ async function boot() {
     // From here the address bar tracks the map. `moveend` covers panning,
     // zooming, rotating and tilting alike.
     ['moveend', 'pitchend', 'rotateend'].forEach((ev) => map.on(ev, scheduleSync));
+    // The way back appears and disappears with the same move. `move` and not
+    // `moveend`, so a link that lands on Houten shows it during the flight
+    // rather than only once the camera has settled.
+    map.on('move', updateHomeButton);
+    updateHomeButton();
 
     if (wanted && Layers.item(wanted)) select(wanted, !view);
     syncView();
@@ -2408,6 +2466,8 @@ function wireControls() {
     if (btn) editorAction(btn.dataset.act);
   });
 
+  el('go-home').addEventListener('click', goHome);
+
   el('layers').addEventListener('click', Layers.openSheet);
   el('layer-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'layer-sheet' || e.target.closest('[data-act="close"]')) {
@@ -2418,6 +2478,16 @@ function wireControls() {
     if (e.target.closest('[data-arrange]')) {
       Layers.closeSheet();
       startPinning(null);
+      return;
+    }
+    // A layer somewhere else stays reachable after the flight that switching it
+    // on gave you: come back a week later with it still ticked and the map on
+    // the moshava, and this is the way to it that does not involve guessing that
+    // toggling the box twice is what does it.
+    const fly = e.target.closest('[data-fly]');
+    if (fly) {
+      Layers.closeSheet();
+      frameLayer(Layers.byId(fly.dataset.fly));
       return;
     }
     const edit = e.target.closest('[data-edit]');
