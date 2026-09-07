@@ -591,31 +591,74 @@ function hostOf(url) {
  *  no coordinates, so this app is where a pardespedia place's position is
  *  decided; the festival placed its own pins on its own map, and offering to
  *  drag those would be offering to be wrong about somebody else's data. */
-/** Adding a video to a place.
+/** Which document owns what somebody attaches to this item.
  *
- *  Only the pardespedia layer. Every other place layer is a file some script
- *  builds and the app only reads, and the worker will not write to any of them
- *  anyway - offering the button there would be offering something that fails.
+ *  'trails'  the initiative's own shortcuts, whose photos live inside
+ *            trails.json alongside the geometry, as they always have.
+ *  'places'  nothing new is written here any more; pardespedia videos added
+ *            before 7/9/2026 sit in places.json and are removed from it.
+ *  'media'   everything else - the cycling plan, the conservation lists, the
+ *            planning schemes, the blocks, the land uses, the festival, Houten,
+ *            Curitiba. Those files are rebuilt by scripts, so the attachment
+ *            goes in the side-car instead of into the file it hangs off. */
+const IN_TRAILS_DOC = ['trails', 'waypoints', 'trips'];
+
+function mediaHome(it, layer) {
+  // The three kinds are the three arrays inside trails.json - the shortcuts,
+  // the initiative's own waypoints and the walks - which is exactly the set
+  // `Store`'s `find` reaches. The drafts layer is of kind `trails` too and is
+  // not in that file at all, hence the second test.
+  if (IN_TRAILS_DOC.includes(layer.kind) && layer.id !== 'drafts'
+      && !it.draft && !it.pending) return 'trails';
+  return 'media';
+}
+
+/** Attaching a picture, a video, a link or a line of explanation to anything on
+ *  the map.
  *
- *  The pictures on a place come from the wiki and the video does not, which is
- *  why `build_places.py` carries `yt` entries across a rebuild the same way it
- *  carries a hand-dropped pin. Without that, the next rebuild would quietly
- *  erase every video anybody had added. */
-function placeVideoActs(it, layer) {
-  if (!Store.isEditor() || layer.id !== Layers.PLACES_ID) return '';
+ *  Until 7/9/2026 this existed twice and covered two layers: the whole block
+ *  inside `editorBlock` for a trail, and a video-only version for a pardespedia
+ *  place. Every other layer offered nothing, because there was nowhere to put
+ *  the answer - the file a photo would have gone into is rebuilt from its
+ *  source every time the script runs. With the side-car there is somewhere, and
+ *  the reason to special-case a layer is gone, so this is one block shown on
+ *  everything.
+ *
+ *  A draft is the exception, and not by omission: it lives in this browser's
+ *  IndexedDB and has its own photo handling in draft.js, which works offline.
+ *  A trail waiting in the queue is the other: it is not on the map yet. */
+function mediaActs(it, layer) {
+  if (!Store.isEditor() || it.draft || it.pending) return '';
+  const home = mediaHome(it, layer);
+  // On a trail this is part of the wider editing block, which carries its own
+  // heading, its own status line and the rename, colour, move and delete
+  // actions this one has no business offering.
+  if (home === 'trails') return '';
+  // The counts name what this block can change, which is what the side-car
+  // holds - not what the item shows. An item whose source shipped four links
+  // and to which nobody has attached one has nothing here yet.
+  const links = (it.linksExtra || []).length;
+  const noted = !!it.noteExtra;
   return `
-    <h3>סרטון</h3>
+    <h3>הוספה</h3>
     <div class="acts">
-      <button class="act" data-place="video"><span class="lbl">הוספת סרטון יוטיוב
-        <span class="hint">יוצג יחד עם התמונות של הערך</span></span></button>
-    </div>`;
+      <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
+        <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
+        <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
+      <button class="act" data-pub="video"><span class="lbl">הוספת סרטון יוטיוב
+        <span class="hint">יוצג יחד עם התמונות, ונפתח בגדול בדפדוף</span></span></button>
+      <button class="act" data-pub="note"><span class="lbl">${noted ? 'שינוי ההערה' : 'הערה'}
+        <span class="hint">${noted ? 'השאר ריק כדי לחזור למה שהמקור אומר'
+          : 'שורה משלך על המקום הזה, במקום מה שהמקור אומר'}</span></span></button>
+      <button class="act" data-pub="links"><span class="lbl">קישורים
+        <span class="hint">${links ? plural(links, 'קישור אחד', 'קישורים')
+          : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
+    </div>
+    <p class="src">נשמר בנפרד מהשכבה עצמה, כדי שבנייה מחדש שלה לא תמחק אותו.</p>`;
 }
 
 function placeBody(it) {
   const layer = Layers.layerOf(it.id) || {};
-  // One per detail pane and never two: `detailSay` finds it by id, and a second
-  // element with the same id is one that never shows a word.
-  const msg = Store.isEditor() ? '<p id="pub-msg" class="pub-msg" hidden></p>' : '';
 
   if (it.unplaced) {
     return `
@@ -626,9 +669,8 @@ function placeBody(it) {
           <button class="act act-nav" data-place="pin"><span class="lbl">נעץ על המפה
             <span class="hint">לחיצה אחת על המקום המדויק, ונשמר לכולם</span></span></button>
         </div>` : ''}
-      ${placeVideoActs(it, layer)}
-      ${msg}
-      ${linksBlock(it)}`;
+      ${linksBlock(it)}
+      ${mediaActs(it, layer)}`;
   }
 
   return `
@@ -649,8 +691,7 @@ function placeBody(it) {
           <span class="lbl">ביטול המיקום הידני
             <span class="hint">יחזור להשערה האוטומטית בבנייה הבאה</span></span></button>` : ''}
       </div>` : ''}
-    ${placeVideoActs(it, layer)}
-    ${msg}`;
+    ${mediaActs(it, layer)}`;
 }
 
 /** The practical half of a festival entry: whom to ring, and whether you can
@@ -731,8 +772,7 @@ function editorBlock(it, layer) {
         <span class="hint">כרגע ב"${escapeHtml(layer.name)}"</span></span></button>` : ''}
       <button class="act danger" data-pub="remove"><span class="lbl">הסרה מהמסד
         <span class="hint">נשמר בהיסטוריה, אפשר לשחזר</span></span></button>
-    </div>
-    <p id="pub-msg" class="pub-msg" hidden></p>`;
+    </div>`;
 }
 
 /** The shortcuts a trip threads together, in the order it walks them.
@@ -852,17 +892,24 @@ function showDetail(it) {
   if (it.place) {
     body = placeBody(it);
   } else if (layer.kind === 'network') {
-    const labels = ['תחילת המקטע', 'סוף המקטע'];
+    // A network layer is lines, except where it is not: Curitiba carries half a
+    // dozen pins for the places its bike network was built to reach, and they
+    // arrive here with a position and no path at all. Calling that "start of
+    // the segment" would be the label lying about what was clicked.
+    const spot = !it.path || it.path.length < 2;
+    const labels = spot ? ['המקום'] : ['תחילת המקטע', 'סוף המקטע'];
     body = `
       ${it.streets && it.streets.length
         ? `<p class="note">עובר לאורך ${escapeHtml(it.streets.join(', '))}.</p>` : ''}
       <h3>הגעה</h3>
       <div class="acts">
-        ${panoActs(it, labels, 'מבט 360° לאורך המקטע')}
-        ${navActs(it, 'ניווט בתוך האפליקציה, לאורך תוואי המקטע')}
+        ${panoActs(it, labels, spot ? 'מבט 360° מהרחוב' : 'מבט 360° לאורך המקטע')}
+        ${navActs(it, spot ? 'ניווט בתוך האפליקציה, עד המקום'
+          : 'ניווט בתוך האפליקציה, לאורך תוואי המקטע')}
       </div>
       ${linksBlock(it)}
-      <p class="src">${escapeHtml(layer.credit || '')}</p>`;
+      <p class="src">${escapeHtml(layer.credit || '')}</p>
+      ${mediaActs(it, layer)}`;
   } else if (it.pending) {
     body = `
       <p class="unplaced">שביל שהתקבל ועוד לא אושר. הוא לא מופיע למי שרק פותח
@@ -877,7 +924,6 @@ function showDetail(it) {
         <button class="act danger" data-queue="reject"><span class="lbl">דחה
           <span class="hint">יוסר מהתור. נשמר בהיסטוריה</span></span></button>
       </div>
-      <p id="pub-msg" class="pub-msg" hidden></p>
       <p class="src">${it.by ? `נשלח על ידי ${escapeHtml(it.by)} · ` : ''}${
         it.submitted ? new Date(it.submitted).toLocaleDateString('he-IL') : ''}</p>`;
   } else if (it.draft) {
@@ -901,9 +947,6 @@ function showDetail(it) {
       ${editorBlock(it, layer)}`;
   }
 
-  // Photos can be removed only where this app owns them: the initiative's own
-  // trails. A pardespedia photo belongs to the wiki article and is changed
-  // there, not here.
   // Photos that live on somebody else's host are asked for without a referrer.
   // Google's image hosting, which is where fifteen years of מקום שמור sit,
   // answers 429 to a request that says it comes from an origin it does not
@@ -913,14 +956,30 @@ function showDetail(it) {
   const photos = it.photos || [];
   const clips = photos.filter((p) => p.yt).length;
 
-  // What this app may remove. A trail is the initiative's own, so all of it.
-  // On a pardespedia place only the video: the pictures came from the wiki and
-  // the next build would bring them back anyway, so a delete button over them
-  // would promise something it cannot keep.
-  const wikiPlace = !!it.place && layer.id === Layers.PLACES_ID;
-  const editable = Store.isEditor() && !it.draft
-    && (layer.kind === 'trails' || wikiPlace);
-  const canDrop = (p) => editable && (!wikiPlace || !!p.yt);
+  // What this app may remove, which is what it put there. The gallery is the
+  // source's own pictures followed by whatever an editor attached, and
+  // `mediaBase` is the boundary between the two - so `base` many pictures came
+  // with the item and the rest are in the side-car.
+  //
+  // A pardespedia photo belongs to the wiki article: the next build of
+  // places.json brings it back, so a delete button over it would promise
+  // something it cannot keep. A Houten path's own photos are the same story.
+  // The attached ones, on either, are ours to remove.
+  const base = (it.mediaBase || photos).length;
+  const home = mediaHome(it, layer);
+  // Which document the item's *own* photos are in, when this app may touch them
+  // at all. A ternary and not `home === 'trails' || …`, which yields `true` and
+  // then never matches the string it is compared against - that read as a trail
+  // whose eight photos had lost their delete buttons.
+  //
+  // Pardespedia videos added before the side-car existed still sit in
+  // places.json, and removing one has to go there. They are the only entries in
+  // any base list this app wrote that are not a trail's.
+  const ownsBase = home === 'trails' ? 'trails'
+    : layer.id === Layers.PLACES_ID ? 'places' : false;
+  const editable = Store.isEditor() && !it.draft;
+  const canDrop = (p, i) => editable
+    && (i >= base || ownsBase === 'trails' || (ownsBase === 'places' && !!p.yt));
 
   const heading = !clips ? 'תמונות'
     : clips === photos.length ? (clips === 1 ? 'סרטון' : 'סרטונים')
@@ -934,10 +993,16 @@ function showDetail(it) {
           title="${escapeHtml(p.cap || (p.yt ? 'סרטון · ' + it.name : it.name))}"
           alt="${escapeHtml(p.cap || it.name)}" loading="lazy"
           referrerpolicy="no-referrer">
-        ${canDrop(p) ? `<button class="shot-x" data-drop="${i}"
+        ${canDrop(p, i) ? `<button class="shot-x" data-drop="${i}"
           aria-label="${p.yt ? 'הסרת הסרטון' : 'הסרת התמונה'}">&times;</button>` : ''}
       </span>`).join('')}
     </div>` : '';
+
+  // One status line per detail pane and never two: `detailSay` finds it by id,
+  // and a second element with the same id is one that never shows a word. It
+  // used to be emitted by whichever branch happened to have editing controls,
+  // which is three places to get that wrong; now there is one.
+  const msg = Store.isEditor() ? '<p id="pub-msg" class="pub-msg" hidden></p>' : '';
 
   el('detail').innerHTML = `
     <h2>${escapeHtml(it.name)}</h2>
@@ -946,6 +1011,7 @@ function showDetail(it) {
     ${unwalkedNote(it)}
     ${tripParts(it)}
     ${body}
+    ${msg}
     ${gallery}
     ${it.place
       ? `<a class="src" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">
@@ -981,24 +1047,35 @@ function detailSay() {
   };
 }
 
+/** Show the document a write handed back.
+ *
+ *  Three documents, three ways back, and refreshing the wrong one leaves the
+ *  pane showing what was just removed. The side-car is the cheap one: nothing
+ *  about the map changed, only what hangs off one item, so the layers are
+ *  re-merged rather than rebuilt. */
+async function reloadAfter(home, doc) {
+  if (home === 'media') Layers.resetMedia(doc);
+  else if (home === 'places') reloadPlaces(doc);
+  else await reloadShared(doc);
+}
+
 /** Editing an item that is already in the shared dataset: a published trail,
  *  or the position of a pardespedia place. */
 /** Ask for a YouTube address and file it with the pictures.
  *
- *  One function for both kinds of item, because the only difference is which
+ *  One function for every kind of item, because the only difference is which
  *  document is written and which one is re-read afterwards.
  *
  *  `prompt` and not a form: this is one field, pasted from a phone's share
  *  sheet nine times out of ten, and every other single-field action in this app
  *  asks the same way. The address is checked in the store rather than here, so
  *  that whatever paths reach it get the same answer. */
-async function addVideoTo(it, onPlace, say) {
+async function addVideoTo(it, home, say) {
   const url = prompt('כתובת של סרטון יוטיוב:\n(אפשר גם קישור קצר של youtu.be)');
   if (url == null || !url.trim()) return;
   say('משבץ סרטון…');
   try {
-    const doc = await Store.addVideo(it.id, url, it.name, onPlace);
-    if (onPlace) reloadPlaces(doc); else await reloadShared(doc);
+    await reloadAfter(home, await Store.addVideo(it.id, url, it.name, home));
     select(it.id, false);
   } catch (err) {
     say('נכשל: ' + err.message, true);
@@ -1008,21 +1085,29 @@ async function addVideoTo(it, onPlace, say) {
 function wirePublished(it) {
   const say = detailSay();
 
-  const onPlace = !!it.place;
+  const layer = Layers.layerOf(it.id) || {};
+  const home = mediaHome(it, layer);
+  // Where the item's own pictures end and the attached ones begin. Anything at
+  // or past this point is in the side-car whatever the item is; anything before
+  // it is in the document the item came from.
+  const base = (it.mediaBase || it.photos || []).length;
 
   el('detail').querySelectorAll('[data-drop]').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const clip = !!btn.closest('.shot.video');
-      if (!confirm(clip ? 'להסיר את הסרטון הזה?' : 'להסיר את התמונה הזאת מהשביל?')) return;
+      if (!confirm(clip ? 'להסיר את הסרטון הזה?' : 'להסיר את התמונה הזאת?')) return;
       btn.disabled = true;
       say(clip ? 'מסיר סרטון…' : 'מסיר תמונה…');
       try {
-        const doc = await Store.removePhoto(it.id, +btn.dataset.drop, it.name, onPlace);
-        // Two documents, two ways back: a place lives in places.json and a
-        // trail in trails.json, and refreshing the wrong one leaves the pane
-        // showing what was just removed.
-        if (onPlace) reloadPlaces(doc); else await reloadShared(doc);
+        const i = +btn.dataset.drop;
+        // A pardespedia video added before the side-car existed is the one
+        // thing this app may remove that is in neither the side-car nor
+        // trails.json.
+        const from = i >= base ? 'media' : (it.place ? 'places' : home);
+        const doc = await Store.removePhoto(
+          it.id, i >= base ? i - base : i, it.name, from);
+        await reloadAfter(from, doc);
         select(it.id, false);
       } catch (err) {
         btn.disabled = false;
@@ -1058,7 +1143,6 @@ function wirePublished(it) {
   el('detail').querySelectorAll('[data-place]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       if (btn.dataset.place === 'pin') { startPinning(it); return; }
-      if (btn.dataset.place === 'video') { addVideoTo(it, true, say); return; }
       if (!confirm(`לבטל את המיקום הידני של "${it.name}"?`)) return;
       btn.disabled = true;
       say('מבטל…');
@@ -1076,7 +1160,7 @@ function wirePublished(it) {
     const act = node.dataset.pub;
 
     if (act === 'video') {
-      node.addEventListener('click', () => addVideoTo(it, false, say));
+      node.addEventListener('click', () => addVideoTo(it, home, say));
       return;
     }
 
@@ -1085,7 +1169,8 @@ function wirePublished(it) {
         if (!node.files || !node.files.length) return;
         say('מעלה…');
         try {
-          await reloadShared(await Store.addPhotos(it.id, [...node.files], it.name, say));
+          await reloadAfter(home, await Store.addPhotos(
+            it.id, [...node.files], it.name, say, home));
           select(it.id, false);
         } catch (err) {
           say('העלאה נכשלה: ' + err.message, true);
@@ -1096,7 +1181,17 @@ function wirePublished(it) {
 
     node.addEventListener('click', async () => {
       try {
-        if (act === 'links') { linksForm(it); return; }
+        if (act === 'links') { linksForm(it, home); return; }
+
+        if (act === 'note') {
+          const note = prompt('הערה על המקום הזה:', it.noteExtra || '');
+          if (note == null) return;
+          node.disabled = true;
+          say('שומר…');
+          await reloadAfter('media', await Store.setNote(it.id, note, it.name));
+          select(it.id, false);
+          return;
+        }
         if (act === 'move') { moveForm(it); return; }
         if (act === 'colour') { colourForm(it); return; }
 
@@ -1182,18 +1277,21 @@ const LinkRows = {
   }
 };
 
-function linksForm(it) {
+function linksForm(it, home) {
   openForm(`
     <header class="sheet-head">
       <h2>קישורים</h2>
       <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
     </header>
     <p class="sheet-lead">קישורים שיופיעו במסך של "${escapeHtml(it.name)}": אתר, כתבה,
-      ערך בפרדספדיה, אלבום תמונות. השאר שורה ריקה כדי למחוק אותה.</p>
-    ${LinkRows.html(it.links)}
+      ערך בפרדספדיה, אלבום תמונות. השאר שורה ריקה כדי למחוק אותה.${
+        home === 'media' && (it.linksBase || []).length
+          ? ' הקישורים שהמקור עצמו נושא נשארים ואינם נערכים כאן.' : ''}</p>
+    ${LinkRows.html(home === 'media' ? (it.linksExtra || []) : it.links)}
     <p id="form-err" class="tok-err" hidden></p>
     <button class="big-act primary" data-act="save-links"><b>שמור קישורים</b></button>`);
   formTarget = it;
+  formHome = home || 'trails';
 }
 
 /* The palette a new layer picks from. Free colour entry on a phone is a colour
@@ -1315,6 +1413,7 @@ function moveForm(it) {
 }
 
 let formTarget = null;      // what the open form is about
+let formHome = 'trails';    // and which document its answer is written to
 
 function formError(err) {
   const box = el('form-err');
@@ -1334,7 +1433,8 @@ async function formAction(act, btn) {
   try {
     if (act === 'save-links') {
       const links = LinkRows.read(el('form-card'));
-      await reloadShared(await Store.setLinks(formTarget.id, links, formTarget.name));
+      await reloadAfter(formHome, await Store.setLinks(
+        formTarget.id, links, formTarget.name, formHome));
       closeForm();
       select(formTarget.id, false);
 
@@ -2254,12 +2354,10 @@ async function boot() {
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
-  const { trails, network, places, art, shimur, makom, plans, blocks, publicLand,
-          houten } = await Store.load();
-  DATA = trails;
-  PLACES = places;
-  Layers.init(trails, network, places, art, shimur, makom, plans, blocks,
-              publicLand, houten);
+  const data = await Store.load();
+  DATA = data.trails;
+  PLACES = data.places;
+  Layers.init(data);
   Layers.onChange = repaint;
 
   // The list, the search and the buttons come up as soon as the data lands.

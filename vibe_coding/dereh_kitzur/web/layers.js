@@ -128,11 +128,62 @@ const Layers = (() => {
     return layer;
   }
 
+  /* ---------- the media side-car ----------
+   *
+   * Every layer but the trails is a file some script rebuilds, so a photo
+   * somebody attached cannot be stored inside it. `data/media.json` holds those
+   * attachments keyed by item id, and they are merged onto the items here -
+   * inside `reindex`, which is the one place every layer's items pass through,
+   * on the way in and after every rebuild.
+   *
+   * `mediaBase` is the item's own list as its source shipped it, kept so that
+   * merging twice adds nothing twice. It is also what tells the detail pane
+   * where a given picture in the gallery is actually filed: everything before
+   * `mediaBase.length` belongs to the source document, everything after it to
+   * the side-car, and removing one has to go to the right file.
+   */
+
+  let media = { items: {} };
+
+  const setMedia = (doc) => { media = doc && doc.items ? doc : { items: {} }; };
+
+  function merge(it) {
+    if (it.mediaBase === undefined) it.mediaBase = it.photos || [];
+    if (it.linksBase === undefined) it.linksBase = it.links || [];
+    const extra = media.items[it.id] || {};
+
+    it.photos = (extra.photos || []).length
+      ? [...it.mediaBase, ...extra.photos] : it.mediaBase;
+
+    // Links join rather than replace. A pardespedia place arrives carrying the
+    // article's own external links, and an editor adding one more meant to add
+    // one more - replacing them would quietly delete the article's. Deduped by
+    // address, so attaching a link the source already had shows one.
+    it.linksExtra = (extra.links || []).filter(
+      (l) => !it.linksBase.some((b) => b.url === l.url));
+    it.links = it.linksExtra.length ? [...it.linksBase, ...it.linksExtra]
+      : it.linksBase;
+
+    // A note does replace. Unlike a link it is not an item in a list but the
+    // one line under the name, and somebody writes one because what the source
+    // said was missing or wrong; showing both would show the wrong one too.
+    if (it.noteBase === undefined) it.noteBase = it.note || '';
+    it.noteExtra = extra.note || '';
+    it.note = it.noteExtra || it.noteBase;
+  }
+
   function reindex() {
     index.clear();
+    const some = Object.keys(media.items || {}).length > 0;
     list.forEach((layer) => {
-      layer.segments.forEach((s) => index.set(s.id, { layer, item: s }));
-      layer.waypoints.forEach((w) => index.set(w.id, { layer, item: w }));
+      layer.segments.forEach((s) => {
+        index.set(s.id, { layer, item: s });
+        if (some || s.mediaBase !== undefined) merge(s);
+      });
+      layer.waypoints.forEach((w) => {
+        index.set(w.id, { layer, item: w });
+        if (some || w.mediaBase !== undefined) merge(w);
+      });
     });
   }
 
@@ -428,8 +479,13 @@ const Layers = (() => {
    * own shortcuts and the circular route. The cycling plan and the several
    * hundred pardespedia pins are a tap away in the layer sheet, and putting
    * them all on the map at once buries the shortcuts under them. */
-  function init(trails, network, places, art, shimur, makom, plans, blocks,
-                publicLand, houten) {
+  /* One object rather than a dozen positional arguments. It is exactly what
+   * `Store.load()` returns, so a document added there arrives here without a
+   * call site in between having to be kept in the same order. */
+  function init(data) {
+    const { trails, network, places, art, shimur, makom, plans, blocks,
+            publicLand, houten, curitiba } = data;
+    setMedia(data.media);
     const prefs = loadPrefs();
     const link = urlPrefs();
     /** What the link asks for, else what this browser chose, else the default
@@ -641,12 +697,18 @@ const Layers = (() => {
     //
     // build_houten.py writes it straight from OpenStreetMap, so unlike every
     // other layer here nobody edits it and nothing is ever published back.
-    (houten ? houten.layers : []).forEach((l) => add({
+    // Curitiba, the second one, and the reason the category is plural. Houten
+    // is the idea at the scale of a small town built from scratch; Curitiba is
+    // the same argument made inside a Brazilian city of two million that was
+    // already there, by a mayor who was an architect and had to work with what
+    // existed. Two examples say "this is a way of laying out a place"; one says
+    // "there is a town in the Netherlands".
+    [houten, curitiba].forEach((doc) => (doc ? doc.layers : []).forEach((l) => add({
       ...l,
       kind: 'network',            // a reference mesh, drawn thin and underneath
       category: 'world',
       on: isOn(l.id, false)
-    }));
+    })));
 
     // Populated from the worker, and only while edit mode is on: a trail nobody
     // has looked at yet is not something to show a visitor as if it were part
@@ -747,6 +809,15 @@ const Layers = (() => {
       map.getSource(srcId(PENDING_ID)).setData(geojson(layer));
     }
     applyVisibility();
+    onChange();
+  }
+
+  /** Take the side-car again after a write and re-merge it, without touching a
+   *  single layer's geometry or anybody's on/off choices: what changed is a
+   *  photo on one item, not what is on the map. */
+  function resetMedia(doc) {
+    setMedia(doc);
+    reindex();
     onChange();
   }
 
@@ -1482,6 +1553,7 @@ const Layers = (() => {
 
   return {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
+    resetMedia,
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render,

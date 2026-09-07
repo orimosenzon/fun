@@ -33,6 +33,7 @@ them away and asks again.
 """
 
 import collections
+import hashlib
 import json
 import math
 import os
@@ -272,9 +273,48 @@ def note_for(tags, group):
 HOUTEN_ID = "houten"
 
 
+def line_id(prefix, path):
+    """A segment's id, derived from the line itself.
+
+    This used to be the segment's position in the answer Overpass happened to
+    give - ``houten-0``, ``houten-1`` - which is fine for as long as nothing
+    else refers to it, and stopped being fine on 7/9/2026, when the app grew a
+    way to attach a photo or a video to any item on the map. Those attachments
+    live in ``data/media.json`` keyed by id, and this file is rebuilt from
+    OpenStreetMap: one new cycleway mapped anywhere in Houten would have
+    renumbered everything after it and moved somebody's photo onto a different
+    road, silently and with no way to notice.
+
+    Five decimals is about a metre, which is finer than any edit that leaves
+    the line meaning the same thing and coarser than the noise. So the id
+    survives a rebuild and changes when, and only when, the line does.
+    """
+    digest = hashlib.sha1(
+        ";".join(f"{lat:.5f},{lng:.5f}" for lat, lng in path).encode()
+    ).hexdigest()[:8]
+    return f"{prefix}-{digest}"
+
+
+def assign_ids(segments, prefix):
+    """Name every segment after its geometry, in one pass so that two identical
+    lines - which the ring road and a cycleway alongside it can genuinely be -
+    get told apart rather than overwriting each other."""
+    taken = set()
+    for seg in segments:
+        ident = line_id(prefix, seg["path"])
+        base, n = ident, 2
+        while ident in taken:
+            ident = f"{base}-{n}"
+            n += 1
+        taken.add(ident)
+        seg["id"] = ident
+    return segments
+
+
 def segment(index, group, name, path, tags, streets):
     return {
-        "id": f"{HOUTEN_ID}-{index}",
+        # Filled in by `assign_ids` once every segment exists.
+        "id": "",
         "name": name,
         "note": note_for(tags, group),
         "photos": [],
@@ -408,6 +448,7 @@ def main():
         segments += made
     made, index = route_segments(routes, index)
     segments += made
+    assign_ids(segments, HOUTEN_ID)
 
     print()
     for group in (g["name"] for g in GROUPS):

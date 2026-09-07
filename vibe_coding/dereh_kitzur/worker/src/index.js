@@ -40,6 +40,7 @@ const ALLOWED = [
   /^data\/trails\.json$/,
   /^data\/places\.json$/,
   /^data\/pending\.json$/,
+  /^data\/media\.json$/,
   IMAGE
 ];
 
@@ -61,7 +62,11 @@ const ALLOWED = [
  */
 const GATED = [
   /^data\/trails\.json$/,
-  /^data\/places\.json$/
+  /^data\/places\.json$/,
+  // The side-car carries the photos, videos, links and notes attached to items
+  // in the layers a script builds. It is the map talking, exactly as the other
+  // two are, so it is gated exactly as they are.
+  /^data\/media\.json$/
 ];
 
 const MAX_BODY = 6 * 1024 * 1024;        // both renditions of one photo, comfortably
@@ -209,6 +214,30 @@ function sane(path, text) {
   }
   if (path === 'data/pending.json') {
     return check('items', 0, 500);
+  }
+  if (path === 'data/media.json') {
+    // `items` is a map from item id to what is attached to it, not a list, so
+    // the shared `check` above does not apply - and an array here would slip
+    // past a bare typeof test, since an array is an object.
+    const items = doc.items;
+    if (!items || typeof items !== 'object' || Array.isArray(items)) {
+      return 'items חסר.';
+    }
+    const ids = Object.keys(items);
+    if (ids.length > 5000) return `items: ${ids.length} פריטים, יותר מדי.`;
+    // Nothing forbids emptying this one: removing the last photo from the last
+    // item anybody attached anything to is an ordinary edit, and the file that
+    // results is `{}`. The other documents are the map itself and emptying one
+    // never is.
+    for (const id of ids) {
+      const it = items[id];
+      if (!it || typeof it !== 'object' || Array.isArray(it)) {
+        return `${id}: מבנה לא צפוי.`;
+      }
+      if ((it.photos || []).length > 60) return `${id}: יותר מדי תמונות.`;
+      if ((it.links || []).length > 8) return `${id}: יותר מדי קישורים.`;
+    }
+    return null;
   }
   return null;
 }
