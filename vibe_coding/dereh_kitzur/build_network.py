@@ -21,6 +21,7 @@ offline apart from an optional, cached street-name lookup.
 """
 
 import collections
+import hashlib
 import io
 import json
 import math
@@ -292,6 +293,33 @@ def read_source(filename):
     return out
 
 
+def assign_ids(segments, prefix):
+    """Name every segment after its own geometry rather than after its position
+    in the shapefile.
+
+    Same reason as in ``build_houten.py``: since 7/9/2026 a photo or a video
+    can be attached to any item on the map, those attachments live in
+    ``data/media.json`` keyed by item id, and this file is regenerated from the
+    engineering firm's shapefiles. A numbering that shifts when a segment is
+    added or removed would move somebody's photo onto a different street.
+
+    Five decimals is about a metre - finer than any edit that leaves the line
+    meaning the same thing, coarser than the noise between two exports.
+    """
+    taken = set()
+    for seg in segments:
+        digest = hashlib.sha1(
+            ";".join(f"{lat:.5f},{lng:.5f}" for lat, lng in seg["path"]).encode()
+        ).hexdigest()[:8]
+        ident, base, n = f"{prefix}-{digest}", f"{prefix}-{digest}", 2
+        while ident in taken:
+            ident = f"{base}-{n}"
+            n += 1
+        taken.add(ident)
+        seg["id"] = ident
+    return segments
+
+
 def build_segment(spec, attrs, path_ll, roads, index):
     streets = street_names(path_ll, roads)
     grade = (attrs.get("grade") or "").strip()
@@ -300,7 +328,7 @@ def build_segment(spec, attrs, path_ll, roads, index):
         else f"{label} · מקטע {index}"
 
     return {
-        "id": f'{spec["id"]}-{index}',
+        "id": "",                                    # filled in by assign_ids
         "name": name,
         "note": (attrs.get("note") or "").strip(),
         "photos": [],
@@ -354,8 +382,9 @@ def main():
     out_layers = []
     for spec in LAYERS:
         rows = by_layer[spec["id"]]
-        segments = [build_segment(spec, attrs, path_ll, roads, i)
-                    for i, (attrs, path_ll) in enumerate(rows)]
+        segments = assign_ids([build_segment(spec, attrs, path_ll, roads, i)
+                               for i, (attrs, path_ll) in enumerate(rows)],
+                              spec["id"])
         total = sum(s["length"] for s in segments)
         named = sum(1 for s in segments if s["streets"])
         print(f'{spec["name"]}: {len(segments)} מקטעים, {total} מ׳, {named} עם שם רחוב')

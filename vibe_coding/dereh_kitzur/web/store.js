@@ -24,11 +24,28 @@
  *   data/shimur.json   the conservation appendix of the master plan, and
  *   data/makom_shamur.json  the מקום שמור documentation project. Both written
  *                      by build_shimur.py; neither is written from the app.
- *   data/houten.json   the bike network of Houten in the Netherlands, from
- *                      OpenStreetMap via build_houten.py. The one document here
- *                      that is not about the moshava at all: a worked example
- *                      of the idea this whole app is named after, kept for
- *                      comparison.
+ *   data/houten.json   the bike network of Houten in the Netherlands, and
+ *   data/curitiba.json the bike network and busways of Curitiba in Brazil.
+ *                      Written by build_houten.py and build_curitiba.py off
+ *                      OpenStreetMap. The two documents here that are not about
+ *                      the moshava at all: worked examples of the idea this
+ *                      whole app is named after, kept for comparison.
+ *   data/media.json    photos, videos, links and notes an editor has attached
+ *                      to an item in any of the layers above. See below.
+ *
+ * Why that last one exists. Every layer except the trails is a file some script
+ * writes and this app only reads, so a photo stored inside it would be erased
+ * by the next rebuild - which is why until 7/9/2026 the app simply offered no
+ * way to add one, and adding a video to a Houten path was impossible. The
+ * side-car keeps the two apart: the script owns the geometry, the side-car owns
+ * what people attached to it, and `media.json` is keyed by item id so a rebuild
+ * that leaves an id alone leaves its photos alone.
+ *
+ * That makes the id the contract. `build_houten.py` and `build_network.py`
+ * numbered their segments in the order they came out of Overpass, which meant
+ * one new bike path in Utrecht province could shift every id after it and move
+ * a photo onto a different road. Both now derive the id from the geometry
+ * itself, so it survives a rebuild and changes only when the line does.
  *
  * Reading needs nothing at all: the files are public and come straight off a
  * CDN. Writing goes through a small Cloudflare worker that holds the only
@@ -94,6 +111,8 @@ const Store = (() => {
   const BLOCKS = 'data/blocks.json';
   const PUBLIC = 'data/public.json';
   const HOUTEN = 'data/houten.json';
+  const CURITIBA = 'data/curitiba.json';
+  const MEDIA = 'data/media.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
   const K_NET = 'dk.cache.network.v2';
@@ -105,6 +124,8 @@ const Store = (() => {
   const K_BLOCKS = 'dk.cache.blocks.v1';
   const K_PUBLIC = 'dk.cache.public.v1';
   const K_HOUTEN = 'dk.cache.houten.v1';
+  const K_CURITIBA = 'dk.cache.curitiba.v1';
+  const K_MEDIA = 'dk.cache.media.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
   const K_KEY = 'dk.key.v1';            // the editor's password, once verified
@@ -129,8 +150,17 @@ const Store = (() => {
    * because a video's thumbnail is an absolute URL that passes through `asset`
    * untouched: on a trip carrying both, the videos worked and the photos did
    * not, which reads like a problem with the upload and is not one. */
-  const withPhotos = (doc) => [...(doc.segments || []), ...(doc.waypoints || []),
-                               ...(doc.places || []), ...(doc.trips || [])];
+  const withPhotos = (doc) => [
+    ...(doc.segments || []), ...(doc.waypoints || []),
+    ...(doc.places || []), ...(doc.trips || []),
+    // A network document - the cycling plan, Houten, Curitiba - is a list of
+    // layers each holding its own segments, so the items are one level deeper.
+    // Missing this meant a photo in such a layer kept its repo-relative path
+    // and came out broken, the same way trips did.
+    ...(doc.layers || []).flatMap((l) => [...(l.segments || []), ...(l.waypoints || [])]),
+    // And the side-car, whose items are keyed by id rather than listed.
+    ...Object.values(doc.items && !Array.isArray(doc.items) ? doc.items : {})
+  ];
 
   function absolutise(doc) {
     if (!doc) return doc;
@@ -210,9 +240,11 @@ const Store = (() => {
     // `publicLand` and not `public`, which is a reserved word under 'use strict'.
     let publicLand = null;
     let houten = null;
+    let curitiba = null;
+    let media = null;
     try {
       [trails, network, places, art, shimur, makom, plans, blocks, publicLand,
-       houten] = await Promise.all([
+       houten, curitiba, media] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -231,8 +263,15 @@ const Store = (() => {
         fetchJson(BLOCKS).catch(() => bundled('data/blocks.json')),
         // And the land the approved plans designate public, from build_public.py.
         fetchJson(PUBLIC).catch(() => bundled('data/public.json')),
-        // Houten, which build_houten.py writes off OpenStreetMap.
-        fetchJson(HOUTEN).catch(() => bundled('data/houten.json'))
+        // Houten and Curitiba, which build_houten.py and build_curitiba.py
+        // write off OpenStreetMap.
+        fetchJson(HOUTEN).catch(() => bundled('data/houten.json')),
+        fetchJson(CURITIBA).catch(() => bundled('data/curitiba.json')),
+        // The side-car. Written from the app, so an editor reads it through the
+        // worker for the same reason as the trails: their own photo would
+        // otherwise be five minutes behind them. A miss is ordinary - the file
+        // does not exist until somebody attaches the first thing.
+        canonical(MEDIA).catch(() => bundled('data/media.json'))
       ]);
       cache(K_TRAILS, trails);
       if (network) cache(K_NET, network);
@@ -244,6 +283,8 @@ const Store = (() => {
       if (blocks) cache(K_BLOCKS, blocks);
       if (publicLand) cache(K_PUBLIC, publicLand);
       if (houten) cache(K_HOUTEN, houten);
+      if (curitiba) cache(K_CURITIBA, curitiba);
+      if (media) cache(K_MEDIA, media);
     } catch (err) {
       state.offline = true;
       trails = cached(K_TRAILS);
@@ -256,6 +297,8 @@ const Store = (() => {
       blocks = cached(K_BLOCKS);
       publicLand = cached(K_PUBLIC);
       houten = cached(K_HOUTEN);
+      curitiba = cached(K_CURITIBA);
+      media = cached(K_MEDIA);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
         // is stale by definition, but it beats an empty map.
@@ -269,6 +312,8 @@ const Store = (() => {
         blocks = await bundled('data/blocks.json');
         publicLand = await bundled('data/public.json');
         houten = await bundled('data/houten.json');
+        curitiba = await bundled('data/curitiba.json');
+        media = await bundled('data/media.json');
       }
     }
     return {
@@ -281,7 +326,9 @@ const Store = (() => {
       plans: absolutise(plans),
       blocks: absolutise(blocks),
       publicLand: absolutise(publicLand),
-      houten,
+      houten: absolutise(houten),
+      curitiba: absolutise(curitiba),
+      media: absolutise(media || { items: {} }),
       offline: state.offline
     };
   }
@@ -532,6 +579,77 @@ const Store = (() => {
   const withTrails = (mutate, message) =>
     withDoc(TRAILS, K_TRAILS, mutate, message, restat);
 
+  /* ---------- the media side-car ----------
+   *
+   * `data/media.json` is a flat map from item id to whatever somebody attached
+   * to that item:
+   *
+   *   { "items": { "houten-a41f9c": { "photos": [...], "links": [...],
+   *                                   "note": "...", "by": "...", "at": "..." } } }
+   *
+   * One file for every layer rather than one per layer, because the thing being
+   * stored is the same thing in all of them and an id names its item without
+   * help. It also means attaching a photo is one write against one sha, so two
+   * editors working on different layers at the same second still merge.
+   *
+   * A trail keeps its photos inside `trails.json` and does not come through
+   * here. That file is the initiative's own and nothing rebuilds it, `restat`
+   * counts the photos in it, and `export_mymaps.py` reads it - splitting a
+   * trail's pictures across two documents would have broken all three to no
+   * purpose. So: the side-car is for the layers this app does not own.
+   */
+
+  const withMedia = (mutate, message) =>
+    withDoc(MEDIA, K_MEDIA, mutate, message, null, { items: {} });
+
+  /** The entry for one item, made on demand. */
+  function slot(doc, id) {
+    doc.items = doc.items || {};
+    doc.items[id] = doc.items[id] || {};
+    return doc.items[id];
+  }
+
+  /** Drop an entry that no longer carries anything.
+   *
+   *  Without this the file fills with `{}` under the id of every item anybody
+   *  ever attached a photo to and then thought better of, and the next reader
+   *  downloads all of them. */
+  function prune(doc, id) {
+    const it = doc.items[id];
+    if (!it) return;
+    if (!(it.photos || []).length && !(it.links || []).length && !it.note) {
+      delete doc.items[id];
+    }
+  }
+
+  /** Stamp who touched it, the same way a trail records who walked it. */
+  function signed(entry) {
+    entry.by = named() || entry.by || '';
+    entry.at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    return entry;
+  }
+
+  /** Change one item wherever its media lives.
+   *
+   *  `home` is decided by the caller, which knows the layer: 'trails' for the
+   *  initiative's own, 'places' for a pardespedia video written before the
+   *  side-car existed, 'media' for everything else. One function so that every
+   *  operation - photo, video, link, note, removal - routes the same way and
+   *  cannot drift apart. */
+  async function onItem(home, id, mutate, message) {
+    if (home === 'media') {
+      return absolutise(await withMedia((doc) => {
+        mutate(signed(slot(doc, id)));
+        prune(doc, id);
+      }, message));
+    }
+    if (home === 'places') {
+      return absolutise(await withPlaces(
+        (doc) => mutate((doc.places || []).find((p) => p.id === id) || {}), message));
+    }
+    return absolutise(await withTrails((doc) => mutate(find(doc, id) || {}), message));
+  }
+
   const withPlaces = (mutate, message) =>
     withDoc(PLACES, K_PLACES, mutate, message, (doc) => {
       doc.stats = {
@@ -732,20 +850,30 @@ const Store = (() => {
     }, `צבע השביל: ${name}`));
   };
 
-  /** Links on an existing trail or waypoint. */
-  const setLinks = async (id, links, name) => absolutise(await withTrails((doc) => {
-    const it = find(doc, id);
-    if (it) it.links = cleanLinks(links);
-  }, `קישורים: ${name}`));
+  /** Links on any item on the map. */
+  const setLinks = (id, links, name, home = 'trails') => onItem(home, id, (it) => {
+    it.links = cleanLinks(links);
+  }, `קישורים: ${name}`);
 
-  /** Photos onto an existing trail or waypoint. */
-  async function addPhotos(id, blobs, name, onStep) {
+  /** A line of explanation on an item in a layer this app does not own.
+   *
+   *  Only the side-car takes one. A trail's note is edited together with its
+   *  name, in the same form and the same write, and a second way in would be a
+   *  second thing to keep straight. Elsewhere the note is whatever the script
+   *  wrote - the group's description on a Houten path, the planning stage on a
+   *  scheme - and this is somebody saying something the source did not. */
+  const setNote = (id, note, name) => onItem('media', id, (it) => {
+    const text = String(note || '').trim().slice(0, 600);
+    if (text) it.note = text; else delete it.note;
+  }, `הערה: ${name}`);
+
+  /** Photos onto any item on the map. */
+  async function addPhotos(id, blobs, name, onStep, home = 'trails') {
     const photos = await uploadAll(blobs, name, onStep);
-    if (onStep) onStep('משייך לשביל…');
-    return absolutise(await withTrails((doc) => {
-      const it = find(doc, id);
-      if (it) it.photos = [...(it.photos || []), ...photos];
-    }, `תמונות לשביל ${name}`));
+    if (onStep) onStep('משייך…');
+    return onItem(home, id, (it) => {
+      it.photos = [...(it.photos || []), ...photos];
+    }, `תמונות: ${name}`);
   }
 
   /* ---------- video ----------
@@ -798,40 +926,34 @@ const Store = (() => {
    * gallery is a broken tile rather than a missing nicety. */
   const youtubeThumb = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 
-  /** File a video with the pictures, on a trail or on a pardespedia place. */
-  const addVideo = async (id, url, name, place) => {
+  /** File a video with the pictures, on any item on the map. */
+  const addVideo = (id, url, name, home = 'trails') => {
     const yt = youtubeId(url);
     if (!yt) throw new Error('זו לא כתובת של סרטון יוטיוב.');
-    const attach = (it) => {
-      if (!it) return;
+    return onItem(home, id, (it) => {
       if ((it.photos || []).some((p) => p.yt === yt)) {
         throw new Error('הסרטון הזה כבר משובץ כאן.');
       }
       it.photos = [...(it.photos || []), { yt, thumb: youtubeThumb(yt) }];
-    };
-    const message = `סרטון: ${name}`;
-    if (place) {
-      return absolutise(await withPlaces(
-        (doc) => attach(doc.places.find((p) => p.id === id)), message));
-    }
-    return absolutise(await withTrails((doc) => attach(find(doc, id)), message));
+    }, `סרטון: ${name}`);
   };
 
-  /** Drop a photo or a video from a trail or from a place.
+  /** Drop a photo or a video from wherever it is filed.
+   *
+   *  `index` counts within that document's own list, which is not the position
+   *  in the gallery: an item can show the pictures its source shipped followed
+   *  by the ones an editor attached, and those live in two different files.
+   *  Whoever calls this works out which list and which position, because only
+   *  the caller knows how the two were joined.
    *
    *  The image file itself stays in the repo. Names are a hash of the bytes, so
    *  the same photo published twice is one file, and deleting it here could
    *  blank it somewhere else. An orphan webp costs a few hundred kilobytes; a
    *  missing one costs a photo. */
-  const removePhoto = async (id, index, name, place) => {
-    const cut = (it) => { if (it && it.photos) it.photos.splice(index, 1); };
-    const message = `הסרת תמונה: ${name}`;
-    if (place) {
-      return absolutise(await withPlaces(
-        (doc) => cut(doc.places.find((p) => p.id === id)), message));
-    }
-    return absolutise(await withTrails((doc) => cut(find(doc, id)), message));
-  };
+  const removePhoto = (id, index, name, home = 'trails') =>
+    onItem(home, id, (it) => {
+      if (it.photos) it.photos.splice(index, 1);
+    }, `הסרת תמונה: ${name}`);
 
   /* ---------- trail layers ----------
    *
@@ -1120,8 +1242,8 @@ const Store = (() => {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, enable, disable, resume, writable,
-    publish, publishTrip, remove, rename, setLinks, setColor, addPhotos, removePhoto,
-    addVideo, youtubeId, youtubeThumb,
+    publish, publishTrip, remove, rename, setLinks, setNote, setColor,
+    addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,
