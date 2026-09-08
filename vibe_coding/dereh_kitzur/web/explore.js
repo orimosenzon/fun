@@ -39,9 +39,19 @@ const Explore = (() => {
   const PITCH_MIN = 58;      // limits for the mouse-drag trim
   const PITCH_MAX = 80;
 
-  const SPEED_K = 0.45;      // cruise m/s per metre of altitude
-  const SPEED_MIN = 14;
-  const SPEED_MAX = 110;
+  /* Cruise is metres per second per metre of altitude, and the first numbers
+   * here were three times too fast: 421 km/h at 260 m, which crosses the whole
+   * four kilometres of the moshava in ten seconds. You were over open fields
+   * before anything had a chance to light up.
+   *
+   * It survived testing because of the clamp on `dt` below. A headless browser
+   * drawing five frames a second advances the model by 0.06 s per frame, so
+   * every test flight ran at about a third of real time and felt reasonable.
+   * A flight model has to be checked against the clock, not against how far it
+   * got in a test. */
+  const SPEED_K = 0.12;      // cruise m/s per metre of altitude
+  const SPEED_MIN = 10;      // 36 km/h skimming the rooftops
+  const SPEED_MAX = 65;      // 234 km/h at survey height
   const BOOST = 2.1;
   const ACCEL = 1.9;         // how fast speed approaches its target, per second
   const YAW_RATE = 62;       // degrees per second at full deflection
