@@ -1047,6 +1047,44 @@ function detailSay() {
   };
 }
 
+/* ---------- media on a layer ----------
+ *
+ * The side-car is keyed by item id, and a layer's id is a key in it like any
+ * other. That is the whole of the feature on the storage side: no new
+ * document, no change to what the worker will accept, and two editors
+ * attaching to two different layers in the same second still merge.
+ *
+ * What it is for: a clip that explains a whole layer. The Not Just Bikes video
+ * about Houten is about Houten, not about the fourteenth piece of its ring
+ * road, and until this existed the only place to file it was on some segment
+ * chosen for being long.
+ */
+
+/** The layer sheet's own status line, the counterpart of `detailSay`. */
+function laySay(text, bad) {
+  const msg = el('lay-msg');
+  if (!msg) return;
+  msg.hidden = !text;
+  msg.textContent = text || '';
+  msg.className = 'pub-msg' + (bad ? ' bad' : '');
+}
+
+/** Write to the side-car under a layer's id, then repaint the sheet.
+ *
+ *  `Layers.resetMedia` re-merges and redraws the map; the sheet is a separate
+ *  repaint because it is the thing the person is looking at, and it is the one
+ *  place the layer's own gallery is drawn. */
+async function onLayerMedia(work, busy) {
+  laySay(busy);
+  try {
+    Layers.resetMedia(await work());
+    Layers.render();
+    laySay('');
+  } catch (err) {
+    laySay('נכשל: ' + err.message, true);
+  }
+}
+
 /** Show the document a write handed back.
  *
  *  Three documents, three ways back, and refreshing the wrong one leaves the
@@ -2566,12 +2604,45 @@ function wireControls() {
 
   el('go-home').addEventListener('click', goHome);
 
-  el('layers').addEventListener('click', Layers.openSheet);
+  el('layers').addEventListener('click', () => { laySay(''); Layers.openSheet(); });
   el('layer-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'layer-sheet' || e.target.closest('[data-act="close"]')) {
       Layers.closeSheet();
       return;
     }
+
+    // The layer's own gallery. Before the tile itself, because the remove
+    // button sits on top of one and a press on it is not a press on the photo.
+    const drop = e.target.closest('[data-lay-drop]');
+    if (drop) {
+      const layer = Layers.byId(drop.dataset.layDrop);
+      const i = +drop.dataset.i;
+      const clip = !!(layer.photos[i] || {}).yt;
+      if (!confirm(clip ? 'להסיר את הסרטון הזה?' : 'להסיר את התמונה הזאת?')) return;
+      // The index in the gallery, less what the layer's own document shipped:
+      // the side-car's list starts where that one ends.
+      const at = i - (layer.mediaBase || layer.photos).length;
+      onLayerMedia(() => Store.removePhoto(layer.id, at, layer.name, 'media'),
+        clip ? 'מסיר סרטון…' : 'מסיר תמונה…');
+      return;
+    }
+    const shot = e.target.closest('[data-shot]');
+    if (shot) {
+      openLightbox(Layers.byId(shot.dataset.shot), +shot.dataset.i);
+      return;
+    }
+    const clip = e.target.closest('[data-lay-video]');
+    if (clip) {
+      const layer = Layers.byId(clip.dataset.layVideo);
+      const url = prompt(`סרטון יוטיוב על "${layer.name}", לשכבה כולה:\n`
+        + '(אפשר גם קישור קצר של youtu.be)');
+      if (url == null || !url.trim()) return;
+      onLayerMedia(() => Store.addVideo(layer.id, url, layer.name, 'media'),
+        'משבץ סרטון…');
+      return;
+    }
+
+    if (e.target.closest('[data-clearall]')) { Layers.clearAll(); return; }
     if (e.target.closest('[data-newlayer]')) { layerForm(null); return; }
     if (e.target.closest('[data-arrange]')) {
       Layers.closeSheet();
@@ -2590,6 +2661,19 @@ function wireControls() {
     }
     const edit = e.target.closest('[data-edit]');
     if (edit) layerForm(Layers.byId(edit.dataset.edit));
+  });
+
+  // Pictures onto a layer. A file input answers `change` and not `click`, and
+  // the sheet is repainted on every write, so this is delegated on the sheet
+  // for the same reason the clicks are: the input that fired it may already
+  // have been replaced by the time the upload finishes.
+  el('layer-sheet').addEventListener('change', (e) => {
+    const input = e.target.closest('[data-lay-photos]');
+    if (!input || !input.files || !input.files.length) return;
+    const layer = Layers.byId(input.dataset.layPhotos);
+    const files = [...input.files];
+    onLayerMedia(() => Store.addPhotos(layer.id, files, layer.name, laySay, 'media'),
+      'מעלה…');
   });
 
   el('form-sheet').addEventListener('click', (e) => {

@@ -147,13 +147,24 @@ const Layers = (() => {
 
   const setMedia = (doc) => { media = doc && doc.items ? doc : { items: {} }; };
 
-  function merge(it) {
+  /** The gallery half of the merge: what the source shipped, then what an
+   *  editor attached.
+   *
+   *  Split out of `merge` because a layer takes this half and not the other
+   *  two. A layer's note is its description, written by the script that builds
+   *  it or edited in the layer form, and letting the side-car overwrite that
+   *  would give one line two owners and no way to tell which won. */
+  function mergePhotos(it) {
     if (it.mediaBase === undefined) it.mediaBase = it.photos || [];
-    if (it.linksBase === undefined) it.linksBase = it.links || [];
     const extra = media.items[it.id] || {};
-
     it.photos = (extra.photos || []).length
       ? [...it.mediaBase, ...extra.photos] : it.mediaBase;
+  }
+
+  function merge(it) {
+    mergePhotos(it);
+    if (it.linksBase === undefined) it.linksBase = it.links || [];
+    const extra = media.items[it.id] || {};
 
     // Links join rather than replace. A pardespedia place arrives carrying the
     // article's own external links, and an editor adding one more meant to add
@@ -176,6 +187,15 @@ const Layers = (() => {
     index.clear();
     const some = Object.keys(media.items || {}).length > 0;
     list.forEach((layer) => {
+      // A layer has a gallery of its own, and it is not a convenience: a video
+      // that explains what Houten is explains the *layer*, not any one of its
+      // three hundred segments, and before 8/9/2026 there was nowhere to put
+      // one. Keyed in the same side-car by the layer's own id, which cannot
+      // collide with an item's - an item id is its layer's id and a hash.
+      //
+      // Not put in `index`, which answers "which item is this", and a layer is
+      // not one of its own items.
+      if (some || layer.mediaBase !== undefined) mergePhotos(layer);
       layer.segments.forEach((s) => {
         index.set(s.id, { layer, item: s });
         if (some || s.mediaBase !== undefined) merge(s);
@@ -388,6 +408,27 @@ const Layers = (() => {
     applyVisibility();
     onChange();
     return true;
+  }
+
+  /** Everything off, in one press.
+   *
+   *  Switching a layer on is one tick; getting back to a clean map after
+   *  looking at four of them is four, spread over four folded categories, and
+   *  finding the fourth means remembering which ones you opened.
+   *
+   *  Everything and not "everything except the shortcuts", tempting as that is:
+   *  a button that says all and means most is a button you have to learn. The
+   *  shortcuts are one tick away again, and the sheet that opens over an empty
+   *  map shows fifteen unticked boxes, which says what happened. */
+  function clearAll() {
+    const was = list.filter((l) => l.on);
+    if (!was.length) return 0;
+    was.forEach((l) => { l.on = false; });
+    savePrefs();
+    applyVisibility();
+    onChange();
+    render();
+    return was.length;
   }
 
   /** The trips that walk along one shortcut, for its detail pane. Deleting a
@@ -1420,6 +1461,54 @@ const Layers = (() => {
     return bits.join(' · ');
   }
 
+  /** A layer's own pictures and clips, under its row in the sheet.
+   *
+   *  The same strip the detail pane draws for an item, and deliberately the
+   *  same classes: a tile that plays gets the play triangle, a tile the
+   *  side-car owns gets the remove button, and clicking one opens the same
+   *  lightbox. What is different is only what it hangs off.
+   *
+   *  Everything before `mediaBase.length` came with the layer - `build_houten.py`
+   *  writes those - and this app may not remove it, exactly as on a segment.
+   *  Everything after it is in `data/media.json` and is ours.
+   *
+   *  The markup carries the layer's id and an index and nothing more; app.js
+   *  owns the lightbox and the writes, and finds the layer by that id. */
+  function layerMedia(layer, editable) {
+    // The two layers that are not part of the map. The drafts live in this
+    // browser's IndexedDB and nobody else has them; the queue is trails waiting
+    // to be looked at and is empty most of the time. Media attached to either
+    // would be filed in the shared side-car under a layer that is scaffolding,
+    // and shown to every other editor for as long as it stayed there.
+    if (layer.kind === 'drafts' || layer.kind === 'pending') return '';
+    const photos = layer.photos || [];
+    const base = (layer.mediaBase || photos).length;
+    if (!photos.length && !editable) return '';
+    const name = escapeHtml(layer.name);
+    return `
+      <div class="lay-media">
+        ${photos.length ? `<div class="gallery${editable ? ' editable' : ''}">
+          ${photos.map((p, i) => `<span class="shot${p.yt ? ' video' : ''}">
+            <img src="${p.thumb}" data-shot="${escapeHtml(layer.id)}" data-i="${i}"
+                 title="${escapeHtml(p.cap || '') || (p.yt ? 'סרטון · ' : '') + name}"
+                 alt="${escapeHtml(p.cap || '') || name}" loading="lazy"
+                 referrerpolicy="no-referrer">
+            ${editable && i >= base ? `<button class="shot-x" data-i="${i}"
+              data-lay-drop="${escapeHtml(layer.id)}"
+              aria-label="${p.yt ? 'הסרת הסרטון' : 'הסרת התמונה'}">&times;</button>` : ''}
+          </span>`).join('')}
+        </div>` : ''}
+        ${editable ? `<div class="lay-media-acts">
+          <button class="lay-edit" data-lay-video="${escapeHtml(layer.id)}"
+            title="סרטון שמסביר את ${name} כולה, ולא שביל אחד בתוכה">+ סרטון לשכבה</button>
+          <label class="lay-edit" title="תמונות על ${name} כולה, ולא על שביל אחד בתוכה">
+            + תמונות לשכבה
+            <input type="file" accept="image/*" multiple hidden
+                   data-lay-photos="${escapeHtml(layer.id)}"></label>
+        </div>` : ''}
+      </div>`;
+  }
+
   /** One layer's row, and whatever hangs off it. */
   function layerRow(layer, editable) {
     const rows = legendRows(layer);
@@ -1448,7 +1537,8 @@ const Layers = (() => {
         <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
           layer.waypoints.filter((p) => p.unplaced).length
             ? ` · ${layer.waypoints.filter((p) => p.unplaced).length} עוד לא ממוקמים` : ''}
-        </button>` : ''}`;
+        </button>` : ''}
+      ${layerMedia(layer, editable)}`;
   }
 
   /** What a folded section says about itself.
@@ -1475,14 +1565,35 @@ const Layers = (() => {
       </button>`;
   }
 
+  /** The layers the sheet lists. The queue is editor-only and is not one of
+   *  them for anybody else, which is why the count on the clear button and the
+   *  rows underneath it are drawn off the same list. */
+  const inSheet = () => list.slice().reverse()
+    .filter((layer) => layer.kind !== 'pending' || Store.isEditor());
+
+  /** Nothing at all while there is nothing to clear. A permanent button that
+   *  does nothing most of the time is one that reads as broken the first time
+   *  somebody presses it on an empty map. */
+  function clearButton() {
+    const lit = inSheet().filter((l) => l.on).length;
+    if (!lit) return '';
+    return '<button class="lay-clear" data-clearall="1">כיבוי כל השכבות'
+      + `<span class="lay-clear-n">${lit === 1 ? 'שכבה אחת דלוקה'
+        : `${lit} שכבות דלוקות`}</span></button>`;
+  }
+
   function render() {
     const box = document.getElementById('layer-list');
     const editable = Store.isEditor();
 
-    const shownLayers = list.slice().reverse()
-      .filter((layer) => layer.kind !== 'pending' || editable);
+    const shownLayers = inSheet();
 
-    box.innerHTML = CATEGORIES.map((cat) => {
+    // The button lives in a slot that survives, so that a tick can repaint it
+    // alone. Replacing the whole list on every tick would cost the scroll
+    // position and the row being looked at - the same reason `paintHeads`
+    // exists.
+    box.innerHTML = `<div id="lay-clear-slot">${clearButton()}</div>`
+      + CATEGORIES.map((cat) => {
       const members = shownLayers.filter((l) => catOf(l) === cat.id);
       if (!members.length) return '';
       const open = !!catOpen[cat.id];
@@ -1508,6 +1619,14 @@ const Layers = (() => {
       });
     };
 
+    // Same story for the clear button, which carries a count and disappears
+    // when the last layer goes out. Its slot stays put, so this is one
+    // innerHTML and no listener to rebind.
+    const paintClear = () => {
+      const slot = document.getElementById('lay-clear-slot');
+      if (slot) slot.innerHTML = clearButton();
+    };
+
     box.querySelectorAll('.lay input').forEach((tick) => {
       tick.addEventListener('change', () => {
         const layer = byId(tick.closest('.lay').dataset.id);
@@ -1517,6 +1636,7 @@ const Layers = (() => {
         applyVisibility();
         onChange();
         paintHeads();
+        paintClear();
         // A layer that lives somewhere else is nothing at all until the map
         // goes there. Switching it on is the request to look at it.
         if (layer.on && layer.bounds) frameLayer(layer, false);
@@ -1556,7 +1676,7 @@ const Layers = (() => {
     resetMedia,
     visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
-    openSheet, closeSheet, render,
+    openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     BLOCKS_ID, PUBLIC_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
