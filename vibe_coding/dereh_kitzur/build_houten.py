@@ -26,10 +26,17 @@ Everything comes from OpenStreetMap through Overpass, in four groups:
 Overpass hands out ways chopped at every junction, so 969 fragments become a
 few hundred readable segments by chaining whatever meets end to end.
 
-    python3 build_houten.py [--refresh]
+On top of the geometry the layer carries a curated handful of pictures and
+clips: one set on the layer itself, which is what a video explaining the whole
+idea of the town belongs to, and the rest on individual segments. The pictures
+come from Wikimedia Commons, resolved at build time so that the credit and the
+licence are whatever Commons says today rather than a stale copy.
+
+    python3 build_houten.py [--refresh] [--skip-media]
 
 Raw Overpass answers are cached under ``.cache/houten/``; ``--refresh`` throws
-them away and asks again.
+them away and asks again. ``--skip-media`` builds the geometry alone, which is
+what to use when there is no network beyond Overpass.
 """
 
 import collections
@@ -42,6 +49,8 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+
+from build_media import attach_media
 
 OUT = "web/data/houten.json"
 CACHE = ".cache/houten"
@@ -413,8 +422,242 @@ def route_segments(doc, index):
     return out, index
 
 
+# ---------------------------------------------------------------- the media
+#
+# What hangs on the layer as a whole. This is the thing the app grew a place
+# for on 8/9/2026: a video that explains Houten explains the *layer*, not any
+# one of its three hundred segments, and until then there was nowhere to put
+# it. The picture is the town's whole argument in one frame - a bike path
+# crossing the ring road on its own bridge, the cars below going the long way
+# round - so it comes first and the clips follow.
+
+LAYER_MEDIA = {
+    "file": "File:Walkers and bikes bridge across the mainringroad Houten - panoramio.jpg",
+    "yt": ["r-TuGAHR78w",        # Not Just Bikes, "The Best-Designed Town…"
+           "lGUrjClbLic"],       # BicycleDutch, "Houten Cycling"
+}
+
+# And what hangs on individual segments. A rule finds its segment one of two
+# ways, and never by id: an id here is a hash of a line that OpenStreetMap may
+# redraw next month, and a rule pointing at a hash that no longer exists fails
+# silently.
+#
+#   "at"       the coordinates the picture belongs to, matched to the nearest
+#              segment of the named group. This is how nearly all of them work,
+#              because a photograph has a place and a Dutch street name is not
+#              something a reader of this file can check. `max_m` refuses a
+#              match that is further away than the picture can honestly claim.
+#   "longest"  the longest segment in the group, for the two rules that are
+#              about a group rather than a spot: the ring road and the bike
+#              streets each get one clip on their main run.
+#
+# The Commons titles and the YouTube ids are written out rather than searched
+# for, for the reason build_media.py gives: a search would quietly swap the
+# picture. The note replaces whatever `note_for` wrote, so each one is a whole
+# sentence rather than an addition to the group's boilerplate.
+
+MEDIA_MAX_M = 250
+
+MEDIA = [
+    # --- the eight signed routes, in order --------------------------------
+    {
+        "at": (52.03459, 5.168863), "group": ROUTES,
+        "file": "File:Modern railway station at centre of Houten, with nice reflections - panoramio.jpg",
+        "yt": "Wr-etDkc7os",
+        "note": "המסלול שמגיע לתחנת הרכבת המרכזית. המסילה מוגבהת והתחנה יושבת "
+                "מתחתיה, ובאותו מבנה נמצא הפייטסטרנספריום שנפתח ב-2011: חניון "
+                "אופניים שמור ל-2,200 אופניים, ממש מתחת לרציף. הרעיון הוא שהמעבר "
+                "מהאופניים לרכבת יהיה קצר מהמעבר מהמכונית.",
+    },
+    {
+        "at": (52.040936, 5.1566), "group": ROUTES,
+        "file": "File:De Oud Wulvenseweg in het buurtschap Oud Wulven bij Houten."
+                "De weg is een snelle verbinding voor fietsers naar Lunetten en verder naar de stad Utrecht.jpg",
+        "yt": "z_irzRLWTgo",
+        "note": "המסלול הצפוני, שממשיך אל מחוץ לעיר לכיוון אוטרכט. הנסיעה "
+                "מהאוטן למרכז אוטרכט היא כתשעה קילומטרים כמעט כולם על תוואי "
+                "נפרד, וזו הסיבה שחלק גדול מתושבי האוטן עובדים בעיר הגדולה בלי "
+                "מכונית.",
+    },
+    {
+        "at": (52.027039, 5.162132), "group": ROUTES,
+        "file": "File:Het Plein Houten.jpg",
+        "note": "המסלול שעובר בכיכר של הכפר הישן. האוטן היתה כפר של כ-4,000 "
+                "תושבים עד 1979, והמרכז ההיסטורי הזה נשאר בתוך העיר החדשה "
+                "שנבנתה סביבו.",
+    },
+    {
+        "at": (52.033175, 5.16666667), "group": ROUTES,
+        "file": "File:Sculptuur De Slinger Houten.JPG",
+        "note": "המסלול שחוצה את מרכז העיר החדש, ליד הפסל \"דה סלינחר\". כל "
+                "הרחובות המובילים מהמרכז לתחנה סגורים למכוניות לגמרי.",
+    },
+    {
+        "at": (52.022774, 5.176244), "group": ROUTES,
+        "file": "File:Foot-bicycle-bridge over the railway in Houten with Sprinter train of NS - panoramio.jpg",
+        "note": "המסלול שחוצה את מסילת הרכבת בגשר אופניים משלו. המסילה מחלקת "
+                "את העיר לשניים, וכל חצייה שלה נעשית מעל או מתחת ולא ברמזור.",
+    },
+    {
+        "at": (52.017338, 5.180976), "group": ROUTES,
+        "file": "File:The brand new Castellum district at Houten South with a trainstation and shops - panoramio.jpg",
+        "note": "המסלול של האוטן-דרום, ההרחבה שנבנתה בשנות האלפיים לפי אותו "
+                "כלל בדיוק. גם למרכז השכונתי שלה אין גישה למכוניות, ויש לה "
+                "תחנת רכבת משלה.",
+    },
+    {
+        "at": (52.017107, 5.179904), "group": ROUTES,
+        "file": "File:NS train station Castellum Houten, named accordingly the Roman castles - panoramio.jpg",
+        "yt": "Ay5_lC46ZNc",
+        "note": "המסלול שמגיע לתחנת קסטלום, התחנה השנייה של האוטן, שנפתחה "
+                "ב-2008. שמה בא ממצודה רומית שעמדה כאן. גם לה חניון אופניים "
+                "מקורה מתחת לרציף.",
+    },
+    {
+        "at": (52.024475, 5.188374), "group": ROUTES, "max_m": 300,
+        "file": "File:Renovation works by new painting at this cable stayed footbridge Houten with a nice sky - panoramio.jpg",
+        "note": "המסלול המזרחי, לאורך האגמים המלאכותיים שנחפרו כשהשכונות "
+                "נבנו. גשר הכבלים בתמונה הוא אחד מכמה מעברים להולכי רגל "
+                "ולאופניים שנבנו מעל המים.",
+    },
+
+    # --- one clip for the group as a whole, on its main run ---------------
+    {
+        "longest": True, "group": RING,
+        "yt": "c1xn7lDbw2c",
+        "note": "הקטע הארוך ביותר של כביש הטבעת. נהג שרוצה לעבור משכונה "
+                "לשכונה חייב לצאת אליו ולחזור פנימה, ולכן נסיעה שבאופניים "
+                "אורכת שלושה קילומטרים אורכת במכונית שישה. זה לא תוצר לוואי "
+                "של התכנון אלא כל התכנון.",
+    },
+    {
+        "longest": True, "group": STREETS,
+        "yt": "GVgp2LZ8PNk",
+        "note": "רחוב האופניים הארוך בעיר. הרוכבים נוסעים באמצע הכביש, "
+                "המכוניות נגררות מאחור ואסור להן לעקוף, וזה חוקי ומקובל.",
+    },
+
+    # --- the mesh: paths that a photograph gives a face to ----------------
+    {
+        "at": (52.03459, 5.169777), "group": PATHS,
+        "file": "File:Nice reflections at the central square of Houten with La Place restaurant - panoramio.jpg",
+        "note": "השביל שמוביל אל הכיכר המרכזית של האוטן. אין כאן מדרכה לצד "
+                "כביש: הכיכר ומה שמוביל אליה הם שטח של הולכי רגל ואופניים "
+                "בלבד.",
+    },
+    {
+        "at": (52.033774, 5.163437), "group": PATHS,
+        "file": "File:Haan Coba Koster Imkerspad Houten.jpg",
+        "note": "אימקרספאד, אחד השבילים שחוצים את שכונת \"הט קאנט\". הפסל "
+                "בתמונה עומד לצדו. השבילים בהאוטן קרויים בשמות משלהם ולא על "
+                "שם הכביש הקרוב, כי הם הרשת הראשית ולא תוספת לה.",
+    },
+    {
+        "at": (52.03388889, 5.16583333), "group": PATHS,
+        "file": "File:Houten, straatzicht Het Kant-Imkerseind foto4 2015-08-06 15.00.jpg",
+        "note": "שכונת \"הט קאנט\" מבפנים. הרחוב מסתיים בחניה ובבתים, השביל "
+                "ממשיך, וכך נראית שכונה שנבנתה כך שהמכונית מגיעה עד הבית אבל "
+                "לא עוברת דרכה.",
+    },
+    {
+        "at": (52.01841, 5.19477), "group": PATHS,
+        "file": "File:De Rietplas in Houten met aan de overkant de visserswoningen.jpg",
+        "note": "השביל סביב הריטפלאס, אגם הקנים שסביבו נבנתה האוטן-דרום. "
+                "הבתים בגדה השנייה פונים אל המים, והשביל הוא הדרך שבה מגיעים "
+                "אליהם.",
+    },
+    {
+        "at": (52.04085, 5.18448), "group": PATHS,
+        "file": "File:Kooikersplas Houten 6027.jpg",
+        "note": "השביל לאורך הקוֹאיקרספלאס בצפון-מזרח העיר. חלק ניכר מרשת "
+                "השבילים עובר בפארקים ולאורך מים, כלומר במקומות שממילא אין "
+                "בהם מכוניות.",
+    },
+    {
+        "at": (52.016678, 5.183833), "group": PATHS,
+        "file": "File:Houten in de wijk Castellum.jpg",
+        "note": "שביל בתוך שכונת קסטלום. הבנייה כאן צפופה יחסית ובגבהים "
+                "משתנים, והשבילים הם מה שמחזיק אותה מחוברת לתחנה ולמרכז.",
+    },
+    {
+        "at": (52.01841, 5.170304), "group": PATHS,
+        "file": "File:Vanaf de Vijfwal in Houten zien we de nieuwe Ecowijk.jpg",
+        "note": "השביל לאורך הפייפוואל, מול השכונה האקולוגית של האוטן. "
+                "הסוללה שהשביל עובר עליה היא שריד לתוואי מים ישן.",
+    },
+    {
+        "at": (52.01441956, 5.14685917), "group": PATHS,
+        "file": "File:Het Amsterdam-Rijnkanaal bij Houten.jpg",
+        "note": "השביל לאורך תעלת אמסטרדם-ריין, בגבול המערבי של האוטן. זהו "
+                "הקטע הרצוף הארוך ביותר ברשת, והוא גם דרך היציאה של העיר "
+                "לדרום.",
+    },
+    {
+        "at": (52.01849, 5.208402), "group": PATHS,
+        "file": "File:Oostromsdijkje komende uit Houten naar Werkhoven.jpg",
+        "note": "האוסטרומסדייקיה, דרך סוללה ישנה שיוצאת מהאוטן מזרחה אל "
+                "וורקהובן. הרשת של העיר לא נעצרת בכביש הטבעת אלא ממשיכה אל "
+                "הכפרים שסביב.",
+    },
+    {
+        "at": (52.048725, 5.160384), "group": PATHS, "max_m": 350,
+        "file": "File:Fietspad door Nieuw-Wulven van Houten naar de Marsdijk in Bunnik en zo naar de stad Utrecht.jpg",
+        "yt": "p8zTwikXJIk",
+        "note": "היציאה הצפונית של האוטן, דרך יער ניאו-וולפן אל בוניק ומשם "
+                "לאוטרכט. הנסיעה הזאת מקצה לקצה אורכת כעשר דקות, והיא הסיבה "
+                "שהאוטן היא פרבר של אוטרכט שאפשר להגיע ממנו לעיר בלי מכונית.",
+    },
+]
+
+
+def point_gap(point, path):
+    """How far a coordinate is from a line: the nearest of its vertices.
+
+    Vertices and not true perpendicular distance to each edge, which is the
+    honest simplification here: Overpass geometry has a point every few metres,
+    so the two answers differ by less than the accuracy of the coordinate a
+    photographer's phone recorded in the first place.
+    """
+    return min(haversine(point, p) for p in path)
+
+
+def pick_media(segments):
+    """Which segment each rule lands on, as a list of (segment, rule).
+
+    A rule that finds nothing says so and is dropped rather than guessing, and
+    two rules landing on the same segment is a mistake in the table above worth
+    hearing about - the media still attaches, but the second note overwrites
+    the first, so one of the two sentences would silently disappear.
+    """
+    picked, taken = [], {}
+    for rule in MEDIA:
+        pool = [s for s in segments if s["group"] == rule["group"]]
+        if not pool:
+            print(f'  אין מקטעים בקבוצה {rule["group"]}', flush=True)
+            continue
+
+        if rule.get("longest"):
+            best = max(pool, key=lambda s: s["length"])
+        else:
+            best = min(pool, key=lambda s: point_gap(rule["at"], s["path"]))
+            gap = point_gap(rule["at"], best["path"])
+            limit = rule.get("max_m", MEDIA_MAX_M)
+            if gap > limit:
+                print(f'  {rule.get("file", rule.get("yt"))}: הקרוב ביותר '
+                      f'{gap:.0f} מ׳, מעל {limit}. מדלג.', flush=True)
+                continue
+
+        if best["id"] in taken:
+            print(f'  שני כללים נחתו על "{best["name"]}", '
+                  f'ההערה של {taken[best["id"]]} תידרס', flush=True)
+        taken[best["id"]] = rule.get("file", rule.get("yt"))
+        picked.append((best, rule))
+    return picked
+
+
 def main():
     refresh = "--refresh" in sys.argv
+    skip_media = "--skip-media" in sys.argv
 
     bike = overpass("bike", Q_BIKE, refresh)
     extra = overpass("extra", Q_EXTRA, refresh)
@@ -486,8 +729,24 @@ def main():
         "groups": GROUPS,
         "bounds": bounds,
         "on": False,
+        # The layer's own gallery, filled in below. It is a list on the layer
+        # for the same reason a segment has one: the app merges whatever an
+        # editor attaches on top of it, and needs somewhere to merge on to.
+        "photos": [],
         "segments": segments,
     }
+
+    # The pictures and the clips, last, so that a build with no network beyond
+    # Overpass still produces the whole layer.
+    wanted = [(layer, LAYER_MEDIA)]
+    for seg, rule in pick_media(segments):
+        if rule.get("note"):
+            seg["note"] = rule["note"]
+        wanted.append((seg, rule))
+    attach_media(wanted, skip_media)
+    shots = len(layer["photos"]) + sum(len(s["photos"]) for s in segments)
+    print(f"  תמונות וסרטונים משובצים: {shots} "
+          f"(מהם {len(layer['photos'])} על השכבה עצמה)")
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh:

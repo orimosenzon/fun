@@ -157,7 +157,11 @@ const Store = (() => {
     // layers each holding its own segments, so the items are one level deeper.
     // Missing this meant a photo in such a layer kept its repo-relative path
     // and came out broken, the same way trips did.
-    ...(doc.layers || []).flatMap((l) => [...(l.segments || []), ...(l.waypoints || [])]),
+    //
+    // The layer object itself is in the list too, and not only its contents:
+    // since 8/9/2026 a layer carries a gallery of its own, for the picture or
+    // the clip that is about the whole of it rather than about one line in it.
+    ...(doc.layers || []).flatMap((l) => [l, ...(l.segments || []), ...(l.waypoints || [])]),
     // And the side-car, whose items are keyed by id rather than listed.
     ...Object.values(doc.items && !Array.isArray(doc.items) ? doc.items : {})
   ];

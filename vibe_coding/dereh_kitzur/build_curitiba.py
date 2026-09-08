@@ -56,13 +56,13 @@ import time
 import urllib.parse
 import urllib.request
 
+from build_media import attach_media
+
 OUT = "web/data/curitiba.json"
 CACHE = ".cache/curitiba"
 
 API = "https://overpass-api.de/api/interpreter"
 STATUS = "https://overpass-api.de/api/status"
-COMMONS = "https://commons.wikimedia.org/w/api.php"
-OEMBED = "https://www.youtube.com/oembed"
 UA = "derech-kitzur/build_curitiba.py (github.com/orimosenzon/fun)"
 
 # The municipality of Curitiba, OSM relation 297514. Overpass area ids are the
@@ -761,116 +761,6 @@ LINE_MEDIA = [
                 "כלומר בדיוק במקומות שבהם ממילא לא עוברות מכוניות.",
     },
 ]
-
-
-# ------------------------------------------------------------------ the media
-
-def http_json(url, what):
-    """One GET that answers JSON, or None. Never fatal: a build with no
-    pictures is a worse layer, and a build that died is no layer."""
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        return json.load(urllib.request.urlopen(req, timeout=60))
-    except Exception as err:                     # network, 404, rate limit
-        print(f"  {what}: {err}", flush=True)
-        return None
-
-
-def commons_photos(titles):
-    """Resolve Commons file titles to a thumbnail, a display copy and a credit.
-
-    Two renditions and never the original: several of these are 5000 px wide and
-    weigh megabytes, and the app would fetch that to fill a phone screen. The
-    thumbnailer takes any width, so 500 for the strip and 1600 for the lightbox
-    matches exactly what `build_data.py` writes for the initiative's own photos.
-
-    Credit is read off Commons rather than written here, because that is the
-    condition the pictures are offered under and a copy of it would go stale.
-    """
-    if not titles:
-        return {}
-
-    def ask(width):
-        url = COMMONS + "?" + urllib.parse.urlencode({
-            "action": "query", "format": "json", "titles": "|".join(titles),
-            "prop": "imageinfo", "iiprop": "url|extmetadata", "iiurlwidth": width,
-        })
-        doc = http_json(url, "ויקישיתוף")
-        pages = (doc or {}).get("query", {}).get("pages", {}) or {}
-        return {p["title"]: (p.get("imageinfo") or [{}])[0]
-                for p in pages.values() if p.get("title")}
-
-    small, large = ask(500), ask(1600)
-    strip = lambda s: re.sub(r"<[^>]+>", "", s or "").strip()
-
-    # Commons hangs `?utm_source=…&utm_campaign=imageinfo` off every url the API
-    # hands out. Dropping it is not only tidiness: it is a campaign tag that
-    # would be sent by every visitor's browser on every load, and it says
-    # nothing this app needs the image server to know.
-    plain = lambda u: u.split("?", 1)[0] if u else u
-
-    out = {}
-    for title in titles:
-        thumb, full = small.get(title, {}), large.get(title, {})
-        if not thumb.get("thumburl"):
-            print(f"  חסרה תמונה בוויקישיתוף: {title}", flush=True)
-            continue
-        meta = full.get("extmetadata", thumb.get("extmetadata", {})) or {}
-        artist = strip(meta.get("Artist", {}).get("value"))
-        lic = strip(meta.get("LicenseShortName", {}).get("value"))
-        credit = " · ".join(x for x in (artist, lic) if x)
-        out[title] = {
-            "thumb": plain(thumb["thumburl"]),
-            "full": plain(full.get("thumburl") or thumb["thumburl"]),
-            "cap": credit or "ויקישיתוף",
-        }
-    return out
-
-
-def youtube_ok(vid):
-    """Does this video still exist and still allow embedding.
-
-    oEmbed is the free way to ask: it needs no key, and it answers 404 both for
-    a video that was taken down and for one whose owner has switched embedding
-    off - which are different things to a person and the same thing to this map,
-    because both come out as a tile that plays nothing.
-    """
-    url = OEMBED + "?" + urllib.parse.urlencode({
-        "format": "json", "url": f"https://www.youtube.com/watch?v={vid}"})
-    doc = http_json(url, f"יוטיוב {vid}")
-    return bool(doc and doc.get("title"))
-
-
-def video_entry(vid):
-    return {"yt": vid, "thumb": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"}
-
-
-def attach_media(wanted, skip):
-    """Hang the curated picture and clip on the items that asked for one.
-
-    `wanted` is a list of (item, spec) pairs - a list and not a dictionary
-    keyed by item, because the items are plain dicts and a dict cannot be a key.
-    Both halves of a spec are optional in the result: a picture that has gone
-    from Commons and a video that has been taken down each drop out on their
-    own, and the item keeps whatever survived. The picture goes first, because a
-    strip that opens with a YouTube thumbnail reads as a video gallery.
-    """
-    if skip or not wanted:
-        return
-    titles = sorted({w["file"] for _, w in wanted if w.get("file")})
-    photos = commons_photos(titles)
-    checked = {}
-    for it, want in wanted:
-        shot = photos.get(want.get("file"))
-        if shot:
-            it["photos"].append(dict(shot))
-        vid = want.get("yt")
-        if vid:
-            if vid not in checked:
-                checked[vid] = youtube_ok(vid)
-                time.sleep(0.4)              # one clip at a time, politely
-            if checked[vid]:
-                it["photos"].append(video_entry(vid))
 
 
 # ------------------------------------------------------------------- assembly

@@ -170,6 +170,10 @@
       <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
     </header>
     <p class="sheet-lead">מה מוצג על המפה וברשימה.</p>
+    <!-- One status line for the whole sheet, the way the detail pane has one:
+         attaching a video to a layer happens inside a row, and a second line
+         per row would be fifteen elements that are silent all but once. -->
+    <p id="lay-msg" class="pub-msg" hidden></p>
     <div id="layer-list"></div>
     <p id="layer-credit" class="sheet-credit"></p>
   </div>
