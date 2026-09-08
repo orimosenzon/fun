@@ -105,7 +105,11 @@ let syncTimer = null;
  *  both read whatever is currently there and rewrite the whole query, so the
  *  two never erase each other. */
 function syncView() {
-  if (!map) return;
+  // The flight moves the camera every frame, and every one of those fires a
+  // moveend. Writing the address bar sixty times a second is both pointless -
+  // the camera is not a place you would link to mid-flight - and enough
+  // history writes for Safari to start refusing them.
+  if (!map || Explore.isOn()) return;
   const params = new URLSearchParams(location.search);
   const c = map.getCenter();
   const round = (v, d) => +v.toFixed(d);
@@ -266,7 +270,17 @@ function setBasemap(i) {
   el('basemap').title = 'רקע: ' + BASEMAPS[i].name;
   // setStyle drops every source and layer we added, so applyOverlays runs
   // again on the style.load that follows.
-  map.setStyle(BASEMAPS[i].style);
+  //
+  // `diff: false` is what makes that sentence true rather than lucky. Left to
+  // itself, setStyle first tries to *patch* the running style into the new
+  // one, and a patch fires `styledata` and never `style.load` - so the trails,
+  // the terrain and the navigation line are diffed away and nothing puts them
+  // back. Whether the patch is attempted at all depends on how far the two
+  // styles are apart, which is why an ordinary background swap looked fine for
+  // months and leaving the flight, which has touched the layers on the way in,
+  // did not. A full reload every time is a few tiles more work and one
+  // behaviour instead of two.
+  map.setStyle(BASEMAPS[i].style, { diff: false });
 }
 
 /* Everything we add on top of whichever base style is loaded. Re-run on every
@@ -2706,6 +2720,9 @@ function wireControls() {
     paintNav();
   });
   el('locate').addEventListener('click', locate);
+  // Needs WebGL and a map to fly over, so it goes away with the other two.
+  if (map) el('explore').addEventListener('click', () => Explore.enter());
+  else el('explore').hidden = true;
   el('basemap').addEventListener('click', () => {
     setBasemap((baseIndex + 1) % BASEMAPS.length);
     syncView();

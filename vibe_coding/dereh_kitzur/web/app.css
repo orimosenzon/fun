@@ -171,6 +171,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab-2 { bottom: calc(var(--panel-h) + 66px); }
 .fab-3 { bottom: calc(var(--panel-h) + 118px); }
 .fab-4 { bottom: calc(var(--panel-h) + 170px); }
+.fab-5 { bottom: calc(var(--panel-h) + 222px); }
 
 .fab svg { width: 22px; height: 22px; fill: #3c4a45; }
 .fab.on svg { fill: var(--accent); }
@@ -1800,3 +1801,457 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Nothing else on the map should react while a pin is being carried. */
 .am-dragging .maplibregl-canvas { cursor: grabbing; }
 .am-dragging .am:not(.drag) i { pointer-events: none; opacity: .75; }
+
+/* ---------- מצב תעופה - exploration mode ----------
+ *
+ * A different world from the rest of the app, on purpose. Everything else here
+ * is a bright document you read; this is a dark screen you fly through, and
+ * the only thing lit is what you have found.
+ *
+ * The stacking order is the whole trick, and it puts the map in the middle of
+ * our own elements rather than under all of them:
+ *
+ *     1  .fly-sky     the gradient above the horizon, seen through the map
+ *     2  #map         satellite tiles, transparent where there is no ground
+ *     3  .fly-world   haze, name chips, the floating photos
+ *     4  .fly-rush    speed streaks   5 .fly-vig  vignette
+ *     6  .fly-hud     gauges and buttons        7 intro   8 the open photo
+ *
+ * `display: contents` on the root is what allows it: the children take part in
+ * the page's own stacking context, so a sky of ours can sit *behind* a map
+ * that is not ours. A positioned wrapper would trap all of them above it.
+ *
+ * The map is grown by --fly-over on every side so that banking into a turn has
+ * material to cover the corners with. explore.js solves for how far it may
+ * bank given the screen's aspect, and sets --fly-over to 0 where it will not
+ * bank at all (touch screens), so nothing is paid for there. */
+
+.fly-root { display: contents; }
+body:not(.flying) .fly-root > * { display: none !important; }
+
+body.flying {
+  background: #05080c;
+  cursor: grab;
+}
+body.flying:active { cursor: grabbing; }
+
+/* Everything the app normally shows is gone. The GL layers are hidden by
+ * explore.js, which can put back what it found; these are the DOM pieces. */
+body.flying .panel,
+body.flying .grip-v,
+body.flying .fab,
+body.flying .legend,
+body.flying .go-home,
+body.flying .nav,
+body.flying .lightbox,
+body.flying .sheet,
+body.flying .maplibregl-control-container,
+body.flying .maplibregl-marker { display: none !important; }
+
+/* `fixed` and not `absolute`, and that is not a detail: an absolutely
+ * positioned box that hangs past the left of the viewport *extends the
+ * document's scrollable width*, and this document is RTL, where the scroll
+ * origin sits at the right. The result was the leftmost 8% of the screen
+ * falling outside the painted map and showing the white page behind it. A
+ * fixed box contributes no scrollable overflow at all, so the overhang is
+ * simply clipped, which is what it was always meant to be. */
+body.flying #map {
+  position: fixed;
+  inset: calc(-1 * var(--fly-over, 0%));
+  z-index: 2;
+  background: transparent;
+  will-change: transform;
+}
+
+/* ---------- sky ---------- */
+
+.fly-sky {
+  position: fixed;
+  inset: calc(-1 * var(--fly-over, 0%));
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Height is set every frame to the horizon line, so the pale end of the
+ * gradient always lands on the ground rather than at a guessed percentage.
+ * Late afternoon, because that is when this walk is worth taking. */
+.fly-band {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0;
+  background: linear-gradient(to bottom,
+    #0f2744 0%, #1d4a78 26%, #4a86b8 54%, #97c0da 76%, #dcd2b4 93%, #efe0be 100%);
+}
+
+/* ---------- the world layer ---------- */
+
+.fly-world {
+  position: fixed;
+  inset: calc(-1 * var(--fly-over, 0%));
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* Where the furthest tiles stop there is an edge, and at this tilt it is right
+ * across the middle of the picture. A band of the sky's own colour, sitting in
+ * front of the map, turns that edge into distance. */
+.fly-haze {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 170px;
+  background: linear-gradient(to bottom,
+    rgba(226, 219, 196, .92) 0%, rgba(214, 214, 198, .55) 34%, rgba(200, 210, 200, 0) 100%);
+}
+
+/* ---------- a photo hanging over its trail ---------- */
+
+.fly-card {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+  cursor: zoom-in;
+  border-radius: 7px;
+  padding: 4px 4px 0;
+  background: linear-gradient(#fffdf6, #f2ece0);
+  box-shadow:
+    0 0 0 1px rgba(255, 245, 210, .55),
+    0 10px 26px rgba(0, 0, 0, .55),
+    0 0 40px rgba(255, 208, 120, .28);
+  transition: opacity .18s linear;
+}
+
+.fly-card-img {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #2a2f33;
+}
+.fly-card-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.fly-card-cap {
+  padding: 3px 4px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #33403a;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Far enough away that the name would be a smudge, so it goes and the picture
+ * stays - a distant card is a promise, not a label. */
+.fly-card.small { padding: 3px; }
+.fly-card.small .fly-card-cap { display: none; }
+
+/* The tether, and the point on the ground it belongs to. Without them a photo
+ * floats over the landscape attached to nothing, which is exactly the thing a
+ * map must not do. */
+.fly-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 2px;
+  height: var(--tether, 0px);
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom,
+    rgba(255, 226, 158, .95), rgba(255, 214, 130, .15));
+}
+
+.fly-card::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + var(--tether, 0px));
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: #ffe6a8;
+  box-shadow: 0 0 10px 3px rgba(255, 205, 110, .75);
+}
+
+/* ---------- the name of a trail you are on top of ---------- */
+
+.fly-chip {
+  position: absolute;
+  transform: translate(-50%, -175%);
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: rgba(12, 20, 16, .62);
+  backdrop-filter: blur(3px);
+  color: #fff6df;
+  font-weight: 800;
+  letter-spacing: -.2px;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+  box-shadow: 0 0 0 1px rgba(255, 219, 150, .35), 0 0 24px rgba(255, 197, 92, .3);
+  transition: opacity .2s linear;
+}
+
+/* ---------- speed, and the edges of the picture ---------- */
+
+/* Streaks radiating from the middle of the screen, which at this tilt is very
+ * nearly where you are heading. Opacity follows the throttle, so it is only
+ * ever there when it is earned. */
+.fly-rush {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 48%,
+    rgba(255, 255, 255, .55) 0deg .16deg, transparent .16deg 2.4deg);
+  -webkit-mask-image: radial-gradient(circle at 50% 48%, transparent 26%, #000 78%);
+  mask-image: radial-gradient(circle at 50% 48%, transparent 26%, #000 78%);
+  transition: opacity .3s linear;
+}
+
+.fly-vig {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 52%,
+    transparent 46%, rgba(0, 0, 0, .28) 78%, rgba(0, 0, 0, .62) 100%);
+}
+
+/* ---------- instruments ---------- */
+
+.fly-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  color: #eef4f2;
+}
+
+/* A scrim under the bottom of the screen. The instruments sit over whatever
+ * the flight happens to be passing at that moment - a white roof, a field, a
+ * photo card - and without this the name of what you found is legible over
+ * some of them and not others. */
+.fly-hud::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 140px;
+  background: linear-gradient(to top, rgba(3, 8, 6, .62), rgba(3, 8, 6, 0));
+  pointer-events: none;
+}
+.fly-hud > * { z-index: 1; }
+.fly-hud button { pointer-events: auto; }
+
+.fly-readout {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  inset-inline-start: 16px;
+  display: flex;
+  gap: 18px;
+}
+
+.fly-gauge { display: flex; flex-direction: column; line-height: 1.1; }
+.fly-gauge b {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .8);
+}
+.fly-gauge i {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .4px;
+  opacity: .62;
+}
+
+.fly-x, .fly-help {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(10, 16, 14, .5);
+  backdrop-filter: blur(4px);
+  color: #eef4f2;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+}
+.fly-x { inset-inline-end: 14px; font-size: 24px; line-height: 1; }
+.fly-help { inset-inline-end: 60px; font-size: 16px; font-weight: 700; }
+.fly-x:hover, .fly-help:hover { background: rgba(30, 44, 38, .78); }
+
+/* What you have found, named, at the bottom where it does not sit over the
+ * thing it names. */
+.fly-found {
+  position: absolute;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  inset-inline: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+.fly-found strong {
+  font-size: 17px;
+  font-weight: 800;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .9);
+}
+/* The key is drawn as a key rather than set as English words inside a Hebrew
+ * line, which is both easier to read and easier to obey. */
+.fly-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  letter-spacing: .3px;
+  opacity: .72;
+}
+.fly-hint kbd {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .26);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  direction: ltr;
+}
+
+.fly-credit {
+  position: absolute;
+  bottom: 6px;
+  inset-inline-start: 12px;
+  margin: 0;
+  font-size: 9.5px;
+  opacity: .6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9);
+  direction: ltr;
+}
+
+/* ---------- how to fly ---------- */
+
+.fly-intro[hidden] { display: none; }
+
+.fly-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 8, 10, .5);
+  backdrop-filter: blur(2px);
+  animation: fly-in .35s ease both;
+}
+
+@keyframes fly-in { from { opacity: 0; } to { opacity: 1; } }
+
+.fly-intro-card {
+  max-width: min(92vw, 400px);
+  padding: 24px 26px 20px;
+  border-radius: 16px;
+  background: rgba(14, 22, 20, .9);
+  box-shadow: inset 0 0 0 1px rgba(255, 220, 150, .22), 0 24px 60px rgba(0, 0, 0, .6);
+  color: #eef4f2;
+}
+.fly-intro-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  letter-spacing: -.4px;
+  color: #ffdc9a;
+}
+.fly-intro-card p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; opacity: .88; }
+
+.fly-keys { margin: 0 0 14px; padding: 0; list-style: none; display: grid; gap: 7px; }
+.fly-keys li { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.fly-keys span { margin-inline-start: 6px; opacity: .78; }
+
+.fly-keys kbd {
+  min-width: 26px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  direction: ltr;
+}
+
+.fly-intro-foot { margin: 0 !important; font-size: 11.5px !important; opacity: .55 !important; }
+
+/* ---------- one photo, full size ---------- */
+
+body.fly-paused .fly-hud,
+body.fly-paused .fly-rush { opacity: 0; pointer-events: none; }
+body.fly-paused .fly-hud { transition: opacity .2s linear; }
+
+.fly-view {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 20px 26px;
+  background: rgba(3, 6, 8, .92);
+}
+.fly-view[hidden] { display: none; }
+
+.fly-view-img {
+  max-width: min(94vw, 1100px);
+  max-height: 74vh;
+  border-radius: 10px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .7);
+  object-fit: contain;
+}
+
+.fly-view-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: #eef4f2;
+}
+.fly-view-name { font-size: 17px; font-weight: 800; }
+.fly-view-cap { font-size: 12.5px; opacity: .66; max-width: 60ch; }
+
+.fly-view-open {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd166;
+  color: #22301d;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.fly-view-x {
+  position: absolute;
+  top: 16px;
+  inset-inline-end: 18px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fly-intro { animation: none; }
+  .fly-rush { display: none; }
+}
