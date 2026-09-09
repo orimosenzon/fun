@@ -168,16 +168,26 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transition: bottom .25s ease;
 }
 
-.fab-2 { bottom: calc(var(--panel-h) + 66px); }
-.fab-3 { bottom: calc(var(--panel-h) + 118px); }
-.fab-4 { bottom: calc(var(--panel-h) + 170px); }
-.fab-5 { bottom: calc(var(--panel-h) + 222px); }
+/* Three groups rather than one column of five identical circles. Reading up
+ * from the thumb: where I am, then the three that only change how the map
+ * looks, then the one that leaves the map altogether. The 24px breaks between
+ * groups carry that; the 4px inside the middle group keeps its three reading as
+ * a single control. Five evenly spaced circles said none of this. */
+.fab-2 { bottom: calc(var(--panel-h) + 82px); }
+.fab-3 { bottom: calc(var(--panel-h) + 130px); }
+.fab-4 { bottom: calc(var(--panel-h) + 178px); }
+.fab-5 { bottom: calc(var(--panel-h) + 246px); }
 
 .fab svg { width: 22px; height: 22px; fill: #3c4a45; }
 .fab.on svg { fill: var(--accent); }
 
 .fab-3d { font-size: 14px; font-weight: 800; color: #3c4a45; letter-spacing: -.5px; }
 .fab.on .fab-3d { color: var(--accent); }
+
+/* Take-off is the only button in the column that is not a map setting, so it is
+ * the only one that is not white. */
+#explore { background: var(--accent); }
+#explore svg { fill: #fff; }
 
 /* ---------- the way back from somewhere else ----------
  *
@@ -1069,11 +1079,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .panel-anim .fab, .panel-anim .grip-v { transition: all .22s ease; }
 
   .panel-head { padding-top: 16px; }
+  /* The .fab rule above resets every button to 20px, so each position has to be
+   * restated here. .fab-5 was not, which dropped the flight button exactly on
+   * top of "where am I" and swallowed it without a trace. */
   .fab { bottom: 20px; inset-inline-end: auto;
          inset-inline-start: calc(var(--panel-w) + 20px); }
-  .fab-2 { bottom: 72px; }
-  .fab-3 { bottom: 124px; }
-  .fab-4 { bottom: 176px; }
+  .fab-2 { bottom: 88px; }
+  .fab-3 { bottom: 136px; }
+  .fab-4 { bottom: 184px; }
+  .fab-5 { bottom: 252px; }
 
   .sheet { align-items: center; }
   .sheet-card { max-width: 460px; border-radius: 16px; margin: 0 16px; }
