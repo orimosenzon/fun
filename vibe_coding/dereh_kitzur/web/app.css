@@ -1231,13 +1231,88 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lay-sub { display: block; font-size: 12px; color: var(--accent); margin-top: 1px; }
 .lay-note { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
 
-/* ---------- the add-trail button in the list header ---------- */
+/* ---------- the invitation in the list header ----------
+ *
+ * Full width and in the accent colour, because it is not one of the controls
+ * around it: the sort chips change what you are looking at, and this one is the
+ * only thing on the panel that adds to the map. It sits above the search rather
+ * than below it so that it is on screen when the panel is at its shortest. */
 
-.sort.add {
-  border-color: #bcd8bf;
+.invite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #bcd8bf;
+  border-radius: 12px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-weight: 700;
+  text-align: start;
+}
+
+.invite:active { background: #ddebde; }
+
+.invite-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.invite-ic svg { width: 20px; height: 20px; fill: #fff; }
+
+.invite-txt { min-width: 0; }
+.invite-txt b { display: block; font-size: 14.5px; }
+
+.invite-txt > span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #3f6b45;
+}
+
+/* Once there is an unsent draft on the device, the explainer has done its job
+ * and the panel needs the room back. See paintUnsent(). */
+.invite.compact { padding: 8px 12px; }
+.invite.compact .invite-txt > span { display: none; }
+.invite.compact .invite-ic { width: 26px; height: 26px; }
+.invite.compact .invite-ic svg { width: 17px; height: 17px; }
+
+/* Unsent work, in the drafts' own purple so that the strip, the badge on the
+ * row and the dashed line on the map are one colour and one idea. Below the
+ * invitation rather than instead of it: somebody with an unsent trail may well
+ * be about to record a second one. */
+.unsent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border: 1px solid #e0c4e8;
+  border-radius: 12px;
+  background: #f8effa;
+  color: #5c2b6b;
+  text-align: start;
+}
+
+.unsent[hidden] { display: none; }
+.unsent:active { background: #f0e0f5; }
+.unsent-ic { flex: none; font-size: 19px; line-height: 1; }
+.unsent-txt { min-width: 0; }
+.unsent-txt b { display: block; font-size: 13.5px; color: #4a148c; }
+
+.unsent-txt > span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 /* ---------- drafting ---------- */
@@ -1664,6 +1739,86 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 13px;
   line-height: 1.55;
 }
+
+/* ---------- a draft, and the one button that ends it ----------
+ *
+ * The band is in the purple the drafts are drawn in on the map, so that the
+ * dashed line, the badge on the row and this paragraph are visibly the same
+ * thing. It is the first element in the pane, above the send button, because
+ * the button only makes sense once you know the trail is nowhere yet. */
+.draft-state {
+  margin: 4px 0 12px;
+  padding: 11px 13px;
+  border-inline-start: 4px solid #8e24aa;
+  border-radius: 10px;
+  background: #f8effa;
+  color: #5c2b6b;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.draft-state b { display: block; color: #4a148c; font-size: 14.5px; margin-bottom: 2px; }
+
+/* Full width, filled, and the only filled thing on the page. Everything else a
+ * draft offers is an outlined row, so this is not "the first of six actions"
+ * but the action, and the six are what you do before or instead of it. */
+.send-cta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 13px 14px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--accent);
+  color: #fff;
+  text-align: start;
+  box-shadow: 0 2px 10px rgba(27, 94, 32, .25);
+}
+
+.send-cta:active { background: #164a1a; }
+.send-cta[disabled] { background: #7f8f86; box-shadow: none; }
+
+.send-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .18);
+}
+
+.send-ic svg { width: 20px; height: 20px; fill: #fff; }
+
+.send-txt { min-width: 0; }
+.send-txt b { display: block; font-size: 15.5px; }
+
+.send-txt > span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .85);
+}
+
+/* The sender's own trail, waiting. The same yellow the queue is drawn in on the
+ * map, with a band down the leading edge so the pane opens on it rather than on
+ * one more paragraph: this is the answer to "where did my trail go", and it has
+ * to be the first thing read. */
+.waiting {
+  margin: 4px 0 14px;
+  padding: 11px 13px;
+  border-inline-start: 4px solid #f9a825;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #7a5b12;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.waiting b { color: #6b4e0a; }
 
 /* ---------- arranging places ---------- */
 

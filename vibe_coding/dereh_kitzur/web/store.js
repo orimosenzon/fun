@@ -362,6 +362,19 @@ const Store = (() => {
   const named = () => localStorage.getItem(K_NAME) || '';
   const keyed = () => localStorage.getItem(K_KEY) || '';
 
+  /** The name that goes in `by` and in the commit, set by anybody.
+   *
+   *  Separate from `enable`, which stores the same field but is the editor's
+   *  door and returns false to somebody without the password - so a resident
+   *  choosing what to be credited as would have been told they had failed at
+   *  something they were not attempting. */
+  function setName(name) {
+    const clean = String(name || '').trim().slice(0, 40);
+    if (clean) localStorage.setItem(K_NAME, clean);
+    else localStorage.removeItem(K_NAME);
+    return clean;
+  }
+
   /** May this browser change the map: the switch is on, a worker is up, and it
    *  has confirmed the password this browser holds. */
   const isEditor = () => editing() && !!WORKER && state.writable !== false
@@ -793,7 +806,7 @@ const Store = (() => {
       id: 'app-' + Date.now().toString(36),
       name: draft.name,
       note: draft.note || '',
-      photos,
+      photos: [...photos, ...(draft.videos || [])],
       links: cleanLinks(draft.links),
       path: draft.path,
       length: draft.length,
@@ -1093,19 +1106,61 @@ const Store = (() => {
 
   const PENDING = 'data/pending.json';
   const K_PENDING = 'dk.cache.pending.v1';
+  const K_SENT = 'dk.sent.v1';          // what this browser sent in, and when
   const emptyQueue = () => ({ version: 1, updated: '', items: [] });
 
   const withPending = (mutate, message) =>
     withDoc(PENDING, K_PENDING, mutate, message, null, emptyQueue());
 
+  /* ---------- what this browser sent ----------
+   *
+   * The queue is a shared file with no notion of who is reading it, so without
+   * a local note of "these ids are mine" a sender has no way to be shown their
+   * own trail waiting - and before this, sending consumed the draft and the
+   * trail simply vanished from their screen with an alert as the only trace.
+   *
+   * Kept in localStorage rather than in the queue itself: an id in a public
+   * file that says which device sent it is worth nothing to the map and is a
+   * small fact about a person. The queue keeps the name they chose, which is
+   * what a credit is, and nothing else.
+   */
+
+  function sent() {
+    try {
+      const rows = JSON.parse(localStorage.getItem(K_SENT) || '[]');
+      return Array.isArray(rows) ? rows : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function keepSent(rows) {
+    try {
+      // Twenty is generous for one person and stops a browser that has been
+      // used for a mapping day from carrying an unbounded list forever.
+      localStorage.setItem(K_SENT, JSON.stringify(rows.slice(-20)));
+    } catch (err) {
+      /* private mode: the sender simply is not shown their own queue */
+    }
+  }
+
+  const remember = (id, name) => keepSent([...sent(), {
+    id, name, at: new Date().toISOString()
+  }]);
+
+  const forget = (id) => keepSent(sent().filter((r) => r.id !== id));
+
+  /** The queue as it stands. Throws when it could not be read.
+   *
+   *  An empty queue and an unreachable one used to come back identical, and
+   *  that stopped being harmless once a sender is told what became of the trail
+   *  they sent: "not in the queue any more" would have been announced to
+   *  everybody the first time the worker was down. No worker at all is still
+   *  not an error - there is genuinely no queue then. */
   async function queue() {
     if (!WORKER) return emptyQueue();
-    try {
-      const { json } = await getFile(PENDING);
-      return json || emptyQueue();
-    } catch (err) {
-      return emptyQueue();
-    }
+    const { json } = await getFile(PENDING);
+    return json || emptyQueue();
   }
 
   /** A trip straight onto the map. Only an editor gets here.
@@ -1122,7 +1177,7 @@ const Store = (() => {
       id: 'trip-' + Date.now().toString(36),
       name: draft.name,
       note: draft.note || '',
-      photos,
+      photos: [...photos, ...(draft.videos || [])],
       links: cleanLinks(draft.links),
       parts: draft.parts,
       ...(draft.difficulty ? { difficulty: draft.difficulty } : {}),
@@ -1136,7 +1191,8 @@ const Store = (() => {
     return { id: trip.id, doc: absolutise(doc) };
   }
 
-  /** Send a trail in for review. Needs nothing from the sender. */
+  /** Send a trail in for review. Needs nothing from the sender but a name to
+   *  be credited by, and that name is theirs to make up. */
   async function submit(draft, blobs, onStep) {
     const photos = await uploadAll(blobs, draft.name, onStep);
     if (onStep) onStep('שולח…');
@@ -1144,7 +1200,9 @@ const Store = (() => {
       id: 'sub-' + Date.now().toString(36),
       name: draft.name,
       note: draft.note || '',
-      photos,
+      // A video is filed with the pictures, the way it is everywhere else on
+      // this map: same gallery, same browsing order, a `yt` instead of a file.
+      photos: [...photos, ...(draft.videos || [])],
       links: cleanLinks(draft.links),
       // A trip goes into the queue as its recipe, a trail as its line. The
       // reviewer sees both drawn the same way; only the approval differs.
@@ -1164,8 +1222,49 @@ const Store = (() => {
     };
     await withPending((doc) => { doc.items.push(item); },
       `${draft.parts ? 'טיול' : 'שביל'} שהתקבל: ${draft.name}`);
+    // Noted only once the write has come back, so a failed send never leaves
+    // this browser waiting on a trail that is not in the queue.
+    remember(item.id, item.name);
     stat('send');
     return item.id;
+  }
+
+  /* ---------- a sender's own trail, while it waits ----------
+   *
+   * `data/pending.json` and `img/` are the two paths the worker leaves ungated,
+   * so somebody who sent a trail in can keep working on it without a password:
+   * the photographs of a shortcut are usually taken on a second walk, and the
+   * alternative was sending the same trail twice.
+   *
+   * Only what is attached, never the line and never the name: a queued trail is
+   * a claim about the ground that somebody is about to review, and letting it
+   * change underneath them would make the review meaningless.
+   */
+
+  const onPending = (id, mutate, message) => withPending((doc) => {
+    const item = (doc.items || []).find((i) => i.id === id);
+    if (!item) throw new Error('השביל כבר לא בתור. ייתכן שהוא כבר אושר.');
+    mutate(item);
+  }, message);
+
+  async function addPendingPhotos(id, files, name, onStep) {
+    const photos = await uploadAll(files, name, onStep);
+    if (onStep) onStep('מצרף…');
+    await onPending(id, (item) => {
+      item.photos = [...(item.photos || []), ...photos];
+    }, `תמונות לשביל שממתין: ${name}`);
+    return photos.length;
+  }
+
+  function addPendingVideo(id, url, name) {
+    const yt = youtubeId(url);
+    if (!yt) throw new Error('זו לא כתובת של סרטון יוטיוב.');
+    return onPending(id, (item) => {
+      if ((item.photos || []).some((p) => p.yt === yt)) {
+        throw new Error('הסרטון הזה כבר משובץ כאן.');
+      }
+      item.photos = [...(item.photos || []), { yt, thumb: youtubeThumb(yt) }];
+    }, `סרטון לשביל שממתין: ${name}`);
   }
 
   /** Move a queued trail onto the map. */
@@ -1245,12 +1344,13 @@ const Store = (() => {
   return {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks, stat, statVisit,
-    isEditor, editor, editing, named, enable, disable, resume, writable,
+    isEditor, editor, editing, named, setName, enable, disable, resume, writable,
     publish, publishTrip, remove, rename, setLinks, setNote, setColor,
     addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,
+    sent, forget, addPendingPhotos, addPendingVideo,
     get offline() { return state.offline; }
   };
 })();

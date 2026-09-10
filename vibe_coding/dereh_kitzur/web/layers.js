@@ -58,8 +58,10 @@ const Layers = (() => {
    * been here before: savePrefs writes a flag for every layer at once, so an
    * earlier visitor carries an explicit `false` for a layer that has since
    * become one of the defaults and would never see the change. Bumped 29/8/2026,
-   * when the circular route joined the opening view. */
-  const PREF = 'dk.layers.v2';
+   * when the circular route joined the opening view, and again 10/9/2026, when
+   * the opening view narrowed to three layers and a returning visitor would
+   * otherwise have kept an editor's trail layers switched on. */
+  const PREF = 'dk.layers.v3';
 
   function loadPrefs() {
     try {
@@ -498,7 +500,7 @@ const Layers = (() => {
       color: '#8d6e63',                    // the colour the pins are drawn in
       note: 'נקודות שהיוזמה סימנה בדרך: עצים, מקלטים, ספסלים, מעברים חסומים. '
         + 'לא שבילים, ולכן לא בשכבת דרכי הקיצור.',
-      on: isOn(SPOTS_ID, true),
+      on: isOn(SPOTS_ID),                  // the caller decides; see init()
       segments: [],
       waypoints: trails.waypoints.filter((w) => home(w) === TRAILS_ID)
     });
@@ -539,9 +541,13 @@ const Layers = (() => {
       link && fromLink ? link.has(id)
         : typeof prefs[id] === 'boolean' ? prefs[id] : byDefault);
 
-    // The shortcuts are the point of the app, and a trail layer an editor makes
-    // later is the same content sorted into buckets, so both arrive on.
-    buildTrailLayers(trails, (id) => isOn(id, true));
+    // The shortcuts are the point of the app, and the initiative's own pins are
+    // part of the same survey rather than a layer of their own subject, so both
+    // arrive on. A trail layer an editor made later does not: it is a sorting
+    // of this material that means something to whoever made it, and somebody
+    // opening the app for the first time should meet the shortcuts, not
+    // somebody else's filing.
+    buildTrailLayers(trails, (id) => isOn(id, id === TRAILS_ID || id === SPOTS_ID));
 
     // Walks made of those shortcuts. Off by default like everything else that
     // is not a shortcut, and drawn under them as a wide band rather than over,
@@ -751,9 +757,12 @@ const Layers = (() => {
       on: isOn(l.id, false)
     })));
 
-    // Populated from the worker, and only while edit mode is on: a trail nobody
-    // has looked at yet is not something to show a visitor as if it were part
-    // of the map.
+    // Populated from the worker. An editor gets the whole queue; everybody else
+    // gets the trails they sent in themselves and nothing else, which is what
+    // makes "your trail is waiting" something you can see rather than a sentence
+    // you were once shown. A trail nobody has looked at yet is still not part of
+    // the map, so for a visitor who has sent nothing this layer stays empty and
+    // never appears at all.
     add({
       id: PENDING_ID,
       kind: 'pending',
@@ -774,7 +783,10 @@ const Layers = (() => {
       kind: 'drafts',
       category: 'trails',
       name: 'הטיוטות שלי',
-      short: 'טיוטות',
+      // The badge on the row says the state and not the filing cabinet.
+      // "טיוטות" named where the trail is kept, which is a fact about this app;
+      // "לא נשלח" says the one thing its owner has to act on.
+      short: 'לא נשלח',
       color: '#8e24aa',
       dash: true,
       note: 'שבילים שהקלטת או ציירת במכשיר הזה. נשמרים כאן בלבד, עד שתשלח אותם.',
@@ -838,13 +850,24 @@ const Layers = (() => {
   }
 
   /** Fill the review queue layer from what the worker holds. */
-  function setPending(items) {
+  function setPending(items, opts = {}) {
     const layer = byId(PENDING_ID);
     if (!layer) return;
+    // `mine` marks the trails this browser sent in. It rides on the item rather
+    // than being worked out again at render time, because the ledger that knows
+    // it lives in store.js and the detail pane would otherwise have to ask on
+    // every repaint.
+    const mine = !!opts.mine;
     layer.segments = (items || [])
       .map((it) => (it.parts ? toTrip(it) : it))
       .filter((it) => it.path && it.path.length > 1)
-      .map((it) => ({ ...it, color: '#f9a825', pending: true }));
+      .map((it) => ({ ...it, color: '#f9a825', pending: true, mine }));
+    layer.name = mine ? 'מה ששלחת' : 'ממתינים לאישור';
+    layer.note = mine
+      ? 'שבילים ששלחת מהמכשיר הזה וממתינים שמישהו מהיוזמה יאשר אותם. '
+        + 'רק אתה רואה אותם. אפשר להוסיף להם תמונות וסרטונים בינתיים.'
+      : 'תור: שבילים שתושבים שלחו דרך "שלח ליוזמה" וממתינים שתאשר אותם. '
+        + 'שביל שאתה מפרסם בעצמך לא עובר דרך כאן. גלוי רק במצב עריכה.';
     reindex();
     if (typeof map !== 'undefined' && map && map.getSource(srcId(PENDING_ID))) {
       map.getSource(srcId(PENDING_ID)).setData(geojson(layer));
@@ -878,7 +901,13 @@ const Layers = (() => {
 
   /* ---------- what the rest of the app sees ---------- */
 
-  const shown = (l) => l.on && !(l.kind === 'pending' && !Store.isEditor());
+  /* The queue is an editor's working surface, and for everybody else it holds
+   * only what they sent in themselves - so it is shown to an editor always, and
+   * to anybody else exactly when there is something of theirs in it. Empty and
+   * visible would be a layer called "מה ששלחת" offered to somebody who has
+   * never sent anything. */
+  const pendingShown = (l) => Store.isEditor() || l.segments.length > 0;
+  const shown = (l) => l.on && (l.kind !== 'pending' || pendingShown(l));
   const visible = () => list.filter(shown);
   const visibleSegments = () => visible().flatMap((l) => l.segments);
   const visibleWaypoints = () => visible().flatMap((l) => l.waypoints);
@@ -1230,7 +1259,7 @@ const Layers = (() => {
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
       const hide = (arranging && layer.pinnable)
-        || (layer.kind === 'pending' && !Store.isEditor());
+        || (layer.kind === 'pending' && !pendingShown(layer));
       const v = layer.on && !hide ? 'visible' : 'none';
       drawnIds(layer).forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
@@ -1565,11 +1594,12 @@ const Layers = (() => {
       </button>`;
   }
 
-  /** The layers the sheet lists. The queue is editor-only and is not one of
-   *  them for anybody else, which is why the count on the clear button and the
-   *  rows underneath it are drawn off the same list. */
+  /** The layers the sheet lists. The queue is listed for an editor, and for a
+   *  resident only once they have something of their own waiting in it, which
+   *  is why the count on the clear button and the rows underneath it are drawn
+   *  off the same list. */
   const inSheet = () => list.slice().reverse()
-    .filter((layer) => layer.kind !== 'pending' || Store.isEditor());
+    .filter((layer) => layer.kind !== 'pending' || pendingShown(layer));
 
   /** Nothing at all while there is nothing to clear. A permanent button that
    *  does nothing most of the time is one that reads as broken the first time

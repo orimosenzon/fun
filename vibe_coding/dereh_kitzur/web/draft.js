@@ -171,6 +171,12 @@ const Drafts = (() => {
       urls.push(url);
       return { thumb: url, full: url };
     });
+    // A video is not a file to store, only an id to remember, so it lives in a
+    // second field on the record and joins the pictures here - one gallery, one
+    // browsing order, exactly as on a trail that is already on the map. Kept
+    // apart in storage so that `rec.photos` stays a list of blobs and nothing
+    // that walks it has to ask which kind of thing it is holding.
+    const videos = rec.videos || [];
     // A trip draft holds its recipe and not its line, exactly like a published
     // one, so it is resolved here against whatever the shortcuts look like now.
     //
@@ -191,7 +197,8 @@ const Drafts = (() => {
       id: rec.id,
       name: rec.name,
       note: rec.note || '',
-      photos,
+      photos: [...photos, ...videos],
+      videos,
       links: rec.links || [],
       layer: rec.layer || '',
       path,
@@ -668,6 +675,26 @@ const Drafts = (() => {
     await reload();
   }
 
+  /** A video on a draft: nothing is downloaded and nothing is stored but the
+   *  id, so this works offline and costs the device nothing. It travels with
+   *  the trail when it is sent in or published. */
+  async function addVideo(seg) {
+    const url = prompt('כתובת של סרטון יוטיוב:', '');
+    if (url === null) return;
+    const yt = Store.youtubeId(url);
+    if (!yt) { alert('זו לא כתובת של סרטון יוטיוב.'); return; }
+
+    const rec = rows.find((r) => r.id === seg.id);
+    if (!rec) return;
+    rec.videos = rec.videos || [];
+    if (rec.videos.some((v) => v.yt === yt)) { alert('הסרטון הזה כבר משובץ כאן.'); return; }
+    rec.videos.push({ yt, thumb: Store.youtubeThumb(yt) });
+    rec.updated = Date.now();
+    await put(rec);
+    await reload();
+    select(seg.id, false);
+  }
+
   /* ---------- export ---------- */
 
   // KML wants aabbggrr, which is neither the order nor the position of the
@@ -778,7 +805,8 @@ ${tracks}
       </label>
       <p class="sheet-credit">${Store.isEditor()
         ? 'אתה במצב עורך, אז אפשר לפרסם ישירות למסד המשותף מסך הפרטים.'
-        : 'השביל נשמר במכשיר הזה בלבד, ומסך הפרטים אפשר לשלוח אותו ליוזמה.'}</p>`);
+        : 'השביל נשמר קודם במכשיר שלך בלבד. כשתסיים אפשר לצרף לו תמונות '
+          + 'וסרטון, ואז לשלוח ליוזמה מסך הפרטים שלו. בלי הרשמה ובלי סיסמה.'}</p>`);
   }
 
   /** The extra three a trip carries and a trail does not: how far and how long,
@@ -920,44 +948,89 @@ ${tracks}
     return trails.segments.some((s) => s.name.trim() === seg.name.trim());
   }
 
-  function detailExtras(seg) {
+  /* ---------- a draft's page ----------
+   *
+   * Rewritten 10/9/2026, after somebody drew two trails and did not send either.
+   *
+   * The old order opened on **הגעה · נווט אליי לכאן** - offering to navigate to
+   * a trail its owner had walked five seconds earlier - and put "שלח ליוזמה"
+   * halfway down, in the same grey box and the same weight as "ייצוא GPX". The
+   * page read as a finished thing with some options attached, and nothing on it
+   * said the trail was still nowhere.
+   *
+   * Now it opens on the two facts that matter and nothing else: this is only on
+   * your phone, and here is the one button that changes that. Everything the
+   * old page offered is still here, underneath.
+   *
+   * `extras` is the navigation block, built by app.js because it shares that
+   * code with every other kind of item. It arrives as a parameter rather than
+   * being pasted above this, which is where it used to sit and what put it
+   * first on the page.
+   */
+  function detailExtras(seg, extras = '') {
     const done = landed(seg);
+    const editor = Store.isEditor();
+    const offline = Store.writable() === false;
 
     // With edit mode on, a trail goes straight onto the map. Without it, it
     // goes into the queue - which needs nothing from the sender, no account
     // and no key. Until the worker existed this hand-off was a file sent over
     // WhatsApp, and a file in a chat is a thing somebody has to remember.
-    const publish = Store.isEditor() ? `
-      <button class="act act-nav" data-draft="publish"><span class="lbl">פרסם למפה
-        <span class="hint">ייכנס מיד לכל מי שפותח את האפליקציה</span></span></button>` : `
-      <button class="act act-nav" data-draft="submit"${Store.writable() === false ? ' disabled' : ''}>
-        <span class="lbl">שלח ליוזמה
-        <span class="hint">${Store.writable() === false
-          ? 'אין חיבור כרגע. השביל נשמר אצלך ואפשר לשלוח אחר כך'
-          : 'נכנס לתור, ומישהו מהיוזמה יאשר אותו למפה'}</span></span></button>`;
+    const cta = editor ? `
+      <button class="send-cta" data-draft="publish">
+        <span class="send-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </span>
+        <span class="send-txt"><b>פרסם למפה</b>
+          <span>ייכנס מיד לכל מי שפותח את האפליקציה</span></span>
+      </button>` : `
+      <button class="send-cta" data-draft="submit"${offline ? ' disabled' : ''}>
+        <span class="send-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </span>
+        <span class="send-txt"><b>שלח ליוזמה</b>
+          <span>${offline
+            ? 'אין חיבור כרגע. השביל נשמר אצלך ואפשר לשלוח אחר כך'
+            : 'בלי הרשמה ובלי סיסמה. רק שם שייכתב לידו'}</span></span>
+      </button>`;
+
+    // The banner, and it is deliberately blunt. "טיוטה" is a word from word
+    // processors and somebody reading it fast takes it to mean "saved". What
+    // they need to know is that nobody else can see this.
+    const state = done ? `<p class="landed">השביל הזה כבר מופיע במסד המשותף, אז אפשר
+      למחוק את הטיוטה.</p>` : `
+      <p class="draft-state">
+        <b>${editor ? 'עוד לא פרסמת את השביל הזה.' : 'השביל הזה עוד לא נשלח.'}</b>
+        הוא שמור במכשיר שלך בלבד, הוא לא על המפה, ואף אחד חוץ ממך לא רואה אותו.
+        ${editor ? '' : 'כשתשלח, מישהו מהיוזמה יאשר אותו והוא ייכנס למפה של כולם.'}
+      </p>`;
 
     return `
-      ${done ? `<p class="landed">השביל הזה כבר מופיע במסד המשותף, אז אפשר
-        למחוק את הטיוטה.</p>` : ''}
-      <h3>${Store.isEditor() ? 'פרסום' : 'לשלוח ליוזמה'}</h3>
+      ${state}
+      ${cta}
+      <p id="pub-msg" class="pub-msg" hidden></p>
+      <h3>${done ? 'עריכה' : 'להשלים לפני השליחה'}</h3>
       <div class="acts">
-        ${publish}
+        <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
+          <span class="hint">נשמרות במכשיר ונוסעות עם השביל</span></span>
+          <input type="file" accept="image/*" multiple hidden data-draft="photos"></label>
+        <button class="act" data-draft="video"><span class="lbl">הוספת סרטון
+          <span class="hint">${(seg.videos || []).length
+            ? plural(seg.videos.length, 'סרטון אחד מצורף', 'סרטונים מצורפים')
+            : 'קישור ליוטיוב, נוסע עם השביל כשתשלח אותו'}</span></span></button>
+        <button class="act" data-draft="rename"><span class="lbl">שם, הערה וקישורים
+          <span class="hint">${(seg.links || []).length
+            ? plural(seg.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
+        <button class="act" data-draft="edit"><span class="lbl">עריכת התוואי
+          <span class="hint">להוסיף או להסיר נקודות</span></span></button>
+      </div>
+      ${extras}
+      <h3>עוד</h3>
+      <div class="acts">
         <button class="act act-sub" data-draft="kml">
           <span class="lbl">ייצוא KML<span class="hint">קובץ, לייבוא ידני ל-My Maps</span></span></button>
         <button class="act act-sub" data-draft="gpx"><span class="lbl">ייצוא GPX
           <span class="hint">לאפליקציות הליכה וניווט</span></span></button>
-      </div>
-      <p id="pub-msg" class="pub-msg" hidden></p>
-      <h3>עריכה</h3>
-      <div class="acts">
-        <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
-          <span class="hint">נשמרות במכשיר, מוקטנות אוטומטית</span></span>
-          <input type="file" accept="image/*" multiple hidden data-draft="photos"></label>
-        <button class="act" data-draft="edit"><span class="lbl">עריכת התוואי
-          <span class="hint">להוסיף או להסיר נקודות</span></span></button>
-        <button class="act" data-draft="rename"><span class="lbl">שם, הערה וקישורים
-          <span class="hint">${(seg.links || []).length
-            ? plural(seg.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
         <button class="act danger" data-draft="delete"><span class="lbl">מחיקת הטיוטה</span></button>
       </div>
       <p class="src">נוצר ${new Date(seg.created).toLocaleDateString('he-IL')} ·
@@ -997,32 +1070,108 @@ ${tracks}
     }
   }
 
-  /** Send a draft into the review queue.
+  /* ---------- sending it in ----------
    *
-   *  Same care as publish(): the local copy is only dropped once the write has
-   *  come back, so a failed send leaves the walk exactly where it was. */
-  async function send(seg, btn) {
-    const msg = el('pub-msg');
-    const rec = rows.find((r) => r.id === seg.id);
-    const say = (text) => { msg.hidden = false; msg.textContent = text; msg.className = 'pub-msg'; };
+   * One sheet rather than a button that fires straight away, for one reason:
+   * the name. A trail on this map carries a credit, and the person who walked
+   * it is the one who should choose what that credit says - so the field is
+   * asked for here, at the moment it means something, rather than buried in a
+   * settings screen nobody opens. It is remembered, so the second trail asks
+   * nothing new.
+   *
+   * The sheet is also where "it is waiting for approval" is said, and said on
+   * the screen the sender is already looking at. Until 10/9/2026 that sentence
+   * was an alert(), the draft was consumed the same instant, and the trail
+   * disappeared from their map with nothing left to look at.
+   */
 
+  let sending = null;                   // the draft the send sheet is about
+
+  /** What is travelling with the trail. Counted apart rather than off
+   *  `seg.photos`, which holds both kinds by then, because "נשלח יחד עם תמונה
+   *  אחת" over a trail carrying one video and no photograph is simply wrong. */
+  function mediaLine(seg) {
+    const clips = (seg.videos || []).length;
+    const shots = (seg.photos || []).length - clips;
+    const bits = [];
+    if (shots) bits.push(plural(shots, 'תמונה אחת', 'תמונות'));
+    if (clips) bits.push(plural(clips, 'סרטון אחד', 'סרטונים'));
+    return bits.length ? 'נשלח יחד עם ' + bits.join(' ו')
+      : 'אפשר להוסיף תמונות וסרטונים גם אחרי השליחה';
+  }
+
+  function askSend(seg) {
+    sending = seg;
+    const what = seg.trip ? 'הטיול' : 'השביל';
+    openSheet(`
+      <header class="sheet-head">
+        <h2>שליחה ליוזמה</h2>
+        <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+      </header>
+      <p class="sheet-lead">${escapeHtml(seg.name)} ייכנס לתור, ומישהו מהיוזמה
+        יאשר אותו למפה. אין הרשמה, אין חשבון ואין סיסמה.</p>
+      <label class="fld"><span>איך לקרוא לך</span>
+        <input id="d-by" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
+               placeholder="השם שיופיע ליד ${what}"></label>
+      <p class="sheet-credit">זה השם שייכתב כקרדיט ליד ${what} על המפה. אפשר שם
+        פרטי, כינוי, מה שתרצה. הוא נשמר במכשיר שלך לפעם הבאה.</p>
+      <p id="d-send-msg" class="pub-msg" hidden></p>
+      <button class="big-act primary" data-act="send-now"><b>שלח את ${what}</b>
+        <span>${mediaLine(seg)}</span></button>`);
+    setTimeout(() => el('d-by').focus(), 60);
+  }
+
+  /** Same care as publish(): the local copy is only dropped once the write has
+   *  come back, so a failed send leaves the walk exactly where it was. */
+  async function send() {
+    const seg = sending;
+    if (!seg) return;
+    const btn = el('draft-card').querySelector('[data-act="send-now"]');
+    const msg = el('d-send-msg');
+    const field = el('d-by');
+    const say = (text, bad) => {
+      msg.hidden = false;
+      msg.textContent = text;
+      msg.className = bad ? 'pub-msg bad' : 'pub-msg';
+    };
+
+    const who = Store.setName(field.value);
+    if (!who) { say('צריך שם. הוא מה שייכתב ליד השביל.', true); field.focus(); return; }
+
+    const rec = rows.find((r) => r.id === seg.id);
     btn.disabled = true;
+    field.disabled = true;
     say('שולח…');
     try {
-      await Store.submit(seg, (rec && rec.photos) || [], say);
+      await Store.submit(seg, (rec && rec.photos) || [], (t) => say(t));
       await drop(seg.id);
       deselect();
       await reload();
       await refreshQueue();
-      alert(seg.trip
-        ? 'נשלח, תודה. הטיול ממתין לאישור ויופיע על המפה בקרוב.'
-        : 'נשלח, תודה. השביל ממתין לאישור ויופיע על המפה בקרוב.');
+      sending = null;
+      sentSheet(seg, who);
     } catch (err) {
       btn.disabled = false;
-      msg.className = 'pub-msg bad';
-      msg.hidden = false;
-      msg.textContent = 'השליחה נכשלה: ' + err.message + ' הטיוטה נשארה אצלך.';
+      field.disabled = false;
+      say('השליחה נכשלה: ' + err.message + ' הטיוטה נשארה אצלך.', true);
     }
+  }
+
+  /** What waiting for approval looks like, on the screen they are already on. */
+  function sentSheet(seg, who) {
+    const what = seg.trip ? 'הטיול' : 'השביל';
+    openSheet(`
+      <header class="sheet-head">
+        <h2>נשלח. תודה 🥾</h2>
+        <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+      </header>
+      <p class="sheet-lead"><b>${escapeHtml(seg.name)}</b> ממתין לאישור, על שם
+        ${escapeHtml(who)}. מישהו מהיוזמה יעבור עליו ויוסיף אותו למפה, ומאותו
+        רגע כל מי שפותח את האפליקציה יראה אותו.</p>
+      <p class="sheet-credit">בינתיים ${what} מסומן על המפה בצהוב מקווקו, בשכבה
+        "מה ששלחת", ורק אתה רואה אותו. אפשר להיכנס אליו ולהוסיף לו תמונות
+        וסרטונים גם עכשיו.</p>
+      <button class="big-act primary" data-act="close"><b>סגירה</b></button>`);
   }
 
   /* ---------- importing a trail somebody sent ---------- */
@@ -1113,7 +1262,8 @@ ${tracks}
       node.addEventListener('click', async () => {
         if (act === 'kml' || act === 'gpx') return share([seg], act);
         if (act === 'publish') return publish(seg, node);
-        if (act === 'submit') return send(seg, node);
+        if (act === 'submit') return askSend(seg);
+        if (act === 'video') return addVideo(seg);
         if (act === 'edit') {
           deselect();
           startEditor(seg.mode === 'walk' ? 'draw' : seg.mode, seg);
@@ -1152,14 +1302,15 @@ ${tracks}
     });
 
     el('draft-sheet').addEventListener('click', async (e) => {
-      if (e.target.id === 'draft-sheet') { closeSheet(); return; }
+      if (e.target.id === 'draft-sheet') { sending = null; closeSheet(); return; }
       const btn = e.target.closest('[data-act]');
       if (!btn) return;
       const act = btn.dataset.act;
-      if (act === 'close') closeSheet();
+      if (act === 'close') { sending = null; closeSheet(); }
       else if (act === 'walk' || act === 'draw' || act === 'trip') {
         closeSheet(); startEditor(act);
       }
+      else if (act === 'send-now') send();
       else if (act === 'save') save();
       else if (act === 'resume' || act === 'back') {
         closeSheet();
