@@ -116,6 +116,32 @@
         <button id="editor-btn" class="editor-btn">מצב עורך</button>
       </div>
       <p id="stats" class="stats">טוען…</p>
+
+      <!-- The invitation, and it is the whole point of the app rather than one
+           more control: 83% of what is on this map is not on any other map,
+           which is only true because somebody walked it and sent it in. It was
+           a chip among the sort chips until 10/9/2026, indistinguishable from
+           "הארוכים", and a chip is not an invitation.
+
+           Deliberately says what it costs - nothing, no account, no password -
+           because the reason a resident does not add a shortcut is almost never
+           that they do not know one. -->
+      <button id="add" class="invite">
+        <span class="invite-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        </span>
+        <span class="invite-txt">
+          <b>הוסף דרך קיצור שאתה מכיר</b>
+          <span>לך בה עם הטלפון והיא תיכנס למפה. בלי הרשמה ובלי סיסמה.</span>
+        </span>
+      </button>
+
+      <!-- Only while there is something unsent on this device. A trail that has
+           been recorded and not sent is the one thing in this app that is
+           waiting on its owner, and until this existed it waited quietly at row
+           sixty of a list sorted by length. -->
+      <button id="unsent" class="unsent" hidden></button>
+
       <div class="controls">
         <input id="search" type="search" placeholder="חיפוש שביל או רחוב…" autocomplete="off" aria-label="חיפוש">
         <div class="sorts" role="group" aria-label="מיון">
@@ -123,7 +149,6 @@
           <button class="sort" data-sort="near">הקרובים</button>
           <button class="sort" data-sort="photos">עם תמונות</button>
           <button class="sort" data-sort="unplaced" id="sort-unplaced" hidden>לא ממוקמים</button>
-          <button id="add" class="sort add">+ שביל חדש</button>
         </div>
       </div>
     </header>
@@ -191,6 +216,14 @@
 
 <div id="editor-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="מצב עורך">
   <div class="sheet-card" id="editor-card"></div>
+</div>
+
+<!-- Shown once, on a first visit, and then never again on this browser. It is
+     here because the app looks finished: a map with fifty trails on it reads as
+     something somebody else made and you came to consult, and nothing about it
+     says the next trail is yours to add. -->
+<div id="welcome-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="ברוך הבא">
+  <div class="sheet-card" id="welcome-card"></div>
 </div>
 
 <!-- Shared by the small editor forms: links, a new layer, moving a trail. -->

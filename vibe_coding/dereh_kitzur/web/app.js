@@ -442,7 +442,21 @@ function items() {
     all = all.filter((it) => it.unplaced);
     all.sort((a, b) => a.name.localeCompare(b.name, 'he'));
   }
-  return all;
+
+  /* Your own unfinished business floats above every sort (10/9/2026).
+   *
+   * A shortcut is short - that is what makes it a shortcut - so a trail
+   * somebody had just recorded landed near the bottom of seventy-odd rows under
+   * the default "longest first", and under "with photos" it was filtered out
+   * altogether for having none yet. Somebody drew two and reported that they
+   * had "gone quiet", which is exactly right: the app had just invited them to
+   * add a trail and then buried what they added.
+   *
+   * These rows are not content to browse. They are a to-do list of two or three
+   * things that are yours and not finished, and they belong where you left
+   * them. Ordinary trails keep the order the sort asked for. */
+  const unfinished = (it) => it.draft || it.pending;
+  return [...all.filter(unfinished), ...all.filter((it) => !unfinished(it))];
 }
 
 function subtitle(it) {
@@ -450,6 +464,11 @@ function subtitle(it) {
   if (it.length) bits.push(metres(it.length));
   else if (it.place) bits.push(it.group || 'מקום');
   else bits.push('נקודת ציון');
+  // Said on the row itself, because the difference between "saved" and "sent"
+  // is the whole of what somebody has to know after recording a trail, and the
+  // only place it was said before was inside the trail's own page.
+  if (it.draft) bits.push('שמור אצלך, עוד לא נשלח');
+  else if (it.pending) bits.push(it.mine ? 'ממתין לאישור' : 'בתור לאישור');
   if (it.unplaced) bits.push('עוד לא ממוקם על המפה');
   else if (it.approx) bits.push('מיקום מקורב');
   if (here) {
@@ -925,7 +944,11 @@ function showDetail(it) {
       <p class="src">${escapeHtml(layer.credit || '')}</p>
       ${mediaActs(it, layer)}`;
   } else if (it.pending) {
-    body = `
+    // The same queued trail, seen from the two ends of the same transaction.
+    // An editor is deciding whether it goes on the map; the person who walked
+    // it is waiting to hear, and what they can still do meanwhile is add the
+    // photographs, which on a shortcut usually means a second walk.
+    body = Store.isEditor() ? `
       <p class="unplaced">שביל שהתקבל ועוד לא אושר. הוא לא מופיע למי שרק פותח
         את האפליקציה.</p>
       <h3>הגעה</h3>
@@ -938,14 +961,35 @@ function showDetail(it) {
         <button class="act danger" data-queue="reject"><span class="lbl">דחה
           <span class="hint">יוסר מהתור. נשמר בהיסטוריה</span></span></button>
       </div>
+      <p id="pub-msg" class="pub-msg" hidden></p>
       <p class="src">${it.by ? `נשלח על ידי ${escapeHtml(it.by)} · ` : ''}${
-        it.submitted ? new Date(it.submitted).toLocaleDateString('he-IL') : ''}</p>`;
+        it.submitted ? new Date(it.submitted).toLocaleDateString('he-IL') : ''}</p>` : `
+      <p class="waiting">שלחת את השביל הזה והוא <b>ממתין לאישור</b>. בינתיים רק
+        אתה רואה אותו. ברגע שמישהו מהיוזמה יאשר אותו הוא ייכנס למפה של כולם, על
+        שמך.</p>
+      <h3>הגעה</h3>
+      <div class="acts">${navActs(it, 'ניווט לפי התוואי ששלחת')}</div>
+      ${linksBlock(it)}
+      <h3>להוסיף לשביל</h3>
+      <div class="acts">
+        <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
+          <span class="hint">נשלחות עכשיו ומצטרפות לשביל שממתין</span></span>
+          <input type="file" accept="image/*" multiple hidden data-mine="photos"></label>
+        <button class="act" data-mine="video"><span class="lbl">הוספת סרטון
+          <span class="hint">קישור ליוטיוב</span></span></button>
+      </div>
+      <p id="pub-msg" class="pub-msg" hidden></p>
+      <p class="src">נשלח${it.by ? ` על שם ${escapeHtml(it.by)}` : ''}${
+        it.submitted ? ` · ${new Date(it.submitted).toLocaleDateString('he-IL')}` : ''}</p>`;
   } else if (it.draft) {
-    body = `
+    // The navigation block is handed to the drafts module rather than printed
+    // above it. On a trail somebody has just walked, "navigate me there" is not
+    // the question, and having it first was most of why the send button went
+    // unnoticed.
+    body = Drafts.detailExtras(it, `
       <h3>הגעה</h3>
       <div class="acts">${navActs(it, 'ניווט לפי התוואי שהקלטת')}</div>
-      ${linksBlock(it)}
-      ${Drafts.detailExtras(it)}`;
+      ${linksBlock(it)}`);
   } else {
     const names = it.connects && it.connects.length === entries.length
       ? it.connects
@@ -1188,6 +1232,42 @@ function wirePublished(it) {
       } catch (err) {
         btn.disabled = false;
         say('נכשל: ' + err.message, true);
+      }
+    });
+  });
+
+  /* Attaching to a trail of one's own that is still in the queue. Both writes
+   * go to the two paths the worker leaves open - the queue itself and the
+   * content-addressed images - so this needs no password, which is the same
+   * reason sending the trail needed none. */
+  el('detail').querySelectorAll('[data-mine]').forEach((node) => {
+    if (node.dataset.mine === 'photos') {
+      node.addEventListener('change', async () => {
+        if (!node.files || !node.files.length) return;
+        node.disabled = true;
+        try {
+          await Store.addPendingPhotos(it.id, [...node.files], it.name, say);
+          await refreshQueue();
+          select(it.id, false);
+        } catch (err) {
+          node.disabled = false;
+          say('הצירוף נכשל: ' + err.message, true);
+        }
+      });
+      return;
+    }
+    node.addEventListener('click', async () => {
+      const url = prompt('כתובת של סרטון יוטיוב:', '');
+      if (url === null) return;
+      node.disabled = true;
+      say('מצרף סרטון…');
+      try {
+        await Store.addPendingVideo(it.id, url, it.name);
+        await refreshQueue();
+        select(it.id, false);
+      } catch (err) {
+        node.disabled = false;
+        say('הצירוף נכשל: ' + err.message, true);
       }
     });
   });
@@ -2365,6 +2445,8 @@ function paintStats() {
     : 'מצב עריכה';
   el('editor-btn').classList.toggle('on', !!who);
 
+  paintUnsent();
+
   // Only an editor can do anything about an unplaced place, so the shortcut to
   // them only appears for one - and only while there are any left.
   const sortUnplaced = el('sort-unplaced');
@@ -2376,6 +2458,40 @@ function paintStats() {
     document.querySelectorAll('.sort').forEach((b) =>
       b.classList.toggle('on', b.dataset.sort === 'length'));
   }
+}
+
+/** The strip that says a trail is sitting on this phone and going nowhere.
+ *
+ *  Counted off the drafts layer rather than off IndexedDB, so it is right the
+ *  instant a draft is saved, sent or deleted - every one of those repaints.
+ *  Hidden entirely at zero: a permanent bar reading "0 unsent" would be one
+ *  more thing to read past, and this one is meant to be unmissable. */
+function paintUnsent() {
+  const bar = el('unsent');
+  const layer = Layers.byId('drafts');
+  const n = layer ? layer.segments.length : 0;
+  bar.hidden = !n;
+  // Two stacked cards over a panel that is 45% of a phone leave about one row
+  // of list. The invitation's explainer is onboarding copy - "walk it with your
+  // phone, no account needed" - and somebody who already has a draft has done
+  // exactly that, so it is the half that goes. The button itself stays: having
+  // one unsent trail is no reason to be unable to start a second.
+  el('add').classList.toggle('compact', !!n);
+  if (!n) return;
+
+  // An editor's own drafts are not waiting to be sent anywhere; they are
+  // waiting to be published, which is the same sentence with a different verb
+  // and a different button at the end of it. Both forms of each verb are
+  // written out rather than derived: Hebrew inflection is not string surgery.
+  const [one, many] = Store.isEditor()
+    ? ['שביל אחד שעוד לא פורסם', `${n} שבילים שעוד לא פורסמו`]
+    : ['שביל אחד שעוד לא נשלח', `${n} שבילים שעוד לא נשלחו`];
+  bar.innerHTML = `
+    <span class="unsent-ic" aria-hidden="true">✏️</span>
+    <span class="unsent-txt">
+      <b>${n === 1 ? one : many}</b>
+      <span>שמור אצלך בלבד. לחץ כדי לפתוח ${n === 1 ? 'אותו' : 'את האחרון'}.</span>
+    </span>`;
 }
 
 /** Everything that has to happen after a layer is toggled or a draft changes.
@@ -2420,6 +2536,10 @@ async function boot() {
   Store.statVisit();
   Drafts.init();
   wireControls();
+  // After the panel is up and wired, and before the network is waited on: the
+  // invitation is about what this app is for, and that does not depend on the
+  // worker being reachable.
+  welcome();
   // Confirming the stored token needs the network, so it must not hold up the
   // list. The editor badge and the publish buttons appear a moment later.
   Store.resume().then(() => { repaint(); refreshQueue(); });
@@ -2482,17 +2602,66 @@ async function reloadShared(doc) {
 
 /** Pull the review queue and hand it to the layer registry.
  *
- *  Only worth a request while edit mode is on: for everybody else the queue is
- *  invisible by design, and asking for it would be a round trip that changes
- *  nothing on screen. */
+ *  An editor gets all of it, because deciding what goes on the map is what the
+ *  queue is for. Somebody who has sent a trail in gets their own rows and
+ *  nothing else, so that "waiting for approval" is a line on the map they can
+ *  go and look at rather than a sentence they were shown once. Everybody else
+ *  is not asking a question the queue answers, so no request is made at all. */
 async function refreshQueue() {
-  if (!Store.isEditor()) { Layers.setPending([]); return; }
+  const ledger = Store.sent();
+  if (!Store.isEditor() && !ledger.length) { Layers.setPending([]); return; }
   try {
     const doc = await Store.queue();
-    Layers.setPending(doc.items || []);
+    const items = doc.items || [];
+    if (Store.isEditor()) { Layers.setPending(items); return; }
+    const ids = new Set(ledger.map((row) => row.id));
+    Layers.setPending(items.filter((item) => ids.has(item.id)), { mine: true });
+    settle(ledger, items);
   } catch (err) {
     console.error('queue unavailable', err);
   }
+}
+
+/** Tell somebody what became of a trail they sent, once, and then stop.
+ *
+ *  A row that has left the queue was either approved onto the map or turned
+ *  down, and this app cannot tell which from the outside: both look like an id
+ *  that is no longer there. So it looks for the trail by name among the
+ *  published ones and says only what it can actually see. Guessing "approved"
+ *  would eventually congratulate somebody on a trail that was rejected. */
+function settle(ledger, items) {
+  const live = new Set(items.map((item) => item.id));
+  const gone = ledger.filter((row) => !live.has(row.id));
+  if (!gone.length) return;
+
+  const published = (name) => [Layers.TRAILS_ID, Layers.TRIPS_ID]
+    .map((id) => Layers.byId(id))
+    .some((layer) => layer && layer.segments.some(
+      (seg) => seg.name.trim() === String(name || '').trim()));
+
+  const landed = gone.filter((row) => published(row.name));
+  const rest = gone.filter((row) => !published(row.name));
+  gone.forEach((row) => Store.forget(row.id));
+
+  const lines = [];
+  if (landed.length) {
+    lines.push(`<p class="sheet-lead">${landed.length === 1
+      ? `<b>${escapeHtml(landed[0].name)}</b> אושר ונמצא עכשיו על המפה, לעיני כולם.`
+      : `${landed.length} מהשבילים ששלחת אושרו ונמצאים עכשיו על המפה.`} תודה. 🥾</p>`);
+  }
+  if (rest.length) {
+    lines.push(`<p class="sheet-credit">${rest.length === 1
+      ? `<b>${escapeHtml(rest[0].name)}</b> כבר לא בתור`
+      : `${rest.length} מהשבילים ששלחת כבר לא בתור`}. או שהוא נוסף למפה בשם
+      אחר, או שהיוזמה החליטה שלא להוסיף אותו. אפשר לשאול אותם.</p>`);
+  }
+  notice(`
+    <header class="sheet-head">
+      <h2>מה קרה למה ששלחת</h2>
+      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+    </header>
+    ${lines.join('')}
+    <button class="big-act primary" data-act="close"><b>סגירה</b></button>`);
 }
 
 /** Same, for the pardespedia layer after a pin is dropped or cleared. */
@@ -2503,6 +2672,67 @@ function reloadPlaces(doc) {
   } catch (err) {
     console.error('places refresh failed', err);
   }
+}
+
+/* ---------- the invitation ----------
+ *
+ * This map exists because residents walked the shortcuts on it: 41 of the 49
+ * are on no other map in the world. Nothing on the screen said so. A visitor
+ * met a finished-looking product with fifty trails and a search box, and the
+ * only way in was a chip called "+ שביל חדש" sitting between "הארוכים" and
+ * "הקרובים", which reads as a filter.
+ *
+ * Two things now say it. A permanent button at the top of the list, and this
+ * sheet on a first visit - shown once per browser and then never again, because
+ * an invitation that repeats is an obstacle.
+ */
+
+const K_WELCOME = 'dk.welcome.v1';
+
+/** One sheet for anything the app has to say on arrival: the invitation on a
+ *  first visit, and what became of a submitted trail on a later one. Never both
+ *  at once - the second needs a trail to have been sent, which needs the first
+ *  to be long past. */
+function notice(html) {
+  el('welcome-card').innerHTML = html;
+  el('welcome-sheet').hidden = false;
+}
+
+function seenWelcome() {
+  try {
+    return localStorage.getItem(K_WELCOME) === 'yes';
+  } catch (err) {
+    return true;                        // no storage: never nag
+  }
+}
+
+function markWelcome() {
+  try {
+    localStorage.setItem(K_WELCOME, 'yes');
+  } catch (err) {
+    /* private mode; it will be offered again next time, which is harmless */
+  }
+}
+
+function welcome() {
+  if (seenWelcome()) return;
+  markWelcome();                        // shown counts, whatever they choose
+  const s = Layers.stats();
+  notice(`
+    <header class="sheet-head">
+      <h2>את המפה הזאת בנו תושבים</h2>
+      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">רוב קיצורי הדרך שכאן לא מופיעים בשום מפה אחרת. הם כאן
+      כי מישהו מהמושבה הלך בהם עם הטלפון ושלח אותם.${s.segments
+        ? ` ${s.segments} מקטעים עד עכשיו.` : ''}</p>
+    <p class="sheet-lead">מכיר קיצור דרך שעוד לא כאן? לך בו מקצה לקצה והאפליקציה
+      תצייר אותו לפי ה-GPS. אפשר גם לצייר אותו על המפה מהבית, ולצרף תמונות
+      וסרטון.</p>
+    <button class="big-act primary" data-act="add"><b>להוסיף דרך קיצור</b>
+      <span>בלי הרשמה, בלי חשבון ובלי סיסמה. רק שם שייכתב לידה</span></button>
+    <button class="big-act ghost" data-act="close"><b>אחר כך</b>
+      <span>הכפתור נשאר בראש הרשימה</span></button>`);
 }
 
 /* ---------- edit mode ----------
@@ -2562,15 +2792,17 @@ function editorSheet() {
     <button class="big-act primary" data-act="save-name"><b>שמור שם</b></button>
     <button class="big-act" data-act="out"><b>כבה מצב עריכה</b>
       <span>הכפתורים ייעלמו מהמסך והסיסמה תישכח במכשיר. הטיוטות שלך נשארות.</span></button>` : `${head}
-    <p class="sheet-lead">כדי להוסיף שביל למפה לא צריך שום דבר מכאן: מקליטים אותו
-      במסך הטיוטות ושולחים ליוזמה. מצב עריכה הוא משהו אחר, והוא מיועד למי שמאשר
-      מה נכנס למפה.</p>
+    <p class="sheet-lead">כדי להוסיף שביל למפה לא צריך שום דבר מכאן: לוחצים על
+      "הוסף דרך קיצור" בראש הרשימה, הולכים בשביל, ושולחים. מצב עריכה הוא משהו
+      אחר, והוא מיועד למי שמאשר מה נכנס למפה.</p>
+    <label class="fld"><span>איך לקרוא לך</span>
+      <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
+             placeholder="השם שיירשם ליד מה שתוסיף"></label>
+    <button class="big-act" data-act="save-name"><b>שמור שם</b>
+      <span>זה הקרדיט שיופיע ליד שביל ששלחת. נשמר במכשיר שלך בלבד</span></button>
     <label class="fld"><span>סיסמת עריכה</span>
       <input id="ed-key" type="password" autocomplete="current-password"
              placeholder="הסיסמה שנשמרת בשרת"></label>
-    <label class="fld"><span>איך לקרוא לך (לא חובה)</span>
-      <input id="ed-name" type="text" maxlength="40" value="${escapeHtml(Store.named())}"
-             placeholder="השם שיירשם ליד השינויים שלך"></label>
     <p id="ed-msg" class="pub-msg" hidden></p>
     <p class="sheet-credit">כל שינוי נשמר בהיסטוריה, אז אפשר לשחזר כל דבר.</p>
     <button class="big-act primary" data-act="in"><b>הדלק מצב עריכה</b></button>`;
@@ -2598,17 +2830,38 @@ async function editorAction(act) {
     refreshQueue();
     return;
   }
-  if (act === 'save-name') { await Store.enable(name); editorSheet(); repaint(); return; }
+  // `setName` and not `enable`: the two used to be the same call, and the name
+  // is not a permission - somebody without the password setting what to be
+  // credited as would have been refused by the door they were not knocking on.
+  if (act === 'save-name') { Store.setName(name); editorSheet(); repaint(); return; }
   if (act === 'out') {
     Store.disable();
     Arrange.close(true);
-    Layers.setPending([]);
     editorSheet();
     repaint();
+    // Not setPending([]): leaving edit mode does not undo having sent a trail,
+    // and this browser may well have some of its own still waiting.
+    refreshQueue();
   }
 }
 
 function wireControls() {
+  el('welcome-sheet').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (e.target.id !== 'welcome-sheet' && !btn) return;
+    el('welcome-sheet').hidden = true;
+    // The point of the sheet. Going through the button on the panel rather than
+    // calling askMode directly keeps one entry into drafting, so there is one
+    // place to change when it moves again.
+    if (btn && btn.dataset.act === 'add') el('add').click();
+  });
+
+  // The drafts layer is newest first, so the first row is the one just made.
+  el('unsent').addEventListener('click', () => {
+    const layer = Layers.byId('drafts');
+    if (layer && layer.segments.length) select(layer.segments[0].id);
+  });
+
   el('editor-btn').addEventListener('click', editorSheet);
   el('editor-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'editor-sheet') { el('editor-sheet').hidden = true; return; }
