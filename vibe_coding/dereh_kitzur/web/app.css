@@ -185,9 +185,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fab.on .fab-3d { color: var(--accent); }
 
 /* Take-off is the only button in the column that is not a map setting, so it is
- * the only one that is not white. */
-#explore { background: var(--accent); }
-#explore svg { fill: #fff; }
+ * the only one that is not white. The roundel green is the button itself and the
+ * F-16 is drawn over it, which is also what makes the canopy a hole: it is the
+ * background showing through.
+ *
+ * Larger than the glyph buttons, because a silhouette with missiles under its
+ * wings is not a glyph and turns to mush at 44px. The negative margin cancels
+ * the extra 6px on every side, so its centre stays on the column's axis in
+ * both layouts without restating a single offset.
+ *
+ * padding: 0 is not cosmetic. A button ships with 1px 6px of it, and an image
+ * that fills the button overflows that content box; Chrome then pins an
+ * overflowing grid item to the start edge instead of centring it, which put
+ * the jet high and to one side of its own disc. */
+#explore {
+  width: 56px;
+  height: 56px;
+  margin: -6px;
+  padding: 0;
+  background: #009f67;
+}
+#explore img { width: 100%; height: 100%; display: block; }
 
 /* ---------- the way back from somewhere else ----------
  *
