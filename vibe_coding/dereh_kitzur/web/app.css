@@ -1990,19 +1990,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
  * the page's own stacking context, so a sky of ours can sit *behind* a map
  * that is not ours. A positioned wrapper would trap all of them above it.
  *
- * The map is grown by --fly-over on every side so that banking into a turn has
- * material to cover the corners with. explore.js solves for how far it may
- * bank given the screen's aspect, and sets --fly-over to 0 where it will not
- * bank at all (touch screens), so nothing is paid for there. */
+ * The map hangs past the screen by --fly-oy above and below and --fly-ox at
+ * the sides, so that rolling the picture has material to cover the corners
+ * with. explore.js sets them to make the map a square the size of the
+ * screen's diagonal, which covers the screen at any angle at all - a full
+ * roll included - and sets both to 0 on touch screens, where nothing rolls
+ * and nothing should be paid for. */
 
 .fly-root { display: contents; }
 body:not(.flying) .fly-root > * { display: none !important; }
 
+/* The cursor is the stick, so it is drawn as a sight and not as a hand: there
+ * is nothing here to grab.
+ *
+ * The ground colour is what shows wherever nothing has been painted yet - a
+ * satellite tile still on its way, a corner of a rotating layer Chrome has
+ * not rasterised in time. Black there reads as a hole in the world; a dark
+ * earth reads as ground the light has not reached, which is a thing a
+ * landscape at dusk is allowed to have. */
 body.flying {
-  background: #05080c;
-  cursor: grab;
+  background: #23261e;
+  cursor: crosshair;
 }
-body.flying:active { cursor: grabbing; }
 
 /* Everything the app normally shows is gone. The GL layers are hidden by
  * explore.js, which can put back what it found; these are the DOM pieces. */
@@ -2026,7 +2035,7 @@ body.flying .maplibregl-marker { display: none !important; }
  * simply clipped, which is what it was always meant to be. */
 body.flying #map {
   position: fixed;
-  inset: calc(-1 * var(--fly-over, 0%));
+  inset: calc(-1 * var(--fly-oy, 0px)) calc(-1 * var(--fly-ox, 0px));
   z-index: 2;
   background: transparent;
   will-change: transform;
@@ -2036,28 +2045,34 @@ body.flying #map {
 
 .fly-sky {
   position: fixed;
-  inset: calc(-1 * var(--fly-over, 0%));
+  inset: calc(-1 * var(--fly-oy, 0px)) calc(-1 * var(--fly-ox, 0px));
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
+  background: #23261e;     /* the ground, under any tile that has not arrived */
+  will-change: transform;
 }
 
-/* Height is set every frame to the horizon line, so the pale end of the
- * gradient always lands on the ground rather than at a guessed percentage.
- * Late afternoon, because that is when this walk is worth taking. */
+/* A fixed-height gradient slid up and down so that its pale end lands
+ * exactly on the horizon. Slid, not resized: its transform is set every
+ * frame and a transform costs the compositor nothing, where a height change
+ * is a repaint of a strip as wide as the map. Its height is BAND_H in
+ * explore.js and the two must agree. Late afternoon, because that is when
+ * this walk is worth taking. */
 .fly-band {
   position: absolute;
   inset: 0 0 auto 0;
-  height: 0;
+  height: 600px;
   background: linear-gradient(to bottom,
     #0f2744 0%, #1d4a78 26%, #4a86b8 54%, #97c0da 76%, #dcd2b4 93%, #efe0be 100%);
+  will-change: transform;
 }
 
 /* ---------- the world layer ---------- */
 
 .fly-world {
   position: fixed;
-  inset: calc(-1 * var(--fly-over, 0%));
+  inset: calc(-1 * var(--fly-oy, 0px)) calc(-1 * var(--fly-ox, 0px));
   z-index: 3;
   pointer-events: none;
   overflow: hidden;
@@ -2069,9 +2084,11 @@ body.flying #map {
  * front of the map, turns that edge into distance. */
 .fly-haze {
   position: absolute;
+  top: 0;                   /* moved with a transform, see paintHud */
   left: -10%;
   width: 120%;
   height: 170px;
+  will-change: transform;
   background: linear-gradient(to bottom,
     rgba(226, 219, 196, .92) 0%, rgba(214, 214, 198, .55) 34%, rgba(200, 210, 200, 0) 100%);
 }
@@ -2080,8 +2097,11 @@ body.flying #map {
 
 .fly-card {
   position: absolute;
-  transform: translate(-50%, -100%);
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);   /* explore.js prepends the position */
   pointer-events: auto;
+  will-change: transform;
   cursor: zoom-in;
   border-radius: 7px;
   padding: 4px 4px 0;
@@ -2091,6 +2111,16 @@ body.flying #map {
     0 10px 26px rgba(0, 0, 0, .55),
     0 0 40px rgba(255, 208, 120, .28);
   transition: opacity .18s linear;
+}
+.fly-card[hidden] { display: none; }
+
+/* The card's click target, 18px wider than the card on every side. Absolute
+ * children may hang outside their parent's box and still take its clicks,
+ * which is the whole trick; nothing is painted here. */
+.fly-card-hit {
+  position: absolute;
+  inset: -18px;
+  pointer-events: auto;
 }
 
 .fly-card-img {
@@ -2117,6 +2147,37 @@ body.flying #map {
  * stays - a distant card is a promise, not a label. */
 .fly-card.small { padding: 3px; }
 .fly-card.small .fly-card-cap { display: none; }
+
+/* A video floats as its thumbnail, with a play mark so it is not mistaken for
+ * a photograph of a place that happens to have a red button in it. */
+.fly-card.video .fly-card-img::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  max-width: 44px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(10, 14, 12, .62);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .85);
+}
+.fly-card.video .fly-card-img { position: relative; }
+.fly-card.video .fly-card-img::before {
+  content: '';
+  position: absolute;
+  left: 54%;
+  top: 50%;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent #fff;
+}
+.fly-card.small.video .fly-card-img::before { border-width: 4px 0 4px 7px; }
 
 /* The tether, and the point on the ground it belongs to. Without them a photo
  * floats over the landscape attached to nothing, which is exactly the thing a
@@ -2150,11 +2211,16 @@ body.flying #map {
 
 .fly-chip {
   position: absolute;
-  transform: translate(-50%, -175%);
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -175%);   /* explore.js prepends the position */
+  will-change: transform;
   padding: 3px 11px;
   border-radius: 999px;
-  background: rgba(12, 20, 16, .62);
-  backdrop-filter: blur(3px);
+  /* No backdrop blur: a blur has to read the map back through a layer that
+   * is rotating every frame, and a handful of them was a measurable share
+   * of the frame. A little more opacity does the same job for the eye. */
+  background: rgba(12, 20, 16, .74);
   color: #fff6df;
   font-weight: 800;
   letter-spacing: -.2px;
@@ -2169,17 +2235,42 @@ body.flying #map {
 /* Streaks radiating from the middle of the screen, which at this tilt is very
  * nearly where you are heading. Opacity follows the throttle, so it is only
  * ever there when it is earned. */
+/* Registered so the colour can transition; an unregistered custom property
+ * snaps. Browsers without @property still get the colour, only instantly. */
+@property --rush {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(255, 255, 255, .55);
+}
+
 .fly-rush {
   position: fixed;
   inset: 0;
   z-index: 4;
   pointer-events: none;
   opacity: 0;
+  --rush: rgba(255, 255, 255, .55);
   background: repeating-conic-gradient(from 0deg at 50% 48%,
-    rgba(255, 255, 255, .55) 0deg .16deg, transparent .16deg 2.4deg);
+    var(--rush) 0deg .16deg, transparent .16deg 2.4deg);
   -webkit-mask-image: radial-gradient(circle at 50% 48%, transparent 26%, #000 78%);
   mask-image: radial-gradient(circle at 50% 48%, transparent 26%, #000 78%);
-  transition: opacity .3s linear;
+  transition: opacity .3s linear, --rush .3s linear;
+}
+/* Under the afterburner the streaks warm up: the same speed, seen through
+ * the exhaust. */
+body.fly-burn .fly-rush { --rush: rgba(255, 196, 120, .8); }
+
+/* The burner itself, a glow rising from the bottom of the screen where the
+ * exhaust would be. Opacity is set by explore.js from the eased burner value,
+ * so it breathes in and out with the key rather than switching. */
+.fly-burner {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 70% 38% at 50% 108%,
+    rgba(255, 150, 60, .55) 0%, rgba(255, 110, 40, .28) 40%, rgba(255, 90, 30, 0) 100%);
 }
 
 .fly-vig {
@@ -2216,6 +2307,45 @@ body.flying #map {
 .fly-hud > * { z-index: 1; }
 .fly-hud button { pointer-events: auto; }
 
+/* The dead zone, drawn: a ring at the middle of the screen inside which the
+ * mouse asks for nothing. Faint on purpose - it is a reference for the hand,
+ * not a target for the eye, and a bright crosshair would turn the flight
+ * into a shooting gallery. */
+.fly-reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28), 0 0 0 1px rgba(0, 0, 0, .25);
+  pointer-events: none;
+}
+.fly-reticle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .55);
+}
+/* Until the cursor has passed through the ring the stick is not engaged, and
+ * the ring says so by breathing: it is asking to be entered. */
+body.fly-unarmed .fly-reticle {
+  box-shadow: inset 0 0 0 2px rgba(255, 220, 150, .85), 0 0 18px rgba(255, 200, 100, .45);
+  animation: fly-arm 1.4s ease-in-out infinite;
+}
+@keyframes fly-arm {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.18); }
+}
+/* Touch has no cursor to centre. */
+@media (pointer: coarse) { .fly-reticle { display: none; } }
+
 .fly-readout {
   position: absolute;
   top: calc(14px + env(safe-area-inset-top, 0px));
@@ -2237,8 +2367,36 @@ body.flying #map {
   letter-spacing: .4px;
   opacity: .62;
 }
+.fly-gauge.burn b { color: #ffb066; }
+.fly-gauge.burn[hidden] { display: none; }
 
-.fly-x, .fly-help {
+/* The throttle, under the gauges: what the button has set, which the speed
+ * only follows. The upper part of the track is tinted where the burner
+ * lives, so the press that lights it is seen coming. */
+.fly-thr {
+  position: absolute;
+  top: calc(60px + env(safe-area-inset-top, 0px));
+  inset-inline-start: 16px;
+  width: 128px;
+  height: 5px;
+  border-radius: 3px;
+  /* RTL: the fill grows from the right, so the burner's share is the left. */
+  background: linear-gradient(to left,
+    rgba(255, 255, 255, .16) 0 48%, rgba(255, 176, 102, .28) 48% 100%);
+  overflow: hidden;
+}
+.fly-thr i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: #eef4f2;
+  transition: background-color .25s linear;
+}
+body.fly-burn .fly-thr i { background: #ffb066; }
+@media (pointer: coarse) { .fly-thr { width: 96px; } }
+
+.fly-x, .fly-help, .fly-snd {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
   width: 38px;
@@ -2254,7 +2412,16 @@ body.flying #map {
 }
 .fly-x { inset-inline-end: 14px; font-size: 24px; line-height: 1; }
 .fly-help { inset-inline-end: 60px; font-size: 16px; font-weight: 700; }
-.fly-x:hover, .fly-help:hover { background: rgba(30, 44, 38, .78); }
+.fly-snd { inset-inline-end: 106px; }
+.fly-x:hover, .fly-help:hover, .fly-snd:hover { background: rgba(30, 44, 38, .78); }
+
+/* One icon, two states: the waves when the engine can be heard, a cross when
+ * it has been muted. */
+.fly-snd svg { width: 20px; height: 20px; fill: currentColor; }
+.fly-snd .snd-off { display: none; }
+.fly-snd.off .snd-wave { display: none; }
+.fly-snd.off .snd-off { display: block; }
+.fly-snd.off { opacity: .7; }
 
 /* What you have found, named, at the bottom where it does not sit over the
  * thing it names. */
@@ -2283,6 +2450,9 @@ body.flying #map {
   letter-spacing: .3px;
   opacity: .72;
 }
+/* The display rule above outranks the browser's own [hidden], so without
+ * this the hint stayed on screen with nothing found under it. */
+.fly-hint[hidden] { display: none; }
 .fly-hint kbd {
   padding: 2px 7px;
   border-radius: 5px;
@@ -2293,6 +2463,11 @@ body.flying #map {
   font-weight: 700;
   direction: ltr;
 }
+/* Enter shows pictures when there are any and opens the page when there are
+ * not; the hint says which, and only one of the two is ever visible. */
+.fly-hint > span { display: inline-flex; align-items: center; gap: 7px; }
+.fly-hint .hint-open, .fly-hint.open .hint-media { display: none; }
+.fly-hint.open .hint-open { display: inline-flex; }
 
 .fly-credit {
   position: absolute;
@@ -2354,13 +2529,24 @@ body.flying #map {
   text-align: center;
   direction: ltr;
 }
+.fly-keys kbd.wide { direction: rtl; min-width: 58px; }
+.fly-keys li:first-child span { line-height: 1.35; }
 
 .fly-intro-foot { margin: 0 !important; font-size: 11.5px !important; opacity: .55 !important; }
+
+/* A phone has no keys to list and no cursor to rest; it gets one paragraph
+ * instead of the table. */
+.fly-intro-touch { display: none; }
+@media (pointer: coarse) {
+  .fly-keys, .fly-intro-foot { display: none; }
+  .fly-intro-touch { display: block; margin: 0 !important; font-size: 13px !important; }
+}
 
 /* ---------- one photo, full size ---------- */
 
 body.fly-paused .fly-hud,
-body.fly-paused .fly-rush { opacity: 0; pointer-events: none; }
+body.fly-paused .fly-burner,
+body.fly-paused .fly-rush { opacity: 0 !important; pointer-events: none; }
 body.fly-paused .fly-hud { transition: opacity .2s linear; }
 
 .fly-view {
@@ -2377,6 +2563,17 @@ body.fly-paused .fly-hud { transition: opacity .2s linear; }
 }
 .fly-view[hidden] { display: none; }
 
+/* The stage holds either the picture or the player; the one that is not in
+ * use is hidden, and the frame keeps the same footprint either way so the
+ * caption does not jump when a gallery steps from a photo to a video. */
+.fly-view-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(94vw, 1100px);
+  max-height: 74vh;
+}
+
 .fly-view-img {
   max-width: min(94vw, 1100px);
   max-height: 74vh;
@@ -2384,6 +2581,18 @@ body.fly-paused .fly-hud { transition: opacity .2s linear; }
   box-shadow: 0 24px 70px rgba(0, 0, 0, .7);
   object-fit: contain;
 }
+.fly-view-img[hidden] { display: none; }
+
+.fly-view-video {
+  width: min(94vw, 1100px);
+  aspect-ratio: 16 / 9;
+  max-height: 74vh;
+  border: 0;
+  border-radius: 10px;
+  background: #000;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .7);
+}
+.fly-view-video[hidden] { display: none; }
 
 .fly-view-foot {
   display: flex;
@@ -2395,6 +2604,27 @@ body.fly-paused .fly-hud { transition: opacity .2s linear; }
 }
 .fly-view-name { font-size: 17px; font-weight: 800; }
 .fly-view-cap { font-size: 12.5px; opacity: .66; max-width: 60ch; }
+.fly-view-count { font-size: 12px; opacity: .55; direction: ltr; font-variant-numeric: tabular-nums; }
+
+/* Stepping through the gallery, at the sides where the app's own lightbox
+ * puts them, and with its convention: the left one is onward. */
+.fly-view-nav {
+  position: absolute;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+}
+.fly-view-nav:hover { background: rgba(255, 255, 255, .22); }
+.fly-view-nav[hidden] { display: none; }
+.fly-view-prev { right: 14px; }
+.fly-view-next { left: 14px; }
 
 .fly-view-open {
   padding: 9px 18px;
@@ -2423,4 +2653,5 @@ body.fly-paused .fly-hud { transition: opacity .2s linear; }
 @media (prefers-reduced-motion: reduce) {
   .fly-intro { animation: none; }
   .fly-rush { display: none; }
+  body.fly-unarmed .fly-reticle { animation: none; }
 }
