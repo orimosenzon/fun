@@ -48,7 +48,10 @@ def stats():
     try:
         with urllib.request.urlopen(TRAILS, timeout=20) as r:
             data = json.load(r)
-        return len(data.get("segments", []))
+        # The card is the most public thing here, and a trail in a private
+        # layer is not on the map anybody who taps it will see.
+        secret = {l["id"] for l in data.get("layers", []) if l.get("private")}
+        return len([s for s in data.get("segments", []) if s.get("layer") not in secret])
     except Exception as e:                                  # offline rebuild
         print(f"  ! could not read live trails ({e}), leaving the count out")
         return 0
