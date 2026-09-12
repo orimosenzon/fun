@@ -990,6 +990,10 @@ const Store = (() => {
       color: layer.color,
       note: layer.note || '',
       dash: !!layer.dash,
+      // Shown to editors only. The gate is in layers.js; this is just the
+      // flag, and it is one field on a public document - see there for what
+      // that does and does not hide.
+      private: !!layer.private,
       added: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       by: named()
     });

@@ -81,8 +81,11 @@ const Layers = (() => {
    * review queue mean nothing to whoever opens the link, and a link that
    * switched somebody's own recordings off would be a nasty surprise. */
   const URL_KEY = 'layers';
-  const shareable = (l) => l.kind === 'trails' || l.kind === 'network'
-    || l.kind === 'places' || l.kind === 'trips' || l.kind === 'waypoints';
+  const shareable = (l) => (l.kind === 'trails' || l.kind === 'network'
+    || l.kind === 'places' || l.kind === 'trips' || l.kind === 'waypoints')
+    // A private layer's id in a link would be a hint that it exists, and the
+    // link would do nothing for whoever opens it anyway.
+    && !l.private;
 
   /** The layers a link asks for, or null when the URL says nothing about them -
    *  which is the difference between "show none of these" and "use whatever
@@ -907,7 +910,22 @@ const Layers = (() => {
    * visible would be a layer called "מה ששלחת" offered to somebody who has
    * never sent anything. */
   const pendingShown = (l) => Store.isEditor() || l.segments.length > 0;
-  const shown = (l) => l.on && (l.kind !== 'pending' || pendingShown(l));
+
+  /* A private trail layer (12/9/2026) exists for everybody and is shown to the
+   * editors only: not on the map, not in the list, not in the search, not in
+   * the sheet, not in a link. The first one holds paths somebody has fenced off
+   * and annexed, which the initiative wants mapped before it wants argued
+   * about - and a public map that says "this is yours to open" to the person
+   * whose fence it is starts the argument.
+   *
+   * What this is: the same gate as the queue's, and nothing stronger. The data
+   * repo is public, so the layer is in the JSON anybody can fetch; what is
+   * hidden is what the app shows. That is the threat here - a neighbour with
+   * the app, not somebody reading raw JSON on GitHub - and it is the honest
+   * description of the guard. */
+  const privateHidden = (l) => !!l.private && !Store.isEditor();
+  const hidden = (l) => (l.kind === 'pending' && !pendingShown(l)) || privateHidden(l);
+  const shown = (l) => l.on && !hidden(l);
   const visible = () => list.filter(shown);
   const visibleSegments = () => visible().flatMap((l) => l.segments);
   const visibleWaypoints = () => visible().flatMap((l) => l.waypoints);
@@ -1258,8 +1276,7 @@ const Layers = (() => {
     renderLegend();
     if (typeof map === 'undefined' || !map) return;
     list.forEach((layer) => {
-      const hide = (arranging && layer.pinnable)
-        || (layer.kind === 'pending' && !pendingShown(layer));
+      const hide = (arranging && layer.pinnable) || hidden(layer);
       const v = layer.on && !hide ? 'visible' : 'none';
       drawnIds(layer).forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
@@ -1548,7 +1565,9 @@ const Layers = (() => {
           <span class="lay-swatch${layer.dash ? ' dash' : ''}"
                 style="--c:${layer.color}"></span>
           <span class="lay-txt">
-            <span class="lay-nm">${escapeHtml(layer.name)}</span>
+            <span class="lay-nm">${layer.private
+              ? '<span class="tag lock" title="גלויה רק למי שנכנס עם סיסמת עריכה">רק לעורכים</span>'
+              : ''}${escapeHtml(layer.name)}</span>
             <span class="lay-sub">${escapeHtml(summary(layer))}</span>
             <span class="lay-note">${escapeHtml(layer.note || '')}</span>
           </span>
@@ -1599,7 +1618,10 @@ const Layers = (() => {
    *  is why the count on the clear button and the rows underneath it are drawn
    *  off the same list. */
   const inSheet = () => list.slice().reverse()
-    .filter((layer) => layer.kind !== 'pending' || pendingShown(layer));
+    .filter((layer) => layer.kind !== 'pending' || pendingShown(layer))
+    // A private layer is not offered to somebody who may not see it: a row
+    // with its name would be the whole secret.
+    .filter((layer) => !privateHidden(layer));
 
   /** Nothing at all while there is nothing to clear. A permanent button that
    *  does nothing most of the time is one that reads as broken the first time
@@ -1704,7 +1726,7 @@ const Layers = (() => {
   return {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     resetMedia,
-    visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
+    shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,

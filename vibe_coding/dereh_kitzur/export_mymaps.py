@@ -207,10 +207,26 @@ def main():
     with urllib.request.urlopen(DATA, timeout=60) as res:
         data = json.load(res)
 
-    known = {l["id"] for l in data.get("layers", [])}
+    # A private layer is for the editors' eyes and My Maps is Yoav's public
+    # copy, so it and everything filed in it stay out of every file here. A
+    # trip that walks along one of its trails goes too: the trip's line would
+    # draw the trail.
+    layers = [l for l in data.get("layers", []) if not l.get("private")]
+    secret = {l["id"] for l in data.get("layers", []) if l.get("private")}
+    known = {l["id"] for l in layers}
     # A trail pointing at a layer that no longer exists rides with the main
     # file rather than being silently dropped from every file.
     home = lambda it: it.get("layer") if it.get("layer") in known else None
+
+    hidden_ids = {it["id"] for it in data["segments"] + data["waypoints"]
+                  if it.get("layer") in secret}
+    data = {**data,
+            "segments": [s for s in data["segments"] if s["id"] not in hidden_ids],
+            "waypoints": [w for w in data["waypoints"] if w["id"] not in hidden_ids],
+            "trips": [t for t in data.get("trips", [])
+                      if not any(p.get("trail") in hidden_ids for p in t.get("parts", []))]}
+    if hidden_ids:
+        print(f"הושמטו {len(hidden_ids)} פריטים משכבות מוסתרות.")
 
     trips = resolve_trips(data)
     everything = data["segments"] + data["waypoints"] + trips
@@ -221,7 +237,7 @@ def main():
     known.add(TRIPS["id"])
 
     print("נכתבו:")
-    for layer in [MAIN] + data.get("layers", []) + [TRIPS]:
+    for layer in [MAIN] + layers + [TRIPS]:
         items = [it for it in everything if home(it) == layer["id"]]
         if items or layer["id"] is None:
             write(layer, items, updated)

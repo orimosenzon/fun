@@ -366,6 +366,10 @@ function markSelection(item) {
 }
 
 function select(id, fit = true) {
+  // The index knows every item, including the ones in a private layer, and a
+  // link carrying such an id would otherwise open its detail pane for anybody.
+  const layer = Layers.layerOf(id);
+  if (layer && layer.private && !Store.isEditor()) return;
   selectedId = id;
   const item = byId(id);
   if (!item) return;
@@ -491,7 +495,11 @@ function badge(it) {
   const [text, colour] = it.place
     ? [it.group || layer.short, it.color]
     : [layer.short, layer.color];
-  return `<span class="tag" style="--c:${colour}">${escapeHtml(text)}</span>`;
+  // Only an editor ever sees a row from a private layer, and the row has to
+  // say so: the same trail looks identical to one everybody can see.
+  const lock = layer.private
+    ? '<span class="tag lock" title="בשכבה מוסתרת, גלוי רק לעורכים">רק לעורכים</span>' : '';
+  return `${lock}<span class="tag" style="--c:${colour}">${escapeHtml(text)}</span>`;
 }
 
 function renderList() {
@@ -884,6 +892,11 @@ function showDetail(it) {
   }
   if (layer.kind === 'trails' && layer.id !== Layers.TRAILS_ID) {
     chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
+  }
+  // Only an editor gets this far with a private trail, and the pane looks
+  // exactly like any other trail's: the one place to say who else sees it.
+  if (layer.private) {
+    chips.push('<span class="chip lock" title="בשכבה מוסתרת">רק לעורכים</span>');
   }
   if (it.trip) {
     if (it.group) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group)}</span>`);
@@ -1480,7 +1493,12 @@ const Swatches = {
 };
 
 function layerForm(layer) {
-  const now = layer || { name: '', color: LAYER_COLOURS[0], note: '', dash: false };
+  const now = layer || { name: '', color: LAYER_COLOURS[0], note: '', dash: false, private: false };
+  // Emptying a private layer by deleting it would hand its trails to the
+  // public one, which is the one thing the flag exists to prevent. The trails
+  // have to be moved out deliberately, one by one, first.
+  const held = layer ? layer.segments.length + layer.waypoints.length : 0;
+  const locked = !!(layer && layer.private && held);
   openForm(`
     <header class="sheet-head">
       <h2>${layer ? 'עריכת שכבה' : 'שכבת שבילים חדשה'}</h2>
@@ -1499,10 +1517,15 @@ function layerForm(layer) {
     </div>
     <label class="check"><input type="checkbox" id="lay-dash" ${now.dash ? 'checked' : ''}>
       <span>קו מקווקו, לשבילים שעוד לא קיימים בשטח</span></label>
+    <label class="check"><input type="checkbox" id="lay-private" ${now.private ? 'checked' : ''}>
+      <span>מוסתרת: רק מי שנכנס עם סיסמת עריכה רואה אותה ואת השבילים שבה.
+        לא במפה, לא ברשימה, לא בחיפוש ולא בקישור. לשבילים שעוד לא הגיע הזמן לדבר עליהם</span></label>
     <p id="form-err" class="tok-err" hidden></p>
     <button class="big-act primary" data-act="save-layer"><b>${layer ? 'שמור' : 'צור שכבה'}</b></button>
-    ${layer ? `<button class="big-act ghost danger" data-act="drop-layer"><b>מחיקת השכבה</b>
-      <span>השבילים שבתוכה יחזרו לשכבת "דרכי קיצור", ולא יימחקו</span></button>` : ''}`);
+    ${layer ? `<button class="big-act ghost danger" data-act="drop-layer" ${locked ? 'disabled' : ''}><b>מחיקת השכבה</b>
+      <span>${locked
+        ? `יש בה ${held === 1 ? 'שביל אחד' : held + ' שבילים'} שהיו הופכים לגלויים לכולם. כדי למחוק, העבר אותם קודם לשכבה אחרת`
+        : 'השבילים שבתוכה יחזרו לשכבת "דרכי קיצור", ולא יימחקו'}</span></button>` : ''}`);
   formTarget = layer || null;
 }
 
@@ -1577,8 +1600,19 @@ async function formAction(act, btn) {
         name,
         note: el('lay-note').value.trim(),
         color: Swatches.read(el('form-card')) || LAYER_COLOURS[0],
-        dash: el('lay-dash').checked
+        dash: el('lay-dash').checked,
+        private: el('lay-private').checked
       };
+      // Taking the flag off is publishing whatever the layer holds, and it is
+      // one tick in a form that otherwise changes a colour. Say so first.
+      if (formTarget && formTarget.private && !patch.private) {
+        const held = formTarget.segments.length + formTarget.waypoints.length;
+        if (held && !confirm(`לחשוף את השכבה "${formTarget.name}"?\n` +
+            `${held === 1 ? 'השביל שבה יופיע' : `${held} השבילים שבה יופיעו`} ` +
+            'במפה של כל מי שפותח את האפליקציה.')) {
+          throw new Error('השכבה נשארה מוסתרת.');
+        }
+      }
       await reloadShared(formTarget
         ? await Store.editLayer(formTarget.id, patch)
         : await Store.addLayer(patch));
@@ -1586,6 +1620,11 @@ async function formAction(act, btn) {
       Layers.render();
 
     } else if (act === 'drop-layer') {
+      // The button is disabled in that case; this is for the keyboard and for
+      // a stale form, so that the guard does not depend on the markup.
+      if (formTarget.private && (formTarget.segments.length + formTarget.waypoints.length)) {
+        throw new Error('שכבה מוסתרת עם שבילים לא נמחקת. העבר אותם קודם לשכבה אחרת.');
+      }
       if (!confirm(`למחוק את השכבה "${formTarget.name}"?\n` +
                    'השבילים שבתוכה יעברו לשכבת "דרכי קיצור" ולא יימחקו.')) {
         btn.disabled = false;
@@ -2504,7 +2543,9 @@ function repaint() {
   drawWaypoints();
   paintStats();
   const layer = selectedId ? Layers.layerOf(selectedId) : null;
-  if (selectedId && (!layer || !layer.on)) deselect();   // deselect repaints the list
+  // `shown` and not `on`: a private layer is on and still not showing once
+  // edit mode goes off, and the pane open on one of its trails has to close.
+  if (selectedId && (!layer || !Layers.shown(layer))) deselect();   // deselect repaints the list
   else if (selectedId) {
     // The ring is re-hung rather than left where it was: a repaint follows a
     // pin being dragged or a layer being rebuilt, and the selected place may
@@ -2542,7 +2583,7 @@ async function boot() {
   welcome();
   // Confirming the stored token needs the network, so it must not hold up the
   // list. The editor badge and the publish buttons appear a moment later.
-  Store.resume().then(() => { repaint(); refreshQueue(); });
+  Store.resume().then(editorChanged);
 
   if (map) {
     await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
@@ -2580,6 +2621,21 @@ async function boot() {
   // on the map, so it has to come after the style and the layers are up, and it
   // still has to happen on a browser that never got a map at all.
   Drafts.restore();
+}
+
+/** Everything that depends on whether this browser is an editor's, after the
+ *  answer changes: the worker confirming a stored key on load, a password
+ *  typed in, edit mode switched off.
+ *
+ *  The map layers come first and explicitly. `repaint` redraws the list off
+ *  `visibleSegments`, which already knows a private layer is only for an
+ *  editor, but the GL layers on the map are switched by `applyVisibility` and
+ *  nothing else - so without this call the list would drop a private trail
+ *  the moment edit mode went off while the line stayed on the map. */
+function editorChanged() {
+  Layers.applyVisibility();
+  repaint();
+  refreshQueue();
 }
 
 /** Show the shared dataset again after a write, so the trail reappears as an
@@ -2826,8 +2882,7 @@ async function editorAction(act) {
       return;
     }
     el('editor-sheet').hidden = true;
-    repaint();
-    refreshQueue();
+    editorChanged();
     return;
   }
   // `setName` and not `enable`: the two used to be the same call, and the name
@@ -2838,10 +2893,9 @@ async function editorAction(act) {
     Store.disable();
     Arrange.close(true);
     editorSheet();
-    repaint();
     // Not setPending([]): leaving edit mode does not undo having sent a trail,
     // and this browser may well have some of its own still waiting.
-    refreshQueue();
+    editorChanged();
   }
 }
 
