@@ -19,3 +19,5 @@ enrich_plans/
 dry_run_main_page.txt
 archive_bot_talk_cron.log
 committees_cron.log
+protocol_cache/
+hood_maps/

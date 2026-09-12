@@ -35,6 +35,14 @@ EMPTY_PAST = "''טרם תועדו ישיבות בדף זה.''"
 
 DATE_RE = re.compile(r'data-sort-value="(\d{4}-\d{2}-\d{2})"')
 
+# The archive table carries one column the upcoming table does not: what the
+# meeting actually decided. The municipality publishes protocols for plenum
+# sittings only and none at all for committees (checked again 9/9/2026), so
+# nothing can fill this automatically — it is a slot for whoever was in the
+# room. A moved row therefore gains an empty cell with a standing placeholder,
+# and stays a well-formed row instead of one cell short of the header.
+PENDING_SUMMARY = "''טרם פורסם''"
+
 
 def split_table(section: str):
     """(before, header, rows, after) for the first wikitable in a section."""
@@ -68,7 +76,9 @@ def rebuild(section: str, parts, rows, empty_note):
         table = pre + (header + '\n' if header else '') + body + post
         # drop a leftover "nothing here yet" line under a table that has rows
         return re.sub(r'\n+' + re.escape(empty_note), '', table)
-    table = pre + (header + '\n' if header else '') + post
+    # no rows: the header butts straight onto "\n|}" — an extra newline here
+    # renders as a stray empty row in the table
+    table = pre + (header if header else '') + post
     if empty_note not in table:
         table = table.rstrip() + '\n\n' + empty_note + '\n'
     return table
@@ -109,7 +119,7 @@ def main():
             continue
         d = dt.date.fromisoformat(m.group(1))
         if d < today:
-            moved.append(row)
+            moved.append(row.rstrip() + ' || ' + PENDING_SUMMARY)
         else:
             if d > horizon:
                 beyond += 1
