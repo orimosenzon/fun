@@ -797,7 +797,8 @@ function editorBlock(it, layer) {
   return `
     <h3>עריכה</h3>
     <div class="acts">
-      <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה</span></button>
+      <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה
+        <span class="hint">השם, והתיאור שמתחתיו</span></span></button>
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
@@ -1328,28 +1329,12 @@ function wirePublished(it) {
       try {
         if (act === 'links') { linksForm(it, home); return; }
 
-        if (act === 'note') {
-          const note = prompt('הערה על המקום הזה:', it.noteExtra || '');
-          if (note == null) return;
-          node.disabled = true;
-          say('שומר…');
-          await reloadAfter('media', await Store.setNote(it.id, note, it.name));
-          select(it.id, false);
-          return;
-        }
+        if (act === 'note') { noteForm(it); return; }
         if (act === 'move') { moveForm(it); return; }
         if (act === 'colour') { colourForm(it); return; }
+        if (act === 'rename') { renameForm(it); return; }
 
-        if (act === 'rename') {
-          const name = prompt('שם השביל:', it.name);
-          if (name == null) return;
-          const note = prompt('הערה (אפשר להשאיר ריק):', it.note || '');
-          if (note == null) return;
-          node.disabled = true;
-          say('שומר…');
-          await reloadShared(await Store.rename(it.id, name.trim() || it.name, note.trim()));
-          select(it.id, false);
-        } else if (act === 'remove') {
+        if (act === 'remove') {
           if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
                        'השינוי נשמר בהיסטוריה ואפשר לשחזר אותו.')) return;
           node.disabled = true;
@@ -1529,6 +1514,47 @@ function layerForm(layer) {
   formTarget = layer || null;
 }
 
+/** The name and the note of a trail the initiative owns.
+ *
+ *  Until 12/9/2026 this was two browser prompts in a row, name then note.
+ *  Cancelling the first one - which is what you do when you only came to change
+ *  the note - meant the second never appeared, so the one field an editor
+ *  actually wanted to edit looked like it could not be edited at all. And a
+ *  prompt is a single line, which is no place to rewrite a paragraph. */
+function renameForm(it) {
+  openForm(`
+    <header class="sheet-head">
+      <h2>שם והערה</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">מה שכתוב כאן מופיע אצל כל מי שפותח את השביל.</p>
+    <label class="fld"><span>שם השביל</span>
+      <input id="rn-name" type="text" maxlength="60" value="${escapeHtml(it.name)}"></label>
+    <label class="fld"><span>הערה (לא חובה)</span>
+      <textarea id="rn-note" rows="5" maxlength="600"
+                placeholder="מה כדאי לדעת על השביל הזה">${escapeHtml(it.note || '')}</textarea></label>
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-rename"><b>שמור</b></button>`);
+  formTarget = it;
+}
+
+/** A note on an item in a layer this app does not own, kept in the side-car.
+ *  Same form as above minus the name, which belongs to the source. */
+function noteForm(it) {
+  openForm(`
+    <header class="sheet-head">
+      <h2>הערה</h2>
+      <button class="sheet-x" data-act="close-form" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">שורה משלך על "${escapeHtml(it.name)}", מעל מה שהמקור כתב.
+      ריק מוחק את ההערה ומחזיר את המקורית.</p>
+    <label class="fld"><span>הערה</span>
+      <textarea id="rn-note" rows="5" maxlength="600">${escapeHtml(it.noteExtra || '')}</textarea></label>
+    <p id="form-err" class="tok-err" hidden></p>
+    <button class="big-act primary" data-act="save-note"><b>שמור</b></button>`);
+  formTarget = it;
+}
+
 /** The colour one trail is drawn in, over and above its layer's. */
 function colourForm(it) {
   const layer = Layers.layerOf(it.id) || {};
@@ -1646,6 +1672,19 @@ async function formAction(act, btn) {
     } else if (act === 'save-colour') {
       await reloadShared(await Store.setColor(
         formTarget.id, Swatches.read(el('form-card')), formTarget.name));
+      closeForm();
+      select(formTarget.id, false);
+
+    } else if (act === 'save-rename') {
+      const name = el('rn-name').value.trim();
+      if (!name) throw new Error('צריך שם לשביל.');
+      await reloadShared(await Store.rename(formTarget.id, name, el('rn-note').value.trim()));
+      closeForm();
+      select(formTarget.id, false);
+
+    } else if (act === 'save-note') {
+      await reloadAfter('media', await Store.setNote(
+        formTarget.id, el('rn-note').value.trim(), formTarget.name));
       closeForm();
       select(formTarget.id, false);
     }
@@ -2614,6 +2653,10 @@ async function boot() {
     updateHomeButton();
 
     if (wanted && Layers.item(wanted)) select(wanted, !view);
+    // A link to a trail in a private layer is refused until the worker has
+    // confirmed this browser is an editor's, and the map may well be up before
+    // that answer is. Kept so that editorChanged can honour it then.
+    if (wanted && !selectedId) askedFor = wanted;
     syncView();
   }
 
@@ -2622,6 +2665,8 @@ async function boot() {
   // still has to happen on a browser that never got a map at all.
   Drafts.restore();
 }
+
+let askedFor = null;        // `?sel=` from the link, not yet honoured
 
 /** Everything that depends on whether this browser is an editor's, after the
  *  answer changes: the worker confirming a stored key on load, a password
@@ -2636,6 +2681,10 @@ function editorChanged() {
   Layers.applyVisibility();
   repaint();
   refreshQueue();
+  // The selection a link asked for, if it was refused earlier for want of an
+  // answer from the worker. Once only: a second refusal is a real one.
+  if (askedFor && !selectedId && Layers.item(askedFor)) select(askedFor, true);
+  askedFor = null;
 }
 
 /** Show the shared dataset again after a write, so the trail reappears as an
