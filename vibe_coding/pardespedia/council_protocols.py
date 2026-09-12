@@ -22,6 +22,16 @@ those lines are lifted, verbatim. A protocol with no such line (it happens,
 mostly in "שלא מן המניין" sittings) gets a section that says so and links to
 the documents, rather than an invented summary.
 
+One page of every protocol is beyond pdftotext even in the digital era: the
+last page, which carries the signatures, is a scan with no text layer. The
+final vote of the sitting lands on it often enough (36, 38, 28 had their
+*only* resolution there) that "no resolution found" must not be read as "no
+resolution taken". A protocol with such a tail says so in its block, and
+`protocol_overrides.json` holds what a person transcribed from that page by
+eye — resolutions appended to the block, or a note replacing the generic
+phrase. The file is keyed by the cache key and every entry says who read it
+and when.
+
 Two sittings often share one day, and the page's own convention is to cover
 them in a single section. Blocks are therefore keyed by date, not by meeting
 number, and a shared day lists both sittings inside one block.
@@ -35,6 +45,7 @@ import datetime as dt
 import difflib
 import hashlib
 import html
+import json
 import os
 import re
 import subprocess
@@ -48,7 +59,9 @@ from wiki_client import WikiClient
 
 PAGE = 'ישיבות מועצה'
 SOURCE = 'https://www.pardes-hanna-karkur.muni.il/council/protocols/'
-CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'protocol_cache')
+HERE = os.path.dirname(os.path.abspath(__file__))
+CACHE = os.path.join(HERE, 'protocol_cache')
+OVERRIDES = os.path.join(HERE, 'protocol_overrides.json')
 
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120 Pardespedia-Bot',
       'Referer': SOURCE}
@@ -68,6 +81,19 @@ BIDI = dict.fromkeys(map(ord, '‎‏‪‫‬‭‮⁦⁧⁨⁩'), None)
 
 RESOLUTION_RE = re.compile(
     r'^מליאת המועצה\s+(?:מאשרת|מחליטה|דוחה|מסמיכה|ממנה|מתקנת|מקבלת|אינה)\b')
+
+# Where a resolution's prose ends: the tally, or the next speaker.
+STOP_RE = re.compile(r'^(הצבעה|בעד|נגד|נמנע|מר |גב\'|עו"ד |ד"ר )')
+
+# The list a resolution announces with "כדלקמן:" / "כמפורט להלן:". Three
+# shapes, all seen: a תב"ר line ("– 616 הקמת מועדון... – הגדלה", the dash
+# pushed to the front by RTL unwrapping), a lettered item with the letter
+# first ("א. רחל מחלוף"), and one with the letter pushed to the end
+# ("גב' מאי סאוטר אזולאי – עו"ס. א.").
+TABAR_RE = re.compile(r'^[–\-]\s*(\d{2,5})\s*(.*)$')
+LETTER_FIRST_RE = re.compile(r'^([א-י])\s*\.\s*(.+)$')
+LETTER_LAST_RE = re.compile(r'^(.+?)\s+([א-י])\s*\.$')
+NUMBER_FIRST_RE = re.compile(r'^\.\s*(\d{1,2})\s*([^\d.].+)$')  # ". 1מנהלת בית הספר"
 
 # Protocols spell out the national ID number of everyone whose signature
 # rights or employment the council votes on. The municipality may publish
@@ -109,13 +135,29 @@ def detangle(s: str) -> str:
     # only after a percent sign: gershayim live *inside* Hebrew words
     # (תב"ר, מנכ"ל), and splitting on them mangles ordinary abbreviations
     s = re.sub(r'(%)([א-ת])', r'\1 \2', s)
-    # a sentence-final period migrates in front of a trailing year
-    s = re.sub(r'\s\.(\d{4})\s*$', r' \1.', s)
+    # a dash that belongs before a final year ("התשפ"ו - 2026") lands after it
+    s = re.sub(r'\s\.(\d{4})\s*[-–]\s*$', r' – \1', s)
+    s = s.strip(' .-–')
+    # a closing parenthesis that unwrapped onto the wrong side of its date:
+    # "(י.פ 14105 מיום .)30.12.2025" → "(... מיום 30.12.2025)"
+    s = re.sub(r'\s*\.\)\s*(\d[\d.]*\d)', r' \1)', s)
+    # a sentence-final period migrates in front of a trailing year or date
+    s = re.sub(r'\s\.(\d{4})\s*$', r' \1', s)
+    s = re.sub(r'\s\.(\d{1,2}\.\d{1,2}\.\d{2,4})', r' \1', s)
+    # a line break inside "308-1368554," lands the comma before the digits
+    s = re.sub(r'(\d)-\s*,\s*(\d+)', r'\1-\2,', s)
+    # a תב"ר line: "– 2026 הגדלה" is "2026 – הגדלה" (the dash hops over the
+    # number), and "-הגדלה" lost its spaces
+    s = re.sub(r'\s*[-–]\s*(\d+)\s+(חדש|הגדלה|הקטנה|ביטול)$', r' \1 – \2', s)
+    s = re.sub(r'([א-ת\d])\s*[-–]\s*([א-ת])', r'\1 – \2', s)
     # RTL unwrapping leaves the comma and the full stop detached from the word
     # they belong to (" ,חופש" / "היום) ."), which reads as a typo on the page
     s = re.sub(r'\s+,\s*', ', ', s)
     s = re.sub(r'\s+\.(?!\d)', '. ', s)
-    return re.sub(r'\s+', ' ', s).strip(' .') + '.'
+    s = re.sub(r'\s+', ' ', s).strip(' .')
+    # "כדלקמן:" announces a list; the colon stays so the block can tell a
+    # head whose list was lost from one that simply ended
+    return s if s.endswith(':') else s + '.'
 
 
 def wiki_escape(s: str) -> str:
@@ -191,21 +233,88 @@ def fetch_pdf_text(url: str, key: str, refresh: bool = False) -> str:
     return open(txt_path, encoding='utf-8', errors='replace').read()
 
 
+def list_item(line: str):
+    """The line as a list entry in reading order, or None if it is prose."""
+    m = TABAR_RE.match(line)
+    if m:
+        return '%s – %s' % (m.group(1), m.group(2).strip(' –-'))
+    m = LETTER_FIRST_RE.match(line)
+    if m:
+        return '%s. %s' % (m.group(1), m.group(2))
+    m = LETTER_LAST_RE.match(line)
+    if m:
+        return '%s. %s' % (m.group(2), m.group(1))
+    m = NUMBER_FIRST_RE.match(line)
+    if m:
+        return '%s. %s' % (m.group(1), m.group(2))
+    return None
+
+
 def resolutions(text: str) -> list:
+    """Every resolution as a string; a list it announces follows the head
+    line, one entry per line, so the block can render it as sub-bullets."""
     out = []
     lines = [clean(l) for l in text.split('\n')]
     for i, line in enumerate(lines):
         if not RESOLUTION_RE.match(line):
             continue
-        parts = [line]
-        for nxt in lines[i + 1:i + 4]:
-            if not nxt or re.match(r'^(הצבעה|בעד|נגד|נמנע|מר |גב\'|עו"ד |ד"ר )', nxt):
+        head, items, prose = [line], [], 0
+        for nxt in lines[i + 1:i + 40]:
+            entry = list_item(nxt)
+            if entry:
+                items.append(entry)
+                continue
+            if not nxt:
+                # some boxes are double-spaced: a blank line inside a sentence
+                # that has not reached its full stop is not the end of it
+                if items or re.search(r'[.:]\s*$', head[-1]):
+                    break
+                continue
+            # prose runs a few lines at most; a list, once begun, ends at
+            # the first line that is not one of its entries; a page number,
+            # a running header or the next agenda item means we ran past
+            if (items or prose >= 6 or STOP_RE.match(nxt) or nxt.isdigit()
+                    or 'מועצה מקומית' in nxt or AGENDA_MARK.match(nxt)):
                 break
-            parts.append(nxt)
-        item = detangle(' '.join(parts).strip(' .'))
+            head.append(nxt)
+            prose += 1
+        item = detangle(' '.join(head).strip(' .'))
+        if items:
+            item = item.rstrip('.') + '\n' + '\n'.join(
+                detangle(x).rstrip('.') for x in items)
         if item not in out:
             out.append(item)
     return out
+
+
+def scanned_tail(text: str) -> int:
+    """How many pages at the end of the protocol carry no text at all.
+
+    pdftotext ends every page with a form feed, so the split has one empty
+    trailing element that is not a page. Every digital protocol has at least
+    one such page: the signed last sheet is scanned back in as an image.
+    """
+    pages = text.split('\f')[:-1]
+    n = 0
+    for p in reversed(pages):
+        if p.strip():
+            break
+        n += 1
+    return n
+
+
+def load_overrides() -> dict:
+    """What a person read off the scanned pages, keyed by cache key.
+
+    {"2026-06-25-ecb72eb9": {"resolutions": ["..."], "note": "...",
+                             "read_by": "בוטי", "read_on": "2026-09-12"}}
+    A resolution string may hold newlines, one list entry per line, exactly
+    as resolutions() produces them.
+    """
+    if not os.path.exists(OVERRIDES):
+        return {}
+    with open(OVERRIDES, encoding='utf-8') as fh:
+        return json.load(fh)
 
 
 def agenda(text: str) -> list:
@@ -313,11 +422,37 @@ def build_block(group: dict) -> str:
     for s in readable:
         label = ("ישיבה מס' %s" % s['number']) if s['number'] else 'הישיבה'
         lines.append("'''מה סוכם''' (%s):" % label)
-        if s['resolutions']:
-            lines += ['* ' + wiki_escape(x) for x in s['resolutions']]
-        else:
+        over = s.get('override') or {}
+        found = list(s['resolutions'])
+        for x in over.get('resolutions', []):
+            head, *items = x.split('\n')
+            same = [i for i, y in enumerate(found) if y.split('\n')[0] == head]
+            if same:                    # the text layer had the head, the
+                i = same[0]             # scan had (the rest of) its list
+                have = found[i].split('\n')
+                found[i] = '\n'.join(have + [it for it in items if it not in have])
+            elif x not in found:
+                found.append(x)
+        for x in found:
+            head, *items = x.split('\n')
+            if head.endswith(':') and not items and s['tail_pages']:
+                head += " ''(הרשימה עצמה בעמוד הסרוק שבסוף הפרוטוקול)''"
+            lines.append('* ' + wiki_escape(head))
+            lines += ['** ' + wiki_escape(it) for it in items]
+        if over.get('note'):
+            lines.append(": ''%s''" % wiki_escape(over['note']))
+        elif not found and s['tail_pages']:
+            # the formula is not in the text layer, but the page it would be
+            # on is a scan we could not read — say that, not "no decision"
+            lines.append(": ''נוסחת ההחלטה לא נמצאה בשכבת הטקסט של הפרוטוקול. "
+                         "העמוד החתום שבסופו הוא סריקה ולא נקרא אוטומטית; "
+                         "ראו את המסמך.''")
+        elif not found:
             lines.append(': ''\'\'בפרוטוקול אין החלטה מנוסחת. '
                          'ראו את המסמכים המלאים.\'\'')
+        elif s['tail_pages'] and not over:
+            lines.append(": ''העמוד החתום שבסוף הפרוטוקול הוא סריקה ולא נקרא "
+                         "אוטומטית; החלטה שנרשמה בו עשויה להיות חסרה כאן.''")
         docs = []
         for name, field in (('פרוטוקול', 'protocol'), ('תמלול', 'transcript'),
                             ('סדר יום', 'agenda')):
@@ -424,6 +559,7 @@ def main():
     print('נמצאו %d ישיבות מליאה בארכיון המועצה' % len(dated), file=sys.stderr)
 
     today = dt.date.today()
+    overrides = load_overrides()
     groups = {}
     for d, card in dated:
         if d > today or len(groups) >= args.limit and d not in groups:
@@ -442,7 +578,8 @@ def main():
             'agenda': agenda(body), 'number': meeting_number(card, body),
             # a real protocol runs to thousands of characters; anything less
             # means the PDF is a scan and pdftotext gave us nothing to work on
-            'readable': len(body.strip()) > 500})
+            'readable': len(body.strip()) > 500,
+            'tail_pages': scanned_tail(body), 'override': overrides.get(key)})
 
     client = WikiClient()
     text = original = client.get_page(PAGE)['wikitext']
@@ -452,10 +589,15 @@ def main():
         group['sittings'].sort(key=lambda s: int(s['number'] or 0))
         text, what = upsert(text, group, parse_sections(text))
         tally[what] = tally.get(what, 0) + 1
-        print('  %s — %s — %d החלטות — %s'
+        # a readable protocol whose scanned tail nobody has read yet is the
+        # one thing left for a person to do; name it in the log
+        unread = [s['number'] or '?' for s in group['sittings']
+                  if s['readable'] and s['tail_pages'] and not s['override']]
+        print('  %s — %s — %d החלטות — %s%s'
               % (d.isoformat(),
                  '/'.join(s['number'] or '?' for s in group['sittings']),
-                 sum(len(s['resolutions']) for s in group['sittings']), what),
+                 sum(len(s['resolutions']) for s in group['sittings']), what,
+                 (' — עמוד סרוק לא נקרא: %s' % '/'.join(unread)) if unread else ''),
               file=sys.stderr)
 
     print('סיכום: %s' % ', '.join('%s=%d' % kv for kv in sorted(tally.items())),
