@@ -24,6 +24,11 @@ Each row gets, where possible:
 Sources (each is best-effort — a failing source is logged and skipped):
   * eventschedule.com hub  — clean JSON feed, aggregates many venues.
   * מרכז אמנויות הבמה (מתנ"ס) — schema.org JSON-LD embedded in its Tickchak page.
+  * "עמק הופעות" (emeklive.co.il) — a second eventschedule instance, same feed
+    shape, but regional rather than local: most of what it lists happens well
+    outside the moshava, so it is filtered harder (see fetch_emeklive).
+  * "חיבור מקומי" (pardes-events-hub) — a moshava events site whose Supabase
+    table is world-readable; residents submit events there directly.
 
 Usage:
     python3 update_events.py [--days 14] [--dry-run] [--no-images]
@@ -65,6 +70,33 @@ MATNAS_VENUE = "מרכז אמנויות הבמה (מתנ\"ס)"
 HAULAM_URL = "https://haulam-phk.smarticket.co.il/"
 HAULAM_LABEL = "[https://haulam-phk.smarticket.co.il האולם — בית תרבות מקומי פרכו\"ר]"
 HAULAM_VENUE = "האולם — בית תרבות מקומי פרכו\"ר"
+
+# "עמק הופעות" runs on the same eventschedule software as the moshava's own hub
+# (same feed path, same JSON), so it reuses the same parser. What differs is
+# reach: it covers the whole region — Hod Hasharon and Kfar Saba out-number
+# Pardes Hanna on it — so an unrecognised locality there means "somewhere in
+# the region", not "probably the moshava". See fetch_emeklive.
+EMEK_FEED_URL = "https://emeklive.co.il/api/calendar-events"
+EMEK_HUB_URL = "https://emeklive.co.il"
+EMEK_LABEL = f"[{EMEK_HUB_URL} עמק הופעות]"
+
+# "חיבור מקומי" — a moshava events site (Lovable front end over Supabase).
+# Its `events` table is readable with the anon key the site ships in its own
+# client bundle; that key is public by design, and this is the same read the
+# web page performs. If the read ever starts returning 401, re-take the key
+# from the bundle at pardes-events-hub.lovable.app/assets/index-*.js.
+HUB_URL = "https://pardes-events-hub.lovable.app"
+HUB_API = "https://gcuonacegmuzwrjxwtfe.supabase.co/rest/v1/events"
+HUB_ANON_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI"
+    "sInJlZiI6ImdjdW9uYWNlZ211endyanh3dGZlIiwicm9sZSI6ImFub24iLCJ"
+    "pYXQiOjE3ODQwMjQ1NjYsImV4cCI6MjA5OTYwMDU2Nn0.FzfLcPR9GpF3zTN"
+    "wgLJnz1NvQMhFoIEwoSSeTUe2TEc"
+)
+HUB_LABEL = f"[{HUB_URL} חיבור מקומי — לוח האירועים של פרדס חנה-כרכור]"
+# The site stores start times in UTC and renders them with toLocaleString, so
+# the wall-clock time a resident sees is the value converted to Israel time.
+IL_TZ = "Asia/Jerusalem"
 
 AUTO_START = "<!-- AUTO:START — אזור מתעדכן אוטומטית, אל תערוך ידנית -->"
 AUTO_END = "<!-- AUTO:END -->"
@@ -118,6 +150,12 @@ CATEGORY_HE = {
     "צמיחה אישית": "רוחניות והתפתחות אישית",
     "Spirituality": "רוחניות והתפתחות אישית",
     "רוחניות": "רוחניות והתפתחות אישית",
+    # "חיבור מקומי" stores its categories as English slugs. "special" is that
+    # site's catch-all rather than a type, so it is resolved per event in
+    # hub_category() instead of here.
+    "music": "מופעים והופעות", "culture": "אמנות ותרבות",
+    "community": "קהילה", "family": "משפחה וילדים",
+    "thrift": "קהילה",
 }
 _CATEGORY_LOOKUP = {k.casefold(): v for k, v in CATEGORY_HE.items()}
 _CATEGORY_LOOKUP.update({c.casefold(): c for c in CATEGORIES})  # canonical is its own alias
@@ -217,12 +255,16 @@ def clean_venue(name: str) -> str:
     return venue
 
 
-def in_area(name: str) -> bool:
+def in_area(name: str, unknown_ok: bool = True) -> bool:
     """Whether an event at this venue belongs on a Pardes Hanna-Karkur board.
 
-    An unparseable or missing venue is kept: the hub is the moshava's own, so
-    a nameless venue is far more likely to be local than not — but it is
-    logged, so a wrong guess is visible in the cron log rather than invisible.
+    `unknown_ok` decides what an unrecognised locality means, and that depends
+    entirely on the feed. On the moshava's own hub a nameless venue is far
+    more likely to be local than not, so it is kept (and logged, so a wrong
+    guess shows up in the cron log rather than silently). On a regional feed
+    like emeklive the same silence means "somewhere in the region", where the
+    moshava is the minority — there an unknown venue is dropped, because a
+    "הקליקו למיקום" event put on the board asserts a location nobody checked.
     """
     _, locality = split_venue(name)
     kind = locality_kind(locality)
@@ -233,9 +275,10 @@ def in_area(name: str) -> bool:
         return False
     if name and name not in _SEEN_UNKNOWN_LOCALITIES:
         _SEEN_UNKNOWN_LOCALITIES.add(name)
-        print(f"  יישוב לא מזוהה בשם המקום, האירוע נכלל בכל זאת: {name!r}",
+        print(f"  יישוב לא מזוהה בשם המקום, האירוע "
+              f"{'נכלל בכל זאת' if unknown_ok else 'לא נכלל'}: {name!r}",
               file=sys.stderr)
-    return True
+    return unknown_ok
 
 
 def maps_link(venue: str) -> str:
@@ -321,15 +364,21 @@ def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=
 
 # --- sources ---------------------------------------------------------------
 
-def fetch_eventschedule() -> list:
-    r = requests.get(ES_FEED_URL, headers={"Accept": "application/json"}, timeout=30)
+def _fetch_eventschedule(feed_url: str, prefix: str, unknown_ok: bool = True) -> list:
+    """Rows from any eventschedule.com instance — they all share one feed shape.
+
+    `prefix` namespaces the dedup key, so the same event listed on two hubs
+    (the moshava's and the regional one) does not collide on identity before
+    _same_event() has had a chance to judge it on date + name.
+    """
+    r = requests.get(feed_url, headers={"Accept": "application/json"}, timeout=30)
     r.raise_for_status()
     rows = []
     for e in r.json().get("events", []):
         ds = e.get("local_date")
         if not ds:
             continue
-        if not in_area(e.get("venue_name")):
+        if not in_area(e.get("venue_name"), unknown_ok=unknown_ok):
             continue
         try:
             d = dt.date.fromisoformat(ds)
@@ -346,8 +395,113 @@ def fetch_eventschedule() -> list:
             category_he(e.get("category_name")),
             clean_venue(e.get("venue_name")),
             price_label(e.get("ticket_price"), e.get("is_free")),
-            f"es-{e.get('id')}",
+            f"{prefix}-{e.get('id')}",
             e.get("image_url") or e.get("flyer_url"),
+        ))
+    return rows
+
+
+def fetch_eventschedule() -> list:
+    return _fetch_eventschedule(ES_FEED_URL, "es")
+
+
+def fetch_emeklive() -> list:
+    """"עמק הופעות" — regional, so an unrecognised locality is not local."""
+    return _fetch_eventschedule(EMEK_FEED_URL, "emek", unknown_ok=False)
+
+
+# Residents submitting to "חיבור מקומי" type a street address where the ticket
+# feeds print the venue's name, and the board then carries one evening twice —
+# "ג'אז Jam Session" at נרבתא beside "גאם סשן גאז בנרבתא" at בילו 10. Nothing
+# general can equate an address with a name, so the handful that actually
+# collide are listed. Add a line when a duplicate shows up in the cron log;
+# a venue not listed here simply keeps whatever the submitter typed.
+HUB_VENUE_ALIASES = {
+    "בילו 10": "נרבתא",
+    "המייסדים 52": "בבושקפה בית הדואר",
+}
+
+# "חיבור מקומי" price strings are typed by whoever submitted the event, so the
+# column has to survive "כניסה חופשית ", "35 ש\"ח", a bare "55", "60-70 ש\"ח"
+# and "בהרשמה מראש" alike.
+_FREE_WORDS = ("חופשית", "חינם", "ללא עלות", "בחינם")
+
+
+def hub_price_label(price) -> str:
+    """Entry-fee label for a hand-typed price string; "" when nothing was said."""
+    s = re.sub(r"\s+", " ", (price or "")).strip()
+    if not s:
+        return ""
+    if any(w in s for w in _FREE_WORDS):
+        return "חינם"
+    rng = re.match(r"^(\d+)\s*[-–]\s*(\d+)", s)
+    if rng:
+        return f"₪{rng.group(1)}–{rng.group(2)}"
+    num = re.match(r"^(\d+(?:\.\d+)?)\b", s)
+    if num:
+        val = float(num.group(1))
+        return f"₪{val:.0f}" if val == int(val) else f"₪{val:.2f}"
+    # No leading number: either free text worth showing ("בהרשמה מראש") or a
+    # price buried mid-string ("150 ₪ למשתתף"). Keep the text — it says more
+    # than "בתשלום" would, and it is the submitter's own wording.
+    return s
+
+
+def hub_category(slug: str, title: str) -> str:
+    """Canonical type for a "חיבור מקומי" event.
+
+    Every slug but one maps straight through CATEGORY_HE. "special" is the
+    site's catch-all — its members are workshops, circles, talks and singles
+    evenings — so it is settled by what the event calls itself, and falls back
+    to קהילה, which is true of all of them.
+    """
+    slug = (slug or "").strip()
+    if slug.casefold() != "special":
+        return canonical_category(slug)
+    if re.search(r"סדנ[הת]|שיעור|הרצא[הת]|קורס", title or ""):
+        return "הרצאות וסדנאות"
+    return "קהילה"
+
+
+def fetch_hub() -> list:
+    """Events residents submitted to "חיבור מקומי" (Supabase, public read)."""
+    from zoneinfo import ZoneInfo
+
+    r = requests.get(HUB_API, timeout=30, params={
+        "select": "id,title,category,event_date,location,price,image_url,"
+                  "ticket_url,facebook_url,status",
+        "status": "eq.approved", "order": "event_date"},
+        headers={"apikey": HUB_ANON_KEY, "Accept": "application/json"})
+    r.raise_for_status()
+    tz = ZoneInfo(IL_TZ)
+    rows = []
+    for e in r.json():
+        raw = e.get("event_date")
+        if not raw:
+            continue
+        try:
+            when = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            print(f"  חיבור מקומי: תאריך לא קריא, האירוע לא נכלל: {raw!r}",
+                  file=sys.stderr)
+            continue
+        if when.tzinfo is None:  # the column is timestamptz; belt and braces
+            when = when.replace(tzinfo=dt.timezone.utc)
+        local = when.astimezone(tz)
+        t = "" if local.strftime("%H:%M") == "00:00" else local.strftime("%H:%M")
+        venue = re.sub(r"\s+", " ", (e.get("location") or "")).strip(" ,")
+        venue = HUB_VENUE_ALIASES.get(venue, venue)
+        img = e.get("image_url") or ""
+        if img.startswith("/"):
+            img = HUB_URL + img
+        rows.append(_row(
+            local.date(), t, e.get("title"),
+            # the site's own event page first: it carries the full description
+            # and the flyer. Ticket and Facebook links are its fallbacks.
+            f"{HUB_URL}/event/{e.get('id')}",
+            hub_category(e.get("category"), e.get("title")),
+            venue, hub_price_label(e.get("price")),
+            f"hub-{e.get('id')}", img,
         ))
     return rows
 
@@ -543,8 +697,12 @@ def fetch_manual() -> list:
             rows.append(r)
     return rows
 
+# Local sources before regional ones: when two of them describe one event,
+# collect() keeps the first, and the moshava's own boards title a moshava
+# event better than a regional aggregator does.
 SOURCES = [("eventschedule", fetch_eventschedule), ("מתנ\"ס", fetch_matnas),
-           ("האולם", fetch_haulam), ("ידני", fetch_manual)]
+           ("האולם", fetch_haulam), ("חיבור מקומי", fetch_hub),
+           ("עמק הופעות", fetch_emeklive), ("ידני", fetch_manual)]
 
 
 def _clock_times(s: str) -> set:
@@ -566,7 +724,37 @@ def _same_event(a, b) -> bool:
     if ta and tb and not (ta & tb):        # no shared showing -> different events
         return False
     na, nb = norm(a["name"]), norm(b["name"])
-    return bool(na and nb) and (na in nb or nb in na)
+    if bool(na and nb) and (na in nb or nb in na):
+        return True
+    return _same_listing(a, b, ta, tb)
+
+
+def _source_of(row) -> str:
+    return (row.get("key") or "").split("-", 1)[0]
+
+
+def _same_listing(a, b, ta: set, tb: set) -> bool:
+    """One event that two different aggregators titled differently.
+
+    The moshava's jazz night reaches the board from "חיבור מקומי" as
+    "ג׳אז בשוק הישן | TuesJazz" and from "עמק הופעות" as the sentence its
+    flyer opens with — no shared words at all, so the name test cannot see
+    that they are one evening. Venue plus an identical start time can: two
+    genuinely different events do not begin the same minute in the same room.
+
+    Only across sources, never within one. A venue that runs parallel
+    sessions at one hour (the Torah Learning Center does) publishes them
+    through a single feed, and those are real separate events; it is the
+    re-listing of one event by a second aggregator that this catches.
+    """
+    if _source_of(a) == _source_of(b):
+        return False
+    if not (ta and tb and ta == tb):
+        return False
+    va, vb = norm(a["venue"]), norm(b["venue"])
+    # containment, not equality: one feed says "השוק הישן", the other
+    # "השוק הישן, האורנים 12, פרדס חנה" for the same room
+    return bool(va and vb) and (va in vb or vb in va)
 
 
 def merge_showtimes(rows: list) -> list:
@@ -837,7 +1025,11 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
     meant to sit above the fold so a visitor immediately sees what's on today.
     Lives between the TODAY_AUTO markers, near the top of the main page.
     """
-    heading = f"📅 קורה היום, {he_date(today)}"
+    # The weekday leads, in a bigger type than the date: a visitor glancing at
+    # the box should read "it's Saturday" before anything else (Ori, 12/9/2026).
+    heading = (f"📅 יום {HE_WEEKDAYS[today.weekday()]} בפרדס חנה-כרכור"
+               f'<span style="font-weight:normal; font-size:82%; color:#8a6a5c;">'
+               f" · {he_date(today)} · מה קורה היום?</span>")
     if not today_rows:
         body = (
             f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
@@ -895,7 +1087,8 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
         f"{build_table(rows, collapsible=True)}\n\n"
         f"{cap_note}"
         f"אירועים שכבר התקיימו נשמרים ב[[ארכיון אירועי התרבות]]. "
-        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}. ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
+        f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}; {HUB_LABEL}; {EMEK_LABEL}. "
+        f"ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
 
