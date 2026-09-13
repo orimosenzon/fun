@@ -790,6 +790,9 @@ const Layers = (() => {
         + 'על צילומי האוויר של 2021, בדיוק של כארבעה מטרים. הירוק הוא צל: '
         + 'שביל שעובר בתוכו מוצל, ושביל שלא, לא. עצים שניטעו או נכרתו מאז אינם '
         + 'כאן. התמונה והמספרים מתוך מפת העצים והחום של GoInfo.',
+      // The one word in the note that is a place to go: the page the tiles
+      // were taken from, as build_canopy.py recorded it.
+      noteLinks: canopy.via && canopy.via.url ? { GoInfo: canopy.via.url } : {},
       credit: 'מפ"י, סקר חופות העצים 2021 · GoInfo (CC BY 4.0)',
       on: isOn(CANOPY_ID, false)
     });
@@ -1686,6 +1689,21 @@ const Layers = (() => {
       </div>`;
   }
 
+  /** The note as HTML: escaped text, with the few names a layer points at
+   *  (`noteLinks`, name → URL) turned into links that open in a new tab.
+   *  Notes are plain text everywhere else - residents type their own into a
+   *  textarea - so the escaping comes first and the links are laid over it,
+   *  never read out of it. Inside the row's label, and a link is interactive
+   *  content, so clicking it follows the link without toggling the layer. */
+  function noteHtml(layer) {
+    let html = escapeHtml(layer.note || '');
+    Object.entries(layer.noteLinks || {}).forEach(([name, url]) => {
+      html = html.split(escapeHtml(name)).join(
+        `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>`);
+    });
+    return html;
+  }
+
   /** One layer's row, and whatever hangs off it. */
   function layerRow(layer, editable) {
     const rows = legendRows(layer);
@@ -1700,7 +1718,7 @@ const Layers = (() => {
               ? '<span class="tag lock" title="גלויה רק למי שנכנס עם סיסמת עריכה">רק לעורכים</span>'
               : ''}${escapeHtml(layer.name)}</span>
             <span class="lay-sub">${escapeHtml(summary(layer))}</span>
-            <span class="lay-note">${escapeHtml(layer.note || '')}</span>
+            <span class="lay-note">${noteHtml(layer)}</span>
           </span>
         </label>
         ${editable && layer.own ? `<button class="lay-edit" data-edit="${layer.id}"
