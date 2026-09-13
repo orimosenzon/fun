@@ -2794,6 +2794,17 @@
    "url": "https://pardes-events-hub.lovable.app/event/d370018e-91f1-470d-8b11-e247fd34c350",
    "venue": "סטודיו יוגה לירון"
   },
+  "2026-09-19--שבת-האזינו": {
+   "category": "קהילה",
+   "date": "2026-09-19",
+   "entry": "",
+   "image_file": "אירוע-es-BwNFqz.jpg",
+   "name": "שבת האזינו",
+   "source": "לוח האירועים",
+   "time": "09:00",
+   "url": "https://pardeshanna.eventschedule.com/shabbat-haazinu/BwNFqz",
+   "venue": "מרכז ללימוד תורה"
+  },
   "2026-09-22--להקת-פולסא-Pulsa": {
    "category": "קונצרטים",
    "date": "2026-09-22",
@@ -2849,6 +2860,17 @@
    "url": "",
    "venue": "גן הציפורים"
   },
+  "2026-09-24--היוצרת-מתן-גנדלמן": {
+   "category": "קונצרטים",
+   "date": "2026-09-24",
+   "entry": "₪70",
+   "image_file": "אירוע-emek-nJzbuw.jpg",
+   "name": "היוצרת מתן גנדלמן:",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://emeklive.co.il/narbata-24-9/nJzbuw",
+   "venue": "נרבתא"
+  },
   "2026-09-26--Kirtan": {
    "category": "רוחניות והתפתחות אישית",
    "date": "2026-09-26",
@@ -2881,6 +2903,28 @@
    "time": "18:00",
    "url": "https://emeklive.co.il/darwish-26-9/VGzN6e",
    "venue": "פסטיבל Zone (קיסריה)"
+  },
+  "2026-09-27--במה-פתוחה-33": {
+   "category": "קונצרטים",
+   "date": "2026-09-27",
+   "entry": "חינם",
+   "image_file": "אירוע-es-967uDn.jpg",
+   "name": "במה פתוחה #33:",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/patricks-27-9/967uDn",
+   "venue": "פטריקס (קיסריה)"
+  },
+  "2026-09-27--נתנאל-גולדברג": {
+   "category": "קונצרטים",
+   "date": "2026-09-27",
+   "entry": "₪80",
+   "image_file": "אירוע-es-vDSeVJ.jpg",
+   "name": "נתנאל גולדברג:",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/unicorn-27-9/vDSeVJ",
+   "venue": "יוניקורן"
   }
  }
 }
