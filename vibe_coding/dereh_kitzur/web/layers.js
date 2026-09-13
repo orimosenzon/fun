@@ -9,6 +9,10 @@
  *            own words, photos and a link back. Two of them: the pardespedia
  *            articles, and the אמנות במושבה festival map.
  *   drafts   trails recorded on this device, held by draft.js
+ *   raster   a picture draped over the ground - the tree canopy. It has no
+ *            items at all: nothing to list, search or select, only to switch
+ *            on and off. The one kind here that is a look at the map rather
+ *            than things on it.
  *
  * Everything downstream - the list, the search, the detail pane, navigation -
  * reads from `visibleSegments()` and `visibleWaypoints()`, so turning a layer
@@ -43,6 +47,7 @@ const Layers = (() => {
   const PLANS_ID = 'plans';
   const BLOCKS_ID = 'blocks';
   const PUBLIC_ID = 'public-land';
+  const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
@@ -82,7 +87,8 @@ const Layers = (() => {
    * switched somebody's own recordings off would be a nasty surprise. */
   const URL_KEY = 'layers';
   const shareable = (l) => (l.kind === 'trails' || l.kind === 'network'
-    || l.kind === 'places' || l.kind === 'trips' || l.kind === 'waypoints')
+    || l.kind === 'places' || l.kind === 'trips' || l.kind === 'waypoints'
+    || l.kind === 'raster')
     // A private layer's id in a link would be a hint that it exists, and the
     // link would do nothing for whoever opens it anyway.
     && !l.private;
@@ -530,7 +536,7 @@ const Layers = (() => {
    * call site in between having to be kept in the same order. */
   function init(data) {
     const { trails, network, places, art, shimur, makom, plans, blocks,
-            publicLand, houten, curitiba } = data;
+            publicLand, houten, curitiba, canopy } = data;
     setMedia(data.media);
     const prefs = loadPrefs();
     const link = urlPrefs();
@@ -680,6 +686,24 @@ const Layers = (() => {
       on: isOn(PLANS_ID, false)
     });
 
+    // What a plan takes off each parcel - so many square metres for a road, so
+    // many for a path, for a שצ"פ - is the one thing about it nobody publishes
+    // as a table, and it is what a resident standing on the parcel wants to
+    // know. GoInfo works it out per plan by crossing the plan's own land-use
+    // sheet with the cadastre, on request, for any plan number. One link on
+    // each plan, then, rather than a layer of our own: it is their computation
+    // and it runs live. Added here and not in build_plans.py because it is not
+    // a fact about the plan but a tool for reading one, and because the plans
+    // document is published to the data repo separately from this app.
+    const plansLayer = byId(PLANS_ID);
+    if (plansLayer) plansLayer.waypoints.forEach((p) => {
+      if (!p.num) return;
+      p.links = [...(p.links || []), {
+        title: 'כמה נגרע מכל חלקה לדרך, לשביל ולשצ"פ',
+        url: 'https://goinfo.co.il/hafkaot-map.html?plan=' + encodeURIComponent(p.num)
+      }];
+    });
+
     // The reference grid the planning layer's names are written in. Every plan
     // is called after a block and a parcel - "תוספת זכויות בניה בגוש 10105
     // חלקה 203" - and without this there is no way to find out from the map
@@ -731,6 +755,43 @@ const Layers = (() => {
       linkTitle: 'התכנית שקבעה את הייעוד, במבא"ת',
       pinnable: false,                     // the outline comes off the register
       on: isOn(PUBLIC_ID, false)
+    });
+
+    // What is over your head rather than under your feet. Every tree canopy in
+    // the moshava, as the Survey of Israel's model outlined it off the 2021
+    // aerial photographs, drawn as a picture at about four metres a pixel -
+    // which is what it is, and thousands of polygons would only pretend
+    // otherwise. For somebody choosing between two shortcuts in August this is
+    // the layer that decides. It has no items: nothing to list, nothing to
+    // select, a green you switch on and look at. build_canopy.py writes it,
+    // as a small pyramid of tiles - see there for why not one image.
+    if (canopy && canopy.tiles && canopy.bounds) add({
+      id: CANOPY_ID,
+      kind: 'raster',
+      category: 'other',
+      name: canopy.name || 'צל עצים',
+      short: 'צל',
+      color: canopy.color || '#1b5e20',
+      // Relative to the page, as build_canopy.py wrote it; MapLibre fetches
+      // tiles by absolute address, and resolving here rather than trusting
+      // the fetch to means the same files whatever the page's own URL is.
+      // The page's own folder and then the template as it is: `new URL` on
+      // the template itself would escape the braces and MapLibre would ask
+      // for a file literally called %7Bz%7D.
+      tiles: new URL('.', location.href).href + canopy.tiles,
+      tileSize: canopy.tileSize || 512,
+      minzoom: canopy.minzoom,
+      maxzoom: canopy.maxzoom,
+      // Not `bounds`: that field is the sheet's cue to fly to a layer that
+      // lives somewhere else, and this one lives here.
+      tileBounds: canopy.bounds,
+      stats: canopy.stats || {},
+      note: 'חופות העצים של המושבה, כפי שמודל של המרכז למיפוי ישראל סימן אותן '
+        + 'על צילומי האוויר של 2021, בדיוק של כארבעה מטרים. הירוק הוא צל: '
+        + 'שביל שעובר בתוכו מוצל, ושביל שלא, לא. עצים שניטעו או נכרתו מאז אינם '
+        + 'כאן. התמונה והמספרים מתוך מפת העצים והחום של GoInfo.',
+      credit: 'מפ"י, סקר חופות העצים 2021 · GoInfo (CC BY 4.0)',
+      on: isOn(CANOPY_ID, false)
     });
 
     // Houten, and it is the only thing on this map that is not the moshava.
@@ -819,8 +880,11 @@ const Layers = (() => {
   // every dot on the map rather than washing the colour out of the ones that
   // happen to fall inside it. The land uses go below even the blocks: they are
   // the only layer here that tints the ground itself, and everything else on
-  // the map is something standing on it.
+  // the map is something standing on it. The canopy sits just above them -
+  // trees stand on the ground too - and below the block lines, which are
+  // drawn on top of everything that has an area.
   const order = (l) => (l.id === PUBLIC_ID ? 0.1
+    : l.id === CANOPY_ID ? 0.15
     : l.id === BLOCKS_ID ? 0.25
     : l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
 
@@ -967,6 +1031,7 @@ const Layers = (() => {
   const shapeSrc = (id) => `shp-${id}`;
   const fillId = (id) => `fl-${id}`;
   const edgeId = (id) => `eg-${id}`;
+  const rasterId = (id) => `ras-${id}`;
 
   /** Whether a places layer also carries an outline for each of its points.
    *  Only the planning schemes do: a plan is an area, and its boundary - the
@@ -975,6 +1040,7 @@ const Layers = (() => {
     && layer.waypoints.some((p) => p.shape && p.shape.length);
 
   const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
+    : layer.kind === 'raster' ? [rasterId(layer.id)]
     : layer.kind === 'places'
     ? (hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
       .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
@@ -1207,6 +1273,55 @@ const Layers = (() => {
     });
   }
 
+  /** The first label layer of the base style, or nothing for a style that has
+   *  none - the satellite one. A picture draped over the ground goes in under
+   *  the labels, or the street names inside it would be read through green.
+   *  Everything else this file draws goes on top of the labels, as it always
+   *  has: a line is thin and a dot is small, and a canopy is neither. */
+  function underLabels() {
+    const first = map.getStyle().layers.find((gl) => gl.type === 'symbol');
+    return first ? first.id : undefined;
+  }
+
+  /** A raster layer: a pyramid of picture tiles, no items. Its source is
+   *  tiles rather than geojson, so it takes the whole of a layer's map work
+   *  on its own instead of threading through the geojson path with a special
+   *  case at every turn.
+   *
+   *  Tiles and not a single image with four corners, which is what the first
+   *  version was: MapLibre 4.7 paints the map into the terrain's tiles when
+   *  the terrain is on, and past zoom 16 some of those never found the one
+   *  image, so the canopy stopped along a straight line through town. Tiles
+   *  are what the satellite basemap is, and it has never had that problem.
+   *  `bounds` keeps the map from asking for tiles outside the picture at
+   *  all, so a pan to the sea costs no 404s. */
+  function addRasterLayer(layer) {
+    const src = srcId(layer.id);
+    if (!map.getSource(src)) {
+      map.addSource(src, {
+        type: 'raster',
+        tiles: [layer.tiles],
+        tileSize: layer.tileSize,
+        minzoom: layer.minzoom,
+        maxzoom: layer.maxzoom,
+        bounds: layer.tileBounds
+      });
+    }
+    if (map.getLayer(rasterId(layer.id))) return;
+    map.addLayer({
+      id: rasterId(layer.id),
+      type: 'raster',
+      source: src,
+      paint: {
+        // Solid enough to read as shade, thin enough to see the street under
+        // it. The fade is off because a picture that dissolves in over a
+        // second reads as the map loading, not as a layer arriving.
+        'raster-opacity': 0.62,
+        'raster-fade-duration': 0
+      }
+    }, underLabels());
+  }
+
   /** Build every source and layer. Re-run after each style change, because
    *  setStyle drops anything we added. */
   function addToMap() {
@@ -1218,7 +1333,7 @@ const Layers = (() => {
     const live = new Set(list.map((l) => l.id));
     const gone = new Set();
     map.getStyle().layers.forEach((gl) => {
-      const match = /^(?:ln|pt|lb|hit)-(.+)$/.exec(gl.id);
+      const match = /^(?:ln|pt|lb|hit|ras)-(.+)$/.exec(gl.id);
       if (match && !live.has(match[1]) && map.getLayer(gl.id)) {
         map.removeLayer(gl.id);
         gone.add(match[1]);
@@ -1235,6 +1350,8 @@ const Layers = (() => {
       // source nor a layer, and an empty line layer would only sit there
       // collecting click handlers for features that never exist.
       if (layer.kind === 'waypoints') return;
+      // And nothing of a raster layer is geojson.
+      if (layer.kind === 'raster') { addRasterLayer(layer); return; }
 
       const src = srcId(layer.id);
       if (map.getSource(src)) {
@@ -1399,6 +1516,11 @@ const Layers = (() => {
       // to appear, or the colour on the map answers to nothing.
       if (rows.length) return rows;
     }
+    // A picture has no members to count, and it is on the map the moment it
+    // is on: one row in its own colour, so that the green has a name.
+    if (layer.kind === 'raster') {
+      return [{ name: layer.name, color: layer.color, line: false, whole: true }];
+    }
     if (!layer.segments.length && !placed.length) return [];
     // A trail is a line on the map, a place is a dot, and a layer drawn as
     // areas is the edge of one. The key has to be the same shape as the thing
@@ -1490,6 +1612,15 @@ const Layers = (() => {
       if (!n) return 'ריק';
       return `${n === 1 ? 'מקום אחד' : `${n} ${layer.unit || 'מקומות'}`}`
         + (shot ? ` · ${shot} תמונות` : '');
+    }
+
+    // The canopy's numbers are the survey's, not a count of anything here.
+    if (layer.kind === 'raster') {
+      const s = layer.stats || {};
+      const bits = [];
+      if (s.pct != null) bits.push(`${s.pct}% מהמושבה תחת עצים`);
+      if (s.trees) bits.push(`${s.trees.toLocaleString('he-IL')} עצים`);
+      return bits.join(' · ') || 'תמונה';
     }
 
     const n = layer.segments.length + layer.waypoints.length;
@@ -1730,7 +1861,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PUBLIC_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PUBLIC_ID, CANOPY_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing,
     set onChange(fn) { onChange = fn; }

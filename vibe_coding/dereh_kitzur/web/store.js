@@ -33,6 +33,10 @@
  *   data/media.json    photos, videos, links and notes an editor has attached
  *                      to an item in any of the layers above. See below.
  *
+ * And one document that is not in that repo: data/canopy.json, the frame of
+ * the tree-canopy picture build_canopy.py writes next to the app. Read from
+ * here only, never from the data repo - see load().
+ *
  * Why that last one exists. Every layer except the trails is a file some script
  * writes and this app only reads, so a photo stored inside it would be erased
  * by the next rebuild - which is why until 7/9/2026 the app simply offered no
@@ -320,6 +324,12 @@ const Store = (() => {
         media = await bundled('data/media.json');
       }
     }
+    // The tree canopy. Not in the list above because it is not in the data
+    // repo at all: build_canopy.py writes a picture and its frame, and a
+    // picture the map drapes over the ground is served from next to the app
+    // like its CSS - a build product, not something an editor changes. A miss
+    // is ordinary: the map simply has no shade layer to offer.
+    const canopy = await bundled('data/canopy.json');
     return {
       trails: absolutise(trails),
       network,
@@ -333,6 +343,7 @@ const Store = (() => {
       houten: absolutise(houten),
       curitiba: absolutise(curitiba),
       media: absolutise(media || { items: {} }),
+      canopy,
       offline: state.offline
     };
   }

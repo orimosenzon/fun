@@ -507,9 +507,17 @@ function renderList() {
   const rows = items();
 
   if (!rows.length) {
-    list.innerHTML = !Layers.visible().length
+    // A layer with nothing to list - the canopy is a picture - is on and yet
+    // puts nothing here, and "every layer is off" would be a lie to somebody
+    // looking at a map full of green.
+    const on = Layers.visible();
+    const pictureOnly = on.some((l) => l.kind === 'raster')
+      && !on.some((l) => l.segments.length || l.waypoints.length);
+    list.innerHTML = !on.length
       ? '<li class="empty-msg">כל השכבות כבויות.<br>פתח את כפתור השכבות והדלק אחת.</li>'
-      : sortMode === 'unplaced'
+      : pictureOnly
+        ? '<li class="empty-msg">מה שדלוק הוא תמונה על המפה, בלי שבילים או מקומות לרשימה.<br>הדלק גם שכבת שבילים.</li>'
+        : sortMode === 'unplaced'
         ? '<li class="empty-msg">כל המקומות ממוקמים. 🎉</li>'
         : '<li class="empty-msg">לא נמצא שביל תואם.</li>';
     return;
