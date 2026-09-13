@@ -1,1 +1,4 @@
 .env
+__pycache__/
+pipin_world.db
+pipin_errors.log

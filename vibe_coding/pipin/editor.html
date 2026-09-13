@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פיפין · עורך העולם</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body class="editor-body">
+
+  <header class="topbar">
+    <div class="topbar-right">
+      <h1 class="game-title">עורך העולם</h1>
+      <span class="topbar-separator">·</span>
+      <span class="topbar-location">ארץ התיכונה</span>
+    </div>
+    <div class="ed-topbar-left">
+      <span id="model-badge" class="ed-badge ed-badge-wait">בודק מודל תמונות…</span>
+      <span id="progress-badge" class="ed-badge">0 / 0</span>
+      <button id="world-lore-btn" class="ed-btn ed-btn-ghost">סיפור העולם</button>
+      <a href="index.html" class="ed-btn ed-btn-ghost">למשחק ←</a>
+    </div>
+  </header>
+
+  <main class="ed-layout">
+
+    <!-- רשימת המקומות -->
+    <aside class="ed-list-panel">
+      <div class="ed-panel-head">
+        <span>מקומות</span>
+        <input id="loc-filter" class="ed-filter" type="search" placeholder="סינון…" autocomplete="off">
+      </div>
+      <div id="loc-list" class="ed-list"></div>
+    </aside>
+
+    <!-- עריכת המקום הנבחר -->
+    <section class="ed-main">
+      <div id="ed-empty" class="ed-empty">
+        <span class="ed-empty-icon">🗺️</span>
+        <p>בחר מקום מהרשימה כדי לספר את סיפור הרקע שלו.</p>
+      </div>
+
+      <div id="ed-detail" class="ed-detail hidden">
+        <div class="ed-detail-head">
+          <div>
+            <h2 id="d-name" class="ed-name"></h2>
+            <span id="d-meta" class="ed-meta"></span>
+          </div>
+          <span id="save-state" class="ed-save-state"></span>
+        </div>
+
+        <label class="ed-label" for="d-description">תיאור המקום <span class="ed-hint">מה שהשחקן קורא כשהוא מגיע</span></label>
+        <textarea id="d-description" class="ed-textarea ed-textarea-sm" rows="3"></textarea>
+
+        <label class="ed-label" for="d-lore">סיפור רקע <span class="ed-hint">מה שאתה מספר לי: היסטוריה, מי חי כאן, מה קרה כאן. זה מה שנכנס לתמונה.</span></label>
+        <textarea id="d-lore" class="ed-textarea" rows="10" placeholder="ספר על המקום הזה…"></textarea>
+
+        <label class="ed-label" for="d-visual">הכוונה ויזואלית <span class="ed-hint">מה נראה בתמונה: קומפוזיציה, שעה, מזג אוויר. באנגלית — זו שפת המודל.</span></label>
+        <textarea id="d-visual" class="ed-textarea ed-textarea-ltr" rows="5"></textarea>
+
+        <div class="ed-actions">
+          <button id="save-btn" class="ed-btn ed-btn-primary">שמור סיפור</button>
+          <button id="gen-btn" class="ed-btn ed-btn-gold">צור תמונה</button>
+          <button id="prompt-btn" class="ed-btn ed-btn-ghost">הצג פרומפט</button>
+        </div>
+
+        <pre id="prompt-view" class="ed-prompt hidden"></pre>
+      </div>
+    </section>
+
+    <!-- תצוגת התמונה -->
+    <aside class="ed-image-panel">
+      <div class="ed-panel-head"><span>תמונה</span></div>
+      <div id="img-frame" class="ed-img-frame">
+        <div id="img-placeholder" class="ed-img-placeholder">
+          <span>🖼️</span>
+          <p>אין עדיין תמונה</p>
+        </div>
+        <img id="img-view" class="ed-img hidden" alt="תמונת המקום">
+        <div id="img-spinner" class="ed-spinner hidden">
+          <div class="loading-spinner"></div>
+          <p>מצייר…</p>
+        </div>
+      </div>
+      <p id="img-note" class="ed-img-note"></p>
+    </aside>
+  </main>
+
+  <!-- סיפור העולם -->
+  <div id="world-modal" class="modal-overlay hidden">
+    <div class="modal ed-modal">
+      <div class="modal-header">
+        <h3>סיפור העולם</h3>
+        <button id="close-world" class="modal-close">✕</button>
+      </div>
+      <div class="ed-modal-body">
+        <label class="ed-label" for="w-title">כותרת התקופה</label>
+        <input id="w-title" class="ed-input" placeholder="למשל: השנים האחרונות של העידן השלישי">
+
+        <label class="ed-label" for="w-premise">מה קורה בעולם <span class="ed-hint">נשלח כרקע בכל בקשת תמונה, וזה מה שמחזיק את הסיפור קוהרנטי</span></label>
+        <textarea id="w-premise" class="ed-textarea" rows="6"></textarea>
+
+        <label class="ed-label" for="w-style">שפת הציור <span class="ed-hint">מה שגורם ל-30 המקומות להיראות כמו עולם אחד. באנגלית — זו שפת המודל.</span></label>
+        <textarea id="w-style" class="ed-textarea ed-textarea-ltr" rows="8"></textarea>
+
+        <div class="ed-actions">
+          <button id="save-world" class="ed-btn ed-btn-primary">שמור</button>
+          <span id="world-save-state" class="ed-save-state"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/editor.js"></script>
+</body>
+</html>
