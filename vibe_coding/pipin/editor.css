@@ -1,0 +1,327 @@
+/* ═══════════════════════════════════════════
+   עורך העולם - בונים את ארץ התיכונה ההתחלתית
+   משתמש במשתני העיצוב של style.css
+   ═══════════════════════════════════════════ */
+
+.editor-body {
+  overflow: hidden;
+}
+
+/* style.css מגדיר .hidden לכל אלמנט בנפרד ואין בו כלל גנרי. העורך מסתיר
+   הרבה דברים דינמית, ולכן צריך כאן כלל שגובר על display של הרכיבים למטה. */
+.hidden { display: none !important; }
+
+.ed-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── תגיות מצב ─────────────────────────── */
+
+.ed-badge {
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ed-badge-ok    { background: var(--accent-light); color: var(--accent-hover); }
+.ed-badge-wait  { background: var(--gold-light);   color: #8a6d1f; }
+.ed-badge-error { background: #fdecec;             color: #a33; }
+
+/* ── פריסה ─────────────────────────────── */
+
+.ed-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 380px;
+  gap: 16px;
+  padding: 16px;
+  height: calc(100vh - 57px);
+  align-items: stretch;
+}
+
+.ed-list-panel,
+.ed-main,
+.ed-image-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ed-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ── רשימת מקומות ──────────────────────── */
+
+.ed-filter {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ed-filter:focus { outline: 2px solid var(--accent-light); }
+
+.ed-list {
+  overflow-y: auto;
+  padding: 8px;
+  flex: 1;
+}
+
+.ed-region {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 10px 8px 4px;
+  letter-spacing: 0.03em;
+}
+
+.ed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: right;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.ed-item:hover  { background: var(--bg-hover); }
+.ed-item.active { background: var(--accent-light); color: var(--accent-hover); font-weight: 500; }
+
+.ed-dots { display: flex; gap: 3px; margin-inline-start: auto; }
+
+.ed-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background: var(--border);
+}
+
+.ed-dot.on-lore  { background: var(--accent); }
+.ed-dot.on-image { background: var(--gold); }
+
+/* ── עריכה ─────────────────────────────── */
+
+.ed-main { overflow-y: auto; }
+
+.ed-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px;
+}
+
+.ed-empty-icon { font-size: 42px; display: block; margin-bottom: 12px; }
+
+.ed-detail { padding: 20px 24px 28px; }
+
+.ed-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ed-name { font-size: 24px; font-weight: 700; }
+.ed-meta { font-size: 13px; color: var(--text-muted); }
+
+.ed-save-state {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 6px;
+}
+
+.ed-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 18px 0 6px;
+}
+
+.ed-hint {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.ed-input,
+.ed-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  resize: vertical;
+}
+
+.ed-textarea-sm { font-size: 14px; }
+
+/* שפת הציור נכתבת באנגלית ולכן צריכה כיוון הפוך */
+.ed-textarea-ltr {
+  direction: ltr;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ed-input:focus,
+.ed-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-panel);
+}
+
+.ed-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.ed-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.ed-btn:hover:not(:disabled) { background: var(--bg-hover); }
+
+.ed-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ed-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.ed-btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.ed-btn-gold {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #3a2f10;
+  font-weight: 500;
+}
+.ed-btn-gold:hover:not(:disabled) { background: #b9992f; }
+
+.ed-btn-ghost { background: none; color: var(--text-secondary); }
+
+.ed-prompt {
+  direction: ltr;
+  text-align: left;
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-secondary);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* ── תמונה ─────────────────────────────── */
+
+.ed-img-frame {
+  position: relative;
+  margin: 16px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-input);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ed-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.ed-img-placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.ed-img-placeholder span { font-size: 36px; display: block; margin-bottom: 8px; }
+
+.ed-spinner {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.86);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.ed-img-note {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  min-height: 20px;
+}
+
+.ed-img-note.error { color: #a33; }
+
+/* ── מודל סיפור העולם ──────────────────── */
+
+.ed-modal { max-width: 720px; width: 92vw; }
+
+.ed-modal-body {
+  padding: 4px 24px 24px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .ed-layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .ed-image-panel { display: none; }
+}
