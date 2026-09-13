@@ -1,0 +1,36 @@
+{
+ "version": 2,
+ "updated": "2026-09-13T06:10:02Z",
+ "name": "צל עצים",
+ "color": "#1b5e20",
+ "tiles": "overlays/canopy/{z}/{x}/{y}.png",
+ "tileSize": 512,
+ "minzoom": 10,
+ "maxzoom": 14,
+ "bounds": [
+  34.938525,
+  32.441844,
+  35.018117,
+  32.507922
+ ],
+ "tileCount": 27,
+ "metres_per_pixel": 4.29,
+ "survey": {
+  "year": 2021,
+  "by": "המרכז למיפוי ישראל",
+  "url": "https://data.gov.il/dataset/nationalcanopytrees"
+ },
+ "via": {
+  "name": "GoInfo",
+  "url": "https://goinfo.co.il/canopy-map.html",
+  "license": "CC BY 4.0",
+  "rendered": "2026-08-05T14:50+0300",
+  "computed": "2026-07-27T12:43+0300"
+ },
+ "stats": {
+  "pct": 8.92,
+  "trees": 24427,
+  "canopy_m2": 2038526.5,
+  "city_m2": 22842815.0
+ }
+}
