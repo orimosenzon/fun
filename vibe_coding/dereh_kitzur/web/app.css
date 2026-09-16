@@ -207,6 +207,33 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 #explore img { width: 100%; height: 100%; display: block; }
 
+/* The other aircraft: a small white disc on the flight button's lower
+ * shoulder, on the open-map side, showing what one press would swap in. It
+ * is placed against the same anchors as the flight button and restated in
+ * the desktop block below with it, because it has to move with the column.
+ * Its own element and not a child of the button, since a button inside a
+ * button is not a thing. */
+#craft {
+  position: absolute;
+  inset-inline-end: 43px;
+  bottom: calc(var(--panel-h) + 233px);
+  z-index: 501;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .3);
+  transition: bottom .25s ease;
+}
+#craft svg { width: 15px; height: 15px; fill: #3c4a45; }
+#craft[hidden] { display: none; }
+body.craft-balloon #craft .craft-bal,
+body:not(.craft-balloon) #craft .craft-jet { display: none; }
+
 /* ---------- the way back from somewhere else ----------
  *
  * Opposite corner from the legend, which is the only other thing living at the
@@ -1092,9 +1119,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .panel-off .grip-btn::before { transform: rotate(45deg); }
 
   /* Dragging a width while the map animates its own is a fight nobody wins. */
-  .panel, #map, .fab, .nav { transition: none; }
+  .panel, #map, .fab, #craft, .nav { transition: none; }
   .panel-anim .panel, .panel-anim #map,
-  .panel-anim .fab, .panel-anim .grip-v { transition: all .22s ease; }
+  .panel-anim .fab, .panel-anim #craft, .panel-anim .grip-v { transition: all .22s ease; }
 
   .panel-head { padding-top: 16px; }
   /* The .fab rule above resets every button to 20px, so each position has to be
@@ -1106,6 +1133,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .fab-3 { bottom: 136px; }
   .fab-4 { bottom: 184px; }
   .fab-5 { bottom: 252px; }
+  #craft { bottom: 239px; inset-inline-end: auto; inset-inline-start: calc(var(--panel-w) + 51px); }
 
   .sheet { align-items: center; }
   .sheet-card { max-width: 460px; border-radius: 16px; margin: 0 16px; }
@@ -2057,6 +2085,7 @@ body.flying {
 body.flying .panel,
 body.flying .grip-v,
 body.flying .fab,
+body.flying #craft,
 body.flying .legend,
 body.flying .go-home,
 body.flying .nav,
@@ -2105,6 +2134,19 @@ body.flying #map {
   background: linear-gradient(to bottom,
     #0f2744 0%, #1d4a78 26%, #4a86b8 54%, #97c0da 76%, #dcd2b4 93%, #efe0be 100%);
   will-change: transform;
+}
+
+/* The balloon flies at dawn, because that is when balloons fly: the air is
+ * still and the ground has not started to breathe. Same band, a different
+ * hour - a cooler blue above and the first warmth on the horizon - and the
+ * haze takes on the same light. */
+body.fly-balloon .fly-band {
+  background: linear-gradient(to bottom,
+    #1b2a4a 0%, #35548a 22%, #7f9bc4 46%, #c9b3b4 66%, #f0c69a 84%, #f8dfb7 100%);
+}
+body.fly-balloon .fly-haze {
+  background: linear-gradient(to bottom,
+    rgba(246, 228, 202, .92) 0%, rgba(234, 224, 206, .55) 34%, rgba(214, 216, 204, 0) 100%);
 }
 
 /* ---------- the world layer ---------- */
@@ -2321,6 +2363,76 @@ body.fly-burn .fly-rush { --rush: rgba(255, 196, 120, .8); }
     transparent 46%, rgba(0, 0, 0, .28) 78%, rgba(0, 0, 0, .62) 100%);
 }
 
+/* ---------- the balloon ----------
+ *
+ * In the balloon the burner is above you, so its light comes down from the
+ * top of the screen; there are no speed streaks, because there is no speed
+ * to speak of and no air going past; and the bottom of the picture is the
+ * rim of the basket, with the flying wires going up out of the frame on
+ * either side. The rim and the wires stay put while the world swings: the
+ * basket is what you are standing in, and it is the horizon that moves. */
+body.fly-balloon .fly-rush { display: none; }
+body.fly-balloon .fly-burner {
+  background: radial-gradient(ellipse 62% 36% at 50% -8%,
+    rgba(255, 176, 80, .62) 0%, rgba(255, 130, 50, .3) 42%, rgba(255, 100, 40, 0) 100%);
+}
+
+.fly-basket {
+  position: fixed;
+  left: -12%;
+  right: -12%;
+  bottom: -70px;
+  height: 118px;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 5px, transparent 5px 11px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .06) 0 2px, transparent 2px 6px),
+    linear-gradient(to bottom, #7b5632, #4e3419);
+  box-shadow: inset 0 7px 0 #3a2310, inset 0 10px 0 #8a6238, 0 -6px 18px rgba(0, 0, 0, .35);
+}
+body:not(.fly-balloon) .fly-basket { display: none !important; }
+.fly-basket::before,
+.fly-basket::after {
+  content: '';
+  position: absolute;
+  bottom: 62px;
+  width: 3px;
+  height: 52vh;
+  background: linear-gradient(to top, rgba(58, 35, 16, .95), rgba(58, 35, 16, 0));
+  transform-origin: bottom center;
+}
+.fly-basket::before { left: 17%; transform: rotate(13deg); }
+.fly-basket::after { right: 17%; transform: rotate(-13deg); }
+
+/* The bar is the envelope's heat, and the mark on it is the heat that just
+ * holds you: below it you are sinking, above it climbing. The fill's colour
+ * is set by explore.js to say which. */
+body.fly-balloon .fly-thr { background: rgba(255, 255, 255, .16); }
+body.fly-balloon .fly-thr::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  inset-inline-start: 61.5%;   /* DT_EQ / DT_MAX in explore.js */
+  background: #fff;
+  opacity: .8;
+}
+
+/* One intro per aircraft; the body class picks. */
+body.fly-balloon .fly-intro-card.jet,
+body:not(.fly-balloon) .fly-intro-card.balloon { display: none; }
+
+/* The balloon has one gauge more than the jet, and on a phone four gauges
+ * run under the three buttons at the other end of the same line. So there
+ * the readout drops to a line of its own, and the heat bar under it. */
+@media (max-width: 560px) {
+  body.fly-balloon .fly-readout { top: calc(64px + env(safe-area-inset-top, 0px)); gap: 14px; }
+  body.fly-balloon .fly-thr { top: calc(110px + env(safe-area-inset-top, 0px)); }
+}
+
 /* ---------- instruments ---------- */
 
 .fly-hud {
@@ -2407,7 +2519,7 @@ body.fly-unarmed .fly-reticle {
   opacity: .62;
 }
 .fly-gauge.burn b { color: #ffb066; }
-.fly-gauge.burn[hidden] { display: none; }
+.fly-gauge[hidden] { display: none; }   /* .fly-gauge sets display, so [hidden] needs restating */
 
 /* The throttle, under the gauges: what the button has set, which the speed
  * only follows. The upper part of the track is tinted where the burner

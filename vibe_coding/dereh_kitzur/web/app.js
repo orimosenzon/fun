@@ -39,7 +39,12 @@ const BASEMAPS = [
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256,
-          maxzoom: 19,
+          // 18, not 19: over the moshava Esri's zoom 19 is a grey "map data
+          // not yet available" tile (checked 16/9/2026), and a raster source
+          // asked for a level it has not got paints exactly that. Capped at
+          // 18 the map stretches the last real tile instead, which is what
+          // the balloon sees when it looks down over the edge of the basket.
+          maxzoom: 18,
           attribution: 'Esri, Maxar, Earthstar Geographics'
         }
       },
@@ -3085,8 +3090,30 @@ function wireControls() {
   });
   el('locate').addEventListener('click', locate);
   // Needs WebGL and a map to fly over, so it goes away with the other two.
-  if (map) el('explore').addEventListener('click', () => Explore.enter());
-  else el('explore').hidden = true;
+  if (map) {
+    el('explore').addEventListener('click', () => Explore.enter());
+    // The small button on the jet's shoulder swaps the aircraft. The big
+    // button shows the one you will fly; the small one, the other.
+    const paintCraft = () => {
+      const bal = Explore.getCraft() === 'balloon';
+      document.body.classList.toggle('craft-balloon', bal);
+      el('explore').querySelector('img').src = bal ? 'img/balloon.svg' : 'img/f16.svg';
+      const fly = bal ? 'מצב תעופה: כדור פורח' : 'מצב תעופה: מטוס קרב';
+      el('explore').title = fly;
+      el('explore').setAttribute('aria-label', fly);
+      const other = bal ? 'מעבר למטוס קרב' : 'מעבר לכדור פורח';
+      el('craft').title = other;
+      el('craft').setAttribute('aria-label', other);
+    };
+    paintCraft();
+    el('craft').addEventListener('click', () => {
+      Explore.setCraft(Explore.getCraft() === 'balloon' ? 'jet' : 'balloon');
+      paintCraft();
+    });
+  } else {
+    el('explore').hidden = true;
+    el('craft').hidden = true;
+  }
   el('basemap').addEventListener('click', () => {
     setBasemap((baseIndex + 1) % BASEMAPS.length);
     syncView();

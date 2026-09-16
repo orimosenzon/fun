@@ -63,6 +63,18 @@
        canopy. -->
   <img src="img/f16.svg" alt="" width="56" height="56">
 </button>
+<!-- The other aircraft, on the jet's shoulder. Pressing it swaps the balloon
+     in for the jet and back; the picture on the big button is the one you
+     will fly, the small one is the one you would switch to. app.js keeps the
+     two in step and Explore remembers the choice. -->
+<button id="craft" title="מעבר לכדור פורח" aria-label="מעבר לכדור פורח">
+  <svg class="craft-bal" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 1.5a7.5 7.5 0 0 0-7.5 7.5c0 4.2 3.4 6.6 5.6 9.2.4.5.6 1 .8 1.6h2.2c.2-.6.4-1.1.8-1.6C16.1 15.6 19.5 13.2 19.5 9A7.5 7.5 0 0 0 12 1.5zM9.8 20.8h4.4l.4 2.2H9.4z"/>
+  </svg>
+  <svg class="craft-jet" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 1.5l1.6 2.8.6 5.2L22 13v2.2l-7.6-1.6-.2 3.6 2.6 1.9v1.6L12 19.6l-4.8 1.1v-1.6l2.6-1.9-.2-3.6L2 15.2V13l7.8-3.5.6-5.2z"/>
+  </svg>
+</button>
 
 <!-- What the colours on the map mean. Each places layer paints its points by the
      group its source sorted them into - seven narratives in the conservation
