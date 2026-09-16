@@ -26,6 +26,14 @@
  * A and D roll, all the way round if you keep them down, and a bank turns you
  * the way a bank does. The point of all of it is to be able to see a photo in
  * the distance and simply go there.
+ *
+ * Since 16/9/2026 there are two aircraft on the button. The jet is the one
+ * described above. The balloon takes the same hands - mouse, button, arrows -
+ * and answers them the way a balloon would: the up arrow is a burner that
+ * heats air which lifts you some seconds later and goes on lifting after you
+ * let go, the down arrow is the valve that lets that air out, and nothing
+ * but the burner makes a sound. Its numbers come from a real one; see the
+ * tuning block for the balloon and `balloonControls` for the flight.
  */
 'use strict';
 
@@ -81,6 +89,67 @@ const Explore = (() => {
   const SINK_K = 0.08;       // banked over, the wings hold less: fraction of altitude lost per second, inverted
 
   const CLIMB_K = 0.85;      // fraction of current altitude gained per second
+
+  /* ---------- the balloon ----------
+   *
+   * Numbers from a real one, then compressed. Daidzic (Aviation 25:3, 2021)
+   * works a 3,000 m³ AX8-class balloon through: 800 kg gross, 18 m across,
+   * 254 m² of drag area, C_D 0.5 going up and 0.9 coming down mouth-first,
+   * 7.5 kg of lift for every degree above 90 °C, 3.4 m/s the best climb and
+   * 8 m/s the terminal fall of a cold envelope. The FAA Balloon Flying
+   * Handbook (ch. 7) gives the feel: a standard burn is four seconds, level
+   * flight is one of those every 25 to 40 seconds, and the balloon answers a
+   * burn 6 to 15 seconds after it, because the air inside has to circulate
+   * before it is lift. The whole craft of a pilot is burning ahead of what
+   * they want and knowing when to stop so the momentum carries them there.
+   *
+   * What is kept is the shape of all of that: heat goes through a plume
+   * before it is envelope heat, lift is heat above the level-flight excess,
+   * the envelope has inertia and drag, and the burner is a rhythm and not a
+   * lever. What is compressed, about threefold, is the heating, the cooling
+   * and the vertical speeds, so the rooftop-to-survey range is a minute and
+   * not seven. The wind is the one lie. A real balloon at 260 m makes
+   * 15 km/h; this one makes 68, because four kilometres of moshava at a
+   * walking pace is a nap. It keeps the one rule of wind that matters here,
+   * that higher is faster, which is how a balloon pilot steers at all. */
+
+  const BAL = {
+    ALT_MIN: 40,
+    ALT_START: 90,
+    PITCH_LOW: 76,         // near the ground: horizon, and a lot of it
+    PITCH_HIGH: 68,        // high up: more of the ground beneath you
+    PITCH_MIN: 50,
+    TRIM_DOWN: 22,         // W leans you out over the edge of the basket
+    TRIM_UP: 6,
+    DT_EQ: 80,             // K above ambient that just carries the load: level flight
+    DT_MAX: 130,           // the fabric's limit; past it the burner adds nothing
+    DT_FLOOR: 62,          // the least a grounded envelope cools to, so a relaunch is a long burn and not an afternoon
+    BURN_K: 6,             // K per second with the burner open
+    VENT_K: 7,             // K per second with the parachute valve open
+    COOL_T: 220,           // seconds for the heat to fall to 1/e of itself
+    MIX_T: 3,              // the plume becomes envelope heat over this long: the lag
+    LIFT_K: 73.6,          // N per K: 7.5 kg per degree
+    MASS: 3000,            // kg, inertial: structure, the hot air, and the outside air dragged along
+    DRAG_UP: 22,           // N per (m/s)², envelope rising
+    DRAG_DOWN: 40,         // and falling, mouth first
+    CEIL_FADE: 150,        // m below the ceiling over which the lift thins out
+    WIND_BASE: 6,          // m/s: the wind is this plus WIND_K per metre of height,
+    WIND_K: 0.05,          // held between WIND_MIN and WIND_MAX
+    WIND_MIN: 7,
+    WIND_MAX: 28,
+    RIDE_IDLE: 0.32,       // the wind never lets go: the share of it you drift at with nothing pressed
+    RIDE_UP: 2,            // seconds to catch the full wind with the button down
+    RIDE_DOWN: 10,         // and to lose it again once released
+    SPEED_T: 2,            // the basket's own lag behind the wind
+    DRIFT_T: 2.0,          // how long the drift takes to come round behind the basket
+    YAW_RATE: 26,          // degrees per second with the mouse at the edge: rotation vents, not a rudder
+    YAW_T: 1.2,
+    SWAY_W: 2 * Math.PI / 7,   // a seven-second pendulum: the basket under the envelope's centre
+    SWAY_Z: 0.12,          // lightly damped, three or four swings before it settles
+    SWAY_GAIN: 0.6,        // degrees of lean per m/s² of the wind pulling on the envelope
+    SWAY_MAX: 6,
+    LAUNCH: 2.5            // seconds past the take-off that the burner is held for you
+  };
 
   const REVEAL_K = 5.0;      // reveal radius = altitude * this
   const REVEAL_MIN = 420;
@@ -154,6 +223,31 @@ const Explore = (() => {
   let gal = null;            // the open gallery: { owner, list, i }
 
   let touchHold = false;     // a finger is on the screen: the touch throttle
+  let touchBurn = false;     // balloon, touch: the finger has been dragged down, the burner is open
+  let touchVent = false;     // and up, the valve is open
+
+  /* Which aircraft. Chosen outside the mode, on the small button beside the
+   * flight button, and kept between visits; read at take-off and fixed for
+   * the flight. */
+  const KEY_CRAFT = 'dk.fly.craft';
+  let craft = 'jet';
+  try { if (localStorage.getItem(KEY_CRAFT) === 'balloon') craft = 'balloon'; } catch (_) { /* private mode */ }
+
+  /* The balloon's own state. Heat is kelvin above the air outside; the
+   * plume is the burner's heat on its way to being the envelope's; the
+   * pendulum angles are degrees and their rates degrees per second. */
+  const bal = {
+    dT: 0, plume: 0, vz: 0,
+    drift: 0,                // the bearing the wind carries you on, behind `bearing`
+    ride: 0,                 // share of the wind caught, RIDE_IDLE..1
+    roll: 0, rollV: 0,       // the basket's swing, side to side
+    pit: 0, pitV: 0,         // and fore-and-aft
+    pvx: 0, pvy: 0,          // last frame's velocity, for the acceleration the basket feels
+    launch: 0,               // seconds of lift-off burn still to go
+    burning: false,          // last frame's burner, for the moment it lights
+    t: 0,                    // flight seconds, the clock the turbulence runs on
+    seed: []                 // phases for the turbulence channels, drawn at take-off
+  };
 
   let restore = null;        // what to put back on the way out
 
@@ -162,7 +256,7 @@ const Explore = (() => {
 
   let root = null, sky = null, band = null, hazeEl = null, worldEl = null;
   let elAlt = null, elSpeed = null, elName = null, elHint = null, rushEl = null, elThr = null;
-  let burnerEl = null, elBurn = null, sndBtn = null;
+  let burnerEl = null, elBurn = null, sndBtn = null, elVsi = null, elVsiG = null;
   let intro = null, viewer = null;
 
   const el = (id) => document.getElementById(id);
@@ -176,11 +270,19 @@ const Explore = (() => {
    * the body deepens and the hiss rises with speed, and the afterburner is a
    * separate roar that comes in under the throttle key. No file to fetch,
    * nothing to license, and the sound is the flight model's, not a loop
-   * played over it. */
+   * played over it.
+   *
+   * The balloon has its own voice, built the same way and kept on its own
+   * bus: a propane burner, which is the only sound a balloon makes. The rest
+   * of a balloon flight is silent, famously so - you move with the air, so
+   * there is not even wind - and that silence is half of what the burner's
+   * roar means when it comes. */
 
   const Engine = (() => {
     const KEY = 'dk.fly.sound';
-    let ctx = null, master = null, n = null;
+    let ctx = null, master = null, n = null, bv = null;
+    let jetBus = null, balBus = null;
+    let mode = 'jet';
     let muted = false;
     try { muted = localStorage.getItem(KEY) === '0'; } catch (_) { /* private mode */ }
 
@@ -219,20 +321,25 @@ const Explore = (() => {
       master = gain(0);
       master.connect(comp);
       comp.connect(ctx.destination);
+      return true;
+    }
 
+    function buildJet() {
       const brown = noise(3, true), white = noise(2, false);
+      jetBus = gain(1);
+      jetBus.connect(master);
 
       // The body of the turbine: rumble through a low-pass whose cutoff climbs
       // with speed, so spooling up is heard as the sound opening.
       const coreLP = filter('lowpass', 160, 0.8);
       const coreG = gain(0.2);
-      loop(brown).connect(coreLP); coreLP.connect(coreG); coreG.connect(master);
+      loop(brown).connect(coreLP); coreLP.connect(coreG); coreG.connect(jetBus);
 
       // Air over the airframe: a band of white noise that is barely there at
       // a hover and most of the sound at top speed.
       const hissBP = filter('bandpass', 2600, 0.5);
       const hissG = gain(0.01);
-      loop(white).connect(hissBP); hissBP.connect(hissG); hissG.connect(master);
+      loop(white).connect(hissBP); hissBP.connect(hissG); hissG.connect(jetBus);
 
       // The whine: a sawtooth and a sine an octave up, slightly off, so they
       // beat against each other the way real blades do. Pitch follows speed.
@@ -241,7 +348,7 @@ const Explore = (() => {
       const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 70;
       const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 141;
       o1.connect(whineLP); o2.connect(whineLP);
-      whineLP.connect(whineG); whineG.connect(master);
+      whineLP.connect(whineG); whineG.connect(jetBus);
       o1.start(); o2.start();
 
       // The afterburner: brown noise driven hard into a soft clipper, kept low,
@@ -257,17 +364,84 @@ const Explore = (() => {
       const lfoG = gain(0.35);
       lfo.connect(lfoG); lfoG.connect(trem.gain); lfo.start();
       loop(brown).connect(shaper); shaper.connect(burnLP); burnLP.connect(burnG);
-      burnG.connect(trem); trem.connect(master);
+      burnG.connect(trem); trem.connect(jetBus);
 
       n = { coreLP, coreG, hissG, o1, o2, whineG, burnG };
-      return true;
     }
+
+    /* The burner. A propane burner is a flame the size of a room, and what
+     * it sounds like is a roar with most of its weight a couple of hundred
+     * hertz up, a tearing edge above that, and the hiss of the jets over
+     * everything; and it flutters, several times a second, which is what
+     * says fire and not wind. Loud on purpose. It is the loudest thing in
+     * ballooning and the only thing you hear, and pilots time their burns
+     * partly by ear. */
+    function buildBalloon() {
+      const brown = noise(3, true), white = noise(2, false);
+      balBus = gain(1);
+      balBus.connect(master);
+
+      // The flutter: a gain the three voices pass through, swung by noise
+      // low-passed to a few hertz. Its resting value is under one so the
+      // swing has room both ways.
+      const flick = gain(0.72);
+      const flLP = filter('lowpass', 11, 1.2);
+      const flG = gain(14);
+      loop(white).connect(flLP); flLP.connect(flG); flG.connect(flick.gain);
+
+      // The body of the roar.
+      const roarBP = filter('bandpass', 240, 0.5);
+      const roarG = gain(3.2);
+      loop(brown).connect(roarBP); roarBP.connect(roarG); roarG.connect(flick);
+
+      // The edge, and the jets.
+      const midBP = filter('bandpass', 950, 0.6);
+      const midG = gain(0.3);
+      loop(white).connect(midBP); midBP.connect(midG); midG.connect(flick);
+      const hissHP = filter('highpass', 2600, 0.7);
+      const hissG = gain(0.07);
+      loop(white).connect(hissHP); hissHP.connect(hissG); hissG.connect(flick);
+
+      // The valve: shut until the key opens it, a fast attack and a quick
+      // close, and nothing at all in between.
+      const out = gain(0);
+      flick.connect(out); out.connect(balBus);
+
+      bv = { out };
+    }
+
+    /** The whoomp of the valve opening: a pitch that falls through the
+     *  bottom of the roar in a third of a second, once per lighting. */
+    function ignite() {
+      if (!ctx || muted || !bv || mode !== 'balloon') return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(36, t + 0.35);
+      const g = gain(0);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.6, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g); g.connect(balBus);
+      o.start(t); o.stop(t + 0.55);
+    }
+
+    /** Which aircraft the next start() is for. */
+    function setMode(m) { mode = m; }
 
     /** Start, or resume. Must be called from a user gesture the first time:
      *  browsers refuse to make a sound a page asked for on its own. */
     function start() {
       if (muted) return;
       if (!ctx && !build()) return;
+      // Each aircraft's voices are built the first time it is flown and kept;
+      // the buses decide which one is heard.
+      if (mode === 'jet' && !n) buildJet();
+      if (mode === 'balloon' && !bv) buildBalloon();
+      if (jetBus) jetBus.gain.value = mode === 'jet' ? 1 : 0;
+      if (balBus) balBus.gain.value = mode === 'balloon' ? 1 : 0;
+      if (bv) bv.out.gain.value = 0;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       master.gain.cancelScheduledValues(ctx.currentTime);
       master.gain.setTargetAtTime(0.55, ctx.currentTime, 0.4);
@@ -286,10 +460,17 @@ const Explore = (() => {
       setTimeout(() => { if (ctx && master.gain.value < 0.01) ctx.suspend().catch(() => {}); }, 900);
     }
 
-    /** Every frame. `s` is speed as a fraction of top speed, `b` the burner. */
+    /** Every frame. For the jet, `s` is speed as a fraction of top speed and
+     *  `b` the afterburner; for the balloon only `b` matters, the burner,
+     *  open or shut. */
     function set(s, b) {
-      if (!ctx || muted || !n) return;
+      if (!ctx || muted) return;
       const t = ctx.currentTime;
+      if (mode === 'balloon') {
+        if (bv) bv.out.gain.setTargetAtTime(b > 0.5 ? 1 : 0, t, b > 0.5 ? 0.035 : 0.09);
+        return;
+      }
+      if (!n) return;
       s = clamp(s, 0, 1);
       n.coreLP.frequency.setTargetAtTime(150 + 950 * s, t, 0.1);
       n.coreG.gain.setTargetAtTime(0.2 + 0.4 * s, t, 0.1);
@@ -308,7 +489,7 @@ const Explore = (() => {
       return !muted;
     }
 
-    return { start, stop, set, poke, toggle, isOn: () => !muted };
+    return { start, stop, set, poke, toggle, setMode, ignite, isOn: () => !muted };
   })();
 
   /* ---------- geometry ---------- */
@@ -417,6 +598,13 @@ const Explore = (() => {
       const d = Math.ceil(Math.hypot(w, h));
       ox = Math.ceil((d - w) / 2);
       oy = Math.ceil((d - h) / 2);
+    } else if (craft === 'balloon') {
+      // No roll on touch, but the basket still sways, and a picture tilted
+      // by a few degrees needs a little material past each edge: a corner
+      // of the screen rotated by `a` reaches about half the other side
+      // times sin(a) beyond it. Eight per cent covers nine degrees.
+      ox = Math.ceil(h * 0.08);
+      oy = Math.ceil(w * 0.08);
     } else {
       ox = 0;
       oy = 0;
@@ -771,103 +959,263 @@ const Explore = (() => {
     return Math.sign(v) * Math.pow(s, 1.6);
   }
 
+  const altMin = () => (craft === 'balloon' ? BAL.ALT_MIN : ALT_MIN);
+
+  /** The tilt the altitude asks for, before trim and sway. */
+  function basePitch() {
+    const isBal = craft === 'balloon';
+    const lo = isBal ? BAL.PITCH_LOW : PITCH_LOW;
+    const hi = isBal ? BAL.PITCH_HIGH : PITCH_HIGH;
+    const t = clamp((alt - altMin()) / (ALT_MAX - altMin()), 0, 1);
+    return lerp(lo, hi, Math.sqrt(t));
+  }
+
+  function viewPitch() {
+    const isBal = craft === 'balloon';
+    return clamp(basePitch() + pitchTrim - (isBal ? bal.pit : 0),
+                 isBal ? BAL.PITCH_MIN : PITCH_MIN, PITCH_MAX);
+  }
+
+  /** Where the stick is, or nothing if the mouse is busy being a mouse: on a
+   *  photo, on a button, on the help card, outside the window. */
+  function readStick(now) {
+    // A card that slid out of range while the cursor rested on it would
+    // otherwise hold the stick until the mouse next moved.
+    if (hover.card && hover.card.hidden) hover.card = null;
+    const held = !!hover.card && now - hover.since > HOVER_MS;   // the cursor is on a photo
+    const steer = canRoll && mouse.in && armed && intro.hidden && !hover.hud && !held;
+    const sx = steer ? stick(mouse.nx) : 0;
+    const keyTurn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
+    return { held, turnIn: clamp(sx + keyTurn, -1, 1) };
+  }
+
+  /** The jet, one frame. Returns how much afterburner it wants heard. */
+  function jetControls(dt, now) {
+    const cruise = clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX);
+    const top = cruise * BOOST;
+
+    // Throttle. The button held opens it, the button released lets it wind
+    // down, and the speed follows the throttle rather than the button, so a
+    // press is a push rather than a switch. Rise is quicker than fall on
+    // purpose: a rhythm of short presses holds a speed without effort, and
+    // letting go altogether is a slow coast to a stop, not a brake. Top
+    // speed follows altitude, so a dive at full throttle does not arrive at
+    // the rooftops at survey speed.
+    const open = hold || touchHold;
+    throttle = open ? Math.min(1, throttle + dt / THR_UP)
+                    : Math.max(0, throttle - dt / THR_DOWN);
+    speed += (throttle * top - speed) * clamp(ACCEL * dt, 0, 1);
+    // The burner is the top of the throttle, past cruise. Below it, with
+    // the button down, the engine is heard spooling, so the press is
+    // answered the moment it lands.
+    const burnWant = throttle * BOOST > 1.02 ? 1 : open ? 0.45 : 0;
+
+    const { held, turnIn } = readStick(now);
+
+    // Roll. A and D roll at a fixed rate for as long as they are down, past
+    // the vertical and over the top if you like. Released, the wings level
+    // themselves - the short way round, so a roll let go past inverted
+    // finishes rather than unwinds - onto the bank a plain turn would show.
+    const rollIn = canRoll ? (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) : 0;
+    if (rollIn) {
+      bankRate += (rollIn * ROLL_RATE - bankRate) * clamp(ROLL_ACCEL * dt, 0, 1);
+      bank += bankRate * dt;
+    } else {
+      bankRate = 0;
+      const want = canRoll ? turnIn * BANK_MAX : 0;
+      bank += angleDiff(want, bank) * clamp(LEVEL_K * dt, 0, 1);
+    }
+    bank = angleDiff(bank, 0);
+
+    // Turn: what the stick asks, plus what the bank gives. A bank turns the
+    // nose the way lift does, so a rolled-in turn is tighter than a flat one
+    // and an inverted aircraft goes straight - which is also what makes a
+    // full roll come out pointing where it went in.
+    const wantYaw = turnIn * YAW_RATE + Math.sin(bank * RAD) * BANK_TURN;
+    // The turn dies quickly under a held photo, so it stops sliding away
+    // from the cursor that is trying to click it.
+    yaw += (wantYaw - yaw) * clamp((held ? 12 : YAW_ACCEL) * dt, 0, 1);
+    bearing = (bearing + yaw * dt + 360) % 360;
+
+    // Elevator. W pushes the nose down and dives, S pulls it up and climbs,
+    // the way a stick pushed forward does; the arrows climb and sink without
+    // moving the view. Climb rate is a fraction of the height you are at, so
+    // the whole range from rooftop to survey takes a handful of seconds
+    // either way.
+    const elev = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
+    const trimWant = elev > 0 ? TRIM_UP : elev < 0 ? -TRIM_DOWN : 0;
+    pitchTrim += (trimWant - pitchTrim) * clamp(4 * dt, 0, 1);
+    const climb = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0) + elev;
+    if (climb) alt = clamp(alt * (1 + climb * CLIMB_K * dt) + climb * 6 * dt,
+                           ALT_MIN, ALT_MAX);
+    // Banked over, the wings hold less. Gentle enough that a mouse turn's
+    // bank costs nothing you would notice and a knife-edge costs a little.
+    const lift = Math.cos(bank * RAD);
+    if (lift < 0.9) alt = clamp(alt * (1 - (1 - lift) * SINK_K * dt), ALT_MIN, ALT_MAX);
+
+    if (speed) pos = destination(pos.lat, pos.lng, bearing, speed * dt);
+    return burnWant;
+  }
+
+  /* ---------- the balloon's flight ----------
+   *
+   * Same hands, different machine. The mouse still says where to face, the
+   * button still says go, the arrows still say up and down; what changes is
+   * what is on the other end of each. Up is the burner: it heats air, and
+   * the air lifts you a few seconds later and goes on lifting after you let
+   * go. Down is the parachute valve at the crown, and it lets that air out.
+   * The button is the wind: hold it and the balloon is carried at the full
+   * wind of its height, let go and it eases back to a drift, never to a
+   * stop, because a balloon is never still. Facing somewhere is a request
+   * the drift takes a couple of seconds to grant.
+   *
+   * The basket is a pendulum under the envelope, and everything the envelope
+   * does reaches you through it. So every horizontal acceleration becomes a
+   * lean the basket swings towards and past, and the picture rolls and tips
+   * with the swing. That, and the silence, is what makes it a balloon. */
+
+  /** Slow, smooth, never-repeating noise in about -1..1: three sines that
+   *  share no period. `ch` picks a channel with phases of its own, `rate`
+   *  sets its tempo. */
+  function turb(ch, rate) {
+    const s = bal.seed[ch];
+    const t = bal.t * rate;
+    return 0.5 * Math.sin(t * 0.31 + s[0]) + 0.3 * Math.sin(t * 0.83 + s[1])
+         + 0.2 * Math.sin(t * 1.93 + s[2]);
+  }
+
+  /** The balloon, one frame. Returns whether the burner is lit. */
+  function balloonControls(dt, now) {
+    bal.t += dt;
+
+    // The launch burn holds the burner for you for the first seconds, so the
+    // roar and the lift arrive together and say what the key does.
+    if (bal.launch > 0) bal.launch -= dt;
+    const burnerOn = (keys.has('ArrowUp') || touchBurn || bal.launch > 0) && bal.dT < BAL.DT_MAX;
+    const ventOpen = keys.has('ArrowDown') || touchVent;
+
+    // Heat. The burner feeds a plume, the plume becomes envelope heat over
+    // MIX_T, the envelope loses heat to the air outside in proportion to
+    // what it holds, and the valve dumps it. Lift is heat above what level
+    // flight needs, so the envelope that lifted you sinks you once it has
+    // cooled past that mark: the rhythm of short burns is not optional.
+    bal.plume += ((burnerOn ? BAL.BURN_K : 0) - bal.plume) * clamp(dt / BAL.MIX_T, 0, 1);
+    bal.dT += (bal.plume - bal.dT / BAL.COOL_T - (ventOpen ? BAL.VENT_K : 0)) * dt;
+    if (alt <= BAL.ALT_MIN + 1) bal.dT = Math.max(bal.dT, BAL.DT_FLOOR);
+    bal.dT = clamp(bal.dT, 0, BAL.DT_MAX + 8);
+
+    // Lift against weight, drag against motion, a slow breath of thermal
+    // luck on top, and a ceiling where the air is too thin to hold more.
+    let lift = BAL.LIFT_K * (bal.dT - BAL.DT_EQ) + 220 * turb(3, 0.25);
+    if (lift > 0) lift *= clamp((ALT_MAX - alt) / BAL.CEIL_FADE, 0, 1);
+    const drag = (bal.vz > 0 ? BAL.DRAG_UP : BAL.DRAG_DOWN) * bal.vz * Math.abs(bal.vz);
+    bal.vz += (lift - drag) / BAL.MASS * dt;
+    alt += bal.vz * dt;
+    if (alt <= BAL.ALT_MIN) {
+      alt = BAL.ALT_MIN;
+      // The basket touches down: a bump through the pendulum, harder the
+      // faster you came.
+      if (bal.vz < -0.4) {
+        bal.pitV += bal.vz * 1.5;
+        bal.rollV += bal.vz * (Math.random() - 0.5) * 2;
+      }
+      bal.vz = 0;
+    }
+    if (alt >= ALT_MAX) { alt = ALT_MAX; bal.vz = Math.min(bal.vz, 0); }
+
+    // Facing. The stick turns the basket, slowly and with weight - these are
+    // the rotation vents, not a rudder - and A and D do the same. The basket
+    // also wanders a little on its own, the way one does.
+    const { held, turnIn } = readStick(now);
+    const rollIn = canRoll ? (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) : 0;
+    const want = clamp(turnIn + rollIn, -1, 1) * BAL.YAW_RATE;
+    yaw += (want - yaw) * clamp(dt / (held ? 0.15 : BAL.YAW_T), 0, 1);
+    bearing = (bearing + (yaw + 0.7 * turb(2, 1)) * dt + 360) % 360;
+
+    // The wind. Its strength is the altitude's, its share is the button's,
+    // and the basket follows both with a lag, so a press is felt as a pull
+    // that builds and a release as a long glide.
+    const open = hold || touchHold;
+    bal.ride += ((open ? 1 : BAL.RIDE_IDLE) - bal.ride)
+              * clamp(dt / (open ? BAL.RIDE_UP : BAL.RIDE_DOWN), 0, 1);
+    const wind = clamp(BAL.WIND_BASE + alt * BAL.WIND_K, BAL.WIND_MIN, BAL.WIND_MAX) * bal.ride;
+    speed += (wind - speed) * clamp(dt / BAL.SPEED_T, 0, 1);
+    bal.drift = (bal.drift + angleDiff(bearing, bal.drift) * clamp(dt / BAL.DRIFT_T, 0, 1) + 360) % 360;
+    if (speed) pos = destination(pos.lat, pos.lng, bal.drift, speed * dt);
+
+    // The pendulum. Whatever accelerates the envelope reaches the basket as
+    // a lean it swings towards and past: the wind taking hold tips you, a
+    // turn leans you outward. Lightly damped, so it takes a few swings to
+    // settle, and the turbulence channels see that it never quite does.
+    const sb = Math.sin(bearing * RAD), cb = Math.cos(bearing * RAD);
+    const vx = speed * Math.sin(bal.drift * RAD), vy = speed * Math.cos(bal.drift * RAD);
+    let fwd = 0, lat = 0;
+    if (dt > 0) {
+      const ax = (vx - bal.pvx) / dt, ay = (vy - bal.pvy) / dt;
+      fwd = ax * sb + ay * cb;
+      lat = ax * cb - ay * sb;
+    }
+    bal.pvx = vx;
+    bal.pvy = vy;
+    const rollEq = clamp(lat * BAL.SWAY_GAIN, -BAL.SWAY_MAX, BAL.SWAY_MAX)
+                 + 0.9 * turb(0, 1) + (burnerOn ? 0.5 * turb(4, 4) : 0);
+    const pitEq = clamp(fwd * BAL.SWAY_GAIN, -BAL.SWAY_MAX, BAL.SWAY_MAX) + 0.6 * turb(1, 1);
+    const w = BAL.SWAY_W, z = BAL.SWAY_Z;
+    bal.rollV += (w * w * (rollEq - bal.roll) - 2 * z * w * bal.rollV) * dt;
+    bal.roll += bal.rollV * dt;
+    bal.pitV += (w * w * (pitEq - bal.pit) - 2 * z * w * bal.pitV) * dt;
+    bal.pit += bal.pitV * dt;
+    // The burner lighting is a small shove: the flame is never quite centred
+    // and the envelope answers before the basket does.
+    if (burnerOn && !bal.burning) {
+      bal.pitV -= 1.4;
+      bal.rollV += (Math.random() - 0.5) * 2;
+      Engine.ignite();
+    }
+    bal.burning = burnerOn;
+    bank = bal.roll;
+
+    // Looking over the edge. W leans out and down, S back and up, and the
+    // view follows slowly, as a body does.
+    const elev = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
+    const trimWant = elev > 0 ? BAL.TRIM_UP : elev < 0 ? -BAL.TRIM_DOWN : 0;
+    pitchTrim += (trimWant - pitchTrim) * clamp(dt / 0.7, 0, 1);
+
+    // The bar under the gauges shows heat here, not throttle; see paintHud.
+    throttle = bal.dT / BAL.DT_MAX;
+    return burnerOn ? 1 : 0;
+  }
+
   function step(now) {
     raf = requestAnimationFrame(step);
     const dt = clamp((now - last) / 1000, 0, 0.06);
     last = now;
+    const isBal = craft === 'balloon';
     // During the take-off ease the camera belongs to MapLibre, but the sky
-    // still has to follow the horizon it is climbing towards.
-    if (!flying) { paintHud(map.getPitch()); return; }
-
-    const t = clamp((alt - ALT_MIN) / (ALT_MAX - ALT_MIN), 0, 1);
-    const pitch = clamp(lerp(PITCH_LOW, PITCH_HIGH, Math.sqrt(t)) + pitchTrim,
-                        PITCH_MIN, PITCH_MAX);
-
-    const cruise = clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX);
-    const top = cruise * BOOST;
-    let burnWant = 0;
+    // still has to follow the horizon it is climbing towards - and the
+    // balloon's burner is already lit, because that is what lifts it.
+    if (!flying) {
+      if (isBal) {
+        burn += (1 - burn) * clamp(8 * dt, 0, 1);
+        if ((frame++ & 1) === 0) Engine.set(0, 1);
+      }
+      paintHud(map.getPitch());
+      return;
+    }
 
     // A photo open full-size holds everything where it is. The speed you had
     // is the speed you get back, because closing a picture is not landing.
-    if (!paused) {
-      // Throttle. The button held opens it, the button released lets it wind
-      // down, and the speed follows the throttle rather than the button, so a
-      // press is a push rather than a switch. Rise is quicker than fall on
-      // purpose: a rhythm of short presses holds a speed without effort, and
-      // letting go altogether is a slow coast to a stop, not a brake. Top
-      // speed follows altitude, so a dive at full throttle does not arrive at
-      // the rooftops at survey speed.
-      const open = hold || touchHold;
-      throttle = open ? Math.min(1, throttle + dt / THR_UP)
-                      : Math.max(0, throttle - dt / THR_DOWN);
-      speed += (throttle * top - speed) * clamp(ACCEL * dt, 0, 1);
-      // The burner is the top of the throttle, past cruise. Below it, with
-      // the button down, the engine is heard spooling, so the press is
-      // answered the moment it lands.
-      burnWant = throttle * BOOST > 1.02 ? 1 : open ? 0.45 : 0;
+    let burnWant = 0;
+    if (!paused) burnWant = isBal ? balloonControls(dt, now) : jetControls(dt, now);
+    const pitch = viewPitch();
 
-      // The stick. The mouse asks nothing while it rests on a photo, on a
-      // button, on the help card, or outside the window: those are the moments
-      // it is being used as a mouse.
-      // A card that slid out of range while the cursor rested on it would
-      // otherwise hold the stick until the mouse next moved.
-      if (hover.card && hover.card.hidden) hover.card = null;
-      const held = !!hover.card && now - hover.since > HOVER_MS;   // the cursor is on a photo
-      const steer = canRoll && mouse.in && armed && intro.hidden && !hover.hud && !held;
-      const sx = steer ? stick(mouse.nx) : 0;
-      const keyTurn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
-      const turnIn = clamp(sx + keyTurn, -1, 1);
-
-      // Roll. A and D roll at a fixed rate for as long as they are down, past
-      // the vertical and over the top if you like. Released, the wings level
-      // themselves - the short way round, so a roll let go past inverted
-      // finishes rather than unwinds - onto the bank a plain turn would show.
-      const rollIn = canRoll ? (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) : 0;
-      if (rollIn) {
-        bankRate += (rollIn * ROLL_RATE - bankRate) * clamp(ROLL_ACCEL * dt, 0, 1);
-        bank += bankRate * dt;
-      } else {
-        bankRate = 0;
-        const want = canRoll ? turnIn * BANK_MAX : 0;
-        bank += angleDiff(want, bank) * clamp(LEVEL_K * dt, 0, 1);
-      }
-      bank = angleDiff(bank, 0);
-
-      // Turn: what the stick asks, plus what the bank gives. A bank turns the
-      // nose the way lift does, so a rolled-in turn is tighter than a flat one
-      // and an inverted aircraft goes straight - which is also what makes a
-      // full roll come out pointing where it went in.
-      const wantYaw = turnIn * YAW_RATE + Math.sin(bank * RAD) * BANK_TURN;
-      // The turn dies quickly under a held photo, so it stops sliding away
-      // from the cursor that is trying to click it.
-      yaw += (wantYaw - yaw) * clamp((held ? 12 : YAW_ACCEL) * dt, 0, 1);
-      bearing = (bearing + yaw * dt + 360) % 360;
-
-      // Elevator. W pushes the nose down and dives, S pulls it up and climbs,
-      // the way a stick pushed forward does; the arrows climb and sink without
-      // moving the view. Climb rate is a fraction of the height you are at, so
-      // the whole range from rooftop to survey takes a handful of seconds
-      // either way.
-      const elev = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
-      const trimWant = elev > 0 ? TRIM_UP : elev < 0 ? -TRIM_DOWN : 0;
-      pitchTrim += (trimWant - pitchTrim) * clamp(4 * dt, 0, 1);
-      const climb = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0) + elev;
-      if (climb) alt = clamp(alt * (1 + climb * CLIMB_K * dt) + climb * 6 * dt,
-                             ALT_MIN, ALT_MAX);
-      // Banked over, the wings hold less. Gentle enough that a mouse turn's
-      // bank costs nothing you would notice and a knife-edge costs a little.
-      const lift = Math.cos(bank * RAD);
-      if (lift < 0.9) alt = clamp(alt * (1 - (1 - lift) * SINK_K * dt), ALT_MIN, ALT_MAX);
-
-      if (speed) pos = destination(pos.lat, pos.lng, bearing, speed * dt);
-    }
-
-    burn += (burnWant - burn) * clamp((burnWant > burn ? 6 : 3) * dt, 0, 1);
+    burn += (burnWant - burn) * clamp((burnWant > burn ? (isBal ? 14 : 6) : (isBal ? 8 : 3)) * dt, 0, 1);
 
     // Bank the picture. The map, the sky and the floating cards are rotated
     // together in CSS - they have to move as one or the photos slide off
-    // their trails. Right wing down is a counter-clockwise picture.
-    if (canRoll) {
+    // their trails. Right wing down is a counter-clockwise picture. The
+    // balloon's basket sways on a phone too, where the jet does not roll.
+    if (canRoll || isBal) {
       const tf = `rotate(${(-bank).toFixed(2)}deg)`;
       map.getContainer().style.transform = tf;
       worldEl.style.transform = tf;
@@ -898,9 +1246,15 @@ const Explore = (() => {
     paintHud(pitch);
 
     // Every other frame is plenty for an automation timeline; the ramps are
-    // smoothed on the audio thread anyway.
-    if ((frame++ & 1) === 0) Engine.set(paused ? 0.12 : Math.abs(speed) / top, paused ? 0 : burn);
+    // smoothed on the audio thread anyway. The balloon's burner takes the
+    // key and not the eased glow: a valve is open or it is not.
+    if ((frame++ & 1) === 0) {
+      if (isBal) Engine.set(0, paused ? 0 : burnWant);
+      else Engine.set(paused ? 0.12 : Math.abs(speed) / topSpeed(), paused ? 0 : burn);
+    }
   }
+
+  const topSpeed = () => clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX) * BOOST;
 
   function paintHud(pitch) {
     // The sky is a band that ends exactly at the horizon, so the pale end of
@@ -921,9 +1275,23 @@ const Explore = (() => {
     elSpeed.textContent = `${Math.round(Math.abs(speed) * 3.6)} קמ״ש`;
     elThr.style.width = `${(throttle * 100).toFixed(0)}%`;
 
-    const top = clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX) * BOOST;
-    rushEl.style.opacity = clamp((Math.abs(speed) / top - 0.34) * 0.62, 0, 0.34);
-    burnerEl.style.opacity = burn * 0.85;
+    if (craft === 'balloon') {
+      // A balloon pilot's instrument is the variometer: not where you are
+      // but which way you are going, because by the time the altimeter
+      // shows it the burn that fixes it is late. The bar is the envelope's
+      // heat, cold blue below the mark that holds you and warm above it, so
+      // the sink you are about to start is visible before it starts.
+      const v = bal.vz;
+      elVsi.textContent = `${v > 0.05 ? '▲' : v < -0.05 ? '▼' : '•'} ${Math.abs(v).toFixed(1)}`;
+      elThr.style.background = bal.dT >= BAL.DT_EQ ? '#ffb066' : '#8ec3ff';
+      rushEl.style.opacity = 0;
+      // The flame is not steady, and neither is its light on the envelope.
+      const flick = 0.78 + 0.22 * Math.abs(Math.sin(bal.t * 23) * Math.sin(bal.t * 7.3));
+      burnerEl.style.opacity = burn * 0.9 * flick;
+    } else {
+      rushEl.style.opacity = clamp((Math.abs(speed) / topSpeed() - 0.34) * 0.62, 0, 0.34);
+      burnerEl.style.opacity = burn * 0.85;
+    }
     document.body.classList.toggle('fly-burn', burn > 0.5);
     elBurn.hidden = burn < 0.5;
 
@@ -1197,6 +1565,8 @@ const Explore = (() => {
   function onBlur() {
     keys.clear();
     touchHold = false;
+    touchBurn = false;
+    touchVent = false;
     onPointerLeave();
   }
 
@@ -1217,7 +1587,7 @@ const Explore = (() => {
     const tgt = e.target;
     if (tgt && tgt.closest && tgt.closest('.fly-card, .fly-hud, .fly-view')) return;
     const t = e.touches[0];
-    touch = { x: t.clientX, y: t.clientY };
+    touch = { x: t.clientX, y: t.clientY, y0: t.clientY };
     touchHold = true;
     dismissIntro();
     Engine.poke();
@@ -1229,10 +1599,20 @@ const Explore = (() => {
     const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
     touch.x = t.clientX; touch.y = t.clientY;
     bearing = (bearing - dx * 0.28 + 360) % 360;
-    if (Math.abs(dy) > 1) alt = clamp(alt * (1 + dy * 0.004), ALT_MIN, ALT_MAX);
+    if (craft === 'balloon') {
+      // The balloon's height is not a thing a finger can set; what it can do
+      // is open the burner or the valve. A finger pulled well below where
+      // it landed is the burner, pushed well above it the valve, and back
+      // in the middle neither.
+      const off = t.clientY - touch.y0;
+      touchBurn = off > 40;
+      touchVent = off < -40;
+    } else if (Math.abs(dy) > 1) {
+      alt = clamp(alt * (1 + dy * 0.004), ALT_MIN, ALT_MAX);
+    }
   }
 
-  function onTouchEnd() { touch = null; touchHold = false; }
+  function onTouchEnd() { touch = null; touchHold = false; touchBurn = false; touchVent = false; }
 
   function onVisibility() {
     if (!on) return;
@@ -1248,7 +1628,8 @@ const Explore = (() => {
   function setSound(isOn) {
     if (!sndBtn) return;
     sndBtn.classList.toggle('off', !isOn);
-    sndBtn.setAttribute('aria-label', isOn ? 'השתקת המנוע' : 'הפעלת הצליל');
+    const what = craft === 'balloon' ? 'המבער' : 'המנוע';
+    sndBtn.setAttribute('aria-label', isOn ? `השתקת ${what}` : 'הפעלת הצליל');
     sndBtn.title = isOn ? 'השתקה (M)' : 'צליל (M)';
   }
 
@@ -1281,10 +1662,12 @@ const Explore = (() => {
       <div class="fly-rush" id="fly-rush"></div>
       <div class="fly-burner" id="fly-burner"></div>
       <div class="fly-vig"></div>
+      <div class="fly-basket" aria-hidden="true"></div>
       <div class="fly-hud">
         <div class="fly-reticle" aria-hidden="true"></div>
         <div class="fly-readout">
           <span class="fly-gauge"><b id="fly-alt">—</b><i>גובה</i></span>
+          <span class="fly-gauge" id="fly-vsi-g" hidden><b id="fly-vsi">—</b><i>מ׳/שנ׳ אנכי</i></span>
           <span class="fly-gauge"><b id="fly-speed">—</b><i>מהירות</i></span>
           <span class="fly-gauge burn" id="fly-burn" hidden><b>מבער</b><i>אחורי</i></span>
         </div>
@@ -1308,7 +1691,7 @@ const Explore = (() => {
         <p class="fly-credit">Esri · Maxar · Earthstar Geographics · גובה: Mapzen / AWS</p>
       </div>
       <div class="fly-intro" id="fly-intro">
-        <div class="fly-intro-card">
+        <div class="fly-intro-card jet">
           <h2>מצב תעופה</h2>
           <p>אתה מרחף מעל פרדס חנה־כרכור. דרכי הקיצור נדלקות כשמתקרבים אליהן,
              והתמונות שלהן תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.</p>
@@ -1325,6 +1708,25 @@ const Explore = (() => {
           <p class="fly-intro-foot">כשהסמן נח על תמונה ההגה משתחרר, כדי שאפשר יהיה ללחוץ עליה.</p>
           <p class="fly-intro-touch">אצבע על המסך היא המצערת: מחזיקים וטסים, משחררים ונעצרים.
              גרירה לצדדים פונה, למעלה ולמטה משנה גובה. נגיעה בתמונה פותחת אותה.</p>
+        </div>
+        <div class="fly-intro-card balloon">
+          <h2>כדור פורח</h2>
+          <p>אתה נישא בשקט מעל פרדס חנה־כרכור. דרכי הקיצור נדלקות כשמתקרבים אליהן,
+             והתמונות שלהן תלויות באוויר מעל השביל. הכדור מגיב באיחור של כמה שניות
+             לכל דבר, אז מבעירים מעט, ומחכים.</p>
+          <ul class="fly-keys">
+            <li><kbd>↑</kbd><span>המבער. מחמם את האוויר, והכדור עולה אחרי כמה שניות וממשיך גם כשמרפים</span></li>
+            <li><kbd>↓</kbd><span>פתח האוורור בקודקוד: משחרר אוויר חם, ויורדים</span></li>
+            <li><kbd class="wide">לחיצה</kbd><span>הרוח: כל עוד הכפתור לחוץ נסחפים במלוא הרוח, וכשמשחררים היא נרגעת</span></li>
+            <li><kbd class="wide">עכבר</kbd><span>לאן הסל פונה. הרוח מתיישרת אחריו, לאט</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>להביט מטה מעבר לדופן, ובחזרה למעלה</span></li>
+            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>M</kbd><span>המבער</span></li>
+            <li><kbd>Esc</kbd><span>יציאה</span></li>
+          </ul>
+          <p class="fly-intro-foot">הבערה קצרה כל עשרים שניות מחזיקה גובה. ככל שגבוה יותר, הרוח חזקה יותר.</p>
+          <p class="fly-intro-touch">אצבע על המסך תופסת את הרוח. גרירה לצדדים פונה, גרירה למטה מבעירה,
+             גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.</p>
         </div>
       </div>
       <div class="fly-view" id="fly-view" hidden>
@@ -1353,6 +1755,8 @@ const Explore = (() => {
     burnerEl = el('fly-burner');
     elAlt = el('fly-alt');
     elSpeed = el('fly-speed');
+    elVsi = el('fly-vsi');
+    elVsiG = el('fly-vsi-g');
     elBurn = el('fly-burn');
     elThr = el('fly-thr-fill');
     elName = el('fly-name');
@@ -1392,7 +1796,8 @@ const Explore = (() => {
     paused = false;
     pos = { lat: c.lat, lng: c.lng };
     bearing = map.getBearing();
-    alt = ALT_START;
+    const isBal = craft === 'balloon';
+    alt = isBal ? BAL.ALT_START : ALT_START;
     speed = 0;
     throttle = 0;
     hold = false;
@@ -1406,9 +1811,37 @@ const Explore = (() => {
     hover.card = null;
     hover.hud = false;
     touchHold = false;
+    touchBurn = false;
+    touchVent = false;
     armed = false;
 
+    if (isBal) {
+      // On the ground with a warm envelope that will not quite carry you:
+      // the launch burn is what lifts you off, and it is already lit through
+      // the take-off ease.
+      bal.dT = BAL.DT_EQ - 6;
+      bal.plume = 0;
+      bal.vz = 0.8;
+      bal.drift = bearing;
+      bal.ride = BAL.RIDE_IDLE;
+      bal.roll = 0; bal.rollV = 0;
+      bal.pit = 0; bal.pitV = 0;
+      bal.pvx = 0; bal.pvy = 0;
+      bal.launch = 1.75 + BAL.LAUNCH;
+      bal.burning = false;
+      bal.t = 0;
+      bal.seed = [];
+      for (let i = 0; i < 5; i++) {
+        bal.seed.push([Math.random() * 6.3, Math.random() * 6.3, Math.random() * 6.3]);
+      }
+    }
+    elBurn.querySelector('i').textContent = isBal ? 'דולק' : 'אחורי';
+    elVsiG.hidden = !isBal;
+    if (!isBal) elThr.style.background = '';
+    setSound(Engine.isOn());
+
     document.body.classList.add('flying');
+    document.body.classList.toggle('fly-balloon', isBal);
 
     // Full screen is asked for, never depended on: iOS refuses it outright and
     // the mode is perfectly good without it.
@@ -1426,6 +1859,7 @@ const Explore = (() => {
     // The engine starts here, inside the click that opened the mode, because
     // that is the gesture the browser wants before it will let a page make a
     // sound. Started later, from a timer, it would stay silent.
+    Engine.setMode(craft);
     Engine.start();
 
     const start = () => {
@@ -1449,13 +1883,14 @@ const Explore = (() => {
       addLayers();
       buildWorld();
 
-      const t = clamp((alt - ALT_MIN) / (ALT_MAX - ALT_MIN), 0, 1);
-      const pitch = lerp(PITCH_LOW, PITCH_HIGH, Math.sqrt(t));
+      const pitch = basePitch();
       const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
 
       // A take-off rather than a cut. The mode is a change of place as much as
       // a change of controls, and arriving at altitude in one frame reads as a
-      // glitch where a rise reads as leaving the ground.
+      // glitch where a rise reads as leaving the ground. The balloon's burner
+      // lights as the rise begins.
+      if (isBal) Engine.ignite();
       map.easeTo({
         center: [ahead.lng, ahead.lat],
         zoom: zoomFor(alt, pitch, ahead.lat),
@@ -1556,7 +1991,8 @@ const Explore = (() => {
     map.getContainer().style.transform = '';
     worldEl.style.transform = '';
     sky.style.transform = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed');
+    elThr.style.background = '';
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon');
     document.documentElement.style.removeProperty('--fly-ox');
     document.documentElement.style.removeProperty('--fly-oy');
 
@@ -1603,11 +2039,32 @@ const Explore = (() => {
       land();
     }
 
+    if (craftNext) { craft = craftNext; craftNext = null; }
+
     if (opts.keepPlace) return;
   }
 
   const isOn = () => on;
   const toggle = () => (on ? exit() : enter());
 
-  return { enter, exit, toggle, isOn };
+  /** Which aircraft the next take-off uses. Kept across visits; a flight
+   *  already in the air keeps the one it took off in. */
+  let craftNext = null;
+  function setCraft(c) {
+    c = c === 'balloon' ? 'balloon' : 'jet';
+    try { localStorage.setItem(KEY_CRAFT, c); } catch (_) { /* fine */ }
+    if (on) craftNext = c; else craft = c;
+    return c;
+  }
+  const getCraft = () => craftNext || craft;
+
+  /** The flight model's state, for the tests. */
+  const debug = () => ({
+    on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
+    burn, throttle,
+    balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
+               roll: bal.roll, pit: bal.pit, launch: bal.launch }
+  });
+
+  return { enter, exit, toggle, isOn, setCraft, getCraft, debug };
 })();
