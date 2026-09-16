@@ -93,10 +93,21 @@ try:
         ex = page.locator('#explore').bounding_box(); cb = craft.bounding_box()
         check('craft button sits on the jet\'s lower-left shoulder',
               cb['x'] < ex['x'] + 10 and cb['y'] + cb['height'] > ex['y'] + ex['height'] - 10, (ex, cb))
-        check('starts as jet', page.evaluate('() => Explore.getCraft()') == 'jet')
+        # A first visit gets the balloon; the jet is one press away, and the
+        # choice is kept.
+        check('starts as balloon', page.evaluate('() => Explore.getCraft()') == 'balloon')
+        check('big button starts with the balloon, before and after app.js',
+              page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/balloon.svg'
+              and page.evaluate('() => document.body.classList.contains("craft-balloon")'))
+        craft.click()
+        check('click swaps to jet', page.evaluate('() => Explore.getCraft()') == 'jet')
+        check('big button shows the jet, title says F-16',
+              page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/f16.svg'
+              and 'F-16' in page.locator('#explore').get_attribute('title'))
+        check('jet choice is kept', page.evaluate('() => localStorage.getItem("dk.fly.craft")') == 'jet')
         page.screenshot(path=f'{OUT}/shot_fab_jet.png', clip={'x': ex['x'] - 40, 'y': ex['y'] - 20, 'width': 120, 'height': 100})
         craft.click()
-        check('click swaps to balloon', page.evaluate('() => Explore.getCraft()') == 'balloon')
+        check('click swaps back to balloon', page.evaluate('() => Explore.getCraft()') == 'balloon')
         check('big button shows the balloon', page.evaluate('() => document.querySelector("#explore img").getAttribute("src")') == 'img/balloon.svg')
         check('choice is kept', page.evaluate('() => localStorage.getItem("dk.fly.craft")') == 'balloon')
         check('title says balloon', 'כדור' in page.locator('#explore').get_attribute('title'))
@@ -111,6 +122,8 @@ try:
         check('craft button hidden in flight', not craft.is_visible())
         check('vario gauge shown', page.locator('#fly-vsi-g').is_visible())
         check('basket rim shown', page.locator('.fly-basket').is_visible())
+        check('compass shown, with the wind pointer', page.locator('#fly-compass').is_visible() and page.locator('#fly-drift').is_visible())
+        check('heading in words', any(w in page.evaluate('() => document.getElementById("fly-heading").textContent') for w in ('צפון', 'דרום', 'מזרח', 'מערב')))
         check('balloon intro shown, jet intro hidden',
               page.locator('.fly-intro-card.balloon').is_visible() and not page.locator('.fly-intro-card.jet').is_visible())
         page.screenshot(path=f'{OUT}/shot_intro.png')
