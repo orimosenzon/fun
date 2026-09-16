@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="app.css">
 </head>
-<body>
+<body class="craft-balloon">
 
 <div id="map" role="application" aria-label="מפת השבילים"></div>
 
@@ -55,19 +55,21 @@
 
 <!-- Take off. The rest of the app answers "where is the trail I came for"; this
      answers "what is out there", by making you go and look. -->
-<button id="explore" class="fab fab-5" title="מצב תעופה" aria-label="מצב תעופה">
-  <!-- The one button with a picture rather than a glyph on it: Ori's own
-       artwork, an F-16 from above on a green roundel, vectorised from the
-       drawing. Its own file because the path is a few kilobytes of traced
-       outline; the green is the button's background, showing through the
-       canopy. -->
-  <img src="img/f16.svg" alt="" width="56" height="56">
+<button id="explore" class="fab fab-5" title="מצב תעופה: כדור פורח" aria-label="מצב תעופה: כדור פורח">
+  <!-- The one button with a picture rather than a glyph on it. The balloon
+       is the first visit's aircraft (since 16/9/2026); the other picture,
+       img/f16.svg, is Ori's own artwork, an F-16 from above on a green
+       roundel, vectorised from the drawing, and each is its own file
+       because the traced outline is a few kilobytes. The green is the
+       button's background, showing through. app.js swaps the picture to
+       whichever aircraft is chosen. -->
+  <img src="img/balloon.svg" alt="" width="56" height="56">
 </button>
-<!-- The other aircraft, on the jet's shoulder. Pressing it swaps the balloon
-     in for the jet and back; the picture on the big button is the one you
-     will fly, the small one is the one you would switch to. app.js keeps the
-     two in step and Explore remembers the choice. -->
-<button id="craft" title="מעבר לכדור פורח" aria-label="מעבר לכדור פורח">
+<!-- The other aircraft, on the big button's shoulder. Pressing it swaps the
+     jet in for the balloon and back; the picture on the big button is the
+     one you will fly, the small one is the one you would switch to. app.js
+     keeps the two in step and Explore remembers the choice. -->
+<button id="craft" title="מעבר למטוס קרב F-16" aria-label="מעבר למטוס קרב F-16">
   <svg class="craft-bal" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 1.5a7.5 7.5 0 0 0-7.5 7.5c0 4.2 3.4 6.6 5.6 9.2.4.5.6 1 .8 1.6h2.2c.2-.6.4-1.1.8-1.6C16.1 15.6 19.5 13.2 19.5 9A7.5 7.5 0 0 0 12 1.5zM9.8 20.8h4.4l.4 2.2H9.4z"/>
   </svg>

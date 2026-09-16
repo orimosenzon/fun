@@ -48,7 +48,6 @@ const Explore = (() => {
    * walk-through, high is a survey. */
 
   const ALT_MIN = 45;
-  const ALT_MAX = 1400;
   const ALT_START = 260;
 
   const PITCH_LOW = 80;      // skimming: a lot of horizon, dramatic
@@ -58,23 +57,62 @@ const Explore = (() => {
   const TRIM_DOWN = 18;      // degrees of nose-down the mouse can ask for
   const TRIM_UP = 8;         // and of nose-up; the auto pitch already sits near the top
 
-  /* Cruise is metres per second per metre of altitude, and the first numbers
-   * here were three times too fast: 421 km/h at 260 m, which crosses the whole
-   * four kilometres of the moshava in ten seconds. You were over open fields
-   * before anything had a chance to light up.
+  /* ---------- the jet: an F-16 ----------
    *
-   * It survived testing because of the clamp on `dt` below. A headless browser
-   * drawing five frames a second advances the model by 0.06 s per frame, so
-   * every test flight ran at about a third of real time and felt reasonable.
-   * A flight model has to be checked against the clock, not against how far it
-   * got in a test. */
-  const SPEED_K = 0.12;      // cruise m/s per metre of altitude
-  const SPEED_MIN = 10;      // 36 km/h skimming the rooftops
-  const SPEED_MAX = 65;      // 234 km/h at survey height
-  const BOOST = 2.1;         // top speed, as a multiple of cruise: the afterburner band
+   * Since 16/9/2026 (evening) the jet is a named aircraft and its limits are
+   * the F-16's, the public figures: a service ceiling of 50,000 ft (15,240 m);
+   * Mach 1.2 at sea level, where the airframe's dynamic-pressure limit is what
+   * stops it, and Mach 2.05 up high, where the intake does; 50,000 ft/min
+   * (254 m/s) of climb; and a 9 g limit, which at these speeds is what sets
+   * the turn rate, not the stick. The engine (F110-GE-129) gives 76 kN dry
+   * and 129 kN in afterburner for some 12 t of aeroplane, 6 and 11 m/s² of
+   * push; here they are a third more, so that going supersonic from a
+   * standstill is half a minute of held button rather than a full one.
+   *
+   * The speed of sound falls with height (ISA: 340 m/s at sea level, 295
+   * above 11 km), so Mach 1 is 1,225 km/h over the rooftops and 1,062 at the
+   * ceiling; the Mach number on the HUD is against the local value, and the
+   * boom is where that reads one.
+   *
+   * What is not the F-16's is the speed floor. A real one stalls below about
+   * 250 km/h; this one slows to a hover when the button is let go, because
+   * the mode exists to find shortcuts on the ground and a thing that cannot
+   * stop cannot look. So it is an F-16 from the speed of a car upwards and a
+   * helicopter below that. The braking is compressed too: chopped to idle at
+   * Mach 1.2 a real F-16 takes over a minute to get subsonic, this one about
+   * twenty seconds, which is already a long time to be going somewhere you
+   * did not mean to.
+   *
+   * The first version of this mode had a cruise of 421 km/h at 260 m and it
+   * was three times too fast: the whole four kilometres of the moshava in ten
+   * seconds, over open fields before anything had a chance to light up. It
+   * survived testing because of the clamp on `dt` below - a headless browser
+   * drawing five frames a second ran every test flight at a third of real
+   * time. A flight model has to be checked against the clock, not against how
+   * far it got in a test. The F-16 is faster still, on purpose this time, and
+   * the throttle is squared below the detent so that the bottom of its travel
+   * is still a walking pace over the rooftops. */
+  const ALT_MAX = 15240;     // 50,000 ft, the service ceiling
+  const ALT_SURVEY = 1400;   // the view is fully tilted down by here; above it, the picture only shrinks
+  const ALT_TROPO = 11000;   // ISA tropopause: the speed of sound stops falling here
+  const ALT_FAST = 12000;    // where the top speed reaches MACH_HI
+  const MACH_SL = 1.2;       // top speed at sea level, in afterburner
+  const MACH_HI = 2.05;      // and at ALT_FAST and above
+  const MACH_MIL_SL = 0.95;  // the most the dry engine gives at sea level
+  const MACH_MIL_HI = 1.1;   // and up high
+  const MIL = 0.66;          // throttle position of the military-power detent: past it is afterburner
+  const A_MIL = 8;           // m/s² of push, dry (real: 6)
+  const A_AB = 15;           // and in afterburner (real: 11)
+  const BRAKE_0 = 12;        // m/s² of slowing at idle, plus
+  const BRAKE_V = 10;        // this much more times (speed / top)²: the drag
+  const SPEED_K = 2.2;       // how the speed settles on what the throttle asks, per second, inside the push and brake limits
   const THR_UP = 2.0;        // seconds of button held from idle to full throttle
   const THR_DOWN = 3.5;      // seconds from full throttle back to idle once released
-  const ACCEL = 2.2;         // how fast the speed follows the throttle, per second
+  const TRANS_W = 0.05;      // the transonic band is Mach 1 ± this: buffet, and drag the burner has to push through
+  const TRANS_DRAG = 0.5;    // the share of the push lost in the middle of the band
+  const CLIMB_MAX = 254;     // m/s: 50,000 ft/min
+  const DIVE_MAX = 400;      // a dive is not a climb
+  const G_MAX = 9;
 
   const YAW_RATE = 70;       // degrees per second with the mouse at the edge
   const YAW_ACCEL = 5.0;
@@ -88,7 +126,7 @@ const Explore = (() => {
   const LEVEL_K = 2.6;       // how quickly the wings level once A and D are released
   const SINK_K = 0.08;       // banked over, the wings hold less: fraction of altitude lost per second, inverted
 
-  const CLIMB_K = 0.85;      // fraction of current altitude gained per second
+  const CLIMB_K = 0.85;      // fraction of current altitude gained per second, up to CLIMB_MAX
 
   /* ---------- the balloon ----------
    *
@@ -115,6 +153,7 @@ const Explore = (() => {
 
   const BAL = {
     ALT_MIN: 40,
+    ALT_MAX: 1400,         // where the air is too thin to hold more, for this envelope
     ALT_START: 90,
     PITCH_LOW: 76,         // near the ground: horizon, and a lot of it
     PITCH_HIGH: 68,        // high up: more of the ground beneath you
@@ -168,6 +207,8 @@ const Explore = (() => {
   const CHIP_MAX_PX = 30;
 
   const HOVER_MS = 120;      // how long the cursor rests on a photo before the stick lets go
+  const ARM_T = 1.4;         // seconds for a freshly taken stick to reach full authority
+  const INTRO_MOVE = 60;     // pixels of mouse travel that put the take-off card away
   const BAND_H = 600;        // height of the sky gradient, in css; must match .fly-band
 
   /* The vertical field of view the viewer actually sees, in degrees. The map
@@ -200,15 +241,34 @@ const Explore = (() => {
   let bankRate = 0;
   let pitchTrim = 0;         // nose up or down, from the mouse, on top of the auto pitch
   let burn = 0;              // afterburner, 0..1, eased for the sound and the glow
+  let mach = 0;              // speed over the local speed of sound
+  let gee = 1;               // the load in the turn, for the HUD
+  let buffet = 0;            // 0..1 through the transonic band: the shake
+  let sonic = false;         // past Mach 1, with a little hysteresis so it does not flicker
+  let booms = 0;             // how many times the barrier has been crossed this flight, for the tests
+  let shook = false;         // last frame shook the picture, so this one has to set it straight
 
-  const mouse = { nx: 0, ny: 0, in: false };   // stick position, -1..1 from the middle
+  const mouse = { nx: 0, ny: 0, px: 0, py: 0, in: false };   // stick position, -1..1 from the middle, and the last pixel
   const hover = { hud: false, card: null, since: 0 };
   /* The stick is taken, not simply held. Whenever the mouse has been busy
    * being a mouse - reading the help, closing a picture, coming back into the
-   * window - it is wherever that left it, and a stick that engages there
-   * throws the aircraft into a turn nobody asked for. It engages again only
-   * when the cursor passes through the ring in the middle of the screen. */
+   * window - it is wherever that left it, and a stick that engages there at
+   * full strength throws the aircraft into a turn nobody asked for. So it
+   * engages on the first movement after that, and its authority comes in
+   * over ARM_T seconds from nothing: a cursor left at the edge gives a turn
+   * that grows, which is seen and corrected, rather than a lurch.
+   *
+   * Until 16/9/2026 (night) it engaged only when the cursor passed through
+   * the ring in the middle of the screen, and the take-off card blocked it
+   * for its nine seconds. Ori flew it and reported "the mouse does not turn
+   * at first, then after a while it does, and it is not clear what makes
+   * the difference". Both were deliberate and neither explained itself,
+   * which for a control is the same as a bug. Now the card goes on the
+   * first real movement of the mouse (it is one press of ? away), and the
+   * ring is only the dead zone drawn. */
   let armed = false;
+  let stickGain = 0;         // 0..1, the authority of a freshly taken stick
+  let introMoved = 0;        // pixels of mouse travel since the take-off card appeared
 
   let canRoll = false;       // fine pointer: a keyboard and a mouse are here
   let ox = 0, oy = 0;        // how far the map hangs past the screen, pixels
@@ -228,10 +288,13 @@ const Explore = (() => {
 
   /* Which aircraft. Chosen outside the mode, on the small button beside the
    * flight button, and kept between visits; read at take-off and fixed for
-   * the flight. */
+   * the flight. The balloon is the one a first visit gets (Ori's call,
+   * 16/9/2026): it is the gentler introduction to the place, and the jet is
+   * there on the small button for whoever wants it. index.html and its
+   * titles start from the same choice. */
   const KEY_CRAFT = 'dk.fly.craft';
-  let craft = 'jet';
-  try { if (localStorage.getItem(KEY_CRAFT) === 'balloon') craft = 'balloon'; } catch (_) { /* private mode */ }
+  let craft = 'balloon';
+  try { if (localStorage.getItem(KEY_CRAFT) === 'jet') craft = 'jet'; } catch (_) { /* private mode */ }
 
   /* The balloon's own state. Heat is kelvin above the air outside; the
    * plume is the burner's heat on its way to being the envelope's; the
@@ -257,6 +320,7 @@ const Explore = (() => {
   let root = null, sky = null, band = null, hazeEl = null, worldEl = null;
   let elAlt = null, elSpeed = null, elName = null, elHint = null, rushEl = null, elThr = null;
   let burnerEl = null, elBurn = null, sndBtn = null, elVsi = null, elVsiG = null;
+  let elMach = null, elMachG = null, elG = null, elGG = null, coneEl = null;
   let intro = null, viewer = null;
 
   const el = (id) => document.getElementById(id);
@@ -328,12 +392,22 @@ const Explore = (() => {
       const brown = noise(3, true), white = noise(2, false);
       jetBus = gain(1);
       jetBus.connect(master);
+      // The engine's voices go through two more gains. `eng` is the boom's:
+      // it pulls them all down at once for the thump. `hush` is the sound
+      // barrier's: past Mach 1 the engine is behind you and its sound goes
+      // through air that is streaming backwards faster than sound travels,
+      // so nothing of it can reach you; what a real pilot still hears is
+      // the airframe carrying a remnant, and pilots do say the cockpit goes
+      // quiet. The air over the airframe is local and stays, so the hiss
+      // is fed past both.
+      const eng = gain(1), hush = gain(1);
+      eng.connect(hush); hush.connect(jetBus);
 
       // The body of the turbine: rumble through a low-pass whose cutoff climbs
       // with speed, so spooling up is heard as the sound opening.
       const coreLP = filter('lowpass', 160, 0.8);
       const coreG = gain(0.2);
-      loop(brown).connect(coreLP); coreLP.connect(coreG); coreG.connect(jetBus);
+      loop(brown).connect(coreLP); coreLP.connect(coreG); coreG.connect(eng);
 
       // Air over the airframe: a band of white noise that is barely there at
       // a hover and most of the sound at top speed.
@@ -348,7 +422,7 @@ const Explore = (() => {
       const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 70;
       const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 141;
       o1.connect(whineLP); o2.connect(whineLP);
-      whineLP.connect(whineG); whineG.connect(jetBus);
+      whineLP.connect(whineG); whineG.connect(eng);
       o1.start(); o2.start();
 
       // The afterburner: brown noise driven hard into a soft clipper, kept low,
@@ -364,9 +438,61 @@ const Explore = (() => {
       const lfoG = gain(0.35);
       lfo.connect(lfoG); lfoG.connect(trem.gain); lfo.start();
       loop(brown).connect(shaper); shaper.connect(burnLP); burnLP.connect(burnG);
-      burnG.connect(trem); trem.connect(jetBus);
+      burnG.connect(trem); trem.connect(eng);
 
-      n = { coreLP, coreG, hissG, o1, o2, whineG, burnG };
+      n = { coreLP, coreG, hissG, o1, o2, whineG, burnG, brown, eng, hush };
+    }
+
+    /** The sonic boom. What reaches the ground is an N-wave: a step up in
+     *  pressure at the nose shock, a step down at the tail, and for an
+     *  aircraft the length of an F-16 the two are a tenth of a second apart,
+     *  which is why a boom is heard as two - the "ba-boom" of the films, and
+     *  of the coast when the air force is out over the sea. Each step is a
+     *  thump with almost nothing above a hundred hertz, and it leaves a
+     *  rumble behind it. Built from a burst of the brown noise through a low
+     *  pass with a snapped attack, and under it a sine falling through the
+     *  bottom of hearing, which is the pressure step itself. Loud, on
+     *  purpose, and the engine is pulled down under it for half a second,
+     *  because a boom is louder than everything else and the compressor
+     *  alone would flatten the two into each other - measured: with the
+     *  burner roaring the thump added a fifth to the level and nothing to
+     *  the ear.
+     *
+     *  Strictly the pilot never hears their own: the boom is left behind
+     *  with the shock cone. But there is no cockpit around this camera, the
+     *  moshava is beneath it, and a barrier crossed in silence would be no
+     *  barrier at all. */
+    function boom() {
+      if (!ctx || muted || !n || mode !== 'jet') return;
+      const t0 = ctx.currentTime;
+      n.eng.gain.cancelScheduledValues(t0);
+      n.eng.gain.setValueAtTime(n.eng.gain.value, t0);
+      n.eng.gain.linearRampToValueAtTime(0.08, t0 + 0.015);
+      n.eng.gain.setTargetAtTime(1, t0 + 0.3, 0.35);
+      for (const [at, amp] of [[0, 1], [0.11, 0.8]]) {
+        const t = t0 + at;
+        const src = ctx.createBufferSource();
+        src.buffer = n.brown;
+        src.playbackRate.value = 0.5;
+        const lp = filter('lowpass', 110, 0.7);
+        const g = gain(0);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(4 * amp, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+        src.connect(lp); lp.connect(g); g.connect(jetBus);
+        src.start(t); src.stop(t + 0.9);
+
+        const o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(72, t);
+        o.frequency.exponentialRampToValueAtTime(26, t + 0.32);
+        const og = gain(0);
+        og.gain.setValueAtTime(0.0001, t);
+        og.gain.exponentialRampToValueAtTime(2.2 * amp, t + 0.01);
+        og.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+        o.connect(og); og.connect(jetBus);
+        o.start(t); o.stop(t + 0.6);
+      }
     }
 
     /* The burner. A propane burner is a flame the size of a room, and what
@@ -460,10 +586,10 @@ const Explore = (() => {
       setTimeout(() => { if (ctx && master.gain.value < 0.01) ctx.suspend().catch(() => {}); }, 900);
     }
 
-    /** Every frame. For the jet, `s` is speed as a fraction of top speed and
-     *  `b` the afterburner; for the balloon only `b` matters, the burner,
-     *  open or shut. */
-    function set(s, b) {
+    /** Every frame. For the jet, `s` is speed as a fraction of top speed,
+     *  `b` the afterburner and `quiet` whether the sound barrier is behind
+     *  you; for the balloon only `b` matters, the burner, open or shut. */
+    function set(s, b, quiet) {
       if (!ctx || muted) return;
       const t = ctx.currentTime;
       if (mode === 'balloon') {
@@ -480,6 +606,9 @@ const Explore = (() => {
       n.o2.frequency.setTargetAtTime(f * 2.02, t, 0.15);
       n.whineG.gain.setTargetAtTime(0.015 + 0.05 * s, t, 0.1);
       n.burnG.gain.setTargetAtTime(0.65 * b, t, b ? 0.12 : 0.3);
+      // Out through the barrier the engine is left behind over half a
+      // second; back through it, it catches up a little faster.
+      n.hush.gain.setTargetAtTime(quiet ? 0.07 : 1, t, quiet ? 0.5 : 0.35);
     }
 
     function toggle() {
@@ -489,7 +618,7 @@ const Explore = (() => {
       return !muted;
     }
 
-    return { start, stop, set, poke, toggle, setMode, ignite, isOn: () => !muted };
+    return { start, stop, set, poke, toggle, setMode, ignite, boom, isOn: () => !muted };
   })();
 
   /* ---------- geometry ---------- */
@@ -966,7 +1095,7 @@ const Explore = (() => {
     const isBal = craft === 'balloon';
     const lo = isBal ? BAL.PITCH_LOW : PITCH_LOW;
     const hi = isBal ? BAL.PITCH_HIGH : PITCH_HIGH;
-    const t = clamp((alt - altMin()) / (ALT_MAX - altMin()), 0, 1);
+    const t = clamp((alt - altMin()) / ((isBal ? BAL.ALT_MAX : ALT_SURVEY) - altMin()), 0, 1);
     return lerp(lo, hi, Math.sqrt(t));
   }
 
@@ -984,31 +1113,71 @@ const Explore = (() => {
     if (hover.card && hover.card.hidden) hover.card = null;
     const held = !!hover.card && now - hover.since > HOVER_MS;   // the cursor is on a photo
     const steer = canRoll && mouse.in && armed && intro.hidden && !hover.hud && !held;
-    const sx = steer ? stick(mouse.nx) : 0;
+    const sx = steer ? stick(mouse.nx) * stickGain * stickGain : 0;
     const keyTurn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
     return { held, turnIn: clamp(sx + keyTurn, -1, 1) };
   }
 
+  /** ISA speed of sound at a height: 340 m/s at sea level, falling 4 m/s per
+   *  kilometre with the temperature until the tropopause, level above it. */
+  const soundSpeed = (h) => (h < ALT_TROPO ? 340.3 - 0.00411 * h : 295.1);
+
+  /** The F-16's limits at a height: the local speed of sound, the most the
+   *  afterburner gives, and the most the dry engine gives. */
+  function envelope(h) {
+    const t = clamp(h / ALT_FAST, 0, 1);
+    const a = soundSpeed(h);
+    return { a, top: lerp(MACH_SL, MACH_HI, t) * a, mil: lerp(MACH_MIL_SL, MACH_MIL_HI, t) * a };
+  }
+
   /** The jet, one frame. Returns how much afterburner it wants heard. */
   function jetControls(dt, now) {
-    const cruise = clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX);
-    const top = cruise * BOOST;
+    const env = envelope(alt);
 
     // Throttle. The button held opens it, the button released lets it wind
     // down, and the speed follows the throttle rather than the button, so a
     // press is a push rather than a switch. Rise is quicker than fall on
     // purpose: a rhythm of short presses holds a speed without effort, and
-    // letting go altogether is a slow coast to a stop, not a brake. Top
-    // speed follows altitude, so a dive at full throttle does not arrive at
-    // the rooftops at survey speed.
+    // letting go altogether is a coast to a stop, not a brake. Below the
+    // detent the throttle asks for a speed that grows as its square, so the
+    // bottom of the travel is a walking pace and the detent is the dry
+    // engine's most; past the detent it is the afterburner, and the rest of
+    // the travel runs to the F-16's limit at this height.
     const open = hold || touchHold;
     throttle = open ? Math.min(1, throttle + dt / THR_UP)
                     : Math.max(0, throttle - dt / THR_DOWN);
-    speed += (throttle * top - speed) * clamp(ACCEL * dt, 0, 1);
-    // The burner is the top of the throttle, past cruise. Below it, with
+    const ab = throttle > MIL;
+    const want = ab ? lerp(env.mil, env.top, (throttle - MIL) / (1 - MIL))
+                    : env.mil * Math.pow(throttle / MIL, 2);
+
+    // How fast the speed may follow: the push is the engine's, and it is
+    // halved in the middle of the transonic band, where the drag rises and
+    // the burner is felt working for it; the brake is drag, and grows with
+    // the square of the speed.
+    mach = Math.abs(speed) / env.a;
+    buffet = clamp(1 - Math.abs(mach - 1) / TRANS_W, 0, 1);
+    const push = (ab ? A_AB : A_MIL) * (1 - TRANS_DRAG * buffet);
+    const brake = (BRAKE_0 + BRAKE_V * Math.pow(speed / env.top, 2)) * (1 + 0.5 * buffet);
+    speed += clamp((want - speed) * SPEED_K, -brake, push) * dt;
+
+    // The barrier. Crossed upwards it is the boom and the cone; crossed
+    // back it is the cone alone. A little hysteresis, so a speed that sits
+    // on Mach 1 is one crossing and not a drum roll.
+    mach = Math.abs(speed) / env.a;
+    if (!sonic && mach >= 1) {
+      sonic = true;
+      booms++;
+      Engine.boom();
+      shockCone();
+    } else if (sonic && mach < 0.985) {
+      sonic = false;
+      shockCone();
+    }
+
+    // The burner is the top of the throttle, past the detent. Below it, with
     // the button down, the engine is heard spooling, so the press is
     // answered the moment it lands.
-    const burnWant = throttle * BOOST > 1.02 ? 1 : open ? 0.45 : 0;
+    const burnWant = ab ? 1 : open ? 0.45 : 0;
 
     const { held, turnIn } = readStick(now);
 
@@ -1030,24 +1199,36 @@ const Explore = (() => {
     // Turn: what the stick asks, plus what the bank gives. A bank turns the
     // nose the way lift does, so a rolled-in turn is tighter than a flat one
     // and an inverted aircraft goes straight - which is also what makes a
-    // full roll come out pointing where it went in.
-    const wantYaw = turnIn * YAW_RATE + Math.sin(bank * RAD) * BANK_TURN;
+    // full roll come out pointing where it went in. Over all of it, the
+    // airframe: a turn is a centripetal acceleration of speed times rate,
+    // and past 9 g the F-16's own computer refuses the stick. Slow, the cap
+    // is far above anything the mouse asks; at Mach 1.2 it is twelve degrees
+    // a second and a half-circle two kilometres across, which is why a
+    // fighter turns back for a target with such patience.
+    const v = Math.abs(speed);
+    const yawCap = Math.min(YAW_RATE + BANK_TURN, G_MAX * 9.81 / Math.max(v, 1) / RAD);
+    const wantYaw = clamp(turnIn * YAW_RATE + Math.sin(bank * RAD) * BANK_TURN, -yawCap, yawCap);
     // The turn dies quickly under a held photo, so it stops sliding away
     // from the cursor that is trying to click it.
     yaw += (wantYaw - yaw) * clamp((held ? 12 : YAW_ACCEL) * dt, 0, 1);
     bearing = (bearing + yaw * dt + 360) % 360;
+    const ac = v * yaw * RAD / 9.81;
+    gee = Math.sqrt(1 + ac * ac);
 
     // Elevator. W pushes the nose down and dives, S pulls it up and climbs,
     // the way a stick pushed forward does; the arrows climb and sink without
-    // moving the view. Climb rate is a fraction of the height you are at, so
-    // the whole range from rooftop to survey takes a handful of seconds
-    // either way.
+    // moving the view. Low down the climb is a fraction of the height you
+    // are at, so rooftop to survey height is a handful of seconds either
+    // way; from a few hundred metres up it is the F-16's own 254 m/s, and
+    // the ceiling is a minute's climb, which is what a ceiling should be.
     const elev = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
     const trimWant = elev > 0 ? TRIM_UP : elev < 0 ? -TRIM_DOWN : 0;
     pitchTrim += (trimWant - pitchTrim) * clamp(4 * dt, 0, 1);
     const climb = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0) + elev;
-    if (climb) alt = clamp(alt * (1 + climb * CLIMB_K * dt) + climb * 6 * dt,
-                           ALT_MIN, ALT_MAX);
+    if (climb) {
+      const rate = Math.min(alt * CLIMB_K + 6, climb > 0 ? CLIMB_MAX : DIVE_MAX);
+      alt = clamp(alt + climb * rate * dt, ALT_MIN, ALT_MAX);
+    }
     // Banked over, the wings hold less. Gentle enough that a mouse turn's
     // bank costs nothing you would notice and a knife-edge costs a little.
     const lift = Math.cos(bank * RAD);
@@ -1107,7 +1288,7 @@ const Explore = (() => {
     // Lift against weight, drag against motion, a slow breath of thermal
     // luck on top, and a ceiling where the air is too thin to hold more.
     let lift = BAL.LIFT_K * (bal.dT - BAL.DT_EQ) + 220 * turb(3, 0.25);
-    if (lift > 0) lift *= clamp((ALT_MAX - alt) / BAL.CEIL_FADE, 0, 1);
+    if (lift > 0) lift *= clamp((BAL.ALT_MAX - alt) / BAL.CEIL_FADE, 0, 1);
     const drag = (bal.vz > 0 ? BAL.DRAG_UP : BAL.DRAG_DOWN) * bal.vz * Math.abs(bal.vz);
     bal.vz += (lift - drag) / BAL.MASS * dt;
     alt += bal.vz * dt;
@@ -1121,7 +1302,7 @@ const Explore = (() => {
       }
       bal.vz = 0;
     }
-    if (alt >= ALT_MAX) { alt = ALT_MAX; bal.vz = Math.min(bal.vz, 0); }
+    if (alt >= BAL.ALT_MAX) { alt = BAL.ALT_MAX; bal.vz = Math.min(bal.vz, 0); }
 
     // Facing. The stick turns the basket, slowly and with weight - these are
     // the rotation vents, not a rudder - and A and D do the same. The basket
@@ -1203,6 +1384,9 @@ const Explore = (() => {
       return;
     }
 
+    // The stick's authority, coming in after it is taken.
+    stickGain = armed ? Math.min(1, stickGain + dt / ARM_T) : 0;
+
     // A photo open full-size holds everything where it is. The speed you had
     // is the speed you get back, because closing a picture is not landing.
     let burnWant = 0;
@@ -1214,12 +1398,19 @@ const Explore = (() => {
     // Bank the picture. The map, the sky and the floating cards are rotated
     // together in CSS - they have to move as one or the photos slide off
     // their trails. Right wing down is a counter-clockwise picture. The
-    // balloon's basket sways on a phone too, where the jet does not roll.
-    if (canRoll || isBal) {
-      const tf = `rotate(${(-bank).toFixed(2)}deg)`;
+    // balloon's basket sways on a phone too, where the jet does not roll;
+    // and the jet shakes through the transonic band on any device, which
+    // is the buffet of the shocks forming and walking back over the wing.
+    let tf = `rotate(${(-bank).toFixed(2)}deg)`;
+    if (!isBal && buffet > 0) {
+      const a = buffet * buffet * 5;
+      tf = `translate(${((Math.random() * 2 - 1) * a).toFixed(1)}px, ${((Math.random() * 2 - 1) * a).toFixed(1)}px) ` + tf;
+    }
+    if (canRoll || isBal || buffet > 0 || shook) {
       map.getContainer().style.transform = tf;
       worldEl.style.transform = tf;
       sky.style.transform = tf;
+      shook = buffet > 0;   // one more frame after the band, to put the picture back
     }
 
     const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
@@ -1250,11 +1441,26 @@ const Explore = (() => {
     // key and not the eased glow: a valve is open or it is not.
     if ((frame++ & 1) === 0) {
       if (isBal) Engine.set(0, paused ? 0 : burnWant);
-      else Engine.set(paused ? 0.12 : Math.abs(speed) / topSpeed(), paused ? 0 : burn);
+      else Engine.set(paused ? 0.12 : Math.abs(speed) / topSpeed(), paused ? 0 : burn, sonic && !paused);
     }
   }
 
-  const topSpeed = () => clamp(alt * SPEED_K, SPEED_MIN, SPEED_MAX) * BOOST;
+  const topSpeed = () => envelope(alt).top;
+
+  /** The vapour cone. In the low pressure behind a shock the air's water
+   *  condenses, and for the second or two an aircraft spends going through
+   *  Mach 1 in damp air it wears a disc of cloud, the famous photograph off
+   *  the deck of a carrier. Here the disc forms around the camera and the
+   *  shock sweeps back over it: a white ring that blooms from the middle of
+   *  the screen and passes out of the frame. The animation is restarted by
+   *  taking the class off and putting it back, with a reflow between, which
+   *  is the one way CSS lets an animation be played twice. */
+  function shockCone() {
+    if (!coneEl) return;
+    coneEl.classList.remove('go');
+    void coneEl.offsetWidth;
+    coneEl.classList.add('go');
+  }
 
   function paintHud(pitch) {
     // The sky is a band that ends exactly at the horizon, so the pale end of
@@ -1274,6 +1480,7 @@ const Explore = (() => {
     elAlt.textContent = `${Math.round(alt)} מ׳`;
     elSpeed.textContent = `${Math.round(Math.abs(speed) * 3.6)} קמ״ש`;
     elThr.style.width = `${(throttle * 100).toFixed(0)}%`;
+    paintCompass();
 
     if (craft === 'balloon') {
       // A balloon pilot's instrument is the variometer: not where you are
@@ -1291,6 +1498,11 @@ const Explore = (() => {
     } else {
       rushEl.style.opacity = clamp((Math.abs(speed) / topSpeed() - 0.34) * 0.62, 0, 0.34);
       burnerEl.style.opacity = burn * 0.85;
+      // The Mach number is the F-16's own instrument, and the one that says
+      // where the boom is; the g is why the turn is slow when it is slow.
+      elMach.textContent = mach.toFixed(2);
+      elG.textContent = gee.toFixed(1);
+      document.body.classList.toggle('fly-super', sonic);
     }
     document.body.classList.toggle('fly-burn', burn > 0.5);
     elBurn.hidden = burn < 0.5;
@@ -1515,10 +1727,19 @@ const Explore = (() => {
   function onPointerMove(e) {
     if (!on || e.pointerType === 'touch') return;
     const hw = innerWidth / 2, hh = innerHeight / 2;
+    // The take-off card goes on the first real movement of the mouse once
+    // the aircraft is flying: a hand that moves the mouse wants to fly. Only
+    // that card - the help reopened with ? was asked for, and stays until
+    // it is put away.
+    if (!intro.hidden && introTimer && flying) {
+      if (mouse.in) introMoved += Math.abs(e.clientX - mouse.px) + Math.abs(e.clientY - mouse.py);
+      if (introMoved > INTRO_MOVE) dismissIntro();
+    }
+    mouse.px = e.clientX; mouse.py = e.clientY;
     mouse.nx = clamp((e.clientX - hw) / hw, -1, 1);
     mouse.ny = clamp((e.clientY - hh) / hh, -1, 1);
     mouse.in = true;
-    if (!armed && Math.abs(mouse.nx) < DEAD * 1.6 && Math.abs(mouse.ny) < DEAD * 1.6) {
+    if (!armed && intro.hidden && !paused) {
       armed = true;
       document.body.classList.remove('fly-unarmed');
     }
@@ -1635,19 +1856,61 @@ const Explore = (() => {
 
   /* ---------- intro ---------- */
 
+  /* Set only for the take-off card, and cleared with it: onPointerMove reads
+   * it to tell that card, which a moving mouse puts away, from the help
+   * reopened with ?, which stays until it is closed. */
   let introTimer = null;
 
   function dismissIntro() {
     if (!intro || intro.hidden) return;
     intro.hidden = true;
     clearTimeout(introTimer);
+    introTimer = null;
     disarm();
   }
 
   function toggleIntro() {
     intro.hidden = !intro.hidden;
     clearTimeout(introTimer);
+    introTimer = null;
     if (intro.hidden) disarm();
+  }
+
+  /* ---------- the compass ----------
+   *
+   * A needle compass, the kind in a pocket: the dial is fixed with the top
+   * being where you look, and the needle swings so that its red end points
+   * north. (The first version was a card compass, the rose turning under a
+   * fixed mark with letters on it; Ori asked for the needle and no big
+   * letters.) Under it the heading in words, because "צפון־מערב" is read
+   * at a glance and 315° is not. The balloon gets one thing more, a marker
+   * on the rim for the way the wind is carrying you, since in a balloon
+   * where you face and where you go are two different questions. */
+
+  const WINDS = ['צפון', 'צפון־מזרח', 'מזרח', 'דרום־מזרח', 'דרום', 'דרום־מערב', 'מערב', 'צפון־מערב'];
+  let elNeedle = null, elDrift = null, elHeading = null;
+  let headingShown = -1;
+
+  /** The tick marks of the dial: every ten degrees, longer every thirty,
+   *  longest at the four quarters. */
+  function compassTicks() {
+    let out = '';
+    for (let a = 0; a < 360; a += 10) {
+      const k = a % 90 === 0 ? 'rose-tick quarter' : a % 30 === 0 ? 'rose-tick long' : 'rose-tick';
+      const len = a % 90 === 0 ? -31 : a % 30 === 0 ? -34 : -37;
+      out += `<line x1="0" y1="-41" x2="0" y2="${len}" class="${k}" transform="rotate(${a})"/>`;
+    }
+    return out;
+  }
+
+  function paintCompass() {
+    elNeedle.setAttribute('transform', `rotate(${(-bearing).toFixed(1)})`);
+    if (craft === 'balloon') elDrift.setAttribute('transform', `rotate(${angleDiff(bal.drift, bearing).toFixed(1)})`);
+    const deg = Math.round(bearing) % 360;
+    if (deg !== headingShown) {
+      headingShown = deg;
+      elHeading.textContent = `${WINDS[Math.round(deg / 45) % 8]} ${deg}°`;
+    }
   }
 
   /* ---------- entering and leaving ---------- */
@@ -1661,6 +1924,7 @@ const Explore = (() => {
       <div class="fly-world" id="fly-world"><div class="fly-haze" id="fly-haze"></div></div>
       <div class="fly-rush" id="fly-rush"></div>
       <div class="fly-burner" id="fly-burner"></div>
+      <div class="fly-cone" id="fly-cone" aria-hidden="true"></div>
       <div class="fly-vig"></div>
       <div class="fly-basket" aria-hidden="true"></div>
       <div class="fly-hud">
@@ -1669,9 +1933,25 @@ const Explore = (() => {
           <span class="fly-gauge"><b id="fly-alt">—</b><i>גובה</i></span>
           <span class="fly-gauge" id="fly-vsi-g" hidden><b id="fly-vsi">—</b><i>מ׳/שנ׳ אנכי</i></span>
           <span class="fly-gauge"><b id="fly-speed">—</b><i>מהירות</i></span>
+          <span class="fly-gauge mach" id="fly-mach-g"><b id="fly-mach">—</b><i>מאך</i></span>
+          <span class="fly-gauge gee" id="fly-g-g"><b id="fly-g">—</b><i>g</i></span>
           <span class="fly-gauge burn" id="fly-burn" hidden><b>מבער</b><i>אחורי</i></span>
         </div>
         <div class="fly-thr" aria-hidden="true"><i id="fly-thr-fill"></i></div>
+        <div class="fly-compass" id="fly-compass">
+          <svg viewBox="-50 -50 100 100" aria-hidden="true">
+            <circle r="41" class="rose-ring"/>
+            ${compassTicks()}
+            <g id="fly-needle">
+              <path class="needle-n" d="M0,-35 L5.5,0 L-5.5,0 Z"/>
+              <path class="needle-s" d="M0,35 L5.5,0 L-5.5,0 Z"/>
+              <circle r="3.2" class="needle-pin"/>
+            </g>
+            <path id="fly-drift" class="rose-drift" d="M0,-45 l-5,-9 h10 z"/>
+            <rect class="rose-lubber" x="-1.6" y="-45" width="3.2" height="10" rx="1"/>
+          </svg>
+          <b id="fly-heading" aria-live="off">—</b>
+        </div>
         <button class="fly-x" id="fly-x" aria-label="יציאה ממצב תעופה">&times;</button>
         <button class="fly-help" id="fly-help" aria-label="מקשים">?</button>
         <button class="fly-snd" id="fly-snd" aria-label="השתקת המנוע">
@@ -1692,20 +1972,27 @@ const Explore = (() => {
       </div>
       <div class="fly-intro" id="fly-intro">
         <div class="fly-intro-card jet">
-          <h2>מצב תעופה</h2>
-          <p>אתה מרחף מעל פרדס חנה־כרכור. דרכי הקיצור נדלקות כשמתקרבים אליהן,
-             והתמונות שלהן תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.</p>
+          <h2>מצב תעופה: F-16</h2>
+          <p>אתה בתא הטייס של F-16 (בחיל האוויר: נץ, ברק וסופה) מעל פרדס חנה־כרכור.
+             תקרת הטיסה 15,240 מ׳, שהם 50,000 רגל. המהירות המרבית מאך 1.2 קרוב לקרקע,
+             כ־1,470 קמ״ש, ומאך 2 בגובה. שני שלישים מהמצערת הם המנוע היבש; מעבר להם נדלק
+             המבער האחורי, ורק איתו עוברים את מהירות הקול. המעבר מלווה בטלטלה, בענן הלם
+             ובבום על־קולי, ומעבר לו המנוע נשאר מאחור: שומעים רק את הרוח. הפנייה מוגבלת
+             ל־9 g, אז במהירות גבוהה המטוס פונה לאט. דרכי הקיצור נדלקות כשמתקרבים אליהן, והתמונות שלהן
+             תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.</p>
           <ul class="fly-keys">
             <li><kbd class="wide">עכבר</kbd><span>ההגה: ימינה ושמאלה פונים</span></li>
-            <li><kbd class="wide">לחיצה</kbd><span>המצערת: כל עוד הכפתור לחוץ המנוע מגביר, וכשמשחררים הוא דועך</span></li>
+            <li><kbd class="wide">לחיצה</kbd><span>המצערת: כל עוד הכפתור לחוץ המנוע מגביר, וכשמשחררים הוא דועך. להחזיק כחצי דקה כדי לעבור את מאך 1</span></li>
             <li><kbd>W</kbd><kbd>S</kbd><span>אף למטה, אף למעלה</span></li>
             <li><kbd>A</kbd><kbd>D</kbd><span>גלגול. להחזיק לגלגול שלם</span></li>
-            <li><kbd>↑</kbd><kbd>↓</kbd><span>גובה</span></li>
+            <li><kbd>↑</kbd><kbd>↓</kbd><span>גובה. עד התקרה זו דקה של טיפוס</span></li>
             <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
             <li><kbd>M</kbd><span>המנוע</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
-          <p class="fly-intro-foot">כשהסמן נח על תמונה ההגה משתחרר, כדי שאפשר יהיה ללחוץ עליה.</p>
+          <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה ותופסת את ההגה; <kbd>?</kbd> מחזיר אותו.
+             כשהסמן נח על תמונה ההגה משתחרר, כדי שאפשר יהיה ללחוץ עליה.
+             בניגוד ל־F-16 אמיתי, כשמרפים מהמצערת המטוס נעצר באוויר: זה מטוס שנועד להסתכל.</p>
           <p class="fly-intro-touch">אצבע על המסך היא המצערת: מחזיקים וטסים, משחררים ונעצרים.
              גרירה לצדדים פונה, למעלה ולמטה משנה גובה. נגיעה בתמונה פותחת אותה.</p>
         </div>
@@ -1724,7 +2011,8 @@ const Explore = (() => {
             <li><kbd>M</kbd><span>המבער</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
-          <p class="fly-intro-foot">הבערה קצרה כל עשרים שניות מחזיקה גובה. ככל שגבוה יותר, הרוח חזקה יותר.</p>
+          <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה; <kbd>?</kbd> מחזיר אותו.
+             הבערה קצרה כל עשרים שניות מחזיקה גובה. ככל שגבוה יותר, הרוח חזקה יותר.</p>
           <p class="fly-intro-touch">אצבע על המסך תופסת את הרוח. גרירה לצדדים פונה, גרירה למטה מבעירה,
              גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.</p>
         </div>
@@ -1757,6 +2045,14 @@ const Explore = (() => {
     elSpeed = el('fly-speed');
     elVsi = el('fly-vsi');
     elVsiG = el('fly-vsi-g');
+    elMach = el('fly-mach');
+    elMachG = el('fly-mach-g');
+    elG = el('fly-g');
+    elGG = el('fly-g-g');
+    coneEl = el('fly-cone');
+    elNeedle = el('fly-needle');
+    elDrift = el('fly-drift');
+    elHeading = el('fly-heading');
     elBurn = el('fly-burn');
     elThr = el('fly-thr-fill');
     elName = el('fly-name');
@@ -1806,6 +2102,12 @@ const Explore = (() => {
     bankRate = 0;
     burn = 0;
     pitchTrim = 0;
+    mach = 0;
+    gee = 1;
+    buffet = 0;
+    sonic = false;
+    booms = 0;
+    shook = false;
     keys.clear();
     mouse.in = false;
     hover.card = null;
@@ -1814,6 +2116,8 @@ const Explore = (() => {
     touchBurn = false;
     touchVent = false;
     armed = false;
+    stickGain = 0;
+    introMoved = 0;
 
     if (isBal) {
       // On the ground with a warm envelope that will not quite carry you:
@@ -1837,6 +2141,10 @@ const Explore = (() => {
     }
     elBurn.querySelector('i').textContent = isBal ? 'דולק' : 'אחורי';
     elVsiG.hidden = !isBal;
+    elMachG.hidden = isBal;
+    elGG.hidden = isBal;
+    coneEl.classList.remove('go');
+    headingShown = -1;
     if (!isBal) elThr.style.background = '';
     setSound(Engine.isOn());
 
@@ -1992,7 +2300,8 @@ const Explore = (() => {
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon');
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-super');
+    coneEl.classList.remove('go');
     document.documentElement.style.removeProperty('--fly-ox');
     document.documentElement.style.removeProperty('--fly-oy');
 
@@ -2061,7 +2370,8 @@ const Explore = (() => {
   /** The flight model's state, for the tests. */
   const debug = () => ({
     on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
-    burn, throttle,
+    burn, throttle, mach, gee, buffet, sonic, booms, yaw, armed, stickGain, intro: !!(intro && !intro.hidden),
+    envelope: envelope(alt),
     balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
                roll: bal.roll, pit: bal.pit, launch: bal.launch }
   });

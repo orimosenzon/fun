@@ -3098,10 +3098,10 @@ function wireControls() {
       const bal = Explore.getCraft() === 'balloon';
       document.body.classList.toggle('craft-balloon', bal);
       el('explore').querySelector('img').src = bal ? 'img/balloon.svg' : 'img/f16.svg';
-      const fly = bal ? 'מצב תעופה: כדור פורח' : 'מצב תעופה: מטוס קרב';
+      const fly = bal ? 'מצב תעופה: כדור פורח' : 'מצב תעופה: מטוס קרב F-16';
       el('explore').title = fly;
       el('explore').setAttribute('aria-label', fly);
-      const other = bal ? 'מעבר למטוס קרב' : 'מעבר לכדור פורח';
+      const other = bal ? 'מעבר למטוס קרב F-16' : 'מעבר לכדור פורח';
       el('craft').title = other;
       el('craft').setAttribute('aria-label', other);
     };
