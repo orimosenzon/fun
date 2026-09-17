@@ -1,0 +1,1493 @@
+{
+ "version": 1,
+ "updated": "2026-09-17T14:27:15Z",
+ "source": "https://2026.hanadiv.org/",
+ "name": "אירועי דרך הנדיב 2026",
+ "festival": {
+  "name": "פסטיבל דרך הנדיב 8",
+  "from": "2026-10-29",
+  "until": "2026-10-31"
+ },
+ "groups": [
+  {
+   "name": "מוסיקה",
+   "color": "#f6a11b"
+  },
+  {
+   "name": "סדנאות ויצירה",
+   "color": "#00acac"
+  },
+  {
+   "name": "גוף ותנועה",
+   "color": "#3ec28f"
+  },
+  {
+   "name": "הרצאות ומילים",
+   "color": "#7b5ea7"
+  },
+  {
+   "name": "ילדים ומשפחה",
+   "color": "#e45462"
+  },
+  {
+   "name": "במה ותערוכות",
+   "color": "#c2185b"
+  },
+  {
+   "name": "אירוח",
+   "color": "#9b8f80"
+  },
+  {
+   "name": "אחר",
+   "color": "#607d8b"
+  }
+ ],
+ "places": [
+  {
+   "id": "hanadiv-2115",
+   "name": "יוגה תרפיה · יום חמישי",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום חמישי 29.10 · 09:00 · שעה וחצי",
+   "date": "2026-10-29",
+   "hour": "09:00",
+   "audience": "רק למבוגרים",
+   "note": "תירגול נשימות · נשימות מרפאות · בהנחיה ובאירוח של רחלי בר · יש חניה בשפע במגרש החניה של בית ספר שדות. הבית מוקף בגדר כחולה",
+   "url": "https://2026.hanadiv.org/event-page/2115",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp",
+     "full": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475502,
+    "lng": 35.0013,
+    "source": "osm",
+    "spread": true
+   },
+   "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 8
+  },
+  {
+   "id": "hanadiv-2078",
+   "name": "מעגל שיחה וכתיבה לאמהות בטבע",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום חמישי 29.10 · 09:30 · שעתיים",
+   "date": "2026-10-29",
+   "hour": "09:30",
+   "audience": "רק למבוגרים",
+   "note": "מפגש שבו נגע בנושאים של אמהות, הריון ולידה, הגוף והנפש והמעבר לאמהות, נדבר על יצירה ונתנסה בתרגילי כתיבה. המפגש בהנחיית נעה ישראלי רוזנברג מחברת הספר \"חדר המתנה\" (הוצאת כנרת זמורה) · מעגל שיחה וכתיבה לאמהות, בהשראת הספר \"חדר המתנה\" · בהנחיה ובאירוח של נעה ישראלי רוזנברג",
+   "url": "https://2026.hanadiv.org/event-page/2078",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp",
+     "full": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.461181,
+    "lng": 34.977432,
+    "source": "festival"
+   },
+   "address": "עמל 1 · חורשת האלונים ברחוב עמל פינת הצפירה",
+   "access": "יש חניה · בחוץ",
+   "seats": 25
+  },
+  {
+   "id": "hanadiv-2104",
+   "name": "תערוכה בג׳ראז׳",
+   "group": "במה ותערוכות",
+   "craft": "תערוכה",
+   "when": "יום חמישי 29.10 · 15:00 · שעתיים",
+   "date": "2026-10-29",
+   "hour": "15:00",
+   "audience": "לכל המשפחה",
+   "note": "שני אומנים מקומיים · בית פתוח · בהנחיה ובאירוח של נהוראי רצון · יש מדרגות בכניסה חניה צמוד למקום",
+   "url": "https://2026.hanadiv.org/event-page/2104",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/c1ff75ee674ed0ce686c55a8a5add9d4af2f48beb6aea72c0561392b9c37b7c7.webp",
+     "full": "https://api.hanadiv.org/images/c1ff75ee674ed0ce686c55a8a5add9d4af2f48beb6aea72c0561392b9c37b7c7.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.467568,
+    "lng": 34.964672,
+    "source": "festival"
+   },
+   "address": "חברון 1 · בית לאומנות הגראז׳",
+   "access": "יש חניה · בפנים",
+   "seats": 50
+  },
+  {
+   "id": "hanadiv-2103",
+   "name": "War darling",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 17:00 · שעה",
+   "date": "2026-10-29",
+   "hour": "17:00",
+   "audience": "לכל המשפחה",
+   "note": "שיריו של מיכאי מתאפיינים ברומנטיקה אפלה ובמתיקות מרירה, מתנדנדים בין גסות לרוך, בניסיון ללכוד את הניגודים והשסעים של לב רגיש ומלא קונפליקטים. חוויה בלתי מתפשרת, חושפנית ולעיתים אף מפתיעה - המאתגרת את קו התפר שבין ההיגיון של הראש והסערות הרגשיות של הלב. · מסע מוזיקלי אל תוך נבכי הנפש · בהנחיית מיכאי צ'רנאה, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2103",
+   "links": [
+    {
+     "url": "https://www.youtube.com/@wardarling6734",
+     "title": "יוטיוב"
+    },
+    {
+     "url": "https://www.wardarling.com/",
+     "title": "wardarling.com"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/26dc7e70c68bc63d565c4e869c4c302dcf713e09c0180680f76443dfd27140a9.webp",
+     "full": "https://api.hanadiv.org/images/26dc7e70c68bc63d565c4e869c4c302dcf713e09c0180680f76443dfd27140a9.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472401,
+    "lng": 34.9699,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2101",
+   "name": "יותם לוין בהופעה - ראפ, מוזיקה ואנרגיות",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 18:00 · שעה",
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "audience": "לכל המשפחה",
+   "note": "יותם לוין הוא פרדס חנאי ותיק ובשנים האחרונות הוא פעיל בסצנת הראפ הישראלית ומתחיל לטפס לעבר הבמות הגדולות ביותר. הוא יוצר וחי בפרדס חנה ומופיע בכל הזדמנות. ההופעה של יותם מגיעה עם רצף שירים מקוריים וקאברים ועם גרעין קהל חזק שצורח את השירים וביחד עם יותם - יוצר אווירה מחשמלת. · הופעה מלאה של יותם לוין - ראפר עולה וצעיר מקומי שיוצר שירים מקוריים · בהנחיית יותם לוין, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2101",
+   "links": [
+    {
+     "url": "https://www.instagram.com/p/DUI4zgUjNAr/?igsh=NngyMWFnNDV1djcw",
+     "title": "אינסטגרם"
+    },
+    {
+     "url": "https://open.spotify.com/album/1Ex5MUu8ye1n5zo5hmbO3A?si=eKI3l2OyTJGLSxEu8omt_g&utm_source=copy-link",
+     "title": "ספוטיפיי"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/bc0edde7729d8dc68b8619f06c91d30e8dc428a7fd8fa4a57411a00cdbdbd9c9.webp",
+     "full": "https://api.hanadiv.org/images/bc0edde7729d8dc68b8619f06c91d30e8dc428a7fd8fa4a57411a00cdbdbd9c9.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472363,
+    "lng": 34.970038,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2089",
+   "name": "סדנת אקרו-יוגה",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום חמישי 29.10 · 18:00 · שעה וחצי",
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "audience": "רק למבוגרים",
+   "note": "אקרו-יוגה היא דרך נהדרת להכיר דרך מגע בטוח ולשחק באיזונים משותפים · סדנה בת שעה ורבע של חיבור בין אנשים, יצירת פסלים אנושיים דינאמיים ומשחקים של שיווי משקל מש · בהנחיית ינאי לב-אור, באירוח רחל בנגורה · בית בנגורה בוויז",
+   "url": "https://2026.hanadiv.org/event-page/2089",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/68139723599e60e9fad8fc16e29cf43a6ce5818be5e16321bc6399f7b5058244.webp",
+     "full": "https://api.hanadiv.org/images/68139723599e60e9fad8fc16e29cf43a6ce5818be5e16321bc6399f7b5058244.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.474036,
+    "lng": 34.993425,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המושב 44, כניסה 2 · בית בנגורה",
+   "access": "בפנים",
+   "seats": 128
+  },
+  {
+   "id": "hanadiv-2085",
+   "name": "בית פתוח והרצאה על יצירתיות לשעות הפנאי",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום חמישי 29.10 · 18:00 · שעתיים וחצי",
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "audience": "רק למבוגרים",
+   "note": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון בציור. · סדנת יצירה ציור וקולאז ויצירות לקישוט הבית · בהנחיה ובאירוח של מרים ברנהרד",
+   "url": "https://2026.hanadiv.org/event-page/2085",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/1c0df8faf1cdecccb4cc93db56395d561d8c7b052b951f4ab94b2bf001db981c.webp",
+     "full": "https://api.hanadiv.org/images/1c0df8faf1cdecccb4cc93db56395d561d8c7b052b951f4ab94b2bf001db981c.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.467704,
+    "lng": 34.955999,
+    "source": "festival"
+   },
+   "address": "גינת אגוז 9, כניסה 35 · סלון ביתי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 71
+  },
+  {
+   "id": "hanadiv-2074",
+   "name": "כשמילים יוצרות מציאות · יום חמישי",
+   "group": "הרצאות ומילים",
+   "craft": "הרצאה",
+   "when": "יום חמישי 29.10 · 18:30 · שעה",
+   "date": "2026-10-29",
+   "hour": "18:30",
+   "audience": "רק למבוגרים",
+   "note": "מסע קצר לעולם הNLP ולכוח שיש למחשבות שלך על הדרך שבה את חיה. לנשים בלבד · סיפור השראה ותוכן מעולם הNLP · בהנחיה ובאירוח של יפעת ביטון",
+   "url": "https://2026.hanadiv.org/event-page/2074",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp",
+     "full": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.480145,
+    "lng": 34.983533,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "נטע 10 · ההרצאה מתקיימת בסלון ביתי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 14
+  },
+  {
+   "id": "hanadiv-2108",
+   "name": "הופעה מוסיקלית",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 19:00 · שעה",
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "audience": "לכל המשפחה",
+   "note": "אנחנו The PainKillers להקת רוק חיפאית באים לעשות שמח ולפנק בהופעה אנרגטית לכל הגילאים · הופעת להקת רוק · בהנחיית סנדי מורנו, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2108",
+   "links": [
+    {
+     "url": "https://www.facebook.com/share/1DUxQQZuya/",
+     "title": "פייסבוק"
+    },
+    {
+     "url": "https://open.spotify.com/artist/4LKLQWKBRrnObnnbWEeJVk?si=Qb0UJCoPTfWrUCDR58VNTw&utm_source=copy-link",
+     "title": "ספוטיפיי"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/b4a10ffbba77784cad074181c9be62b0f8d865919fe8b35bf63dc4b85f0afb7e.webp",
+     "full": "https://api.hanadiv.org/images/b4a10ffbba77784cad074181c9be62b0f8d865919fe8b35bf63dc4b85f0afb7e.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472264,
+    "lng": 34.970123,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2090",
+   "name": "אלטרנדיב",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 19:00 · 11 שעות וחצי",
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "audience": "לכל המשפחה",
+   "note": "2 במות כמיטב המסורת למיני פסטיבל אלטרנדיב בתוך פסטיבל הנדיב להקות מנגנות - רוק \\ אלטרנטיב \\ אינדי \\ נוייז \\ נסיוני · פסטיבל רוק אלטרנטיבי · בהנחיה ובאירוח של יובל גוטמן · ביה\"ס שבילים",
+   "url": "https://2026.hanadiv.org/event-page/2090",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/43644b856ec96852b70e1847bf4829eeafb053454309c5cb533964118455e868.webp",
+     "full": "https://api.hanadiv.org/images/43644b856ec96852b70e1847bf4829eeafb053454309c5cb533964118455e868.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.477426,
+    "lng": 34.965959,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "החורש 36 · ביה\"ס שבילים",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2083",
+   "name": "סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית · יום חמישי",
+   "group": "סדנאות ויצירה",
+   "craft": "אמנות פלסטית",
+   "when": "יום חמישי 29.10 · 19:30 · שעתיים",
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "audience": "רק למבוגרים",
+   "note": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה. בסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור. בהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה. *התכנית* פתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי. סיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך. *על התהליך* נשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים. המיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות! *שני הכלים הפשוטים שנלמד* מאתר חזותי: חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף. כלי להשוואת גדלים: שיפוד עץ – כלי פשוט ויעיל מאוד. · נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון. · בהנחיה ובאירוח של ישראל ינקלוביץ' · בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
+   "url": "https://2026.hanadiv.org/event-page/2083",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp",
+     "full": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.47242,
+    "lng": 34.994998,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "ניר 3 · סטודיו ביתי בכרכור",
+   "access": "בפנים",
+   "seats": 12
+  },
+  {
+   "id": "hanadiv-2069",
+   "name": "פילאטיס מזרן · יום חמישי",
+   "group": "גוף ותנועה",
+   "craft": "ספורט",
+   "when": "יום חמישי 29.10 · 19:30 · שעה",
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "audience": "רק למבוגרים",
+   "note": "בואו לזוז את הגוף שלכם באווירה נעימה. שיעור קבוצתי של פילאטיס מזרן. מתאים לכל רמה ולכל גיל מעל 18. לבוא עם מזרן יוגה/פילאטיס. מחכה לכם! · שיעור קבוצתי · בהנחיה ובאירוח של יעל לומברוסו · דלת לבנה בכניסת 'ב'",
+   "url": "https://2026.hanadiv.org/event-page/2069",
+   "links": [
+    {
+     "url": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+     "title": "אינסטגרם"
+    },
+    {
+     "url": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLanVleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+     "title": "yaelitalombroso.wixsite.com"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/6904fd14a8e0784dfc7ef02961659b8d943d75754bde309cc886811e9227ea25.webp",
+     "full": "https://api.hanadiv.org/images/6904fd14a8e0784dfc7ef02961659b8d943d75754bde309cc886811e9227ea25.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475276,
+    "lng": 34.985929,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המגינים 18, כניסה ב · בבית שלי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 8
+  },
+  {
+   "id": "hanadiv-2113",
+   "name": "הופעה ארטיקופיקו",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 20:00 · 50 דק׳",
+   "date": "2026-10-29",
+   "hour": "20:00",
+   "audience": "לכל המשפחה",
+   "note": "מופיעים בפעמים האחרונות לפני גיוס · הלהקה ארטיקופיקו מופיעה בפסטיבל · בהנחיית טל קופ, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2113",
+   "links": [
+    {
+     "url": "https://open.spotify.com/artist/1agR9TzXeFDwR1hcaf14yV?si=kJmbUMsrSNazV68ynkLGvQ&utm_source=copy-link",
+     "title": "ספוטיפיי"
+    },
+    {
+     "url": "https://www.instagram.com/artikofiko/",
+     "title": "אינסטגרם"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/9c534ad723e5a7997aa3641fb1add62a8362fb09827941483d1cd331639ffa6e.webp",
+     "full": "https://api.hanadiv.org/images/9c534ad723e5a7997aa3641fb1add62a8362fb09827941483d1cd331639ffa6e.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472142,
+    "lng": 34.970123,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2096",
+   "name": "Lucia N°03 העולם שבין ערות לשינה: טכנולוגיה…",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום חמישי 29.10 · 21:00 · 30 דק׳",
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "audience": "רק למבוגרים",
+   "note": "Lucia N°03 העולם שבין ערות לשינה: טכנולוגיה שתיקח אתכם לטיול בתוך התודעה שלכם · בואו להתנסות בLucia N°3- טכנולוגיה פורצת דרך מנורה הקסמים מאפשרת למי שנכנס למרחב שלה חוויה רב-חושית מהפנטת. באמצעות תדרי אור מבוקרים המופנים לעיניים עצומות, המנורה מעוררת את הדמיון ומעבירה את המוח למצב תודעה ייחודי המדמה 'חלומות צלולים'. זוהי חוויה המשלבת אור בתדרים משתנים בעוצמות שונות, אשר משקיטה מיידית את רעשי הרקע בראש ומערסלת את הגוף ברגיעה מוחלטת ובביטחון מלא. המנורה משמשת ככלי עוצמתי להרפיית מתחים, לטעינה אנרגטית, להגברת היצירתיות ולפתיחת שער לחקירה רוחנית וחיבור עמוק???? הסדנא כוללת שיח ובסופו מעגל שיתוף ואינטגרציה. יושבת בפרדס חנה אבל אשמח להגיע לכל מקום בארץ *לא לנשים בהריון ולמתמודדים עם אפילפסיה · בואו לחוות את העולם הקסום שבין ערות לשינה בעזרת תדרי אור עוצמתיים · בהנחיה ובאירוח של ענבר פז",
+   "url": "https://2026.hanadiv.org/event-page/2096",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/4dab4ba49c3cde3442470c3616d7c7b3f1efddef2b2059dc20f9e8a25e027b2b.webp",
+     "full": "https://api.hanadiv.org/images/4dab4ba49c3cde3442470c3616d7c7b3f1efddef2b2059dc20f9e8a25e027b2b.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.48266,
+    "lng": 34.967889,
+    "source": "festival"
+   },
+   "address": "חרמון 5 · הקליניקה של לוסיה תרפיה",
+   "access": "יש חניה · בפנים",
+   "seats": 11
+  },
+  {
+   "id": "hanadiv-2111",
+   "name": "הופעת להקה - ציונה תג'ר",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום חמישי 29.10 · 22:00 · שעה",
+   "date": "2026-10-29",
+   "hour": "22:00",
+   "audience": "לכל המשפחה",
+   "note": "להקת ציונה תג'ר - נערי הרוק מיפו - מגיעים לדרך הנדיב עם רוק מורכב בעברית, גיטרות מהעתיד וטקסטים שנוגעים בעצבים החשופים להופעה בועטת שלוקחת את הקהל פנימה. · רוקנרול בועט ותיאטרלי בעברית · בהנחיית אובי אוחיון, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2111",
+   "links": [
+    {
+     "url": "https://www.instagram.com/reel/DZvTMeNgeBw/?stkn=OXUxZHF1bzRuOHkw",
+     "title": "אינסטגרם"
+    },
+    {
+     "url": "https://open.spotify.com/album/3LdqfAwnxncNkulmqRMJaf?si=gQRUU8DiSMGy5jZoBvlcGQ",
+     "title": "ספוטיפיי"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/169d21239b961a25112db8beab4cade8941351d2d85ebe8faa9083c34d904b63.webp",
+     "full": "https://api.hanadiv.org/images/169d21239b961a25112db8beab4cade8941351d2d85ebe8faa9083c34d904b63.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472043,
+    "lng": 34.970038,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2076",
+   "name": "מתחם טיפולים · יום שישי",
+   "group": "אירוח",
+   "craft": "אירוח",
+   "when": "יום שישי 30.10 · 08:00 · 10 שעות",
+   "date": "2026-10-30",
+   "hour": "08:00",
+   "audience": "רק למבוגרים",
+   "note": "מתחם טיפולים - במשך כל יום שבת! הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!! קישור לרשימה העדכנית של המטפלים בתחתית העמוד · *שימו לב!!! - הרשמה ישירות מול המטפל.ת ולא דרך האתר של הפסטיבל. גם הכניסה לרשימת המתנה רק ישירות מול המטפלים והמטפלות* מגוון רחב של טיפולי גוף ונפש מתארחים ב \"דרך המשי מרפאה קהילתית לרפואה משלימה\" ניתנים ללא תשלום !! בתיאום מראש עם המטפל.ת. !! רשימת המטפלים בלינק בתחתית הדף או חפשו בפייסבוק - מתחם טיפולים פסטיבל דרך הנדיב 2026 · מטפלי פרדס חנה כרכור בנתינה מכל הלב. · בהנחיה ובאירוח של אפרת פיליפובסקי · מטפלי פרדס חנה כרכור בנתינה מכל הלב. הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!!",
+   "url": "https://2026.hanadiv.org/event-page/2076",
+   "links": [
+    {
+     "url": "https://www.facebook.com/events/941558078976386/?active_tab=discussion",
+     "title": "פייסבוק"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/dff1709d263a64f88755869dcece333cfc8dc3172012a39ee722eb526a4bf05d.webp",
+     "full": "https://api.hanadiv.org/images/dff1709d263a64f88755869dcece333cfc8dc3172012a39ee722eb526a4bf05d.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.473328,
+    "lng": 34.97353,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הדקלים 95, כניסה קומה 2 · קליניקה קהילתית \"דרך המשי\" בית פעם שישי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 101
+  },
+  {
+   "id": "hanadiv-2071",
+   "name": "שיעור התנסות בטאי צ'י טיבטי מסורתי",
+   "group": "גוף ותנועה",
+   "craft": "תנועה ומחול",
+   "when": "יום שישי 30.10 · 08:30 · שעה",
+   "date": "2026-10-30",
+   "hour": "08:30",
+   "audience": "רק למבוגרים",
+   "note": "טאי צ'י טיבטי עגור לבן, \"יד הכותנה העוטפת את המחט\" תרגול רך וייחודי התורם לגמישות המפרקים, חיזוק הגוף, התבוננות פנימית, ריכוז, רוגע ושקט נפשי. · שיעור טאי צ'י עגור לבן- pak hok pai · בהנחיה ובאירוח של אהוד עמרם · השיעור יערך בדשא מול גינת הכלבים",
+   "url": "https://2026.hanadiv.org/event-page/2071",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8c58a9d08118ecf184289e4449cfd6936cadaabe8dab8b5c0c388021ec67a193.webp",
+     "full": "https://api.hanadiv.org/images/8c58a9d08118ecf184289e4449cfd6936cadaabe8dab8b5c0c388021ec67a193.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.464357,
+    "lng": 34.952574,
+    "source": "festival"
+   },
+   "address": "יונה 44 · גן הציפורים - שכונת רמז",
+   "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
+   "seats": 15
+  },
+  {
+   "id": "hanadiv-2116",
+   "name": "יוגה תרפיה · יום שישי",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום שישי 30.10 · 09:00 · שעה וחצי",
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "audience": "רק למבוגרים",
+   "note": "תירגול נשימות · נשימות מרפאות · בהנחיה ובאירוח של רחלי בר · יש חניה בשפע במגרש החניה של בית ספר שדות. הבית מוקף בגדר כחולה",
+   "url": "https://2026.hanadiv.org/event-page/2116",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp",
+     "full": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475319,
+    "lng": 35.001425,
+    "source": "osm",
+    "spread": true
+   },
+   "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 8
+  },
+  {
+   "id": "hanadiv-2067",
+   "name": "פילאטיס מזרן · יום שישי",
+   "group": "גוף ותנועה",
+   "craft": "ספורט",
+   "when": "יום שישי 30.10 · 09:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "audience": "רק למבוגרים",
+   "note": "בואו לבוא לזוז את הגוף שלכם באווירה נעימה. שיעור קבוצתי של פילאטיס מזרן. מתאים לכל רמה ולכל גיל מעל 18. לבוא עם מזרן יוגה/פילאטיס. מחכה לכם! · פילאטיס קבוצתי · בהנחיה ובאירוח של יעל לומברוסו · דלת לבנה בכניסת 'ב'",
+   "url": "https://2026.hanadiv.org/event-page/2067",
+   "links": [
+    {
+     "url": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+     "title": "אינסטגרם"
+    },
+    {
+     "url": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLY5FleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+     "title": "yaelitalombroso.wixsite.com"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8e66a7a0742ca02e3a51083e53a2f1861bca1cd3c9d51bcd9366739ee807212e.webp",
+     "full": "https://api.hanadiv.org/images/8e66a7a0742ca02e3a51083e53a2f1861bca1cd3c9d51bcd9366739ee807212e.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475093,
+    "lng": 34.986054,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המגינים 18, כניסה ב · בבית שלי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 8
+  },
+  {
+   "id": "hanadiv-2075",
+   "name": "כשמילים יוצרות מציאות · יום שישי",
+   "group": "הרצאות ומילים",
+   "craft": "הרצאה",
+   "when": "יום שישי 30.10 · 09:30 · שעה",
+   "date": "2026-10-30",
+   "hour": "09:30",
+   "audience": "רק למבוגרים",
+   "note": "מסע קצר לעולם הNLP ולכוח שיש למחשבות שלך על הדרך שבה את חיה. לנשים בלבד · סיפור השראה ותוכן מעולם הNLP · בהנחיה ובאירוח של יפעת ביטון",
+   "url": "https://2026.hanadiv.org/event-page/2075",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp",
+     "full": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.479923,
+    "lng": 34.983533,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "נטע 10 · ההרצאה מתקיימת בסלון ביתי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 14
+  },
+  {
+   "id": "hanadiv-2112",
+   "name": "המסע אל האור - מופע בלוז רוקנרול מקורי",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 10:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "10:00",
+   "audience": "רק למבוגרים",
+   "note": "יפעת שריג, זמרת יוצרת מפרדס חנה במופע בלוז רוקנרול, מרגש ומלא באנרגיה. שירים מקוריים של העצמה, תהליכים ותובנות לחיים. · מופע בלוז רוקנרול מקורי שמספר סיפור חיים · בהנחיית יפעת שריג, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2112",
+   "links": [
+    {
+     "url": "https://drive.google.com/file/d/1-m7JJ4Cbq00d20xvgSd_gep1n0a44JPY/view?usp=sharing",
+     "title": "גוגל דרייב"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/31d31ee9d15101e2177aae8f6c911c7f76f9b94f6505747a05b1516ae3bb4fd4.webp",
+     "full": "https://api.hanadiv.org/images/31d31ee9d15101e2177aae8f6c911c7f76f9b94f6505747a05b1516ae3bb4fd4.webp"
+    },
+    {
+     "yt": "Z4C0yzTlr0Y",
+     "thumb": "https://i.ytimg.com/vi/Z4C0yzTlr0Y/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.472005,
+    "lng": 34.9699,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2081",
+   "name": "מהחצר האחורית לחזית המושבה",
+   "group": "הרצאות ומילים",
+   "craft": "הרצאה",
+   "when": "יום שישי 30.10 · 10:00 · שעתיים וחצי",
+   "date": "2026-10-30",
+   "hour": "10:00",
+   "audience": "רק למבוגרים",
+   "note": "הרצאות, פנלים ושיחות · מיני כנס - יישום של ערכי הקהילה האקולוגית במרחב המקומי. · בהנחיית רֹתם, באירוח טל בריל · יש הרבה פינות ישיבה , מקרן , מתאים לפעילויות עד 100 איש",
+   "url": "https://2026.hanadiv.org/event-page/2081",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/5e007da2bd7ccb751165ce56032209467c8f91486ced6fd3049e61e66b5b3c0b.webp",
+     "full": "https://api.hanadiv.org/images/5e007da2bd7ccb751165ce56032209467c8f91486ced6fd3049e61e66b5b3c0b.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472043,
+    "lng": 34.969762,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · הלובי של המתנס המחודש",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 144
+  },
+  {
+   "id": "hanadiv-2084",
+   "name": "סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית · יום שישי",
+   "group": "סדנאות ויצירה",
+   "craft": "אמנות פלסטית",
+   "when": "יום שישי 30.10 · 10:30 · שעתיים",
+   "date": "2026-10-30",
+   "hour": "10:30",
+   "audience": "רק למבוגרים",
+   "note": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה. בסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור. בהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה. *התכנית* פתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי. סיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך. *על התהליך* נשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים. המיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות! *שני הכלים הפשוטים שנלמד* מאתר חזותי: חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף. כלי להשוואת גדלים: שיפוד עץ – כלי פשוט ויעיל מאוד. · נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון. · בהנחיה ובאירוח של ישראל ינקלוביץ' · בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
+   "url": "https://2026.hanadiv.org/event-page/2084",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp",
+     "full": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472198,
+    "lng": 34.994998,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "ניר 3 · סטודיו ביתי בכרכור",
+   "access": "בפנים",
+   "seats": 12
+  },
+  {
+   "id": "hanadiv-2056",
+   "name": "סדנת בייבי יוגה ועיסוי תינוקות",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום שישי 30.10 · 10:30 · שעה",
+   "date": "2026-10-30",
+   "hour": "10:30",
+   "audience": "רק למבוגרים",
+   "note": "הורים ותינוקות, אני מזמינה אתכם לעצור רגע, ולהנות מזמן איכות של רוגע, חיבור ואהבה. נלמד יחד כלים רכים, פרקטים והתפתחותיים מעולם עיסוי התינוקות והבייבי יוגה. נתרגל מגע שעוזר להרגיע, לשחרר מתאים (וגם גזים!), ולחזק את הקשר והביטחון שלכם עם הבייבי. · להורה ולתינוק עד גיל זחילה · בהנחיה ובאירוח של שרי ציק · חניה בשפע לאורך שדרת האורנים, להקפיד לחנות בצורה מסודרת ולא להפריע לכניסות ויציאות של השכנים. נכנסים ברגל בשביל עד שתראו את הבקתה בצד שמאל עם שער בצבע טורקיז בוהק.",
+   "url": "https://2026.hanadiv.org/event-page/2056",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/c07a3197d008c78052b9da0b1dc1b1e8cd095d8a5cb5bc4c3c70697127e0c1c7.webp",
+     "full": "https://api.hanadiv.org/images/c07a3197d008c78052b9da0b1dc1b1e8cd095d8a5cb5bc4c3c70697127e0c1c7.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.481203,
+    "lng": 34.965994,
+    "source": "festival"
+   },
+   "address": "האורנים 84 · בתוך בקתת עץ קסומה במקום שקט",
+   "access": "יש חניה · בפנים",
+   "seats": 12
+  },
+  {
+   "id": "hanadiv-2110",
+   "name": "עוד לא",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 11:00 · 50 דק׳",
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "audience": "לכל המשפחה",
+   "note": "עוד לא היא להקת רוק אלטרנטיבי ישראלי המבוססת במרכז הארץ, שמביאה איתה סאונד מחשמל, גיטרות מחוספסות, וקצב שאי אפשר שלא לזוז אליו. עם אלבום הבכורה שלהם \"יגיע היום\" בחוץ, וחומרים חדשים בדרך, הם באים לתת הופעה שיהיה קשה לשכוח. · להקת רוק · בהנחיית נועם קדוש, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2110",
+   "links": [
+    {
+     "url": "https://open.spotify.com/artist/2xMLadnXhwHB83ralfQF5b?si=bmc4dmUPR76wfCPoU24mnQ",
+     "title": "ספוטיפיי"
+    },
+    {
+     "url": "https://www.instagram.com/oddlowband/",
+     "title": "אינסטגרם"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/fbb0f3153039d267272357544709dcd389a611178ff9be7e0dd504dd7cafd76a.webp",
+     "full": "https://api.hanadiv.org/images/fbb0f3153039d267272357544709dcd389a611178ff9be7e0dd504dd7cafd76a.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472142,
+    "lng": 34.969677,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2095",
+   "name": "גילי ליבר",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 11:00 · 30 דק׳",
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "audience": "לכל המשפחה",
+   "note": "גילי מנגן ושר משיריו המקוריים וגם את השירים שכולנו גדלנו עליהם של להקת גאיה האגדית · גילי ליבר סולן ומייסד להקת גאיה · בהנחיה ובאירוח של רחל בנגורה · בית בנגורה בוויז",
+   "url": "https://2026.hanadiv.org/event-page/2095",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/2a52e746a2bb502681b6f68ff5e9f546d90f173891f33ccc32888714a66d7a33.webp",
+     "full": "https://api.hanadiv.org/images/2a52e746a2bb502681b6f68ff5e9f546d90f173891f33ccc32888714a66d7a33.webp"
+    },
+    {
+     "yt": "CkRQvvYWeoE",
+     "thumb": "https://i.ytimg.com/vi/CkRQvvYWeoE/hqdefault.jpg"
+    },
+    {
+     "yt": "ag3GtJF9Ryk",
+     "thumb": "https://i.ytimg.com/vi/ag3GtJF9Ryk/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.473853,
+    "lng": 34.99355,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המושב 44, כניסה 2 · בית בנגורה",
+   "access": "בפנים",
+   "seats": 128
+  },
+  {
+   "id": "hanadiv-2070",
+   "name": "פילאטיס מכשירים",
+   "group": "גוף ותנועה",
+   "craft": "ספורט",
+   "when": "יום שישי 30.10 · 11:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "audience": "רק למבוגרים",
+   "note": "שיעור פרטי של פילאטיס מכשירים קלאסי בסטודיו אינטימי בבית שלי. מתאים לכל רמה, לכל גיל מעל 18 ולכל מצב גוף · שיעור פרטי · בהנחיה ובאירוח של יעל לומברוסו · בכניסה 18 ב, דלת לבנה.",
+   "url": "https://2026.hanadiv.org/event-page/2070",
+   "links": [
+    {
+     "url": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+     "title": "אינסטגרם"
+    },
+    {
+     "url": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLa9VleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+     "title": "yaelitalombroso.wixsite.com"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/e6e573576f05149415f8f9ec18f0deb46e0e1d733d49e2a3e3c4dd028916fe8c.webp",
+     "full": "https://api.hanadiv.org/images/e6e573576f05149415f8f9ec18f0deb46e0e1d733d49e2a3e3c4dd028916fe8c.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475093,
+    "lng": 34.985804,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המגינים 18, כניסה ב · סטודיו פילאטיס מכשירים, אינטימי בבית שלי",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 2
+  },
+  {
+   "id": "hanadiv-2094",
+   "name": "ג'אם תופים ושירה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 11:30 · שעה וחצי",
+   "date": "2026-10-30",
+   "hour": "11:30",
+   "audience": "לכל המשפחה",
+   "note": "בואו למעגל הקצב בג'אם הקבוע של בנגורה בימי חמישי והפעם בחסות פסטיבל נדיב · מפגש תיפוף תנועה וקול, הקצב מרפאוהתנועה משחררת · בהנחיה ובאירוח של רחל בנגורה · בית בנגורה בוויז",
+   "url": "https://2026.hanadiv.org/event-page/2094",
+   "links": [
+    {
+     "url": "https://www.facebook.com/reel/1751232955504988",
+     "title": "פייסבוק"
+    },
+    {
+     "url": "https://www.bangoura.co.il/",
+     "title": "bangoura.co.il"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/4cca7331e5e6261f09d8df2640ec71685689646e2cccf886a320e2f37c1702df.webp",
+     "full": "https://api.hanadiv.org/images/4cca7331e5e6261f09d8df2640ec71685689646e2cccf886a320e2f37c1702df.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.473853,
+    "lng": 34.9933,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "המושב 44, כניסה 2 · בית בנגורה",
+   "access": "בפנים",
+   "seats": 128
+  },
+  {
+   "id": "hanadiv-2114",
+   "name": "סטלה גוט - הופעה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 12:00 · 15 דק׳",
+   "date": "2026-10-30",
+   "hour": "12:00",
+   "audience": "רק למבוגרים",
+   "note": "במופע תבצע גוט שירים מתוך האלבום החדש שבדרך, בעיבודים פשוטים ועירומים, שנותנים לשירים ולקול של גוט להחזיק את הבמה בעצמם. · מופע פריצה סולו סטלה גוט · בהנחיית סטלה גוטשטיין, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2114",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/e6ea7c4637a75e859cccc6526a25c523c6b241c9cae699cae73f38eb1e126652.webp",
+     "full": "https://api.hanadiv.org/images/e6ea7c4637a75e859cccc6526a25c523c6b241c9cae699cae73f38eb1e126652.webp"
+    },
+    {
+     "yt": "2sbT3Z5RUOo",
+     "thumb": "https://i.ytimg.com/vi/2sbT3Z5RUOo/hqdefault.jpg"
+    },
+    {
+     "yt": "yLUx8nOx7Ms",
+     "thumb": "https://i.ytimg.com/vi/yLUx8nOx7Ms/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.472264,
+    "lng": 34.969677,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2072",
+   "name": "ציור על קירות בצבעים אקריליים",
+   "group": "סדנאות ויצירה",
+   "craft": "ציור",
+   "when": "יום שישי 30.10 · 12:30 · 10 דק׳",
+   "date": "2026-10-30",
+   "hour": "12:30",
+   "audience": "רק למבוגרים",
+   "note": "מציירים עם צבעים אקריליים על קירות · מציירים דמויות מספרי ילדים על קירות מבואה של בניין · בהנחיה ובאירוח של תמר קינן",
+   "url": "https://2026.hanadiv.org/event-page/2072",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp",
+     "full": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.466645,
+    "lng": 34.974731,
+    "source": "b144",
+    "spread": true
+   },
+   "address": "הצפירה 10 · רחבת כניסה לבניין הצפירה 10",
+   "access": "יש חניה · בחוץ",
+   "seats": 21
+  },
+  {
+   "id": "hanadiv-2100",
+   "name": "קורדרוי",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 13:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "audience": "לכל המשפחה",
+   "note": "להקת קורדרוי, בני 20 מתל אביב, להקה הפועלת כבר 7 שנים, אחרי שני אלבומים ושנייה לפני אלבום שלישי, מגיעים להופעה בפסטיבל הנדיב האהוב. · להקת קורדרוי בהופעה חשמלית מחשמלת! · בהנחיית עומר אליאס, באירוח עידו בסון · הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "url": "https://2026.hanadiv.org/event-page/2100",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/e65f59ed4f2b7125666a955577268c24f4b82634467794d0dfe8496105f706b0.webp",
+     "full": "https://api.hanadiv.org/images/e65f59ed4f2b7125666a955577268c24f4b82634467794d0dfe8496105f706b0.webp"
+    },
+    {
+     "yt": "1Vek_mItzTA",
+     "thumb": "https://i.ytimg.com/vi/1Vek_mItzTA/hqdefault.jpg"
+    },
+    {
+     "yt": "F0VAK3_H8f4",
+     "thumb": "https://i.ytimg.com/vi/F0VAK3_H8f4/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.472363,
+    "lng": 34.969762,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הבוטנים 54 · במה בראש",
+   "access": "נגיש · יש חניה · ידידותי לחיות",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2073",
+   "name": "הכנת כדורי שוקולד",
+   "group": "סדנאות ויצירה",
+   "craft": "אוכל",
+   "when": "יום שישי 30.10 · 13:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "audience": "רק לילדים",
+   "note": "שקד בת 12 תלמד ילדים בכיתות א' ו ב' להכין בעצמם כדורי שוקולד טעימים במיוחד · ילדים מכינים כדורי שוקולד · בהנחיה ובאירוח של תמר קינן",
+   "url": "https://2026.hanadiv.org/event-page/2073",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/145195cc3062d39cf2965683b1cd50fe6f20ed13ee6d20c49c1cad610ed3c77f.webp",
+     "full": "https://api.hanadiv.org/images/145195cc3062d39cf2965683b1cd50fe6f20ed13ee6d20c49c1cad610ed3c77f.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.466423,
+    "lng": 34.974731,
+    "source": "b144",
+    "spread": true
+   },
+   "address": "הצפירה 10 · רחבת כניסה לבניין הצפירה 10",
+   "access": "יש חניה · בחוץ",
+   "seats": 21
+  },
+  {
+   "id": "hanadiv-2107",
+   "name": "מסה קריטית - רכיבת אופניים קהילתית",
+   "group": "גוף ותנועה",
+   "craft": "ספורט",
+   "when": "יום שישי 30.10 · 15:00 · שעה",
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "audience": "לכל המשפחה",
+   "note": "נפגש כולנו ברחבת יד לבנים ביום שישי בשעה 1500 ונצא יחדיו לרכיבה. המסלול יפורסם יומיים לפני האירוע פה בדף האירוע · מסה קריטית היא רכיבת אופניים קהילתית ונעימה לכל המשפחה בשביל הספורט, החוויה וקידום תרבות האופניים במושבה! · בהנחיה ובאירוח של ארז בן קיקי",
+   "url": "https://2026.hanadiv.org/event-page/2107",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp",
+     "full": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.47543,
+    "lng": 34.97373,
+    "source": "osm"
+   },
+   "address": "הדקלים 90 · רחבת יד לבנים מול בניין המועצה",
+   "access": "נגיש · יש חניה · בחוץ",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2099",
+   "name": "סדנת צריבה בעץ",
+   "group": "סדנאות ויצירה",
+   "craft": "אמנות פלסטית",
+   "when": "יום שישי 30.10 · 16:00 · שעתיים וחצי",
+   "date": "2026-10-30",
+   "hour": "16:00",
+   "audience": "רק למבוגרים",
+   "note": "סדנה בה נלמד לצרוב בעץ מ0, לא דרוש ניסיון · סדנה ללימוד טכניקת צריבה בעץ, לא דרוש ניסיון · בהנחיית נעמה ברקוביץ, באירוח מיכל שלו גולן · הבית הצמוד למסעדת רוברטה וינצ'י",
+   "url": "https://2026.hanadiv.org/event-page/2099",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/aef2774e353a9d74009e9bcf67c92a564059591cd6e8b4eef98c8904322a90fb.webp",
+     "full": "https://api.hanadiv.org/images/aef2774e353a9d74009e9bcf67c92a564059591cd6e8b4eef98c8904322a90fb.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472484,
+    "lng": 34.991497,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "אחוזה 43 · מרחב פנים מתאים לסדנאות הופעות אינטימיות. חצר יפה פורחת הכוללת איזור הושבה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 40
+  },
+  {
+   "id": "hanadiv-2109",
+   "name": "קבלת שבת מוזיקלית",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 18:30 · שעה",
+   "date": "2026-10-30",
+   "hour": "18:30",
+   "audience": "לכל המשפחה",
+   "note": "קרן סימן טוב, זמרת יוצרת מזמינה לקבל את השבת בשירה משותפת בליווי גיטרה ומצגת שירים. · שעה של שירים ישראלים יפים לכבוד השבת · בהנחיית קרן סימן טוב, באירוח מיכל שלו גולן · הבית הצמוד למסעדת רוברטה וינצ'י",
+   "url": "https://2026.hanadiv.org/event-page/2109",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/cca9adeef7f005804f364d39d6fcddc1cc0dc745346562143c299b606487b078.webp",
+     "full": "https://api.hanadiv.org/images/cca9adeef7f005804f364d39d6fcddc1cc0dc745346562143c299b606487b078.webp"
+    },
+    {
+     "yt": "D_zND4THsQI",
+     "thumb": "https://i.ytimg.com/vi/D_zND4THsQI/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.472351,
+    "lng": 34.991655,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "אחוזה 43 · מרחב פנים מתאים לסדנאות הופעות אינטימיות. חצר יפה פורחת הכוללת איזור הושבה",
+   "access": "נגיש · יש חניה",
+   "seats": 40
+  },
+  {
+   "id": "hanadiv-2098",
+   "name": "פסנתר חי - יוצרים מוסיקה ביחד",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 20:30 · שעה",
+   "date": "2026-10-30",
+   "hour": "20:30",
+   "audience": "רק למבוגרים",
+   "note": "המופע הוא חוויה מוזיקלית חד פעמית המבוססת על אלתור חי בפסנתר בשיתוף הקהל. היצירה במופע מתרחשת בזמן אמת לעיני הקהל. במהלך המופע הקהל מוזמן להציע רעיונות, רגשות, מילים, דמויות, תמונות או סיטואציות, ומתוכם נוצרת מוזיקה מקורית במקום. כל מופע שונה לחלוטין מקודמו, שכן התוכן מושפע ישירות מהקהל הנוכח ומהאינטראקציה עמו. המטרה היא להמחיש את תהליך היצירה המוזיקלית, להפוך את הקהל לשותף פעיל ולהעניק חוויה יצירתית, אישית ובלתי נשכחת. · היצירה במופע מתרחשת בזמן אמת לעיני הקהל · בהנחיית סשה בקמן, באירוח מיכל שלו גולן · הבית הצמוד למסעדת רוברטה וינצ'י",
+   "url": "https://2026.hanadiv.org/event-page/2098",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/d1e8c21500459ddd09f7b7aad210ac3bebcbea7ec60f4750755c8db16d630adc.webp",
+     "full": "https://api.hanadiv.org/images/d1e8c21500459ddd09f7b7aad210ac3bebcbea7ec60f4750755c8db16d630adc.webp"
+    },
+    {
+     "yt": "B3Pg-fOvljA",
+     "thumb": "https://i.ytimg.com/vi/B3Pg-fOvljA/hqdefault.jpg"
+    },
+    {
+     "yt": "sy1t5JZDKBc",
+     "thumb": "https://i.ytimg.com/vi/sy1t5JZDKBc/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.472218,
+    "lng": 34.991497,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "אחוזה 43 · מרחב פנים מתאים לסדנאות הופעות אינטימיות. חצר יפה פורחת הכוללת איזור הושבה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 40
+  },
+  {
+   "id": "hanadiv-2117",
+   "name": "יוגה תרפיה · יום שבת",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום שבת 31.10 · 09:30 · שעה וחצי",
+   "date": "2026-10-31",
+   "hour": "09:30",
+   "audience": "רק למבוגרים",
+   "note": "תירגול נשימות · נשימות מרפאות · בהנחיה ובאירוח של רחלי בר · יש חניה בשפע במגרש החניה של בית ספר שדות. הבית מוקף בגדר כחולה",
+   "url": "https://2026.hanadiv.org/event-page/2117",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp",
+     "full": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.475319,
+    "lng": 35.001175,
+    "source": "osm",
+    "spread": true
+   },
+   "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 8
+  },
+  {
+   "id": "hanadiv-2077",
+   "name": "מתחם טיפולים · יום שבת",
+   "group": "אירוח",
+   "craft": "אירוח",
+   "when": "יום שבת 31.10 · 10:00 · 10 שעות",
+   "date": "2026-10-31",
+   "hour": "10:00",
+   "audience": "רק למבוגרים",
+   "note": "מתחם טיפולים - במשך כל יום שבת! הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!! קישור לרשימה העדכנית של המטפלים בתחתית העמוד · *שימו לב!!! - הרשמה ישירות מול המטפל.ת ולא דרך האתר של הפסטיבל. גם הכניסה לרשימת המתנה רק ישירות מול המטפלים והמטפלות* מגוון רחב של טיפולי גוף ונפש מתארחים ב \"דרך המשי מרפאה קהילתית לרפואה משלימה\" ניתנים ללא תשלום !! בתיאום מראש עם המטפל.ת. !! רשימת המטפלים בלינק בתחתית הדף או חפשו בפייסבוק - מתחם טיפולים פסטיבל דרך הנדיב 2026 · מטפלי פרדס חנה כרכור בנתינה מכל הלב. · בהנחיה ובאירוח של אפרת פיליפובסקי · מטפלי פרדס חנה כרכור בנתינה מכל הלב. הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!!",
+   "url": "https://2026.hanadiv.org/event-page/2077",
+   "links": [
+    {
+     "url": "https://www.facebook.com/events/941558078976386/?active_tab=discussion",
+     "title": "פייסבוק"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/db3b9e7a10e59f61982403d7d30c4ccb51d9510949472fbb4930d242acae37dc.webp",
+     "full": "https://api.hanadiv.org/images/db3b9e7a10e59f61982403d7d30c4ccb51d9510949472fbb4930d242acae37dc.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.473106,
+    "lng": 34.97353,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "הדקלים 95, כניסה קומה 2 · קליניקה קהילתית \"דרך המשי\" בית פעם שבת",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 100
+  },
+  {
+   "id": "hanadiv-2102",
+   "name": "מפגש לייב של הפודקאסט ׳השיר הנכון׳",
+   "group": "הרצאות ומילים",
+   "craft": "הגות ושירה",
+   "when": "יום שבת 31.10 · 11:00 · שעה",
+   "date": "2026-10-31",
+   "hour": "11:00",
+   "audience": "רק למבוגרים",
+   "note": "בואו לציין איתנו את פרק ה 100! כמו בפודקאסט אבל במפגש לייב יחד אתכםן, גליה שושני וורד עצמון יפגשו לקרוא שיר ולהגג עליו. יחד אתכםן נדבר על מה הוא עושה לנו, אילו מחשבות, זכרונות ורגשות הוא מעלה. ובעיקר, בשטף החיים העסוקים יהיה לנו תירוץ לעצור לרגע, להפגש, לדבר ולצחוק יחד. · הפודקאסט שזכה בציון לשבח מתאגיד ׳כאן׳ שוב מקיים מפגש לייב! · בהנחיה ובאירוח של ורד עצמון · הבית עם גדר העץ *החומה* ולא הלבנה שיש לשכנים הצמודים באותה כתובת",
+   "url": "https://2026.hanadiv.org/event-page/2102",
+   "links": [
+    {
+     "url": "https://www.poeticard.com/podcast",
+     "title": "poeticard.com"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/2968168fb87a4ffbdeb017337a6d49230d1d708eeeffd8975edae67c273d21d7.webp",
+     "full": "https://api.hanadiv.org/images/2968168fb87a4ffbdeb017337a6d49230d1d708eeeffd8975edae67c273d21d7.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.47597,
+    "lng": 35.00069,
+    "source": "osm"
+   },
+   "address": "ברקאי 7 · בית פרטי",
+   "seats": 61
+  },
+  {
+   "id": "hanadiv-2093",
+   "name": "הופעה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שבת 31.10 · 11:30 · שעה וחצי",
+   "date": "2026-10-31",
+   "hour": "11:30",
+   "audience": "לכל המשפחה",
+   "note": "אגיע עם הגיטרה שלי, אספר סיפורים ואשיר שירים משלל פרקים בחיי · הופעה מוזיקלית, אקוסטית, וחשמלית, שירים מקוריים בעברית · בהנחיית ג'ני וסילנקו, באירוח מייטל קורח מרגוליס · מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!! נתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "url": "https://2026.hanadiv.org/event-page/2093",
+   "links": [
+    {
+     "url": "https://open.spotify.com/artist/5LselN3JqqCLeWwm4JJJzb?si=J5fhNfJYQ8aSnE3KSDMQkA",
+     "title": "ספוטיפיי"
+    },
+    {
+     "url": "https://www.instagram.com/dr.or.music?stkn=eXhibnRwdDVpczRl&utm_source=qr",
+     "title": "אינסטגרם"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/37977499e4290ae753118a19b3d9bde4165de773daff58314cdfa24f733ecfdb.webp",
+     "full": "https://api.hanadiv.org/images/37977499e4290ae753118a19b3d9bde4165de773daff58314cdfa24f733ecfdb.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.477293,
+    "lng": 34.966117,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "access": "נגיש · יש חניה",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2106",
+   "name": "שעת סיפור \"רון הנוירון\"",
+   "group": "ילדים ומשפחה",
+   "craft": "שעת סיפור",
+   "when": "יום שבת 31.10 · 16:00 · שעה",
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "audience": "לכל המשפחה",
+   "note": "שעת סיפור שתתבצע על ידי, נעמה אשחר, הכותבת והמאיירת של ספר הילדים \"רון הנוירון\" שלוקח אותנו למסע מרתק במערכת העצבים, ומפתח את הסקרנות הטבעית של ילדים. מתאים במיוחד לגילאי 5-7. · שעת סיפור של ספר הילדים רון הנוירון, גילאי 5-7 · בהנחיית נעמה ברקוביץ, באירוח מייטל קורח מרגוליס · מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!! נתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "url": "https://2026.hanadiv.org/event-page/2106",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/6bc000d2ff0ddc91b968cc4f9075f1a0b427645ea9d36bc825858fc4b4f5fa3e.webp",
+     "full": "https://api.hanadiv.org/images/6bc000d2ff0ddc91b968cc4f9075f1a0b427645ea9d36bc825858fc4b4f5fa3e.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.47716,
+    "lng": 34.965959,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "access": "נגיש · יש חניה",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2097",
+   "name": "מפגש לימוד רוחני- ספר הידע",
+   "group": "הרצאות ומילים",
+   "craft": "הרצאה",
+   "when": "יום שבת 31.10 · 16:00 · שעה וחצי",
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "audience": "רק למבוגרים",
+   "note": "אנחנו מזמינים אורחים סקרנים ללימודים רוחניים אוניברסליים מיוחדים בספר הידע\" · לימודים רוחניים אוניברסליים ללא תשלום · בהנחיה ובאירוח של שני גבאי · כניסה מהסמטה",
+   "url": "https://2026.hanadiv.org/event-page/2097",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/6ec73cfe144d955da3caf333fee03004ec742c38549cd70a844a4e49b7317f22.webp",
+     "full": "https://api.hanadiv.org/images/6ec73cfe144d955da3caf333fee03004ec742c38549cd70a844a4e49b7317f22.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.478745,
+    "lng": 34.991746,
+    "source": "parcel"
+   },
+   "address": "המייסדים 90 · בית פרטי",
+   "access": "בפנים",
+   "seats": 60
+  },
+  {
+   "id": "hanadiv-2092",
+   "name": "מופע כשרונות צעירים",
+   "group": "ילדים ומשפחה",
+   "craft": "ילדים והורים",
+   "when": "יום שבת 31.10 · 17:00 · שעתיים",
+   "date": "2026-10-31",
+   "hour": "17:00",
+   "audience": "לכל המשפחה",
+   "note": "מופע מיוחד בו ילדים וילדות מראים את היצירתיות שלהם דרך- ריקוד, שירה, תיאטרון ואמנות · ילדים וילדות באים להופיע על הבמה · בהנחיה ובאירוח של מייטל קורח מרגוליס · מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!! נתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "url": "https://2026.hanadiv.org/event-page/2092",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/ff0848e4e5b7375eb6c47a1486ef978b40a84706b0ac47a935331671c934750d.webp",
+     "full": "https://api.hanadiv.org/images/ff0848e4e5b7375eb6c47a1486ef978b40a84706b0ac47a935331671c934750d.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.477293,
+    "lng": 34.965801,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "access": "נגיש · יש חניה",
+   "seats": 300
+  },
+  {
+   "id": "hanadiv-2091",
+   "name": "הרצאה על הביטלס",
+   "group": "הרצאות ומילים",
+   "craft": "הרצאה",
+   "when": "יום שבת 31.10 · 19:30 · שעה",
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "audience": "רק למבוגרים",
+   "note": "הרצאה על להקת הביטלס מלווה בקליפים ושירים מקסימים שלהם, בסיום ההרצאה נשיר כמה משיריהם הטובים · הרצאה על הלהקה ששינתה את העולם מלווה בקליפיפ שלהם · בהנחיית סלעית אביב, באירוח מיכל שלו גולן · הבית הצמוד למסעדת רוברטה וינצ'י",
+   "url": "https://2026.hanadiv.org/event-page/2091",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/8ce4c1a9f87c922fcceb8be273d3228b444c168bb4acfca0569fb1e2527badf3.webp",
+     "full": "https://api.hanadiv.org/images/8ce4c1a9f87c922fcceb8be273d3228b444c168bb4acfca0569fb1e2527badf3.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.472351,
+    "lng": 34.991339,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "אחוזה 43 · מרחב פנים מתאים לסדנאות הופעות אינטימיות. חצר יפה פורחת הכוללת איזור הושבה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 40
+  },
+  {
+   "id": "hanadiv-2087",
+   "name": "sing & soul",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שבת 31.10 · 19:30 · שעה",
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "audience": "לכל המשפחה",
+   "note": "שתי זמרות וחברות נפגשות לדואט אינטימי וסוחף של הזמרות הגדולות מכל הזמנים ושירים מקוריים. ארית'ה פרנקלין, איימי ווינהאוס, אדל, קרולינה, קרול קינג ועוד. לימור פיגל - שירה ופסנתר · מופע מוזיקלי · בהנחיית לימור פיגל, באירוח מיכל ויסברג · נא להחנות לאורך רחוב שלדג והסביבה ולא לחסום לשכנים את החניות :) בואו בשמחה",
+   "url": "https://2026.hanadiv.org/event-page/2087",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/a35fdd18fc4e8cc4966ba2b59dc678c965fd96daa5c275da50671ce94c1e1abf.webp",
+     "full": "https://api.hanadiv.org/images/a35fdd18fc4e8cc4966ba2b59dc678c965fd96daa5c275da50671ce94c1e1abf.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.461936,
+    "lng": 34.952337,
+    "source": "b144"
+   },
+   "address": "שלדג 33 · בית פרטי עם סלון גדול לארח",
+   "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
+   "seats": 41
+  },
+  {
+   "id": "hanadiv-2088",
+   "name": "הצעד הבא",
+   "group": "במה ותערוכות",
+   "craft": "תיאטרון",
+   "when": "יום שבת 31.10 · 20:30 · שעה",
+   "date": "2026-10-31",
+   "hour": "20:30",
+   "audience": "רק למבוגרים",
+   "note": "מופע הכולל קובץ של יצירות אישיות, מבית היוצר של מסלול \"הוצאה לאור\" בתיאטרון הידית, שמתייחסות בדרכים שונות אל מצוקות הזמן והמקום. · מופע תיאטרוני · בהנחיה ובאירוח של קובי גרוסמן",
+   "url": "https://2026.hanadiv.org/event-page/2088",
+   "links": [
+    {
+     "url": "https://www.facebook.com/reel/2243708183029963",
+     "title": "פייסבוק"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/4feaae77f9c99b161754154871837c5dc9b6f588a6e2b9ecdde08d7d03041bc3.webp",
+     "full": "https://api.hanadiv.org/images/4feaae77f9c99b161754154871837c5dc9b6f588a6e2b9ecdde08d7d03041bc3.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.474976,
+    "lng": 34.969912,
+    "source": "landmark"
+   },
+   "address": "המעלה 4 · אמפי פרדס חנה",
+   "access": "נגיש · יש חניה · בפנים",
+   "seats": 100
+  }
+ ],
+ "stats": {
+  "events": 46,
+  "venues": 21,
+  "placed": 46,
+  "photos": 56
+ }
+}

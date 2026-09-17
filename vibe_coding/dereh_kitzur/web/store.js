@@ -30,6 +30,9 @@
  *                      OpenStreetMap. The two documents here that are not about
  *                      the moshava at all: worked examples of the idea this
  *                      whole app is named after, kept for comparison.
+ *   data/hanadiv.json  the events of פסטיבל דרך הנדיב, one pin per event.
+ *                      Written by build_hanadiv.py off the festival's own API;
+ *                      never written from the app.
  *   data/media.json    photos, videos, links and notes an editor has attached
  *                      to an item in any of the layers above. See below.
  *
@@ -116,6 +119,7 @@ const Store = (() => {
   const PUBLIC = 'data/public.json';
   const HOUTEN = 'data/houten.json';
   const CURITIBA = 'data/curitiba.json';
+  const HANADIV = 'data/hanadiv.json';
   const MEDIA = 'data/media.json';
 
   const K_TRAILS = 'dk.cache.trails.v2';
@@ -129,6 +133,7 @@ const Store = (() => {
   const K_PUBLIC = 'dk.cache.public.v1';
   const K_HOUTEN = 'dk.cache.houten.v1';
   const K_CURITIBA = 'dk.cache.curitiba.v1';
+  const K_HANADIV = 'dk.cache.hanadiv.v1';
   const K_MEDIA = 'dk.cache.media.v1';
   const K_ON = 'dk.editing.v1';         // the edit toggle, per browser
   const K_NAME = 'dk.name.v1';          // what to write in `by`, if given
@@ -249,10 +254,11 @@ const Store = (() => {
     let publicLand = null;
     let houten = null;
     let curitiba = null;
+    let hanadiv = null;
     let media = null;
     try {
       [trails, network, places, art, shimur, makom, plans, blocks, publicLand,
-       houten, curitiba, media] = await Promise.all([
+       houten, curitiba, hanadiv, media] = await Promise.all([
         canonical(TRAILS),
         fetchJson('data/layers.json').catch(() => null),
         // The places file is younger than the repo, and a copy also ships with
@@ -275,6 +281,8 @@ const Store = (() => {
         // write off OpenStreetMap.
         fetchJson(HOUTEN).catch(() => bundled('data/houten.json')),
         fetchJson(CURITIBA).catch(() => bundled('data/curitiba.json')),
+        // The festival's events, which build_hanadiv.py writes once a year.
+        fetchJson(HANADIV).catch(() => bundled('data/hanadiv.json')),
         // The side-car. Written from the app, so an editor reads it through the
         // worker for the same reason as the trails: their own photo would
         // otherwise be five minutes behind them. A miss is ordinary - the file
@@ -292,6 +300,7 @@ const Store = (() => {
       if (publicLand) cache(K_PUBLIC, publicLand);
       if (houten) cache(K_HOUTEN, houten);
       if (curitiba) cache(K_CURITIBA, curitiba);
+      if (hanadiv) cache(K_HANADIV, hanadiv);
       if (media) cache(K_MEDIA, media);
     } catch (err) {
       state.offline = true;
@@ -306,6 +315,7 @@ const Store = (() => {
       publicLand = cached(K_PUBLIC);
       houten = cached(K_HOUTEN);
       curitiba = cached(K_CURITIBA);
+      hanadiv = cached(K_HANADIV);
       media = cached(K_MEDIA);
       if (!trails) {
         // First ever visit, with no connection. The copy shipped with the app
@@ -321,6 +331,7 @@ const Store = (() => {
         publicLand = await bundled('data/public.json');
         houten = await bundled('data/houten.json');
         curitiba = await bundled('data/curitiba.json');
+        hanadiv = await bundled('data/hanadiv.json');
         media = await bundled('data/media.json');
       }
     }
@@ -342,6 +353,7 @@ const Store = (() => {
       publicLand: absolutise(publicLand),
       houten: absolutise(houten),
       curitiba: absolutise(curitiba),
+      hanadiv: absolutise(hanadiv),
       media: absolutise(media || { items: {} }),
       canopy,
       offline: state.offline
