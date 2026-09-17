@@ -1,0 +1,3 @@
+# נתוני CIFAR-10 שהמחברות מורידות בעצמן (~170MB)
+**/cifar10_data/
+.ipynb_checkpoints/
