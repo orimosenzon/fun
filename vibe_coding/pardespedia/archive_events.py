@@ -251,9 +251,15 @@ def build_archive(led: dict, today: dt.date) -> str:
                 '!! אירוע !! סוג !! מקום !! כניסה']
         for e in evs:
             img = f"[[קובץ:{e['image_file']}|90px]]" if e.get("image_file") else "—"
-            name = f"[{e['url']} {e['name']}]" if e.get("url") else e["name"]
+            # (imported here: update_events imports this module at load time)
+            from update_events import canonical_category, clean_name
+            # stored labels pass through the board's vocabulary on every render,
+            # so an alias added later (e.g. קונצרטים → מופעים והופעות) also
+            # corrects rows that were archived before it existed
+            ename = clean_name(e["name"])
+            name = f"[{e['url']} {ename}]" if e.get("url") else ename
             out += ["|-", f'| {img} || data-sort-value="{e["date"]}" | {_he_date(e["date"])} '
-                          f'|| {e.get("time") or "—"} || {name} || {e.get("category") or "—"} '
+                          f'|| {e.get("time") or "—"} || {name} || {canonical_category(e.get("category")) or "—"} '
                           f'|| {e.get("venue") or "—"} || {e.get("entry") or "—"}']
         out += ["|}", "</div>", ""]
 
