@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 logs/*_stdout.log
 checkpoints/*_last.pt
+checkpoints/*_final.pt
+logs/chain_a2c.log

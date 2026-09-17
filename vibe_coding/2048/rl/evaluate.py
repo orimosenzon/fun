@@ -85,7 +85,8 @@ def evaluate_policy(name: str, label: str, policy, games: int, seed: int = 2048)
     typical = recorded[len(recorded) // 2]
     # מאפייני אסטרטגיה מתוך 40 המשחקים המוקלטים: העדפת כיוונים, והאם האריח הגדול נשמר בפינה
     action_counts = [0, 0, 0, 0]
-    corner_hits, frames_n = 0, 0
+    corner_hits, edge_hits, frames_n = 0, 0, 0
+    pos = np.zeros((4, 4))  # איפה יושב האריח הגדול ביותר
     for g in recorded:
         for fr in g["frames"]:
             if fr["action"] is not None:
@@ -94,14 +95,20 @@ def evaluate_policy(name: str, label: str, policy, games: int, seed: int = 2048)
             m = b.max()
             if m >= 5:  # מ-32 ומעלה, לפני זה "פינה" חסרת משמעות
                 frames_n += 1
-                corners = (b[0, 0], b[0, 3], b[3, 0], b[3, 3])
-                corner_hits += int(m in corners)
+                r, c = np.unravel_index(int(b.argmax()), b.shape)
+                pos[r, c] += 1
+                is_corner = r in (0, 3) and c in (0, 3)
+                is_edge = r in (0, 3) or c in (0, 3)
+                corner_hits += int(is_corner)
+                edge_hits += int(is_edge)
     out = {
         "name": name,
         "label": label,
         "summary": summ,
         "action_counts": action_counts,
         "corner_rate": corner_hits / max(1, frames_n),
+        "edge_rate": edge_hits / max(1, frames_n),
+        "max_tile_pos": (pos / max(1, frames_n)).round(4).tolist(),
         "scores": [r["score"] for r in results],
         "max_tiles": [r["max_tile"] for r in results],
         "moves": [r["moves"] for r in results],
@@ -135,13 +142,14 @@ def main():
         rng = np.random.default_rng(0)
         save(evaluate_policy("random", "מדיניות אקראית", random_policy(rng), args.games))
         save(evaluate_policy("greedy", "חמדן צעד אחד", greedy_score_policy, args.games))
-        for kind, name, label in (("dqn", "dqn", "DQN"), ("ac", "ac", "Actor-Critic")):
-            path = os.path.join(ROOT, "checkpoints", f"{name}_best.pt")
+        # (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית)
+        for kind, run, label in (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic")):
+            path = os.path.join(ROOT, "checkpoints", f"{run}_best.pt")
             if not os.path.exists(path):
-                print(f"skip {name}: no checkpoint at {path}")
+                print(f"skip {kind}: no checkpoint at {path}")
                 continue
             net, ckpt = load_agent(kind, path, device)
-            data = evaluate_policy(name, label, agent_policy(kind, net, device), args.games)
+            data = evaluate_policy(kind, label, agent_policy(kind, net, device), args.games)
             data["checkpoint"] = os.path.relpath(path, ROOT)
             data["train_transitions"] = ckpt.get("transitions")
             data["train_args"] = ckpt.get("args")

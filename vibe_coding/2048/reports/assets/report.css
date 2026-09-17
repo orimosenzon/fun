@@ -95,6 +95,8 @@ a { color: var(--series-1); }
 .kpi .delta.good { color: var(--good); }
 .kpi.s1 { border-top: 3px solid var(--series-1); }
 .kpi.s2 { border-top: 3px solid var(--series-2); }
+.card .kpis { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.card .kpi .value { font-size: 26px; }
 
 /* כרטיס גרף */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 10px; margin: 16px 0; }
@@ -148,3 +150,14 @@ tr.hl td { font-weight: 600; }
 .hp div span:last-child { font-variant-numeric: tabular-nums; direction: ltr; color: var(--ink-2); }
 
 footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--grid); padding-top: 12px; }
+
+/* מפת חום 4x4 של מיקום האריח הגדול */
+.hm-row { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; padding: 6px 0; }
+.hm { text-align: center; }
+.hm-grid { display: grid; grid-template-columns: repeat(4, 34px); grid-template-rows: repeat(4, 34px); gap: 2px; direction: ltr; background: var(--surface); }
+.hm-cell {
+  border-radius: 3px; font-size: 12px; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in oklab, var(--seq-700) calc(var(--v) * 100%), var(--seq-100));
+  color: color-mix(in oklab, #ffffff calc(var(--v) * 130%), var(--ink));
+}
+.hm-label { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
