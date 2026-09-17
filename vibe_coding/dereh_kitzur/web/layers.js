@@ -49,6 +49,7 @@ const Layers = (() => {
   const PUBLIC_ID = 'public-land';
   const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
+  const HANADIV_ID = 'hanadiv';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -534,9 +535,16 @@ const Layers = (() => {
   /* One object rather than a dozen positional arguments. It is exactly what
    * `Store.load()` returns, so a document added there arrives here without a
    * call site in between having to be kept in the same order. */
+  /** '2026-10-29' -> '29.10.2026', for a layer note; a Date would bring the
+   *  time zone into a day that has none. */
+  const hebrewDate = (iso) => {
+    const [y, m, d] = String(iso || '').split('-');
+    return d ? `${+d}.${+m}.${y}` : iso;
+  };
+
   function init(data) {
     const { trails, network, places, art, shimur, makom, plans, blocks,
-            publicLand, houten, curitiba, canopy } = data;
+            publicLand, houten, curitiba, hanadiv, canopy } = data;
     setMedia(data.media);
     const prefs = loadPrefs();
     const link = urlPrefs();
@@ -617,6 +625,32 @@ const Layers = (() => {
       linkTitle: 'הדף המלא באתר הפסטיבל',
       pinnable: false,                     // the festival placed these itself
       on: isOn(ART_ID, false)
+    });
+
+    // Three days at the end of October when the moshava opens its living
+    // rooms: forty-odd events in twenty-odd houses, studios and yards, read
+    // off the festival's own API by build_hanadiv.py. One pin per event and
+    // not per venue, because an event is the thing you go to and it has a
+    // time; nine at the community centre sit on a ring around it. Positions
+    // are the festival's, checked and in a few cases corrected against
+    // OpenStreetMap, the cadastre and a second geocoder - see the builder.
+    addPlaceLayer(HANADIV_ID, hanadiv, {
+      name: (hanadiv && hanadiv.name) || 'אירועי דרך הנדיב',
+      category: 'places',
+      short: 'דרך הנדיב',
+      unit: 'אירועים',
+      color: '#f6a11b',
+      note: 'האירועים של פסטיבל דרך הנדיב, פסטיבל האירוח הביתי של המושבה: '
+        + 'הופעות, סדנאות, הרצאות ושעות סיפור בבתים, בסטודיואים ובחצרות, '
+        + (hanadiv && hanadiv.festival
+          ? `${hebrewDate(hanadiv.festival.from)} עד ${hebrewDate(hanadiv.festival.until)}. `
+          : '') + 'סיכה לכל אירוע, בצבע לפי הסוג. הטקסט והתמונות מהאתר של הפסטיבל.',
+      credit: 'פסטיבל דרך הנדיב · hanadiv.org',
+      sourceName: 'פסטיבל דרך הנדיב',
+      sourceLine: 'הטקסט והתמונות מתוך האתר של פסטיבל דרך הנדיב',
+      linkTitle: 'עמוד האירוע באתר הפסטיבל',
+      pinnable: false,                     // the festival's addresses, checked by the builder
+      on: isOn(HANADIV_ID, false)
     });
 
     // What the moshava has decided is worth keeping. Two lists rather than
@@ -1879,7 +1913,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PUBLIC_ID, CANOPY_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing,
     set onChange(fn) { onChange = fn; }

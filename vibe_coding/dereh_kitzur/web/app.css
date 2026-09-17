@@ -801,6 +801,9 @@ body:not(.craft-balloon) #craft .craft-jet { display: none; }
 }
 
 .chip.accent { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+/* When an event happens: the one chip on a festival pin that is read before
+ * the name is. */
+.chip.when { background: #1a2320; color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .note {
   margin: 0 0 14px;

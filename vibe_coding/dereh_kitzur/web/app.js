@@ -435,8 +435,8 @@ function items() {
       // The craft and the wiki's own categories are what somebody actually
       // types: "קרמיקה", "ברים ופאבים". Neither is drawn in the list, so
       // without this they were the one thing on a place you could not search.
-      [it.name, it.note, it.group, it.address, it.craft, (it.cats || []).join(' '),
-       (it.connects || []).join(' '), (it.streets || []).join(' ')]
+      [it.name, it.note, it.group, it.address, it.craft, it.when, it.audience,
+       (it.cats || []).join(' '), (it.connects || []).join(' '), (it.streets || []).join(' ')]
         .join(' ').toLowerCase().includes(needle));
   }
 
@@ -473,6 +473,7 @@ function subtitle(it) {
   if (it.length) bits.push(metres(it.length));
   else if (it.place) bits.push(it.group || 'מקום');
   else bits.push('נקודת ציון');
+  if (it.when) bits.push(it.when);   // an event: the day and the hour, on the row
   // Said on the row itself, because the difference between "saved" and "sent"
   // is the whole of what somebody has to know after recording a trail, and the
   // only place it was said before was inside the trail's own page.
@@ -784,7 +785,10 @@ const GEO_SOURCE = {
   block: 'מרכז הגוש בקדסטר',
   pardespedia: 'לפי המיקום של אותו מקום בפרדספדיה',
   shimur: 'לפי אותו אתר בנספח השימור',
-  festival: 'הסיכה שהפסטיבל עצמו הניח'
+  festival: 'הסיכה שהפסטיבל עצמו הניח',
+  // The two build_hanadiv.py adds when the festival's own point was wrong.
+  b144: 'לפי מספר הבית במפות בזק, מקורב',
+  landmark: 'לפי סימון האתר עצמו במקור חיצוני'
 };
 
 /** What an editor can change about a trail that is already published. */
@@ -901,6 +905,10 @@ function showDetail(it) {
   // "אמנות | ציור" - the festival's own two-level labelling of what somebody
   // makes, which is the first thing a visitor picking a studio wants to know.
   if (it.craft) chips.push(`<span class="chip">${escapeHtml(it.craft)}</span>`);
+  // An event rather than a place: when it happens is the first thing to
+  // know, and whom it is for the second. build_hanadiv.py writes both.
+  if (it.when) chips.push(`<span class="chip when">${escapeHtml(it.when)}</span>`);
+  if (it.audience) chips.push(`<span class="chip">${escapeHtml(it.audience)}</span>`);
   if (layer.kind !== 'trails' && !it.place) {
     chips.push(`<span class="chip layer" style="--c:${layer.color}">${escapeHtml(layer.name)}</span>`);
   }
