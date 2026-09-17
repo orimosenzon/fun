@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>2048</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="description" content="Join the tiles, get to 2048!">
+  <link rel="stylesheet" href="style/main.css">
+</head>
+<body>
+  <div class="container">
+    <div class="heading">
+      <h1 class="title">2048</h1>
+      <div class="scores-container">
+        <div class="score-container">0</div>
+        <div class="best-container">0</div>
+      </div>
+    </div>
+
+    <div class="above-game">
+      <p class="game-intro">Join the tiles, get to <strong>2048!</strong></p>
+      <a class="restart-button">New Game</a>
+    </div>
+
+    <div class="game-container">
+      <div class="game-message">
+        <p></p>
+        <div class="lower">
+          <a class="keep-playing-button">Keep going</a>
+          <a class="retry-button">Try again</a>
+        </div>
+      </div>
+
+      <div class="grid-container">
+        <div class="grid-row">
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+        </div>
+        <div class="grid-row">
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+        </div>
+        <div class="grid-row">
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+        </div>
+        <div class="grid-row">
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+        </div>
+      </div>
+
+      <div class="tile-container"></div>
+    </div>
+
+    <p class="game-explanation">
+      <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles.
+      Tiles with the same number <strong>merge into one</strong> when they touch. Add them up to reach <strong>2048!</strong>
+    </p>
+    <hr>
+    <div class="agent-panel">
+      <p class="agent-title"><strong class="important">Watch the AI play:</strong> pick a trained agent (from the Python/PyTorch part of this project) and let it drive the board. Press <strong>P</strong> to play or pause.</p>
+      <div class="agent-controls">
+        <select class="agent-select">
+          <option value="">Choose an agent…</option>
+          <option value="dqn">DQN</option>
+          <option value="ac">Actor-Critic</option>
+        </select>
+        <a class="agent-play agent-button">Play</a>
+        <a class="agent-step agent-button">Step</a>
+        <label class="agent-speed-label">Speed <input type="range" class="agent-speed" min="20" max="600" value="420"></label>
+        <label class="agent-auto-label"><input type="checkbox" class="agent-auto" checked> Auto-restart</label>
+      </div>
+      <div class="agent-values">
+        <div class="agent-bar" data-dir="0"><em>↑ up</em><span></span></div>
+        <div class="agent-bar" data-dir="1"><em>→ right</em><span></span></div>
+        <div class="agent-bar" data-dir="2"><em>↓ down</em><span></span></div>
+        <div class="agent-bar" data-dir="3"><em>← left</em><span></span></div>
+      </div>
+      <p class="agent-status"></p>
+      <p class="agent-help">The bars show what the network thinks of each direction: for DQN the estimated future score (Q-value), for Actor-Critic the probability it assigns. × marks a move that would not change the board.</p>
+    </div>
+    <hr>
+    <p>
+      <strong class="important">Note:</strong> This is a faithful re-implementation of the original
+      <a href="https://play2048.co/" target="_blank" rel="noopener">2048</a> by Gabriele Cirulli,
+      built as the playground for a reinforcement-learning project.
+    </p>
+    <p dir="rtl" class="hebrew-note">
+      המשחק הזה הוא חלק מפרויקט למידת חיזוק: סוכנים (DQN ו-Actor-Critic) שלומדים לשחק 2048 בעצמם.
+      <a href="../README.md">התיעוד המלא</a> ·
+      <a href="../reports/comparison.html">דו"ח השוואה בין האלגוריתמים</a>
+    </p>
+  </div>
+
+  <script src="js/grid.js"></script>
+  <script src="js/tile.js"></script>
+  <script src="js/local_storage_manager.js"></script>
+  <script src="js/keyboard_input_manager.js"></script>
+  <script src="js/html_actuator.js"></script>
+  <script src="js/game_manager.js"></script>
+  <script src="js/application.js"></script>
+  <script src="js/agent.js"></script>
+</body>
+</html>

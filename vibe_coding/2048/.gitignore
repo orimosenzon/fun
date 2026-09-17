@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+logs/*_stdout.log
+checkpoints/*_last.pt
