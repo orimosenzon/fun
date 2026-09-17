@@ -2641,7 +2641,7 @@ body:not(.fly-balloon) .fly-compass .rose-drift { display: none; }
   .fly-compass b { font-size: 11px; }
 }
 
-.fly-x, .fly-help, .fly-snd {
+.fly-x, .fly-help, .fly-snd, .fly-look {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
   width: 38px;
@@ -2658,7 +2658,8 @@ body:not(.fly-balloon) .fly-compass .rose-drift { display: none; }
 .fly-x { inset-inline-end: 14px; font-size: 24px; line-height: 1; }
 .fly-help { inset-inline-end: 60px; font-size: 16px; font-weight: 700; }
 .fly-snd { inset-inline-end: 106px; }
-.fly-x:hover, .fly-help:hover, .fly-snd:hover { background: rgba(30, 44, 38, .78); }
+.fly-look { inset-inline-end: 152px; }
+.fly-x:hover, .fly-help:hover, .fly-snd:hover, .fly-look:hover { background: rgba(30, 44, 38, .78); }
 
 /* One icon, two states: the waves when the engine can be heard, a cross when
  * it has been muted. */
@@ -2667,6 +2668,44 @@ body:not(.fly-balloon) .fly-compass .rose-drift { display: none; }
 .fly-snd.off .snd-wave { display: none; }
 .fly-snd.off .snd-off { display: block; }
 .fly-snd.off { opacity: .7; }
+
+/* The view: what hangs over the ground. One button that steps through its
+ * positions, so it has to say where it is: the icon is the position (a
+ * photo; a photo struck out; a lit trail) and the word under the ring names
+ * it, the way the compass has its heading under the dial. The trails
+ * position glows, because that is what it does to the map. */
+.fly-look svg { width: 21px; height: 21px; overflow: visible; }
+.fly-look .look-clean, .fly-look .look-trails { display: none; }
+.fly-look[data-view="clean"] .look-normal, .fly-look[data-view="trails"] .look-normal { display: none; }
+.fly-look[data-view="clean"] .look-clean { display: block; }
+.fly-look[data-view="trails"] .look-trails { display: block; }
+.fly-look b {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+}
+.fly-look[data-view="trails"] {
+  color: #ffd27a;
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 122, .6), 0 0 14px rgba(255, 190, 90, .4);
+}
+/* In the trails view the names are what you look at, so they carry a little
+ * more of the glow. */
+body[data-fly-view="trails"] .fly-chip {
+  box-shadow: 0 0 0 1px rgba(255, 219, 150, .6), 0 0 28px rgba(255, 197, 92, .5);
+}
+/* On a phone a fourth button on the top line lands on the compass, so it
+ * drops to a line of its own under the three. (body.flying for the weight,
+ * as with the readout above.) */
+@media (max-width: 560px) {
+  body.flying .fly-look { top: calc(58px + env(safe-area-inset-top, 0px)); inset-inline-end: 14px; }
+}
 
 /* What you have found, named, at the bottom where it does not sit over the
  * thing it names. */

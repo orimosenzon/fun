@@ -199,6 +199,7 @@ const Explore = (() => {
 
   const MAX_CARDS = 8;       // floating photos on screen at once
   const MAX_CHIPS = 5;       // trail names on screen at once
+  const MAX_CHIPS_TRAILS = 12;   // and in the trails view, where the names are the point
   const MAX_LINES = 40;      // trails fed to the glow source
 
   const CARD_MIN_PX = 44;
@@ -314,6 +315,30 @@ const Explore = (() => {
 
   let restore = null;        // what to put back on the way out
 
+  /* What is drawn over the ground, on the button at the top right (Ori,
+   * 17/9/2026): the photos are the point of the flight and also the thing
+   * that hides the land, and sometimes the land, or the trails through it,
+   * is what you came to look at.
+   *
+   *   normal   the photos, the names of the trails, the trails lit as found
+   *   clean    the trails alone, nothing hanging over the ground
+   *   trails   no photos, more names, and the trails lit hard
+   *
+   * 'trails' is there only while there is a trail in the world to light; with
+   * the shortcuts layer off the button has two positions. Kept between
+   * flights like the aircraft is, and like the sound. */
+  const VIEWS = ['normal', 'clean', 'trails'];
+  const VIEW_NAME = { normal: 'רגיל', clean: 'נקי', trails: 'שבילים' };
+  const VIEW_WHAT = {
+    normal: 'תמונות, שמות ושבילים',
+    clean: 'רק השבילים, בלי תמונות ושמות',
+    trails: 'השבילים מוארים חזק, עם השמות, בלי תמונות'
+  };
+  const KEY_VIEW = 'dk.fly.view';
+  let view = 'normal';
+  try { const v = localStorage.getItem(KEY_VIEW); if (VIEWS.includes(v)) view = v; } catch (_) { /* private mode */ }
+  let hasTrails = false;     // a line in the world, decided by buildWorld
+
   const cards = new Map();   // photo key -> element, pooled across frames
   const chips = new Map();   // item id -> element
 
@@ -321,7 +346,7 @@ const Explore = (() => {
   let elAlt = null, elSpeed = null, elName = null, elHint = null, rushEl = null, elThr = null;
   let burnerEl = null, elBurn = null, sndBtn = null, elVsi = null, elVsiG = null;
   let elMach = null, elMachG = null, elG = null, elGG = null, coneEl = null;
-  let intro = null, viewer = null;
+  let intro = null, viewer = null, lookBtn = null, elLook = null;
 
   const el = (id) => document.getElementById(id);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -849,6 +874,7 @@ const Explore = (() => {
         });
       });
     }
+    hasTrails = world.some((e) => e.line);
   }
 
   /* ---------- reveal ----------
@@ -880,7 +906,12 @@ const Explore = (() => {
       // something should be an event.
       const t = 1 - hit.d / reach;
       const pulse = Math.exp(-(now - seen.get(e.id)) / 0.85) * 0.75;
-      e.g = clamp(t * t * (3 - 2 * t) + pulse, 0, 1);
+      let g = t * t * (3 - 2 * t);
+      // The trails view lights a trail hard almost as soon as it is in range,
+      // still from nothing at the edge so it swells rather than pops: a fifth
+      // of the way in it is already half lit, halfway in it is nearly full.
+      if (view === 'trails') g = 1 - Math.pow(1 - g, 3);
+      e.g = clamp(g + pulse, 0, 1);
       e.d = hit.d;
       e.at = toLngLat(hit.x, hit.y);
       near.push(e);
@@ -890,11 +921,12 @@ const Explore = (() => {
 
     const src = map.getSource('fly-trails');
     if (src) {
+      const halo = view === 'trails' ? 1 : 0.7;
       src.setData({
         type: 'FeatureCollection',
         features: near.filter((e) => e.line).slice(0, MAX_LINES).map((e) => ({
           type: 'Feature',
-          properties: { g: e.g, h: e.g * 0.7 },
+          properties: { g: e.g, h: e.g * halo },
           geometry: {
             type: 'LineString',
             coordinates: e.item.path.map(([lat, lng]) => [lng, lat])
@@ -941,6 +973,9 @@ const Explore = (() => {
   }
 
   function paintCards(pitch, fx, fy) {
+    // Only the normal view hangs photos; applyView put the existing ones
+    // away, and nothing here makes a new one until the view is back.
+    if (view !== 'normal') return;
     const reach = clamp(alt * PHOTO_K, PHOTO_MIN, PHOTO_MAX);
     const vh = map.getContainer().clientHeight || 800;
     const sinP = Math.sin(pitch * RAD);
@@ -1042,16 +1077,26 @@ const Explore = (() => {
   }
 
   function paintChips() {
+    if (view === 'clean') return;   // applyView hid them; nothing to paint
     const keep = new Set();
     // Five names fit across a laptop and pile on top of each other across a
-    // phone, where they are also the widest thing on the screen.
-    const cap = innerWidth < 560 ? 2 : MAX_CHIPS;
+    // phone, where they are also the widest thing on the screen. In the
+    // trails view the names are what is being looked at, so more of them.
+    const phone = innerWidth < 560;
+    const cap = view === 'trails' ? (phone ? 4 : MAX_CHIPS_TRAILS) : (phone ? 2 : MAX_CHIPS);
     const pick = near.filter((e) => e.g > 0.42 && e.name).slice(0, cap);
     const vh = map.getContainer().clientHeight || 800;
     // The bottom strip belongs to the instruments, and the nearest trail's name
     // is already printed there. A chip that lands under it prints the same
     // words twice, half of each behind the other.
     const floor = (vh - innerHeight) / 2 + innerHeight - 96;
+    // And the map hangs past the sides of the screen: a chip centred out
+    // there is a word cut in half at the edge. Once the picture is rolled
+    // the window is not axis-aligned in these pixels, and the whole
+    // container is allowed, as with the cards.
+    const rolled = Math.abs(bank) > 6;
+    const x0 = rolled ? -40 : ox + 16;
+    const x1 = rolled ? (map.getContainer().clientWidth || innerWidth) + 40 : ox + innerWidth - 16;
 
     for (const e of pick) {
       const p = map.project([e.at[0], e.at[1]]);
@@ -1070,7 +1115,7 @@ const Explore = (() => {
         `${clamp(CHIP_MIN_PX + (e.g - 0.42) * 34, CHIP_MIN_PX, CHIP_MAX_PX)}px`;
       node.style.opacity = clamp((e.g - 0.42) * 3.4, 0, 1);
       node.style.zIndex = String(3000 - Math.round(e.d));
-      node.hidden = p.y < -80 || p.y > floor;
+      node.hidden = p.y < -80 || p.y > floor || p.x < x0 || p.x > x1;
       keep.add(e.id);
     }
     for (const [id, node] of chips) if (!keep.has(id)) node.hidden = true;
@@ -1618,22 +1663,39 @@ const Explore = (() => {
 
   /* ---------- map layers ---------- */
 
+  /** How a lit trail is drawn: a wide soft glow under a thin bright core. The
+   *  trails view is the same pair with the glow nearly twice as wide and a
+   *  deeper amber, and the core wider and white, so that a trail reads from
+   *  across the screen and not only when you are on top of it. */
+  function trailPaint(v) {
+    const hard = v === 'trails';
+    return {
+      glow: {
+        'line-color': hard ? '#ffb340' : '#ffd166',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 13, hard ? 16 : 9, 18, hard ? 64 : 36],
+        'line-blur': ['interpolate', ['linear'], ['zoom'], 13, hard ? 8 : 6, 18, hard ? 26 : 20],
+        'line-opacity': ['get', 'h']
+      },
+      core: {
+        'line-color': hard ? '#ffffff' : '#fffaea',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 13, hard ? 4 : 2.4, 18, hard ? 13 : 8],
+        'line-opacity': ['get', 'g']
+      }
+    };
+  }
+
   function addLayers() {
     if (!map.getSource('fly-trails')) {
       map.addSource('fly-trails', { type: 'geojson', data: EMPTY });
     }
+    const paint = trailPaint(view);
     if (!map.getLayer('fly-trail-glow')) {
       map.addLayer({
         id: 'fly-trail-glow',
         type: 'line',
         source: 'fly-trails',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': '#ffd166',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 9, 18, 36],
-          'line-blur': ['interpolate', ['linear'], ['zoom'], 13, 6, 18, 20],
-          'line-opacity': ['get', 'h']
-        }
+        paint: paint.glow
       });
     }
     if (!map.getLayer('fly-trail-core')) {
@@ -1642,12 +1704,55 @@ const Explore = (() => {
         type: 'line',
         source: 'fly-trails',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': '#fffaea',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 2.4, 18, 8],
-          'line-opacity': ['get', 'g']
-        }
+        paint: paint.core
       });
+    }
+  }
+
+  /* ---------- the view: what hangs over the ground ---------- */
+
+  /** The views this flight can offer: without a trail in the world there is
+   *  nothing for the trails view to light, and a position on the button
+   *  that changes nothing is a broken button. */
+  const viewsNow = () => (hasTrails ? VIEWS : VIEWS.slice(0, 2));
+
+  function setView(v) {
+    if (!VIEWS.includes(v)) return view;
+    if (on && !viewsNow().includes(v)) v = 'clean';   // the nearest thing to what was asked
+    view = v;
+    try { localStorage.setItem(KEY_VIEW, v); } catch (_) { /* fine */ }
+    if (on) applyView();
+    return view;
+  }
+
+  function cycleView() {
+    const opts = viewsNow();
+    const i = opts.indexOf(view);
+    return setView(opts[(i + 1) % opts.length]);
+  }
+
+  /** Put the flight into the current view: the photos and names that are
+   *  not part of it go away, the trail layers take its paint, and the reveal
+   *  is redone on the next frame so the glow changes now and not a tenth of
+   *  a second later. The button shows where it is and what the next press
+   *  brings. */
+  function applyView() {
+    if (view !== 'normal') for (const [, node] of cards) node.hidden = true;
+    if (view === 'clean') for (const [, node] of chips) node.hidden = true;
+    if (map && map.getLayer('fly-trail-core')) {
+      const paint = trailPaint(view);
+      for (const [k, val] of Object.entries(paint.glow)) map.setPaintProperty('fly-trail-glow', k, val);
+      for (const [k, val] of Object.entries(paint.core)) map.setPaintProperty('fly-trail-core', k, val);
+    }
+    tick = 0;
+    document.body.dataset.flyView = view;
+    if (lookBtn) {
+      const opts = viewsNow();
+      const next = opts[(opts.indexOf(view) + 1) % opts.length];
+      lookBtn.dataset.view = view;
+      elLook.textContent = VIEW_NAME[view];
+      lookBtn.setAttribute('aria-label', `תצוגה: ${VIEW_NAME[view]}. לחיצה: ${VIEW_NAME[next]}`);
+      lookBtn.title = `${VIEW_NAME[view]}: ${VIEW_WHAT[view]}. לחיצה או V: ${VIEW_NAME[next]}`;
     }
   }
 
@@ -1706,6 +1811,7 @@ const Explore = (() => {
       return;
     }
     if (e.code === 'KeyM') { e.preventDefault(); setSound(Engine.toggle()); return; }
+    if (e.code === 'KeyV') { e.preventDefault(); cycleView(); return; }
     if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleIntro(); return; }
     if (/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(e.code)) {
       e.preventDefault();
@@ -1961,6 +2067,24 @@ const Explore = (() => {
             <path class="snd-off" d="M16.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
+        <button class="fly-look" id="fly-look" aria-label="תצוגה">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <g class="look-normal">
+              <rect x="3" y="5" width="18" height="14" rx="2.2"/>
+              <circle cx="8.6" cy="9.6" r="1.6" fill="currentColor" stroke="none"/>
+              <path d="M3.6 17.2l4.9-4.9 3.6 3.6 2.6-2.6 5.6 5.6"/>
+            </g>
+            <g class="look-clean">
+              <path d="M8.2 5H19a2 2 0 012 2v9.2M16.2 19H5a2 2 0 01-2-2V7.6"/>
+              <path d="M3.5 3.5l17 17" stroke-width="2"/>
+            </g>
+            <g class="look-trails">
+              <path class="look-glow" d="M3.5 18.5C7 8 11 22 15 11.5S20 7.5 20.5 5.5" stroke-width="6" opacity=".38"/>
+              <path d="M3.5 18.5C7 8 11 22 15 11.5S20 7.5 20.5 5.5" stroke-width="2.2"/>
+            </g>
+          </svg>
+          <b id="fly-look-name">רגיל</b>
+        </button>
         <div class="fly-found">
           <strong id="fly-name" hidden></strong>
           <span id="fly-hint" class="fly-hint" hidden>
@@ -1987,6 +2111,7 @@ const Explore = (() => {
             <li><kbd>A</kbd><kbd>D</kbd><span>גלגול. להחזיק לגלגול שלם</span></li>
             <li><kbd>↑</kbd><kbd>↓</kbd><span>גובה. עד התקרה זו דקה של טיפוס</span></li>
             <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי (בלי תמונות, כדי לראות את השטח), שבילים (מוארים חזק)</span></li>
             <li><kbd>M</kbd><span>המנוע</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
@@ -2008,6 +2133,7 @@ const Explore = (() => {
             <li><kbd class="wide">עכבר</kbd><span>לאן הסל פונה. הרוח מתיישרת אחריו, לאט</span></li>
             <li><kbd>W</kbd><kbd>S</kbd><span>להביט מטה מעבר לדופן, ובחזרה למעלה</span></li>
             <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי (בלי תמונות, כדי לראות את השטח), שבילים (מוארים חזק)</span></li>
             <li><kbd>M</kbd><span>המבער</span></li>
             <li><kbd>Esc</kbd><span>יציאה</span></li>
           </ul>
@@ -2058,12 +2184,15 @@ const Explore = (() => {
     elName = el('fly-name');
     elHint = el('fly-hint');
     sndBtn = el('fly-snd');
+    lookBtn = el('fly-look');
+    elLook = el('fly-look-name');
     intro = el('fly-intro');
     viewer = el('fly-view');
 
     el('fly-x').addEventListener('click', () => exit());
     el('fly-help').addEventListener('click', toggleIntro);
     sndBtn.addEventListener('click', () => setSound(Engine.toggle()));
+    lookBtn.addEventListener('click', cycleView);
     intro.addEventListener('click', dismissIntro);
     viewer.querySelector('.fly-view-x').addEventListener('click', closeShot);
     viewer.querySelector('.fly-view-prev').addEventListener('click', () => stepGallery(-1));
@@ -2190,6 +2319,9 @@ const Explore = (() => {
 
       addLayers();
       buildWorld();
+      // A trails view chosen on a flight that had trails, on one that has
+      // none, becomes the clean view: the nearest thing to what was asked.
+      if (view === 'trails' && !hasTrails) setView('clean'); else applyView();
 
       const pitch = basePitch();
       const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
@@ -2301,6 +2433,7 @@ const Explore = (() => {
     sky.style.transform = '';
     elThr.style.background = '';
     document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-super');
+    delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
     document.documentElement.style.removeProperty('--fly-ox');
     document.documentElement.style.removeProperty('--fly-oy');
@@ -2371,10 +2504,14 @@ const Explore = (() => {
   const debug = () => ({
     on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
     burn, throttle, mach, gee, buffet, sonic, booms, yaw, armed, stickGain, intro: !!(intro && !intro.hidden),
+    view, views: viewsNow(), hasTrails,
+    cards: [...cards.values()].filter((n) => !n.hidden).length,
+    chips: [...chips.values()].filter((n) => !n.hidden).length,
+    lit: near.filter((e) => e.line).map((e) => e.g),
     envelope: envelope(alt),
     balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
                roll: bal.roll, pit: bal.pit, launch: bal.launch }
   });
 
-  return { enter, exit, toggle, isOn, setCraft, getCraft, debug };
+  return { enter, exit, toggle, isOn, setCraft, getCraft, setView, cycleView, debug };
 })();
