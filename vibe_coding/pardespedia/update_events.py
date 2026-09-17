@@ -130,6 +130,11 @@ CATEGORY_HE = {
     "Concerts": "מופעים והופעות", "MusicEvent": "מופעים והופעות",
     "Event": "מופעים והופעות", "מופע": "מופעים והופעות",
     "מוזיקה": "מופעים והופעות",
+    # eventschedule's Hebrew UI renders "Concerts" as "קונצרטים", but in
+    # current Hebrew a קונצרט is classical music; a gig at a pub is a הופעה.
+    # Translationese caught by Ori on 14/9/2026.
+    "קונצרטים": "מופעים והופעות", "קונצרט": "מופעים והופעות",
+    "חינוך": "הרצאות וסדנאות",
     "TheaterEvent": "תיאטרון",
     "ComedyEvent": "סטנדאפ וקומדיה", "סטנד-אפ": "סטנדאפ וקומדיה",
     "סטנדאפ": "סטנדאפ וקומדיה",
@@ -155,7 +160,7 @@ CATEGORY_HE = {
     # hub_category() instead of here.
     "music": "מופעים והופעות", "culture": "אמנות ותרבות",
     "community": "קהילה", "family": "משפחה וילדים",
-    "thrift": "קהילה",
+    "thrift": "קהילה", "initiative": "קהילה",
 }
 _CATEGORY_LOOKUP = {k.casefold(): v for k, v in CATEGORY_HE.items()}
 _CATEGORY_LOOKUP.update({c.casefold(): c for c in CATEGORIES})  # canonical is its own alias
@@ -193,6 +198,17 @@ def he_date(d: dt.date) -> str:
 
 def wiki_escape(text: str) -> str:
     return (text or "").replace("|", "‖").strip()
+
+
+def clean_name(text: str) -> str:
+    """An event name as a person would type it.
+
+    eventschedule keeps "Artist: subtitle" and most venues leave the subtitle
+    blank, so gigs arrive as "רונן ברק:" — the colon is the form's, not the
+    event's. Doubled spaces come from the same kind of copy-paste.
+    """
+    text = re.sub(r"\s+", " ", wiki_escape(text))
+    return text.rstrip(" :").strip()
 
 
 # eventschedule venue strings are pipe-separated and end with the locality:
@@ -346,7 +362,7 @@ def _sort_key(d, time) -> str:
 
 
 def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None) -> dict:
-    return {"date": d, "time": time, "name": wiki_escape(name), "url": url or "",
+    return {"date": d, "time": time, "name": clean_name(name), "url": url or "",
             # every source funnels its category wording through one gate here,
             # so the sortable "סוג" column keeps a single vocabulary
             "category": canonical_category(category),
@@ -987,7 +1003,7 @@ def attach_videos(rows: list) -> None:
 
 def build_table(rows: list, collapsible: bool = False) -> str:
     if not rows:
-        return "''אין כרגע אירועים מתוזמנים בטווח הקרוב. בדקו שוב בקרוב.''"
+        return "''לא ידוע כרגע על אירועים בשבועיים הקרובים.''"
     # mw-collapsible (without mw-collapsed) → the table starts *open*; the
     # "הסתר" toggle in the caption lets a reader fold it away.
     cls = "wikitable sortable mw-collapsible" if collapsible else "wikitable sortable"
@@ -1035,8 +1051,8 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
             f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
             f'padding:10px 16px; margin:0 0 16px;">\n'
             f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
-            f'<div style="font-size:94%; margin-top:4px;">אין כרגע אירועים מתוזמנים להיום. '
-            f'למה שקורה בשבועיים הקרובים ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים המלא]] בהמשך הדף.</div>\n'
+            f'<div style="font-size:94%; margin-top:4px;">לא ידוע על אירועים היום. '
+            f'מה קורה בשבועיים הקרובים: ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים המלא]] בהמשך הדף.</div>\n'
             f'</div>'
         )
         return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
