@@ -11,6 +11,50 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "2048 ולמידת חיזוק",
+          "icon": "🎲",
+          "theme": "t-amber",
+          "dir": "2048",
+          "tags": [
+            "PyTorch",
+            "DQN",
+            "Actor-Critic",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#fbbf24\">המשחק 2048, ושני סוכנים שלומדים לשחק בו לבד.</strong><br> שחזור נאמן של המשחק המקורי בדפדפן, ולצידו קוד למידת חיזוק ב-PyTorch שרץ על ה-GPU המקומי: DQN ואחריו Actor-Critic. הסוכן המאומן משחק בתוך הממשק ומראה מה הוא חושב על כל כיוון. דו\"חות ביצועים והשוואה בעברית.",
+          "links": [
+            {
+              "href": "2048/game/index.html",
+              "style": "live",
+              "label": "▶ שחק, או תן ל-AI לשחק",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/blob/master/vibe_coding/2048/README.md",
+              "style": "secondary",
+              "label": "📖 תיעוד",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/2048",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            },
+            {
+              "type": "wip",
+              "label": "⚙ אימון בתהליך"
+            }
+          ],
+          "illus": "                <!-- 2048 board illustration -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <rect x=\"4\" y=\"4\" width=\"64\" height=\"64\" rx=\"6\" fill=\"#bbada0\"/>\n                    <rect x=\"9\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#edc22e\"/>\n                    <rect x=\"23\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#edc53f\"/>\n                    <rect x=\"37\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#f65e3b\"/>\n                    <rect x=\"51\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#f67c5f\"/>\n                    <rect x=\"9\" y=\"23\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#edc850\"/>\n                    <rect x=\"23\" y=\"23\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#f59563\"/>\n                    <rect x=\"37\" y=\"23\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#f2b179\"/>\n                    <rect x=\"51\" y=\"23\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                    <rect x=\"9\" y=\"37\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#edcc61\"/>\n                    <rect x=\"23\" y=\"37\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#ede0c8\"/>\n                    <rect x=\"37\" y=\"37\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                    <rect x=\"51\" y=\"37\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                    <rect x=\"9\" y=\"51\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#edcf72\"/>\n                    <rect x=\"23\" y=\"51\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                    <rect x=\"37\" y=\"51\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                    <rect x=\"51\" y=\"51\" width=\"12\" height=\"12\" rx=\"2\" fill=\"#eee4da\" opacity=\".5\"/>\n                </svg>\n"
+        },
+        {
           "title": "Letras — מילות שירים",
           "icon": "🎤",
           "theme": "t-purple",
