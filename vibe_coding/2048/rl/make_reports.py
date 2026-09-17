@@ -71,7 +71,8 @@ def hist(values, width, max_value=None):
     top = max_value if max_value is not None else values.max()
     edges = np.arange(0, top + width, width)
     counts, _ = np.histogram(values, bins=edges)
-    labels = [f"{int(edges[i] / 1000)}–{int(edges[i + 1] / 1000)}K" for i in range(len(counts))]
+    # סימן LRM בתחילת התווית כדי שהטווח לא יתהפך בציור על קנבס בדף RTL
+    labels = [f"\u200e{int(edges[i] / 1000)}–{int(edges[i + 1] / 1000)}K" for i in range(len(counts))]
     return labels, counts.tolist()
 
 
@@ -135,6 +136,16 @@ def kpi(label, value, sub="", cls="", delta="", delta_cls=""):
 
 def card(cid, title, desc, cls="chart", script=""):
     return f'<div class="card"><h3>{title}</h3><p class="desc">{desc}</p><div class="{cls}" id="{cid}"></div></div>\n<script>{script}</script>\n'
+
+
+def heatmap_html(pos, label: str) -> str:
+    """מפת חום 4x4 של מיקום האריח הגדול (אחוזים), בסולם כחול רציף."""
+    cells = []
+    for r in range(4):
+        for c in range(4):
+            v = pos[r][c]
+            cells.append(f'<div class="hm-cell" style="--v:{v:.3f}" title="{100 * v:.1f}%">{(f"{100 * v:.0f}" if v >= 0.005 else "")}</div>')
+    return f'<div class="hm"><div class="hm-grid">{"".join(cells)}</div><div class="hm-label">{label}</div></div>'
 
 
 def hp_list(args: dict, keys: list[tuple[str, str]]) -> str:
@@ -254,8 +265,8 @@ def algo_report(kind: str, baselines: dict):
         third_title, third_desc = "הפסד המדיניות", "עם יתרונות מנורמלים הערך הזה מרכז סביב אפס ואינו מדד לאיכות; הוא מוצג לשלמות."
 
     # --- הערכה סופית ---
-    width = 2000
     max_score = max(max(ev["scores"]), max(baselines["greedy"]["scores"]))
+    width = 2000 if max_score < 40000 else 5000
     labels_h, counts_h = hist(ev["scores"], width, max_score)
     h_cfg = {"labels": labels_h, "series": [{"label": "משחקים", "y": counts_h, "color": color}], "yTitle": "מספר משחקים", "xTitle": "ניקוד (אלפים)",
              "table": {"columns": ["טווח ניקוד", "משחקים"], "rows": [[l, c] for l, c in zip(labels_h, counts_h)]}}
@@ -328,10 +339,10 @@ def algo_report(kind: str, baselines: dict):
 <p>שחקנים טובים ב-2048 שומרים את האריח הגדול בפינה ומשתמשים בעיקר בשני כיוונים, ומשתמשים בכיוון השלישי רק כשאין ברירה. אפשר לבדוק אם הסוכן גילה את זה לבד, מתוך 40 המשחקים המוקלטים.</p>
 <div class="grid2">
 {card("c_act", "אילו כיוונים הסוכן בוחר", "התפלגות המהלכים ב-40 משחקים מוקלטים.", "chart short", f"R.barChart('c_act', {j(act_cfg)});")}
-<div class="card"><h3>האריח הגדול בפינה</h3><p class="desc">אחוז המהלכים (מרגע שיש אריח 32 ומעלה) שבהם האריח הגדול ביותר נמצא באחת מארבע הפינות.</p>
-<div class="kpis"><div class="kpi {color}"><div class="label">{A['label']}</div><div class="value">{pct(ev.get('corner_rate', 0))}</div></div>
-<div class="kpi"><div class="label">חמדן צעד אחד</div><div class="value">{pct(baselines['greedy'].get('corner_rate', 0))}</div></div>
-<div class="kpi"><div class="label">אקראי</div><div class="value">{pct(baselines['random'].get('corner_rate', 0))}</div></div></div></div>
+<div class="card"><h3>איפה יושב האריח הגדול ביותר</h3><p class="desc">אחוז המהלכים (מרגע שיש אריח 32 ומעלה) שבהם האריח הגדול ביותר נמצא בכל משבצת. כחול כהה = לעיתים קרובות. שחקן טוב מחזיק אותו במקום קבוע.</p>
+<div class="hm-row">{heatmap_html(ev.get('max_tile_pos', [[0]*4]*4), A['label'] + f" (בקצה {pct(ev.get('edge_rate', 0))}, בפינה {pct(ev.get('corner_rate', 0))})")}
+{heatmap_html(baselines['greedy'].get('max_tile_pos', [[0]*4]*4), "חמדן צעד אחד")}
+{heatmap_html(baselines['random'].get('max_tile_pos', [[0]*4]*4), "אקראי")}</div></div>
 </div>
 </section>
 
@@ -339,9 +350,9 @@ def algo_report(kind: str, baselines: dict):
 <h2>צפייה במשחק</h2>
 <p>שני משחקים מוקלטים של הסוכן. אפשר לנגן, לגרור את הסרגל או להתקדם צעד-צעד.</p>
 <div class="card"><h3>המשחק הטוב ביותר מתוך 40 מוקלטים ({f0(ev['best_game']['score'])} נקודות, אריח {f0(ev['best_game']['max_tile'])})</h3><div id="rp_best"></div></div>
-<script>R.replay('rp_best', {j(ev['best_game'])});</script>
+<script>R.replay('rp_best', {j(ev['best_game'])}, {{start: 'end'}});</script>
 <div class="card"><h3>משחק טיפוסי (חציוני, {f0(ev['typical_game']['score'])} נקודות, אריח {f0(ev['typical_game']['max_tile'])})</h3><div id="rp_typ"></div></div>
-<script>R.replay('rp_typ', {j(ev['typical_game'])});</script>
+<script>R.replay('rp_typ', {j(ev['typical_game'])}, {{start: 'end'}});</script>
 </section>
 
 <section id="analysis">
@@ -422,8 +433,8 @@ def comparison_report(R: dict, baselines: dict):
         "xTitle": "זמן אימון (דקות)", "yTitle": "אחוז מהמשחקים", "yMax": 100,
     }
 
-    width = 2000
     max_score = max(max(D["eval"]["scores"]), max(C["eval"]["scores"]))
+    width = 2000 if max_score < 40000 else 5000
     lh, ch_d = hist(D["eval"]["scores"], width, max_score)
     _, ch_c = hist(C["eval"]["scores"], width, max_score)
     h_cfg = {"labels": lh, "series": [{"label": "DQN", "y": ch_d, "color": "s1"}, {"label": "Actor-Critic", "y": ch_c, "color": "s2"}],
@@ -511,10 +522,9 @@ def comparison_report(R: dict, baselines: dict):
 <h3>האסטרטגיה שכל סוכן למד</h3>
 <div class="grid2">
 {card("c_act", "העדפת כיוונים", "התפלגות המהלכים ב-40 משחקים מוקלטים לכל סוכן.", "chart short", f"R.barChart('c_act', {j(act_cmp)});")}
-<div class="card"><h3>האריח הגדול בפינה</h3><p class="desc">אחוז המהלכים (מאריח 32 ומעלה) שבהם האריח הגדול ביותר יושב בפינה.</p>
-<div class="kpis"><div class="kpi s1"><div class="label">DQN</div><div class="value">{pct(D['eval'].get('corner_rate', 0))}</div></div>
-<div class="kpi s2"><div class="label">Actor-Critic</div><div class="value">{pct(C['eval'].get('corner_rate', 0))}</div></div>
-<div class="kpi"><div class="label">חמדן צעד אחד</div><div class="value">{pct(baselines['greedy'].get('corner_rate', 0))}</div></div></div></div>
+<div class="card"><h3>איפה יושב האריח הגדול ביותר</h3><p class="desc">אחוז המהלכים (מאריח 32 ומעלה) שבהם האריח הגדול ביותר נמצא בכל משבצת.</p>
+<div class="hm-row">{heatmap_html(D['eval'].get('max_tile_pos', [[0]*4]*4), f"DQN (בקצה {pct(D['eval'].get('edge_rate', 0))})")}
+{heatmap_html(C['eval'].get('max_tile_pos', [[0]*4]*4), f"Actor-Critic (בקצה {pct(C['eval'].get('edge_rate', 0))})")}</div></div>
 </div>
 </section>
 
@@ -531,7 +541,7 @@ def comparison_report(R: dict, baselines: dict):
 <div class="card"><h3><span class="swatch s1"></span>DQN: {f0(D['eval']['best_game']['score'])} נקודות, אריח {f0(D['eval']['best_game']['max_tile'])}</h3><div id="rp_d"></div></div>
 <div class="card"><h3><span class="swatch s2"></span>Actor-Critic: {f0(C['eval']['best_game']['score'])} נקודות, אריח {f0(C['eval']['best_game']['max_tile'])}</h3><div id="rp_c"></div></div>
 </div>
-<script>R.replay('rp_d', {j(D['eval']['best_game'])}); R.replay('rp_c', {j(C['eval']['best_game'])});</script>
+<script>R.replay('rp_d', {j(D['eval']['best_game'])}, {{start: 'end'}}); R.replay('rp_c', {j(C['eval']['best_game'])}, {{start: 'end'}});</script>
 </section>
 
 <section id="discussion">
@@ -561,8 +571,10 @@ def update_readme(R: dict, baselines: dict):
             s = R[kind]["summary"]
             rows.append(f"| **{AGENTS[kind]['label']}** | **{f0(s['score_mean'])}** | {f0(s['score_median'])} | {f0(s['score_max'])} | {pct(s['reach_1024'])} | {pct(s['reach_2048'])} | {R[kind]['minutes']:.0f} דק', {R[kind]['transitions'] / 1e6:.0f}M מעברים |")
     table = "\n".join(rows)
-    new = re.sub(r"<!-- RESULTS_TABLE -->.*?(?=\n---)", f"<!-- RESULTS_TABLE -->\n{table}\n", text, flags=re.S)
-    if "<!-- RESULTS_TABLE -->" in text and new == text:
+    pattern = r"<!-- RESULTS_TABLE -->.*?(?=\n---)"
+    if re.search(pattern, text, flags=re.S):
+        new = re.sub(pattern, f"<!-- RESULTS_TABLE -->\n{table}\n", text, flags=re.S)
+    else:
         new = text.replace("<!-- RESULTS_TABLE -->", f"<!-- RESULTS_TABLE -->\n{table}\n")
     with open(path, "w", encoding="utf-8") as f:
         f.write(new)
