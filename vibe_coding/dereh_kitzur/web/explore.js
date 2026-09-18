@@ -34,6 +34,18 @@
  * let go, the down arrow is the valve that lets that air out, and nothing
  * but the burner makes a sound. Its numbers come from a real one; see the
  * tuning block for the balloon and `balloonControls` for the flight.
+ *
+ * Since 18/9/2026 there is a third: the jet bike from the fable project,
+ * brought over whole (bike.js). It is the one aircraft here you can see -
+ * a chase camera sits behind it, and the bike, its rider and its flames are
+ * drawn by Three.js on a transparent canvas over the map, with the camera
+ * of that scene rebuilt every frame from the map's own, so the two never
+ * disagree about where the ground is. Its hands are fable's: the arrows
+ * lean the rider, W and S are the throttle grip, E and D climb and descend
+ * with the flight computer flying the lift nozzles, Space is the burner,
+ * Shift and Z and X are the reaction thrusters; and the mouse is the lean
+ * too, both axes, with the button on the throttle, so one hand can fly it.
+ * It can land, and it can crash. See `bikeControls`.
  */
 'use strict';
 
@@ -190,6 +202,41 @@ const Explore = (() => {
     LAUNCH: 2.5            // seconds past the take-off that the burner is held for you
   };
 
+  /* ---------- the jet bike ----------
+   *
+   * The flight model and its numbers are fable's and live in bike.js
+   * (Bike.TUNE). What is here is the seam between that world and this one:
+   * the camera, and what the map can and cannot do for it.
+   *
+   * The map cannot look up. MapLibre's pitch runs from straight down to a
+   * few degrees under the horizon, so a camera that follows a climbing bike
+   * is raised to keep its target beneath it (bike.js, camDip) and its pitch
+   * is clamped here as a last resort. And the map cannot roll, so the roll
+   * is CSS, as for the jet - but a chase camera does not roll with what it
+   * chases; it leans a little, and the bike is seen banking in front of it.
+   * The lean is a share of the bank, capped, and the map hangs past the
+   * screen by exactly enough to cover that cap (fitFrame). The rider's-eye
+   * camera (C) rolls fully, and gets the jet's diagonal square instead.
+   *
+   * The field of view is wider than the jet's 32 degrees, because a chase
+   * camera ten metres behind a three-metre motorcycle needs the room and
+   * the speed is felt at the edges. fable uses 68 and more; MapLibre 4 caps
+   * the container's field at 60, and the container is larger than the
+   * window, so 42 is what the window can be given (see fitFrame). */
+  const BIKE = {
+    VFOV: 42,              // degrees, vertical, in the window
+    ROLL_K: 0.3,           // the picture leans by this share of the bike's bank
+    ROLL_MAX: 16,          // and never more than this, degrees; fitFrame covers exactly this
+    ROLL_T: 0.18,          // seconds for the lean to follow the bank
+    PITCH_MIN: 12,         // the map's camera, degrees from straight down
+    PITCH_MAX: 82,
+    ZOOM_MAX: 24,          // the ground under a parked bike is zoom 22 and a half
+    CARD_W: 12,            // metres: the floor for a photo's width at the bike's heights
+    CARD_H: 8,             // and for how high it hangs
+    RUSH_V: 45,            // m/s at which the speed streaks are fully there
+    MSG_MS: 2400           // how long a message stays on the screen
+  };
+
   const REVEAL_K = 5.0;      // reveal radius = altitude * this
   const REVEAL_MIN = 420;
   const REVEAL_MAX = 3000;
@@ -294,8 +341,28 @@ const Explore = (() => {
    * there on the small button for whoever wants it. index.html and its
    * titles start from the same choice. */
   const KEY_CRAFT = 'dk.fly.craft';
+  const CRAFTS = ['balloon', 'jet', 'bike'];   // the order the small button cycles them in
   let craft = 'balloon';
-  try { if (localStorage.getItem(KEY_CRAFT) === 'jet') craft = 'jet'; } catch (_) { /* private mode */ }
+  try { const c = localStorage.getItem(KEY_CRAFT); if (CRAFTS.includes(c)) craft = c; } catch (_) { /* private mode */ }
+
+  /* The bike's state outside the physics: the scene it is drawn in, the
+   * camera's lean, the pose the map was last asked for, the messages. The
+   * rig is made on the first bike flight and kept. */
+  const bk = {
+    rig: null, canvas: null,
+    cam: 0,                  // 0 chase, 1 the rider's eyes; kept between flights
+    lever: 0,                // the throttle lever, 0..1; the engine gets its square
+    grip: false,             // the lever was last raised by the mouse button, which lets it go
+    camRoll: 0,              // the picture's lean, degrees, eased towards its share of the bank
+    want: { x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 1, roll: 0 },   // where the chase camera wants to be
+    pose: null,              // { center, zoom, bearing, pitch } last handed to the map
+    crashes: 0,              // this flight, for the tests
+    msg: '', msgUntil: 0     // what the message line says, and until when
+  };
+  const tb = {               // the touch controls, fable's: a joystick and hold buttons
+    steer: 0, pitch: 0,
+    throttleUp: false, throttleDown: false, collUp: false, collDown: false, boost: false
+  };
 
   /* The balloon's own state. Heat is kelvin above the air outside; the
    * plume is the burner's heat on its way to being the envelope's; the
@@ -347,6 +414,8 @@ const Explore = (() => {
   let burnerEl = null, elBurn = null, sndBtn = null, elVsi = null, elVsiG = null;
   let elMach = null, elMachG = null, elG = null, elGG = null, coneEl = null;
   let intro = null, viewer = null, lookBtn = null, elLook = null;
+  let elThrMark = null, elLift = null, elLiftFill = null, elLiftMark = null;
+  let elFc = null, elFcG = null, elMsg = null, touchEl = null;
 
   const el = (id) => document.getElementById(id);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -365,12 +434,17 @@ const Explore = (() => {
    * bus: a propane burner, which is the only sound a balloon makes. The rest
    * of a balloon flight is silent, famously so - you move with the air, so
    * there is not even wind - and that silence is half of what the burner's
-   * roar means when it comes. */
+   * roar means when it comes.
+   *
+   * The bike's voice is fable's (audio.js there), on a third bus: white
+   * noise through a low-pass for the rumble and a sawtooth for the turbine
+   * whine, both following the total jet power, plus the chuff of a
+   * reaction-thruster pulse and the thump of a crash. */
 
   const Engine = (() => {
     const KEY = 'dk.fly.sound';
-    let ctx = null, master = null, n = null, bv = null;
-    let jetBus = null, balBus = null;
+    let ctx = null, master = null, n = null, bv = null, kv = null;
+    let jetBus = null, balBus = null, bikeBus = null;
     let mode = 'jet';
     let muted = false;
     try { muted = localStorage.getItem(KEY) === '0'; } catch (_) { /* private mode */ }
@@ -578,6 +652,81 @@ const Explore = (() => {
       o.start(t); o.stop(t + 0.55);
     }
 
+    /* The bike: a turbojet the size of a barrel, a metre under the saddle.
+     * fable's two voices - looped white noise through a low-pass whose
+     * cutoff opens with the power, and a sawtooth whine whose pitch climbs
+     * with it - with the rumble given a little more weight here, because it
+     * arrives through the master and the compressor the other two share. */
+    function buildBikeVoice() {
+      const white = noise(2, false);
+      bikeBus = gain(1);
+      bikeBus.connect(master);
+      const lp = filter('lowpass', 300);
+      const g = gain(0);
+      loop(white).connect(lp); lp.connect(g); g.connect(bikeBus);
+      const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 90;
+      const wg = gain(0);
+      osc.connect(wg); wg.connect(bikeBus); osc.start();
+      kv = { lp, g, osc, wg };
+    }
+
+    /** RCS pulse: a short pressurized-gas chuff (fable). */
+    function pulse() {
+      if (!ctx || muted || !bikeBus || mode !== 'bike') return;
+      const t = ctx.currentTime, dur = 0.16;
+      const buf = ctx.createBuffer(1, Math.floor(dur * ctx.sampleRate), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = filter('bandpass', 1900, 0.8);
+      const g = gain(0);
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(f); f.connect(g); g.connect(bikeBus);
+      src.start(t);
+    }
+
+    /** The crash: a burst of noise swept down through a low-pass, and a
+     *  sub-bass thump under it (fable). */
+    function crash() {
+      if (!ctx || muted || !bikeBus || mode !== 'bike') return;
+      const t = ctx.currentTime, dur = 1.3;
+      const buf = ctx.createBuffer(1, Math.floor(dur * ctx.sampleRate), ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = filter('lowpass', 950);
+      f.frequency.setValueAtTime(950, t);
+      f.frequency.exponentialRampToValueAtTime(55, t + dur);
+      const g = gain(0);
+      g.gain.setValueAtTime(1.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(f); f.connect(g); g.connect(bikeBus);
+      src.start(t);
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(72, t);
+      o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
+      const og = gain(0);
+      og.gain.setValueAtTime(0.8, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+      o.connect(og); og.connect(bikeBus);
+      o.start(t); o.stop(t + 0.7);
+    }
+
+    /** Every frame of the bike: `power` is the jets' total as a fraction of
+     *  full, roughly 0 to 1.6, and `speed` is in m/s. */
+    function setBike(power, speed) {
+      if (!ctx || muted || !kv) return;
+      const t = ctx.currentTime;
+      kv.g.gain.setTargetAtTime(0.22 + power * 0.7, t, 0.08);
+      kv.lp.frequency.setTargetAtTime(220 + power * 1500 + speed * 8, t, 0.1);
+      kv.wg.gain.setTargetAtTime(0.025 + power * 0.1, t, 0.1);
+      kv.osc.frequency.setTargetAtTime(85 + power * 150 + speed * 1.2, t, 0.15);
+    }
+
     /** Which aircraft the next start() is for. */
     function setMode(m) { mode = m; }
 
@@ -590,8 +739,10 @@ const Explore = (() => {
       // the buses decide which one is heard.
       if (mode === 'jet' && !n) buildJet();
       if (mode === 'balloon' && !bv) buildBalloon();
+      if (mode === 'bike' && !kv) buildBikeVoice();
       if (jetBus) jetBus.gain.value = mode === 'jet' ? 1 : 0;
       if (balBus) balBus.gain.value = mode === 'balloon' ? 1 : 0;
+      if (bikeBus) bikeBus.gain.value = mode === 'bike' ? 1 : 0;
       if (bv) bv.out.gain.value = 0;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       master.gain.cancelScheduledValues(ctx.currentTime);
@@ -643,7 +794,7 @@ const Explore = (() => {
       return !muted;
     }
 
-    return { start, stop, set, poke, toggle, setMode, ignite, boom, isOn: () => !muted };
+    return { start, stop, set, setBike, pulse, crash, poke, toggle, setMode, ignite, boom, isOn: () => !muted };
   })();
 
   /* ---------- geometry ---------- */
@@ -678,7 +829,32 @@ const Explore = (() => {
     const h = map.getContainer().clientHeight || 800;
     const mpp = a / (focal * h * Math.cos(pitch * RAD));
     const worldPx = 40075016.686 * Math.cos(lat * RAD) / mpp;
-    return clamp(Math.log2(worldPx / 512), 1, 22);
+    // The bike parks three metres over the ground, which is past zoom 22;
+    // enter() raises the map's ceiling to match.
+    return clamp(Math.log2(worldPx / 512), 1, craft === 'bike' ? BIKE.ZOOM_MAX : 22);
+  }
+
+  /** The inverse: where the map's camera is, in the bike's frame of the
+   *  world (x east, y up, z south, metres), and the unit direction it looks
+   *  along, from the map's own centre, zoom, pitch and bearing. Exact to
+   *  the pixel, because it undoes zoomFor and the centre-ahead step with the
+   *  same focal and the same container height. */
+  function mapCamera() {
+    const c = map.getCenter();
+    const pitch = map.getPitch(), brg = map.getBearing();
+    const ch = map.getContainer().clientHeight || 800;
+    const mpp = 40075016.686 * Math.cos(c.lat * RAD) / (512 * Math.pow(2, map.getZoom()));
+    const dist = focal * ch * mpp;                       // camera to the centre point, metres
+    const sp = Math.sin(pitch * RAD), cp = Math.cos(pitch * RAD);
+    const sb = Math.sin(brg * RAD), cb = Math.cos(brg * RAD);
+    const [cx, cn] = toLocal(c.lat, c.lng);              // east, north
+    return {
+      x: cx - sb * dist * sp,
+      y: dist * cp,
+      z: -(cn - cb * dist * sp),
+      dx: sb * sp, dy: -cp, dz: -cb * sp,
+      vfov: 2 * Math.atan(innerHeight / (2 * focal * ch)) / RAD
+    };
   }
 
   /** Screen y of the horizon, in map-container pixels. Points at infinity sit
@@ -748,7 +924,14 @@ const Explore = (() => {
   function fitFrame() {
     const w = innerWidth, h = innerHeight;
     canRoll = matchMedia('(pointer: fine)').matches;
-    if (canRoll) {
+    if (craft === 'bike' && bk.cam === 0) {
+      // The chase camera leans by ROLL_MAX at most, on any device: a corner
+      // of the screen turned by that angle reaches half the other side times
+      // its sine past the edge, and that is all the map needs to hang over.
+      const s = Math.sin(BIKE.ROLL_MAX * RAD);
+      ox = Math.ceil(h * 0.5 * s) + 2;
+      oy = Math.ceil(w * 0.5 * s) + 2;
+    } else if (canRoll) {
       const d = Math.ceil(Math.hypot(w, h));
       ox = Math.ceil((d - w) / 2);
       oy = Math.ceil((d - h) / 2);
@@ -773,13 +956,18 @@ const Explore = (() => {
     map.resize();
 
     const ch = map.getContainer().clientHeight || (h + 2 * oy);
-    const dist = 0.5 * h / Math.tan((VFOV / 2) * RAD);
+    const dist = 0.5 * h / Math.tan(((craft === 'bike' ? BIKE.VFOV : VFOV) / 2) * RAD);
     // MapLibre caps the field of view at 60 degrees. An ultrawide screen asks
     // for more and gets a slightly narrower view instead of a broken one;
     // `focal` is taken from what was actually set, so the geometry stays true.
     const fov = clamp((2 * Math.atan((0.5 * ch) / dist)) / RAD, 10, 60);
     setFov(fov);
     focal = 0.5 / Math.tan((fov / 2) * RAD);
+
+    // The bike's canvas is the window, not the container: the lean is put
+    // into its camera rather than into CSS, so it never needs material past
+    // the edges, and it is a quarter the pixels of the map's square.
+    if (bk.rig) bk.rig.resize(w, h, Math.min(devicePixelRatio || 1, PIXEL_CAP));
   }
 
   /* ---------- the world, precomputed once per flight ----------
@@ -984,8 +1172,11 @@ const Explore = (() => {
     // follow altitude so that a card is a similar size on screen whether you
     // are skimming or surveying - what changes with distance, and only that,
     // is how much bigger it gets as you approach it.
-    const wMetres = clamp(alt * 0.20, 22, 90);
-    const hMetres = clamp(alt * 0.18, 20, 90);
+    // The bike flies at rooftop height, where a 22 m card a hundred metres
+    // off would fill a third of the screen; its floors are lower.
+    const isBike = craft === 'bike';
+    const wMetres = clamp(alt * 0.20, isBike ? BIKE.CARD_W : 22, 90);
+    const hMetres = clamp(alt * 0.18, isBike ? BIKE.CARD_H : 20, 90);
 
     // The window the viewer can actually see, in the map's own pixels. The map
     // hangs past the screen on every side, so its centre and the screen's
@@ -1158,9 +1349,15 @@ const Explore = (() => {
     if (hover.card && hover.card.hidden) hover.card = null;
     const held = !!hover.card && now - hover.since > HOVER_MS;   // the cursor is on a photo
     const steer = canRoll && mouse.in && armed && intro.hidden && !hover.hud && !held;
-    const sx = steer ? stick(mouse.nx) * stickGain * stickGain : 0;
+    const g = steer ? stickGain * stickGain : 0;
+    const sx = stick(mouse.nx) * g;
+    // The other axis, for the bike: the cursor below the middle is the
+    // rider leaning back, nose up, the way a stick pulled back is; above it
+    // is leaning forward and down. The jet and the balloon do not read it.
+    const sy = stick(mouse.ny) * g;
     const keyTurn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
-    return { held, turnIn: clamp(sx + keyTurn, -1, 1) };
+    const keyPitch = (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0);
+    return { held, turnIn: clamp(sx + keyTurn, -1, 1), pitchIn: clamp(sy + keyPitch, -1, 1) };
   }
 
   /** ISA speed of sound at a height: 340 m/s at sea level, falling 4 m/s per
@@ -1412,18 +1609,193 @@ const Explore = (() => {
     return burnerOn ? 1 : 0;
   }
 
+  /* ---------- the bike's flight ----------
+   *
+   * fable's main.js, the part of it that reads the hands and moves the
+   * world: the levers are ramped, the physics is stepped at its own 120 Hz
+   * under the frame rate, the mesh and the flames follow, and the chase
+   * camera decides where the map should look. The map is then asked for
+   * exactly that (bikePose), and when it has drawn it, the scene is drawn
+   * over it from the same place (onMapRender).
+   *
+   * The mouse is fable's touch joystick in the other hand: both axes lean
+   * the rider, the button is the throttle grip held open, and the arrows do
+   * the same for whoever prefers them. Everything else is a key, and the
+   * keys are fable's. */
+
+  /** A line across the middle of the screen for a couple of seconds: what
+   *  just happened, in words. */
+  function say(text, ms = BIKE.MSG_MS, cls = '') {
+    if (!elMsg) return;
+    bk.msg = text;
+    bk.msgUntil = performance.now() + ms;
+    elMsg.textContent = text;
+    elMsg.className = 'fly-msg show ' + cls;
+  }
+
+  const CRASH_TEXT = {
+    ground: 'ריסוק! פגיעה חזקה מדי בקרקע',
+    flip: 'התהפכות!'
+  };
+
+  /** One reaction-thruster pulse: a fixed bit of impulse, and its chuff. */
+  function bikePulse(which) {
+    if (!bk.rig || paused) return;
+    if (bk.rig.phys.firePulse(which)) Engine.pulse();
+  }
+
+  function bikeAssist() {
+    if (!bk.rig) return;
+    const p = bk.rig.phys;
+    p.assist = !p.assist;
+    say(p.assist ? 'מחשב טיסה: פועל. הגובה נשמר אוטומטית'
+                 : 'מחשב טיסה: כבוי. שליטה ידנית מלאה, E/D הם עוצמת העילוי');
+  }
+
+  /** R: level the bike where it is. fable resets to its pad; here there is
+   *  no pad, and the thing you want back after a tumble is the horizon, not
+   *  the take-off point. */
+  function bikeLevel() {
+    if (!bk.rig || paused) return;
+    bk.rig.phys.level();
+    say('יישור', 900);
+  }
+
+  /** C: the chase camera, or the rider's eyes. The frame changes with it -
+   *  the rider's-eye camera rolls all the way and gets the jet's square. */
+  function bikeCamera() {
+    if (!bk.rig) return;
+    bk.cam = bk.cam ? 0 : 1;
+    bk.rig.setCamMode(bk.cam);
+    bk.camRoll = 0;
+    fitFrame();
+    say(bk.cam ? 'מהאוכף' : 'מצלמת מעקב', 900);
+  }
+
+  /** The bike, one frame. Sets pos, alt, bearing and speed from the
+   *  physics for the reveal and the instruments, and leaves the camera it
+   *  wants in bk.want. Returns the afterburner, for the glow. */
+  function bikeControls(dt, now) {
+    const rig = bk.rig, p = rig.phys;
+    const { held, turnIn, pitchIn } = readStick(now);
+
+    // fable's applyInput, with the lever between the hand and the engine.
+    // W winds the lever up while held and S winds it down, and it stays
+    // where it is let go, so a cruise is set once: fable's grip. The mouse
+    // button is the jet's: held it winds the lever up, released the lever
+    // winds itself down, because that is what the button means in this
+    // mode and a bike that ran on after the hand let go would be the one
+    // aircraft here that did. A photo under the cursor takes the mouse off
+    // the button, or aiming at it would be a shove. S with the lever at
+    // idle is the brake: the rider sits up into the wind.
+    //
+    // The lever's law is squared. fable's bike does 400 km/h flat out and
+    // the moshava is four kilometres across; a linear lever put a walking
+    // pace in its first twentieth and a highway in the rest. Squared, the
+    // first half of the travel is 0 to 210 km/h and the top is still
+    // fable's top, so a tap of W is a cruise and a held W is the whole
+    // thing. Same reasoning as the F-16's throttle below its detent.
+    const keyUp = keys.has('KeyW') || tb.throttleUp;
+    const btnUp = hold && !held;
+    if (keyUp) { bk.grip = false; bk.lever = clamp(bk.lever + dt * 1.1, 0, 1); }
+    else if (btnUp) { bk.grip = true; bk.lever = clamp(bk.lever + dt * 1.1, 0, 1); }
+    else if (bk.grip) bk.lever = clamp(bk.lever - dt * 1.5, 0, 1);
+    const keyDown = keys.has('KeyS') || tb.throttleDown;
+    if (keyDown) bk.lever = clamp(bk.lever - dt * 1.5, 0, 1);
+    p.throttle = bk.lever * bk.lever;
+    p.brake = keyDown && bk.lever <= 0.001;
+    // E/D: with the flight computer on they command climb/descend (the
+    // computer flies the lift nozzles); in manual mode they move the
+    // collective directly.
+    const upDown = (keys.has('KeyE') || tb.collUp ? 1 : 0) - (keys.has('KeyD') || tb.collDown ? 1 : 0);
+    if (p.assist && p.autoLift) {
+      p.vert += (upDown - p.vert) * Math.min(1, dt * 6);
+    } else {
+      p.vert = 0;
+      if (upDown) p.collective = clamp(p.collective + upDown * dt * 0.55, 0, 1.25);
+    }
+    p.steer += (clamp(turnIn + tb.steer, -1, 1) - p.steer) * Math.min(1, dt * 8);
+    p.pitch += (clamp(pitchIn + tb.pitch, -1, 1) - p.pitch) * Math.min(1, dt * 6);
+    p.input.boostRear = keys.has('Space') || tb.boost;
+
+    const crashReason = rig.advance(dt);
+    if (crashReason) {
+      bk.crashes++;
+      bk.lever = 0;      // the wreck's throttle is not the next bike's
+      bk.grip = false;
+      Engine.crash();
+      say(`${CRASH_TEXT[crashReason] || 'ריסוק'} · מתחילים מחדש כאן`, 2400, 'crash');
+    }
+
+    // Where the flyer is, for everything that is not the camera: the
+    // reveal, the photos, the instruments. Bike frame z is south.
+    const [lng, lat] = toLngLat(p.pos.x, -p.pos.z);
+    pos = { lat, lng };
+    alt = Math.max(0, p.pos.y);
+    bearing = rig.heading();
+    speed = p.vel.length();
+    throttle = p.throttle;
+
+    // The camera it wants; the map is asked for it in step, and the lean
+    // follows the bank with a short lag so a wobble is not a shake.
+    rig.wantCamera(dt, bk.want);
+    const leanWant = bk.cam ? bk.want.roll : clamp(bk.want.roll * BIKE.ROLL_K, -BIKE.ROLL_MAX, BIKE.ROLL_MAX);
+    bk.camRoll += angleDiff(leanWant, bk.camRoll) * clamp(dt / BIKE.ROLL_T, 0, 1);
+    bk.camRoll = angleDiff(bk.camRoll, 0);
+    return p.ab;
+  }
+
+  /** The map's view of the camera the bike wants: the point on the ground
+   *  under the middle of the screen, and the zoom that puts the camera at
+   *  its height. The look is clamped to what the map can do - it cannot
+   *  look up, nor quite straight down - and the scene is later drawn from
+   *  wherever the map actually went (mapCamera), so a clamp shows as the
+   *  bike a little off centre and never as a bike floating off the ground. */
+  function bikePose(w) {
+    const brg = (Math.atan2(w.dx, -w.dz) / RAD + 360) % 360;
+    const dip = Math.asin(clamp(-w.dy, -1, 1)) / RAD;          // degrees below the horizon
+    const pitch = clamp(90 - dip, BIKE.PITCH_MIN, BIKE.PITCH_MAX);
+    const camAlt = Math.max(w.y, 0.6);
+    const [lng, lat] = toLngLat(w.x, -w.z);
+    const c = destination(lat, lng, brg, camAlt * Math.tan(pitch * RAD));
+    return { center: [c.lng, c.lat], zoom: zoomFor(camAlt, pitch, c.lat), bearing: brg, pitch };
+  }
+
+  /** After the map has drawn: the scene, from where the map's camera is,
+   *  and the lean of the picture, both in the same frame as the tiles they
+   *  have to agree with. Reading the camera back from the map rather than
+   *  reusing what was asked for is what makes the bike sit on the ground
+   *  through the take-off ease, when the map is between two views, and
+   *  through any clamp the map applied on the way. */
+  function onMapRender() {
+    if (!on || !bk.rig || craft !== 'bike') return;
+    const c = mapCamera();
+    bk.rig.setCamera(c.x, c.y, c.z, c.dx, c.dy, c.dz, bk.camRoll, c.vfov);
+    bk.rig.render();
+    const tf = `rotate(${(-bk.camRoll).toFixed(2)}deg)`;
+    map.getContainer().style.transform = tf;
+    worldEl.style.transform = tf;
+    sky.style.transform = tf;
+  }
+
   function step(now) {
     raf = requestAnimationFrame(step);
     const dt = clamp((now - last) / 1000, 0, 0.06);
     last = now;
     const isBal = craft === 'balloon';
+    const isBike = craft === 'bike';
     // During the take-off ease the camera belongs to MapLibre, but the sky
     // still has to follow the horizon it is climbing towards - and the
-    // balloon's burner is already lit, because that is what lifts it.
+    // balloon's burner is already lit, because that is what lifts it. The
+    // bike sits on the ground with its nozzles idling while the camera
+    // arrives, so its physics runs, hands off.
     if (!flying) {
       if (isBal) {
         burn += (1 - burn) * clamp(8 * dt, 0, 1);
         if ((frame++ & 1) === 0) Engine.set(0, 1);
+      } else if (isBike && bk.rig) {
+        bk.rig.advance(dt);
+        if ((frame++ & 1) === 0) Engine.setBike(bikePower(), 0);
       }
       paintHud(map.getPitch());
       return;
@@ -1435,8 +1807,8 @@ const Explore = (() => {
     // A photo open full-size holds everything where it is. The speed you had
     // is the speed you get back, because closing a picture is not landing.
     let burnWant = 0;
-    if (!paused) burnWant = isBal ? balloonControls(dt, now) : jetControls(dt, now);
-    const pitch = viewPitch();
+    if (!paused) burnWant = isBal ? balloonControls(dt, now) : isBike ? bikeControls(dt, now) : jetControls(dt, now);
+    const pitch = isBike ? (bk.pose ? bk.pose.pitch : map.getPitch()) : viewPitch();
 
     burn += (burnWant - burn) * clamp((burnWant > burn ? (isBal ? 14 : 6) : (isBal ? 8 : 3)) * dt, 0, 1);
 
@@ -1446,25 +1818,36 @@ const Explore = (() => {
     // balloon's basket sways on a phone too, where the jet does not roll;
     // and the jet shakes through the transonic band on any device, which
     // is the buffet of the shocks forming and walking back over the wing.
-    let tf = `rotate(${(-bank).toFixed(2)}deg)`;
-    if (!isBal && buffet > 0) {
-      const a = buffet * buffet * 5;
-      tf = `translate(${((Math.random() * 2 - 1) * a).toFixed(1)}px, ${((Math.random() * 2 - 1) * a).toFixed(1)}px) ` + tf;
-    }
-    if (canRoll || isBal || buffet > 0 || shook) {
-      map.getContainer().style.transform = tf;
-      worldEl.style.transform = tf;
-      sky.style.transform = tf;
-      shook = buffet > 0;   // one more frame after the band, to put the picture back
+    // The bike's lean is applied when the map has drawn (onMapRender), so
+    // it lands in the same frame as the tiles it leans.
+    if (!isBike) {
+      let tf = `rotate(${(-bank).toFixed(2)}deg)`;
+      if (!isBal && buffet > 0) {
+        const a = buffet * buffet * 5;
+        tf = `translate(${((Math.random() * 2 - 1) * a).toFixed(1)}px, ${((Math.random() * 2 - 1) * a).toFixed(1)}px) ` + tf;
+      }
+      if (canRoll || isBal || buffet > 0 || shook) {
+        map.getContainer().style.transform = tf;
+        worldEl.style.transform = tf;
+        sky.style.transform = tf;
+        shook = buffet > 0;   // one more frame after the band, to put the picture back
+      }
     }
 
-    const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
-    map.jumpTo({
-      center: [ahead.lng, ahead.lat],
-      zoom: zoomFor(alt, pitch, ahead.lat),
-      bearing,
-      pitch
-    });
+    if (isBike) {
+      if (!paused) {
+        bk.pose = bikePose(bk.want);
+        map.jumpTo(bk.pose);
+      }
+    } else {
+      const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
+      map.jumpTo({
+        center: [ahead.lng, ahead.lat],
+        zoom: zoomFor(alt, pitch, ahead.lat),
+        bearing,
+        pitch
+      });
+    }
 
     // The reveal test is the expensive half and does not need every frame; the
     // positions of what it revealed do, or the cards swim behind the camera.
@@ -1486,11 +1869,19 @@ const Explore = (() => {
     // key and not the eased glow: a valve is open or it is not.
     if ((frame++ & 1) === 0) {
       if (isBal) Engine.set(0, paused ? 0 : burnWant);
+      else if (isBike) Engine.setBike(paused ? 0.1 : bikePower(), paused ? 0 : speed);
       else Engine.set(paused ? 0.12 : Math.abs(speed) / topSpeed(), paused ? 0 : burn, sonic && !paused);
     }
   }
 
   const topSpeed = () => envelope(alt).top;
+
+  /** The bike's jets as a share of full power, for its voice: fable's sum
+   *  of the rear jet and the lift nozzles, weighted as fable weights them. */
+  function bikePower() {
+    const p = bk.rig.phys;
+    return clamp(p.jetRear / 8400 * 1.2 + p.jetLift / 7800 * 0.8, 0, 1.6);
+  }
 
   /** The vapour cone. In the low pressure behind a shock the air's water
    *  condenses, and for the second or two an aircraft spends going through
@@ -1524,10 +1915,35 @@ const Explore = (() => {
 
     elAlt.textContent = `${Math.round(alt)} מ׳`;
     elSpeed.textContent = `${Math.round(Math.abs(speed) * 3.6)} קמ״ש`;
-    elThr.style.width = `${(throttle * 100).toFixed(0)}%`;
+    if (craft !== 'bike') elThr.style.width = `${(throttle * 100).toFixed(0)}%`;
     paintCompass();
 
-    if (craft === 'balloon') {
+    if (bk.msg && performance.now() > bk.msgUntil) {
+      bk.msg = '';
+      elMsg.className = 'fly-msg';
+    }
+
+    if (craft === 'bike') {
+      // fable's instruments: the vertical speed; the throttle and the lift
+      // as two-layer bars, the fill being what the turbines are actually
+      // doing and the mark what the lever asks, so the spool lag is seen;
+      // the flight computer's state; and the boost.
+      const p = bk.rig.phys;
+      const v = p.vel.y;
+      elVsi.textContent = `${v > 0.05 ? '▲' : v < -0.05 ? '▼' : '•'} ${Math.abs(v).toFixed(1)}`;
+      // Both in the lever's units, so the fill arrives at the mark: the
+      // engine's share is the lever squared, and here it is unsquared.
+      elThr.style.width = `${(Math.sqrt(Math.min(1, p.spoolRear + p.ab * 0.2)) * 100).toFixed(0)}%`;
+      elThrMark.style.insetInlineStart = `${(bk.lever * 100).toFixed(0)}%`;
+      elLiftFill.style.width = `${(p.spoolLift / 1.25 * 100).toFixed(0)}%`;
+      elLiftMark.style.insetInlineStart = `${(p.collective / 1.25 * 100).toFixed(0)}%`;
+      elFc.textContent = p.assist ? 'פועל' : 'ידני';
+      elFcG.classList.toggle('off', !p.assist);
+      rushEl.style.opacity = clamp((speed / BIKE.RUSH_V - 0.35) * 0.55, 0, 0.3);
+      // The burner is on the screen, in three dimensions, two metres behind
+      // the saddle; the glow at the bottom is only its light on the ground.
+      burnerEl.style.opacity = burn * 0.45;
+    } else if (craft === 'balloon') {
       // A balloon pilot's instrument is the variometer: not where you are
       // but which way you are going, because by the time the altimeter
       // shows it the burn that fixes it is late. The bar is the envelope's
@@ -1813,7 +2229,21 @@ const Explore = (() => {
     if (e.code === 'KeyM') { e.preventDefault(); setSound(Engine.toggle()); return; }
     if (e.code === 'KeyV') { e.preventDefault(); cycleView(); return; }
     if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleIntro(); return; }
-    if (/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(e.code)) {
+    if (craft === 'bike' && bk.rig) {
+      // fable's one-shot keys. Not on repeat: a held Shift is one pulse, not
+      // a stream of them, and the nozzle's own refractory gap agrees.
+      const once = !e.repeat;
+      switch (e.code) {
+        case 'KeyZ': if (once) bikePulse('L'); e.preventDefault(); dismissIntro(); return;
+        case 'KeyX': if (once) bikePulse('R'); e.preventDefault(); dismissIntro(); return;
+        case 'ShiftLeft':
+        case 'ShiftRight': if (once) bikePulse('C'); e.preventDefault(); dismissIntro(); return;
+        case 'KeyT': if (once) bikeAssist(); e.preventDefault(); return;
+        case 'KeyR': if (once) bikeLevel(); e.preventDefault(); return;
+        case 'KeyC': if (once) bikeCamera(); e.preventDefault(); return;
+      }
+    }
+    if (/^(Key[WASDE]|Space|Arrow(Up|Down|Left|Right))$/.test(e.code)) {
       e.preventDefault();
       keys.add(e.code);
       dismissIntro();
@@ -1850,7 +2280,7 @@ const Explore = (() => {
       document.body.classList.remove('fly-unarmed');
     }
     const t = e.target;
-    hover.hud = !!(t && t.closest && t.closest('.fly-hud button, .fly-view, .fly-intro'));
+    hover.hud = !!(t && t.closest && t.closest('.fly-hud button, .fly-view, .fly-intro, .fly-touch'));
     const card = t && t.closest ? t.closest('.fly-card') : null;
     if (card !== hover.card) {
       hover.card = card;
@@ -1876,7 +2306,7 @@ const Explore = (() => {
   function onPointerDown(e) {
     if (!on || e.pointerType === 'touch' || e.button !== 0) return;
     const t = e.target;
-    if (t && t.closest && t.closest('.fly-card, .fly-hud, .fly-view, .fly-intro')) return;
+    if (t && t.closest && t.closest('.fly-card, .fly-hud, .fly-view, .fly-intro, .fly-touch')) return;
     hold = true;
     Engine.poke();
   }
@@ -1894,6 +2324,7 @@ const Explore = (() => {
     touchHold = false;
     touchBurn = false;
     touchVent = false;
+    clearTouch();
     onPointerLeave();
   }
 
@@ -1912,7 +2343,10 @@ const Explore = (() => {
 
   function onTouchStart(e) {
     const tgt = e.target;
-    if (tgt && tgt.closest && tgt.closest('.fly-card, .fly-hud, .fly-view')) return;
+    if (tgt && tgt.closest && tgt.closest('.fly-card, .fly-hud, .fly-view, .fly-touch')) return;
+    // The bike has fable's joystick and buttons (buildTouch); a finger on
+    // open ground is not a lever there.
+    if (craft === 'bike') { dismissIntro(); Engine.poke(); return; }
     const t = e.touches[0];
     touch = { x: t.clientX, y: t.clientY, y0: t.clientY };
     touchHold = true;
@@ -1941,6 +2375,112 @@ const Explore = (() => {
 
   function onTouchEnd() { touch = null; touchHold = false; touchBurn = false; touchVent = false; }
 
+  /* fable's touch controls (touch.js there), for the bike on a phone: a
+   * virtual joystick on the left for the lean - pull the knob down to
+   * raise the nose, the yoke convention the arrows use - and on the right
+   * hold-buttons for the throttle and for climb and descend, three pulse
+   * buttons, the boost, and the camera, the flight computer and the
+   * levelling as taps. Pointer Events, so it also works with a mouse for
+   * testing. Built once with the rest of the DOM; CSS shows it only for
+   * the bike on a coarse pointer. */
+  function buildTouch(root) {
+    const el = (cls, parent, tag = 'div') => {
+      const d = document.createElement(tag);
+      d.className = cls;
+      parent.appendChild(d);
+      return d;
+    };
+    touchEl = el('fly-touch', root);
+
+    const joyBase = el('tjoy', touchEl);
+    const joyKnob = el('tjoy-knob', joyBase);
+    const JOY_R = 46;
+    let joyId = null, joyCX = 0, joyCY = 0;
+    const expo = (v) => 0.4 * v + 0.6 * v * Math.abs(v);   // fine authority near the centre
+    function joyMove(e) {
+      let dx = e.clientX - joyCX, dy = e.clientY - joyCY;
+      const d = Math.hypot(dx, dy);
+      if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
+      joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      tb.steer = expo(clamp(dx / JOY_R, -1, 1));
+      tb.pitch = expo(clamp(dy / JOY_R, -1, 1));
+    }
+    function joyReset() {
+      tb.steer = 0; tb.pitch = 0;
+      joyKnob.style.transform = 'translate(0,0)';
+    }
+    joyBase.addEventListener('pointerdown', (e) => {
+      joyId = e.pointerId;
+      const r = joyBase.getBoundingClientRect();
+      joyCX = r.left + r.width / 2; joyCY = r.top + r.height / 2;
+      try { joyBase.setPointerCapture(joyId); } catch (_) { /* synthetic pointer */ }
+      joyMove(e);
+      dismissIntro();
+      Engine.poke();
+      e.preventDefault();
+    });
+    joyBase.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) { joyMove(e); e.preventDefault(); } });
+    const joyEnd = (e) => { if (e.pointerId === joyId) { joyId = null; joyReset(); } };
+    joyBase.addEventListener('pointerup', joyEnd);
+    joyBase.addEventListener('pointercancel', joyEnd);
+
+    function holdBtn(cls, parent, label, onDown, onUp) {
+      const b = el(cls, parent, 'button');
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('pointerdown', (e) => {
+        try { b.setPointerCapture(e.pointerId); } catch (_) { /* synthetic pointer */ }
+        onDown();
+        b.classList.add('active');
+        dismissIntro();
+        Engine.poke();
+        e.preventDefault();
+      });
+      const release = () => { onUp(); b.classList.remove('active'); };
+      b.addEventListener('pointerup', release);
+      b.addEventListener('pointercancel', release);
+      return b;
+    }
+    function tapBtn(cls, parent, label, fn) {
+      const b = el(cls, parent, 'button');
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('pointerdown', (e) => {
+        fn();
+        b.classList.add('active');
+        setTimeout(() => b.classList.remove('active'), 160);
+        e.preventDefault();
+      });
+      return b;
+    }
+
+    const side = el('tside', touchEl);
+    const pair = el('tvert-pair', side);
+    const thrBox = el('tvert', pair);
+    el('tlabel', thrBox).textContent = 'מצערת';
+    holdBtn('tbtn', thrBox, '▲', () => { tb.throttleUp = true; }, () => { tb.throttleUp = false; });
+    holdBtn('tbtn', thrBox, '▼', () => { tb.throttleDown = true; }, () => { tb.throttleDown = false; });
+    const colBox = el('tvert', pair);
+    el('tlabel', colBox).textContent = 'גובה';
+    holdBtn('tbtn', colBox, '▲', () => { tb.collUp = true; }, () => { tb.collUp = false; });
+    holdBtn('tbtn', colBox, '▼', () => { tb.collDown = true; }, () => { tb.collDown = false; });
+    const rollRow = el('troll', side);
+    tapBtn('tbtn tsmall', rollRow, '↺', () => bikePulse('L'));
+    tapBtn('tbtn tsmall', rollRow, '⬆', () => bikePulse('C'));
+    tapBtn('tbtn tsmall', rollRow, '↻', () => bikePulse('R'));
+    holdBtn('tboost', side, '🔥', () => { tb.boost = true; }, () => { tb.boost = false; });
+
+    const menu = el('tmenu', touchEl);
+    tapBtn('tbtn tsmall', menu, '📷', bikeCamera);
+    tapBtn('tbtn tsmall', menu, 'T', bikeAssist);
+    tapBtn('tbtn tsmall', menu, '⟲', bikeLevel);
+  }
+
+  function clearTouch() {
+    tb.steer = 0; tb.pitch = 0;
+    tb.throttleUp = tb.throttleDown = tb.collUp = tb.collDown = tb.boost = false;
+  }
+
   function onVisibility() {
     if (!on) return;
     if (document.hidden) { Engine.stop(); keys.clear(); } else Engine.start();
@@ -1955,7 +2495,7 @@ const Explore = (() => {
   function setSound(isOn) {
     if (!sndBtn) return;
     sndBtn.classList.toggle('off', !isOn);
-    const what = craft === 'balloon' ? 'המבער' : 'המנוע';
+    const what = craft === 'balloon' ? 'המבער' : 'המנוע';   // the bike's is an engine too
     sndBtn.setAttribute('aria-label', isOn ? `השתקת ${what}` : 'הפעלת הצליל');
     sndBtn.title = isOn ? 'השתקה (M)' : 'צליל (M)';
   }
@@ -2012,6 +2552,13 @@ const Explore = (() => {
   function paintCompass() {
     elNeedle.setAttribute('transform', `rotate(${(-bearing).toFixed(1)})`);
     if (craft === 'balloon') elDrift.setAttribute('transform', `rotate(${angleDiff(bal.drift, bearing).toFixed(1)})`);
+    // The bike's marker is the wind: where it blows to, relative to the
+    // nose, because a hover drifts with it and the nose vanes into it.
+    if (craft === 'bike' && bk.rig) {
+      const W = bk.rig.phys.wind.W;
+      const wb = Math.atan2(W.x, -W.z) / RAD;
+      elDrift.setAttribute('transform', `rotate(${angleDiff(wb, bearing).toFixed(1)})`);
+    }
     const deg = Math.round(bearing) % 360;
     if (deg !== headingShown) {
       headingShown = deg;
@@ -2028,6 +2575,7 @@ const Explore = (() => {
     root.innerHTML = `
       <div class="fly-sky" id="fly-sky"><div class="fly-band" id="fly-band"></div></div>
       <div class="fly-world" id="fly-world"><div class="fly-haze" id="fly-haze"></div></div>
+      <canvas class="fly-bike" id="fly-bike" hidden aria-hidden="true"></canvas>
       <div class="fly-rush" id="fly-rush"></div>
       <div class="fly-burner" id="fly-burner"></div>
       <div class="fly-cone" id="fly-cone" aria-hidden="true"></div>
@@ -2041,9 +2589,12 @@ const Explore = (() => {
           <span class="fly-gauge"><b id="fly-speed">—</b><i>מהירות</i></span>
           <span class="fly-gauge mach" id="fly-mach-g"><b id="fly-mach">—</b><i>מאך</i></span>
           <span class="fly-gauge gee" id="fly-g-g"><b id="fly-g">—</b><i>g</i></span>
+          <span class="fly-gauge fc" id="fly-fc-g" hidden><b id="fly-fc">פועל</b><i>מחשב טיסה</i></span>
           <span class="fly-gauge burn" id="fly-burn" hidden><b>מבער</b><i>אחורי</i></span>
         </div>
-        <div class="fly-thr" aria-hidden="true"><i id="fly-thr-fill"></i></div>
+        <div class="fly-thr" aria-hidden="true"><i id="fly-thr-fill"></i><b id="fly-thr-mark" hidden></b></div>
+        <div class="fly-thr fly-lift" id="fly-lift" aria-hidden="true" hidden><i id="fly-lift-fill"></i><b id="fly-lift-mark"></b></div>
+        <p class="fly-msg" id="fly-msg" aria-live="polite"></p>
         <div class="fly-compass" id="fly-compass">
           <svg viewBox="-50 -50 100 100" aria-hidden="true">
             <circle r="41" class="rose-ring"/>
@@ -2142,6 +2693,32 @@ const Explore = (() => {
           <p class="fly-intro-touch">אצבע על המסך תופסת את הרוח. גרירה לצדדים פונה, גרירה למטה מבעירה,
              גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.</p>
         </div>
+        <div class="fly-intro-card bike">
+          <h2>אופנוע סילון: FLYING HOG</h2>
+          <p>אתה על האוכף של אופנוע סילון מעופף, על הקרקע, בפרדס חנה־כרכור. אתה מטה את הגוף,
+             ומחשב הטיסה מטיס בשבילך את צינורות העילוי: האופנוע טס לאן שהאף מצביע, ואף ישר
+             שומר גובה לבד. אפשר לנחות על כל שביל, ואפשר להתרסק. דרכי הקיצור נדלקות
+             כשמתקרבים אליהן, והתמונות שלהן תלויות באוויר מעל השביל.</p>
+          <ul class="fly-keys">
+            <li><kbd class="wide">עכבר</kbd><span>הטיית הגוף: לצדדים לפנייה, למטה להרמת האף, למעלה לצלילה</span></li>
+            <li><kbd class="wide">לחיצה</kbd><span>המצערת, כל עוד הכפתור לחוץ; כשמשחררים היא נסגרת</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>מנוף המצערת: נשאר איפה שעזבו. S כשהמצערת סגורה הוא בלם</span></li>
+            <li><kbd>E</kbd><kbd>D</kbd><span>עלייה וירידה. מהקרקע: E מרים, ואז מצערת</span></li>
+            <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><span>הטיית הגוף במקשים; חץ למטה מרים את האף</span></li>
+            <li><kbd class="wide">רווח</kbd><span>מבער אחורי</span></li>
+            <li><kbd class="wide">Shift</kbd><kbd>Z</kbd><kbd>X</kbd><span>פולסים: ניתור, גלגול שמאלה, גלגול ימינה</span></li>
+            <li><kbd>C</kbd><kbd>T</kbd><kbd>R</kbd><span>מצלמה, מחשב טיסה, יישור</span></li>
+            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי, שבילים</span></li>
+            <li><kbd>M</kbd><span>המנוע</span></li>
+            <li><kbd>Esc</kbd><span>יציאה</span></li>
+          </ul>
+          <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה ותופסת את ההגה; <kbd>?</kbd> מחזיר אותו.
+             הסמן במרכז המסך הוא גוף ישר. פגיעה בקרקע מעל 40 קמ״ש היא ריסוק, ואחריו מתחילים
+             מאותו מקום.</p>
+          <p class="fly-intro-touch">ג'ויסטיק משמאל מטה את הגוף (למטה מרים את האף). מימין: מצערת,
+             עלייה וירידה, שלושה פולסים, ומבער. הגובה נשמר אוטומטית.</p>
+        </div>
       </div>
       <div class="fly-view" id="fly-view" hidden>
         <button class="fly-view-x" aria-label="סגירה">&times;</button>
@@ -2188,6 +2765,15 @@ const Explore = (() => {
     elLook = el('fly-look-name');
     intro = el('fly-intro');
     viewer = el('fly-view');
+    elThrMark = el('fly-thr-mark');
+    elLift = el('fly-lift');
+    elLiftFill = el('fly-lift-fill');
+    elLiftMark = el('fly-lift-mark');
+    elFc = el('fly-fc');
+    elFcG = el('fly-fc-g');
+    elMsg = el('fly-msg');
+    bk.canvas = el('fly-bike');
+    buildTouch(root);
 
     el('fly-x').addEventListener('click', () => exit());
     el('fly-help').addEventListener('click', toggleIntro);
@@ -2220,9 +2806,10 @@ const Explore = (() => {
     flying = false;
     paused = false;
     pos = { lat: c.lat, lng: c.lng };
-    bearing = map.getBearing();
+    bearing = (map.getBearing() + 360) % 360;
     const isBal = craft === 'balloon';
-    alt = isBal ? BAL.ALT_START : ALT_START;
+    const isBike = craft === 'bike';
+    alt = isBal ? BAL.ALT_START : isBike ? 0.6 : ALT_START;
     speed = 0;
     throttle = 0;
     hold = false;
@@ -2269,9 +2856,20 @@ const Explore = (() => {
       }
     }
     elBurn.querySelector('i').textContent = isBal ? 'דולק' : 'אחורי';
-    elVsiG.hidden = !isBal;
-    elMachG.hidden = isBal;
-    elGG.hidden = isBal;
+    elVsiG.hidden = !isBal && !isBike;
+    elMachG.hidden = isBal || isBike;
+    elGG.hidden = isBal || isBike;
+    elFcG.hidden = !isBike;
+    elLift.hidden = !isBike;
+    elThrMark.hidden = !isBike;
+    elMsg.className = 'fly-msg';
+    bk.msg = '';
+    bk.crashes = 0;
+    bk.camRoll = 0;
+    bk.pose = null;
+    bk.lever = 0;
+    bk.grip = false;
+    clearTouch();
     coneEl.classList.remove('go');
     headingShown = -1;
     if (!isBal) elThr.style.background = '';
@@ -2279,6 +2877,7 @@ const Explore = (() => {
 
     document.body.classList.add('flying');
     document.body.classList.toggle('fly-balloon', isBal);
+    document.body.classList.toggle('fly-bike', isBike);
 
     // Full screen is asked for, never depended on: iOS refuses it outright and
     // the mode is perfectly good without it.
@@ -2323,22 +2922,37 @@ const Explore = (() => {
       // none, becomes the clean view: the nearest thing to what was asked.
       if (view === 'trails' && !hasTrails) setView('clean'); else applyView();
 
-      const pitch = basePitch();
-      const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
+      let target;
+      if (isBike) {
+        // The bike starts on the ground at the middle of the map, facing the
+        // way the map faced, and the camera comes down to it. The map's
+        // pitch ceiling goes up to the chase camera's, and its zoom ceiling
+        // to a parked bike's; both go back on the way out.
+        if (!bk.rig) bk.rig = Bike.makeRig(bk.canvas);
+        bk.canvas.hidden = false;
+        restore.maxPitch = map.getMaxPitch();
+        restore.maxZoom = map.getMaxZoom();
+        map.setMaxPitch(85);
+        map.setMaxZoom(BIKE.ZOOM_MAX);
+        fitFrame();   // again, now that there is a rig to size
+        bk.rig.setCamMode(bk.cam);
+        bk.rig.place(0, 0, Bike.yawFor(bearing));
+        bk.rig.wantCamera(1 / 60, bk.want);
+        bk.pose = bikePose(bk.want);
+        target = bk.pose;
+        map.on('render', onMapRender);
+      } else {
+        const pitch = basePitch();
+        const ahead = destination(pos.lat, pos.lng, bearing, alt * Math.tan(pitch * RAD));
+        target = { center: [ahead.lng, ahead.lat], zoom: zoomFor(alt, pitch, ahead.lat), bearing, pitch };
+      }
 
       // A take-off rather than a cut. The mode is a change of place as much as
       // a change of controls, and arriving at altitude in one frame reads as a
       // glitch where a rise reads as leaving the ground. The balloon's burner
       // lights as the rise begins.
       if (isBal) Engine.ignite();
-      map.easeTo({
-        center: [ahead.lng, ahead.lat],
-        zoom: zoomFor(alt, pitch, ahead.lat),
-        bearing,
-        pitch,
-        duration: 1700,
-        essential: true
-      });
+      map.easeTo({ ...target, duration: 1700, essential: true });
       setTimeout(() => {
         if (!on) return;
         flying = true;
@@ -2353,13 +2967,23 @@ const Explore = (() => {
     };
 
     // Satellite is not a preference here, it is the material: the mode is a
-    // flight over a photograph of the place.
-    if (baseIndex !== 1) {
-      map.once('style.load', () => setTimeout(start, 60));
-      setBasemap(1);
-    } else {
-      setTimeout(start, 30);
-    }
+    // flight over a photograph of the place. The bike also waits for its
+    // engine, Three.js, fetched on the first ride and kept; a fetch that
+    // fails leaves the mode the way it came.
+    const ready = isBike ? Bike.load() : Promise.resolve();
+    ready.then(() => {
+      if (!on) return;
+      if (baseIndex !== 1) {
+        map.once('style.load', () => setTimeout(start, 60));
+        setBasemap(1);
+      } else {
+        setTimeout(start, 30);
+      }
+    }).catch((err) => {
+      console.error('bike: three.js did not load', err);
+      exit();
+      alert('האופנוע צריך ספרייה תלת־ממדית שלא נטענה. בדוק את החיבור ונסה שוב.');
+    });
 
     addEventListener('keydown', onKeyDown);
     addEventListener('keyup', onKeyUp);
@@ -2428,11 +3052,21 @@ const Explore = (() => {
     chips.clear();
     if (viewer) closeShot();
 
+    // The bike's scene is kept for the next ride; its canvas goes, and the
+    // map gets its ceilings back.
+    map.off('render', onMapRender);
+    if (bk.canvas) bk.canvas.hidden = true;
+    clearTouch();
+    if (restore && restore.maxPitch !== undefined) {
+      map.setMaxPitch(restore.maxPitch);
+      map.setMaxZoom(restore.maxZoom);
+    }
+
     map.getContainer().style.transform = '';
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-super');
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-bike', 'fly-super');
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
     document.documentElement.style.removeProperty('--fly-ox');
@@ -2493,25 +3127,42 @@ const Explore = (() => {
    *  already in the air keeps the one it took off in. */
   let craftNext = null;
   function setCraft(c) {
-    c = c === 'balloon' ? 'balloon' : 'jet';
+    if (!CRAFTS.includes(c)) c = 'jet';
     try { localStorage.setItem(KEY_CRAFT, c); } catch (_) { /* fine */ }
     if (on) craftNext = c; else craft = c;
     return c;
   }
   const getCraft = () => craftNext || craft;
+  /** The aircraft after this one on the small button: the order is the
+   *  balloon, the jet, the bike, and round again. */
+  const nextCraft = (c) => CRAFTS[(CRAFTS.indexOf(c || getCraft()) + 1) % CRAFTS.length];
 
   /** The flight model's state, for the tests. */
-  const debug = () => ({
-    on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
-    burn, throttle, mach, gee, buffet, sonic, booms, yaw, armed, stickGain, intro: !!(intro && !intro.hidden),
-    view, views: viewsNow(), hasTrails,
-    cards: [...cards.values()].filter((n) => !n.hidden).length,
-    chips: [...chips.values()].filter((n) => !n.hidden).length,
-    lit: near.filter((e) => e.line).map((e) => e.g),
-    envelope: envelope(alt),
-    balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
-               roll: bal.roll, pit: bal.pit, launch: bal.launch }
-  });
+  const debug = () => {
+    const p = bk.rig && bk.rig.phys;
+    return {
+      on, flying, craft, alt, speed, bearing, bank, pitch: map ? map.getPitch() : 0,
+      burn, throttle, mach, gee, buffet, sonic, booms, yaw, armed, stickGain, intro: !!(intro && !intro.hidden),
+      view, views: viewsNow(), hasTrails,
+      cards: [...cards.values()].filter((n) => !n.hidden).length,
+      chips: [...chips.values()].filter((n) => !n.hidden).length,
+      lit: near.filter((e) => e.line).map((e) => e.g),
+      envelope: envelope(alt),
+      balloon: { dT: bal.dT, plume: bal.plume, vz: bal.vz, drift: bal.drift, ride: bal.ride,
+                 roll: bal.roll, pit: bal.pit, launch: bal.launch },
+      bike: p ? {
+        x: p.pos.x, y: p.pos.y, z: p.pos.z, vx: p.vel.x, vy: p.vel.y, vz: p.vel.z,
+        throttle: p.throttle, spoolRear: p.spoolRear, spoolLift: p.spoolLift, collective: p.collective,
+        ab: p.ab, vert: p.vert, steer: p.steer, pitchCmd: p.pitch, grounded: p.grounded, crashed: p.crashed,
+        assist: p.assist, heading: bk.rig.heading(), bank: bk.rig.bank(), nose: bk.rig.nose(),
+        w: [p.angVel.x, p.angVel.y, p.angVel.z].map((v) => +v.toFixed(2)),
+        cam: bk.cam, camRoll: bk.camRoll, want: { ...bk.want }, pose: bk.pose, crashes: bk.crashes,
+        visible: bk.rig.bike.group.visible, canvas: !!(bk.canvas && !bk.canvas.hidden),
+        mapCam: on && craft === 'bike' ? mapCamera() : null, msg: bk.msg,
+        wind: { x: p.wind.W.x, z: p.wind.W.z, speed: p.wind.speed }
+      } : null
+    };
+  };
 
-  return { enter, exit, toggle, isOn, setCraft, getCraft, setView, cycleView, debug };
+  return { enter, exit, toggle, isOn, setCraft, getCraft, nextCraft, setView, cycleView, debug };
 })();

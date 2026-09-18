@@ -3100,22 +3100,26 @@ function wireControls() {
   // Needs WebGL and a map to fly over, so it goes away with the other two.
   if (map) {
     el('explore').addEventListener('click', () => Explore.enter());
-    // The small button on the jet's shoulder swaps the aircraft. The big
-    // button shows the one you will fly; the small one, the other.
+    // The small button on the flight button's shoulder steps through the
+    // aircraft: balloon, jet, bike, and round again (Ori, 18/9/2026). The
+    // big button shows the one you will fly; the small one, the next.
+    const CRAFT_IMG = { balloon: 'img/balloon.svg', jet: 'img/f16.svg', bike: 'img/bike.svg' };
+    const CRAFT_NAME = { balloon: 'כדור פורח', jet: 'מטוס קרב F-16', bike: 'אופנוע סילון' };
     const paintCraft = () => {
-      const bal = Explore.getCraft() === 'balloon';
-      document.body.classList.toggle('craft-balloon', bal);
-      el('explore').querySelector('img').src = bal ? 'img/balloon.svg' : 'img/f16.svg';
-      const fly = bal ? 'מצב תעופה: כדור פורח' : 'מצב תעופה: מטוס קרב F-16';
+      const c = Explore.getCraft();
+      const next = Explore.nextCraft(c);
+      for (const k of Object.keys(CRAFT_IMG)) document.body.classList.toggle('craft-' + k, k === c);
+      el('explore').querySelector('img').src = CRAFT_IMG[c];
+      const fly = `מצב תעופה: ${CRAFT_NAME[c]}`;
       el('explore').title = fly;
       el('explore').setAttribute('aria-label', fly);
-      const other = bal ? 'מעבר למטוס קרב F-16' : 'מעבר לכדור פורח';
+      const other = `מעבר ל${CRAFT_NAME[next]}`;
       el('craft').title = other;
       el('craft').setAttribute('aria-label', other);
     };
     paintCraft();
     el('craft').addEventListener('click', () => {
-      Explore.setCraft(Explore.getCraft() === 'balloon' ? 'jet' : 'balloon');
+      Explore.setCraft(Explore.nextCraft());
       paintCraft();
     });
   } else {
