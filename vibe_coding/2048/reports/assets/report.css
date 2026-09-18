@@ -11,7 +11,7 @@
   --border: rgba(11, 11, 11, 0.10);
   --series-1: #2a78d6;   /* DQN */
   --series-2: #eb6834;   /* Actor-Critic */
-  --series-3: #1baf7a;
+  --series-3: #1baf7a;   /* PPO */
   --de-emph: #b5b3ac;    /* קווי בסיס וסדרות הקשר */
   --seq-100: #cde2fb; --seq-250: #86b6ef; --seq-400: #3987e5; --seq-550: #1c5cab; --seq-700: #0d366b;
   --good: #006300;
@@ -95,6 +95,9 @@ a { color: var(--series-1); }
 .kpi .delta.good { color: var(--good); }
 .kpi.s1 { border-top: 3px solid var(--series-1); }
 .kpi.s2 { border-top: 3px solid var(--series-2); }
+.kpi.s3 { border-top: 3px solid var(--series-3); }
+.kpis.cols2 { grid-template-columns: repeat(2, 1fr); }
+.kpis.cols3 { grid-template-columns: repeat(3, 1fr); }
 .card .kpis { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
 .card .kpi .value { font-size: 26px; }
 
@@ -106,7 +109,10 @@ a { color: var(--series-1); }
 .chart.short { height: 240px; }
 .chart.tall { height: 380px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } .chart { height: 260px; } header.hero h1 { font-size: 30px; } }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid3 .card { margin: 0; }
+.scroll { overflow-x: auto; }
+@media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } .kpis.cols3 { grid-template-columns: 1fr 1fr; } .chart { height: 260px; } header.hero h1 { font-size: 30px; } }
 details.table { margin-top: 8px; font-size: 13px; }
 details.table summary { cursor: pointer; color: var(--muted); }
 details.table table { margin-top: 6px; }
@@ -118,7 +124,7 @@ th { color: var(--ink-2); font-weight: 600; background: transparent; }
 td.num, th.num { font-variant-numeric: tabular-nums; direction: ltr; text-align: left; }
 tr.hl td { font-weight: 600; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 6px; vertical-align: middle; }
-.swatch.s1 { background: var(--series-1); } .swatch.s2 { background: var(--series-2); } .swatch.s0 { background: var(--de-emph); }
+.swatch.s1 { background: var(--series-1); } .swatch.s2 { background: var(--series-2); } .swatch.s3 { background: var(--series-3); } .swatch.s0 { background: var(--de-emph); }
 
 /* שחזור משחק */
 .replay { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
@@ -161,3 +167,36 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px
   color: color-mix(in oklab, #ffffff calc(var(--v) * 130%), var(--ink));
 }
 .hm-label { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+
+/* סעיף השיטות: נוסחאות (KaTeX), תיבות אינטואיציה, דיאגרמת הרשת */
+.katex { direction: ltr; unicode-bidi: isolate; font-size: 1.08em; }
+.katex-display { direction: ltr; margin: 14px 0 16px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.katex-display > .katex { font-size: 1.15em; }
+.method { margin-top: 36px; padding-top: 4px; }
+.method > h3 { font-size: 23px; margin-top: 8px; padding-top: 10px; border-top: 3px solid var(--m, var(--axis)); }
+.method.s1 { --m: var(--series-1); } .method.s2 { --m: var(--series-2); } .method.s3 { --m: var(--series-3); }
+.method h4 { font-size: 17px; margin: 22px 0 6px; color: var(--ink); }
+.intuition {
+  background: color-mix(in oklab, var(--m, var(--series-1)) 7%, var(--surface));
+  border-inline-start: 4px solid var(--m, var(--series-1));
+  border-radius: 8px; padding: 12px 16px; margin: 12px 0 16px;
+}
+.intuition p:last-child { margin-bottom: 0; }
+.symbols { font-size: 15px; color: var(--ink-2); margin: 4px 0 12px; padding-inline-start: 20px; }
+.symbols li { margin: 2px 0; }
+.aside { font-size: 15px; color: var(--ink-2); border: 1px dashed var(--axis); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.aside p:last-child { margin-bottom: 0; }
+.terms dt { font-weight: 600; margin-top: 10px; }
+.terms dd { margin: 2px 0 0; color: var(--ink-2); font-size: 15px; }
+.method table td:first-child, .method table th:first-child { white-space: nowrap; }
+.cases td { text-align: center; } .cases td:first-child { text-align: right; }
+.good-cell { color: var(--good); font-weight: 600; }
+
+.netdiag { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; direction: ltr; margin: 14px 0; font-size: 14px; }
+.nd-box { border: 1px solid var(--axis); border-radius: 8px; padding: 8px 12px; background: var(--surface); text-align: center; min-width: 88px; }
+.nd-box small { display: block; color: var(--muted); font-size: 12px; }
+.nd-box.s1 { border-color: var(--series-1); border-width: 2px; }
+.nd-box.s2 { border-color: var(--series-2); border-width: 2px; }
+.nd-box.s3 { border-color: var(--series-3); border-width: 2px; }
+.nd-arrow { color: var(--muted); font-size: 18px; }
+.nd-heads { display: flex; flex-direction: column; gap: 6px; }

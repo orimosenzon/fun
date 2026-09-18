@@ -7,6 +7,7 @@
 הרצה:
     python rl/export_weights.py --agent dqn --checkpoint checkpoints/dqn_best.pt
     python rl/export_weights.py --agent ac  --checkpoint checkpoints/a2c_best.pt
+    python rl/export_weights.py --agent ppo --checkpoint checkpoints/ppo_best.pt
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--agent", choices=["dqn", "ac"], required=True)
+    p.add_argument("--agent", choices=["dqn", "ac", "ppo"], required=True)
     p.add_argument("--checkpoint", required=True)
     args = p.parse_args()
 

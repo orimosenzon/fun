@@ -7,6 +7,7 @@
 הרצה:
     python rl/evaluate.py --all
     python rl/evaluate.py --agent dqn --checkpoint checkpoints/dqn_best.pt --games 1000
+    python rl/evaluate.py --agent ppo --checkpoint checkpoints/ppo_best.pt
 """
 
 from __future__ import annotations
@@ -31,6 +32,10 @@ from game2048 import move_boards
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "reports", "data")
+
+# (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית). ac ו-ppo חולקים את אותה רשת.
+AGENT_KINDS = (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic"), ("ppo", "ppo", "PPO"))
+LABELS = {k: label for k, _, label in AGENT_KINDS}
 
 
 def greedy_score_policy(boards: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -131,8 +136,8 @@ def save(data: dict):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--all", action="store_true", help="הערכת שני הסוכנים ושני קווי הבסיס")
-    p.add_argument("--agent", choices=["dqn", "ac"])
+    p.add_argument("--all", action="store_true", help="הערכת כל הסוכנים ושני קווי הבסיס")
+    p.add_argument("--agent", choices=[k for k, _, _ in AGENT_KINDS])
     p.add_argument("--checkpoint")
     p.add_argument("--games", type=int, default=1000)
     args = p.parse_args()
@@ -142,8 +147,7 @@ def main():
         rng = np.random.default_rng(0)
         save(evaluate_policy("random", "מדיניות אקראית", random_policy(rng), args.games))
         save(evaluate_policy("greedy", "חמדן צעד אחד", greedy_score_policy, args.games))
-        # (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית)
-        for kind, run, label in (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic")):
+        for kind, run, label in AGENT_KINDS:
             path = os.path.join(ROOT, "checkpoints", f"{run}_best.pt")
             if not os.path.exists(path):
                 print(f"skip {kind}: no checkpoint at {path}")
@@ -156,7 +160,7 @@ def main():
             save(data)
     else:
         net, ckpt = load_agent(args.agent, args.checkpoint, device)
-        label = "DQN" if args.agent == "dqn" else "Actor-Critic"
+        label = LABELS[args.agent]
         data = evaluate_policy(args.agent, label, agent_policy(args.agent, net, device), args.games)
         data["checkpoint"] = os.path.relpath(args.checkpoint, ROOT)
         data["train_transitions"] = ckpt.get("transitions")
