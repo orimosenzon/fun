@@ -2950,6 +2950,115 @@ body[data-fly-view="trails"] .fly-chip {
   direction: ltr;
 }
 
+/* ---------- the F-16's cockpit (cockpit.js) ----------
+ *
+ * The jet's instruments are the aircraft's own: the HUD glass in green over
+ * the picture and the top of the panel along the bottom. The generic gauges,
+ * the compass, the throttle bar and the found-trail caption are the other
+ * two aircraft's, and go away while the jet is flown; the DED on the panel
+ * carries the trail's name instead. */
+
+body.fly-jet .fly-readout, body.fly-jet .fly-thr, body.fly-jet .fly-compass,
+body.fly-jet .fly-found, body.fly-jet .fly-hud::after { display: none; }
+body.fly-jet .fly-credit { bottom: calc(var(--ckpt-h, 180px) + 4px); }
+/* The stick's dead zone, in the HUD's ink. */
+body.fly-jet .fly-reticle { box-shadow: inset 0 0 0 1px rgba(140, 255, 150, .38), 0 0 0 1px rgba(0, 0, 0, .2); }
+body.fly-jet .fly-reticle::after { background: rgba(140, 255, 150, .6); }
+
+.ckpt { position: absolute; inset: 0; pointer-events: none; }
+.ckpt[hidden] { display: none; }
+
+.ckpt-hud {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* The page is RTL, and in RTL an SVG text-anchor of "start" is the right
+   * end: every number would grow leftwards out of its box. */
+  direction: ltr;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  fill: #8dff86;
+  stroke: #8dff86;
+  /* The bloom of a phosphor on glass. One filter on the whole layer, which
+   * the compositor does once, rather than a shadow per symbol. */
+  filter: drop-shadow(0 0 1.5px rgba(80, 255, 90, .55));
+}
+.ckpt-hud text { stroke: none; font-weight: 600; letter-spacing: .4px; }
+.ckpt-hud .ckpt-pane { fill: rgba(80, 200, 110, .035); stroke: rgba(140, 255, 150, .14); stroke-width: 1; }
+.ckpt-hud .rung-line { fill: none; stroke-width: 2; stroke-linecap: round; }
+.ckpt-hud .below .rung-line { stroke-dasharray: 9 6; }
+.ckpt-hud .horizon .rung-line { stroke-width: 2.4; }
+.ckpt-hud .rung-num { font-size: .95em; }
+.ckpt-hud .fpm-ring, .ckpt-hud .fpm-wing { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.ckpt-hud .ckpt-fpm.lim .fpm-ring { stroke-dasharray: 4 3; }
+.ckpt-hud .tick { stroke-width: 1.6; }
+.ckpt-hud .tape-num { font-size: .85em; }
+.ckpt-hud .box { fill: rgba(0, 0, 0, .38); stroke-width: 1.8; }
+.ckpt-hud .box-num { font-size: 1.05em; font-weight: 700; }
+.ckpt-hud .caret { stroke-width: 1.5; fill: rgba(0, 0, 0, .38); }
+.ckpt-hud .warn { font-size: 1.4em; font-weight: 800; }
+
+.ckpt-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--ckpt-h, 180px);
+  overflow: hidden;
+}
+.ckpt-panel svg { display: block; }
+.ckpt-panel .hood { fill: #17191d; }
+.ckpt-panel .lip { fill: none; stroke: rgba(255, 255, 255, .16); stroke-width: 1.5; }
+.ckpt-panel .bezel { fill: #101215; stroke: #2a2e34; stroke-width: 1; }
+.ckpt-panel .screen { fill: #04110a; stroke: #0b2a16; }
+.ckpt-panel .key { fill: #2b2f35; stroke: #14161a; stroke-width: 1; }
+.ckpt-panel .key-t { fill: #d9dde3; font: 600 8px system-ui, sans-serif; text-anchor: middle; letter-spacing: .3px; }
+.ckpt-panel .icp { fill: #1f2226; stroke: #0c0d10; stroke-width: 1.2; }
+.ckpt-panel .ded { fill: #061309; stroke: #0f3a1c; }
+.ckpt-panel .knob { fill: #303439; stroke: #0c0d10; }
+.ckpt-panel .lamp { fill: #2a1d16; stroke: #0c0d10; }
+.ckpt-panel .lamp.lit { fill: #ffb43a; }
+.ckpt-panel .lamp-t { fill: rgba(255, 255, 255, .35); font: 600 5.2px system-ui, sans-serif; text-anchor: middle; }
+.ckpt-panel .lamp.lit + .lamp-t { fill: #2a1d16; }
+.ckpt-panel .gauge { fill: #0c0e11; stroke: #34383e; stroke-width: 1.5; }
+.ckpt-panel .gauge-tick { stroke: #c9ced6; stroke-width: 1.2; }
+.ckpt-panel .needle { stroke: #fff; stroke-width: 1.8; stroke-linecap: round; }
+.ckpt-panel .needle-hub { fill: #d0d4da; }
+.ckpt-panel .gauge-t { fill: #aeb4bd; font: 600 6px system-ui, sans-serif; text-anchor: middle; }
+
+/* The DED: three lines of green, the middle one the steerpoint's name. */
+.ckpt-ded {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  overflow: hidden;
+  direction: rtl;
+  color: #7cf28a;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  line-height: 1.2;
+  text-shadow: 0 0 3px rgba(120, 255, 140, .5);
+}
+.ckpt-ded .l1 { direction: ltr; text-align: left; font-size: .85em; opacity: .85; white-space: pre; }
+.ckpt-ded .l2 { font-family: system-ui, sans-serif; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ckpt-ded .l3 { font-family: system-ui, sans-serif; font-size: .8em; opacity: .8; white-space: nowrap; }
+.ckpt-hsd, .ckpt-fcr { position: absolute; }
+.ckpt-fcr {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 4px 6px;
+  box-sizing: border-box;
+  padding: 6px;
+  color: rgba(120, 255, 140, .5);
+  font: 600 9px ui-monospace, Menlo, Consolas, monospace;
+}
+
 /* ---------- how to fly ---------- */
 
 .fly-intro[hidden] { display: none; }

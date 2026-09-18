@@ -1964,6 +1964,17 @@ const Explore = (() => {
       elMach.textContent = mach.toFixed(2);
       elG.textContent = gee.toFixed(1);
       document.body.classList.toggle('fly-super', sonic);
+      // The cockpit draws the HUD from the same camera the map is given:
+      // the focal length in pixels of the container, the boresight in the
+      // middle of the window. The steerpoint on its DED is the nearest trail.
+      Cockpit.paint({
+        w: innerWidth, h: innerHeight,
+        F: focal * (map.getContainer().clientHeight || 800),
+        pitch, bank, bearing, speed, alt, mach, gee, throttle, burn,
+        nearest: nearest ? { name: nearest.name, d: nearest.d, media: mediaOf(nearest).length > 0 } : null,
+        own: toLocal(pos.lat, pos.lng),
+        world
+      });
     }
     document.body.classList.toggle('fly-burn', burn > 0.5);
     elBurn.hidden = burn < 0.5;
@@ -2654,7 +2665,10 @@ const Explore = (() => {
              המבער האחורי, ורק איתו עוברים את מהירות הקול. המעבר מלווה בטלטלה, בענן הלם
              ובבום על־קולי, ומעבר לו המנוע נשאר מאחור: שומעים רק את הרוח. הפנייה מוגבלת
              ל־9 g, אז במהירות גבוהה המטוס פונה לאט. דרכי הקיצור נדלקות כשמתקרבים אליהן, והתמונות שלהן
-             תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.</p>
+             תלויות באוויר מעל השביל. טסים אל תמונה, ולוחצים עליה.
+             המכשירים הם של המטוס: ב־HUD המהירות בקשר והגובה ברגל (100 קשר = 185 קמ״ש,
+             1,000 רגל = 305 מ׳), העיגול עם הכנפיים הוא סמן נתיב הטיסה, לאן אתה באמת טס,
+             וה־DED בלוח מציג את השביל הקרוב.</p>
           <ul class="fly-keys">
             <li><kbd class="wide">עכבר</kbd><span>ההגה: ימינה ושמאלה פונים</span></li>
             <li><kbd class="wide">לחיצה</kbd><span>המצערת: כל עוד הכפתור לחוץ המנוע מגביר, וכשמשחררים הוא דועך. להחזיק כחצי דקה כדי לעבור את מאך 1</span></li>
@@ -2774,6 +2788,9 @@ const Explore = (() => {
     elMsg = el('fly-msg');
     bk.canvas = el('fly-bike');
     buildTouch(root);
+    // The jet's HUD and panel live inside the instrument layer, over the
+    // picture and under the buttons; built once, shown for the jet.
+    Cockpit.mount(root.querySelector('.fly-hud'));
 
     el('fly-x').addEventListener('click', () => exit());
     el('fly-help').addEventListener('click', toggleIntro);
@@ -2878,6 +2895,7 @@ const Explore = (() => {
     document.body.classList.add('flying');
     document.body.classList.toggle('fly-balloon', isBal);
     document.body.classList.toggle('fly-bike', isBike);
+    Cockpit.show(!isBal && !isBike);
 
     // Full screen is asked for, never depended on: iOS refuses it outright and
     // the mode is perfectly good without it.
@@ -3067,6 +3085,7 @@ const Explore = (() => {
     sky.style.transform = '';
     elThr.style.background = '';
     document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-bike', 'fly-super');
+    Cockpit.show(false);
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
     document.documentElement.style.removeProperty('--fly-ox');
