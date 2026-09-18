@@ -4,7 +4,7 @@
 // Network (same as rl/common.py):
 //   one-hot (16,4,4) -> Conv3x3(16->F, pad 1) -> ReLU -> Conv3x3(F->F, pad 1) -> ReLU
 //   -> flatten (F*16, order c*16 + y*4 + x) -> Linear(F*16 -> H) -> ReLU -> head(s)
-//   DQN head: Linear(H -> 4) = Q-values.   Actor-Critic: policy_head Linear(H -> 4), value_head Linear(H -> 1).
+//   DQN head: Linear(H -> 4) = Q-values.   Actor-Critic and PPO: policy_head Linear(H -> 4), value_head Linear(H -> 1).
 
 class AgentNetwork {
   constructor(payload) {
@@ -208,7 +208,7 @@ class AgentPlayer {
     this.playBtn.textContent = "Play";
   }
 
-  // show Q-values (DQN) or probabilities (actor-critic) for the four directions
+  // show Q-values (DQN) or probabilities (actor-critic, PPO) for the four directions
   showValues(out, valid, best) {
     if (!out) { this.bars.forEach((b) => { b.style.setProperty("--w", "0%"); b.querySelector("span").textContent = ""; b.classList.remove("best"); }); return; }
     let vals = out.logits.slice();
