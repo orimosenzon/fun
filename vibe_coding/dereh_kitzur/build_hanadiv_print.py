@@ -281,9 +281,13 @@ def page_html(data, vs, style, paper):
   #leader {{ position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }}
   #leader line {{ stroke: {PIN}; stroke-width: calc(.35mm * var(--k)); }}
   #leader circle {{ fill: {PIN}; }}
+  /* No box-shadow: Chromium exports a blurred shadow to PDF as a rectangular
+     bitmap, and phone viewers that drop its alpha show a grey square behind
+     every pin (Yoav's first comment). A white border and a solid outline are
+     plain vector shapes and survive any viewer. */
   .pin {{ width: var(--pin); height: var(--pin); border-radius: 50%;
           background: {PIN}; color: #fff; border: calc(var(--pin) * .07) solid #fff;
-          box-shadow: 0 0 0 calc(var(--pin) * .045) {PIN}, 0 calc(var(--pin) * .06) calc(var(--pin) * .15) rgba(0,0,0,.35);
+          outline: calc(var(--pin) * .045) solid {PIN};
           font-size: calc(var(--pin) * .52); font-weight: 700; line-height: 1;
           display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }}
   .maplibregl-ctrl-scale {{ font-family: Heebo, sans-serif; font-size: calc(8pt * var(--k)); color: #111; direction: ltr;
