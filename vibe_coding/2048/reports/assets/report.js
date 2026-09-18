@@ -6,13 +6,13 @@
     const cs = getComputedStyle(document.documentElement);
     const g = (n) => cs.getPropertyValue(n).trim();
     return {
-      s1: g("--series-1"), s2: g("--series-2"), s3: g("--series-3"), de: g("--de-emph"),
+      s1: g("--series-1"), s2: g("--series-2"), s3: g("--series-3"), s4: g("--series-4"), de: g("--de-emph"),
       ink: g("--ink"), ink2: g("--ink-2"), muted: g("--muted"), grid: g("--grid"), axis: g("--axis"),
       surface: g("--surface"),
       seq: [g("--seq-100"), g("--seq-250"), g("--seq-400"), g("--seq-550"), g("--seq-700")],
     };
   }
-  const colorOf = (t, c) => (c && c.startsWith("seq") ? t.seq[+c[3]] : ({ s1: t.s1, s2: t.s2, s3: t.s3, de: t.de }[c] || c));
+  const colorOf = (t, c) => (c && c.startsWith("seq") ? t.seq[+c[3]] : ({ s1: t.s1, s2: t.s2, s3: t.s3, s4: t.s4, de: t.de }[c] || c));
   const fmt = (v, d) => {
     if (v == null || isNaN(v)) return "";
     const n = Number(v);

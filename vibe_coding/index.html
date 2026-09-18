@@ -345,11 +345,12 @@
                             <span class="tag">DQN</span>
                             <span class="tag">Actor-Critic</span>
                             <span class="tag">PPO</span>
+                            <span class="tag">N-Tuple TD</span>
                             <span class="tag">Vanilla JS</span>
                         </div>
                 </div>
             </div>
-            <div class="card-desc"><strong style="color:#fbbf24">המשחק 2048, ושלושה סוכנים שלמדו לשחק בו לבד.</strong><br> שחזור נאמן של המשחק המקורי בדפדפן, ולצידו למידת חיזוק ב-PyTorch על ה-GPU המקומי: DQN, Actor-Critic ו-PPO באותו תקציב זמן. הסוכן המאומן משחק בתוך הממשק ומראה מה הוא חושב על כל כיוון. Actor-Critic מגיע ל-2048 ב-81% מהמשחקים, PPO ב-30%, DQN ב-2.4%. דו"חות בעברית עם הסבר מפורט על כל שיטה: אינטואיציה, מתמטיקה והבדלים.</div>
+            <div class="card-desc"><strong style="color:#fbbf24">המשחק 2048, וארבעה סוכנים שלמדו לשחק בו לבד.</strong><br> שחזור נאמן של המשחק המקורי בדפדפן, ולצידו למידת חיזוק באותו תקציב זמן: DQN, Actor-Critic ו-PPO ב-PyTorch על ה-GPU המקומי, ורשת n-tuple עם TD על afterstates (השיטה שהספרות של 2048 מעדיפה) על ליבת CPU אחת. הסוכנים העצביים משחקים בתוך הממשק ומראים מה הם חושבים על כל כיוון. רשת ה-n-tuple מגיעה ל-2048 ב-95% מהמשחקים ול-8192 ב-61%, Actor-Critic ל-2048 ב-81%, PPO ב-30%, DQN ב-2.4%. דו"חות בעברית עם הסבר מפורט על כל שיטה: אינטואיציה, היסטוריה, מתמטיקה והבדלים.</div>
             <div class="card-links">
                     <a href="2048/game/index.html" class="btn-live">▶ שחק, או תן ל-AI לשחק</a>
                     <a href="2048/reports/comparison.html" class="btn-secondary">📊 דו"ח השוואה</a>

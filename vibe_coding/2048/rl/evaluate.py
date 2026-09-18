@@ -8,6 +8,7 @@
     python rl/evaluate.py --all
     python rl/evaluate.py --agent dqn --checkpoint checkpoints/dqn_best.pt --games 1000
     python rl/evaluate.py --agent ppo --checkpoint checkpoints/ppo_best.pt
+    python rl/evaluate.py --agent ntuple --checkpoint checkpoints/ntuple_best.npz
 """
 
 from __future__ import annotations
@@ -33,9 +34,10 @@ from game2048 import move_boards
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "reports", "data")
 
-# (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית). ac ו-ppo חולקים את אותה רשת.
-AGENT_KINDS = (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic"), ("ppo", "ppo", "PPO"))
+# (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית). ac ו-ppo חולקים את אותה רשת; ntuple הוא טבלאות (npz), בלי torch.
+AGENT_KINDS = (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic"), ("ppo", "ppo", "PPO"), ("ntuple", "ntuple", "N-Tuple TD"))
 LABELS = {k: label for k, _, label in AGENT_KINDS}
+CKPT_EXT = {"ntuple": ".npz"}
 
 
 def greedy_score_policy(boards: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -52,6 +54,10 @@ def greedy_score_policy(boards: np.ndarray, valid: np.ndarray) -> np.ndarray:
 
 
 def load_agent(kind: str, path: str, device: torch.device):
+    if kind == "ntuple":
+        from ntuple_td import load_checkpoint
+        table, meta = load_checkpoint(path)
+        return table, meta
     ckpt = torch.load(path, map_location=device)
     a = ckpt["args"]
     if kind == "dqn":
@@ -65,6 +71,10 @@ def load_agent(kind: str, path: str, device: torch.device):
 
 def agent_policy(kind: str, net, device: torch.device):
     from common import encode_boards, masked_argmax
+
+    if kind == "ntuple":
+        from ntuple_td import make_policy
+        return make_policy(net)
 
     @torch.no_grad()
     def policy(boards, valid):
@@ -148,7 +158,7 @@ def main():
         save(evaluate_policy("random", "מדיניות אקראית", random_policy(rng), args.games))
         save(evaluate_policy("greedy", "חמדן צעד אחד", greedy_score_policy, args.games))
         for kind, run, label in AGENT_KINDS:
-            path = os.path.join(ROOT, "checkpoints", f"{run}_best.pt")
+            path = os.path.join(ROOT, "checkpoints", f"{run}_best{CKPT_EXT.get(kind, '.pt')}")
             if not os.path.exists(path):
                 print(f"skip {kind}: no checkpoint at {path}")
                 continue
