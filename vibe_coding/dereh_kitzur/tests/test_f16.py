@@ -129,9 +129,14 @@ try:
         check('intro gives the Mach limits', 'מאך 1.2' in txt and 'מאך 2' in txt)
         check('intro mentions the boom', 'בום' in txt)
         check('intro says a real one does not stop', 'נעצר באוויר' in txt)
-        check('Mach and g gauges shown, vario hidden',
-              page.locator('#fly-mach-g').is_visible() and page.locator('#fly-g-g').is_visible()
-              and not page.locator('#fly-vsi-g').is_visible())
+        check('intro explains the HUD units', 'קשר' in txt and 'רגל' in txt)
+        # The jet's instruments are the F-16's own HUD and panel (cockpit.js);
+        # the generic gauges and the compass belong to the other two aircraft.
+        check('cockpit shown, generic gauges and compass hidden',
+              page.locator('.ckpt').is_visible() and page.locator('#hud-mach').is_visible()
+              and page.locator('.ckpt-panel').is_visible()
+              and not page.locator('.fly-readout').is_visible() and not page.locator('#fly-compass').is_visible())
+        check('vario hidden', not page.locator('#fly-vsi-g').is_visible())
         page.screenshot(path=f'{OUT}/shot_f16_intro.png')
         env = d['envelope']
         print(f'    at {d["alt"]:.0f} m: a = {env["a"]:.1f} m/s, top = {env["top"]:.0f} m/s ({env["top"]*3.6:.0f} km/h), dry = {env["mil"]:.0f} m/s')
@@ -174,23 +179,40 @@ try:
         page.mouse.move(720, 450); page.mouse.move(722, 452)
         check('stick armed', not page.evaluate('() => document.body.classList.contains("fly-unarmed")'))
 
-        # ---- the compass ----
-        d = dbg(page)
-        heading = page.evaluate('() => document.getElementById("fly-heading").textContent')
-        rose = page.evaluate('() => document.getElementById("fly-needle").getAttribute("transform")')
-        print(f'    bearing {d["bearing"]:.1f}: compass says "{heading}", needle {rose}')
-        check('compass shown', page.locator('#fly-compass').is_visible())
-        check('heading text is the bearing', f'{round(d["bearing"]) % 360}°' in heading, (d['bearing'], heading))
-        check('and a wind in words', any(w in heading for w in ('צפון', 'דרום', 'מזרח', 'מערב')), heading)
-        check('needle turned against the bearing: red end north', abs(float(rose[7:-1]) + d['bearing']) < 1.5, (rose, d['bearing']))
-        check('no letters on the dial', page.evaluate('() => document.querySelectorAll("#fly-compass text").length') == 0)
-        check('no wind pointer on the jet', not page.locator('#fly-drift').is_visible())
+        # ---- the HUD ----
+        HUD = '''() => { const d = Explore.debug(); const t = (id) => document.getElementById(id).textContent;
+          const tf = (id) => document.getElementById(id).getAttribute('transform');
+          const hz = document.querySelector('#hud-ladder .rung.horizon');
+          return { bearing: d.bearing, alt: d.alt, speed: d.speed, bank: d.bank, mach: d.mach, gee: d.gee,
+                   hdg: t('hud-hdg'), spd: t('hud-spd'), alt_: t('hud-alt'), g: t('hud-g'), machS: t('hud-mach'),
+                   ded: t('hud-ded'), stpt: t('hud-stpt'), lad: tf('hud-ladder'), fpm: tf('hud-fpm'),
+                   hz: hz && hz.style.display !== 'none' ? hz.getAttribute('transform') : null,
+                   fpmLim: document.getElementById('hud-fpm').classList.contains('lim') }; }'''
+        hud = page.evaluate(HUD)
+        print(f'    bearing {hud["bearing"]:.1f}: HUD heading "{hud["hdg"]}", {hud["spd"]} kt, {hud["alt_"]} ft, g {hud["g"]}, ded "{hud["ded"]}"')
+        want = round(hud['bearing']) % 360 or 360
+        check('heading box is the bearing, three digits', hud['hdg'] == f'{want:03d}', (hud['bearing'], hud['hdg']))
+        check('airspeed box in knots', abs(int(hud['spd']) - abs(hud['speed']) * 1.943844) < 1.5, (hud['speed'], hud['spd']))
+        check('altitude box in feet, to ten', abs(int(hud['alt_'].replace(',', '')) - hud['alt'] * 3.28084) <= 5, (hud['alt'], hud['alt_']))
+        check('radar altitude below 1,500 ft', page.evaluate('() => [...document.querySelectorAll(".ckpt-hud text")].some(t => t.textContent === "R" && t.style.display !== "none")'))
+        check('DED carries heading, knots and feet', 'HDG' in hud['ded'] and 'KT' in hud['ded'] and 'FT' in hud['ded'], hud['ded'])
+        check('DED names the steerpoint, the nearest trail', bool(hud['stpt'].strip()), hud['stpt'])
+        # Conformal: level, the flight path marker rides the horizon line.
+        def ty(tr): return float(tr.split()[-1].rstrip(')'))
+        check('horizon rung drawn and the FPM on it, level', hud['hz'] is not None and abs(ty(hud['hz']) - ty(hud['fpm'])) < 2 and not hud['fpmLim'], (hud['hz'], hud['fpm']))
         page.keyboard.down('ArrowRight'); time.sleep(1.5); page.keyboard.up('ArrowRight')
         time.sleep(1.2)   # the turn dies down after the key
-        # bearing and label in one round trip: between two the nose still moves
-        b2, heading2 = page.evaluate('() => [Explore.debug().bearing, document.getElementById("fly-heading").textContent]')
-        check('compass follows a turn', b2 > d['bearing'] + 20 and f'{round(b2) % 360}°' in heading2, (d['bearing'], b2, heading2))
-        page.screenshot(path=f'{OUT}/shot_f16_compass.png', clip={'x': 610, 'y': 0, 'width': 220, 'height': 130})
+        hud2 = page.evaluate(HUD)
+        want2 = round(hud2['bearing']) % 360 or 360
+        check('heading box follows a turn', hud2['bearing'] > hud['bearing'] + 20 and hud2['hdg'] == f'{want2:03d}', (hud['bearing'], hud2['bearing'], hud2['hdg']))
+        # The ladder rolls with the picture: the stick to the side banks it.
+        page.mouse.move(1300, 450); time.sleep(0.9)
+        hud3 = page.evaluate(HUD)
+        rot = float(hud3['lad'].split('(')[1].split()[0])
+        check('ladder rolled against the bank', abs(hud3['bank']) > 5 and abs(rot + hud3['bank']) < 0.5, (hud3['bank'], hud3['lad']))
+        check('g on the HUD while turning', float(hud3['g']) >= 1.0 and hud3['g'] == f'{hud3["gee"]:.1f}', (hud3['g'], hud3['gee']))
+        page.mouse.move(720, 450); time.sleep(1.5)
+        page.screenshot(path=f'{OUT}/shot_f16_hud.png', clip={'x': 480, 'y': 40, 'width': 480, 'height': 400})
 
         # ---- a short press: a walking pace, not a launch ----
         page.mouse.down(); time.sleep(0.5); page.mouse.up()
@@ -244,7 +266,7 @@ try:
         check('boom is a thump: energy drops under 120 Hz', c_post < 110 and l_post > 0.9, (c_post, l_post))
         check('engine ducked under the boom', r_dip < 0.5 * min(x['rms'] for x in pre), (r_dip, min(x['rms'] for x in pre)))
         page.screenshot(path=f'{OUT}/shot_f16_sonic.png')
-        check('Mach gauge reads over one', float(page.evaluate('() => document.getElementById("fly-mach").textContent')) >= 1.0)
+        check('Mach on the HUD reads over one', float(page.evaluate('() => document.getElementById("hud-mach").textContent')) >= 1.0)
 
         # ---- to the top, and the turn there ----
         top = sample(page, 40, 0.5, until=lambda x: x['speed'] > 0.97 * x['envelope']['top'])
@@ -312,7 +334,9 @@ try:
         check('top speed is Mach 2.05', abs(env['top'] / env['a'] - 2.05) < 0.01, env)
         check('the view still draws at the ceiling', 1 < d['pitch'] < 90 and page.evaluate('() => map.getZoom()') > 5)
         page.screenshot(path=f'{OUT}/shot_f16_ceiling.png')
-        check('altitude gauge reads the ceiling', '15240' in page.evaluate('() => document.getElementById("fly-alt").textContent'))
+        check('altitude box reads the ceiling, 50,000 ft', page.evaluate('() => document.getElementById("hud-alt").textContent') == '50,000')
+        check('no radar altitude up here', not page.evaluate('() => [...document.querySelectorAll(".ckpt-hud text")].some(t => t.textContent === "R" && t.style.display !== "none")'))
+        check('FPM clamped and dashed, looking down from the ceiling', page.evaluate('() => document.getElementById("hud-fpm").classList.contains("lim")'))
 
         # a dive is faster than a climb
         page.keyboard.down('ArrowDown'); dive = sample(page, 3, 0.5); page.keyboard.up('ArrowDown')
