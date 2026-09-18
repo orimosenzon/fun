@@ -229,10 +229,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   box-shadow: 0 1px 6px rgba(0, 0, 0, .3);
   transition: bottom .25s ease;
 }
-#craft svg { width: 15px; height: 15px; fill: #3c4a45; }
+#craft svg { width: 15px; height: 15px; fill: #3c4a45; display: none; }
+#craft .craft-bike { width: 17px; height: 17px; }
 #craft[hidden] { display: none; }
-body.craft-balloon #craft .craft-bal,
-body:not(.craft-balloon) #craft .craft-jet { display: none; }
+/* The small button shows the aircraft a press would bring: the one after
+ * the current in the cycle balloon -> jet -> bike -> balloon. app.js sets
+ * the body class; before it runs the page starts as the balloon. */
+body.craft-balloon #craft .craft-jet,
+body.craft-jet #craft .craft-bike,
+body.craft-bike #craft .craft-bal { display: block; }
 
 /* ---------- the way back from somewhere else ----------
  *
@@ -2466,9 +2471,187 @@ body.fly-balloon .fly-thr::after {
   opacity: .8;
 }
 
+/* ---------- the jet bike ----------
+ *
+ * The one aircraft that is drawn: bike.js renders it with Three.js on this
+ * canvas, which is the window exactly, over the map and its cards and under
+ * the instruments. The lean of the picture goes into the scene's camera, so
+ * the canvas itself never turns and never needs material past the edges.
+ * Nothing on it takes a pointer; a photo behind the bike is still a photo. */
+.fly-bike {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3;
+  pointer-events: none;
+}
+.fly-bike[hidden] { display: none; }
+
+/* A clear day, the bike's hour: fable's sky, blue to the haze it fogs
+ * with (#c6d8e8). */
+body.fly-bike .fly-band {
+  background: linear-gradient(to bottom,
+    #1a4a8a 0%, #2d6cb0 24%, #5b96cf 50%, #9dc1e2 76%, #c6d8e8 93%, #d9e4ee 100%);
+}
+body.fly-bike .fly-haze {
+  background: linear-gradient(to bottom,
+    rgba(214, 226, 236, .92) 0%, rgba(206, 218, 226, .5) 34%, rgba(200, 212, 210, 0) 100%);
+}
+/* The burner is a thing on the screen here, not a glow at its edge; what is
+ * left at the bottom is its light on the ground, warm and low. */
+body.fly-bike .fly-burner {
+  background: radial-gradient(ellipse 60% 30% at 50% 108%,
+    rgba(255, 150, 60, .5) 0%, rgba(255, 110, 40, .22) 40%, rgba(255, 90, 30, 0) 100%);
+}
+/* No burner tint on the bike's throttle track: it has no detent. */
+body.fly-bike .fly-thr { background: rgba(255, 255, 255, .16); }
+
+/* fable's two-layer bars: the fill is what the turbines are doing, the thin
+ * mark is where the lever is. The lift bar sits under the throttle. */
+.fly-thr b {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  inset-inline-start: 0;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 0 3px rgba(0, 0, 0, .6);
+}
+.fly-thr b[hidden] { display: none; }
+/* Two classes, because the plain .fly-thr rule further down sets the same
+ * top and would win on order alone. */
+.fly-thr.fly-lift { top: calc(71px + env(safe-area-inset-top, 0px)); }
+.fly-thr.fly-lift[hidden] { display: none; }
+.fly-thr.fly-lift i { background: #8ec3ff; }
+body.fly-bike .fly-thr.fly-lift { background: rgba(142, 195, 255, .18); }
+@media (max-width: 560px) {
+  body.flying .fly-thr.fly-lift { top: calc(143px + env(safe-area-inset-top, 0px)); }
+}
+/* The flight computer's gauge: it is on unless it says otherwise. */
+.fly-gauge.fc.off b { color: #ffb066; }
+
+/* What just happened: a crash, a levelling, the computer going off. Across
+ * the upper middle, where fable puts it, gone in a couple of seconds. */
+.fly-msg {
+  position: absolute;
+  top: 24%;
+  inset-inline: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .7);
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+}
+.fly-msg.show { opacity: 1; }
+.fly-msg.crash { color: #ff6a5e; }
+@media (max-width: 560px) { .fly-msg { font-size: 19px; } }
+
+/* fable's touch controls, for the bike on a phone. Shown only there: a
+ * mouse has the whole screen as a stick and every key on the board. */
+.fly-touch { display: none; }
+@media (pointer: coarse) {
+  body.fly-bike .fly-touch {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+body.fly-paused .fly-touch { display: none !important; }
+.fly-touch button { pointer-events: auto; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.fly-touch .tjoy {
+  position: absolute;
+  left: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  border: 2px solid rgba(255, 255, 255, .25);
+  pointer-events: auto;
+  touch-action: none;
+}
+.fly-touch .tjoy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: rgba(255, 179, 71, .55);
+  border: 2px solid rgba(255, 255, 255, .5);
+}
+.fly-touch .tside {
+  position: absolute;
+  right: 14px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  direction: ltr;
+}
+.fly-touch .tvert-pair { display: flex; gap: 8px; }
+.fly-touch .tvert { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fly-touch .tlabel { font-size: 10px; color: #eef3f8; opacity: .8; order: 1; }
+.fly-touch .tbtn {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(20, 26, 36, .6);
+  color: #eef3f8;
+  font-size: 18px;
+}
+.fly-touch .tbtn.active, .fly-touch .tbtn:active { background: rgba(255, 179, 71, .55); }
+.fly-touch .tbtn.tsmall { width: 38px; height: 38px; font-size: 15px; }
+.fly-touch .troll { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.fly-touch .tboost {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 150, 60, .7);
+  background: rgba(255, 100, 30, .35);
+  color: #fff;
+  font-size: 26px;
+}
+.fly-touch .tboost.active, .fly-touch .tboost:active { background: rgba(255, 120, 30, .75); }
+/* The taps - camera, computer, level - under the top row of buttons, on
+ * the left where nothing else lives on a phone. */
+.fly-touch .tmenu {
+  position: absolute;
+  top: calc(180px + env(safe-area-inset-top, 0px));
+  inset-inline-start: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+.fly-touch .tmenu .tbtn { background: rgba(10, 16, 26, .5); }
+/* The name of what was found sits where the throttle buttons are on a
+ * phone; on the bike it moves up above them. */
+@media (pointer: coarse) {
+  body.fly-bike .fly-found { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+}
+
 /* One intro per aircraft; the body class picks. */
 body.fly-balloon .fly-intro-card.jet,
-body:not(.fly-balloon) .fly-intro-card.balloon { display: none; }
+body.fly-bike .fly-intro-card.jet,
+body:not(.fly-balloon) .fly-intro-card.balloon,
+body:not(.fly-bike) .fly-intro-card.bike { display: none; }
+/* The bike lists more keys than the others; the card scrolls on a short
+ * screen rather than pushing its foot off it. */
+.fly-intro-card.bike { max-height: 92vh; overflow-y: auto; }
+.fly-intro-card.bike .fly-keys { gap: 5px; }
 
 /* On a phone the top line is the three buttons and the compass, and four
  * gauges do not fit beside them. So there the readout drops under the
@@ -2631,7 +2814,7 @@ body.fly-burn .fly-thr i { background: #ffb066; }
 .fly-compass .rose-lubber { fill: #ffd27a; }
 /* The balloon's drift: a pointer outside the rim, the way the wind goes. */
 .fly-compass .rose-drift { fill: #8ec3ff; stroke: rgba(0, 0, 0, .45); stroke-width: .8; }
-body:not(.fly-balloon) .fly-compass .rose-drift { display: none; }
+body:not(.fly-balloon):not(.fly-bike) .fly-compass .rose-drift { display: none; }   /* the bike's is the wind */
 .fly-compass b {
   font-size: 12.5px;
   font-weight: 700;
