@@ -1,2 +1,3 @@
 # torch מותקן בנפרד מהאינדקס של cu126 (ראו README, סעיף התקנה)
 numpy>=1.26
+numba>=0.60      # rl/ntuple_td.py: הלולאה הסדרתית של TD על afterstates
