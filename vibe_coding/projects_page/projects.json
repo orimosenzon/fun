@@ -882,6 +882,32 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "yoram — דד ליינים לקורסים",
+          "icon": "📅",
+          "theme": "t-teal",
+          "dir": "yoram",
+          "tags": [
+            "Google Apps Script",
+            "Google Tasks",
+            "Google Calendar"
+          ],
+          "desc": "תפריט בתוך Google Sheets שהופך טאב של קורס לרשימת משימות עם תאריכי יעד וליומן משותף עם המדריך, עם תזכורות במייל ועל המסך. במקום להקליד עשרות דד ליינים ידנית לכל קורס.",
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ],
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/yoram",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ]
+        },
+        {
           "title": "Central Park Development Model",
           "icon": "🗽",
           "theme": "t-orange",
