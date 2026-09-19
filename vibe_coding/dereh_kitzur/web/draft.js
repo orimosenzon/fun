@@ -896,8 +896,12 @@ ${tracks}
         <textarea id="d-note" rows="2" maxlength="240"
                   placeholder="מדרגות בקצה, חסום בחורף, מתאים לעגלה…">${escapeHtml(cur.note || '')}</textarea></label>
       ${picker}
-      <div class="fld"><span>צבע השביל</span>
-        ${Swatches.html(TRAIL_COLOURS, cur.color || '#097138', true)}
+      <div class="fld"><span>צבע השביל (לא חובה)</span>
+        ${/* Nothing picked means the layer's colour, which is the rule. Until
+            19/9/2026 the green swatch came preselected, and every trail added
+            through the app carried a colour of its own without anybody
+            choosing one - 19 of them, cleared in the data repo that day. */''}
+        ${Swatches.html(TRAIL_COLOURS, cur.color || '', true)}
       </div>
       <div class="fld"><span>קישורים (לא חובה)</span>
         ${LinkRows.html(cur.links)}</div>
