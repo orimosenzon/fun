@@ -35,10 +35,13 @@ AGENTS = {
     "ppo": {"run": "ppo", "label": "PPO", "color": "s3", "report": "ppo_report.html", "long": "Proximal Policy Optimization (PPO)", "hw": HARDWARE},
     "ntuple": {"run": "ntuple", "label": "N-Tuple TD", "color": "s4", "report": "ntuple_report.html",
                "long": "TD(0) על afterstates עם רשת n-tuple", "hw": HARDWARE_CPU},
+    "asnet": {"run": "asnet", "label": "Afterstate TD (רשת)", "color": "s5", "report": "asnet_report.html",
+              "long": "TD(0) על afterstates עם רשת הקונבולוציה (הניסוי המפריד: האלגוריתם של רשת ה-n-tuple, הייצוג של הרשתות העצביות)", "hw": HARDWARE},
 }
 KINDS = list(AGENTS)
-COUNT_WORDS = {2: "שני", 3: "שלושה", 4: "ארבעה"}
-COUNT_WORDS_F = {2: "שתי", 3: "שלוש", 4: "ארבע"}
+NEURAL = ("dqn", "ac", "ppo", "asnet")
+COUNT_WORDS = {2: "שני", 3: "שלושה", 4: "ארבעה", 5: "חמישה"}
+COUNT_WORDS_F = {2: "שתי", 3: "שלוש", 4: "ארבע", 5: "חמש"}
 DIRECTIONS = ["↑ למעלה", "→ ימינה", "↓ למטה", "← שמאלה"]
 THRESHOLDS = [3000, 5000, 8000, 12000, 16000, 20000, 30000, 40000, 60000, 100000]
 
@@ -242,7 +245,12 @@ NTUPLE_HP = [
     ("time_limit_min", "מגבלת זמן (דקות)"), ("alpha", "קצב למידה alpha (מתחלק ב-32 משקלים)"), ("chunk", "מהלכים בכל קריאה ללולאה המקומפלת"),
     ("eval_every", "הערכה כל"), ("eval_games", "משחקים בהערכה"), ("seed", "זרע"),
 ]
-HP_LISTS = {"dqn": DQN_HP, "ac": AC_HP, "ppo": PPO_HP, "ntuple": NTUPLE_HP}
+ASNET_HP = [
+    ("time_limit_min", "מגבלת זמן (דקות)"), ("n_envs", "סביבות במקביל"), ("gamma", "gamma (היוון)"), ("lr", "קצב למידה (Adam)"),
+    ("grad_clip", "חיתוך גרדיאנט"), ("reward_scale", "סקאלת תגמול"), ("filters", "פילטרים בקונבולוציה"), ("hidden", "שכבה נסתרת"),
+    ("eval_every", "הערכה כל"), ("eval_games", "משחקים בהערכה"), ("seed", "זרע"),
+]
+HP_LISTS = {"dqn": DQN_HP, "ac": AC_HP, "ppo": PPO_HP, "ntuple": NTUPLE_HP, "asnet": ASNET_HP}
 
 
 def network_note(kind: str, args: dict) -> str:
@@ -251,8 +259,9 @@ def network_note(kind: str, args: dict) -> str:
                 "(השורה הראשונה עם שתי משבצות מהשנייה, השורה השנייה עם שתיים מהשלישית, מלבן 2×3 בפינה, מלבן 2×3 באמצע), "
                 "כל חלון נקרא על 8 הסימטריות של הלוח. V(afterstate) = סכום 32 קריאות. בלי היוון, ניקוד גולמי. "
                 "הפירוט המלא ב-<a href=\"../README.md\">README</a>.")
+    head = "ראש ערך אחד (V של afterstate; הקלט הוא הלוח אחרי ההחלקה)" if kind == "asnet" else "ראש"
     return (f"הרשת: קלט one-hot (16, 4, 4) → שתי שכבות Conv 3x3 עם {args.get('filters', 128)} פילטרים → Linear → "
-            f"{args.get('hidden', 256)} → ראש. כ-690 אלף פרמטרים. הפירוט המלא ב-<a href=\"../README.md\">README</a>.")
+            f"{args.get('hidden', 256)} → {head}. כ-690 אלף פרמטרים. הפירוט המלא ב-<a href=\"../README.md\">README</a>.")
 
 
 # ----------------------------------------------------------------------------
@@ -296,6 +305,12 @@ def training_charts(kind: str, train: list, x_tr: list, color: str) -> str:
 {lc("c_q", "כמה מהטבלה בשימוש", "אחוז המשקלים (מתוך 67 מיליון) שכבר נגעו בהם. רוב הכניסות מייצגות חלונות שלא יכולים להופיע במשחק אמיתי (למשל שישה אריחים גדולים צמודים), ולכן הטבלה לא תתמלא לעולם.", [{"label": "משקלים שנגעו בהם", "y": [100 * r["visited"] for r in train], "color": color}], yTitle="אחוז מהטבלה")}
 </div>
 """
+    if kind == "asnet":
+        return f"""<div class="grid2">
+{lc("c_loss", "שגיאת ה-TD הממוצעת", "ממוצע |delta| של העדכונים, בנקודות משחק (אותו מדד כמו בדוח של רשת ה-n-tuple). גדל כשהערכים גדלים.", [{"label": "|delta| ממוצע", "y": [r["td_abs"] for r in train], "color": color}], yTitle="נקודות")}
+{lc("c_q", "V הממוצע של ה-afterstates שעודכנו", "כמה נקודות הרשת צופה לצבור עוד מהלוחות שהיא מבקרת בהם. ברשת עצבית הערך יכול לזנק בתחילת האימון ואז להתייצב; בטבלה הוא מתחיל מאפס ורק עולה.", [{"label": "V ממוצע", "y": [r["v_mean"] for r in train], "color": color}], yTitle="נקודות")}
+</div>
+"""
     common = f"""<div class="grid2">
 {lc("c_loss", "הפסד המבקר במהלך האימון", "ריבוע הפער בין V(s) להחזר המשוער. גדל כשהערכים גדלים, כמו ב-DQN.", [{"label": "הפסד המבקר (ערך)", "y": [r["v_loss"] for r in train], "color": color}], yTitle="הפסד")}
 {lc("c_q", "אנטרופיית המדיניות", "אנטרופיה מקסימלית (ln 4 ≈ 1.39) היא מדיניות אחידה לגמרי. ירידה פירושה שהמדיניות נעשית בטוחה יותר בבחירותיה. בונוס האנטרופיה מונע ממנה לרדת לאפס.", [{"label": "אנטרופיית המדיניות", "y": [r["entropy"] for r in train], "color": color}], yTitle="אנטרופיה (nats)", yMax=1.4)}
@@ -308,6 +323,134 @@ def training_charts(kind: str, train: list, x_tr: list, color: str) -> str:
 {lc("c_kl", "מרחק KL בין המדיניות הישנה לחדשה", "כמה המדיניות זזה במהלך 16 צעדי הגרדיאנט על כל אצווה (אומדן k3, ממוצע על המיני-אצוות). PPO נחשב בריא באזור 0.01 עד 0.03; קפיצות פירושן עדכונים אגרסיביים מדי.", [{"label": "KL משוער", "y": [r["approx_kl"] for r in train], "color": color}], yTitle="KL (nats)")}
 {lc("c_clip", "חלק הדגימות שנקטמו", "אחוז הדגימות במיני-אצווה שיחס ההסתברויות שלהן יצא מהחלון [1-ε, 1+ε] ולכן הגרדיאנט שלהן אופס. במיני-אצווה הראשונה של כל אצווה הוא תמיד אפס, כך שהממוצע כאן הוא על כל 16 הצעדים.", [{"label": "חלק שנקטם", "y": [100 * r["clip_frac"] for r in train], "color": color}], yTitle="אחוז מהדגימות")}
 </div>
+"""
+
+
+
+# ----------------------------------------------------------------------------
+# ניסויים נוספים על רשת ה-n-tuple: expectimax מעל הטבלה, וריצה ארוכה עם דעיכה מאוחרת
+# ----------------------------------------------------------------------------
+
+def ntuple_experiments(evals_main: list, color: str) -> str:
+    html = ""
+    em = load_eval("ntuple_expectimax")
+    if em and em.get("depths"):
+        depths = sorted(em["depths"], key=int)
+        D = {d: em["depths"][d] for d in depths}
+        labels = {"1": "עומק 1 (חמדן, כמו בדו\"ח)", "2": "עומק 2", "3": "עומק 3"}
+        colors = ["de", color, color]
+        bar = {"labels": [labels.get(d, f"עומק {d}") for d in depths],
+               "series": [{"label": "ניקוד ממוצע", "y": [round(D[d]["summary"]["score_mean"]) for d in depths], "color": [colors[i] if i < len(colors) else color for i in range(len(depths))]}],
+               "yTitle": "ניקוד ממוצע", "legend": False}
+        max_score = max(max(D[d]["scores"]) for d in depths)
+        width = hist_width(max_score)
+        h_series, lh = [], None
+        seq = ["de", "seq2", "seq4"]
+        for i, d in enumerate(depths):
+            lh, counts = hist(D[d]["scores"], width, max_score)
+            h_series.append({"label": labels.get(d, d), "y": [100 * c / D[d]["games"] for c in counts], "color": seq[i] if i < len(seq) else color})
+        h_cfg = {"labels": lh, "series": h_series, "yTitle": "אחוז מהמשחקים", "xTitle": "ניקוד (אלפים)",
+                 "table": {"columns": ["טווח"] + [labels.get(d, d) for d in depths], "rows": [[l] + [round(sr["y"][i], 1) for sr in h_series] for i, l in enumerate(lh)]}}
+        order = tile_order_for(*(D[d]["max_tiles"] for d in depths))
+        td_cfg = {"labels": [str(t) for t in order],
+                  "series": [{"label": labels.get(d, d), "y": [round(100 * c / D[d]["games"], 1) for c in tile_dist(D[d]["max_tiles"], order)], "color": seq[i] if i < len(seq) else color} for i, d in enumerate(depths)],
+                  "yTitle": "אחוז מהמשחקים", "xTitle": "האריח הגדול ביותר במשחק"}
+        rows = ""
+        for d in depths:
+            S, mt = D[d]["summary"], np.asarray(D[d]["max_tiles"])
+            rows += (f"<tr class='{'hl' if d != '1' else ''}'><td>{labels.get(d, d)}</td><td class='num'>{D[d]['games']:,}</td><td class='num'>{f0(S['score_mean'])}</td>"
+                     f"<td class='num'>{f0(S['score_median'])}</td><td class='num'>{f0(S['score_max'])}</td><td class='num'>{pct(S['reach_2048'])}</td>"
+                     f"<td class='num'>{pct(S['reach_4096'])}</td><td class='num'>{pct((mt >= 8192).mean())}</td><td class='num'>{pct((mt >= 16384).mean())}</td>"
+                     f"<td class='num'>{f0(S['moves_mean'])}</td><td class='num'>{f0(D[d]['moves_per_sec'])}</td></tr>")
+        rec = next((D[d].get("recorded_game") for d in depths if D[d].get("recorded_game")), None)
+        rec_d = next((d for d in depths if D[d].get("recorded_game")), None)
+        rec_html = ""
+        if rec:
+            rec_html = (f'<div class="card"><h3>משחק מוקלט של עומק {rec_d} ({f0(rec["score"])} נקודות, אריח {f0(rec["max_tile"])}, {f0(rec["moves"])} מהלכים)</h3>'
+                        f'<div id="rp_em"></div></div><script>R.replay(\'rp_em\', {j(rec)}, {{start: \'end\'}});</script>')
+        html += f"""
+<h3>ניסוי 1: expectimax מעל הטבלה, בלי אימון נוסף</h3>
+<p>אותה טבלה בדיוק, אבל במקום לבחור לפי \(r + V(s')\) של מהלך אחד קדימה, הסוכן מחשב לכל afterstate את התוחלת על האריח האקראי (עד 15 משבצות × שני ערכים) ובכל לוח שנוצר בוחר שוב את המהלך הטוב ביותר, וכן הלאה עד העומק. עומק 1 הוא הסוכן של הדו\"ח; כל רמת עומק נוספת עולה פי ~100 בחישוב (30 המשכים × 4 מהלכים), ולכן ההערכה רצה על ארבע ליבות במקביל, ועומק 3 על {D[depths[-1]]['games']:,} משחקים. הקוד ב-<code>rl/expectimax.py</code>.</p>
+<div class="grid2">
+{card("c_em_bar", "ניקוד ממוצע לפי עומק החיפוש", "אותה טבלה, אותם זרעים להתחלות המשחקים.", "chart short", f"R.barChart('c_em_bar', {j(bar)});")}
+{card("c_em_td", "האריח הגדול ביותר, לפי עומק", "אחוז המשחקים שהסתיימו עם כל אריח מקסימלי.", "chart short", f"R.barChart('c_em_td', {j(td_cfg)});")}
+</div>
+{card("c_em_hist", "התפלגות הניקוד לפי עומק", f"רוחב עמודה {width:,} נקודות, באחוזים מהמשחקים של כל עומק (מספר המשחקים שונה).", "chart", f"R.barChart('c_em_hist', {j(h_cfg)});")}
+<div class="card"><h3>הטבלה המלאה</h3>
+<div class="scroll"><table><thead><tr><th>חיפוש</th><th class="num">משחקים</th><th class="num">ממוצע</th><th class="num">חציון</th><th class="num">הטוב ביותר</th><th class="num">2048</th><th class="num">4096</th><th class="num">8192</th><th class="num">16384</th><th class="num">מהלכים למשחק</th><th class="num">מהלכים/שנייה</th></tr></thead><tbody>{rows}</tbody></table></div></div>
+{rec_html}
+"""
+    train_long, evals_long = load_log("ntuple_long")
+    if evals_long:
+        ev_long = load_eval("ntuple_long")
+        t_main = [e["elapsed_sec"] / 60 for e in evals_main]
+        ab_cfg = {"series": [
+                      {"label": "הריצה הארוכה", "x": [e["elapsed_sec"] / 60 for e in evals_long], "y": [e["eval"]["score_mean"] for e in evals_long], "color": color, "width": 2.5},
+                      {"label": "הריצה של הדו\"ח (73 דקות, קצב קבוע)", "x": t_main, "y": [e["eval"]["score_mean"] for e in evals_main], "color": "de", "width": 2.5},
+                  ],
+                  "xTitle": "זמן אימון (דקות)", "yTitle": "ניקוד ממוצע בהערכה (100 משחקים)",
+                  "table": {"columns": ["דקות", "הריצה הארוכה", "הריצה של הדו\"ח"],
+                            "rows": [[round(e["elapsed_sec"] / 60, 1), round(e["eval"]["score_mean"]), ""] for e in evals_long] +
+                                    [[round(e["elapsed_sec"] / 60, 1), "", round(e["eval"]["score_mean"])] for e in evals_main]}}
+        ab_cfg["x"] = sorted(set(ab_cfg["series"][0]["x"]) | set(ab_cfg["series"][1]["x"]))
+        alpha_cfg = {"x": [r["elapsed_sec"] / 60 for r in train_long], "series": [{"label": "alpha", "y": [r["alpha"] for r in train_long], "color": color}],
+                     "xTitle": "זמן אימון (דקות)", "yTitle": "alpha", "yMax": 0.11}
+        last = train_long[-1]
+        kp = ""
+        if ev_long:
+            S = ev_long["summary"]
+            kp = '<div class="kpis cols4">' + "".join([
+                kpi("ניקוד ממוצע (1,000 משחקים)", f0(S["score_mean"]), cls=color, delta=f"הריצה של הדו\"ח: 116,716"),
+                kpi("חציון", f0(S["score_median"]), cls=color),
+                kpi("הגיע ל-2048 / 4096", f"{pct(S['reach_2048'])} / {pct(S['reach_4096'])}", cls=color),
+                kpi("הגיע ל-8192 / 16384", f"{pct(np.mean(np.asarray(ev_long['max_tiles']) >= 8192))} / {pct(np.mean(np.asarray(ev_long['max_tiles']) >= 16384))}", cls=color),
+            ]) + "</div>"
+        long_title = "ההערכה החמדנית לאורך הזמן: הריצה הארוכה מול הריצה של הדו\"ח"
+        html += f"""
+<h3>ניסוי 2: ריצה ארוכה, עם דעיכה מתונה רק בסופה</h3>
+<p>{last['elapsed_sec'] / 60:.0f} דקות במקום 73, {trans_fmt(last['transitions'])[0]} {trans_fmt(last['transitions'])[1]} מעברים, {f0(last.get('episodes', 0))} משחקים. קצב הלמידה נשאר 0.1 בשלושת הרבעים הראשונים של הזמן (ניסוי ההסרה הראה שדעיכה מוקדמת מזיקה), ירד ל-0.03 ברבע האחרון ול-0.01 בעשירית האחרונה. השאלה: האם המישור של 117 אלף אחרי 43 דקות הוא של הקצב הקבוע (ואז זמן ודעיכה יעברו אותו) או של גודל הרשת (ואז לא).</p>
+{kp}
+<div class="grid2">
+{card("c_long", long_title, "100 משחקים בכל נקודת ביקורת.", "chart", f"R.lineChart('c_long', {j(ab_cfg)});")}
+{card("c_long_alpha", "לוח הזמנים של קצב הלמידה בריצה הארוכה", "0.1 → 0.03 ב-75% מהזמן → 0.01 ב-90%.", "chart short", f"R.lineChart('c_long_alpha', {j(alpha_cfg)});")}
+</div>
+"""
+    if html:
+        html += data_text("analysis_ntuple_experiments", "הניתוח של הניסויים ייכתב בקובץ reports/data/analysis_ntuple_experiments.html.")
+    return html
+
+
+
+def asnet_plain_cards(evals_main: list, train_main: list, color: str) -> str:
+    """הריצה הראשונה של ניסוי 3, האלגוריתם כלשונו בלי מייצבים (asnet_plain): קרסה בדקה 18. מוצגת מול הריצה המיוצבת."""
+    train_p, evals_p = load_log("asnet_plain")
+    if not evals_p:
+        return ""
+    ev_plain = load_eval("asnet_plain")
+    t = lambda e: e["elapsed_sec"] / 60
+    sc = {"series": [
+              {"label": "הריצה המיוצבת (gamma 0.99, רשת מטרה, Huber)", "x": [t(e) for e in evals_main], "y": [e["eval"]["score_mean"] for e in evals_main], "color": color, "width": 2.5},
+              {"label": "האלגוריתם כלשונו (gamma 1, בלי רשת מטרה, ריבועי)", "x": [t(e) for e in evals_p], "y": [e["eval"]["score_mean"] for e in evals_p], "color": "de", "width": 2.5},
+          ],
+          "xTitle": "זמן אימון (דקות)", "yTitle": "ניקוד ממוצע בהערכה (100 משחקים)",
+          "table": {"columns": ["דקות", "מיוצבת", "כלשונו"],
+                    "rows": [[round(t(e), 1), round(e["eval"]["score_mean"]), ""] for e in evals_main] + [[round(t(e), 1), "", round(e["eval"]["score_mean"])] for e in evals_p]}}
+    sc["x"] = sorted(set(sc["series"][0]["x"]) | set(sc["series"][1]["x"]))
+    vm = {"series": [
+              {"label": "מיוצבת", "x": [t(r) for r in train_main], "y": [r["v_mean"] for r in train_main], "color": color, "width": 2},
+              {"label": "כלשונו", "x": [t(r) for r in train_p], "y": [r["v_mean"] for r in train_p], "color": "de", "width": 2},
+          ], "xTitle": "זמן אימון (דקות)", "yTitle": "V ממוצע (נקודות)"}
+    vm["x"] = sorted(set(vm["series"][0]["x"]) | set(vm["series"][1]["x"]))
+    best_p = max(e["eval"]["score_mean"] for e in evals_p)
+    best_min = next(t(e) for e in evals_p if e["eval"]["score_mean"] == best_p)
+    plain_1000 = f0(ev_plain["summary"]["score_mean"]) if ev_plain else ""
+    return f"""<div class="card"><h3>הריצה הראשונה: האלגוריתם כלשונו, וקריסה</h3>
+<p class="desc">הניסוי התחיל בדיוק כמו בטבלה: gamma = 1, הפסד ריבועי, בלי רשת מטרה. הריצה הזאת (<code>asnet_plain</code>) הגיעה ל-{f0(best_p)} אחרי {best_min:.0f} דקות{(' (' + plain_1000 + ' על 1,000 משחקים בנקודת הביקורת הטובה ביותר)') if plain_1000 else ''}, ואז V זינק, והרשת קרסה לפונקציה קבועה: אותו ערך לכל לוח, ולכן בחירה לפי הניקוד המיידי בלבד (3,130, כמו החמדן), בלי התאוששות עד סוף 73 הדקות. הריצה השנייה מוסיפה את שלושת המייצבים הסטנדרטיים של השיטות העצביות. ההסבר בסעיף הניתוח.</p>
+<div class="grid2">
+<div><div class="chart" id="c_ab"></div></div>
+<div><div class="chart" id="c_ab_v"></div></div>
+</div></div>
+<script>R.lineChart('c_ab', {j(sc)}); R.lineChart('c_ab_v', {j(vm)});</script>
 """
 
 
@@ -434,17 +577,27 @@ def algo_report(kind: str, baselines: dict):
                                  "ריצה נפרדת של 20 דקות עם לוח הזמנים המקובל בספרות (alpha יורד פי 10 בחצי התקציב ופי 100 בשלושה רבעים), מול 20 הדקות הראשונות של הריצה המלאה עם alpha קבוע. ההסבר בסעיף הניתוח.",
                                  "chart", f"R.lineChart('c_ab', {j(ab_cfg)});")
 
+    if kind == "asnet":
+        ablation_html = asnet_plain_cards(evals, train, color)
+
     updates_note = ""
     if kind == "ppo" and updates:
         updates_note = f" ({f0(updates)} צעדי גרדיאנט, {args.get('ppo_epochs', 4)} מעברים על כל אצווה)"
     elif kind == "ntuple":
         updates_note = f" ({f0(train[-1].get('episodes', 0))} משחקים; כל מהלך הוא עדכון אחד של הטבלה)"
+    elif kind == "asnet" and updates:
+        updates_note = f" ({f0(updates)} צעדי גרדיאנט, אחד על כל צעד של {args.get('n_envs', 64)} הסביבות)"
     elif updates:
         updates_note = f" ({f0(updates)} צעדי גרדיאנט)"
     trans_num, trans_word = trans_fmt(total_trans)
     n_methods = len(KINDS)
 
-    toc = [("summary", "תקציר"), ("method", "האלגוריתם"), ("learning", "עקומת הלמידה"), ("final", "ההערכה הסופית"), ("replay", "צפייה במשחק"), ("analysis", "ניתוח"), ("hp", "היפר-פרמטרים")]
+    experiments_html = ntuple_experiments(evals, color) if kind == "ntuple" else ""
+    toc = [("summary", "תקציר"), ("method", "האלגוריתם"), ("learning", "עקומת הלמידה"), ("final", "ההערכה הסופית"), ("replay", "צפייה במשחק")]
+    if experiments_html:
+        toc.append(("experiments", "ניסויים נוספים"))
+        experiments_html = f'<section id="experiments"><h2>ניסויים נוספים: חיפוש מעל הטבלה, וריצה ארוכה</h2>{experiments_html}</section>'
+    toc += [("analysis", "ניתוח"), ("hp", "היפר-פרמטרים")]
     body = f"""
 <section id="summary">
 <h2>תקציר</h2>
@@ -498,7 +651,7 @@ def algo_report(kind: str, baselines: dict):
 <div class="card"><h3>משחק טיפוסי (חציוני, {f0(ev['typical_game']['score'])} נקודות, אריח {f0(ev['typical_game']['max_tile'])})</h3><div id="rp_typ"></div></div>
 <script>R.replay('rp_typ', {j(ev['typical_game'])}, {{start: 'end'}});</script>
 </section>
-
+{experiments_html}
 <section id="analysis">
 <h2>ניתוח</h2>
 {analysis_text(kind)}
@@ -623,6 +776,7 @@ def comparison_report(R: dict, baselines: dict):
         row("הגיע ל-8192", [pct(np.mean(np.asarray(R[k]["eval"]["max_tiles"]) >= 8192)) for k in kinds]),
         row("זמן אימון (דקות)", [f"{R[k]['minutes']:.0f}" for k in kinds]),
         row("חומרה", [("ליבת CPU" if k == "ntuple" else "GPU") for k in kinds]),
+        row("ייצוג V / המדיניות", [{"dqn": "רשת: Q(s,a)", "ac": "רשת: π ו-V(s)", "ppo": "רשת: π ו-V(s)", "ntuple": "טבלאות: V(afterstate)", "asnet": "רשת: V(afterstate)"}[k] for k in kinds]),
         row("מעברים באימון", [(f"{R[k]['transitions'] / 1e9:.2f}B" if R[k]["transitions"] >= 1e9 else f"{R[k]['transitions'] / 1e6:.1f}M") for k in kinds]),
         row("משחקים באימון", [f0(R[k]["train"][-1].get("episodes", 0)) for k in kinds]),
         row("מעברים בשנייה", [f"{R[k]['sps']:,}" for k in kinds]),
@@ -648,6 +802,9 @@ def comparison_report(R: dict, baselines: dict):
         "ntuple": ["V(afterstate): ערך הלוח אחרי ההחלקה, סכום 4 טבלאות × 8 סימטריות", "argmax על r + V(afterstate), צעד אחד קדימה", "אין (חמדן; האריח האקראי מספיק)",
                    "on-policy מקוון: כל מעבר מיד, פעם אחת", "r + V(afterstate הבא), בלי היוון",
                    "עדכון של 32 משקלים אחרי כל מהלך (alpha/32 לכל אחד)", "לא נדרש; קירוב לינארי"],
+        "asnet": ["V(afterstate) ברשת הקונבולוציה (ראש ערך אחד)", "כמו רשת ה-n-tuple: argmax על r + V(afterstate)", "אין (חמדן)",
+                  "on-policy מקוון: כל מעבר פעם אחת, מיד", "r + V(afterstate הבא), בלי היוון; חצי-גרדיאנט",
+                  "צעד גרדיאנט אחד (Adam) על כל 64 מעברים", "חיתוך גרדיאנט 0.5; בלי רשת מטרה ובלי זיכרון חוויות"],
     }
     aspects = ["מה נלמד", "איך נבחרת פעולה", "חקירה", "שימוש בנתונים", "יעד הלמידה", "עדכונים", "יציבות"]
     diff_rows = "".join(f"<tr><td>{a}</td>" + "".join(f"<td>{diff_table[k][i]}</td>" for k in kinds) + "</tr>" for i, a in enumerate(aspects))
@@ -667,12 +824,14 @@ def comparison_report(R: dict, baselines: dict):
     n_word = COUNT_WORDS[n]
     n_word_f = COUNT_WORDS_F[n]
     has_nt = "ntuple" in kinds
-    same_net = "אותה סביבה, אותו תגמול, אותם 1,000 משחקי מבחן" + (" (שלוש רשתות עצביות זהות, ורשת n-tuple בלי רשת עצבית)" if has_nt else ", אותה רשת")
+    n_neural = sum(1 for k in kinds if k in NEURAL)
+    same_net = "אותה סביבה, אותו תגמול, אותם 1,000 משחקי מבחן" + (f" ({COUNT_WORDS_F[n_neural]} רשתות עצביות זהות, ורשת n-tuple בלי רשת עצבית)" if has_nt and n_neural >= 2 else ", אותה רשת")
     methods_html = data_text("methods_intro", "המסגרת המשותפת תיכתב בקובץ reports/data/methods_intro.html.") + \
         "".join(data_text(f"method_{k}", f"ההסבר על {L(k)} ייכתב בקובץ reports/data/method_{k}.html.") for k in kinds) + \
         data_text("methods_outro", "טבלת ההבדלים תיכתב בקובץ reports/data/methods_outro.html.")
     curves_intro = ("ההשוואה נעשית על שני צירים, כי לאלגוריתמים יש יחס שונה בין חישוב לנתונים. DQN מבצע 8 דגימות אימון ברשת על כל מעבר, A2C דגימה אחת, PPO ארבע"
                     + (", ורשת ה-n-tuple עדכון אחד של 32 מספרים בטבלה (בלי רשת, על ליבת CPU אחת)" if has_nt else "")
+                    + (", ו-Afterstate TD ברשת דגימה אחת, אבל ארבע הרצות רשת לכל מעבר בבחירת המהלך" if "asnet" in kinds else "")
                     + ". לכן קצב צריכת המעברים שונה בסדרי גודל, וכל אלגוריתם מפיק מכל מעבר כמות אחרת. ציר הזמן עונה על \"מה מקבלים מדקת חישוב\", ציר המעברים על \"כמה ניסיון צריך\"."
                     + (" שימו לב שלרשת ה-n-tuple ציר הזמן מודד דקת CPU ולאחרים דקת GPU; זה חלק מהסיפור, לא פגם בהשוואה." if has_nt else ""))
     hw_note = HARDWARE + (f"; {L('ntuple')}: {HARDWARE_CPU}" if has_nt else "")

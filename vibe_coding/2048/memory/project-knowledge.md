@@ -68,6 +68,7 @@ LIVE: orimosenzon.github.io/fun/vibe_coding/2048/game/index.html והדו"חות
   ומצוירים בדו"ח של הסוכן.
 
 ## תוצאות (ריצה אחת לכל אלגוריתם, 73 דקות, 1,000 משחקי מבחן)
+סוכן חמישי מ-20/9: **Afterstate TD (רשת)** 30,757 / 32,148, 2048 ב-70%, 4096 ב-15.5%, 50M מעברים ב-73 דק' (11.5K/s, GPU).
 | | DQN | A2C | PPO | N-Tuple TD |
 |---|---|---|---|---|
 | ניקוד ממוצע / חציון | 9,312 / 7,774 | 39,212 / 36,268 | 17,980 / 16,346 | **116,716 / 131,100** |
@@ -101,6 +102,28 @@ LIVE: orimosenzon.github.io/fun/vibe_coding/2048/game/index.html והדו"חות
   >15K), טעינת הטבלה, hover מדגיש 4 משבצות, 390px בלי גלילה אופקית, 0 שגיאות, בשני הדו"חות ובשני המצבים.
 - כל חמשת הדו"חות נבדקים ב-Playwright: 0 שגיאות KaTeX, בהיר וכהה, רוחב 390px בלי גלילה אופקית (סקריפט בסקראצ'פד של הסשן;
   לשחזר: playwright גלובלי + http.server על תיקיית הפרויקט).
+
+## שלושת הניסויים (19–20/9)
+- **ניסוי 1, expectimax** (`rl/expectimax.py`, numba `prange` על 4 ליבות, רקורסיה עם scratch לכל רמה): עומק 1 = חמדן.
+  תוצאות ב-`reports/data/eval_ntuple_expectimax.json` (depths → summary/scores/max_tiles/moves/moves_per_sec + משחק מוקלט של עומק 2):
+  עומק 1: 114,392 (1,000); עומק 2: **167,387** (1,000, 2.3 דק', 50K מהלכים/ש'); עומק 3: **187,715** (300, 17 דק', 2.2K/ש').
+  מתחת ל-100K: 40% → 8% → 2%. הסעיף "ניסויים נוספים" ב-`ntuple_report.html#experiments` (`ntuple_experiments()` ב-make_reports),
+  הניתוח ב-`analysis_ntuple_experiments.html` (חלק 1 נכתב; חלק 2 של הריצה הארוכה ממתין לתוצאות).
+- **ניסוי 3, הסוכן החמישי `asnet`** (`rl/afterstate_net.py`, `AfterstateValueNetwork` ב-common.py, קידומת s5 = מג'נטה מהפלטה,
+  `COUNT_WORDS[5]`, `.kpis.cols5`/`.grid5`, method_asnet.html, analysis_asnet.html, עמודה חמישית ב-methods_outro, ראש חמישי
+  ב-netdiag של methods_intro). ריצה 1 `asnet_plain` (כלשונו: gamma 1, ריבועי, בלי רשת מטרה): 34,606 אחרי 5 דק'/4M, קריסה
+  בדקה 18 ל-V קבוע (3,130 = חמדן), 29,496 על 1,000 בצ'קפוינט הטוב. ריצה 2 `asnet` (`--gamma 0.99 --target-tau 0.005 --huber 1`):
+  **30,757** על 1,000 (2048 ב-70%, 4096 ב-15.5%), שיא 34,431 בדקה 58/40M, 11.5K sps, 50M מעברים. **הממצא**: עד 40M מעברים
+  העקומה זהה לטבלה (30.7K/34.4K מול 29.2K/35.6K), פי 2–3 מעל A2C/PPO/DQN; מה שלא עובר הוא מהירות (פי 57) ויציבות.
+  הכרטיס "הריצה הראשונה: קריסה" בדו"ח asnet נבנה ב-`asnet_plain_cards()` מ-`logs/asnet_plain_train.jsonl` + `eval_asnet_plain.json`.
+  בדפדפן: `AgentNetwork.forwardAfterstates` (kind asnet, ערכים בנקודות דרך reward_scale), `game/weights/asnet.js`.
+  אסטרטגיה: "כמעט לעולם לא ימינה" (8%), האריח הגדול בעמודה השמאלית 72% אבל בשורה השנייה (41%) יותר מבפינה (22%).
+- **ניסוי 2, הריצה הארוכה `ntuple_long`** (`--time-limit-min 240 --lr-decay 2`: 0.1 → 0.03 ב-75% → 0.01 ב-90%): הושקה 01:45
+  ב-20/9 בשרשרת (train → `evaluate.py --name ntuple_long` → make_reports; הלוג `logs/ntuple_long_stdout.txt`, "LONG CHAIN DONE"
+  בסופו). הסעיף בדו"ח נבנה אוטומטית מ-`logs/ntuple_long_train.jsonl` ו-`eval_ntuple_long.json` (KPI, עקומה מול הריצה של 73 דק',
+  לוח alpha). **נשאר לכתוב**: חלק 2 ב-`analysis_ntuple_experiments.html`, סעיף בREADME (פסקה 2 ב"שלושה ניסויים"), ואולי
+  להחליף את הצ'קפוינט של השידור החוזר.
+- `evaluate.py --name X` כותב ל-`eval_X.json` (בלי זה `--agent ntuple` דורס את `eval_ntuple.json`).
 
 ## מה יש בדו"חות מ-19/9
 `method_ntuple.html` הורחב: סעיף "מה זה בעצם" עם 4 איורים (החלקה ואריח; 4 החלונות + 5 של הרשת הקטנה; 8 סימטריות של חלון 1;

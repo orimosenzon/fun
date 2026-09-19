@@ -9,6 +9,8 @@
     python rl/evaluate.py --agent dqn --checkpoint checkpoints/dqn_best.pt --games 1000
     python rl/evaluate.py --agent ppo --checkpoint checkpoints/ppo_best.pt
     python rl/evaluate.py --agent ntuple --checkpoint checkpoints/ntuple_best.npz
+    python rl/evaluate.py --agent ntuple --checkpoint checkpoints/ntuple_long_best.npz --name ntuple_long
+    python rl/evaluate.py --agent asnet --checkpoint checkpoints/asnet_best.pt
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ import torch
 
 from common import (
     ActorCriticNetwork,
+    AfterstateValueNetwork,
     QNetwork,
     get_device,
     play_games,
@@ -35,7 +38,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "reports", "data")
 
 # (סוג הסוכן, שם הריצה של נקודת הביקורת, תווית). ac ו-ppo חולקים את אותה רשת; ntuple הוא טבלאות (npz), בלי torch.
-AGENT_KINDS = (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic"), ("ppo", "ppo", "PPO"), ("ntuple", "ntuple", "N-Tuple TD"))
+AGENT_KINDS = (("dqn", "dqn", "DQN"), ("ac", "a2c", "Actor-Critic"), ("ppo", "ppo", "PPO"), ("ntuple", "ntuple", "N-Tuple TD"),
+               ("asnet", "asnet", "Afterstate TD (רשת)"))
 LABELS = {k: label for k, _, label in AGENT_KINDS}
 CKPT_EXT = {"ntuple": ".npz"}
 
@@ -62,11 +66,18 @@ def load_agent(kind: str, path: str, device: torch.device):
     a = ckpt["args"]
     if kind == "dqn":
         net = QNetwork(a["filters"], a["hidden"]).to(device)
+    elif kind == "asnet":
+        net = AfterstateValueNetwork(a["filters"], a["hidden"]).to(device)
     else:
         net = ActorCriticNetwork(a["filters"], a["hidden"]).to(device)
     net.load_state_dict(ckpt["model"])
     net.eval()
+    net._reward_scale = a.get("reward_scale", 1e-3)
     return net, ckpt
+
+
+def ckpt_reward_scale(net) -> float:
+    return getattr(net, "_reward_scale", 1e-3)
 
 
 def agent_policy(kind: str, net, device: torch.device):
@@ -76,6 +87,9 @@ def agent_policy(kind: str, net, device: torch.device):
         from ntuple_td import make_policy
         table, ntnet = net
         return make_policy(table, ntnet)
+    if kind == "asnet":
+        from afterstate_net import make_policy as make_asnet_policy
+        return make_asnet_policy(net, device, ckpt_reward_scale(net))
 
     @torch.no_grad()
     def policy(boards, valid):
@@ -151,6 +165,7 @@ def main():
     p.add_argument("--agent", choices=[k for k, _, _ in AGENT_KINDS])
     p.add_argument("--checkpoint")
     p.add_argument("--games", type=int, default=1000)
+    p.add_argument("--name", help="שם קובץ הפלט (eval_<name>.json); ברירת מחדל: סוג הסוכן. למשל ntuple_long לריצה הארוכה")
     args = p.parse_args()
     device = get_device()
 
@@ -172,7 +187,7 @@ def main():
     else:
         net, ckpt = load_agent(args.agent, args.checkpoint, device)
         label = LABELS[args.agent]
-        data = evaluate_policy(args.agent, label, agent_policy(args.agent, net, device), args.games)
+        data = evaluate_policy(args.name or args.agent, label, agent_policy(args.agent, net, device), args.games)
         data["checkpoint"] = os.path.relpath(args.checkpoint, ROOT)
         data["train_transitions"] = ckpt.get("transitions")
         data["train_args"] = ckpt.get("args")

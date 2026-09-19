@@ -5,6 +5,8 @@
 //   one-hot (16,4,4) -> Conv3x3(16->F, pad 1) -> ReLU -> Conv3x3(F->F, pad 1) -> ReLU
 //   -> flatten (F*16, order c*16 + y*4 + x) -> Linear(F*16 -> H) -> ReLU -> head(s)
 //   DQN head: Linear(H -> 4) = Q-values.   Actor-Critic and PPO: policy_head Linear(H -> 4), value_head Linear(H -> 1).
+//   Afterstate TD ("asnet"): value_head only; the input is the board *after* a slide, and the decision is
+//   argmax over r + V(afterstate) like the n-tuple agent.
 
 class AgentNetwork {
   constructor(payload) {
@@ -16,6 +18,7 @@ class AgentNetwork {
       this.t[name] = AgentNetwork.decodeF16(spec.data);
     }
     this.headName = this.kind === "dqn" ? "head" : "policy_head";
+    this.rewardScale = payload.reward_scale || 1e-3;
   }
 
   // base64 float16 -> Float32Array
@@ -39,6 +42,7 @@ class AgentNetwork {
 
   // board: 16 exponents, row-major (index = y*4 + x), 0 = empty
   forward(board) {
+    if (this.kind === "asnet") return this.forwardAfterstates(board);
     const F = this.F;
     // one-hot input: x[c][y][x]
     const inp = new Float32Array(16 * 16);
@@ -52,6 +56,27 @@ class AgentNetwork {
       out.value = AgentNetwork.linear(fc, this.t["value_head.weight"], this.t["value_head.bias"], 1, false)[0];
     }
     return out;
+  }
+
+  // trunk only, up to the hidden vector
+  features(board) {
+    const inp = new Float32Array(16 * 16);
+    for (let i = 0; i < 16; i++) inp[board[i] * 16 + i] = 1;
+    const h1 = AgentNetwork.conv3x3(inp, 16, this.t["trunk.conv1.weight"], this.t["trunk.conv1.bias"], this.F);
+    const h2 = AgentNetwork.conv3x3(h1, this.F, this.t["trunk.conv2.weight"], this.t["trunk.conv2.bias"], this.F);
+    return AgentNetwork.linear(h2, this.t["trunk.fc.weight"], this.t["trunk.fc.bias"], this.H, true);
+  }
+
+  // afterstate value network: four slides, V of each resulting board, in game points (the net learned on score/1000)
+  forwardAfterstates(board) {
+    const logits = [];
+    for (let a = 0; a < 4; a++) {
+      const after = BoardRules.afterstate(board, a);
+      if (!after.changed) { logits.push(-Infinity); continue; }
+      const v = AgentNetwork.linear(this.features(after.board), this.t["value_head.weight"], this.t["value_head.bias"], 1, false)[0];
+      logits.push(after.score + v / this.rewardScale);
+    }
+    return { logits };
   }
 
   // input: Cin*16 (c, y, x); weight: (Cout, Cin, 3, 3); output Cout*16 with ReLU
@@ -262,6 +287,7 @@ class AgentPlayer {
       const ev = payload.eval;
       const moves = payload.transitions ? `${(payload.transitions / 1e6).toFixed(0)}M moves` : "";
       let what = "";
+      if (payload.kind === "asnet") what = "Afterstate TD with the convolutional network (the n-tuple algorithm, the neural representation). ";
       if (payload.kind === "ntuple") {
         what = `Browser-sized n-tuple network: ${payload.tuples.length} windows of ${payload.tuples[0].length} cells, ${(payload.table.size / 1e3).toFixed(0)}K table entries (${(4 * payload.table.size / 1e6).toFixed(1)}MB). `;
       }
@@ -358,8 +384,8 @@ class AgentPlayer {
     if (kind === "replay") {
       label = (v) => (v ? "recorded" : "");
       widths = vals.map((v) => (v ? 100 : 0));
-    } else if (kind === "dqn" || kind === "ntuple") {
-      const scale = kind === "dqn" ? 1000 : 1;    // DQN learned on score/1000; the n-tuple table holds raw points
+    } else if (kind === "dqn" || kind === "ntuple" || kind === "asnet") {
+      const scale = kind === "dqn" ? 1000 : 1;    // DQN learned on score/1000; the n-tuple and afterstate values are already in points
       label = (v) => (v * scale).toFixed(0);
       const lo = Math.min(...vals.filter((_, a) => valid[a])), hi = Math.max(...vals.filter((_, a) => valid[a]));
       widths = vals.map((v, a) => (valid[a] ? (hi > lo ? 30 + 70 * (v - lo) / (hi - lo) : 100) : 0));
