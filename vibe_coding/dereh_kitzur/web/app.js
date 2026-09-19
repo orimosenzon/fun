@@ -2892,6 +2892,8 @@ const Install = (() => {
       <details class="install-more"><summary>מכשיר אחר?</summary>
         ${rest.map((k) => `<h3>${steps[k][0]}</h3>${steps[k][1]}`).join('')}
       </details>
+      <p class="sheet-lead"><a href="install.html" target="_blank" rel="noopener">דף הסבר מלא</a>,
+        לכל מכשיר, שאפשר לשלוח לחברים.</p>
       <button class="big-act primary" data-act="close"><b>הבנתי</b></button>`);
   }
 
