@@ -834,8 +834,9 @@ const Store = (() => {
       path: draft.path,
       length: draft.length,
       // No colour means "draw me in my layer's colour", so the field is left
-      // out rather than written empty.
-      ...(draft.color ? { color: draft.color } : {}),
+      // out rather than written empty. And the shortcuts layer is one colour,
+      // so only a trail bound for a layer of its own may carry one.
+      ...(draft.color && draft.layer ? { color: draft.color } : {}),
       connects: [],
       entries: [
         { lat: draft.path[0][0], lng: draft.path[0][1] },
@@ -1039,7 +1040,10 @@ const Store = (() => {
     const it = find(doc, id);
     if (!it) return;
     if (layerId) it.layer = layerId;
-    else delete it.layer;
+    else {
+      delete it.layer;
+      delete it.color;   // the shortcuts layer is one colour; a colour of its own does not come along
+    }
   }, `העברת ${name} לשכבה אחרת`));
 
   /* ---------- places ---------- */
@@ -1333,9 +1337,8 @@ const Store = (() => {
       links: item.links || [],
       path: item.path,
       length: item.length,
-      // Items queued before a sender could pick a colour were stamped with the
-      // queue's own yellow, which was never a statement about the map.
-      ...(item.color && item.color !== '#f9a825' ? { color: item.color } : {}),
+      // An approved trail joins the shortcuts layer, which is one colour: the
+      // colour a sender may have picked stays in the queue.
       connects: [],
       entries: [
         { lat: item.path[0][0], lng: item.path[0][1] },

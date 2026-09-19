@@ -896,11 +896,13 @@ ${tracks}
         <textarea id="d-note" rows="2" maxlength="240"
                   placeholder="מדרגות בקצה, חסום בחורף, מתאים לעגלה…">${escapeHtml(cur.note || '')}</textarea></label>
       ${picker}
-      <div class="fld"><span>צבע השביל (לא חובה)</span>
-        ${/* Nothing picked means the layer's colour, which is the rule. Until
-            19/9/2026 the green swatch came preselected, and every trail added
-            through the app carried a colour of its own without anybody
-            choosing one - 19 of them, cleared in the data repo that day. */''}
+      ${/* Only for a trail bound for a layer of its own. The shortcuts layer
+          is one colour and nothing else, and the picker is not offered for it
+          at all: until 19/9/2026 it came with the green preselected, and every
+          trail added through the app carried a colour of its own without
+          anybody choosing one. */''}
+      <div class="fld" id="d-colour" ${cur.layer && cur.layer !== Layers.TRAILS_ID ? '' : 'hidden'}>
+        <span>צבע השביל (לא חובה)</span>
         ${Swatches.html(TRAIL_COLOURS, cur.color || '', true)}
       </div>
       <div class="fld"><span>קישורים (לא חובה)</span>
@@ -909,6 +911,9 @@ ${tracks}
       <button class="big-act ghost" data-act="resume"><b>חזרה לתוואי</b>
         <span>להוסיף עוד נקודות או להמשיך להקליט</span></button>`);
     setTimeout(() => el('d-name').focus(), 60);
+    // The picker follows the layer chosen in the select.
+    const sel = el('d-layer');
+    if (sel) sel.addEventListener('change', () => { el('d-colour').hidden = !sel.value; });
   }
 
   async function save() {
@@ -921,8 +926,8 @@ ${tracks}
     rec.name = name;
     rec.note = el('d-note').value.trim();
     rec.links = LinkRows.read(el('draft-card'));
-    rec.color = Swatches.read(el('draft-card'));
     rec.layer = el('d-layer') ? el('d-layer').value : (rec.layer || '');
+    rec.color = rec.layer ? Swatches.read(el('draft-card')) : '';   // the shortcuts layer is one colour
     if (ed.mode === 'trip') {
       rec.parts = ed.parts;
       delete rec.path;                 // the recipe is the record; the line is not
