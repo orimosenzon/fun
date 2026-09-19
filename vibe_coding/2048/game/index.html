@@ -74,6 +74,8 @@
           <option value="dqn">DQN</option>
           <option value="ac">Actor-Critic</option>
           <option value="ppo">PPO</option>
+          <option value="ntuple">N-Tuple TD (small table, live)</option>
+          <option value="ntuple_replay">N-Tuple TD (full table, replay)</option>
         </select>
         <a class="agent-play agent-button">Play</a>
         <a class="agent-step agent-button">Step</a>
@@ -87,7 +89,8 @@
         <div class="agent-bar" data-dir="3"><em>← left</em><span></span></div>
       </div>
       <p class="agent-status"></p>
-      <p class="agent-help">The bars show what the network thinks of each direction: for DQN the estimated future score (Q-value), for Actor-Critic and PPO the probability it assigns. × marks a move that would not change the board. The fourth agent from the reports, the n-tuple table, is 268MB and stays in Python.</p>
+      <p class="agent-help">The bars show what the agent thinks of each direction: for DQN the estimated future score (Q-value), for Actor-Critic and PPO the probability it assigns, for the n-tuple agent the immediate score plus the learned value of the board after the slide. × marks a move that would not change the board.
+      The strongest agent in the reports, the n-tuple network with four 6-cell windows, is a 268MB table and cannot be downloaded into a web page; it appears here in two forms: a <em>browser-sized</em> version (five 4-cell windows, 1.3MB, the 2014 network of Szubert and Jaśkowski) that really decides every move in the browser, and <em>recorded games</em> of the full table, replayed move by move with the game's own rules.</p>
     </div>
     <hr>
     <p>
@@ -96,7 +99,7 @@
       built as the playground for a reinforcement-learning project.
     </p>
     <p dir="rtl" class="hebrew-note">
-      המשחק הזה הוא חלק מפרויקט למידת חיזוק: סוכנים (DQN, Actor-Critic ו-PPO) שלומדים לשחק 2048 בעצמם.
+      המשחק הזה הוא חלק מפרויקט למידת חיזוק: סוכנים (DQN, Actor-Critic, PPO ורשת n-tuple) שלומדים לשחק 2048 בעצמם.
       <a href="../README.md">התיעוד המלא</a> ·
       <a href="../reports/comparison.html">דו"ח השוואה בין האלגוריתמים</a>
     </p>

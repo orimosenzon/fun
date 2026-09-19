@@ -6,3 +6,5 @@ checkpoints/*_last.pt
 checkpoints/*_final.pt
 logs/chain_a2c.log
 checkpoints/*.npz
+!checkpoints/ntuple_small_best.npz
+logs/ntuple_small_stdout.txt

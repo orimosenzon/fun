@@ -277,6 +277,29 @@
     show(opts && opts.start === "end" ? game.frames.length - 1 : 0);
   }
 
+  // גרף קווים חי (לסימולציה): הנקודות נוספות בזמן אמת. cfg.series: [{label, color}], מחזיר {push(i, x, y), reset()}
+  function liveLine(el, cfg) {
+    const canvas = document.createElement("canvas");
+    el.appendChild(canvas);
+    const data = cfg.series.map(() => []);
+    let chart = null;
+    const build = () => {
+      const t = tokens();
+      if (chart) chart.destroy();
+      const datasets = cfg.series.map((s, i) => ({
+        label: s.label, data: data[i], borderColor: colorOf(t, s.color), backgroundColor: colorOf(t, s.color),
+        borderWidth: s.width || 2, borderDash: s.dash || [], pointRadius: 0, pointHoverRadius: 4, pointHitRadius: 12, tension: 0, spanGaps: true,
+      }));
+      chart = new Chart(canvas.getContext("2d"), { type: "line", data: { datasets }, options: baseOptions(t, Object.assign({ legend: cfg.series.length > 1, padRight: 8 }, cfg)) });
+    };
+    build();
+    builders.push(build);
+    return {
+      push(i, x, y) { data[i].push({ x, y }); chart.update("none"); },
+      reset() { data.forEach((d) => (d.length = 0)); chart.update("none"); },
+    };
+  }
+
   function init() {
     Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', Arial, sans-serif";
     Chart.defaults.font.size = 12;
@@ -284,5 +307,5 @@
     mq.addEventListener("change", () => builders.forEach((b) => b()));
   }
 
-  window.R = { lineChart, barChart, scatterChart, replay, init, fmt };
+  window.R = { lineChart, barChart, scatterChart, liveLine, replay, init, fmt };
 })();

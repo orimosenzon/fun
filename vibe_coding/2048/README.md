@@ -39,8 +39,8 @@
 │       ├── keyboard_input_manager.js   מקלדת, כפתורים והחלקות מגע
 │       ├── local_storage_manager.js    שיא ומצב משחק ב-localStorage
 │       ├── application.js        חיבור הכול יחד
-│       └── agent.js              הסוכן המאומן משחק בדפדפן (רשת ב-JS טהור)
-│   └── weights/                  משקולות מיוצאות (dqn.js, ac.js, ppo.js)
+│       └── agent.js              הסוכן המאומן משחק בדפדפן (רשתות ב-JS טהור, רשת n-tuple, ושידור חוזר)
+│   └── weights/                  משקולות מיוצאות (dqn.js, ac.js, ppo.js, ntuple.js) והמשחקים המוקלטים (ntuple_replays.js)
 ├── rl/                       למידת חיזוק
 │   ├── game2048.py           מנוע משחק מהיר ומקבילי (NumPy, טבלאות חיפוש)
 │   ├── test_game2048.py      בדיקות למנוע מול מימוש ייחוס איטי
@@ -48,14 +48,16 @@
 │   ├── dqn.py                אלגוריתם DQN
 │   ├── actor_critic.py       אלגוריתם Actor-Critic (A2C)
 │   ├── ppo.py                אלגוריתם PPO (A2C עם שלב עדכון קטום)
-│   ├── ntuple_td.py          TD(0) על afterstates עם רשת n-tuple (numba, CPU)
+│   ├── ntuple_td.py          TD(0) על afterstates עם רשת n-tuple (numba, CPU); --net 4x6 (הדו"ח) או small (הדפדפן)
 │   ├── test_ntuple_td.py     בדיקות למימוש ה-numba מול הגרסה הווקטורית
 │   ├── evaluate.py           הערכת סוכן מאומן וייצוא נתונים לדו"ח
 │   ├── make_reports.py       בניית דו"חות ה-HTML
-│   └── export_weights.py     ייצוא משקולות לדפדפן
-├── checkpoints/              משקולות של רשתות מאומנות (*.pt; טבלת ה-n-tuple *.npz, 268MB, מחוץ לגיט)
+│   ├── export_weights.py     ייצוא משקולות לדפדפן (כולל הרשת הקטנה של ה-n-tuple)
+│   └── export_replays.py     ייצוא משחקים מוקלטים של טבלת ה-n-tuple הגדולה לדפדפן
+├── checkpoints/              משקולות של רשתות מאומנות (*.pt; טבלת ה-n-tuple הגדולה *.npz, 268MB, מחוץ לגיט; הקטנה 1.3MB, בגיט)
 ├── logs/                     עקומות למידה (JSONL) ופלט האימון
 └── reports/                  הדו"חות ונתוני ההערכה
+    ├── assets/ntuple_sim.js  המעבדה האינטראקטיבית של רשת ה-n-tuple (האלגוריתם ב-JS) והאיורים
     └── data/method_*.html    ההסבר המפורט על כל שיטה (נטען לדו"ח שלה ולדו"ח ההשוואה)
 ```
 
@@ -106,12 +108,16 @@ python3 -m http.server 8000     # ואז http://localhost:8000/game/
 
 # N-Tuple TD: אותו תקציב זמן, ליבת CPU אחת, בלי GPU (numba)
 ./.venv/bin/python rl/ntuple_td.py --run-name ntuple --time-limit-min 73
+
+# הרשת הקטנה לדפדפן (5 רביעיות, 1.3MB): 20 דקות, מתייצבת כבר אחרי דקה
+./.venv/bin/python rl/ntuple_td.py --net small --run-name ntuple_small --time-limit-min 20
 ```
 
 כל ריצה כותבת עקומת למידה ל-`logs/<run>_train.jsonl` ושומרת ב-`checkpoints/` שלוש
 נקודות ביקורת: `_best.pt` (הכי טובה בהערכה), `_last.pt` (האחרונה) ו-`_final.pt`. בריפו
-נשמרות רק `_best.pt`, שמהן נבנים הדו"חות והמשקולות לדפדפן. טבלת ה-n-tuple
+נשמרות רק `_best.pt`, שמהן נבנים הדו"חות והמשקולות לדפדפן. טבלת ה-n-tuple הגדולה
 (`ntuple_best.npz`, 268MB) גדולה מדי לגיט; מי שרוצה אותה מריץ את האימון (73 דקות על ליבה אחת).
+הטבלה הקטנה (`ntuple_small_best.npz`, 1.3MB) כן בגיט, וממנה נבנה `game/weights/ntuple.js`.
 
 ### הערכה ודו"חות
 
@@ -161,9 +167,18 @@ python3 -m http.server 8000     # ואז http://localhost:8000/game/
 
 ### הסוכן המאומן משחק בדפדפן
 
-מתחת ללוח יש פאנל "Watch the AI play": בוחרים סוכן (DQN, Actor-Critic או PPO) והוא משחק
-בעצמו, בתוך הממשק האמיתי, עם אנימציות. ארבעה פסים מראים מה הרשת חושבת על כל כיוון
-(ערכי Q ב-DQN, הסתברויות ב-Actor-Critic וב-PPO), והכיוון שנבחר מודגש.
+מתחת ללוח יש פאנל "Watch the AI play": בוחרים סוכן (DQN, Actor-Critic, PPO או רשת n-tuple)
+והוא משחק בעצמו, בתוך הממשק האמיתי, עם אנימציות. ארבעה פסים מראים מה הסוכן חושב על כל
+כיוון (ערכי Q ב-DQN, הסתברויות ב-Actor-Critic וב-PPO, "ניקוד מיידי + ערך ה-afterstate"
+ברשת ה-n-tuple), והכיוון שנבחר מודגש.
+
+רשת ה-n-tuple של הדו"ח (4 שישיות, 268MB) גדולה מדי לדף ווב, ולכן היא מופיעה בפאנל בשתי
+צורות: **רשת קטנה** (5 רביעיות, 327,680 משקלים, 1.3MB; `--net small`, הרשת המקורית של סוברט
+ויאשקובסקי מ-2014) שמחליטה כל מהלך בדפדפן, עם ממוצע של 44,436 ב-1,000 משחקים (2048 ב-86%),
+כלומר חלשה מהגדולה אבל עדיין מעל A2C; ו**משחקים מוקלטים** של הטבלה הגדולה (`rl/export_replays.py`
+מקודד כל מהלך בשני תווים: הכיוון והאריח שנפל; שישה משחקים ב-71KB), שהדפדפן משחזר עם חוקי
+המשחק שלו דרך `forcedTile` ב-`game_manager.js`. השחזור נבדק: 10,150 מהלכים של המשחק הטוב
+ביותר שוחזרו לניקוד המוקלט בדיוק, 268,716.
 
 איך זה עובד: `rl/export_weights.py` מייצא את משקולות הרשת המאומנת לקובץ JS
 (`game/weights/dqn.js`, `ac.js`, `ppo.js`, כ-1.9MB כל אחד, float16 ב-base64),
@@ -176,6 +191,8 @@ python3 -m http.server 8000     # ואז http://localhost:8000/game/
 ./.venv/bin/python rl/export_weights.py --agent dqn --checkpoint checkpoints/dqn_best.pt
 ./.venv/bin/python rl/export_weights.py --agent ac  --checkpoint checkpoints/a2c_best.pt
 ./.venv/bin/python rl/export_weights.py --agent ppo --checkpoint checkpoints/ppo_best.pt
+./.venv/bin/python rl/export_weights.py --agent ntuple --checkpoint checkpoints/ntuple_small_best.npz   # כולל הערכה של 1,000 משחקים
+./.venv/bin/python rl/export_replays.py --record 4 --checkpoint checkpoints/ntuple_best.npz            # דורש את הטבלה הגדולה
 ```
 
 ### מנוע הפייתון המהיר
@@ -353,12 +370,18 @@ Flatten -> Linear 2048 -> 256, ReLU
 
 **מה אין כאן, בכוונה.** לא expectimax (חיפוש לעומק כמה מהלכים עם V בעלים, שמכפיל את
 הניקוד בעבודות החזקות), לא דעיכת קצב למידה או Temporal Coherence, לא חלוקה לשלבים (MS-TD)
-ולא אתחול אופטימי. זו הגרסה הבסיסית ביותר, כדי להשוות למידה ללמידה. וגם: הסוכן הזה לא משחק
-בדפדפן, כי הטבלה שוקלת 268MB (שלושת האחרים: 1.9MB כל אחד).
+ולא אתחול אופטימי. זו הגרסה הבסיסית ביותר, כדי להשוות למידה ללמידה.
 
-ההסבר המלא, כולל משוואת בלמן על afterstates, ההיסטוריה ולמה זה מנצח רשתות עצביות
-ב-2048, בסעיף "ארבע השיטות" של [דו"ח ההשוואה](reports/comparison.html#methods) ובדו"ח
-[N-Tuple TD](reports/ntuple_report.html).
+**בדפדפן.** הטבלה של 268MB לא יכולה להיטען לדף ווב (שלושת הסוכנים העצביים: 1.9MB כל אחד),
+ולכן דף המשחק מציע רשת n-tuple קטנה (`--net small`: חמש רביעיות, 1.3MB, 44,436 בממוצע) שמחליטה
+בדפדפן, ושידור חוזר של משחקים מוקלטים של הטבלה הגדולה. הפירוט בסעיף "הסוכן המאומן משחק בדפדפן".
+
+**ההסבר המלא**, כולל ארבעה איורים (החלקה ואריח, החלונות, הסימטריות, מהלוח לכניסה בטבלה עם
+המספרים האמיתיים) ו**מעבדה אינטראקטיבית** שמריצה את האלגוריתם ב-JavaScript (מהלך אחד עם כל
+40 הכניסות והעדכון שלהן, אימון של אלפי משחקים בשנייה עם עקומת למידה, וטעינת הטבלה המאומנת),
+בסעיף "ארבע השיטות" של [דו"ח ההשוואה](reports/comparison.html#methods) ובדו"ח
+[N-Tuple TD](reports/ntuple_report.html). המעבדה (`reports/assets/ntuple_sim.js`) עושה כ-300 אלף
+מהלכים בשנייה בכרומיום, והרשת הקטנה מגיעה בה לממוצע של 20 אלף תוך עשר שניות.
 
 ### הערכה
 
