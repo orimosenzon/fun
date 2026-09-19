@@ -271,6 +271,11 @@ const I_WALK = 'M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v
 function setBasemap(i) {
   if (!map) return;
   baseIndex = i;
+  // The shortcuts glow, and the recipe depends on the ground: a gold lamp
+  // over the satellite picture, a saturated green stroke over the pale
+  // street map. Told here and not on style.load, because on a slow style the
+  // data lands first and draws itself without waiting for the style.
+  Layers.setTheme(BASEMAPS[i].id === 'sat' ? 'dark' : 'light');
   el('basemap').classList.toggle('on', i > 0);
   el('basemap').title = 'רקע: ' + BASEMAPS[i].name;
   // setStyle drops every source and layer we added, so applyOverlays runs
@@ -306,6 +311,10 @@ function applyOverlays() {
 
   if (DATA) {
     Layers.addToMap();
+    // The shortcuts' colour follows the basemap (see setBasemap), and the
+    // list and the legend carry that colour too.
+    Layers.render();
+    renderList();
     drawWaypoints();
     if (Drafts.isDrafting()) Drafts.paintEditor();
     // Changing the basemap throws away every source on the style, the

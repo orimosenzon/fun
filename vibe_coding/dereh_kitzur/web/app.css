@@ -723,6 +723,10 @@ body.craft-bike #craft .craft-bal { display: block; }
 .row .nm {
   font-size: 14.5px;
   font-weight: 600;
+  /* The row is in its layer's colour, and the gold of the shortcuts is too
+   * light for a title on white: the swatch keeps the colour, the name is
+   * pulled towards black. */
+  color: color-mix(in srgb, currentColor 72%, #000);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
