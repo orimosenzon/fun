@@ -55,9 +55,9 @@ def greedy_score_policy(boards: np.ndarray, valid: np.ndarray) -> np.ndarray:
 
 def load_agent(kind: str, path: str, device: torch.device):
     if kind == "ntuple":
-        from ntuple_td import load_checkpoint
+        from ntuple_td import load_checkpoint, net_from_meta
         table, meta = load_checkpoint(path)
-        return table, meta
+        return (table, net_from_meta(meta)), meta
     ckpt = torch.load(path, map_location=device)
     a = ckpt["args"]
     if kind == "dqn":
@@ -74,7 +74,8 @@ def agent_policy(kind: str, net, device: torch.device):
 
     if kind == "ntuple":
         from ntuple_td import make_policy
-        return make_policy(net)
+        table, ntnet = net
+        return make_policy(table, ntnet)
 
     @torch.no_grad()
     def policy(boards, valid):

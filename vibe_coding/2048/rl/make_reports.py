@@ -153,6 +153,7 @@ def page(title: str, subtitle: str, meta: str, toc: list[tuple[str, str]], body:
 <link rel="stylesheet" href="assets/report.css">
 {katex}<script src="{CHARTJS}"></script>
 <script src="assets/report.js"></script>
+<script src="assets/ntuple_sim.js"></script>
 </head>
 <body>
 <div class="wrap">

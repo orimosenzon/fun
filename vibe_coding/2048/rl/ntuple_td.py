@@ -21,6 +21,7 @@ TD(0) על afterstates עם רשת n-tuple ל-2048 (Szubert & Jaśkowski, 2014).
 
 הרצה לדוגמה:
     python rl/ntuple_td.py --time-limit-min 73 --run-name ntuple
+    python rl/ntuple_td.py --net small --time-limit-min 20 --run-name ntuple_small   # הגרסה לדפדפן
 """
 
 from __future__ import annotations
@@ -46,9 +47,19 @@ TUPLES_4x6 = np.array([
     [0, 1, 2, 4, 5, 6],     # מלבן 2x3 בפינה
     [4, 5, 6, 8, 9, 10],    # מלבן 2x3 באמצע
 ], dtype=np.int64)
+
+# הרשת הקטנה לדפדפן: הרשת המקורית של Szubert & Jaśkowski (2014), רביעיות בלבד. במקור 17 רביעיות
+# (4 שורות, 4 עמודות, 9 ריבועים 2x2) בלי דגימה סימטרית; עם 8 הסימטריות מספיקות 5 רביעיות מייצגות.
+# 5 x 16^4 = 327,680 משקלים (1.3MB), פי 200 פחות מהרשת של 4x6, ולכן אפשר לטעון אותה בדפדפן.
+TUPLES_SMALL = np.array([
+    [0, 1, 2, 3],           # שורה חיצונית (ובסימטריה: השורה התחתונה ושתי העמודות החיצוניות)
+    [4, 5, 6, 7],           # שורה פנימית
+    [0, 1, 4, 5],           # ריבוע 2x2 בפינה
+    [1, 2, 5, 6],           # ריבוע 2x2 באמצע הצלע
+    [5, 6, 9, 10],          # ריבוע 2x2 במרכז
+], dtype=np.int64)
+NETWORKS = {"4x6": TUPLES_4x6, "small": TUPLES_SMALL}
 N_VALUES = 16                       # מעריכים 0..15 (ריק עד 32768)
-TUPLE_SIZE = TUPLES_4x6.shape[1]
-TABLE_SIZE = N_VALUES ** TUPLE_SIZE  # 16^6 = 16,777,216 כניסות לכל שישייה
 
 
 def board_symmetries() -> np.ndarray:
@@ -62,45 +73,68 @@ def board_symmetries() -> np.ndarray:
     return np.array(perms, dtype=np.int64)
 
 
-def build_features(tuples: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def build_features(tuples: np.ndarray, table_size: int) -> tuple[np.ndarray, np.ndarray]:
     """
-    דגימה סימטרית: כל שישייה מופעלת על 8 הסימטריות. מחזיר
+    דגימה סימטרית: כל חלון מופעל על 8 הסימטריות. מחזיר
       feats   (8*m, n): אינדקסי המשבצות של כל מאפיין
-      offsets (8*m,):   התחלת הטבלה של השישייה שאליה המאפיין שייך
+      offsets (8*m,):   התחלת הטבלה של החלון שאליו המאפיין שייך
     """
     syms = board_symmetries()
     feats, offsets = [], []
     for s in range(8):
         for j, cells in enumerate(tuples):
             feats.append(syms[s][cells])
-            offsets.append(j * TABLE_SIZE)
+            offsets.append(j * table_size)
     return np.array(feats, dtype=np.int64), np.array(offsets, dtype=np.int64)
 
 
-FEATS, OFFSETS = build_features(TUPLES_4x6)
-N_FEATS = FEATS.shape[0]  # 32
-N_TABLES = TUPLES_4x6.shape[0]
+class Net:
+    """תיאור רשת n-tuple: החלונות, המאפיינים (חלונות x סימטריות) ומיקומי הטבלאות במערך השטוח."""
+
+    def __init__(self, tuples):
+        self.tuples = np.asarray(tuples, dtype=np.int64)
+        self.n_tables, self.tuple_size = self.tuples.shape
+        self.table_size = N_VALUES ** self.tuple_size
+        self.feats, self.offsets = build_features(self.tuples, self.table_size)
+        self.n_feats = self.feats.shape[0]
+        self.n_weights = self.n_tables * self.table_size
+        self.pow = (N_VALUES ** np.arange(self.tuple_size - 1, -1, -1)).astype(np.int64)
+
+    def new_table(self) -> np.ndarray:
+        return np.zeros(self.n_weights, dtype=np.float32)
+
+    def describe(self) -> str:
+        return (f"{self.n_tables} x {self.tuple_size}-tuples, {self.n_feats} features with symmetry, "
+                f"{self.n_weights:,} weights ({4 * self.n_weights / 1e6:.1f} MB)")
+
+
+NET_4x6 = Net(TUPLES_4x6)
+# שמות ברמת המודול לרשת הראשית (הבדיקות והקוד הישן משתמשים בהם)
+FEATS, OFFSETS, N_FEATS, N_TABLES, TABLE_SIZE, TUPLE_SIZE = (
+    NET_4x6.feats, NET_4x6.offsets, NET_4x6.n_feats, NET_4x6.n_tables, NET_4x6.table_size, NET_4x6.tuple_size)
+
+
+def net_from_meta(meta: dict) -> Net:
+    """הרשת ששמורה בנקודת ביקורת (החלונות נשמרים ב-meta, ולכן הקובץ מספיק לעצמו)."""
+    return Net(meta["tuples"])
 
 
 # ----------------------------------------------------------------------------
 # גרסת NumPy (וקטורית) של V ושל המדיניות: להערכה ולבדיקת המימוש ב-numba
 # ----------------------------------------------------------------------------
 
-_POW = (N_VALUES ** np.arange(TUPLE_SIZE - 1, -1, -1)).astype(np.int64)
-
-
-def feature_indices_np(boards: np.ndarray) -> np.ndarray:
-    """(N,4,4) -> (N,32) אינדקסים לטבלה השטוחה."""
+def feature_indices_np(boards: np.ndarray, net: Net = NET_4x6) -> np.ndarray:
+    """(N,4,4) -> (N,n_feats) אינדקסים לטבלה השטוחה."""
     flat = boards.reshape(boards.shape[0], 16).astype(np.int64)
-    vals = flat[:, FEATS]                 # (N,32,6)
-    return (vals * _POW).sum(axis=2) + OFFSETS
+    vals = flat[:, net.feats]                 # (N,n_feats,tuple_size)
+    return (vals * net.pow).sum(axis=2) + net.offsets
 
 
-def values_np(table: np.ndarray, boards: np.ndarray) -> np.ndarray:
-    return table[feature_indices_np(boards)].sum(axis=1)
+def values_np(table: np.ndarray, boards: np.ndarray, net: Net = NET_4x6) -> np.ndarray:
+    return table[feature_indices_np(boards, net)].sum(axis=1)
 
 
-def make_policy(table: np.ndarray):
+def make_policy(table: np.ndarray, net: Net = NET_4x6):
     """מדיניות חמדנית של צעד אחד: argmax על r + V(afterstate), רק בין מהלכים חוקיים."""
 
     def policy(boards: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -108,7 +142,7 @@ def make_policy(table: np.ndarray):
         best = np.full((n, 4), -np.inf)
         for a in range(4):
             after, sc, changed = move_boards(boards, np.full(n, a))
-            v = sc + values_np(table, after)
+            v = sc + values_np(table, after, net)
             best[:, a] = np.where(changed & valid[:, a], v, -np.inf)
         return best.argmax(axis=1)
 
@@ -319,12 +353,12 @@ def play_greedy(table, feats, offsets, n_games, ep_scores, ep_tiles, ep_moves):
         ep_moves[g] = moves
 
 
-def greedy_eval(table: np.ndarray, n_games: int, seed: int) -> list[dict]:
+def greedy_eval(table: np.ndarray, n_games: int, seed: int, net: Net = NET_4x6) -> list[dict]:
     seed_numba(seed)
     sc = np.zeros(n_games, dtype=np.int64)
     ti = np.zeros(n_games, dtype=np.int64)
     mv = np.zeros(n_games, dtype=np.int64)
-    play_greedy(table, FEATS, OFFSETS, n_games, sc, ti, mv)
+    play_greedy(table, net.feats, net.offsets, n_games, sc, ti, mv)
     return [{"score": int(s), "max_tile": int(t), "moves": int(m)} for s, t, m in zip(sc, ti, mv)]
 
 
@@ -351,9 +385,10 @@ def train(args: argparse.Namespace):
     os.makedirs(ckpt_dir, exist_ok=True)
     logger = JsonlLogger(os.path.join(root, "logs", f"{args.run_name}_train.jsonl"))
 
-    table = np.zeros(N_TABLES * TABLE_SIZE, dtype=np.float32)
-    print(f"n-tuple network: {N_TABLES} x {TUPLE_SIZE}-tuples, {N_FEATS} features with symmetry, "
-          f"{table.size:,} weights ({table.nbytes / 1e6:.0f} MB), alpha={args.alpha} ({args.alpha / N_FEATS:.5f} per weight)"
+    net = Net(NETWORKS[args.net])
+    FEATS, OFFSETS, N_FEATS = net.feats, net.offsets, net.n_feats
+    table = net.new_table()
+    print(f"n-tuple network '{args.net}': {net.describe()}, alpha={args.alpha} ({args.alpha / N_FEATS:.5f} per weight)"
           f"{', decay x0.1 at 50% and x0.01 at 75% of the budget' if args.lr_decay else ', constant'}", flush=True)
 
     def current_alpha(frac_done: float) -> float:
@@ -385,7 +420,7 @@ def train(args: argparse.Namespace):
     acc_delta, acc_n = 0.0, 0
 
     def flush_best():
-        # הטבלה שוקלת 268MB, ולכן הגרסה הטובה ביותר נשמרת בזיכרון ונכתבת לדיסק רק מדי כמה דקות
+        # הטבלה של 4x6 שוקלת 268MB, ולכן הגרסה הטובה ביותר נשמרת בזיכרון ונכתבת לדיסק רק מדי כמה דקות
         nonlocal best_dirty, last_save
         if best_dirty:
             save_checkpoint(best_path, best_table, best_meta)
@@ -433,7 +468,7 @@ def train(args: argparse.Namespace):
         # ------------------ הערכה חמדנית ושמירה ------------------
         if transitions >= next_eval:
             next_eval += args.eval_every
-            results = greedy_eval(table, args.eval_games, seed=999)
+            results = greedy_eval(table, args.eval_games, seed=999, net=net)
             summ = summarize(results)
             logger.log(transitions=transitions, updates=transitions, eval=summ)
             print(
@@ -448,13 +483,13 @@ def train(args: argparse.Namespace):
                 else:
                     np.copyto(best_table, table)
                 best_meta = {"args": vars(args), "transitions": transitions, "episodes": episodes, "eval": summ,
-                             "tuples": TUPLES_4x6.tolist()}
+                             "net": args.net, "tuples": net.tuples.tolist()}
                 best_dirty = True
             if time.time() - last_save > 60 * args.save_every_min:
                 flush_best()
 
     flush_best()
-    meta = {"args": vars(args), "transitions": transitions, "episodes": episodes, "tuples": TUPLES_4x6.tolist()}
+    meta = {"args": vars(args), "transitions": transitions, "episodes": episodes, "net": args.net, "tuples": net.tuples.tolist()}
     save_checkpoint(os.path.join(ckpt_dir, f"{args.run_name}_final.npz"), table, meta)
     logger.close()
     print(f"done. {transitions:,} transitions, {episodes:,} episodes, {(time.time()-t_start)/60:.1f} min", flush=True)
@@ -463,10 +498,11 @@ def train(args: argparse.Namespace):
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Afterstate TD(0) with an n-tuple network for 2048")
     p.add_argument("--run-name", default="ntuple")
+    p.add_argument("--net", choices=list(NETWORKS), default="4x6", help="4x6 = 4 שישיות (268MB); small = 5 רביעיות (1.3MB, לדפדפן)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--total-transitions", type=int, default=20_000_000_000)
     p.add_argument("--time-limit-min", type=float, default=0, help="0 = ללא הגבלת זמן")
-    p.add_argument("--alpha", type=float, default=0.1, help="קצב הלמידה של V; כל אחד מ-32 המשקלים מקבל alpha/32")
+    p.add_argument("--alpha", type=float, default=0.1, help="קצב הלמידה של V; כל אחד מהמשקלים שנקראו מקבל alpha/n_feats")
     p.add_argument("--lr-decay", type=int, default=0, help="1 = להוריד את alpha פי 10 בחצי התקציב ופי 100 בשלושה רבעים")
     p.add_argument("--chunk", type=int, default=200_000, help="מהלכים בכל קריאה ללולאה המקומפלת")
     p.add_argument("--log-every", type=int, default=5_000_000)

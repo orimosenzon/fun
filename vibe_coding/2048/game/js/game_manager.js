@@ -67,14 +67,36 @@ class GameManager {
     }
   }
 
-  // Adds a tile in a random position
+  // Adds a tile in a random position. A replay (agent.js) can force the next tile
+  // to reproduce a recorded game exactly; the forced cell must still be empty.
   addRandomTile() {
     if (this.grid.cellsAvailable()) {
-      const value = Math.random() < 0.9 ? 2 : 4;
-      const tile = new Tile(this.grid.randomAvailableCell(), value);
+      let tile;
+      const forced = this.forcedTile;
+      this.forcedTile = null;
+      if (forced && this.grid.cellAvailable({ x: forced.x, y: forced.y })) {
+        tile = new Tile({ x: forced.x, y: forced.y }, forced.value);
+      } else {
+        const value = Math.random() < 0.9 ? 2 : 4;
+        tile = new Tile(this.grid.randomAvailableCell(), value);
+      }
 
       this.grid.insertTile(tile);
     }
+  }
+
+  // Replace the board with a given position (16 exponents, row-major) and start a fresh game from it.
+  loadBoard(board) {
+    this.grid = new Grid(this.size);
+    for (let i = 0; i < 16; i++) {
+      if (board[i]) this.grid.insertTile(new Tile({ x: i % 4, y: Math.floor(i / 4) }, 2 ** board[i]));
+    }
+    this.score = 0;
+    this.over = false;
+    this.won = false;
+    this.keepPlayingFlag = false;
+    this.actuator.continueGame();
+    this.actuate();
   }
 
   // Sends the updated grid to the actuator

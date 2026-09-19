@@ -4,10 +4,14 @@
 הפורמט: קובץ JS שמגדיר window.AGENT_WEIGHTS[<name>] = {kind, filters, hidden, tensors: {name: {shape, dtype, data}}}
 כאשר data הוא base64 של float16 (חצי מהגודל של float32; דיוק מספיק לבחירת פעולה).
 
+רשת n-tuple (הגרסה הקטנה, 5 רביעיות): {kind: "ntuple", tuples, table: {dtype: "float32", data}}, עם
+הערכה של 1,000 משחקים שמחושבת כאן (numba, שניות ספורות). הטבלה של 4x6 (268MB) לא מיוצאת: גדולה מדי לדפדפן.
+
 הרצה:
     python rl/export_weights.py --agent dqn --checkpoint checkpoints/dqn_best.pt
     python rl/export_weights.py --agent ac  --checkpoint checkpoints/a2c_best.pt
     python rl/export_weights.py --agent ppo --checkpoint checkpoints/ppo_best.pt
+    python rl/export_weights.py --agent ntuple --checkpoint checkpoints/ntuple_small_best.npz
 """
 
 from __future__ import annotations
@@ -18,18 +22,15 @@ import json
 import os
 
 import numpy as np
-import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MAX_BROWSER_MB = 8  # מעבר לזה הקובץ כבד מדי להורדה בדף המשחק
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--agent", choices=["dqn", "ac", "ppo"], required=True)
-    p.add_argument("--checkpoint", required=True)
-    args = p.parse_args()
+def export_torch(agent: str, checkpoint: str) -> tuple[dict, int]:
+    import torch
 
-    ckpt = torch.load(os.path.join(ROOT, args.checkpoint), map_location="cpu")
+    ckpt = torch.load(os.path.join(ROOT, checkpoint), map_location="cpu")
     a = ckpt["args"]
     tensors = {}
     total = 0
@@ -42,14 +43,57 @@ def main():
             "data": base64.b64encode(arr.tobytes()).decode("ascii"),
         }
     payload = {
-        "kind": args.agent,
+        "kind": agent,
         "filters": a["filters"],
         "hidden": a["hidden"],
-        "checkpoint": args.checkpoint,
+        "checkpoint": checkpoint,
         "eval": ckpt.get("eval"),
         "transitions": ckpt.get("transitions"),
         "tensors": tensors,
     }
+    return payload, total
+
+
+def export_ntuple(checkpoint: str, eval_games: int) -> tuple[dict, int]:
+    from common import summarize
+    from ntuple_td import greedy_eval, load_checkpoint, net_from_meta
+
+    table, meta = load_checkpoint(os.path.join(ROOT, checkpoint))
+    net = net_from_meta(meta)
+    if table.nbytes / 1e6 > MAX_BROWSER_MB:
+        raise SystemExit(f"the table is {table.nbytes / 1e6:.0f}MB; only the small network fits in the browser "
+                         f"(train with --net small)")
+    # הערכה עצמאית של 1,000 משחקים (הערכת האימון היא על 100 בלבד), כדי שהפאנל בדפדפן יציג מספר אמין
+    summ = summarize(greedy_eval(table.astype(np.float32), eval_games, seed=2048, net=net))
+    print(f"eval on {eval_games} games: mean {summ['score_mean']:,.0f}, median {summ['score_median']:,.0f}, "
+          f"2048 in {100 * summ['reach_2048']:.1f}%, 4096 in {100 * summ['reach_4096']:.1f}%")
+    payload = {
+        "kind": "ntuple",
+        "net": meta.get("net", "small"),
+        "tuples": net.tuples.tolist(),
+        "n_values": 16,
+        "checkpoint": checkpoint,
+        "eval": summ,
+        "transitions": meta.get("transitions"),
+        "episodes": meta.get("episodes"),
+        "train_minutes": (meta.get("args") or {}).get("time_limit_min"),
+        "table": {"dtype": "float32", "size": int(table.size),
+                  "data": base64.b64encode(table.astype(np.float32).tobytes()).decode("ascii")},
+    }
+    return payload, int(table.size)
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--agent", choices=["dqn", "ac", "ppo", "ntuple"], required=True)
+    p.add_argument("--checkpoint", required=True)
+    p.add_argument("--eval-games", type=int, default=1000, help="ל-ntuple: כמה משחקים להערכה שנשמרת בקובץ")
+    args = p.parse_args()
+
+    if args.agent == "ntuple":
+        payload, total = export_ntuple(args.checkpoint, args.eval_games)
+    else:
+        payload, total = export_torch(args.agent, args.checkpoint)
     out_dir = os.path.join(ROOT, "game", "weights")
     os.makedirs(out_dir, exist_ok=True)
     out = os.path.join(out_dir, f"{args.agent}.js")

@@ -10,6 +10,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}], throwOnError: false});"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="assets/report.js"></script>
+<script src="assets/ntuple_sim.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -17,7 +18,7 @@
 <header class="hero">
   <h1>DQN לומד לשחק 2048</h1>
   <p class="sub">דו"ח ביצועים: Deep Q-Network, אימון מקומי על GPU</p>
-  <div class="meta">הדו"ח נוצר ב-18.09.2026 · אימון של 74 דקות · 20 מיליון מעברים</div>
+  <div class="meta">הדו"ח נוצר ב-19.09.2026 · אימון של 74 דקות · 20 מיליון מעברים</div>
   <nav class="toc"><a href="#summary">תקציר</a> <a href="#method">האלגוריתם</a> <a href="#learning">עקומת הלמידה</a> <a href="#final">ההערכה הסופית</a> <a href="#replay">צפייה במשחק</a> <a href="#analysis">ניתוח</a> <a href="#hp">היפר-פרמטרים</a></nav>
 </header>
 
@@ -177,7 +178,7 @@ $$\mathcal{L}(\theta) = \mathbb{E}_{(s,a,r,s') \sim \mathcal{D}} \Big[\, \ell_{\
 <p class="note" style="margin-top:12px">הרשת: קלט one-hot (16, 4, 4) → שתי שכבות Conv 3x3 עם 128 פילטרים → Linear → 256 → ראש. כ-690 אלף פרמטרים. הפירוט המלא ב-<a href="../README.md">README</a>.</p>
 </section>
 
-<footer>נוצר אוטומטית ב-18.09.2026 על ידי <code>rl/make_reports.py</code> (בוטי). הגרפים מצוירים עם Chart.js; לכל גרף יש תצוגת טבלה.</footer>
+<footer>נוצר אוטומטית ב-19.09.2026 על ידי <code>rl/make_reports.py</code> (בוטי). הגרפים מצוירים עם Chart.js; לכל גרף יש תצוגת טבלה.</footer>
 </div>
 <script>R.init();</script>
 </body>

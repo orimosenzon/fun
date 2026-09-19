@@ -133,28 +133,42 @@ tr.hl td { font-weight: 600; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 6px; vertical-align: middle; }
 .swatch.s1 { background: var(--series-1); } .swatch.s2 { background: var(--series-2); } .swatch.s3 { background: var(--series-3); } .swatch.s4 { background: var(--series-4); } .swatch.s0 { background: var(--de-emph); }
 
+/* לוח 2048 קטן (שחזור משחק, איורים והסימולציה של רשת ה-n-tuple). --bs = גודל הלוח */
+.board {
+  --bs: 260px; width: var(--bs); height: var(--bs); padding: calc(var(--bs) / 32); border-radius: 6px; background: var(--tile-bg);
+  display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: calc(var(--bs) / 32); direction: ltr;
+  flex-shrink: 0;
+}
+.board .cell {
+  border-radius: 3px; background: var(--tile-empty); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: calc(var(--bs) / 10); color: #776e65; font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+}
+.board .cell.t2 { background: #eee4da; } .board .cell.t4 { background: #ede0c8; }
+.board .cell.t8 { background: #f2b179; color: #f9f6f2; } .board .cell.t16 { background: #f59563; color: #f9f6f2; }
+.board .cell.t32 { background: #f67c5f; color: #f9f6f2; } .board .cell.t64 { background: #f65e3b; color: #f9f6f2; }
+.board .cell.t128 { background: #edcf72; color: #f9f6f2; font-size: calc(var(--bs) / 12); } .board .cell.t256 { background: #edcc61; color: #f9f6f2; font-size: calc(var(--bs) / 12); }
+.board .cell.t512 { background: #edc850; color: #f9f6f2; font-size: calc(var(--bs) / 12); } .board .cell.t1024 { background: #edc53f; color: #f9f6f2; font-size: calc(var(--bs) / 14.5); }
+.board .cell.t2048 { background: #edc22e; color: #f9f6f2; font-size: calc(var(--bs) / 14.5); } .board .cell.tsuper { background: #3c3a32; color: #f9f6f2; font-size: calc(var(--bs) / 16); }
+/* משבצת שמודגשת כחלק מחלון (n-tuple) */
+.board .cell.hl { box-shadow: inset 0 0 0 3px var(--series-4); }
+.board .cell.hl::after { content: ""; position: absolute; inset: 0; background: color-mix(in oklab, var(--series-4) 35%, transparent); border-radius: 3px; pointer-events: none; }
+.board .cell.dim { opacity: 0.45; }
+/* לוח אינדקסים (0..15) לאיורי החלונות */
+.board.idx { background: var(--axis); }
+.board.idx .cell { background: var(--surface); color: var(--muted); font-weight: 500; font-size: calc(var(--bs) / 9); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.board.idx .cell.hl { color: var(--ink); font-weight: 700; }
+
 /* שחזור משחק */
 .replay { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
-.replay .board {
-  width: 260px; height: 260px; padding: 8px; border-radius: 6px; background: var(--tile-bg);
-  display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 8px; direction: ltr;
-}
-.replay .cell {
-  border-radius: 3px; background: var(--tile-empty); display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 26px; color: #776e65; font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
-}
-.replay .cell.t2 { background: #eee4da; } .replay .cell.t4 { background: #ede0c8; }
-.replay .cell.t8 { background: #f2b179; color: #f9f6f2; } .replay .cell.t16 { background: #f59563; color: #f9f6f2; }
-.replay .cell.t32 { background: #f67c5f; color: #f9f6f2; } .replay .cell.t64 { background: #f65e3b; color: #f9f6f2; }
-.replay .cell.t128 { background: #edcf72; color: #f9f6f2; font-size: 22px; } .replay .cell.t256 { background: #edcc61; color: #f9f6f2; font-size: 22px; }
-.replay .cell.t512 { background: #edc850; color: #f9f6f2; font-size: 22px; } .replay .cell.t1024 { background: #edc53f; color: #f9f6f2; font-size: 18px; }
-.replay .cell.t2048 { background: #edc22e; color: #f9f6f2; font-size: 18px; } .replay .cell.tsuper { background: #3c3a32; color: #f9f6f2; font-size: 16px; }
 .replay .controls { flex: 1; min-width: 220px; font-size: 15px; }
 .replay .controls .stat { display: flex; justify-content: space-between; border-bottom: 1px solid var(--grid); padding: 4px 0; }
 .replay .controls .stat b { font-variant-numeric: tabular-nums; }
 .replay .controls input[type=range] { width: 100%; margin: 10px 0; }
-.replay button { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); cursor: pointer; margin-inline-end: 6px; }
-.replay button:hover { border-color: var(--ink-2); }
+.replay button, .ntsim button { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); cursor: pointer; margin-inline-end: 6px; }
+.replay button:hover, .ntsim button:hover { border-color: var(--ink-2); }
+.ntsim button.primary { border-color: var(--series-4); box-shadow: inset 0 0 0 1px var(--series-4); }
+.ntsim button:disabled { opacity: 0.45; cursor: default; }
 
 /* היפר-פרמטרים */
 .hp { columns: 2; column-gap: 24px; font-size: 15px; }
@@ -211,3 +225,65 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px
 .nd-box.s4 { border-color: var(--series-4); border-width: 2px; }
 .nd-arrow { color: var(--muted); font-size: 18px; }
 .nd-heads { display: flex; flex-direction: column; gap: 6px; }
+
+/* איורים בסעיף רשת ה-n-tuple: שורה של לוחות קטנים עם כיתובים וחצים */
+.fig { margin: 14px 0 18px; }
+.fig .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; }
+.fig .item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; max-width: 180px; }
+.fig .item .cap { font-size: 13px; color: var(--ink-2); line-height: 1.4; }
+.fig .item .cap b { color: var(--ink); }
+.fig .arrow { font-size: 26px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 70px; }
+.fig .arrow small { font-size: 12px; color: var(--ink-2); line-height: 1.3; text-align: center; white-space: normal; }
+.fig .caption { font-size: 14px; color: var(--ink-2); text-align: center; margin-top: 10px; }
+.fig .caption b { color: var(--ink); }
+.fig.wins .item { max-width: 150px; }
+.fig .strip { direction: ltr; height: 26px; border-radius: 6px; border: 1px solid var(--axis); background: repeating-linear-gradient(90deg, var(--surface) 0 6px, var(--grid) 6px 7px); position: relative; margin: 8px 0 4px; }
+.fig .strip .mark { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--series-4); border-radius: 2px; }
+.fig .strip .mark::after { content: attr(data-label); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 12px; color: var(--ink-2); margin-top: 3px; direction: ltr; }
+.fig .strip .lbl { position: absolute; top: -20px; font-size: 12px; color: var(--muted); direction: ltr; }
+.fig .calc { font-family: ui-monospace, Menlo, Consolas, monospace; direction: ltr; unicode-bidi: isolate; font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin: 8px auto; max-width: 100%; text-align: left; overflow-x: auto; white-space: nowrap; }
+.fig > .calc { max-width: min(660px, 100%); }
+.fig .item.wide { max-width: 100%; min-width: 0; }
+.fig .calc b { color: var(--series-4); }
+.fig .calc .he { direction: rtl; unicode-bidi: isolate; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink-2); font-size: 13px; }
+.fig .calc + .cap { font-size: 13px; color: var(--ink-2); text-align: center; }
+.ntsim .formula i { color: var(--muted); font-style: normal; font-size: 12px; }
+.ntsim .formula sub { font-size: 10px; }
+
+/* הסימולציה */
+.ntsim { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 14px 16px; margin: 16px 0; }
+.ntsim h4 { margin: 0 0 4px; font-size: 18px; }
+.ntsim .desc { font-size: 14px; color: var(--ink-2); margin: 0 0 10px; }
+.ntsim .toolbar { display: flex; flex-wrap: wrap; gap: 8px 6px; align-items: center; margin: 8px 0 12px; }
+.ntsim .toolbar label { font-size: 14px; color: var(--ink-2); margin-inline-start: 6px; }
+.ntsim .toolbar select { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); }
+.ntsim .counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 8px 0 14px; }
+.ntsim .counter { background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+.ntsim .counter .l { font-size: 12px; color: var(--muted); }
+.ntsim .counter .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.ntsim .counter .v small { font-size: 12px; font-weight: 400; color: var(--ink-2); }
+.ntsim h5 { font-size: 15px; margin: 18px 0 6px; color: var(--ink); }
+.ntsim .stage { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-start; }
+.ntsim .now { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.ntsim .cands { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 1; min-width: 280px; }
+.ntsim .cand { border: 1px solid var(--border); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; background: var(--page); }
+.ntsim .cand.best { border-color: var(--series-4); box-shadow: inset 0 0 0 1px var(--series-4); }
+.ntsim .cand.invalid { opacity: 0.4; }
+.ntsim .cand .dir { font-weight: 600; }
+.ntsim .cand .nums { font-variant-numeric: tabular-nums; direction: ltr; text-align: center; line-height: 1.35; color: var(--ink-2); }
+.ntsim .cand .nums b { color: var(--ink); }
+.ntsim .formula { font-family: ui-monospace, Menlo, Consolas, monospace; direction: ltr; unicode-bidi: isolate; font-size: 14px; background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin: 6px 0 10px; overflow-x: auto; text-align: left; }
+.ntsim .formula b { color: var(--series-4); }
+.ntsim .note { font-size: 14px; color: var(--ink-2); margin: 4px 0 8px; }
+.ntsim .entries { font-size: 12px; border-collapse: collapse; width: 100%; direction: rtl; }
+.ntsim .entries th, .ntsim .entries td { padding: 3px 6px; border-bottom: 1px solid var(--grid); text-align: center; white-space: nowrap; }
+.ntsim .entries th:first-child, .ntsim .entries td:first-child { text-align: right; }
+.ntsim .entries td.e { cursor: default; font-variant-numeric: tabular-nums; direction: ltr; }
+.ntsim .entries td.e:hover { background: color-mix(in oklab, var(--series-4) 18%, var(--surface)); }
+.ntsim .entries .w { font-weight: 600; color: var(--ink); }
+.ntsim .entries .d { color: var(--good); } .ntsim .entries .d.neg { color: var(--series-2); }
+.ntsim .entries .tiles { color: var(--muted); }
+.ntsim .chart { height: 220px; }
+.ntsim .live { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.ntsim .live .chartwrap { flex: 1; min-width: 260px; }
+@media (max-width: 760px) { .ntsim .cands { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
