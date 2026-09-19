@@ -389,12 +389,16 @@ def train(args: argparse.Namespace):
     FEATS, OFFSETS, N_FEATS = net.feats, net.offsets, net.n_feats
     table = net.new_table()
     print(f"n-tuple network '{args.net}': {net.describe()}, alpha={args.alpha} ({args.alpha / N_FEATS:.5f} per weight)"
-          f"{', decay x0.1 at 50% and x0.01 at 75% of the budget' if args.lr_decay else ', constant'}", flush=True)
+          f"{', decay x0.1 at 50% and x0.01 at 75% of the budget' if args.lr_decay == 1 else ', late decay x0.3 at 75% and x0.1 at 90%' if args.lr_decay == 2 else ', constant'}", flush=True)
 
     def current_alpha(frac_done: float) -> float:
-        """קצב הלמידה של V. עם --lr-decay: לוח הזמנים המקובל (גואי 2022): 0.1 → 0.01 בחצי → 0.001 בשלושה רבעים."""
+        """קצב הלמידה של V.
+        --lr-decay 1: לוח הזמנים המקובל (גואי 2022): 0.1 → 0.01 בחצי → 0.001 בשלושה רבעים (הפסיד בניסוי ההסרה).
+        --lr-decay 2: דעיכה מתונה ומאוחרת: 0.1 → 0.03 בשלושה רבעים → 0.01 בעשירית האחרונה (הריצה הארוכה)."""
         if not args.lr_decay:
             return args.alpha
+        if args.lr_decay == 2:
+            return args.alpha * (1.0 if frac_done < 0.75 else 0.3 if frac_done < 0.9 else 0.1)
         return args.alpha * (1.0 if frac_done < 0.5 else 0.1 if frac_done < 0.75 else 0.01)
 
     seed_numba(args.seed)
@@ -503,7 +507,7 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--total-transitions", type=int, default=20_000_000_000)
     p.add_argument("--time-limit-min", type=float, default=0, help="0 = ללא הגבלת זמן")
     p.add_argument("--alpha", type=float, default=0.1, help="קצב הלמידה של V; כל אחד מהמשקלים שנקראו מקבל alpha/n_feats")
-    p.add_argument("--lr-decay", type=int, default=0, help="1 = להוריד את alpha פי 10 בחצי התקציב ופי 100 בשלושה רבעים")
+    p.add_argument("--lr-decay", type=int, default=0, help="1 = פי 10 בחצי התקציב ופי 100 בשלושה רבעים; 2 = מתון ומאוחר: פי 3 בשלושה רבעים ופי 10 ב-90%")
     p.add_argument("--chunk", type=int, default=200_000, help="מהלכים בכל קריאה ללולאה המקומפלת")
     p.add_argument("--log-every", type=int, default=5_000_000)
     p.add_argument("--eval-every", type=int, default=20_000_000)

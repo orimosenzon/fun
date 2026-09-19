@@ -86,6 +86,18 @@ class ActorCriticNetwork(nn.Module):
         return self.policy_head(h), self.value_head(h).squeeze(-1)
 
 
+class AfterstateValueNetwork(nn.Module):
+    """רשת ערך ל-afterstates (ניסוי 3): אותו גוף, ראש ערך בלבד. הלוח שנכנס הוא לוח *אחרי* ההחלקה ולפני האריח."""
+
+    def __init__(self, filters: int = 128, hidden: int = 256):
+        super().__init__()
+        self.trunk = Trunk(filters, hidden)
+        self.value_head = nn.Linear(hidden, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.value_head(self.trunk(x)).squeeze(-1)
+
+
 def masked_argmax(values: torch.Tensor, valid: torch.Tensor) -> torch.Tensor:
     """argmax רק על פעולות חוקיות. values (N,4), valid (N,4) bool."""
     return values.masked_fill(~valid, float("-inf")).argmax(dim=1)

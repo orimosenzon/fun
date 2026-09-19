@@ -13,6 +13,7 @@
   --series-2: #eb6834;   /* Actor-Critic */
   --series-3: #1baf7a;   /* PPO */
   --series-4: #eda100;   /* N-Tuple TD */
+  --series-5: #e87ba4;   /* Afterstate TD (רשת) */
   --de-emph: #b5b3ac;    /* קווי בסיס וסדרות הקשר */
   --seq-100: #cde2fb; --seq-250: #86b6ef; --seq-400: #3987e5; --seq-550: #1c5cab; --seq-700: #0d366b;
   --good: #006300;
@@ -34,6 +35,7 @@
     --series-2: #d95926;
     --series-3: #199e70;
     --series-4: #c98500;
+    --series-5: #d55181;
     --de-emph: #5d5c58;
     --seq-100: #184f95; --seq-250: #1c5cab; --seq-400: #3987e5; --seq-550: #6da7ec; --seq-700: #b7d3f6;
     --good: #0ca30c;
@@ -53,6 +55,7 @@
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
+  --series-5: #d55181;
   --de-emph: #5d5c58;
   --seq-100: #184f95; --seq-250: #1c5cab; --seq-400: #3987e5; --seq-550: #6da7ec; --seq-700: #b7d3f6;
   --good: #0ca30c;
@@ -100,9 +103,11 @@ a { color: var(--series-1); }
 .kpi.s2 { border-top: 3px solid var(--series-2); }
 .kpi.s3 { border-top: 3px solid var(--series-3); }
 .kpi.s4 { border-top: 3px solid var(--series-4); }
+.kpi.s5 { border-top: 3px solid var(--series-5); }
 .kpis.cols2 { grid-template-columns: repeat(2, 1fr); }
 .kpis.cols3 { grid-template-columns: repeat(3, 1fr); }
 .kpis.cols4 { grid-template-columns: repeat(4, 1fr); }
+.kpis.cols5 { grid-template-columns: repeat(5, 1fr); }
 .card .kpis { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
 .card .kpi .value { font-size: 26px; }
 
@@ -118,8 +123,10 @@ a { color: var(--series-1); }
 .grid3 .card { margin: 0; }
 .grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid4 .card { margin: 0; }
+.grid5 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid5 .card { margin: 0; }
 .scroll { overflow-x: auto; }
-@media (max-width: 760px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } .kpis.cols3, .kpis.cols4 { grid-template-columns: 1fr 1fr; } .chart { height: 260px; } header.hero h1 { font-size: 30px; } }
+@media (max-width: 760px) { .grid2, .grid3, .grid4, .grid5 { grid-template-columns: 1fr; } .kpis.cols3, .kpis.cols4, .kpis.cols5 { grid-template-columns: 1fr 1fr; } .chart { height: 260px; } header.hero h1 { font-size: 30px; } }
 details.table { margin-top: 8px; font-size: 13px; }
 details.table summary { cursor: pointer; color: var(--muted); }
 details.table table { margin-top: 6px; }
@@ -131,7 +138,7 @@ th { color: var(--ink-2); font-weight: 600; background: transparent; }
 td.num, th.num { font-variant-numeric: tabular-nums; direction: ltr; text-align: left; }
 tr.hl td { font-weight: 600; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 6px; vertical-align: middle; }
-.swatch.s1 { background: var(--series-1); } .swatch.s2 { background: var(--series-2); } .swatch.s3 { background: var(--series-3); } .swatch.s4 { background: var(--series-4); } .swatch.s0 { background: var(--de-emph); }
+.swatch.s1 { background: var(--series-1); } .swatch.s2 { background: var(--series-2); } .swatch.s3 { background: var(--series-3); } .swatch.s4 { background: var(--series-4); } .swatch.s5 { background: var(--series-5); } .swatch.s0 { background: var(--de-emph); }
 
 /* לוח 2048 קטן (שחזור משחק, איורים והסימולציה של רשת ה-n-tuple). --bs = גודל הלוח */
 .board {
@@ -198,7 +205,7 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px
 .katex-display > .katex { font-size: 1.15em; }
 .method { margin-top: 36px; padding-top: 4px; }
 .method > h3 { font-size: 23px; margin-top: 8px; padding-top: 10px; border-top: 3px solid var(--m, var(--axis)); }
-.method.s1 { --m: var(--series-1); } .method.s2 { --m: var(--series-2); } .method.s3 { --m: var(--series-3); } .method.s4 { --m: var(--series-4); }
+.method.s1 { --m: var(--series-1); } .method.s2 { --m: var(--series-2); } .method.s3 { --m: var(--series-3); } .method.s4 { --m: var(--series-4); } .method.s5 { --m: var(--series-5); }
 .method h4 { font-size: 17px; margin: 22px 0 6px; color: var(--ink); }
 .intuition {
   background: color-mix(in oklab, var(--m, var(--series-1)) 7%, var(--surface));
@@ -223,6 +230,7 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px
 .nd-box.s2 { border-color: var(--series-2); border-width: 2px; }
 .nd-box.s3 { border-color: var(--series-3); border-width: 2px; }
 .nd-box.s4 { border-color: var(--series-4); border-width: 2px; }
+.nd-box.s5 { border-color: var(--series-5); border-width: 2px; }
 .nd-arrow { color: var(--muted); font-size: 18px; }
 .nd-heads { display: flex; flex-direction: column; gap: 6px; }
 
@@ -287,3 +295,4 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px
 .ntsim .live { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
 .ntsim .live .chartwrap { flex: 1; min-width: 260px; }
 @media (max-width: 760px) { .ntsim .cands { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 761px) and (max-width: 1000px) { .kpis.cols5 { grid-template-columns: repeat(3, 1fr); } }

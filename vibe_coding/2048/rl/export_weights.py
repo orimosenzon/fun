@@ -12,6 +12,7 @@
     python rl/export_weights.py --agent ac  --checkpoint checkpoints/a2c_best.pt
     python rl/export_weights.py --agent ppo --checkpoint checkpoints/ppo_best.pt
     python rl/export_weights.py --agent ntuple --checkpoint checkpoints/ntuple_small_best.npz
+    python rl/export_weights.py --agent asnet --checkpoint checkpoints/asnet_best.pt
 """
 
 from __future__ import annotations
@@ -49,6 +50,7 @@ def export_torch(agent: str, checkpoint: str) -> tuple[dict, int]:
         "checkpoint": checkpoint,
         "eval": ckpt.get("eval"),
         "transitions": ckpt.get("transitions"),
+        "reward_scale": a.get("reward_scale", 1e-3),
         "tensors": tensors,
     }
     return payload, total
@@ -85,7 +87,7 @@ def export_ntuple(checkpoint: str, eval_games: int) -> tuple[dict, int]:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--agent", choices=["dqn", "ac", "ppo", "ntuple"], required=True)
+    p.add_argument("--agent", choices=["dqn", "ac", "ppo", "ntuple", "asnet"], required=True)
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--eval-games", type=int, default=1000, help="ל-ntuple: כמה משחקים להערכה שנשמרת בקובץ")
     args = p.parse_args()
