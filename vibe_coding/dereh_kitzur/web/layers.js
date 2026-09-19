@@ -486,8 +486,10 @@ const Layers = (() => {
       // One colour for all of them. They arrived from My Maps in seven, which
       // was that map's own sorting and meant nothing here, and a shortcut is a
       // shortcut. A trail may still be given a colour of its own from its page,
-      // and that stays an exception rather than the rule.
-      color: '#4a148c',
+      // and that stays an exception rather than the rule. Gold, and drawn as a
+      // glow (see addLineLayers): the flight mode lights the trails this way
+      // and Ori wanted the map to say the same thing (19/9/2026).
+      color: theme === 'dark' ? TRAIL_GOLD : TRAIL_GREEN,
       note: 'קיצורי הדרך שמופו על ידי יוזמת דרך קיצור.',
       source: trails.source,
       on: isOn(TRAILS_ID),                 // the point of the app; on unless muted
@@ -1062,6 +1064,8 @@ const Layers = (() => {
 
   const srcId = (id) => `src-${id}`;
   const lineId = (id) => `ln-${id}`;
+  const haloId = (id) => `gl-${id}`;    // the glow under a shortcut
+  const coreId = (id) => `hl-${id}`;    // the bright filament on top of it
   const dotId = (id) => `pt-${id}`;
   const labelId = (id) => `lb-${id}`;
   const hitId = (id) => `hit-${id}`;
@@ -1081,7 +1085,45 @@ const Layers = (() => {
     : layer.kind === 'places'
     ? (hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
       .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
+    : glows(layer)
+    ? [haloId(layer.id), lineId(layer.id), coreId(layer.id), hitId(layer.id)]
     : [lineId(layer.id), hitId(layer.id)]);
+
+  /* ---------- the glow ----------
+   *
+   * The shortcuts are what the app is for, and until 19/9/2026 they were a
+   * flat purple line like any reference layer. Ori asked for the glowing gold
+   * of the flight mode: the trail as a light on the ground, not a stroke on
+   * a map. That look is three lines on one geometry: a wide, blurred halo
+   * underneath, the line itself, and a thin pale filament on top, the way a
+   * neon tube is brightest at its core.
+   *
+   * What the three are made of depends on what is under them. On the
+   * satellite picture the halo carries the colour and the filament is nearly
+   * white - the flight mode's own recipe, a lamp seen from above. On the
+   * street map the ground is white and pale yellow, a white filament would
+   * vanish and a pale halo would bleed into the roads, so there the line and
+   * the halo are the saturated colour and the filament only a hint of white.
+   * app.js says which through setTheme, before it asks for the layers. */
+  let theme = 'light';
+  /* The colour itself changes with the ground too. Gold is the flight mode's
+   * and it is right over the satellite picture; over the street map it is the
+   * colour of the main roads (liberty draws them in yellow with an orange
+   * casing), and a shortcut that looks like a road is worse than a purple
+   * one. There the shortcuts are green: the app's own colour, and nothing on
+   * that map is a saturated green line. Trails with a colour of their own keep
+   * it on both. */
+  const TRAIL_GOLD = '#f2a900';
+  const TRAIL_GREEN = '#00c853';
+  function setTheme(t) {
+    theme = t === 'dark' ? 'dark' : 'light';
+    const trails = byId(TRAILS_ID);
+    if (trails) trails.color = theme === 'dark' ? TRAIL_GOLD : TRAIL_GREEN;
+  }
+  /** The shortcut layers glow; the planned network, the trips' bands and the
+   *  dashed drafts keep their plain strokes, so a shortcut still stands out
+   *  among them. */
+  const glows = (layer) => layer.kind === 'trails' && !layer.dash;
 
   function geojson(layer) {
     if (layer.kind === 'places') {
@@ -1292,6 +1334,31 @@ const Layers = (() => {
     // "not published yet" for a draft.
     if (layer.dash) paint['line-dasharray'] = [2, 1.6];
 
+    // One zoom curve per property is all MapLibre allows, so the selected
+    // width sits inside the curve's stops rather than around it.
+    const z = (on, off) => ['interpolate', ['linear'], ['zoom'],
+      12, ['case', sel, on[0], off[0]], 15, ['case', sel, on[1], off[1]], 18, ['case', sel, on[2], off[2]]];
+    if (glows(layer)) {
+      const dark = theme === 'dark';
+      map.addLayer({
+        id: haloId(layer.id),
+        type: 'line',
+        source: src,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': z(dark ? [16, 26, 40] : [14, 22, 32], dark ? [10, 18, 28] : [8, 13, 20]),
+          'line-blur': z(dark ? [7, 11, 16] : [6, 9, 13], dark ? [5, 9, 14] : [4, 6, 9]),
+          // The others stay lit when one is picked: browsing on from the map
+          // to the next trail is the point (see the plain stroke's note).
+          'line-opacity': ['case', sel, 0.95, dim, dark ? 0.35 : 0.22, dark ? 0.85 : 0.5]
+        }
+      });
+      paint['line-color'] = dark ? '#ffe9a8' : ['get', 'color'];
+      paint['line-width'] = z([5, 7, 9], [2.8, 4, 5.5]);
+      paint['line-opacity'] = ['case', sel, 1, dim, 0.55, dark ? 0.95 : 1];
+    }
+
     map.addLayer({
       id: lineId(layer.id),
       type: 'line',
@@ -1299,6 +1366,20 @@ const Layers = (() => {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint
     });
+
+    if (glows(layer)) {
+      map.addLayer({
+        id: coreId(layer.id),
+        type: 'line',
+        source: src,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': z([2, 2.6, 3.4], [1, 1.4, 2]),
+          'line-opacity': ['case', dim, 0.3, theme === 'dark' ? 0.9 : 0.45]
+        }
+      });
+    }
 
     // A fat transparent line on top, so a fingertip does not have to land on
     // the stroke itself.
@@ -1370,7 +1451,7 @@ const Layers = (() => {
     const live = new Set(list.map((l) => l.id));
     const gone = new Set();
     map.getStyle().layers.forEach((gl) => {
-      const match = /^(?:ln|pt|lb|hit|ras)-(.+)$/.exec(gl.id);
+      const match = /^(?:ln|gl|hl|pt|lb|hit|ras)-(.+)$/.exec(gl.id);
       if (match && !live.has(match[1]) && map.getLayer(gl.id)) {
         map.removeLayer(gl.id);
         gone.add(match[1]);
@@ -1910,7 +1991,7 @@ const Layers = (() => {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     resetMedia,
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, highlight, setArranging, setPending,
+    addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     BLOCKS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
