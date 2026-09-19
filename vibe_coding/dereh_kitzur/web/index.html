@@ -27,6 +27,17 @@
 <meta property="og:image:alt" content="שביל עפר בין עצי ג'קרנדה פורחים בפרדס חנה-כרכור">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🥾</text></svg>">
+<!-- Installable: a home-screen icon and a window of its own on a phone or a
+     desktop. The manifest names the app and its icons, sw.js exists only to
+     satisfy Chrome's install criteria and caches nothing (see the file), and
+     the apple-* tags are what iOS reads instead of the manifest. The icons are
+     built by build_icons.py. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="דרך קיצור">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -158,7 +169,12 @@
     <header class="panel-head">
       <div class="title-row">
         <h1>דרך קיצור</h1>
-        <button id="editor-btn" class="editor-btn">מצב עורך</button>
+        <span class="title-btns">
+          <!-- Put an icon on the home screen. Hidden once the app is running
+               as one (display-mode: standalone), see Install in app.js. -->
+          <button id="install-btn" class="editor-btn install" hidden>📲 למסך הבית</button>
+          <button id="editor-btn" class="editor-btn">מצב עורך</button>
+        </span>
       </div>
       <p id="stats" class="stats">טוען…</p>
 

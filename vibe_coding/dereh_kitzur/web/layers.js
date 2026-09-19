@@ -493,7 +493,13 @@ const Layers = (() => {
       note: 'קיצורי הדרך שמופו על ידי יוזמת דרך קיצור.',
       source: trails.source,
       on: isOn(TRAILS_ID),                 // the point of the app; on unless muted
-      segments: trails.segments.filter((s) => home(s) === TRAILS_ID),
+      // A shortcut is drawn in the layer's colour, full stop. A `color` a
+      // segment may still carry in the file - from the years the form
+      // preselected one, or set by hand - is dropped here, so nothing can
+      // come up purple among the gold (Ori, 19/9/2026, after the first
+      // clean-up left four "deliberate" ones and he saw them at once).
+      segments: trails.segments.filter((s) => home(s) === TRAILS_ID)
+        .map((s) => (s.color ? { ...s, color: '' } : s)),
       waypoints: []                        // they have their own layer, below
     });
 

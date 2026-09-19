@@ -830,9 +830,9 @@ function editorBlock(it, layer) {
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
       <button class="act" data-pub="video"><span class="lbl">הוספת סרטון יוטיוב
         <span class="hint">יוצג יחד עם התמונות, ונפתח בגדול בדפדוף</span></span></button>
-      <button class="act" data-pub="colour"><span class="lbl">צבע השביל
+      ${layer.id === Layers.TRAILS_ID ? '' : `<button class="act" data-pub="colour"><span class="lbl">צבע השביל
         <span class="hint"><span class="dot" style="--c:${it.color || layer.color}"></span>
-          איך הקו נראה על המפה</span></span></button>
+          איך הקו נראה על המפה</span></span></button>`}
       <button class="act" data-pub="links"><span class="lbl">קישורים
         <span class="hint">${(it.links || []).length
           ? plural(it.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
@@ -2809,6 +2809,95 @@ function reloadPlaces(doc) {
   }
 }
 
+/* ---------- a home-screen icon ----------
+ *
+ * Ori asked for an easy way to put the app on a phone's home screen and a
+ * computer's desktop, with a short explanation for people (19/9/2026). The
+ * app is installable (manifest.webmanifest, sw.js, the apple-* tags in
+ * index.html), which is what makes this possible at all; this is the button
+ * that starts it and the words for the browsers that make you do it by hand.
+ *
+ * Chrome and Edge, on Android and on a desktop, fire beforeinstallprompt and
+ * let a page show their own install dialog on a tap: the button does that.
+ * Safari on iOS has no such event and never will; there it is the share
+ * sheet and "add to home screen", and the button opens the instructions.
+ * Everything else (Firefox, Samsung Internet, Safari on a Mac) gets the same
+ * sheet with its own paragraph. The button goes away once the app is running
+ * from the home screen, where it would be a riddle. */
+
+const Install = (() => {
+  let deferred = null;
+
+  const standalone = () => matchMedia('(display-mode: standalone)').matches
+    || navigator.standalone === true;
+  const ua = navigator.userAgent;
+  const ios = () => /iPhone|iPad|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);   // iPad with a desktop UA
+  const android = () => /Android/.test(ua);
+  const firefox = () => /Firefox|FxiOS/.test(ua);
+  const samsung = () => /SamsungBrowser/.test(ua);
+  const safariMac = () => /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) && /Macintosh/.test(ua);
+
+  function init() {
+    const btn = el('install-btn');
+    if (!btn) return;
+    // The worker is registered whether or not the button shows: it is what
+    // makes the browser's own install offer appear.
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if (standalone()) return;
+    btn.hidden = false;
+    addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; });
+    addEventListener('appinstalled', () => { btn.hidden = true; deferred = null; });
+    btn.addEventListener('click', async () => {
+      if (deferred) {
+        deferred.prompt();
+        const choice = await deferred.userChoice.catch(() => ({ outcome: '' }));
+        deferred = null;
+        if (choice.outcome === 'accepted') btn.hidden = true;
+        return;
+      }
+      howTo();
+    });
+  }
+
+  /** The steps for this device first, the others folded under it. */
+  function howTo() {
+    const steps = {
+      ios: ['iPhone ו-iPad', `<ol class="steps">
+        <li>בספארי (או בכרום), לחץ על כפתור השיתוף: הריבוע עם החץ למעלה, בתחתית המסך.</li>
+        <li>גלול בתפריט ובחר <b>הוסף למסך הבית</b>.</li>
+        <li>לחץ <b>הוסף</b>. האייקון של דרך קיצור יופיע בין האפליקציות.</li></ol>`],
+      android: ['אנדרואיד', `<ol class="steps">
+        <li>בכרום, לחץ על שלוש הנקודות ⋮ בפינה למעלה.</li>
+        <li>בחר <b>הוספה למסך הבית</b> (או <b>התקנת אפליקציה</b>).</li>
+        <li>אשר. בדפדפן של סמסונג: תפריט ≡ ← <b>הוסף דף ל</b> ← <b>מסך הבית</b>.</li></ol>`],
+      desktop: ['מחשב', `<ol class="steps">
+        <li>בכרום או באדג׳: בקצה שורת הכתובת יש אייקון התקנה (מסך קטן עם חץ). לחץ עליו ואז <b>התקנה</b>.
+            אם הוא לא שם: תפריט ⋮ ← <b>שמירה ושיתוף</b> ← <b>התקנת דרך קיצור</b>.</li>
+        <li>בספארי במק: תפריט <b>קובץ</b> ← <b>הוסף ל-Dock</b>.</li>
+        <li>בפיירפוקס אין התקנה; גרור את הכתובת משורת הכתובת אל שולחן העבודה, או Ctrl+D לסימנייה.</li></ol>`]
+    };
+    const mine = ios() ? 'ios' : android() ? 'android' : 'desktop';
+    const first = steps[mine];
+    const rest = Object.keys(steps).filter((k) => k !== mine);
+    notice(`
+      <header class="sheet-head">
+        <h2>דרך קיצור על מסך הבית</h2>
+        <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+      </header>
+      <p class="sheet-lead">אייקון כמו של כל אפליקציה, שנפתח ישר למפה, בלי שורת כתובת.
+        אין מה להוריד: זו אותה אפליקציה, ובכל פתיחה היא עם השבילים העדכניים.</p>
+      <h3>${first[0]}</h3>
+      ${first[1]}
+      <details class="install-more"><summary>מכשיר אחר?</summary>
+        ${rest.map((k) => `<h3>${steps[k][0]}</h3>${steps[k][1]}`).join('')}
+      </details>
+      <button class="big-act primary" data-act="close"><b>הבנתי</b></button>`);
+  }
+
+  return { init, howTo };
+})();
+
 /* ---------- the invitation ----------
  *
  * This map exists because residents walked the shortcuts on it: 41 of the 49
@@ -2996,6 +3085,7 @@ function wireControls() {
   });
 
   el('editor-btn').addEventListener('click', editorSheet);
+  Install.init();
   el('editor-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'editor-sheet') { el('editor-sheet').hidden = true; return; }
     const btn = e.target.closest('[data-act]');

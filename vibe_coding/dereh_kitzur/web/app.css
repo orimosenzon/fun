@@ -1517,6 +1517,11 @@ body.craft-bike #craft .craft-bal { display: block; }
   color: var(--accent);
   font-weight: 600;
 }
+.title-btns { display: flex; gap: 6px; flex: none; }
+.editor-btn[hidden] { display: none; }
+.install-more { margin: 4px 0 14px; font-size: 13px; }
+.install-more summary { cursor: pointer; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+.sheet-card .steps + h3, .sheet-card .sheet-lead + h3, .install-more h3 { margin: 10px 0 6px; font-size: 14px; }
 
 .steps {
   margin: 0 0 14px;
