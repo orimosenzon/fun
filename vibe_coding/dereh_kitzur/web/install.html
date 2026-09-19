@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>דרך קיצור על מסך הבית</title>
+<meta name="description" content="איך שמים את אפליקציית דרך קיצור כאייקון על מסך הבית של הטלפון או על שולחן העבודה של המחשב: אייפון, אנדרואיד, ווינדוס ומק.">
+<meta name="theme-color" content="#1b5e20">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="דרך קיצור">
+<meta property="og:locale" content="he_IL">
+<meta property="og:title" content="דרך קיצור על מסך הבית">
+<meta property="og:description" content="שלושה צעדים, ואין מה להוריד: איך שמים את מפת השבילים של פרדס חנה-כרכור כאייקון בטלפון ובמחשב.">
+<meta property="og:url" content="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/install.html">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<!-- The same manifest as the app: this page is inside its scope, so a browser
+     that offers to install from here installs the app itself. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --accent: #1b5e20;
+    --accent-soft: #e8f2e9;
+    --gold: #f2a900;
+    --ink: #1c2420;
+    --muted: #5c6b63;
+    --line: #dfe6e2;
+    --card: #ffffff;
+    --bg: #f4f7f5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, "Segoe UI", Rubik, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header.hero {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  header.hero img {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(27, 94, 32, .25);
+    flex: none;
+  }
+  h1 { margin: 0 0 4px; font-size: 26px; line-height: 1.2; letter-spacing: -.3px; }
+  .hero p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  .lead {
+    margin: 18px 0 8px;
+    padding: 14px 16px;
+    background: var(--accent-soft);
+    border-radius: 14px;
+    font-size: 15px;
+  }
+  .lead b { color: var(--accent); }
+
+  /* The browser that can install in one tap gets a button; the rest never
+     see it, so nobody is told to press something that does nothing. */
+  #now {
+    display: none;
+    width: 100%;
+    margin: 12px 0 4px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #now span { display: block; font-weight: 400; font-size: 13px; opacity: .85; }
+
+  h2.section { font-size: 14px; color: var(--muted); font-weight: 600; margin: 26px 0 10px; letter-spacing: .3px; }
+
+  .os {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .os.mine { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .os-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .os-head .ic {
+    width: 38px; height: 38px; border-radius: 10px; flex: none;
+    display: grid; place-items: center; font-size: 20px; background: var(--bg);
+  }
+  .os-head h3 { margin: 0; font-size: 18px; }
+  .os-head .you {
+    margin-inline-start: auto;
+    font-size: 11.5px; font-weight: 700; color: var(--accent);
+    background: var(--accent-soft); border-radius: 999px; padding: 3px 9px;
+  }
+  .os .browser { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  ol { margin: 0; padding-inline-start: 22px; }
+  li { margin: 6px 0; }
+  li b { color: var(--accent); }
+  .alt { margin: 10px 0 0; padding: 10px 12px; background: var(--bg); border-radius: 10px; font-size: 13.5px; color: #3a4741; }
+  .alt b { color: var(--ink); }
+
+  /* The two glyphs people have to find on their screens, drawn rather than
+     described: the share square with an arrow, and the three dots. */
+  .glyph {
+    display: inline-block; vertical-align: -4px; width: 20px; height: 20px;
+    margin: 0 2px;
+  }
+
+  .faq { margin-top: 26px; }
+  .faq details { border-top: 1px solid var(--line); padding: 10px 2px; }
+  .faq details:last-child { border-bottom: 1px solid var(--line); }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq p { margin: 8px 0 2px; color: #3a4741; font-size: 14.5px; }
+
+  footer { margin-top: 30px; color: var(--muted); font-size: 13px; text-align: center; }
+  footer a { color: var(--accent); }
+  .addr {
+    display: block; margin: 8px auto 0; padding: 8px 12px; max-width: 100%;
+    direction: ltr; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px;
+    background: var(--card); border: 1px dashed var(--line); border-radius: 10px;
+    overflow-wrap: anywhere; color: var(--ink);
+  }
+  @media (max-width: 420px) {
+    h1 { font-size: 22px; }
+    header.hero img { width: 68px; height: 68px; border-radius: 16px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <img src="icon-192.png" alt="האייקון של דרך קיצור: דרך זהובה זוהרת על רקע ירוק">
+    <div>
+      <h1>דרך קיצור על מסך הבית</h1>
+      <p>מפת השבילים של פרדס חנה-כרכור, כאייקון, כמו כל אפליקציה</p>
+    </div>
+  </header>
+
+  <p class="lead"><b>אין מה להוריד ואין הרשמה.</b> דרך קיצור היא אתר שמתנהג כמו אפליקציה: שמים אותו
+    על מסך הבית בשלושה צעדים, ומאז הוא נפתח ישר למפה, בלי שורת כתובת, ותמיד עם השבילים
+    העדכניים. ההוראות למכשיר שלך מסומנות למטה.</p>
+
+  <button id="now" type="button">התקנה בלחיצה אחת<span>הדפדפן הזה יודע לעשות את זה בעצמו</span></button>
+
+  <h2 class="section">בחר את המכשיר שלך</h2>
+
+  <section class="os" id="ios">
+    <div class="os-head"><span class="ic">🍎</span><h3>אייפון ואייפד</h3><span class="you" hidden>המכשיר שלך</span></div>
+    <p class="browser">בספארי. גם בכרום לאייפון זה עובד, באותה דרך.</p>
+    <ol>
+      <li>פתח את הקישור לדרך קיצור (למטה בדף הזה).</li>
+      <li>לחץ על כפתור <b>השיתוף</b>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7"/></svg>
+        (הריבוע עם החץ למעלה) בתחתית המסך. בכרום הוא למעלה, ליד שורת הכתובת.</li>
+      <li>גלול בתפריט שנפתח ובחר <b>הוסף למסך הבית</b>.</li>
+      <li>לחץ <b>הוסף</b> בפינה. האייקון יופיע בין האפליקציות.</li>
+    </ol>
+  </section>
+
+  <section class="os" id="android">
+    <div class="os-head"><span class="ic">🤖</span><h3>אנדרואיד</h3><span class="you" hidden>המכשיר שלך</span></div>
+    <p class="browser">בכרום. בדפדפן של סמסונג ובפיירפוקס, ראה למטה.</p>
+    <ol>
+      <li>פתח את הקישור לדרך קיצור.</li>
+      <li>לחץ על <b>📲 למסך הבית</b> בראש הרשימה, ואז <b>התקנה</b>. זהו.</li>
+      <li>אם הכפתור לא שם: לחץ על שלוש הנקודות
+        <svg class="glyph" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        בפינה למעלה ובחר <b>הוספה למסך הבית</b> (או <b>התקנת אפליקציה</b>).</li>
+    </ol>
+    <p class="alt"><b>דפדפן סמסונג:</b> תפריט ≡ למטה ← <b>הוסף דף ל</b> ← <b>מסך הבית</b>.
+      <b>פיירפוקס:</b> שלוש הנקודות ← <b>התקנה</b>.</p>
+  </section>
+
+  <section class="os" id="windows">
+    <div class="os-head"><span class="ic">🪟</span><h3>ווינדוס</h3><span class="you" hidden>המכשיר שלך</span></div>
+    <p class="browser">בכרום או באדג׳. האפליקציה תופיע בתפריט התחל ואפשר להצמיד אותה לשורת המשימות.</p>
+    <ol>
+      <li>פתח את הקישור לדרך קיצור.</li>
+      <li>לחץ על <b>📲 למסך הבית</b> בראש הרשימה, או על <b>אייקון ההתקנה</b> בקצה שורת הכתובת
+        (מסך קטן עם חץ למטה).</li>
+      <li>לחץ <b>התקנה</b>. נפתח חלון משלו, בלי שורת כתובת.</li>
+    </ol>
+    <p class="alt"><b>אם אין אייקון בשורת הכתובת:</b> בכרום, תפריט ⋮ ← <b>שמירה ושיתוף</b> ← <b>התקנת דרך קיצור</b>.
+      באדג׳, תפריט ⋯ ← <b>אפליקציות</b> ← <b>התקן אתר זה כאפליקציה</b>.
+      <b>פיירפוקס</b> לא יודע להתקין: גרור את המנעול שליד הכתובת אל שולחן העבודה, וזה קיצור דרך רגיל.</p>
+  </section>
+
+  <section class="os" id="mac">
+    <div class="os-head"><span class="ic">💻</span><h3>מק</h3><span class="you" hidden>המכשיר שלך</span></div>
+    <p class="browser">בספארי או בכרום.</p>
+    <ol>
+      <li>פתח את הקישור לדרך קיצור.</li>
+      <li><b>בספארי:</b> תפריט <b>קובץ</b> ← <b>הוסף ל-Dock</b> ← <b>הוסף</b>. (צריך macOS Sonoma ומעלה.)</li>
+      <li><b>בכרום:</b> לחץ על <b>📲 למסך הבית</b> בראש הרשימה, או על אייקון ההתקנה בקצה שורת הכתובת, ואז <b>התקנה</b>.</li>
+    </ol>
+    <p class="alt"><b>פיירפוקס</b> לא יודע להתקין: גרור את הכתובת משורת הכתובת אל שולחן העבודה.</p>
+  </section>
+
+  <div class="faq">
+    <h2 class="section">שאלות</h2>
+    <details><summary>איך אני יודע שזה עבד?</summary>
+      <p>יש אייקון ירוק עם דרך זהובה בין האפליקציות, וכשפותחים אותו המפה ממלאת את המסך,
+        בלי שורת כתובת ובלי כפתורי דפדפן.</p></details>
+    <details><summary>צריך לעדכן את זה מדי פעם?</summary>
+      <p>לא. בכל פתיחה האפליקציה מביאה את השבילים העדכניים. שביל שמישהו הוסיף הבוקר כבר שם.</p></details>
+    <details><summary>זה תופס מקום? זה בטוח?</summary>
+      <p>זה לא מוריד תוכנה, רק שומר קיצור דרך עם אייקון. אין הרשמה, אין חשבון, אין הרשאות
+        חוץ מהמיקום, וגם אותו רק אם תבקש "איפה אני".</p></details>
+    <details><summary>איך מסירים?</summary>
+      <p>כמו כל אפליקציה: לחיצה ארוכה על האייקון ← הסרה. במחשב: לחיצה ימנית על החלון או על
+        האייקון ← הסרת התקנה.</p></details>
+  </div>
+
+  <footer>
+    <a href="./">פתח את דרך קיצור</a> · הכתובת, למקרה שצריך להקליד:
+    <span class="addr">orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/</span>
+  </footer>
+</main>
+
+<script>
+  // The reader's own device goes first, marked. Nothing else moves.
+  (function () {
+    var ua = navigator.userAgent;
+    var id = (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
+      : /Android/.test(ua) ? 'android'
+      : /Windows/.test(ua) ? 'windows'
+      : /Macintosh/.test(ua) ? 'mac' : '';
+    var card = id && document.getElementById(id);
+    if (!card) return;
+    card.classList.add('mine');
+    card.querySelector('.you').hidden = false;
+    var first = document.querySelector('.os');
+    if (first !== card) first.parentNode.insertBefore(card, first);
+  })();
+
+  // Chrome and Edge can install from here in one tap; the button appears only
+  // once the browser has said so.
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  var deferred = null;
+  addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    document.getElementById('now').style.display = 'block';
+  });
+  document.getElementById('now').addEventListener('click', function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function (r) {
+      if (r.outcome === 'accepted') document.getElementById('now').style.display = 'none';
+      deferred = null;
+    });
+  });
+  addEventListener('appinstalled', function () { document.getElementById('now').style.display = 'none'; });
+</script>
+</body>
+</html>
