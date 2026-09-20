@@ -314,7 +314,7 @@ class AgentPlayer {
     r.game = r.games[index];
     r.pos = 0;
     window.game.loadBoard(r.game.start);
-    this.status.textContent = `Replaying a game recorded in Python by the full 4×6 n-tuple table (268MB): ` +
+    this.status.textContent = `Replaying a game recorded in Python by the full 4×6 n-tuple table (268MB, trained ${r.game.label || "73 minutes"}): ` +
       `${r.game.score.toLocaleString()} points, ${r.game.moves.toLocaleString()} moves, best tile ${r.game.max_tile.toLocaleString()}. ` +
       `Game ${index + 1} of ${r.games.length}.`;
   }

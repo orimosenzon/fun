@@ -177,7 +177,7 @@ def page(title: str, subtitle: str, meta: str, toc: list[tuple[str, str]], body:
 
 
 def kpi(label, value, sub="", cls="", delta="", delta_cls=""):
-    sub_html = f"<small>{sub}</small>" if sub else ""
+    sub_html = f"<wbr><small>{sub}</small>" if sub else ""   # נקודת שבירה: בטלפון התוספת יורדת שורה במקום להרחיב את הכרטיס
     delta_html = f'<div class="delta {delta_cls}">{delta}</div>' if delta else ""
     return f'<div class="kpi {cls}"><div class="label">{label}</div><div class="value">{value}{sub_html}</div>{delta_html}</div>'
 
@@ -402,8 +402,8 @@ def ntuple_experiments(evals_main: list, color: str) -> str:
             kp = '<div class="kpis cols4">' + "".join([
                 kpi("ניקוד ממוצע (1,000 משחקים)", f0(S["score_mean"]), cls=color, delta=f"הריצה של הדו\"ח: 116,716"),
                 kpi("חציון", f0(S["score_median"]), cls=color),
-                kpi("הגיע ל-2048 / 4096", f"{pct(S['reach_2048'])} / {pct(S['reach_4096'])}", cls=color),
-                kpi("הגיע ל-8192 / 16384", f"{pct(np.mean(np.asarray(ev_long['max_tiles']) >= 8192))} / {pct(np.mean(np.asarray(ev_long['max_tiles']) >= 16384))}", cls=color),
+                kpi("הגיע ל-2048", pct(S['reach_2048']), sub=f"4096: {pct(S['reach_4096'])}", cls=color),
+                kpi("הגיע ל-8192", pct(np.mean(np.asarray(ev_long['max_tiles']) >= 8192)), sub=f"16384: {pct(np.mean(np.asarray(ev_long['max_tiles']) >= 16384))}", cls=color),
             ]) + "</div>"
         long_title = "ההערכה החמדנית לאורך הזמן: הריצה הארוכה מול הריצה של הדו\"ח"
         html += f"""
@@ -411,7 +411,7 @@ def ntuple_experiments(evals_main: list, color: str) -> str:
 <p>{last['elapsed_sec'] / 60:.0f} דקות במקום 73, {trans_fmt(last['transitions'])[0]} {trans_fmt(last['transitions'])[1]} מעברים, {f0(last.get('episodes', 0))} משחקים. קצב הלמידה נשאר 0.1 בשלושת הרבעים הראשונים של הזמן (ניסוי ההסרה הראה שדעיכה מוקדמת מזיקה), ירד ל-0.03 ברבע האחרון ול-0.01 בעשירית האחרונה. השאלה: האם המישור של 117 אלף אחרי 43 דקות הוא של הקצב הקבוע (ואז זמן ודעיכה יעברו אותו) או של גודל הרשת (ואז לא).</p>
 {kp}
 <div class="grid2">
-{card("c_long", long_title, "100 משחקים בכל נקודת ביקורת.", "chart", f"R.lineChart('c_long', {j(ab_cfg)});")}
+{card("c_long", long_title, "100 משחקים בכל נקודת ביקורת. שתי הריצות מתחילות מאותו זרע, ולכן 73 הדקות הראשונות זהות והקו האפור מוסתר מתחת לצהוב.", "chart", f"R.lineChart('c_long', {j(ab_cfg)});")}
 {card("c_long_alpha", "לוח הזמנים של קצב הלמידה בריצה הארוכה", "0.1 → 0.03 ב-75% מהזמן → 0.01 ב-90%.", "chart short", f"R.lineChart('c_long_alpha', {j(alpha_cfg)});")}
 </div>
 """
