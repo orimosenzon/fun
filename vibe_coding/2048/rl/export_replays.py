@@ -7,10 +7,10 @@
 עם forcedTile), ולכן הניקוד והאנימציות הם של המשחק, וכל סטייה הייתה מתגלה מיד.
 
 מקורות: שני המשחקים שכבר מוקלטים ב-reports/data/eval_ntuple.json (הטוב ביותר והטיפוסי), ובנוסף
-הקלטות חדשות עם נקודת הביקורת (--record N --checkpoint ...).
+הקלטות חדשות מנקודות ביקורת, כל אחת עם תווית שמוצגת בפאנל (--source נתיב:מספר_משחקים:תווית, אפשר כמה).
 
 הרצה:
-    python rl/export_replays.py --record 4 --checkpoint checkpoints/ntuple_best.npz
+    python rl/export_replays.py --source "checkpoints/ntuple_best.npz:4:73 דקות" --source "checkpoints/ntuple_long_best.npz:4:4 שעות"
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIGITS = "0123456789abcdefghijklmnopqrstuv"
 
 
-def encode_game(game: dict) -> dict:
+def encode_game(game: dict, label: str) -> dict:
     """מהקלטת לוחות (frames) למחרוזת של פעולות ואריחים."""
     frames = game["frames"]
     steps = []
@@ -44,6 +44,7 @@ def encode_game(game: dict) -> dict:
         assert exp in (1, 2)
         steps.append(f"{a}{DIGITS[cell + (16 if exp == 2 else 0)]}")
     return {
+        "label": label,
         "score": game["score"],
         "max_tile": game["max_tile"],
         "moves": len(steps),
@@ -54,8 +55,7 @@ def encode_game(game: dict) -> dict:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--record", type=int, default=0, help="כמה משחקים חדשים להקליט עם נקודת הביקורת")
-    p.add_argument("--checkpoint", default="checkpoints/ntuple_best.npz")
+    p.add_argument("--source", action="append", default=[], help="נתיב:מספר_משחקים:תווית (אפשר כמה פעמים)")
     p.add_argument("--seed", type=int, default=777)
     args = p.parse_args()
 
@@ -64,20 +64,22 @@ def main():
     if os.path.exists(ev_path):
         with open(ev_path, encoding="utf-8") as f:
             ev = json.load(f)
-        for key in ("best_game", "typical_game"):
+        for key, label in (("best_game", "73 minutes, best of 40 recorded"), ("typical_game", "73 minutes, typical game")):
             if ev.get(key):
-                games.append(encode_game(ev[key]))
+                games.append(encode_game(ev[key], label))
                 print(f"{key}: {games[-1]['score']:,} points, {games[-1]['moves']:,} moves")
 
-    if args.record:
+    for src in args.source:
+        path, n, label = src.split(":", 2)
         from common import record_game
         from ntuple_td import load_checkpoint, make_policy, net_from_meta
-        table, meta = load_checkpoint(os.path.join(ROOT, args.checkpoint))
+        table, meta = load_checkpoint(os.path.join(ROOT, path))
         policy = make_policy(table, net_from_meta(meta))
-        for i in range(args.record):
+        for i in range(int(n)):
             g = record_game(policy, seed=args.seed + i)
-            games.append(encode_game(g))
-            print(f"recorded seed {args.seed + i}: {g['score']:,} points, {g['moves']:,} moves, tile {g['max_tile']:,}")
+            games.append(encode_game(g, label))
+            print(f"{label} seed {args.seed + i}: {g['score']:,} points, {g['moves']:,} moves, tile {g['max_tile']:,}")
+        del table, policy
 
     games.sort(key=lambda g: -g["score"])
     out = os.path.join(ROOT, "game", "weights", "ntuple_replays.js")
