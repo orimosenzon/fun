@@ -63,7 +63,7 @@ def recent_talk_pages(hours):
 
 
 def page_revisions_user_check(title):
-    """Return (latest_user, latest_ts, latest_revid, bot_has_prior_revision).
+    """Return (latest_user, latest_ts, latest_revid, latest_size, bot_has_prior_revision).
 
     Housekeeping edits by the bot are skipped when deciding who spoke last.
     archive_bot_talk.py edits the bot's own talk page daily, and such an edit
@@ -71,22 +71,25 @@ def page_revisions_user_check(title):
     bot look like the last speaker and hid the pending question entirely.
     (That happened on 2026-08-26: a question at 08:25 was masked by an
     archiving edit 13 minutes later and never got picked up.)
+
+    latest_size is the byte size of that revision. The caller uses it to tell
+    a real message apart from a user blanking their own talk page.
     """
     r = requests.get(API, params={
         "action": "query", "titles": title,
-        "prop": "revisions", "rvprop": "user|timestamp|ids|comment", "rvlimit": 50,
+        "prop": "revisions", "rvprop": "user|timestamp|ids|comment|size", "rvlimit": 50,
         "format": "json",
     }, headers=H, timeout=40).json()
     page = next(iter(r["query"]["pages"].values()))
     if "missing" in page or "revisions" not in page:
-        return None, None, None, False
+        return None, None, None, None, False
     revs = page["revisions"]
     bot_has_prior = any(rv["user"] == BOT_NAME for rv in revs)
     for rv in revs:                       # newest first
         if rv["user"] == BOT_NAME and is_housekeeping(rv.get("comment", "")):
             continue
-        return rv["user"], rv["timestamp"], rv["revid"], bot_has_prior
-    return None, None, None, bot_has_prior
+        return rv["user"], rv["timestamp"], rv["revid"], rv.get("size"), bot_has_prior
+    return None, None, None, None, bot_has_prior
 
 
 def main():
@@ -96,13 +99,22 @@ def main():
 
     pending = []
     for title in recent_talk_pages(args.hours):
-        user, ts, revid, bot_has_prior = page_revisions_user_check(title)
+        user, ts, revid, size, bot_has_prior = page_revisions_user_check(title)
         if user is None or user == BOT_NAME:
             continue
         if not bot_has_prior:
             # The bot never participated on this page — out of scope for this
             # check (check_bot_talk.py's own-page check already covers the
             # bot's own talk page even on a first-ever message).
+            continue
+        if size == 0:
+            # The last edit blanked the page. That's a user clearing their own
+            # talk page after a conversation ended, not a new message — there
+            # is nothing to answer, and the agent's "always reply" rule would
+            # otherwise undo a deliberate blanking. (שיחת_משתמש:חוה_אהרון,
+            # 2026-08-21, "הסרת כל התוכן מהדף", was flagged this way.)
+            print(f"[check_all_bot_talk] skipping {title}: last edit by '{user}' "
+                  f"at {ts} (rev {revid}) blanked the page — not a message")
             continue
         pending.append((title, user, ts, revid))
 
