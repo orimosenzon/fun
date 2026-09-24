@@ -34,6 +34,19 @@ polygons over a small town is a wall you cannot see the moshava through; a
 closed file is not information about anything. Both are one `STAGES` entry away
 if that turns out to be wrong.
 
+How big, and how long is left
+-----------------------------
+Two things a resident wants and the layer used not to carry, both of them in
+the service all along under names nothing in the REST output explains:
+
+    quantity_delta_120     שינוי מס' יח' דיור      how many flats it adds
+    pl_rejection_date      תאריך אחרון להתנגדויות  the day objections shut
+
+The layer's own metadata gives the Hebrew alias of every column - ask for
+`MapServer/1?f=pjson` and read `fields[].alias`. That is how the `quantity_*`
+family was finally told apart; before 24/9/2026 this file deliberately guessed
+at none of them. See QUANTITIES and `deadline()`.
+
     python3 build_plans.py
     python3 build_plans.py --all      # every status, including approved and closed
 """
@@ -85,6 +98,31 @@ FIELDS = [
     "pl_area_dunam", "pl_landuse_string", "pl_by_auth_of",
     "depositing_date", "pl_last_deposit_date", "receiving_date",
     "last_update_date", "pl_id", "mp_id",
+    # The objection window, and what the plan actually adds. See QUANTITIES and
+    # `deadline` below for what each of these means and how the names were run
+    # to ground.
+    "pl_date_advertise", "pl_rejection_date", "ja_concat",
+    "quantity_delta_120", "quantity_delta_125", "quantity_delta_75",
+    "quantity_delta_80", "quantity_delta_60",
+    "pq_authorised_quantity_120",
+]
+
+# The `quantity_delta_*` columns are numbered by מבא"ת land-use code, and the
+# service's own Hebrew aliases say which is which - `?f=pjson` on the layer
+# returns them. Until 24/9/2026 this script left the whole family alone rather
+# than guess; the aliases end the guessing. Verified against plans whose size is
+# public knowledge: "מתחם אחוזת נעורים" reports 261 units, "התחדשות עירונית
+# בשכונת קנדי" 270, "תעסוקה מצפון ומדרום לרחוב תדהר" 9,906 m² of commerce.
+#
+# Only the deltas are used. `pq_authorised_quantity_120` is the standing figure
+# rather than the change, and a resident asking what a plan does to their street
+# is asking for the change.
+QUANTITIES = [
+    ("quantity_delta_120", "{n:g} יחידות דיור", "יחידת דיור אחת"),
+    ("quantity_delta_125", "{n:,.0f} מ\"ר שטחי מגורים", None),
+    ("quantity_delta_75", "{n:,.0f} מ\"ר מסחר", None),
+    ("quantity_delta_60", "{n:,.0f} מ\"ר תעסוקה", None),
+    ("quantity_delta_80", "{n:,.0f} מ\"ר מבני ציבור", None),
 ]
 
 PAGE = 200
@@ -182,6 +220,69 @@ def when(stamp):
         return None
 
 
+def days_left(stamp):
+    """Whole days from today to an epoch-milliseconds date. Negative is past."""
+    if not stamp:
+        return None
+    try:
+        return int((int(stamp) / 1000 - time.time()) // 86400) + 1
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def deadline(at):
+    """The last day to object to a plan, and whether that day has passed.
+
+    Two fields carry it and they take turns, which is why neither alone looked
+    like the answer:
+
+        pl_last_deposit_date   תאריך אחרון להפקדה
+        pl_rejection_date      תאריך אחרון להתנגדויות
+
+    While a plan is on show - status פרסום הפקדה - only the first is filled, and
+    it sits exactly 63 days after `pl_date_advertise`, the newspaper notice. It
+    is the live window. The second is filled later, once objections have been
+    registered and the plan has moved on, and is then the authoritative record
+    of when the window shut. Taking whichever is present, preferring the
+    recorded one, gives one date for every plan that ever had one.
+
+    Returns (date string, days remaining) or (None, None).
+    """
+    stamp = at.get("pl_rejection_date") or at.get("pl_last_deposit_date")
+    return when(stamp), days_left(stamp)
+
+
+def adds(at):
+    """What the plan changes, as a Hebrew phrase, or None if it changes nothing.
+
+    A plan that moves a building line has zeroes in every quantity column, and
+    "the plan adds nothing" would be a wrong way to say that - so an all-zero
+    plan simply says nothing here.
+    """
+    parts = []
+    for field, many, one in QUANTITIES:
+        value = at.get(field)
+        try:
+            n = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not n:
+            continue
+        if n == 1 and one:
+            parts.append(one)
+        else:
+            # A minus sign in front of a Hebrew phrase reads as a dash, so a
+            # reduction is said in words. 308-0340059 turned 6,936 m² of
+            # commerce into flats, and "מסחר: -6936" would not have said that.
+            word = many.format(n=abs(n))
+            parts.append(word if n > 0 else "גריעה של " + word)
+    if not parts:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    return ", ".join(parts[:-1]) + " ו" + parts[-1]
+
+
 # ---------------------------------------------------------------- fetching
 
 def statuses(want_all):
@@ -241,15 +342,33 @@ def note_for(at):
     if objectives and objectives.rstrip(" .") != name.rstrip(" ."):
         bits.append(objectives)
 
+    # What it does to the ground, before the procedure it is going through: a
+    # resident wants the number of flats first and the committee stage second.
+    change = adds(at)
+    if change:
+        bits.append(f"התכנית מוסיפה {change}.")
+
     stage = (at.get("station_desc") or "").strip()
     if stage:
         bits.append(f"השלב הנוכחי: {stage}.")
 
+    # The one sentence in the whole layer a resident can act on.
+    last, left = deadline(at)
+    if last and left is not None and left >= 0:
+        when_text = "היום" if left == 0 else ("מחר" if left == 1 else f"בעוד {left} ימים")
+        bits.append(f"אפשר להגיש התנגדות עד {last}, כלומר {when_text}.")
+    elif last:
+        bits.append(f"חלון ההתנגדויות נסגר ב-{last}.")
+
+    advert = when(at.get("pl_date_advertise"))
+    if advert and last:
+        bits.append(f"ההפקדה פורסמה בעיתונים ב-{advert}.")
+
     deposit = when(at.get("pl_last_deposit_date")) or when(at.get("depositing_date"))
-    if deposit:
+    if deposit and not last:
         bits.append(f"הופקדה ב-{deposit}.")
     received = when(at.get("receiving_date"))
-    if received and not deposit:
+    if received and not deposit and not last:
         bits.append(f"נקלטה ב-{received}.")
 
     dunam = at.get("pl_area_dunam")
@@ -271,6 +390,7 @@ def build(features, want_all):
 
     plans = []
     skipped = 0
+    openable = 0
     for feat in features:
         at = feat.get("attributes", {})
         rings = (feat.get("geometry") or {}).get("rings") or []
@@ -282,13 +402,24 @@ def build(features, want_all):
         number = (at.get("pl_number") or "").strip()
         name = (at.get("pl_name") or "").strip() or number
         status = (at.get("internet_short_status") or "").strip()
+        last, left = deadline(at)
+        open_now = bool(last) and left is not None and left >= 0
+        if open_now:
+            openable += 1
 
         plans.append({
             "id": "plan-" + (number or str(at.get("pl_id"))),
             "name": name,
             "group": bucket_of.get(status, "בתהליך"),
-            "cats": [c for c in ["תכנית", status] if c],
+            # "פתוח להתנגדות" is searchable text, so typing it in the list box
+            # finds exactly the plans somebody can still do something about.
+            "cats": [c for c in ["תכנית", status,
+                                 "פתוח להתנגדות" if open_now else None] if c],
             "num": number,
+            # The date is kept as well as said in the note: the app shows a
+            # count of what is open, and counting sentences is no way to do it.
+            "objection": last,
+            "units": at.get("quantity_delta_120") or 0,
             # Both render as chips in the detail pane.
             "status": status,
             "kind": (at.get("entity_subtype_desc") or "").strip() or None,
@@ -316,6 +447,7 @@ def build(features, want_all):
         "stats": {
             "plans": len(plans),
             "no_geometry": skipped,
+            "open_for_objection": openable,
             "by_status": {s: sum(1 for p in plans if p["status"] == s)
                           for s in sorted({p["status"] for p in plans})},
         },
