@@ -3267,12 +3267,18 @@ function wireControls() {
 
   // "מה מתוכנן כאן?" - one tap arms the question, the next tap on the map asks
   // it. See plan_here.js for why arming beats a mode you have to leave.
-  el('plan-ask').addEventListener('click', () => {
-    if (PlanHere.isArmed()) { PlanHere.disarm(); return; }
-    PlanHere.arm();
-    // The panel covers the map on a phone. Arming and leaving it there would
-    // ask somebody to tap a map they cannot see.
-    collapsePanel();
+  // The same question from two places: the card in the list, and the button on
+  // the map. The card explains itself and is what somebody reading the panel
+  // finds; the map button is what somebody looking at their street reaches for,
+  // and on a phone it is the only one of the two on screen.
+  ['plan-ask', 'plan-fab'].forEach((id) => {
+    el(id).addEventListener('click', () => {
+      if (PlanHere.isArmed()) { PlanHere.disarm(); return; }
+      PlanHere.arm();
+      // The panel covers the map on a phone. Arming and leaving it there would
+      // ask somebody to tap a map they cannot see.
+      collapsePanel();
+    });
   });
 
   el('plan-sheet').addEventListener('click', (e) => {
