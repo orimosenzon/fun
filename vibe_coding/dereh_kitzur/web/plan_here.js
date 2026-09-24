@@ -462,18 +462,24 @@ const PlanHere = (() => {
   /* Arming rather than a mode: one tap on the button, one tap on the map, and
    * the app goes back to being a trail browser. A mode you have to remember to
    * leave is a mode that swallows the next tap you meant for a trail. */
+  /* Two buttons offer the same question - the card in the panel and the one on
+   * the map - so both have to light up, whichever was pressed. */
+  const BUTTONS = ['plan-ask', 'plan-fab'];
+  const lightButtons = (on) => BUTTONS.forEach((id) => {
+    const btn = el(id);
+    if (btn) btn.classList.toggle('on', on);
+  });
+
   function arm() {
     armed = true;
     document.body.classList.add('asking-plan');
-    const btn = el('plan-ask');
-    if (btn) btn.classList.add('on');
+    lightButtons(true);
   }
 
   function disarm() {
     armed = false;
     document.body.classList.remove('asking-plan');
-    const btn = el('plan-ask');
-    if (btn) btn.classList.remove('on');
+    lightButtons(false);
   }
 
   const isArmed = () => armed;
