@@ -2341,6 +2341,170 @@ function locate() {
 
 /* ---------- panel drag (mobile) ---------- */
 
+/* ---------- the parcels, fetched as you look at them ----------
+ *
+ * Every other layer in this app is a file: built once by a script, published to
+ * the data repo, kept in localStorage. The parcels cannot be. There are over
+ * ten thousand in the moshava and their outlines are the bulk of the cadastre,
+ * which is exactly why build_cadastre.py stops at the sixty blocks and says so
+ * in its docstring - "parcels want a different shape entirely: fetched for the
+ * block you are looking at, when you zoom in past it".
+ *
+ * This is that shape. govmap's WFS answers a browser directly - it sends
+ * `Access-Control-Allow-Origin: *` - so the layer starts empty and fills from
+ * the viewport, and nothing is stored anywhere: close the tab and it is gone.
+ *
+ * They matter because a plan is written in blocks and parcels. "גוש 10102 חלקה
+ * 109" is the whole subject of a plan and means nothing to a resident until
+ * they can see which plot on their own street it is.
+ */
+const Parcels = (() => {
+  'use strict';
+
+  const WFS = 'https://open.govmap.gov.il/geoserver/opendata/ows';
+  const MINZOOM = 16;
+  // A viewport at z16 holds a few hundred. The cap is a guard against a
+  // gesture that lands the map somewhere unexpected, not a working limit.
+  const CAP = 1200;
+  const GOVMAP = 'https://www.govmap.gov.il/';
+
+  const seen = new Map();          // gush/parcel -> the item, for this tab only
+  let covered = null;              // the box already asked for, in degrees
+  let busy = false;
+
+  /** WGS84 to Web Mercator: the layer's own CRS, and what a CQL filter is read
+   *  in whatever `srsName` asks the answer to be. Degrees here match nothing
+   *  and come back empty, which cost an hour the first time. */
+  function merc(lng, lat) {
+    return [lng * 20037508.34 / 180,
+            Math.log(Math.tan((90 + lat) * Math.PI / 360)) * 20037508.34 / Math.PI];
+  }
+
+  const inside = (b, box) => box && b.west >= box.west && b.east <= box.east
+    && b.south >= box.south && b.north <= box.north;
+
+  function centre(rings) {
+    let x = 0, y = 0, n = 0;
+    rings.forEach((r) => r.forEach((p) => { x += p[0]; y += p[1]; n += 1; }));
+    return n ? [x / n, y / n] : null;
+  }
+
+  /** Every parcel in the box, merged into what we already hold. */
+  async function fetchBox(box) {
+    const [x1, y1] = merc(box.west, box.south);
+    const [x2, y2] = merc(box.east, box.north);
+    const url = WFS + '?' + new URLSearchParams({
+      service: 'WFS', version: '2.0.0', request: 'GetFeature',
+      typeName: 'opendata:PARCEL_ALL', outputFormat: 'application/json',
+      srsName: 'EPSG:4326', count: String(CAP),
+      CQL_FILTER: `BBOX(the_geom,${x1},${y1},${x2},${y2})`
+    });
+    const stop = new AbortController();
+    const timer = setTimeout(() => stop.abort(), 20000);
+    let doc;
+    try {
+      const res = await fetch(url, { signal: stop.signal });
+      if (!res.ok) throw new Error('govmap החזיר ' + res.status);
+      doc = await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+
+    let added = 0;
+    (doc.features || []).forEach((f) => {
+      const p = f.properties || {};
+      if (p.GUSH_NUM == null || p.PARCEL == null) return;
+      const id = `parcel-${p.GUSH_NUM}-${p.PARCEL}`;
+      if (seen.has(id)) return;
+      // MultiPolygon, almost always with one ring that matters.
+      const coords = (f.geometry || {}).coordinates || [];
+      const rings = [];
+      coords.forEach((poly) => poly.forEach((ring) => rings.push(
+        ring.map((pt) => [Math.round(pt[0] * 1e6) / 1e6, Math.round(pt[1] * 1e6) / 1e6]))));
+      if (!rings.length) return;
+      const mid = centre(rings);
+      const area = p.LEGAL_AREA;
+      seen.set(id, {
+        id,
+        name: `גוש ${p.GUSH_NUM} חלקה ${p.PARCEL}`,
+        group: '',
+        cats: ['חלקה', String(p.GUSH_NUM), String(p.PARCEL)],
+        num: String(p.PARCEL),
+        gush: String(p.GUSH_NUM),
+        photos: [],
+        url: GOVMAP,
+        geo: { lat: mid[1], lng: mid[0], source: 'parcel' },
+        lat: mid[1],
+        lng: mid[0],
+        place: true,
+        color: '#5d4037',
+        shape: rings,
+        note: `חלקה ${p.PARCEL} בגוש ${p.GUSH_NUM}`
+          + (area ? `, ${Math.round(area).toLocaleString('he-IL')} מ"ר רשומים` : '')
+          + (p.LOCALITY_N ? `, ${p.LOCALITY_N}` : '') + '. '
+          + 'גוש וחלקה הם השפה שבה כתובות התכניות: תכנית שנקראת '
+          + '"תוספת זכויות בגוש 10102 חלקה 109" מדברת על חלקה אחת כזאת. '
+          + 'כדי לראות מה חל כאן, השתמש ב"מה מתוכנן כאן?".'
+      });
+      added += 1;
+    });
+    return added;
+  }
+
+  /** Fill from the current viewport, if the layer is showing and we are close
+   *  enough in. Quiet about everything: a cadastre that did not arrive must not
+   *  interrupt somebody looking for a footpath. */
+  async function maybeFill() {
+    if (busy || !map) return;
+    const layer = Layers.byId(Layers.PARCELS_ID);
+    if (!layer || !Layers.shown(layer) || map.getZoom() < MINZOOM) return;
+
+    const b = map.getBounds();
+    const box = { west: b.getWest(), east: b.getEast(),
+                  south: b.getSouth(), north: b.getNorth() };
+    if (inside(box, covered)) return;
+    // Asked for a fifth more than is on screen, so a small pan is not another
+    // request. `covered` is replaced rather than unioned: the parcels
+    // themselves accumulate in `seen`, so a box that moves away only costs a
+    // repeat request, never a wrong map.
+    const padX = (box.east - box.west) * 0.2;
+    const padY = (box.north - box.south) * 0.2;
+    const wide = { west: box.west - padX, east: box.east + padX,
+                   south: box.south - padY, north: box.north + padY };
+
+    busy = true;
+    try {
+      const added = await fetchBox(wide);
+      covered = wide;
+      if (added) {
+        layer.waypoints = [...seen.values()];
+        Layers.refresh(Layers.PARCELS_ID);
+      }
+    } catch (err) {
+      console.info('דרך קיצור: לא הצלחתי למשוך חלקות מ-govmap', err);
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** Forget the box when the layer is switched off, so switching it back on
+   *  asks again rather than showing whatever was on screen last time. */
+  function reset() { covered = null; }
+
+  return { maybeFill, reset, count: () => seen.size, MINZOOM };
+})();
+
+/** Get the list out of the way so the map is tappable.
+ *
+ *  Only on a narrow screen: on a desktop the panel is a column beside the map
+ *  and shrinking it would move the list for no reason. */
+function collapsePanel() {
+  if (window.innerWidth > 760) return;
+  if (el('panel').getBoundingClientRect().height < 140) return;
+  document.documentElement.style.setProperty('--panel-h', '96px');
+  setTimeout(() => { if (map) map.resize(); }, 260);
+}
+
 function wireGrip() {
   const grip = el('grip');
   let startY = 0, startH = 0, dragging = false;
@@ -2611,6 +2775,8 @@ function paintUnsent() {
 function repaint() {
   drawWaypoints();
   paintStats();
+  // The parcels layer may have just been switched on, and it arrives empty.
+  Parcels.maybeFill();
   const layer = selectedId ? Layers.layerOf(selectedId) : null;
   // `shown` and not `on`: a private layer is on and still not showing once
   // edit mode goes off, and the pane open on one of its trails has to close.
@@ -2676,6 +2842,9 @@ async function boot() {
     // From here the address bar tracks the map. `moveend` covers panning,
     // zooming, rotating and tilting alike.
     ['moveend', 'pitchend', 'rotateend'].forEach((ev) => map.on(ev, scheduleSync));
+    // The cadastre follows the viewport. `moveend` and not `move`: one request
+    // when the pan stops, not sixty on the way.
+    map.on('moveend', () => Parcels.maybeFill());
     // The way back appears and disappears with the same move. `move` and not
     // `moveend`, so a link that lands on Houten shows it during the flight
     // rather than only once the camera has settled.
@@ -3096,6 +3265,32 @@ function wireControls() {
 
   el('go-home').addEventListener('click', goHome);
 
+  // "מה מתוכנן כאן?" - one tap arms the question, the next tap on the map asks
+  // it. See plan_here.js for why arming beats a mode you have to leave.
+  el('plan-ask').addEventListener('click', () => {
+    if (PlanHere.isArmed()) { PlanHere.disarm(); return; }
+    PlanHere.arm();
+    // The panel covers the map on a phone. Arming and leaving it there would
+    // ask somebody to tap a map they cannot see.
+    collapsePanel();
+  });
+
+  el('plan-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'plan-sheet' || e.target.closest('[data-act="close"]')) {
+      PlanHere.close();
+    }
+  });
+
+  // Escape backs out of the question: first the answer, then the armed tap.
+  // Without it, arming and changing your mind leaves the map waiting.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (PlanHere.isOpen()) PlanHere.close();
+    else if (PlanHere.isArmed()) PlanHere.disarm();
+  });
+
+  el('plan-banner').addEventListener('click', () => PlanHere.showOpen());
+
   el('layers').addEventListener('click', () => { laySay(''); Layers.openSheet(); });
   el('layer-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'layer-sheet' || e.target.closest('[data-act="close"]')) {
@@ -3271,6 +3466,11 @@ function wireControls() {
   // the tap actually landed on empty ground - and never while drafting, where
   // a tap on the map is how you place a point.
   if (map) map.on('click', (e) => {
+    // Armed by "מה מתוכנן כאן?": this tap is the question, not a selection.
+    // First, so it beats both the trail picker and the clear-the-selection
+    // rule below, and so a tap that lands on a trail still asks about the
+    // ground under it - which is what somebody who just armed it meant.
+    if (PlanHere.isArmed()) { PlanHere.at(e.lngLat); return; }
     // While drafting or arranging, a tap on the map means something other than
     // "clear the selection".
     if (!selectedId || Drafts.isDrafting() || Arrange.isOn()) return;
@@ -3284,6 +3484,11 @@ function wireControls() {
   wirePanelWidth();
   wireSwipe();
   wireLightboxZoom();
+
+  // What is open for objection right now. Late, unawaited and allowed to fail:
+  // it is a government service behind a firewall, and the trails must not wait
+  // on it. The banner stays hidden until there is an answer worth showing.
+  PlanHere.paintBanner();
 }
 
 if (!hasGL) {

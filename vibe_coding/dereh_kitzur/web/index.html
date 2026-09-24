@@ -203,6 +203,23 @@
            sixty of a list sorted by length. -->
       <button id="unsent" class="unsent" hidden></button>
 
+      <!-- What is being planned around here, and the one window in a plan's
+           life when a resident can say anything about it. The banner is filled
+           live from the planning administration on load, and stays hidden when
+           nothing is open - a row that says "0 plans" every day is a row nobody
+           reads on the day it says 4. See plan_here.js and refreshObjections. -->
+      <button id="plan-banner" class="plan-banner" hidden></button>
+
+      <button id="plan-ask" class="invite invite-quiet">
+        <span class="invite-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 4a3 3 0 011.7 5.5V13h-1.4v-1.5A3 3 0 0112 6z"/></svg>
+        </span>
+        <span class="invite-txt">
+          <b>מה מתוכנן כאן?</b>
+          <span>לחץ, ואז בחר נקודה במפה. כל התכניות שחלות עליה, הייעוד, הגוש והחלקה.</span>
+        </span>
+      </button>
+
       <div class="controls">
         <input id="search" type="search" placeholder="חיפוש שביל או רחוב…" autocomplete="off" aria-label="חיפוש">
         <div class="sorts" role="group" aria-label="מיון">
@@ -292,6 +309,13 @@
   <div class="sheet-card" id="form-card"></div>
 </div>
 
+<!-- "מה מתוכנן כאן?" - filled live from the planning administration at the
+     moment somebody taps a point. See plan_here.js for why it is live and not
+     built into a layer. -->
+<div id="plan-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="מה מתוכנן כאן">
+  <div class="sheet-card" id="plan-card"></div>
+</div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <!-- Plain scripts sharing one global scope, no bundler. store.js, layers.js and
      draft.js define their modules; app.js is loaded last and drives all three. -->
@@ -303,6 +327,7 @@
      Three.js itself, only when the bike is first flown. -->
 <script src="bike.js"></script>
 <script src="cockpit.js"></script>
+<script src="plan_here.js"></script>
 <script src="explore.js"></script>
 <script src="app.js"></script>
 </body>

@@ -32,6 +32,11 @@ const Layers = (() => {
   const shapeFeature = new Map();     // the same, for the layers drawn as areas
   const wired = new Set();            // layer ids whose map handlers are bound
 
+  /* Which item the map is lit for. Kept here rather than asked of app.js when
+   * needed, because every rebuild of a source has to be able to put the
+   * highlight back on its own - see paintHighlight. */
+  let litId = null;
+
   let onChange = () => {};            // set by app.js, re-renders the list
 
   const byId = (id) => list.find((l) => l.id === id);
@@ -46,6 +51,7 @@ const Layers = (() => {
   const MAKOM_ID = 'makom-shamur';
   const PLANS_ID = 'plans';
   const BLOCKS_ID = 'blocks';
+  const PARCELS_ID = 'parcels';
   const PUBLIC_ID = 'public-land';
   const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
@@ -770,6 +776,44 @@ const Layers = (() => {
       on: isOn(BLOCKS_ID, false)
     });
 
+    // The parcels inside those blocks, and the one layer here that arrives
+    // empty. There are over ten thousand of them in the moshava, which is why
+    // build_cadastre.py stops at the sixty blocks: the app keeps every layer
+    // in localStorage and a file of ten thousand polygons is not a file this
+    // app can carry. So this one is filled from govmap as you look at it, a
+    // viewport at a time, and kept only for as long as the tab is open. See
+    // Parcels in app.js.
+    //
+    // It earns its complication: a plan is written in blocks and parcels, and
+    // "גוש 10102 חלקה 109" is a sentence a resident can do nothing with until
+    // they can see which plot on their street that is.
+    add({
+      id: PARCELS_ID,
+      kind: 'places',
+      category: 'other',
+      name: 'חלקות',
+      short: 'חלקה',
+      unit: 'חלקות',
+      color: '#5d4037',
+      dash: true,                          // a reference grid, like the blocks
+      dots: false,
+      labels: false,                       // the number is in the detail pane
+      groups: [],
+      waypoints: [],
+      minzoom: 16,                         // below this it is a brown smear
+      note: 'גבולות החלקות מהקדסטר הארצי, נטענות מ-govmap לפי מה שרואים על המסך '
+        + 'ורק מזום 16 ומעלה. יש במושבה יותר מעשרת אלפים חלקות, ולכן הן אינן '
+        + 'נשמרות במכשיר כמו שאר השכבות אלא נמשכות מחדש בכל ביקור. '
+        + 'גוש וחלקה הם השפה שבה כתובות התכניות, וזו הדרך לראות על הקרקע '
+        + 'על מה בדיוק תכנית מדברת.',
+      credit: 'הקדסטר הארצי · govmap',
+      sourceName: 'הקדסטר הארצי',
+      sourceLine: 'גבולות החלקות מתוך הקדסטר הארצי, govmap',
+      linkTitle: 'govmap',
+      pinnable: false,
+      on: isOn(PARCELS_ID, false)
+    });
+
     // Which ground is public, which is the question every shortcut eventually
     // runs into: a path across a שצ"פ is a path across land set aside for it,
     // and the same line across somebody's plot lasts as long as they put up
@@ -931,6 +975,9 @@ const Layers = (() => {
   const order = (l) => (l.id === PUBLIC_ID ? 0.1
     : l.id === CANOPY_ID ? 0.15
     : l.id === BLOCKS_ID ? 0.25
+    // Parcels sit just inside their blocks: the block outline has to stay
+    // readable over the finer grid, not under it.
+    : l.id === PARCELS_ID ? 0.3
     : l.id === PLANS_ID ? 0.5 : RANK[l.kind]);
 
   /** Rebuild the trail layers after a write, without disturbing the drafts
@@ -983,6 +1030,7 @@ const Layers = (() => {
     reindex();
     if (typeof map !== 'undefined' && map && map.getSource(srcId(PENDING_ID))) {
       map.getSource(srcId(PENDING_ID)).setData(geojson(layer));
+      paintHighlight();
     }
     applyVisibility();
     onChange();
@@ -1007,6 +1055,7 @@ const Layers = (() => {
     reindex();
     if (typeof map !== 'undefined' && map && map.getSource(srcId(PLACES_ID))) {
       map.getSource(srcId(PLACES_ID)).setData(geojson(layer));
+      paintHighlight();
     }
     onChange();
   }
@@ -1206,7 +1255,12 @@ const Layers = (() => {
     // ninety-five overlapping ones still leave the streets underneath readable.
     const grid = !!layer.dash;
 
-    map.addLayer({
+    // A layer that only means anything close up says so once, here, and both
+    // of its GL layers inherit it. The parcels are the case: ten thousand
+    // outlines at z13 are a brown smear that hides the town.
+    const near = layer.minzoom ? { minzoom: layer.minzoom } : {};
+
+    map.addLayer(Object.assign({
       id: fillId(layer.id),
       type: 'fill',
       source: src,
@@ -1216,9 +1270,9 @@ const Layers = (() => {
           ? ['case', sel, 0.14, 0]
           : ['case', sel, 0.32, dim, 0.05, 0.14]
       }
-    });
+    }, near));
 
-    map.addLayer({
+    map.addLayer(Object.assign({
       id: edgeId(layer.id),
       type: 'line',
       source: src,
@@ -1227,7 +1281,7 @@ const Layers = (() => {
         'line-width': ['case', sel, 3.5, grid ? 1 : 1.6],
         'line-opacity': ['case', sel, 1, dim, 0.25, grid ? 0.5 : 0.8]
       }, grid ? { 'line-dasharray': [3, 2] } : {})
-    });
+    }, near));
 
     // Tapping anywhere inside a plan selects it, which is how you ask "what is
     // planned for my street" without having to find its centre dot.
@@ -1450,7 +1504,10 @@ const Layers = (() => {
    *  setStyle drops anything we added. */
   function addToMap() {
     if (typeof map === 'undefined' || !map) return;
+    // Both of them: a layer that has since lost its areas would otherwise
+    // leave shapeFeature pointing at positions nothing occupies any more.
     feature.clear();
+    shapeFeature.clear();
 
     // A layer deleted since the last run leaves its GL layers and its source
     // behind. Sources go last: removing one still in use throws.
@@ -1492,17 +1549,98 @@ const Layers = (() => {
 
       // A layer-scoped listener outlives the layer it names, and setStyle wipes
       // every layer we added - so without this set, each basemap switch bound
-      // another copy of the same three handlers.
+      // another copy of the same two handlers. The click is not among them:
+      // one handler over all the layers at once is what lets the nearest line
+      // win, see wirePicking.
       if (wired.has(layer.id)) return;
       wired.add(layer.id);
-      map.on('click', hitId(layer.id), (e) => {
-        if (e.features && e.features.length) select(e.features[0].properties.id, false);
-      });
       map.on('mouseenter', hitId(layer.id), () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', hitId(layer.id), () => { map.getCanvas().style.cursor = ''; });
     });
+    wirePicking();
 
     applyVisibility();
+    // Every source here is either brand new - setStyle threw the old ones away
+    // - or has just been handed a fresh array. Either way the highlight has to
+    // be put back on; see paintHighlight.
+    paintHighlight();
+  }
+
+  /* ---------- picking a line with a finger ----------
+   *
+   * A tap has to end up on one trail, and several can answer it at once. The
+   * hit line is a flat 22 pixels so that a fingertip need not land on the
+   * stroke itself, but 22 pixels is 15 metres of ground at z18 and seventy at
+   * z15 - so at a junction, or anywhere two shortcuts run alongside, three of
+   * them are under the finger together.
+   *
+   * MapLibre hands those back in the order it drew them, which is the order
+   * they sit in the tile and has nothing to do with where the finger was. One
+   * listener per layer made it worse still: several fired for the same tap and
+   * the last one registered won. Between them, tapping a trail would open the
+   * one next to it - the pane naming one shortcut while another glowed (Ori,
+   * 24/9/2026, on the satellite background where the trails are easiest to aim
+   * at and so the miss is plainest).
+   *
+   * One listener over every layer, and the nearest line wins. */
+
+  /** How far a tap is from a line, in units proportional to metres.
+   *
+   *  Degrees, with longitude squeezed by the latitude - not pixels. The map
+   *  can be tilted over terrain, where a pixel near the horizon is a hundred
+   *  metres and a pixel underfoot is one, and the question here is which trail
+   *  the finger was nearest to on the ground. */
+  function tapDistance(lngLat, geom) {
+    const k = Math.cos(lngLat.lat * Math.PI / 180);
+    const px = lngLat.lng * k;
+    const py = lngLat.lat;
+    // A dot has one position and no length, so it is measured to itself. It
+    // competes with the lines on the same footing: a place ten metres off does
+    // not outrank the trail under the finger.
+    if (geom.type === 'Point') {
+      return Math.hypot(geom.coordinates[0] * k - px, geom.coordinates[1] - py);
+    }
+    const lines = geom.type === 'MultiLineString' ? geom.coordinates
+      : geom.type === 'LineString' ? [geom.coordinates] : null;
+    if (!lines) return 0;             // an area answered a tap inside it: already exact
+    let best = Infinity;
+    lines.forEach((line) => {
+      for (let i = 1; i < line.length; i++) {
+        const ax = line[i - 1][0] * k, ay = line[i - 1][1];
+        const bx = line[i][0] * k, by = line[i][1];
+        const dx = bx - ax, dy = by - ay;
+        const len = dx * dx + dy * dy;
+        let t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const ox = ax + t * dx - px, oy = ay + t * dy - py;
+        best = Math.min(best, Math.sqrt(ox * ox + oy * oy));
+      }
+    });
+    return best;
+  }
+
+  let picking = false;
+  function wirePicking() {
+    if (picking || typeof map === 'undefined' || !map) return;
+    picking = true;
+    map.on('click', (e) => {
+      // "מה מתוכנן כאן?" has armed the next tap. It asks about the ground, so
+      // a trail lying over that ground must not swallow the tap. app.js holds
+      // the same guard for the clear-the-selection handler; whichever of the
+      // two listeners MapLibre reaches first, the answer is the same.
+      if (typeof PlanHere !== 'undefined' && PlanHere.isArmed()) return;
+      const hits = list.map((l) => hitId(l.id)).filter((id) => map.getLayer(id));
+      if (!hits.length) return;
+      const found = map.queryRenderedFeatures(e.point, { layers: hits });
+      if (!found.length) return;      // empty ground; app.js clears the selection
+      let best = found[0];
+      let bestD = tapDistance(e.lngLat, best.geometry);
+      found.forEach((f) => {
+        const d = tapDistance(e.lngLat, f.geometry);
+        if (d < bestD) { bestD = d; best = f; }
+      });
+      select(best.properties.id, false);
+    });
   }
 
   /* While the arrange tool is open it draws its own draggable marker for every
@@ -1532,18 +1670,70 @@ const Layers = (() => {
     reindex();
     if (typeof map !== 'undefined' && map && map.getSource(srcId(id))) {
       map.getSource(srcId(id)).setData(geojson(layer));
+      // The areas live in a source of their own (see addShapeLayers), and
+      // until the parcels arrived no layer ever gained or lost one after the
+      // first build - so this used to redraw the dots and leave the outlines
+      // as they were. The parcels layer starts with no areas at all and fills
+      // from the viewport, so both cases have to work: push new shapes into an
+      // existing source, and build the source the first time there is one.
+      if (hasShapes(layer)) {
+        const shp = shapeSrc(layer.id);
+        if (map.getSource(shp)) map.getSource(shp).setData(shapeGeojson(layer));
+        else {
+          addShapeLayers(layer);
+          // addLayer puts them on top of everything, which for a reference
+          // grid is the wrong end of the map: a brown dashed net over the
+          // shortcuts. Slide them back under the first layer that should be
+          // above them, which is what addToMap's ordering would have done had
+          // the areas existed at build time.
+          const above = list.filter((l) => order(l) > order(layer))
+            .flatMap(drawnIds).find((gl) => map.getLayer(gl));
+          if (above) {
+            map.moveLayer(fillId(layer.id), above);
+            map.moveLayer(edgeId(layer.id), above);
+          }
+          applyVisibility();               // the new GL layers take the layer's on/off
+        }
+      }
+      paintHighlight();
     }
     onChange();
   }
 
   /** Highlight one item and dim the rest, across every layer. */
   function highlight(id) {
+    litId = id;
+    paintHighlight();
+  }
+
+  /** Paint the current selection onto the sources.
+   *
+   *  Feature state lives inside the source and is keyed by the numeric feature
+   *  id, which is nothing but a position in the array handed to setData. Two
+   *  things follow, and both of them were bugs (Ori, 24/9/2026, from a trail
+   *  named in the pane while its neighbour glowed on the map):
+   *
+   *  A state survives setData. A rebuild that adds or drops one item shifts
+   *  every position after it, and the old states stay behind on whatever now
+   *  sits at those numbers - so the trail lit is the one next to the trail
+   *  chosen. Clearing each source first is what keeps the two from drifting.
+   *
+   *  And setStyle throws the sources away entirely, so after a basemap switch
+   *  nothing was lit and nothing was dimmed at all. Hence this is called from
+   *  every place that rebuilds a source, not only from select(). */
+  function paintHighlight() {
     if (typeof map === 'undefined' || !map) return;
+    const sources = new Set();
+    [feature, shapeFeature].forEach((where) => {
+      where.forEach(({ src }) => { if (map.getSource(src)) sources.add(src); });
+    });
+    sources.forEach((src) => map.removeFeatureState({ source: src }));
+    if (litId == null) return;      // cleared is exactly what "nothing chosen" looks like
     [feature, shapeFeature].forEach((where) => {
       where.forEach(({ src, fid }, ourId) => {
         if (!map.getSource(src)) return;
         map.setFeatureState({ source: src, id: fid },
-          { sel: ourId === id, dim: id != null && ourId !== id });
+          { sel: ourId === litId, dim: ourId !== litId });
       });
     });
   }
@@ -2000,7 +2190,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing,
     set onChange(fn) { onChange = fn; }
