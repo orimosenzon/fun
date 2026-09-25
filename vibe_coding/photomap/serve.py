@@ -3,32 +3,43 @@
 
 שימוש:
     python3 serve.py [פורט]        (ברירת מחדל 8797)
+    python3 serve.py --set-password
 
 /media/thumb/<id>.jpg    תמונה ממוזערת 300x300. נוצרת בפעם הראשונה ונשמרת במטמון
 /media/poster/<id>.jpg   פריים מתוך סרטון
 /media/view/<id>         המקור: תמונה כמו שהיא, או סרטון עם תמיכה ב-Range
 
+כשיש סיסמה (ראו auth.py), כל בקשה צריכה עוגיית כניסה, והשרת מגיש רק את מה שהאפליקציה צריכה.
+
 סרטון שהדפדפן לא יודע לנגן (3gp ישן, HEVC וכו') עובר המרה ל-H.264 בצפייה הראשונה.
 תהליך רקע מכין מראש תמונות ממוזערות לכל הפריטים הממוקמים.
 """
+import getpass
 import io
 import json
+import posixpath
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+import urllib.parse
 import zipfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from PIL import Image, ImageOps
 
+import auth
+
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 CACHE = DATA / "cache"
 VIDEO_CACHE_BYTES = 8 << 30
 PLAYABLE = {"h264", "vp8", "vp9", "av1"}
+# רק אלה נגישים מבחוץ. כל השאר (auth.json, takeout_members.json, קוד) מחזיר 404
+PUBLIC_FILES = {"/", "/index.html", "/app.js", "/style.css", "/data/library.json", "/data/trips.json"}
+PUBLIC_DIRS = ("/data/thumbs/", "/data/large/", "/media/")
 TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif",
          ".webp": "image/webp", ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/mp4"}
 
@@ -171,7 +182,16 @@ class Handler(SimpleHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        parts = self.path.split("?")[0].strip("/").split("/")
+        path = posixpath.normpath(urllib.parse.unquote(self.path.split("?")[0]))
+        if path == "/login":
+            return self.send_html(auth.login_page(urllib.parse.parse_qs(self.path.partition("?")[2]).get("e", [""])[0]))
+        if path == "/logout":
+            return self.redirect("/login", auth.logout_header())
+        if auth.enabled() and not auth.valid(self.headers.get("Cookie")):
+            return self.redirect("/login") if path in ("/", "/index.html") else self.send_error(401)
+        if path not in PUBLIC_FILES and not path.startswith(PUBLIC_DIRS):
+            return self.send_error(404)
+        parts = path.strip("/").split("/")
         if len(parts) != 3 or parts[0] != "media":
             return super().do_GET()
         kind, iid = parts[1], parts[2].removesuffix(".jpg")
@@ -196,6 +216,34 @@ class Handler(SimpleHTTPRequestHandler):
             print(f"! {kind} {iid[:12]}: {e}", flush=True)
             return self.send_error(500)
         self.send_error(404)
+
+    def do_POST(self):
+        if self.path != "/login" or not auth.enabled():
+            return self.send_error(404)
+        if auth.locked():
+            return self.redirect("/login?e=locked")
+        n = min(int(self.headers.get("Content-Length") or 0), 4096)
+        pw = urllib.parse.parse_qs(self.rfile.read(n).decode("utf-8", "replace")).get("password", [""])[0]
+        if auth.check(pw):
+            return self.redirect("/", auth.cookie_header())
+        self.redirect("/login?e=" + ("locked" if auth.locked() else "bad"))
+
+    def redirect(self, where, cookie=None):
+        self.send_response(303)
+        self.send_header("Location", where)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def send_html(self, html):
+        data = html.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
 
     def send_bytes(self, data, ctype):
         self.send_response(200)
@@ -262,6 +310,14 @@ def prewarm():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--set-password"]:
+        pw = getpass.getpass("סיסמה: ") if sys.stdin.isatty() else sys.stdin.readline().strip()
+        if len(pw) < 4:
+            sys.exit("סיסמה קצרה מדי")
+        auth.set_password(pw)
+        sys.exit("הסיסמה נקבעה. כל הכניסות הקודמות בוטלו.")
+    if not auth.enabled():
+        print("אזהרה: אין סיסמה. להגדרה: python3 serve.py --set-password", flush=True)
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8797
     threading.Thread(target=prewarm, daemon=True).start()
     print(f"http://127.0.0.1:{port}/", flush=True)
