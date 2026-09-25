@@ -49,6 +49,7 @@
   build_art.py                  המפה של אמנות במושבה ל-art2026.json
   build_shimur.py               שתי שכבות השימור ל-shimur.json ול-makom_shamur.json
   build_plans.py                תכניות בתהליך ממנהל התכנון ל-plans.json
+  watch_objections.py           מעקב יומי אחרי חלונות התנגדות (קרון: cron_objections.sh)
   build_cadastre.py             גבולות הגושים מהקדסטר הארצי ל-blocks.json
   build_public.py               ייעודי קרקע ציבוריים ממנהל התכנון ל-public.json
   build_houten.py               רשת האופניים של האוטן מ-OpenStreetMap ל-houten.json
@@ -77,6 +78,7 @@ python3 build_places.py          # רענון המקומות מפרדספדיה
 python3 build_art.py             # רענון המפה של אמנות במושבה
 python3 build_shimur.py          # רענון שתי שכבות השימור
 python3 build_plans.py           # רענון התכניות שבתהליך
+python3 watch_objections.py      # מה נפתח/נסגר להתנגדות מאז הריצה הקודמת; דוח ב-reports/objections/
 python3 build_cadastre.py        # רענון גבולות הגושים
 python3 build_public.py          # רענון שכבת השטחים הציבוריים
 python3 build_canopy.py          # רענון שכבת צל העצים, אריחים מ-GoInfo מעל סקר מפ"י
