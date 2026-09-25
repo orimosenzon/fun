@@ -775,13 +775,14 @@ const Layers = (() => {
       on: isOn(BLOCKS_ID, false)
     });
 
-    // The parcels inside those blocks, and the one layer here that arrives
-    // empty. There are over ten thousand of them in the moshava, which is why
-    // build_cadastre.py stops at the sixty blocks: the app keeps every layer
-    // in localStorage and a file of ten thousand polygons is not a file this
-    // app can carry. So this one is filled from govmap as you look at it, a
-    // viewport at a time, and kept only for as long as the tab is open. See
-    // Parcels in app.js.
+    // The parcels inside those blocks: all 9,126 of them, tiling the moshava.
+    // They do not go through this file's item machinery - 9,126 list rows made
+    // the list and the search unusable - but are drawn as a grid of their own
+    // straight from data/parcels.json (build_parcels.py), which MapLibre
+    // fetches and parses in its worker, and only once the layer is switched
+    // on. A parcel becomes an ordinary item of this layer when it is tapped,
+    // so the detail pane and the highlight work as for anything else. See
+    // `grid` below and Parcels in app.js.
     //
     // It earns its complication: a plan is written in blocks and parcels, and
     // "גוש 10102 חלקה 109" is a sentence a resident can do nothing with until
@@ -798,13 +799,12 @@ const Layers = (() => {
       dots: false,
       labels: false,                       // the number is in the detail pane
       groups: [],
-      waypoints: [],
-      minzoom: 16,                         // below this it is a brown smear
-      note: 'גבולות החלקות מהקדסטר הארצי, נטענות מ-govmap לפי מה שרואים על המסך '
-        + 'ורק מזום 16 ומעלה. יש במושבה יותר מעשרת אלפים חלקות, ולכן הן אינן '
-        + 'נשמרות במכשיר כמו שאר השכבות אלא נמשכות מחדש בכל ביקור. '
-        + 'גוש וחלקה הם השפה שבה כתובות התכניות, וזו הדרך לראות על הקרקע '
-        + 'על מה בדיוק תכנית מדברת.',
+      waypoints: [],                       // only the parcel last tapped
+      grid: 'data/parcels.json',
+      note: 'כל 9,126 החלקות של המושבה מהקדסטר הארצי, בכל רמות הזום. מספרי '
+        + 'החלקות מופיעים כשמתקרבים, ולחיצה בכל נקודה אומרת באיזה גוש ובאיזו '
+        + 'חלקה היא נמצאת. גוש וחלקה הם השפה שבה כתובות התכניות, וזו הדרך '
+        + 'לראות על הקרקע על מה בדיוק תכנית מדברת.',
       credit: 'הקדסטר הארצי · govmap',
       sourceName: 'הקדסטר הארצי',
       sourceLine: 'גבולות החלקות מתוך הקדסטר הארצי, govmap',
@@ -1134,10 +1134,19 @@ const Layers = (() => {
   const hasShapes = (layer) => layer.kind === 'places'
     && layer.waypoints.some((p) => p.shape && p.shape.length);
 
+  /* A layer too big to be items - the parcels - drawn from a file of its own. */
+  const gridSrc = (id) => `grd-${id}`;
+  const gridFillId = (id) => `pgf-${id}`;
+  const gridLineId = (id) => `pgl-${id}`;
+  const gridNumId = (id) => `pgn-${id}`;
+  const gridIds = (layer) => (layer.grid
+    ? [gridFillId(layer.id), gridLineId(layer.id), gridNumId(layer.id)] : []);
+
   const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
     : layer.kind === 'raster' ? [rasterId(layer.id)]
     : layer.kind === 'places'
-    ? (hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
+    ? gridIds(layer)
+      .concat(hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
       .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
     : glows(layer)
     ? [haloId(layer.id), lineId(layer.id), coreId(layer.id), hitId(layer.id)]
@@ -1451,6 +1460,64 @@ const Layers = (() => {
     return first ? first.id : undefined;
   }
 
+  /** The grid of a layer too big to be items - the parcels - straight from its
+   *  file. Called when the layer is first shown, not at build time, so that
+   *  nobody who never turns the parcels on downloads three megabytes of them.
+   *
+   *  Three GL layers: a fill that is never seen and is there to be tapped (a
+   *  tap inside a parcel is a tap on the parcel, not only on its outline), the
+   *  outlines, thin from afar and firmer close in, and the parcel numbers once
+   *  there is room for them. The numbers are digits only, so the style's
+   *  glyphs cover them whatever it thinks of Hebrew. */
+  function addGrid(layer) {
+    const src = gridSrc(layer.id);
+    if (!map.getSource(src)) map.addSource(src, { type: 'geojson', data: layer.grid });
+    if (map.getLayer(gridLineId(layer.id))) return;
+
+    // Under the first layer that should be above this one, as addToMap would
+    // have ordered it; failing that, under the basemap's own labels.
+    const above = list.filter((l) => order(l) > order(layer))
+      .flatMap(drawnIds).find((gl) => map.getLayer(gl)) || underLabels();
+
+    map.addLayer({
+      id: gridFillId(layer.id),
+      type: 'fill',
+      source: src,
+      paint: { 'fill-color': layer.color, 'fill-opacity': 0 }
+    }, above);
+    // Brown on the street map; on the satellite a brown line vanishes into the
+    // roofs and the orchards, so it goes a pale cream there. A basemap switch
+    // rebuilds every layer, so the choice is made afresh each time.
+    const dark = theme === 'dark';
+    map.addLayer({
+      id: gridLineId(layer.id),
+      type: 'line',
+      source: src,
+      paint: {
+        'line-color': dark ? '#fff3d6' : layer.color,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.3, 15, 0.7, 18, 1.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, dark ? 0.45 : 0.35, 16, dark ? 0.8 : 0.75]
+      }
+    }, above);
+    map.addLayer({
+      id: gridNumId(layer.id),
+      type: 'symbol',
+      source: src,
+      minzoom: 16.5,
+      layout: {
+        'text-field': ['to-string', ['get', 'p']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 16.5, 10, 19, 13],
+        'text-padding': 2
+      },
+      paint: {
+        'text-color': dark ? '#fffaf0' : '#4e342e',
+        'text-halo-color': dark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.85)',
+        'text-halo-width': 1.2
+      }
+    }, above);
+  }
+
   /** A raster layer: a pyramid of picture tiles, no items. Its source is
    *  tiles rather than geojson, so it takes the whole of a layer's map work
    *  on its own instead of threading through the geojson path with a special
@@ -1616,12 +1683,20 @@ const Layers = (() => {
 
   const HOVER_REST_MS = 80;
 
-  /** The map layers a tap or a hover can land on: lines and dots, then areas. */
+  /** The map layers a tap or a hover can land on, in the order they win it:
+   *  lines and dots; then solid areas, the plans; then the parcel grid; then
+   *  dashed areas, the blocks. A parcel is the more particular answer than
+   *  the block around it, and a plan the more particular than the parcels it
+   *  is drawn over. The parcels' own item layer is left out: the one parcel
+   *  in it lies exactly on the grid, which already answers for it. */
   function pickLayers() {
-    const lines = list.map((l) => hitId(l.id)).filter((id) => map.getLayer(id));
-    const areas = list.filter(hasShapes).map((l) => fillId(l.id))
-      .filter((id) => map.getLayer(id));
-    return { lines, areas };
+    const have = (id) => map.getLayer(id);
+    const lines = list.map((l) => hitId(l.id)).filter(have);
+    const shaped = list.filter((l) => hasShapes(l) && !l.grid);
+    const solid = shaped.filter((l) => !l.dash).map((l) => fillId(l.id)).filter(have);
+    const dashed = shaped.filter((l) => l.dash).map((l) => fillId(l.id)).filter(have);
+    const grids = list.filter((l) => l.grid).map((l) => gridFillId(l.id)).filter(have);
+    return { lines, areas: solid, grids, dashed };
   }
 
   /** Nothing on the map is for picking while these have the map's taps. */
@@ -1641,7 +1716,7 @@ const Layers = (() => {
       // two listeners MapLibre reaches first, the answer is the same. The
       // drafts editor owns every tap while it is open, in the same way.
       if (mapIsBusy()) return;
-      const { lines, areas } = pickLayers();
+      const { lines, areas, grids, dashed } = pickLayers();
       const found = lines.length ? map.queryRenderedFeatures(e.point, { layers: lines }) : [];
       if (found.length) {
         let best = found[0];
@@ -1658,7 +1733,16 @@ const Layers = (() => {
       // when no line or dot answered: a plan's area lies under the trails in
       // it, and a trail is the more particular thing to have meant.
       const inside = areas.length ? map.queryRenderedFeatures(e.point, { layers: areas }) : [];
-      if (inside.length) select(inside[0].properties.id, false);
+      if (inside.length) { select(inside[0].properties.id, false); return; }
+      // With the parcels on, every point in the moshava is in one of them.
+      // Parcels in app.js turns the grid feature into an item and selects it.
+      const parcel = grids.length ? map.queryRenderedFeatures(e.point, { layers: grids }) : [];
+      if (parcel.length && typeof Parcels !== 'undefined') {
+        Parcels.pick(parcel[0].properties);
+        return;
+      }
+      const block = dashed.length ? map.queryRenderedFeatures(e.point, { layers: dashed }) : [];
+      if (block.length) select(block[0].properties.id, false);
       // Otherwise empty ground; app.js clears the selection.
     });
 
@@ -1675,8 +1759,8 @@ const Layers = (() => {
       const point = [e.clientX - box.left, e.clientY - box.top];
       rest = setTimeout(() => {
         if (mapIsBusy() || map.isMoving()) { canvas.style.cursor = ''; return; }
-        const { lines, areas } = pickLayers();
-        const layers = lines.concat(areas);
+        const { lines, areas, grids, dashed } = pickLayers();
+        const layers = lines.concat(areas, grids, dashed);
         const over = layers.length && map.queryRenderedFeatures(point, { layers }).length;
         canvas.style.cursor = over ? 'pointer' : '';
       }, HOVER_REST_MS);
@@ -1698,6 +1782,18 @@ const Layers = (() => {
     // first load that reaches here before the style has finished loading.
     renderLegend();
     if (typeof map === 'undefined' || !map) return;
+    // A grid is built the first time its layer is shown, and again after a
+    // basemap switch has thrown it away. Before the loop, so that the loop
+    // below finds its GL layers and gives them the layer's visibility.
+    list.forEach((layer) => {
+      if (!layer.grid || !layer.on || hidden(layer) || map.getLayer(gridLineId(layer.id))) return;
+      try {
+        addGrid(layer);
+      } catch (err) {
+        // Mid-way through a basemap switch the style refuses new sources;
+        // addToMap runs again once it has loaded, and calls back here.
+      }
+    });
     list.forEach((layer) => {
       const hide = (arranging && layer.pinnable) || hidden(layer);
       const v = layer.on && !hide ? 'visible' : 'none';
@@ -1947,6 +2043,9 @@ const Layers = (() => {
   /* ---------- the layer sheet ---------- */
 
   function summary(layer) {
+    // Its items are only the parcel last tapped, so counting them would say
+    // "1 חלקות" about a layer of nine thousand. The file is not read here.
+    if (layer.grid) return `כל ה${layer.unit} במושבה`;
     if (layer.kind === 'places') {
       const n = layer.waypoints.length;
       const missing = layer.waypoints.filter((p) => p.unplaced).length;
