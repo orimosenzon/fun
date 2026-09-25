@@ -15,3 +15,8 @@ derech_kitzur*.kml
 
 # build_art.py imports build_places.py for its spread()
 __pycache__/
+
+# watch_objections.py: its memory of yesterday, and the daily reports
+.watch/
+reports/
+objections_cron.log
