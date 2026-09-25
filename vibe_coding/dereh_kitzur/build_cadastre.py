@@ -28,10 +28,10 @@ and caches it in localStorage, which has about five megabytes for everything;
 a parcel layer that size would not go in, and would not be readable if it did.
 
 The blocks are 60 polygons and 11,303 points, which is a third of the
-pardespedia layer. If the parcels are wanted later they want a different shape
-entirely - fetched for the block you are looking at, when you zoom in past it,
-rather than shipped - and that is a decision about how this app loads data, not
-another builder.
+pardespedia layer. The parcels did get a builder of their own in the end,
+build_parcels.py (25/9/2026): 9,126 of them, drawn as a grid straight from
+their file and never kept in localStorage or listed as items. See its
+docstring.
 
     python3 build_cadastre.py
 """
