@@ -462,6 +462,74 @@ const Drafts = (() => {
     };
   }
 
+  /* ---------- the line before the map has it ----------
+   *
+   * A point added to a GeoJSON source does not reach the screen when setData
+   * is called. The data is posted to MapLibre's worker, which re-cuts the
+   * source into tiles, and only then does a frame draw it - and that worker is
+   * shared with every tile the map is loading, so after a pan the point waits
+   * behind them. Measured on 24/9/2026 in Chrome on a desktop GPU with the
+   * terrain on: the map drew the point 200-450ms after the tap, the overlay in
+   * the tap's own frame. (The seconds-long delay reported that day was a
+   * different thing, the hover queries - see wirePicking in layers.js.)
+   *
+   * So while the map catches up, the same line and dots are drawn as SVG over
+   * it, synchronously, in the tap's own frame. The overlay follows the camera
+   * on every `move`, and steps aside once the map is idle again - by then the
+   * map is drawing exactly what it showed. Drawing and trips only: a walk adds
+   * points at the GPS's pace, and nobody is waiting on a tap there. */
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  let ghost = null;                 // { svg, line, dots, seq } while shown
+  let ghostSeq = 0;
+
+  function ghostPaint() {
+    if (!ghost || !ed) return;
+    const pts = ed.path.map(([lat, lng]) => map.project([lng, lat]));
+    ghost.line.setAttribute('points',
+      pts.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' '));
+    const dots = ghost.dots;
+    while (dots.childElementCount > pts.length) dots.lastChild.remove();
+    while (dots.childElementCount < pts.length) {
+      dots.appendChild(document.createElementNS(SVG_NS, 'circle'));
+    }
+    pts.forEach((p, i) => {
+      const dot = dots.children[i];
+      dot.setAttribute('cx', p.x.toFixed(1));
+      dot.setAttribute('cy', p.y.toFixed(1));
+      dot.setAttribute('r', i === 0 || i === pts.length - 1 ? 6 : 3.5);
+    });
+  }
+
+  function showGhost() {
+    if (!map || !ed || ed.mode === 'walk') return;
+    if (!ghost) {
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'editor-ghost');
+      svg.setAttribute('aria-hidden', 'true');
+      const line = document.createElementNS(SVG_NS, 'polyline');
+      line.setAttribute('class', 'ghost-line');
+      const dots = document.createElementNS(SVG_NS, 'g');
+      dots.setAttribute('class', 'ghost-dots');
+      svg.append(line, dots);
+      map.getContainer().appendChild(svg);
+      ghost = { svg, line, dots };
+      map.on('move', ghostPaint);
+    }
+    ghostPaint();
+    // Only the idle that follows the latest change may take the overlay away;
+    // an earlier one would uncover a map that has not drawn that change yet.
+    const seq = ++ghostSeq;
+    map.once('idle', () => { if (seq === ghostSeq) hideGhost(); });
+  }
+
+  function hideGhost() {
+    if (!ghost) return;
+    map.off('move', ghostPaint);
+    ghost.svg.remove();
+    ghost = null;
+  }
+
   function paintEditor() {
     // Ahead of the map check on purpose. Every change to the editor funnels
     // through here - a GPS fix, a tap, an undo, a chained shortcut - which
@@ -469,6 +537,7 @@ const Drafts = (() => {
     // without WebGL still has work in `ed` that is worth not losing.
     saveLive();
     if (!map) return;
+    showGhost();
     if (!map.getSource(EDIT_SRC)) {
       map.addSource(EDIT_SRC, { type: 'geojson', data: editorGeoJSON() });
       map.addLayer({
@@ -499,6 +568,7 @@ const Drafts = (() => {
 
   function clearEditorLayers() {
     if (!map) return;
+    hideGhost();
     ['editor-line', 'editor-pts'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
