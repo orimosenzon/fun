@@ -30,7 +30,6 @@ const Layers = (() => {
   const index = new Map();            // segment/waypoint id -> {layer, item}
   const feature = new Map();          // item id -> {src, fid} for feature-state
   const shapeFeature = new Map();     // the same, for the layers drawn as areas
-  const wired = new Set();            // layer ids whose map handlers are bound
 
   /* Which item the map is lit for. Kept here rather than asked of app.js when
    * needed, because every rebuild of a source has to be able to put the
@@ -1282,16 +1281,7 @@ const Layers = (() => {
         'line-opacity': ['case', sel, 1, dim, 0.25, grid ? 0.5 : 0.8]
       }, grid ? { 'line-dasharray': [3, 2] } : {})
     }, near));
-
-    // Tapping anywhere inside a plan selects it, which is how you ask "what is
-    // planned for my street" without having to find its centre dot.
-    if (wired.has(fillId(layer.id))) return;
-    wired.add(fillId(layer.id));
-    map.on('click', fillId(layer.id), (e) => {
-      if (e.features && e.features.length) select(e.features[0].properties.id, false);
-    });
-    map.on('mouseenter', fillId(layer.id), () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', fillId(layer.id), () => { map.getCanvas().style.cursor = ''; });
+    // Tapping anywhere inside a plan selects it; see wirePicking.
   }
 
   function addPlaceLayers(layer) {
@@ -1522,7 +1512,6 @@ const Layers = (() => {
     });
     gone.forEach((id) => {
       if (map.getSource(srcId(id))) map.removeSource(srcId(id));
-      wired.delete(id);
     });
 
     list.forEach((layer) => {
@@ -1546,16 +1535,8 @@ const Layers = (() => {
       if (hasShapes(layer)) addShapeLayers(layer);
       if (layer.kind === 'places') addPlaceLayers(layer);
       else addLineLayers(layer);
-
-      // A layer-scoped listener outlives the layer it names, and setStyle wipes
-      // every layer we added - so without this set, each basemap switch bound
-      // another copy of the same two handlers. The click is not among them:
-      // one handler over all the layers at once is what lets the nearest line
-      // win, see wirePicking.
-      if (wired.has(layer.id)) return;
-      wired.add(layer.id);
-      map.on('mouseenter', hitId(layer.id), () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', hitId(layer.id), () => { map.getCanvas().style.cursor = ''; });
+      // No per-layer handlers here, for the click or for the hover cursor:
+      // both are one listener over every layer, see wirePicking.
     });
     wirePicking();
 
@@ -1619,6 +1600,36 @@ const Layers = (() => {
     return best;
   }
 
+  /* ---------- one query per gesture, not one per layer ----------
+   *
+   * Until 24/9/2026 every layer bound its own mouseenter and mouseleave for the
+   * pointer cursor, and every plan-like layer its own click. MapLibre answers
+   * each layer-scoped listener with a queryRenderedFeatures of its own, on
+   * every mouse event - and with the terrain on, each of those reads pixels
+   * back from the GPU twice per source, a stall of a whole display frame
+   * apiece. Measured in a real Chrome window: 124 such reads over four taps,
+   * two to three seconds of frozen main thread per tap, while drawing a trail.
+   * A phone pays it too, since a tap is followed by synthetic mouse events.
+   *
+   * Now there is one click listener and one hover listener for the whole map,
+   * and the hover asks only once the mouse has come to rest. */
+
+  const HOVER_REST_MS = 80;
+
+  /** The map layers a tap or a hover can land on: lines and dots, then areas. */
+  function pickLayers() {
+    const lines = list.map((l) => hitId(l.id)).filter((id) => map.getLayer(id));
+    const areas = list.filter(hasShapes).map((l) => fillId(l.id))
+      .filter((id) => map.getLayer(id));
+    return { lines, areas };
+  }
+
+  /** Nothing on the map is for picking while these have the map's taps. */
+  function mapIsBusy() {
+    return (typeof Drafts !== 'undefined' && Drafts.isDrafting())
+      || (typeof PlanHere !== 'undefined' && PlanHere.isArmed());
+  }
+
   let picking = false;
   function wirePicking() {
     if (picking || typeof map === 'undefined' || !map) return;
@@ -1627,19 +1638,52 @@ const Layers = (() => {
       // "מה מתוכנן כאן?" has armed the next tap. It asks about the ground, so
       // a trail lying over that ground must not swallow the tap. app.js holds
       // the same guard for the clear-the-selection handler; whichever of the
-      // two listeners MapLibre reaches first, the answer is the same.
-      if (typeof PlanHere !== 'undefined' && PlanHere.isArmed()) return;
-      const hits = list.map((l) => hitId(l.id)).filter((id) => map.getLayer(id));
-      if (!hits.length) return;
-      const found = map.queryRenderedFeatures(e.point, { layers: hits });
-      if (!found.length) return;      // empty ground; app.js clears the selection
-      let best = found[0];
-      let bestD = tapDistance(e.lngLat, best.geometry);
-      found.forEach((f) => {
-        const d = tapDistance(e.lngLat, f.geometry);
-        if (d < bestD) { bestD = d; best = f; }
-      });
-      select(best.properties.id, false);
+      // two listeners MapLibre reaches first, the answer is the same. The
+      // drafts editor owns every tap while it is open, in the same way.
+      if (mapIsBusy()) return;
+      const { lines, areas } = pickLayers();
+      const found = lines.length ? map.queryRenderedFeatures(e.point, { layers: lines }) : [];
+      if (found.length) {
+        let best = found[0];
+        let bestD = tapDistance(e.lngLat, best.geometry);
+        found.forEach((f) => {
+          const d = tapDistance(e.lngLat, f.geometry);
+          if (d < bestD) { bestD = d; best = f; }
+        });
+        select(best.properties.id, false);
+        return;
+      }
+      // Tapping anywhere inside a plan selects it, which is how you ask "what
+      // is planned for my street" without having to find its centre dot. Only
+      // when no line or dot answered: a plan's area lies under the trails in
+      // it, and a trail is the more particular thing to have meant.
+      const inside = areas.length ? map.queryRenderedFeatures(e.point, { layers: areas }) : [];
+      if (inside.length) select(inside[0].properties.id, false);
+      // Otherwise empty ground; app.js clears the selection.
+    });
+
+    // The pointer cursor over anything pickable. A mouse only - a finger has
+    // no cursor - and only once it rests, so that sweeping across the map
+    // costs one query at the end rather than one per frame on the way.
+    const canvas = map.getCanvas();
+    let rest = null;
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      clearTimeout(rest);
+      if (e.buttons) return;                   // dragging the map
+      const box = canvas.getBoundingClientRect();
+      const point = [e.clientX - box.left, e.clientY - box.top];
+      rest = setTimeout(() => {
+        if (mapIsBusy() || map.isMoving()) { canvas.style.cursor = ''; return; }
+        const { lines, areas } = pickLayers();
+        const layers = lines.concat(areas);
+        const over = layers.length && map.queryRenderedFeatures(point, { layers }).length;
+        canvas.style.cursor = over ? 'pointer' : '';
+      }, HOVER_REST_MS);
+    });
+    canvas.addEventListener('pointerleave', () => {
+      clearTimeout(rest);
+      canvas.style.cursor = '';
     });
   }
 

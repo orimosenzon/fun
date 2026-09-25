@@ -316,6 +316,32 @@ body.craft-bike #craft .craft-bal { display: block; }
 /* Confirmation that a tap landed, painted immediately and independently of the
  * map's own render loop. See `ping` in draft.js for why it is not enough to let
  * the point speak for itself. */
+/* The trail being drawn, over the map until the map has drawn it itself. The
+ * same colours and sizes as the editor-line and editor-pts layers in draft.js,
+ * so the hand-over is invisible. */
+.editor-ghost {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 440;
+  pointer-events: none;
+  overflow: visible;
+}
+.editor-ghost .ghost-line {
+  fill: none;
+  stroke: #8e24aa;
+  stroke-width: 5;
+  stroke-opacity: .95;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.editor-ghost .ghost-dots circle {
+  fill: #fff;
+  stroke: #8e24aa;
+  stroke-width: 2.5;
+}
+
 .tap-ping {
   position: absolute;
   z-index: 450;
@@ -1452,6 +1478,10 @@ body.craft-bike #craft .craft-bal { display: block; }
 /* While placing points, a tap on the map means "add a vertex", so the panel
  * gets out of the way rather than covering the trail being drawn. */
 .drafting { --panel-h: 96px; }
+/* While a trail is being drawn every tap on the map is a point. A waypoint's
+ * label is an HTML element over the canvas, so a tap on it used to select the
+ * waypoint and add nothing - a lost tap, from where the person sat. */
+.drafting .pin { pointer-events: none; }
 .drafting .maplibregl-ctrl-top-left { margin-top: 62px; }
 
 /* ---------- draft forms ---------- */
