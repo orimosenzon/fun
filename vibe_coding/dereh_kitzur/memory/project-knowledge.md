@@ -14,6 +14,11 @@ https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/
 **הנתונים לא יושבים בריפו הקוד** אלא ב-`orimosenzon/derech-kitzur-data`. פרסום שביל
 לא דורש פריסה מחדש של האפליקציה.
 
+## קשר ל"רוצים שקיפות" (25/9/2026)
+הכלים של יוזמת השקיפות (תוכניות, התנגדויות, היתרים) נבנים **בתוך האפליקציה הזו**.
+הידע, המקורות וההחלטות של השקיפות נשמרים בתיקייה `../transparency/`. כאן נשאר רק
+הקוד וידע טכני על האפליקציה.
+
 ## מקורות
 - ריפו הנתונים: https://github.com/orimosenzon/derech-kitzur-data
 - מפת My Maps (mid): `19q4SgSScTh3pW3lRqQO9dQ8kw8z2wTg` (כיום יעד לייצוא, לא מקור)
