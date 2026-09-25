@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מפת התמונות</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map" dir="ltr"></div>
+
+<aside id="panel">
+  <header>
+    <h1>מפת התמונות</h1>
+    <button id="collapse" title="הסתר">‹</button>
+  </header>
+  <p id="stats"></p>
+  <div id="trip-tabs" hidden>
+    <button data-kind="trip"></button>
+    <button data-kind="outing"></button>
+  </div>
+  <ul id="trips"></ul>
+  <h2>אלבומים</h2>
+  <ul id="albums"></ul>
+  <button id="unlocated" hidden></button>
+</aside>
+
+<footer id="timeline">
+  <div class="tl-head">
+    <span id="tl-label"></span>
+    <button id="tl-reset" hidden>כל התקופה</button>
+  </div>
+  <canvas id="tl-canvas"></canvas>
+</footer>
+
+<div id="empty" hidden>
+  <h2>עדיין אין תמונות</h2>
+  <p>מושכים אלבום משותף מגוגל פוטוס:</p>
+  <pre dir="ltr">python3 fetch_album.py &lt;album link&gt;</pre>
+  <p>ואז מרעננים את הדף.</p>
+</div>
+
+<div id="lightbox" hidden>
+  <button class="lb-close" title="סגור (Esc)">✕</button>
+  <button class="lb-nav lb-prev" title="הקודם">›</button>
+  <div class="lb-stage"></div>
+  <button class="lb-nav lb-next" title="הבא">‹</button>
+  <div class="lb-caption"></div>
+  <div class="lb-strip"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
