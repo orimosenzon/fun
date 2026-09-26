@@ -90,10 +90,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lb-stage img, .lb-stage video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
 .lb-prev { grid-column: 1; grid-row: 1; z-index: 1; }
 .lb-next { grid-column: 3; grid-row: 1; z-index: 1; }
-.lb-nav { background: none; border: 0; color: #fff; font-size: 44px; opacity: .6; }
+.lb-nav { background: none; border: 0; color: #fff; opacity: .6; display: flex; align-items: center; justify-content: center; padding: 0; }
+.lb-nav svg { filter: drop-shadow(0 0 3px rgba(0,0,0,.8)); }
 .lb-nav:hover { opacity: 1; }
 .lb-nav:disabled { visibility: hidden; }
-.lb-close { position: absolute; top: 10px; left: 14px; z-index: 1; background: none; border: 0; color: #fff; font-size: 26px; opacity: .7; }
+/* מעל כפתורי הניווט, שתופסים את כל גובה הצדדים */
+.lb-close { position: absolute; top: 10px; left: 14px; z-index: 3; width: 44px; height: 44px; background: none; border: 0; color: #fff; font-size: 26px; opacity: .7; }
 .lb-caption { grid-column: 1 / -1; text-align: center; padding: 10px 16px 4px; font-size: 15px; }
 .lb-caption small { color: #aab; margin-inline-start: 10px; }
 .lb-caption a { color: #9cc3ff; }
@@ -105,5 +107,5 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (max-width: 600px) {
   #panel { width: calc(100% - 24px); max-height: 45%; }
   #lightbox { grid-template-columns: 36px 1fr 36px; }
-  .lb-nav { font-size: 32px; }
+  .lb-nav svg { width: 30px; height: 30px; }
 }
