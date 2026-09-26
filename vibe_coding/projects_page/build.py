@@ -55,10 +55,6 @@ def render_links(links: list) -> str:
     return "\n".join(out)
 
 
-def badge_type(b) -> str:
-    return b if isinstance(b, str) else b.get("type", "")
-
-
 def render_badge(b) -> str:
     """A badge is {"type": "live"|"wip", "label": "..."}; bare strings are
     accepted as shorthand for the default label."""
@@ -123,6 +119,55 @@ def assign_anchors(data: dict) -> None:
             p["_anchor"] = unique(base)
 
 
+SHOTS = HERE / "shots"
+
+
+def try_link(p: dict):
+    """The link that opens a project's running app, or None. That is its first
+    "live"/"primary" button; "try": false drops a project whose main button is
+    not something a visitor can play with (a landing page, a login wall)."""
+    if p.get("try") is False:
+        return None
+    for l in p["links"]:
+        if l["style"] in ("live", "primary"):
+            return l
+    return None
+
+
+def try_projects(data: dict) -> list:
+    return [(s, p, l) for s in data["sections"] for p in s["projects"] if (l := try_link(p))]
+
+
+def render_try(data: dict) -> str:
+    cards = []
+    for s, p, l in try_projects(data):
+        name, sub = short_name(p["title"])
+        shot = SHOTS / f'{p["_anchor"]}.webp'
+        visual = (
+            f'<img src="{shot.relative_to(ROOT)}" alt="צילום מסך של {name}" loading="lazy" width="640" height="400">'
+            if shot.exists()
+            else f'<span class="try-noshot">{p.get("icon", "")}</span>'
+        )
+        target = ' target="_blank" rel="noopener"' if l.get("external") or l["href"].startswith("http") else ""
+        sub_html = f'<span class="try-sub">{sub}</span>' if sub else ""
+        cards.append(f"""        <a class="try-card {p.get('theme', 't-indigo')}" href="{l['href']}"{target}>
+            <span class="try-shot">{visual}</span>
+            <span class="try-info">
+                <span class="try-icon">{p.get('icon', '')}</span>
+                <span class="try-text"><span class="try-name">{name}</span>{sub_html}</span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>""")
+    return f"""    <div class="section-header" id="try">
+        <span class="section-emoji">🚀</span>
+        <span class="section-title">פרויקטים live: נסו עכשיו בדפדפן</span>
+        <span class="section-count">{plural(len(cards))}</span>
+    </div>
+    <div class="try-grid">
+{chr(10).join(cards)}
+    </div>"""
+
+
 def render_toc(data: dict) -> str:
     cols = []
     for s in data["sections"]:
@@ -147,6 +192,7 @@ def render_toc(data: dict) -> str:
     return f"""    <nav class="toc" id="toc" aria-label="תוכן עניינים">
         <div class="toc-bar">
             <span class="toc-title">תוכן עניינים</span>
+            <a href="#try" class="toc-try">🚀 {len(try_projects(data))} פרויקטים live</a>
             <button type="button" class="toc-sort-all">מיין הכל א–ת</button>
         </div>
         <div class="toc-grid">
@@ -234,7 +280,8 @@ def render_section(s: dict, number: int) -> str:
 
 def render_header(data: dict) -> str:
     projects = [p for s in data["sections"] for p in s["projects"]]
-    live = sum(1 for p in projects if any(badge_type(b) == "live" for b in p.get("badges", [])))
+    # the same list as the "פרויקטים live" gallery, so the two numbers agree
+    live = len(try_projects(data))
     ai = sum(1 for p in projects if is_ai(p))
     meta = data.get("site", {})
     stats = [
@@ -291,6 +338,7 @@ def build() -> str:
     html = TEMPLATE.read_text(encoding="utf-8")
     html = html.replace("{{HEADER}}", render_header(data).rstrip("\n"))
     html = html.replace("{{TOC}}", render_toc(data))
+    html = html.replace("{{TRY}}", render_try(data))
     html = html.replace("{{SECTIONS}}", sections)
     OUTPUT.write_text(html, encoding="utf-8")
     n = sum(len(s["projects"]) for s in data["sections"])
