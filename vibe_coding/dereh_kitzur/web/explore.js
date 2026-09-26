@@ -2193,22 +2193,45 @@ const Explore = (() => {
   /** Hide everything the app normally draws, and remember what was hidden so
    *  the way out puts back exactly what was there. Nothing is drawn until you
    *  find it - that is the whole mechanic, and a map with all 62 trails
-   *  already on it has nothing left to discover. */
+   *  already on it has nothing left to discover.
+   *
+   *  Except the parcels (Ori, 26/9/2026): they are not something to find but
+   *  the ground itself, cut up the way the plans cut it, and flying over the
+   *  moshava with them on is how you see which parcel is which. So their grid
+   *  keeps whatever it had - on if the layer is on, off if not.
+   *
+   *  Their numbers come in earlier than on the map. The map shows them from
+   *  zoom 16.5, and the flight's camera sits at 16 and a bit - but at a pitch
+   *  in the seventies the ground under the nose is far closer than the zoom
+   *  says, and from 14 the near parcels were measured to carry their numbers
+   *  at a readable size while the far ones thin out by themselves. Standing
+   *  up, as the map draws them: laid flat on the ground they were tried too,
+   *  and at that angle they shrink to specks. */
+  const FLY_NUM_Z = 14;
   function hideOverlays() {
-    const was = [];
+    const layers = [];
+    const src = `grd-${Layers.PARCELS_ID}`;
+    const num = `pgn-${Layers.PARCELS_ID}`;
     for (const layer of map.getStyle().layers) {
-      if (layer.id.startsWith('fly-') || layer.source === 'sat') continue;
+      if (layer.id.startsWith('fly-') || layer.source === 'sat' || layer.source === src) continue;
       const vis = map.getLayoutProperty(layer.id, 'visibility');
-      was.push([layer.id, vis]);
+      layers.push([layer.id, vis]);
       map.setLayoutProperty(layer.id, 'visibility', 'none');
     }
-    return was;
+    const gl = map.getLayer(num);
+    const numZoom = gl ? [gl.minzoom, gl.maxzoom] : null;
+    if (gl) map.setLayerZoomRange(num, FLY_NUM_Z, gl.maxzoom === undefined ? 24 : gl.maxzoom);
+    return { layers, num, numZoom };
   }
 
   function showOverlays(was) {
-    for (const [id, vis] of was) {
+    for (const [id, vis] of was.layers) {
       if (!map.getLayer(id)) continue;
       map.setLayoutProperty(id, 'visibility', vis === undefined ? 'visible' : vis);
+    }
+    if (was.numZoom && map.getLayer(was.num)) {
+      map.setLayerZoomRange(was.num, was.numZoom[0] === undefined ? 0 : was.numZoom[0],
+        was.numZoom[1] === undefined ? 24 : was.numZoom[1]);
     }
   }
 

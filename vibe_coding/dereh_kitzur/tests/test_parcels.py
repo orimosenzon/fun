@@ -98,6 +98,34 @@ try:
      check('a second tap moves to the next parcel', after['items'] <= 1 and after['sel'] != 'parcel-10102-110', after)
      pg.screenshot(path=os.path.join(OUT, 'shot_parcels.png'))
 
+     # In flight (26/9/2026): the grid stays, white, with its numbers, and
+     # everything is put back on landing. The balloon, low: the first visit's
+     # craft. queryRenderedFeatures counts few lines at that pitch - they are
+     # there in the shot - so any at all is the test.
+     pg.click('#explore')
+     pg.wait_for_function('() => Explore.debug().flying', timeout=20000)
+     pg.evaluate('() => document.getElementById("fly-intro").click()')
+     pg.wait_for_timeout(4000)
+     fly = pg.evaluate('''() => ({
+       vis: ['pgl-parcels', 'pgn-parcels', 'ln-trails'].map((id) => map.getLayoutProperty(id, 'visibility')),
+       lines: map.queryRenderedFeatures({ layers: ['pgl-parcels'] }).length,
+       nums: map.queryRenderedFeatures({ layers: ['pgn-parcels'] }).length,
+       line: map.getPaintProperty('pgl-parcels', 'line-color'),
+       text: map.getPaintProperty('pgn-parcels', 'text-color'),
+       zoom: map.getZoom() })''')
+     print('  in flight:', fly)
+     check('in flight the grid is drawn', fly['vis'][0] != 'none' and fly['lines'] > 0, fly)
+     check('in flight the shortcuts are still hidden', fly['vis'][2] == 'none', fly['vis'])
+     check('in flight the numbers show', fly['vis'][1] != 'none' and fly['nums'] > 20, fly)
+     check('white over the satellite', fly['line'] == '#ffffff' and fly['text'] == '#ffffff', fly)
+     pg.screenshot(path=os.path.join(OUT, 'shot_parcels_flight.png'))
+     pg.keyboard.press('Escape')
+     pg.wait_for_timeout(3000)
+     back = pg.evaluate('''() => ({ vis: map.getLayoutProperty('ln-trails', 'visibility'),
+       minzoom: map.getLayer('pgn-parcels').minzoom })''')
+     check('landing puts the shortcuts back', back['vis'] != 'none', back)
+     check('and the numbers back to close in only', back['minzoom'] == 16.5, back)
+
      # Off hides the grid.
      pg.evaluate('() => Layers.toggle ? Layers.toggle("parcels") : (Layers.byId("parcels").on = false, Layers.applyVisibility && Layers.applyVisibility())')
      pg.wait_for_timeout(800)
