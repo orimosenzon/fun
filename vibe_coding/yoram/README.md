@@ -290,11 +290,97 @@ To get reminders before each deadline:
 If Ori tells you there is a new version:
 
 1. Open the spreadsheet → **Extensions → Apps Script**.
-2. Click **Code.gs**, and repeat **Part 1, Step 3** (copy from the link, select all, paste, save).
-3. Only if Ori says the manifest changed: click **appsscript.json** and repeat **Part 1, Step 5**.
-4. Reload the spreadsheet.
+2. If you ever changed the script yourself, first **save a version** of your current script (see [Saving versions](#saving-versions-of-the-script-before-you-change-it) below),
+   and tell Ori what you changed. Pasting Ori's new version replaces your changes.
+3. Click **Code.gs**, and repeat **Part 1, Step 3** (copy from the link, select all, paste, save).
+4. Only if Ori says the manifest changed: click **appsscript.json** and repeat **Part 1, Step 5**.
+5. Reload the spreadsheet.
 
 You usually won't need to give permission again.
+
+---
+
+## Saving versions of the script before you change it
+
+If you want to change the script yourself, first learn how to keep a copy of the version that works.
+Then, if something goes wrong, you can always go back.
+
+### The short answer
+
+- **Saving (Ctrl+S) does not keep old versions.** Every save replaces the previous code. There is no "undo" after you close the editor,
+  and the spreadsheet's own *File → Version history* does not include the script.
+- **A saved version is created only when you "deploy".** This is the only way the Apps Script editor keeps a copy of old code.
+- **Deploying does not change how the helper works.** The **Course tools** menu always runs the code that is currently saved,
+  whether you deployed it or not. Here, deploying is just the way to take a snapshot (a frozen copy) of the code.
+- **The original script from Ori is always available** at the GitHub link in Part 1, Step 3. So even without any saved versions,
+  you can always return to Ori's version by pasting it again.
+
+That is why no old versions were found: nothing was deployed yet, so Google never kept a copy.
+
+### What is a "version" and what is a "deployment"?
+
+- A **version** is a numbered snapshot of all the script files at one moment: version 1, version 2, and so on.
+  It never changes after it is created. You can give it a short description, such as *"Before changing the reminder times"*.
+- A **deployment** is Google's way of publishing a script so it can be used from other places (a website, another script, and so on).
+  Every time you deploy, Google also creates a new version. We use deployment **only for that side effect**, to get the snapshot.
+  We choose the deployment type **Library**, because it does not publish anything and nobody new gets access.
+
+### First time: create the first version
+
+Do this **once**, before your first change, so that the version that works today is kept.
+
+1. Open the spreadsheet → **Extensions → Apps Script**.
+2. At the top right, click the blue **Deploy** button → **New deployment**.
+3. Next to **Select type**, click the **gear icon ⚙️** and choose **Library**.
+4. In **Description**, type something that explains this version, for example: `Original version from Ori, works`.
+5. Click **Deploy**.
+6. A box says the deployment was created and shows **Version 1**. Click **Done**.
+
+(If Google asks for permission at this point, allow it as in Part 2.)
+
+### Every time before (and after) you change the script
+
+Before you start changing things, save a version of the current code. After your change works, save another one.
+This way you always have both the "before" and the "after".
+
+1. Make sure the code is saved (**Ctrl+S**). A version is made from the **saved** code only.
+2. At the top right, click **Deploy → Manage deployments**.
+3. On the left, the Library deployment you created is selected. At the top right of the box, click the **pencil icon ✏️** (Edit).
+4. Open the **Version** list and choose **New version**.
+5. In **Description**, write what this version is, for example: `Before changing reminders to 2 days` or `Reminders changed to 2 days, tested`.
+6. Click **Deploy**, then **Done**.
+
+Each time you do this, the version number goes up by one (version 2, version 3, ...).
+
+> **Tip:** Write clear descriptions. In a month, `Reminders at 8:00, tested on the Utrecht course` helps much more than `v3`.
+
+### Seeing old versions
+
+1. In the Apps Script editor, on the **far left edge**, click the **clock icon 🕘** (when you move the mouse over it, it says **Project History**).
+2. You see the list of versions, newest at the top. Move the mouse over a version to see its description.
+3. Click a version to see the code as it was in that version. You can only read it here; you cannot edit it.
+4. To see what changed since then, turn on **Highlight changes** at the top. The lines that are different from today's code are marked.
+
+### Going back to an old version
+
+Google has no "Restore" button, so you go back by copying and pasting:
+
+1. Open **Project History** (the clock icon) and click the version you want to go back to.
+2. Click **Code.gs** in that version, click inside the code, press **Ctrl+A**, then **Ctrl+C**.
+3. Click the **`< >` icon** (Editor) on the far left to go back to the editor, and click **Code.gs**.
+4. Click inside the code, press **Ctrl+A**, then **Ctrl+V**, and press **Ctrl+S** to save.
+5. If `appsscript.json` also changed in that version (Highlight changes shows this), do the same for it.
+6. Reload the spreadsheet.
+
+The helper now works exactly as it did in that version. The newer versions stay in the history, so you can change your mind later.
+
+### Good to know
+
+- You can keep up to **200 versions**, far more than you will need. Old versions can be deleted in Project History (the **⋮** menu next to a version),
+  except the one the deployment is currently using.
+- **Don't** save a backup by adding a second script file (for example `Code copy.gs`) to the project. All the files in a project run together,
+  so two copies of the same code confuse the helper. Use versions, or paste the code into a Google Doc if you want an extra copy outside the editor.
+- If your change doesn't work and you are stuck, go back to the last version that worked, or paste Ori's original from the GitHub link (Part 1, Step 3).
 
 ---
 
