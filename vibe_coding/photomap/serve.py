@@ -15,6 +15,7 @@
 תהליך רקע מכין מראש תמונות ממוזערות לכל הפריטים הממוקמים.
 """
 import getpass
+import gzip
 import io
 import json
 import posixpath
@@ -49,6 +50,7 @@ for sub in ("thumbs", "posters", "video"):
 _members, _members_mtime = {}, 0
 _local = threading.local()
 _locks, _locks_guard = {}, threading.Lock()
+_gz_cache = {}
 
 
 def members():
@@ -193,6 +195,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(404)
         parts = path.strip("/").split("/")
         if len(parts) != 3 or parts[0] != "media":
+            if path.endswith((".json", ".js", ".css", ".html", "/")) and "gzip" in self.headers.get("Accept-Encoding", ""):
+                return self.send_gzipped(ROOT / (path.lstrip("/") or "index.html") if path != "/" else ROOT / "index.html")
             return super().do_GET()
         kind, iid = parts[1], parts[2].removesuffix(".jpg")
         if iid not in members():
@@ -242,6 +246,27 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def send_gzipped(self, f):
+        """קבצי טקסט מכווצים. דרך מנהרה עם העלאה ביתית איטית זה ההבדל בין 2 דקות ל-15 שניות."""
+        if not f.is_file():
+            return self.send_error(404)
+        key = (str(f), f.stat().st_mtime)
+        with _locks_guard:
+            data = _gz_cache.get(key)
+        if data is None:
+            data = gzip.compress(f.read_bytes(), 6)
+            with _locks_guard:
+                _gz_cache.clear() if len(_gz_cache) > 20 else None
+                _gz_cache[key] = data
+        ctype = {".json": "application/json", ".js": "text/javascript", ".css": "text/css"}.get(f.suffix, "text/html")
+        self.send_response(200)
+        self.send_header("Content-Type", ctype + "; charset=utf-8")
+        self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(data)
 
