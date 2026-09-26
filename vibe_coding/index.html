@@ -187,6 +187,92 @@
         .toc-name { font-size: 0.82rem; font-weight: 600; color: #cbd5e1; }
         .toc-sub { display: block; font-size: 0.68rem; color: #64748b; }
 
+        .toc-try {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #4ade80;
+            text-decoration: none;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: rgba(74,222,128,0.1);
+            border: 1px solid rgba(74,222,128,0.25);
+        }
+        .toc-try:hover { background: rgba(74,222,128,0.18); }
+
+        /* ── Live projects gallery ── */
+        .try-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 14px;
+        }
+
+        .try-card {
+            display: flex;
+            flex-direction: column;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
+            border-radius: 14px;
+            overflow: hidden;
+            text-decoration: none;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .try-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent, #818cf8);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .try-shot {
+            display: block;
+            aspect-ratio: 16 / 10;
+            background: var(--icon-bg, #131e2e);
+            border-bottom: 1px solid #1a2840;
+            overflow: hidden;
+        }
+        .try-shot img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .try-card:hover .try-shot img { transform: scale(1.04); }
+        .try-noshot {
+            display: flex; align-items: center; justify-content: center;
+            height: 100%;
+            font-size: 2.4rem;
+        }
+
+        .try-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+        }
+        .try-icon { font-size: 1rem; flex-shrink: 0; }
+        .try-text { flex: 1; min-width: 0; line-height: 1.3; }
+        .try-name { display: block; font-size: 0.86rem; font-weight: 700; color: #f1f5f9; }
+        .try-sub { display: block; font-size: 0.7rem; color: #64748b; }
+        .try-go {
+            flex-shrink: 0;
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem;
+            color: #fff;
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 0 12px rgba(16,185,129,0.3);
+        }
+
+        /* Phones: two small cards per row instead of one tall column */
+        @media (max-width: 520px) {
+            .try-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            .try-info { padding: 8px 9px; gap: 6px; }
+            .try-name { font-size: 0.78rem; }
+            .try-sub { font-size: 0.64rem; }
+            .try-go { display: none; }
+        }
+
         /* Floating "back to contents" button */
         .to-toc {
             position: fixed;
@@ -431,7 +517,7 @@
         <p class="header-meta">Built with Claude Code &bull; אורי מוסנזון</p>
         <div class="header-stats">
             <div class="stat"><div class="stat-num">45</div><div class="stat-label">פרויקטים</div></div>
-            <div class="stat"><div class="stat-num">5</div><div class="stat-label">Live Demos</div></div>
+            <div class="stat"><div class="stat-num">22</div><div class="stat-label">Live Demos</div></div>
             <div class="stat"><div class="stat-num">18</div><div class="stat-label">AI-Powered</div></div>
             <div class="stat"><div class="stat-num">5</div><div class="stat-label">קטגוריות</div></div>
         </div>
@@ -439,6 +525,7 @@
     <nav class="toc" id="toc" aria-label="תוכן עניינים">
         <div class="toc-bar">
             <span class="toc-title">תוכן עניינים</span>
+            <a href="#try" class="toc-try">🚀 22 פרויקטים live</a>
             <button type="button" class="toc-sort-all">מיין הכל א–ת</button>
         </div>
         <div class="toc-grid">
@@ -530,6 +617,191 @@
         </div>
     </nav>
     <a href="#toc" class="to-toc" aria-label="חזרה לתוכן העניינים">↑</a>
+
+    <div class="section-header" id="try">
+        <span class="section-emoji">🚀</span>
+        <span class="section-title">פרויקטים live: נסו עכשיו בדפדפן</span>
+        <span class="section-count">22 פרויקטים</span>
+    </div>
+    <div class="try-grid">
+        <a class="try-card t-amber" href="2048/game/index.html">
+            <span class="try-shot"><img src="projects_page/shots/2048.webp" alt="צילום מסך של 2048 ולמידת חיזוק" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🎲</span>
+                <span class="try-text"><span class="try-name">2048 ולמידת חיזוק</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-purple" href="https://fun-production-d221.up.railway.app/" target="_blank" rel="noopener">
+            <span class="try-shot"><img src="projects_page/shots/letras.webp" alt="צילום מסך של Letras" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🎤</span>
+                <span class="try-text"><span class="try-name">Letras</span><span class="try-sub">מילות שירים</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-green" href="nash/index.html">
+            <span class="try-shot"><img src="projects_page/shots/nash.webp" alt="צילום מסך של שיווי משקל נאש" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">⚖️</span>
+                <span class="try-text"><span class="try-name">שיווי משקל נאש</span><span class="try-sub">הדגמה</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-green" href="https://pardespedia.info" target="_blank" rel="noopener">
+            <span class="try-shot"><img src="projects_page/shots/pardespedia.webp" alt="צילום מסך של פרדספדיה" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🌳</span>
+                <span class="try-text"><span class="try-name">פרדספדיה</span><span class="try-sub">ויקי קהילתי</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-purple" href="one_prompt/index.html">
+            <span class="try-shot"><img src="projects_page/shots/one_prompt.webp" alt="צילום מסך של One Prompt" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">✦</span>
+                <span class="try-text"><span class="try-name">One Prompt</span><span class="try-sub">תוכנה מפרומפט אחד</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-indigo" href="vedit/index.html">
+            <span class="try-shot"><img src="projects_page/shots/vedit.webp" alt="צילום מסך של vedit" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🎬</span>
+                <span class="try-text"><span class="try-name">vedit</span><span class="try-sub">עורך וידאו בדפדפן</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-green" href="dereh_kitzur/">
+            <span class="try-shot"><img src="projects_page/shots/dereh_kitzur.webp" alt="צילום מסך של דרך קיצור" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🥾</span>
+                <span class="try-text"><span class="try-name">דרך קיצור</span><span class="try-sub">שבילי פרדס חנה-כרכור</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-pink" href="bloom/index.html">
+            <span class="try-shot"><img src="projects_page/shots/bloom.webp" alt="צילום מסך של Bloom" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🌸</span>
+                <span class="try-text"><span class="try-name">Bloom</span><span class="try-sub">מצא את הפרחים שלך</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-cyan" href="fable/index.html">
+            <span class="try-shot"><img src="projects_page/shots/fable.webp" alt="צילום מסך של Fable" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🚀</span>
+                <span class="try-text"><span class="try-name">Fable</span><span class="try-sub">אופנוע סילון מעופף</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-cyan" href="opus5/index.html">
+            <span class="try-shot"><img src="projects_page/shots/opus5.webp" alt="צילום מסך של אופנוע סילון" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🏔️</span>
+                <span class="try-text"><span class="try-name">אופנוע סילון</span><span class="try-sub">עמק אלפיני</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-red" href="mmx.html">
+            <span class="try-shot"><img src="projects_page/shots/mmx.webp" alt="צילום מסך של Dirt Bike Racing" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🏍️</span>
+                <span class="try-text"><span class="try-name">Dirt Bike Racing</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-indigo" href="soduku.html">
+            <span class="try-shot"><img src="projects_page/shots/soduku.webp" alt="צילום מסך של סודוקו עם רמזים חכמים" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🎯</span>
+                <span class="try-text"><span class="try-name">סודוקו עם רמזים חכמים</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-orange" href="solar.html">
+            <span class="try-shot"><img src="projects_page/shots/solar.webp" alt="צילום מסך של Solar System Simulation" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🪐</span>
+                <span class="try-text"><span class="try-name">Solar System Simulation</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-orange" href="manhattan_project/index.html" target="_blank" rel="noopener">
+            <span class="try-shot"><img src="projects_page/shots/manhattan_project.webp" alt="צילום מסך של Central Park Development Model" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🗽</span>
+                <span class="try-text"><span class="try-name">Central Park Development Model</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-purple" href="animate/animate.html">
+            <span class="try-shot"><img src="projects_page/shots/animate.webp" alt="צילום מסך של Bezier Curve Animation Editor" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">✨</span>
+                <span class="try-text"><span class="try-name">Bezier Curve Animation Editor</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-cyan" href="primes.html">
+            <span class="try-shot"><img src="projects_page/shots/primes.webp" alt="צילום מסך של Prime Number Spirals" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🔢</span>
+                <span class="try-text"><span class="try-name">Prime Number Spirals</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-indigo" href="mandelbrot/index.html">
+            <span class="try-shot"><img src="projects_page/shots/mandelbrot.webp" alt="צילום מסך של חוקר קבוצת מנדלברוט" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🌀</span>
+                <span class="try-text"><span class="try-name">חוקר קבוצת מנדלברוט</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-purple" href="zeta.html">
+            <span class="try-shot"><img src="projects_page/shots/zeta.webp" alt="צילום מסך של ζ" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🔮</span>
+                <span class="try-text"><span class="try-name">ζ</span><span class="try-sub">ההמשכה האנליטית של זטא</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-amber" href="battery_density_chart.html">
+            <span class="try-shot"><img src="projects_page/shots/battery_density_chart.webp" alt="צילום מסך של צפיפות אנרגטית של מצברים" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🔋</span>
+                <span class="try-text"><span class="try-name">צפיפות אנרגטית של מצברים</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-pink" href="tmp/v.html">
+            <span class="try-shot"><img src="projects_page/shots/v.webp" alt="צילום מסך של 3D Rose &amp; Heart" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🌹</span>
+                <span class="try-text"><span class="try-name">3D Rose &amp; Heart</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-teal" href="tmp/karina.html">
+            <span class="try-shot"><img src="projects_page/shots/karina.webp" alt="צילום מסך של Mind · Heart · Body · Spirit" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🌌</span>
+                <span class="try-text"><span class="try-name">Mind · Heart · Body · Spirit</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+        <a class="try-card t-blue" href="t.html">
+            <span class="try-shot"><img src="projects_page/shots/t.webp" alt="צילום מסך של 3D Flying Motorcycle" loading="lazy" width="640" height="400"></span>
+            <span class="try-info">
+                <span class="try-icon">🏍️</span>
+                <span class="try-text"><span class="try-name">3D Flying Motorcycle</span></span>
+                <span class="try-go">▶</span>
+            </span>
+        </a>
+    </div>
+
     <!-- ══════════════════════════════════════════
          1. פרויקטי AI
     ══════════════════════════════════════════ -->
