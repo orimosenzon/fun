@@ -49,7 +49,7 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 500px; height: 250px;
+            width: min(500px, 100%); height: 250px;
             background: radial-gradient(ellipse, rgba(129,140,248,0.12) 0%, transparent 70%);
             pointer-events: none;
         }
@@ -101,6 +101,122 @@
             font-size: 0.75rem;
             color: #64748b;
             margin-top: 2px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        /* ── Table of contents ── */
+        .toc {
+            background: #0c1726;
+            border: 1px solid #1a2840;
+            border-radius: 16px;
+            padding: 18px 20px 20px;
+            scroll-margin-top: 16px;
+        }
+
+        .toc-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .toc-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: 1.5px;
+        }
+
+        .toc-sort, .toc-sort-all {
+            font: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: #131e2e;
+            border: 1px solid #1e2e42;
+            border-radius: 20px;
+            padding: 2px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.18s;
+        }
+        .toc-sort:hover, .toc-sort-all:hover { background: #1a2840; color: #e2e8f0; }
+        .toc-sort.sorted { color: #c084fc; border-color: rgba(192,132,252,0.4); }
+        .toc-sort-all { margin-inline-start: auto; }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 18px 16px;
+        }
+
+        .toc-head {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .toc-cat {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            text-decoration: none;
+        }
+        .toc-cat:hover { color: #c084fc; }
+
+        .toc-list { list-style: none; }
+
+        .toc-list a {
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+            padding: 3px 4px;
+            border-radius: 6px;
+            text-decoration: none;
+            line-height: 1.3;
+        }
+        .toc-list a:hover { background: #131e2e; }
+        .toc-list a:hover .toc-name { color: #c084fc; }
+
+        .toc-icon { font-size: 0.8rem; flex-shrink: 0; }
+        .toc-name { font-size: 0.82rem; font-weight: 600; color: #cbd5e1; }
+        .toc-sub { display: block; font-size: 0.68rem; color: #64748b; }
+
+        /* Floating "back to contents" button */
+        .to-toc {
+            position: fixed;
+            bottom: 20px;
+            inset-inline-start: 20px;
+            z-index: 5;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #131e2e;
+            border: 1px solid #1e2e42;
+            color: #c084fc;
+            font-size: 1.1rem;
+            text-decoration: none;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .to-toc.show { opacity: 1; pointer-events: auto; }
+
+        /* Card reached from the table of contents */
+        .project-card, .section-header { scroll-margin-top: 16px; }
+        .project-card:target {
+            border-color: var(--accent, #818cf8);
+            animation: target-glow 2s ease-out;
+        }
+        @keyframes target-glow {
+            0%, 40% { box-shadow: 0 0 0 3px var(--accent, #818cf8), 0 8px 32px rgba(0,0,0,0.4); }
+            100% { box-shadow: 0 0 0 0 transparent; }
         }
 
         /* ── Section headers ── */
@@ -310,11 +426,79 @@
 <div class="container">
 
 {{HEADER}}
+{{TOC}}
 {{SECTIONS}}
     <footer>
         ✦ Built with Claude Code &nbsp;&bull;&nbsp; Vibe Coding &nbsp;&bull;&nbsp; אורי מוסנזון
     </footer>
 
 </div>
+<script>
+// Table of contents: each column cycles page order → א–ת → ת–א.
+// The chosen order is remembered per browser; failing storage is harmless.
+(function () {
+    var MODES = ['page', 'az', 'za'];
+    var LABELS = { page: 'סדר הדף', az: 'א–ת ↓', za: 'ת–א ↑' };
+    var collator = new Intl.Collator(['he', 'en'], { numeric: true, sensitivity: 'base' });
+    var cols = Array.prototype.slice.call(document.querySelectorAll('.toc-col'));
+    var allBtn = document.querySelector('.toc-sort-all');
+
+    function nameOf(li) { return li.querySelector('.toc-name').textContent.trim(); }
+
+    function apply(col, mode) {
+        var list = col.querySelector('.toc-list');
+        var items = Array.prototype.slice.call(list.children);
+        items.sort(function (a, b) {
+            if (mode === 'page') return a.dataset.i - b.dataset.i;
+            var c = collator.compare(nameOf(a), nameOf(b));
+            return mode === 'az' ? c : -c;
+        });
+        items.forEach(function (li) { list.appendChild(li); });
+        col.dataset.mode = mode;
+        var btn = col.querySelector('.toc-sort');
+        btn.textContent = LABELS[mode];
+        btn.classList.toggle('sorted', mode !== 'page');
+    }
+
+    function save() {
+        try {
+            localStorage.setItem('toc-sort', JSON.stringify(cols.map(function (c) { return c.dataset.mode; })));
+        } catch (e) {}
+    }
+
+    function syncAllBtn() {
+        var allAz = cols.every(function (c) { return c.dataset.mode === 'az'; });
+        allBtn.textContent = allAz ? 'חזרה לסדר הדף' : 'מיין הכל א–ת';
+    }
+
+    var saved = [];
+    try { saved = JSON.parse(localStorage.getItem('toc-sort')) || []; } catch (e) {}
+    cols.forEach(function (col, i) {
+        apply(col, MODES.indexOf(saved[i]) >= 0 ? saved[i] : 'page');
+        col.querySelector('.toc-sort').addEventListener('click', function () {
+            apply(col, MODES[(MODES.indexOf(col.dataset.mode) + 1) % MODES.length]);
+            syncAllBtn();
+            save();
+        });
+    });
+    syncAllBtn();
+
+    allBtn.addEventListener('click', function () {
+        var allAz = cols.every(function (c) { return c.dataset.mode === 'az'; });
+        cols.forEach(function (c) { apply(c, allAz ? 'page' : 'az'); });
+        syncAllBtn();
+        save();
+    });
+
+    // Show the "back to contents" button once the table has scrolled away
+    var toc = document.getElementById('toc');
+    var back = document.querySelector('.to-toc');
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+            back.classList.toggle('show', !entries[0].isIntersecting);
+        }).observe(toc);
+    }
+})();
+</script>
 </body>
 </html>

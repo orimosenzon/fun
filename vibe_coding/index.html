@@ -49,7 +49,7 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 500px; height: 250px;
+            width: min(500px, 100%); height: 250px;
             background: radial-gradient(ellipse, rgba(129,140,248,0.12) 0%, transparent 70%);
             pointer-events: none;
         }
@@ -101,6 +101,122 @@
             font-size: 0.75rem;
             color: #64748b;
             margin-top: 2px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        /* ── Table of contents ── */
+        .toc {
+            background: #0c1726;
+            border: 1px solid #1a2840;
+            border-radius: 16px;
+            padding: 18px 20px 20px;
+            scroll-margin-top: 16px;
+        }
+
+        .toc-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .toc-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: 1.5px;
+        }
+
+        .toc-sort, .toc-sort-all {
+            font: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: #131e2e;
+            border: 1px solid #1e2e42;
+            border-radius: 20px;
+            padding: 2px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.18s;
+        }
+        .toc-sort:hover, .toc-sort-all:hover { background: #1a2840; color: #e2e8f0; }
+        .toc-sort.sorted { color: #c084fc; border-color: rgba(192,132,252,0.4); }
+        .toc-sort-all { margin-inline-start: auto; }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 18px 16px;
+        }
+
+        .toc-head {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .toc-cat {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            text-decoration: none;
+        }
+        .toc-cat:hover { color: #c084fc; }
+
+        .toc-list { list-style: none; }
+
+        .toc-list a {
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+            padding: 3px 4px;
+            border-radius: 6px;
+            text-decoration: none;
+            line-height: 1.3;
+        }
+        .toc-list a:hover { background: #131e2e; }
+        .toc-list a:hover .toc-name { color: #c084fc; }
+
+        .toc-icon { font-size: 0.8rem; flex-shrink: 0; }
+        .toc-name { font-size: 0.82rem; font-weight: 600; color: #cbd5e1; }
+        .toc-sub { display: block; font-size: 0.68rem; color: #64748b; }
+
+        /* Floating "back to contents" button */
+        .to-toc {
+            position: fixed;
+            bottom: 20px;
+            inset-inline-start: 20px;
+            z-index: 5;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #131e2e;
+            border: 1px solid #1e2e42;
+            color: #c084fc;
+            font-size: 1.1rem;
+            text-decoration: none;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .to-toc.show { opacity: 1; pointer-events: auto; }
+
+        /* Card reached from the table of contents */
+        .project-card, .section-header { scroll-margin-top: 16px; }
+        .project-card:target {
+            border-color: var(--accent, #818cf8);
+            animation: target-glow 2s ease-out;
+        }
+        @keyframes target-glow {
+            0%, 40% { box-shadow: 0 0 0 3px var(--accent, #818cf8), 0 8px 32px rgba(0,0,0,0.4); }
+            100% { box-shadow: 0 0 0 0 transparent; }
         }
 
         /* ── Section headers ── */
@@ -320,10 +436,104 @@
             <div class="stat"><div class="stat-num">5</div><div class="stat-label">קטגוריות</div></div>
         </div>
     </header>
+    <nav class="toc" id="toc" aria-label="תוכן עניינים">
+        <div class="toc-bar">
+            <span class="toc-title">תוכן עניינים</span>
+            <button type="button" class="toc-sort-all">מיין הכל א–ת</button>
+        </div>
+        <div class="toc-grid">
+            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#cat-1" class="toc-cat">🤖 פרויקטי AI</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+                <li data-i="0"><a href="#2048" title="2048 ולמידת חיזוק"><span class="toc-icon">🎲</span><span class="toc-text"><span class="toc-name">2048 ולמידת חיזוק</span></span></a></li>
+                <li data-i="1"><a href="#letras" title="Letras — מילות שירים"><span class="toc-icon">🎤</span><span class="toc-text"><span class="toc-name">Letras</span><span class="toc-sub">מילות שירים</span></span></a></li>
+                <li data-i="2"><a href="#nash" title="שיווי משקל נאש — הדגמה"><span class="toc-icon">⚖️</span><span class="toc-text"><span class="toc-name">שיווי משקל נאש</span><span class="toc-sub">הדגמה</span></span></a></li>
+                <li data-i="3"><a href="#embedding" title="Word Embeddings — שיכון מילים"><span class="toc-icon">🧠</span><span class="toc-text"><span class="toc-name">Word Embeddings</span><span class="toc-sub">שיכון מילים</span></span></a></li>
+                <li data-i="4"><a href="#golem" title="Golem — תוסף VS Code"><span class="toc-icon">🤖</span><span class="toc-text"><span class="toc-name">Golem</span><span class="toc-sub">תוסף VS Code</span></span></a></li>
+                <li data-i="5"><a href="#sidekick" title="Sidekick — דיבאג אינטגרציות"><span class="toc-icon">🔍</span><span class="toc-text"><span class="toc-name">Sidekick</span><span class="toc-sub">דיבאג אינטגרציות</span></span></a></li>
+                <li data-i="6"><a href="#wikivoice" title="WikiVoice — ויקיפדיה מדברת"><span class="toc-icon">🔊</span><span class="toc-text"><span class="toc-name">WikiVoice</span><span class="toc-sub">ויקיפדיה מדברת</span></span></a></li>
+                <li data-i="7"><a href="#claude-auto" title="Claude Auto — עוזר קולי לנהיגה"><span class="toc-icon">🚗</span><span class="toc-text"><span class="toc-name">Claude Auto</span><span class="toc-sub">עוזר קולי לנהיגה</span></span></a></li>
+                <li data-i="8"><a href="#agents-101" title="Agents 101 — LangChain, LangGraph & MCP"><span class="toc-icon">🤖</span><span class="toc-text"><span class="toc-name">Agents 101</span><span class="toc-sub">LangChain, LangGraph & MCP</span></span></a></li>
+                <li data-i="9"><a href="#nudge" title="Nudge — ניהול כספים קולי"><span class="toc-icon">🌱</span><span class="toc-text"><span class="toc-name">Nudge</span><span class="toc-sub">ניהול כספים קולי</span></span></a></li>
+                <li data-i="10"><a href="#deepcourse" title="Deep Course — קורס למידה עמוקה"><span class="toc-icon">🎓</span><span class="toc-text"><span class="toc-name">Deep Course</span><span class="toc-sub">קורס למידה עמוקה</span></span></a></li>
+                <li data-i="11"><a href="#g4" title="g4 — Gemma 4 מקומי"><span class="toc-icon">🟢</span><span class="toc-text"><span class="toc-name">g4</span><span class="toc-sub">Gemma 4 מקומי</span></span></a></li>
+                <li data-i="12"><a href="#dragon-cloud" title="Dragon Cloud — LLM סיני בענן"><span class="toc-icon">🐉</span><span class="toc-text"><span class="toc-name">Dragon Cloud</span><span class="toc-sub">LLM סיני בענן</span></span></a></li>
+                <li data-i="13"><a href="#archon" title="Archon — שחזור משחק קומודור 64"><span class="toc-icon">⚔️</span><span class="toc-text"><span class="toc-name">Archon</span><span class="toc-sub">שחזור משחק קומודור 64</span></span></a></li>
+                <li data-i="14"><a href="#haskala" title="Haskala — אדמיניסטרציה של כיתה"><span class="toc-icon">📝</span><span class="toc-text"><span class="toc-name">Haskala</span><span class="toc-sub">אדמיניסטרציה של כיתה</span></span></a></li>
+                <li data-i="15"><a href="#remez" title="Remez — רמזים ל-OCR עברי"><span class="toc-icon">💡</span><span class="toc-text"><span class="toc-name">Remez</span><span class="toc-sub">רמזים ל-OCR עברי</span></span></a></li>
+                <li data-i="16"><a href="#openclaw" title="OpenClaw — סוכן קולי"><span class="toc-icon">🦾</span><span class="toc-text"><span class="toc-name">OpenClaw</span><span class="toc-sub">סוכן קולי</span></span></a></li>
+                <li data-i="17"><a href="#pardespedia" title="פרדספדיה — ויקי קהילתי"><span class="toc-icon">🌳</span><span class="toc-text"><span class="toc-name">פרדספדיה</span><span class="toc-sub">ויקי קהילתי</span></span></a></li>
+                <li data-i="18"><a href="#one_prompt" title="One Prompt — תוכנה מפרומפט אחד"><span class="toc-icon">✦</span><span class="toc-text"><span class="toc-name">One Prompt</span><span class="toc-sub">תוכנה מפרומפט אחד</span></span></a></li>
+                </ol>
+            </div>
+            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#cat-2" class="toc-cat">🌐 אפליקציות מלאות</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+                <li data-i="0"><a href="#vedit" title="vedit: עורך וידאו בדפדפן"><span class="toc-icon">🎬</span><span class="toc-text"><span class="toc-name">vedit</span><span class="toc-sub">עורך וידאו בדפדפן</span></span></a></li>
+                <li data-i="1"><a href="#dereh_kitzur" title="דרך קיצור — שבילי פרדס חנה-כרכור"><span class="toc-icon">🥾</span><span class="toc-text"><span class="toc-name">דרך קיצור</span><span class="toc-sub">שבילי פרדס חנה-כרכור</span></span></a></li>
+                <li data-i="2"><a href="#inbal" title="Inbal — אתר קרמיקה"><span class="toc-icon">🏺</span><span class="toc-text"><span class="toc-name">Inbal</span><span class="toc-sub">אתר קרמיקה</span></span></a></li>
+                <li data-i="3"><a href="#road-to-recovery" title="בדרך להחלמה"><span class="toc-icon">🚑</span><span class="toc-text"><span class="toc-name">בדרך להחלמה</span></span></a></li>
+                <li data-i="4"><a href="#ori" title="Smart Business Search"><span class="toc-icon">🗺️</span><span class="toc-text"><span class="toc-name">Smart Business Search</span></span></a></li>
+                <li data-i="5"><a href="#bloom" title="Bloom — מצא את הפרחים שלך"><span class="toc-icon">🌸</span><span class="toc-text"><span class="toc-name">Bloom</span><span class="toc-sub">מצא את הפרחים שלך</span></span></a></li>
+                </ol>
+            </div>
+            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#cat-3" class="toc-cat">🎮 משחקים והרפתקאות</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+                <li data-i="0"><a href="#fable" title="Fable — אופנוע סילון מעופף"><span class="toc-icon">🚀</span><span class="toc-text"><span class="toc-name">Fable</span><span class="toc-sub">אופנוע סילון מעופף</span></span></a></li>
+                <li data-i="1"><a href="#opus5" title="אופנוע סילון — עמק אלפיני"><span class="toc-icon">🏔️</span><span class="toc-text"><span class="toc-name">אופנוע סילון</span><span class="toc-sub">עמק אלפיני</span></span></a></li>
+                <li data-i="2"><a href="#pipin" title="פיפין — הרפתקה בארץ התיכונה"><span class="toc-icon">🧙</span><span class="toc-text"><span class="toc-name">פיפין</span><span class="toc-sub">הרפתקה בארץ התיכונה</span></span></a></li>
+                <li data-i="3"><a href="#mmx" title="Dirt Bike Racing"><span class="toc-icon">🏍️</span><span class="toc-text"><span class="toc-name">Dirt Bike Racing</span></span></a></li>
+                <li data-i="4"><a href="#soduku" title="סודוקו עם רמזים חכמים"><span class="toc-icon">🎯</span><span class="toc-text"><span class="toc-name">סודוקו עם רמזים חכמים</span></span></a></li>
+                <li data-i="5"><a href="#solar" title="Solar System Simulation"><span class="toc-icon">🪐</span><span class="toc-text"><span class="toc-name">Solar System Simulation</span></span></a></li>
+                </ol>
+            </div>
+            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#cat-4" class="toc-cat">🛠️ כלים אינטראקטיביים</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+                <li data-i="0"><a href="#yoram" title="yoram — דד ליינים לקורסים"><span class="toc-icon">📅</span><span class="toc-text"><span class="toc-name">yoram</span><span class="toc-sub">דד ליינים לקורסים</span></span></a></li>
+                <li data-i="1"><a href="#manhattan_project" title="Central Park Development Model"><span class="toc-icon">🗽</span><span class="toc-text"><span class="toc-name">Central Park Development Model</span></span></a></li>
+                <li data-i="2"><a href="#esla_vibe" title="esla_vibe — אלגברה לינארית"><span class="toc-icon">📐</span><span class="toc-text"><span class="toc-name">esla_vibe</span><span class="toc-sub">אלגברה לינארית</span></span></a></li>
+                <li data-i="3"><a href="#animate" title="Bezier Curve Animation Editor"><span class="toc-icon">✨</span><span class="toc-text"><span class="toc-name">Bezier Curve Animation Editor</span></span></a></li>
+                <li data-i="4"><a href="#empires" title="Historical Empires on the Map"><span class="toc-icon">🌍</span><span class="toc-text"><span class="toc-name">Historical Empires on the Map</span></span></a></li>
+                <li data-i="5"><a href="#primes" title="Prime Number Spirals"><span class="toc-icon">🔢</span><span class="toc-text"><span class="toc-name">Prime Number Spirals</span></span></a></li>
+                <li data-i="6"><a href="#pgn2study" title="PGN2Study — פאזלים לשחמט"><span class="toc-icon">♟</span><span class="toc-text"><span class="toc-name">PGN2Study</span><span class="toc-sub">פאזלים לשחמט</span></span></a></li>
+                <li data-i="7"><a href="#surfaces" title="surfaces — משטחים פרמטריים"><span class="toc-icon">🌐</span><span class="toc-text"><span class="toc-name">surfaces</span><span class="toc-sub">משטחים פרמטריים</span></span></a></li>
+                <li data-i="8"><a href="#mandelbrot" title="חוקר קבוצת מנדלברוט"><span class="toc-icon">🌀</span><span class="toc-text"><span class="toc-name">חוקר קבוצת מנדלברוט</span></span></a></li>
+                <li data-i="9"><a href="#zeta" title="ζ — ההמשכה האנליטית של זטא"><span class="toc-icon">🔮</span><span class="toc-text"><span class="toc-name">ζ</span><span class="toc-sub">ההמשכה האנליטית של זטא</span></span></a></li>
+                <li data-i="10"><a href="#battery_density_chart" title="צפיפות אנרגטית של מצברים"><span class="toc-icon">🔋</span><span class="toc-text"><span class="toc-name">צפיפות אנרגטית של מצברים</span></span></a></li>
+                </ol>
+            </div>
+            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#cat-5" class="toc-cat">🌐 ניסויי 3D</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+                <li data-i="0"><a href="#v" title="3D Rose &amp; Heart"><span class="toc-icon">🌹</span><span class="toc-text"><span class="toc-name">3D Rose &amp; Heart</span></span></a></li>
+                <li data-i="1"><a href="#karina" title="Mind · Heart · Body · Spirit"><span class="toc-icon">🌌</span><span class="toc-text"><span class="toc-name">Mind · Heart · Body · Spirit</span></span></a></li>
+                <li data-i="2"><a href="#t" title="3D Flying Motorcycle"><span class="toc-icon">🏍️</span><span class="toc-text"><span class="toc-name">3D Flying Motorcycle</span></span></a></li>
+                </ol>
+            </div>
+        </div>
+    </nav>
+    <a href="#toc" class="to-toc" aria-label="חזרה לתוכן העניינים">↑</a>
     <!-- ══════════════════════════════════════════
          1. פרויקטי AI
     ══════════════════════════════════════════ -->
-    <div class="section-header">
+    <div class="section-header" id="cat-1">
         <span class="section-emoji">🤖</span>
         <span class="section-title">פרויקטי AI</span>
         <span class="section-count">19 פרויקטים</span>
@@ -331,7 +541,7 @@
     <div class="projects">
 
         <!-- 2048 ולמידת חיזוק -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="2048">
             <div>
             <div class="card-header">
                 <div class="card-icon">🎲</div>
@@ -383,7 +593,7 @@
         </div>
 
         <!-- Letras — מילות שירים -->
-        <div class="project-card t-purple">
+        <div class="project-card t-purple" id="letras">
             <div>
             <div class="card-header">
                 <div class="card-icon">🎤</div>
@@ -424,7 +634,7 @@
         </div>
 
         <!-- שיווי משקל נאש — הדגמה -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="nash">
             <div>
             <div class="card-header">
                 <div class="card-icon">⚖️</div>
@@ -457,7 +667,7 @@
         </div>
 
         <!-- Word Embeddings — שיכון מילים -->
-        <div class="project-card t-cyan">
+        <div class="project-card t-cyan" id="embedding">
             <div>
             <div class="card-header">
                 <div class="card-icon">🧠</div>
@@ -500,7 +710,7 @@
         </div>
 
         <!-- Golem — תוסף VS Code -->
-        <div class="project-card t-indigo">
+        <div class="project-card t-indigo" id="golem">
             <div>
             <div class="card-header">
                 <div class="card-icon">🤖</div>
@@ -538,7 +748,7 @@
         </div>
 
         <!-- Sidekick — דיבאג אינטגרציות -->
-        <div class="project-card t-blue">
+        <div class="project-card t-blue" id="sidekick">
             <div>
             <div class="card-header">
                 <div class="card-icon">🔍</div>
@@ -578,7 +788,7 @@
         </div>
 
         <!-- WikiVoice — ויקיפדיה מדברת -->
-        <div class="project-card t-teal">
+        <div class="project-card t-teal" id="wikivoice">
             <div>
             <div class="card-header">
                 <div class="card-icon">🔊</div>
@@ -615,7 +825,7 @@
         </div>
 
         <!-- Claude Auto — עוזר קולי לנהיגה -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="claude-auto">
             <div>
             <div class="card-header">
                 <div class="card-icon">🚗</div>
@@ -655,7 +865,7 @@
         </div>
 
         <!-- Agents 101 — LangChain, LangGraph & MCP -->
-        <div class="project-card t-indigo">
+        <div class="project-card t-indigo" id="agents-101">
             <div>
             <div class="card-header">
                 <div class="card-icon">🤖</div>
@@ -696,7 +906,7 @@
         </div>
 
         <!-- Nudge — ניהול כספים קולי -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="nudge">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌱</div>
@@ -733,7 +943,7 @@
         </div>
 
         <!-- Deep Course — קורס למידה עמוקה -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="deepcourse">
             <div>
             <div class="card-header">
                 <div class="card-icon">🎓</div>
@@ -777,7 +987,7 @@
         </div>
 
         <!-- g4 — Gemma 4 מקומי -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="g4">
             <div>
             <div class="card-header">
                 <div class="card-icon">🟢</div>
@@ -810,7 +1020,7 @@
         </div>
 
         <!-- Dragon Cloud — LLM סיני בענן -->
-        <div class="project-card t-red">
+        <div class="project-card t-red" id="dragon-cloud">
             <div>
             <div class="card-header">
                 <div class="card-icon">🐉</div>
@@ -843,7 +1053,7 @@
         </div>
 
         <!-- Archon — שחזור משחק קומודור 64 -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="archon">
             <div>
             <div class="card-header">
                 <div class="card-icon">⚔️</div>
@@ -883,7 +1093,7 @@
         </div>
 
         <!-- Haskala — אדמיניסטרציה של כיתה -->
-        <div class="project-card t-teal">
+        <div class="project-card t-teal" id="haskala">
             <div>
             <div class="card-header">
                 <div class="card-icon">📝</div>
@@ -922,7 +1132,7 @@
         </div>
 
         <!-- Remez — רמזים ל-OCR עברי -->
-        <div class="project-card t-teal">
+        <div class="project-card t-teal" id="remez">
             <div>
             <div class="card-header">
                 <div class="card-icon">💡</div>
@@ -960,7 +1170,7 @@
         </div>
 
         <!-- OpenClaw — סוכן קולי -->
-        <div class="project-card t-purple">
+        <div class="project-card t-purple" id="openclaw">
             <div>
             <div class="card-header">
                 <div class="card-icon">🦾</div>
@@ -997,7 +1207,7 @@
         </div>
 
         <!-- פרדספדיה — ויקי קהילתי -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="pardespedia">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌳</div>
@@ -1023,7 +1233,7 @@
         </div>
 
         <!-- One Prompt — תוכנה מפרומפט אחד -->
-        <div class="project-card t-purple">
+        <div class="project-card t-purple" id="one_prompt">
             <div>
             <div class="card-header">
                 <div class="card-icon">✦</div>
@@ -1049,7 +1259,7 @@
     <!-- ══════════════════════════════════════════
          2. אפליקציות מלאות
     ══════════════════════════════════════════ -->
-    <div class="section-header">
+    <div class="section-header" id="cat-2">
         <span class="section-emoji">🌐</span>
         <span class="section-title">אפליקציות מלאות</span>
         <span class="section-count">6 פרויקטים</span>
@@ -1057,7 +1267,7 @@
     <div class="projects">
 
         <!-- vedit: עורך וידאו בדפדפן -->
-        <div class="project-card t-indigo">
+        <div class="project-card t-indigo" id="vedit">
             <div>
             <div class="card-header">
                 <div class="card-icon">🎬</div>
@@ -1084,7 +1294,7 @@
         </div>
 
         <!-- דרך קיצור — שבילי פרדס חנה-כרכור -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="dereh_kitzur">
             <div>
             <div class="card-header">
                 <div class="card-icon">🥾</div>
@@ -1120,7 +1330,7 @@
         </div>
 
         <!-- Inbal — אתר קרמיקה -->
-        <div class="project-card t-pink">
+        <div class="project-card t-pink" id="inbal">
             <div>
             <div class="card-header">
                 <div class="card-icon">🏺</div>
@@ -1156,7 +1366,7 @@
         </div>
 
         <!-- בדרך להחלמה -->
-        <div class="project-card t-green">
+        <div class="project-card t-green" id="road-to-recovery">
             <div>
             <div class="card-header">
                 <div class="card-icon">🚑</div>
@@ -1193,7 +1403,7 @@
         </div>
 
         <!-- Smart Business Search -->
-        <div class="project-card t-blue">
+        <div class="project-card t-blue" id="ori">
             <div>
             <div class="card-header">
                 <div class="card-icon">🗺️</div>
@@ -1229,7 +1439,7 @@
         </div>
 
         <!-- Bloom — מצא את הפרחים שלך -->
-        <div class="project-card t-pink">
+        <div class="project-card t-pink" id="bloom">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌸</div>
@@ -1266,7 +1476,7 @@
     <!-- ══════════════════════════════════════════
          3. משחקים והרפתקאות
     ══════════════════════════════════════════ -->
-    <div class="section-header">
+    <div class="section-header" id="cat-3">
         <span class="section-emoji">🎮</span>
         <span class="section-title">משחקים והרפתקאות</span>
         <span class="section-count">6 פרויקטים</span>
@@ -1274,7 +1484,7 @@
     <div class="projects">
 
         <!-- Fable — אופנוע סילון מעופף -->
-        <div class="project-card t-cyan">
+        <div class="project-card t-cyan" id="fable">
             <div>
             <div class="card-header">
                 <div class="card-icon">🚀</div>
@@ -1308,7 +1518,7 @@
         </div>
 
         <!-- אופנוע סילון — עמק אלפיני -->
-        <div class="project-card t-cyan">
+        <div class="project-card t-cyan" id="opus5">
             <div>
             <div class="card-header">
                 <div class="card-icon">🏔️</div>
@@ -1343,7 +1553,7 @@
         </div>
 
         <!-- פיפין — הרפתקה בארץ התיכונה -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="pipin">
             <div>
             <div class="card-header">
                 <div class="card-icon">🧙</div>
@@ -1386,7 +1596,7 @@
         </div>
 
         <!-- Dirt Bike Racing -->
-        <div class="project-card t-red">
+        <div class="project-card t-red" id="mmx">
             <div>
             <div class="card-header">
                 <div class="card-icon">🏍️</div>
@@ -1421,7 +1631,7 @@
         </div>
 
         <!-- סודוקו עם רמזים חכמים -->
-        <div class="project-card t-indigo">
+        <div class="project-card t-indigo" id="soduku">
             <div>
             <div class="card-header">
                 <div class="card-icon">🎯</div>
@@ -1458,7 +1668,7 @@
         </div>
 
         <!-- Solar System Simulation -->
-        <div class="project-card t-orange">
+        <div class="project-card t-orange" id="solar">
             <div>
             <div class="card-header">
                 <div class="card-icon">🪐</div>
@@ -1498,7 +1708,7 @@
     <!-- ══════════════════════════════════════════
          4. כלים אינטראקטיביים
     ══════════════════════════════════════════ -->
-    <div class="section-header">
+    <div class="section-header" id="cat-4">
         <span class="section-emoji">🛠️</span>
         <span class="section-title">כלים אינטראקטיביים</span>
         <span class="section-count">11 פרויקטים</span>
@@ -1506,7 +1716,7 @@
     <div class="projects">
 
         <!-- yoram — דד ליינים לקורסים -->
-        <div class="project-card t-teal">
+        <div class="project-card t-teal" id="yoram">
             <div>
             <div class="card-header">
                 <div class="card-icon">📅</div>
@@ -1530,7 +1740,7 @@
         </div>
 
         <!-- Central Park Development Model -->
-        <div class="project-card t-orange">
+        <div class="project-card t-orange" id="manhattan_project">
             <div>
             <div class="card-header">
                 <div class="card-icon">🗽</div>
@@ -1571,7 +1781,7 @@
         </div>
 
         <!-- esla_vibe — אלגברה לינארית -->
-        <div class="project-card t-blue">
+        <div class="project-card t-blue" id="esla_vibe">
             <div>
             <div class="card-header">
                 <div class="card-icon">📐</div>
@@ -1615,7 +1825,7 @@
         </div>
 
         <!-- Bezier Curve Animation Editor -->
-        <div class="project-card t-purple">
+        <div class="project-card t-purple" id="animate">
             <div>
             <div class="card-header">
                 <div class="card-icon">✨</div>
@@ -1649,7 +1859,7 @@
         </div>
 
         <!-- Historical Empires on the Map -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="empires">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌍</div>
@@ -1684,7 +1894,7 @@
         </div>
 
         <!-- Prime Number Spirals -->
-        <div class="project-card t-cyan">
+        <div class="project-card t-cyan" id="primes">
             <div>
             <div class="card-header">
                 <div class="card-icon">🔢</div>
@@ -1721,7 +1931,7 @@
         </div>
 
         <!-- PGN2Study — פאזלים לשחמט -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="pgn2study">
             <div>
             <div class="card-header">
                 <div class="card-icon">♟</div>
@@ -1757,7 +1967,7 @@
         </div>
 
         <!-- surfaces — משטחים פרמטריים -->
-        <div class="project-card t-cyan">
+        <div class="project-card t-cyan" id="surfaces">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌐</div>
@@ -1792,7 +2002,7 @@
         </div>
 
         <!-- חוקר קבוצת מנדלברוט -->
-        <div class="project-card t-indigo">
+        <div class="project-card t-indigo" id="mandelbrot">
             <div>
             <div class="card-header">
                 <div class="card-icon">🌀</div>
@@ -1816,7 +2026,7 @@
         </div>
 
         <!-- ζ — ההמשכה האנליטית של זטא -->
-        <div class="project-card t-purple">
+        <div class="project-card t-purple" id="zeta">
             <div>
             <div class="card-header">
                 <div class="card-icon">🔮</div>
@@ -1837,7 +2047,7 @@
         </div>
 
         <!-- צפיפות אנרגטית של מצברים -->
-        <div class="project-card t-amber">
+        <div class="project-card t-amber" id="battery_density_chart">
             <div>
             <div class="card-header">
                 <div class="card-icon">🔋</div>
@@ -1862,7 +2072,7 @@
     <!-- ══════════════════════════════════════════
          5. ניסויי 3D
     ══════════════════════════════════════════ -->
-    <div class="section-header">
+    <div class="section-header" id="cat-5">
         <span class="section-emoji">🌐</span>
         <span class="section-title">ניסויי 3D</span>
         <span class="section-count">3 פרויקטים</span>
@@ -1870,7 +2080,7 @@
     <div class="projects-mini">
 
         <!-- 3D Rose &amp; Heart -->
-        <div class="project-card card-small t-pink">
+        <div class="project-card card-small t-pink" id="v">
         <div class="card-header">
             <div class="card-icon">🌹</div>
             <div>
@@ -1888,7 +2098,7 @@
         </div>
 
         <!-- Mind · Heart · Body · Spirit -->
-        <div class="project-card card-small t-teal">
+        <div class="project-card card-small t-teal" id="karina">
         <div class="card-header">
             <div class="card-icon">🌌</div>
             <div>
@@ -1906,7 +2116,7 @@
         </div>
 
         <!-- 3D Flying Motorcycle -->
-        <div class="project-card card-small t-blue">
+        <div class="project-card card-small t-blue" id="t">
         <div class="card-header">
             <div class="card-icon">🏍️</div>
             <div>
@@ -1929,5 +2139,72 @@
     </footer>
 
 </div>
+<script>
+// Table of contents: each column cycles page order → א–ת → ת–א.
+// The chosen order is remembered per browser; failing storage is harmless.
+(function () {
+    var MODES = ['page', 'az', 'za'];
+    var LABELS = { page: 'סדר הדף', az: 'א–ת ↓', za: 'ת–א ↑' };
+    var collator = new Intl.Collator(['he', 'en'], { numeric: true, sensitivity: 'base' });
+    var cols = Array.prototype.slice.call(document.querySelectorAll('.toc-col'));
+    var allBtn = document.querySelector('.toc-sort-all');
+
+    function nameOf(li) { return li.querySelector('.toc-name').textContent.trim(); }
+
+    function apply(col, mode) {
+        var list = col.querySelector('.toc-list');
+        var items = Array.prototype.slice.call(list.children);
+        items.sort(function (a, b) {
+            if (mode === 'page') return a.dataset.i - b.dataset.i;
+            var c = collator.compare(nameOf(a), nameOf(b));
+            return mode === 'az' ? c : -c;
+        });
+        items.forEach(function (li) { list.appendChild(li); });
+        col.dataset.mode = mode;
+        var btn = col.querySelector('.toc-sort');
+        btn.textContent = LABELS[mode];
+        btn.classList.toggle('sorted', mode !== 'page');
+    }
+
+    function save() {
+        try {
+            localStorage.setItem('toc-sort', JSON.stringify(cols.map(function (c) { return c.dataset.mode; })));
+        } catch (e) {}
+    }
+
+    function syncAllBtn() {
+        var allAz = cols.every(function (c) { return c.dataset.mode === 'az'; });
+        allBtn.textContent = allAz ? 'חזרה לסדר הדף' : 'מיין הכל א–ת';
+    }
+
+    var saved = [];
+    try { saved = JSON.parse(localStorage.getItem('toc-sort')) || []; } catch (e) {}
+    cols.forEach(function (col, i) {
+        apply(col, MODES.indexOf(saved[i]) >= 0 ? saved[i] : 'page');
+        col.querySelector('.toc-sort').addEventListener('click', function () {
+            apply(col, MODES[(MODES.indexOf(col.dataset.mode) + 1) % MODES.length]);
+            syncAllBtn();
+            save();
+        });
+    });
+    syncAllBtn();
+
+    allBtn.addEventListener('click', function () {
+        var allAz = cols.every(function (c) { return c.dataset.mode === 'az'; });
+        cols.forEach(function (c) { apply(c, allAz ? 'page' : 'az'); });
+        syncAllBtn();
+        save();
+    });
+
+    // Show the "back to contents" button once the table has scrolled away
+    var toc = document.getElementById('toc');
+    var back = document.querySelector('.to-toc');
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+            back.classList.toggle('show', !entries[0].isIntersecting);
+        }).observe(toc);
+    }
+})();
+</script>
 </body>
 </html>

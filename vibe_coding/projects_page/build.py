@@ -76,6 +76,86 @@ def render_link_row(links: list, pad: str) -> str:
     return f'\n{IND}{pad}<div class="card-links">\n{render_links(links)}\n{IND}{pad}</div>'
 
 
+def short_name(title: str) -> tuple:
+    """Split "Letras — מילות שירים" / "vedit: עורך וידאו" into (name, subtitle)
+    for the table of contents. Titles without a separator stay whole."""
+    for sep in (" — ", ": "):
+        if sep in title:
+            name, sub = title.split(sep, 1)
+            return name.strip(), sub.strip()
+    return title, ""
+
+
+def assign_anchors(data: dict) -> None:
+    """Give every project and section a stable, readable id for in-page links
+    (index.html#vedit). Derived from the project's directory; duplicates get a
+    numeric suffix."""
+    from urllib.parse import unquote
+
+    used = set()
+
+    def unique(base: str) -> str:
+        base = re.sub(r"[^\w-]+", "-", base).strip("-").lower() or "p"
+        slug, n = base, 2
+        while slug in used:
+            slug, n = f"{base}-{n}", n + 1
+        used.add(slug)
+        return slug
+
+    for si, s in enumerate(data["sections"]):
+        s["_anchor"] = unique(f"cat-{si + 1}")
+        for p in s["projects"]:
+            base = p.get("dir", "")
+            if not base:
+                for l in p["links"]:
+                    path = unquote(l["href"]).replace(
+                        "https://github.com/orimosenzon/fun/tree/master/vibe_coding/", ""
+                    )
+                    if re.match(r"https?:", path):
+                        continue
+                    parts = [x for x in path.split("/") if x]
+                    # tmp/v.html → "v": the top dir is shared scratch space
+                    top = parts[-1] if parts and parts[0] == "tmp" else (parts[0] if parts else "")
+                    base = re.sub(r"\.html$", "", top)
+                    break
+            if not base:
+                base = short_name(re.sub(r"<[^>]+>|&\w+;", "", p["title"]))[0]
+            p["_anchor"] = unique(base)
+
+
+def render_toc(data: dict) -> str:
+    cols = []
+    for s in data["sections"]:
+        items = []
+        for i, p in enumerate(s["projects"]):
+            name, sub = short_name(p["title"])
+            sub_html = f'<span class="toc-sub">{sub}</span>' if sub else ""
+            items.append(
+                f'                <li data-i="{i}"><a href="#{p["_anchor"]}" title="{p["title"]}">'
+                f'<span class="toc-icon">{p.get("icon", "")}</span>'
+                f'<span class="toc-text"><span class="toc-name">{name}</span>{sub_html}</span></a></li>'
+            )
+        cols.append(f"""            <div class="toc-col">
+                <div class="toc-head">
+                    <a href="#{s['_anchor']}" class="toc-cat">{s['emoji']} {s['title']}</a>
+                    <button type="button" class="toc-sort" title="מיון">סדר הדף</button>
+                </div>
+                <ol class="toc-list">
+{chr(10).join(items)}
+                </ol>
+            </div>""")
+    return f"""    <nav class="toc" id="toc" aria-label="תוכן עניינים">
+        <div class="toc-bar">
+            <span class="toc-title">תוכן עניינים</span>
+            <button type="button" class="toc-sort-all">מיין הכל א–ת</button>
+        </div>
+        <div class="toc-grid">
+{chr(10).join(cols)}
+        </div>
+    </nav>
+    <a href="#toc" class="to-toc" aria-label="חזרה לתוכן העניינים">↑</a>"""
+
+
 def render_card(p: dict) -> str:
     small = bool(p.get("small"))
     classes = ["project-card"]
@@ -129,7 +209,7 @@ def render_card(p: dict) -> str:
         body = f"{IND}    <div>\n{body}\n{IND}    </div>{illus}"
 
     return f"""{IND}<!-- {p['title']} -->
-{IND}<div class="{' '.join(classes)}">
+{IND}<div class="{' '.join(classes)}" id="{p['_anchor']}">
 {body}
 {IND}</div>"""
 
@@ -140,7 +220,7 @@ def render_section(s: dict, number: int) -> str:
     return f"""    <!-- {rule}
          {number}. {s['title']}
     {rule} -->
-    <div class="section-header">
+    <div class="section-header" id="{s['_anchor']}">
         <span class="section-emoji">{s['emoji']}</span>
         <span class="section-title">{s['title']}</span>
         <span class="section-count">{plural(len(s['projects']))}</span>
@@ -204,11 +284,13 @@ def assert_not_excluded(data: dict) -> None:
 def build() -> str:
     data = json.loads(DATA.read_text(encoding="utf-8"))
     assert_not_excluded(data)
+    assign_anchors(data)
     sections = "\n\n".join(
         render_section(s, i + 1) for i, s in enumerate(data["sections"])
     )
     html = TEMPLATE.read_text(encoding="utf-8")
     html = html.replace("{{HEADER}}", render_header(data).rstrip("\n"))
+    html = html.replace("{{TOC}}", render_toc(data))
     html = html.replace("{{SECTIONS}}", sections)
     OUTPUT.write_text(html, encoding="utf-8")
     n = sum(len(s["projects"]) for s in data["sections"])
