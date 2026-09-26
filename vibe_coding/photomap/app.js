@@ -203,6 +203,8 @@ function renderPanel() {
 }
 
 document.getElementById('collapse').onclick = () => document.getElementById('panel').classList.toggle('collapsed');
+// בטלפון הפאנל מסתיר חצי מפה, אז מתחילים מקופל
+if (matchMedia('(max-width: 600px)').matches) document.getElementById('panel').classList.add('collapsed');
 
 // ---------- ציר זמן ----------
 // היסטוגרמה של כמות הפריטים לאורך הזמן, עם בחירת טווח בגרירה.
