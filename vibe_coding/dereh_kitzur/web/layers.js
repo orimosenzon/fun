@@ -1486,15 +1486,18 @@ const Layers = (() => {
       paint: { 'fill-color': layer.color, 'fill-opacity': 0 }
     }, above);
     // Brown on the street map; on the satellite a brown line vanishes into the
-    // roofs and the orchards, so it goes a pale cream there. A basemap switch
-    // rebuilds every layer, so the choice is made afresh each time.
+    // roofs and the orchards, so it goes white there, lines and numbers both
+    // (Ori, 26/9/2026: the look of a surveyor's overlay on an aerial photo,
+    // and the flight, which is always over the satellite, draws the same). A
+    // basemap switch rebuilds every layer, so the choice is made afresh each
+    // time.
     const dark = theme === 'dark';
     map.addLayer({
       id: gridLineId(layer.id),
       type: 'line',
       source: src,
       paint: {
-        'line-color': dark ? '#fff3d6' : layer.color,
+        'line-color': dark ? '#ffffff' : layer.color,
         'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.3, 15, 0.7, 18, 1.4],
         'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, dark ? 0.45 : 0.35, 16, dark ? 0.8 : 0.75]
       }
@@ -1511,7 +1514,7 @@ const Layers = (() => {
         'text-padding': 2
       },
       paint: {
-        'text-color': dark ? '#fffaf0' : '#4e342e',
+        'text-color': dark ? '#ffffff' : '#4e342e',
         'text-halo-color': dark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.85)',
         'text-halo-width': 1.2
       }
