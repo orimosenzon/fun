@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>המגרש ברחוב הנשיא</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#f6f4ef; --surface:#ffffff; --surface-2:#efece4; --ink:#1f2328; --muted:#5d6570;
+  --line:#dcd7cc; --accent:#b4531f; --accent-soft:#f6e3d6; --public:#2f7d5b; --office:#3b6fb6;
+  --cafe:#c08a1e; --care:#8a5cb8; --warn-bg:#fff4d6; --warn-ink:#6b4e00; --ok-bg:#e3f2ea; --ok-ink:#1d5a3f;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1e2125; --surface-2:#262a2f; --ink:#e8e6e1; --muted:#a3a9b1;
+    --line:#343941; --accent:#e58a55; --accent-soft:#3a2a20; --public:#5cc195; --office:#7aa6e8;
+    --cafe:#e2b04d; --care:#b690e0; --warn-bg:#3a3217; --warn-ink:#f1d98a; --ok-bg:#1d3329; --ok-ink:#9ad8b8;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1e2125; --surface-2:#262a2f; --ink:#e8e6e1; --muted:#a3a9b1;
+  --line:#343941; --accent:#e58a55; --accent-soft:#3a2a20; --public:#5cc195; --office:#7aa6e8;
+  --cafe:#e2b04d; --care:#b690e0; --warn-bg:#3a3217; --warn-ink:#f1d98a; --ok-bg:#1d3329; --ok-ink:#9ad8b8;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,system-ui,sans-serif;font-size:17px;line-height:1.7}
+main{max-width:860px;margin:0 auto;padding:0 16px 80px}
+a{color:var(--accent)}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.15;margin:0 0 14px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:25px;margin:56px 0 12px;font-weight:800}
+h3{font-size:19px;margin:0 0 6px}
+p{margin:0 0 14px}
+.kicker{color:var(--accent);font-weight:700;font-size:14px;letter-spacing:.04em;margin-top:40px}
+.lead{font-size:19px;color:var(--ink)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.stat b{display:block;font-size:26px;line-height:1.2;font-weight:800}
+.stat span{color:var(--muted);font-size:14px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+nav.toc a{font-size:14px;text-decoration:none;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);padding:4px 12px;border-radius:99px}
+nav.toc a:hover{border-color:var(--accent)}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:15px;border:0;background:transparent;color:var(--ink);padding:6px 14px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:var(--shadow);font-weight:700;outline:1px solid var(--line)}
+#map{height:320px;border-radius:14px;border:1px solid var(--line);margin-top:10px}
+.bldg-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+@media (max-width:640px){.bldg-wrap{grid-template-columns:1fr}}
+svg text{font-family:Heebo,system-ui,sans-serif}
+.facts li{margin-bottom:4px}
+.bar{display:flex;height:44px;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin:10px 0 8px}
+.bar div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;transition:flex-basis .4s ease;white-space:nowrap;overflow:hidden}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-left:6px;vertical-align:-1px}
+.timeline{list-style:none;padding:0;margin:14px 0 0;position:relative}
+.timeline:before{content:"";position:absolute;right:9px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.timeline li{position:relative;padding-right:34px;margin-bottom:10px}
+.timeline li:before{content:"";position:absolute;right:3px;top:10px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--accent)}
+.timeline li.unknown:before{border-style:dashed;border-color:var(--muted)}
+.timeline button{all:unset;cursor:pointer;display:block;width:100%}
+.timeline .date{font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.timeline li.unknown .date{color:var(--muted)}
+.timeline .detail{display:none;margin-top:6px;color:var(--muted);font-size:15.5px}
+.timeline li.open .detail{display:block}
+.timeline .hint{font-size:13px;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+details summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:"+";display:inline-block;width:20px;color:var(--accent);font-weight:800}
+details[open] summary:before{content:"–"}
+details .body{padding:0 16px 14px 16px}
+.q,.a{padding:10px 12px;border-radius:8px;margin-top:8px;font-size:15.5px}
+.q{background:var(--surface-2)}
+.a{background:var(--accent-soft)}
+.q b,.a b{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
+.insight{border-right:4px solid var(--accent);padding:14px 18px;background:var(--surface);border-radius:10px;margin:14px 0}
+.chip{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:99px;vertical-align:2px;margin-inline-start:6px}
+.chip.v{background:var(--ok-bg);color:var(--ok-ink)}
+.chip.u{background:var(--warn-bg);color:var(--warn-ink)}
+.chip.n{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.side{background:var(--surface-2);border:1px dashed var(--line);border-radius:14px;padding:18px 20px}
+.claim{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.claim .how{font-size:15px;color:var(--muted);margin-top:6px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{margin-top:7px;accent-color:var(--accent);width:18px;height:18px;flex:none}
+.check label{cursor:pointer}
+.sources li{margin-bottom:6px;font-size:15px}
+footer{margin-top:60px;font-size:13px;color:var(--muted)}
+.themebtn{position:fixed;left:14px;bottom:14px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;box-shadow:var(--shadow);z-index:1000}
+</style>
+</head>
+<body>
+<main>
+
+<div class="kicker">רוצים שקיפות · תיק מקרה</div>
+<h1>המגרש הציבורי ברחוב הנשיא</h1>
+<p class="lead">בכרכור, ברחוב הנשיא, יש מגרש של דונם אחד שמיועד ל"מבנים ומוסדות ציבור". הוא שייך לאנשים פרטיים. ב-2022 אישרה הוועדה המחוזית תוכנית שמאפשרת לבנות עליו בניין של 4 קומות, שעד חצי ממנו יכול להיות משרדים ועוד עשירית בתי קפה. 64 תושבים התנגדו, וההתנגדות נדחתה פה אחד.</p>
+<p>הדף הזה מסביר מה בדיוק אושר, למה מגרש "ציבורי" יכול להיות בידיים פרטיות, מה עוד לא ידוע ואיך בודקים.</p>
+
+<nav class="toc" aria-label="תוכן">
+  <a href="#where">איפה</a><a href="#what">מה אושר</a><a href="#uses">למי הבניין</a><a href="#when">ציר זמן</a><a href="#args">הטענות</a><a href="#why">למה זה חשוב</a><a href="#next">מה בודקים</a><a href="#src">מקורות</a>
+</nav>
+
+<div class="grid" style="margin-top:22px">
+  <div class="card stat"><b>1,098 מ"ר</b><span>גודל המגרש (גוש 10074, חלקה 269)</span></div>
+  <div class="card stat"><b>בבעלות פרטית</b><span>למרות הייעוד הציבורי</span></div>
+  <div class="card stat"><b>4 קומות</b><span>גובה עד 16 מ' (קודם 3 קומות), ועוד 2 מרתפי חניה</span></div>
+  <div class="card stat"><b>עד 60%</b><span>משרדים (50%) ובתי קפה (10%)</span></div>
+</div>
+
+<h2 id="where">איפה זה</h2>
+<p>המגרש מסומן על המפה. מסביב בתים פרטיים נמוכים, וזו בדיוק הנקודה שהמתנגדים העלו.</p>
+<div class="seg" role="group" aria-label="סוג מפה">
+  <button type="button" data-layer="sat" aria-pressed="true">תצלום אוויר</button>
+  <button type="button" data-layer="osm" aria-pressed="false">מפת רחובות</button>
+</div>
+<div id="map" role="img" aria-label="מפה של חלקה 269 ברחוב הנשיא בכרכור"></div>
+<p class="small muted" style="margin-top:6px">הגבול לפי שכבת החלקות הארצית של המרכז למיפוי ישראל.</p>
+
+<h2 id="what">מה אושר: לפני ואחרי</h2>
+<p>לחצו כדי להשוות בין מה שהיה מותר קודם לבין מה שהתוכנית מאפשרת.</p>
+<div class="seg" role="group" aria-label="מצב">
+  <button type="button" data-state="before" aria-pressed="false">לפני התוכנית</button>
+  <button type="button" data-state="after" aria-pressed="true">אחרי התוכנית (2022)</button>
+</div>
+<div class="card" style="margin-top:12px">
+  <div class="bldg-wrap">
+    <svg id="bldg" viewBox="0 0 300 300" width="100%" style="max-width:340px;display:block;margin:auto" aria-label="שרטוט חתך של הבניין"></svg>
+    <ul class="facts" id="facts" style="margin:0;padding-right:18px"></ul>
+  </div>
+</div>
+<p class="small muted" style="margin-top:8px">החישובים לפי 1,098 מ"ר: 120% שטח עיקרי הם כ-1,318 מ"ר, 30% שטחי שירות הם כ-329 מ"ר. השרטוט סכמטי, לא בקנה מידה של תוכנית.</p>
+
+<h2 id="uses">למי הבניין הזה ישמש?</h2>
+<p>התוכנית מתירה שימושים ציבוריים: חינוך, תרבות, ספורט, בריאות, קהילה ורווחה. אבל יש שתי הרחבות. משרדים עד 50% מזכויות הבנייה, בתי קפה עד 10%. ובתוך "שימושי הציבור" עצמם התוכנית כוללת במפורש "שימושים בעלי אוריינטציה מסחרית של בתי אבות ומרפאות".</p>
+<p>בחרו תרחיש:</p>
+<div class="seg" role="group" aria-label="תרחיש">
+  <button type="button" data-mix="public" aria-pressed="false">הכל ציבורי</button>
+  <button type="button" data-mix="max" aria-pressed="true">מקסימום משרדים וקפה</button>
+  <button type="button" data-mix="private" aria-pressed="false">כולו עסק פרטי</button>
+</div>
+<div class="bar" id="bar" aria-live="polite"></div>
+<div class="legend">
+  <span><i style="background:var(--public)"></i>ציבורי (חינוך, קהילה, תרבות)</span>
+  <span><i style="background:var(--care)"></i>בית אבות או מרפאה פרטיים</span>
+  <span><i style="background:var(--office)"></i>משרדים</span>
+  <span><i style="background:var(--cafe)"></i>בית קפה</span>
+</div>
+<p id="mixText" style="margin-top:12px"></p>
+<p class="small muted">לשם ההגינות: לפי הוועדה, גם לפני התוכנית היו מותרים במגרש שימושי מסחר, ברשימה רחבה יותר. התוכנית של 2022 צמצמה את רשימת השימושים, אבל הגדילה את הבניין.</p>
+
+<h2 id="when">ציר זמן</h2>
+<p class="hint muted small">לחצו על שלב כדי לפתוח פרטים.</p>
+<ol class="timeline" id="tl">
+  <li><button type="button"><span class="date">7/12/2016</span> · המועצה מכינה רשימת הפקעה, והמגרש לא בה</button>
+    <div class="detail">תוכנית 308-0093914 "הפקעת שטחי ציבור" מאפשרת למועצה להפקיע מגרשים שיועדו לציבור בתוכניות הישנות (<bdi>ש/1</bdi>, <bdi>ש/17</bdi>, <bdi>ש/18</bdi>). חלקה 269 לא נכללה. בלשון מסמך ההחלטות: "הרשות המקומית לא ראתה אז צורך בהפקעתו". כלומר המגרש נשאר ציבורי על הנייר ופרטי בפועל.</div></li>
+  <li><button type="button"><span class="date">6/10/2021</span> · הוועדה המחוזית מחליטה להפקיד את התוכנית</button>
+    <div class="detail">תוכנית 308-0958751, "מבנה ציבור בגוש 10074 חלקה 269". היזמים: שני אנשים פרטיים. הוועדה המקומית ביקשה להגביל את המשרדים ואת בתי הקפה, "על מנת שהמגרש יוכל לספק צרכי ציבור עתידיים במידת הצורך".</div></li>
+  <li><button type="button"><span class="date">נובמבר 2021</span> · פרסום לציבור, ומתחיל חלון של 60 יום להתנגדויות</button>
+    <div class="detail">ברשומות ב-7/11, מכתבים רשומים לשכנים ב-9/11, בעיתונים, על שלטים ובלוחות מודעות ב-12/11. זה הרגע היחיד שבו לציבור יש זכות להתנגד, ורוב האנשים לא יודעים עליו.</div></li>
+  <li><button type="button"><span class="date">סוף 2021</span> · שתי התנגדויות</button>
+    <div class="detail">אחת בשם 64 תושבי כרכור, ואחת של תושב נוסף מהסביבה.</div></li>
+  <li><button type="button"><span class="date">30/3/2022</span> · דיון בזום והחלטה פה אחד</button>
+    <div class="detail">ועדת המשנה להתנגדויות של הוועדה המחוזית חיפה (ישיבה 2022008) דחתה את כל הטענות ואישרה בשלושה תנאים: הממ"דים ייספרו בתוך שטחי השירות; לפני היתר לשימושי מסחר תידרש התייחסות של איגוד ערים לאיכות הסביבה; תיקונים טכניים.</div></li>
+  <li><button type="button"><span class="date">16/5/2022</span> · התוכנית בתוקף</button>
+    <div class="detail">מעכשיו מותר להגיש בקשה להיתר בנייה לפי הזכויות החדשות.</div></li>
+  <li class="unknown"><button type="button"><span class="date">2022 עד היום</span> · האם הוגשה בקשה להיתר? לא ידוע</button>
+    <div class="detail">כאן נגמר המידע הציבורי. בקשה להיתר נדונה ברשות הרישוי של הוועדה המקומית, והציבור רואה אותה רק כשההיתר כבר מופק. בדיקה ידנית אפשרית באתר הוועדה (ראו "מה בודקים").</div></li>
+</ol>
+
+<h2 id="args">מה טענו התושבים ומה ענתה הוועדה</h2>
+<p>תמצית. הניסוח של התשובות קרוב למקור.</p>
+<div id="argList"></div>
+
+<h2 id="why">למה זה חשוב</h2>
+<div class="insight"><h3>1. "ציבורי" על המפה לא אומר "של הציבור"</h3>
+<p style="margin:0">ייעוד קרקע קובע מה מותר לבנות, לא של מי הקרקע. מגרש ציבורי בבעלות פרטית נשאר של הבעלים עד שהמועצה מפקיעה אותו. כאן המועצה החליטה ב-2016 לא להפקיע, ובתוכנית של 2022 הבעלים קיבלו זכויות בנייה גדולות יותר ושימושים מסחריים. מי קיבל את ההחלטה ב-2016 ולמה, לא מופיע בשום מסמך שמצאנו.</p></div>
+<div class="insight"><h3>2. הציבור שומע, אבל רק פעם אחת ורק אם הוא שם לב</h3>
+<p style="margin:0">חלון ההתנגדות היה 60 יום בנובמבר–דצמבר 2021. מהרגע שהתוכנית בתוקף, השלב הבא (בקשה להיתר, ההחלטה עליה) קורה בלי פרסום יזום לתושבים, אלא אם מתבקשת הקלה. זה בדיוק הפער שהפרויקט "רוצים שקיפות" מנסה לסגור.</p></div>
+<div class="insight"><h3>3. רשימת ההפקעה לא מספרת את כל הסיפור</h3>
+<p style="margin:0">המקרה הזה מראה שיש מגרשים שמיועדים לציבור ולא מופיעים ברשימת ההפקעה של 2016. לכן, כדי לדעת אם מגרש מסוים ציבורי, צריך לבדוק בתוכניות הישנות, ולא להסתמך על הרשימה.</p></div>
+
+<h2 id="next">מה עוד לא ידוע ואיך בודקים</h2>
+<p class="small muted">אפשר לסמן מה כבר נבדק. הסימון נשמר רק בדפדפן הזה.</p>
+<div class="card" id="checks">
+  <div class="check"><input type="checkbox" id="c1"><label for="c1"><b>האם הוגשה בקשה להיתר על חלקה 269 מאז 2022?</b><br><span class="small muted">vaada.phk.org.il ← בקשות להיתר ← "איתור בקשה לפי מקרקעין" ← גוש 10074, חלקה 269. דורש מעבר ידני של קפצ'ה.</span></label></div>
+  <div class="check"><input type="checkbox" id="c2"><label for="c2"><b>מי הבעלים היום?</b><br><span class="small muted">נסח טאבו לגוש 10074 חלקה 269, באתר רשם המקרקעין (בתשלום סמלי). מראה גם אם היו העברות בעלות אחרי 2022.</span></label></div>
+  <div class="check"><input type="checkbox" id="c3"><label for="c3"><b>למה החלקה לא נכללה בתוכנית ההפקעה של 2016?</b><br><span class="small muted">שאלה למועצה (מהנדס/ת הוועדה), או בקשה לפי חוק חופש המידע לפרוטוקול הדיון שבו נקבעה רשימת ההפקעה.</span></label></div>
+  <div class="check"><input type="checkbox" id="c4"><label for="c4"><b>מסמכי התוכנית המלאים</b><br><span class="small muted">mavat.iplan.gov.il ← חיפוש לפי מספר תוכנית 308-0958751: הוראות, תשריט, נספח בינוי.</span></label></div>
+</div>
+
+<h2 id="src">מקורות</h2>
+<ol class="sources">
+  <li>קובץ החלטות, ועדת המשנה להתנגדויות, הוועדה המחוזית חיפה, ישיבה 2022008, 30/3/2022, עמ' 10–13 (תוכנית 308-0958751). מופיע במבא"ת תחת מסמכי התוכנית.</li>
+  <li>תוכנית 308-0093914 "הפקעת שטחי ציבור", בתוקף מ-7/12/2016. רשימת החלקות מאתר תבע.קום.</li>
+  <li>שכבת החלקות הארצית, open.govmap.gov.il (גבול ושטח החלקה).</li>
+</ol>
+
+<footer>נכתב 27/9/2026 בפרויקט "רוצים שקיפות". כל העובדות בדף נשענות על המקורות שברשימה. אם מצאתם טעות, ספרו לנו ונתקן.</footer>
+</main>
+<button class="themebtn" id="themeBtn" type="button">מצב תצוגה</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  // theme toggle
+  var root=document.documentElement;
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme=dark?'light':'dark';
+  });
+  function css(v){return getComputedStyle(root).getPropertyValue(v).trim();}
+  function pressGroup(btns,active){btns.forEach(function(b){b.setAttribute('aria-pressed',b===active?'true':'false');});}
+
+  // map
+  var poly=[[32.474736,34.9878],[32.474768,34.987323],[32.474989,34.987344],[32.474957,34.987823]];
+  if(window.L){
+    var map=L.map('map',{scrollWheelZoom:false}).setView([32.47486,34.98757],18);
+    var sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'Esri'});
+    var osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'});
+    sat.addTo(map);
+    L.polygon(poly,{color:'#ff7a2e',weight:3,fillOpacity:.25}).addTo(map).bindTooltip('חלקה 269 · 1,098 מ"ר',{permanent:true,direction:'top'});
+    var layerBtns=[].slice.call(document.querySelectorAll('[data-layer]'));
+    layerBtns.forEach(function(b){b.addEventListener('click',function(){
+      pressGroup(layerBtns,b);
+      if(b.dataset.layer==='sat'){map.removeLayer(osm);sat.addTo(map);}else{map.removeLayer(sat);osm.addTo(map);}
+    });});
+  } else {
+    document.getElementById('map').textContent='המפה לא נטענה (אין חיבור לרשת).';
+  }
+
+  // building
+  var svg=document.getElementById('bldg'), facts=document.getElementById('facts');
+  var states={
+    before:{floors:3,base:0,items:['עד 3 קומות','כ-131 מ"ר שטחי שירות','בלי מרתפי חניה מוגדרים','שימושים ציבוריים, ובמצב הקודם גם שימושי מסחר ברשימה רחבה יותר']},
+    after:{floors:4,base:2,items:['עד 4 קומות, גובה עד 16 מ\'','שטח עיקרי 120% (כ-1,318 מ"ר)','שטחי שירות 30% (כ-329 מ"ר), כולל ממ"דים','2 קומות מרתף חניה, 1,098 מ"ר','משרדים עד 50%, בתי קפה עד 10%']}
+  };
+  function drawBldg(k){
+    var s=states[k], fh=36, ground=190, w=150, x=110, out='';
+    out+='<rect x="0" y="'+ground+'" width="300" height="110" fill="'+css('--surface-2')+'"/>';
+    out+='<line x1="0" y1="'+ground+'" x2="300" y2="'+ground+'" stroke="'+css('--muted')+'" stroke-width="1.5"/>';
+    // neighbour house
+    out+='<rect x="18" y="'+(ground-50)+'" width="62" height="50" fill="none" stroke="'+css('--muted')+'" stroke-dasharray="4 3"/>';
+    out+='<polygon points="14,'+(ground-50)+' 49,'+(ground-76)+' 84,'+(ground-50)+'" fill="none" stroke="'+css('--muted')+'" stroke-dasharray="4 3"/>';
+    out+='<text x="49" y="'+(ground+18)+'" text-anchor="middle" font-size="11" fill="'+css('--muted')+'">בית שכן</text>';
+    for(var i=0;i<s.floors;i++){
+      var y=ground-(i+1)*fh, isNew=(k==='after'&&i===3);
+      out+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(fh-2)+'" rx="2" fill="'+(isNew?css('--accent'):css('--public'))+'" opacity="'+(isNew?.9:.8)+'"/>';
+      out+='<text x="'+(x+w/2)+'" y="'+(y+fh/2+4)+'" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">'+(isNew?'קומה נוספת':'קומה '+(i+1))+'</text>';
+    }
+    for(var j=0;j<s.base;j++){
+      var yb=ground+4+j*(fh-4);
+      out+='<rect x="'+x+'" y="'+yb+'" width="'+w+'" height="'+(fh-8)+'" rx="2" fill="none" stroke="'+css('--ink')+'" stroke-dasharray="5 3"/>';
+      out+='<text x="'+(x+w/2)+'" y="'+(yb+fh/2)+'" text-anchor="middle" font-size="11" fill="'+css('--ink')+'">מרתף חניה</text>';
+    }
+    var top=ground-s.floors*fh;
+    out+='<line x1="'+(x+w+10)+'" y1="'+ground+'" x2="'+(x+w+10)+'" y2="'+top+'" stroke="'+css('--ink')+'" stroke-width="1"/>';
+    out+='<text x="'+(x+w+14)+'" y="'+((ground+top)/2+4)+'" font-size="12" fill="'+css('--ink')+'" text-anchor="start" direction="ltr">'+(k==='after'?'16 m':'3 fl.')+'</text>';
+    svg.innerHTML=out;
+    facts.innerHTML=s.items.map(function(t){return '<li>'+t+'</li>';}).join('');
+  }
+  var stateBtns=[].slice.call(document.querySelectorAll('[data-state]')), curState='after';
+  stateBtns.forEach(function(b){b.addEventListener('click',function(){pressGroup(stateBtns,b);curState=b.dataset.state;drawBldg(curState);});});
+  drawBldg(curState);
+
+  // uses mix
+  var mixes={
+    public:{parts:[['--public',100,'ציבורי 100%']],text:'המצב שהייעוד "מבנים ומוסדות ציבור" מרמז עליו: כל הבניין משמש את הציבור. התוכנית מאפשרת את זה, אבל לא מחייבת.'},
+    max:{parts:[['--public',40,'ציבורי 40%'],['--office',50,'משרדים 50%'],['--cafe',10,'קפה 10%']],text:'מה שהתוכנית מתירה במפורש: חצי משרדים, עשירית בתי קפה, והשאר שימושי ציבור. בערך 660 מ"ר משרדים ו-130 מ"ר קפה.'},
+    private:{parts:[['--care',40,'בית אבות/מרפאה 40%'],['--office',50,'משרדים 50%'],['--cafe',10,'קפה 10%']],text:'על הנייר זה אפשרי: התוכנית מגדירה בית אבות ומרפאה כ"שימושי ציבור בעלי אוריינטציה מסחרית". אז גם ה-40% הנותרים יכולים להיות עסק פרטי שגובה כסף, ובניין "ציבורי" יכול לפעול כולו כעסק. זה לא אומר שזה מה שיקרה, רק שזה מותר.'}
+  };
+  var bar=document.getElementById('bar'), mixText=document.getElementById('mixText');
+  function drawMix(k){
+    bar.innerHTML=mixes[k].parts.map(function(p){return '<div style="flex:0 0 '+p[1]+'%;background:var('+p[0]+')">'+(p[1]>=10?p[2]:'')+'</div>';}).join('');
+    mixText.textContent=mixes[k].text;
+  }
+  var mixBtns=[].slice.call(document.querySelectorAll('[data-mix]'));
+  mixBtns.forEach(function(b){b.addEventListener('click',function(){pressGroup(mixBtns,b);drawMix(b.dataset.mix);});});
+  drawMix('max');
+
+  // re-draw building on theme change (colors come from tokens)
+  new MutationObserver(function(){drawBldg(curState);}).observe(root,{attributes:true,attributeFilter:['data-theme']});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){drawBldg(curState);});
+
+  // timeline
+  [].slice.call(document.querySelectorAll('#tl li')).forEach(function(li){
+    li.querySelector('button').addEventListener('click',function(){li.classList.toggle('open');});
+  });
+
+  // objections
+  var args=[
+    ['שטחי השירות גדלים מ-131 ל-329 מ"ר (25% מהבנייה), ובפועל יהפכו לשטח עיקרי.','שטחי שירות מוגדרים בתקנות (חניה, ממ"ד, מדרגות, מעלית) ואסור להשתמש בהם לשימוש עיקרי. אין חובה לנצל את כולם.'],
+    ['קומה רביעית במקום שלוש. חריגה.','תכנית המתאר הכוללנית של המושבה מתירה 4 קומות למבני ציבור. צריך "ראייה עתידית" ולמצות את השטח הציבורי.'],
+    ['מרתף של 1,098 מ"ר בלי פתרון חלחול. נגר יציף את הרחוב, והחניה תזלוג לרחובות.','יש היום משאבות ומתקני ניקוז. החניה חייבת להיות בתוך המגרש לפי התקן, וזה ייבדק בהיתר.'],
+    ['משרדים עד 50% הם שימוש פרטי שהציבור לא ייהנה ממנו.','זה מגרש ציבורי בבעלות פרטית שהמועצה לא ראתה צורך להפקיע. המדיניות היום היא עירוב שימושים, ומדובר ב"משרדים קטנים ומקומיים באופיים".'],
+    ['בית קפה ירבה תנועה, יסתור את השימוש הציבורי, ובעתיד תבוא "סגירת חורף" שתכפיל אותו.','גם במגרשים ציבוריים מופקעים נהוג 10% מסחר. בית קפה שכונתי מקטין את התלות ברכב. סגירת חורף שייכת לשלב ההיתר.'],
+    ['שינוי אופי של רחוב שקט של בתים צמודי קרקע. השימושים האלה מתאימים לצירים ראשיים.','שימושים מעורבים בתוך שכונות דווקא פותרים בעיות תנועה ויוצרים קהילתיות.'],
+    ['כרכור כבר עמוסה בבתי קפה ברחוב המייסדים. אין צורך בעוד אחד בשכונה שקטה.','בניגוד למייסדים, כאן מדובר בשימושים שכונתיים לתושבי השכונות הסמוכות.'],
+    ['היישוב כבר סובל מבעיות מים ונגר. עוד בנייה תחריף אותן.','אם יש בעיית תשתית, על הרשות המקומית לפתור אותה. אי אפשר לעצור פיתוח בגלל בעיות קיימות.']
+  ];
+  document.getElementById('argList').innerHTML=args.map(function(a,i){
+    return '<details><summary>'+a[0].split('.')[0]+'</summary><div class="body"><div class="q"><b>טענת המתנגדים</b>'+a[0]+'</div><div class="a"><b>תשובת הוועדה: נדחה</b>'+a[1]+'</div></div></details>';
+  }).join('');
+
+  // checklist (per-viewer convenience)
+  [].slice.call(document.querySelectorAll('#checks input')).forEach(function(cb){
+    try{cb.checked=localStorage.getItem('hanasi-'+cb.id)==='1';}catch(e){}
+    cb.addEventListener('change',function(){try{localStorage.setItem('hanasi-'+cb.id,cb.checked?'1':'0');}catch(e){}});
+  });
+})();
+</script>
+</body>
+</html>
