@@ -11,7 +11,7 @@ cd "$DIR"
 LOG="$DIR/objections_cron.log"
 
 echo "===== $(date '+%Y-%m-%d %H:%M:%S') objections =====" >>"$LOG"
-OUT="$(/usr/bin/env python3 "$DIR/watch_objections.py" 2>>"$LOG")"
+OUT="$(/usr/bin/env python3 "$DIR/watch_objections.py" --publish 2>>"$LOG")"
 STATUS=$?
 printf '%s\n' "$OUT" >>"$LOG"
 if [ $STATUS -ne 0 ]; then
