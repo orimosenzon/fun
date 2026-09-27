@@ -26,12 +26,16 @@ def plan(num, shuts=None, units=0, status='פרסום הפקדה'):
 tmp = tempfile.mkdtemp()
 state = os.path.join(tmp, 'state.json')
 reports = os.path.join(tmp, 'reports')
+public = os.path.join(tmp, 'objections.json')
+pages = os.path.join(tmp, 'mavat')          # recorded מבא"ת pages, by mid
+os.makedirs(pages)
 
 def day(today, plans):
     fx = os.path.join(tmp, 'fx.json')
     json.dump({'features': [{'attributes': p} for p in plans]}, open(fx, 'w'))
     out = subprocess.run([sys.executable, SCRIPT, '--fixture', fx, '--state', state,
-                          '--reports', reports, '--today', today],
+                          '--reports', reports, '--today', today,
+                          '--public', public, '--mavat-dir', pages],
                          capture_output=True, text=True)
     if out.returncode:
         print(out.stderr)
@@ -80,6 +84,36 @@ check('an extension is news', news == 1 and 'תכנית B' in text and '15/03/20
 # Day 13: B drops out of deposit while its window is open.
 news, text = day('2026-01-13', [plan('A', '2026-01-10', 12), plan('C')])
 check('a plan that vanishes while open is said', news == 1 and 'יצאה משלב ההפקדה' in text, (news, text))
+
+# Day 14: D has no date in Xplan, but its מבא"ת page shows a sign and a web
+# notice four weeks ago and takes objections: open, with an estimated date.
+def page(mid, rec):
+    json.dump(rec, open(os.path.join(pages, mid + '.json'), 'w'), ensure_ascii=False)
+
+d = plan('D', units=2)
+d['pl_url'] = 'https://mavat.iplan.gov.il/SV4/1/111/310'
+page('111', {'status': 'הפקדה להתנגדויות/השגות',
+             'openOpp': {'CAN_SUBMIT_OPPN': 1, 'OPPN_END_DATE': None},
+             'internet': [{'date': '16/12/2025', 'code': 7890}, {'date': '16/12/2025', 'code': 4415},
+                          {'date': '17/12/2025', 'code': 4400}],
+             'blocks': [{'gush': '10074', 'whole': '331', 'partial': ''}],
+             'address': ['הגליל 34']})
+# E is a local committee plan: only the web notice, three months ago. Closed.
+e = plan('E')
+e['pl_url'] = 'https://mavat.iplan.gov.il/SV4/1/222/310'
+page('222', {'status': 'הפקדה להתנגדויות/השגות', 'openOpp': {'CAN_SUBMIT_OPPN': 0},
+             'internet': [{'date': '10/10/2025', 'code': 7890}], 'blocks': []})
+news, text = day('2026-01-14', [plan('A', '2026-01-10', 12), plan('C'), d, e])
+check('a window only מבא"ת knows about is news', text and '## נפתח חלון התנגדות\n\n- **תכנית D**' in text, text)
+check('its date is marked as an estimate', text and 'מועד משוער: 18/02/2026' in text, text)
+check('it says Xplan does not show it', text and 'לא מופיעה כפתוחה במאגר הארצי' in text, text)
+check('a stale local plan is not open', text and 'תכנית E' not in text.split('## פתוח עכשיו')[1], text)
+doc = json.load(open(public, encoding='utf-8'))
+dd = [p for p in doc['plans'] if p['num'] == 'D']
+check('the map file carries D', len(dd) == 1 and dd[0]['exact'] is False and dd[0]['hidden'], doc)
+check('with the parcel it lists', dd and dd[0]['parcels'] == [10074 * 10000 + 331], dd)
+check('and a place to put its glow', dd and dd[0]['centre'] and 34.9 < dd[0]['centre'][0] < 35.0, dd)
+check('closed plans stay out of the map file', all(p['num'] not in ('A', 'E') for p in doc['plans']), doc)
 
 print()
 print('FAIL: ' + ', '.join(fails) if fails else 'all ok')

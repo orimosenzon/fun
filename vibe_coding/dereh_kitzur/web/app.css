@@ -3445,3 +3445,30 @@ body.asking-plan .invite-quiet {
 
 .ph-limits li { margin-bottom: 6px; }
 .ph-limits b { color: #33443a; }
+
+/* The list of what is open: "show on the map", as a link-sized button beside
+ * the link to the plan, and one full-width button for all of them. */
+.ph-link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c62828;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ph-map-all {
+  margin: 10px 0 4px;
+  border-color: #ff8a80;
+  background: #fff1f0;
+  color: #b71c1c;
+}
+
+/* The plan whose red disc was tapped. */
+.ph-focus {
+  border-color: #ff1744;
+  box-shadow: 0 0 0 2px rgba(255, 23, 68, 0.18);
+}

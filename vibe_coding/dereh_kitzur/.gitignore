@@ -20,3 +20,7 @@ __pycache__/
 .watch/
 reports/
 objections_cron.log
+
+# watch_objections.py rewrites it every morning; the app reads the data repo's
+# copy (--publish), and this one only serves ?local.
+web/data/objections.json

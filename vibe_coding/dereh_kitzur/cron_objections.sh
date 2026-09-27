@@ -25,7 +25,8 @@ REPORT="$(printf '%s\n' "$OUT" | sed -n 's/^REPORT=//p' | tail -1)"
 NEWS="$(printf '%s\n' "$OUT" | sed -n 's/^NEWS=//p' | tail -1)"
 if [ -n "$REPORT" ] && [ "${NEWS:-0}" -gt 0 ]; then
   export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
-  notify-send -a "דרך קיצור" "חלונות התנגדות: $NEWS עדכונים" \
+  # "--": the body starts with "- ", which notify-send would read as an option.
+  notify-send -a "דרך קיצור" -- "חלונות התנגדות: $NEWS עדכונים" \
     "$(grep -m3 '^- ' "$REPORT" | sed 's/\[[^]]*\]([^)]*)//g; s/\*\*//g')" \
     2>>"$LOG" || true
   echo "REPORT READY: $REPORT" >>"$LOG"

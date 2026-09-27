@@ -804,8 +804,10 @@ const Layers = (() => {
       note: 'כל 9,126 החלקות של המושבה מהקדסטר הארצי, בכל רמות הזום. מספרי '
         + 'החלקות מופיעים כשמתקרבים, ולחיצה בכל נקודה אומרת באיזה גוש ובאיזו '
         + 'חלקה היא נמצאת. גוש וחלקה הם השפה שבה כתובות התכניות, וזו הדרך '
-        + 'לראות על הקרקע על מה בדיוק תכנית מדברת.',
-      credit: 'הקדסטר הארצי · govmap',
+        + 'לראות על הקרקע על מה בדיוק תכנית מדברת. חלקות שחלה עליהן תכנית '
+        + 'שפתוחה עכשיו להתנגדות צבועות באדום זוהר, ולחיצה עליהן אומרת עד מתי '
+        + 'ואיפה מגישים.',
+      credit: 'הקדסטר הארצי · govmap · מינהל התכנון',
       sourceName: 'הקדסטר הארצי',
       sourceLine: 'גבולות החלקות מתוך הקדסטר הארצי, govmap',
       linkTitle: 'govmap',
@@ -1139,8 +1141,18 @@ const Layers = (() => {
   const gridFillId = (id) => `pgf-${id}`;
   const gridLineId = (id) => `pgl-${id}`;
   const gridNumId = (id) => `pgn-${id}`;
+  /* The parcels open to objection, glowing red over the grid: a fill, a wide
+   * blurred halo and a pale core on the grid's own source, the plan's blue
+   * line as a fallback for a plan with no parcel in the file, and a blurred
+   * disc on each plan so that the whole moshava can be taken in at a glance -
+   * a plot of 500 m² is two pixels at zoom 13, and a disc is not. */
+  const OBJ_PTS = 'obj-pts';
+  const OBJ_SHAPES = 'obj-shapes';
+  const objIds = (id) => [`pgo-f-${id}`, `pgo-h-${id}`, `pgo-c-${id}`,
+    `pgo-sf-${id}`, `pgo-sh-${id}`, `pgo-p-${id}`, `pgo-d-${id}`];
   const gridIds = (layer) => (layer.grid
-    ? [gridFillId(layer.id), gridLineId(layer.id), gridNumId(layer.id)] : []);
+    ? [gridFillId(layer.id), gridLineId(layer.id), gridNumId(layer.id)].concat(objIds(layer.id))
+    : []);
 
   const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
     : layer.kind === 'raster' ? [rasterId(layer.id)]
@@ -1519,6 +1531,149 @@ const Layers = (() => {
         'text-halo-width': 1.2
       }
     }, above);
+    addObjectionGlow(layer);
+  }
+
+  /* ---------- open to objection: the red glow ----------
+   *
+   * Ori, 27/9/2026: the parcels on which a plan can be objected to right now,
+   * in glowing red, so that one look at the whole moshava shows them. A plan
+   * is open for two months, after which nothing a resident says counts, and
+   * the only notices are a sign on the plot and small print in the papers.
+   *
+   * Which parcels those are comes from data/objections.json, which
+   * watch_objections.py writes every morning from Xplan and מבא"ת (Xplan on
+   * its own knew five of the nine open that day). plan_here.js reads it and
+   * hands the result here through setObjections. The glow lives with the
+   * parcels because that is what it marks, and it goes on and off with them. */
+  const OBJ_RED = '#ff1744';
+  let objections = { ids: [], points: [], shapes: [], rows: [] };
+  let pulseOn = false;
+
+  const objFilter = () => ['in', ['id'], ['literal', objections.ids]];
+  const objPoints = () => ({
+    type: 'FeatureCollection',
+    features: objections.points.map((p) => ({
+      type: 'Feature', properties: { num: p.num },
+      geometry: { type: 'Point', coordinates: p.at }
+    }))
+  });
+  const objShapes = () => ({
+    type: 'FeatureCollection',
+    features: objections.shapes.map((s) => ({
+      type: 'Feature', properties: { num: s.num },
+      geometry: { type: 'Polygon', coordinates: s.rings }
+    }))
+  });
+
+  /** Width of the halo, the same at every zoom in pixels of ground: thin
+   *  enough far out not to swallow the street, wide enough close in to read
+   *  as light rather than as a thick line. */
+  const haloWidth = ['interpolate', ['linear'], ['zoom'], 12, 4, 15, 9, 17, 16, 19, 26];
+
+  function addObjectionGlow(layer) {
+    const id = layer.id;
+    const src = gridSrc(id);
+    const before = map.getLayer(gridNumId(id)) ? gridNumId(id) : undefined;
+    if (map.getLayer(`pgo-f-${id}`)) return;
+    if (!map.getSource(OBJ_PTS)) map.addSource(OBJ_PTS, { type: 'geojson', data: objPoints() });
+    if (!map.getSource(OBJ_SHAPES)) map.addSource(OBJ_SHAPES, { type: 'geojson', data: objShapes() });
+
+    // The parcels themselves.
+    map.addLayer({ id: `pgo-f-${id}`, type: 'fill', source: src, filter: objFilter(),
+      paint: { 'fill-color': OBJ_RED, 'fill-opacity': 0.45 } }, before);
+    map.addLayer({ id: `pgo-h-${id}`, type: 'line', source: src, filter: objFilter(),
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': OBJ_RED, 'line-width': haloWidth, 'line-blur': haloWidth,
+               'line-opacity': 0.9 } }, before);
+    map.addLayer({ id: `pgo-c-${id}`, type: 'line', source: src, filter: objFilter(),
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': '#ffd6dc',
+               'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.8, 16, 1.6, 19, 2.4] } },
+      before);
+    // A plan with no parcel in the file: its blue line, drawn the same way.
+    map.addLayer({ id: `pgo-sf-${id}`, type: 'fill', source: OBJ_SHAPES,
+      paint: { 'fill-color': OBJ_RED, 'fill-opacity': 0.45 } }, before);
+    map.addLayer({ id: `pgo-sh-${id}`, type: 'line', source: OBJ_SHAPES,
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': OBJ_RED, 'line-width': haloWidth, 'line-blur': haloWidth,
+               'line-opacity': 0.9 } }, before);
+    // The disc, for the view of the whole moshava. It fades as the parcels
+    // grow big enough to be seen for themselves, and is gone by the time the
+    // parcel numbers come in.
+    map.addLayer({ id: `pgo-p-${id}`, type: 'circle', source: OBJ_PTS,
+      paint: {
+        'circle-color': OBJ_RED,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 17, 13, 24, 15, 32, 16.5, 40],
+        'circle-blur': 0.85,
+        'circle-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.95, 15, 0.7, 16.5, 0]
+      } }, before);
+    map.addLayer({ id: `pgo-d-${id}`, type: 'circle', source: OBJ_PTS,
+      paint: {
+        'circle-color': '#ffe3e7',
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 15, 3.5],
+        'circle-stroke-color': OBJ_RED,
+        'circle-stroke-width': 1.5,
+        'circle-opacity': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 0.9, 16, 0],
+        'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 0.9, 16, 0]
+      } }, before);
+    startPulse();
+  }
+
+  /** What is open, from plan_here.js: parcel ids, a point for each plan, and
+   *  the blue lines of plans the file had no parcel for. Safe to call before
+   *  the map or the grid exist; the glow picks it up when it is built. */
+  function setObjections(next) {
+    objections = {
+      ids: (next && next.ids) || [],
+      points: (next && next.points) || [],
+      shapes: (next && next.shapes) || [],
+      rows: (next && next.rows) || []        // the plans themselves, for a tap on a parcel
+    };
+    if (typeof map === 'undefined' || !map || !map.getStyle()) return;
+    const id = PARCELS_ID;
+    ['pgo-f-', 'pgo-h-', 'pgo-c-'].forEach((pre) => {
+      if (map.getLayer(pre + id)) map.setFilter(pre + id, objFilter());
+    });
+    if (map.getSource(OBJ_PTS)) map.getSource(OBJ_PTS).setData(objPoints());
+    if (map.getSource(OBJ_SHAPES)) map.getSource(OBJ_SHAPES).setData(objShapes());
+    startPulse();
+  }
+
+  const objectionsNow = () => objections;
+
+  /* A slow breath, about two seconds a cycle, so the eye finds the red on a
+   * busy satellite picture. Twelve frames a second is plenty for something
+   * this slow, and it stops whenever there is nothing to see: parcels off,
+   * nothing open, the tab in the background. Still for anybody who asked
+   * their system for less motion. */
+  const stillPlease = typeof matchMedia === 'function'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function startPulse() {
+    if (pulseOn || stillPlease) return;
+    pulseOn = true;
+    let last = 0;
+    const tick = (t) => {
+      const id = PARCELS_ID;
+      const f = `pgo-f-${id}`;
+      const live = typeof map !== 'undefined' && map && map.getLayer(f)
+        && (objections.ids.length || objections.points.length);
+      if (!live) { pulseOn = false; return; }
+      if (t - last > 80 && !document.hidden
+          && map.getLayoutProperty(f, 'visibility') !== 'none') {
+        last = t;
+        const k = 0.5 + 0.5 * Math.sin(t / 2000 * Math.PI * 2);     // 0..1
+        map.setPaintProperty(f, 'fill-opacity', 0.38 + 0.3 * k);
+        map.setPaintProperty(`pgo-sf-${id}`, 'fill-opacity', 0.38 + 0.3 * k);
+        map.setPaintProperty(`pgo-h-${id}`, 'line-opacity', 0.55 + 0.45 * k);
+        map.setPaintProperty(`pgo-sh-${id}`, 'line-opacity', 0.55 + 0.45 * k);
+        map.setPaintProperty(`pgo-p-${id}`, 'circle-opacity', ['interpolate', ['linear'], ['zoom'],
+          11, 0.7 + 0.3 * k, 15, 0.45 + 0.3 * k, 16.5, 0]);
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 
   /** A raster layer: a pyramid of picture tiles, no items. Its source is
@@ -1708,6 +1863,26 @@ const Layers = (() => {
       || (typeof PlanHere !== 'undefined' && PlanHere.isArmed());
   }
 
+  /** A red disc, from far out: the plan under it, in the list of what is
+   *  open. Ahead of the trails, but only for a tap on the disc's middle: the
+   *  disc is wide and soft, and a trail passing through its glow is still the
+   *  trail. Only while the disc is visible - MapLibre answers for a circle it
+   *  has faded to nothing, and close in the tap belongs to the parcel. */
+  function tapOnDisc(e) {
+    const disc = `pgo-p-${PARCELS_ID}`;
+    if (!map.getLayer(disc) || map.getZoom() >= 15.5 || typeof PlanHere === 'undefined'
+        || map.getLayoutProperty(disc, 'visibility') === 'none') return false;
+    let best = null, bestD = 16;
+    map.queryRenderedFeatures(e.point, { layers: [disc] }).forEach((f) => {
+      const p = map.project(f.geometry.coordinates);
+      const d = Math.hypot(p.x - e.point.x, p.y - e.point.y);
+      if (d <= bestD) { bestD = d; best = f; }
+    });
+    if (!best) return false;
+    PlanHere.showOpen(best.properties.num);
+    return true;
+  }
+
   let picking = false;
   function wirePicking() {
     if (picking || typeof map === 'undefined' || !map) return;
@@ -1719,6 +1894,7 @@ const Layers = (() => {
       // two listeners MapLibre reaches first, the answer is the same. The
       // drafts editor owns every tap while it is open, in the same way.
       if (mapIsBusy()) return;
+      if (tapOnDisc(e)) return;
       const { lines, areas, grids, dashed } = pickLayers();
       const found = lines.length ? map.queryRenderedFeatures(e.point, { layers: lines }) : [];
       if (found.length) {
@@ -2338,7 +2514,7 @@ const Layers = (() => {
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     BLOCKS_ID, PARCELS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
-    trailHitLayers, turnOn, tripsUsing,
+    trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,
     set onChange(fn) { onChange = fn; }
   };
 })();
