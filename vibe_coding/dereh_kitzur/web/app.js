@@ -2382,6 +2382,9 @@ const Parcels = (() => {
 
   function item(g, p, area, rings) {
     const mid = centre(rings);
+    // A red parcel: the plan that is open on it comes first, since it is the
+    // one thing here a resident can still do something about.
+    const open = PlanHere.openOn(g * 10000 + p);
     return {
       id: `parcel-${g}-${p}`,
       name: `גוש ${g} חלקה ${p}`,
@@ -2395,9 +2398,18 @@ const Parcels = (() => {
       lat: mid[1],
       lng: mid[0],
       place: true,
-      color: '#5d4037',
+      color: open ? '#ff1744' : '#5d4037',
       shape: rings,
-      note: `חלקה ${p} בגוש ${g}`
+      when: open ? 'פתוחה להתנגדות' : undefined,
+      links: open ? [{ title: 'התכנית במבא"ת, ושם גם מגישים התנגדות', url: open.url }] : undefined,
+      note: (open
+        ? `על החלקה הזאת חלה תכנית שפתוחה עכשיו להתנגדות: ${open.name} (${open.num}). `
+          + (open.adds ? `התכנית מוסיפה ${open.adds}. ` : '')
+          + `${PlanHere.deadlineText(open)}. `
+          + (!open.exact && open.basis ? open.basis + '. ' : '')
+          + PlanHere.whereTo(open) + ' '
+        : '')
+        + `חלקה ${p} בגוש ${g}`
         + (area ? `, ${Math.round(area).toLocaleString('he-IL')} מ"ר רשומים` : '') + '. '
         + 'גוש וחלקה הם השפה שבה כתובות התכניות: תכנית שנקראת '
         + '"תוספת זכויות בגוש 10102 חלקה 109" מדברת על חלקה אחת כזאת. '
@@ -3213,7 +3225,13 @@ function wireControls() {
   el('plan-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'plan-sheet' || e.target.closest('[data-act="close"]')) {
       PlanHere.close();
+      return;
     }
+    // From the list of what is open: the parcels layer on, and the map on one
+    // plan or on all of them, glowing red.
+    const fly = e.target.closest('[data-act="obj-fly"]');
+    if (fly) { PlanHere.showOnMap(fly.dataset.num); return; }
+    if (e.target.closest('[data-act="obj-all"]')) PlanHere.showOnMap(null);
   });
 
   // Escape backs out of the question: first the answer, then the armed tap.

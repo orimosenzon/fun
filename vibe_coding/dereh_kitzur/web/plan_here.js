@@ -215,11 +215,15 @@ const PlanHere = (() => {
 
   /** Everything about one point, in one go. */
   async function lookUp(lngLat) {
-    const [plans, uses, plot] = await Promise.all([
+    const [plans, uses, plot, open] = await Promise.all([
       ask(PLANS, Object.assign(atPoint(lngLat), { outFields: PLAN_FIELDS })),
       ask(LANDUSE, Object.assign(atPoint(lngLat), { outFields: USE_FIELDS })),
-      parcel(lngLat)
+      parcel(lngLat),
+      // What is open town-wide, which knows windows Xplan's own fields miss.
+      openForObjection().catch(() => [])
     ]);
+    const openByNum = new Map(open.map((r) => [r.num, r]));
+    const isOpenHere = (a) => openByNum.has(a.pl_number) || daysTo(shutsOn(a)) >= 0;
 
     const byNumber = {};
     plans.forEach((f) => { byNumber[f.attributes.pl_number] = f.attributes; });
@@ -239,22 +243,22 @@ const PlanHere = (() => {
     const rows = plans.map((f) => f.attributes).sort((x, y) => {
       // Newest first, and anything still moving above anything finished: a
       // plan that can still be objected to is the news on this point.
-      const open = (a) => (daysTo(shutsOn(a)) >= 0 ? 1 : 0);
+      const open = (a) => (isOpenHere(a) ? 1 : 0);
       if (open(y) !== open(x)) return open(y) - open(x);
       return (inForceOn(y) || y.last_update_date || 0)
         - (inForceOn(x) || x.last_update_date || 0);
     });
 
-    return { plans: rows, uses, live, plot, at: lngLat };
+    return { plans: rows, uses, live, plot, at: lngLat, openByNum };
   }
 
   /* ---------- the sheet ---------- */
 
-  function planRow(a) {
+  function planRow(a, known) {
     const number = esc(a.pl_number || '');
     const shut = shutsOn(a);
     const left = daysTo(shut);
-    const open = shut && left >= 0;
+    const open = (shut && left >= 0) || !!known;
     const force = date(inForceOn(a));
     const change = adds(a);
 
@@ -279,7 +283,9 @@ const PlanHere = (() => {
       </div>
       <p class="ph-facts">${facts.join(' · ')}</p>
       ${change ? `<p class="ph-adds">מוסיפה ${esc(change)}</p>` : ''}
-      ${open ? `<p class="ph-deadline">אפשר להגיש התנגדות עד ${date(shut)},
+      ${known ? `<p class="ph-deadline">פתוחה להתנגדות. ${deadlineText(known)}</p>
+        ${!known.exact && known.basis ? `<p class="ph-obj">${esc(known.basis)}.</p>` : ''}`
+        : open ? `<p class="ph-deadline">אפשר להגיש התנגדות עד ${date(shut)},
         ${left === 0 ? 'כלומר היום' : left === 1 ? 'כלומר מחר' : 'בעוד ' + left + ' ימים'}</p>`
         : shut ? `<p class="ph-closed">חלון ההתנגדויות נסגר ב-${date(shut)}</p>` : ''}
       ${blurb ? `<p class="ph-obj">${esc(blurb)}</p>` : ''}
@@ -293,9 +299,10 @@ const PlanHere = (() => {
 
   function render(found) {
     const { plans, live, plot } = found;
+    const openByNum = found.openByNum || new Map();
     const openOnes = plans.filter((a) => {
       const s = shutsOn(a);
-      return s && daysTo(s) >= 0;
+      return openByNum.has(a.pl_number) || (s && daysTo(s) >= 0);
     });
 
     const where = plot
@@ -335,7 +342,7 @@ const PlanHere = (() => {
 
       <h3>התכניות שחלות כאן (${plans.length})</h3>
       ${plans.length
-        ? `<ul class="ph-plans">${plans.map(planRow).join('')}</ul>`
+        ? `<ul class="ph-plans">${plans.map((a) => planRow(a, openByNum.get(a.pl_number))).join('')}</ul>`
         : `<p class="ph-none">אין כאן תכנית מקוונת. המאגר מכיל תכניות שהוגשו
              דרך האינטרנט, בערך מ-2011. תכנית ישנה יותר קיימת במבא"ת אבל בלי
              גבול על המפה.</p>`}
@@ -371,44 +378,165 @@ const PlanHere = (() => {
    * an hour in sessionStorage so that moving around the app is not forty
    * requests to a government service. */
 
-  const OPEN_KEY = 'dk.objections.v1';
+  const OPEN_KEY = 'dk.objections.v2';
   const OPEN_TTL = 3600e3;
 
-  /** Every plan in the moshava whose objection window has not shut. */
-  async function openForObjection() {
-    try {
-      const kept = JSON.parse(sessionStorage.getItem(OPEN_KEY) || 'null');
-      if (kept && Date.now() - kept.at < OPEN_TTL) return kept.rows;
-    } catch (err) {
-      /* private mode, or someone else's key: ask again, it is one request */
-    }
+  /* Xplan alone misses windows. On 27/9/2026 it had a last day for five of
+   * the thirty-four plans at the deposit stage, and nine were open: a
+   * district plan whose newspaper notice was not recorded yet, and local
+   * committee plans, whose windows no national service records at all.
+   * watch_objections.py reads מבא"ת every morning, works the dates out and
+   * writes this file to the data repo, with the parcels each plan covers.
+   * The live question still runs beside it, so a window that opened since
+   * this morning's run is not missed; the file adds what Xplan cannot say. */
+  const OPEN_FILE = 'data/objections.json';
 
+  async function openFile() {
+    const base = (typeof Store !== 'undefined' && Store.RAW) || './';
+    const res = await withTimeout(base + OPEN_FILE, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(OPEN_FILE + ' ' + res.status);
+    return res.json();
+  }
+
+  /** '2026-10-16' as the service's own kind of date: midnight UTC, in ms. */
+  const isoStamp = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null;
+  };
+
+  /** A rough middle for a ring, for the glowing disc. */
+  function ringMiddle(rings) {
+    const ring = rings && rings[0];
+    if (!ring || !ring.length) return null;
+    let x = 0, y = 0;
+    ring.forEach((p) => { x += p[0]; y += p[1]; });
+    return [x / ring.length, y / ring.length];
+  }
+
+  async function liveOpen() {
     const feats = await ask(PLANS, {
       // Deposit is the only stage with an open window. The wider town filter is
       // the one build_plans.py settled on: three fields name the town and they
       // disagree, and this is the widest.
       where: "plan_area_name LIKE '%פרדס חנה%'"
         + " AND internet_short_status IN ('פרסום הפקדה', 'בתהליך הפקדה')",
-      outFields: 'pl_number,pl_name,pl_url,pl_last_deposit_date,'
+      outFields: 'pl_number,pl_name,pl_url,pl_last_deposit_date,pl_by_auth_of,'
         + 'pl_rejection_date,pl_date_advertise,quantity_delta_120',
-      returnGeometry: 'false',
+      // The blue line, for a plan this morning's file does not know yet.
+      returnGeometry: 'true',
+      outSR: '4326',
+      maxAllowableOffset: '0.000005',
       f: 'json'
     });
-
-    const rows = feats
-      .map((f) => f.attributes)
-      .map((a) => ({
+    return feats.map((f) => {
+      const a = f.attributes;
+      const rings = f.geometry && f.geometry.rings;
+      return {
         num: a.pl_number, name: a.pl_name, url: a.pl_url,
         units: Number(a.quantity_delta_120) || 0,
-        shuts: shutsOn(a), left: daysTo(shutsOn(a))
-      }))
+        shuts: shutsOn(a), exact: true, basis: '', hidden: false,
+        local: a.pl_by_auth_of === 3, parcels: [],
+        rings: rings || null, centre: ringMiddle(rings)
+      };
+    }).filter((r) => r.shuts);
+  }
+
+  function fileOpen(doc) {
+    return ((doc && doc.plans) || []).map((p) => ({
+      num: p.num, name: p.name, url: p.url, units: Number(p.units) || 0,
+      adds: p.adds || '', shuts: isoStamp(p.shuts), exact: !!p.exact,
+      basis: p.basis || '', hidden: !!p.hidden, local: !!p.local,
+      address: p.address || '', parcels: p.parcels || [],
+      rings: (p.rings && p.rings.length) ? p.rings : null, centre: p.centre || null
+    }));
+  }
+
+  /** Every plan in the moshava whose objection window has not shut: Xplan's
+   *  answer now, joined to the morning's file. Throws only when both fail. */
+  async function openForObjection() {
+    try {
+      const kept = JSON.parse(sessionStorage.getItem(OPEN_KEY) || 'null');
+      if (kept && Date.now() - kept.at < OPEN_TTL) { toMap(kept.rows); return kept.rows; }
+    } catch (err) {
+      /* private mode, or someone else's key: ask again, it is two requests */
+    }
+
+    const [live, file] = await Promise.allSettled([liveOpen(), openFile()]);
+    if (live.status === 'rejected' && file.status === 'rejected') throw live.reason;
+
+    const byNum = new Map();
+    if (file.status === 'fulfilled') fileOpen(file.value).forEach((r) => byNum.set(r.num, r));
+    if (live.status === 'fulfilled') live.value.forEach((r) => {
+      const known = byNum.get(r.num);
+      if (!known) { byNum.set(r.num, r); return; }
+      // The file knows more about the plan; Xplan may know its date better.
+      if (!known.exact) Object.assign(known, { shuts: r.shuts, exact: true, basis: '', hidden: false });
+      if (!known.rings) known.rings = r.rings;
+      if (!known.centre) known.centre = r.centre;
+    });
+
+    const rows = [...byNum.values()]
+      .map((r) => Object.assign(r, { left: daysTo(r.shuts) }))
       .filter((r) => r.shuts && r.left >= 0)
       .sort((x, y) => x.left - y.left);
 
     try {
       sessionStorage.setItem(OPEN_KEY, JSON.stringify({ at: Date.now(), rows }));
     } catch (err) { /* nothing depends on it being kept */ }
+    toMap(rows);
     return rows;
+  }
+
+  /** Hand the open plans to the parcels layer, which paints them red. */
+  function toMap(rows) {
+    if (typeof Layers === 'undefined' || !Layers.setObjections) return;
+    const ids = [];
+    const points = [];
+    const shapes = [];
+    rows.forEach((r) => {
+      ids.push(...r.parcels);
+      if (r.centre) points.push({ num: r.num, at: r.centre });
+      if (!r.parcels.length && r.rings) shapes.push({ num: r.num, rings: r.rings });
+    });
+    Layers.setObjections({ ids, points, shapes, rows });
+  }
+
+  /** The open plan a parcel belongs to, for the parcel's own detail pane. */
+  function openOn(parcelId) {
+    const now = Layers.objectionsNow ? Layers.objectionsNow() : null;
+    return ((now && now.rows) || []).find((r) => r.parcels.includes(parcelId)) || null;
+  }
+
+  /** "עד 16/10/2026, בעוד 19 ימים", with an estimate said as one. */
+  function deadlineText(r) {
+    const when = r.left === 0 ? 'כלומר היום' : r.left === 1 ? 'כלומר מחר' : 'בעוד ' + r.left + ' ימים';
+    return r.exact ? `עד ${date(r.shuts)}, ${when}`
+      : `מועד משוער: ${date(r.shuts)}, ${when}`;
+  }
+
+  /** Where the objection goes, which differs by who deposited the plan
+   *  (section 103 of the law), and what it has to be (section 103א). */
+  const whereTo = (r) => (r.local
+    ? 'תכנית בסמכות הוועדה המקומית: ההתנגדות מוגשת לוועדה המקומית לתכנון ובנייה פרדס חנה-כרכור, עם עותק לוועדה המחוזית חיפה.'
+    : 'תכנית בסמכות הוועדה המחוזית: אפשר להגיש מקוון במבא"ת, בכפתור "הגשת התנגדות לתוכנית".')
+    + ' התנגדות צריכה להיות בכתב, מנומקת, ומלווה בתצהיר.';
+
+  /** Parcels on, and the map on the plan, or on all of them. */
+  function showOnMap(num) {
+    const rows = ((Layers.objectionsNow && Layers.objectionsNow().rows) || []);
+    const pick = num ? rows.filter((r) => r.num === num) : rows;
+    Layers.turnOn(Layers.PARCELS_ID);
+    close();
+    if (typeof collapsePanel === 'function') collapsePanel();
+    const pts = [];
+    pick.forEach((r) => {
+      (r.rings || []).forEach((ring) => ring.forEach((p) => pts.push(p)));
+      if (r.centre) pts.push(r.centre);
+    });
+    if (!pts.length || typeof map === 'undefined' || !map) return;
+    let w = 180, s = 90, e = -180, n = -90;
+    pts.forEach(([x, y]) => { w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); });
+    map.fitBounds([[w, s], [e, n]], { padding: 70, maxZoom: num ? 17.5 : 16, duration: 1000 });
   }
 
   /* ---------- the panel's own state ---------- */
@@ -490,7 +618,7 @@ const PlanHere = (() => {
    *  layer is a file built by build_plans.py and this is live. A banner whose
    *  count comes from today and whose list comes from the last build would
    *  disagree with itself on the day it mattered. */
-  async function showOpen() {
+  async function showOpen(focus) {
     show(`<header class="sheet-head">
             <h2>פתוח להתנגדות</h2>
             <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
@@ -508,32 +636,50 @@ const PlanHere = (() => {
             <p class="ph-none">לא הצלחתי להגיע לשירות של מינהל התכנון כרגע.</p>`);
       return;
     }
+    // A tap on one red disc: that plan first, the rest after it.
+    if (focus) rows = rows.filter((r) => r.num === focus).concat(rows.filter((r) => r.num !== focus));
+    const hidden = rows.filter((r) => r.hidden).length;
     show(`
       <header class="sheet-head">
         <h2>פתוח להתנגדות</h2>
         <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
       </header>
-      <p class="sheet-lead">תכניות שהופקדו במושבה ושחלון ההתנגדויות שלהן עוד לא נסגר.</p>
+      <p class="sheet-lead">תכניות שהופקדו במושבה ושחלון ההתנגדויות שלהן עוד לא נסגר.
+        על מפת החלקות הן צבועות באדום.</p>
+      ${rows.length ? `<button class="big-act ph-map-all" data-act="obj-all">
+          <b>הצג את כולן על המפה</b></button>` : ''}
+      ${hidden ? `<p class="ph-alert">${hidden === 1 ? 'אחת מהן אינה מופיעה'
+        : `${hidden} מהן אינן מופיעות`} כפתוחה במאגר הארצי של מינהל התכנון. מצאנו
+        אותן בדף התכנית במבא"ת, לפי השלט, ההודעה באינטרנט והפרסום ברשומות.</p>` : ''}
       ${rows.length ? `<ul class="ph-plans">${rows.map((r) => `
-        <li class="ph-plan ph-open">
+        <li class="ph-plan ph-open${r.num === focus ? ' ph-focus' : ''}">
           <div class="ph-plan-head">
             <b>${esc(r.name)}</b><span class="ph-num">${esc(r.num)}</span>
           </div>
-          ${r.units > 0 ? `<p class="ph-adds">מוסיפה ${r.units === 1 ? 'יחידת דיור אחת'
+          ${r.address ? `<p class="ph-facts">${esc(r.address)}</p>` : ''}
+          ${r.adds ? `<p class="ph-adds">מוסיפה ${esc(r.adds)}</p>`
+            : r.units > 0 ? `<p class="ph-adds">מוסיפה ${r.units === 1 ? 'יחידת דיור אחת'
             : fmt(r.units) + ' יחידות דיור'}</p>` : ''}
-          <p class="ph-deadline">עד ${date(r.shuts)},
-            ${r.left === 0 ? 'כלומר היום' : r.left === 1 ? 'כלומר מחר' : 'בעוד ' + r.left + ' ימים'}</p>
+          <p class="ph-deadline">${deadlineText(r)}</p>
+          ${!r.exact && r.basis ? `<p class="ph-obj">${esc(r.basis)}.</p>` : ''}
+          <p class="ph-obj">${whereTo(r)}</p>
           <p class="ph-links">
-            <a href="${esc(r.url || XPLAN_SITE)}" target="_blank" rel="noopener">התכנית, ושם גם מגישים התנגדות ↗</a>
+            ${(r.parcels.length || r.centre) ? `<button class="ph-link-btn" data-act="obj-fly"
+              data-num="${esc(r.num)}">הצג על המפה</button>` : ''}
+            <a href="${esc(r.url || XPLAN_SITE)}" target="_blank" rel="noopener">התכנית במבא"ת ↗</a>
           </p>
         </li>`).join('')}</ul>`
         : '<p class="ph-none">אין כרגע תכנית פתוחה להתנגדות במושבה.</p>'}
       <h3>מה זה אומר</h3>
       <p class="ph-none">הפקדה היא השלב היחיד בחיי תכנית שבו הציבור יכול להגיש
-        התנגדות, והוא נמשך שישים יום מהפרסום בעיתונים. אחרי שהחלון נסגר אי אפשר
-        עוד להתנגד, גם אם מדובר במאות יחידות דיור.</p>
+        התנגדות. לפי סעיף 102 לחוק התכנון והבנייה החלון נמשך חודשיים מהפרסום
+        המאוחר בעיתונים, ומוסד התכנון רשאי להאריך אותו לשלושה. אחרי שהחלון נסגר
+        אי אפשר עוד להתנגד, גם אם מדובר במאות יחידות דיור.</p>
+      <p class="ph-none">מועד "משוער" פירושו שמועד הפרסום בעיתונים לא נרשם במאגר.
+        התאריך המחייב כתוב בנוסח ההודעה שבדף התכנית ובשלט שעל המגרש.</p>
       <p class="sheet-credit">
-        נשאל עכשיו מ<a href="${XPLAN_SITE}" target="_blank" rel="noopener">שירות המפה של מינהל התכנון</a>.
+        מ<a href="${XPLAN_SITE}" target="_blank" rel="noopener">שירות המפה של מינהל התכנון</a>
+        ומדפי התכניות במבא"ת, שנבדקים כל בוקר.
         <a href="${GUIDE}" target="_blank" rel="noopener">איך עובד הליך התכנון ↗</a>
       </p>`);
   }
@@ -558,13 +704,14 @@ const PlanHere = (() => {
     btn.innerHTML =
       `<b>${rows.length === 1 ? 'תכנית אחת פתוחה להתנגדות'
         : `${rows.length} תכניות פתוחות להתנגדות`} במושבה</b>` +
-      `<span>הקרובה נסגרת ${when}, ב-${date(soon.shuts)}.` +
+      `<span>הקרובה נסגרת ${when}, ב-${date(soon.shuts)}${soon.exact ? '' : ' (משוער)'}.` +
       (units ? ` יחד הן מוסיפות ${fmt(units)} יחידות דיור.` : '') +
-      ' לחץ כדי לראות אותן ברשימה.</span>';
+      ' לחץ כדי לראות אותן ברשימה ועל המפה.</span>';
     btn.hidden = false;
     return rows;
   }
 
   return { at, arm, disarm, isArmed, close, isOpen, lookUp, paintBanner, showOpen,
+           showOnMap, openOn, deadlineText, whereTo,
            openForObjection, shutsOn, daysTo, date, GUIDE };
 })();
