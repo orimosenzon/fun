@@ -22,11 +22,12 @@ const params = new URLSearchParams(location.search);
 const DEMO = params.has('demo');
 const QUALITY = +(params.get('q') || (matchMedia('(pointer: coarse)').matches ? 0.6 : 1));
 let renderScale = +(params.get('scale') || (QUALITY < 1 ? 0.7 : 1));
-const statusEl = document.getElementById('status');
-const say = (m) => { statusEl.textContent = m; };
 const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// loading bar (index.html): 0–12 % module download, 12–90 % world, then bike and GPU warm-up
+const load = (f, label) => window.loader?.set(f, label);
+const T_LOAD = performance.now();
 
-say('בונה עמק…');
+load(0.12, 'מתחיל לבנות את העמק');
 await frame();
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: params.has('shots') });
 renderer.setPixelRatio(1);
@@ -42,8 +43,8 @@ const rings = buildCourse();
 const corridor = [];
 { const pts = [[PAD[0], 2, PAD[2]], ...rings.map((r) => r.p), [LANDING.x, heightAt(LANDING.x, LANDING.z) + 3, LANDING.z]];
   for (let i = 0; i < pts.length - 1; i++) corridor.push([pts[i], pts[i + 1]]); }
-const world = buildWorld(scene, renderer, { quality: QUALITY, clearings: [], corridor });
-say('מרכיב את האופנוע…');
+const world = await buildWorld(scene, renderer, { quality: QUALITY, clearings: [], corridor }, (f, label) => load(0.12 + 0.78 * f, label));
+load(0.9, 'מרכיב את האופנוע');
 await frame();
 const model = buildBike(world.envTex);
 scene.add(model.root);
@@ -371,7 +372,6 @@ function begin() {
   newRace();
 }
 showMenu();
-say('');
 
 // ---------------- main loop
 const prof = { phys: 0, fx: 0, render: 0, n: 0 };
@@ -552,5 +552,17 @@ function resize() {
 addEventListener('resize', resize);
 addEventListener('click', () => { if (state === 'menu') begin(); else if (state === 'finished') begin(); else audio.start(); });
 
+// GPU warm-up behind the loading screen: shader compilation would otherwise freeze the first frames
+load(0.93, 'מכין את כרטיס הגרפיקה');
+await frame();
+updateCamera(1 / 60, 0);
+try { await renderer.compileAsync(scene, camera); } catch (e) { console.warn('compileAsync', e); }
+load(0.97, 'מכין את כרטיס הגרפיקה');
+await frame();
+last = performance.now();
+loop(last);          // first real frame (post passes, water mirror, shadow map) still under the loader
+await frame();
+console.log(`loaded in ${((performance.now() - T_LOAD) / 1000).toFixed(1)} s after modules`);
+window.loader?.done();
+
 window.game = { get state() { return state; }, get ringIndex() { return ringIndex; }, get raceT() { return raceT; }, bike, get fps() { return document.body.dataset.fps; }, begin };
-requestAnimationFrame(loop);
