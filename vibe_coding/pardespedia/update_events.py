@@ -2,22 +2,24 @@
 """Update the events board on the pardespedia main page ("עמוד ראשי").
 
 Pulls events from several structured sources in the moshava, keeps the ones in
-the next N days, merges + de-duplicates them, and rebuilds the auto-managed
+the coming week (N days, today included; default 7), merges + de-duplicates them, and rebuilds the auto-managed
 events board inside the "אירועי תרבות ובילוי קרובים" section of the main page
 (between the AUTO markers). Content outside the AUTO markers is preserved.
 
-The board is the full table — image and video columns included — and is
-rendered collapsible-but-*open* (``mw-collapsible`` without ``mw-collapsed``),
-so a visitor sees the whole board on arrival and can fold it with "הסתר".
+Since 28/9/2026 the board is a list of cards, not a table: one card per event,
+always in chronological order under a heading per day, each with a large
+flyer and everything a person asks before going (when and until when, where
+with a map link, price, who is on, a short description, links to book). The
+sortable table it replaced was traded away on purpose for readability.
 (The old standalone page "אירועי תרבות ובילוי בפרדס חנה-כרכור" was retired in
 favour of showing the board directly on the main page.)
 
-Each row gets, where possible:
-  * an image (first column) — the event's flyer, downloaded + uploaded to the
+Each card gets, where possible:
+  * an image — the event's flyer, downloaded + uploaded to the
     wiki at low resolution under a fair-use rationale (external hotlinking is
     disabled on pardespedia). Filenames are stable per event, so re-runs skip
     images that already exist.
-  * a video (last column) — looked up in event_videos.json, a hand-maintained
+  * a video — looked up in event_videos.json, a hand-maintained
     map of event-name → YouTube id (the feeds carry no video data). The script
     reads it every run, so curated videos persist across automatic updates.
 
@@ -31,7 +33,7 @@ Sources (each is best-effort — a failing source is logged and skipped):
     table is world-readable; residents submit events there directly.
 
 Usage:
-    python3 update_events.py [--days 14] [--dry-run] [--no-images]
+    python3 update_events.py [--days 7] [--dry-run] [--no-images]
 
 Deterministic (no LLM) — safe to run unattended from cron.
 """
@@ -325,7 +327,7 @@ def price_label(price, is_free: bool = False) -> str:
     price, not declaring one: eventschedule sends exactly that for every Torah
     Learning Center class. Returning "בתשלום" there made the board assert that
     free community classes cost money, so silence now stays silence and
-    build_table() renders it as "—".
+    the card simply leaves the price line out.
     """
     if is_free:
         return "חינם"
@@ -361,8 +363,39 @@ def _sort_key(d, time) -> str:
     return f"{d.isoformat()}T{hhmm}"
 
 
-def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None) -> dict:
+DESC_MAX = 280  # characters of blurb on a card; the event page has the rest
+
+
+def clean_blurb(text: str, name: str = "") -> str:
+    """A short, single-paragraph description fit for a card.
+
+    Sources hand us anything from a one-line tagline (eventschedule's
+    short_description) to a multi-paragraph post a resident typed into
+    "חיבור מקומי". Collapse it to one paragraph, drop a leading repeat of the
+    event name ("ירון אילן במופע ... - הופעה עם...") and cut at a word
+    boundary. Ticket sites also append sales boilerplate ("הזמן עכשיו לפני
+    שיגמרו!"), which says nothing about the event and is dropped.
+    """
+    s = re.sub(r"\s+", " ", text or "").strip()
+    if not s:
+        return ""
+    if name and s.startswith(name):
+        s = s[len(name):].lstrip(" -–:·,")
+    s = re.split(r"(?:עוד הופעה בקטגוריית|הזמינו? עכשיו|הזמן עכשיו|כרטיסים במחירים)", s)[0]
+    s = re.sub(r"\s*(?:יום\s+\S+\s+)?\d{1,2}/\d{1,2}/\d{4}\s*", " ", s).strip(" -–·,")
+    if len(s) > DESC_MAX:
+        s = s[:DESC_MAX].rsplit(" ", 1)[0].rstrip(" ,.-–") + "…"
+    return s
+
+
+def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None,
+         desc="", duration=None, people="", links=None, cancelled=False) -> dict:
     return {"date": d, "time": time, "name": clean_name(name), "url": url or "",
+            # card details: a short blurb, how long it runs (hours), who is on
+            # stage or organising, extra links beyond the main one (label, url),
+            # and whether the source marked it cancelled
+            "desc": clean_blurb(desc, clean_name(name)), "duration": duration,
+            "people": wiki_escape(people), "links": links or [], "cancelled": cancelled,
             # every source funnels its category wording through one gate here,
             # so the sortable "סוג" column keeps a single vocabulary
             "category": canonical_category(category),
@@ -406,6 +439,15 @@ def _fetch_eventschedule(feed_url: str, prefix: str, unknown_ok: bool = True) ->
             hm = lsa.split(" ")[1][:5]
             if hm and hm != "00:00":
                 t = hm
+        reg = e.get("registration_url") or ""
+        links = [(link_label(reg), reg)] if reg and reg != e.get("guest_url") else []
+        talent = e.get("talent") or []
+        people = ", ".join(x.get("name", "") if isinstance(x, dict) else str(x)
+                           for x in talent if x)
+        try:
+            duration = float(e.get("duration") or 0) or None
+        except (TypeError, ValueError):
+            duration = None
         rows.append(_row(
             d, t, e.get("name"), e.get("guest_url"),
             category_he(e.get("category_name")),
@@ -413,8 +455,23 @@ def _fetch_eventschedule(feed_url: str, prefix: str, unknown_ok: bool = True) ->
             price_label(e.get("ticket_price"), e.get("is_free")),
             f"{prefix}-{e.get('id')}",
             e.get("image_url") or e.get("flyer_url"),
+            desc=e.get("short_description") or "", duration=duration,
+            people=people, links=links,
+            cancelled=str(e.get("is_cancelled")).lower() == "true",
         ))
     return rows
+
+
+def link_label(url: str) -> str:
+    """What a secondary link is, in the reader's words."""
+    u = (url or "").lower()
+    if "whatsapp" in u:
+        return "קבוצת וואטסאפ"
+    if "facebook" in u or "fb.me" in u:
+        return "פייסבוק"
+    if "instagram" in u:
+        return "אינסטגרם"
+    return "הרשמה וכרטיסים"
 
 
 def fetch_eventschedule() -> list:
@@ -485,7 +542,7 @@ def fetch_hub() -> list:
 
     r = requests.get(HUB_API, timeout=30, params={
         "select": "id,title,category,event_date,location,price,image_url,"
-                  "ticket_url,facebook_url,status",
+                  "ticket_url,facebook_url,status,description,organizer",
         "status": "eq.approved", "order": "event_date"},
         headers={"apikey": HUB_ANON_KEY, "Accept": "application/json"})
     r.raise_for_status()
@@ -518,6 +575,8 @@ def fetch_hub() -> list:
             hub_category(e.get("category"), e.get("title")),
             venue, hub_price_label(e.get("price")),
             f"hub-{e.get('id')}", img,
+            desc=e.get("description") or "", people=e.get("organizer") or "",
+            links=[(link_label(u), u) for u in (e.get("ticket_url"), e.get("facebook_url")) if u],
         ))
     return rows
 
@@ -535,6 +594,14 @@ def _ldjson_nodes(html: str) -> list:
                 items += it["@graph"]
         nodes += [it for it in items if isinstance(it, dict)]
     return nodes
+
+
+def _ld_people(it: dict) -> str:
+    """Performer names from a schema.org Event, comma-joined."""
+    perf = it.get("performer") or []
+    if isinstance(perf, dict):
+        perf = [perf]
+    return ", ".join(p.get("name", "") for p in perf if isinstance(p, dict) and p.get("name"))
 
 
 def fetch_matnas() -> list:
@@ -564,6 +631,8 @@ def fetch_matnas() -> list:
             it.get("name"), url, CATEGORY_HE.get(cat_key, "מופעים והופעות"),
             MATNAS_VENUE, price_label(offers.get("price")),
             f"mt-{hashlib.md5((url or it.get('name','')).encode()).hexdigest()[:8]}", img,
+            desc=it.get("description") or "", people=_ld_people(it),
+            cancelled="Cancelled" in str(it.get("eventStatus") or ""),
         ))
     return rows
 
@@ -606,6 +675,8 @@ def fetch_haulam() -> list:
                 name, url, "מופעים והופעות",
                 HAULAM_VENUE, price_label(offers.get("price")),
                 f"hl-{eid}", img,
+                desc=it.get("description") or "", people=_ld_people(it),
+                cancelled="Cancelled" in str(it.get("eventStatus") or ""),
             ))
     return rows
 
@@ -687,10 +758,12 @@ def fetch_manual() -> list:
                 r = _row(d0, t, name, ev.get("url"), ev.get("category", ""),
                          ev.get("venue", ""), ev.get("entry", "חינם"),
                          key, ev.get("image_url"),
-                         date_label=_format_date_range(dl))
+                         date_label=_format_date_range(dl),
+                         desc=ev.get("description", ""), people=ev.get("organizer", ""))
                 r["image_file"] = ev.get("image_file")
                 r["video_id"] = ev.get("video")
                 r["pin"] = bool(ev.get("pin"))
+                r["dates"] = dl                     # all nights, for the week strip
                 rows.append(r)
             continue
         # resolve dates: explicit one-off or a monthly/weekly recurrence
@@ -706,7 +779,8 @@ def fetch_manual() -> list:
             key = "man-" + hashlib.md5(f"{name}{d}".encode()).hexdigest()[:8]
             r = _row(d, t, name, ev.get("url"), ev.get("category", ""),
                      ev.get("venue", ""), ev.get("entry", "חינם"),
-                     key, ev.get("image_url"))
+                     key, ev.get("image_url"),
+                     desc=ev.get("description", ""), people=ev.get("organizer", ""))
             r["image_file"] = ev.get("image_file")  # reference an existing wiki file
             r["video_id"] = ev.get("video")          # inline curated video
             r["pin"] = bool(ev.get("pin"))           # show even if beyond the window
@@ -815,7 +889,7 @@ def cap_per_venue(rows: list, limit: int = VENUE_MAX_EVENTS) -> list:
     together, since "unknown" is not a place.
 
     A cut leaves a trace: the last surviving row of an over-full venue carries
-    "more_count", which build_table() renders as "ועוד N אירועים במקום זה".
+    "more_count", which the card renders as "ועוד N אירועים במקום זה".
     A reader who wants that venue's full programme should be told it exists
     rather than shown a board that quietly pretends it doesn't.
     """
@@ -838,11 +912,6 @@ def cap_per_venue(rows: list, limit: int = VENUE_MAX_EVENTS) -> list:
         print(f"  venue cap: dropped {dropped} later event(s) from {len(over)} "
               f"over-full venue(s)", file=sys.stderr)
     return sorted(out, key=lambda r: r["sort"])
-
-
-def _covered_keys(r) -> set:
-    """Every source event a (possibly merged) row stands for."""
-    return {p["key"] for p in (r.get("parts") or [r])}
 
 
 def merge_venue_day(rows: list) -> list:
@@ -1001,39 +1070,208 @@ def attach_videos(rows: list) -> None:
 
 # --- rendering -------------------------------------------------------------
 
-def build_table(rows: list, collapsible: bool = False) -> str:
+CARD_IMG_PX = 200  # flyer width on a card; on a phone it stacks above the text
+
+# one icon per type in CATEGORIES, for the chip on each card
+CATEGORY_ICON = {
+    "מופעים והופעות": "🎵", "תיאטרון": "🎭", "סטנדאפ וקומדיה": "🎤",
+    "מסיבות ופסטיבלים": "🎉", "אמנות ותרבות": "🎨", "הרצאות וסדנאות": "🧑‍🏫",
+    "ספורט": "🏃", "קהילה": "🤝", "משפחה וילדים": "🧸",
+    "רוחניות והתפתחות אישית": "🕯️",
+}
+
+
+def _nowiki(text: str) -> str:
+    """Free text typed by a resident or an organiser, shown literally.
+
+    A blurb can contain anything ("[[", "{{", "''", a stray "~~~~") and the
+    wiki would try to interpret it. <nowiki> keeps it as plain text."""
+    text = (text or "").replace("</nowiki", "&lt;/nowiki")
+    return f"<nowiki>{text}</nowiki>" if text else ""
+
+
+def _day_label(d: dt.date, today: dt.date) -> str:
+    rel = {0: "היום", 1: "מחר"}.get((d - today).days)
+    base = f"יום {HE_WEEKDAYS[d.weekday()]}, {d.day} ב{HE_MONTHS[d.month]}"
+    return f"{base} · {rel}" if rel else base
+
+
+def _time_span(r) -> str:
+    """"20:30 עד 23:00" when there is a single start time and a known duration.
+
+    Words, not a dash: in a right-to-left line "20:30–23:00" is laid out by
+    the bidi algorithm as "23:00–20:30", which reads as the wrong order."""
+    t = r["time"] or ""
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", t)
+    dur = r.get("duration")
+    if m and dur and 0 < dur <= 12:
+        start = dt.datetime(2000, 1, 1, int(m.group(1)), int(m.group(2)))
+        stop = start + dt.timedelta(minutes=round(dur * 60))
+        return f"{t} עד {stop.strftime('%H:%M')}"
+    return t
+
+
+def _venue_markup(r) -> str:
+    if not r["venue"]:
+        return ""
+    v = f'[{maps_link(r["venue"])} {r["venue"]}]'
+    if r.get("more_count"):
+        n = r["more_count"]
+        what = "אירוע אחד" if n == 1 else f"{n} אירועים"
+        v += f' <small>([{ES_HUB_URL} ועוד {what} במקום זה])</small>'
+    return v
+
+
+def _links_markup(r) -> str:
+    """The event's own page first, then any registration or social links."""
+    out = []
+    if r["url"]:
+        out.append(f"[{r['url']} לפרטים ולכרטיסים ›]")
+    seen = {r["url"]}
+    for label, url in r.get("links") or []:
+        if url and url not in seen:
+            out.append(f"[{url} {label}]")
+            seen.add(url)
+    return " · ".join(out)
+
+
+def _line(icon: str, content: str) -> str:
+    if not content:
+        return ""
+    return (f'<div style="margin-top:3px;"><span style="display:inline-block; width:1.7em;">'
+            f'{icon}</span>{content}</div>')
+
+
+BOLD = "'''"
+
+
+WEEK_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"]  # Sunday .. Saturday
+CAL_BLUE = "#1a73e8"
+
+
+def week_strip(r, today: dt.date) -> str:
+    """A tiny week view, Google-Calendar style, so a reader scrolling the board
+    can see at a glance where the event falls in the week relative to today.
+
+    The week runs Sunday..Saturday **left to right** (dir="ltr"), as Ori asked
+    (28/9/2026) — the way a calendar app draws it, not the page's RTL order.
+    The event's day is a filled blue circle; today, when it is in the same
+    week, gets a thin grey ring so the eye has a reference point."""
+    d = r["date"]
+    days = set(r.get("dates") or [d])
+    start = d - dt.timedelta(days=(d.weekday() + 1) % 7)   # back to Sunday
+    cells = []
+    for i in range(7):
+        day = start + dt.timedelta(days=i)
+        num = "width:22px; height:22px; line-height:22px; border-radius:50%; margin:1px auto 0;"
+        if day in days:
+            num += f" background:{CAL_BLUE}; color:#fff; font-weight:bold;"
+        elif day == today:
+            num += " box-shadow:inset 0 0 0 1.5px #9aa0a6; color:#3c4043;"
+        else:
+            num += " color:#3c4043;"
+        letter_color = CAL_BLUE if day in days else "#70757a"
+        cells.append(
+            f'<div style="width:28px; text-align:center;">'
+            f'<div style="font-size:72%; color:{letter_color}; line-height:1.2;">{WEEK_LETTERS[i]}</div>'
+            f'<div style="font-size:78%; {num}">{day.day}</div></div>')
+    return ('<div dir="ltr" style="display:inline-flex; gap:2px; margin-top:6px; padding:3px 4px; '
+            'border:1px solid #e0e0e0; border-radius:8px; background:#fafafa;">'
+            + "".join(cells) + "</div>")
+
+
+def build_card(r, today: dt.date) -> str:
+    """One event as a card: a big flyer beside everything a person asks
+    before going: what, when (and until when), where (with a map link), how
+    much, who is on, what it is about, and where to read more or book."""
+    title_text = r["name"]
+    title = f"[{r['url']} {title_text}]" if r["url"] else title_text
+    cancelled = (' <span style="background:#b3261e; color:#fff; border-radius:4px; '
+                 'padding:0 6px; font-size:80%;">בוטל</span>') if r.get("cancelled") else ""
+    cats = [c for c in (r["category"] or "").split(" · ") if c]
+    chip = " ".join(
+        f'<span style="display:inline-block; background:#f6e7df; color:#8a4b33; '
+        f'border-radius:999px; padding:1px 10px; font-size:85%; margin-top:4px;">'
+        f'{CATEGORY_ICON.get(c, "✨")} {c}</span>' for c in cats)
+
+    parts = r.get("parts")
+    if parts:
+        # several events at one venue on one day: one card, a line per session
+        sessions = []
+        for p in parts:
+            pname = f"[{p['url']} {p['name']}]" if p["url"] else p["name"]
+            span = _time_span(p)
+            line = f"{BOLD}{span}{BOLD} {pname}" if span else pname
+            if p.get("desc"):
+                line += (f'<br /><span style="color:#555; font-size:92%;">'
+                         f'{_nowiki(p["desc"])}</span>')
+            sessions.append(f'<div style="margin-top:6px;">{line}</div>')
+        head = f"{len(parts)} אירועים ב{r['venue']}" if r["venue"] else f"{len(parts)} אירועים"
+        body = [
+            f'<div style="font-size:125%; font-weight:bold; line-height:1.3;">{head}</div>',
+            chip,
+            week_strip(r, today),
+            _line("🗓️", r.get("date_label") or ""),
+            _line("📍", _venue_markup(r)),
+            _line("🎟️", r["entry"]),
+            "".join(sessions),
+        ]
+    else:
+        # the day is already the heading above the card; the card adds the
+        # hours, or the date range for a multi-night run
+        span = _time_span(r)
+        when = " · ".join(x for x in (r.get("date_label"), span) if x)
+        body = [
+            f'<div style="font-size:125%; font-weight:bold; line-height:1.3;">{title}{cancelled}</div>',
+            chip,
+            week_strip(r, today),
+            _line("🕗", when),
+            _line("📍", _venue_markup(r)),
+            _line("🎟️", r["entry"]),
+            _line("👥", r.get("people") or ""),
+        ]
+        if r.get("desc"):
+            body.append(f'<div style="margin-top:8px; color:#333; line-height:1.5;">'
+                        f'{_nowiki(r["desc"])}</div>')
+        links = _links_markup(r)
+        if links:
+            body.append(f'<div style="margin-top:8px; font-weight:bold;">{links}</div>')
+    if r.get("video_id"):
+        body.append(f'<div style="margin-top:8px;"><youtube width="280" height="158">'
+                    f'{r["video_id"]}</youtube></div>')
+
+    # בלי |link=: לחיצה על הכרזה פותחת את דף הקובץ, שם היא מוצגת בגדול ולצידה
+    # המקור והרישיון. הקישור לאירוע עצמו נמצא על השם ובשורת הקישורים.
+    img = (f'<div style="flex:0 0 auto;">[[קובץ:{r["image_file"]}|{CARD_IMG_PX}px|{title_text}]]</div>\n'
+           if r["image_file"] else "")
+    return (
+        '<div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; '
+        'background:#fff; border:1px solid #ead9cf; border-radius:12px; padding:12px; '
+        'margin:10px 0; box-shadow:0 1px 3px rgba(0,0,0,0.06);">\n'
+        + img +
+        '<div style="flex:1 1 260px; min-width:0;">\n'
+        + "\n".join(b for b in body if b) +
+        '\n</div>\n</div>'
+    )
+
+
+def build_board(rows: list, today: dt.date) -> str:
+    """The week's events as cards, always in chronological order, under a
+    heading per day. Replaced the sortable table on 28/9/2026 at Ori's
+    request: sorting was traded for a readable board with a big flyer and
+    the full details of each event."""
     if not rows:
-        return "''לא ידוע כרגע על אירועים בשבועיים הקרובים.''"
-    # mw-collapsible (without mw-collapsed) → the table starts *open*; the
-    # "הסתר" toggle in the caption lets a reader fold it away.
-    cls = "wikitable sortable mw-collapsible" if collapsible else "wikitable sortable"
-    lines = [f'{{| class="{cls}" style="width:100%"']
-    if collapsible:
-        lines.append('|+ אירועי השבועיים הקרובים — לחצו על "הסתר" כדי לקפל את הלוח (ומיינו לפי "סוג" כדי למצוא סוג אירוע)')
-    # עמודת התמונה אינה ניתנת למיון (חסר-משמעות). התאריך ממוין כרונולוגית דרך
-    # data-sort-value בפורמט ISO בכל תא (אחרת המחרוזת העברית תמוין אלפביתית).
-    lines.append('! class="unsortable" | תמונה !! תאריך !! class="unsortable" | שעה !! אירוע !! סוג !! מקום !! כניסה')
+        return "''לא ידוע כרגע על אירועים בשבוע הקרוב.''"
+    out, current = [], None
     for r in rows:
-        when = r.get("date_label") or f"יום {HE_WEEKDAYS[r['date'].weekday()]}, {r['date'].day}.{r['date'].month}"
-        iso = r["date"].isoformat()
-        name = r.get("name_markup") or (f"[{r['url']} {r['name']}]" if r["url"] else r["name"])
-        # בלי |link=: לחיצה על הכרזה פותחת את דף הקובץ, שם היא מוצגת בגדול
-        # ולצידה המקור והרישיון. קודם הלחיצה קפצה לאתר האירוע, וזה הפריע —
-        # מי שלוחץ על תמונה מצפה לראות אותה, לא לעזוב את הדף. הקישור לאירוע
-        # עצמו לא אבד: הוא נשאר על שם האירוע בעמודת "אירוע".
-        img = f"[[קובץ:{r['image_file']}|90px]]" if r["image_file"] else "—"
-        venue = f'[{maps_link(r["venue"])} {r["venue"]}]' if r["venue"] else "—"
-        if r.get("more_count"):
-            n = r["more_count"]
-            what = "אירוע אחד" if n == 1 else f"{n} אירועים"
-            venue += f'<br /><small>[{ES_HUB_URL} ועוד {what} במקום זה]</small>'
-        lines += ["|-", f'| {img} || data-sort-value="{iso}" | {when} || {r["time"] or "—"} || {name} || '
-                  f'{r["category"]} || {venue} || {r["entry"] or "—"}']
-    lines.append("|}")
-    # מעטפת גלילה: הלוח רחב מדי למסך טלפון. בלי המעטפת הטבלה דוחפת את כל הדף
-    # הצידה, ובדף RTL זה מסתיר את כל הטקסט מחוץ למסך (המבקר חושב שהאתר ריק).
-    # עם המעטפת הטבלה גוללת בתוך עצמה והדף נשאר במקומו.
-    return '<div style="overflow-x:auto;">\n' + "\n".join(lines) + "\n</div>"
+        if r["date"] != current:
+            current = r["date"]
+            out.append(
+                '<div style="font-size:120%; font-weight:bold; color:#a8674e; '
+                'border-bottom:2px solid #e3bcac; margin:22px 0 4px; padding-bottom:3px;">'
+                f'{_day_label(current, today)}</div>')
+        out.append(build_card(r, today))
+    return "\n".join(out)
 
 
 def build_today_block(today_rows: list, today: dt.date) -> str:
@@ -1052,7 +1290,7 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
             f'padding:10px 16px; margin:0 0 16px;">\n'
             f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
             f'<div style="font-size:94%; margin-top:4px;">לא ידוע על אירועים היום. '
-            f'מה קורה בשבועיים הקרובים: ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים המלא]] בהמשך הדף.</div>\n'
+            f'מה קורה בשבוע הקרוב: ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים]] בהמשך הדף.</div>\n'
             f'</div>'
         )
         return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
@@ -1076,6 +1314,8 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
         f'padding:10px 16px; margin:0 0 16px;">\n'
         f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
         + "\n".join(cards) +
+        f'\n<div style="font-size:88%; margin-top:8px;">שעות, תיאור וקישורים: '
+        f'[[#אירועי תרבות ובילוי קרובים|בלוח האירועים]] בהמשך הדף.</div>'
         f'\n</div>'
     )
     return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
@@ -1088,7 +1328,7 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
     section. The table is collapsible but starts *open*, per the user's wish:
     a reader sees the whole board on arrival and can fold it with "הסתר".
     """
-    end = today + dt.timedelta(days=days)
+    end = today + dt.timedelta(days=days - 1)
     # say the cap out loud, but only when it actually bit — a rule stated on a
     # board it isn't affecting just reads as noise.
     capped = sum(1 for r in rows if r.get("more_count"))
@@ -1098,9 +1338,9 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
         if capped else ""
     )
     body = (
-        f"מה קורה במושבה — '''אירועי תרבות ובילוי''' בשבועיים הקרובים, עם תמונות וסרטונים. "
+        f"מה קורה במושבה בשבוע הקרוב: '''אירועי תרבות ובילוי''', לפי סדר הימים והשעות. "
         f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
-        f"{build_table(rows, collapsible=True)}\n\n"
+        f"{build_board(rows, today)}\n\n"
         f"{cap_note}"
         f"אירועים שכבר התקיימו נשמרים ב[[ארכיון אירועי התרבות]]. "
         f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}; {HUB_LABEL}; {EMEK_LABEL}. "
@@ -1164,19 +1404,19 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     today = dt.date.today()
 
     # rows are already chronologically sorted (collect() sorts by "sort").
-    # Pull out at most TODAY_MAX of today's events for the top highlight box;
-    # the full board below shows everything else (no duplication).
+    # Pull out at most TODAY_MAX of today's events for the top highlight box.
     # The box shows one card per event, so a venue-day row is expanded back into
     # its sessions here (merging is a board-layout concern, not a today concern).
     today_events = [p for r in rows if r["date"] == today
                     for p in (r["parts"] or [r])]
     today_shown = today_events[:TODAY_MAX]
-    shown_keys = {r["key"] for r in today_shown}
-    # drop a row from the board only once *all* of its events made the box
-    rest_rows = [r for r in rows if not _covered_keys(r) <= shown_keys]
 
+    # Today's events appear twice on purpose: briefly in the box at the top,
+    # and again as full cards on the board, because the card carries the
+    # details (hours, description, links) and today is what matters most
+    # (Ori, 28/9/2026). Until then the board dropped whatever the box showed.
     today_block = build_today_block(today_shown, today)
-    main_block = build_main_block(rest_rows, today, days)
+    main_block = build_main_block(rows, today, days)
 
     if TODAY_AUTO_START in existing and TODAY_AUTO_END in existing:
         new = splice_marked(existing, TODAY_AUTO_START, TODAY_AUTO_END, today_block)
@@ -1231,7 +1471,8 @@ def splice_marked(existing: str, start_marker: str, end_marker: str, block: str)
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=14)
+    ap.add_argument("--days", type=int, default=7,
+                    help="how many days the board covers, today included")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-images", action="store_true", help="skip image upload (faster dry runs)")
     ap.add_argument("--no-archive", action="store_true",
@@ -1239,7 +1480,7 @@ def main():
     args = ap.parse_args()
 
     today = dt.date.today()
-    end = today + dt.timedelta(days=args.days)
+    end = today + dt.timedelta(days=args.days - 1)
     print(f"Collecting events for window {today}..{end}", file=sys.stderr)
     rows = collect(today, end)
     attach_videos(rows)
@@ -1254,7 +1495,7 @@ def main():
     # page was retired). All publishing happens through update_main_page.
     update_main_page(client, rows, args.days, dry_run=args.dry_run)
 
-    # The board is a two-week window, so an event that happens falls off it and
+    # The board is a one-week window, so an event that happens falls off it and
     # would otherwise leave no trace. Keep every row in the ledger and rebuild
     # the archive page, so pardespedia also records what already took place.
     if not args.dry_run and not args.no_archive:
