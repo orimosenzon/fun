@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>MJ-5 · מסלול העמק</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Heebo', sans-serif; color: #fff; touch-action: none; user-select: none; }
   #stage canvas { display: block; width: 100vw; height: 100vh; }
@@ -61,6 +61,19 @@
   .tthr .tfill { position: absolute; bottom: 0; left: 0; right: 0; height: 0; background: rgba(232,89,12,0.7); }
   .tthr span { position: absolute; top: 4px; width: 100%; text-align: center; font-size: 11px; }
   .tboost { position: absolute; right: 90px; bottom: 180px; width: 70px; height: 70px; border-radius: 50%; background: rgba(200,40,20,0.6); display: flex; align-items: center; justify-content: center; font-size: 14px; pointer-events: auto; }
+  #loader { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: radial-gradient(ellipse at 50% 35%, #1b2733 0%, #0a0e13 60%, #000 100%); transition: opacity 0.6s; }
+  #loader.gone { opacity: 0; pointer-events: none; }
+  #loader .box { width: min(460px, 100%); text-align: center; }
+  #loader h1 { font-size: 56px; margin: 0; font-weight: 800; letter-spacing: 0.06em; direction: ltr; }
+  #loader h2 { font-size: 19px; font-weight: 300; margin: 0 0 30px; opacity: 0.8; }
+  #loader .ltrack { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  #loader .lfill { height: 100%; width: 0; margin-inline-start: 0; border-radius: 4px; background: linear-gradient(to left, #ffb347, #e8590c); transition: width 0.25s linear; }
+  #loader .lrow { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 15px; }
+  #loader .lstage { text-align: right; }
+  #loader .lpct { font-variant-numeric: tabular-nums; opacity: 0.7; direction: ltr; }
+  #loader .lwhy { margin-top: 26px; font-size: 14px; font-weight: 300; line-height: 1.6; opacity: 0.6; }
+  #loader.err .lstage { color: #ffb0a0; }
   @media (pointer: coarse) { .hud { left: auto; right: 10px; top: 10px; bottom: auto; transform: scale(0.8); transform-origin: top right; } }
 </style>
 <script type="importmap">
@@ -74,8 +87,33 @@
 <div id="stage"></div>
 <div id="overlay"></div>
 <div id="status"></div>
+<div id="loader">
+  <div class="box">
+    <h1>MJ-5</h1>
+    <h2>אופנוע סילון · מסלול העמק</h2>
+    <div class="ltrack"><div class="lfill"></div></div>
+    <div class="lrow"><span class="lstage">מוריד את מנוע הגרפיקה…</span><span class="lpct">0%</span></div>
+    <p class="lwhy">רגע של סבלנות: העמק לא יורד מהרשת, הוא נבנה אצלך במחשב.<br>ההרים, הצללים ועשרות אלפי עצים מחושבים מאפס בכל טעינה, וזה לוקח כמה שניות.</p>
+  </div>
+</div>
 <script>
-  window.addEventListener('error', (e) => { const s = document.getElementById('status'); s.textContent = 'שגיאה: ' + e.message; });
+  // Loading bar. Until main.js takes over, creep toward 12 % while the modules download.
+  window.loader = (() => {
+    const el = document.getElementById('loader'), fill = el.querySelector('.lfill'), stage = el.querySelector('.lstage'), pct = el.querySelector('.lpct');
+    let f = 0, t0 = performance.now(), creeping = true;
+    const show = (v) => { f = Math.max(f, v); fill.style.width = (f * 100).toFixed(1) + '%'; pct.textContent = Math.floor(f * 100) + '%'; };
+    (function creep() { if (!creeping) return; show(0.12 * (1 - Math.exp(-(performance.now() - t0) / 1500))); setTimeout(creep, 100); })();
+    return {
+      set(v, label) { creeping = false; show(v); if (label) stage.textContent = label; },
+      error(msg) { creeping = false; el.classList.add('err'); stage.textContent = 'שגיאה: ' + msg; },
+      done() { creeping = false; show(1); el.classList.add('gone'); setTimeout(() => el.remove(), 700); },
+    };
+  })();
+  window.addEventListener('error', (e) => {
+    const s = document.getElementById('status'); s.textContent = 'שגיאה: ' + e.message;
+    if (document.getElementById('loader')) window.loader.error(e.message);
+  });
+  window.addEventListener('unhandledrejection', (e) => { if (document.getElementById('loader')) window.loader.error(e.reason?.message || String(e.reason)); });
 </script>
 <script type="module" src="js/main.js"></script>
 </body>

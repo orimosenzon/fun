@@ -74,17 +74,36 @@ ${NOISE_GLSL}`)
   return mat;
 }
 
-function gridMesh(x0, z0, w, d, nx, nz, mat, { sink = null, fallback = () => -1e9 } = {}) {
+// Building the world takes seconds of pure computation. The heavy loops pause every ~50 ms so
+// the browser can repaint the loading bar (a single long task would freeze the page).
+// stage(a, b, label) maps the next loop's 0..1 onto a..b of the whole build; label may be a
+// function of the sub-phase ('height' / 'shade' in gridMesh).
+function makeSlicer(onProgress) {
+  let last = performance.now(), a = 0, b = 1, label = '';
+  const yieldTask = globalThis.scheduler?.yield ? () => scheduler.yield() : () => new Promise((r) => setTimeout(r, 0));
+  const say = (f, sub) => onProgress(a + (b - a) * f, typeof label === 'function' ? label(sub) : label);
+  return {
+    due: () => performance.now() - last > 50,
+    async pause(f, sub) { say(f, sub); await yieldTask(); last = performance.now(); },
+    async stage(a1, b1, lab) { a = a1; b = b1; label = lab; await this.pause(0); },
+  };
+}
+
+async function gridMesh(x0, z0, w, d, nx, nz, mat, { sink = null, fallback = () => -1e9, slicer, hFrac = 0.8 } = {}) {
   // sink(x, z) -> metres to lower the rendered surface (hidden areas / under the pad)
+  // hFrac: share of the progress for the height pass (heightAt is the expensive part)
   const g = new THREE.BufferGeometry();
   const pos = new Float32Array(nx * nz * 3);
   const H = new Float32Array(nx * nz);
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
-    const x = x0 + w * i / (nx - 1), z = z0 + d * j / (nz - 1);
-    const h = heightAt(x, z);
-    const k = j * nx + i;
-    H[k] = h;
-    pos[k * 3] = x; pos[k * 3 + 1] = sink ? h - sink(x, z) : h; pos[k * 3 + 2] = z;
+  for (let j = 0; j < nz; j++) {
+    for (let i = 0; i < nx; i++) {
+      const x = x0 + w * i / (nx - 1), z = z0 + d * j / (nz - 1);
+      const h = heightAt(x, z);
+      const k = j * nx + i;
+      H[k] = h;
+      pos[k * 3] = x; pos[k * 3 + 1] = sink ? h - sink(x, z) : h; pos[k * 3 + 2] = z;
+    }
+    if (slicer.due()) await slicer.pause(hFrac * j / nz, 'height');
   }
   const nrm = new Float32Array(nx * nz * 3);
   const dx = w / (nx - 1), dz = d / (nz - 1);
@@ -108,6 +127,7 @@ function gridMesh(x0, z0, w, d, nx, nz, mat, { sink = null, fallback = () => -1e
   };
   const hz = Math.hypot(sx, sz);
   for (let k = 0; k < nx * nz; k++) {
+    if ((k & 1023) === 0 && slicer.due()) await slicer.pause(hFrac + (1 - hFrac) * k / (nx * nz), 'shade');
     const x = pos[k * 3], y = H[k], z = pos[k * 3 + 2];
     let minMargin = 1e9;
     for (let s = stepM; s < 2600; s *= 1.12) {
@@ -277,7 +297,7 @@ function rockGeometry(seed) {
 }
 
 // Grass blades that lean away from jet impingement points (vertex shader)
-function makeGrass(centers, uniforms) {
+async function makeGrass(centers, uniforms, slicer) {
   const blade = new THREE.PlaneGeometry(0.05, 1, 1, 4).translate(0, 0.5, 0);
   const pos = blade.attributes.position;
   for (let i = 0; i < pos.count; i++) {
@@ -289,6 +309,7 @@ function makeGrass(centers, uniforms) {
   const R = rng(17);
   for (const c of centers) {
     for (let k = 0; k < c.count; k++) {
+      if ((k & 1023) === 0 && slicer.due()) await slicer.pause(k / c.count);
       const r = c.r0 + Math.sqrt(R()) * (c.r1 - c.r0), a = R() * Math.PI * 2;
       // thin out toward the ring edges so the patch melts into the terrain
       const edge = Math.min((r - c.r0) / 4 + (c.r0 === 0 ? 1 : 0), (c.r1 - r) / 9, 1);
@@ -387,7 +408,8 @@ function makePad() {
   return mesh;
 }
 
-export function buildWorld(scene, renderer, { clearings = [], quality = 1, corridor = [] } = {}) {
+export async function buildWorld(scene, renderer, { clearings = [], quality = 1, corridor = [] } = {}, onProgress = () => {}) {
+  const slicer = makeSlicer(onProgress);
   const uniforms = {
     uWaterY: { value: WATER_Y }, uPad: { value: new THREE.Vector2(PAD[0], PAD[2]) },
     uLand: { value: new THREE.Vector2(LAND.x, LAND.z) },
@@ -398,14 +420,17 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
   const NEAR = { x0: -520, z0: -820, w: 3720, d: 1560 };
   // far: mountains out to ~14 km, sunk under the near patch
   const inNear = (x, z) => x > NEAR.x0 + 30 && x < NEAR.x0 + NEAR.w - 30 && z > NEAR.z0 + 30 && z < NEAR.z0 + NEAR.d - 30;
-  const far = gridMesh(-13000, -14000, 28000, 28000, 561, 561, tmat, { sink: (x, z) => (inNear(x, z) ? 40 : 0) });
+  await slicer.stage(0, 0.25, (ph) => (ph === 'shade' ? 'מחשב את הצללים שההרים מטילים' : 'מרים את רכסי ההרים סביב העמק'));
+  const far = await gridMesh(-13000, -14000, 28000, 28000, 561, 561, tmat, { sink: (x, z) => (inNear(x, z) ? 40 : 0), slicer, hFrac: 0.9 });
   scene.add(far.mesh);
-  const near = gridMesh(NEAR.x0, NEAR.z0, NEAR.w, NEAR.d, quality > 0.7 ? 1241 : 931, quality > 0.7 ? 521 : 391, tmat, { fallback: far.sampleH, sink: (x, z) => (Math.hypot(x - PAD[0], z - PAD[2]) < 9.6 ? 0.25 : 0) });
+  await slicer.stage(0.25, 0.81, (ph) => (ph === 'shade' ? 'מחשב לכל נקודה בעמק אם השמש מגיעה אליה' : 'מעצב את קרקע העמק, נקודה כל 3 מטרים'));
+  const near = await gridMesh(NEAR.x0, NEAR.z0, NEAR.w, NEAR.d, quality > 0.7 ? 1241 : 931, quality > 0.7 ? 521 : 391, tmat, { fallback: far.sampleH, sink: (x, z) => (Math.hypot(x - PAD[0], z - PAD[2]) < 9.6 ? 0.25 : 0), slicer, hFrac: 0.72 });
   scene.add(near.mesh);
   const sunVisAt = (x, z) => (inNear(x, z) ? near.sunVisAt(x, z) : far.sunVisAt(x, z));
   const hAt = (x, z) => (inNear(x, z) ? near.sampleH(x, z) : far.sampleH(x, z));
 
   // sky
+  await slicer.stage(0.81, 0.825, 'שמיים, אור שמש ואגם');
   const sky = new Sky();
   sky.scale.setScalar(45000);
   const su = sky.material.uniforms;
@@ -456,6 +481,7 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
 
   // forest
   const R = rng(3);
+  await slicer.stage(0.825, 0.83, 'מכין דגמים של עצים');
   // detailed trees near the camera, simple ones beyond (swapped per 200 m chunk every frame)
   const species = [coniferGeometry(1), coniferGeometry(2), broadleafGeometry(3)];
   const speciesLo = [coniferGeometry(1, 3, 6), coniferGeometry(2, 3, 6), broadleafGeometry(3, 1)];
@@ -493,14 +519,20 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
     const sp = y < 25 && R() < 0.45 ? 2 : R() < 0.5 ? 0 : 1;
     list.push([x, y - 0.3, z, sp === 2 ? s * 0.75 : s, R(), sp]);
   };
-  for (let i = 0; i < 300000 && nearT.length < Math.round(38000 * quality); i++) place(NEAR.x0 + R() * NEAR.w, NEAR.z0 + R() * NEAR.d, nearT, 9, 24);
-  for (let i = 0; i < 260000 && farT.length < Math.round(30000 * quality); i++) {
+  const nNear = Math.round(38000 * quality), nFar = Math.round(30000 * quality);
+  await slicer.stage(0.83, 0.915, () => `שותל יער: ${(nearT.length + farT.length).toLocaleString('he-IL')} עצים`);
+  for (let i = 0; i < 300000 && nearT.length < nNear; i++) {
+    if ((i & 255) === 0 && slicer.due()) await slicer.pause(0.6 * i / 300000);
+    place(NEAR.x0 + R() * NEAR.w, NEAR.z0 + R() * NEAR.d, nearT, 9, 24);
+  }
+  for (let i = 0; i < 260000 && farT.length < nFar; i++) {
+    if ((i & 255) === 0 && slicer.due()) await slicer.pause(0.6 + 0.4 * i / 260000);
     const x = -5000 + R() * 10000, z = -5000 + R() * 10000;
     if (inNear(x, z)) continue;
     place(x, z, farT, 12, 26);
   }
   const chunks = [];
-  const mkInst = (all, cast, cell) => {
+  const mkInst = async (all, cast, cell, f0, f1) => {
     const groups = new Map();
     for (const e of all) {
       const k = `${Math.floor(e[0] / cell)},${Math.floor(e[2] / cell)},${e[5]}`;
@@ -508,7 +540,10 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
       groups.get(k).push(e);
     }
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color();
+    let gi = 0;
     for (const [k, list] of groups) {
+      if (slicer.due()) await slicer.pause(f0 + (f1 - f0) * gi / groups.size);
+      gi++;
       const sp = list[0][5];
       const make = (geo) => {
         const im = new THREE.InstancedMesh(geo, treeMat, list.length);
@@ -534,8 +569,9 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
       chunks.push({ cx, cz, hi, lo });
     }
   };
-  mkInst(nearT, true, 400);
-  mkInst(farT, false, 2500);
+  await slicer.stage(0.915, 0.92, 'מסדר את היער בגושים לפי מרחק');
+  await mkInst(nearT, true, 400, 0, 0.7);
+  await mkInst(farT, false, 2500, 0.7, 1);
   const updateLOD = (cam) => {
     for (const c of chunks) {
       if (!c.hi) continue;
@@ -547,6 +583,7 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
   };
 
   // boulders
+  await slicer.stage(0.92, 0.93, 'מפזר סלעים');
   const rocks = [rockGeometry(1), rockGeometry(2), rockGeometry(3)];
   const rockMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 });
   rocks.forEach((rg, ri) => {
@@ -581,8 +618,10 @@ export function buildWorld(scene, renderer, { clearings = [], quality = 1, corri
     uTime: { value: 0 }, uWind: { value: new THREE.Vector3() },
   };
   // two separate patches so each is frustum-culled on its own
-  scene.add(makeGrass([{ x: LAND.x, z: LAND.z, r0: 0, r1: 38, count: Math.round(90000 * quality) }], grassU));
-  scene.add(makeGrass([{ x: PAD[0], z: PAD[2], r0: 17, r1: 42, count: Math.round(60000 * quality) }], grassU));
+  await slicer.stage(0.93, 0.972, 'מגדל עשב בשדה הנחיתה');
+  scene.add(await makeGrass([{ x: LAND.x, z: LAND.z, r0: 0, r1: 38, count: Math.round(90000 * quality) }], grassU, slicer));
+  await slicer.stage(0.972, 1, 'מגדל עשב סביב רחבת ההמראה');
+  scene.add(await makeGrass([{ x: PAD[0], z: PAD[2], r0: 17, r1: 42, count: Math.round(60000 * quality) }], grassU, slicer));
 
   return { sun, water, sky, grassU, sunVisAt, hAt, near, envTex: env, trees: nearT, updateLOD };
 }
