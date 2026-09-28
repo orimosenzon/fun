@@ -33,6 +33,11 @@ python3 serve.py                                       # פורט 8797
   - **לא localhost.run:** נמדד שם 28KB/s ו-18 שניות לבקשה זעירה, מול העלאה ביתית של 44Mbit/s. ב-Cloudflare תמונה מלאה מגיעה תוך 0.9 שניות.
   - gzip ב-serve.py הקטין את library.json מ-10MB ל-1.6MB.
   - אורי משתף עם קארינה. בהמשך: אולי צינור מגוגל דרייב (שם ה-API מחזיר `imageMediaMetadata.location` ולא מוחק מיקום), או ענן עם כתובת קבועה.
+- **קישור קבוע (מ-28/9/2026):** `orimosenzon.github.io/fun/vibe_coding/photomap/live.html`. זה הקישור בדף הפרויקטים ולחברים.
+  - `go_live.py` מרים את `serve.py` (אם לא רץ) ואת המנהרה, וכותב את הכתובת החדשה ל-gist נסתר `635f409c8f70b93c2b0e37e32eacf356` (דרך `gh api`, בלי קומיט בריפו). לוג: `data/live.log`.
+  - `live.html` קורא את ה-gist דרך api.github.com, בודק `/ping` (פתוח בלי סיסמה, CORS רק ל-orimosenzon.github.io, מחזיר "ok" ותו לא) ומעביר. אם אין מענה: "המחשב של אורי כבוי".
+  - **הפעלה אוטומטית:** שירות systemd של המשתמש `~/.config/systemd/user/photomap-live.service` (Restart=always). כשהמנהרה נופלת, התהליך יוצא, מופעל מחדש ומפרסם כתובת חדשה. עולה עם הכניסה למשתמש, לא לפני (אין linger).
+  - עצירה: `systemctl --user stop photomap-live` (ו-`disable` כדי שלא יעלה בהדלקה).
 - בטלפון (עד 600px) הפאנל נפתח מקופל, כי אחרת הוא מסתיר את הקבוצות.
 - **מלכודת בבדיקות:** `pkill -f "...serve.py 8797"` בתוך אותה פקודה שגם מפעילה את `serve.py 8797` הורג את עצמו (exit 144). להריץ עצירה והפעלה בשתי קריאות נפרדות.
 
