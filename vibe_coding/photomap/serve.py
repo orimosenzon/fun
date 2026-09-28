@@ -185,6 +185,17 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = posixpath.normpath(urllib.parse.unquote(self.path.split("?")[0]))
+        if path == "/ping":
+            # live.html on GitHub Pages asks this before redirecting, so a friend
+            # gets "offline" instead of a Cloudflare error page. Says nothing but
+            # "up", and only the Pages origin may read it.
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Access-Control-Allow-Origin", "https://orimosenzon.github.io")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(b"ok")
+            return
         if path == "/login":
             return self.send_html(auth.login_page(urllib.parse.parse_qs(self.path.partition("?")[2]).get("e", [""])[0]))
         if path == "/logout":

@@ -623,6 +623,38 @@
           ]
         },
         {
+          "title": "photomap: מפת התמונות",
+          "icon": "🗺️",
+          "theme": "t-blue",
+          "tags": [
+            "Leaflet",
+            "Google Takeout",
+            "Cloudflare Tunnel",
+            "Python"
+          ],
+          "desc": "<strong style=\"color:#60a5fa\">כל תמונה וסרטון מגוגל פוטוס, במקום שבו צולמו.</strong><br> קבוצות על מפת עולם, גלריה עם זום עד רמת הפיקסל, ציר זמן לבחירת תקופה, וזיהוי אוטומטי של טיולים ויציאות יום. כ-19 אלף פריטים נקראים ישירות מקובצי ה-Takeout בלי לחלץ אותם. המפה רצה מהמחשב שלי ומוגנת בסיסמה, והתמונות לא עולות לשום שרת.",
+          "links": [
+            {
+              "href": "photomap/live.html",
+              "style": "live",
+              "label": "▶ פתח את המפה (בסיסמה)",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/photomap",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "Inbal — אתר קרמיקה",
           "icon": "🏺",
           "theme": "t-pink",
