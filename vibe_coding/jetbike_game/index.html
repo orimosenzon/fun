@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>MJ-5 · מסלול העמק</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Heebo', sans-serif; color: #fff; touch-action: none; user-select: none; }
+  #stage canvas { display: block; width: 100vw; height: 100vh; }
+  #overlay { position: fixed; inset: 0; pointer-events: none; }
+  #status { position: fixed; top: 50%; left: 0; right: 0; text-align: center; font-size: 22px; opacity: 0.85; }
+  .hud { position: absolute; left: 18px; bottom: 18px; width: 230px; padding: 10px 12px 8px; background: rgba(8,10,14,0.4);
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; backdrop-filter: blur(3px); font-size: 14px; direction: rtl; }
+  .hud .row { display: flex; justify-content: space-between; line-height: 1.5; }
+  .hud .lab { opacity: 0.65; font-weight: 300; }
+  .hud .val { font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: plaintext; }
+  .bars { display: flex; justify-content: space-between; margin-top: 8px; direction: ltr; }
+  .bar { position: relative; width: 17%; text-align: center; }
+  .track { height: 58px; background: rgba(255,255,255,0.1); border-radius: 3px; position: relative; overflow: hidden; }
+  .fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(#ffb347, #e8590c); }
+  .cmd { position: absolute; left: 0; right: 0; height: 2px; background: #fff; opacity: 0.8; }
+  .vane { position: absolute; top: 26px; left: calc(50% - 3px); width: 6px; height: 6px; border-radius: 50%; background: #7fd8ff; box-shadow: 0 0 4px #7fd8ff; }
+  .bn { font-size: 10px; opacity: 0.7; margin-top: 2px; white-space: nowrap; direction: rtl; }
+  .heat { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; opacity: 0.85; }
+  .htrack { flex: 1; height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; direction: ltr; }
+  .hfill { height: 100%; width: 0; }
+  .mode { font-size: 11px; opacity: 0.6; margin-top: 6px; text-align: center; }
+  .race { position: absolute; top: 14px; left: 0; right: 0; text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.7); }
+  .race .rings { font-size: 18px; font-weight: 600; }
+  .race .time { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; direction: ltr; }
+  .race .best { font-size: 13px; opacity: 0.75; direction: rtl; }
+  .marker { position: absolute; left: 0; top: 0; width: 0; height: 0; display: none; }
+  .marker .mk { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border: 2px solid #ffb347; border-radius: 50%; box-shadow: 0 0 10px #ff8c1a; }
+  .marker.edge .mk { border-radius: 0; border: none; width: 0; height: 0; left: -12px; top: -16px; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 22px solid #ffb347; filter: drop-shadow(0 0 6px #ff8c1a); }
+  .marker .md { position: absolute; top: 18px; left: -40px; width: 80px; text-align: center; font-size: 12px; font-weight: 600; text-shadow: 0 1px 4px #000; direction: rtl; }
+  .msg { position: absolute; top: 28vh; left: 0; right: 0; text-align: center; font-size: 26px; font-weight: 600; opacity: 0; transition: opacity 0.35s; text-shadow: 0 2px 14px rgba(0,0,0,0.8); }
+  .msg.show { opacity: 1; }
+  .msg.good { color: #b6ffcf; } .msg.bad { color: #ffb0a0; }
+  .msg small { font-size: 16px; font-weight: 400; opacity: 0.8; }
+  .warn { position: absolute; top: 88px; left: 0; right: 0; text-align: center; font-size: 17px; font-weight: 600; color: #ffcf6b; opacity: 0; transition: opacity 0.3s; text-shadow: 0 1px 8px #000; }
+  .screen { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(0,0,0,0.25), rgba(0,0,0,0.65)); pointer-events: auto; }
+  .card { background: rgba(10,12,16,0.72); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 26px 34px; max-width: 520px; text-align: center; backdrop-filter: blur(6px); }
+  .card.wide { max-width: 680px; }
+  .card h1 { font-size: 64px; margin: 0; font-weight: 800; letter-spacing: 0.06em; direction: ltr; }
+  .card h2 { font-size: 22px; font-weight: 300; margin: 0 0 10px; }
+  .card p { font-weight: 300; line-height: 1.6; opacity: 0.9; }
+  .card .big { font-size: 56px; font-weight: 800; direction: ltr; }
+  .card .gold { color: #ffd36b; font-weight: 600; }
+  .card .hint { opacity: 0.6; font-size: 14px; }
+  .keys { margin: 8px auto 14px; border-collapse: collapse; font-size: 14px; text-align: right; }
+  .keys td { padding: 3px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .keys td:first-child { white-space: nowrap; direction: ltr; text-align: left; }
+  button#go { font: inherit; font-size: 20px; font-weight: 600; padding: 10px 34px; border-radius: 10px; border: none; background: #e8590c; color: #fff; cursor: pointer; }
+  .touch { position: absolute; inset: 0; pointer-events: none; direction: ltr; }
+  .tstick { position: absolute; bottom: 30px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); pointer-events: auto; touch-action: none; }
+  #tl { left: 30px; } #tr { right: 90px; }
+  .knob { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+  .tthr { position: absolute; right: 18px; bottom: 30px; width: 50px; height: 160px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); pointer-events: auto; overflow: hidden; }
+  .tthr .tfill { position: absolute; bottom: 0; left: 0; right: 0; height: 0; background: rgba(232,89,12,0.7); }
+  .tthr span { position: absolute; top: 4px; width: 100%; text-align: center; font-size: 11px; }
+  .tboost { position: absolute; right: 90px; bottom: 180px; width: 70px; height: 70px; border-radius: 50%; background: rgba(200,40,20,0.6); display: flex; align-items: center; justify-content: center; font-size: 14px; pointer-events: auto; }
+  @media (pointer: coarse) { .hud { left: auto; right: 10px; top: 10px; bottom: auto; transform: scale(0.8); transform-origin: top right; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="overlay"></div>
+<div id="status"></div>
+<script>
+  window.addEventListener('error', (e) => { const s = document.getElementById('status'); s.textContent = 'שגיאה: ' + e.message; });
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
