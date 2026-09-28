@@ -24,8 +24,10 @@ Plain ES modules plus Three.js 0.169 from jsdelivr. No build. Run with `python3 
 - `tools/keys.py`: real keyboard.
 - Results on 28/9: the autopilot passes all 12 rings, and the finish via `?pose=final` works.
 
+- **Loading screen** (index.html, `window.loader`): shown on first paint. buildWorld/gridMesh/makeGrass are async and yield every 50 ms through `makeSlicer` (stage weights were calibrated from measured times). The first render and shader warm-up happen behind the loader.
+
 ## Open for next time
 - Nobody has flown it by hand yet: tuning the feel (gains in `ASSIST`) according to Ori's impressions.
 - Touch controls are basic and untested on a real phone.
 - The demo autopilot crashes into trees south of the rock (fine as a demo, but could be improved).
-- Deploying to GitHub Pages and adding it to the projects page (projects.json + build.py) has not been done.
+- Loading takes ~12 s (6 s of it is `heightAt` for the terrain grids). Candidates: a Web Worker, or a precomputed height grid.
