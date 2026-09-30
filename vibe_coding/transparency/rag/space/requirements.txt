@@ -1,6 +1,8 @@
 sentence-transformers==6.1.0
 rank-bm25
 flask
-gunicorn
 openai
 numpy
+torch
+uvicorn
+fastapi
