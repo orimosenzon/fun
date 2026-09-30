@@ -17,11 +17,21 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-INDEX = os.path.join(HERE, "..", "private", "index")
+INDEX = os.environ.get("RAG_INDEX", os.path.join(HERE, "..", "private", "index"))
 ANSWER_MODEL = "gpt-5.4-mini"
 PREFIXES = ("וש", "וה", "וב", "ול", "ומ", "שה", "שב", "של", "מה", "כש", "לכ", "ו", "ה", "ב", "ל", "מ", "ש", "כ")
 STOP = set("של את על עם זה זו לא כן גם אבל או כי אם אני אתה את הוא היא אנחנו הם יש אין מה מי "
            "כל עוד רק כבר אז פה שם היה היו יהיה אחד אחת טוב בסדר רגע אוקיי".split())
+
+
+def llm_client():
+    """ב-Space: משתני סביבה (סודות של HF). במחשב של אורי: המודול המשותף ai_azure."""
+    if os.environ.get("AZURE_OPENAI_API_KEY"):
+        from openai import OpenAI
+        return OpenAI(base_url=os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/",
+                      api_key=os.environ["AZURE_OPENAI_API_KEY"])
+    import ai_azure
+    return ai_azure.client()
 
 
 def tokens(text):
@@ -97,9 +107,8 @@ class Engine:
             "אמור זאת. אם הקטעים לא עונים על השאלה, אמור בפשטות שלא נמצא מידע בישיבות, "
             "והצע ניסוח אחר לחיפוש. אל תמציא ואל תשתמש בידע חיצוני. ציין תאריכים כשזה עוזר. "
             "הבחן בין דבר שנאמר על ידי חבר מועצה לבין החלטה שהתקבלה בהצבעה.")
-        import ai_azure
         t0 = time.time()
-        resp = ai_azure.client().chat.completions.create(
+        resp = llm_client().chat.completions.create(
             model=ANSWER_MODEL,
             messages=[{"role": "system", "content": system},
                       {"role": "user", "content": f"שאלה: {question}\n\nקטעים מהישיבות:\n\n{ctx}"}],
