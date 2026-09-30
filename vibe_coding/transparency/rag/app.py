@@ -17,7 +17,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from engine import Engine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-QUERY_LOG = os.path.join(HERE, "..", "private", "queries.jsonl")
+QUERY_LOG = os.environ.get("RAG_QUERY_LOG", os.path.join(HERE, "..", "private", "queries.jsonl"))
 PER_IP_DAILY = 20    # שאלות ביום לכל כתובת
 GLOBAL_DAILY = 300   # תקרה לכל האתר: ~300 שאלות * ~1 סנט = ~3$ ביום לכל היותר
 
@@ -92,4 +92,4 @@ def ask():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5077)), threaded=True)
+    app.run(host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", 5077)), threaded=True)
