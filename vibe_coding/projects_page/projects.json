@@ -11,6 +11,40 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "רוצים שקיפות: מה אמרו במועצה",
+          "icon": "🏛️",
+          "theme": "t-green",
+          "dir": "transparency",
+          "tags": [
+            "Whisper (ivrit.ai)",
+            "pyannote",
+            "bge-m3",
+            "RAG",
+            "Azure GPT"
+          ],
+          "desc": "<strong style=\"color:#34d399\">חיפוש ושאלות בכל ישיבות מליאת המועצה פרדס חנה-כרכור.</strong><br> 75 ישיבות מהשידורים ביוטיוב, כ-91 שעות, תומללו מקומית במודל העברי של ivrit.ai. הדוברים זוהו אוטומטית עם pyannote, ושמם הוצמד על ידי מודל שפה לפי ראיות מהתמלול. החיפוש משלב התאמת מילים והתאמת משמעות (bge-m3), ומצב שאלה חופשית מנסח תשובה עם הפניה לכל מקור. כל קטע נפתח בסרטון ברגע שבו נאמר. חלק מיוזמת שקיפות מוניציפלית.",
+          "links": [
+            {
+              "href": "https://orimosenzon-phk-council.hf.space",
+              "style": "live",
+              "label": "▶ חפש בישיבות",
+              "external": true
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/transparency",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "2048 ולמידת חיזוק",
           "icon": "🎲",
           "theme": "t-amber",
