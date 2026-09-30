@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מה אמרו במועצה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f1; --surface:#fff; --ink:#1c2420; --muted:#5b6660; --line:#d9ded8;
+  --accent:#1f6b4f; --accent-soft:#e2efe8; --mark:#fff0b3; --warn:#8a5a00;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121614; --surface:#1b201d; --ink:#e6ebe7; --muted:#9aa59f; --line:#2d3530;
+    --accent:#5cc49a; --accent-soft:#1d3129; --mark:#4d4217; --warn:#e3b35a; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 Assistant,system-ui,sans-serif}
+main{max-width:820px;margin:0 auto;padding:28px 16px 80px}
+h1{font:900 clamp(32px,6vw,46px)/1.1 "Frank Ruhl Libre",serif;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 22px}
+.modes{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:10px}
+.modes button{font:inherit;font-size:15px;border:0;background:none;color:var(--ink);padding:6px 16px;border-radius:8px;cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:700}
+form{display:flex;gap:8px}
+#q{flex:1;font:inherit;font-size:18px;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+#q:focus{outline:2px solid var(--accent);border-color:transparent}
+#go{font:inherit;font-weight:700;padding:0 22px;border:0;border-radius:10px;background:var(--accent);color:#fff;cursor:pointer}
+#go:disabled{opacity:.6;cursor:wait}
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 0;color:var(--muted);font-size:15px}
+.filters select{font:inherit;font-size:15px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.examples{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.examples button{font:inherit;font-size:14.5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:4px 12px;cursor:pointer}
+.examples button:hover{border-color:var(--accent)}
+#status{color:var(--muted);margin:22px 0 8px;min-height:1.7em}
+#answer{background:var(--surface);border:1px solid var(--line);border-right:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:18px;white-space:pre-wrap}
+#answer a{color:var(--accent);font-weight:700;text-decoration:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.card.hl{outline:2px solid var(--accent)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-size:14.5px;color:var(--muted);margin-bottom:6px}
+.meta b{color:var(--ink);font-size:15.5px}
+.num{display:inline-block;min-width:24px;text-align:center;background:var(--accent-soft);color:var(--accent);border-radius:6px;font-weight:700}
+.watch{margin-inline-start:auto;color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap}
+.text{font-size:16px;max-height:9.5em;overflow:hidden;position:relative}
+.text.open{max-height:none}
+.text p{margin:0 0 4px}
+.text .who{font-weight:700}
+.more{font:inherit;font-size:14px;border:0;background:none;color:var(--accent);cursor:pointer;padding:0}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.note{font-size:13.5px;color:var(--muted);margin-top:36px;border-top:1px solid var(--line);padding-top:12px}
+.err{color:var(--warn)}
+</style>
+</head>
+<body>
+<main>
+  <h1>מה אמרו במועצה</h1>
+  <p class="sub" id="sub">חיפוש בתמלולים של ישיבות מליאת המועצה פרדס חנה-כרכור.</p>
+
+  <div class="modes" role="group" aria-label="סוג חיפוש">
+    <button type="button" data-mode="ask" aria-pressed="true">שאלה חופשית</button>
+    <button type="button" data-mode="search" aria-pressed="false">חיפוש קטעים</button>
+  </div>
+  <form id="f">
+    <input id="q" autocomplete="off" placeholder="למשל: מה הוחלט על המגרש הציבורי ברחוב הנשיא?">
+    <button id="go">חפש</button>
+  </form>
+  <div class="filters">
+    <label for="from">משנת</label><select id="from"></select>
+    <label for="to">עד שנת</label><select id="to"></select>
+  </div>
+  <div class="examples" id="ex"></div>
+
+  <div id="status" aria-live="polite"></div>
+  <div id="answer" hidden></div>
+  <div id="results"></div>
+
+  <p class="note">התמלול והזיהוי של הדוברים נעשו אוטומטית, ויש בהם שגיאות. התשובות מנוסחות על ידי מודל שפה על סמך קטעי התמלול בלבד. לפני שמצטטים, כדאי לצפות ברגע עצמו בסרטון, דרך הקישור שבכל קטע.</p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let mode='ask', lastTerms=[];
+const EXAMPLES=['מה נאמר על ציפוף ובנייה לגובה?','מה עם בית הספר החדש?','דיונים על עצים וכריתה','ניגוד עניינים','תקציב התרבות','שבילי אופניים'];
+$('#ex').innerHTML=EXAMPLES.map(e=>`<button type="button">${e}</button>`).join('');
+$('#ex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('#q').value=e.target.textContent;run();}};
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{
+  mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('#go').textContent=mode==='ask'?'שאל':'חפש';
+});
+$('#go').textContent='שאל';
+fetch('/api/meta').then(r=>r.json()).then(m=>{
+  const y0=+m.first.slice(0,4), y1=+m.last.slice(0,4);
+  const opts=[...Array(y1-y0+1)].map((_,i)=>y0+i);
+  $('#from').innerHTML='<option value="">כל השנים</option>'+opts.map(y=>`<option>${y}</option>`).join('');
+  $('#to').innerHTML='<option value="">היום</option>'+opts.map(y=>`<option>${y}</option>`).join('');
+  $('#sub').textContent=`חיפוש בתמלולים של ${m.meetings} ישיבות מליאת המועצה פרדס חנה-כרכור, ${fmtDate(m.first)} עד ${fmtDate(m.last)}.`;
+});
+function fmtDate(d){const [y,m,dd]=d.split('-');return `${+dd}/${+m}/${y}`}
+function hms(t){const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function highlight(html){
+  if(!lastTerms.length)return html;
+  const re=new RegExp('('+lastTerms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','g');
+  return html.replace(re,'<mark>$1</mark>');
+}
+function card(r,i){
+  const url=`https://youtu.be/${r.video}?t=${r.start}`;
+  const body=r.text.split('\n').map(l=>{const k=l.indexOf(': ');return k>0?`<p><span class="who">${esc(l.slice(0,k))}:</span> ${highlight(esc(l.slice(k+2)))}</p>`:`<p>${highlight(esc(l))}</p>`}).join('');
+  return `<div class="card" id="src${i+1}"><div class="meta"><span class="num">${i+1}</span><b>${fmtDate(r.date)}</b><span>דקה ${hms(r.start)}</span><a class="watch" href="${url}" target="_blank" rel="noopener">צפייה ברגע הזה ←</a></div><div class="text">${body}</div><button class="more" type="button">הצג הכל</button></div>`;
+}
+$('#results').onclick=e=>{if(e.target.classList.contains('more')){const t=e.target.previousElementSibling;t.classList.toggle('open');e.target.textContent=t.classList.contains('open')?'הצג פחות':'הצג הכל';}};
+$('#answer').onclick=e=>{const a=e.target.closest('a[data-src]');if(!a)return;e.preventDefault();const c=$('#src'+a.dataset.src);if(c){document.querySelectorAll('.card.hl').forEach(x=>x.classList.remove('hl'));c.classList.add('hl');c.scrollIntoView({behavior:'smooth',block:'center'});}};
+$('#f').onsubmit=e=>{e.preventDefault();run()};
+async function run(){
+  const q=$('#q').value.trim(); if(!q)return;
+  lastTerms=q.split(/\s+/).filter(w=>w.length>2);
+  const from=$('#from').value, to=$('#to').value;
+  const date_from=from?from+'-01-01':null, date_to=to?to+'-12-31':null;
+  $('#go').disabled=true; $('#answer').hidden=true; $('#results').innerHTML='';
+  $('#status').textContent=mode==='ask'?'מחפש בישיבות ומנסח תשובה… (עד חצי דקה)':'מחפש…';
+  try{
+    let data;
+    if(mode==='ask'){
+      const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,date_from,date_to})});
+      data=await r.json(); if(!r.ok) throw new Error(data.error||'שגיאה');
+      $('#answer').innerHTML=esc(data.answer).replace(/\[(\d+)\]/g,'<a href="#src$1" data-src="$1">[$1]</a>');
+      $('#answer').hidden=false; $('#status').textContent='מקורות:';
+      $('#results').innerHTML=data.sources.map(card).join('');
+    }else{
+      const p=new URLSearchParams({q}); if(date_from)p.set('from',date_from); if(date_to)p.set('to',date_to);
+      const r=await fetch('/api/search?'+p); data=await r.json();
+      $('#status').textContent=data.results.length?`${data.results.length} קטעים רלוונטיים, מהרלוונטי ביותר:`:'לא נמצאו קטעים.';
+      $('#results').innerHTML=data.results.map(card).join('');
+    }
+  }catch(err){$('#status').innerHTML=`<span class="err">${esc(err.message)}</span>`}
+  finally{$('#go').disabled=false}
+}
+</script>
+</body>
+</html>
