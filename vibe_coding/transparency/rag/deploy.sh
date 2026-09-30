@@ -23,9 +23,11 @@ if [[ ! -d "$SPACE/.git" ]]; then
 fi
 
 git -C "$SPACE" pull --rebase -q || true
-cp "$SRC/app.py" "$SRC/engine.py" "$SRC/index.html" "$SPACE/"
-cp "$SRC/space/Dockerfile" "$SRC/space/requirements.txt" "$SRC/space/README.md" \
-   "$SRC/space/.dockerignore" "$SPACE/"
+# Space מסוג Gradio (Docker עבר לתשלום): app.py של ה-Space הוא space/app_gradio.py,
+# והשרת שלנו נכנס בשם server.py
+cp "$SRC/app.py" "$SPACE/server.py"
+cp "$SRC/space/app_gradio.py" "$SPACE/app.py"
+cp "$SRC/engine.py" "$SRC/index.html" "$SRC/space/requirements.txt" "$SRC/space/README.md" "$SPACE/"
 mkdir -p "$SPACE/index"
 cp "$SRC/../private/index/chunks.json" "$SRC/../private/index/emb.npy" "$SPACE/index/"
 
