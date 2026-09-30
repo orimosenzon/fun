@@ -64,6 +64,15 @@ def meta():
                    last=engine.meetings[-1], chunks=len(engine.chunks))
 
 
+@app.get("/api/health")
+def health():
+    """בדיקת הגדרות בלי לחשוף דבר: האם הוגדרו כתובת ומפתח, ואם יש בהם רווח מיותר."""
+    ep = os.environ.get("AZURE_OPENAI_ENDPOINT", "")
+    key = os.environ.get("AZURE_OPENAI_API_KEY", "")
+    return jsonify(endpoint_set=bool(ep.strip()), key_set=bool(key.strip()),
+                   has_whitespace=(ep != ep.strip()) or (key != key.strip()))
+
+
 @app.get("/api/search")
 def search():
     q = (request.values.get("q") or "").strip()[:300]

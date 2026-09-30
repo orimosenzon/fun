@@ -28,8 +28,9 @@ def llm_client():
     """ב-Space: משתני סביבה (סודות של HF). במחשב של אורי: המודול המשותף ai_azure."""
     if os.environ.get("AZURE_OPENAI_API_KEY"):
         from openai import OpenAI
-        return OpenAI(base_url=os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/",
-                      api_key=os.environ["AZURE_OPENAI_API_KEY"])
+        # strip: מפתח שהודבק מהלוח הגיע עם ירידת שורה בסוף, וכל קריאה נכשלה ב-APIConnectionError (30/9)
+        return OpenAI(base_url=os.environ["AZURE_OPENAI_ENDPOINT"].strip().rstrip("/") + "/",
+                      api_key=os.environ["AZURE_OPENAI_API_KEY"].strip())
     import ai_azure
     return ai_azure.client()
 
