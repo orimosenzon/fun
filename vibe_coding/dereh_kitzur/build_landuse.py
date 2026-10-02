@@ -586,9 +586,13 @@ def build(refresh):
             unknown[name] = unknown.get(name, 0) + 1
             continue
         code, fill, stripe, group = style_for(key, code, table)
+        # The מבא"ת name of an old mix, or of a private institution, is the
+        # name of only its first use ("מגורים" for "מגורים ומלאכה"), and the
+        # legend lists designations by it: those keep their own name.
+        own = key in MIXED_OLD or key in PRIVATE_INSTITUTION
         props = {"u": name.replace(' - מבא"ת', "").replace('- מבא"ת', "")
                  .replace('-מבא"ת', "").strip(),
-                 "m": table[code][0] if code in table else "",
+                 "m": "" if own else (table[code][0] if code in table else ""),
                  "t": at["Taba_Name"].strip(), "l": (at.get("Lot_No") or "").strip(),
                  "f": fill, "k": group, "src": "q"}
         if stripe:
