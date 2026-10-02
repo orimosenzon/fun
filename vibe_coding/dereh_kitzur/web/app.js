@@ -623,7 +623,7 @@ function linksBlock(it) {
   const layer = Layers.layerOf(it.id) || {};
   const links = [];
   if (it.place && it.url) {
-    links.push({ url: it.url, title: layer.linkTitle || 'הערך המלא', lead: true });
+    links.push({ url: it.url, title: it.linkTitle || layer.linkTitle || 'הערך המלא', lead: true });
   }
   (it.links || []).forEach((l) => links.push(l));
   if (!links.length) return '';
@@ -2380,7 +2380,7 @@ const Parcels = (() => {
     return n ? [x / n, y / n] : null;
   }
 
-  function item(g, p, area, rings) {
+  function item(g, p, area, rings, use) {
     const mid = centre(rings);
     // A red parcel: the plan that is open on it comes first, since it is the
     // one thing here a resident can still do something about.
@@ -2411,6 +2411,7 @@ const Parcels = (() => {
         : '')
         + `חלקה ${p} בגוש ${g}`
         + (area ? `, ${Math.round(area).toLocaleString('he-IL')} מ"ר רשומים` : '') + '. '
+        + (use ? LandUse.sentence(use) + ' ' : '')
         + 'גוש וחלקה הם השפה שבה כתובות התכניות: תכנית שנקראת '
         + '"תוספת זכויות בגוש 10102 חלקה 109" מדברת על חלקה אחת כזאת. '
         + 'כדי לראות מה חל כאן, השתמש ב"מה מתוכנן כאן?". '
@@ -2419,7 +2420,7 @@ const Parcels = (() => {
   }
 
   /** A tap landed in a parcel of the grid: make it the layer's item, select it. */
-  async function pick(props) {
+  async function pick(props, use) {
     const layer = Layers.byId(Layers.PARCELS_ID);
     if (!layer || props.g == null || props.p == null) return;
     const g = Number(props.g), p = Number(props.p);
@@ -2431,13 +2432,138 @@ const Parcels = (() => {
       console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ החלקות', err);
     }
     if (!rings || !rings.length) return;
-    const it = item(g, p, Number(props.a) || 0, rings);
+    const it = item(g, p, Number(props.a) || 0, rings, use);
     layer.waypoints = [it];
     Layers.refresh(Layers.PARCELS_ID);
     select(it.id, false);
   }
 
   return { pick };
+})();
+
+/* ---------- land uses ----------
+ *
+ * The cell of data/landuse.json under a tap (build_landuse.py), as an item of
+ * the land-use layer, the way Parcels does it for a parcel. The file holds the
+ * designation as the plan names it (`u`), its מבא"ת name where that differs
+ * (`m`), the plan (`t`), the lot (`l`), its legend group (`k`), its area (`a`),
+ * where it came from (`src`: the committee's compilation, or the national
+ * register for a plan the compilation does not have yet) and, for the latter,
+ * the plan's page in mavat (`w`). */
+const LandUse = (() => {
+  'use strict';
+
+  const COMMITTEE = 'https://vaada.phk.org.il/PlaceLotCityPlanSearchResults';
+  let all = null;                  // promise of Map(feature id -> feature)
+
+  function load(url) {
+    if (!all) {
+      all = fetch(url)
+        .then((res) => { if (!res.ok) throw new Error('landuse.json ' + res.status); return res.json(); })
+        .then((doc) => new Map((doc.features || []).map((f) => [f.id, f])))
+        .catch((err) => { all = null; throw err; });
+    }
+    return all;
+  }
+
+  /** The lot's page on the committee's engineering site: the plan's documents
+   *  and what the lot is allowed. The same address for every lot. */
+  function committeeUrl(plan, lot) {
+    return `${COMMITTEE}?1=1&PlanID=${encodeURIComponent(plan)}&lot=${encodeURIComponent(lot)}`;
+  }
+
+  /** One sentence for somebody standing on the spot, by group. Said only where
+   *  the name alone misleads or means nothing to a resident. */
+  const MEANS = {
+    open: 'שטח ציבורי פתוח הוא קרקע שהתכנית שמרה לציבור: גינה, פארק, מגרש משחקים או מעבר.',
+    private: 'שטח פרטי פתוח נראה כמו שצ"פ ואינו ציבורי: הקרקע פרטית, והייעוד רק קובע שלא ייבנה עליה.',
+    public: 'מגרש למבני ציבור נשמר לגן, בית ספר, מרפאה, בית כנסת, מועדון וכדומה.',
+    newroad: 'דרך מוצעת היא דרך שהתכנית קבעה. בתכניות הישנות גם רחובות שנסללו מזמן עדיין מסומנים כך.',
+    rural: 'משק עזר הוא מגרש מגורים עם חלק חקלאי, הייעוד הוותיק של המושבה.',
+    farm: 'קרקע חקלאית: אין עליה בנייה למגורים בלי תכנית חדשה שמשנה את הייעוד.'
+  };
+
+  /** "The ground here is X, by plan Y, lot Z." For the parcel card as well. */
+  function sentence(props) {
+    const lot = props.l ? `, מגרש ${props.l}` : '';
+    return `ייעוד הקרקע כאן: ${props.u}, לפי תכנית ${props.t}${lot}.`;
+  }
+
+  /** The polygon of a cell, as one ring list: the part under the tap if the
+   *  cell came in pieces, else its largest. */
+  function rings(geometry, at) {
+    if (!geometry) return null;
+    if (geometry.type === 'Polygon') return geometry.coordinates;
+    const parts = geometry.coordinates || [];
+    const inside = (ring, x, y) => {
+      let hit = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    return (at && parts.find((p) => inside(p[0], at.lng, at.lat)))
+      || parts.slice().sort((a, b) => b[0].length - a[0].length)[0] || null;
+  }
+
+  function item(id, props, shape) {
+    let x = 0, y = 0, n = 0;
+    (shape[0] || []).forEach((p) => { x += p[0]; y += p[1]; n += 1; });
+    const mid = n ? [x / n, y / n] : [0, 0];
+    const fromRegister = props.src === 'x';
+    const url = fromRegister ? (props.w || 'https://ags.iplan.gov.il/xplan/')
+      : committeeUrl(props.t, props.l);
+    const area = Number(props.a) || 0;
+    return {
+      id: `landuse-${id}`,
+      name: props.u,
+      group: '',
+      cats: ['ייעוד', props.u, props.t].filter(Boolean),
+      num: props.l || undefined,
+      photos: [],
+      url,
+      geo: { lat: mid[1], lng: mid[0], source: 'landuse' },
+      lat: mid[1],
+      lng: mid[0],
+      place: true,
+      color: '#0d47a1',
+      shape,
+      // The layer's link names the committee's site; a cell from the register
+      // links to its plan in mavat instead, and says so.
+      linkTitle: fromRegister ? 'התכנית במבא"ת' : undefined,
+      note: sentence(props) + ' '
+        + (props.m && props.m !== props.u ? `בשפת מבא"ת של היום: ${props.m}. ` : '')
+        + (area ? `כ-${area.toLocaleString('he-IL')} מ"ר. ` : '')
+        + (MEANS[props.k] ? MEANS[props.k] + ' ' : '')
+        + (fromRegister
+          ? 'מהמאגר המקוון של מנהל התכנון: זו תכנית שאושרה ועוד לא נכנסה לקומפילציה של הוועדה. '
+          : 'מהקומפילציה של הוועדה המקומית, שמאחדת את כל התכניות שחלות על המושבה. ')
+        + 'ייעוד אינו בעלות ואינו היתר להיכנס. הנתון להתמצאות: את המצב המחייב '
+        + 'נותן מידע תכנוני מהוועדה.'
+    };
+  }
+
+  /** A tap landed in a cell of the grid: make it the layer's item, select it. */
+  async function pick(id, props, at) {
+    const layer = Layers.byId(Layers.LANDUSE_ID);
+    if (!layer || id == null) return;
+    let shape = null;
+    try {
+      const f = (await load(layer.grid)).get(id);
+      shape = f && rings(f.geometry, at);
+      props = (f && f.properties) || props;
+    } catch (err) {
+      console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ ייעודי הקרקע', err);
+    }
+    if (!shape || !shape.length) return;
+    const it = item(id, props, shape);
+    layer.waypoints = [it];
+    Layers.refresh(Layers.LANDUSE_ID);
+    select(it.id, false);
+  }
+
+  return { pick, sentence };
 })();
 
 /** Get the list out of the way so the map is tappable.

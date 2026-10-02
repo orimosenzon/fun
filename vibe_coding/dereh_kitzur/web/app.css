@@ -497,6 +497,20 @@ body.craft-bike #craft .craft-bal { display: block; }
 
 .lg-dot.approx { background: color-mix(in srgb, var(--c) 30%, #fff); border-color: var(--c); }
 
+/* A land use is an area of colour, so its key is a patch of it, with the blue
+ * edge a תשריט draws the cells in, and the stripes of a mixed or hatched one. */
+.lg-dot.area {
+  width: 14px;
+  height: 11px;
+  border-radius: 2px;
+  border: 1px solid rgba(31, 79, 255, .45);
+  box-shadow: none;
+}
+
+.lg-dot.area.striped {
+  background: repeating-linear-gradient(135deg, var(--c) 0 2.5px, var(--s) 2.5px 4px);
+}
+
 .lg-nm { flex: 1; min-width: 0; }
 .lg-n { flex: none; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
@@ -1148,19 +1162,19 @@ body.craft-bike #craft .craft-bal { display: block; }
     margin: 0 auto;
     border-top: 2px solid #55635e;
     border-inline-start: 2px solid #55635e;
-    transform: rotate(-135deg);   /* points at the map: "fold this away" */
+    transform: rotate(45deg);     /* points away from the map: push the list out */
   }
 
   .grip-v:hover .grip-btn { border-color: var(--accent); }
   .grip-v:hover .grip-btn::before { border-color: var(--accent); }
 
-  /* Folded: no panel and nothing to drag, only the tab pointing back at where
-   * the list went. The seam stops straddling the edge so the tab stays inside
+  /* Folded: no panel and nothing to drag, only the tab pointing the way the
+   * list will slide in. The seam stops straddling the edge so the tab stays inside
    * the window. */
   .panel-off { --panel-w: 0px; }
   .panel-off .panel { box-shadow: none; }
   .panel-off .grip-v { cursor: pointer; margin-inline-start: 0; }
-  .panel-off .grip-btn::before { transform: rotate(45deg); }
+  .panel-off .grip-btn::before { transform: rotate(-135deg); }
 
   /* Dragging a width while the map animates its own is a fight nobody wins. */
   .panel, #map, .fab, #craft, .nav { transition: none; }

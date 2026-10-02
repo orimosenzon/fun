@@ -2759,8 +2759,8 @@ const Explore = (() => {
       </div>
       <div class="fly-view" id="fly-view" hidden>
         <button class="fly-view-x" aria-label="סגירה">&times;</button>
-        <button class="fly-view-nav fly-view-prev" aria-label="הקודמת">&rsaquo;</button>
-        <button class="fly-view-nav fly-view-next" aria-label="הבאה">&lsaquo;</button>
+        <button class="fly-view-nav fly-view-prev" aria-label="הקודמת">&lsaquo;</button>
+        <button class="fly-view-nav fly-view-next" aria-label="הבאה">&rsaquo;</button>
         <div class="fly-view-stage">
           <img class="fly-view-img" alt="" referrerpolicy="no-referrer">
           <iframe class="fly-view-video" hidden allow="autoplay; encrypted-media; picture-in-picture"
