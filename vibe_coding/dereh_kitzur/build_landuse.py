@@ -197,7 +197,7 @@ PRIVATE_INSTITUTION = {"מוסד פרטי", "שטח למוסד"}
 MIXED = {
     # עירוני מעורב is housing over shops, and the renderer's grey hatch drew the
     # apartment blocks of the centre as if they were a commercial zone (Ori,
-    # 2/10/2026, about his own street). Housing yellow striped grey, like
+    # 2/10/2026, about the centre of the moshava). Housing yellow striped grey, like
     # every other housing-and-something.
     290: (10, 290),
     1000: (10, 210), 1001: (150, 210), 1050: (10, 210), 1100: (10, 200),
