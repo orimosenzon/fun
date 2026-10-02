@@ -73,11 +73,13 @@ plans predate מבא"ת and name things their own way - "אזור מגורים �
 to. A name in neither is printed at the end of a run and the build fails: a
 new designation is a decision, not something to paint grey.
 
-Two departures, both on purpose:
+Three departures, all on purpose:
 * **Hatching.** The renderer hatches a mixed use in a single colour on
   nothing. Here, as on a paper תשריט, a mixed use is the colour of its first
   use striped with the colour of its second (MIXED), and a single-use hatch is
   its colour striped with a darker shade of itself.
+* **עירוני מעורב** is a grey hatch in the renderer, which reads as commerce;
+  it is housing with shops, so here it is housing yellow striped grey.
 * **שטח פרטי פתוח** has exactly the colour of a שצ"פ in the renderer. On this
   map the difference between the two is the whole point, so it gets dark green
   stripes. The layer's note says this is ours.
@@ -193,7 +195,11 @@ PRIVATE_INSTITUTION = {"מוסד פרטי", "שטח למוסד"}
 
 # The codes whose renderer symbol is a mix: first use, second use.
 MIXED = {
-    290: (290, 290),
+    # עירוני מעורב is housing over shops, and the renderer's grey hatch drew the
+    # apartment blocks of the centre as if they were a commercial zone (Ori,
+    # 2/10/2026, about his own street). Housing yellow striped grey, like
+    # every other housing-and-something.
+    290: (10, 290),
     1000: (10, 210), 1001: (150, 210), 1050: (10, 210), 1100: (10, 200),
     1200: (10, 220), 1250: (10, 400), 1300: (150, 400), 1350: (10, 150),
     1410: (10, 210), 1420: (10, 210), 1470: (10, 200), 1480: (10, 200),
