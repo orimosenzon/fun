@@ -3206,5 +3206,21 @@ const Explore = (() => {
     };
   };
 
-  return { enter, exit, toggle, isOn, setCraft, getCraft, nextCraft, setView, cycleView, debug };
+  /** For the address bar (syncView in app.js): the view the flight is in, and
+   *  the base map it will land back on - the flight itself is always over the
+   *  satellite, and a link should say what the sender had chosen. */
+  const getView = () => view;
+  const returnBase = () => (restore ? restore.base : null);
+  /** Where the aircraft is, not where the camera is: the camera rides behind
+   *  and above it, a kilometre off at speed, and a link written from the
+   *  camera would start every flight it is opened in that much further on.
+   *  Zoom and tilt are the ones the flight will land back to. */
+  const place = () => (on && pos ? {
+    lat: pos.lat, lng: pos.lng, bearing,
+    zoom: restore ? restore.zoom : map.getZoom(),
+    pitch: restore ? restore.pitch : map.getPitch()
+  } : null);
+
+  return { enter, exit, toggle, isOn, setCraft, getCraft, nextCraft, setView, cycleView,
+    getView, returnBase, place, debug };
 })();

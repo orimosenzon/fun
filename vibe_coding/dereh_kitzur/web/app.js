@@ -78,6 +78,30 @@ const VIEW_KEY = 'map';
 const BG_KEY = 'bg';
 const SEL_KEY = 'sel';
 
+/* Ori, 2/10/2026: "the URL should represent exactly the state the app is in",
+ * so that sending it shows somebody precisely what you see. Four more things
+ * joined the four above:
+ *
+ *     panel=off        the list is folded away (desktop) or pulled down (phone)
+ *     craft=jet        the aircraft on the flight button: balloon, jet, bike
+ *     fly=clean        in flight, and in which view: normal, clean, trails
+ *     legend=1         the key is open
+ *
+ * And the way it is kept true changed. Every change used to have to remember
+ * to call syncView, and the ones that did not - folding the panel, the flight,
+ * the key - left the address behind. Now a light check every second and a
+ * half compares the address with the live state and rewrites it only when
+ * they differ, on top of the immediate writes after a move. Nothing that
+ * changes the picture can be missed, and an idle map writes nothing. */
+const PANEL_KEY = 'panel';
+const CRAFT_KEY = 'craft';
+const FLY_KEY = 'fly';
+const LEGEND_KEY = 'legend';
+const SYNC_POLL_MS = 1500;
+
+/** The query the page was opened with, read once before anything rewrites it. */
+const OPENED_WITH = new URLSearchParams(location.search);
+
 /** The camera the URL asks for, or null when it says nothing about it. */
 function urlView() {
   const raw = new URLSearchParams(location.search).get(VIEW_KEY);
@@ -110,28 +134,85 @@ let syncTimer = null;
  *  both read whatever is currently there and rewrite the whole query, so the
  *  two never erase each other. */
 function syncView() {
-  // The flight moves the camera every frame, and every one of those fires a
-  // moveend. Writing the address bar sixty times a second is both pointless -
-  // the camera is not a place you would link to mid-flight - and enough
-  // history writes for Safari to start refusing them.
-  if (!map || Explore.isOn()) return;
+  if (!map) return;
+  const flying = typeof Explore !== 'undefined' && Explore.isOn();
   const params = new URLSearchParams(location.search);
   const c = map.getCenter();
+  const at = (flying && Explore.place()) || {
+    lat: c.lat, lng: c.lng, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch()
+  };
   const round = (v, d) => +v.toFixed(d);
-  params.set(VIEW_KEY, [round(c.lat, 5), round(c.lng, 5), round(map.getZoom(), 2),
-    Math.round(map.getBearing()), Math.round(map.getPitch())].join(','));
+  params.set(VIEW_KEY, [round(at.lat, 5), round(at.lng, 5), round(at.zoom, 2),
+    Math.round(at.bearing), Math.round(at.pitch)].join(','));
 
-  if (baseIndex > 0) params.set(BG_KEY, BASEMAPS[baseIndex].id);
+  // In flight the map is always the satellite; the link names the one the
+  // sender will land back on.
+  const base = flying && Explore.returnBase() !== null ? Explore.returnBase() : baseIndex;
+  if (base > 0) params.set(BG_KEY, BASEMAPS[base].id);
   else params.delete(BG_KEY);
 
   if (selectedId) params.set(SEL_KEY, selectedId);
   else params.delete(SEL_KEY);
 
+  if (panelHidden()) params.set(PANEL_KEY, 'off');
+  else params.delete(PANEL_KEY);
+
+  // Always named while the flight buttons are there: the recipient's own
+  // last choice is otherwise what they would see on the button.
+  if (canFly()) params.set(CRAFT_KEY, Explore.getCraft());
+  else params.delete(CRAFT_KEY);
+
+  if (flying) params.set(FLY_KEY, Explore.getView());
+  else params.delete(FLY_KEY);
+
+  if (Layers.legendIsOpen()) params.set(LEGEND_KEY, '1');
+  else params.delete(LEGEND_KEY);
+
   const query = params.toString().replace(/%2C/g, ',');
+  if (`?${query}` === location.search) return;
   try {
     history.replaceState(null, '', `${location.pathname}?${query}${location.hash}`);
   } catch (err) {
     /* opened straight off the filesystem; everything still works */
+  }
+}
+
+/** Whether the list is out of the way: folded on a wide screen, pulled down
+ *  to its handle on a phone. */
+function panelHidden() {
+  if (window.innerWidth > 760) return document.body.classList.contains('panel-off');
+  return el('panel').getBoundingClientRect().height < 140;
+}
+
+const canFly = () => typeof Explore !== 'undefined' && !!map && !el('explore').hidden;
+
+/** Everything else a link asks for, once the map and the layers are up:
+ *  the panel, the key, a selected parcel or land-use cell, and the flight.
+ *  Only a link that carries a camera speaks for the panel and the key - an
+ *  old link with layers alone should not fold anybody's list. */
+function applyLinkState(selected) {
+  const q = OPENED_WITH;
+  if (q.has(VIEW_KEY)) {
+    const hide = q.get(PANEL_KEY) === 'off';
+    if (window.innerWidth > 760) {
+      if (hide !== document.body.classList.contains('panel-off')) foldPanel(hide, false);
+    } else if (hide) collapsePanel();
+    Layers.setLegendOpen(q.get(LEGEND_KEY) === '1');
+  }
+
+  // A parcel or a land-use cell becomes an item only when it is tapped, so a
+  // link to one has to tap it again.
+  const wanted = q.get(SEL_KEY) || '';
+  let m;
+  if (!selected && (m = /^parcel-(\d+)-(\d+)$/.exec(wanted))) {
+    Parcels.pick({ g: m[1], p: m[2] });
+  } else if (!selected && (m = /^landuse-(\d+)$/.exec(wanted))) {
+    LandUse.pick(Number(m[1]), {}, null);
+  }
+
+  if (q.has(FLY_KEY) && canFly()) {
+    Explore.setView(q.get(FLY_KEY));
+    Explore.enter();
   }
 }
 
@@ -206,6 +287,22 @@ if (map) {
   // visualizePitch gives the compass-and-tilt puck, the same control Google
   // offers for looking at the map from an angle.
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
+  // Under the zoom buttons, in the same white group: on the map rather than in
+  // the list, so that it is there with the list folded away too.
+  map.addControl({
+    onAdd() {
+      const box = document.createElement('div');
+      box.className = 'maplibregl-ctrl maplibregl-ctrl-group share-ctrl';
+      box.innerHTML = '<button type="button" class="share-btn" title="שיתוף המפה כמו שהיא" '
+        + 'aria-label="שיתוף המפה כמו שהיא"><svg viewBox="0 0 24 24" aria-hidden="true">'
+        + '<path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7'
+        + 'l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-5.91.7L8.04 9.81A2.99 2.99 0 0 0 3 12a2.99 2.99 '
+        + '0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65A2.92 2.92 0 1 0 18 16.08z"/></svg></button>';
+      box.querySelector('button').addEventListener('click', () => Share.open());
+      return box;
+    },
+    onRemove() {}
+  }, 'top-left');
   window.__map = map;   // handle for debugging and for the browser tests
 }
 
@@ -2428,6 +2525,8 @@ const Parcels = (() => {
     try {
       const f = (await load(layer.grid)).get(g * 10000 + p);
       rings = f && f.geometry && f.geometry.coordinates;
+      // A link to a parcel arrives with its numbers only.
+      if (f && props.a == null) props = { ...props, a: f.properties.a };
     } catch (err) {
       console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ החלקות', err);
     }
@@ -2564,6 +2663,101 @@ const LandUse = (() => {
   }
 
   return { pick, sentence };
+})();
+
+/* ---------- sharing ----------
+ *
+ * Ori, 2/10/2026: a share button with the usual icon, and a short link. The
+ * address bar already says everything about the view (syncView), so sharing
+ * is that address - written fresh - made short by the worker (/s in
+ * worker/src/index.js) and handed to whatever the device shares with.
+ *
+ * A sheet rather than going straight to the system's share menu: that menu
+ * has to be opened by a tap, and a tap that first waits on the network for
+ * the short link is no longer a tap as far as Safari is concerned. So the tap
+ * opens this, the link is made while it is open, and the second tap - copy,
+ * WhatsApp, or the system menu - is a fresh one. */
+const Share = (() => {
+  'use strict';
+
+  // The parameters that describe the view, and nothing else: `local` and the
+  // like are for whoever is debugging, not for the person receiving the link.
+  const KEEP = ['map', 'bg', 'sel', 'layers', 'panel', 'craft', 'fly', 'legend'];
+  const SITE = 'https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/';
+  let current = '';
+  let asked = 0;
+
+  function query() {
+    syncView();
+    const now = new URLSearchParams(location.search);
+    const out = new URLSearchParams();
+    KEEP.forEach((k) => { if (now.has(k)) out.set(k, now.get(k)); });
+    return out.toString().replace(/%2C/g, ',');
+  }
+
+  function show(url, note) {
+    current = url;
+    el('share-url').value = url;
+    el('share-note').textContent = note || '';
+    el('share-note').hidden = !note;
+  }
+
+  async function open() {
+    const q = query();
+    // The long one first, so there is always something to copy - from the
+    // public site, since a localhost link is no use to anybody else.
+    show(`${SITE}?${q}`, 'מכין קישור קצר…');
+    el('share-copy').textContent = 'העתקת הקישור';
+    el('share-native').hidden = !navigator.share;
+    el('share-sheet').hidden = false;
+    const ticket = ++asked;
+    try {
+      const res = await fetch(`${Store.WORKER}/s`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ q })
+      });
+      const doc = await res.json();
+      if (ticket !== asked) return;
+      if (!res.ok || !doc.url) throw new Error(doc.error || res.status);
+      show(doc.url);
+    } catch (err) {
+      if (ticket !== asked) return;
+      show(current, 'הקישור הקצר לא זמין כרגע, אבל הארוך עובד בדיוק אותו דבר.');
+    }
+  }
+
+  function close() { el('share-sheet').hidden = true; }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(current);
+    } catch (err) {
+      // An older browser, or no permission: select it and let the system copy.
+      el('share-url').select();
+      document.execCommand('copy');
+    }
+    el('share-copy').textContent = 'הועתק ✓';
+  }
+
+  function wire() {
+    el('share-sheet').addEventListener('click', (e) => {
+      if (e.target === el('share-sheet') || e.target.closest('[data-act="close"]')) close();
+    });
+    el('share-copy').addEventListener('click', copy);
+    el('share-url').addEventListener('focus', () => el('share-url').select());
+    el('share-wa').addEventListener('click', () => {
+      window.open(`https://wa.me/?text=${encodeURIComponent(current)}`, '_blank', 'noopener');
+    });
+    el('share-native').addEventListener('click', () => {
+      navigator.share({ title: 'דרך קיצור', url: current }).catch(() => {});
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !el('share-sheet').hidden) close();
+    });
+  }
+
+  return { open, close, wire };
 })();
 
 /** Get the list out of the way so the map is tappable.
@@ -2862,6 +3056,10 @@ function repaint() {
 }
 
 async function boot() {
+  // Before wireControls paints the flight buttons.
+  if (OPENED_WITH.get(CRAFT_KEY) && typeof Explore !== 'undefined') {
+    Explore.setCraft(OPENED_WITH.get(CRAFT_KEY));
+  }
   const wantedBg = urlBasemap();
   if (wantedBg) setBasemap(wantedBg);
   el('basemap').title = 'רקע: ' + BASEMAPS[baseIndex].name;
@@ -2923,7 +3121,9 @@ async function boot() {
     // confirmed this browser is an editor's, and the map may well be up before
     // that answer is. Kept so that editorChanged can honour it then.
     if (wanted && !selectedId) askedFor = wanted;
+    applyLinkState(!!selectedId);
     syncView();
+    setInterval(syncView, SYNC_POLL_MS);
   }
 
   // Last, and outside the `if (map)`: reopening an interrupted recording draws
@@ -3561,6 +3761,7 @@ function wireControls() {
 
   wireGrip();
   wirePanelWidth();
+  Share.wire();
   wireSwipe();
   wireLightboxZoom();
 

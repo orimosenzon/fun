@@ -281,6 +281,26 @@
   <p class="lb-cap"><span id="lb-cap-text"></span> <span id="lb-count" class="lb-count"></span></p>
 </div>
 
+<!-- Sharing the view as it is: the short link, and three ways to send it.
+     Share in app.js. -->
+<div id="share-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="שיתוף">
+  <div class="sheet-card share-card">
+    <header class="sheet-head">
+      <h2>שיתוף המפה</h2>
+      <button class="sheet-x" data-act="close" aria-label="סגירה">&times;</button>
+    </header>
+    <p class="sheet-lead">מי שיפתח את הקישור יראה בדיוק את מה שעל המסך שלך: המקום,
+      הזום, השכבות, הרקע, מה שנבחר, והרשימה פתוחה או מוסתרת.</p>
+    <input id="share-url" class="share-url" type="text" readonly dir="ltr" aria-label="הקישור">
+    <p id="share-note" class="share-note" hidden></p>
+    <div class="share-acts">
+      <button id="share-copy" class="share-act primary">העתקת הקישור</button>
+      <button id="share-wa" class="share-act">וואטסאפ</button>
+      <button id="share-native" class="share-act" hidden>שיתוף…</button>
+    </div>
+  </div>
+</div>
+
 <div id="layer-sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-label="שכבות">
   <div class="sheet-card">
     <header class="sheet-head">
