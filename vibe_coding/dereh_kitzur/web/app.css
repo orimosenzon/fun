@@ -500,16 +500,36 @@ body.craft-bike #craft .craft-bal { display: block; }
 /* A land use is an area of colour, so its key is a patch of it, with the blue
  * edge a תשריט draws the cells in, and the stripes of a mixed or hatched one. */
 .lg-dot.area {
-  width: 14px;
-  height: 11px;
+  width: 22px;
+  height: 15px;
   border-radius: 2px;
   border: 1px solid rgba(31, 79, 255, .45);
   box-shadow: none;
 }
 
 .lg-dot.area.striped {
-  background: repeating-linear-gradient(135deg, var(--c) 0 2.5px, var(--s) 2.5px 4px);
+  background: repeating-linear-gradient(135deg, var(--c) 0 3.5px, var(--s) 3.5px 5.5px);
 }
+
+/* The designation under a resting mouse (layers.js, landUseTip). */
+.lu-tip {
+  position: absolute;
+  z-index: 6;
+  transform: translate(-50%, calc(-100% - 14px));
+  pointer-events: none;
+  max-width: 260px;
+  padding: 4px 9px 5px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .22);
+  direction: rtl;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #1d2a24;
+}
+.lu-tip span { display: block; font-size: 11.5px; color: #5d6b65; }
+.lu-tip[hidden] { display: none; }
 
 .lg-nm { flex: 1; min-width: 0; }
 .lg-n { flex: none; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }

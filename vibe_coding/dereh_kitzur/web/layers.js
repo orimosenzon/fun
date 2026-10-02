@@ -1620,7 +1620,16 @@ const Layers = (() => {
     // Before the layer that asks for the stripes: an image MapLibre found
     // missing before anybody was listening stays missing until the next
     // layout, and the first view came up with its farmland unstriped.
-    if (!patterns) { map.on('styleimagemissing', landUsePattern); patterns = true; }
+    if (!patterns) {
+      map.on('styleimagemissing', landUsePattern);
+      // The key follows the view: whenever the map comes to rest, or the file
+      // has finished arriving, the land uses on screen are counted again.
+      map.on('moveend', landUseKeyLater);
+      map.on('sourcedata', (e) => {
+        if (e.sourceId === gridSrc(LANDUSE_ID) && e.isSourceLoaded) landUseKeyLater();
+      });
+      patterns = true;
+    }
     map.addLayer({
       id: gridFillId(layer.id),
       type: 'fill',
@@ -1677,6 +1686,66 @@ const Layers = (() => {
     [[0, px, px, 0], [-px / 2, px / 2, px / 2, -px / 2], [px / 2, px * 1.5, px * 1.5, px / 2]]
       .forEach(([x0, y0, x1, y1]) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); });
     map.addImage(e.id, g.getImageData(0, 0, px, px), { pixelRatio: ratio });
+  }
+
+  /* ---------- the land-use key: what is on the screen ----------
+   *
+   * Ori, 2/10/2026: twenty groups, each shown by its commonest look, left the
+   * striped mixes out of the key altogether - the grey-and-magenta of מסחר
+   * ותעסוקה by his own café was in no row - and a group's swatch told you
+   * nothing about which of its four looks you were facing. So the key lists
+   * what is actually in view: one row for every look drawn on the screen, in
+   * the name the plan gives it, the most plots first. Moving the map changes
+   * it; the twenty groups are the fallback before anything has been drawn. */
+  let luInView = null;
+  let luTimer = null;
+
+  function landUseKeyLater() {
+    clearTimeout(luTimer);
+    luTimer = setTimeout(() => {
+      const layer = byId(LANDUSE_ID);
+      if (!layer || !layer.on) return;
+      luInView = landUseInView();
+      renderLegend();
+    }, 250);
+  }
+
+  function landUseInView() {
+    const fill = gridFillId(LANDUSE_ID);
+    if (typeof map === 'undefined' || !map || !map.getLayer(fill)) return null;
+    const seen = new Set();
+    const looks = new Map();
+    // Tilted, the top of the screen is the horizon: a strip of orchards
+    // kilometres off that would head the key. Only the near ground counts then.
+    const { width, height } = map.getCanvas().getBoundingClientRect();
+    const tilt = map.getPitch() > 20;
+    const area = tilt ? [[width * 0.1, height * 0.35], [width * 0.9, height]]
+      : [[0, 0], [width, height]];
+    map.queryRenderedFeatures(area, { layers: [fill] }).forEach((f) => {
+      // A polygon crossing a tile edge comes back once per tile.
+      if (seen.has(f.id)) return;
+      seen.add(f.id);
+      const p = f.properties;
+      const key = `${p.f}|${p.s || ''}`;
+      const name = (p.m || p.u || '').trim();
+      // By plots rather than by area: a single field of forty dunam is not
+      // more of what you are looking at than the twenty houses beside it.
+      const weight = 1 + Math.min(Number(p.a) || 0, 3000) / 3000;
+      let look = looks.get(key);
+      if (!look) {
+        look = { color: p.f, stripe: p.s || undefined, weight: 0, names: new Map() };
+        looks.set(key, look);
+      }
+      look.weight += weight;
+      look.names.set(name, (look.names.get(name) || 0) + weight);
+    });
+    if (!looks.size) return null;
+    return [...looks.values()].sort((a, b) => b.weight - a.weight).map((look) => {
+      const names = [...look.names.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => n);
+      const more = names.length > 2 ? ` ועוד ${names.length - 2}` : '';
+      return { name: names.slice(0, 2).join(' / ') + more, color: look.color,
+        stripe: look.stripe, area: true };
+    });
   }
 
   /* ---------- open to objection: the red glow ----------
@@ -2029,6 +2098,30 @@ const Layers = (() => {
     return true;
   }
 
+  /** The designation under a resting mouse, in a small label beside it - the
+   *  answer to "what is this colour" without a tap, which on a desktop is the
+   *  one question the key cannot settle for a single plot. */
+  let tip = null;
+  function landUseTip(point) {
+    const fill = gridFillId(LANDUSE_ID);
+    const layer = byId(LANDUSE_ID);
+    const live = point && layer && layer.on && map.getLayer(fill) && !map.isMoving();
+    const f = live && map.queryRenderedFeatures(point, { layers: [fill] })[0];
+    if (!f) { if (tip) tip.hidden = true; return; }
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.className = 'lu-tip';
+      map.getContainer().appendChild(tip);
+    }
+    const p = f.properties;
+    const also = p.m && p.m !== p.u ? ` (${p.m})` : '';
+    tip.innerHTML = `<b>${escapeHtml(p.u)}</b>${escapeHtml(also)}`
+      + `<span>תכנית ${escapeHtml(p.t)}${p.l ? ` · מגרש ${escapeHtml(p.l)}` : ''}</span>`;
+    tip.style.left = `${point[0]}px`;
+    tip.style.top = `${point[1]}px`;
+    tip.hidden = false;
+  }
+
   let picking = false;
   function wirePicking() {
     if (picking || typeof map === 'undefined' || !map) return;
@@ -2092,6 +2185,7 @@ const Layers = (() => {
       const box = canvas.getBoundingClientRect();
       const point = [e.clientX - box.left, e.clientY - box.top];
       rest = setTimeout(() => {
+        landUseTip(point);
         if (mapIsBusy() || map.isMoving()) { canvas.style.cursor = ''; return; }
         const { lines, areas, grids, dashed } = pickLayers();
         const layers = lines.concat(areas, grids, dashed);
@@ -2101,6 +2195,7 @@ const Layers = (() => {
     });
     canvas.addEventListener('pointerleave', () => {
       clearTimeout(rest);
+      landUseTip(null);
       canvas.style.cursor = '';
     });
   }
@@ -2290,6 +2385,7 @@ const Layers = (() => {
     // The land uses have no members to count until one is tapped, and every
     // colour is on the map the moment the layer is: the whole key, always.
     if (layer.landuseGroups) {
+      if (luInView && luInView.length) return luInView;
       return layer.landuseGroups.map((g) => ({
         name: g.name, color: g.color, stripe: g.stripe, area: true }));
     }
@@ -2351,8 +2447,10 @@ const Layers = (() => {
     document.getElementById('legend-body').innerHTML = sections.map(({ layer, rows }) => {
       // A one-colour layer names itself in its only row, so a heading above it
       // would just say the same thing twice.
+      const title = layer.landuseGroups && luInView && luInView.length
+        ? `${layer.name} · מה שעל המסך` : layer.name;
       const head = rows[0].whole ? ''
-        : `<p class="lg-layer">${escapeHtml(layer.name)}</p>`;
+        : `<p class="lg-layer">${escapeHtml(title)}</p>`;
       return head + `<ul class="lg-rows">${rows.map((r) => `<li>
         <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}${r.area ? ' area' : ''}${r.stripe ? ' striped' : ''}"
               style="--c:${r.color}${r.stripe ? `;--s:${r.stripe}` : ''}"></span>
