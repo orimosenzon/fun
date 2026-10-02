@@ -2468,6 +2468,14 @@ const Layers = (() => {
     box.classList.toggle('open', legendOpen);
   }
 
+  const legendIsOpen = () => legendOpen;
+  /** A link says whether the key was open; it does not become this browser's
+   *  own preference. */
+  function setLegendOpen(open) {
+    legendOpen = !!open;
+    renderLegend();
+  }
+
   function toggleLegend() {
     legendOpen = !legendOpen;
     try {
@@ -2770,6 +2778,7 @@ const Layers = (() => {
     resetMedia,
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
+    legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,

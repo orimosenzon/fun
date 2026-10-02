@@ -28,3 +28,8 @@ id = "3e525627ec39406083b5dc59e12a9a2a"
 [[kv_namespaces]]
 binding = "STATS"
 id = "92c43fc2decc46e383e7b84e68b438b4"
+
+# Short links to a view of the map: /s/<code> -> the app with that query.
+[[kv_namespaces]]
+binding = "LINKS"
+id = "ebeadb033b884650bc501d9ad78ce929"

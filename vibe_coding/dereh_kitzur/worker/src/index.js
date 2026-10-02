@@ -485,6 +485,86 @@ async function stats(env) {
   });
 }
 
+
+/* ---------- short links ----------
+ *
+ * Ori, 2/10/2026: a link to exactly what is on the screen is two hundred
+ * characters of query string, and a message with that in it reads as noise.
+ * So the app asks for a short one: POST /s with the query, and the answer is
+ * /s/<code>, which redirects to the app with that query.
+ *
+ * What makes it safe to leave open to anyone:
+ *   - the target is fixed. Only a query string is stored, and the redirect
+ *     always goes to APP_URL, so this cannot be turned into a redirect to some
+ *     other site.
+ *   - the query must be the app's own: known parameter names, plain values,
+ *     a length cap. Nobody gets free storage for their own text.
+ *   - the code is the hash of the query, so the same view always gets the same
+ *     link and asking again stores nothing new.
+ *   - a rate limit per IP, like every other write here.
+ */
+const APP_URL_DEFAULT = 'https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/';
+const LINK_KEYS = new Set(['map', 'bg', 'sel', 'layers', 'panel', 'craft', 'fly', 'legend']);
+const LINK_VALUE = /^[\p{L}\p{N}_\-.,:~]*$/u;
+const LINK_MAX = 1500;
+const LINK_RATE = 60;                    // new links per window, per IP
+const CODE = /^[0-9A-Za-z]{6,12}$/;
+const B62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+function cleanQuery(raw) {
+  const q = String(raw || '').replace(/^\?/, '');
+  if (!q || q.length > LINK_MAX) return null;
+  const params = new URLSearchParams(q);
+  const out = new URLSearchParams();
+  for (const [k, v] of params) {
+    if (!LINK_KEYS.has(k) || !LINK_VALUE.test(v) || out.has(k)) return null;
+    out.set(k, v);
+  }
+  return out.toString().replace(/%2C/g, ',');
+}
+
+async function codeFor(query, length) {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256',
+    new TextEncoder().encode(query)));
+  let n = 0n;
+  for (const b of digest.slice(0, 12)) n = (n << 8n) | BigInt(b);
+  let code = '';
+  while (code.length < length) { code += B62[Number(n % 62n)]; n /= 62n; }
+  return code;
+}
+
+async function shorten(env, request, ip, origin) {
+  if (!env.LINKS) return json({ error: 'הקישורים הקצרים כבויים' }, 503);
+  let query = null;
+  try {
+    query = cleanQuery(JSON.parse(await request.text()).q);
+  } catch (err) {
+    return json({ error: 'bad body' }, 400);
+  }
+  if (query === null) return json({ error: 'not an app link' }, 400);
+
+  // Seven characters is 3.5 trillion codes; on the off chance two views meet,
+  // the second one gets a longer code rather than the first one's place.
+  for (let length = 7; length <= 10; length++) {
+    const code = await codeFor(query, length);
+    const have = await env.LINKS.get(code);
+    if (have === query) return json({ code, url: `${origin}/s/${code}` });
+    if (have === null) {
+      if (await overRate(env, 'l', ip, LINK_RATE)) return json({ error: 'יותר מדי קישורים, נסה שוב בעוד כמה דקות' }, 429);
+      await env.LINKS.put(code, query);
+      return json({ code, url: `${origin}/s/${code}` });
+    }
+  }
+  return json({ error: 'collision' }, 500);
+}
+
+async function follow(env, code) {
+  const app = env.APP_URL || APP_URL_DEFAULT;
+  const query = CODE.test(code) && env.LINKS ? await env.LINKS.get(code) : null;
+  // An unknown code still lands somewhere useful: the map, at its opening view.
+  return Response.redirect(query ? `${app}?${query}` : app, 302);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -518,6 +598,14 @@ export default {
 
     if (url.pathname === '/stats') {
       return stats(env);
+    }
+
+    if (url.pathname === '/s' && request.method === 'POST') {
+      return shorten(env, request, ip, url.origin);
+    }
+
+    if (url.pathname.startsWith('/s/')) {
+      return follow(env, url.pathname.slice(3));
     }
 
     return json({ error: 'not found' }, 404);
