@@ -1692,7 +1692,7 @@ const Layers = (() => {
    *
    * Ori, 2/10/2026: twenty groups, each shown by its commonest look, left the
    * striped mixes out of the key altogether - the grey-and-magenta of מסחר
-   * ותעסוקה by his own café was in no row - and a group's swatch told you
+   * ותעסוקה by Café Tavori was in no row - and a group's swatch told you
    * nothing about which of its four looks you were facing. So the key lists
    * what is actually in view: one row for every look drawn on the screen, in
    * the name the plan gives it, the most plots first. Moving the map changes
