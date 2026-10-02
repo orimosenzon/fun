@@ -52,9 +52,38 @@ const Layers = (() => {
   const BLOCKS_ID = 'blocks';
   const PARCELS_ID = 'parcels';
   const PUBLIC_ID = 'public-land';
+  const LANDUSE_ID = 'landuse';
   const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
   const HANADIV_ID = 'hanadiv';
+
+  /* The land-use layer's legend: one row per group build_landuse.py files
+   * every designation under, in the colours of the planning administration's
+   * own renderer. `stripe` is the hatch a mixed or hatched use is drawn with;
+   * the rows show the group's commonest look, and a tap on the map gives the
+   * exact designation. Keys must match GROUPS in build_landuse.py. */
+  const LANDUSE_GROUPS = [
+    { key: 'res_a', name: "מגורים א'", color: '#ffff00' },
+    { key: 'res_b', name: "מגורים ב'", color: '#ffbf00' },
+    { key: 'res_c', name: "מגורים ג' וד'", color: '#ff7f00' },
+    { key: 'res', name: 'מגורים, בלי צפיפות בשם', color: '#ffdf7f' },
+    { key: 'rural', name: 'משק עזר', color: '#ffdf7f', stripe: '#9e8a4e' },
+    { key: 'mixed', name: 'מגורים ושימוש נוסף', color: '#ffdf7f', stripe: '#adadad' },
+    { key: 'public', name: 'מבנים ומוסדות ציבור', color: '#cc9966' },
+    { key: 'open', name: 'שטח ציבורי פתוח, ספורט ונופש', color: '#bfff00' },
+    { key: 'private', name: 'שטח פרטי פתוח', color: '#bfff00', stripe: '#1b5e20' },
+    { key: 'trade', name: 'מסחר ותיירות', color: '#adadad' },
+    { key: 'work', name: 'תעסוקה ומשרדים', color: '#ff00c5' },
+    { key: 'industry', name: 'תעשייה ומלאכה', color: '#cc66cc' },
+    { key: 'road', name: 'דרך קיימת או מאושרת', color: '#ccb266' },
+    { key: 'newroad', name: 'דרך מוצעת', color: '#ff003f' },
+    { key: 'path', name: 'שביל וחניון', color: '#009972' },
+    { key: 'farm', name: 'קרקע חקלאית ומבני משק', color: '#7fff7f', stripe: '#4e9e4e' },
+    { key: 'nature', name: 'שמורה, יער ונחל', color: '#72994c', stripe: '#465e2f' },
+    { key: 'infra', name: 'מתקנים הנדסיים, מסילה ותשתיות', color: '#7f7fff' },
+    { key: 'cemetery', name: 'בית עלמין', color: '#ffff00', stripe: '#9e9e00' },
+    { key: 'other', name: 'אחר', color: '#848484', stripe: '#515151' }
+  ];
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -815,6 +844,45 @@ const Layers = (() => {
       on: isOn(PARCELS_ID, false)
     });
 
+    // What every piece of ground in the moshava is designated for, in the
+    // colours of a תשריט (Ori, 1/10/2026). The local committee's compilation of
+    // all its plans, old ones included, with the national register's newer
+    // plans over it - see build_landuse.py. A grid like the parcels: ten
+    // thousand polygons are not list items, the file is fetched only once the
+    // layer is on, and a tap makes the one under the finger an item (LandUse
+    // in app.js).
+    add({
+      id: LANDUSE_ID,
+      kind: 'places',
+      category: 'other',
+      name: 'ייעודי קרקע',
+      short: 'ייעוד',
+      unit: 'תאי שטח',
+      color: '#0d47a1',                    // the outline of the cell tapped
+      dots: false,
+      labels: false,
+      groups: [],
+      landuseGroups: LANDUSE_GROUPS,
+      waypoints: [],                       // only the cell last tapped
+      grid: 'data/landuse.json',
+      gridStyle: 'landuse',
+      note: 'לכל חלקת קרקע במושבה, הייעוד שהתכנית התקפה קבעה לה, בצבעים של '
+        + 'תשריט: צהוב למגורים, חום למבני ציבור, ירוק לשטח ציבורי פתוח, אדום '
+        + 'לדרך מוצעת. המקור הוא הקומפילציה של הוועדה המקומית, שמאחדת את כל '
+        + 'התכניות, גם הישנות שאינן במאגר המקוון, ומעליה תכניות חדשות ממנהל '
+        + 'התכנון שעוד לא נכנסו אליה. ייעוד הוא מה שהתכנית קובעת, לא מי '
+        + 'הבעלים ולא היתר להיכנס. בתכניות הישנות רחובות קיימים רבים עדיין '
+        + 'מסומנים "דרך מוצעת". הפסים הירוקים הכהים על שטח פרטי פתוח הם '
+        + 'תוספת שלנו: בתשריט הוא באותו צבע כמו שצ"פ. לחיצה על שטח אומרת מה '
+        + 'הייעוד, לפי איזו תכנית ובאיזה מגרש, ומקשרת לאתר ההנדסי של הוועדה.',
+      credit: 'הוועדה המקומית פרדס חנה-כרכור · מינהל התכנון',
+      sourceName: 'הוועדה המקומית לתכנון ובנייה',
+      sourceLine: 'ייעודי הקרקע מהקומפילציה של הוועדה המקומית, ומהמאגר המקוון של מנהל התכנון',
+      linkTitle: 'המגרש באתר ההנדסי של הוועדה',
+      pinnable: false,
+      on: isOn(LANDUSE_ID, false)
+    });
+
     // Which ground is public, which is the question every shortcut eventually
     // runs into: a path across a שצ"פ is a path across land set aside for it,
     // and the same line across somebody's plot lasts as long as they put up
@@ -973,7 +1041,8 @@ const Layers = (() => {
   // the map is something standing on it. The canopy sits just above them -
   // trees stand on the ground too - and below the block lines, which are
   // drawn on top of everything that has an area.
-  const order = (l) => (l.id === PUBLIC_ID ? 0.1
+  const order = (l) => (l.id === LANDUSE_ID ? 0.05
+    : l.id === PUBLIC_ID ? 0.1
     : l.id === CANOPY_ID ? 0.15
     : l.id === BLOCKS_ID ? 0.25
     // Parcels sit just inside their blocks: the block outline has to stay
@@ -1141,6 +1210,7 @@ const Layers = (() => {
   const gridFillId = (id) => `pgf-${id}`;
   const gridLineId = (id) => `pgl-${id}`;
   const gridNumId = (id) => `pgn-${id}`;
+  const gridPatId = (id) => `pgp-${id}`;
   /* The parcels open to objection, glowing red over the grid: a fill, a wide
    * blurred halo and a pale core on the grid's own source, the plan's blue
    * line as a fallback for a plan with no parcel in the file, and a blurred
@@ -1151,7 +1221,8 @@ const Layers = (() => {
   const objIds = (id) => [`pgo-f-${id}`, `pgo-h-${id}`, `pgo-c-${id}`,
     `pgo-sf-${id}`, `pgo-sh-${id}`, `pgo-p-${id}`, `pgo-d-${id}`];
   const gridIds = (layer) => (layer.grid
-    ? [gridFillId(layer.id), gridLineId(layer.id), gridNumId(layer.id)].concat(objIds(layer.id))
+    ? [gridFillId(layer.id), gridPatId(layer.id), gridLineId(layer.id), gridNumId(layer.id)]
+      .concat(objIds(layer.id))
     : []);
 
   const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
@@ -1490,6 +1561,7 @@ const Layers = (() => {
     // have ordered it; failing that, under the basemap's own labels.
     const above = list.filter((l) => order(l) > order(layer))
       .flatMap(drawnIds).find((gl) => map.getLayer(gl)) || underLabels();
+    if (layer.gridStyle === 'landuse') { addLandUseGrid(layer, src, above); return; }
 
     map.addLayer({
       id: gridFillId(layer.id),
@@ -1534,6 +1606,79 @@ const Layers = (() => {
     addObjectionGlow(layer);
   }
 
+  /** The land uses: each cell in its colour, a hatched or mixed one striped
+   *  over it, and the cell boundaries in the blue a תשריט draws them in once
+   *  the cells are big enough to tell apart.
+   *
+   *  The colours are opaque on paper. Here they are washed enough to leave the
+   *  street names and the houses readable underneath - less on the satellite,
+   *  where a strong yellow over the roofs is all you would see - and they
+   *  thin out as you come close, where the houses are what you look at. */
+  let patterns = false;
+  function addLandUseGrid(layer, src, above) {
+    const dark = theme === 'dark';
+    // Before the layer that asks for the stripes: an image MapLibre found
+    // missing before anybody was listening stays missing until the next
+    // layout, and the first view came up with its farmland unstriped.
+    if (!patterns) { map.on('styleimagemissing', landUsePattern); patterns = true; }
+    map.addLayer({
+      id: gridFillId(layer.id),
+      type: 'fill',
+      source: src,
+      paint: {
+        'fill-color': ['get', 'f'],
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'],
+          12, dark ? 0.5 : 0.62, 17, dark ? 0.32 : 0.45, 19, dark ? 0.22 : 0.32]
+      }
+    }, above);
+    map.addLayer({
+      id: gridPatId(layer.id),
+      type: 'fill',
+      source: src,
+      filter: ['has', 'p'],
+      paint: {
+        'fill-pattern': ['get', 'p'],
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'],
+          12, dark ? 0.6 : 0.75, 19, dark ? 0.35 : 0.5]
+      }
+    }, above);
+    map.addLayer({
+      id: gridLineId(layer.id),
+      type: 'line',
+      source: src,
+      minzoom: 14,
+      paint: {
+        'line-color': dark ? '#90caf9' : '#1f4fff',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.3, 16, 0.7, 19, 1.3],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16.5, 0.7]
+      }
+    }, above);
+  }
+
+  /* The stripes of a hatched or mixed land use, made on demand: the file names
+   * each as `lu-<fill>-<stripe>` and MapLibre asks for any image it has not
+   * got. A diagonal stripe over transparency, drawn over the cell's own fill,
+   * so a mixed use reads as its first colour striped with its second - which
+   * is how a תשריט draws one. */
+  function landUsePattern(e) {
+    const m = /^lu-([0-9a-f]{6})-([0-9a-f]{6})$/.exec(e.id);
+    if (!m || map.hasImage(e.id)) return;
+    const size = 12;
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const px = size * ratio;
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    const g = c.getContext('2d');
+    g.strokeStyle = '#' + m[2];
+    g.lineWidth = 2.2 * ratio;
+    g.lineCap = 'square';
+    // Down-left to up-right, and the two corners again so the tile repeats
+    // without a seam.
+    [[0, px, px, 0], [-px / 2, px / 2, px / 2, -px / 2], [px / 2, px * 1.5, px * 1.5, px / 2]]
+      .forEach(([x0, y0, x1, y1]) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); });
+    map.addImage(e.id, g.getImageData(0, 0, px, px), { pixelRatio: ratio });
+  }
+
   /* ---------- open to objection: the red glow ----------
    *
    * Ori, 27/9/2026: the parcels on which a plan can be objected to right now,
@@ -1572,6 +1717,7 @@ const Layers = (() => {
   const haloWidth = ['interpolate', ['linear'], ['zoom'], 12, 4, 15, 9, 17, 16, 19, 26];
 
   function addObjectionGlow(layer) {
+    if (layer.id !== PARCELS_ID) return;
     const id = layer.id;
     const src = gridSrc(id);
     const before = map.getLayer(gridNumId(id)) ? gridNumId(id) : undefined;
@@ -1915,9 +2061,18 @@ const Layers = (() => {
       if (inside.length) { select(inside[0].properties.id, false); return; }
       // With the parcels on, every point in the moshava is in one of them.
       // Parcels in app.js turns the grid feature into an item and selects it.
-      const parcel = grids.length ? map.queryRenderedFeatures(e.point, { layers: grids }) : [];
-      if (parcel.length && typeof Parcels !== 'undefined') {
-        Parcels.pick(parcel[0].properties);
+      // The land uses tile it too. A parcel is the more particular answer, so
+      // with both on it wins, and its card says what the ground under it is
+      // designated for; with only the land uses on, the cell is the answer.
+      const under = grids.length ? map.queryRenderedFeatures(e.point, { layers: grids }) : [];
+      const parcel = under.find((f) => f.layer.id === gridFillId(PARCELS_ID));
+      const use = under.find((f) => f.layer.id === gridFillId(LANDUSE_ID));
+      if (parcel && typeof Parcels !== 'undefined') {
+        Parcels.pick(parcel.properties, use ? use.properties : null);
+        return;
+      }
+      if (use && typeof LandUse !== 'undefined') {
+        LandUse.pick(use.id, use.properties, e.lngLat);
         return;
       }
       const block = dashed.length ? map.queryRenderedFeatures(e.point, { layers: dashed }) : [];
@@ -2132,6 +2287,12 @@ const Layers = (() => {
    *  places are all still unplaced - most of מקום שמור - would otherwise be a
    *  colour in the key that appears nowhere on the map. */
   function legendRows(layer) {
+    // The land uses have no members to count until one is tapped, and every
+    // colour is on the map the moment the layer is: the whole key, always.
+    if (layer.landuseGroups) {
+      return layer.landuseGroups.map((g) => ({
+        name: g.name, color: g.color, stripe: g.stripe, area: true }));
+    }
     const placed = layer.waypoints.filter((p) => !p.unplaced);
     // Segments as well as places, because trips are sorted into groups too -
     // by how hard they are - and they are lines.
@@ -2193,8 +2354,8 @@ const Layers = (() => {
       const head = rows[0].whole ? ''
         : `<p class="lg-layer">${escapeHtml(layer.name)}</p>`;
       return head + `<ul class="lg-rows">${rows.map((r) => `<li>
-        <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}"
-              style="--c:${r.color}"></span>
+        <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}${r.area ? ' area' : ''}${r.stripe ? ' striped' : ''}"
+              style="--c:${r.color}${r.stripe ? `;--s:${r.stripe}` : ''}"></span>
         <span class="lg-nm">${escapeHtml(r.name)}</span>
         ${r.n ? `<span class="lg-n">${r.n}</span>` : ''}
       </li>`).join('')}</ul>`;
@@ -2224,6 +2385,7 @@ const Layers = (() => {
   function summary(layer) {
     // Its items are only the parcel last tapped, so counting them would say
     // "1 חלקות" about a layer of nine thousand. The file is not read here.
+    if (layer.gridStyle === 'landuse') return 'כל המושבה, לפי התכניות התקפות';
     if (layer.grid) return `כל ה${layer.unit} במושבה`;
     if (layer.kind === 'places') {
       const n = layer.waypoints.length;
@@ -2512,7 +2674,7 @@ const Layers = (() => {
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
     openSheet, closeSheet, render, clearAll,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,
     set onChange(fn) { onChange = fn; }
