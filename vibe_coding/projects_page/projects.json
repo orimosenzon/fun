@@ -1006,6 +1006,40 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "מסלול: מה צריך כדי להגיע לחלל",
+          "icon": "🛰️",
+          "theme": "t-blue",
+          "dir": "orbit",
+          "tags": [
+            "Three.js",
+            "פיזיקה מסלולית",
+            "סימולציית שיגור",
+            "תלת-גופי",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#60a5fa\">כדור הארץ, רקטות ולוויינים בתלת־ממד, מדויקים פיזיקלית.</strong><br> בוחרים גובה ורואים מהירות, זמן הקפה ותקציב דלתא־וי. משגרים פלקון 9, סטארשיפ, סטורן 5, סויוז או צעדה ארוכה 5 בסימולציה מלאה עם גרר, שלבים והנחיה. סטארלינק מול לוויין גאוסטציונרי מעל פרדס חנה, ומשימות מספוטניק ואפולו 11 (מסלול ירח מחושב בתלת־גופי) ועד סטארשיפ טיסה 14. מוזיאון של כל הכלים בקנה מידה אמיתי.",
+          "links": [
+            {
+              "href": "orbit/index.html",
+              "style": "live",
+              "label": "▶ פתח את ההדמיה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/orbit",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "yoram — דד ליינים לקורסים",
           "icon": "📅",
           "theme": "t-teal",
