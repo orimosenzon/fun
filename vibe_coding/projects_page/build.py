@@ -361,6 +361,8 @@ EXCLUDED = {
 SKIP = EXCLUDED | {
     "projects_page", "tmp", "memory", "billing-check", "job-search", "factotum",
     "ori_android",
+    # clone of the PRIVATE repo orimosenzon/private, never on the public page
+    "private",
     # earlier iterations of "Smart Business Search" (ori/index.html)
     "map_search.html", "smart_map.html", "ms.html", "ms_es.html", "ms_mob.html",
     "wip.html", "tmp.html",
