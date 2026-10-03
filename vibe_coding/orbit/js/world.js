@@ -33,6 +33,7 @@ const earthFS = `
   #include <common>
   #include <logdepthbuf_pars_fragment>
   uniform sampler2D dayTex; uniform sampler2D nightTex; uniform vec3 sunDir;
+  uniform float hazeAmt; uniform vec3 hazeCol;
   varying vec2 vUv; varying vec3 vN; varying vec3 vP;
   void main(){
     #include <logdepthbuf_fragment>
@@ -57,6 +58,8 @@ const earthFS = `
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
+    // אובך אווירי כשהמצלמה בתוך האטמוספרה (אותו מודל כמו FogExp2 של three, בצבע sRGB)
+    if (hazeAmt > 0.0) { float hd = hazeAmt * length(cameraPosition - vP); gl_FragColor.rgb = mix(gl_FragColor.rgb, hazeCol, 1.0 - exp(-hd * hd)); }
   }`;
 const atmoFS = `
   #include <common>
@@ -89,6 +92,8 @@ export function createWorld(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -112,7 +117,7 @@ export function createWorld(canvas) {
   const moonTex = tex('textures/moon.jpg');
 
   const sunDir = new THREE.Vector3(1, 0, 0);
-  const earthMat = new THREE.ShaderMaterial({ uniforms: { dayTex: { value: dayTex }, nightTex: { value: nightTex }, sunDir: { value: sunDir } }, vertexShader: earthVS, fragmentShader: earthFS });
+  const earthMat = new THREE.ShaderMaterial({ uniforms: { dayTex: { value: dayTex }, nightTex: { value: nightTex }, sunDir: { value: sunDir }, hazeAmt: { value: 0 }, hazeCol: { value: new THREE.Vector3(0.7, 0.79, 0.88) } }, vertexShader: earthVS, fragmentShader: earthFS });
 
   // כדור הארץ מסתובב בתוך קבוצה (מערכת ECEF)
   const earth = new THREE.Group();
@@ -153,7 +158,7 @@ export function createWorld(canvas) {
   // אור מילוי חלש מכיוון המצלמה, כדי שגם צד הצל של כלים יהיה קריא
   const fill = new THREE.DirectionalLight(0x9fb4d8, 0.45);
   camera.add(fill); camera.add(fill.target); fill.position.set(0.3, 0.4, 1); fill.target.position.set(0, 0, -1); scene.add(camera);
-  const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff2d0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff2d0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   sunSprite.scale.setScalar(2.2e7);
   scene.add(sunSprite);
 
@@ -238,7 +243,17 @@ export function createWorld(canvas) {
     return m;
   }
 
+  // OrbitControls שומר את כיוון ה"למעלה" רק כשהוא נוצר. כשמשנים את camera.up (למשל לאנך המקומי
+  // באתר השיגור) חייבים לעדכן גם אותו, אחרת הגרירה מסובבת סביב ציר שגוי ומרגישה הפוכה.
+  const Y_AXIS = new THREE.Vector3(0, 1, 0);
+  function setUp(v) {
+    camera.up.copy(v).normalize();
+    controls._quat.setFromUnitVectors(camera.up, Y_AXIS);
+    controls._quatInverse.copy(controls._quat).invert();
+  }
+
   const world = {
+    setUp,
     renderer, scene, camera, controls, earth, earthMesh, earthMat, clouds, atmo, moon, sun, sunDir, clock,
     addLabel, removeLabel, updateLabels, updateCelestial, orientMoon, groundPatch, moonOverride: false,
   };
@@ -270,15 +285,15 @@ function makeStars() {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  return new THREE.Points(g, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, depthWrite: false }));
+  return new THREE.Points(g, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, depthWrite: false, fog: false }));
 }
 
 // קו מסלול מנקודות ECI (ק"מ)
 export function makeLine(points, color = 0x6fc3ff, opacity = 0.9, dashed = false) {
   const g = new THREE.BufferGeometry().setFromPoints(points);
   const m = dashed
-    ? new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: 600, gapSize: 400, depthWrite: false })
-    : new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
+    ? new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: 600, gapSize: 400, depthWrite: false, fog: false })
+    : new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false, fog: false });
   const l = new THREE.Line(g, m);
   if (dashed) l.computeLineDistances();
   return l;

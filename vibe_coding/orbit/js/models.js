@@ -394,7 +394,28 @@ function starship() {
     const t = m.clone(); t.material = hsMat; t.scale.z = 0.05; t.position.z = -0.24 - 0.02; g.add(t);
   };
   flap(3.6, 10.5, y0 + 0.5, 1, false); flap(3.6, 10.5, y0 + 0.5, -1, false);
-  flap(2.0, 7.0, y0 + 38.5, 1, true); flap(2.0, 7.0, y0 + 38.5, -1, true);
+  // דשים קדמיים של V3: קטנים, גבוה על החרטום וקרוב לחוד, ומוסטים כ-30° לצד המוגן (הרחק ממגן החום).
+  // הקצה הפנימי צמוד לקו האוז'יב של החרטום, כך שהציר שלהם עוקב אחרי העקמומיות.
+  const noseL = 18.1, rho = (R * R + noseL * noseL) / (2 * R);
+  const noseR = (x) => Math.sqrt(rho * rho - x * x) + R - rho;
+  const fwdFlap = (side) => {
+    const xa = 4.0, xb = 10.8, n = 10, pts = [];
+    for (let i = 0; i <= n; i++) { const x = xa + (xb - xa) * i / n; pts.push([noseR(x) - 0.05, x]); }
+    // הקצה החיצוני: רוחב 2.1 מ' בבסיס שהולך ומצטמצם, עם הסטה לאחור
+    for (let i = n; i >= 0; i--) { const f = i / n, x = xa + (xb - xa) * f; pts.push([noseR(x) + 2.1 - 1.55 * f, x - 1.1 * f * f]); }
+    const sh = new THREE.Shape(pts.map(([u, v]) => new THREE.Vector2(u, v)));
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.3, bevelEnabled: false }).translate(0, 0, -0.15);
+    const phi = side > 0 ? Math.PI / 6 : Math.PI - Math.PI / 6;
+    const m = new THREE.Mesh(geo, steel());
+    m.rotation.y = -phi; m.position.y = y0 + 34.0;
+    g.add(m);
+    // אריחים על הפנים הפונות לרוח
+    const t = new THREE.Mesh(geo, hsMat);
+    t.scale.z = 0.12; t.position.copy(m.position); t.rotation.copy(m.rotation);
+    t.translateZ(side > 0 ? -0.19 : 0.19);
+    g.add(t);
+  };
+  fwdFlap(1); fwdFlap(-1);
   // 3 רפטור ים + 3 רפטור ואקום
   ring(3, 1.05, (a, x, z) => { const n = nozzle(0.3, 0.65, 1.5, y0 + 0.6, copper()); n.position.x = x; n.position.z = z; g.add(n); });
   ring(3, 3.05, (a, x, z) => { const n = nozzle(0.35, 1.18, 3.0, y0 + 1.6, copper()); n.position.x = x; n.position.z = z; g.add(n); }, 0);
