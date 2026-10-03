@@ -7,6 +7,7 @@ import { RE_KM, eciToThree, ecefDir, ecefToEci, makeLine } from './world.js';
 import { barsHTML } from './mode_orbits.js';
 import { $, $$, fmt, fmtT, fmtMass, fmtDur, drawChart } from './util.js';
 import { settings, speedNum, speedStr, speedUnit } from './settings.js';
+import { SITES, GROUND_M, HAZE_SRGB, buildSite, placeSite, makeSky, Smoke } from './launch_site.js';
 
 // חלוקת המודל לחלקים לפי גובה מרכז כל רכיב (מטרים) ומרחקו מהציר
 const PARTS = {
@@ -94,7 +95,7 @@ export const launchMode = {
     $('#alt', panel).addEventListener('input', e => { this.alt = +e.target.value; this.syncUI(); });
     $('#inc', panel).addEventListener('input', e => { this.inc = +e.target.value; this.syncUI(); });
     $('#go', panel).onclick = () => this.launch();
-    $('#camBtn', panel).onclick = () => { this.follow = !this.follow; $('#camBtn', panel).textContent = this.follow ? 'מצלמה: עוקבת' : 'מצלמה: חופשית'; if (!this.follow) this.overview(); };
+    $('#camBtn', panel).onclick = () => this.toggleFollow();
     $('#maxBtn', panel).onclick = () => this.computeMax();
     this.follow = true;
     this.syncUI();
@@ -141,25 +142,21 @@ export const launchMode = {
     world.clock.paused = true;
     world.updateCelestial();
     this.theta0 = world.earth.rotation.y;
-    // קטע קרקע מפורט ואתר השיגור
+    // קטע קרקע לווייני, ומעליו אתר השיגור המפורט: כן, מגדלים, מבנים, צמחייה
+    const S = SITES[this.rid];
+    this.site = S;
     this.patch = world.groundPatch(R.site.lat, R.site.lon, 80);
-    const sDir = ecefDir(R.site.lat, R.site.lon);
-    this.siteEcef = sDir;
-    // מגדל שיגור פשוט במערכת כדור הארץ
-    this.pad = new THREE.Group();
-    const towerH = R.height * 1.05;
-    const tower = new THREE.Mesh(new THREE.BoxGeometry(8, towerH, 8), new THREE.MeshStandardMaterial({ color: 0x5b5f66, roughness: 0.8, wireframe: true }));
-    tower.position.set(R.diameter / 2 + 12, towerH / 2, 0);
-    this.pad.add(tower);
-    const slab = new THREE.Mesh(new THREE.CylinderGeometry(60, 60, 2, 32), new THREE.MeshStandardMaterial({ color: 0x8a8a84, roughness: 0.95 }));
-    slab.position.y = -1; this.pad.add(slab);
-    this.pad.scale.setScalar(0.001);
-    const up = new THREE.Vector3(sDir[0], sDir[2], -sDir[1]);
-    this.pad.position.copy(up).multiplyScalar(RE_KM + 0.001);
-    this.pad.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+    this.siteEcef = ecefDir(R.site.lat, R.site.lon);
+    const built = buildSite(this.rid, settings.quality);
+    this.pad = built.root;
+    this.frame = placeSite(this.pad, R.site.lat, R.site.lon);
     world.earth.add(this.pad);
+    this.baseOff = GROUND_M + S.baseH; // גובה בסיס הרקטה מעל כדור הייחוס (מ')
+    this.smoke = new Smoke(this.pad, built.plumeDir, S.baseH);
+    this.enterAtmosphere();
     // הרקטה ומיפוי חלקיה
     this.rocket = buildModel(this.rid);
+    this.rocket.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     this.parts = {};
     const fn = PARTS[this.rid];
     for (const ch of [...this.rocket.children]) {
@@ -181,14 +178,15 @@ export const launchMode = {
     this.plumeCone = cone; this.plumeCore = core;
     this.rocketRoot.add(this.plume);
     this.plume.visible = false;
+    // אור הלהבה: מאיר את הכן ואת העשן בזמן ההמראה
+    this.flameLight = new THREE.PointLight(0xffa860, 0, 0.6, 1.2);
+    this.flameLight.position.y = -0.01;
+    this.rocketRoot.add(this.flameLight);
     this.placeOnPad();
-    // מצלמה ליד הכן
-    const pos = this.rocketRoot.position;
-    const upv = pos.clone().normalize();
-    const side = new THREE.Vector3().crossVectors(upv, new THREE.Vector3(0, 1, 0)).normalize();
-    world.controls.target.copy(pos).addScaledVector(upv, R.height * 0.0005);
-    world.camera.position.copy(world.controls.target).addScaledVector(side, R.height * 0.0028).addScaledVector(upv, R.height * 0.0004);
-    world.camera.up.copy(upv);
+    this.savedView = null;
+    this.follow = true;
+    const cb = $('#camBtn', this.panel); if (cb) cb.textContent = 'מצלמה: עוקבת';
+    this.closeView();
     this.sim = null;
     this.tAnim = 0;
     $('#hud').hidden = true;
@@ -198,21 +196,62 @@ export const launchMode = {
     world.timeDisplay = () => 'T−00:00';
   },
 
+  // מבט קרוב על הרקטה, בצד השמש (כדי שתהיה מוארת), מעט מוסט כדי לראות גם את המגדל
+  closeView() {
+    const { world, R } = this;
+    const pos = this.rocketRoot.position;
+    const upv = pos.clone().normalize();
+    const sunH = world.sunDir.clone().addScaledVector(upv, -world.sunDir.dot(upv)).normalize();
+    const side = sunH.applyAxisAngle(upv, -0.6);
+    world.controls.target.copy(pos).addScaledVector(upv, R.height * 0.00045);
+    world.camera.position.copy(world.controls.target).addScaledVector(side, R.height * 0.0029).addScaledVector(upv, -R.height * 0.00012 + 0.0012);
+    world.setUp(upv);
+  },
+
+  // מעבר בין מצלמה עוקבת לחופשית. כשחוזרים לעוקבת, המבט חוזר בדיוק למקום שבו היה ביחס לרקטה.
+  toggleFollow() {
+    const w = this.world, root = this.rocketRoot;
+    if (this.follow) {
+      const qi = root.quaternion.clone().invert();
+      this.savedView = {
+        cam: w.camera.position.clone().sub(root.position).applyQuaternion(qi),
+        tgt: w.controls.target.clone().sub(root.position).applyQuaternion(qi),
+      };
+      this.follow = false;
+      this.overview();
+    } else {
+      this.follow = true;
+      if (this.savedView) {
+        w.camera.position.copy(this.savedView.cam).applyQuaternion(root.quaternion).add(root.position);
+        w.controls.target.copy(this.savedView.tgt).applyQuaternion(root.quaternion).add(root.position);
+        w.setUp(root.position.clone().normalize());
+      } else this.closeView();
+    }
+    $('#camBtn', this.panel).textContent = this.follow ? 'מצלמה: עוקבת' : 'מצלמה: חופשית';
+  },
+
   placeOnPad() {
     const w = this.world;
     const s = ecefToEci(this.siteEcef, w.earth.rotation.y);
     const up = eciToThree(s).normalize();
-    this.rocketRoot.position.copy(up).multiplyScalar(RE_KM + 0.0012);
-    this.rocketRoot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+    this.rocketRoot.position.copy(up).multiplyScalar(RE_KM + this.baseOff / 1000);
+    // אותה הכוונה כמו האתר (מזרח/צפון), כדי שהרקטה תעמוד נכון מול המגדל
+    this.rocketRoot.quaternion.copy(w.earth.quaternion).multiply(this.pad.quaternion);
   },
 
   clear3D() {
     const w = this.world;
     if (this.patch) { w.earth.remove(this.patch); this.patch.geometry.dispose(); this.patch = null; }
-    if (this.pad) { w.earth.remove(this.pad); this.pad = null; }
+    if (this.pad) {
+      w.earth.remove(this.pad);
+      this.pad.traverse(o => { o.geometry?.dispose(); if (o.material?.map && o.isMesh && o.material.transparent) o.material.map.dispose(); });
+      this.pad = null;
+    }
+    this.smoke = null;
+    if (this.pathLine) { w.earth.remove(this.pathLine); this.pathLine.geometry.dispose(); this.pathLine = null; }
     this.group.clear();
     this.debris = [];
-    w.camera.up.set(0, 1, 0);
+    w.setUp(new THREE.Vector3(0, 1, 0));
   },
 
   launch() {
@@ -266,11 +305,15 @@ export const launchMode = {
 
   buildPath() {
     this.B = this.basis();
-    const pts = this.sim.log.map(e => this.toThree(P.R_EARTH + e.alt, e.theta));
+    // קו העלייה מצויר יחסית לקרקע (בתוך מערכת כדור הארץ המסתובבת): כל נקודה מסובבת לאחור בזווית
+    // שכדור הארץ הסתובב עד לרגע שלה. כך הקו מתחיל בכן ונשאר צמוד לנוף, והקצה שלו תמיד על הרקטה.
+    // (במערכת האינרציאלית הכן היה "בורח" מזרחה מתחילת הקו, כ-50 ק"מ בשתי דקות.)
+    const Y = new THREE.Vector3(0, 1, 0);
+    const pts = this.sim.log.map(e => this.toThree(P.R_EARTH + e.alt + this.baseOff, e.theta).applyAxisAngle(Y, -(this.theta0 + P.OMEGA_EARTH * e.t)));
     this.pathLine = makeLine(pts, 0xfbbf24, 0.95);
     this.pathLine.geometry.setDrawRange(0, 0);
     this.pathLine.frustumCulled = false;
-    this.group.add(this.pathLine);
+    this.world.earth.add(this.pathLine);
   },
 
   // אחרי הכניסה למסלול: שיוט, ואם היעד GTO/TLI, הבערה שנייה של השלב העליון
@@ -372,6 +415,7 @@ export const launchMode = {
   update(world, dtReal, dtSim) {
     if (!this.sim) {
       if (this.rocketRoot) this.placeOnPad();
+      this.updateAtmosphere();
       return;
     }
     const sim = this.sim, log = sim.log;
@@ -389,15 +433,18 @@ export const launchMode = {
       e = {};
       for (const k of ['alt', 'theta', 'v', 'vRel', 'm', 'F', 'q', 'g', 'pitch', 'M']) e[k] = a[k] + (b[k] - a[k]) * f;
       e.stage = a.stage;
-      const r = P.R_EARTH + e.alt;
+      const r = P.R_EARTH + e.alt + this.baseOff;
       pos = this.toThree(r, e.theta);
       const up = pos.clone().normalize();
       const down = this.toThree(r, e.theta + 1e-6).sub(pos).normalize();
       fwd = up.clone().multiplyScalar(Math.sin(e.pitch)).addScaledVector(down, Math.cos(e.pitch)).normalize();
       this.pathLine.geometry.setDrawRange(0, i + 2);
-      if (e.alt < 1 && t < 3) { // על הכן, כדור הארץ מסתובב
+      if (e.alt < 0.5) { // עוד על הכן (המנועים מתעוררים), כדור הארץ מסתובב
+        this.placeOnPad();
         pos = this.rocketRoot.position.clone();
       }
+      this.smoke?.update(dtSim, t, e.alt, e.F > 0);
+      this.flameLight.intensity = e.F > 0 ? Math.max(0, 60 * (1 - e.alt / 2500)) * (0.8 + 0.4 * Math.random()) : 0;
       this.hud(e, t);
       this.plume.visible = e.F > 0;
       this.updatePlume(e);
@@ -426,7 +473,10 @@ export const launchMode = {
       const vel = this.toThree(Math.hypot(this.state.x + this.state.vx, this.state.y + this.state.vy), Math.atan2(this.state.y + this.state.vy, this.state.x + this.state.vx)).sub(pos).normalize();
       fwd = vel;
       this.hudCoast(r, t);
+      this.smoke?.update(dtSim, t, 1e6, false);
+      this.flameLight.intensity = 0;
     }
+    this.updateAtmosphere();
     // מיקום והכוונה של הרקטה
     const prev = this.rocketRoot.position.clone();
     const prevQ = this.rocketRoot.quaternion.clone();
@@ -457,7 +507,7 @@ export const launchMode = {
       const tgtOff = world.controls.target.clone().sub(prev).applyQuaternion(dq);
       world.camera.position.copy(this.rocketRoot.position).add(camOff);
       world.controls.target.copy(this.rocketRoot.position).add(tgtOff);
-      world.camera.up.copy(this.rocketRoot.position).normalize();
+      world.setUp(this.rocketRoot.position.clone().normalize());
     }
   },
 
@@ -567,19 +617,70 @@ export const launchMode = {
     this.drawCharts(this.tAnim);
   },
 
+  // שמיים, ערפל וצל השמש כשהמצלמה בתוך האטמוספרה
+  enterAtmosphere() {
+    const w = this.world;
+    if (!this.sky) this.sky = makeSky();
+    w.scene.add(this.sky);
+    w.scene.fog = new THREE.FogExp2(HAZE_SRGB, 0);
+    w.sun.castShadow = true;
+    const sc = w.sun.shadow.camera;
+    sc.left = sc.bottom = -0.32; sc.right = sc.top = 0.32; sc.near = 0.01; sc.far = 3;
+    w.sun.shadow.mapSize.set(settings.quality === 'saver' ? 1024 : 2048, settings.quality === 'saver' ? 1024 : 2048);
+    w.sun.shadow.bias = -0.0004;
+    w.sun.shadow.normalBias = 0.0004;
+    sc.updateProjectionMatrix();
+  },
+  updateAtmosphere() {
+    const w = this.world;
+    if (!this.sky) return;
+    const cam = w.camera.position;
+    const alt = Math.max(0, cam.length() - RE_KM - GROUND_M / 1000);
+    const up = cam.clone().normalize();
+    const u = this.sky.material.uniforms;
+    u.alt.value = alt; u.up.value.copy(up); u.sunDir.value.copy(w.sunDir);
+    this.sky.position.copy(cam);
+    // המצלמה לא יורדת אל מתחת לקרקע: מגבילים את זווית הגרירה לפי גובה נקודת המבט ומרחק המצלמה ממנה
+    const tH = (w.controls.target.length() - RE_KM) * 1000 - GROUND_M;
+    const dist = cam.distanceTo(w.controls.target) * 1000;
+    w.controls.maxPolarAngle = tH > 0 && tH < dist ? Math.acos(Math.max(-1, Math.min(1, -(tH - 3) / dist))) : Math.PI;
+    // ראות של כ-30 ק"מ בגובה הקרקע, נעלמת עם הגובה
+    const dens = 0.032 * Math.exp(-alt / 7.5);
+    w.scene.fog.density = dens;
+    w.earthMat.uniforms.hazeAmt.value = dens;
+    // הצל: תיבת צל סביב הכן, מכוונת לשמש
+    if (this.pad) {
+      const c = this.pad.getWorldPosition(this._tmpV ??= new THREE.Vector3());
+      w.sun.target.position.copy(c);
+      w.sun.position.copy(c).addScaledVector(w.sunDir, 1.5);
+      w.sun.target.updateMatrixWorld();
+    }
+  },
+  leaveAtmosphere() {
+    const w = this.world;
+    if (this.sky) w.scene.remove(this.sky);
+    w.scene.fog = null;
+    w.earthMat.uniforms.hazeAmt.value = 0;
+    w.sun.castShadow = false;
+    w.controls.maxPolarAngle = Math.PI;
+    w.sun.target.position.set(0, 0, 0);
+    w.sun.target.updateMatrixWorld();
+  },
+
   overview() {
     const w = this.world;
     w.controls.target.set(0, 0, 0);
-    w.camera.up.set(0, 1, 0);
+    w.setUp(new THREE.Vector3(0, 1, 0));
     w.camera.position.copy(this.rocketRoot.position).normalize().multiplyScalar(RE_KM * 3.2).add(new THREE.Vector3(0, RE_KM, 0));
   },
 
   exit(world) {
     this.clear3D();
+    this.leaveAtmosphere();
     world.scene.remove(this.group);
     world.clock.paused = false;
     world.controls.minDistance = RE_KM * 1.05;
-    world.camera.up.set(0, 1, 0);
+    world.setUp(new THREE.Vector3(0, 1, 0));
     this.sim = null;
   },
 };

@@ -86,7 +86,7 @@ export const missionsMode = {
     this.anim = null;
     if (this.siteMarker) { w.earth.remove(this.siteMarker); this.siteMarker = null; }
     w.moonOverride = false;
-    w.camera.up.set(0, 1, 0);
+    w.setUp(new THREE.Vector3(0, 1, 0));
   },
 
   addSite(m) {

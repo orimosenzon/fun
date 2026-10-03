@@ -107,6 +107,16 @@ table.cmp td.geo { color: var(--geo); }
 .chart { width: 100%; height: 110px; display: block; margin: 6px 0; background: rgba(255,255,255,0.025); border-radius: 8px; }
 
 #hud[hidden] { display: none !important; }
+/* מבט נקי */
+body.clean #top, body.clean #panel, body.clean #hud, body.clean #timebar, body.clean #labels { display: none !important; }
+body.clean.idle, body.clean.idle canvas { cursor: none; }
+#cleanbar[hidden] { display: none; }
+#cleanbar { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 6px; padding: 5px; border-radius: 999px;
+  background: rgba(10, 14, 24, 0.55); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity .6s; }
+#cleanbar.idle { opacity: 0; pointer-events: none; }
+#cleanbar button { background: transparent; color: #e8edf6; border: 0; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+#cleanbar button:hover { background: rgba(255, 255, 255, 0.12); }
+#cleanbar button[hidden] { display: none; }
 #hud { position: fixed; left: 50%; transform: translateX(-50%); bottom: 64px; z-index: 4; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px;
   display: grid; grid-template-columns: repeat(7, auto); gap: 4px 20px; backdrop-filter: blur(10px); direction: rtl; }
 #hud .k { font-size: 11.5px; color: var(--muted); }
@@ -117,6 +127,8 @@ table.cmp td.geo { color: var(--geo); }
 #clock { font-family: var(--mono); font-size: 13px; color: var(--muted); direction: ltr; }
 #warp { display: flex; gap: 2px; direction: ltr; }
 #warp button { background: none; border: 0; padding: 4px 9px; border-radius: 999px; font-size: 12.5px; font-family: var(--mono); color: var(--muted); }
+#cleanBtn { background: none; border: 0; border-inline-start: 1px solid var(--line); padding: 4px 10px; font-size: 12.5px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+#cleanBtn:hover { color: var(--text); }
 #warp button.on { background: rgba(90,169,255,0.25); color: var(--text); }
 
 #labels { position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }

@@ -57,8 +57,31 @@ world.setWarps = (list, current) => {
 };
 world.timeDisplay = null; // לשונית יכולה להחליף את תצוגת השעון
 
+// ---------- מבט נקי: מסתיר את כל הממשק ומשאיר רק את הסצנה ----------
+let cleanTimer = 0;
+function wakeCleanbar() {
+  const bar = $('#cleanbar');
+  bar.classList.remove('idle'); document.body.classList.remove('idle');
+  clearTimeout(cleanTimer);
+  cleanTimer = setTimeout(() => { bar.classList.add('idle'); document.body.classList.add('idle'); }, 2200);
+}
+function setClean(on) {
+  document.body.classList.toggle('clean', on);
+  $('#cleanbar').hidden = !on;
+  $('#cleanGo').hidden = !mode?.launch;
+  mode?.onClean?.(on);
+  if (on) wakeCleanbar(); else { clearTimeout(cleanTimer); document.body.classList.remove('idle'); }
+}
+world.setClean = setClean;
+$('#cleanExit').addEventListener('click', () => setClean(false));
+$('#cleanBtn').addEventListener('click', () => setClean(true));
+$('#cleanGo').addEventListener('click', () => mode?.launch?.());
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('clean')) setClean(false); });
+for (const ev of ['pointermove', 'pointerdown', 'wheel']) window.addEventListener(ev, () => { if (document.body.classList.contains('clean')) wakeCleanbar(); }, { passive: true });
+
 function setMode(name) {
   if (name === modeName) return;
+  if (document.body.classList.contains('clean')) setClean(false);
   if (mode?.exit) mode.exit(world);
   modeName = name;
   mode = MODES[name];

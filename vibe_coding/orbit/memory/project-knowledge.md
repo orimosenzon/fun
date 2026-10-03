@@ -6,6 +6,7 @@ LIVE (אחרי push): orimosenzon.github.io/fun/vibe_coding/orbit/
 ## סטאק
 - סטטי לגמרי, בלי build: `index.html` + מודולי ES ב-`js/`, Three.js 0.170 מ-jsdelivr דרך importmap.
 - יחידות הסצנה: ק"מ. מערכת ECI ממופה ל-three: x→x, z(צפון)→y, y→-z. כדור הארץ מסתובב לפי GMST בתוך `world.earth` (מערכת ECEF).
+- **לעולם לא לשנות `camera.up` ישירות**, אלא רק דרך `world.setUp(v)`. OrbitControls שומר את ציר ה"למעלה" רק כשהוא נוצר, ובלי העדכון הגרירה מסתובבת סביב ציר שגוי.
 - logarithmicDepthBuffer: כל ShaderMaterial חייב את ה-chunks של logdepthbuf (ראו world.js).
 - מרקמים מנאס"א (נחלת הכלל) ב-`textures/`.
 
@@ -13,12 +14,17 @@ LIVE (אחרי push): orimosenzon.github.io/fun/vibe_coding/orbit/
 - `physics.js` — קבועים, ויס־ויבה, הוהמן, אטמוספרה US1976, סימולציית שיגור דו־ממדית (`simulateAscent`), `optimizeKick`, `maxPayload`, שמש/ירח/GMST, דעיכת מסלול. רץ גם ב-node.
 - `rockets.js` — נתוני שלבים (דחף ים/ואקום, Isp, דלק, מסה יבשה). ערכים לא רשמיים מסומנים `est`.
 - `models.js` — מודלים פרוצדורליים במטרים (רקטות ציר +Y). מצב השיגור מחלק אותם לשלבים לפי גובה מרכז כל רכיב (`PARTS` ב-mode_launch.js) — שינוי במודל עלול לשבור את החלוקה.
+- `launch_site.js` — אתרי השיגור בגובה הקרקע (מטרים, X מזרח, Y למעלה, Z דרום): קרקע מצוירת על קנבס (6.5 ק"מ + ריבוע מפורט 900 מ'), מבנים לכל כן ב-`LAYOUT`, עצים ובתים כ-InstancedMesh, כיפת שמיים ועשן המראה. הקואורדינטות המדויקות של הכנים נמצאות רק ב-`rockets.js` (site). הקרקע שקופה בשוליים, ולכן היא חייבת `renderOrder` שלילי, אחרת היא מכסה את הסילון.
 - `data.js` — מסלולים מוכרים, משימות, מפרטים למוזיאון.
 - `lunar_data.js` — נוצר ע"י `node tools/build_lunar.mjs` (תלת־גופי מישורי + ירי; ~45 שניות). לא לערוך ידנית.
 - מצבים: `mode_orbits / compare / launch / missions / museum / about`. לכל אחד enter/update/exit. `main.js` מנהל לשוניות, שעון ולולאה. `window.__app` חשוף לדיבאג.
 
+- קו העלייה הצהוב חי בתוך `world.earth` (יחסית לקרקע): כל נקודה מסובבת ב-`-(theta0 + OMEGA_EARTH·t)`. קווי המסלול הכחולים/סגולים נשארים אינרציאליים, כי מסלול הוא אינרציאלי.
+- במצב השיגור: `scene.fog` (FogExp2), אובך ב-earthMat (`hazeAmt`), צל מהשמש (`world.sun.castShadow`), וכולם מתאפסים ב-`leaveAtmosphere`. הערפל חל על כל חומר רגיל, ולכן לכוכבים, לשמש ולקווים יש `fog: false`.
+
 ## בדיקות
 - `node tools/test_sim.mjs`, `node tools/test_payload.mjs` — סימולציה מול ערכים מפורסמים (מטען מרבי גבוה ב-10–20%, צפוי).
+- swiftshader נתקע בצילום של לשונית השיגור מאז שנוספו הצללים והאתר. במקום זה מריצים Chromium עם GPU אמיתי: `headless=False, args=['--ignore-gpu-blocklist','--enable-gpu','--use-angle=gl']`.
 - `python3 tools/shot.py <hash> out.png [wait] [w] [h] [js] [wait2]` — צילום מסך עם Playwright (swiftshader). דורש שרת: `python3 -m http.server 8765` מתוך התיקייה.
 
 ## עובדות שנבדקו (3/10/2026)
