@@ -6,6 +6,7 @@ import { buildModel } from './models.js';
 import { RE_KM, eciToThree, ecefDir, ecefToEci, makeLine } from './world.js';
 import { dvBudget } from './mode_orbits.js';
 import { $, fmt, h } from './util.js';
+import { settings, speedStr } from './settings.js';
 
 // מעטפת אחת של סטארלינק: 72 מישורים × 22 לוויינים, נטייה 53° (המעטפת הראשונה, שהונמכה ב-2026 ל-480 ק"מ)
 const PLANES = 72, PER = 22, INC = 53 * Math.PI / 180, ALT = 480, F = 39;
@@ -31,7 +32,7 @@ export const compareMode = {
     this.slPos = new Float32Array(n * 3);
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(this.slPos, 3));
-    this.slPoints = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x7dd3fc, size: 3, sizeAttenuation: false, transparent: true, opacity: 0.95, depthWrite: false }));
+    this.slPoints = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x7dd3fc, size: 3 * settings.satSize, sizeAttenuation: false, transparent: true, opacity: 0.95, depthWrite: false }));
     this.slPoints.frustumCulled = false;
     this.group.add(this.slPoints);
     this.rS = RE_KM + ALT;
@@ -44,7 +45,7 @@ export const compareMode = {
     this.group.add(makeLine(ring, 0xf59e0b, 0.45));
     this.geo = GEO_SATS.map(s => {
       const m = buildModel('geo');
-      m.scale.setScalar(25);
+      m.scale.setScalar(25 * settings.satSize);
       const d = ecefDir(0, s.lon);
       m.position.set(d[0] * rG, d[2] * rG, -d[1] * rG);
       // הצד עם האנטנות פונה לכדור הארץ
@@ -98,7 +99,7 @@ export const compareMode = {
       <table class="cmp">
         <tr><th></th><th>סטארלינק</th><th>גאוסטציונרי</th></tr>
         <tr><td>גובה</td><td class="leo">480–560 ק"מ</td><td class="geo">35,786 ק"מ (פי 70)</td></tr>
-        <tr><td>מהירות</td><td class="leo">${fmt(P.circularSpeed(this.rS * 1e3) / 1000, 2)} ק"מ/שנ׳</td><td class="geo">3.07 ק"מ/שנ׳</td></tr>
+        <tr><td>מהירות</td><td class="leo" id="spdS">${speedStr(P.circularSpeed(this.rS * 1e3))}</td><td class="geo" id="spdG">${speedStr(P.circularSpeed(P.GEO_RADIUS))}</td></tr>
         <tr><td>הקפה</td><td class="leo">${fmt(P.periodOf(this.rS * 1e3) / 60, 0)} דקות</td><td class="geo">23:56 שעות, כמו סיבוב כדור הארץ</td></tr>
         <tr><td>בשמיים</td><td class="leo">חוצה את השמיים בדקות; המשתמש עובר מלוויין ללוויין כל הזמן</td><td class="geo">עומד במקום</td></tr>
         <tr><td>אנטנה בבית</td><td class="leo">מערך מופע שמכוון את האלומה אלקטרונית</td><td class="geo">צלחת קבועה שמכוונים פעם אחת</td></tr>
@@ -187,6 +188,17 @@ export const compareMode = {
         <div class="card"><div class="k">זמן לאות: אליו וממנו לקרקע</div><div class="v" style="color:var(--geo)">${ms(dGeo)} <small>מ"ש</small></div></div>
         <div class="card"><div class="k">הגבהה מעל האופק</div><div class="v" style="color:var(--leo)">${best ? fmt(Math.asin(best.sinEl) * 180 / Math.PI, 0) + '°' : '—'}</div></div>
         <div class="card"><div class="k">הגבהה מעל האופק</div><div class="v" style="color:var(--geo)">${fmt(elGeo, 0)}° <small>תמיד</small></div></div>`;
+    }
+  },
+
+  onSettings(k) {
+    if (k === 'speedUnit') {
+      $('#spdS', this.panel).textContent = speedStr(P.circularSpeed(this.rS * 1e3));
+      $('#spdG', this.panel).textContent = speedStr(P.circularSpeed(P.GEO_RADIUS));
+    }
+    if (k === 'satSize') {
+      this.slPoints.material.size = 3 * settings.satSize;
+      this.geo.forEach(g => g.mesh.scale.setScalar(25 * settings.satSize));
     }
   },
 

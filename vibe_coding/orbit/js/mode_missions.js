@@ -6,6 +6,7 @@ import { LUNAR } from './lunar_data.js';
 import { buildModel } from './models.js';
 import { RE_KM, eciToThree, ecefDir, makeLine } from './world.js';
 import { $, $$, fmt, fmtDateHe, fmtDur, h } from './util.js';
+import { settings, speedStr } from './settings.js';
 
 const FILTERS = [
   ['all', 'הכל'], ['us', 'ארה"ב'], ['ussr', 'ברית המועצות'], ['cn', 'סין'], ['spacex', 'SpaceX'], ['il', 'ישראל'],
@@ -61,7 +62,7 @@ export const missionsMode = {
         <dt>רקטה</dt><dd>${m.rocket}</dd>
         <dt>אתר שיגור</dt><dd>${m.site.name}</dd>
         ${m.crew ? `<dt>צוות</dt><dd>${m.crew}</dd>` : ''}
-        ${m.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}
+        ${m.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v?.speed ? speedStr(v.speed) : v}</dd>`).join('')}
       </dl>
       ${m.launchPreset ? `<button class="btn" id="sim">🚀 לסמלץ את השיגור הזה</button>` : ''}
       ${m.text.map(p => `<p>${p}</p>`).join('')}
@@ -254,7 +255,7 @@ export const missionsMode = {
     const x = new THREE.Vector3().crossVectors(y, z);
     s.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
     const dist = world.camera.position.distanceTo(pos);
-    s.scale.setScalar(Math.max(0.001, dist * 0.05 / this.satSize));
+    s.scale.setScalar(Math.max(0.001, dist * 0.05 * settings.satSize / this.satSize));
     this.satLabel.pos.copy(pos);
   },
 
@@ -294,7 +295,7 @@ export const missionsMode = {
       this.craft.visible = true; this.satLabel.visible = true;
       this.craft.position.copy(p);
       const dist = world.camera.position.distanceTo(p);
-      this.craft.scale.setScalar(dist * 0.004);
+      this.craft.scale.setScalar(dist * 0.004 * settings.satSize);
       this.satLabel.pos.copy(p);
     }
   },
