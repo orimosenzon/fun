@@ -35,7 +35,9 @@
     <button data-tab="missions">משימות</button>
     <button data-tab="museum">מוזיאון</button>
     <button data-tab="about" class="ghost">על הדיוק</button>
+    <button id="gear" class="ghost" aria-label="הגדרות" title="הגדרות">⚙</button>
   </nav>
+  <div id="settings" hidden></div>
 </header>
 
 <aside id="panel">
@@ -50,7 +52,18 @@
   <div id="warp"></div>
 </div>
 
-<div id="loading">טוען את כדור הארץ…</div>
+<div id="loading">
+  <div class="ld">
+    <h2>אנא המתינו...</h2>
+    <div class="ld-bar"><i id="ld-fill"></i></div>
+    <p id="ld-msg">טוען את מנוע התלת־ממד (Three.js)</p>
+    <ul id="ld-steps"></ul>
+  </div>
+</div>
+<script>
+  // מתחיל להתקדם עוד לפני שהמודולים נטענו, כדי שלא ייראה תקוע
+  document.getElementById('ld-fill').style.width = '4%';
+</script>
 
 <script type="module" src="js/main.js"></script>
 </body>

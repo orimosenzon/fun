@@ -6,6 +6,7 @@ import { buildModel, ROCKET_HEIGHTS } from './models.js';
 import { RE_KM, eciToThree, ecefDir, ecefToEci, makeLine } from './world.js';
 import { barsHTML } from './mode_orbits.js';
 import { $, $$, fmt, fmtT, fmtMass, fmtDur, drawChart } from './util.js';
+import { settings, speedNum, speedStr, speedUnit } from './settings.js';
 
 // חלוקת המודל לחלקים לפי גובה מרכז כל רכיב (מטרים) ומרחקו מהציר
 const PARTS = {
@@ -341,7 +342,7 @@ export const launchMode = {
       }
     } else {
       const vc = P.circularSpeed(sim.r);
-      verdict = `<div class="verdict fail">✗ <b>לא הגענו למסלול.</b> הדלק נגמר בגובה ${fmt((sim.r - P.R_EARTH) / 1000)} ק"מ במהירות ${fmt(sim.v)} מ׳/שנ׳, בעוד שמסלול מעגלי שם דורש ${fmt(vc)}. המטען כבד מדי לרקטה הזו, והיא תיפול בחזרה.</div>`;
+      verdict = `<div class="verdict fail">✗ <b>לא הגענו למסלול.</b> הדלק נגמר בגובה ${fmt((sim.r - P.R_EARTH) / 1000)} ק"מ במהירות ${speedStr(sim.v)}, בעוד שמסלול מעגלי שם דורש ${speedStr(vc)}. המטען כבד מדי לרקטה הזו, והיא תיפול בחזרה.</div>`;
     }
     $('#result', panel).innerHTML = verdict + `
       <h3>לאן הלך הדלק? (Δv שהמנועים סיפקו)</h3>
@@ -518,8 +519,8 @@ export const launchMode = {
     $('#hud').innerHTML = `
       <div><div class="k">זמן</div><div class="v">T+${fmtT(t)}</div></div>
       <div><div class="k">גובה</div><div class="v">${fmt(e.alt / 1000, 1)} km</div></div>
-      <div><div class="k">מהירות יחסית לקרקע</div><div class="v">${fmt(e.vRel * 3.6)} km/h</div></div>
-      <div><div class="k">מהירות מסלולית</div><div class="v">${fmt(e.v * 3.6)} km/h</div></div>
+      <div><div class="k">מהירות יחסית לקרקע (${speedUnit().label})</div><div class="v">${speedNum(e.vRel)}</div></div>
+      <div><div class="k">מהירות מסלולית (${speedUnit().label})</div><div class="v">${speedNum(e.v)}</div></div>
       <div><div class="k">תאוצה</div><div class="v">${fmt(e.g, 2)} g</div></div>
       <div><div class="k">לחץ דינמי</div><div class="v">${fmt(e.q / 1000, 1)} kPa</div></div>
       <div><div class="k">${stageName}</div><div class="v">${fmt(e.m / 1000, 0)} t</div></div>
@@ -534,7 +535,7 @@ export const launchMode = {
     $('#hud').innerHTML = `
       <div><div class="k">זמן</div><div class="v">T+${fmtT(t)}</div></div>
       <div><div class="k">גובה</div><div class="v">${fmt((r - P.R_EARTH) / 1000, 0)} km</div></div>
-      <div><div class="k">מהירות מסלולית</div><div class="v">${fmt(v * 3.6)} km/h</div></div>
+      <div><div class="k">מהירות מסלולית (${speedUnit().label})</div><div class="v">${speedNum(v)}</div></div>
       <div><div class="k">מנועים</div><div class="v">כבויים</div></div>
       <div><div class="k">תאוצה</div><div class="v">0 g</div></div>
       <div><div class="k">לחץ דינמי</div><div class="v">0</div></div>
@@ -545,16 +546,25 @@ export const launchMode = {
   drawCharts(t) {
     const c1 = $('#ch1', this.panel), c2 = $('#ch2', this.panel);
     if (!c1) return;
-    if (!this.sim) { drawChart(c1, [], { title: 'גובה (ק"מ, צהוב) ומהירות (מ׳/שנ׳ ÷10, תכלת)' }); drawChart(c2, [], { title: 'תאוצה (g ×10, כתום) ולחץ דינמי (kPa, ורוד)' }); return; }
+    if (!this.sim) { drawChart(c1, [], { title: 'גובה (ק"מ, צהוב) ומהירות (תכלת)' }); drawChart(c2, [], { title: 'תאוצה (g ×10, כתום) ולחץ דינמי (kPa, ורוד)' }); return; }
     const log = this.sim.log;
+    // מהירות ביחידה שנבחרה, מוקטנת כדי שתשב באותו טווח של הגובה
+    const div = { kmh: 100, kms: 0.01, ms: 10 }[settings.speedUnit] ?? 100;
+    const sc = div >= 1 ? `÷${div}` : `×${1 / div}`;
     drawChart(c1, [
       { data: log.map(e => [e.t, e.alt / 1000]), color: '#fbbf24' },
-      { data: log.map(e => [e.t, e.v / 10]), color: '#5ac8ff' },
-    ], { title: 'גובה (ק"מ, צהוב) ומהירות (מ׳/שנ׳ ÷10, תכלת)', marker: t, xLabel: 'שניות' });
+      { data: log.map(e => [e.t, speedUnit().f(e.v) / div]), color: '#5ac8ff' },
+    ], { title: `גובה (ק"מ, צהוב) ומהירות (${speedUnit().label} ${sc}, תכלת)`, marker: t, xLabel: 'שניות' });
     drawChart(c2, [
       { data: log.map(e => [e.t, e.g * 10]), color: '#fb923c' },
       { data: log.map(e => [e.t, e.q / 1000]), color: '#f472b6' },
     ], { title: 'תאוצה (g ×10, כתום) ולחץ דינמי (kPa, ורוד)', marker: t, xLabel: 'שניות' });
+  },
+
+  onSettings(k) {
+    if (k !== 'speedUnit' || !this.sim) return;
+    this.showResult();
+    this.drawCharts(this.tAnim);
   },
 
   overview() {
