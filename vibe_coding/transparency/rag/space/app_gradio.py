@@ -11,7 +11,7 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 os.environ.setdefault("RAG_DEVICE", "cpu")
 os.environ.setdefault("RAG_INDEX", os.path.join(HERE, "index"))
-os.environ.setdefault("RAG_QUERY_LOG", "/tmp/queries.jsonl")
+os.environ.setdefault("RAG_DATA", "/tmp/rag_data")  # מועלה ל-Dataset אם הוגדר RAG_DATASET
 
 import spaces  # noqa: E402  חייב לבוא לפני כל ספרייה שנוגעת ב-CUDA
 import gradio as gr  # noqa: E402

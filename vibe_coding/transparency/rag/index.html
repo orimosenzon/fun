@@ -52,6 +52,13 @@ form{display:flex;gap:8px}
 mark{background:var(--mark);color:inherit;border-radius:2px}
 .note{font-size:13.5px;color:var(--muted);margin-top:36px;border-top:1px solid var(--line);padding-top:12px}
 .err{color:var(--warn)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 14px}
+.bar button{font:inherit;font-size:15px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:4px 14px;cursor:pointer}
+.bar button:hover{border-color:var(--accent)}
+.bar .done{color:var(--accent);font-size:14.5px}
+#saved{background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:15px}
+#saved p{margin:0}
+.bar[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -74,7 +81,9 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   <div class="examples" id="ex"></div>
 
   <div id="status" aria-live="polite"></div>
+  <div id="saved" class="bar" hidden><p id="savedText"></p><button type="button" id="again">שאל שוב, תשובה עדכנית</button></div>
   <div id="answer" hidden></div>
+  <div id="share" class="bar" hidden><button type="button" id="shareBtn">🔗 שיתוף</button><span class="done" id="shareDone" aria-live="polite"></span></div>
   <div id="results"></div>
 
   <p class="note">התמלול והזיהוי של הדוברים נעשו אוטומטית, ויש בהם שגיאות. התשובות מנוסחות על ידי מודל שפה על סמך קטעי התמלול בלבד. לפני שמצטטים, כדאי לצפות ברגע עצמו בסרטון, דרך הקישור שבכל קטע.</p>
@@ -85,12 +94,9 @@ let mode='ask', lastTerms=[];
 const EXAMPLES=['מה נאמר על ציפוף ובנייה לגובה?','מה עם בית הספר החדש?','דיונים על עצים וכריתה','ניגוד עניינים','תקציב התרבות','שבילי אופניים'];
 $('#ex').innerHTML=EXAMPLES.map(e=>`<button type="button">${e}</button>`).join('');
 $('#ex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('#q').value=e.target.textContent;run();}};
-document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{
-  mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  $('#go').textContent=mode==='ask'?'שאל':'חפש';
-});
-$('#go').textContent='שאל';
-fetch('/api/meta').then(r=>r.json()).then(m=>{
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+setMode('ask');
+const ready=fetch('/api/meta').then(r=>r.json()).then(m=>{
   const y0=+m.first.slice(0,4), y1=+m.last.slice(0,4);
   const opts=[...Array(y1-y0+1)].map((_,i)=>y0+i);
   $('#from').innerHTML='<option value="">כל השנים</option>'+opts.map(y=>`<option>${y}</option>`).join('');
@@ -113,26 +119,72 @@ function card(r,i){
 $('#results').onclick=e=>{if(e.target.classList.contains('more')){const t=e.target.previousElementSibling;t.classList.toggle('open');e.target.textContent=t.classList.contains('open')?'הצג פחות':'הצג הכל';}};
 $('#answer').onclick=e=>{const a=e.target.closest('a[data-src]');if(!a)return;e.preventDefault();const c=$('#src'+a.dataset.src);if(c){document.querySelectorAll('.card.hl').forEach(x=>x.classList.remove('hl'));c.classList.add('hl');c.scrollIntoView({behavior:'smooth',block:'center'});}};
 $('#f').onsubmit=e=>{e.preventDefault();run()};
+
+// שיתוף: תשובה מקבלת קישור קבוע (?s=) שמציג אותה כמו שנשמרה, בלי לפנות שוב למודל.
+// חיפוש קטעים לא עולה כסף, ולכן הקישור שלו מכיל את החיפוש עצמו והוא רץ מחדש.
+let shareUrl='';
+function setShare(params){
+  shareUrl=location.origin+location.pathname+'?'+new URLSearchParams(params);
+  history.replaceState(null,'',shareUrl);
+  $('#shareDone').textContent=''; $('#share').hidden=false;
+}
+$('#shareBtn').onclick=async()=>{
+  if(navigator.share&&matchMedia('(pointer:coarse)').matches){
+    try{await navigator.share({title:'מה אמרו במועצה',text:$('#q').value,url:shareUrl});}catch(e){}
+    return;
+  }
+  try{await navigator.clipboard.writeText(shareUrl);$('#shareDone').textContent='הקישור הועתק';}
+  catch(e){prompt('העתיקו את הקישור:',shareUrl);}
+};
+$('#again').onclick=()=>{setMode('ask');run();};
+function setMode(m){mode=m;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode===m));$('#go').textContent=m==='ask'?'שאל':'חפש';}
+function setYears(from,to){
+  if(from)$('#from').value=from.slice(0,4);
+  if(to)$('#to').value=to.slice(0,4);
+}
+function showAnswer(data){
+  lastTerms=data.q.split(/\s+/).filter(w=>w.length>2);
+  $('#answer').innerHTML=esc(data.answer).replace(/\[(\d+)\]/g,'<a href="#src$1" data-src="$1">[$1]</a>');
+  $('#answer').hidden=false; $('#status').textContent='';
+  $('#results').innerHTML='<p id="status2" style="color:var(--muted);margin:0 0 8px">מקורות:</p>'+data.sources.map(card).join('');
+}
+ready.then(async()=>{
+  const p=new URLSearchParams(location.search);
+  if(p.get('s')){
+    $('#status').textContent='טוען תשובה שמורה…';
+    try{
+      const r=await fetch('/api/share/'+encodeURIComponent(p.get('s'))); const data=await r.json();
+      if(!r.ok) throw new Error(data.error||'שגיאה');
+      $('#q').value=data.q; setYears(data.date_from,data.date_to); setMode('ask');
+      showAnswer(data);
+      $('#savedText').textContent=`תשובה שנשמרה ב-${fmtDate(data.t.slice(0,10))}. היא לא מתעדכנת כשנוספות ישיבות.`;
+      $('#saved').hidden=false; setShare({s:data.id});
+    }catch(err){$('#status').innerHTML=`<span class="err">${esc(err.message)}</span>`}
+  }else if(p.get('q')){
+    $('#q').value=p.get('q'); setYears(p.get('from'),p.get('to'));
+    setMode('search'); run();   // רק חיפוש קטעים רץ אוטומטית; שאלה עולה כסף ומחכה ללחיצה
+  }
+});
 async function run(){
   const q=$('#q').value.trim(); if(!q)return;
   lastTerms=q.split(/\s+/).filter(w=>w.length>2);
   const from=$('#from').value, to=$('#to').value;
   const date_from=from?from+'-01-01':null, date_to=to?to+'-12-31':null;
   $('#go').disabled=true; $('#answer').hidden=true; $('#results').innerHTML='';
+  $('#saved').hidden=true; $('#share').hidden=true;
   $('#status').textContent=mode==='ask'?'מחפש בישיבות ומנסח תשובה… (עד חצי דקה)':'מחפש…';
   try{
     let data;
     if(mode==='ask'){
       const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,date_from,date_to})});
       data=await r.json(); if(!r.ok) throw new Error(data.error||'שגיאה');
-      $('#answer').innerHTML=esc(data.answer).replace(/\[(\d+)\]/g,'<a href="#src$1" data-src="$1">[$1]</a>');
-      $('#answer').hidden=false; $('#status').textContent='מקורות:';
-      $('#results').innerHTML=data.sources.map(card).join('');
+      showAnswer({...data,q}); setShare({s:data.id});
     }else{
       const p=new URLSearchParams({q}); if(date_from)p.set('from',date_from); if(date_to)p.set('to',date_to);
       const r=await fetch('/api/search?'+p); data=await r.json();
       $('#status').textContent=data.results.length?`${data.results.length} קטעים רלוונטיים, מהרלוונטי ביותר:`:'לא נמצאו קטעים.';
       $('#results').innerHTML=data.results.map(card).join('');
+      if(data.results.length){const sp={q};if(from)sp.from=from;if(to)sp.to=to;setShare(sp);}
     }
   }catch(err){$('#status').innerHTML=`<span class="err">${esc(err.message)}</span>`}
   finally{$('#go').disabled=false}
