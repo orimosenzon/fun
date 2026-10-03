@@ -20,3 +20,8 @@ vibe_coding/nudge/.env
 # up again — the company's business knowledge, customer names and grading
 # prompts do not belong in a repo anyone can read.
 vibe_coding/haskala/
+
+# Private projects live in one PRIVATE repo (2026-10-03), a folder per project:
+#   git@github.com:orimosenzon/private.git
+# Medical details, budgets and contacts stay out of the public repo.
+vibe_coding/private/
