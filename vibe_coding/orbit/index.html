@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מסלול · מה צריך כדי להגיע לחלל</title>
+<meta name="description" content="הדמיה תלת־ממדית ומדויקת פיזיקלית של מסלולים סביב כדור הארץ, שיגור רקטות, לוויני סטארלינק מול לוויינים גאוסטציונריים, ומשימות היסטוריות מספוטניק ועד סטארשיפ טיסה 14.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='12' fill='%233b82f6'/><ellipse cx='32' cy='32' rx='29' ry='11' fill='none' stroke='%23fbbf24' stroke-width='3' transform='rotate(-25 32 32)'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+
+<header id="top">
+  <div class="brand">
+    <span class="logo">◎</span>
+    <div>
+      <h1>מסלול</h1>
+      <p>מה צריך, פיזיקלית, כדי להגיע לחלל</p>
+    </div>
+  </div>
+  <nav id="tabs">
+    <button data-tab="orbits" class="on">מסלולים</button>
+    <button data-tab="compare">סטארלינק מול גאו</button>
+    <button data-tab="launch">שיגור</button>
+    <button data-tab="missions">משימות</button>
+    <button data-tab="museum">מוזיאון</button>
+    <button data-tab="about" class="ghost">על הדיוק</button>
+  </nav>
+</header>
+
+<aside id="panel">
+  <button id="sheet-toggle" aria-label="הצג או הסתר את הלוח">▾</button>
+  <div id="panel-body"></div>
+</aside>
+
+<div id="hud" hidden></div>
+
+<div id="timebar">
+  <div id="clock">—</div>
+  <div id="warp"></div>
+</div>
+
+<div id="loading">טוען את כדור הארץ…</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
