@@ -3551,3 +3551,149 @@ body.asking-plan .invite-quiet {
 }
 .share-act.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .share-act[hidden] { display: none; }
+
+/* ---------- walking routes (route.js, 3/10/2026) ----------
+ *
+ * Blue, because it is the one colour nothing else on this map uses for a line:
+ * the trails are gold or green, the drafts purple, the plans red. The shortcut
+ * stretches inside a route are orange, to read over both basemaps and over the
+ * trail layer they run along. */
+
+.invite-route {
+  border-color: #b9cfe9;
+  background: #eaf2fb;
+  color: #0d47a1;
+}
+
+.invite-route:active { background: #dbe8f7; }
+.invite-route .invite-ic { background: #1565c0; }
+.invite-route .invite-txt > span { color: #36557e; }
+
+.route-bar { background: #1565c0; cursor: pointer; }
+.route-bar .route-ic svg { width: 22px; height: 22px; }
+.route-bar .draft-btn.strong { color: #1565c0; }
+.route-bar .draft-btn { font-size: 15px; }
+
+#route-stop {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .17);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Walking the route: the navigation bar takes the top, and closing it brings
+ * the route bar back. */
+body.nav-active .route-bar { display: none; }
+body.routing .maplibregl-ctrl-top-left { margin-top: 62px; }
+body.routing #map canvas { cursor: crosshair; }
+
+.route-pin {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1565c0;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  color: #fff;
+  font: 700 14px/1 system-ui, sans-serif;
+  cursor: grab;
+}
+
+.route-from { background: #2e7d32; }
+.route-to { background: #c62828; }
+
+.route-title { margin: 4px 0 10px; font-size: 19px; }
+
+.route-compare { display: flex; gap: 10px; margin-bottom: 8px; }
+
+.route-num {
+  flex: 1;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: #eaf2fb;
+  color: #0d47a1;
+}
+
+.route-num b { display: block; font-size: 22px; }
+.route-num span { font-size: 12px; }
+.route-num.grey { background: #f1f3f2; color: #5a6b5f; }
+
+.route-say { margin: 0 0 10px; font-size: 13.5px; line-height: 1.5; }
+
+.route-legs { list-style: none; margin: 0 0 12px; padding: 0; }
+
+.route-leg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.route-leg.trail { color: #bf5000; font-weight: 600; cursor: pointer; }
+.route-leg.off { color: var(--muted); font-size: 12.5px; }
+.route-glyph { flex: none; width: 22px; text-align: center; }
+.route-nm { flex: 1; min-width: 0; }
+.route-len { flex: none; font-size: 12.5px; color: var(--muted); }
+
+/* ---------- view presets (modes.js, 3/10/2026) ---------- */
+
+.modes {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 4px;
+}
+
+.mode {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: #2f4a38;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mode.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.mode:not(.on):active { background: var(--accent-soft); }
+
+.mode-hint {
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+#layer-sheet .modes { margin: 0 0 12px; }
+
+/* Each preset keeps the panel's cards to the ones that belong to it. A walker
+ * meets the invitation and the directions; a planner and somebody following
+ * the council meet "מה מתוכנן כאן?", with the invitation folded to one line
+ * rather than gone - it is still the point of the app. With no preset lit,
+ * every card shows, as before. The map's own "מה מתוכנן כאן?" button stays in
+ * every mode. */
+body.mode-walk #plan-ask { display: none; }
+body.mode-plan #route-ask,
+body.mode-open #route-ask { display: none; }
+body.mode-plan #add,
+body.mode-open #add { padding: 8px 12px; }
+body.mode-plan #add .invite-txt > span,
+body.mode-open #add .invite-txt > span { display: none; }
+body.mode-plan #add .invite-ic,
+body.mode-open #add .invite-ic { width: 26px; height: 26px; }

@@ -97,6 +97,10 @@ const PANEL_KEY = 'panel';
 const CRAFT_KEY = 'craft';
 const FLY_KEY = 'fly';
 const LEGEND_KEY = 'legend';
+/* route=fromLat,fromLng,toLat,toLng - a walking route on screen (3/10/2026).
+ * The start is written as a point even when it was "where I am": the person
+ * opening the link is somewhere else, and wants the route that was sent. */
+const ROUTE_KEY = 'route';
 const SYNC_POLL_MS = 1500;
 
 /** The query the page was opened with, read once before anything rewrites it. */
@@ -168,6 +172,10 @@ function syncView() {
   if (Layers.legendIsOpen()) params.set(LEGEND_KEY, '1');
   else params.delete(LEGEND_KEY);
 
+  const route = Route.linkValue();
+  if (route) params.set(ROUTE_KEY, route);
+  else params.delete(ROUTE_KEY);
+
   const query = params.toString().replace(/%2C/g, ',');
   if (`?${query}` === location.search) return;
   try {
@@ -209,6 +217,8 @@ function applyLinkState(selected) {
   } else if (!selected && (m = /^landuse-(\d+)$/.exec(wanted))) {
     LandUse.pick(Number(m[1]), {}, null);
   }
+
+  if (q.has(ROUTE_KEY)) Route.fromLink(q.get(ROUTE_KEY));
 
   if (q.has(FLY_KEY) && canFly()) {
     Explore.setView(q.get(FLY_KEY));
@@ -361,7 +371,8 @@ function icon(path) {
 }
 
 const I_PANO = 'M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z';
-const I_WALK = 'M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7 7 0 0019 13v-2a5 5 0 01-4.2-2.4l-1-1.6c-.4-.6-1-1-1.8-1-.3 0-.5 0-.8.2L6 8.3V13h2V9.6l1.8-.7z';
+const I_ROUTE = 'M6.5 3a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM17.5 12a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM6 13.5v1.5a3 3 0 003 3h3v-2H9a1 1 0 01-1-1v-1.5zm6-7.5v2h3a1 1 0 011 1v1h2V9a3 3 0 00-3-3z';
+const I_WALK ='M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7 7 0 0019 13v-2a5 5 0 01-4.2-2.4l-1-1.6c-.4-.6-1-1-1.8-1-.3 0-.5 0-.8.2L6 8.3V13h2V9.6l1.8-.7z';
 
 /* ---------- map layers ---------- */
 
@@ -418,6 +429,7 @@ function applyOverlays() {
     // navigation line included. Without this, switching to satellite mid-walk
     // silently loses the one thing telling you where you are heading.
     if (nav && here) paintNav();
+    Route.repaint();
   }
 }
 
@@ -698,7 +710,14 @@ function panoActs(it, labels, hint) {
 function navActs(it, hint) {
   const first = (it.entries && it.entries[0]) || it;
   if (first.lat == null) return '';
-  return `<button class="act act-nav" id="go">
+  // To a place, a real route through the shortcuts comes first: it is the
+  // answer to "how do I get there", where the arrow below is only a bearing.
+  const route = it.path ? '' : `<button class="act act-nav" id="route-here">
+      ${icon(I_ROUTE)}
+      <span class="lbl">מסלול הליכה לכאן
+        <span class="hint">מהמקום שלך, דרך קיצורי הדרך</span></span>
+    </button>`;
+  return `${route}<button class="act${it.path ? ' act-nav' : ''}" id="go">
       ${icon(I_WALK)}
       <span class="lbl">נווט אליי לכאן
         <span class="hint">${escapeHtml(hint)}</span></span>
@@ -1225,6 +1244,9 @@ function showDetail(it) {
   el('detail').querySelectorAll('[data-goto]').forEach((btn) => {
     btn.addEventListener('click', () => select(btn.dataset.goto, true));
   });
+  const toHere = el('route-here');
+  if (toHere) toHere.addEventListener('click', () =>
+    Route.open({ lat: it.lat, lng: it.lng, label: it.name }));
   const go = el('go');
   if (go) go.addEventListener('click', () => startNav(it));
   if (it.draft) Drafts.wireDetail(it, el('detail'));
@@ -2139,6 +2161,23 @@ function projectOnPath(pos, path) {
   return { ...best, before, after };
 }
 
+/** The point `metres` further along a path from a projection onto it, or the
+ *  path's end if it is nearer than that. */
+function aheadOnPath(path, p, metres) {
+  let a = p.point, left = metres;
+  for (let i = p.i + 1; i < path.length; i++) {
+    const b = { lat: path[i][0], lng: path[i][1] };
+    const d = distance(a, b);
+    if (d >= left) {
+      const t = left / d;
+      return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+    }
+    left -= d;
+    a = b;
+  }
+  return a;
+}
+
 /* ---------- the line you are meant to walk ----------
  *
  * The bar alone was a distance, a compass word and an arrow, and somebody
@@ -2322,7 +2361,16 @@ function paintNav() {
 
   let target, label, state, onTrail = false;
 
-  if (item.path) {
+  if (item.route) {
+    // A walking route has one direction, and it bends: the arrow points at a
+    // spot a little way ahead along it rather than at the far end, which may
+    // well be behind you around the next corner.
+    const p = projectOnPath(here, item.path);
+    onTrail = p.d < 30;
+    target = onTrail ? aheadOnPath(item.path, p, 35) : p.point;
+    label = fmt(p.after + (onTrail ? 0 : p.d));
+    state = onTrail ? 'במסלול · עד היעד' : 'אל המסלול';
+  } else if (item.path) {
     const p = projectOnPath(here, item.path);
     if (p.d < 25) {
       onTrail = true;
@@ -3039,6 +3087,7 @@ function paintUnsent() {
  *  asking only "does it still exist" leaves the detail pane open on a trail the
  *  user just hid - and skips the list repaint on the way out. */
 function repaint() {
+  Modes.paint();
   drawWaypoints();
   paintStats();
   const layer = selectedId ? Layers.layerOf(selectedId) : null;
@@ -3566,7 +3615,11 @@ function wireControls() {
     if (e.key !== 'Escape') return;
     if (PlanHere.isOpen()) PlanHere.close();
     else if (PlanHere.isArmed()) PlanHere.disarm();
+    else if (Route.isOn()) Route.close();
   });
+
+  Route.wire();
+  Modes.wire();
 
   el('plan-banner').addEventListener('click', () => PlanHere.showOpen());
 
@@ -3750,6 +3803,8 @@ function wireControls() {
     // rule below, and so a tap that lands on a trail still asks about the
     // ground under it - which is what somebody who just armed it meant.
     if (PlanHere.isArmed()) { PlanHere.at(e.lngLat); return; }
+    // Waiting for one end of a walking route: the tap is that end.
+    if (Route && Route.isPicking()) { Route.pick(e.lngLat); return; }
     // While drafting or arranging, a tap on the map means something other than
     // "clear the selection".
     if (!selectedId || Drafts.isDrafting() || Arrange.isOn()) return;
