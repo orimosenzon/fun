@@ -477,6 +477,24 @@ const Layers = (() => {
     return was.length;
   }
 
+  /** Layers a view preset decides about (modes.js). Not the queue or the
+   *  drafts, which are this device's own business; not a private layer, which
+   *  only an editor sees and no preset should switch on behind their back. */
+  const presettable = (l) => l.kind !== 'pending' && l.kind !== 'drafts' && !l.private;
+
+  /** Exactly these on, every other presettable layer off, in one repaint. */
+  function setOnly(ids) {
+    const want = new Set(ids);
+    list.filter(presettable).forEach((l) => { l.on = want.has(l.id); });
+    savePrefs();
+    applyVisibility();
+    onChange();
+    if (!document.getElementById('layer-sheet').hidden) render();
+  }
+
+  /** The presettable layers that are on, for telling which preset is showing. */
+  const onIds = () => list.filter((l) => presettable(l) && l.on).map((l) => l.id);
+
   /** The trips that walk along one shortcut, for its detail pane. Deleting a
    *  shortcut is not a local act once a trip is built on it. */
   const tripsUsing = (trailId) => {
@@ -2075,7 +2093,8 @@ const Layers = (() => {
   /** Nothing on the map is for picking while these have the map's taps. */
   function mapIsBusy() {
     return (typeof Drafts !== 'undefined' && Drafts.isDrafting())
-      || (typeof PlanHere !== 'undefined' && PlanHere.isArmed());
+      || (typeof PlanHere !== 'undefined' && PlanHere.isArmed())
+      || (typeof Route !== 'undefined' && Route && Route.isPicking());
   }
 
   /** A red disc, from far out: the plan under it, in the list of what is
@@ -2779,9 +2798,10 @@ const Layers = (() => {
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
     addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
     legendIsOpen, setLegendOpen,
-    openSheet, closeSheet, render, clearAll,
+    openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
     BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    SOVEV_ID,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,
     set onChange(fn) { onChange = fn; }

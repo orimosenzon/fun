@@ -140,7 +140,9 @@ try:
      pg.evaluate('''() => { if (map.getTerrain()) map.setTerrain(null);
          map.jumpTo({center: [34.97507, 32.47411], zoom: 17, pitch: 0, bearing: 0}); }''')
      pg.wait_for_timeout(1200)
-     pg.click('#plan-ask')
+     # The map's button: the card in the panel is hidden in the walker's view
+     # (modes.js), which is what a first visit opens in.
+     pg.click('#plan-fab')
      armed = pg.evaluate('() => ({armed: PlanHere.isArmed(), body: document.body.classList.contains("asking-plan")})')
      check('the button arms the next tap', armed['armed'] and armed['body'], armed)
 

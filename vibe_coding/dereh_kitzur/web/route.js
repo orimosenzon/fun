@@ -1,0 +1,714 @@
+/* Walking directions from anywhere to anywhere, through the shortcuts.
+ *
+ * Ori, 3/10/2026. Until now the app could take you *to a trail*. The question
+ * somebody actually has is "how do I get from here to the kindergarten", and
+ * nobody else can answer it: 83% of these shortcuts are on no map Google has,
+ * so Google routes around them. This app has both halves - the streets, from
+ * OpenStreetMap (data/walknet.json, built by build_walknet.py), and the
+ * shortcuts, which residents walked and sent in - so it can route through
+ * the whole of it, here in the browser, with no service and no key.
+ *
+ * Every route is worked out twice, once with the shortcuts and once without,
+ * and the difference is the point: "12 minutes, and 7 of them saved". The
+ * route without them is drawn too, thin and grey, so you see what you are
+ * cutting.
+ *
+ * Two parts. `RouteEngine` is the graph and Dijkstra, pure and DOM-free so a
+ * test can drive it under node. `Route` is the screen: picking the two ends,
+ * the bar, the line on the map, the detail pane, the link.
+ */
+'use strict';
+
+const RouteEngine = (() => {
+
+  const WALK_M_PER_MIN = 80;        // 4.8 km/h, an unhurried adult
+  const CELL = 60;                  // spatial grid, metres
+  const TRAIL_SNAP = 80;            // how far a trail's end may be from the network
+  const POINT_SNAP = 400;           // how far a chosen point may be from any path
+
+  // Edge kinds. A link is the bit of nothing between a trail's recorded end and
+  // the street it comes out on: GPS starts recording a step or two in, and the
+  // trail is unusable without it. It belongs to the trail, so it is left out of
+  // the without-shortcuts route along with the trail itself.
+  const STREET = 0, TRAIL = 1, LINK = 2, OFF = 3;
+
+  /** walknet.json -> plain arrays, once. */
+  function decode(net) {
+    const n = net.pts.length / 2;
+    const lat = new Float64Array(n), lng = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      lat[i] = net.o[0] + net.pts[2 * i] / net.scale;
+      lng[i] = net.o[1] + net.pts[2 * i + 1] / net.scale;
+    }
+    let s = 90, w = 180, nn = -90, e = -180;
+    for (let i = 0; i < n; i++) {
+      if (lat[i] < s) s = lat[i]; if (lat[i] > nn) nn = lat[i];
+      if (lng[i] < w) w = lng[i]; if (lng[i] > e) e = lng[i];
+    }
+    return { lat, lng, ways: net.ways, names: net.names, bounds: [[s, w], [nn, e]] };
+  }
+
+  /** The graph for one question: the streets, every shortcut, and the two
+   *  points asked about, all joined up.
+   *
+   *  Built fresh for every route. It takes a few tens of milliseconds, and in
+   *  exchange there is no state to keep in step with trails being added,
+   *  approved or switched off while the app is open. */
+  function build(base, trails, ends) {
+    const lat0 = base.lat[0] || 32.47;
+    const KX = 111320 * Math.cos(lat0 * Math.PI / 180), KY = 111320;
+    const X = [], Y = [];
+    const node = (la, ln) => { X.push((ln - base.lng[0]) * KX); Y.push((la - base.lat[0]) * KY); return X.length - 1; };
+    const toLatLng = (i) => [base.lat[0] + Y[i] / KY, base.lng[0] + X[i] / KX];
+
+    for (let i = 0; i < base.lat.length; i++) node(base.lat[i], base.lng[i]);
+
+    const eA = [], eB = [], eKind = [], eRef = [];
+    const edge = (a, b, kind, ref) => {
+      if (a === b) return -1;
+      eA.push(a); eB.push(b); eKind.push(kind); eRef.push(ref);
+      return eA.length - 1;
+    };
+
+    for (const w of base.ways) {
+      for (let k = 2; k < w.length; k++) edge(w[k - 1], w[k], STREET, w[0]);
+    }
+    const trailEnds = [];
+    trails.forEach((t, ti) => {
+      if (!t.path || t.path.length < 2) return;
+      let prev = node(t.path[0][0], t.path[0][1]);
+      const first = prev;
+      for (let k = 1; k < t.path.length; k++) {
+        const cur = node(t.path[k][0], t.path[k][1]);
+        edge(prev, cur, TRAIL, ti);
+        prev = cur;
+      }
+      trailEnds.push([first, ti], [prev, ti]);
+    });
+
+    // The grid: every edge, in every cell its bounding box touches.
+    const grid = new Map();
+    const key = (cx, cy) => cx * 1e6 + cy;
+    const cellsOf = (x0, y0, x1, y1, fn) => {
+      for (let cx = Math.floor(Math.min(x0, x1) / CELL); cx <= Math.floor(Math.max(x0, x1) / CELL); cx++) {
+        for (let cy = Math.floor(Math.min(y0, y1) / CELL); cy <= Math.floor(Math.max(y0, y1) / CELL); cy++) fn(key(cx, cy));
+      }
+    };
+    const fixed = eA.length;
+    for (let e = 0; e < fixed; e++) {
+      cellsOf(X[eA[e]], Y[eA[e]], X[eB[e]], Y[eB[e]], (k) => {
+        const c = grid.get(k);
+        if (c) c.push(e); else grid.set(k, [e]);
+      });
+    }
+
+    /** Nearest point on any edge `ok` accepts, within `max` metres. */
+    function nearest(x, y, max, ok) {
+      let best = null;
+      const seen = new Set();
+      cellsOf(x - max, y - max, x + max, y + max, (k) => {
+        const c = grid.get(k);
+        if (!c) return;
+        for (const e of c) {
+          if (seen.has(e) || !ok(e)) continue;
+          seen.add(e);
+          const ax = X[eA[e]], ay = Y[eA[e]], bx = X[eB[e]], by = Y[eB[e]];
+          const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+          const t = len ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len)) : 0;
+          const d = Math.hypot(x - ax - t * dx, y - ay - t * dy);
+          if (d <= max && (!best || d < best.d)) best = { e, t, d, x: ax + t * dx, y: ay + t * dy };
+        }
+      });
+      return best;
+    }
+
+    // Points that land part-way along an edge. Collected first and stitched in
+    // at the end, so that two of them on one long street are joined to each
+    // other and not only to the street's two ends.
+    const splits = new Map();
+    function splitAt(hit) {
+      if (hit.t < 1e-6) return eA[hit.e];
+      if (hit.t > 1 - 1e-6) return eB[hit.e];
+      const list = splits.get(hit.e) || [];
+      for (const s of list) if (Math.abs(s.t - hit.t) < 1e-6) return s.n;
+      X.push(hit.x); Y.push(hit.y);
+      const n = X.length - 1;
+      list.push({ t: hit.t, n });
+      splits.set(hit.e, list);
+      return n;
+    }
+
+    // Where a shortcut crosses a street on the way, it can be joined there:
+    // the circular trail crosses a dozen roads, and only its two ends would
+    // otherwise connect.
+    for (let e = 0; e < fixed; e++) {
+      if (eKind[e] !== TRAIL) continue;
+      const ax = X[eA[e]], ay = Y[eA[e]], bx = X[eB[e]], by = Y[eB[e]];
+      const seen = new Set();
+      cellsOf(ax, ay, bx, by, (k) => {
+        for (const f of grid.get(k) || []) {
+          if (seen.has(f) || eKind[f] !== STREET) continue;
+          seen.add(f);
+          const cx = X[eA[f]], cy = Y[eA[f]], dx = X[eB[f]], dy = Y[eB[f]];
+          const r1 = bx - ax, r2 = by - ay, s1 = dx - cx, s2 = dy - cy;
+          const den = r1 * s2 - r2 * s1;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((cx - ax) * s2 - (cy - ay) * s1) / den;
+          const u = ((cx - ax) * r2 - (cy - ay) * r1) / den;
+          if (t <= 0 || t >= 1 || u <= 0 || u >= 1) continue;
+          const at = splitAt({ e: f, t: u, x: ax + t * r1, y: ay + t * r2 });
+          const list = splits.get(e) || [];
+          list.push({ t, n: at });
+          splits.set(e, list);
+        }
+      });
+    }
+
+    // Each end of each shortcut, onto the nearest thing that is not itself.
+    for (const [n, ti] of trailEnds) {
+      const hit = nearest(X[n], Y[n], TRAIL_SNAP,
+        (e) => !(eKind[e] === TRAIL && eRef[e] === ti));
+      if (hit) edge(n, splitAt(hit), LINK, ti);
+    }
+
+    // The two points asked about. Each gets two landings: the nearest path of
+    // any kind, for the route with the shortcuts, and the nearest street, for
+    // the one without - otherwise a destination at the mouth of a shortcut has
+    // no without-shortcuts route at all.
+    const asked = ends.map((p) => {
+      const x = (p.lng - base.lng[0]) * KX, y = (p.lat - base.lat[0]) * KY;
+      const any = nearest(x, y, POINT_SNAP, () => true);
+      const street = nearest(x, y, POINT_SNAP, (e) => eKind[e] === STREET);
+      if (!any) return null;
+      const n = node(p.lat, p.lng);
+      edge(n, splitAt(any), OFF, -1);
+      if (street && street.e !== any.e) edge(n, splitAt(street), OFF, -1);
+      return n;
+    });
+
+    for (const [e, list] of splits) {
+      list.sort((a, b) => a.t - b.t);
+      let prev = eA[e];
+      for (const s of list) { edge(prev, s.n, eKind[e], eRef[e]); prev = s.n; }
+      edge(prev, eB[e], eKind[e], eRef[e]);
+    }
+
+    // Adjacency, compressed: every edge both ways.
+    const N = X.length, E = eA.length;
+    const len = new Float64Array(E);
+    const deg = new Int32Array(N + 1);
+    for (let e = 0; e < E; e++) {
+      len[e] = Math.hypot(X[eB[e]] - X[eA[e]], Y[eB[e]] - Y[eA[e]]);
+      deg[eA[e] + 1]++; deg[eB[e] + 1]++;
+    }
+    for (let i = 0; i < N; i++) deg[i + 1] += deg[i];
+    const adj = new Int32Array(2 * E), fill = deg.slice(0, N);
+    for (let e = 0; e < E; e++) { adj[fill[eA[e]]++] = e; adj[fill[eB[e]]++] = e; }
+
+    return { N, X, Y, eA, eB, eKind, eRef, len, off: deg, adj, toLatLng, from: asked[0], to: asked[1] };
+  }
+
+  /** Shortest path by Dijkstra, as a list of edges from `from` to `to`. */
+  function shortest(g, ok) {
+    if (g.from == null || g.to == null) return null;
+    const dist = new Float64Array(g.N).fill(Infinity);
+    const via = new Int32Array(g.N).fill(-1);
+    // A binary heap of [distance, node] pairs, laid out flat.
+    const hd = [], hn = [];
+    const push = (d, n) => {
+      let i = hd.length; hd.push(d); hn.push(n);
+      while (i > 0) {
+        const p = (i - 1) >> 1;
+        if (hd[p] <= hd[i]) break;
+        [hd[p], hd[i]] = [hd[i], hd[p]]; [hn[p], hn[i]] = [hn[i], hn[p]]; i = p;
+      }
+    };
+    const pop = () => {
+      const d = hd[0], n = hn[0], ld = hd.pop(), ln = hn.pop();
+      if (hd.length) {
+        hd[0] = ld; hn[0] = ln;
+        let i = 0;
+        for (;;) {
+          const l = 2 * i + 1, r = l + 1;
+          let m = i;
+          if (l < hd.length && hd[l] < hd[m]) m = l;
+          if (r < hd.length && hd[r] < hd[m]) m = r;
+          if (m === i) break;
+          [hd[m], hd[i]] = [hd[i], hd[m]]; [hn[m], hn[i]] = [hn[i], hn[m]]; i = m;
+        }
+      }
+      return [d, n];
+    };
+    dist[g.from] = 0;
+    push(0, g.from);
+    while (hd.length) {
+      const [d, n] = pop();
+      if (d > dist[n]) continue;
+      if (n === g.to) break;
+      for (let k = g.off[n]; k < g.off[n + 1]; k++) {
+        const e = g.adj[k];
+        if (!ok(g.eKind[e])) continue;
+        const m = g.eA[e] === n ? g.eB[e] : g.eA[e];
+        const nd = d + g.len[e];
+        if (nd < dist[m]) { dist[m] = nd; via[m] = e; push(nd, m); }
+      }
+    }
+    if (!isFinite(dist[g.to])) return null;
+    const edges = [];
+    for (let n = g.to; n !== g.from;) {
+      const e = via[n];
+      edges.push(e);
+      n = g.eA[e] === n ? g.eB[e] : g.eA[e];
+    }
+    edges.reverse();
+    return { edges, length: dist[g.to] };
+  }
+
+  /** A path of edges as legs: runs of one street, one shortcut, or open ground. */
+  function legs(g, path, base, trails) {
+    const out = [];
+    let at = g.from;
+    for (const e of path.edges) {
+      const next = g.eA[e] === at ? g.eB[e] : g.eA[e];
+      const kind = g.eKind[e];
+      const leg = kind === STREET
+        ? { kind: 'street', name: base.names[g.eRef[e]] || '' }
+        : kind === OFF ? { kind: 'off', name: '' }
+          : { kind: 'trail', name: trails[g.eRef[e]].name, id: trails[g.eRef[e]].id };
+      const last = out[out.length - 1];
+      const same = last && last.kind === leg.kind && last.name === leg.name && last.id === leg.id;
+      if (same) {
+        last.length += g.len[e];
+        last.path.push(g.toLatLng(next));
+      } else {
+        out.push({ ...leg, length: g.len[e], path: [g.toLatLng(at), g.toLatLng(next)] });
+      }
+      at = next;
+    }
+    // A short street with no name is usually the last metres of a junction or
+    // a service road. Folded into the street before it, so the list names the
+    // turns that matter. Open ground and shortcuts always stay their own leg.
+    const folded = [];
+    for (const l of out) {
+      const prev = folded[folded.length - 1];
+      if (prev && prev.kind === 'street' && l.kind === 'street' && (!l.name && l.length < 60 || l.name === prev.name)) {
+        prev.length += l.length;
+        prev.path.push(...l.path.slice(1));
+      } else folded.push(l);
+    }
+    return folded;
+  }
+
+  /** The whole answer: with the shortcuts, and without them. */
+  function route(base, trails, from, to) {
+    const g = build(base, trails, [from, to]);
+    if (g.from == null) return { error: 'from' };
+    if (g.to == null) return { error: 'to' };
+    const withAll = shortest(g, () => true);
+    const without = shortest(g, (k) => k === STREET || k === OFF);
+    if (!withAll) return { error: 'none' };
+    const pathOf = (p) => {
+      const pts = [g.toLatLng(g.from)];
+      let at = g.from;
+      for (const e of p.edges) { at = g.eA[e] === at ? g.eB[e] : g.eA[e]; pts.push(g.toLatLng(at)); }
+      return pts;
+    };
+    const L = legs(g, withAll, base, trails);
+    const trailM = L.filter((l) => l.kind === 'trail').reduce((s, l) => s + l.length, 0);
+    return {
+      length: withAll.length,
+      minutes: withAll.length / WALK_M_PER_MIN,
+      path: pathOf(withAll),
+      legs: L,
+      trailLength: trailM,
+      trailsUsed: [...new Set(L.filter((l) => l.kind === 'trail').map((l) => l.id))],
+      without: without && { length: without.length, minutes: without.length / WALK_M_PER_MIN,
+                            path: pathOf(without) }
+    };
+  }
+
+  return { decode, route, WALK_M_PER_MIN };
+})();
+
+if (typeof module !== 'undefined') module.exports = { RouteEngine };
+
+/* ---------- the screen ---------- */
+
+const Route = (typeof document === 'undefined') ? null : (() => {
+  const SRC = 'src-route';
+  const LAYERS = ['route-without', 'route-case', 'route-street', 'route-trail', 'route-off'];
+
+  let base = null, loading = null;
+  let from = null, to = null;      // {lat, lng, mine?}
+  let picking = null;              // 'from' | 'to' | null
+  let result = null;
+  let markers = { from: null, to: null };
+
+  function load() {
+    if (base) return Promise.resolve(base);
+    if (!loading) {
+      loading = fetch('data/walknet.json')
+        .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then((net) => (base = RouteEngine.decode(net)))
+        .catch((err) => { loading = null; throw err; });
+    }
+    return loading;
+  }
+
+  /** The shortcuts a route may use: every published one, whether or not its
+   *  layer is switched on - turning the gold lines off to see the map better
+   *  should not make the directions worse - plus the circular trail. Never a
+   *  private layer: those are the paths somebody has fenced off, and the one
+   *  place they must not send anybody is through the fence. Never a draft or
+   *  the queue, which nobody has checked yet. */
+  function trails() {
+    const layers = Layers.trailLayers().filter((l) => !l.private);
+    const sovev = Layers.byId(Layers.SOVEV_ID);
+    if (sovev) layers.push(sovev);
+    return layers.flatMap((l) => l.segments).filter((s) => s.path && s.path.length > 1);
+  }
+
+  const bar = () => el('route-bar');
+  const say = (strong, line) => {
+    el('route-main').textContent = strong;
+    el('route-sub').textContent = line;
+  };
+  const isOn = () => !bar().hidden;
+  const isPicking = () => !!picking;
+
+  /** Open the bar. With a destination, route there from where you are; without
+   *  one, wait for taps on the map.
+   *
+   *  Taps go in reading order: the first is א, the start, and the second ב,
+   *  the destination (Ori, 3/10/2026 - the first version asked for the
+   *  destination first, which put ב on the first tap). When the phone knows
+   *  it is in the moshava, א is where you stand and the one tap is ב. */
+  function open(dest) {
+    stopNavIfOurs();
+    from = to = result = null;
+    clear();
+    bar().hidden = false;
+    document.body.classList.add('routing');
+    el('route-go').hidden = true;
+    el('route-swap').hidden = true;
+    load().catch(() => say('לא הצלחתי לטעון את מפת הרחובות', 'בדוק את החיבור ונסה שוב.'));
+    if (dest) {
+      to = { lat: dest.lat, lng: dest.lng, label: dest.label };
+      paintMarker('to');
+      picking = null;
+      say('מחפש את המיקום שלך…', '');
+    } else {
+      picking = 'from';
+      say('לחץ על נקודת היציאה (א)', 'או חכה רגע: אם אתה במושבה, היציאה תהיה המקום שלך.');
+    }
+    collapsePanel();
+    findMe();
+  }
+
+  /** Where you are, as the start - when you are actually in the moshava. A
+   *  phone in Tel Aviv routing to a kindergarten in Karkur is somebody
+   *  planning, not walking, and they are asked to tap a start instead. A start
+   *  already tapped is never overruled by a GPS answer that arrives late. */
+  function findMe() {
+    const use = (p) => {
+      if (from || !isOn()) return;
+      const [[s, w], [n, e]] = base ? base.bounds : [[32.43, 34.93], [32.52, 35.03]];
+      if (p && p.lat > s && p.lat < n && p.lng > w && p.lng < e) {
+        from = { lat: p.lat, lng: p.lng, mine: true };
+        paintMarker('from');
+        if (to) { picking = null; run(); }
+        else {
+          picking = 'to';
+          say('לחץ על היעד (ב)', 'יוצאים מהמקום שלך (א). אפשר לגרור את שתי הסיכות.');
+        }
+      } else askForStart();
+    };
+    if (here) { use(here); return; }
+    if (!navigator.geolocation) { use(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { here = { lat: pos.coords.latitude, lng: pos.coords.longitude }; drawMe(); use(here); },
+      () => use(null),
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 });
+    // Not waited on: if the answer is slow, tapping a start is still allowed.
+  }
+
+  function askForStart() {
+    if (from) return;
+    picking = 'from';
+    say('לחץ על נקודת היציאה (א)', to
+      ? 'לא מצאתי אותך במושבה, אז צריך לבחור מאיפה יוצאים.'
+      : 'לא מצאתי אותך במושבה. קודם היציאה, ואחריה היעד (ב).');
+  }
+
+  /** A tap on the map while the bar waits for one. */
+  function pick(lngLat) {
+    const p = { lat: lngLat.lat, lng: lngLat.lng };
+    if (picking === 'from') {
+      from = p;
+      paintMarker('from');
+      if (to) { picking = null; run(); }
+      else {
+        picking = 'to';
+        say('עכשיו לחץ על היעד (ב)', 'אפשר לגרור את שתי הסיכות אחר כך.');
+      }
+    } else if (picking === 'to') {
+      to = p;
+      paintMarker('to');
+      picking = null;
+      run();
+    }
+  }
+
+  function paintMarker(which) {
+    if (!map) return;
+    const p = which === 'from' ? from : to;
+    if (!markers[which]) {
+      const node = document.createElement('div');
+      node.className = `route-pin route-${which}`;
+      node.textContent = which === 'from' ? 'א' : 'ב';
+      const m = new maplibregl.Marker({ element: node, draggable: true });
+      m.on('dragend', () => {
+        const ll = m.getLngLat();
+        const q = { lat: ll.lat, lng: ll.lng };
+        if (which === 'from') from = q; else to = { ...q, label: '' };
+        if (from && to) run();
+      });
+      markers[which] = m;
+    }
+    markers[which].setLngLat([p.lng, p.lat]).addTo(map);
+  }
+
+  async function run(keepCamera = false) {
+    say('מחשב מסלול…', '');
+    try {
+      await load();
+    } catch (err) {
+      say('לא הצלחתי לטעון את מפת הרחובות', 'בדוק את החיבור ונסה שוב.');
+      return;
+    }
+    const t0 = performance.now();
+    const r = RouteEngine.route(base, trails(), from, to);
+    console.info(`דרך קיצור: מסלול חושב ב-${Math.round(performance.now() - t0)} מ"ש`);
+    if (r.error) {
+      result = null;
+      clearLine();
+      say(r.error === 'none' ? 'לא מצאתי דרך בין שתי הנקודות' : 'הנקודה רחוקה מכל דרך',
+          r.error === 'none' ? 'נסה להזיז אחת מהן.' : 'גרור אותה קרוב יותר לרחוב או לשביל.');
+      el('route-go').hidden = true;
+      return;
+    }
+    result = r;
+    paintLine();
+    paintBar();
+    el('route-go').hidden = false;
+    el('route-swap').hidden = false;
+    if (!keepCamera) frame();
+    showDetail();
+    if (typeof scheduleSync === 'function') scheduleSync();
+  }
+
+  const mins = (m) => `${Math.max(1, Math.round(m))} דק׳`;
+
+  /** What the shortcuts bought you, in the words somebody would use. */
+  function saving(r) {
+    if (!r.trailsUsed.length) return null;
+    if (!r.without) return 'בלי קיצורי הדרך אין דרך בכלל';
+    const saved = r.without.minutes - r.minutes;
+    if (saved < 0.75) return `${plural(r.trailsUsed.length, 'קיצור דרך אחד', 'קיצורי דרך')}, כמעט בלי חיסכון`;
+    return `חוסך ${mins(saved)} לעומת הרחובות`;
+  }
+
+  function paintBar() {
+    const r = result;
+    const s = saving(r);
+    say(`${mins(r.minutes)} · ${fmt(r.length)}`,
+        s ? `${s} · ${plural(r.trailsUsed.length, 'קיצור דרך אחד', 'קיצורי דרך')}`
+          : 'אין קיצור דרך שעוזר כאן. זה המסלול ברחובות.');
+  }
+
+  /* ---------- on the map ---------- */
+
+  function geo() {
+    const r = result;
+    const line = (path, props) => ({ type: 'Feature', properties: props,
+      geometry: { type: 'LineString', coordinates: path.map(([la, ln]) => [ln, la]) } });
+    const feats = r.legs.map((l) => line(l.path, { kind: l.kind }));
+    if (r.without && r.trailsUsed.length) feats.unshift(line(r.without.path, { kind: 'without' }));
+    return { type: 'FeatureCollection', features: feats };
+  }
+
+  function paintLine() {
+    if (!map || !result) return;
+    // isStyleLoaded is false while tiles are still arriving, which right after
+    // opening the app is most of the time. Waiting beats a route that only
+    // draws on the second try.
+    if (!map.isStyleLoaded()) { map.once('idle', paintLine); return; }
+    const data = geo();
+    if (map.getSource(SRC)) { map.getSource(SRC).setData(data); return; }
+    map.addSource(SRC, { type: 'geojson', data });
+    const kind = (k) => ['==', ['get', 'kind'], k];
+    // The route without the shortcuts: grey and dashed, underneath. It is the
+    // comparison, not a way to go.
+    map.addLayer({ id: 'route-without', type: 'line', source: SRC, filter: kind('without'),
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#6b7a72', 'line-width': 3.5, 'line-opacity': 0.75,
+               'line-dasharray': [1.2, 1.4] } });
+    map.addLayer({ id: 'route-case', type: 'line', source: SRC, filter: ['!=', ['get', 'kind'], 'without'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#fff', 'line-width': 10, 'line-opacity': 0.95 } });
+    map.addLayer({ id: 'route-street', type: 'line', source: SRC, filter: kind('street'),
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#1565c0', 'line-width': 6 } });
+    // The shortcuts in the route, in a colour that is neither the gold nor the
+    // green the trails layer uses, so the route reads over either basemap and
+    // over the trails themselves.
+    map.addLayer({ id: 'route-trail', type: 'line', source: SRC, filter: kind('trail'),
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#ef6c00', 'line-width': 7 } });
+    map.addLayer({ id: 'route-off', type: 'line', source: SRC, filter: kind('off'),
+      layout: { 'line-cap': 'round' },
+      paint: { 'line-color': '#1565c0', 'line-width': 3, 'line-dasharray': [0.8, 1.2] } });
+  }
+
+  function clearLine() {
+    if (!map) return;
+    LAYERS.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource(SRC)) map.removeSource(SRC);
+  }
+
+  function clear() {
+    clearLine();
+    Object.values(markers).forEach((m) => m && m.remove());
+    markers = { from: null, to: null };
+  }
+
+  function frame() {
+    if (!map || !result) return;
+    const b = new maplibregl.LngLatBounds();
+    result.path.forEach(([la, ln]) => b.extend([ln, la]));
+    if (result.without) result.without.path.forEach(([la, ln]) => b.extend([ln, la]));
+    // On a phone the panel lies over the bottom of the map, however short. It
+    // may still be sliding down when this runs, so the measure is capped: a
+    // padding taller than the map makes MapLibre refuse to move at all.
+    const under = window.innerWidth <= 760
+      ? Math.min(el('panel').getBoundingClientRect().height, window.innerHeight * 0.2) : 0;
+    // The camera is worked out as if the map were flat and then given back its
+    // tilt. fitBounds on a tilted map (the app opens at 58°) leaves the route
+    // small and off to the top, since it measures the box on the flat ground.
+    const cam = map.cameraForBounds(b, { padding: { top: 90, bottom: 40 + under, left: 40, right: 40 },
+                                         maxZoom: 17.5, bearing: 0 });
+    if (cam) map.easeTo({ ...cam, bearing: map.getBearing(), pitch: map.getPitch(), duration: 800 });
+  }
+
+  /* ---------- the pane ---------- */
+
+  function showDetail() {
+    const r = result;
+    const s = saving(r);
+    // The few metres from the tapped point to the nearest path are on the map
+    // as a dotted stub; as a row they only push the real directions down.
+    const rows = r.legs.filter((l) => l.length >= (l.kind === 'off' ? 40 : 8)).map((l) => {
+      const glyph = l.kind === 'trail' ? '🥾' : l.kind === 'off' ? '·' : '🛣️';
+      const name = l.kind === 'trail' ? l.name
+        : l.kind === 'off' ? 'עד הדרך' : (l.name || 'דרך בלי שם');
+      const attr = l.kind === 'trail' && l.id ? ` data-route-trail="${escapeHtml(l.id)}"` : '';
+      return `<li class="route-leg ${l.kind}"${attr}>
+          <span class="route-glyph">${glyph}</span>
+          <span class="route-nm">${escapeHtml(name)}</span>
+          <span class="route-len">${fmt(l.length)}</span></li>`;
+    }).join('');
+    el('detail').innerHTML = `
+      <h2 class="route-title">מסלול הליכה</h2>
+      <div class="route-compare">
+        <div class="route-num"><b>${mins(r.minutes)}</b><span>${fmt(r.length)} דרך קיצורי הדרך</span></div>
+        ${r.without && r.trailsUsed.length ? `<div class="route-num grey"><b>${mins(r.without.minutes)}</b>
+          <span>${fmt(r.without.length)} ברחובות בלבד</span></div>` : ''}
+      </div>
+      <p class="route-say">${s ? escapeHtml(s) + '.' : 'אין כאן קיצור דרך שעוזר, וזה המסלול ברחובות.'}
+        ${r.trailsUsed.length ? 'הקטעים הכתומים הם קיצורי הדרך, והקו האפור המקווקו הוא הדרך בלעדיהם.' : ''}</p>
+      <ol class="route-legs">${rows}</ol>
+      <div class="acts">
+        <button class="act act-nav" data-route="go">${icon(I_WALK)}
+          <span class="lbl">נווט אותי במסלול
+            <span class="hint">חץ ומרחק עד היעד, לאורך המסלול</span></span></button>
+        <button class="act act-sub" data-route="close"><span class="lbl">סגור את המסלול</span></button>
+      </div>
+      <p class="sheet-credit">הרחובות מ-OpenStreetMap. קיצורי הדרך מהיוזמה. ההליכה מחושבת לפי
+        4.8 קמ"ש. שביל שנחסם? ספר ליוזמה.</p>`;
+    selectedId = null;
+    Layers.highlight(null);
+    markSelection(null);
+    el('list-view').hidden = true;
+    el('detail-view').hidden = false;
+  }
+
+  /* ---------- walking it ---------- */
+
+  function navigate() {
+    if (!result) return;
+    startNav({ name: 'המסלול', route: true, path: result.path,
+               entries: [{ lat: result.path[0][0], lng: result.path[0][1] }] });
+  }
+
+  function stopNavIfOurs() {
+    if (nav && nav.item && nav.item.route) stopNav();
+  }
+
+  function swap() {
+    if (!from || !to) return;
+    [from, to] = [{ ...to, mine: false }, { ...from }];
+    paintMarker('from'); paintMarker('to');
+    run();
+  }
+
+  function close() {
+    stopNavIfOurs();
+    picking = null;
+    result = from = to = null;
+    clear();
+    bar().hidden = true;
+    document.body.classList.remove('routing');
+    if (!el('detail-view').hidden && el('detail').querySelector('.route-title')) deselect();
+    if (typeof scheduleSync === 'function') scheduleSync();
+  }
+
+  /* ---------- in the link ---------- */
+
+  const r5 = (v) => +v.toFixed(5);
+  const linkValue = () => (from && to ? [r5(from.lat), r5(from.lng), r5(to.lat), r5(to.lng)].join(',') : null);
+
+  function fromLink(raw) {
+    const n = String(raw || '').split(',').map(Number);
+    if (n.length !== 4 || n.some((v) => !isFinite(v))) return;
+    stopNavIfOurs();
+    clear();
+    bar().hidden = false;
+    document.body.classList.add('routing');
+    from = { lat: n[0], lng: n[1] };
+    to = { lat: n[2], lng: n[3] };
+    picking = null;
+    paintMarker('from'); paintMarker('to');
+    // A link that carries a camera already framed the shot it was sent with.
+    run(new URLSearchParams(location.search).has('map'));
+  }
+
+  function wire() {
+    el('route-stop').addEventListener('click', (e) => { e.stopPropagation(); close(); });
+    el('route-go').addEventListener('click', (e) => { e.stopPropagation(); navigate(); });
+    el('route-swap').addEventListener('click', (e) => { e.stopPropagation(); swap(); });
+    el('route-bar').addEventListener('click', () => { if (result) { frame(); showDetail(); } });
+    el('route-ask').addEventListener('click', () => open(null));
+    el('detail').addEventListener('click', (e) => {
+      const act = e.target.closest('[data-route]');
+      if (act) { act.dataset.route === 'go' ? navigate() : close(); return; }
+      const leg = e.target.closest('[data-route-trail]');
+      if (leg && Layers.item(leg.dataset.routeTrail)) select(leg.dataset.routeTrail);
+    });
+  }
+
+  /** Called after a basemap swap, which throws every added layer away. */
+  function repaint() { if (result) { clearLine(); paintLine(); } }
+
+  return { open, pick, isOn, isPicking, close, wire, repaint, linkValue, fromLink, load,
+           result: () => result };
+})();
