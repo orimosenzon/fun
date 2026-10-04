@@ -3569,10 +3569,26 @@ body.asking-plan .invite-quiet {
 .invite-route .invite-ic { background: #1565c0; }
 .invite-route .invite-txt > span { color: #36557e; }
 
-.route-bar { background: #1565c0; cursor: pointer; }
+.route-bar { background: #1565c0; cursor: pointer; flex-wrap: wrap; row-gap: 8px; }
 .route-bar .route-ic svg { width: 22px; height: 22px; }
-.route-bar .draft-btn.strong { color: #1565c0; }
-.route-bar .draft-btn { font-size: 15px; }
+
+/* The second row of the bar: the actions, each with its name on it. */
+.route-acts { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.route-acts:not(:has(.route-act:not([hidden]))) { display: none; }
+.route-act {
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, .18);
+  cursor: pointer;
+}
+.route-act.strong { background: #fff; color: #0d47a1; }
+@media (max-width: 420px) { .route-act { font-size: 13px; padding: 6px 9px; } .route-acts { gap: 5px; } }
+.route-act[hidden] { display: none; }
 
 #route-stop {
   flex: none;
@@ -3589,7 +3605,7 @@ body.asking-plan .invite-quiet {
 /* Walking the route: the navigation bar takes the top, and closing it brings
  * the route bar back. */
 body.nav-active .route-bar { display: none; }
-body.routing .maplibregl-ctrl-top-left { margin-top: 62px; }
+body.routing .maplibregl-ctrl-top-left { margin-top: calc(var(--route-h, 52px) + 10px); }
 body.routing #map canvas { cursor: crosshair; }
 
 .route-pin {
@@ -3638,7 +3654,30 @@ body.routing #map canvas { cursor: crosshair; }
   font-size: 14px;
 }
 
-.route-leg.trail { color: #bf5000; font-weight: 600; cursor: pointer; }
+.route-leg.trail { color: #0d47a1; font-weight: 600; cursor: pointer; }
+
+/* The other ways (4/10/2026): faded blue on the map, a row each here. */
+.route-alts-h { margin: 4px 0 6px; font-size: 14px; }
+.route-alts-h span { font-weight: 400; font-size: 12px; color: var(--muted); }
+.route-alts { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.route-alt {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid #c9dbf1;
+  border-radius: 10px;
+  background: #f3f7fd;
+  color: #3b67a8;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: start;
+  cursor: pointer;
+}
+.route-alt:active { background: #e3edf9; }
+.route-alt b { font-size: 15px; }
+.route-alt-tr { margin-inline-start: auto; font-size: 12.5px; }
 .route-leg.off { color: var(--muted); font-size: 12.5px; }
 .route-glyph { flex: none; width: 22px; text-align: center; }
 .route-nm { flex: 1; min-width: 0; }

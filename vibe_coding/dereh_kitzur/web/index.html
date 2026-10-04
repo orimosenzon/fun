@@ -171,18 +171,25 @@
 </div>
 
 <!-- A walking route through the shortcuts (route.js). The bar says what is
-     wanted next - a tap for the destination, then for the start if you are not
-     in the moshava - and once there is a route, how long it takes and what the
-     shortcuts saved. Tapping it frames the route and opens the directions. -->
+     wanted next - the start (a tap, or "my location"), then the destination -
+     and once there is a route, how long it takes and what the shortcuts
+     saved. Tapping it frames the route and opens the directions. -->
 <div id="route-bar" class="nav route-bar" hidden role="status" aria-live="polite">
   <div class="nav-arrow route-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM17.5 12a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM6 13.5v1.5a3 3 0 003 3h3v-2H9a1 1 0 01-1-1v-1.5zm6-7.5v2h3a1 1 0 011 1v1h2V9a3 3 0 00-3-3z"/></svg></div>
   <div class="nav-txt">
     <strong id="route-main">לחץ על נקודת היציאה (א)</strong>
     <span id="route-sub"></span>
   </div>
-  <button id="route-swap" class="draft-btn" hidden title="החלף בין היציאה ליעד" aria-label="החלף כיוון">⇅</button>
-  <button id="route-go" class="draft-btn strong" hidden>נווט</button>
   <button id="route-stop" aria-label="סגור מסלול">&times;</button>
+  <!-- What can be done now, in words (Ori, 4/10/2026: an unlabelled ⇅ and a
+       bare "נווט" were not understood). route.js shows the ones that apply. -->
+  <div id="route-acts" class="route-acts">
+    <button id="route-mine" class="route-act strong" hidden>📍 המיקום שלי</button>
+    <button id="route-go" class="route-act strong" hidden>▶ התחל ניווט</button>
+    <button id="route-from" class="route-act" hidden>שנה את א</button>
+    <button id="route-to" class="route-act" hidden>שנה את ב</button>
+    <button id="route-swap" class="route-act" hidden title="החלף בין היציאה ליעד">⇅ הפוך</button>
+  </div>
 </div>
 
 <section id="panel" class="panel" aria-label="רשימת השבילים">
