@@ -1,6 +1,6 @@
 # FABLE — Flying Jet Bike
 
-**[▶ Play it live](https://orimosenzon.github.io/fun/vibe_coding/fable)** — nothing to install, just a browser.
+**[▶ Play it live](https://orimosenzon.github.io/fun/vibe_coding/jetbikes/fable)** — nothing to install, just a browser.
 
 A browser-based 3D flight game: you ride a jet-powered motorcycle — the *FLYING HOG / ALPINIST* — through a procedurally generated landscape of mountains, valleys, forests, villages and lakes, racing through 16 glowing rings as fast as possible. The whole thing is built on a from-scratch 6-degrees-of-freedom rigid-body flight model, not a canned physics engine — the project's actual centerpiece is *how it flies*, not just what it looks like.
 
@@ -170,7 +170,7 @@ Tests zero out `TUNE.windSpeed` for a calm, deterministic baseline; the wind-spe
 
 Static hosting on **GitHub Pages via GitHub Actions** (`.github/workflows/pages.yml`), not the legacy Jekyll-based Pages build — that was switched over after the old build started failing consistently. Every push to `master` triggers the workflow, which uploads the whole repo tree as a Pages artifact and deploys it — typically live within seconds, no build step of its own since the game needs none.
 
-Live at: **https://orimosenzon.github.io/fun/vibe_coding/fable**
+Live at: **https://orimosenzon.github.io/fun/vibe_coding/jetbikes/fable**
 
 ## Known gaps / ideas for next steps
 

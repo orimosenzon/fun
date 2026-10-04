@@ -8,7 +8,7 @@
 - קבצים: `index.html` + `js/{main,physics,wind,world,bike,jetfx,explosion,grass,animals,hud,i18n,audio,touch,noise}.js`
 - הרצה: `python3 -m http.server 8791` בתיקיית הפרויקט → http://localhost:8791/
 - דגלי URL לדיבאג: `?demo` המראה אוטומטית · `?pose=cruise|show|boom|horses|birds` תנוחות קבועות · `?touch=1` בקרת מגע במחשב · `?lang=he|en` שפה · `?selftest=touch` בדיקת ג'ויסטיק/כפתורי מגע אוטומטית.
-- פריסה: **GitHub Pages דרך GitHub Actions** (לא legacy Jekyll — הוחלף ב-4.7.2026 כי ה-build הישן נכשל בעקביות). כל push ל-master מפעיל `.github/workflows/pages.yml` ופורס תוך שניות. לינק: https://orimosenzon.github.io/fun/vibe_coding/fable
+- פריסה: **GitHub Pages דרך GitHub Actions** (לא legacy Jekyll — הוחלף ב-4.7.2026 כי ה-build הישן נכשל בעקביות). כל push ל-master מפעיל `.github/workflows/pages.yml` ופורס תוך שניות. לינק: https://orimosenzon.github.io/fun/vibe_coding/jetbikes/fable (הכתובת הישנה vibe_coding/fable עובדת דרך קישור סימבולי)
 
 ## מודל פיזיקלי (physics.js + wind.js) — עודכן מהותית ב-5.7.2026
 - גוף קשיח 6DOF: מיקום+מהירות, קווטרניון+תנע זוויתי בפריים הגוף (L=Iω), משוואות אוילר עם איבר ג'ירוסקופי, אינטגרציית **exp מדויקת** (לא Euler רגיל) — שימור תנע מושלם (סחף <0.02° ב-0.5ש').
