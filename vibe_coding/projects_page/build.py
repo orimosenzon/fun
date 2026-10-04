@@ -101,7 +101,9 @@ def assign_anchors(data: dict) -> None:
     for si, s in enumerate(data["sections"]):
         s["_anchor"] = unique(f"cat-{si + 1}")
         for p in s["projects"]:
-            base = p.get("dir", "")
+            # "anchor" pins the id when the directory moved (jetbikes/fable
+            # keeps #fable and its shots/fable.webp)
+            base = p.get("anchor") or p.get("dir", "")
             if not base:
                 for l in p["links"]:
                     path = unquote(l["href"]).replace(
@@ -363,6 +365,9 @@ SKIP = EXCLUDED | {
     "ori_android",
     # clone of the PRIVATE repo orimosenzon/private, never on the public page
     "private",
+    # symlinks into jetbikes/ (4.10.2026) so old shared links keep working;
+    # only fable and jetbike_game have cards, and they link to jetbikes/
+    "fable", "opus5", "jetbike_film", "jetbike_game",
     # earlier iterations of "Smart Business Search" (ori/index.html)
     "map_search.html", "smart_map.html", "ms.html", "ms_es.html", "ms_mob.html",
     "wip.html", "tmp.html",
