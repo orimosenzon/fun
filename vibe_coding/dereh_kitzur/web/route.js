@@ -360,6 +360,75 @@ const RouteEngine = (() => {
     return folded;
   }
 
+  /** Turn-by-turn steps from the legs (Ori, 4/10/2026: a dot to walk toward
+   *  was not navigation). Each step is where a leg begins: how far along the
+   *  route that is, which way to turn there, and onto what. The bits of open
+   *  ground at either end are not steps of their own. */
+  function steps(L) {
+    const M = 111320;
+    const vec = (a, b) => [(b[1] - a[1]) * M * Math.cos(a[0] * Math.PI / 180), (b[0] - a[0]) * M];
+    const bearing = (a, b) => { const [x, y] = vec(a, b); return Math.atan2(x, y) * 180 / Math.PI; };
+    const lenOf = (a, b) => Math.hypot(...vec(a, b));
+    // A point about `m` metres from one end of a path, to take a bearing over
+    // the stretch you actually see rather than its last kink.
+    const reach = (path, m, fromEnd) => {
+      const pts = fromEnd ? path.slice().reverse() : path;
+      let left = m;
+      for (let i = 1; i < pts.length; i++) {
+        const d = lenOf(pts[i - 1], pts[i]);
+        if (d >= left || i === pts.length - 1) return pts[i];
+        left -= d;
+      }
+      return pts[pts.length - 1];
+    };
+    const out = [];
+    let at = 0, prev = null;
+    L.forEach((l, i) => {
+      // A few metres of street between two turns is a jog, not a step of its
+      // own: "slight left onto X, then 30 m on, left again" is noise.
+      const jog = l.kind === 'street' && l.length < 35 && prev && L.slice(i + 1).some((n) => n.kind !== 'off');
+      if (jog) out[out.length - 1].length += l.length;
+      else if (l.kind !== 'off') {
+        const step = { at, kind: l.kind, name: l.name, id: l.id, pt: l.path[0], length: l.length, turn: 'start', angle: 0 };
+        if (prev) {
+          const inB = bearing(reach(prev.path, 20, true), prev.path[prev.path.length - 1]);
+          const outB = bearing(l.path[0], reach(l.path, 20, false));
+          const d = ((outB - inB + 540) % 360) - 180;     // + is clockwise: a right turn
+          step.angle = d;
+          const a = Math.abs(d), side = d > 0 ? 'right' : 'left';
+          step.turn = a < 25 ? 'straight' : a < 60 ? `slight-${side}` : a < 150 ? side : 'back';
+        }
+        out.push(step);
+        prev = l;
+      } else if (prev) out[out.length - 1].length += l.length;
+      at += l.length;
+    });
+    // Straight on along the same street, after a jog was folded away, is the
+    // step before it continuing.
+    const merged = [];
+    for (const st of out) {
+      const last = merged[merged.length - 1];
+      if (last && st.turn === 'straight' && st.kind === last.kind && st.name === last.name) last.length += st.length;
+      else merged.push(st);
+    }
+    merged.push({ at, kind: 'end', name: '', pt: L[L.length - 1].path.slice(-1)[0], length: 0, turn: 'end', angle: 0 });
+    return merged;
+  }
+
+  /** A step in words, in two halves: the turn ("פנה ימינה") and what it is
+   *  onto ("לשביל כיכר פעם"). The navigation bar puts them on two lines. */
+  const TURN = { start: 'צא', straight: 'המשך ישר', 'slight-right': 'פנה קלות ימינה',
+                 'slight-left': 'פנה קלות שמאלה', right: 'פנה ימינה', left: 'פנה שמאלה',
+                 back: 'הסתובב', end: 'הגעת ליעד' };
+  const turnWords = (s) => TURN[s.turn];
+  // A name that already says what it is ("שביל השבילים", "רחוב הנשיא") is
+  // not given the word a second time.
+  const onto = (s) => (s.kind === 'end' ? ''
+    : /^(שביל|רחוב|דרך|שדרות|סמטת|כביש)\s/.test(s.name) ? `ל${s.name}`
+      : s.kind === 'trail' ? `לשביל ${s.name}`
+        : s.name ? `לרחוב ${s.name}` : 'לדרך בלי שם');
+  const say = (s) => `${turnWords(s)} ${onto(s)}`.trim();
+
   /** The whole answer: the recommended route through the shortcuts, a few
    *  alternatives, and the streets-only walk to compare against. */
   function route(base, trails, from, to) {
@@ -383,6 +452,7 @@ const RouteEngine = (() => {
         minutes: p.length / WALK_M_PER_MIN,
         path: pathOf(p),
         legs: L,
+        steps: steps(L),
         trailLength: T.reduce((s, l) => s + l.length, 0),
         trailsUsed: [...new Set(T.map((l) => l.id))]
       };
@@ -406,7 +476,7 @@ const RouteEngine = (() => {
     return { ...picked, alternatives: alts, without };
   }
 
-  return { decode, route, choose, WALK_M_PER_MIN };
+  return { decode, route, choose, say, turnWords, onto, WALK_M_PER_MIN };
 })();
 
 if (typeof module !== 'undefined') module.exports = { RouteEngine };
@@ -739,17 +809,16 @@ const Route = (typeof document === 'undefined') ? null : (() => {
   function showDetail() {
     const r = result;
     const s = saving(r);
-    // The few metres from the tapped point to the nearest path are on the map
-    // as a dotted stub; as a row they only push the real directions down.
-    const rows = r.legs.filter((l) => l.length >= (l.kind === 'off' ? 40 : 8)).map((l) => {
-      const glyph = l.kind === 'trail' ? '🥾' : l.kind === 'off' ? '·' : '🛣️';
-      const name = l.kind === 'trail' ? l.name
-        : l.kind === 'off' ? 'עד הדרך' : (l.name || 'דרך בלי שם');
-      const attr = l.kind === 'trail' && l.id ? ` data-route-trail="${escapeHtml(l.id)}"` : '';
-      return `<li class="route-leg ${l.kind}"${attr}>
-          <span class="route-glyph">${glyph}</span>
-          <span class="route-nm">${escapeHtml(name)}</span>
-          <span class="route-len">${fmt(l.length)}</span></li>`;
+    // The directions as turns, in order (4/10/2026). The same steps drive the
+    // navigation bar, and the one it is on is highlighted here as you walk.
+    const GLYPH = { start: '●', straight: '↑', 'slight-right': '↗', 'slight-left': '↖',
+                    right: '→', left: '←', back: '↶', end: '🏁' };
+    const rows = r.steps.map((st, i) => {
+      const attr = st.kind === 'trail' && st.id ? ` data-route-trail="${escapeHtml(st.id)}"` : '';
+      return `<li class="route-leg ${st.kind}" data-step="${i}"${attr}>
+          <span class="route-glyph">${GLYPH[st.turn]}</span>
+          <span class="route-nm">${escapeHtml(RouteEngine.say(st))}${st.kind === 'trail' ? ' 🥾' : ''}</span>
+          <span class="route-len">${st.length >= 1 ? fmt(st.length) : ''}</span></li>`;
     }).join('');
     // The other ways, as rows that pick them - the same as tapping the faded
     // line on the map, for whoever reads the pane before the map.
@@ -775,7 +844,7 @@ const Route = (typeof document === 'undefined') ? null : (() => {
       <div class="acts">
         <button class="act act-nav" data-route="go">${icon(I_WALK)}
           <span class="lbl">התחל ניווט
-            <span class="hint">פס למעלה יראה כמה נשאר עד היעד, וחץ יראה לאן ללכת</span></span></button>
+            <span class="hint">תוך כדי הליכה: המפה עוקבת אחריך, והפס למעלה אומר מה הפנייה הבאה ובעוד כמה מטרים</span></span></button>
         <button class="act act-sub" data-route="close"><span class="lbl">סגור את המסלול</span></button>
       </div>
       <p class="sheet-credit">הרחובות מ-OpenStreetMap. קיצורי הדרך מהיוזמה. ההליכה מחושבת לפי
@@ -789,9 +858,15 @@ const Route = (typeof document === 'undefined') ? null : (() => {
 
   /* ---------- walking it ---------- */
 
+  /** Highlight the step navigation is on, in the pane, if it is showing. */
+  function markStep(i) {
+    document.querySelectorAll('#detail .route-leg[data-step]').forEach((li) =>
+      li.classList.toggle('now', +li.dataset.step === i));
+  }
+
   function navigate() {
     if (!result) return;
-    startNav({ name: 'המסלול', route: true, path: result.path,
+    startNav({ name: 'המסלול', route: true, path: result.path, steps: result.steps,
                entries: [{ lat: result.path[0][0], lng: result.path[0][1] }] });
   }
 
@@ -860,5 +935,5 @@ const Route = (typeof document === 'undefined') ? null : (() => {
   function repaint() { if (result) { clearLine(); paintLine(); } }
 
   return { open, pick, isOn, isPicking, close, wire, repaint, linkValue, fromLink, load,
-           choose, tapAlt, altAt, result: () => result };
+           choose, tapAlt, altAt, markStep, result: () => result };
 })();

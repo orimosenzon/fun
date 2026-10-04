@@ -3679,6 +3679,9 @@ body.routing #map canvas { cursor: crosshair; }
 .route-alt b { font-size: 15px; }
 .route-alt-tr { margin-inline-start: auto; font-size: 12.5px; }
 .route-leg.off { color: var(--muted); font-size: 12.5px; }
+/* The step navigation is on (4/10/2026). */
+.route-leg.now { background: #e3edf9; border-radius: 8px; font-weight: 700; }
+.route-leg[data-step] .route-glyph { font-weight: 700; color: #0d47a1; }
 .route-glyph { flex: none; width: 22px; text-align: center; }
 .route-nm { flex: 1; min-width: 0; }
 .route-len { flex: none; font-size: 12.5px; color: var(--muted); }
