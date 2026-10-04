@@ -2152,6 +2152,8 @@ const Layers = (() => {
       // two listeners MapLibre reaches first, the answer is the same. The
       // drafts editor owns every tap while it is open, in the same way.
       if (mapIsBusy()) return;
+      // A faded alternative walking route: app.js makes the tap choose it.
+      if (typeof Route !== 'undefined' && Route && Route.altAt(e.point) != null) return;
       if (tapOnDisc(e)) return;
       const { lines, areas, grids, dashed } = pickLayers();
       const found = lines.length ? map.queryRenderedFeatures(e.point, { layers: lines }) : [];

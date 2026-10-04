@@ -2368,8 +2368,11 @@ function paintNav() {
     const p = projectOnPath(here, item.path);
     onTrail = p.d < 30;
     target = onTrail ? aheadOnPath(item.path, p, 35) : p.point;
-    label = fmt(p.after + (onTrail ? 0 : p.d));
-    state = onTrail ? 'במסלול · עד היעד' : 'אל המסלול';
+    // In words a walker reads at a glance (Ori, 4/10/2026: "במסלול · עד היעד ·
+    // צפון" was not understood): how much is left, or where the line is.
+    const left = p.after + (onTrail ? 0 : p.d);
+    label = onTrail ? `${fmt(left)} עד היעד` : `${fmt(p.d)} עד המסלול`;
+    state = onTrail ? `עוד כ-${Math.max(1, Math.round(left / 80))} דק׳ הליכה` : 'התרחקת מהקו הכחול';
   } else if (item.path) {
     const p = projectOnPath(here, item.path);
     if (p.d < 25) {
@@ -2413,9 +2416,14 @@ function paintNav() {
   // is north-up, so say so rather than sending someone the wrong way. The
   // wording is spelled out because "(חץ לפי צפון)" told the truth to somebody
   // who already knew what it meant, and nothing to anybody else.
-  el('nav-state').textContent = facing == null
-    ? `${state} · ${compass(course)} · החץ מיושר לצפון`
-    : `${state} · ${compass(course)}`;
+  // A route says it in a sentence: with a heading the arrow is where to walk;
+  // without one the arrow is north-up, so the direction is said in words.
+  el('nav-state').textContent = item.route
+    ? (facing == null ? `${state} · ללכת ל${compass(course)}`
+      : `${state} · ${onTrail ? 'החץ מראה לאן ללכת' : 'החץ מראה איך לחזור אליו'}`)
+    : facing == null
+      ? `${state} · ${compass(course)} · החץ מיושר לצפון`
+      : `${state} · ${compass(course)}`;
 
   document.querySelector('.nav-arrow').style.transform =
     `rotate(${course - (facing || 0)}deg)`;
@@ -3805,6 +3813,8 @@ function wireControls() {
     if (PlanHere.isArmed()) { PlanHere.at(e.lngLat); return; }
     // Waiting for one end of a walking route: the tap is that end.
     if (Route && Route.isPicking()) { Route.pick(e.lngLat); return; }
+    // A faded alternative route: the tap chooses it.
+    if (Route && Route.isOn() && Route.tapAlt(e.point)) return;
     // While drafting or arranging, a tap on the map means something other than
     // "clear the selection".
     if (!selectedId || Drafts.isDrafting() || Arrange.isOn()) return;

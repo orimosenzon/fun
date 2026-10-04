@@ -18,6 +18,7 @@ PORT = 8771
 URL = f'http://127.0.0.1:{PORT}/index.html'
 HOME = {'latitude': 32.47830, 'longitude': 34.96950}   # just past one end of p11
 OTHER = {'lat': 32.47920, 'lng': 34.97160}               # just past the other end
+FAR = {'lat': 32.46400, 'lng': 34.98200}                 # about 2.5 km off, across the moshava
 
 fails = []
 def check(name, ok, detail=''):
@@ -50,12 +51,19 @@ try:
     r = pg.evaluate('''async (to) => {
       await Route.load();
       Route.open(to);
+      await new Promise(r => setTimeout(r, 300));
+      // The start is not taken from the GPS on its own any more: it waits.
+      window.__before = {picking: Route.isPicking(), result: !!Route.result(),
+                         mine: !document.getElementById('route-mine').hidden};
+      document.getElementById('route-mine').click();
       await new Promise(r => setTimeout(r, 1500));
       const x = Route.result();
       return x && {len: x.length, without: x.without && x.without.length,
                    used: x.trailsUsed, legs: x.legs.map(l => [l.kind, l.name, Math.round(l.length)])};
     }''', OTHER)
     print('route p11:', json.dumps(r, ensure_ascii=False))
+    wait = pg.evaluate('() => window.__before')
+    check('opening waits for the start, with a "my location" button', wait['picking'] and not wait['result'] and wait['mine'], wait)
     check('a route comes back', bool(r), r)
     check('it goes through הדקלים - גפן', r and 'p11' in r['used'], r and r['used'])
     check('and is much shorter than the streets', r and r['without'] and r['without'] > 1.5 * r['len'],
@@ -65,14 +73,52 @@ try:
       main: document.getElementById('route-main').textContent,
       sub: document.getElementById('route-sub').textContent,
       go: !document.getElementById('route-go').hidden,
-      layers: ['route-street','route-trail','route-without'].filter(id => map.getLayer(id)),
+      layers: ['route-main','route-trail','route-alt'].filter(id => map.getLayer(id)),
+      alts: Route.result().alternatives.length,
       pane: !document.getElementById('detail-view').hidden && !!document.querySelector('#detail .route-title'),
       legs: document.querySelectorAll('#detail .route-leg').length,
       url: location.search})''')
     print('bar:', json.dumps(bar, ensure_ascii=False))
     check('the bar says minutes and metres', bar['shown'] and 'דק׳' in bar['main'], bar['main'])
     check('it says what the shortcut saved', 'חוסך' in bar['sub'], bar['sub'])
-    check('the route is drawn, with the street-only one under it', len(bar['layers']) == 3, bar['layers'])
+    check('the route is drawn, with the alternatives under it', len(bar['layers']) == 3, bar['layers'])
+
+    # ---- a longer walk: alternatives, chosen from the pane and from the map ----
+    pg.evaluate('(to) => Route.open(to)', FAR)
+    pg.click('#route-mine')
+    pg.wait_for_timeout(2000)
+    shown = pg.evaluate('''() => ['route-go','route-from','route-to','route-swap','route-mine']
+        .filter(id => !document.getElementById(id).hidden)''')
+    check('with a route the bar shows its actions by name', shown == ['route-go','route-from','route-to','route-swap'], shown)
+    far = pg.evaluate('''() => { const x = Route.result(); return x && {len: Math.round(x.length),
+      trail: Math.round(x.trailLength), alts: x.alternatives.map(a => [Math.round(a.length), Math.round(a.trailLength)]),
+      rows: document.querySelectorAll('#detail [data-route-alt]').length}; }''')
+    print('far:', json.dumps(far))
+    check('a longer walk has alternatives, listed in the pane', far and far['alts'] and far['rows'] == len(far['alts']), far)
+    check('the recommended route leans on the shortcuts',
+          far and far['trail'] >= max([a[1] for a in far['alts']] + [0]) * 0.8, far)
+    ch = pg.evaluate('''() => {
+      const before = Route.result(), alt = before.alternatives[0];
+      document.querySelector('#detail [data-route-alt="0"]').click();
+      const after = Route.result();
+      return {same: Math.abs(after.length - alt.length) < 0.5,
+              oldIsAlt: after.alternatives.some(a => Math.abs(a.length - before.length) < 0.5),
+              count: after.alternatives.length === before.alternatives.length};
+    }''')
+    check('a row in the pane makes that way the route', ch['same'] and ch['oldIsAlt'] and ch['count'], ch)
+    tap = pg.evaluate('''() => {
+      const a = Route.result().alternatives[0];
+      // a point well inside the alternative, not shared with the route
+      const p = a.path[Math.floor(a.path.length / 2)];
+      const before = Route.result().length;
+      const pt = map.project([p[1], p[0]]);
+      const i = Route.altAt(pt);
+      return {i, chose: i != null && Route.tapAlt(pt), changed: Math.abs(Route.result().length - before) > 0.5};
+    }''')
+    check('a tap on a faded line chooses it', tap['chose'] and tap['changed'], tap)
+    pg.evaluate('(to) => Route.open(to)', OTHER)
+    pg.click('#route-mine')
+    pg.wait_for_timeout(1500)
     check('the pane lists the legs', bar['pane'] and bar['legs'] >= 2, bar)
     q = parse_qs(urlparse(bar['url']).query)
     check('the link carries the route', 'route' in q, bar['url'])
@@ -90,7 +136,7 @@ try:
     print('walking:', json.dumps(nv, ensure_ascii=False))
     check('נווט starts navigation along the route', nv['nav'] and nv['route'], nv)
     check('the route bar steps aside for it', nv['bar'] == 'none', nv['bar'])
-    check('it counts down along the route', 'מסלול' in nv['state'], nv['state'])
+    check('it counts down along the route, in words', 'עד היעד' in nv['dist'] and 'דק׳ הליכה' in nv['state'], nv)
     pg.click('#nav-stop')
     pg.wait_for_timeout(300)
     check('stopping brings the route bar back',
@@ -109,7 +155,7 @@ try:
     pg.click('#route-stop')
     pg.wait_for_timeout(400)
     gone = pg.evaluate('''() => ({bar: document.getElementById('route-bar').hidden,
-      layers: ['route-street','route-trail','route-without'].filter(id => map.getLayer(id)).length,
+      layers: ['route-main','route-trail','route-alt'].filter(id => map.getLayer(id)).length,
       pins: document.querySelectorAll('.route-pin').length, url: location.search})''')
     check('× clears the bar, the line and the pins',
           gone['bar'] and gone['layers'] == 0 and gone['pins'] == 0, gone)
@@ -121,7 +167,9 @@ try:
     pg.wait_for_timeout(1500)
     pg.click('#route-ask')
     pg.wait_for_timeout(300)
-    check('the card arms a tap for the destination', pg.evaluate('() => Route.isPicking()'))
+    pg.click('#route-mine')
+    pg.wait_for_timeout(800)
+    check('the card, then "my location", arms a tap for the destination', pg.evaluate('() => Route.isPicking()'))
     before = pg.evaluate('() => selectedId')
     box = pg.evaluate('() => { const r = map.getCanvas().getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }')
     pg.mouse.click(box[0] + box[2] * 0.7, box[1] + box[3] * 0.4)
@@ -131,6 +179,18 @@ try:
     print('after the tap:', json.dumps(tapped, ensure_ascii=False))
     check('the tap sets the destination and routes', tapped['result'] and not tapped['picking'], tapped)
     check('the tap did not also open a trail', tapped['sel'] == before, tapped['sel'])
+
+    # ---- "שנה את א": the next tap moves the start ----
+    pg.click('#route-from')
+    pg.wait_for_timeout(200)
+    old = pg.evaluate('() => Route.linkValue()')
+    pg.mouse.click(box[0] + box[2] * 0.35, box[1] + box[3] * 0.65)
+    pg.wait_for_timeout(1500)
+    moved = pg.evaluate('''(old) => ({picking: Route.isPicking(), link: Route.linkValue(), old,
+        result: !!Route.result()})''', old)
+    check('שנה את א, then a tap, moves the start and routes again',
+          not moved['picking'] and moved['result'] and moved['link'] != old
+          and moved['link'].split(',')[2:] == old.split(',')[2:], moved)
     pg.click('#route-stop')
 
     # ---- from a place's page ----
@@ -140,6 +200,8 @@ try:
     check('a place offers מסלול הליכה לכאן', has)
     if has:
         pg.click('#route-here')
+        pg.wait_for_timeout(300)
+        pg.click('#route-mine')
         pg.wait_for_timeout(2500)
         res = pg.evaluate('() => { const x = Route.result(); return x && Math.round(x.length); }')
         check('and it routes there from where you are', bool(res), res)
@@ -188,7 +250,8 @@ try:
 
     # ---- phone ----
     ctx3, pg3, errs3 = open_app(b, URL, {'width': 390, 'height': 800})
-    pg3.evaluate('async (to) => { await Route.load(); Route.open(to); }', OTHER)
+    pg3.evaluate('async (to) => { await Route.load(); Route.open(to); }', FAR)
+    pg3.click('#route-mine')
     pg3.wait_for_timeout(2500)
     pg3.screenshot(path=os.path.join(OUT, 'shot_route_phone.png'))
     errs.extend(errs3)
