@@ -1354,25 +1354,6 @@
             }
           ],
           "small": true
-        },
-        {
-          "title": "3D Flying Motorcycle",
-          "icon": "🏍️",
-          "theme": "t-blue",
-          "tags": [
-            "Canvas",
-            "WebGL"
-          ],
-          "desc": "סימולציית נהיגת אופנוע תלת-מימדי עם שליטה במקלדת.",
-          "links": [
-            {
-              "href": "t.html",
-              "style": "primary",
-              "label": "▶ פתח",
-              "external": false
-            }
-          ],
-          "small": true
         }
       ]
     }

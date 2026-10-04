@@ -368,6 +368,8 @@ SKIP = EXCLUDED | {
     # symlinks into jetbikes/ (4.10.2026) so old shared links keep working;
     # only fable and jetbike_game have cards, and they link to jetbikes/
     "fable", "opus5", "jetbike_film", "jetbike_game",
+    # t.html → jetbikes/motorcycle_3d/index.html (the 2025 "3D Flying Motorcycle")
+    "t.html",
     # earlier iterations of "Smart Business Search" (ori/index.html)
     "map_search.html", "smart_map.html", "ms.html", "ms_es.html", "ms_mob.html",
     "wip.html", "tmp.html",
