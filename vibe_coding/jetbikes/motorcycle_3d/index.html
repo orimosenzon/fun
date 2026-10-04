@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אופנוע מעופף 3D</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            direction: rtl;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: right;
+            z-index: 100;
+        }
+        
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            min-width: 120px;
+            z-index: 100;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div class="crosshair"></div>
+    <div class="controls">
+        <strong>בקרה:</strong><br>
+        W/S - דחף/בלם<br>
+        A/D - פניות<br>
+        Q/E - גילגול<br>
+        רווח - סילון חזק<br>
+        R - איפוס<br>
+        עכבר - מבט
+    </div>
+    <div class="info">
+        <div>גובה: <span id="altitude">0</span>מ</div>
+        <div>מהירות: <span id="speed">0</span>קמ״ש</div>
+        <div>דלק: <span id="fuel">100</span>%</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // הגדרות בסיסיות
+        let scene, camera, renderer;
+        let motorcycle, jetParticles = [];
+        let keys = {};
+        let mouse = { x: 0, y: 0 };
+        let isMouseLocked = false;
+        
+        // פיזיקה
+        const physics = {
+            position: new THREE.Vector3(0, 50, 0),
+            velocity: new THREE.Vector3(0, 0, 0),
+            rotation: new THREE.Euler(0, 0, 0),
+            angularVelocity: new THREE.Vector3(0, 0, 0),
+            fuel: 100,
+            thrustPower: 0.8,
+            gravity: -0.02,
+            drag: 0.98,
+            angularDrag: 0.95
+        };
+        
+        // אתחול המשחק
+        function init() {
+            // יצירת סצנה
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x87CEEB, 100, 1000);
+            
+            // מצלמה
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            
+            // רנדרר
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x87CEEB);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // תאורה
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(100, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            directionalLight.shadow.camera.left = -200;
+            directionalLight.shadow.camera.right = 200;
+            directionalLight.shadow.camera.top = 200;
+            directionalLight.shadow.camera.bottom = -200;
+            scene.add(directionalLight);
+            
+            // יצירת אופנוע
+            createMotorcycle();
+            
+            // יצירת עולם
+            createWorld();
+            
+            // בקרה
+            setupControls();
+            
+            // התחלת לופ המשחק
+            animate();
+        }
+        
+        // יצירת האופנוע
+        function createMotorcycle() {
+            motorcycle = new THREE.Group();
+            
+            // חומרים משופרים
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff4500, 
+                shininess: 100,
+                specular: 0x222222 
+            });
+            const metalMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x333333, 
+                shininess: 150,
+                specular: 0x555555 
+            });
+            const chromeMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x888888, 
+                shininess: 200,
+                specular: 0xaaaaaa 
+            });
+            const blackMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x111111, 
+                shininess: 50 
+            });
+            const rubberMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+            
+            // מיכל דלק ראשי - צורה אליפטית
+            const tankGeometry = new THREE.SphereGeometry(1.2, 12, 8);
+            tankGeometry.scale(1.5, 0.8, 2.2);
+            const tank = new THREE.Mesh(tankGeometry, bodyMaterial);
+            tank.position.set(0, 0.3, 0);
+            tank.castShadow = true;
+            motorcycle.add(tank);
+            
+            // מושב מעוגל
+            const seatGeometry = new THREE.SphereGeometry(0.8, 12, 8);
+            seatGeometry.scale(1.8, 0.4, 1.5);
+            const seat = new THREE.Mesh(seatGeometry, blackMaterial);
+            seat.position.set(0, 0.9, -1.2);
+            seat.castShadow = true;
+            motorcycle.add(seat);
+            
+            // מנוע מפורט
+            const engineMainGeo = new THREE.CylinderGeometry(0.8, 1, 1.5, 8);
+            const engineMain = new THREE.Mesh(engineMainGeo, metalMaterial);
+            engineMain.position.set(0, -0.2, 0.5);
+            engineMain.castShadow = true;
+            motorcycle.add(engineMain);
+            
+            // צילינדרים
+            for (let i = 0; i < 2; i++) {
+                const cylinderGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8);
+                const cylinder = new THREE.Mesh(cylinderGeo, metalMaterial);
+                cylinder.position.set(i === 0 ? -0.4 : 0.4, 0.2, 0.8);
+                cylinder.castShadow = true;
+                motorcycle.add(cylinder);
+            }
+            
+            // גלגלים מפורטים
+            const createWheel = (x, y, z) => {
+                const wheelGroup = new THREE.Group();
+                
+                // גומי
+                const tireGeo = new THREE.TorusGeometry(1, 0.4, 8, 16);
+                const tire = new THREE.Mesh(tireGeo, rubberMaterial);
+                tire.rotation.y = Math.PI / 2;
+                wheelGroup.add(tire);
+                
+                // חישוק
+                const rimGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.3, 16);
+                const rim = new THREE.Mesh(rimGeo, chromeMaterial);
+                rim.rotation.z = Math.PI / 2;
+                wheelGroup.add(rim);
+                
+                // חישורים
+                for (let i = 0; i < 5; i++) {
+                    const spokeGeo = new THREE.BoxGeometry(0.05, 0.05, 1.4);
+                    const spoke = new THREE.Mesh(spokeGeo, chromeMaterial);
+                    spoke.rotation.z = (Math.PI * 2 / 5) * i;
+                    spoke.rotation.y = Math.PI / 2;
+                    wheelGroup.add(spoke);
+                }
+                
+                wheelGroup.position.set(x, y, z);
+                wheelGroup.castShadow = true;
+                return wheelGroup;
+            };
+            
+            const frontWheel = createWheel(0, -0.5, 2.8);
+            const rearWheel = createWheel(0, -0.5, -2.3);
+            motorcycle.add(frontWheel);
+            motorcycle.add(rearWheel);
+            
+            // מזלג קדמי
+            const forkLeftGeo = new THREE.CylinderGeometry(0.08, 0.08, 2);
+            const forkLeft = new THREE.Mesh(forkLeftGeo, chromeMaterial);
+            forkLeft.position.set(-0.3, 0.5, 2.8);
+            forkLeft.rotation.x = Math.PI * 0.1;
+            motorcycle.add(forkLeft);
+            
+            const forkRight = new THREE.Mesh(forkLeftGeo, chromeMaterial);
+            forkRight.position.set(0.3, 0.5, 2.8);
+            forkRight.rotation.x = Math.PI * 0.1;
+            motorcycle.add(forkRight);
+            
+            // כידון מפורט
+            const handlebarMainGeo = new THREE.CylinderGeometry(0.05, 0.05, 2.5);
+            const handlebarMain = new THREE.Mesh(handlebarMainGeo, chromeMaterial);
+            handlebarMain.rotation.z = Math.PI / 2;
+            handlebarMain.position.set(0, 1.3, 2.5);
+            motorcycle.add(handlebarMain);
+            
+            // ידיות
+            const gripGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.3);
+            const leftGrip = new THREE.Mesh(gripGeo, blackMaterial);
+            leftGrip.rotation.z = Math.PI / 2;
+            leftGrip.position.set(-1.1, 1.3, 2.5);
+            motorcycle.add(leftGrip);
+            
+            const rightGrip = new THREE.Mesh(gripGeo, blackMaterial);
+            rightGrip.rotation.z = Math.PI / 2;
+            rightGrip.position.set(1.1, 1.3, 2.5);
+            motorcycle.add(rightGrip);
+            
+            // פנס קדמי
+            const headlightGeo = new THREE.SphereGeometry(0.3, 12, 8);
+            const headlightMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffffcc,
+                emissive: 0x444400,
+                transparent: true,
+                opacity: 0.9
+            });
+            const headlight = new THREE.Mesh(headlightGeo, headlightMaterial);
+            headlight.position.set(0, 0.8, 3.2);
+            motorcycle.add(headlight);
+            
+            // פנס אחורי
+            const tailLightGeo = new THREE.SphereGeometry(0.15, 8, 6);
+            const tailLightMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff0000,
+                emissive: 0x220000
+            });
+            const tailLight = new THREE.Mesh(tailLightGeo, tailLightMaterial);
+            tailLight.position.set(0, 0.5, -3);
+            motorcycle.add(tailLight);
+            
+            // צינור פליטה
+            const exhaustGeo = new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8);
+            const exhaust = new THREE.Mesh(exhaustGeo, metalMaterial);
+            exhaust.position.set(0.6, -0.3, -2);
+            exhaust.rotation.x = Math.PI * 0.1;
+            exhaust.castShadow = true;
+            motorcycle.add(exhaust);
+            
+            // מגן רוח
+            const windshieldGeo = new THREE.PlaneGeometry(1.5, 1);
+            const windshieldMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const windshield = new THREE.Mesh(windshieldGeo, windshieldMaterial);
+            windshield.position.set(0, 1.8, 2.8);
+            windshield.rotation.x = -Math.PI * 0.15;
+            motorcycle.add(windshield);
+            
+            // מראות
+            const mirrorGeo = new THREE.SphereGeometry(0.08, 8, 6);
+            const mirrorMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x444444,
+                shininess: 200
+            });
+            const leftMirror = new THREE.Mesh(mirrorGeo, mirrorMaterial);
+            leftMirror.position.set(-0.8, 1.4, 2.3);
+            motorcycle.add(leftMirror);
+            
+            const rightMirror = new THREE.Mesh(mirrorGeo, mirrorMaterial);
+            rightMirror.position.set(0.8, 1.4, 2.3);
+            motorcycle.add(rightMirror);
+            
+            motorcycle.position.copy(physics.position);
+            scene.add(motorcycle);
+        }
+        
+        // יצירת העולם
+        function createWorld() {
+            // קרקע
+            const groundGeometry = new THREE.PlaneGeometry(2000, 2000);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // עצים
+            for (let i = 0; i < 200; i++) {
+                createTree(
+                    (Math.random() - 0.5) * 1500,
+                    0,
+                    (Math.random() - 0.5) * 1500
+                );
+            }
+            
+            // בתים
+            for (let i = 0; i < 50; i++) {
+                createHouse(
+                    (Math.random() - 0.5) * 1200,
+                    0,
+                    (Math.random() - 0.5) * 1200
+                );
+            }
+            
+            // עננים
+            for (let i = 0; i < 30; i++) {
+                createCloud(
+                    (Math.random() - 0.5) * 2000,
+                    100 + Math.random() * 100,
+                    (Math.random() - 0.5) * 2000
+                );
+            }
+        }
+        
+        // יצירת עץ
+        function createTree(x, y, z) {
+            const tree = new THREE.Group();
+            
+            // גזע
+            const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.8, 8);
+            const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 4;
+            trunk.castShadow = true;
+            tree.add(trunk);
+            
+            // עלים
+            const leavesGeometry = new THREE.SphereGeometry(4, 8, 6);
+            const leavesMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+            leaves.position.y = 8;
+            leaves.castShadow = true;
+            tree.add(leaves);
+            
+            tree.position.set(x, y, z);
+            scene.add(tree);
+        }
+        
+        // יצירת בית
+        function createHouse(x, y, z) {
+            const house = new THREE.Group();
+            
+            // קירות
+            const wallsGeometry = new THREE.BoxGeometry(8, 6, 8);
+            const wallsMaterial = new THREE.MeshLambertMaterial({ color: 0xCD853F });
+            const walls = new THREE.Mesh(wallsGeometry, wallsMaterial);
+            walls.position.y = 3;
+            walls.castShadow = true;
+            house.add(walls);
+            
+            // גג
+            const roofGeometry = new THREE.ConeGeometry(6, 4, 4);
+            const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 8;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            house.add(roof);
+            
+            house.position.set(x, y, z);
+            scene.add(house);
+        }
+        
+        // יצירת ענן
+        function createCloud(x, y, z) {
+            const cloud = new THREE.Group();
+            
+            for (let i = 0; i < 5; i++) {
+                const cloudGeometry = new THREE.SphereGeometry(3 + Math.random() * 2, 8, 6);
+                const cloudMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const cloudPart = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                cloudPart.position.set(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 10
+                );
+                cloud.add(cloudPart);
+            }
+            
+            cloud.position.set(x, y, z);
+            scene.add(cloud);
+        }
+        
+        // יצירת חלקיקי סילון
+        function createJetParticle(powerful = false) {
+            const particleGeometry = new THREE.SphereGeometry(0.3, 8, 6);
+            const particleMaterial = new THREE.MeshBasicMaterial({ 
+                color: powerful ? 0xffffff : 0xff6600,
+                transparent: true,
+                opacity: 0.8
+            });
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            
+            // מיקום יחסית לאופנוע
+            const jetOffset = new THREE.Vector3(0, -1, -4);
+            jetOffset.applyEuler(physics.rotation);
+            particle.position.copy(physics.position).add(jetOffset);
+            
+            // מהירות
+            const jetVelocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 2,
+                -5 - Math.random() * 3
+            );
+            jetVelocity.applyEuler(physics.rotation);
+            
+            particle.userData = {
+                velocity: jetVelocity,
+                life: powerful ? 60 : 40,
+                maxLife: powerful ? 60 : 40
+            };
+            
+            jetParticles.push(particle);
+            scene.add(particle);
+        }
+        
+        // עדכון חלקיקי סילון
+        function updateJetParticles() {
+            for (let i = jetParticles.length - 1; i >= 0; i--) {
+                const particle = jetParticles[i];
+                const data = particle.userData;
+                
+                // עדכון מיקום
+                particle.position.add(data.velocity);
+                data.velocity.multiplyScalar(0.95);
+                data.life--;
+                
+                // עדכון שקיפות
+                particle.material.opacity = data.life / data.maxLife * 0.8;
+                
+                // הסרת חלקיק מת
+                if (data.life <= 0) {
+                    scene.remove(particle);
+                    jetParticles.splice(i, 1);
+                }
+            }
+        }
+        
+        // הגדרת בקרה
+        function setupControls() {
+            // מקלדת
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            // עכבר
+            document.addEventListener('click', () => {
+                document.body.requestPointerLock();
+            });
+            
+            document.addEventListener('pointerlockchange', () => {
+                isMouseLocked = document.pointerLockElement === document.body;
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isMouseLocked) {
+                    mouse.x += e.movementX * 0.002;
+                    mouse.y += e.movementY * 0.002;
+                    mouse.y = Math.max(-Math.PI/3, Math.min(Math.PI/3, mouse.y));
+                }
+            });
+        }
+        
+        // עדכון פיזיקה
+        function updatePhysics() {
+            // בקרת סיבוב
+            if (keys['KeyA']) {
+                physics.angularVelocity.y += 0.002;
+            }
+            if (keys['KeyD']) {
+                physics.angularVelocity.y -= 0.002;
+            }
+            
+            // גילגול
+            if (keys['KeyQ']) {
+                physics.angularVelocity.z += 0.003;
+            }
+            if (keys['KeyE']) {
+                physics.angularVelocity.z -= 0.003;
+            }
+            
+            // דחף
+            let thrustActive = false;
+            if (keys['KeyW'] && physics.fuel > 0) {
+                const thrust = new THREE.Vector3(0, 0, physics.thrustPower);
+                thrust.applyEuler(physics.rotation);
+                physics.velocity.add(thrust);
+                physics.fuel -= 0.3;
+                thrustActive = true;
+                
+                if (Math.random() < 0.3) createJetParticle(false);
+            }
+            
+            // דחף חזק
+            if (keys['Space'] && physics.fuel > 0) {
+                const strongThrust = new THREE.Vector3(0, 0, physics.thrustPower * 2);
+                strongThrust.applyEuler(physics.rotation);
+                physics.velocity.add(strongThrust);
+                physics.fuel -= 0.8;
+                thrustActive = true;
+                
+                if (Math.random() < 0.6) createJetParticle(true);
+            }
+            
+            // בלימה
+            if (keys['KeyS']) {
+                physics.velocity.multiplyScalar(0.95);
+            }
+            
+            // איפוס
+            if (keys['KeyR']) {
+                physics.position.set(0, 50, 0);
+                physics.velocity.set(0, 0, 0);
+                physics.rotation.set(0, 0, 0);
+                physics.angularVelocity.set(0, 0, 0);
+                physics.fuel = 100;
+                mouse.x = 0;
+                mouse.y = 0;
+            }
+            
+            // כוח כבידה
+            physics.velocity.y += physics.gravity;
+            
+            // התנגדות
+            physics.velocity.multiplyScalar(physics.drag);
+            physics.angularVelocity.multiplyScalar(physics.angularDrag);
+            
+            // עדכון סיבוב
+            physics.rotation.x += physics.angularVelocity.x;
+            physics.rotation.y += physics.angularVelocity.y;
+            physics.rotation.z += physics.angularVelocity.z;
+            
+            // עדכון מיקום
+            physics.position.add(physics.velocity);
+            
+            // בדיקת קרקע
+            if (physics.position.y < 2) {
+                physics.position.y = 2;
+                physics.velocity.y *= -0.3;
+                physics.velocity.x *= 0.8;
+                physics.velocity.z *= 0.8;
+                
+                // חידוש דלק על הקרקע
+                if (physics.fuel < 100) {
+                    physics.fuel += 0.5;
+                    if (physics.fuel > 100) physics.fuel = 100;
+                }
+            }
+            
+            // עדכון אופנוע
+            motorcycle.position.copy(physics.position);
+            motorcycle.rotation.copy(physics.rotation);
+        }
+        
+        // עדכון מצלמה
+        function updateCamera() {
+            // מצלמה מאחורי האופנוע
+            const cameraOffset = new THREE.Vector3(0, 3, -15);
+            cameraOffset.applyEuler(physics.rotation);
+            
+            const targetPosition = new THREE.Vector3().copy(physics.position).add(cameraOffset);
+            camera.position.lerp(targetPosition, 0.1);
+            
+            // מבט עם עכבר
+            const lookTarget = new THREE.Vector3().copy(physics.position);
+            lookTarget.x += Math.sin(mouse.x) * 10;
+            lookTarget.y += Math.sin(mouse.y) * 10;
+            lookTarget.z += Math.cos(mouse.x) * 10;
+            
+            camera.lookAt(lookTarget);
+        }
+        
+        // עדכון ממשק משתמש
+        function updateUI() {
+            const altitude = Math.max(0, Math.round(physics.position.y));
+            const speed = Math.round(physics.velocity.length() * 100);
+            
+            document.getElementById('altitude').textContent = altitude;
+            document.getElementById('speed').textContent = speed;
+            document.getElementById('fuel').textContent = Math.round(physics.fuel);
+        }
+        
+        // לופ ראשי
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updatePhysics();
+            updateCamera();
+            updateJetParticles();
+            updateUI();
+            
+            renderer.render(scene, camera);
+        }
+        
+        // התאמה לשינוי גודל חלון
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // התחלת המשחק
+        init();
+    </script>
+</body>
+</html>
