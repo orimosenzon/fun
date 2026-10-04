@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipper</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brandmark">✂ <span data-i18n="appName">קליפר</span></div>
+  <div class="topbar-file" id="fileName"></div>
+  <div class="topbar-actions">
+    <button class="btn ghost" id="btnOpen" data-i18n="openVideo">פתח סרטון</button>
+    <button class="btn ghost" id="btnLang">English</button>
+  </div>
+  <input type="file" id="fileInput" accept="video/*" hidden>
+</header>
+
+<main class="layout">
+  <!-- תצוגה מקדימה -->
+  <section class="stage-wrap">
+    <div class="stage" id="stage">
+      <canvas id="preview" width="1080" height="1920"></canvas>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-inner">
+          <div class="dz-icon">🎬</div>
+          <div class="dz-title" data-i18n="dropTitle">גרור לכאן סרטון</div>
+          <div class="dz-sub" data-i18n="dropSub">או לחץ כדי לבחור קובץ מהמחשב</div>
+        </div>
+      </div>
+      <div class="stage-badge" id="stageBadge"></div>
+    </div>
+
+    <div class="transport">
+      <button class="tbtn" id="btnBack" data-i18n-title="tipBack">⇤</button>
+      <button class="tbtn" id="btnJumpBack" data-i18n-title="tipJumpBack">−5s</button>
+      <button class="tbtn" id="btnFrameBack" data-i18n-title="tipFrameBack">‹ 1f</button>
+      <button class="icon-btn play" id="btnPlay" data-i18n-title="tipPlay">▶</button>
+      <button class="tbtn" id="btnFrameFwd" data-i18n-title="tipFrameFwd">1f ›</button>
+      <button class="tbtn" id="btnJumpFwd" data-i18n-title="tipJumpFwd">+5s</button>
+      <button class="tbtn" id="btnMute" data-i18n-title="tipMute">🔊</button>
+      <input type="range" id="rngVolume" min="0" max="1" step="0.05" value="1" data-i18n-title="tipVolume">
+      <span class="timecode" id="timecode">0:00.00 / 0:00.00</span>
+      <span class="spacer"></span>
+      <button class="btn" id="btnSetIn" data-i18n="setIn" data-i18n-title="tipSetIn">סמן התחלה</button>
+      <button class="btn" id="btnSetOut" data-i18n="setOut" data-i18n-title="tipSetOut">סמן סוף</button>
+      <button class="btn" id="btnPlaySel" data-i18n="playSel" data-i18n-title="tipPlaySel">נגן קטע</button>
+      <button class="btn" id="btnPlayAll" data-i18n="playAll" data-i18n-title="tipPlayAll">נגן תוצאה מלאה</button>
+    </div>
+  </section>
+
+  <!-- פאנל צד -->
+  <aside class="panel">
+    <div class="card">
+      <h3 data-i18n="secClip">הקטע</h3>
+      <div class="sel-grid">
+        <label data-i18n="lblIn">התחלה</label>
+        <input class="time-input" id="inIn" value="0:00.00">
+        <label data-i18n="lblOut">סוף</label>
+        <input class="time-input" id="inOut" value="0:00.00">
+        <label data-i18n="lblLen">אורך הקטע</label>
+        <span class="mono" id="selLen">0:00.00</span>
+        <label data-i18n="lblTotal">אורך התוצאה</label>
+        <span class="mono" id="totalLen">0:00.00</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="secFormat">פלטפורמה</h3>
+      <div class="platforms" id="platforms"></div>
+      <div class="hint" id="platformNote"></div>
+      <div class="warn-box" id="lenWarn" hidden></div>
+      <div class="warn-box" id="codecWarn" hidden></div>
+      <div class="sub-label" data-i18n="lblRatio">יחס</div>
+      <div class="seg" id="segFormat">
+        <button data-v="9:16">9:16</button>
+        <button data-v="1:1">1:1</button>
+        <button data-v="4:5">4:5</button>
+        <button data-v="16:9">16:9</button>
+        <button data-v="source" data-i18n="fmtSource">מקור</button>
+      </div>
+      <div class="hint" id="formatHint"></div>
+      <label class="row">
+        <span data-i18n="lblFit">התאמה</span>
+        <select id="selFit">
+          <option value="cover" data-i18n="fitCover">מילוי (חיתוך שוליים)</option>
+          <option value="blur" data-i18n="fitBlur">התאמה עם רקע מטושטש</option>
+          <option value="contain" data-i18n="fitContain">התאמה עם פסים שחורים</option>
+        </select>
+      </label>
+      <label class="row" id="rowFocus">
+        <span data-i18n="lblFocus">מרכז החיתוך</span>
+        <input type="range" id="rngFocus" min="0" max="1" step="0.01" value="0.5">
+      </label>
+      <label class="row">
+        <span data-i18n="lblQuality">איכות</span>
+        <select id="selQuality">
+          <option value="1080" data-i18n="q1080">גבוהה (1080)</option>
+          <option value="720" data-i18n="q720">בינונית (720), קובץ קטן</option>
+        </select>
+      </label>
+      <label class="row check">
+        <input type="checkbox" id="chkGuides" checked>
+        <span data-i18n="lblGuides">סמן בתצוגה את מה שהאפליקציה מכסה</span>
+      </label>
+      <label class="row check">
+        <input type="checkbox" id="chkFades" checked>
+        <span data-i18n="lblFades">מעבר רך (דהייה) בין החלקים</span>
+      </label>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="secBrand">מיתוג</h3>
+      <div class="slot" data-slot="logo">
+        <div class="slot-thumb" id="thumbLogo"></div>
+        <div class="slot-body">
+          <div class="slot-name" data-i18n="slotLogo">לוגו</div>
+          <div class="slot-status" id="statLogo"></div>
+        </div>
+        <button class="btn small" data-pick="logo" data-i18n="choose">בחר</button>
+        <button class="btn small ghost" data-clear="logo" title="✕">✕</button>
+      </div>
+      <div class="slot" data-slot="intro">
+        <div class="slot-thumb" id="thumbIntro"></div>
+        <div class="slot-body">
+          <div class="slot-name" data-i18n="slotIntro">סרטון פתיחה</div>
+          <div class="slot-status" id="statIntro"></div>
+        </div>
+        <button class="btn small" data-pick="intro" data-i18n="choose">בחר</button>
+        <button class="btn small ghost" data-clear="intro" title="✕">✕</button>
+      </div>
+      <div class="slot" data-slot="outro">
+        <div class="slot-thumb" id="thumbOutro"></div>
+        <div class="slot-body">
+          <div class="slot-name" data-i18n="slotOutro">סרטון סיום</div>
+          <div class="slot-status" id="statOutro"></div>
+        </div>
+        <button class="btn small" data-pick="outro" data-i18n="choose">בחר</button>
+        <button class="btn small ghost" data-clear="outro" title="✕">✕</button>
+      </div>
+      <input type="file" id="brandInput" hidden>
+
+      <div class="logo-opts">
+        <div class="row">
+          <span data-i18n="lblCorner">פינה</span>
+          <div class="corners" id="corners">
+            <button data-v="tl">↖</button><button data-v="tr">↗</button>
+            <button data-v="bl">↙</button><button data-v="br">↘</button>
+          </div>
+        </div>
+        <label class="row">
+          <span data-i18n="lblSize">גודל</span>
+          <input type="range" id="rngLogoSize" min="5" max="40" step="1" value="18">
+        </label>
+        <label class="row">
+          <span data-i18n="lblOpacity">שקיפות</span>
+          <input type="range" id="rngLogoOpacity" min="0.2" max="1" step="0.05" value="0.9">
+        </label>
+        <label class="row check">
+          <input type="checkbox" id="chkLogoAll">
+          <span data-i18n="lblLogoAll">לוגו גם על הפתיחה והסיום</span>
+        </label>
+      </div>
+      <div class="hint" data-i18n="brandSaved">הלוגו והסרטונים נשמרים בדפדפן, ואין צורך לבחור אותם שוב בפעם הבאה.</div>
+    </div>
+
+    <div class="card export">
+      <button class="btn primary big" id="btnExport" data-i18n="export">צור סרטון</button>
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><div class="fill" id="progFill"></div></div>
+        <div class="prog-row">
+          <span id="progText"></span>
+          <button class="btn small ghost" id="btnCancel" data-i18n="cancel">ביטול</button>
+        </div>
+        <div class="hint warn" data-i18n="keepVisible">השאר את הלשונית הזו פתוחה וגלויה עד הסוף. הייצוא נמשך בערך כאורך הסרטון.</div>
+      </div>
+      <div class="result" id="result" hidden>
+        <video id="resultVideo" controls playsinline></video>
+        <a class="btn primary" id="btnDownload" data-i18n="download">הורד</a>
+        <div class="hint" id="resultInfo"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- טיימליין -->
+  <section class="timeline-wrap">
+    <div class="tl-toolbar">
+      <button class="icon-btn small" id="btnZoomOut" data-i18n-title="tipZoomOut">−</button>
+      <input type="range" id="rngZoom" min="0" max="1" step="0.001" value="0">
+      <button class="icon-btn small" id="btnZoomIn" data-i18n-title="tipZoomIn">+</button>
+      <button class="btn small ghost" id="btnZoomFit" data-i18n="zoomFit">כל הסרטון</button>
+      <button class="btn small ghost" id="btnZoomSel" data-i18n="zoomSel">התמקד בקטע</button>
+      <span class="spacer"></span>
+      <span class="hint" data-i18n="tlHint">גרור על הטיימליין כדי לבחור קטע · גרור את הקצוות כדי לדייק · I / O מקלדת</span>
+    </div>
+    <div class="tl-canvas-wrap" id="tlWrap" dir="ltr">
+      <canvas id="timeline"></canvas>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<video id="srcVideo" playsinline preload="auto" hidden></video>
+<video id="introVideo" playsinline preload="auto" hidden></video>
+<video id="outroVideo" playsinline preload="auto" hidden></video>
+
+<script src="js/i18n.js"></script>
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/platforms.js"></script>
+<script src="js/compose.js"></script>
+<script src="js/media.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/sequencer.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

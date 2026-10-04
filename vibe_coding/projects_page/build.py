@@ -365,6 +365,8 @@ SKIP = EXCLUDED | {
     "ori_android",
     # clone of the PRIVATE repo orimosenzon/private, never on the public page
     "private",
+    # כלי עבודה ליורם (4.10.2026): ציבורי רק כדי שיהיה לו לינק, לא פרויקט לתצוגה
+    "clipper",
     # symlinks into jetbikes/ (4.10.2026) so old shared links keep working;
     # only fable and jetbike_game have cards, and they link to jetbikes/
     "fable", "opus5", "jetbike_film", "jetbike_game",
