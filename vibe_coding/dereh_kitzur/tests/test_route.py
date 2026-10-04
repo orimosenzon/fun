@@ -136,7 +136,25 @@ try:
     print('walking:', json.dumps(nv, ensure_ascii=False))
     check('נווט starts navigation along the route', nv['nav'] and nv['route'], nv)
     check('the route bar steps aside for it', nv['bar'] == 'none', nv['bar'])
-    check('it counts down along the route, in words', 'עד היעד' in nv['dist'] and 'דק׳ הליכה' in nv['state'], nv)
+    check('it says the next turn and how far', ('בעוד' in nv['dist'] or 'עד היעד' in nv['dist']) and 'עד היעד' in (nv['state'] + nv['dist']), nv)
+
+    # ---- walking it, simulated: half-way along, then off the route ----
+    mid = pg.evaluate('() => { const p = Route.result().path; return p[Math.floor(p.length / 2)]; }')
+    ctx.set_geolocation({'latitude': mid[0], 'longitude': mid[1]})
+    pg.wait_for_timeout(2500)
+    w1 = pg.evaluate('''() => ({dist: document.getElementById('nav-dist').textContent,
+      state: document.getElementById('nav-state').textContent,
+      now: [...document.querySelectorAll('#detail .route-leg.now')].map(l => l.dataset.step),
+      turn: !!map.getLayer('nav-turn')})''')
+    print('half-way:', json.dumps(w1, ensure_ascii=False))
+    check('half-way it still says what comes next', 'בעוד' in w1['dist'] or 'עד היעד' in w1['dist'], w1)
+    check('the next turn is marked on the map', w1['turn'], w1)
+    ctx.set_geolocation({'latitude': mid[0] + 0.002, 'longitude': mid[1] + 0.002})
+    pg.wait_for_timeout(2500)
+    w2 = pg.evaluate("() => document.getElementById('nav-dist').textContent")
+    check('off the route it says to go back to the line', 'חזור' in w2, w2)
+    ctx.set_geolocation(HOME)
+    pg.wait_for_timeout(1500)
     pg.click('#nav-stop')
     pg.wait_for_timeout(300)
     check('stopping brings the route bar back',

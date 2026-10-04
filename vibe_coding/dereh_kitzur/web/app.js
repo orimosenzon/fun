@@ -2244,8 +2244,9 @@ function paintNavLine(target) {
   });
 }
 
-function clearNavLine() {
+function clearNavLine(keepTurn = false) {
   if (!map) return;
+  if (!keepTurn) clearTurnDot();
   ['nav-line', 'nav-target'].forEach((id) => {
     if (map.getLayer(id)) map.removeLayer(id);
   });
@@ -2320,7 +2321,7 @@ function frameNav(target) {
 function startNav(item) {
   if (!navigator.geolocation) { alert('הדפדפן לא תומך באיתור מיקום.'); return; }
   stopNav();
-  nav = { item, watchId: null, endIdx: null, framed: false };
+  nav = { item, watchId: null, endIdx: null, framed: false, follow: !!item.route };
   document.body.classList.add('nav-active');
   el('nav').hidden = false;
   el('nav-dist').textContent = '—';
@@ -2361,19 +2362,8 @@ function paintNav() {
 
   let target, label, state, onTrail = false;
 
-  if (item.route) {
-    // A walking route has one direction, and it bends: the arrow points at a
-    // spot a little way ahead along it rather than at the far end, which may
-    // well be behind you around the next corner.
-    const p = projectOnPath(here, item.path);
-    onTrail = p.d < 30;
-    target = onTrail ? aheadOnPath(item.path, p, 35) : p.point;
-    // In words a walker reads at a glance (Ori, 4/10/2026: "במסלול · עד היעד ·
-    // צפון" was not understood): how much is left, or where the line is.
-    const left = p.after + (onTrail ? 0 : p.d);
-    label = onTrail ? `${fmt(left)} עד היעד` : `${fmt(p.d)} עד המסלול`;
-    state = onTrail ? `עוד כ-${Math.max(1, Math.round(left / 80))} דק׳ הליכה` : 'התרחקת מהקו הכחול';
-  } else if (item.path) {
+  if (item.route) { paintRouteNav(); return; }
+  if (item.path) {
     const p = projectOnPath(here, item.path);
     if (p.d < 25) {
       onTrail = true;
@@ -2418,10 +2408,7 @@ function paintNav() {
   // who already knew what it meant, and nothing to anybody else.
   // A route says it in a sentence: with a heading the arrow is where to walk;
   // without one the arrow is north-up, so the direction is said in words.
-  el('nav-state').textContent = item.route
-    ? (facing == null ? `${state} · ללכת ל${compass(course)}`
-      : `${state} · ${onTrail ? 'החץ מראה לאן ללכת' : 'החץ מראה איך לחזור אליו'}`)
-    : facing == null
+  el('nav-state').textContent = facing == null
       ? `${state} · ${compass(course)} · החץ מיושר לצפון`
       : `${state} · ${compass(course)}`;
 
@@ -2432,6 +2419,76 @@ function paintNav() {
   // every fix and the framing happens once, on the first.
   paintNavLine(target);
   frameNav(target);
+}
+
+/* ---------- turn by turn, along a walking route (4/10/2026) ----------
+ *
+ * Ori, seeing the first version: "I see a green dot - how does the navigation
+ * work?". It pointed at a spot 35 m ahead and left the rest to you. Now it
+ * says what Google Maps would: the next turn and how far off it is, onto
+ * what, and how much is left; the arrow is that turn's shape. The map follows
+ * you until you pan it, and a tap on the bar brings it back. Off the route by
+ * more than 30 m, it says so and points back to the line.
+ */
+
+const OFF_ROUTE_M = 30;
+
+function paintRouteNav() {
+  const item = nav.item, bar = el('nav');
+  const p = projectOnPath(here, item.path);
+  const left = p.after;
+  const arrow = document.querySelector('.nav-arrow');
+  const tail = `${fmt(left)} עד היעד, כ-${Math.max(1, Math.round(left / 80))} דק׳`;
+
+  if (p.d > OFF_ROUTE_M) {
+    const course = bearingTo(here, p.point);
+    bar.classList.remove('on-trail');
+    el('nav-dist').textContent = 'חזור אל הקו הכחול';
+    el('nav-state').textContent = `${fmt(p.d)} ממך` + (facing == null
+      ? ` · לכיוון ${compass(course)}` : ' · החץ מראה לשם');
+    arrow.style.transform = `rotate(${course - (facing || 0)}deg)`;
+    paintNavLine(p.point);
+    clearTurnDot();
+  } else {
+    bar.classList.add('on-trail');
+    clearNavLine(true);
+    const done = p.before;
+    const steps = item.steps;
+    const i = steps.findIndex((st, k) => k > 0 && st.at > done + 8);
+    const next = steps[i < 0 ? steps.length - 1 : i];
+    const toIt = Math.max(0, next.at - done);
+    if (next.turn === 'end') {
+      el('nav-dist').textContent = toIt < 20 ? 'הגעת ליעד' : `עוד ${fmt(toIt)} עד היעד`;
+      el('nav-state').textContent = toIt < 20 ? 'אפשר לסגור את הניווט ב-×' : 'המשך ישר עד הסוף';
+    } else {
+      el('nav-dist').textContent = `בעוד ${fmt(toIt)}: ${RouteEngine.turnWords(next)}`;
+      el('nav-state').textContent = `${RouteEngine.onto(next)} · ${tail}`;
+    }
+    arrow.style.transform = `rotate(${next.turn === 'end' ? 0 : next.angle}deg)`;
+    paintTurnDot(next.pt);
+    if (Route) Route.markStep(Math.max(0, (i < 0 ? steps.length : i) - 1));
+  }
+
+  if (nav.follow && map) {
+    map.easeTo({ center: [here.lng, here.lat], zoom: Math.max(map.getZoom(), 17), duration: 600 });
+  }
+}
+
+/** The next turn, as a ring on the map where it is. */
+const TURN_SRC = 'src-nav-turn';
+function paintTurnDot(pt) {
+  if (!map || !pt || !map.isStyleLoaded()) return;
+  const data = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [pt[1], pt[0]] } };
+  if (map.getSource(TURN_SRC)) { map.getSource(TURN_SRC).setData(data); return; }
+  map.addSource(TURN_SRC, { type: 'geojson', data });
+  map.addLayer({ id: 'nav-turn', type: 'circle', source: TURN_SRC,
+    paint: { 'circle-radius': 8, 'circle-color': '#fff', 'circle-stroke-color': '#0d47a1', 'circle-stroke-width': 4 } });
+}
+
+function clearTurnDot() {
+  if (!map) return;
+  if (map.getLayer('nav-turn')) map.removeLayer('nav-turn');
+  if (map.getSource(TURN_SRC)) map.removeSource(TURN_SRC);
 }
 
 const fmt = (m) => (m >= 1000 ? (m / 1000).toFixed(1) + ' ק"מ' : Math.round(m) + ' מ׳');
@@ -3722,7 +3779,13 @@ function wireControls() {
 
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
-  el('nav-stop').addEventListener('click', stopNav);
+  el('nav-stop').addEventListener('click', (e) => { e.stopPropagation(); stopNav(); });
+  // Walking a route the map follows you; panning it lets go, and a tap on the
+  // bar takes it back.
+  el('nav').addEventListener('click', () => {
+    if (nav && nav.item.route) { nav.follow = true; if (here) paintNav(); }
+  });
+  if (map) map.on('dragstart', () => { if (nav) nav.follow = false; });
 
   // Tapping the bar frames both ends again. Walking with the map open means
   // panning it, and after a couple of pans neither you nor the target is on
