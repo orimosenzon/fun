@@ -22,6 +22,7 @@
   <!-- תצוגה מקדימה -->
   <section class="stage-wrap">
     <div class="stage" id="stage">
+      <canvas id="ghost"></canvas>
       <canvas id="preview" width="1080" height="1920"></canvas>
       <div class="dropzone" id="dropzone">
         <div class="dz-inner">
@@ -83,18 +84,6 @@
       </div>
       <div class="hint" id="formatHint"></div>
       <label class="row">
-        <span data-i18n="lblFit">התאמה</span>
-        <select id="selFit">
-          <option value="cover" data-i18n="fitCover">מילוי (חיתוך שוליים)</option>
-          <option value="blur" data-i18n="fitBlur">התאמה עם רקע מטושטש</option>
-          <option value="contain" data-i18n="fitContain">התאמה עם פסים שחורים</option>
-        </select>
-      </label>
-      <label class="row" id="rowFocus">
-        <span data-i18n="lblFocus">מרכז החיתוך</span>
-        <input type="range" id="rngFocus" min="0" max="1" step="0.01" value="0.5">
-      </label>
-      <label class="row">
         <span data-i18n="lblQuality">איכות</span>
         <select id="selQuality">
           <option value="1080" data-i18n="q1080">גבוהה (1080)</option>
@@ -109,6 +98,42 @@
         <input type="checkbox" id="chkFades" checked>
         <span data-i18n="lblFades">מעבר רך (דהייה) בין החלקים</span>
       </label>
+    </div>
+
+    <div class="card" id="cardFrame">
+      <h3 data-i18n="secFrame">מסגור</h3>
+      <div class="hint" data-i18n="frameHint">גרור את התמונה בתצוגה כדי להזיז אותה. גלגלת העכבר (או צביטה) מגדילה ומקטינה.</div>
+      <label class="row">
+        <span data-i18n="lblZoom">זום</span>
+        <input type="range" id="rngFrameZoom" min="0.5" max="4" step="0.01" value="1" dir="ltr">
+        <span class="mono" id="zoomVal">100%</span>
+      </label>
+      <div class="seg frame-presets">
+        <button data-frame="whole" data-i18n="frWhole">כל התמונה</button>
+        <button data-frame="fill" data-i18n="frFill">מלא את המסגרת</button>
+        <button data-frame="center" data-i18n="frCenter">מרכז</button>
+      </div>
+      <label class="row">
+        <span data-i18n="lblFill">שטח ריק</span>
+        <select id="selFill">
+          <option value="blur" data-i18n="fillBlur">הסרטון עצמו, מטושטש</option>
+          <option value="color" data-i18n="fillColor">צבע אחיד</option>
+        </select>
+        <input type="color" id="inFillColor" value="#000000">
+      </label>
+      <label class="row check">
+        <input type="checkbox" id="chkText">
+        <span data-i18n="lblText">טקסט ברצועות הריקות</span>
+      </label>
+      <div class="text-opts" id="textOpts" hidden>
+        <textarea id="inTextTop" rows="2" data-i18n-ph="phTextTop" placeholder="טקסט למעלה"></textarea>
+        <textarea id="inTextBottom" rows="2" data-i18n-ph="phTextBottom" placeholder="טקסט למטה"></textarea>
+        <label class="row">
+          <span data-i18n="lblSize">גודל</span>
+          <input type="range" id="rngTextSize" min="3" max="14" step="0.5" value="7">
+          <input type="color" id="inTextColor" value="#ffffff">
+        </label>
+      </div>
     </div>
 
     <div class="card">

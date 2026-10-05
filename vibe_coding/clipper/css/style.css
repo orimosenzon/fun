@@ -110,6 +110,10 @@ body {
   box-shadow: 0 0 0 1px var(--line);
 }
 .stage canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
+.stage #ghost { position: absolute; inset: 0; pointer-events: none; }
+.stage #preview { position: relative; touch-action: none; }
+body.has-video .stage #preview { cursor: grab; }
+body.has-video .stage #preview.grabbing { cursor: grabbing; }
 .stage-badge {
   position: absolute; top: 8px; inset-inline-start: 8px;
   background: rgba(0,0,0,.6); color: #fff; border-radius: 6px; padding: 2px 8px; font-size: 12px;
@@ -225,3 +229,12 @@ body.exporting .panel .card:not(.export), body.exporting .transport, body.export
 .warn-box { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 12px;
   background: #3a1d20; border: 1px solid #7a2e35; color: #ffc7cc; }
 .mono.bad { color: #ff8a95; font-weight: 700; }
+
+/* ── מסגור ─────────────────────────────────────────────── */
+.frame-presets { margin-top: 8px; }
+.frame-presets button { font-size: 12px; }
+#zoomVal { min-width: 44px; text-align: end; color: var(--muted); }
+input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #353b48; border-radius: 6px; background: #12151b; cursor: pointer; flex: none; }
+.text-opts { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.text-opts textarea { font: inherit; background: #12151b; color: var(--text); border: 1px solid #353b48; border-radius: 6px; padding: 6px 8px; resize: vertical; }
+.text-opts textarea:focus { outline: none; border-color: var(--accent); }
