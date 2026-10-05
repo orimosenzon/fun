@@ -20,6 +20,7 @@
       platform: 'ig_reels', format: '9:16', guides: true, quality: '1080', fades: true,
       zoom: 1, px: 0.5, py: 0.5, fill: 'blur', fillColor: '#000000',      // מסגור: אחד לכל הסרטון
       textOn: false, textTop: '', textBottom: '', textSize: 7, textColor: '#ffffff',
+      batchText: '',
       corner: 'tr', logoSize: 18, logoOpacity: 0.9, logoAll: false,
       volume: 1, muted: false,
     },
@@ -62,10 +63,8 @@
   }
 
   /** האורך הכולל (פתיחה + קטע + סיום) */
-  function totalSeconds() {
-    const extra = (S.brand.intro && introV.duration ? introV.duration : 0) + (S.brand.outro && outroV.duration ? outroV.duration : 0);
-    return Math.max(0, S.selOut - S.selIn) + extra;
-  }
+  const brandSeconds = () => (S.brand.intro && introV.duration ? introV.duration : 0) + (S.brand.outro && outroV.duration ? outroV.duration : 0);
+  function totalSeconds() { return Math.max(0, S.selOut - S.selIn) + brandSeconds(); }
 
   const tooLong = () => !!(S.file && plat()?.maxSec && totalSeconds() > plat().maxSec + 0.05);
 
@@ -275,6 +274,8 @@
     setSelection(0, Math.min(S.dur, 60));
     drawPreview();
     updateTimes();
+    B.status.clear();
+    renderBatch();
 
     const n = clamp(Math.round(S.dur / 2), 24, 160);
     tl.setThumbCount(n);
@@ -355,12 +356,16 @@
   $('btnPlaySel').addEventListener('click', () => play(S.selIn, S.selOut));
 
   // ── רצף מלא (פתיחה + קטע + סיום) ────────────────────────────────────────
-  function buildParts() {
+  /** ranges: טווחי הקטע בסרטון המקור. כמה טווחים = כמה חלקים ברצף, עם דהייה ביניהם. */
+  function buildParts(ranges = [[S.selIn, S.selOut]]) {
     const parts = [];
     // פתיחה וסיום אף פעם לא נחתכים: יש בהם טקסט וכתובות שחייבים להיראות במלואם
     const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null };
     if (S.brand.intro && introV.duration) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageIntro') });
-    parts.push({ video: src, from: S.selIn, to: S.selOut, logo: !!S.logoImg, label: t('stageMain') });
+    ranges.forEach(([from, to], k) => parts.push({
+      video: src, from, to, logo: !!S.logoImg,
+      label: ranges.length > 1 ? `${t('stageMain')} ${k + 1}/${ranges.length}` : t('stageMain'),
+    }));
     if (S.brand.outro && outroV.duration) parts.push({ video: outroV, from: 0, to: outroV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
     return parts;
   }
@@ -371,13 +376,11 @@
     return true;
   }
 
-  $('btnPlayAll').addEventListener('click', async () => {
-    if (S.mode === 'sequence') { stopAll(); drawPreview(); return; }
-    if (!checkReady()) return;
+  async function playSequence(parts) {
     stopAll();
     S.mode = 'sequence';
+    drawGhost();
     $('btnPlay').textContent = '⏸';
-    const parts = buildParts();
     S.seq = C.sequencer.run({
       parts, canvas: preview, look: look(), fades: S.set.fades, record: null,
       onProgress: (_f, label) => { if (label) $('stageBadge').textContent = label; $('stageBadge').hidden = !label; tl.setPlayhead(src.currentTime); },
@@ -387,66 +390,270 @@
     S.seq = null;
     $('btnPlay').textContent = '▶';
     drawPreview();
+  }
+
+  $('btnPlayAll').addEventListener('click', () => {
+    if (S.mode === 'sequence') { stopAll(); drawPreview(); return; }
+    if (!checkReady()) return;
+    playSequence(buildParts());
   });
 
   // ── ייצוא ──────────────────────────────────────────────────────────────
-  $('btnExport').addEventListener('click', async () => {
-    if (S.mode === 'export') return;
-    if (!checkReady()) return;
-    if (tooLong() && !confirm(t('confirmTooLong'))) return;
+  /** מקליט רצף אחד לקובץ. ההתקדמות מדווחת דרך onProgress(שבר, תווית). */
+  async function makeVideo(parts, onProgress) {
     const fmt = C.sequencer.pickFormat();
-    if (!fmt) { toast(t('noRecorder'), 6000); return; }
-    stopAll();
-    S.mode = 'export';
-    document.body.classList.add('exporting');
-    $('result').hidden = true;
-    $('progress').hidden = false;
-    $('progFill').style.width = '0%';
-
     const { W, H } = outSize();
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     // ~0.15 ביט לפיקסל בשנייה ב-30fps: 1080×1920 ≈ 9.3Mbps. מספיק בשביל לשרוד את הדחיסה החוזרת של הרשתות.
     const bitrate = Math.round(W * H * 30 * 0.15);
-    const parts = buildParts();
     const t0 = performance.now();
     const seq = S.seq = C.sequencer.run({
       parts, canvas: cv, look: look(), fades: S.set.fades,
       record: { mime: fmt.mime, bitrate },
       onFrame: (c) => pctx.drawImage(c, 0, 0, preview.width, preview.height),
       onProgress: (f, label) => {
-        $('progFill').style.width = `${(f * 100).toFixed(1)}%`;
-        $('progText').textContent = label ? t('exporting', Math.round(f * 100), label) : t('finishing');
+        onProgress(f, label);
         if (label) { $('stageBadge').textContent = label; $('stageBadge').hidden = false; }
       },
     });
     let blob = null, err = null;
-    try { blob = await S.seq.done; } catch (e) { err = e; console.error(e); }
+    try { blob = await seq.done; } catch (e) { err = e; console.error(e); }
     S.seq = null;
+    const seconds = parts.reduce((s, p) => s + p.to - p.from, 0);
+    return { blob, err, fmt, W, H, seconds, took: (performance.now() - t0) / 1000, stats: seq.stats };
+  }
+
+  function beginExport() {
+    if (S.mode === 'export') return false;
+    if (!C.sequencer.pickFormat()) { toast(t('noRecorder'), 6000); return false; }
+    stopAll();
+    S.mode = 'export';
+    document.body.classList.add('exporting');
+    drawGhost();
+    return true;
+  }
+  function endExport() {
     S.mode = 'idle';
     document.body.classList.remove('exporting');
-    $('progress').hidden = true;
     drawPreview();
+  }
 
-    if (err) { toast(t('exportFailed', err.message || err), 8000); return; }
-    if (!blob) { toast(t('cancelled')); return; }
+  $('btnExport').addEventListener('click', async () => {
+    if (S.mode === 'export') return;
+    if (!checkReady()) return;
+    if (tooLong() && !confirm(t('confirmTooLong'))) return;
+    if (!beginExport()) return;
+    $('result').hidden = true;
+    $('progress').hidden = false;
+    $('progFill').style.width = '0%';
 
-    const url = URL.createObjectURL(blob);
+    const parts = buildParts();
+    const r = await makeVideo(parts, (f, label) => {
+      $('progFill').style.width = `${(f * 100).toFixed(1)}%`;
+      $('progText').textContent = label ? t('exporting', Math.round(f * 100), label) : t('finishing');
+    });
+    $('progress').hidden = true;
+    endExport();
+
+    if (r.err) { toast(t('exportFailed', r.err.message || r.err), 8000); return; }
+    if (!r.blob) { toast(t('cancelled')); return; }
+
+    const url = URL.createObjectURL(r.blob);
     const rv = $('resultVideo');
     if (rv._url) URL.revokeObjectURL(rv._url);
     rv._url = url;
     rv.src = url;
-    const name = `${C.baseName(S.file.name)}_${plat() ? plat().id : S.set.format.replace(':', 'x')}.${fmt.ext}`;
+    const name = `${C.baseName(S.file.name)}_${plat() ? plat().id : S.set.format.replace(':', 'x')}.${r.fmt.ext}`;
     const a = $('btnDownload');
     a.href = url;
     a.download = name;
-    const total = parts.reduce((s, p) => s + p.to - p.from, 0);
-    $('resultInfo').textContent = t('resultInfo', C.fmtBytes(blob.size), fmtTime(total), `${fmt.label} · ${W}×${H}`)
-      + (fmt.warn ? `\n${t(fmt.warn)}` : '');
+    $('resultInfo').textContent = t('resultInfo', C.fmtBytes(r.blob.size), fmtTime(r.seconds), `${r.fmt.label} · ${r.W}×${r.H}`)
+      + (r.fmt.warn ? `\n${t(r.fmt.warn)}` : '');
     $('result').hidden = false;
-    S.lastExport = { blob, name, mime: fmt.mime, W, H, seconds: (performance.now() - t0) / 1000, stats: seq.stats };
+    S.lastExport = { blob: r.blob, name, mime: r.fmt.mime, W: r.W, H: r.H, seconds: r.took, stats: r.stats };
     toast(t('done'));
   });
+
+  // ── רשימת קטעים: הרבה סרטונים מאותו מקור בבת אחת ─────────────────────────
+  const B = { items: [], off: new Set(), cur: null, status: new Map(), cancel: false, sim: new Map() };
+  window.__batch = B;
+  const short = (x) => fmtTime(x).replace(/\.00$/, '');
+  const stamp = (x) => { x = Math.floor(x); return `${Math.floor(x / 3600)}-${String(Math.floor(x / 60) % 60).padStart(2, '0')}-${String(x % 60).padStart(2, '0')}`; };
+  const okItem = (it) => it.n && !it.errors.length && !(S.file && it.ranges.some(([, b]) => b > S.dur + 0.05));
+  const chosen = () => B.items.filter((it) => okItem(it) && !B.off.has(it.text));
+
+  function renderBatch() {
+    B.items = C.batch.parse(S.set.batchText);
+    B.sim = C.batch.similarTo(B.items);
+    const box = $('batchList');
+    box.innerHTML = '';
+    const max = plat()?.maxSec;
+    for (const it of B.items) {
+      const row = document.createElement('div');
+      row.className = 'bitem';
+      row.classList.toggle('cur', B.cur === it.text);
+      const msgs = it.errors.map((k) => t(k));
+      const warns = [];
+      if (S.file && it.ranges.some(([, b]) => b > S.dur + 0.05)) msgs.push(t('bPastEnd', short(S.dur)));
+      const len = C.batch.length(it) + brandSeconds();
+      if (it.n && max && len > max + 0.05) warns.push(t('bTooLong', short(len), short(max)));
+      if (B.sim.has(it)) warns.push(t('bSimilar', B.sim.get(it)));
+      const bad = !okItem(it);
+      row.classList.toggle('bad', bad);
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !bad && !B.off.has(it.text);
+      cb.disabled = bad;
+      cb.addEventListener('change', () => { if (cb.checked) B.off.delete(it.text); else B.off.add(it.text); updateBatchSum(); });
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      const n = document.createElement('span'); n.className = 'bn'; n.textContent = it.n || '!';
+      const r = document.createElement('span'); r.className = 'br';
+      r.textContent = it.ranges.length ? it.ranges.map(([a, b]) => `${short(a)}–${short(b)}`).join(' + ') : it.text;
+      r.title = `${t('batchLine', it.line)}: ${it.text}`;
+      const l = document.createElement('span'); l.className = 'bl'; l.textContent = it.n ? short(C.batch.length(it)) : '';
+      const pb = document.createElement('button'); pb.className = 'bplay'; pb.textContent = '▶'; pb.title = t('batchPlay');
+      pb.hidden = bad || !S.file;
+      pb.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode !== 'export') { B.cur = it.text; markCur(); playSequence(buildParts(it.ranges)); } });
+      row.append(cb, n, r, l, pb);
+      if (msgs.length || warns.length) {
+        const m = document.createElement('div'); m.className = 'bmsg'; m.textContent = [...msgs, ...warns].join(' · ');
+        row.appendChild(m);
+      }
+      const st = B.status.get(it.text);
+      if (st) row.appendChild(st);
+      if (!bad) {
+        row.title = t('batchShow');
+        row.addEventListener('click', () => showItem(it));
+      }
+      it.row = row;
+      box.appendChild(row);
+    }
+    updateBatchSum();
+  }
+
+  function markCur() { for (const it of B.items) it.row?.classList.toggle('cur', B.cur === it.text); }
+
+  function showItem(it) {
+    if (!S.file || S.mode === 'export') return;
+    stopAll();
+    B.cur = it.text; markCur();
+    // הטווח הראשון נבחר על הטיימליין; בשורה עם And רואים את כולם ב-▶
+    const [a, b] = it.ranges[0];
+    setSelection(a, b);
+    src.currentTime = a;
+    const pad = Math.max(2, (b - a) * 0.15);
+    tl.zoomTo(Math.max(0, a - pad), Math.min(S.dur, b + pad));
+    $('rngZoom').value = tl.getZoom01();
+  }
+
+  function updateBatchSum() {
+    const c = chosen();
+    const any = B.items.length > 0;
+    $('batchSum').hidden = !any;
+    $('batchSum').textContent = any ? t('batchSum', c.length, short(c.reduce((s, it) => s + C.batch.length(it) + brandSeconds(), 0)))
+      + (B.items.some((it) => !okItem(it)) ? `\n${t('batchFixErrors')}` : '') : '';
+    $('btnBatchRun').hidden = !any;
+    $('btnBatchRun').textContent = c.length ? t('batchRunN', c.length) : t('batchRun');
+    $('btnBatchRun').disabled = !c.length;
+  }
+
+  let batchTimer = null;
+  // Pages מפריד שורות בתוך פסקה בתו U+2028, ותיבת טקסט מציגה אותו כרווח. ממירים לשורה רגילה.
+  const normLines = (x) => x.replace(/\r\n?|\u2028|\u2029/g, '\n');
+  $('inBatch').addEventListener('input', (e) => {
+    if (/[\r\u2028\u2029]/.test(e.target.value)) e.target.value = normLines(e.target.value);
+    S.set.batchText = e.target.value;
+    clearTimeout(batchTimer);
+    batchTimer = setTimeout(() => { renderBatch(); saveSettings(); }, 150);
+  });
+  $('btnBatchFile').addEventListener('click', () => $('batchInput').click());
+  $('btnBatchClear').addEventListener('click', () => {
+    S.set.batchText = ''; $('inBatch').value = ''; B.status.clear(); B.off.clear(); B.cur = null;
+    renderBatch(); saveSettings();
+  });
+  $('batchInput').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (/\.(pages|docx?|rtf)$/i.test(f.name)) { toast(t('batchPagesFile'), 7000); return; }
+    S.set.batchText = normLines(await f.text());
+    $('inBatch').value = S.set.batchText;
+    B.status.clear();
+    renderBatch(); saveSettings();
+    toast(t('batchFileRead', f.name, B.items.filter((it) => it.n).length));
+  });
+
+  function statusLine(html) {
+    const d = document.createElement('div');
+    d.className = 'bstat';
+    if (typeof html === 'string') d.textContent = html; else d.append(...html);
+    return d;
+  }
+
+  $('btnBatchRun').addEventListener('click', async () => {
+    if (!S.file) { toast(t('noVideo')); return; }
+    const list = chosen();
+    if (!list.length) { toast(t('batchNoneSelected')); return; }
+    const max = plat()?.maxSec;
+    if (max && list.some((it) => C.batch.length(it) + brandSeconds() > max + 0.05) && !confirm(t('batchConfirmLong'))) return;
+    // בכרום ובאדג' שומרים ישר לתיקייה, וכל קובץ משתחרר מהזיכרון מיד. בשאר הדפדפנים: הורדה רגילה לכל קובץ.
+    let dir = null;
+    if (window.showDirectoryPicker) {
+      try { dir = await window.showDirectoryPicker({ id: 'clipper-batch', mode: 'readwrite' }); }
+      catch (e) { if (e.name === 'AbortError') return; dir = null; }
+    }
+    if (!beginExport()) return;
+    B.cancel = false;
+    S.lastBatch = [];
+    $('inBatch').readOnly = true;
+    $('btnBatchRun').hidden = true;
+    $('batchProg').hidden = false;
+    const base = C.baseName(S.file.name);
+    const suffix = plat() ? plat().id : S.set.format.replace(':', 'x');
+    let done = 0;
+    for (let i = 0; i < list.length && !B.cancel; i++) {
+      const it = list[i];
+      B.cur = it.text; markCur();
+      it.row?.scrollIntoView({ block: 'nearest' });
+      const r = await makeVideo(buildParts(it.ranges), (f, label) => {
+        const all = (i + f) / list.length;
+        $('batchFill').style.width = `${(all * 100).toFixed(1)}%`;
+        $('batchText').textContent = label ? t('batchProgress', i + 1, list.length, Math.round(f * 100)) : t('finishing');
+      });
+      if (r.err) { B.status.set(it.text, statusLine(t('exportFailed', r.err.message || r.err))); renderBatch(); continue; }
+      if (!r.blob) break;
+      const name = `${base}_${String(it.n).padStart(2, '0')}_${stamp(it.ranges[0][0])}_${suffix}.${r.fmt.ext}`;
+      const info = `${name} · ${C.fmtBytes(r.blob.size)} · ${short(r.seconds)}`;
+      if (dir) {
+        try {
+          const fh = await dir.getFileHandle(name, { create: true });
+          const w = await fh.createWritable();
+          await w.write(r.blob);
+          await w.close();
+          B.status.set(it.text, statusLine(`✓ ${t('batchSaved')} · ${info}`));
+        } catch (e) { console.error(e); dir = null; }
+      }
+      if (!dir) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(r.blob);
+        a.download = name;
+        a.textContent = `⬇ ${info}`;
+        a.addEventListener('click', (e) => e.stopPropagation());
+        B.status.set(it.text, statusLine([a]));
+        a.click();
+      }
+      done++;
+      renderBatch();
+      S.lastBatch = (S.lastBatch || []).concat({ name, blob: dir ? null : r.blob, size: r.blob.size, seconds: r.seconds, W: r.W, H: r.H });
+    }
+    $('batchProg').hidden = true;
+    $('inBatch').readOnly = false;
+    endExport();
+    renderBatch();
+    toast(B.cancel ? t('cancelled') : t('batchDone', done), 5000);
+  });
+  $('btnBatchCancel').addEventListener('click', () => { B.cancel = true; if (S.seq) S.seq.abort(); });
 
   $('btnCancel').addEventListener('click', () => { if (S.seq) S.seq.abort(); });
 
@@ -467,6 +674,7 @@
     $('inTextBottom').value = S.set.textBottom;
     $('rngTextSize').value = S.set.textSize;
     $('inTextColor').value = S.set.textColor;
+    $('inBatch').value = S.set.batchText;
     $('selQuality').value = S.set.quality;
     $('chkFades').checked = S.set.fades;
     $('rngLogoSize').value = S.set.logoSize;
@@ -474,7 +682,7 @@
     $('chkLogoAll').checked = S.set.logoAll;
   }
 
-  function changed() { saveSettings(); sizePreview(); drawPreview(); updateTimes(); }
+  function changed() { saveSettings(); sizePreview(); drawPreview(); updateTimes(); renderBatch(); }
 
   $('segFormat').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -572,6 +780,7 @@
     renderBrandStatus();
     drawPreview();
     updateTimes();
+    renderBatch();
   }
 
   function renderBrandStatus() {
@@ -656,7 +865,7 @@
   // ── שפה ────────────────────────────────────────────────────────────────
   $('btnLang').addEventListener('click', () => {
     C.setLang(C.lang === 'he' ? 'en' : 'he');
-    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes();
+    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch();
   });
 
   // ── אתחול ──────────────────────────────────────────────────────────────
@@ -666,6 +875,7 @@
     if (saved) { delete saved.fit; delete saved.focus; Object.assign(S.set, saved); }   // fit/focus: לפני שהיה מסגור חופשי
     if (S.set.platform && C.platform(S.set.platform)?.format !== S.set.format) S.set.platform = null;
     syncControls();
+    renderBatch();
     applyVolume();
     sizePreview();
     drawPreview();
