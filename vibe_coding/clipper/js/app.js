@@ -17,7 +17,9 @@
     brandFrom: {},       // 'folder' אם הגיע מתיקיית brand/ ולא מהמשתמש
     logoImg: null,
     set: {               // הגדרות שנשמרות בין ביקורים
-      platform: 'ig_reels', format: '9:16', guides: true, fit: 'blur', focus: 0.5, quality: '1080', fades: true,
+      platform: 'ig_reels', format: '9:16', guides: true, quality: '1080', fades: true,
+      zoom: 1, px: 0.5, py: 0.5, fill: 'blur', fillColor: '#000000',      // מסגור: אחד לכל הסרטון
+      textOn: false, textTop: '', textBottom: '', textSize: 7, textColor: '#ffffff',
       corner: 'tr', logoSize: 18, logoOpacity: 0.9, logoAll: false,
       volume: 1, muted: false,
     },
@@ -31,7 +33,9 @@
   const plat = () => C.platform(S.set.platform);
   const safe = () => plat()?.safe || C.DEFAULT_SAFE;
   const look = () => ({
-    fit: S.set.fit, focus: S.set.focus, logo: S.logoImg, safe: safe(),
+    zoom: S.set.zoom, px: S.set.px, py: S.set.py, fill: S.set.fill, fillColor: S.set.fillColor,
+    text: S.set.textOn ? { top: S.set.textTop, bottom: S.set.textBottom, size: S.set.textSize, color: S.set.textColor } : null,
+    logo: S.logoImg, safe: safe(),
     corner: S.set.corner, logoSize: S.set.logoSize, logoOpacity: S.set.logoOpacity,
   });
   const platName = () => (plat() ? plat().name[C.lang] : t('platCustom'));
@@ -48,7 +52,7 @@
     if (preview.width !== W || preview.height !== H) { preview.width = W; preview.height = H; }
     const full = outSize();
     $('formatHint').textContent = t('fmtHint', full.W, full.H, t('fmtFor')[S.set.format]);
-    $('rowFocus').hidden = S.set.fit !== 'cover';
+    $('rngFrameZoom').max = Math.max(4, Math.ceil(coverZoom() * 1.5));
     $('platformNote').textContent = plat() ? plat().note[C.lang] : '';
     // אינסטגרם ורוב הרשתות דורשות AAC. כרום על לינוקס יודע רק Opus.
     const fmt = C.sequencer.pickFormat();
@@ -98,11 +102,117 @@
   }
 
   function drawPreview() {
-    if (S.mode === 'sequence' || S.mode === 'export') return;
+    if (S.mode === 'sequence' || S.mode === 'export') { drawGhost(); return; }
     C.compose.draw(pctx, S.file ? src : null, preview.width, preview.height, { ...look(), logoOn: !!S.logoImg, fade: 0 });
     drawGuides(pctx, preview.width, preview.height);
     setBadge(S.file ? 'stageMain' : '');
+    drawGhost();
   }
+
+  // ── מסגור: גרירה וזום ישירות על התצוגה ───────────────────────────────────
+  const ghost = $('ghost');
+  const gctx = ghost.getContext('2d');
+  const coverZoom = () => (S.file ? C.compose.coverZoom(src, preview.width, preview.height) : 1);
+  const ZMIN = 0.5;
+  const zmax = () => +$('rngFrameZoom').max;
+
+  /** איפה הפריים של התוצאה מוצג בתוך הבמה (הקנבס מוצג ב-object-fit: contain) */
+  function shownRect() {
+    const b = preview.getBoundingClientRect();
+    const s = Math.min(b.width / preview.width, b.height / preview.height);
+    return { s, left: b.left + (b.width - preview.width * s) / 2, top: b.top + (b.height - preview.height * s) / 2, b };
+  }
+
+  /** החלקים שנחתכים מחוץ למסגרת, בשקיפות, כדי שיהיה ברור מה נשאר בחוץ */
+  function drawGhost() {
+    const dpr = window.devicePixelRatio || 1;
+    const { s, left, top, b } = shownRect();
+    const gw = Math.round(b.width * dpr), gh = Math.round(b.height * dpr);
+    if (ghost.width !== gw || ghost.height !== gh) { ghost.width = gw; ghost.height = gh; }
+    gctx.setTransform(1, 0, 0, 1, 0, 0);
+    gctx.clearRect(0, 0, gw, gh);
+    if (!S.file || S.mode === 'sequence' || S.mode === 'export') return;
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ox = left - b.left, oy = top - b.top;
+    const r = C.compose.place(src, preview.width, preview.height, look());
+    gctx.globalAlpha = 0.28;
+    gctx.drawImage(src, ox + r.x * s, oy + r.y * s, r.w * s, r.h * s);
+    gctx.globalAlpha = 1;
+    gctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    gctx.lineWidth = 1;
+    gctx.strokeRect(ox - 0.5, oy - 0.5, preview.width * s + 1, preview.height * s + 1);
+  }
+
+  /** px/py חדשים כך שהנקודה (X, Y) בפריים תישאר מתחת לאצבע אחרי שינוי זום */
+  function zoomAround(z, X, Y) {
+    const W = preview.width, H = preview.height;
+    const r0 = C.compose.place(src, W, H, look());
+    const u = (X - r0.x) / r0.w, v = (Y - r0.y) / r0.h;
+    S.set.zoom = clamp(z, ZMIN, zmax());
+    const r1 = C.compose.place(src, W, H, look());
+    const sx = W - r1.w, sy = H - r1.h;
+    S.set.px = Math.abs(sx) > 0.5 ? clamp((X - u * r1.w) / sx, 0, 1) : 0.5;
+    S.set.py = Math.abs(sy) > 0.5 ? clamp((Y - v * r1.h) / sy, 0, 1) : 0.5;
+  }
+
+  let saveTimer = null;
+  function frameChanged() {
+    $('rngFrameZoom').value = S.set.zoom;
+    $('zoomVal').textContent = `${Math.round(S.set.zoom * 100)}%`;
+    if (S.mode !== 'play') drawPreview();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveSettings, 400);
+  }
+
+  const pointers = new Map();
+  let drag = null;
+  const canFrame = () => S.file && S.mode !== 'sequence' && S.mode !== 'export';
+  const toFrame = (e) => { const { s, left, top } = shownRect(); return [(e.clientX - left) / s, (e.clientY - top) / s]; };
+
+  preview.addEventListener('pointerdown', (e) => {
+    if (!canFrame()) return;
+    preview.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, toFrame(e));
+    const r = C.compose.place(src, preview.width, preview.height, look());
+    drag = { start: toFrame(e), px: S.set.px, py: S.set.py, sx: preview.width - r.w, sy: preview.height - r.h, pinch: null };
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      drag.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), zoom: S.set.zoom };
+    }
+    preview.classList.add('grabbing');
+  });
+  preview.addEventListener('pointermove', (e) => {
+    if (!drag || !pointers.has(e.pointerId)) return;
+    const p = toFrame(e);
+    pointers.set(e.pointerId, p);
+    if (drag.pinch && pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (drag.pinch.d > 10) zoomAround(drag.pinch.zoom * (d / drag.pinch.d), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    } else if (!drag.pinch) {
+      // גרירה ימינה מזיזה את התמונה ימינה, בין אם היא קטנה מהמסגרת ובין אם גדולה ממנה
+      if (Math.abs(drag.sx) > 0.5) S.set.px = clamp(drag.px + (p[0] - drag.start[0]) / drag.sx, 0, 1);
+      if (Math.abs(drag.sy) > 0.5) S.set.py = clamp(drag.py + (p[1] - drag.start[1]) / drag.sy, 0, 1);
+    }
+    frameChanged();
+  });
+  const endDrag = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) { drag = null; preview.classList.remove('grabbing'); }
+  };
+  preview.addEventListener('pointerup', endDrag);
+  preview.addEventListener('pointercancel', endDrag);
+  preview.addEventListener('wheel', (e) => {
+    if (!canFrame()) return;
+    e.preventDefault();
+    // צביטה בטאצ'פד מגיעה ככגלגלת עם ctrlKey וצעדים קטנים
+    const k = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
+    const [X, Y] = toFrame(e);
+    zoomAround(S.set.zoom * k, X, Y);
+    frameChanged();
+  }, { passive: false });
+  preview.addEventListener('dblclick', () => { if (canFrame()) { S.set.zoom = 1; S.set.px = S.set.py = 0.5; frameChanged(); } });
+  window.addEventListener('resize', () => drawGhost());
 
   function setBadge(key) {
     const b = $('stageBadge');
@@ -248,7 +358,7 @@
   function buildParts() {
     const parts = [];
     // פתיחה וסיום אף פעם לא נחתכים: יש בהם טקסט וכתובות שחייבים להיראות במלואם
-    const brandLook = { fit: S.set.fit === 'cover' ? 'blur' : S.set.fit };
+    const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null };
     if (S.brand.intro && introV.duration) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageIntro') });
     parts.push({ video: src, from: S.selIn, to: S.selOut, logo: !!S.logoImg, label: t('stageMain') });
     if (S.brand.outro && outroV.duration) parts.push({ video: outroV, from: 0, to: outroV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
@@ -346,8 +456,17 @@
     $('chkGuides').checked = S.set.guides;
     document.querySelectorAll('#segFormat button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.set.format));
     document.querySelectorAll('#corners button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.set.corner));
-    $('selFit').value = S.set.fit;
-    $('rngFocus').value = S.set.focus;
+    $('selFill').value = S.set.fill;
+    $('inFillColor').value = S.set.fillColor;
+    $('inFillColor').hidden = S.set.fill !== 'color';
+    $('rngFrameZoom').value = S.set.zoom;
+    $('zoomVal').textContent = `${Math.round(S.set.zoom * 100)}%`;
+    $('chkText').checked = S.set.textOn;
+    $('textOpts').hidden = !S.set.textOn;
+    $('inTextTop').value = S.set.textTop;
+    $('inTextBottom').value = S.set.textBottom;
+    $('rngTextSize').value = S.set.textSize;
+    $('inTextColor').value = S.set.textColor;
     $('selQuality').value = S.set.quality;
     $('chkFades').checked = S.set.fades;
     $('rngLogoSize').value = S.set.logoSize;
@@ -374,8 +493,25 @@
     const b = e.target.closest('button'); if (!b) return;
     S.set.corner = b.dataset.v; syncControls(); changed();
   });
-  $('selFit').addEventListener('change', (e) => { S.set.fit = e.target.value; changed(); });
-  $('rngFocus').addEventListener('input', (e) => { S.set.focus = +e.target.value; changed(); });
+  $('rngFrameZoom').addEventListener('input', (e) => {
+    if (S.file) zoomAround(+e.target.value, preview.width / 2, preview.height / 2);
+    else S.set.zoom = +e.target.value;
+    frameChanged();
+  });
+  document.querySelectorAll('[data-frame]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.frame;
+    if (k === 'whole') { S.set.zoom = 1; S.set.px = S.set.py = 0.5; }
+    else if (k === 'fill') { S.set.zoom = coverZoom(); S.set.px = S.set.py = 0.5; }
+    else { S.set.px = S.set.py = 0.5; }
+    frameChanged();
+  }));
+  $('selFill').addEventListener('change', (e) => { S.set.fill = e.target.value; syncControls(); changed(); });
+  $('inFillColor').addEventListener('input', (e) => { S.set.fillColor = e.target.value; changed(); });
+  $('chkText').addEventListener('change', (e) => { S.set.textOn = e.target.checked; syncControls(); changed(); });
+  $('inTextTop').addEventListener('input', (e) => { S.set.textTop = e.target.value; changed(); });
+  $('inTextBottom').addEventListener('input', (e) => { S.set.textBottom = e.target.value; changed(); });
+  $('rngTextSize').addEventListener('input', (e) => { S.set.textSize = +e.target.value; changed(); });
+  $('inTextColor').addEventListener('input', (e) => { S.set.textColor = e.target.value; changed(); });
   $('selQuality').addEventListener('change', (e) => { S.set.quality = e.target.value; changed(); });
   $('chkFades').addEventListener('change', (e) => { S.set.fades = e.target.checked; changed(); });
   $('rngLogoSize').addEventListener('input', (e) => { S.set.logoSize = +e.target.value; changed(); });
@@ -527,7 +663,7 @@
   (async () => {
     C.applyI18n();
     const saved = await C.store.get('settings');
-    if (saved) Object.assign(S.set, saved);
+    if (saved) { delete saved.fit; delete saved.focus; Object.assign(S.set, saved); }   // fit/focus: לפני שהיה מסגור חופשי
     if (S.set.platform && C.platform(S.set.platform)?.format !== S.set.format) S.set.platform = null;
     syncControls();
     applyVolume();
