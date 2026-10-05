@@ -238,3 +238,25 @@ input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #35
 .text-opts { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .text-opts textarea { font: inherit; background: #12151b; color: var(--text); border: 1px solid #353b48; border-radius: 6px; padding: 6px 8px; resize: vertical; }
 .text-opts textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ── רשימת קטעים ───────────────────────────────────────── */
+.batch-src { display: flex; gap: 6px; margin: 8px 0 6px; }
+#inBatch { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; background: #12151b; color: var(--text); border: 1px solid #353b48; border-radius: 6px; padding: 6px 8px; resize: vertical; }
+#inBatch:focus { outline: none; border-color: var(--accent); }
+.batch-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; max-height: 320px; overflow-y: auto; }
+.bitem { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; background: #12151b; cursor: pointer; font-size: 12px; }
+.bitem:hover { background: #181c24; }
+.bitem.cur { box-shadow: inset 0 0 0 1px var(--accent); }
+.bitem .bn { font-weight: 700; min-width: 20px; text-align: center; }
+.bitem .br { direction: ltr; text-align: start; font-family: ui-monospace, Menlo, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bitem .bl { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+.bitem .bplay { background: none; border: 0; color: var(--text); cursor: pointer; padding: 0 4px; font-size: 13px; }
+.bitem .bmsg { grid-column: 2 / -1; font-size: 11px; color: #e8c46a; }
+.bitem.bad { background: #2a1517; cursor: default; }
+.bitem.bad .bmsg { color: #ff8a8a; }
+.bitem .bstat { grid-column: 2 / -1; font-size: 11px; color: #8fd18f; }
+.bitem .bstat a { color: var(--accent); }
+#btnBatchRun { width: 100%; margin-top: 8px; }
+#batchProg { margin-top: 10px; }
+body.exporting .panel .card.batch { opacity: 1; pointer-events: auto; }
+body.exporting .card.batch .bplay, body.exporting .card.batch .batch-src { visibility: hidden; }

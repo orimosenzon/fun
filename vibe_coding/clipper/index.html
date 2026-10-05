@@ -68,6 +68,28 @@
       </div>
     </div>
 
+    <div class="card batch" id="cardBatch">
+      <h3 data-i18n="secBatch">רשימת קטעים</h3>
+      <div class="hint" data-i18n="batchHint">כל שורה היא סרטון אחד, למשל 02.49 - 13.35 או 1.00.14 - 1.01.50. כמה טווחים באותה שורה (עם And) מתחברים לסרטון אחד.</div>
+      <div class="batch-src">
+        <button class="btn small" id="btnBatchFile" data-i18n="batchFile">טען קובץ טקסט</button>
+        <button class="btn small ghost" id="btnBatchClear" data-i18n="batchClear">נקה</button>
+        <input type="file" id="batchInput" accept=".txt,.text,.csv,.md,text/plain" hidden>
+      </div>
+      <textarea id="inBatch" rows="5" dir="ltr" spellcheck="false" data-i18n-ph="batchPh" placeholder="או הדבק כאן את הרשימה"></textarea>
+      <div class="batch-list" id="batchList"></div>
+      <div class="hint" id="batchSum"></div>
+      <button class="btn primary" id="btnBatchRun" data-i18n="batchRun" hidden>צור את כל הסרטונים</button>
+      <div class="progress" id="batchProg" hidden>
+        <div class="bar"><div class="fill" id="batchFill"></div></div>
+        <div class="prog-row">
+          <span id="batchText"></span>
+          <button class="btn small ghost" id="btnBatchCancel" data-i18n="cancel">ביטול</button>
+        </div>
+        <div class="hint warn" data-i18n="keepVisible">השאר את הלשונית הזו פתוחה וגלויה עד הסוף. הייצוא נמשך בערך כאורך הסרטון.</div>
+      </div>
+    </div>
+
     <div class="card">
       <h3 data-i18n="secFormat">פלטפורמה</h3>
       <div class="platforms" id="platforms"></div>
@@ -237,6 +259,7 @@
 <script src="js/store.js"></script>
 <script src="js/platforms.js"></script>
 <script src="js/compose.js"></script>
+<script src="js/batch.js"></script>
 <script src="js/media.js"></script>
 <script src="js/timeline.js"></script>
 <script src="js/sequencer.js"></script>
