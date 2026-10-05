@@ -363,8 +363,8 @@ EXCLUDED = {
 SKIP = EXCLUDED | {
     "projects_page", "tmp", "memory", "billing-check", "job-search", "factotum",
     "ori_android",
-    # clone of the PRIVATE repo orimosenzon/private, never on the public page
-    "private",
+    # clone of the PRIVATE repo orimosenzon/unlisted, never on the public page
+    "unlisted",
     # כלי עבודה ליורם (4.10.2026): ציבורי רק כדי שיהיה לו לינק, לא פרויקט לתצוגה
     "clipper",
     # symlinks into jetbikes/ (4.10.2026) so old shared links keep working;

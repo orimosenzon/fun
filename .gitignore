@@ -22,6 +22,6 @@ vibe_coding/nudge/.env
 vibe_coding/haskala/
 
 # Private projects live in one PRIVATE repo (2026-10-03), a folder per project:
-#   git@github.com:orimosenzon/private.git
+#   git@github.com:orimosenzon/unlisted.git
 # Medical details, budgets and contacts stay out of the public repo.
-vibe_coding/private/
+vibe_coding/unlisted/
