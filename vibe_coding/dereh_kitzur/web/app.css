@@ -3724,18 +3724,135 @@ body.routing #map canvas { cursor: crosshair; }
 
 #layer-sheet .modes { margin: 0 0 12px; }
 
-/* Each preset keeps the panel's cards to the ones that belong to it. A walker
- * meets the invitation and the directions; a planner and somebody following
- * the council meet "מה מתוכנן כאן?", with the invitation folded to one line
- * rather than gone - it is still the point of the app. With no preset lit,
- * every card shows, as before. The map's own "מה מתוכנן כאן?" button stays in
- * every mode. */
-body.mode-walk #plan-ask { display: none; }
-body.mode-plan #route-ask,
-body.mode-open #route-ask { display: none; }
-body.mode-plan #add,
-body.mode-open #add { padding: 8px 12px; }
-body.mode-plan #add .invite-txt > span,
-body.mode-open #add .invite-txt > span { display: none; }
-body.mode-plan #add .invite-ic,
-body.mode-open #add .invite-ic { width: 26px; height: 26px; }
+/* Until 6/10/2026 each preset hid the panel's cards that did not belong to
+ * it, to save room. The cards are now two buttons on the map and a menu that
+ * is closed until asked for, so every mode shows all of them. */
+
+/* ---------- the top of the map: two actions and the ☰ menu (6/10/2026) ----------
+ *
+ * The panel is for what is on the map. What people come to do - walk somewhere
+ * through the shortcuts, add one they know - is here, one press away; every
+ * rarer thing is in the menu. Above the legend, under the full-width bars
+ * (route, navigation, drafting), which hide it while they are up. */
+
+.topbar {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 950;
+  display: flex;
+  gap: 6px;
+  max-width: calc(100vw - 70px);
+}
+
+.tb-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .22);
+  cursor: pointer;
+}
+
+.tb-btn svg { width: 20px; height: 20px; flex: none; fill: currentColor; }
+.tb-menu { width: 40px; padding: 0; justify-content: center; }
+.tb-menu[aria-expanded="true"] { background: var(--accent-soft); }
+.tb-route { background: #1565c0; color: #fff; }
+.tb-add { background: var(--accent); color: #fff; }
+.tb-btn:active { filter: brightness(.93); }
+
+/* Plans open for objection: the one thing in the menu with a deadline. */
+.tb-badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #d9480f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* The legend steps down under the bar. */
+.legend { top: 58px; }
+
+body.routing .topbar, body.nav-active .topbar, body.drafting .topbar,
+body.arranging .topbar, body.asking-plan .topbar, body.flying .topbar { display: none; }
+body.routing .menu, body.nav-active .menu, body.drafting .menu,
+body.arranging .menu, body.asking-plan .menu, body.flying .menu { display: none; }
+
+.menu {
+  position: absolute;
+  top: 56px;
+  inset-inline-start: 10px;
+  z-index: 1150;
+  width: min(340px, calc(100vw - 20px));
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 28px rgba(10, 30, 20, .28);
+}
+
+.menu[hidden] { display: none; }
+
+.menu-h {
+  margin: 8px 2px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.menu-h:first-child { margin-top: 0; }
+.menu .mode-hint { margin: 2px 2px 4px; }
+.menu .plan-banner { margin-bottom: 6px; }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.menu-item[hidden] { display: none; }
+.menu-item:hover, .menu-item:active { background: #f1f5f2; }
+.menu-item.on { color: var(--accent); font-weight: 700; }
+.menu-item small { display: block; font-size: 12px; color: var(--muted); }
+.menu-ic { flex: none; width: 24px; text-align: center; font-size: 17px; }
+
+@media (min-width: 860px) {
+  .topbar, .menu { inset-inline-start: calc(var(--panel-w) + 12px); }
+  .topbar { max-width: calc(100vw - var(--panel-w) - 80px); }
+  .legend { inset-inline-start: calc(var(--panel-w) + 12px); }
+}
+
+/* A narrow phone: the two actions keep their words, a little tighter. */
+@media (max-width: 380px) {
+  .tb-btn { padding: 0 10px; font-size: 13px; gap: 4px; }
+}

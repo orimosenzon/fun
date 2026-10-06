@@ -21,7 +21,7 @@ def check(name, ok, detail=''):
 
 READY = '() => typeof Modes !== "undefined" && typeof map !== "undefined" && !!map.getSource("src-trails")'
 STATE = '''() => ({
-  lit: [...document.querySelectorAll('#list-view .mode.on')].map(b => b.dataset.mode),
+  lit: [...document.querySelectorAll('#menu .mode.on')].map(b => b.dataset.mode),
   current: (Modes.current() || {}).id || null,
   on: Layers.onIds().sort(),
   pitch: Math.round(map.getPitch()),
@@ -54,10 +54,13 @@ try:
     s = pg.evaluate(STATE)
     print('first visit:', json.dumps(s, ensure_ascii=False))
     check('a first visit is the walker preset', s['lit'] == ['walk'], s['lit'])
-    check('the walker sees the directions card, not the planning one',
-          s['routeCard'] != 'none' and s['planCard'] == 'none', (s['routeCard'], s['planCard']))
+    # Since 6/10/2026 the modes live in the ☰ menu and hide nothing: the
+    # directions are on the map's top bar, the planning question in the menu.
+    check('the directions button is on the map in every mode', s['routeCard'] != 'none', s['routeCard'])
 
-    pg.click('#list-view .mode[data-mode="plan"]')
+    pg.click('#menu-btn')
+    pg.wait_for_timeout(300)
+    pg.click('#menu .mode[data-mode="plan"]')
     pg.wait_for_timeout(1200)
     s = pg.evaluate(STATE)
     print('planner:', json.dumps(s, ensure_ascii=False))
@@ -67,14 +70,14 @@ try:
     check('and nothing of the walker it does not need', 'kitzur-spots' not in s['on'], s['on'])
     check('the map goes flat', s['pitch'] < 3, s['pitch'])
     check('the key opens, for the land-use colours', s['legend'])
-    check('the planning card shows, the directions card does not',
-          s['planCard'] != 'none' and s['routeCard'] == 'none')
+    check('choosing a view leaves the menu open, to compare', pg.evaluate('() => Menu.isOpen()'))
+    check('and hides no action', s['planCard'] != 'none' and s['routeCard'] != 'none')
     check('the link carries the layers', 'landuse' in s['url'], s['url'])
     pg.wait_for_timeout(1500)
     pg.screenshot(path=os.path.join(OUT, 'shot_mode_plan.png'))
     plan_url = URL + s['url']
 
-    pg.click('#list-view .mode[data-mode="open"]')
+    pg.click('#menu .mode[data-mode="open"]')
     pg.wait_for_timeout(1500)
     s = pg.evaluate(STATE)
     print('transparency:', json.dumps(s, ensure_ascii=False))
@@ -89,9 +92,9 @@ try:
     s = pg.evaluate(STATE)
     check('a layer ticked by hand lights no chip', s['lit'] == [] and s['current'] is None, s['lit'])
     check('the hint says it is a view of your own', 'משלך' in s['hint'], s['hint'])
-    check('and every card is back', s['planCard'] != 'none' and s['routeCard'] != 'none')
+    check('and every action is still there', s['planCard'] != 'none' and s['routeCard'] != 'none')
 
-    pg.click('#list-view .mode[data-mode="walk"]')
+    pg.click('#menu .mode[data-mode="walk"]')
     pg.wait_for_timeout(1200)
     s = pg.evaluate(STATE)
     check('הולך רגל goes back to the shortcuts', s['lit'] == ['walk'] and 'canopy' not in s['on'], s)

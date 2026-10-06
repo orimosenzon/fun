@@ -2421,6 +2421,59 @@ function paintNav() {
   frameNav(target);
 }
 
+/* ---------- the ☰ menu (6/10/2026) ----------
+ *
+ * Everything the panel used to offer above the list that is not done every
+ * visit: the ready-made views, what is planned and open for objection, what is
+ * planned at a spot, sharing, the home-screen icon and editor mode. The buttons
+ * were moved here with their ids, so their own handlers still run; the menu
+ * only opens, closes after a choice, and counts the open plans on its button.
+ */
+const Menu = (() => {
+  const box = () => el('menu');
+  const isOpen = () => !box().hidden;
+
+  function open() {
+    box().hidden = false;
+    el('menu-btn').setAttribute('aria-expanded', 'true');
+  }
+
+  function close() {
+    if (!isOpen()) return;
+    box().hidden = true;
+    el('menu-btn').setAttribute('aria-expanded', 'false');
+  }
+
+  /** The number of plans open for objection, on the ☰ button. */
+  function badge(n) {
+    const b = el('menu-badge');
+    b.hidden = !n;
+    b.textContent = n > 9 ? '9+' : String(n || '');
+    el('menu-btn').title = n ? `${n} תכניות פתוחות להתנגדות` : 'תפריט';
+  }
+
+  function wire() {
+    el('menu-btn').addEventListener('click', (e) => { e.stopPropagation(); isOpen() ? close() : open(); });
+    // A choice closes the menu - except a view, which is worth comparing with
+    // the next one before deciding.
+    box().addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b && !b.closest('[data-modes]')) close();
+    });
+    el('menu-share').addEventListener('click', () => {
+      const s = document.querySelector('.share-btn');
+      if (s) s.click();
+    });
+    document.addEventListener('click', (e) => {
+      if (isOpen() && !box().contains(e.target) && !el('menu-btn').contains(e.target)) close();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    if (map) map.on('movestart', (e) => { if (e.originalEvent) close(); });
+  }
+
+  return { open, close, isOpen, badge, wire };
+})();
+
 /* ---------- turn by turn, along a walking route (4/10/2026) ----------
  *
  * Ori, seeing the first version: "I see a green dot - how does the navigation
@@ -3092,7 +3145,7 @@ function paintStats() {
   el('stats').textContent = bits.join(' · ');
 
   const who = Store.editor();
-  el('editor-btn').textContent = who ? (who === 'עורך' ? 'עריכה דלוקה' : `עריכה · ${who}`)
+  el('editor-lbl').textContent = who ? (who === 'עורך' ? 'עריכה דלוקה' : `עריכה · ${who}`)
     : 'מצב עריכה';
   el('editor-btn').classList.toggle('on', !!who);
 
@@ -3122,12 +3175,6 @@ function paintUnsent() {
   const layer = Layers.byId('drafts');
   const n = layer ? layer.segments.length : 0;
   bar.hidden = !n;
-  // Two stacked cards over a panel that is 45% of a phone leave about one row
-  // of list. The invitation's explainer is onboarding copy - "walk it with your
-  // phone, no account needed" - and somebody who already has a draft has done
-  // exactly that, so it is the half that goes. The button itself stays: having
-  // one unsent trail is no reason to be unable to start a second.
-  el('add').classList.toggle('compact', !!n);
   if (!n) return;
 
   // An editor's own drafts are not waiting to be sent anywhere; they are
@@ -3637,6 +3684,7 @@ function wireControls() {
   });
 
   el('editor-btn').addEventListener('click', editorSheet);
+  Menu.wire();
   Install.init();
   el('editor-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'editor-sheet') { el('editor-sheet').hidden = true; return; }
