@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מה קרה במרכז המושבה</title>
+<meta name="description" content="תחקיר על התכנון של מתחם תבורי ולב המושבה בפרדס חנה, בין השומר, הדקלים, הגלעד ודרך הבנים: מה תוכנן, מה שונה, ואיך.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f4ef; --surface:#ffffff; --surface-2:#efece4; --ink:#1f2328; --muted:#5d6570;
+  --line:#dcd7cc; --accent:#b4531f; --accent-soft:#f6e3d6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --tavori:#8a5cb8; --plain:#c9c3b6; --square:#d9b44a; --green:#5b9b62;
+  --warn-bg:#fff4d6; --warn-ink:#6b4e00; --ok-bg:#e3f2ea; --ok-ink:#1d5a3f; --bad-bg:#fbe4e1; --bad-ink:#8a2318;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#15171a; --surface:#1e2125; --surface-2:#262a2f; --ink:#e8e6e1; --muted:#a3a9b1;
+    --line:#343941; --accent:#e58a55; --accent-soft:#3a2a20;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --tavori:#b690e0; --plain:#4a4f57; --square:#c9a23c; --green:#5fae68;
+    --warn-bg:#3a3217; --warn-ink:#f1d98a; --ok-bg:#1d3329; --ok-ink:#9ad8b8; --bad-bg:#3d2220; --bad-ink:#f2a69c;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#15171a; --surface:#1e2125; --surface-2:#262a2f; --ink:#e8e6e1; --muted:#a3a9b1;
+  --line:#343941; --accent:#e58a55; --accent-soft:#3a2a20;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --tavori:#b690e0; --plain:#4a4f57; --square:#c9a23c; --green:#5fae68;
+  --warn-bg:#3a3217; --warn-ink:#f1d98a; --ok-bg:#1d3329; --ok-ink:#9ad8b8; --bad-bg:#3d2220; --bad-ink:#f2a69c;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,system-ui,sans-serif;font-size:17px;line-height:1.7}
+main{max-width:900px;margin:0 auto;padding:0 16px 80px}
+a{color:var(--accent)}
+h1{font-size:clamp(30px,6vw,46px);line-height:1.15;margin:0 0 14px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:26px;margin:60px 0 12px;font-weight:800;line-height:1.3}
+h3{font-size:19px;margin:0 0 6px;line-height:1.4}
+p{margin:0 0 14px}
+.kicker{color:var(--accent);font-weight:700;font-size:14px;letter-spacing:.04em;margin-top:40px}
+.lead{font-size:19.5px}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.stat b{display:block;font-size:27px;line-height:1.2;font-weight:800;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:14.5px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}
+nav.toc a{font-size:14px;text-decoration:none;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);padding:4px 12px;border-radius:99px}
+nav.toc a:hover{border-color:var(--accent)}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:15px;border:0;background:transparent;color:var(--ink);padding:6px 14px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:var(--shadow);font-weight:700;outline:1px solid var(--line)}
+.answer{border-right:5px solid var(--accent);background:var(--surface);border-radius:12px;padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+.answer ol{margin:8px 0 0;padding-right:22px}
+.answer li{margin-bottom:6px}
+.mapwrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;margin-top:12px}
+@media (max-width:700px){.mapwrap{grid-template-columns:1fr}}
+#map{height:460px;border-radius:14px;border:1px solid var(--line)}
+@media (max-width:700px){#map{height:360px}}
+#lotPanel{min-height:200px}
+#lotPanel table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+#lotPanel th,#lotPanel td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right}
+#lotPanel th{color:var(--muted);font-weight:500;font-size:13.5px}
+td.up{color:var(--bad-ink);font-weight:800}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-left:6px;vertical-align:-1px}
+.leaflet-container{font-family:Heebo,system-ui,sans-serif;background:var(--surface-2)}
+.lotlabel{background:transparent;border:0;box-shadow:none;font-weight:800;font-size:12px;color:#1f2328;text-shadow:0 0 3px #fff,0 0 3px #fff}
+.lotlabel:before{display:none}
+svg text{font-family:Heebo,system-ui,sans-serif}
+.chartbox{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.15);opacity:0;transition:opacity .12s;white-space:nowrap;z-index:5}
+.tavwrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:700px){.tavwrap{grid-template-columns:1fr}}
+.stack{display:flex;height:38px;border-radius:8px;overflow:hidden;gap:2px;background:var(--surface)}
+.stack div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden}
+.stackrow{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+@media (max-width:520px){.stackrow{grid-template-columns:1fr}}
+.timeline{list-style:none;padding:0;margin:14px 0 0;position:relative}
+.timeline:before{content:"";position:absolute;right:9px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.timeline li{position:relative;padding-right:34px;margin-bottom:10px}
+.timeline li:before{content:"";position:absolute;right:3px;top:10px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--muted)}
+.timeline li[data-k="dist"]:before{border-color:var(--s1)}
+.timeline li[data-k="local"]:before{border-color:var(--s2)}
+.timeline li[data-k="permit"]:before{border-color:var(--bad-ink);border-radius:3px}
+.timeline li[data-k="hist"]:before{border-color:var(--green)}
+.timeline li.hide{display:none}
+.timeline button{all:unset;cursor:pointer;display:block;width:100%}
+.timeline button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.timeline .date{font-weight:800;font-variant-numeric:tabular-nums}
+.timeline .tag{font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);margin-inline-start:6px;white-space:nowrap}
+.timeline .detail{display:none;margin-top:6px;color:var(--muted);font-size:15.5px}
+.timeline li.open .detail{display:block}
+.move{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.move .num{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-weight:800;margin-left:8px;flex:none}
+.move h3{display:flex;align-items:center}
+.move .rows{display:grid;grid-template-columns:110px 1fr;gap:4px 12px;font-size:15.5px;margin-top:10px}
+@media (max-width:520px){.move .rows{grid-template-columns:1fr}}
+.move .rows b{color:var(--muted);font-weight:500}
+blockquote{margin:10px 0;padding:10px 14px;background:var(--surface-2);border-radius:8px;font-size:15.5px}
+blockquote cite{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:4px}
+.chip{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:99px;vertical-align:2px}
+.chip.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.chip.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.chip.bad{background:var(--bad-bg);color:var(--bad-ink)}
+table.plain{width:100%;border-collapse:collapse;font-size:15px}
+table.plain th,table.plain td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+table.plain th{color:var(--muted);font-weight:500;font-size:13.5px}
+.scroll{overflow-x:auto}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+details summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:"+";display:inline-block;width:20px;color:var(--accent);font-weight:800}
+details[open] summary:before{content:"–"}
+details .body{padding:0 16px 14px 16px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{margin-top:7px;accent-color:var(--accent);width:18px;height:18px;flex:none}
+.check label{cursor:pointer}
+.sources li{margin-bottom:6px;font-size:15px}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+footer{margin-top:60px;font-size:13px;color:var(--muted)}
+.themebtn{position:fixed;left:14px;bottom:14px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;box-shadow:var(--shadow);z-index:1000}
+bdi{unicode-bidi:isolate}
+</style>
+</head>
+<body>
+<main>
+
+<div class="kicker">רוצים שקיפות · תחקיר תכנוני</div>
+<h1>מה קרה במרכז המושבה</h1>
+<p class="lead">הגוש שבין השומר, הדקלים, הגלעד ודרך הבנים, שהיום קוראים לו "תבורי", היה אמור להיות הלב העירוני של פרדס חנה: מרכז מסחרי עם חזיתות בנויות, כיכר עירונית, חניה מתחת לאדמה ובתי מגורים מדורגים מסביב. חלק גדול מזה באמת תוכנן, ובקפידה. מה שקרה אחר כך הוא שינוי אחרי שינוי, מגרש אחרי מגרש, ולפעמים ההיתר קדם לתוכנית.</p>
+<p>הדף מבוסס על מסמכי מינהל התכנון: כ-20 תוכניות, החלטות ופרוטוקולים של הוועדה המחוזית מ-2008 עד 2023, ותקנוני התוכניות. כל טענה מקושרת למקור.</p>
+
+<nav class="toc" aria-label="תוכן">
+  <a href="#short">התשובה הקצרה</a><a href="#map-sec">המפה</a><a href="#plan">התוכנית המקורית</a><a href="#tavori">תבורי</a><a href="#floors">הקומות</a><a href="#moves">חמשת המהלכים</a><a href="#legal">חוקי?</a><a href="#tl">ציר זמן</a><a href="#open">שאלות פתוחות</a><a href="#src">מקורות</a>
+</nav>
+
+<div class="grid" style="margin-top:22px">
+  <div class="card stat"><b>68 → 346</b><span>יחידות דיור מאושרות בגוש, לפני 2010 ובסוף 2023</span></div>
+  <div class="card stat"><b>‎−60%</b><span>שטחי המסחר והתעסוקה בתבורי, אחרי שהמגרש שונה ב-2010 ממגורים למסחר כדי שיהיה "עוגן מסחרי"</span></div>
+  <div class="card stat"><b>5 → 9</b><span>קומות בתא שטח 808 ברחוב השומר, בשלושה שלבים</span></div>
+  <div class="card stat"><b>"חריגה"</b><span>כך תיארה הוועדה המחוזית ב-2022 את ההתנהלות התכנונית בשני מגרשים בגוש</span></div>
+</div>
+
+<h2 id="short">התשובה הקצרה</h2>
+<div class="answer">
+  <p style="margin:0"><b>כן, הייתה תוכנית קוהרנטית, ואפילו שתיים שהשלימו זו את זו.</b> סביב שנת 2000 הוכנה <b>תוכנית אב לשדרוג מרכז המושבה</b> (מסמך מדיניות, לא תוכנית מחייבת), והוועדה המחוזית אימצה אותה. ממנה נגזרו שתי תוכניות מחייבות: <bdi>ש/1327</bdi> למתחם תבורי (2010) ו<bdi>ש/1476</bdi> ל"מרכז המושבה" שמצפון לו (2017). אחר כך היא שונתה בחמישה מהלכים:</p>
+  <ol>
+    <li><b>היתר שלא תאם את התוכנית.</b> ב-2016 ניתן בתבורי היתר למרכז קניות פתוח עם מגרש חניה גדול מול רחוב הגלעד, במקום החזית הבנויה והחניה התת־קרקעית שהתוכנית קבעה. לשכת התכנון המחוזית כתבה שהיא לא תומכת בבינוי הזה.</li>
+    <li><b>תוכנית שהותאמה להיתר.</b> תוכנית בסמכות הוועדה המקומית החזירה את הכניסה מרחוב הגלעד למגרש החניה, אף שלשכת התכנון הודיעה שלא תתמוך גם בה.</li>
+    <li><b>מסחר הפך למגורים.</b> ב-2018 בוטלו כ-7,000 מ"ר מסחר בתבורי ונוספו 120 דירות. הנימוק: "עודף בשטחי מסחר". זה בדיוק ההפך מהנימוק שבגללו המגרש שונה ממגורים למסחר ב-2010.</li>
+    <li><b>הוועדה המקומית שינתה לעצמה את התוכנית.</b> ב-2021 אושרה תוכנית שהוועדה המקומית הגישה ויזמה בעצמה. היא הוסיפה קומות במגרש 808, הוסיפה 20% שטח למרפסות וביטלה חלק מהוראות העיצוב (למשל חובת גג רעפים והמרווחים המחייבים בין הבניינים).</li>
+    <li><b>הקלות בהיתר, ואז תוכנית שמכשירה אותן.</b> בשני בניינים ברחוב השומר נוספו בהקלה 13 דירות וקומות. כשהשלד כבר עמד, הוגשה תוכנית שמעגנת את מה שנבנה. הוועדה המחוזית אישרה אותה וכתבה: "על אף שמדובר בהתנהלות תכנונית חריגה".</li>
+  </ol>
+  <p style="margin:12px 0 0" class="small muted">כל המהלכים האלה נעשו בכלים שהחוק מתיר. לא מצאתי ראיה למשהו בלתי חוקי. מה שמצאתי הוא דפוס: תכנון מקיף אחד, ואחריו פירוק שלו בשלבים קטנים, שכל אחד מהם נראה טכני ואף אחד מהם לא נבחן מול התמונה כולה. ראו <a href="#legal">חוקי?</a>.</p>
+</div>
+
+<h2 id="map-sec">המפה: מגרש מגרש</h2>
+<p>הגבולות לקוחים משירות המפה של מינהל התכנון. לחצו על מגרש כדי לראות מה אושר בו בכל שלב.</p>
+<div class="seg" role="group" aria-label="צביעת המפה">
+  <button type="button" data-color="change" aria-pressed="true">מה השתנה</button>
+  <button type="button" data-color="use" aria-pressed="false">ייעוד הקרקע</button>
+</div>
+<div class="seg" role="group" aria-label="רקע" style="margin-inline-start:8px">
+  <button type="button" data-base="sat" aria-pressed="true">תצלום אוויר</button>
+  <button type="button" data-base="osm" aria-pressed="false">רחובות</button>
+</div>
+<div class="mapwrap">
+  <div>
+    <div id="map" role="img" aria-label="מפת המגרשים במרכז המושבה ובמתחם תבורי"></div>
+    <div class="legend" id="mapLegend"></div>
+  </div>
+  <div class="card" id="lotPanel" aria-live="polite">
+    <h3>בחרו מגרש</h3>
+    <p class="muted small">המספרים על המפה הם מספרי תאי השטח בתוכנית (801 עד 809 בלב המושבה). תבורי מסומן בסגול.</p>
+    <p class="small">הצפון למעלה. הגוש נטוי מעט: דרך הבנים בצפון, הגלעד בדרום, השומר בצד המזרחי והדקלים בצד המערבי.</p>
+  </div>
+</div>
+
+<h2 id="plan">התוכנית המקורית: מה היה אמור לקום כאן</h2>
+<p>לפני 2010 הגוש היה טלאי של תוכניות ישנות: "מרכז מסחרי" מתקופת המנדט (<bdi>בע/55</bdi>, 1943), "מרכז חנויות" מ-1962, "מבנים ציבוריים במרכז פרדס חנה" (<bdi>ש/19</bdi>, 1969), "מרכז פרדס חנה, קטע צפוני" ו"קטע דרומי" (<bdi>ש/282</bdi>, <bdi>ש/283</bdi>, 1983) ועוד. בפינה הדרומית עמד מאז 1936 מפעל המשקאות של משפחת תבורי, שנסגר ב-1990 ועמד נטוש.</p>
+<div class="grid">
+  <div class="card"><h3>תוכנית האב (סביב 2000)</h3><p class="small" style="margin:0">מסמך מדיניות שהזמינה המועצה, ש"אומץ ע"י הוועדה המחוזית". הוא ייעד את מתחם תבורי ל"עוגן מסחרי מרכזי בישוב", לצד כיכר עירונית בכניסה ל"פארק הוואדי". לא מצאתי עותק ציבורי שלו. כל מה שידוע עליו מגיע מציטוטים בהחלטות של הוועדה המחוזית.</p></div>
+  <div class="card"><h3><bdi>ש/1327</bdi> מתחם תבורי (2010)</h3><p class="small" style="margin:0">שינוי ייעוד ממגורים למסחר ותעסוקה. 10,200 מ"ר שטח עיקרי במבנים של 2 עד 6 קומות. שימור בית משפחת תבורי בסגנון הבינלאומי, הבאר ושדרת הוושינגטוניות. ב-2014 תוקנה (<bdi>353-0078717</bdi>), ורוב החניה הועברה למרתף כדי לפנות את פני הקרקע להולכי רגל.</p></div>
+  <div class="card"><h3><bdi>ש/1476</bdi> מרכז המושבה (2017)</h3><p class="small" style="margin:0">יזמה המועצה עצמה. 36 דונם בין דרך הבנים לתבורי, איחוד וחלוקה בלי הסכמת הבעלים. 212 דירות ו-6,250 מ"ר מסחר ומשרדים בתשעה מגרשים סביב כיכר עירונית. בינוי מדורג: 4 קומות לחזית הדקלים, עד 9 בעורף. שדרה ברוחב 9 מ' בדרך הבנים.</p></div>
+</div>
+<blockquote>"התכנית מציעה לתכנן מחדש את המתחם... על ידי יעוד מגרשים ליעוד מעורב של מגורים (כ-212 יח"ד) ומסחר (כ-6,300 מ"ר), ובמרכזם כיכר עירונית."<cite>הוועדה המחוזית חיפה, ועדת משנה להתנגדויות, 7/3/2016</cite></blockquote>
+<p>תוכנית המתאר הכוללנית של 2017 (<bdi>353-0138586</bdi>) עיגנה את אותו רעיון: בלב המושבה עד 9 קומות בעורף ו-4 בחזית לדקלים ולבנים, ובתבורי "יעוד הקרקע העיקרי יהיה מסחר", עד 6 קומות בעורף ובנייה נמוכה יותר לכיוון הדקלים. אבל יש בה סעיף שחשוב להכיר: אם תוכנית תקפה מתירה יותר, התוכנית התקפה גוברת.</p>
+
+<h2 id="tavori">תבורי: מה התוכנית אמרה ומה נבנה</h2>
+<p>השרטוטים סכמטיים. הם מבוססים על התיאורים המילוליים בפרוטוקולים של הוועדה המחוזית ולא על מדידה. בחרו שלב:</p>
+<div class="seg" role="group" aria-label="שלב בתבורי">
+  <button type="button" data-tav="plan" aria-pressed="true">התוכנית (2010–2014)</button>
+  <button type="button" data-tav="permit" aria-pressed="false">ההיתר (2016)</button>
+  <button type="button" data-tav="now" aria-pressed="false">אחרי 2018</button>
+</div>
+<div class="card" style="margin-top:12px">
+  <div class="tavwrap">
+    <svg id="tav" viewBox="0 0 360 300" width="100%" style="max-width:420px;display:block;margin:auto" role="img" aria-label="שרטוט סכמטי של מתחם תבורי"></svg>
+    <div id="tavText"></div>
+  </div>
+</div>
+
+<h3 style="margin-top:26px">לאן הלכו שטחי המסחר</h3>
+<p class="small muted">שטח עיקרי במ"ר, לפי נתוני מבא"ת. רחפו על מקטע לפרטים.</p>
+<div class="chartbox card" id="mixBox">
+  <div id="mixRows"></div>
+  <div class="legend">
+    <span><i style="background:var(--s1)"></i>מסחר ותעסוקה</span>
+    <span><i style="background:var(--s2)"></i>מגורים</span>
+    <span><i style="background:var(--s3)"></i>שטח לציבור</span>
+  </div>
+  <div class="tip" id="mixTip"></div>
+</div>
+<blockquote>"לאור מיקום השטח... השטח אינו מתאים עוד לשימושי מגורים או תעשיה ויש הצדקה להקים במקום מרכז מסחרי שיהווה עוגן עירוני כלכלי חזק."<cite>הוועדה המחוזית, אישור <bdi>ש/1327</bdi>, 13/4/2010</cite></blockquote>
+<blockquote>"התכנית באה להסדיר תוספת שימוש למגורים במתחם מרכז תבורי, בשל עודף בשטחי מסחר ותעסוקה אשר גדול מהביקוש ביחס לאזור."<cite>דברי ההסבר של תוכנית <bdi>308-0340059</bdi> שהגיש היזם, אושרה 2018</cite></blockquote>
+<p>שמונה שנים בין שני הציטוטים. אותו מגרש עבר ממגורים למסחר בגלל "מחסור במסחר", ובחזרה למגורים בגלל "עודף במסחר". הוועדה המחוזית לא קיבלה את ההצעה המקורית של היזם, שלושה מגדלים של 10 ו-11 קומות, וכתבה עליה שהיא "זרה לסביבה". היא הגבילה את הגובה ל-6 קומות לרחוב השומר ו-7 בנסיגה, ובשלב מאוחר יותר ל-21 מטר בחזית לשומר.</p>
+
+<h2 id="floors">הקומות והדירות, מגרש אחר מגרש</h2>
+<p>כמה קומות מותר בכל מגרש בלב המושבה, בשלושה רגעים: התוכנית של 2017, התוכנית של הוועדה המקומית ב-2021, והמצב אחרי ההקלות והתוכנית המתקנת של 2023.</p>
+<div class="seg" role="group" aria-label="מדד">
+  <button type="button" data-metric="f" aria-pressed="true">קומות</button>
+  <button type="button" data-metric="u" aria-pressed="false">דירות</button>
+</div>
+<div class="chartbox card" style="margin-top:12px">
+  <svg id="bars" viewBox="0 0 720 300" width="100%" role="img" aria-label="תרשים קומות או דירות לפי מגרש ושלב"></svg>
+  <div class="legend">
+    <span><i style="background:var(--s1)"></i><bdi>ש/1476</bdi> (2017)</span>
+    <span><i style="background:var(--s2)"></i><bdi>308-0701094</bdi> של הוועדה המקומית (2021)</span>
+    <span><i style="background:var(--s3)"></i>אחרי ההקלות ו<bdi>308-1048149</bdi> (2023)</span>
+  </div>
+  <div class="tip" id="barTip"></div>
+</div>
+<details style="margin-top:10px"><summary>אותם נתונים כטבלה</summary><div class="body scroll" id="lotTable"></div></details>
+<p class="small muted">בכמה מגרשים (802, 803, 807, 809) התוכנית מ-2017 כבר התירה "קומה אחת נוספת" אם אי אפשר להגיע למספר הדירות. זה לא שינוי מאוחר. במגרש 804 נדונה ב-2023 תוכנית ל-39 דירות ו-7 עד 8 קומות. הוועדה המחוזית החליטה להפקיד אותה, התנאים לא מולאו והטיפול בה הסתיים. היא לא מופיעה בתרשים.</p>
+
+<h2 id="moves">חמשת המהלכים, אחד אחד</h2>
+
+<div class="move">
+  <h3><span class="num">1</span>היתר שלא תאם את התוכנית (תבורי, 2016)</h3>
+  <div class="rows">
+    <b>מה קרה</b><span>ב-21/3/2016 ניתן היתר למרכז מסחרי ומשרדים בשתי קומות, בכ-43% מהשטח העיקרי המותר, ובחזית לגלעד ולפינת הדקלים מגרש חניה פתוח גדול. התוכנית שאושרה ב-2014 העבירה את רוב החניה למרתף "לטובת הולכי הרגל", וקבעה חזיתות בנויות לגלעד ולדקלים עם חצר פנימית.</span>
+    <b>הכלי</b><span>היתר בנייה של הוועדה המקומית.</span>
+    <b>מה עוד נמצא</b><span>לפי הוועדה המחוזית: ההיתר לא הציג את מעבר הולכי הרגל צפונה ולא את השטח שהוקצה למועצה. במתחם השימור הוצבו צוברי גז ותחנת טרנספורמציה, ושולחנות בכיכר העירונית, "בניגוד לתכנית ש/1327". בהיתר שינויים מספטמבר 2016 היו "חנויות החודרות לתוך המתחם לשימור".</span>
+    <b>מי עצר</b><span>הוועדה המחוזית התנתה את אישור התוכנית הבאה בכך שהיזם יגיש היתר שינויים שמבטל את החנויות במתחם השימור.</span>
+  </div>
+  <blockquote>"לשכת התכנון אינה תומכת בבינוי שהוצע, שמייצר במרכז המושבה מרכז קניות פתוח ("ביג") עם מגרש חניה גדול פתוח במקום בינוי עירוני, ושאינו מתאים אורבנית לרחוב עירוני בלב ישוב בכלל, ולמרכז המושבה הייחודי בפרט."<cite>סיכום לשכת התכנון המחוזית, 29/12/2015, מצוטט בפרוטוקול 1/6/2016</cite></blockquote>
+</div>
+
+<div class="move">
+  <h3><span class="num">2</span>תוכנית שהותאמה להיתר (2016)</h3>
+  <div class="rows">
+    <b>מה קרה</b><span>תוכנית <bdi>308-0340034</bdi>, "הסדרת גישה למרכז תבורי", החזירה כניסה לכלי רכב מרחוב הגלעד אל מגרש החניה העילי. את התוכנית הגישה חברת היזם, והיא אושרה בסמכות הוועדה המקומית. היא פורסמה להפקדה ב-20/4/2016 ונכנסה לתוקף ב-16/11/2016.</span>
+    <b>הכלי</b><span>תוכנית בסמכות ועדה מקומית. בתוכנית כזו הוועדה המקומית היא שמחליטה, לא המחוזית.</span>
+    <b>למה זה בעייתי</b><span>ב-18/1/2016, שלושה חודשים לפני ההפקדה, כתבה לשכת התכנון שכל מטרת התוכנית היא "לייצר כניסה לבינוי שלשכת התכנון אינו תומכת בו", ולכן "לא תתמוך בתכנית זו". הוועדה המחוזית תיארה את המצב כ"מספר תהליכים תכנוניים מקבילים שאינם תואמים האחד לשני".</span>
+  </div>
+</div>
+
+<div class="move">
+  <h3><span class="num">3</span>מסחר הפך למגורים (2018)</h3>
+  <div class="rows">
+    <b>מה קרה</b><span>תוכנית <bdi>308-0340059</bdi>: מינוס 6,936 מ"ר מסחר, ועוד 120 דירות על 11,000 מ"ר. היזם ביקש בהתחלה 124 דירות בשלושה מגדלים.</span>
+    <b>הכלי</b><span>תוכנית מפורטת בסמכות הוועדה המחוזית, עם הפקדה והתנגדויות כחוק. הוגשה התנגדות אחת, של שכנים ברחוב הגלעד, והתקבלה חלקית.</span>
+    <b>מה הרוויח הציבור</b><span>הגבלת גובה, ושטח ציבורי שגדל מ-264 ל-500 מ"ר.</span>
+  </div>
+  <blockquote>"גובה המבנים המוצע בתכנית חורג באופן ניכר מהסביבה ומהמותר בתכנית המתאר... גם אופי הבינוי המוצע למגורים של 3 מגדלי מגורים גבוהים מבודדים הוא זר לסביבה ואינו משתלב בה."<cite>הוועדה המחוזית, 1/6/2016</cite></blockquote>
+</div>
+
+<div class="move">
+  <h3><span class="num">4</span>הוועדה המקומית שינתה לעצמה את התוכנית (2020–2021)</h3>
+  <div class="rows">
+    <b>מה קרה</b><span>תוכנית <bdi>308-0701094</bdi>, "שינויים בתכנית מרכז המושבה". מגישה ויזמית: הוועדה המקומית עצמה. היא חלה על כל 22.7 הדונם של <bdi>ש/1476</bdi>.</span>
+    <b>מה היא שינתה</b><span>תוספת 20% שטח עיקרי למרפסות מקורות בכל המגרשים. שלוש קומות חניה תת־קרקעית, גם מתחת לכיכר העירונית. 100% תכסית למרתפים. במגרש 808 משתנה מספר הקומות מ-5 ל-8, באותה תקרת גובה. ביטול חובת גג רעפים. ביטול ההוראה שהמרווח בין הבניינים מחייב לפי תוכנית הבינוי, ובמקומה מינימום של 9 מ'. ביטול האיסור על מחסנים בקיר משותף לדירה. ביטול מגבלת המרפסות ל-25% מרוחב החזית. "גמישות בהוראות העיצוב האדריכלי בהתאם לשיקול דעת הועדה".</span>
+    <b>הכלי</b><span>סעיף 62א לחוק התכנון והבנייה, שמתיר לוועדה מקומית לאשר בעצמה שינויים מסוגים מוגדרים: קווי בניין, תוספת קומות, בינוי, תכסית ושטחי שירות.</span>
+    <b>שקיפות</b><span>ההפקדה פורסמה ברשומות ב-12/7/2020, באמצע תקופת הקורונה. במבא"ת אין רישום של פרסום בעיתונים, של שלט או של התנגדויות. זה החור המוכר של תוכניות בסמכות מקומית: הוועדה המקומית לא מעדכנת את המערכת הארצית.</span>
+  </div>
+</div>
+
+<div class="move">
+  <h3><span class="num">5</span>הקלות בהיתר, ואז תוכנית שמכשירה אותן (2018–2023)</h3>
+  <div class="rows">
+    <b>מה קרה</b><span>בשני בניינים ברחוב השומר (תאי שטח 805 ו-808) ניתנו בהיתרים הקלות: בניין 805 גדל מ-20 ל-26 דירות ובניין 808 מ-22 ל-30, ושני הבניינים קיבלו גם קומות. כשהשלד כבר עמד, ביקשה תוכנית <bdi>308-1048149</bdi> להוסיף עוד דירה אחת ושטחי מסחר. הוועדה המחוזית דרשה שהתוכנית "תעגן ותשקף" את כל מה שניתן בהקלה, ואישרה. התוכנית אושרה ב-2023 ואף אחד לא התנגד.</span>
+    <b>הכלי</b><span>הקלת שבס: תקנה שמתירה לוועדה המקומית להוסיף בהיתר עד 30% דירות בלי להגדיל את השטח, ובתנאים מסוימים גם קומות. ההקלה מחייבת פרסום לשכנים ו-15 יום להתנגדות, אבל הפרסומים האלה לא מגיעים לשום מאגר ארצי.</span>
+    <b>מה הרוויח הציבור</b><span>הוועדה המחוזית דרשה, "כתרומה לציבור בשל תוספת השטחים המבוקשת בפרויקט ועומס הזכויות", שחלק מקומת הקרקע בבניין 808 יהיה שטח ציבורי שיימסר למועצה לפני טופס 4.</span>
+  </div>
+  <blockquote>"הוועדה סבורה כי על אף שמדובר בהתנהלות תכנונית חריגה ניתן לקדם את התכנון המוצע ולכלול בו גם מענה ציבורי לרווחת תושבי השכונה."<cite>הוועדה המחוזית חיפה, ועדת משנה א', 3/8/2022</cite></blockquote>
+</div>
+
+<div class="side card" style="background:var(--warn-bg);color:var(--warn-ink);border-color:transparent">
+  <h3>ועוד פרט אחד: איפה יושבת הוועדה המקומית</h3>
+  <p style="margin:0">הכתובת של הוועדה המקומית לתכנון ובנייה היום היא "רח' הגלעד 1 מרכז תבורי קומה 1", כלומר בבניין של היזם שהיא דנה בתוכניות ובהיתרים שלו. ב-2023 הוגשה תוכנית (<bdi>308-1080514</bdi>) שהוועדה המקומית רשומה בה כאחת היזמות, יחד עם חברת מרכז תבורי. התוכנית ביקשה לרשום "משרד קיים" של כ-170 מ"ר במרכז תבורי כשטח ציבורי "לטובת המועצה". לא מצאתי אם הוועדה שוכרת את המשרד, אם הוא חלק מהשטח הציבורי שהתוכניות חייבו את היזם למסור למועצה, או משהו אחר. זו שאלה שצריך לשאול את המועצה, ולא הייתי מסיק ממנה שום דבר לפני שיש תשובה.</p>
+</div>
+
+<h2 id="legal">אז זה חוקי?</h2>
+<p>תשובה כנה: כל מהלך לחוד, כנראה כן. כל כלי שהופעל כאן קיים בחוק: היתר, הקלה, תוכנית בסמכות מקומית, תוכנית שמתקנת תוכנית. במקרה הקשה ביותר, ההיתר מ-2016, הוועדה המחוזית לא ביטלה אותו אלא דרשה היתר שינויים. אבל "חוקי" זה לא אותו דבר כמו "בסדר". מה שהמסמכים מראים:</p>
+<div class="verdict">
+  <div class="card"><span class="chip bad">דפוס</span><h3 style="margin-top:8px">ההיתר קודם לתוכנית</h3><p class="small" style="margin:0">פעמיים בגוש הזה ניתן היתר שלא תאם את התוכנית, והתוכנית הותאמה אליו אחר כך: מגרש החניה בתבורי ב-2016, והקלות הדירות והקומות ברחוב השומר. גם הוועדה המחוזית, הגוף המפקח, השתמשה בשתי ההזדמנויות במילים "סתירות" ו"חריגה".</p></div>
+  <div class="card"><span class="chip warn">פרוסות</span><h3 style="margin-top:8px">שינוי גדול שמחולק לקטנים</h3><p class="small" style="margin:0">מ-2017 אושרו בגוש שלוש תוכניות נוספות, ועוד אחת הגיעה עד להחלטה על הפקדה. כל אחת קטנה: "הסדרת גישה", "שינויים בתכנית", "תוספת יחידה אחת". אף אחת לא נבחנה מול הגוש כולו. גם הוועדה המחוזית העירה ב-2016 שהפרוגרמה לשטחי ציבור של תבורי "לא לוקחת בחשבון" את 212 הדירות של לב המושבה.</p></div>
+  <div class="card"><span class="chip warn">שקיפות</span><h3 style="margin-top:8px">רוב השינויים עברו במקום שהציבור לא רואה</h3><p class="small" style="margin:0">הקלות, היתרים ותוכניות בסמכות מקומית מתפרסמים רק בשלט, בעיתון מקומי או באתר הוועדה שמאחורי קפצ'ה. מאז 2017 רק לתוכנית אחת (2018) הוגשה התנגדות. לאחרות אין רישום של התנגדויות בכלל.</p></div>
+  <div class="card"><span class="chip ok">לזכותם</span><h3 style="margin-top:8px">המחוזית עצרה חלק מזה</h3><p class="small" style="margin:0">שלושת המגדלים לא נבנו. גובה הבניינים לשומר הוגבל ל-21 מ'. החנויות במתחם השימור בוטלו. השטח הציבורי גדל. בלי הוועדה המחוזית התוצאה הייתה רחוקה עוד יותר מהתוכנית המקורית.</p></div>
+</div>
+
+<h2 id="tl">ציר זמן</h2>
+<div class="seg" role="group" aria-label="סינון ציר הזמן">
+  <button type="button" data-f="all" aria-pressed="true">הכל</button>
+  <button type="button" data-f="dist" aria-pressed="false">ועדה מחוזית</button>
+  <button type="button" data-f="local" aria-pressed="false">ועדה מקומית</button>
+  <button type="button" data-f="permit" aria-pressed="false">היתרים</button>
+  <button type="button" data-f="hist" aria-pressed="false">רקע</button>
+</div>
+<p class="small muted" style="margin-top:8px">לחצו על שורה כדי לפתוח פרטים.</p>
+<ol class="timeline" id="timeline"></ol>
+
+<h2 id="open">מה עוד לא ידוע ואיך בודקים</h2>
+<p class="small muted">אפשר לסמן מה כבר נבדק. הסימון נשמר רק בדפדפן הזה.</p>
+<div class="card" id="checks">
+  <div class="check"><input type="checkbox" id="q1"><label for="q1"><b>מה מעמד המשרדים של הוועדה המקומית במרכז תבורי?</b><br><span class="small muted">בקשת חופש מידע למועצה: הסכם השכירות או ההקצאה, דמי שכירות, ממתי, והאם זה השטח הציבורי של 264 או 500 מ"ר שהתוכניות חייבו להעביר למועצה. מה עלה בגורל 170 המ"ר של <bdi>308-1080514</bdi>?</span></label></div>
+  <div class="check"><input type="checkbox" id="q2"><label for="q2"><b>הקלות השבס בבניינים 805 ו-808</b><br><span class="small muted">היתרים 20180414, 201990375, 20210442. באתר הוועדה (vaada.phk.org.il, חיפוש בקשה לפי מספר) אפשר לראות את פרסום ההקלה ואם הוגשו התנגדויות.</span></label></div>
+  <div class="check"><input type="checkbox" id="q3"><label for="q3"><b>שני עררים שרשומים במבא"ת</b><br><span class="small muted">ערר <bdi>פחכ/0824/82014</bdi> על <bdi>308-1048149</bdi>, וערר <bdi>בלמ/פחכ/0822/82522</bdi> על החלטה לפי <bdi>ש/1476</bdi>. ההחלטות נמצאות במאגר ועדות הערר (gov.il). מי עירער, על מה, ומה הוחלט?</span></label></div>
+  <div class="check"><input type="checkbox" id="q4"><label for="q4"><b>הכיכר העירונית והחניון שמתחתיה</b><br><span class="small muted">התוכנית של 2021 התירה 3 קומות חניה מתחת לכיכר. מי אמור לבנות את הכיכר, מתי, ומה מצבה היום? כדאי להסתכל בשטח ולשאול את מהנדס/ת המועצה.</span></label></div>
+  <div class="check"><input type="checkbox" id="q5"><label for="q5"><b>השדרה בדרך הבנים ו-25 החניות הציבוריות</b><br><span class="small muted">תוכנית המתאר דורשת רצועה מגוננת ברוחב 9 מ' ולפחות 25 מקומות חניה ציבוריים. האם זה בוצע?</span></label></div>
+  <div class="check"><input type="checkbox" id="q6"><label for="q6"><b>סקר הקרקע של המפעל</b><br><span class="small muted">ב-2010 התנתה הוועדה המחוזית את ההיתר בסקר זיהום קרקע (Phase 1) בגלל עשרות שנות תעשייה במקום. האם בוצע ומה נמצא? אפשר לשאול את המשרד להגנת הסביבה.</span></label></div>
+  <div class="check"><input type="checkbox" id="q7"><label for="q7"><b>מה הוצג לציבור ב-2020</b><br><span class="small muted">פרוטוקול הוועדה המקומית שבו הוחלט להפקיד את <bdi>308-0701094</bdi>, והאם הוגשו לה התנגדויות. הפרוטוקולים של הוועדה המקומית לא נמצאים בארכיון הציבורי שבדקנו.</span></label></div>
+</div>
+<div class="card" style="margin-top:14px">
+  <h3>בהמשך הרחוב: מתחם החירום</h3>
+  <p class="small" style="margin:0">ממש מצפון לגוש, בצומת הנדיב והבנים, נמצאת בבדיקה תוכנית <bdi>308-1143700</bdi> "מתחם החירום" (מד"א, משטרה ועוד). לפי מטרותיה היא כוללת "ביטול שצ"פ הנוטר". היא עוד לא הופקדה. כשתופקד, ייפתח חלון של 60 יום להתנגדויות, וזה הרגע לשים לב.</p>
+</div>
+
+<h2 id="src">מקורות</h2>
+<p class="small muted">כל התוכניות במבא"ת (מערכת התכנון הארצית). בכל דף תוכנית יש לשונית "החלטות" עם הפרוטוקולים המלאים.</p>
+<ul class="sources">
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3074499/310"><bdi>ש/1327</bdi> מתחם תבורי (2010)</a>: החלטות 28/5/2008, 5/1/2010, 13/4/2010</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000233739/310"><bdi>353-0078717</bdi> תוספת שטחי שירות למתחם תבורי (2014)</a></li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000369965/310"><bdi>308-0340034</bdi> הסדרת גישה למרכז תבורי (2016, סמכות מקומית)</a></li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000217225/310"><bdi>ש/1476</bdi> פרדס חנה כרכור, מרכז המושבה (2017)</a>: החלטות 2012–2016, טבלת זכויות</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000369971/310"><bdi>308-0340059</bdi> תוספת מגורים במרכז תבורי (2018)</a>: החלטות 1/6/2016 (כולל עמדת לשכת התכנון ותיאור ההיתר), 26/7/2017, 15/1/2018</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000973031/310"><bdi>308-0701094</bdi> שינויים בתכנית מרכז המושבה (2021, סמכות מקומית)</a>: הוראות התוכנית</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3005200684/310"><bdi>308-1048149</bdi> תוספת זכויות ויח"ד, חלקות 109, 171 (2023)</a>: החלטה 3/8/2022</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3005219790/310"><bdi>308-1080514</bdi> הוראות בנייה במתחם תבורי ובתא שטח 804 (2023, הטיפול הסתיים)</a>: החלטה 31/5/2023</li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3000264259/310"><bdi>353-0138586</bdi> תוכנית המתאר הכוללנית (2017)</a></li>
+  <li><a href="https://mavat.iplan.gov.il/SV4/1/3005259338/310"><bdi>308-1143700</bdi> מתחם החירום (בבדיקה)</a></li>
+  <li>גבולות המגרשים: שירות Xplan של מינהל התכנון, שכבות "קווים כחולים" ו"ייעודי קרקע"</li>
+  <li><a href="https://vaada.phk.org.il/">אתר הוועדה המקומית</a> (הכתובת במרכז תבורי)</li>
+  <li><a href="https://pardespedia.info/index.php?title=%D7%AA%D7%91%D7%95%D7%A8%D7%99">פרדספדיה: תבורי</a>, ההיסטוריה של המפעל</li>
+</ul>
+
+<footer>
+  נכתב באוקטובר 2026 במסגרת "רוצים שקיפות". הדף מבוסס רק על מסמכים ציבוריים, ואינו מזכיר שמות של אנשים פרטיים. ייתכנו טעויות בקריאת מסמכים סרוקים. מצאתם טעות? כדאי לבדוק מול הפרוטוקול המקורי במבא"ת.
+</footer>
+</main>
+<button class="themebtn" id="themeBtn" type="button">מצב תצוגה</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var GEO = {"plans":[{"n":"308-0340034","r":[[[34.974329,32.472876],[34.974313,32.472877],[34.974297,32.47288],[34.974282,32.472885],[34.974268,32.472891],[34.974256,32.4729],[34.974245,32.47291],[34.974236,32.472921],[34.974147,32.47305],[34.974098,32.473121],[34.974086,32.473138],[34.974576,32.473184],[34.974614,32.473188],[34.974643,32.47319],[34.974641,32.473203],[34.974634,32.473248],[34.974586,32.473561],[34.974952,32.473602],[34.975063,32.473614],[34.975019,32.473913],[34.975263,32.473952],[34.975376,32.473767],[34.975444,32.473656],[34.975497,32.47357],[34.975578,32.473436],[34.975638,32.473338],[34.975717,32.473209],[34.975724,32.473195],[34.975728,32.473181],[34.975729,32.473166],[34.975727,32.473151],[34.975723,32.473137],[34.975715,32.473123],[34.975706,32.473111],[34.975694,32.4731],[34.97568,32.473091],[34.975664,32.473084],[34.975602,32.473062],[34.975505,32.473034],[34.975474,32.473024],[34.975414,32.473007],[34.975372,32.472997],[34.975283,32.472975],[34.97522,32.472961],[34.97502,32.472926],[34.974813,32.472902],[34.974771,32.472897],[34.974595,32.472884],[34.974437,32.472879],[34.974331,32.472876],[34.974329,32.472876]]]},{"n":"353-0078717","r":[[[34.975968,32.473013],[34.976002,32.472957],[34.975856,32.4729],[34.975708,32.472848],[34.975556,32.472803],[34.975403,32.472763],[34.975284,32.472733],[34.975176,32.472714],[34.975068,32.472695],[34.974966,32.472681],[34.974847,32.472666],[34.974551,32.472652],[34.974537,32.47265],[34.974523,32.472647],[34.97451,32.472641],[34.974499,32.472633],[34.974489,32.472624],[34.974481,32.472614],[34.974475,32.472603],[34.974472,32.472591],[34.974471,32.472579],[34.974472,32.472567],[34.974476,32.472555],[34.974482,32.472544],[34.974516,32.472495],[34.974485,32.472494],[34.97448,32.472494],[34.974305,32.472497],[34.974264,32.472504],[34.97416,32.472521],[34.974157,32.472522],[34.974066,32.472538],[34.973826,32.472579],[34.973623,32.472629],[34.973421,32.472679],[34.973379,32.472672],[34.97327,32.472579],[34.973187,32.47265],[34.973198,32.472662],[34.973204,32.472672],[34.973209,32.472682],[34.973211,32.472693],[34.973211,32.472705],[34.973209,32.472717],[34.973204,32.472729],[34.973198,32.47274],[34.973189,32.47275],[34.973178,32.472758],[34.973166,32.472765],[34.973136,32.472775],[34.973021,32.472817],[34.972883,32.472867],[34.972917,32.472936],[34.972964,32.472921],[34.973017,32.472907],[34.973071,32.472897],[34.973126,32.47289],[34.973201,32.472885],[34.973204,32.472885],[34.973208,32.472885],[34.973211,32.472885],[34.973214,32.472887],[34.973217,32.472888],[34.973219,32.47289],[34.973221,32.472892],[34.973223,32.472894],[34.973229,32.472903],[34.973243,32.47292],[34.97326,32.472935],[34.973279,32.472949],[34.973282,32.47295],[34.973284,32.472952],[34.973286,32.472955],[34.973287,32.472958],[34.973288,32.47296],[34.973288,32.472963],[34.973288,32.472966],[34.973287,32.472969],[34.973286,32.472972],[34.973284,32.472974],[34.973274,32.472985],[34.973263,32.472995],[34.973245,32.47301],[34.973323,32.473096],[34.973466,32.473002],[34.973486,32.472994],[34.973501,32.472981],[34.973533,32.472977],[34.973559,32.472976],[34.973581,32.472984],[34.973608,32.472997],[34.973768,32.473133],[34.97388,32.473224],[34.973714,32.473464],[34.97384,32.473478],[34.974589,32.473561],[34.974952,32.473602],[34.975063,32.473614],[34.975019,32.473913],[34.975171,32.473937],[34.975383,32.473972],[34.975519,32.473749],[34.975642,32.473548],[34.975875,32.473166],[34.97591,32.473109],[34.975939,32.473061],[34.975968,32.473013]]]},{"n":"308-0340059","r":[[[34.974305,32.47288],[34.97429,32.472881],[34.974275,32.472884],[34.974261,32.472889],[34.974248,32.472897],[34.974237,32.472906],[34.974228,32.472916],[34.974089,32.47312],[34.974045,32.473185],[34.97401,32.473237],[34.973841,32.473484],[34.974955,32.473604],[34.975065,32.473616],[34.975021,32.473915],[34.975266,32.473953],[34.975647,32.473324],[34.975727,32.473191],[34.975732,32.47318],[34.975735,32.473169],[34.975736,32.473157],[34.975735,32.473146],[34.975732,32.473135],[34.975726,32.473124],[34.975719,32.473114],[34.97571,32.473106],[34.975699,32.473098],[34.975687,32.473093],[34.975684,32.473092],[34.975601,32.473062],[34.975507,32.473035],[34.975474,32.473024],[34.975413,32.473008],[34.975282,32.472976],[34.975269,32.472973],[34.975218,32.472963],[34.975018,32.472928],[34.974811,32.472905],[34.974769,32.4729],[34.974593,32.472887],[34.974435,32.472883],[34.974316,32.47288],[34.974305,32.47288]]]},{"n":"308-0406462","r":[[[34.976853,32.476676],[34.976859,32.476672],[34.977298,32.476821],[34.977355,32.476842],[34.977416,32.47676],[34.977454,32.476774],[34.977494,32.476777],[34.977539,32.476769],[34.977569,32.476754],[34.977582,32.476744],[34.977595,32.476733],[34.977808,32.476457],[34.977392,32.476328],[34.976985,32.476203],[34.976726,32.476123],[34.976661,32.476126],[34.976597,32.476136],[34.976535,32.476153],[34.976476,32.476176],[34.976421,32.476205],[34.97637,32.47624],[34.976325,32.47628],[34.976122,32.476627],[34.976122,32.476628],[34.976008,32.476811],[34.976301,32.476929],[34.976607,32.477052],[34.976674,32.476953],[34.976731,32.476865],[34.976763,32.476818],[34.976853,32.476676]]]},{"n":"308-0701094","r":[[[34.974595,32.475213],[34.974749,32.474829],[34.974832,32.474692],[34.974902,32.474578],[34.974939,32.474517],[34.975083,32.474278],[34.975158,32.474309],[34.975201,32.47424],[34.975295,32.473958],[34.975266,32.473953],[34.975292,32.473911],[34.975028,32.47387],[34.975065,32.473616],[34.974955,32.473604],[34.974556,32.473561],[34.974206,32.473523],[34.973841,32.473484],[34.973692,32.473704],[34.97355,32.473927],[34.973975,32.474016],[34.973866,32.474269],[34.973755,32.474524],[34.973716,32.474512],[34.973357,32.474401],[34.973251,32.474369],[34.973211,32.474356],[34.973038,32.474611],[34.973107,32.474761],[34.973148,32.474775],[34.97332,32.474832],[34.973491,32.474889],[34.973485,32.474898],[34.973477,32.474906],[34.973468,32.474913],[34.973457,32.474919],[34.973446,32.474923],[34.973608,32.474973],[34.973599,32.474969],[34.97359,32.474965],[34.973612,32.474921],[34.973809,32.474979],[34.974104,32.475067],[34.97416,32.475084],[34.974281,32.47512],[34.974399,32.475155],[34.974595,32.475213]]]},{"n":"308-1048149","r":[[[34.974504,32.474456],[34.974434,32.474435],[34.974324,32.474698],[34.974639,32.474795],[34.974749,32.474829],[34.974901,32.474578],[34.974504,32.474456]],[[34.974844,32.474179],[34.974684,32.47412],[34.974554,32.474363],[34.974938,32.474517],[34.975082,32.474277],[34.974844,32.474179]]]},{"n":"308-1143700","r":[[[34.976717,32.475127],[34.976858,32.474889],[34.976851,32.474899],[34.976841,32.474908],[34.976831,32.474915],[34.976819,32.474921],[34.976806,32.474925],[34.976793,32.474928],[34.976779,32.474928],[34.976765,32.474927],[34.976752,32.474924],[34.976739,32.474919],[34.976728,32.474912],[34.976597,32.474827],[34.976459,32.474747],[34.976284,32.474664],[34.976229,32.474642],[34.976103,32.474593],[34.975991,32.474562],[34.975889,32.474546],[34.97586,32.474635],[34.975859,32.474636],[34.975723,32.475042],[34.975908,32.475104],[34.975927,32.475149],[34.975931,32.475166],[34.975968,32.475297],[34.97598,32.475413],[34.975891,32.475623],[34.975873,32.475665],[34.976088,32.475731],[34.976177,32.475758],[34.976317,32.475801],[34.976384,32.475688],[34.976462,32.475557],[34.976575,32.475367],[34.976716,32.475129],[34.976717,32.475127]]]}],"cells":[{"p":"353-0078717","u":"דרך מאושרת","num":"2001","area":4565,"r":[[[34.975968,32.473013],[34.976002,32.472957],[34.975856,32.4729],[34.975708,32.472848],[34.975556,32.472803],[34.975403,32.472763],[34.975284,32.472733],[34.975176,32.472714],[34.975068,32.472695],[34.974966,32.472681],[34.974847,32.472666],[34.974551,32.472652],[34.974488,32.472744],[34.974532,32.472754],[34.974579,32.472758],[34.974605,32.472759],[34.974788,32.472773],[34.974832,32.472779],[34.975045,32.472803],[34.975253,32.47284],[34.975322,32.472855],[34.975459,32.472888],[34.975655,32.472945],[34.975736,32.472974],[34.975737,32.472975],[34.97574,32.472976],[34.975741,32.472976],[34.975742,32.472977],[34.975743,32.472978],[34.975743,32.472978],[34.975744,32.472979],[34.975744,32.47298],[34.975744,32.472981],[34.975744,32.472982],[34.975744,32.472983],[34.975744,32.472983],[34.975743,32.472984],[34.975735,32.472996],[34.975734,32.472997],[34.975733,32.472997],[34.975733,32.472998],[34.975732,32.472998],[34.975731,32.472999],[34.97573,32.472999],[34.975729,32.472999],[34.975728,32.472999],[34.975727,32.472998],[34.975726,32.472998],[34.975725,32.472997],[34.975706,32.472985],[34.975684,32.472975],[34.975647,32.472962],[34.975452,32.472905],[34.975316,32.472872],[34.975248,32.472857],[34.975042,32.47282],[34.97483,32.472796],[34.974786,32.472791],[34.974603,32.472777],[34.974535,32.472775],[34.974507,32.472773],[34.97448,32.472769],[34.974437,32.472879],[34.974595,32.472884],[34.974808,32.472901],[34.97502,32.472926],[34.975252,32.472968],[34.975414,32.473007],[34.975508,32.473034],[34.975602,32.473062],[34.975633,32.473073],[34.975664,32.473084],[34.97568,32.473091],[34.975694,32.4731],[34.975706,32.473111],[34.975715,32.473123],[34.975723,32.473137],[34.975727,32.473151],[34.975729,32.473166],[34.975728,32.473181],[34.975724,32.473195],[34.975717,32.473209],[34.975648,32.473322],[34.975579,32.473435],[34.975497,32.473569],[34.975445,32.473653],[34.975372,32.473773],[34.975263,32.473952],[34.975383,32.473972],[34.975519,32.473749],[34.975642,32.473548],[34.975875,32.473166],[34.97591,32.473109],[34.975939,32.473061],[34.975968,32.473013]]]},{"p":"353-0078717","u":"מסחר ותעסוקה","num":"1001","area":8787,"r":[[[34.975724,32.47314],[34.975717,32.473126],[34.975707,32.473113],[34.975695,32.473101],[34.975681,32.473092],[34.975664,32.473084],[34.975633,32.473073],[34.975602,32.473062],[34.975508,32.473034],[34.975414,32.473007],[34.975252,32.472968],[34.97502,32.472926],[34.974808,32.472901],[34.974595,32.472884],[34.974437,32.472879],[34.974348,32.473008],[34.97426,32.473136],[34.9741,32.473119],[34.974088,32.473135],[34.974645,32.473197],[34.974589,32.473561],[34.974952,32.473602],[34.975063,32.473614],[34.975019,32.473913],[34.975171,32.473937],[34.975263,32.473952],[34.975372,32.473773],[34.975445,32.473653],[34.975497,32.473569],[34.975579,32.473435],[34.975648,32.473322],[34.975717,32.473209],[34.975724,32.473196],[34.975728,32.473182],[34.975729,32.473168],[34.975728,32.473154],[34.975724,32.47314]]]},{"p":"353-0078717","u":"שטח ציבורי פתוח","num":"3002","area":1019,"r":[[[34.97404,32.472811],[34.974043,32.472806],[34.974045,32.472801],[34.974045,32.472796],[34.974045,32.472791],[34.974044,32.472786],[34.974041,32.472781],[34.974029,32.472756],[34.974021,32.472729],[34.974018,32.472717],[34.974011,32.472706],[34.974003,32.472695],[34.973993,32.472687],[34.973981,32.472679],[34.973967,32.472674],[34.973953,32.472671],[34.973938,32.472669],[34.97393,32.47267],[34.973922,32.472671],[34.973866,32.472682],[34.973657,32.472733],[34.973646,32.472737],[34.973635,32.472742],[34.973626,32.472749],[34.973618,32.472756],[34.973611,32.472765],[34.973607,32.472775],[34.973604,32.472785],[34.973603,32.472795],[34.973604,32.472805],[34.973607,32.472815],[34.973612,32.472824],[34.973619,32.472833],[34.973627,32.47284],[34.973751,32.472938],[34.973883,32.47304],[34.97404,32.472811]]]},{"p":"308-0340059","u":"שטח ציבורי פתוח","num":"4","area":122,"r":[[[34.975292,32.473911],[34.975028,32.47387],[34.975021,32.473915],[34.975266,32.473953],[34.975292,32.473911]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"804","area":1755,"r":[[[34.973983,32.4743],[34.973867,32.474558],[34.974214,32.474664],[34.974324,32.474401],[34.974119,32.474338],[34.974213,32.474115],[34.974084,32.474062],[34.973975,32.474016],[34.973866,32.474269],[34.973983,32.4743]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"806","area":1581,"r":[[[34.974481,32.474038],[34.974556,32.473561],[34.974206,32.473523],[34.974153,32.473876],[34.974168,32.473912],[34.974481,32.474038]]]},{"p":"308-0701094","u":"ככר עירונית","num":"405","area":483,"r":[[[34.973107,32.474761],[34.973125,32.474731],[34.97317,32.474655],[34.973216,32.474577],[34.97326,32.474503],[34.973318,32.474404],[34.973251,32.474375],[34.973251,32.474369],[34.973211,32.474356],[34.973038,32.474611],[34.973107,32.474761]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"807","area":1914,"r":[[[34.973841,32.473484],[34.973692,32.473704],[34.973779,32.473758],[34.973726,32.473848],[34.974115,32.474006],[34.974168,32.473912],[34.974153,32.473876],[34.974206,32.473523],[34.973841,32.473484]]]},{"p":"308-1048149","u":"עירוני מעורב","num":"808","area":1215,"r":[[[34.974844,32.474179],[34.974684,32.47412],[34.974554,32.474363],[34.974938,32.474517],[34.975082,32.474277],[34.974844,32.474179]]]},{"p":"308-1143700","u":"מבנים ומוסדות ציבור","num":"403","area":2010,"r":[[[34.976136,32.475089],[34.976317,32.474784],[34.976235,32.474744],[34.976194,32.474728],[34.976062,32.474678],[34.975966,32.474651],[34.97586,32.474635],[34.975859,32.474636],[34.975723,32.475042],[34.975908,32.475104],[34.975927,32.475149],[34.975931,32.475166],[34.976136,32.475089]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"808","area":1217,"r":[[[34.974684,32.47412],[34.974554,32.474363],[34.974939,32.474517],[34.975083,32.474278],[34.974844,32.474179],[34.974684,32.47412]]]},{"p":"308-0701094","u":"ככר עירונית","num":"401","area":633,"r":[[[34.97355,32.473927],[34.973975,32.474016],[34.974084,32.474062],[34.974115,32.474006],[34.973726,32.473848],[34.973779,32.473758],[34.973692,32.473704],[34.97355,32.473927]]]},{"p":"308-0701094","u":"שטח פרטי פתוח","num":"421","area":697,"r":[[[34.973809,32.474979],[34.974104,32.475067],[34.974269,32.474681],[34.974214,32.474664],[34.974117,32.474889],[34.97392,32.474831],[34.973862,32.474854],[34.973809,32.474979]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"803A","area":1408,"r":[[[34.974465,32.474999],[34.974441,32.475057],[34.974399,32.475155],[34.974595,32.475213],[34.974749,32.474829],[34.974639,32.474795],[34.974324,32.474698],[34.974242,32.474889],[34.974429,32.474945],[34.974435,32.474947],[34.974465,32.474999]]]},{"p":"308-1048149","u":"עירוני מעורב","num":"805","area":1382,"r":[[[34.974504,32.474456],[34.974434,32.474435],[34.974324,32.474698],[34.974639,32.474795],[34.974749,32.474829],[34.974901,32.474578],[34.974504,32.474456]]]},{"p":"353-0078717","u":"ככר עירונית","num":"4001","area":447,"r":[[[34.974242,32.472912],[34.9741,32.473119],[34.97426,32.473136],[34.974348,32.473008],[34.974437,32.472879],[34.974318,32.472876],[34.974305,32.472876],[34.974293,32.472879],[34.97428,32.472882],[34.974269,32.472888],[34.974258,32.472895],[34.974249,32.472903],[34.974242,32.472912]]]},{"p":"353-0078717","u":"שטח ציבורי פתוח","num":"3001","area":260,"r":[[[34.974832,32.472779],[34.974788,32.472773],[34.974605,32.472759],[34.974579,32.472758],[34.974537,32.472755],[34.974496,32.472747],[34.974456,32.472734],[34.974456,32.472734],[34.974455,32.472734],[34.974455,32.472733],[34.974454,32.472733],[34.974453,32.472734],[34.974452,32.472734],[34.974451,32.472734],[34.97445,32.472735],[34.97445,32.472735],[34.974449,32.472736],[34.974438,32.472754],[34.974438,32.472754],[34.974437,32.472755],[34.974437,32.472756],[34.974437,32.472756],[34.974437,32.472757],[34.974438,32.472758],[34.974438,32.472758],[34.974439,32.472759],[34.974439,32.47276],[34.97444,32.47276],[34.974441,32.47276],[34.974487,32.472771],[34.974535,32.472775],[34.974603,32.472777],[34.974786,32.472791],[34.97483,32.472796],[34.975042,32.47282],[34.975248,32.472857],[34.975316,32.472872],[34.975452,32.472905],[34.975647,32.472962],[34.975684,32.472975],[34.975706,32.472985],[34.975725,32.472997],[34.975726,32.472998],[34.975727,32.472998],[34.975728,32.472999],[34.975729,32.472999],[34.97573,32.472999],[34.975731,32.472999],[34.975732,32.472998],[34.975733,32.472998],[34.975733,32.472997],[34.975734,32.472997],[34.975735,32.472996],[34.975743,32.472984],[34.975744,32.472983],[34.975744,32.472983],[34.975744,32.472982],[34.975744,32.472981],[34.975744,32.47298],[34.975744,32.472979],[34.975743,32.472978],[34.975743,32.472978],[34.975742,32.472977],[34.975741,32.472976],[34.97574,32.472976],[34.975737,32.472975],[34.975736,32.472974],[34.975655,32.472945],[34.975459,32.472888],[34.975322,32.472855],[34.975253,32.47284],[34.975045,32.472803],[34.974832,32.472779]]]},{"p":"308-0340059","u":"ככר עירונית","num":"2","area":471,"r":[[[34.974228,32.472916],[34.974089,32.47312],[34.974263,32.473136],[34.974435,32.472883],[34.974316,32.47288],[34.974301,32.47288],[34.974287,32.472881],[34.974272,32.472885],[34.974259,32.47289],[34.974247,32.472897],[34.974236,32.472906],[34.974228,32.472916]]]},{"p":"308-0701094","u":"דרך מאושרת","num":"612","area":192,"r":[[[34.973612,32.474921],[34.973741,32.474636],[34.973709,32.474622],[34.973561,32.474872],[34.973556,32.474883],[34.973553,32.474894],[34.973552,32.474906],[34.973553,32.474917],[34.973557,32.474929],[34.973562,32.47494],[34.97357,32.474949],[34.973579,32.474958],[34.97359,32.474965],[34.973612,32.474921]]]},{"p":"308-0701094","u":"דרך מאושרת","num":"604","area":344,"r":[[[34.973755,32.474524],[34.973867,32.474558],[34.973983,32.4743],[34.973866,32.474269],[34.973755,32.474524]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"805","area":1383,"r":[[[34.974434,32.474435],[34.974324,32.474698],[34.974639,32.474795],[34.974749,32.474829],[34.974832,32.474692],[34.974902,32.474578],[34.974504,32.474456],[34.974434,32.474435]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"803B","area":143,"r":[[[34.974203,32.474983],[34.97416,32.475084],[34.974281,32.47512],[34.974323,32.475019],[34.974203,32.474983]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"801","area":1800,"r":[[[34.97332,32.474832],[34.973491,32.474889],[34.973537,32.474812],[34.973583,32.474734],[34.973627,32.47466],[34.973716,32.474512],[34.973357,32.474401],[34.973251,32.474369],[34.973251,32.474375],[34.973318,32.474404],[34.97326,32.474503],[34.973216,32.474577],[34.97317,32.474655],[34.973125,32.474731],[34.973107,32.474761],[34.973162,32.47478],[34.97332,32.474832]]]},{"p":"308-0701094","u":"ככר עירונית","num":"402","area":1958,"r":[[[34.974379,32.474418],[34.974434,32.474435],[34.974504,32.474456],[34.974554,32.474363],[34.974684,32.47412],[34.974481,32.474038],[34.974168,32.473912],[34.974115,32.474006],[34.974084,32.474062],[34.974213,32.474115],[34.974119,32.474338],[34.974324,32.474401],[34.974379,32.474418]]]},{"p":"353-0078717","u":"מסחר ותעסוקה","num":"1002","area":2496,"r":[[[34.974645,32.473197],[34.974088,32.473135],[34.974019,32.473236],[34.973935,32.473357],[34.973852,32.473479],[34.974589,32.473561],[34.974645,32.473197]]]},{"p":"353-0078717","u":"דרך מאושרת","num":"2002","area":5870,"r":[[[34.9741,32.473119],[34.974242,32.472912],[34.974249,32.472903],[34.974258,32.472895],[34.974269,32.472888],[34.97428,32.472882],[34.974293,32.472879],[34.974305,32.472876],[34.974318,32.472876],[34.974437,32.472879],[34.97448,32.472769],[34.974441,32.47276],[34.97444,32.47276],[34.974439,32.47276],[34.974439,32.472759],[34.974438,32.472758],[34.974438,32.472758],[34.974437,32.472757],[34.974437,32.472756],[34.974437,32.472756],[34.974437,32.472755],[34.974438,32.472754],[34.974438,32.472754],[34.974449,32.472736],[34.97445,32.472735],[34.97445,32.472735],[34.974451,32.472734],[34.974452,32.472734],[34.974453,32.472734],[34.974454,32.472733],[34.974455,32.472733],[34.974456,32.472734],[34.974456,32.472734],[34.974488,32.472744],[34.974551,32.472652],[34.974537,32.47265],[34.974523,32.472647],[34.97451,32.472641],[34.974499,32.472633],[34.974489,32.472624],[34.974481,32.472614],[34.974475,32.472603],[34.974472,32.472591],[34.974471,32.472579],[34.974472,32.472567],[34.974476,32.472555],[34.974482,32.472544],[34.974516,32.472495],[34.97448,32.472494],[34.974305,32.472497],[34.974264,32.472504],[34.974157,32.472522],[34.974066,32.472538],[34.973826,32.472579],[34.973623,32.472629],[34.973421,32.472679],[34.973379,32.472672],[34.97327,32.472579],[34.973187,32.47265],[34.973198,32.472662],[34.973204,32.472672],[34.973209,32.472682],[34.973211,32.472693],[34.973211,32.472705],[34.973209,32.472717],[34.973204,32.472729],[34.973198,32.47274],[34.973189,32.47275],[34.973178,32.472758],[34.973166,32.472765],[34.973136,32.472775],[34.973021,32.472817],[34.972883,32.472867],[34.972917,32.472936],[34.972964,32.472921],[34.973017,32.472907],[34.973071,32.472897],[34.973126,32.47289],[34.973201,32.472885],[34.973204,32.472885],[34.973208,32.472885],[34.973211,32.472885],[34.973214,32.472887],[34.973217,32.472888],[34.973219,32.47289],[34.973221,32.472892],[34.973223,32.472894],[34.973229,32.472903],[34.973243,32.47292],[34.97326,32.472935],[34.973279,32.472949],[34.973282,32.47295],[34.973284,32.472952],[34.973286,32.472955],[34.973287,32.472958],[34.973288,32.47296],[34.973288,32.472963],[34.973288,32.472966],[34.973287,32.472969],[34.973286,32.472972],[34.973284,32.472974],[34.973274,32.472985],[34.973263,32.472995],[34.973245,32.47301],[34.973323,32.473096],[34.973466,32.473002],[34.973486,32.472994],[34.973501,32.472981],[34.973533,32.472977],[34.973559,32.472976],[34.973581,32.472984],[34.973608,32.472997],[34.973768,32.473133],[34.973773,32.473137],[34.97388,32.473224],[34.973714,32.473464],[34.97384,32.473478],[34.973852,32.473479],[34.973935,32.473357],[34.974019,32.473236],[34.974088,32.473135],[34.9741,32.473119]],[[34.973883,32.47304],[34.973751,32.472938],[34.973627,32.47284],[34.973619,32.472833],[34.973612,32.472824],[34.973607,32.472815],[34.973604,32.472805],[34.973603,32.472795],[34.973604,32.472785],[34.973607,32.472775],[34.973611,32.472765],[34.973618,32.472756],[34.973626,32.472749],[34.973635,32.472742],[34.973646,32.472737],[34.973657,32.472733],[34.973866,32.472682],[34.973922,32.472671],[34.973935,32.472669],[34.973949,32.47267],[34.973962,32.472672],[34.973974,32.472676],[34.973986,32.472682],[34.973996,32.47269],[34.974005,32.472698],[34.974013,32.472708],[34.974018,32.472718],[34.974021,32.472729],[34.974029,32.472756],[34.974041,32.472781],[34.974044,32.472786],[34.974045,32.472791],[34.974045,32.472796],[34.974045,32.472801],[34.974043,32.472806],[34.97404,32.472811],[34.973883,32.47304]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"802","area":1431,"r":[[[34.973741,32.474636],[34.973612,32.474921],[34.973809,32.474979],[34.973862,32.474854],[34.97392,32.474831],[34.974117,32.474889],[34.974214,32.474664],[34.973867,32.474558],[34.973806,32.474664],[34.973776,32.474651],[34.973741,32.474636]]]},{"p":"308-0701094","u":"שטח פרטי פתוח","num":"422","area":643,"r":[[[34.974104,32.475067],[34.97416,32.475084],[34.974203,32.474983],[34.974323,32.475019],[34.974281,32.47512],[34.974399,32.475155],[34.974441,32.475057],[34.974465,32.474999],[34.974435,32.474947],[34.974429,32.474945],[34.974242,32.474889],[34.974324,32.474698],[34.974269,32.474681],[34.974104,32.475067]]]},{"p":"308-1143700","u":"מבנים ומוסדות ציבור","num":"401","area":1012,"r":[[[34.976411,32.475542],[34.97598,32.475413],[34.975891,32.475623],[34.976162,32.475705],[34.976203,32.475718],[34.97622,32.475722],[34.976237,32.475723],[34.976255,32.475722],[34.976272,32.475718],[34.976288,32.475713],[34.976303,32.475704],[34.976316,32.475694],[34.976326,32.475684],[34.976334,32.475673],[34.976411,32.475542]]]},{"p":"308-1143700","u":"מבנים ומוסדות ציבור","num":"402","area":3474,"r":[[[34.976411,32.475542],[34.976715,32.47503],[34.976705,32.475016],[34.976692,32.475004],[34.976677,32.474993],[34.976586,32.474934],[34.976533,32.4749],[34.976405,32.474825],[34.976318,32.474784],[34.976317,32.474784],[34.976136,32.475089],[34.975931,32.475166],[34.975968,32.475297],[34.97598,32.475413],[34.976411,32.475542]]]},{"p":"308-1143700","u":"דרך מוצעת","num":"703","area":695,"r":[[[34.976717,32.475127],[34.976858,32.474889],[34.97685,32.4749],[34.976841,32.474909],[34.97683,32.474916],[34.976817,32.474922],[34.976804,32.474926],[34.97679,32.474928],[34.976775,32.474928],[34.976763,32.474926],[34.976751,32.474923],[34.97674,32.474919],[34.976729,32.474913],[34.976728,32.474912],[34.976597,32.474827],[34.976459,32.474747],[34.976284,32.474664],[34.976229,32.474642],[34.976194,32.474728],[34.976235,32.474744],[34.976318,32.474784],[34.976405,32.474825],[34.976533,32.4749],[34.976586,32.474934],[34.976677,32.474993],[34.976692,32.475004],[34.976705,32.475016],[34.976715,32.47503],[34.976723,32.475045],[34.976728,32.475062],[34.97673,32.475078],[34.976729,32.475095],[34.976724,32.475112],[34.976717,32.475127]]]},{"p":"308-0701094","u":"שטח פרטי פתוח","num":"424","area":170,"r":[[[34.974324,32.474698],[34.974434,32.474435],[34.974379,32.474418],[34.974269,32.474681],[34.974324,32.474698]]]},{"p":"308-0701094","u":"שטח פרטי פתוח","num":"423","area":171,"r":[[[34.974269,32.474681],[34.974379,32.474418],[34.974324,32.474401],[34.974214,32.474664],[34.974269,32.474681]]]},{"p":"308-0701094","u":"עירוני מעורב","num":"809","area":2691,"r":[[[34.974684,32.47412],[34.974844,32.474179],[34.97499,32.47391],[34.975021,32.473915],[34.975065,32.473616],[34.974955,32.473604],[34.974556,32.473561],[34.974481,32.474038],[34.974684,32.47412]]]},{"p":"308-0701094","u":"שטח ציבורי פתוח","num":"411","area":1162,"r":[[[34.975083,32.474278],[34.975158,32.474309],[34.975201,32.47424],[34.975295,32.473958],[34.975021,32.473915],[34.97499,32.47391],[34.974844,32.474179],[34.975083,32.474278]]]},{"p":"308-0701094","u":"שטח ציבורי פתוח","num":"4","area":122,"r":[[[34.975292,32.473911],[34.975028,32.47387],[34.975021,32.473915],[34.975266,32.473953],[34.975292,32.473911]]]},{"p":"308-0701094","u":"ככר עירונית","num":"403","area":378,"r":[[[34.974554,32.474363],[34.974504,32.474456],[34.974902,32.474578],[34.974921,32.474547],[34.974925,32.474541],[34.974939,32.474517],[34.974554,32.474363]]]},{"p":"308-1143700","u":"דרך מאושרת","num":"702","area":339,"r":[[[34.975991,32.474562],[34.975889,32.474546],[34.97586,32.474635],[34.975966,32.474651],[34.976062,32.474678],[34.976194,32.474728],[34.976229,32.474642],[34.976103,32.474593],[34.975991,32.474562]]]},{"p":"308-1143700","u":"דרך מאושרת","num":"701","area":667,"r":[[[34.975891,32.475623],[34.975873,32.475665],[34.976088,32.475731],[34.976177,32.475758],[34.976317,32.475801],[34.976384,32.475688],[34.976411,32.475643],[34.976462,32.475557],[34.976575,32.475367],[34.976716,32.475129],[34.976717,32.475127],[34.976724,32.475112],[34.976729,32.475095],[34.97673,32.475078],[34.976728,32.475062],[34.976723,32.475045],[34.976715,32.47503],[34.976411,32.475542],[34.976334,32.475673],[34.976326,32.475684],[34.976316,32.475694],[34.976303,32.475704],[34.976288,32.475713],[34.976272,32.475718],[34.976255,32.475722],[34.976237,32.475723],[34.97622,32.475722],[34.976203,32.475718],[34.976162,32.475705],[34.975891,32.475623]]]},{"p":"308-0340059","u":"מגורים מסחר ותעסוקה","num":"1","area":10020,"r":[[[34.975028,32.47387],[34.975292,32.473911],[34.975647,32.473324],[34.975355,32.473243],[34.975359,32.473234],[34.975257,32.473207],[34.975245,32.473203],[34.975234,32.473197],[34.975225,32.47319],[34.975217,32.473181],[34.975211,32.473172],[34.975207,32.473162],[34.975205,32.473152],[34.975205,32.473141],[34.975208,32.47313],[34.975209,32.473127],[34.975269,32.472973],[34.975218,32.472963],[34.975018,32.472928],[34.974811,32.472905],[34.974769,32.4729],[34.974593,32.472887],[34.974435,32.472883],[34.974263,32.473136],[34.974089,32.47312],[34.974045,32.473185],[34.97401,32.473237],[34.973841,32.473484],[34.974955,32.473604],[34.975065,32.473616],[34.975028,32.47387]]]},{"p":"308-0340059","u":"מסחר ותעסוקה","num":"3","area":1206,"r":[[[34.975355,32.473243],[34.975647,32.473324],[34.975727,32.473191],[34.975732,32.47318],[34.975735,32.473169],[34.975736,32.473157],[34.975735,32.473146],[34.975732,32.473135],[34.975726,32.473124],[34.975719,32.473114],[34.97571,32.473106],[34.975699,32.473098],[34.975687,32.473093],[34.975684,32.473092],[34.975601,32.473062],[34.975507,32.473035],[34.975474,32.473024],[34.975413,32.473008],[34.975282,32.472976],[34.975269,32.472973],[34.975209,32.473127],[34.975208,32.47313],[34.975205,32.473141],[34.975205,32.473152],[34.975207,32.473162],[34.975211,32.473172],[34.975217,32.473181],[34.975225,32.47319],[34.975234,32.473197],[34.975245,32.473203],[34.975257,32.473207],[34.975359,32.473234],[34.975355,32.473243]]]},{"p":"308-0701094","u":"דרך מאושרת","num":"603","area":407,"r":[[[34.973709,32.474622],[34.973741,32.474636],[34.973776,32.474651],[34.973806,32.474664],[34.973867,32.474558],[34.973755,32.474524],[34.973716,32.474512],[34.973627,32.47466],[34.973583,32.474734],[34.973537,32.474812],[34.973491,32.474889],[34.973485,32.474898],[34.973477,32.474906],[34.973468,32.474913],[34.973457,32.474919],[34.973446,32.474923],[34.973608,32.474973],[34.973599,32.474969],[34.97359,32.474965],[34.973579,32.474958],[34.97357,32.474949],[34.973562,32.47494],[34.973557,32.474929],[34.973553,32.474917],[34.973552,32.474906],[34.973553,32.474894],[34.973556,32.474883],[34.973561,32.474872],[34.973709,32.474622]]]}]};
+</script>
+<script>
+(function(){
+  var root=document.documentElement;
+  function css(v){return getComputedStyle(root).getPropertyValue(v).trim();}
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme=dark?'light':'dark';
+  });
+  function seg(group,fn){
+    var bs=document.querySelectorAll('[role=group] button[data-'+group+']');
+    bs.forEach(function(b){b.addEventListener('click',function(){
+      bs.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      fn(b.dataset[group]);
+    });});
+  }
+
+  // ------------------------------------------------------------- lots data
+  // s0 = ש/1476 (2017), s1 = 308-0701094 (2021), s2 = after reliefs + 308-1048149 (2023)
+  var LOTS={
+    '801':{u:[22,22,22],f:[7,7,7],h:[30,30,30]},
+    '802':{u:[16,16,16],f:[4,4,4],h:[19,19,19],fx:'אפשר קומה נוספת אם לא מגיעים למספר הדירות'},
+    '803A':{u:[16,16,16],f:[4,4,4],h:[19,19,19],fx:'אפשר קומה נוספת אם לא מגיעים למספר הדירות. ב-2021 התא פוצל ל-803A ו-803B'},
+    '803B':{same:'803A'},
+    '804':{u:[30,30,30],f:[6,6,6],h:[25,25,25],fx:'ב-2023 נדונה תוכנית ל-39 דירות ו-7 עד 8 קומות. הוחלט להפקיד, התנאים לא מולאו והטיפול הסתיים'},
+    '805':{u:[20,20,26],f:[6,6,8],h:[25,25,30],fx:'6 דירות וקומות נוספו בהקלה בהיתר, ועוגנו בתוכנית 308-1048149'},
+    '806':{u:[32,32,32],f:[9,9,9],h:[34,34,34]},
+    '807':{u:[20,20,20],f:[6,6,6],h:[25,25,25],fx:'אפשר קומה נוספת אם לא מגיעים למספר הדירות'},
+    '808':{u:[22,22,30],f:[5,8,9],h:[31,31,32],fx:'2021: מ-5 ל-8 קומות בתוכנית הוועדה המקומית. אחר כך 7 דירות וקומה נוספו בהקלה, ועוגנו ב-2023. חלק מקומת הקרקע נקבע כשטח ציבורי'},
+    '809':{u:[34,34,34],f:[9,9,9],h:[34,34,34],fx:'אפשר קומה נוספת אם לא מגיעים למספר הדירות'}
+  };
+  var ORDER=['801','802','803A','804','805','806','807','808','809'];
+  var STAGES=['2017','2021','2023'];
+  function lot(n){var L=LOTS[n];return L&&L.same?LOTS[L.same]:L;}
+
+  // ------------------------------------------------------------- map
+  var map=L.map('map',{scrollWheelZoom:false,zoomSnap:.25}).setView([32.47345,34.9746],17.25);
+  var sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'Esri'}).addTo(map);
+  var osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'});
+  seg('base',function(v){if(v==='sat'){map.removeLayer(osm);sat.addTo(map);}else{map.removeLayer(sat);osm.addTo(map);}});
+  function ll(r){return r.map(function(ring){return ring.map(function(p){return [p[1],p[0]];});});}
+
+  var USE={'עירוני מעורב':'--s1','ככר עירונית':'--square','שטח ציבורי פתוח':'--green','שטח פרטי פתוח':'--plain','מגורים מסחר ותעסוקה':'--tavori','מסחר ותעסוקה':'--tavori','דרך מאושרת':'--plain'};
+  var cells=[], colorMode='change';
+  var mainCells=GEO.cells.filter(function(c){return c.p==='308-0701094'||(c.p==='308-0340059'&&(c.num==='1'||c.num==='3'||c.num==='2'||c.num==='4'));});
+  function changeColor(c){
+    if(c.p==='308-0340059') return c.num==='1'||c.num==='3'?'--tavori':(c.num==='2'?'--square':'--green');
+    var L=lot(c.num);
+    if(L){ if(c.num==='805'||c.num==='808') return '--bad-ink'; if(c.num==='804') return '--s2'; return '--plain'; }
+    if(c.u==='ככר עירונית') return '--square';
+    if(c.u==='שטח ציבורי פתוח') return '--green';
+    return '--plain';
+  }
+  function styleFor(c){
+    var v=colorMode==='change'?changeColor(c):(USE[c.u]||'--plain');
+    return {color:css('--surface'),weight:1.5,fillColor:css(v),fillOpacity:.72};
+  }
+  mainCells.forEach(function(c){
+    if(c.u==='דרך מאושרת') return;
+    var poly=L.polygon(ll(c.r),styleFor(c)).addTo(map);
+    poly._c=c; cells.push(poly);
+    var label=c.p==='308-0340059'?(c.num==='1'?'תבורי':''):c.num;
+    if(label&&(lot(c.num)||c.p==='308-0340059')) poly.bindTooltip(label,{permanent:true,direction:'center',className:'lotlabel'});
+    poly.on('click',function(){showLot(c);});
+  });
+  // outlines of the two big plans
+  var bounds=L.latLngBounds([]);
+  GEO.plans.forEach(function(p){
+    if(p.n==='308-0701094'||p.n==='353-0078717'){
+      bounds.extend(L.polygon(ll(p.r)).getBounds());
+      L.polygon(ll(p.r),{color:css('--accent'),weight:2.5,fill:false,dashArray:p.n==='353-0078717'?'6 5':null,interactive:false}).addTo(map);
+    }
+  });
+  map.fitBounds(bounds,{padding:[8,8]});
+  function legend(){
+    var items=colorMode==='change'
+      ? [['--bad-ink','נוספו דירות וקומות (הקלות + תוכנית מתקנת)'],['--s2','הוצעה תוספת שלא הושלמה'],['--plain','לפי התוכנית של 2017, עם שינויי 2021'],['--tavori','מתחם תבורי'],['--square','כיכר עירונית'],['--green','שטח ציבורי פתוח']]
+      : [['--s1','עירוני מעורב (מגורים ומסחר)'],['--tavori','מסחר, תעסוקה ומגורים (תבורי)'],['--square','כיכר עירונית'],['--green','שטח ציבורי פתוח'],['--plain','שטח פרטי פתוח']];
+    document.getElementById('mapLegend').innerHTML=items.map(function(i){return '<span><i style="background:var('+i[0]+')"></i>'+i[1]+'</span>';}).join('')+'<span><i style="background:transparent;border:2px solid var(--accent)"></i>גבול התוכניות</span>';
+  }
+  function restyle(){cells.forEach(function(p){p.setStyle(styleFor(p._c));});legend();}
+  seg('color',function(v){colorMode=v;restyle();});
+  legend();
+  new MutationObserver(function(){restyle();drawTav(tavState);drawBars();drawMix();}).observe(root,{attributes:true,attributeFilter:['data-theme']});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){restyle();drawTav(tavState);drawBars();drawMix();});
+
+  var panel=document.getElementById('lotPanel');
+  function showLot(c){
+    var h='';
+    if(c.p==='308-0340059'){
+      if(c.num==='1'||c.num==='3'){
+        h='<h3>מתחם תבורי</h3><p class="small">כ-12 דונם בין השומר, הגלעד והדקלים. ייעוד היום: מגורים, מסחר ותעסוקה.</p>'+
+          '<table><tr><th>שלב</th><th>מסחר ותעסוקה</th><th>מגורים</th></tr>'+
+          '<tr><td>2010 (<bdi>ש/1327</bdi>)</td><td>10,200 מ"ר</td><td>0</td></tr>'+
+          '<tr><td>2018 (<bdi>308-0340059</bdi>)</td><td class="up">כ-4,100 מ"ר</td><td class="up">120 דירות</td></tr></table>'+
+          '<p class="small muted" style="margin-top:8px">כאן גם המבנה לשימור (בית תבורי), הבאר ושדרת הוושינגטוניות. ראו <a href="#tavori">הפרק על תבורי</a>.</p>';
+      } else if(c.num==='2'){ h='<h3>כיכר עירונית (תבורי)</h3><p class="small">471 מ"ר. בהיתר של 2016 הוצבו בה שולחנות וכיסאות, "בניגוד לתכנית ש/1327" לפי הוועדה המחוזית.</p>'; }
+      else { h='<h3>שטח ציבורי פתוח</h3><p class="small">פיסה קטנה (122 מ"ר) בקצה מתחם תבורי, שמשמשת גם למעבר רכב לפי התוכנית.</p>'; }
+    } else if(lot(c.num)){
+      var L=lot(c.num);
+      function row(lbl,a){return '<tr><td>'+lbl+'</td>'+a.map(function(v,i){return '<td'+(i>0&&v!==a[i-1]?' class="up"':'')+'>'+v+'</td>';}).join('')+'</tr>';}
+      h='<h3>תא שטח '+c.num+'</h3><p class="small muted">'+Math.round(c.area).toLocaleString('he-IL')+' מ"ר, ייעוד: '+c.u+'</p>'+
+        '<table><tr><th></th><th>2017</th><th>2021</th><th>2023</th></tr>'+row('קומות',L.f)+row('גובה (מ\')',L.h)+row('דירות',L.u)+'</table>'+
+        (L.fx?'<p class="small" style="margin-top:8px">'+L.fx+'</p>':'')+
+        '<p class="small muted" style="margin-top:6px">בכל המגרשים: מ-2021 נוספו 20% שטח עיקרי למרפסות מקורות, ובוטלה חובת גג הרעפים.</p>';
+    } else if(c.u==='ככר עירונית'){
+      h='<h3>כיכר עירונית (תא '+c.num+')</h3><p class="small">לב התוכנית של 2017. מ-2021 מותרות מתחתיה עד שלוש קומות חניה.</p>';
+    } else if(c.u==='שטח ציבורי פתוח'){
+      h='<h3>שטח ציבורי פתוח (תא '+c.num+')</h3><p class="small">'+Math.round(c.area).toLocaleString('he-IL')+' מ"ר לאורך רחוב השומר. ייעודו לא שונה. בתא 411 מותר גם מעבר כלי רכב.</p>';
+    } else if(c.u==='שטח פרטי פתוח'){
+      h='<h3>שטח פרטי פתוח (תא '+c.num+')</h3><p class="small">נראה כמו גינה, אבל פרטי. מותרת מתחתיו חניה תת־קרקעית, עם זיקת הנאה למעבר הולכי רגל.</p>';
+    }
+    panel.innerHTML=h;
+  }
+
+  // ------------------------------------------------------------- Tavori schematic
+  var TAV={
+    plan:{t:'<h3>מה התוכנית קבעה</h3><ul class="small" style="padding-right:18px;margin:0"><li>חזיתות בנויות לרחוב הדקלים ולרחוב הגלעד, עם חצר פנימית.</li><li>רוב החניה במרתף. בתיקון של 2014 נוספו 7,700 מ"ר שטחי שירות תת־קרקעיים "לטובת הולכי הרגל ובאי המתחם".</li><li>10,200 מ"ר מסחר ומשרדים, 2 עד 6 קומות.</li><li>מתחם שימור: בית משפחת תבורי, הבאר ושדרת הוושינגטוניות.</li><li>שטח שמוקצה למועצה (264 מ"ר) ומעבר הולכי רגל צפונה, ללב המושבה.</li></ul>'},
+    permit:{t:'<h3>מה ההיתר נתן (2016)</h3><ul class="small" style="padding-right:18px;margin:0"><li>מבנה מסחרי בצורת ר בדופן הצפונית, בשתי קומות, בכ-43% מהשטח העיקרי המותר.</li><li>מגרש חניה פתוח גדול "בכל יתרת שטח המגרש", בחזית לגלעד ולפינת הדקלים.</li><li>אין מעבר הולכי רגל צפונה, ואין את השטח שהוקצה למועצה.</li><li>צוברי גז ותחנת טרנספורמציה בתוך מתחם השימור, וחנויות שחודרות לתוכו.</li></ul><p class="small muted" style="margin-top:8px">לפי תיאור הוועדה המחוזית בפרוטוקולים של 1/6/2016 ו-26/7/2017.</p>'},
+    now:{t:'<h3>אחרי 2018</h3><ul class="small" style="padding-right:18px;margin:0"><li>מתחם מגורים לאורך רחוב השומר, 6 קומות בחזית ו-7 בנסיגה, עד 21 מ׳ לשומר.</li><li>מגורים מעל המסחר בעורף, עד 9 קומות.</li><li>דופן מסחרית בנויה לגלעד.</li><li>120 דירות, ומסחר שירד לכ-4,100 מ"ר.</li><li>החנויות בוטלו ממתחם השימור כתנאי לאישור.</li></ul>'}
+  };
+  var tavState='plan', svgNS='http://www.w3.org/2000/svg';
+  function el(n,a,txt){var e=document.createElementNS(svgNS,n);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e;}
+  function drawTav(s){
+    tavState=s; var g=document.getElementById('tav'); g.innerHTML='';
+    var ink=css('--ink'),mut=css('--muted'),line=css('--line'),surf=css('--surface-2'),
+        com=css('--s1'),res=css('--s2'),pres=css('--green'),park=css('--plain'),sq=css('--square');
+    // streets
+    g.appendChild(el('rect',{x:0,y:0,width:360,height:300,fill:surf,rx:10}));
+    g.appendChild(el('text',{x:250,y:292,'text-anchor':'middle','font-size':12,fill:mut},'רחוב הגלעד'));
+    g.appendChild(el('text',{x:16,y:150,'text-anchor':'middle','font-size':12,fill:mut,transform:'rotate(-90 16 150)'},'רחוב הדקלים'));
+    g.appendChild(el('text',{x:346,y:150,'text-anchor':'middle','font-size':12,fill:mut,transform:'rotate(-90 346 150)'},'רחוב השומר'));
+    g.appendChild(el('text',{x:180,y:16,'text-anchor':'middle','font-size':12,fill:mut},'↑ לב המושבה (ש/1476)'));
+    var lot={x:32,y:28,w:296,h:248};
+    g.appendChild(el('rect',{x:lot.x,y:lot.y,width:lot.w,height:lot.h,fill:css('--surface'),stroke:line,'stroke-width':1.5,rx:6}));
+    function box(x,y,w,h,f,label,dash){g.appendChild(el('rect',{x:x,y:y,width:w,height:h,fill:f,rx:4,stroke:dash?ink:'none','stroke-dasharray':dash||'', 'stroke-width':dash?1:0,'fill-opacity':dash?.25:.9}));if(label)g.appendChild(el('text',{x:x+w/2,y:y+h/2+4,'text-anchor':'middle','font-size':11.5,'font-weight':700,fill:dash?ink:'#fff'},label));}
+    // preservation compound (south-east)
+    box(250,190,70,78,pres,'שימור');
+    g.appendChild(el('circle',{cx:262,cy:258,r:4,fill:'#fff'}));
+    if(s==='plan'){
+      box(40,40,58,226,com,'מסחר');
+      box(98,206,146,60,com,'מסחר');
+      box(98,40,150,46,com,'מסחר ומשרדים');
+      g.appendChild(el('rect',{x:110,y:96,width:128,height:100,fill:'none',stroke:ink,'stroke-dasharray':'5 4',rx:4}));
+      g.appendChild(el('text',{x:174,y:142,'text-anchor':'middle','font-size':11.5,fill:ink},'חצר פנימית'));
+      g.appendChild(el('text',{x:174,y:158,'text-anchor':'middle','font-size':10.5,fill:mut},'חניה במרתף מתחת'));
+      box(40,236,40,30,sq,'');
+      g.appendChild(el('path',{d:'M290 40 L290 100',stroke:ink,'stroke-width':1.5,'marker-end':'url(#ar)'}));
+    } else if(s==='permit'){
+      box(40,40,280,46,com,'מרכז מסחרי, 2 קומות');
+      box(250,86,70,60,com,'');
+      box(40,96,204,170,park,'מגרש חניה פתוח',' ');
+      g.appendChild(el('path',{d:'M150 296 L150 270',stroke:css('--bad-ink'),'stroke-width':3}));
+      g.appendChild(el('text',{x:100,y:292,'text-anchor':'middle','font-size':11,'font-weight':700,fill:css('--bad-ink')},'כניסה מהגלעד ←'));
+      g.appendChild(el('rect',{x:256,y:196,width:26,height:16,rx:3,fill:css('--bad-ink')}));
+      g.appendChild(el('text',{x:269,y:208,'text-anchor':'middle','font-size':10,fill:'#fff','font-weight':700},'גז'));
+    } else {
+      box(40,40,210,46,com,'מסחר');
+      box(110,96,90,40,res,'מגורים מעל');
+      box(258,40,62,140,res,'מגורים');
+      box(40,226,200,40,com,'דופן מסחרית');
+      box(40,96,60,120,park,'',' ');
+      g.appendChild(el('text',{x:70,y:160,'text-anchor':'middle','font-size':10.5,fill:ink},'חניה'));
+    }
+    var defs=el('defs',{});var m=el('marker',{id:'ar',markerWidth:8,markerHeight:8,refX:4,refY:4,orient:'auto'});m.appendChild(el('path',{d:'M0 0 L8 4 L0 8 z',fill:ink}));defs.appendChild(m);g.appendChild(defs);
+    document.getElementById('tavText').innerHTML=TAV[s].t;
+  }
+  seg('tav',drawTav); drawTav('plan');
+
+  // ------------------------------------------------------------- mix bars (Tavori)
+  var MIX=[
+    {y:'2010',l:'ש/1327',c:10200,r:0,p:0},
+    {y:'2014',l:'353-0078717',c:10200,r:0,p:264},
+    {y:'2018',l:'308-0340059',c:4100,r:11000,p:500}
+  ];
+  var mixTip=document.getElementById('mixTip'), mixBox=document.getElementById('mixBox');
+  function drawMix(){
+    var max=15600, h='';
+    MIX.forEach(function(m){
+      function seg_(v,col,name){ if(!v) return ''; return '<div data-t="'+name+': '+v.toLocaleString('he-IL')+' מ&quot;ר" style="flex:0 0 '+(v/max*100)+'%;background:var('+col+')">'+(v>=1500?v.toLocaleString('he-IL'):'')+'</div>';}
+      h+='<div class="stackrow"><div><b>'+m.y+'</b> <span class="small muted"><bdi>'+m.l+'</bdi></span></div><div class="stack">'+seg_(m.c,'--s1','מסחר ותעסוקה')+seg_(m.r,'--s2','מגורים')+seg_(m.p,'--s3','שטח לציבור')+'</div></div>';
+    });
+    document.getElementById('mixRows').innerHTML=h;
+  }
+  drawMix();
+  mixBox.addEventListener('mousemove',function(e){
+    var t=e.target.closest('[data-t]'); if(!t){mixTip.style.opacity=0;return;}
+    var b=mixBox.getBoundingClientRect(); mixTip.textContent=t.dataset.t; mixTip.style.opacity=1;
+    mixTip.style.left=Math.min(e.clientX-b.left+12,b.width-160)+'px'; mixTip.style.top=(e.clientY-b.top-34)+'px';
+  });
+  mixBox.addEventListener('mouseleave',function(){mixTip.style.opacity=0;});
+
+  // ------------------------------------------------------------- grouped bars per lot
+  var metric='f', barTip=document.getElementById('barTip');
+  function drawBars(){
+    var g=document.getElementById('bars'); g.innerHTML='';
+    var narrow=g.parentNode.clientWidth<560, W=narrow?420:720,H=narrow?280:300,pl=30,pr=6,pt=16,pb=40; g.setAttribute('viewBox','0 0 '+W+' '+H); var cw=(W-pl-pr)/ORDER.length, bw=Math.min(18,(cw-8)/3);
+    var max=metric==='f'?10:35, step=metric==='f'?2:5;
+    var mut=css('--muted'),line=css('--line'),ink=css('--ink'),surf=css('--surface');
+    var cols=[css('--s1'),css('--s2'),css('--s3')];
+    function y(v){return pt+(H-pt-pb)*(1-v/max);}
+    for(var v=0;v<=max;v+=step){
+      g.appendChild(el('line',{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:line,'stroke-width':v?0.7:1.2}));
+      g.appendChild(el('text',{x:pl-6,y:y(v)+4,'text-anchor':'end','font-size':11,fill:mut},v));
+    }
+    // RTL: first lot on the right
+    ORDER.forEach(function(n,i){
+      var L=lot(n), arr=L[metric], cx=W-pr-cw*(i+.5);
+      arr.forEach(function(v,k){
+        var x=cx+(1-k)*(bw+2)-bw/2, top=y(v), hgt=y(0)-top;
+        var r=el('path',{d:'M'+x+' '+y(0)+' V'+(top+4)+' Q'+x+' '+top+' '+(x+4)+' '+top+' H'+(x+bw-4)+' Q'+(x+bw)+' '+top+' '+(x+bw)+' '+(top+4)+' V'+y(0)+' Z',fill:cols[k]});
+        g.appendChild(r);
+        var hit=el('rect',{x:x-1,y:pt,width:bw+2,height:y(0)-pt,fill:'transparent'});
+        hit.dataset.t='תא '+n+' · '+STAGES[k]+': '+v+(metric==='f'?' קומות':' דירות');
+        g.appendChild(hit);
+        if(k===2&&v!==arr[0]) g.appendChild(el('text',{x:x+bw/2,y:top-5,'text-anchor':'middle','font-size':11.5,'font-weight':800,fill:ink},v));
+      });
+      g.appendChild(el('text',{x:cx,y:H-pb+18,'text-anchor':'middle','font-size':12.5,'font-weight':700,fill:ink},n));
+    });
+    g.appendChild(el('text',{x:W-pr,y:H-4,'text-anchor':'end','font-size':11,fill:mut},'תא שטח'));
+  }
+  seg('metric',function(v){metric=v;drawBars();}); drawBars();
+  var barsSvg=document.getElementById('bars');
+  barsSvg.addEventListener('mousemove',function(e){
+    var t=e.target.dataset&&e.target.dataset.t; var b=barsSvg.parentNode.getBoundingClientRect();
+    if(!t){barTip.style.opacity=0;return;} barTip.textContent=t; barTip.style.opacity=1;
+    barTip.style.left=Math.min(Math.max(e.clientX-b.left-60,4),b.width-170)+'px'; barTip.style.top=(e.clientY-b.top-40)+'px';
+  });
+  barsSvg.addEventListener('mouseleave',function(){barTip.style.opacity=0;});
+  // table view
+  (function(){
+    var h='<table class="plain"><tr><th>תא</th><th>קומות 2017</th><th>2021</th><th>2023</th><th>דירות 2017</th><th>2021</th><th>2023</th></tr>';
+    ORDER.forEach(function(n){var L=lot(n);h+='<tr><td>'+n+'</td>'+L.f.map(function(v){return '<td>'+v+'</td>';}).join('')+L.u.map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>';});
+    var s=function(k){return ORDER.reduce(function(a,n){return a+lot(n).u[k];},0);};
+    h+='<tr><td><b>סה"כ</b></td><td></td><td></td><td></td><td><b>'+s(0)+'</b></td><td><b>'+s(1)+'</b></td><td><b>'+s(2)+'</b></td></tr></table>';
+    document.getElementById('lotTable').innerHTML=h;
+  })();
+
+  // ------------------------------------------------------------- timeline
+  var TL=[
+    ['hist','1936','המפעל של משפחת תבורי','בית חרושת לגזוז, מים מינרליים ומיצים, ברפת שבחצר הבית. בית המשפחה בסגנון הבינלאומי, הבאר ועצי הוושינגטוניה שרדו עד היום.'],
+    ['hist','1943–1996','טלאי של תוכניות ישנות','"מרכז מסחרי" מתקופת המנדט (בע/55), "מרכז חנויות" (חפאג/366, 1962), "מבנים ציבוריים במרכז פרדס חנה" (ש/19, 1969), "מרכז פרדס חנה" קטע צפוני ודרומי (ש/282, ש/283, 1983), "הגן במרכז המושבה" (ש/482, 1996). בגוש היו הדואר, בזק, בתים ומבני ציבור.'],
+    ['hist','1990','המפעל נסגר','מיזוג עם חברה אחרת והעתקת הייצור. המתחם עומד נטוש ומוזנח שנים.'],
+    ['hist','סביב 2000','תוכנית אב למרכז המושבה','מסמך מדיניות שאומץ בוועדה המחוזית. מייעד את תבורי ל"עוגן מסחרי מרכזי". לא סטטוטורי, ובדיון של 2010 טענו מתנגדים ש"אין להסתמך עליה".'],
+    ['dist','28/5/2008','החלטה להפקיד את ש/1327','"התכנית... מהווה תכנית להתחדשות עירונית בלב מרכז המושבה ההיסטורית." שינוי ייעוד ממגורים למסחר.'],
+    ['dist','5/1/2010','החלטת ביניים: סקר קרקע','הוועדה דורשת סקר זיהום קרקע (Phase 1) לפני מתן תוקף, בגלל השנים שבהן פעל במקום מפעל. בדיון הובהר שאחת ההתנגדויות "על רקע עסקי", של מתחרה.'],
+    ['dist','13/4/2010','ש/1327 מאושרת','10,200 מ"ר מסחר ומשרדים, 2 עד 6 קומות, מתחם שימור. בתוקף מ-7/10/2010.'],
+    ['dist','11/9/2013','353-0078717: החניה יורדת למרתף','7,700 מ"ר שטחי שירות למרתף חניה, כדי לפנות את פני הקרקע להולכי רגל. הכניסה מהגלעד מבוטלת. בתוקף מ-20/3/2014.'],
+    ['dist','6/11/2013','החלטה להפקיד את ש/1476','התוכנית של המועצה למרכז המושבה: 212 דירות, כיכר עירונית, איחוד וחלוקה בלי הסכמה.'],
+    ['dist','30/11/2015','ש/1476: לא נשלחו הודעות לבעלים','לפני הדיון התברר שבעלי הקרקע לא קיבלו הודעות אישיות כנדרש באיחוד וחלוקה בלי הסכמה. הוועדה מורה לשלוח ולתת 30 יום.'],
+    ['dist','29/12/2015','לשכת התכנון: לא תומכים ב"ביג"','"אינה תומכת בבינוי שהוצע, שמייצר במרכז המושבה מרכז קניות פתוח (ביג) עם מגרש חניה גדול פתוח."'],
+    ['local','18/1/2016','לשכת התכנון: לא נתמוך בכניסה מהגלעד','עמדה שנשלחה לוועדה המקומית: כל מטרת 308-0340034 היא "לייצר כניסה לבינוי שלשכת התכנון אינו תומכת בו".'],
+    ['dist','7/3/2016','ש/1476: שמיעת 8 התנגדויות','בעלי קרקע, הדואר ובזק. הוועדה מתקנת את טבלאות ההקצאה ומפרסמת מחדש לפי סעיף 106(ב).'],
+    ['permit','21/3/2016','היתר למרכז המסחרי בתבורי','מסחר ומשרדים בשתי קומות, בית קפה ומבנה לשימור. 4,426 מ"ר עיקרי, וחניה פתוחה בחזית הגלעד.'],
+    ['local','20/4/2016','308-0340034 מופקדת','תוכנית של היזם בסמכות הוועדה המקומית, להחזרת הכניסה מהגלעד למגרש החניה.'],
+    ['dist','1/6/2016','"תהליכים תכנוניים מקבילים שאינם תואמים"','הוועדה המחוזית מפקידה את תוכנית המגורים בתבורי בהגבלות: לא שלושה מגדלים, 6 קומות לשומר, חזית בנויה לגלעד, ופרוגרמה משותפת עם ש/1476.'],
+    ['permit','19/9/2016','היתר שינויים בתבורי','לפי הוועדה המחוזית, כלל "חנויות החודרות לתוך המתחם לשימור".'],
+    ['local','16/11/2016','308-0340034 בתוקף','הכניסה מהגלעד חוזרת.'],
+    ['dist','31/1/2017','ש/1476 בתוקף','212 דירות, 6,250 מ"ר מסחר ותעסוקה, כיכר עירונית, שדרה בדרך הבנים.'],
+    ['permit','10/8/2017','היתר שינויים: החנויות יוצאות ממתחם השימור','כתנאי שקבעה הוועדה המחוזית לתוכנית המגורים.'],
+    ['dist','15/8/2017','תוכנית המתאר הכוללנית בתוקף','מרכז המושבה כמע"ר. בתבורי "יעוד הקרקע העיקרי יהיה מסחר".'],
+    ['dist','15/1/2018','308-0340059: 120 דירות בתבורי','מינוס 6,936 מ"ר מסחר. התנגדות של שכנים מהגלעד מתקבלת חלקית: עד 21 מ׳ לשומר. בתוקף מ-20/3/2018.'],
+    ['permit','2018–2021','היתרים לבניינים 805 ו-808, עם הקלות','היתרים 20180414, 201990375, 20210442. הקלות שבס: 13 דירות נוספות וקומות.'],
+    ['local','12/7/2020','308-0701094 מופקדת','הוועדה המקומית מגישה בעצמה "שינויים בתכנית מרכז המושבה", לפי סעיף 62א.'],
+    ['local','22/3/2021','308-0701094 בתוקף','מרפסות (+20%), שלוש קומות חניה גם מתחת לכיכר, 808 מ-5 ל-8 קומות, ביטול חלק מהוראות העיצוב.'],
+    ['hist','2021 בערך','הוועדה המקומית במרכז תבורי','הכתובת הרשמית היום: "רח\' הגלעד 1 מרכז תבורי קומה 1". המועד המדויק של המעבר לא אומת.'],
+    ['dist','3/8/2022','"התנהלות תכנונית חריגה"','הוועדה המחוזית מפקידה את 308-1048149, שמעגנת את ההקלות בבניינים 805 ו-808, ודורשת שטח ציבורי בקומת הקרקע.'],
+    ['dist','22/2/2023','308-1048149 בתוקף','לא הוגשו התנגדויות. סה"כ 56 דירות בשני הבניינים, במקום 42.'],
+    ['dist','31/5/2023','308-1080514: עוד 9 דירות במגרש 804','יזמיות: בעלי המגרש, הוועדה המקומית וחברת מרכז תבורי. כוללת 170 מ"ר "משרד קיים" לציבור בתבורי. הוחלט להפקיד; התנאים לא מולאו והטיפול הסתיים ב-12/2023.'],
+    ['dist','2023 והלאה','מתחם החירום בצומת הנדיב והבנים','308-1143700, בבדיקה. כולל "ביטול שצ"פ הנוטר". עוד לא הופקדה.']
+  ];
+  var KN={dist:'ועדה מחוזית',local:'ועדה מקומית',permit:'היתר',hist:'רקע'};
+  var ol=document.getElementById('timeline');
+  ol.innerHTML=TL.map(function(t){return '<li data-k="'+t[0]+'"><button type="button" aria-expanded="false"><span class="date">'+t[1]+'</span> · '+t[2]+'<span class="tag">'+KN[t[0]]+'</span></button><div class="detail">'+t[3]+'</div></li>';}).join('');
+  ol.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){var li=b.parentNode;li.classList.toggle('open');b.setAttribute('aria-expanded',li.classList.contains('open'));});});
+  seg('f',function(v){ol.querySelectorAll('li').forEach(function(li){li.classList.toggle('hide',v!=='all'&&li.dataset.k!==v);});});
+
+  // ------------------------------------------------------------- checklist
+  document.querySelectorAll('#checks input').forEach(function(cb){
+    try{cb.checked=localStorage.getItem('merkaz-'+cb.id)==='1';}catch(e){}
+    cb.addEventListener('change',function(){try{localStorage.setItem('merkaz-'+cb.id,cb.checked?'1':'0');}catch(e){}});
+  });
+})();
+</script>
+</body>
+</html>
