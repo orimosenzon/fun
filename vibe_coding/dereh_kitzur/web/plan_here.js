@@ -695,6 +695,7 @@ const PlanHere = (() => {
       console.info('דרך קיצור: לא הצלחתי לבדוק תכניות פתוחות להתנגדות', err);
       return [];                       // a banner that says "unknown" is noise
     }
+    if (typeof Menu !== 'undefined') Menu.badge(rows.length);
     if (!rows.length) { btn.hidden = true; return rows; }
 
     const soon = rows[0];

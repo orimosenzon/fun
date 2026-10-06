@@ -192,6 +192,42 @@
   </div>
 </div>
 
+<!-- The top of the map (Ori, 6/10/2026): the panel had become a column of
+     offers - add a shortcut, open plans, walking directions, what is planned
+     here - and on a small screen the list of what is actually on the map
+     started below the fold. The panel is now about the map; the two things
+     people come to do sit here, one press away, and everything rarer is in the
+     ☰ menu. The badge on ☰ counts plans open for objection, the one item in
+     the menu that has a deadline. -->
+<div id="topbar" class="topbar">
+  <button id="menu-btn" class="tb-btn tb-menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    <span id="menu-badge" class="tb-badge" hidden></span>
+  </button>
+  <button id="route-ask" class="tb-btn tb-route" title="מסלול הליכה מכל מקום לכל מקום במושבה, דרך קיצורי הדרך">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM17.5 12a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM6 13.5v1.5a3 3 0 003 3h3v-2H9a1 1 0 01-1-1v-1.5zm6-7.5v2h3a1 1 0 011 1v1h2V9a3 3 0 00-3-3z"/></svg>
+    <span>איך מגיעים?</span>
+  </button>
+  <button id="add" class="tb-btn tb-add" title="לך בדרך קיצור עם הטלפון והיא תיכנס למפה. בלי הרשמה ובלי סיסמה.">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+    <span>הוסף קיצור</span>
+  </button>
+</div>
+
+<div id="menu" class="menu" hidden role="menu" aria-label="תפריט">
+  <p class="menu-h">תצוגה מוכנה</p>
+  <div class="modes" data-modes role="group" aria-label="תצוגה מוכנה"></div>
+  <p id="mode-hint" class="mode-hint"></p>
+  <p class="menu-h">תכנון ובנייה</p>
+  <button id="plan-banner" class="plan-banner" hidden></button>
+  <button id="plan-ask" class="menu-item"><span class="menu-ic">📍</span>
+    <span>מה מתוכנן כאן?<small>בוחרים נקודה במפה ורואים את התכניות שחלות עליה</small></span></button>
+  <p class="menu-h">עוד</p>
+  <button id="menu-share" class="menu-item"><span class="menu-ic">🔗</span>שיתוף המפה כמו שהיא</button>
+  <button id="install-btn" class="menu-item" hidden><span class="menu-ic">📲</span>הוספה למסך הבית</button>
+  <button id="editor-btn" class="menu-item"><span class="menu-ic">✏️</span><span id="editor-lbl">מצב עורך</span></button>
+</div>
+
 <section id="panel" class="panel" aria-label="רשימת השבילים">
   <div class="grip" id="grip" role="button" tabindex="0" aria-label="הרחב או כווץ את הרשימה"></div>
 
@@ -200,76 +236,14 @@
     <header class="panel-head">
       <div class="title-row">
         <h1>דרך קיצור</h1>
-        <span class="title-btns">
-          <!-- Put an icon on the home screen. Hidden once the app is running
-               as one (display-mode: standalone), see Install in app.js. -->
-          <button id="install-btn" class="editor-btn install" hidden>📲 למסך הבית</button>
-          <button id="editor-btn" class="editor-btn">מצב עורך</button>
-        </span>
       </div>
       <p id="stats" class="stats">טוען…</p>
-
-      <!-- Three ready-made views (modes.js): the layers each kind of visitor
-           needs, one press instead of six ticks across three categories. The
-           lit chip is read off the layers that are on, so ticking one more
-           box by hand simply lights none of them. -->
-      <div class="modes" data-modes role="group" aria-label="תצוגה מוכנה"></div>
-      <p id="mode-hint" class="mode-hint"></p>
-
-      <!-- The invitation, and it is the whole point of the app rather than one
-           more control: 83% of what is on this map is not on any other map,
-           which is only true because somebody walked it and sent it in. It was
-           a chip among the sort chips until 10/9/2026, indistinguishable from
-           "הארוכים", and a chip is not an invitation.
-
-           Deliberately says what it costs - nothing, no account, no password -
-           because the reason a resident does not add a shortcut is almost never
-           that they do not know one. -->
-      <button id="add" class="invite">
-        <span class="invite-ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
-        </span>
-        <span class="invite-txt">
-          <b>הוסף דרך קיצור שאתה מכיר</b>
-          <span>לך בה עם הטלפון והיא תיכנס למפה. בלי הרשמה ובלי סיסמה.</span>
-        </span>
-      </button>
 
       <!-- Only while there is something unsent on this device. A trail that has
            been recorded and not sent is the one thing in this app that is
            waiting on its owner, and until this existed it waited quietly at row
            sixty of a list sorted by length. -->
       <button id="unsent" class="unsent" hidden></button>
-
-      <!-- What is being planned around here, and the one window in a plan's
-           life when a resident can say anything about it. The banner is filled
-           live from the planning administration on load, and stays hidden when
-           nothing is open - a row that says "0 plans" every day is a row nobody
-           reads on the day it says 4. See plan_here.js and refreshObjections. -->
-      <button id="plan-banner" class="plan-banner" hidden></button>
-
-      <!-- Directions from anywhere to anywhere, through the shortcuts. The
-           question somebody actually has, and the one no other map can answer
-           here, since most of these shortcuts are on no other map. -->
-      <button id="route-ask" class="invite invite-route">
-        <span class="invite-ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M6.5 3a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM17.5 12a3 3 0 00-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 00-3-3zm0 4.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zM6 13.5v1.5a3 3 0 003 3h3v-2H9a1 1 0 01-1-1v-1.5zm6-7.5v2h3a1 1 0 011 1v1h2V9a3 3 0 00-3-3z"/></svg>
-        </span>
-        <span class="invite-txt">
-          <b>איך מגיעים ברגל?</b>
-          <span>מסלול מכל מקום לכל מקום במושבה, דרך קיצורי הדרך. לחץ, ובחר במפה יציאה (א) ויעד (ב).</span>
-        </span>
-      </button>
-
-      <button id="plan-ask" class="invite invite-quiet">
-        <span class="invite-ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 4a3 3 0 011.7 5.5V13h-1.4v-1.5A3 3 0 0112 6z"/></svg>
-        </span>
-        <span class="invite-txt">
-          <b>מה מתוכנן כאן?</b>
-          <span>לחץ, ואז בחר נקודה במפה. כל התכניות שחלות עליה, הייעוד, הגוש והחלקה.</span>
-        </span>
-      </button>
 
       <div class="controls">
         <input id="search" type="search" placeholder="חיפוש שביל או רחוב…" autocomplete="off" aria-label="חיפוש">

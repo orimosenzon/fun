@@ -36,6 +36,16 @@ Moshe Meir arts centre that is in it, and המעלה 4 (the amphitheatre) 170 m
 west of Amudanan's marker. A geocoder's house number is an interpolation; a
 landmark's own marker beats it.
 
+The 6/10/2026 rerun (114 events, 41 venues) added five FIXES - four venues
+with no API position, placed by B144, and האולם on ההגנה, which has no house
+number and is a named building in OSM. Left as the API has them, on purpose:
+המושב 1 and 5, where B144 puts 1, 5 and 44 within 250 m of each other while the
+API runs monotonically down the OSM street (1 at its south end, 44 midway);
+and אתרוג 8, the Neve Pardesim community centre, 340 m from B144 but on its
+street, with no OSM or Amudanan marker to settle it. One event stays
+unplaced: חוות החזון הירוק, "a dirt road past Zen Garden near BIG", which no
+open map has.
+
     python3 build_hanadiv.py            # fetch, check, write web/data/hanadiv.json
     python3 build_hanadiv.py --report   # also print every venue against B144
 
@@ -85,6 +95,17 @@ FIXES = {
                     why="Amudanan marker for בית העם - אמפיתיאטרון"),
     "הדקלים 90": dict(lat=32.475430, lng=34.973730, source="osm",
                       why="OSM node יד לבנים; the plaza is the memorial's"),
+    # Added 6/10/2026, when the programme grew from 46 events to 114.
+    "ההגנה 0": dict(lat=32.474830, lng=34.981190, source="osm",
+                    why="no house number; OSM way 1525472043 is האולם itself, 180 m from the API point"),
+    "האורנים 1": dict(lat=32.478080, lng=34.968570, source="b144",
+                      why="no API position; B144, monotonic with האורנים 66 and 84"),
+    "הדקלים 100": dict(lat=32.476070, lng=34.972280, source="b144",
+                       why="no API position; B144, beside הדקלים 90"),
+    "הנשיא 14": dict(lat=32.473960, lng=34.987950, source="b144",
+                     why="no API position; B144"),
+    "נעורים 23": dict(lat=32.470110, lng=34.993560, source="b144",
+                      why="no API position; B144, 50 m from נעורים 27 where the API agrees"),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The
@@ -92,11 +113,13 @@ FIXES = {
 GROUPS = [
     {"name": "מוסיקה", "color": "#f6a11b", "genres": ["מוסיקה"]},
     {"name": "סדנאות ויצירה", "color": "#00acac",
-     "genres": ["סדנא חווייתית", "אמנות פלסטית", "ציור", "אוכל"]},
+     "genres": ["סדנא חווייתית", "אמנות פלסטית", "ציור", "אוכל", "יצירה"]},
     {"name": "גוף ותנועה", "color": "#3ec28f", "genres": ["ספורט", "תנועה ומחול"]},
-    {"name": "הרצאות ומילים", "color": "#7b5ea7", "genres": ["הרצאה", "הגות ושירה"]},
-    {"name": "ילדים ומשפחה", "color": "#e45462", "genres": ["שעת סיפור", "ילדים והורים"]},
+    {"name": "הרצאות ומילים", "color": "#7b5ea7", "genres": ["הרצאה", "הגות ושירה", "כתיבה"]},
+    {"name": "ילדים ומשפחה", "color": "#e45462", "genres": ["שעת סיפור", "ילדים והורים", "משחק"]},
     {"name": "במה ותערוכות", "color": "#c2185b", "genres": ["תיאטרון", "תערוכה"]},
+    # Ten screenings in 2026, the festival's own film strand: a group of its own.
+    {"name": "קולנוע", "color": "#3949ab", "genres": ["קולנוע"]},
     {"name": "אירוח", "color": "#9b8f80", "genres": ["אירוח"]},
 ]
 OTHER = {"name": "אחר", "color": "#607d8b"}

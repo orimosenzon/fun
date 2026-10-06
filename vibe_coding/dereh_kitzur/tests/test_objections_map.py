@@ -21,6 +21,10 @@ WEB = os.path.join(os.path.dirname(OUT), 'web')
 PORT = 8773
 URL = f'http://127.0.0.1:{PORT}/index.html'
 FILE = json.load(open(os.path.join(WEB, 'data', 'objections.json'), encoding='utf-8'))
+# The file is refreshed each morning from the real plans, so it can still hold
+# one whose objection period closed since; the app drops those, and so does this.
+_today = time.strftime('%Y-%m-%d')
+FILE['plans'] = [p for p in FILE['plans'] if not p.get('shuts') or p['shuts'] >= _today]
 fails = []
 def check(name, ok, detail=''):
     print(('  ok   ' if ok else '  FAIL ') + name + ('' if ok else '   ' + str(detail)))
@@ -92,6 +96,9 @@ try:
      pg.screenshot(path=os.path.join(OUT, 'shot_objections_far.png'))
 
      # The list.
+     check('the ☰ button counts the open plans', pg.inner_text('#menu-badge') == str(n_open), pg.inner_text('#menu-badge'))
+     pg.click('#menu-btn')
+     pg.wait_for_timeout(300)
      pg.click('#plan-banner')
      pg.wait_for_selector('#plan-card .ph-plan', timeout=10000)
      rows = pg.locator('#plan-card .ph-plan').count()
