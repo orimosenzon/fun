@@ -232,6 +232,9 @@ body.exporting .panel .card:not(.export), body.exporting .transport, body.export
 
 /* ── מסגור ─────────────────────────────────────────────── */
 .frame-presets { margin-top: 8px; }
+.frame-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: #12151b; font-size: 12px; line-height: 1.5; }
+.frame-scope span { flex: 1 1 180px; }
+.frame-scope.own { box-shadow: inset 0 0 0 1px var(--accent); }
 .frame-presets button { font-size: 12px; }
 #zoomVal { min-width: 44px; text-align: end; color: var(--muted); }
 input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #353b48; border-radius: 6px; background: #12151b; cursor: pointer; flex: none; }
