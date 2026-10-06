@@ -78,9 +78,27 @@ C.sequencer = (() => {
 
   const FADE = 0.4;
 
-  // כשהלשונית מוסתרת requestAnimationFrame נעצר. הקול מנגן, ולכן הלשונית "משמיעה"
-  // וכרום לא מאט בה טיימרים, אז setTimeout ממשיך לעבוד.
-  const nextTick = (fn) => (document.hidden ? setTimeout(fn, 1000 / 30) : requestAnimationFrame(fn));
+  // השעון של הלולאה מגיע מ-Worker. בלשונית ברקע כרום מאט את requestAnimationFrame ואת
+  // setTimeout לפעם בשנייה, ואחרי חמש דקות לפעם בדקה. אז התמונה קופאת, והעצירה בסוף
+  // הקטע מאחרת: הקובץ יוצא ארוך עם שקט בסוף (ככה זה קרה ליורם). טיימר בתוך Worker לא מואט.
+  // כל המתנה בזמן הקלטה עוברת דרכו, גם ההמתנה הקצרה לפני סגירת הקובץ: setTimeout של 60ms
+  // הפך שם לשנייה, ואחרי חמש דקות ברקע לדקה שלמה של שקט בסוף הסרטון.
+  const worker = (() => {
+    try {
+      const code = 'onmessage=(e)=>setTimeout(()=>postMessage(e.data.id),e.data.ms);';
+      return new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    } catch { return null; }
+  })();
+  const timers = new Map();
+  let timerId = 0;
+  if (worker) worker.onmessage = (e) => { const fn = timers.get(e.data); timers.delete(e.data); fn?.(); };
+  const after = (ms, fn) => {
+    if (!worker) { setTimeout(fn, ms); return; }
+    timers.set(++timerId, fn);
+    worker.postMessage({ id: timerId, ms });
+  };
+  const sleep = (ms) => new Promise((r) => after(ms, r));
+  const nextTick = (fn) => after(1000 / 60, fn);
 
   /**
    * @param o {
@@ -199,7 +217,7 @@ C.sequencer = (() => {
         if (rec && rec.state !== 'inactive') {
           o.onProgress?.(1, null);
           if (rec.state === 'paused') rec.resume();
-          await new Promise((r) => setTimeout(r, 60));
+          await sleep(60);
           const stopped = new Promise((r) => { rec.onstop = r; });
           rec.stop();
           await stopped;

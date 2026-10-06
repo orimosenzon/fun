@@ -18,9 +18,10 @@
     logoImg: null,
     set: {               // הגדרות שנשמרות בין ביקורים
       platform: 'ig_reels', format: '9:16', guides: true, quality: '1080', fades: true,
-      zoom: 1, px: 0.5, py: 0.5, fill: 'blur', fillColor: '#000000',      // מסגור: אחד לכל הסרטון
+      zoom: 1, px: 0.5, py: 0.5, fill: 'blur', fillColor: '#000000',      // המסגור הכללי
       textOn: false, textTop: '', textBottom: '', textSize: 7, textColor: '#ffffff',
       batchText: '',
+      frames: {},          // מסגור נפרד לסרטונים מהרשימה: { 'מ-עד+מ-עד': { zoom, px, py } }
       corner: 'tr', logoSize: 18, logoOpacity: 0.9, logoAll: false,
       volume: 1, muted: false,
     },
@@ -33,8 +34,26 @@
   // ── עזרים ──────────────────────────────────────────────────────────────
   const plat = () => C.platform(S.set.platform);
   const safe = () => plat()?.safe || C.DEFAULT_SAFE;
+  // ── מסגור לכל סרטון ─────────────────────────────────────────────────────
+  // כשסרטון מהרשימה מסומן, הגרירה והזום חלים רק עליו (נשמר לפי הטווחים, כך שעריכה של
+  // טקסט אחר בשורה לא מאבדת אותו). סרטון בלי מסגור משלו משתמש במסגור הכללי.
+  const frameKey = (it) => it.ranges.map(([a, b]) => `${a}-${b}`).join('+');
+  const curItem = () => (B.cur ? B.items.find((it) => it.text === B.cur && okItem(it)) || null : null);
+  const ownFrame = (it) => (it ? S.set.frames[frameKey(it)] || null : null);
+  const frameOf = (it) => ownFrame(it) || S.set;
+  /** המסגור שמוצג עכשיו (לקריאה) */
+  const F = () => frameOf(curItem());
+  /** המסגור שמשנים עכשיו: בסרטון מסומן נוצר לו מסגור משלו, בהעתקה מהכללי */
+  function FW() {
+    const it = curItem();
+    if (!it) return S.set;
+    const k = frameKey(it);
+    return (S.set.frames[k] ||= { zoom: S.set.zoom, px: S.set.px, py: S.set.py });
+  }
+  const frameLook = (f) => ({ zoom: f.zoom, px: f.px, py: f.py });
+
   const look = () => ({
-    zoom: S.set.zoom, px: S.set.px, py: S.set.py, fill: S.set.fill, fillColor: S.set.fillColor,
+    ...frameLook(F()), fill: S.set.fill, fillColor: S.set.fillColor,
     text: S.set.textOn ? { top: S.set.textTop, bottom: S.set.textBottom, size: S.set.textSize, color: S.set.textColor } : null,
     logo: S.logoImg, safe: safe(),
     corner: S.set.corner, logoSize: S.set.logoSize, logoOpacity: S.set.logoOpacity,
@@ -147,17 +166,35 @@
     const W = preview.width, H = preview.height;
     const r0 = C.compose.place(src, W, H, look());
     const u = (X - r0.x) / r0.w, v = (Y - r0.y) / r0.h;
-    S.set.zoom = clamp(z, ZMIN, zmax());
+    const f = FW();
+    f.zoom = clamp(z, ZMIN, zmax());
     const r1 = C.compose.place(src, W, H, look());
     const sx = W - r1.w, sy = H - r1.h;
-    S.set.px = Math.abs(sx) > 0.5 ? clamp((X - u * r1.w) / sx, 0, 1) : 0.5;
-    S.set.py = Math.abs(sy) > 0.5 ? clamp((Y - v * r1.h) / sy, 0, 1) : 0.5;
+    f.px = Math.abs(sx) > 0.5 ? clamp((X - u * r1.w) / sx, 0, 1) : 0.5;
+    f.py = Math.abs(sy) > 0.5 ? clamp((Y - v * r1.h) / sy, 0, 1) : 0.5;
+  }
+
+  /** השורה מתחת לכותרת "מסגור": על מה חל המסגור שרואים עכשיו */
+  function renderFrameScope() {
+    const it = curItem();
+    const box = $('frameScope');
+    box.hidden = !it && !B.items.some((x) => x.n);
+    $('frameScopeText').textContent = !it ? t('frScopeAll') : ownFrame(it) ? t('frScopeOwn', it.n) : t('frScopeNew', it.n);
+    box.classList.toggle('own', !!ownFrame(it));
+    $('btnFrameShared').hidden = !ownFrame(it);
+    $('btnFrameDone').hidden = !it;
+  }
+
+  function syncFrameUI() {
+    $('rngFrameZoom').value = F().zoom;
+    $('zoomVal').textContent = `${Math.round(F().zoom * 100)}%`;
+    renderFrameScope();
+    for (const it of B.items) if (it.row) it.row.querySelector('.bl').textContent = rowLen(it);
   }
 
   let saveTimer = null;
   function frameChanged() {
-    $('rngFrameZoom').value = S.set.zoom;
-    $('zoomVal').textContent = `${Math.round(S.set.zoom * 100)}%`;
+    syncFrameUI();
     if (S.mode !== 'play') drawPreview();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveSettings, 400);
@@ -173,10 +210,10 @@
     preview.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, toFrame(e));
     const r = C.compose.place(src, preview.width, preview.height, look());
-    drag = { start: toFrame(e), px: S.set.px, py: S.set.py, sx: preview.width - r.w, sy: preview.height - r.h, pinch: null };
+    drag = { start: toFrame(e), px: F().px, py: F().py, sx: preview.width - r.w, sy: preview.height - r.h, pinch: null };
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
-      drag.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), zoom: S.set.zoom };
+      drag.pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), zoom: F().zoom };
     }
     preview.classList.add('grabbing');
   });
@@ -190,8 +227,8 @@
       if (drag.pinch.d > 10) zoomAround(drag.pinch.zoom * (d / drag.pinch.d), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
     } else if (!drag.pinch) {
       // גרירה ימינה מזיזה את התמונה ימינה, בין אם היא קטנה מהמסגרת ובין אם גדולה ממנה
-      if (Math.abs(drag.sx) > 0.5) S.set.px = clamp(drag.px + (p[0] - drag.start[0]) / drag.sx, 0, 1);
-      if (Math.abs(drag.sy) > 0.5) S.set.py = clamp(drag.py + (p[1] - drag.start[1]) / drag.sy, 0, 1);
+      if (Math.abs(drag.sx) > 0.5) FW().px = clamp(drag.px + (p[0] - drag.start[0]) / drag.sx, 0, 1);
+      if (Math.abs(drag.sy) > 0.5) FW().py = clamp(drag.py + (p[1] - drag.start[1]) / drag.sy, 0, 1);
     }
     frameChanged();
   });
@@ -207,10 +244,10 @@
     // צביטה בטאצ'פד מגיעה ככגלגלת עם ctrlKey וצעדים קטנים
     const k = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
     const [X, Y] = toFrame(e);
-    zoomAround(S.set.zoom * k, X, Y);
+    zoomAround(F().zoom * k, X, Y);
     frameChanged();
   }, { passive: false });
-  preview.addEventListener('dblclick', () => { if (canFrame()) { S.set.zoom = 1; S.set.px = S.set.py = 0.5; frameChanged(); } });
+  preview.addEventListener('dblclick', () => { if (canFrame()) { Object.assign(FW(), { zoom: 1, px: 0.5, py: 0.5 }); frameChanged(); } });
   window.addEventListener('resize', () => drawGhost());
 
   function setBadge(key) {
@@ -356,14 +393,15 @@
   $('btnPlaySel').addEventListener('click', () => play(S.selIn, S.selOut));
 
   // ── רצף מלא (פתיחה + קטע + סיום) ────────────────────────────────────────
-  /** ranges: טווחי הקטע בסרטון המקור. כמה טווחים = כמה חלקים ברצף, עם דהייה ביניהם. */
-  function buildParts(ranges = [[S.selIn, S.selOut]]) {
+  /** ranges: טווחי הקטע בסרטון המקור. כמה טווחים = כמה חלקים ברצף, עם דהייה ביניהם.
+   *  frame: המסגור של הקטע (ברירת מחדל: מה שמוצג עכשיו) */
+  function buildParts(ranges = [[S.selIn, S.selOut]], frame = F()) {
     const parts = [];
     // פתיחה וסיום אף פעם לא נחתכים: יש בהם טקסט וכתובות שחייבים להיראות במלואם
     const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null };
     if (S.brand.intro && introV.duration) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageIntro') });
     ranges.forEach(([from, to], k) => parts.push({
-      video: src, from, to, logo: !!S.logoImg,
+      video: src, from, to, logo: !!S.logoImg, look: frameLook(frame),
       label: ranges.length > 1 ? `${t('stageMain')} ${k + 1}/${ranges.length}` : t('stageMain'),
     }));
     if (S.brand.outro && outroV.duration) parts.push({ video: outroV, from: 0, to: outroV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
@@ -420,6 +458,7 @@
     let blob = null, err = null;
     try { blob = await seq.done; } catch (e) { err = e; console.error(e); }
     S.seq = null;
+    window.__lastStats = seq.stats;   // לבדיקות: קצב הלולאה בכל חלק
     const seconds = parts.reduce((s, p) => s + p.to - p.from, 0);
     return { blob, err, fmt, W, H, seconds, took: (performance.now() - t0) / 1000, stats: seq.stats };
   }
@@ -479,6 +518,8 @@
   const B = { items: [], off: new Set(), cur: null, status: new Map(), cancel: false, sim: new Map() };
   window.__batch = B;
   const short = (x) => fmtTime(x).replace(/\.00$/, '');
+  /** האורך בשורה, עם 🔍 לסרטון שיש לו מסגור משלו */
+  const rowLen = (it) => (it.n ? (ownFrame(it) ? '🔍 ' : '') + short(C.batch.length(it)) : '');
   const stamp = (x) => { x = Math.floor(x); return `${Math.floor(x / 3600)}-${String(Math.floor(x / 60) % 60).padStart(2, '0')}-${String(x % 60).padStart(2, '0')}`; };
   const okItem = (it) => it.n && !it.errors.length && !(S.file && it.ranges.some(([, b]) => b > S.dur + 0.05));
   const chosen = () => B.items.filter((it) => okItem(it) && !B.off.has(it.text));
@@ -511,10 +552,10 @@
       const r = document.createElement('span'); r.className = 'br';
       r.textContent = it.ranges.length ? it.ranges.map(([a, b]) => `${short(a)}–${short(b)}`).join(' + ') : it.text;
       r.title = `${t('batchLine', it.line)}: ${it.text}`;
-      const l = document.createElement('span'); l.className = 'bl'; l.textContent = it.n ? short(C.batch.length(it)) : '';
+      const l = document.createElement('span'); l.className = 'bl'; l.textContent = rowLen(it);
       const pb = document.createElement('button'); pb.className = 'bplay'; pb.textContent = '▶'; pb.title = t('batchPlay');
       pb.hidden = bad || !S.file;
-      pb.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode !== 'export') { B.cur = it.text; markCur(); playSequence(buildParts(it.ranges)); } });
+      pb.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode !== 'export') { B.cur = it.text; markCur(); playSequence(buildParts(it.ranges, frameOf(it))); } });
       row.append(cb, n, r, l, pb);
       if (msgs.length || warns.length) {
         const m = document.createElement('div'); m.className = 'bmsg'; m.textContent = [...msgs, ...warns].join(' · ');
@@ -530,9 +571,14 @@
       box.appendChild(row);
     }
     updateBatchSum();
+    syncFrameUI();
   }
 
-  function markCur() { for (const it of B.items) it.row?.classList.toggle('cur', B.cur === it.text); }
+  /** סימון הסרטון הנוכחי ברשימה. המסגור בתצוגה מתחלף למסגור שלו. */
+  function markCur() {
+    for (const it of B.items) it.row?.classList.toggle('cur', B.cur === it.text);
+    frameChanged();
+  }
 
   function showItem(it) {
     if (!S.file || S.mode === 'export') return;
@@ -570,7 +616,8 @@
   $('btnBatchFile').addEventListener('click', () => $('batchInput').click());
   $('btnBatchClear').addEventListener('click', () => {
     S.set.batchText = ''; $('inBatch').value = ''; B.status.clear(); B.off.clear(); B.cur = null;
-    renderBatch(); saveSettings();
+    S.set.frames = {};
+    renderBatch(); saveSettings(); drawPreview();
   });
   $('batchInput').addEventListener('change', async (e) => {
     const f = e.target.files[0];
@@ -616,7 +663,7 @@
       const it = list[i];
       B.cur = it.text; markCur();
       it.row?.scrollIntoView({ block: 'nearest' });
-      const r = await makeVideo(buildParts(it.ranges), (f, label) => {
+      const r = await makeVideo(buildParts(it.ranges, frameOf(it)), (f, label) => {
         const all = (i + f) / list.length;
         $('batchFill').style.width = `${(all * 100).toFixed(1)}%`;
         $('batchText').textContent = label ? t('batchProgress', i + 1, list.length, Math.round(f * 100)) : t('finishing');
@@ -653,6 +700,13 @@
     renderBatch();
     toast(B.cancel ? t('cancelled') : t('batchDone', done), 5000);
   });
+  // סיום מסגור של סרטון אחד: חוזרים לערוך את המסגור הכללי
+  $('btnFrameDone').addEventListener('click', () => { B.cur = null; markCur(); });
+  $('btnFrameShared').addEventListener('click', () => {
+    const it = curItem();
+    if (it) delete S.set.frames[frameKey(it)];
+    frameChanged();
+  });
   $('btnBatchCancel').addEventListener('click', () => { B.cancel = true; if (S.seq) S.seq.abort(); });
 
   $('btnCancel').addEventListener('click', () => { if (S.seq) S.seq.abort(); });
@@ -666,8 +720,8 @@
     $('selFill').value = S.set.fill;
     $('inFillColor').value = S.set.fillColor;
     $('inFillColor').hidden = S.set.fill !== 'color';
-    $('rngFrameZoom').value = S.set.zoom;
-    $('zoomVal').textContent = `${Math.round(S.set.zoom * 100)}%`;
+    $('rngFrameZoom').value = F().zoom;
+    $('zoomVal').textContent = `${Math.round(F().zoom * 100)}%`;
     $('chkText').checked = S.set.textOn;
     $('textOpts').hidden = !S.set.textOn;
     $('inTextTop').value = S.set.textTop;
@@ -708,9 +762,10 @@
   });
   document.querySelectorAll('[data-frame]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.frame;
-    if (k === 'whole') { S.set.zoom = 1; S.set.px = S.set.py = 0.5; }
-    else if (k === 'fill') { S.set.zoom = coverZoom(); S.set.px = S.set.py = 0.5; }
-    else { S.set.px = S.set.py = 0.5; }
+    const f = FW();
+    if (k === 'whole') Object.assign(f, { zoom: 1, px: 0.5, py: 0.5 });
+    else if (k === 'fill') Object.assign(f, { zoom: coverZoom(), px: 0.5, py: 0.5 });
+    else Object.assign(f, { px: 0.5, py: 0.5 });
     frameChanged();
   }));
   $('selFill').addEventListener('change', (e) => { S.set.fill = e.target.value; syncControls(); changed(); });
