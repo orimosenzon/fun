@@ -1,0 +1,803 @@
+''ערך זה מתאר את מהדורת 2026 של הפסטיבל. על הפסטיבל עצמו, ראו [[אמנות במושבה]].''
+
+[[קובץ:אמנות במושבה 2026 - המפה הדיגיטלית.jpg|ממוזער|260px|המפה הדיגיטלית של הפסטיבל. כל סמן הוא סטודיו או מתחם פתוח]]
+
+'''אמנות במושבה 2026''' היא המהדורה ה-28 של פסטיבל האמנות, העיצוב והקראפט של [[פרדס חנה-כרכור]], והיא נערכת בימים חמישי עד שבת, '''3 עד 5 בספטמבר 2026'''. במשך שלושה ימים פותחים אמניות ואמנים מקומיים את הסטודיואים שבהם הם עובדים, ומוכרים עבודות מקוריות ישירות מהיוצר. הכניסה לכל הסטודיואים ולמתחמים חופשית.
+
+הדף הזה מרכז את התוכנית המלאה: מי מציג ואיפה, ארבע התערוכות, לוח האירועים לפי ימים, ומה פתוח לאכול בין לבין.
+
+<div style="background:#f4f7fb; border:1px solid #ccd6e4; border-right:5px solid #21659c; border-radius:10px; padding:14px 18px; margin:1em 0;">
+'''בשורה אחת:''' 113 אמניות ואמנים פותחים סטודיו. 11 כתובות הן מתחמים שבכל אחד מהם בין ארבעה לאחד עשר יוצרים, ולצדם ארבע תערוכות ו-94 אירועים לאורך שלושת הימים. 75 מהאירועים ללא עלות, ו-58 מהם בלי הרשמה מראש. בנוסף פתוחים 16 עסקי אוכל.
+</div>
+
+== מתי ואיפה ==
+<div style="overflow-x:auto;">
+{| class="wikitable" style="width:auto"
+! יום !! תאריך !! שעות
+|-
+| חמישי || 3 בספטמבר || 10:00–20:00
+|-
+| שישי || 4 בספטמבר || 10:00–17:00
+|-
+| שבת || 5 בספטמבר || 10:00–20:00
+|}
+</div>
+
+הכניסה לסטודיואים, למתחמים ולתערוכות חופשית. חלק מהאירועים כרוכים בתשלום סמלי ובהרשמה מראש, והפירוט מופיע בטבלאות שלמטה. שעות הפתיחה של סטודיו מסוים עשויות להיות צרות יותר משעות הפסטיבל, ובמיוחד בשבת: 14 מהמשתתפים סימנו שאינם פותחים בשבת.
+
+== מה זה הפסטיבל ==
+הפסטיבל התחיל ב-1999 כמיזם קהילתי של האמנית '''אסנת דן''' ז"ל, שאספה 21 אמניות ואמנים מהמושבה סביב רעיון אחד: לפתוח את הבתים והסטודיואים ולפגוש קהל דרך העבודה עצמה. האירוע הראשון נקרא "בתים פתוחים" והתקיים במרץ 1999. בגרעין המייסד היו גם [[אילנה פלדה|אילנה]] ו[[הנס פלדה]] ז"ל. מאז גדל הפסטיבל משנה לשנה, והוא מופעל בידי עמותת אמנות פרדס חנה-כרכור.
+
+מהדורת 2026 מתקיימת תחת הכותרת '''Slow Art''', הזמנה להאט ולשהות מול היצירה במקום לעבור עליה ברפרוף. לפי המארגנים, המשתתפים הם אמניות ואמנים תושבי המושבה, ולצדם כמה אמניות שפונו מבתיהן במהלך המלחמה והצטרפו לקהילה המקומית.
+
+''הערה על המועד:'' באתר העמותה נכתב שהפסטיבל נערך מדי שנה כשבועיים לפני פסח, ואכן מהדורות קודמות התקיימו באפריל. מהדורת 2026 נערכת בספטמבר.
+
+== איך לקרוא את הדף ==
+* '''לפי מתחם.''' רוב המוקדים אינם סטודיו בודד אלא מתחם שבו יושבים כמה יוצרים בכתובת אחת. הסעיף הבא מסודר לפי מתחמים, מהגדול לקטן, וזו הדרך היעילה ביותר לראות הרבה בזמן קצר.
+* '''לפי אזור.''' מי שאינו במתחם מופיע בסעיף שאחריו, מחולק למרכז המושבה, לכרכור ולמערב ולדרום.
+* '''לפי תחום.''' כל טבלה ניתנת למיון. לחיצה על החץ שליד '''תחום''' מקבצת ציור, קרמיקה, צורפות וכן הלאה.
+* '''כתובת.''' כל כתובת היא קישור שנפתח בגוגל מפות.
+* '''טוב לדעת.''' העמודה מציינת נגישות ומי שאינו פותח בשבת, לפי הצהרת המשתתפים.
+
+== המתחמים ==
+אחת עשרה כתובות מרכזות בין ארבעה לאחד עשר משתתפים כל אחת. יחד הן מכסות יותר ממחצית מהמשתתפים בפסטיבל, וזו הדרך היעילה ביותר לראות הרבה בזמן קצר.
+
+[[קובץ:אמנות במושבה 2026 - מפת המתחמים.jpg|מרכז|ממוזער|900px|אחד עשר המתחמים. המספרים תואמים לטבלה שמתחת. '''סמן מלא''' הוא מיקום מדויק; '''סמן חלול''' הוא הרחוב הנכון, כשהמיקום המדויק לאורכו משוער.]]
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:auto"
+! מס' !! מתחם !! כתובת !! משתתפים !! דיוק הסימון
+|-
+| style="text-align:center; font-weight:bold" | 1 || [[#1. מתחם הידית (חרושת 1)|מתחם הידית]] || [https://www.google.com/maps/search/?api=1&query=%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw חרושת 1] || style="text-align:center" | 11 || מדויק
+|-
+| style="text-align:center; font-weight:bold" | 2 || [[#2. מתחם האורנים (האורנים 40)|מתחם האורנים]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2040%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 40] || style="text-align:center" | 11 || משוער על הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 3 || [[#3. מתחם הקשת (קדמה 8ב)|מתחם הקשת]] || [https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw קדמה 8ב] || style="text-align:center" | 10 || מרכז הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 4 || [[#4. מתחם התורמוסים (הבוטנים 25)|מתחם התורמוסים]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 25] || style="text-align:center" | 8 || משוער על הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 5 || [[#5. מתחם הדרים Dream (הדרים 77א)|מתחם הדרים Dream]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2077%D7%90%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 77א] || style="text-align:center" | 8 || מרכז הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 6 || [[#6. השוק הישן (האורנים 12)|השוק הישן]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 12] || style="text-align:center" | 7 || מדויק
+|-
+| style="text-align:center; font-weight:bold" | 7 || [[#7. בית תרבות נרבתא (ביל״ו 10)|בית תרבות נרבתא]] || [https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ביל״ו 10] || style="text-align:center" | 7 || מדויק
+|-
+| style="text-align:center; font-weight:bold" | 8 || [[#8. הבוטנים 7|הבוטנים 7]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%207%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 7] || style="text-align:center" | 7 || משוער על הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 9 || [[#9. מתחם שאננים (שאננים 9)|מתחם שאננים]] || [https://www.google.com/maps/search/?api=1&query=%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw שאננים 9] || style="text-align:center" | 7 || מדויק
+|-
+| style="text-align:center; font-weight:bold" | 10 || [[#10. הדקלים 131|הדקלים 131]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20131%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 131] || style="text-align:center" | 5 || משוער על הרחוב
+|-
+| style="text-align:center; font-weight:bold" | 11 || [[#11. המזמור 11|המזמור 11]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%96%D7%9E%D7%95%D7%A8%2011%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המזמור 11] || style="text-align:center" | 4 || מרכז הרחוב
+|}
+</div>
+
+=== 1. מתחם הידית (חרושת 1) ===
+''ערך מורחב: [[מתחם הידית]]''
+11 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''[[בלומס|BLOOMS]]''' || קולינריה || <small>עגלת קפה ובית קליה ספשלטי, קפה מאפה, כריכים ועוד</small> || נגישות בתיאום || <small>053-7277829</small><br /><small>[http://bloomscoffeeroastery.com/ אתר]</small><br /><small>[https://www.instagram.com/blooms_specialty_coffee/ אינסטגרם]</small><br /><small>[https://www.facebook.com/Blooms_Cafe-100603668476408/ פייסבוק]</small>
+|-
+| '''[[גיא בורגר|Guy's burgertruck]]''' || קולינריה ||  || נגישות בתיאום || <small>054-6644090</small><br /><small>[https://www.facebook.com/gaya.bistrobar פייסבוק]</small>
+|-
+| '''[[דודסון רוקחות טבעית|אפרת ועמית - דודסון רוקחות טבעית]]''' || רוקחות טבעית, קראפט || <small>אפרת ועמית דודסון הם יוצרי המותג המשפחתי "דודסון רוקחות טבעית”, שנוצר וחי בפרדס חנה, מקום שבו בריאות טבעית היא שפה. הם מפתחים מרקחות טבעיות בעבודת יד, הנשענות על ידע נטורופתי, רפואת צמחים וחומרי גלם איכותיים, ומיועדות לטיפול…</small> || לא נגיש || <small>052-3595153</small><br /><small>[https://www.davidsonhealth.co.il/ אתר]</small><br /><small>[https://www.instagram.com/davidsonhealth/ אינסטגרם]</small><br /><small>[https://www.facebook.com/davidsonhealth/ פייסבוק]</small>
+|-
+| '''[[נגיעות בחומר|אפרת רון - נגיעות בחומר]]''' || קרמיקה, קראפט || <small>אפרת רון, אמנית קרמיקה בעלת סטודיו עצמאי, מזמינה אתכם לעולם של חומר, צבע ויצירה. עם ניסיון של מעל 15 שנה בהנחיית קבוצות, אפרת מעבירה חוגים וסדנאות לכל מי שחפץ להתנסות בעבודה עם חימר וליהנות מחוויית יצירה מעשירה.</small> || נגיש<br />סגור בשבת || <small>054-3382360</small><br /><small>[https://www.instagram.com/efrat_ron?igsh=MTFsdGFmd3VjZm0wNw== אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100068979776574# פייסבוק]</small>
+|-
+| '''גורי פרידלנדר - סטודיו גורינקה''' || חפצי נוי, קראפט || <small>גורינקה היא אומנית הדפס בוטני וצביעה טבעית. בעשור האחרון יצרה, חקרה ולימדה מלאכות עתיקות, ובשנים האחרונות העמיקה את שורשיה בעולם הצביעה הטבעית וההדפס הבוטני.</small> || לא נגיש || <small>055-9877586</small><br /><small>[https://www.studiogorinka.com/ אתר]</small><br /><small>[https://www.instagram.com/studio_gorinka/ אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100057528395742 פייסבוק]</small>
+|-
+| '''[[Kwala Paper Art|גליה שמחאי - KWALA Paper Art]]''' || פיסול, אמנות || <small>גליה שמחאי, בעלת תואר בצילום ומזה 23 שנה בעלת המותג KWALA Paper Art. גליה היא אמנית המפסלת ומעצבת מנייר פסלים, גופי תאורה, ומציירת על דפי ספר ומפות ישנות. ביצירותיה היא משלבת חומרים שונים ומשתמשת בחפצים בשימוש חוזר.</small> || לא נגיש || <small>052-8513786</small><br /><small>[https://kwala.co.il/ אתר]</small><br /><small>[https://www.instagram.com/kwalart/ אינסטגרם]</small><br /><small>[https://www.facebook.com/kwalart פייסבוק]</small>
+|-
+| '''טל ירום - ירום דיזיין''' || חפצי נוי, קראפט || <small>טל ירום, בעל המותג YAROM DESIGN, הוא אומן המתמחה בעיצוב ויצירה בבטון. ירום דיזיין נולד מתוך תשוקה ליצירה ומהרצון להפיח חיים בחומר הנתפס כתעשייתי ואפור. בעבודת יד מוקפדת, החומר מקבל חיים חדשים!</small> || לא נגיש || <small>054-3070138</small><br /><small>[https://yaromdesign.co.il אתר]</small><br /><small>[https://www.instagram.com/yarom.design?igsh=MnNzYWpnNHBidnBy&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/16VqfCduiq/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''מינדה גלאון''' || פיסול, קראפט || <small>מינדה היא אמנית קרמיקה בעלת ניסיון של מעל שני עשורים. מינדה הציגה את עבודותיה בתערוכות בארץ ובעולם. יצירתה מתאפיינת בחיבור ייחודי בין אסתטיקה גבוהה לשימושיות יומיומית, בטכניקות של אובניים, חוליות ומשטחים, ובעיטורי כחול-לבן…</small> || נגיש || <small>054-7902165</small><br /><small>[https://www.instagram.com/mindagalonceramics/?hl=en# אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100057320303982 פייסבוק]</small>
+|-
+| '''[[נוגה ספקטור|נוגה ספקטור - אמנות בפסיפס]]''' || זכוכית, קראפט || <small>נוגה אמנית פסיפס ופיסול סביבתי. יוצרת ומנחת סדנאות בסטודיו לפסיפס במתחם הידית. בוגרת המכון לחינוך טכנולוגי בחולון HIT, במגמת עיצוב המוצר, בעלת BA ותעודת הוראה בחינוך הטכנולוגי.</small> || נגיש || <small>052-5792992</small><br /><small>[https://nogaspector.co.il/ אתר]</small><br /><small>[https://www.instagram.com/noga.spector_mosaic.art/ אינסטגרם]</small><br /><small>[https://www.facebook.com/NogaSpectorMosaics פייסבוק]</small>
+|-
+| '''נעמה סגל''' || ציור, אמנות || <small>נעמה מציירת ציורי פרא וציפורים יציבות ונודדות בישראל. ציוריה מצויירים על גבי דיקטים והיא משלבת בין צבעים תעשייתיים לפנדה, עיפרון, גיר ואבקת פחם.</small> || נגיש || <small>052-5362276</small><br /><small>[https://www.naamasegal.com אתר]</small><br /><small>[https://www.instagram.com/naama_segal אינסטגרם]</small><br /><small>[https://www.facebook.com/naamasegalart פייסבוק]</small>
+|-
+| '''[[שוקדת|שירה פרידמן - שוקדת]]''' || חפצי נוי, עיצוב || <small>שירה פרידמן, בעלת סטודיו 'שוקדת' מזה 10 שנים, מעצבת ומייצרת מוצרים לבית ובעיקר לעיצוב שולחן, מתמחה בתחום הטקסטיל – מפות שולחן מבדי בוטיק, כריות וסינרים, פלייסמנטים וראנרים מבודדי חום, ערכות למלאכת יד מקוריות ועוד.</small> || לא נגיש || <small>054-5907157</small><br /><small>[https://shokedet.co.il/ אתר]</small><br /><small>[https://www.instagram.com/shokedet/ אינסטגרם]</small><br /><small>[https://www.facebook.com/shokedet פייסבוק]</small>
+|}
+</div>
+
+=== 2. מתחם האורנים (האורנים 40) ===
+11 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2040%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''אורלי חלק''' || כתיבה, אמנות || <small>אורלי חלק היא בעלת תואר שני בטיפול באומנויות, אומנית רב תחומית, ופסיכותרפיסטית. היא מציירת ציורי טבע בצבעי מים, בעיקר עצים. מאמינה בכוחם של עצים וצבעים לחולל שינוי בעולם.</small> || לא נגיש || <small>052-4721390</small><br /><small>[https://www.instagram.com/orly.halak?igsh=MWVraGdiNTYxc2g3OQ== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/18247TQkZH/ פייסבוק]</small>
+|-
+| '''איילת כהן - אפונה ובוטן''' || חפצי נוי, עיצוב || <small>איילת, כהן – סטודיו אפונה ובוטן, היא מעצבת ואומנית אשר יוצרת בתים וחדרים מינייאטורים מלאים בפרטים קטנים שרובם מורכבים בעבודת יד ומעוררי השראה. בנוסף, איילת מעבירה סדנאות יצירה לילדים ויוצרת ערכות DIY מפתיעות מלאות בחלקים קטנטנים.</small> || לא נגיש || <small>054-8144945</small><br /><small>[https://www.instagram.com/apona_and_boten?igsh=MWIxOGl2YnRmODB3ag%3D%3D&#038;utm_source=qr אינסטגרם]</small>
+|-
+| '''הילה נובקוביץ' - כד קטן''' || קדרות, קראפט || <small>הילה נובקוביץ' היא מורה ותיקה למדיטציה יוגה והילינג, ובעלת המותג kadkatan, והיא קדרית של כדי מיניאטורה. בעבודתה משלבת כוונה נפשית רוחנית עם תכשיט קמע אישי – כל כד הוא חד פעמי, נעשה בעבודת יד, כל אחד נמשך לכד המסויים שלו.</small> || לא נגיש || <small>054-8118525</small><br /><small>[https://www.kadkatan.co.il/ אתר]</small><br /><small>[https://www.instagram.com/hillanovakovitch?igsh=YnJhdDUxZHQwbXdt אינסטגרם]</small><br /><small>[https://www.facebook.com/share/14S6p4wkXRC/ פייסבוק]</small>
+|-
+| '''הפרסמניות - Bubiq''' || חפצי נוי, קראפט || <small>הפרסמניות – תמר, שירה, נועה וסיגל פרסמן, סורגות בובות וצעצועים, מוצרים לתינוקות כמו כובעים, שמיכות ורעשנים, עציצים סרוגים, פריטים לקישוט שולחן האוכל ופריטים שימושיים כגון תיקים וסלסלות.</small> || לא נגיש || <small>054-5349502</small><br /><small>[https://www.facebook.com/profile.php?id=61550417773374 פייסבוק]</small>
+|-
+| '''טל קולומב - פלומה Paloma''' || אפנה, עיצוב || <small>טל קולומב, בעלת תואר ראשון במחול ותעודת הוראה, בעלת המותג "פלומה Paloma" היא אומנית שעובדת עם נוצות מהן היא יוצרת תכשיטים, סיכות שיער וסיכות כובעים.</small> || לא נגיש || <small>052-6565508</small><br /><small>[https://www.instagram.com/palomafeatherart?igsh=d3Y0d2dkeWpkNGtu אינסטגרם]</small><br /><small>[https://www.facebook.com/tal.collomb פייסבוק]</small>
+|-
+| '''יונינה רבינוב - Yonina_Jewelry''' || זכוכית, עיצוב || <small>יונינה, בעלת המותג Yonina Jewelry, מעצבת תכשיטים ייחודיים בסגנון בוהו צבעוני. התכשיטים עשויים מחרוזי זכוכית שהיא יוצרת במבער, ומשלבים בהם חומרים איכותיים כגון כסף, גולדפיל, ונחושת.</small> || לא נגיש || <small>054-8111601</small><br /><small>[https://yonina-jewelry.insite.plus/ אתר]</small><br /><small>[https://www.instagram.com/joannrabinov/ אינסטגרם]</small><br /><small>[https://www.facebook.com/YoninaJewelry/ פייסבוק]</small>
+|-
+| '''לירון שטמלר - Liron jewelry design''' || צורפות, עיצוב || <small>לירון, צורפת ומעצבת תכשיטי כסף בעבודת יד, החלה דרכה בזמן לימודיה לתואר ראשון בעיצוב גרפי, אז החלה ללמוד ולעבוד אצל צורפת מקצועית והתאהבה בחומר וביצירה.</small> || לא נגיש || <small>053-5330650</small><br /><small>[https://www.instagram.com/Liron.jewelry.design/ אינסטגרם]</small>
+|-
+| '''מומו טיבטי''' || קולינריה || <small>כיסונים טבעוניים המיוצרים בעבודת יד מסורתית</small> || נגישות בתיאום || <small>052-4849114</small><br /><small>[https://instagram.com/momotibeti אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100063548381179&#038;mibextid=ZbWKwL פייסבוק]</small>
+|-
+| '''מיכל פלנר - MISSMISH''' || צורפות, עיצוב || <small>מיכל, צורפת תכשיטים בעבודת יד, לב פתוח וים של יצירתיות מזה כשני עשורים, בעלת המותג MISSMISH. היא יוצרת במגוון מתכות כגון: כסף, גולדפילד ובראס תכשיטים עם נוכחות, רכות והומור.</small> || לא נגיש || <small>054-3135197</small><br /><small>[https://www.missmishstudio.com/ אתר]</small><br /><small>[https://www.instagram.com/missmishstudio/ אינסטגרם]</small><br /><small>[https://www.facebook.com/m.f.jewelry/ פייסבוק]</small>
+|-
+| '''עדנה חן - אמנות בקרמיקה''' || קרמיקה, קראפט || <small>עדנה, בעלת תואר לאמנות וחינוך לאמנות – במדרשה לאמנות, בית ברל, בשנה שלישית של לימודי תראפיה באומנות בגישה האנתרופוסופית. בעלת המותג "עדנה חן-אמנות בקרמיקה וציור אינטואיטיבי בצבעי מים". עדנה יוצרת בקרמיקה באופן יחודי.</small> || לא נגיש || <small>050-2407741</small><br /><small>[https://www.ednaart.com אתר]</small><br /><small>[https://www.instagram.com/edna_hen_art?igsh=OW4wNXQ2dmUxMjZu אינסטגרם]</small>
+|-
+| '''שלומית חפר - עוד מימד לאמנות''' || קדרות, קראפט || <small>שלומית חפר היא קרמיקאית וקדרית, בעלת סטודיו-גלריה “עוד מימד לאמנות”. משתתפת כבר 26 שנה באירועי האמנות במושבה. מאז אוקטובר 2023 שלומית שותפה פעילה בצוות הניהול של מיזם ארצי 'כלניות לפני הגשם' לזכר הנצחת הנרצחים וההרוגים במלחמה…</small> || לא נגיש || <small>052-2488522</small><br /><small>[https://shlomitart.co.il/ אתר]</small><br /><small>[https://www.instagram.com/shlomit_hepher?igsh=YmV4MXBtYm1yc3Jt אינסטגרם]</small><br /><small>[https://www.facebook.com/share/17iNDgCQzj/?mibextid=wwXIfr פייסבוק]</small>
+|}
+</div>
+
+=== 3. מתחם הקשת (קדמה 8ב) ===
+10 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''גילי קמחי - Insomnia.Gal0re''' || חפצי נוי, אמנות || <small>גילי קמחי, יוצרת רב-תחומית, מעצבת קולאז'ים דיגיטליים תחת המותג Insomnia.Gal0re (אינסומניה גאלור). הקולאז'ים נולדו בלילה אחד של נדודי שינה, מתוך דחף לבטא את מה שלא נותן לישון, והפכו לאפיק יצירתי חדש, צבעוני, עתיר דמיון ומלא עוצמה.</small> || נגיש || <small>054-7807178</small><br /><small>[https://insomnia-gal0re.my.canva.site/insomnia-gal0re-available-prints אתר]</small><br /><small>[https://www.instagram.com/insomnia.gal0re/ אינסטגרם]</small>
+|-
+| '''דקלה שי - צורפות מהטבע''' || צורפות, עיצוב || <small>דקלה שי היא צורפת ומעצבת בעבודת יד תכשיטי כסף, בראס, ציפוי זהב וגם תכשיטים מגרעיני אבוקדו ועץ. בעבודותיה משולבים אלמנטים מעולמות הטבע .</small> || נגיש || <small>054-7823225</small><br /><small>[https://www.instagram.com/diklashai_jewellery?utm_source=qr&#038;igsh=ODJmOHdlM3JpOWhv אינסטגרם]</small>
+|-
+| '''חן הני ניסימוב - חינה לגוף, לשיער ולנשמה''' || ציור, קראפט || <small>חן הני ניסימוב בעלת סטודיו Henna Artherapy – חינה לגוף, לשיער ולנשמה, ובעלת המותג היחודי ׳הנרייטה – שיקום וצבע טבעי לשיער׳. חן היא אמנית חינה ומטפלת בחינה, החוקרת את החינה – הכופר הלבן, כאלמנט מקודש התומך במעברים ונושא ברכה ומזל.</small> || נגיש || <small>052-3414782</small><br /><small>[https://www.chenheny.com/ אתר]</small><br /><small>[https://www.instagram.com/chenhenna/ אינסטגרם]</small><br /><small>[https://www.instagram.com/henryetta_healinghaircolors/ פייסבוק]</small>
+|-
+| '''טלי ליכטר דישון - TD ceramic''' || קדרות, קראפט || <small>טלי ליכטר דישון, אומנית בחימר ויוצרת קרמיקה שימושית לחלל הבית. טלי היא אומנית שמקפידה על כל פרט בייצור הכלים הנפלאים שלה.</small> || נגיש || <small>054-4208413</small><br /><small>[https://www.instagram.com/td_ceramic/# אתר]</small><br /><small>[https://www.instagram.com/td_ceramic/# אינסטגרם]</small>
+|-
+| '''ליאת אבירם - ליאת תכשיטים שאין לאחרים''' || צורפות, עיצוב || <small>ליאת היא בעלת המותג "ליאת תכשיטים שאין לאחרים" יוצרת כבר כמעט 40 שנה תכשיטים קלאסיים, שניתנים לענידה לנצח, ללא קשר לאופנות מתחלפות. מקבלת השראה מהעולם, מהטבע ומחיי הנפש שלה.</small> || נגיש || <small>052-2518300</small>
+|-
+| '''לירון אלדר''' || פיסול, אמנות || <small>לירון אלדר, בוגרת בצלאל, היא אמנית רב־תחומית ומעצבת גרפית העוסקת בפיסול קרמי, רישום וציור. בעבודותיה היא חוקרת מצבים נפשיים באמצעות דימויים המשלבים בין הפנטסטי לריאליסטי.</small> || נגיש || <small>050-9905225</small><br /><small>[https://www.lirona-art.co.il/ אתר]</small><br /><small>[https://www.instagram.com/liron_eldar_artist?igsh=a2l6NzRuMzN6aWh6&#038;utm_source=qr אינסטגרם]</small>
+|-
+| '''מיה הוד רן - מסע הגיבורה שאני''' || כתיבה, אמנות || <small>מיה הוד רן MA – סופרת, מטפלת, מובילה תהליכי כתיבה לריפוי הנפש ומרצה על ביבליותרפיה ומסע הגיבור. מלווה א.נשים בקליניקה (ובזום) לברוא סיפור חדש. הוציאה לאור שבעה ספרים, "טריקה שקטה" הוא רומן הפרוזה האחרון שלה.</small> || נגיש || <small>054-7480632</small><br /><small>[https://www.mayahodran.com/ אתר]</small><br /><small>[https://www.instagram.com/mayahodran/ אינסטגרם]</small><br /><small>[https://www.facebook.com/mayahodran/ פייסבוק]</small>
+|-
+| '''משק הלא - מטבח דרוזי ביתי''' || קולינריה || <small>פיתה דרוזית, עלי גפן, קובה, סמבוסק וממולאים, הכל בעבודת יד ובטעמים ביתיים מסורתיים.</small> ||  || <small>0506875000</small><br /><small>[https://www.facebook.com/hala.farm פייסבוק]</small>
+|-
+| '''סוזי מור - פנימהות''' || עיצוב מוצר, עיצוב || <small>סוזי, מטפלת בפרחי באך ומלווה תהליכי גילוי וצמיחה, היא היוצרת והרוח מאחורי המותג פנימהות. הקלפים ומוצרי הנייר הייחודיים שלה נולדו מתוך אמונה עמוקה כי הכוחות לריפוי, שינוי וצמיחה טמונים בכל אחת מאיתנו.</small> || נגיש || <small>052-2898713</small><br /><small>[https://www.pnimahut.com אתר]</small><br /><small>[https://www.instagram.com/pnimahut?igsh=MTFkNmc2eGZlY3Bpbg== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1CRLUksEHN/ פייסבוק]</small>
+|-
+| '''רקפת הדר - יומן ויוזאלי בשיטת "דפי נפש"''' || כתיבה, אמנות || <small>רקפת הדר היא מטפלת באמנות, אמנית וסופרת, מפתחת שיטת "דפי נפש" ליצירה ביומן ויזואלי ומכשירה מלוות דרך בשיטה. במהלך המלחמה, רקפת וכ-60 מלוות מוסמכות העניקו תמיכה למאות מפונים מהצפון ומהעוטף באמצעות העבודה ביומן.</small> || נגיש || <small>054-3322464</small><br /><small>[https://visualjournal.co.il/ אתר]</small><br /><small>[https://www.instagram.com/rakefethadar/ אינסטגרם]</small><br /><small>[https://www.facebook.com/rakefetlink פייסבוק]</small>
+|}
+</div>
+
+=== 4. מתחם התורמוסים (הבוטנים 25) ===
+8 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''Jburger v&w by J17''' || קולינריה || <small>אוכל רחוב טבעוני - המבורגרים איכותיים ועוד</small> || נגישות בתיאום || <small>054-4402208</small><br /><small>[https://www.instagram.com/jburger_vegan?igsh=aTVndjNuYzlvNTk= אינסטגרם]</small><br /><small>[https://www.facebook.com/share/166DFWZCfQ/ פייסבוק]</small>
+|-
+| '''איילת סניור - ayeletales''' || ציור, אמנות || <small>איילת סניור, בעלת המותג ayeletales היא אמנית היוצרת איורים המספרים על המתרחש בתוך הנפש. ביצירותיה היא משלבת אנשים ובעלי חיים המשדרים מצב תודעתי או נפשי ונוגעים ישר בלב.</small> || לא נגיש || <small>054-7781775</small><br /><small>[https://kanayelet.wixsite.com/ayeletales אתר]</small><br /><small>[https://www.instagram.com/ayeletales/ אינסטגרם]</small><br /><small>[https://www.facebook.com/ayelet.senyor?locale=he_IL פייסבוק]</small>
+|-
+| '''ורה אלטרמן''' || תכשיטנות, עיצוב || <small>ורה, בוגרת הפקולטה לעיצוב במכון הטכנולוגי חולון HIT, עוסקת בתכשיטנות וקרמיקה מזה 8 שנים. התכשיטים עשויים פורצלן ספרדי ומצוירים בעבודת יד בזהב אמיתי 23 קראט.</small> || לא נגיש || <small>052-5490046</small><br /><small>[https://www.instagram.com/lilome.porcelain אינסטגרם]</small><br /><small>[https://www.facebook.com/vera.alterman.2025 פייסבוק]</small>
+|-
+| '''ילנה חייפץ - Liya_Lem''' || קרמיקה, קראפט || <small>ילנה, קרמיקאית מהנשמה, יוצרת מהלב את מה שמתבקש. היא מתמחה ביצירות בחומר איכותי, ומייצרת מוצרים לנוי, לבית ולגינה בגימור איתן ואומנותי. היא מוכרת את עבודותיה בפרדס חנה והסביבה והשתתפה במספר תערוכות.</small> || לא נגיש || <small>050-9749774</small><br /><small>[https://www.instagram.com/liyalem?igsh=ZWlvMndqNGhvOWc1 אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1Gwmifq4i7/ פייסבוק]</small>
+|-
+| '''מירב גלזרמן - חומר למחשבה''' || קדרות, קראפט || <small>מירב יוצרת כלי קרמיקה שימושיים, בטקסטורות, צורות יחודיות וצבעוניות עדינה, ומשקיעה מחשבה רבה ביצירת כלים נוחים, קלים ופונקציונלים. ההשראה מגיעה מהטבע, משחקי אור וצל, ביער ובקרקעית הים.</small> || לא נגיש || <small>052-8735939</small><br /><small>[https://www.instagram.com/meiravglaserman?igsh=MTU0Znh0bjA4ZzdkdQ== אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100054659220725 פייסבוק]</small>
+|-
+| '''נועם ויובל בר - ״יובל ואבא״''' || ציור, אמנות || <small>״יובל ואבא״ – מאיירים. בעבודתם הם יוצרים דמויות מקוריות ואנושיות, השואבות השראה מעולמות הפנטזיה, הטבע והאנימה. האיורים מוצגים כסדרות קונספטואליות, תחת נושא משותף, תוך הקפדה על פרטים וקומפוזיציה ששמה את הדמות במרכז.</small> || לא נגיש || <small>052-6321067</small><br /><small>[https://www.instagram.com/yuval.ve.aba/ אינסטגרם]</small>
+|-
+| '''עמי ליבוביץ''' || זכוכית, קראפט || <small>עמי ליבוביץ, בעל תואר שני לפילוסופיה ובעל המותג דברי זכוכית. הוא מציג עבודות מגוונות, מקוריות וחד פעמיות. ביצירותיו הוא נע בין כלים דקורטיביים ומעשיים לבין כלים מופשטים בעלי הבעה חברתית, בין זכוכית עבה לדקיקה, בין צבעוניות עזה…</small> || לא נגיש || <small>050-8289021</small><br /><small>[https://www.flickr.com/photos/glami/ אתר]</small><br /><small>[https://www.instagram.com/amileibowicz/ אינסטגרם]</small><br /><small>[https://www.facebook.com/Ami-Leibowicz-Glass-411845549305354 פייסבוק]</small>
+|-
+| '''צ'קי קטן - Messian.art''' || זכוכית, קראפט || <small>צ'קי, אומן המתמחה בעבודות עץ, ברזל וזכוכית, עם אהבה מיוחדת לויטראז' ופרזול אומנותי. צ'קי הוא אומן שיוצר פריטים בעבודת יד, בהתאמה אישית מלאה: משלב הרעיון, לפי צורך הלקוח, והופך אותם לפי תחושה ליצירה חד־פעמית, מוקפדת ואישית.</small> || נגיש || <small>050-6322400</small><br /><small>[https://www.instagram.com/messian.art?utm_source=qr&#038;igsh=MTUxenUzMmhtaXFpcw== אינסטגרם]</small>
+|}
+</div>
+
+=== 5. מתחם הדרים Dream (הדרים 77א) ===
+8 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2077%D7%90%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''אנג'לה סרמונטה - paperflowers.art''' || חפצי נוי, קראפט || <small>אנגילה, אמנית פרחי נייר. יוצרת ומעבירה סדנאות בבית שלה בכרכור. לאחר שנים של עבודה משרדית, אנג'לה החליטה לחזור לאהבתה הגדולה – היצירה והאמנות.</small> || לא נגיש || <small>054-4546702</small><br /><small>[https://www.instagram.com/paperflowers.art/ אינסטגרם]</small>
+|-
+| '''בועז דרורי''' || עיצוב מוצר, אמנות || <small>בועז, בוגר המחלקה לעיצוב תעשייתי מבצלאל, יוצר, צייר, ומעצב שנים רבות לחברות מובילות בארץ ובעולם. מנהל את מרכז הממציאים ע"ש רפי מהודר-בטכניון. בועז מצייר דמויות שבטיות וציורים עם הרבה תנועה, בוטות והומור.</small> || לא נגיש || <small>054-6645748</small><br /><small>[https://www.instagram.com/boazdrori?igsh=MTliNXo1N2VtaHFpdA%3D%3D&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100083286005248 פייסבוק]</small>
+|-
+| '''הרייט גויטיין''' || ציור, אמנות || <small>הרייט גויטיין היא בעלת תואר BA באמנות מארצות הברית ובוגרת תוכנית האנימציה של קולג’ שרידן בקנדה וסיימה לימודי הוראת אנגלית בבית ברל.</small> || לא נגיש || <small>054-9430053</small><br /><small>[https://www.facebook.com/share/1AY4fnT9FB/ פייסבוק]</small>
+|-
+| '''מארק יודל''' || פיסול, אמנות || <small>מארק יודל, בוגר בצלאל ואקדמיה החופשית לאמנות בהאג, הולנד, הוא אמן קרמיקה היוצר מעל 40 שנה, בעל סטודיו בפרדס חנה, אחד המייסדים של פסטיבל 'אמנות במושבה'.</small> || לא נגיש || <small>050-5947698</small><br /><small>[https://www.instagram.com/yudellmark/ אינסטגרם]</small><br /><small>[https://www.facebook.com/mark.yudell פייסבוק]</small>
+|-
+| '''סופיה פארס''' || קולינריה || <small>אוכל דרוזי באווירה ביתית. עלי גפן, כרוב ממולא, מג'דרה, פיתה עם לבנה ופטאייר תרד</small> || נגישות בתיאום || <small>050-8821087</small><br /><small>[https://sofia-kitchen.com/?fbclid=IwAR1zeXgt1Zt-c1BPmTW9P2aWOKci5rGunEiPaoFU5FEmZQiX1q0udvdo2wE אתר]</small><br /><small>[https://www.facebook.com/profile.php?id=100042371234703 פייסבוק]</small>
+|-
+| '''פנינה הרפז - מרגניתא אמנות בפסיפס''' || פסיפס, קראפט || <small>פנינה הרפז, בעלת מותג 'מרגניתא אמנות בפסיפס', יוצרת פסיפסים ומחברת יחדיו חלקים שבורים ממקורות שונים ליצירת אחדוּת. פנינה משלבת חומרים כגון קרמיקה וזכוכית בטכניקות שונות כדי ליצור אפקטים וגוונים ייחודיים ולהפיק חיבורים מורכבים של…</small> || לא נגיש || <small>054-8041302</small><br /><small>[https://www.instagram.com/marganitamosaicarts/ אינסטגרם]</small><br /><small>[https://www.facebook.com/marganitamosaicarts פייסבוק]</small>
+|-
+| '''רונית כרמל''' || צורפות, עיצוב || <small>רונית, בוגרת בצלאל, צורפת ותיקה, משתתפת באירוע משנת 2001. יוצרת תכשיטים מכסף, פליז ונחושת בעבודת יד, כך שאין שני תכשיטים זהים. עיצוביה מושפעים מהטבע שסביבנו וממסעותיה לאפריקה. בנוסף לתכשיטים, היא מפסלת מחומרים מהטבע.</small> || לא נגיש || <small>050-7712437</small><br /><small>[https://www.instagram.com/ronit.carmel?igsh=dWxqa2Z0M3p3MzRo אינסטגרם]</small><br /><small>[https://www.facebook.com/share/16jtQhLia2/ פייסבוק]</small>
+|-
+| '''רינה רונן - סורגת סיפור''' || עיצוב מוצר, קראפט || <small>רינה רונן – "סורגת סיפור", היא אמנית סריגה היוצרת מזה כ-20 שנה, מביאה אל עולם הקראפט יד ייחודית המשלבת מסורת עם רגישות מודרנית.</small> || לא נגיש || <small>054-4273648</small>
+|}
+</div>
+
+=== 6. השוק הישן (האורנים 12) ===
+''ערך מורחב: [[השוק הישן]]''
+7 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''אביאלה גולדברג - אביאלה ART''' || ציור, אמנות || <small>אביאלה גולדברג, ציירת ואמנית פלסטית, בעלת תואר ראשון לאומנות מבצלאל, ותעודת הוראת אומנות. בוגרת בית הספר "הקוביה" בירושלים, בעלת המותג אביאלהART. אביאלה מציירת בצבעי שמן על בד ועל קרטון.</small> || נגיש<br />סגור בשבת || <small>054-9169981</small><br /><small>[https://www.instagram.com/aviella_art?igsh=MXczaTZzNXZubHd4eg== אינסטגרם]</small>
+|-
+| '''אפרת לובל - צלמת יוצרת''' || עיצוב מוצר, אמנות || <small>אפרת, בעלת תואר הנדסאי צילום ומדיה דיגיטלית ומזה 20 שנה בעלת המותג "אפרת לובל – צלמת יוצרת", היא צלמת ויוצרת מוצרים המשלבים את עולמות הצילום, ההשראה והאופטימיות שבה. ביצירותיה היא משלבת בין ויזואל לטיפוגרפיה.</small> || נגיש<br />סגור בשבת || <small>052-8535259</small><br /><small>[https://efratlobel.com/ אתר]</small><br /><small>[https://www.instagram.com/efratlobel/ אינסטגרם]</small>
+|-
+| '''ג׳ודית סירוצקי - JUDE''' || פיסול, אמנות || <small>ג׳ודית סירוצקי, יוצרת הקרמיקה מאחורי המותג JUDE, מחברת בין חומר לתהליך של התבוננות פנימית. עבודתה נשענת על התפיסה של “לא מושלם כמושלם”.</small> || נגיש<br />סגור בשבת || <small>054-7098920</small><br /><small>[https://www.instagram.com/jude__ceramics?igsh=MTRsMWNxNXBsN3p0ZA%3D%3D&#038;utm_source=qr אינסטגרם]</small>
+|-
+| '''דורין כהן ניסן - YOSKE''' || אפנה, עיצוב || <small>דורין כהן ניסן, פרדסחנאית, המעצבת, בעלת המותג והנכדה של YOSKE. ביולי 2022 דורין ומשפחתה נפרדו מסבא יוסקה היקר. קצת לאחר מכן, הלב המרוסק שלה נתקל במחווה פשוטה ומחמיאה שהובילה למסע אדיר.</small> || נגיש || <small>050-6031000</small><br /><small>[https://www.wearyourheart-yoske.com אתר]</small><br /><small>[https://www.instagram.com/wearyourheart.yoske?utm_source=ig_web_button_share_sheet&#038;igsh=ZDNlZDc0MzIxNw== אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=61550519382747 פייסבוק]</small>
+|-
+| '''יעל מנחם - Belamika Ceramics''' || קדרות, קראפט || <small>יעל מנחם היא אמנית קרמיקה ובעלת המותג Belamika Ceramics. נולדה באורוגוואי ועלתה לישראל בגיל 20. השפה הספרדית והחום הדרום אמריקאי נוכחים בעשייה שלה ומשפיעים על הסגנון ועל הגישה השמחה לחיים.</small> || נגיש<br />סגור בשבת || <small>052-6859934</small><br /><small>[https://www.instagram.com/_belamika_ceramics/ אינסטגרם]</small><br /><small>[https://www.facebook.com/yael.grodzicki?locale=es_LA פייסבוק]</small>
+|-
+| '''[[שושנה|שושנה - פיתה שיפודים - השוק הישן]]''' || קולינריה || <small>שׁוֹשַׁנָּה - פיתה שיפודים, מציעה אוכל רחוב כשר וטעים: פיתות עם שיפודים עסיסיים, ביסים טובים מהג׳וספר וטעמים אותנטיים שעושים טוב בלב.</small> || נגישות בתיאום<br />סגור בשבת || <small>053-9322390</small><br /><small>[https://www.instagram.com/shoshana.phk?igsh=aTBqYW9xNGprbndt&#038;utm_source=qr אינסטגרם]</small>
+|-
+| '''שרון גנדלמן - Shuzi Jewelry''' || תכשיטנות, עיצוב || <small>שרון גנדלמן, מעצבת תכשיטים ויזמית שגדלה בפרדס חנה–כרכור, היא מייסדת המותג שוזי. את דרכה החלה לפני עשר שנים בלימודי צורפות ועיצוב תכשיטים בתלת־ממד, וכיום היא בעלת חנות בלב השוק הישן במושבה, חלל עם עבר עשיר של מלאכה וחיים.</small> || נגיש<br />סגור בשבת || <small>052-6936963</small><br /><small>[https://www.instagram.com/shuzijewelry/ אינסטגרם]</small><br /><small>[https://www.facebook.com/shuzijewelry פייסבוק]</small>
+|}
+</div>
+
+=== 7. בית תרבות נרבתא (ביל״ו 10) ===
+''ערך מורחב: [[נרבתא]]''
+7 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''אורי דונט''' || ציור, אמנות || <small>אורי הוא אנימטור, אמן וידאו-ארט ולייב-וידאו (VJ) מזה 20 שנה, מוסיקאי פעיל בקהילה (׳החדר של אורי׳), ומצייר מזה שנים בצבעי מים בעיקר, וגם בדיו ופחם. ציוריו מצוירים בטכניקה קלאסית לרוב, ואם זאת משופעים בתוכן חדשני, מקורי ושובב.</small> || נגיש || <small>050-7833437</small><br /><small>[https://www.instagram.com/ori.donat?igsh=MWU1dTlpYnQxMGNlYw== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1MFFjiWQS7/ פייסבוק]</small>
+|-
+| '''אורנית מרק איתן - Little Traveling Dolls''' || חפצי נוי, קראפט || <small>אורנית יוצרת בהנאה עולם קסום של בובות, גמדי יער, ארנבונים ומאורות, פטריות ועוד, תחת השם Little Traveling Dolls. יצירותיה עשויות בעבודת יד, במלאכה איטית של תפירה, רקמה, סריגה וליבוד, בהשראת טכניקת וולדורף והרוח האנתרופוסופית.</small> || נגיש || <small>050-7292094</small><br /><small>[https://littletravelingdolls.etsy.com/ אתר]</small><br /><small>[https://www.instagram.com/little.traveling.dolls/ אינסטגרם]</small><br /><small>[https://www.facebook.com/LittleTravelingDolls פייסבוק]</small>
+|-
+| '''טל פלג''' || ציור, אמנות || <small>טל היא ציירת ומאיירת, מציירת בעיקר בצבעי עיפרון ובצבעי אקריליק. ביצירותיה היא מתמקדת בנושאים של טבע, נשים ואנשים, והמפגש ביניהם.</small> || נגיש || <small>054-6587601</small><br /><small>[https://www.talpelleg.com/ אתר]</small><br /><small>[https://www.instagram.com/pelleg.tal/ אינסטגרם]</small>
+|-
+| '''יעל שלח''' || צילום, אמנות || <small>יעל היא צלמת עצמאית, בוגרת המחלקה לצילום בהדסה ירושלים ובעלת הכשרה בפוטותרפיה מאוניברסיטת תל אביב. הצילום של יעל מתאפיין בשפה טבעית, רגישה ואינטימית, הנשענת על הקשבה, נוכחות ואינטואיציה.</small> || נגיש || <small>052-8546673</small><br /><small>[https://www.yaelshelach.com/ אתר]</small><br /><small>[https://www.instagram.com/yael.shelach/ אינסטגרם]</small><br /><small>[https://www.facebook.com/yaelshelach23/ פייסבוק]</small>
+|-
+| '''מור גפן - MORGEN''' || עיצוב מוצר, עיצוב || <small>מור גפן, בעלת תואר בעיצוב תעשייתי מהמכון הטכנולוגי חולון HIT, היא המעצבת והאמנית מאחורי המותג MORGEN DESIGN היוצרת אובייקטים הנעים בין עיצוב לאמנות.</small> || נגיש || <small>054-6218810</small><br /><small>[https://www.morgenceramics.com אתר]</small><br /><small>[https://www.instagram.com/morgen_design אינסטגרם]</small><br /><small>[https://www.facebook.com/morgenceramics פייסבוק]</small>
+|-
+| '''צ׳לסי מוסרי-בירנבאום - Sideways Studio''' || חפצי נוי, אמנות || <small>צ׳לסי מוסרי־בירנבאום היא אמנית המשלבת מלאכת יד מסורתית עם אמנות עכשווית. בעבודותיה, הנעות בין רקמה לציור, בולטת עבודה ידנית נוכחת, צבעוניות מודגשת ושכבתיות היוצרת עומק ומתח חזותי.</small> || נגיש || <small>054-2124210</small><br /><small>[https://sidewaysstudio.carrd.co/ אתר]</small><br /><small>[https://www.instagram.com/sideways.the.studio/ אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=61577601300990 פייסבוק]</small>
+|-
+| '''שירה מזור - Shira Mazor Jewelry''' || צורפות, עיצוב || <small>שירה מזור, בעלת תואר בבצלאל ובעלת המותג Shira Mazor Jewelry, היא צורפת תכשיטי זהב מיוחדים בעבודת יד עדינה מלאים באהבה לרוח ולחומר ביצירותיה היא משלבת אבני חן וטקסטורות ולוקחת הרשאה גדולה מהטבע שסביבה.</small> || נגיש || <small>052-3756563</small><br /><small>[https://www.instagram.com/mazorshira/ אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1BoLDdnpVR/?mibextid=wwXIfr פייסבוק]</small>
+|}
+</div>
+
+=== 8. הבוטנים 7 ===
+7 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%207%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''דניאל זיו ברון - Nav נב מוצרי נייר''' || עיצוב מוצר, עיצוב || <small>דניאל זיו ברון, מעצבת ומאיירת בוגרת שנקר, עם תואר בתקשורת חזותית, בעלת המותג Nav מזה 8 שנים. Nav הוא מותג מוצרי נייר גבוה שכל החומרים בו נבחרו בקפידה; ישנם מוצרים כמו מחברות, ספרי סקיצות, פנקסים, כרטיסי ברכה, פרינטים ועוד.</small> || לא נגיש || <small>052-7469939</small><br /><small>[https://www.navnotebooks.com/ אתר]</small><br /><small>[https://www.instagram.com/nav_notebooks/ אינסטגרם]</small><br /><small>[https://www.facebook.com/Navnotebooks פייסבוק]</small>
+|-
+| '''הגר קדמי - Seven generations''' || אפנה, עיצוב || <small>7generations הוא מותג אופנה אקולוגי סביבתי וחברתי. יצירות והקולקציות של המותג מבוססות על טהרת החומרים הטבעיים, ניצול מקסימלי של חומרים והפחתת פסולת. כמו כן, הייצור שלנו הוא לוקאלי בסחר הוגן.</small> || לא נגיש || <small>052-2393104</small><br /><small>[https://7generations.co.il/ אתר]</small><br /><small>[https://www.instagram.com/7generations.fashion?igsh=cXI1Y2l5cXljNzFp&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/hagar.kedmi.fashion פייסבוק]</small>
+|-
+| '''חני דרמר - תזכורת''' || כתיבה, אמנות || <small>חני דרמר היא אמנית ומאיירת, בעלת המותג ׳תזכורת׳. היא אמנית היוצרת איורים וטיפוגרפיה בעבודת יד, מתוך משאלה להעניק רגע של נשימה בתוך המציאות העמוסה ולהזכיר לשים את הלב באהבה.</small> || לא נגיש || <small>052-4706132</small><br /><small>[https://www.remindertolove.shop/ אתר]</small><br /><small>[https://www.instagram.com/reminder.to.love אינסטגרם]</small><br /><small>[https://www.facebook.com/Reminder.to.love פייסבוק]</small>
+|-
+| '''טל מידן - טולה רוקחות באהבה''' || רוקחות טבעית, קראפט || <small>טל מידן, בעלת סטודיו המתמחה ברקיחת מוצרי ריפוי וקוסמטיקה טבעיים על בסיס צמחי מרפא וארומתרפיה. מזה 20 שנה רוקחת טל את מוצריה, שנולדו מתוך תהליך ארוך של חקירה, למידה והעמקה בעולמות צמחי המרפא והארומתרפיה, מתוך כוונה אמיתית להביא…</small> || לא נגיש || <small>054-2299248</small><br /><small>[https://www.tulatherapy.com אתר]</small><br /><small>[https://www.instagram.com/tulatherapy_/ אינסטגרם]</small><br /><small>[https://www.facebook.com/tal.meidan.9?locale=he_IL פייסבוק]</small>
+|-
+| '''סיון שובע''' || צורפות, עיצוב || <small>סיון שובע – יוצרת עולמות מיניאטוריים בכסף וזהב. צורפת כבר למעלה מ-15 שנה, בוגרת שנקר. התכשיטים שהיא יוצרת עשירים בפרטים ובמשמעות, ומשלבים איור ופיסול. יוצרת עבודות בהתאמה אישית, מיני קמעות ותכשיטי עוצמה.</small> || לא נגיש || <small>054-2078220</small><br /><small>[https://www.instagram.com/sivansovajewelry/ אינסטגרם]</small><br /><small>[https://www.facebook.com/sivansovajewelry פייסבוק]</small>
+|-
+| '''רונית חרוד - קבקבי העץ של רונה''' || אפנה, עיצוב || <small>רונה, בעלת המותג קבקבי העץ של רונה, מעצבת קבקבי עץ המשלבים עיצוב על־זמני עם פרקטיות ונוחות יומיומית. ההשראה מגיעה מקבקבי העץ הקלאסיים של פעם, ומקבלת פרשנות עכשווית דרך עבודה מדויקת בעץ טבעי וקווים נקיים.</small> || לא נגיש || <small>054-9963633</small><br /><small>[https://ronaclogs.co.il/ אתר]</small><br /><small>[https://www.instagram.com/rona.clogs?igsh=MWl3dmg2Ym8zbXYyMA== אינסטגרם]</small><br /><small>[https://www.facebook.com/Rona.Clogs פייסבוק]</small>
+|-
+| '''תהילה שץ - Shatze''' || תכשיטנות, עיצוב || <small>תהילה, מעצבת תכשיטים ובעלת המותג Shatze, היא אמנית היוצרת תכשיטים בעבודת יד לגברים ונשים, המבוססים על שילובים ייחודיים של אבני חן טבעיות.</small> || לא נגיש || <small>054-2249727</small><br /><small>[https://shatze.co.il/ אתר]</small><br /><small>[https://www.instagram.com/shatze_jewelry?igsh=dWkyNTV3aHRjcWR2&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/17oi3AqhrU/?mibextid=wwXIfr פייסבוק]</small>
+|}
+</div>
+
+=== 9. מתחם שאננים (שאננים 9) ===
+7 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''אלכסנדרה בן שמול - Alex''' || אפנה, עיצוב || <small>אלכסנדרה בן שמול, מעצבת אופנה ואם לארבעה ילדים, בעלת המותג alex. את דרכה החלה במהלך הריונה הראשון בעיצוב בגדים המותאמים להריון ולחיים עצמם, מתוך צורך אישי בנוחות, רכות ותנועה.</small> || לא נגיש || <small>054-4522606</small><br /><small>[https://www.alexsahara.com אתר]</small><br /><small>[https://www.instagram.com/alex_women_fashion?igsh=MTg4bnk5ZHlzZnZyZw== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/17k6eUFQgS/ פייסבוק]</small>
+|-
+| '''זיוה שמחי - Vardi''' || רוקחות טבעית, קראפט || <small>זיוה שמחי היא בעלת מותג VARDI, המתמחה ברוקחות טבעית ,מוצרי קוסמטיקה-טיפוח וטיפול לכל המשפחה. כל המוצרים נרקחים בעבודת יד, ועשויים מתמציות שמנים ארומתרפיות טהורות וחמאות, כמו גם משחות טיפוליות המופקות משמן חלוט.</small> || לא נגיש || <small>054-6880100</small><br /><small>[https://www.facebook.com/share/1A9X9FG3K4/?mibextid=wwXIfr אתר]</small><br /><small>[https://www.instagram.com/zivasimhi?igsh=bjFoNWIyd2x2ejNo אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1A9X9FG3K4/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''מורן דר - מורן עיצובים בנייר''' || חפצי נוי, קראפט || <small>מורן דר היא בעלת המותג "מורן עיצובים בנייר", יוצרת רב-תחומית שמאמינה בכוחה של היצירה לחבר בין אנשים. מורן מתמחה בעיצוב ויצירת מתנות מרגשות וערכות DIY ייחודיות. כל יצירה של מורן שמה דגש על חיבור רגשי ונגיעה אישית.</small> || לא נגיש || <small>052-4681654</small><br /><small>[https://digital-business-card.co.il/moran-dar/ אתר]</small><br /><small>[https://www.instagram.com/moran_dar/ אינסטגרם]</small><br /><small>[https://www.facebook.com/moran.jacuel פייסבוק]</small>
+|-
+| '''סמדר צורן ארד''' || צורפות, עיצוב || <small>סמדר צורן ארד, צורפת בעבודת יד ויוצרת מהלב, תכשיטים בזהב ובכסף. עבודותיה נקיות, רכות ונוגעות, משלבות אלמנטים ומרקמים הלקוחים מן הטבע ופרי דמיונה של היוצרת. ב'אמנות במושבה' סמדר תציג ממגוון יצירותיה, חלקן One of a kind .</small> || לא נגיש || <small>054-5640072</small><br /><small>[https://www.instagram.com/smadartsoran_jewelry/ אינסטגרם]</small><br /><small>[https://www.facebook.com/smadartsoran פייסבוק]</small>
+|-
+| '''ענת יונאי - הקדרות של ענת''' || קדרות, קראפט || <small>ענת יונאי היא קדרית, יוצרת כלים שימושיים ומוצרים דקורטיביים. מגיעה מעולם הצורפות- למדה ועבדה בסטודיו "תכשיט", בו גם לימדה במהלך השנים לימודי צורפות.</small> || לא נגיש || <small>052-4783311</small><br /><small>[https://www.instagram.com/anat_pottery אינסטגרם]</small><br /><small>[https://www.facebook.com/anatyoev פייסבוק]</small>
+|-
+| '''[[קבב ואחיו|קבב ואחיו - אוכל רחוב בגבוה]]''' || קולינריה || <small>אוכל רחוב ישראלי טרי - פיתות קבב עסיסיות, מנות גריל ותוספות אהובות, בהגשה מהירה ובאווירת סטריט פוד שמחה</small> || נגישות בתיאום || <small>[https://www.instagram.com/kebabandbro?igsh=MTM0dDNoNmQwd2hwdw== אינסטגרם]</small><br /><small>[https://www.facebook.com/kebabandbro פייסבוק]</small>
+|-
+| '''רותם לוי - רותמיקה סטודיו לעיצוב גרפי ואיור''' || עיצוב מוצר, אמנות || <small>רותם לוי, בעלת תואר בתקשורת חזותית ובעלת המותג רותמיקה – סטודיו לעיצוב גרפי ואיור היא אמנית ומאיירת המתמקדת באיורים דיגיטליים של דמויות נשיות, העוסקים בזהות, חופש, גאווה והעצמה נשית.</small> || לא נגיש || <small>052-8485161</small><br /><small>[https://www.rotemartdesign.co.il/ אתר]</small><br /><small>[https://www.instagram.com/rotemika.design/ אינסטגרם]</small><br /><small>[https://www.facebook.com/rotemartdesign פייסבוק]</small>
+|}
+</div>
+
+=== 10. הדקלים 131 ===
+5 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20131%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''דפנה קסטנבוים''' || קרמיקה, קראפט || <small>דפנה קסטנבוים – אמנית בחומר, היא אמנית רב תחומית, עוסקת בחומר 20 שנה. מוכרת את עבודותיה בחנות גלריה ״המוסד״ ברחוב הדקלים 131 פרדס חנה.</small> || לא נגיש || <small>055-6800895</small><br /><small>[http://hamosad-gallery.co.il אתר]</small><br /><small>[https://www.instagram.com/daphna.kestenboim/ אינסטגרם]</small><br /><small>[https://www.facebook.com/daphna.kestenboim פייסבוק]</small>
+|-
+| '''לירי יער - פירסינג רפואי''' || תכשיטנות, עיצוב || <small>לירי יער היא אחות מיילדת מוסמכת ואומנית פירסינג, מומחית בניקוב איבחון ייעוץ וטיפול בפתולוגיות בעקבות ניקוב אקדח. לירי משלבת בין הניסיון והידע שלה כאחות מיילדת מוסמכת, לבין הניסיון והאהבה שלה לפירסינג.</small> || לא נגיש<br />סגור בשבת || <small>050-3302254</small><br /><small>[https://www.instagram.com/nikuv_kashoov?igsh=MTNoMzdvMWZ1N3NiNg== אינסטגרם]</small>
+|-
+| '''מיכל ניב נהוראי''' || צורפות, עיצוב || <small>מיכל ניב נהוראי היא אמנית רב-תחומית שהחלה את דרכה כצורפת והמשיכה מתוך סקרנות ואהבה לחומר אל תחומי הציור והפיסול בעץ ממוחזר. ביצירותיה ניכרת תשומת לב לטכניקה לצד ביטוי אישי.</small> || לא נגיש || <small>050-4991428</small><br /><small>[https://hamosad-gallery.co.il/ אתר]</small><br /><small>[https://www.instagram.com/michal_niv_nehorai/ אינסטגרם]</small><br /><small>[https://www.facebook.com/MichalJewelryDesign/ פייסבוק]</small>
+|-
+| '''צ׳ארוּ ויאס - URBANIC TRIBE''' || אפנה, עיצוב || <small>צ׳ארו ויאס בעלת המותג URBANIC TRIBE היא אמנית, מעצבת אופנה ואקססוריז המוכרת את עבודותיה בחנות גלריה ״המוסד״. כל חייה הייתה עטופה צ׳ארו בעולם הבדים, הטקסטורות, האמנות והאופנה, כשהיא מונעת מתשוקה לאסתטיקה.</small> || לא נגיש || <small>054-6535059</small><br /><small>[https://www.urbanictribe.com אתר]</small><br /><small>[https://www.instagram.com/urbanictribe?igsh=MWFkNzh2ODB2bWJtdA%3D%3D&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1DGRuGBczW/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''רפאל הנקוק - אמן קעקועים - Raph ink''' || ציור, אמנות || <small>סטודיו לקעקועים – רפא אינק (Rapha Ink) ממוקם בפרדס חנה, הוא המקום שבו אני, ג'סטין רפאל מייקל הנקוק – אמן בעל שורשים בינלאומיים, מביא פרספקטיבה גלובלית ישירות לסצנה המקומית.</small> || לא נגיש || <small>053-7700337</small><br /><small>[https://hamosad-gallery.co.il/ אתר]</small><br /><small>[https://www.instagram.com/rapha.ink.tatz?igsh=YmIwZ3g4MHZvYXIx&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/Jus.Hancock?mibextid=wwXIfr&#038;mibextid=wwXIfr פייסבוק]</small>
+|}
+</div>
+
+=== 11. המזמור 11 ===
+4 משתתפים. [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%96%D7%9E%D7%95%D7%A8%2011%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw למיקום בגוגל מפות].
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''ברברה סטצן''' || עיצוב מוצר, עיצוב || <small>ברברה סטצן היא קילטרית (תופרת בטלאים) עם ניסיון של כ־20 שנה, היוצרת קווילטים ייחודיים באיכות גבוהה. ברברה, המוכרת גם כמורה לקווילטים בפרדס חנה–כרכור, מעצבת שמיכות לתינוקות, לילדים ולמבוגרים, כיסויי מיטה ופריטי טקסטיל שמכניסים…</small> || לא נגיש || <small>052-2614726</small>
+|-
+| '''נטע ליבנה - NETUSH''' || תכשיטנות, עיצוב || <small>נטע ליבנה היא אמנית ומעצבת תכשיטים הנמכרים בארץ ובעולם, מופיעים במגזינים נחשבים בתחום האופנה והלייף סטייל, והפכו למותג אהוב על ידי נשים רבות.</small> || לא נגיש || <small>052-3764737</small><br /><small>[https://www.netalivne.com/ אתר]</small><br /><small>[https://www.instagram.com/neta_livne_fashion_jewelry/ אינסטגרם]</small><br /><small>[https://www.facebook.com/NetaLivneJewleryDesign פייסבוק]</small>
+|-
+| '''ניתאי אימרי גפן - נקודת אור''' || חפצי נוי, קראפט || <small>ניתאי, בעל המותג "נקודת אור", הוא אמן ומנחה סדנאות היוצר גופי תאורה ייחודיים מדלעות נוי מיובשות. דרך חורים זעירים נולד אור חמים ורך, המצייר על הקירות תחרה של נקודות, צללים ודימויים גיאומטריים משתנים.</small> || לא נגיש || <small>052-5391929</small><br /><small>[https://immanda.my.canva.site/lightdots אתר]</small><br /><small>[https://www.instagram.com/nitay.gefen אינסטגרם]</small><br /><small>[https://www.facebook.com/NitayNatureArt פייסבוק]</small>
+|-
+| '''תמי מאירי''' || פיסול, אמנות || <small>תמי מאירי פסלת ויוצרת מזה 40 שנה. עבודותיה בעלות אופי פיגורטיבי מובהק, מעולם המחול, הקרקס וההתעמלות האמנותית. יוצרת בחימר, ברונזה, פוליאסטר, רשתות ברזל ושילוב חומרים. כמו כן יוצרת אמנות קרמית שימושית בעלת אופי פיסולי.</small> || לא נגיש || <small>054-4549517</small><br /><small>[https://tamimeiri-art.com/about/ אתר]</small><br /><small>[https://www.instagram.com/tami_meiri_sculpture/ אינסטגרם]</small><br /><small>[https://www.facebook.com/share/17z6bJayQg/ פייסבוק]</small>
+|}
+</div>
+
+== סטודיואים נוספים, לפי אזור ==
+44 משתתפים נוספים פזורים ברחבי המושבה. החלוקה לאזורים כאן נגזרה ממיקום הרחובות ולא מהמסלולים הרשמיים של הפסטיבל, שמסומנים בארבעה צבעים במפה הדיגיטלית שלו.
+
+=== מרכז המושבה ===
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! כתובת !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''הילדה מירום - HILDA MEROM - CLAY ARTIST''' || פיסול, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%92%D7%91%D7%A2%2013%20%D7%93%D7%99%D7%A8%D7%94%203%20%D7%A7%D7%95%D7%9E%D7%94%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw גבע 13 דירה 3 קומה 1] || <small>הילדה מירום היא אמנית קרמיקה ותיקה הפועלת מעל 40 שנה ובעלת קריירה בינלאומית עשירה. עבודותיה הוצגו במוזיאונים, ביאנלות וגלריות בארץ ובעולם, יצירה שלה נמצאת באוסף הקבע של הכנסת בירושלים, ועבודות נוספות מצויות באוספים של אספנים…</small> || נגיש || <small>050-7567221</small><br /><small>[https://www.meromhilda.com/ אתר]</small><br /><small>[https://www.facebook.com/share/1AW9oxHaZz/ פייסבוק]</small>
+|-
+| '''[[דליקטו|דליקטו - ג'לאטו איטלקי אמיתי]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%91%D7%A0%D7%99%D7%9D%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הבנים 5] || <small>ג'לאטו עבודת יד במתיקות מעודנת, מילקשייק, וופל בלגי אגדי, קרפ משובח, קפה מעולה, אפוגטו ועוד שפע משקאות מפנקים וכל זה באווירה נעימה עם מוזיקה טובה ושירות ברמה גבוהה</small> || נגישות בתיאום<br />סגור בשבת || <small>04-6390261</small><br /><small>[https://www.instagram.com/delicato.phk?igsh=MTVmeGQxcHZqNDJqbQ== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1CGy7mDfDK/ פייסבוק]</small>
+|-
+| '''[[נוני ופורטונה|רות מורן ואוהד - נוני ופורטונה]]''' || עיצוב מוצר, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%A0%D7%93%D7%99%D7%91%2016%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הנדיב 16] || <small>נוני ופורטונה הוא מקום מיוחד, מלא באוצרות שעושים נעים בלב, מקום למפגש, שקל להרגיש בו בבית. חנות יד שנייה ווינטג׳ שהיא גם בית קפה מתוק ומלא בגודיז.</small> || לא נגיש || <small>054-9844049</small><br /><small>[http://nunivefortuna.co.il/ אתר]</small><br /><small>[https://www.instagram.com/nuni_vefortuna?igsh=d3p2MjBmazg1YXNx&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1ATP3XHEDG/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[נוני ופורטונה|נוני ופורטונה - קפה משובח ופינוקים]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%A0%D7%93%D7%99%D7%91%2016%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הנדיב 16] || <small>בית קפה שמיד מרגישים בו בבית, שהוא גם חנות יד שניה ווינטג׳</small> || נגישות בתיאום || <small>[https://nunivefortuna.co.il אתר]</small><br /><small>[https://www.instagram.com/nuni_vefortuna?igsh=d3p2MjBmazg1YXNx&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/181a14bbRk/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''דרור פרבדה''' || פיסול, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%A1%D7%AA%D7%93%D7%A8%D7%95%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההסתדרות 1] || <small>היצירה עבורי היא דרך חיים. היא החלה בכדרות על האובניים, מתוך אהבה לחומר ולמלאכת היד,ומתוך משיכה אל הפיסול בברונזה שבו אני מבקש לבטא את עוצמת הרגש האנושי.</small> || לא נגיש || <small>050-5651483</small><br /><small>[https://www.facebook.com/share/1DqVbLB7Ji/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[בבושקפה|בבושקפה עגלת קפה]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%A1%D7%AA%D7%93%D7%A8%D7%95%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההסתדרות 1] || <small>the best coffee in town! קפה מעולה, מאפים מושלמים ושייקים</small> ||  || <small>055-2533933</small><br /><small>[https://www.instagram.com/babushcoffee/ אינסטגרם]</small><br /><small>[https://www.facebook.com/babushcaffe/?locale=he_IL פייסבוק]</small>
+|-
+| '''אלמה לונה - alma space''' || חפצי נוי, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A9%D7%9C%D7%95%D7%9D%206%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw השלום 6] || <small>אלמה, יוצרת רב תחומית, ממחזרת חפצים ומפיחה בהם חיים חדשים. ביצירותיה נותנת ביטוי להתמודדותה היומיומית עם קומפלקס פוסט טראומה ומאפשרת ביטוי לכל חלק בה המבקש מקום, משלבת את חלקיה דיסוציאטיביים השונים לכדי יצירה שלמה המתפרשת על כל…</small> || לא נגיש<br />סגור בשבת || <small>054-4865542</small><br /><small>[https://www.instagram.com/alma_lilu?igsh=dzV5OGpsb3RzZTg5 אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1FFNwgCi8w/ פייסבוק]</small>
+|-
+| '''ברוריה יודילביץ - נגוהות סטודיו לויטראז'''' || זכוכית, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%99%D7%94%D7%9C%D7%95%D7%9D%2011%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw יהלום 11] || <small>ברוריה עוסקת בעבודת ויטראז' זה שלושה עשורים, מאז שהתגוררה בארצות הברית, שם למדה והתאהבה באמנות יפה זו. היא יוצרת בסטודיו נגוהות (Negohot – Stained Glass Studio) שצמוד לביתה בפרדס חנה.</small> || לא נגיש || <small>052-3323328</small><br /><small>[https://www.xn--6dbecb5c8c.co.il/ אתר]</small><br /><small>[https://www.facebook.com/profile.php?id=61584049288546 פייסבוק]</small>
+|-
+| '''[[KaRiniTi|קארין קויפמן - קריניטי]]''' || עיצוב מוצר, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%9C%D7%90%D7%9B%D7%94%2012%20%D7%90%27%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מלאכה 12 א'] || <small>קארין קויפמן, בעלת סטודיו קריניטי, מותג עיצוב למוצרי נייר פרימיום שמשלב עיצוב מוקפד ופונקציונליות גבוהה. המוצרים כוללים יומנים, פלנרים, מחברות ומוצרים משלימים לסביבת העבודה, ומתאפיינים בקו עיצובי נקי ומינימליסטי, תוך שימוש…</small> || לא נגיש || <small>050-4777473</small><br /><small>[https://kariniti.com/he אתר]</small><br /><small>[https://www.instagram.com/kariniti/ אינסטגרם]</small><br /><small>[https://www.facebook.com/karinitistudio/ פייסבוק]</small>
+|-
+| '''שרון יוחאי - יצירה טבעית''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%A2%D7%A4%D7%99%D7%9C%D7%99%D7%9D%2013%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מעפילים 13] || <small>שרון יוחאי, בעלת המותג יצירה טבעית, בוגרת לימודי עיצוב תעשייתי HIT, מציירת נופים קרובים. על קווי אופק מתגלים בגווני אור העננים, ארץ ישראל היפה בחילופי עונותיה – צורת העץ הטבעית משתתפת במרקם היצירה, צבעי שמן מעניקים חיות לעץ הישן.</small> || לא נגיש || <small>054-8119016</small><br /><small>[https://www.natural-creation.shop/ אתר]</small><br /><small>[https://www.instagram.com/sharonyohay.artist/ אינסטגרם]</small><br /><small>[https://www.facebook.com/bonjouk פייסבוק]</small>
+|-
+| '''ליאת אליעז - המיוחדת''' || אפנה, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%98%D7%A2%206%20%D7%93%D7%99%D7%A8%D7%AA%20%D7%92%D7%9F%20%D7%9E%D7%A1%27%202%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נטע 6 דירת גן מס' 2] || <small>ליאת היא סטייליסטית אישית לנשים מזה כעשור, בעלת סטודיו לסטיילינג ויד שניה "המיוחדת" – בו היא מעניקה סטיילינג אישי תוך כדי השופינג, ללא עלות נוספת.</small> || לא נגיש || <small>052-8414154</small><br /><small>[https://www.instagram.com/liateliazstyling/ אינסטגרם]</small><br /><small>[https://www.facebook.com/liateliazstyling פייסבוק]</small>
+|-
+| '''תמר אגין - TamarAginZ''' || תכשיטנות, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%A2%D7%9E%D7%9C%2047%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw עמל 47] || <small>תמר, יוצרת בחומרים מגוונים ובטכניקות שונות, שהמשותף להם הוא אותנטיות ושילוב של ישן עם חדש. בוגרת 'חינוך יצירתי' בסמינר הקיבוצים, בעלת B.A בעיצוב טקסטיל, M.A ב'הנחיית קבוצות בשילוב אמנויות'.</small> || נגיש || <small>052-5285239</small><br /><small>[https://www.instagram.com/tamar_aginz?igsh=MmdiNWMwaHZ2OGk5 אינסטגרם]</small><br /><small>[https://www.facebook.com/Tamaraginz.jewelry/ פייסבוק]</small>
+|}
+</div>
+
+=== כרכור ===
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! כתובת !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''[[רוברטה וינצ'י|רוברטה וינצ'י - מסעדה איטלקית מקומית]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43] || <small>מסעדה איטלקית המבוססת על חומרי גלם מקומיים ועונתיים, ממוקמת בבית בלב המושבה ומוקפת חצר גדולה, עצי פרי וגינת תבלינים.</small> || נגישות בתיאום || <small>04-6037377</small><br /><small>[https://www.robertavinci.co.il/ אתר]</small><br /><small>[https://www.instagram.com/robertavincirest?igsh=OHgxdHY1amV6eWd0 אינסטגרם]</small><br /><small>[https://www.facebook.com/robertavincirest פייסבוק]</small>
+|-
+| '''סמדר לוין''' || צורפות, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%90%D7%A8%D7%91%D7%9C%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ארבל 3] || <small>כבר שלושה עשורים שמלאכת הצורפות הפכה לאומנות המנחה את דרכה של סמדר. כמעצבת תכשיטים בעבודת יד, היא יוצרת בזהב, כסף, אבני חן ויהלומים, ומגשימה את חלומותיהם של לקוחותיה לכדי יצירות מקוריות, עם דגש על התאמה אישית וירידה לפרטים.</small> || נגיש || <small>052-8689900</small><br /><small>[https://smadarlevine-jewelry.co.il/ אתר]</small><br /><small>[https://www.instagram.com/smadarlevinejewelry?igsh=MTJ1bDczdm1pN2t3ZQ%3D%3D&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1C9Zz7jFPw/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[הווארד פוקס|האוורד פוקס]]''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%91%D7%A6%D7%99%D7%A8%202%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בציר 2] || <small>האוורד פוקס, צייר ובוגר לימודי אומנות York University ,BFAH הוא בעל סגנון ייחודי – Imaginary Realism המוכר בארץ ובעולם. בציוריו היא משלב רעיונות, עולמות, מציאות ובדיה.</small> || לא נגיש || <small>058-4312606</small><br /><small>[https://www.howardfox.com אתר]</small><br /><small>[https://www.instagram.com/howardfox.art?igsh=MW5kOWd0cmExanpiNg== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1C42Evghyo/ פייסבוק]</small>
+|-
+| '''טליה שמר Color me in''' || אפנה, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%91%D7%A6%D7%99%D7%A8%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בציר 5] || <small>טליה, אמנית רב תחומית, משיקה לראשונה מותג אופנה ייחודי לנשים. אחרי חמש עשרה שנים בהן פיסלה והלבישה עולם שלם של פיות, בחרה להביא את הקסם אל הבגדים ולהתחיל להלביש נשים אמיתיות.</small> || לא נגיש || <small>050-7229339</small><br /><small>[https://www.instagram.com/color_me_in_bytalia/ אינסטגרם]</small>
+|-
+| '''ג׳אנה שימונוב - Jana''' || פיסול, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%92%D7%A0%D7%99%D7%94%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דגניה 69] || <small>"ג'אנה, קדרית היוצרת כלים שימושיים ואובייקטים לעיצוב הבית, בעלת המותג Jana כבר מעל ל-20 שנה.. השנה עבודה שלה נבחרה להשתתף בביאנלה לאומנויות ועיצוב תל אביב 2026 במוז""""א. העבודות של ג'אנה מינימליסטיות ומזכירות עבודות מהמזרח הרחוק.</small> || נגיש || <small>054-4559821</small><br /><small>[https://www.facebook.com/Janashimonovpottery אתר]</small><br /><small>[https://www.instagram.com/janaceramics/ אינסטגרם]</small><br /><small>[https://www.facebook.com/jana.shimonovceramics/ פייסבוק]</small>
+|-
+| '''[[רחל בנגורה|רחל בנגורה - בית בנגורה]]''' || חפצי נוי, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44] || <small>רחל בנגורה היא יוצרת רב־תחומית ובעלת המותג בנגורה. אמנית טאי־דאי, כלי הקשה ותכשיטים, מוזיקאית וכוריאוגרפית. ביצירותיה היא משלבת אבני מרפא, חרוזי קריסטל וזכוכית, אלמנטים של מיחזור וקצב חי – יוצרת כלי הקשה, מעצבת תלבושות ריקוד…</small> || לא נגיש || <small>054-5715489</small><br /><small>[https://www.bangoura.co.il/ אתר]</small><br /><small>[https://www.instagram.com/r.bangora/ אינסטגרם]</small><br /><small>[https://www.facebook.com/DancingAccessories/ פייסבוק]</small>
+|-
+| '''מעיין מזור - הסטודיו של מעיין''' || קדרות, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%96%D7%9E%D7%95%D7%A8%2012%20%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המזמור 12 כניסה ב] || <small>מעיין מזור אטיאס, קדרית ואמנית כבר עשור, מתמחה בעבודת אבניים וביצירת כלים שימושיים ואסטתיים, החיבור שלה לחומר וליצירה התחיל עוד בכיתה ד', ומאז הפך לחלום שהתגשם- לייצר כלים ייחודיים ולשתף אותם עם העולם, מעיין מתמקדת בעיצוב וייצור…</small> || נגיש || <small>054-7259063</small><br /><small>[https://maayansstudioclayart.com אתר]</small><br /><small>[https://www.instagram.com/maayan.ceramic/ אינסטגרם]</small><br /><small>[https://www.facebook.com/maayan.atias פייסבוק]</small>
+|-
+| '''[[בבושקפה "בית הדואר"|בבושקפה בית הדואר]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%99%D7%99%D7%A1%D7%93%D7%99%D7%9D%2052%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המייסדים 52] || <small>עגלה בלב כרכור המתמחה בקפה ומגישה איכות - קפה איכות, מאפים מטריפים ובורקס מנצח</small> ||  || <small>055-9602221</small><br /><small>[https://www.instagram.com/babushcoffee_doar/ אינסטגרם]</small><br /><small>[https://www.facebook.com/p/%D7%91%D7%91%D7%95%D7%A9%D7%A7%D7%A4%D7%94-%D7%91%D7%99%D7%AA-%D7%94%D7%93%D7%95%D7%90%D7%A8-61582427521721/ פייסבוק]</small>
+|-
+| '''הדס בן חיים''' || קדרות, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A2%D7%9C%D7%99%D7%94%2017%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw העליה 17] || <small>"הדס בן חיים הכירה את גלגל האבניים בגיל צעיר, והתאהבה בגוש בוץ גולמי המסוגל להפוך לכלי. אחרי שסיימה תואר באדריכלות בחרה לחזור ולהתמסר לאהבתה הראשונה לחומר.</small> || לא נגיש || <small>054-7479328</small><br /><small>[https://www.instagram.com/hadas.ceramic?igsh=Z2wzZWdlMmliMTl0 אינסטגרם]</small><br /><small>[https://www.facebook.com/share/16yfez4fXX/ פייסבוק]</small>
+|-
+| '''טליה שפירא - צילום ואמנות ההתבוננות''' || צילום, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A2%D7%9C%D7%99%D7%94%2017%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw העליה 17] || <small>טליה שפירא היא אמנית, מורה לצילום ובוגרת לימודי משפטים וקולנוע; לשעבר צלמת הבית של מגזין טבע הדברים, מייסדת "בית הספר לצילום ואמנות ההתבוננות" ותלמידה בדרך הבודהיסטית.</small> || לא נגיש || <small>052-6926608</small><br /><small>[https://www.simplemoments.co.il אתר]</small><br /><small>[https://www.instagram.com/talya_shapiro/ אינסטגרם]</small><br /><small>[https://www.facebook.com/TalyaShapiroSimpleMoments פייסבוק]</small>
+|-
+| '''יעל פישלר''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D%2011%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ירושלים 11] || <small>יעל פישלר היא ציירת בוגרת בצלאל, המתגוררת בקיבוץ הצפוני להבות הבשן בעמק החולה, בתחילת המלחמה התפנתה עצמאית לכרכור, ובהמשך חזרה עם משפחתה לחיות בגליל הנטוש והמשתקם.</small> || לא נגיש || <small>052-6211596</small><br /><small>[https://www.instagram.com/yael.fishler.art?igsh=MXE0NThuMHY4YXVwdg== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1DNF5fehye/ פייסבוק]</small>
+|-
+| '''שלומית ויידה''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D%2011%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ירושלים 11] || <small>שלומית היא אמנית ומנחת סדנאות וקורסים דיגיטליים לציור בוטני בצבעי מים. ביצירותיה היא משלבת אלמנטים בהשראת עולם הצומח המאויירים בצבעי מים, גואש ודיו, ומוגשים לצופה באופן נקי ומינימליסטי.</small> || לא נגיש || <small>054-2490749</small><br /><small>[https://www.instagram.com/shlomitvayda.art/ אתר]</small><br /><small>[https://www.instagram.com/shlomitvayda.art/ אינסטגרם]</small><br /><small>[https://www.facebook.com/ShlomitVayda.Art פייסבוק]</small>
+|-
+| '''נעמי יהל''' || קרמיקה, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D%2048%20%28%D7%93%D7%A8%D7%9A%20%D7%A2%D7%A4%D7%A8%29%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ירושלים 48 (דרך עפר)] || <small>נעמי יהל, קרמיקאית ותיקה ובוגרת בצלאל, יוצרת בעבודת יד כלים מרהיבים באובניים. הכלים שלה צבעוניים, משמחים, ושימושיים להפליא, ומשלבים מגוון סגנונות ייחודיים.</small> || לא נגיש || <small>052-5361743</small><br /><small>[https://www.instagram.com/naomiyahel?utm_source=ig_web_button_share_sheet&#038;igsh=ZDNlZDc0MzIxNw== אינסטגרם]</small><br /><small>[https://www.facebook.com/naomi.yahel פייסבוק]</small>
+|-
+| '''[[קפה בחורשה|קפה בחורשה - מאפים טריים, בראנצ'ים, פסטורלי בסטייל]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%97%D7%9C%D7%94%206%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נחלה 6] || <small>קפה מוקף בחורשה נעימה. מגיש מאפים טריים, בראנצ'ים מפנקים ואווירה רגועה. מתאים להורים וגם לילדים</small> || נגישות בתיאום<br />סגור בשבת || <small>052-3317700</small><br /><small>[https://www.instagram.com/cafe_bahorsha?igsh=ZGYxZnJwb2J4Ynpo אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1D6qoutcXG/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[קפה ויעל|קפה ויעל - קפה שכונה]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2027%2C%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 27, פינת המושב] || <small>בית קפה שכונתי, אוכל טעים, שייקים, מיצים סחוטים, קהילה, וקפה מעולה</small> ||  || <small>04-6461506</small><br /><small>[https://www.instagram.com/cafe.and.yael?igsh=dzM5MHk2dWhmcm9u אינסטגרם]</small><br /><small>[https://www.facebook.com/cafeandyael?rdid=pVfgYPig3i6k5RFm&#038;share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F17Yjf5eGJ6%2F# פייסבוק]</small>
+|-
+| '''הילה דגני כגן - דורותיאה''' || חפצי נוי, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2035%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 35] || <small>הילה היא מעצבת טקסטיל המתמחה בחידוש, שיפוץ וריפוד רהיטי וינטג'. היא הקימה את סטודיו "דורותיאה" ב-2003, מאז עברו תחת ידיה אינסוף רהיטים יפים, כריות, ואריגים.</small> || לא נגיש || <small>050-7390983</small><br /><small>[https://www.dorotheashop.com/ אתר]</small><br /><small>[https://www.instagram.com/dorothea_vintage/ אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1H9kEWAkJK/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''איב ענן - סטודיו איב ענן''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2041%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 41] || <small>איב הוא אמן רב תחומי העוסק באדריכלות ועיצוב, פיסול, ציור, קרמיקה ותחריט, והוא בשלן חובב ברמה מקצועית (זוכרים אותו ממאסטר שף, עונה 5?). הסטודיו שלו שוכן ב"בית האמנים" בכרכור, בניין שתוכנן כסטודיו לאמנים.</small> || נגיש || <small>054-2278701</small><br /><small>[https://www.instagram.com/yvesanane אינסטגרם]</small><br /><small>[https://www.facebook.com/yvesanane פייסבוק]</small>
+|}
+</div>
+
+=== מערב ודרום המושבה ===
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! כתובת !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''איזי לוי - Izi Stone Art''' || פיסול, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%A4%D7%99%D7%A7%22%D7%90%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך פיק"א 69] || <small>איזי נולד בשנת 1945 בתל אביב. לאחר שנים רבות של עבודה בתחום המסחר גילה את עולם הפיסול ונשבה בקסמו. הכל התחיל בבלוק איטונג אותו התחיל לגלף.</small> || נגיש || <small>054-4333957</small><br /><small>[https://izistone.com/ אתר]</small><br /><small>[https://www.facebook.com/Izistoneart פייסבוק]</small>
+|-
+| '''[[נוילנד (בית קפה)|נוילנד - דברים טובים מאוד]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2022%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 22] ||  || סגור בשבת || <small>050-5515800</small><br /><small>[https://www.instagram.com/noyland.phk?igsh=MTBnZDV5bGxnbmZ0NQ%3D%3D אינסטגרם]</small><br /><small>[https://www.facebook.com/noyland.phk פייסבוק]</small>
+|-
+| '''ליאור מרום''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 31] || <small>ליאור מרום, אדריכל, מעצב ואמן פלסטי רב תחומי, בוגר בית הספר לאמנות "אלון" ברמת השרון, ובעל תואר אדריכל בהצטיינות מבית הספר הגבוה לאדריכלות בפריז, צרפת.</small> || לא נגיש || <small>054-4578110</small><br /><small>[https://www.instagram.com/liormarom_art/ אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=61573949904510 פייסבוק]</small>
+|-
+| '''איריס הרפז - GoldArtJewelry''' || צורפות, עיצוב || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%2034%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 34] || <small>איריס צורפת בזהב תכשיטים בעבודת יד מסורתית, בעלת המותג GoldArtJewelry. התכשיטים שאיריס צורפת נראים לעיתים כלקוחים מתקופה קדומה, השימוש בטכניקות עתיקות מדגיש את הצבע והטקסטורה הטבעית של הזהב.</small> || לא נגיש || <small>052-3766033</small><br /><small>[https://goldartjewelry.etsy.com/ אתר]</small><br /><small>[https://www.instagram.com/hi.iris.gold?igsh=MWZoYzJ3aG9kZGpvMg%3D%3D&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1ASin9UNNW/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''דרור מצליח - MushroomHome''' || חפצי נוי, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%2052%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 52] || <small>דרור מצליח הוא אמן רב תחומי שהקים יחד עם אחיו לפני 3 שנים את חוות "MushroomHome – הבית של הפטריות" העוסקת בגידול ולימוד אמנות גידול פטריות מאכל ומרפא.</small> || לא נגיש<br />סגור בשבת || <small>054-5357349</small><br /><small>[https://greenbook.co.il/card/8579/37028 אתר]</small><br /><small>[https://www.instagram.com/mushroomhome.co.il?utm_source=qr&#038;igsh=eTIwMGZ3Nm5kbzlm אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=61550807317479 פייסבוק]</small>
+|-
+| '''יפעת רגב-מצליח - שורשים''' || רוקחות טבעית, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%2052%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 52] || <small>יפעת רגב-מצליח היא ארומתרפיסטית ורוקחת טבעית, בעלת המותג המקומי הוותיק שורשים-טבע, החוגג השנה 20, ובו ליין מוצרים לטיפוח ולטיפול לכל המשפחה.</small> || לא נגיש<br />סגור בשבת || <small>052-3854408</small><br /><small>[https://www.yifatregev.com/ אתר]</small><br /><small>[https://www.instagram.com/regevyifat?igsh=MnNqMWx0dGtxYzNx אינסטגרם]</small><br /><small>[https://www.facebook.com/share/19Kgyfm1aS/ פייסבוק]</small>
+|-
+| '''עדינה דילמוני - סטודיו לאמנות''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 59] || <small>עדינה דילמוני היא ציירת בוגרת “בצלאל”, מורה ומטפלת באמנות ומדריכת טיולים מוסמכת. יצירתה נעה בין ציור, רישום והדפס, ונובעת מחיבור עמוק ומתמשך אל הטבע.</small> || נגיש || <small>052-3714359</small><br /><small>[https://www.instagram.com/adinadilmoney/ אינסטגרם]</small><br /><small>[https://www.facebook.com/adinadilmoney פייסבוק]</small>
+|-
+| '''קארין להב''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 59] || <small>קארין היא בוגרת תואר ראשון במסלול סיוע ושיקום באמצעות אמנות, עובדת בתחום השיקום וסטודנטית לתואר שני בפסיכודרמה. מגיל צעיר היא מציירת ורואה באמנות שפה שלמה, חופשית ופראית.</small> || נגיש || <small>054-6610321</small><br /><small>[https://www.instagram.com/karinlahav?igsh=cWphNTJocW5kaGNp&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1CMA9kkCw9/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''גילוש נתן''' || פיסול, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2080/1%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 80/1] || <small>גילוש, פסלת ובעלת המותג גילוש נתן, היא אומנית המפסלת בחמר בשילוב עצי סחף וחומרים ממוחזרים, אותם היא אוספת בחוף הים ובטיוליה בטבע. כל יצירה היא ייחודית, ONE OF A KIND ART הנעשית בכפות הידיים וללא התערבות של מכונה.</small> || נגיש || <small>050-9588475</small><br /><small>[https://www.instagram.com/gilush_studio/ אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100063591091561 פייסבוק]</small>
+|-
+| '''רותם כהן - Mud made''' || קדרות, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A8%D7%90%D7%A9%D7%95%D7%A0%D7%99%D7%9D%2019%20%D7%93%27%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הראשונים 19 ד'] || <small>רותם בעלת הסטודיו mud made לכלי חימר, היא יוצרת כלים שימושיים ופיסוליים בעבודת יד ואובניים. כל כלי הוא אחד ויחיד. בין יצירותיה ניתן למצוא קערות, צלחות, אגרטלים,פמוטים,כלי הגשה ועוד.</small> || נגיש || <small>052-5784680</small><br /><small>[https://www.mudmade.co.il/ אתר]</small><br /><small>[https://www.instagram.com/mud_made_?igsh=NGs5cHJudjN6OHdq אינסטגרם]</small><br /><small>[https://www.facebook.com/share/17pEWuJxMV/ פייסבוק]</small>
+|-
+| '''ערן גל''' || עיצוב מוצר, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%96%D7%9E%D7%99%D7%A8%2083%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw זמיר 83] || <small>ערן גל, בוגר תואר בצילום, הוא צלם מסחרי ואמנותי שניהל סטודיו עצמאי לצילום פרסום ותעשיה במשך כעשור. תשוקה לגעת גם באפיקי יצירה נוספים הובילה אותו בהמשך לעסוק בתחומי עיצוב שונים כמו עיצוב מוצר, רהיטים, תכשיטים ויעוץ בעיצוב תאורה.</small> || לא נגיש || <small>052-6886181</small><br /><small>[https://www.instagram.com/erangalphotography/ אינסטגרם]</small><br /><small>[https://www.facebook.com/eran.gal.90/?locale=he_IL פייסבוק]</small>
+|-
+| '''דנה בלייר - סטודיו לקרמיקה''' || קדרות, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%97%D7%95%D7%92%D7%9C%D7%94%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw חוגלה 31] || <small>דנה בלייר עוסקת בקדרות מזה 27 שנים. למדה בתל חי במגמת קרמיקה וקדרות. דנה יוצרת קולקציות אשר מדגישות את אהבת החומר, תוך משחק בניגודים.</small> || לא נגיש || <small>052-8561105</small><br /><small>[https://www.mobileapp.app/to/QTzJsfH?ref=cl אתר]</small><br /><small>[https://www.instagram.com/danablayer?igsh=ZmdtbHB5ZjBjM3Fo אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1DNzU8S58r/ פייסבוק]</small>
+|-
+| '''אלה פאוסט''' || צילום, אמנות || [https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%9E%D7%98%D7%AA%20%D7%98%D7%95%D7%A4%D7%97%203%20%D7%90%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סמטת טופח 3 א] || <small>אלה פאוסט, צלמת פורטרטים, אמנית, פוטותרפיסטית. את הסטודיו הראשון לצילום הקימה אלה בגיל 17, במקלט של בניין מגוריה בהרצליה, שם צילמה חברים וחברות וסדרות של פורטרטים עצמיים.</small> || נגיש || <small>052-2332958</small><br /><small>[https://www.instagram.com/ellafaust__photographer/ אינסטגרם]</small><br /><small>[https://www.facebook.com/ella.faust פייסבוק]</small>
+|-
+| '''גלית חן ויס''' || קדרות, קראפט || [https://www.google.com/maps/search/?api=1&query=%D7%AA%D7%A8%D7%A4%22%D7%98%2014%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw תרפ"ט 14] || <small>גלית יוצרת באהבה בחומר מזה 20 שנים, בסטודיו הצמוד לביתה. גלית אוהבת ליצור כלים פונקציונאלים ומשמחים, תוך תשומת לב לפרטים. הכלים של גלית מעוטרים בציורים עדינים של : פרחים, נקודות, מילים טובות, עצי זהב, לבבות, ועוד.</small> || נגיש || <small>052-4734041</small><br /><small>[https://galitpottery.com אתר]</small><br /><small>[https://www.instagram.com/galit_weiss_pottery?igsh=NnVmMGs0bWx6bGk1 אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1KxLhGRja4/?mibextid=qi2Omg פייסבוק]</small>
+|}
+</div>
+
+=== כתובת לא צוינה באתר ===
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! כתובת !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''ליאנה כהן - Liana Art''' || ציור, אמנות || [https://www.google.com/maps/search/?api=1&query=%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ] || <small>ליאנה היא אמנית ובעלת תואר הנדסאית אדריכלות ועיצוב פנים. ציור הוא חלק בלתי נפרד ממנה. היא מציירת למעלה מעשור ומתעסקת בלא מעט סגנונות. בנוסף פיתחה שילוב של עיצוב באמצעות ציור על נעליים בהתאמה אישית, יוצרת בקרמיקה וצורפות.</small> || לא נגיש || <small>052-4229944</small><br /><small>[https://lianart.co.il אתר]</small><br /><small>[https://www.instagram.com/lianart96/ אינסטגרם]</small>
+|}
+</div>
+
+== ארבע התערוכות ==
+לצד הסטודיואים הפתוחים מוצגות בפסטיבל ארבע תערוכות אצורות. הכניסה לכולן חופשית.
+
+=== קווי אחיזה ===
+'''תערוכה קבוצתית''', בית לִים, מרכז לתרבות חומרית, [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%20126%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 126].
+
+התערוכה בוחנת את הקו ככוח בונה כוונה, בצורה וברעיון. דרך חומרים, מחוות ופעולות נחשפים מבנים עדינים, גלויים וסמויים, שמייצרים חיבור, תמיכה ועמידות ברגעי שבר. היא שואלת מהם החוטים הקושרים קהילות זו לזו מעבר להבדלים, ואילו קווים מסמנים ביטחון, חיבור או מרחק.
+
+'''משתתפים:''' אילנה אביב, יעל אגוזי, יורם אפק, ענת בינג, בן בר, מינדה גלאון, מרגו גראן, אבנר זינגר, אורלי חלק, שלומית חפר ודנה בהרב, עמי ליבוביץ, פריאל עזר, דרור פרבדה, דוד רוזנברג, גבריאל רענן, מתן שמאי, ליאת שרון
+
+'''אוצרוּת:''' ברק רובין
+
+* אירוע פתיחה: חמישי 3.9 בשעה 18:00
+* שעות פתיחה: חמישי 10:00–20:00, שישי 10:00–17:00, שבת 10:00–20:00
+* טלפון: 052-3344208
+
+=== מגורשת ===
+'''תערוכת יחיד של דורון כפרי דהן''', [[הסולם (בית ספר לאמנות)|הסולם, בית ספר לאמנות]], [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%20104%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 104].
+
+עבודתה הפיסולית של דורון כפרי-דהן מחיה מיתוסים עבריים וקדם-מקראיים, מתוך חקירת הדחקתם של המיתוסים הנשיים הקדומים מהתרבות. באמצעות פסליה היא מפרקת את תודעת ההשתקה, ומנסחת אתוס פלסטי עברי חדש.
+
+'''אוצרוּת:''' מיכל קרסני
+
+* אירוע פתיחה: חמישי 3.9 בשעה 18:30
+* מפגש שיח אמן: שישי 4.9 בשעה 11:00
+* שיח גלריה: שבת 5.9 בשעה 11:00
+* שעות פתיחה: חמישי 16:00–21:00, שישי 09:00–15:00, שבת 10:00–18:00
+* טלפון: 050-4313077
+
+=== ערות ===
+'''תערוכה קבוצתית''', [[נרבתא|בית תרבות נרבתא]], [https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%9C%22%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ביל"ו 10].
+
+התערוכה מתבוננת במשבר חברתי ובאי-ודאות מנקודת מבט נשית, ובוחנת כיצד נשים חוות ומעבדות שבר דרך ציור כמרחב של שהייה והתבוננות. חלק מהעבודות נוצרו בשנתיים האחרונות וחלקן משקפות משברי עבר.
+
+'''משתתפים:''' מיכל גבע, מירי ספקטור צ׳רניץ, מרגו גראן, עליזה אשכנזי, ענת אור מגל
+
+'''אוצרוּת:''' עליזה אשכנזי ומירי ספקטור צ׳רניץ
+
+* אירוע פתיחה: חמישי 3.9 בשעה 18:30
+* מפגש שיח אמניות: שבת 5.9 בשעה 11:00
+* שעות פתיחה: חמישי 10:00–20:00, שישי 10:00–17:00, שבת 10:00–20:00
+
+=== בכורות ===
+'''תערוכה קבוצתית''', [[הפרדס - מרכז צעירים|הפרדס, מרכז צעירים]], [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2048%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 48].
+
+התערוכה מביאה לקדמת הבמה את הדור הצעיר של אמני ואמניות המושבה, בוגרי מגמות אמנות ויוצרים אוטודידקטים. העבודות נעות בין חופש נעורים לאחריות אישית וקולקטיבית, ובין קיום בבועה פרטית להתגבשות תודעה חברתית.
+
+'''משתתפים:''' גורי אמיתי, גילי בן יוסף, עלי ברדה, רוני פולוביאן, חן פוקס, זיו פיקלר, דריה רותם
+
+'''אוצרוּת:''' איתמר גנדלמן
+
+* אירוע פתיחה: חמישי 3.9 בשעה 19:00
+* שעות פתיחה: חמישי 19:00–22:30, שישי 10:00–14:00
+
+== לוח האירועים ==
+94 אירועים לאורך שלושת הימים: שיחות אמן בסטודיו, הדגמות, הרצאות, הופעות ומופעים. חלקם דורשים הרשמה מראש, וחלקם בתשלום. הטבלאות ניתנות למיון לפי שעה, סוג או עלות.
+
+=== חמישי 3 בספטמבר ===
+36 אירועים.
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! שעה !! מי !! סוג !! מה !! איפה !! עלות !! הרשמה
+|-
+| data-sort-value="08:00" | 08:00–20:00 || '''אלה פאוסט''' || סט צילומים || <small>סט צילומי פורטרטים בסטודיו של אלה פאוסט, לאחריו תצאו עם 36 תמונות טובות</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%9C%D7%94%20%D7%A4%D7%90%D7%95%D7%A1%D7%98%2C%20%D7%98%D7%95%D7%A4%D7%97%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו אלה פאוסט, טופח 3]</small> || 450 ש״ח || <small>הרשמה מראש בוואטסאפ<br />052-2332958</small>
+|-
+| data-sort-value="10:00" | 10:00–10:30 || '''גליה שמחאי''' || שיח אמן || <small>הסיפורים המרגשים שמאחורי היצירות, תהליכי העבודה, אמנות ותת מודע ואיך מתרגמים רגשות וסיפורים ליצירה. כל זאת ועוד במפגש שיח עם האמנית גליה שמחאי בסטודיו שלה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20Kwala%20Paper%20Art%2C%20%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%99%D7%93%D7%99%D7%AA%2C%20%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו Kwala Paper Art, מתחם הידית, חרושת 1]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-8513786</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''אפרת ועמית דודסון''' || שיח אמן || <small>מאחורי הקלעים של עולם הרוקחות הטבעית – מפגש שיח בן 40 דקות בו נגלה כמה פשוט ומרגש להיעזר במעבדה הכי גדולה בעולם – הטבע!</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%93%D7%95%D7%93%D7%A1%D7%95%D7%9F%20%D7%A8%D7%95%D7%A7%D7%97%D7%95%D7%AA%20%D7%98%D7%91%D7%A2%D7%99%D7%AA%2C%20%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%99%D7%93%D7%99%D7%AA%2C%20%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דודסון רוקחות טבעית, מתחם הידית, חרושת 1]</small> || ללא עלות || <small>הרשמה מראש בלינק</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''שרון יוחאי''' || שיח אמן || <small>צַיְּרִי לָךְ שָׁמַיִם – שיחה על ציור שהוא גם התבוננות וגם נשימה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%99%D7%A6%D7%99%D7%A8%D7%94%20%D7%98%D7%91%D7%A2%D7%99%D7%AA%2C%20%D7%9E%D7%A2%D7%A4%D7%99%D7%9C%D7%99%D7%9D%2013%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו יצירה טבעית, מעפילים 13]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:00" | 11:00–11:30 || '''ג'אנה שימונוב''' || הדגמה || <small>הדגמה של הכנת כלי על אובניים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20Jana%2C%20%D7%93%D7%92%D7%A0%D7%99%D7%94%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו Jana, דגניה 69]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="12:00" | 12:00–13:00 || '''מיה הוד רן''' || הרצאה || <small>סיפור יציאת מצרים כמסע הנשמה – על הקשר בין מיתוס מכונן על הסמלים והדימויים שבתוכו, וסיפור החיים של כל אחד ואחת מאתנו.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-7480632</small>
+|-
+| data-sort-value="12:00" | 12:00–13:00 || '''עדינה דילמוני''' || הרצאה || <small>איור בוטני – מסע בין אמנות למדע, מהימים שציירו צמחים כדי להבין את העולם ועד היום כחוויה של התבוננות, דיוק ויופי.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%A2%D7%93%D7%99%D7%A0%D7%94%20%D7%93%D7%99%D7%9C%D7%9E%D7%95%D7%A0%D7%99%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו עדינה דילמוני, הדרים 59]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3714359</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''הראל ברמן וחברים -LIVE MUSIC''' || הופעה || <small>מוזיקה חיה בשיתוף מוסיקאים מהאיזור. מסע מוסיקאלי חוצה עולם דרך שפות וסגנונות שונים. פותחים את הלב ומניעים את הגוף</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:30" | 14:30–15:00 || '''טליה שפירא''' || הדגמה || <small>הדגמה והתנסות באופן שבו צילום בסמארטפון מפגיש אותנו עם הקסם והיופי שבפשוט וברגיל</small> || <small></small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-6926608</small>
+|-
+| data-sort-value="15:00" | 15:00–15:30 || '''ג'אנה שימונוב''' || הדגמה || <small>הדגמה של הכנת כלי על אובניים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20Jana%2C%20%D7%93%D7%92%D7%A0%D7%99%D7%94%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו Jana, דגניה 69]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="15:00" | 15:00–15:30 || '''טל פלג''' || שיח אמן || <small>מוזמנים ומוזמנות לשמוע על התהליכים, מקורות ההשראה, אופן העבודה והטכניקות בהן אני משתמשת ביצירה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%9C%D7%A8%D7%99%D7%A9%D7%95%D7%9D%20%D7%95%D7%A6%D7%91%D7%A2%2C%20%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית לרישום וצבע, מתחם שקדים, שקדים 9]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="15:30" | 15:30–16:00 || '''אילת רוזנברג''' || שיח אמן || <small>כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%A2%D7%95%D7%9C%D7%9D%20%D7%94%D7%99%D7%A6%D7%99%D7%A8%D7%94%2C%20%D7%94%D7%A9%D7%90%D7%9C%D7%95%D7%AA%20%D7%95%D7%94%D7%9C%D7%91%20%D7%A9%D7%9E%D7%90%D7%97%D7%95%D7%A8%D7%99%20%D7%94%D7%A2%D7%91%D7%95%D7%93%D7%95%D7%AA.%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="16:00" | 16:00–17:00 || '''אלה פאוסט''' || שיח אמן || <small>שיחה זורמת על אור, צל, צילום והחוויה האנושית, כמו שכולנו מכירים, מנקודת המבט של צלמת פורטרטים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%9C%D7%94%20%D7%A4%D7%90%D7%95%D7%A1%D7%98%2C%20%D7%A1%D7%9E%D7%98%D7%AA%20%D7%98%D7%95%D7%A4%D7%97%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו אלה פאוסט, סמטת טופח 3]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="16:00" | 16:00–17:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="17:00" | 17:00–17:30 || '''נירית לפידות''' || הופעה || <small>זמרת יוצרת במופע סולו אינטימי. קול חשוף וגיטרה במסע של נשמה, לב ואופטימיות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%96%D7%9E%D7%A8%D7%AA%20%D7%99%D7%95%D7%A6%D7%A8%D7%AA%20%D7%91%D7%9E%D7%95%D7%A4%D7%A2%20%D7%A1%D7%95%D7%9C%D7%95%20%D7%90%D7%99%D7%A0%D7%98%D7%99%D7%9E%D7%99.%20%D7%A7%D7%95%D7%9C%20%D7%97%D7%A9%D7%95%D7%A3%20%D7%95%D7%92%D7%99%D7%98%D7%A8%D7%94%20%D7%91%D7%9E%D7%A1%D7%A2%20%D7%A9%D7%9C%20%D7%A0%D7%A9%D7%9E%D7%94%2C%20%D7%9C%D7%91%20%D7%95%D7%90%D7%95%D7%A4%D7%98%D7%99%D7%9E%D7%99%D7%95%D7%AA.%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw זמרת יוצרת במופע סולו אינטימי. קול חשוף וגיטרה במסע של נשמה, לב ואופטימיות.]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="17:00" | 17:00–18:00 || '''איב ענן''' || שיח אמן || <small>"נרשם בגוף" – לא תמיד האמן מבין את תהליך היצירה. רק בסוף הכול מתחבר לרגש ולעוצמה מבפנים. בואו לשמוע מה מסתתר מאחורי היצירות ואיך אני מתמודד עם הלם קרב דרך אמנות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%99%D7%91%20%D7%A2%D7%A0%D7%9F%2C%20%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2041%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו איב ענן, נעורים 41]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="17:00" | 17:00–18:00 || '''יואב יו־יו סיטאר''' || הופעה || <small>הופעת חצר – יואב יו־יו סיטאר הוא מוזיקאי ונגן סיטאר היוצר חיבור ייחודי בין מוזיקה הודית קלאסית לבין השפעות של מוזיקת עולם, אפריקאית ורוק עכשווי.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%92%D7%95%D7%A8%D7%99%D7%A0%D7%A7%D7%94%2C%20%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20128%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו גורינקה, הדקלים 128]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="17:00" | 17:00–18:00 || '''סוזי מור''' || שיח אמן || <small>טקסים ליומיום – להכניס כוונה לשגרה": בואי לגלות איך להפוך רגעים פשוטים למקדש אישי. נלמד ליצור עוגנים של שקט וכוונה בעזרת קלפים בתוך השגרה".</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-2898713</small>
+|-
+| data-sort-value="17:00" | 17:00–21:00 || '''דיג'י מיכל רוז''' || גרוב וצבע || <small>שיטוט בין דוכני מעצבות מקומיות ברקע ביטים של גרוב צבעוניים וכיפיים של דיג׳י מיכל רוז</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A9%D7%95%D7%A7%20%D7%94%D7%99%D7%A9%D7%9F%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם השוק הישן, האורנים 12]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="17:30" | 17:30–19:00 || '''צ׳לסי מוסרי-בירנבאום''' || הדגמה || <small>פרפורמנס חי – עבודה ברקמה ובציור עם הקרנה בזמן אמת של עבודת היד על מסך</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–18:30 || '''עומרי פריג'''' || הופעה || <small>גיטריסט, יוצר ומלחין. עומרי חוקר את הגיטרה ומגלה אינסוף עולמות. על הבמה הכול מתכנס לרגע אותנטי אחד</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם שקדים, שקדים 9]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''טל אבני במופע''' || הופעה || <small>המוסיקאי טל אבני במופע אינדי</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''טליה שפירא''' || שיח אמן || <small>הסתמיות המופלאה של החיים – מסע של אישה עם מצלמה. הרצאה ושיח על האפשרות להשתמש ברגיל ובפשוט כחומר גלם לצילום ולתרגול חיים של נוכחות, סקרנות ובחירה</small> || <small></small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-6926608</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''יסמין עמידן''' || שיח אמן ומיצג || <small>​מסע בין השברים – שיח אמן ומיצגי מקרמה, בטון ואפוקסי השזורים באדמה ומגוללים מסע אישי של יצירה, הנצחה וריפוי מאז ה-7 באוקטובר.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%AA%D7%95%D7%A8%D7%9E%D7%95%D7%A1%D7%99%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם התורמוסים, הבוטנים 25]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''עדינה דילמוני''' || הרצאה || <small>תולדות עולם הרישום – מהימים שבהם שימש רק כסקיצה לציור, ועד הרגע שבו הפך ליצירה שלמה בפני עצמה.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%A2%D7%93%D7%99%D7%A0%D7%94%20%D7%93%D7%99%D7%9C%D7%9E%D7%95%D7%A0%D7%99%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו עדינה דילמוני, הדרים 59]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3714359</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''שרון יוחאי''' || שיח אמן || <small>צַיְּרִי לָךְ שָׁמַיִם – שיחה על ציור שהוא גם התבוננות וגם נשימה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%99%D7%A6%D7%99%D7%A8%D7%94%20%D7%98%D7%91%D7%A2%D7%99%D7%AA%2C%20%D7%9E%D7%A2%D7%A4%D7%99%D7%9C%D7%99%D7%9D%2013%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו יצירה טבעית, מעפילים 13]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–19:30 || '''הראל ברמן וחברים – LIVE MUSIC''' || הופעה || <small>מוזיקה חיה בשיתוף מוסיקאים מהאיזור. מסע מוסיקאלי חוצה עולם דרך שפות וסגנונות שונים. פותחים את הלב ומניעים את הגוף</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–21:00 || '''אירוע פתיחה לתערוכה 'מגורשת'''' || אירוע פתיחה לתערוכה || <small>אירוע פתיחה חגיגי בנוכחות האמנית דורון כפרי דהן</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A1%D7%95%D7%9C%D7%9D%20-%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%20%D7%9C%D7%90%D7%9E%D7%A0%D7%95%D7%AA%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%20104%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הסולם - בית ספר לאמנות האורנים 104]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:30" | 18:30–19:00 || '''ליאת אליעז''' || שיח אמן || <small>הדרך שלי למיוחדת – סיפור על אומץ, סקרנות, סטיילינג וקיימות שהתחיל ב "כן" אחד שאמרתי לחברה לפני 8 שנים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%94%D7%9E%D7%99%D7%95%D7%97%D7%93%D7%AA%2C%20%D7%A0%D7%98%D7%A2%206%2C%20%D7%93%D7%99%D7%A8%D7%AA%20%D7%92%D7%9F%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו המיוחדת, נטע 6, דירת גן]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ</small>
+|-
+| data-sort-value="18:30" | 18:30–19:30 || '''אלון סגל''' || וידאו ארט || <small>מרחב פתוח שמתהווה לעולם קטן, התבוננות שקטה וחלומית במציאות הנעה לאיטה.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%A8%D7%97%D7%91%20%D7%A4%D7%AA%D7%95%D7%97%20%D7%A9%D7%9E%D7%AA%D7%94%D7%95%D7%95%D7%94%20%D7%9C%D7%A2%D7%95%D7%9C%D7%9D%20%D7%A7%D7%98%D7%9F%2C%20%D7%94%D7%AA%D7%91%D7%95%D7%A0%D7%A0%D7%95%D7%AA%20%D7%A9%D7%A7%D7%98%D7%94%20%D7%95%D7%97%D7%9C%D7%95%D7%9E%D7%99%D7%AA%20%D7%91%D7%9E%D7%A6%D7%99%D7%90%D7%95%D7%AA%20%D7%94%D7%A0%D7%A2%D7%94%20%D7%9C%D7%90%D7%99%D7%98%D7%94.%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מרחב פתוח שמתהווה לעולם קטן, התבוננות שקטה וחלומית במציאות הנעה לאיטה.]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:30" | 18:30–19:30 || '''מיכל גולדברג וחברים''' || הופעה || <small>מופע מוסיקלי לכבוד השנה החדשה – מחרוזת שירי ראש השנה וניגוני כלייזמר מארצות הבלקן בשירה, ובנגינה בכינור, אקורדיון, קלרינט, סקסופון, מנדולינה וגיטרה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2040%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם האורנים, האורנים 40]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="19:00" | 19:00–19:30 || '''דן שכטר''' || הופעה || <small>אמן הפאנטם במופע סולו. צלילים רכים בתוך סיפור עמוק שמתחברים לחוויה מדהימה אחת!</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם שקדים, שקדים 9]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="19:00" | 19:00–20:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="19:30" | 19:30–21:30 || '''הבמה הפתוחה בנרבתא''' || הופעה || <small>הבמה פתוחה לחומרים מכל הסוגים. בואו לשיר, לנגן, להקריא, להמחיז ולרקוד… בואו לשמוע ולקבל השראה. הרשמה לעלייה לבמה בלינק המצורף.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="20:00" | 20:00–21:00 || '''המוסיקאי כפיר לוי במופע אינדי''' || הופעה || <small>המוסיקאי כפיר לוי במופע אינדי</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="20:00" | 20:00–21:30 || '''שמאן שמאן''' || הופעה || <small>ישות מוזיקלית חסרת גבולות ומעצורים שתופסת צורה על הבמה בריל טיים כל פעם מחדש בגוון אחר – מופע לייב של איש אחד שהנשמה שלו נשמעת כמו תזמורת של 1000 נגנים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A9%D7%95%D7%A7%20%D7%94%D7%99%D7%A9%D7%9F%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם השוק הישן, האורנים 12]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|}
+</div>
+
+=== שישי 4 בספטמבר ===
+29 אירועים.
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! שעה !! מי !! סוג !! מה !! איפה !! עלות !! הרשמה
+|-
+| data-sort-value="09:00" | 09:00–10:00 || '''מיה הוד רן''' || הדגמה || <small>הדגמה של קריאה בקלפי מסע הגיבור – פתיחת 4 קלפים מארבע הסדרות של ערכת הקלפים, קריאה מחוברת הציטוטים וההשראה, והשלכה על סיפור החיים האישי.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-7480632</small>
+|-
+| data-sort-value="10:00" | 10:00–10:30 || '''גילת זעירא''' || שיח אמן || <small>ממציאות לחלום – שיח אמנית על מדינת פנטסטיק, חזון נשי שנולד מדימוי ויזואלי והפך לשאלות עומק והנהגה אפשרית של עתיד אחר.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%22%D7%9E%D7%93%D7%90%D7%9D%20%D7%A4%D7%A0%D7%98%D7%A1%D7%98%D7%99%D7%A7%22%2C%20%D7%AA%D7%97%D7%9B%D7%9E%D7%95%D7%A0%D7%99%208/3%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו "מדאם פנטסטיק", תחכמוני 8/3]</small> || ללא עלות || <small>הרשמה מראש בלינק</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''בן בר''' || הדגמה || <small>הדגמה חיה: האנזו (מעגל הזן) ככלי ניווט לשיקוף דפוסי תודעה ורגש – ותרגול לשינוי מיידי. שפת ההוויה והתחושות, NoMind, חזרה למרכז בגוף, בלב, ובחיים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%27%D7%90%D7%A0%D7%96%D7%95%20%D7%93%D7%95%20%D7%96%D7%9F%27%2C%20%D7%92%D7%95%D7%A9%20%D7%97%D7%9C%D7%91%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו 'אנזו דו זן', גוש חלב 36]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-8306040</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''רחל בנגורה''' || שיח אמן || <small>שיח אמן עם רחל בנגורה, מקימת בית בנגורה, על ריקוד אפריקאי, המקורות שלו, ההתפתחות והביטוי שלו בארץ.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''שרון יוחאי''' || שיח אמן || <small>צַיְּרִי לָךְ שָׁמַיִם – שיחה על ציור שהוא גם התבוננות וגם נשימה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%99%D7%A6%D7%99%D7%A8%D7%94%20%D7%98%D7%91%D7%A2%D7%99%D7%AA%2C%20%D7%9E%D7%A2%D7%A4%D7%99%D7%9C%D7%99%D7%9D%2013%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו יצירה טבעית, מעפילים 13]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="10:00" | 10:00–16:00 || '''אלה פאוסט''' || סט צילומים || <small>סט צילומי פורטרטים בסטודיו של אלה פאוסט, לאחריו תצאו עם 36 תמונות טובות</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%9C%D7%94%20%D7%A4%D7%90%D7%95%D7%A1%D7%98%2C%20%D7%A1%D7%9E%D7%98%D7%AA%20%D7%98%D7%95%D7%A4%D7%97%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו אלה פאוסט, סמטת טופח 3]</small> || 450 ש״ח || <small>הרשמה מראש בוואטסאפ<br />052-2332958</small>
+|-
+| data-sort-value="10:30" | 10:30–11:30 || '''רקפת הדר''' || שיח אמן || <small>שערים של תקווה: שיח אמן מרגש על יצירה וריפוי. המסע המשותף עם ניצולות בארי שהוביל ליצירת ספר האמן.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-3322464</small>
+|-
+| data-sort-value="11:00" | 11:00–12:00 || '''אומנים מסטודיו הסולם''' || שיח גלריה || <small>שיח גלריה בהשתתפות אומנים מציגים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A1%D7%95%D7%9C%D7%9D%20-%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%20%D7%9C%D7%90%D7%9E%D7%A0%D7%95%D7%AA%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%20104%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הסולם - בית ספר לאמנות, האורנים 104]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:00" | 11:00–12:00 || '''רחל בנגורה''' || ג'אם תופים || <small>מעגל תופים משפחתי לכל גיל בבית בנגורה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:00" | 11:00–16:00 || '''Leroy – Global Beats''' || תקלוט || <small>שישי של גלובל ביטס, גרוב אינסופי ואווירה שאי אפשר להישאר אדישים אליה. דיג'יי לירוי מגיע להרים את השוק.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A9%D7%95%D7%A7%20%D7%94%D7%99%D7%A9%D7%9F%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם השוק הישן, האורנים 12]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:30" | 11:30–13:00 || '''אורי דונט''' || שיח אמן || <small>שיח אמן – אורי דונט ישוחח על תהליך הציור בצבעי מים בתוספת תמונות, קטעי וידאו והדגמה במקום.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="12:00" | 12:00–12:30 || '''טל פלג''' || שיח אמן || <small>שיח אמנית – מוזמנים ומוזמנות לשמוע על התהליכים, מקורות ההשראה, אופן העבודה והטכניקות בהן אני משתמשת ביצירה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%9C%D7%A8%D7%99%D7%A9%D7%95%D7%9D%20%D7%95%D7%A6%D7%91%D7%A2%2C%20%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית לרישום וצבע, מתחם שקדים, שקדים 9]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="12:00" | 12:00–13:00 || '''ליאת אליעז''' || הדגמה || <small>שיעור סטיילינג מעשי שיפתח לך את הראש – איך להוציא מהלוק שלך את המקסימום! בואי לשדרג את הלוק שאת כבר לובשת! נמצא לו עוד שילובים שמתחברים אליו, עוד צבעים ואקססורייז מפתיעים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%94%D7%9E%D7%99%D7%95%D7%97%D7%93%D7%AA%2C%20%D7%A0%D7%98%D7%A2%206%2C%20%D7%93%D7%99%D7%A8%D7%AA%20%D7%92%D7%9F%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו המיוחדת, נטע 6, דירת גן]</small> || 50 ש"ח || <small>הרשמה מראש בוואטסאפ</small>
+|-
+| data-sort-value="12:00" | 12:00–13:00 || '''סוזי מור''' || שיח אמן || <small>"לחזור הביתה – הקלף כתזכורת למי שאני": מסע של שיבה אל העוצמות שלך. נגלה איך הקלפים משמשים מראה שמעירה את הכוח והטוב שקיימים בך תמיד.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-2898713</small>
+|-
+| data-sort-value="12:00" | 12:00–13:00 || '''עדינה דילמוני''' || הרצאה || <small>איור בוטני – מסע בין אמנות למדע, מהימים שציירו צמחים כדי להבין את העולם ועד היום כחוויה של התבוננות, דיוק ויופי.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%A2%D7%93%D7%99%D7%A0%D7%94%20%D7%93%D7%99%D7%9C%D7%9E%D7%95%D7%A0%D7%99%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו עדינה דילמוני, הדרים 59]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3714359</small>
+|-
+| data-sort-value="12:30" | 12:30–13:30 || '''אלמה לונה''' || שיח אמן || <small>אלמה חיה נפש – סיפור על ביטוי אמוני – יצירתי המלווה התמודדות נפשיית יומיומית עם קומפלקס פוסט טראומה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%9C%D7%9E%D7%94%20%D7%A1%D7%A4%D7%99%D7%99%D7%A1%2C%20%D7%A9%D7%9C%D7%95%D7%9D%206%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אלמה ספייס, שלום 6]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–13:30 || '''אילת רוזנברג''' || שיח אמן || <small>כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%A2%D7%95%D7%9C%D7%9D%20%D7%94%D7%99%D7%A6%D7%99%D7%A8%D7%94%2C%20%D7%94%D7%A9%D7%90%D7%9C%D7%95%D7%AA%20%D7%95%D7%94%D7%9C%D7%91%20%D7%A9%D7%9E%D7%90%D7%97%D7%95%D7%A8%D7%99%20%D7%94%D7%A2%D7%91%D7%95%D7%93%D7%95%D7%AA.%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–14:00 || '''חן הני''' || שיח אמן || <small>מחן הני, דרך חן חינה ועד להנרייטה. סיפור מסע של כ 27 שנה. שילוב בין חינה, צמחי מרפא ותהליכים רוחניים – חיבור בין־דורי למסורת, תפילה, ריח, סבתות וייעוד עד לשיער טבעי ובריא</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3414782</small>
+|-
+| data-sort-value="13:00" | 13:00–14:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="13:00" | 13:00–14:00 || '''מייפל''' || הופעה || <small>הופעת חצר – מייפל היא זמרת ויוצרת פולק וגוספל, אוהבת לכתוב על אהבתה לטבע, החיות והעצים. במופע בין בלדות אינטימיות מהאיפי החדש להמנונים סוחפים בהשראת הטבע.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%92%D7%95%D7%A8%D7%99%D7%A0%D7%A7%D7%94%2C%20%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20128%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו גורינקה, הדקלים 128]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–14:00 || '''רודה פרדס חנה''' || הופעה || <small>קלאסיקה ברזילאית בסגנון השורו – צלילים מחממי לב</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%AA%D7%95%D7%A8%D7%9E%D7%95%D7%A1%D7%99%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם התורמוסים, הבוטנים 25]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–16:00 || '''לירן קלינה מתקלט ויניל''' || תקלוט ויניל || <small>תקלוט של שישי צהריים עם לירן קלינה – מתופף, פרקשניסט, ואספן תקליטים מ-2001. מלאטין ג׳אז, fאנק והיפהופ ועד אלקטרו גרוב ונגיעות האוס.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:30" | 13:30–14:30 || '''טליה שפירא''' || הדגמה || <small>צילום ואמנות ההתבוננות – הדגמה והתנסות בצילום הפשוט והסתמי והאפשרות ליצור קסמים עם מצלמת הסמארטפון</small> || <small></small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />0526926608</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''אלה פאוסט''' || הרצאה || <small>אישה בפני עצמה – שיחה פנימית חזותית' – כאשר צילום הופך מכשיר לריפוי רגשי</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%9C%D7%94%20%D7%A4%D7%90%D7%95%D7%A1%D7%98%2C%20%D7%A1%D7%9E%D7%98%D7%AA%20%D7%98%D7%95%D7%A4%D7%97%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו אלה פאוסט, סמטת טופח 3]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''עדינה דילמוני''' || הרצאה || <small>תולדות ציור הנוף – איך הטבע עבר מרקע שולי בציור לגיבור הראשי, ומה השתנה בדרך בעיניים של האמנים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%A2%D7%93%D7%99%D7%A0%D7%94%20%D7%93%D7%99%D7%9C%D7%9E%D7%95%D7%A0%D7%99%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו עדינה דילמוני, הדרים 59]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3714359</small>
+|-
+| data-sort-value="14:00" | 14:00–15:30 || '''אנסמבל בנגורה ויאיר דלאל''' || הופעה || <small>אסמבל בנגורה בקונצרט טרנס אורגני עם יאיר דלל</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || 80 ש"ח || <small>הרשמה מראש בלינק</small>
+|-
+| data-sort-value="15:00" | 15:00–17:00 || '''הראל ברמן וחברים – LIVE MUSIC''' || הופעה || <small>מוזיקה חיה בשיתוף מוסיקאים מהאיזור. מסע מוסיקאלי חוצה עולם דרך שפות וסגנונות שונים. פותחים את הלב ומניעים את הגוף</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="16:00" | 16:00–17:00 || '''מאמרוקו''' || הופעה || <small>מופע פיוז'ן ג'אז צבעוני של היוצר רועי רוקו כהן, המשלב בתוכו מוזיקה מכל העולם</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%95%D7%A4%D7%A2%20%D7%A4%D7%99%D7%95%D7%96%27%D7%9F%20%D7%92%27%D7%90%D7%96%20%D7%A6%D7%91%D7%A2%D7%95%D7%A0%D7%99%20%D7%A9%D7%9C%20%D7%94%D7%99%D7%95%D7%A6%D7%A8%20%D7%A8%D7%95%D7%A2%D7%99%20%D7%A8%D7%95%D7%A7%D7%95%20%D7%9B%D7%94%D7%9F%2C%20%D7%94%D7%9E%D7%A9%D7%9C%D7%91%20%D7%91%D7%AA%D7%95%D7%9B%D7%95%20%D7%9E%D7%95%D7%96%D7%99%D7%A7%D7%94%20%D7%9E%D7%9B%D7%9C%20%D7%94%D7%A2%D7%95%D7%9C%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מופע פיוז'ן ג'אז צבעוני של היוצר רועי רוקו כהן, המשלב בתוכו מוזיקה מכל העולם]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|}
+</div>
+
+=== שבת 5 בספטמבר ===
+29 אירועים.
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! שעה !! מי !! סוג !! מה !! איפה !! עלות !! הרשמה
+|-
+| data-sort-value="09:00" | 09:00–10:00 || '''מיה הוד רן''' || שיח אמן || <small>מסע הגיבורה שאני – כתיבת סיפור החיים שלך, על פי 13 השערים מספר ההשראה ומדריך הכתיבה "מסע הגיבורה שאני". איך מתחילים ומה קורה בדרך.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-7480632</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''בן בר''' || הדגמה והרצאה || <small>הדגמה חיה: האנזו (מעגל הזן) ככלי ניווט לשיקוף דפוסי תודעה ורגש – ותרגול לשינוי מיידי. שפת ההוויה והתחושות, NoMind, חזרה למרכז בגוף, בלב, ובחיים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%27%D7%90%D7%A0%D7%96%D7%95%20%D7%93%D7%95%20%D7%96%D7%9F%27%2C%20%D7%92%D7%95%D7%A9%20%D7%97%D7%9C%D7%91%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו 'אנזו דו זן', גוש חלב 36]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-8306040</small>
+|-
+| data-sort-value="10:00" | 10:00–11:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="10:00" | 10:00–19:00 || '''אלה פאוסט''' || סט צילומים || <small>סט צילומי פורטרטים בסטודיו של אלה פאוסט, לאחריו תצאו עם 36 תמונות טובות</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%90%D7%9C%D7%94%20%D7%A4%D7%90%D7%95%D7%A1%D7%98%2C%20%D7%A1%D7%9E%D7%98%D7%AA%20%D7%98%D7%95%D7%A4%D7%97%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו אלה פאוסט, סמטת טופח 3]</small> || 450 ש״ח || <small>הרשמה מראש בוואטסאפ<br />052-2332958</small>
+|-
+| data-sort-value="10:30" | 10:30–11:30 || '''רקפת הדר''' || שיח אמן || <small>שערים של תקווה: שיח אמן מרגש על יצירה וריפוי. המסע המשותף עם ניצולות בארי שהוביל ליצירת ספר האמן.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-3322464</small>
+|-
+| data-sort-value="11:00" | 11:00–11:30 || '''ליאת אליעז''' || הרצאה || <small>מתלבשות על הארון – אגלה לך את 5 העקרונות שלי לסדר וארגון חכם של המלתחה כך שתוכלי לגלות לבד את כל האוצרות החבויים בארון ותתחדשי לך בלי להוציא שקל נוסף!</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%94%D7%9E%D7%99%D7%95%D7%97%D7%93%D7%AA%2C%20%D7%A0%D7%98%D7%A2%206%2C%20%D7%93%D7%99%D7%A8%D7%AA%20%D7%92%D7%9F%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו המיוחדת, נטע 6, דירת גן]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ</small>
+|-
+| data-sort-value="11:00" | 11:00–11:30 || '''רינה רונן''' || שעת סיפור || <small>שעת סיפור חווייתית: "האריה שאהב תות" עם בובות סרוגות קסומות. מיועד לילדי גן וכיתות א'-ב'</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%20Dream%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2077%D7%90%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הדרים Dream, הדרים 77א]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:00" | 11:00–12:00 || '''אומנים מציגים''' || שיח גלריה || <small></small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A1%D7%95%D7%9C%D7%9D%20-%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%20%D7%9C%D7%90%D7%9E%D7%A0%D7%95%D7%AA%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%20104%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הסולם - בית ספר לאמנות האורנים 104]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:30" | 11:30–12:00 || '''איזי לוי''' || שיח אמן || <small>מפגש שיח אינטימי על הדרך שהובילה אותי אל האמנות, החומר, והצורך ליצור.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%92%D7%9C%D7%A8%D7%99%D7%94%20%D7%A9%D7%9C%20%D7%90%D7%99%D7%96%D7%99%2C%20%D7%93%D7%A8%D7%9A%20%D7%A4%D7%99%D7%A7%22%D7%90%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הגלריה של איזי, דרך פיק"א 69]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="11:30" | 11:30–12:00 || '''זויה שמחי''' || שיח אמן || <small>סגולות שמנים אתריים.השראה וסיפור אישי לתחום הרוקחות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%2C%20%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם שאננים, שאננים 9]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />054-6880100</small>
+|-
+| data-sort-value="11:30" | 11:30–12:00 || '''עדינה דילמוני''' || שיח אמן || <small>שיח אמן בסטודיו: הצטרפו לשיחה אישית, בה אשתף בסיפורים, השראות ותהליכים שמאחורי היצירות שלי.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%A2%D7%93%D7%99%D7%A0%D7%94%20%D7%93%D7%99%D7%9C%D7%9E%D7%95%D7%A0%D7%99%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2059%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו עדינה דילמוני, הדרים 59]</small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-3714359</small>
+|-
+| data-sort-value="11:30" | 11:30–12:30 || '''ענת אור מגל, מירי ספקטור צ׳רניץ ומרגו גראן''' || שיח אמן || <small>שיח אמניות בתערוכה ׳ערות׳ – המבקשת להתבונן במציאות של משבר חברתי וימים של אי־ודאות מנקודת מבט נשית.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="12:00" | 12:00–12:30 || '''טל פלג''' || שיח אמן || <small>מוזמנים ומוזמנות לשמוע על התהליכים, מקורות ההשראה, אופן העבודה והטכניקות בהן אני משתמשת ביצירה</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%9C%D7%A8%D7%99%D7%A9%D7%95%D7%9D%20%D7%95%D7%A6%D7%91%D7%A2%2C%20%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית לרישום וצבע, מתחם שקדים, שקדים 9]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–13:30 || '''אילת רוזנברג''' || שיח אמן || <small>כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9B%D7%A0%D7%99%D7%A1%D7%94%20%D7%9C%D7%A2%D7%95%D7%9C%D7%9D%20%D7%94%D7%99%D7%A6%D7%99%D7%A8%D7%94%2C%20%D7%94%D7%A9%D7%90%D7%9C%D7%95%D7%AA%20%D7%95%D7%94%D7%9C%D7%91%20%D7%A9%D7%9E%D7%90%D7%97%D7%95%D7%A8%D7%99%20%D7%94%D7%A2%D7%91%D7%95%D7%93%D7%95%D7%AA.%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw כניסה לעולם היצירה, השאלות והלב שמאחורי העבודות.]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–14:00 || '''flor do amor''' || הופעה || <small>מוזיקה ברזילאית בעיבודים מקוריים ומקומיים רומה – שירה וטן טן, דביר כפרי – שירה וגיטרה ונגנים אורחים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%AA%D7%95%D7%A8%D7%9E%D7%95%D7%A1%D7%99%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם התורמוסים, הבוטנים 25]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="13:00" | 13:00–16:00 || '''ג׳אם אקוסטי בנרבתא''' || ג׳אם אקוסטי || <small>ג'אם אקוסטי ונעים באווירה ביתית ומשמחת, עם מיטב המוסיקאים של האיזור.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:00" | 14:00–14:30 || '''ג'אנה שימונוב''' || הדגמה || <small>הדגמה של הכנת כלי על אובניים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20Jana%2C%20%D7%93%D7%92%D7%A0%D7%99%D7%94%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו Jana, דגניה 69]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''JonZ''' || הופעה || <small>הופעת חצר – ג'ונזי הוא צמד אינטימי ואופטימי, שנולד במהלך המסע המוזיקלי של ג'ניה וסילנקו ויואב אור.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%92%D7%95%D7%A8%D7%99%D7%A0%D7%A7%D7%94%2C%20%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20128%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו גורינקה, הדקלים 128]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''דימה גולדנברג והרכב אקוסטי''' || הופעה || <small>"בנשימה אחת" "אנדי-רוק עם נגיות בלוז" שירים מקוריים בעברית, קאברים באנגלית ועברית</small> || <small>[https://www.google.com/maps/search/?api=1&query=%22%D7%91%D7%A0%D7%A9%D7%99%D7%9E%D7%94%20%D7%90%D7%97%D7%AA%22%20%22%D7%90%D7%A0%D7%93%D7%99-%D7%A8%D7%95%D7%A7%20%D7%A2%D7%9D%20%D7%A0%D7%92%D7%99%D7%95%D7%AA%20%D7%91%D7%9C%D7%95%D7%96%22%20%D7%A9%D7%99%D7%A8%D7%99%D7%9D%20%D7%9E%D7%A7%D7%95%D7%A8%D7%99%D7%99%D7%9D%20%D7%91%D7%A2%D7%91%D7%A8%D7%99%D7%AA%2C%20%D7%A7%D7%90%D7%91%D7%A8%D7%99%D7%9D%20%D7%91%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%95%D7%A2%D7%91%D7%A8%D7%99%D7%AA%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw "בנשימה אחת" "אנדי-רוק עם נגיות בלוז" שירים מקוריים בעברית, קאברים באנגלית ועברית]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="14:00" | 14:00–15:00 || '''הראל ברמן וחברים – LIVE MUSIC''' || הופעה || <small>מוזיקה חיה בשיתוף מוסיקאים מהאיזור. מסע מוסיקאלי חוצה עולם דרך שפות וסגנונות שונים. פותחים את הלב ומניעים את הגוף</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="15:00" | 15:00–16:00 || '''ליאור מרום''' || שיח אמן || <small>שיח אמן על תהליך היצירה של התערוכה "כי ממני באת ואלי תשוב" בנושא הזיכרון המשפחתי באמנות, לצד תצוגת עבודות מקור וחשיפה לסיפורים המרגשים שמאחורי היצירות.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%9C%D7%99%D7%90%D7%95%D7%A8%20%D7%9E%D7%A8%D7%95%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו ליאור מרום, הבוטנים 31]</small> || 60 ש"ח || <small>הרשמה מראש בוואטסאפ<br />054-4578110</small>
+|-
+| data-sort-value="16:00" | 16:00–17:00 || '''דרור גולדשטיין''' || הופעה || <small>הופעת חצר – דרור גולדשטיין הוא אמן רב־תחומי שמביא לבמה את הלב הפועם והנשמה הרחבה שלו. השירים שלו נוגעים בנימים הכי עדינים של הנפש, וההופעה היא מסע בין מים שקטים של רגש לבין סערה…</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20%D7%92%D7%95%D7%A8%D7%99%D7%A0%D7%A7%D7%94%2C%20%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20128%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו גורינקה, הדקלים 128]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="16:30" | 16:30–17:30 || '''יסמין עמידן''' || שיח אמן ומיצג || <small>​מסע בין השברים – שיח אמן ומיצגי מקרמה, בטון ואפוקסי השזורים באדמה ומגוללים מסע אישי של יצירה, הנצחה וריפוי מאז ה-7 באוקטובר.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%AA%D7%95%D7%A8%D7%9E%D7%95%D7%A1%D7%99%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם התורמוסים, הבוטנים 25]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="17:00" | 17:00–17:30 || '''ג'אנה שימונוב''' || הדגמה || <small>הדגמה של הכנת כלי על אובניים</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%98%D7%95%D7%93%D7%99%D7%95%20Jana%2C%20%D7%93%D7%92%D7%A0%D7%99%D7%94%2069%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סטודיו Jana, דגניה 69]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–18:30 || '''גיל שגרין (ענן-ANNAN)''' || הופעה || <small>מופע אקוסטי שמאפשר להתקרב – אל האחר ואל עצמינו. ערב של אינדי – פולק ׳קיומי׳.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%2C%20%D7%A9%D7%A7%D7%93%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם שקדים, שקדים 9]</small> || לא צוין || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="18:00" | 18:00–19:00 || '''טליה שפירא''' || הרצאה || <small>הסתמיות המופלאה של החיים- מסע של אישה עם מצלמה. הרצאה ושיח על האפשרות להשתמש ברגיל ובפשוט כחומר גלם לצילום ולתרגול חיים של נוכחות, סקרנות ובחירה</small> || <small></small> || ללא עלות || <small>הרשמה מראש בוואטסאפ<br />052-6926608</small>
+|-
+| data-sort-value="18:00" | 18:00–19:30 || '''הראל ברמן וחברים – LIVE MUSIC''' || הופעה || <small>מוזיקה חיה בשיתוף מוסיקאים מהאיזור. מסע מוסיקאלי חוצה עולם דרך שפות וסגנונות שונים. פותחים את הלב ומניעים את הגוף</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="20:00" | 20:00–21:30 || '''יוצרים בתהילים''' || הופעה || <small>מרתון יוצרים עם לחנים חדשים ומודרנים למקורות</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%91%D7%A0%D7%92%D7%95%D7%A8%D7%94%2C%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית בנגורה, המושב 44]</small> || הכניסה חופשית || <small>לא נדרשת הרשמה</small>
+|-
+| data-sort-value="20:30" | 20:30–22:30 || '''רחלי שלו – "חיים מצוירים”''' || מופע סיום אינטראקטיבי || <small>"חיים מצוירים” – הרצאה-מופע אינטראקטיבי המשלב אנימציה, איור חי, מוזיקה וקומיקס, עם הצצה מרתקת אל מאחורי הקלעים.</small> || <small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%99%D7%AA%20%D7%AA%D7%A8%D7%91%D7%95%D7%AA%20%D7%A0%D7%A8%D7%91%D7%AA%D7%90%2C%20%D7%91%D7%99%D7%9C%D7%B4%D7%95%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw בית תרבות נרבתא, ביל״ו 10]</small> || ללא עלות || <small>לא נדרשת הרשמה</small>
+|}
+</div>
+
+== איפה אוכלים ==
+16 עסקי אוכל שותפים לפסטיבל. חלקם יושבים בתוך המתחמים ומופיעים גם בטבלאות שלמעלה.
+
+<div style="overflow-x:auto;">
+{| class="wikitable sortable" style="width:100%"
+! מי !! תחום !! כתובת !! על מה מדובר !! טוב לדעת !! קשר
+|-
+| '''[[רוברטה וינצ'י|רוברטה וינצ'י - מסעדה איטלקית מקומית]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43] || <small>מסעדה איטלקית המבוססת על חומרי גלם מקומיים ועונתיים, ממוקמת בבית בלב המושבה ומוקפת חצר גדולה, עצי פרי וגינת תבלינים.</small> || נגישות בתיאום || <small>04-6037377</small><br /><small>[https://www.robertavinci.co.il/ אתר]</small><br /><small>[https://www.instagram.com/robertavincirest?igsh=OHgxdHY1amV6eWd0 אינסטגרם]</small><br /><small>[https://www.facebook.com/robertavincirest פייסבוק]</small>
+|-
+| '''[[דליקטו|דליקטו - ג'לאטו איטלקי אמיתי]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%91%D7%A0%D7%99%D7%9D%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הבנים 5] || <small>ג'לאטו עבודת יד במתיקות מעודנת, מילקשייק, וופל בלגי אגדי, קרפ משובח, קפה מעולה, אפוגטו ועוד שפע משקאות מפנקים וכל זה באווירה נעימה עם מוזיקה טובה ושירות ברמה גבוהה</small> || נגישות בתיאום<br />סגור בשבת || <small>04-6390261</small><br /><small>[https://www.instagram.com/delicato.phk?igsh=MTVmeGQxcHZqNDJqbQ== אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1CGy7mDfDK/ פייסבוק]</small>
+|-
+| '''[[נוני ופורטונה|נוני ופורטונה - קפה משובח ופינוקים]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%A0%D7%93%D7%99%D7%91%2016%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הנדיב 16] || <small>בית קפה שמיד מרגישים בו בבית, שהוא גם חנות יד שניה ווינטג׳</small> || נגישות בתיאום || <small>[https://nunivefortuna.co.il אתר]</small><br /><small>[https://www.instagram.com/nuni_vefortuna?igsh=d3p2MjBmazg1YXNx&#038;utm_source=qr אינסטגרם]</small><br /><small>[https://www.facebook.com/share/181a14bbRk/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[שושנה|שושנה - פיתה שיפודים - השוק הישן]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 12] || <small>שׁוֹשַׁנָּה - פיתה שיפודים, מציעה אוכל רחוב כשר וטעים: פיתות עם שיפודים עסיסיים, ביסים טובים מהג׳וספר וטעמים אותנטיים שעושים טוב בלב.</small> || נגישות בתיאום<br />סגור בשבת || <small>053-9322390</small><br /><small>[https://www.instagram.com/shoshana.phk?igsh=aTBqYW9xNGprbndt&#038;utm_source=qr אינסטגרם]</small>
+|-
+| '''[[נוילנד (בית קפה)|נוילנד - דברים טובים מאוד]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2022%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 22] ||  || סגור בשבת || <small>050-5515800</small><br /><small>[https://www.instagram.com/noyland.phk?igsh=MTBnZDV5bGxnbmZ0NQ%3D%3D אינסטגרם]</small><br /><small>[https://www.facebook.com/noyland.phk פייסבוק]</small>
+|-
+| '''[[בבושקפה|בבושקפה עגלת קפה]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%A1%D7%AA%D7%93%D7%A8%D7%95%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההסתדרות 1] || <small>the best coffee in town! קפה מעולה, מאפים מושלמים ושייקים</small> ||  || <small>055-2533933</small><br /><small>[https://www.instagram.com/babushcoffee/ אינסטגרם]</small><br /><small>[https://www.facebook.com/babushcaffe/?locale=he_IL פייסבוק]</small>
+|-
+| '''[[בבושקפה "בית הדואר"|בבושקפה בית הדואר]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%99%D7%99%D7%A1%D7%93%D7%99%D7%9D%2052%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המייסדים 52] || <small>עגלה בלב כרכור המתמחה בקפה ומגישה איכות - קפה איכות, מאפים מטריפים ובורקס מנצח</small> ||  || <small>055-9602221</small><br /><small>[https://www.instagram.com/babushcoffee_doar/ אינסטגרם]</small><br /><small>[https://www.facebook.com/p/%D7%91%D7%91%D7%95%D7%A9%D7%A7%D7%A4%D7%94-%D7%91%D7%99%D7%AA-%D7%94%D7%93%D7%95%D7%90%D7%A8-61582427521721/ פייסבוק]</small>
+|-
+| '''מומו טיבטי''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2C%20%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2040%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם האורנים, האורנים 40] || <small>כיסונים טבעוניים המיוצרים בעבודת יד מסורתית</small> || נגישות בתיאום || <small>052-4849114</small><br /><small>[https://instagram.com/momotibeti אינסטגרם]</small><br /><small>[https://www.facebook.com/profile.php?id=100063548381179&#038;mibextid=ZbWKwL פייסבוק]</small>
+|-
+| '''סופיה פארס''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%20Dream%2C%20%D7%94%D7%93%D7%A8%D7%99%D7%9D%2077%D7%90%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הדרים Dream, הדרים 77א] || <small>אוכל דרוזי באווירה ביתית. עלי גפן, כרוב ממולא, מג'דרה, פיתה עם לבנה ופטאייר תרד</small> || נגישות בתיאום || <small>050-8821087</small><br /><small>[https://sofia-kitchen.com/?fbclid=IwAR1zeXgt1Zt-c1BPmTW9P2aWOKci5rGunEiPaoFU5FEmZQiX1q0udvdo2wE אתר]</small><br /><small>[https://www.facebook.com/profile.php?id=100042371234703 פייסבוק]</small>
+|-
+| '''[[בלומס|BLOOMS]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%99%D7%93%D7%99%D7%AA%2C%20%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הידית, חרושת 1] || <small>עגלת קפה ובית קליה ספשלטי, קפה מאפה, כריכים ועוד</small> || נגישות בתיאום || <small>053-7277829</small><br /><small>[http://bloomscoffeeroastery.com/ אתר]</small><br /><small>[https://www.instagram.com/blooms_specialty_coffee/ אינסטגרם]</small><br /><small>[https://www.facebook.com/Blooms_Cafe-100603668476408/ פייסבוק]</small>
+|-
+| '''[[גיא בורגר|Guy's burgertruck]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%99%D7%93%D7%99%D7%AA%2C%20%D7%97%D7%A8%D7%95%D7%A9%D7%AA%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הידית, חרושת 1] ||  || נגישות בתיאום || <small>054-6644090</small><br /><small>[https://www.facebook.com/gaya.bistrobar פייסבוק]</small>
+|-
+| '''משק הלא - מטבח דרוזי ביתי''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%A7%D7%A9%D7%AA%2C%20%D7%A7%D7%93%D7%9E%D7%94%208%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם הקשת, קדמה 8ב] || <small>פיתה דרוזית, עלי גפן, קובה, סמבוסק וממולאים, הכל בעבודת יד ובטעמים ביתיים מסורתיים.</small> ||  || <small>0506875000</small><br /><small>[https://www.facebook.com/hala.farm פייסבוק]</small>
+|-
+| '''Jburger v&w by J17''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%94%D7%AA%D7%95%D7%A8%D7%9E%D7%95%D7%A1%D7%99%D7%9D%2C%20%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2025%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם התורמוסים, הבוטנים 25] || <small>אוכל רחוב טבעוני - המבורגרים איכותיים ועוד</small> || נגישות בתיאום || <small>054-4402208</small><br /><small>[https://www.instagram.com/jburger_vegan?igsh=aTVndjNuYzlvNTk= אינסטגרם]</small><br /><small>[https://www.facebook.com/share/166DFWZCfQ/ פייסבוק]</small>
+|-
+| '''[[קבב ואחיו|קבב ואחיו - אוכל רחוב בגבוה]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%9E%D7%AA%D7%97%D7%9D%20%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%2C%20%D7%A9%D7%90%D7%A0%D7%A0%D7%99%D7%9D%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw מתחם שאננים, שאננים 9] || <small>אוכל רחוב ישראלי טרי - פיתות קבב עסיסיות, מנות גריל ותוספות אהובות, בהגשה מהירה ובאווירת סטריט פוד שמחה</small> || נגישות בתיאום || <small>[https://www.instagram.com/kebabandbro?igsh=MTM0dDNoNmQwd2hwdw== אינסטגרם]</small><br /><small>[https://www.facebook.com/kebabandbro פייסבוק]</small>
+|-
+| '''[[קפה בחורשה|קפה בחורשה - מאפים טריים, בראנצ'ים, פסטורלי בסטייל]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%97%D7%9C%D7%94%206%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נחלה 6] || <small>קפה מוקף בחורשה נעימה. מגיש מאפים טריים, בראנצ'ים מפנקים ואווירה רגועה. מתאים להורים וגם לילדים</small> || נגישות בתיאום<br />סגור בשבת || <small>052-3317700</small><br /><small>[https://www.instagram.com/cafe_bahorsha?igsh=ZGYxZnJwb2J4Ynpo אינסטגרם]</small><br /><small>[https://www.facebook.com/share/1D6qoutcXG/?mibextid=wwXIfr פייסבוק]</small>
+|-
+| '''[[קפה ויעל|קפה ויעל - קפה שכונה]]''' || קולינריה || [https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2027%2C%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%9E%D7%95%D7%A9%D7%91%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 27, פינת המושב] || <small>בית קפה שכונתי, אוכל טעים, שייקים, מיצים סחוטים, קהילה, וקפה מעולה</small> ||  || <small>04-6461506</small><br /><small>[https://www.instagram.com/cafe.and.yael?igsh=dzM5MHk2dWhmcm9u אינסטגרם]</small><br /><small>[https://www.facebook.com/cafeandyael?rdid=pVfgYPig3i6k5RFm&#038;share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F17Yjf5eGJ6%2F# פייסבוק]</small>
+|}
+</div>
+
+== לזכרם של אילנה והנס פלדה ==
+מהדורת 2026 מוקדשת לזכרם של [[אילנה פלדה|אילנה]] ו[[הנס פלדה]], שנפטרו השנה. השניים היו בגרעין המייסד של הפסטיבל ב-1999, והנס היה גם ממקימי [[תיאטרון הידית]]. שני מוקדים בפסטיבל מוקדשים להם.
+
+=== סיור "מקום שמור" ===
+[[מקום שמור]] הוא פרויקט תיעוד המבנים, הנופים והסיפורים של המושבה, שיזמה אילנה הרשנברג פלדה. במהלך הפסטיבל יתקיים סיור בעקבות האתרים שסומנו בפרויקט, בהובלת '''יואב טריפון''' ו'''יעל גתי'''.
+* מועדים: חמישי 3.9 בשעה 18:00, שישי 4.9 בשעה 09:00
+* משך: כשעה וחצי, בהליכה
+* נקודת יציאה: מרכז המושבה. המיקום המדויק נמסר לנרשמים
+* ההשתתפות ללא עלות, בהרשמה מראש
+
+=== קיר השראה בוואדי ===
+[[שיקשוק|השיקשוק]], שוק היד השנייה שנולד ב[[הוואדי|ואדי]] של המושבה ביוזמת בני הזוג פלדה לפני יותר מעשרים שנה, הוא היום חלק מחיי התרבות המקומיים. במהלך ימי הפסטיבל יוקם בוואדי קיר השראה לזכרם, ובו תמונות ורגעים מתחנות בדרכם. המבקרים מוזמנים להוסיף מילה אישית. לצד הקיר תעמוד סלסילת בועות סבון, מחווה להנס, שנהג למלא את הוואדי בבועות.
+
+== קישורים חיצוניים ==
+* [https://www.pardesart.co.il/ אתר הפסטיבל הרשמי]
+* [https://www.pardesart.co.il/map/ המפה הדיגיטלית של הפסטיבל], ובה ארבעת המסלולים המסומנים בצבעים
+* [https://www.pardesart.co.il/plan/ תכנון ביקור]
+
+== מקורות ==
+רשימת המשתתפים, התערוכות ולוח האירועים נאספו מ[https://www.pardesart.co.il/ אתר הפסטיבל הרשמי] של עמותת אמנות פרדס חנה-כרכור, נכון ל-29 באוגוסט 2026. החלוקה לאזורים נגזרה ממיקומי הרחובות ב[https://www.openstreetmap.org/copyright OpenStreetMap] (רישיון ODbL) ואינה חלוקה רשמית של הפסטיבל.
+
+''התוכנית עשויה להשתנות. במקרה של סתירה, האתר הרשמי קובע.''
+
+[[קטגוריה:תרבות מקומית]]
+[[קטגוריה:אמנות]]

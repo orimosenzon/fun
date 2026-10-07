@@ -1,0 +1,403 @@
+[
+ {
+  "url": "https://www.pardesart.co.il/food/blooms/",
+  "kind": "food",
+  "name": "BLOOMS",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם הידית, חרושת 1",
+  "address": "מתחם הידית, חרושת 1, פרדס חנה-כרכור",
+  "phone": "053-7277829",
+  "links": {
+   "website": "http://bloomscoffeeroastery.com/",
+   "facebook": "https://www.facebook.com/Blooms_Cafe-100603668476408/",
+   "instagram": "https://www.instagram.com/blooms_specialty_coffee/"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "עגלת קפה ובית קליה ספשלטי, קפה מאפה, כריכים ועוד",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2025/01/ראשית-scaled.jpeg",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/01/מוצר-4-scaled.jpeg",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/01/מוצר-1-scaled.jpeg",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/01/מוצר-2-scaled.jpeg",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/01/מוצר-3-scaled.jpeg"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/guys-burgertruck/",
+  "kind": "food",
+  "name": "Guy's burgertruck",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם הידית, חרושת 1",
+  "address": "מתחם הידית, חרושת 1, פרדס חנה-כרכור",
+  "phone": "054-6644090",
+  "links": {
+   "facebook": "https://www.facebook.com/gaya.bistrobar"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "",
+  "notes": [
+   "Best burger in town"
+  ],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/גייזבורגר-תמונה-ראשית-למפה.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/01/גיא-בורגר-תמונת-מוצר-חלופית-2026-במקום-הילדים-על-רקע-הואן-הכחול.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/jburger-vw-by-j17/",
+  "kind": "food",
+  "name": "Jburger v&w by J17",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם התורמוסים, הבוטנים 25",
+  "address": "מתחם התורמוסים, הבוטנים 25, פרדס חנה-כרכור",
+  "phone": "054-4402208",
+  "links": {
+   "facebook": "https://www.facebook.com/share/166DFWZCfQ/",
+   "instagram": "https://www.instagram.com/jburger_vegan?igsh=aTVndjNuYzlvNTk="
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "אוכל רחוב טבעוני - המבורגרים איכותיים ועוד",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2025/02/2ראשית-לאתר.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/02/לאתר-מוצר-4-J17-בורגר.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2025/02/לאתר-מוצר-1-J17-בורגר.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/01/טבעוני-חלופה-ל-3.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/01/טבעוני-חלופה-ל-4.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%91%d7%91%d7%95%d7%a9%d7%a7%d7%a4%d7%94-%d7%91%d7%99%d7%aa-%d7%94%d7%93%d7%95%d7%90%d7%a8/",
+  "kind": "food",
+  "name": "בבושקפה בית הדואר",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "המייסדים 52",
+  "address": "המייסדים 52, פרדס חנה-כרכור",
+  "phone": "055-9602221",
+  "links": {
+   "facebook": "https://www.facebook.com/p/%D7%91%D7%91%D7%95%D7%A9%D7%A7%D7%A4%D7%94-%D7%91%D7%99%D7%AA-%D7%94%D7%93%D7%95%D7%90%D7%A8-61582427521721/",
+   "instagram": "https://www.instagram.com/babushcoffee_doar/"
+  },
+  "accessibility": "",
+  "shabbat": "",
+  "description": "עגלה בלב כרכור המתמחה בקפה ומגישה איכות - קפה איכות, מאפים מטריפים ובורקס מנצח",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/ראשית.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/4.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/3.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%91%d7%91%d7%95%d7%a9%d7%a7%d7%a4%d7%94-%d7%a2%d7%92%d7%9c%d7%aa-%d7%a7%d7%a4%d7%94/",
+  "kind": "food",
+  "name": "בבושקפה עגלת קפה",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "ההסתדרות 1",
+  "address": "ההסתדרות 1, פרדס חנה-כרכור",
+  "phone": "055-2533933",
+  "links": {
+   "facebook": "https://www.facebook.com/babushcaffe/?locale=he_IL",
+   "instagram": "https://www.instagram.com/babushcoffee/"
+  },
+  "accessibility": "",
+  "shabbat": "",
+  "description": "the best coffee in town! קפה מעולה, מאפים מושלמים ושייקים",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/ראשית-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/4-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/1-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/2-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/08/3-1.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%93%d7%9c%d7%99%d7%a7%d7%98%d7%95-%d7%92%d7%9c%d7%90%d7%98%d7%95-%d7%90%d7%99%d7%98%d7%9c%d7%a7%d7%99-%d7%90%d7%9e%d7%99%d7%aa%d7%99/",
+  "kind": "food",
+  "name": "דליקטו – ג'לאטו איטלקי אמיתי",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "דרך הבנים 5",
+  "address": "דרך הבנים 5, פרדס חנה-כרכור",
+  "phone": "04-6390261",
+  "links": {
+   "facebook": "https://www.facebook.com/share/1CGy7mDfDK/",
+   "instagram": "https://www.instagram.com/delicato.phk?igsh=MTVmeGQxcHZqNDJqbQ=="
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "לא פתוח בשבת",
+  "description": "ג'לאטו עבודת יד במתיקות מעודנת, מילקשייק, וופל בלגי אגדי, קרפ משובח, קפה מעולה, אפוגטו ועוד שפע משקאות מפנקים וכל זה באווירה נעימה עם מוזיקה טובה ושירות ברמה גבוהה",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-1-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-2-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-3-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-4-1.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%9e%d7%95%d7%9e%d7%95-%d7%98%d7%99%d7%91%d7%98%d7%99/",
+  "kind": "food",
+  "name": "מומו טיבטי",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם האורנים, האורנים 40",
+  "address": "מתחם האורנים, האורנים 40, פרדס חנה-כרכור",
+  "phone": "052-4849114",
+  "links": {
+   "facebook": "https://www.facebook.com/profile.php?id=100063548381179&#038;mibextid=ZbWKwL",
+   "instagram": "https://instagram.com/momotibeti"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "כיסונים טבעוניים המיוצרים בעבודת יד מסורתית",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/יעלה-ולובסנג-מומו-טיבטי-צלמת-יעלה-טוקו-תמונת-ראשית-מוקטנת-לאתר.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/יעלה-ולובסנג-מומו-טיבטי-צלמת-ליאת-גל-תמונת-מוצר-לאתר-3.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/יעלה-ולובסנג-מומו-טיבטי-צלם-לובסנג-טוקו-תמונת-מוצר-לאתר-4.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/יעלה-ולובסנג-מומו-טיבטי-צלמת-ליאת-גל-תמונת-מוצר-לאתר-2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2023/01/יעלה-ולובסנג-מומו-טיבטי-צלם-לובסנג-טוקו-תמונת-מוצר-לאתר-5.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%9e%d7%a9%d7%a7-%d7%94%d7%9c%d7%90-%d7%9e%d7%98%d7%91%d7%97-%d7%93%d7%a8%d7%95%d7%96%d7%99-%d7%91%d7%99%d7%aa%d7%99/",
+  "kind": "food",
+  "name": "משק הלא – מטבח דרוזי ביתי",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם הקשת, קדמה 8ב",
+  "address": "מתחם הקשת, קדמה 8ב, פרדס חנה-כרכור",
+  "phone": "0506875000",
+  "links": {
+   "facebook": "https://www.facebook.com/hala.farm"
+  },
+  "accessibility": "",
+  "shabbat": "",
+  "description": "פיתה דרוזית, עלי גפן, קובה, סמבוסק וממולאים, הכל בעבודת יד ובטעמים ביתיים מסורתיים.",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/Hla-main.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/Hla-4.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/Hla-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/Hla-2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/Hla-3.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a0%d7%95%d7%99%d7%9c%d7%a0%d7%93-%d7%93%d7%91%d7%a8%d7%99%d7%9d-%d7%98%d7%95%d7%91%d7%99%d7%9d-%d7%9e%d7%90%d7%95%d7%93/",
+  "kind": "food",
+  "name": "נוילנד – דברים טובים מאוד",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "האורנים 22",
+  "address": "האורנים 22, פרדס חנה-כרכור",
+  "phone": "050-5515800",
+  "links": {
+   "facebook": "https://www.facebook.com/noyland.phk",
+   "instagram": "https://www.instagram.com/noyland.phk?igsh=MTBnZDV5bGxnbmZ0NQ%3D%3D"
+  },
+  "accessibility": "",
+  "shabbat": "לא פתוח בשבת",
+  "description": "",
+  "notes": [
+   "בית אוכל, קפה ותרבות"
+  ],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית-2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/3.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/4.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a0%d7%95%d7%a0%d7%99-%d7%95%d7%a4%d7%95%d7%a8%d7%98%d7%95%d7%a0%d7%94-%d7%a7%d7%a4%d7%94-%d7%9e%d7%a9%d7%95%d7%91%d7%97-%d7%95%d7%a4%d7%99%d7%a0%d7%95%d7%a7%d7%99%d7%9d/",
+  "kind": "food",
+  "name": "נוני ופורטונה – קפה משובח ופינוקים",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "דרך הנדיב 16",
+  "address": "דרך הנדיב 16, פרדס חנה-כרכור",
+  "phone": "",
+  "links": {
+   "website": "https://nunivefortuna.co.il",
+   "facebook": "https://www.facebook.com/share/181a14bbRk/?mibextid=wwXIfr",
+   "instagram": "https://www.instagram.com/nuni_vefortuna?igsh=d3p2MjBmazg1YXNx&#038;utm_source=qr"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "בית קפה שמיד מרגישים בו בבית, שהוא גם חנות יד שניה ווינטג׳",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-1-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-2-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-3-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-4-scaled.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a1%d7%95%d7%a4%d7%99%d7%94-%d7%a4%d7%90%d7%a8%d7%a1/",
+  "kind": "food",
+  "name": "סופיה פארס",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם הדרים Dream, הדרים 77א",
+  "address": "מתחם הדרים Dream, הדרים 77א, פרדס חנה-כרכור",
+  "phone": "050-8821087",
+  "links": {
+   "website": "https://sofia-kitchen.com/?fbclid=IwAR1zeXgt1Zt-c1BPmTW9P2aWOKci5rGunEiPaoFU5FEmZQiX1q0udvdo2wE",
+   "facebook": "https://www.facebook.com/profile.php?id=100042371234703"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "אוכל דרוזי באווירה ביתית. עלי גפן, כרוב ממולא, מג'דרה, פיתה עם לבנה ופטאייר תרד",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2024/02/sofia.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2024/02/סופיה-5-כרוב-ממולא.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2024/02/סופיה-3-פיתה-לבנה.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2024/02/סופיה-2-מג_דרה.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2024/02/סופיה-1-עלי-גפן.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a7%d7%91%d7%91-%d7%95%d7%90%d7%97%d7%99%d7%95-%d7%90%d7%95%d7%9b%d7%9c-%d7%a8%d7%97%d7%95%d7%91-%d7%91%d7%92%d7%91%d7%95%d7%94/",
+  "kind": "food",
+  "name": "קבב ואחיו – אוכל רחוב בגבוה",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "מתחם שאננים, שאננים 9",
+  "address": "מתחם שאננים, שאננים 9, פרדס חנה-כרכור",
+  "phone": "",
+  "links": {
+   "facebook": "https://www.facebook.com/kebabandbro",
+   "instagram": "https://www.instagram.com/kebabandbro?igsh=MTM0dDNoNmQwd2hwdw=="
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "אוכל רחוב ישראלי טרי - פיתות קבב עסיסיות, מנות גריל ותוספות אהובות, בהגשה מהירה ובאווירת סטריט פוד שמחה",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/קבב-ראשית.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/קבב-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/קבב-2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/קבב-3.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/קבב-4.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a7%d7%a4%d7%94-%d7%91%d7%97%d7%95%d7%a8%d7%a9%d7%94-%d7%9e%d7%90%d7%a4%d7%99%d7%9d-%d7%98%d7%a8%d7%99%d7%99%d7%9d-%d7%91%d7%a8%d7%90%d7%a0%d7%a6%d7%99%d7%9d-%d7%a4%d7%a1%d7%98%d7%95%d7%a8/",
+  "kind": "food",
+  "name": "קפה בחורשה – מאפים טריים, בראנצ'ים, פסטורלי בסטייל",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "נחלה 6",
+  "address": "נחלה 6, פרדס חנה-כרכור",
+  "phone": "052-3317700",
+  "links": {
+   "facebook": "https://www.facebook.com/share/1D6qoutcXG/?mibextid=wwXIfr",
+   "instagram": "https://www.instagram.com/cafe_bahorsha?igsh=ZGYxZnJwb2J4Ynpo"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "לא פתוח בשבת",
+  "description": "קפה מוקף בחורשה נעימה. מגיש מאפים טריים, בראנצ'ים מפנקים ואווירה רגועה. מתאים להורים וגם לילדים",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית.png",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-1.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-2.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-3.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-4.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a7%d7%a4%d7%94-%d7%95%d7%99%d7%a2%d7%9c-%d7%a7%d7%a4%d7%94-%d7%a9%d7%9b%d7%95%d7%a0%d7%94/",
+  "kind": "food",
+  "name": "קפה ויעל – קפה שכונה",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "נעורים 27, פינת המושב",
+  "address": "נעורים 27, פינת המושב, פרדס חנה-כרכור",
+  "phone": "04-6461506",
+  "links": {
+   "facebook": "https://www.facebook.com/cafeandyael?rdid=pVfgYPig3i6k5RFm&#038;share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F17Yjf5eGJ6%2F#",
+   "instagram": "https://www.instagram.com/cafe.and.yael?igsh=dzM5MHk2dWhmcm9u"
+  },
+  "accessibility": "",
+  "shabbat": "",
+  "description": "בית קפה שכונתי, אוכל טעים, שייקים, מיצים סחוטים, קהילה, וקפה מעולה",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/1ראשית-לאתר.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-1.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-2.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-3.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/מוצר-4.jpg"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a8%d7%95%d7%91%d7%a8%d7%98%d7%94-%d7%95%d7%99%d7%a0%d7%a6%d7%99-%d7%9e%d7%a1%d7%a2%d7%93%d7%94-%d7%90%d7%99%d7%98%d7%9c%d7%a7%d7%99%d7%aa-%d7%9e%d7%a7%d7%95%d7%9e%d7%99%d7%aa/",
+  "kind": "food",
+  "name": "רוברטה וינצ'י – מסעדה איטלקית מקומית",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "אחוזה 43",
+  "address": "אחוזה 43, פרדס חנה-כרכור",
+  "phone": "04-6037377",
+  "links": {
+   "website": "https://www.robertavinci.co.il/",
+   "facebook": "https://www.facebook.com/robertavincirest",
+   "instagram": "https://www.instagram.com/robertavincirest?igsh=OHgxdHY1amV6eWd0"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "",
+  "description": "מסעדה איטלקית המבוססת על חומרי גלם מקומיים ועונתיים, ממוקמת בבית בלב המושבה ומוקפת חצר גדולה, עצי פרי וגינת תבלינים.",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית-1-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/1-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/2-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/3-scaled.webp",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/4-scaled.webp"
+  ]
+ },
+ {
+  "url": "https://www.pardesart.co.il/food/%d7%a9%d7%95%d7%a9%d7%a0%d7%94-%d7%a4%d7%99%d7%aa%d7%94-%d7%a9%d7%99%d7%a4%d7%95%d7%93%d7%99%d7%9d-%d7%94%d7%a9%d7%95%d7%a7-%d7%94%d7%99%d7%a9%d7%9f/",
+  "kind": "food",
+  "name": "שושנה – פיתה שיפודים – השוק הישן",
+  "breadcrumb": [],
+  "categories": [],
+  "address_label": "האורנים 12",
+  "address": "האורנים 12, פרדס חנה-כרכור",
+  "phone": "053-9322390",
+  "links": {
+   "instagram": "https://www.instagram.com/shoshana.phk?igsh=aTBqYW9xNGprbndt&#038;utm_source=qr"
+  },
+  "accessibility": "לסידורי נגישות צרו קשר טלפוני",
+  "shabbat": "לא פתוח בשבת",
+  "description": "שׁוֹשַׁנָּה - פיתה שיפודים, מציעה אוכל רחוב כשר וטעים: פיתות עם שיפודים עסיסיים, ביסים טובים מהג׳וספר וטעמים אותנטיים שעושים טוב בלב.",
+  "notes": [],
+  "images": [
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונה-ראשית-3.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונת-מוצר-1.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונת-מוצר-2_.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונת-מוצר-3.jpg",
+   "https://www.pardesart.co.il/wp-content/uploads/2026/02/תמונת-מוצר-4.jpg"
+  ]
+ }
+]
