@@ -1,0 +1,6113 @@
+{
+ "fetched": "2026-10-06",
+ "festival": {
+  "festivalID": "36",
+  "name": "פסטיבל דרך הנדיב 8",
+  "about": null,
+  "navigation": null,
+  "thanks": null,
+  "team": null,
+  "sleep": null,
+  "updates": null,
+  "metadata": null,
+  "logo": "59d7cb1ca8f40358ed2a1c413e49e274c326cbfd6260075c81a3d77e61895909.webp",
+  "fromDate": "2026-10-29",
+  "untilDate": "2026-10-31",
+  "cityID": "878",
+  "timezone": "Asia/Jerusalem",
+  "publicationWindowStart": "2026-06-01 00:00:00",
+  "publicationWindowEnd": "2026-10-22 23:59:00",
+  "festivalEnglishName": "2026",
+  "city": "פרדס חנה-כרכור",
+  "facebook": "https://www.facebook.com/derech.hanadiv",
+  "instagram": "https://www.instagram.com/hanadiv.fest",
+  "whatsapp": "https://chat.whatsapp.com/K1VmKQRsN5653Rm0ZSdPr7"
+ },
+ "events": [
+  {
+   "eventID": 2194,
+   "initiativeOwnerUserID": 26,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 15,
+   "genre": "רב תחומי",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "14:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מופע הסרטים הקסומים",
+   "details": "צמד השופצי חוזרים והפעם משתפים פעולה במופע קסמים חד פעמי בהשראת סרטים - ולראשונה בפסטיבל דרך הנדיב המופע יוצג במתחם הקולנוע!",
+   "initiativeDescription": "איתי שופל ודניאל עמוס ארצי חוזרים עם מופע קסמים חדש שכולו סרטים",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "איתי",
+   "initiativeOwnerLastName": "שופל",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/ecaede32b3aa6db69e00d5662ca6805a0af942703cf3ad5ec72c17b7bdc89bac.webp"
+  },
+  {
+   "eventID": 2193,
+   "initiativeOwnerUserID": 294,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "11:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 80,
+   "totalNumberOfPeopleThatCanAttend": 80,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "קולנוע משנה מציאות-מסע בעקבות סרטים מערערי קונצנזוס",
+   "details": "אנחנו חיים בתקופה שיש בה חופש ביטוי, כביכול. יש רשתות חברתיות באמצעותן כל אחד יכול לייצר מידע ולהביע את דעתו. האם זה מייצר לנו כחברה את התגובה ההפוכה? האם אנשים חיים במרחב האידיאולוגי הויזואלי של האלגוריתם ובמחילת הארנב שבנו להם וכל רמז לאימות התמונה שנוצרה עם מידע חדש וסותר, נתקל בחוסר רצון להיחשף למה שמערער את נקודת ההסתכלות? \nבדיון נעבור על סרטים ששינו מציאות, עזרו לסיים עוולות ולהוביל לעולם טוב יותר.\nנדבר על איך הם עשו את זה ומה ההבדל בינם לבין סרטים שלקחו על עצמם תפקיד של בית משפט וחריצת גורלות. איפה עובר הקו הדק בין נקודת ראות נוספת ותעמולה, בין ריבוי קולות ודיסאינפורמציה והאם יש עוד דבר כזה שנקרא אמת בעולם ב2026 ? \nבשיחה יוקרנו קטעים מסרטים ששינו את העולם.",
+   "initiativeDescription": "מה החשיבות של סרטים לפתיחת דיון מחוץ לגבולות השיח המותרים?",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "יהודית",
+   "initiativeOwnerLastName": "מנסן רמון",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/84ef3dac42079e0c4560d79a56df2de988e670f307e7ff916fe313e8234a4eaa.webp"
+  },
+  {
+   "eventID": 2191,
+   "initiativeOwnerUserID": 10986,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 130,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "גבי סוקולובסקי - מופע להקה",
+   "details": "גבי סוקולובסקי, אמן אינדי פופ חיפאי, יופיע עם להקתו ויבצע שירים מתוך אלבום הבכורה, שעתיד לצאת ממש בקרוב.",
+   "initiativeDescription": "הופעת להקה",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "גבי",
+   "initiativeOwnerLastName": "סוקולובסקי",
+   "attendees": [
+    {
+     "eventID": "2191",
+     "userID": "10992"
+    },
+    {
+     "eventID": "2191",
+     "userID": "10993"
+    }
+   ],
+   "externalLink1": "https://distrokid.com/hyperfollow/6ed1cfe/-",
+   "externalLink2": "https://www.instagram.com/gabi_soco/",
+   "path": "https://api.hanadiv.org/images/735d5b1057c48e0748da2cae676ce72f9587c4eca539b61abbf5ee31bdf2c778.webp"
+  },
+  {
+   "eventID": 2190,
+   "initiativeOwnerUserID": 264,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 120,
+   "totalNumberOfPeopleThatCanAttend": 120,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "אלברט סופר - מופע להקה",
+   "details": "ערב של פולק, רוק ובלוז ישראלי, שיעבור על פני כל התקופות - משירי \"אלגנט\" הבלתי נשכחים של תחילת שנות ה-90, דרך קריירת הסולו, ועד טעימות מחומרים חדשים שבדרך.",
+   "initiativeDescription": "אלברט סופר עם הרכב חשמלי משובח!",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "אלברט",
+   "initiativeOwnerLastName": "סופר",
+   "attendees": [],
+   "externalLink1": "https://open.spotify.com/track/64DJjoZ8mgOI16okLLkXr2?si=WYrsrSHLQrybK18p3hPyHw&utm_source=copy-link",
+   "externalLink2": "https://open.spotify.com/track/7ouR0EMVsYDo4LO7gtzRAn?si=KmqXRbeLSpa9kHR8XAP5xQ&utm_source=copy-link",
+   "path": "https://api.hanadiv.org/images/d360fd152020fc5de342852f7d9004cbd8bc72a21645e626a4b1c1d930434eeb.webp"
+  },
+  {
+   "eventID": 2189,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "20:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 107,
+   "totalNumberOfPeopleThatCanAttend": 107,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: Rei Honda and The Late Bloomers",
+   "details": "Japanese rock/rock and roll/ garage/psychedelic/noise/folk",
+   "initiativeDescription": "הופעה ",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [],
+   "externalLink1": "https://www.google.com/search?q=rei+honda+show+band&oq=rei+honda+show+band&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRiPAtIBCDc2NTlqMGo3qAIAsAIA&sourceid=chrome&source=chrome.ob&ie=UTF-8#fpstate=ive&vld=cid:93463507,vid:BwAZB3lxLKQ,st:0",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/45b4ad4f86ffdd6203a992996789eb6467e1992ff0ebebfe2fd8c2601fcadd95.webp"
+  },
+  {
+   "eventID": 2188,
+   "initiativeOwnerUserID": 10985,
+   "placeOwnerUserID": 10985,
+   "street": "האורנים",
+   "houseNumber": 1,
+   "entrance": "1",
+   "placeDescription": "הוואדי של השיקשוק",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 22,
+   "genre": "משחק",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 2,
+   "date": "2026-10-29",
+   "hour": "17:00",
+   "maxNumberOfPeople": 70,
+   "limitNumberOfPeople": 80,
+   "totalNumberOfPeopleThatCanAttend": 70,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "המירוץ למטמון",
+   "details": "הילדים מתחלקים לקבוצות ויוצאים למסע בעקבות סדרת רמזים. בכל תחנה מחכה להם משימה אחרת – חידה, קוד, אתגר קבוצתי או משימה יצירתית. רק באמצעות חשיבה, שיתוף פעולה ותושייה הם יצליחו להתקדם מרמז לרמז ולהגיע בסופו של דבר אל האוצר.\n\nפעילות נהדרת לילדים, מוזמנים לבוא לשחק, ומי שיאהב יכול גם להזמין את הפעילות ליום ההולדת שלו :)",
+   "initiativeDescription": "משחק משימות קבוצתי",
+   "placeNotes": "נפגשים בוואדי איפה שהשיקשוק תזהו אותי לפי הכובע המצחיק :)",
+   "initiativeOwnerFirstName": "מעין",
+   "initiativeOwnerLastName": "פררה",
+   "attendees": [],
+   "externalLink1": "https://hamerozlamatmon.lovable.app/",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/671a911fd7e6d7c87478513d1ebebd4785ea5c2f961e0eee9fdd4c0c111991db.webp"
+  },
+  {
+   "eventID": 2187,
+   "initiativeOwnerUserID": 14,
+   "placeOwnerUserID": 14,
+   "street": "אורוות האמנים",
+   "houseNumber": 1,
+   "entrance": "1",
+   "placeDescription": "לייבלב Music",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 97,
+   "totalNumberOfPeopleThatCanAttend": 97,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הופעה קול המלאכים וקול הגרוב",
+   "details": "ישראל כסיף עם קול הגרוב להקה מקומית וקול המלאכים זוכת פרס וראייטי הארצית",
+   "initiativeDescription": "הופעה",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "אורית",
+   "initiativeOwnerLastName": "איזנשטיין",
+   "attendees": [
+    {
+     "eventID": "2187",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/colagrooveBand/",
+   "externalLink2": "https://www.facebook.com/kolhamalachim",
+   "path": "https://api.hanadiv.org/images/539a1582f05449525b06eb424fe8be754d7ae02a75f9c69c6df1a29b329e3fdb.webp"
+  },
+  {
+   "eventID": 2186,
+   "initiativeOwnerUserID": 14,
+   "placeOwnerUserID": 14,
+   "street": "נעורים",
+   "houseNumber": 23,
+   "entrance": "1",
+   "placeDescription": "בחצר של כסיף",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 2,
+   "date": "2026-10-31",
+   "hour": "20:00",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 88,
+   "totalNumberOfPeopleThatCanAttend": 88,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "כסיף ונאטשה - שרים אהבה",
+   "details": "מופע מלא לב עם קלאסיקות אהובות, שירי אהבה גדולים וסיפורים קטנים מהחיים. בין השירים נשזרים רגעים אישיים, אנקדוטות והתבוננות אנושית על התמודדות, ריפוי, פוסט טראומה והבחירה שוב ושוב באהבה, בחיים ובמוזיקה.",
+   "initiativeDescription": "מופע מוזיקלי מרגש",
+   "placeNotes": "חניה-לאורך רחוב הנעורים רק בלי לחסום או להפריע לשכנים.",
+   "initiativeOwnerFirstName": "אורית",
+   "initiativeOwnerLastName": "איזנשטיין",
+   "attendees": [
+    {
+     "eventID": "2186",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/kasifandnatasha/",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/6cb7750ba1f537f86f40f923f1f3f60a5ed139e0499840007d072b913c44d4d5.webp"
+  },
+  {
+   "eventID": 2185,
+   "initiativeOwnerUserID": 10923,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 130,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אייל חי - מופע להקה",
+   "details": "עם פרויקט חדשני שנע בין פולק עדין לג׳אז אלקטרוני בועט, מגיע אייל חי בליווי הרכב מחשמל להגיש את השירים מאלבומו האישי והחשוף ״אל הטפל״, העתיד לצאת ביוני 2026. זהו אלבומו השלישי של הזמר/יוצר, מפיק וסקסופוניסט אייל חי, והראשון בעברית אחרי עשור של יצירה ענפה בניו-יורק וארה״ב. לשני אלבומיו קודמים יש מיליוני האזנות ואלפי מאזינים חודשיים.\nהאלבום פותח את התמה של השיבה לארץ ומתעסק בפערים התרבותיים בעקבות החזרה לתל-אביב. חלק מהשירים נשמעים תמימים מבחינה מוזיקלית ולירית, כמעט כמו שירי ילדים אך מחביאים בתוכם התמודדות עם האבסטרקט והאבסורד של אווירת חיי הלילה בתל-אביב מנקודת מבט תמימה ולא תמיד מותאמת. \nהמוזיקה באלבום נשענת על סאונד רך ובלוי, של גיטרה ישנה וסקסופון שמונח בשכבות הרמוניות ומבטא רגשות עדינים, בהפקה שמדגישה כנות, פגיעות ויופי שעבר זמנו. השפה היא פשוטה ויומיומית, מתוך מחשבה שאין צורך במילים גדולות כדי לתאר תחושות אנושיות בסיסיות. הלחנים והביצועים משלימים את הבחירה האמנותית הזאת. בהופעה החיה, יחד עם הבס/תופים העוצמתי של יוני מריאנר ורון אבידן והאנרגיות של הקהל, השירים מתרוממים לגבהים חדשים.\nבשנת 2019, אייל חזר מרילוקיישן של 11 שנים במעבר שלווה בפרידה וחיפוש זהות ומשמעות, החל לכתוב טקסטים שמתעמתים עם הפרידה, חיי הרווקות המחודשים וחיפוש הזהות המחודשת בחזרה במקום אליו שמר געגועים.\nאייל חי, בוגר Berklee College of Music, בעלים שותף בלייבל Rabbit Rabbit Rabbit שדרכו יצאו שני אלבומיו הראשונים באנגלית Practicing Catharsis, Flowers on the Moon ושני אלבומים נוספים עם רביעיית הסקסופונים שהקים - The Side Project. להקה זו שיתפה פעולה בין היתר עם זמרים מובילים מהסצנה בניו-יורק (אליטה מוזס מהלהקה של ג׳ייקוב קוליאר, אקי ברמיס וסיריל אמיי) והוזמנה לפתוח את הקונצרט של ה New York Philharmonic בפרוספקט פארק בברוקלין. עם שובו לארץ, אייל השתלב כסקסופוניסט במספר הפקות גדולות, ביניהן: שירי מימון, תמר רדה, ההודנא אורקסטרה ועוד.\n\nהופעת ההשקה של האלבום היא ב-29/07  באממה, ת\"א\n Spotify | Instagram | eyalhaimusic@gmail.com | 058-4966177",
+   "initiativeDescription": "אייל חי - מופע להקה",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "אייל",
+   "initiativeOwnerLastName": "חי",
+   "attendees": [
+    {
+     "eventID": "2185",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": " https://open.spotify.com/artist/6nQAOfHn42kF8Vgzp1f8iZ?si=86bP0V2kQ_66MV5x5aJyOg&utm_source=copy-link קישור חיצוני 2  קישור לקבוצת וואטסאפ (לא חובה) מי שנרשם לאירוע יקבל את הקישור מיד אחרי ההרשמה  להוספת תמונות",
+   "externalLink2": " https://www.instagram.com/eyalhai?stkn=MWtnMTZ2OGQ2bnBhYg%3D%3D&utm_source=qr קישור לקבוצת וואטסאפ (לא חובה) מי שנרשם לאירוע יקבל את הקישור מיד אחרי ההרשמה  להוספת תמונות",
+   "path": "https://api.hanadiv.org/images/272036c5e0d03bf094b54bb83859231cb70d9b401b8af8d8261c6edc4f61ee15.webp"
+  },
+  {
+   "eventID": 2184,
+   "initiativeOwnerUserID": 10892,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "18:30",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 90,
+   "totalNumberOfPeopleThatCanAttend": 90,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "עדן זלניק- הופעה ",
+   "details": "עדן זלניק היא זמרת יוצרת בסגנון אינדי-פופ מקורי, עכשווי ועמוק. לאחר שהוציאה השנה את ה-E.P הראשון ״מי שהייתי בעינייך״ וסינגל נוסף הקיץ.\nבימים אלו עדן עובדת על אלבום נוסף, ומופיעה עם הלהקה שלה עם חומריים מקוריים.\n\nעדן מושפעת מוזיקלית ממגוון סגנונות-החל מפופ, דרך רוק רך ועד למוזיקה קלאסית, ויוצרת טביעת אצבע ייחודית, לצד מילים כנות וחשופות.\n\nהמופע יערך כשעה ויכלול שירים מקוריים, חלקם יצאו וחלקם עתידיים לצאת. \n",
+   "initiativeDescription": "שרה ומנגנת שירים מקוריים שלי, יחד עם הרכב",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "עדן",
+   "initiativeOwnerLastName": "זלניק",
+   "attendees": [
+    {
+     "eventID": "2184",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://linktr.ee/Edenzelnik",
+   "externalLink2": "https://www.instagram.com/edenzelnik/",
+   "path": "https://api.hanadiv.org/images/4b70e3fac55121435d571406d1a6a177cbfc71bd43ebf2859068ba994ec83380.webp"
+  },
+  {
+   "eventID": 2183,
+   "initiativeOwnerUserID": 10365,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:00",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 50,
+   "totalNumberOfPeopleThatCanAttend": 50,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הופעת דואו אקוסטית",
+   "details": "מיכל ויסברג היא זמרת-יוצרת עם קול גדול ועמוק, המגיעה להופעת דואו אקוסטית יחד עם אורי דוידסון(היישר מברלין) על גיטרה, פסנתר ובס.\n\nבהופעה יבוצעו שירים מקוריים מתוך אלבומה השני, בהפקתו של יהוא ירון  שירים כנים, בועטים, סוחפים ומרגשים, שנכתבו מדם ליבה ומבקשים לפתוח מרחב לריפוי משותף, בין מיכל לקהל.",
+   "initiativeDescription": "הופעת סולו חומרים מקוריים מתוך אלבום שני",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "מיכל",
+   "initiativeOwnerLastName": "ויסברג",
+   "attendees": [
+    {
+     "eventID": "2183",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://youtu.be/Ix7qWuQGgeY",
+   "externalLink2": "https://www.youtube.com/watch?v=Yzyo2mlwxks",
+   "path": "https://api.hanadiv.org/images/5616b56a5892580a061739b4a4b2263192f2b58696de20f484f51b03a2656ffb.webp"
+  },
+  {
+   "eventID": 2182,
+   "initiativeOwnerUserID": 7460,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 116,
+   "totalNumberOfPeopleThatCanAttend": 116,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "טליה דנציג",
+   "details": "הקהל\nפגש את טליה לראשונה באלבום \"לי עוד יש ים בתוכי\" של יוגב גלוסמן, ובפרויקט של תמרי.\nסינגל הבכורה \"לב ליבי\", היה המבשר של האלבום המסקרן ״תחזרי הביתה״ שיוצא כשטליה רק\nבת 20 . מאז ממשיכה דנציג לבסס את עצמה בנוף המוזיקה הישראלית עם הופעות על הבמות של הפסטיבלים הנחשבים במדינה.",
+   "initiativeDescription": "הופעה אקוסטית",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "מתן",
+   "initiativeOwnerLastName": "בן צבי",
+   "attendees": [
+    {
+     "eventID": "2182",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2182",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://youtu.be/PKV7Jk6jmEo?si=LtNZso1VksgTCjg5",
+   "externalLink2": "https://open.spotify.com/album/2nZnxhCL7KgymMVQQIokiZ?si=mLkFcpx0TNO4fseisBjGFw",
+   "path": "https://api.hanadiv.org/images/ad5b8931f3e80e3a300c994900f4bfe106f16a75a1d68d49af0231acab170eb2.webp"
+  },
+  {
+   "eventID": 2181,
+   "initiativeOwnerUserID": 10981,
+   "placeOwnerUserID": 10981,
+   "street": "הנשיא",
+   "houseNumber": 14,
+   "entrance": null,
+   "placeDescription": "בית פרטי",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "17:00",
+   "maxNumberOfPeople": 40,
+   "limitNumberOfPeople": 42,
+   "totalNumberOfPeopleThatCanAttend": 40,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מעגל שירה עם הרכב נשים \"מורקה\"",
+   "details": "נאסף בבית חמים ונעים לשירה משותפת עם נשות מורקה.",
+   "initiativeDescription": "שירי בריאה ויצירה , לצלול ביחד, להתפלל, להסכים לברוא עולם חדש.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "מעין",
+   "initiativeOwnerLastName": "אגמון",
+   "attendees": [
+    {
+     "eventID": "2181",
+     "userID": "10985"
+    },
+    {
+     "eventID": "2181",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2181",
+     "userID": "10981"
+    }
+   ],
+   "externalLink1": "https://open.spotify.com/artist/4uyqbXDfaTczuqmFmjbzWF?si=2DfxRIu0T-66BQM_zqD1LA&utm_source=copy-link",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/a3a4fdeee446574d34ef88670c2872d7581cfa44573ac95ba6ed950c8e7427b1.webp"
+  },
+  {
+   "eventID": 2180,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "קלרה הקדושה",
+   "details": "אילו לא מספיק קשה להיות התלמידה החדשה, לקלרה יש גם יכולת לראות את העתיד, והיא עלולה לשנות מקצה לקצה את בית הספר שלה – ואת כל העיירה שאליה עברה.\nבכיכוב: לוסי דובינצ'ק, חליל אלוהב וג'וני פיטרסון",
+   "initiativeDescription": "סרט קולנוע",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/de14d572e06c7213d03b98b9e697c346d6a328ede68992d2532b18e278e96294.webp"
+  },
+  {
+   "eventID": 2179,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "22:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 123,
+   "totalNumberOfPeopleThatCanAttend": 123,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: רפאים",
+   "details": "רפאים - \"הֱיוּת\"\nרפאים קמו בתחילת 2022, מתוך חיבור טבעי לאנימיזם, טקסים עתיקים ומוזיקה פסיכדלית. הלהקה הוקמה בדרום תל אביב, ומאז הם חוקרים יחד את גבולות הצליל והתודעה.\n\nבהשראת רשימותיו של הסופר הבריטי אלדוס הקסלי על חוויית המסקלין שלו, מצאו רפאים במילה העברית \"הֱיוּת\" (Isness) את המיקרוקוסמוס המדויק למסע המוזיקלי שלהם. \"הֱיוּת\" הוא גם שם אלבום הבכורה של רפאים, שיצא בלייבל היווני \"Sound Effect Records\".\nהמפגש בין ארבעת חברי ההרכב יוצר מארג מוזיקלי עשיר, הנולד ממיזוג של עולמות והשפעות מגוונים: קראוטרוק גרמני ומוזיקה מן המזרח, רוח חופשית של רוק פסיכדלי, וגרוב ישיר ומינימליסטי. התוצאה היא טריפ מוזיקלי ששומר על זהות מקומית מובחנת, שורשית ובלתי מתפשרת.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2179",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://linktr.ee/refaim.music",
+   "externalLink2": "https://www.instagram.com/refaim.music/",
+   "path": "https://api.hanadiv.org/images/261ad37cdc3b840e72280f2dd8ea83a6997470ba9c17a0a8753df3aa31892484.webp"
+  },
+  {
+   "eventID": 2178,
+   "initiativeOwnerUserID": 1898,
+   "placeOwnerUserID": 1898,
+   "street": "הדקלים",
+   "houseNumber": 100,
+   "entrance": "הכניסה במרכז המבנה בין חנות הסלולר למסגרות, קומה א' דלת חומה משמאל.",
+   "placeDescription": "סטודיו GoART פרדס חנה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 2,
+   "genre": "אמנות פלסטית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "10:00",
+   "maxNumberOfPeople": 24,
+   "limitNumberOfPeople": 24,
+   "totalNumberOfPeopleThatCanAttend": 24,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "יוצרים יחד בסטודיו GoART - לב המושבה",
+   "details": "מפגש אנושי ומשחרר, במרחב מאפשר של סטודיו GoART פרדס חנה, השופע בהשראה ליצירה. מתאים לקהל בוגר (מגיל 16 ומעלה). אעזור לכם להיכנס למוזה וליהנות מיצירה חופשית.\nאתם מגיעים בזמנכם המתאים, מסגרת שעות הסדנה ומשתלבים.",
+   "initiativeDescription": "ציור ויצירה חופשית, בסטודיו GoART, עם קרן נעים",
+   "placeNotes": "בשבת יש חניה בשפע. \nהסטודיו במבנה הצמוד לסופר סיטי. \nהכניסה לחדר המדרגות היא בין חנות המסגרות לחנות הסלולר, בקומה הראשונה, הדלת חומה משמאל.",
+   "initiativeOwnerFirstName": "קרן",
+   "initiativeOwnerLastName": "נעים",
+   "attendees": [],
+   "externalLink1": "https://chat.whatsapp.com/G3tVSFcpNVjDx3lfKMPuRS?s=cl&p=i&mlu=0&ilr=4",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/c86bce03134f90b647c2b2eec5cbe29b6b5c1059598cc0d99cae76579242fc47.webp"
+  },
+  {
+   "eventID": 2177,
+   "initiativeOwnerUserID": 62,
+   "placeOwnerUserID": 62,
+   "street": "נעורים",
+   "houseNumber": 27,
+   "entrance": null,
+   "placeDescription": "בית הקפה \"קפה ויעל\"",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 60,
+   "limitNumberOfPeople": 60,
+   "totalNumberOfPeopleThatCanAttend": 60,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "Death Cafe  בקפה ויעל",
+   "details": "מוזמנים למפגש Death Cafe קהילתי חודשי ב \"קפה ויעל\".\nDeath Cafe הוא קונספט מסוים, המתקיים בצורה דומה במקומות שונים בעולם. הוא שיחה בקבוצה, במרחב בטוח, שמותר לדבר בה על המוות וכל מה שקשור אליו, מעל קפה ועוגה. המנחים הינם אנשי מקצוע בתחום, אך זו לא הרצאה או שיעור, אלא שיחה פתוחה, המאפשרת ללמוד זה מנסיונו של זה.",
+   "initiativeDescription": "מוזמנים לDeath cafe המסורתי של פסטיבל הנדיב, זו השנה השמינית, בבית הקפה קפה ויעל",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "מיכל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2177",
+     "userID": "5203"
+    },
+    {
+     "eventID": "2177",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/DeathCafeAtGuyAndYael",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/4dcc780e720a6ca5f03134c5ccf2e9535720fda738893d19a7479651991f967d.png"
+  },
+  {
+   "eventID": 2176,
+   "initiativeOwnerUserID": 1232,
+   "placeOwnerUserID": 1232,
+   "street": "מרחוב הנורית - הוראות הגעה",
+   "houseNumber": 111,
+   "entrance": " ",
+   "placeDescription": "חוות החזון הירוק",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 2,
+   "date": "2026-10-31",
+   "hour": "10:00",
+   "maxNumberOfPeople": 32,
+   "limitNumberOfPeople": 32,
+   "totalNumberOfPeopleThatCanAttend": 32,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "עולם הצמחים והליקוט בחווה",
+   "details": "נפגש, נכיר את המקום ואת הצמחים הקיימים בחווה ואת אלו המתחילים את נביטתם עם בואו של הגשם. נפתח שולחן נישנושים ממה שכולם יביאו, נכין ונטעם משקה מופלא במיוחד",
+   "initiativeDescription": "מפגש בחוות החזון הירוק סביב עולם הצמחים המופלא",
+   "placeNotes": "*איפה המפגש?*\nכיוון כללי - הגיעו לביג פרדס חנה והמשיכו לכיוון זן גרדן/רחוב נורית (יש זן גרדן בווייז) ומשם ממשיכים ישר בדרך עפר כ-2-3 דקות עד שתראו שער מימינכם. החנו מחוץ לשער בצורה שלא חוסמת את הכביש ואת השער. (לא להמשיך לכיוון החממה, אתם תראו את הֹשער). \nבבקשה אחרי שאתם נכנסים ברגל לשטח, סגרו את השער עם ה-וו.\nבפנים כבר תמצאו אותנו",
+   "initiativeOwnerFirstName": "אפרת",
+   "initiativeOwnerLastName": "שקד",
+   "attendees": [
+    {
+     "eventID": "2176",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2176",
+     "userID": "10989"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/083bc1c783549d8b4bb6b893efde3a26f542512d801aac2b57277630c3ec9a45.webp"
+  },
+  {
+   "eventID": 2174,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "12:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 150,
+   "virtual": false,
+   "title": "מעבר לקשת הענן",
+   "details": "הסרט \"מעבר לקשת בענן\" של יעלה אלישיב שהופיע בפסטיבל קולנוע רוחני 2009 סינמטק ת\"א, יוקרן בפסטיבל הנדיב 2026. בסרט היוצרת יעלה שחיה כבר 22 שנה בקהילת פרדס חנה שוזרת סצנות מתוך חיי הקהילה מהשיקשוק בתחילת שנותיו ומדמויות צבעוניות שחיות ופועלות בקהילה עד היום . את הסרט צילמה יעלה  כ 6 שנים 2004- 2009 בהן היא עוקבת  אחר אנשי הריינבו וחוקרת כיצד הוא משפיע על חיי היום יום מחוץ למפגשי הריינבו ומה היא תרומתו לאדם ולקהילה. במבט לאחור בשורת הריינבו הביאה להמון יוזמות שקיימות ופועלות ביננו עד היום כאן בקהילת פרדס חנה כרכור ,גינות קהילתיות ,בארטרים ,יד שניה,סדנאות מפגשי טבע, מעגלי שירה סביב האש ועוד המון ארועים ופסטיבלים כגון פסטיבל הנדיב .",
+   "initiativeDescription": "סרט דוקומנטרי שיחה עם היוצרת",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [
+    {
+     "eventID": "2174",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2174",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2174",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2174",
+     "userID": "10994"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/cf07e4c9f8515c9ac4e0c1268db3aa7b2a96aaa6ecd1d9a690a1955423c88b06.webp"
+  },
+  {
+   "eventID": 2173,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "22:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 120,
+   "totalNumberOfPeopleThatCanAttend": 120,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: רימוך און",
+   "details": "כפיר רימוך הוא זיקית של יצירה, מילים, לחנים, מוזיקה ודמיון. אמן רב-תחומי המהווה דמות מפתח בסצנת האינדי והאלטרנטיב הישראלית. לאורך השנים בנה רימוך עולם אמנותי עשיר ולא מתפשר המשלב בין הומור פרוע, פסיכדליה ומחויבות עמוקה לחופש יצירתי.\nאחרי שחרש את הבמות בארץ ובעולם עם פרויקטים שהפכו לקאלט - מהפאנק הבועט של The Pickles , דרך פולק-רחוב המנוני ב-בותימזוג וסינתי-פופ מיתולוגי ב-לטאות הענק מכוכב הניבירו (שחיממו את אליס קופר בישראל), ועד לטראנס האלקטרוני החייזרי של RIMOJEKI עם אשתו ג'קי.\nכעת, רימוך בשנת היובל שלו, מציין אבן דרך כפולה עם צאת הסולו אלבום הראשון שלו \"חי כפוי טובה\" בהפקתו של הכישרון אייל סמסון. \nחי כפוי טובה זה ההפוך של מת אסיר תודה. מנגנים להיטים מכל הפרוייקטים, רוק סבנטיז, פסיכדלי, מרגש, בעברית ומקיסריה!\nנגנים: ג'קי א100ממת - קלידים ושירה / רימוך - חשמלית ושירה / איתן ירושלמי - חשמלית / יאיר קוצר - בס /  איתי דוברין - תופים / מיקי פרץ - פרקשיינס.\n\n:",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2173",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://orcd.co/rimochlp",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/fe7ad8f2d809812531fc619fdc57860cda798fed38afc9da614e14f124aa1629.webp"
+  },
+  {
+   "eventID": 2172,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 120,
+   "totalNumberOfPeopleThatCanAttend": 120,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: מאיה זלצר",
+   "details": "מאיה זלצר היא אמנית פוסט-פאנק שנבנית על גיטרות רועשות, אנרגיה גולמית, הומור שחור ואינסטינקט לעשות את מה שמרגיש נכון. המוזיקה שלה היא מקום לאבד את הראש, לרקוד גרוע, לצרוח חזק מדי ולשכוח, לרגע, איך אנחנו באמת אמורים להתנהג.\n\n\n\nאחרי שמאיה לקחה את המוזיקה שלה לסיבובי הופעות בבריטניה ולשיתופי פעולה עם שרון קנטור, רם אוריון וסי היימן, האלבום האחרון שלה, Falling Angel, בהפקה עצמית, נולד מתוך השקט המוחלט של מחנה מדיטציה בצפון. האלבום נכתב באוהל במשך שלושים יום, והפך ליומן גולמי של כל מה שצף באותו הרגע. מהאוהל הקטן הוא יצא לעולם דרך נענע דיסק, שהדפיסו לו מהדורת ויניל מיוחדת.\nומשם כבר לא היה לו לאן לברוח. הוא עלה לבמות חיות בישראל עם כל ההרכב.\n\nאלבומם החדש Falling Angel\nנע בין פוסט-פאנק, גיטרות מתפרצות וחוש משחק חסר מנוחה. אפשר לשמוע בו משהו מהחופש של Sonic Youth, מהאינטימיות של PJ Harvey ומהישירות של Patti Smith. אבל\nהשירים עצמם מסרבים להישאר במקום אחד.\nהם הולכים לאן שבא להם: \nמהמכוער למגוחך, \nמהאישי ביותר למופרע לחלוטין.\nזה אלבום שלוקח אמת אישית ופחד והופך אותם למשהו שאפשר לרקוד איתו.\nתיהנו מהחושך ותעשו חיים.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2172",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/1d4be48cd97b4b33a15353464fa97891b43cd4e50890432d3e2ba14f28d3c9e3.webp"
+  },
+  {
+   "eventID": 2171,
+   "initiativeOwnerUserID": 2041,
+   "placeOwnerUserID": 1238,
+   "street": "האורנים",
+   "houseNumber": 66,
+   "entrance": null,
+   "placeDescription": "סככה מקורה",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 16,
+   "genre": "תיאטרון",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "18:30",
+   "maxNumberOfPeople": 80,
+   "limitNumberOfPeople": 76,
+   "totalNumberOfPeopleThatCanAttend": 76,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 80,
+   "virtual": false,
+   "title": "הופעת תיאטרון פלייבק שבטי",
+   "details": "אנסמבל \"פלייבק שבטי\" בהשתתפות : נעמה תל צור, נאוה ליכטנר, מיכל צרפתי, איילת טפירו, שירה זהבי ושירה לין. ליווי מוסיקלי -רועי נורמן. המופע יתקיים בחצר של משפחת רותם ברחוב האורנים 66.",
+   "initiativeDescription": "סיפורי חיים מהקהל מתעוררים לחיים על הבמה באלתור תיאטרלי בליווי מוסיקה חיה. ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "נאוה",
+   "initiativeOwnerLastName": "ליכטנר",
+   "attendees": [
+    {
+     "eventID": "2171",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2171",
+     "userID": "4363"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/5cfb32c95ea817b5fc106666f3340f65929e71a1f8968716698948cb150373cd.webp"
+  },
+  {
+   "eventID": 2170,
+   "initiativeOwnerUserID": 967,
+   "placeOwnerUserID": 967,
+   "street": "שביל התלמיד",
+   "houseNumber": 7,
+   "entrance": null,
+   "placeDescription": "אגף לשירותי רווחה וקהילה פרדס חנה כרכור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "maxNumberOfPeople": 32,
+   "limitNumberOfPeople": 31,
+   "totalNumberOfPeopleThatCanAttend": 31,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "הפרעת קשב התמכרויות ומה שביניהם",
+   "details": "הרצאה תעסוק באופן שבו הפרעת קשב (ADHD/ADD) באה לידי ביטוי ברצף החיים (ילדות, התבגרות ובחיים הבוגרים). בנוסף תעלה תובנות לגבי הקשר בין שימוש בחומרים פסיכואקטיביים והפרעת קשב; כיצד \"מעגל הקסם\" של שימוש בחומרים פסיכואקטיביים משפיעים על התפקודים הניהוליים בקרב אנשים עם קשב וריכוז. ההרצאה תועבר על ידי ד\"ר עינב ורד, מייסדת מרכז ע.נ.ו. עובדת סוציאלית ומטפלת משפחתית, מתמחה בליווי ילדים, נוער ומבוגרים עם הפרעות קשב ולקויות למידה במעגלי החיים. ",
+   "initiativeDescription": "הרצאה לקהל הרחב",
+   "placeNotes": "יש לסוע עד לקצה הרחוב, מאחורי בית הספר אלונים",
+   "initiativeOwnerFirstName": "ברכה",
+   "initiativeOwnerLastName": "בוולסקי פריז",
+   "attendees": [
+    {
+     "eventID": "2170",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2170",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2170",
+     "userID": "10947"
+    },
+    {
+     "eventID": "2170",
+     "userID": "10984"
+    },
+    {
+     "eventID": "2170",
+     "userID": "7565"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/ad296309eccd343399fc3cff882025b82cc87fbaa75d10169b21d5ea44a62176.webp"
+  },
+  {
+   "eventID": 2167,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "17:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 106,
+   "totalNumberOfPeopleThatCanAttend": 106,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: אורן בן סימון ולהקתו",
+   "details": "להקת גראז' רוק מקורי. האלבום כל שיר להיט יצא בשנת 2024 עם להיטי קצב, גיטרות פאזז ונגיעות פסיכאדליות.\nיוני טנבאום (רוקפור) תופים\nנלי פולי בס ושירה\nאורן בן סימון גיטרה חשמל ושירה",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2167",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2167",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/61457cb45fd23704d1cb1c5e9494d66db7ea06cf2c0858c6f92b10901c9b5541.webp"
+  },
+  {
+   "eventID": 2166,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "20:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 110,
+   "totalNumberOfPeopleThatCanAttend": 110,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: Wrong Use (דן עזרא, מיכאל יצחקי, ידידיה הרן)",
+   "details": "הרכב פאנק רוק פסיכדלי הבנוי משלושה יוצרים\nמיכאל יצחקי \nידידיה הרינג \nדן עזרא\nההרכב ליקראת הוצאת אלבום בכורה ומטייל איפשהו באזור הדמדומים\nופעה אמיתית.\nמוות ל AI.\nחופש לכולם",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2166",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2166",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2166",
+     "userID": "7635"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/ab62acf649710ea6d23f1440dc383c31923c2ea69032b184748b5af71ed3dbf2.webp"
+  },
+  {
+   "eventID": 2164,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "17:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 99,
+   "totalNumberOfPeopleThatCanAttend": 99,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: STEREO CANDY",
+   "details": "סטריאו קנדי היא להקת שוגייז-רוק מקומית חדשה, שנולדה מתוך תשוקה לסאונד האופורי והנוסטלגי של ז'אנר השוגייז (Shoegaze).\nמלודיות חלומיות, קירות סאונד (Walls of sound), וגיטרות ספוגות בריוורב ואפקטים שמתוכן עולה שירה שמיימית פייתית ומסתורית של הסולנית (שהיא במקרה גם זמרת אופרה). ההרכב שואב השראה מלהקות כמו Cocteau Twins ו-Slowdive, אבל מפיק סאונד בועט וייחודי משלו, המשלב נגיעות כבדות של פוסט פאנק, Dustgaze, רוק אלטרנטיבי ונויז רוק.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2164",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2164",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2164",
+     "userID": "10970"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=Piplkw_egCw",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/b1d1c0f046ded469d54f8a770fe12d82a714b69b0c8dfa67046d1f0f49ee4aff.webp"
+  },
+  {
+   "eventID": 2163,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 96,
+   "totalNumberOfPeopleThatCanAttend": 96,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: נגה שלו",
+   "details": "נגה שלו היא סינגר סונגרייטרית ותיקה בשדות האינדי. מתאפיינת בסגנון ישיר וכנה - מגיעה לסט אקוסטי -עם שירים חדשים מהשנה הזו",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2163",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2163",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2163",
+     "userID": "5033"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/4e6edc69f789bc9d99325bafcd5d75ded41a90fa84049a215eaf1f39442422f4.webp"
+  },
+  {
+   "eventID": 2162,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "14:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 116,
+   "totalNumberOfPeopleThatCanAttend": 116,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: עמוס צימרמן - סולו",
+   "details": "עמוס צימרמן הוא זמר-יוצר ותיק מאזור עמק חפר שכותב ושר בעיקר פולק-רוק באנגלית, כשמאחוריו סיבובי הופעות בגרמניה ואנגליה.\nאלבומו החדש - Finger Tales הוא אלבומו השלישי: אוסף אינטימי של שירים המוקלטים עם שירה וגיטרה אקוסטית בלבד, ללא העלאות ערוצים, ללא כלים נוספים או קולות, ואפילו ללא שימוש במַפרֵט גיטרה.\nלבמת אלטרנדיב מגיע צימרמן חמוש במפוחית ושלוש גיטרות בכיוונים שונים ומשונים, להופעת סולו אינטימית.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2162",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2162",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2162",
+     "userID": "10942"
+    }
+   ],
+   "externalLink1": "https://music.apple.com/il/album/finger-tales/6784776415?l=he",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/1d51f3b0d4cd12ab931d5e9e9a37d58005c26d9f30c716307aeab444159b1a28.webp"
+  },
+  {
+   "eventID": 2161,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "22:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 113,
+   "totalNumberOfPeopleThatCanAttend": 113,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: Sklep",
+   "details": "המוסיקה שלנו היא הדרך אנחנו מציעים הצצה לפינות האפלות של התת מודה. \nניהיליזם ורעש לבן של רוח האנושית.  ",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2161",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2161",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/e2075613751cae37fa1354b4d363b30f9850903769c0404343c5051e30a646b9.webp"
+  },
+  {
+   "eventID": 2160,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "16:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 106,
+   "totalNumberOfPeopleThatCanAttend": 106,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: Cadaver Eyes",
+   "details": "קאדאבר אייז (Cadaver Eyes) הוא צמד מוזיקלי ישראלי ותיק הפועל משנת 2003 בתחומי המוזיקה הניסיונית, הנויז, האוונגרד והגראינדקור.חברי ההרכב הם ערן זקס (המנגן על מיקסר ללא קלט - no-input mixer) ודוד אופ (מתופף וסולן).",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2160",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2160",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/4222d80e37d04952ec0cbbea0027ba77e4c1ef37ede38ff1faded98368101cd5.webp"
+  },
+  {
+   "eventID": 2159,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "14:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 116,
+   "totalNumberOfPeopleThatCanAttend": 116,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: אלעד זאב ולהקה",
+   "details": "זמר-יוצר, מוזיקאי וגיטריסט ישראלי, הנחשב לאחד מחלוצי ומגיבורי סצנת האינדי רוק והלואו-פיי (Lo-Fi) המחתרתית בישראל. המוזיקה שלו מתאפיינת בגיטרות נונשלנטיות, סאונד שנע בין הקלאסי לעכשווי, ומילים חדות וישירות.\n",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2159",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2159",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2159",
+     "userID": "10970"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/2994ea77cba4bf21f41672fc391ce788a453c84f6f7852cc5c67688e395783c1.webp"
+  },
+  {
+   "eventID": 2158,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 120,
+   "totalNumberOfPeopleThatCanAttend": 120,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: Cosmic Alliance",
+   "details": "סיון אבלסון ויואב אליגון, זוג בחיים ובמוזיקה, הם Cosmic Alliance: ספייס־דרים־פולק אלקטרוני, רטרו־עתידני, קצת אנלוגי והרבה לב. כמו קלטת מהאייטיז שנמצאה בחללית. שני קולות ששרים בעברית ובאנגלית על אהבה, על החיים עצמם ועל הגעגוע לחיבור.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2158",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2158",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/04d88d447746fd5a5f67a3da6159b2ba4b762fe16fa16f5d11635820a92e39e8.webp"
+  },
+  {
+   "eventID": 2157,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "19:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 127,
+   "totalNumberOfPeopleThatCanAttend": 127,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: אלקטריק סי\\ Electric Sea ",
+   "details": "אלקטריק סי\\ Electric Sea - \nהמוזיקאית ים אשכנזי מגיעה מצוידת בשלל מכונות ומכשירים ללייב מתגלגל, רקיד, מצפצף ומנצנץ, שיכול להשתלב בקלות בסצנה קולנועית של מסיבה סוריאליסטית.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2157",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2157",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=RflQKkO3syo",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/20c615c54cc15d17de39cea13dfabf6970301888ea69f341904aa82546277762.webp"
+  },
+  {
+   "eventID": 2156,
+   "initiativeOwnerUserID": 4759,
+   "placeOwnerUserID": 4759,
+   "street": "פומלית",
+   "houseNumber": 2,
+   "entrance": null,
+   "placeDescription": "בית פרטי בבניין",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 32,
+   "genre": "כתיבה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:30",
+   "maxNumberOfPeople": 16,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 16,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "כאן כותבים - מרחב כתיבה ",
+   "details": "מרחב כתיבה הוא זמן לכל מי שרוצה להתחיל לכתוב או לעבוד על מה שהלב כבר דורש.\nדרך שאלות וקלפים נפנה מקום לכתיבה מרובה והתעמקות אישית וחוויתית.",
+   "initiativeDescription": "מרחב לכתיבה אישית המתאימה להיכרות עם עולם הכתיבה ולהתמדה לכל בעלי החשיבה היצירתית שכאן.",
+   "placeNotes": "יש חנייה ואם אין מקום אפשר לחנות בהדר סנטר או ברחוב. \nהבניין הראשון מבין השלושה",
+   "initiativeOwnerFirstName": "נוה",
+   "initiativeOwnerLastName": "נצר",
+   "attendees": [],
+   "externalLink1": "https://www.instagram.com/navehnetzer/",
+   "externalLink2": "https://www.facebook.com/profile.php?id=100083548891519",
+   "path": "https://api.hanadiv.org/images/91c67aa297461ef99230d3502985f06b6dcdd5563d0cdd05ff687823581b7646.webp"
+  },
+  {
+   "eventID": 2155,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 296,
+   "totalNumberOfPeopleThatCanAttend": 296,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 30,
+   "virtual": false,
+   "title": "The Creative Block  סרט אנימציה קצר ",
+   "details": "אש, אמנית מוכשרת, יום אחד מאבדת את \"הברק\", ההשראה שלה. \nכשהיא נותרת לבדה בריק דומם, היא שוקעת בבלוק יצירתי, \n\"הבלוק היצירתי\" עוקב אחר המסע שלה. \nהסרט השתתף בפסטיבל בעולם וזכה לציונים ופרסים . בסיום ההקרנה שיח עם היוצרת על AI אנימציה ורגשות.",
+   "initiativeDescription": "של היוצרת מאיה שושני ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [
+    {
+     "eventID": "2155",
+     "userID": "10939"
+    },
+    {
+     "eventID": "2155",
+     "userID": "10939"
+    },
+    {
+     "eventID": "2155",
+     "userID": "1264"
+    },
+    {
+     "eventID": "2155",
+     "userID": "1264"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/b1aabf502a5c4ffec520898b02b33d2f6c85af2e35bd22c86d7ba8eb466b2667.webp"
+  },
+  {
+   "eventID": 2152,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "אימפריה קטנה שלי ",
+   "details": " אימפריה קטנה שלי  (2007, מעגלות הפקות)\nהקרנת פרק מהסדרה ששודרה ברשת 13\nבהשתתפות היוצרות חנה אזולאי הספרי וטל מיכאל,                                                                *ומצוות הצילום והעריכה- עירית שרביט וליאת פרוינד.*\n\nלפני עשרים שנה, הרבה לפני שהמושג \"העצמה כלכלית נשית\" הפך לחלק מהשיח הציבורי המרכזי, יצרנו סדרה דוקומנטרית חלוצית שהגיעה אל לב הפריים טיים בישראל. \nהסדרה ניפצה תקרות זכוכית במסך הטלוויזיה והוכיחה שסיפורים על כוח, יזמות ומאבק כלכלי פמיניסטי יכולים לרתק את הצופה ולהוביל שינוי חברתי אמיתי.\nאימפריה קטנה שלי עקבה מקרוב אחר 13 נשים מרקעים מורכבים ושונים, שקיבלו החלטה אמיצה לשנות את גורלן. מתוך נקודת זינוק לא פשוטה, הן בחרו לקחת סיכון ולהקים מאפס עסקים עצמאיים קטנים – ה\"אימפריות\" הפרטיות שלהן. הסדרה ליוותה את רגעי השיא והשפל, את המאבקים הבירוקרטיים והאישיים, ואת הדרך המפותלת אל עבר עצמאות כלכלית ויזמות כחופש אישי, ככלי להישרדות וכזכות של כל אישה לכתוב מחדש את סיפור חייה .\n\n(קרדיט צילום: טוליק גלאון, מתוך \"אימפריה קטנה שלי\")",
+   "initiativeDescription": "הקרנת פרק מהסדרה ששודרה ברשת 13   בהשתתפות היוצרות חנה אזולאי הספרי וטל מיכאל, ומצוות הצילום והעריכה- עירית שרביט וליאת פרוינד.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/119b0ed2915dc66ae9314b5328b1c2ab7992c79d8888948bf473d01523c7633b.webp"
+  },
+  {
+   "eventID": 2151,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "\"הערוגה \" בית הספר לקולנוע. ",
+   "details": "בעז דבי ",
+   "initiativeDescription": "אסופת סרטי בוגרים",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/90c70bc5c7ea119dc44de52b3e453ab7e0c93b04ab21f7ebeb8285839958c3bc.webp"
+  },
+  {
+   "eventID": 2150,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "18:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "How Can You Be Born (בעברית : ״כל תוכלי להיוולד״)  ",
+   "details": "מסע אוטוביוגרפי בין מימדי הנפש, המוות והחיים, החופש וההכרח.                                       לאחר הסרט תהיה שיח עם הבימאית אורי שמר",
+   "initiativeDescription": "סרט דוקומנטרי אישי על התמודדות עם אובדן, טראומה וריפוי.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [
+    {
+     "eventID": "2150",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2150",
+     "userID": "8077"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/f704fa22fba257953e503552f3685d03a6791332a42541116e018955631d841c.webp"
+  },
+  {
+   "eventID": 2149,
+   "initiativeOwnerUserID": 10883,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "10:00",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "חשבון האהבה",
+   "details": "רוב הזוגות לא מתרחקים בגלל אירוע גדול.\nהם מתרחקים בגלל מאות רגעים קטנים של פספוס.\nבמפגש נסתכל על הזוגיות דרך הדימוי של \"חשבון אהבה\" - חשבון זוגי רגשי שאליו אנחנו מפקידים או ממנו אנחנו מושכים בכל אינטראקציה קטנה.\nנדבר על:\n- למה גם זוגות אוהבים נשחקים עם השנים.\n- המחיר הסמוי של עומס, טלפונים והסחות דעת.\n- איך מחוות קטנות יוצרות ביטחון וקרבה.\n- דרכים פשוטות למלא מחדש את חשבון האהבה בלי לשנות את כל החיים.\n\nהרצאה נגישה, מרגשת ומעשית על הכוח של תשומת לב יומיומית.\n",
+   "initiativeDescription": "איך זוגיות מתרוקנת לאט־לאט - ואיך ממלאים אותה מחדש",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "שחר",
+   "initiativeOwnerLastName": "ארז",
+   "attendees": [
+    {
+     "eventID": "2149",
+     "userID": "926"
+    },
+    {
+     "eventID": "2149",
+     "userID": "926"
+    },
+    {
+     "eventID": "2149",
+     "userID": "1264"
+    },
+    {
+     "eventID": "2149",
+     "userID": "10943"
+    },
+    {
+     "eventID": "2149",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2149",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2149",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2149",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://beinghuman.co.il/about/",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/55b0aa5ca02b53d3a556b5bdc17333418043901018acad12187425bdd4141209.webp"
+  },
+  {
+   "eventID": 2148,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 288,
+   "totalNumberOfPeopleThatCanAttend": 288,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "היו היה נער -",
+   "details": "היה היה נער״ הוא סרט ההמשך ל”היה היה ילד“ 2019 זוכה פרסי ״השופטים״ ו״חביב הקהל״ שתיעד את רון בן ה,10- ילד עם צרכים\nמיוחדים, ואת אחיו התאום ינאי. שבע שנים חלפו, ורון בן ה17- ניצב כעת\nבפני החלטה גורלית: לצאת למכינה לבוגרים עם צרכים מיוחדים או להישאר בבית, בעוד ינאי נערך לשירות קרב.",
+   "initiativeDescription": " סרט  דוקומנטרי  כולל שיחה עם הבמאי  אורי לוי.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/d8a86114e16798d83fe95522d7ca3e3789ed0134709135dfb4fd7f063c61bd7e.webp"
+  },
+  {
+   "eventID": 2147,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 295,
+   "totalNumberOfPeopleThatCanAttend": 295,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "שביליסטים - סרט קולנוע",
+   "details": "\nעלילתי, 82 דקות\n\nתסריט ובימוי- שי פלדמן, שי פנר\nמפיקה- צליל זיו\n\nשלושה סיפורים שזורים לאורך שביל ישראל ומספרים את סיפורה של הארץ דרך האנשים שצועדים בה. בסוף הסרט המפיקה והיוצרים יעלו לשיחה .",
+   "initiativeDescription": "סרט קולנוע",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [
+    {
+     "eventID": "2147",
+     "userID": "10941"
+    },
+    {
+     "eventID": "2147",
+     "userID": "10941"
+    },
+    {
+     "eventID": "2147",
+     "userID": "10941"
+    },
+    {
+     "eventID": "2147",
+     "userID": "10941"
+    },
+    {
+     "eventID": "2147",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2147",
+     "userID": "10991"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/80f7f086eff72a835fefe976f7470b6191177a8f5b5fb415b25e144fcb935719.webp"
+  },
+  {
+   "eventID": 2146,
+   "initiativeOwnerUserID": 7530,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "21:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "סרט קולנוע - זהר ",
+   "details": "סרטו של ערן  ריקליס משנת  1993  .                                                                                   אמנון זלאייט צלם הסרט, יתארח לשיחה בגמר ההקרנה .                                                    הסרט  זכה בפרס אופיר   על השחקן הטוב ביותר שאול מזרחי. והיה מועמד לסרט הטוב.",
+   "initiativeDescription": "סיפור של עליתו ונפילתו של מלך הזמר המזרחי זהר ארגוב. ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "Alon",
+   "initiativeOwnerLastName": "Feig",
+   "attendees": [
+    {
+     "eventID": "2146",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2146",
+     "userID": "3850"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/4779f2d36976230be61fe18a4d6caf31e574e100f1866ea6594027a67fecd7e3.webp"
+  },
+  {
+   "eventID": 2144,
+   "initiativeOwnerUserID": 7206,
+   "placeOwnerUserID": 26,
+   "street": "אתרוג",
+   "houseNumber": 8,
+   "entrance": null,
+   "placeDescription": "מרכז קהילתי נווה פרדסים",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 10,
+   "totalNumberOfPeopleThatCanAttend": 10,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "לחשב מסלול מחדש בעזרת כלי ה-NLP",
+   "details": "כשעולה השאלות: \nאז מה עכשיו?\nאיך אדע לבחור נכון?\nהאם זה הזמן המתאים עבורי?\nאו מה יעשה לי טוב?\nכלי הכתיבה מאפשר גישה לתשובות בתוכך\nובעזרת כלי ה-NLP המסר יתחדד ויתבהר\nובקבוצה תומכת התשובות יתבהרו",
+   "initiativeDescription": "סדנת כתיבה ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "תמר",
+   "initiativeOwnerLastName": "שופל",
+   "attendees": [
+    {
+     "eventID": "2144",
+     "userID": "7474"
+    },
+    {
+     "eventID": "2144",
+     "userID": "10943"
+    },
+    {
+     "eventID": "2144",
+     "userID": "10961"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/47112058da59d7c2b22a2b1ae22ea4eee6bf5b2420bfe93353f7421f082937f8.webp"
+  },
+  {
+   "eventID": 2143,
+   "initiativeOwnerUserID": 26,
+   "placeOwnerUserID": 26,
+   "street": "אתרוג",
+   "houseNumber": 8,
+   "entrance": null,
+   "placeDescription": "מרכז קהילתי נווה פרדסים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 15,
+   "genre": "רב תחומי",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 100,
+   "totalNumberOfPeopleThatCanAttend": 100,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "סיפורים בדרך 2026 - הקסם שמניע את השינוי",
+   "details": "במופע \"סיפורים בדרך 2026\" אנחנו מזמינים אתכם למסע מרתק אל תוך הרגעים שמעצבים מחדש את הגורל שלנו. ארבעה יוצרים, ארבעה סיפורים, וסוד הקסם שמשנה חיים. על במה אחת ייפגשו ארבעה עולמות שונים לחלוטין: רקדנית, טריינר NLP, שחקן ומספר סיפורים. כל אחד מהמשתתפים יחשוף בפניכם, בגילוי לב נדיר ומרגש, את הרגע המדויק בחייו, אותה חוויה מכוננת, סוערת וחד-פעמית ששינתה את מסלול חייו באופן מוחלט, מהקצה אל הקצה. אבל בניגוד למופעים אחרים שראיתם, כאן החוויה המשותפת שלנו לא מסתיימת רק כשהסיפור מגיע לסיומו. המופע שלנו לוקח אתכם צעד אחד חשוב ומשמעותי קדימה, היישר אל מאחורי הקלעים של הנפש האנושית וקבלת ההחלטות. מיד לאחר כל סיפור אישי, נקיים על הבמה ראיון קצר וחשוף, המהווה סוג של חקירה עדינה ומרתקת. המטרה המרכזית שלנו בערב הזה היא לא רק להתרגש יחד איתכם מהסיפורים, אלא גם להבין לעומק איך הכל קרה. אנחנו נחפש יחד בפינצטה את אותו ניצוץ חמקמק ונסתר, בין אם זו תובנה פתאומית, החלטה אמיצה או שבריר שנייה בודד בתוך הסיפור, שגרם לשינוי האמיתי להתרחש הלכה למעשה. זהו ערב יוצא דופן שמשלב בתוכו אמנות בימתית מרהיבה, חשיפה רגשית עמוקה וכלים פרקטיים של התפתחות אישית. אנחנו מזמינים אתכם להצטרף למסע שמתחיל בסיפוריהם של אחרים, ויסתיים בתובנות חדשות על החיים האישיים שלכם.",
+   "initiativeDescription": "ארבעה יוצרים, ארבעה סיפורים, וסוד הקסם שמשנה חיים",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "איתי",
+   "initiativeOwnerLastName": "שופל",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/664af571ff4f4747b8cd0b0c046c51bedd1ca32f118e30ada1e24d8a15bae024.webp"
+  },
+  {
+   "eventID": 2142,
+   "initiativeOwnerUserID": 8055,
+   "placeOwnerUserID": 8055,
+   "street": "השומר",
+   "houseNumber": 3,
+   "entrance": "א",
+   "placeDescription": "דירה ברחוב השומר ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 1,
+   "genre": "אוכל",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:30",
+   "maxNumberOfPeople": 10,
+   "limitNumberOfPeople": 6,
+   "totalNumberOfPeopleThatCanAttend": 6,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "סדנה להכנת ספולייטלה",
+   "details": "סדנה מעשית, בה נלמד להכין את המאפה האיטלקי ספולייטלה",
+   "initiativeDescription": "סדנה בה נלמד להכין את המאפה האיטלקי ספולייטלה מאפס",
+   "placeNotes": "להכוונה לדירה המדויקת יש ליצור קשר עם המארחת נעמה 0509965514",
+   "initiativeOwnerFirstName": "נעמה",
+   "initiativeOwnerLastName": "ברקוביץ",
+   "attendees": [
+    {
+     "eventID": "2142",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2142",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2142",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2142",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2142",
+     "userID": "8206"
+    },
+    {
+     "eventID": "2142",
+     "userID": "10297"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/70a0754d23a060d0b0900159b68d718b3f9b1795c75624d1db4e02685faefcb6.webp"
+  },
+  {
+   "eventID": 2141,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "20:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 124,
+   "totalNumberOfPeopleThatCanAttend": 124,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: רייסקינדר",
+   "details": "Tel Aviv's Low-fi expressionist Ryskinder creates a unique kind of loop based rock by\nunleashing beats and guitar riffs from his sampler and singing in Hebrew about politics and\nlove.\nHis live shows are a wild fusion of Power electronics, Punk Attitude and Warm Psych rock\nriffs",
+   "initiativeDescription": "הופעה טירוף חושים",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2141",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2141",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2141",
+     "userID": "10970"
+    },
+    {
+     "eventID": "2141",
+     "userID": "1782"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/watch/?v=551152155321787",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/7a2789cdfe95164b355a9ad194081643130606c20f7b95bbcf926af977b86949.webp"
+  },
+  {
+   "eventID": 2140,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "19:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 126,
+   "totalNumberOfPeopleThatCanAttend": 126,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: רוקרפוקטס",
+   "details": "רטט פסיכו-איים שכבש את היבשת ומעבר פלוס פלוס ״סאונד של אולם ריקודים בים השחור כשהקזינו סגור״ (אדיק מיטגרץ ספוטניק הייפיי), ״האמא והאבא של הלו פיי העברי״ (טוני לימון), יולנטה שירה ובס, אמיר גרומן חשמלית, אלעד שופן חשמלית, דניאל יהלום תופים. \n\nרוֹקֶרְפּוֹקֶטְס הוא הרכב אינדי רוק ישראלי שהוקם בבאר שבע בשנת 2019 על ידי אמיר גרומן (גיטרות, בס, סינתיסייזר, מכונת תופים) ויולנטה דולב (שירה, סינתיסייזר, בס).\n\nהמוזיקה של רוקרפוקטס נעה בין פוסט-פאנק וגל חדש לבין סינת׳-פופ ונאו-פסיכדליה ומאופיינת בגישה אירונית והומוריסטית.[1]\n\nשיתוף הפעולה בין אמיר גרומן (מריונטה סול) לבין יולנטה דולב החל בשנת 2011, כשאמיר גרומן הפיק את אלבום הבכורה של יולנטה דולב (״רוצי יולנטה״, 2012).[2] לאחר מספר שנים של עבודה משותפת על אלבומי סולו נוספים שלה, החלו השניים לעבוד על חומרים משותפים, וההופעה הראשונה של הצמד תחת השם ״רוקרפוקטס״ נערכה במועדון לבונטין 7 בתל אביב ב-2019. את השירים של רוקרפוקטס כותבים ומלחינים השניים יחדיו, וכן מפיקים ומעבדים יחדיו באולפן של גרומן, ״מחלקה להעלמות״.\n\nההרכב הופיע בפסטיבל אינדינגב בשנים 2021[3], ו-2025,[4] והושמע פעמים רבות ברדיו הקצה. ב-2025 נכנסו לרשימות סיכום השנה של שדרני התחנה מלי רחום, אסף קפלן וגיא בהיר.[5][6][7]\n\nרוקרפוקטס מרבים להופיע ברחבי הארץ, ממצפה רמון ועד חיפה, ולשתף פעולה עם מוזיקאים והרכבי אינדי אחרים. בין שיתופי הפעולה של ההרכב: ספוטניק היי פיי, אלעד זאב, חשש אמיתי, ניר מטרסו. להופעות רבות מגיעים רוקרפוקטס מחוזקים בנגנים נוספים. מנגנים איתם אלעד שופן (גיטרות), דני ורגה (תופים). בעבר ניגנו איתם שליו ורד (תופים) ויובל גוטמן (תופים).\n\nלהרכב ארבעה אלבומים: ״רוקרפוקטס״ (2020), ״מלון 2 כוכבים״ (2022), ״רוקרפוקטס משמידים ת׳אנושות״ (2024), ״מתקשרת מאה״ (2025).",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2140",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2140",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2140",
+     "userID": "10970"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/c772b9776c7c06e7d3e17397b1ca7415f5787cd15b1e63141165522e2f44cfc8.webp"
+  },
+  {
+   "eventID": 2139,
+   "initiativeOwnerUserID": 9735,
+   "placeOwnerUserID": 9735,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אמפי פנימי שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "17:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 128,
+   "totalNumberOfPeopleThatCanAttend": 128,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "אלטרנדיב: דני לוזון - להקה",
+   "details": "המנוני אינדי רוק בעברית משובשים עם גיטרות עקומות שעושות נעים.\nאלבומו \"קו משובש\" מ2025 זכה במקום השמיני במצעד אלבומי השנה של רדיו הקצה.",
+   "initiativeDescription": "הופעה",
+   "placeNotes": "ביה\"ס שבילים",
+   "initiativeOwnerFirstName": "יובל",
+   "initiativeOwnerLastName": "גוטמן",
+   "attendees": [
+    {
+     "eventID": "2139",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2139",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://dannyluzon.bandcamp.com/album/--3",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/5c13993d6b847acc6889c0d2c9387c250b599b8cb72f245f679f08ab05ac70a7.webp"
+  },
+  {
+   "eventID": 2138,
+   "initiativeOwnerUserID": 1099,
+   "placeOwnerUserID": 1099,
+   "street": "אבן גבירול ",
+   "houseNumber": 14,
+   "entrance": null,
+   "placeDescription": "מועדון אור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "17:30",
+   "maxNumberOfPeople": 12,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 12,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מפגש בנות מצווה ואימותיהן",
+   "details": "מפגש לבנות מצווה ואימותיהן לקראת אירוע בת מצווה. ",
+   "initiativeDescription": "משתפות על אירוע בת מצווש מתוכננים, מעלייה לתורה, משימות שנת בת מצווה ועד טיול לחו''ל",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "תמר",
+   "initiativeOwnerLastName": "קינן",
+   "attendees": [
+    {
+     "eventID": "2138",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2138",
+     "userID": "2980"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/4011461ab1a017edf24969ce2b4bb6c0a68e6c8183912e3c9b7d188bb8925028.webp"
+  },
+  {
+   "eventID": 2137,
+   "initiativeOwnerUserID": 4759,
+   "placeOwnerUserID": 4759,
+   "street": "פומלית",
+   "houseNumber": 24,
+   "entrance": "2",
+   "placeDescription": "בית פרטי בבניין.\nפומלית 2, קומה 6 דירה 24",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 32,
+   "genre": "כתיבה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 16,
+   "limitNumberOfPeople": 16,
+   "totalNumberOfPeopleThatCanAttend": 16,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "סדנת כתיבה - מילה טובה",
+   "details": "סדנת כתיבה על המילים הטובות שנמצאות ביום יום ועצמינו ומבקשות להיכתב לעולם.\nשעתיים בהן תהיה כתיבה על המשמעות בבחירה לראות את הטוב \nדרך שאלות והקשבה תהיה את ההזדמנות למצוא תשובות.\nאני מזמינה אותך להצטרף לסדנה המיועדת לכל מי שאוהב לכתוב או רוצה להתחיל.\nהסדנה מיועדת לגיל 16+ (או פחות, אני לא אגלה (; )",
+   "initiativeDescription": "סדנת כתיבה אישית אינטואיטיבית דרך כתיבה חיובית ",
+   "placeNotes": "יש חנייה, אם אין אפשר לחנות ברחוב או בהדר סנטר. \n",
+   "initiativeOwnerFirstName": "נוה",
+   "initiativeOwnerLastName": "נצר",
+   "attendees": [
+    {
+     "eventID": "2137",
+     "userID": "10940"
+    },
+    {
+     "eventID": "2137",
+     "userID": "10940"
+    },
+    {
+     "eventID": "2137",
+     "userID": "10940"
+    },
+    {
+     "eventID": "2137",
+     "userID": "7474"
+    },
+    {
+     "eventID": "2137",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/profile.php?id=100083548891519&sk=photos",
+   "externalLink2": "https://www.instagram.com/navehnetzer/",
+   "path": "https://api.hanadiv.org/images/c5c189f9feaa65353310d7f5b374f17a91acc316d3ffd2a513430041b4a976d4.webp"
+  },
+  {
+   "eventID": 2136,
+   "initiativeOwnerUserID": 4668,
+   "placeOwnerUserID": 4668,
+   "street": "קדמה",
+   "houseNumber": 41,
+   "entrance": "3",
+   "placeDescription": "בית פרטי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 3,
+   "genre": "הגות ושירה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "18:00",
+   "maxNumberOfPeople": 15,
+   "limitNumberOfPeople": 16,
+   "totalNumberOfPeopleThatCanAttend": 15,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "שירה יכולה",
+   "details": "שיחה על שירים שהמנחה או שהמשתתפים יביאו, והתבוננות על האופן בו הם ליוו אותי בעבר  - או עשויים לעשות זאת בעתיד. ",
+   "initiativeDescription": "ביבליותרפיה - שירים משני חיים",
+   "placeNotes": "רחוב הולנדי, הבית הפנימי",
+   "initiativeOwnerFirstName": "יגאל",
+   "initiativeOwnerLastName": "עמנואל",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/8409313e9f7eb9709754690633c7272f4cda930029e68a1dfd12a69fbdbb1664.jpg"
+  },
+  {
+   "eventID": 2135,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "20:00",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 86,
+   "totalNumberOfPeopleThatCanAttend": 86,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "יוצרים בתהילים ",
+   "details": "כל יוצר/ת יעלה לבמה עם 1–3 שירים או מזמורים, בביצוע, בעיבוד או בהלחנה מחודשים.\n פרשנויות אישיות ומקוריות שמחברות בין מסורות לעולם העכשווי – אפרו, פואטרי סלאם, מוזיקה ממדבר הסהרה, מקצבים מסורתיים, טקסטים עתיקים או עכשוויים, וקולות מוזיקליים חדשים.\nזהו מרחב למפגש בין יוצרים, סגנונות ושפות – כל אחד מביא את היצירה שלו ואת נקודת המבט האישית שלו,\nהקהל מוזמן להצטרף בשירה ובריקוד. ",
+   "initiativeDescription": "אירוע בעל אופי אחר, עם עומק תרבותי ורוחני. כדאי לתת לו פרסום נפרד, במיוחד אם את רוצה להגיע לקהל שמתעניין במוזיקה מקורית, בטקסטים מהמקורות ובפרשנות עכשווית.",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [],
+   "externalLink1": "https://www.facebook.com/reel/1460187325947278",
+   "externalLink2": "https://www.facebook.com/reel/1424275952988858",
+   "path": "https://api.hanadiv.org/images/964a50d81e1946cb61c27b1222dd3aff7db09f11cf24838f9dbb14a5b06bc492.webp"
+  },
+  {
+   "eventID": 2134,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 106,
+   "totalNumberOfPeopleThatCanAttend": 106,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "מופע אנסמבל בנגורה ",
+   "details": "קונצרט חי של תיפוף אפריקאי, כלי נשיפה, שירה וגרוב שבטי עכשווי.\nמוזמנים לבוא להקשיב, להרגיש, לנוע ולהיות חלק מהמסע.",
+   "initiativeDescription": "קונצרט טראנס אפרו פיוז'ן ",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [
+    {
+     "eventID": "2134",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2134",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://www.bangoura.co.il/",
+   "externalLink2": "https://www.facebook.com/bangouraafricandanceanddrumming",
+   "path": "https://api.hanadiv.org/images/3971d4275758d849e8c62181f22a163a3cf61222623755dfe75a6682df85104d.webp"
+  },
+  {
+   "eventID": 2133,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "13:30",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 95,
+   "totalNumberOfPeopleThatCanAttend": 95,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 45,
+   "virtual": false,
+   "title": "מופע אינדי ",
+   "details": "מוזיקאי צעיר במוזיקה מקורית ",
+   "initiativeDescription": "כפיר לוי ",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [
+    {
+     "eventID": "2133",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2133",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/6a1e07e3ebcd5ef12dd6047c4809c46e60dd86c1b3a0a0338026198f4ebe4f94.webp"
+  },
+  {
+   "eventID": 2132,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "12:30",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 89,
+   "totalNumberOfPeopleThatCanAttend": 89,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 45,
+   "virtual": false,
+   "title": "איתמר אהרוני - מופע מוסיקלי ",
+   "details": "איתמר אהרוני בשירים מהמקורות מולחנים ומוגשים עם צלילים אפריקאים ומקצבים שונים ",
+   "initiativeDescription": "צ'אנט יהודי בסגנון אפריקאי ",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [
+    {
+     "eventID": "2132",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2132",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2132",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/2f3a5c5c698c78f2e2a6d8ac7db2f0cd4f68b3c436279a8fb2453c88accaa8d5.webp"
+  },
+  {
+   "eventID": 2131,
+   "initiativeOwnerUserID": 10881,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 23,
+   "genre": "יצירה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "14:00",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 11,
+   "totalNumberOfPeopleThatCanAttend": 11,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 8,
+   "virtual": false,
+   "title": "ללמד לסרוג סלסלה או בובה קטנה",
+   "details": "צריך שכל אחד יביא חוטים ומסרגה ואלמד הכנה",
+   "initiativeDescription": "ללמד איך לסרוגה חצאי עמודים לבסיס של סלסלה",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "לאה",
+   "initiativeOwnerLastName": "בן גרא",
+   "attendees": [
+    {
+     "eventID": "2131",
+     "userID": "1264"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/be7d4c9820e074719d0ddb1d08e8bf1e0ce059d186fb1b1ebea71a5fb98e0381.webp"
+  },
+  {
+   "eventID": 2130,
+   "initiativeOwnerUserID": 3941,
+   "placeOwnerUserID": 3941,
+   "street": "המושב",
+   "houseNumber": 1,
+   "entrance": null,
+   "placeDescription": "דירה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 3,
+   "genre": "הגות ושירה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "17:00",
+   "maxNumberOfPeople": 7,
+   "limitNumberOfPeople": 7,
+   "totalNumberOfPeopleThatCanAttend": 7,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "כתיבה קונסטלטיבית ",
+   "details": "באמצעות קונסטלציה נגיע לעומקים  חדשים, ומשם תנבע כתיבה חדשה ",
+   "initiativeDescription": "סדנה המשלבת בין עולמות הקונסטלציה המערכתית משפחתית לכתיבה ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "סהר",
+   "initiativeOwnerLastName": "עדס",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/90f04edb287bae0d99a9c9e88428bf158e7f5fd72c40f402dcc4faa21b6b9dde.webp"
+  },
+  {
+   "eventID": 2129,
+   "initiativeOwnerUserID": 3941,
+   "placeOwnerUserID": 3941,
+   "street": "המושב ",
+   "houseNumber": 5,
+   "entrance": null,
+   "placeDescription": "דירה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 3,
+   "genre": "הגות ושירה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "15:30",
+   "maxNumberOfPeople": 7,
+   "limitNumberOfPeople": 7,
+   "totalNumberOfPeopleThatCanAttend": 7,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "כתיבה קונסטלטיבית ",
+   "details": "סדנה המשלבת קונסטלציה וכתיבה ",
+   "initiativeDescription": "לעורר את רוח הכתיבה באמצעות השראה מעולמות הקונסטלציה המערכתית משפחתית ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "סהר",
+   "initiativeOwnerLastName": "עדס",
+   "attendees": [
+    {
+     "eventID": "2129",
+     "userID": "7474"
+    },
+    {
+     "eventID": "2129",
+     "userID": "6681"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/936af9efd2aa7e726a0359fd72e2ab25c4d935f027893cf10277d21ac14f1f5c.webp"
+  },
+  {
+   "eventID": 2128,
+   "initiativeOwnerUserID": 3941,
+   "placeOwnerUserID": 3941,
+   "street": "המושב/מעלה גיבורים",
+   "houseNumber": 5,
+   "entrance": null,
+   "placeDescription": "דירה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "11:00",
+   "maxNumberOfPeople": 7,
+   "limitNumberOfPeople": 7,
+   "totalNumberOfPeopleThatCanAttend": 7,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "קונסטלציה וכתיבה ",
+   "details": "מפגש בן 3 שעות  בו נחווה מפגש קונסטלטיבי ומתוכו  ניצור טקסטים מן הנשמה ",
+   "initiativeDescription": "סדנה בה המשלבת קונסטלציה מערכתית וכתיבה  ",
+   "placeNotes": "ינתנו בהמשך",
+   "initiativeOwnerFirstName": "סהר",
+   "initiativeOwnerLastName": "עדס",
+   "attendees": [
+    {
+     "eventID": "2128",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2128",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2128",
+     "userID": "8077"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/7b8bc4946e2a04495b22b40def367fb3ac6c0d21e80286e94e41c1169d1121fd.webp"
+  },
+  {
+   "eventID": 2127,
+   "initiativeOwnerUserID": 9702,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "20:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "מקום נפש ",
+   "details": "שירה ערוסי, מוזיקאית יוצרת, במופע סולו מלא אנרגיה. עם נוכחות ממגנטת מביאה אל הבמה חגיגה עממית שאי אפשר להישאר אדישים אליה. יצירתה המקורית נולדת מחיבור עמוק ללשון העברית, לשירת הפיוטים ולתרבות העשירה של המזרח התיכון, ומביאה מפגש מרתק בין מסורת לחיים עכשוויים. השירים משלבים פולק עם השפעות אתניות, בלקניות ותימניות, ומזמינים את הקהל להיות חלק, להתרגש ולשמוח יחד במופע חם, פועם ומלא נשמה.",
+   "initiativeDescription": "שירה ערוסי",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "שירה",
+   "initiativeOwnerLastName": "מודן",
+   "attendees": [
+    {
+     "eventID": "2127",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2127",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2127",
+     "userID": "1099"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=4646cXSAYDw&list=RD4646cXSAYDw&start_radio=1",
+   "externalLink2": "https://www.instagram.com/p/DaQ3bKEhCKJ/",
+   "path": "https://api.hanadiv.org/images/56fc4cec057b9d4ca38de45e2a79d5fdffee15e7e30e4a3ec2d8dbfeed97bebe.webp"
+  },
+  {
+   "eventID": 2126,
+   "initiativeOwnerUserID": 10886,
+   "placeOwnerUserID": 10886,
+   "street": "הנדיב",
+   "houseNumber": 86,
+   "entrance": null,
+   "placeDescription": "בית פרטי עם גינה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "20:30",
+   "maxNumberOfPeople": 16,
+   "limitNumberOfPeople": 14,
+   "totalNumberOfPeopleThatCanAttend": 14,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "גברים מדברים, נשים מקשיבות",
+   "details": "מה קורה כשהעיניים נעצמות והלב נפתח? \"גברים מדברים, נשים מקשיבות\" הוא מפגש מקרב ויוצא דופן המזמין נשים וגברים לחוויה יוצאת דופן של חיבור בין-מגדרי.\n\nלגברים: זהו מרחב בטוח, מוגן ומשחרר להביא את עולמכם הפנימי – המחשבות, האתגרים והסיפורים שלכם – בקצב שלכם, בלי חובת הוכחה, בלי לקבל עצות ובלי לחשוש משיפוטיות.\n\nלנשים: זוהי הזדמנות נדירה לעטות כיסוי עיניים, להניח להסחות הדעת הוויזואליות ולצלול להקשבה טהורה, מעצימה ועוטפת לקול הגברי הכנה.\n\nיחד, ניצור מרחב של שותפות, כנות והבנה הדדית עמוקה שלא חוויתם כמותה.",
+   "initiativeDescription": "מעגל חיבור והקשבה טהורה",
+   "placeNotes": "כניסה לסימטה מול חנות \"לה גן\" ברחוב הנדיב. בית ראשון מצד שמאל, כניסה בסוף החניה.\nאין חניה בסימטה. מומלץ לחנות במקום אחר ולבוא ברגל (יש מעט חניה ליד חנות \"לה-גן\" על בסיס מקום פנוי).",
+   "initiativeOwnerFirstName": "שרה",
+   "initiativeOwnerLastName": "סירוטה",
+   "attendees": [
+    {
+     "eventID": "2126",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2126",
+     "userID": "1792"
+    },
+    {
+     "eventID": "2126",
+     "userID": "967"
+    },
+    {
+     "eventID": "2126",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2126",
+     "userID": "10480"
+    },
+    {
+     "eventID": "2126",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2126",
+     "userID": "10964"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/3fa12a3cd0bdfda993a1d58d7ed4ce7120af5087d54b410a27fad02bb13951fb.webp"
+  },
+  {
+   "eventID": 2125,
+   "initiativeOwnerUserID": 10886,
+   "placeOwnerUserID": 10886,
+   "street": "הנדיב",
+   "houseNumber": 86,
+   "entrance": null,
+   "placeDescription": "בית פרטי עם גינה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "20:30",
+   "maxNumberOfPeople": 16,
+   "limitNumberOfPeople": 14,
+   "totalNumberOfPeopleThatCanAttend": 14,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "נשים מדברות, גברים מקשיבים",
+   "details": "מה קורה כשהראייה נעלמת וההקשבה תופסת את קדמת הבמה? \"נשים מדברות, גברים מקשיבים\" הוא מפגש ייחודי ופורץ דרך המזמין גברים לעטות כיסויי עיניים ולהקשיב מקרוב, ללא פילטרים או שיפוטיות, לשיחה כנה ופתוחה של נשים. במרחב בטוח ומאפשר, הנשים במעגל יענו על השאלות העמוקות והמסקרנות ביותר שגברים תמיד רצו לשאול – על מערכות יחסים, מיניות, עולם הרגש והחיים עצמם. חוויה יוצאת דופן של הקשבה נקייה, פגיעות וחיבור מקרב בין המגדרים.",
+   "initiativeDescription": "הקשבה בחשכה",
+   "placeNotes": "כניסה לסימטה מול חנות \"לה גן\" ברחוב הנדיב. בית ראשון מצד שמאל, כניסה בסוף החניה.\nאין חניה בסימטה. מומלץ לחנות במקום אחר ולבוא ברגל (יש מעט חניה ליד חנות \"לה-גן\" על בסיס מקום פנוי).",
+   "initiativeOwnerFirstName": "שרה",
+   "initiativeOwnerLastName": "סירוטה",
+   "attendees": [
+    {
+     "eventID": "2125",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2125",
+     "userID": "926"
+    },
+    {
+     "eventID": "2125",
+     "userID": "926"
+    },
+    {
+     "eventID": "2125",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2125",
+     "userID": "10480"
+    },
+    {
+     "eventID": "2125",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2125",
+     "userID": "10964"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/cbb6dde32216ed82c0aeab5d054299cc8b9461b64951695a009abc72b03f8168.webp"
+  },
+  {
+   "eventID": 2124,
+   "initiativeOwnerUserID": 10886,
+   "placeOwnerUserID": 10886,
+   "street": "הנדיב",
+   "houseNumber": 86,
+   "entrance": null,
+   "placeDescription": "בית פרטי עם גינה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "maxNumberOfPeople": 16,
+   "limitNumberOfPeople": 10,
+   "totalNumberOfPeopleThatCanAttend": 10,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "משחק הדרקונים",
+   "details": "מתי בפעם האחרונה יצא לכם לנהל שיחת עומק אמיתית עם אדם שעדיין לא הכרתם? \"משחק דרקונים\" הוא מעגל שיח ייחודי למבוגרים, המשלב קלילות משחקית עם צלילה רגשית פנימה. דרך הנחיה רגישה, קלפים ושאלות מעוררות מחשבה, ניפגש לפגוש את ה\"דרקונים\" שלנו – האתגרים, התשוקות והסיפורים שכולנו נושאים – במרחב בטוח, מקרב ומלא בסקרנות. הזדמנות לעבור משיחות חולין לחיבור אנושי כנה.",
+   "initiativeDescription": " צלילה לעומק במעגל משחקי",
+   "placeNotes": "כניסה לסימטה מול חנות \"לה גן\" ברחוב הנדיב. בית ראשון מצד שמאל, כניסה בסוף החניה.\nאין חניה בסימטה. מומלץ לחנות במקום אחר ולבוא ברגל (יש מעט חניה ליד חנות \"לה-גן\" על בסיס מקום פנוי).",
+   "initiativeOwnerFirstName": "שרה",
+   "initiativeOwnerLastName": "סירוטה",
+   "attendees": [
+    {
+     "eventID": "2124",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2124",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2124",
+     "userID": "5307"
+    },
+    {
+     "eventID": "2124",
+     "userID": "4363"
+    },
+    {
+     "eventID": "2124",
+     "userID": "4363"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/4e9c4633d948321c4fc73a18ee68c752938653cae2a0ebc75c56172a8a846008.webp"
+  },
+  {
+   "eventID": 2123,
+   "initiativeOwnerUserID": 116,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 16,
+   "genre": "תיאטרון",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:30",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 31,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "הקול בראש",
+   "details": "מכירים את זה, כשעולה אתגר או בעייה בחיים וישר מתפקדים לנו קולות שונים בראש... מי מדבר? למי להקשיב?\nקבוצת \"תיאורטרון - פלייבק מהרוח\" מזמינים אתכם לחווית התבוננות בקולות האלה,דרך תיאטרון פלייבק, בשיתוף הקהל.\nערב מלא הומור, מעשיר ומרומם רוח.",
+   "initiativeDescription": "מפגש תיאטרון פלייבק",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "יעל",
+   "initiativeOwnerLastName": "טל נוטע",
+   "attendees": [
+    {
+     "eventID": "2123",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2123",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2123",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2123",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2123",
+     "userID": "926"
+    },
+    {
+     "eventID": "2123",
+     "userID": "926"
+    },
+    {
+     "eventID": "2123",
+     "userID": "9760"
+    },
+    {
+     "eventID": "2123",
+     "userID": "10961"
+    },
+    {
+     "eventID": "2123",
+     "userID": "4363"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/2b89d539a7ae3ec5b6cd8f002bcd36c71738f2ea698d8138e211485da8d295e9.webp"
+  },
+  {
+   "eventID": 2122,
+   "initiativeOwnerUserID": 10930,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 205,
+   "totalNumberOfPeopleThatCanAttend": 205,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "שלוש אלף קילו",
+   "details": "אנחנו להקת רוק מרימה ומגניבה",
+   "initiativeDescription": "הופעת רוק",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "אור",
+   "initiativeOwnerLastName": "מהסילקר",
+   "attendees": [
+    {
+     "eventID": "2122",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2122",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2122",
+     "userID": "10958"
+    },
+    {
+     "eventID": "2122",
+     "userID": "10960"
+    },
+    {
+     "eventID": "2122",
+     "userID": "10962"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/6c08d1c474f9492af6cfd78e8571eaca469c916702f42dbae1a213f27daca330.webp"
+  },
+  {
+   "eventID": 2121,
+   "initiativeOwnerUserID": 8399,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 75,
+   "virtual": false,
+   "title": "נועם שחר - יצירות מהלב לעוּד וכלי הקשה",
+   "details": "נועם שחר - עוּד \nנעם הראל - כלי הקשה",
+   "initiativeDescription": "מסע מוזיקלי מהלב אל הלב, מתרגשים להופיע בפסטיבל הנדיב! מזמינים אתכם למופע של יצירות מקוריות לעוּד וכלי הקשה. בואו לצלול איתנו לתוך המוזיקה.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "noam",
+   "initiativeOwnerLastName": "shahar",
+   "attendees": [
+    {
+     "eventID": "2121",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2121",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2121",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2121",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2121",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://youtu.be/NK6hjy9bvfI?si=lb_QFvcLkHLbHL6L",
+   "externalLink2": "https://youtu.be/9-FSR87Pcho?si=lzkuXz8WH9mkfV3N",
+   "path": "https://api.hanadiv.org/images/42162ac3aaceaaf2feae43ef9b0b2a344f9393f1ccc19190fbe993408f93067f.webp"
+  },
+  {
+   "eventID": 2120,
+   "initiativeOwnerUserID": 10923,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 45,
+   "virtual": false,
+   "title": "Tourmaline Playground",
+   "details": "טריו ג׳אז אקספרימנטלי של סקסופון, בס ותופים דרך אפקטים.\nאייל חי - סקסופון ואפקטים\nיוני מריאנר - בס ואפקטים\nרון אבידן - תופים ותופים אלקטרוניים",
+   "initiativeDescription": "טריו ג׳אז אקספרימנטלי",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "אייל",
+   "initiativeOwnerLastName": "חי",
+   "attendees": [
+    {
+     "eventID": "2120",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2120",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": " https://www.instagram.com/reel/DZRzQVtIUfx/?igsi=ZHd6cWVpbzR0a29w קישור חיצוני 2  להוספת תמונות",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/a8062555e26aed9d54eb843eaf6292a2b1ab336c83f76ffb8f5d4ca7d0433bd8.webp"
+  },
+  {
+   "eventID": 2119,
+   "initiativeOwnerUserID": 4613,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "20:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "נגינת המונים",
+   "details": "מנגנים בגיטרה? חליל? כינור? קלרינט? קרן יער? משולש? אוהבים לשיר? הביאו את כלי הנגינה שלכם ויחד נהפוך לתזמורת ענקית של מנגנים ושרים על מסך ענק יוקרנו שירים מכל הזמנים ובניצוח אהבה שמעיה נהפוך לתזמורת בלתי נשכחת",
+   "initiativeDescription": "כל אחד מביא כלי נגינה ואנחנו הופכים לתזמורת ענקית",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "אהבה",
+   "initiativeOwnerLastName": "שמעיה",
+   "attendees": [
+    {
+     "eventID": "2119",
+     "userID": "7480"
+    },
+    {
+     "eventID": "2119",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2119",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2119",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/watch/?v=374215536772731",
+   "externalLink2": "https://hakaftor.co.il/",
+   "path": "https://api.hanadiv.org/images/a0b4185b3189f92e0e796aa2515dc32e68f26f73c0dbae5f914a3f0e4665e83c.webp"
+  },
+  {
+   "eventID": 2118,
+   "initiativeOwnerUserID": 1446,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "אקלקטוס",
+   "details": "מופע מוסיקלי של סמול ביגבנד מקומי  מדליק ומגוון בן 14 נגנים + זמרות לכל המשפחה, שילוב של קאברים מסגנונות מגוונים ובעיבודים מיוחדים ויצירות מקוריות! ",
+   "initiativeDescription": " מופע מוזיקלי של סמול ביגבנד מקומי אקלקטי מדליק לכל המשפחה ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "יפתח",
+   "initiativeOwnerLastName": "פרת",
+   "attendees": [
+    {
+     "eventID": "2118",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2118",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2118",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2118",
+     "userID": "9760"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/e117a56ebfefdcbe394adcb9c937db6bcacb620bfe2cc200efc3bcec45cc8764.png"
+  },
+  {
+   "eventID": 2117,
+   "initiativeOwnerUserID": 3094,
+   "placeOwnerUserID": 3094,
+   "street": "ארבל",
+   "houseNumber": 14,
+   "entrance": "5",
+   "placeDescription": "סטודיו ליוגה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "09:30",
+   "maxNumberOfPeople": 8,
+   "limitNumberOfPeople": 8,
+   "totalNumberOfPeopleThatCanAttend": 8,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "יוגה תרפיה ",
+   "details": "תירגול נשימות ",
+   "initiativeDescription": "נשימות מרפאות ",
+   "placeNotes": "יש חניה בשפע במגרש החניה של בית ספר שדות. \nהבית מוקף בגדר כחולה",
+   "initiativeOwnerFirstName": "רחלי",
+   "initiativeOwnerLastName": "בר",
+   "attendees": [
+    {
+     "eventID": "2117",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2117",
+     "userID": "10943"
+    },
+    {
+     "eventID": "2117",
+     "userID": "2270"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+  },
+  {
+   "eventID": 2116,
+   "initiativeOwnerUserID": 3094,
+   "placeOwnerUserID": 3094,
+   "street": "ארבל",
+   "houseNumber": 14,
+   "entrance": "5",
+   "placeDescription": "סטודיו ליוגה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "maxNumberOfPeople": 8,
+   "limitNumberOfPeople": 8,
+   "totalNumberOfPeopleThatCanAttend": 8,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "יוגה תרפיה ",
+   "details": "תירגול נשימות ",
+   "initiativeDescription": "נשימות מרפאות ",
+   "placeNotes": "יש חניה בשפע במגרש החניה של בית ספר שדות. \nהבית מוקף בגדר כחולה",
+   "initiativeOwnerFirstName": "רחלי",
+   "initiativeOwnerLastName": "בר",
+   "attendees": [
+    {
+     "eventID": "2116",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2116",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2116",
+     "userID": "967"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+  },
+  {
+   "eventID": 2115,
+   "initiativeOwnerUserID": 3094,
+   "placeOwnerUserID": 3094,
+   "street": "ארבל",
+   "houseNumber": 14,
+   "entrance": "5",
+   "placeDescription": "סטודיו ליוגה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "09:00",
+   "maxNumberOfPeople": 8,
+   "limitNumberOfPeople": 8,
+   "totalNumberOfPeopleThatCanAttend": 8,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "יוגה תרפיה ",
+   "details": "תירגול נשימות ",
+   "initiativeDescription": "נשימות מרפאות ",
+   "placeNotes": "יש חניה בשפע במגרש החניה של בית ספר שדות. \nהבית מוקף בגדר כחולה",
+   "initiativeOwnerFirstName": "רחלי",
+   "initiativeOwnerLastName": "בר",
+   "attendees": [
+    {
+     "eventID": "2115",
+     "userID": "10933"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/8d97de2bbd0e2712007ca2abe6d4ebad56d159d94b589ceb934bbbcac0101c4f.webp"
+  },
+  {
+   "eventID": 2114,
+   "initiativeOwnerUserID": 7428,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "12:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 15,
+   "virtual": false,
+   "title": "סטלה גוט - הופעה",
+   "details": "במופע תבצע גוט שירים מתוך האלבום החדש שבדרך, בעיבודים פשוטים ועירומים, שנותנים לשירים ולקול של גוט להחזיק את הבמה בעצמם.\n",
+   "initiativeDescription": "מופע פריצה סולו סטלה גוט",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "סטלה",
+   "initiativeOwnerLastName": "גוטשטיין",
+   "attendees": [
+    {
+     "eventID": "2114",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2114",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2114",
+     "userID": "3903"
+    },
+    {
+     "eventID": "2114",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2114",
+     "userID": "1782"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=2sbT3Z5RUOo",
+   "externalLink2": "https://youtube.com/shorts/yLUx8nOx7Ms?si=Arqg5RGiA0KsUC7R",
+   "path": "https://api.hanadiv.org/images/e6ea7c4637a75e859cccc6526a25c523c6b241c9cae699cae73f38eb1e126652.webp"
+  },
+  {
+   "eventID": 2113,
+   "initiativeOwnerUserID": 10920,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "20:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 148,
+   "totalNumberOfPeopleThatCanAttend": 148,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 50,
+   "virtual": false,
+   "title": "הופעה ארטיקופיקו",
+   "details": "מופיעים בפעמים האחרונות לפני גיוס  ",
+   "initiativeDescription": "הלהקה ארטיקופיקו מופיעה בפסטיבל",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "טל",
+   "initiativeOwnerLastName": "קופ",
+   "attendees": [
+    {
+     "eventID": "2113",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2113",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10957"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10958"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10959"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10960"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10962"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10572"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10976"
+    },
+    {
+     "eventID": "2113",
+     "userID": "10988"
+    }
+   ],
+   "externalLink1": " https://open.spotify.com/artist/1agR9TzXeFDwR1hcaf14yV?si=kJmbUMsrSNazV68ynkLGvQ&utm_source=copy-link  קישור חיצוני 2  להוספת תמונות קישור חיצוני 2  להוספת תמונות",
+   "externalLink2": " https://www.instagram.com/artikofiko/ להוספת תמונות",
+   "path": "https://api.hanadiv.org/images/9c534ad723e5a7997aa3641fb1add62a8362fb09827941483d1cd331639ffa6e.webp"
+  },
+  {
+   "eventID": 2112,
+   "initiativeOwnerUserID": 10868,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "10:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "המסע אל האור - מופע בלוז רוקנרול מקורי",
+   "details": "יפעת שריג, זמרת יוצרת מפרדס חנה במופע בלוז רוקנרול, מרגש ומלא באנרגיה. שירים מקוריים של העצמה, תהליכים ותובנות לחיים. ",
+   "initiativeDescription": "מופע בלוז רוקנרול מקורי שמספר סיפור חיים",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "יפעת",
+   "initiativeOwnerLastName": "שריג",
+   "attendees": [
+    {
+     "eventID": "2112",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2112",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://youtu.be/Z4C0yzTlr0Y?si=kzjrZO8E0p0tOK6I",
+   "externalLink2": "https://drive.google.com/file/d/1-m7JJ4Cbq00d20xvgSd_gep1n0a44JPY/view?usp=sharing",
+   "path": "https://api.hanadiv.org/images/31d31ee9d15101e2177aae8f6c911c7f76f9b94f6505747a05b1516ae3bb4fd4.webp"
+  },
+  {
+   "eventID": 2111,
+   "initiativeOwnerUserID": 10924,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "22:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "הופעת להקה - ציונה תג'ר",
+   "details": "להקת ציונה תג'ר - נערי הרוק מיפו - מגיעים לדרך הנדיב עם רוק מורכב בעברית, גיטרות מהעתיד וטקסטים שנוגעים בעצבים החשופים להופעה בועטת שלוקחת את הקהל פנימה.",
+   "initiativeDescription": "רוקנרול בועט ותיאטרלי בעברית",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "אובי",
+   "initiativeOwnerLastName": "אוחיון",
+   "attendees": [
+    {
+     "eventID": "2111",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2111",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2111",
+     "userID": "10957"
+    },
+    {
+     "eventID": "2111",
+     "userID": "10958"
+    },
+    {
+     "eventID": "2111",
+     "userID": "10960"
+    },
+    {
+     "eventID": "2111",
+     "userID": "10962"
+    },
+    {
+     "eventID": "2111",
+     "userID": "10572"
+    },
+    {
+     "eventID": "2111",
+     "userID": "4363"
+    },
+    {
+     "eventID": "2111",
+     "userID": "4363"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/reel/DZvTMeNgeBw/?stkn=OXUxZHF1bzRuOHkw",
+   "externalLink2": "https://open.spotify.com/album/3LdqfAwnxncNkulmqRMJaf?si=gQRUU8DiSMGy5jZoBvlcGQ",
+   "path": "https://api.hanadiv.org/images/169d21239b961a25112db8beab4cade8941351d2d85ebe8faa9083c34d904b63.webp"
+  },
+  {
+   "eventID": 2110,
+   "initiativeOwnerUserID": 10921,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 50,
+   "virtual": false,
+   "title": "עוד לא",
+   "details": "עוד לא היא להקת רוק אלטרנטיבי ישראלי המבוססת במרכז הארץ, שמביאה איתה סאונד מחשמל, גיטרות מחוספסות, וקצב שאי אפשר שלא לזוז אליו.\nעם אלבום הבכורה שלהם \"יגיע היום\" בחוץ, וחומרים חדשים בדרך, הם באים לתת הופעה שיהיה קשה לשכוח.",
+   "initiativeDescription": "להקת רוק ",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "נועם",
+   "initiativeOwnerLastName": "קדוש",
+   "attendees": [
+    {
+     "eventID": "2110",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2110",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2110",
+     "userID": "10928"
+    },
+    {
+     "eventID": "2110",
+     "userID": "10928"
+    },
+    {
+     "eventID": "2110",
+     "userID": "10928"
+    },
+    {
+     "eventID": "2110",
+     "userID": "10971"
+    }
+   ],
+   "externalLink1": "https://open.spotify.com/artist/2xMLadnXhwHB83ralfQF5b?si=bmc4dmUPR76wfCPoU24mnQ",
+   "externalLink2": "https://www.instagram.com/oddlowband/",
+   "path": "https://api.hanadiv.org/images/fbb0f3153039d267272357544709dcd389a611178ff9be7e0dd504dd7cafd76a.webp"
+  },
+  {
+   "eventID": 2109,
+   "initiativeOwnerUserID": 1718,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "18:30",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 30,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "קבלת שבת מוזיקלית",
+   "details": "קרן סימן טוב, זמרת יוצרת מזמינה לקבל את השבת בשירה משותפת בליווי גיטרה ומצגת שירים.\n",
+   "initiativeDescription": "שעה של שירים ישראלים יפים לכבוד השבת",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "קרן",
+   "initiativeOwnerLastName": "סימן טוב",
+   "attendees": [
+    {
+     "eventID": "2109",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2109",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2109",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://youtu.be/D_zND4THsQI?si=Fmtds3l_Ts-MnAWb",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/cca9adeef7f005804f364d39d6fcddc1cc0dc745346562143c299b606487b078.webp"
+  },
+  {
+   "eventID": 2108,
+   "initiativeOwnerUserID": 7465,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "19:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 100,
+   "totalNumberOfPeopleThatCanAttend": 100,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "הופעה מוסיקלית",
+   "details": "אנחנו The PainKillers  להקת רוק חיפאית באים לעשות שמח ולפנק בהופעה אנרגטית לכל הגילאים ",
+   "initiativeDescription": "הופעת להקת רוק",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "סנדי",
+   "initiativeOwnerLastName": "מורנו",
+   "attendees": [
+    {
+     "eventID": "2108",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2108",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2108",
+     "userID": "7465"
+    },
+    {
+     "eventID": "2108",
+     "userID": "10935"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/share/1DUxQQZuya/",
+   "externalLink2": "https://open.spotify.com/artist/4LKLQWKBRrnObnnbWEeJVk?si=Qb0UJCoPTfWrUCDR58VNTw&utm_source=copy-link",
+   "path": "https://api.hanadiv.org/images/b4a10ffbba77784cad074181c9be62b0f8d865919fe8b35bf63dc4b85f0afb7e.webp"
+  },
+  {
+   "eventID": 2107,
+   "initiativeOwnerUserID": 8040,
+   "placeOwnerUserID": 8040,
+   "street": "הדקלים",
+   "houseNumber": 90,
+   "entrance": null,
+   "placeDescription": "רחבת יד לבנים מול בניין המועצה",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 33,
+   "genre": "ספורט",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 2,
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מסה קריטית - רכיבת אופניים קהילתית",
+   "details": "נפגש כולנו ברחבת יד לבנים ביום שישי בשעה 1500 ונצא יחדיו לרכיבה. המסלול יפורסם יומיים לפני האירוע פה בדף האירוע",
+   "initiativeDescription": "מסה קריטית היא רכיבת אופניים קהילתית ונעימה לכל המשפחה בשביל הספורט, החוויה וקידום תרבות האופניים במושבה! ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "ארז",
+   "initiativeOwnerLastName": "בן קיקי",
+   "attendees": [
+    {
+     "eventID": "2107",
+     "userID": "10915"
+    },
+    {
+     "eventID": "2107",
+     "userID": "10919"
+    },
+    {
+     "eventID": "2107",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2107",
+     "userID": "4943"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp"
+  },
+  {
+   "eventID": 2106,
+   "initiativeOwnerUserID": 8055,
+   "placeOwnerUserID": 7559,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 26,
+   "genre": "שעת סיפור",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 40,
+   "totalNumberOfPeopleThatCanAttend": 40,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "שעת סיפור \"רון הנוירון\"",
+   "details": "שעת סיפור שתתבצע על ידי, נעמה אשחר, הכותבת והמאיירת של ספר הילדים \"רון הנוירון\" שלוקח אותנו למסע מרתק במערכת העצבים, ומפתח את הסקרנות הטבעית של ילדים. מתאים במיוחד לגילאי 5-7. ",
+   "initiativeDescription": "שעת סיפור של ספר הילדים רון הנוירון, גילאי 5-7",
+   "placeNotes": "מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!!\nנתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "initiativeOwnerFirstName": "נעמה",
+   "initiativeOwnerLastName": "ברקוביץ",
+   "attendees": [
+    {
+     "eventID": "2106",
+     "userID": "625"
+    },
+    {
+     "eventID": "2106",
+     "userID": "625"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/6bc000d2ff0ddc91b968cc4f9075f1a0b427645ea9d36bc825858fc4b4f5fa3e.webp"
+  },
+  {
+   "eventID": 2104,
+   "initiativeOwnerUserID": 10914,
+   "placeOwnerUserID": 10914,
+   "street": "חברון ",
+   "houseNumber": 1,
+   "entrance": null,
+   "placeDescription": "בית לאומנות הגראז׳",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 25,
+   "genre": "תערוכה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "15:00",
+   "maxNumberOfPeople": 50,
+   "limitNumberOfPeople": 50,
+   "totalNumberOfPeopleThatCanAttend": 50,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "תערוכה בג׳ראז׳",
+   "details": "שני אומנים מקומיים ",
+   "initiativeDescription": "בית פתוח ",
+   "placeNotes": "יש מדרגות בכניסה \nחניה צמוד למקום ",
+   "initiativeOwnerFirstName": "נהוראי",
+   "initiativeOwnerLastName": "רצון",
+   "attendees": [
+    {
+     "eventID": "2104",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2104",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/c1ff75ee674ed0ce686c55a8a5add9d4af2f48beb6aea72c0561392b9c37b7c7.webp"
+  },
+  {
+   "eventID": 2103,
+   "initiativeOwnerUserID": 10896,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "War darling",
+   "details": "שיריו  של מיכאי מתאפיינים ברומנטיקה אפלה ובמתיקות מרירה, מתנדנדים בין  גסות לרוך, בניסיון ללכוד את הניגודים והשסעים של לב רגיש ומלא קונפליקטים.\n\nחוויה בלתי מתפשרת, חושפנית ולעיתים אף מפתיעה - המאתגרת את קו התפר שבין ההיגיון של הראש והסערות הרגשיות של הלב.",
+   "initiativeDescription": "מסע מוזיקלי אל תוך  נבכי הנפש",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "מיכאי",
+   "initiativeOwnerLastName": "צ'רנאה",
+   "attendees": [
+    {
+     "eventID": "2103",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2103",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/@wardarling6734",
+   "externalLink2": "https://www.wardarling.com/",
+   "path": "https://api.hanadiv.org/images/26dc7e70c68bc63d565c4e869c4c302dcf713e09c0180680f76443dfd27140a9.webp"
+  },
+  {
+   "eventID": 2102,
+   "initiativeOwnerUserID": 3070,
+   "placeOwnerUserID": 3070,
+   "street": "ברקאי",
+   "houseNumber": 7,
+   "entrance": "גדר עץ חומה ולא לבנה שיש לשכנים הצמודים",
+   "placeDescription": "בית פרטי ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 3,
+   "genre": "הגות ושירה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "11:00",
+   "maxNumberOfPeople": 61,
+   "limitNumberOfPeople": 63,
+   "totalNumberOfPeopleThatCanAttend": 61,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מפגש לייב של הפודקאסט ׳השיר הנכון׳",
+   "details": "בואו לציין איתנו את פרק ה 100! כמו בפודקאסט אבל במפגש לייב יחד אתכםן, גליה שושני וורד עצמון יפגשו לקרוא שיר ולהגג עליו. יחד אתכםן נדבר על מה הוא עושה לנו, אילו מחשבות, זכרונות ורגשות הוא מעלה. ובעיקר, בשטף החיים העסוקים יהיה לנו תירוץ לעצור לרגע, להפגש, לדבר ולצחוק יחד.",
+   "initiativeDescription": "הפודקאסט שזכה בציון לשבח מתאגיד ׳כאן׳ שוב מקיים מפגש לייב!",
+   "placeNotes": "הבית עם גדר העץ *החומה* ולא הלבנה שיש לשכנים הצמודים באותה כתובת ",
+   "initiativeOwnerFirstName": "ורד",
+   "initiativeOwnerLastName": "עצמון",
+   "attendees": [
+    {
+     "eventID": "2102",
+     "userID": "10944"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10948"
+    },
+    {
+     "eventID": "2102",
+     "userID": "3199"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10950"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10952"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10953"
+    },
+    {
+     "eventID": "2102",
+     "userID": "3428"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10954"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10955"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10955"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10955"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10963"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10965"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10966"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10968"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10967"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10969"
+    },
+    {
+     "eventID": "2102",
+     "userID": "4635"
+    },
+    {
+     "eventID": "2102",
+     "userID": "3155"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10973"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10974"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10975"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10951"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10949"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10297"
+    },
+    {
+     "eventID": "2102",
+     "userID": "10980"
+    }
+   ],
+   "externalLink1": " https://www.poeticard.com/podcast",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/2968168fb87a4ffbdeb017337a6d49230d1d708eeeffd8975edae67c273d21d7.webp"
+  },
+  {
+   "eventID": 2101,
+   "initiativeOwnerUserID": 10872,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "יותם לוין בהופעה - ראפ, מוזיקה ואנרגיות",
+   "details": "יותם לוין הוא פרדס חנאי ותיק ובשנים האחרונות הוא פעיל בסצנת הראפ הישראלית ומתחיל לטפס לעבר הבמות הגדולות ביותר. הוא יוצר וחי בפרדס חנה ומופיע בכל הזדמנות. ההופעה של יותם מגיעה עם רצף שירים מקוריים וקאברים ועם גרעין קהל חזק שצורח את השירים וביחד עם יותם - יוצר אווירה מחשמלת.",
+   "initiativeDescription": "הופעה מלאה של יותם לוין - ראפר עולה וצעיר מקומי שיוצר שירים מקוריים ",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "יותם",
+   "initiativeOwnerLastName": "לוין",
+   "attendees": [
+    {
+     "eventID": "2101",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2101",
+     "userID": "5401"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/p/DUI4zgUjNAr/?igsh=NngyMWFnNDV1djcw",
+   "externalLink2": "https://open.spotify.com/album/1Ex5MUu8ye1n5zo5hmbO3A?si=eKI3l2OyTJGLSxEu8omt_g&utm_source=copy-link",
+   "path": "https://api.hanadiv.org/images/bc0edde7729d8dc68b8619f06c91d30e8dc428a7fd8fa4a57411a00cdbdbd9c9.webp"
+  },
+  {
+   "eventID": 2100,
+   "initiativeOwnerUserID": 4780,
+   "placeOwnerUserID": 7561,
+   "street": "מתנס הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "במה בראש",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "קורדרוי",
+   "details": "להקת קורדרוי, בני 20 מתל אביב, להקה הפועלת כבר 7 שנים, אחרי שני אלבומים ושנייה לפני אלבום שלישי, מגיעים להופעה בפסטיבל הנדיב האהוב.",
+   "initiativeDescription": "להקת קורדרוי בהופעה חשמלית מחשמלת!",
+   "placeNotes": "הבמה נמצאת על הדשא של מתנס פרדס חנה, יש מקום לקהל גדול המקום פתוח והוא מיועד לרוק הישראלי על גווניו.",
+   "initiativeOwnerFirstName": "עומר",
+   "initiativeOwnerLastName": "אליאס",
+   "attendees": [
+    {
+     "eventID": "2100",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2100",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2100",
+     "userID": "3903"
+    },
+    {
+     "eventID": "2100",
+     "userID": "1782"
+    }
+   ],
+   "externalLink1": "https://youtu.be/1Vek_mItzTA?si=_gA-mLVDhycFh0ze",
+   "externalLink2": "https://youtu.be/F0VAK3_H8f4?si=t0xUwbu9xpJRZq8z",
+   "path": "https://api.hanadiv.org/images/e65f59ed4f2b7125666a955577268c24f4b82634467794d0dfe8496105f706b0.webp"
+  },
+  {
+   "eventID": 2099,
+   "initiativeOwnerUserID": 8055,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 2,
+   "genre": "אמנות פלסטית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "16:00",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 8,
+   "totalNumberOfPeopleThatCanAttend": 8,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 150,
+   "virtual": false,
+   "title": "סדנת צריבה בעץ",
+   "details": "סדנה בה נלמד לצרוב בעץ מ0, לא דרוש ניסיון\n ",
+   "initiativeDescription": "סדנה ללימוד טכניקת צריבה בעץ, לא דרוש ניסיון",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "נעמה",
+   "initiativeOwnerLastName": "ברקוביץ",
+   "attendees": [
+    {
+     "eventID": "2099",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2099",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2099",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2099",
+     "userID": "625"
+    },
+    {
+     "eventID": "2099",
+     "userID": "625"
+    },
+    {
+     "eventID": "2099",
+     "userID": "7480"
+    },
+    {
+     "eventID": "2099",
+     "userID": "1818"
+    },
+    {
+     "eventID": "2099",
+     "userID": "1818"
+    },
+    {
+     "eventID": "2099",
+     "userID": "926"
+    },
+    {
+     "eventID": "2099",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2099",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2099",
+     "userID": "8206"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/aef2774e353a9d74009e9bcf67c92a564059591cd6e8b4eef98c8904322a90fb.webp"
+  },
+  {
+   "eventID": 2098,
+   "initiativeOwnerUserID": 7236,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "20:30",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "פסנתר חי - יוצרים מוסיקה ביחד",
+   "details": "המופע הוא חוויה מוזיקלית חד פעמית המבוססת על אלתור חי בפסנתר בשיתוף הקהל.\nהיצירה במופע מתרחשת בזמן אמת לעיני הקהל. במהלך המופע הקהל מוזמן להציע רעיונות, רגשות, מילים, דמויות, תמונות או סיטואציות, ומתוכם נוצרת מוזיקה מקורית במקום.\nכל מופע שונה לחלוטין מקודמו, שכן התוכן מושפע ישירות מהקהל הנוכח ומהאינטראקציה עמו. המטרה היא להמחיש את תהליך היצירה המוזיקלית, להפוך את הקהל לשותף פעיל ולהעניק חוויה יצירתית, אישית ובלתי נשכחת.\n",
+   "initiativeDescription": "היצירה במופע מתרחשת בזמן אמת לעיני הקהל",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "סשה",
+   "initiativeOwnerLastName": "בקמן",
+   "attendees": [
+    {
+     "eventID": "2098",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2098",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2098",
+     "userID": "5219"
+    },
+    {
+     "eventID": "2098",
+     "userID": "5219"
+    },
+    {
+     "eventID": "2098",
+     "userID": "1781"
+    },
+    {
+     "eventID": "2098",
+     "userID": "1781"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=B3Pg-fOvljA",
+   "externalLink2": "https://www.youtube.com/watch?v=sy1t5JZDKBc",
+   "path": "https://api.hanadiv.org/images/d1e8c21500459ddd09f7b7aad210ac3bebcbea7ec60f4750755c8db16d630adc.webp"
+  },
+  {
+   "eventID": 2097,
+   "initiativeOwnerUserID": 5092,
+   "placeOwnerUserID": 5092,
+   "street": "המייסדים",
+   "houseNumber": 90,
+   "entrance": null,
+   "placeDescription": "בית פרטי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 60,
+   "limitNumberOfPeople": 75,
+   "totalNumberOfPeopleThatCanAttend": 60,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "מפגש לימוד רוחני- ספר הידע",
+   "details": "אנחנו מזמינים אורחים סקרנים ללימודים רוחניים אוניברסליים מיוחדים בספר הידע\"",
+   "initiativeDescription": "לימודים רוחניים אוניברסליים ללא תשלום",
+   "placeNotes": "כניסה מהסמטה",
+   "initiativeOwnerFirstName": "שני",
+   "initiativeOwnerLastName": "גבאי",
+   "attendees": [
+    {
+     "eventID": "2097",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2097",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2097",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2097",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2097",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2097",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2097",
+     "userID": "2980"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/6ec73cfe144d955da3caf333fee03004ec742c38549cd70a844a4e49b7317f22.webp"
+  },
+  {
+   "eventID": 2096,
+   "initiativeOwnerUserID": 2769,
+   "placeOwnerUserID": 2769,
+   "street": "חרמון",
+   "houseNumber": 5,
+   "entrance": null,
+   "placeDescription": "הקליניקה של לוסיה תרפיה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "maxNumberOfPeople": 11,
+   "limitNumberOfPeople": 4,
+   "totalNumberOfPeopleThatCanAttend": 4,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 30,
+   "virtual": false,
+   "title": "Lucia N°03 העולם שבין ערות לשינה: טכנולוגיה שתיקח אתכם לטיול בתוך התודעה שלכם",
+   "details": "בואו להתנסות בLucia N°3- טכנולוגיה פורצת דרך  מנורה הקסמים מאפשרת למי שנכנס למרחב שלה חוויה רב-חושית מהפנטת.\nבאמצעות תדרי אור מבוקרים המופנים לעיניים עצומות, המנורה מעוררת את הדמיון ומעבירה את המוח למצב תודעה ייחודי המדמה 'חלומות צלולים'. זוהי חוויה המשלבת אור בתדרים משתנים בעוצמות שונות, אשר משקיטה מיידית את רעשי הרקע בראש ומערסלת את הגוף ברגיעה מוחלטת ובביטחון מלא.\nהמנורה משמשת ככלי עוצמתי להרפיית מתחים, לטעינה אנרגטית, להגברת היצירתיות ולפתיחת שער לחקירה רוחנית וחיבור עמוק????\nהסדנא כוללת שיח ובסופו מעגל שיתוף ואינטגרציה.\nיושבת בפרדס חנה אבל אשמח להגיע לכל מקום בארץ\n*לא לנשים בהריון ולמתמודדים עם אפילפסיה",
+   "initiativeDescription": "בואו לחוות את העולם הקסום שבין ערות לשינה בעזרת תדרי אור עוצמתיים",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "ענבר",
+   "initiativeOwnerLastName": "פז",
+   "attendees": [
+    {
+     "eventID": "2096",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2096",
+     "userID": "5493"
+    },
+    {
+     "eventID": "2096",
+     "userID": "4879"
+    },
+    {
+     "eventID": "2096",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2096",
+     "userID": "10918"
+    },
+    {
+     "eventID": "2096",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2096",
+     "userID": "926"
+    },
+    {
+     "eventID": "2096",
+     "userID": "1781"
+    },
+    {
+     "eventID": "2096",
+     "userID": "2980"
+    },
+    {
+     "eventID": "2096",
+     "userID": "10937"
+    },
+    {
+     "eventID": "2096",
+     "userID": "8206"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/4dab4ba49c3cde3442470c3616d7c7b3f1efddef2b2059dc20f9e8a25e027b2b.webp"
+  },
+  {
+   "eventID": 2095,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "11:30",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 86,
+   "totalNumberOfPeopleThatCanAttend": 86,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 30,
+   "virtual": false,
+   "title": "גילי ליבר",
+   "details": "גילי מנגן ושר משיריו המקוריים וגם את השירים שכולנו גדלנו עליהם של להקת גאיה האגדית ",
+   "initiativeDescription": "גילי ליבר סולן ומייסד להקת גאיה ",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [
+    {
+     "eventID": "2095",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2095",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2095",
+     "userID": "9760"
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=CkRQvvYWeoE",
+   "externalLink2": "https://www.youtube.com/watch?v=ag3GtJF9Ryk",
+   "path": "https://api.hanadiv.org/images/2a52e746a2bb502681b6f68ff5e9f546d90f173891f33ccc32888714a66d7a33.webp"
+  },
+  {
+   "eventID": 2094,
+   "initiativeOwnerUserID": 43,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 41,
+   "totalNumberOfPeopleThatCanAttend": 41,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "ג'אם תופים ושירה",
+   "details": "בואו למעגל הקצב בג'אם הקבוע של בנגורה בימי חמישי והפעם בחסות פסטיבל נדיב",
+   "initiativeDescription": "מפגש תיפוף תנועה וקול, הקצב מרפאוהתנועה משחררת",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "רחל",
+   "initiativeOwnerLastName": "בנגורה",
+   "attendees": [
+    {
+     "eventID": "2094",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2094",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2094",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2094",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2094",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2094",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2094",
+     "userID": "10933"
+    },
+    {
+     "eventID": "2094",
+     "userID": "1792"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/reel/1751232955504988",
+   "externalLink2": "https://www.bangoura.co.il/",
+   "path": "https://api.hanadiv.org/images/4cca7331e5e6261f09d8df2640ec71685689646e2cccf886a320e2f37c1702df.webp"
+  },
+  {
+   "eventID": 2093,
+   "initiativeOwnerUserID": 7617,
+   "placeOwnerUserID": 7559,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "11:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 300,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "הופעה",
+   "details": "אגיע עם הגיטרה שלי, אספר סיפורים ואשיר שירים משלל פרקים בחיי",
+   "initiativeDescription": "הופעה מוזיקלית, אקוסטית, וחשמלית, שירים מקוריים בעברית ",
+   "placeNotes": "מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!!\nנתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "initiativeOwnerFirstName": "ג'ני",
+   "initiativeOwnerLastName": "וסילנקו",
+   "attendees": [],
+   "externalLink1": "https://open.spotify.com/artist/5LselN3JqqCLeWwm4JJJzb?si=J5fhNfJYQ8aSnE3KSDMQkA",
+   "externalLink2": "https://www.instagram.com/dr.or.music?stkn=eXhibnRwdDVpczRl&utm_source=qr",
+   "path": "https://api.hanadiv.org/images/37977499e4290ae753118a19b3d9bde4165de773daff58314cdfa24f733ecfdb.webp"
+  },
+  {
+   "eventID": 2092,
+   "initiativeOwnerUserID": 7559,
+   "placeOwnerUserID": 7559,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 28,
+   "genre": "ילדים והורים",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 160,
+   "totalNumberOfPeopleThatCanAttend": 160,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "מופע כשרונות צעירים",
+   "details": "מופע מיוחד בו ילדים וילדות מראים את היצירתיות שלהם דרך- ריקוד, שירה, תיאטרון ואמנות",
+   "initiativeDescription": "ילדים וילדות באים להופיע על הבמה",
+   "placeNotes": "מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!!\nנתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "initiativeOwnerFirstName": "מייטל",
+   "initiativeOwnerLastName": "קורח מרגוליס",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/ff0848e4e5b7375eb6c47a1486ef978b40a84706b0ac47a935331671c934750d.webp"
+  },
+  {
+   "eventID": 2091,
+   "initiativeOwnerUserID": 9695,
+   "placeOwnerUserID": 1719,
+   "street": "אחוזה",
+   "houseNumber": 43,
+   "entrance": null,
+   "placeDescription": "\"הבית 43\"  מרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הרצאה על הביטלס ",
+   "details": "הרצאה על להקת הביטלס מלווה בקליפים ושירים מקסימים שלהם, בסיום ההרצאה נשיר כמה משיריהם הטובים",
+   "initiativeDescription": "הרצאה על הלהקה ששינתה את העולם מלווה בקליפיפ שלהם",
+   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמיכל שלו גולן 050-7591163",
+   "initiativeOwnerFirstName": "סלעית",
+   "initiativeOwnerLastName": "אביב",
+   "attendees": [
+    {
+     "eventID": "2091",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2091",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2091",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10906"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10916"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10916"
+    },
+    {
+     "eventID": "2091",
+     "userID": "8410"
+    },
+    {
+     "eventID": "2091",
+     "userID": "10297"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/8ce4c1a9f87c922fcceb8be273d3228b444c168bb4acfca0569fb1e2527badf3.webp"
+  },
+  {
+   "eventID": 2089,
+   "initiativeOwnerUserID": 10900,
+   "placeOwnerUserID": 43,
+   "street": "המושב",
+   "houseNumber": 44,
+   "entrance": " ",
+   "placeDescription": "בית בנגורה ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "maxNumberOfPeople": 128,
+   "limitNumberOfPeople": 30,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "סדנת אקרו-יוגה",
+   "details": "אקרו-יוגה היא דרך נהדרת להכיר דרך מגע בטוח ולשחק באיזונים משותפים",
+   "initiativeDescription": "סדנה בת שעה ורבע של חיבור בין אנשים, יצירת פסלים אנושיים דינאמיים ומשחקים של שיווי משקל מש",
+   "placeNotes": "בית בנגורה בוויז ",
+   "initiativeOwnerFirstName": "ינאי",
+   "initiativeOwnerLastName": "לב-אור",
+   "attendees": [
+    {
+     "eventID": "2089",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2089",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2089",
+     "userID": "8077"
+    }
+   ],
+   "externalLink1": "Www.acrobalance.co.il",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/68139723599e60e9fad8fc16e29cf43a6ce5818be5e16321bc6399f7b5058244.webp"
+  },
+  {
+   "eventID": 2088,
+   "initiativeOwnerUserID": 182,
+   "placeOwnerUserID": 182,
+   "street": "המעלה",
+   "houseNumber": 4,
+   "entrance": null,
+   "placeDescription": "אמפי פרדס חנה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 16,
+   "genre": "תיאטרון",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "20:30",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 70,
+   "totalNumberOfPeopleThatCanAttend": 70,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הצעד הבא",
+   "details": "מופע הכולל קובץ של יצירות אישיות, מבית היוצר של מסלול \"הוצאה לאור\" בתיאטרון הידית, שמתייחסות בדרכים שונות אל מצוקות הזמן והמקום.",
+   "initiativeDescription": "מופע תיאטרוני",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "קובי",
+   "initiativeOwnerLastName": "גרוסמן",
+   "attendees": [
+    {
+     "eventID": "2088",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2088",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2088",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2088",
+     "userID": "926"
+    },
+    {
+     "eventID": "2088",
+     "userID": "926"
+    },
+    {
+     "eventID": "2088",
+     "userID": "119"
+    },
+    {
+     "eventID": "2088",
+     "userID": "119"
+    },
+    {
+     "eventID": "2088",
+     "userID": "1938"
+    },
+    {
+     "eventID": "2088",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2088",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2088",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2088",
+     "userID": "1118"
+    },
+    {
+     "eventID": "2088",
+     "userID": "1118"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/reel/2243708183029963",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/4feaae77f9c99b161754154871837c5dc9b6f588a6e2b9ecdde08d7d03041bc3.webp"
+  },
+  {
+   "eventID": 2087,
+   "initiativeOwnerUserID": 10888,
+   "placeOwnerUserID": 10365,
+   "street": "שלדג",
+   "houseNumber": 33,
+   "entrance": null,
+   "placeDescription": "בית פרטי עם סלון גדול לארח",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "maxNumberOfPeople": 41,
+   "limitNumberOfPeople": 41,
+   "totalNumberOfPeopleThatCanAttend": 41,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "sing & soul",
+   "details": "שתי זמרות וחברות נפגשות לדואט אינטימי וסוחף של הזמרות הגדולות מכל הזמנים ושירים מקוריים. ארית'ה פרנקלין, איימי ווינהאוס, אדל, קרולינה, קרול קינג ועוד.\nלימור פיגל - שירה ופסנתר",
+   "initiativeDescription": "מופע מוזיקלי",
+   "placeNotes": "נא להחנות לאורך רחוב שלדג  והסביבה ולא לחסום לשכנים את החניות :) בואו בשמחה",
+   "initiativeOwnerFirstName": "לימור",
+   "initiativeOwnerLastName": "פיגל",
+   "attendees": [
+    {
+     "eventID": "2087",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2087",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2087",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2087",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2087",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2087",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2087",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2087",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2087",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2087",
+     "userID": "9760"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/a35fdd18fc4e8cc4966ba2b59dc678c965fd96daa5c275da50671ce94c1e1abf.webp"
+  },
+  {
+   "eventID": 2085,
+   "initiativeOwnerUserID": 10887,
+   "placeOwnerUserID": 10887,
+   "street": "גינת אגוז",
+   "houseNumber": 9,
+   "entrance": "35",
+   "placeDescription": "סלון ביתי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "18:00",
+   "maxNumberOfPeople": 71,
+   "limitNumberOfPeople": 7,
+   "totalNumberOfPeopleThatCanAttend": 7,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 150,
+   "virtual": false,
+   "title": "בית פתוח והרצאה על יצירתיות לשעות הפנאי ",
+   "details": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון  בציור. ",
+   "initiativeDescription": "סדנת יצירה ציור וקולאז ויצירות לקישוט הבית ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "מרים",
+   "initiativeOwnerLastName": "ברנהרד",
+   "attendees": [
+    {
+     "eventID": "2085",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2085",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2085",
+     "userID": "10903"
+    },
+    {
+     "eventID": "2085",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2085",
+     "userID": "10913"
+    },
+    {
+     "eventID": "2085",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2085",
+     "userID": "1749"
+    },
+    {
+     "eventID": "2085",
+     "userID": "10887"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/1c0df8faf1cdecccb4cc93db56395d561d8c7b052b951f4ab94b2bf001db981c.webp"
+  },
+  {
+   "eventID": 2084,
+   "initiativeOwnerUserID": 10884,
+   "placeOwnerUserID": 10884,
+   "street": "ניר",
+   "houseNumber": 3,
+   "entrance": null,
+   "placeDescription": "סטודיו ביתי בכרכור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 2,
+   "genre": "אמנות פלסטית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "10:30",
+   "maxNumberOfPeople": 12,
+   "limitNumberOfPeople": 10,
+   "totalNumberOfPeopleThatCanAttend": 10,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית",
+   "details": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה.\n \nבסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור.\n \nבהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה.\n \n*התכנית*\nפתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי.\nסיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך.\n \n*על התהליך*\nנשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים.\nהמיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות!\n \n*שני הכלים הפשוטים שנלמד*\nמאתר חזותי:  חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף.\nכלי להשוואת גדלים:  שיפוד עץ – כלי פשוט ויעיל מאוד.",
+   "initiativeDescription": "נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון.",
+   "placeNotes": "בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
+   "initiativeOwnerFirstName": "ישראל",
+   "initiativeOwnerLastName": "ינקלוביץ'",
+   "attendees": [
+    {
+     "eventID": "2084",
+     "userID": "5097"
+    },
+    {
+     "eventID": "2084",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2084",
+     "userID": "119"
+    },
+    {
+     "eventID": "2084",
+     "userID": "10938"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp"
+  },
+  {
+   "eventID": 2083,
+   "initiativeOwnerUserID": 10884,
+   "placeOwnerUserID": 10884,
+   "street": "ניר",
+   "houseNumber": 3,
+   "entrance": null,
+   "placeDescription": "סטודיו ביתי בכרכור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 2,
+   "genre": "אמנות פלסטית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 12,
+   "limitNumberOfPeople": 10,
+   "totalNumberOfPeopleThatCanAttend": 10,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית",
+   "details": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה.\n \nבסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור.\n \nבהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה.\n \n*התכנית*\nפתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי.\nסיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך.\n \n*על התהליך*\nנשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים.\nהמיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות!\n \n*שני הכלים הפשוטים שנלמד*\nמאתר חזותי:  חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף.\nכלי להשוואת גדלים:  שיפוד עץ – כלי פשוט ויעיל מאוד.",
+   "initiativeDescription": "נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון.",
+   "placeNotes": "בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
+   "initiativeOwnerFirstName": "ישראל",
+   "initiativeOwnerLastName": "ינקלוביץ'",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/754a5350b1d8c96ea3b0e09def18baea3a5b4532ff81fd66ac6f8e99b2ff18af.webp"
+  },
+  {
+   "eventID": 2081,
+   "initiativeOwnerUserID": 1238,
+   "placeOwnerUserID": 9710,
+   "street": "הבוטנים 54 פרדס חנה ",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "הלובי של המתנס המחודש ",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "10:00",
+   "maxNumberOfPeople": 144,
+   "limitNumberOfPeople": 151,
+   "totalNumberOfPeopleThatCanAttend": 144,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 150,
+   "virtual": false,
+   "title": "מהחצר האחורית לחזית המושבה",
+   "details": "הרצאות, פנלים ושיחות ",
+   "initiativeDescription": "מיני כנס -   יישום של ערכי הקהילה האקולוגית במרחב המקומי.",
+   "placeNotes": "יש הרבה פינות ישיבה , מקרן , מתאים לפעילויות עד 100 איש",
+   "initiativeOwnerFirstName": " ",
+   "initiativeOwnerLastName": "רֹתם",
+   "attendees": [
+    {
+     "eventID": "2081",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2081",
+     "userID": "1238"
+    },
+    {
+     "eventID": "2081",
+     "userID": "1158"
+    },
+    {
+     "eventID": "2081",
+     "userID": "9750"
+    },
+    {
+     "eventID": "2081",
+     "userID": "10919"
+    },
+    {
+     "eventID": "2081",
+     "userID": "6695"
+    },
+    {
+     "eventID": "2081",
+     "userID": "7522"
+    },
+    {
+     "eventID": "2081",
+     "userID": "10066"
+    },
+    {
+     "eventID": "2081",
+     "userID": "10964"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/5e007da2bd7ccb751165ce56032209467c8f91486ced6fd3049e61e66b5b3c0b.webp"
+  },
+  {
+   "eventID": 2078,
+   "initiativeOwnerUserID": 1056,
+   "placeOwnerUserID": 1056,
+   "street": "עמל",
+   "houseNumber": 1,
+   "entrance": null,
+   "placeDescription": "חורשת האלונים ברחוב עמל פינת הצפירה",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 2,
+   "date": "2026-10-29",
+   "hour": "09:30",
+   "maxNumberOfPeople": 25,
+   "limitNumberOfPeople": 25,
+   "totalNumberOfPeopleThatCanAttend": 25,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 120,
+   "virtual": false,
+   "title": "מעגל שיחה וכתיבה לאמהות בטבע",
+   "details": "מפגש שבו נגע בנושאים של אמהות, הריון ולידה, הגוף והנפש והמעבר לאמהות, נדבר על יצירה ונתנסה בתרגילי כתיבה. המפגש בהנחיית נעה ישראלי רוזנברג מחברת הספר \"חדר המתנה\" (הוצאת כנרת זמורה) ",
+   "initiativeDescription": "מעגל שיחה וכתיבה לאמהות, בהשראת הספר \"חדר המתנה\"",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "נעה",
+   "initiativeOwnerLastName": "ישראלי רוזנברג",
+   "attendees": [
+    {
+     "eventID": "2078",
+     "userID": "119"
+    },
+    {
+     "eventID": "2078",
+     "userID": "10918"
+    },
+    {
+     "eventID": "2078",
+     "userID": "10956"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp"
+  },
+  {
+   "eventID": 2077,
+   "initiativeOwnerUserID": 9681,
+   "placeOwnerUserID": 9681,
+   "street": "הדקלים",
+   "houseNumber": 95,
+   "entrance": "קומה 2",
+   "placeDescription": "קליניקה קהילתית \"דרך המשי\" בית פעם שבת",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 35,
+   "genre": "אירוח",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "10:00",
+   "maxNumberOfPeople": 100,
+   "limitNumberOfPeople": 2,
+   "totalNumberOfPeopleThatCanAttend": 2,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 600,
+   "virtual": false,
+   "title": "מתחם טיפולים - במשך כל יום שבת! הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!! קישור לרשימה העדכנית של המטפלים בתחתית העמוד",
+   "details": "*שימו לב!!! - הרשמה ישירות מול המטפל.ת ולא דרך האתר של הפסטיבל. גם הכניסה לרשימת המתנה רק ישירות מול המטפלים והמטפלות* מגוון רחב של טיפולי גוף ונפש מתארחים ב \"דרך המשי מרפאה קהילתית לרפואה משלימה\" ניתנים ללא תשלום !! בתיאום מראש עם המטפל.ת. !! רשימת המטפלים בלינק בתחתית הדף או חפשו בפייסבוק - מתחם טיפולים פסטיבל דרך הנדיב 2026",
+   "initiativeDescription": "מטפלי פרדס חנה כרכור בנתינה מכל הלב. ",
+   "placeNotes": "מטפלי פרדס חנה כרכור בנתינה מכל הלב. הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!!",
+   "initiativeOwnerFirstName": "אפרת",
+   "initiativeOwnerLastName": "פיליפובסקי",
+   "attendees": [
+    {
+     "eventID": "2077",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2077",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2077",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2077",
+     "userID": "10906"
+    },
+    {
+     "eventID": "2077",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2077",
+     "userID": "7438"
+    },
+    {
+     "eventID": "2077",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2077",
+     "userID": "10943"
+    },
+    {
+     "eventID": "2077",
+     "userID": "10946"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/events/941558078976386/?active_tab=discussion",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/db3b9e7a10e59f61982403d7d30c4ccb51d9510949472fbb4930d242acae37dc.webp"
+  },
+  {
+   "eventID": 2076,
+   "initiativeOwnerUserID": 9681,
+   "placeOwnerUserID": 9681,
+   "street": "הדקלים",
+   "houseNumber": 95,
+   "entrance": "קומה 2",
+   "placeDescription": "קליניקה קהילתית \"דרך המשי\" בית פעם שישי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 35,
+   "genre": "אירוח",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "08:00",
+   "maxNumberOfPeople": 101,
+   "limitNumberOfPeople": 101,
+   "totalNumberOfPeopleThatCanAttend": 101,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 600,
+   "virtual": false,
+   "title": "מתחם טיפולים - במשך כל יום שישי! הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!! קישור לרשימה העדכנית של המטפלים בתחתית העמוד",
+   "details": "*שימו לב!!! - הרשמה ישירות מול המטפל.ת ולא דרך האתר של הפסטיבל. גם הכניסה לרשימת המתנה רק ישירות מול המטפלים והמטפלות* מגוון רחב של טיפולי גוף ונפש מתארחים ב \"דרך המשי מרפאה קהילתית לרפואה משלימה\" ניתנים ללא תשלום !! בתיאום מראש עם המטפל.ת. !! רשימת המטפלים בלינק בתחתית הדף או חפשו בפייסבוק - מתחם טיפולים פסטיבל דרך הנדיב 2026",
+   "initiativeDescription": "מטפלי פרדס חנה כרכור בנתינה מכל הלב. ",
+   "placeNotes": "מטפלי פרדס חנה כרכור בנתינה מכל הלב. הרשמה ישירות מול המטפל.ת !!! ולא דרך האתר !!! ",
+   "initiativeOwnerFirstName": "אפרת",
+   "initiativeOwnerLastName": "פיליפובסקי",
+   "attendees": [
+    {
+     "eventID": "2076",
+     "userID": "5401"
+    },
+    {
+     "eventID": "2076",
+     "userID": "9743"
+    },
+    {
+     "eventID": "2076",
+     "userID": "8454"
+    },
+    {
+     "eventID": "2076",
+     "userID": "8454"
+    },
+    {
+     "eventID": "2076",
+     "userID": "8454"
+    },
+    {
+     "eventID": "2076",
+     "userID": "10903"
+    },
+    {
+     "eventID": "2076",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2076",
+     "userID": "7438"
+    },
+    {
+     "eventID": "2076",
+     "userID": "10931"
+    },
+    {
+     "eventID": "2076",
+     "userID": "967"
+    },
+    {
+     "eventID": "2076",
+     "userID": "967"
+    },
+    {
+     "eventID": "2076",
+     "userID": "4863"
+    },
+    {
+     "eventID": "2076",
+     "userID": "5307"
+    },
+    {
+     "eventID": "2076",
+     "userID": "10946"
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/events/941558078976386/?active_tab=discussion",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/dff1709d263a64f88755869dcece333cfc8dc3172012a39ee722eb526a4bf05d.webp"
+  },
+  {
+   "eventID": 2075,
+   "initiativeOwnerUserID": 10063,
+   "placeOwnerUserID": 10063,
+   "street": "נטע",
+   "houseNumber": 10,
+   "entrance": null,
+   "placeDescription": "ההרצאה מתקיימת בסלון ביתי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "09:30",
+   "maxNumberOfPeople": 14,
+   "limitNumberOfPeople": 14,
+   "totalNumberOfPeopleThatCanAttend": 14,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "כשמילים יוצרות מציאות",
+   "details": "מסע קצר לעולם הNLP ולכוח שיש למחשבות שלך על הדרך שבה את חיה.  לנשים בלבד",
+   "initiativeDescription": "סיפור השראה ותוכן מעולם הNLP",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "יפעת",
+   "initiativeOwnerLastName": "ביטון",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp"
+  },
+  {
+   "eventID": 2074,
+   "initiativeOwnerUserID": 10063,
+   "placeOwnerUserID": 10063,
+   "street": "נטע",
+   "houseNumber": 10,
+   "entrance": null,
+   "placeDescription": "ההרצאה מתקיימת בסלון ביתי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "18:30",
+   "maxNumberOfPeople": 14,
+   "limitNumberOfPeople": 14,
+   "totalNumberOfPeopleThatCanAttend": 14,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "כשמילים יוצרות מציאות",
+   "details": "מסע קצר לעולם הNLP ולכוח שיש למחשבות שלך על הדרך שבה את חיה.  לנשים בלבד",
+   "initiativeDescription": "סיפור השראה ותוכן מעולם הNLP",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "יפעת",
+   "initiativeOwnerLastName": "ביטון",
+   "attendees": [
+    {
+     "eventID": "2074",
+     "userID": "1858"
+    },
+    {
+     "eventID": "2074",
+     "userID": "1858"
+    },
+    {
+     "eventID": "2074",
+     "userID": "926"
+    },
+    {
+     "eventID": "2074",
+     "userID": "926"
+    },
+    {
+     "eventID": "2074",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2074",
+     "userID": "1938"
+    },
+    {
+     "eventID": "2074",
+     "userID": "10932"
+    },
+    {
+     "eventID": "2074",
+     "userID": "1792"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/71c289e3c84f22b3924a8567db33701cbdf3ab0ad1aa5f16ccd9c62d35350fa8.webp"
+  },
+  {
+   "eventID": 2073,
+   "initiativeOwnerUserID": 1099,
+   "placeOwnerUserID": 1099,
+   "street": "הצפירה ",
+   "houseNumber": 10,
+   "entrance": null,
+   "placeDescription": "רחבת כניסה לבניין הצפירה 10 ",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 1,
+   "genre": "אוכל",
+   "public": "רק לילדים",
+   "areaSettingValue": 2,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 21,
+   "limitNumberOfPeople": 8,
+   "totalNumberOfPeopleThatCanAttend": 8,
+   "publicValue": 1,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הכנת כדורי שוקולד ",
+   "details": "שקד בת 12 תלמד ילדים בכיתות א' ו ב' להכין בעצמם כדורי שוקולד טעימים במיוחד",
+   "initiativeDescription": "ילדים מכינים כדורי שוקולד",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "תמר",
+   "initiativeOwnerLastName": "קינן",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/145195cc3062d39cf2965683b1cd50fe6f20ed13ee6d20c49c1cad610ed3c77f.webp"
+  },
+  {
+   "eventID": 2072,
+   "initiativeOwnerUserID": 1099,
+   "placeOwnerUserID": 1099,
+   "street": "הצפירה ",
+   "houseNumber": 10,
+   "entrance": null,
+   "placeDescription": "רחבת כניסה לבניין הצפירה 10 ",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 30,
+   "genre": "ציור",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 2,
+   "date": "2026-10-30",
+   "hour": "12:30",
+   "maxNumberOfPeople": 21,
+   "limitNumberOfPeople": 17,
+   "totalNumberOfPeopleThatCanAttend": 17,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 10,
+   "virtual": false,
+   "title": "ציור על קירות בצבעים אקריליים",
+   "details": "מציירים עם צבעים אקריליים על קירות ",
+   "initiativeDescription": "מציירים דמויות מספרי ילדים על קירות מבואה של בניין ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "תמר",
+   "initiativeOwnerLastName": "קינן",
+   "attendees": [
+    {
+     "eventID": "2072",
+     "userID": "926"
+    },
+    {
+     "eventID": "2072",
+     "userID": "926"
+    },
+    {
+     "eventID": "2072",
+     "userID": "10916"
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp"
+  },
+  {
+   "eventID": 2071,
+   "initiativeOwnerUserID": 7217,
+   "placeOwnerUserID": 7217,
+   "street": "יונה",
+   "houseNumber": 44,
+   "entrance": null,
+   "placeDescription": "גן הציפורים - שכונת רמז ",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 18,
+   "genre": "תנועה ומחול",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 2,
+   "date": "2026-10-30",
+   "hour": "08:30",
+   "maxNumberOfPeople": 15,
+   "limitNumberOfPeople": 15,
+   "totalNumberOfPeopleThatCanAttend": 15,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "שיעור התנסות בטאי צ'י טיבטי מסורתי",
+   "details": "טאי צ'י טיבטי עגור לבן, \"יד הכותנה העוטפת את המחט\" תרגול רך וייחודי התורם לגמישות המפרקים, חיזוק הגוף, התבוננות פנימית, ריכוז, רוגע ושקט נפשי.",
+   "initiativeDescription": "שיעור טאי צ'י עגור לבן- pak hok pai ",
+   "placeNotes": "השיעור יערך בדשא מול גינת הכלבים",
+   "initiativeOwnerFirstName": "אהוד",
+   "initiativeOwnerLastName": "עמרם",
+   "attendees": [
+    {
+     "eventID": "2071",
+     "userID": "9743"
+    },
+    {
+     "eventID": "2071",
+     "userID": "1938"
+    },
+    {
+     "eventID": "2071",
+     "userID": "1099"
+    },
+    {
+     "eventID": "2071",
+     "userID": "967"
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/8c58a9d08118ecf184289e4449cfd6936cadaabe8dab8b5c0c388021ec67a193.webp"
+  },
+  {
+   "eventID": 2070,
+   "initiativeOwnerUserID": 10869,
+   "placeOwnerUserID": 10869,
+   "street": "המגינים ",
+   "houseNumber": 18,
+   "entrance": "ב",
+   "placeDescription": "סטודיו פילאטיס מכשירים,  אינטימי בבית שלי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 33,
+   "genre": "ספורט",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "maxNumberOfPeople": 2,
+   "limitNumberOfPeople": 2,
+   "totalNumberOfPeopleThatCanAttend": 2,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "פילאטיס מכשירים ",
+   "details": "שיעור פרטי של פילאטיס מכשירים קלאסי בסטודיו אינטימי בבית שלי.\nמתאים לכל רמה, לכל גיל מעל 18 ולכל מצב גוף ",
+   "initiativeDescription": "שיעור פרטי",
+   "placeNotes": "בכניסה 18 ב, דלת לבנה.",
+   "initiativeOwnerFirstName": "יעל",
+   "initiativeOwnerLastName": "לומברוסו",
+   "attendees": [
+    {
+     "eventID": "2070",
+     "userID": "9680"
+    },
+    {
+     "eventID": "2070",
+     "userID": "2270"
+    },
+    {
+     "eventID": "2070",
+     "userID": "8077"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+   "externalLink2": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLa9VleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+   "path": "https://api.hanadiv.org/images/e6e573576f05149415f8f9ec18f0deb46e0e1d733d49e2a3e3c4dd028916fe8c.webp"
+  },
+  {
+   "eventID": 2069,
+   "initiativeOwnerUserID": 10869,
+   "placeOwnerUserID": 10869,
+   "street": "המגינים ",
+   "houseNumber": 18,
+   "entrance": "ב",
+   "placeDescription": "בבית שלי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 33,
+   "genre": "ספורט",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 8,
+   "limitNumberOfPeople": 6,
+   "totalNumberOfPeopleThatCanAttend": 6,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "פילאטיס מזרן ",
+   "details": "בואו  לזוז את הגוף שלכם באווירה נעימה. שיעור קבוצתי של פילאטיס מזרן. מתאים לכל רמה ולכל גיל מעל 18. לבוא עם מזרן יוגה/פילאטיס.  מחכה לכם!",
+   "initiativeDescription": "שיעור קבוצתי ",
+   "placeNotes": "דלת לבנה בכניסת 'ב'",
+   "initiativeOwnerFirstName": "יעל",
+   "initiativeOwnerLastName": "לומברוסו",
+   "attendees": [
+    {
+     "eventID": "2069",
+     "userID": "8454"
+    },
+    {
+     "eventID": "2069",
+     "userID": "8454"
+    },
+    {
+     "eventID": "2069",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2069",
+     "userID": "8077"
+    },
+    {
+     "eventID": "2069",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2069",
+     "userID": "3850"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+   "externalLink2": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLanVleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+   "path": "https://api.hanadiv.org/images/6904fd14a8e0784dfc7ef02961659b8d943d75754bde309cc886811e9227ea25.webp"
+  },
+  {
+   "eventID": 2067,
+   "initiativeOwnerUserID": 10869,
+   "placeOwnerUserID": 10869,
+   "street": "המגינים ",
+   "houseNumber": 18,
+   "entrance": "ב",
+   "placeDescription": "בבית שלי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 33,
+   "genre": "ספורט",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "maxNumberOfPeople": 8,
+   "limitNumberOfPeople": 6,
+   "totalNumberOfPeopleThatCanAttend": 6,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "פילאטיס מזרן",
+   "details": "בואו לבוא לזוז את הגוף שלכם באווירה נעימה. שיעור קבוצתי של פילאטיס מזרן. מתאים לכל רמה ולכל גיל מעל 18. לבוא עם מזרן יוגה/פילאטיס.  מחכה לכם!",
+   "initiativeDescription": "פילאטיס קבוצתי ",
+   "placeNotes": "דלת לבנה בכניסת 'ב'",
+   "initiativeOwnerFirstName": "יעל",
+   "initiativeOwnerLastName": "לומברוסו",
+   "attendees": [
+    {
+     "eventID": "2067",
+     "userID": "10733"
+    },
+    {
+     "eventID": "2067",
+     "userID": "10724"
+    },
+    {
+     "eventID": "2067",
+     "userID": "1792"
+    },
+    {
+     "eventID": "2067",
+     "userID": "967"
+    },
+    {
+     "eventID": "2067",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2067",
+     "userID": "3850"
+    },
+    {
+     "eventID": "2067",
+     "userID": "8077"
+    }
+   ],
+   "externalLink1": "https://www.instagram.com/pupik.in.pilates?igsh=MTljdWk3a2ZhenI4",
+   "externalLink2": "https://yaelitalombroso.wixsite.com/my-site/fr/pilates-method?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAb21jcATLY5FleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafqLubaNOMkJ-SyYkCtT2qqQgAknylVZOZTGpqhw8J6nbn2ipxk_qkpDLdZCw_aem_HpNGxNn8yfUDeHxES9z62w",
+   "path": "https://api.hanadiv.org/images/8e66a7a0742ca02e3a51083e53a2f1861bca1cd3c9d51bcd9366739ee807212e.webp"
+  },
+  {
+   "eventID": 2056,
+   "initiativeOwnerUserID": 10866,
+   "placeOwnerUserID": 10866,
+   "street": "האורנים ",
+   "houseNumber": 84,
+   "entrance": null,
+   "placeDescription": "בתוך בקתת עץ קסומה במקום שקט",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "10:30",
+   "maxNumberOfPeople": 12,
+   "limitNumberOfPeople": 12,
+   "totalNumberOfPeopleThatCanAttend": 12,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "סדנת בייבי יוגה ועיסוי תינוקות",
+   "details": "הורים ותינוקות, אני מזמינה אתכם לעצור רגע, ולהנות מזמן איכות של רוגע, חיבור ואהבה. נלמד יחד כלים רכים, פרקטים והתפתחותיים מעולם עיסוי התינוקות והבייבי יוגה. נתרגל מגע שעוזר להרגיע, לשחרר מתאים (וגם גזים!), ולחזק את הקשר והביטחון שלכם עם הבייבי.",
+   "initiativeDescription": "להורה ולתינוק עד גיל זחילה",
+   "placeNotes": "חניה בשפע לאורך שדרת האורנים, להקפיד לחנות בצורה מסודרת ולא להפריע לכניסות ויציאות של השכנים. נכנסים ברגל בשביל עד שתראו את הבקתה בצד שמאל עם שער בצבע טורקיז בוהק.",
+   "initiativeOwnerFirstName": "שרי",
+   "initiativeOwnerLastName": "ציק",
+   "attendees": [],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/c07a3197d008c78052b9da0b1dc1b1e8cd095d8a5cb5bc4c3c70697127e0c1c7.webp"
+  }
+ ]
+}
