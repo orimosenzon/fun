@@ -90,12 +90,12 @@ body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   grid-template-rows: minmax(0, 1fr) auto;
-  grid-template-areas: "stage panel" "tl tl";
+  grid-template-areas: "stage panel" "tl panel";
 }
 .stage-wrap { grid-area: stage; display: flex; flex-direction: column; min-height: 0; padding: 14px; gap: 10px; }
-.panel { grid-area: panel; overflow-y: auto; padding: 14px; border-inline-start: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 12px; }
+.panel { grid-area: panel; min-height: 0; border-inline-start: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; }
 .timeline-wrap { grid-area: tl; border-top: 1px solid var(--line); background: var(--panel); padding: 8px 14px 12px; }
 
 /* ── במה ───────────────────────────────────────────────── */
@@ -179,13 +179,10 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
 .logo-opts { margin-top: 6px; }
 .corners { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex: 1; direction: ltr; }
 
-.export .progress { margin-top: 10px; }
 .bar { height: 8px; background: #12151b; border-radius: 4px; overflow: hidden; }
 .fill { height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
 .prog-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 13px; }
-.result { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-.result video { width: 100%; max-height: 260px; background: #000; border-radius: 6px; }
-body.exporting .panel .card:not(.export), body.exporting .transport, body.exporting .timeline-wrap { opacity: .45; pointer-events: none; }
+body.exporting .panes, body.exporting .tabs, body.exporting .transport, body.exporting .frame-bar, body.exporting .timeline-wrap { opacity: .45; pointer-events: none; }
 
 /* ── טיימליין ──────────────────────────────────────────── */
 .tl-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -206,7 +203,9 @@ body.exporting .panel .card:not(.export), body.exporting .transport, body.export
   body { overflow: auto; height: auto; }
   .layout { grid-template-columns: 1fr; grid-template-areas: "stage" "tl" "panel"; grid-template-rows: auto auto auto; }
   .stage { max-height: 60vh; flex: none; height: 60vh; }
-  .panel { border-inline-start: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .panel { border-inline-start: 0; border-top: 1px solid var(--line); }
+  .panes { overflow: visible; }
+  .dock { position: sticky; bottom: 0; }
   .tl-toolbar .hint { display: none; }
   .topbar { padding: 8px 16px; gap: 10px; }
 }
@@ -215,13 +214,14 @@ body.exporting .panel .card:not(.export), body.exporting .transport, body.export
 /* ── פלטפורמות ─────────────────────────────────────────── */
 .platforms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .platforms button {
-  font: inherit; font-size: 12px; line-height: 1.2;
+  font: inherit; font-size: 12px; line-height: 1.2; text-align: start;
   background: #12151b; color: var(--text);
   border: 1px solid #353b48; border-radius: 6px;
-  padding: 6px 4px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 5px 6px; cursor: pointer;
+  display: grid; grid-template-columns: auto 1fr; column-gap: 5px; align-items: center;
 }
-.platforms button .pi { font-size: 16px; }
+.platforms button .pi { font-size: 14px; grid-row: span 2; }
+.platforms button .pm { grid-column: 2; }
 .platforms button .pm { color: var(--muted); font-size: 11px; }
 .platforms button.on { border-color: var(--accent); background: #2a2410; }
 .platforms button.on .pm { color: var(--accent); }
@@ -231,11 +231,6 @@ body.exporting .panel .card:not(.export), body.exporting .transport, body.export
 .mono.bad { color: #ff8a95; font-weight: 700; }
 
 /* ── מסגור ─────────────────────────────────────────────── */
-.frame-presets { margin-top: 8px; }
-.frame-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: #12151b; font-size: 12px; line-height: 1.5; }
-.frame-scope span { flex: 1 1 180px; }
-.frame-scope.own { box-shadow: inset 0 0 0 1px var(--accent); }
-.frame-presets button { font-size: 12px; }
 #zoomVal { min-width: 44px; text-align: end; color: var(--muted); }
 input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #353b48; border-radius: 6px; background: #12151b; cursor: pointer; flex: none; }
 .text-opts { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
@@ -243,13 +238,13 @@ input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #35
 .text-opts textarea:focus { outline: none; border-color: var(--accent); }
 
 /* ── רשימת קטעים ───────────────────────────────────────── */
-.batch-src { display: flex; gap: 6px; margin: 8px 0 6px; }
 #inBatch { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; background: #12151b; color: var(--text); border: 1px solid #353b48; border-radius: 6px; padding: 6px 8px; resize: vertical; }
 #inBatch:focus { outline: none; border-color: var(--accent); }
-.batch-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; max-height: 320px; overflow-y: auto; }
-.bitem { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; background: #12151b; cursor: pointer; font-size: 12px; }
+.batch-list { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.bitem { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: #12151b; cursor: pointer; font-size: 13px; border: 1px solid transparent; }
+.bitem.off { opacity: .5; }
 .bitem:hover { background: #181c24; }
-.bitem.cur { box-shadow: inset 0 0 0 1px var(--accent); }
+.bitem.cur { border-color: var(--accent); background: #211d10; }
 .bitem .bn { font-weight: 700; min-width: 20px; text-align: center; }
 .bitem .br { direction: ltr; text-align: start; font-family: ui-monospace, Menlo, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bitem .bl { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
@@ -259,7 +254,89 @@ input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid #35
 .bitem.bad .bmsg { color: #ff8a8a; }
 .bitem .bstat { grid-column: 2 / -1; font-size: 11px; color: #8fd18f; }
 .bitem .bstat a { color: var(--accent); }
-#btnBatchRun { width: 100%; margin-top: 8px; }
-#batchProg { margin-top: 10px; }
-body.exporting .panel .card.batch { opacity: 1; pointer-events: auto; }
-body.exporting .card.batch .bplay, body.exporting .card.batch .batch-src { visibility: hidden; }
+body.exporting.batching .panes { opacity: 1; pointer-events: auto; }
+body.exporting .card.batch .bplay, body.exporting .card.batch .head-actions, body.exporting .batch-tools { visibility: hidden; }
+
+/* ── לשוניות בפאנל ─────────────────────────────────────── */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px 10px 0; border-bottom: 1px solid var(--line); flex: none; }
+.tab { font: inherit; display: flex; align-items: center; gap: 7px; text-align: start; padding: 8px 6px 10px; border: 0; border-bottom: 3px solid transparent;
+  background: none; color: var(--muted); cursor: pointer; border-radius: 8px 8px 0 0; min-width: 0; }
+.tab:hover { background: #1c2028; color: var(--text); }
+.tab.on { color: var(--text); border-bottom-color: var(--accent); background: var(--card); }
+.tab .tn { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: #2a2f3a; }
+.tab.on .tn { background: var(--accent); color: var(--accent-ink); }
+.tab b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+.tab small { display: block; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab > span:last-child { min-width: 0; }
+.panes { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; }
+.pane { display: flex; flex-direction: column; gap: 12px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.card-head h3 { margin: 0; }
+.head-actions { display: flex; gap: 2px; }
+.len-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.len-row .mono { color: var(--text); }
+.batch-edit textarea { margin-top: 6px; }
+.batch-edit #btnBatchDone { margin-top: 6px; }
+.batch-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.batch-tools .row { margin: 0; }
+.batch-tools .hint { margin: 0; font-size: 11px; text-align: end; }
+
+/* ── הכפתור הראשי, תמיד בתחתית הפאנל ──────────────────── */
+.dock { flex: none; border-top: 1px solid var(--line); background: #13161b; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.dock .warn-box { margin: 0; }
+.dock-sum { font-size: 12px; color: var(--muted); white-space: pre-line; line-height: 1.5; }
+.dock-sum b { color: var(--text); font-weight: 600; }
+.dock-actions { display: flex; flex-direction: column; gap: 6px; }
+.dock-actions .btn.secondary { background: transparent; border-color: #353b48; color: var(--text); font-weight: 500; font-size: 13px; padding: 6px; }
+.dock .hint { margin: 0; }
+
+/* ── סרגל המסגור מתחת לתצוגה ──────────────────────────── */
+.frame-bar { flex: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.fb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.fb-group { display: flex; align-items: center; gap: 8px; }
+.fb-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.fb-group input[type=range] { width: 120px; }
+.seg.compact { margin: 0; flex-wrap: nowrap; }
+.seg.compact button { flex: none; padding: 4px 10px; font-size: 12px; min-width: 0; }
+.fb-hint { color: var(--muted); font-size: 11px; }
+.frame-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.frame-scope span { flex: 1 1 200px; }
+.frame-scope.item { color: var(--text); }
+.frame-scope.own { color: var(--accent); }
+.frame-scope:empty { display: none; }
+body:not(.has-video) .frame-bar { opacity: .45; pointer-events: none; }
+#zoomVal { min-width: 40px; }
+
+/* ── מבנה הסרטון (מיתוג) ──────────────────────────────── */
+.struct { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 4px; }
+.struct .arrow { align-self: center; color: var(--muted); font-size: 16px; }
+.blk { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 8px; border: 1px solid #353b48; background: #12151b; text-align: center; cursor: pointer; min-width: 0; }
+.blk.main { cursor: default; border-color: var(--accent); }
+.blk.off { opacity: .45; }
+.blk.empty { border-style: dashed; }
+.blk-top { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.blk small { color: var(--muted); font-size: 11px; line-height: 1.3; }
+.blk .mini { display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; }
+.blk .mini input { width: 13px; height: 13px; }
+.bthumb { width: 100%; height: 54px; border-radius: 4px; display: grid; place-items: center; overflow: hidden;
+  background: repeating-conic-gradient(#2a2f3a 0 25%, #1f232b 0 50%) 0 0 / 10px 10px; color: var(--muted); font-size: 18px; }
+.bthumb canvas, .bthumb img { max-width: 100%; max-height: 100%; display: block; }
+.slot-thumb.tall { width: 48px; }
+.slot .btn.ghost[data-clear] { visibility: hidden; }
+.slot.user .btn.ghost[data-clear] { visibility: visible; }
+.logo-opts.disabled { opacity: .45; pointer-events: none; }
+
+/* ── חלון התוצאה ──────────────────────────────────────── */
+.result-dlg { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 14px; width: min(420px, 92vw); }
+.result-dlg::backdrop { background: rgba(0, 0, 0, .6); }
+.result { display: flex; flex-direction: column; gap: 10px; }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.result video { width: 100%; max-height: 60vh; background: #000; border-radius: 6px; }
+.fb-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; }
+.fb-check { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+.fb-check input { width: 14px; height: 14px; }
+@media (max-width: 1500px) {
+  .transport .btn { padding: 5px 9px; font-size: 13px; }
+  .transport { gap: 6px; }
+  #rngVolume { width: 60px; }
+}

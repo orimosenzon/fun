@@ -19,7 +19,7 @@
 </header>
 
 <main class="layout">
-  <!-- תצוגה מקדימה -->
+  <!-- תצוגה מקדימה, ומתחתיה כל מה שעושים על התמונה -->
   <section class="stage-wrap">
     <div class="stage" id="stage">
       <canvas id="ghost"></canvas>
@@ -32,6 +32,38 @@
         </div>
       </div>
       <div class="stage-badge" id="stageBadge"></div>
+    </div>
+
+    <div class="frame-bar" id="frameBar">
+      <div class="frame-scope" id="frameScope">
+        <span id="frameScopeText"></span>
+        <button class="btn small ghost" id="btnFrameShared" data-i18n="frBackShared" hidden>בטל מסגור נפרד</button>
+        <button class="btn small" id="btnFrameDone" data-i18n="frDone" hidden>סיום</button>
+      </div>
+      <div class="fb-row">
+        <div class="fb-group">
+          <span class="fb-label" data-i18n="lblZoom">זום</span>
+          <input type="range" id="rngFrameZoom" min="0.5" max="4" step="0.01" value="1" dir="ltr">
+          <span class="mono" id="zoomVal">100%</span>
+        </div>
+        <div class="seg compact frame-presets">
+          <button data-frame="whole" data-i18n="frWhole" data-i18n-title="tipFrWhole">כל התמונה</button>
+          <button data-frame="fill" data-i18n="frFill" data-i18n-title="tipFrFill">מלא</button>
+          <button data-frame="center" data-i18n="frCenter">מרכז</button>
+        </div>
+        <div class="fb-group">
+          <span class="fb-label" data-i18n="lblFill">רקע בשטח הריק</span>
+          <div class="seg compact" id="segFill">
+            <button data-fill="blur" data-i18n="fillBlur">מטושטש</button>
+            <button data-fill="color" data-i18n="fillColor">צבע</button>
+          </div>
+          <input type="color" id="inFillColor" value="#000000" data-i18n-title="fillColor">
+        </div>
+      </div>
+      <div class="fb-foot">
+        <label class="fb-check"><input type="checkbox" id="chkGuides" checked><span data-i18n="lblGuides">סמן את מה שהאפליקציה מכסה</span></label>
+        <span class="fb-hint" data-i18n="frameHint">גרור את התמונה כדי להזיז · גלגלת או צביטה לזום · לחיצה כפולה לאיפוס</span>
+      </div>
     </div>
 
     <div class="transport">
@@ -52,198 +84,221 @@
     </div>
   </section>
 
-  <!-- פאנל צד -->
+  <!-- פאנל צד: שלוש לשוניות, וכפתור הייצוא תמיד למטה -->
   <aside class="panel">
-    <div class="card">
-      <h3 data-i18n="secClip">הקטע</h3>
-      <div class="sel-grid">
-        <label data-i18n="lblIn">התחלה</label>
-        <input class="time-input" id="inIn" value="0:00.00">
-        <label data-i18n="lblOut">סוף</label>
-        <input class="time-input" id="inOut" value="0:00.00">
-        <label data-i18n="lblLen">אורך הקטע</label>
-        <span class="mono" id="selLen">0:00.00</span>
-        <label data-i18n="lblTotal">אורך התוצאה</label>
-        <span class="mono" id="totalLen">0:00.00</span>
-      </div>
-    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-tab="clips" role="tab"><span class="tn">1</span><span><b data-i18n="tabClips">סרטונים</b><small id="sumClips"></small></span></button>
+      <button class="tab" data-tab="format" role="tab"><span class="tn">2</span><span><b data-i18n="tabFormat">פורמט</b><small id="sumFormat"></small></span></button>
+      <button class="tab" data-tab="brand" role="tab"><span class="tn">3</span><span><b data-i18n="tabBrand">מיתוג</b><small id="sumBrand"></small></span></button>
+    </nav>
 
-    <div class="card batch" id="cardBatch">
-      <h3 data-i18n="secBatch">רשימת קטעים</h3>
-      <div class="hint" data-i18n="batchHint">כל שורה היא סרטון אחד, למשל 02.49 - 13.35 או 1.00.14 - 1.01.50. כמה טווחים באותה שורה (עם And) מתחברים לסרטון אחד.</div>
-      <div class="batch-src">
-        <button class="btn small" id="btnBatchFile" data-i18n="batchFile">טען קובץ טקסט</button>
-        <button class="btn small ghost" id="btnBatchClear" data-i18n="batchClear">נקה</button>
-        <input type="file" id="batchInput" accept=".txt,.text,.csv,.md,text/plain" hidden>
-      </div>
-      <textarea id="inBatch" rows="5" dir="ltr" spellcheck="false" data-i18n-ph="batchPh" placeholder="או הדבק כאן את הרשימה"></textarea>
-      <div class="batch-list" id="batchList"></div>
-      <div class="hint" id="batchSum"></div>
-      <button class="btn primary" id="btnBatchRun" data-i18n="batchRun" hidden>צור את כל הסרטונים</button>
-      <div class="progress" id="batchProg" hidden>
-        <div class="bar"><div class="fill" id="batchFill"></div></div>
-        <div class="prog-row">
-          <span id="batchText"></span>
-          <button class="btn small ghost" id="btnBatchCancel" data-i18n="cancel">ביטול</button>
-        </div>
-        <div class="hint warn" data-i18n="keepVisible">השאר את הלשונית הזו פתוחה וגלויה עד הסוף. הייצוא נמשך בערך כאורך הסרטון.</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 data-i18n="secFormat">פלטפורמה</h3>
-      <div class="platforms" id="platforms"></div>
-      <div class="hint" id="platformNote"></div>
-      <div class="warn-box" id="lenWarn" hidden></div>
-      <div class="warn-box" id="codecWarn" hidden></div>
-      <div class="sub-label" data-i18n="lblRatio">יחס</div>
-      <div class="seg" id="segFormat">
-        <button data-v="9:16">9:16</button>
-        <button data-v="1:1">1:1</button>
-        <button data-v="4:5">4:5</button>
-        <button data-v="16:9">16:9</button>
-        <button data-v="source" data-i18n="fmtSource">מקור</button>
-      </div>
-      <div class="hint" id="formatHint"></div>
-      <label class="row">
-        <span data-i18n="lblQuality">איכות</span>
-        <select id="selQuality">
-          <option value="1080" data-i18n="q1080">גבוהה (1080)</option>
-          <option value="720" data-i18n="q720">בינונית (720), קובץ קטן</option>
-        </select>
-      </label>
-      <label class="row check">
-        <input type="checkbox" id="chkGuides" checked>
-        <span data-i18n="lblGuides">סמן בתצוגה את מה שהאפליקציה מכסה</span>
-      </label>
-      <label class="row check">
-        <input type="checkbox" id="chkFades" checked>
-        <span data-i18n="lblFades">מעבר רך (דהייה) בין החלקים</span>
-      </label>
-    </div>
-
-    <div class="card" id="cardFrame">
-      <h3 data-i18n="secFrame">מסגור</h3>
-      <div class="frame-scope" id="frameScope" hidden>
-        <span id="frameScopeText"></span>
-        <button class="btn small ghost" id="btnFrameShared" data-i18n="frBackShared" hidden>חזור למסגור הכללי</button>
-        <button class="btn small" id="btnFrameDone" data-i18n="frDone" hidden>סיום</button>
-      </div>
-      <div class="hint" data-i18n="frameHint">גרור את התמונה בתצוגה כדי להזיז אותה. גלגלת העכבר (או צביטה) מגדילה ומקטינה.</div>
-      <label class="row">
-        <span data-i18n="lblZoom">זום</span>
-        <input type="range" id="rngFrameZoom" min="0.5" max="4" step="0.01" value="1" dir="ltr">
-        <span class="mono" id="zoomVal">100%</span>
-      </label>
-      <div class="seg frame-presets">
-        <button data-frame="whole" data-i18n="frWhole">כל התמונה</button>
-        <button data-frame="fill" data-i18n="frFill">מלא את המסגרת</button>
-        <button data-frame="center" data-i18n="frCenter">מרכז</button>
-      </div>
-      <label class="row">
-        <span data-i18n="lblFill">שטח ריק</span>
-        <select id="selFill">
-          <option value="blur" data-i18n="fillBlur">הסרטון עצמו, מטושטש</option>
-          <option value="color" data-i18n="fillColor">צבע אחיד</option>
-        </select>
-        <input type="color" id="inFillColor" value="#000000">
-      </label>
-      <label class="row check">
-        <input type="checkbox" id="chkText">
-        <span data-i18n="lblText">טקסט ברצועות הריקות</span>
-      </label>
-      <div class="text-opts" id="textOpts" hidden>
-        <textarea id="inTextTop" rows="2" data-i18n-ph="phTextTop" placeholder="טקסט למעלה"></textarea>
-        <textarea id="inTextBottom" rows="2" data-i18n-ph="phTextBottom" placeholder="טקסט למטה"></textarea>
-        <label class="row">
-          <span data-i18n="lblSize">גודל</span>
-          <input type="range" id="rngTextSize" min="3" max="14" step="0.5" value="7">
-          <input type="color" id="inTextColor" value="#ffffff">
-        </label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 data-i18n="secBrand">מיתוג</h3>
-      <div class="slot" data-slot="logo">
-        <div class="slot-thumb" id="thumbLogo"></div>
-        <div class="slot-body">
-          <div class="slot-name" data-i18n="slotLogo">לוגו</div>
-          <div class="slot-status" id="statLogo"></div>
-        </div>
-        <button class="btn small" data-pick="logo" data-i18n="choose">בחר</button>
-        <button class="btn small ghost" data-clear="logo" title="✕">✕</button>
-      </div>
-      <div class="slot" data-slot="intro">
-        <div class="slot-thumb" id="thumbIntro"></div>
-        <div class="slot-body">
-          <div class="slot-name" data-i18n="slotIntro">סרטון פתיחה</div>
-          <div class="slot-status" id="statIntro"></div>
-        </div>
-        <button class="btn small" data-pick="intro" data-i18n="choose">בחר</button>
-        <button class="btn small ghost" data-clear="intro" title="✕">✕</button>
-      </div>
-      <div class="slot" data-slot="outro">
-        <div class="slot-thumb" id="thumbOutro"></div>
-        <div class="slot-body">
-          <div class="slot-name" data-i18n="slotOutro">סיום לרוחב (16:9)</div>
-          <div class="slot-status" id="statOutro"></div>
-        </div>
-        <button class="btn small" data-pick="outro" data-i18n="choose">בחר</button>
-        <button class="btn small ghost" data-clear="outro" title="✕">✕</button>
-      </div>
-      <div class="slot" data-slot="outroTall">
-        <div class="slot-thumb" id="thumbOutroTall"></div>
-        <div class="slot-body">
-          <div class="slot-name" data-i18n="slotOutroTall">סיום לאורך (9:16)</div>
-          <div class="slot-status" id="statOutroTall"></div>
-        </div>
-        <button class="btn small" data-pick="outroTall" data-i18n="choose">בחר</button>
-        <button class="btn small ghost" data-clear="outroTall" title="✕">✕</button>
-      </div>
-      <div class="hint" data-i18n="outroHint">כל סרטון מקבל את הסיום שמתאים לו: לאורך לרילס, טיקטוק ושורטס, לרוחב ליוטיוב ולריבוע.</div>
-      <input type="file" id="brandInput" hidden>
-
-      <div class="logo-opts">
-        <div class="row">
-          <span data-i18n="lblCorner">פינה</span>
-          <div class="corners" id="corners">
-            <button data-v="tl">↖</button><button data-v="tr">↗</button>
-            <button data-v="bl">↙</button><button data-v="br">↘</button>
+    <div class="panes">
+      <!-- 1. סרטונים -->
+      <div class="pane" data-pane="clips" role="tabpanel">
+        <div class="card">
+          <h3 data-i18n="secClip">הקטע המסומן בטיימליין</h3>
+          <div class="sel-grid">
+            <label data-i18n="lblIn">התחלה</label>
+            <input class="time-input" id="inIn" value="0:00.00">
+            <label data-i18n="lblOut">סוף</label>
+            <input class="time-input" id="inOut" value="0:00.00">
+          </div>
+          <div class="len-row">
+            <span><span data-i18n="lblLen">אורך הקטע</span> <span class="mono" id="selLen">0:00.00</span></span>
+            <span><span data-i18n="lblTotal">עם פתיחה וסיום</span> <span class="mono" id="totalLen">0:00.00</span></span>
           </div>
         </div>
-        <label class="row">
-          <span data-i18n="lblSize">גודל</span>
-          <input type="range" id="rngLogoSize" min="5" max="40" step="1" value="18">
-        </label>
-        <label class="row">
-          <span data-i18n="lblOpacity">שקיפות</span>
-          <input type="range" id="rngLogoOpacity" min="0.2" max="1" step="0.05" value="0.9">
-        </label>
-        <label class="row check">
-          <input type="checkbox" id="chkLogoAll">
-          <span data-i18n="lblLogoAll">לוגו גם על הפתיחה והסיום</span>
-        </label>
+
+        <div class="card batch" id="cardBatch">
+          <div class="card-head">
+            <h3 data-i18n="secBatch">רשימת קטעים</h3>
+            <div class="head-actions">
+              <button class="btn small ghost" id="btnBatchEdit" data-i18n="batchEdit" hidden>ערוך את הרשימה</button>
+              <button class="btn small ghost" id="btnBatchFile" data-i18n="batchFile">טען קובץ</button>
+              <button class="btn small ghost" id="btnBatchClear" data-i18n="batchClear">נקה</button>
+            </div>
+          </div>
+          <input type="file" id="batchInput" accept=".txt,.text,.csv,.md,text/plain" hidden>
+          <div class="batch-edit" id="batchEditBox">
+            <div class="hint" data-i18n="batchHint">כל שורה היא סרטון אחד, למשל 02.49 - 13.35 או 1.00.14 - 1.01.50. כמה טווחים באותה שורה (עם And) מתחברים לסרטון אחד.</div>
+            <textarea id="inBatch" rows="5" dir="ltr" spellcheck="false" data-i18n-ph="batchPh" placeholder="או הדבק כאן את הרשימה"></textarea>
+            <button class="btn small" id="btnBatchDone" data-i18n="batchDoneEdit" hidden>סיום עריכה</button>
+          </div>
+          <div class="batch-tools" id="batchTools" hidden>
+            <label class="row check"><input type="checkbox" id="chkBatchAll"><span data-i18n="batchAll">כולם</span></label>
+            <span class="hint" data-i18n="batchClickHint">לחיצה על שורה: מציגה אותה ומאפשרת מסגור משלה</span>
+          </div>
+          <div class="batch-list" id="batchList"></div>
+        </div>
       </div>
-      <div class="hint" data-i18n="brandSaved">הלוגו והסרטונים נשמרים בדפדפן, ואין צורך לבחור אותם שוב בפעם הבאה.</div>
+
+      <!-- 2. פורמט וטקסט -->
+      <div class="pane" data-pane="format" role="tabpanel" hidden>
+        <div class="card">
+          <h3 data-i18n="secFormat">איפה הסרטון יעלה</h3>
+          <div class="platforms" id="platforms"></div>
+          <div class="hint" id="platformNote"></div>
+          <div class="sub-label" data-i18n="lblRatio">יחס</div>
+          <div class="seg" id="segFormat">
+            <button data-v="9:16">9:16</button>
+            <button data-v="1:1">1:1</button>
+            <button data-v="4:5">4:5</button>
+            <button data-v="16:9">16:9</button>
+            <button data-v="source" data-i18n="fmtSource">מקור</button>
+          </div>
+          <div class="hint" id="formatHint"></div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="secText">טקסט</h3>
+          <label class="row check">
+            <input type="checkbox" id="chkText">
+            <span data-i18n="lblText">טקסט ברצועות הריקות, למעלה ולמטה</span>
+          </label>
+          <div class="text-opts" id="textOpts" hidden>
+            <textarea id="inTextTop" rows="2" data-i18n-ph="phTextTop" placeholder="טקסט למעלה"></textarea>
+            <textarea id="inTextBottom" rows="2" data-i18n-ph="phTextBottom" placeholder="טקסט למטה"></textarea>
+            <label class="row">
+              <span data-i18n="lblSize">גודל</span>
+              <input type="range" id="rngTextSize" min="3" max="14" step="0.5" value="7">
+              <input type="color" id="inTextColor" value="#ffffff">
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="secOutput">הקובץ</h3>
+          <label class="row">
+            <span data-i18n="lblQuality">איכות</span>
+            <select id="selQuality">
+              <option value="1080" data-i18n="q1080">גבוהה (1080)</option>
+              <option value="720" data-i18n="q720">בינונית (720), קובץ קטן</option>
+            </select>
+          </label>
+          <label class="row check">
+            <input type="checkbox" id="chkFades" checked>
+            <span data-i18n="lblFades">מעבר רך (דהייה) בין החלקים</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 3. מיתוג -->
+      <div class="pane" data-pane="brand" role="tabpanel" hidden>
+        <div class="card">
+          <h3 data-i18n="secStruct">ממה כל סרטון בנוי</h3>
+          <div class="struct">
+            <label class="blk" id="blkIntro">
+              <span class="blk-top"><input type="checkbox" id="useIntro"><b data-i18n="blkIntro">פתיחה</b></span>
+              <span class="bthumb" id="bthIntro"></span>
+              <small id="bstIntro"></small>
+            </label>
+            <span class="arrow">←</span>
+            <div class="blk main">
+              <span class="blk-top"><b data-i18n="blkMain">הקטע</b></span>
+              <span class="bthumb" id="bthMain"></span>
+              <label class="mini"><input type="checkbox" id="useLogo"><span data-i18n="blkLogo">עם לוגו</span></label>
+            </div>
+            <span class="arrow">←</span>
+            <label class="blk" id="blkOutro">
+              <span class="blk-top"><input type="checkbox" id="useOutro"><b data-i18n="blkOutro">סיום</b></span>
+              <span class="bthumb" id="bthOutro"></span>
+              <small id="bstOutro"></small>
+            </label>
+          </div>
+          <div class="hint" data-i18n="structHint">מה שמסומן נכנס לכל סרטון. ביטול הסימון לא מוחק את הקובץ.</div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="secFiles">הקבצים</h3>
+          <div class="slot" data-slot="intro">
+            <div class="slot-thumb" id="thumbIntro"></div>
+            <div class="slot-body">
+              <div class="slot-name" data-i18n="slotIntro">פתיחה</div>
+              <div class="slot-status" id="statIntro"></div>
+            </div>
+            <button class="btn small" data-pick="intro" data-i18n="choose">בחר</button>
+            <button class="btn small ghost" data-clear="intro" data-i18n-title="tipClear">✕</button>
+          </div>
+          <div class="slot" data-slot="outroTall">
+            <div class="slot-thumb tall" id="thumbOutroTall"></div>
+            <div class="slot-body">
+              <div class="slot-name" data-i18n="slotOutroTall">סיום לאורך (9:16)</div>
+              <div class="slot-status" id="statOutroTall"></div>
+            </div>
+            <button class="btn small" data-pick="outroTall" data-i18n="choose">בחר</button>
+            <button class="btn small ghost" data-clear="outroTall" data-i18n-title="tipClear">✕</button>
+          </div>
+          <div class="slot" data-slot="outro">
+            <div class="slot-thumb" id="thumbOutro"></div>
+            <div class="slot-body">
+              <div class="slot-name" data-i18n="slotOutro">סיום לרוחב (16:9)</div>
+              <div class="slot-status" id="statOutro"></div>
+            </div>
+            <button class="btn small" data-pick="outro" data-i18n="choose">בחר</button>
+            <button class="btn small ghost" data-clear="outro" data-i18n-title="tipClear">✕</button>
+          </div>
+          <div class="hint" data-i18n="outroHint">כל סרטון מקבל את הסיום שמתאים לו: לאורך לרילס, טיקטוק ושורטס, לרוחב ליוטיוב ולריבוע.</div>
+          <div class="slot" data-slot="logo">
+            <div class="slot-thumb" id="thumbLogo"></div>
+            <div class="slot-body">
+              <div class="slot-name" data-i18n="slotLogo">לוגו</div>
+              <div class="slot-status" id="statLogo"></div>
+            </div>
+            <button class="btn small" data-pick="logo" data-i18n="choose">בחר</button>
+            <button class="btn small ghost" data-clear="logo" data-i18n-title="tipClear">✕</button>
+          </div>
+          <input type="file" id="brandInput" hidden>
+          <div class="logo-opts" id="logoOpts">
+            <div class="row">
+              <span data-i18n="lblCorner">פינה</span>
+              <div class="corners" id="corners">
+                <button data-v="tl">↖</button><button data-v="tr">↗</button>
+                <button data-v="bl">↙</button><button data-v="br">↘</button>
+              </div>
+            </div>
+            <label class="row">
+              <span data-i18n="lblSize">גודל</span>
+              <input type="range" id="rngLogoSize" min="5" max="40" step="1" value="18">
+            </label>
+            <label class="row">
+              <span data-i18n="lblOpacity">שקיפות</span>
+              <input type="range" id="rngLogoOpacity" min="0.2" max="1" step="0.05" value="0.9">
+            </label>
+            <label class="row check">
+              <input type="checkbox" id="chkLogoAll">
+              <span data-i18n="lblLogoAll">לוגו גם על הפתיחה והסיום</span>
+            </label>
+          </div>
+          <div class="hint" data-i18n="brandSaved">הקבצים נשמרים בדפדפן, ואין צורך לבחור אותם שוב בפעם הבאה.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card export">
-      <button class="btn primary big" id="btnExport" data-i18n="export">צור סרטון</button>
+    <!-- תמיד גלוי: מה ייווצר, וכפתור -->
+    <footer class="dock">
+      <div class="warn-box" id="lenWarn" hidden></div>
+      <div class="warn-box" id="codecWarn" hidden></div>
+      <div class="dock-sum" id="dockSum"></div>
+      <div class="dock-actions" id="dockActions">
+        <button class="btn primary big" id="btnBatchRun" hidden>צור את כל הסרטונים</button>
+        <button class="btn primary big" id="btnExport" data-i18n="export">צור סרטון</button>
+      </div>
       <div class="progress" id="progress" hidden>
         <div class="bar"><div class="fill" id="progFill"></div></div>
         <div class="prog-row">
           <span id="progText"></span>
           <button class="btn small ghost" id="btnCancel" data-i18n="cancel">ביטול</button>
         </div>
-        <div class="hint warn" data-i18n="keepVisible">השאר את הלשונית הזו פתוחה וגלויה עד הסוף. הייצוא נמשך בערך כאורך הסרטון.</div>
       </div>
-      <div class="result" id="result" hidden>
-        <video id="resultVideo" controls playsinline></video>
-        <a class="btn primary" id="btnDownload" data-i18n="download">הורד</a>
-        <div class="hint" id="resultInfo"></div>
+      <div class="progress" id="batchProg" hidden>
+        <div class="bar"><div class="fill" id="batchFill"></div></div>
+        <div class="prog-row">
+          <span id="batchText"></span>
+          <button class="btn small ghost" id="btnBatchCancel" data-i18n="cancel">ביטול</button>
+        </div>
       </div>
-    </div>
+      <div class="hint" id="keepOpen" data-i18n="keepVisible" hidden>אפשר לעבור ללשונית אחרת בזמן הייצוא, רק לא לסגור את הלשונית הזו.</div>
+    </footer>
   </aside>
 
   <!-- טיימליין -->
@@ -262,6 +317,19 @@
     </div>
   </section>
 </main>
+
+<!-- התוצאה של סרטון בודד -->
+<dialog class="result-dlg" id="resultDlg">
+  <div class="result" id="result" hidden>
+    <div class="dlg-head">
+      <b data-i18n="resultTitle">הסרטון מוכן</b>
+      <button class="btn small ghost" id="btnResultClose">✕</button>
+    </div>
+    <video id="resultVideo" controls playsinline></video>
+    <div class="hint" id="resultInfo"></div>
+    <a class="btn primary big" id="btnDownload" data-i18n="download">הורד</a>
+  </div>
+</dialog>
 
 <div class="toast" id="toast" hidden></div>
 

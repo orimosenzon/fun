@@ -24,6 +24,8 @@
       batchText: '',
       frames: {},          // מסגור נפרד לסרטונים מהרשימה: { 'מ-עד+מ-עד': { zoom, px, py } }
       corner: 'tr', logoSize: 18, logoOpacity: 0.9, logoAll: false,
+      use: { intro: true, outro: true, logo: true },   // מה נכנס לסרטון (הקבצים נשארים גם כשלא מסומן)
+      tab: 'clips',
       volume: 1, muted: false,
     },
     mode: 'idle',        // idle | play | sequence | export
@@ -56,9 +58,10 @@
   const look = () => ({
     ...frameLook(F()), fill: S.set.fill, fillColor: S.set.fillColor,
     text: S.set.textOn ? { top: S.set.textTop, bottom: S.set.textBottom, size: S.set.textSize, color: S.set.textColor } : null,
-    logo: S.logoImg, safe: safe(),
+    logo: logoOn() ? S.logoImg : null, safe: safe(),
     corner: S.set.corner, logoSize: S.set.logoSize, logoOpacity: S.set.logoOpacity,
   });
+  const logoOn = () => !!(S.logoImg && S.set.use.logo);
   const platName = () => (plat() ? plat().name[C.lang] : t('platCustom'));
 
   function outSize(short) {
@@ -83,7 +86,9 @@
   }
 
   /** האורך הכולל (פתיחה + קטע + סיום) */
-  const brandSeconds = () => (S.brand.intro && introV.duration ? introV.duration : 0) + (pickOutro()?.duration || 0);
+  const useIntro = () => S.set.use.intro && S.brand.intro && introV.duration ? introV : null;
+  const useOutro = () => (S.set.use.outro ? pickOutro() : null);
+  const brandSeconds = () => (useIntro()?.duration || 0) + (useOutro()?.duration || 0);
 
   /** הסיום שמתאים לפורמט: סרטון לאורך לפלט גבוה (9:16, 4:5), לרוחב לשאר.
    *  לפי הצורה של הסרטון עצמו ולא לפי המשבצת, ואם יש רק אחד משתמשים בו. */
@@ -131,10 +136,11 @@
 
   function drawPreview() {
     if (S.mode === 'sequence' || S.mode === 'export') { drawGhost(); return; }
-    C.compose.draw(pctx, S.file ? src : null, preview.width, preview.height, { ...look(), logoOn: !!S.logoImg, fade: 0 });
+    C.compose.draw(pctx, S.file ? src : null, preview.width, preview.height, { ...look(), logoOn: logoOn(), fade: 0 });
     drawGuides(pctx, preview.width, preview.height);
     setBadge(S.file ? 'stageMain' : '');
     drawGhost();
+    if (S.mode === 'idle') snapMain();
   }
 
   // ── מסגור: גרירה וזום ישירות על התצוגה ───────────────────────────────────
@@ -284,6 +290,7 @@
     S.selIn = a; S.selOut = b;
     if (!fromTimeline) tl.setSelection(a, b);
     updateTimes();
+    updateBatchSum();   // הסיכום למטה ובלשונית תלוי באורך הקטע
   }
 
   // ── טיימליין ───────────────────────────────────────────────────────────
@@ -292,6 +299,7 @@
     onSelect: (a, b) => setSelection(a, b, true),
     onScrub: (on) => { S.scrubbing = on; },
     onZoom: () => { $('rngZoom').value = tl.getZoom01(); },
+    onRange: (key) => { const it = B.items.find((x) => x.text === key); if (it) showItem(it); },
   });
 
   src.addEventListener('seeked', () => { drawPreview(); tl.setPlayhead(src.currentTime); updateTimes(); });
@@ -409,13 +417,13 @@
     const parts = [];
     // פתיחה וסיום אף פעם לא נחתכים: יש בהם טקסט וכתובות שחייבים להיראות במלואם
     const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null };
-    if (S.brand.intro && introV.duration) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageIntro') });
+    if (useIntro()) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && logoOn(), look: brandLook, label: t('stageIntro') });
     ranges.forEach(([from, to], k) => parts.push({
-      video: src, from, to, logo: !!S.logoImg, look: frameLook(frame),
+      video: src, from, to, logo: logoOn(), look: frameLook(frame),
       label: ranges.length > 1 ? `${t('stageMain')} ${k + 1}/${ranges.length}` : t('stageMain'),
     }));
-    const ov = pickOutro();
-    if (ov) parts.push({ video: ov, from: 0, to: ov.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
+    const ov = useOutro();
+    if (ov) parts.push({ video: ov, from: 0, to: ov.duration, logo: S.set.logoAll && logoOn(), look: brandLook, label: t('stageOutro') });
     return parts;
   }
 
@@ -496,6 +504,8 @@
     if (!beginExport()) return;
     $('result').hidden = true;
     $('progress').hidden = false;
+    $('dockActions').hidden = true;
+    $('keepOpen').hidden = false;
     $('progFill').style.width = '0%';
 
     const parts = buildParts();
@@ -504,6 +514,8 @@
       $('progText').textContent = label ? t('exporting', Math.round(f * 100), label) : t('finishing');
     });
     $('progress').hidden = true;
+    $('dockActions').hidden = false;
+    $('keepOpen').hidden = true;
     endExport();
 
     if (r.err) { toast(t('exportFailed', r.err.message || r.err), 8000); return; }
@@ -521,6 +533,7 @@
     $('resultInfo').textContent = t('resultInfo', C.fmtBytes(r.blob.size), fmtTime(r.seconds), `${r.fmt.label} · ${r.W}×${r.H}`)
       + (r.fmt.warn ? `\n${t(r.fmt.warn)}` : '');
     $('result').hidden = false;
+    $('resultDlg').showModal();
     S.lastExport = { blob: r.blob, name, mime: r.fmt.mime, W: r.W, H: r.H, seconds: r.took, stats: r.stats };
     toast(t('done'));
   });
@@ -545,6 +558,7 @@
       const row = document.createElement('div');
       row.className = 'bitem';
       row.classList.toggle('cur', B.cur === it.text);
+      row.classList.toggle('off', B.off.has(it.text));
       const msgs = it.errors.map((k) => t(k));
       const warns = [];
       if (S.file && it.ranges.some(([, b]) => b > S.dur + 0.05)) msgs.push(t('bPastEnd', short(S.dur)));
@@ -557,7 +571,11 @@
       cb.type = 'checkbox';
       cb.checked = !bad && !B.off.has(it.text);
       cb.disabled = bad;
-      cb.addEventListener('change', () => { if (cb.checked) B.off.delete(it.text); else B.off.add(it.text); updateBatchSum(); });
+      cb.addEventListener('change', () => {
+        if (cb.checked) B.off.delete(it.text); else B.off.add(it.text);
+        row.classList.toggle('off', !cb.checked);
+        updateBatchSum();
+      });
       cb.addEventListener('click', (e) => e.stopPropagation());
       const n = document.createElement('span'); n.className = 'bn'; n.textContent = it.n || '!';
       const r = document.createElement('span'); r.className = 'br';
@@ -581,6 +599,13 @@
       it.row = row;
       box.appendChild(row);
     }
+    // תיבת הטקסט מקופלת כשיש רשימה, ונפתחת בכפתור "ערוך"
+    const has = B.items.length > 0;
+    $('batchEditBox').hidden = has && !B.editing;
+    $('btnBatchEdit').hidden = !has || B.editing;
+    $('btnBatchDone').hidden = !has || !B.editing;
+    $('batchTools').hidden = !has;
+    $('btnBatchClear').hidden = !has;
     updateBatchSum();
     syncFrameUI();
   }
@@ -589,6 +614,14 @@
   function markCur() {
     for (const it of B.items) it.row?.classList.toggle('cur', B.cur === it.text);
     frameChanged();
+    sendRanges();
+  }
+
+  /** הקטעים מהרשימה כפסים ממוספרים על הטיימליין */
+  function sendRanges() {
+    tl.setRanges(B.items.filter(okItem).flatMap((it) => it.ranges.map(([a, b]) => ({
+      a, b, n: it.n, key: it.text, on: !B.off.has(it.text), cur: B.cur === it.text,
+    }))));
   }
 
   function showItem(it) {
@@ -604,15 +637,37 @@
     $('rngZoom').value = tl.getZoom01();
   }
 
+  /** התחתית של הפאנל: מה ייווצר, והכפתור המתאים. וגם הסיכום בכל לשונית. */
   function updateBatchSum() {
     const c = chosen();
-    const any = B.items.length > 0;
-    $('batchSum').hidden = !any;
-    $('batchSum').textContent = any ? t('batchSum', c.length, short(c.reduce((s, it) => s + C.batch.length(it) + brandSeconds(), 0)))
-      + (B.items.some((it) => !okItem(it)) ? `\n${t('batchFixErrors')}` : '') : '';
-    $('btnBatchRun').hidden = !any;
-    $('btnBatchRun').textContent = c.length ? t('batchRunN', c.length) : t('batchRun');
-    $('btnBatchRun').disabled = !c.length;
+    const list = B.items.some((it) => it.n);
+    const fmt = `${platName()} ${S.set.format === 'source' ? t('fmtSource') : S.set.format}`;
+    const run = $('btnBatchRun'), one = $('btnExport');
+    run.hidden = !list;
+    run.textContent = c.length ? t('batchRunN', c.length) : t('batchNoneSelected');
+    run.disabled = !c.length;
+    one.textContent = list ? t('exportSel') : t('export');
+    one.classList.toggle('primary', !list);
+    one.classList.toggle('big', !list);
+    one.classList.toggle('secondary', list);
+    let sum;
+    if (!S.file) sum = t('dockNoVideo');
+    else if (list) {
+      sum = t('dockList', c.length, short(c.reduce((x, it) => x + C.batch.length(it) + brandSeconds(), 0)), fmt);
+      if (B.items.some((it) => !okItem(it))) sum += `\n${t('batchFixErrors')}`;
+    } else sum = t('dockOne', short(totalSeconds()), fmt);
+    $('dockSum').innerHTML = sum;
+    $('chkBatchAll').checked = B.items.filter(okItem).every((it) => !B.off.has(it.text));
+    sendRanges();
+    renderTabSums();
+  }
+
+  function renderTabSums() {
+    const c = chosen();
+    $('sumClips').textContent = B.items.some((it) => it.n) ? t('sumList', c.length) : S.file ? t('sumOne', short(S.selOut - S.selIn)) : '';
+    $('sumFormat').textContent = `${platName()} · ${S.set.format === 'source' ? t('fmtSource') : S.set.format}`;
+    const parts = [useIntro() && t('blkIntro'), useOutro() && t('blkOutro'), logoOn() && t('slotLogo')].filter(Boolean);
+    $('sumBrand').textContent = parts.length ? parts.join(' · ') : t('sumNone');
   }
 
   let batchTimer = null;
@@ -621,12 +676,19 @@
   $('inBatch').addEventListener('input', (e) => {
     if (/[\r\u2028\u2029]/.test(e.target.value)) e.target.value = normLines(e.target.value);
     S.set.batchText = e.target.value;
+    B.editing = true;   // לא לקפל את התיבה באמצע הקלדה
     clearTimeout(batchTimer);
     batchTimer = setTimeout(() => { renderBatch(); saveSettings(); }, 150);
   });
   $('btnBatchFile').addEventListener('click', () => $('batchInput').click());
+  $('btnBatchEdit').addEventListener('click', () => { B.editing = true; renderBatch(); $('inBatch').focus(); });
+  $('btnBatchDone').addEventListener('click', () => { B.editing = false; renderBatch(); });
+  $('chkBatchAll').addEventListener('change', (e) => {
+    for (const it of B.items.filter(okItem)) { if (e.target.checked) B.off.delete(it.text); else B.off.add(it.text); }
+    renderBatch();
+  });
   $('btnBatchClear').addEventListener('click', () => {
-    S.set.batchText = ''; $('inBatch').value = ''; B.status.clear(); B.off.clear(); B.cur = null;
+    S.set.batchText = ''; $('inBatch').value = ''; B.status.clear(); B.off.clear(); B.cur = null; B.editing = false;
     S.set.frames = {};
     renderBatch(); saveSettings(); drawPreview();
   });
@@ -638,6 +700,7 @@
     S.set.batchText = normLines(await f.text());
     $('inBatch').value = S.set.batchText;
     B.status.clear();
+    B.editing = false;
     renderBatch(); saveSettings();
     toast(t('batchFileRead', f.name, B.items.filter((it) => it.n).length));
   });
@@ -665,8 +728,11 @@
     B.cancel = false;
     S.lastBatch = [];
     $('inBatch').readOnly = true;
-    $('btnBatchRun').hidden = true;
+    $('dockActions').hidden = true;
     $('batchProg').hidden = false;
+    $('keepOpen').hidden = false;
+    document.body.classList.add('batching');
+    setTab('clips');
     const base = C.baseName(S.file.name);
     const suffix = plat() ? plat().id : S.set.format.replace(':', 'x');
     let done = 0;
@@ -707,6 +773,9 @@
     }
     $('batchProg').hidden = true;
     $('inBatch').readOnly = false;
+    $('dockActions').hidden = false;
+    $('keepOpen').hidden = true;
+    document.body.classList.remove('batching');
     endExport();
     renderBatch();
     toast(B.cancel ? t('cancelled') : t('batchDone', done), 5000);
@@ -728,9 +797,12 @@
     $('chkGuides').checked = S.set.guides;
     document.querySelectorAll('#segFormat button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.set.format));
     document.querySelectorAll('#corners button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.set.corner));
-    $('selFill').value = S.set.fill;
+    document.querySelectorAll('#segFill button').forEach((b) => b.classList.toggle('on', b.dataset.fill === S.set.fill));
     $('inFillColor').value = S.set.fillColor;
     $('inFillColor').hidden = S.set.fill !== 'color';
+    $('useIntro').checked = S.set.use.intro;
+    $('useOutro').checked = S.set.use.outro;
+    $('useLogo').checked = S.set.use.logo;
     $('rngFrameZoom').value = F().zoom;
     $('zoomVal').textContent = `${Math.round(F().zoom * 100)}%`;
     $('chkText').checked = S.set.textOn;
@@ -747,7 +819,7 @@
     $('chkLogoAll').checked = S.set.logoAll;
   }
 
-  function changed() { saveSettings(); sizePreview(); drawPreview(); updateTimes(); renderBatch(); }
+  function changed() { saveSettings(); sizePreview(); drawPreview(); updateTimes(); renderBatch(); renderStruct(); }
 
   $('segFormat').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -779,7 +851,10 @@
     else Object.assign(f, { px: 0.5, py: 0.5 });
     frameChanged();
   }));
-  $('selFill').addEventListener('change', (e) => { S.set.fill = e.target.value; syncControls(); changed(); });
+  $('segFill').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.set.fill = b.dataset.fill; syncControls(); changed();
+  });
   $('inFillColor').addEventListener('input', (e) => { S.set.fillColor = e.target.value; changed(); });
   $('chkText').addEventListener('change', (e) => { S.set.textOn = e.target.checked; syncControls(); changed(); });
   $('inTextTop').addEventListener('input', (e) => { S.set.textTop = e.target.value; changed(); });
@@ -848,6 +923,7 @@
     drawPreview();
     updateTimes();
     renderBatch();
+    renderStruct();
   }
 
   function renderBrandStatus() {
@@ -864,6 +940,7 @@
         if (S.brandFrom[kind] === 'folder') txt += ` · ${t('fromFolder')}`;
       }
       $(SLOT[kind].stat).textContent = txt;
+      document.querySelector(`.slot[data-slot="${kind}"]`).classList.toggle('user', S.brandFrom[kind] === 'user');
       document.querySelector(`.slot[data-slot="${kind}"]`).classList.toggle('set', !!b);
     }
   }
@@ -886,8 +963,64 @@
   document.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', async () => {
     const kind = b.dataset.clear;
     await C.store.set('brand.' + kind, null);
-    await applyBrand(kind, null);
+    // אם יש קובץ בתיקיית המיתוג, חוזרים אליו. ההחלטה אם להשתמש בו היא בתיבות הסימון.
+    const def = await folderBrand(kind);
+    await applyBrand(kind, def, def ? 'folder' : null);
+    toast(t(def ? 'backToDefault' : 'removed'));
   }));
+  for (const k of ['intro', 'outro', 'logo']) {
+    const id = 'use' + k[0].toUpperCase() + k.slice(1);
+    $(id).addEventListener('change', (e) => { S.set.use[k] = e.target.checked; changed(); });
+  }
+  // לחיצה על חלק בלי קובץ פותחת את בחירת הקובץ
+  for (const [blk, kind] of [['blkIntro', () => 'intro'], ['blkOutro', () => (outSize().H > outSize().W ? 'outroTall' : 'outro')]]) {
+    $(blk).addEventListener('click', (e) => {
+      if (!$(blk).classList.contains('empty')) return;
+      e.preventDefault();
+      document.querySelector(`[data-pick="${kind()}"]`).click();
+    });
+  }
+
+  /** "ממה כל סרטון בנוי": שלושה חלקים עם תמונה ותיבת סימון */
+  function copyThumb(from, to) {
+    const el = from?.querySelector('canvas, img');
+    to.innerHTML = '';
+    if (!el) { to.textContent = '+'; return; }
+    const c = document.createElement('canvas');
+    c.width = el.naturalWidth || el.width; c.height = el.naturalHeight || el.height;
+    c.getContext('2d').drawImage(el, 0, 0, c.width, c.height);
+    to.appendChild(c);
+  }
+  function snapMain() {
+    const to = $('bthMain');
+    let c = to.firstChild;
+    if (!(c instanceof HTMLCanvasElement)) { to.innerHTML = ''; c = document.createElement('canvas'); to.appendChild(c); }
+    const h = 108, w = Math.round((h * preview.width) / preview.height);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    c.getContext('2d').drawImage(preview, 0, 0, w, h);
+  }
+  function renderStruct() {
+    const hasI = !!(S.brand.intro && introV.duration);
+    const ov = pickOutro();
+    const blk = (id, has, on) => { $(id).classList.toggle('empty', !has); $(id).classList.toggle('off', has && !on); };
+    blk('blkIntro', hasI, S.set.use.intro);
+    blk('blkOutro', !!ov, S.set.use.outro);
+    $('useIntro').disabled = !hasI;
+    $('useOutro').disabled = !ov;
+    $('useIntro').checked = hasI && S.set.use.intro;
+    $('useOutro').checked = !!ov && S.set.use.outro;
+    copyThumb(hasI ? $('thumbIntro') : null, $('bthIntro'));
+    copyThumb(ov ? $(ov === outroTallV ? 'thumbOutroTall' : 'thumbOutro') : null, $('bthOutro'));
+    $('bstIntro').textContent = hasI ? t('seconds', introV.duration.toFixed(1)) : t('blkAdd');
+    $('bstOutro').textContent = ov ? `${t(ov.videoHeight > ov.videoWidth ? 'blkTall' : 'blkWide')} · ${t('seconds', ov.duration.toFixed(1))}` : t('blkAdd');
+    $('useLogo').disabled = !S.logoImg;
+    $('useLogo').checked = !!S.logoImg && S.set.use.logo;
+    $('useLogo').nextElementSibling.textContent = t(S.logoImg ? 'blkLogo' : 'blkNoLogo');
+    $('logoOpts').hidden = !S.logoImg;
+    $('logoOpts').classList.toggle('disabled', !logoOn());
+    snapMain();
+    renderTabSums();
+  }
 
   /** ברירות מחדל מתיקיית brand/ (רק כשהאתר מוגש מ-http, כי file:// חוסם fetch) */
   async function folderBrand(kind) {
@@ -929,10 +1062,21 @@
   $('btnZoomFit').addEventListener('click', () => { tl.zoomFit(); });
   $('btnZoomSel').addEventListener('click', () => { if (S.selOut > S.selIn) tl.zoomTo(S.selIn, S.selOut); });
 
+  // ── לשוניות ─────────────────────────────────────────────────────────────
+  function setTab(k) {
+    S.set.tab = k;
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === k));
+    document.querySelectorAll('.pane').forEach((p) => { p.hidden = p.dataset.pane !== k; });
+  }
+  document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => { setTab(b.dataset.tab); saveSettings(); }));
+
+  $('btnResultClose').addEventListener('click', () => $('resultDlg').close());
+  $('resultDlg').addEventListener('close', () => $('resultVideo').pause());
+
   // ── שפה ────────────────────────────────────────────────────────────────
   $('btnLang').addEventListener('click', () => {
     C.setLang(C.lang === 'he' ? 'en' : 'he');
-    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch();
+    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch(); renderStruct();
   });
 
   // ── אתחול ──────────────────────────────────────────────────────────────
@@ -941,7 +1085,9 @@
     const saved = await C.store.get('settings');
     if (saved) { delete saved.fit; delete saved.focus; Object.assign(S.set, saved); }   // fit/focus: לפני שהיה מסגור חופשי
     if (S.set.platform && C.platform(S.set.platform)?.format !== S.set.format) S.set.platform = null;
+    S.set.use = { intro: true, outro: true, logo: true, ...(S.set.use || {}) };
     syncControls();
+    setTab(S.set.tab || 'clips');
     renderBatch();
     applyVolume();
     sizePreview();
@@ -953,6 +1099,7 @@
       if (blob) await applyBrand(kind, blob, from);
     }
     renderBrandStatus();
+    renderStruct();
     document.body.classList.add('ready');
   })();
 })();

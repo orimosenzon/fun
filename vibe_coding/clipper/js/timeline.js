@@ -5,6 +5,7 @@
  *
  * אינטראקציות:
  *   סרגל            גרירה = הזזת סמן הניגון
+ *   פס הקטעים       לחיצה על קטע מהרשימה = בחירה שלו
  *   תמונות/גל       לחיצה = קפיצה; גרירה = קטע חדש; גרירת קצה = שינוי התחלה/סוף
  *                   (גרירה בתוך הקטע יוצרת קטע חדש ולא מזיזה אותו: כשהקטע הוא כל
  *                   הסרטון אין שום מקום "מחוצה לו", ובחירה מחדש היא הפעולה הנפוצה)
@@ -14,9 +15,9 @@
 window.C = window.C || {};
 
 C.Timeline = function (canvas, wrap, cb) {
-  const RULER = 24, THUMB = 56, WAVE = 38, GAP = 8, OVER = 14;
-  const H = RULER + THUMB + WAVE + GAP + OVER;
-  const TRACK_TOP = RULER, TRACK_BOT = RULER + THUMB + WAVE;
+  const RULER = 24, LANE = 18, THUMB = 56, WAVE = 38, GAP = 8, OVER = 14;
+  const H = RULER + LANE + THUMB + WAVE + GAP + OVER;
+  const LANE_TOP = RULER, TRACK_TOP = RULER + LANE, TRACK_BOT = TRACK_TOP + THUMB + WAVE;
   const OVER_TOP = TRACK_BOT + GAP;
   const MAX_PPS = 400;
   const EDGE_PX = 8;
@@ -30,6 +31,7 @@ C.Timeline = function (canvas, wrap, cb) {
   let selIn = 0, selOut = 0;
   let thumbs = [], thumbCount = 0, thumbAspect = 16 / 9;
   let peaks = null;
+  let ranges = [];   // קטעים מהרשימה: { a, b, n, key, on, cur }
   let drag = null;
   let dirty = true;
 
@@ -139,7 +141,7 @@ C.Timeline = function (canvas, wrap, cb) {
     if (xEnd < W) { ctx.fillStyle = '#15171c'; ctx.fillRect(xEnd, TRACK_TOP, W - xEnd, TRACK_BOT - TRACK_TOP); }
 
     // צורת גל
-    const wy = RULER + THUMB;
+    const wy = TRACK_TOP + THUMB;
     ctx.fillStyle = '#1a2a33';
     ctx.fillRect(0, wy, Math.min(W, xEnd), WAVE);
     if (peaks) {
@@ -180,6 +182,26 @@ C.Timeline = function (canvas, wrap, cb) {
       ctx.fillRect(xi, RULER - 4, xo - xi, 4);
     }
 
+    // פס הקטעים מהרשימה
+    ctx.fillStyle = '#181b21';
+    ctx.fillRect(0, LANE_TOP, W, LANE);
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    for (const r of [...ranges].sort((p, q) => p.cur - q.cur)) {
+      const x1 = t2x(r.a), x2 = t2x(r.b);
+      if (x2 < 0 || x1 > W) continue;
+      const w = Math.max(3, x2 - x1);
+      ctx.fillStyle = r.cur ? C_ACCENT : r.on ? '#3d6fb8' : '#3a3f4a';
+      ctx.fillRect(x1, LANE_TOP + 3, w, LANE - 6);
+      if (r.cur) { ctx.fillStyle = C_ACCENT + '22'; ctx.fillRect(x1, TRACK_TOP, w, TRACK_BOT - TRACK_TOP); }
+      if (w > 16) {
+        ctx.fillStyle = r.cur ? '#1a1400' : '#e7eaf0';
+        ctx.fillText(String(r.n), x1 + w / 2, LANE_TOP + LANE / 2 + 0.5);
+      }
+    }
+    ctx.textAlign = 'start';
+
     // סמן ניגון
     const xp = Math.round(t2x(playhead)) + 0.5;
     if (xp >= -6 && xp <= W + 6) {
@@ -202,6 +224,10 @@ C.Timeline = function (canvas, wrap, cb) {
     const k = W / dur;
     ctx.fillStyle = C_ACCENT + 'aa';
     ctx.fillRect(selIn * k, OVER_TOP + 3, Math.max(2, (selOut - selIn) * k), OVER - 6);
+    for (const r of ranges) {
+      ctx.fillStyle = r.cur ? C_ACCENT : r.on ? '#5b8fd6' : '#4a4f5c';
+      ctx.fillRect(r.a * k, OVER_TOP + 1, Math.max(2, (r.b - r.a) * k), 3);
+    }
     ctx.strokeStyle = '#dfe3ec';
     ctx.lineWidth = 1;
     ctx.strokeRect(viewStart * k + 0.5, OVER_TOP + 0.5, Math.max(4, viewLen() * k) - 1, OVER - 1);
@@ -218,6 +244,11 @@ C.Timeline = function (canvas, wrap, cb) {
   function zone(x, y) {
     if (y >= OVER_TOP) return { kind: 'over' };
     if (y < RULER) return { kind: 'ruler' };
+    if (y < TRACK_TOP) {
+      const t = x2t(x);
+      const r = ranges.find((q) => t >= q.a && t <= q.b) || ranges.find((q) => Math.abs(t2x(q.a) - x) < 4 || Math.abs(t2x(q.b) - x) < 4);
+      return r ? { kind: 'lane', key: r.key } : { kind: 'ruler' };
+    }
     if (selOut > selIn) {
       const xi = t2x(selIn), xo = t2x(selOut);
       if (Math.abs(x - xi) <= EDGE_PX && x <= (xi + xo) / 2) return { kind: 'in' };
@@ -226,7 +257,7 @@ C.Timeline = function (canvas, wrap, cb) {
     return { kind: 'track' };
   }
 
-  const CURSORS = { over: 'pointer', ruler: 'col-resize', in: 'ew-resize', out: 'ew-resize', track: 'crosshair' };
+  const CURSORS = { over: 'pointer', lane: 'pointer', ruler: 'col-resize', in: 'ew-resize', out: 'ew-resize', track: 'crosshair' };
 
   function setSel(a, b, fromUser) {
     a = C.clamp(a, 0, dur); b = C.clamp(b, 0, dur);
@@ -255,6 +286,7 @@ C.Timeline = function (canvas, wrap, cb) {
     const z = zone(x, y);
     canvas.setPointerCapture(e.pointerId);
     drag = { kind: z.kind, x0: x, t0: x2t(x), in0: selIn, out0: selOut, moved: false };
+    if (z.kind === 'lane') { drag = null; cb.onRange?.(z.key); return; }
     if (z.kind === 'over') centerOverview(x);
     else if (z.kind === 'ruler') { cb.onScrub?.(true); cb.onSeek?.(C.clamp(x2t(x), 0, dur)); }
   });
@@ -332,6 +364,7 @@ C.Timeline = function (canvas, wrap, cb) {
     setThumbCount(n) { thumbCount = n; thumbs = new Array(n); dirty = true; },
     setThumb(i, bmp) { thumbs[i] = bmp; dirty = true; },
     setPeaks(p) { peaks = p; dirty = true; },
+    setRanges(list) { ranges = list || []; dirty = true; },
     setSelection(a, b) { setSel(a, b, false); },
     setPlayhead(t, follow) {
       playhead = t;

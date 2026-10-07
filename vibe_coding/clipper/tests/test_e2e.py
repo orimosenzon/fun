@@ -53,6 +53,7 @@ with sync_playwright() as p:
     check(abs(dur - 30) < 0.2, f"משך המקור 30 שנ׳ (יצא {dur:.2f})")
 
     print("מיתוג")
+    page.click("[data-tab='brand']")
     for kind, f in [("logo", "logo.png"), ("intro", "intro.mp4"), ("outro", "outro.mp4")]:
         with page.expect_file_chooser() as fc:
             page.click(f'[data-pick="{kind}"]')
@@ -60,6 +61,12 @@ with sync_playwright() as p:
         page.wait_for_function(f"!!window.__clipper.brand.{kind}")
     page.wait_for_timeout(500)
     check("2.0" in page.inner_text("#statIntro"), "סטטוס הפתיחה מציג 2 שניות")
+    check(page.is_checked("#useIntro") and page.is_checked("#useOutro") and page.is_checked("#useLogo"),
+          "פתיחה, סיום ולוגו מסומנים במבנה הסרטון")
+    page.uncheck("#useIntro")
+    check("פתיחה" not in page.inner_text("#sumBrand"), f"בלי סימון, הפתיחה יוצאת מהסיכום ({page.inner_text('#sumBrand')})")
+    page.check("#useIntro")
+    page.click("[data-tab='clips']")
 
     print("בחירת קטע בגרירה על הטיימליין")
     box = page.locator("#timeline").bounding_box()
@@ -91,6 +98,7 @@ with sync_playwright() as p:
     check(page.inner_text("#totalLen").strip() == "0:08.00", f"אורך התוצאה 8 שנ׳ (יצא {page.inner_text('#totalLen')})")
 
     print("פלטפורמות")
+    page.click("[data-tab='format']")
     page.click('#platforms button[data-id="youtube"]')
     check(page.evaluate("__clipper.set.format") == "16:9", "יוטיוב בוחר 16:9")
     page.evaluate("C.platform('wa_status').maxSec = 5")
@@ -101,7 +109,7 @@ with sync_playwright() as p:
     check(not page.is_visible("#lenWarn"), "אין אזהרת אורך ברילס (8 שנ׳)")
     page.click('#segFormat button[data-v="9:16"]')
     check(page.evaluate("__clipper.set.platform") == "ig_reels", "לחיצה על אותו יחס משאירה את הפלטפורמה")
-    page.select_option("#selFill", "blur")
+    page.click("#segFill button[data-fill='blur']")
     page.wait_for_timeout(300)
     page.screenshot(path=OUT / "1_loaded.png")
 
