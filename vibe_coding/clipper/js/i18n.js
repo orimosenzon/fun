@@ -1,6 +1,6 @@
 /* i18n.js: עברית ואנגלית.
  * המשתמש העיקרי עובד בעברית והעוזרת שלו באנגלית, ולכן שתי השפות.
- * הבחירה נשמרת ב-localStorage; ברירת המחדל לפי שפת הדפדפן.
+ * הבחירה נשמרת ב-localStorage; ברירת המחדל אנגלית.
  */
 window.C = window.C || {};
 
@@ -332,7 +332,7 @@ C.STR = {
 
 C.lang = (() => {
   try { const l = localStorage.getItem('clipper.lang'); if (l === 'he' || l === 'en') return l; } catch {}
-  return (navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en';
+  return 'en';   // אנגלית כברירת מחדל: העוזרת של יורם עובדת באנגלית. עברית בכפתור, והבחירה נשמרת
 })();
 
 C.t = (key, ...args) => {
