@@ -43,12 +43,15 @@ with sync_playwright() as p:
     page.goto(f"http://127.0.0.1:{PORT}/index.html")
     page.wait_for_function("document.body.classList.contains('ready')")
     page.evaluate("C.setLang('he')")
+    page.click("[data-tab='brand']")
     check("outro_tall.mp4" in page.inner_text("#statOutroTall"), "הסיום לאורך נטען מתיקיית brand/")
     check("outro.mp4" in page.inner_text("#statOutro"), "הסיום לרוחב נטען מתיקיית brand/")
     page.set_input_files("#fileInput", str(HERE / "media" / "source.mp4"))
     page.wait_for_function("window.__clipper.dur > 0")
+    page.click("[data-tab='clips']")
     page.fill("#inIn", "0:02"); page.press("#inIn", "Enter")
     page.fill("#inOut", "0:03"); page.press("#inOut", "Enter")
+    page.click("[data-tab='format']")
     for fmt in ["9:16", "16:9"]:
         page.click(f"#segFormat button[data-v='{fmt}']")
         page.click("[data-frame='whole']")
@@ -60,6 +63,7 @@ with sync_playwright() as p:
             let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
             return btoa(s);
         }""")
+        page.click("#btnResultClose")
         f = OUT / f"outro_{fmt.replace(':', 'x')}.mp4"
         f.write_bytes(base64.b64decode(b64))
         files[fmt] = f

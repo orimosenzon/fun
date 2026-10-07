@@ -33,7 +33,7 @@ with sync_playwright() as p:
     page.evaluate("C.setLang('he')")
     # בלי בורר תיקייה: הבדיקה עוברת במסלול ההורדות, שעובד בכל דפדפן
     page.evaluate("delete window.showDirectoryPicker; window.showDirectoryPicker = undefined")
-    page.click("#btnBatchClear")
+    page.evaluate("document.getElementById('btnBatchClear').click()")
 
     print("טעינה מקובץ טקסט")
     lst = OUT / "list.txt"
@@ -55,18 +55,29 @@ with sync_playwright() as p:
     check("דומה מאוד לקטע 2" in rows.nth(3).inner_text(), "קטע 11–12 מסומן כדומה לקטע 2")
 
     print("הדבקה ועריכה")
+    check(not page.is_visible("#inBatch"), "אחרי טעינת קובץ תיבת הטקסט מקופלת")
+    page.click("#btnBatchEdit")
     page.fill("#inBatch", LIST + "1.05 -\n")
     page.wait_for_timeout(300)
     check("לא מצאתי כאן טווח" in page.locator(".bitem").last.inner_text(), "שורה עם זמן בלי טווח מקבלת הסבר")
     page.fill("#inBatch", LIST)
     page.wait_for_timeout(300)
     page.locator(".bitem").nth(3).locator("input").uncheck()
-    check("2 סרטונים" in page.inner_text("#batchSum"), f"סיכום: 2 סרטונים (יצא {page.inner_text('#batchSum')})")
+    check("2 סרטונים" in page.inner_text("#dockSum"), f"סיכום: 2 סרטונים (יצא {page.inner_text('#dockSum')})")
 
     print("לחיצה על שורה מציגה אותה בטיימליין")
     page.locator(".bitem").nth(1).locator(".br").click()
     s = page.evaluate("[__clipper.selIn, __clipper.selOut]")
     check(s == [10, 12], f"הבחירה 10–12 (יצא {s})")
+
+    print("לחיצה על פס של קטע בטיימליין")
+    page.locator(".bitem").nth(0).locator(".br").click()
+    page.click("#btnZoomFit")
+    tb = page.locator("#timeline").bounding_box()
+    dur = page.evaluate("__clipper.dur")
+    page.mouse.click(tb["x"] + tb["width"] * 11 / dur, tb["y"] + 24 + 9)
+    cur = page.evaluate("__batch.cur")
+    check(cur and cur.startswith("0.10-0.12"), f"הפס של קטע 2 בוחר אותו (יצא {cur!r})")
 
     print("ייצוא של כולם")
     page.click("#btnBatchRun")
