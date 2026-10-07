@@ -186,12 +186,22 @@
       <div class="slot" data-slot="outro">
         <div class="slot-thumb" id="thumbOutro"></div>
         <div class="slot-body">
-          <div class="slot-name" data-i18n="slotOutro">סרטון סיום</div>
+          <div class="slot-name" data-i18n="slotOutro">סיום לרוחב (16:9)</div>
           <div class="slot-status" id="statOutro"></div>
         </div>
         <button class="btn small" data-pick="outro" data-i18n="choose">בחר</button>
         <button class="btn small ghost" data-clear="outro" title="✕">✕</button>
       </div>
+      <div class="slot" data-slot="outroTall">
+        <div class="slot-thumb" id="thumbOutroTall"></div>
+        <div class="slot-body">
+          <div class="slot-name" data-i18n="slotOutroTall">סיום לאורך (9:16)</div>
+          <div class="slot-status" id="statOutroTall"></div>
+        </div>
+        <button class="btn small" data-pick="outroTall" data-i18n="choose">בחר</button>
+        <button class="btn small ghost" data-clear="outroTall" title="✕">✕</button>
+      </div>
+      <div class="hint" data-i18n="outroHint">כל סרטון מקבל את הסיום שמתאים לו: לאורך לרילס, טיקטוק ושורטס, לרוחב ליוטיוב ולריבוע.</div>
       <input type="file" id="brandInput" hidden>
 
       <div class="logo-opts">
@@ -258,6 +268,7 @@
 <video id="srcVideo" playsinline preload="auto" hidden></video>
 <video id="introVideo" playsinline preload="auto" hidden></video>
 <video id="outroVideo" playsinline preload="auto" hidden></video>
+<video id="outroTallVideo" playsinline preload="auto" hidden></video>
 
 <script src="js/i18n.js"></script>
 <script src="js/util.js"></script>
