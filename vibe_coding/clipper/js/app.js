@@ -5,6 +5,7 @@
   const src = $('srcVideo');
   const introV = $('introVideo');
   const outroV = $('outroVideo');
+  const outroTallV = $('outroTallVideo');
   const preview = $('preview');
   const pctx = preview.getContext('2d', { alpha: false });
 
@@ -13,7 +14,7 @@
     file: null,          // הסרטון הפתוח
     dur: 0,
     selIn: 0, selOut: 0,
-    brand: { logo: null, intro: null, outro: null },   // Blob לכל אחד
+    brand: { logo: null, intro: null, outro: null, outroTall: null },   // Blob לכל אחד
     brandFrom: {},       // 'folder' אם הגיע מתיקיית brand/ ולא מהמשתמש
     logoImg: null,
     set: {               // הגדרות שנשמרות בין ביקורים
@@ -82,7 +83,16 @@
   }
 
   /** האורך הכולל (פתיחה + קטע + סיום) */
-  const brandSeconds = () => (S.brand.intro && introV.duration ? introV.duration : 0) + (S.brand.outro && outroV.duration ? outroV.duration : 0);
+  const brandSeconds = () => (S.brand.intro && introV.duration ? introV.duration : 0) + (pickOutro()?.duration || 0);
+
+  /** הסיום שמתאים לפורמט: סרטון לאורך לפלט גבוה (9:16, 4:5), לרוחב לשאר.
+   *  לפי הצורה של הסרטון עצמו ולא לפי המשבצת, ואם יש רק אחד משתמשים בו. */
+  function pickOutro() {
+    const have = [['outroTall', outroTallV], ['outro', outroV]].filter(([k, v]) => S.brand[k] && v.duration).map(([, v]) => v);
+    if (!have.length) return null;
+    const { W, H } = outSize();
+    return have.find((v) => (v.videoHeight > v.videoWidth) === (H > W)) || have[0];
+  }
   function totalSeconds() { return Math.max(0, S.selOut - S.selIn) + brandSeconds(); }
 
   const tooLong = () => !!(S.file && plat()?.maxSec && totalSeconds() > plat().maxSec + 0.05);
@@ -404,7 +414,8 @@
       video: src, from, to, logo: !!S.logoImg, look: frameLook(frame),
       label: ranges.length > 1 ? `${t('stageMain')} ${k + 1}/${ranges.length}` : t('stageMain'),
     }));
-    if (S.brand.outro && outroV.duration) parts.push({ video: outroV, from: 0, to: outroV.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
+    const ov = pickOutro();
+    if (ov) parts.push({ video: ov, from: 0, to: ov.duration, logo: S.set.logoAll && !!S.logoImg, look: brandLook, label: t('stageOutro') });
     return parts;
   }
 
@@ -799,9 +810,10 @@
 
   // ── מיתוג ──────────────────────────────────────────────────────────────
   const SLOT = {
-    logo: { stat: 'statLogo', thumb: 'thumbLogo', accept: 'image/*' },
-    intro: { stat: 'statIntro', thumb: 'thumbIntro', accept: 'video/*' },
-    outro: { stat: 'statOutro', thumb: 'thumbOutro', accept: 'video/*' },
+    logo: { stat: 'statLogo', thumb: 'thumbLogo', accept: 'image/*', name: 'slotLogo' },
+    intro: { stat: 'statIntro', thumb: 'thumbIntro', accept: 'video/*', name: 'slotIntro', video: introV },
+    outro: { stat: 'statOutro', thumb: 'thumbOutro', accept: 'video/*', name: 'slotOutro', video: outroV },
+    outroTall: { stat: 'statOutroTall', thumb: 'thumbOutroTall', accept: 'video/*', name: 'slotOutroTall', video: outroTallV },
   };
 
   async function applyBrand(kind, blob, from) {
@@ -818,7 +830,7 @@
         } catch { S.brand.logo = null; }
       }
     } else {
-      const v = kind === 'intro' ? introV : outroV;
+      const v = SLOT[kind].video;
       if (blob) {
         try {
           await C.loadVideo(v, blob);
@@ -846,7 +858,7 @@
         const name = b.name || '';
         if (kind === 'logo') txt = name || 'PNG';
         else {
-          const v = kind === 'intro' ? introV : outroV;
+          const v = SLOT[kind].video;
           txt = `${name ? name + ' · ' : ''}${t('seconds', (v.duration || 0).toFixed(1))}`;
         }
         if (S.brandFrom[kind] === 'folder') txt += ` · ${t('fromFolder')}`;
@@ -869,7 +881,7 @@
     const want = pickKind === 'logo' ? 'image/' : 'video/';
     if (f.type && !f.type.startsWith(want)) { toast(t('badFile')); return; }
     await applyBrand(pickKind, f, 'user');
-    if (S.brand[pickKind]) { await C.store.set('brand.' + pickKind, f); toast(t('savedBrand', t(pickKind === 'logo' ? 'slotLogo' : pickKind === 'intro' ? 'slotIntro' : 'slotOutro'))); }
+    if (S.brand[pickKind]) { await C.store.set('brand.' + pickKind, f); toast(t('savedBrand', t(SLOT[pickKind].name))); }
   });
   document.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', async () => {
     const kind = b.dataset.clear;
