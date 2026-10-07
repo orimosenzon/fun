@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- קליפר: מספריים על ריבוע בצבע המותג -->
+  <rect width="64" height="64" rx="14" fill="#f5b301"/>
+  <g fill="none" stroke="#1a1400" stroke-width="5" stroke-linecap="round">
+    <circle cx="18" cy="44" r="8"/>
+    <circle cx="46" cy="44" r="8"/>
+    <path d="M23.5 38 L44 12"/>
+    <path d="M40.5 38 L20 12"/>
+  </g>
+  <circle cx="32" cy="27" r="2.6" fill="#1a1400"/>
+</svg>
