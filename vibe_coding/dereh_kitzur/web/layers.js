@@ -1311,7 +1311,10 @@ const Layers = (() => {
       // has none, and it still belongs in the list and the detail pane - it is
       // only the map that cannot show it. Filtering here rather than upstream
       // is what keeps those two facts from fighting.
-      features: layer.segments.filter((s) => s.path && s.path.length > 1).map((seg, i) => {
+      // The trail open in the shape editor is drawn by the editor instead
+      // (shape.js), and the stored line under it would read as a second trail.
+      features: layer.segments.filter((s) => s.path && s.path.length > 1
+          && s.id !== shapingId).map((seg, i) => {
         feature.set(seg.id, { src: srcId(layer.id), fid: i });
         return {
           type: 'Feature',
@@ -2093,6 +2096,7 @@ const Layers = (() => {
   /** Nothing on the map is for picking while these have the map's taps. */
   function mapIsBusy() {
     return (typeof Drafts !== 'undefined' && Drafts.isDrafting())
+      || (typeof Shape !== 'undefined' && Shape.isOn())
       || (typeof PlanHere !== 'undefined' && PlanHere.isArmed())
       || (typeof Route !== 'undefined' && Route && Route.isPicking());
   }
@@ -2250,6 +2254,18 @@ const Layers = (() => {
       drawnIds(layer).forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v);
       });
+    });
+  }
+
+  /** Take one trail off the map while the shape editor holds it, or put it
+   *  back with null. Only the drawing: it stays in the list and the index. */
+  let shapingId = null;
+  function setShaping(id) {
+    const prev = shapingId;
+    shapingId = id || null;
+    [prev, shapingId].forEach((x) => {
+      const l = x && layerOf(x);
+      if (l) refresh(l.id);
     });
   }
 
@@ -2798,7 +2814,7 @@ const Layers = (() => {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     resetMedia,
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, highlight, setArranging, setPending, setTheme,
+    addToMap, applyVisibility, refresh, highlight, setArranging, setShaping, setPending, setTheme,
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,

@@ -142,6 +142,28 @@
   <button id="draft-cancel" aria-label="ביטול">&times;</button>
 </div>
 
+<!-- Redrawing a trail that is already there (shape.js): drag its points, pull
+     new ones out of the ⊕ on each stretch, tap a point or a stretch for what
+     can be done to it. The bar holds what applies to the whole line. -->
+<div id="shape-bar" class="nav shape-bar" hidden role="status" aria-live="polite">
+  <div class="shape-row">
+    <div class="shape-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
+    <div class="nav-txt">
+      <strong><span id="shape-name"></span> · <span id="shape-len"></span></strong>
+      <span id="shape-state"></span>
+    </div>
+    <button id="shape-save" class="draft-btn strong" disabled>שמור</button>
+    <button id="shape-cancel" aria-label="יציאה בלי לשמור">&times;</button>
+  </div>
+  <div class="shape-acts">
+    <button id="shape-undo" class="shape-act" disabled title="בטל (Ctrl+Z)">↶ בטל</button>
+    <button id="shape-redo" class="shape-act" disabled title="חזור (Ctrl+Y)">↷ חזור</button>
+    <button id="shape-simplify" class="shape-act" hidden title="מוריד נקודות מיותרות בלי להזיז את הקו ביותר משני מטרים"></button>
+    <button id="shape-new" class="shape-act" hidden>✎ צייר מחדש</button>
+    <button id="shape-reset" class="shape-act" hidden>↺ חזרה למקור</button>
+  </div>
+</div>
+
 <!-- Correcting where the pardespedia places sit. The wiki has no coordinates at
      all, so most of these positions were guessed and a lot of them are wrong.
      This bar belongs to a session of fixing many of them, not one. -->
@@ -369,6 +391,7 @@
 <script src="layers.js"></script>
 <script src="draft.js"></script>
 <script src="arrange.js"></script>
+<script src="shape.js"></script>
 <!-- bike.js is the jet bike's physics and mesh (fable's), and it fetches
      Three.js itself, only when the bike is first flown. -->
 <script src="bike.js"></script>

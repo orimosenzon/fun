@@ -1101,7 +1101,8 @@ ${tracks}
           <span class="hint">${(seg.links || []).length
             ? plural(seg.links.length, 'קישור אחד', 'קישורים') : 'אתר, כתבה, ערך בוויקי'}</span></span></button>
         <button class="act" data-draft="edit"><span class="lbl">עריכת התוואי
-          <span class="hint">להוסיף או להסיר נקודות</span></span></button>
+          <span class="hint">${seg.trip ? 'לשרשר או להסיר שבילים'
+            : 'לגרור, להוסיף ולמחוק נקודות וקטעים'}</span></span></button>
       </div>
       ${extras}
       <h3>עוד</h3>
@@ -1344,8 +1345,13 @@ ${tracks}
         if (act === 'submit') return askSend(seg);
         if (act === 'video') return addVideo(seg);
         if (act === 'edit') {
-          deselect();
-          startEditor(seg.mode === 'walk' ? 'draw' : seg.mode, seg);
+          // A trip is a recipe and goes back to the chaining editor; any
+          // other line opens in the shape editor (shape.js), where its points
+          // can be dragged, added and deleted rather than only appended.
+          if (seg.trip || !Shape.canShape(seg)) {
+            deselect();
+            startEditor(seg.mode === 'walk' ? 'draw' : seg.mode, seg);
+          } else Shape.open(seg);
           return;
         }
         if (act === 'rename') {
@@ -1361,6 +1367,36 @@ ${tracks}
         }
       });
     });
+  }
+
+  /** The shape editor's answer for a draft (see shape.js). One piece replaces
+   *  the line; several mean the trail was cut, and each extra piece becomes a
+   *  draft of its own with the same name and a number, the way Store.reshape
+   *  treats a published trail. The photos stay with the longest. */
+  async function reshape(id, pieces) {
+    const rec = rows.find((r) => r.id === id);
+    if (!rec) throw new Error('הטיוטה כבר לא נמצאת במכשיר.');
+    const sorted = pieces.filter((p) => p.length > 1)
+      .sort((a, b) => pathLength(b) - pathLength(a));
+    if (!sorted.length) throw new Error('אין תוואי לשמור.');
+    rec.path = sorted[0];
+    rec.updated = Date.now();
+    await put(rec);
+    for (let k = 1; k < sorted.length; k++) {
+      await put({
+        id: 'draft-' + Date.now().toString(36) + '-' + k,
+        name: `${rec.name} (${k + 1})`,
+        note: rec.note || '',
+        path: sorted[k],
+        mode: rec.mode === 'walk' ? 'walk' : 'draw',
+        layer: rec.layer || '',
+        color: rec.color || '',
+        created: Date.now() + k,
+        updated: Date.now(),
+        photos: []
+      });
+    }
+    await reload();
   }
 
   /* ---------- wiring ---------- */
@@ -1469,5 +1505,5 @@ ${tracks}
   }
 
   return { init, restore, detailExtras, wireDetail, share, isDrafting: () => !!ed,
-           paintEditor, stop: () => stopEditor() };
+           paintEditor, reshape, stop: () => stopEditor() };
 })();
