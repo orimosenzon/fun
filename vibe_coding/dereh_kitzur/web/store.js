@@ -868,6 +868,67 @@ const Store = (() => {
     if (doc.trips) doc.trips = doc.trips.filter((t) => t.id !== id);
   }, `הסרת שביל: ${name}`));
 
+  /** A published trail's line, redrawn in the shape editor (shape.js).
+   *
+   *  `pieces` is one line or several. Several means the editor cut the trail -
+   *  a stretch in the middle was deleted, or it was split on purpose - and the
+   *  answer is one trail per piece: the longest keeps the id, and with it the
+   *  photos, the links, the trips that walk it and every link anybody shared;
+   *  the rest become trails of their own, named after it, with nothing attached
+   *  yet. Writing several lines into one trail is not an option, because
+   *  everything downstream - navigation, the router, the export - reads `path`
+   *  as one continuous walk.
+   *
+   *  The street names in `connects` describe where the two entrances are. Once
+   *  an end has moved further than a front garden they describe somewhere else,
+   *  and a stale name is worse than none: the detail page then falls back to
+   *  "כניסה 1". */
+  async function reshape(id, pieces, name) {
+    const clean = (pieces || [])
+      .map((p) => p.map(([lat, lng]) => [+(+lat).toFixed(6), +(+lng).toFixed(6)]))
+      .filter((p) => p.length > 1)
+      .sort((a, b) => Layers.pathLength(b) - Layers.pathLength(a));
+    if (!clean.length) throw new Error('אין תוואי לשמור.');
+    const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    const ends = (p) => [{ lat: p[0][0], lng: p[0][1] },
+                         { lat: p[p.length - 1][0], lng: p[p.length - 1][1] }];
+    const fit = (seg, p) => {
+      seg.path = p;
+      seg.length = Layers.pathLength(p);
+      seg.entries = ends(p);
+    };
+    const doc = await withTrails((d) => {
+      const seg = (d.segments || []).find((s) => s.id === id);
+      if (!seg) throw new Error('השביל כבר לא במסד.');
+      const was = seg.path && seg.path.length ? ends(seg.path) : [];
+      fit(seg, clean[0]);
+      if (was.length && (Layers.metres([was[0].lat, was[0].lng], clean[0][0]) > 25
+          || Layers.metres([was[1].lat, was[1].lng], clean[0][clean[0].length - 1]) > 25)) {
+        seg.connects = [];
+      }
+      seg.reshaped = { by: named(), at: now };
+      clean.slice(1).forEach((p, k) => {
+        const part = {
+          id: 'app-' + Date.now().toString(36) + k,
+          name: `${seg.name} (${k + 2})`,
+          note: seg.note || '',
+          photos: [],
+          links: [],
+          connects: [],
+          origin: 'app',
+          mode: 'split',
+          added: now,
+          by: named()
+        };
+        if (seg.layer) part.layer = seg.layer;
+        if (seg.color) part.color = seg.color;
+        fit(part, p);
+        d.segments.push(part);
+      });
+    }, clean.length > 1 ? `פיצול שביל: ${name}` : `עדכון תוואי: ${name}`);
+    return absolutise(doc);
+  }
+
   const rename = async (id, name, note) => absolutise(await withTrails((doc) => {
     const it = find(doc, id);
     if (it) { it.name = name; it.note = note; }
@@ -1375,7 +1436,7 @@ const Store = (() => {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, setName, enable, disable, resume, writable,
-    publish, publishTrip, remove, rename, setLinks, setNote, setColor,
+    publish, publishTrip, remove, reshape, rename, setLinks, setNote, setColor,
     addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,

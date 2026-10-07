@@ -279,6 +279,7 @@ if (hasGL) {
   }
 }
 
+let mapLoaded = false;     // see the 'load' listener below and the wait in boot()
 const map = hasGL ? new maplibregl.Map({
   container: 'map',
   style: BASEMAPS[0].style,
@@ -314,6 +315,8 @@ if (map) {
     onRemove() {}
   }, 'top-left');
   window.__map = map;   // handle for debugging and for the browser tests
+  // 'load' fires once, and boot() may only get to wait for it afterwards.
+  map.once('load', () => { mapLoaded = true; });
 }
 
 let DATA = null;          // the trails document, for its source link and bounds
@@ -941,6 +944,8 @@ function editorBlock(it, layer) {
     <div class="acts">
       <button class="act" data-pub="rename"><span class="lbl">שינוי שם והערה
         <span class="hint">השם, והתיאור שמתחתיו</span></span></button>
+      ${Shape.canShape(it) ? `<button class="act" data-pub="shape"><span class="lbl">עריכת התוואי
+        <span class="hint">לגרור נקודות, להוסיף ולמחוק קטעים, להאריך או לפצל</span></span></button>` : ''}
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
@@ -1482,6 +1487,7 @@ function wirePublished(it) {
         if (act === 'move') { moveForm(it); return; }
         if (act === 'colour') { colourForm(it); return; }
         if (act === 'rename') { renameForm(it); return; }
+        if (act === 'shape') { Shape.open(it); return; }
 
         if (act === 'remove') {
           if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
@@ -3250,7 +3256,11 @@ async function boot() {
   Store.resume().then(editorChanged);
 
   if (map) {
-    await new Promise((done) => (map.isStyleLoaded() ? done() : map.once('load', done)));
+    // Not isStyleLoaded() alone: it is also false while tiles are loading, so
+    // trails data that arrived after 'load' but before the tiles waited here
+    // for a 'load' that had already happened, and the trails never drew
+    // (found 7/10/2026, reloading a page that had panned).
+    await new Promise((done) => (mapLoaded || map.isStyleLoaded() ? done() : map.once('load', done)));
     // A link that carries a camera is somebody saying "look at this". It wins
     // over the opening view, which is only ever a guess at where to start.
     const view = urlView();
@@ -3290,7 +3300,9 @@ async function boot() {
   // Last, and outside the `if (map)`: reopening an interrupted recording draws
   // on the map, so it has to come after the style and the layers are up, and it
   // still has to happen on a browser that never got a map at all.
-  Drafts.restore();
+  // The shape editor's mirror names a draft or a published trail, so it waits
+  // for the drafts; editorChanged asks again once an editor is confirmed.
+  Drafts.restore().then(() => Shape.restore());
 }
 
 let askedFor = null;        // `?sel=` from the link, not yet honoured
@@ -3312,6 +3324,9 @@ function editorChanged() {
   // answer from the worker. Once only: a second refusal is a real one.
   if (askedFor && !selectedId && Layers.item(askedFor)) select(askedFor, true);
   askedFor = null;
+  // Editing a published line is an editor's, and leaving edit mode leaves it.
+  if (Shape.kind() === 'trail' && !Store.isEditor()) Shape.close(true);
+  Shape.restore();
 }
 
 /** Show the shared dataset again after a write, so the trail reappears as an
@@ -3824,6 +3839,7 @@ function wireControls() {
   Swatches.wire(el('form-sheet'));
 
   Arrange.wire();
+  Shape.wire();
 
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
@@ -3928,7 +3944,7 @@ function wireControls() {
     if (Route && Route.isOn() && Route.tapAlt(e.point)) return;
     // While drafting or arranging, a tap on the map means something other than
     // "clear the selection".
-    if (!selectedId || Drafts.isDrafting() || Arrange.isOn()) return;
+    if (!selectedId || Drafts.isDrafting() || Arrange.isOn() || Shape.isOn()) return;
     const hits = Layers.list
       .map((l) => `hit-${l.id}`)
       .filter((id) => map.getLayer(id));

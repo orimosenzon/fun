@@ -2043,6 +2043,148 @@ body.craft-bike #craft .craft-bal { display: block; }
 .arranging { --panel-h: 128px; }
 .arranging .maplibregl-ctrl-top-left { margin-top: 96px; }
 
+/* ---------- reshaping a trail (shape.js) ----------
+ *
+ * Orange, because it is the one bar that changes a line which is already on
+ * everybody's map: the drafts are purple, the route blue, the arranging pins
+ * violet. The line being edited is the same orange with a white casing, so it
+ * reads on the streets and on the satellite alike. */
+
+.shape-bar {
+  background: #d84315;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.shape-bar.bad { background: #8e2a0b; }
+.shape-row { display: flex; align-items: center; gap: 10px; }
+.shape-bar .draft-btn.strong { color: #d84315; }
+
+.shape-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .2);
+}
+
+.shape-ic svg { width: 18px; height: 18px; fill: #fff; }
+
+.shape-bar .nav-txt strong {
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shape-bar .nav-txt strong span { display: inline; font-size: inherit; opacity: 1; }
+
+/* The hint is the manual, so it may take two lines rather than be cut off. */
+#shape-state {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+#shape-cancel {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .17);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.shape-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.shape-act {
+  border: 0;
+  border-radius: 9px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, .18);
+  cursor: pointer;
+}
+
+.shape-act[hidden] { display: none; }
+.shape-act[disabled] { opacity: .4; cursor: default; }
+
+.shaping { --panel-h: 96px; }
+.shaping .pin { pointer-events: none; }
+.shaping .maplibregl-ctrl-top-left { margin-top: 104px; }
+body.shaping .topbar, body.shaping .menu { display: none; }
+
+.shape-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 440;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.shape-svg polyline, .shape-svg line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.shape-svg .sh-orig { stroke: #455a64; stroke-width: 2.5; stroke-dasharray: 5 6; stroke-opacity: .7; }
+.shape-svg .sh-case { stroke: #fff; stroke-width: 9; stroke-opacity: .9; }
+.shape-svg .sh-line { stroke: #ff6d00; stroke-width: 5; }
+.shape-svg .sh-sel-edge { stroke: #d50000; stroke-width: 7; }
+.shape-svg .sh-band { stroke: #ff6d00; stroke-width: 3; stroke-dasharray: 6 6; }
+
+/* Only the handles take the pointer; everywhere else the map pans as usual. */
+.shape-svg g { pointer-events: all; cursor: grab; touch-action: none; }
+.shape-svg .hit { fill: transparent; }
+.shape-svg .sh-v .dot { fill: #fff; stroke: #ff6d00; stroke-width: 2.5; }
+.shape-svg .sh-v.end .dot { fill: #ff6d00; stroke: #fff; stroke-width: 2.5; }
+.shape-svg .sh-v.on .dot { fill: #d50000; stroke: #fff; stroke-width: 3; }
+.shape-svg .sh-v.active .dot { fill: #fff; stroke: #ff6d00; stroke-width: 4; }
+.shape-svg .sh-mid .dot { fill: rgba(255, 255, 255, .85); stroke: #ff6d00; stroke-width: 1.5; }
+.shape-svg .sh-mid path { stroke: #e65100; stroke-width: 1.8; stroke-linecap: round; }
+.shape-svg .sh-mid { opacity: .85; }
+.shape-svg .sh-mid:hover { opacity: 1; }
+.shape-svg .sh-snap { fill: none; stroke: #00c853; stroke-width: 3; }
+body.sh-dragging, body.sh-dragging .shape-svg g { cursor: grabbing; }
+
+/* The few things that can be done to what is selected, next to it. */
+.shape-pop {
+  position: absolute;
+  z-index: 445;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #263238;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+  white-space: nowrap;
+}
+
+.shape-pop[hidden] { display: none; }
+
+.shape-pop button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shape-pop button:hover { background: rgba(255, 255, 255, .12); }
+.shape-pop button.strong { background: #ff6d00; }
+
 /* ---------- a draggable place marker ---------- */
 
 /* Built like .pin above, and for the same reason: the element is the point,
