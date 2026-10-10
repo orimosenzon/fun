@@ -586,7 +586,9 @@ const Drafts = (() => {
     if (ed.mode === 'walk') {
       state = ed.paused ? 'מושהה. לחץ המשך כדי לחזור להקליט.'
         : (ed.path.length ? `מקליט · ${ed.path.length} נקודות` : 'מחפש מיקום מדויק…');
-      if (ed.weak && !ed.paused) state = 'הקליטה פועלת, אבל הדיוק חלש כרגע…';
+      // The number is what tells "the GPS is warming up" (it falls) apart
+      // from "this phone only gives a rough location" (it sits in hundreds).
+      if (ed.weak && !ed.paused) state = `מחכה לדיוק טוב יותר (±${ed.acc} מ׳)…`;
     } else if (ed.mode === 'trip') {
       const n = (ed.uses || []).length;
       state = ed.gap
@@ -611,6 +613,87 @@ const Drafts = (() => {
     el('draft-pause').hidden = ed.mode !== 'walk';
     el('draft-pause').textContent = ed.paused ? 'המשך' : 'השהה';
     el('draft-done').disabled = ed.path.length < 2;
+  }
+
+  /* ---------- the walk log ----------
+   *
+   * Recording a walk is the one thing here that cannot be tried at a desk, so
+   * every fix the phone hands over is written down on the phone, with what the
+   * recorder made of it. Open the app with ?gpslog to read the log, copy it or
+   * share it. It stays on this device: it is a trace of where somebody walked,
+   * and nothing sends it anywhere unless they press share. */
+
+  const GPS_LOG = 'dk.gpslog.v1';
+  const GPS_LOG_MAX = 800;          // lines; about an hour of walking
+
+  function glog(...parts) {
+    try {
+      const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      const lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]');
+      lines.push(`${t} ${parts.join(' ')}`);
+      localStorage.setItem(GPS_LOG, JSON.stringify(lines.slice(-GPS_LOG_MAX)));
+    } catch (err) {
+      /* a log is never allowed to be why the recording fails */
+    }
+  }
+
+  function showGpsLog() {
+    let lines = [];
+    try { lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]'); } catch (err) { /* empty */ }
+    const text = lines.length ? lines.join('\n') : '(הלוג ריק. עוד לא הוקלטה הליכה בטלפון הזה.)';
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;color:#111;'
+      + 'display:flex;flex-direction:column;padding:12px;gap:8px';
+    box.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<button data-a="share">שתף</button><button data-a="copy">העתק</button>'
+      + '<button data-a="clear">נקה</button><button data-a="close">סגור</button></div>'
+      + '<pre dir="ltr" style="flex:1;overflow:auto;margin:0;font:11px/1.4 monospace;'
+      + 'white-space:pre-wrap;background:#f4f4f4;padding:8px"></pre>';
+    box.querySelector('pre').textContent = text;
+    box.addEventListener('click', async (e) => {
+      const a = e.target.dataset && e.target.dataset.a;
+      if (a === 'close') box.remove();
+      if (a === 'clear' && confirm('למחוק את הלוג?')) {
+        try { localStorage.removeItem(GPS_LOG); } catch (err) { /* nothing to drop */ }
+        box.remove();
+      }
+      if (a === 'copy') {
+        try { await navigator.clipboard.writeText(text); e.target.textContent = 'הועתק'; }
+        catch (err) { alert('ההעתקה לא הצליחה. אפשר לסמן את הטקסט ידנית.'); }
+      }
+      if (a === 'share') {
+        try { await navigator.share({ title: 'לוג GPS - דרך קיצור', text }); }
+        catch (err) { /* cancelled, or no share sheet here */ }
+      }
+    });
+    document.body.appendChild(box);
+  }
+
+  /* A phone dims and locks its screen after half a minute, and a locked
+   * screen stops a web page from hearing the GPS at all. So the screen is
+   * held on for as long as a walk is being recorded. The browser lets go of
+   * the hold whenever the tab is hidden, so it is taken again on return. */
+  async function holdScreen() {
+    if (!ed || ed.mode !== 'walk' || ed.lock || document.hidden) return;
+    if (!('wakeLock' in navigator)) { glog('wakelock unsupported'); return; }
+    const mine = ed;
+    try {
+      const lock = await navigator.wakeLock.request('screen');
+      if (ed !== mine) { lock.release(); return; }
+      ed.lock = lock;
+      glog('wakelock on');
+      lock.addEventListener('release', () => {
+        glog('wakelock released');
+        if (mine.lock === lock) mine.lock = null;
+      });
+    } catch (err) {
+      glog('wakelock failed', err.name, err.message);
+    }
+  }
+
+  function onVisibility() {
+    glog('visibility', document.visibilityState);
+    if (!document.hidden) holdScreen();
   }
 
   function startEditor(mode, existing) {
@@ -672,31 +755,57 @@ const Drafts = (() => {
       return;
     }
 
+    glog('---- walk start', existing ? `resumed ${ed.path.length}pts` : 'new',
+      `visibility=${document.visibilityState}`, navigator.userAgent);
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((p) => glog('permission', p.state), () => {});
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    holdScreen();
+
     ed.watch = navigator.geolocation.watchPosition((pos) => {
       const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
+      const age = Date.now() - pos.timestamp;
+      const note = (verdict) => glog('fix', `acc=${Math.round(acc)}`,
+        `${lat.toFixed(5)},${lng.toFixed(5)}`, `age=${age}ms`, verdict);
       here = { lat, lng };
       drawMe();
       if (map && ed.path.length < 2) map.easeTo({ center: [lng, lat], zoom: 18, duration: 500 });
+      // Past the first points the map is the walker's to pan, so it only
+      // follows once they have walked off the edge of it.
+      else if (map && !map.getBounds().contains([lng, lat])) map.easeTo({ center: [lng, lat], duration: 500 });
 
       // A vague fix is worse than no fix: it bends the trail sideways by more
       // than the trail is wide, and that error is then stored for good.
+      ed.acc = Math.round(acc);
       ed.weak = acc > MAX_ACC_M;
-      if (ed.paused || ed.weak) { paintBar(); return; }
+      if (ed.paused || ed.weak) { note(ed.paused ? 'paused' : 'weak'); paintBar(); return; }
 
       const last = ed.path[ed.path.length - 1];
       if (last && distance({ lat: last[0], lng: last[1] }, { lat, lng }) < MIN_STEP_M) {
+        note('still');
         paintBar();
         return;                       // standing still, not walking
       }
       ed.path.push([+lat.toFixed(6), +lng.toFixed(6)]);
+      note(`push #${ed.path.length}`);
       paintEditor();
-    }, () => {
-      el('draft-state').textContent = 'אין גישה למיקום. צריך לאשר, ורק מעל https.';
+    }, (err) => {
+      glog('error', `code=${err.code}`, err.message);
+      // A timeout is not the end of a watch: the phone keeps looking, and a
+      // fix that arrives later repaints the bar over this text.
+      el('draft-state').textContent = err.code === 1
+        ? 'אין הרשאה למיקום. צריך לאשר אותה בהגדרות הדפדפן.'
+        : 'הטלפון עדיין לא מוצא מיקום. ממשיך לחפש…';
       el('draft-bar').classList.add('paused');
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
   }
 
   function stopEditor(quiet) {
+    if (ed && ed.mode === 'walk') glog('---- walk stop', `${ed.path.length}pts`);
+    document.removeEventListener('visibilitychange', onVisibility);
+    if (ed && ed.lock) { const lock = ed.lock; ed.lock = null; lock.release().catch(() => {}); }
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);
     if (ed && ed.offTap) ed.offTap();
     ed = null;
@@ -1490,6 +1599,7 @@ ${tracks}
 
   function init() {
     wire();
+    if (new URLSearchParams(location.search).has('gpslog')) showGpsLog();
     keepStorage();                    // not awaited: the drafts must not wait on it
     // Held so that restore(), which the app calls later and from outside, can
     // wait for the stored drafts rather than race them.
