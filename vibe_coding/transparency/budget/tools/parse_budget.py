@@ -20,7 +20,7 @@ import sys
 import pdfplumber
 
 HEB = re.compile(r'[֐-׿]')
-NUM = re.compile(r'^-?[\d,]+\.\d\d$')
+NUM = re.compile(r'^-?\d{1,3}(,\d{3})*(\.\d\d)?$')
 CODE = re.compile(r'^\d{10}$')
 
 
@@ -40,31 +40,105 @@ def rows_of(words):
     return rows
 
 
-def columns(words):
-    """מיקום העמודות לפי הכותרת. None אם זה לא עמוד דוח רגיל."""
-    cols = {}
-    for w in words:
-        t = fix(w['text'])
-        if 'הצעת_תקציב' in t:
-            cols['p'] = w['x1']
-        elif 'תחזית_ביצוע' in t:
-            cols['f_prev'] = w['x1']
-        elif 'הפרש' in t:
-            cols['diff'] = w['x1']
-        elif t.startswith('תקציב_'):
-            cols['b_prev'] = w['x1']
-        elif t == 'משרות':
-            cols['jobs'] = w['x1']
-            cols['_details_edge'] = w['x0'] - 2
-        elif t == 'כרטיס':
-            cols['_code_x0'] = w['x0'] - 25
-    return cols if {'p', 'f_prev', 'b_prev', 'jobs'} <= cols.keys() else None
+HEADER_TOP = (80, 115)
+
+
+def header_words(words):
+    return [(fix(w['text']), w) for w in words if HEADER_TOP[0] < w['top'] < HEADER_TOP[1]]
+
+
+def is_report_page(words):
+    return any(t == 'כרטיס' for t, _ in header_words(words))
+
+
+def book_columns(pdf):
+    """רצועות ה-x של עמודות המספרים בספר כולו.
+
+    הכותרות משתנות בין שנים ("הצעת_תקציב_2026" מול "הצעת" ו"תקציב" בנפרד, "משרות"
+    מול "תקן כ"א"), וגם היישור: ב-2026 המספרים מיושרים לימין, ב-2013 לשמאל. לכן
+    בונים היסטוגרמה של כל הפיקסלים שמספרים תופסים, וכל רצף צפוף הוא עמודה.
+    מימין לשמאל העמודות הן: תקציב השנה הקודמת, תחזית ביצוע (אם יש), ההצעה,
+    הפרש (אם יש), משרות. מהכותרת לוקחים רק אילו מהן קיימות.
+    """
+    hist, head, toks = {}, {}, []
+    for page in pdf.pages:
+        words = page.extract_words()
+        if not is_report_page(words):
+            continue
+        for t, w in header_words(words):
+            if t == 'כרטיס':
+                head['_code_x0'] = w['x0'] - 25
+                head.setdefault('_kartis_all', []).append(round(w['x0']))
+            elif t in ('פרטים', 'הערות'):
+                head['_details_edge'] = w['x1'] + 2
+                head['_details_hdr'] = (w['x0'], w['x1'])
+            elif 'תחזית' in t:
+                head['has_f'] = True
+            elif 'הפרש' in t:
+                head['has_diff'] = True
+        for w in words:
+            if NUM.match(w['text']) and w['top'] > HEADER_TOP[1] and w['x1'] < head.get('_code_x0', 1e9) - 90:
+                for x in range(int(w['x0']), int(w['x1']) + 1):
+                    hist[x] = hist.get(x, 0) + 1
+                toks.append((w['x0'], w['x1'], abs(float(w['text'].replace(',', '')))))
+    ks = head['_kartis_all']
+    head['_kartis'] = max(set(ks), key=ks.count)
+    head['_code_x0'] = head['_kartis'] - 25
+    thr = max(hist.values()) * 0.02
+    runs = []
+    for x in sorted(hist):
+        if hist[x] < thr:
+            continue
+        if runs and x - runs[-1][1] <= 4:
+            runs[-1][1] = x
+        else:
+            runs.append([x, x])
+    # מספרים בתוך טקסט ההערות ("₪ 1578") הם לא עמודה
+    dh = head.get('_details_hdr')
+    runs = [r for r in runs if r[1] - r[0] >= 6 and not (dh and r[0] < dh[1] and r[1] > dh[0])]
+    runs.sort(key=lambda r: -r[1])
+
+    def median(r):
+        v = sorted(val for x0, x1, val in toks if x0 < r[1] and x1 > r[0] and val)
+        return v[len(v) // 2] if v else 0
+    # עמודת המשרות: המספרים בה קטנים (2.00, 15.00), ותמיד היא השמאלית
+    jobs = runs[-1] if runs and median(runs[-1]) < 1000 else None
+    money = [r for r in runs if r is not jobs]
+    if len(money) == 4:
+        names = ['b_prev', 'f_prev', 'p', 'diff']
+    elif len(money) == 3:
+        names = ['b_prev', 'p', 'diff'] if head.get('has_diff') and not head.get('has_f') else ['b_prev', 'f_prev', 'p']
+    elif len(money) == 2:
+        names = ['b_prev', 'p']
+    else:
+        raise ValueError(f'מצאתי {len(money)} עמודות סכומים {runs}')
+    cols = dict(zip(names, (tuple(r) for r in money)))
+    if jobs:
+        cols['jobs'] = tuple(jobs)
+    cols['_code_x0'] = head['_code_x0']
+    cols['_kartis'] = head['_kartis']
+    left = cols.get('jobs', money[-1])[0]
+    # בדרך כלל ההערות משמאל למשרות, אבל ב-2021 המשרות בקצה השמאלי וההערות ביניהן
+    cols['_details_edge'] = head.get('_details_edge', left - 4)
+    return cols
+
+
+def col_for(cols, w):
+    """העמודה שהמילה חופפת לה הכי הרבה."""
+    best, ov = None, 0
+    for c, v in cols.items():
+        if c.startswith('_'):
+            continue
+        o = min(w['x1'], v[1]) - max(w['x0'], v[0])
+        if o > ov:
+            best, ov = c, o
+    return best if ov >= min(4, (w['x1'] - w['x0']) / 2) else None
 
 
 def parse_row(row, cols):
     r = {'nums': {}, 'name': [], 'details': [], 'code': None, 'total': False}
-    numeric = {c: x for c, x in cols.items() if not c.startswith('_')}
-    num_edge = max(numeric.values()) + 8
+    # מספרים מיושרים לשמאל (2013) גולשים מעבר לרצועה, ולכן מרווח נדיב
+    num_edge = cols['b_prev'][1] + 30
     signs, nums = [], []
     for w in sorted(row, key=lambda w: -w['x1']):
         t = w['text']
@@ -73,8 +147,8 @@ def parse_row(row, cols):
         elif CODE.match(t) and w['x0'] > cols['_code_x0']:
             r['code'] = t
         elif NUM.match(t) and w['x1'] < num_edge:
-            c = min(numeric, key=lambda c: abs(numeric[c] - w['x1']))
-            if abs(numeric[c] - w['x1']) < 14:
+            c = col_for(cols, w)
+            if c:
                 nums.append((c, w['x1'], float(t.replace(',', ''))))
         elif t in ('ז', 'ח') and w['x1'] < num_edge:
             signs.append((w['x0'], t))
@@ -90,7 +164,7 @@ def parse_row(row, cols):
             r['name'].append(name)
     for c, x1, v in nums:
         # ח = חובה (הוצאה, חיובי), ז = זכות (הכנסה, שלילי). הסימן צמוד מימין למספר.
-        s = next((s for sx, s in signs if 0 <= sx - x1 < 7), None)
+        s = next((s for sx, s in signs if 0 <= sx - x1 < 8), None)
         r['nums'][c] = -v if s == 'ז' else v
         if s is None and v and c != 'jobs':
             r.setdefault('unsigned', []).append(c)
@@ -117,19 +191,27 @@ def parse_row(row, cols):
 
 def read_pages(path):
     pdf = pdfplumber.open(path)
+    cols = book_columns(pdf)
     out = []
     for pi, page in enumerate(pdf.pages, start=1):
-        cols = columns(page.extract_words())
-        if not cols:
+        # עמוד סיכום בתחילת הספר בנוי אחרת (ב-2026 "כרטיס" בו זז ימינה), ומדלגים עליו
+        if not any(t == 'כרטיס' and abs(w['x0'] - cols['_kartis']) < 6
+                   for t, w in header_words(page.extract_words())):
             continue
         # שמות ארוכים גולשים לעמודת השנה הקודמת, והאותיות והספרות מתערבבות למילה
         # אחת ("וישיבחו 0ת0.000,52"). באזור העמודות המספריות מפרידים את התווים
         # לשני זרמים, ספרות מול כל השאר, וקוראים מילים מכל זרם בנפרד.
-        band = cols['b_prev'] + 8
+        band = cols['b_prev'][1] + 30
         numeric = lambda o: o.get('object_type') == 'char' and o['x0'] < band and o['text'] in '0123456789,.-'
-        # גם אותיות הסימן (ז/ח) שבתוך העמודות יוצאות לזרם משלהן, אחרת הן נדבקות לשם
-        sign = lambda o: (o.get('object_type') == 'char' and o['text'] in 'זח' and o['x0'] < band
-                          and any(abs(o['x0'] - (cols[c] - 6)) < 4 for c in ('b_prev', 'f_prev', 'p', 'diff')))
+        # גם אותיות הסימן (ז/ח) שבתוך העמודות יוצאות לזרם משלהן, אחרת הן נדבקות לשם.
+        # אות סימן היא ז/ח שצמודה מימין לספרה באותה שורה.
+        digit_ends = [(round(c['top']), c['x1']) for c in page.chars
+                      if c['text'] in '0123456789' and c['x0'] < band]
+        def sign(o):
+            if o.get('object_type') != 'char' or o['text'] not in 'זח' or o['x0'] >= band:
+                return False
+            top = round(o['top'])
+            return any(abs(t - top) <= 2 and 0 <= o['x0'] - x1 < 5 for t, x1 in digit_ends)
         rest = lambda o: o.get('object_type') != 'char' or not (numeric(o) or sign(o))
         words = (page.filter(rest).extract_words(x_tolerance=8) + page.filter(numeric).extract_words()
                  + page.filter(sign).extract_words())
@@ -186,18 +268,25 @@ def clean(name):
     return re.sub(r'^\d+\s+', '', name)
 
 
+SUBTOTALS = {'שכר', 'פעולות', '1 הכנסות', '2 הוצאות', 'הכנסות', 'הוצאות'}
+
+
 def build(pages, year):
     """עמודים → רשימת תחומים, כל אחד עם מחלקות וכרטיסים."""
     chapters, domains, dept = [], [], None
     for pg in pages:
         rows = pg['rows']
         first = rows[0]
-        if first['code']:  # עמוד המשך
+        # עמוד המשך: מתחיל בכרטיס, או בשורת סיכום של סעיף משנה ("סה"כ שכר")
+        if first['code'] or (first['name'] in SUBTOTALS and dept is not None):
             target = dept
         else:
             label = clean(first['name'])
             has_items = any(r['code'] for r in rows)
-            if re.fullmatch(r'\d+', first['name'].strip()):
+            # עמוד פרק ("10", "20"); בחלק מהשנים המספר שלו לא נקרא, והשם ריק
+            if re.fullmatch(r'\d*', first['name'].strip()) and not has_items:
+                if not first['name'].strip():
+                    continue  # עמוד סיכום בלי שם: אין מה לבדוק מולו
                 chapters.append({'name': first['name'].strip(), 'net': first['nums'].get('p', 0),
                                  'start': len(domains)})
                 continue
@@ -207,8 +296,14 @@ def build(pages, year):
                 dept = None
                 continue
             if not domains:
-                raise ValueError(f'מחלקה בלי תחום בעמוד {pg["page"]}')
-            dept = {'name': label, 'net': first['nums'].get('p', 0), 'page': pg['page'], 'items': []}
+                # בחלק מהשנים הספר נפתח ישר במחלקה (שומה וגביה) בלי עמוד תחום מעליה
+                domains.append({'name': 'תקבולים כלליים', 'net': 0, 'page': pg['page'], 'depts': [],
+                                '_auto': True})
+            if first['name'] in SUBTOTALS:
+                # תחום שהמחלקה היחידה בו בלי שורת שם משלה ("בחירות לרשויות")
+                label = domains[-1]['name']
+            dept = {'name': label, 'net': first['nums'].get('p', 0), 'page': pg['page'], 'items': [],
+                    '_auto': first['name'] in SUBTOTALS}
             domains[-1]['depts'].append(dept)
             target = dept
         # בעמוד המשך ממשיכים מהסעיף (הכנסות/הוצאות, פעולות/שכר) של העמוד הקודם
@@ -220,6 +315,9 @@ def build(pages, year):
                     section = 'income'
                 elif n.endswith('הוצאות'):
                     section = 'expense'
+                if n.endswith('הכנסות') or n.endswith('הוצאות'):
+                    st = target.setdefault('_sect', {})
+                    st[section] = st.get(section, 0) + r['nums'].get('p', 0)
                 elif n in ('פעולות', 'שכר'):
                     sub = n
                 continue
@@ -240,10 +338,18 @@ def check(chapters, domains):
     bad = []
     for d in domains:
         for dp in d['depts']:
+            for sec, tot in dp.pop('_sect', {}).items():
+                s = sum(i['p'] for i in dp['items'] if i['section'] == sec)
+                if abs(s - tot) > 1:
+                    bad.append(f'{sec} במחלקה {dp["name"]} (עמוד {dp["page"]}): {s:,.0f} ≠ {tot:,.0f}')
             s = sum(i['p'] for i in dp['items'])
+            if dp.pop('_auto', False):
+                dp['net'] = s  # אין שורת סיכום למחלקה, רק לסעיפים שלה (שנבדקו למעלה)
             if abs(s - dp['net']) > 1:
                 bad.append(f'מחלקה {dp["name"]} (עמוד {dp["page"]}): {s:,.0f} ≠ {dp["net"]:,.0f}')
         s = sum(dp['net'] for dp in d['depts'])
+        if d.pop('_auto', False):
+            d['net'] = s
         if abs(s - d['net']) > 1:
             bad.append(f'תחום {d["name"]}: {s:,.0f} ≠ {d["net"]:,.0f}')
     ends = [c['start'] for c in chapters[1:]] + [len(domains)]
