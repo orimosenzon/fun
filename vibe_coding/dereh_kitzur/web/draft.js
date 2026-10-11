@@ -596,7 +596,7 @@ const Drafts = (() => {
       // The bar is narrow on a phone and cuts its text with an ellipsis, so
       // the number goes first where it cannot be the part that is cut.
       if (ed.weak && !ed.paused) state = ed.acc >= COARSE_M
-        ? 'מיקום משוער בלבד. הפעל מיקום מדויק'
+        ? 'מיקום משוער בלבד, צריך מדויק'
         : `דיוק ±${ed.acc} מ׳, מחכה לטוב יותר…`;
     } else if (ed.mode === 'trip') {
       const n = (ed.uses || []).length;
@@ -700,6 +700,37 @@ const Drafts = (() => {
     }
   }
 
+  /* The page cannot switch precise location on; only the phone's settings
+   * can. What it can try on Android is to open Chrome's own settings screen
+   * through an intent link, which leaves two taps instead of a hunt. Whether
+   * Chrome lets a page open that screen is not known yet (11/10/2026: to be
+   * tried on Ori's phone), so the written path stays in the box either way. */
+  const CHROME_SETTINGS = 'intent:com.android.chrome#Intent;scheme=package;'
+    + 'action=android.settings.APPLICATION_DETAILS_SETTINGS;end';
+
+  function tellCoarse(acc) {
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);'
+      + 'display:flex;align-items:center;justify-content:center;padding:16px';
+    const android = /Android/i.test(navigator.userAgent);
+    box.innerHTML = '<div dir="rtl" style="background:#fff;color:#111;border-radius:14px;'
+      + 'padding:18px;max-width:380px;font-size:15px;line-height:1.5">'
+      + '<b style="display:block;font-size:17px;margin-bottom:6px">צריך מיקום מדויק</b>'
+      + `<p style="margin:0 0 8px">הטלפון נותן לדפדפן רק מיקום משוער (דיוק של כ-${Math.round(acc)} מ׳), `
+      + 'ואיתו אי אפשר להקליט שביל.</p>'
+      + '<p style="margin:0 0 14px">כדי לתקן: הגדרות הטלפון ← אפליקציות ← Chrome ← הרשאות ← מיקום, '
+      + 'ולהדליק "השתמש במיקום מדויק". אחר כך לחזור לכאן, וההקלטה ממשיכה לבד.</p>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">'
+      + (android ? '<button data-a="open" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#6a1b9a;color:#fff">פתח את הגדרות כרום</button>' : '')
+      + '<button data-a="close" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#eee;color:#333">הבנתי</button></div></div>';
+    box.addEventListener('click', (e) => {
+      const a = e.target.dataset && e.target.dataset.a;
+      if (a === 'open') { glog('open chrome settings'); location.href = CHROME_SETTINGS; }
+      if (a === 'close' || e.target === box) box.remove();
+    });
+    document.body.appendChild(box);
+  }
+
   function onVisibility() {
     glog('visibility', document.visibilityState);
     if (!document.hidden) holdScreen();
@@ -791,11 +822,8 @@ const Drafts = (() => {
       ed.weak = acc > MAX_ACC_M;
       if (ed.weak && acc >= COARSE_M && !ed.toldCoarse) {
         ed.toldCoarse = true;
-        // After the bar has painted, so the alert does not sit over a stale one.
-        setTimeout(() => alert('הטלפון נותן לדפדפן רק מיקום משוער (דיוק של כ-'
-          + `${Math.round(acc)} מ׳), ואיתו אי אפשר להקליט שביל.\n\n`
-          + 'כדי לתקן: הגדרות הטלפון ← אפליקציות ← Chrome ← הרשאות ← מיקום, '
-          + 'ולהדליק "השתמש במיקום מדויק". אחר כך לחזור לכאן, ההקלטה ממשיכה לבד.'), 50);
+        glog('coarse location');
+        tellCoarse(acc);
       }
       if (ed.paused || ed.weak) { note(ed.paused ? 'paused' : 'weak'); paintBar(); return; }
 
