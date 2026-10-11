@@ -182,3 +182,57 @@ h1 { margin: 4px 0 6px; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; }
 .sheet-card td:last-child { text-align: left; }
 .sheet-card .foot { font-size: 13px; color: var(--text-3); margin-top: 10px; }
 .sheet-card .foot a { color: var(--accent); }
+
+/* ---------- שנים, שיתוף, גרף ---------- */
+.share {
+  font: inherit; font-size: 15px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  padding: 7px 16px; border-radius: 999px; cursor: pointer;
+}
+.share:hover { background: var(--surface-2); }
+.share:disabled { opacity: .6; cursor: progress; }
+
+.years-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 6px; }
+.years-label { color: var(--text-3); font-size: 14px; }
+.years {
+  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; padding: 2px 0 4px;
+  direction: ltr; /* ציר הזמן משמאל לימין, כמו בגרף */
+}
+.years button {
+  font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; flex: 0 0 auto;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text-2);
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+}
+.years button:hover { background: var(--surface-2); }
+.years button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+.year-note { margin: 0 0 6px; font-size: 14px; color: var(--text-2); }
+
+.seg.small button { font-size: 13px; padding: 4px 10px; }
+.chart-card { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px 0 8px; margin: 0 0 12px; }
+.chart-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.chart-head h3 { margin: 0; font-size: 16px; }
+.chart-ctrls { display: flex; flex-wrap: wrap; gap: 6px; }
+.chart-box { position: relative; }
+.chart svg { display: block; overflow: visible; }
+.chart .grid line { stroke: var(--line); stroke-width: 1; }
+.chart .axis text { fill: var(--text-3); font-size: 11px; font-family: inherit; }
+.chart .axis path, .chart .axis line { stroke: var(--line); }
+.chart .bar { transition: opacity .15s; }
+.chart .fc { stroke: var(--text); stroke-width: 2; stroke-linecap: round; opacity: .75; }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: opacity .15s; }
+.chart .line.dim { opacity: .15; }
+.chart .sel-year { fill: var(--surface-2); }
+.chart .cross { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart-note p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-3); }
+.key-fc { display: inline-block; width: 14px; height: 2px; background: var(--text); vertical-align: middle; opacity: .75; }
+.tooltip .row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.tooltip .row i { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.tooltip .row span { margin-inline-start: auto; padding-inline-start: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sheet-chart-title { margin: 14px 0 4px; font-size: 15px; }
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 60;
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; box-shadow: var(--shadow);
+  font-size: 14px; max-width: calc(100% - 32px);
+}
+.toast a { color: inherit; font-weight: 500; word-break: break-all; }
