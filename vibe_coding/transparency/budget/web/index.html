@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>לאן הולך הכסף</title>
+<meta name="description" content="תקציב המועצה המקומית פרדס חנה-כרכור לשנת 2026, כעוגה שאפשר להיכנס לכל פלח שלה עד שורת התקציב האחרונה.">
+<meta property="og:title" content="לאן הולך הכסף? תקציב פרדס חנה-כרכור 2026">
+<meta property="og:description" content="400 מיליון ₪ בעוגה אחת. לחצו על פלח וראו איך הוא מתחלק, עד שורת התקציב האחרונה.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="kicker">רוצים שקיפות · פרדס חנה-כרכור</p>
+    <h1>לאן הולך הכסף?</h1>
+    <p class="lede">תקציב המועצה לשנת <span id="year">2026</span>: <strong id="grand-total">…</strong>.
+      לחצו על פלח בעוגה כדי לראות איך הוא מתחלק, עד שורת התקציב האחרונה.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="controls">
+    <div class="seg" role="tablist" aria-label="צד התקציב">
+      <button role="tab" data-side="expense" aria-selected="true">לאן הולך הכסף</button>
+      <button role="tab" data-side="income" aria-selected="false">מאיפה הוא בא</button>
+    </div>
+    <div class="search">
+      <input id="search" type="search" placeholder="חיפוש סעיף: גנים, ספריות, תאורה…" autocomplete="off" aria-label="חיפוש סעיף בתקציב">
+      <ul id="search-results" class="search-results" hidden></ul>
+    </div>
+  </div>
+
+  <nav id="crumbs" class="crumbs" aria-label="מיקום בתקציב"></nav>
+
+  <section class="stage">
+    <div class="pie-box">
+      <svg id="pie" role="img" aria-label="עוגת התקציב"></svg>
+      <div id="tooltip" class="tooltip" hidden></div>
+    </div>
+    <div class="side">
+      <div id="node-info" class="node-info"></div>
+      <ol id="list" class="list"></ol>
+    </div>
+  </section>
+
+  <section class="mine">
+    <label for="arnona">כמה ארנונה אתם משלמים בשנה?</label>
+    <div class="mine-row">
+      <input id="arnona" type="number" inputmode="numeric" min="0" step="100" placeholder="למשל 6000">
+      <span class="unit">₪</span>
+    </div>
+    <p class="note">אם תמלאו, ליד כל סעיף יופיע כמה ממנו "שלכם". זה חישוב יחסי:
+      הארנונה לא צבועה לשירות מסוים, היא נכנסת לקופה אחת עם הכסף ממשרדי הממשלה ומהאגרות.</p>
+  </section>
+
+  <section class="about">
+    <h2>מאיפה המספרים</h2>
+    <p>ספר התקציב לשנת 2026 של המועצה המקומית פרדס חנה-כרכור, כפי שהוגש לאישור המליאה בדצמבר 2025
+      ופורסם באתר המועצה. כל מספר כאן נקרא מהספר עצמו, ונבדק מול שורות הסיכום שלו: כל מחלקה שווה
+      לסכום הסעיפים שלה וכל תחום שווה לסכום המחלקות.
+      <a id="source-link" href="#" target="_blank" rel="noopener">לספר התקציב המקורי (PDF)</a>.</p>
+    <p>"תקציב 2025" בהשוואות הוא התקציב המעודכן של 2025, כפי שמופיע בעמודה המקבילה באותו ספר.
+      התקציב הרגיל בלבד: תקציבי הפיתוח (תב"רים) הם מסמך נפרד.</p>
+    <p class="note">טעות? משהו לא מובן? הקוד והנתונים פתוחים, ואפשר לבדוק כל שורה מול העמוד בספר.</p>
+  </section>
+</main>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <button class="close" id="sheet-close" aria-label="סגירה">×</button>
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
