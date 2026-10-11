@@ -1153,8 +1153,8 @@ def week_strip(r, today: dt.date) -> str:
     """A tiny week view, Google-Calendar style, so a reader scrolling the board
     can see at a glance where the event falls in the week relative to today.
 
-    The week runs Sunday..Saturday **left to right** (dir="ltr"), as Ori asked
-    (28/9/2026) — the way a calendar app draws it, not the page's RTL order.
+    The week runs Sunday..Saturday **right to left** (dir="rtl"), Sunday on the
+    right, as Ori asked (11/10/2026; on 28/9/2026 he had asked for LTR).
     The event's day is a filled blue circle; today, when it is in the same
     week, gets a thin grey ring so the eye has a reference point."""
     d = r["date"]
@@ -1175,7 +1175,7 @@ def week_strip(r, today: dt.date) -> str:
             f'<div style="width:28px; text-align:center;">'
             f'<div style="font-size:72%; color:{letter_color}; line-height:1.2;">{WEEK_LETTERS[i]}</div>'
             f'<div style="font-size:78%; {num}">{day.day}</div></div>')
-    return ('<div dir="ltr" style="display:inline-flex; gap:2px; margin-top:6px; padding:3px 4px; '
+    return ('<div dir="rtl" style="display:inline-flex; gap:2px; margin-top:6px; padding:3px 4px; '
             'border:1px solid #e0e0e0; border-radius:8px; background:#fafafa;">'
             + "".join(cells) + "</div>")
 
