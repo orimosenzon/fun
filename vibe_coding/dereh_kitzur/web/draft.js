@@ -21,6 +21,11 @@ const Drafts = (() => {
   const MAX_PX = 1600;              // photos are resized before they are stored
   const MIN_STEP_M = 4;             // GPS noise below this is not movement
   const MAX_ACC_M = 30;             // a fix vaguer than this is not a position
+  /* Android hands a site that was given only "approximate location" a point
+   * snapped to a grid with an accuracy of exactly 2000 m, and few updates of
+   * it. Waiting does not help, so that case is told apart and explained.
+   * Seen on Ori's phone on 11/10/2026: one fix at 2000 m, then silence. */
+  const COARSE_M = 500;
 
   const MODE_TEXT = {
     walk: 'הוקלט בהליכה',
@@ -588,7 +593,11 @@ const Drafts = (() => {
         : (ed.path.length ? `מקליט · ${ed.path.length} נקודות` : 'מחפש מיקום מדויק…');
       // The number is what tells "the GPS is warming up" (it falls) apart
       // from "this phone only gives a rough location" (it sits in hundreds).
-      if (ed.weak && !ed.paused) state = `מחכה לדיוק טוב יותר (±${ed.acc} מ׳)…`;
+      // The bar is narrow on a phone and cuts its text with an ellipsis, so
+      // the number goes first where it cannot be the part that is cut.
+      if (ed.weak && !ed.paused) state = ed.acc >= COARSE_M
+        ? 'מיקום משוער בלבד. הפעל מיקום מדויק'
+        : `דיוק ±${ed.acc} מ׳, מחכה לטוב יותר…`;
     } else if (ed.mode === 'trip') {
       const n = (ed.uses || []).length;
       state = ed.gap
@@ -780,6 +789,14 @@ const Drafts = (() => {
       // than the trail is wide, and that error is then stored for good.
       ed.acc = Math.round(acc);
       ed.weak = acc > MAX_ACC_M;
+      if (ed.weak && acc >= COARSE_M && !ed.toldCoarse) {
+        ed.toldCoarse = true;
+        // After the bar has painted, so the alert does not sit over a stale one.
+        setTimeout(() => alert('הטלפון נותן לדפדפן רק מיקום משוער (דיוק של כ-'
+          + `${Math.round(acc)} מ׳), ואיתו אי אפשר להקליט שביל.\n\n`
+          + 'כדי לתקן: הגדרות הטלפון ← אפליקציות ← Chrome ← הרשאות ← מיקום, '
+          + 'ולהדליק "השתמש במיקום מדויק". אחר כך לחזור לכאן, ההקלטה ממשיכה לבד.'), 50);
+      }
       if (ed.paused || ed.weak) { note(ed.paused ? 'paused' : 'weak'); paintBar(); return; }
 
       const last = ed.path[ed.path.length - 1];
