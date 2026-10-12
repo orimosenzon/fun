@@ -651,6 +651,7 @@ const Drafts = (() => {
     try { lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]'); } catch (err) { /* empty */ }
     const text = lines.length ? lines.join('\n') : '(הלוג ריק. עוד לא הוקלטה הליכה בטלפון הזה.)';
     const box = document.createElement('div');
+    box.className = 'dk-modal';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;color:#111;'
       + 'display:flex;flex-direction:column;padding:12px;gap:8px';
     box.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -683,7 +684,7 @@ const Drafts = (() => {
    * held on for as long as a walk is being recorded. The browser lets go of
    * the hold whenever the tab is hidden, so it is taken again on return. */
   async function holdScreen() {
-    if (!ed || ed.mode !== 'walk' || ed.lock || document.hidden) return;
+    if (!ed || ed.mode !== 'walk' || ed.lock || document.hidden || Native.isApp) return;
     if (!('wakeLock' in navigator)) { glog('wakelock unsupported'); return; }
     const mine = ed;
     try {
@@ -710,22 +711,29 @@ const Drafts = (() => {
 
   function tellCoarse(acc) {
     const box = document.createElement('div');
+    box.className = 'dk-modal';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);'
       + 'display:flex;align-items:center;justify-content:center;padding:16px';
     const android = /Android/i.test(navigator.userAgent);
+    const where = Native.isApp
+      ? 'כדי לתקן: בהגדרות של האפליקציה ← הרשאות ← מיקום, '
+      : 'כדי לתקן: הגדרות הטלפון ← אפליקציות ← Chrome ← הרשאות ← מיקום, ';
     box.innerHTML = '<div dir="rtl" style="background:#fff;color:#111;border-radius:14px;'
       + 'padding:18px;max-width:380px;font-size:15px;line-height:1.5">'
       + '<b style="display:block;font-size:17px;margin-bottom:6px">צריך מיקום מדויק</b>'
       + `<p style="margin:0 0 8px">הטלפון נותן לדפדפן רק מיקום משוער (דיוק של כ-${Math.round(acc)} מ׳), `
       + 'ואיתו אי אפשר להקליט שביל.</p>'
-      + '<p style="margin:0 0 14px">כדי לתקן: הגדרות הטלפון ← אפליקציות ← Chrome ← הרשאות ← מיקום, '
+      + `<p style="margin:0 0 14px">${where}`
       + 'ולהדליק "השתמש במיקום מדויק". אחר כך לחזור לכאן, וההקלטה ממשיכה לבד.</p>'
       + '<div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">'
-      + (android ? '<button data-a="open" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#6a1b9a;color:#fff">פתח את הגדרות כרום</button>' : '')
+      + (android ? `<button data-a="open" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#6a1b9a;color:#fff">${Native.isApp ? 'פתח את ההגדרות' : 'פתח את הגדרות כרום'}</button>` : '')
       + '<button data-a="close" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#eee;color:#333">הבנתי</button></div></div>';
     box.addEventListener('click', (e) => {
       const a = e.target.dataset && e.target.dataset.a;
-      if (a === 'open') { glog('open chrome settings'); location.href = CHROME_SETTINGS; }
+      if (a === 'open') {
+        glog('open settings', Native.isApp ? 'app' : 'chrome');
+        if (Native.isApp) Native.openSettings(); else location.href = CHROME_SETTINGS;
+      }
       if (a === 'close' || e.target === box) box.remove();
     });
     document.body.appendChild(box);
@@ -804,7 +812,9 @@ const Drafts = (() => {
     document.addEventListener('visibilitychange', onVisibility);
     holdScreen();
 
-    ed.watch = navigator.geolocation.watchPosition((pos) => {
+    const mine = ed;
+    const onFix = (pos) => {
+      if (ed !== mine) return;        // a native fix still on its way after stop
       const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
       const age = Date.now() - pos.timestamp;
       const note = (verdict) => glog('fix', `acc=${Math.round(acc)}`,
@@ -836,15 +846,36 @@ const Drafts = (() => {
       ed.path.push([+lat.toFixed(6), +lng.toFixed(6)]);
       note(`push #${ed.path.length}`);
       paintEditor();
-    }, (err) => {
+    };
+    const onError = (err) => {
+      if (ed !== mine) return;
       glog('error', `code=${err.code}`, err.message);
       // A timeout is not the end of a watch: the phone keeps looking, and a
       // fix that arrives later repaints the bar over this text.
-      el('draft-state').textContent = err.code === 1
-        ? 'אין הרשאה למיקום. צריך לאשר אותה בהגדרות הדפדפן.'
-        : 'הטלפון עדיין לא מוצא מיקום. ממשיך לחפש…';
+      const denied = err.code === 1 || err.code === 'NOT_AUTHORIZED';
+      el('draft-state').textContent = !denied ? 'הטלפון עדיין לא מוצא מיקום. ממשיך לחפש…'
+        : Native.isApp ? 'אין הרשאה למיקום. צריך לאשר אותה בהגדרות האפליקציה.'
+        : 'אין הרשאה למיקום. צריך לאשר אותה בהגדרות הדפדפן.';
       el('draft-bar').classList.add('paused');
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+      if (denied && Native.isApp && !ed.toldDenied) {
+        ed.toldDenied = true;
+        if (confirm('בלי הרשאה למיקום אי אפשר להקליט בהליכה. לפתוח את הגדרות האפליקציה?')) {
+          Native.openSettings();
+        }
+      }
+    };
+
+    if (Native.isApp) {
+      // The app's own watcher, which keeps going with the screen off.
+      ed.unwatch = Native.watchWalk(onFix, onError).catch((err) => {
+        glog('native watch failed', err && err.message);
+        onError({ code: 2, message: String(err && err.message) });
+        return null;
+      });
+      return;
+    }
+    ed.watch = navigator.geolocation.watchPosition(onFix, onError,
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
   }
 
   function stopEditor(quiet) {
@@ -852,6 +883,7 @@ const Drafts = (() => {
     document.removeEventListener('visibilitychange', onVisibility);
     if (ed && ed.lock) { const lock = ed.lock; ed.lock = null; lock.release().catch(() => {}); }
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);
+    if (ed && ed.unwatch) ed.unwatch.then((stop) => stop && stop());
     if (ed && ed.offTap) ed.offTap();
     ed = null;
     saveLive();          // no editor, so this drops the mirror

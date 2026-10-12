@@ -1,0 +1,20 @@
+{
+  "appId": "il.derechkitzur.app",
+  "appName": "דרך קיצור",
+  "webDir": "www",
+  "server": {
+    "url": "https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/index.html?src=app",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "backgroundColor": "#ffffff",
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover",
+      "style": "LIGHT"
+    }
+  }
+}
