@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">דרך קיצור</string>
+    <string name="title_activity_main">דרך קיצור</string>
+    <string name="package_name">il.derechkitzur.app</string>
+    <string name="custom_url_scheme">il.derechkitzur.app</string>
+    <!-- The recording notification (background-geolocation plugin). -->
+    <string name="capacitor_background_geolocation_notification_channel_name">הקלטת שביל</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_walk_note</string>
+    <string name="capacitor_background_geolocation_notification_color">#1b5e20</string>
+</resources>
