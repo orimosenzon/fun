@@ -530,6 +530,8 @@ function deselect() {
   Layers.highlight(null);
   markSelection(null);
   el('detail-view').hidden = true;
+  // Back from a tree opened out of the tree explorer goes back to the explorer.
+  if (Trees.resume()) { scheduleSync(); return; }
   el('list-view').hidden = false;
   renderList();
   scheduleSync();
@@ -858,6 +860,7 @@ function placeBody(it) {
 
   return `
     ${it.address ? `<p class="addr">${escapeHtml(it.address)}</p>` : ''}
+    ${it.tree ? Trees.detailBlock(it) : ''}
     ${contactBlock(it)}
     <h3>הגעה</h3>
     <div class="acts">
@@ -908,6 +911,7 @@ const GEO_SOURCE = {
   // rather than a point, so even the exact ones are the middle of a plot; and
   // a fifth of its parcels no longer exist in today's cadastre.
   parcel: 'מרכז החלקה שבנספח, לא המבנה עצמו',
+  survey: 'לפי הקואורדינטות שבסקר העצים',
   neighbour: 'החלקה שבנספח כבר לא קיימת, לפי חלקה סמוכה במספור',
   plan: 'מרכז שטח התכנית, לפי הקו הכחול',
   block: 'מרכז הגוש בקדסטר',
@@ -1030,7 +1034,9 @@ function showDetail(it) {
   const chips = [];
 
   if (it.length) chips.push(`<span class="chip accent">${metres(it.length)}</span>`);
-  else if (it.place) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group || 'מקום')}</span>`);
+  // A tree coloured by species has its species as its group, and the title
+  // already says it.
+  else if (it.place && it.group !== it.name) chips.push(`<span class="chip accent" style="--c:${it.color}">${escapeHtml(it.group || 'מקום')}</span>`);
   else chips.push('<span class="chip accent">נקודת ציון</span>');
   // "אמנות | ציור" - the festival's own two-level labelling of what somebody
   // makes, which is the first thing a visitor picking a studio wants to know.
@@ -1259,6 +1265,7 @@ function showDetail(it) {
 
   el('detail').scrollTop = 0;
   el('list-view').hidden = true;
+  Trees.onDetail();
   el('detail-view').hidden = false;
 }
 
@@ -3238,6 +3245,7 @@ async function boot() {
   PLACES = data.places;
   Layers.init(data);
   Layers.onChange = repaint;
+  Trees.init();                // a `tr=` in the link: the tree explorer's cut
 
   // The list, the search and the buttons come up as soon as the data lands.
   // Waiting for the map style first would leave the whole panel dead on a weak
@@ -3791,6 +3799,11 @@ function wireControls() {
 
     if (e.target.closest('[data-clearall]')) { Layers.clearAll(); return; }
     if (e.target.closest('[data-newlayer]')) { layerForm(null); return; }
+    if (e.target.closest('[data-trees]')) {
+      Layers.closeSheet();
+      Trees.open();
+      return;
+    }
     if (e.target.closest('[data-arrange]')) {
       Layers.closeSheet();
       startPinning(null);

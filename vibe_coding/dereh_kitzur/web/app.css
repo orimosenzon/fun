@@ -3998,3 +3998,83 @@ body.arranging .menu, body.asking-plan .menu, body.flying .menu { display: none;
 @media (max-width: 380px) {
   .tb-btn { padding: 0 10px; font-size: 13px; gap: 4px; }
 }
+
+/* ---------- tree explorer (trees.js) ----------
+ * A third view in the panel, beside the list and the detail pane. */
+
+#trees-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#trees-view[hidden] { display: none; }
+
+.tx h3 { margin: 16px 0 6px; font-size: 14px; color: #48564f; }
+.tx-warn {
+  margin: 0 0 10px; padding: 8px 10px; border-radius: 10px;
+  background: #fff7e6; color: #6b4a00; font-size: 13px; line-height: 1.45;
+}
+.tx-warn.small { margin: 8px 0 12px; font-size: 12.5px; }
+.tx-many {
+  margin: 0 0 10px; padding: 8px 10px; border-radius: 10px;
+  background: #efecf9; color: #3b2f87; font-size: 13px; line-height: 1.45;
+}
+.tx-count { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; font-size: 14px; }
+.tx-count b { font-size: 20px; color: var(--accent); }
+.tx-sub { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+td .tx-sub { display: inline; }
+.tx-acts { display: flex; gap: 6px; }
+.tx-btn {
+  border: 1px solid #d6e2db; background: #fff; color: var(--accent);
+  border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.tx-active { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tx-tag {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px;
+  background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 4px 3px 10px;
+}
+.tx-tag button { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; }
+
+.tx-presets, .tx-dims, .tx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tx-chip {
+  border: 1px solid #d6e2db; background: #fff; color: #2b3a33;
+  border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.tx-chip.small { padding: 4px 10px; font-size: 12.5px; }
+.tx-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tx-chip:disabled { opacity: .4; cursor: default; }
+.tx-n { font-variant-numeric: tabular-nums; opacity: .7; font-size: 12px; }
+.tx-hint { margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
+
+.tx-rows { list-style: none; margin: 0; padding: 0; }
+.tx-row {
+  width: 100%; display: grid; grid-template-columns: 12px minmax(0, 1fr) minmax(40px, 30%) 44px;
+  gap: 8px; align-items: center; padding: 6px 8px; border: 0; border-radius: 8px;
+  background: none; font: inherit; font-size: 14px; color: inherit; text-align: start; cursor: pointer;
+}
+.tx-row:hover { background: #f3f6f4; }
+.tx-row.on { background: var(--accent-soft); font-weight: 600; }
+.tx-row.empty { opacity: .45; }
+.tx-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-bar { height: 6px; background: #eef2ef; border-radius: 3px; overflow: hidden; }
+.tx-bar i { display: block; height: 100%; border-radius: 3px; }
+.tx-row .tx-n { text-align: left; }
+
+.tx-q {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 14px;
+  padding: 8px 12px; border: 1px solid #d6e2db; border-radius: 10px; background: #fff;
+}
+.tx-more { border-top: 1px solid #eef2ef; padding: 6px 0; }
+.tx-more summary { cursor: pointer; font-size: 14px; padding: 4px 0; }
+.tx-more .tx-chips { padding: 6px 0 4px; }
+.tx .src { display: block; margin-top: 18px; }
+
+.tx-facts { width: 100%; border-collapse: collapse; font-size: 14px; margin: 4px 0; }
+.tx-facts th { text-align: start; font-weight: 400; color: var(--muted); padding: 5px 0; width: 34%; vertical-align: top; }
+.tx-facts td { padding: 5px 0; border-bottom: 1px solid #eef2ef; }
+.tx-facts tr:last-child td { border-bottom: 0; }
+.tx-facts .lg-dot { display: inline-block; vertical-align: middle; }
+.tx-shapes {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px;
+  margin: 12px 0 0; font-size: 12.5px; color: #48564f;
+}
+.tx-shapes-t { font-weight: 600; margin-inline-end: 2px; }
+.tx-shape { display: inline-flex; align-items: flex-end; height: 30px; }
+.tx-shape canvas { display: block; }
+.tx-shape + span { margin-inline-end: 6px; }
