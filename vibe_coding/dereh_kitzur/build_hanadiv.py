@@ -46,6 +46,12 @@ street, with no OSM or Amudanan marker to settle it. One event stays
 unplaced: חוות החזון הירוק, "a dirt road past Zen Garden near BIG", which no
 open map has.
 
+The 13/10/2026 rerun (152 events, 58 venues) found /place sending null for
+lat, lng and street on every record. The positions it gave on 6/10 are kept
+in API_POSITIONS; a new venue with none falls back to B144 automatically
+(source b144), and four that B144 lacked got FIXES. Unplaced: חוות החזון
+הירוק again, and בית המחול מנשה in קריית החינוך מנשה, found on no open map.
+
     python3 build_hanadiv.py            # fetch, check, write web/data/hanadiv.json
     python3 build_hanadiv.py --report   # also print every venue against B144
 
@@ -71,6 +77,12 @@ SITE = "https://2026.hanadiv.org/"
 FESTIVAL = "2026"                       # the subdomain is the festival key
 OUT = "web/data/hanadiv.json"
 B144_CACHE = ".cache/hanadiv_b144.json"
+# What /place said each address was, by "street number". Between 6/10 and
+# 13/10/2026 the API stopped sending lat, lng and street for places (all 80
+# null), so the positions it gave earlier live here, recovered from the 6/10
+# output (a pile's ring is centred on the venue, so the mean of its pins is
+# the API point exactly). Every run adds whatever the API still sends.
+API_POSITIONS = "hanadiv_src/api_positions.json"
 UA = {"User-Agent": "derech-kitzur-hanadiv/1.0 (https://github.com/orimosenzon/fun; orimosenzon@gmail.com)",
       "Origin": "https://2026.hanadiv.org"}
 
@@ -106,6 +118,16 @@ FIXES = {
                      why="no API position; B144"),
     "נעורים 23": dict(lat=32.470110, lng=34.993560, source="b144",
                       why="no API position; B144, 50 m from נעורים 27 where the API agrees"),
+    # Added 13/10/2026 (152 events), when the API had stopped sending any
+    # positions and B144 had nothing for these. Street-level, not house-level.
+    "הבנים רחבת המועצה 20": dict(lat=32.475455, lng=34.974988, source="b144",
+                                 why="the council plaza; B144 for הבנים 20, the council's address"),
+    "לאה גולדברג 12": dict(lat=32.466657, lng=34.983502, source="osm",
+                           why="centre of OSM way 489280873, a 250 m street; B144 has no page"),
+    "ברקת 27": dict(lat=32.466120, lng=34.980500, source="osm",
+                    why="'a grove between ברקת and יהלום': midway between OSM ways 477494365 and 477494607"),
+    "סמטת צאלון 4": dict(lat=32.473589, lng=34.963170, source="osm",
+                         why="centre of OSM way 183324944 (צאלון); B144 has no page"),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The
@@ -152,8 +174,9 @@ def address_key(street, number):
     number into the street field and left the number field empty."""
     street = norm_street(street)
     number = int(number or 0)
-    tail = re.search(r"^(.*?)\s+(\d+)$", street)
-    if tail and not number:
+    tail = re.search(r"^(.*?),?\s+(\d+)$", street)
+    # 'לאה גולדברג, 12' with 12 in the number field too: one number, not two.
+    if tail and (not number or int(tail.group(2)) == number):
         street, number = tail.group(1), int(tail.group(2))
     return f"{street} {number}"
 
@@ -265,20 +288,30 @@ def spread(places):
             place["geo"]["spread"] = True
 
 
-def locate(place_rec, key):
+def locate(place_rec, key, known, cache):
     """The position for a venue and where it came from.
 
     The API's own coordinate is the default, because the platform geocoded a
-    full address and most of them check out. FIXES overrides it where a
-    better source was found; a coordinate that is missing or outside the
-    moshava and has no fix is reported and the pin goes out unplaced."""
+    full address and most of them check out; `known` keeps the ones it gave
+    before it stopped giving them. FIXES overrides both where a better source
+    was found. A venue with neither falls back to B144, which is right for a
+    house on a street and wrong for a landmark (see the docstring) - those
+    show as source b144 in the report and get a FIXES line if they need one.
+    Nothing at all, and the pin goes out unplaced."""
     fix = FIXES.get(key)
     if fix:
         return {"lat": fix["lat"], "lng": fix["lng"], "source": fix["source"]}
     if place_rec:
         lat, lng = float(place_rec.get("lat") or 0), float(place_rec.get("lng") or 0)
         if in_box(lat, lng):
-            return {"lat": round(lat, 6), "lng": round(lng, 6), "source": "festival"}
+            known[key] = [round(lat, 6), round(lng, 6)]
+    if key in known:
+        lat, lng = known[key]
+        return {"lat": lat, "lng": lng, "source": "festival"}
+    street, number = key.rsplit(" ", 1)
+    second = b144(street, number, cache) if int(number) else None
+    if second and in_box(*second):
+        return {"lat": round(second[0], 6), "lng": round(second[1], 6), "source": "b144"}
     print(f"  ! no position for {key}", file=sys.stderr)
     return None
 
@@ -298,6 +331,7 @@ def build(report):
         by_address.setdefault(address_key(p["street"], p["houseNumber"]), []).append(p)
 
     cache = load_json(B144_CACHE, {})
+    known = load_json(API_POSITIONS, {})
     seen_titles = {}
     for e in events:
         seen_titles.setdefault(text(e["title"]), set()).add(e["date"])
@@ -310,7 +344,7 @@ def build(report):
         key = address_key(e["street"], e["houseNumber"])
         recs = by_address.get(key, [])
         rec = next((r for r in recs if text(r["description"]) == text(e["placeDescription"])), recs[0] if recs else None)
-        geo = locate(rec, key)
+        geo = locate(rec, key, known, cache)
         venues[key] = (rec, geo)
 
         title = text(e["title"])
@@ -390,8 +424,11 @@ def build(report):
             del place["geo"]
         out.append(place)
 
+    save_json(API_POSITIONS, dict(sorted(known.items())))
+    save_json(B144_CACHE, cache)
+
     if report:
-        print("\nvenue                     api                   b144                  apart  used")
+        print("\nvenue                     api                  b144                  apart  used")
         for key, (rec, geo) in sorted(venues.items()):
             street, number = key.rsplit(" ", 1)
             second = b144(street, number, cache)
