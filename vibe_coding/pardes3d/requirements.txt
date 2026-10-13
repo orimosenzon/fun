@@ -1,0 +1,7 @@
+numpy
+scipy
+shapely>=2
+trimesh
+mapbox_earcut
+pillow
+requests

@@ -1,0 +1,9 @@
+.venv/
+.env
+__pycache__/
+data/raw/
+# העולם נבנה מחדש ב-make world (כ-55MB)
+game/world/*
+!game/world/.gdignore
+game/.godot/
+shot.png
