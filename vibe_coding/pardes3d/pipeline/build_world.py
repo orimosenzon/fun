@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw
 from shapely.geometry import LineString, Polygon, MultiPolygon
 from shapely.ops import orient, unary_union
 
+import extras
 from geo import LAT0, LON0, M_PER_DEG_LAT, M_PER_DEG_LON, to_local
 from fetch_dem import tile_xy
 from fetch_osm import BBOX, ROOT
@@ -143,32 +144,35 @@ WALL_COLORS = [  # טיח ישראלי: לבן, שמנת, בז', אבן ירוש
 ]
 
 
-def building_height(el, area):
-    t = el.get("tags", {})
+def building_height(key, t, area, g):
+    """גובה בניין במטרים. g = הגובה הממוצע של הבניינים במשבצת GHSL (0 אם אין)."""
     for k in ("height", "building:height"):
         try:
-            return float(t[k].split()[0]), None
+            return float(t[k].split()[0])
         except (KeyError, ValueError):
             pass
     try:
-        lv = float(t["building:levels"])
-        return lv * FLOOR + 0.8, lv
+        return float(t["building:levels"]) * FLOOR + 0.8
     except (KeyError, ValueError):
         pass
     kind = t.get("building", "yes")
-    r = stable_rand(el["id"])
+    r = stable_rand(key)
     if kind in ("greenhouse",):
-        return 4.0, None
+        return 4.0
     if kind in ("industrial", "warehouse", "retail", "cowshed", "farm_auxiliary", "shed", "roof"):
-        return 5 + 4 * r, None
-    if kind in ("apartments",) or area > 600:
-        lv = 3 + int(r * 4)
-        return lv * FLOOR + 0.8, lv
+        return 5 + 4 * r
     if area < 25:  # מחסן, חדר שומר
-        return 2.6, 1
-    # רוב פרדס חנה: בתים צמודי קרקע בקומה או שתיים
-    lv = 1 if r < 0.45 else 2
-    return lv * FLOOR + 0.6, lv
+        return 2.6
+    if area > 250 and g >= 5.5:
+        # משבצת עם בניינים גבוהים: בניין גדול בה הוא כנראה בניין דירות.
+        # הממוצע במשבצת כולל גם בתים נמוכים, ולכן מעט מעליו
+        lv = int(np.clip(round(g * 1.35 / FLOOR + (r - 0.5) * 1.5), 3, 14))
+        return lv * FLOOR + 0.8
+    if kind == "apartments" or area > 600:
+        return (3 + int(r * 3)) * FLOOR + 0.8
+    # בתים צמודי קרקע: ככל שהמשבצת גבוהה יותר, יותר בתים של שתי קומות
+    p2 = 0.45 if g <= 0 else float(np.clip(0.2 + (g - 2.5) * 0.25, 0.15, 0.85))
+    return (2 if r < p2 else 1) * FLOOR + 0.6
 
 
 def enu_to_godot(v):
@@ -177,11 +181,9 @@ def enu_to_godot(v):
     return np.stack([v[:, 0], v[:, 2], -v[:, 1]], 1)
 
 
-def build_buildings(els, terrain):
-    import mapbox_earcut as earcut
-    V, F, UV, C = [], [], [], []
-    n = 0
-    footprints = []
+def collect_buildings(els):
+    """(מזהה, פוליגון, תגיות) לכל בניין: OSM, ואחריו מה שחסר בו ונמצא אצל מיקרוסופט."""
+    items = []
     for el in els:
         t = el.get("tags", {})
         if "building" not in t or t["building"] == "no":
@@ -192,13 +194,30 @@ def build_buildings(els, terrain):
             poly = orient(poly.simplify(0.15), 1.0)  # חיצוני נגד כיוון השעון, חורים עם
             if poly.is_empty or not isinstance(poly, Polygon):
                 continue
+            items.append((el["id"], poly, t))
+    n_osm = len(items)
+    for key, poly, conf in extras.ms_buildings([p for _, p, _ in items]):
+        poly = orient(poly.simplify(0.3), 1.0)
+        if isinstance(poly, Polygon) and not poly.is_empty:
+            items.append((key, poly, {"building": "yes", "source": "microsoft"}))
+    return items, n_osm
+
+
+def build_buildings(items, terrain, ghsl):
+    import mapbox_earcut as earcut
+    V, F, UV, C = [], [], [], []
+    n = 0
+    footprints = []
+    for key, poly, t in items:
+        if True:
             footprints.append(poly)
-            hgt, _ = building_height(el, poly.area)
+            c = poly.centroid
+            hgt = building_height(key, t, poly.area, ghsl.at(c.x, c.y))
             ex = np.array(poly.exterior.coords)
             hs = terrain.height(ex[:, 0], ex[:, 1])
             base = float(hs.min()) - 0.3  # הבסיס קבור קצת, כדי שלא ירחף בשיפוע
             top = float(hs.max()) + hgt
-            col = WALL_COLORS[int(stable_rand(el["id"], "c") * len(WALL_COLORS))]
+            col = WALL_COLORS[int(stable_rand(key, "c") * len(WALL_COLORS))]
             v, f, uv = [], [], []
             # קירות: u = מטרים לאורך ההיקף, v = מטרים מעל הקרקע הגבוהה ביותר בבניין פחות הגובה
             for r in [poly.exterior, *poly.interiors]:
@@ -309,9 +328,71 @@ def build_roads(els, terrain):
         F.append(f)
         UV.append(uv)
         n += 2 * k
+    # מעברי חצייה: מלבן קצר מעל הכביש, סוג 4
+    for x, y, ang, w in extras.crossings(els, lines):
+        fx, fy = math.sin(ang), math.cos(ang)  # כיוון הכביש
+        rx, ry = fy, -fx                        # ימינה
+        L = 1.6
+        corners = [(x - fx * L - rx * w / 2, y - fy * L - ry * w / 2), (x - fx * L + rx * w / 2, y - fy * L + ry * w / 2),
+                   (x + fx * L - rx * w / 2, y + fy * L - ry * w / 2), (x + fx * L + rx * w / 2, y + fy * L + ry * w / 2)]
+        hh = terrain.height(np.array([c[0] for c in corners]), np.array([c[1] for c in corners])) + 0.19
+        V.append(np.array([(cx, h, -cy) for (cx, cy), h in zip(corners, hh)]))
+        code = 2 * round(w * 4) + 4000
+        UV.append(np.array([(code, 0), (code + 1, 0), (code, 2 * L), (code + 1, 2 * L)], dtype=float))
+        F.append(np.array([(n, n + 1, n + 2), (n + 1, n + 3, n + 2)]))
+        n += 4
     m = trimesh.Trimesh(np.vstack(V), np.vstack(F), process=False)
     m.visual = trimesh.visual.TextureVisuals(uv=np.vstack(UV))
     return m, lines
+
+
+# ---------------------------------------------------------------- חומות וגדרות
+
+def build_walls(walls, terrain):
+    """קופסאות דקות לאורך כל קטע. UV.x = מטרים לאורך + 10000 * סוג, UV.y = גובה."""
+    V, F, UV, C = [], [], [], []
+    n = 0
+    for i, (line, kind, h, thick) in enumerate(walls):
+        col = WALL_COLORS[int(stable_rand(i, "wc") * len(WALL_COLORS))] if kind == 0 else (190, 188, 182)
+        pts = np.array(line.coords)
+        u0 = 0.0
+        for a, b in zip(pts[:-1], pts[1:]):
+            L = float(np.linalg.norm(b - a))
+            if L < 0.2:
+                continue
+            k = max(1, int(L / 12) + 1)
+            for j in range(k):  # קטעים קצרים כדי לעקוב אחרי הקרקע
+                p0 = a + (b - a) * j / k
+                p1 = a + (b - a) * (j + 1) / k
+                d = (p1 - p0) / np.linalg.norm(p1 - p0)
+                nn = np.array([d[1], -d[0]]) * thick / 2
+                g0 = float(terrain.height(p0[0], p0[1])) - 0.2
+                g1 = float(terrain.height(p1[0], p1[1])) - 0.2
+                quad = [p0 + nn, p1 + nn, p1 - nn, p0 - nn]  # ימין-התחלה, ימין-סוף, שמאל-סוף, שמאל-התחלה
+                gs = [g0, g1, g1, g0]
+                bot = [(q[0], q[1], g) for q, g in zip(quad, gs)]
+                top = [(q[0], q[1], g + h + 0.2) for q, g in zip(quad, gs)]
+                v = bot + top
+                ul = u0 + L * j / k
+                ur = u0 + L * (j + 1) / k
+                base = 10000 * kind
+                uv = [(base + ul, 0), (base + ur, 0), (base + ur, 0), (base + ul, 0),
+                      (base + ul, h), (base + ur, h), (base + ur, h), (base + ul, h)]
+                # צד ימין (0,1,5,4), צד שמאל (2,3,7,6), קצוות (1,2,6,5),(3,0,4,7), גג (4,5,6,7)
+                f = [(0, 1, 5), (0, 5, 4), (2, 3, 7), (2, 7, 6), (4, 5, 6), (4, 6, 7)]
+                if j == k - 1:
+                    f += [(1, 2, 6), (1, 6, 5)]
+                if j == 0:
+                    f += [(3, 0, 4), (3, 4, 7)]
+                V.append(enu_to_godot(v))
+                UV.append(np.array(uv, dtype=float))
+                F.append(np.array(f) + n)
+                C.append(np.tile(col + (255,), (8, 1)))
+                n += 8
+            u0 += L
+    m = trimesh.Trimesh(np.vstack(V), np.vstack(F), process=False)
+    m.visual = trimesh.visual.TextureVisuals(uv=np.vstack(UV))
+    return m, np.vstack(C).astype(np.uint8)
 
 
 # ---------------------------------------------------------------- טקסטורת קרקע
@@ -329,7 +410,16 @@ LAND = {  # צבע לפי שימוש קרקע, בסדר הציור (הראשון
 
 
 def build_ground_texture(els, terrain, road_lines, footprints):
+    """בסיס: צילום הלוויין (Sentinel-2) אם הורד, אחרת צבעי שימושי הקרקע מ-OSM.
+    מעליו כבישים, מים וצל מגע של בניינים, שהלוויין רזולוציה גסה מכדי להראות."""
+    sat = extras.s2_ground(terrain, TEX)
+    if sat is not None:
+        return _overlay(els, sat, terrain, road_lines, footprints, sat_base=True)
     img = Image.new("RGB", (TEX, TEX), (186, 170, 130))  # אדמת חמרה בהירה
+    return _overlay(els, img, terrain, road_lines, footprints, sat_base=False)
+
+
+def _overlay(els, img, terrain, road_lines, footprints, sat_base):
     dr = ImageDraw.Draw(img)
     sx = TEX / (terrain.east - terrain.west)
     sy = TEX / (terrain.north - terrain.south)
@@ -346,13 +436,15 @@ def build_ground_texture(els, terrain, road_lines, footprints):
             for p in polygons(el):
                 areas.append((order.index(k), k, p))
     areas.sort(key=lambda a: (a[0], -a[2].area))
+    if sat_base:  # בלוויין רואים את השטח עצמו; מ-OSM לוקחים רק מים
+        areas = [a for a in areas if a[1] in ("water", "swimming_pool", "reservoir")]
     for _, k, p in areas:
         dr.polygon(px(p.exterior.coords), fill=LAND[k])
         for r in p.interiors:
             dr.polygon(px(r.coords), fill=(186, 170, 130))
     # כתמי ירק אקראיים: גינות פרטיות שלא ממופות
     rng = np.random.default_rng(7)
-    for _ in range(25000):
+    for _ in range(0 if sat_base else 25000):
         x, y = rng.uniform(0, TEX, 2)
         r = rng.uniform(1.5, 5)
         g = int(rng.uniform(90, 130))
@@ -363,7 +455,7 @@ def build_ground_texture(els, terrain, road_lines, footprints):
         dr.line(px(line.coords), fill=col, width=max(1, int(w * sx)))
     # צל מגע מתחת לבניינים
     for p in footprints:
-        dr.polygon(px(p.buffer(1.2).exterior.coords), fill=(120, 115, 105))
+        dr.polygon(px(p.buffer(1.2).exterior.coords), fill=(110, 105, 98))
     return img
 
 
@@ -386,7 +478,7 @@ def build_trees(els):
     return trees
 
 
-def scatter_trees(els, footprints, road_lines):
+def scatter_trees(els, footprints, road_lines, canopy):
     """עצים "ממולאים" בשטחים ירוקים ובשכונות, כי הסקר ו-OSM מכסים רק חלק קטן מהם.
     מסומנים ב-name ריק ו-health="synthetic" כדי שיהיה ברור שאינם עצים אמיתיים."""
     from shapely.strtree import STRtree
@@ -394,8 +486,11 @@ def scatter_trees(els, footprints, road_lines):
     # לא שותלים על בניינים ועל כבישים
     blockers = footprints + [ln.buffer(w / 2 + 1.0, cap_style=2) for ln, w, _ in road_lines]
     tree_index = STRtree(blockers)
-    density = {"orchard": 1 / 40, "forest": 1 / 60, "wood": 1 / 60, "park": 1 / 150,
-               "garden": 1 / 150, "residential": 1 / 260, "cemetery": 1 / 120}
+    # בשכונות ובפארקים העצים באים ממסכת הצמרות. כאן רק פרדסים וחורשות,
+    # ורק היכן שהמסכה לא כבר שתלה (היא מכסה בעיקר את השטח הבנוי)
+    density = {"orchard": 1 / 40, "forest": 1 / 60, "wood": 1 / 60}
+    if not canopy.ok:
+        density.update({"park": 1 / 150, "garden": 1 / 150, "residential": 1 / 260, "cemetery": 1 / 120})
     out = []
     for el in els:
         t = el.get("tags", {})
@@ -411,7 +506,7 @@ def scatter_trees(els, footprints, road_lines):
             ys = rng.uniform(miny, maxy, cnt * 3)
             from shapely import points, contains
             pts = points(xs, ys)
-            inside = contains(p, pts)
+            inside = contains(p, pts) & (canopy.at(xs, ys) < 0.5)
             kept = 0
             for x, y, ok, pt in zip(xs, ys, inside, pts):
                 if not ok:
@@ -478,23 +573,41 @@ def main():
     export_glb(terrain.mesh(), OUT / "terrain.glb")
     terrain.h.astype("<f4").tofile(OUT / "heights.bin")
     print("בניינים...")
-    bm, bcol, footprints = build_buildings(els, terrain)
+    items, n_osm = collect_buildings(els)
+    bm, bcol, footprints = build_buildings(items, terrain, extras.Ghsl())
     export_glb(bm, OUT / "buildings.glb", bcol)
-    print(f"  {len(footprints)} בניינים, {len(bm.faces)} משולשים")
+    print(f"  {len(footprints)} בניינים ({n_osm} מ-OSM, {len(footprints) - n_osm} ממיקרוסופט), {len(bm.faces)} משולשים")
     print("כבישים...")
     rm, lines = build_roads(els, terrain)
     export_glb(rm, OUT / "roads.glb")
     print(f"  {len(lines)} קטעים")
     print("טקסטורת קרקע...")
     build_ground_texture(els, terrain, lines, footprints).save(OUT / "ground.png", optimize=True)
+    print("חומות וגדרות...")
+    walls = extras.parcel_walls(footprints, lines, terrain)
+    if walls:
+        wm, wcol = build_walls(walls, terrain)
+        export_glb(wm, OUT / "walls.glb", wcol)
+        print(f"  {len(walls)} קטעים, {len(wm.faces)} משולשים")
+    furniture = extras.street_furniture(els, lines, terrain)
+    (OUT / "furniture.json").write_text(json.dumps(furniture, separators=(",", ":")))
+    (OUT / "power.json").write_text(json.dumps(extras.power_lines(els), separators=(",", ":")))
+    print(f"ריהוט רחוב: {len(furniture)}")
+    pois = extras.pois()
+    (OUT / "pois.json").write_text(json.dumps(pois, ensure_ascii=False))
+    print(f"נקודות מידע: {len(pois)}")
     trees = build_trees(els)
-    synth = scatter_trees(els, footprints, lines)
-    # קומפקטי: [x, y, גובה, קוטר צמרת, סוג]; סוג 0 = עץ מהסקר, 1 = ממולא, 2 = הדר ממולא
+    canopy = extras.Canopy()
+    ctrees = extras.canopy_trees(canopy, footprints, trees, terrain)
+    synth = scatter_trees(els, footprints, lines, canopy)
+    # קומפקטי: [x, y, גובה, קוטר צמרת, סוג]
+    # סוג 0 = עץ מהסקר, 1 = ממולא, 2 = הדר ממולא, 3 = ממסכת הצמרות (מיקום אמיתי, גודל משוער)
     rows = [[t["x"], t["y"], t["h"], t["c"], 0] for t in trees]
+    rows += [[t["x"], t["y"], t["h"], t["c"], 3] for t in ctrees]
     rows += [[t["x"], t["y"], t["h"], t["c"], 2 if t.get("kind") == "citrus" else 1] for t in synth]
     (OUT / "trees.json").write_text(json.dumps(rows, separators=(",", ":")))
     (OUT / "survey_trees.json").write_text(json.dumps(trees, ensure_ascii=False))
-    print(f"עצים: {len(trees)} אמיתיים + {len(synth)} ממולאים")
+    print(f"עצים: {len(trees)} מהסקר + {len(ctrees)} ממסכת הצמרות + {len(synth)} ממולאים")
     places = build_places(els)
     (OUT / "places.json").write_text(json.dumps(places, ensure_ascii=False, indent=0))
     meta = {
@@ -506,6 +619,12 @@ def main():
             "© OpenStreetMap contributors (ODbL)",
             "Elevation: Mapzen Terrarium / SRTM (AWS Open Data)",
             "סקר העצים 2018–2019, פרדספדיה, דרך קיצור",
+            "Microsoft Global ML Building Footprints (ODbL)",
+            "GHS-BUILT-H R2023A, European Commission JRC (CC BY 4.0)",
+            "Sentinel-2 cloudless 2024 by EOX IT Services GmbH, contains modified Copernicus Sentinel data 2024 (CC BY-NC-SA 4.0)",
+            "מפת הצמרות הארצית 2021, המרכז למיפוי ישראל, דרך GoInfo",
+            "גושים וחלקות: GovMap, המרכז למיפוי ישראל",
+            "פרדספדיה; Wikimedia Commons (יוצר ורישיון לכל תמונה)",
         ],
     }
     (OUT / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))

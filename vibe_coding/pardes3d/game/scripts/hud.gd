@@ -12,6 +12,17 @@ var marker: Control
 var places_panel: PanelContainer
 var places_list: ItemList
 var place_rows: Array = []
+var prompt: Label
+var poi_panel: PanelContainer
+var poi_title: Label
+var poi_img: TextureRect
+var poi_text: Label
+var poi_credit: Label
+var poi_current: Dictionary = {}
+var poi_near: Dictionary = {}
+var credits: PanelContainer
+var http: HTTPRequest
+var img_cache := {}
 
 
 func _ready() -> void:
@@ -29,6 +40,7 @@ func _ready() -> void:
 		"WASD / חיצים: תנועה   Shift: מהר   E/Q: למעלה/למטה (רחפן)",
 		"F: רחפן / הליכה   גלגלת: מהירות הרחפן   רווח: קפיצה",
 		"P: רשימת מקומות   G: פתח את המקום בגוגל סטריט ויו   M: מפה   H: הסתר עזרה",
+		"I: פרטים על הנקודה הקרובה (סיכות צבעוניות: פרדספדיה, כחולות: תמונות)   C: מקורות וקרדיט",
 	])
 	help.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	help.position = Vector2(16, get_viewport().get_visible_rect().size.y - 110)
@@ -50,6 +62,12 @@ func _ready() -> void:
 	minimap.add_child(marker)
 
 	_make_places(root)
+	_make_poi_panel(root)
+	_make_credits(root)
+	prompt = _label(root, 20)
+	http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(_on_image)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -67,7 +85,12 @@ func _label(parent: Control, size: int) -> Label:
 func _layout() -> void:
 	var s := get_viewport().get_visible_rect().size
 	minimap.position = Vector2(s.x - MAP_SIZE - 16, 16)
-	help.position = Vector2(16, s.y - 110)
+	help.position = Vector2(16, s.y - 136)
+	prompt.position = Vector2(s.x / 2 - 200, s.y - 90)
+	poi_panel.position = Vector2(16, 60)
+	poi_panel.size = Vector2(minf(560, s.x * 0.45), s.y - 220)
+	credits.position = Vector2(s.x / 2 - 330, 80)
+	credits.size = Vector2(660, 0)
 	places_panel.position = Vector2(s.x - 360, MAP_SIZE + 32)
 	places_panel.size = Vector2(344, s.y - MAP_SIZE - 48)
 
@@ -85,10 +108,105 @@ func _make_places(root: Control) -> void:
 	places_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(places_list)
 	place_rows = main.world.places.duplicate()
+	for p in main.world.pois:
+		if p.src == "pp":
+			place_rows.append({"name": p.name, "kind": "פרדספדיה", "x": p.x, "y": p.y})
 	place_rows.sort_custom(func(a, b): return a.name < b.name)
 	for p in place_rows:
 		places_list.add_item(p.name + ("  ·  " + p.kind if p.kind != "" else ""))
 	places_list.item_activated.connect(_on_place)
+
+
+func _make_poi_panel(root: Control) -> void:
+	poi_panel = PanelContainer.new()
+	poi_panel.visible = false
+	root.add_child(poi_panel)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	poi_panel.add_child(scroll)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
+	poi_title = Label.new()
+	poi_title.add_theme_font_size_override("font_size", 22)
+	poi_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(poi_title)
+	poi_img = TextureRect.new()
+	poi_img.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	poi_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	poi_img.custom_minimum_size = Vector2(0, 280)
+	box.add_child(poi_img)
+	poi_text = Label.new()
+	poi_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(poi_text)
+	poi_credit = Label.new()
+	poi_credit.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	poi_credit.add_theme_font_size_override("font_size", 13)
+	poi_credit.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	box.add_child(poi_credit)
+	var row := HBoxContainer.new()
+	box.add_child(row)
+	var open := Button.new()
+	open.text = "פתח בדפדפן"
+	open.pressed.connect(func(): if poi_current.get("url", "") != "": OS.shell_open(poi_current.url))
+	row.add_child(open)
+	var close := Button.new()
+	close.text = "סגור (I)"
+	close.pressed.connect(func(): poi_panel.visible = false)
+	row.add_child(close)
+
+
+func _make_credits(root: Control) -> void:
+	credits = PanelContainer.new()
+	credits.visible = false
+	root.add_child(credits)
+	var l := Label.new()
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var lines: Array = ["מקורות הנתונים (C לסגירה):", ""]
+	lines.append_array(main.world.meta.get("attribution", []))
+	l.text = "\n".join(lines)
+	credits.add_child(l)
+
+
+func _show_poi(p: Dictionary) -> void:
+	poi_current = p
+	poi_title.text = p.name + ("  ·  " + p.group if p.group != "" else "")
+	var t: String = p.get("text", "")
+	if p.get("address", "") != "":
+		t = p.address + "\n\n" + t
+	if p.get("approx", false):
+		t += "\n\n(המיקום משוער, לפי הרחוב)"
+	poi_text.text = t
+	poi_credit.text = p.get("credit", "")
+	poi_img.texture = null
+	poi_img.visible = p.get("img", "") != ""
+	if poi_img.visible:
+		if img_cache.has(p.img):
+			poi_img.texture = img_cache[p.img]
+		else:
+			http.cancel_request()
+			http.request(p.img, ["User-Agent: pardes3d/0.1 (github.com/orimosenzon/fun)"])
+	poi_panel.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	main.player.mouse_captured = false
+
+
+func _on_image(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
+		poi_text.text += "\n\n(התמונה לא נטענה: %d)" % code
+		return
+	var img := Image.new()
+	var url: String = poi_current.get("img", "")
+	var err := img.load_jpg_from_buffer(body)
+	if err != OK:
+		err = img.load_png_from_buffer(body)
+	if err != OK:
+		err = img.load_webp_from_buffer(body)
+	if err != OK:
+		return
+	var tex := ImageTexture.create_from_image(img)
+	img_cache[url] = tex
+	poi_img.texture = tex
 
 
 func _on_place(i: int) -> void:
@@ -121,6 +239,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				places_list.grab_focus()
 		KEY_G:
 			_open_street_view()
+		KEY_I:
+			if poi_panel.visible:
+				poi_panel.visible = false
+			elif not poi_near.is_empty():
+				_show_poi(poi_near)
+		KEY_C:
+			credits.visible = not credits.visible
 
 
 func _open_street_view() -> void:
@@ -142,6 +267,8 @@ func _process(_delta: float) -> void:
 		"רחפן" if pl.flying else "הליכה", ll.x, ll.y, int(pl.heading_deg()), int(agl),
 		int(pl.global_position.y), Engine.get_frames_per_second()]
 	marker.queue_redraw()
+	poi_near = w.street.nearest_poi(pl.camera.global_position, 30.0) if w.street else {}
+	prompt.text = "" if poi_near.is_empty() or poi_panel.visible else "I: " + str(poi_near.name)
 
 
 func _draw_marker() -> void:

@@ -15,6 +15,8 @@ var grid: float
 var west: float
 var south: float
 var places: Array = []
+var pois: Array = []
+var street: Street
 
 
 func world_path(name: String) -> String:
@@ -54,7 +56,23 @@ func load_all() -> void:
 	rmat.shader = load("res://shaders/road.gdshader")
 	_add_glb("roads.glb", rmat, false)
 
+	if FileAccess.file_exists(world_path("walls.glb")):
+		var wmat := ShaderMaterial.new()
+		wmat.shader = load("res://shaders/wall.gdshader")
+		for mi in _add_glb("walls.glb", wmat, true):
+			mi.visibility_range_end = 1500.0
+			var body := StaticBody3D.new()
+			var shape := CollisionShape3D.new()
+			shape.shape = mi.mesh.create_trimesh_shape()
+			body.add_child(shape)
+			mi.add_child(body)
+
 	_add_trees()
+
+	street = Street.new()
+	add_child(street)
+	street.build(self)
+	pois = street.pois
 
 
 func _add_glb(name: String, mat: Material, shadows: bool) -> Array[MeshInstance3D]:
