@@ -988,6 +988,34 @@
           ]
         },
         {
+          "title": "פרדס חנה תלת-ממד",
+          "icon": "🏘️",
+          "theme": "t-green",
+          "dir": "pardes3d",
+          "tags": [
+            "Godot 4",
+            "Python",
+            "OpenStreetMap",
+            "Sentinel-2",
+            "glTF"
+          ],
+          "desc": "<strong style=\"color:#34d399\">המושבה כעולם תלת-ממדי שאפשר לטוס מעליו וללכת ברחובותיו.</strong><br> כל שטח המועצה נבנה מנתונים פתוחים: 14 אלף בניינים מ-OSM וממיקרוסופט עם גבהים לפי GHSL, טופוגרפיה אמיתית, קרקע מצילום לוויין, כ-27 אלף עצים במקומות האמיתיים לפי סקר העצים ומפת הצמרות, חומות לפי גבולות המגרשים, ריהוט רחוב, ונקודות מידע מפרדספדיה ומ-Wikimedia Commons. מקש אחד פותח את גוגל סטריט ויו בדיוק במקום שבו עומדים, להשוואה.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/pardes3d",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "wip",
+              "label": "⚙ בפיתוח"
+            }
+          ]
+        },
+        {
           "title": "מתמטיקה תיכונית: חפיפת משולשים",
           "icon": "📐",
           "theme": "t-amber",
