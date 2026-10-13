@@ -3367,7 +3367,15 @@ async function refreshQueue() {
   if (!Store.isEditor() && !ledger.length) { Layers.setPending([]); return; }
   try {
     const doc = await Store.queue();
-    const items = doc.items || [];
+    // The queue keeps photo paths relative to the data repo, as trails.json
+    // does, and approving copies them across as they are. So they are made
+    // absolute here, on a copy, for showing only. Without it they resolved
+    // against the site and every photo on a waiting trail came up empty
+    // (13/10/2026, the morning walk's seven photos).
+    const items = (doc.items || []).map((item) => !item.photos ? item : {
+      ...item,
+      photos: item.photos.map((ph) => ({ ...ph, thumb: Store.asset(ph.thumb), full: Store.asset(ph.full) }))
+    });
     if (Store.isEditor()) { Layers.setPending(items); return; }
     const ids = new Set(ledger.map((row) => row.id));
     Layers.setPending(items.filter((item) => ids.has(item.id)), { mine: true });
