@@ -54,6 +54,11 @@ def main():
   way[barrier~"^(wall|fence|retaining_wall)$"];
   node[natural=tree];
   node[name];
+  node[highway~"^(bus_stop|street_lamp|traffic_signals|stop|give_way|crossing)$"];
+  node[amenity~"^(bench|waste_basket|drinking_water|post_box|bicycle_parking)$"];
+  node[man_made~"^(water_tower|mast|tower|flagpole)$"];
+  node[power~"^(pole|tower)$"];
+  way[power=line];
   rel({BOUNDARY_REL});
 );
 out geom;

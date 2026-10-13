@@ -5,3 +5,4 @@ trimesh
 mapbox_earcut
 pillow
 requests
+rasterio

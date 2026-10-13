@@ -6,6 +6,7 @@
 ##   --alt=METERS       גובה מעל הקרקע (0 = מצב הליכה)
 ##   --heading=DEG      כיוון מבט (0 = צפון)
 ##   --pitch=DEG        הטיית מבט
+##   --open-poi         לפתוח את חלון המידע של הנקודה הקרובה (לבדיקה)
 extends Node3D
 
 # מרכז המושבה, ליד המועצה
@@ -45,7 +46,13 @@ func _ready() -> void:
 	add_child(hud)
 
 	if args.has("shot"):
-		shot_frames = 90
+		shot_frames = 240 if args.has("open-poi") else 90
+	if args.has("open-poi"):
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var p := world.street.nearest_poi(player.camera.global_position, 80.0)
+		if not p.is_empty():
+			hud._show_poi(p)
 
 
 func teleport(lat: float, lon: float, alt: float, heading := -1.0, pitch := -10.0) -> void:
