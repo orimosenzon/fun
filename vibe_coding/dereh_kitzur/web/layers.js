@@ -56,6 +56,7 @@ const Layers = (() => {
   const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
   const HANADIV_ID = 'hanadiv';
+  const TREES_ID = 'trees';
 
   /* The land-use layer's legend: one row per group build_landuse.py files
    * every designation under, in the colours of the planning administration's
@@ -604,7 +605,7 @@ const Layers = (() => {
 
   function init(data) {
     const { trails, network, places, art, shimur, makom, plans, blocks,
-            publicLand, houten, curitiba, hanadiv, canopy } = data;
+            publicLand, houten, curitiba, hanadiv, canopy, trees } = data;
     setMedia(data.media);
     const prefs = loadPrefs();
     const link = urlPrefs();
@@ -753,6 +754,34 @@ const Layers = (() => {
       linkTitle: 'הדף באתר מקום שמור',
       pinnable: false,                     // no arrange tool for this one yet
       on: isOn(MAKOM_ID, false)
+    });
+
+    // Almost two thousand trees in the moshava's public space, each measured
+    // and judged one by one in 2018-2019, as pardespedia publishes the survey.
+    // Coloured by how each tree was doing, because that is the question a tree
+    // guardian walks out with; trees.js lets you colour and filter by anything
+    // else the survey recorded. Seven years old, and the note says so before
+    // anybody reads a "בריא" as today's verdict. No labels: a species name on
+    // every pin would bury the streets.
+    if (trees && trees.places) trees.places.forEach((p) => { p.url = p.url || trees.source; });
+    addPlaceLayer(TREES_ID, trees, {
+      name: (trees && trees.name) || 'עצים: סקר 2018–2019',
+      category: 'places',
+      short: 'עץ',
+      unit: 'עצים',
+      color: '#2e7d32',
+      labels: false,
+      icons: true,                         // little trees, drawn by drawTree
+      note: 'כל עץ שנמדד בסקר העצים של המושבה, אוקטובר 2018 עד יולי 2019: מין, '
+        + 'גובה, גזע, גיל, מצב בריאות ומה הוא צריך. הצבע לפי מצב העץ בזמן הסקר, '
+        + 'וב"סייר העצים" אפשר לצבוע ולסנן לפי כל השאר. זו תמונה של לפני שבע '
+        + 'שנים: חלק מהעצים נכרתו מאז, ומצבם של אחרים השתנה.',
+      credit: 'סקר העצים 2018–2019 · פרדספדיה',
+      sourceName: 'סקר העצים בפרדס חנה-כרכור',
+      sourceLine: 'הנתונים מתוך סקר העצים 2018–2019, כפי שפורסם בפרדספדיה',
+      linkTitle: 'הסקר המלא בפרדספדיה',
+      pinnable: false,                     // the survey's own coordinates
+      on: isOn(TREES_ID, false)
     });
 
     // What somebody is trying to build here. Unlike everything else on this map
@@ -1174,7 +1203,7 @@ const Layers = (() => {
   const shown = (l) => l.on && !hidden(l);
   const visible = () => list.filter(shown);
   const visibleSegments = () => visible().flatMap((l) => l.segments);
-  const visibleWaypoints = () => visible().flatMap((l) => l.waypoints);
+  const visibleWaypoints = () => visible().flatMap((l) => l.waypoints.filter((p) => !p.hidden));
 
   /** Waypoints drawn as HTML markers, which is the initiative's own handful.
    *  Places are hundreds of points and go through a GL layer instead. */
@@ -1212,6 +1241,7 @@ const Layers = (() => {
   const dotId = (id) => `pt-${id}`;
   const labelId = (id) => `lb-${id}`;
   const hitId = (id) => `hit-${id}`;
+  const iconId = (id) => `ic-${id}`;
   const shapeSrc = (id) => `shp-${id}`;
   const fillId = (id) => `fl-${id}`;
   const edgeId = (id) => `eg-${id}`;
@@ -1249,6 +1279,7 @@ const Layers = (() => {
     ? gridIds(layer)
       .concat(hasShapes(layer) ? [fillId(layer.id), edgeId(layer.id)] : [])
       .concat([dotId(layer.id), labelId(layer.id), hitId(layer.id)])
+      .concat(layer.icons ? [iconId(layer.id)] : [])
     : glows(layer)
     ? [haloId(layer.id), lineId(layer.id), coreId(layer.id), hitId(layer.id)]
     : [lineId(layer.id), hitId(layer.id)]);
@@ -1294,12 +1325,14 @@ const Layers = (() => {
       let i = 0;
       return {
         type: 'FeatureCollection',
-        features: layer.waypoints.filter((p) => !p.unplaced).map((p) => {
+        // `hidden` is a filter somebody set in the tree explorer (trees.js).
+        features: layer.waypoints.filter((p) => !p.unplaced && !p.hidden).map((p) => {
           feature.set(p.id, { src: srcId(layer.id), fid: i });
           return {
             type: 'Feature',
             id: i++,
-            properties: { id: p.id, color: p.color, name: p.name, vague: !!p.vague },
+            properties: { id: p.id, color: p.color, name: p.name, vague: !!p.vague,
+              ...(p.icon ? { icon: p.icon } : {}) },
             geometry: { type: 'Point', coordinates: [p.lng, p.lat] }
           };
         })
@@ -1410,7 +1443,21 @@ const Layers = (() => {
     // A dot at the centre of a cadastral block means nothing - the block is its
     // outline, and the point is only there to hang the number on. The invisible
     // hit circle below stays, so the number is still something you can tap.
-    if (layer.dots !== false) map.addLayer({
+    // A layer drawn as little pictures (the trees) keeps its circle only as the
+    // ring that says "this one is selected"; the picture is drawn above it.
+    if (layer.icons) map.addLayer({
+      id: dotId(layer.id),
+      type: 'circle',
+      source: src,
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 9, 15, 14, 18, 22],
+        'circle-opacity': ['case', sel, 0.25, 0],
+        'circle-stroke-color': ['get', 'color'],
+        'circle-stroke-width': ['case', sel, 3, 0]
+      }
+    });
+    else if (layer.dots !== false) map.addLayer({
       id: dotId(layer.id),
       type: 'circle',
       source: src,
@@ -1461,12 +1508,157 @@ const Layers = (() => {
       }
     });
 
+    if (layer.icons) {
+      if (!treeIcons) {
+        map.on('styleimagemissing', treeIconMissing);
+        treeIcons = true;
+      }
+      map.addLayer({
+        id: iconId(layer.id),
+        type: 'symbol',
+        source: src,
+        layout: {
+          'icon-image': ['get', 'icon'],
+          // Small enough at the moshava's scale that two thousand of them read
+          // as a texture, big enough up close to tell a sick tree from a hollow one.
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.38, 15, 0.65, 18, 1.05],
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true
+        },
+        paint: { 'icon-opacity': ['case', dim, 0.45, 1] }
+      });
+    }
+
     map.addLayer({
       id: hitId(layer.id),
       type: 'circle',
       source: src,
       paint: { 'circle-color': '#000', 'circle-opacity': 0, 'circle-radius': 16 }
     });
+  }
+
+  /* ---------- tree pictures ----------
+   *
+   * Ori, 12/10/2026: little drawings of trees rather than dots, a healthy tree
+   * looking healthy and a sick one sick. The shape says how the tree was doing
+   * and never changes; the colour is whatever the tree explorer is colouring
+   * by, so a map coloured by species still shows which of them were hollow.
+   * Made on demand like the land-use stripes: a feature asks for
+   * `tree-<shape>-<rrggbb>`, and MapLibre asks here for any it has not got. */
+  let treeIcons = false;
+  const TREE_W = 32, TREE_H = 40;
+
+  /** Draw one tree on a 2D context, `TREE_W` by `TREE_H` logical pixels. */
+  function drawTree(g, shape, color) {
+    const trunk = '#4e342e';
+    const blob = (pts) => {
+      g.beginPath();
+      pts.forEach(([x, y, r]) => { g.moveTo(x + r, y); g.arc(x, y, r, 0, Math.PI * 2); });
+    };
+    const lighter = (hex, k) => {
+      const n = parseInt(hex.slice(1), 16);
+      const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * k));
+      return `rgb(${c.join(',')})`;
+    };
+    // Every part twice: first a fat white outline, so the tree stands off the
+    // satellite picture and off its neighbours, then the part itself.
+    const parts = [];
+    const one = (dx, s) => {
+      const T = (x) => dx + 16 + (x - 16) * s;
+      const Y = (y) => 40 - (40 - y) * s;
+      const crownFull = [[T(16), Y(13), 9 * s], [T(9.5), Y(18), 6.5 * s], [T(22.5), Y(18), 6.5 * s], [T(16), Y(20), 7 * s]];
+      const crown = shape === 'weak' ? [[T(12), Y(17), 5 * s], [T(19.5), Y(12), 4.5 * s]] : crownFull;
+      const tw = (shape === 'hollow' ? 7 : 5) * s;
+      parts.push({ kind: 'trunk', x: T(16) - tw / 2, y: Y(20), w: tw, h: Y(38) - Y(20) });
+      if (shape === 'weak') {
+        parts.push({ kind: 'twig', pts: [[T(16), Y(24)], [T(24), Y(10)]] });
+        parts.push({ kind: 'twig', pts: [[T(20), Y(17)], [T(26), Y(16)]] });
+      }
+      parts.push({ kind: 'crown', pts: crown, s, T, Y });
+    };
+    if (shape === 'grove') { one(-8, 0.62); one(8, 0.62); one(0, 0.8); } else one(0, 1);
+
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
+    const paint = (outline) => parts.forEach((p) => {
+      if (p.kind === 'trunk') {
+        g.beginPath();
+        g.rect(p.x, p.y, p.w, p.h);
+        if (outline) { g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); } else { g.fillStyle = trunk; g.fill(); }
+        if (!outline && shape === 'hollow') {
+          g.beginPath();
+          g.ellipse(p.x + p.w / 2, p.y + p.h * 0.55, p.w * 0.28, p.h * 0.24, 0, 0, Math.PI * 2);
+          g.fillStyle = '#1d120d';
+          g.fill();
+        }
+      } else if (p.kind === 'twig') {
+        g.beginPath();
+        g.moveTo(...p.pts[0]); g.lineTo(...p.pts[1]);
+        g.lineWidth = outline ? 4.5 : 1.8;
+        g.strokeStyle = outline ? '#fff' : trunk;
+        g.stroke();
+      } else {
+        if (shape === 'unknown') {
+          // An outline only: a tree the survey said nothing about. Stroke every
+          // circle thick and fill them white over it, so only the outer edge of
+          // the crown is left - stroking the union directly would draw every
+          // circle's arc inside it too.
+          blob(p.pts);
+          g.lineWidth = outline ? 5 : 3.2;
+          g.strokeStyle = outline ? '#fff' : color;
+          g.stroke();
+          if (!outline) { blob(p.pts); g.fillStyle = '#fff'; g.fill(); }
+          return;
+        }
+        blob(p.pts);
+        if (outline) { g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); return; }
+        g.fillStyle = color;
+        g.fill();
+        // A light spot up and to the right, so the crown reads as round.
+        const [x, y, r] = p.pts[0];
+        g.beginPath();
+        g.arc(x + r * 0.3, y - r * 0.35, r * 0.35, 0, Math.PI * 2);
+        g.fillStyle = lighter(color, 0.45);
+        g.fill();
+        if (shape === 'sick') {
+          // Yellowed patches, the way a sick crown looks from the street.
+          [[p.T(11), p.Y(19), 2.2], [p.T(20), p.Y(15), 2], [p.T(18.5), p.Y(22), 1.8]].forEach(([sx, sy, sr]) => {
+            g.beginPath(); g.arc(sx, sy, sr * p.s, 0, Math.PI * 2);
+            g.fillStyle = '#f3e3a0'; g.fill();
+          });
+        }
+      }
+    });
+    paint(true);
+    paint(false);
+  }
+
+  /** A canvas with one tree on it, for HTML (the explorer's key). */
+  function treeCanvas(shape, color, scale = 0.6) {
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const c = document.createElement('canvas');
+    c.width = Math.round(TREE_W * scale * ratio);
+    c.height = Math.round(TREE_H * scale * ratio);
+    c.style.width = `${TREE_W * scale}px`;
+    c.style.height = `${TREE_H * scale}px`;
+    const g = c.getContext('2d');
+    g.scale(scale * ratio, scale * ratio);
+    drawTree(g, shape, color);
+    return c;
+  }
+
+  function treeIconMissing(e) {
+    const m = /^tree-(ok|sick|weak|hollow|unknown|grove)-([0-9a-f]{6})$/.exec(e.id);
+    if (!m || map.hasImage(e.id)) return;
+    const ratio = 2;
+    const c = document.createElement('canvas');
+    c.width = TREE_W * ratio;
+    c.height = TREE_H * ratio;
+    const g = c.getContext('2d');
+    g.scale(ratio, ratio);
+    drawTree(g, m[1], '#' + m[2]);
+    map.addImage(e.id, g.getImageData(0, 0, c.width, c.height), { pixelRatio: ratio });
   }
 
   function addLineLayers(layer) {
@@ -2269,6 +2461,14 @@ const Layers = (() => {
     });
   }
 
+  /** A layer whose colours or filter changed from outside (the tree explorer):
+   *  the dots, the key and the list all follow. */
+  function restyle(id) {
+    refresh(id);
+    renderLegend();
+    onChange();
+  }
+
   /** Push a layer's items back into its map source, after drafts change. */
   function refresh(id) {
     const layer = byId(id);
@@ -2426,7 +2626,7 @@ const Layers = (() => {
       return layer.landuseGroups.map((g) => ({
         name: g.name, color: g.color, stripe: g.stripe, area: true }));
     }
-    const placed = layer.waypoints.filter((p) => !p.unplaced);
+    const placed = layer.waypoints.filter((p) => !p.unplaced && !p.hidden);
     // Segments as well as places, because trips are sorted into groups too -
     // by how hard they are - and they are lines.
     const members = placed.concat(layer.segments);
@@ -2668,6 +2868,9 @@ const Layers = (() => {
         <ul class="lay-legend">${rows.map((r) => `<li>
           <span class="lg-dot" style="--c:${r.color}"></span>${escapeHtml(r.name)}
         </li>`).join('')}</ul>` : ''}
+      ${layer.id === TREES_ID && layer.on ? `
+        <button class="lay-add places" data-trees="1">סייר העצים: צבע, סינון וחתכים${
+          layer.filtered ? ' · מסונן' : ''}</button>` : ''}
       ${editable && layer.pinnable ? `
         <button class="lay-add places" data-arrange="1">סידור מיקומי המקומות${
           layer.waypoints.filter((p) => p.unplaced).length
@@ -2814,11 +3017,11 @@ const Layers = (() => {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     resetMedia,
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, highlight, setArranging, setShaping, setPending, setTheme,
+    addToMap, applyVisibility, refresh, restyle, highlight, treeCanvas, setArranging, setShaping, setPending, setTheme,
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TREES_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     SOVEV_ID,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,

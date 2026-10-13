@@ -340,7 +340,11 @@ const Store = (() => {
     // picture the map drapes over the ground is served from next to the app
     // like its CSS - a build product, not something an editor changes. A miss
     // is ordinary: the map simply has no shade layer to offer.
-    const canopy = await bundled('data/canopy.json');
+    //
+    // The tree survey is the same kind of thing: build_trees.py reads it off
+    // pardespedia and writes it next to the app, and nothing here edits it.
+    const [canopy, trees] = await Promise.all([
+      bundled('data/canopy.json'), bundled('data/trees.json')]);
     return {
       trails: absolutise(trails),
       network,
@@ -356,6 +360,7 @@ const Store = (() => {
       hanadiv: absolutise(hanadiv),
       media: absolutise(media || { items: {} }),
       canopy,
+      trees,
       offline: state.offline
     };
   }

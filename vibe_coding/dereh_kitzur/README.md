@@ -38,8 +38,9 @@
     cockpit.js                  תא הטייס של ה-F-16: HUD קונפורמי וקצה לוח המכשירים, SVG וקנבס
     manifest.webmanifest, sw.js, icon-*.png   התקנה למסך הבית; sw.js לא מטמין כלום
     install.html                דף ההסבר למשתמשים: איך שמים את האפליקציה על מסך הבית
+    trees.js                    סייר העצים: צבע, סינון וחתכים על שכבת סקר העצים, וכרטיס העץ
     app.js                      מפה, רשימה, פרטים, ניווט, נעיצת מקומות
-    data/                       עותק לא מקוון בלבד, לא מקור. חוץ מ-canopy.json, שחי כאן
+    data/                       עותק לא מקוון בלבד, לא מקור. חוץ מ-canopy.json ו-trees.json, שחיים כאן
     overlays/canopy/            אריחי צל העצים, 27 קבצי PNG. תוצר של build_canopy.py
     vendor/                     תוסף הכיווניות של MapLibre
   worker/                       שרתון Cloudflare: מחזיק את מפתח גיטהאב היחיד
@@ -57,6 +58,7 @@
   build_landuse.py              ייעוד הקרקע של כל המושבה, בצבעי מבא"ת, ל-web/data/landuse.json
   build_houten.py               רשת האופניים של האוטן מ-OpenStreetMap ל-houten.json
   build_canopy.py               חופות העצים מ-GoInfo מעל סקר מפ"י לאריחים ול-canopy.json
+  build_trees.py                סקר העצים 2018–2019 מהדף בפרדספדיה ל-web/data/trees.json
   build_media.py                תמונות מוויקישיתוף וסרטוני יוטיוב, משותף לשתי הערים
   build_trips.py                מציע טיולים: משרשר דרכי קיצור עם ניתוב ברחוב
   shimur_src/                   תמלול טבלת נספח השימור, המקור של build_shimur.py
@@ -87,6 +89,7 @@ python3 build_cadastre.py        # רענון גבולות הגושים
 python3 build_parcels.py         # רענון החלקות (פעם בכמה חודשים מספיק)
 python3 build_public.py          # רענון שכבת השטחים הציבוריים
 python3 build_canopy.py          # רענון שכבת צל העצים, אריחים מ-GoInfo מעל סקר מפ"י
+python3 build_trees.py           # רענון שכבת סקר העצים מהדף בפרדספדיה
 python3 build_houten.py          # רענון שכבת האוטן (--refresh מדלג על המטמון)
                                  # --skip-media בונה גאומטריה בלבד, בלי רשת חיצונית
 python3 build_trips.py           # הצעות לטיולים חדשים, לא כותב כלום
@@ -562,6 +565,7 @@ preflight. `?local` ומצב עריכה **לא נספרים**: אורי פותח
 | גושים | `build_cadastre.py`, מהקדסטר הארצי | כבויה |
 | חלקות | `build_parcels.py`, מהקדסטר הארצי; נטענת רק כשמדליקים | כבויה |
 | צל עצים | `build_canopy.py`, אריחים מ-GoInfo מעל סקר חופות העצים של מפ"י | כבויה |
+| עצים: סקר 2018–2019 | `build_trees.py`, מהדף "סקר העצים בפרדס חנה-כרכור" בפרדספדיה | כבויה |
 | האוטן | `build_houten.py`, מ-OpenStreetMap | כבויה |
 | שכבות שבילים של עורך | `trails.json` → `layers[]` | כבויה |
 | ממתינים לאישור | `data/pending.json` | לעורך, ולמי ששלח |
