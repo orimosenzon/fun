@@ -4077,4 +4077,7 @@ td .tx-sub { display: inline; }
 .tx-shapes-t { font-weight: 600; margin-inline-end: 2px; }
 .tx-shape { display: inline-flex; align-items: flex-end; height: 30px; }
 .tx-shape canvas { display: block; }
-.tx-shape + span { margin-inline-end: 6px; }
+/* A picture and its name are one unit, so a wrapped line never leaves a tree
+ * next to the wrong name. The title takes a line of its own. */
+.tx-shapes-t { flex-basis: 100%; }
+.tx-form { display: inline-flex; align-items: flex-end; gap: 3px; margin-inline-end: 10px; white-space: nowrap; }

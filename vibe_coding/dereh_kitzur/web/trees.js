@@ -82,13 +82,40 @@ const Trees = (() => {
   }
   const valuesOf = (d, p) => [].concat(d.of(p));
 
-  /* The picture of each tree on the map, by how it was doing. The colour is
-   * the explorer's; the shape is always this. An avenue or a grove is three
-   * trees whatever its health, because that is the first thing to know. */
-  const SHAPE = { 'בריא': 'ok', 'חולה': 'sick', 'מנוון': 'weak', 'חלול': 'hollow' };
-  const shapeOf = (p) => (p.tree.many ? 'grove' : SHAPE[p.tree.health] || 'unknown');
-  const SHAPE_KEY = [['ok', 'בריא'], ['sick', 'חולה'], ['weak', 'מנוון'], ['hollow', 'חלול'],
-    ['grove', 'שדרה או חורשה'], ['unknown', 'מצב לא תועד']];
+  /* The picture of each tree on the map: its shape is the way the species
+   * grows, its colour whatever the explorer colours by (health, unless
+   * somebody picks otherwise). Ori, 13/10/2026: "the shape the kind of tree,
+   * the colour its state". The forms themselves are drawn in layers.js; this
+   * says which species grows which way, by a word in its Hebrew name, first
+   * match wins. 12 species are 83 % of the survey, and each of those has a
+   * form of its own or its family's. An avenue or a grove is three of them. */
+  const FORMS = [
+    ['cypress', 'ברוש', (n) => n === 'ברוש מצוי'],
+    ['palm', 'דקל', (n) => /דקל|תמר|וושינגטוניה/.test(n)],
+    ['conifer', 'מחטני אחר', (n) => /ברוש|תויה|אראוקריה|קזוארינה/.test(n)],
+    ['grevillea', 'גרווילאה', (n) => n.includes('גרווילאה')],
+    ['oak', 'אלון', (n) => n.startsWith('אלון')],
+    ['eucalyptus', 'איקליפטוס', (n) => n.includes('איקליפטוס')],
+    ['weeping', 'שיטה', (n) => n.startsWith('שיטה') || n.startsWith('שיטת')],
+    ['vase', 'סיגלון', (n) => n.includes('סיגלון')],
+    ['ficus', 'פיקוס', (n) => n.startsWith('פיקוס')],
+    ['umbrella', 'צמרת שטוחה: מכנף, צאלון, אורן הגלעין',
+      (n) => /מכנף|צאלון|אלביציה|אורן הגלעין/.test(n)],
+    ['pine', 'אורן', (n) => n.startsWith('אורן')],
+    ['olive', 'זית', (n) => n.startsWith('זית')],
+    ['round', 'עץ רחב-עלים אחר', () => true]
+  ];
+  const formOf = (p) => FORMS.find(([, , is]) => is(p.name))[0];
+  const iconOf = (p) => `tree-${formOf(p)}-${p.tree.many ? 'g' : 's'}-${p.color.slice(1).toLowerCase()}`;
+
+  /** The shapes the survey actually uses, most common first, and the grove. */
+  function shapeKey() {
+    const n = new Map();
+    trees().forEach((p) => { const f = formOf(p); n.set(f, (n.get(f) || 0) + 1); });
+    const rows = FORMS.filter(([f]) => n.get(f)).sort((a, b) => (a[0] === 'round') - (b[0] === 'round')
+      || n.get(b[0]) - n.get(a[0])).map(([f, name]) => [f, name, false]);
+    return [...rows, ['round', 'שדרה או חורשה', true]];
+  }
 
   /* Views worth a click. Each is a whole state, not a tweak of the current one,
    * so that pressing it twice gives the same map. */
@@ -183,7 +210,7 @@ const Trees = (() => {
       const v = vs.find((x) => want.includes(x)) || vs[0];
       p.group = cm.has(v) ? v : (d.id === 'species' ? 'מינים אחרים' : v);
       p.color = cm.get(v) || OTHER;
-      p.icon = `tree-${shapeOf(p)}-${p.color.slice(1).toLowerCase()}`;
+      p.icon = iconOf(p);
       p.hidden = !passes(p);
     });
     // The key is built from the layer's groups. Ordered as the cut is, and only
@@ -310,8 +337,8 @@ const Trees = (() => {
         `<button class="tx-chip${x.id === d.id ? ' on' : ''}" data-tx="color" data-d="${x.id}">${escapeHtml(x.name)}</button>`).join('')}</div>
 
       <div class="tx-shapes" aria-label="מה אומרת צורת העץ">
-        <span class="tx-shapes-t">הצורה במפה:</span>
-        ${SHAPE_KEY.map(([s, n]) => `<span class="tx-shape" data-shape="${s}"></span><span>${n}</span>`).join('')}
+        <span class="tx-shapes-t">הצורה במפה היא סוג העץ, הצבע הוא מה שבחרתם למעלה:</span>
+        ${shapeKey().map(([f, n, g]) => `<span class="tx-form"><span class="tx-shape" data-form="${f}"${g ? ' data-grove="1"' : ''}></span><span>${escapeHtml(n)}</span></span>`).join('')}
       </div>
       <p class="tx-hint">הצבע לפי מה שבחרתם למעלה. לחיצה על שורה מסננת לפיה. אפשר לבחור כמה.</p>
       <ul class="tx-rows">${rows.map((r) => {
@@ -346,7 +373,7 @@ const Trees = (() => {
       <a class="src" href="${escapeHtml((layer() || {}).waypoints[0].url)}" target="_blank" rel="noopener">
         סקר העצים המלא בפרדספדיה ↗</a>`;
     box.querySelectorAll('.tx-shape').forEach((el) => {
-      el.appendChild(Layers.treeCanvas(el.dataset.shape, '#4f8a4b', 0.7));
+      el.appendChild(Layers.treeCanvas(el.dataset.form, '#4f8a4b', 0.7, !!el.dataset.grove));
     });
   }
 
