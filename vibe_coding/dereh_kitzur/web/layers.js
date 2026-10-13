@@ -1540,102 +1540,142 @@ const Layers = (() => {
 
   /* ---------- tree pictures ----------
    *
-   * Ori, 12/10/2026: little drawings of trees rather than dots, a healthy tree
-   * looking healthy and a sick one sick. The shape says how the tree was doing
-   * and never changes; the colour is whatever the tree explorer is colouring
-   * by, so a map coloured by species still shows which of them were hollow.
+   * Ori, 12/10/2026: little drawings of trees rather than dots. 13/10/2026: the
+   * shape is the kind of tree and the colour is how it was doing, so a cypress
+   * reads as a cypress and a sick one as sick. The colour is whatever the tree
+   * explorer is colouring by, which is health unless somebody picks otherwise.
+   *
+   * Ninety-odd species cannot be ninety shapes anyone tells apart at this
+   * size, so a shape is a way of growing: a column, a palm, a wide low dome,
+   * an open crown on a pale trunk. trees.js decides which species grows which
+   * way. Each shape is a few circles, ellipses and polygons in a 32x40 box,
+   * ground at the bottom.
+   *
    * Made on demand like the land-use stripes: a feature asks for
-   * `tree-<shape>-<rrggbb>`, and MapLibre asks here for any it has not got. */
+   * `tree-<form>-<s|g>-<rrggbb>` (g: an avenue or a grove, drawn as three),
+   * and MapLibre asks here for any it has not got. */
   let treeIcons = false;
   const TREE_W = 32, TREE_H = 40;
+  const TREE_FORMS = ['cypress', 'conifer', 'palm', 'grevillea', 'oak', 'eucalyptus', 'weeping',
+    'vase', 'ficus', 'pine', 'umbrella', 'olive', 'round'];
+
+  /* Each form as parts: `c` circle [x, y, r], `e` ellipse [x, y, rx, ry],
+   * `p` polygon [[x, y]...], `t` trunk [x, y, w, h], `s` stem [[x, y]...]
+   * drawn as a thick line, `f` a palm frond (a stroked curve in the crown's
+   * colour). The first crown part gets the light spot that makes it round. */
+  const FORM_PARTS = {
+    // Cupressus sempervirens: a dark flame, much taller than wide.
+    cypress: [['t', 14.8, 33, 2.4, 6], ['e', 16, 20, 5, 15], ['p', [[16, 1.5], [12.6, 13], [19.4, 13]]]],
+    // Other conifers (Arizona cypress, thuja, araucaria, casuarina): a cone.
+    conifer: [['t', 14.5, 32, 3, 7], ['p', [[16, 3], [6.5, 33], [25.5, 33]]]],
+    // Canary palm: a thick trunk and a round head of arching fronds.
+    palm: [['t', 13.5, 15, 5, 24],
+      ['f', [16, 14], [6, 9], [1.5, 17]], ['f', [16, 14], [26, 9], [30.5, 17]],
+      ['f', [16, 14], [9, 4], [3, 7]], ['f', [16, 14], [23, 4], [29, 7]],
+      ['f', [16, 14], [14, 3], [10, 1.5]], ['f', [16, 14], [18, 3], [22, 1.5]],
+      ['f', [16, 14], [8, 15], [5, 22]], ['f', [16, 14], [24, 15], [27, 22]],
+      ['c', 16, 14, 3.2]],
+    // Silk oak: tall and narrow, the crown ragged at the edges.
+    grevillea: [['t', 14.8, 27, 2.4, 12], ['e', 16, 17, 6, 8], ['c', 16, 6.5, 3.6],
+      ['c', 12.5, 12, 3.8], ['c', 19.8, 11, 3.8], ['c', 11.5, 21, 4], ['c', 20.5, 22, 4], ['c', 16, 25, 4.2]],
+    // Mount Tabor oak: a wide, low dome on a thick trunk, wider than tall.
+    oak: [['s', [[16, 39], [16, 27], [10, 21]], 4], ['s', [[16, 28], [23, 21]], 3.2],
+      ['e', 16, 18, 15, 6.5], ['e', 16, 14, 10, 6], ['c', 4.5, 20.5, 3.5], ['c', 27.5, 20.5, 3.5]],
+    // Eucalyptus: a tall pale trunk that forks, and loose clumps of leaves.
+    eucalyptus: [['s', [[16, 39], [16, 22], [11, 11]], 3.2, 'pale'], ['s', [[16, 24], [22, 9]], 2.6, 'pale'],
+      ['s', [[16, 30], [23, 22]], 1.8, 'pale'],
+      ['c', 21.5, 7, 5.2], ['c', 10.5, 9, 5], ['c', 16, 4, 3.6], ['c', 25.5, 16, 3.6], ['c', 7, 15.5, 3.4]],
+    // Acacias (the blue-leaved wattle above all): a dome that hangs down.
+    weeping: [['t', 14.5, 24, 3, 15], ['e', 16, 13, 10, 7],
+      ['f', [8, 13], [4, 18], [4.5, 28]], ['f', [11, 16], [8.5, 22], [9, 30]],
+      ['f', [24, 13], [28, 18], [27.5, 28]], ['f', [21, 16], [23.5, 22], [23, 30]],
+      ['f', [16, 18], [15, 22], [16.5, 27]]],
+    // Jacaranda: a trunk that splits into a V under a wide, airy crown.
+    vase: [['s', [[16, 39], [16, 27], [9.5, 16]], 2.8], ['s', [[16, 27], [22.5, 15]], 2.6],
+      ['e', 16, 11, 13, 5.5], ['c', 9, 12.5, 5], ['c', 23, 12, 5.5], ['c', 16, 8, 5]],
+    // Figs: a huge dense dome, several trunks and roots under it.
+    ficus: [['t', 11, 25, 3, 14], ['t', 18, 25, 3, 14], ['t', 14.6, 27, 2.6, 12],
+      ['c', 16, 13, 9.5], ['c', 6.5, 18, 6], ['c', 25.5, 18, 6], ['e', 16, 20, 14, 6]],
+    // Pines: a leaning trunk and flat layers of needles.
+    pine: [['s', [[17, 39], [15.5, 27], [16.5, 12]], 3], ['s', [[15.8, 25], [9, 20]], 1.8], ['s', [[16.2, 20], [23, 15]], 1.8],
+      ['e', 16.5, 8.5, 8, 4.2], ['e', 10.5, 14.5, 7.5, 4], ['e', 22, 15, 7.5, 4], ['e', 15.5, 19.5, 6.5, 3.4]],
+    // Tipu tree, poinciana, albizia, stone pine: a flat umbrella on a tall trunk.
+    umbrella: [['s', [[16, 39], [16, 18], [9, 12]], 3.2], ['s', [[16, 19], [23, 12]], 2.6],
+      ['e', 16, 10, 14.5, 5], ['e', 16, 6.5, 9, 4]],
+    // Olive: a short trunk twisted in two, a loose grey crown.
+    olive: [['s', [[14, 39], [12.5, 30], [14.5, 22]], 3.2], ['s', [[17.5, 39], [19.5, 30], [17.5, 21]], 3],
+      ['c', 20, 13, 6.5], ['c', 11, 15, 6], ['c', 16, 9, 5], ['c', 24.5, 18, 4], ['c', 7, 20, 3.6]],
+    // Everything else: the round broadleaf tree.
+    round: [['t', 13.5, 20, 5, 19], ['c', 16, 13, 9], ['c', 9.5, 18, 6.5], ['c', 22.5, 18, 6.5], ['c', 16, 20, 7]]
+  };
 
   /** Draw one tree on a 2D context, `TREE_W` by `TREE_H` logical pixels. */
-  function drawTree(g, shape, color) {
-    const trunk = '#4e342e';
-    const blob = (pts) => {
-      g.beginPath();
-      pts.forEach(([x, y, r]) => { g.moveTo(x + r, y); g.arc(x, y, r, 0, Math.PI * 2); });
-    };
+  function drawTree(g, form, color, grove = false) {
+    const parts = FORM_PARTS[form] || FORM_PARTS.round;
+    const trunk = '#4e342e', pale = '#e6dccd';
     const lighter = (hex, k) => {
       const n = parseInt(hex.slice(1), 16);
       const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * k));
       return `rgb(${c.join(',')})`;
     };
-    // Every part twice: first a fat white outline, so the tree stands off the
-    // satellite picture and off its neighbours, then the part itself.
-    const parts = [];
-    const one = (dx, s) => {
-      const T = (x) => dx + 16 + (x - 16) * s;
-      const Y = (y) => 40 - (40 - y) * s;
-      const crownFull = [[T(16), Y(13), 9 * s], [T(9.5), Y(18), 6.5 * s], [T(22.5), Y(18), 6.5 * s], [T(16), Y(20), 7 * s]];
-      const crown = shape === 'weak' ? [[T(12), Y(17), 5 * s], [T(19.5), Y(12), 4.5 * s]] : crownFull;
-      const tw = (shape === 'hollow' ? 7 : 5) * s;
-      parts.push({ kind: 'trunk', x: T(16) - tw / 2, y: Y(20), w: tw, h: Y(38) - Y(20) });
-      if (shape === 'weak') {
-        parts.push({ kind: 'twig', pts: [[T(16), Y(24)], [T(24), Y(10)]] });
-        parts.push({ kind: 'twig', pts: [[T(20), Y(17)], [T(26), Y(16)]] });
-      }
-      parts.push({ kind: 'crown', pts: crown, s, T, Y });
-    };
-    if (shape === 'grove') { one(-8, 0.62); one(8, 0.62); one(0, 0.8); } else one(0, 1);
-
     g.lineJoin = 'round';
     g.lineCap = 'round';
-    const paint = (outline) => parts.forEach((p) => {
-      if (p.kind === 'trunk') {
+
+    const one = (dx, k) => {
+      const X = (x) => dx + 16 + (x - 16) * k;
+      const Y = (y) => 40 - (40 - y) * k;
+      const shape = (p) => {
         g.beginPath();
-        g.rect(p.x, p.y, p.w, p.h);
-        if (outline) { g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); } else { g.fillStyle = trunk; g.fill(); }
-        if (!outline && shape === 'hollow') {
-          g.beginPath();
-          g.ellipse(p.x + p.w / 2, p.y + p.h * 0.55, p.w * 0.28, p.h * 0.24, 0, 0, Math.PI * 2);
-          g.fillStyle = '#1d120d';
-          g.fill();
-        }
-      } else if (p.kind === 'twig') {
-        g.beginPath();
-        g.moveTo(...p.pts[0]); g.lineTo(...p.pts[1]);
-        g.lineWidth = outline ? 4.5 : 1.8;
-        g.strokeStyle = outline ? '#fff' : trunk;
+        if (p[0] === 'c') g.arc(X(p[1]), Y(p[2]), p[3] * k, 0, Math.PI * 2);
+        else if (p[0] === 'e') g.ellipse(X(p[1]), Y(p[2]), p[3] * k, p[4] * k, 0, 0, Math.PI * 2);
+        else if (p[0] === 'p') { p[1].forEach(([x, y], i) => (i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)))); g.closePath(); }
+        else if (p[0] === 't') g.rect(X(p[1]), Y(p[2]), p[3] * k, p[4] * k);
+        else if (p[0] === 's') p[1].forEach(([x, y], i) => (i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))));
+        else if (p[0] === 'f') { g.moveTo(X(p[1][0]), Y(p[1][1])); g.quadraticCurveTo(X(p[2][0]), Y(p[2][1]), X(p[3][0]), Y(p[3][1])); }
+      };
+      const wood = (p) => p[0] === 't' || p[0] === 's';
+      const lined = (p) => p[0] === 's' || p[0] === 'f';
+      const width = (p) => (p[0] === 's' ? p[2] : 2.4) * k;
+
+      // Every part twice: first a fat white outline, so the tree stands off
+      // the satellite picture and off its neighbours, then the part itself.
+      parts.forEach((p) => {
+        shape(p);
+        g.strokeStyle = '#fff';
+        g.lineWidth = lined(p) ? width(p) + 2.6 : 3;
         g.stroke();
-      } else {
-        if (shape === 'unknown') {
-          // An outline only: a tree the survey said nothing about. Stroke every
-          // circle thick and fill them white over it, so only the outer edge of
-          // the crown is left - stroking the union directly would draw every
-          // circle's arc inside it too.
-          blob(p.pts);
-          g.lineWidth = outline ? 5 : 3.2;
-          g.strokeStyle = outline ? '#fff' : color;
-          g.stroke();
-          if (!outline) { blob(p.pts); g.fillStyle = '#fff'; g.fill(); }
-          return;
-        }
-        blob(p.pts);
-        if (outline) { g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); return; }
-        g.fillStyle = color;
-        g.fill();
-        // A light spot up and to the right, so the crown reads as round.
-        const [x, y, r] = p.pts[0];
+      });
+      // Wood under leaves, in the order given.
+      parts.filter(wood).forEach((p) => {
+        shape(p);
+        if (!lined(p)) { g.fillStyle = trunk; g.fill(); return; }
+        // A pale trunk gets a thin brown edge, or it vanishes into the white.
+        if (p[3] === 'pale') { g.strokeStyle = '#8d6e63'; g.lineWidth = width(p) + 1.2 * k; g.stroke(); }
+        g.strokeStyle = p[3] === 'pale' ? pale : trunk;
+        g.lineWidth = width(p);
+        g.stroke();
+      });
+      const leaves = parts.filter((p) => !wood(p));
+      leaves.forEach((p) => {
+        shape(p);
+        if (p[0] === 'f') { g.strokeStyle = color; g.lineWidth = width(p); g.stroke(); }
+        else { g.fillStyle = color; g.fill(); }
+      });
+      // A light spot up and to the right on the first solid crown part.
+      const top = leaves.find((p) => p[0] === 'c' || p[0] === 'e');
+      if (top && form !== 'palm') {
+        const r = (top[0] === 'c' ? top[3] : Math.min(top[3], top[4]));
         g.beginPath();
-        g.arc(x + r * 0.3, y - r * 0.35, r * 0.35, 0, Math.PI * 2);
-        g.fillStyle = lighter(color, 0.45);
+        g.arc(X(top[1]) + r * 0.3 * k, Y(top[2]) - r * 0.35 * k, r * 0.33 * k, 0, Math.PI * 2);
+        g.fillStyle = lighter(color, 0.42);
         g.fill();
-        if (shape === 'sick') {
-          // Yellowed patches, the way a sick crown looks from the street.
-          [[p.T(11), p.Y(19), 2.2], [p.T(20), p.Y(15), 2], [p.T(18.5), p.Y(22), 1.8]].forEach(([sx, sy, sr]) => {
-            g.beginPath(); g.arc(sx, sy, sr * p.s, 0, Math.PI * 2);
-            g.fillStyle = '#f3e3a0'; g.fill();
-          });
-        }
       }
-    });
-    paint(true);
-    paint(false);
+    };
+    if (grove) { one(-8, 0.6); one(8, 0.6); one(0, 0.78); } else one(0, 1);
   }
 
   /** A canvas with one tree on it, for HTML (the explorer's key). */
-  function treeCanvas(shape, color, scale = 0.6) {
+  function treeCanvas(form, color, scale = 0.6, grove = false) {
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const c = document.createElement('canvas');
     c.width = Math.round(TREE_W * scale * ratio);
@@ -1644,12 +1684,14 @@ const Layers = (() => {
     c.style.height = `${TREE_H * scale}px`;
     const g = c.getContext('2d');
     g.scale(scale * ratio, scale * ratio);
-    drawTree(g, shape, color);
+    drawTree(g, form, color, grove);
     return c;
   }
 
+  const TREE_ICON = new RegExp(`^tree-(${TREE_FORMS.join('|')})-([sg])-([0-9a-f]{6})$`);
+
   function treeIconMissing(e) {
-    const m = /^tree-(ok|sick|weak|hollow|unknown|grove)-([0-9a-f]{6})$/.exec(e.id);
+    const m = TREE_ICON.exec(e.id);
     if (!m || map.hasImage(e.id)) return;
     const ratio = 2;
     const c = document.createElement('canvas');
@@ -1657,7 +1699,7 @@ const Layers = (() => {
     c.height = TREE_H * ratio;
     const g = c.getContext('2d');
     g.scale(ratio, ratio);
-    drawTree(g, m[1], '#' + m[2]);
+    drawTree(g, m[1], '#' + m[3], m[2] === 'g');
     map.addImage(e.id, g.getImageData(0, 0, c.width, c.height), { pixelRatio: ratio });
   }
 
@@ -3017,7 +3059,7 @@ const Layers = (() => {
     list, init, add, byId, item, layerOf, reindex, resetTrails, resetPlaces,
     resetMedia,
     shown, visible, visibleSegments, visibleWaypoints, markerWaypoints, trailLayers, stats,
-    addToMap, applyVisibility, refresh, restyle, highlight, treeCanvas, setArranging, setShaping, setPending, setTheme,
+    addToMap, applyVisibility, refresh, restyle, highlight, treeCanvas, TREE_FORMS, setArranging, setShaping, setPending, setTheme,
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
