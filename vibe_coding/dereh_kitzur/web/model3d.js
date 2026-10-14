@@ -182,7 +182,7 @@ const Model3D = (() => {
 
       const fc = (features) => ({ type: 'FeatureCollection', features });
       data = { houses: fc(houses), trees: fc(trees), walls: fc(walls),
-        attribution: b.attribution };
+        attribution: b.attribution, raw: b, rawWalls: w };
       return data;
     })();
     try {
@@ -344,6 +344,11 @@ const Model3D = (() => {
       }
     });
     restack();
+    // The faces (facades.js) take over from the plain boxes once Three.js
+    // is here; until then, or without it, the boxes are the houses.
+    if (typeof Facades !== 'undefined') {
+      Facades.attach(map, d.raw, d.rawWalls, 'm3d-roofs').then((ok) => { if (ok && active) restack(); });
+    }
   }
 
   /* Where the model sits among the app's own layers. With no terrain, MapLibre
@@ -353,7 +358,7 @@ const Model3D = (() => {
    * a pin or a label is what it should not. So the buildings go above every
    * line and fill and below every circle and label, and they are put back
    * there whenever the app adds a layer, which it does at the top. */
-  const EXTRUDED = ['m3d-walls', 'm3d-trees', 'm3d-houses', 'm3d-roofs'];
+  const EXTRUDED = ['m3d-walls', 'm3d-trees', 'm3d-houses', 'm3d-facades', 'm3d-roofs'];
   const onTop = (l) => l.type === 'symbol' || l.type === 'circle' || l.type === 'heatmap';
   let restacking = false;
 
@@ -367,7 +372,7 @@ const Model3D = (() => {
     if (!wrong) return;
     restacking = true;
     try {
-      EXTRUDED.forEach((id) => map.moveLayer(id));
+      EXTRUDED.forEach((id) => { if (map.getLayer(id)) map.moveLayer(id); });
       layers.filter((l) => onTop(l) && !EXTRUDED.includes(l.id)).forEach((l) => map.moveLayer(l.id));
     } finally {
       restacking = false;

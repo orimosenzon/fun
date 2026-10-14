@@ -5,6 +5,9 @@ What it checks, at phone and desktop width:
     buildings, roofs, trees and walls are on the map, with terrain off
   - the buildings sit above every line and below every label, after the app
     has added its own layers (a trail behind a house must not show through)
+  - the faces (facades.js) take over: Three.js draws every house, roof and
+    garden wall, the plain extrusions are hidden, the shaders compile, and
+    the faces too stay between the lines and the labels
   - the angle slider tilts the map, past the 3D button's 58 to 85
   - the person stands you on a street, not inside a house, at eye height
   - a tap walks you, and a tap on a house stops you short of its wall
@@ -47,6 +50,9 @@ try:
         pg = ctx.new_page()
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
+        glErrs = []
+        pg.on('console', lambda m: glErrs.append(m.text[:300])
+              if m.type == 'error' and ('THREE' in m.text or 'WebGL' in m.text or 'facades' in m.text) else None)
         # The old moshava around the water tower, a little zoomed out.
         pg.goto(f'http://127.0.0.1:{PORT}/index.html?map=32.4741,34.9700,16.5,30,58&panel=off')
         pg.wait_for_function('() => window.__map && __map.isStyleLoaded() && typeof Model3D !== "undefined"',
@@ -87,6 +93,26 @@ try:
         later = pg.evaluate('''() => { const L = __map.getStyle().layers.map((l) => l.id);
                                        return L.indexOf('t-x') < L.indexOf('m3d-walls'); }''')
         check(f'{label}: a line added later is put back under the buildings', later)
+
+        # The faces: Three.js arrives, builds, and replaces the boxes.
+        try:
+            pg.wait_for_function('() => __map.getLayer("m3d-facades")', timeout=60000, polling=500)
+        except Exception:
+            pass
+        pg.wait_for_timeout(1500)
+        fa = pg.evaluate('''() => {
+            const O = __map.style._order, L = __map.getStyle().layers;
+            const top = L.filter((l) => ['symbol', 'circle', 'heatmap'].includes(l.type)).map((l) => O.indexOf(l.id));
+            return { on: !!__map.getLayer('m3d-facades'), stats: Facades.stats(),
+                     hidden: ['m3d-houses', 'm3d-roofs', 'm3d-walls'].map((l) => __map.getLayoutProperty(l, 'visibility')),
+                     aboveLine: O.indexOf('m3d-facades') > O.indexOf('t-x'),
+                     belowLabels: top.every((i) => i > O.indexOf('m3d-facades')) }; }''')
+        check(f'{label}: the faces are drawn, every house of them',
+              fa['on'] and fa['stats'] and fa['stats']['buildings'] > 14000, fa)
+        check(f'{label}: the plain boxes and garden walls are hidden', fa['hidden'] == ['none'] * 3, fa)
+        check(f'{label}: the faces sit above the lines and below the labels',
+              fa['aboveLine'] and fa['belowLabels'], fa)
+        check(f'{label}: the shaders compile', not glErrs, glErrs[:2])
 
         # The slider: a drag from the thumb to the bottom of the track.
         tr = pg.evaluate('''() => { const t = document.querySelector('.m3d-track').getBoundingClientRect(),
