@@ -4081,3 +4081,138 @@ td .tx-sub { display: inline; }
  * next to the wrong name. The title takes a line of its own. */
 .tx-shapes-t { flex-basis: 100%; }
 .tx-form { display: inline-flex; align-items: flex-end; gap: 3px; margin-inline-end: 10px; white-space: nowrap; }
+
+/* ---------- the 3D model (model3d.js) ----------
+ *
+ * Beside the button column, level with the globe and the 3D button that it
+ * belongs with: the angle slider on top, the person who stands you in the
+ * street under it. Shown only while the model is the background. */
+.m3d-ctl {
+  position: absolute;
+  z-index: 500;
+  inset-inline-end: 70px;
+  bottom: calc(var(--panel-h) + 70px);   /* clear of the attribution line under it */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: bottom .25s ease;
+}
+.m3d-ctl[hidden] { display: none; }
+
+.m3d-tilt {
+  width: 44px;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+  touch-action: none;
+  cursor: ns-resize;
+  user-select: none;
+}
+.m3d-tilt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.m3d-end { display: grid; place-items: center; width: 32px; height: 28px; cursor: pointer; }
+.m3d-end svg { width: 20px; height: 20px; fill: #3c4a45; }
+.m3d-track {
+  position: relative;
+  width: 6px;
+  height: 100px;
+  margin: 4px 0;
+  border-radius: 3px;
+  background: #dde3e0;
+}
+.m3d-fill {
+  position: absolute;
+  inset: 0 0 auto 0;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.m3d-thumb {
+  position: absolute;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+
+.m3d-walk {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+  cursor: pointer;
+}
+.m3d-walk svg { width: 24px; height: 24px; fill: #e8a317; }
+.m3d-walk.on { background: #e8a317; }
+.m3d-walk.on svg { fill: #fff; }
+
+.m3d-hint {
+  position: fixed;
+  z-index: 900;
+  top: 108px;            /* under the way back, clear of the bar of buttons on top */
+  left: 16px;
+  right: 16px;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 9px 16px;
+  border-radius: 20px;
+  background: rgba(20, 30, 26, .82);
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+.m3d-hint[hidden] { display: none; }
+
+.m3d-exit {
+  position: fixed;
+  z-index: 900;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px 8px 12px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  color: #1f2a26;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+  cursor: pointer;
+}
+.m3d-exit[hidden] { display: none; }
+.m3d-exit svg { width: 18px; height: 18px; fill: var(--accent); }
+
+/* Standing in the street the map is a place, not a map: the buttons that
+ * zoom, tilt and swap backgrounds mean nothing there, and the cursor is the
+ * hand that turns your head. */
+body.m3d-street .fab,
+body.m3d-street #craft,
+body.m3d-street .m3d-ctl,
+body.m3d-street .maplibregl-ctrl-top-left { display: none !important; }
+body.m3d-street .maplibregl-canvas-container { cursor: grab; }
+body.m3d-street .maplibregl-canvas-container:active { cursor: grabbing; }
+body.flying .m3d-ctl { display: none !important; }
+
+@media (min-width: 860px) {
+  .m3d-ctl { bottom: 20px; inset-inline-end: auto; inset-inline-start: calc(var(--panel-w) + 76px); }
+  .m3d-exit { left: calc(50% - var(--panel-w) / 2); }
+  .m3d-hint { right: calc(var(--panel-w) + 16px); }
+  .panel-anim .m3d-ctl { transition: all .22s ease; }
+}

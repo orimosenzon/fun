@@ -469,7 +469,10 @@ def build_trees(els):
             if not g:
                 continue
             x, y = to_local(g["lat"], g["lng"])
-            trees.append({"x": round(x, 2), "y": round(y, 2), "h": t.get("h") or 7,
+            h = t.get("h") or 7
+            if h > 40:  # בסקר יש עץ של 155 מ': כנראה 15.5 בלי הנקודה. העץ הגבוה בארץ פחות מ-60
+                h = round(h / 10, 1)
+            trees.append({"x": round(x, 2), "y": round(y, 2), "h": h,
                           "c": t.get("c") or 6, "name": p.get("name", ""), "health": t.get("health", "")})
     for el in els:
         if el["type"] == "node" and el.get("tags", {}).get("natural") == "tree":
