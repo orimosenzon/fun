@@ -27,7 +27,7 @@ const BASEMAPS = [
   { id: 'streets', name: 'רחובות', style: 'https://tiles.openfreemap.org/styles/liberty' },
   {
     id: 'sat',
-    name: 'לוויין',
+    name: 'צילום לוויין',
     style: {
       version: 8,
       // Hand-built styles carry no glyphs, and without them the place labels
@@ -52,6 +52,96 @@ const BASEMAPS = [
     }
   }
 ];
+
+/* The third background: the moshava as a model (model3d.js). The same
+ * photograph underneath, with pardes3d's buildings, trees and walls standing
+ * on it, a sky for when the view comes down to the horizon, and a low
+ * afternoon sun from the south-west so that the walls facing you are not
+ * all one flat colour. */
+/* Streets in metres. From the rooftops the photograph is the ground; from
+ * a pavement it is a blur, Esri's zoom 18 stretched sixteen times. So the
+ * roads come in as lines at their real width, an asphalt strip inside a pale
+ * pavement, and fade in only as the camera comes down. Line widths in
+ * MapLibre are pixels, so a width in metres is an exponential in the zoom:
+ * at this latitude a pixel is 66,030 m at zoom 0, halving with each zoom. */
+const PX_PER_M_Z0 = 1 / 66030;
+// The zoom has to be the outermost expression, so the width per feature goes
+// inside each stop.
+const metresWide = (m) => ['interpolate', ['exponential', 2], ['zoom'],
+  14, ['*', m, PX_PER_M_Z0 * 2 ** 14], 24, ['*', m, PX_PER_M_Z0 * 2 ** 24]];
+const byClass = (widths, other) => ['match', ['get', 'class'], ...widths.flat(), other];
+const ROAD_W = [[['primary', 'trunk', 'motorway'], 12], [['secondary', 'tertiary'], 9],
+  [['minor', 'street', 'street_limited'], 6.5], [['service'], 4]];
+const fadeIn = ['interpolate', ['linear'], ['zoom'], 14.5, 0, 16.5, 1];
+const ROAD_LAYERS = [
+  { id: 'm3d-pave', type: 'line', source: 'omt', 'source-layer': 'transportation', minzoom: 14.5,
+    filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary',
+      'minor', 'street', 'street_limited', 'service'], true, false],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#c9c3b8', 'line-opacity': fadeIn,
+      'line-width': metresWide(byClass(ROAD_W.map(([c, w]) => [c, w + 4]), 6)) } },
+  { id: 'm3d-road', type: 'line', source: 'omt', 'source-layer': 'transportation', minzoom: 14.5,
+    filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary',
+      'minor', 'street', 'street_limited', 'service'], true, false],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#55595c', 'line-opacity': fadeIn,
+      'line-width': metresWide(byClass(ROAD_W, 4)) } },
+  { id: 'm3d-path', type: 'line', source: 'omt', 'source-layer': 'transportation', minzoom: 15,
+    filter: ['match', ['get', 'class'], ['path', 'track'], true, false],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#bfa77e', 'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 17, 0.85],
+      'line-width': metresWide(['match', ['get', 'class'], 'track', 3, 1.6]) } }
+];
+
+BASEMAPS.push({
+  id: '3d',
+  name: 'תלת־ממד',
+  style: {
+    ...BASEMAPS[1].style,
+    sources: {
+      ...BASEMAPS[1].style.sources,
+      omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' }
+    },
+    layers: [...BASEMAPS[1].style.layers, ...ROAD_LAYERS],
+    sky: {
+      'sky-color': '#7fb2e6',
+      'horizon-color': '#dfeaf2',
+      'fog-color': '#dfe6ea',
+      'sky-horizon-blend': 0.6,
+      'horizon-fog-blend': 0.7,
+      'fog-ground-blend': 0.85,
+      'atmosphere-blend': 0.6
+    },
+    light: { anchor: 'map', position: [1.4, 215, 40], color: '#fffaf0', intensity: 0.32 }
+  }
+});
+/* The globe button shows where it goes next, not where you are (Ori,
+ * 14/10/2026): a globe for the photograph, buildings for the model, a folded
+ * map for the street map. The background you are on is in plain sight; what
+ * the button is for is the one you are about to get. The model's buildings
+ * are two boxes drawn in isometric, their sides in two shades so that they
+ * read as solids at 22 pixels. */
+const BASEMAP_ICONS = {
+  sat: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm6.9 6h-2.9a15.6 15.6 0 00-1.4-3.6A8 8 0 0118.9 8zM12 4c.8 1.2 1.4 2.5 1.8 4h-3.6c.4-1.5 1-2.8 1.8-4zM4.3 14a7.9 7.9 0 010-4h3.3a16.5 16.5 0 000 4H4.3zm.8 2H8a15.6 15.6 0 001.4 3.6A8 8 0 015.1 16zm2.9-8H5.1a8 8 0 014.3-3.6A15.6 15.6 0 008 8zm4 12c-.8-1.2-1.4-2.5-1.8-4h3.6c-.4 1.5-1 2.8-1.8 4zm2.2-6H9.8a14.7 14.7 0 010-4h4.4a14.7 14.7 0 010 4zm.4 5.6A15.6 15.6 0 0016 16h2.9a8 8 0 01-4.3 3.6zm1.8-5.6a16.5 16.5 0 000-4h3.3a7.9 7.9 0 010 4h-3.3z"/>',
+  '3d': '<path d="M2.5 6.2L7 4l4.5 2.2L7 8.4z" opacity=".45"/>'
+    + '<path d="M2.5 6.2L7 8.4v12.1l-4.5-2.2z"/>'
+    + '<path d="M11.5 6.2L7 8.4v12.1l4.5-2.2z" opacity=".7"/>'
+    + '<path d="M12.5 12.2L17 10l4.5 2.2-4.5 2.2z" opacity=".45"/>'
+    + '<path d="M12.5 12.2l4.5 2.2v7.1l-4.5-2.2z"/>'
+    + '<path d="M21.5 12.2L17 14.4v7.1l4.5-2.2z" opacity=".7"/>',
+  streets: '<path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>'
+};
+
+function paintBasemapButton() {
+  const next = BASEMAPS[(baseIndex + 1) % BASEMAPS.length];
+  const btn = el('basemap');
+  btn.querySelector('svg').innerHTML = BASEMAP_ICONS[next.id];
+  btn.title = `מעבר ל${next.id === 'streets' ? 'מפת ' : ''}${next.name}`;
+  btn.setAttribute('aria-label', btn.title);
+}
+
+const isDark = (i) => BASEMAPS[i].id !== 'streets';
+const is3D = (i) => BASEMAPS[i].id === '3d';
 
 const el = (id) => document.getElementById(id);
 
@@ -118,7 +208,7 @@ function urlView() {
     center: [lng, lat],
     zoom: Math.min(Math.max(zoom, 0), 22),
     bearing: isFinite(bearing) ? bearing : 0,
-    pitch: Math.min(Math.max(isFinite(pitch) ? pitch : 0, 0), 80)
+    pitch: Math.min(Math.max(isFinite(pitch) ? pitch : 0, 0), 85)
   };
 }
 
@@ -381,14 +471,15 @@ const I_WALK ='M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6
 
 function setBasemap(i) {
   if (!map) return;
+  // Off the model, before the swap: its steeper tilt and the street go with it.
+  if (!is3D(i) && typeof Model3D !== 'undefined' && Model3D.isActive()) Model3D.detach();
   baseIndex = i;
   // The shortcuts glow, and the recipe depends on the ground: a gold lamp
   // over the satellite picture, a saturated green stroke over the pale
   // street map. Told here and not on style.load, because on a slow style the
   // data lands first and draws itself without waiting for the style.
-  Layers.setTheme(BASEMAPS[i].id === 'sat' ? 'dark' : 'light');
-  el('basemap').classList.toggle('on', i > 0);
-  el('basemap').title = 'רקע: ' + BASEMAPS[i].name;
+  Layers.setTheme(isDark(i) ? 'dark' : 'light');
+  paintBasemapButton();
   // setStyle drops every source and layer we added, so applyOverlays runs
   // again on the style.load that follows.
   //
@@ -409,7 +500,13 @@ function setBasemap(i) {
 function applyOverlays() {
   if (!map) return;
   if (!map.getSource('dem')) map.addSource('dem', DEM);
-  map.setTerrain({ source: 'dem', exaggeration: TERRAIN_X });
+  // The model stands on flat ground; see model3d.js for why.
+  if (is3D(baseIndex)) {
+    map.setTerrain(null);
+    Model3D.attach();
+  } else {
+    map.setTerrain({ source: 'dem', exaggeration: TERRAIN_X });
+  }
 
   // The vector style extrudes buildings at high zoom, but only 1 of 400
   // buildings here carries a height in OSM, so they all come out the same
@@ -3236,7 +3333,7 @@ async function boot() {
   }
   const wantedBg = urlBasemap();
   if (wantedBg) setBasemap(wantedBg);
-  el('basemap').title = 'רקע: ' + BASEMAPS[baseIndex].name;
+  paintBasemapButton();
   // Fires for the initial style and again after every setBasemap.
   if (map) map.on('style.load', applyOverlays);
 
