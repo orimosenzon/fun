@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <header class="top">
@@ -72,6 +72,35 @@
     </div>
   </section>
 
+  <section class="value" id="value" aria-labelledby="value-h">
+    <h2 id="value-h">מה מקבלים תמורת הכסף?</h2>
+    <p class="v-lede">כמה עולה למועצה כל יחידה של שירות, ליד מה שיוצא ממנו, בהשוואה לרשויות שדומות לנו.
+      זו השוואה ולא ציון: עלות גבוהה יכולה להיות גם שירות טוב יותר או תדיר יותר.</p>
+    <div class="seg" role="tablist" aria-label="תחום">
+      <button role="tab" data-domain="waste" aria-selected="true">פסולת</button>
+      <button role="tab" data-domain="edu" aria-selected="false">חינוך</button>
+    </div>
+    <div id="v-kpis" class="v-kpis"></div>
+    <div class="v-charts">
+      <figure class="v-fig">
+        <h3 id="v-scatter-title"></h3>
+        <div class="v-legend"><span><i class="v-swatch home"></i>פרדס חנה-כרכור</span><span><i class="v-swatch peer"></i>רשויות דומות</span></div>
+        <div class="v-plot"><div id="v-scatter"></div></div>
+      </figure>
+      <figure class="v-fig">
+        <h3 id="v-trend-title"></h3>
+        <div class="v-legend"><span><i class="v-line home"></i>פרדס חנה-כרכור</span><span><i class="v-line peer"></i>חציון רשויות דומות</span><span><i class="v-swatch band"></i>חצי מהרשויות הדומות בתוך הטווח</span></div>
+        <div class="v-plot"><div id="v-trend"></div></div>
+      </figure>
+      <div id="v-tip" class="v-tip" hidden></div>
+    </div>
+    <details class="v-details"><summary id="v-table-sum">כל הרשויות בהשוואה</summary><div class="v-table-wrap"><table id="v-table"></table></div></details>
+    <p id="v-note" class="note"></p>
+    <p class="note"><span id="v-peers"></span>
+      מקורות: <a href="https://www.cbs.gov.il/he/publications/Pages/2019/%D7%94%D7%A8%D7%A9%D7%95%D7%99%D7%95%D7%AA-%D7%94%D7%9E%D7%A7%D7%95%D7%9E%D7%99%D7%95%D7%AA-%D7%91%D7%99%D7%A9%D7%A8%D7%90%D7%9C-%D7%A7%D7%95%D7%91%D7%A6%D7%99-%D7%A0%D7%AA%D7%95%D7%A0%D7%99%D7%9D-%D7%9C%D7%A2%D7%99%D7%91%D7%95%D7%93-1999-2017.aspx" target="_blank" rel="noopener">הלמ"ס, הרשויות המקומיות בישראל</a>,
+      ו<a href="https://data.gov.il/dataset/local-authorities" target="_blank" rel="noopener">הדוחות הכספיים המבוקרים של משרד הפנים</a>.</p>
+  </section>
+
   <section class="mine">
     <label for="arnona">כמה ארנונה אתם משלמים בשנה?</label>
     <div class="mine-row">
@@ -108,5 +137,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="app.js?v=4"></script>
+<script src="value.js?v=2"></script>
 </body>
 </html>
