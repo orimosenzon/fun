@@ -4,17 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>מה אמרו במועצה</title>
+<meta name="description" content="חיפוש בישיבות מליאת המועצה פרדס חנה-כרכור ובפרוטוקולים של הוועדה המקומית לתכנון ובנייה">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f3f5f1; --surface:#fff; --ink:#1c2420; --muted:#5b6660; --line:#d9ded8;
   --accent:#1f6b4f; --accent-soft:#e2efe8; --mark:#fff0b3; --warn:#8a5a00;
+  --plan:#8a4b12; --plan-soft:#f8e9da; --doc:#2d4f86; --doc-soft:#e3eaf6;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#121614; --surface:#1b201d; --ink:#e6ebe7; --muted:#9aa59f; --line:#2d3530;
     --accent:#5cc49a; --accent-soft:#1d3129; --mark:#4d4217; --warn:#e3b35a; color-scheme:dark;
+    --plan:#f0b27a; --plan-soft:#3a2a1b; --doc:#9cb8ea; --doc-soft:#1f2a3d;
   }
 }
 *{box-sizing:border-box}
@@ -43,6 +46,10 @@ form{display:flex;gap:8px}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-size:14.5px;color:var(--muted);margin-bottom:6px}
 .meta b{color:var(--ink);font-size:15.5px}
 .num{display:inline-block;min-width:24px;text-align:center;background:var(--accent-soft);color:var(--accent);border-radius:6px;font-weight:700}
+.badge{font-size:13px;font-weight:700;border-radius:6px;padding:0 7px;background:var(--line);color:var(--ink)}
+.badge.planning{background:var(--plan-soft);color:var(--plan)}
+.badge.council_doc{background:var(--doc-soft);color:var(--doc)}
+.head{font-weight:700;font-size:15px;margin:0 0 4px}
 .watch{margin-inline-start:auto;color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap}
 .text{font-size:16px;max-height:9.5em;overflow:hidden;position:relative}
 .text.open{max-height:none}
@@ -64,7 +71,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
 <body>
 <main>
   <h1>מה אמרו במועצה</h1>
-  <p class="sub" id="sub">חיפוש בתמלולים של ישיבות מליאת המועצה פרדס חנה-כרכור.</p>
+  <p class="sub" id="sub">חיפוש בישיבות מליאת המועצה פרדס חנה-כרכור ובפרוטוקולים של הוועדה המקומית לתכנון ובנייה.</p>
 
   <div class="modes" role="group" aria-label="סוג חיפוש">
     <button type="button" data-mode="ask" aria-pressed="true">שאלה חופשית</button>
@@ -75,6 +82,12 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
     <button id="go">חפש</button>
   </form>
   <div class="filters">
+    <label for="src">איפה לחפש</label><select id="src">
+      <option value="">בכל המקורות</option>
+      <option value="council">מליאת המועצה (הקלטות ופרוטוקולים)</option>
+      <option value="planning">הוועדה המקומית לתכנון ובנייה</option>
+      <option value="committees">ועדות המועצה (תנועה, מכרזים, תמיכות...)</option>
+    </select>
     <label for="from">משנת</label><select id="from"></select>
     <label for="to">עד שנת</label><select id="to"></select>
   </div>
@@ -86,12 +99,13 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
   <div id="share" class="bar" hidden><button type="button" id="shareBtn">🔗 שיתוף</button><span class="done" id="shareDone" aria-live="polite"></span></div>
   <div id="results"></div>
 
-  <p class="note">התמלול והזיהוי של הדוברים נעשו אוטומטית, ויש בהם שגיאות. התשובות מנוסחות על ידי מודל שפה על סמך קטעי התמלול בלבד. לפני שמצטטים, כדאי לצפות ברגע עצמו בסרטון, דרך הקישור שבכל קטע.</p>
+  <p class="note">המקורות: הקלטות ישיבות המליאה (תמלול וזיהוי דוברים אוטומטיים, ויש בהם שגיאות); פרוטוקולים, תמלולים רשמיים וסדרי יום שהמועצה פרסמה (דרך הארכיון של goinfo; הטקסט עבר זיהוי תווים, ולפעמים סדר המילים משתבש); ופרוטוקולים של ועדת המשנה, מליאת הוועדה ורשות הרישוי, מאתר הוועדה המקומית לתכנון ובנייה. המועצה לא פרסמה פרוטוקולים של המליאה מ-2017 עד אמצע 2025, ולכן לשנים האלה יש רק את ההקלטות (מסוף 2020). התשובות מנוסחות על ידי מודל שפה על סמך הקטעים בלבד. לפני שמצטטים, כדאי לפתוח את המקור דרך הקישור שבכל קטע.</p>
 </main>
 <script>
 const $=s=>document.querySelector(s);
 let mode='ask', lastTerms=[];
-const EXAMPLES=['מה נאמר על ציפוף ובנייה לגובה?','מה עם בית הספר החדש?','דיונים על עצים וכריתה','ניגוד עניינים','תקציב התרבות','שבילי אופניים'];
+const EXAMPLES=['מה נאמר על ציפוף ובנייה לגובה?','מה הוחלט על תמ"א 38 ברחוב המייסדים?','התנגדויות של שכנים להיתרי בנייה','דיונים על עצים וכריתה','ניגוד עניינים','מה עם בית הספר החדש?'];
+const SRC_LABEL={video:'הקלטת מליאה',council_doc:'מסמך המועצה',planning:'תכנון ובנייה'};
 $('#ex').innerHTML=EXAMPLES.map(e=>`<button type="button">${e}</button>`).join('');
 $('#ex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('#q').value=e.target.textContent;run();}};
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
@@ -101,7 +115,11 @@ const ready=fetch('/api/meta').then(r=>r.json()).then(m=>{
   const opts=[...Array(y1-y0+1)].map((_,i)=>y0+i);
   $('#from').innerHTML='<option value="">כל השנים</option>'+opts.map(y=>`<option>${y}</option>`).join('');
   $('#to').innerHTML='<option value="">היום</option>'+opts.map(y=>`<option>${y}</option>`).join('');
-  $('#sub').textContent=`חיפוש בתמלולים של ${m.meetings} ישיבות מליאת המועצה פרדס חנה-כרכור, ${fmtDate(m.first)} עד ${fmtDate(m.last)}.`;
+  const c=m.counts||{};
+  $('#sub').textContent=`חיפוש בהקלטות של ${c.video||m.meetings} ישיבות מליאת המועצה פרדס חנה-כרכור`+
+    (c.council_doc?`, ב-${c.council_doc} פרוטוקולים ומסמכים של המועצה`:'')+
+    (c.planning?` וב-${c.planning} פרוטוקולים של הוועדה המקומית לתכנון ובנייה`:'')+
+    `, ${fmtDate(m.first)} עד ${fmtDate(m.last)}.`;
 });
 function fmtDate(d){const [y,m,dd]=d.split('-');return `${+dd}/${+m}/${y}`}
 function hms(t){const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')}
@@ -112,9 +130,18 @@ function highlight(html){
   return html.replace(re,'<mark>$1</mark>');
 }
 function card(r,i){
-  const url=`https://youtu.be/${r.video}?t=${r.start}`;
-  const body=r.text.split('\n').map(l=>{const k=l.indexOf(': ');return k>0?`<p><span class="who">${esc(l.slice(0,k))}:</span> ${highlight(esc(l.slice(k+2)))}</p>`:`<p>${highlight(esc(l))}</p>`}).join('');
-  return `<div class="card" id="src${i+1}"><div class="meta"><span class="num">${i+1}</span><b>${fmtDate(r.date)}</b><span>דקה ${hms(r.start)}</span><a class="watch" href="${url}" target="_blank" rel="noopener">צפייה ברגע הזה ←</a></div><div class="text">${body}</div><button class="more" type="button">הצג הכל</button></div>`;
+  const src=r.src||'video';
+  const body=r.text.split('\n').map(l=>{const k=l.indexOf(': ');return k>0&&k<40?`<p><span class="who">${esc(l.slice(0,k))}:</span> ${highlight(esc(l.slice(k+2)))}</p>`:/:$/.test(l)&&l.length<40&&!/\d/.test(l)?`<p class="who">${esc(l)}</p>`:`<p>${highlight(esc(l))}</p>`}).join('');
+  let meta, head='';
+  if(src==='video'){
+    meta=`<span>דקה ${hms(r.start)}</span><a class="watch" href="https://youtu.be/${r.video}?t=${r.start}" target="_blank" rel="noopener">צפייה ברגע הזה ←</a>`;
+  }else if(src==='planning'){
+    meta=`<span>${esc(r.body)}, ישיבה ${esc(r.number)}</span><span>עמוד ${r.page}</span><a class="watch" href="${esc(r.url)}" target="_blank" rel="noopener">לפרוטוקול (PDF) ←</a>`;
+    head=`<p class="head">${highlight(esc(r.head))}</p>`;
+  }else{
+    meta=`<span>${esc(r.body)}: ${esc(r.kind)}</span>${r.page?`<span>עמוד ${r.page}</span>`:''}<a class="watch" href="${esc(r.url)}${r.page?'#page='+r.page:''}" target="_blank" rel="noopener">למסמך המקורי ←</a>`;
+  }
+  return `<div class="card" id="src${i+1}"><div class="meta"><span class="num">${i+1}</span><span class="badge ${src}">${SRC_LABEL[src]}</span><b>${fmtDate(r.date)}</b>${meta}</div>${head}<div class="text">${body}</div><button class="more" type="button">הצג הכל</button></div>`;
 }
 $('#results').onclick=e=>{if(e.target.classList.contains('more')){const t=e.target.previousElementSibling;t.classList.toggle('open');e.target.textContent=t.classList.contains('open')?'הצג פחות':'הצג הכל';}};
 $('#answer').onclick=e=>{const a=e.target.closest('a[data-src]');if(!a)return;e.preventDefault();const c=$('#src'+a.dataset.src);if(c){document.querySelectorAll('.card.hl').forEach(x=>x.classList.remove('hl'));c.classList.add('hl');c.scrollIntoView({behavior:'smooth',block:'center'});}};
@@ -138,6 +165,7 @@ $('#shareBtn').onclick=async()=>{
 };
 $('#again').onclick=()=>{setMode('ask');run();};
 function setMode(m){mode=m;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode===m));$('#go').textContent=m==='ask'?'שאל':'חפש';}
+function setSrc(v){if(v)$('#src').value=v;}
 function setYears(from,to){
   if(from)$('#from').value=from.slice(0,4);
   if(to)$('#to').value=to.slice(0,4);
@@ -155,13 +183,13 @@ ready.then(async()=>{
     try{
       const r=await fetch('/api/share/'+encodeURIComponent(p.get('s'))); const data=await r.json();
       if(!r.ok) throw new Error(data.error||'שגיאה');
-      $('#q').value=data.q; setYears(data.date_from,data.date_to); setMode('ask');
+      $('#q').value=data.q; setYears(data.date_from,data.date_to); setSrc(data.src); setMode('ask');
       showAnswer(data);
       $('#savedText').textContent=`תשובה שנשמרה ב-${fmtDate(data.t.slice(0,10))}. היא לא מתעדכנת כשנוספות ישיבות.`;
       $('#saved').hidden=false; setShare({s:data.id});
     }catch(err){$('#status').innerHTML=`<span class="err">${esc(err.message)}</span>`}
   }else if(p.get('q')){
-    $('#q').value=p.get('q'); setYears(p.get('from'),p.get('to'));
+    $('#q').value=p.get('q'); setYears(p.get('from'),p.get('to')); setSrc(p.get('src'));
     setMode('search'); run();   // רק חיפוש קטעים רץ אוטומטית; שאלה עולה כסף ומחכה ללחיצה
   }
 });
@@ -169,22 +197,22 @@ async function run(){
   const q=$('#q').value.trim(); if(!q)return;
   lastTerms=q.split(/\s+/).filter(w=>w.length>2);
   const from=$('#from').value, to=$('#to').value;
-  const date_from=from?from+'-01-01':null, date_to=to?to+'-12-31':null;
+  const date_from=from?from+'-01-01':null, date_to=to?to+'-12-31':null, src=$('#src').value||null;
   $('#go').disabled=true; $('#answer').hidden=true; $('#results').innerHTML='';
   $('#saved').hidden=true; $('#share').hidden=true;
-  $('#status').textContent=mode==='ask'?'מחפש בישיבות ומנסח תשובה… (עד חצי דקה)':'מחפש…';
+  $('#status').textContent=mode==='ask'?'מחפש בישיבות ובפרוטוקולים ומנסח תשובה… (עד חצי דקה)':'מחפש…';
   try{
     let data;
     if(mode==='ask'){
-      const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,date_from,date_to})});
+      const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,date_from,date_to,src})});
       data=await r.json(); if(!r.ok) throw new Error(data.error||'שגיאה');
       showAnswer({...data,q}); setShare({s:data.id});
     }else{
-      const p=new URLSearchParams({q}); if(date_from)p.set('from',date_from); if(date_to)p.set('to',date_to);
+      const p=new URLSearchParams({q}); if(date_from)p.set('from',date_from); if(date_to)p.set('to',date_to); if(src)p.set('src',src);
       const r=await fetch('/api/search?'+p); data=await r.json();
       $('#status').textContent=data.results.length?`${data.results.length} קטעים רלוונטיים, מהרלוונטי ביותר:`:'לא נמצאו קטעים.';
       $('#results').innerHTML=data.results.map(card).join('');
-      if(data.results.length){const sp={q};if(from)sp.from=from;if(to)sp.to=to;setShare(sp);}
+      if(data.results.length){const sp={q};if(from)sp.from=from;if(to)sp.to=to;if(src)sp.src=src;setShare(sp);}
     }
   }catch(err){$('#status').innerHTML=`<span class="err">${esc(err.message)}</span>`}
   finally{$('#go').disabled=false}

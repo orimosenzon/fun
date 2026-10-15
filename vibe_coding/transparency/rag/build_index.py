@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""בניית אינדקס החיפוש מתמלולי ישיבות המליאה.
+"""בניית אינדקס החיפוש: תמלולי ישיבות המליאה, ומסמכים כתובים (פרוטוקולים של המועצה
+ושל הוועדה המקומית לתכנון ובנייה, דרך doc_chunks).
 
 חותך כל ישיבה לקטעים של עד ~90 שניות (עם חפיפה קטנה), כל קטע עם שמות הדוברים
 שבו, ומחשב לכל קטע וקטור משמעות עם BAAI/bge-m3 (רב-לשוני, חזק בעברית, רץ מקומית).
@@ -16,6 +17,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 from export_notebooklm import label  # noqa: E402  אותו ניסוח של שם דובר בכל מקום
+from doc_chunks import council_chunks, planning_chunks  # noqa: E402
 
 PRIV = os.path.join(HERE, "..", "private")
 OUT = os.path.join(PRIV, "index")
@@ -48,7 +50,7 @@ def meeting_chunks(path):
     for c in chunks:
         text = "\n".join(f"{label(p['speaker'], names)}: {p['text']}" for p in c)
         speakers = sorted({label(p["speaker"], names) for p in c})
-        out.append({"date": m["date"], "video": m["id"], "start": int(c[0]["start"]),
+        out.append({"date": m["date"], "src": "video", "video": m["id"], "start": int(c[0]["start"]),
                     "end": int(c[-1]["end"]), "speakers": speakers, "text": text})
     return out
 
@@ -59,10 +61,15 @@ def main():
     for path in sorted(glob.glob(os.path.join(PRIV, "transcripts_spk", "*.json"))):
         chunks += meeting_chunks(path)
     print(f"{len(chunks)} chunks from {len({c['video'] for c in chunks})} meetings", flush=True)
+    docs = council_chunks() + planning_chunks()
+    print(f"{len(docs)} chunks from documents", flush=True)
+    chunks += docs
     from sentence_transformers import SentenceTransformer
     model = SentenceTransformer(EMBED_MODEL, device="cuda")
     model.max_seq_length = 1024
-    emb = model.encode([c["text"] for c in chunks], batch_size=8, normalize_embeddings=True,
+    # בקטע ממסמך הכותרת (סעיף, כתובת, גוש) היא חלק ממה שמחפשים, ולכן נכנסת לווקטור
+    emb = model.encode([(c["head"] + "\n" + c["text"]) if c.get("head") else c["text"] for c in chunks],
+                       batch_size=8, normalize_embeddings=True,
                        show_progress_bar=True, convert_to_numpy=True)
     np.save(os.path.join(OUT, "emb.npy"), emb.astype(np.float16))
     json.dump({"model": EMBED_MODEL, "chunks": chunks},

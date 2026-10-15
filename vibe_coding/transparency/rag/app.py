@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""שרת "מה אמרו במועצה": חיפוש ושאלות על תמלולי ישיבות המליאה.
+"""שרת "מה אמרו במועצה": חיפוש ושאלות על תמלולי ישיבות המליאה ועל הפרוטוקולים.
 
     .venv/bin/python rag/app.py            # http://localhost:5077
 
@@ -92,7 +92,8 @@ def log_query(kind, q, extra=None):
 
 def filters():
     return {"date_from": request.values.get("from") or None,
-            "date_to": request.values.get("to") or None}
+            "date_to": request.values.get("to") or None,
+            "src": request.values.get("src") or None}
 
 
 @app.get("/")
@@ -102,8 +103,8 @@ def index():
 
 @app.get("/api/meta")
 def meta():
-    return jsonify(meetings=len(engine.meetings), first=engine.meetings[0],
-                   last=engine.meetings[-1], chunks=len(engine.chunks))
+    return jsonify(meetings=len(engine.meetings), first=engine.dates[0],
+                   last=engine.dates[-1], chunks=len(engine.chunks), counts=engine.counts)
 
 
 @app.get("/api/health")
@@ -134,11 +135,11 @@ def ask():
     if denied:
         return jsonify(error=denied), 429
     try:
-        res = engine.answer(q, **{k: (request.json or {}).get(k) for k in ("date_from", "date_to")})
+        res = engine.answer(q, **{k: (request.json or {}).get(k) for k in ("date_from", "date_to", "src")})
     except Exception as e:  # שגיאה של השירות לא אמורה להפיל את הדף
         app.logger.exception("answer failed")
         return jsonify(error=f"השירות לא הצליח לענות כרגע ({type(e).__name__}). נסו שוב."), 502
-    filt = {k: (request.json or {}).get(k) for k in ("date_from", "date_to")}
+    filt = {k: (request.json or {}).get(k) for k in ("date_from", "date_to", "src")}
     res["id"] = save_share({"q": q, **filt, "answer": res["answer"], "sources": res["sources"]})
     log_query("ask", q, {"usage": res["usage"], "id": res["id"]})
     return jsonify(res)
