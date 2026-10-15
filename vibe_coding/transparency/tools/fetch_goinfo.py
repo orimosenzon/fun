@@ -61,6 +61,32 @@ def page_text(t):
     return re.sub(r"\n\s*\n+", "\n", body).strip()
 
 
+DATE_RE = re.compile(r"(?<!\d)(\d{1,2})[./](\d{1,2})[./](20\d\d|\d\d)(?!\d)")
+
+
+def sane_date(date, title, text, pdf_url):
+    """התאריך ש-goinfo נותן בשם הקובץ, אלא אם הוא חסר או סותר את תיקיית ההעלאה של ה-PDF באתר
+    המועצה (uploads/YYYY/MM). goinfo קרא את "מועצה 27 11.12.25" כ-27/11/2012, ומסמכים אחרים
+    הגיעו בלי תאריך בכלל. אז לוקחים את התאריך הראשון שבכותרת או בפתיחת המסמך, ובלבד שהוא לא
+    אחרי ההעלאה ולא יותר משנתיים לפניה."""
+    up = re.search(r"/uploads/(20\d\d)/(\d\d)/", pdf_url)
+    if not up:
+        return date
+    upload = f"{up.group(1)}-{up.group(2)}-31"
+    if date and date <= upload and int(date[:4]) >= int(up.group(1)) - 1:
+        return date
+    for src in (title, text[:1500]):
+        # בכותרות יש רווח באמצע תאריך ("02.0 8.26"), אבל "מועצה 27 11.12.25" חייב להישאר מופרד
+        for d, m, y in DATE_RE.findall(re.sub(r"(\.\d)\s+(\d)", r"\1\2", src)):
+            y = int(y) + (2000 if len(y) == 2 else 0)
+            if not (1 <= int(m) <= 12 and 1 <= int(d) <= 31):
+                continue
+            cand = f"{y:04d}-{int(m):02d}-{int(d):02d}"
+            if cand <= upload and y >= int(up.group(1)) - 2:
+                return cand
+    return date if date and date <= upload else ""
+
+
 def main():
     os.makedirs(os.path.join(OUT, "pages"), exist_ok=True)
     index = requests.get(BASE + "index.html", headers=UA, timeout=60).text
@@ -89,6 +115,7 @@ def main():
         title = re.sub(r"^\d+\s+", "", title)
         pdf = re.search(r'href="(https?://[^"]+\.pdf)"', t, re.I)
         date = f[:10] if re.match(r"\d{4}-\d\d-\d\d", f) else ""
+        date = sane_date(date, title, text, pdf.group(1) if pdf else "")
         docs.append({"date": date, "body": cls[0], "kind": cls[1], "title": title,
                      "url": pdf.group(1) if pdf else BASE + quote(f), "goinfo": BASE + quote(f),
                      "text": text})

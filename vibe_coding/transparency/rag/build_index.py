@@ -17,7 +17,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 from export_notebooklm import label  # noqa: E402  אותו ניסוח של שם דובר בכל מקום
-from doc_chunks import council_chunks, planning_chunks  # noqa: E402
+from doc_chunks import council_chunks, planning_chunks, tree_chunks, plan_chunks  # noqa: E402
 
 PRIV = os.path.join(HERE, "..", "private")
 OUT = os.path.join(PRIV, "index")
@@ -55,23 +55,45 @@ def meeting_chunks(path):
     return out
 
 
+def previous_vectors():
+    """{טקסט שנכנס לווקטור: הווקטור} מהאינדקס הקיים, אם נבנה באותו מודל."""
+    try:
+        old = json.load(open(os.path.join(OUT, "chunks.json"), encoding="utf-8"))
+        emb = np.load(os.path.join(OUT, "emb.npy"))
+    except (OSError, ValueError):
+        return {}
+    if old.get("model") != EMBED_MODEL or len(old["chunks"]) != len(emb):
+        return {}
+    return {((c["head"] + "\n" + c["text"]) if c.get("head") else c["text"]): v
+            for c, v in zip(old["chunks"], emb)}
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     chunks = []
     for path in sorted(glob.glob(os.path.join(PRIV, "transcripts_spk", "*.json"))):
         chunks += meeting_chunks(path)
     print(f"{len(chunks)} chunks from {len({c['video'] for c in chunks})} meetings", flush=True)
-    docs = council_chunks() + planning_chunks()
+    docs = council_chunks() + planning_chunks() + tree_chunks() + plan_chunks()
     print(f"{len(docs)} chunks from documents", flush=True)
     chunks += docs
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer(EMBED_MODEL, device="cuda")
-    model.max_seq_length = 1024
     # בקטע ממסמך הכותרת (סעיף, כתובת, גוש) היא חלק ממה שמחפשים, ולכן נכנסת לווקטור
-    emb = model.encode([(c["head"] + "\n" + c["text"]) if c.get("head") else c["text"] for c in chunks],
-                       batch_size=8, normalize_embeddings=True,
-                       show_progress_bar=True, convert_to_numpy=True)
-    np.save(os.path.join(OUT, "emb.npy"), emb.astype(np.float16))
+    texts = [(c["head"] + "\n" + c["text"]) if c.get("head") else c["text"] for c in chunks]
+    # וקטור שכבר חושב באינדקס הקיים לא מחושב שוב, כך שמקור חדש עולה דקות ולא שעה
+    known = previous_vectors()
+    todo = [i for i, t in enumerate(texts) if t not in known]
+    print(f"{len(texts) - len(todo)} וקטורים מהאינדקס הקיים, {len(todo)} לחישוב", flush=True)
+    emb = np.zeros((len(texts), next(iter(known.values())).shape[0] if known else 1024), np.float16)
+    for i, t in enumerate(texts):
+        if t in known:
+            emb[i] = known[t]
+    if todo:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(EMBED_MODEL, device="cuda")
+        model.max_seq_length = 1024
+        emb[todo] = model.encode([texts[i] for i in todo], batch_size=8, normalize_embeddings=True,
+                                 show_progress_bar=True, convert_to_numpy=True).astype(np.float16)
+    np.save(os.path.join(OUT, "emb.npy"), emb)
     json.dump({"model": EMBED_MODEL, "chunks": chunks},
               open(os.path.join(OUT, "chunks.json"), "w", encoding="utf-8"), ensure_ascii=False)
     print("saved", emb.shape)

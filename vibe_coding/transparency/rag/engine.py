@@ -21,11 +21,14 @@ INDEX = os.environ.get("RAG_INDEX", os.path.join(HERE, "..", "private", "index")
 ANSWER_MODEL = "gpt-5.4-mini"
 PREFIXES = ("וש", "וה", "וב", "ול", "ומ", "שה", "שב", "של", "מה", "כש", "לכ", "ו", "ה", "ב", "ל", "מ", "ש", "כ")
 # קבוצות המקורות שאפשר לסנן לפיהן. src של קטע: video (הקלטה), council_doc (מסמך מ-goinfo),
-# planning (פרוטוקול של הוועדה המקומית לתכנון ובנייה)
+# planning (פרוטוקול של הוועדה המקומית לתכנון ובנייה), trees (רישיון כריתה של פקיד היערות)
+# דוחות הפעילות של הוועדה, ותוכניות והחלטות מ-מבא"ת, הם council_doc אבל שייכים לתכנון
+PLANNING_BODIES = ("הוועדה המקומית לתכנון ובנייה", "מוסדות התכנון")
 GROUPS = {
     "council": lambda c: c["src"] == "video" or (c["src"] == "council_doc" and c["body"] == "מליאת המועצה"),
-    "committees": lambda c: c["src"] == "council_doc" and c["body"] != "מליאת המועצה",
-    "planning": lambda c: c["src"] == "planning",
+    "committees": lambda c: c["src"] == "council_doc" and c["body"] not in ("מליאת המועצה",) + PLANNING_BODIES,
+    "planning": lambda c: c["src"] == "planning" or c.get("body") in PLANNING_BODIES,
+    "trees": lambda c: c["src"] == "trees",
 }
 STOP = set("של את על עם זה זו לא כן גם אבל או כי אם אני אתה את הוא היא אנחנו הם יש אין מה מי "
            "כל עוד רק כבר אז פה שם היה היו יהיה אחד אחת טוב בסדר רגע אוקיי".split())
@@ -61,6 +64,8 @@ def describe(h):
     """שורת הכותרת של קטע בהקשר שנשלח למודל."""
     if h.get("src") == "planning":
         return f"פרוטוקול {h['body']}, ישיבה {h['number']}, {h['date']}, עמוד {h['page']}. {h['head']}"
+    if h.get("src") == "trees":
+        return f"רישיון כריתה שפרסם פקיד היערות במערכת יעלה, {h['date']}"
     if h.get("src") == "council_doc":
         return f"מסמך רשמי, {h['body']}, {h['kind']}, {h['date']} ({h['title']})"
     return f"תמלול אוטומטי של הקלטת ישיבת המליאה {h['date']}, דקה {h['start'] // 60}"
@@ -78,13 +83,14 @@ class Engine:
         self.token_sets = [set(self._base(t)) for t in toks]
         from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer(d["model"], device=device)
-        self.boost = np.array([2.0 if c.get("kind") == "החלטות מהעמוד הסרוק" else 1.0 for c in self.chunks])
+        self.boost = np.array([2.0 if c.get("kind") in ("החלטות מהעמוד הסרוק", "פרוטוקול (עמוד ההצבעות הסרוק)") else 1.0 for c in self.chunks])
         self.meetings = sorted({c["date"] for c in self.chunks if c["src"] == "video"})
         self.dates = sorted({c["date"] for c in self.chunks})
         self.counts = {
             "video": len({c["video"] for c in self.chunks if c["src"] == "video"}),
             "council_doc": len({c["url"] for c in self.chunks if c["src"] == "council_doc"}),
             "planning": len({c["url"] for c in self.chunks if c["src"] == "planning"}),
+            "trees": sum(1 for c in self.chunks if c["src"] == "trees"),
         }
 
     @staticmethod

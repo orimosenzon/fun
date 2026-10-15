@@ -7,6 +7,8 @@
   כדי שחיפוש של כתובת או של מספר תוכנית ינחת על הסעיף הנכון גם מעמוד ההמשך שלו.
 - מסמכי המועצה מ-goinfo (tools/fetch_goinfo.py): פרוטוקולים, תמלולים וסדרי יום של המליאה,
   ופרוטוקולים של ועדות המועצה.
+- פרוטוקולי המליאה מהארכיון של המועצה (tools/fetch_council_protocols.py), עם OCR: פרוטוקולים
+  ש-goinfo לא מחזיק, ועמוד ההצבעות הסרוק שבסוף כל פרוטוקול דיגיטלי.
 
 כל קטע: date, src ("planning" / "council_doc"), body, kind, title, url, page, head, text.
 """
@@ -157,4 +159,102 @@ def council_chunks():
             out.append({"date": d["date"], "src": "council_doc", "body": d["body"], "kind": d["kind"],
                         "title": d["title"], "url": d["url"], "page": None,
                         "head": f"{d['body']}: {d['kind']}", "text": w})
-    return out + override_chunks(docs)
+    return out + override_chunks(docs) + council_site_chunks()
+
+
+SCANNED_KIND = "פרוטוקול (עמוד ההצבעות הסרוק)"
+
+
+def council_site_chunks():
+    """מסמכים שנשמרו עמוד-עמוד: פרוטוקולי המליאה מארכיון המועצה (fetch_council_protocols), מסמכי
+    אתר המועצה (fetch_council_media), דוחות הפעילות של הוועדה המקומית (fetch_vaada_reports), והוראות
+    תוכניות והחלטות מוסדות התכנון מ-מבא"ת (fetch_plans)."""
+    out = []
+    for sub in ("council_site", "council_media", "vaada_reports", "plans"):
+        path = os.path.join(PRIV, sub, "docs.json")
+        if not os.path.exists(path):
+            continue
+        for d in json.load(open(path, encoding="utf-8")):
+            if not d["date"]:
+                continue
+            scanned = d["kind"] == "עמוד סרוק"
+            kind = SCANNED_KIND if scanned else d["kind"]
+            base = {"date": d["date"], "src": "council_doc", "body": d["body"], "kind": kind,
+                    "title": d["title"], "url": d["url"]}
+            head = ("מליאת המועצה: הצבעות והחלטות מהעמוד האחרון של הפרוטוקול (נקרא בזיהוי טקסט מהסריקה)"
+                    if scanned else f"{d['body']}: {kind} · {d['title']}")
+            for p in d["pages"]:
+                for w in windows(p["text"]):
+                    out.append(dict(base, page=p["page"], head=head, text=w))
+    return out
+
+
+# רישיונות כריתה מ"יעלה" (tools/fetch_trees.py). רשומה לכל מין עץ בבקשה, ולכן מקבצים לפי בקשה:
+# קטע אחד לכל בקשה, עם כל העצים שבה. אין קישור קבוע לרישיון, אז הקישור הוא לדף הפרסומים.
+TREES_PAGE = "https://yeela-trees.moag.gov.il/FoPublic/FoLicence"
+
+
+def tree_chunks():
+    path = os.path.join(PRIV, "trees", "licenses.json")
+    if not os.path.exists(path):
+        return []
+    reqs = {}
+    for r in json.load(open(path, encoding="utf-8")):
+        reqs.setdefault(r["requestId"], []).append(r)
+    out = []
+    for rid, rows in reqs.items():
+        r0, x = rows[0], (rows[0].get("expandRows") or [{}])[0]
+        date = (r0.get("approvedDate") or x.get("dateOLicensePublic") or "")[:10]
+        if not date:
+            continue
+        trees = []
+        for r in rows:
+            acts = [f"{n} {w}" for n, w in ((r.get("unproot"), "לכריתה"), (r.get("copying"), "להעתקה"),
+                                            (r.get("conservation"), "לשימור")) if n]
+            trees.append(f"{r.get('treeName') or 'עץ'}: {', '.join(acts) or 'בלי פירוט כמות'}")
+        where = " · ".join(p for p in (x.get("street"), x.get("block") and f"גוש {x['block']} חלקה {x.get('parcel')}") if p)
+        appeal = (r0.get("appealLastDate") or "")[:10]
+        lines = [f"רישיון כריתה/העתקה של עצים מס' {r0.get('licenseId')}, {x.get('shortHebDesc', '')}",
+                 f"מקום: {where}", f"סיבה: {x.get('requestReason', '')}", "העצים: " + "; ".join(trees),
+                 f"סטטוס: {r0.get('licenseStatusDesc', '')}", f"מבקש: {(x.get('customerName') or '').strip()}",
+                 f"אישר: {x.get('approvedBy') or ''}"]
+        if appeal:
+            lines.append(f"מועד אחרון להגשת השגה: {appeal}")
+        out.append({"date": date, "src": "trees", "body": "פקיד היערות", "kind": "רישיון כריתה",
+                    "title": f"רישיון {r0.get('licenseId')}", "url": TREES_PAGE, "page": None,
+                    "head": f"כריתת עצים · {where}", "text": "\n".join(lines)})
+    return out
+
+
+# רשומה לכל תוכנית מ-Xplan (fetch_plans.py): מספר, שם, מטרות, סטטוס ותאריכים. קטע קצר, כדי שחיפוש
+# של מספר תוכנית או של מטרה ("תוספת יח"ד", "מבנה ציבור") יגיע לתוכנית גם בלי שהורדו ההוראות שלה.
+AUTH = {1: "הוועדה המחוזית", 2: "הוועדה הארצית", 3: "הוועדה המקומית"}
+
+
+def plan_chunks():
+    path = os.path.join(PRIV, "plans", "xplan.json")
+    if not os.path.exists(path):
+        return []
+    import time
+    day = lambda ms: time.strftime("%Y-%m-%d", time.gmtime(ms / 1000)) if ms else ""  # noqa: E731
+    out = []
+    for p in json.load(open(path, encoding="utf-8")):
+        date = day(p.get("last_update_date")) or day(p.get("receiving_date"))
+        if not date:
+            continue
+        obj = (p.get("pl_objectives") or "").replace("^", "\n").replace("\r", "")
+        lines = [f"תוכנית {p['pl_number']}: {p.get('pl_name') or ''}",
+                 f"סטטוס: {p.get('internet_short_status') or ''}; שלב: {p.get('station_desc') or ''}",
+                 f"בסמכות: {AUTH.get(int(p['pl_by_auth_of'] or 0), '')}; סוג: {p.get('entity_subtype_desc') or ''}; "
+                 f"שטח: {p.get('pl_area_dunam') or '?'} דונם",
+                 f"ייעודי קרקע: {p.get('pl_landuse_string') or ''}"]
+        for k, label in (("receiving_date", "נקלטה"), ("depositing_date", "הופקדה"),
+                         ("pl_last_deposit_date", "מועד אחרון להתנגדות")):
+            if p.get(k):
+                lines.append(f"{label}: {day(p[k])}")
+        lines.append("מטרות: " + obj.strip())
+        out.append({"date": date, "src": "council_doc", "body": "מוסדות התכנון", "kind": "תוכנית (Xplan)",
+                    "title": f"תוכנית {p['pl_number']}: {p.get('pl_name') or ''}", "url": p.get("pl_url") or "",
+                    "page": None, "head": f"תוכנית {p['pl_number']} · {p.get('pl_name') or ''}",
+                    "text": "\n".join(lines)[:MAX_CHARS * 2]})
+    return out
