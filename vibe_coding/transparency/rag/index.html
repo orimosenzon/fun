@@ -11,13 +11,13 @@
 :root{
   --bg:#f3f5f1; --surface:#fff; --ink:#1c2420; --muted:#5b6660; --line:#d9ded8;
   --accent:#1f6b4f; --accent-soft:#e2efe8; --mark:#fff0b3; --warn:#8a5a00;
-  --plan:#8a4b12; --plan-soft:#f8e9da; --doc:#2d4f86; --doc-soft:#e3eaf6;
+  --plan:#8a4b12; --plan-soft:#f8e9da; --doc:#2d4f86; --doc-soft:#e3eaf6; --tree:#2f6b2f; --tree-soft:#e2f0e0;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#121614; --surface:#1b201d; --ink:#e6ebe7; --muted:#9aa59f; --line:#2d3530;
     --accent:#5cc49a; --accent-soft:#1d3129; --mark:#4d4217; --warn:#e3b35a; color-scheme:dark;
-    --plan:#f0b27a; --plan-soft:#3a2a1b; --doc:#9cb8ea; --doc-soft:#1f2a3d;
+    --plan:#f0b27a; --plan-soft:#3a2a1b; --doc:#9cb8ea; --doc-soft:#1f2a3d; --tree:#9ad19a; --tree-soft:#1d2e1d;
   }
 }
 *{box-sizing:border-box}
@@ -49,6 +49,7 @@ form{display:flex;gap:8px}
 .badge{font-size:13px;font-weight:700;border-radius:6px;padding:0 7px;background:var(--line);color:var(--ink)}
 .badge.planning{background:var(--plan-soft);color:var(--plan)}
 .badge.council_doc{background:var(--doc-soft);color:var(--doc)}
+.badge.trees{background:var(--tree-soft);color:var(--tree)}
 .head{font-weight:700;font-size:15px;margin:0 0 4px}
 .watch{margin-inline-start:auto;color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap}
 .text{font-size:16px;max-height:9.5em;overflow:hidden;position:relative}
@@ -86,7 +87,8 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
       <option value="">בכל המקורות</option>
       <option value="council">מליאת המועצה (הקלטות ופרוטוקולים)</option>
       <option value="planning">הוועדה המקומית לתכנון ובנייה</option>
-      <option value="committees">ועדות המועצה (תנועה, מכרזים, תמיכות...)</option>
+      <option value="committees">ועדות ומסמכי המועצה (ועדות, ביקורת, דוחות כספיים, חוקי עזר...)</option>
+      <option value="trees">רישיונות כריתת עצים</option>
     </select>
     <label for="from">משנת</label><select id="from"></select>
     <label for="to">עד שנת</label><select id="to"></select>
@@ -105,7 +107,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
 const $=s=>document.querySelector(s);
 let mode='ask', lastTerms=[];
 const EXAMPLES=['מה נאמר על ציפוף ובנייה לגובה?','מה הוחלט על תמ"א 38 ברחוב המייסדים?','התנגדויות של שכנים להיתרי בנייה','דיונים על עצים וכריתה','ניגוד עניינים','מה עם בית הספר החדש?'];
-const SRC_LABEL={video:'הקלטת מליאה',council_doc:'מסמך המועצה',planning:'תכנון ובנייה'};
+const SRC_LABEL={video:'הקלטת מליאה',council_doc:'מסמך המועצה',planning:'תכנון ובנייה',trees:'רישיון כריתה'};
 $('#ex').innerHTML=EXAMPLES.map(e=>`<button type="button">${e}</button>`).join('');
 $('#ex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('#q').value=e.target.textContent;run();}};
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
@@ -118,7 +120,8 @@ const ready=fetch('/api/meta').then(r=>r.json()).then(m=>{
   const c=m.counts||{};
   $('#sub').textContent=`חיפוש בהקלטות של ${c.video||m.meetings} ישיבות מליאת המועצה פרדס חנה-כרכור`+
     (c.council_doc?`, ב-${c.council_doc} פרוטוקולים ומסמכים של המועצה`:'')+
-    (c.planning?` וב-${c.planning} פרוטוקולים של הוועדה המקומית לתכנון ובנייה`:'')+
+    (c.planning?`, ב-${c.planning} פרוטוקולים של הוועדה המקומית לתכנון ובנייה`:'')+
+    (c.trees?` וב-${c.trees} רישיונות לכריתת עצים`:'')+
     `, ${fmtDate(m.first)} עד ${fmtDate(m.last)}.`;
 });
 function fmtDate(d){const [y,m,dd]=d.split('-');return `${+dd}/${+m}/${y}`}

@@ -8,7 +8,7 @@
 # 2. זיהוי דוברים (pyannote, בסביבה של הפרויקט)
 # 3. שמות לדוברים (Azure, כ-2 סנט)
 # 4. ייצוא ל-NotebookLM
-# 5. מסמכים חדשים: goinfo (פרוטוקולים של המועצה) ואתר הוועדה לתכנון ובנייה (השנה הנוכחית)
+# 5. מסמכים חדשים: goinfo (פרוטוקולים של המועצה), ארכיון המועצה עם OCR לעמודים הסרוקים, ואתר הוועדה לתכנון ובנייה (השנה הנוכחית)
 # 6. בניית האינדקס מחדש (bge-m3, כ-40 דקות עם המסמכים)
 # 7. פריסה ל-HF Space
 #
@@ -22,6 +22,7 @@ cd "$(dirname "$0")/.."
 if [[ "$VID" == "--docs" ]]; then
     MSG="${2:-פרוטוקולים חדשים $(date +%F)}"
     python3 tools/fetch_goinfo.py
+    python3 tools/fetch_council_protocols.py
     python3 tools/fetch_vaada.py --from "$(date +%Y)"
     .venv/bin/python rag/build_index.py
     rag/deploy.sh "$MSG"
@@ -34,6 +35,7 @@ ls private/transcripts/*_"$VID".json >/dev/null  # נכשל אם התמלול ל
 python3 tools/name_speakers.py "$VID"
 python3 tools/export_notebooklm.py
 python3 tools/fetch_goinfo.py
+python3 tools/fetch_council_protocols.py
 python3 tools/fetch_vaada.py --from "$(date +%Y)"
 .venv/bin/python rag/build_index.py
 rag/deploy.sh "$MSG"
