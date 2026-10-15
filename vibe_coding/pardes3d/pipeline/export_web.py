@@ -69,6 +69,10 @@ def main():
     origin = (bw.LON0, bw.LAT0)
 
     items, n_osm = bw.collect_buildings(els)
+    # צבע טיח אמיתי מתמונות Mapillary (facade_colors.py), לבניינים שצולמו
+    fc_path = ROOT / "data" / "raw" / "mapillary" / "facade_colors.json"
+    fc = json.loads(fc_path.read_text()) if fc_path.exists() else {}
+    wall_colors = list(bw.WALL_COLORS)
     rows, footprints = [], []
     for key, poly, t in items:
         footprints.append(poly)
@@ -80,9 +84,12 @@ def main():
         # היה נקבר; מוסיפים את חצי ההפרש כדי שהגג יישאר מעל הקרקע בכל צד
         h += float(hs.max() - hs.min()) / 2
         wall = int(bw.stable_rand(key, "c") * len(bw.WALL_COLORS))
+        if str(key) in fc:
+            wall = len(wall_colors)
+            wall_colors.append(tuple(fc[str(key)][:3]))
         kind = t.get("building", "yes")
         rows.append([round(h, 1), wall, roof_color(key, kind)] + pack(latlon(ex[:-1]), origin))
-    print(f"בניינים: {len(rows)} ({n_osm} מ-OSM)")
+    print(f"בניינים: {len(rows)} ({n_osm} מ-OSM), {len(wall_colors) - len(bw.WALL_COLORS)} בצבע מתמונה")
 
     _, lines = bw.build_roads(els, terrain)  # בשביל החומות: הן לא חוצות כבישים
 
@@ -119,9 +126,10 @@ def main():
 
     meta = {
         "origin": origin, "q": Q,
-        "wall_colors": bw.WALL_COLORS, "roof_colors": ROOF_COLORS + [(222, 230, 226)],
+        "wall_colors": wall_colors, "roof_colors": ROOF_COLORS + [(222, 230, 226)],
         "attribution": "מודל: פרדס חנה תלת-ממד · © OpenStreetMap · Microsoft Building Footprints · "
-                       "GHS-BUILT-H (JRC) · מפת הצמרות, המרכז למיפוי ישראל",
+                       "GHS-BUILT-H (JRC) · מפת הצמרות, המרכז למיפוי ישראל"
+                       + (" · צבעי חזיתות: Mapillary, CC BY-SA" if fc else ""),
     }
     for name, data in (("buildings", rows), ("trees", trows), ("walls", wrows)):
         (OUT / f"{name}.json").write_text(json.dumps({**meta, "rows": data} if name == "buildings"
