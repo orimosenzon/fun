@@ -953,6 +953,8 @@ body.craft-bike #craft .craft-bal { display: block; }
 }
 
 .act:hover { background: #f6faf8; }
+/* "הוספת תמונות" היא label (עוטפת input של קובץ), ו-label לא ממרכז טקסט כמו button */
+label.act { text-align: center; }
 
 /* The primary action: navigate without leaving the app. */
 .act-nav {
@@ -1293,6 +1295,10 @@ body.craft-bike #craft .craft-bal { display: block; }
 .sheet-card {
   width: 100%;
   max-height: 88vh;
+  /* באייפון vh הוא גובה המסך כשסרגל הכתובת מוסתר. כשהסרגל מוצג הכרטיס
+     גבוה מהחלק הנראה, והראש שלו עם האיקס נדחק אל מתחת לסרגל. dvh הוא
+     הגובה הנראה בפועל; vh נשאר לדפדפנים שלא מכירים אותו */
+  max-height: 88dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--bg);
@@ -2872,7 +2878,7 @@ body:not(.fly-balloon) .fly-intro-card.balloon,
 body:not(.fly-bike) .fly-intro-card.bike { display: none; }
 /* The bike lists more keys than the others; the card scrolls on a short
  * screen rather than pushing its foot off it. */
-.fly-intro-card.bike { max-height: 92vh; overflow-y: auto; }
+.fly-intro-card.bike { max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
 .fly-intro-card.bike .fly-keys { gap: 5px; }
 
 /* On a phone the top line is the three buttons and the compass, and four
