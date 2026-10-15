@@ -130,8 +130,19 @@ def fname(pnum, f):
     return os.path.join(OUT, "files", f"{safe}.{ft.lower()}")
 
 
+def plan_pages(pages, pnum):
+    """מסמך החלטה הוא לרוב פרוטוקול שלם של ישיבה, עם תוכניות מיישובים אחרים. נשארים העמודים שבהם
+    מופיע מספר התוכנית (גם בלי הקידומת או עם רווחים), והעמוד שאחריהם, כי הדיון גולש."""
+    tail = pnum.split("-")[-1].lstrip("0")
+    rx = re.compile(r"(?<!\d)0*" + r"\s?".join(tail) + r"(?!\d)")
+    hit = {i for i, (_, t) in enumerate(pages) if rx.search(t)}
+    keep = sorted(hit | {i + 1 for i in hit if i + 1 < len(pages)})
+    return [pages[i] for i in keep]
+
+
 def texts(plans):
-    docs = []
+    import hashlib
+    docs, seen = [], set()
     for p in plans:
         mid = str(int(p["mp_id"])) if p.get("mp_id") else ""
         jpath = next((x for x in (os.path.join(OUT, "mavat", mid + ".json"), os.path.join(OLD_MAVAT, mid + ".json"))
@@ -144,17 +155,24 @@ def texts(plans):
             path = fname(pnum, f)
             if not os.path.exists(path) or not path.endswith(".pdf"):
                 continue
+            digest = hashlib.md5(open(path, "rb").read()).hexdigest()
+            if digest in seen:  # אותו פרוטוקול צורף לכמה תוכניות
+                continue
+            seen.add(digest)
             try:
                 pages = text_pages(path)
             except Exception:
                 continue
-            out, n_ocr = [], 0
+            got, n_ocr = [], 0
             for i, t in enumerate(pages, 1):
                 if len(t.strip()) < EMPTY and n_ocr < MAX_OCR:
                     t = ocr_page(path, i, "p" + os.path.basename(path)[:-4][-60:])
                     n_ocr += 1
                 if len(t.strip()) >= EMPTY:
-                    out.append({"page": i, "text": t})
+                    got.append((i, t))
+            if f[4] == "החלטה":
+                got = plan_pages(got, pnum)
+            out = [{"page": i, "text": t} for i, t in got]
             if not out:
                 continue
             kind = f[4]

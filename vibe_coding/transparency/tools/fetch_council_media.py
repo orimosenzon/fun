@@ -70,6 +70,10 @@ def title_date(title, uploaded):
         y = int(y) + (2000 if len(y) == 2 else 0)
         if 1 <= int(m) <= 12 and 1 <= int(d) <= 31 and 2005 <= y and f"{y}" <= uploaded[:4]:
             return f"{y:04d}-{int(m):02d}-{int(d):02d}"
+    # דוחות הביקורת הישנים הועלו כולם ב-2/2025; השנה שלהם כתובה בכותרת ("לשנת 2016")
+    m = re.search(r"(?:לשנת|שנת הכספים|לשנים)\s*(20[012]\d)", title)
+    if m and m.group(1) <= uploaded[:4]:
+        return min(f"{m.group(1)}-12-31", uploaded)  # דוח רבעוני של השנה הנוכחית לא יקבל תאריך עתידי
     return uploaded
 
 
