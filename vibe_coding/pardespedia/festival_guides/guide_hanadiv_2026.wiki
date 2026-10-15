@@ -7,7 +7,7 @@
 הדף מרכז את התוכנית כפי שהיא מופיעה באתר הפסטיבל: המוקדים הגדולים, ולוח האירועים המלא לפי ימים.
 
 <div style="background:#f4f7fb; border:1px solid #ccd6e4; border-right:5px solid #21659c; border-radius:10px; padding:14px 18px; margin:1em 0;">
-'''בשורה אחת:''' 114 אירועים ב-39 כתובות לאורך שלושה ימים. התחומים הבולטים: מוסיקה (51), סדנא חווייתית (16), קולנוע (10), הרצאה (7). 54 מהאירועים מתאימים גם לילדים, ו-86 מהם הוגדרו נגישים. התוכנית עוד מתמלאת: אפשר להוסיף אירועים עד 22 באוקטובר.
+'''בשורה אחת:''' 152 אירועים ב-57 כתובות לאורך שלושה ימים. התחומים הבולטים: מוסיקה (61), סדנא חווייתית (28), קולנוע (13), הרצאה (7). 67 מהאירועים מתאימים גם לילדים, ו-107 מהם הוגדרו נגישים. התוכנית עוד מתמלאת: אפשר להוסיף אירועים עד 22 באוקטובר.
 </div>
 
 == מתי ואיפה ==
@@ -15,11 +15,11 @@
 {| class="wikitable" style="width:auto"
 ! יום !! תאריך !! אירועים
 |-
-| [[#יום חמישי, 29 באוקטובר|חמישי]] || 29 באוקטובר || style="text-align:center" | 39
+| [[#יום חמישי, 29 באוקטובר|חמישי]] || 29 באוקטובר || style="text-align:center" | 52
 |-
-| [[#יום שישי, 30 באוקטובר|שישי]] || 30 באוקטובר || style="text-align:center" | 43
+| [[#יום שישי, 30 באוקטובר|שישי]] || 30 באוקטובר || style="text-align:center" | 57
 |-
-| [[#יום שבת, 31 באוקטובר|שבת]] || 31 באוקטובר || style="text-align:center" | 32
+| [[#יום שבת, 31 באוקטובר|שבת]] || 31 באוקטובר || style="text-align:center" | 43
 |}
 </div>
 
@@ -37,15 +37,15 @@
 {| class="wikitable sortable" style="width:auto"
 ! מוקד !! כתובת !! אירועים !! מה יש שם
 |-
-| [[שבילים (בית ספר)|בית ספר שבילים]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36] || style="text-align:center" | 25 || <small>מוסיקה, שעת סיפור, ילדים והורים</small>
+| [[שבילים (בית ספר)|בית ספר שבילים]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36] || style="text-align:center" | 30 || <small>מוסיקה, תנועה ומחול, משחק</small>
 |-
-| [[מתנ"ס פרדס חנה כרכור|המתנ"ס]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54] || style="text-align:center" | 17 || <small>מוסיקה, הרצאה</small>
+| [[מתנ"ס פרדס חנה כרכור|המתנ"ס]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54] || style="text-align:center" | 20 || <small>מוסיקה, הרצאה</small>
 |-
-| [[האולם - בית תרבות מקומי פרכו"ר|האולם]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים] || style="text-align:center" | 11 || <small>קולנוע, רב תחומי</small>
+| [[האולם - בית תרבות מקומי פרכו"ר|האולם]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים] || style="text-align:center" | 14 || <small>קולנוע, רב תחומי</small>
 |-
 | [[מרכז בנגורה|בית בנגורה]] || [https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44] || style="text-align:center" | 8 || <small>מוסיקה, יצירה, סדנא חווייתית</small>
 |-
-| "הבית 43" || [https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43] || style="text-align:center" | 6 || <small>הרצאה, מוסיקה, תיאטרון</small>
+| "הבית 43" || [https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43] || style="text-align:center" | 7 || <small>הרצאה, מוסיקה, רב תחומי</small>
 |}
 </div>
 
@@ -63,7 +63,17 @@
 |-
 | style="white-space:nowrap" | 09:30–11:30 || '''[https://2026.hanadiv.org/event-page/2078 מעגל שיחה וכתיבה לאמהות בטבע]'''<br /><small>נעה ישראלי רוזנברג</small> || סדנא חווייתית || חורשת האלונים ברחוב עמל פינת הצפירה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A2%D7%9E%D7%9C%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw עמל 1]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 09:30–10:30 || '''[https://2026.hanadiv.org/event-page/2235 פלדנקרייז אצל יעל]'''<br /><small>יעל פינקל</small> || תנועה ומחול || סטודיו<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A1%D7%9E%D7%98%D7%AA%20%D7%A6%D7%90%D7%9C%D7%95%D7%9F%204%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw סמטת צאלון 4]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 10:00–11:45 || '''[https://2026.hanadiv.org/event-page/2201 הקשבה אחרת לסיפור הלידה שלך]'''<br /><small>תחיה רדלר</small> || סדנא חווייתית || סלון<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A8%D7%99%D7%9D%2073%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדרים 73]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 10:00–12:00 || '''[https://2026.hanadiv.org/event-page/2200 טעימה מצורפות]'''<br /><small>מיכל פלנר</small> || סדנא חווייתית || סטודיו לצורפות<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%93%D7%A8%D7%9A%20%D7%94%D7%91%D7%A0%D7%99%D7%9D%2031%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw דרך הבנים 31]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 10:00–11:30 || '''[https://2026.hanadiv.org/event-page/2226 ציור אינטואיטיבי]'''<br /><small>עדי נאה בלוך</small> || אמנות פלסטית || הבית שלי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%9C%D7%90%D7%94%20%D7%92%D7%95%D7%9C%D7%93%D7%91%D7%A8%D7%92%2C%2012%2012%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw לאה גולדברג, 12 12]</small> || <small>מבוגרים, נגיש</small>
+|-
 | style="white-space:nowrap" | 11:00–14:00 || '''[https://2026.hanadiv.org/event-page/2128 קונסטלציה וכתיבה]'''<br /><small>סהר עדס</small> || סדנא חווייתית || דירה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 5]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 13:30–15:00 || '''[https://2026.hanadiv.org/event-page/2207 משחקי תאטרון אילתור]'''<br /><small>גבריאל רענן</small> || תיאטרון || המרתף של תאטרון הידית<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%A2%D7%9C%D7%94%204%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המעלה 4]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 14:00–14:08 || '''[https://2026.hanadiv.org/event-page/2131 ללמד לסרוג סלסלה או בובה קטנה]'''<br /><small>לאה בן גרא</small> || יצירה || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>כל המשפחה</small>
 |-
@@ -71,11 +81,15 @@
 |-
 | style="white-space:nowrap" | 15:30–18:30 || '''[https://2026.hanadiv.org/event-page/2129 כתיבה קונסטלטיבית]'''<br /><small>סהר עדס</small> || הגות ושירה || דירה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 5]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 16:30–17:30 || '''[https://2026.hanadiv.org/event-page/2205 קוסמי מדע בחלל]'''<br /><small>איתי שופל</small> || רב תחומי || "הבית 43"<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 17:00–18:30 || '''[https://2026.hanadiv.org/event-page/2151 "הערוגה" בית הספר לקולנוע.]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 17:00–18:00 || '''[https://2026.hanadiv.org/event-page/2103 War darling]'''<br /><small>מיכאי צ'רנאה</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 17:00–18:00 || '''[https://2026.hanadiv.org/event-page/2188 המירוץ למטמון]'''<br /><small>מעין פררה</small> || משחק || [[הוואדי]] של ה[[שיקשוק]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 1]</small> || <small>כל המשפחה</small>
+|-
+| style="white-space:nowrap" | 17:00–19:00 || '''[https://2026.hanadiv.org/event-page/2227 רגע לשנינו - סדנה לזוגות]'''<br /><small>אלון הירשברג</small> || סדנא חווייתית || הסלון של מרכז אלון<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A6%D7%91%D7%99%208%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הצבי 8]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 17:30–18:30 || '''[https://2026.hanadiv.org/event-page/2167 אלטרנדיב: אורן בן סימון ולהקתו]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
@@ -87,7 +101,7 @@
 |-
 | style="white-space:nowrap" | 18:00–19:30 || '''[https://2026.hanadiv.org/event-page/2089 סדנת אקרו-יוגה]'''<br /><small>ינאי לב-אור</small> || סדנא חווייתית || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>מבוגרים</small>
 |-
-| style="white-space:nowrap" | 18:30–19:30 || '''[https://2026.hanadiv.org/event-page/2150 How Can You Be Born (בעברית : ״כל תוכלי להיוולד״)]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
+| style="white-space:nowrap" | 18:30–19:30 || '''[https://2026.hanadiv.org/event-page/2150 How Can You Be Born (בעברית : ״כך תוכלי להיוולד״)]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 18:30–19:50 || '''[https://2026.hanadiv.org/event-page/2171 הופעת תיאטרון פלייבק שבטי]'''<br /><small>נאוה ליכטנר</small> || תיאטרון || סככה מקורה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2066%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 66]</small> || <small>מבוגרים</small>
 |-
@@ -99,19 +113,23 @@
 |-
 | style="white-space:nowrap" | 19:00–20:30 || '''[https://2026.hanadiv.org/event-page/2170 הפרעת קשב התמכרויות ומה שביניהם]'''<br /><small>ברכה בוולסקי פריז</small> || הרצאה || אגף לשירותי רווחה וקהילה פרדס חנה כרכור<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A9%D7%91%D7%99%D7%9C%20%D7%94%D7%AA%D7%9C%D7%9E%D7%99%D7%93%207%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw שביל התלמיד 7]</small> || <small>מבוגרים, נגיש</small>
 |-
-| style="white-space:nowrap" | 19:00–21:00 || '''[https://2026.hanadiv.org/event-page/2124 משחק הדרקונים]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || בית פרטי עם גינה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
+| style="white-space:nowrap" | 19:00–20:30 || '''[https://2026.hanadiv.org/event-page/2229 כל אחד יכול לנגן בגיטרה]'''<br /><small>אהבה שמעיה</small> || מוסיקה || קונסרבטוריון במתנס<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה</small>
+|-
+| style="white-space:nowrap" | 19:00–21:00 || '''[https://2026.hanadiv.org/event-page/2124 משחק הדרקונים]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || סלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 19:30–21:00 || '''[https://2026.hanadiv.org/event-page/2152 אימפריה קטנה שלי]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 19:30–21:00 || '''[https://2026.hanadiv.org/event-page/2094 ג'אם תופים ושירה]'''<br /><small>רחל בנגורה</small> || מוסיקה || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>כל המשפחה</small>
 |-
-| style="white-space:nowrap" | 19:30–21:30 || '''[https://2026.hanadiv.org/event-page/2083 סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית]'''<br /><small>ישראל ינקלוביץ'</small> || אמנות פלסטית || סטודיו ביתי בכרכור<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%99%D7%A8%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ניר 3]</small> || <small>מבוגרים</small>
+| style="white-space:nowrap" | 19:30–20:35 || '''[https://2026.hanadiv.org/event-page/2210 מיכאל אלכסנדרוביץ צ׳כוב, כי הנפש לא יכולה לחיות כמו אורנגאוטן]'''<br /><small>עופר שגיא</small> || תיאטרון || ״הקוסמת״ מארחת בסלון<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%2078%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 78]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 19:30–20:30 || '''[https://2026.hanadiv.org/event-page/2069 פילאטיס מזרן]'''<br /><small>יעל לומברוסו</small> || ספורט || בבית שלי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%92%D7%99%D7%A0%D7%99%D7%9D%2018%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המגינים 18]</small> || <small>מבוגרים, נגיש</small>
 |-
+| style="white-space:nowrap" | 20:00–21:30 || '''[https://2026.hanadiv.org/event-page/2225 דאבל פיצ'ר- דניאלה גולדפיין ורועי נורמן]'''<br /><small>רועי נורמן</small> || מוסיקה || סככה מקורה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2066%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 66]</small> || <small>כל המשפחה</small>
+|-
 | style="white-space:nowrap" | 20:00–20:50 || '''[https://2026.hanadiv.org/event-page/2113 הופעה ארטיקופיקו]'''<br /><small>טל קופ</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 20:00–21:00 || '''[https://2026.hanadiv.org/event-page/2183 הופעת דואו אקוסטית]'''<br /><small>מיכל ויסברג</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
+| style="white-space:nowrap" | 20:00–22:00 || '''[https://2026.hanadiv.org/event-page/2183 מיכל ויסברג- הופעת דואו אקוסטית]'''<br /><small>מיכל ויסברג</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 20:00–21:00 || '''[https://2026.hanadiv.org/event-page/2127 מקום נפש]'''<br /><small>שירה מודן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>מבוגרים, נגיש</small>
 |-
@@ -125,17 +143,25 @@
 |-
 | style="white-space:nowrap" | 20:30–22:30 || '''[https://2026.hanadiv.org/event-page/2142 סדנה להכנת ספולייטלה]'''<br /><small>נעמה ברקוביץ</small> || אוכל || דירה ברחוב השומר<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A9%D7%95%D7%9E%D7%A8%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw השומר 3]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 20:30–22:00 || '''[https://2026.hanadiv.org/event-page/2213 פותחים פרשה]'''<br /><small>דרכי נועם הקהילה מסורתית שיוויונית בפרדס חנה-כרכור</small> || שיחה || דירה בבניין משותף<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%A0%D7%99%D7%9D%2035%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבנים 35]</small> || <small>מבוגרים, נגיש</small>
+|-
 | style="white-space:nowrap" | 21:00–21:30 || '''[https://2026.hanadiv.org/event-page/2096 Lucia N°03 העולם שבין ערות לשינה: טכנולוגיה שתיקח אתכם לטיול בתוך התודעה שלכם]'''<br /><small>ענבר פז</small> || סדנא חווייתית || הקליניקה של לוסיה תרפיה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%97%D7%A8%D7%9E%D7%95%D7%9F%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw חרמון 5]</small> || <small>מבוגרים</small>
 |-
-| style="white-space:nowrap" | 21:00–22:30 || '''[https://2026.hanadiv.org/event-page/2190 אלברט סופר - מופע להקה]'''<br /><small>אלברט סופר</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
+| style="white-space:nowrap" | 21:00–22:00 || '''[https://2026.hanadiv.org/event-page/2190 אלברט סופר - מופע להקה]'''<br /><small>אלברט סופר</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 21:00–23:00 || '''[https://2026.hanadiv.org/event-page/2195 מפגש אוהבי תקליטי Vinyl]'''<br /><small>Ben Harel</small> || מוסיקה || בית פרטי, סלון + גינה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%99%D7%95%D7%A0%D7%94%2060%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw יונה 60]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 21:00–22:30 || '''[https://2026.hanadiv.org/event-page/2147 שביליסטים - סרט קולנוע]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 21:00–22:00 || '''[https://2026.hanadiv.org/event-page/2122 שלוש אלף קילו]'''<br /><small>אור מהסילקר</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |-
+| style="white-space:nowrap" | 21:30–22:30 || '''[https://2026.hanadiv.org/event-page/2230 "ובחרת בחיים"]'''<br /><small>סיון הוד</small> || מוסיקה || הסלון במתנס<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
+|-
 | style="white-space:nowrap" | 22:00–23:00 || '''[https://2026.hanadiv.org/event-page/2173 אלטרנדיב: רימוך און]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 22:00–23:00 || '''[https://2026.hanadiv.org/event-page/2111 הופעת להקה - ציונה תג'ר]'''<br /><small>אובי אוחיון</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 22:00–23:00 || '''[https://2026.hanadiv.org/event-page/2217 סשקשיפשיצקי - מקס אולארציק, איילו, גל לייזר]'''<br /><small>מתן בן צבי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |}
 </div>
 
@@ -148,21 +174,27 @@
 |-
 | style="white-space:nowrap" | 08:30–09:30 || '''[https://2026.hanadiv.org/event-page/2071 שיעור התנסות בטאי צ'י טיבטי מסורתי]'''<br /><small>אהוד עמרם</small> || תנועה ומחול || [[גן הציפורים]], [[רמז (שכונה)|שכונת רמז]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%99%D7%95%D7%A0%D7%94%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw יונה 44]</small> || <small>מבוגרים, נגיש</small>
 |-
+| style="white-space:nowrap" | 09:00–10:00 || '''[https://2026.hanadiv.org/event-page/2232 יוגה נשית תחת האורנים]'''<br /><small>אסנת אבידן</small> || סדנא חווייתית || חורשת האורנים ברחוב קק״ל<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%A7%D7%B4%D7%9C%205%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw קק״ל 5]</small> || <small>מבוגרים</small>
+|-
 | style="white-space:nowrap" | 09:00–10:30 || '''[https://2026.hanadiv.org/event-page/2116 יוגה תרפיה]'''<br /><small>רחלי בר</small> || סדנא חווייתית || סטודיו ליוגה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%A8%D7%91%D7%9C%2014%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ארבל 14]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 09:00–10:30 || '''[https://2026.hanadiv.org/event-page/2144 לחשב מסלול מחדש בעזרת כלי ה-NLP]'''<br /><small>תמר שופל</small> || סדנא חווייתית || המרכז הקהילתי [[נווה פרדסים (שכונה)|נווה פרדסים]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%AA%D7%A8%D7%95%D7%92%208%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אתרוג 8]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 09:00–10:00 || '''[https://2026.hanadiv.org/event-page/2067 פילאטיס מזרן]'''<br /><small>יעל לומברוסו</small> || ספורט || בבית שלי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%92%D7%99%D7%A0%D7%99%D7%9D%2018%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המגינים 18]</small> || <small>מבוגרים, נגיש</small>
 |-
-| style="white-space:nowrap" | 09:30–10:30 || '''[https://2026.hanadiv.org/event-page/2075 כשמילים יוצרות מציאות]'''<br /><small>יפעת ביטון</small> || הרצאה || ההרצאה מתקיימת בסלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%98%D7%A2%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נטע 10]</small> || <small>מבוגרים, נגיש</small>
+| style="white-space:nowrap" | 09:30–11:30 || '''[https://2026.hanadiv.org/event-page/2203 מעגל גברים מארח נשים חוזר]'''<br /><small>גיא לאופר</small> || סדנא חווייתית || מרכז צעירים - רחוב המושב<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2048%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 48]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 10:00–11:00 || '''[https://2026.hanadiv.org/event-page/2112 המסע אל האור - מופע בלוז רוקנרול מקורי]'''<br /><small>יפעת שריג</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 10:00–11:30 || '''[https://2026.hanadiv.org/event-page/2149 חשבון האהבה]'''<br /><small>שחר ארז</small> || הרצאה || "הבית 43"<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43]</small> || <small>מבוגרים, נגיש</small>
 |-
+| style="white-space:nowrap" | 10:00–11:30 || '''[https://2026.hanadiv.org/event-page/2220 ללמוד רקמה ושיח על קשרים]'''<br /><small>מיצי בנגיו</small> || סדנא חווייתית || חורשה, שטח ירוק בין רחוב ברקת לרחוב יהלום<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%A8%D7%A7%D7%AA%2027%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ברקת 27]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 10:00–11:00 || '''[https://2026.hanadiv.org/event-page/2223 מה מבקש להישמע? מפגש עם קלפי שירת הלב]'''<br /><small>שולי השלי</small> || סדנא חווייתית || הסלון של אודליה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%98%D7%A2%206%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נטע 6]</small> || <small>מבוגרים</small>
+|-
 | style="white-space:nowrap" | 10:00–12:30 || '''[https://2026.hanadiv.org/event-page/2081 מהחצר האחורית לחזית המושבה]'''<br /><small>רֹתם</small> || הרצאה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], הלובי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
 |-
-| style="white-space:nowrap" | 10:30–11:30 || '''[https://2026.hanadiv.org/event-page/2056 סדנת בייבי יוגה ועיסוי תינוקות]'''<br /><small>שרי ציק</small> || סדנא חווייתית || בתוך בקתת עץ קסומה במקום שקט<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%90%D7%95%D7%A8%D7%A0%D7%99%D7%9D%2084%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw האורנים 84]</small> || <small>מבוגרים</small>
+| style="white-space:nowrap" | 10:30–11:30 || '''[https://2026.hanadiv.org/event-page/2056 סדנת בייבי יוגה ועיסוי תינוקות]'''<br /><small>שרי ציק</small> || סדנא חווייתית || המרכז הקהילתי [[נווה פרדסים (שכונה)|נווה פרדסים]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%AA%D7%A8%D7%95%D7%92%208%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אתרוג 8]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 10:30–12:30 || '''[https://2026.hanadiv.org/event-page/2084 סדנת ציור מהתבוננות: התרעננות יצירתית ומחשבתית]'''<br /><small>ישראל ינקלוביץ'</small> || אמנות פלסטית || סטודיו ביתי בכרכור<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%99%D7%A8%203%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ניר 3]</small> || <small>מבוגרים</small>
 |-
@@ -172,7 +204,15 @@
 |-
 | style="white-space:nowrap" | 11:00–12:00 || '''[https://2026.hanadiv.org/event-page/2070 פילאטיס מכשירים]'''<br /><small>יעל לומברוסו</small> || ספורט || סטודיו פילאטיס מכשירים, אינטימי בבית שלי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%92%D7%99%D7%A0%D7%99%D7%9D%2018%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המגינים 18]</small> || <small>מבוגרים, נגיש</small>
 |-
+| style="white-space:nowrap" | 11:00–12:30 || '''[https://2026.hanadiv.org/event-page/2218 רשת של אהבה]'''<br /><small>Sivan Senior</small> || סדנא חווייתית || מועדון אור<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%91%D7%9F%20%D7%92%D7%91%D7%99%D7%A8%D7%95%D7%9C%2014%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אבן גבירול 14]</small> || <small>מבוגרים</small>
+|-
 | style="white-space:nowrap" | 11:30–12:00 || '''[https://2026.hanadiv.org/event-page/2095 גילי ליבר]'''<br /><small>רחל בנגורה</small> || מוסיקה || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>כל המשפחה</small>
+|-
+| style="white-space:nowrap" | 12:00–13:00 || '''[https://2026.hanadiv.org/event-page/2185 אייל חי - מופע להקה]'''<br /><small>אייל חי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 12:00–13:00 || '''[https://2026.hanadiv.org/event-page/2234 דיויד מוזס]'''<br /><small>דיויד מוזס</small> || מוסיקה || קונסרבטוריון במתנס<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 12:00–14:00 || '''[https://2026.hanadiv.org/event-page/2236 הרצאה ומבוא להומורדרמה ואימון פרדוקסלי- כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים]'''<br /><small>אלכס סטרניק</small> || הרצאה || סלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%92%D7%99%D7%A0%D7%AA%20%D7%90%D7%92%D7%95%D7%96%209%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw גינת אגוז 9]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 12:00–12:15 || '''[https://2026.hanadiv.org/event-page/2114 סטלה גוט - הופעה]'''<br /><small>סטלה גוטשטיין</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], במה בראש<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
 |-
@@ -182,13 +222,13 @@
 |-
 | style="white-space:nowrap" | 12:30–12:40 || '''[https://2026.hanadiv.org/event-page/2072 ציור על קירות בצבעים אקריליים]'''<br /><small>תמר קינן</small> || ציור || רחבת כניסה לבניין הצפירה 10<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A6%D7%A4%D7%99%D7%A8%D7%94%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הצפירה 10]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 12:30–14:00 || '''[https://2026.hanadiv.org/event-page/2219 רשת של אהבה - סיון סניור]'''<br /><small>קיקה ברוקס</small> || סדנא חווייתית || מועדון אור<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%91%D7%9F%20%D7%92%D7%91%D7%99%D7%A8%D7%95%D7%9C%2014%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אבן גבירול 14]</small> || <small>מבוגרים</small>
+|-
 | style="white-space:nowrap" | 13:00–14:30 || '''[https://2026.hanadiv.org/event-page/2177 Death Cafe בקפה ויעל]'''<br /><small>מיכל גוטמן</small> || סדנא חווייתית || [[קפה ויעל]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2027%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 27]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 13:00–14:00 || '''[https://2026.hanadiv.org/event-page/2158 אלטרנדיב: Cosmic Alliance]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 13:00–14:00 || '''[https://2026.hanadiv.org/event-page/2191 גבי סוקולובסקי - מופע להקה]'''<br /><small>גבי סוקולובסקי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
-|-
-| style="white-space:nowrap" | 13:00–14:00 || '''[https://2026.hanadiv.org/event-page/2187 הופעה קול המלאכים וקול הגרוב]'''<br /><small>אורית איזנשטיין</small> || מוסיקה || [[לייבלב]], [[אורוות האמנים]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%95%D7%A8%D7%95%D7%95%D7%AA%20%D7%94%D7%90%D7%9E%D7%A0%D7%99%D7%9D%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אורוות האמנים 1]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 13:00–14:00 || '''[https://2026.hanadiv.org/event-page/2073 הכנת כדורי שוקולד]'''<br /><small>תמר קינן</small> || אוכל || רחבת כניסה לבניין הצפירה 10<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A6%D7%A4%D7%99%D7%A8%D7%94%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הצפירה 10]</small> || <small>ילדים</small>
 |-
@@ -196,9 +236,13 @@
 |-
 | style="white-space:nowrap" | 13:30–14:15 || '''[https://2026.hanadiv.org/event-page/2133 מופע אינדי]'''<br /><small>רחל בנגורה</small> || מוסיקה || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 14:00–15:00 || '''[https://2026.hanadiv.org/event-page/2118 אקלקטוס]'''<br /><small>יפתח פרת</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 14:00–15:00 || '''[https://2026.hanadiv.org/event-page/2209 פלורה]'''<br /><small>מתן בן צבי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 14:30–15:30 || '''[https://2026.hanadiv.org/event-page/2159 אלטרנדיב: אלעד זאב ולהקה]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 15:00–16:00 || '''[https://2026.hanadiv.org/event-page/2118 אקלקטוס]'''<br /><small>יפתח פרת</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+| style="white-space:nowrap" | 15:00–16:30 || '''[https://2026.hanadiv.org/event-page/2197 דרישת שלום]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 15:00–16:00 || '''[https://2026.hanadiv.org/event-page/2182 טליה דנציג]'''<br /><small>מתן בן צבי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |-
@@ -212,7 +256,15 @@
 |-
 | style="white-space:nowrap" | 17:00–17:30 || '''[https://2026.hanadiv.org/event-page/2155 The Creative Block סרט אנימציה קצר]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>כל המשפחה, נגיש</small>
 |-
+| style="white-space:nowrap" | 17:00–18:15 || '''[https://2026.hanadiv.org/event-page/2233 דילן בדרכים - יונתן זילברשייד שר מנגן ומספר בוב דילן]'''<br /><small>יונתן זילברשייד</small> || מוסיקה || סניף אקרופוליס החדשה, לימוד פילוסופיה כדרך…<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A8%D7%91%D7%99%20%D7%A2%D7%A7%D7%99%D7%91%D7%90%2015%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw רבי עקיבא 15]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 17:00–18:00 || '''[https://2026.hanadiv.org/event-page/2222 קבלת שבת וסדנת פלמנקו]'''<br /><small>גינת קליד</small> || תנועה ומחול || בית המחול מנשה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%A8%D7%99%D7%99%D7%AA%20%D7%94%D7%97%D7%99%D7%A0%D7%95%D7%9A%20%D7%9E%D7%95%D7%A2%D7%A6%D7%94%20%D7%90%D7%96%D7%95%D7%A8%D7%99%D7%AA%20%D7%9E%D7%A0%D7%A9%D7%94%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw קריית החינוך מועצה אזורית מנשה 1]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 17:30–18:00 || '''[https://2026.hanadiv.org/event-page/2224 אווה EVA - a short film]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
+|-
 | style="white-space:nowrap" | 17:30–18:30 || '''[https://2026.hanadiv.org/event-page/2164 אלטרנדיב: STEREO CANDY]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 18:00–19:30 || '''[https://2026.hanadiv.org/event-page/2199 מופע סיפור , מיכאל צ׳כוב]'''<br /><small>עופר שגיא</small> || תיאטרון || בית פרטי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2037%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 37]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 18:00–19:30 || '''[https://2026.hanadiv.org/event-page/2136 שירה יכולה]'''<br /><small>יגאל עמנואל</small> || הגות ושירה || בית פרטי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%93%D7%9E%D7%94%2041%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw קדמה 41]</small> || <small>מבוגרים, נגיש</small>
 |-
@@ -222,11 +274,13 @@
 |-
 | style="white-space:nowrap" | 20:30–21:30 || '''[https://2026.hanadiv.org/event-page/2141 אלטרנדיב: רייסקינדר]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 20:30–22:30 || '''[https://2026.hanadiv.org/event-page/2125 נשים מדברות, גברים מקשיבים]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || בית פרטי עם גינה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
+| style="white-space:nowrap" | 20:30–22:30 || '''[https://2026.hanadiv.org/event-page/2125 נשים מדברות, גברים מקשיבים]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || סלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 20:30–21:30 || '''[https://2026.hanadiv.org/event-page/2098 פסנתר חי - יוצרים מוסיקה ביחד]'''<br /><small>סשה בקמן</small> || מוסיקה || "הבית 43"<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 21:00–23:00 || '''[https://2026.hanadiv.org/event-page/2146 סרט קולנוע - זהר]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 21:30–23:30 || '''[https://2026.hanadiv.org/event-page/2202 שיח בנושא זוגיות]'''<br /><small>רן רצהבי</small> || סדנא חווייתית || סטודיו ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%91%D7%98%D7%99%D7%9D%204%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נבטים 4]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 22:00–23:00 || '''[https://2026.hanadiv.org/event-page/2161 אלטרנדיב: Sklep]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |}
@@ -241,9 +295,17 @@
 |-
 | style="white-space:nowrap" | 10:00–13:00 || '''[https://2026.hanadiv.org/event-page/2178 יוצרים יחד בסטודיו GoART - לב המושבה]'''<br /><small>קרן נעים</small> || אמנות פלסטית || סטודיו GoART פרדס חנה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%20100%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 100]</small> || <small>מבוגרים</small>
 |-
+| style="white-space:nowrap" | 10:00–10:30 || '''[https://2026.hanadiv.org/event-page/2231 מתגלגלים- חיבור בתנועה הורים וילדים]'''<br /><small>מאיה נחמיאס</small> || תנועה ומחול || [[שבילים (בית ספר)|בית ספר שבילים]], אינדיגו, מתחם הילדים<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 10:00 ואילך || '''[https://2026.hanadiv.org/event-page/2077 מתחם טיפולים לאורך כל היום]'''<br /><small>אפרת פיליפובסקי</small><br /><small>ההרשמה ישירות מול המטפלים, לא דרך אתר הפסטיבל</small> || אירוח || קליניקה קהילתית "דרך המשי" בית פעם שבת<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%93%D7%A7%D7%9C%D7%99%D7%9D%2095%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הדקלים 95]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 10:00–11:30 || '''[https://2026.hanadiv.org/event-page/2176 עולם הצמחים והליקוט בחווה]'''<br /><small>אפרת שקד</small> || סדנא חווייתית || חוות החזון הירוק (הגעה מרחוב הנורית, לפי ההוראות באתר)<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%95%D7%A8%D7%99%D7%AA%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנורית]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 10:30–12:30 || '''[https://2026.hanadiv.org/event-page/2237 כנס אוהבי הפוקימונים השני של פרדס חנה-כרכור]'''<br /><small>שחר פרטיג</small> || משחק || [[שבילים (בית ספר)|בית ספר שבילים]], אינדיגו, מתחם הילדים<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 10:30–11:30 || '''[https://2026.hanadiv.org/event-page/2215 שיעור פילאטיס]'''<br /><small>אוה אוה</small> || ספורט || אצלי בבית<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A2%D7%9C%D7%99%D7%94%2010%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw העליה 10]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 11:00–12:30 || '''[https://2026.hanadiv.org/event-page/2198 בנוגע לכסף - שינוי תודעה לשיפור מערכת היחסים עם כסף]'''<br /><small>אביב עגני</small> || סדנא חווייתית || סלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%A8%D7%91%D7%9C%2042%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ארבל 42]</small> || <small>מבוגרים, נגיש</small>
 |-
 | style="white-space:nowrap" | 11:00–12:00 || '''[https://2026.hanadiv.org/event-page/2102 מפגש לייב של הפודקאסט ׳השיר הנכון׳]'''<br /><small>ורד עצמון</small> || הגות ושירה || בית פרטי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%91%D7%A8%D7%A7%D7%90%D7%99%207%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ברקאי 7]</small> || <small>מבוגרים</small>
 |-
@@ -251,9 +313,17 @@
 |-
 | style="white-space:nowrap" | 11:30–13:00 || '''[https://2026.hanadiv.org/event-page/2093 הופעה]'''<br /><small>ג'ני וסילנקו</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], אינדיגו, מתחם הילדים<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
+| style="white-space:nowrap" | 12:00–13:00 || '''[https://2026.hanadiv.org/event-page/2221 סיור הורים וילדים לחממה בעין שמר]'''<br /><small>גינת קליד</small> || סיור || בית המחול מנשה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A7%D7%A8%D7%99%D7%99%D7%AA%20%D7%94%D7%97%D7%99%D7%A0%D7%95%D7%9A%20%D7%9E%D7%95%D7%A2%D7%A6%D7%94%20%D7%90%D7%96%D7%95%D7%A8%D7%99%D7%AA%20%D7%9E%D7%A0%D7%A9%D7%94%201%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw קריית החינוך מועצה אזורית מנשה 1]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 12:30–14:00 || '''[https://2026.hanadiv.org/event-page/2196 חם לי קר לי]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 13:00–14:00 || '''[https://2026.hanadiv.org/event-page/2214 מוטי פרנסס]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 14:00–15:00 || '''[https://2026.hanadiv.org/event-page/2194 מופע הסרטים הקסומים]'''<br /><small>איתי שופל</small> || רב תחומי || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 14:30–15:30 || '''[https://2026.hanadiv.org/event-page/2162 אלטרנדיב: עמוס צימרמן - סולו]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 15:00–16:00 || '''[https://2026.hanadiv.org/event-page/2228 אקרו משפחות]'''<br /><small>יובל לוינסון</small> || סדנא חווייתית || [[שבילים (בית ספר)|בית ספר שבילים]], אינדיגו, מתחם הילדים<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 16:00–16:45 || '''[https://2026.hanadiv.org/event-page/2120 Tourmaline Playground]'''<br /><small>אייל חי</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
@@ -271,33 +341,39 @@
 |-
 | style="white-space:nowrap" | 17:00–19:00 || '''[https://2026.hanadiv.org/event-page/2092 מופע כשרונות צעירים]'''<br /><small>מייטל קורח מרגוליס</small> || ילדים והורים || [[שבילים (בית ספר)|בית ספר שבילים]], אינדיגו, מתחם הילדים<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 17:00–18:00 || '''[https://2026.hanadiv.org/event-page/2181 מעגל שירה עם הרכב נשים "מורקה"]'''<br /><small>מעין אגמון</small> || מוסיקה || בית פרטי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%A9%D7%99%D7%90%2014%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנשיא 14]</small> || <small>כל המשפחה, נגיש</small>
-|-
-| style="white-space:nowrap" | 17:00–19:00 || '''[https://2026.hanadiv.org/event-page/2180 קלרה הקדושה]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>כל המשפחה, נגיש</small>
+| style="white-space:nowrap" | 17:00–18:00 || '''[https://2026.hanadiv.org/event-page/2181 מעגל שירה עם הרכב הנשים "מורקה"]'''<br /><small>מעין אגמון</small> || מוסיקה || בית פרטי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%A9%D7%99%D7%90%204%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנשיא 4]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 17:30–18:30 || '''[https://2026.hanadiv.org/event-page/2139 אלטרנדיב: דני לוזון - להקה]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
+| style="white-space:nowrap" | 17:30–19:30 || '''[https://2026.hanadiv.org/event-page/2180 קלרה הקדושה]'''<br /><small>Alon Feig</small> || קולנוע || [[האולם - בית תרבות מקומי פרכו"ר|האולם]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%94%D7%92%D7%A0%D7%94%20%D7%A4%D7%99%D7%A0%D7%AA%20%D7%94%D7%A6%D7%A0%D7%97%D7%A0%D7%99%D7%9D%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw ההגנה פינת הצנחנים]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 18:30–19:30 || '''[https://2026.hanadiv.org/event-page/2184 עדן זלניק- הופעה]'''<br /><small>עדן זלניק</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
+|-
+| style="white-space:nowrap" | 19:00–20:00 || '''[https://2026.hanadiv.org/event-page/2087 Sing & Soul]'''<br /><small>לימור פיגל</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 19:00–20:00 || '''[https://2026.hanadiv.org/event-page/2140 אלטרנדיב: רוקרפוקטס]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 19:30–20:30 || '''[https://2026.hanadiv.org/event-page/2087 sing & soul]'''<br /><small>לימור פיגל</small> || מוסיקה || בית פרטי עם סלון גדול לארח<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A9%D7%9C%D7%93%D7%92%2033%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw שלדג 33]</small> || <small>כל המשפחה, נגיש</small>
-|-
-| style="white-space:nowrap" | 19:30–20:30 || '''[https://2026.hanadiv.org/event-page/2185 אייל חי - מופע להקה]'''<br /><small>אייל חי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>מבוגרים, נגיש</small>
-|-
 | style="white-space:nowrap" | 19:30–20:30 || '''[https://2026.hanadiv.org/event-page/2091 הרצאה על הביטלס]'''<br /><small>סלעית אביב</small> || הרצאה || "הבית 43"<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%90%D7%97%D7%95%D7%96%D7%94%2043%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw אחוזה 43]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 20:00–21:00 || '''[https://2026.hanadiv.org/event-page/2238 גילי קמחי - הופעה אקוסטית]'''<br /><small>גילי קמחי</small> || מוסיקה || סניף אקרופוליס החדשה, לימוד פילוסופיה כדרך…<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A8%D7%91%D7%99%20%D7%A2%D7%A7%D7%99%D7%91%D7%90%2015%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw רבי עקיבא 15]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 20:00–21:30 || '''[https://2026.hanadiv.org/event-page/2135 יוצרים בתהילים]'''<br /><small>רחל בנגורה</small> || מוסיקה || [[מרכז בנגורה|בית בנגורה]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%95%D7%A9%D7%91%2044%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המושב 44]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 20:00–21:00 || '''[https://2026.hanadiv.org/event-page/2186 כסיף ונאטשה - שרים אהבה]'''<br /><small>אורית איזנשטיין</small> || מוסיקה || בחצר של כסיף<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%A0%D7%A2%D7%95%D7%A8%D7%99%D7%9D%2023%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw נעורים 23]</small> || <small>מבוגרים, נגיש</small>
 |-
+| style="white-space:nowrap" | 20:00–20:30 || '''[https://2026.hanadiv.org/event-page/2211 מייצג - "מסומנים"]'''<br /><small>סיגל ניר</small> || מיצג || בית מירי ומומו צ'רניץ<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%AA%D7%A8%D7%A4%22%D7%98%2024%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw תרפ"ט 24]</small> || <small>מבוגרים</small>
+|-
+| style="white-space:nowrap" | 20:00–23:00 || '''[https://2026.hanadiv.org/event-page/2204 מעגל שירה יונייט אין פרדס חנה]'''<br /><small>רומי נטיס</small> || הגות ושירה || רחבת המועצה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%A0%D7%99%D7%9D%20%D7%A8%D7%97%D7%91%D7%AA%20%D7%94%D7%9E%D7%95%D7%A2%D7%A6%D7%94%2020%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבנים רחבת המועצה 20]</small> || <small>כל המשפחה, נגיש</small>
+|-
 | style="white-space:nowrap" | 20:00–21:00 || '''[https://2026.hanadiv.org/event-page/2119 נגינת המונים]'''<br /><small>אהבה שמעיה</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], במת הג'אז ומוסיקת עולם<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 20:30–21:30 || '''[https://2026.hanadiv.org/event-page/2189 אלטרנדיב: Rei Honda and The Late Bloomers]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |-
-| style="white-space:nowrap" | 20:30–22:30 || '''[https://2026.hanadiv.org/event-page/2126 גברים מדברים, נשים מקשיבות]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || בית פרטי עם גינה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
+| style="white-space:nowrap" | 20:30–22:30 || '''[https://2026.hanadiv.org/event-page/2126 גברים מדברים, נשים מקשיבות]'''<br /><small>שרה סירוטה</small> || סדנא חווייתית || סלון ביתי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%A0%D7%93%D7%99%D7%91%2086%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הנדיב 86]</small> || <small>מבוגרים</small>
 |-
 | style="white-space:nowrap" | 20:30–21:30 || '''[https://2026.hanadiv.org/event-page/2088 הצעד הבא]'''<br /><small>קובי גרוסמן</small> || תיאטרון || אמפי פרדס חנה<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%9E%D7%A2%D7%9C%D7%94%204%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw המעלה 4]</small> || <small>מבוגרים, נגיש</small>
+|-
+| style="white-space:nowrap" | 20:30–21:30 || '''[https://2026.hanadiv.org/event-page/2216 רועי ריק - הפחד מהריק]'''<br /><small>מתן בן צבי</small> || מוסיקה || [[מתנ"ס פרדס חנה כרכור|המתנ"ס]], [[חנה בר]]<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%91%D7%95%D7%98%D7%A0%D7%99%D7%9D%2054%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw הבוטנים 54]</small> || <small>כל המשפחה, נגיש</small>
 |-
 | style="white-space:nowrap" | 22:00–23:00 || '''[https://2026.hanadiv.org/event-page/2179 אלטרנדיב: רפאים]'''<br /><small>יובל גוטמן</small> || מוסיקה || [[שבילים (בית ספר)|בית ספר שבילים]], האמפי הפנימי<br /><small>[https://www.google.com/maps/search/?api=1&query=%D7%94%D7%97%D7%95%D7%A8%D7%A9%2036%2C%20%D7%A4%D7%A8%D7%93%D7%A1%20%D7%97%D7%A0%D7%94-%D7%9B%D7%A8%D7%9B%D7%95%D7%A8&hl=iw החורש 36]</small> || <small>כל המשפחה, נגיש</small>
 |}
@@ -315,7 +391,7 @@
 * [https://www.instagram.com/hanadiv.fest הפסטיבל באינסטגרם]
 
 == מקורות ==
-לוח האירועים נאסף מ[https://2026.hanadiv.org/ אתר הפסטיבל], נכון ל-6 באוקטובר 2026. הכתובות ותיאורי המקומות הם כפי שהמארחים הזינו אותם, עם תיקון של שגיאות הקלדה ברורות.
+לוח האירועים נאסף מ[https://2026.hanadiv.org/ אתר הפסטיבל], נכון ל-13 באוקטובר 2026. הכתובות ותיאורי המקומות הם כפי שהמארחים הזינו אותם, עם תיקון של שגיאות הקלדה ברורות.
 
 ''התוכנית עשויה להשתנות. במקרה של סתירה, אתר הפסטיבל קובע.''
 
