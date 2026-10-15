@@ -236,3 +236,39 @@ h1 { margin: 4px 0 6px; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; }
   font-size: 14px; max-width: calc(100% - 32px);
 }
 .toast a { color: inherit; font-weight: 500; word-break: break-all; }
+
+/* מה מקבלים תמורת הכסף */
+.value { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; margin: 24px 0; }
+.value h2 { margin: 0 0 4px; font-size: 22px; }
+.v-lede { margin: 0 0 12px; color: var(--text-2); max-width: 75ch; }
+.v-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 16px 0; }
+.v-tile { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
+.v-label { color: var(--text-2); font-size: 14px; }
+.v-value { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.v-sub { color: var(--text-3); font-size: 13px; }
+.v-charts { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.v-fig { margin: 0; min-width: 0; }
+.v-fig h3 { margin: 0 0 4px; font-size: 16px; }
+.v-plot { direction: ltr; }
+.v-plot svg { display: block; max-width: 100%; height: auto; }
+.v-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--text-2); font-size: 13px; margin-bottom: 4px; }
+.v-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.v-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.v-swatch.home { background: var(--s1); } .v-swatch.peer { background: var(--other); }
+.v-swatch.band { background: var(--other); opacity: .35; border-radius: 2px; }
+.v-line { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.v-line.home { background: var(--s1); } .v-line.peer { background: var(--other); }
+.v-tip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 13px; min-width: 150px; }
+.v-tip-row { display: flex; align-items: center; gap: 6px; }
+.v-tip-row strong { font-variant-numeric: tabular-nums; }
+.v-tip-l { color: var(--text-2); }
+.v-key { width: 12px; height: 2px; border-radius: 1px; flex: 0 0 auto; }
+.v-details { margin-top: 14px; }
+.v-details summary { cursor: pointer; color: var(--accent); }
+.v-table-wrap { overflow-x: auto; }
+.v-details table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+.v-details th, .v-details td { text-align: start; padding: 5px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.v-details th { color: var(--text-2); font-weight: 500; }
+.v-details tr.home td { font-weight: 700; }
+@media (max-width: 520px) { .value { padding: 14px; } .v-value { font-size: 24px; } }
