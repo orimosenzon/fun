@@ -54,6 +54,7 @@ in API_POSITIONS; a new venue with none falls back to B144 automatically
 
     python3 build_hanadiv.py            # fetch, check, write web/data/hanadiv.json
     python3 build_hanadiv.py --report   # also print every venue against B144
+    python3 build_hanadiv.py --publish  # also put it in the data repo (nightly cron)
 
 The B144 check is a report for whoever runs this, not an automatic decision -
 see the two cases above. Its results are cached in .cache/ so a rerun is free.
@@ -71,6 +72,7 @@ import urllib.parse
 import urllib.request
 
 from build_places import load_json, save_json
+from data_repo import publish_json
 
 API = "https://api.hanadiv.org"
 SITE = "https://2026.hanadiv.org/"
@@ -128,6 +130,18 @@ FIXES = {
                     why="'a grove between ברקת and יהלום': midway between OSM ways 477494365 and 477494607"),
     "סמטת צאלון 4": dict(lat=32.473589, lng=34.963170, source="osm",
                          why="centre of OSM way 183324944 (צאלון); B144 has no page"),
+    # Added 16/10/2026 (169 events). The first two are one meeting point, "הזולה
+    # בכרכור", in the fields past the end of ברקאי; numbering starts at the
+    # west end (ברקאי 7 is there), so the end is the east one.
+    "סוף רחוב ברקאי בשדות 1": dict(lat=32.475820, lng=35.004000, source="osm",
+                                   why="just past the east end of OSM way 112976696 (ברקאי), into the fields"),
+    "ברקאי 100": dict(lat=32.475820, lng=35.004000, source="osm",
+                      why="ברקאי has no 100; same venue as the line above, by its description"),
+    "המעלה פינת רבי עקיבא 4": dict(lat=32.474700, lng=34.970180, source="osm",
+                                   why="'the plaza between the theatre and רבי עקיבא': midway from the amphitheatre "
+                                       "marker to where OSM way 68706427 meets המעלה"),
+    'עמ"ל 45': dict(lat=32.463774, lng=34.976019, source="osm",
+                    why="centre of OSM way 68726800 (עמל), 630 m; B144 has no page"),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The
@@ -467,8 +481,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--report", action="store_true",
                         help="print every venue against B144 (slow, cached)")
+    parser.add_argument("--publish", action="store_true",
+                        help="put the file in the data repo, where the app reads it")
     args = parser.parse_args()
-    build(args.report)
+    doc = build(args.report)
+    if args.publish:
+        s = doc["stats"]
+        msg = (f"דרך הנדיב: {s['events']} אירועים ב-{s['venues']} כתובות, "
+               f"{s['placed']} ממוקמים (build_hanadiv.py, בוטי)")
+        print(f"ריפו הנתונים: {publish_json('data/hanadiv.json', doc, msg)}")
 
 
 if __name__ == "__main__":

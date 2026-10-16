@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>בדיקת מיקום בתמונות</title>
+<!-- A one-off probe, not part of the app: which way of picking a photo on a
+     phone still hands the page the GPS the camera wrote into it. Android's
+     photo picker redacts location for callers without ACCESS_MEDIA_LOCATION,
+     and iOS varies by version, so this has to be answered on real phones
+     before photos can be placed on the trail by their EXIF. -->
+<style>
+  :root {
+    --accent: #1b5e20; --accent-soft: #e8f2e9; --ink: #1c2420;
+    --muted: #5c6b63; --line: #dfe6e2; --bg: #f6f8f7; --card: #fff;
+    --good: #1b5e20; --bad: #b3261e; --warn: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 4px 0 6px; color: var(--accent); }
+  p.lead { margin: 0 0 14px; color: var(--muted); }
+  .pick { display: grid; gap: 10px; margin-bottom: 16px; }
+  .pick label {
+    display: block; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; cursor: pointer;
+  }
+  .pick label b { display: block; color: var(--accent); }
+  .pick label span { font-size: 14px; color: var(--muted); }
+  .note {
+    background: #fff8e1; border: 1px solid #f2d27a; border-radius: 12px;
+    padding: 10px 14px; font-size: 14px; margin-bottom: 16px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px;
+  }
+  .card img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; flex: none; }
+  .card .rows { min-width: 0; flex: 1; font-size: 14px; }
+  .card .verdict { font-weight: 700; font-size: 15px; }
+  .ok { color: var(--good); } .no { color: var(--bad); } .meh { color: var(--warn); }
+  .card .k { color: var(--muted); }
+  .card a { color: var(--accent); }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 20px; }
+  button {
+    border: 0; border-radius: 10px; padding: 10px 14px; font: inherit;
+    font-weight: 600; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.ghost { background: var(--accent-soft); color: var(--accent); }
+  .env { font-size: 12px; color: var(--muted); word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>בדיקת מיקום בתמונות</h1>
+  <p class="lead">בוחרים תמונה שצולמה בחוץ, והדף מראה אם נשמרו בה המיקום ושעת הצילום. כדאי לבחור את אותה תמונה בכל אחת משלוש הדרכים.</p>
+
+  <div class="note">בסמסונג המצלמה שומרת מיקום רק אם זה מופעל: מצלמה ← הגדרות ← "תגי מיקום". אם זה כבוי, לאף תמונה לא יהיה מיקום, ואין בזה שום דבר שקשור לדף.</div>
+
+  <div class="pick">
+    <label><b>1. מהגלריה</b><span>כמו כפתור "הוספת תמונות" באתר היום</span>
+      <input type="file" accept="image/*" multiple hidden data-way="גלריה"></label>
+    <label><b>2. ממנהל הקבצים</b><span>בלי סינון לתמונות. באנדרואיד נפתח "הקבצים שלי" או "קבצים"; משם להיכנס ל-DCIM ← Camera</span>
+      <input type="file" multiple hidden data-way="קבצים"></label>
+    <label><b>3. צילום עכשיו</b><span>פותח את המצלמה ישר מהדף</span>
+      <input type="file" accept="image/*" capture="environment" hidden data-way="מצלמה"></label>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="bar" id="bar" hidden>
+    <button id="share">שליחת התוצאות</button>
+    <button class="ghost" id="copy">העתקה</button>
+    <button class="ghost" id="clear">ניקוי</button>
+  </div>
+
+  <div class="env" id="env"></div>
+</main>
+
+<script>
+(() => {
+  /* ---------- EXIF ---------- */
+
+  /** The TIFF block that holds EXIF sits behind "Exif\0\0" in a JPEG's APP1,
+   *  in a WebP's EXIF chunk and in a HEIC's Exif item alike, so rather than
+   *  walk three container formats, look for that marker (or a bare TIFF
+   *  header right after it) in the first part of the file. */
+  function findTiff(bytes) {
+    const n = Math.min(bytes.length - 8, 512 * 1024);
+    for (let i = 0; i < n; i++) {
+      if (bytes[i] === 0x45 && bytes[i + 1] === 0x78 && bytes[i + 2] === 0x69 &&
+          bytes[i + 3] === 0x66 && bytes[i + 4] === 0 && bytes[i + 5] === 0) {
+        const t = i + 6;
+        if ((bytes[t] === 0x49 && bytes[t + 1] === 0x49) ||
+            (bytes[t] === 0x4d && bytes[t + 1] === 0x4d)) return t;
+      }
+    }
+    return -1;
+  }
+
+  function readExif(buf) {
+    const bytes = new Uint8Array(buf);
+    const base = findTiff(bytes);
+    if (base < 0) return null;
+    const dv = new DataView(buf);
+    const le = bytes[base] === 0x49;
+    const u16 = (o) => dv.getUint16(base + o, le);
+    const u32 = (o) => dv.getUint32(base + o, le);
+    const SIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+
+    function value(entry) {
+      const type = u16(entry + 2), count = u32(entry + 4);
+      const size = (SIZE[type] || 1) * count;
+      const at = size > 4 ? u32(entry + 8) : entry + 8;
+      if (type === 2) {
+        let s = '';
+        for (let i = 0; i < count; i++) {
+          const c = bytes[base + at + i];
+          if (!c) break;
+          s += String.fromCharCode(c);
+        }
+        return s.trim();
+      }
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        if (type === 3) out.push(u16(at + i * 2));
+        else if (type === 4) out.push(u32(at + i * 4));
+        else if (type === 5) {
+          const d = u32(at + i * 8 + 4);
+          out.push(d ? u32(at + i * 8) / d : 0);
+        } else out.push(bytes[base + at + i]);
+      }
+      return count === 1 ? out[0] : out;
+    }
+
+    function ifd(off) {
+      const tags = {};
+      if (!off || off + 2 > bytes.length - base) return tags;
+      const count = u16(off);
+      for (let i = 0; i < count; i++) {
+        const e = off + 2 + i * 12;
+        try { tags[u16(e)] = value(e); } catch (err) { /* a tag past the end */ }
+      }
+      return tags;
+    }
+
+    const ifd0 = ifd(u32(4));
+    const sub = ifd0[0x8769] ? ifd(ifd0[0x8769]) : {};
+    const gps = ifd0[0x8825] ? ifd(ifd0[0x8825]) : null;
+    return { ifd0, sub, gps };
+  }
+
+  const dms = (v) => Array.isArray(v) ? v[0] + v[1] / 60 + (v[2] || 0) / 3600 : NaN;
+
+  function summarize(exif) {
+    const r = { hasExif: !!exif, hasGpsBlock: false, lat: null, lng: null };
+    if (!exif) return r;
+    r.make = [exif.ifd0[0x10f], exif.ifd0[0x110]].filter(Boolean).join(' ');
+    r.taken = exif.sub[0x9003] || exif.ifd0[0x132] || null;
+    r.offset = exif.sub[0x9011] || null;
+    if (exif.gps) {
+      r.hasGpsBlock = true;
+      let lat = dms(exif.gps[2]), lng = dms(exif.gps[4]);
+      if (exif.gps[1] === 'S') lat = -lat;
+      if (exif.gps[3] === 'W') lng = -lng;
+      // A redacted photo keeps the GPS block and zeroes what is in it.
+      if (isFinite(lat) && isFinite(lng) && (lat || lng)) {
+        r.lat = +lat.toFixed(6);
+        r.lng = +lng.toFixed(6);
+      }
+      if (typeof exif.gps[6] === 'number') r.alt = Math.round(exif.gps[6]);
+    }
+    return r;
+  }
+
+  /* ---------- the nearest trail ---------- */
+
+  let trails = null;
+  fetch('data/trails.json').then((r) => r.json())
+    .then((d) => { trails = d.segments || []; }).catch(() => {});
+
+  /** Metres from a point to the nearest trail, on a local flat projection;
+   *  over a few kilometres that is well under a metre off. */
+  function nearestTrail(lat, lng) {
+    if (!trails) return null;
+    const kx = 111320 * Math.cos(lat * Math.PI / 180), ky = 110540;
+    let best = null;
+    for (const s of trails) {
+      const p = s.path || [];
+      for (let i = 1; i < p.length; i++) {
+        const ax = (p[i - 1][1] - lng) * kx, ay = (p[i - 1][0] - lat) * ky;
+        const bx = (p[i][1] - lng) * kx, by = (p[i][0] - lat) * ky;
+        const dx = bx - ax, dy = by - ay;
+        const len = dx * dx + dy * dy;
+        const t = len ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len)) : 0;
+        const d = Math.hypot(ax + t * dx, ay + t * dy);
+        if (!best || d < best.d) best = { d, name: s.name };
+      }
+    }
+    return best;
+  }
+
+  /* ---------- the page ---------- */
+
+  const out = document.getElementById('out');
+  const results = [];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function render(file, way, r, url) {
+    let verdict;
+    if (r.lat !== null) verdict = '<span class="ok">✔ יש מיקום</span>';
+    else if (r.hasGpsBlock) verdict = '<span class="no">✘ המיקום נמחק (נשאר רק השלד שלו)</span>';
+    else if (r.hasExif) verdict = '<span class="no">✘ אין מיקום</span>';
+    else verdict = '<span class="no">✘ אין בכלל מידע נלווה בקובץ</span>';
+
+    const rows = [`<div class="verdict">${verdict}</div>`,
+      `<div><span class="k">דרך:</span> ${esc(way)}</div>`];
+    if (r.lat !== null) {
+      const near = nearestTrail(r.lat, r.lng);
+      rows.push(`<div><span class="k">מיקום:</span> <a class="ltr" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${r.lat},${r.lng}&hl=iw">${r.lat}, ${r.lng}</a></div>`);
+      if (near) rows.push(`<div><span class="k">השביל הקרוב:</span> ${esc(near.name)}, ${Math.round(near.d)} מ׳</div>`);
+    }
+    rows.push(`<div><span class="k">שעת צילום:</span> ${r.taken ? `<span class="ltr">${esc(r.taken)}${r.offset ? ' ' + esc(r.offset) : ''}</span>` : '<span class="no">אין</span>'}</div>`);
+    if (r.make) rows.push(`<div><span class="k">מכשיר:</span> <span class="ltr">${esc(r.make)}</span></div>`);
+    rows.push(`<div><span class="k">קובץ:</span> <span class="ltr">${esc(file.name)} · ${esc(file.type || '?')} · ${(file.size / 1e6).toFixed(1)} MB</span></div>`);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<img alt="" src="${url}"><div class="rows">${rows.join('')}</div>`;
+    out.prepend(card);
+  }
+
+  document.querySelectorAll('input[type=file]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      for (const file of input.files) {
+        let r;
+        try { r = summarize(readExif(await file.arrayBuffer())); }
+        catch (err) { r = { hasExif: false, hasGpsBlock: false, lat: null, error: String(err) }; }
+        const way = input.dataset.way;
+        results.push({ way, name: file.name, type: file.type, size: file.size, ...r });
+        render(file, way, r, URL.createObjectURL(file));
+      }
+      input.value = '';
+      document.getElementById('bar').hidden = !results.length;
+    });
+  });
+
+  const inApp = /[?&]src=app/.test(location.search) || !!window.Capacitor;
+  const env = `${inApp ? 'אפליקציה' : 'דפדפן'} · ${navigator.userAgent}`;
+  document.getElementById('env').textContent = env;
+
+  function report() {
+    const lines = ['בדיקת מיקום בתמונות', env, ''];
+    for (const r of results) {
+      lines.push(`[${r.way}] ${r.name} (${r.type || '?'})`,
+        `  מיקום: ${r.lat !== null ? r.lat + ', ' + r.lng : r.hasGpsBlock ? 'נמחק' : 'אין'}`,
+        `  שעה: ${r.taken || 'אין'}${r.offset ? ' ' + r.offset : ''}  מידע נלווה: ${r.hasExif ? 'יש' : 'אין'}`);
+    }
+    return lines.join('\n');
+  }
+
+  document.getElementById('share').onclick = async () => {
+    const text = report();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'בדיקת מיקום בתמונות', text }); return; }
+      catch (err) { if (err.name === 'AbortError') return; }
+    }
+    await navigator.clipboard.writeText(text);
+    alert('הועתק');
+  };
+  document.getElementById('copy').onclick = async () => {
+    await navigator.clipboard.writeText(report());
+    alert('הועתק');
+  };
+  document.getElementById('clear').onclick = () => {
+    results.length = 0;
+    out.innerHTML = '';
+    document.getElementById('bar').hidden = true;
+  };
+})();
+</script>
+</body>
+</html>
