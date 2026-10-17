@@ -57,6 +57,19 @@ const Layers = (() => {
   const HOUTEN_ID = 'houten';
   const HANADIV_ID = 'hanadiv';
   const TREES_ID = 'trees';
+  const MARKED_ID = 'marked';
+
+  /* The marked trails' key: the four colours of the Israel Trails Committee,
+   * each a stripe between two white ones on the ground, and the long trails
+   * with marks of their own. build_marked.py writes the same hues. */
+  const MARKED_KEY = [
+    { name: 'שביל מסומן אדום', dash: true, color: '#e53935' },
+    { name: 'שביל מסומן כחול', dash: true, color: '#1e88e5' },
+    { name: 'שביל מסומן ירוק', dash: true, color: '#2e9e44' },
+    { name: 'שביל מסומן שחור', dash: true, color: '#222222' },
+    { name: 'שביל ישראל', color: '#fb8c00', stripe: '#1e88e5' },
+    { name: 'שבילים ארוכים אחרים, בסימון משלהם', color: '#8e24aa' }
+  ];
 
   /* The land-use layer's legend: one row per group build_landuse.py files
    * every designation under, in the colours of the planning administration's
@@ -653,6 +666,41 @@ const Layers = (() => {
       category: 'trails',
       on: isOn(l.id, l.id === SOVEV_ID)    // the rest is planning data, opt-in
     }));
+
+    // Every marked hiking trail in the country (Ori, 17/10/2026): the Israel
+    // Trails Committee's red, blue, green and black, and the long trails -
+    // שביל ישראל, שביל ישו, שביל הגולן, שביל הים and the rest. From
+    // OpenStreetMap, rebuilt every night by build_marked.py into the data
+    // repo, so a trail mapped yesterday is here today. Eleven thousand
+    // kilometres are not list items: the file is drawn as a grid, fetched
+    // only once the layer is on, and a tap makes the trail under the finger
+    // the layer's one segment (Marked in app.js), which is what the detail
+    // pane, the highlight and navigation work from.
+    add({
+      id: MARKED_ID,
+      kind: 'network',
+      category: 'trails',
+      name: 'שבילים מסומנים בישראל',
+      short: 'שביל מסומן',
+      unit: 'שבילים',
+      color: '#e53935',
+      markedKey: MARKED_KEY,
+      segments: [],                        // only the trail last tapped
+      waypoints: [],
+      grid: (typeof Store !== 'undefined' ? Store.RAW : './') + 'data/marked.json',
+      gridStyle: 'marked',
+      note: 'כל השבילים המסומנים בארץ: האדומים, הכחולים, הירוקים והשחורים של '
+        + 'הוועדה לשבילי ישראל, שבשטח מסומנים בפס צבעוני בין שני פסים לבנים, '
+        + 'והשבילים הארוכים בסימון משלהם: שביל ישראל, שביל ישו, שביל הגולן, '
+        + 'שביל הים, שביל הסנהדרין, שביל השרון ועוד. הנתונים מ-OpenStreetMap, '
+        + 'שם קהילת ישראל הייקינג מעדכנת אותם לפי הסימון בשטח, והשכבה נבנית '
+        + 'מהם מחדש בכל לילה. לחיצה על שביל מראה את שמו, את אורכו ומה עוד עובר '
+        + 'באותה נקודה. הסימון בשטח קובע: שביל שסומן מחדש בשבוע שעבר אולי עוד '
+        + 'לא עודכן כאן.',
+      noteLinks: { 'ישראל הייקינג': 'https://israelhiking.osm.org.il/' },
+      credit: 'OpenStreetMap · ישראל הייקינג · הוועדה לשבילי ישראל',
+      on: isOn(MARKED_ID, false)
+    });
 
     addPlaceLayer(PLACES_ID, places, {
       name: 'מקומות מפרדספדיה',
@@ -1268,12 +1316,19 @@ const Layers = (() => {
   const OBJ_SHAPES = 'obj-shapes';
   const objIds = (id) => [`pgo-f-${id}`, `pgo-h-${id}`, `pgo-c-${id}`,
     `pgo-sf-${id}`, `pgo-sh-${id}`, `pgo-p-${id}`, `pgo-d-${id}`];
+  const gridStripeId = (id) => `pgs-${id}`;
+  const gridDashId = (id) => `pgd-${id}`;
   const gridIds = (layer) => (layer.grid
-    ? [gridFillId(layer.id), gridPatId(layer.id), gridLineId(layer.id), gridNumId(layer.id)]
+    ? [gridFillId(layer.id), gridPatId(layer.id), gridLineId(layer.id),
+      gridDashId(layer.id), gridStripeId(layer.id), gridNumId(layer.id)]
       .concat(objIds(layer.id))
     : []);
 
-  const drawnIds = (layer) => (layer.kind === 'waypoints' ? []
+  /* A lines layer can be a grid too - the marked trails - and then it is the
+   * grid's GL layers plus its own, which draw the one trail last tapped. */
+  const drawnIds = (layer) => (layer.grid && layer.kind === 'network'
+    ? gridIds(layer).concat(ownIds(layer)) : ownIds(layer));
+  const ownIds = (layer) => (layer.kind === 'waypoints' ? []
     : layer.kind === 'raster' ? [rasterId(layer.id)]
     : layer.kind === 'places'
     ? gridIds(layer)
@@ -1353,7 +1408,12 @@ const Layers = (() => {
           type: 'Feature',
           id: i,
           properties: { id: seg.id, color: seg.color || layer.color },
-          geometry: {
+          // A marked trail can come in pieces; `path` is then its longest one,
+          // which is what navigation and the ends work from.
+          geometry: seg.pieces ? {
+            type: 'MultiLineString',
+            coordinates: seg.pieces.map((p) => p.map(([lat, lng]) => [lng, lat]))
+          } : {
             type: 'LineString',
             coordinates: seg.path.map(([lat, lng]) => [lng, lat])
           }
@@ -1817,6 +1877,7 @@ const Layers = (() => {
     const above = list.filter((l) => order(l) > order(layer))
       .flatMap(drawnIds).find((gl) => map.getLayer(gl)) || underLabels();
     if (layer.gridStyle === 'landuse') { addLandUseGrid(layer, src, above); return; }
+    if (layer.gridStyle === 'marked') { addMarkedGrid(layer, src, above); return; }
 
     map.addLayer({
       id: gridFillId(layer.id),
@@ -1859,6 +1920,104 @@ const Layers = (() => {
       }
     }, above);
     addObjectionGlow(layer);
+  }
+
+  /** The marked trails as they look on a rock: the trail's colour between two
+   *  white stripes, which here is a coloured line in a white casing. A long
+   *  trail is wider, and where its mark has a second colour (שביל ישראל's
+   *  blue, שביל הגולן's) that runs down its middle. Names along the named
+   *  ones once there is room, the long trails from further out. Under them a
+   *  wide line nobody sees, for a finger to land on.
+   *
+   *  The layer's own line layers, which draw the trail last tapped, were added
+   *  with the rest of the map and so sit under this grid; they are moved back
+   *  on top, or the highlighted trail would be covered by its own copy. */
+  function addMarkedGrid(layer, src, above) {
+    const long = ['==', ['get', 'k'], 'l'];
+    const w = (z7, z10, z13, z16, z18, k = 1) => ['interpolate', ['linear'], ['zoom'],
+      7, ['case', long, z7 * 1.8 * k, z7 * k], 10, ['case', long, z10 * 1.7 * k, z10 * k],
+      13, ['case', long, z13 * 1.6 * k, z13 * k], 16, ['case', long, z16 * 1.5 * k, z16 * k],
+      18, ['case', long, z18 * 1.4 * k, z18 * k]];
+    map.addLayer({
+      id: gridFillId(layer.id),
+      type: 'line',
+      source: src,
+      layout: { 'line-cap': 'round' },
+      paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 16 }
+    }, above);
+    map.addLayer({
+      id: gridPatId(layer.id),
+      type: 'line',
+      source: src,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': w(1.6, 2.6, 4.2, 6, 8),
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.55, 12, 0.9]
+      }
+    }, above);
+    // The ordinary trails dashed, as hiking maps draw them (Ori, 17/10/2026),
+    // over a solid white casing - so the gaps come out white, which is the
+    // mark itself: colour, white, colour. The long trails stay solid. Two
+    // layers, because a dash pattern cannot vary by feature.
+    map.addLayer({
+      id: gridLineId(layer.id),
+      type: 'line',
+      source: src,
+      filter: long,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': ['get', 'c'],
+        'line-width': w(0.7, 1.2, 2.2, 3.2, 4.4)
+      }
+    }, above);
+    map.addLayer({
+      id: gridDashId(layer.id),
+      type: 'line',
+      source: src,
+      filter: ['!', long],
+      layout: { 'line-join': 'round' },
+      paint: {
+        'line-color': ['get', 'c'],
+        'line-width': w(0.7, 1.2, 2.2, 3.2, 4.4),
+        'line-dasharray': [2.5, 1.5]
+      }
+    }, above);
+    map.addLayer({
+      id: gridStripeId(layer.id),
+      type: 'line',
+      source: src,
+      filter: ['has', 's'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': ['get', 's'],
+        'line-width': w(0.3, 0.5, 0.8, 1.2, 1.6)
+      }
+    }, above);
+    map.addLayer({
+      id: gridNumId(layer.id),
+      type: 'symbol',
+      source: src,
+      minzoom: 9,
+      filter: ['!=', ['get', 'n'], ''],
+      layout: {
+        'symbol-placement': 'line',
+        // The long trails' names from zoom 9, everybody else's from 13.
+        'text-field': ['step', ['zoom'], ['case', long, ['get', 'n'], ''], 13, ['get', 'n']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 9, 11, 16, 13],
+        'symbol-spacing': 320,
+        'text-max-angle': 30
+      },
+      paint: {
+        'text-color': ['get', 'c'],
+        'text-halo-color': 'rgba(255,255,255,0.92)',
+        'text-halo-width': 1.6
+      }
+    }, above);
+    [lineId(layer.id), hitId(layer.id)].forEach((id) => {
+      if (map.getLayer(id)) map.moveLayer(id, above);
+    });
   }
 
   /** The land uses: each cell in its colour, a hatched or mixed one striped
@@ -2417,6 +2576,16 @@ const Layers = (() => {
       // with both on it wins, and its card says what the ground under it is
       // designated for; with only the land uses on, the cell is the answer.
       const under = grids.length ? map.queryRenderedFeatures(e.point, { layers: grids }) : [];
+      // A marked trail is a line, and wins over the ground it crosses. Every
+      // trail under the finger goes along: the nearest is the one opened, the
+      // rest are named in its card, since a red trail and שביל ישראל often
+      // share the same path.
+      const trails = under.filter((f) => f.layer.id === gridFillId(MARKED_ID));
+      if (trails.length && typeof Marked !== 'undefined') {
+        const d = (f) => tapDistance(e.lngLat, f.geometry);
+        Marked.pick(trails.slice().sort((a, b) => d(a) - d(b)).map((f) => f.properties));
+        return;
+      }
       const parcel = under.find((f) => f.layer.id === gridFillId(PARCELS_ID));
       const use = under.find((f) => f.layer.id === gridFillId(LANDUSE_ID));
       if (parcel && typeof Parcels !== 'undefined') {
@@ -2663,6 +2832,9 @@ const Layers = (() => {
   function legendRows(layer) {
     // The land uses have no members to count until one is tapped, and every
     // colour is on the map the moment the layer is: the whole key, always.
+    if (layer.markedKey) {
+      return layer.markedKey.map((g) => ({ name: g.name, color: g.color, line: true, dash: g.dash }));
+    }
     if (layer.landuseGroups) {
       if (luInView && luInView.length) return luInView;
       return layer.landuseGroups.map((g) => ({
@@ -2771,6 +2943,7 @@ const Layers = (() => {
     // Its items are only the parcel last tapped, so counting them would say
     // "1 חלקות" about a layer of nine thousand. The file is not read here.
     if (layer.gridStyle === 'landuse') return 'כל המושבה, לפי התכניות התקפות';
+    if (layer.gridStyle === 'marked') return 'כל הארץ, מתעדכן כל לילה';
     if (layer.grid) return `כל ה${layer.unit} במושבה`;
     if (layer.kind === 'places') {
       const n = layer.waypoints.length;
@@ -3063,7 +3236,7 @@ const Layers = (() => {
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TREES_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TREES_ID, MARKED_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     SOVEV_ID,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,
