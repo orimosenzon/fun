@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>רודסטר: סימולטור</title>
+<meta name="description" content="סימולטור פיזיקלי של הרודסטר המעופף שהוצג ב-15/10/2026: נסיעה, טיפוס על קיר עם יניקה, קפיצה מעל מכוניות ומנועי גז קר.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="view"></div>
+
+<!-- ======== HUD ======== -->
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <div class="pill" id="hud-variant">רוקט</div>
+    <div class="pill" id="hud-scn">נסיעה חופשית</div>
+    <div class="pill dim" id="hud-cam">מצלמה: עוקבת</div>
+    <button class="pill btn" id="btn-academy" title="המרכז המקצועי">🎓 המרכז המקצועי</button>
+    <button class="pill btn" id="btn-menu" title="תפריט (Esc)">☰</button>
+  </div>
+
+  <div id="banner"><div id="banner-status"></div><div id="banner-live"></div></div>
+
+  <div id="panel-left" class="panel">
+    <div class="ptitle">מה מרגישים בגוף</div>
+    <canvas id="gmeter" width="190" height="190"></canvas>
+    <div class="grow"><span>סה"כ</span><b id="g-total">1.0</b><span>g</span></div>
+    <div id="feel">עומדים במקום. 1g כרגיל.</div>
+    <div class="kv"><span>משקל הראש (5 ק"ג)</span><b id="head-w">5 ק"ג</b></div>
+    <div class="kv"><span>גובה</span><b id="alt">0.0 מ'</b></div>
+    <div class="kv"><span>זווית נטייה</span><b id="pitch">0°</b></div>
+  </div>
+
+  <div id="panel-right" class="panel">
+    <div class="ptitle">מערכת היניקה <a class="help" data-ch="fan">?</a></div>
+    <div class="bar"><div id="fan-bar"></div></div>
+    <div class="kv"><span>מצב (F)</span><b id="fan-mode">אוטומטי</b></div>
+    <div class="kv"><span>הפרש לחץ</span><b id="fan-dp">0 kPa</b></div>
+    <div class="kv"><span>כוח הצמדה</span><b id="fan-force">0 ק"ג</b></div>
+    <div class="kv"><span>מרווח חצאיות</span><b id="fan-gap">3 מ"מ</b></div>
+    <div class="kv"><span>הספק</span><b id="fan-pw">0 kW</b></div>
+    <div id="air-block">
+      <div class="ptitle">גז קר (COPV) <a class="help" data-ch="coldgas">?</a></div>
+      <div class="tankrow">
+        <div class="tank"><div id="tank-fill"></div></div>
+        <div class="tankinfo">
+          <div class="kv"><span>לחץ</span><b id="tank-p">379 בר</b></div>
+          <div class="kv"><span></span><b id="tank-psi" class="dim">5,500 psi</b></div>
+          <div class="kv"><span>אוויר</span><b id="tank-m">227 ק"ג</b></div>
+          <div class="kv"><span>טמפ' בגז</span><b id="tank-t">20°C</b></div>
+          <div class="kv"><span>דחף</span><b id="thrust">0 kN</b></div>
+        </div>
+      </div>
+      <svg id="nozmap" viewBox="-60 -100 120 200" width="104" height="170"></svg>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="speed"><b id="spd">0</b><span>קמ"ש</span></div>
+    <div id="power"><div class="lbl">הספק מנועים</div><div class="bar"><div id="pow-bar"></div></div><b id="pow">0 kW</b></div>
+    <div id="modes"><span id="aero-mode" class="chip">כנף: גרר נמוך (V)</span><span id="assist" class="chip on">ייצוב: פעיל (L)</span><span id="tc" class="chip on">בקרת משיכה (T)</span></div>
+  </div>
+  <canvas id="minimap" width="170" height="170"></canvas>
+  <div id="keys">W/S גז ובלם · A/D היגוי · <b>רווח</b> המראה · <b>Shift</b> דחף · K קיקפליפ · C מצלמה · X רנטגן · R איפוס · H עזרה</div>
+
+  <div id="touch" class="hidden">
+    <div class="tleft"><button data-t="steerL">◀</button><button data-t="steerR">▶</button></div>
+    <div class="tright"><button data-t="lift">⤒</button><button data-t="boost">🔥</button><button data-t="brake">⏷</button><button data-t="throttle">⏶</button></div>
+  </div>
+</div>
+
+<!-- ======== תוצאה ======== -->
+<div id="result" class="modal hidden"><div class="card">
+  <h2 id="result-title">כל הכבוד!</h2>
+  <div id="result-body"></div>
+  <div class="row"><button id="result-again" class="primary">שוב (R)</button><button id="result-close">המשך לנסוע</button></div>
+</div></div>
+
+<!-- ======== מסך פתיחה / תפריט ======== -->
+<div id="intro" class="modal">
+  <div class="card wide">
+    <div class="hero">
+      <div>
+        <div class="kicker">סימולטור פיזיקלי · מבוסס על ההדגמה מ-15 באוקטובר 2026</div>
+        <h1>רודסטר</h1>
+        <p class="lead">רכב שנצמד לקירות בכוח של 2g, נוסע הפוך, וקופץ מעל משאית על סילוני אוויר דחוס. כאן אפשר לנהוג בו, עם פיזיקה שנבנתה מהמספרים שטסלה הציגה ומחישובים הנדסיים שבודקים אותם.</p>
+      </div>
+      <a class="academy-link" href="academy.html">🎓 המרכז המקצועי<br><small>איך זה עובד: יניקה, גז קר, COPV, בקרת טיסה, והגוף שלכם</small></a>
+    </div>
+    <h3>בחרו דגם</h3>
+    <div id="variants" class="cards"></div>
+    <h3>בחרו תרחיש</h3>
+    <div id="scenarios" class="cards scn"></div>
+    <div class="row opts">
+      <label><input type="checkbox" id="opt-infinite"> אוויר בלתי מוגבל (לא מציאותי)</label>
+      <label><input type="checkbox" id="opt-assist" checked> ייצוב ובלימת נפילה אוטומטיים</label>
+      <label><input type="checkbox" id="opt-sound" checked> קול</label>
+      <label>איכות <select id="opt-quality"><option value="high">גבוהה</option><option value="med" selected>בינונית</option><option value="low">נמוכה</option></select></label>
+    </div>
+    <div class="row"><button id="go" class="primary big">סעו! ▶</button></div>
+    <details class="controls"><summary>מקשים ובקר</summary>
+      <div class="ctrlgrid">
+        <div><b>W / ↑</b> גז · באוויר: חרטום למטה</div><div><b>S / ↓</b> בלם, רוורס · באוויר: חרטום למעלה</div>
+        <div><b>A D / ← →</b> היגוי · באוויר: גלגול</div><div><b>Q / E</b> סבסוב (נחירי החרטום)</div>
+        <div><b>רווח</b> מנועי הפינות: המראה (עם ייצוב: טיפוס ב-8 מ'/ש')</div><div><b>Shift</b> מנועי הדחף האחוריים</div>
+        <div><b>K</b> קיקפליפ אוטומטי</div><div><b>J</b> החזקת גובה (ריחוף)</div><div><b>Z</b> בלם יד</div><div></div>
+        <div><b>F</b> מצב מאווררים</div><div><b>V</b> מצב כנף</div>
+        <div><b>C</b> מצלמה: עוקבת / מתוך הרכב / חופשית</div><div><b>X</b> תצוגת רנטגן</div>
+        <div><b>L</b> ייצוב אוטומטי</div><div><b>T</b> בקרת משיכה</div>
+        <div><b>G</b> גרף טלמטריה</div><div><b>1–8</b> מעבר לתרחיש · <b>R</b> איפוס · <b>Esc</b> תפריט · <b>M</b> השתקה</div>
+        <div class="full">בקר: RT גז, LT בלם, מקל שמאלי היגוי/גלגול, מקל ימני סבסוב, A המראה, RB דחף, X קיקפליפ, Y מצלמה, B מאווררים</div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div id="tele" class="hidden"><canvas id="tele-c" width="420" height="230"></canvas></div>
+<div id="toast"></div>
+<div id="loading">טוען את אתר הניסויים…</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
