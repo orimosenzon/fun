@@ -15,9 +15,13 @@ BOT = "בוטי"
 BOT_EMAIL = "orimosenzon@gmail.com"      # as on the bot's earlier commits there
 
 
-def publish_json(path, doc, message, ignore=("updated",)):
-    """Write `doc` to `path` in the data repo. Returns "פורסם" or "ללא שינוי"."""
-    body = json.dumps(doc, ensure_ascii=False, indent=1)     # as save_json writes it
+def publish_json(path, doc, message, ignore=("updated",), compact=False):
+    """Write `doc` to `path` in the data repo. Returns "פורסם" or "ללא שינוי".
+
+    `compact` drops the indentation, for a file of several megabytes that
+    nobody reads by eye (the marked trails)."""
+    body = (json.dumps(doc, ensure_ascii=False, separators=(",", ":")) if compact
+            else json.dumps(doc, ensure_ascii=False, indent=1))     # as save_json writes it
     api = f"repos/{DATA_REPO}/contents/{path}"
     sha = None
     try:

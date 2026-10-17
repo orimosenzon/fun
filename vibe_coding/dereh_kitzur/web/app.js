@@ -306,6 +306,8 @@ function applyLinkState(selected) {
     Parcels.pick({ g: m[1], p: m[2] });
   } else if (!selected && (m = /^landuse-(\d+)$/.exec(wanted))) {
     LandUse.pick(Number(m[1]), {}, null);
+  } else if (!selected && (m = /^marked-(\d+)$/.exec(wanted))) {
+    Marked.pick([{ id: m[1] }]);
   }
 
   if (q.has(ROUTE_KEY)) Route.fromLink(q.get(ROUTE_KEY));
@@ -421,7 +423,10 @@ let selMarker = null;     // the ring around the selected point, see markSelecti
 
 /* ---------- helpers ---------- */
 
-const metres = (m) => (m >= 1000 ? (m / 1000).toFixed(2) + ' ק"מ' : m + ' מ׳');
+// Two decimals suit a shortcut of 1.35 km; a marked trail of 1,079 km wants none.
+const metres = (m) => (m >= 1000
+  ? (m / 1000).toLocaleString('he-IL', { maximumFractionDigits: m >= 100000 ? 0 : m >= 10000 ? 1 : 2 }) + ' ק"מ'
+  : m + ' מ׳');
 
 /* Hebrew says "קישור אחד" and "2 קישורים", never "1 קישורים". */
 const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
@@ -1198,15 +1203,18 @@ function showDetail(it) {
     // arrive here with a position and no path at all. Calling that "start of
     // the segment" would be the label lying about what was clicked.
     const spot = !it.path || it.path.length < 2;
-    const labels = spot ? ['המקום'] : ['תחילת המקטע', 'סוף המקטע'];
+    // A marked trail is a trail, not a segment of somebody's network.
+    const marked = layer.id === Layers.MARKED_ID;
+    const labels = spot ? ['המקום'] : marked ? ['קצה אחד של השביל', 'הקצה השני']
+      : ['תחילת המקטע', 'סוף המקטע'];
     body = `
       ${it.streets && it.streets.length
         ? `<p class="note">עובר לאורך ${escapeHtml(it.streets.join(', '))}.</p>` : ''}
       <h3>הגעה</h3>
       <div class="acts">
-        ${panoActs(it, labels, spot ? 'מבט 360° מהרחוב' : 'מבט 360° לאורך המקטע')}
+        ${panoActs(it, labels, spot ? 'מבט 360° מהרחוב' : marked ? 'מבט 360°, אם יש שם' : 'מבט 360° לאורך המקטע')}
         ${navActs(it, spot ? 'ניווט בתוך האפליקציה, עד המקום'
-          : 'ניווט בתוך האפליקציה, לאורך תוואי המקטע')}
+          : marked ? 'ניווט בתוך האפליקציה, לאורך השביל' : 'ניווט בתוך האפליקציה, לאורך תוואי המקטע')}
       </div>
       ${linksBlock(it)}
       <p class="src">${escapeHtml(layer.credit || '')}</p>
@@ -2939,6 +2947,153 @@ const LandUse = (() => {
   }
 
   return { pick, sentence };
+})();
+
+/* ---------- marked trails ----------
+ *
+ * The trail of data/marked.json under a tap (build_marked.py), as the one
+ * segment of the marked-trails layer, the way Parcels does it for a parcel.
+ * The geometry comes from the file and not from the tap, for the same reason:
+ * what the map hands back is the trail as cut into one tile. The file holds
+ * the name (`n`, empty for most committee trails), the colour of the mark
+ * (`m`, and `c` its hue; `s` a second colour down the middle), whether it is a
+ * long trail (`k` 'l'), its length (`km`), the nearest settlement (`near`),
+ * and whatever else OSM had: `en`, `op`, `web`, `wiki`, `d`, `ref`. */
+const Marked = (() => {
+  'use strict';
+
+  const HE = {
+    red: 'אדום', blue: 'כחול', green: 'ירוק', black: 'שחור', orange: 'כתום',
+    purple: 'סגול', yellow: 'צהוב', brown: 'חום', maroon: 'בורדו', olive: 'זית'
+  };
+  const MANY = {
+    red: 'אדומים', blue: 'כחולים', green: 'ירוקים', black: 'שחורים', orange: 'כתומים',
+    purple: 'סגולים', yellow: 'צהובים', brown: 'חומים', white: 'לבנים'
+  };
+  const ONE = { ...HE, white: 'לבן' };
+  let all = null;                  // promise of Map(relation id -> feature)
+
+  /** What to look for on the rocks, in a sentence, from the trail's
+   *  `osmc:symbol` (`sym`): waycolour:background:foreground[:foreground].
+   *  `red:white:red_stripe` is the committee's red - a red stripe on a white
+   *  ground, which painted on a rock is red between two white stripes. A long
+   *  trail's own mark is said the same way where it fits that pattern, and as
+   *  its colours where it does not. שביל ישראל is said in full, since the order
+   *  of its stripes tells you which way you are walking. */
+  function markSentence(p) {
+    if (p.id === 282071) {
+      return 'בשטח: שלושה פסים, לבן, כחול וכתום. הפס הלבן מסמל את השלג בצפון והכתום '
+        + 'את המדבר בדרום, ולכן כשהלבן למעלה הולכים צפונה, וכשהכתום למעלה הולכים דרומה.';
+    }
+    const [way, bg, ...fg] = (p.sym || '').split(':');
+    const stripes = fg.filter((f) => /_stripe$/.test(f)).map((f) => f.replace(/_stripe$/, ''));
+    const pointer = fg.find((f) => /_pointer$/.test(f));
+    const halves = fg.filter((f) => /_(right|left)$/.test(f));
+    if (!halves.length && stripes.length === 1 && ONE[stripes[0]] && MANY[bg]) {
+      return `בשטח: פס ${ONE[stripes[0]]} בין שני פסים ${MANY[bg]}, צבוע על סלעים, עמודים ועצים לאורך הדרך.`;
+    }
+    if (pointer && ONE[pointer.replace(/_pointer$/, '')] && bg === 'white') {
+      return `בשטח: חץ ${ONE[pointer.replace(/_pointer$/, '')]} על רקע לבן.`;
+    }
+    if (halves.length || stripes.length) {
+      const colours = [bg, ...fg.map((f) => f.split('_')[0])]
+        .filter((c, i, a) => ONE[c] && a.indexOf(c) === i).map((c) => ONE[c]);
+      if (colours.length > 1) {
+        return `בשטח: סימון משלו ב${colours.length === 2 ? 'שני' : 'שלושה'} צבעים, `
+          + `${colours.slice(0, -1).join(', ')} ו${colours[colours.length - 1]}.`;
+      }
+    }
+    // `black:white` and the like: the waycolour on white, the committee's way.
+    const c = ONE[way] || ONE[p.m];
+    if (c && (bg === 'white' || (!p.sym && p.op === 'itc'))) {
+      return `בשטח: פס ${c} בין שני פסים לבנים, צבוע על סלעים, עמודים ועצים לאורך הדרך.`;
+    }
+    return 'ב-OpenStreetMap לא רשום איך השביל מסומן בשטח.';
+  }
+
+  function load(url) {
+    if (!all) {
+      all = fetch(url)
+        .then((res) => { if (!res.ok) throw new Error('marked.json ' + res.status); return res.json(); })
+        .then((doc) => new Map((doc.features || []).map((f) => [f.properties.id, f])))
+        .catch((err) => { all = null; throw err; });
+    }
+    return all;
+  }
+
+  /** Most committee trails have no name in OSM; their colour and the nearest
+   *  settlement are what anybody would call them. */
+  function nameOf(p) {
+    if (p.n) return p.n;
+    const colour = HE[p.m] ? `שביל ${HE[p.m]}` : 'שביל מסומן';
+    return p.near ? `${colour} ליד ${p.near}` : colour;
+  }
+
+  function item(f, others) {
+    const p = f.properties;
+    const g = f.geometry;
+    const parts = (g.type === 'MultiLineString' ? g.coordinates : [g.coordinates])
+      .map((line) => line.map(([lng, lat]) => [lat, lng]));
+    const path = parts.reduce((a, b) => (b.length > a.length ? b : a), parts[0]);
+    const colour = HE[p.m];
+    const itc = p.op === 'itc';
+    const links = [
+      { title: 'השביל במפת ישראל הייקינג',
+        url: `https://israelhiking.osm.org.il/poi/OSM/relation_${p.id}?language=he` },
+      { title: 'השביל ב-OpenStreetMap, ושם גם מתקנים טעות',
+        url: `https://www.openstreetmap.org/relation/${p.id}` }
+    ];
+    if (p.web) links.unshift({ title: 'האתר של השביל', url: p.web });
+    if (p.wiki) links.unshift({ title: 'הערך בוויקיפדיה',
+      url: `https://he.wikipedia.org/wiki/${encodeURIComponent(p.wiki)}` });
+    const also = others.map(nameOf).filter((n, i, a) => n !== nameOf(p) && a.indexOf(n) === i);
+    return {
+      id: `marked-${p.id}`,
+      name: nameOf(p),
+      layer: Layers.MARKED_ID,
+      color: p.c,
+      path,
+      pieces: parts.length > 1 ? parts : undefined,
+      length: Math.round(p.km * 1000),
+      kind: p.k === 'l' ? 'שביל ארוך' : colour ? `סימון ${colour}` : 'שביל מסומן',
+      photos: [],
+      links,
+      note: (p.k === 'l' ? 'שביל ארוך בסימון משלו.'
+        : itc && colour ? `שביל מסומן ${colour} של הוועדה לשבילי ישראל.`
+          : `שביל מסומן${colour ? ' ' + colour : ''}${p.op && !itc ? `, באחריות ${p.op}` : ''}.`)
+        + ' ' + markSentence(p)
+        + (p.d ? ' ' + p.d : '')
+        + (!p.n && p.near ? ` היישוב הקרוב לאמצע השביל: ${p.near}.` : '')
+        + (also.length ? ` באותה נקודה עובר גם: ${also.join(', ')}.` : '')
+        + (parts.length > 1 ? ' במפה השביל בנוי מכמה קטעים נפרדים, והניווט הוא לאורך הארוך שבהם.' : '')
+        + ' הנתונים מ-OpenStreetMap, ונבנים מחדש כל לילה. בשטח, הסימון קובע.'
+    };
+  }
+
+  /** A tap landed on marked trails: `props` are the ones under the finger,
+   *  nearest first. Or a link named one, and then `props` is that one alone. */
+  async function pick(props) {
+    const layer = Layers.byId(Layers.MARKED_ID);
+    if (!layer || !props.length) return;
+    const seen = new Set();
+    const ids = props.map((p) => Number(p.id)).filter((id) => !seen.has(id) && seen.add(id));
+    let byIdMap;
+    try {
+      byIdMap = await load(layer.grid);
+    } catch (err) {
+      console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ השבילים המסומנים', err);
+      return;
+    }
+    const f = byIdMap.get(ids[0]);
+    if (!f) return;
+    const others = ids.slice(1).map((id) => byIdMap.get(id)).filter(Boolean).map((o) => o.properties);
+    const it = item(f, others);
+    layer.segments = [it];
+    Layers.refresh(Layers.MARKED_ID);
+    select(it.id, false);
+  }
+
+  return { pick };
 })();
 
 /* ---------- sharing ----------
