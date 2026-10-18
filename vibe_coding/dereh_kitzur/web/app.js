@@ -1052,6 +1052,10 @@ function editorBlock(it, layer) {
         <span class="hint">השם, והתיאור שמתחתיו</span></span></button>
       ${Shape.canShape(it) ? `<button class="act" data-pub="shape"><span class="lbl">עריכת התוואי
         <span class="hint">לגרור נקודות, להוסיף ולמחוק קטעים, להאריך או לפצל</span></span></button>` : ''}
+      ${Split.canSplit(it) ? `<button class="act" data-pub="split"><span class="lbl">פירוק למסלולים
+        <span class="hint">${it.splitInto
+          ? `כבר פורק ב-${new Date(it.splitInto.at).toLocaleDateString('he-IL')} ל-${plural(it.splitInto.ids.length, 'שביל אחד', 'שבילים')}`
+          : 'הקלטה ארוכה: מוצא לבד את הקטעים שמחוץ לרחובות'}</span></span></button>` : ''}
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
@@ -1600,6 +1604,7 @@ function wirePublished(it) {
         if (act === 'colour') { colourForm(it); return; }
         if (act === 'rename') { renameForm(it); return; }
         if (act === 'shape') { Shape.open(it); return; }
+        if (act === 'split') { Split.open(it); return; }
 
         if (act === 'remove') {
           if (!confirm(`להסיר את "${it.name}" מהמסד המשותף?\n` +
@@ -3562,7 +3567,7 @@ async function boot() {
   // still has to happen on a browser that never got a map at all.
   // The shape editor's mirror names a draft or a published trail, so it waits
   // for the drafts; editorChanged asks again once an editor is confirmed.
-  Drafts.restore().then(() => Shape.restore());
+  Drafts.restore().then(() => { Shape.restore(); Split.restore(); });
 }
 
 let askedFor = null;        // `?sel=` from the link, not yet honoured
@@ -3586,7 +3591,9 @@ function editorChanged() {
   askedFor = null;
   // Editing a published line is an editor's, and leaving edit mode leaves it.
   if (Shape.kind() === 'trail' && !Store.isEditor()) Shape.close(true);
+  if (Split.kind() === 'trail' && !Store.isEditor()) Split.close(true);
   Shape.restore();
+  Split.restore();
 }
 
 /** Show the shared dataset again after a write, so the trail reappears as an
@@ -4113,6 +4120,7 @@ function wireControls() {
 
   Arrange.wire();
   Shape.wire();
+  Split.wire();
 
   el('search').addEventListener('input', renderList);
   el('back').addEventListener('click', deselect);
@@ -4217,7 +4225,7 @@ function wireControls() {
     if (Route && Route.isOn() && Route.tapAlt(e.point)) return;
     // While drafting or arranging, a tap on the map means something other than
     // "clear the selection".
-    if (!selectedId || Drafts.isDrafting() || Arrange.isOn() || Shape.isOn()) return;
+    if (!selectedId || Drafts.isDrafting() || Arrange.isOn() || Shape.isOn() || Split.isOn()) return;
     const hits = Layers.list
       .map((l) => `hit-${l.id}`)
       .filter((id) => map.getLayer(id));

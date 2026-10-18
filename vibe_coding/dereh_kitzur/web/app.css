@@ -675,7 +675,7 @@ body.craft-bike #craft .craft-bal { display: block; }
  * full width of the screen, and there is no width to argue about. */
 .grip-v { display: none; }
 
-#list-view, #detail-view {
+#list-view, #detail-view, #split-view {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -684,7 +684,7 @@ body.craft-bike #craft .craft-bal { display: block; }
 
 /* `display: flex` beats the hidden attribute's own display:none, so the two
  * views would otherwise stack on top of each other. */
-#list-view[hidden], #detail-view[hidden] { display: none; }
+#list-view[hidden], #detail-view[hidden], #split-view[hidden] { display: none; }
 
 .panel-head { flex: none; padding: 0 14px 8px; }
 
@@ -2096,7 +2096,7 @@ label.act { text-align: center; }
   -webkit-box-orient: vertical;
 }
 
-#shape-cancel {
+#shape-cancel, #split-cancel {
   flex: none;
   width: 30px;
   height: 30px;
@@ -2190,6 +2190,149 @@ body.sh-dragging, body.sh-dragging .shape-svg g { cursor: grabbing; }
 
 .shape-pop button:hover { background: rgba(255, 255, 255, .12); }
 .shape-pop button.strong { background: #ff6d00; }
+
+/* ---------- splitting a recording (split.js) ----------
+ *
+ * Green, the colour of a new shortcut, because that is what this mode makes.
+ * The same three looks are used on the map, in the key in the bar and in the
+ * list: green for what will be saved, grey dashes for the streets, blue for
+ * what is already on the map. */
+
+.split-bar { background: #1b6b3a; }
+.split-bar.bad { background: #8e2a0b; }
+.split-bar .draft-btn.strong { color: #1b6b3a; }
+
+.split-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-inline-start: auto;
+  font-size: 12px;
+  opacity: .95;
+}
+.split-key > span { display: inline-flex; align-items: center; gap: 5px; }
+.split-key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
+.split-key .k-new { background: #4ade80; }
+.split-key .k-street { background: repeating-linear-gradient(90deg, #d7dde1 0 4px, transparent 4px 7px); }
+.split-key .k-known { background: #7cb1ff; }
+
+.splitting { --panel-h: 40vh; }
+.splitting .pin { pointer-events: none; }
+.splitting .maplibregl-ctrl-top-left { margin-top: 104px; }
+body.splitting .topbar, body.splitting .menu { display: none; }
+
+.split-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 440;
+  pointer-events: none;
+  overflow: visible;
+}
+.split-svg polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.split-svg .sp-case { stroke: #fff; stroke-width: 10; stroke-opacity: .95; }
+.split-svg .sp-case.on { stroke: #fde047; stroke-width: 15; }
+.split-svg .sp-line.keep { stroke: #15803d; stroke-width: 6; }
+.split-svg .sp-line.street { stroke: #5f6b73; stroke-width: 3.5; stroke-dasharray: 3 6; stroke-linecap: butt; }
+.split-svg .sp-line.known { stroke: #2563eb; stroke-width: 3.5; stroke-opacity: .8; }
+.split-svg .sp-line.street.on, .split-svg .sp-line.known.on { stroke-width: 6; stroke-opacity: 1; }
+.split-svg .sp-num circle { fill: #15803d; stroke: #fff; stroke-width: 2; }
+.split-svg .sp-num text { fill: #fff; font: 700 11.5px system-ui, sans-serif; text-anchor: middle; }
+.split-svg .sp-cut { pointer-events: all; cursor: grab; touch-action: none; }
+.split-svg .sp-cut .hit { fill: transparent; }
+.split-svg .sp-cut .dot { fill: #fff; stroke: #1f2a24; stroke-width: 2; }
+.split-svg .sp-cut.on .dot { fill: #fde047; stroke-width: 2.5; }
+.split-svg .sp-tick { fill: #fff; stroke: #1f2a24; stroke-width: 1.5; }
+.split-svg .sp-cut text { font-size: 13px; text-anchor: middle; fill: #1f2a24; pointer-events: none; }
+body.sp-dragging, body.sp-dragging .split-svg .sp-cut { cursor: grabbing; }
+.split-pop button.strong { background: #15803d; }
+
+.split-title { margin: 0; font-size: 17px; }
+.split-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 10px 8px;
+  list-style: none;
+}
+.sp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+  padding: 6px 9px;
+  border: 1px solid #dfe5e2;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.sp-row.keep { border-color: #9fd3b0; background: #f1faf4; }
+.sp-row.on { box-shadow: 0 0 0 2.5px #fde047; }
+.sp-row.drop { border-style: dashed; color: #66727a; font-size: 13px; padding-block: 4px; }
+.sp-row.k-T { color: #1e4fbf; }
+.sp-n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sp-ic { flex: none; width: 22px; height: 4px; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #8b969d 0 4px, transparent 4px 7px); }
+.sp-row.k-T .sp-ic { background: #2563eb; }
+.sp-row.k-O .sp-ic { background: #15803d; opacity: .4; }
+.sp-name {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c9d3ce;
+  border-radius: 7px;
+  padding: 5px 7px;
+  font: inherit;
+  font-size: 14px;
+  background: #fff;
+}
+.sp-what { flex: 1; min-width: 0; }
+.sp-len { flex: none; font-size: 12px; color: #55625b; font-variant-numeric: tabular-nums; }
+.sp-tg {
+  flex: none;
+  position: relative;
+  width: 36px;
+  height: 21px;
+  border: 0;
+  border-radius: 11px;
+  background: #c8d0cc;
+  cursor: pointer;
+}
+.sp-tg::after {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  right: 2.5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: right .15s;
+}
+.sp-tg.on { background: #15803d; }
+.sp-tg.on::after { right: 17.5px; }
+.split-keep {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid #e3e8e5;
+  font-size: 13px;
+  color: #3d4a43;
+}
 
 /* ---------- a draggable place marker ---------- */
 
