@@ -2490,6 +2490,7 @@ const Layers = (() => {
   function mapIsBusy() {
     return (typeof Drafts !== 'undefined' && Drafts.isDrafting())
       || (typeof Shape !== 'undefined' && Shape.isOn())
+      || (typeof Split !== 'undefined' && Split.isOn())
       || (typeof PlanHere !== 'undefined' && PlanHere.isArmed())
       || (typeof Route !== 'undefined' && Route && Route.isPicking());
   }

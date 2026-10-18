@@ -786,6 +786,7 @@ const Shape = (() => {
 
   function start(kind, it, lines) {
     if (s) close(true);
+    if (typeof Split !== 'undefined' && Split.isOn()) Split.close(true);
     stopNav();
     Arrange.close(true);
     if (Drafts.isDrafting()) Drafts.stop();

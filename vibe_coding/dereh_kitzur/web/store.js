@@ -934,6 +934,54 @@ const Store = (() => {
     return absolutise(doc);
   }
 
+  /** A long recording, split into the trails inside it (split.js).
+   *
+   *  Each piece becomes a trail of the shortcuts layer, credited to whoever
+   *  made the recording, since they are the ones who walked it. The recording
+   *  either stays, noting what it became, or goes. Unlike reshape() nothing is
+   *  carried over from it: its photos and links belong to the whole walk, and
+   *  which twelfth of it a photo was taken on is not something this knows. */
+  async function splitOut(id, pieces, keepOrig, name) {
+    const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    const stamp = Date.now().toString(36);
+    let ids = [];
+    const doc = await withTrails((d) => {
+      const seg = (d.segments || []).find((s) => s.id === id);
+      if (!seg) throw new Error('ההקלטה כבר לא במסד.');
+      ids = [];
+      pieces.forEach((p, k) => {
+        const path = p.path.map(([lat, lng]) => [+(+lat).toFixed(6), +(+lng).toFixed(6)]);
+        if (path.length < 2) return;
+        const part = {
+          id: `app-${stamp}s${k}`,
+          name: String(p.name || '').trim().slice(0, 80) || `${seg.name} (${k + 1})`,
+          note: '',
+          photos: [],
+          links: [],
+          connects: [],
+          origin: 'app',
+          mode: 'split',
+          from: id,
+          path,
+          length: Layers.pathLength(path),
+          entries: [{ lat: path[0][0], lng: path[0][1] },
+                    { lat: path[path.length - 1][0], lng: path[path.length - 1][1] }],
+          added: now,
+          by: seg.by || named()
+        };
+        d.segments.push(part);
+        ids.push(part.id);
+      });
+      if (!ids.length) throw new Error('אין קטעים לשמור.');
+      if (keepOrig) seg.splitInto = { at: now, by: named(), ids: ids.slice() };
+      else {
+        d.segments = d.segments.filter((s) => s.id !== id);
+        if (d.trips) d.trips = d.trips.filter((t) => t.id !== id);
+      }
+    }, `פירוק הקלטה: ${name}, ${pieces.length} שבילים`);
+    return { doc: absolutise(doc), ids };
+  }
+
   const rename = async (id, name, note) => absolutise(await withTrails((doc) => {
     const it = find(doc, id);
     if (it) { it.name = name; it.note = note; }
@@ -1441,7 +1489,7 @@ const Store = (() => {
     RAW, OWNER, REPO, WORKER,
     load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, setName, enable, disable, resume, writable,
-    publish, publishTrip, remove, reshape, rename, setLinks, setNote, setColor,
+    publish, publishTrip, remove, reshape, splitOut, rename, setLinks, setNote, setColor,
     addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,

@@ -1289,6 +1289,8 @@ ${tracks}
         <button class="act" data-draft="edit"><span class="lbl">עריכת התוואי
           <span class="hint">${seg.trip ? 'לשרשר או להסיר שבילים'
             : 'לגרור, להוסיף ולמחוק נקודות וקטעים'}</span></span></button>
+        ${Split.canSplit(seg) ? `<button class="act" data-draft="split"><span class="lbl">פירוק למסלולים
+          <span class="hint">הקלטה ארוכה: מוצא לבד את הקטעים שמחוץ לרחובות</span></span></button>` : ''}
       </div>
       ${extras}
       <h3>עוד</h3>
@@ -1530,6 +1532,7 @@ ${tracks}
         if (act === 'publish') return publish(seg, node);
         if (act === 'submit') return askSend(seg);
         if (act === 'video') return addVideo(seg);
+        if (act === 'split') { Split.open(seg); return; }
         if (act === 'edit') {
           // A trip is a recipe and goes back to the chaining editor; any
           // other line opens in the shape editor (shape.js), where its points
@@ -1583,6 +1586,38 @@ ${tracks}
       });
     }
     await reload();
+  }
+
+  /** A recording split into the trails inside it (split.js): a draft per
+   *  piece, named. The original goes unless asked to stay. */
+  async function splitOut(id, pieces, keepOrig) {
+    const rec = rows.find((r) => r.id === id);
+    if (!rec) throw new Error('הטיוטה כבר לא נמצאת במכשיר.');
+    const ids = [];
+    const stamp = Date.now();
+    for (let k = 0; k < pieces.length; k++) {
+      const p = pieces[k];
+      if (!p.path || p.path.length < 2) continue;
+      const row = {
+        id: 'draft-' + stamp.toString(36) + '-s' + k,
+        name: p.name,
+        note: '',
+        path: p.path,
+        mode: rec.mode === 'walk' ? 'walk' : 'draw',
+        layer: '',
+        color: '',
+        // Newest first in the list, so the first piece is created last and
+        // the pieces read in walking order.
+        created: stamp + pieces.length - k,
+        updated: stamp,
+        photos: []
+      };
+      await put(row);
+      ids.push(row.id);
+    }
+    if (!keepOrig) await drop(id);
+    await reload();
+    return ids;
   }
 
   /* ---------- wiring ---------- */
@@ -1691,6 +1726,6 @@ ${tracks}
     return ready;
   }
 
-  return { init, restore, detailExtras, wireDetail, share, isDrafting: () => !!ed,
+  return { init, restore, detailExtras, wireDetail, share, splitOut, isDrafting: () => !!ed,
            paintEditor, reshape, stop: () => stopEditor() };
 })();
