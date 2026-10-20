@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-13",
+ "fetched": "2026-10-16",
  "festival": {
   "festivalID": "36",
   "name": "פסטיבל דרך הנדיב 8",
@@ -24,6 +24,891 @@
   "whatsapp": "https://chat.whatsapp.com/K1VmKQRsN5653Rm0ZSdPr7"
  },
  "events": [
+  {
+   "eventID": 2262,
+   "initiativeOwnerUserID": 10979,
+   "placeOwnerUserID": 7460,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "חנה - בר קהילתי- במה למוסיקה אלטרנטיבית",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "19:30",
+   "maxNumberOfPeople": 130,
+   "limitNumberOfPeople": 60,
+   "totalNumberOfPeopleThatCanAttend": 60,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "ליאור הדס - מופע אקוסטי",
+   "details": "ליאור הדס היא זמרת-יוצרת בתחילת דרכה, שבימים אלו עובדת על אלבום בכורה שעתיד לצאת בשנה הקרובה. בצורה כנה וחשופה ועם לא מעט הומור עצמי, היא שרה על התבגרות, פרידה, מיניות, בדידות, וכל הפסיפס הכאוטי שמאפיין את מסע החיפוש העצמי של אדם בשנות העשרים לחייו. בואו להכיר את השירים ולהצטרף אליה למסע הזה!",
+   "initiativeDescription": "ליאור הדס - מופע אקוסטי",
+   "placeNotes": "חניה במתנ״ס - הבר נמצא מאחורי המתנ״ס ליד החורשה",
+   "initiativeOwnerFirstName": "ליאור",
+   "initiativeOwnerLastName": "הדס",
+   "attendees": [],
+   "externalLink1": "https://www.instagram.com/liorhadasss?stkn=ajQwb3Z0b2Ziem82",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/f1fdd31c8a2e09da4274c04f3ab73d95809e69d5cba92cea2c0ad77f1916ee20.webp"
+  },
+  {
+   "eventID": 2261,
+   "initiativeOwnerUserID": 11067,
+   "placeOwnerUserID": 11067,
+   "street": "המעלה פינת רבי עקיבא",
+   "houseNumber": 4,
+   "entrance": null,
+   "placeDescription": "רחבת האספלט שבין התיאטרון לרחוב רבי עקיבא",
+   "areaSetting": "בחוץ",
+   "status": 1,
+   "genreID": 15,
+   "genre": "רב תחומי",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 2,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 120,
+   "limitNumberOfPeople": 99,
+   "totalNumberOfPeopleThatCanAttend": 99,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": false,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 300,
+   "virtual": false,
+   "title": "הידית האחורית",
+   "details": "לרגל פסטיבל דרך הנדיב, פותחת הידית האחורית את שעריה, ומארחת את עצמה ואת חבריה לערב שהוא מסע, אשר יוקדש ליקום, ולקידום שימורו של האמפיתיאטרון ההיסטורי. \nהמסע יפתח ב-18:00 בתהלוכה מככר המושבה צפונה במורד רחוב הדקלים, ויסתיים ב-23:00, בידית האחורית, שבין רחוב רבי עקיבא לתיאטרון.\nהערב יכלול קטעי תיאטרון ומופע אישיים, מופעים מוזיקליים ונשף תחפושות (בואו מחופשים)",
+   "initiativeDescription": "ערב של חיבורים בין תיאטרון לריקוד, לוידאו ולמוזיקה, ושל קיצורי דרך בין הלבבות",
+   "placeNotes": "בצדו הצפוני של האמפי על רחוב רבי עקיבא",
+   "initiativeOwnerFirstName": "Yoav",
+   "initiativeOwnerLastName": "Trifon",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/94d242dc71bd87428f3be271e9f8a5dc4d4d108b6c710bd6605c8d62fff5452b.webp"
+  },
+  {
+   "eventID": 2260,
+   "initiativeOwnerUserID": 139,
+   "placeOwnerUserID": 9710,
+   "street": "הבוטנים 54 פרדס חנה ",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "הלובי של המתנס המחודש ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-30",
+   "hour": "13:00",
+   "maxNumberOfPeople": 144,
+   "limitNumberOfPeople": 300,
+   "totalNumberOfPeopleThatCanAttend": 144,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "האירוע המרגש שכולו אהבה",
+   "details": "מפגש מינגלינג מחבר לבבות. בהנחיית קרן-אור שני (אורורה), מנטורית לאהבה ותודעה,\nלאנשים שנמצאים במסע התפתחות אישית ותודעתית, \nהמבקשים לחייהם אהבה נשמתית מלהיבה וקסומה ✨\nנתחיל בהרצאה קצרה ונמשיך בפעילות מחברת ומקרבת. נקנח עם מינגלינג חופשי ומוסיקה טובה\nלמי זה מתאים:\nאנשים שמאמינים שיש כח שמניע יחד איתנו את אנרגיית החיים וההגשמה שלנו\nאנשים שמאמינים באהבה טהורה וללא תנאי ❤️\nגברים ונשים בגילאי 37-56 שמוכנים לפתוח את הלב\nאנשים כיפיים עם אנרגיה גבוהה ⚡",
+   "initiativeDescription": "מפגש הכרויות לאהבה נשמתית גילאי 37-56",
+   "placeNotes": "יש הרבה פינות ישיבה , מקרן , מתאים לפעילויות עד 100 איש",
+   "initiativeOwnerFirstName": "קרן-אור",
+   "initiativeOwnerLastName": "שני",
+   "attendees": [
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    },
+    {
+     "eventID": 2260
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/bd25c51ee575fd055672b49bc87bbebb10d975e1cd48bedb32fcde16a348d56d.webp"
+  },
+  {
+   "eventID": 2259,
+   "initiativeOwnerUserID": 11076,
+   "placeOwnerUserID": 11076,
+   "street": "סוף רחוב ברקאי  בשדות",
+   "houseNumber": 1,
+   "entrance": "1",
+   "placeDescription": "להפגש באמת הזולה בכרכור. בשדות בהמשך לסוף הרחוב !!!",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "21:00",
+   "maxNumberOfPeople": 70,
+   "limitNumberOfPeople": 70,
+   "totalNumberOfPeopleThatCanAttend": 70,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "Inner Pulse",
+   "details": "מסע חוויתי סומטי על קו התפר שבין sound healing , מדיטציה , טראנס ו ecstatic dance. תופי המסגרת ( frame drums ) אינם רק כלי. הם שער. Portal.",
+   "initiativeDescription": "מסע דרך התוף - ממדיטציה עמוקה לטראנס אקסטטי ובחזרה",
+   "placeNotes": "דרך הגעה :\nhttps://waze.com/ul?a=share_drive&locale=iw&sd=XFu-7MkjhNzLflFZOw-sd&env=il&utm_source=waze_app&utm_campaign=share_driveלנסוע לבית עלמין עין עירון - בבית העלמין לפנות ימינה, להמשיך עם הכביש (המשובש שהופך לשביל עפר) שמתפתל - עד ל T . ב-T שמאלה, עד שתראו לול משמאלכם - 4 מטר לפני הלול לקחת השביל ימינה .",
+   "initiativeOwnerFirstName": "Split",
+   "initiativeOwnerLastName": "Brain",
+   "attendees": [
+    {
+     "eventID": 2259
+    },
+    {
+     "eventID": 2259
+    }
+   ],
+   "externalLink1": " https://youtube.com/watch?v=3nD4hcF159U&si=nQg7DWCNuBHNCq_g קישור חיצוני 2  קישור לקבוצת וואטסאפ (לא חובה) מי שנרשם לאירוע יקבל את הקישור מיד אחרי ההרשמה  להוספת תמונות",
+   "externalLink2": " https://www.youtube.com/watch?v=N0HwXl15_i4 קישור לקבוצת וואטסאפ (לא חובה) מי שנרשם לאירוע יקבל את הקישור מיד אחרי ההרשמה  להוספת תמונות",
+   "path": "https://api.hanadiv.org/images/9d476ac889e44080416b8c88d05d089e7c3be10ea3e501d46d8c7fcec0baf542.webp"
+  },
+  {
+   "eventID": 2258,
+   "initiativeOwnerUserID": 7825,
+   "placeOwnerUserID": 7825,
+   "street": "ברקאי",
+   "houseNumber": 100,
+   "entrance": null,
+   "placeDescription": "הזולה בכרכור - להפגש באמת",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "18:00",
+   "maxNumberOfPeople": 70,
+   "limitNumberOfPeople": 60,
+   "totalNumberOfPeopleThatCanAttend": 60,
+   "publicValue": 2,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "ערב במה ליוצרים מקוריים",
+   "details": "כל אמן מוזמן לעלות ולתת עד 3 שירים  מקוריים (אפשר גם קאברים בביצוע אמנותי או מיוחד). אנחנו נספק במה ושרותי סאונד ותאורה",
+   "initiativeDescription": "אנחנו מזמינים זמרים וזמרות יוצרים מקוריים  מתחום המוזיקה הפופולרית להופיע על הבמה שלנו.",
+   "placeNotes": "המקום הוא בית אריזה ישן מטופח ומתוחזק על ידי קהילת נפגשים באמת ונמצא בפרדסים ממזרח לכרכור בין השביל שממשיך את רחוב אחוזה לשביל שממשיך את רחוב ברקאי מדרום מזרח לבית העלמין של עין עירון",
+   "initiativeOwnerFirstName": "אורן",
+   "initiativeOwnerLastName": "אליעזרי",
+   "attendees": [
+    {
+     "eventID": 2258
+    },
+    {
+     "eventID": 2258
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/784edb2010a6257d5dfc0c82d6bad07934c5e7232d611325e5cb58a18fce3ec1.webp"
+  },
+  {
+   "eventID": 2256,
+   "initiativeOwnerUserID": 10878,
+   "placeOwnerUserID": 3941,
+   "street": "הגדוד",
+   "houseNumber": 8,
+   "entrance": "כניסה בין הבתים מהחניה ",
+   "placeDescription": "סטודיו חיבור נכון - תאטרון, מודעות, תנועה ויצירה.",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "15:30",
+   "maxNumberOfPeople": 20,
+   "limitNumberOfPeople": 28,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 92,
+   "virtual": false,
+   "title": "תנועה מדיטטיבית",
+   "details": "נתאמן בדרך תנועה מדיטטיבית",
+   "initiativeDescription": "״בוטמר״ הוא התאמנות תנועה אנתרופוסופית שמפתחת מודעות לגוף, למרחב ולכוחות התנועה.",
+   "placeNotes": "יש חניה במגרש החניה בפינת הרחובות הגדוד ודרור. ",
+   "initiativeOwnerFirstName": "עופר",
+   "initiativeOwnerLastName": "שגיא",
+   "attendees": [],
+   "externalLink1": "https://www.facebook.com/profile.php?id=100065444882334",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/a55564bfa8d16c6697ac702edbb9ce4695c605a51c09d93730edda309e7a38fe.webp"
+  },
+  {
+   "eventID": 2255,
+   "initiativeOwnerUserID": 10878,
+   "placeOwnerUserID": 3941,
+   "street": "הגדוד",
+   "houseNumber": 8,
+   "entrance": "הכניסה מהחניה בין הבתים",
+   "placeDescription": "סטודיו חיבור נכון - תיאטרון מודעות תנועה יצירה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "15:00",
+   "maxNumberOfPeople": 17,
+   "limitNumberOfPeople": 28,
+   "totalNumberOfPeopleThatCanAttend": 17,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 92,
+   "virtual": false,
+   "title": "תנועה מדיטטיבית",
+   "details": "נתאמן בדרך תנועה מדיטטיבית",
+   "initiativeDescription": "״בוטמר״ הוא התאמנות תנועה אנתרופוסופית שמפתחת מודעות לגוף, למרחב ולכוחות התנועה.",
+   "placeNotes": "החניה במגרש כורכר בפינת הרחובות הגדוד ודרור מרחק הליכה של 5 דק מהסטודיו",
+   "initiativeOwnerFirstName": "עופר",
+   "initiativeOwnerLastName": "שגיא",
+   "attendees": [],
+   "externalLink1": "https://www.facebook.com/profile.php?id=100065444882334",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/a55564bfa8d16c6697ac702edbb9ce4695c605a51c09d93730edda309e7a38fe.webp"
+  },
+  {
+   "eventID": 2254,
+   "initiativeOwnerUserID": 3941,
+   "placeOwnerUserID": 3941,
+   "street": "הגדוד",
+   "houseNumber": 8,
+   "entrance": "הכניסה מהחניה בין הבתים",
+   "placeDescription": "סטודיו חיבור נכון - תיאטרון מודעות תנועה יצירה",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "11:00",
+   "maxNumberOfPeople": 17,
+   "limitNumberOfPeople": 14,
+   "totalNumberOfPeopleThatCanAttend": 14,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 180,
+   "virtual": false,
+   "title": "טקס קונסטלטיבי",
+   "details": "שילוב בין קונסטלציה לטקס אישי טרנספורמטיבי",
+   "initiativeDescription": "שילוב בין קונסטלציה לטקס",
+   "placeNotes": "החניה במגרש כורכר בפינת הרחובות הגדוד ודרור מרחק הליכה של 5 דק מהסטודיו",
+   "initiativeOwnerFirstName": "סהר",
+   "initiativeOwnerLastName": "עדס",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/7013143ded7c4d00788650df643b4c479a14ab9c20f7479ea496e52d7287e43e.webp"
+  },
+  {
+   "eventID": 2252,
+   "initiativeOwnerUserID": 7944,
+   "placeOwnerUserID": 2747,
+   "street": "אבן גבירול ",
+   "houseNumber": 14,
+   "entrance": "אולם ההופעות הגדול - החדר שמימין",
+   "placeDescription": "מועדון אור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "12:30",
+   "maxNumberOfPeople": 50,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "רשת של אהבה",
+   "details": "מיועד לעצמאים ועצמאיות. \nשעה וחצי של שרבוט מונחה בטושים וקבלת מסר לקידום העסק מהציור שציירת ובעזרתי - יועצת עיסקית ומתקשרת.\nאם רוצים, אפשר להביא נשנוש ללא סוכר וללא גלוטן לשולחן הכיבוד. תודה!",
+   "initiativeDescription": "שרבוט מונחה בטושים לטובת קידום העסק",
+   "placeNotes": "אולם ההופעות הגדול - החדר שמימין",
+   "initiativeOwnerFirstName": "Sivan",
+   "initiativeOwnerLastName": "Senior",
+   "attendees": [
+    {
+     "eventID": 2252
+    },
+    {
+     "eventID": 2252
+    },
+    {
+     "eventID": 2252
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/879dcc002cb58c4a2312ef58b60134e6fbda7846f668f569f1c1620b541837a5.webp"
+  },
+  {
+   "eventID": 2251,
+   "initiativeOwnerUserID": 1753,
+   "placeOwnerUserID": 1753,
+   "street": "שביל התלמיד",
+   "houseNumber": 2,
+   "entrance": null,
+   "placeDescription": "בית הראשונים פרדס חנה כרכור",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "19:30",
+   "maxNumberOfPeople": 60,
+   "limitNumberOfPeople": 60,
+   "totalNumberOfPeopleThatCanAttend": 60,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "תערוכה וקונצרט בבית הראשונים",
+   "details": "הדואו של פסנתרן הג'אז ג׳וי שכטר וזמרת הסופרן שרה בכר נוצר מתוך מפגש בין עולמות מוזיקליים שונים: מוזיקה קלאסית, ג׳אז, הלחנה ואלתור. \nהשניים חוקרים את המפגש בין קול לפסנתר, בין חומר כתוב לבין חופש מוזיקלי ובין ביצוע נאמן לפרשנות אישית באופן נועז.\nבמופע המשותף הם מבצעים יצירות ישראליות ומן הרפרטואר הקלאסי.",
+   "initiativeDescription": "בית הראשונים ותערוכת \"ניצבות\" של ליאת שכטר מזמינים לערב מיוחד שמפגיש ג'אז ושירה קלאסית",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "בית הראשונים",
+   "initiativeOwnerLastName": "פרדס חנה-כרכור",
+   "attendees": [
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    },
+    {
+     "eventID": 2251
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/c62b50e123822e44bbcce888eaf1cfcbb7453aac771a5721ca74ff03a91c1204.webp"
+  },
+  {
+   "eventID": 2249,
+   "initiativeOwnerUserID": 10899,
+   "placeOwnerUserID": 9710,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "הסלון במתנס",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 4,
+   "genre": "הרצאה",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "11:30",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 41,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "הרצאה",
+   "details": "שמתם לב שתהליך משמעותי ורחב מימדים עובר על האנושות? ניכר שאנחנו בתקופת מהפך.\nזרמים רוחניים ואף מדעיים ידעו על בא העת הזו  וחכמי הקבלה חשפו סוד שיאפשר לדורנו לצלוח את המעבר ברחמים (בטוב) ולא בדינים (יסורים).\nבהרצאה:\n•\tנגלה את 3 העקרונות המנחים ו-  4 אבני הדרך ליצירת מהפך מיטיב במציאות הקולקטיבית, בהתבסס על הפיזיקה והמטאפיזיקה\n•\tנחשוף את הסוד הקבלי מתוך הכתובים. \n•\tנגלה כיצד השימוש בו ע\"י מסה קריטית של אנשים, יכול לנתב את המציאות לטובת העולם כולו.\n•\tנבין מה תפקידו של העם היהודי בתהליך הזה.",
+   "initiativeDescription": "נאם ואם כן כיצד ניתן ליצור מהפך מיטיב במציאות הקולקטיבית בעזרת התודעה",
+   "placeNotes": "יש שולחנות וכסאות, מזגן, טלויזיה , מטבחון . מתאים לסדנאות יצירה, מפגשי תוכן ,הרצאות ",
+   "initiativeOwnerFirstName": "פרנסואז",
+   "initiativeOwnerLastName": "מיקאל",
+   "attendees": [
+    {
+     "eventID": 2249
+    },
+    {
+     "eventID": 2249
+    },
+    {
+     "eventID": 2249
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/eb574f97419d2d3244f5883b4ba3441d299ece34b05afbdd158a51cf63549194.webp"
+  },
+  {
+   "eventID": 2248,
+   "initiativeOwnerUserID": 9714,
+   "placeOwnerUserID": 7559,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "אינדיגו - מתחם ילדים בבית ספר שבילים",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "09:30",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 30,
+   "totalNumberOfPeopleThatCanAttend": 30,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "ספייס קווסט: יוצאים לחקור תעלומה",
+   "details": "צוות חוקרים מקבל תעלומה, יוצא לאסוף ממצאים, מחפש קשרים בין הראיות, מציע השערות ובודק אותן עד לגיבוש פתרון. המשתתפים יתנסו בחשיבה כמו חוקרים אמיתיים, בשיתוף פעולה ובקבלת החלטות על בסיס ראיות. הפעילות מיועדת לילדים בכיתות ד׳–ו׳, בקבוצה של עד 20 משתתפים, ותימשך כשעה. זהו פיילוט של תוכנית חינוכית בפיתוח.",
+   "initiativeDescription": "הרפתקת חקר שבה מפענחים רמזים, בודקים השערות ופועלים יחד לפתרון תעלומה",
+   "placeNotes": "מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!!\nנתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
+   "initiativeOwnerFirstName": "שחר",
+   "initiativeOwnerLastName": "פרטיג",
+   "attendees": [],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/26d82c8b3191c9fb3e2c3b878e5d4fac7bbcae6662d8d6d5ac40f165c27bb96f.webp"
+  },
+  {
+   "eventID": 2247,
+   "initiativeOwnerUserID": 10880,
+   "placeOwnerUserID": 9710,
+   "street": "הבוטנים",
+   "houseNumber": 54,
+   "entrance": null,
+   "placeDescription": "הסלון במתנס",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-29",
+   "hour": "20:00",
+   "maxNumberOfPeople": 30,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "סדנאת ריקודי בטן",
+   "details": "סדנה של ריקודי בטן והנאה",
+   "initiativeDescription": "פעילות העצמה של שעה בה נרקוד, נלמד את הגוף ובעיקר נהנה :)",
+   "placeNotes": "יש שולחנות וכסאות, מזגן, טלויזיה , מטבחון . מתאים לסדנאות יצירה, מפגשי תוכן ,הרצאות ",
+   "initiativeOwnerFirstName": "תכלת",
+   "initiativeOwnerLastName": "רוזנבוים",
+   "attendees": [
+    {
+     "eventID": 2247
+    },
+    {
+     "eventID": 2247
+    },
+    {
+     "eventID": 2247
+    },
+    {
+     "eventID": 2247
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/bfff06306a03091811e316143d488073ed7c096bcc88ff1f4b358a2a2488a19f.webp"
+  },
+  {
+   "eventID": 2246,
+   "initiativeOwnerUserID": 3638,
+   "placeOwnerUserID": 7530,
+   "street": "ההגנה",
+   "houseNumber": 0,
+   "entrance": null,
+   "placeDescription": "\"האולם\"  בית תרבות מקומי\nפסטיבל קולנוע הנדיב 8",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 13,
+   "genre": "קולנוע",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "20:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 50,
+   "totalNumberOfPeopleThatCanAttend": 50,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 150,
+   "virtual": false,
+   "title": "הרצאה וסרט- להסכים לחוות את הטרגי מכל. יוקרן הסרט \"פסיכומאגיה- אמנות הריפוי\" חודורובסקי",
+   "details": "בהרצאה קצרה  על הנושא נבין  את המשמעות כשאדם מוכן לחוות, להתמסר, להתרסק גם למקום הכי חלש שלו. נבין את כוחו הטרנספורמטיבי  של האומץ לפגוש, לרצות לחוות את הדבר המאיים מכל- דרך טקס או מסע אחר.  איך זה קשור לארכיטיפ השוטה? אלו גישות נוספות תומכות בזה? נקרין את הסרט פסיכומאגיה של חודורובסקי דרכו נבין את הקונספט\nמרצה: אלכס סטרניק, תזונאי קליני, מאמן , מנחה ומרצה בינל ללחץ חיובי EuStress , בניית עמידות וסיבולת רגשית נפשית, תראפיה בצחוק והומורדרמה ואימון פרדוקסלי. מביא השיטה יוגה צחוק לישראל-2004.  אלכס מלמד כיתות אמן בנושא בבתי ספר לליצנות , תקשורת מקרבת, גשטלט ברחבי העולם ועובד באופן אישי בהקשר של ריפוי דפוסי נפש-רגש באמצעות הגחכה, הומור עצמי ולייצנות בגישת הכוונה הפרדוקסלית של דר ויקטור פרנקל.\n\nהסרט מתאים מאוד לעוסקים בקשר בין אמנות לריפוי, מרפאים, פסיכודרמטיסטים, דרמה תראפיסטים, הילרים וכמובן העוסקים בפסיכדליה",
+   "initiativeDescription": "מהו לחץ חיובי אל מול לחץ שלילי. איך ומהן הגישות ההתערבותיות ההופכות דחק למקום של מפגש,בחירה וריפוי? ",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "אלכס",
+   "initiativeOwnerLastName": "סטרניק",
+   "attendees": [
+    {
+     "eventID": 2246
+    },
+    {
+     "eventID": 2246
+    },
+    {
+     "eventID": 2246
+    }
+   ],
+   "externalLink1": "https://www.youtube.com/watch?v=KsJqGm9Ml9E",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/1c9197011b4645009aaa2385d059439d6e104be7fe9b0e26d52acc19e43fea64.webp"
+  },
+  {
+   "eventID": 2245,
+   "initiativeOwnerUserID": 10899,
+   "placeOwnerUserID": 10899,
+   "street": "עמ\"ל",
+   "houseNumber": 45,
+   "entrance": null,
+   "placeDescription": "בית פרטי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 40,
+   "limitNumberOfPeople": 40,
+   "totalNumberOfPeopleThatCanAttend": 40,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "מעגל  זימון  - סודות הרחם והרימון",
+   "details": "* סוד יכולת הבריאה של הרימון: המיסטיקה של עוררות החושניות, זרימת חיים חיונית ושפע.\n* הפרדוקס הקבלי של הזרעים: פרספקטיבה חדשה על \"פוטנציאל\" ואיך הוא מתממש.\n* קריסת הזמן הליניארי: התחברות לציר זמן פנימי לקפיצת זמן שיאיץ את הגשמת הרצונות שלך בקלות ובחן.\n* טקס בריאה מקודש: כוונות משותפות ומוזיקה שייתנו צורה פיזית למה שמחכה להוולד בשבילך השנה. \nמָה לְהָבִיא: 2 רימונים, ריח טוב של שמן אתרי או בשם טבעי כלי הקשה/פעמונים/חליל/מפוחית.\nמחכה לראות אתכן.ם. פרנסואז✨",
+   "initiativeDescription": "טקס יצירת מציאות  דרך הזכרות חוכמה עתיקה חדשה",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "פרנסואז",
+   "initiativeOwnerLastName": "מיקאל",
+   "attendees": [
+    {
+     "eventID": 2245
+    },
+    {
+     "eventID": 2245
+    }
+   ],
+   "externalLink1": "",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/8edc905c3e8e7baa98e109f0a3572b91c415a92717dfdb4037891c9907193483.webp"
+  },
+  {
+   "eventID": 2243,
+   "initiativeOwnerUserID": 14,
+   "placeOwnerUserID": 114,
+   "street": "החורש",
+   "houseNumber": 36,
+   "entrance": null,
+   "placeDescription": "במת הג'אז ומוסיקת עולם ",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 6,
+   "genre": "מוסיקה",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-29",
+   "hour": "17:00",
+   "maxNumberOfPeople": 300,
+   "limitNumberOfPeople": 97,
+   "totalNumberOfPeopleThatCanAttend": 97,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": true,
+   "duration": 60,
+   "virtual": false,
+   "title": "שרים באהבה - ישראל כסיף ולהקות ״קול המלאכים״ ו״קול הגרוב״",
+   "details": "???? מופע של מוזיקה, חיבור ואהבה\n\nילדים וילדות מוכשרים — ילדים עם צרכים מיוחדים וילדים מכילים — נפגשים על במה אחת עם ישראל כסיף, לקלאסיקות ישראליות אהובות בעיבודים מיוחדים, שירים מקוריים וגם שירים שחוצים גבולות: מ״להאמין״ של עידן רייכל ועד ״הללויה״ של לאונרד כהן.\n???? הכול בשירה חיה — והקהל מוזמן לשיר איתנו!\n✨ אורחים מיוחדים והפתעות!\n",
+   "initiativeDescription": "במסגרת פסטיבל הנדיב — ישראל כסיף, זוכה פרס וראייטי כמוזיקאי פורץ דרך, עם ״קול הגרוב״, להקת השירה האזורית, ו״קול המלאכים״, להקה ארצית זוכת פרס וראייטי.",
+   "placeNotes": null,
+   "initiativeOwnerFirstName": "אורית",
+   "initiativeOwnerLastName": "איזנשטיין",
+   "attendees": [
+    {
+     "eventID": 2243
+    },
+    {
+     "eventID": 2243
+    },
+    {
+     "eventID": 2243
+    },
+    {
+     "eventID": 2243
+    },
+    {
+     "eventID": 2243
+    }
+   ],
+   "externalLink1": "https://www.facebook.com/colagrooveBand/",
+   "externalLink2": "https://www.facebook.com/kolhamalachim",
+   "path": "https://api.hanadiv.org/images/539a1582f05449525b06eb424fe8be754d7ae02a75f9c69c6df1a29b329e3fdb.webp"
+  },
+  {
+   "eventID": 2242,
+   "initiativeOwnerUserID": 10901,
+   "placeOwnerUserID": 10901,
+   "street": "האורנים",
+   "houseNumber": 33,
+   "entrance": "אין",
+   "placeDescription": "הוואדי הירוק שלאורך רחוב האורנים (איפה שהשיקשוק)",
+   "areaSetting": "לא משנה",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "לכל המשפחה",
+   "areaSettingValue": -1,
+   "date": "2026-10-31",
+   "hour": "10:30",
+   "maxNumberOfPeople": 50,
+   "limitNumberOfPeople": 60,
+   "totalNumberOfPeopleThatCanAttend": 50,
+   "publicValue": 3,
+   "canHostNoisyEvents": true,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": true,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "סדנת ריקוד מערב אפריקאי בליווי תיפוף חיי",
+   "details": "שירי פרלמוטר היא רקדנית מקצועית לכל הסגנונות ובשנים האחרונות מתמחה בסגנון המערב אפריקאי. ענבר אברמי היא מתופפת מקצועית שגם כן מתמחה בסגנון המערב אפריקאי והיא תלווה בנגינה יחד עם עוד מתופפים את הסדנת ריקוד. נשמח מאוד להפיץ את השמחה של הקצב והתנועה של אפריקה! אנחנו רק צריכות חלל גדול עם רצפה שנוח לרקוד עליה או אפילו מרחב בחוץ",
+   "initiativeDescription": "סדנה משחררת, אנרגטית, מקרקעת שמתאימה לכולם.ן ללא צורך בניסיון קודם",
+   "placeNotes": "אפשר לכתוב בווייז שיקשוק פרדס חנה או רחוב האורנים 30",
+   "initiativeOwnerFirstName": "ענבר",
+   "initiativeOwnerLastName": "אברמי",
+   "attendees": [
+    {
+     "eventID": 2242
+    },
+    {
+     "eventID": 2242
+    },
+    {
+     "eventID": 2242
+    }
+   ],
+   "externalLink1": null,
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/9886a37e549f81b3ce98c71c0fbac5db837a95974b5639c2d8f4174aaa8424d8.webp"
+  },
+  {
+   "eventID": 2241,
+   "initiativeOwnerUserID": 11063,
+   "placeOwnerUserID": 381,
+   "street": "ארבל",
+   "houseNumber": 42,
+   "entrance": null,
+   "placeDescription": "סלון ביתי",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "לכל המשפחה",
+   "areaSettingValue": 1,
+   "date": "2026-10-31",
+   "hour": "16:00",
+   "maxNumberOfPeople": 20,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 3,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": true,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 60,
+   "virtual": false,
+   "title": "מבטטת מסך ליוצרי תוכן",
+   "details": "מאיו עגני מקיימת חוג עיצוב דיגיטלי ומזמינה אתכם לראות ולחוות בעצמכם את האפשרויות הטמונות בעיצוב הדיגיטלי ואיך אפשר לנצל את הזמן מול מסך של ילדיכם ליצירת יצירות מדהימות. מומלץ להורים עם ילדים בכיתות ג' עד ה'",
+   "initiativeDescription": "בואו גלו עם הילדים שלכם איך לפתח מיומנויות עיצוב בכלים פשוטים ונוחים",
+   "placeNotes": "משפחת עגני, בית פינתי עם גדר עץ.\nבויז לכתוב ארבל 14 (מספר בית ארבל 42)",
+   "initiativeOwnerFirstName": "Mili11",
+   "initiativeOwnerLastName": "Milani",
+   "attendees": [
+    {
+     "eventID": 2241
+    },
+    {
+     "eventID": 2241
+    },
+    {
+     "eventID": 2241
+    }
+   ],
+   "externalLink1": "https://docs.google.com/presentation/d/1h7_4qhBeDr_bjAXOEEFmjtSBUQZW-b-NmG0f7LWfJ00/present?usp=sharing",
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/0bdf5db616ca0dd07f87db42fd338729ca1535a554e4eb12bc19bd768c10599a.webp"
+  },
+  {
+   "eventID": 2240,
+   "initiativeOwnerUserID": 193,
+   "placeOwnerUserID": 193,
+   "street": "הצבי ",
+   "houseNumber": 8,
+   "entrance": "א׳",
+   "placeDescription": "הסלון של מרכז אלון",
+   "areaSetting": "בפנים",
+   "status": 1,
+   "genreID": 10,
+   "genre": "סדנא חווייתית",
+   "public": "רק למבוגרים",
+   "areaSettingValue": 1,
+   "date": "2026-10-30",
+   "hour": "09:00",
+   "maxNumberOfPeople": 20,
+   "limitNumberOfPeople": 20,
+   "totalNumberOfPeopleThatCanAttend": 20,
+   "publicValue": 2,
+   "canHostNoisyEvents": false,
+   "hasParking": true,
+   "isAccessible": false,
+   "petFriendly": false,
+   "piano": false,
+   "duration": 90,
+   "virtual": false,
+   "title": "רגע לשנינו - סדנת זוגיות",
+   "details": "סדנה שתוכננה במיוחד לפסטיבל, עשרות זוגות כבר חוו את הקסם ואתם.ן מוזמנות.ים גם.\nבסדנה נחלוק בניסיון הזוגי שלנו, ובחלק מהתובנות שלנו,\n שנרכשו ב 30 שנה של טיפול, ליווי ותמיכה ביחידים וזוגות שהתגברו על דפוסים, \nהסכימו לראות אחד את השניה וליצור זוגיות או קירבה מחודשת.\n ניתן לכם להקשיב ולגעת עם תרגילי שיאצו נעימים ומקרבים, \nנתרגל שיתוף מהלב והקשבה ללא תנאי.",
+   "initiativeDescription": "מפגש זוגי בו נדבר, נקשיב מקרוב, נבין, נכיל, נביט בעיניים, ננוע, ונצא קרובים יותר",
+   "placeNotes": "לרשום בווייז מרכז אלון לרפואה משלימה\nחניה ברחוב או ברחוב דגן ולאה גולדברג הסמוכים",
+   "initiativeOwnerFirstName": "אלון",
+   "initiativeOwnerLastName": "הירשברג",
+   "attendees": [
+    {
+     "eventID": 2240
+    },
+    {
+     "eventID": 2240
+    }
+   ],
+   "externalLink1": "https://alloncenter.co.il/relations-2/",
+   "externalLink2": null,
+   "path": "https://api.hanadiv.org/images/30866a5b3d3b1ddbdbaaa943430a9916276dfd382fda5834a94e07c6daf390cc.webp"
+  },
   {
    "eventID": 2238,
    "initiativeOwnerUserID": 8943,
@@ -57,7 +942,20 @@
    "placeNotes": null,
    "initiativeOwnerFirstName": "גילי",
    "initiativeOwnerLastName": "קמחי",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2238
+    },
+    {
+     "eventID": 2238
+    },
+    {
+     "eventID": 2238
+    },
+    {
+     "eventID": 2238
+    }
+   ],
    "externalLink1": "https://www.youtube.com/@gilikimchimusic",
    "externalLink2": "https://open.spotify.com/artist/6rrdc7ji3L0dB9oKX11gGq",
    "path": "https://api.hanadiv.org/images/8c227cc522c2bdd02539a14b99c8b916129703dd196b5c473e68f0da33dd34d2.webp"
@@ -110,8 +1008,8 @@
    "placeDescription": "סלון ביתי",
    "areaSetting": "בפנים",
    "status": 1,
-   "genreID": 4,
-   "genre": "הרצאה",
+   "genreID": 13,
+   "genre": "קולנוע",
    "public": "רק למבוגרים",
    "areaSettingValue": 1,
    "date": "2026-10-30",
@@ -128,12 +1026,25 @@
    "duration": 120,
    "virtual": false,
    "title": "הרצאה ומבוא להומורדרמה ואימון פרדוקסלי- כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים",
-   "details": "בהרצאה ישתף אלכס סטרניק , מאמן , מרצה ומנחה בינל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה70 עי תלמידו של דר ויקטור פרנקל , דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). \nההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו....\nנלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. \nכיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות.\nאחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים.\nוכמובן לא נשכח להזכיר את דר ויקטור פרנקל...\nהתחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. \nבואו.\n\nמרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress  , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004.",
-   "initiativeDescription": "איך עושים שלום עם חלקים נאבקים באמצעות הגזמה , הגחכה וליצנות? גישת פרקליט השטן בטיפול",
+   "details": "בהרצאה קצרה  ישתף אלכס סטרניק , מאמן , מרצה ומנחה בינל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה70 עי תלמידו של דר ויקטור פרנקל , דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). \nההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו....\nנלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. \nכיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות.\nאחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים.\nוכמובן לא נשכח להזכיר את דר ויקטור פרנקל...\nהתחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. \nבואו.\n\nמרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress  , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004.",
+   "initiativeDescription": "איך עושים שלום עם חלקים נאבקים באמצעות הגזמה , הגחכה וליצנות? גישת פרקליט השטן בטיפול. כוחה של הבחירה לפגוש את הטרגי מכל בריפוי.",
    "placeNotes": null,
    "initiativeOwnerFirstName": "אלכס",
    "initiativeOwnerLastName": "סטרניק",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2236
+    },
+    {
+     "eventID": 2236
+    },
+    {
+     "eventID": 2236
+    },
+    {
+     "eventID": 2236
+    }
+   ],
    "externalLink1": "http://www.laughter.co.il ",
    "externalLink2": "https://www.youtube.com/watch?v=6ERVvnUy2lg&t=2986s",
    "path": "https://api.hanadiv.org/images/1cffea1f7a5d34bbc31e45233cf63ccda99b8b08315f6137f333ae9d8ba3ac92.webp"
@@ -172,6 +1083,18 @@
    "initiativeOwnerFirstName": "יעל",
    "initiativeOwnerLastName": "פינקל",
    "attendees": [
+    {
+     "eventID": 2235
+    },
+    {
+     "eventID": 2235
+    },
+    {
+     "eventID": 2235
+    },
+    {
+     "eventID": 2235
+    },
     {
      "eventID": 2235
     },
@@ -225,6 +1148,21 @@
     },
     {
      "eventID": 2234
+    },
+    {
+     "eventID": 2234
+    },
+    {
+     "eventID": 2234
+    },
+    {
+     "eventID": 2234
+    },
+    {
+     "eventID": 2234
+    },
+    {
+     "eventID": 2234
     }
    ],
    "externalLink1": "https://www.facebook.com/events/876598358107330",
@@ -264,7 +1202,41 @@
    "placeNotes": null,
    "initiativeOwnerFirstName": "יונתן",
    "initiativeOwnerLastName": "זילברשייד",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    },
+    {
+     "eventID": 2233
+    }
+   ],
    "externalLink1": null,
    "externalLink2": null,
    "path": "https://api.hanadiv.org/images/f0f2aef4a411c837dc5c337e4612289257a624107590aaa7c1ea57d3340f9cad.webp"
@@ -302,7 +1274,17 @@
    "placeNotes": "יש חניה בשפע\nנתרגל על מחצלות גדולות תחת צמרות האורנים \nאנא הביאו מזרן יוגה עמכן",
    "initiativeOwnerFirstName": "אסנת",
    "initiativeOwnerLastName": "אבידן",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2232
+    },
+    {
+     "eventID": 2232
+    },
+    {
+     "eventID": 2232
+    }
+   ],
    "externalLink1": null,
    "externalLink2": null,
    "path": "https://api.hanadiv.org/images/944ee7a33698d623ebfc2a05cb596c3ff716b566066feaee237467e08808ce60.webp"
@@ -349,8 +1331,8 @@
    "eventID": 2230,
    "initiativeOwnerUserID": 4586,
    "placeOwnerUserID": 9710,
-   "street": "הבוטנים 54",
-   "houseNumber": 0,
+   "street": "הבוטנים",
+   "houseNumber": 54,
    "entrance": null,
    "placeDescription": "הסלון במתנס",
    "areaSetting": "בפנים",
@@ -438,6 +1420,21 @@
     },
     {
      "eventID": 2229
+    },
+    {
+     "eventID": 2229
+    },
+    {
+     "eventID": 2229
+    },
+    {
+     "eventID": 2229
+    },
+    {
+     "eventID": 2229
+    },
+    {
+     "eventID": 2229
     }
    ],
    "externalLink1": "https://www.youtube.com/watch?v=tHs1pYZuo2g",
@@ -477,7 +1474,20 @@
    "placeNotes": "מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!!\nנתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
    "initiativeOwnerFirstName": "יובל",
    "initiativeOwnerLastName": "לוינסון",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2228
+    },
+    {
+     "eventID": 2228
+    },
+    {
+     "eventID": 2228
+    },
+    {
+     "eventID": 2228
+    }
+   ],
    "externalLink1": null,
    "externalLink2": null,
    "path": "https://api.hanadiv.org/images/537dedb1d6fcd26ca57488e88723783088b8774f67ebd8504af8b087e121a8cc.webp"
@@ -507,7 +1517,7 @@
    "isAccessible": false,
    "petFriendly": false,
    "piano": false,
-   "duration": 120,
+   "duration": 90,
    "virtual": false,
    "title": "רגע לשנינו - סדנה לזוגות",
    "details": "שעתיים של סדנה שתוכננה במיוחד לפסטיבל, עשרות זוגות כבר חוו את הקסם ואתם.ן מוזמנות.ים גם.\nבסדנה נחלוק בניסיון הזוגי שלנו, ובחלק מהתובנות שלנו שנרכשו ב 30 שנה של טיפול, ליווי ותמיכה ביחידים וזוגות שהתגברו על דפוסים, הסכימו לראות אחד את השניה וליצור זוגיות או קירבה מחודשת.\n ניתן לכם להקשיב ולגעת עם תרגילי שיאצו נעימים ומקרבים, נתרגל שיתוף מהלב והקשבה ללא תנאי.",
@@ -516,6 +1526,18 @@
    "initiativeOwnerFirstName": "אלון",
    "initiativeOwnerLastName": "הירשברג",
    "attendees": [
+    {
+     "eventID": 2227
+    },
+    {
+     "eventID": 2227
+    },
+    {
+     "eventID": 2227
+    },
+    {
+     "eventID": 2227
+    },
     {
      "eventID": 2227
     },
@@ -561,6 +1583,15 @@
    "initiativeOwnerFirstName": "עדי",
    "initiativeOwnerLastName": "נאה בלוך",
    "attendees": [
+    {
+     "eventID": 2226
+    },
+    {
+     "eventID": 2226
+    },
+    {
+     "eventID": 2226
+    },
     {
      "eventID": 2226
     },
@@ -623,6 +1654,9 @@
     },
     {
      "eventID": 2225
+    },
+    {
+     "eventID": 2225
     }
    ],
    "externalLink1": "https://www.youtube.com/@daniellagoldfine-music2127",
@@ -658,13 +1692,13 @@
    "virtual": false,
    "title": "אווה EVA - a short film",
    "details": "אישה מבוגרת יוצאת מחדרה אל עבר מסדרון אינסופי.\nבדרכה היא תיתקל בשברי חייה, המשתקפים דרך פסיפס אנושי.\nמבט מעמיק אל תוך טקס בנאלי, הלוכד את הדרמה של החיים.",
-   "initiativeDescription": "עלילתי קצר",
+   "initiativeDescription": "עלילתי קצר - רפאל שרגאי",
    "placeNotes": null,
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
    "attendees": [],
-   "externalLink1": null,
-   "externalLink2": null,
+   "externalLink1": "",
+   "externalLink2": "",
    "path": "https://api.hanadiv.org/images/0418fe2814aed27d169ebb8f355084eb85825964dee16fc2721249deee3059f7.webp"
   },
   {
@@ -700,10 +1734,14 @@
    "placeNotes": null,
    "initiativeOwnerFirstName": "שולי",
    "initiativeOwnerLastName": "השלי",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2223
+    }
+   ],
    "externalLink1": "youtube.com/watch?v=x3m_0-Po1Ww&feature=youtu.be",
-   "externalLink2": null,
-   "path": "https://api.hanadiv.org/images/60ddb8118dedec23c70af2a911879983280c0d61a0234d78d47e028b0cb82b79.jpeg"
+   "externalLink2": "",
+   "path": "https://api.hanadiv.org/images/eede708ad115ea3e02f9de927953b52d12f1a6f5adbfa41bd7881626aef817eb.webp"
   },
   {
    "eventID": 2222,
@@ -849,53 +1887,23 @@
     },
     {
      "eventID": 2220
+    },
+    {
+     "eventID": 2220
+    },
+    {
+     "eventID": 2220
+    },
+    {
+     "eventID": 2220
+    },
+    {
+     "eventID": 2220
     }
    ],
    "externalLink1": "",
    "externalLink2": "",
    "path": "https://api.hanadiv.org/images/11081a74e221011add5222abfac544e58921a3e1939c3ed1041f450c3dc028c2.webp"
-  },
-  {
-   "eventID": 2219,
-   "initiativeOwnerUserID": 2747,
-   "placeOwnerUserID": 2747,
-   "street": "אבן גבירול ",
-   "houseNumber": 14,
-   "entrance": "אולם ההופעות הגדול - החדר שמימין",
-   "placeDescription": "מועדון אור",
-   "areaSetting": "בפנים",
-   "status": 1,
-   "genreID": 10,
-   "genre": "סדנא חווייתית",
-   "public": "רק למבוגרים",
-   "areaSettingValue": 1,
-   "date": "2026-10-30",
-   "hour": "12:30",
-   "maxNumberOfPeople": 50,
-   "limitNumberOfPeople": 20,
-   "totalNumberOfPeopleThatCanAttend": 20,
-   "publicValue": 2,
-   "canHostNoisyEvents": false,
-   "hasParking": true,
-   "isAccessible": false,
-   "petFriendly": false,
-   "piano": false,
-   "duration": 90,
-   "virtual": false,
-   "title": "רשת של אהבה - סיון סניור",
-   "details": "מיועד לעצמאים ועצמאיות. שעה וחצי של שרבוט מונחה בטושים וקבלת מסר לקידום העסק מהציור שציירת ובעזרתי - יועצת עיסקית ומתקשרת.\nאם רוצים, אפשר להביא נשנוש ללא סוכר וללא גלוטן לשולחן הכיבוד. תודה!",
-   "initiativeDescription": "שרבוט מונחה בטושים לטובת קידום העסק",
-   "placeNotes": "אולם ההופעות הגדול - החדר שמימין",
-   "initiativeOwnerFirstName": "קיקה",
-   "initiativeOwnerLastName": "ברוקס",
-   "attendees": [
-    {
-     "eventID": 2219
-    }
-   ],
-   "externalLink1": null,
-   "externalLink2": null,
-   "path": "https://api.hanadiv.org/images/c386c68bc5b6204db02cb5748f7a54535cec47d8ae5ad687505f2a0bbac2494f.webp"
   },
   {
    "eventID": 2218,
@@ -925,12 +1933,24 @@
    "duration": 90,
    "virtual": false,
    "title": "רשת של אהבה",
-   "details": "מיועד לעצמאים ועצמאיות. שעה וחצי של שרבוט מונחה בטושים וקבלת מסר לקידום העסק מהציור שציירת ובעזרתי - יועצת עיסקית ומתקשרת.\nאם רוצים, אפשר להביא נשנוש ללא סוכר וללא גלוטן לשולחן הכיבוד. תודה!",
+   "details": "מיועד לעצמאים ועצמאיות. \nשעה וחצי של שרבוט מונחה בטושים וקבלת מסר לקידום העסק מהציור שציירת ובעזרתי - יועצת עיסקית ומתקשרת.\nאם רוצים, אפשר להביא נשנוש ללא סוכר וללא גלוטן לשולחן הכיבוד. תודה!",
    "initiativeDescription": "שרבוט מונחה בטושים לטובת קידום העסק",
    "placeNotes": "אולם ההופעות הגדול - החדר שמימין",
    "initiativeOwnerFirstName": "Sivan",
    "initiativeOwnerLastName": "Senior",
    "attendees": [
+    {
+     "eventID": 2218
+    },
+    {
+     "eventID": 2218
+    },
+    {
+     "eventID": 2218
+    },
+    {
+     "eventID": 2218
+    },
     {
      "eventID": 2218
     },
@@ -976,6 +1996,12 @@
    "initiativeOwnerFirstName": "מתן",
    "initiativeOwnerLastName": "בן צבי",
    "attendees": [
+    {
+     "eventID": 2217
+    },
+    {
+     "eventID": 2217
+    },
     {
      "eventID": 2217
     },
@@ -1089,6 +2115,9 @@
    "attendees": [
     {
      "eventID": 2215
+    },
+    {
+     "eventID": 2215
     }
    ],
    "externalLink1": null,
@@ -1176,6 +2205,12 @@
     },
     {
      "eventID": 2214
+    },
+    {
+     "eventID": 2214
+    },
+    {
+     "eventID": 2214
     }
    ],
    "externalLink1": null,
@@ -1216,6 +2251,18 @@
    "initiativeOwnerFirstName": "דרכי נועם",
    "initiativeOwnerLastName": "הקהילה מסורתית שיוויונית בפרדס חנה-כרכור",
    "attendees": [
+    {
+     "eventID": 2213
+    },
+    {
+     "eventID": 2213
+    },
+    {
+     "eventID": 2213
+    },
+    {
+     "eventID": 2213
+    },
     {
      "eventID": 2213
     },
@@ -1371,6 +2418,9 @@
     },
     {
      "eventID": 2210
+    },
+    {
+     "eventID": 2210
     }
    ],
    "externalLink1": "https://www.facebook.com/profile.php?id=100065444882334",
@@ -1485,6 +2535,12 @@
     },
     {
      "eventID": 2207
+    },
+    {
+     "eventID": 2207
+    },
+    {
+     "eventID": 2207
     }
    ],
    "externalLink1": null,
@@ -1551,6 +2607,69 @@
     },
     {
      "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
+    },
+    {
+     "eventID": 2205
     }
    ],
    "externalLink1": null,
@@ -1591,6 +2710,18 @@
    "initiativeOwnerFirstName": "רומי",
    "initiativeOwnerLastName": "נטיס",
    "attendees": [
+    {
+     "eventID": 2204
+    },
+    {
+     "eventID": 2204
+    },
+    {
+     "eventID": 2204
+    },
+    {
+     "eventID": 2204
+    },
     {
      "eventID": 2204
     },
@@ -1716,6 +2847,24 @@
     },
     {
      "eventID": 2203
+    },
+    {
+     "eventID": 2203
+    },
+    {
+     "eventID": 2203
+    },
+    {
+     "eventID": 2203
+    },
+    {
+     "eventID": 2203
+    },
+    {
+     "eventID": 2203
+    },
+    {
+     "eventID": 2203
     }
    ],
    "externalLink1": "https://bit.ly/men-circles",
@@ -1755,7 +2904,20 @@
    "placeNotes": null,
    "initiativeOwnerFirstName": "רן",
    "initiativeOwnerLastName": "רצהבי",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2202
+    },
+    {
+     "eventID": 2202
+    },
+    {
+     "eventID": 2202
+    },
+    {
+     "eventID": 2202
+    }
+   ],
    "externalLink1": "",
    "externalLink2": "",
    "path": "https://api.hanadiv.org/images/397cdd57247d46a0c47b2a940d0de5d261e254f3aed9227ce6c733a23988732b.webp"
@@ -1794,6 +2956,9 @@
    "initiativeOwnerFirstName": "תחיה",
    "initiativeOwnerLastName": "רדלר",
    "attendees": [
+    {
+     "eventID": 2201
+    },
     {
      "eventID": 2201
     },
@@ -1845,6 +3010,9 @@
    "initiativeOwnerFirstName": "מיכל",
    "initiativeOwnerLastName": "פלנר",
    "attendees": [
+    {
+     "eventID": 2200
+    },
     {
      "eventID": 2200
     },
@@ -1984,6 +3152,12 @@
     },
     {
      "eventID": 2198
+    },
+    {
+     "eventID": 2198
+    },
+    {
+     "eventID": 2198
     }
    ],
    "externalLink1": "www.avivogni.co.il",
@@ -2024,6 +3198,9 @@
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
    "attendees": [
+    {
+     "eventID": 2197
+    },
     {
      "eventID": 2197
     },
@@ -2296,6 +3473,48 @@
     },
     {
      "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
+    },
+    {
+     "eventID": 2194
     }
    ],
    "externalLink1": "",
@@ -2336,6 +3555,21 @@
    "initiativeOwnerFirstName": "יהודית",
    "initiativeOwnerLastName": "מנסן רמון",
    "attendees": [
+    {
+     "eventID": 2193
+    },
+    {
+     "eventID": 2193
+    },
+    {
+     "eventID": 2193
+    },
+    {
+     "eventID": 2193
+    },
+    {
+     "eventID": 2193
+    },
     {
      "eventID": 2193
     },
@@ -2567,6 +3801,15 @@
    "initiativeOwnerFirstName": "מעין",
    "initiativeOwnerLastName": "פררה",
    "attendees": [
+    {
+     "eventID": 2188
+    },
+    {
+     "eventID": 2188
+    },
+    {
+     "eventID": 2188
+    },
     {
      "eventID": 2188
     },
@@ -2941,6 +4184,9 @@
     },
     {
      "eventID": 2181
+    },
+    {
+     "eventID": 2181
     }
    ],
    "externalLink1": "https://open.spotify.com/artist/4uyqbXDfaTczuqmFmjbzWF?si=2DfxRIu0T-66BQM_zqD1LA&utm_source=copy-link",
@@ -2992,6 +4238,12 @@
     },
     {
      "eventID": 2180
+    },
+    {
+     "eventID": 2180
+    },
+    {
+     "eventID": 2180
     }
    ],
    "externalLink1": null,
@@ -3032,6 +4284,12 @@
    "initiativeOwnerFirstName": "יובל",
    "initiativeOwnerLastName": "גוטמן",
    "attendees": [
+    {
+     "eventID": 2179
+    },
+    {
+     "eventID": 2179
+    },
     {
      "eventID": 2179
     }
@@ -3109,6 +4367,15 @@
     },
     {
      "eventID": 2178
+    },
+    {
+     "eventID": 2178
+    },
+    {
+     "eventID": 2178
+    },
+    {
+     "eventID": 2178
     }
    ],
    "externalLink1": "https://chat.whatsapp.com/G3tVSFcpNVjDx3lfKMPuRS?s=cl&p=i&mlu=0&ilr=4",
@@ -3149,6 +4416,21 @@
    "initiativeOwnerFirstName": "מיכל",
    "initiativeOwnerLastName": "גוטמן",
    "attendees": [
+    {
+     "eventID": 2177
+    },
+    {
+     "eventID": 2177
+    },
+    {
+     "eventID": 2177
+    },
+    {
+     "eventID": 2177
+    },
+    {
+     "eventID": 2177
+    },
     {
      "eventID": 2177
     },
@@ -3274,10 +4556,13 @@
     },
     {
      "eventID": 2176
+    },
+    {
+     "eventID": 2176
     }
    ],
-   "externalLink1": null,
-   "externalLink2": null,
+   "externalLink1": "",
+   "externalLink2": "",
    "path": "https://api.hanadiv.org/images/083bc1c783549d8b4bb6b893efde3a26f542512d801aac2b57277630c3ec9a45.webp"
   },
   {
@@ -3442,6 +4727,18 @@
     },
     {
      "eventID": 2172
+    },
+    {
+     "eventID": 2172
+    },
+    {
+     "eventID": 2172
+    },
+    {
+     "eventID": 2172
+    },
+    {
+     "eventID": 2172
     }
    ],
    "externalLink1": "",
@@ -3496,6 +4793,18 @@
     },
     {
      "eventID": 2171
+    },
+    {
+     "eventID": 2171
+    },
+    {
+     "eventID": 2171
+    },
+    {
+     "eventID": 2171
+    },
+    {
+     "eventID": 2171
     }
    ],
    "externalLink1": "",
@@ -3536,6 +4845,12 @@
    "initiativeOwnerFirstName": "ברכה",
    "initiativeOwnerLastName": "בוולסקי פריז",
    "attendees": [
+    {
+     "eventID": 2170
+    },
+    {
+     "eventID": 2170
+    },
     {
      "eventID": 2170
     },
@@ -3670,6 +4985,15 @@
     },
     {
      "eventID": 2166
+    },
+    {
+     "eventID": 2166
+    },
+    {
+     "eventID": 2166
+    },
+    {
+     "eventID": 2166
     }
    ],
    "externalLink1": "",
@@ -3761,6 +5085,9 @@
    "initiativeOwnerFirstName": "יובל",
    "initiativeOwnerLastName": "גוטמן",
    "attendees": [
+    {
+     "eventID": 2163
+    },
     {
      "eventID": 2163
     },
@@ -4030,6 +5357,9 @@
     },
     {
      "eventID": 2158
+    },
+    {
+     "eventID": 2158
     }
    ],
    "externalLink1": "",
@@ -4123,6 +5453,9 @@
     },
     {
      "eventID": 2156
+    },
+    {
+     "eventID": 2156
     }
    ],
    "externalLink1": "https://www.instagram.com/navehnetzer/",
@@ -4163,6 +5496,9 @@
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
    "attendees": [
+    {
+     "eventID": 2155
+    },
     {
      "eventID": 2155
     },
@@ -4240,6 +5576,9 @@
    "attendees": [
     {
      "eventID": 2152
+    },
+    {
+     "eventID": 2152
     }
    ],
    "externalLink1": "",
@@ -4279,7 +5618,50 @@
    "placeNotes": null,
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    },
+    {
+     "eventID": 2151
+    }
+   ],
    "externalLink1": "",
    "externalLink2": "",
    "path": "https://api.hanadiv.org/images/90c70bc5c7ea119dc44de52b3e453ab7e0c93b04ab21f7ebeb8285839958c3bc.webp"
@@ -4318,6 +5700,9 @@
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
    "attendees": [
+    {
+     "eventID": 2150
+    },
     {
      "eventID": 2150
     },
@@ -4404,6 +5789,12 @@
     },
     {
      "eventID": 2149
+    },
+    {
+     "eventID": 2149
+    },
+    {
+     "eventID": 2149
     }
    ],
    "externalLink1": "https://beinghuman.co.il/about/",
@@ -4444,6 +5835,21 @@
    "initiativeOwnerFirstName": "Alon",
    "initiativeOwnerLastName": "Feig",
    "attendees": [
+    {
+     "eventID": 2148
+    },
+    {
+     "eventID": 2148
+    },
+    {
+     "eventID": 2148
+    },
+    {
+     "eventID": 2148
+    },
+    {
+     "eventID": 2148
+    },
     {
      "eventID": 2148
     },
@@ -4575,6 +5981,9 @@
     },
     {
      "eventID": 2146
+    },
+    {
+     "eventID": 2146
     }
    ],
    "externalLink1": "",
@@ -4615,6 +6024,15 @@
    "initiativeOwnerFirstName": "תמר",
    "initiativeOwnerLastName": "שופל",
    "attendees": [
+    {
+     "eventID": 2144
+    },
+    {
+     "eventID": 2144
+    },
+    {
+     "eventID": 2144
+    },
     {
      "eventID": 2144
     },
@@ -4758,6 +6176,15 @@
     },
     {
      "eventID": 2142
+    },
+    {
+     "eventID": 2142
+    },
+    {
+     "eventID": 2142
+    },
+    {
+     "eventID": 2142
     }
    ],
    "externalLink1": "",
@@ -4839,6 +6266,12 @@
     },
     {
      "eventID": 2141
+    },
+    {
+     "eventID": 2141
+    },
+    {
+     "eventID": 2141
     }
    ],
    "externalLink1": "https://www.facebook.com/watch/?v=551152155321787",
@@ -4879,6 +6312,9 @@
    "initiativeOwnerFirstName": "יובל",
    "initiativeOwnerLastName": "גוטמן",
    "attendees": [
+    {
+     "eventID": 2140
+    },
     {
      "eventID": 2140
     },
@@ -4978,6 +6414,12 @@
    "initiativeOwnerFirstName": "תמר",
    "initiativeOwnerLastName": "קינן",
    "attendees": [
+    {
+     "eventID": 2138
+    },
+    {
+     "eventID": 2138
+    },
     {
      "eventID": 2138
     },
@@ -5100,7 +6542,7 @@
    "attendees": [],
    "externalLink1": null,
    "externalLink2": null,
-   "path": "https://api.hanadiv.org/images/8409313e9f7eb9709754690633c7272f4cda930029e68a1dfd12a69fbdbb1664.jpg"
+   "path": "https://api.hanadiv.org/images/0840629a43c5f673449642d15c6430f5e6f8dd6fcfbfab6506779a4cf4995081.webp"
   },
   {
    "eventID": 2135,
@@ -5135,7 +6577,11 @@
    "placeNotes": "בית בנגורה בוויז ",
    "initiativeOwnerFirstName": "רחל",
    "initiativeOwnerLastName": "בנגורה",
-   "attendees": [],
+   "attendees": [
+    {
+     "eventID": 2135
+    }
+   ],
    "externalLink1": "https://www.facebook.com/reel/1460187325947278",
    "externalLink2": "https://www.facebook.com/reel/1424275952988858",
    "path": "https://api.hanadiv.org/images/964a50d81e1946cb61c27b1222dd3aff7db09f11cf24838f9dbb14a5b06bc492.webp"
@@ -5174,6 +6620,12 @@
    "initiativeOwnerFirstName": "רחל",
    "initiativeOwnerLastName": "בנגורה",
    "attendees": [
+    {
+     "eventID": 2134
+    },
+    {
+     "eventID": 2134
+    },
     {
      "eventID": 2134
     },
@@ -5269,6 +6721,15 @@
     },
     {
      "eventID": 2133
+    },
+    {
+     "eventID": 2133
+    },
+    {
+     "eventID": 2133
+    },
+    {
+     "eventID": 2133
     }
    ],
    "externalLink1": null,
@@ -5309,6 +6770,12 @@
    "initiativeOwnerFirstName": "רחל",
    "initiativeOwnerLastName": "בנגורה",
    "attendees": [
+    {
+     "eventID": 2132
+    },
+    {
+     "eventID": 2132
+    },
     {
      "eventID": 2132
     },
@@ -5377,12 +6844,6 @@
     },
     {
      "eventID": 2131
-    },
-    {
-     "eventID": 2131
-    },
-    {
-     "eventID": 2131
     }
    ],
    "externalLink1": null,
@@ -5393,8 +6854,8 @@
    "eventID": 2130,
    "initiativeOwnerUserID": 3941,
    "placeOwnerUserID": 3941,
-   "street": "המושב",
-   "houseNumber": 1,
+   "street": "המושב ",
+   "houseNumber": 5,
    "entrance": null,
    "placeDescription": "דירה",
    "areaSetting": "בפנים",
@@ -5423,6 +6884,9 @@
    "initiativeOwnerFirstName": "סהר",
    "initiativeOwnerLastName": "עדס",
    "attendees": [
+    {
+     "eventID": 2130
+    },
     {
      "eventID": 2130
     },
@@ -5487,8 +6951,8 @@
      "eventID": 2129
     }
    ],
-   "externalLink1": null,
-   "externalLink2": null,
+   "externalLink1": "",
+   "externalLink2": "",
    "path": "https://api.hanadiv.org/images/936af9efd2aa7e726a0359fd72e2ab25c4d935f027893cf10277d21ac14f1f5c.webp"
   },
   {
@@ -5525,6 +6989,9 @@
    "initiativeOwnerFirstName": "סהר",
    "initiativeOwnerLastName": "עדס",
    "attendees": [
+    {
+     "eventID": 2128
+    },
     {
      "eventID": 2128
     },
@@ -5602,6 +7069,12 @@
     },
     {
      "eventID": 2127
+    },
+    {
+     "eventID": 2127
+    },
+    {
+     "eventID": 2127
     }
    ],
    "externalLink1": "https://www.youtube.com/watch?v=4646cXSAYDw&list=RD4646cXSAYDw&start_radio=1",
@@ -5642,6 +7115,9 @@
    "initiativeOwnerFirstName": "שרה",
    "initiativeOwnerLastName": "סירוטה",
    "attendees": [
+    {
+     "eventID": 2126
+    },
     {
      "eventID": 2126
     },
@@ -5752,6 +7228,21 @@
     },
     {
      "eventID": 2125
+    },
+    {
+     "eventID": 2125
+    },
+    {
+     "eventID": 2125
+    },
+    {
+     "eventID": 2125
+    },
+    {
+     "eventID": 2125
+    },
+    {
+     "eventID": 2125
     }
    ],
    "externalLink1": "https://chat.whatsapp.com/CkDt4qgq6qx7mDSEJJn3t3",
@@ -5822,81 +7313,6 @@
    "path": "https://api.hanadiv.org/images/4e9c4633d948321c4fc73a18ee68c752938653cae2a0ebc75c56172a8a846008.webp"
   },
   {
-   "eventID": 2123,
-   "initiativeOwnerUserID": 116,
-   "placeOwnerUserID": 1719,
-   "street": "אחוזה",
-   "houseNumber": 43,
-   "entrance": null,
-   "placeDescription": "הבית 43",
-   "areaSetting": "בפנים",
-   "status": 1,
-   "genreID": 16,
-   "genre": "תיאטרון",
-   "public": "רק למבוגרים",
-   "areaSettingValue": 1,
-   "date": "2026-10-29",
-   "hour": "20:30",
-   "maxNumberOfPeople": 30,
-   "limitNumberOfPeople": 31,
-   "totalNumberOfPeopleThatCanAttend": 30,
-   "publicValue": 2,
-   "canHostNoisyEvents": false,
-   "hasParking": true,
-   "isAccessible": true,
-   "petFriendly": false,
-   "piano": false,
-   "duration": 90,
-   "virtual": false,
-   "title": "הקול בראש",
-   "details": "מכירים את זה, כשעולה אתגר או בעייה בחיים וישר מתפקדים לנו קולות שונים בראש... מי מדבר? למי להקשיב?\nקבוצת \"תיאורטרון - פלייבק מהרוח\" מזמינים אתכם לחווית התבוננות בקולות האלה,דרך תיאטרון פלייבק, בשיתוף הקהל.\nערב מלא הומור, מעשיר ומרומם רוח.",
-   "initiativeDescription": "מפגש תיאטרון פלייבק",
-   "placeNotes": "הבית הצמוד למסעדת רוברטה וינצ'י\nלתיאום נא ליצור קשר\nמרחב פנים המתאים לסדנאות , הרצאות, יוזמות קהילתיות  והופעות אינטימיות. \nחצר יפה פורחת, עצי פרי הכוללת איזורי הושבה\n\nמיכל שלו גולן 050-7591163",
-   "initiativeOwnerFirstName": "יעל",
-   "initiativeOwnerLastName": "טל נוטע",
-   "attendees": [
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    },
-    {
-     "eventID": 2123
-    }
-   ],
-   "externalLink1": "",
-   "externalLink2": "",
-   "path": "https://api.hanadiv.org/images/2b89d539a7ae3ec5b6cd8f002bcd36c71738f2ea698d8138e211485da8d295e9.webp"
-  },
-  {
    "eventID": 2122,
    "initiativeOwnerUserID": 10930,
    "placeOwnerUserID": 7561,
@@ -5944,6 +7360,9 @@
     },
     {
      "eventID": 2122
+    },
+    {
+     "eventID": 2122
     }
    ],
    "externalLink1": null,
@@ -5964,7 +7383,7 @@
    "genre": "מוסיקה",
    "public": "לכל המשפחה",
    "areaSettingValue": 1,
-   "date": "2026-10-29",
+   "date": "2026-10-30",
    "hour": "20:30",
    "maxNumberOfPeople": 300,
    "limitNumberOfPeople": 300,
@@ -5984,6 +7403,18 @@
    "initiativeOwnerFirstName": "noam",
    "initiativeOwnerLastName": "shahar",
    "attendees": [
+    {
+     "eventID": 2121
+    },
+    {
+     "eventID": 2121
+    },
+    {
+     "eventID": 2121
+    },
+    {
+     "eventID": 2121
+    },
     {
      "eventID": 2121
     },
@@ -6103,6 +7534,9 @@
     },
     {
      "eventID": 2120
+    },
+    {
+     "eventID": 2120
     }
    ],
    "externalLink1": " https://www.instagram.com/reel/DZRzQVtIUfx/?igsi=ZHd6cWVpbzR0a29w קישור חיצוני 2  להוספת תמונות",
@@ -6143,6 +7577,9 @@
    "initiativeOwnerFirstName": "אהבה",
    "initiativeOwnerLastName": "שמעיה",
    "attendees": [
+    {
+     "eventID": 2119
+    },
     {
      "eventID": 2119
     },
@@ -6253,6 +7690,18 @@
     },
     {
      "eventID": 2118
+    },
+    {
+     "eventID": 2118
+    },
+    {
+     "eventID": 2118
+    },
+    {
+     "eventID": 2118
+    },
+    {
+     "eventID": 2118
     }
    ],
    "externalLink1": null,
@@ -6293,6 +7742,12 @@
    "initiativeOwnerFirstName": "רחלי",
    "initiativeOwnerLastName": "בר",
    "attendees": [
+    {
+     "eventID": 2117
+    },
+    {
+     "eventID": 2117
+    },
     {
      "eventID": 2117
     },
@@ -6565,6 +8020,9 @@
     },
     {
      "eventID": 2113
+    },
+    {
+     "eventID": 2113
     }
    ],
    "externalLink1": " https://open.spotify.com/artist/1agR9TzXeFDwR1hcaf14yV?si=kJmbUMsrSNazV68ynkLGvQ&utm_source=copy-link  קישור חיצוני 2  להוספת תמונות קישור חיצוני 2  להוספת תמונות",
@@ -6610,6 +8068,9 @@
     },
     {
      "eventID": 2112
+    },
+    {
+     "eventID": 2112
     }
    ],
    "externalLink1": "https://youtu.be/Z4C0yzTlr0Y?si=kzjrZO8E0p0tOK6I",
@@ -6650,6 +8111,12 @@
    "initiativeOwnerFirstName": "אובי",
    "initiativeOwnerLastName": "אוחיון",
    "attendees": [
+    {
+     "eventID": 2111
+    },
+    {
+     "eventID": 2111
+    },
     {
      "eventID": 2111
     },
@@ -6733,6 +8200,9 @@
     },
     {
      "eventID": 2110
+    },
+    {
+     "eventID": 2110
     }
    ],
    "externalLink1": "https://open.spotify.com/artist/2xMLadnXhwHB83ralfQF5b?si=bmc4dmUPR76wfCPoU24mnQ",
@@ -6773,6 +8243,12 @@
    "initiativeOwnerFirstName": "קרן",
    "initiativeOwnerLastName": "סימן טוב",
    "attendees": [
+    {
+     "eventID": 2109
+    },
+    {
+     "eventID": 2109
+    },
     {
      "eventID": 2109
     },
@@ -6847,6 +8323,30 @@
     },
     {
      "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
+    },
+    {
+     "eventID": 2108
     }
    ],
    "externalLink1": "https://www.facebook.com/share/1DUxQQZuya/",
@@ -6887,6 +8387,9 @@
    "initiativeOwnerFirstName": "ארז",
    "initiativeOwnerLastName": "בן קיקי",
    "attendees": [
+    {
+     "eventID": 2107
+    },
     {
      "eventID": 2107
     },
@@ -7042,6 +8545,9 @@
     },
     {
      "eventID": 2104
+    },
+    {
+     "eventID": 2104
     }
    ],
    "externalLink1": null,
@@ -7087,6 +8593,18 @@
     },
     {
      "eventID": 2103
+    },
+    {
+     "eventID": 2103
+    },
+    {
+     "eventID": 2103
+    },
+    {
+     "eventID": 2103
+    },
+    {
+     "eventID": 2103
     }
    ],
    "externalLink1": "https://www.youtube.com/@wardarling6734",
@@ -7127,6 +8645,21 @@
    "initiativeOwnerFirstName": "ורד",
    "initiativeOwnerLastName": "עצמון",
    "attendees": [
+    {
+     "eventID": 2102
+    },
+    {
+     "eventID": 2102
+    },
+    {
+     "eventID": 2102
+    },
+    {
+     "eventID": 2102
+    },
+    {
+     "eventID": 2102
+    },
     {
      "eventID": 2102
     },
@@ -7345,6 +8878,24 @@
     },
     {
      "eventID": 2100
+    },
+    {
+     "eventID": 2100
+    },
+    {
+     "eventID": 2100
+    },
+    {
+     "eventID": 2100
+    },
+    {
+     "eventID": 2100
+    },
+    {
+     "eventID": 2100
+    },
+    {
+     "eventID": 2100
     }
    ],
    "externalLink1": "https://youtu.be/1Vek_mItzTA?si=_gA-mLVDhycFh0ze",
@@ -7385,6 +8936,15 @@
    "initiativeOwnerFirstName": "נעמה",
    "initiativeOwnerLastName": "ברקוביץ",
    "attendees": [
+    {
+     "eventID": 2099
+    },
+    {
+     "eventID": 2099
+    },
+    {
+     "eventID": 2099
+    },
     {
      "eventID": 2099
     },
@@ -7546,7 +9106,7 @@
    "public": "רק למבוגרים",
    "areaSettingValue": 1,
    "date": "2026-10-31",
-   "hour": "16:00",
+   "hour": "18:00",
    "maxNumberOfPeople": 60,
    "limitNumberOfPeople": 75,
    "totalNumberOfPeopleThatCanAttend": 60,
@@ -7565,6 +9125,12 @@
    "initiativeOwnerFirstName": "שני",
    "initiativeOwnerLastName": "גבאי",
    "attendees": [
+    {
+     "eventID": 2097
+    },
+    {
+     "eventID": 2097
+    },
     {
      "eventID": 2097
     },
@@ -7696,6 +9262,9 @@
     },
     {
      "eventID": 2096
+    },
+    {
+     "eventID": 2096
     }
    ],
    "externalLink1": null,
@@ -7736,6 +9305,15 @@
    "initiativeOwnerFirstName": "רחל",
    "initiativeOwnerLastName": "בנגורה",
    "attendees": [
+    {
+     "eventID": 2095
+    },
+    {
+     "eventID": 2095
+    },
+    {
+     "eventID": 2095
+    },
     {
      "eventID": 2095
     },
@@ -7843,6 +9421,12 @@
     },
     {
      "eventID": 2094
+    },
+    {
+     "eventID": 2094
+    },
+    {
+     "eventID": 2094
     }
    ],
    "externalLink1": "https://www.facebook.com/reel/1751232955504988",
@@ -7888,6 +9472,9 @@
     },
     {
      "eventID": 2093
+    },
+    {
+     "eventID": 2093
     }
    ],
    "externalLink1": "https://open.spotify.com/artist/5LselN3JqqCLeWwm4JJJzb?si=J5fhNfJYQ8aSnE3KSDMQkA",
@@ -7928,6 +9515,15 @@
    "initiativeOwnerFirstName": "מייטל",
    "initiativeOwnerLastName": "קורח מרגוליס",
    "attendees": [
+    {
+     "eventID": 2092
+    },
+    {
+     "eventID": 2092
+    },
+    {
+     "eventID": 2092
+    },
     {
      "eventID": 2092
     },
@@ -8026,6 +9622,18 @@
     },
     {
      "eventID": 2091
+    },
+    {
+     "eventID": 2091
+    },
+    {
+     "eventID": 2091
+    },
+    {
+     "eventID": 2091
+    },
+    {
+     "eventID": 2091
     }
    ],
    "externalLink1": "",
@@ -8066,6 +9674,15 @@
    "initiativeOwnerFirstName": "ינאי",
    "initiativeOwnerLastName": "לב-אור",
    "attendees": [
+    {
+     "eventID": 2089
+    },
+    {
+     "eventID": 2089
+    },
+    {
+     "eventID": 2089
+    },
     {
      "eventID": 2089
     },
@@ -8245,6 +9862,15 @@
     },
     {
      "eventID": 2087
+    },
+    {
+     "eventID": 2087
+    },
+    {
+     "eventID": 2087
+    },
+    {
+     "eventID": 2087
     }
    ],
    "externalLink1": "",
@@ -8383,6 +10009,9 @@
     },
     {
      "eventID": 2084
+    },
+    {
+     "eventID": 2084
     }
    ],
    "externalLink1": "",
@@ -8423,6 +10052,12 @@
    "initiativeOwnerFirstName": " ",
    "initiativeOwnerLastName": "רֹתם",
    "attendees": [
+    {
+     "eventID": 2081
+    },
+    {
+     "eventID": 2081
+    },
     {
      "eventID": 2081
     },
@@ -8529,8 +10164,8 @@
      "eventID": 2078
     }
    ],
-   "externalLink1": null,
-   "externalLink2": null,
+   "externalLink1": "",
+   "externalLink2": "",
    "path": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp"
   },
   {
@@ -8567,6 +10202,9 @@
    "initiativeOwnerFirstName": "אפרת",
    "initiativeOwnerLastName": "פיליפובסקי",
    "attendees": [
+    {
+     "eventID": 2077
+    },
     {
      "eventID": 2077
     },
@@ -8648,6 +10286,12 @@
    "initiativeOwnerFirstName": "אפרת",
    "initiativeOwnerLastName": "פיליפובסקי",
    "attendees": [
+    {
+     "eventID": 2076
+    },
+    {
+     "eventID": 2076
+    },
     {
      "eventID": 2076
     },
@@ -8926,6 +10570,12 @@
     },
     {
      "eventID": 2072
+    },
+    {
+     "eventID": 2072
+    },
+    {
+     "eventID": 2072
     }
    ],
    "externalLink1": null,
@@ -8966,6 +10616,21 @@
    "initiativeOwnerFirstName": "אהוד",
    "initiativeOwnerLastName": "עמרם",
    "attendees": [
+    {
+     "eventID": 2071
+    },
+    {
+     "eventID": 2071
+    },
+    {
+     "eventID": 2071
+    },
+    {
+     "eventID": 2071
+    },
+    {
+     "eventID": 2071
+    },
     {
      "eventID": 2071
     },
@@ -9212,6 +10877,9 @@
    "initiativeOwnerFirstName": "שרי",
    "initiativeOwnerLastName": "ציק",
    "attendees": [
+    {
+     "eventID": 2056
+    },
     {
      "eventID": 2056
     },
