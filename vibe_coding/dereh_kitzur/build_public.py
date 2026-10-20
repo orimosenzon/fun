@@ -17,11 +17,10 @@ realised - and where they disagree the designation is still the stronger fact
 for this app: it is what the ground is legally for, it binds whoever owns it,
 and it is what any argument about a blocked path is eventually decided on.
 
-Ownership itself is not available. The cadastre that govmap publishes openly
-carries parcels and blocks and no owner column, רשות מקרקעי ישראל publishes no
-open ownership service, and data.gov.il has no such dataset. A layer claiming to
-show ownership would have to be assembled out of guesswork, and guesswork about
-whether a piece of land is yours is the one thing this layer must not do.
+Ownership is a layer of its own since 20/10/2026, build_ownership.py: the
+cadastre govmap publishes openly has no owner column, as this file said when it
+was written, but govmap's viewer has the land registry's kind of owner for every
+registered parcel, and that file reads it off.
 
 Where it comes from
 -------------------

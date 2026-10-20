@@ -53,6 +53,7 @@ const Layers = (() => {
   const PARCELS_ID = 'parcels';
   const PUBLIC_ID = 'public-land';
   const LANDUSE_ID = 'landuse';
+  const OWNERSHIP_ID = 'ownership';
   const CANOPY_ID = 'canopy';
   const HOUTEN_ID = 'houten';
   const HANADIV_ID = 'hanadiv';
@@ -98,6 +99,21 @@ const Layers = (() => {
     { key: 'cemetery', name: 'בית עלמין', color: '#ffff00', stripe: '#9e9e00' },
     { key: 'other', name: 'אחר', color: '#848484', stripe: '#515151' }
   ];
+
+  /* The ownership layer's key: the land registry's four kinds of owner, as
+   * govmap's "סוג בעלות בחלקות רשומות" gives them, and קק"ל's forests drawn
+   * over them as an outline. Codes and colours must match KINDS in
+   * build_ownership.py. The state and קק"ל are one row because the registry's
+   * published summary makes them one; see the layer's note. */
+  const OWNERSHIP_KEY = [
+    { key: 'm', name: 'המועצה המקומית', color: '#1565c0' },
+    { key: 'i', name: 'מקרקעי ישראל: מדינה, קק"ל, רשות הפיתוח (רמ"י)', color: '#e65100' },
+    { key: 'x', name: 'מעורבת: כמה סוגי בעלים בחלקה אחת', color: '#8e24aa' },
+    { key: 'p', name: 'פרטית', color: '#f2d16b' },
+    { key: 'o', name: 'אחרת', color: '#00897b' },
+    { key: 'u', name: 'לא ידוע', color: '#9e9e9e' }
+  ];
+  const OWNERSHIP_FOREST = '#1b5e20';
 
   /* The circular route around the moshava, imported from off-road.io. Unlike
    * the rest of that file it is not a plan on paper but a marked route people
@@ -978,6 +994,42 @@ const Layers = (() => {
       on: isOn(LANDUSE_ID, false)
     });
 
+    // Who owns the ground (Ori, 20/10/2026): every registered parcel coloured
+    // by the land registry's kind of owner, off govmap's ownership layer, and
+    // קק"ל's forests outlined over them - see build_ownership.py. A grid like
+    // the parcels, whose outlines it shares; a tap makes the parcel under the
+    // finger an item (Ownership in app.js).
+    add({
+      id: OWNERSHIP_ID,
+      kind: 'places',
+      category: 'other',
+      name: 'בעלות קרקע',
+      short: 'בעלות',
+      unit: 'חלקות',
+      color: '#263238',                    // the outline of the parcel tapped
+      dots: false,
+      labels: false,
+      groups: [],
+      ownershipKey: OWNERSHIP_KEY,
+      waypoints: [],                       // only the parcel last tapped
+      grid: 'data/ownership.json',
+      gridStyle: 'ownership',
+      note: 'מי הבעלים הרשום של כל חלקה במושבה, לפי פנקסי המקרקעין (הטאבו): '
+        + 'כחול לקרקע של המועצה, כתום למקרקעי ישראל, צהוב חיוור לפרטית, סגול '
+        + 'לחלקה שיש בה כמה סוגי בעלים. "מקרקעי ישראל" הם שלושה בעלים שרמ"י '
+        + 'מנהלת יחד: המדינה, קק"ל ורשות הפיתוח. הסיכום שהמדינה מפרסמת לא '
+        + 'מפריד ביניהם, ולכן גם המפה לא. את הבעלים המדויק נותן רק נסח טאבו. '
+        + 'בקו ירוק מקווקו: יערות שקק"ל מנהלת, שזה ניהול ולא בהכרח בעלות. '
+        + 'דרכים ושבילים שעוד לא נרשמו כחלקה נשארים בלי צבע. לחיצה על חלקה '
+        + 'אומרת מי הבעלים, מה השטח הרשום ואיך מזמינים נסח.',
+      credit: 'הרשות לרישום והסדר זכויות במקרקעין · govmap · קק"ל',
+      sourceName: 'פנקסי המקרקעין',
+      sourceLine: 'סוג הבעלות בחלקות הרשומות, מהשכבה של govmap; יערות קק"ל מהשירות הפתוח של קק"ל',
+      linkTitle: 'הזמנת נסח טאבו',
+      pinnable: false,
+      on: isOn(OWNERSHIP_ID, false)
+    });
+
     // Which ground is public, which is the question every shortcut eventually
     // runs into: a path across a שצ"פ is a path across land set aside for it,
     // and the same line across somebody's plot lasts as long as they put up
@@ -1137,6 +1189,7 @@ const Layers = (() => {
   // trees stand on the ground too - and below the block lines, which are
   // drawn on top of everything that has an area.
   const order = (l) => (l.id === LANDUSE_ID ? 0.05
+    : l.id === OWNERSHIP_ID ? 0.07
     : l.id === PUBLIC_ID ? 0.1
     : l.id === CANOPY_ID ? 0.15
     : l.id === BLOCKS_ID ? 0.25
@@ -1878,6 +1931,7 @@ const Layers = (() => {
       .flatMap(drawnIds).find((gl) => map.getLayer(gl)) || underLabels();
     if (layer.gridStyle === 'landuse') { addLandUseGrid(layer, src, above); return; }
     if (layer.gridStyle === 'marked') { addMarkedGrid(layer, src, above); return; }
+    if (layer.gridStyle === 'ownership') { addOwnershipGrid(layer, src, above); return; }
 
     map.addLayer({
       id: gridFillId(layer.id),
@@ -2074,6 +2128,76 @@ const Layers = (() => {
         'line-color': dark ? '#90caf9' : '#1f4fff',
         'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.3, 16, 0.7, 19, 1.3],
         'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.25, 16.5, 0.7]
+      }
+    }, above);
+  }
+
+  /** Ownership: each parcel washed in its owner's colour, its outline in the
+   *  same colour darkened once there is room, and קק"ל's forests as a dashed
+   *  green line with their names along it. The fill answers taps for the
+   *  parcels only; a forest is drawn over them and is not itself a target,
+   *  since what is under the finger is still somebody's parcel. */
+  function addOwnershipGrid(layer, src, above) {
+    const dark = theme === 'dark';
+    const parcel = ['has', 'o'];
+    const forest = ['==', ['get', 'k'], 'f'];
+    const colour = ['match', ['get', 'o'],
+      ...OWNERSHIP_KEY.flatMap((k) => [k.key, k.color]), '#9e9e9e'];
+    map.addLayer({
+      id: gridFillId(layer.id),
+      type: 'fill',
+      source: src,
+      filter: parcel,
+      paint: {
+        'fill-color': colour,
+        // Private ground is most of the moshava and the least of the question,
+        // so it is the palest: the eye goes to the blue and the orange.
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'],
+          12, ['case', ['==', ['get', 'o'], 'p'], dark ? 0.3 : 0.35, dark ? 0.6 : 0.65],
+          18, ['case', ['==', ['get', 'o'], 'p'], dark ? 0.15 : 0.2, dark ? 0.35 : 0.4]]
+      }
+    }, above);
+    map.addLayer({
+      id: gridLineId(layer.id),
+      type: 'line',
+      source: src,
+      filter: parcel,
+      minzoom: 14,
+      paint: {
+        'line-color': colour,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.3, 16, 0.8, 19, 1.5],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.4, 16.5, 0.9]
+      }
+    }, above);
+    map.addLayer({
+      id: gridDashId(layer.id),
+      type: 'line',
+      source: src,
+      filter: forest,
+      layout: { 'line-join': 'round' },
+      paint: {
+        'line-color': dark ? '#a5d6a7' : OWNERSHIP_FOREST,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.4, 16, 2.6],
+        'line-dasharray': [3, 2]
+      }
+    }, above);
+    map.addLayer({
+      id: gridNumId(layer.id),
+      type: 'symbol',
+      source: src,
+      filter: forest,
+      minzoom: 13,
+      layout: {
+        'symbol-placement': 'line',
+        'text-field': ['concat', 'יער קק"ל ', ['get', 'n']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 12,
+        'symbol-spacing': 400
+      },
+      paint: {
+        'text-color': dark ? '#c8e6c9' : OWNERSHIP_FOREST,
+        'text-halo-color': dark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
+        'text-halo-width': 1.4
       }
     }, above);
   }
@@ -2520,10 +2644,17 @@ const Layers = (() => {
    *  one question the key cannot settle for a single plot. */
   let tip = null;
   function landUseTip(point) {
-    const fill = gridFillId(LANDUSE_ID);
-    const layer = byId(LANDUSE_ID);
-    const live = point && layer && layer.on && map.getLayer(fill) && !map.isMoving();
-    const f = live && map.queryRenderedFeatures(point, { layers: [fill] })[0];
+    // The land use if it is on, else the owner: the same label answers "what
+    // is this colour" for either layer.
+    const live = (id) => {
+      const layer = byId(id);
+      return point && layer && layer.on && map.getLayer(gridFillId(id)) && !map.isMoving();
+    };
+    const use = live(LANDUSE_ID)
+      && map.queryRenderedFeatures(point, { layers: [gridFillId(LANDUSE_ID)] })[0];
+    const own = !use && live(OWNERSHIP_ID)
+      && map.queryRenderedFeatures(point, { layers: [gridFillId(OWNERSHIP_ID)] })[0];
+    const f = use || own;
     if (!f) { if (tip) tip.hidden = true; return; }
     if (!tip) {
       tip = document.createElement('div');
@@ -2531,9 +2662,15 @@ const Layers = (() => {
       map.getContainer().appendChild(tip);
     }
     const p = f.properties;
-    const also = p.m && p.m !== p.u ? ` (${p.m})` : '';
-    tip.innerHTML = `<b>${escapeHtml(p.u)}</b>${escapeHtml(also)}`
-      + `<span>תכנית ${escapeHtml(p.t)}${p.l ? ` · מגרש ${escapeHtml(p.l)}` : ''}</span>`;
+    if (own) {
+      const kind = OWNERSHIP_KEY.find((k) => k.key === p.o);
+      tip.innerHTML = `<b>בעלות: ${escapeHtml(kind ? kind.name : 'לא ידועה')}</b>`
+        + `<span>גוש ${escapeHtml(p.g)} חלקה ${escapeHtml(p.p)}</span>`;
+    } else {
+      const also = p.m && p.m !== p.u ? ` (${p.m})` : '';
+      tip.innerHTML = `<b>${escapeHtml(p.u)}</b>${escapeHtml(also)}`
+        + `<span>תכנית ${escapeHtml(p.t)}${p.l ? ` · מגרש ${escapeHtml(p.l)}` : ''}</span>`;
+    }
     tip.style.left = `${point[0]}px`;
     tip.style.top = `${point[1]}px`;
     tip.hidden = false;
@@ -2589,8 +2726,16 @@ const Layers = (() => {
       }
       const parcel = under.find((f) => f.layer.id === gridFillId(PARCELS_ID));
       const use = under.find((f) => f.layer.id === gridFillId(LANDUSE_ID));
+      // Ownership is per parcel, so with the parcels on it is one more line
+      // in the parcel's card; on its own it is the parcel, by owner.
+      const own = under.find((f) => f.layer.id === gridFillId(OWNERSHIP_ID));
       if (parcel && typeof Parcels !== 'undefined') {
-        Parcels.pick(parcel.properties, use ? use.properties : null);
+        Parcels.pick(parcel.properties, use ? use.properties : null,
+          own ? own.properties : null);
+        return;
+      }
+      if (own && typeof Ownership !== 'undefined') {
+        Ownership.pick(own.properties, use ? use.properties : null);
         return;
       }
       if (use && typeof LandUse !== 'undefined') {
@@ -2836,6 +2981,10 @@ const Layers = (() => {
     if (layer.markedKey) {
       return layer.markedKey.map((g) => ({ name: g.name, color: g.color, line: true, dash: g.dash }));
     }
+    if (layer.ownershipKey) {
+      return layer.ownershipKey.map((k) => ({ name: k.name, color: k.color, area: true }))
+        .concat([{ name: 'יער בניהול קק"ל', color: OWNERSHIP_FOREST, line: true, dash: true }]);
+    }
     if (layer.landuseGroups) {
       if (luInView && luInView.length) return luInView;
       return layer.landuseGroups.map((g) => ({
@@ -2945,6 +3094,7 @@ const Layers = (() => {
     // "1 חלקות" about a layer of nine thousand. The file is not read here.
     if (layer.gridStyle === 'landuse') return 'כל המושבה, לפי התכניות התקפות';
     if (layer.gridStyle === 'marked') return 'כל הארץ, מתעדכן כל לילה';
+    if (layer.gridStyle === 'ownership') return 'כל החלקות הרשומות, לפי הטאבו';
     if (layer.grid) return `כל ה${layer.unit} במושבה`;
     if (layer.kind === 'places') {
       const n = layer.waypoints.length;
@@ -3237,7 +3387,7 @@ const Layers = (() => {
     legendIsOpen, setLegendOpen,
     openSheet, closeSheet, render, clearAll, setOnly, onIds,
     TRAILS_ID, PLACES_ID, PENDING_ID, ART_ID, SHIMUR_ID, MAKOM_ID, PLANS_ID,
-    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, CANOPY_ID, HANADIV_ID, TREES_ID, MARKED_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
+    BLOCKS_ID, PARCELS_ID, PUBLIC_ID, LANDUSE_ID, OWNERSHIP_ID, CANOPY_ID, HANADIV_ID, TREES_ID, MARKED_ID, TRIPS_ID, TRIP_GAP_M, DIFFICULTY,
     SOVEV_ID,
     resolveTrip, toTrip, pathLength, metres, isLoop,
     trailHitLayers, turnOn, tripsUsing, setObjections, objectionsNow,

@@ -2766,7 +2766,7 @@ const Parcels = (() => {
     return n ? [x / n, y / n] : null;
   }
 
-  function item(g, p, area, rings, use) {
+  function item(g, p, area, rings, use, own) {
     const mid = centre(rings);
     // A red parcel: the plan that is open on it comes first, since it is the
     // one thing here a resident can still do something about.
@@ -2798,6 +2798,7 @@ const Parcels = (() => {
         + `חלקה ${p} בגוש ${g}`
         + (area ? `, ${Math.round(area).toLocaleString('he-IL')} מ"ר רשומים` : '') + '. '
         + (use ? LandUse.sentence(use) + ' ' : '')
+        + (own ? Ownership.sentence(own) + ' ' : '')
         + 'גוש וחלקה הם השפה שבה כתובות התכניות: תכנית שנקראת '
         + '"תוספת זכויות בגוש 10102 חלקה 109" מדברת על חלקה אחת כזאת. '
         + 'כדי לראות מה חל כאן, השתמש ב"מה מתוכנן כאן?". '
@@ -2806,7 +2807,7 @@ const Parcels = (() => {
   }
 
   /** A tap landed in a parcel of the grid: make it the layer's item, select it. */
-  async function pick(props, use) {
+  async function pick(props, use, own) {
     const layer = Layers.byId(Layers.PARCELS_ID);
     if (!layer || props.g == null || props.p == null) return;
     const g = Number(props.g), p = Number(props.p);
@@ -2820,13 +2821,120 @@ const Parcels = (() => {
       console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ החלקות', err);
     }
     if (!rings || !rings.length) return;
-    const it = item(g, p, Number(props.a) || 0, rings, use);
+    const it = item(g, p, Number(props.a) || 0, rings, use, own);
     layer.waypoints = [it];
     Layers.refresh(Layers.PARCELS_ID);
     select(it.id, false);
   }
 
   return { pick };
+})();
+
+/* ---------- ownership ----------
+ *
+ * The parcel of data/ownership.json under a tap (build_ownership.py), as an
+ * item of the ownership layer, the way Parcels does it. The file is the
+ * parcels with the land registry's kind of owner added (`o`: m the council,
+ * i מקרקעי ישראל, p private, x mixed) and the registered area (`a`). */
+const Ownership = (() => {
+  'use strict';
+
+  const EXTRACT = 'https://www.gov.il/he/service/land_registration_extract';
+  let all = null;                  // promise of Map(feature id -> feature)
+
+  function load(url) {
+    if (!all) {
+      all = fetch(url)
+        .then((res) => { if (!res.ok) throw new Error('ownership.json ' + res.status); return res.json(); })
+        .then((doc) => new Map((doc.features || []).map((f) => [f.id, f])))
+        .catch((err) => { all = null; throw err; });
+    }
+    return all;
+  }
+
+  const KINDS = {
+    m: { name: 'המועצה המקומית', color: '#1565c0',
+      means: 'הקרקע רשומה על שם המועצה המקומית פרדס חנה-כרכור. בדרך כלל אלה '
+        + 'שטחים שהועברו למועצה כשתכנית מומשה: גינות, שבילים, מגרשים לבתי ספר '
+        + 'ולגני ילדים, ודרכים שנרשמו כחלקה.' },
+    i: { name: 'מקרקעי ישראל', color: '#e65100',
+      means: 'הקרקע רשומה על שם אחד משלושת הבעלים שרמ"י מנהלת: המדינה, קק"ל '
+        + 'או רשות הפיתוח. הסיכום שהמדינה מפרסמת לא אומר מי מהשלושה, ונסח '
+        + 'טאבו כן. גם בית פרטי יכול לעמוד על קרקע כזאת, בחכירה מרמ"י.' },
+    x: { name: 'מעורבת', color: '#8e24aa',
+      means: 'בחלקה רשומים כמה בעלים מסוגים שונים, למשל אנשים פרטיים לצד '
+        + 'המועצה או המדינה. החלוקה ביניהם מופיעה רק בנסח.' },
+    p: { name: 'פרטית', color: '#b8860b',
+      means: 'הקרקע רשומה על שם בעלים פרטיים: אנשים, חברות או עמותות.' },
+    o: { name: 'אחרת', color: '#00897b',
+      means: 'הבעלים אינם פרטיים, המועצה או מקרקעי ישראל. הסיכום לא אומר מי '
+        + 'הם, ונסח טאבו כן.' },
+    u: { name: 'לא ידוע', color: '#616161',
+      means: 'הסיכום של המדינה לא מציין לחלקה הזאת סוג בעלות. את הבעלים '
+        + 'נותן רק נסח טאבו.' }
+  };
+
+  /** "The registered owner here is X." For the parcel card as well. */
+  function sentence(props) {
+    const kind = KINDS[props.o];
+    return kind ? `הבעלות בחלקה לפי הטאבו: ${kind.name}.` : '';
+  }
+
+  function item(id, props, rings, use) {
+    let x = 0, y = 0, n = 0;
+    (rings[0] || []).forEach((pt) => { x += pt[0]; y += pt[1]; n += 1; });
+    const mid = n ? [x / n, y / n] : [0, 0];
+    const kind = KINDS[props.o] || { name: 'לא ידועה', color: '#616161', means: '' };
+    const area = Number(props.a) || 0;
+    return {
+      id: `ownership-${id}`,
+      name: `${kind.name} · גוש ${props.g} חלקה ${props.p}`,
+      group: '',
+      cats: ['בעלות', kind.name, String(props.g), String(props.p)],
+      num: String(props.p),
+      gush: String(props.g),
+      photos: [],
+      url: EXTRACT,
+      geo: { lat: mid[1], lng: mid[0], source: 'ownership' },
+      lat: mid[1],
+      lng: mid[0],
+      place: true,
+      color: kind.color,
+      shape: rings,
+      note: `חלקה ${props.p} בגוש ${props.g}`
+        + (area ? `, ${area.toLocaleString('he-IL')} מ"ר רשומים` : '') + '. '
+        + sentence(props) + ' ' + kind.means + ' '
+        + (use ? LandUse.sentence(use) + ' ' : '')
+        + 'בעלות אינה היתר להיכנס, ואינה הייעוד: קרקע פרטית יכולה להיות '
+        + 'מיועדת לשצ"פ, וקרקע של המועצה יכולה להיות מגרש לבנייה. הנתון מסיכום '
+        + 'הבעלויות שהמרכז למיפוי ישראל מפרסם ב-govmap, וזה לא מסמך רשמי. '
+        + `את הבעלים בשמם נותן נסח טאבו, שמזמינים באתר משרד המשפטים לפי גוש ${props.g} `
+        + `וחלקה ${props.p}.`
+    };
+  }
+
+  /** A tap landed in a parcel of the grid: make it the layer's item, select it. */
+  async function pick(props, use) {
+    const layer = Layers.byId(Layers.OWNERSHIP_ID);
+    if (!layer || props.g == null || props.p == null) return;
+    const id = Number(props.g) * 10000 + Number(props.p);
+    let rings = null;
+    try {
+      const f = (await load(layer.grid)).get(id);
+      rings = f && f.geometry && (f.geometry.type === 'Polygon'
+        ? f.geometry.coordinates : (f.geometry.coordinates[0] || null));
+      props = (f && f.properties) || props;
+    } catch (err) {
+      console.info('דרך קיצור: לא הצלחתי לקרוא את קובץ הבעלויות', err);
+    }
+    if (!rings || !rings.length) return;
+    const it = item(id, props, rings, use);
+    layer.waypoints = [it];
+    Layers.refresh(Layers.OWNERSHIP_ID);
+    select(it.id, false);
+  }
+
+  return { pick, sentence };
 })();
 
 /* ---------- land uses ----------
