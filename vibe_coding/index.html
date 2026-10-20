@@ -212,6 +212,7 @@
             --sw: min(1000px, calc(100vw - 40px), calc((100vh - 150px) * 1.6 * 0.7));
             width: var(--sw);
             margin: 0 calc((100% - var(--sw)) / 2) 56px;
+            position: relative;
             outline: none;
         }
         .stage:focus-visible .stage-face { outline: 3px solid #818cf8; outline-offset: 3px; }
@@ -301,20 +302,101 @@
             gap: 8px;
             margin-top: 18px;
         }
-        .stage-arrow, .stage-play {
-            flex-shrink: 0;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            border: 1px solid #1a2840;
-            background: #0e1a2b;
-            color: #cbd5e1;
-            font: inherit;
-            font-size: 1.1rem;
+        /* The arrows sit beside the picture, level with its middle: big, wide
+           and short, so no one misses that there is more to see. They stand
+           outside the face when the screen has room, and over its edges when
+           it does not. Prev is on the right: on a right-to-left page that is
+           back. */
+        .stage-arrow {
+            --aw: 92px;
+            --gap: max(calc(-1 * (var(--aw) + 28px)), calc((var(--sw) - 100vw) / 2 + 8px));
+            position: absolute;
+            z-index: 3;
+            top: calc(var(--sw) * 0.3125);
+            transform: translateY(-50%);
+            width: var(--aw);
+            height: 64px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 18px;
+            border: 1.5px solid rgba(129,140,248,0.55);
+            background: rgba(20,30,52,0.88);
+            color: #e0e7ff;
             cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 22px rgba(129,140,248,0.25);
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            animation: stage-arrow-call 1.6s ease-in-out 1s 2;
         }
-        .stage-play { font-size: 0.7rem; letter-spacing: -1px; }
-        .stage-arrow:hover, .stage-play:hover { border-color: #818cf8; color: #fff; }
+        .stage-prev { right: var(--gap); }
+        .stage-next { left: var(--gap); }
+        .stage-arrow:hover {
+            background: #4f46e5;
+            border-color: #a5b4fc;
+            color: #fff;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.5), 0 0 34px rgba(129,140,248,0.6);
+            transform: translateY(-50%) scale(1.06);
+        }
+        .stage-arrow:active { transform: translateY(-50%) scale(0.96); }
+        .stage-arrow:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+        /* two soft calls for attention after the page loads, then still */
+        @keyframes stage-arrow-call {
+            50% { box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 40px rgba(129,140,248,0.75); border-color: #a5b4fc; }
+        }
+        /* Autoplay row: a big play/pause button, the speed slider, the count */
+        .stage-auto {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px 22px;
+            margin-top: 16px;
+        }
+        .stage-play {
+            display: inline-flex; align-items: center; gap: 10px;
+            height: 52px;
+            padding: 0 26px 0 22px;
+            border-radius: 999px;
+            border: 1.5px solid #a5b4fc;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff;
+            font: inherit;
+            font-size: 1.02rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 22px rgba(79,70,229,0.45);
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+        }
+        .stage-play:hover { transform: scale(1.04); box-shadow: 0 8px 30px rgba(124,58,237,0.6); }
+        .stage-play:active { transform: scale(0.97); }
+        .stage-play:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+        .stage-play-icon { font-size: 0.85rem; letter-spacing: -1px; width: 1.1em; text-align: center; }
+        /* paused: green, an invitation to start again */
+        .stage-play[aria-pressed="false"] {
+            border-color: #6ee7b7;
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 6px 22px rgba(16,185,129,0.4);
+        }
+        .stage-speed {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
+            cursor: pointer;
+        }
+        .stage-speed-end { font-size: 1.15rem; }
+        .stage-speed input {
+            width: 170px;
+            accent-color: #818cf8;
+            cursor: pointer;
+        }
+        .stage-speed-out {
+            min-width: 7.5em;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+        .stage-speed.off { opacity: 0.55; }
         .stage-pills {
             flex: 1;
             min-width: 0;
@@ -349,15 +431,14 @@
             box-shadow: 0 1px 6px rgba(0,0,0,0.4);
         }
         .stage-count {
-            margin-top: 8px;
-            text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             color: #64748b;
         }
         .stage-count b { color: #cbd5e1; }
 
         @media (prefers-reduced-motion: reduce) {
             .stage-inner { transition: none; }
+            .stage-arrow { animation: none; }
         }
         @media (max-width: 520px) {
             .stage { --sw: calc(100vw - 24px); margin-bottom: 40px; }
@@ -367,7 +448,10 @@
             .stage-name { font-size: 0.95rem; }
             .stage-lead { display: none; }
             .stage-open { padding: 7px 13px; font-size: 0.8rem; }
-            .stage-prev, .stage-next { display: none; }
+            .stage-arrow { --aw: 46px; height: 56px; border-radius: 14px; }
+            .stage-arrow svg { width: 26px; height: 26px; }
+            .stage-play { height: 46px; padding: 0 20px 0 16px; }
+            .stage-speed input { width: 110px; }
         }
 
         /* ── Live projects gallery ── */
@@ -694,6 +778,8 @@
         </div>
     </header>
     <section class="stage" id="stage" tabindex="0" aria-roledescription="carousel" aria-label="תצוגה מתחלפת של הפרויקטים שרצים בדפדפן">
+        <button class="stage-arrow stage-prev" type="button" aria-label="הקודם"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="stage-arrow stage-next" type="button" aria-label="הבא"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div class="stage-flip">
             <div class="stage-inner">
                 <a class="stage-face stage-face-0 t-green" href="https://orimosenzon-phk-council.hf.space" target="_blank" rel="noopener" tabindex="-1">
@@ -732,7 +818,6 @@
             </div>
         </div>
         <div class="stage-nav">
-            <button class="stage-arrow stage-prev" type="button" aria-label="הקודם">→</button>
             <div class="stage-pills" role="group" aria-label="בחירת פרויקט">
             <button class="stage-pill" type="button" data-i="0"><span>🏛️</span> רוצים שקיפות</button>
             <button class="stage-pill" type="button" data-i="1"><span>🎲</span> 2048 ולמידת חיזוק</button>
@@ -740,33 +825,35 @@
             <button class="stage-pill" type="button" data-i="3"><span>⚖️</span> שיווי משקל נאש</button>
             <button class="stage-pill" type="button" data-i="4"><span>🌳</span> פרדספדיה</button>
             <button class="stage-pill" type="button" data-i="5"><span>✦</span> One Prompt</button>
-            <button class="stage-pill" type="button" data-i="6"><span>🎬</span> vedit</button>
-            <button class="stage-pill" type="button" data-i="7"><span>🥾</span> דרך קיצור</button>
-            <button class="stage-pill" type="button" data-i="8"><span>🌸</span> Bloom</button>
-            <button class="stage-pill" type="button" data-i="9"><span>🚀</span> Fable</button>
-            <button class="stage-pill" type="button" data-i="10"><span>🏁</span> MJ-5</button>
-            <button class="stage-pill" type="button" data-i="11"><span>🏍️</span> Dirt Bike Racing</button>
-            <button class="stage-pill" type="button" data-i="12"><span>🎯</span> סודוקו עם רמזים חכמים</button>
-            <button class="stage-pill" type="button" data-i="13"><span>🪐</span> Solar System Simulation</button>
-            <button class="stage-pill" type="button" data-i="14"><span>🏎️</span> רודסטר</button>
-            <button class="stage-pill" type="button" data-i="15"><span>🤖</span> אופטימוס 3</button>
-            <button class="stage-pill" type="button" data-i="16"><span>🛰️</span> מסלול</button>
-            <button class="stage-pill" type="button" data-i="17"><span>📐</span> מתמטיקה תיכונית</button>
-            <button class="stage-pill" type="button" data-i="18"><span>🔢</span> מתמטיקה</button>
-            <button class="stage-pill" type="button" data-i="19"><span>🗽</span> Central Park Development Model</button>
-            <button class="stage-pill" type="button" data-i="20"><span>✨</span> Bezier Curve Animation Editor</button>
-            <button class="stage-pill" type="button" data-i="21"><span>🔢</span> Prime Number Spirals</button>
-            <button class="stage-pill" type="button" data-i="22"><span>🌀</span> חוקר קבוצת מנדלברוט</button>
-            <button class="stage-pill" type="button" data-i="23"><span>🔮</span> ζ</button>
-            <button class="stage-pill" type="button" data-i="24"><span>🔋</span> צפיפות אנרגטית של מצברים</button>
-            <button class="stage-pill" type="button" data-i="25"><span>🌹</span> 3D Rose &amp; Heart</button>
-            <button class="stage-pill" type="button" data-i="26"><span>🌌</span> Mind · Heart · Body · Spirit</button>
+            <button class="stage-pill" type="button" data-i="6"><span>🥾</span> דרך קיצור</button>
+            <button class="stage-pill" type="button" data-i="7"><span>🚀</span> Fable</button>
+            <button class="stage-pill" type="button" data-i="8"><span>🏁</span> MJ-5</button>
+            <button class="stage-pill" type="button" data-i="9"><span>🎯</span> סודוקו עם רמזים חכמים</button>
+            <button class="stage-pill" type="button" data-i="10"><span>🪐</span> Solar System Simulation</button>
+            <button class="stage-pill" type="button" data-i="11"><span>🏎️</span> רודסטר</button>
+            <button class="stage-pill" type="button" data-i="12"><span>🤖</span> אופטימוס 3</button>
+            <button class="stage-pill" type="button" data-i="13"><span>🛰️</span> מסלול</button>
+            <button class="stage-pill" type="button" data-i="14"><span>📐</span> מתמטיקה תיכונית</button>
+            <button class="stage-pill" type="button" data-i="15"><span>🔢</span> מתמטיקה</button>
+            <button class="stage-pill" type="button" data-i="16"><span>🗽</span> Central Park Development Model</button>
+            <button class="stage-pill" type="button" data-i="17"><span>✨</span> Bezier Curve Animation Editor</button>
+            <button class="stage-pill" type="button" data-i="18"><span>🔢</span> Prime Number Spirals</button>
+            <button class="stage-pill" type="button" data-i="19"><span>🌀</span> חוקר קבוצת מנדלברוט</button>
+            <button class="stage-pill" type="button" data-i="20"><span>🔮</span> ζ</button>
+            <button class="stage-pill" type="button" data-i="21"><span>🔋</span> צפיפות אנרגטית של מצברים</button>
             </div>
-            <button class="stage-arrow stage-next" type="button" aria-label="הבא">←</button>
-            <button class="stage-play" type="button" aria-label="עצור החלפה אוטומטית" aria-pressed="true">❚❚</button>
         </div>
-        <p class="stage-count" aria-live="polite"><b>1</b> / 27</p>
-        <script type="application/json" id="stage-data">[{"name": "רוצים שקיפות", "sub": "מה אמרו במועצה", "icon": "🏛️", "theme": "t-green", "lead": "חיפוש ושאלות בכל ישיבות מליאת המועצה פרדס חנה-כרכור.", "href": "https://orimosenzon-phk-council.hf.space", "ext": true, "img": "projects_page/shots/big/transparency.webp", "anchor": "transparency"}, {"name": "2048 ולמידת חיזוק", "sub": "", "icon": "🎲", "theme": "t-amber", "lead": "המשחק 2048, וחמישה סוכנים שלמדו לשחק בו לבד.", "href": "2048/game/index.html", "ext": false, "img": "projects_page/shots/big/2048.webp", "anchor": "2048"}, {"name": "Letras", "sub": "מילות שירים", "icon": "🎤", "theme": "t-purple", "lead": "מחפשים שיר — האפליקציה מציגה מילים מסונכרנות עם הסרטון.", "href": "https://fun-production-d221.up.railway.app/", "ext": true, "img": "projects_page/shots/big/letras.webp", "anchor": "letras"}, {"name": "שיווי משקל נאש", "sub": "הדגמה", "icon": "⚖️", "theme": "t-green", "lead": "אסטרטגיות מעורבות.", "href": "nash/index.html", "ext": false, "img": "projects_page/shots/big/nash.webp", "anchor": "nash"}, {"name": "פרדספדיה", "sub": "ויקי קהילתי", "icon": "🌳", "theme": "t-green", "lead": "הוויקי של פרדס חנה-כרכור, ובוט שמתחזק אותו: כותב ערכים חדשים, מעבה קיימים ממקורות, מאתר תמונות ברישיון חופשי, ומרענן לוח אירועי תרבות שמתעדכן לבד.", "href": "https://pardespedia.info", "ext": true, "img": "projects_page/shots/big/pardespedia.webp", "anchor": "pardespedia"}, {"name": "One Prompt", "sub": "תוכנה מפרומפט אחד", "icon": "✦", "theme": "t-purple", "lead": "אוסף תוכנות שכל אחת נכתבה מפרומפט בודד, בלי סבב תיקונים.", "href": "one_prompt/index.html", "ext": false, "img": "projects_page/shots/big/one_prompt.webp", "anchor": "one_prompt"}, {"name": "vedit", "sub": "עורך וידאו בדפדפן", "icon": "🎬", "theme": "t-indigo", "lead": "עריכת וידאו בלי להתקין כלום.", "href": "vedit/index.html", "ext": false, "img": "projects_page/shots/big/vedit.webp", "anchor": "vedit"}, {"name": "דרך קיצור", "sub": "שבילי פרדס חנה-כרכור", "icon": "🥾", "theme": "t-green", "lead": "מדריך לרשת קיצורי הדרך של המושבה, וגם מסד הנתונים של היוזמה.", "href": "dereh_kitzur/", "ext": false, "img": "projects_page/shots/big/dereh_kitzur.webp", "anchor": "dereh_kitzur"}, {"name": "Bloom", "sub": "מצא את הפרחים שלך", "icon": "🌸", "theme": "t-pink", "lead": "\"הפרחים הנכונים, לאדם הנכון, עכשיו\" — פלטפורמת פרחים לחיפוש לפי אירוע ותקציב, פרופיל ספק, והמלצות מותאמות אישית.", "href": "bloom/index.html", "ext": false, "img": "projects_page/shots/big/bloom.webp", "anchor": "bloom"}, {"name": "Fable", "sub": "אופנוע סילון מעופף", "icon": "🚀", "theme": "t-cyan", "lead": "משחק טיסה תלת־ממדי עם פיזיקת גוף קשיח אמיתית: מנוע סילון אחורי, שלושה צינורות עילוי שמטים ומגלגלים את האופנוע, עולם פרוצדורלי של הרים ועמקים, ומסלול 16 טבעות נגד השעון.", "href": "jetbikes/fable/index.html", "ext": false, "img": "projects_page/shots/big/fable.webp", "anchor": "fable"}, {"name": "MJ-5", "sub": "מסלול העמק", "icon": "🏁", "theme": "t-cyan", "lead": "משחק טיסה על המנוע של סרט MJ-5: חמישה מנועי סילון אמיתיים עם השהיית סחרור וכנפוני הסטה, מחשב טיסה שמתרגם את הסטיק לפקודות מנוע, 12 טבעות מעל האגם ודרך קניון, ונחיתה…", "href": "jetbikes/jetbike_game/index.html", "ext": false, "img": "projects_page/shots/big/jetbike_game.webp", "anchor": "jetbike_game"}, {"name": "Dirt Bike Racing", "sub": "", "icon": "🏍️", "theme": "t-red", "lead": "משחק מרוצי אופנועים עם פיזיקת 2D.", "href": "mmx.html", "ext": false, "img": "projects_page/shots/big/mmx.webp", "anchor": "mmx"}, {"name": "סודוקו עם רמזים חכמים", "sub": "", "icon": "🎯", "theme": "t-indigo", "lead": "פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.", "href": "soduku.html", "ext": false, "img": "projects_page/shots/big/soduku.webp", "anchor": "soduku"}, {"name": "Solar System Simulation", "sub": "", "icon": "🪐", "theme": "t-orange", "lead": "סימולציה real-time של מערכת השמש עם מסלולים פלנטריים.", "href": "solar.html", "ext": false, "img": "projects_page/shots/big/solar.webp", "anchor": "solar"}, {"name": "רודסטר", "sub": "המכונית שנצמדת לקירות", "icon": "🏎️", "theme": "t-red", "lead": "נוהגים ברודסטר המעופף שטסלה הציגה ב-15 באוקטובר 2026.", "href": "roadster/index.html", "ext": false, "img": "projects_page/shots/big/roadster.webp", "anchor": "roadster"}, {"name": "אופטימוס 3", "sub": "רובוט הומנואידי", "icon": "🤖", "theme": "t-amber", "lead": "מפעילים את הרובוט ההומנואידי של טסלה, עם פיזיקה אמיתית של MuJoCo בדפדפן.", "href": "optimus/index.html", "ext": false, "img": "projects_page/shots/big/optimus.webp", "anchor": "optimus"}, {"name": "מסלול", "sub": "מה צריך כדי להגיע לחלל", "icon": "🛰️", "theme": "t-blue", "lead": "כדור הארץ, רקטות ולוויינים בתלת־ממד, מדויקים פיזיקלית.", "href": "orbit/index.html", "ext": false, "img": "projects_page/shots/big/orbit.webp", "anchor": "orbit"}, {"name": "מתמטיקה תיכונית", "sub": "חפיפת משולשים", "icon": "📐", "theme": "t-amber", "lead": "אפליקציה אינטראקטיבית שנבנתה בשביל עומר, תלמיד שלומד חפיפת משולשים.", "href": "high_school_math/congruence/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math.webp", "anchor": "high_school_math"}, {"name": "מתמטיקה", "sub": "שברים עשרוניים", "icon": "🔢", "theme": "t-amber", "lead": "מסלול לימוד אינטראקטיבי לעידו, מאפס: חותכים שוקולד לעשיריות, צובעים ריבוע מאה, בונים מספרים מקוביות שמתאחדות ומתפרטות, עושים זום על ציר המספרים, משחקים דו-קרב נגד…", "href": "high_school_math/decimals/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math-2.webp", "anchor": "high_school_math-2"}, {"name": "Central Park Development Model", "sub": "", "icon": "🗽", "theme": "t-orange", "lead": "מה יקרה לערך הנדל\"ן של מנהטן אם יבנו מגדלים על סנטרל פארק?", "href": "manhattan_project/index.html", "ext": true, "img": "projects_page/shots/big/manhattan_project.webp", "anchor": "manhattan_project"}, {"name": "Bezier Curve Animation Editor", "sub": "", "icon": "✨", "theme": "t-purple", "lead": "עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes.", "href": "animate/animate.html", "ext": false, "img": "projects_page/shots/big/animate.webp", "anchor": "animate"}, {"name": "Prime Number Spirals", "sub": "", "icon": "🔢", "theme": "t-cyan", "lead": "ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה.", "href": "primes.html", "ext": false, "img": "projects_page/shots/big/primes.webp", "anchor": "primes"}, {"name": "חוקר קבוצת מנדלברוט", "sub": "", "icon": "🌀", "theme": "t-indigo", "lead": "זום אינטראקטיבי לתוך קבוצת מנדלברוט, עם מסך נלווה שמראה את מסלול האיטרציות של כל נקודה שבוחרים — למה היא בורחת לאינסוף או נשארת בפנים.", "href": "mandelbrot/index.html", "ext": false, "img": "projects_page/shots/big/mandelbrot.webp", "anchor": "mandelbrot"}, {"name": "ζ", "sub": "ההמשכה האנליטית של זטא", "icon": "🔮", "theme": "t-purple", "lead": "איך פונקציה שמוגדרת רק מימין לקו אחד מקבלת ערכים בכל המישור המרוכב.", "href": "zeta.html", "ext": false, "img": "projects_page/shots/big/zeta.webp", "anchor": "zeta"}, {"name": "צפיפות אנרגטית של מצברים", "sub": "", "icon": "🔋", "theme": "t-amber", "lead": "כמה אנרגיה נדחסה לקילוגרם סוללה, מעופרת-חומצה של המאה ה-19 ועד ליתיום-יון של היום — וכמה איטית העלייה הזאת באמת.", "href": "battery_density_chart.html", "ext": false, "img": "projects_page/shots/big/battery_density_chart.webp", "anchor": "battery_density_chart"}, {"name": "3D Rose &amp; Heart", "sub": "", "icon": "🌹", "theme": "t-pink", "lead": "ורד ולב תלת-מימדיים עם אפקט חלקיקים ואנימציה חלקה.", "href": "tmp/v.html", "ext": false, "img": "projects_page/shots/big/v.webp", "anchor": "v"}, {"name": "Mind · Heart · Body · Spirit", "sub": "", "icon": "🌌", "theme": "t-teal", "lead": "סצנת 3D אנימציה על תמות של נפש, לב, גוף ורוח — בסביבה קוסמית.", "href": "tmp/karina.html", "ext": false, "img": "projects_page/shots/big/karina.webp", "anchor": "karina"}]</script>
+        <div class="stage-auto">
+            <button class="stage-play" type="button" aria-pressed="true"><span class="stage-play-icon" aria-hidden="true">❚❚</span> <span class="stage-play-text">עצור</span></button>
+            <label class="stage-speed">
+                <span class="stage-speed-end" aria-hidden="true" title="איטי">🐢</span>
+                <input type="range" min="0" max="8" step="1" value="4" aria-label="מהירות ההחלפה">
+                <span class="stage-speed-end" aria-hidden="true" title="מהיר">🐇</span>
+                <output class="stage-speed-out">כל 6.5 שניות</output>
+            </label>
+            <span class="stage-count" aria-live="polite"><b>1</b> / 22</span>
+        </div>
+        <script type="application/json" id="stage-data">[{"name": "רוצים שקיפות", "sub": "מה אמרו במועצה", "icon": "🏛️", "theme": "t-green", "lead": "חיפוש ושאלות בכל ישיבות מליאת המועצה פרדס חנה-כרכור.", "href": "https://orimosenzon-phk-council.hf.space", "ext": true, "img": "projects_page/shots/big/transparency.webp", "anchor": "transparency"}, {"name": "2048 ולמידת חיזוק", "sub": "", "icon": "🎲", "theme": "t-amber", "lead": "המשחק 2048, וחמישה סוכנים שלמדו לשחק בו לבד.", "href": "2048/game/index.html", "ext": false, "img": "projects_page/shots/big/2048.webp", "anchor": "2048"}, {"name": "Letras", "sub": "מילות שירים", "icon": "🎤", "theme": "t-purple", "lead": "מחפשים שיר — האפליקציה מציגה מילים מסונכרנות עם הסרטון.", "href": "https://fun-production-d221.up.railway.app/", "ext": true, "img": "projects_page/shots/big/letras.webp", "anchor": "letras"}, {"name": "שיווי משקל נאש", "sub": "הדגמה", "icon": "⚖️", "theme": "t-green", "lead": "אסטרטגיות מעורבות.", "href": "nash/index.html", "ext": false, "img": "projects_page/shots/big/nash.webp", "anchor": "nash"}, {"name": "פרדספדיה", "sub": "ויקי קהילתי", "icon": "🌳", "theme": "t-green", "lead": "הוויקי של פרדס חנה-כרכור, ובוט שמתחזק אותו: כותב ערכים חדשים, מעבה קיימים ממקורות, מאתר תמונות ברישיון חופשי, ומרענן לוח אירועי תרבות שמתעדכן לבד.", "href": "https://pardespedia.info", "ext": true, "img": "projects_page/shots/big/pardespedia.webp", "anchor": "pardespedia"}, {"name": "One Prompt", "sub": "תוכנה מפרומפט אחד", "icon": "✦", "theme": "t-purple", "lead": "אוסף תוכנות שכל אחת נכתבה מפרומפט בודד, בלי סבב תיקונים.", "href": "one_prompt/index.html", "ext": false, "img": "projects_page/shots/big/one_prompt.webp", "anchor": "one_prompt"}, {"name": "דרך קיצור", "sub": "שבילי פרדס חנה-כרכור", "icon": "🥾", "theme": "t-green", "lead": "מדריך לרשת קיצורי הדרך של המושבה, וגם מסד הנתונים של היוזמה.", "href": "dereh_kitzur/", "ext": false, "img": "projects_page/shots/big/dereh_kitzur.webp", "anchor": "dereh_kitzur"}, {"name": "Fable", "sub": "אופנוע סילון מעופף", "icon": "🚀", "theme": "t-cyan", "lead": "משחק טיסה תלת־ממדי עם פיזיקת גוף קשיח אמיתית: מנוע סילון אחורי, שלושה צינורות עילוי שמטים ומגלגלים את האופנוע, עולם פרוצדורלי של הרים ועמקים, ומסלול 16 טבעות נגד השעון.", "href": "jetbikes/fable/index.html", "ext": false, "img": "projects_page/shots/big/fable.webp", "anchor": "fable"}, {"name": "MJ-5", "sub": "מסלול העמק", "icon": "🏁", "theme": "t-cyan", "lead": "משחק טיסה על המנוע של סרט MJ-5: חמישה מנועי סילון אמיתיים עם השהיית סחרור וכנפוני הסטה, מחשב טיסה שמתרגם את הסטיק לפקודות מנוע, 12 טבעות מעל האגם ודרך קניון, ונחיתה…", "href": "jetbikes/jetbike_game/index.html", "ext": false, "img": "projects_page/shots/big/jetbike_game.webp", "anchor": "jetbike_game"}, {"name": "סודוקו עם רמזים חכמים", "sub": "", "icon": "🎯", "theme": "t-indigo", "lead": "פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.", "href": "soduku.html", "ext": false, "img": "projects_page/shots/big/soduku.webp", "anchor": "soduku"}, {"name": "Solar System Simulation", "sub": "", "icon": "🪐", "theme": "t-orange", "lead": "סימולציה real-time של מערכת השמש עם מסלולים פלנטריים.", "href": "solar.html", "ext": false, "img": "projects_page/shots/big/solar.webp", "anchor": "solar"}, {"name": "רודסטר", "sub": "המכונית שנצמדת לקירות", "icon": "🏎️", "theme": "t-red", "lead": "נוהגים ברודסטר המעופף שטסלה הציגה ב-15 באוקטובר 2026.", "href": "roadster/index.html", "ext": false, "img": "projects_page/shots/big/roadster.webp", "anchor": "roadster"}, {"name": "אופטימוס 3", "sub": "רובוט הומנואידי", "icon": "🤖", "theme": "t-amber", "lead": "מפעילים את הרובוט ההומנואידי של טסלה, עם פיזיקה אמיתית של MuJoCo בדפדפן.", "href": "optimus/index.html", "ext": false, "img": "projects_page/shots/big/optimus.webp", "anchor": "optimus"}, {"name": "מסלול", "sub": "מה צריך כדי להגיע לחלל", "icon": "🛰️", "theme": "t-blue", "lead": "כדור הארץ, רקטות ולוויינים בתלת־ממד, מדויקים פיזיקלית.", "href": "orbit/index.html", "ext": false, "img": "projects_page/shots/big/orbit.webp", "anchor": "orbit"}, {"name": "מתמטיקה תיכונית", "sub": "חפיפת משולשים", "icon": "📐", "theme": "t-amber", "lead": "אפליקציה אינטראקטיבית שנבנתה בשביל עומר, תלמיד שלומד חפיפת משולשים.", "href": "high_school_math/congruence/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math.webp", "anchor": "high_school_math"}, {"name": "מתמטיקה", "sub": "שברים עשרוניים", "icon": "🔢", "theme": "t-amber", "lead": "מסלול לימוד אינטראקטיבי לעידו, מאפס: חותכים שוקולד לעשיריות, צובעים ריבוע מאה, בונים מספרים מקוביות שמתאחדות ומתפרטות, עושים זום על ציר המספרים, משחקים דו-קרב נגד…", "href": "high_school_math/decimals/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math-2.webp", "anchor": "high_school_math-2"}, {"name": "Central Park Development Model", "sub": "", "icon": "🗽", "theme": "t-orange", "lead": "מה יקרה לערך הנדל\"ן של מנהטן אם יבנו מגדלים על סנטרל פארק?", "href": "manhattan_project/index.html", "ext": true, "img": "projects_page/shots/big/manhattan_project.webp", "anchor": "manhattan_project"}, {"name": "Bezier Curve Animation Editor", "sub": "", "icon": "✨", "theme": "t-purple", "lead": "עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes.", "href": "animate/animate.html", "ext": false, "img": "projects_page/shots/big/animate.webp", "anchor": "animate"}, {"name": "Prime Number Spirals", "sub": "", "icon": "🔢", "theme": "t-cyan", "lead": "ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה.", "href": "primes.html", "ext": false, "img": "projects_page/shots/big/primes.webp", "anchor": "primes"}, {"name": "חוקר קבוצת מנדלברוט", "sub": "", "icon": "🌀", "theme": "t-indigo", "lead": "זום אינטראקטיבי לתוך קבוצת מנדלברוט, עם מסך נלווה שמראה את מסלול האיטרציות של כל נקודה שבוחרים — למה היא בורחת לאינסוף או נשארת בפנים.", "href": "mandelbrot/index.html", "ext": false, "img": "projects_page/shots/big/mandelbrot.webp", "anchor": "mandelbrot"}, {"name": "ζ", "sub": "ההמשכה האנליטית של זטא", "icon": "🔮", "theme": "t-purple", "lead": "איך פונקציה שמוגדרת רק מימין לקו אחד מקבלת ערכים בכל המישור המרוכב.", "href": "zeta.html", "ext": false, "img": "projects_page/shots/big/zeta.webp", "anchor": "zeta"}, {"name": "צפיפות אנרגטית של מצברים", "sub": "", "icon": "🔋", "theme": "t-amber", "lead": "כמה אנרגיה נדחסה לקילוגרם סוללה, מעופרת-חומצה של המאה ה-19 ועד ליתיום-יון של היום — וכמה איטית העלייה הזאת באמת.", "href": "battery_density_chart.html", "ext": false, "img": "projects_page/shots/big/battery_density_chart.webp", "anchor": "battery_density_chart"}]</script>
     </section>
 
     <div class="section-header" id="try">
@@ -2890,7 +2977,10 @@
     var count = stage.querySelector('.stage-count b');
     var playBtn = stage.querySelector('.stage-play');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var SPEEDS = [15, 12, 10, 8, 6.5, 5, 4, 3, 2.5];  // seconds per project, slow to fast
     var DWELL = 6500, ROLL = reduce ? 0 : 900;
+    var slider = stage.querySelector('.stage-speed input');
+    var speedOut = stage.querySelector('.stage-speed-out');
     var n = slides.length, idx = 0, front = 0, rot = 0, busy = false;
     var playing = !reduce, hold = false, visible = true, timer = null;
 
@@ -2965,14 +3055,33 @@
 
     function setPlaying(on) {
         playing = on;
-        playBtn.textContent = on ? '❚❚' : '▶';
+        playBtn.querySelector('.stage-play-icon').textContent = on ? '❚❚' : '▶';
+        playBtn.querySelector('.stage-play-text').textContent = on ? 'עצור' : 'הפעל';
+        playBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
         playBtn.setAttribute('aria-label', on ? 'עצור החלפה אוטומטית' : 'הפעל החלפה אוטומטית');
+        slider.parentNode.classList.toggle('off', !on);
         schedule();
     }
 
     stage.querySelector('.stage-next').addEventListener('click', function () { step(1); });
     stage.querySelector('.stage-prev').addEventListener('click', function () { step(-1); });
     playBtn.addEventListener('click', function () { setPlaying(!playing); });
+
+    // speed: remembered per browser; failing storage just means the default
+    function setSpeed(i, save) {
+        i = Math.max(0, Math.min(SPEEDS.length - 1, i | 0));
+        slider.value = i;
+        DWELL = SPEEDS[i] * 1000;
+        speedOut.textContent = 'כל ' + SPEEDS[i] + ' שניות';
+        slider.setAttribute('aria-valuetext', speedOut.textContent);
+        if (save) { try { localStorage.setItem('stage-speed', i); } catch (e) {} }
+    }
+    try { var saved = localStorage.getItem('stage-speed'); } catch (e) {}
+    setSpeed(saved === null || saved === undefined ? 4 : +saved, false);
+    slider.addEventListener('input', function () {
+        setSpeed(+slider.value, true);
+        if (!playing) setPlaying(true); else schedule();
+    });
     pills.forEach(function (p, i) {
         p.addEventListener('click', function () { go(i); schedule(); });
     });
@@ -3001,7 +3110,14 @@
     var nav = stage.querySelector('.stage-nav');
     nav.addEventListener('mouseenter', function () { hold = true; schedule(); });
     nav.addEventListener('mouseleave', function () { hold = false; schedule(); });
-    stage.addEventListener('focusin', function () { hold = true; schedule(); });
+    // keyboard focus holds it too, but not a mouse click (the clicked button
+    // keeps focus) and not the autoplay controls, which would pause it the
+    // moment someone presses play
+    stage.addEventListener('focusin', function (e) {
+        var t = e.target;
+        hold = !t.closest('.stage-auto') && (!t.matches || t.matches(':focus-visible'));
+        schedule();
+    });
     stage.addEventListener('focusout', function (e) {
         if (!stage.contains(e.relatedTarget)) { hold = false; schedule(); }
     });
