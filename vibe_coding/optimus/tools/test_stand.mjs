@@ -1,0 +1,40 @@
+import { mj } from './load.mjs';
+import { World, DT } from '../js/sim/world.js';
+import { WBC } from '../js/ctrl/wbc.js';
+import { rotZYX, clamp } from '../js/ctrl/linalg.js';
+const w = new World(mj, {});
+const m = w.model, d = w.data;
+const wbc = new WBC(w);
+const post = new Float64Array(wbc.joints.length), postW = new Float64Array(wbc.joints.length);
+wbc.joints.forEach((j, k) => { post[k] = d.qpos[j.qadr]; postW[k] = j.group === 'leg' ? 0.5 : 6; });
+mj.mj_forward(m, d);
+const c0 = wbc.com();
+const ls = wbc.sitePos(wbc.ids.l_sole), rs = wbc.sitePos(wbc.ids.r_sole);
+const center = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2];
+console.log('com0', c0.map(x => x.toFixed(3)), 'center', center.map(x => x.toFixed(3)));
+const g = 9.81, zc = c0[2], om = Math.sqrt(g / zc);
+let t = 0, maxErr = 0, ms = 0;
+const push = process.argv[2] ? +process.argv[2] : 0;
+for (let i = 0; i < 2500; i++) {
+  mj.mj_step1(m, d);
+  const t0 = performance.now();
+  const c = wbc.com();
+  const cv = wbc.out.comVel || [0, 0, 0];
+  const xi = [c[0] + cv[0] / om, c[1] + cv[1] / om];
+  const k = 2.5;
+  let p = [xi[0] + k / om * (xi[0] - center[0]), xi[1] + k / om * (xi[1] - center[1])];
+  p[0] = clamp(p[0], center[0] - 0.08, center[0] + 0.1); p[1] = clamp(p[1], center[1] - 0.13, center[1] + 0.13);
+  const comAcc = [om * om * (c[0] - p[0]), om * om * (c[1] - p[1]), 120 * (zc - c[2]) - 22 * cv[2]];
+  const tau = wbc.compute({ stance: { l: true, r: true }, comAcc, pelvisR: rotZYX(0), torsoR: rotZYX(0), post, postW });
+  wbc.apply(tau);
+  ms += performance.now() - t0;
+  // דחיפה: 1 שנייה אחרי ההתחלה, 0.1 ש'
+  d.xfrc_applied.fill(0);
+  if (push && t > 1 && t < 1.1) d.xfrc_applied[6 * wbc.ids.torso + 0] = push;
+  mj.mj_step2(m, d);
+  t += DT;
+  const e = Math.hypot(c[0] - center[0], c[1] - center[1]);
+  if (t > 0.5) maxErr = Math.max(maxErr, e);
+  if (i % 250 === 0) console.log(t.toFixed(2), 'com', c.map(x => x.toFixed(3)).join(' '), 'pz', d.qpos[2].toFixed(3), 'tau knee', tau[3].toFixed(1), 'hip', tau[2].toFixed(1), 'ank', tau[4].toFixed(1));
+}
+console.log('max com err', maxErr.toFixed(4), 'ctrl ms/step', (ms / 2500).toFixed(3), 'final pz', d.qpos[2].toFixed(3));

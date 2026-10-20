@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>אופטימוס 3: סימולטור</title>
+<meta name="description" content="סימולטור פיזיקלי של הרובוט ההומנואידי אופטימוס 3 של טסלה: הליכה, שיווי משקל, ידיים עם 22 דרגות חופש, ומשימות אוטונומיות. פיזיקה של MuJoCo בדפדפן.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "mujoco": "https://cdn.jsdelivr.net/npm/@mujoco/mujoco@3.14.0/mujoco.js"
+} }
+</script>
+</head>
+<body>
+<div id="view"></div>
+
+<!-- ======== HUD ======== -->
+<div id="hud">
+  <div id="topbar">
+    <div class="pill brand">OPTIMUS <b>3</b></div>
+    <div class="pill" id="hud-task">שליטה ידנית</div>
+    <div class="pill dim" id="hud-cam">מצלמה: עוקבת</div>
+    <div class="spacer"></div>
+    <button class="pill btn" id="btn-tasks">🤖 משימות</button>
+    <a class="pill btn" id="btn-academy" href="academy.html">🎓 האקדמיה</a>
+    <button class="pill btn" id="btn-menu" title="תפריט (Esc)">☰</button>
+  </div>
+
+  <div id="task-card" class="hidden">
+    <div class="tc-head"><span id="tc-icon">📦</span><b id="tc-name"></b><button id="tc-stop" title="עצור משימה">⏹</button></div>
+    <div id="tc-status"></div>
+    <div id="tc-desc"></div>
+  </div>
+
+  <div id="panel-left" class="panel">
+    <div class="ptitle">שיווי משקל <a class="help" href="academy.html#balance" target="_blank">?</a></div>
+    <canvas id="balance" width="200" height="200"></canvas>
+    <div class="legend">
+      <span><i style="background:#23c483"></i>שטח תמיכה</span>
+      <span><i style="background:#ff4d3d"></i>ZMP</span>
+      <span><i class="ring"></i>מרכז מסה</span>
+      <span><i style="background:#2f8cff"></i>DCM</span>
+    </div>
+    <div class="kv"><span>מצב</span><b id="b-mode" class="he">עמידה</b></div>
+    <div class="kv"><span>מהירות (מ'/ש')</span><b id="b-speed">0.00</b></div>
+    <div class="kv"><span>גובה מרכז המסה (מ')</span><b id="b-comz">0.94</b></div>
+    <div class="kv"><span>צעדים</span><b id="b-steps">0</b></div>
+  </div>
+
+  <div id="panel-right" class="panel">
+    <div class="ptitle">מפעילים ואנרגיה <a class="help" href="academy.html#actuators" target="_blank">?</a></div>
+    <canvas id="body-heat" width="150" height="230"></canvas>
+    <div class="heat-legend"><span>0%</span><div class="grad"></div><span>100% מהמומנט</span></div>
+    <div id="top-joints"></div>
+    <div class="sep"></div>
+    <div class="kv"><span>הספק (ואט)</span><b id="e-power">100</b></div>
+    <div class="bar"><div id="e-pbar"></div></div>
+    <div class="kv"><span>סוללה (2.3 קוט"ש)</span><b id="e-soc">100%</b></div>
+    <div class="kv"><span>שעות עבודה בקצב הזה</span><b id="e-hours">–</b></div>
+  </div>
+
+  <div id="bottom">
+    <div id="hand-hud" class="hidden"><b>טלאופרציה</b> · <span id="hand-which"></span> · I/K קדימה-אחורה · J/L צדדים · U/O למעלה-למטה · G אחיזה · T צורת אחיזה: <span id="grip-shape">כוח</span></div>
+    <div id="keys">W/S הליכה · A/D פנייה · Q/E צעד הצידה · Shift מהר · <b>1/2/3</b> ידיים · קליק ימני על הרובוט: דחיפה · C מצלמה · X שכבות מידע · Space עצירה · H עזרה</div>
+  </div>
+  <div id="push-tool">
+    <button id="push-arm" title="דחיפה (B)">✋ דחיפה</button>
+    <input id="push-strength" type="range" min="5" max="60" step="1" value="22">
+    <span id="push-val">22 נ"ש</span>
+  </div>
+  <div id="sim-tools">
+    <button id="btn-pause" title="עצירה (Space)">⏸</button>
+    <button id="btn-slow" title="הילוך איטי (M)">🐢</button>
+    <button id="btn-reset" title="איפוס (R)">↺</button>
+  </div>
+  <canvas id="pip" width="320" height="200" class="hidden"></canvas>
+  <div id="joy" class="hidden"><div class="knob"></div></div>
+</div>
+
+<!-- ======== משימות ======== -->
+<div id="tasks-modal" class="modal hidden"><div class="card wide">
+  <h2>משימות אוטונומיות</h2>
+  <p class="note">הרובוט מבצע לבד: מתכנן צעדים, מושיט ידיים, סוגר אצבעות, ומאזן את עצמו תוך כדי. בזמן משימה אפשר לדחוף אותו (קליק ימני) ולראות איך הוא מתאושש.</p>
+  <div id="task-list" class="cards"></div>
+  <div class="row"><button id="tasks-close">סגור</button></div>
+</div></div>
+
+<!-- ======== מסך פתיחה / תפריט ======== -->
+<div id="intro" class="modal">
+  <div class="card wide">
+    <div class="hero">
+      <div>
+        <div class="kicker">סימולטור פיזיקלי · מבוסס על כל מה שידוע עד אוקטובר 2026</div>
+        <h1>אופטימוס <span class="gold">3</span></h1>
+        <p class="lead">הרובוט ההומנואידי של טסלה: 1.73 מטר, כ-57 ק"ג, 28 מפעילים בגוף ו-22 דרגות חופש בכל יד. כאן אפשר להפעיל אותו בשליטה ידנית, לתת לו משימות ולראות אותו מבצע אותן לבד, ולדחוף אותו כדי להבין מה זה שיווי משקל דינמי.</p>
+        <p class="note">הפיזיקה רצה במנוע MuJoCo (של Google DeepMind), 500 צעדים בשנייה. כל מומנט במפרק מחושב מחדש בכל צעד, מתוך משוואות התנועה, ומוגבל לגבולות המנוע. אין כאן אנימציות מוקלטות.</p>
+      </div>
+      <a class="academy-link" href="academy.html">🎓 האקדמיה<br><small>איך עובד רובוט הומנואידי: מפעילים, ידיים, שיווי משקל, הליכה, בקרה, ראייה, אנרגיה והיסטוריה</small></a>
+    </div>
+    <div class="honest"><b>מה אמיתי כאן ומה משוער?</b> טסלה עוד לא חשפה רשמית את אופטימוס 3. העיצוב מבוסס על הדמיות שנמצאו באפליקציה של טסלה (ספטמבר 2026), על הפטנטים של היד ועל המספרים מ-AI Day. כל ערך מסומן במקור שלו באקדמיה, בפרק "מקורות והנחות".</div>
+    <h3>מה עושים?</h3>
+    <div class="cards three">
+      <div class="scard" data-act="manual"><h4>🎮 שליטה ידנית</h4><p>הולכים במקלדת או בבקר, מפעילים את הידיים בטלאופרציה, ודוחפים את הרובוט.</p></div>
+      <div class="scard" data-act="tasks"><h4>🤖 משימות</h4><p>לך לנקודה, העבר ארגז, מיין תאי סוללה, נופף, רקוד, מבחן דחיפות.</p></div>
+      <div class="scard" data-act="academy"><h4>🎓 האקדמיה</h4><p>15 פרקים עם הדמיות: מבורג הגלגלות הפלנטרי ועד ההיסטוריה של ASIMO.</p></div>
+    </div>
+    <div class="row opts">
+      <label><input type="checkbox" id="opt-overlay" checked> שכבות מידע (ZMP, מרכז מסה, צעדים)</label>
+      <label><input type="checkbox" id="opt-pip"> חלון "מה הרובוט רואה"</label>
+      <label>איכות <select id="opt-quality"><option value="high">גבוהה</option><option value="med" selected>בינונית</option><option value="low">נמוכה</option></select></label>
+    </div>
+    <div class="row"><button id="go" class="primary big">התחל ▶</button></div>
+    <details class="controls"><summary>מקשים ובקר</summary>
+      <div class="ctrlgrid">
+        <div><b>W / ↑</b> הליכה קדימה · <b>S / ↓</b> אחורה</div><div><b>A D / ← →</b> פנייה</div>
+        <div><b>Q / E</b> צעד הצידה</div><div><b>Shift</b> הליכה מהירה (0.62 מ'/ש')</div>
+        <div><b>1</b> יד שמאל · <b>2</b> יד ימין · <b>3</b> שתיהן · <b>0</b> שחרור</div><div><b>I K J L U O</b> הזזת היד בטלאופרציה</div>
+        <div><b>G</b> סגירה/פתיחה של האצבעות · <b>T</b> צורת אחיזה</div><div><b>Z</b> כפיפת ברכיים · <b>V</b> הטיית גו</div>
+        <div><b>קליק ימני</b> על הרובוט: דחיפה (<b>B</b>: דחיפה מכיוון המצלמה)</div><div><b>C</b> מצלמה: עוקבת / עיני הרובוט / חופשית</div>
+        <div><b>X</b> שכבות מידע · <b>P</b> חלון מצלמת הרובוט</div><div><b>Space</b> עצירה · <b>M</b> הילוך איטי · <b>R</b> איפוס · <b>Esc</b> תפריט</div>
+        <div class="full">בקר משחק: מקל שמאלי הליכה, מקל ימני פנייה.</div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loading"><div class="spin"></div><div>טוען את מנוע הפיזיקה (MuJoCo, כ-10 מגה)…</div></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

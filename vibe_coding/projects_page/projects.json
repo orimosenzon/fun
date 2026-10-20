@@ -954,6 +954,86 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "רודסטר: המכונית שנצמדת לקירות",
+          "icon": "🏎️",
+          "theme": "t-red",
+          "dir": "roadster",
+          "tags": [
+            "Three.js",
+            "פיזיקת רכב",
+            "מנועי גז קר",
+            "מערכת יניקה",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#f87171\">נוהגים ברודסטר המעופף שטסלה הציגה ב-15 באוקטובר 2026.</strong><br> פיזיקה מלאה ב-600 צעדים לשנייה: צמיגים, מתלים, מאווררי יניקה של 2g ועשרה נחירי אוויר דחוס עם מכל שמתרוקן ומתקרר. מטפסים על הקיר מההדגמה עד 170°, קופצים בקיקפליפ מעל שורת מכוניות, נוסעים על התקרה של צינור ובלולאה, במבט עוקב או מתוך הרכב. ומרכז מקצועי עם 13 פרקים והדמיות: איך עובדים היניקה, נחיר דה-לבאל, מכלי COPV ובקרת הטיסה, ומה מרגיש הגוף.",
+          "links": [
+            {
+              "href": "roadster/index.html",
+              "style": "live",
+              "label": "▶ סעו",
+              "external": false
+            },
+            {
+              "href": "roadster/academy.html",
+              "style": "secondary",
+              "label": "🎓 המרכז המקצועי",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/roadster",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
+          "title": "אופטימוס 3: רובוט הומנואידי",
+          "icon": "🤖",
+          "theme": "t-amber",
+          "dir": "optimus",
+          "tags": [
+            "MuJoCo",
+            "Three.js",
+            "בקרת כל-הגוף",
+            "הליכה דינמית",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#d6b980\">מפעילים את הרובוט ההומנואידי של טסלה, עם פיזיקה אמיתית של MuJoCo בדפדפן.</strong><br> 70 מפרקים, ידיים עם 22 דרגות חופש, ובקר כל-הגוף שמחשב כל מומנט 500 פעם בשנייה. הולכים במקלדת, מפעילים את הידיים בטלאופרציה, דוחפים ורואים אותו צועד כדי לא ליפול, או נותנים לו משימות: מיון תאי סוללה, העברת ארגז, סקוואט, ריקוד. ואקדמיה עם 15 פרקים והדמיות: מפעילים, גידים, שיווי משקל, למידה, אנרגיה, בטיחות והיסטוריה.",
+          "links": [
+            {
+              "href": "optimus/index.html",
+              "style": "live",
+              "label": "▶ הפעילו",
+              "external": false
+            },
+            {
+              "href": "optimus/academy.html",
+              "style": "secondary",
+              "label": "🎓 האקדמיה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/optimus",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "מסלול: מה צריך כדי להגיע לחלל",
           "icon": "🛰️",
           "theme": "t-blue",
