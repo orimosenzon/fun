@@ -122,6 +122,7 @@ def assign_anchors(data: dict) -> None:
 
 
 SHOTS = HERE / "shots"
+SHOTS_BIG = SHOTS / "big"
 
 
 def try_link(p: dict):
@@ -168,6 +169,84 @@ def render_try(data: dict) -> str:
     <div class="try-grid">
 {chr(10).join(cards)}
     </div>"""
+
+
+def lead_text(desc: str) -> str:
+    """One line for the stage caption: the bold opening sentence most cards
+    start with, or else the first sentence of the description."""
+    m = re.search(r"<strong[^>]*>(.*?)</strong>", desc, re.S)
+    text = m.group(1) if m else desc
+    text = re.sub(r"<[^>]+>", " ", text).replace("&nbsp;", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    if not m:
+        text = re.split(r"(?<=[.!?])\s", text, 1)[0]
+    return text if len(text) <= 170 else text[:168].rsplit(" ", 1)[0] + "…"
+
+
+def render_stage(data: dict) -> str:
+    """The rotating showcase at the top: every live project that has a full-size
+    screenshot and is not marked "stage": false, one at a time on the faces of a turning prism. The slides are
+    data for the script; the first one is also written into the page, so the
+    stage shows something before (or without) JavaScript."""
+    slides = []
+    for _, p, l in try_projects(data):
+        big = SHOTS_BIG / f'{p["_anchor"]}.webp'
+        if p.get("stage") is False or not big.exists():
+            continue
+        name, sub = short_name(re.sub(r"<[^>]+>", "", p["title"]))
+        slides.append({
+            "name": name, "sub": sub, "icon": p.get("icon", ""),
+            "theme": p.get("theme", "t-indigo"), "lead": lead_text(p.get("desc", "")),
+            "href": l["href"], "ext": bool(l.get("external") or l["href"].startswith("http")),
+            "img": str(big.relative_to(ROOT)), "anchor": p["_anchor"],
+        })
+    if not slides:
+        return ""
+    first = slides[0]
+    pills = "\n".join(
+        f'            <button class="stage-pill" type="button" data-i="{i}">'
+        f'<span>{s["icon"]}</span> {s["name"]}</button>'
+        for i, s in enumerate(slides)
+    )
+    target = ' target="_blank" rel="noopener"' if first["ext"] else ""
+    face = lambda k: f"""                <a class="stage-face stage-face-{k} {first['theme'] if k == 0 else ''}" href="{first['href'] if k == 0 else '#'}"{target if k == 0 else ''} tabindex="-1"{'' if k == 0 else ' aria-hidden="true"'}>
+                    <span class="stage-shot">{f'<img src="{first["img"]}" alt="צילום מסך של {first["name"]}" width="1440" height="900">' if k == 0 else '<img alt="" width="1440" height="900">'}</span>
+                    <span class="stage-cap">
+                        <span class="stage-icon">{first['icon'] if k == 0 else ''}</span>
+                        <span class="stage-text">
+                            <span class="stage-name">{first['name'] if k == 0 else ''}{f' <small>{first["sub"]}</small>' if k == 0 and first['sub'] else ''}</span>
+                            <span class="stage-lead">{first['lead'] if k == 0 else ''}</span>
+                        </span>
+                        <span class="stage-open">פתח ▶</span>
+                    </span>
+                </a>"""
+    data_json = json.dumps(slides, ensure_ascii=False).replace("</", "<\\/")
+    return f"""    <section class="stage" id="stage" tabindex="0" aria-roledescription="carousel" aria-label="תצוגה מתחלפת של הפרויקטים שרצים בדפדפן">
+        <button class="stage-arrow stage-prev" type="button" aria-label="הקודם"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="stage-arrow stage-next" type="button" aria-label="הבא"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="stage-flip">
+            <div class="stage-inner">
+{chr(10).join(face(k) for k in range(3))}
+            </div>
+        </div>
+        <div class="stage-nav">
+            <div class="stage-pills" role="group" aria-label="בחירת פרויקט">
+{pills}
+            </div>
+        </div>
+        <div class="stage-auto">
+            <button class="stage-play" type="button" aria-pressed="true"><span class="stage-play-icon" aria-hidden="true">❚❚</span> <span class="stage-play-text">עצור</span></button>
+            <label class="stage-speed">
+                <span class="stage-speed-end" aria-hidden="true" title="איטי">🐢</span>
+                <input type="range" min="0" max="8" step="1" value="4" aria-label="מהירות ההחלפה">
+                <span class="stage-speed-end" aria-hidden="true" title="מהיר">🐇</span>
+                <output class="stage-speed-out">כל 6.5 שניות</output>
+            </label>
+            <span class="stage-count" aria-live="polite"><b>1</b> / {len(slides)}</span>
+        </div>
+        <script type="application/json" id="stage-data">{data_json}</script>
+    </section>
+"""
 
 
 def render_toc(data: dict) -> str:
@@ -339,6 +418,7 @@ def build() -> str:
     )
     html = TEMPLATE.read_text(encoding="utf-8")
     html = html.replace("{{HEADER}}", render_header(data).rstrip("\n"))
+    html = html.replace("{{STAGE}}", render_stage(data))
     html = html.replace("{{TOC}}", render_toc(data))
     html = html.replace("{{TRY}}", render_try(data))
     html = html.replace("{{SECTIONS}}", sections)

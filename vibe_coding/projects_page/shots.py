@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Screenshot every project in the "פרויקטים live" section.
 
-Opens each app in headless Chromium, the way a visitor would, and saves a
-640×400 WebP to projects_page/shots/<anchor>.webp. build.py shows the image if
-it exists and falls back to the project's icon if not.
+Opens each app in headless Chromium, the way a visitor would, and saves two
+WebPs from one 1440×900 capture: a 640×400 thumbnail for the gallery at
+projects_page/shots/<anchor>.webp, and the full size for the stage at the top
+of the page at projects_page/shots/big/<anchor>.webp. build.py shows the images
+if they exist and falls back to the project's icon if not.
 
     python3 projects_page/shots.py              # only projects with no shot yet
     python3 projects_page/shots.py vedit 2048   # redo these
@@ -24,22 +26,30 @@ from playwright.sync_api import sync_playwright
 
 import build
 
-VIEWPORT = {"width": 1280, "height": 800}
+GPU_ARGS = ["--use-angle=vulkan", "--enable-features=Vulkan", "--ignore-gpu-blocklist", "--enable-gpu"]
+VIEWPORT = {"width": 1440, "height": 900}
 OUT_SIZE = (640, 400)
 
-# Per-project tweaks, keyed by anchor, applied in this order: "files" loads a
-# file into an <input type=file>, "fill" types into a field, "click" presses
-# buttons, "keys" plays keystrokes, then "wait" ms for canvases and WebGL to
-# settle. The point is a shot of the app doing its thing, not its start screen.
+# Per-project tweaks, keyed by anchor, applied in this order: "settle" ms for a
+# slow start screen, "files" loads a file into an <input type=file>, "fill"
+# types into a field, "click" presses buttons (a missing one is skipped),
+# "keys" plays keystrokes, then "wait" ms for canvases and WebGL to settle.
+# "gpu" runs the page in Chrome on the real graphics card, for scenes too heavy
+# for the software renderer. The point is a shot of the app doing its thing,
+# not its start screen.
 ARROWS = ["ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]
 TWEAKS = {
     "2048": {"keys": ARROWS * 25, "wait": 1200},
     "letras": {"fill": [("#searchInput", "Despacito")], "keys": ["Enter"], "wait": 6000},
     "fable": {"keys": ["Enter"], "wait": 4000},
     "opus5": {"click": ["#startBtn"], "wait": 4000},
-    "dereh_kitzur": {"click": ["#welcome-sheet .sheet-x"], "wait": 4000},
+    "dereh_kitzur": {"click": ["#welcome-sheet .sheet-x", "text=אחר כך"], "wait": 4000},
     "animate": {"files": [("#loadMovieInput", "animate/a1.clp")], "wait": 1500},
     "manhattan_project": {"click": ["text=Edge Ring"], "wait": 2500},
+    "orbit": {"wait": 15000},
+    "jetbike_game": {"gpu": True, "settle": 12000, "keys": ["Enter"], "wait": 8000},
+    "optimus": {"click": ["#go"], "wait": 6000},
+    "roadster": {"click": ["#go"], "wait": 5000},
 }
 
 
@@ -61,22 +71,29 @@ def capture(page, url, tweak):
         page.wait_for_load_state("networkidle", timeout=8000)
     except Exception:
         pass  # pages that poll or stream never go idle; the fixed wait covers them
+    page.wait_for_timeout(tweak.get("settle", 0))
     for sel, path in tweak.get("files", []):
         page.set_input_files(sel, str(build.ROOT / path))
         page.wait_for_timeout(800)
     for sel, text in tweak.get("fill", []):
         page.fill(sel, text)
     for sel in tweak.get("click", []):
-        page.click(sel, timeout=5000)
+        try:
+            page.click(sel, timeout=5000)
+        except Exception:
+            print(f"    (no {sel} to click, shooting as is)")
         page.wait_for_timeout(400)
     for key in tweak.get("keys", []):
         page.keyboard.press(key)
         page.wait_for_timeout(150)
     page.wait_for_timeout(tweak.get("wait", 2500))
-    png = page.screenshot()
-    img = Image.open(io.BytesIO(png)).convert("RGB").resize(OUT_SIZE, Image.LANCZOS)
+    big = Image.open(io.BytesIO(page.screenshot(timeout=90000))).convert("RGB")
+    return webp(big.resize(OUT_SIZE, Image.LANCZOS), 80), webp(big, 74)
+
+
+def webp(img, quality):
     buf = io.BytesIO()
-    img.save(buf, "WEBP", quality=80, method=6)
+    img.save(buf, "WEBP", quality=quality, method=6)
     return buf.getvalue()
 
 
@@ -94,7 +111,7 @@ def main():
         out = build.SHOTS / f"{a}.webp"
         if args.only and a not in args.only:
             continue
-        if not (args.all or args.only) and out.exists():
+        if not (args.all or args.only) and out.exists() and (build.SHOTS_BIG / out.name).exists():
             continue
         todo.append((a, link["href"], out))
 
@@ -102,23 +119,32 @@ def main():
         print("כל צילומי המסך קיימים. --all כדי לצלם הכל מחדש.")
         return 0
 
-    build.SHOTS.mkdir(exist_ok=True)
+    build.SHOTS_BIG.mkdir(parents=True, exist_ok=True)
     httpd = serve(build.ROOT)
     base = f"http://127.0.0.1:{httpd.server_address[1]}/"
     failed = []
     with sync_playwright() as pw:
         browser = pw.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+        gpu = None
         for a, href, out in todo:
             url = href if href.startswith("http") else base + href
-            page = browser.new_page(viewport=VIEWPORT, locale="he-IL")
+            if TWEAKS.get(a, {}).get("gpu"):
+                gpu = gpu or pw.chromium.launch(channel="chrome", args=GPU_ARGS)
+                page = gpu.new_page(viewport=VIEWPORT, locale="he-IL")
+            else:
+                page = browser.new_page(viewport=VIEWPORT, locale="he-IL")
             try:
-                out.write_bytes(capture(page, url, TWEAKS.get(a, {})))
-                print(f"  ✓ {a}  ({out.stat().st_size // 1024}KB)")
+                small, big = capture(page, url, TWEAKS.get(a, {}))
+                out.write_bytes(small)
+                (build.SHOTS_BIG / out.name).write_bytes(big)
+                print(f"  ✓ {a}  ({len(small) // 1024}KB, big {len(big) // 1024}KB)")
             except Exception as e:
                 failed.append(a)
                 print(f"  ✗ {a}: {str(e).splitlines()[0]}")
             page.close()
         browser.close()
+        if gpu:
+            gpu.close()
     httpd.shutdown()
     return 1 if failed else 0
 

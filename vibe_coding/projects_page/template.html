@@ -13,7 +13,9 @@
             background: #09111f;
             color: #e2e8f0;
             min-height: 100vh;
-            padding: 40px 20px 60px;
+            padding: 28px 20px 60px;
+            /* the stage's prism swings wider than the screen mid-roll */
+            overflow-x: clip;
         }
 
         /* Subtle grid background */
@@ -39,8 +41,8 @@
         /* ── Header ── */
         header {
             text-align: center;
-            margin-bottom: 56px;
-            padding: 48px 24px;
+            margin-bottom: 28px;
+            padding: 12px 24px 0;
             position: relative;
         }
 
@@ -80,7 +82,7 @@
             display: flex;
             justify-content: center;
             gap: 32px;
-            margin-top: 28px;
+            margin-top: 18px;
             flex-wrap: wrap;
         }
 
@@ -198,6 +200,259 @@
             border: 1px solid rgba(74,222,128,0.25);
         }
         .toc-try:hover { background: rgba(74,222,128,0.18); }
+
+        /* ── Stage: the rotating showcase at the top ──
+           One live project at a time on the faces of a three-sided prism that
+           rolls a third of a turn per step, the same mechanism as the haskala
+           landing page. There are many projects and only three faces: the
+           script writes the next project onto the face about to swing in.
+           --sw is the face width: about 70% of what fits in one screen, so
+           the page around it stays in view. */
+        .stage {
+            --sw: min(1000px, calc(100vw - 40px), calc((100vh - 150px) * 1.6 * 0.7));
+            width: var(--sw);
+            margin: 0 calc((100% - var(--sw)) / 2) 56px;
+            position: relative;
+            outline: none;
+        }
+        .stage:focus-visible .stage-face { outline: 3px solid #818cf8; outline-offset: 3px; }
+        .stage-flip {
+            perspective: calc(var(--sw) * 3.2);
+            touch-action: pan-y;
+        }
+        .stage-inner {
+            /* the true inradius of an equilateral prism, so the faces meet at
+               the edges and the roll never shows a gap */
+            --r: calc(var(--sw) * 0.2887);
+            display: grid;
+            transform-style: preserve-3d;
+            transform: translateZ(calc(-1 * var(--r))) rotateY(var(--rot, 0deg));
+            /* symmetric easing: a front-loaded curve leaves a frame where no
+               face looks at the reader */
+            transition: transform 0.9s cubic-bezier(.65, 0, .35, 1);
+        }
+        .stage-face {
+            grid-area: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            transform: rotateY(calc(var(--k) * 120deg)) translateZ(var(--r));
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
+            border-radius: 18px;
+            overflow: hidden;
+            text-decoration: none;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+        }
+        .stage-face-0 { --k: 0; }
+        .stage-face-1 { --k: 1; }
+        .stage-face-2 { --k: 2; }
+        .stage-shot {
+            display: block;
+            aspect-ratio: 16 / 10;
+            background: #0b1424;
+        }
+        .stage-shot img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        .stage-cap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 13px 20px;
+            border-top: 2px solid var(--accent, #818cf8);
+        }
+        .stage-icon { font-size: 1.7rem; flex-shrink: 0; }
+        .stage-text { flex: 1; min-width: 0; line-height: 1.35; }
+        .stage-name { display: block; font-size: 1.12rem; font-weight: 700; color: #f1f5f9; }
+        .stage-name small { font-size: 0.85rem; font-weight: 500; color: var(--accent, #94a3b8); }
+        .stage-lead {
+            display: block;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .stage-open {
+            flex-shrink: 0;
+            padding: 9px 20px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 0 16px rgba(16,185,129,0.3);
+            transition: box-shadow 0.2s;
+        }
+        .stage-face:hover .stage-open { box-shadow: 0 0 24px rgba(16,185,129,0.6); }
+
+        .stage-nav {
+            /* above the face that swings out towards the reader mid-roll */
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        /* The arrows sit beside the picture, level with its middle: big, wide
+           and short, so no one misses that there is more to see. They stand
+           outside the face when the screen has room, and over its edges when
+           it does not. Prev is on the right: on a right-to-left page that is
+           back. */
+        .stage-arrow {
+            --aw: 92px;
+            --gap: max(calc(-1 * (var(--aw) + 28px)), calc((var(--sw) - 100vw) / 2 + 8px));
+            position: absolute;
+            z-index: 3;
+            top: calc(var(--sw) * 0.3125);
+            transform: translateY(-50%);
+            width: var(--aw);
+            height: 64px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 18px;
+            border: 1.5px solid rgba(129,140,248,0.55);
+            background: rgba(20,30,52,0.88);
+            color: #e0e7ff;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 22px rgba(129,140,248,0.25);
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            animation: stage-arrow-call 1.6s ease-in-out 1s 2;
+        }
+        .stage-prev { right: var(--gap); }
+        .stage-next { left: var(--gap); }
+        .stage-arrow:hover {
+            background: #4f46e5;
+            border-color: #a5b4fc;
+            color: #fff;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.5), 0 0 34px rgba(129,140,248,0.6);
+            transform: translateY(-50%) scale(1.06);
+        }
+        .stage-arrow:active { transform: translateY(-50%) scale(0.96); }
+        .stage-arrow:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+        /* two soft calls for attention after the page loads, then still */
+        @keyframes stage-arrow-call {
+            50% { box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 40px rgba(129,140,248,0.75); border-color: #a5b4fc; }
+        }
+        /* Autoplay row: a big play/pause button, the speed slider, the count */
+        .stage-auto {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px 22px;
+            margin-top: 16px;
+        }
+        .stage-play {
+            display: inline-flex; align-items: center; gap: 10px;
+            height: 52px;
+            padding: 0 26px 0 22px;
+            border-radius: 999px;
+            border: 1.5px solid #a5b4fc;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff;
+            font: inherit;
+            font-size: 1.02rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 22px rgba(79,70,229,0.45);
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+        }
+        .stage-play:hover { transform: scale(1.04); box-shadow: 0 8px 30px rgba(124,58,237,0.6); }
+        .stage-play:active { transform: scale(0.97); }
+        .stage-play:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 3px; }
+        .stage-play-icon { font-size: 0.85rem; letter-spacing: -1px; width: 1.1em; text-align: center; }
+        /* paused: green, an invitation to start again */
+        .stage-play[aria-pressed="false"] {
+            border-color: #6ee7b7;
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 6px 22px rgba(16,185,129,0.4);
+        }
+        .stage-speed {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
+            cursor: pointer;
+        }
+        .stage-speed-end { font-size: 1.15rem; }
+        .stage-speed input {
+            width: 170px;
+            accent-color: #818cf8;
+            cursor: pointer;
+        }
+        .stage-speed-out {
+            min-width: 7.5em;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+        .stage-speed.off { opacity: 0.55; }
+        .stage-pills {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            background: #0e1a2b;
+            border: 1px solid #1a2840;
+            border-radius: 999px;
+        }
+        .stage-pills::-webkit-scrollbar { display: none; }
+        .stage-pill {
+            flex-shrink: 0;
+            white-space: nowrap;
+            border: none;
+            border-radius: 999px;
+            padding: 7px 14px;
+            background: transparent;
+            color: #94a3b8;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.18s, color 0.18s;
+        }
+        .stage-pill:hover { color: #f1f5f9; }
+        .stage-pill[aria-current="true"] {
+            background: #1e2b45;
+            color: #fff;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+        }
+        .stage-count {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .stage-count b { color: #cbd5e1; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .stage-inner { transition: none; }
+            .stage-arrow { animation: none; }
+        }
+        @media (max-width: 520px) {
+            .stage { --sw: calc(100vw - 24px); margin-bottom: 40px; }
+            .stage-face { border-radius: 12px; }
+            .stage-cap { padding: 9px 12px; gap: 9px; }
+            .stage-icon { font-size: 1.3rem; }
+            .stage-name { font-size: 0.95rem; }
+            .stage-lead { display: none; }
+            .stage-open { padding: 7px 13px; font-size: 0.8rem; }
+            .stage-arrow { --aw: 46px; height: 56px; border-radius: 14px; }
+            .stage-arrow svg { width: 26px; height: 26px; }
+            .stage-play { height: 46px; padding: 0 20px 0 16px; }
+            .stage-speed input { width: 110px; }
+        }
 
         /* ── Live projects gallery ── */
         .try-grid {
@@ -512,6 +767,7 @@
 <div class="container">
 
 {{HEADER}}
+{{STAGE}}
 {{TRY}}
 
 {{TOC}}
@@ -522,6 +778,177 @@
     </footer>
 
 </div>
+<script>
+// Stage: roll the prism one face per step. Three faces, many projects, so the
+// face about to swing in gets the target project's screenshot first. Next
+// arrives from the left, which is "forward" on a right-to-left page.
+(function () {
+    var stage = document.getElementById('stage');
+    if (!stage) return;
+    var slides = JSON.parse(document.getElementById('stage-data').textContent);
+    var inner = stage.querySelector('.stage-inner');
+    var faces = Array.prototype.slice.call(stage.querySelectorAll('.stage-face'));
+    var pills = Array.prototype.slice.call(stage.querySelectorAll('.stage-pill'));
+    var strip = stage.querySelector('.stage-pills');
+    var count = stage.querySelector('.stage-count b');
+    var playBtn = stage.querySelector('.stage-play');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var SPEEDS = [15, 12, 10, 8, 6.5, 5, 4, 3, 2.5];  // seconds per project, slow to fast
+    var DWELL = 6500, ROLL = reduce ? 0 : 900;
+    var slider = stage.querySelector('.stage-speed input');
+    var speedOut = stage.querySelector('.stage-speed-out');
+    var n = slides.length, idx = 0, front = 0, rot = 0, busy = false;
+    var playing = !reduce, hold = false, visible = true, timer = null;
+
+    function fill(k, s) {
+        var face = faces[k];
+        face.className = 'stage-face stage-face-' + k + ' ' + s.theme;
+        face.href = s.href;
+        if (s.ext) { face.target = '_blank'; face.rel = 'noopener'; }
+        else { face.removeAttribute('target'); face.removeAttribute('rel'); }
+        var img = face.querySelector('img');
+        img.src = s.img;
+        img.alt = 'צילום מסך של ' + s.name;
+        face.querySelector('.stage-icon').textContent = s.icon;
+        var name = face.querySelector('.stage-name');
+        name.textContent = s.name + ' ';
+        if (s.sub) {
+            var small = document.createElement('small');
+            small.textContent = s.sub;
+            name.appendChild(small);
+        }
+        face.querySelector('.stage-lead').textContent = s.lead;
+        return img;
+    }
+
+    function preload(i) { new Image().src = slides[(i + n) % n].img; }
+
+    function mark(scroll) {
+        pills.forEach(function (p, i) {
+            if (i === idx) p.setAttribute('aria-current', 'true');
+            else p.removeAttribute('aria-current');
+        });
+        faces.forEach(function (f, k) {
+            f.tabIndex = k === front ? 0 : -1;
+            if (k === front) f.removeAttribute('aria-hidden');
+            else f.setAttribute('aria-hidden', 'true');
+        });
+        count.textContent = idx + 1;
+        if (!scroll) return;
+        // scroll only the strip, never the page: autoplay runs while the
+        // reader may be further down
+        var pr = pills[idx].getBoundingClientRect(), sr = strip.getBoundingClientRect();
+        strip.scrollBy({ left: pr.left + pr.width / 2 - (sr.left + sr.width / 2), behavior: reduce ? 'auto' : 'smooth' });
+    }
+
+    function go(j, dir) {
+        j = (j + n) % n;
+        if (j === idx || busy) return;
+        if (!dir) dir = j > idx ? 1 : -1;
+        var k = (front - dir + 3) % 3;
+        var img = fill(k, slides[j]);
+        busy = true;
+        // wait (briefly) for the picture, so the face does not roll in empty
+        var ready = img.decode ? img.decode() : Promise.resolve();
+        Promise.race([ready, new Promise(function (r) { setTimeout(r, 600); })])
+            .catch(function () {})
+            .then(function () {
+                rot += dir * 120;
+                inner.style.setProperty('--rot', rot + 'deg');
+                front = k; idx = j;
+                mark(true);
+                preload(j + 1); preload(j - 1);
+                setTimeout(function () { busy = false; }, ROLL);
+            });
+    }
+
+    function schedule() {
+        clearTimeout(timer);
+        if (playing && !hold && visible && !document.hidden)
+            timer = setTimeout(function () { go(idx + 1, 1); schedule(); }, DWELL);
+    }
+    function step(dir) { go(idx + dir, dir); schedule(); }
+
+    function setPlaying(on) {
+        playing = on;
+        playBtn.querySelector('.stage-play-icon').textContent = on ? '❚❚' : '▶';
+        playBtn.querySelector('.stage-play-text').textContent = on ? 'עצור' : 'הפעל';
+        playBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        playBtn.setAttribute('aria-label', on ? 'עצור החלפה אוטומטית' : 'הפעל החלפה אוטומטית');
+        slider.parentNode.classList.toggle('off', !on);
+        schedule();
+    }
+
+    stage.querySelector('.stage-next').addEventListener('click', function () { step(1); });
+    stage.querySelector('.stage-prev').addEventListener('click', function () { step(-1); });
+    playBtn.addEventListener('click', function () { setPlaying(!playing); });
+
+    // speed: remembered per browser; failing storage just means the default
+    function setSpeed(i, save) {
+        i = Math.max(0, Math.min(SPEEDS.length - 1, i | 0));
+        slider.value = i;
+        DWELL = SPEEDS[i] * 1000;
+        speedOut.textContent = 'כל ' + SPEEDS[i] + ' שניות';
+        slider.setAttribute('aria-valuetext', speedOut.textContent);
+        if (save) { try { localStorage.setItem('stage-speed', i); } catch (e) {} }
+    }
+    try { var saved = localStorage.getItem('stage-speed'); } catch (e) {}
+    setSpeed(saved === null || saved === undefined ? 4 : +saved, false);
+    slider.addEventListener('input', function () {
+        setSpeed(+slider.value, true);
+        if (!playing) setPlaying(true); else schedule();
+    });
+    pills.forEach(function (p, i) {
+        p.addEventListener('click', function () { go(i); schedule(); });
+    });
+    stage.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') { step(1); e.preventDefault(); }
+        else if (e.key === 'ArrowRight') { step(-1); e.preventDefault(); }
+    });
+
+    // swipe: dragging the picture to the right brings in the next one from
+    // the left, the way the roll goes
+    var flip = stage.querySelector('.stage-flip'), x0 = null, y0 = 0, dragged = false;
+    flip.addEventListener('pointerdown', function (e) { x0 = e.clientX; y0 = e.clientY; dragged = false; });
+    flip.addEventListener('pointerup', function (e) {
+        if (x0 === null) return;
+        var dx = e.clientX - x0, dy = e.clientY - y0;
+        x0 = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { dragged = true; step(dx > 0 ? 1 : -1); }
+    });
+    flip.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    faces.forEach(function (f) {
+        f.addEventListener('click', function (e) { if (dragged) { e.preventDefault(); dragged = false; } });
+    });
+
+    // hold still while the reader works the controls. Not on hovering the
+    // picture: it fills most of the screen, so the mouse is nearly always on it
+    var nav = stage.querySelector('.stage-nav');
+    nav.addEventListener('mouseenter', function () { hold = true; schedule(); });
+    nav.addEventListener('mouseleave', function () { hold = false; schedule(); });
+    // keyboard focus holds it too, but not a mouse click (the clicked button
+    // keeps focus) and not the autoplay controls, which would pause it the
+    // moment someone presses play
+    stage.addEventListener('focusin', function (e) {
+        var t = e.target;
+        hold = !t.closest('.stage-auto') && (!t.matches || t.matches(':focus-visible'));
+        schedule();
+    });
+    stage.addEventListener('focusout', function (e) {
+        if (!stage.contains(e.relatedTarget)) { hold = false; schedule(); }
+    });
+    document.addEventListener('visibilitychange', schedule);
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+            visible = es[0].isIntersecting; schedule();
+        }, { threshold: 0.4 }).observe(stage);
+    }
+
+    mark(false);
+    preload(1); preload(-1);
+    setPlaying(playing);
+})();
+</script>
 <script>
 // Table of contents: each column cycles page order → א–ת → ת–א.
 // The chosen order is remembered per browser; failing storage is harmless.
