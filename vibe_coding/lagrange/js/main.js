@@ -5,15 +5,11 @@ import { initKKT } from './demos/kkt.js';
 import { initDuality } from './demos/duality.js';
 import { initLP } from './demos/lp.js';
 
-for (const init of [initGeo, initFence, initBead, initEntropy, initKKT, initDuality, initLP]) {
-  try { init(); } catch (e) { console.error(init.name, e); }
-}
-
-// theme toggle
+// theme first, so everything is created in the right colors
 const root = document.documentElement, btn = document.getElementById('theme');
+try { const saved = localStorage.getItem('lagrange-theme'); if (saved) root.dataset.theme = saved; } catch (e) { /* storage blocked */ }
 const dark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
 const sync = () => { btn.textContent = dark() ? '☀' : '☾'; };
-try { const saved = localStorage.getItem('lagrange-theme'); if (saved) root.dataset.theme = saved; } catch (e) { /* storage blocked */ }
 sync();
 btn.addEventListener('click', () => {
   root.dataset.theme = dark() ? 'light' : 'dark';
@@ -21,6 +17,13 @@ btn.addEventListener('click', () => {
   sync(); redrawAll();
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { sync(); redrawAll(); });
+
+for (const init of [initGeo, initFence, initBead, initEntropy, initKKT, initDuality, initLP]) {
+  try { init(); } catch (e) { console.error(init.name, e); }
+}
+
+// the 3D labs load separately, so a CDN or WebGL failure leaves the rest of the page working
+import('./three/labs3d.js').then(m => m.init3D()).catch(e => console.error('3D labs', e));
 
 // highlight the current chapter in the table of contents
 const links = [...document.querySelectorAll('nav.toc a')];

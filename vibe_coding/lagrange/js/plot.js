@@ -22,8 +22,10 @@ export function niceStep(span, target = 8) {
 
 const HEB = /[\u0590-\u05FF]/;
 const registry = new Set();
+export const themeHooks = new Set();
 export function redrawAll() {
   for (const p of registry) { p.fieldCache = null; p.invalidate(); }
+  for (const f of themeHooks) f();
 }
 
 export class Plot {
