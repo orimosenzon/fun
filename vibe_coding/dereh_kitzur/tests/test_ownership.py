@@ -61,6 +61,7 @@ try:
      check('the whole moshava is coloured', far['drawn'] > 8500, far)
      check('the council, the state and private ground are all there',
            all(k in far['kinds'] for k in 'mip'), far['kinds'])
+     check('leased state ground is its own colour', far['kinds'].get('l', 0) > 1000, far['kinds'])
      check('קק"ל\'s forest is drawn', far['forest'] > 0, far)
 
      pg.evaluate("() => Layers.setLegendOpen(true)")
@@ -68,6 +69,12 @@ try:
      key = pg.evaluate('() => document.getElementById("legend-body").textContent.replace(/\\s+/g, " ")')
      check('the key names the council, מקרקעי ישראל and the forest',
            'המועצה המקומית' in key and 'מקרקעי ישראל' in key and 'יער בניהול קק"ל' in key, key[:200])
+     # The key's patches are the map's colours at the map's strength (Ori,
+     # 21/10/2026: they were the colours at full strength, and did not match).
+     tint = pg.evaluate("""() => [...document.querySelectorAll('#legend-body .lg-dot.area.tint')]
+       .map((e) => getComputedStyle(e).backgroundColor)""")
+     check('the key has a tinted patch per kind, leased among them',
+           len(tint) == 7 and 'בחכירה לדורות' in key, tint)
      pg.screenshot(path=os.path.join(OUT, 'shot_ownership_far.png'))
 
      pg.evaluate(f'() => map.jumpTo({{center: {SPOT}, zoom: 17}})')
