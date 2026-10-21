@@ -85,6 +85,7 @@ function simStep() {
 
 // ---------- ציור ----------
 const eye = { pos: new THREE.Vector3(), quat: new THREE.Quaternion() };
+const EYE_TILT = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -15 * Math.PI / 180);
 function render() {
   const d = app.world.data;
   app.model.update(d);
@@ -102,7 +103,9 @@ function render() {
   eye.pos.copy(toThree(eyeSim));
   const f3 = toThree(fwd), u3 = toThree(up);
   const m4 = new THREE.Matrix4().lookAt(new THREE.Vector3(), f3, u3);
-  eye.quat.setFromRotationMatrix(m4);
+  // המצלמות מוטות 15° למטה בתוך הראש (הנחה שלנו, כמו ברוב הרובוטים): בלי זה, ראש זקוף רואה רק מ-2.3 מ' והלאה,
+  // והשולחן שהרובוט עובד עליו נשאר מחוץ לתמונה. ההטיה היא בתצוגה בלבד ולא משנה את הפיזיקה
+  eye.quat.setFromRotationMatrix(m4).multiply(EYE_TILT);
   app.model.headVisible(rig.mode !== 'eyes');
   rig.update(pelvis, eye, 1 / 60);
   // המצלמה בקואורדינטות הסימולציה (למשימות שמסתכלות על הצופה)
@@ -110,18 +113,22 @@ function render() {
   renderer.setScissorTest(false);
   renderer.setViewport(0, 0, container.clientWidth, container.clientHeight);
   renderer.render(scene, camera);
-  // חלון "מה הרובוט רואה": רינדור שני מהמצלמה שבראש, בפינה
-  if (app.pip && rig.mode !== 'eyes') {
+  // חלון הפינה: רינדור שני לתוך המלבן של החלון. במבט רגיל הוא מראה מה הרובוט רואה,
+  // ובמבט מהעיניים הוא מתהפך ומראה את הרובוט מבחוץ
+  if (app.pip) {
     const el = $('pip').getBoundingClientRect(), H = container.clientHeight;
-    eyeCam.position.copy(eye.pos); eyeCam.quaternion.copy(eye.quat);
-    eyeCam.aspect = el.width / el.height; eyeCam.updateProjectionMatrix();
-    app.model.headVisible(false);
-    renderer.setScissorTest(true);
-    renderer.setScissor(el.left, H - el.bottom, el.width, el.height);
-    renderer.setViewport(el.left, H - el.bottom, el.width, el.height);
-    renderer.render(scene, eyeCam);
-    renderer.setScissorTest(false);
-    app.model.headVisible(true);
+    if (el.width > 0) {
+      const eyes = rig.mode === 'eyes', cam = eyes ? rig.view : eyeCam;
+      if (!eyes) { eyeCam.position.copy(eye.pos); eyeCam.quaternion.copy(eye.quat); }
+      cam.aspect = el.width / el.height; cam.updateProjectionMatrix();
+      app.model.headVisible(eyes);
+      renderer.setScissorTest(true);
+      renderer.setScissor(el.left, H - el.bottom, el.width, el.height);
+      renderer.setViewport(el.left, H - el.bottom, el.width, el.height);
+      renderer.render(scene, cam);
+      renderer.setScissorTest(false);
+      app.model.headVisible(!eyes);
+    }
   }
 }
 const eyeCam = new THREE.PerspectiveCamera(70, 1.6, 0.03, 100);
