@@ -23,22 +23,31 @@
 <div id="hud">
   <div id="topbar">
     <div class="pill brand">OPTIMUS <b>3</b></div>
-    <div class="pill" id="hud-task">שליטה ידנית</div>
-    <div class="pill dim" id="hud-cam">מצלמה: עוקבת</div>
+    <div class="seg" id="cam-seg" role="group" aria-label="מצלמה">
+      <button data-cam="follow" title="מצלמה שעוקבת אחרי הרובוט (C)">🎥<span>עוקבת</span></button>
+      <button data-cam="eyes" title="המסך כולו מעיני הרובוט (C)">👁<span>עיני הרובוט</span></button>
+      <button data-cam="free" title="מצלמה חופשית שלא זזה עם הרובוט (C)">🕹<span>חופשית</span></button>
+    </div>
     <div class="spacer"></div>
-    <button class="pill btn" id="btn-tasks">🤖 משימות</button>
-    <a class="pill btn" id="btn-academy" href="academy.html">🎓 האקדמיה</a>
+    <div id="task-card" class="pill">
+      <span id="tc-icon">🎮</span><b id="tc-name">שליטה ידנית</b>
+      <span id="tc-status"></span>
+      <button id="tc-info" class="hidden" title="מה המשימה עושה">ⓘ</button>
+      <button id="tc-stop" class="hidden" title="עצור משימה">⏹</button>
+      <div id="tc-desc" class="hidden"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="pill btn" id="btn-pip" title="חלון קטן עם מה שהרובוט רואה (P)">📺<span>חלון עיניים</span></button>
+    <button class="pill btn" id="btn-clean" title="להסתיר את כל הלוחות ולראות רק את הרובוט (F)">🔲<span>מבט נקי</span></button>
+    <button class="pill btn" id="btn-tasks">🤖<span>משימות</span></button>
+    <a class="pill btn" id="btn-academy" href="academy.html">🎓<span>האקדמיה</span></a>
     <button class="pill btn" id="btn-menu" title="תפריט (Esc)">☰</button>
   </div>
 
-  <div id="task-card" class="hidden">
-    <div class="tc-head"><span id="tc-icon">📦</span><b id="tc-name"></b><button id="tc-stop" title="עצור משימה">⏹</button></div>
-    <div id="tc-status"></div>
-    <div id="tc-desc"></div>
-  </div>
+  <div id="eyes-frame"><i></i><i></i><i></i><i></i><div class="label">👁 עיני הרובוט · שדה ראייה 70°, מוטה 15° למטה</div></div>
 
   <div id="panel-left" class="panel">
-    <div class="ptitle">שיווי משקל <a class="help" href="academy.html#balance" target="_blank">?</a></div>
+    <div class="ptitle"><span>⚖️ שיווי משקל</span><a class="help" href="academy.html#balance" target="_blank">?</a><button class="pmin" title="מזער / הרחב">–</button></div>
     <canvas id="balance" width="200" height="200"></canvas>
     <div class="legend">
       <span><i style="background:#23c483"></i>שטח תמיכה</span>
@@ -53,7 +62,7 @@
   </div>
 
   <div id="panel-right" class="panel">
-    <div class="ptitle">מפעילים ואנרגיה <a class="help" href="academy.html#actuators" target="_blank">?</a></div>
+    <div class="ptitle"><span>⚡ מפעילים ואנרגיה</span><a class="help" href="academy.html#actuators" target="_blank">?</a><button class="pmin" title="מזער / הרחב">–</button></div>
     <canvas id="body-heat" width="150" height="230"></canvas>
     <div class="heat-legend"><span>0%</span><div class="grad"></div><span>100% מהמומנט</span></div>
     <div id="top-joints"></div>
@@ -66,7 +75,8 @@
 
   <div id="bottom">
     <div id="hand-hud" class="hidden"><b>טלאופרציה</b> · <span id="hand-which"></span> · I/K קדימה-אחורה · J/L צדדים · U/O למעלה-למטה · G אחיזה · T צורת אחיזה: <span id="grip-shape">כוח</span></div>
-    <div id="keys">W/S הליכה · A/D פנייה · Q/E צעד הצידה · Shift מהר · <b>1/2/3</b> ידיים · קליק ימני על הרובוט: דחיפה · C מצלמה · X שכבות מידע · Space עצירה · H עזרה</div>
+    <div id="keys"><button id="keys-close" title="הסתר">✕</button>W/S הליכה · A/D פנייה · Q/E צעד הצידה · Shift מהר · <b>1/2/3</b> ידיים · קליק ימני על הרובוט: דחיפה · <b>C</b> מצלמה · <b>P</b> חלון עיניים · <b>F</b> מבט נקי · X שכבות מידע · Space עצירה · H עזרה</div>
+    <button id="keys-chip" class="hidden" title="הצג את רשימת המקשים">⌨ מקשים</button>
   </div>
   <div id="push-tool">
     <button id="push-arm" title="דחיפה (B)">✋ דחיפה</button>
@@ -78,7 +88,15 @@
     <button id="btn-slow" title="הילוך איטי (M)">🐢</button>
     <button id="btn-reset" title="איפוס (R)">↺</button>
   </div>
-  <canvas id="pip" width="320" height="200" class="hidden"></canvas>
+  <div id="pip-box" class="hidden size-m">
+    <canvas id="pip"></canvas>
+    <div class="pip-head" title="גררו כדי להזיז">
+      <span id="pip-title">👁 מה הרובוט רואה</span>
+      <button id="pip-swap" title="להחליף בין החלון למסך הראשי">⇄</button>
+      <button id="pip-size" title="גודל החלון">⤢</button>
+      <button id="pip-close" title="סגור (P)">✕</button>
+    </div>
+  </div>
   <div id="joy" class="hidden"><div class="knob"></div></div>
 </div>
 
@@ -122,7 +140,8 @@
         <div><b>1</b> יד שמאל · <b>2</b> יד ימין · <b>3</b> שתיהן · <b>0</b> שחרור</div><div><b>I K J L U O</b> הזזת היד בטלאופרציה</div>
         <div><b>G</b> סגירה/פתיחה של האצבעות · <b>T</b> צורת אחיזה</div><div><b>Z</b> כפיפת ברכיים · <b>V</b> הטיית גו</div>
         <div><b>קליק ימני</b> על הרובוט: דחיפה (<b>B</b>: דחיפה מכיוון המצלמה)</div><div><b>C</b> מצלמה: עוקבת / עיני הרובוט / חופשית</div>
-        <div><b>X</b> שכבות מידע · <b>P</b> חלון מצלמת הרובוט</div><div><b>Space</b> עצירה · <b>M</b> הילוך איטי · <b>R</b> איפוס · <b>Esc</b> תפריט</div>
+        <div><b>X</b> שכבות מידע · <b>P</b> חלון עיני הרובוט</div><div><b>F</b> מבט נקי: מסתיר את כל הלוחות</div><div><b>Space</b> עצירה · <b>M</b> הילוך איטי · <b>R</b> איפוס · <b>Esc</b> תפריט</div>
+        <div class="full">קליק על חלון העיניים מחליף בינו לבין המסך הראשי. אפשר לגרור אותו מהפס העליון שלו, ולמזער כל לוח בכפתור – שבכותרת שלו.</div>
         <div class="full">בקר משחק: מקל שמאלי הליכה, מקל ימני פנייה.</div>
       </div>
     </details>

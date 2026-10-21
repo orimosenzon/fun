@@ -68,6 +68,7 @@ export class HUD {
     $('btn-menu').onclick = () => { intro.classList.remove('hidden'); };
     $('opt-overlay').onchange = (e) => { app.overlay.setVisible(e.target.checked); };
     $('opt-pip').onchange = (e) => { this.setPip(e.target.checked); };
+    this.bindView();
     $('opt-quality').onchange = (e) => this.setQuality(e.target.value);
     this.setQuality(ctx.store.get('quality', 'med'));
     $('opt-quality').value = ctx.store.get('quality', 'med');
@@ -100,7 +101,94 @@ export class HUD {
   togglePause() { this.app.paused = !this.app.paused; $('btn-pause').classList.toggle('on', this.app.paused); $('btn-pause').textContent = this.app.paused ? '▶' : '⏸'; }
   toggleSlow() { this.app.slow = this.app.slow === 1 ? 0.25 : 1; $('btn-slow').classList.toggle('on', this.app.slow !== 1); this.toast(this.app.slow === 1 ? 'מהירות רגילה' : 'הילוך איטי ×¼'); }
   reset() { const k = this.app.tasks.active?.key; this.ctx.loadScene(this.app.sceneKey); if (k && k !== 'goto') this.app.tasks.start(k); this.toast('איפוס'); }
-  setPip(on) { this.app.pip = on; $('pip').classList.toggle('hidden', !on); }
+  // ---------- מה רואים על המסך: מצלמה, חלון עיניים, לוחות, מבט נקי ----------
+  bindView() {
+    const { rig, store } = this.ctx;
+    // בורר המצלמה
+    rig.onMode = (m) => {
+      document.querySelectorAll('#cam-seg button').forEach(b => b.classList.toggle('on', b.dataset.cam === m));
+      document.body.classList.toggle('eyes', m === 'eyes');
+      this.updatePipTitle();
+    };
+    rig.onMode(rig.mode);
+    document.querySelectorAll('#cam-seg button').forEach(b => b.onclick = () => rig.setMode(b.dataset.cam));
+    // חלון העיניים: פתוח כברירת מחדל, כי זה המבט הכי מעניין
+    $('btn-pip').onclick = () => this.setPip(!this.app.pip);
+    $('pip-close').onclick = () => this.setPip(false);
+    $('pip-swap').onclick = () => this.swapPip();
+    $('pip').onclick = () => this.swapPip();
+    const sizes = ['s', 'm', 'l'];
+    const box = $('pip-box');
+    const setSize = (s) => { sizes.forEach(z => box.classList.toggle('size-' + z, z === s)); store.set('pipSize', s); this.clampPip(); };
+    const defSize = innerWidth < 1250 ? 's' : 'm';
+    setSize(store.get('pipSize', defSize));
+    $('pip-size').onclick = () => setSize(sizes[(sizes.indexOf(store.get('pipSize', defSize)) + 1) % 3]);
+    this.setPip(store.get('pip', true));
+    // גרירה של החלון מהפס העליון שלו
+    const head = box.querySelector('.pip-head');
+    head.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      head.setPointerCapture(e.pointerId);
+      const r = box.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
+      const move = (ev) => { this.placePip(ev.clientX - ox, ev.clientY - oy); };
+      const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); };
+      head.addEventListener('pointermove', move); head.addEventListener('pointerup', up);
+    });
+    addEventListener('resize', () => this.clampPip());
+    // מזעור לוחות. על מסך צר הם מתחילים ממוזערים
+    const narrow = innerWidth < 1250;
+    for (const id of ['panel-left', 'panel-right']) {
+      const p = $(id);
+      const set = (v) => { p.classList.toggle('collapsed', v); p.querySelector('.pmin').textContent = v ? '+' : '–'; store.set('min.' + id, v); };
+      set(store.get('min.' + id, narrow));
+      p.querySelector('.pmin').onclick = (e) => { e.stopPropagation(); set(!p.classList.contains('collapsed')); };
+      p.querySelector('.ptitle').onclick = () => { if (p.classList.contains('collapsed')) set(false); };
+    }
+    // רשימת המקשים
+    const setKeys = (v) => { $('keys').classList.toggle('hidden', !v); $('keys-chip').classList.toggle('hidden', v); store.set('keys', v); };
+    setKeys(store.get('keys', !narrow));
+    $('keys-close').onclick = () => setKeys(false);
+    $('keys-chip').onclick = () => setKeys(true);
+    // תיאור המשימה נפתח בלחיצה
+    $('tc-info').onclick = () => $('tc-desc').classList.toggle('hidden');
+    // מבט נקי
+    $('btn-clean').onclick = () => this.toggleClean();
+    let idleT = 0;
+    this.wake = () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle'), 2500); };
+    addEventListener('pointermove', this.wake); addEventListener('keydown', this.wake);
+  }
+  toggleClean(v = !document.body.classList.contains('clean')) {
+    document.body.classList.toggle('clean', v);
+    $('btn-clean').classList.toggle('on', v);
+    $('btn-clean').querySelector('span').textContent = v ? 'הצג לוחות' : 'מבט נקי';
+    if (v) { this.toast('מבט נקי · F מחזיר את הלוחות', 2200); this.wake(); }
+  }
+  setPip(on) {
+    this.app.pip = on;
+    $('pip-box').classList.toggle('hidden', !on);
+    $('btn-pip').classList.toggle('on', on);
+    $('opt-pip').checked = on;
+    this.ctx.store.set('pip', on);
+    if (on) this.clampPip();
+  }
+  // החלפה: המסך הראשי עובר לעיני הרובוט והחלון מראה את הרובוט מבחוץ, ולהפך
+  swapPip() {
+    const { rig } = this.ctx;
+    rig.setMode(rig.mode === 'eyes' ? (this.lastOuter || 'follow') : (this.lastOuter = rig.mode, 'eyes'));
+  }
+  updatePipTitle() {
+    const eyes = this.ctx.rig.mode === 'eyes';
+    $('pip-title').textContent = eyes ? '🎥 הרובוט מבחוץ' : '👁 מה הרובוט רואה';
+  }
+  placePip(x, y) {
+    const box = $('pip-box'), w = box.offsetWidth, h = box.offsetHeight;
+    x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y));
+    Object.assign(box.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
+  }
+  clampPip() {
+    const box = $('pip-box');
+    if (box.style.left) { const r = box.getBoundingClientRect(); this.placePip(r.left, r.top); }
+  }
   setQuality(q) {
     const { renderer } = this.ctx;
     renderer.setPixelRatio(q === 'high' ? Math.min(devicePixelRatio, 2) : q === 'med' ? Math.min(devicePixelRatio, 1.5) : 1);
@@ -111,9 +199,10 @@ export class HUD {
   onKey(e) {
     const app = this.app, { rig, input } = this.ctx, r = app.robot;
     switch (e.code) {
-      case 'KeyC': { const m = rig.cycle(); $('hud-cam').textContent = 'מצלמה: ' + ({ follow: 'עוקבת', eyes: 'עיני הרובוט', free: 'חופשית' })[m]; break; }
+      case 'KeyC': { const m = rig.cycle(); this.toast('מצלמה: ' + ({ follow: 'עוקבת', eyes: 'עיני הרובוט', free: 'חופשית' })[m], 1200); break; }
       case 'KeyX': { const v = !app.overlay.visible; app.overlay.setVisible(v); $('opt-overlay').checked = v; break; }
-      case 'KeyP': this.setPip(!app.pip); $('opt-pip').checked = app.pip; break;
+      case 'KeyP': this.setPip(!app.pip); break;
+      case 'KeyF': this.toggleClean(); break;
       case 'Space': e.preventDefault(); this.togglePause(); break;
       case 'KeyM': this.toggleSlow(); break;
       case 'KeyR': this.reset(); break;
@@ -145,17 +234,22 @@ export class HUD {
     const tm = r.telemetry();
     // משימה
     const T = app.tasks.active, ctx = app.tasks.ctx;
-    const card = $('task-card');
-    if (T || ctx) {
-      card.classList.remove('hidden');
+    const on = !!(T || ctx), card = $('task-card'), st = $('tc-status');
+    if (on !== this.taskOn) {
+      this.taskOn = on;
+      card.classList.toggle('active', on);
+      $('tc-info').classList.toggle('hidden', !on); $('tc-stop').classList.toggle('hidden', !on);
+      $('tc-desc').classList.add('hidden');
+    }
+    if (on) {
       $('tc-icon').textContent = (T || {}).icon || '🤖';
       $('tc-name').textContent = (T || {}).name || '';
       $('tc-desc').textContent = (T || {}).desc || '';
-      const st = $('tc-status');
-      st.textContent = app.tasks.status;
+      if (st.textContent !== app.tasks.status) { st.textContent = app.tasks.status; st.title = app.tasks.status; }
       st.className = ctx?.done ? 'ok' : ctx?.failed ? 'bad' : '';
-      $('hud-task').textContent = (T ? T.icon + ' ' + T.name : 'שליטה ידנית');
-    } else { card.classList.add('hidden'); $('hud-task').textContent = 'שליטה ידנית'; }
+    } else if ($('tc-name').textContent !== 'שליטה ידנית') {
+      $('tc-icon').textContent = '🎮'; $('tc-name').textContent = 'שליטה ידנית'; st.textContent = '';
+    }
     if (r.fallen && !this.fallShown) { this.fallShown = true; this.toast('הרובוט נפל. R לאיפוס', 4000); }
     if (!r.fallen) this.fallShown = false;
     // הידיים
