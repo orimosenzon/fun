@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>כופלי לגרנז'</title>
+<meta name="description" content="דף לימוד אינטראקטיבי על אופטימיזציה תחת אילוצים: כופלי לגרנז' ומשמעותם, תנאי KKT, דואליות, הסימפלקס, שיטת האליפסואיד ונקודות פנימיות.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="כופלי לגרנז': המחיר של אילוץ">
+<meta property="og:description" content="דף לימוד אינטראקטיבי: אופטימיזציה תחת אילוצים, מה באמת אומר הכופל λ, תנאי KKT, דואליות, הסימפלקס ושיטת האליפסואיד. גוררים, מזיזים ורואים.">
+<meta property="og:url" content="https://orimosenzon.github.io/fun/vibe_coding/lagrange/">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/lagrange/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="he_IL">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false})"></script>
+<link rel="stylesheet" href="css/style.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<button id="theme" aria-label="מצב כהה או בהיר">☾</button>
+
+<header class="hero">
+  <p class="kicker">אופטימיזציה תחת אילוצים · דף לימוד אינטראקטיבי</p>
+  <h1>כופלי לגרנז'</h1>
+  <p class="lead">איך מוצאים את הטוב ביותר כשאסור ללכת לכל מקום, ולמה המספר שהשיטה מייצרת בדרך, $\lambda$, הוא לעתים קרובות החלק החשוב ביותר בתשובה.</p>
+  <p>הדף מניח היכרות עם נגזרות חלקיות ועם הגרדיאנט. כל פרק בנוי סביב מעבדה: גוררים נקודות, מזיזים מחוונים ורואים את המתמטיקה מגיבה. נתחיל מאילוץ אחד, נעבור לאי-שוויונים (תנאי KKT), משם לדואליות, ובסוף נראה איך אותם כופלים מנהלים את האלגוריתמים של תכנון ליניארי: הסימפלקס, שיטת האליפסואיד ושיטות הנקודה הפנימית.</p>
+  <ul class="legend">
+    <li><span class="chip f">∇f</span> המטרה: הכיוון שבו היא עולה הכי מהר</li>
+    <li><span class="chip g">g</span> האילוץ והגרדיאנט שלו</li>
+    <li><span class="chip lam">λ</span> הכופל וכל מה שנבנה ממנו</li>
+  </ul>
+</header>
+
+<nav class="toc" aria-label="תוכן העניינים">
+  <ol>
+    <li><a href="#s1"><span class="n">1</span>טיול על שביל</a></li>
+    <li><a href="#s2"><span class="n">2</span>השיטה: הלגרנז'יאן</a></li>
+    <li><a href="#s3"><span class="n">3</span>מה אומר המספר λ</a></li>
+    <li><a href="#s4"><span class="n">4</span>אי-שוויונים: KKT</a></li>
+    <li><a href="#s5"><span class="n">5</span>דואליות</a></li>
+    <li><a href="#s6"><span class="n">6</span>תכנון ליניארי והסימפלקס</a></li>
+    <li><a href="#s7"><span class="n">7</span>אליפסואידים ונקודות פנימיות</a></li>
+    <li><a href="#s8"><span class="n">8</span>איפה עוד פוגשים כופלים</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================== 1 ============================== -->
+<section id="s1">
+  <h2><span class="n">1</span>טיול על שביל</h2>
+  <p>נדמיין הר. הגובה בכל נקודה הוא $f(x,y)$. דרך ההר עובר שביל, והשביל הוא אוסף הנקודות שמקיימות משוואה אחת, $g(x,y) = c$. אנחנו חייבים להישאר על השביל. מה הנקודה הגבוהה ביותר שאפשר להגיע אליה?</p>
+  <p>בלי אילוץ היינו מחפשים נקודה שבה $\nabla f = 0$, כלומר פסגה. אבל השביל לא חייב לעבור בפסגה, ובנקודה הגבוהה ביותר על השביל הגרדיאנט בדרך כלל לא מתאפס בכלל: ההר עדיין עולה שם, רק לא בכיוון שמותר לנו ללכת בו.</p>
+  <p>האבחנה המרכזית היא גאומטרית. נסתכל על קו הגובה של $f$ שעובר דרך הנקודה שלנו. אם השביל <b>חוצה</b> אותו, אז בצד אחד של קו הגובה גבוה יותר, והשביל ממשיך לשם, כך שאפשר עוד לעלות. לכן בנקודה הגבוהה ביותר השביל <b>משיק</b> לקו הגובה. הגרדיאנט ניצב תמיד לקו הגובה, ולכן כששני קווים משיקים, הגרדיאנטים שלהם מקבילים:</p>
+  $$\nabla f(x^*) = \lambda\, \nabla g(x^*)$$
+  <p>המספר $\lambda$ הוא היחס בין שני החצים, והוא נקרא <b>כופל לגרנז'</b>. כרגע הוא נראה כמו פרט טכני. בפרק 3 נראה שהוא התשובה לשאלה אחרת, ולעתים חשובה יותר.</p>
+
+  <figure class="lab" id="lab-geo">
+    <div class="lab-head"><span class="tag">מעבדה 1</span><h3>הנקודה על האילוץ</h3></div>
+    <div class="seg" id="geo-presets">
+      <button data-k="circle">ישרים ומעגל</button>
+      <button data-k="ellipse">xy על אליפסה</button>
+      <button data-k="trail">שביל בהרים</button>
+      <button data-k="rayleigh">מנת ריילי</button>
+    </div>
+    <div class="lab-body">
+      <div>
+        <canvas id="geo-plane" class="cv sq" dir="ltr"></canvas>
+        <p class="hint">לחצו וגררו בכל מקום על הלוח: הנקודה נצמדת לאילוץ הכתום. הקו הכחול העבה הוא קו הגובה של $f$ שעובר בנקודה.</p>
+      </div>
+      <div>
+        <canvas id="geo-trace" class="cv wide" dir="ltr"></canvas>
+        <p class="cap">הערך של $f$ לאורך האילוץ, כפונקציה של המיקום עליו. הנקודות הקריטיות הן המקומות שבהם השיפוע של הגרף הזה מתאפס, ושם החץ הירוק נעלם.</p>
+        <div class="readouts">
+          <div><span class="k">f בנקודה</span><span class="v f" id="geo-f"></span></div>
+          <div><span class="k">λ (היחס בין החצים)</span><span class="v lam" id="geo-lam"></span></div>
+          <div><span class="k">רכיב משיקי של ∇f</span><span class="v" id="geo-tan"></span></div>
+          <div><span class="k">זווית בין ∇f ל-∇g</span><span class="v" id="geo-angle"></span></div>
+        </div>
+        <div class="status" id="geo-status"></div>
+        <div class="btns"><button class="btn primary" id="geo-next">לנקודה הקריטית הבאה</button></div>
+        <p class="note" data-preset="circle">$f = x + 2y$ על המעגל $x^2 + y^2 = 4$. קווי הגובה הם ישרים, והמקסימום נמצא במקום שבו ישר כזה רק נוגע במעגל. שם $\lambda = \sqrt5/4 \approx 0.559$. במינימום, בצד השני, $\lambda$ שלילי: $\nabla f$ מצביע פנימה, נגד $\nabla g$.</p>
+        <p class="note" data-preset="ellipse" hidden>$f = xy$ על האליפסה $x^2/4 + y^2 = 1$. יש ארבע נקודות קריטיות: שני מקסימומים ($f = 1$) ושני מינימומים ($f = -1$). במקסימום $\lambda = 1$. אם נגדיל את האליפסה ל-$x^2/4 + y^2 = c$, המקסימום יהיה בדיוק $c$, כלומר הוא עולה בקצב 1 ליחידה של $c$. את זה בדיוק $\lambda$ מודד, ועל זה פרק 3.</p>
+        <p class="note" data-preset="trail" hidden>הר עם שתי פסגות ושביל מתפתל שלא עובר באף אחת מהן. על השביל יש כמה מקסימומים מקומיים, וכל אחד מהם הוא נקודה שבה השביל משיק לקו גובה. השיטה מוצאת את כולם, וכדי לדעת מי הגבוה ביותר משווים את הערכים.</p>
+        <p class="note" data-preset="rayleigh" hidden>$f = x^\top A x$ על מעגל היחידה, עם $A = \begin{pmatrix}1.5 & 1\\ 1 & -0.5\end{pmatrix}$. כאן $\nabla f = 2Ax$ ו-$\nabla g = 2x$, ולכן התנאי הוא $Ax = \lambda x$. הנקודות הקריטיות הן הווקטורים העצמיים, הכופלים הם הערכים העצמיים ($1.914$ ו-$-0.914$), והערך של $f$ בכל נקודה כזו שווה ל-$\lambda$. זו אחת ההוכחות למשפט הספקטרלי: המקסימום של $f$ על הספרה הוא ערך עצמי.</p>
+      </div>
+    </div>
+    <figcaption class="hint">
+      <span class="chip f">∇f</span> כחול,
+      <span class="chip g">∇g</span> כתום,
+      <span class="chip lam">λ∇g</span> החלק של $\nabla f$ שמקביל ל-$\nabla g$,
+      <span class="chip tan">ירוק</span> מה שנשאר: הרכיב של $\nabla f$ לאורך האילוץ. הוא מראה לאן ללכת כדי לעלות, ובנקודה קריטית הוא מתאפס.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 2 ============================== -->
+<section id="s2">
+  <h2><span class="n">2</span>השיטה: הלגרנז'יאן</h2>
+  <p>נוכיח את התנאי בצורה שעובדת בכל ממד. תהי $x^*$ נקודת מקסימום של $f$ על הקבוצה $\{g = c\}$, ותהי $\gamma(t)$ עקומה כלשהי שנשארת על הקבוצה ועוברת ב-$x^*$ כש-$t = 0$. מכיוון ש-$g(\gamma(t)) = c$ לכל $t$, אפשר לגזור:</p>
+  $$\nabla g(x^*) \cdot \gamma'(0) = 0.$$
+  <p>כלומר כל כיוון תנועה חוקי ניצב ל-$\nabla g$. מכיוון ש-$f(\gamma(t))$ מקבלת מקסימום ב-$t = 0$, גם</p>
+  $$\nabla f(x^*) \cdot \gamma'(0) = 0.$$
+  <p>אז $\nabla f$ ניצב לכל הכיוונים החוקיים. במישור יש רק כיוון חוקי אחד, המשיק, והכיוון שניצב לו הוא הכיוון של $\nabla g$. מכאן $\nabla f = \lambda \nabla g$. צריך רק ש-$\nabla g(x^*) \neq 0$, אחרת למשיק אין משמעות.</p>
+  <p>לגרנז' הפך את זה לטריק. מגדירים פונקציה אחת, <b>הלגרנז'יאן</b>,</p>
+  $$\mathcal L(x, \lambda) = f(x) - \lambda\,\bigl(g(x) - c\bigr),$$
+  <p>ומחפשים בה נקודות סטציונריות רגילות. הנגזרת לפי $x$ נותנת $\nabla f = \lambda \nabla g$, והנגזרת לפי $\lambda$ מחזירה את האילוץ $g = c$. בעיה עם אילוץ הפכה לבעיה בלי אילוץ, במחיר של משתנה אחד נוסף.</p>
+
+  <div class="box plain">
+    <span class="title">כמה אילוצים</span>
+    <p>עם $m$ אילוצים $g_1 = c_1, \dots, g_m = c_m$ ב-$\mathbb R^n$, הכיוונים החוקיים הם אלה שניצבים לכל ה-$\nabla g_i$, והכיוונים שניצבים לכל אלה הם המרחב שה-$\nabla g_i$ פורשים. התנאי:</p>
+    $$\nabla f = \sum_{i=1}^m \lambda_i \nabla g_i, \qquad \mathcal L = f - \sum_{i=1}^m \lambda_i\,(g_i - c_i).$$
+    <p>אלה $n + m$ משוואות ב-$n + m$ נעלמים. מה שצריך כדי שזה יעבוד: שהגרדיאנטים $\nabla g_i(x^*)$ יהיו בלתי תלויים ליניארית.</p>
+  </div>
+
+  <h3>דוגמה שלמה</h3>
+  <p>נמצא את המקסימום של $f = x + 2y$ על המעגל $x^2 + y^2 = 4$, ברירת המחדל של מעבדה 1. התנאי $\nabla f = \lambda \nabla g$:</p>
+  $$(1,\ 2) = \lambda\,(2x,\ 2y) \quad\Longrightarrow\quad x = \frac{1}{2\lambda}, \qquad y = \frac{1}{\lambda}.$$
+  <p>מציבים באילוץ: $\frac{1}{4\lambda^2} + \frac{1}{\lambda^2} = 4$, כלומר $\lambda^2 = \frac{5}{16}$ ו-$\lambda = \pm\frac{\sqrt5}{4}$. הסימן החיובי נותן את המקסימום, $(x, y) = \bigl(\tfrac{2}{\sqrt5}, \tfrac{4}{\sqrt5}\bigr)$ עם $f^* = 2\sqrt5 \approx 4.472$, והשלילי נותן את המינימום.</p>
+  <p>כדאי לזכור את המספר $\lambda = \sqrt5/4 \approx 0.559$. עוד מעט נגלה מה הוא אומר.</p>
+
+  <p>הערה שתחסוך בלבול בהמשך: הנקודה הסטציונרית של $\mathcal L$ היא בדרך כלל <b>נקודת אוכף</b> שלו, לא מקסימום. $\mathcal L$ ליניארית ב-$\lambda$, ולכן אין לה שם קיצון. אי אפשר פשוט למקסם את $\mathcal L$ לפי כל המשתנים יחד. המבנה הזה, מקסימום בכיוון אחד ומינימום בכיוון אחר, יחזור בפרק 5 ויהיה הלב של הדואליות.</p>
+  <p>כדי להבחין בין מקסימום למינימום משווים ערכים בין המועמדים, או בודקים את הנגזרת השנייה של $f$ לאורך האילוץ. בממד גבוה עושים את זה עם "ההסיאן הממוסגר" (bordered Hessian): מטריצת הנגזרות השניות של $\mathcal L$, ממוסגרת בשורה ובעמודה של $\nabla g$.</p>
+
+  <aside class="word"><b>מאיפה המילה?</b> הלגרנז'יאן (Lagrangian) נקרא על שם ז'וזף-לואי לגראנז' (1736–1813), שנולד בטורינו בשם ג'וזפה לודוביקו לגראנג'ה ועבד בברלין ובפריז. הוא השתמש בכופלים בספרו "מכניקה אנליטית" (1788) כדי לטפל במערכות מכניות עם אילוצים, כמו חרוז על תיל או מטוטלת על חוט, ורק אחר כך הם הפכו לכלי כללי של אופטימיזציה. נחזור לחרוז בפרק הבא.</aside>
+
+  <details class="ex">
+    <summary>תרגיל: מקסימום של $xyz$</summary>
+    <p class="q">מצאו את המקסימום של $f = xyz$ בתנאי $x + y + z = 3$, עם $x, y, z > 0$. כמה יוצא $\lambda$?</p>
+    <div class="ans">$\nabla f = (yz,\ xz,\ xy) = \lambda\,(1, 1, 1)$, ולכן $yz = xz = xy$, ומכאן $x = y = z = 1$, $f^* = 1$ ו-$\lambda = 1$. בדיקה מהפרק הבא: עם האילוץ $x + y + z = c$ המקסימום הוא $(c/3)^3$, והנגזרת שלו לפי $c$ בנקודה $c = 3$ היא $c^2/9 = 1$.</div>
+  </details>
+</section>
+
+<!-- ============================== 3 ============================== -->
+<section id="s3">
+  <h2><span class="n">3</span>מה אומר המספר λ</h2>
+  <p>בהרבה ספרי לימוד $\lambda$ הוא משתנה עזר: פותרים, מוצאים את $x^*$ ומשליכים אותו. חבל, כי $\lambda$ עונה על שאלה שבעולם האמיתי חשובה לא פחות מהפתרון עצמו: <b>כמה היה שווה לנו להזיז את האילוץ?</b></p>
+  <p>נחזור לדוגמה. אילו המעגל היה $x^2 + y^2 = c$ במקום $4$, אותו חישוב היה נותן מקסימום $f^*(c) = \sqrt{5c}$. נגזור:</p>
+  $$\frac{df^*}{dc} = \frac{\sqrt5}{2\sqrt c}\,\Bigg|_{c=4} = \frac{\sqrt5}{4} = \lambda.$$
+  <p>הכופל שמצאנו הוא בדיוק הקצב שבו הערך האופטימלי משתנה כשמזיזים את האילוץ. וזה לא מקרה של הדוגמה:</p>
+
+  <div class="box">
+    <span class="title">משפט הרגישות (משפט המעטפת)</span>
+    $$\frac{d f^*}{dc} = \lambda^*$$
+    <p>ועם כמה אילוצים, $\partial f^* / \partial c_i = \lambda_i$. לכל אילוץ יש כופל משלו, והוא מודד כמה האילוץ הזה עולה לנו.</p>
+  </div>
+
+  <p>ההוכחה היא שתי שורות של כלל השרשרת. נסמן ב-$x^*(c)$ את הפתרון כפונקציה של $c$ ונניח שהוא גזיר. אז $f^*(c) = f(x^*(c))$, ו-</p>
+  $$\frac{df^*}{dc} = \nabla f \cdot \frac{dx^*}{dc} = \lambda\, \nabla g \cdot \frac{dx^*}{dc} = \lambda\, \frac{d}{dc}\, g\bigl(x^*(c)\bigr) = \lambda \cdot \frac{d}{dc}\,c = \lambda.$$
+  <p>המעבר השני הוא תנאי לגרנז', והשלישי הוא כלל השרשרת על $g$, שעל הפתרון שווה תמיד ל-$c$.</p>
+
+  <h3>איך לקרוא את λ</h3>
+  <ul>
+    <li><b>יחידות.</b> ל-$\lambda$ יש יחידות של $f$ חלקי יחידות של $c$. אם $f$ הוא רווח בשקלים ו-$c$ הוא שעות עבודה, $\lambda$ נמדד בשקלים לשעה: כמה שווה שעה נוספת. זה שער החליפין בין האילוץ למטרה.</li>
+    <li><b>מחיר צל.</b> אם מישהו מציע למכור לנו עוד קצת מהמשאב שמגביל אותנו, $\lambda$ הוא המחיר הגבוה ביותר שכדאי לשלם, לכמויות קטנות.</li>
+    <li><b>$\lambda = 0$.</b> הזזה קטנה של האילוץ לא משנה את האופטימום. האילוץ נוגע בפתרון אבל לא באמת מגביל אותו.</li>
+    <li><b>$\lambda$ גדול.</b> האילוץ חונק, וכאן כדאי להשקיע בהרחבה שלו.</li>
+    <li><b>הסימן.</b> באילוץ שוויון הסימן יכול להיות כל דבר, והוא אומר לאיזה כיוון כדאי להזיז את $c$. באי-שוויון, בפרק 4, הסימן ייקבע מראש, בדיוק בגלל המשמעות הזו.</li>
+    <li><b>רק בקירוב ליניארי.</b> $\Delta f^* \approx \lambda\, \Delta c$ לשינויים קטנים. בשינוי גדול האופטימום זז ו-$\lambda$ משתנה איתו. במעבדות רואים את הפער.</li>
+  </ul>
+
+  <aside class="word"><b>מאיפה המילה?</b> מחיר צל (shadow price) הוא ערך של משהו שאין לו תווית מחיר: אף אחד לא מוכר "עוד שעה של מכונה" בחנות, אבל לשעה כזו יש ערך מדויק בשבילנו. המחיר נסתר, ו"עומד בצל" של הבעיה. משפט המעטפת (envelope theorem) נקרא כך כי הפונקציה $f^*(c)$ היא המעטפת של משפחת עקומות, אחת לכל בחירה של $x$, והמשיק למעטפת שווה למשיק של העקומה שנוגעת בה.</aside>
+
+  <h3>3.1 λ כמחיר: גדר לגינה</h3>
+  <p>גינה מלבנית נשענת על פינה של שני קירות, ולכן צריך לגדר רק שתי צלעות: אחת באורך $x$ ואחת באורך $y$. גדר מהסוג של צלע $x$ עולה $p_x$ שקלים למטר, ושל צלע $y$ עולה $p_y$. יש תקציב $B$. רוצים שטח מרבי: $\max\, xy$ בתנאי $p_x x + p_y y = B$. תנאי לגרנז':</p>
+  $$(y,\ x) = \lambda\,(p_x,\ p_y) \quad\Longrightarrow\quad \lambda = \frac{y^*}{p_x} = \frac{x^*}{p_y} = \frac{B}{2\,p_x p_y}.$$
+  <p>לפני שמזיזים מחוונים, כדאי לקרוא את המשוואה הזו במילים. שקל נוסף שהולך לצלע $x$ קונה $1/p_x$ מטר ממנה, וכל מטר כזה מוסיף $y^*$ מ״ר. לכן $y^*/p_x$ הוא השטח שמרוויחים משקל שהולך לצלע $x$, ו-$x^*/p_y$ הוא השטח משקל שהולך לצלע $y$. תנאי לגרנז' אומר: <b>באופטימום, שקל נוסף מניב אותה תשואה בכל שימוש</b>. אילו שקל היה מניב יותר בצלע $x$, היה כדאי להעביר לשם כסף מצלע $y$. התשואה המשותפת הזו היא $\lambda$: כמה מ״ר קונה שקל.</p>
+
+  <figure class="lab" id="lab-fence">
+    <div class="lab-head"><span class="tag">מעבדה 2</span><h3>כמה שווה שקל נוסף</h3></div>
+    <div class="lab-body even">
+      <div>
+        <canvas id="fence-plane" class="cv sq nodrag" dir="ltr"></canvas>
+        <p class="cap">המישור $(x, y)$: קו התקציב בכתום, היפרבולות של שטח קבוע, והמלבן האופטימלי. באופטימום קו התקציב משיק להיפרבולה.</p>
+      </div>
+      <div>
+        <div class="ctrl"><label for="fence-B">תקציב B</label><input type="range" id="fence-B" min="20" max="200" step="1" value="120"><output id="fence-B-out"></output></div>
+        <div class="ctrl"><label for="fence-px">מחיר מטר x</label><input type="range" id="fence-px" min="1" max="10" step="0.5" value="4"><output id="fence-px-out"></output></div>
+        <div class="ctrl"><label for="fence-py">מחיר מטר y</label><input type="range" id="fence-py" min="1" max="10" step="0.5" value="2"><output id="fence-py-out"></output></div>
+        <canvas id="fence-value" class="cv wide nodrag" dir="ltr"></canvas>
+        <p class="cap">השטח המרבי $f^*(B)$ כפונקציה של התקציב. הקו המקווקו משיק בשיפוע $\lambda$. הקטע הסגול הוא החיזוי $\lambda \cdot 20$ לתוספת של 20 ₪, והנקודה הכחולה היא מה שקורה באמת.</p>
+        <div class="readouts">
+          <div><span class="k">x* (מטר)</span><span class="v" id="fence-x"></span></div>
+          <div><span class="k">y* (מטר)</span><span class="v" id="fence-y"></span></div>
+          <div><span class="k">שטח מרבי (מ״ר)</span><span class="v f" id="fence-area"></span></div>
+          <div><span class="k">λ (מ״ר לשקל)</span><span class="v lam" id="fence-lam"></span></div>
+          <div><span class="k">תשואת שקל בצלע x</span><span class="v" id="fence-r1"></span></div>
+          <div><span class="k">תשואת שקל בצלע y</span><span class="v" id="fence-r2"></span></div>
+          <div><span class="k">חיזוי ל-20 ₪ נוספים (מ״ר)</span><span class="v lam" id="fence-pred"></span></div>
+          <div><span class="k">השינוי בפועל (מ״ר)</span><span class="v f" id="fence-act"></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">החיזוי תמיד קצת נמוך מהמציאות, כי $f^*(B) = B^2/(4p_xp_y)$ קמורה: כל שקל נוסף שווה יותר מהקודם, ו-$\lambda$ עצמו גדל עם $B$. ושימו לב ששתי ה"תשואות" בטבלה שוות תמיד, איך שלא מזיזים את המחירים.</p>
+  </figure>
+
+  <h3>3.2 λ ככוח: חרוז על תיל</h3>
+  <p>בשביל זה לגרנז' המציא את הכופלים. חרוז מושחל על תיל עגול ברדיוס $R$, ופועלים עליו כוח הכובד וקפיץ שמחובר לנקודה שאפשר לגרור. החרוז מתייצב במינימום של האנרגיה הפוטנציאלית $U$ על האילוץ $g = r - R = 0$, ושם $\nabla U = \lambda\, \nabla g$.</p>
+  <p>אבל $-\nabla U$ הוא הכוח הכולל של הכובד והקפיץ, ו-$\nabla g$ הוא וקטור היחידה הרדיאלי $\hat r$. המשוואה אומרת שהכוח שנשאר לא מאוזן ניצב בדיוק לתיל, ומשהו צריך לבלום אותו: התיל. <b>הכוח שהתיל מפעיל על החרוז הוא $\lambda\, \hat r$</b>. הכופל הוא כוח האילוץ.</p>
+  <p>ומשפט הרגישות? $\lambda = dU^*/dR$. אם מרחיבים את התיל במרחק קטן $\delta$, האנרגיה בשיווי המשקל משתנה ב-$\lambda \delta$, וזו בדיוק העבודה שהתיל מבצע כשהוא דוחף את החרוז החוצה: כוח כפול דרך. אותה עובדה בשתי שפות.</p>
+
+  <figure class="lab" id="lab-bead">
+    <div class="lab-head"><span class="tag">מעבדה 3</span><h3>הכופל ככוח אילוץ</h3></div>
+    <div class="lab-body">
+      <div>
+        <canvas id="bead-plane" class="cv sq" dir="ltr"></canvas>
+        <p class="hint">גררו על הלוח כדי להזיז את נקודת העיגון של הקפיץ (העיגול הירוק). החרוז גולש לאורך התיל ונעצר בשיווי משקל.</p>
+      </div>
+      <div>
+        <div class="ctrl"><label for="bead-R">רדיוס התיל R</label><input type="range" id="bead-R" min="0.8" max="2.6" step="0.05" value="1.6"><output id="bead-R-out"></output></div>
+        <div class="ctrl"><label for="bead-k">קבוע הקפיץ k</label><input type="range" id="bead-k" min="0" max="4" step="0.1" value="1.5"><output id="bead-k-out"></output></div>
+        <div class="ctrl"><label for="bead-mg">משקל mg</label><input type="range" id="bead-mg" min="0" max="3" step="0.1" value="1"><output id="bead-mg-out"></output></div>
+        <div class="readouts">
+          <div><span class="k">λ (כוח התיל)</span><span class="v lam" id="bead-lam"></span></div>
+          <div><span class="k">התיל</span><span class="v" id="bead-dir"></span></div>
+          <div><span class="k">מצב</span><span class="v" id="bead-state"></span></div>
+          <div><span class="k">dU*/dR, בדיקה מספרית</span><span class="v" id="bead-der"></span></div>
+        </div>
+        <p class="note">החץ הסגול הוא $\lambda \nabla g$. כאן $|\nabla g| = 1$, כך שאורכו הוא בדיוק $|\lambda|$, והוא מאזן את סכום החץ האפור (כובד) והחץ הירוק (קפיץ). כשהחרוז נעצר, הכופל והנגזרת המספרית של האנרגיה לפי $R$ מתלכדים. משכו את העיגון רחוק מחוץ לתיל: הקפיץ מושך את החרוז החוצה, התיל מושך פנימה, ו-$\lambda$ נהיה שלילי. כיווץ של התיל יעלה אז את האנרגיה, ולא יוריד אותה.</p>
+      </div>
+    </div>
+  </figure>
+
+  <h3>3.3 λ כטמפרטורה: הקובייה של בולצמן</h3>
+  <p>יש לנו קובייה עם שש פאות, ואנחנו יודעים עליה רק דבר אחד: הממוצע של ההטלות הוא $m$. איזו התפלגות הכי "כנה", כלומר מניחה הכי מעט מעבר למה שידוע? העיקרון של ג'יינס (Jaynes, 1957) אומר: זו שממקסמת את האנטרופיה $H(p) = -\sum p_i \ln p_i$ בתנאים $\sum p_i = 1$ ו-$\sum i\, p_i = m$.</p>
+  <p>שני אילוצים, שני כופלים. $\mathcal L = H - \alpha\,(\sum p_i - 1) - \beta\,(\sum i\,p_i - m)$, ואיפוס הנגזרת לפי $p_i$ נותן $-\ln p_i - 1 - \alpha - \beta i = 0$, כלומר</p>
+  $$p_i = \frac{e^{-\beta i}}{Z}, \qquad Z = \sum_{j=1}^{6} e^{-\beta j}.$$
+  <p>זו התפלגות בולצמן. בפיזיקה הפאה $i$ היא רמת אנרגיה $E_i$, והכופל $\beta$ הוא $1/kT$. <b>הטמפרטורה היא ההופכי של כופל לגרנז'</b> של האילוץ על האנרגיה הממוצעת. ומשפט הרגישות נותן מיד את אחת ההגדרות התרמודינמיות של טמפרטורה:</p>
+  $$\frac{dH^*}{dm} = \beta = \frac{1}{kT}.$$
+  <p>(כאן האנטרופיה $H$ נמדדת ביחידות של $k$. בפיזיקה כותבים $\partial S / \partial E = 1/T$.)</p>
+
+  <figure class="lab" id="lab-ent">
+    <div class="lab-head"><span class="tag">מעבדה 4</span><h3>הכופל כטמפרטורה</h3></div>
+    <div class="ctrl"><label for="ent-m">ממוצע m</label><input type="range" id="ent-m" min="1.05" max="5.95" step="0.01" value="4.5"><output id="ent-m-out"></output></div>
+    <div class="lab-body even">
+      <div>
+        <canvas id="ent-bars" class="cv wide nodrag" dir="ltr"></canvas>
+        <p class="cap">ההתפלגות עם האנטרופיה המרבית. הקו המקווקו הוא ההתפלגות האחידה, $1/6$.</p>
+      </div>
+      <div>
+        <canvas id="ent-curve" class="cv wide nodrag" dir="ltr"></canvas>
+        <p class="cap">האנטרופיה המרבית כפונקציה של $m$. השיפוע של המשיק הוא $\beta$.</p>
+      </div>
+    </div>
+    <div class="readouts">
+      <div><span class="k">β (הכופל)</span><span class="v lam" id="ent-beta"></span></div>
+      <div><span class="k">H* (אנטרופיה מרבית)</span><span class="v f" id="ent-H"></span></div>
+      <div><span class="k">"טמפרטורה" 1/β</span><span class="v" id="ent-T"></span></div>
+    </div>
+    <p class="note">בממוצע $3.5$ ההתפלגות אחידה ו-$\beta = 0$: האילוץ לא עולה כלום, והטמפרטורה אינסופית. מתחת ל-$3.5$, $\beta > 0$ והפאות הנמוכות מועדפות, כמו במערכת קרה. מעל $3.5$ קורה דבר מוזר: $\beta < 0$, טמפרטורה שלילית. במערכות פיזיקליות שהאנרגיה שלהן חסומה מלמעלה, כמו ספינים בשדה מגנטי, זה אמיתי לגמרי: מצב "חם יותר מאינסוף", שבו הרמות הגבוהות מאוכלסות יותר מהנמוכות.</p>
+  </figure>
+
+  <div class="box">
+    <span class="title">שלוש פנים של אותו מספר</span>
+    <p>מחיר של שקל במ״ר, כוח שתיל מפעיל, טמפרטורה של גז. בכל המקרים $\lambda$ הוא הנגזרת של הערך האופטימלי לפי הקבוע שבאילוץ. מי שיודע את $\lambda$ יודע מה יקרה אם משנים את הכללים.</p>
+  </div>
+</section>
+
+<!-- ============================== 4 ============================== -->
+<section id="s4">
+  <h2><span class="n">4</span>אי-שוויונים: תנאי קרוש-קון-טאקר</h2>
+  <p>בעולם האמיתי אילוצים הם בדרך כלל אי-שוויונים: אסור לחרוג מהתקציב, אבל לא חייבים לבזבז את כולו. מכאן נעבור לצורה הסטנדרטית שבה כותבים את הנושא, בעיית מינימום: $\min f(x)$ בתנאים $g_i(x) \le 0$, עבור $i = 1, \dots, m$.</p>
+  <p>עם אילוץ אחד יש שתי אפשרויות. או שהפתרון בפנים ($g < 0$), ואז האילוץ לא משחק תפקיד ופשוט $\nabla f = 0$. או שהפתרון על השפה ($g = 0$), ואז זה אילוץ שוויון רגיל עם תוספת אחת: עכשיו אנחנו יודעים לאיזה צד אסור לזוז. $\nabla g$ מצביע החוצה מהתחום, וכדי שלא יהיה אפשר לשפר, הכיוון שבו $f$ יורדת הכי מהר, $-\nabla f$, חייב להצביע החוצה גם הוא:</p>
+  $$-\nabla f = \lambda\, \nabla g, \qquad \lambda \ge 0.$$
+  <p>שני המקרים נכנסים לנוסחה אחת אם דורשים $\lambda\, g(x) = 0$: או שהאילוץ הדוק ($g = 0$), או שהכופל אפס. עם כמה אילוצים מקבלים את ארבעת התנאים של <b>קרוש-קון-טאקר</b>, או בקיצור KKT:</p>
+
+  <div class="box">
+    <ol>
+      <li><b>סטציונריות:</b> $\nabla f(x^*) + \sum_i \lambda_i \nabla g_i(x^*) = 0$</li>
+      <li><b>היתכנות:</b> $g_i(x^*) \le 0$ לכל $i$</li>
+      <li><b>כופלים אי-שליליים:</b> $\lambda_i \ge 0$</li>
+      <li><b>משלימות הרפיון:</b> $\lambda_i\, g_i(x^*) = 0$ לכל $i$</li>
+    </ol>
+    <p>אם יש גם אילוצי שוויון $h_j(x) = 0$, מוסיפים להם כופלים $\nu_j$ בלי הגבלת סימן, כמו בפרק 2.</p>
+  </div>
+
+  <h3>למה λ ≥ 0? כי זו המשמעות שלו</h3>
+  <p>נרחיב את האילוץ ה-$i$ ל-$g_i(x) \le u_i$. ההרחבה רק מגדילה את התחום, ולכן המינימום יכול רק לרדת או להישאר. משפט הרגישות בגרסה הזו:</p>
+  $$\frac{\partial p^*}{\partial u_i} = -\lambda_i \le 0.$$
+  <p>הסימן של הכופל לא הומצא כדי שהמתמטיקה תסתדר. הוא <b>נובע</b> מהמשמעות: מחיר של משאב לא יכול להיות שלילי, כי תמיד אפשר לא להשתמש בתוספת. משלימות הרפיון היא אותו רעיון מהצד השני: אם האילוץ רפוי ויש מרווח, עוד מרווח לא שווה כלום, ולכן המחיר שלו אפס.</p>
+  <p>ובגאומטריה: תנאים 1 ו-3 יחד אומרים ש-$-\nabla f$ נמצא בתוך ה<b>חרוט</b> שפורשים הגרדיאנטים של האילוצים הפעילים. כל כיוון שמוריד את $f$ יוצא מהתחום.</p>
+
+  <figure class="lab" id="lab-kkt">
+    <div class="lab-head"><span class="tag">מעבדה 5</span><h3>הנקודה הקרובה ביותר בתחום</h3></div>
+    <div class="lab-body">
+      <div>
+        <canvas id="kkt-plane" class="cv sq" dir="ltr"></canvas>
+        <p class="hint">גררו את נקודת המטרה $p$. הבעיה: למצוא את הנקודה בתחום שהכי קרובה ל-$p$, כלומר $\min\,|x - p|^2$. נסו להכניס את $p$ פנימה, להוציא אותו מעבר לצלע אחת, ולהביא אותו לאזור שמעבר לפינה.</p>
+      </div>
+      <div>
+        <div>
+          <label class="check"><input type="checkbox" id="kkt-on0" checked> מעגל</label>
+          <label class="check"><input type="checkbox" id="kkt-on1" checked> אלכסון</label>
+          <label class="check"><input type="checkbox" id="kkt-on2" checked> רצפה</label>
+        </div>
+        <div class="tablewrap">
+          <table class="tab" id="kkt-table">
+            <thead><tr><th>אילוץ</th><th>נוסחה</th><th>g(x*)</th><th>λ</th><th>λ·g</th><th>מצב</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="readouts"><div><span class="k">f* = |x* − p|²</span><span class="v f" id="kkt-f"></span></div></div>
+        <div class="status" id="kkt-status"></div>
+        <p class="note">הפתרון מחושב כאן בשיטה שמדגימה את KKT ישירות. המחשב עובר על כל הצירופים של אילוצים פעילים (אף אחד, אחד או שניים), פותר לכל צירוף משוואת לגרנז' רגילה, וזורק כל מועמד שיוצא מהתחום או שאחד הכופלים שלו שלילי. מה שנשאר הוא הפתרון. כשהמטרה מעבר לפינה, שני אילוצים פעילים והחרוט הסגול נפתח. כשהיא עוברת לרצועה שמול צלע אחת, אחד הכופלים יורד לאפס בדיוק ברגע שהפתרון עוזב את הפינה. העמודה $\lambda \cdot g$ היא תמיד אפס: זו משלימות הרפיון.</p>
+      </div>
+    </div>
+  </figure>
+
+  <aside class="word"><b>מאיפה השם?</b> ויליאם קרוש (Karush) ניסח את התנאים בעבודת המאסטר שלו באוניברסיטת שיקגו ב-1939 ולא פרסם אותם. הרולד קון (Kuhn) ואלברט טאקר (Tucker) מצאו אותם מחדש ופרסמו ב-1951, ובמשך שנים הם נקראו "תנאי קון-טאקר". רק כשהעבודה של קרוש התגלתה מחדש בשנות ה-70 נוסף גם שמו. <b>רפיון</b> (slack) הוא מעולם הספנות: החלק הרפוי של חבל. אילוץ רפוי הוא חבל שלא מתוח, יש לו מרווח והוא לא מושך את הפתרון. אילוץ הדוק (tight או binding, "כובל") הוא חבל מתוח.</aside>
+
+  <h3>כשהתנאים נכשלים</h3>
+  <p>תנאי KKT הכרחיים רק בהנחת "רגולריות" של האילוצים (constraint qualification, בערך "הכשר לאילוצים": תנאי שמבטיח שהם מתנהגים יפה). הנפוצה: הגרדיאנטים של האילוצים הפעילים בלתי תלויים ליניארית. בלעדיה התנאים יכולים להיכשל גם במינימום אמיתי. דוגמה: $\min x$ בתנאי $y^2 - x^3 \le 0$. התחום הוא "מקור" חד שהקודקוד שלו בראשית, והמינימום הוא שם. אבל $\nabla g(0, 0) = (0, 0)$, ולכן $\nabla f + \lambda \nabla g = (1, 0) \neq 0$ לכל $\lambda$. אין כופל. בחוד חד אין משיק, ואין מחיר.</p>
+  <p>ובכיוון ההפוך: אם $f$ וכל ה-$g_i$ קמורות, כל נקודה שמקיימת את KKT היא מינימום גלובלי. בבעיות קמורות KKT הם כל הסיפור.</p>
+
+  <details class="ex">
+    <summary>תרגיל: אילוץ אחד, שני מצבים</summary>
+    <p class="q">מצאו את $x^*$ ואת $\lambda$ עבור $\min\,(x - a)^2$ בתנאי $x \le 1$, כפונקציה של $a$.</p>
+    <div class="ans">אם $a \le 1$: $x^* = a$ ו-$\lambda = 0$, האילוץ רפוי. אם $a > 1$: $x^* = 1$, והסטציונריות $2(1 - a) + \lambda = 0$ נותנת $\lambda = 2(a - 1) > 0$. בדיקה: עם האילוץ $x \le u$ הערך הוא $p^*(u) = (a - u)^2$ (כש-$u < a$), ו-$-dp^*/du = 2(a - u)$, שבנקודה $u = 1$ שווה בדיוק ל-$\lambda$.</div>
+  </details>
+</section>
+
+<!-- ============================== 5 ============================== -->
+<section id="s5">
+  <h2><span class="n">5</span>דואליות: הבעיה שמסתכלת מצד המחירים</h2>
+  <p>עד עכשיו פתרנו עבור $x$ ו-$\lambda$ יחד. דואליות היא הרעיון שאפשר לפתור עבור $\lambda$ <b>לבד</b>, ושהבעיה שמתקבלת היא בעיית אופטימיזציה בזכות עצמה, עם משמעות משלה.</p>
+  <p>נדמיין רגולטור שלא אוסר עלינו לחרוג מהאילוץ, אלא גובה קנס: על כל יחידה של $g_i(x)$ משלמים $\lambda_i$, ואם $g_i < 0$ מקבלים החזר. מול הקנס הזה פותרים בעיה בלי אילוצים בכלל:</p>
+  $$q(\lambda) = \min_x \Bigl[\, f(x) + \sum_i \lambda_i\, g_i(x) \Bigr] = \min_x \mathcal L(x, \lambda).$$
+  <p>הפונקציה $q$ נקראת <b>הפונקציה הדואלית</b>.</p>
+
+  <h3>דואליות חלשה: תמיד</h3>
+  <p>לכל $x$ חוקי ולכל $\lambda \ge 0$ הסכום $\sum \lambda_i g_i(x)$ אינו חיובי, ולכן</p>
+  $$q(\lambda) \;\le\; \mathcal L(x, \lambda) \;\le\; f(x).$$
+  <p>כלומר כל $q(\lambda)$ הוא חסם תחתון לפתרון $p^*$. זה נכון בכל בעיה, קמורה או לא, ומוביל ישר לבעיה הדואלית: למצוא את החסם התחתון הטוב ביותר,</p>
+  $$d^* = \max_{\lambda \ge 0}\, q(\lambda) \;\le\; p^*.$$
+  <p>ועוד מתנה: $q$ היא מינימום של פונקציות ליניאריות ב-$\lambda$, ולכן היא קעורה תמיד. הבעיה הדואלית "נוחה" גם כשהבעיה המקורית קשה.</p>
+
+  <h3>התמונה הגאומטרית</h3>
+  <p>כל $x$ נותן זוג מספרים: כמה הוא מפר את האילוץ, $u = g(x)$, וכמה הוא עולה, $t = f(x)$. נצייר את כל הזוגות במישור $(u, t)$. הבעיה המקורית: הנקודה הנמוכה ביותר בחצי השמאלי, $u \le 0$. הבעיה הדואלית: לכל $\lambda$, הלגרנז'יאן $t + \lambda u$ קבוע לאורך ישרים בשיפוע $-\lambda$. מורידים ישר כזה מלמעלה עד שהוא נוגע בקבוצה, ו-$q(\lambda)$ הוא הגובה שבו הוא חוצה את הציר $u = 0$. הדואלית מחפשת את השיפוע שבו נקודת החיתוך הזו הכי גבוהה.</p>
+
+  <figure class="lab" id="lab-dual">
+    <div class="lab-head"><span class="tag">מעבדה 6</span><h3>ישרים תומכים ופער דואליות</h3></div>
+    <div class="seg" id="dual-presets">
+      <button data-k="convex">בעיה קמורה</button>
+      <button data-k="gap">בעיה לא קמורה</button>
+    </div>
+    <div class="ctrl"><label for="dual-lam">הכופל λ</label><input type="range" id="dual-lam" min="0" max="4" step="0.01" value="0.6"><output id="dual-lam-out"></output></div>
+    <div class="lab-body even">
+      <div>
+        <canvas id="dual-s" class="cv sq nodrag" dir="ltr"></canvas>
+        <p class="cap">הקבוצה $\{(g(x), f(x))\}$ בכחול, החצי החוקי מוצלל. הישר הסגול בשיפוע $-\lambda$ נוגע בקבוצה מלמטה. הקו הירוק המקווקו הוא $p^*(u)$: הערך האופטימלי אם מרחיבים את האילוץ ל-$g \le u$.</p>
+      </div>
+      <div>
+        <canvas id="dual-qplot" class="cv sq" dir="ltr"></canvas>
+        <p class="cap">הפונקציה הדואלית $q(\lambda)$, תמיד מתחת ל-$p^*$. אפשר גם לגרור כאן.</p>
+        <div class="readouts">
+          <div><span class="k">q(λ)</span><span class="v lam" id="dual-q"></span></div>
+          <div><span class="k">p* (הבעיה המקורית)</span><span class="v f" id="dual-p"></span></div>
+          <div><span class="k">d* (הדואלית)</span><span class="v lam" id="dual-d"></span></div>
+          <div><span class="k">פער דואליות</span><span class="v" id="dual-gap"></span></div>
+        </div>
+        <div class="btns"><button class="btn primary" id="dual-best">קפצו ל-λ*</button></div>
+      </div>
+    </div>
+    <p class="note" data-preset="convex">$\min x^2$ בתנאי $1 - x \le 0$. הקבוצה היא פרבולה. כאן $q(\lambda) = \lambda - \lambda^2/4$, והמקסימום ב-$\lambda^* = 2$ נותן $d^* = 1 = p^*$: אין פער. הישר האופטימלי הוא בדיוק המשיק לקו הירוק $p^*(u)$ בנקודה $u = 0$, והשיפוע שלו $-\lambda^*$. זה משפט הרגישות מפרק 3, בתמונה: הכופל הוא השיפוע של הערך האופטימלי.</p>
+    <p class="note" data-preset="gap" hidden>$\min\,4 - x^2$ בתנאי $x \le 0$, עם $x \in [-1, 2]$. הקבוצה מתעקלת כלפי מטה, וישר לא יכול להיכנס לשקע. הטוב ביותר שהדואלית משיגה הוא $d^* = 2$ ב-$\lambda^* = 1$, בעוד $p^* = 3$. ההפרש הוא <b>פער הדואליות</b>. שום מחיר לא יגרום למתכנן לבחור מרצונו את הנקודה החוקית הטובה ביותר.</p>
+  </figure>
+
+  <h3>דואליות חזקה</h3>
+  <p>בתמונה רואים מתי אין פער: כשהחלק התחתון של הקבוצה קמור, יש ישר תומך שנוגע בו בדיוק ב-$p^*$. זה מה שהמשפט מבטיח:</p>
+  <div class="box">
+    <span class="title">משפט (דואליות חזקה, תנאי סלייטר)</span>
+    <p>אם $f$ וכל ה-$g_i$ קמורות, וקיימת נקודה שמקיימת את כל האילוצים בחוזקה ($g_i(x) < 0$ לכל $i$), אז $d^* = p^*$. יותר מזה: ה-$\lambda^*$ שממקסם את $q$ הוא בדיוק וקטור הכופלים של KKT.</p>
+  </div>
+  <p>מסקנה מעשית: כופלי KKT הם הפתרון של בעיה אחרת. ואם מישהו מגיש לנו $x$ חוקי ו-$\lambda \ge 0$ עם $f(x) = q(\lambda)$, לא צריך להאמין לו על המילה: זו <b>תעודת אופטימליות</b>. שום פתרון לא יכול להיות טוב מחסם תחתון שכבר הושג.</p>
+
+  <h3>משחק ונקודת אוכף</h3>
+  <p>אפשר לכתוב את שתי הבעיות דרך הלגרנז'יאן בלבד. אם $x$ מפר אילוץ, $\max_{\lambda \ge 0} \mathcal L = \infty$, ואחרת המקסימום הוא $f(x)$. לכן</p>
+  $$p^* = \min_x\, \max_{\lambda \ge 0}\, \mathcal L(x, \lambda), \qquad d^* = \max_{\lambda \ge 0}\, \min_x\, \mathcal L(x, \lambda).$$
+  <p>זה משחק בין שני שחקנים: אחד בוחר תוכנית $x$, והשני בוחר מחירים $\lambda$. בגרסה הראשונה המתכנן משחק ראשון, והרגולטור מעניש אותו על כל הפרה. בשנייה הרגולטור קובע מחירים מראש, והמתכנן מגיב. דואליות חזקה אומרת שהסדר לא משנה: יש <b>נקודת אוכף</b> $(x^*, \lambda^*)$, מחירים שבהם המתכנן בוחר מרצונו לכבד את האילוצים. זו הנקודה הסטציונרית של $\mathcal L$ מפרק 2, ועכשיו ברור למה היא אוכף ולא מקסימום.</p>
+
+  <aside class="word"><b>מאיפה המילה?</b> דואליות (duality) באה מהמילה הלטינית duo, שניים. כל בעיית אופטימיזציה באה בזוג: אחת על כמויות ואחת על מחירים, ומכל אחת אפשר לשחזר את השנייה. מורטון סלייטר (Slater) פרסם את התנאי שנושא את שמו ב-1950.</aside>
+
+  <details class="ex">
+    <summary>תרגיל: דואלית בעבודת יד</summary>
+    <p class="q">חשבו את הפונקציה הדואלית של $\min x^2$ בתנאי $x \ge 1$, ומצאו את $d^*$.</p>
+    <div class="ans">$\mathcal L = x^2 + \lambda\,(1 - x)$. המינימום לפי $x$ ב-$x = \lambda/2$, ולכן $q(\lambda) = \lambda - \lambda^2/4$. המקסימום ב-$\lambda^* = 2$ עם $d^* = 1$. ומ-KKT: $x^* = 1$ ו-$2x^* - \lambda = 0$, כלומר $\lambda = 2$. אותו מספר משתי הדרכים.</div>
+  </details>
+</section>
+
+<!-- ============================== 6 ============================== -->
+<section id="s6">
+  <h2><span class="n">6</span>תכנון ליניארי: מחירי צל והסימפלקס</h2>
+  <p>כשהמטרה והאילוצים ליניאריים, כל מה שראינו מקבל צורה חדה במיוחד. נגרייה מייצרת שולחנות ($x_1$) וארונות ($x_2$). שולחן מכניס 300 ₪ רווח וארון 500 ₪, ונמדוד במאות שקלים: $c = (3, 5)$. יש שלושה משאבים מוגבלים בשבוע:</p>
+  <ul>
+    <li><b>חיתוך:</b> שולחן דורש שעה במכונת החיתוך, ויש 4 שעות: $x_1 \le 4$.</li>
+    <li><b>ליטוש:</b> ארון דורש שעתיים ליטוש, ויש 12: $2x_2 \le 12$.</li>
+    <li><b>עבודה:</b> שולחן דורש 3 שעות עבודה וארון 2, ויש 18: $3x_1 + 2x_2 \le 18$.</li>
+  </ul>
+  <p>המטרה היא $\max\; 3x_1 + 5x_2$. התחום הוא מצולע, קווי הגובה של המטרה הם ישרים מקבילים, והאופטימום תמיד בקודקוד (או לאורך צלע שלמה). בכל קודקוד שני אילוצים הדוקים, ולכן לחפש קודקוד זה בדיוק לחפש את <b>הקבוצה הפעילה</b> הנכונה, כמו שהמחשב עשה במעבדה 5.</p>
+
+  <h3>הבעיה הדואלית: מישהו רוצה לקנות את המשאבים</h3>
+  <p>נבנה את הדואלית מהלגרנז'יאן, עם כופלים $y_i \ge 0$ על שלושת המשאבים:</p>
+  $$\mathcal L = c^\top x + y^\top (b - Ax) = b^\top y + (c - A^\top y)^\top x.$$
+  <p>כדי שהמקסימום על $x \ge 0$ יהיה סופי צריך $A^\top y \ge c$, ואז הוא שווה $b^\top y$. הבעיה הדואלית היא $\min\, b^\top y$ בתנאים $A^\top y \ge c$ ו-$y \ge 0$.</p>
+  <p>ויש לה סיפור כלכלי יפה. קבלן מציע לקנות מהנגרייה את כל המשאבים שלה, $y_i$ לכל שעה מכל סוג. כדי שהנגר יסכים, ההצעה צריכה להיות שווה לפחות כמו כל מוצר שאפשר לייצר מהם. שעת החיתוך ושלוש שעות העבודה של שולחן צריכות להיות שוות לפחות 3, וזה האילוץ $y_1 + 3y_3 \ge 3$. הקבלן רוצה לשלם כמה שפחות: $\min\; 4y_1 + 12y_2 + 18y_3$.</p>
+  <p>דואליות חזקה מתקיימת בתכנון ליניארי תמיד, ברגע ששתי הבעיות פתירות: המחיר ההוגן של המשאבים שווה בדיוק לרווח המרבי. ומשלימות הרפיון אומרת: משאב שלא מנוצל עד הסוף מקבל מחיר 0, ומוצר שמייצרים בפועל לא משאיר רווח מעבר למחיר המשאבים שהוא צורך.</p>
+
+  <h3>הסימפלקס</h3>
+  <p>ג'ורג' דנציג המציא ב-1947 שיטה שעדיין פותרת חלק גדול מבעיות התכנון הליניארי בעולם. מתחילים בקודקוד $(0, 0)$, ובכל צעד עוברים לקודקוד שכן שמשפר את הרווח, עד שאין שכן כזה. האלגוריתם מחזיק טבלת עבודה (tableau), ושורת $z$ שלה היא החלק המעניין:</p>
+  <ul>
+    <li>המספרים בעמודות של משתני הרפיון $s_i$ (השעות שנשארו לא מנוצלות) הם <b>מחירים זמניים</b> של המשאבים, $y$, לפי הקודקוד הנוכחי.</li>
+    <li>המספר בעמודה של מוצר $j$ הוא $(A^\top y - c)_j$: עלות המשאבים שהמוצר צורך במחירים האלה, פחות הרווח שלו. מספר שלילי אומר "המוצר הזה מרוויח יותר ממה שהמשאבים שלו עולים", ולכן כדאי להכניס אותו לייצור.</li>
+    <li>כשאין יותר מספרים שליליים, המחירים $y$ חוקיים בבעיה הדואלית ומתאימים לקודקוד הנוכחי. פתרון ראשוני חוקי, פתרון דואלי חוקי, ואותו ערך: אופטימום, עם תעודה.</li>
+  </ul>
+  <p>כלומר הסימפלקס לא רק מוצא את $x^*$. הוא מוצא את מחירי הצל בחינם, והם תנאי העצירה שלו.</p>
+
+  <figure class="lab" id="lab-lp">
+    <div class="lab-head"><span class="tag">מעבדה 7</span><h3>הנגרייה: סימפלקס צעד אחר צעד</h3></div>
+    <div class="lab-body">
+      <div>
+        <canvas id="lp-plane" class="cv sq nodrag" dir="ltr"></canvas>
+        <p class="cap">התחום החוקי, שלושת האילוצים בכתום, וקווי רווח קבוע בכחול. הקו השחור הוא המסלול של הסימפלקס בין הקודקודים.</p>
+      </div>
+      <div>
+        <div class="btns">
+          <button class="btn primary" id="lp-step">צעד סימפלקס</button>
+          <button class="btn" id="lp-reset">מההתחלה</button>
+          <button class="btn" id="lp-solve">עד הסוף</button>
+        </div>
+        <div class="tablewrap" id="lp-tableau"></div>
+        <div class="status" id="lp-msg"></div>
+        <div class="readouts">
+          <div><span class="k">x* (שולחנות, ארונות)</span><span class="v" id="lp-x"></span></div>
+          <div><span class="k">רווח מרבי z*</span><span class="v f" id="lp-z"></span></div>
+          <div><span class="k">מחירי צל y*</span><span class="v lam" id="lp-y"></span></div>
+          <div><span class="k">ערך הדואלית b·y*</span><span class="v lam" id="lp-dual"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lab-body even" style="margin-top:14px">
+      <div>
+        <div class="ctrl"><label for="lp-b1">שעות חיתוך</label><input type="range" id="lp-b1" min="1" max="10" step="0.5" value="4"><output id="lp-b1-out"></output></div>
+        <div class="ctrl"><label for="lp-b2">שעות ליטוש</label><input type="range" id="lp-b2" min="2" max="24" step="0.5" value="12"><output id="lp-b2-out"></output></div>
+        <div class="ctrl"><label for="lp-b3">שעות עבודה</label><input type="range" id="lp-b3" min="4" max="36" step="0.5" value="18"><output id="lp-b3-out"></output></div>
+        <div class="ctrl"><label for="lp-c1">רווח משולחן</label><input type="range" id="lp-c1" min="0" max="8" step="0.5" value="3"><output id="lp-c1-out"></output></div>
+        <div class="ctrl"><label for="lp-c2">רווח מארון</label><input type="range" id="lp-c2" min="0" max="8" step="0.5" value="5"><output id="lp-c2-out"></output></div>
+        <p class="cap">הבעיה הדואלית, מתעדכנת עם המחוונים:</p>
+        <div class="mono" id="lp-dual-text"></div>
+      </div>
+      <div>
+        <div class="seg" id="lp-sens-pick">
+          <button data-k="0">חיתוך</button>
+          <button data-k="1">ליטוש</button>
+          <button data-k="2" class="on">עבודה</button>
+        </div>
+        <canvas id="lp-sens" class="cv wide nodrag" dir="ltr"></canvas>
+        <p class="cap">הרווח המרבי כפונקציה של כמות המשאב שנבחר. הגרף ליניארי למקוטעין, והשיפוע של כל קטע הוא מחיר הצל של המשאב.</p>
+      </div>
+    </div>
+    <p class="note">בסוף הריצה מצוירים על הקודקוד האופטימלי וקטור הרווח $c$ (כחול) והחצים $y_i a_i$ (סגול), כאשר $a_i$ היא השורה של האילוץ: $c = \sum_i y_i a_i$. זה תנאי KKT לתכנון ליניארי, והמחירים הם המקדמים. בנקודות השבירה של גרף הרגישות הקודקוד האופטימלי מחליף אילוצים פעילים, והמחיר קופץ. נסו את שעות החיתוך: המחיר שלהן אפס, כי שעתיים מתוך ארבע לא מנוצלות. הורידו אותן מתחת ל-2 והמחיר יקפוץ ל-3.</p>
+  </figure>
+
+  <aside class="word"><b>מאיפה המילה?</b> simplex בלטינית פירושו "פשוט", ובמקור "מקופל פעם אחת". בגאומטריה סימפלקס הוא הפאון הפשוט ביותר בכל ממד: קטע, משולש, טטראדר. את השם לשיטה הציע תאודור מוצקין, על פי פרשנות גאומטרית שלה שמשתמשת בסימפלקסים. דנציג פיתח אותה כשעבד על תכנון לוגיסטי בחיל האוויר האמריקאי, וכשהציג את התכנון הליניארי לג'ון פון נוימן, פון נוימן זיהה מיד את הדואליות מתורת המשחקים שלו. לאוניד קנטורוביץ' פיתח רעיונות דומים בברית המועצות כבר ב-1939, ובשנת 1975 קיבל יחד עם צ'לינג קופמנס פרס נובל לכלכלה על התאוריה של הקצאה אופטימלית של משאבים.</aside>
+
+  <p>יש לסימפלקס סוד מביך. ב-1972 בנו קלי ומינטי בעיות שבהן הוא עובר על כל הקודקודים, ומספרם גדל אקספוננציאלית עם הממד. בפועל זה כמעט לא קורה, אבל השאלה התאורטית נשארה פתוחה: האם אפשר לפתור תכנון ליניארי בזמן פולינומי?</p>
+</section>
+
+<!-- ============================== 7 ============================== -->
+<section id="s7">
+  <h2><span class="n">7</span>אליפסואידים ונקודות פנימיות</h2>
+  <p>ב-1979 פרסם לאוניד חצ'יאן הוכחה שהתשובה חיובית, עם אלגוריתם שלא הולך על השפה בכלל. הוא התבסס על שיטת האליפסואיד, שפותחה קודם לכן לאופטימיזציה קמורה (שור, ויודין ונמירובסקי, באמצע שנות ה-70). הרעיון:</p>
+  <ol>
+    <li>מתחילים בכדור גדול שבוודאות מכיל את הפתרון.</li>
+    <li>בודקים את המרכז $x_c$. אם הוא מפר אילוץ $a_i^\top x \le b_i$, הפתרון נמצא בוודאות בחצי שבו $a_i^\top x \le a_i^\top x_c$. אם המרכז חוקי, הפתרון נמצא בחצי שבו המטרה טובה לפחות כמו במרכז, $c^\top x \ge c^\top x_c$.</li>
+    <li>עוטפים את חצי האליפסואיד שנשאר באליפסואיד הקטן ביותר שמכיל אותו, וחוזרים.</li>
+  </ol>
+  <p>בכל צעד הנפח קטן לפחות פי $e^{-1/(2(n+1))}$, כאשר $n$ הוא הממד. במישור השטח קטן בדיוק פי $\tfrac23\sqrt{4/3} \approx 0.77$. אחרי מספר פולינומי של צעדים האליפסואיד קטן כל כך שהמרכז שלו כמעט אופטימלי.</p>
+  <p>כדאי לשים לב ממה עשויים החתכים: וקטור הנורמל של אילוץ, $a_i = \nabla g_i$, או הגרדיאנט של המטרה. אלה בדיוק החצים של KKT. השיטה שואלת שוב ושוב "לאיזה כיוון אסור ללכת", וזה כל המידע שהיא צריכה.</p>
+
+  <figure class="lab" id="lab-ell">
+    <div class="lab-head"><span class="tag">מעבדה 8</span><h3>שיטת האליפסואיד על הנגרייה</h3></div>
+    <div class="lab-body">
+      <div>
+        <canvas id="ell-plane" class="cv sq nodrag" dir="ltr"></canvas>
+      </div>
+      <div>
+        <div class="btns">
+          <button class="btn primary" id="ell-step">צעד</button>
+          <button class="btn" id="ell-play">הפעלה</button>
+          <button class="btn" id="ell-reset">מההתחלה</button>
+          <button class="btn" id="ell-zoom">זום לאליפסה</button>
+          <button class="btn" id="ell-full">תמונה מלאה</button>
+        </div>
+        <div class="status" id="ell-kind"></div>
+        <div class="readouts">
+          <div><span class="k">צעד</span><span class="v" id="ell-k"></span></div>
+          <div><span class="k">שטח ביחס לכדור</span><span class="v lam" id="ell-area"></span></div>
+          <div><span class="k">התאוריה: 0.77 בחזקת הצעד</span><span class="v" id="ell-theory"></span></div>
+          <div><span class="k">הרווח הטוב ביותר שנמצא</span><span class="v f" id="ell-best"></span></div>
+          <div><span class="k">פער מ-z*</span><span class="v" id="ell-gap"></span></div>
+        </div>
+        <p class="note">נקודה ירוקה היא מרכז חוקי, אדומה היא מרכז שמפר אילוץ. החלק האדום הוא החצי שנזרק, והקו המקווקו הוא החתך: כתום אם הוא בא מאילוץ, כחול אם מהמטרה. העיגול הירוק הריק הוא הנקודה החוקית הטובה ביותר עד כה, והנקודה הכחולה היא האופטימום שהסימפלקס מצא. אחרי כמה עשרות צעדים לחצו "זום לאליפסה". הבעיה היא אותה נגרייה, עם המחוונים של מעבדה 7.</p>
+      </div>
+    </div>
+  </figure>
+
+  <p>האליפסואיד הוא ניצחון תאורטי: הוא הוכיח שתכנון ליניארי פולינומי, והחדשות הגיעו אפילו לעמוד הראשון של הניו יורק טיימס. בפועל הוא איטי מאוד, הרבה יותר מהסימפלקס. אבל יש לו תכונה עמוקה: הוא לא צריך לראות את האילוצים בכלל, רק "אורקל הפרדה" (separation oracle): קופסה שחורה שאומרת על כל נקודה אם היא חוקית, ואם לא, איזה חצי מישור לזרוק. מכאן הראו גרטשל, לובאס וסכרייבר (1981) שאופטימיזציה ו"הפרדה" הן בעצם אותה בעיה, וזה פתח את הדלת לאלגוריתמים פולינומיים לבעיות קומבינטוריות עם מספר אילוצים אקספוננציאלי.</p>
+
+  <aside class="word"><b>מאיפה המילה?</b> אליפסה באה מהיוונית elleipsis, "חוסר" או "החסרה". אפולוניוס קרא כך לחתך החרוט הזה כי בהגדרה שלו משהו בו "חסר" ביחס למעגל ולפרבולה. הסיומת oid פירושה "דומה ל", ואליפסואיד הוא "דמוי אליפסה" בכל ממד. אורקל (oracle) בא מהלטינית oraculum, מקום שבו מקבלים תשובה מהאלים בלי לדעת איך היא נוצרה.</aside>
+
+  <h3>שיטות נקודה פנימית: KKT עם קצת רפיון</h3>
+  <p>ב-1984 הציג נרנדרה קרמרקר ממעבדות בל אלגוריתם פולינומי שגם מהיר בפועל, ומאז שיטות הנקודה הפנימית הן אחת משתי הדרכים העיקריות לפתור בעיות גדולות. הרעיון שלהן מתחבר ישירות לכופלים. במקום לדרוש משלימות רפיון מדויקת, $y_i s_i = 0$ (מחיר כפול מרווח), דורשים $y_i s_i = \mu$ לכל $i$, עם $\mu > 0$ קטן.</p>
+  <p>אלה בדיוק תנאי האופטימליות של בעיה עם "מחסום" לוגריתמי, $\max\; c^\top x + \mu \sum_i \ln s_i$, שדוחף את הנקודה הרחק מהשפה. לכל $\mu$ יש פתרון יחיד, ואוסף הפתרונות הוא עקומה חלקה בתוך התחום: <b>המסלול המרכזי</b> (central path). האלגוריתם מקטין את $\mu$ בהדרגה ועוקב אחרי המסלול בצעדי ניוטון. בכל נקודה על המסלול יש לנו גם מחירים, $y_i = \mu / s_i$, וגם פער ידוע בדיוק בין הבעיה המקורית לדואלית: מספר האילוצים כפול $\mu$.</p>
+
+  <figure class="lab" id="lab-ipm">
+    <div class="lab-head"><span class="tag">מעבדה 9</span><h3>המסלול המרכזי</h3></div>
+    <div class="lab-body">
+      <div>
+        <canvas id="ipm-plane" class="cv sq nodrag" dir="ltr"></canvas>
+      </div>
+      <div>
+        <div class="ctrl"><label for="ipm-t">התקדמות</label><input type="range" id="ipm-t" min="0" max="140" step="1" value="40"><output id="ipm-t-out"></output></div>
+        <div class="readouts">
+          <div><span class="k">μ</span><span class="v" id="ipm-mu"></span></div>
+          <div><span class="k">x(μ)</span><span class="v" id="ipm-x"></span></div>
+          <div><span class="k">מחירים y(μ) = μ/s</span><span class="v lam" id="ipm-y"></span></div>
+          <div><span class="k">מחירי הצל y*</span><span class="v lam" id="ipm-ystar"></span></div>
+          <div><span class="k">פער דואליות (5μ)</span><span class="v" id="ipm-gap"></span></div>
+        </div>
+        <p class="note">הזיזו את המחוון עד הסוף: $\mu$ יורד מ-100 ל-0.001, והנקודה גולשת מאזור המרכז אל הקודקוד האופטימלי. המחירים $y(\mu)$ מתכנסים למחירי הצל שהסימפלקס מצא. המחיר של שעות החיתוך לא אפס לאורך הדרך, הוא רק שואף לאפס, כי המרחק מהאילוץ הזה נשאר חיובי. הפער $5\mu$ (חמישה אילוצים, כולל $x_1, x_2 \ge 0$) הוא תעודה: בכל רגע ידוע בדיוק כמה רחוק אנחנו מהאופטימום.</p>
+      </div>
+    </div>
+  </figure>
+
+  <div class="box plain">
+    <span class="title">שלושה אלגוריתמים, אותם כופלים</span>
+    <p>הסימפלקס מחפש את הקבוצה הפעילה הנכונה ומחזיק מחירים זמניים עד שהם חוקיים. האליפסואיד חותך לפי הגרדיאנטים של KKT ומכווץ נפח. הנקודה הפנימית מרפה את משלימות הרפיון ל-$y_i s_i = \mu$ ומהדקת אותה בהדרגה. שלושתם פותרים בעצם את מערכת KKT, ושלושתם מחזירים בסוף גם את $\lambda^*$.</p>
+  </div>
+</section>
+
+<!-- ============================== 8 ============================== -->
+<section id="s8">
+  <h2><span class="n">8</span>איפה עוד פוגשים כופלים</h2>
+  <ul>
+    <li><b>מכניקה.</b> משוואות לגרנז' מהסוג הראשון: $m\ddot x = F + \sum_i \lambda_i \nabla g_i$. כל כופל הוא כוח אילוץ, כמו בחרוז מפרק 3. המתיחות בחוט של מטוטלת היא כופל.</li>
+    <li><b>כלכלה.</b> אצל צרכן שממקסם תועלת בתקציב, $\lambda$ הוא "התועלת השולית של הכסף". בתכנון ייצור, מחירי צל. ובתנאים מסוימים (קמירות, תחרות מלאה) מחירי שוק בשיווי משקל הם הכופלים של בעיית הקצאה של המשק כולו.</li>
+    <li><b>פיזיקה סטטיסטית.</b> $\beta = 1/kT$ הוא הכופל של האנרגיה הממוצעת. הכופל של מספר החלקיקים הממוצע הוא $-\beta\mu$, ומשם מגיע הפוטנציאל הכימי $\mu$.</li>
+    <li><b>אלגברה ליניארית.</b> המקסימום של $x^\top A x$ על ספרת היחידה הוא הערך העצמי הגדול ביותר, והכופל הוא הערך העצמי עצמו (מעבדה 1, "מנת ריילי").</li>
+    <li><b>מכונת וקטורים תומכים (SVM).</b> מחפשים את המישור המפריד עם השוליים הרחבים ביותר. לכל נקודת אימון יש אילוץ וכופל $\alpha_i$. ממשלימות הרפיון, $\alpha_i > 0$ רק לנקודות שנוגעות בשוליים: אלה "הווקטורים התומכים", והמסווג תלוי רק בהם. את כל השאר אפשר למחוק. והבעיה הדואלית תלויה בנתונים רק דרך מכפלות פנימיות, ומשם בא "טריק הגרעין" (kernel trick): מחליפים את המכפלה הפנימית בפונקציה אחרת ומקבלים מפריד לא ליניארי.</li>
+    <li><b>רגולריזציה.</b> רגרסיית רכס (ridge regression), $\min\, \|Xw - y\|^2 + \lambda \|w\|^2$, היא הלגרנז'יאן של $\min\, \|Xw - y\|^2$ בתנאי $\|w\|^2 \le r$. ה-$\lambda$ שמכווננים בוולידציה הוא כופל לגרנז', וכל ערך שלו מתאים לרדיוס $r$ אחר. כך גם לאסו (lasso), עם נורמת $L^1$.</li>
+    <li><b>למידת חיזוק.</b> TRPO (אופטימיזציית מדיניות באזור אמון) מגביל כל עדכון של המדיניות באילוץ על מרחק KL (סטיית קולבק-לייבלר) מהמדיניות הקודמת. PPO בגרסת הקנס מחליף את האילוץ בקנס $\beta \cdot \mathrm{KL}$ ומכוונן את $\beta$: מגדיל אותו כשה-KL גדול מהיעד ומקטין כשהוא קטן. זו עלייה דואלית: עדכון של כופל לגרנז' לפי ההפרה של האילוץ.</li>
+    <li><b>רשתות תקשורת.</b> את בקרת העומס של TCP אפשר לפרש כאלגוריתם מבוזר שפותר בעיה דואלית: עיכובים ואובדן חבילות בנתב עמוס משמשים "מחיר" של הקישור, וכל מקור מתאים את הקצב שלו למחיר (קלי, 1998).</li>
+  </ul>
+
+  <div class="box">
+    <span class="title">השורה התחתונה</span>
+    <p>לכל בעיית אופטימיזציה עם אילוצים יש שתי תשובות. אחת היא מה לעשות, $x^*$. השנייה היא כמה עולה כל אילוץ, $\lambda^*$. התשובה השנייה אומרת לאן כדאי להשקיע, מה לא משנה, ואיך יודעים שהתשובה הראשונה נכונה. לגרנז' קיבל אותה כמעט בדרך אגב, כמשתנה עזר.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  נבנה באוקטובר 2026. כל ההדמיות רצות בדפדפן, בלי שרת. הנוסחאות מוצגות ב-KaTeX.
+</footer>
+
+</body>
+</html>
