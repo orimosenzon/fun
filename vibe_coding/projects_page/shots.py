@@ -35,8 +35,10 @@ OUT_SIZE = (640, 400)
 # types into a field, "click" presses buttons (a missing one is skipped),
 # "keys" plays keystrokes, then "wait" ms for canvases and WebGL to settle.
 # "gpu" runs the page in Chrome on the real graphics card, for scenes too heavy
-# for the software renderer. The point is a shot of the app doing its thing,
-# not its start screen.
+# for the software renderer. "frame" scrolls an element into view and crops the
+# shot to it (padded out to 16:10), shot at "dpr" device pixels so the crop
+# stays sharp. The point is a shot of the app doing its thing, not its start
+# screen.
 ARROWS = ["ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]
 TWEAKS = {
     "2048": {"keys": ARROWS * 25, "wait": 1200},
@@ -50,6 +52,7 @@ TWEAKS = {
     "jetbike_game": {"gpu": True, "settle": 12000, "keys": ["Enter"], "wait": 8000},
     "optimus": {"click": ["#go"], "wait": 6000},
     "roadster": {"click": ["#go"], "wait": 5000},
+    "lagrange": {"frame": "#lab-mtn", "dpr": 2, "wait": 3000},
 }
 
 
@@ -86,9 +89,22 @@ def capture(page, url, tweak):
     for key in tweak.get("keys", []):
         page.keyboard.press(key)
         page.wait_for_timeout(150)
+    if "frame" in tweak:
+        page.locator(tweak["frame"]).evaluate("e => e.scrollIntoView({block: 'center', behavior: 'instant'})")
     page.wait_for_timeout(tweak.get("wait", 2500))
-    big = Image.open(io.BytesIO(page.screenshot(timeout=90000))).convert("RGB")
+    clip = frame_clip(page.locator(tweak["frame"]).bounding_box()) if "frame" in tweak else None
+    big = Image.open(io.BytesIO(page.screenshot(clip=clip, timeout=90000))).convert("RGB")
+    big = big.resize((VIEWPORT["width"], VIEWPORT["height"]), Image.LANCZOS)
     return webp(big.resize(OUT_SIZE, Image.LANCZOS), 80), webp(big, 74)
+
+
+def frame_clip(box, pad=16):
+    """The element's box plus a margin, widened or heightened to the viewport's 16:10."""
+    w, h = box["width"] + 2 * pad, box["height"] + 2 * pad
+    ratio = VIEWPORT["width"] / VIEWPORT["height"]
+    w, h = max(w, h * ratio), max(h, w / ratio)
+    cx, cy = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    return {"x": cx - w / 2, "y": cy - h / 2, "width": w, "height": h}
 
 
 def webp(img, quality):
@@ -128,13 +144,15 @@ def main():
         gpu = None
         for a, href, out in todo:
             url = href if href.startswith("http") else base + href
-            if TWEAKS.get(a, {}).get("gpu"):
+            tweak = TWEAKS.get(a, {})
+            opts = {"viewport": VIEWPORT, "locale": "he-IL", "device_scale_factor": tweak.get("dpr", 1)}
+            if tweak.get("gpu"):
                 gpu = gpu or pw.chromium.launch(channel="chrome", args=GPU_ARGS)
-                page = gpu.new_page(viewport=VIEWPORT, locale="he-IL")
+                page = gpu.new_page(**opts)
             else:
-                page = browser.new_page(viewport=VIEWPORT, locale="he-IL")
+                page = browser.new_page(**opts)
             try:
-                small, big = capture(page, url, TWEAKS.get(a, {}))
+                small, big = capture(page, url, tweak)
                 out.write_bytes(small)
                 (build.SHOTS_BIG / out.name).write_bytes(big)
                 print(f"  ✓ {a}  ({len(small) // 1024}KB, big {len(big) // 1024}KB)")
