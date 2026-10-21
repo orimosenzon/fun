@@ -6,7 +6,7 @@
 - `index.html`: כל הטקסט (8 פרקים), KaTeX מ-jsdelivr עם auto-render. RTL, נוסחאות LTR דרך CSS.
 - `css/style.css`: טוקנים של צבעים, מצב כהה (prefers-color-scheme + כפתור עם data-theme).
 - `js/plot.js`: עוזר קנבס משותף (קואורדינטות עולם, רשת, heat map, קווי גובה ב-marching squares, חצים, גרירה). טקסט עברי בקנבס מקבל direction=rtl אוטומטית.
-- `js/demos/`: geo (מעבדה 1), meaning (2–4: גדר, חרוז, אנטרופיה), kkt (5), duality (6), lp (7–9: סימפלקס+טבלה, אליפסואיד, מסלול מרכזי). כל מעבדות ה-LP חולקות מצב אחד (`st` ב-lp.js).
+- `js/demos/`: geo (מעבדה 1), meaning (4–6: גדר, חרוז, אנטרופיה), kkt (7), duality (8), lp (10, 12, 13: סימפלקס+טבלה, אליפסואיד, מסלול מרכזי). כל מעבדות ה-LP חולקות מצב אחד (`st` ב-lp.js).
 - `js/three/`: ארבע מעבדות תלת-ממד (Three.js 0.160 דרך import map מ-jsdelivr), נטענות ב-import דינמי כדי שכשל ב-WebGL לא ישבור את השאר. `view3d.js` הוא העוזר המשותף (z למעלה, OrbitControls בלי זום כדי לא לחטוף גלילה, תוויות CSS2D, צבעים מטוקנים).
   - mountain (מעבדה 2): ההר שקוף למחצה, השביל כ"וילון", f*(c) עם שבר כשהשיא קופץ בין גבעות.
   - twocons (3): כדור ∩ מישור, ∇f במישור ש-∇g₁, ∇g₂ פורשים.
@@ -31,5 +31,5 @@
 - פורט 8765 ו-8791 תפוסים בשרתים של פרויקטים אחרים. לבחור פורט פנוי.
 
 ## צעדים הבאים אפשריים
-- להוסיף לדף הפרויקטים (projects.json + build.py). פורסם ב-GitHub Pages: orimosenzon.github.io/fun/vibe_coding/lagrange/
+- פורסם ב-GitHub Pages: orimosenzon.github.io/fun/vibe_coding/lagrange/ ובדף הפרויקטים (מ-21/10/2026).
 - רעיונות: מעבדת SVM קטנה (וקטורים תומכים כמשלימות רפיון), עלייה דואלית אנימטיבית, ההסיאן הממוסגר.

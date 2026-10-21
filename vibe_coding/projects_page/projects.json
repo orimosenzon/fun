@@ -1071,6 +1071,41 @@
           ]
         },
         {
+          "title": "כופלי לגרנז': אופטימיזציה תחת אילוצים",
+          "icon": "λ",
+          "theme": "t-purple",
+          "dir": "lagrange",
+          "tags": [
+            "אופטימיזציה",
+            "KKT",
+            "סימפלקס",
+            "Three.js",
+            "KaTeX",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#c4b5fd\">מה בעצם אומר הכופל λ? המחיר של האילוץ.</strong><br> דף לימוד בעברית למי שמכיר קלקולוס: 8 פרקים ו-13 מעבדות שגוררים בהן ורואים את λ כמחיר צל, ככוח וכטמפרטורה. תנאי KKT, דואליות, נקודת אוכף של הלגרנז'יאן, סימפלקס עם שלושה כללי ציר על הקובייה של קלי-מינטי, שיטת האליפסואיד והמסלול המרכזי. ארבע מהמעבדות בתלת-ממד.",
+          "links": [
+            {
+              "href": "lagrange/index.html",
+              "style": "live",
+              "label": "▶ ללמוד",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/lagrange",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "פרדס חנה תלת-ממד",
           "icon": "🏘️",
           "theme": "t-green",
