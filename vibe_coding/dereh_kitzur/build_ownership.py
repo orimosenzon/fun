@@ -113,12 +113,28 @@ TO_3857 = Transformer.from_crs(4326, 3857, always_xy=True).transform
 # decision, not something to paint grey.
 KINDS = {
     "רשות מקומית": ("m", "#1565c0", "המועצה המקומית"),
-    "מקרקעי ישראל": ("i", "#e65100", 'מקרקעי ישראל (מדינה, קק"ל, רשות הפיתוח)'),
-    "פרטית": ("p", "#f2d16b", "פרטית"),
+    "מקרקעי ישראל": ("i", "#d32f2f", 'מקרקעי ישראל (מדינה, קק"ל, רשות הפיתוח)'),
+    "פרטית": ("p", "#ffd54f", "פרטית"),
     "מעורבת": ("x", "#8e24aa", "מעורבת"),
-    "אחרת": ("o", "#00897b", "אחרת"),
+    "אחרת": ("o", "#6d4c41", "אחרת"),
     "לא ידוע": ("u", "#9e9e9e", "לא ידוע"),
 }
+
+# Ori, 21/10/2026: ground leased for generations is, for whoever lives on it,
+# much more like private ground than like the state's, so it gets a colour
+# next to the private one. Nobody publishes which parcels of מקרקעי ישראל are
+# leased (the lease is in the נסח טאבו, parcel by parcel), so it is read off
+# the land use instead: a parcel of מקרקעי ישראל that lies mostly in a zone of
+# homes, shops, workshops or offices has been leased out - that is how רמ"י
+# hands out building land. In the moshava the split is clean: 2,068 parcels
+# lie 90%+ in such zones and 1,438 have none at all, almost nothing between.
+# Fields, open space, roads and public buildings stay the state's colour;
+# farmland can be leased too, but nothing open says which.
+LEASE = ("l", "#fb8c00", "מקרקעי ישראל בחכירה לדורות (משוער לפי הייעוד)")
+LEASE_USES = {"res_a", "res_b", "res_c", "res", "rural", "mixed", "trade",
+              "industry", "work", "private"}
+LEASE_SHARE = 0.5
+LANDUSE = os.path.join(HERE, "web", "data", "landuse.json")
 
 # The colour each kind is painted in on the images the WMS renders for us:
 # pure and far apart, with antialiasing off, so a pixel is one kind or none.
@@ -334,6 +350,28 @@ def forests(area):
     return out
 
 
+def leased(features, known):
+    """The ids of the parcels of מקרקעי ישראל that are, by their land use, leased."""
+    from shapely.strtree import STRtree
+    with open(LANDUSE, encoding="utf-8") as handle:
+        uses = json.load(handle)["features"]
+    to_m = Transformer.from_crs(4326, 2039, always_xy=True).transform
+    zones = [transform(to_m, shape(u["geometry"])).buffer(0) for u in uses]
+    builds = [u["properties"]["k"] in LEASE_USES for u in uses]
+    tree = STRtree(zones)
+    out = set()
+    for f in features:
+        if known.get(f["id"]) != "מקרקעי ישראל":
+            continue
+        g = transform(to_m, shape(f["geometry"])).buffer(0)
+        if g.is_empty:
+            continue
+        built = sum(g.intersection(zones[j]).area for j in tree.query(g) if builds[j])
+        if built / g.area >= LEASE_SHARE:
+            out.add(f["id"])
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--refresh", action="store_true", help="ask govmap again")
@@ -348,13 +386,14 @@ def main():
     known, shapes = pull(features, args.refresh)
     check(known, shapes, args.check)
 
+    lease = leased(features, known)
     out, tally, missing = [], {}, []
     for f in features:
         kind = known.get(f["id"])
         if not kind:
             missing.append(f["id"])
             continue
-        code = KINDS[kind][0]
+        code = LEASE[0] if f["id"] in lease else KINDS[kind][0]
         props = dict(f["properties"], o=code)
         out.append({"type": "Feature", "id": f["id"], "properties": props,
                     "geometry": f["geometry"]})
@@ -366,7 +405,7 @@ def main():
     woods = forests(area)
 
     print("\nלפי סוג בעלות:")
-    for name, (code, _, label) in KINDS.items():
+    for code, _, label in list(KINDS.values()) + [LEASE]:
         n, m2 = tally.get(code, [0, 0])
         print(f"  {label}: {n} חלקות, {m2 / 1000:,.0f} דונם")
     print(f"  בלי נתון: {len(missing)} חלקות")
@@ -379,7 +418,7 @@ def main():
         "kinds": {code: {"name": label, "color": colour,
                          "parcels": tally.get(code, [0, 0])[0],
                          "dunam": round(tally.get(code, [0, 0])[1] / 1000)}
-                  for code, colour, label in KINDS.values()},
+                  for code, colour, label in list(KINDS.values()) + [LEASE]},
         "missing": len(missing),
         "features": out + woods,
     }

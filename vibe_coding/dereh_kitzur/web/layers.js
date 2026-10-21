@@ -100,18 +100,26 @@ const Layers = (() => {
     { key: 'other', name: 'אחר', color: '#848484', stripe: '#515151' }
   ];
 
-  /* The ownership layer's key: the land registry's four kinds of owner, as
-   * govmap's "סוג בעלות בחלקות רשומות" gives them, and קק"ל's forests drawn
-   * over them as an outline. Codes and colours must match KINDS in
-   * build_ownership.py. The state and קק"ל are one row because the registry's
-   * published summary makes them one; see the layer's note. */
+  /* The ownership layer's key: the land registry's kinds of owner, as govmap's
+   * "סוג בעלות בחלקות רשומות" gives them, with the ground of מקרקעי ישראל that
+   * is leased for generations split off by its land use, and קק"ל's forests
+   * drawn over them as an outline. Codes and colours must match KINDS and
+   * LEASE in build_ownership.py. The state and קק"ל are one row because the
+   * registry's published summary makes them one; see the layer's note.
+   *
+   * `alpha` is how strongly each is filled on the map, and the key mixes its
+   * patch with the same share of white, so the key looks like the map does
+   * rather than like the colour at full strength (Ori, 21/10/2026: the key
+   * did not match the map). Leased ground is next to private ground in colour
+   * and in the list, because to whoever lives on it that is what it is like. */
   const OWNERSHIP_KEY = [
-    { key: 'm', name: 'המועצה המקומית', color: '#1565c0' },
-    { key: 'i', name: 'מקרקעי ישראל: מדינה, קק"ל, רשות הפיתוח (רמ"י)', color: '#e65100' },
-    { key: 'x', name: 'מעורבת: כמה סוגי בעלים בחלקה אחת', color: '#8e24aa' },
-    { key: 'p', name: 'פרטית', color: '#f2d16b' },
-    { key: 'o', name: 'אחרת', color: '#00897b' },
-    { key: 'u', name: 'לא ידוע', color: '#9e9e9e' }
+    { key: 'm', name: 'המועצה המקומית', color: '#1565c0', alpha: 0.6 },
+    { key: 'i', name: 'מקרקעי ישראל: מדינה, קק"ל, רשות הפיתוח (רמ"י)', color: '#d32f2f', alpha: 0.6 },
+    { key: 'l', name: 'מקרקעי ישראל בחכירה לדורות (משוער לפי הייעוד)', color: '#fb8c00', alpha: 0.6 },
+    { key: 'p', name: 'פרטית', color: '#ffd54f', alpha: 0.65 },
+    { key: 'x', name: 'מעורבת: כמה סוגי בעלים בחלקה אחת', color: '#8e24aa', alpha: 0.6 },
+    { key: 'o', name: 'אחרת', color: '#6d4c41', alpha: 0.6 },
+    { key: 'u', name: 'לא ידוע', color: '#9e9e9e', alpha: 0.6 }
   ];
   const OWNERSHIP_FOREST = '#1b5e20';
 
@@ -1015,10 +1023,14 @@ const Layers = (() => {
       grid: 'data/ownership.json',
       gridStyle: 'ownership',
       note: 'מי הבעלים הרשום של כל חלקה במושבה, לפי פנקסי המקרקעין (הטאבו): '
-        + 'כחול לקרקע של המועצה, כתום למקרקעי ישראל, צהוב חיוור לפרטית, סגול '
+        + 'כחול לקרקע של המועצה, אדום למקרקעי ישראל, צהוב לפרטית, סגול '
         + 'לחלקה שיש בה כמה סוגי בעלים. "מקרקעי ישראל" הם שלושה בעלים שרמ"י '
         + 'מנהלת יחד: המדינה, קק"ל ורשות הפיתוח. הסיכום שהמדינה מפרסמת לא '
         + 'מפריד ביניהם, ולכן גם המפה לא. את הבעלים המדויק נותן רק נסח טאבו. '
+        + 'מקרקעי ישראל שרובם באזור מגורים, מסחר או תעסוקה צבועים כתום, '
+        + 'בין הצהוב של הפרטית לאדום של המדינה: קרקע כזאת רמ"י מחכירה לדורות למי שגר או עובד עליה, '
+        + 'ובפועל היא קרובה לפרטית. זו הערכה לפי הייעוד, כי רשימת החכירות '
+        + 'לא מתפרסמת. '
         + 'בקו ירוק מקווקו: יערות שקק"ל מנהלת, שזה ניהול ולא בהכרח בעלות. '
         + 'דרכים ושבילים שעוד לא נרשמו כחלקה נשארים בלי צבע. לחיצה על חלקה '
         + 'אומרת מי הבעלים, מה השטח הרשום ואיך מזמינים נסח.',
@@ -2143,6 +2155,8 @@ const Layers = (() => {
     const forest = ['==', ['get', 'k'], 'f'];
     const colour = ['match', ['get', 'o'],
       ...OWNERSHIP_KEY.flatMap((k) => [k.key, k.color]), '#9e9e9e'];
+    const alpha = ['match', ['get', 'o'],
+      ...OWNERSHIP_KEY.flatMap((k) => [k.key, k.alpha]), 0.6];
     map.addLayer({
       id: gridFillId(layer.id),
       type: 'fill',
@@ -2150,11 +2164,10 @@ const Layers = (() => {
       filter: parcel,
       paint: {
         'fill-color': colour,
-        // Private ground is most of the moshava and the least of the question,
-        // so it is the palest: the eye goes to the blue and the orange.
+        // Each kind's own strength, which the key copies, up to street level;
+        // closer in it thins so the houses and the paths show through.
         'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-          12, ['case', ['==', ['get', 'o'], 'p'], dark ? 0.3 : 0.35, dark ? 0.6 : 0.65],
-          18, ['case', ['==', ['get', 'o'], 'p'], dark ? 0.15 : 0.2, dark ? 0.35 : 0.4]]
+          15, alpha, 18, ['*', alpha, 0.6]]
       }
     }, above);
     map.addLayer({
@@ -2982,7 +2995,7 @@ const Layers = (() => {
       return layer.markedKey.map((g) => ({ name: g.name, color: g.color, line: true, dash: g.dash }));
     }
     if (layer.ownershipKey) {
-      return layer.ownershipKey.map((k) => ({ name: k.name, color: k.color, area: true }))
+      return layer.ownershipKey.map((k) => ({ name: k.name, color: k.color, area: true, alpha: k.alpha }))
         .concat([{ name: 'יער בניהול קק"ל', color: OWNERSHIP_FOREST, line: true, dash: true }]);
     }
     if (layer.landuseGroups) {
@@ -3053,8 +3066,8 @@ const Layers = (() => {
       const head = rows[0].whole ? ''
         : `<p class="lg-layer">${escapeHtml(title)}</p>`;
       return head + `<ul class="lg-rows">${rows.map((r) => `<li>
-        <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}${r.area ? ' area' : ''}${r.stripe ? ' striped' : ''}"
-              style="--c:${r.color}${r.stripe ? `;--s:${r.stripe}` : ''}"></span>
+        <span class="lg-dot${r.line ? ' line' : ''}${r.dash ? ' dash' : ''}${r.area ? ' area' : ''}${r.stripe ? ' striped' : ''}${r.alpha ? ' tint' : ''}"
+              style="--c:${r.color}${r.stripe ? `;--s:${r.stripe}` : ''}${r.alpha ? `;--a:${Math.round(r.alpha * 100)}%` : ''}"></span>
         <span class="lg-nm">${escapeHtml(r.name)}</span>
         ${r.n ? `<span class="lg-n">${r.n}</span>` : ''}
       </li>`).join('')}</ul>`;
