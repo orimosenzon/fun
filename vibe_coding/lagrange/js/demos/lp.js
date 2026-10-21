@@ -12,7 +12,7 @@ const listeners = [];
 const changed = () => listeners.forEach(f => f());
 
 /* ---------- simplex (dense tableau, Dantzig's rule) ---------- */
-export function simplex(Am, b, c) {
+export function simplex(Am, b, c, rule = 'dantzig') {
   const m = Am.length, n = c.length, W = n + m + 1;
   const T = Am.map((row, i) => [...row, ...Array.from({ length: m }, (_, k) => +(k === i)), b[i]]);
   T.push([...c.map(v => -v), ...Array(m).fill(0), 0]);
@@ -22,13 +22,25 @@ export function simplex(Am, b, c) {
     basis.forEach((j, i) => { if (j < n) x[j] = T[i][W - 1]; });
     return { T: T.map(r => r.slice()), basis: basis.slice(), x, z: T[m][W - 1], y: T[m].slice(n, n + m), pivot: null };
   };
-  const states = [snap()];
-  for (let it = 0; it < 50; it++) {
-    let e = -1, best = -1e-9;
-    for (let j = 0; j < n + m; j++) if (T[m][j] < best) { best = T[m][j]; e = j; }
-    if (e < 0) break;
+  // ratio test; Bland breaks ties by the smallest basic index
+  const ratio = e => {
     let r = -1, br = Infinity;
-    for (let i = 0; i < m; i++) if (T[i][e] > 1e-9) { const ratio = T[i][W - 1] / T[i][e]; if (ratio < br - 1e-12) { br = ratio; r = i; } }
+    for (let i = 0; i < m; i++) {
+      if (T[i][e] <= 1e-9) continue;
+      const q = T[i][W - 1] / T[i][e];
+      if (q < br - 1e-12 || (rule === 'bland' && r >= 0 && Math.abs(q - br) <= 1e-12 && basis[i] < basis[r])) { br = q; r = i; }
+    }
+    return { r, br };
+  };
+  const states = [snap()];
+  for (let it = 0; it < 100; it++) {
+    const cands = [];
+    for (let j = 0; j < n + m; j++) if (T[m][j] < -1e-9) cands.push(j);
+    if (!cands.length) break;
+    let e = cands[0];
+    if (rule === 'dantzig') e = cands.reduce((a, j) => T[m][j] < T[m][a] ? j : a);
+    else if (rule === 'greatest') e = cands.reduce((a, j) => -T[m][j] * ratio(j).br > -T[m][a] * ratio(a).br ? j : a);
+    const { r, br } = ratio(e);
     if (r < 0) break;
     states[states.length - 1].pivot = { r, e, ratio: br };
     const pv = T[r][e];

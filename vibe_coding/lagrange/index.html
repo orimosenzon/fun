@@ -21,6 +21,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
   onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false})"></script>
 <link rel="stylesheet" href="css/style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -100,6 +101,31 @@
       <span class="chip tan">ירוק</span> מה שנשאר: הרכיב של $\nabla f$ לאורך האילוץ. הוא מראה לאן ללכת כדי לעלות, ובנקודה קריטית הוא מתאפס.
     </figcaption>
   </figure>
+
+  <p>ועכשיו אותה תמונה בתלת-ממד. הפעם רואים את ההר עצמו. השביל מצויר על הקרקע, ומעליו עומד "וילון" כתום שהגובה שלו בכל נקודה הוא הגובה של ההר מעליה. השפה העליונה של הווילון היא $f$ לאורך השביל, כלומר הגרף הקטן של המעבדה הקודמת, והנקודה הגבוהה ביותר עליה היא הפתרון. המישור הכחול האופקי בגובה $f^*$ נוגע בשפה הזו ולא חוצה אותה: זו בדיוק המשיקות, במבט מהצד.</p>
+
+  <figure class="lab" id="lab-mtn">
+    <div class="lab-head"><span class="tag">מעבדה 2</span><h3>ההר, השביל והווילון</h3><span class="badge3">תלת-ממד</span></div>
+    <div class="lab-body">
+      <div>
+        <div class="cv3" id="mtn-3d"></div>
+        <p class="hint">גררו כדי לסובב. על הקרקע, למרגלות הנקודה הגבוהה: $\nabla g$ (כתום, עבה) ו-$\nabla f$ (כחול) מצביעים לאותו כיוון. הכדור האפור הקטן הוא הפסגה האמיתית, שהשביל לא עובר בה.</p>
+      </div>
+      <div>
+        <div class="ctrl"><label for="mtn-c">הזזת השביל c</label><input type="range" id="mtn-c" min="-1.5" max="1.5" step="0.01" value="0"><output id="mtn-c-out"></output></div>
+        <label class="check"><input type="checkbox" id="mtn-hide"> הסתירו את ההר, השאירו רק את הווילון</label>
+        <div class="ctrl"><label for="mtn-t">הולך על השביל</label><input type="range" id="mtn-t" min="-3.2" max="3.2" step="0.01" value="-2.2"><output id="mtn-t-out"></output></div>
+        <div class="readouts">
+          <div><span class="k">f* (השיא על השביל)</span><span class="v f" id="mtn-f"></span></div>
+          <div><span class="k">λ בשיא</span><span class="v lam" id="mtn-lam"></span></div>
+          <div><span class="k">df*/dc, מספרית</span><span class="v" id="mtn-der"></span></div>
+          <div><span class="k">גובה ההולך</span><span class="v" id="mtn-walk"></span></div>
+        </div>
+        <canvas id="mtn-graph" class="cv short nodrag" dir="ltr"></canvas>
+        <p class="note">המחוון $c$ מזיז את השביל, כלומר משנה את האילוץ $g = c$. הגרף מראה איך $f^*$ משתנה, והקו הסגול משיק לו בשיפוע $\lambda$. הנגזרת המספרית ו-$\lambda$ מתלכדים, וזה התוכן של פרק 3. ויש רגע מעניין: כשהשביל עובר בין שתי הגבעות, הנקודה הטובה ביותר קופצת מגבעה לגבעה. שם יש ל-$f^*(c)$ "שבר" ו-$\lambda$ קופץ, כי משפט הרגישות מניח שהפתרון זז ברציפות.</p>
+      </div>
+    </div>
+  </figure>
 </section>
 
 <!-- ============================== 2 ============================== -->
@@ -120,6 +146,36 @@
     $$\nabla f = \sum_{i=1}^m \lambda_i \nabla g_i, \qquad \mathcal L = f - \sum_{i=1}^m \lambda_i\,(g_i - c_i).$$
     <p>אלה $n + m$ משוואות ב-$n + m$ נעלמים. מה שצריך כדי שזה יעבוד: שהגרדיאנטים $\nabla g_i(x^*)$ יהיו בלתי תלויים ליניארית.</p>
   </div>
+
+  <p>בשלושה ממדים עם שני אילוצים רואים למה צריך כופל לכל אילוץ. הכדור $x^2 + y^2 + z^2 = 4$ והמישור נחתכים במעגל, והמעגל הוא הקבוצה החוקית. בכל נקודה עליו יש רק כיוון חוקי אחד, המשיק למעגל, ויש שני גרדיאנטים של אילוצים. שני הגרדיאנטים פורשים מישור שלם (הדיסק הסגול) שניצב למשיק. התנאי לנקודה קריטית הוא לא ש-$\nabla f$ מקביל ל-$\nabla g_1$ או ל-$\nabla g_2$, אלא שהוא נמצא איפשהו במישור שהם פורשים, $\nabla f = \lambda_1 \nabla g_1 + \lambda_2 \nabla g_2$. המקדמים של הצירוף הם שני הכופלים.</p>
+
+  <figure class="lab" id="lab-two">
+    <div class="lab-head"><span class="tag">מעבדה 3</span><h3>שני אילוצים במרחב</h3><span class="badge3">תלת-ממד</span></div>
+    <div class="lab-body">
+      <div>
+        <div class="cv3" id="two-3d"></div>
+        <p class="hint">גררו כדי לסובב. המטרה היא $f = a \cdot x$, פונקציה ליניארית שהכיוון שלה $a$ (החץ הכחול) נקבע במחוונים.</p>
+      </div>
+      <div>
+        <div class="ctrl"><label for="two-th">מיקום על המעגל</label><input type="range" id="two-th" min="0" max="359" step="1" value="34"><output id="two-th-out"></output></div>
+        <div class="btns">
+          <button class="btn primary" id="two-max">למקסימום</button>
+          <button class="btn" id="two-min">למינימום</button>
+          <button class="btn" id="two-walk">הליכה / עצירה</button>
+        </div>
+        <div class="readouts">
+          <div><span class="k">f בנקודה</span><span class="v f" id="two-f"></span></div>
+          <div><span class="k">λ₁ (הכדור)</span><span class="v lam" id="two-l1"></span></div>
+          <div><span class="k">λ₂ (המישור)</span><span class="v lam" id="two-l2"></span></div>
+          <div><span class="k">רכיב משיקי של ∇f</span><span class="v" id="two-tan"></span></div>
+        </div>
+        <div class="status" id="two-status"></div>
+        <div class="ctrl"><label for="two-az">כיוון המטרה</label><input type="range" id="two-az" min="0" max="359" step="1" value="40"><output id="two-az-out"></output></div>
+        <div class="ctrl"><label for="two-el">גובה המטרה</label><input type="range" id="two-el" min="-80" max="80" step="1" value="25"><output id="two-el-out"></output></div>
+        <p class="note">הריבוע הכחול השקוף הוא "קו הגובה" של $f$ דרך הנקודה, ובמרחב הוא מישור. במקסימום ובמינימום הוא משיק למעגל. ה-$\lambda$ שמוצגים הם הצירוף הקרוב ביותר ל-$\nabla f$ מתוך המישור הסגול, ורק בנקודה קריטית הצירוף מדויק. הטו את המטרה כך שתצביע כמעט בכיוון הנורמל של המישור: $\lambda_2$ ייקח כמעט את כל העבודה, ו-$\lambda_1$ יתקרב לאפס.</p>
+      </div>
+    </div>
+  </figure>
 
   <h3>דוגמה שלמה</h3>
   <p>נמצא את המקסימום של $f = x + 2y$ על המעגל $x^2 + y^2 = 4$, ברירת המחדל של מעבדה 1. התנאי $\nabla f = \lambda \nabla g$:</p>
@@ -175,7 +231,7 @@
   <p>לפני שמזיזים מחוונים, כדאי לקרוא את המשוואה הזו במילים. שקל נוסף שהולך לצלע $x$ קונה $1/p_x$ מטר ממנה, וכל מטר כזה מוסיף $y^*$ מ״ר. לכן $y^*/p_x$ הוא השטח שמרוויחים משקל שהולך לצלע $x$, ו-$x^*/p_y$ הוא השטח משקל שהולך לצלע $y$. תנאי לגרנז' אומר: <b>באופטימום, שקל נוסף מניב אותה תשואה בכל שימוש</b>. אילו שקל היה מניב יותר בצלע $x$, היה כדאי להעביר לשם כסף מצלע $y$. התשואה המשותפת הזו היא $\lambda$: כמה מ״ר קונה שקל.</p>
 
   <figure class="lab" id="lab-fence">
-    <div class="lab-head"><span class="tag">מעבדה 2</span><h3>כמה שווה שקל נוסף</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 4</span><h3>כמה שווה שקל נוסף</h3></div>
     <div class="lab-body even">
       <div>
         <canvas id="fence-plane" class="cv sq nodrag" dir="ltr"></canvas>
@@ -208,7 +264,7 @@
   <p>ומשפט הרגישות? $\lambda = dU^*/dR$. אם מרחיבים את התיל במרחק קטן $\delta$, האנרגיה בשיווי המשקל משתנה ב-$\lambda \delta$, וזו בדיוק העבודה שהתיל מבצע כשהוא דוחף את החרוז החוצה: כוח כפול דרך. אותה עובדה בשתי שפות.</p>
 
   <figure class="lab" id="lab-bead">
-    <div class="lab-head"><span class="tag">מעבדה 3</span><h3>הכופל ככוח אילוץ</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 5</span><h3>הכופל ככוח אילוץ</h3></div>
     <div class="lab-body">
       <div>
         <canvas id="bead-plane" class="cv sq" dir="ltr"></canvas>
@@ -238,7 +294,7 @@
   <p>(כאן האנטרופיה $H$ נמדדת ביחידות של $k$. בפיזיקה כותבים $\partial S / \partial E = 1/T$.)</p>
 
   <figure class="lab" id="lab-ent">
-    <div class="lab-head"><span class="tag">מעבדה 4</span><h3>הכופל כטמפרטורה</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 6</span><h3>הכופל כטמפרטורה</h3></div>
     <div class="ctrl"><label for="ent-m">ממוצע m</label><input type="range" id="ent-m" min="1.05" max="5.95" step="0.01" value="4.5"><output id="ent-m-out"></output></div>
     <div class="lab-body even">
       <div>
@@ -289,7 +345,7 @@
   <p>ובגאומטריה: תנאים 1 ו-3 יחד אומרים ש-$-\nabla f$ נמצא בתוך ה<b>חרוט</b> שפורשים הגרדיאנטים של האילוצים הפעילים. כל כיוון שמוריד את $f$ יוצא מהתחום.</p>
 
   <figure class="lab" id="lab-kkt">
-    <div class="lab-head"><span class="tag">מעבדה 5</span><h3>הנקודה הקרובה ביותר בתחום</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 7</span><h3>הנקודה הקרובה ביותר בתחום</h3></div>
     <div class="lab-body">
       <div>
         <canvas id="kkt-plane" class="cv sq" dir="ltr"></canvas>
@@ -346,7 +402,7 @@
   <p>כל $x$ נותן זוג מספרים: כמה הוא מפר את האילוץ, $u = g(x)$, וכמה הוא עולה, $t = f(x)$. נצייר את כל הזוגות במישור $(u, t)$. הבעיה המקורית: הנקודה הנמוכה ביותר בחצי השמאלי, $u \le 0$. הבעיה הדואלית: לכל $\lambda$, הלגרנז'יאן $t + \lambda u$ קבוע לאורך ישרים בשיפוע $-\lambda$. מורידים ישר כזה מלמעלה עד שהוא נוגע בקבוצה, ו-$q(\lambda)$ הוא הגובה שבו הוא חוצה את הציר $u = 0$. הדואלית מחפשת את השיפוע שבו נקודת החיתוך הזו הכי גבוהה.</p>
 
   <figure class="lab" id="lab-dual">
-    <div class="lab-head"><span class="tag">מעבדה 6</span><h3>ישרים תומכים ופער דואליות</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 8</span><h3>ישרים תומכים ופער דואליות</h3></div>
     <div class="seg" id="dual-presets">
       <button data-k="convex">בעיה קמורה</button>
       <button data-k="gap">בעיה לא קמורה</button>
@@ -386,6 +442,34 @@
   $$p^* = \min_x\, \max_{\lambda \ge 0}\, \mathcal L(x, \lambda), \qquad d^* = \max_{\lambda \ge 0}\, \min_x\, \mathcal L(x, \lambda).$$
   <p>זה משחק בין שני שחקנים: אחד בוחר תוכנית $x$, והשני בוחר מחירים $\lambda$. בגרסה הראשונה המתכנן משחק ראשון, והרגולטור מעניש אותו על כל הפרה. בשנייה הרגולטור קובע מחירים מראש, והמתכנן מגיב. דואליות חזקה אומרת שהסדר לא משנה: יש <b>נקודת אוכף</b> $(x^*, \lambda^*)$, מחירים שבהם המתכנן בוחר מרצונו לכבד את האילוצים. זו הנקודה הסטציונרית של $\mathcal L$ מפרק 2, ועכשיו ברור למה היא אוכף ולא מקסימום.</p>
 
+  <p>אפשר גם לראות את המשחק. הנה הלגרנז'יאן עצמו כמשטח מעל המישור $(x, \lambda)$, עבור הבעיה מהמעבדה הקודמת: $\min x^2$ בתנאי $1 - x \le 0$, כלומר $\mathcal L = x^2 + \lambda\,(1 - x)$. שני דברים בולטים מיד. בכיוון $\lambda$ המשטח עשוי מקווים ישרים: לכל $x$ קבוע, $\mathcal L$ ליניארי ב-$\lambda$, והשיפוע שלו הוא $g(x)$. ובכיוון $x$ הוא עשוי מפרבולות.</p>
+
+  <figure class="lab" id="lab-saddle">
+    <div class="lab-head"><span class="tag">מעבדה 9</span><h3>הלגרנז'יאן כמשטח: מתכנן מול רגולטור</h3><span class="badge3">תלת-ממד</span></div>
+    <div class="seg" id="sad-presets">
+      <button data-k="convex">בעיה קמורה</button>
+      <button data-k="gap">בעיה לא קמורה</button>
+    </div>
+    <div class="lab-body">
+      <div>
+        <div class="cv3" id="sad-3d"></div>
+        <p class="hint">גררו כדי לסובב. העקומה הסגולה העבה היא "קרקעית העמק": לכל $\lambda$, המינימום של $\mathcal L$ על פני $x$. הגובה שלה הוא בדיוק $q(\lambda)$.</p>
+      </div>
+      <div>
+        <div class="ctrl"><label for="sad-lam">המחיר λ</label><input type="range" id="sad-lam" min="0" max="4" step="0.01" value="0.8"><output id="sad-lam-out"></output></div>
+        <div class="ctrl"><label for="sad-x">התוכנית x</label><input type="range" id="sad-x" min="-1" max="3" step="0.01" value="1.6"><output id="sad-x-out"></output></div>
+        <div class="readouts">
+          <div><span class="k">L(x, λ)</span><span class="v" id="sad-L"></span></div>
+          <div><span class="k">q(λ): תגובת המתכנן</span><span class="v lam" id="sad-q"></span></div>
+          <div><span class="k">g(x): שיפוע החתך הכחול</span><span class="v f" id="sad-g"></span></div>
+          <div><span class="k">תגובת הרגולטור</span><span class="v" id="sad-reg"></span></div>
+        </div>
+        <p class="note" data-preset="convex">החתך הסגול הדק ($\lambda$ קבוע) הוא הפרבולה שהמתכנן ממזער, והכדור עליו הוא התגובה הטובה ביותר שלו. החתך הכחול ($x$ קבוע) הוא ישר, ומה שהרגולטור רואה: אם $x$ מפר את האילוץ ($g > 0$) הישר עולה, והרגולטור מעלה את הקנס בלי גבול; אם $x$ חוקי בחוזקה, הישר יורד, והקנס הטוב ביותר הוא 0. קרקעית העמק מגיעה לשיא ב-$(x, \lambda) = (1, 2)$, וזו נקודת אוכף: בכיוון $x$ היא מינימום, ובכיוון $\lambda$ החתך שטוח לגמרי, כי $g(1) = 0$. זו משלימות הרפיון. שני השחקנים מרוצים, ו-$p^* = d^* = 1$.</p>
+        <p class="note" data-preset="gap" hidden>הבעיה הלא קמורה מהמעבדה הקודמת: $\mathcal L = 4 - x^2 + \lambda x$ עם $x \in [-1, 2]$. הפרבולות הפוכות, ולכן המינימום של כל חתך נמצא תמיד באחד הקצוות. קרקעית העמק קופצת בין $x = -1$ ל-$x = 2$, ובשיא שלה, $\lambda = 1$, המתכנן אדיש בין השתיים. $x = 2$ בכלל לא חוקי, ו-$x = -1$ אמנם הפתרון, אבל עם $\lambda = 1$ משלימות הרפיון נכשלת ($\lambda g = -1 \ne 0$). אין נקודת אוכף: לכל מחיר שהרגולטור יקבע, המתכנן יברח לקצה. זה פער הדואליות, כפי שהוא נראה על המשטח.</p>
+      </div>
+    </div>
+  </figure>
+
   <aside class="word"><b>מאיפה המילה?</b> דואליות (duality) באה מהמילה הלטינית duo, שניים. כל בעיית אופטימיזציה באה בזוג: אחת על כמויות ואחת על מחירים, ומכל אחת אפשר לשחזר את השנייה. מורטון סלייטר (Slater) פרסם את התנאי שנושא את שמו ב-1950.</aside>
 
   <details class="ex">
@@ -404,7 +488,7 @@
     <li><b>ליטוש:</b> ארון דורש שעתיים ליטוש, ויש 12: $2x_2 \le 12$.</li>
     <li><b>עבודה:</b> שולחן דורש 3 שעות עבודה וארון 2, ויש 18: $3x_1 + 2x_2 \le 18$.</li>
   </ul>
-  <p>המטרה היא $\max\; 3x_1 + 5x_2$. התחום הוא מצולע, קווי הגובה של המטרה הם ישרים מקבילים, והאופטימום תמיד בקודקוד (או לאורך צלע שלמה). בכל קודקוד שני אילוצים הדוקים, ולכן לחפש קודקוד זה בדיוק לחפש את <b>הקבוצה הפעילה</b> הנכונה, כמו שהמחשב עשה במעבדה 5.</p>
+  <p>המטרה היא $\max\; 3x_1 + 5x_2$. התחום הוא מצולע, קווי הגובה של המטרה הם ישרים מקבילים, והאופטימום תמיד בקודקוד (או לאורך צלע שלמה). בכל קודקוד שני אילוצים הדוקים, ולכן לחפש קודקוד זה בדיוק לחפש את <b>הקבוצה הפעילה</b> הנכונה, כמו שהמחשב עשה במעבדה 7.</p>
 
   <h3>הבעיה הדואלית: מישהו רוצה לקנות את המשאבים</h3>
   <p>נבנה את הדואלית מהלגרנז'יאן, עם כופלים $y_i \ge 0$ על שלושת המשאבים:</p>
@@ -423,7 +507,7 @@
   <p>כלומר הסימפלקס לא רק מוצא את $x^*$. הוא מוצא את מחירי הצל בחינם, והם תנאי העצירה שלו.</p>
 
   <figure class="lab" id="lab-lp">
-    <div class="lab-head"><span class="tag">מעבדה 7</span><h3>הנגרייה: סימפלקס צעד אחר צעד</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 10</span><h3>הנגרייה: סימפלקס צעד אחר צעד</h3></div>
     <div class="lab-body">
       <div>
         <canvas id="lp-plane" class="cv sq nodrag" dir="ltr"></canvas>
@@ -470,7 +554,50 @@
 
   <aside class="word"><b>מאיפה המילה?</b> simplex בלטינית פירושו "פשוט", ובמקור "מקופל פעם אחת". בגאומטריה סימפלקס הוא הפאון הפשוט ביותר בכל ממד: קטע, משולש, טטראדר. את השם לשיטה הציע תאודור מוצקין, על פי פרשנות גאומטרית שלה שמשתמשת בסימפלקסים. דנציג פיתח אותה כשעבד על תכנון לוגיסטי בחיל האוויר האמריקאי, וכשהציג את התכנון הליניארי לג'ון פון נוימן, פון נוימן זיהה מיד את הדואליות מתורת המשחקים שלו. לאוניד קנטורוביץ' פיתח רעיונות דומים בברית המועצות כבר ב-1939, ובשנת 1975 קיבל יחד עם צ'לינג קופמנס פרס נובל לכלכלה על התאוריה של הקצאה אופטימלית של משאבים.</aside>
 
-  <p>יש לסימפלקס סוד מביך. ב-1972 בנו קלי ומינטי בעיות שבהן הוא עובר על כל הקודקודים, ומספרם גדל אקספוננציאלית עם הממד. בפועל זה כמעט לא קורה, אבל השאלה התאורטית נשארה פתוחה: האם אפשר לפתור תכנון ליניארי בזמן פולינומי?</p>
+  <h3>בשלושה משתנים: פאון, ובחירה בכל צומת</h3>
+  <p>עם שלושה משתנים התחום הוא פאון, וכל קודקוד הוא מקום שבו שלושה אילוצים הדוקים בבת אחת. הסימפלקס הולך לאורך הצלעות, ובכל צעד הוא צריך לבחור לאיזה שכן ללכת. זו החלטה אמיתית, שנקראת "כלל הציר" (pivot rule; ציר במובן של נקודה שהטבלה מסתובבת סביבה). דנציג בחר במשתנה עם המחיר השלילי ביותר בשורת $z$, וזה בדרך כלל כלל סביר מאוד.</p>
+  <p>אבל לסימפלקס יש סוד מביך. ב-1972 בנו ויקטור קלי וג'ורג' מינטי "קובייה מעוותת" שבה הכלל של דנציג עובר על כל $2^n$ הקודקודים. בשלושה ממדים זה 8 קודקודים ב-7 צעדים, ובממד 50 זה יותר ממיליון מיליארד.</p>
+
+  <figure class="lab" id="lab-poly">
+    <div class="lab-head"><span class="tag">מעבדה 11</span><h3>הסימפלקס על פאון</h3><span class="badge3">תלת-ממד</span></div>
+    <div class="seg" id="poly-presets">
+      <button data-k="km">קובייה של קלי-מינטי</button>
+      <button data-k="shop">נגרייה עם כיסאות</button>
+    </div>
+    <div class="lab-body">
+      <div>
+        <div class="cv3" id="poly-3d"></div>
+        <p class="hint">גררו כדי לסובב. כלל הציר: דנציג בוחר את המחיר השלילי ביותר, "שיפור מרבי" את הצעד שמעלה הכי הרבה את הרווח, ובלנד את המשתנה הראשון שמשפר. המסלול הירוק הוא הדרך של הסימפלקס, והמישור הכחול הוא מישור הרווח הקבוע דרך הקודקוד הנוכחי.</p>
+      </div>
+      <div>
+        <div class="seg" id="poly-rule">
+          <button data-k="dantzig" class="on">דנציג</button>
+          <button data-k="greatest">שיפור מרבי</button>
+          <button data-k="bland">בלנד</button>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="poly-next">הצעד הבא</button>
+          <button class="btn" id="poly-play">הרצה</button>
+          <button class="btn" id="poly-reset">מההתחלה</button>
+        </div>
+        <div class="readouts">
+          <div><span class="k">צעד</span><span class="v" id="poly-step"></span></div>
+          <div><span class="k">קודקודים בפאון</span><span class="v" id="poly-nv"></span></div>
+          <div><span class="k">הקודקוד הנוכחי</span><span class="v" id="poly-x"></span></div>
+          <div><span class="k">רווח z</span><span class="v f" id="poly-z"></span></div>
+          <div><span class="k">מחירי צל y</span><span class="v lam" id="poly-y"></span></div>
+        </div>
+        <div class="status" id="poly-msg"></div>
+        <div class="ctrl"><label for="poly-c1">c₁</label><input type="range" id="poly-c1" min="0" max="8" step="0.5" value="4"><output id="poly-c1-out"></output></div>
+        <div class="ctrl"><label for="poly-c2">c₂</label><input type="range" id="poly-c2" min="0" max="8" step="0.5" value="2"><output id="poly-c2-out"></output></div>
+        <div class="ctrl"><label for="poly-c3">c₃</label><input type="range" id="poly-c3" min="0" max="8" step="0.5" value="1"><output id="poly-c3-out"></output></div>
+      </div>
+    </div>
+    <p class="note" data-preset="km">$\max\, 4x_1 + 2x_2 + x_3$ בתנאים $x_1 \le 5$, $4x_1 + x_2 \le 25$, $8x_1 + 4x_2 + x_3 \le 125$. כל ציר מוצג בקנה מידה משלו, ולכן הפאון נראה כמו קובייה. הריצו עם הכלל של דנציג וספרו: 7 צעדים, כל 8 הקודקודים. עברו ל"שיפור הגדול ביותר": צעד אחד. ובלנד: 5. אף כלל לא מנצח תמיד, ולכל אחד מהכללים הקלאסיים נמצאו בעיות שבהן הוא אקספוננציאלי.</p>
+    <p class="note" data-preset="shop" hidden>הנגרייה עם מוצר שלישי, כיסאות ($x_3$): כיסא צורך חצי שעת חיתוך ושעת עבודה, ומרוויח 2. בסוף הריצה מופיעים על הקודקוד הרווח $c$ (כחול) והנורמלים של כל הפאות הפעילות כפול הכופלים שלהן (סגול), כולל פאות של $x_j \ge 0$ שמסומנות $\mu_j$. בשלושה ממדים רואים יפה ש-$c$ נמצא בתוך החרוט שלהם: זה KKT. שנו את הרווחים ותראו את הפתרון קופץ בין קודקודים.</p>
+  </figure>
+
+  <p>בפועל המקרה הגרוע כמעט לא קורה, והסימפלקס מהיר מאוד ברוב הבעיות האמיתיות. אבל השאלה התאורטית נשארה פתוחה: האם אפשר לפתור תכנון ליניארי בזמן פולינומי?</p>
 </section>
 
 <!-- ============================== 7 ============================== -->
@@ -486,7 +613,7 @@
   <p>כדאי לשים לב ממה עשויים החתכים: וקטור הנורמל של אילוץ, $a_i = \nabla g_i$, או הגרדיאנט של המטרה. אלה בדיוק החצים של KKT. השיטה שואלת שוב ושוב "לאיזה כיוון אסור ללכת", וזה כל המידע שהיא צריכה.</p>
 
   <figure class="lab" id="lab-ell">
-    <div class="lab-head"><span class="tag">מעבדה 8</span><h3>שיטת האליפסואיד על הנגרייה</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 12</span><h3>שיטת האליפסואיד על הנגרייה</h3></div>
     <div class="lab-body">
       <div>
         <canvas id="ell-plane" class="cv sq nodrag" dir="ltr"></canvas>
@@ -507,7 +634,7 @@
           <div><span class="k">הרווח הטוב ביותר שנמצא</span><span class="v f" id="ell-best"></span></div>
           <div><span class="k">פער מ-z*</span><span class="v" id="ell-gap"></span></div>
         </div>
-        <p class="note">נקודה ירוקה היא מרכז חוקי, אדומה היא מרכז שמפר אילוץ. החלק האדום הוא החצי שנזרק, והקו המקווקו הוא החתך: כתום אם הוא בא מאילוץ, כחול אם מהמטרה. העיגול הירוק הריק הוא הנקודה החוקית הטובה ביותר עד כה, והנקודה הכחולה היא האופטימום שהסימפלקס מצא. אחרי כמה עשרות צעדים לחצו "זום לאליפסה". הבעיה היא אותה נגרייה, עם המחוונים של מעבדה 7.</p>
+        <p class="note">נקודה ירוקה היא מרכז חוקי, אדומה היא מרכז שמפר אילוץ. החלק האדום הוא החצי שנזרק, והקו המקווקו הוא החתך: כתום אם הוא בא מאילוץ, כחול אם מהמטרה. העיגול הירוק הריק הוא הנקודה החוקית הטובה ביותר עד כה, והנקודה הכחולה היא האופטימום שהסימפלקס מצא. אחרי כמה עשרות צעדים לחצו "זום לאליפסה". הבעיה היא אותה נגרייה, עם המחוונים של מעבדה 10.</p>
       </div>
     </div>
   </figure>
@@ -521,7 +648,7 @@
   <p>אלה בדיוק תנאי האופטימליות של בעיה עם "מחסום" לוגריתמי, $\max\; c^\top x + \mu \sum_i \ln s_i$, שדוחף את הנקודה הרחק מהשפה. לכל $\mu$ יש פתרון יחיד, ואוסף הפתרונות הוא עקומה חלקה בתוך התחום: <b>המסלול המרכזי</b> (central path). האלגוריתם מקטין את $\mu$ בהדרגה ועוקב אחרי המסלול בצעדי ניוטון. בכל נקודה על המסלול יש לנו גם מחירים, $y_i = \mu / s_i$, וגם פער ידוע בדיוק בין הבעיה המקורית לדואלית: מספר האילוצים כפול $\mu$.</p>
 
   <figure class="lab" id="lab-ipm">
-    <div class="lab-head"><span class="tag">מעבדה 9</span><h3>המסלול המרכזי</h3></div>
+    <div class="lab-head"><span class="tag">מעבדה 13</span><h3>המסלול המרכזי</h3></div>
     <div class="lab-body">
       <div>
         <canvas id="ipm-plane" class="cv sq nodrag" dir="ltr"></canvas>

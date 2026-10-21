@@ -13,6 +13,8 @@
   --contour: #8d9bbb;
   --heat-lo: #fffdf8;
   --heat-hi: #c9d8f4;
+  --surf-lo: #e6ebf3;
+  --surf-hi: #4f74cf;
 
   --c-f: #2456c4;
   --c-g: #d46c0a;
@@ -40,6 +42,8 @@
     --contour: #5c6c90;
     --heat-lo: #1c1b17;
     --heat-hi: #253a66;
+    --surf-lo: #2b2f3a;
+    --surf-hi: #6d93f0;
     --c-f: #79a2ff;
     --c-g: #ffa24f;
     --c-lam: #ea7fe2;
@@ -65,6 +69,8 @@
   --contour: #5c6c90;
   --heat-lo: #1c1b17;
   --heat-hi: #253a66;
+  --surf-lo: #2b2f3a;
+  --surf-hi: #6d93f0;
   --c-f: #79a2ff;
   --c-g: #ffa24f;
   --c-lam: #ea7fe2;
@@ -261,3 +267,16 @@ table.tab td.price { color: var(--c-lam); font-weight: 700; }
 .tablewrap { overflow-x: auto; }
 
 footer { max-width: 880px; margin: 0 auto; padding: 24px 16px 60px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+
+/* ---------- 3D labs ---------- */
+.cv3 { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--plot-bg); cursor: grab; }
+.cv3:active { cursor: grabbing; }
+.cv3 > canvas { display: block; }
+.cv3 > div { direction: ltr; }
+.lbl3 { left: 0; top: 0; font: 600 13px "Heebo", system-ui, sans-serif; padding: 0 5px; border-radius: 5px; white-space: nowrap; background: color-mix(in srgb, var(--plot-bg) 72%, transparent); }
+.lbl3.f { color: var(--c-f); }
+.lbl3.g { color: var(--c-g); }
+.lbl3.lam { color: var(--c-lam); }
+.lbl3.ink { color: var(--ink); }
+.lbl3.muted, .lbl3.axis { color: var(--muted); }
+.badge3 { font-size: .75rem; font-weight: 700; color: var(--c-f); border: 1px solid currentColor; border-radius: 99px; padding: 0 8px; }
