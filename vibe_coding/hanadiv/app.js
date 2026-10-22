@@ -233,12 +233,12 @@ function setupStrip() {
     const t = tOf(clamp(ev.clientX - r.left, 0, r.width), r.width);
     setT(Math.round(t / STEP) * STEP);
   };
-  strip.addEventListener('pointerdown', ev => { dragging = true; strip.setPointerCapture(ev.pointerId); stopPlay(); fromEvent(ev); });
+  strip.addEventListener('pointerdown', ev => { letGo(); dragging = true; strip.setPointerCapture(ev.pointerId); stopPlay(); fromEvent(ev); });
   strip.addEventListener('pointermove', ev => dragging && fromEvent(ev));
   strip.addEventListener('pointerup', () => { dragging = false; });
   strip.addEventListener('keydown', ev => {
     const d = { ArrowLeft: STEP, ArrowRight: -STEP, PageUp: 60, PageDown: -60 }[ev.key];
-    if (d) { ev.preventDefault(); stopPlay(); setT(S.t + d); }
+    if (d) { ev.preventDefault(); letGo(); stopPlay(); setT(S.t + d); }
   });
   new ResizeObserver(() => drawStrip()).observe(strip);
 }
@@ -617,11 +617,20 @@ function tickGrid() {
   line.style.right = NAMEW + (S.t - S.lo) * PPM + 'px';
   $$('.bar', g).forEach(b => b.classList.toggle('past', status(S.byId.get(b.dataset.ev)) === 'past'));
 }
-function scrollGridToNow() {
+// The timetable follows the playhead: the red line stays near the right edge, with what is
+// on and what comes next to its left. While the playhead moves the bars only fade and the
+// view slides; once it rests, the rows are re-ordered for the new time and the view goes
+// back to the top, where the places with something on now are.
+function followGrid(smooth) {
   const g = $('#grid');
   const x = NAMEW + (S.t - S.lo) * PPM;
-  // rows are in order of their first event; start at the first one still going at the playhead
-  g.scrollTo({ left: -(x - NAMEW - 60), top: 0, behavior: 'smooth' });
+  g.scrollTo({ left: -(x - NAMEW - 90), behavior: smooth ? 'smooth' : 'auto' });
+}
+function scrollGridToNow() { followGrid(true); $('#grid').scrollTo({ top: 0 }); }
+let regridTimer;
+function regridSoon() {
+  clearTimeout(regridTimer);
+  regridTimer = setTimeout(() => { if (S.view === 'grid' && !S.playing) { drawGrid(); followGrid(); $('#grid').scrollTop = 0; } }, 350);
 }
 
 /* ---------- detail card ---------- */
@@ -766,10 +775,8 @@ function render() {
     if (map) drawMarkers();
     drawRoute();
     if (S.view === 'plan') drawPlan(); else drawList();
-    if (S.view === 'grid') tickGrid();
-    const fn = festivalNow();
-    $('#nowBtn').disabled = !fn;
-    $('#nowBtn').title = fn ? '' : 'הכפתור יעבוד בימי הפסטיבל';
+    if (S.view === 'grid') { tickGrid(); followGrid(); regridSoon(); }
+    $('#nowBtn').classList.toggle('on', S.follow);
     setHashSoon();
   });
 }
@@ -783,7 +790,7 @@ function setDay(d) {
   S.day = d; S.moreLater = false;
   closePopup();
   drawDays(); drawStrip();
-  if (S.view === 'grid') drawGrid();
+  if (S.view === 'grid') { drawGrid(); scrollGridToNow(); }
   if (S.view === 'plan') setView('plan');
   render();
 }
@@ -793,20 +800,29 @@ function filtersChanged() {
   render();
 }
 
-function busiest(d) {
-  const evs = S.events.filter(e => e.date === d && !e.long);
-  let best = S.lo, n = -1;
-  for (let t = S.lo; t < S.hi; t += 30) {
-    const k = evs.filter(e => e.start <= t && t < e.end).length;
-    if (k > n) { n = k; best = t; }
-  }
-  return best;
+/* "Now" is the real time of day, in Israel. During the festival it also picks today;
+   before it, the time is shown on the chosen festival day. While following, the
+   playhead moves with the clock; touching the strip or pressing play lets go. */
+function goNow(quiet) {
+  const n = israelNow();
+  S.follow = true;
+  const today = S.days.includes(n.date);
+  if (today) setDay(n.date);
+  const m = Math.round(clamp(n.m, S.lo, S.hi) / STEP) * STEP;
+  S.t === m ? render() : setT(m);
+  if (quiet) return;
+  if (!today) {
+    const days = Math.round((new Date(S.days[0]) - new Date(n.date)) / 864e5);
+    toast(days > 0 ? `הפסטיבל מתחיל בעוד ${days === 1 ? 'יום' : days + ' ימים'}. זו השעה עכשיו, ב${dayName(S.day, true)}.` : 'הפסטיבל נגמר. זו השעה עכשיו.');
+  } else if (n.m !== m) toast(n.m < S.lo ? 'עוד מוקדם, האירועים מתחילים ב-' + hm(S.lo) : 'האירועים של היום נגמרו');
 }
+function letGo() { if (S.follow) { S.follow = false; $('#nowBtn').classList.remove('on'); } }
 
 /* ---------- play ---------- */
 
 function play() {
   if (S.playing) return stopPlay();
+  letGo();
   if (S.t >= S.hi - STEP) S.t = S.lo;
   $('#playBtn').innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
   S.playing = setInterval(() => {
@@ -860,7 +876,8 @@ let hashTimer;
 function setHashSoon() { clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 400); }
 function setHash() {
   const p = new URLSearchParams();
-  p.set('d', S.day.slice(8)); p.set('t', hm(S.t));
+  p.set('d', S.day.slice(8));
+  if (!S.follow) p.set('t', hm(S.t));  // following the clock: a reload should come back to now
   if (S.view !== 'map') p.set('v', S.view);
   if (S.detail) p.set('e', S.detail.id);
   history.replaceState(null, '', '#' + p.toString().replace(/%3A/g, ':'));
@@ -958,7 +975,7 @@ function setupEvents() {
   $('#sheetBody').addEventListener('mouseover', hl(true));
   $('#sheetBody').addEventListener('mouseout', hl(false));
   $('#playBtn').onclick = play;
-  $('#nowBtn').onclick = () => { const n = festivalNow(); if (!n) return; stopPlay(); setDay(n.date); setT(Math.round(n.m / STEP) * STEP); };
+  $('#nowBtn').onclick = () => { stopPlay(); goNow(); };
   $('#meBtn').onclick = locate;
   $('#searchBtn').onclick = () => {
     const row = $('#searchRow'); row.hidden = !row.hidden;
@@ -981,7 +998,9 @@ async function main() {
   const h = readHash();
   const now = festivalNow();
   S.day = h.day || (now && now.date) || S.days[0];
-  S.t = h.t != null ? h.t : now && now.date === S.day ? Math.round(clamp(now.m, S.lo, S.hi) / STEP) * STEP : busiest(S.day);
+  // a shared link keeps its time; otherwise the app opens on the real time of day, following it
+  S.follow = h.t == null;
+  S.t = h.t != null ? h.t : Math.round(clamp(israelNow().m, S.lo, S.hi) / STEP) * STEP;
   if (h.plan && h.plan.length) S.shared = h.plan;
   $('#sub').textContent = `פסטיבל ${dayName(S.days[0]).split(' ')[1]}–${dayName(S.days.at(-1)).split(' ')[1]} · ${S.events.length} אירועים ב-${S.venues.size} מקומות`;
   setupEvents(); setupStrip(); setupSheet(); setupMap();
@@ -989,11 +1008,6 @@ async function main() {
   setView(h.plan ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
   if (!h.plan && innerWidth < 900) snap('mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
-  // during the festival, keep "now" moving if the playhead is on it
-  setInterval(() => {
-    const n = festivalNow();
-    if (n && n.date === S.day && Math.abs(n.m - S.t) <= STEP && !S.playing) setT(Math.round(n.m / STEP) * STEP);
-    drawDays();
-  }, 60000);
+  setInterval(() => { if (S.follow && !S.playing) goNow(true); drawDays(); }, 30000);
 }
 main();
