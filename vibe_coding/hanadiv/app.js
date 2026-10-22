@@ -268,7 +268,7 @@ function setupMap() {
     const el = document.createElement('div');
     el.className = 'vm hide';
     el.innerHTML = '<div class="dot"></div>';
-    el.addEventListener('click', ev => { ev.stopPropagation(); openVenue(v); });
+    el.addEventListener('click', ev => { ev.stopPropagation(); S.focus = null; openVenue(v); markFocus(); });
     const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
     markers.set(v.key, { el, mk, v });
   }
@@ -323,7 +323,55 @@ function drawMarkers() {
     if (no) { if (!badge) { badge = document.createElement('div'); badge.className = 'planno'; el.appendChild(badge); } badge.textContent = no; }
     else if (badge) badge.remove();
   }
-  if (S.popup && S.sel) S.popup.setHTML(venueHTML(S.sel));
+  if (S.focus) {
+    const m = markers.get(S.focus.vkey);
+    if (m) {
+      m.el.classList.add('focus');
+      m.el.classList.remove('hide', 'idle', 'done');
+      m.el.style.setProperty('--c', S.focus.c);
+    }
+  }
+  if (S.popup && S.sel) S.popup.setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(S.sel));
+}
+
+function eventPopHTML(e) {
+  const r = e.date === S.day ? relLabel(e) : null;
+  const more = e.venue.events.filter(o => o.date === S.day && o.id !== e.id).length;
+  const ph = e.photos[0] ? `<div class="pph" style="background-image:url('${esc(e.photos[0].thumb)}')"></div>` : '';
+  return `<div class="pop epop" style="--c:${e.c}">${ph}
+    <div class="kind">${esc(e.group)}${e.craft && e.craft !== e.group ? ' · ' + esc(e.craft) : ''}</div>
+    <h4>${esc(e.name)}</h4>
+    <div class="addr">${dayName(e.date, true)} ${rng(e.start, e.end)}${r ? ` <span class="tag ${r.cls}">${r.txt}</span>` : ''}</div>
+    <div class="addr">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}</div>
+    <div class="pact"><button class="btn" data-detail="${e.id}">לפרטים</button>
+      <button class="btn ghost ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}">${STAR}</button>
+      <a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${e.vgeo.lat},${e.vgeo.lng}&navigate=yes">${ICON.nav}</a></div>
+    ${more ? `<button class="more" data-venuelist>עוד ${more} כאן היום</button>` : ''}</div>`;
+}
+
+/* A pick in the list (or in a popup) flies to the place, lights it up and
+   shows the event there; the full card is one more tap. */
+function focusEvent(e) {
+  if (!e.vgeo) return openDetail(e);
+  if (S.view === 'grid') setView('map');
+  if (e.date !== S.day) setDay(e.date);
+  const keep = S.popup && S.sel === e.venue;
+  S.focus = e;
+  if (!keep) openVenue(e.venue, false);
+  else S.popup.setHTML(eventPopHTML(e));
+  const wide = innerWidth >= 900;
+  if (!wide) snap('peek');
+  // the popup sits above the place (and on a phone the sheet below it), so the place goes low on the screen
+  const pad = { top: Math.min(wide ? 330 : 300, map.getContainer().clientHeight * .58), bottom: wide ? 20 : 140, left: 10, right: 10 };
+  map.flyTo({ center: [e.vgeo.lng, e.vgeo.lat], zoom: Math.max(map.getZoom(), 15), padding: pad, duration: 700 });
+  drawMarkers(); markFocus(true);
+}
+function markFocus(scroll) {
+  $$('#sheetBody .ev').forEach(c => c.classList.toggle('focus', !!S.focus && c.dataset.ev === S.focus.id));
+  if (scroll && innerWidth >= 900) {
+    const c = $(`#sheetBody .ev.focus`);
+    if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 let meMarker;
@@ -348,20 +396,19 @@ function venueHTML(v) {
     ${evs.length ? `<div class="mini">${bars}${now}</div>` : ''}<ul>${items}</ul></div>`;
 }
 function openVenue(v, fly) {
+  const f = S.focus && S.focus.vkey === v.key ? S.focus : null;
   closePopup();
+  S.focus = f;
   S.sel = v;
   if (!v.geo) return;
-  S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 18 })
-    .setLngLat([v.geo.lng, v.geo.lat]).setHTML(venueHTML(v)).addTo(map);
-  S.popup.getElement().addEventListener('click', ev => {
-    const li = ev.target.closest('[data-ev]'); if (li) openDetail(S.byId.get(li.dataset.ev));
-  });
-  S.popup.on('close', () => { if (S.sel === v) { S.sel = null; drawMarkers(); } });
+  S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 22, focusAfterOpen: false, anchor: 'bottom' })
+    .setLngLat([v.geo.lng, v.geo.lat]).setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(v)).addTo(map);
+  S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); } });
   if (fly) map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), padding: fitPad() });
   if ($('#sheet').dataset.snap === 'full') snap('peek');
   drawMarkers();
 }
-function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; }
+function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; S.focus = null; }
 
 /* ---------- the list ---------- */
 
@@ -387,7 +434,8 @@ function byNear(a, b) {
   return (a.vgeo ? dist(S.me, a.vgeo) : 1e9) - (b.vgeo ? dist(S.me, b.vgeo) : 1e9);
 }
 
-function drawList() {
+function drawList() { $('#sheetBody').innerHTML = listHTML(); markFocus(); }
+function listHTML() {
   const evs = dayEvents();
   const live = evs.filter(e => status(e) === 'live' && !e.long).sort((a, b) => byNear(a, b) || a.end - b.end);
   const open = evs.filter(e => status(e) === 'live' && e.long);
@@ -413,7 +461,7 @@ function drawList() {
   }
   const unplaced = evs.filter(e => !e.vgeo);
   if (unplaced.length && !filtered) h += `<div class="empty" style="font-size:12.5px">${unplaced.length} אירועים היום בלי נקודה על המפה (כתובת שלא הצלחנו למקם). הם מופיעים ברשימה.</div>`;
-  $('#sheetBody').innerHTML = h;
+  return h;
 }
 
 /* ---------- my plan ---------- */
@@ -436,9 +484,7 @@ function toggleStar(id) {
 }
 
 function drawPlan() {
-  const live = dayEvents().filter(e => status(e) === 'live' && !e.long).length;
-  let h = `<div class="shared" style="background:#fff;border-color:var(--line)">ב-${hm(S.t)} קורים ${live} אירועים, והם מסומנים על המפה.
-    <button class="more" data-view="map">לרשימה המלאה</button></div>`;
+  let h = '';
   if (S.shared) {
     const fresh = S.shared.filter(id => !S.plan.has(id));
     h += `<div class="shared">מישהו שיתף איתכם תוכנית של ${S.shared.length} אירועים.
@@ -447,8 +493,8 @@ function drawPlan() {
   }
   const list = planList();
   if (!list.length) {
-    h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="empty">עוד אין כאן כלום. לוחצים על ★ ליד אירוע והוא נכנס לכאן, מסודר לפי שעות, עם זמן ההליכה בין אירוע לאירוע ואזהרה כששניים מתנגשים.<br><br>התוכנית נשמרת בדפדפן הזה, ואפשר לשלוח אותה לחברים בקישור.</div>`;
-    $('#sheetBody').innerHTML = h; return;
+    h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="empty">עוד ריקה. לוחצים על ★ ליד אירוע ברשימה למטה, והוא נכנס לכאן לפי שעות, עם זמן ההליכה בין אירוע לאירוע ואזהרה כששניים מתנגשים. אפשר לשלוח את התוכנית לחברים בקישור.</div>`;
+    $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus(); return;
   }
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
     <div class="planbar"><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
@@ -471,7 +517,7 @@ function drawPlan() {
     });
     h += '</div>';
   }
-  $('#sheetBody').innerHTML = h;
+  $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus();
 }
 
 function drawRoute() {
@@ -829,11 +875,17 @@ function setupEvents() {
     if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
     if (t.closest('[data-clear]')) { S.filt.clear(); S.kids = S.access = false; S.q = ''; $('#q').value = ''; return filtersChanged(); }
     const sm = t.closest('[data-showmap]');
-    if (sm) { const e = S.byId.get(sm.dataset.showmap); closeDetail(); if (S.view === 'grid') setView('map'); if (e.date !== S.day) setDay(e.date); setT(e.start); return openVenue(e.venue, true); }
+    if (sm) { const e = S.byId.get(sm.dataset.showmap); closeDetail(); if (e.date !== S.day) setDay(e.date); setT(e.start); return focusEvent(e); }
     const vn = t.closest('[data-venue]');
     if (vn) { const v = S.venues.get(vn.dataset.venue); setView('map'); return v.geo && openVenue(v, true); }
+    const det = t.closest('[data-detail]'); if (det) return openDetail(S.byId.get(det.dataset.detail));
+    if (t.closest('[data-venuelist]')) { S.focus = null; S.popup.setHTML(venueHTML(S.sel)); markFocus(); return drawMarkers(); }
     const evEl = t.closest('[data-ev]');
-    if (evEl && !t.closest('.maplibregl-popup')) return openDetail(S.byId.get(evEl.dataset.ev));
+    if (evEl) {
+      const e = S.byId.get(evEl.dataset.ev);
+      // the list and the popups point at the map; the timetable and the full card open the card
+      return t.closest('#sheetBody, .maplibregl-popup') && S.view !== 'grid' ? focusEvent(e) : openDetail(e);
+    }
     const day = t.closest('[data-day]'); if (day) return setDay(day.dataset.day);
     const g = t.closest('[data-g]');
     if (g) { const n = g.dataset.g; S.filt.has(n) ? S.filt.delete(n) : S.filt.add(n); return filtersChanged(); }
@@ -842,6 +894,14 @@ function setupEvents() {
     const view = t.closest('[data-view]'); if (view) return setView(view.dataset.view);
   });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.detail) closeDetail(); });
+  // pointing at a card lights up its place on the map
+  const hl = on => ev => {
+    const c = ev.target.closest('#sheetBody .ev'); if (!c) return;
+    const e = S.byId.get(c.dataset.ev), m = e && markers.get(e.vkey);
+    if (m) m.el.classList.toggle('hl', on);
+  };
+  $('#sheetBody').addEventListener('mouseover', hl(true));
+  $('#sheetBody').addEventListener('mouseout', hl(false));
   $('#playBtn').onclick = play;
   $('#nowBtn').onclick = () => { const n = festivalNow(); if (!n) return; stopPlay(); setDay(n.date); setT(Math.round(n.m / STEP) * STEP); };
   $('#meBtn').onclick = locate;

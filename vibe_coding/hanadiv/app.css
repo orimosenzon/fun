@@ -145,6 +145,18 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
   text-shadow: 0 0 2px #fff, 0 0 2px #fff; font-weight: 400;
 }
 .vm.hide { display: none; }
+.vm.focus { z-index: 6; }
+.vm.focus .dot {
+  width: 38px; height: 38px; background: var(--c); border: 3px solid #fff; opacity: 1; color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 45%, transparent), 0 0 30px 12px color-mix(in srgb, var(--c) 65%, transparent);
+}
+.vm.focus .dot::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--c);
+  animation: pulse 1.4s ease-out infinite; pointer-events: none;
+}
+.vm.hl { z-index: 7; }
+.vm.hl .dot { transform: translate(-50%, -50%) scale(1.5); box-shadow: 0 0 0 3px var(--ink), 0 4px 14px rgba(0, 0, 0, .35); opacity: 1; }
+.vm .dot { transition: width .25s, height .25s, opacity .25s, background .25s, border-color .25s, transform .2s, box-shadow .2s; }
 @keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(2.1); opacity: 0; } }
 .vm.live { z-index: 3; }
 .vm.soon { z-index: 2; }
@@ -172,6 +184,18 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .pop li.live .h { color: var(--now); font-weight: 700; }
 .pop li.past { opacity: .5; }
 .pop li:hover .n { text-decoration: underline; }
+.epop { width: 250px; }
+.epop .pph { height: 120px; margin: -10px -12px 8px; border-radius: 12px 12px 0 0; background: var(--c) center/cover no-repeat; }
+.epop .kind { font-size: 12px; color: var(--c); font-weight: 700; margin-bottom: 2px; }
+.epop h4 { font-size: 15px; line-height: 1.3; margin-bottom: 4px; }
+.epop .addr { margin-bottom: 3px; }
+.epop .tag { font-size: 11px; }
+.epop .pact { display: flex; gap: 6px; margin: 8px 0 4px; }
+.epop .btn { padding: 6px 12px; font-size: 13px; }
+.epop .btn svg { width: 16px; height: 16px; }
+.epop .btn.on { color: var(--accent-ink); border-color: var(--accent); }
+.epop .btn.on svg { fill: var(--accent); stroke: var(--accent); }
+.epop .more { font-size: 12.5px; color: var(--accent-ink); padding: 2px 0; }
 
 /* ---------- sheet ---------- */
 #sheet {
@@ -220,6 +244,8 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .star.on { color: var(--accent); }
 .star.on svg { fill: currentColor; }
 .ev.past { opacity: .55; }
+.ev.focus { border-color: var(--c); box-shadow: 0 0 0 2px var(--c); background: color-mix(in srgb, var(--c) 8%, #fff); }
+.divider { height: 1px; background: var(--line); margin: 18px 0 2px; }
 
 /* plan */
 .planday h4 { margin: 14px 0 6px; font-size: 14px; color: var(--ink2); font-weight: 500; }
@@ -321,6 +347,8 @@ body.view-grid #sheet { display: none; }
 }
 
 @media (max-width: 899px) {
+  .epop { width: 230px; }
+  .epop .pph { height: 76px; }
   #top { padding: 8px 12px 4px; }
   h1 { font-size: 19px; }
   .sub { display: none; }
