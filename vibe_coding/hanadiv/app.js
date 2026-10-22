@@ -114,6 +114,9 @@ function prepare(doc) {
     v.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
     if (v.pts.length) v.geo = { lat: avg(v.pts.map(p => p.lat)), lng: avg(v.pts.map(p => p.lng)) };
     v.events.forEach(e => { e.venue = v; e.vgeo = v.geo || null; });
+    // a complex (a school, a culture hall) runs several stages under one address
+    v.stages = [...new Set(v.events.map(e => e.place))];
+    v.title = v.stages.length > 1 ? v.street || v.place : v.place;
   }
   S.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start || a.name.localeCompare(b.name, 'he'));
   S.byId = new Map(S.events.map(e => [e.id, e]));
@@ -374,8 +377,9 @@ function eventPopHTML(e) {
     <div class="addr">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}</div>
     <div class="pact"><button class="btn" data-detail="${e.id}">לפרטים</button>
       <button class="btn ghost ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}">${STAR}</button>
-      <a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${e.vgeo.lat},${e.vgeo.lng}&navigate=yes">${ICON.nav}</a></div>
-    ${more ? `<button class="more" data-venuelist>עוד ${more} כאן היום</button>` : ''}</div>`;
+      <a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${e.vgeo.lat},${e.vgeo.lng}&navigate=yes">${ICON.nav}</a>
+      ${waLinks(e).slice(0, 1).map(l => `<a class="btn wa" target="_blank" rel="noopener" href="${esc(l.url)}" title="${esc(l.title)}">${ICON.wa}</a>`).join('')}</div>
+    <div class="pmore">${more ? `<button class="more" data-venuelist>עוד ${more} כאן היום</button>` : ''}<button class="more" data-place="${esc(e.vkey)}">${ICON.list}לוח המקום</button></div></div>`;
 }
 
 /* A pick in the list (or in a popup) flies to the place, lights it up and
@@ -421,8 +425,9 @@ function venueHTML(v) {
     const st = status(e);
     return `<li class="${st}" data-ev="${e.id}"><span class="h">${hm(e.start)}</span><span class="n" style="color:${e.c}">●</span><span class="n">${esc(e.name)}</span></li>`;
   }).join('') || `<li>אין אירועים ב${dayName(S.day, true)}. ${v.events.length} בימים אחרים.</li>`;
-  return `<div class="pop"><h4>${esc(v.place)}</h4><div class="addr">${esc(v.street)}</div>
-    ${evs.length ? `<div class="mini">${bars}${now}</div>` : ''}<ul>${items}</ul></div>`;
+  return `<div class="pop"><h4>${esc(v.title)}</h4><div class="addr">${esc(v.stages.length > 1 ? v.stages.length + ' במות' : v.street)}</div>
+    ${evs.length ? `<div class="mini">${bars}${now}</div>` : ''}<ul>${items}</ul>
+    <div class="pmore"><button class="more" data-place="${esc(v.key)}">${ICON.list}לוח הזמנים של המקום · ${v.events.length}</button></div></div>`;
 }
 function openVenue(v, fly) {
   const f = S.focus && S.focus.vkey === v.key ? S.focus : null;
@@ -599,7 +604,7 @@ function drawGrid() {
     }
     const n = lanes.length, rowH = Math.max(54, n * 28 + 12), bh = (rowH - 12) / n - 2;
     const v = list[0].venue;
-    h += `<div class="row" style="height:${rowH}px"><div class="vname" data-venue="${esc(v.key)}"><b>${esc(v.place)}</b>${esc(v.street !== v.place ? v.street : '')}</div>`;
+    h += `<div class="row" style="height:${rowH}px"><div class="vname" data-place="${esc(v.key)}" title="לוח הזמנים של המקום"><b>${esc(v.title)}</b>${esc(v.stages.length > 1 ? v.stages.length + ' במות' : v.street !== v.place ? v.street : '')}</div>`;
     for (const e of list) {
       const w = Math.max(Math.min(e.dur, S.hi - e.start) * PPM - 3, 16);
       h += `<div class="bar ${n > 1 ? 'split' : ''} ${S.plan.has(e.id) ? 'planned' : ''}" data-ev="${e.id}" style="--c:${e.c};right:${X(e.start)}px;width:${w}px;top:${6 + e._lane * (bh + 2)}px;height:${bh}px" title="${esc(e.name)}"><b>${esc(e.name)}</b><span>${rng(e.start, e.end)}</span></div>`;
@@ -645,7 +650,73 @@ const ICON = {
   cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
+  wa: '<svg viewBox="0 0 24 24"><path d="M3.5 20.5 4.8 16A8.6 8.6 0 1 1 8 19.2z"/><path d="M9 8.2c.2 3.4 3.3 6.5 6.8 6.8l1-1.6-2.1-1-1 .9c-1.1-.5-2.4-1.8-2.9-2.9l.9-1-1-2.1z"/></svg>',
 };
+
+/* The festival form had two free link fields. Some hosts put a WhatsApp group there,
+   and some wrote a phone number into the description instead. */
+const isWa = url => /(^|\.)(whatsapp\.com|wa\.me)$/.test((() => { try { return new URL(url).hostname; } catch (e) { return ''; } })());
+function waLinks(e) {
+  const wa = e.links.filter(l => isWa(l.url));
+  const groups = wa.filter(l => /chat\.whatsapp/.test(l.url)).length;
+  let n = 0;
+  return wa.map(l => ({ url: l.url, title: !/chat\.whatsapp/.test(l.url) ? 'הודעה בווטסאפ' : groups > 1 ? `קבוצת ווטסאפ ${++n}` : 'קבוצת הווטסאפ' }));
+}
+function noteHTML(note) {
+  return esc(note).replace(/ · /g, '\n').replace(/(^|[^\d])(05\d)[- ]?(\d{3})[- ]?(\d{4})(?!\d)/g, (m, pre, a, b, c) =>
+    `${pre}<a href="tel:${a}${b}${c}">${a}-${b}${c}</a> <a class="wa-inline" target="_blank" rel="noopener" href="https://wa.me/972${a.slice(1)}${b}${c}" title="ווטסאפ">${ICON.wa}</a>`);
+}
+
+/* A place's whole festival on one card: every day, every stage. */
+function openPlace(v) {
+  if (!v) return;
+  S.detail = { place: v };
+  const nav = v.geo ? `<a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${v.geo.lat},${v.geo.lng}&navigate=yes">${ICON.nav}ווייז</a>
+     <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.geo.lat},${v.geo.lng}&travelmode=walking&hl=iw">גוגל מפות</a>
+     <button class="btn ghost" data-placemap="${esc(v.key)}">${ICON.pin}על המפה</button>` : '';
+  const multi = v.stages.length > 1;
+  const W = S.hi - S.lo;
+  let days = '';
+  for (const d of S.days) {
+    const evs = v.events.filter(e => e.date === d);
+    if (!evs.length) continue;
+    const today = d === S.day;
+    const bars = evs.map(e => `<b style="--c:${e.c};right:${(e.start - S.lo) / W * 100}%;width:${Math.min(e.dur, S.hi - e.start) / W * 100}%"></b>`).join('');
+    days += `<section class="pday ${today ? 'today' : ''}" data-pday="${d}"><h3>${dayName(d)}<span>${evs.length} אירועים</span></h3>
+      <div class="mini">${bars}${today ? `<i style="right:${(S.t - S.lo) / W * 100}%"></i>` : ''}</div>`;
+    for (const e of evs) {
+      const st = today ? status(e) : '';
+      const r = today ? relLabel(e) : null;
+      days += `<div class="srow ${st}" data-ev="${e.id}" style="--c:${e.c}">
+        <span class="h">${rng(e.start, e.end)}</span>
+        <span class="n"><b>${esc(e.name)}</b><small>${multi ? esc(e.place) + ' · ' : ''}${esc(e.craft || e.group)}${r && (st === 'live' || st === 'soon') ? ` · <em class="${r.cls}">${r.txt}</em>` : ''}</small></span>
+        ${waLinks(e).length ? `<span class="wa-dot" title="יש קבוצת ווטסאפ">${ICON.wa}</span>` : ''}
+        <button class="star ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}" aria-label="לתוכנית שלי">${STAR}</button></div>`;
+    }
+    days += '</section>';
+  }
+  $('#detailCard').style.setProperty('--c', 'var(--accent)');
+  $('#detailCard').innerHTML = `<button class="x" data-close aria-label="סגירה">${ICON.x}</button>
+    <div class="phead"><div class="kind">${ICON.list}לוח הזמנים של המקום</div>
+      <h2>${esc(v.title)}</h2>
+      <div class="addr">${multi ? `${v.stages.length} במות: ${v.stages.map(esc).join(' · ')}` : esc(v.street && v.street !== v.place ? v.street : '')}</div></div>
+    <div class="inner">
+      <div class="actions">${nav}<button class="btn ghost" data-shareplace>${ICON.share}שיתוף</button></div>
+      ${days}
+    </div>`;
+  if (!S.pushed) { history.pushState({ card: 1 }, ''); S.pushed = true; }
+  $('#detail').hidden = false;
+  const today = $('#detailCard .pday.today');
+  $('#detailCard').scrollTop = today && today !== $('#detailCard .pday') ? today.offsetTop - 60 : 0;
+  setHash();
+}
+function redrawDetail() {
+  if (!S.detail) return;
+  const y = $('#detailCard').scrollTop;
+  S.detail.place ? openPlace(S.detail.place) : openDetail(S.detail);
+  $('#detailCard').scrollTop = y;
+}
 
 function openDetail(e) {
   if (!e) return;
@@ -659,6 +730,7 @@ function openDetail(e) {
      <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.geo.lat},${v.geo.lng}&travelmode=walking&hl=iw">גוגל מפות</a>` : '';
   const others = v.events.filter(o => o.id !== e.id);
   const walk = S.me && v.geo ? ` · ${walkMin(S.me, v.geo)} דק׳ הליכה ממך` : '';
+  const wa = waLinks(e), links = e.links.filter(l => !isWa(l.url));
   $('#detailCard').style.setProperty('--c', e.c);
   $('#detailCard').innerHTML = `<button class="x" data-close aria-label="סגירה">${ICON.x}</button>${gallery}
     <div class="inner">
@@ -667,19 +739,21 @@ function openDetail(e) {
       ${r ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}
       <div class="facts">
         <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
-        <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}</span></div>
+        <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}
+          ${v.events.length > 1 ? `<br><button class="linkish" data-place="${esc(v.key)}">לוח הזמנים של המקום (${v.events.length} אירועים)</button>` : ''}</span></div>
         <div>${ICON.ppl}<span>${esc(e.audience)}${e.seats ? ` · ${e.seats} מקומות` : ''}</span></div>
         ${e.access ? `<div>${ICON.acc}<span>${esc(e.access)}</span></div>` : ''}
       </div>
       <div class="actions">
         <button class="btn ${S.plan.has(e.id) ? 'warm' : ''}" data-star="${e.id}">${STAR}${S.plan.has(e.id) ? 'בתוכנית שלי' : 'לתוכנית שלי'}</button>
+        ${wa.map(l => `<a class="btn wa" target="_blank" rel="noopener" href="${esc(l.url)}">${ICON.wa}${esc(l.title)}</a>`).join('')}
         <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע והרשמה</a>
         ${nav}
         <button class="btn ghost" data-ics="${e.id}">${ICON.cal}ליומן</button>
         ${v.geo ? `<button class="btn ghost" data-showmap="${e.id}">${ICON.pin}על המפה</button>` : ''}
       </div>
-      <div class="note">${esc(e.note).replace(/ · /g, '\n')}</div>
-      ${e.links.length ? `<div class="links">${e.links.map(l => `<a target="_blank" rel="noopener" href="${esc(l.url)}">${esc(l.title)}</a>`).join('')}</div>` : ''}
+      <div class="note">${noteHTML(e.note)}</div>
+      ${links.length ? `<div class="links">${links.map(l =>`<a target="_blank" rel="noopener" href="${esc(l.url)}">${esc(l.title)}</a>`).join('')}</div>` : ''}
       ${others.length ? `<div class="same"><h4>עוד באותו מקום (${others.length})</h4>${others.map(o => card(o, { showDay: true, noRel: o.date !== S.day })).join('')}</div>` : ''}
     </div>`;
   if (!S.pushed) { history.pushState({ card: 1 }, ''); S.pushed = true; }
@@ -879,7 +953,7 @@ function setHash() {
   p.set('d', S.day.slice(8));
   if (!S.follow) p.set('t', hm(S.t));  // following the clock: a reload should come back to now
   if (S.view !== 'map') p.set('v', S.view);
-  if (S.detail) p.set('e', S.detail.id);
+  if (S.detail) S.detail.place ? p.set('place', S.detail.place.key) : p.set('e', S.detail.id);
   history.replaceState(null, '', '#' + p.toString().replace(/%3A/g, ':'));
 }
 function readHash() {
@@ -887,7 +961,7 @@ function readHash() {
   const d = p.get('d') && S.days.find(x => x.slice(8) === p.get('d').padStart(2, '0'));
   const t = p.get('t') && /^(\d\d?):(\d\d)$/.exec(p.get('t'));
   return {
-    day: d, t: t ? +t[1] * 60 + +t[2] : null, view: p.get('v'), e: p.get('e'),
+    day: d, t: t ? +t[1] * 60 + +t[2] : null, view: p.get('v'), e: p.get('e'), place: p.get('place'),
     plan: p.get('plan') ? p.get('plan').split(/[,.]/).filter(id => S.byId.has(id)) : null,
   };
 }
@@ -922,20 +996,30 @@ function locate() {
   }, () => { toast('לא קיבלנו מיקום. אפשר לאשר אותו בהגדרות הדפדפן.'); S.watch = null; }, { enableHighAccuracy: true, maximumAge: 30000 });
 }
 
-async function share() {
-  const ids = [...S.plan].join(',');
-  const url = `${location.origin}${location.pathname}#d=${S.day.slice(8)}&plan=${ids}`;
-  const text = `התוכנית שלי לפסטיבל דרך הנדיב (${S.plan.size} אירועים)`;
+function share() {
+  const url = `${location.origin}${location.pathname}#d=${S.day.slice(8)}&plan=${[...S.plan].join(',')}`;
+  return shareUrl(url, `התוכנית שלי לפסטיבל דרך הנדיב (${S.plan.size} אירועים)`);
+}
+// a host can send their place's own schedule to their guests
+function sharePlace(v) {
+  const url = `${location.origin}${location.pathname}#place=${encodeURIComponent(v.key)}`;
+  return shareUrl(url, `${v.title} בפסטיבל דרך הנדיב: כל האירועים`);
+}
+async function shareUrl(url, text) {
   if (navigator.share) { try { await navigator.share({ title: text, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   try { await navigator.clipboard.writeText(url); toast('הקישור הועתק. אפשר להדביק בוואטסאפ'); }
-  catch (e) { prompt('הקישור לתוכנית:', url); }
+  catch (e) { prompt('הקישור:', url); }
 }
 
 function setupEvents() {
   document.addEventListener('click', ev => {
     const t = ev.target;
     const star = t.closest('[data-star]');
-    if (star) { ev.stopPropagation(); toggleStar(star.dataset.star); if (S.detail) openDetail(S.detail); return; }
+    if (star) { ev.stopPropagation(); toggleStar(star.dataset.star); redrawDetail(); return; }
+    const pl = t.closest('[data-place]'); if (pl) return openPlace(S.venues.get(pl.dataset.place));
+    const pm = t.closest('[data-placemap]');
+    if (pm) { const v = S.venues.get(pm.dataset.placemap); closeDetail(); setView('map'); return openVenue(v, true); }
+    if (t.closest('[data-shareplace]')) return sharePlace(S.detail.place);
     if (t.closest('[data-close]')) return closeDetail();
     const ics = t.closest('[data-ics]'); if (ics) { const e = S.byId.get(ics.dataset.ics); return downloadIcs([e], e.name.slice(0, 40)); }
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
@@ -1008,6 +1092,7 @@ async function main() {
   setView(h.plan ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
   if (!h.plan && innerWidth < 900) snap('mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
+  else if (h.place && S.venues.has(h.place)) openPlace(S.venues.get(h.place));
   setInterval(() => { if (S.follow && !S.playing) goNow(true); drawDays(); }, 30000);
 }
 main();

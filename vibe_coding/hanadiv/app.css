@@ -201,7 +201,7 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .epop .btn svg { width: 16px; height: 16px; }
 .epop .btn.on { color: var(--accent-ink); border-color: var(--accent); }
 .epop .btn.on svg { fill: var(--accent); stroke: var(--accent); }
-.epop .more { font-size: 12.5px; color: var(--accent-ink); padding: 2px 0; }
+.pop .more { font-size: 12.5px; color: var(--accent-ink); padding: 2px 0; font-weight: 500; }
 
 /* ---------- sheet ---------- */
 #sheet {
@@ -343,6 +343,43 @@ body.view-grid #sheet { display: none; }
 .card .note { font-size: 15px; line-height: 1.65; white-space: pre-line; color: #2d3946; }
 .card .links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .card .links a { font-size: 13px; color: #1a5bb8; }
+.btn.wa { background: #25d366; color: #fff; }
+.btn.wa svg { stroke: #fff; }
+.wa-inline { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #25d366; vertical-align: -5px; }
+.wa-inline svg { width: 14px; height: 14px; stroke: #fff; }
+.card .note a[href^="tel:"] { color: #1a5bb8; white-space: nowrap; }
+.linkish { color: #1a5bb8; font-size: 13.5px; padding: 4px 0 0; text-decoration: underline; text-underline-offset: 3px; }
+.pmore { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.pmore .more { display: inline-flex; align-items: center; gap: 4px; }
+.pmore .more svg { width: 14px; height: 14px; stroke: var(--accent-ink); }
+.pmore .more + .more { border-inline-start: 1px solid var(--line); padding-inline-start: 8px; }
+/* a place's schedule */
+.phead { padding: 18px 18px 4px 56px; background: linear-gradient(#fff7e6, var(--paper)); }
+.phead .kind { color: var(--accent-ink); }
+.phead .kind svg { width: 16px; height: 16px; stroke: var(--accent-ink); }
+.phead .addr { font-size: 13.5px; color: var(--ink2); line-height: 1.5; }
+.pday { margin-top: 16px; }
+.pday h3 { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; margin: 0 0 6px; }
+.pday h3 span { font-size: 12.5px; color: var(--ink3); font-weight: 400; }
+.pday .mini { position: relative; height: 14px; background: #f1ece2; border-radius: 5px; margin-bottom: 4px; overflow: hidden; }
+.pday .mini b { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; background: var(--c); opacity: .85; }
+.pday .mini i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--now); }
+.srow {
+  display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 0; border-bottom: 1px solid #f1ece2; cursor: pointer;
+  border-inline-start: 4px solid var(--c); padding-inline-start: 8px;
+}
+.srow:hover { background: #fffaf0; }
+.srow .h { flex: none; width: 92px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink2); }
+.srow .n { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.srow .n b { font-size: 14.5px; font-weight: 500; line-height: 1.3; }
+.srow .n small { font-size: 12px; color: var(--ink3); }
+.srow .n em { font-style: normal; font-weight: 700; color: var(--now); }
+.srow .n em.soon { color: var(--accent-ink); }
+.srow.live { background: #fff1ee; }
+.srow.live .h { color: var(--now); font-weight: 700; }
+.srow.past { opacity: .45; }
+.srow .wa-dot svg { width: 18px; height: 18px; stroke: #25d366; }
+.srow .star { flex: none; }
 .card .same h4 { margin: 18px 0 6px; font-size: 14px; color: var(--ink2); font-weight: 500; }
 .card .timeline { position: relative; height: 10px; background: #f1ece2; border-radius: 5px; margin: 6px 0 2px; }
 .card .timeline b { position: absolute; top: 0; bottom: 0; background: var(--c); border-radius: 5px; }

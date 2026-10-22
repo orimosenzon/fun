@@ -259,7 +259,8 @@ def link_title(url):
     host = host.replace("www.", "").replace("open.", "")
     return {"youtube.com": "יוטיוב", "youtu.be": "יוטיוב", "spotify.com": "ספוטיפיי",
             "instagram.com": "אינסטגרם", "facebook.com": "פייסבוק",
-            "drive.google.com": "גוגל דרייב"}.get(host, host or "קישור")
+            "drive.google.com": "גוגל דרייב", "chat.whatsapp.com": "קבוצת ווטסאפ",
+            "api.whatsapp.com": "ווטסאפ", "wa.me": "ווטסאפ"}.get(host, host or "קישור")
 
 
 def clean_links(*raw):
