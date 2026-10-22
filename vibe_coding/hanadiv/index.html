@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>דרך הנדיב · מה קורה עכשיו</title>
+<meta name="description" content="כל אירועי פסטיבל דרך הנדיב בפרדס חנה-כרכור על מפה חיה: גוררים את השעון ורואים מה קורה, איפה, ומה מתחיל עוד מעט.">
+<meta name="theme-color" content="#1d2b3a">
+<meta property="og:title" content="דרך הנדיב · מה קורה עכשיו">
+<meta property="og:description" content="מפה חיה של כל אירועי הפסטיבל: מה קורה עכשיו, מה מתחיל עוד מעט, ואיך להגיע.">
+<meta property="og:image" content="og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23f6a11b'/><circle cx='16' cy='16' r='5' fill='%231d2b3a'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">
+    <div class="title">
+      <h1>דרך הנדיב</h1>
+      <span class="sub" id="sub">פסטיבל 29–31.10 · פרדס חנה-כרכור</span>
+    </div>
+    <div class="tools">
+      <button id="searchBtn" class="iconbtn" aria-label="חיפוש"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+      <button id="meBtn" class="iconbtn" aria-label="מה קרוב אליי"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="8"/></svg></button>
+    </div>
+  </div>
+  <div id="searchRow" hidden>
+    <input id="q" type="search" placeholder="חיפוש: ג'אז, יוגה, סדנת קרמיקה, שם רחוב..." autocomplete="off">
+  </div>
+  <nav id="days" role="tablist"></nav>
+  <section id="clock">
+    <div class="clockhead">
+      <button id="playBtn" class="play" aria-label="הרצת היום"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <div class="readout">
+        <div class="time" id="timeLabel">--:--</div>
+        <div class="count" id="countLabel"></div>
+      </div>
+      <button id="nowBtn" class="nowbtn">עכשיו</button>
+    </div>
+    <div id="strip" tabindex="0" role="slider" aria-label="שעה ביום">
+      <svg id="stripSvg"></svg>
+      <div id="playhead"><span></span></div>
+    </div>
+  </section>
+  <div id="chips"></div>
+</header>
+
+<main id="stage">
+  <div id="map"></div>
+  <div id="grid" hidden></div>
+  <aside id="sheet" data-snap="mid">
+    <div class="grab" id="grab"><span></span></div>
+    <div id="sheetBody"></div>
+  </aside>
+</main>
+
+<nav id="views">
+  <button data-view="map" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>מפה</button>
+  <button data-view="grid"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18"/><path d="M8 3v4M14 10v4M11 17v4"/></svg>לוח זמנים</button>
+  <button data-view="plan"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>התוכנית שלי<b id="planCount"></b></button>
+</nav>
+
+<div id="detail" hidden>
+  <div class="scrim" data-close></div>
+  <article class="card" id="detailCard"></article>
+</div>
+<div id="toast" hidden></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

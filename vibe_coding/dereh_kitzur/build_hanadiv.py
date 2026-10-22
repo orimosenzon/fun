@@ -142,6 +142,20 @@ FIXES = {
                                        "marker to where OSM way 68706427 meets המעלה"),
     'עמ"ל 45': dict(lat=32.463774, lng=34.976019, source="osm",
                     why="centre of OSM way 68726800 (עמל), 630 m; B144 has no page"),
+    # Added 22/10/2026 (228 events). האולם came back with Waze directions in
+    # the street field, so "ההגנה 0" above no longer catches it. Left unplaced:
+    # ירושלים 52 (הבוסתן הקהילתי, no B144 page, nothing in OSM) and שפת הים 13
+    # in Caesarea (a beach, not an address).
+    'בווייז - האולם בית תרבות מקומי פרכו"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. 0':
+        dict(lat=32.474830, lng=34.981190, source="osm", why="האולם, the same building as ההגנה 0"),
+    "השופטים פינת נילי 34": dict(lat=32.474662, lng=34.987145, source="osm",
+                                 why="OSM way 1366208564, גינה קהילתית עמק החובזות itself"),
+    "גן עוז 12": dict(lat=32.462600, lng=34.965841, source="osm",
+                      why="'the garden at the end of גן עוז': the dead end of OSM way 236101086"),
+    "הצפירה פינת הבוטנים 15": dict(lat=32.467031, lng=34.975362, source="osm",
+                                   why="the node הצפירה and הבוטנים share in OSM"),
+    "גינת אגוז - דירה 35 קומה 9": dict(lat=32.467710, lng=34.955967, source="osm",
+                                       why="a flat on גינת אגוז; centre of OSM way 69024212"),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The

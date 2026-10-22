@@ -34,7 +34,7 @@ fi
 
 # Venues known to be on no open map (see the docstring); anything else
 # unplaced is new and wants a FIXES entry.
-KNOWN='חוות החזון הירוק|הנורית|קריית החינוך'
+KNOWN='חוות החזון הירוק|הנורית|קריית החינוך|ירושלים 52|שפת הים 13'
 NEW="$(sed -n 's/^  ! no position for //p' "$ERR" | grep -Ev "$KNOWN" | sort -u)"
 rm -f "$ERR"
 if [ -n "$NEW" ]; then
