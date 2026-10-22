@@ -1,0 +1,884 @@
+/* דרך הנדיב · מה קורה עכשיו
+ *
+ * One page over the festival's programme. The programme comes from the nightly
+ * build of דרך קיצור (dereh_kitzur/build_hanadiv.py), which pulls the
+ * festival's API and places every venue on the map; that file lands in the
+ * derech-kitzur-data repo, so this page is as fresh as last night's run with
+ * no deploy. A copy in data/ is the fallback when GitHub is unreachable.
+ *
+ * The whole interface hangs on one value, the playhead: a day and a minute.
+ * The strip, the map, the list and the timetable all redraw from it.
+ */
+'use strict';
+
+const DATA_URLS = [
+  'https://raw.githubusercontent.com/orimosenzon/derech-kitzur-data/main/data/hanadiv.json',
+  'data/hanadiv.json',
+];
+const CENTER = [34.978, 32.4735];
+const SOON = 60;            // minutes ahead that count as "starting soon"
+const LONG = 240;           // events this long are exhibitions, open all day
+const WALK_M_PER_MIN = 75;  // with 1.3 for streets not being straight lines
+const STEP = 5;
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hm = m => { m = Math.round(m); const h = Math.floor(m / 60) % 24; return `${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; };
+const rng = (a, b) => `<span dir="ltr">${hm(a)}–${hm(b)}</span>`;
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+const S = {
+  events: [], venues: new Map(), groups: [], colors: {}, days: [],
+  day: null, t: 600, lo: 480, hi: 1440,
+  view: 'map', filt: new Set(), kids: false, access: false, q: '',
+  plan: new Set(), me: null, sel: null, playing: null, moreLater: false, shared: null,
+};
+
+/* ---------- data ---------- */
+
+function parseDur(s) {
+  s = (s || '').trim();
+  let m = 0;
+  if (/^שעתיים/.test(s)) m = 120;
+  else if (/^שעה/.test(s)) m = 60;
+  const h = s.match(/^(\d+)\s*שעות/); if (h) m = +h[1] * 60;
+  if (/וחצי/.test(s)) m += 30;
+  const d = s.match(/(\d+)\s*דק/); if (d) m += +d[1];
+  return m || 60;
+}
+
+function splitAddress(a) {
+  const [street, ...rest] = String(a || '').split(' · ');
+  let place = rest.join(' · ').replace(/["״]/g, '').trim();
+  let st = street.replace(/\s+0$/, '').trim();
+  if (st.length > 34) {  // "בווייז - האולם ... ולהמשיך לפי השילוט" is directions, not a street
+    if (!place) place = st.split(/[.,]/)[0];
+    st = '';
+  }
+  place = place.replace(/\.\s*בוו?ייז.*$/, '').replace(/\.$/, '');
+  return { street: st, place: place || st, directions: street.length > 34 ? street.replace(/\s+0$/, '') : '' };
+}
+
+async function load() {
+  for (const url of DATA_URLS) {
+    try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 7000);
+      const r = await fetch(url, { signal: ctl.signal });
+      clearTimeout(timer);
+      if (r.ok) return await r.json();
+    } catch (e) { /* next */ }
+  }
+  throw new Error('no data');
+}
+
+function prepare(doc) {
+  S.groups = doc.groups.map(g => g.name);
+  doc.groups.forEach(g => S.colors[g.name] = g.color);
+  S.festival = doc.festival;
+  S.updated = doc.updated;
+  for (const p of doc.places) {
+    const [h, m] = p.hour.split(':').map(Number);
+    const durLabel = (p.when.split('·').pop() || '').trim();
+    const dur = parseDur(durLabel);
+    const a = splitAddress(p.address);
+    const vkey = (a.street || a.place).replace(/\s+/g, ' ');
+    const e = {
+      id: p.id.replace(/^hanadiv-/, ''), name: p.name.replace(/\s*·\s*יום (חמישי|שישי|שבת)\s*$/, ''),
+      group: p.group, craft: p.craft, date: p.date, start: h * 60 + m, dur, durLabel,
+      audience: p.audience, note: p.note, url: p.url, links: p.links || [], photos: p.photos || [],
+      street: a.street, place: a.place, directions: a.directions, access: p.access || '', seats: p.seats, vkey,
+      geo: p.geo ? { lat: p.geo.lat, lng: p.geo.lng } : null,
+    };
+    e.end = e.start + dur;
+    e.long = dur >= LONG;
+    e.c = S.colors[e.group] || '#607d8b';
+    S.events.push(e);
+    let v = S.venues.get(vkey);
+    if (!v) S.venues.set(vkey, v = { key: vkey, street: a.street, place: a.place, events: [], pts: [] });
+    v.events.push(e);
+    if (e.geo) v.pts.push(e.geo);
+  }
+  for (const v of S.venues.values()) {
+    v.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+    if (v.pts.length) v.geo = { lat: avg(v.pts.map(p => p.lat)), lng: avg(v.pts.map(p => p.lng)) };
+    v.events.forEach(e => { e.venue = v; e.vgeo = v.geo || null; });
+  }
+  S.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start || a.name.localeCompare(b.name, 'he'));
+  S.byId = new Map(S.events.map(e => [e.id, e]));
+  S.days = [...new Set(S.events.map(e => e.date))].sort();
+  S.lo = Math.floor(Math.min(...S.events.map(e => e.start)) / 60) * 60;
+  S.hi = Math.min(26 * 60, Math.ceil(Math.max(...S.events.map(e => e.start + Math.min(e.dur, 120))) / 60) * 60);
+}
+const avg = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+/* ---------- helpers over the playhead ---------- */
+
+function passes(e) {
+  if (S.filt.size && !S.filt.has(e.group)) return false;
+  if (S.kids && e.audience === 'רק למבוגרים') return false;
+  if (S.access && !/(^|· )נגיש/.test(e.access)) return false;
+  if (S.q) {
+    const hay = `${e.name} ${e.craft} ${e.group} ${e.note} ${e.place} ${e.street}`;
+    if (!S.q.split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+const dayEvents = () => S.events.filter(e => e.date === S.day && passes(e));
+function status(e, t = S.t) {
+  if (e.date !== S.day) return e.date < S.day ? 'past' : 'later';
+  if (e.start <= t && t < e.end) return 'live';
+  if (e.end <= t) return 'past';
+  return e.start - t <= SOON ? 'soon' : 'later';
+}
+function dist(a, b) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+const walkMin = (a, b) => Math.max(1, Math.round(dist(a, b) * 1.3 / WALK_M_PER_MIN));
+function mins(n) {
+  n = Math.round(n);
+  if (n < 60) return `${n} דק׳`;
+  const h = Math.floor(n / 60), m = n % 60;
+  const hs = h === 1 ? 'שעה' : h === 2 ? 'שעתיים' : `${h} שעות`;
+  return m ? `${hs} ו-${m} דק׳` : hs;
+}
+function dayName(d, short) {
+  const w = new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long' }).replace('יום ', '');
+  const [, mo, da] = d.split('-');
+  return short ? w : `${w} ${+da}.${+mo}`;
+}
+function israelNow() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date()).map(p => [p.type, p.value]));
+  let date = `${parts.year}-${parts.month}-${parts.day}`, m = +parts.hour * 60 + +parts.minute;
+  if (m < 180) {  // the small hours belong to last night
+    const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1);
+    date = d.toISOString().slice(0, 10); m += 1440;
+  }
+  return { date, m };
+}
+const festivalNow = () => { const n = israelNow(); return S.days.includes(n.date) ? n : null; };
+function relLabel(e) {
+  const st = status(e);
+  if (st === 'live') return { cls: 'live', txt: e.long ? `פתוח עד ${hm(e.end)}` : `קורה עכשיו · עוד ${mins(e.end - S.t)}` };
+  if (st === 'soon') return { cls: 'soon', txt: e.start === S.t ? 'מתחיל עכשיו' : `בעוד ${mins(e.start - S.t)}` };
+  if (st === 'past') return { cls: '', txt: 'הסתיים' };
+  return null;
+}
+
+/* ---------- the strip ---------- */
+
+const PAD = 16;  // room for the first and last hour labels
+function xOf(t, W) { return W - PAD - (t - S.lo) / (S.hi - S.lo) * (W - 2 * PAD); }  // right to left: morning on the right
+function tOf(x, W) { return S.lo + (W - PAD - x) / (W - 2 * PAD) * (S.hi - S.lo); }
+
+function drawStrip() {
+  const svg = $('#stripSvg');
+  const W = svg.clientWidth, H = svg.clientHeight, base = H - 14;
+  const evs = dayEvents().filter(e => !e.long);
+  const BIN = 10, bins = [];
+  let peak = 1;
+  for (let t = S.lo; t < S.hi; t += BIN) {
+    const per = {};
+    let n = 0;
+    for (const e of evs) if (e.start < t + BIN && e.end > t) { per[e.group] = (per[e.group] || 0) + 1; n++; }
+    bins.push({ t, per, n }); peak = Math.max(peak, n);
+  }
+  const bw = (W - 2 * PAD) / bins.length;
+  let out = '';
+  for (let h = S.lo; h <= S.hi; h += 60) {
+    const x = xOf(h, W);
+    out += `<line x1="${x}" x2="${x}" y1="0" y2="${base}" stroke="#000" stroke-opacity=".06"/>`;
+    if ((h / 60) % 2 === 0 || W > 700) out += `<text x="${x}" y="${H - 2}" text-anchor="middle">${hm(h)}</text>`;
+  }
+  for (const b of bins) {
+    let y = base;
+    const x = xOf(b.t + BIN, W);
+    for (const g of S.groups) {
+      const n = b.per[g]; if (!n) continue;
+      const h = n / peak * (base - 4);
+      y -= h;
+      out += `<rect x="${x + .5}" y="${y}" width="${Math.max(bw - 1, 1)}" height="${h}" fill="${S.colors[g]}" rx="1"/>`;
+    }
+  }
+  out += `<line x1="${PAD}" x2="${W - PAD}" y1="${base}" y2="${base}" stroke="#000" stroke-opacity=".15"/>`;
+  svg.innerHTML = out;
+  placePlayhead();
+}
+function placePlayhead() {
+  const W = $('#stripSvg').clientWidth;
+  $('#playhead').style.left = xOf(S.t, W) + 'px';
+}
+
+function setupStrip() {
+  const strip = $('#strip');
+  let dragging = false;
+  const fromEvent = ev => {
+    const r = strip.getBoundingClientRect();
+    const t = tOf(clamp(ev.clientX - r.left, 0, r.width), r.width);
+    setT(Math.round(t / STEP) * STEP);
+  };
+  strip.addEventListener('pointerdown', ev => { dragging = true; strip.setPointerCapture(ev.pointerId); stopPlay(); fromEvent(ev); });
+  strip.addEventListener('pointermove', ev => dragging && fromEvent(ev));
+  strip.addEventListener('pointerup', () => { dragging = false; });
+  strip.addEventListener('keydown', ev => {
+    const d = { ArrowLeft: STEP, ArrowRight: -STEP, PageUp: 60, PageDown: -60 }[ev.key];
+    if (d) { ev.preventDefault(); stopPlay(); setT(S.t + d); }
+  });
+  new ResizeObserver(() => drawStrip()).observe(strip);
+}
+
+/* ---------- time of day: the map darkens towards evening ---------- */
+
+function sky() {
+  const n = clamp((S.t - 16.5 * 60) / 100, 0, 1);       // sunset is about 16:50 at the end of October
+  const dusk = clamp(1 - Math.abs(S.t - 17 * 60) / 50, 0, 1);
+  if (S.shade) S.shade.style.background = `rgba(${Math.round(40 - 20 * n)},${Math.round(45 - 10 * n)},${Math.round(70 + 20 * n)},${(.42 * n).toFixed(3)})`;
+  if (S.glow) S.glow.style.background = `rgba(255,140,60,${(.18 * dusk).toFixed(3)})`;
+  const mix = (a, b, k) => a.map((x, i) => Math.round(x + (b[i] - x) * k));
+  const day = [253, 243, 223], eve = [251, 226, 205], night = [226, 226, 240];
+  const c = S.t < 17 * 60 ? mix(day, eve, dusk) : mix(eve, night, n);
+  document.documentElement.style.setProperty('--sky', `rgb(${c})`);
+}
+
+/* ---------- map ---------- */
+
+let map;
+const markers = new Map();
+function setupMap() {
+  map = new maplibregl.Map({
+    container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: CENTER, zoom: 13.4, attributionControl: { compact: true },
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+  const cc = map.getCanvasContainer();
+  for (const k of ['shade', 'glow']) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;transition:background .4s';
+    cc.appendChild(d); S[k] = d;
+  }
+  S.glow.style.mixBlendMode = 'soft-light';
+  for (const v of S.venues.values()) {
+    if (!v.geo) continue;
+    const el = document.createElement('div');
+    el.className = 'vm hide';
+    el.innerHTML = '<div class="dot"></div>';
+    el.addEventListener('click', ev => { ev.stopPropagation(); openVenue(v); });
+    const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
+    markers.set(v.key, { el, mk, v });
+  }
+  map.on('load', () => {
+    map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'route-case', type: 'line', source: 'route', paint: { 'line-color': '#fff', 'line-width': 7, 'line-opacity': .9 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+    map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': '#1d2b3a', 'line-width': 3.5, 'line-dasharray': [1.5, 1.2] }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+    drawRoute();
+    // frame the moshava: venues further than 3 km (the outskirts, Caesarea's beach) are left out of the opening view
+    const near = [...S.venues.values()].filter(v => v.geo && dist(v.geo, { lat: CENTER[1], lng: CENTER[0] }) < (innerWidth < 600 ? 1600 : 3000));
+    if (near.length && !S.sel) {
+      const b = new maplibregl.LngLatBounds();
+      near.forEach(v => b.extend([v.geo.lng, v.geo.lat]));
+      map.fitBounds(b, { padding: fitPad(), duration: 0, maxZoom: 15 });
+    }
+  });
+  map.on('click', () => closePopup());
+}
+function fitPad() {
+  const wide = innerWidth >= 900;
+  return wide ? { top: 40, bottom: 40, left: 40, right: 40 } : { top: 20, bottom: 150, left: 10, right: 10 };
+}
+
+function drawMarkers() {
+  const planDay = S.view === 'plan' ? planList().filter(e => e.date === S.day) : null;
+  const planVenues = new Map();
+  if (planDay) planDay.forEach((e, i) => { if (!planVenues.has(e.vkey)) planVenues.set(e.vkey, i + 1); });
+  for (const { el, v } of markers.values()) {
+    const evs = v.events.filter(e => e.date === S.day && passes(e));
+    const dot = el.firstChild;
+    let cls = 'hide', txt = '', color = '#9aa3ab';
+    if (evs.length) {
+      const live = evs.filter(e => status(e) === 'live');
+      const liveShort = live.filter(e => !e.long);
+      const soon = evs.filter(e => status(e) === 'soon');
+      if (live.length) {
+        cls = 'live' + (liveShort.length > 1 ? ' multi' : '');
+        color = (liveShort[0] || live[0]).c;
+        txt = liveShort.length > 1 ? liveShort.length : '';
+      } else if (soon.length) {
+        cls = 'soon'; color = soon[0].c; txt = `${soon[0].start - S.t}′`;
+      } else cls = evs.some(e => status(e) === 'later') ? 'idle' : 'done';
+    }
+    // the map always shows what is on at the playhead; the plan only adds stars, numbers and the route
+    if (evs.some(e => S.plan.has(e.id))) cls += ' plan';
+    if (S.sel && S.sel.key === v.key) cls += ' sel';
+    el.className = 'vm ' + cls;
+    el.style.setProperty('--c', color);
+    if (dot.textContent !== String(txt)) dot.textContent = txt;
+    let badge = el.querySelector('.planno');
+    const no = planDay && planVenues.get(v.key);
+    if (no) { if (!badge) { badge = document.createElement('div'); badge.className = 'planno'; el.appendChild(badge); } badge.textContent = no; }
+    else if (badge) badge.remove();
+  }
+  if (S.popup && S.sel) S.popup.setHTML(venueHTML(S.sel));
+}
+
+let meMarker;
+function drawMe() {
+  if (!S.me || !map) return;
+  if (!meMarker) {
+    const el = document.createElement('div'); el.className = 'medot';
+    meMarker = new maplibregl.Marker({ element: el }).setLngLat([S.me.lng, S.me.lat]).addTo(map);
+  } else meMarker.setLngLat([S.me.lng, S.me.lat]);
+}
+
+function venueHTML(v) {
+  const evs = v.events.filter(e => e.date === S.day);
+  const W = S.hi - S.lo;
+  const bars = evs.map(e => `<b style="--c:${e.c};right:${(e.start - S.lo) / W * 100}%;width:${Math.min(e.dur, S.hi - e.start) / W * 100}%"></b>`).join('');
+  const now = `<i style="right:${(S.t - S.lo) / W * 100}%"></i>`;
+  const items = evs.map(e => {
+    const st = status(e);
+    return `<li class="${st}" data-ev="${e.id}"><span class="h">${hm(e.start)}</span><span class="n" style="color:${e.c}">●</span><span class="n">${esc(e.name)}</span></li>`;
+  }).join('') || `<li>אין אירועים ב${dayName(S.day, true)}. ${v.events.length} בימים אחרים.</li>`;
+  return `<div class="pop"><h4>${esc(v.place)}</h4><div class="addr">${esc(v.street)}</div>
+    ${evs.length ? `<div class="mini">${bars}${now}</div>` : ''}<ul>${items}</ul></div>`;
+}
+function openVenue(v, fly) {
+  closePopup();
+  S.sel = v;
+  if (!v.geo) return;
+  S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 18 })
+    .setLngLat([v.geo.lng, v.geo.lat]).setHTML(venueHTML(v)).addTo(map);
+  S.popup.getElement().addEventListener('click', ev => {
+    const li = ev.target.closest('[data-ev]'); if (li) openDetail(S.byId.get(li.dataset.ev));
+  });
+  S.popup.on('close', () => { if (S.sel === v) { S.sel = null; drawMarkers(); } });
+  if (fly) map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), padding: fitPad() });
+  if ($('#sheet').dataset.snap === 'full') snap('peek');
+  drawMarkers();
+}
+function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; }
+
+/* ---------- the list ---------- */
+
+function card(e, opts = {}) {
+  const r = relLabel(e);
+  const st = status(e);
+  const ph = e.photos[0] ? `background-image:url('${esc(e.photos[0].thumb)}')` : '';
+  const walk = S.me && e.vgeo ? `<span class="tag walk">${walkMin(S.me, e.vgeo)} דק׳ הליכה</span>` : '';
+  const kid = e.audience !== 'רק למבוגרים' ? `<span class="tag kid">${e.audience === 'רק לילדים' ? 'לילדים' : 'למשפחה'}</span>` : '';
+  const prog = st === 'live' && !e.long ? `<div class="prog" style="width:${(S.t - e.start) / e.dur * 100}%"></div>` : '';
+  const day = opts.showDay ? `${dayName(e.date, true)} · ` : '';
+  return `<div class="ev ${opts.dim && st === 'past' ? 'past' : ''}" data-ev="${e.id}" style="--c:${e.c}">
+    <div class="ph" style="${ph}"></div>
+    <div class="body"><div class="nm">${esc(e.name)}</div>
+      <div class="where">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}${e.vgeo ? '' : ' · לא על המפה'}</div>
+      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}</div></div>
+    <button class="star ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}" aria-label="לתוכנית שלי">${STAR}</button>${prog}</div>`;
+}
+const STAR = '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
+
+function byNear(a, b) {
+  if (!S.me) return 0;
+  return (a.vgeo ? dist(S.me, a.vgeo) : 1e9) - (b.vgeo ? dist(S.me, b.vgeo) : 1e9);
+}
+
+function drawList() {
+  const evs = dayEvents();
+  const live = evs.filter(e => status(e) === 'live' && !e.long).sort((a, b) => byNear(a, b) || a.end - b.end);
+  const open = evs.filter(e => status(e) === 'live' && e.long);
+  const soon = evs.filter(e => status(e) === 'soon').sort((a, b) => a.start - b.start || byNear(a, b));
+  const later = evs.filter(e => status(e) === 'later');
+  let h = '';
+  const filtered = S.filt.size || S.kids || S.access || S.q;
+  if (!evs.length) {
+    h += `<div class="empty">${filtered ? `אין ב${dayName(S.day, true)} אירועים שמתאימים לסינון. <button class="more" data-clear>לנקות את הסינון</button>` : 'אין אירועים ביום הזה.'}</div>`;
+  }
+  h += `<div class="sec"><h3>${live.length ? '<span class="livedot"></span>' : ''}קורה ב-${hm(S.t)}</h3><span class="meta">${live.length} אירועים</span></div>`;
+  if (live.length) h += live.map(e => card(e)).join('');
+  else if (evs.length) {
+    const next = evs.find(e => e.start > S.t);
+    h += `<div class="empty">${next ? `בשעה הזאת שקט. הבא מתחיל ב-${hm(next.start)}: ${esc(next.name)}.` : 'היום נגמר. מחר עוד.'}</div>`;
+  }
+  if (soon.length) h += `<div class="sec"><h3>מתחיל בשעה הקרובה</h3><span class="meta">${soon.length}</span></div>` + soon.map(e => card(e)).join('');
+  if (open.length) h += `<div class="sec"><h3>פתוח לאורך היום</h3><span class="meta">תערוכות ומיצגים</span></div>` + open.map(e => card(e)).join('');
+  if (later.length) {
+    const shown = S.moreLater ? later : later.slice(0, 5);
+    h += `<div class="sec"><h3>בהמשך היום</h3>${later.length > 5 && !S.moreLater ? `<button class="more" data-more>כל ה-${later.length}</button>` : `<span class="meta">${later.length}</span>`}</div>`;
+    h += shown.map(e => card(e)).join('');
+  }
+  const unplaced = evs.filter(e => !e.vgeo);
+  if (unplaced.length && !filtered) h += `<div class="empty" style="font-size:12.5px">${unplaced.length} אירועים היום בלי נקודה על המפה (כתובת שלא הצלחנו למקם). הם מופיעים ברשימה.</div>`;
+  $('#sheetBody').innerHTML = h;
+}
+
+/* ---------- my plan ---------- */
+
+function planList() { return [...S.plan].map(id => S.byId.get(id)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start); }
+function savePlan() {
+  try { localStorage.setItem('hanadiv-plan', JSON.stringify([...S.plan])); } catch (e) { /* private window */ }
+  const n = S.plan.size;
+  $('#planCount').textContent = n || '';
+}
+function toggleStar(id) {
+  const e = S.byId.get(id);
+  if (S.plan.has(id)) { S.plan.delete(id); toast('הוסר מהתוכנית'); }
+  else {
+    S.plan.add(id);
+    const clash = planList().find(o => o.id !== id && o.date === e.date && o.start < e.end && e.start < o.end);
+    toast(clash ? `נוסף, אבל חופף ל"${clash.name}"` : 'נוסף לתוכנית שלך ★');
+  }
+  savePlan(); render();
+}
+
+function drawPlan() {
+  const live = dayEvents().filter(e => status(e) === 'live' && !e.long).length;
+  let h = `<div class="shared" style="background:#fff;border-color:var(--line)">ב-${hm(S.t)} קורים ${live} אירועים, והם מסומנים על המפה.
+    <button class="more" data-view="map">לרשימה המלאה</button></div>`;
+  if (S.shared) {
+    const fresh = S.shared.filter(id => !S.plan.has(id));
+    h += `<div class="shared">מישהו שיתף איתכם תוכנית של ${S.shared.length} אירועים.
+      ${fresh.length ? `<div class="planbar"><button class="btn warm" data-import>להוסיף ${fresh.length} לתוכנית שלי</button><button class="btn ghost" data-dismiss>לא תודה</button></div>` : '<br>כולם כבר בתוכנית שלכם.'}</div>`;
+    h += S.shared.map(id => S.byId.get(id)).filter(Boolean).map(e => card(e, { showDay: true, noRel: true })).join('');
+  }
+  const list = planList();
+  if (!list.length) {
+    h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="empty">עוד אין כאן כלום. לוחצים על ★ ליד אירוע והוא נכנס לכאן, מסודר לפי שעות, עם זמן ההליכה בין אירוע לאירוע ואזהרה כששניים מתנגשים.<br><br>התוכנית נשמרת בדפדפן הזה, ואפשר לשלוח אותה לחברים בקישור.</div>`;
+    $('#sheetBody').innerHTML = h; return;
+  }
+  h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
+    <div class="planbar"><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
+  for (const d of S.days) {
+    const evs = list.filter(e => e.date === d);
+    if (!evs.length) continue;
+    h += `<div class="planday"><h4>${dayName(d)}</h4>`;
+    evs.forEach((e, i) => {
+      h += card(e, { noRel: d !== S.day, dim: true });
+      const nx = evs[i + 1];
+      if (!nx) return;
+      const gap = nx.start - e.end;
+      const walk = e.vgeo && nx.vgeo ? (e.vkey === nx.vkey ? 0 : walkMin(e.vgeo, nx.vgeo)) : null;
+      let cls = '', txt;
+      if (gap < 0) { cls = 'bad'; txt = `חופף לבא אחריו (${mins(-gap)}). צריך לבחור, או לצאת מוקדם`; }
+      else if (walk != null && walk > gap) { cls = 'bad'; txt = `${mins(walk)} הליכה, ויש רק ${gap ? mins(gap) : 'אפס דקות'}`; }
+      else if (walk != null && walk + 5 > gap) { cls = 'tight'; txt = `צפוף: ${mins(walk)} הליכה, ${mins(gap)} ביניהם`; }
+      else txt = `${gap ? mins(gap) + ' הפסקה' : 'מיד אחרי'}${walk ? ` · ${mins(walk)} הליכה` : walk === 0 ? ' · באותו מקום' : ''}`;
+      h += `<div class="gap ${cls}">${txt}</div>`;
+    });
+    h += '</div>';
+  }
+  $('#sheetBody').innerHTML = h;
+}
+
+function drawRoute() {
+  if (!map || !map.getSource('route')) return;
+  const pts = S.view === 'plan' ? planList().filter(e => e.date === S.day && e.vgeo).map(e => [e.vgeo.lng, e.vgeo.lat]) : [];
+  map.getSource('route').setData({ type: 'FeatureCollection', features: pts.length > 1 ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: pts } }] : [] });
+}
+
+/* ---------- timetable ---------- */
+
+const PPM = 2.4, NAMEW = 128;
+function drawGrid() {
+  const g = $('#grid');
+  const evs = dayEvents();
+  const rows = new Map();
+  evs.forEach(e => { if (!rows.has(e.vkey)) rows.set(e.vkey, []); rows.get(e.vkey).push(e); });
+  const W = (S.hi - S.lo) * PPM + NAMEW + 20;
+  const X = t => NAMEW + (t - S.lo) * PPM;
+  let h = `<div class="gt" style="width:${W}px"><div class="hours">`;
+  for (let t = S.lo; t <= S.hi; t += 60) h += `<span style="right:${X(t)}px">${hm(t)}</span>`;
+  h += '</div>';
+  for (let t = S.lo; t <= S.hi; t += 60) h += `<div class="grid-hour" style="right:${X(t)}px"></div>`;
+  const ordered = [...rows.values()].sort((a, b) => a[0].start - b[0].start);
+  for (const list of ordered) {
+    const lanes = [];
+    for (const e of list) {
+      const end = e.start + Math.min(e.dur, S.hi - e.start);
+      let l = lanes.findIndex(x => x <= e.start);
+      if (l < 0) { l = lanes.length; lanes.push(0); }
+      lanes[l] = end; e._lane = l;
+    }
+    const n = lanes.length, rowH = Math.max(54, n * 28 + 12), bh = (rowH - 12) / n - 2;
+    const v = list[0].venue;
+    h += `<div class="row" style="height:${rowH}px"><div class="vname" data-venue="${esc(v.key)}"><b>${esc(v.place)}</b>${esc(v.street !== v.place ? v.street : '')}</div>`;
+    for (const e of list) {
+      const w = Math.max(Math.min(e.dur, S.hi - e.start) * PPM - 3, 16);
+      h += `<div class="bar ${n > 1 ? 'split' : ''} ${S.plan.has(e.id) ? 'planned' : ''}" data-ev="${e.id}" style="--c:${e.c};right:${X(e.start)}px;width:${w}px;top:${6 + e._lane * (bh + 2)}px;height:${bh}px" title="${esc(e.name)}"><b>${esc(e.name)}</b><span>${rng(e.start, e.end)}</span></div>`;
+    }
+    h += '</div>';
+  }
+  if (!ordered.length) h += `<div class="empty" style="padding:20px">אין אירועים שמתאימים לסינון.</div>`;
+  h += `<div class="nowline" style="right:${X(S.t)}px"></div></div>`;
+  g.innerHTML = h;
+  tickGrid();
+}
+function tickGrid() {
+  const g = $('#grid');
+  const line = $('.nowline', g); if (!line) return;
+  line.style.right = NAMEW + (S.t - S.lo) * PPM + 'px';
+  $$('.bar', g).forEach(b => b.classList.toggle('past', status(S.byId.get(b.dataset.ev)) === 'past'));
+}
+function scrollGridToNow() {
+  const g = $('#grid');
+  const x = NAMEW + (S.t - S.lo) * PPM;
+  // rows are in order of their first event; start at the first one still going at the playhead
+  const row = $$('.row', g).find(r => $$('.bar', r).some(b => S.byId.get(b.dataset.ev).end > S.t));
+  g.scrollTo({ left: -(x - NAMEW - 60), top: row ? row.offsetTop - 26 : 0, behavior: 'smooth' });
+}
+
+/* ---------- detail card ---------- */
+
+const ICON = {
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  pin: '<svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  ppl: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.5 6-5.5s5.4 2.1 6 5.5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.6c2.4.2 4 1.9 4.5 4.6"/></svg>',
+  acc: '<svg viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"/></svg>',
+  nav: '<svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg>',
+  ext: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
+  x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+};
+
+function openDetail(e) {
+  if (!e) return;
+  S.detail = e;
+  const v = e.venue;
+  const gallery = e.photos.length ? `<div class="gallery">${e.photos.map(p => `<img src="${esc(p.full)}" alt="" loading="lazy">`).join('')}</div>` : `<div class="gallery" style="height:70px"></div>`;
+  const r = e.date === S.day ? relLabel(e) : null;
+  const W = S.hi - S.lo;
+  const tl = `<div class="timeline"><b style="right:${(e.start - S.lo) / W * 100}%;width:${Math.min(e.dur, S.hi - e.start) / W * 100}%"></b>${e.date === S.day ? `<i style="right:${(S.t - S.lo) / W * 100}%"></i>` : ''}</div>`;
+  const nav = v.geo ? `<a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${v.geo.lat},${v.geo.lng}&navigate=yes">${ICON.nav}ווייז</a>
+     <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.geo.lat},${v.geo.lng}&travelmode=walking&hl=iw">גוגל מפות</a>` : '';
+  const others = v.events.filter(o => o.id !== e.id);
+  const walk = S.me && v.geo ? ` · ${walkMin(S.me, v.geo)} דק׳ הליכה ממך` : '';
+  $('#detailCard').style.setProperty('--c', e.c);
+  $('#detailCard').innerHTML = `<button class="x" data-close aria-label="סגירה">${ICON.x}</button>${gallery}
+    <div class="inner">
+      <div class="kind"><i></i>${esc(e.group)}${e.craft && e.craft !== e.group ? ' · ' + esc(e.craft) : ''}</div>
+      <h2>${esc(e.name)}</h2>
+      ${r ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}
+      <div class="facts">
+        <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
+        <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}</span></div>
+        <div>${ICON.ppl}<span>${esc(e.audience)}${e.seats ? ` · ${e.seats} מקומות` : ''}</span></div>
+        ${e.access ? `<div>${ICON.acc}<span>${esc(e.access)}</span></div>` : ''}
+      </div>
+      <div class="actions">
+        <button class="btn ${S.plan.has(e.id) ? 'warm' : ''}" data-star="${e.id}">${STAR}${S.plan.has(e.id) ? 'בתוכנית שלי' : 'לתוכנית שלי'}</button>
+        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע והרשמה</a>
+        ${nav}
+        <button class="btn ghost" data-ics="${e.id}">${ICON.cal}ליומן</button>
+        ${v.geo ? `<button class="btn ghost" data-showmap="${e.id}">${ICON.pin}על המפה</button>` : ''}
+      </div>
+      <div class="note">${esc(e.note).replace(/ · /g, '\n')}</div>
+      ${e.links.length ? `<div class="links">${e.links.map(l => `<a target="_blank" rel="noopener" href="${esc(l.url)}">${esc(l.title)}</a>`).join('')}</div>` : ''}
+      ${others.length ? `<div class="same"><h4>עוד באותו מקום (${others.length})</h4>${others.map(o => card(o, { showDay: true, noRel: o.date !== S.day })).join('')}</div>` : ''}
+    </div>`;
+  $('#detail').hidden = false;
+  $('#detailCard').scrollTop = 0;
+  setHash();
+}
+function closeDetail() { $('#detail').hidden = true; S.detail = null; setHash(); }
+
+/* ---------- calendar ---------- */
+
+function icsTime(date, m) {
+  // The festival falls after the clocks go back (25/10/2026), so Israel is UTC+2.
+  const t = new Date(`${date}T00:00:00+02:00`).getTime() + m * 60000;
+  return new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+}
+function downloadIcs(evs, name) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//pardespedia//hanadiv//HE', 'CALSCALE:GREGORIAN'];
+  const fold = s => s.replace(/[\\;,]/g, c => '\\' + c).replace(/\n/g, '\\n');
+  for (const e of evs) {
+    lines.push('BEGIN:VEVENT', `UID:hanadiv-${e.id}@pardespedia.info`, `DTSTAMP:${icsTime('2026-10-01', 0)}`,
+      `DTSTART:${icsTime(e.date, e.start)}`, `DTEND:${icsTime(e.date, e.end)}`,
+      `SUMMARY:${fold(e.name)}`, `LOCATION:${fold([e.place, e.street, 'פרדס חנה-כרכור'].filter(Boolean).join(', '))}`,
+      `DESCRIPTION:${fold(e.url + '\n\n' + e.note.slice(0, 600))}`, `URL:${e.url}`);
+    if (e.vgeo) lines.push(`GEO:${e.vgeo.lat};${e.vgeo.lng}`);
+    lines.push('END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name + '.ics'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- chips, days, views ---------- */
+
+function drawDays() {
+  const today = festivalNow();
+  $('#days').innerHTML = S.days.map(d => {
+    const n = S.events.filter(e => e.date === d && passes(e)).length;
+    return `<button role="tab" data-day="${d}" class="${d === S.day ? 'on' : ''}">${dayName(d, true)} <small>${d.slice(8)}.${d.slice(5, 7)}${today && today.date === d ? ' · <span class="today">היום</span>' : ''}<span class="cnt"> · ${n} אירועים</span></small></button>`;
+  }).join('');
+}
+function drawChips() {
+  const counts = {};
+  S.events.forEach(e => counts[e.group] = (counts[e.group] || 0) + 1);
+  const gs = S.groups.filter(g => counts[g]);
+  $('#chips').innerHTML =
+    gs.map(g => `<button class="chip ${S.filt.has(g) ? 'on' : S.filt.size ? 'off' : ''}" data-g="${esc(g)}" style="--c:${S.colors[g]}"><i></i>${esc(g)}</button>`).join('') +
+    `<button class="chip sep ${S.kids ? 'on' : ''}" data-kids style="--c:#1d7a52">מתאים לילדים</button>` +
+    `<button class="chip ${S.access ? 'on' : ''}" data-access style="--c:#1a5bb8">נגיש</button>`;
+}
+
+function setView(v) {
+  S.view = v;
+  document.body.className = 'view-' + v;
+  $$('#views button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  $('#grid').hidden = v !== 'grid';
+  if (v === 'plan') {
+    snap(innerWidth < 900 ? 'mid' : 'mid');
+    const pts = planList().filter(e => e.date === S.day && e.vgeo);
+    if (pts.length && map) {
+      const b = new maplibregl.LngLatBounds(); pts.forEach(e => b.extend([e.vgeo.lng, e.vgeo.lat]));
+      map.fitBounds(b, { padding: fitPad(), maxZoom: 15.5 });
+    }
+  }
+  render();
+  if (v === 'grid') { drawGrid(); scrollGridToNow(); }
+  else map && map.resize();
+  setHash();
+}
+
+/* ---------- state changes ---------- */
+
+let raf = 0;
+function render() {
+  if (raf) return;
+  raf = requestAnimationFrame(() => {
+    raf = 0;
+    const evs = dayEvents();
+    const live = evs.filter(e => status(e) === 'live' && !e.long).length;
+    const soon = evs.filter(e => status(e) === 'soon').length;
+    $('#timeLabel').textContent = `${dayName(S.day, true)} ${hm(S.t)}`;
+    $('#countLabel').innerHTML = `<b>${live}</b> קורים עכשיו · ${soon} מתחילים בשעה הקרובה`;
+    placePlayhead();
+    sky();
+    if (map) drawMarkers();
+    drawRoute();
+    if (S.view === 'plan') drawPlan(); else drawList();
+    if (S.view === 'grid') tickGrid();
+    const fn = festivalNow();
+    $('#nowBtn').disabled = !fn;
+    $('#nowBtn').title = fn ? '' : 'הכפתור יעבוד בימי הפסטיבל';
+    setHashSoon();
+  });
+}
+function setT(t) {
+  t = clamp(t, S.lo, S.hi);
+  if (t === S.t) return;
+  S.t = t; render();
+}
+function setDay(d) {
+  if (d === S.day) return;
+  S.day = d; S.moreLater = false;
+  closePopup();
+  drawDays(); drawStrip();
+  if (S.view === 'grid') drawGrid();
+  if (S.view === 'plan') setView('plan');
+  render();
+}
+function filtersChanged() {
+  drawChips(); drawDays(); drawStrip();
+  if (S.view === 'grid') drawGrid();
+  render();
+}
+
+function busiest(d) {
+  const evs = S.events.filter(e => e.date === d && !e.long);
+  let best = S.lo, n = -1;
+  for (let t = S.lo; t < S.hi; t += 30) {
+    const k = evs.filter(e => e.start <= t && t < e.end).length;
+    if (k > n) { n = k; best = t; }
+  }
+  return best;
+}
+
+/* ---------- play ---------- */
+
+function play() {
+  if (S.playing) return stopPlay();
+  if (S.t >= S.hi - STEP) S.t = S.lo;
+  $('#playBtn').innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+  S.playing = setInterval(() => {
+    if (S.t >= S.hi) return stopPlay();
+    setT(S.t + STEP);
+  }, 90);
+}
+function stopPlay() {
+  if (!S.playing) return;
+  clearInterval(S.playing); S.playing = null;
+  $('#playBtn').innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+}
+
+/* ---------- sheet ---------- */
+
+function snap(s) { $('#sheet').dataset.snap = s; }
+function setupSheet() {
+  const sheet = $('#sheet'), grab = $('#grab');
+  let y0 = null, h0 = 0, moved = false;
+  const offset = () => sheet.getBoundingClientRect().top - sheet.parentElement.getBoundingClientRect().top;
+  grab.addEventListener('pointerdown', ev => {
+    if (innerWidth >= 900) return;
+    y0 = ev.clientY; h0 = offset(); moved = false;
+    grab.setPointerCapture(ev.pointerId); sheet.classList.add('dragging');
+  });
+  grab.addEventListener('pointermove', ev => {
+    if (y0 == null) return;
+    const dy = ev.clientY - y0;
+    if (Math.abs(dy) > 4) moved = true;
+    const H = sheet.parentElement.clientHeight;
+    const top = clamp(h0 + dy, H * .08, H - 132);
+    sheet.style.transform = `translateY(${top - H * .08}px)`;
+  });
+  const end = ev => {
+    if (y0 == null) return;
+    sheet.classList.remove('dragging'); sheet.style.transform = '';
+    const H = sheet.parentElement.clientHeight;
+    if (!moved) { snap(sheet.dataset.snap === 'full' ? 'peek' : sheet.dataset.snap === 'peek' ? 'mid' : 'full'); y0 = null; return; }
+    const top = h0 + (ev.clientY - y0);
+    const frac = top / H;
+    snap(frac < .3 ? 'full' : frac < .7 ? 'mid' : 'peek');
+    y0 = null;
+  };
+  grab.addEventListener('pointerup', end);
+  grab.addEventListener('pointercancel', end);
+}
+
+/* ---------- url ---------- */
+
+let hashTimer;
+function setHashSoon() { clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 400); }
+function setHash() {
+  const p = new URLSearchParams();
+  p.set('d', S.day.slice(8)); p.set('t', hm(S.t));
+  if (S.view !== 'map') p.set('v', S.view);
+  if (S.detail) p.set('e', S.detail.id);
+  history.replaceState(null, '', '#' + p.toString().replace(/%3A/g, ':'));
+}
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  const d = p.get('d') && S.days.find(x => x.slice(8) === p.get('d').padStart(2, '0'));
+  const t = p.get('t') && /^(\d\d?):(\d\d)$/.exec(p.get('t'));
+  return {
+    day: d, t: t ? +t[1] * 60 + +t[2] : null, view: p.get('v'), e: p.get('e'),
+    plan: p.get('plan') ? p.get('plan').split(/[,.]/).filter(id => S.byId.has(id)) : null,
+  };
+}
+
+/* ---------- misc ---------- */
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+}
+
+function locate() {
+  const btn = $('#meBtn');
+  if (S.watch != null) {
+    navigator.geolocation.clearWatch(S.watch); S.watch = null; S.me = null; btn.classList.remove('on');
+    if (meMarker) { meMarker.remove(); meMarker = null; }
+    render(); return;
+  }
+  if (!navigator.geolocation) return toast('הדפדפן לא נותן מיקום');
+  toast('מחפש איפה אתם...');
+  let first = true;
+  S.watch = navigator.geolocation.watchPosition(pos => {
+    const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    if (dist(me, { lat: CENTER[1], lng: CENTER[0] }) > 15000) {
+      if (first) toast('אתם רחוקים מהפסטיבל, אז אין טעם במרחקי הליכה. בפרדס חנה זה יעבוד.');
+      navigator.geolocation.clearWatch(S.watch); S.watch = null; return;
+    }
+    S.me = me; btn.classList.add('on'); drawMe();
+    if (first) { map.flyTo({ center: [me.lng, me.lat], zoom: 15, padding: fitPad() }); toast('הרשימה מסודרת עכשיו לפי מה שהכי קרוב'); }
+    first = false; render();
+  }, () => { toast('לא קיבלנו מיקום. אפשר לאשר אותו בהגדרות הדפדפן.'); S.watch = null; }, { enableHighAccuracy: true, maximumAge: 30000 });
+}
+
+async function share() {
+  const ids = [...S.plan].join(',');
+  const url = `${location.origin}${location.pathname}#d=${S.day.slice(8)}&plan=${ids}`;
+  const text = `התוכנית שלי לפסטיבל דרך הנדיב (${S.plan.size} אירועים)`;
+  if (navigator.share) { try { await navigator.share({ title: text, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(url); toast('הקישור הועתק. אפשר להדביק בוואטסאפ'); }
+  catch (e) { prompt('הקישור לתוכנית:', url); }
+}
+
+function setupEvents() {
+  document.addEventListener('click', ev => {
+    const t = ev.target;
+    const star = t.closest('[data-star]');
+    if (star) { ev.stopPropagation(); toggleStar(star.dataset.star); if (S.detail) openDetail(S.detail); return; }
+    if (t.closest('[data-close]')) return closeDetail();
+    const ics = t.closest('[data-ics]'); if (ics) { const e = S.byId.get(ics.dataset.ics); return downloadIcs([e], e.name.slice(0, 40)); }
+    if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
+    if (t.closest('[data-share]')) return share();
+    if (t.closest('[data-clear-plan]')) { if (confirm('לנקות את כל התוכנית?')) { S.plan.clear(); savePlan(); render(); } return; }
+    if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); history.replaceState(null, '', location.pathname); return render(); }
+    if (t.closest('[data-dismiss]')) { S.shared = null; return render(); }
+    if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
+    if (t.closest('[data-clear]')) { S.filt.clear(); S.kids = S.access = false; S.q = ''; $('#q').value = ''; return filtersChanged(); }
+    const sm = t.closest('[data-showmap]');
+    if (sm) { const e = S.byId.get(sm.dataset.showmap); closeDetail(); if (S.view === 'grid') setView('map'); if (e.date !== S.day) setDay(e.date); setT(e.start); return openVenue(e.venue, true); }
+    const vn = t.closest('[data-venue]');
+    if (vn) { const v = S.venues.get(vn.dataset.venue); setView('map'); return v.geo && openVenue(v, true); }
+    const evEl = t.closest('[data-ev]');
+    if (evEl && !t.closest('.maplibregl-popup')) return openDetail(S.byId.get(evEl.dataset.ev));
+    const day = t.closest('[data-day]'); if (day) return setDay(day.dataset.day);
+    const g = t.closest('[data-g]');
+    if (g) { const n = g.dataset.g; S.filt.has(n) ? S.filt.delete(n) : S.filt.add(n); return filtersChanged(); }
+    if (t.closest('[data-kids]')) { S.kids = !S.kids; return filtersChanged(); }
+    if (t.closest('[data-access]')) { S.access = !S.access; return filtersChanged(); }
+    const view = t.closest('[data-view]'); if (view) return setView(view.dataset.view);
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.detail) closeDetail(); });
+  $('#playBtn').onclick = play;
+  $('#nowBtn').onclick = () => { const n = festivalNow(); if (!n) return; stopPlay(); setDay(n.date); setT(Math.round(n.m / STEP) * STEP); };
+  $('#meBtn').onclick = locate;
+  $('#searchBtn').onclick = () => {
+    const row = $('#searchRow'); row.hidden = !row.hidden;
+    $('#searchBtn').classList.toggle('on', !row.hidden);
+    if (!row.hidden) $('#q').focus(); else if (S.q) { S.q = ''; $('#q').value = ''; filtersChanged(); }
+  };
+  let qt;
+  $('#q').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { S.q = $('#q').value.trim(); filtersChanged(); }, 180); });
+}
+
+/* ---------- start ---------- */
+
+async function main() {
+  let doc;
+  try { doc = await load(); }
+  catch (e) { $('#sheetBody').innerHTML = '<div class="empty">לא הצלחנו לטעון את התוכנייה. כדאי לנסות שוב בעוד רגע.</div>'; return; }
+  prepare(doc);
+  try { (JSON.parse(localStorage.getItem('hanadiv-plan')) || []).forEach(id => S.byId.has(id) && S.plan.add(id)); } catch (e) { /* none */ }
+  savePlan();
+  const h = readHash();
+  const now = festivalNow();
+  S.day = h.day || (now && now.date) || S.days[0];
+  S.t = h.t != null ? h.t : now && now.date === S.day ? Math.round(clamp(now.m, S.lo, S.hi) / STEP) * STEP : busiest(S.day);
+  if (h.plan && h.plan.length) S.shared = h.plan;
+  $('#sub').textContent = `פסטיבל ${dayName(S.days[0]).split(' ')[1]}–${dayName(S.days.at(-1)).split(' ')[1]} · ${S.events.length} אירועים ב-${S.venues.size} מקומות`;
+  setupEvents(); setupStrip(); setupSheet(); setupMap();
+  drawDays(); drawChips(); drawStrip();
+  setView(h.plan ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
+  if (!h.plan && innerWidth < 900) snap('peek');
+  if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
+  // during the festival, keep "now" moving if the playhead is on it
+  setInterval(() => {
+    const n = festivalNow();
+    if (n && n.date === S.day && Math.abs(n.m - S.t) <= STEP && !S.playing) setT(Math.round(n.m / STEP) * STEP);
+    drawDays();
+  }, 60000);
+}
+main();
