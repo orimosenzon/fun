@@ -344,6 +344,17 @@ body.view-grid #sheet { display: none; }
 .card .timeline b { position: absolute; top: 0; bottom: 0; background: var(--c); border-radius: 5px; }
 .card .timeline i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--now); }
 
+.site-footer {
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  padding: 16px 0 8px; opacity: .55; transition: opacity .25s;
+}
+.site-footer:hover { opacity: 1; }
+.site-footer a { text-decoration: none; display: flex; align-items: center; }
+.site-footer svg { width: auto; height: 22px; }
+.footer-credit { color: var(--ink2); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.footer-credit img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.footer-sep { color: var(--ink3); }
+
 #toast {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
   padding: 10px 18px; border-radius: 999px; font-size: 14px; z-index: 30; box-shadow: var(--shadow); max-width: 90vw; text-align: center;
