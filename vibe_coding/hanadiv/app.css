@@ -78,7 +78,8 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
   padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--now); color: var(--now);
   font-weight: 700; font-size: 14px; flex: none;
 }
-.nowbtn[disabled] { border-color: var(--line); color: var(--ink3); cursor: default; }
+.nowbtn.on { background: var(--now); color: #fff; }
+.nowbtn.on::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #fff; margin-inline-end: 6px; vertical-align: middle; animation: blink 1.4s infinite; }
 
 #strip {
   position: relative; height: 54px; margin: 6px 0 2px; touch-action: none; cursor: grab;
