@@ -504,6 +504,30 @@ def check() -> int:
         elif entry.suffix == ".html" and entry.name != "index.html":
             missing.append((entry.name, entry.name in tracked))
 
+    # 1b. apps nested inside a claimed directory (transparency/budget/ and the
+    # like): a card for the parent hides them from the check above. A nested
+    # app is <top>/<sub>/ with its own README.md and index.html (or
+    # web/index.html); it is covered only by a card whose dir or link reaches
+    # into <top>/<sub>.
+    reach = {p["dir"].rstrip("/") for p in projects if p.get("dir")}
+    for href in hrefs:
+        path = re.sub(r"^https://github\.com/orimosenzon/fun/tree/master/vibe_coding/", "", href)
+        if not re.match(r"https?:", path):
+            reach.add(path.rstrip("/"))
+    for top in sorted(claimed - SKIP):
+        d = ROOT / top
+        if not d.is_dir() or d.is_symlink():
+            continue
+        for sub in sorted(d.iterdir()):
+            rel = f"{top}/{sub.name}"
+            if not sub.is_dir() or not (sub / "README.md").exists():
+                continue
+            if not ((sub / "index.html").exists() or (sub / "web" / "index.html").exists()):
+                continue
+            if any(r == rel or r.startswith(rel + "/") for r in reach):
+                continue
+            missing.append((rel + "/", any(t.startswith(rel + "/") for t in tracked)))
+
     # 2. links that point nowhere useful
     broken, unpublished = [], []
     for p in projects:

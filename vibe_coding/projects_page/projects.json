@@ -957,6 +957,72 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "רוצים שקיפות: לאן הולך הכסף",
+          "icon": "🥧",
+          "theme": "t-green",
+          "dir": "transparency/budget",
+          "tags": [
+            "D3",
+            "pdfplumber",
+            "למ\"ס",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#34d399\">תקציב המועצה פרדס חנה-כרכור כעוגה שנכנסים לתוכה.</strong><br> לחיצה על פלח הופכת אותו לעוגה משלו: תחום, מחלקה ושורת תקציב, ובשורה כרטיס עם ההסבר מהספר, השוואה לשנה הקודמת ועמוד ב-PDF. 14 ספרי תקציב (2013–2026) נקראו אוטומטית ונבדקו מול שורות הסה\"כ שלהם, עם גרף לאורך השנים לכל פלח, חישוב לפי הארנונה שלך והשוואה לרשויות דומות: כמה עולה טון אשפה ותלמיד, ומה מקבלים תמורתם. חלק מיוזמת שקיפות מוניציפלית.",
+          "links": [
+            {
+              "href": "transparency/budget/web/index.html",
+              "style": "live",
+              "label": "▶ לאן הולך הכסף",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/transparency/budget",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
+          "title": "רוצים שקיפות: תקציב המדינה",
+          "icon": "🇮🇱",
+          "theme": "t-blue",
+          "dir": "transparency/state_budget",
+          "tags": [
+            "D3",
+            "מפתח התקציב",
+            "OECD",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#60a5fa\">תקציב המדינה 1997–2026 כעוגה, עד רמת תקנה.</strong><br> אחות של תקציב המועצה באותו ממשק: משרד, תכנית ותקנה, בשלושה שלבים (בחוק, אחרי שינויים, בפועל). אפשר להסתיר את החזר קרן החוב ולעבור לשקלים של היום או לתושב. בכל תקנה רואים בזמן אמת ממפתח התקציב מי קיבל את הכסף ואילו שינויים נעשו במהלך השנה. ועוד: הפערים הבולטים בין החוק לביצוע, ישראל מול מדינות OECD, וכמה מהמסים שלך הולכים לכל דבר.",
+          "links": [
+            {
+              "href": "transparency/state_budget/web/index.html",
+              "style": "live",
+              "label": "▶ לאן הולך הכסף של המדינה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/transparency/state_budget",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "רודסטר: המכונית שנצמדת לקירות",
           "icon": "🏎️",
           "theme": "t-red",
