@@ -1539,26 +1539,6 @@
       "grid": "projects-mini",
       "projects": [
         {
-          "title": "3D Rose &amp; Heart",
-          "icon": "🌹",
-          "theme": "t-pink",
-          "tags": [
-            "Three.js",
-            "Particles"
-          ],
-          "desc": "ורד ולב תלת-מימדיים עם אפקט חלקיקים ואנימציה חלקה.",
-          "links": [
-            {
-              "href": "tmp/v.html",
-              "style": "primary",
-              "label": "▶ פתח",
-              "external": false
-            }
-          ],
-          "small": true,
-          "stage": false
-        },
-        {
           "title": "Mind · Heart · Body · Spirit",
           "icon": "🌌",
           "theme": "t-teal",
