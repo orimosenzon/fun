@@ -53,6 +53,7 @@ TWEAKS = {
     "optimus": {"click": ["#go"], "wait": 6000},
     "roadster": {"click": ["#go"], "wait": 5000},
     "lagrange": {"frame": "#lab-mtn", "dpr": 2, "wait": 3000},
+    "phonebot": {"click": ["[data-mode=map]"], "frame": ".simgrid", "wait": 12000},
 }
 
 

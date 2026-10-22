@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>פונבוט: הטלפון על גלגלים</title>
+<meta name="description" content="סימולטור ומחקר היתכנות לתושבת רובוטית שהופכת טלפון נייד לרובוט מחמד: פיזיקה, סוללות, עלויות, ייצור, מתחרים ושוק.">
+<meta property="og:title" content="פונבוט: הטלפון על גלגלים">
+<meta property="og:description" content="סימולטור ומחקר היתכנות לתושבת רובוטית לטלפון: מה עובד, כמה זה עולה, ומי כבר ניסה.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Rubik:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>try { const t = localStorage.getItem('phonebot-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top">🤖📱 פונבוט</a>
+    <nav class="topnav">
+      <a href="#sim">סימולטור</a>
+      <a href="#verdict">בקיצור</a>
+      <a href="#battery">למה סוללה נפרדת?</a>
+      <a href="#tech">טכנולוגיה</a>
+      <a href="#bom">עלויות</a>
+      <a href="#make">ייצור</a>
+      <a href="#reg">רגולציה</a>
+      <a href="#rivals">מתחרים</a>
+      <a href="#market">שוק</a>
+      <a href="#econ">מחשבון</a>
+      <a href="#risks">סיכונים</a>
+      <a href="#road">מפת דרכים</a>
+      <a href="#gloss">מילון</a>
+    </nav>
+    <button class="iconbtn" id="theme" title="מצב כהה/בהיר" aria-label="מצב כהה/בהיר">🌓</button>
+  </div>
+</header>
+
+<main id="top">
+<div class="wrap">
+  <section class="hero">
+    <div class="kicker">פרויקט פתוח · נפתח באוקטובר 2026</div>
+    <h1>הטלפון שבכיס הוא כבר רובוט.<br>חסרים לו רק גלגלים.</h1>
+    <p class="lead">
+      בטלפון יש סוללה, מעבד חזק יותר ממחשבי העל של המאה הקודמת, מצלמה, מיקרופון, רמקול, מסך שיכול להיות פרצוף, וחיבור לאינטרנט.
+      הרעיון, <a href="https://he.wikipedia.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:%D7%90%D7%95%D7%A8%D7%99_%D7%9E%D7%95%D7%A1%D7%A0%D7%96%D7%95%D7%9F/%D7%AA%D7%95%D7%A9%D7%91%D7%AA_%D7%A8%D7%95%D7%91%D7%95%D7%98_%D7%9E%D7%97%D7%9E%D7%93_%D7%9C%D7%98%D7%9C%D7%A4%D7%95%D7%A0%D7%99%D7%9D_%D7%A1%D7%95%D7%9C%D7%9C%D7%A8%D7%99%D7%99%D7%9D">שכתבתי בוויקיפדיה לפני יותר מעשור</a>:
+      תושבת בעשרה דולר, שני מנועים וארבעה גלגלים, והטלפון הופך לרובוט מחמד.
+      בדף הזה יש סימולטור שבודק את הפיזיקה, ומחקר שבודק את העסק.
+    </p>
+    <div class="pills">
+      <span class="pill">🗺️ מיפוי הבית</span><span class="pill">🐈 מעקב אחרי החתול</span><span class="pill">🥊 אנדרואיד הזועם</span>
+      <span class="pill">📡 הסנג׳ר (שליטה מרחוק)</span><span class="pill">🧠 למידת חיזוק</span>
+    </div>
+  </section>
+
+  <!-- ================= סימולטור ================= -->
+  <section id="sim" class="sim" aria-label="סימולטור">
+    <div class="modes">
+      <button data-mode="drive">🎮 נהיגה</button>
+      <button data-mode="map">🗺️ מיפוי</button>
+      <button data-mode="follow">🐈 מעקב</button>
+      <button data-mode="sumo">🥊 סומו</button>
+      <button data-mode="rl">🧠 למידת חיזוק</button>
+    </div>
+    <p class="modehelp" id="modehelp"></p>
+
+    <div class="simgrid">
+      <div class="stage">
+        <canvas id="map" aria-label="מפת הבית מלמעלה"></canvas>
+        <div class="joy" id="joy"><i></i></div>
+        <div class="banner" id="banner"></div>
+        <div class="toolbar">
+          <button class="btn" id="btn-reset">↺ התחלה מחדש</button>
+          <button class="btn on" id="btn-mapview" data-for="map">מה הרובוט יודע</button>
+          <span data-for="rl">
+            מהירות:
+            <button class="btn on" data-rlspeed="1">×1</button>
+            <button class="btn" data-rlspeed="10">×10</button>
+            <button class="btn" data-rlspeed="100">×100</button>
+            <button class="btn" id="rl-greedy" title="בלי ניסיונות אקראיים">רק מה שלמד</button>
+            <button class="btn" id="rl-reset">שכח הכול</button>
+          </span>
+          <span data-for="sumo">
+            <select id="sumo-foe" class="btn" aria-label="סגנון היריב"><option value="fair">יריב הוגן</option><option value="dirty">יריב מלוכלך (רוורס)</option></select>
+            <label class="hint"><input type="checkbox" id="sumo-aivai"> מחשב נגד מחשב</label>
+            <button class="btn" id="sumo-reset">איפוס ניקוד</button>
+          </span>
+          <span class="hint" data-for="drive sumo">מקלדת: חיצים / WASD, רווח = בלימה</span>
+        </div>
+        <div class="config">
+          <label>טלפון<select id="cfg-phone"></select></label>
+          <label>מנועים<select id="cfg-motor"></select></label>
+          <label>מקור כוח למנועים<select id="cfg-power"></select></label>
+          <label>תפס הטלפון<select id="cfg-mount"></select></label>
+          <label>פגוש<select id="cfg-bumper"></select></label>
+          <label>ערוץ טלפון ⇄ בקר<select id="cfg-link"></select></label>
+          <label class="chk"><input type="checkbox" id="cfg-portrait"> טלפון לאורך (גבוה יותר, נופל יותר)</label>
+          <label class="chk"><input type="checkbox" id="cfg-fall" checked> הטלפון יכול ליפול</label>
+          <label class="chk" data-for="drive"><input type="checkbox" id="cfg-remote"> שליטה מרחוק דרך האינטרנט (הסנג׳ר)</label>
+          <label data-for="drive">השהיית רשת: <span class="num" id="net-v">300</span>ms<input type="range" id="cfg-net" min="0" max="1500" step="50" value="300"></label>
+        </div>
+        <p class="hint">המספרים במודל (מומנט, זרמים, הספק הטלפון, כוח אחיזה) הם הערכות סבירות לרכיבים זולים נפוצים, לא מדידות. המטרה היא להרגיש את סדרי הגודל ואת הפשרות.</p>
+      </div>
+
+      <div class="side">
+        <div class="phone" id="phonebox">
+          <canvas id="cam" width="384" height="216" aria-label="מה המצלמה של הטלפון רואה"></canvas>
+          <div class="cam-tabs">
+            <button class="on" data-cam="rgb">מצלמה</button>
+            <button data-cam="depth">רשת עומק</button>
+          </div>
+          <canvas id="face" width="240" height="110" style="margin-top:8px" aria-label="הפרצוף על המסך"></canvas>
+          <div class="caption">למעלה: המצלמה האחורית. למטה: המסך, הפרצוף של החיה.</div>
+        </div>
+
+        <div class="card">
+          <h4>טלמטריה</h4>
+          <div class="meter"><div class="lbl"><span>מהירות</span><span class="num" id="t-speed"></span></div></div>
+          <div class="meter"><div class="lbl"><span>משקל כולל</span><span class="num" id="t-mass"></span></div></div>
+          <div class="meter"><div class="lbl"><span>זרם למנועים</span><span class="v"></span></div><div class="bar" id="b-current"><i></i></div></div>
+          <div class="meter"><div class="lbl"><span>עומס על התושבת</span><span class="v"></span></div><div class="bar" id="b-load"><i></i></div></div>
+          <div class="meter"><div class="lbl"><span>🔋 טלפון</span><span class="v"></span></div><div class="bar" id="b-phone"><i></i></div></div>
+          <div class="meter"><div class="lbl"><span>🔋 מנועים</span><span class="v"></span></div><div class="bar" id="b-batt"><i></i></div></div>
+          <div class="hint" id="t-mode" style="margin-top:6px"></div>
+          <canvas id="rl-chart" width="300" height="80" data-for="rl" style="width:100%;margin-top:6px" aria-label="מרחק ממוצע עד התנגשות לאורך האימון"></canvas>
+        </div>
+        <div class="card">
+          <h4>יומן</h4>
+          <ul class="log" id="log"></ul>
+        </div>
+      </div>
+    </div>
+
+
+  </section>
+</div>
+
+<!-- ================= ניתוח ================= -->
+<div class="wrap narrow">
+<section class="doc">
+
+<h2 id="verdict">בקיצור: מה גיליתי</h2>
+<div class="verdict">
+  <div class="card"><b>✅ טכנית: עובד</b>זה הוכח לפחות פעמיים: Romo (2012) ו-OpenBot של אינטל (2020). אין כאן שום מחסום הנדסי. המכשול הוא תוכנה, חוויה ועסק.</div>
+  <div class="card"><b>💲 עשרה דולר: חצי נכון</b>כעלות רכיבים בייצור של 10,000 יחידות זה אפשרי (בערך $7–14). כמחיר מדף לא: אחרי משלוח, עמלות וחנויות, מחיר מדף ריאלי הוא $35–60.</div>
+  <div class="card"><b>⚰️ השוק: בית קברות</b>Anki, Jibo, Kuri, Romo: חברות רובוטי מחמד שגייסו יחד מאות מיליוני דולרים ונסגרו. מה שכן נמכר בכמויות הוא הבן הדומם: תושבת שרק מסתובבת ועוקבת אחרי הפנים.</div>
+  <div class="card"><b>🧭 ההמלצה</b>לא להתחיל כצעצוע לצרכן. להתחיל כקוד פתוח וכערכת לימוד: "החיים השניים של הטלפון הישן מהמגירה". לבדוק על 20 ילדים לפני כל תבנית הזרקה.</div>
+</div>
+<div class="callout">
+  <b>מה השתנה מאז שהרעיון נכתב?</b> שלושה דברים, וכולם לטובה.
+  (1) <b>מודלי שפה וראייה</b>: האישיות, הדבר הכי קשה ויקר ברובוט מחמד, נהייתה כמעט חינמית. הטלפון יכול לראות, לשמוע, לדבר ולזכור, ובחלק מהטלפונים גם בלי ענן.
+  (2) <b>USB-C בכל מקום</b>: מאז 2023 גם באייפון, ומאז סוף 2024 חובה באירופה. מחבר אחד לכל הטלפונים, מה שהרג את Romo (ראו למטה) כבר לא בעיה.
+  (3) <b>מגירות מלאות בטלפונים ישנים</b>: טלפון בן חמש שנים עדיין מריץ רשת זיהוי עצמים. הוא לא שווה כלום ביד שנייה, ולכן לא כואב לתת לו ליפול בקרב סומו.
+</div>
+
+<h2 id="battery">"לא הבנתי למה צריך סוללות נפרדות"</h2>
+<p>זו השאלה מהעדכון של 2021 על OpenBot, והסימולטור עונה עליה. בחרו "מקור כוח: סוללת הטלפון" ונסעו. ארבע סיבות:</p>
+<ol>
+  <li><b>תקרת זרם.</b> טלפון שמשמש כמארח USB (מצב OTG) מספק בדרך כלל 0.5–1.5 אמפר ב-5 וולט. מנוע DC זול בעצירה, כלומר ברגע ההתנעה או כשהוא נתקע בקיר, שותה 1–1.5 אמפר <em>כל אחד</em>. שני מנועים בהתנעה כבר מעל התקרה, והטלפון חונק את המנועים או מנתק את היציאה לגמרי. בסימולטור זה נראה כ"⚡" ורובוט שנעצר באמצע.</li>
+  <li><b>רעש חשמלי.</b> מנועים עם מברשות מייצרים קפיצות מתח. כשהם על אותו קו של הטלפון, הטלפון מזהה "התקן תקול" ומנתק. צריך סינון, וזה עוד רכיבים.</li>
+  <li><b>הסוללה של הטלפון היא בדיוק מה שלא רוצים לבזבז.</b> מצלמה פעילה ורשת נוירונים שורפות 3–5 וואט. הוסיפו מנועים ותקבלו טלפון ריק אחרי שעה–שעתיים, וטלפון חם שמאט את עצמו.</li>
+  <li><b>אייפון.</b> אפליקציה באייפון לא יכולה סתם לדבר עם בקר בכבל USB בלי תוכנת ההסמכה של אפל (MFi). אז ממילא מתקשרים ב-Bluetooth, וממילא צריך לבקר מקור כוח משלו.</li>
+</ol>
+<div class="callout warn"><b>אבל:</b> יש פתרון ביניים יפה. סוללה אחת בגוף הרובוט שמניעה את המנועים <em>וגם טוענת את הטלפון</em>. הטלפון לא נגמר, והמשתמש מטעין דבר אחד. זה מוסיף בערך דולר של רכיבי טעינה ושווה כל סנט.</div>
+
+<h2 id="tech">הטכנולוגיה</h2>
+<h3>הארכיטקטורה</h3>
+<p>שלוש קומות: הטלפון הוא המוח (ראייה, החלטות, פרצוף, קול, אינטרנט). בקר זעיר הוא חוט השדרה (מקבל פקודות, מפעיל מנועים, קורא חיישני התנגשות, שומר על בטיחות אם הקשר נופל). דרייבר מנועים הוא השרירים.</p>
+<div class="cols" style="text-align:center">
+  <div class="card"><b>📱 טלפון</b><div class="hint">מצלמה · מאיץ AI · מסך-פרצוף · מיקרופון · אינטרנט</div></div>
+  <div class="card"><b>⇄ Bluetooth LE</b><div class="hint">פקודות מהירות 20–50 פעם בשנייה, השהיה 15–50ms</div></div>
+  <div class="card"><b>🔌 בקר ESP32-C3</b><div class="hint">$1–2 · BLE ו-Wi‑Fi מובנים · מגן "אם הקשר נופל, לעצור"</div></div>
+  <div class="card"><b>⚙️ דרייבר + 2 מנועים</b><div class="hint">DRV8833 או TB6612 · PWM · בלימה</div></div>
+</div>
+
+<h3>איך הטלפון מדבר עם המנועים</h3>
+<div class="tablewrap"><table>
+<tr><th>ערוץ</th><th>אנדרואיד</th><th>אייפון</th><th>עלות חומרה</th><th>הערות</th></tr>
+<tr><td><b>Bluetooth LE</b> לבקר ESP32</td><td>✅</td><td>✅</td><td class="n">$1–2</td><td>הבחירה הברורה. עובד בשתי המערכות בלי הסמכה. בכרום לאנדרואיד אפשר אפילו לשלוט <b>מדף אינטרנט</b> (Web Bluetooth) בלי להתקין אפליקציה. בספארי של אייפון זה לא נתמך.</td></tr>
+<tr><td><b>כבל USB-C</b> לבקר (סריאלי)</td><td>✅</td><td>❌ בלי MFi</td><td class="n">$1–3</td><td>מה ש-OpenBot עושה. השהיה זעירה, אבל רק אנדרואיד, ותופס את השקע של הטלפון.</td></tr>
+<tr><td><b>Wi‑Fi</b> לבקר</td><td>✅</td><td>✅</td><td class="n">$1–2</td><td>הבקר פותח רשת משלו, ואז הטלפון מתנתק מהאינטרנט. שותה יותר סוללה ומקפץ בהשהיות.</td></tr>
+<tr><td><b>Apple DockKit</b></td><td>❌</td><td>✅</td><td class="n">MFi</td><td>הממשק הרשמי של אפל לתושבות ממונעות (iOS 17). בנוי לסיבוב והטיה, לא לנסיעה. מעניין לגרסה הדוממת.</td></tr>
+<tr><td><b>הבהובי מסך</b> לחיישן אור</td><td>✅</td><td>✅</td><td class="n">$0.1</td><td>טריק לערכה של עשרה דולר: פינת המסך מהבהבת, פוטו-טרנזיסטור קורא. בלי רדיו, בלי צימוד, בלי רגולציה אלחוטית. איטי (עשרות ביטים בשנייה) אבל מספיק ל"ימינה/שמאלה/קדימה".</td></tr>
+<tr><td><b>שקע אוזניות</b> (טונים)</td><td>כמעט אין</td><td>❌</td><td class="n">$0.5</td><td>כך עבד Romo הראשון. מת יחד עם השקע.</td></tr>
+</table></div>
+
+<h3>התוכנה היא המוצר</h3>
+<p>החומרה היא בערך שבוע עבודה. התוכנה היא שנים, וזה מה שקובע אם מישהו ישתמש ברובוט אחרי השבוע הראשון.</p>
+<ul>
+  <li><b>ראייה על המכשיר:</b> זיהוי עצמים (משפחת YOLO, MediaPipe), הערכת עומק ממצלמה אחת (Depth Anything, MiDaS). רצים בזמן אמת על מאיצי ה-AI של טלפונים מהשנים האחרונות, דרך LiteRT (לשעבר TensorFlow Lite) באנדרואיד ו-Core ML באייפון.</li>
+  <li><b>ניווט ומיפוי:</b> בלי לידאר, רק מצלמה. מיפוי ומיקום בו-זמנית (SLAM) ממצלמה אחת עובד, אבל נסחף; מצב "מיפוי" בסימולטור מרמה ומקבל את המיקום האמיתי. בטלפונים יש גם ARCore/ARKit שנותנים מעקב מיקום טוב בחינם, וזה יתרון ענק של הטלפון על פני רובוט עם מצלמה זולה.</li>
+  <li><b>אישיות:</b> מודל שפה שרואה דרך המצלמה ומדבר דרך הרמקול. אפשר בענן (עולה כסף לכל משתמש, לכל חודש, לנצח) או על המכשיר: Gemini Nano בחלק ממכשירי האנדרואיד, ומסגרת Foundation Models של אפל מ-iOS 26. זו ההחלטה הכלכלית החשובה בפרויקט: Vector נאלץ לעבור למנוי חודשי בדיוק בגלל עלויות ענן.</li>
+  <li><b>שליטה מרחוק:</b> WebRTC לווידאו ופקודות. נסו בסימולטור השהיה של 800ms ותבינו למה צריך "בטיחות מקומית": הרובוט עוצר לבד לפני קיר גם אם הפקודה מהחותנת אומרת "קדימה".</li>
+  <li><b>הקושחה:</b> ESP32 בסביבת Arduino או ESP-IDF. חובה: עצירה אוטומטית אם אין פקודה 300ms, הגבלת זרם, עדכון אלחוטי.</li>
+  <li><b>הפיצול:</b> מאות דגמי טלפונים, כל אחד עם מצלמה במקום אחר, עדשה אחרת, רוחב אחר. התפס צריך להחזיק טלפונים ברוחב 64–80 מ״מ, עם כיסוי ובלי.</li>
+</ul>
+
+<h3>המצלמה מאחור, הפרצוף מקדימה: בעיה קטנה עם השלכות</h3>
+<p>אם המסך פונה קדימה (כדי שיהיה פרצוף), הרובוט רואה דרך מצלמת הסלפי, שהיא בדרך כלל חלשה יותר וצרה יותר. אם המצלמה האחורית פונה קדימה, הפרצוף מסתכל אחורה. פתרונות: מראה קטנה בזווית 45° מעל המצלמה האחורית (סנט וחצי), או לקבל את מצלמת הסלפי. OpenBot בחר בפתרון הפשוט: מסך אחורה, אין פרצוף. לרובוט <em>מחמד</em> זה לא מספיק.</p>
+
+<h2 id="bom">כמה זה עולה: רשימת רכיבים</h2>
+<p>הערכה לסוף 2026. העמודה השמאלית היא קנייה בודדת מאליאקספרס, הימנית היא מחיר ספק בייצור של 10,000 יחידות.</p>
+<div class="tablewrap"><table>
+<tr><th>רכיב</th><th>אב-טיפוס (יחידה)</th><th>בייצור (10K)</th></tr>
+<tr><td>בקר ESP32-C3 (מודול זעיר עם BLE ו-Wi‑Fi)</td><td class="n">$2.5–4</td><td class="n">$1.1–1.6</td></tr>
+<tr><td>דרייבר מנועים DRV8833 / TB6612</td><td class="n">$1–2</td><td class="n">$0.25–0.5</td></tr>
+<tr><td>2 מנועים עם תמסורת (TT או N20)</td><td class="n">$2–5</td><td class="n">$0.9–2</td></tr>
+<tr><td>גלגלים או זחלים + גלגל משענת</td><td class="n">$1.5–3</td><td class="n">$0.4–0.9</td></tr>
+<tr><td>סוללה (18650 אחת או שתיים) + תושבת</td><td class="n">$4–8</td><td class="n">$1.5–2.8</td></tr>
+<tr><td>טעינה והגנה + שקע USB-C</td><td class="n">$1–2</td><td class="n">$0.25–0.5</td></tr>
+<tr><td>מעגל מודפס + הרכבה</td><td class="n">$2–5</td><td class="n">$0.6–1.2</td></tr>
+<tr><td>שלדה ותפס טלפון</td><td class="n">$3–6 (הדפסה)</td><td class="n">$1.2–2.5 (הזרקה)</td></tr>
+<tr><td>קפיץ / מגנט, ברגים, פגוש ספוג</td><td class="n">$1–2</td><td class="n">$0.3–0.7</td></tr>
+<tr><td>אריזה ודף הוראות</td><td class="n">-</td><td class="n">$0.7–1.5</td></tr>
+<tr class="total"><td>סה״כ רכיבים</td><td class="n">$18–37</td><td class="n">$7.2–14.2</td></tr>
+</table></div>
+<p><b>שתי דרכים לרדת לעשרה דולר אמיתיים:</b> (א) גרסה בלי סוללה ליתיום, עם 4 סוללות AA שהלקוח קונה (גם חוסך את כל כאב הראש של משלוח ליתיום); (ב) שלדה מקרטון מודפס או מחיתוך לייזר, בסגנון Nintendo Labo, שהילד מרכיב לבד. שתיהן גם הופכות את המוצר לחוויית הרכבה, מה שמתאים בדיוק לקהל החינוכי.</p>
+<div class="callout"><b>כלל אצבע:</b> מחיר מדף ≈ פי 3–4 מעלות הרכיבים. רכיבים ב-$10 → מחיר מדף $35–40. רואים את זה במחשבון למטה.</div>
+
+<h2 id="make">חומרים ודרכי ייצור</h2>
+<div class="tablewrap"><table>
+<tr><th>שיטה</th><th>כמויות</th><th>עלות חלקים ליחידה</th><th>השקעה מראש</th><th>מתי</th></tr>
+<tr><td><b>הדפסה תלת-ממדית ביתית</b> (PLA / PETG, צמיגים מ-TPU)</td><td class="n">1–30</td><td class="n">$2–6</td><td class="n">$0–400</td><td>עכשיו. אב-טיפוס, וגם הפצה כקבצים פתוחים: כל מי שיש לו מדפסת מדפיס לבד.</td></tr>
+<tr><td><b>חיתוך לייזר</b> (אקריליק, דיקט, קרטון)</td><td class="n">50–5,000</td><td class="n">$0.5–3</td><td class="n">$0–2K</td><td>ערכת לימוד. שטוח, זול במשלוח, הילדים מרכיבים.</td></tr>
+<tr><td><b>יציקת ואקום</b> בתבנית סיליקון</td><td class="n">20–200</td><td class="n">$10–25</td><td class="n">$1–3K</td><td>יחידות שנראות כמו מוצר אמיתי לצילומי קמפיין.</td></tr>
+<tr><td><b>הזרקת פלסטיק, תבנית אלומיניום</b> (ABS, PC-ABS)</td><td class="n">1K–30K</td><td class="n">$1–2.5</td><td class="n">$15–40K</td><td>אחרי שיש הזמנות. 4–6 חלקים = 4–6 תבניות.</td></tr>
+<tr><td><b>הזרקה, תבנית פלדה</b></td><td class="n">50K+</td><td class="n">&lt; $1.5</td><td class="n">$40–100K</td><td>רק אם זה הצליח.</td></tr>
+<tr><td><b>יצרן ODM בשנג׳ן</b> (תכנון + ייצור עד הקופסה)</td><td class="n">3K+</td><td class="n">מחיר כולל</td><td class="n">$20–80K</td><td>מהיר למוצר מוגמר, אבל הם מכירים את העיצוב שלכם, ומינימום הזמנה גבוה.</td></tr>
+<tr><td><b>מדף קיים + תושבת</b>: קונים ערכת רכב רובוטי סינית ומוסיפים תפס</td><td class="n">100–2K</td><td class="n">$6–15</td><td class="n">&lt; $2K</td><td>הדרך הכי מהירה לבדוק ביקוש. אלפי ערכות כאלה כבר נמכרות.</td></tr>
+</table></div>
+<ul>
+  <li><b>חומרים:</b> ABS או PC-ABS לגוף (עמיד במכות, מקובל בצעצועים); TPU או גומי סיליקון לצמיגים (אחיזה = בלימה טובה, אבל גם יותר תאוצה על הטלפון); POM לגלגלי שיניים אם מתכננים תמסורת עצמית; ספוג EVA לפגוש. בסימולטור רואים שפגוש ספוג הוא ההבדל בין טלפון שנשאר במקום לטלפון שעף.</li>
+  <li><b>התפס הוא החלק הקשה:</b> הוא צריך להחזיק טלפון של 230 גרם במכה של 2g, להתאים לכל רוחב, לא לשרוט, לא לחסום מצלמה ולא לחסום כפתורים. שווה לבנות 10 גרסאות מודפסות לפני שמחליטים. MagSafe פותר את זה לאייפונים, ורוב האנדרואידים צריכים טבעת מתכת מודבקת.</li>
+  <li><b>תכנון לייצור (DFM):</b> כמה שפחות חלקים, בלי ברגים (קליפסים), זוויות שחרור בתבנית, עובי דופן אחיד. כל חלק נוסף הוא תבנית נוספת.</li>
+</ul>
+
+<h2 id="reg">רגולציה ותקינה</h2>
+<p>נושא שמשעמם עד שהוא עולה 30 אלף דולר ושלושה חודשים. הסדרי גודל:</p>
+<div class="tablewrap"><table>
+<tr><th>מה</th><th>למה</th><th>הערכת עלות</th></tr>
+<tr><td><b>FCC</b> (ארה״ב) / <b>CE-RED</b> (אירופה)</td><td>יש רדיו (BLE). שימוש במודול רדיו שכבר מאושר מוריד את רוב העלות; עדיין צריך בדיקת פליטות למוצר השלם.</td><td class="n">$3–12K</td></tr>
+<tr><td><b>בטיחות צעצועים</b>: ASTM F963, EN 71, ובישראל ת״י 562</td><td>אם משווקים לילדים מתחת לגיל 14. חלקים קטנים, תא סוללות עם בורג, חומרים.</td><td class="n">$2–8K</td></tr>
+<tr><td><b>UN38.3</b> + גיליון בטיחות</td><td>סוללת ליתיום במשלוח אווירי. גרסת AA פוטרת מזה.</td><td class="n">$2–5K</td></tr>
+<tr><td><b>RoHS / REACH / WEEE</b></td><td>חומרים מסוכנים ומחזור פסולת אלקטרונית באירופה.</td><td class="n">$1–3K</td></tr>
+<tr><td><b>ישראל: משרד התקשורת</b></td><td>ציוד אלחוטי דורש הסדרה. אחרי רפורמת "מה שטוב לאירופה" חלק גדול נשען על אישורי CE, אבל צריך לבדוק את המסלול המדויק.</td><td class="n">משתנה</td></tr>
+<tr><td><b>פרטיות</b>: COPPA (ארה״ב), GDPR</td><td>מצלמה שמסתובבת בבית, וילדים. מה נשמר, איפה, מי רואה. שליטה מרחוק מגדילה את הסיכון.</td><td class="n">עו״ד</td></tr>
+</table></div>
+<p class="hint">טווחי העלויות הם הערכות גסות למוצר פשוט, ומשתנים מאוד לפי מעבדה ושוק. לפני תקציב אמיתי: הצעת מחיר ממעבדה מוסמכת.</p>
+
+<h2 id="rivals">מתחרים ומי כבר ניסה</h2>
+<div class="tablewrap"><table>
+<tr><th>מוצר</th><th>מה זה</th><th>מחיר</th><th>מצב</th><th>הלקח</th></tr>
+<tr><td><b>Romo</b> (Romotive)</td><td>הטלפון הוא הראש, פרצוף על המסך. אייפון בלבד.</td><td class="n">$149</td><td><span class="tag dead">נסגרה 2015</span></td><td>החליפו מחבר שלוש פעמים (שקע אוזניות, 30 פינים, Lightning), וכל החלפה ייתמה לקוחות. ויתרו על אנדרואיד שהיה חצי מהלקוחות. לפני הסגירה שחררו את הקוד כפתוח.</td></tr>
+<tr><td><b>OpenBot</b> (Intel Labs)</td><td>גוף מודפס, אנדרואיד הוא המוח, למחקר ולימוד. קוד פתוח.</td><td class="n">≈ $50</td><td><span class="tag alive">קוד פתוח, פעיל</span></td><td>הוכחה שזה עובד ומסוגל לנהיגה אוטונומית ומעקב אחרי אדם. קהילה קטנה, אין מוצר קנוי.</td></tr>
+<tr><td><b>ערכות רכב ESP32-CAM</b></td><td>רכב זעיר עם מצלמה ו-Wi‑Fi משלו, בלי טלפון.</td><td class="n">$15–30</td><td><span class="tag alive">נמכר המון</span></td><td>המתחרה האמיתי של "עשרה דולר": יש להם מצלמה בעצמם. היתרון של הטלפון חייב להיות המוח, המסך והקול.</td></tr>
+<tr><td><b>Belkin Auto-Tracking Stand Pro</b>, <b>Insta360 Flow Pro</b></td><td>תושבת דוממת ממונעת שעוקבת אחרי הפנים (Apple DockKit).</td><td class="n">$135–180</td><td><span class="tag alive">נמכר</span></td><td>הבן הדומם שהצליח. ויש מאות חיקויים לאנדרואיד ב-$20–50. מוכיח שאנשים כן קונים "תושבת חכמה", כשיש לה שימוש ברור (וידאו).</td></tr>
+<tr><td><b>EMO</b> (Living.ai)</td><td>רובוט מחמד שולחני עם פרצוף מונפש.</td><td class="n">$279+</td><td><span class="tag alive">נמכר</span></td><td>האישיות והאנימציה מוכרות, לא הנסיעה.</td></tr>
+<tr><td><b>Vector</b> (Anki, אחר כך DDL)</td><td>רובוט מחמד עם מצלמה ועוזר קולי.</td><td class="n">$399 + מנוי</td><td><span class="tag dead">Anki נסגרה 2019</span></td><td>גייסו כ-200 מיליון דולר. עלות ענן קבועה בלי הכנסה קבועה. היורש הוסיף מנוי.</td></tr>
+<tr><td><b>Loona</b> (KEYi Tech)</td><td>רובוט מחמד נוסע עם מסך, עוקב, משחק.</td><td class="n">$449–499</td><td><span class="tag alive">נמכר</span></td><td>מראה את התקרה: כך נראה המוצר כשבונים הכול מאפס. הטלפון של הלקוח יכול להחליף חצי מזה.</td></tr>
+<tr><td><b>Jibo</b>, <b>Kuri</b></td><td>רובוטים ביתיים חברתיים.</td><td class="n">$700–900</td><td><span class="tag dead">נסגרו 2018–2019</span></td><td>יקר מדי, שימושי מדי מעט. בדיוק המשפט מהרעיון המקורי.</td></tr>
+<tr><td><b>Amazon Astro</b></td><td>רובוט בית עם מסך ומצלמה מתרוממת.</td><td class="n">$1,599</td><td><span class="tag">בהזמנה בלבד</span></td><td>גם לאמזון קשה. גרסת העסקים בוטלה ב-2024.</td></tr>
+<tr><td><b>Sphero, mBot, LEGO Spike</b></td><td>רובוטים לחינוך ולתכנות.</td><td class="n">$60–400</td><td><span class="tag alive">שוק יציב</span></td><td>שוק החינוך קונה, אבל דרך מורים, תקציבים ותוכניות לימוד. איטי ונאמן.</td></tr>
+</table></div>
+<p class="hint">מחירים לפי מקורות פומביים מ-2024–2026, ומשתנים. יש לבדוק מחיר עדכני לפני השוואה.</p>
+
+<h2 id="market">איפה הכסף: ארבעה מוצרים מאותה חומרה</h2>
+<div class="cols">
+  <div class="card"><b>🧸 צעצוע / חיית מחמד</b><p>השוק הגדול והקשה. מבוסס עונת חגים, החזרות גבוהות, חנויות לוקחות חצי, ותחרות עם צעצועים של $20. ההייפ נגמר אחרי שבועיים אם אין עוד תוכן. <b>לא להתחיל כאן.</b></p></div>
+  <div class="card"><b>🎓 ערכת לימוד</b><p>הכי מתאים. "בנה רובוט עם AI מהטלפון הישן שלך": אלקטרוניקה, הדפסה, תכנות, ראייה ממוחשבת ולמידת חיזוק באותה ערכה. מורים מחפשים בדיוק את זה. אתגר: בבתי ספר רבים יש הגבלות על טלפונים, ולכן הטלפון הישן מהמגירה, שנשאר בכיתה, הוא חלק מהמוצר.</p></div>
+  <div class="card"><b>🔬 פלטפורמת מחקר</b><p>מעבדות ללמידת חיזוק ולרובוטיקה צריכות עשרות רובוטים זולים. OpenBot הוכיח את הביקוש, אבל זה שוק של מאות יחידות. טוב לקרדיט ולקהילה, לא לפרנסה.</p></div>
+  <div class="card"><b>📡 עיניים בבית</b><p>"הסנג׳ר": לבדוק את הבית, את הכלב, את סבא. מתחרה במצלמות אבטחה של $30 שלא צריכות לנסוע. יתרון אמיתי רק כשצריך לזוז בין חדרים. רגיש מאוד לפרטיות.</p></div>
+</div>
+<div class="callout"><b>הניסוח שמוכר:</b> לא "רובוט בעשרה דולר", אלא <b>"לטלפון הישן שלך יש עוד חיים: הוא יכול להיות חיית מחמד"</b>. זה פותר שלוש בעיות בבת אחת: הפחד להפיל טלפון יקר, הגבלת הטלפונים בבתי ספר, וסיפור ירוק של מחזור אלקטרוניקה.</div>
+
+<h2 id="econ">מחשבון: האם זה עסק?</h2>
+<p>שחקו עם המספרים. "תרומה ליחידה" היא מה שנשאר אחרי עלות המוצר וההפצה, לפני ההשקעה החד-פעמית (תבניות, אישורים, פיתוח).</p>
+<div class="econ">
+  <div class="card">
+    <label>כמות בסדרה הראשונה: <b class="num" id="e-vol-v"></b><input type="range" id="e-vol" min="500" max="50000" step="500" value="5000"></label>
+    <label>עלות רכיבים: <b class="num" id="e-bom-v"></b><input type="range" id="e-bom" min="5" max="40" step="0.5" value="11"></label>
+    <label>הרכבה ואריזה: <b class="num" id="e-asm-v"></b><input type="range" id="e-asm" min="0.5" max="8" step="0.5" value="2"></label>
+    <label>הובלה, מכס, בקרת איכות: <b class="num" id="e-ship-v"></b><input type="range" id="e-ship" min="5" max="40" step="1" value="18"></label>
+    <label>השקעה חד-פעמית: <b class="num" id="e-nre-v"></b><input type="range" id="e-nre" min="10000" max="400000" step="5000" value="120000"></label>
+    <label>עלות רכישת לקוח: <b class="num" id="e-cac-v"></b><input type="range" id="e-cac" min="0" max="40" step="1" value="8"></label>
+    <label>מחיר לצרכן: <b class="num" id="e-price-v"></b><input type="range" id="e-price" min="10" max="150" step="1" value="39"></label>
+  </div>
+  <div>
+    <p>עלות ליחידה עד המחסן: <b class="num" id="e-landed"></b> · השקעה חד-פעמית ליחידה: <b class="num" id="e-nreunit"></b> · מחיר חלקי עלות: <b class="num" id="e-mult"></b></p>
+    <div class="tablewrap out"><table>
+      <thead><tr><th>ערוץ</th><th>תרומה ליחידה</th><th>מרווח</th><th>יחידות עד איזון</th><th>רווח על הסדרה</th></tr></thead>
+      <tbody id="e-out"></tbody>
+    </table></div>
+    <p class="hint">נסו מחיר של $10: כל הערוצים במינוס. נסו $39 בחנויות: כמעט אפס. זו הסיבה שמוצרי חומרה קטנים מתחילים במכירה ישירה (קיקסטארטר, אתר), ורק אחר כך עוברים לחנויות.</p>
+  </div>
+</div>
+
+<h2 id="risks">סיכונים, מהגדול לקטן</h2>
+<ol>
+  <li><b>אף אחד לא משתמש בזה אחרי שבוע.</b> הסיבה שבגללה נסגרו כמעט כל רובוטי המחמד. תרופה: תוכן מתחדש, משחקים עם חברים (הסומו!), אתגרים, קהילה שכותבת התנהגויות.</li>
+  <li><b>טלפון שבור.</b> טלפון של 4,000 ש״ח שנפל מתושבת הוא תביעה, ביקורת רעה וכתבה. תרופה: גובה נמוך, פגוש, זיהוי נפילה שעוצר את המנועים, וקמפיין שמדבר על הטלפון הישן. מצב הסומו מיועד רק לטלפונים ישנים ולשטיח.</li>
+  <li><b>פיצול טלפונים.</b> כל דגם מתנהג אחרת: מצלמה, חום, Bluetooth, הגבלות רקע. מבחן על 30 דגמים לפני כל השקה.</li>
+  <li><b>חום.</b> מצלמה + רשת נוירונים + מסך דולק בתוך תפס = טלפון שמאט את עצמו אחרי 15–20 דקות. התפס צריך לאוורר.</li>
+  <li><b>מדיניות חנויות האפליקציות.</b> הרשאות מצלמה ו-Bluetooth ברקע, שליטה מרחוק במצלמה בבית של מישהו. אפל ו-גוגל יכולים לשנות כללים בכל גרסה.</li>
+  <li><b>פטנטים.</b> לחברות כמו Sphero ו-Anki היו פטנטים על רובוטים שנשלטים מאפליקציה. לפני השקעה: חיפוש חופש פעולה אצל עורך פטנטים.</li>
+  <li><b>עלויות ענן לנצח.</b> אם האישיות רצה בענן, כל משתמש עולה כסף כל חודש, גם אם שילם פעם אחת. להעדיף מודל על המכשיר.</li>
+</ol>
+
+<h2 id="road">מפת דרכים מוצעת</h2>
+<div class="timeline">
+  <div><b>שלב 0, עכשיו:</b> הסימולטור הזה. ואחריו אפליקציית אינטרנט ששולטת ברובוט ב-Web Bluetooth מכרום באנדרואיד, בלי התקנה.</div>
+  <div><b>שלב 1, שבועיים, ≈ $40:</b> אב-טיפוס. ערכת רכב TT מוכנה + ESP32-C3 + תפס מודפס + סוללת 18650. מטרה: לנסוע מהטלפון, לעקוב אחרי כדור, לא להפיל את הטלפון במכה.</div>
+  <div><b>שלב 2, חודש–חודשיים:</b> 10–20 יחידות בחוג או בכיתה. למדוד: כמה זמן ילדים משחקים, מה נשבר, מה מבקשים.</div>
+  <div><b>שלב 3:</b> קוד פתוח מלא (קבצי הדפסה, קושחה, אפליקציה) + ערכה למכירה ב-300–1,000 יחידות בחיתוך לייזר. קיקסטארטר כבדיקת ביקוש, לא כמימון.</div>
+  <div><b>שלב 4, רק אם יש משיכה:</b> תבניות הזרקה, אישורים, יצרן. לא לפני שיש אלפי לקוחות שמחכים.</div>
+</div>
+
+<h3>מה הסימולטור לא יודע</h3>
+<p>הוא מניח מיקום מושלם (בעולם האמיתי צריך SLAM, והוא נסחף), מנועים זהים (באמת אחד תמיד חזק מהשני והרובוט מושך הצידה), רצפה אחידה (שטיחים, ספים וחוטי חשמל הם האויב האמיתי), ומודל נפילה פשוט של קליפס. השתמשו בו לסדרי גודל ולאינטואיציה, לא למפרט.</p>
+
+<h2 id="gloss">מילון מונחים</h2>
+<dl class="gloss">
+  <dt>BOM (בום), רשימת רכיבים</dt><dd>Bill of Materials. כל מה שנכנס למוצר והמחיר שלו. bill מגיע מלטינית bulla, החותם על מסמך, ומשם "מסמך".</dd>
+  <dt>OTG, מצב מארח</dt><dd>On-The-Go, "תוך כדי תנועה". הרחבה לתקן USB שמאפשרת לטלפון להיות הצד ש"מנהל" את החיבור ומספק חשמל, כמו מחשב.</dd>
+  <dt>BLE, בלוטות׳ חסכוני</dt><dd>Bluetooth Low Energy. בלוטות׳ קרוי על שם המלך הדני הרלד "שן כחולה", שאיחד שבטים, כמו שהתקן איחד יצרנים.</dd>
+  <dt>MCU / ESP32, בקר זעיר</dt><dd>Microcontroller Unit: מחשב קטנטן על שבב אחד. ESP32 הוא משפחת בקרים של חברת Espressif עם רדיו מובנה.</dd>
+  <dt>PWM, אפנון רוחב דופק</dt><dd>Pulse Width Modulation. מדליקים ומכבים את המנוע אלפי פעמים בשנייה; היחס בין "דולק" ל"כבוי" קובע את המהירות.</dd>
+  <dt>מומנט עצירה (stall torque)</dt><dd>הכוח המקסימלי של המנוע כשהוא לא מצליח להסתובב. זה גם הרגע שבו הוא שותה הכי הרבה זרם. stall = להיתקע.</dd>
+  <dt>SLAM, מיפוי ומיקום בו-זמנית</dt><dd>Simultaneous Localization And Mapping. בעיית הביצה והתרנגולת: כדי למפות צריך לדעת איפה אתה, וכדי לדעת איפה אתה צריך מפה.</dd>
+  <dt>Frontier, חזית</dt><dd>הגבול בין מה שכבר ראית למה שלא. אלגוריתם המיפוי בסימולטור פשוט נוסע תמיד לחזית הקרובה.</dd>
+  <dt>למידת חיזוק (Reinforcement Learning) ו-Q-learning</dt><dd>לומדים מניסוי, טעייה ופרס. reinforcement בא מהפסיכולוגיה ההתנהגותית: "חיזוק" של התנהגות שזכתה בפרס. Q הוא Quality: הערכה כמה טוב לעשות פעולה מסוימת במצב מסוים.</dd>
+  <dt>Sim2Real, מהסימולציה למציאות</dt><dd>הפער בין מה שעובד בסימולטור למה שעובד על רצפה אמיתית. האתגר הגדול של רובוטים שלומדים.</dd>
+  <dt>MFi, תוכנית ההסמכה של אפל</dt><dd>Made for iPhone. אביזר שרוצה לדבר עם אייפון בכבל צריך שבב והסמכה מאפל, בתשלום.</dd>
+  <dt>ODM / OEM, יצרני קבלן</dt><dd>Original Design Manufacturer: מתכנן ומייצר בשבילך. Original Equipment Manufacturer: מייצר לפי התכנון שלך.</dd>
+  <dt>NRE, הוצאה חד-פעמית</dt><dd>Non-Recurring Engineering: תבניות, אישורים, פיתוח. משלמים פעם אחת, לא לכל יחידה.</dd>
+  <dt>MOQ, כמות מינימום</dt><dd>Minimum Order Quantity: הכמות הכי קטנה שהמפעל מוכן לייצר.</dd>
+  <dt>DFM, תכנון לייצור</dt><dd>Design for Manufacturing: לשנות את העיצוב כך שיהיה זול וקל לייצר, לא רק יפה.</dd>
+  <dt>CAC, עלות רכישת לקוח</dt><dd>Customer Acquisition Cost: כמה פרסום ושיווק עולה כדי שאדם אחד יקנה.</dd>
+  <dt>FDM, PLA, TPU</dt><dd>FDM (Fused Deposition Modeling): מדפסת שמתיכה חוט פלסטיק. PLA: פלסטיק מעמילן תירס, קל להדפסה. TPU: פלסטיק גמיש כמו גומי, לצמיגים.</dd>
+</dl>
+
+<h3>מקורות</h3>
+<ul class="hint">
+  <li><a href="https://he.wikipedia.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:%D7%90%D7%95%D7%A8%D7%99_%D7%9E%D7%95%D7%A1%D7%A0%D7%96%D7%95%D7%9F/%D7%AA%D7%95%D7%A9%D7%91%D7%AA_%D7%A8%D7%95%D7%91%D7%95%D7%98_%D7%9E%D7%97%D7%9E%D7%93_%D7%9C%D7%98%D7%9C%D7%A4%D7%95%D7%A0%D7%99%D7%9D_%D7%A1%D7%95%D7%9C%D7%9C%D7%A8%D7%99%D7%99%D7%9D">הרעיון המקורי בוויקיפדיה</a></li>
+  <li><a href="https://www.openbot.org/">OpenBot</a> · <a href="https://spectrum.ieee.org/intel-openbot-robots-smartphones">IEEE Spectrum על OpenBot</a></li>
+  <li><a href="https://www.techhive.com/article/601667/romo-the-smartphone-robot-returns-faster-stronger-after-kickstarter-campaign.html">TechHive על Romo</a> · <a href="https://www.cbinsights.com/company/romo">CB Insights: Romotive</a></li>
+  <li><a href="https://www.engadget.com/belkins-stand-pro-iphone-dock-uses-apples-dockkit-to-track-you-around-a-room-095605017.html">Engadget: Belkin Stand Pro</a> · <a href="https://www.engadget.com/insta360s-flow-pro-smartphone-gimbal-uses-apples-dockkit-to-track-you-010029542.html">Engadget: Insta360 Flow Pro</a></li>
+  <li><a href="https://keyirobot.com/en-us/blogs/buying-guide/loona-vs-vector-vs-emo-which-robot-pet-is-right-for-you">השוואת Loona / Vector / EMO</a> (של היצרן של Loona, להתייחס בזהירות)</li>
+</ul>
+
+</section>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">פונבוט · פרויקט פתוח של אורי מוסנזון · <a href="https://github.com/orimosenzon/fun/tree/master/vibe_coding/phonebot">קוד מקור</a></div>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+<script type="module" src="js/econ.js"></script>
+</body>
+</html>

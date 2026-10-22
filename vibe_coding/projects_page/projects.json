@@ -1172,6 +1172,41 @@
           ]
         },
         {
+          "title": "פונבוט: תושבת רובוטית לטלפון",
+          "icon": "🤖",
+          "theme": "t-orange",
+          "dir": "phonebot",
+          "tags": [
+            "רובוטיקה",
+            "סימולטור",
+            "Q-learning",
+            "Canvas",
+            "ניתוח עסקי",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#fdba74\">הטלפון הישן מהמגירה הוא המוח. חסרים לו רק גלגלים.</strong><br> סימולטור של רובוט מחמד שבנוי מתושבת עם מנועים: נהיגה מרחוק עם השהיית רשת, מיפוי הבית ממצלמה בלבד, מעקב אחרי חתול, קרבות סומו שבהם מפילים את הטלפון של היריב, ולמידת חיזוק מאפס. ומתחתיו ניתוח של הפרויקט בעולם האמיתי: רכיבים ועלויות, ייצור, תקינה, מתחרים, שווקים ומחשבון כלכלת יחידה.",
+          "links": [
+            {
+              "href": "phonebot/index.html",
+              "style": "live",
+              "label": "▶ לנסות",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/phonebot",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "פרדס חנה תלת-ממד",
           "icon": "🏘️",
           "theme": "t-green",
