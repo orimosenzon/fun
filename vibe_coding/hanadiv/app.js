@@ -251,6 +251,11 @@ function sky() {
 let map;
 const markers = new Map();
 function setupMap() {
+  // without it Hebrew street names come out mirrored
+  try {
+    const pending = maplibregl.setRTLTextPlugin('vendor/mapbox-gl-rtl-text.min.js', false);
+    if (pending && pending.catch) pending.catch(() => {});
+  } catch (e) { /* mirrored labels are bad, a blank map is worse */ }
   map = new maplibregl.Map({
     container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
     center: CENTER, zoom: 13.4, attributionControl: { compact: true },
@@ -461,7 +466,14 @@ function listHTML() {
   }
   const unplaced = evs.filter(e => !e.vgeo);
   if (unplaced.length && !filtered) h += `<div class="empty" style="font-size:12.5px">${unplaced.length} אירועים היום בלי נקודה על המפה (כתובת שלא הצלחנו למקם). הם מופיעים ברשימה.</div>`;
+  h += `<div class="empty" style="font-size:12px;color:var(--ink3)">${updatedLabel()}</div>`;
   return h;
+}
+function updatedLabel() {
+  if (!S.updated) return '';
+  const d = new Date(S.updated);
+  const t = d.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return `התוכנייה נמשכת מאתר הפסטיבל כל לילה. עדכון אחרון: ${t}`;
 }
 
 /* ---------- my plan ---------- */
