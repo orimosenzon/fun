@@ -303,9 +303,16 @@ function setupMap() {
   });
   map.on('click', () => closePopup());
 }
+// flyTo's padding would stay on the map and skew every later move, so a fly takes the
+// same padding as a one-off offset of the centre instead
+const off = p => [(p.left - p.right) / 2, (p.top - p.bottom) / 2];
 function fitPad() {
   const wide = innerWidth >= 900;
-  return wide ? { top: 40, bottom: 40, left: 40, right: 40 } : { top: 20, bottom: 150, left: 10, right: 10 };
+  if (wide) return { top: 40, bottom: 40, left: 40, right: 40 };
+  // on a phone, frame what is left above the sheet at the height it is snapping to
+  const H = $('#stage').clientHeight, snapTo = $('#sheet').dataset.snap;
+  const sheet = snapTo === 'peek' ? 128 : snapTo === 'full' ? H * .92 : H * .5;
+  return { top: 30, bottom: Math.min(sheet + 30, H - 120), left: 30, right: 30 };
 }
 
 function drawMarkers() {
@@ -385,7 +392,7 @@ function focusEvent(e) {
   if (!wide) snap('peek');
   // the popup sits above the place (and on a phone the sheet below it), so the place goes low on the screen
   const pad = { top: Math.min(wide ? 330 : 300, map.getContainer().clientHeight * .58), bottom: wide ? 20 : 140, left: 10, right: 10 };
-  map.flyTo({ center: [e.vgeo.lng, e.vgeo.lat], zoom: Math.max(map.getZoom(), 15), padding: pad, duration: 700 });
+  map.flyTo({ center: [e.vgeo.lng, e.vgeo.lat], zoom: Math.max(map.getZoom(), 15), offset: off(pad), duration: 700 });
   drawMarkers(); markFocus(true);
 }
 function markFocus(scroll) {
@@ -426,7 +433,7 @@ function openVenue(v, fly) {
   S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 22, focusAfterOpen: false, anchor: 'bottom' })
     .setLngLat([v.geo.lng, v.geo.lat]).setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(v)).addTo(map);
   S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); } });
-  if (fly) map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), padding: fitPad() });
+  if (fly) map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), offset: off(fitPad()) });
   if ($('#sheet').dataset.snap === 'full') snap('peek');
   drawMarkers();
 }
@@ -579,7 +586,9 @@ function drawGrid() {
   for (let t = S.lo; t <= S.hi; t += 60) h += `<span style="right:${X(t)}px">${hm(t)}</span>`;
   h += '</div>';
   for (let t = S.lo; t <= S.hi; t += 60) h += `<div class="grid-hour" style="right:${X(t)}px"></div>`;
-  const ordered = [...rows.values()].sort((a, b) => a[0].start - b[0].start);
+  // places with something on now or next come first, places whose day is over go last
+  const key = list => Math.min(...list.map(e => (e.end <= S.t ? 1e5 + e.start : Math.max(e.start, S.t)) + (e.long ? 5000 : 0)));
+  const ordered = [...rows.values()].sort((a, b) => key(a) - key(b) || a[0].start - b[0].start);
   for (const list of ordered) {
     const lanes = [];
     for (const e of list) {
@@ -612,8 +621,7 @@ function scrollGridToNow() {
   const g = $('#grid');
   const x = NAMEW + (S.t - S.lo) * PPM;
   // rows are in order of their first event; start at the first one still going at the playhead
-  const row = $$('.row', g).find(r => $$('.bar', r).some(b => S.byId.get(b.dataset.ev).end > S.t));
-  g.scrollTo({ left: -(x - NAMEW - 60), top: row ? row.offsetTop - 26 : 0, behavior: 'smooth' });
+  g.scrollTo({ left: -(x - NAMEW - 60), top: 0, behavior: 'smooth' });
 }
 
 /* ---------- detail card ---------- */
@@ -665,11 +673,17 @@ function openDetail(e) {
       ${e.links.length ? `<div class="links">${e.links.map(l => `<a target="_blank" rel="noopener" href="${esc(l.url)}">${esc(l.title)}</a>`).join('')}</div>` : ''}
       ${others.length ? `<div class="same"><h4>עוד באותו מקום (${others.length})</h4>${others.map(o => card(o, { showDay: true, noRel: o.date !== S.day })).join('')}</div>` : ''}
     </div>`;
+  if (!S.pushed) { history.pushState({ card: 1 }, ''); S.pushed = true; }
   $('#detail').hidden = false;
   $('#detailCard').scrollTop = 0;
   setHash();
 }
-function closeDetail() { $('#detail').hidden = true; S.detail = null; setHash(); }
+function closeDetail(fromBack) {
+  $('#detail').hidden = true; S.detail = null;
+  if (S.pushed) { S.pushed = false; if (!fromBack) { history.back(); return; } }
+  setHash();
+}
+addEventListener('popstate', () => { if (S.detail) closeDetail(true); else S.pushed = false; });
 
 /* ---------- calendar ---------- */
 
@@ -716,21 +730,22 @@ function drawChips() {
 }
 
 function setView(v) {
+  if (v !== S.view) closePopup();
   S.view = v;
   document.body.className = 'view-' + v;
   $$('#views button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   $('#grid').hidden = v !== 'grid';
-  if (v === 'plan') {
-    snap(innerWidth < 900 ? 'mid' : 'mid');
+  if (v === 'plan') snap('mid');
+  render();
+  if (v === 'grid') { drawGrid(); scrollGridToNow(); }
+  else if (map) map.resize();  // before any camera move: a resize cuts an animation short
+  if (v === 'plan' && map) {
     const pts = planList().filter(e => e.date === S.day && e.vgeo);
-    if (pts.length && map) {
+    if (pts.length) {
       const b = new maplibregl.LngLatBounds(); pts.forEach(e => b.extend([e.vgeo.lng, e.vgeo.lat]));
       map.fitBounds(b, { padding: fitPad(), maxZoom: 15.5 });
     }
   }
-  render();
-  if (v === 'grid') { drawGrid(); scrollGridToNow(); }
-  else map && map.resize();
   setHash();
 }
 
@@ -744,8 +759,8 @@ function render() {
     const evs = dayEvents();
     const live = evs.filter(e => status(e) === 'live' && !e.long).length;
     const soon = evs.filter(e => status(e) === 'soon').length;
-    $('#timeLabel').textContent = `${dayName(S.day, true)} ${hm(S.t)}`;
-    $('#countLabel').innerHTML = `<b>${live}</b> קורים עכשיו · ${soon} מתחילים בשעה הקרובה`;
+    $('#timeLabel').innerHTML = `<span class="tday">${dayName(S.day, true)} </span>${hm(S.t)}`;
+    $('#countLabel').innerHTML = `<b>${live}</b><span class="tlong"> קורים</span> עכשיו · ${soon}<span class="tlong"> מתחילים בשעה הקרובה</span><span class="tshort"> בקרוב</span>`;
     placePlayhead();
     sky();
     if (map) drawMarkers();
@@ -822,12 +837,12 @@ function setupSheet() {
     const dy = ev.clientY - y0;
     if (Math.abs(dy) > 4) moved = true;
     const H = sheet.parentElement.clientHeight;
-    const top = clamp(h0 + dy, H * .08, H - 132);
-    sheet.style.transform = `translateY(${top - H * .08}px)`;
+    const top = clamp(h0 + dy, H * .08, H - 128);
+    sheet.style.height = `${H - top}px`;
   });
   const end = ev => {
     if (y0 == null) return;
-    sheet.classList.remove('dragging'); sheet.style.transform = '';
+    sheet.classList.remove('dragging'); sheet.style.height = '';
     const H = sheet.parentElement.clientHeight;
     if (!moved) { snap(sheet.dataset.snap === 'full' ? 'peek' : sheet.dataset.snap === 'peek' ? 'mid' : 'full'); y0 = null; return; }
     const top = h0 + (ev.clientY - y0);
@@ -885,7 +900,7 @@ function locate() {
       navigator.geolocation.clearWatch(S.watch); S.watch = null; return;
     }
     S.me = me; btn.classList.add('on'); drawMe();
-    if (first) { map.flyTo({ center: [me.lng, me.lat], zoom: 15, padding: fitPad() }); toast('הרשימה מסודרת עכשיו לפי מה שהכי קרוב'); }
+    if (first) { map.flyTo({ center: [me.lng, me.lat], zoom: 15, offset: off(fitPad()) }); toast('הרשימה מסודרת עכשיו לפי מה שהכי קרוב'); }
     first = false; render();
   }, () => { toast('לא קיבלנו מיקום. אפשר לאשר אותו בהגדרות הדפדפן.'); S.watch = null; }, { enableHighAccuracy: true, maximumAge: 30000 });
 }
@@ -972,7 +987,7 @@ async function main() {
   setupEvents(); setupStrip(); setupSheet(); setupMap();
   drawDays(); drawChips(); drawStrip();
   setView(h.plan ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
-  if (!h.plan && innerWidth < 900) snap('peek');
+  if (!h.plan && innerWidth < 900) snap('mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
   // during the festival, keep "now" moving if the playhead is on it
   setInterval(() => {

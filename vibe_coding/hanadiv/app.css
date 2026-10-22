@@ -41,7 +41,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .sub { font-size: 13px; color: var(--ink2); }
-.tools { display: flex; gap: 4px; }
+.tools { display: flex; gap: 2px; flex: none; }
 .iconbtn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; }
 .iconbtn:hover, .iconbtn.on { background: rgba(29, 43, 58, .08); }
 .iconbtn.on { color: #1a73e8; }
@@ -69,6 +69,8 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 }
 .play svg { fill: currentColor; stroke: none; width: 18px; height: 18px; }
 .readout { flex: 1; min-width: 0; }
+.time { white-space: nowrap; }
+.tshort { display: none; }
 .time { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
 .count { font-size: 13px; color: var(--ink2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .count b { color: var(--now); }
@@ -202,16 +204,17 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 
 /* ---------- sheet ---------- */
 #sheet {
-  position: absolute; inset-inline: 0; bottom: 0; height: 92%;
+  position: absolute; inset-inline: 0; bottom: 0; height: 92%; max-height: 92%;
   background: var(--paper); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 30px rgba(29, 43, 58, .18);
   display: flex; flex-direction: column; z-index: 4;
-  transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+  transition: height .3s cubic-bezier(.2, .8, .2, 1);
 }
-#sheet[data-snap="peek"] { transform: translateY(calc(100% - 132px)); }
-#sheet[data-snap="mid"] { transform: translateY(52%); }
-#sheet[data-snap="full"] { transform: translateY(0); }
+/* snaps change the height, not a transform, so the list can always scroll to its last item */
+#sheet[data-snap="peek"] { height: 128px; }
+#sheet[data-snap="mid"] { height: 50%; }
+#sheet[data-snap="full"] { height: 92%; }
 #sheet.dragging { transition: none; }
-.grab { padding: 8px 0 4px; display: grid; place-items: center; cursor: grab; touch-action: none; flex: none; }
+.grab { padding: 10px 0 8px; display: grid; place-items: center; cursor: grab; touch-action: none; flex: none; }
 .grab span { width: 42px; height: 5px; border-radius: 3px; background: #d5cec2; }
 #sheetBody { overflow-y: auto; padding: 0 14px 30px; flex: 1; overscroll-behavior: contain; }
 
@@ -361,6 +364,11 @@ body.view-grid #sheet { display: none; }
 }
 
 @media (max-width: 899px) {
+  .brand { display: none; }
+  .planbar .btn { padding: 7px 12px; font-size: 13px; }
+  .tday, .tlong { display: none; }
+  .tshort { display: inline; }
+  .clockhead .tools { margin-inline-start: -4px; }
   .epop { width: 230px; }
   .epop .pph { height: 76px; }
   #top { padding: 8px 12px 4px; }
@@ -388,7 +396,7 @@ body.view-grid #sheet { display: none; }
   #sheetBody { padding-top: 6px; }
   #map { right: 410px; }
   #grid { inset-inline-start: 0; }
-  #views { position: absolute; top: 14px; left: 120px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; overflow: hidden; }
+  #views { position: absolute; top: 12px; left: 20px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; overflow: hidden; }
   #views button { flex-direction: row; gap: 6px; white-space: nowrap; padding: 6px 14px; font-size: 13px; border-radius: 999px; }
   #views button.on { background: var(--ink); color: #fff; }
   #views button.on svg { stroke: var(--accent); }
@@ -402,3 +410,6 @@ body.view-grid #sheet { display: none; }
   #views { position: static; border-radius: 0; border: 0; border-top: 1px solid var(--line); padding: 0; }
   #views button { border-radius: 0; }
 }
+
+/* touch screens zoom with two fingers; the buttons are clutter there */
+@media (pointer: coarse) { .maplibregl-ctrl-top-left { display: none; } }
