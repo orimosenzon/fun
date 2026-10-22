@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>תקציב המדינה</title>
+<meta name="description" content="תקציב מדינת ישראל 1997–2026 כעוגה שאפשר להיכנס לכל פלח שלה, עד התקנה האחרונה: כמה תוכנן, כמה הוצא בפועל, מי קיבל את הכסף ואיך זה השתנה לאורך השנים.">
+<meta property="og:title" content="לאן הולך הכסף של המדינה?">
+<meta property="og:description" content="תקציב המדינה 1997–2026 בעוגה אחת: לחצו על פלח וראו איך הוא מתחלק, כמה הוצא בפועל, ומי קיבל את הכסף.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="kicker">רוצים שקיפות · תקציב המדינה</p>
+    <h1>לאן הולך הכסף של המדינה?</h1>
+    <p class="lede">תקציב המדינה לשנת <span id="year">…</span>: <strong id="grand-total">…</strong>,
+      <span id="per-person">…</span>.
+      לחצו על פלח בעוגה כדי לראות איך הוא מתחלק, עד התקנה האחרונה. מתחת לעוגה: איך כל פלח השתנה מ-1997 ועד היום.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="controls">
+    <div class="seg" role="tablist" aria-label="צד התקציב">
+      <button role="tab" data-side="expense" aria-selected="true">לאן הולך הכסף</button>
+      <button role="tab" data-side="income" aria-selected="false">מאיפה הוא בא</button>
+    </div>
+    <button id="share" class="share" type="button">שיתוף</button>
+    <div class="search">
+      <input id="search" type="search" placeholder="חיפוש: קופות חולים, כבישים, מלגות, או קוד תקנה…" autocomplete="off" aria-label="חיפוש סעיף בתקציב">
+      <ul id="search-results" class="search-results" hidden></ul>
+    </div>
+  </div>
+
+  <div class="controls second">
+    <div class="seg" role="group" aria-label="איזה תקציב">
+      <button type="button" data-phase="0" title="התקציב כפי שהכנסת אישרה בחוק התקציב">כפי שאושר בחוק</button>
+      <button type="button" data-phase="1" title="אחרי כל השינויים שאישרה ועדת הכספים במהלך השנה">אחרי שינויים</button>
+      <button type="button" data-phase="2" title="כמה הוצא בפועל">בפועל</button>
+    </div>
+    <label class="check"><input type="checkbox" id="debt" checked> כולל החזר קרן החוב</label>
+  </div>
+
+  <div class="years-row">
+    <span class="years-label">שנה</span>
+    <div id="years" class="years" role="group" aria-label="בחירת שנה"></div>
+  </div>
+  <p id="year-note" class="year-note" hidden></p>
+
+  <nav id="crumbs" class="crumbs" aria-label="מיקום בתקציב"></nav>
+
+  <section class="stage">
+    <div class="pie-box">
+      <svg id="pie" role="img" aria-label="עוגת התקציב"></svg>
+      <div id="tooltip" class="tooltip" hidden></div>
+    </div>
+    <div class="side">
+      <div id="node-info" class="node-info"></div>
+      <div class="chart-card">
+        <div class="chart-head">
+          <h3 id="chart-title">לאורך השנים</h3>
+          <div class="chart-ctrls">
+            <div class="seg small" role="group" aria-label="מה להציג">
+              <button type="button" data-view="one">הסעיף הזה</button>
+              <button type="button" data-view="cmp">השוואת הפלחים</button>
+            </div>
+            <div class="seg small" role="group" aria-label="יחידות">
+              <button type="button" data-unit="nis" title="שקלים של כל שנה">₪</button>
+              <button type="button" data-unit="real" title="מתוקן לאינפלציה">₪ היום</button>
+              <button type="button" data-unit="cap" title="לתושב, מתוקן לאינפלציה">לתושב</button>
+              <button type="button" data-unit="pct" title="אחוז מכל התקציב">%</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-box"><div id="chart" class="chart"></div><div id="chart-tip" class="tooltip" hidden></div></div>
+        <div id="chart-note" class="chart-note"></div>
+      </div>
+      <details id="who" class="who" hidden>
+        <summary id="who-sum">מי קיבל את הכסף?</summary>
+        <div id="who-body" class="who-body"></div>
+      </details>
+      <ol id="list" class="list"></ol>
+    </div>
+  </section>
+
+  <section class="value" id="moves" aria-labelledby="moves-h">
+    <h2 id="moves-h">מה בולט השנה?</h2>
+    <p class="v-lede" id="moves-lede"></p>
+    <div class="moves-grid">
+      <div class="move-card"><h3 id="mv-gap-h">איפה הביצוע רחוק מהחוק</h3><ol id="mv-gap" class="moves-list"></ol></div>
+      <div class="move-card"><h3 id="mv-grow-h">מה גדל הכי הרבה בעשור</h3><ol id="mv-grow" class="moves-list"></ol></div>
+      <div class="move-card"><h3 id="mv-shrink-h">מה הצטמק הכי הרבה בעשור</h3><ol id="mv-shrink" class="moves-list"></ol></div>
+    </div>
+    <p class="note" id="moves-note"></p>
+  </section>
+
+  <section class="value" id="world" aria-labelledby="world-h">
+    <h2 id="world-h">ישראל מול העולם</h2>
+    <p class="v-lede">כמה מהתוצר כל מדינה במערכת ה-OECD מוציאה על כל תחום, בכל רובדי הממשלה יחד (מדינה, רשויות
+      מקומיות וביטוח לאומי). זה המדד שמאפשר להשוות בין מדינות, ולכן הוא לא אותו מספר כמו בעוגה: כאן גם הרשויות
+      המקומיות וגם הביטוח הלאומי נספרים, וההחזר של קרן החוב לא נספר.</p>
+    <div class="seg wrap-seg" role="tablist" aria-label="תחום" id="w-funcs"></div>
+    <div id="w-kpis" class="v-kpis"></div>
+    <div class="v-charts">
+      <figure class="v-fig">
+        <h3 id="w-strip-title"></h3>
+        <div class="v-legend"><span><i class="v-swatch home"></i>ישראל</span><span><i class="v-swatch peer"></i>מדינות OECD</span></div>
+        <div class="v-plot"><div id="w-strip"></div></div>
+      </figure>
+      <figure class="v-fig">
+        <h3 id="w-trend-title"></h3>
+        <div class="v-legend"><span><i class="v-line home"></i>ישראל</span><span><i class="v-line peer"></i>חציון OECD</span><span><i class="v-swatch band"></i>חצי מהמדינות בתוך הטווח</span></div>
+        <div class="v-plot"><div id="w-trend"></div></div>
+      </figure>
+      <div id="w-tip" class="v-tip" hidden></div>
+    </div>
+    <details class="v-details"><summary id="w-table-sum">כל המדינות</summary><div class="v-table-wrap"><table id="w-table"></table></div></details>
+    <p class="note">מקור: <a href="https://data-explorer.oecd.org/" target="_blank" rel="noopener">OECD</a>, הוצאות הממשלה
+      הכללית לפי ייעוד (COFOG, טבלה 11) והתוצר במחירים שוטפים (טבלה 1). הנתון האחרון של ישראל הוא בדרך כלל של לפני שנתיים.</p>
+  </section>
+
+  <section class="mine">
+    <label for="tax">כמה מס אתם משלמים בשנה?</label>
+    <div class="mine-row">
+      <input id="tax" type="number" inputmode="numeric" min="0" step="1000" placeholder="למשל 40000">
+      <span class="unit">₪</span>
+      <button type="button" id="est-open" class="share small">לא יודעים? הערכה לפי שכר</button>
+    </div>
+    <div id="est" class="est" hidden>
+      <label>שכר ברוטו חודשי <input id="est-salary" type="number" inputmode="numeric" min="0" step="500" placeholder="למשל 15000"></label>
+      <label>נקודות זיכוי <input id="est-points" type="number" inputmode="decimal" min="0" step="0.25" value="2.25"></label>
+      <p id="est-out" class="note"></p>
+      <button type="button" id="est-use" class="share small" disabled>להשתמש בהערכה</button>
+    </div>
+    <p class="note">אם תמלאו, ליד כל סעיף יופיע כמה ממנו "שלכם": החלק היחסי של המסים שלכם בכל ההוצאה. זה חישוב
+      יחסי בלבד: המסים לא צבועים לשירות מסוים, וחלק מההוצאה ממומן בהלוואות ולא במסים.</p>
+  </section>
+
+  <section class="about">
+    <h2>מאיפה המספרים</h2>
+    <p>קובץ התקציב של משרד האוצר ברמת תקנה, 1997–2026, כפי שהוא מתפרסם ב<a href="https://next.obudget.org/" target="_blank" rel="noopener">מפתח התקציב</a>
+      (הסדנא לידע ציבורי). לכל תקנה שלושה מספרים: התקציב המקורי שאושר בחוק, התקציב אחרי השינויים שאישרה ועדת הכספים במהלך השנה,
+      והביצוע בפועל. כל הסכומים הם "הוצאה נטו": בלי הוצאה שמותנית בהכנסה.</p>
+    <p>מה נכלל: התקציב הרגיל, תקציב הפיתוח, החזרי החוב והרזרבה, כך שהסכום שווה לסך התקציב שהממשלה מפרסמת. המפעלים העסקיים
+      (בתי החולים הממשלתיים, רשות מקרקעי ישראל ועוד) לא נכללים: הם מממנים את עצמם מההכנסות שלהם. בצד ההכנסות: המסים, האגרות,
+      ההלוואות שהמדינה לוקחת, וההכנסות שהמשרדים גובים בעצמם.</p>
+    <p>"מי קיבל את הכסף" נטען בזמן אמת ממפתח התקציב: תמיכות (לפי שנת התשלום) והתקשרויות (לפי תאריך ההזמנה), שהמשרדים מדווחים.
+      הדיווח לא מלא, בעיקר בהתקשרויות של השנה האחרונה, ולכן הסכומים שם לא מסתכמים לסכום של הסעיף.</p>
+    <p>תיקון לאינפלציה: מדד המחירים לצרכן (ממוצע שנתי, הבנק העולמי והלמ"ס). אוכלוסייה: הבנק העולמי. <span id="ctx-notes"></span></p>
+    <p class="note">טעות? משהו לא מובן? הקוד והנתונים פתוחים, ואפשר לבדוק כל תקנה מול הקובץ המקורי. יש גם <a href="../../budget/web/">תקציב המועצה של פרדס חנה-כרכור</a> באותה צורה.</p>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <button class="close" id="sheet-close" aria-label="סגירה">×</button>
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="app.js?v=1"></script>
+<script src="world.js?v=1"></script>
+</body>
+</html>
