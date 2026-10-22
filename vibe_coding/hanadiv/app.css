@@ -145,6 +145,9 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
   text-shadow: 0 0 2px #fff, 0 0 2px #fff; font-weight: 400;
 }
 .vm.hide { display: none; }
+.vm.mine .dot { width: 28px; height: 28px; background: var(--c); border: 2.5px solid #fff; opacity: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
+.vm.mine.live .dot, .vm.mine.multi .dot { width: 34px; height: 34px; }
+.vm.mine.soon .dot { color: #fff; }
 .vm.focus { z-index: 6; }
 .vm.focus .dot {
   width: 38px; height: 38px; background: var(--c); border: 3px solid #fff; opacity: 1; color: #fff;

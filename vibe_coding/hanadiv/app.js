@@ -32,7 +32,7 @@ const S = {
   events: [], venues: new Map(), groups: [], colors: {}, days: [],
   day: null, t: 600, lo: 480, hi: 1440,
   view: 'map', filt: new Set(), kids: false, access: false, q: '',
-  plan: new Set(), me: null, sel: null, playing: null, moreLater: false, shared: null,
+  plan: new Set(), onlyMine: true, me: null, sel: null, playing: null, moreLater: false, shared: null,
 };
 
 /* ---------- data ---------- */
@@ -317,8 +317,14 @@ function drawMarkers() {
         cls = 'soon'; color = soon[0].c; txt = `${soon[0].start - S.t}′`;
       } else cls = evs.some(e => status(e) === 'later') ? 'idle' : 'done';
     }
-    // the map always shows what is on at the playhead; the plan only adds stars, numbers and the route
-    if (evs.some(e => S.plan.has(e.id))) cls += ' plan';
+    // the map shows what is on at the playhead; the plan adds stars, numbers and the route,
+    // and "only mine" leaves just the planned places, each in its event's colour
+    const mine = evs.filter(e => S.plan.has(e.id));
+    if (mine.length) cls += ' plan';
+    if (onlyMine()) {
+      if (!mine.length) cls = 'hide';
+      else { cls = cls.replace(/\b(idle|done|hide)\b/, '') + ' mine'; if (!/live|soon/.test(cls)) color = mine[0].c; }
+    }
     if (S.sel && S.sel.key === v.key) cls += ' sel';
     el.className = 'vm ' + cls;
     el.style.setProperty('--c', color);
@@ -478,6 +484,7 @@ function updatedLabel() {
 
 /* ---------- my plan ---------- */
 
+const onlyMine = () => S.view === 'plan' && S.onlyMine && S.plan.size > 0;
 function planList() { return [...S.plan].map(id => S.byId.get(id)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start); }
 function savePlan() {
   try { localStorage.setItem('hanadiv-plan', JSON.stringify([...S.plan])); } catch (e) { /* private window */ }
@@ -509,7 +516,7 @@ function drawPlan() {
     $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus(); return;
   }
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
-    <div class="planbar"><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
+    <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
   for (const d of S.days) {
     const evs = list.filter(e => e.date === d);
     if (!evs.length) continue;
@@ -529,7 +536,8 @@ function drawPlan() {
     });
     h += '</div>';
   }
-  $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus();
+  if (S.onlyMine) h += `<div class="empty">על המפה מופיעים רק המקומות שבתוכנית, ממוספרים לפי הסדר. <button class="more" data-onlymine>להציג גם את כל השאר</button></div>`;
+  $('#sheetBody').innerHTML = h + (S.onlyMine ? '' : '<div class="divider"></div>' + listHTML()); markFocus();
 }
 
 function drawRoute() {
@@ -884,6 +892,7 @@ function setupEvents() {
     if (t.closest('[data-clear-plan]')) { if (confirm('לנקות את כל התוכנית?')) { S.plan.clear(); savePlan(); render(); } return; }
     if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); history.replaceState(null, '', location.pathname); return render(); }
     if (t.closest('[data-dismiss]')) { S.shared = null; return render(); }
+    if (t.closest('[data-onlymine]')) { S.onlyMine = !S.onlyMine; return render(); }
     if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
     if (t.closest('[data-clear]')) { S.filt.clear(); S.kids = S.access = false; S.q = ''; $('#q').value = ''; return filtersChanged(); }
     const sm = t.closest('[data-showmap]');
