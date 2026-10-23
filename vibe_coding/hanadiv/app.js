@@ -325,7 +325,7 @@ function setupMap() {
     el.className = 'vm hide';
     el.innerHTML = '<div class="dot"><i class="img"></i><span class="lbl"></span></div>';
     el.addEventListener('click', ev => { ev.stopPropagation(); S.focus = null; openVenue(v); markFocus(); });
-    const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
+    const mk = new maplibregl.Marker({ element: el, anchor: 'center', opacityWhenCovered: '1' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
     markers.set(v.key, { el, mk, v });
   }
   map.on('load', () => {
@@ -336,6 +336,8 @@ function setupMap() {
     map.addLayer({ id: 'sat', type: 'raster', source: 'sat', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } }, before);
     applyLook();
     // tilting with two fingers (or ctrl-drag) counts as asking for the 3D view
+    map.on('sourcedata', ev => { if (ev.sourceId === 'dem' && !map.isMoving()) groundCamera(); });
+    map.on('moveend', groundCamera);
     map.on('pitchend', () => { const t = map.getPitch() >= 10; if (t !== S.tilt) { S.tilt = t; applyLook(); } });
     map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addLayer({ id: 'route-case', type: 'line', source: 'route', paint: { 'line-color': '#fff', 'line-width': 7, 'line-opacity': .9 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
@@ -374,6 +376,17 @@ function applyLook() {
   // grey boxes standing on a photograph of the same roofs are noise
   for (const l of map.getStyle().layers) if (l.type === 'fill-extrusion') map.setLayoutProperty(l.id, 'visibility', S.sat ? 'none' : 'visible');
   map.setTerrain(S.tilt ? { source: 'dem', exaggeration: TERRAIN_X } : null);
+  groundCamera();
+}
+/* MapLibre keeps the camera's ground at sea level until the first drag. The moshava stands
+   about 70 m up, 170 m once the relief is exaggerated, so zoomed in close the tilted camera
+   sat inside the hill: a grey blur, the pictures faded out, and the first drag then jumped
+   four zoom levels in. Lifting the ground under the camera as soon as the heights arrive
+   keeps the zoom where it was. */
+function groundCamera() {
+  if (!map || !map.terrain) return;
+  const h = map.terrain.getElevationForLngLatZoom(map.getCenter(), map.getZoom());
+  if (Math.abs(h - map.transform.elevation) > 1) { map.transform.elevation = h; map.triggerRepaint(); }
 }
 // flyTo's padding would stay on the map and skew every later move, so a fly takes the
 // same padding as a one-off offset of the centre instead
@@ -531,14 +544,16 @@ function openVenue(v, fly) {
   if ($('#sheet').dataset.snap === 'full') snap('peek');
   drawMarkers();
 }
-/* A popup opened near the edge of the map would be cut off by the header (or hidden under
-   the sheet on a phone), so the map slides until all of it is in sight. */
+/* A popup opened near the edge of the map would run off it (or hide under the sheet on a
+   phone), so the map slides until all of it is in sight. When the map is too short to hold
+   it, the popup rises over the header instead, which it is drawn above. */
 function fitPopup() {
   if (!S.popup || !map) return;
   const el = S.popup.getElement(); if (!el) return;
   const r = el.getBoundingClientRect(), m = map.getContainer().getBoundingClientRect();
   const sheet = innerWidth < 900 && !$('#sheet').hidden ? $('#sheet').getBoundingClientRect().top : m.bottom;
-  const top = m.top + 10, bottom = Math.min(m.bottom, sheet) - 10, left = m.left + 10, right = m.right - 10;
+  const bottom = Math.min(m.bottom, sheet) - 10, left = m.left + 10, right = m.right - 10;
+  const top = r.height <= bottom - m.top - 10 ? m.top + 10 : 8;
   let dx = 0, dy = 0;
   if (r.top < top) dy = r.top - top;
   else if (r.bottom > bottom) dy = Math.min(r.bottom - bottom, r.top - top);
