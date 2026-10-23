@@ -193,6 +193,7 @@ function tOf(x, W) { return S.lo + (W - PAD - x) / (W - 2 * PAD) * (S.hi - S.lo)
 function drawStrip() {
   const svg = $('#stripSvg');
   const W = svg.clientWidth, H = svg.clientHeight, base = H - 14;
+  if (!H) return;  // put away by the viewer; it draws again when it comes back
   const evs = dayEvents().filter(e => !e.long);
   const BIN = 10, bins = [];
   let peak = 1;
@@ -258,6 +259,9 @@ function sky() {
   const dusk = clamp(1 - Math.abs(S.t - 17 * 60) / 50, 0, 1);
   if (S.shade) S.shade.style.background = `rgba(${Math.round(40 - 20 * n)},${Math.round(45 - 10 * n)},${Math.round(70 + 20 * n)},${(.42 * n).toFixed(3)})`;
   if (S.glow) S.glow.style.background = `rgba(255,140,60,${(.18 * dusk).toFixed(3)})`;
+  // a blended layer costs a full-screen blend every frame even when it is clear, so by day it is gone
+  if (S.shade) S.shade.style.display = n ? '' : 'none';
+  if (S.glow) S.glow.style.display = dusk ? '' : 'none';
   const mix = (a, b, k) => a.map((x, i) => Math.round(x + (b[i] - x) * k));
   const day = [253, 243, 223], eve = [251, 226, 205], night = [226, 226, 240];
   const c = S.t < 17 * 60 ? mix(day, eve, dusk) : mix(eve, night, n);
@@ -293,7 +297,9 @@ function setupMap() {
   } catch (e) { /* mirrored labels are bad, a blank map is worse */ }
   map = new maplibregl.Map({
     container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: CENTER, zoom: 13.4, pitch: S.tilt ? TILTED : 0, maxPitch: 75,
+    center: CENTER, zoom: 13.4, pitch: S.tilt ? TILTED : 0, maxPitch: 65,
+    // a phone's screen of 3 pixels to the point would draw 9 for each one seen, over the relief twice
+    pixelRatio: Math.min(devicePixelRatio || 1, 2),
     attributionControl: { compact: true, customAttribution: `אורי מוסנזון · <a href="${SRC}" target="_blank" rel="noopener">GPL-3.0</a>` },
   });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
@@ -302,8 +308,12 @@ function setupMap() {
       const box = document.createElement('div');
       box.className = 'maplibregl-ctrl maplibregl-ctrl-group lookctl';
       box.innerHTML = `<button type="button" id="satBtn" title="צילום אוויר" aria-label="צילום אוויר">${ICON.sat}</button>
-        <button type="button" id="tiltBtn" title="מבט בהטיה, תלת־ממד" aria-label="מבט בהטיה">3D</button>`;
+        <button type="button" id="tiltBtn" title="מבט בהטיה, תלת־ממד" aria-label="מבט בהטיה">3D</button>
+        <button type="button" id="showBtn" title="מה להציג" aria-label="מה להציג">${ICON.sliders}</button>
+        <button type="button" id="cleanBtn" title="מפה בלבד" aria-label="מפה בלבד, מסך מלא">${ICON.full}</button>`;
       box.querySelector('#satBtn').onclick = () => { S.sat = !S.sat; applyLook(); };
+      box.querySelector('#showBtn').onclick = ev => { ev.stopPropagation(); toggleShowPanel(); };
+      box.querySelector('#cleanBtn').onclick = () => setClean(!S.clean);
       box.querySelector('#tiltBtn').onclick = () => {
         S.tilt = !S.tilt; applyLook();
         map.easeTo({ pitch: S.tilt ? TILTED : 0, bearing: S.tilt ? map.getBearing() : 0, duration: 700 });
@@ -325,7 +335,11 @@ function setupMap() {
     el.className = 'vm hide';
     el.innerHTML = '<div class="dot"><i class="img"></i><span class="lbl"></span></div>';
     el.addEventListener('click', ev => { ev.stopPropagation(); S.focus = null; openVenue(v); markFocus(); });
-    const mk = new maplibregl.Marker({ element: el, anchor: 'center', opacityWhenCovered: '1' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
+    const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
+    // Over the relief MapLibre asks the graphics card, picture by picture and several times a
+    // second, whether a hill hides it. Each ask stalls the card until it answers, and with 90
+    // pictures that was most of why the 3D view crawled. The moshava has no hill to hide behind.
+    mk._updateOpacity = () => {};
     markers.set(v.key, { el, mk, v });
   }
   map.on('load', () => {
@@ -334,7 +348,7 @@ function setupMap() {
     map.addSource('dem', DEM);
     const before = (map.getStyle().layers.find(l => l.type === 'symbol' || l.type === 'fill-extrusion') || {}).id;
     map.addLayer({ id: 'sat', type: 'raster', source: 'sat', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } }, before);
-    applyLook();
+    applyLook(); applyLabels();
     // tilting with two fingers (or ctrl-drag) counts as asking for the 3D view
     map.on('sourcedata', ev => { if (ev.sourceId === 'dem' && !map.isMoving()) groundCamera(); });
     map.on('moveend', groundCamera);
@@ -352,6 +366,8 @@ function setupMap() {
     }
   });
   map.on('click', () => closePopup());
+  map.on('movestart', () => map.getContainer().classList.add('moving'));
+  map.on('moveend', () => map.getContainer().classList.remove('moving'));
   // The pictures shrink as the map zooms out, so the whole moshava stays readable on a phone.
   // Zoomed right in they take on a real size on the ground, about a quarter of a house,
   // and keep growing with the map until the picture is plain to see.
@@ -388,6 +404,69 @@ function groundCamera() {
   const h = map.terrain.getElevationForLngLatZoom(map.getCenter(), map.getZoom());
   if (Math.abs(h - map.transform.elevation) > 1) { map.transform.elevation = h; map.triggerRepaint(); }
 }
+
+/* ---------- how much is on the screen ---------- */
+/* Each viewer picks what stays on screen: the hour strip, the kind chips, the list, and on
+   the map the places already over, the ones later in the day, and the street names. "Map
+   only" clears everything but the map and a small clock, full screen where the browser
+   allows it (not on an iPhone). The choices are remembered; map-only lasts the visit. */
+const UI_DEF = { strip: true, chips: true, list: true, done: true, idle: true, labels: true };
+S.ui = { ...UI_DEF, ...(() => { try { return JSON.parse(localStorage.getItem('hanadiv-ui')) || {}; } catch (e) { return {}; } })() };
+S.clean = false;
+const SHOW_ROWS = [
+  ['על המסך', [['strip', 'סרגל השעות'], ['chips', 'סינון לפי סוג'], ['list', 'רשימת האירועים ליד המפה']]],
+  ['על המפה', [['idle', 'מה שמתחיל מאוחר יותר היום'], ['done', 'מה שכבר נגמר'], ['labels', 'שמות רחובות ומקומות']]],
+];
+function showPanelHTML() {
+  const sw = ([k, label]) => `<label class="sw"><span>${label}</span><input type="checkbox" data-ui="${k}" ${S.ui[k] ? 'checked' : ''}><i></i></label>`;
+  return `<div class="sphead"><b>מה להציג</b><button class="iconbtn" data-showclose aria-label="סגירה">${ICON.x}</button></div>
+    <button class="btn cleango" data-clean>${ICON.full}מפה בלבד, מסך מלא</button>
+    ${SHOW_ROWS.map(([h, rows]) => `<div class="spsec"><h5>${h}</h5>${rows.map(sw).join('')}</div>`).join('')}
+    ${Object.keys(UI_DEF).some(k => S.ui[k] !== UI_DEF[k]) ? '<button class="more" data-uireset>להחזיר הכל</button>' : ''}`;
+}
+function toggleShowPanel(open = $('#showPanel').hidden) {
+  const p = $('#showPanel');
+  p.hidden = !open;
+  $('#showBtn')?.classList.toggle('on', open);
+  if (open) p.innerHTML = showPanelHTML();
+}
+function applyUI() {
+  try { localStorage.setItem('hanadiv-ui', JSON.stringify(S.ui)); } catch (e) { /* private window */ }
+  layoutUI();
+  applyLabels();
+  if (map) map.resize();
+  render();
+  if (S.popup) requestAnimationFrame(fitPopup);
+}
+function layoutUI() {
+  const R = document.documentElement.classList;
+  R.toggle('clean', S.clean);
+  R.toggle('nostrip', !S.ui.strip);
+  R.toggle('nochips', !S.ui.chips);
+  // the plan lives in the list, so asking for the plan brings the list back
+  R.toggle('nolist', !S.ui.list && S.view === 'map');
+  $('#sheet').hidden = S.clean || (!S.ui.list && S.view === 'map');
+  $('#cleanBtn')?.classList.toggle('on', S.clean);
+  if ($('#cleanBtn')) $('#cleanBtn').innerHTML = S.clean ? ICON.shrink : ICON.full;
+}
+function applyLabels() {
+  if (!map || !map.isStyleLoaded()) return;
+  for (const l of map.getStyle().layers) if (l.type === 'symbol') map.setLayoutProperty(l.id, 'visibility', S.ui.labels ? 'visible' : 'none');
+}
+function setClean(on) {
+  if (on === S.clean) return;
+  S.clean = on;
+  if (on) {
+    toggleShowPanel(false);
+    if (S.view !== 'map') setView('map');
+    const d = document.documentElement;
+    if (d.requestFullscreen && !document.fullscreenElement) d.requestFullscreen().then(() => { S.fs = true; }, () => {});
+  } else if (document.fullscreenElement) { S.fs = false; document.exitFullscreen().catch(() => {}); }
+  applyUI();
+}
+// leaving the browser's full screen (the back gesture, Esc) leaves map-only too
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && S.fs) { S.fs = false; setClean(false); } });
+
 // flyTo's padding would stay on the map and skew every later move, so a fly takes the
 // same padding as a one-off offset of the centre instead
 const GROUND_M = 12;  // a picture's width on the ground, once zoomed in close
@@ -399,7 +478,7 @@ function popOffset(v) {
 const off = p => [(p.left - p.right) / 2, (p.top - p.bottom) / 2];
 function fitPad() {
   const wide = innerWidth >= 900;
-  if (wide) return { top: 40, bottom: 40, left: 40, right: 40 };
+  if (wide || $('#sheet').hidden) return { top: 40, bottom: 40, left: 40, right: 40 };
   // on a phone, frame what is left above the sheet at the height it is snapping to
   const H = $('#stage').clientHeight, snapTo = $('#sheet').dataset.snap;
   const sheet = snapTo === 'peek' ? 128 : snapTo === 'full' ? H * .92 : H * .5;
@@ -430,6 +509,8 @@ function drawMarkers() {
         cls = 'soon'; rep = pick(soon); txt = `${rep.start - S.t}′`;
       } else if (later.length) { cls = 'idle'; rep = pick(later); }
       else { cls = 'done'; rep = evs.at(-1); }
+      // the viewer may clear away what is not on now; a place in my plan stays
+      if ((cls === 'idle' && !S.ui.idle || cls === 'done' && !S.ui.done) && !evs.some(e => S.plan.has(e.id) && status(e) !== 'past')) cls = 'hide';
     }
     // the plan adds a glow and a star; "only mine" leaves just the planned places
     const mine = evs.filter(e => S.plan.has(e.id));
@@ -864,7 +945,10 @@ const ICON = {
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
-  sat: '<svg viewBox="0 0 24 24"><path d="m12 3 9 4.5-9 4.5-9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg>',
+  sat: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg>',
+  sliders: '<svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>',
+  full: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  shrink: '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   wa: '<svg viewBox="0 0 24 24"><path d="M3.5 20.5 4.8 16A8.6 8.6 0 1 1 8 19.2z"/><path d="M9 8.2c.2 3.4 3.3 6.5 6.8 6.8l1-1.6-2.1-1-1 .9c-1.1-.5-2.4-1.8-2.9-2.9l.9-1-1-2.1z"/></svg>',
 };
@@ -1041,6 +1125,8 @@ function setView(v) {
   if (v !== S.view) closePopup();
   S.view = v;
   document.body.className = 'view-' + v;
+  if (v !== 'map' && S.clean) { S.clean = false; if (document.fullscreenElement) { S.fs = false; document.exitFullscreen().catch(() => {}); } }
+  layoutUI();
   $$('#views button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   $('#grid').hidden = v !== 'grid';
   if (v === 'plan') snap('mid');
@@ -1069,6 +1155,7 @@ function render() {
     const soon = evs.filter(e => status(e) === 'soon').length;
     $('#timeLabel').innerHTML = `<span class="tday">${dayName(S.day, true)} </span>${hm(S.t)}`;
     $('#countLabel').innerHTML = `<b>${live}</b><span class="tlong"> קורים</span> עכשיו · ${soon}<span class="tlong"> מתחילים בשעה הקרובה</span><span class="tshort"> בקרוב</span>`;
+    if (S.clean) $('#cleanbar').innerHTML = `<b>${dayName(S.day, true)} ${hm(S.t)}</b><span><b class="n">${live}</b> קורים עכשיו · ${soon} בקרוב</span>${ICON.shrink}`;
     placePlayhead();
     sky();
     if (map) drawMarkers();
@@ -1242,8 +1329,16 @@ async function shareUrl(url, text) {
 }
 
 function setupEvents() {
+  $('#showPanel').addEventListener('change', ev => {
+    const k = ev.target.dataset.ui; if (!k) return;
+    S.ui[k] = ev.target.checked; applyUI(); $('#showPanel').innerHTML = showPanelHTML();
+  });
   document.addEventListener('click', ev => {
     const t = ev.target;
+    if (t.closest('[data-clean]')) return setClean(!S.clean);
+    if (t.closest('[data-showclose]')) return toggleShowPanel(false);
+    if (t.closest('[data-uireset]')) { S.ui = { ...UI_DEF }; applyUI(); return toggleShowPanel(true); }
+    if (!$('#showPanel').hidden && !t.closest('#showPanel')) toggleShowPanel(false);
     const star = t.closest('[data-star]');
     if (star) { ev.stopPropagation(); toggleStar(star.dataset.star); redrawDetail(); return; }
     const gp = t.closest('[data-gap]'); if (gp) { S.openGap = S.openGap === gp.dataset.gap ? null : gp.dataset.gap; return render(); }
@@ -1280,7 +1375,12 @@ function setupEvents() {
     if (t.closest('[data-access]')) { S.access = !S.access; return filtersChanged(); }
     const view = t.closest('[data-view]'); if (view) return setView(view.dataset.view);
   });
-  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.detail) closeDetail(); });
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    if (S.detail) closeDetail();
+    else if (!$('#showPanel').hidden) toggleShowPanel(false);
+    else if (S.clean) setClean(false);
+  });
   // pointing at a card lights up its place on the map
   const hl = on => ev => {
     const c = ev.target.closest('#sheetBody .ev'); if (!c) return;
