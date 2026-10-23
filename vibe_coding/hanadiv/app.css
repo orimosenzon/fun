@@ -118,8 +118,13 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .chip.sep { margin-inline-start: 4px; }
 
 /* ---------- stage ---------- */
-#stage { position: relative; overflow: hidden; }
+/* A place's popup may rise over the header when the map is too short to hold it, so the map
+   itself does not clip: its canvas and pictures are clipped one level down instead. */
+#stage { position: relative; overflow: visible; }
 #map { position: absolute; inset: 0; }
+#map.maplibregl-map { overflow: visible; }
+#map .maplibregl-canvas-container { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+#map .maplibregl-popup { z-index: 8; }
 #map .maplibregl-canvas { transition: filter .5s; }
 .maplibregl-ctrl-attrib { font-size: 10px; }
 
