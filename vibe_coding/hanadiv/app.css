@@ -148,6 +148,9 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .vm.done { --s: 11px; }
 .vm.done .dot { background: #c2c7cc; opacity: .7; box-shadow: none; border-width: 1.5px; }
 .vm.done .img { display: none; }
+#map.close .vm.done { --s: 22px; }
+#map.close .vm.done .img { display: block; filter: grayscale(1); opacity: .7; }
+#map.close .vm .img { inset: clamp(3px, calc(2px * var(--k)), 9px); }
 .vm.soon { --s: 38px; z-index: 2; }
 .vm.live { --s: 46px; z-index: 3; }
 .vm.live.multi { --s: 50px; }
