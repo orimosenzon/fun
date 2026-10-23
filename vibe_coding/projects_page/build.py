@@ -185,7 +185,8 @@ def lead_text(desc: str) -> str:
 
 def render_stage(data: dict) -> str:
     """The rotating showcase at the top: every live project that has a full-size
-    screenshot and is not marked "stage": false, one at a time on the faces of a turning prism. The slides are
+    screenshot and is not marked "stage": false (the ones marked "stage_first"
+    lead), one at a time on the faces of a turning prism. The slides are
     data for the script; the first one is also written into the page, so the
     stage shows something before (or without) JavaScript."""
     slides = []
@@ -199,9 +200,12 @@ def render_stage(data: dict) -> str:
             "theme": p.get("theme", "t-indigo"), "lead": lead_text(p.get("desc", "")),
             "href": l["href"], "ext": bool(l.get("external") or l["href"].startswith("http")),
             "img": str(big.relative_to(ROOT)), "anchor": p["_anchor"],
+            "first": bool(p.get("stage_first")),
         })
     if not slides:
         return ""
+    # "stage_first": true puts a project at the front of the rotation
+    slides.sort(key=lambda s: not s.pop("first"))
     first = slides[0]
     pills = "\n".join(
         f'            <button class="stage-pill" type="button" data-i="{i}">'
