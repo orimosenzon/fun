@@ -870,10 +870,28 @@ function drawPlan() {
   $('#sheetBody').innerHTML = h + (S.onlyMine ? '' : '<div class="divider"></div>' + listHTML()); markFocus();
 }
 
+// The day's plan as a dashed line from place to place, in time order. It is straight, not
+// along the streets, so each leg carries its walking time to say what the line is.
+let hopMarkers = [];
 function drawRoute() {
   if (!map || !map.getSource('route')) return;
-  const pts = S.view === 'plan' ? planList().filter(e => e.date === S.day && e.vgeo).map(e => [e.vgeo.lng, e.vgeo.lat]) : [];
+  const evs = S.view === 'plan' ? planList().filter(e => e.date === S.day && e.vgeo) : [];
+  const pts = evs.map(e => [e.vgeo.lng, e.vgeo.lat]);
   map.getSource('route').setData({ type: 'FeatureCollection', features: pts.length > 1 ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: pts } }] : [] });
+  hopMarkers.forEach(m => m.remove()); hopMarkers = [];
+  for (let i = 1; i < evs.length; i++) {
+    const a = evs[i - 1], b = evs[i];
+    if (a.vkey === b.vkey) continue;
+    const w = walkMin(a.vgeo, b.vgeo), gap = b.start - a.end;
+    const el = document.createElement('div');
+    el.className = 'hop' + (gap < w && !a.long && !b.long ? ' late' : '');
+    el.title = `הליכה מ${a.place} אל ${b.place}, בערך ${w} דקות${gap < w ? ' (יותר מהזמן שיש בין האירועים)' : ''}`;
+    el.innerHTML = `${ICON.walk}${w} דק׳`;
+    const mk = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([(a.vgeo.lng + b.vgeo.lng) / 2, (a.vgeo.lat + b.vgeo.lat) / 2]).addTo(map);
+    mk._updateOpacity = () => {};  // the same graphics-card stall as the venue pictures
+    hopMarkers.push(mk);
+  }
 }
 
 /* ---------- timetable ---------- */
@@ -970,6 +988,7 @@ const ICON = {
   cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  walk: '<svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="m9 21 2.5-6 2.5 2v4M10.5 9.5 13 8l2.5 4 3 1M13 8l-1.5 6.5M10.5 9.5 7 11.5v3"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
   sat: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg>',
   sliders: '<svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>',
