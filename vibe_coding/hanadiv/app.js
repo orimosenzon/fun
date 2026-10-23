@@ -310,12 +310,28 @@ function setupMap() {
     }
   });
   map.on('click', () => closePopup());
-  // the pictures shrink as the map zooms out, so the whole moshava stays readable on a phone
-  const scale = () => map.getContainer().style.setProperty('--k', clamp(.62 + (map.getZoom() - 12.6) * .2, .6, 1.15).toFixed(3));
+  // The pictures shrink as the map zooms out, so the whole moshava stays readable on a phone.
+  // Zoomed right in they take on a real size on the ground, about a quarter of a house,
+  // and keep growing with the map until the picture is plain to see.
+  const scale = () => {
+    const z = map.getZoom();
+    const mpp = 156543 * Math.cos(map.getCenter().lat * Math.PI / 180) / 2 ** z / 2;  // metres per css pixel (512px tiles)
+    const k = Math.min(Math.max(clamp(.62 + (z - 12.6) * .2, .6, 1.15), GROUND_M / mpp / 34), 7);
+    const c = map.getContainer();
+    c.style.setProperty('--k', k.toFixed(3));
+    c.classList.toggle('close', k > 1.6);
+    if (S.popup && S.sel) S.popup.setOffset(popOffset(S.sel));
+  };
   map.on('zoom', scale); scale();
 }
 // flyTo's padding would stay on the map and skew every later move, so a fly takes the
 // same padding as a one-off offset of the centre instead
+const GROUND_M = 12;  // a picture's width on the ground, once zoomed in close
+// the popup clears the top of its place's picture, however big the picture has grown
+function popOffset(v) {
+  const m = markers.get(v.key);
+  return m && m.el.firstChild.offsetHeight ? m.el.firstChild.offsetHeight / 2 + 8 : 22;
+}
 const off = p => [(p.left - p.right) / 2, (p.top - p.bottom) / 2];
 function fitPad() {
   const wide = innerWidth >= 900;
@@ -456,7 +472,7 @@ function openVenue(v, fly) {
   S.focus = f;
   S.sel = v;
   if (!v.geo) return;
-  S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 22, focusAfterOpen: false, anchor: 'bottom' })
+  S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: popOffset(v), focusAfterOpen: false, anchor: 'bottom' })
     .setLngLat([v.geo.lng, v.geo.lat]).setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(v)).addTo(map);
   S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); } });
   if (fly) { map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), offset: off(fitPad()) }); map.once('moveend', fitPopup); }
