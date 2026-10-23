@@ -37,8 +37,8 @@ OUT_SIZE = (640, 400)
 # "gpu" runs the page in Chrome on the real graphics card, for scenes too heavy
 # for the software renderer. "frame" scrolls an element into view and crops the
 # shot to it (padded out to 16:10), shot at "dpr" device pixels so the crop
-# stays sharp. The point is a shot of the app doing its thing, not its start
-# screen.
+# stays sharp. "hash" is added to the URL, to open the app on a given state.
+# The point is a shot of the app doing its thing, not its start screen.
 ARROWS = ["ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]
 TWEAKS = {
     "2048": {"keys": ARROWS * 25, "wait": 1200},
@@ -53,6 +53,7 @@ TWEAKS = {
     "optimus": {"click": ["#go"], "wait": 6000},
     "roadster": {"click": ["#go"], "wait": 5000},
     "lagrange": {"frame": "#lab-mtn", "dpr": 2, "wait": 3000},
+    "hanadiv": {"hash": "#d=30&t=11:30", "wait": 9000},
     "phonebot": {"click": ["[data-mode=map]"], "frame": ".simgrid", "wait": 12000},
 }
 
@@ -144,8 +145,8 @@ def main():
         browser = pw.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         gpu = None
         for a, href, out in todo:
-            url = href if href.startswith("http") else base + href
             tweak = TWEAKS.get(a, {})
+            url = (href if href.startswith("http") else base + href) + tweak.get("hash", "")
             opts = {"viewport": VIEWPORT, "locale": "he-IL", "device_scale_factor": tweak.get("dpr", 1)}
             if tweak.get("gpu"):
                 gpu = gpu or pw.chromium.launch(channel="chrome", args=GPU_ARGS)
