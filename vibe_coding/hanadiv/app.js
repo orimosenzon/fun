@@ -417,6 +417,7 @@ function focusEvent(e) {
   // the popup sits above the place (and on a phone the sheet below it), so the place goes low on the screen
   const pad = { top: Math.min(wide ? 330 : 300, map.getContainer().clientHeight * .58), bottom: wide ? 20 : 140, left: 10, right: 10 };
   map.flyTo({ center: [e.vgeo.lng, e.vgeo.lat], zoom: Math.max(map.getZoom(), 15), offset: off(pad), duration: 700 });
+  map.once('moveend', fitPopup);
   drawMarkers(); markFocus(true);
 }
 function markFocus(scroll) {
@@ -458,9 +459,25 @@ function openVenue(v, fly) {
   S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: 22, focusAfterOpen: false, anchor: 'bottom' })
     .setLngLat([v.geo.lng, v.geo.lat]).setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(v)).addTo(map);
   S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); } });
-  if (fly) map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), offset: off(fitPad()) });
+  if (fly) { map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), offset: off(fitPad()) }); map.once('moveend', fitPopup); }
+  else requestAnimationFrame(fitPopup);
   if ($('#sheet').dataset.snap === 'full') snap('peek');
   drawMarkers();
+}
+/* A popup opened near the edge of the map would be cut off by the header (or hidden under
+   the sheet on a phone), so the map slides until all of it is in sight. */
+function fitPopup() {
+  if (!S.popup || !map) return;
+  const el = S.popup.getElement(); if (!el) return;
+  const r = el.getBoundingClientRect(), m = map.getContainer().getBoundingClientRect();
+  const sheet = innerWidth < 900 && !$('#sheet').hidden ? $('#sheet').getBoundingClientRect().top : m.bottom;
+  const top = m.top + 10, bottom = Math.min(m.bottom, sheet) - 10, left = m.left + 10, right = m.right - 10;
+  let dx = 0, dy = 0;
+  if (r.top < top) dy = r.top - top;
+  else if (r.bottom > bottom) dy = Math.min(r.bottom - bottom, r.top - top);
+  if (r.left < left) dx = r.left - left;
+  else if (r.right > right) dx = r.right - right;
+  if (dx || dy) map.panBy([dx, dy], { duration: 350 });
 }
 function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; S.focus = null; }
 
@@ -1166,7 +1183,7 @@ function setupEvents() {
     const vn = t.closest('[data-venue]');
     if (vn) { const v = S.venues.get(vn.dataset.venue); setView('map'); return v.geo && openVenue(v, true); }
     const det = t.closest('[data-detail]'); if (det) return openDetail(S.byId.get(det.dataset.detail));
-    if (t.closest('[data-venuelist]')) { S.focus = null; S.popup.setHTML(venueHTML(S.sel)); markFocus(); return drawMarkers(); }
+    if (t.closest('[data-venuelist]')) { S.focus = null; S.popup.setHTML(venueHTML(S.sel)); markFocus(); drawMarkers(); return requestAnimationFrame(fitPopup); }
     const evEl = t.closest('[data-ev]');
     if (evEl) {
       const e = S.byId.get(evEl.dataset.ev);
