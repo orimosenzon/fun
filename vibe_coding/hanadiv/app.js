@@ -266,6 +266,23 @@ function sky() {
 
 /* ---------- map ---------- */
 
+/* Two looks for the map, as in דרך קיצור: the aerial photograph (Esri's, free and keyless) laid
+   in under the street names, and a tilted view over the relief. The relief across the moshava
+   is only some 46 m, so it is exaggerated to read as anything. Both are remembered. */
+const SAT = {
+  type: 'raster', tileSize: 256, maxzoom: 18,  // Esri has no zoom 19 here, so 18 is stretched
+  tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+  attribution: 'Esri, Maxar, Earthstar Geographics',
+};
+const DEM = {
+  type: 'raster-dem', tileSize: 256, maxzoom: 14, encoding: 'terrarium',
+  tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+  attribution: 'Elevation: Mapzen / AWS Open Data',
+};
+const TILTED = 58, TERRAIN_X = 2.5;
+const LOOK = (() => { try { return JSON.parse(localStorage.getItem('hanadiv-look')) || {}; } catch (e) { return {}; } })();
+S.sat = !!LOOK.sat; S.tilt = !!LOOK.tilt;
+
 let map;
 const markers = new Map();
 function setupMap() {
@@ -276,10 +293,25 @@ function setupMap() {
   } catch (e) { /* mirrored labels are bad, a blank map is worse */ }
   map = new maplibregl.Map({
     container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: CENTER, zoom: 13.4,
+    center: CENTER, zoom: 13.4, pitch: S.tilt ? TILTED : 0, maxPitch: 75,
     attributionControl: { compact: true, customAttribution: `אורי מוסנזון · <a href="${SRC}" target="_blank" rel="noopener">GPL-3.0</a>` },
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
+  map.addControl({
+    onAdd() {
+      const box = document.createElement('div');
+      box.className = 'maplibregl-ctrl maplibregl-ctrl-group lookctl';
+      box.innerHTML = `<button type="button" id="satBtn" title="צילום אוויר" aria-label="צילום אוויר">${ICON.sat}</button>
+        <button type="button" id="tiltBtn" title="מבט בהטיה, תלת־ממד" aria-label="מבט בהטיה">3D</button>`;
+      box.querySelector('#satBtn').onclick = () => { S.sat = !S.sat; applyLook(); };
+      box.querySelector('#tiltBtn').onclick = () => {
+        S.tilt = !S.tilt; applyLook();
+        map.easeTo({ pitch: S.tilt ? TILTED : 0, bearing: S.tilt ? map.getBearing() : 0, duration: 700 });
+      };
+      return box;
+    },
+    onRemove() {},
+  }, 'top-right');
   const cc = map.getCanvasContainer();
   for (const k of ['shade', 'glow']) {
     const d = document.createElement('div');
@@ -297,6 +329,14 @@ function setupMap() {
     markers.set(v.key, { el, mk, v });
   }
   map.on('load', () => {
+    // the photograph goes in under the labels and the 3D buildings, so street names stay on top
+    map.addSource('sat', SAT);
+    map.addSource('dem', DEM);
+    const before = (map.getStyle().layers.find(l => l.type === 'symbol' || l.type === 'fill-extrusion') || {}).id;
+    map.addLayer({ id: 'sat', type: 'raster', source: 'sat', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } }, before);
+    applyLook();
+    // tilting with two fingers (or ctrl-drag) counts as asking for the 3D view
+    map.on('pitchend', () => { const t = map.getPitch() >= 10; if (t !== S.tilt) { S.tilt = t; applyLook(); } });
     map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addLayer({ id: 'route-case', type: 'line', source: 'route', paint: { 'line-color': '#fff', 'line-width': 7, 'line-opacity': .9 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
     map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': '#1d2b3a', 'line-width': 3.5, 'line-dasharray': [1.5, 1.2] }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
@@ -323,6 +363,17 @@ function setupMap() {
     if (S.popup && S.sel) S.popup.setOffset(popOffset(S.sel));
   };
   map.on('zoom', scale); scale();
+}
+function applyLook() {
+  try { localStorage.setItem('hanadiv-look', JSON.stringify({ sat: S.sat, tilt: S.tilt })); } catch (e) { /* private window */ }
+  $('#satBtn')?.classList.toggle('on', S.sat);
+  $('#tiltBtn')?.classList.toggle('on', S.tilt);
+  document.body.classList.toggle('sat', S.sat);
+  if (!map || !map.getLayer('sat')) return;
+  map.setLayoutProperty('sat', 'visibility', S.sat ? 'visible' : 'none');
+  // grey boxes standing on a photograph of the same roofs are noise
+  for (const l of map.getStyle().layers) if (l.type === 'fill-extrusion') map.setLayoutProperty(l.id, 'visibility', S.sat ? 'none' : 'visible');
+  map.setTerrain(S.tilt ? { source: 'dem', exaggeration: TERRAIN_X } : null);
 }
 // flyTo's padding would stay on the map and skew every later move, so a fly takes the
 // same padding as a one-off offset of the centre instead
@@ -798,6 +849,7 @@ const ICON = {
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
+  sat: '<svg viewBox="0 0 24 24"><path d="m12 3 9 4.5-9 4.5-9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   wa: '<svg viewBox="0 0 24 24"><path d="M3.5 20.5 4.8 16A8.6 8.6 0 1 1 8 19.2z"/><path d="M9 8.2c.2 3.4 3.3 6.5 6.8 6.8l1-1.6-2.1-1-1 .9c-1.1-.5-2.4-1.8-2.9-2.9l.9-1-1-2.1z"/></svg>',
 };
