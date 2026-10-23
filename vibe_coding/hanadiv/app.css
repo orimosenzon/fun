@@ -8,6 +8,10 @@
   --accent: #f6a11b;
   --accent-ink: #9a5b00;
   --now: #e8463b;
+  --mine: #ffd23f;          /* my plan: a yellow gold, apart from the music orange */
+  --mine-ink: #7a5600;
+  --mine-glow: rgba(255, 200, 30, .75);
+  --mine-bg: #fff8dc;
   --sky: #fdf3df;
   --radius: 14px;
   --shadow: 0 6px 24px rgba(29, 43, 58, .14);
@@ -119,60 +123,83 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 #map .maplibregl-canvas { transition: filter .5s; }
 .maplibregl-ctrl-attrib { font-size: 10px; }
 
-/* venue markers */
-#map { direction: ltr; }
-.vm { width: 0; height: 0; cursor: pointer; }
+/* venue markers: the event's picture inside a ring of its kind's colour */
+#map { direction: ltr; --k: .8; }
+.vm { width: 0; height: 0; cursor: pointer; --s: 30px; }
 .vm .dot {
   position: absolute; transform: translate(-50%, -50%); border-radius: 50%;
-  transition: width .25s, height .25s, opacity .25s, background .25s, border-color .25s;
-  display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 12px;
+  width: calc(var(--s) * var(--k)); height: calc(var(--s) * var(--k));
+  background: var(--c); border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .35);
+  transition: width .25s, height .25s, opacity .25s, background .25s, transform .2s, box-shadow .2s;
 }
-.vm.idle .dot { width: 9px; height: 9px; background: #9aa3ab; border: 1.5px solid #fff; opacity: .8; }
-.vm.done .dot { width: 7px; height: 7px; background: #c2c7cc; border: 1px solid #fff; opacity: .6; }
-.vm.soon .dot {
-  width: 22px; height: 22px; background: rgba(255, 255, 255, .92); border: 3px solid var(--c);
-  color: var(--ink); font-size: 9px; font-weight: 700;
+.vm .img {
+  position: absolute; inset: max(2px, calc(3.5px * var(--k))); border-radius: 50%;
+  background: #e9e3d8 center/cover no-repeat;
 }
-.vm.live .dot {
-  width: 30px; height: 30px; background: var(--c); border: 2.5px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+.vm .lbl:empty { display: none; }
+.vm .lbl {
+  position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); min-width: 18px; padding: 0 4px;
+  height: 16px; line-height: 16px; border-radius: 8px; text-align: center; font-size: 10.5px; font-weight: 700;
+  background: var(--c); color: #fff; border: 1.5px solid #fff; white-space: nowrap; font-family: Rubik, sans-serif;
 }
+.vm.idle { --s: 28px; }
+.vm.idle .dot { opacity: .82; }
+.vm.idle .img { filter: saturate(.75); }
+.vm.done { --s: 11px; }
+.vm.done .dot { background: #c2c7cc; opacity: .7; box-shadow: none; border-width: 1.5px; }
+.vm.done .img { display: none; }
+.vm.soon { --s: 38px; z-index: 2; }
+.vm.live { --s: 46px; z-index: 3; }
+.vm.live.multi { --s: 50px; }
+.vm.live .dot { border-width: 2.5px; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); }
 .vm.live .dot::after {
-  content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--c);
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid var(--c);
   animation: pulse 1.8s ease-out infinite; pointer-events: none;
 }
-.vm.live.multi .dot { width: 34px; height: 34px; }
+.vm.live.multi .lbl { bottom: auto; top: -6px; left: auto; right: -8px; transform: none; background: var(--ink); }
 .vm.sel .dot { outline: 3px solid var(--ink); outline-offset: 2px; }
-.vm.plan .dot::before {
-  content: '★'; position: absolute; top: -9px; inset-inline-end: -9px; font-size: 13px; color: var(--accent);
-  text-shadow: 0 0 2px #fff, 0 0 2px #fff; font-weight: 400;
-}
 .vm.hide { display: none; }
-.vm.mine .dot { width: 28px; height: 28px; background: var(--c); border: 2.5px solid #fff; opacity: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
-.vm.mine.live .dot, .vm.mine.multi .dot { width: 34px; height: 34px; }
-.vm.mine.soon .dot { color: #fff; }
-.vm.focus { z-index: 6; }
+/* my plan: a gold halo and a star, on every view of the map */
+.vm.plan { z-index: 4; }
+.vm.plan .dot {
+  border-color: var(--mine);
+  box-shadow: 0 0 0 2px #fff, 0 0 14px 5px var(--mine-glow);
+  animation: glow 2.2s ease-in-out infinite;
+}
+.vm.plan .dot::before {
+  content: '★'; position: absolute; top: -10px; right: -9px; width: 19px; height: 19px; border-radius: 50%;
+  background: var(--mine); color: var(--ink); font-size: 12px; line-height: 19px; text-align: center;
+  border: 1.5px solid #fff; z-index: 1; font-family: system-ui, sans-serif;
+}
+.vm.plan.multi .lbl { right: auto; left: -8px; }
+.vm.idle.plan .dot { opacity: 1; }
+.vm.idle.plan .img { filter: none; }
+.vm.mine { --s: 40px; }
+.vm.mine.live { --s: 50px; }
+.vm.mine.over .dot { opacity: .55; }
+.vm.mine.over .img { filter: grayscale(.8); }
+.vm.focus { z-index: 6; --s: 60px; }
 .vm.focus .dot {
-  width: 38px; height: 38px; background: var(--c); border: 3px solid #fff; opacity: 1; color: #fff;
+  opacity: 1; border-width: 3px;
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 45%, transparent), 0 0 30px 12px color-mix(in srgb, var(--c) 65%, transparent);
 }
+.vm.focus .img { filter: none; }
 .vm.focus .dot::after {
-  content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--c);
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid var(--c);
   animation: pulse 1.4s ease-out infinite; pointer-events: none;
 }
 .vm.hl { z-index: 7; }
-.vm.hl .dot { transform: translate(-50%, -50%) scale(1.5); box-shadow: 0 0 0 3px var(--ink), 0 4px 14px rgba(0, 0, 0, .35); opacity: 1; }
-.vm .dot { transition: width .25s, height .25s, opacity .25s, background .25s, border-color .25s, transform .2s, box-shadow .2s; }
-@keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(2.1); opacity: 0; } }
-.vm.live { z-index: 3; }
-.vm.soon { z-index: 2; }
+.vm.hl .dot { transform: translate(-50%, -50%) scale(1.35); box-shadow: 0 0 0 3px var(--ink), 0 4px 14px rgba(0, 0, 0, .35); opacity: 1; }
+@keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+@keyframes glow { 50% { box-shadow: 0 0 0 2px #fff, 0 0 22px 9px var(--mine-glow); } }
 .medot {
   width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff;
   box-shadow: 0 0 0 6px rgba(26, 115, 232, .25);
 }
 .planno {
   width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px;
-  font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; transform: translate(14px, -16px);
+  font-weight: 700; display: grid; place-items: center; border: 2px solid #fff;
+  transform: translate(calc(-50% - 15px * var(--k) - 6px), calc(-50% - 15px * var(--k) - 4px)); position: absolute; z-index: 2;
   pointer-events: none;
 }
 
@@ -297,8 +324,6 @@ body.view-grid #sheet { display: none; }
 .gt .bar.lane0.split { height: 21px; }
 .gt .bar.split span { display: none; }
 .gt .bar.past { opacity: .4; }
-.gt .bar.planned { box-shadow: 0 0 0 2px var(--accent), 0 1px 2px rgba(0, 0, 0, .15); }
-.gt .bar.planned b::before { content: '★ '; }
 .gt .nowline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--now); z-index: 1; pointer-events: none; }
 .gt .grid-hour { position: absolute; top: 26px; bottom: 0; width: 1px; background: #eee6d8; }
 
@@ -451,3 +476,97 @@ body.view-grid #sheet { display: none; }
 
 /* touch screens zoom with two fingers; the buttons are clutter there */
 @media (pointer: coarse) { .maplibregl-ctrl-top-left { display: none; } }
+
+/* ---------- my plan, wherever it shows ---------- */
+#views b.bump { animation: bump .5s; }
+@keyframes bump { 40% { transform: scale(1.5); } }
+#toast { display: flex; align-items: center; gap: 12px; }
+#toast[hidden] { display: none; }
+#toast button { color: var(--mine); font-weight: 700; padding: 0 2px; }
+
+/* the strip */
+#stripSvg .mineband { fill: var(--mine); stroke: var(--ink); stroke-width: 1.2; filter: drop-shadow(0 0 3px var(--mine-glow)); }
+
+/* day tabs */
+.mystars { font-size: 11px; font-weight: 700; color: var(--mine-ink); background: var(--mine); border-radius: 8px; padding: 0 5px; margin-inline-start: 2px; }
+#days button.on .mystars { color: var(--ink); }
+
+/* list cards */
+.ev.mine {
+  border-color: var(--mine); background: linear-gradient(to left, var(--mine-bg), #fff 70%);
+  box-shadow: 0 0 0 1.5px var(--mine), 0 0 14px 1px var(--mine-glow);
+}
+.ev.mine.focus { box-shadow: 0 0 0 2.5px var(--c), 0 0 16px 2px var(--mine-glow); }
+.ev.mine.past { opacity: .6; box-shadow: 0 0 0 1.5px var(--mine); }
+.ev.mine .star.on { color: #e0a800; filter: drop-shadow(0 0 4px var(--mine-glow)); }
+.tag.clash { background: #fde6e4; color: #b62a20; }
+.tag.minetag { background: var(--mine); color: var(--ink); font-weight: 700; }
+
+/* the banner: what of mine is on or next */
+.mynext {
+  display: grid; grid-template-columns: 62px 1fr; gap: 12px; align-items: center; cursor: pointer;
+  margin: 4px 0 10px; padding: 10px; border-radius: 16px; position: relative; overflow: hidden;
+  background: linear-gradient(120deg, #2a3a4c, var(--ink)); color: #fff;
+  box-shadow: 0 0 0 2px var(--mine), 0 4px 18px var(--mine-glow);
+}
+.mynext .ph { width: 62px; height: 62px; border-radius: 50%; background: var(--c) center/cover no-repeat; border: 3px solid var(--c); box-shadow: 0 0 0 2px var(--mine); }
+.mynext .body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mynext small { color: var(--mine); font-weight: 700; font-size: 12.5px; }
+.mynext b { font-size: 16px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mynext span { font-size: 12.5px; color: #c9d2db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mynext em { font-style: normal; font-size: 12.5px; color: #fff; }
+.mynext em.go { color: #ffb4ad; font-weight: 700; animation: blink 1.4s infinite; }
+.mynext .rest { color: #9fb0c0; font-size: 12px; }
+.mynext.live small::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--now); margin-inline-end: 6px; animation: blink 1.4s infinite; }
+
+/* the plan view */
+.planday { margin-bottom: 6px; }
+.planday h4 { display: flex; justify-content: space-between; align-items: baseline; cursor: pointer; }
+.planday h4 span { color: var(--ink); font-weight: 700; font-size: 15px; }
+.planday h4 small { font-size: 12px; color: var(--ink3); }
+.planday.today h4 span::after { content: ' · מוצג'; color: var(--accent-ink); font-weight: 500; font-size: 12px; }
+.pmini { position: relative; height: 30px; background: #f3efe7; border-radius: 8px; margin: 0 0 10px; overflow: hidden; }
+.pmini u { position: absolute; bottom: 1px; transform: translateX(50%); font-size: 9.5px; color: var(--ink3); text-decoration: none; font-variant-numeric: tabular-nums; }
+.pmini u::before { content: ''; position: absolute; bottom: 12px; left: 50%; height: 30px; width: 1px; background: #e2dacb; }
+.pmini b { position: absolute; top: 4px; height: 13px; border-radius: 4px; background: var(--c); box-shadow: 0 0 0 1.5px var(--mine), 0 0 6px var(--mine-glow); cursor: pointer; }
+.pmini i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--now); }
+.gapfit {
+  display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 8px; padding: 8px 12px; border-radius: 12px;
+  border: 1.5px dashed #d8cdb8; color: var(--accent-ink); font-size: 13.5px; font-weight: 500; text-align: start;
+}
+.gapfit svg { width: 16px; height: 16px; flex: none; }
+.gapfit.on { border-style: solid; border-color: var(--accent); background: #fff8ea; }
+.fitlist { padding: 0 0 4px 0; margin: -2px 0 10px; border-inline-start: 3px solid #f3e2bf; padding-inline-start: 8px; }
+.planhelp { background: var(--mine-bg); border: 1px solid #f2dc8a; border-radius: var(--radius); padding: 4px 14px; font-size: 14px; line-height: 1.55; }
+.planhelp ol { padding-inline-start: 20px; margin: 4px 0 10px; }
+.planhelp li { margin-bottom: 4px; }
+
+/* popups and a place's schedule */
+.pop li.mine { background: var(--mine-bg); border-radius: 6px; padding-inline: 4px; }
+.pop li .ms { color: #e0a800; margin-inline-start: auto; }
+.epop.mine .pph { box-shadow: inset 0 0 0 3px var(--mine); }
+.myflag { display: inline-block; background: var(--mine); color: var(--ink); font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-bottom: 4px; }
+.srow.mine { background: var(--mine-bg); box-shadow: inset 0 0 0 1.5px var(--mine); border-radius: 6px; }
+.srow.mine .star.on { color: #e0a800; }
+.clashnote { margin: 8px 0 0; font-size: 13.5px; color: #b62a20; background: #fdeceb; border-radius: 10px; padding: 7px 10px; }
+
+/* the timetable */
+.gt .bar.planned {
+  z-index: 1; border: 2px solid var(--mine);
+  box-shadow: 0 0 0 1.5px var(--ink), 0 0 14px 4px var(--mine-glow);
+  animation: barglow 2.2s ease-in-out infinite;
+}
+.gt .bar.planned b::before { content: '★ '; color: var(--mine); }
+.gt .bar.planned.past { opacity: .6; animation: none; }
+.gt .myrow .bar.planned { animation: none; box-shadow: 0 0 0 1.5px var(--ink), 0 0 8px 2px var(--mine-glow); }
+@keyframes barglow { 50% { box-shadow: 0 0 0 1.5px var(--ink), 0 0 22px 8px var(--mine-glow); } }
+.gt .row.hasmine .vname b s { text-decoration: none; color: #e0a800; margin-inline-end: 3px; }
+.gt .row.myrow {
+  position: sticky; top: 26px; z-index: 2; background: var(--mine-bg) !important;
+  border-bottom: 2px solid var(--mine); box-shadow: 0 3px 8px rgba(29, 43, 58, .08);
+}
+.gt .row.myrow .vname { background: linear-gradient(to left, var(--mine-bg) 85%, transparent); color: var(--mine-ink); }
+.gt .row.myrow .vname b { color: var(--ink); }
+.gt .row.myrow.empty .vname { width: min(92vw, 440px); display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+.gt .row.myrow.empty .vname b { flex: none; }
+.gt .row.myrow.empty .vname span { overflow: hidden; text-overflow: ellipsis; font-size: 12px; }

@@ -220,6 +220,11 @@ function drawStrip() {
     }
   }
   out += `<line x1="${PAD}" x2="${W - PAD}" y1="${base}" y2="${base}" stroke="#000" stroke-opacity=".15"/>`;
+  // my plan rides on top of the strip, so dragging the clock shows when I am busy
+  for (const e of planList().filter(e => e.date === S.day && !e.long)) {
+    const x1 = xOf(Math.min(e.end, S.hi), W), x2 = xOf(e.start, W);
+    out += `<rect class="mineband" x="${x1}" y="${base - 7}" width="${Math.max(x2 - x1, 5)}" height="7" rx="3"/>`;
+  }
   svg.innerHTML = out;
   placePlayhead();
 }
@@ -286,7 +291,7 @@ function setupMap() {
     if (!v.geo) continue;
     const el = document.createElement('div');
     el.className = 'vm hide';
-    el.innerHTML = '<div class="dot"></div>';
+    el.innerHTML = '<div class="dot"><i class="img"></i><span class="lbl"></span></div>';
     el.addEventListener('click', ev => { ev.stopPropagation(); S.focus = null; openVenue(v); markFocus(); });
     const mk = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([v.geo.lng, v.geo.lat]).addTo(map);
     markers.set(v.key, { el, mk, v });
@@ -305,6 +310,9 @@ function setupMap() {
     }
   });
   map.on('click', () => closePopup());
+  // the pictures shrink as the map zooms out, so the whole moshava stays readable on a phone
+  const scale = () => map.getContainer().style.setProperty('--k', clamp(.62 + (map.getZoom() - 12.6) * .2, .6, 1.15).toFixed(3));
+  map.on('zoom', scale); scale();
 }
 // flyTo's padding would stay on the map and skew every later move, so a fly takes the
 // same padding as a one-off offset of the centre instead
@@ -322,34 +330,47 @@ function drawMarkers() {
   const planDay = S.view === 'plan' ? planList().filter(e => e.date === S.day) : null;
   const planVenues = new Map();
   if (planDay) planDay.forEach((e, i) => { if (!planVenues.has(e.vkey)) planVenues.set(e.vkey, i + 1); });
+  // a place shows the picture of the event that matters at the playhead: what is on, else what
+  // starts next. Among those, one of mine wins, so the map shows my evening first.
+  const pick = list => list.find(e => S.plan.has(e.id)) || list[0];
   for (const { el, v } of markers.values()) {
     const evs = v.events.filter(e => e.date === S.day && passes(e));
     const dot = el.firstChild;
-    let cls = 'hide', txt = '', color = '#9aa3ab';
+    let cls = 'hide', txt = '', rep = null;
     if (evs.length) {
       const live = evs.filter(e => status(e) === 'live');
       const liveShort = live.filter(e => !e.long);
       const soon = evs.filter(e => status(e) === 'soon');
+      const later = evs.filter(e => status(e) === 'later');
       if (live.length) {
         cls = 'live' + (liveShort.length > 1 ? ' multi' : '');
-        color = (liveShort[0] || live[0]).c;
+        rep = pick(liveShort.length ? liveShort : live);
         txt = liveShort.length > 1 ? liveShort.length : '';
       } else if (soon.length) {
-        cls = 'soon'; color = soon[0].c; txt = `${soon[0].start - S.t}′`;
-      } else cls = evs.some(e => status(e) === 'later') ? 'idle' : 'done';
+        cls = 'soon'; rep = pick(soon); txt = `${rep.start - S.t}′`;
+      } else if (later.length) { cls = 'idle'; rep = pick(later); }
+      else { cls = 'done'; rep = evs.at(-1); }
     }
-    // the map shows what is on at the playhead; the plan adds stars, numbers and the route,
-    // and "only mine" leaves just the planned places, each in its event's colour
+    // the plan adds a glow and a star; "only mine" leaves just the planned places
     const mine = evs.filter(e => S.plan.has(e.id));
-    if (mine.length) cls += ' plan';
+    const myNow = mine.filter(e => status(e) !== 'past');
+    if (myNow.length) cls += ' plan';
     if (onlyMine()) {
       if (!mine.length) cls = 'hide';
-      else { cls = cls.replace(/\b(idle|done|hide)\b/, '') + ' mine'; if (!/live|soon/.test(cls)) color = mine[0].c; }
+      else {
+        cls = cls.replace(/\b(idle|done|hide)\b/, '') + ' mine';
+        if (!/live|soon/.test(cls)) { rep = myNow[0] || mine.at(-1); if (!myNow.length) cls += ' over'; }
+      }
     }
     if (S.sel && S.sel.key === v.key) cls += ' sel';
+    if (S.focus && S.focus.vkey === v.key) rep = S.focus;
     el.className = 'vm ' + cls;
-    el.style.setProperty('--c', color);
-    if (dot.textContent !== String(txt)) dot.textContent = txt;
+    el.style.setProperty('--c', rep ? rep.c : '#9aa3ab');
+    const img = rep && rep.photos[0] ? rep.photos[0].thumb : '';
+    if (el.dataset.img !== img) { el.dataset.img = img; dot.firstChild.style.backgroundImage = img ? `url("${img}")` : ''; }
+    el.title = rep ? rep.name : '';
+    const lbl = dot.lastChild;
+    if (lbl.textContent !== String(txt)) lbl.textContent = txt;
     let badge = el.querySelector('.planno');
     const no = planDay && planVenues.get(v.key);
     if (no) { if (!badge) { badge = document.createElement('div'); badge.className = 'planno'; el.appendChild(badge); } badge.textContent = no; }
@@ -359,8 +380,7 @@ function drawMarkers() {
     const m = markers.get(S.focus.vkey);
     if (m) {
       m.el.classList.add('focus');
-      m.el.classList.remove('hide', 'idle', 'done');
-      m.el.style.setProperty('--c', S.focus.c);
+      m.el.classList.remove('hide', 'done');
     }
   }
   if (S.popup && S.sel) S.popup.setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(S.sel));
@@ -370,7 +390,7 @@ function eventPopHTML(e) {
   const r = e.date === S.day ? relLabel(e) : null;
   const more = e.venue.events.filter(o => o.date === S.day && o.id !== e.id).length;
   const ph = e.photos[0] ? `<div class="pph" style="background-image:url('${esc(e.photos[0].thumb)}')"></div>` : '';
-  return `<div class="pop epop" style="--c:${e.c}">${ph}
+  return `<div class="pop epop ${isMine(e) ? 'mine' : ''}" style="--c:${e.c}">${ph}${isMine(e) ? '<div class="myflag">★ בתוכנית שלך</div>' : ''}
     <div class="kind">${esc(e.group)}${e.craft && e.craft !== e.group ? ' · ' + esc(e.craft) : ''}</div>
     <h4>${esc(e.name)}</h4>
     <div class="addr">${dayName(e.date, true)} ${rng(e.start, e.end)}${r ? ` <span class="tag ${r.cls}">${r.txt}</span>` : ''}</div>
@@ -423,7 +443,7 @@ function venueHTML(v) {
   const now = `<i style="right:${(S.t - S.lo) / W * 100}%"></i>`;
   const items = evs.map(e => {
     const st = status(e);
-    return `<li class="${st}" data-ev="${e.id}"><span class="h">${hm(e.start)}</span><span class="n" style="color:${e.c}">●</span><span class="n">${esc(e.name)}</span></li>`;
+    return `<li class="${st} ${isMine(e) ? 'mine' : ''}" data-ev="${e.id}"><span class="h">${hm(e.start)}</span><span class="n" style="color:${e.c}">●</span><span class="n">${esc(e.name)}</span>${isMine(e) ? '<span class="ms">★</span>' : ''}</li>`;
   }).join('') || `<li>אין אירועים ב${dayName(S.day, true)}. ${v.events.length} בימים אחרים.</li>`;
   return `<div class="pop"><h4>${esc(v.title)}</h4><div class="addr">${esc(v.stages.length > 1 ? v.stages.length + ' במות' : v.street)}</div>
     ${evs.length ? `<div class="mini">${bars}${now}</div>` : ''}<ul>${items}</ul>
@@ -454,11 +474,13 @@ function card(e, opts = {}) {
   const kid = e.audience !== 'רק למבוגרים' ? `<span class="tag kid">${e.audience === 'רק לילדים' ? 'לילדים' : 'למשפחה'}</span>` : '';
   const prog = st === 'live' && !e.long ? `<div class="prog" style="width:${(S.t - e.start) / e.dur * 100}%"></div>` : '';
   const day = opts.showDay ? `${dayName(e.date, true)} · ` : '';
-  return `<div class="ev ${opts.dim && st === 'past' ? 'past' : ''}" data-ev="${e.id}" style="--c:${e.c}">
+  const clash = !opts.noClash && S.plan.size ? clashWith(e) : null;
+  const cl = clash ? `<span class="tag clash" title="${esc(clash.name)}">חופף לתוכנית</span>` : '';
+  return `<div class="ev ${opts.dim && st === 'past' ? 'past' : ''} ${isMine(e) ? 'mine' : ''}" data-ev="${e.id}" style="--c:${e.c}">
     <div class="ph" style="${ph}"></div>
     <div class="body"><div class="nm">${esc(e.name)}</div>
       <div class="where">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}${e.vgeo ? '' : ' · לא על המפה'}</div>
-      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}</div></div>
+      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}${cl}</div></div>
     <button class="star ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}" aria-label="לתוכנית שלי">${STAR}</button>${prog}</div>`;
 }
 const STAR = '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
@@ -468,7 +490,7 @@ function byNear(a, b) {
   return (a.vgeo ? dist(S.me, a.vgeo) : 1e9) - (b.vgeo ? dist(S.me, b.vgeo) : 1e9);
 }
 
-function drawList() { $('#sheetBody').innerHTML = listHTML(); markFocus(); }
+function drawList() { $('#sheetBody').innerHTML = myNextHTML() + listHTML(); markFocus(); }
 function listHTML() {
   const evs = dayEvents();
   const live = evs.filter(e => status(e) === 'live' && !e.long).sort((a, b) => byNear(a, b) || a.end - b.end);
@@ -516,21 +538,81 @@ function updatedLabel() {
 /* ---------- my plan ---------- */
 
 const onlyMine = () => S.view === 'plan' && S.onlyMine && S.plan.size > 0;
-function planList() { return [...S.plan].map(id => S.byId.get(id)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start); }
+let planMemo = null;
+function planList() { return planMemo || (planMemo = [...S.plan].map(id => S.byId.get(id)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)); }
+const isMine = e => S.plan.has(e.id);
+// the planned event that an unplanned one would collide with
+const clashWith = e => isMine(e) ? null : planList().find(o => o.date === e.date && o.start < e.end && e.start < o.end && !o.long && !e.long) || null;
+// what of mine is on or still to come at the playhead, on the chosen day
+function myNext() {
+  const left = planList().filter(e => e.date === S.day && e.end > S.t && !e.long);
+  return left.find(e => e.start <= S.t) || left[0] || null;
+}
 function savePlan() {
+  planMemo = null;
   try { localStorage.setItem('hanadiv-plan', JSON.stringify([...S.plan])); } catch (e) { /* private window */ }
   const n = S.plan.size;
   $('#planCount').textContent = n || '';
 }
 function toggleStar(id) {
   const e = S.byId.get(id);
-  if (S.plan.has(id)) { S.plan.delete(id); toast('הוסר מהתוכנית'); }
-  else {
+  if (S.plan.has(id)) {
+    S.plan.delete(id);
+    toast('הוסר מהתוכנית', { label: 'ביטול', fn: () => { S.plan.add(id); savePlan(); render(); redrawAll(); redrawDetail(); } });
+  } else {
     S.plan.add(id);
+    planMemo = null;
     const clash = planList().find(o => o.id !== id && o.date === e.date && o.start < e.end && e.start < o.end);
-    toast(clash ? `נוסף, אבל חופף ל"${clash.name}"` : 'נוסף לתוכנית שלך ★');
+    toast(clash ? `נוסף, אבל חופף ל"${clash.name}"` : `נוסף לתוכנית שלך ★ (${S.plan.size})`);
+    const b = $('#planCount'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
   }
-  savePlan(); render();
+  savePlan(); render(); redrawAll();
+}
+// the plan shows on the timetable, the strip and the day tabs too
+function redrawAll() { drawStrip(); drawDays(); if (S.view === 'grid') { const g = $('#grid'), x = g.scrollLeft, y = g.scrollTop; drawGrid(); g.scrollLeft = x; g.scrollTop = y; } }
+
+/* The banner at the top of the list: what of mine is on now or next, and when to leave for it. */
+function myNextHTML() {
+  const e = myNext(); if (!e) return '';
+  const st = status(e);
+  const ph = e.photos[0] ? `background-image:url('${esc(e.photos[0].thumb)}')` : '';
+  const w = S.me && e.vgeo ? walkMin(S.me, e.vgeo) : null;
+  const head = st === 'live' ? `עכשיו בתוכנית שלך · עד ${hm(e.end)}` : `הבא בתוכנית שלך · ${e.start === S.t ? 'מתחיל עכשיו' : 'בעוד ' + mins(e.start - S.t)}`;
+  let go = '';
+  if (w != null && st !== 'live') go = e.start - w <= S.t ? `<em class="go">לצאת עכשיו · ${w} דק׳ הליכה</em>` : `<em>לצאת ב-${hm(e.start - w)} · ${w} דק׳ הליכה</em>`;
+  const rest = planList().filter(o => o.date === S.day && o.start > e.start && !o.long).length;
+  return `<div class="mynext ${st}" data-ev="${e.id}" style="--c:${e.c}"><div class="ph" style="${ph}"></div>
+    <div class="body"><small>★ ${head}</small><b>${esc(e.name)}</b>
+      <span>${rng(e.start, e.end)} · ${esc(e.place)}</span>${go}
+      ${rest ? `<span class="rest">ואחריו עוד ${rest} בתוכנית היום</span>` : ''}</div></div>`;
+}
+
+// walking time between two events, guessing ten minutes when one of them is not on the map
+const hop = (a, b) => a.vgeo && b.vgeo ? (a.vkey === b.vkey ? 0 : walkMin(a.vgeo, b.vgeo)) : 10;
+/* Events that fit in a free window of the plan, with the walk there and on to the next. */
+function fits(prev, next, d) {
+  return S.events.filter(o => o.date === d && !isMine(o) && !o.long && passes(o)
+    && (!prev || o.start >= prev.end + hop(prev, o))
+    && (!next || o.end + hop(o, next) <= next.start)
+    && !(d === S.day && o.start < S.t))
+    .sort((a, b) => a.start - b.start || (prev ? hop(prev, a) - hop(prev, b) : 0));
+}
+function gapHTML(prev, next, d, label) {
+  const key = `${d}:${prev ? prev.id : ''}>${next ? next.id : ''}`;
+  const f = fits(prev, next, d);
+  if (!f.length) return '';
+  const open = S.openGap === key;
+  let h = `<button class="gapfit ${open ? 'on' : ''}" data-gap="${esc(key)}">${ICON.plus}${label} · ${f.length} אירועים${open ? ' ▴' : ' ▾'}</button>`;
+  if (open) h += `<div class="fitlist">${f.slice(0, 8).map(o => card(o, { noRel: true, noClash: true })).join('')}${f.length > 8 ? `<div class="empty" style="font-size:12.5px">ועוד ${f.length - 8}. אפשר לצמצם עם הסינון למעלה.</div>` : ''}</div>`;
+  return h;
+}
+function planMini(evs, d) {
+  const W = S.hi - S.lo;
+  let h = '';
+  for (let t = Math.ceil((S.lo + 60) / 120) * 120; t < S.hi - 30; t += 120) h += `<u style="right:${(t - S.lo) / W * 100}%">${hm(t)}</u>`;
+  h += evs.map(e => `<b style="--c:${e.c};right:${(e.start - S.lo) / W * 100}%;width:${Math.max(Math.min(e.dur, S.hi - e.start) / W * 100, 1.5)}%" data-ev="${e.id}" title="${esc(e.name)}"></b>`).join('');
+  if (d === S.day) h += `<i style="right:${(S.t - S.lo) / W * 100}%"></i>`;
+  return `<div class="pmini">${h}</div>`;
 }
 
 function drawPlan() {
@@ -543,15 +625,23 @@ function drawPlan() {
   }
   const list = planList();
   if (!list.length) {
-    h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="empty">עוד ריקה. לוחצים על ★ ליד אירוע ברשימה למטה, והוא נכנס לכאן לפי שעות, עם זמן ההליכה בין אירוע לאירוע ואזהרה כששניים מתנגשים. אפשר לשלוח את התוכנית לחברים בקישור.</div>`;
+    h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="planhelp">
+      <p><b>בונים תוכנית בשלושה צעדים:</b></p>
+      <ol><li>לוחצים ★ ליד כל אירוע שרוצים: ברשימה, בבועה על המפה, בכרטיס האירוע או בלוח הזמנים של מקום.</li>
+      <li>כאן הם מסתדרים לפי שעות, עם זמן ההליכה ביניהם ואזהרה כששניים מתנגשים, ובין אירוע לאירוע מוצע מה עוד נכנס בחלון.</li>
+      <li>התוכנית זוהרת בכל האפליקציה: על המפה, בלוח הזמנים, בפס השעות ובימים. ואפשר לשלוח אותה לחברים בקישור.</li></ol></div>`;
     $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus(); return;
   }
+  h += myNextHTML();
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
     <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
   for (const d of S.days) {
-    const evs = list.filter(e => e.date === d);
-    if (!evs.length) continue;
-    h += `<div class="planday"><h4>${dayName(d)}</h4>`;
+    const all = list.filter(e => e.date === d);
+    if (!all.length) continue;
+    const evs = all.filter(e => !e.long), long = all.filter(e => e.long);
+    const mins_ = evs.reduce((a, e) => a + e.dur, 0);
+    h += `<div class="planday ${d === S.day ? 'today' : ''}"><h4 data-day="${d}"><span>${dayName(d)}</span><small>${all.length} אירועים${mins_ ? ' · ' + mins(mins_) : ''}</small></h4>${planMini(all, d)}`;
+    if (evs[0]) h += gapHTML(null, evs[0], d, 'מה אפשר לפני');
     evs.forEach((e, i) => {
       h += card(e, { noRel: d !== S.day, dim: true });
       const nx = evs[i + 1];
@@ -564,7 +654,10 @@ function drawPlan() {
       else if (walk != null && walk + 5 > gap) { cls = 'tight'; txt = `צפוף: ${mins(walk)} הליכה, ${mins(gap)} ביניהם`; }
       else txt = `${gap ? mins(gap) + ' הפסקה' : 'מיד אחרי'}${walk ? ` · ${mins(walk)} הליכה` : walk === 0 ? ' · באותו מקום' : ''}`;
       h += `<div class="gap ${cls}">${txt}</div>`;
+      if (gap >= 30) h += gapHTML(e, nx, d, 'מה נכנס בחלון');
     });
+    if (evs.length) h += gapHTML(evs.at(-1), null, d, 'מה אפשר אחרי');
+    if (long.length) h += `<div class="sec"><h3 style="font-size:14px">פתוח לאורך היום</h3></div>` + long.map(e => card(e, { noRel: true })).join('');
     h += '</div>';
   }
   if (S.onlyMine) h += `<div class="empty">על המפה מופיעים רק המקומות שבתוכנית, ממוספרים לפי הסדר. <button class="more" data-onlymine>להציג גם את כל השאר</button></div>`;
@@ -594,6 +687,7 @@ function drawGrid() {
   // places with something on now or next come first, places whose day is over go last
   const key = list => Math.min(...list.map(e => (e.end <= S.t ? 1e5 + e.start : Math.max(e.start, S.t)) + (e.long ? 5000 : 0)));
   const ordered = [...rows.values()].sort((a, b) => key(a) - key(b) || a[0].start - b[0].start);
+  h += myRowHTML(X);
   for (const list of ordered) {
     const lanes = [];
     for (const e of list) {
@@ -604,7 +698,8 @@ function drawGrid() {
     }
     const n = lanes.length, rowH = Math.max(54, n * 28 + 12), bh = (rowH - 12) / n - 2;
     const v = list[0].venue;
-    h += `<div class="row" style="height:${rowH}px"><div class="vname" data-place="${esc(v.key)}" title="לוח הזמנים של המקום"><b>${esc(v.title)}</b>${esc(v.stages.length > 1 ? v.stages.length + ' במות' : v.street !== v.place ? v.street : '')}</div>`;
+    const vmine = list.some(isMine);
+    h += `<div class="row ${vmine ? 'hasmine' : ''}" style="height:${rowH}px"><div class="vname" data-place="${esc(v.key)}" title="לוח הזמנים של המקום"><b>${vmine ? '<s>★</s>' : ''}${esc(v.title)}</b>${esc(v.stages.length > 1 ? v.stages.length + ' במות' : v.street !== v.place ? v.street : '')}</div>`;
     for (const e of list) {
       const w = Math.max(Math.min(e.dur, S.hi - e.start) * PPM - 3, 16);
       h += `<div class="bar ${n > 1 ? 'split' : ''} ${S.plan.has(e.id) ? 'planned' : ''}" data-ev="${e.id}" style="--c:${e.c};right:${X(e.start)}px;width:${w}px;top:${6 + e._lane * (bh + 2)}px;height:${bh}px" title="${esc(e.name)}"><b>${esc(e.name)}</b><span>${rng(e.start, e.end)}</span></div>`;
@@ -615,6 +710,25 @@ function drawGrid() {
   h += `<div class="nowline" style="right:${X(S.t)}px"></div></div>`;
   g.innerHTML = h;
   tickGrid();
+}
+/* The first row of the timetable is my own: every planned event of the day on one line,
+   pinned under the hours so it stays in sight while scrolling through the places. */
+function myRowHTML(X) {
+  const evs = planList().filter(e => e.date === S.day);
+  if (!evs.length) return `<div class="row myrow empty" style="height:40px"><div class="vname"><b>★ התוכנית שלי</b><span>${S.plan.size ? 'אין לך אירועים ביום הזה' : 'לוחצים על אירוע ואז ★, והוא יופיע כאן'}</span></div></div>`;
+  const lanes = [];
+  for (const e of evs) {
+    let l = lanes.findIndex(x => x <= e.start);
+    if (l < 0) { l = lanes.length; lanes.push(0); }
+    lanes[l] = e.start + Math.min(e.dur, S.hi - e.start); e._ml = l;
+  }
+  const n = lanes.length, rowH = Math.max(54, n * 30 + 12), bh = (rowH - 12) / n - 2;
+  let h = `<div class="row myrow" style="height:${rowH}px"><div class="vname"><b>★ התוכנית שלי</b>${evs.length} אירועים</div>`;
+  for (const e of evs) {
+    const w = Math.max(Math.min(e.dur, S.hi - e.start) * PPM - 3, 16);
+    h += `<div class="bar planned ${n > 1 ? 'split' : ''}" data-ev="${e.id}" style="--c:${e.c};right:${X(e.start)}px;width:${w}px;top:${6 + e._ml * (bh + 2)}px;height:${bh}px" title="${esc(e.name)}"><b>${esc(e.name)}</b><span>${esc(e.place)}</span></div>`;
+  }
+  return h + '</div>';
 }
 function tickGrid() {
   const g = $('#grid');
@@ -651,6 +765,7 @@ const ICON = {
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   wa: '<svg viewBox="0 0 24 24"><path d="M3.5 20.5 4.8 16A8.6 8.6 0 1 1 8 19.2z"/><path d="M9 8.2c.2 3.4 3.3 6.5 6.8 6.8l1-1.6-2.1-1-1 .9c-1.1-.5-2.4-1.8-2.9-2.9l.9-1-1-2.1z"/></svg>',
 };
 
@@ -688,7 +803,7 @@ function openPlace(v) {
     for (const e of evs) {
       const st = today ? status(e) : '';
       const r = today ? relLabel(e) : null;
-      days += `<div class="srow ${st}" data-ev="${e.id}" style="--c:${e.c}">
+      days += `<div class="srow ${st} ${isMine(e) ? 'mine' : ''}" data-ev="${e.id}" style="--c:${e.c}">
         <span class="h">${rng(e.start, e.end)}</span>
         <span class="n"><b>${esc(e.name)}</b><small>${multi ? esc(e.place) + ' · ' : ''}${esc(e.craft || e.group)}${r && (st === 'live' || st === 'soon') ? ` · <em class="${r.cls}">${r.txt}</em>` : ''}</small></span>
         ${waLinks(e).length ? `<span class="wa-dot" title="יש קבוצת ווטסאפ">${ICON.wa}</span>` : ''}
@@ -736,7 +851,8 @@ function openDetail(e) {
     <div class="inner">
       <div class="kind"><i></i>${esc(e.group)}${e.craft && e.craft !== e.group ? ' · ' + esc(e.craft) : ''}</div>
       <h2>${esc(e.name)}</h2>
-      ${r ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}
+      ${isMine(e) ? '<span class="tag minetag">★ בתוכנית שלך</span> ' : ''}${r ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}
+      ${(() => { const c = clashWith(e); return c ? `<div class="clashnote">חופף ל<b>${esc(c.name)}</b> שבתוכנית שלך (${rng(c.start, c.end)})</div>` : ''; })()}
       <div class="facts">
         <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
         <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}
@@ -755,11 +871,19 @@ function openDetail(e) {
       <div class="note">${noteHTML(e.note)}</div>
       ${links.length ? `<div class="links">${links.map(l =>`<a target="_blank" rel="noopener" href="${esc(l.url)}">${esc(l.title)}</a>`).join('')}</div>` : ''}
       ${others.length ? `<div class="same"><h4>עוד באותו מקום (${others.length})</h4>${others.map(o => card(o, { showDay: true, noRel: o.date !== S.day })).join('')}</div>` : ''}
+      ${e.long || isMine(e) ? '' : (() => { const nb = alsoThen(e); return nb.length ? `<div class="same"><h4>באותה שעה, קרוב (${nb.length})</h4>${nb.map(o => card(o, { noRel: true })).join('')}</div>` : ''; })()}
     </div>`;
   if (!S.pushed) { history.pushState({ card: 1 }, ''); S.pushed = true; }
   $('#detail').hidden = false;
   $('#detailCard').scrollTop = 0;
   setHash();
+}
+// unplanned events on at the same time within a short walk: the alternatives to this one
+function alsoThen(e) {
+  if (!e.vgeo) return [];
+  return S.events.filter(o => o.date === e.date && o.id !== e.id && o.vkey !== e.vkey && !o.long && o.vgeo
+    && Math.abs(o.start - e.start) <= 30 && walkMin(o.vgeo, e.vgeo) <= 12)
+    .sort((a, b) => walkMin(a.vgeo, e.vgeo) - walkMin(b.vgeo, e.vgeo)).slice(0, 4);
 }
 function closeDetail(fromBack) {
   $('#detail').hidden = true; S.detail = null;
@@ -799,7 +923,8 @@ function drawDays() {
   const today = festivalNow();
   $('#days').innerHTML = S.days.map(d => {
     const n = S.events.filter(e => e.date === d && passes(e)).length;
-    return `<button role="tab" data-day="${d}" class="${d === S.day ? 'on' : ''}">${dayName(d, true)} <small>${d.slice(8)}.${d.slice(5, 7)}${today && today.date === d ? ' · <span class="today">היום</span>' : ''}<span class="cnt"> · ${n} אירועים</span></small></button>`;
+    const my = planList().filter(e => e.date === d).length;
+    return `<button role="tab" data-day="${d}" class="${d === S.day ? 'on' : ''}">${dayName(d, true)}${my ? ` <span class="mystars">★${my}</span>` : ''} <small>${d.slice(8)}.${d.slice(5, 7)}${today && today.date === d ? ' · <span class="today">היום</span>' : ''}<span class="cnt"> · ${n} אירועים</span></small></button>`;
   }).join('');
 }
 function drawChips() {
@@ -969,9 +1094,14 @@ function readHash() {
 /* ---------- misc ---------- */
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, act) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+  if (act) {
+    const b = document.createElement('button'); b.textContent = act.label;
+    b.onclick = ev => { ev.stopPropagation(); t.hidden = true; act.fn(); };
+    t.appendChild(b);
+  }
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, act ? 4500 : 2600);
 }
 
 function locate() {
@@ -1016,6 +1146,7 @@ function setupEvents() {
     const t = ev.target;
     const star = t.closest('[data-star]');
     if (star) { ev.stopPropagation(); toggleStar(star.dataset.star); redrawDetail(); return; }
+    const gp = t.closest('[data-gap]'); if (gp) { S.openGap = S.openGap === gp.dataset.gap ? null : gp.dataset.gap; return render(); }
     const pl = t.closest('[data-place]'); if (pl) return openPlace(S.venues.get(pl.dataset.place));
     const pm = t.closest('[data-placemap]');
     if (pm) { const v = S.venues.get(pm.dataset.placemap); closeDetail(); setView('map'); return openVenue(v, true); }
@@ -1024,8 +1155,8 @@ function setupEvents() {
     const ics = t.closest('[data-ics]'); if (ics) { const e = S.byId.get(ics.dataset.ics); return downloadIcs([e], e.name.slice(0, 40)); }
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
     if (t.closest('[data-share]')) return share();
-    if (t.closest('[data-clear-plan]')) { if (confirm('לנקות את כל התוכנית?')) { S.plan.clear(); savePlan(); render(); } return; }
-    if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); history.replaceState(null, '', location.pathname); return render(); }
+    if (t.closest('[data-clear-plan]')) { if (confirm('לנקות את כל התוכנית?')) { S.plan.clear(); savePlan(); render(); redrawAll(); } return; }
+    if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); history.replaceState(null, '', location.pathname); redrawAll(); return render(); }
     if (t.closest('[data-dismiss]')) { S.shared = null; return render(); }
     if (t.closest('[data-onlymine]')) { S.onlyMine = !S.onlyMine; return render(); }
     if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
