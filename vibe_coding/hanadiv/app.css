@@ -480,6 +480,13 @@ body.view-grid #sheet { display: none; }
 /* touch screens zoom with two fingers; the buttons are clutter there */
 @media (pointer: coarse) { .maplibregl-ctrl-top-left { display: none; } }
 
+/* the map's looks: aerial photograph and tilt */
+.lookctl button { width: 40px; height: 40px; display: grid; place-items: center; font: 800 13px Rubik, sans-serif; color: var(--ink); }
+.lookctl button svg { width: 20px; height: 20px; }
+.lookctl button.on { background: var(--ink); color: var(--mine); }
+.lookctl button.on:hover { background: var(--ink); }
+.maplibregl-ctrl-top-right { margin-top: 2px; }
+
 /* ---------- my plan, wherever it shows ---------- */
 #views b.bump { animation: bump .5s; }
 @keyframes bump { 40% { transform: scale(1.5); } }
