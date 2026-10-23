@@ -633,3 +633,22 @@ html.clean #cleanbar {
 .sw input:checked + i::after { right: 21px; }
 .sw input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
 #showPanel .more { margin-top: 10px; }
+
+/* ---------- the present, and a look ahead ---------- */
+/* Red is the colour of now. Looking at another time, the playhead turns ink, nothing on the
+   map pulses, and a line under the time tells the real time with a tap back to it. */
+.realnow:empty { display: none; }
+.realnow button {
+  font-size: 12.5px; color: var(--now); margin-top: 4px; padding: 0; white-space: nowrap; max-width: 100%; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(232, 70, 59, .4);
+}
+html.preview .count b { color: var(--ink); }
+html.preview #playhead::before, html.preview #playhead span { background: var(--ink); }
+html.preview #playhead span { box-shadow: 0 0 0 4px rgba(29, 43, 58, .18); }
+#realTick { position: absolute; top: 2px; bottom: 12px; width: 0; pointer-events: none; }
+#realTick::before { content: ''; position: absolute; top: 0; bottom: 0; inset-inline-start: -1px; width: 2px; background: var(--now); opacity: .7; }
+#realTick::after { content: 'עכשיו'; position: absolute; top: -13px; transform: translateX(-50%); font-size: 9.5px; font-weight: 700; color: var(--now); }
+html.preview .vm .dot::after { animation: none; display: none; }
+html.preview .sec h3 .livedot { display: none; }
+html.preview .gt .nowline { background: var(--ink); }
+.tag.at { background: #e8eef4; color: var(--ink); }

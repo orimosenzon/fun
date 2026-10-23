@@ -176,10 +176,19 @@ function israelNow() {
   return { date, m };
 }
 const festivalNow = () => { const n = israelNow(); return S.days.includes(n.date) ? n : null; };
+/* "Now" is said only of the real present: the festival is on today, and the playhead stands
+   on today at the clock's time. Anywhere else the app is a look ahead (or back), and every
+   label speaks of the chosen time instead, so nothing reads as happening when it is not. */
+function isNow() {
+  const n = festivalNow();
+  return !!n && n.date === S.day && Math.abs(n.m - S.t) <= STEP;
+}
 function relLabel(e) {
-  const st = status(e);
-  if (st === 'live') return { cls: 'live', txt: e.long ? `פתוח עד ${hm(e.end)}` : `קורה עכשיו · עוד ${mins(e.end - S.t)}` };
-  if (st === 'soon') return { cls: 'soon', txt: e.start === S.t ? 'מתחיל עכשיו' : `בעוד ${mins(e.start - S.t)}` };
+  const st = status(e), now = isNow();
+  if (st === 'live') return e.long ? { cls: now ? 'live' : 'at', txt: `פתוח עד ${hm(e.end)}` }
+    : now ? { cls: 'live', txt: `קורה עכשיו · עוד ${mins(e.end - S.t)}` } : { cls: 'at', txt: `ב-${hm(S.t)} באמצע · עד ${hm(e.end)}` };
+  if (st === 'soon') return now ? { cls: 'soon', txt: e.start === S.t ? 'מתחיל עכשיו' : `בעוד ${mins(e.start - S.t)}` }
+    : { cls: 'soon', txt: e.start === S.t ? `מתחיל ב-${hm(S.t)}` : `${mins(e.start - S.t)} אחרי ${hm(S.t)}` };
   if (st === 'past') return { cls: '', txt: 'הסתיים' };
   return null;
 }
@@ -232,6 +241,21 @@ function drawStrip() {
 function placePlayhead() {
   const W = $('#stripSvg').clientWidth;
   $('#playhead').style.left = xOf(S.t, W) + 'px';
+  // looking at another time of today, the real present stays marked on the strip
+  const n = festivalNow(), tick = $('#realTick');
+  tick.hidden = !n || n.date !== S.day || isNow() || n.m < S.lo || n.m > S.hi;
+  if (!tick.hidden) tick.style.left = xOf(n.m, W) + 'px';
+}
+// under the chosen time, when it is not the present: what the real time is, and a way back to it
+function realNowHTML() {
+  const r = israelNow(), n = festivalNow();
+  let where;
+  if (n) where = n.date === S.day ? 'היום' : `היום ${dayName(n.date, true)}`;
+  else if (r.date < S.days[0]) {
+    const d = Math.round((new Date(S.days[0]) - new Date(r.date)) / 864e5);
+    where = `הפסטיבל מתחיל ${d === 1 ? 'מחר' : `בעוד ${d} ימים`}`;
+  } else where = 'הפסטיבל כבר נגמר';
+  return `<button data-gonow>השעה עכשיו ${hm(r.m % 1440)} · ${where}</button>`;
 }
 
 function setupStrip() {
@@ -682,13 +706,13 @@ function listHTML() {
   if (!evs.length) {
     h += `<div class="empty">${filtered ? `אין ב${dayName(S.day, true)} אירועים שמתאימים לסינון. <button class="more" data-clear>לנקות את הסינון</button>` : 'אין אירועים ביום הזה.'}</div>`;
   }
-  h += `<div class="sec"><h3>${live.length ? '<span class="livedot"></span>' : ''}קורה ב-${hm(S.t)}</h3><span class="meta">${live.length} אירועים</span></div>`;
+  h += `<div class="sec"><h3>${live.length && isNow() ? '<span class="livedot"></span>קורה עכשיו, ' : `${dayName(S.day, true)}, `}ב-${hm(S.t)}</h3><span class="meta">${live.length} אירועים</span></div>`;
   if (live.length) h += live.map(e => card(e)).join('');
   else if (evs.length) {
     const next = evs.find(e => e.start > S.t);
     h += `<div class="empty">${next ? `בשעה הזאת שקט. הבא מתחיל ב-${hm(next.start)}: ${esc(next.name)}.` : 'היום נגמר. מחר עוד.'}</div>`;
   }
-  if (soon.length) h += `<div class="sec"><h3>מתחיל בשעה הקרובה</h3><span class="meta">${soon.length}</span></div>` + soon.map(e => card(e)).join('');
+  if (soon.length) h += `<div class="sec"><h3>${isNow() ? 'מתחיל בשעה הקרובה' : `מתחיל עד ${hm(S.t + 60)}`}</h3><span class="meta">${soon.length}</span></div>` + soon.map(e => card(e)).join('');
   if (open.length) h += `<div class="sec"><h3>פתוח לאורך היום</h3><span class="meta">תערוכות ומיצגים</span></div>` + open.map(e => card(e)).join('');
   if (later.length) {
     const shown = S.moreLater ? later : later.slice(0, 5);
@@ -757,9 +781,11 @@ function myNextHTML() {
   const st = status(e);
   const ph = e.photos[0] ? `background-image:url('${esc(e.photos[0].thumb)}')` : '';
   const w = S.me && e.vgeo ? walkMin(S.me, e.vgeo) : null;
-  const head = st === 'live' ? `עכשיו בתוכנית שלך · עד ${hm(e.end)}` : `הבא בתוכנית שלך · ${e.start === S.t ? 'מתחיל עכשיו' : 'בעוד ' + mins(e.start - S.t)}`;
+  const now = isNow();
+  const head = st === 'live' ? `${now ? 'עכשיו' : 'ב-' + hm(S.t)} בתוכנית שלך · עד ${hm(e.end)}`
+    : `הבא בתוכנית שלך · ${e.start === S.t ? (now ? 'מתחיל עכשיו' : 'מתחיל ב-' + hm(S.t)) : now ? 'בעוד ' + mins(e.start - S.t) : 'ב-' + hm(e.start)}`;
   let go = '';
-  if (w != null && st !== 'live') go = e.start - w <= S.t ? `<em class="go">לצאת עכשיו · ${w} דק׳ הליכה</em>` : `<em>לצאת ב-${hm(e.start - w)} · ${w} דק׳ הליכה</em>`;
+  if (w != null && st !== 'live') go = now && e.start - w <= S.t ? `<em class="go">לצאת עכשיו · ${w} דק׳ הליכה</em>` : `<em>לצאת ב-${hm(e.start - w)} · ${w} דק׳ הליכה</em>`;
   const rest = planList().filter(o => o.date === S.day && o.start > e.start && !o.long).length;
   return `<div class="mynext ${st}" data-ev="${e.id}" style="--c:${e.c}"><div class="ph" style="${ph}"></div>
     <div class="body"><small>★ ${head}</small><b>${esc(e.name)}</b>
@@ -1154,15 +1180,20 @@ function render() {
     const live = evs.filter(e => status(e) === 'live' && !e.long).length;
     const soon = evs.filter(e => status(e) === 'soon').length;
     $('#timeLabel').innerHTML = `<span class="tday">${dayName(S.day, true)} </span>${hm(S.t)}`;
-    $('#countLabel').innerHTML = `<b>${live}</b><span class="tlong"> קורים</span> עכשיו · ${soon}<span class="tlong"> מתחילים בשעה הקרובה</span><span class="tshort"> בקרוב</span>`;
-    if (S.clean) $('#cleanbar').innerHTML = `<b>${dayName(S.day, true)} ${hm(S.t)}</b><span><b class="n">${live}</b> קורים עכשיו · ${soon} בקרוב</span>${ICON.shrink}`;
+    const now = isNow();
+    document.documentElement.classList.toggle('preview', !now);
+    $('#countLabel').innerHTML = now
+      ? `<b>${live}</b><span class="tlong"> קורים</span> עכשיו · ${soon}<span class="tlong"> מתחילים בשעה הקרובה</span><span class="tshort"> בקרוב</span>`
+      : `<b>${live}</b> קורים בשעה הזאת · ${soon}<span class="tlong"> מתחילים בשעה שאחריה</span><span class="tshort"> אחריה</span>`;
+    $('#realNow').innerHTML = now ? '' : realNowHTML();
+    if (S.clean) $('#cleanbar').innerHTML = `<b>${dayName(S.day, true)} ${hm(S.t)}</b><span><b class="n">${live}</b> ${now ? 'קורים עכשיו' : 'קורים בשעה הזאת'} · ${soon} ${now ? 'בקרוב' : 'אחריה'}</span>${ICON.shrink}`;
     placePlayhead();
     sky();
     if (map) drawMarkers();
     drawRoute();
     if (S.view === 'plan') drawPlan(); else drawList();
     if (S.view === 'grid') { tickGrid(); followGrid(); regridSoon(); }
-    $('#nowBtn').classList.toggle('on', S.follow);
+    $('#nowBtn').classList.toggle('on', now);
     setHashSoon();
   });
 }
@@ -1336,6 +1367,7 @@ function setupEvents() {
   document.addEventListener('click', ev => {
     const t = ev.target;
     if (t.closest('[data-clean]')) return setClean(!S.clean);
+    if (t.closest('[data-gonow]')) { stopPlay(); return goNow(); }
     if (t.closest('[data-showclose]')) return toggleShowPanel(false);
     if (t.closest('[data-uireset]')) { S.ui = { ...UI_DEF }; applyUI(); return toggleShowPanel(true); }
     if (!$('#showPanel').hidden && !t.closest('#showPanel')) toggleShowPanel(false);
@@ -1424,6 +1456,6 @@ async function main() {
   if (!h.plan && innerWidth < 900) snap('mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
   else if (h.place && S.venues.has(h.place)) openPlace(S.venues.get(h.place));
-  setInterval(() => { if (S.follow && !S.playing) goNow(true); drawDays(); }, 30000);
+  setInterval(() => { if (S.follow && !S.playing) goNow(true); else render(); drawDays(); }, 30000);  // the real clock under a look-ahead ticks too
 }
 main();
