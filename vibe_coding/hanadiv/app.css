@@ -602,6 +602,23 @@ body.view-grid #sheet { display: none; }
 html.nostrip #strip { display: none; }
 html.nochips #chips { display: none; }
 @media (min-width: 900px) { html.nolist #map, html.clean #map { right: 0; } }
+/* the tab on the list's edge, as in דרך קיצור: it hangs into the map, so with the list folded
+   away it is still there to bring it back. Wide screens and the map view only: on a phone the
+   list is a sheet to drag, and in the plan view the list is the plan. */
+#sheetFold { display: none; }
+@media (min-width: 900px) {
+  body.view-map #sheetFold {
+    display: grid; place-items: center; position: absolute; top: 50%; right: 410px; z-index: 5;
+    width: 24px; height: 48px; margin-top: -24px; padding: 0; cursor: pointer;
+    background: var(--paper); border: 1px solid var(--line); border-right: 0; border-radius: 9px 0 0 9px;
+    box-shadow: -3px 2px 8px rgba(29, 43, 58, .14); color: var(--ink2);
+  }
+  body.view-map #sheetFold:hover { color: var(--ink); background: #fff; }
+  #sheetFold svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  html.nolist body.view-map #sheetFold { right: 0; }
+  html.nolist #sheetFold svg { transform: scaleX(-1); }
+  html.clean body.view-map #sheetFold { display: none; }
+}
 html.clean body { grid-template-rows: minmax(0, 1fr); }
 html.clean #top, html.clean #views { display: none; }
 #cleanbar { display: none; }
