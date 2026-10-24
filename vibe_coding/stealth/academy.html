@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>חמקן: האקדמיה</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="description" content="המתמטיקה והפיזיקה של מטוסים חמקנים: משוואת המכ״ם, חתך מכ״ם, אופטיקה פיזיקלית ונוסחת גורדון, עקיפה מקצוות, פיזור מי, מחזירים פינתיים, חומרים בולעים, חום ואווירודינמיקה. עם סימולציות ותלת-ממד.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/academy.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="logo">
+    <svg viewBox="0 0 68 44"><path d="M34 2 L66 38 L48 34 L34 42 L20 34 L2 38 Z" fill="none" stroke="#4fd1ff" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    חמקן <small>האקדמיה</small>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn primary" href="index.html">✈ לשולחן המתכנן</a>
+</header>
+
+<div class="acad">
+<nav class="toc" id="toc">
+  <div class="toc-title">פרקים</div>
+  <a href="#ch1">1. משוואת המכ"ם והשורש הרביעי</a>
+  <a href="#ch2">2. מה זה חתך מכ"ם</a>
+  <a href="#ch3">3. אופטיקה פיזיקלית ונוסחת גורדון</a>
+  <a href="#ch4">4. מראות: עיצוב בפאות</a>
+  <a href="#ch5">5. קצוות ועקיפה</a>
+  <a href="#ch6">6. תדר וגודל: פיזור מי</a>
+  <a href="#ch7">7. פינות, חללים ופתחי אוויר</a>
+  <a href="#ch8">8. חומרים בולעים</a>
+  <a href="#ch9">9. חום</a>
+  <a href="#ch10">10. המחיר האווירודינמי</a>
+  <a href="#ch11">11. היסטוריה קצרה</a>
+</nav>
+
+<article class="content">
+
+<section class="hero">
+  <h1>איך מעלימים מטוס</h1>
+  <p class="lead">מטוס חמקן הוא לא בלתי נראה. הוא נראה ממרחק קטן יותר. כל הפרקים כאן עונים על שאלה אחת: איך מקטינים את המרחק הזה, ובאיזה מחיר. נלך מהמשוואה של המכ"ם, דרך גלים שפוגעים במשטחים וקצוות, ועד חומרים, חום ואווירודינמיקה. כל פרק כולל את המתמטיקה המלאה ומעבדה שאפשר לשחק בה. כל החישובים במעבדות רצים בדפדפן ומשתמשים באותו מנוע שמחשב את שולחן המתכנן.</p>
+  <p class="note">רקע מומלץ: וקטורים, נגזרות ואינטגרלים, ומספרים מרוכבים בצורה \(e^{j\phi}\). מהנדסי חשמל כותבים \(j\) במקום \(i\), ונשתמש במוסכמה שלהם.</p>
+</section>
+
+<!-- ========== 1 ========== -->
+<section id="ch1" class="chapter">
+  <h2><span>1</span> משוואת המכ"ם והשורש הרביעי</h2>
+  <p>מכ"ם שולח פולס בהספק \(P_t\) דרך אנטנה עם הגבר \(G\). במרחק \(R\) ההספק מתפזר על פני כדור, אז צפיפות ההספק שמגיעה למטרה היא</p>
+  $$ S_1 = \frac{P_t G}{4\pi R^2} \quad [\mathrm{W/m^2}] $$
+  <p>המטרה "חוטפת" חלק מהאנרגיה ומפזרת אותה חזרה. מגדירים את <b>חתך המכ"ם</b> \(\sigma\) כשטח של מחזיר דמיוני שקולט את כל מה שנופל עליו ומפזר אותו שווה לכל הכיוונים, כך שבכיוון המכ"ם הוא נותן בדיוק את מה שהמטרה האמיתית נותנת. בדרך חזרה ההספק שוב מתפזר על כדור, והאנטנה אוספת אותו בשטח אפקטיבי \(A_e = G\lambda^2/4\pi\):</p>
+  $$ P_r = \underbrace{\frac{P_t G}{4\pi R^2}}_{\text{הלוך}}\cdot\sigma\cdot \underbrace{\frac{1}{4\pi R^2}}_{\text{חזור}}\cdot \frac{G\lambda^2}{4\pi} = \frac{P_t\, G^2 \lambda^2\, \sigma}{(4\pi)^3 R^4} $$
+  <p>המכ"ם מגלה את המטרה כשהאות גדול מסף מינימלי \(S_{\min}\) (שנקבע מהרעש). מכאן הטווח המקסימלי:</p>
+  $$ R_{\max} = \left[\frac{P_t\, G^2 \lambda^2\, \sigma}{(4\pi)^3 S_{\min}}\right]^{1/4} \;\propto\; \sigma^{1/4} $$
+  <div class="callout">זה כל הסיפור: הטווח תלוי בשורש <b>הרביעי</b> של σ. כדי לקצר את טווח הגילוי פי 2 צריך להקטין את σ פי 16. כדי לקצר פי 10 צריך פי 10,000. לכן חמקנות נמדדת בדציבלים: \(\sigma_{\mathrm{dBsm}} = 10\log_{10}(\sigma / 1\,\mathrm{m^2})\), ומטוסים חמקנים מדברים על ‎-30 עד ‎-40 dBsm.</div>
+  <div class="lab" id="lab-radar-eq">
+    <div class="lab-head">מעבדה 1: מה קונה כל דציבל</div>
+    <div class="lab-body two">
+      <div>
+        <div class="ctl"><label>חתך המכ"ם של המטוס שלך <b id="re-sv"></b></label><input type="range" id="re-s" min="-40" max="20" step="1" value="-20"></div>
+        <div class="ctl"><label>טווח הגילוי מול 1 מ"ר (R₁) <b id="re-rv"></b></label><input type="range" id="re-r" min="50" max="400" step="5" value="150"></div>
+        <div class="kpis" id="re-k"></div>
+        <p class="note">המעגל החיצוני: מטוס קרב רגיל (10 מ"ר). הפנימי: שלך. הנקודות על קו הגבול הן מכ"מים שצריך כדי לכסות גבול של 600 ק"מ: כשהטווח מתקצר, האויב צריך הרבה יותר מכ"מים.</p>
+      </div>
+      <canvas class="chart" id="re-c" style="height:300px"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 2 ========== -->
+<section id="ch2" class="chapter">
+  <h2><span>2</span> מה זה חתך מכ"ם</h2>
+  <p>ההגדרה הפורמלית משווה את השדה המפוזר \(E_s\) לשדה הפוגע \(E_i\), רחוק מאוד מהמטרה:</p>
+  $$ \sigma = \lim_{R\to\infty} 4\pi R^2 \frac{|E_s|^2}{|E_i|^2} $$
+  <p>הגורם \(4\pi R^2\) מבטל את הדעיכה הגאומטרית, וכך σ תלוי רק במטרה, בתדר ובכיוון. מה שמפתיע הוא כמה מעט σ קשור לגודל הפיזי. הנה כמה גופים קנוניים, באזור "האופטי" שבו הגוף גדול בהרבה מאורך הגל \(\lambda\):</p>
+  <table class="formulas">
+    <tr><th>גוף</th><th>σ מרבי</th><th>תלות בתדר</th></tr>
+    <tr><td>כדור ברדיוס \(a\)</td><td>\(\pi a^2\)</td><td>אין</td></tr>
+    <tr><td>לוח שטוח בשטח \(A\), בניצב</td><td>\(4\pi A^2/\lambda^2\)</td><td>\(\propto f^2\)</td></tr>
+    <tr><td>גליל ברדיוס \(a\) ובאורך \(L\), מהצד</td><td>\(2\pi a L^2/\lambda\)</td><td>\(\propto f\)</td></tr>
+    <tr><td>פינה כפולה 90° (\(a\times b\))</td><td>\(8\pi a^2 b^2/\lambda^2\)</td><td>\(\propto f^2\)</td></tr>
+    <tr><td>פינה משולשת ריבועית בצלע \(a\)</td><td>\(12\pi a^4/\lambda^2\)</td><td>\(\propto f^2\)</td></tr>
+    <tr><td>קצה ישר באורך \(L\), בניצב</td><td>\(L^2/\pi\)</td><td>אין</td></tr>
+    <tr><td>חוד של חרוט (חצי זווית \(\alpha\)), מהחוד</td><td>\(\frac{\lambda^2}{16\pi}\tan^4\alpha\)</td><td>\(\propto 1/f^2\)</td></tr>
+  </table>
+  <p>לוח של מטר על מטר, בניצב, בתדר 10 גיגה-הרץ (\(\lambda=3\) ס"מ), נותן \(4\pi/0.03^2 \approx 14{,}000\) מ"ר: יותר מאוניית משא. אבל אם מסובבים אותו בכמה מעלות, הוא כמעט נעלם. זה הרעיון של עיצוב בפאות: משטח שטוח הוא מראה מושלמת, ולכן אפשר לבחור לאן הוא מחזיר. עבור לוח ריבועי בצלע \(a\) שמסתובב בזווית \(\theta\):</p>
+  $$ \sigma(\theta) = \frac{4\pi a^4}{\lambda^2}\cos^2\theta\left[\frac{\sin(ka\sin\theta)}{ka\sin\theta}\right]^2,\qquad k=\frac{2\pi}{\lambda} $$
+  <p>הרוחב של האונה הראשית הוא בערך \(\lambda/2a\) רדיאן: 0.9° ללוח של מטר ב-10 גיגה-הרץ. מחוץ לאונה, העטיפה של האונות הצדדיות דועכת כמו \(1/\theta^2\).</p>
+  <div class="lab" id="lab-canon">
+    <div class="lab-head">מעבדה 2: לוח מסתובב, נוסחה מול חישוב נומרי</div>
+    <div class="lab-body two">
+      <div>
+        <div class="ctl"><label>תדר <b id="cn-fv"></b></label><input type="range" id="cn-f" min="-0.5" max="1.25" step="0.01" value="0.5"></div>
+        <div class="ctl"><label>צלע הלוח <b id="cn-av"></b></label><input type="range" id="cn-a" min="0.1" max="2" step="0.05" value="1"></div>
+        <p class="note">הקו הכחול הוא הנוסחה. הנקודות הירוקות הן אותו לוח, מחולק לשני משולשים, מחושב במנוע האופטיקה הפיזיקלית של פרק 3. ההתאמה היא בדיוק של מספר נקודה צפה.</p>
+        <canvas class="chart" id="cn-bars" style="height:200px"></canvas>
+        <p class="tiny">למטה: כל הגופים מהטבלה בגודל אופייני של מטר אחד, בתדר שבחרתם. שימו לב לסקאלה הלוגריתמית.</p>
+      </div>
+      <canvas class="chart" id="cn-c" style="height:420px"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 3 ========== -->
+<section id="ch3" class="chapter">
+  <h2><span>3</span> אופטיקה פיזיקלית ונוסחת גורדון</h2>
+  <p>איך מחשבים σ לגוף מורכב? הפתרון המדויק דורש לפתור את משוואות מקסוול סביב כל המטוס: מיליארדי נעלמים בתדר 10 גיגה-הרץ. <b>אופטיקה פיזיקלית</b> (Physical Optics, ובקיצור PO) היא קירוב שעובד מצוין כשהגוף גדול מאורך הגל: מניחים שכל נקודה על המשטח מתנהגת כאילו היא חלק ממישור אינסופי.</p>
+  <h3>הזרם על המשטח</h3>
+  <p>על מוליך מושלם, שדה מגנטי פוגע \(\mathbf H_i\) משרה זרם משטחי. במישור אינסופי הזרם הוא בדיוק</p>
+  $$ \mathbf J_s = \begin{cases} 2\,\hat{\mathbf n}\times\mathbf H_i & \text{בצד המואר} \\ 0 & \text{בצל} \end{cases} $$
+  <p>מהזרם מחשבים את השדה המפוזר באינטגרל קרינה. עבור מכ"ם מונוסטטי (משדר ומקלט באותו מקום, בכיוון \(\hat{\mathbf r}\)), ובהזנחה של הקיטוב, הכל מתכווץ לאינטגרל סקלרי אחד:</p>
+  $$ \sqrt{\sigma} = \frac{2\sqrt{\pi}}{\lambda}\left|\int_{S_{\text{lit}}} (\hat{\mathbf n}\cdot\hat{\mathbf r})\; e^{\,j2k\,\hat{\mathbf r}\cdot\mathbf r'}\, dS'\right| $$
+  <p>הפקטור 2 במעריך הוא ההלוך-חזור: כל נקודה רחוקה יותר ב-\(\Delta\) מוסיפה \(2\Delta\) למסלול. בדיקת שפיות: לוח בשטח \(A\) בניצב (\(\hat{\mathbf n}\cdot\hat{\mathbf r}=1\), פאזה קבועה) נותן \(\sigma = 4\pi A^2/\lambda^2\), בדיוק כמו בטבלה.</p>
+  <h3>אינטגרל על משולש: נוסחת גורדון</h3>
+  <p>מחלקים את המטוס למשולשים שטוחים. על כל משולש \(\hat{\mathbf n}\) קבוע, ונשאר לחשב \(I = \int_T e^{j\mathbf w\cdot\mathbf r}\,dS\) עם \(\mathbf w = 2k\hat{\mathbf r}\). הפאזה ליניארית, אז מספיק לדעת אותה בשלושת הקודקודים: \(\alpha=\mathbf w\cdot\mathbf a,\ \beta=\mathbf w\cdot\mathbf b,\ \gamma=\mathbf w\cdot\mathbf c\). בקואורדינטות בריצנטריות \(\mathbf r = \lambda_1\mathbf a+\lambda_2\mathbf b+\lambda_3\mathbf c\), והמשולש הופך לסימפלקס הסטנדרטי (שטחו ½), כך ש-\(dS = 2A\,d\lambda\).</p>
+  <p>כאן נכנס משפט יפה מאנליזה נומרית, <b>נוסחת הרמיט-ג'נוקי</b>: ההפרש המחולק השני של פונקציה שווה לאינטגרל של הנגזרת השנייה שלה על הסימפלקס,</p>
+  $$ f[x_0,x_1,x_2] = \int_{\Delta} f''(\lambda_1x_0+\lambda_2x_1+\lambda_3x_2)\,d\lambda $$
+  <p>נבחר \(f(x) = -e^{jx}\), כך ש-\(f''(x) = e^{jx}\), ונקבל ביטוי סגור:</p>
+  $$ I = -2A\left[\frac{e^{j\alpha}}{(\alpha-\beta)(\alpha-\gamma)}+\frac{e^{j\beta}}{(\beta-\alpha)(\beta-\gamma)}+\frac{e^{j\gamma}}{(\gamma-\alpha)(\gamma-\beta)}\right] $$
+  <p>זו נוסחת גורדון (W. B. Gordon, 1975). הבעיה: כשהפאזות קרובות זו לזו, המכנים מתאפסים והחישוב מתפוצץ, למשל במכ"ם שמסתכל כמעט בניצב למשולש. הפתרון הוא לחשב קודם את ההפרש המחולק הראשון בצורה יציבה,</p>
+  $$ \frac{e^{jx}-e^{jy}}{x-y} = j\,e^{j\frac{x+y}{2}}\;\frac{\sin\frac{x-y}{2}}{\frac{x-y}{2}} $$
+  <p>ואחר כך לחלק את ההפרש בין שניים כאלה בזוג הקודקודים שהפרש הפאזה ביניהם <i>הגדול ביותר</i>. אם גם הוא זעיר, המשולש קטן בהרבה מאורך הגל ו-\(I \approx A\,e^{j\bar\phi}\). כך עובד המנוע של שולחן המתכנן, ובמעבדה הבאה תוכלו לראות אותו פועל בתלת-ממד.</p>
+  <h3>מה PO לא יודע</h3>
+  <ul>
+    <li><b>קצוות</b>: הזרם האמיתי ליד קצה שונה מזרם של מישור אינסופי. בכיוונים שבהם המשטח כמעט מקביל לקרן, PO נותן אפס והקצה דווקא מחזיר. לזה נגיע בפרק 5.</li>
+    <li><b>החזרות מרובות</b>: PO סופר רק פגיעה אחת. פינות וחללים (פרק 7) צריכים מעקב קרניים.</li>
+    <li><b>גלים זוחלים וגלי שטח</b>: גל שזוחל סביב הצל וחוזר. חשוב בתדרים נמוכים (פרק 6).</li>
+  </ul>
+  <div class="lab" id="lab-po3d">
+    <div class="lab-head">מעבדה 3 (תלת-ממד): בועת ה-RCS של גופים פשוטים</div>
+    <div class="lab-body two wide3d">
+      <div class="view3d" id="po3d-view"><div class="hint">גררו לסיבוב · גלגלת לזום</div></div>
+      <div>
+        <div class="seg" id="po3d-shape"></div>
+        <div class="ctl"><label>תדר <b id="po3d-fv"></b></label><input type="range" id="po3d-f" min="0.2" max="6" step="0.1" value="1.5"></div>
+        <div class="ctl"><label>גובה החתך הקוטבי <b id="po3d-ev"></b></label><input type="range" id="po3d-e" min="-80" max="80" step="1" value="10"></div>
+        <canvas class="chart" id="po3d-polar" style="height:260px"></canvas>
+        <p class="note" id="po3d-note">הבועה מראה את σ בכל כיוון, בקנה מידה של דציבלים (40 dB מהמרכז לשפה). זה סכום קוהרנטי: האונות והחריצים הם התאבכות אמיתית בין חלקי הגוף. הגדילו את התדר ותראו את האונות מתחדדות.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 4 ========== -->
+<section id="ch4" class="chapter">
+  <h2><span>4</span> מראות: עיצוב בפאות</h2>
+  <p>באזור האופטי אפשר לחשוב על גל המכ"ם כאלומת קרניים. קרן בכיוון \(\hat{\mathbf d}\) שפוגעת במשטח עם ניצב \(\hat{\mathbf n}\) מוחזרת בכיוון</p>
+  $$ \hat{\mathbf d}' = \hat{\mathbf d} - 2(\hat{\mathbf d}\cdot\hat{\mathbf n})\,\hat{\mathbf n} $$
+  <p>קרן חוזרת למכ"ם רק אם \(\hat{\mathbf d}' = -\hat{\mathbf d}\), כלומר רק אם הניצב מצביע בדיוק אל המכ"ם. מכאן העיקרון: <b>אם כל הניצבים של המטוס מצביעים לכיוונים שבהם אין מכ"ם, המטוס יחזיר מעט מאוד</b>. מכ"ם קרקעי רואה את המטוס מלמטה ומהצד, בזוויות גובה קטנות, ולכן:</p>
+  <ul>
+    <li>דפנות הגוף מוטות (ב-F-117 בערך 30° ויותר מהאנך), כך שהניצבים פונים לשמיים או לאדמה ולא לאופק.</li>
+    <li>הזנבות מוטים מהאנך. זנב אנכי הוא מראה מושלמת למכ"ם מהצד.</li>
+    <li>אין משטח שמצביע קדימה. החזית, שממנה מגיעים המכ"מים של המטרה המותקפת, היא הגזרה הקריטית.</li>
+  </ul>
+  <p>המחיר: האנרגיה לא נעלמת. היא מוחזרת לכיוונים אחרים, ומכ"ם שיושב בדיוק שם (למשל מכ"ם במטוס אחר, מלמעלה) יקבל הבזק חזק. המתכנן לא מבטל החזרות, הוא מרכז אותן בכמה כיוונים "זולים".</p>
+  <div class="lab" id="lab-rays">
+    <div class="lab-head">מעבדה 4 (תלת-ממד): אלומת קרניים על מטוס</div>
+    <div class="lab-body two wide3d">
+      <div class="view3d" id="rays-view"><div class="hint">גררו לסיבוב · גלגלת לזום</div></div>
+      <div>
+        <div class="seg" id="rays-shape"></div>
+        <div class="ctl"><label>אזימוט המכ"ם <b id="rays-av"></b></label><input type="range" id="rays-a" min="-180" max="180" step="1" value="25"></div>
+        <div class="ctl"><label>גובה המכ"ם <b id="rays-ev"></b></label><input type="range" id="rays-e" min="-60" max="60" step="1" value="-8"></div>
+        <label class="chk"><input type="checkbox" id="rays-2" checked> לעקוב גם אחרי החזרה שנייה</label>
+        <div class="kpis" id="rays-k"></div>
+        <p class="note">כ-1,500 קרניים מקבילות יוצאות מהמכ"ם. הצהובות פגעו במטוס והוחזרו. האדומות חוזרות אל המכ"ם (בתוך 4°). במטוס הקונבנציונלי תמצאו אדומות כמעט מכל כיוון: גוף עגול תמיד מכיל נקודה שהניצב בה מצביע אליכם. בפאות, רק בכיוונים מסוימים.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5 ========== -->
+<section id="ch5" class="chapter">
+  <h2><span>5</span> קצוות ועקיפה</h2>
+  <p>אחרי שהפאות מסודרות, מה שנשאר הוא הקצוות. קצה חד מפזר אנרגיה גם כשאף משטח לא מצביע למכ"ם. בשנות ה-50 פיתח ג'וזף קלר את התאוריה הגאומטרית של העקיפה (GTD), ובמאמר המסכם שלו מ-1962 היא קיבלה את צורתה: קרן שפוגעת בקצה יוצרת חרוט של קרניים מפוזרות, "חרוט קלר", שזווית הפתיחה שלו שווה לזווית הפגיעה. החזרה ישירה למכ"ם מתקבלת רק כשהמכ"ם נמצא במישור הניצב לקצה.</p>
+  <p>בברית המועצות פיתח פיוטר אופימצב (Ufimtsev) ב-1962 את <b>התאוריה הפיזיקלית של העקיפה</b> (PTD): לוקחים את הזרם של PO ומוסיפים לו תיקון, "זרם שוליים", שמרוכז ליד הקצה ומחושב מהפתרון המדויק של זומרפלד לטריז אינסופי (1896). עבור קצה ישר באורך \(L\), אם \(\psi\) היא הזווית בין קרן המכ"ם לקצה, ההחזרה של קצה דק היא בקירוב</p>
+  $$ \sigma_{\text{edge}}(\psi) \approx \frac{L^2}{\pi}\,\sin^2\psi\left[\frac{\sin(kL\cos\psi)}{kL\cos\psi}\right]^2 $$
+  <p>שני דברים חשובים בנוסחה. ראשית, בניצב לקצה (\(\psi=90°\)) σ שווה \(L^2/\pi\) <i>בלי תלות בתדר</i>: קצה של 10 מטר נותן 32 מ"ר, יותר ממטוס קרב שלם. שנית, מחוץ למישור הניצב ההחזרה נופלת כמו sinc², ובקצה ארוך בהרבה מ-\(\lambda\) היא צרה מאוד. לכן כל קצה ישר הוא "קוץ" בתבנית ה-RCS, בכיוון הניצב שלו.</p>
+  <div class="callout">מכאן הכלל הכי מזוהה עם מטוסים חמקנים, <b>יישור הקצוות</b> (planform alignment): כל הקצוות במטוס מקבילים לכמה כיוונים מעטים. הקצה המוביל של הכנף מקביל לקצה הנגרר של הכנף הנגדית, לקצוות של הזנבות, לשולי דלתות תא החימוש ואפילו לשיניים בשולי הפאנלים. כך כל הקוצים מתרכזים בשתיים-ארבע אלומות צרות, והמכ"ם צריך להיות בדיוק שם ובדיוק ברגע הזה. מבט על B-2 או F-22 מלמעלה מראה את זה מיד.</div>
+  <div class="lab" id="lab-edges">
+    <div class="lab-head">מעבדה 5: עורך צורת כנף ותבנית הקוצים</div>
+    <div class="lab-body two">
+      <div>
+        <div class="seg" id="ed-preset"></div>
+        <canvas id="ed-c" class="chart" style="height:360px;cursor:grab"></canvas>
+        <p class="tiny">גררו את הקודקודים. לחיצה כפולה על קו מוסיפה קודקוד, לחיצה כפולה על קודקוד מוחקת אותו. הצורה סימטרית.</p>
+      </div>
+      <div>
+        <div class="ctl"><label>תדר <b id="ed-fv"></b></label><input type="range" id="ed-f" min="0" max="1.3" step="0.01" value="1"></div>
+        <canvas id="ed-p" class="chart" style="height:340px"></canvas>
+        <div class="kpis" id="ed-k"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6 ========== -->
+<section id="ch6" class="chapter">
+  <h2><span>6</span> תדר וגודל: פיזור מי</h2>
+  <p>כל מה שאמרנו עד עכשיו נכון כשהגוף גדול מאורך הגל. מה קורה כשלא? לכדור מוליך יש פתרון מדויק למשוואות מקסוול, שגוסטב מי (Mie) פרסם ב-1908. בשימוש בפונקציות בסל כדוריות \(j_n\) ופונקציות הנקל \(h_n = j_n + jy_n\), החזרה המונוסטטית היא</p>
+  $$ \frac{\sigma}{\pi a^2} = \frac{1}{(ka)^2}\left|\sum_{n=1}^{\infty}(-1)^n(2n+1)\,(a_n-b_n)\right|^2,\quad a_n=\frac{j_n(ka)}{h_n(ka)},\quad b_n=\frac{[x\,j_n(x)]'}{[x\,h_n(x)]'}\Big|_{x=ka} $$
+  <p>הגרף מתחלק לשלושה אזורים:</p>
+  <ul>
+    <li><b>אזור ריילי</b> (\(ka \ll 1\)): \(\sigma \approx 9\pi a^2 (ka)^4\). הגוף קטן מאורך הגל וכמעט לא מפזר. לכן השמיים כחולים, ולכן טיפות גשם כמעט שקופות למכ"ם בגל ארוך.</li>
+    <li><b>אזור התהודה</b> (\(ka \approx 1\)–\(10\)): σ מתנודד, ובשיא הראשון מגיע לפי 3.6 מהשטח הגאומטרי. כאן גל זוחל מקיף את הכדור וחוזר בפאזה.</li>
+    <li><b>האזור האופטי</b> (\(ka \gg 1\)): \(\sigma \to \pi a^2\). כאן עובדים PO ועיצוב בפאות.</li>
+  </ul>
+  <p>וזו נקודת התורפה של החמקנות. מכ"ם VHF בתדר 150 מגה-הרץ עובד באורך גל של 2 מטר. זנב בגובה 2 מטר וכנף בעובי חצי מטר נמצאים שם באזור התהודה: הפאות מפסיקות להיות מראות, הקצוות "מצלצלים", וציפוי בעובי מילימטרים לא עושה כלום ביחס לגל של 2 מטר. מכ"מי VHF מגלים מטוסים חמקנים ממרחק רב. מצד שני, הקרן שלהם רחבה מאוד (האנטנה צריכה להיות גדולה פי כמה מ-\(\lambda\) כדי למקד), והם מתקשים לתת מיקום מדויק מספיק להנחיית טיל.</p>
+  <div class="lab" id="lab-mie">
+    <div class="lab-head">מעבדה 6: פיזור מי, ואיפה נמצא כל חלק של המטוס</div>
+    <div class="lab-body two">
+      <div>
+        <canvas class="chart" id="mie-c" style="height:330px"></canvas>
+      </div>
+      <div>
+        <div class="ctl"><label>תדר המכ"ם <b id="mie-fv"></b></label><input type="range" id="mie-f" min="-1" max="1.2" step="0.01" value="-0.82"></div>
+        <div id="mie-list"></div>
+        <p class="note">כל נקודה היא חלק של המטוס, ממוקם לפי הגודל האופייני שלו ביחס לאורך הגל (ka = 2π·גודל/λ). מתחת ל-ka≈1 החלק "שקוף", סביב 1–10 הוא מתהודד, ומעל 10 עיצוב בפאות עובד עליו.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 7 ========== -->
+<section id="ch7" class="chapter">
+  <h2><span>7</span> פינות, חללים ופתחי אוויר</h2>
+  <h3>מחזיר פינתי</h3>
+  <p>שני משטחים בזווית ישרה מחזירים כל קרן שנכנסת ביניהם חזרה לכיוון שממנו באה, בלי קשר לזווית הפגיעה (בתוך טווח רחב). ההוכחה פשוטה: כל החזרה הופכת את הסימן של רכיב אחד של הכיוון. במישור, שני קירות ניצבים הופכים את \(d_x\) ואת \(d_y\), כלומר \(\hat{\mathbf d}' = -\hat{\mathbf d}\). בתלת-ממד, שלושה קירות ניצבים (פינה של קופסה) הופכים את שלושת הרכיבים. לכן מחזירים פינתיים משמשים לסימון סירות, ולכן זנב אנכי על גוף עם דופן אנכית או כנף שטוחה הוא אסון. ב-F-22 ובשאר המטוסים החמקנים אין אף זווית של 90° בין משטחים חיצוניים. המעבדה מראה מה קורה כשמשנים את הזווית: ב-90° הקרניים חוזרות, ובזוויות אחרות הן מתפזרות.</p>
+  <div class="lab" id="lab-corner">
+    <div class="lab-head">מעבדה 7א: פינה כפולה</div>
+    <div class="lab-body two">
+      <canvas class="chart" id="co-c" style="height:330px"></canvas>
+      <div>
+        <div class="ctl"><label>הזווית בין הקירות <b id="co-av"></b></label><input type="range" id="co-a" min="40" max="150" step="1" value="90"></div>
+        <div class="ctl"><label>כיוון הגעת הקרן <b id="co-iv"></b></label><input type="range" id="co-i" min="-40" max="40" step="1" value="15"></div>
+        <div class="kpis" id="co-k"></div>
+        <canvas class="chart" id="co-p" style="height:170px"></canvas>
+        <p class="tiny">הגרף: איזה חלק מהקרניים חוזר למכ"ם (בתוך 2°) כפונקציה של זווית הפינה, בכיוון ההגעה שבחרתם.</p>
+      </div>
+    </div>
+  </div>
+  <h3>פתחי אוויר: חלל שמסתיים במראה</h3>
+  <p>מנוע סילון צריך פתח גדול בחזית, ובקצה הפתח נמצאות פני המדחס: דיסקה מתכתית עם עשרות להבים. זה אחד המחזירים הגדולים במטוס קונבנציונלי. שלושה פתרונות:</p>
+  <ul>
+    <li><b>צינור בצורת S</b>: המדחס לא נמצא בקו ראייה מהחוץ. כל קרן חייבת לפגוע בדפנות כמה פעמים לפני שהיא מגיעה אליו וחוזרת. אם הדפנות מצופות חומר בולע שמחזיר שבריר \(|\Gamma|^2\) מהעוצמה, אחרי \(N\) החזרות הלוך וחזור נשאר \(|\Gamma|^{2N}\). עם ‎-10 dB להחזרה ושמונה החזרות, זה ‎-80 dB.</li>
+    <li><b>רשת מתחת לתדר הקטעון</b> (ה-F-117): כל תא ברשת הוא מוליך גלים קצר. גל בתדר נמוך מתדר הקטעון \(f_c = c/2a\) לא מתפשט בו אלא דועך אקספוננציאלית, עם קבוע דעיכה \(\alpha = \frac{2\pi}{\lambda_c}\sqrt{1-(f/f_c)^2}\). האוויר עובר, הגל לא.</li>
+    <li><b>פתח בלי מפצל</b> (DSI, ב-F-35 ו-J-20): בליטה על הגוף שמסיטה את שכבת הגבול, במקום מפצל עם פינות.</li>
+  </ul>
+  <div class="lab" id="lab-duct">
+    <div class="lab-head">מעבדה 7ב: קרניים בצינור S, ורשת מתחת לקטעון</div>
+    <div class="lab-body two">
+      <div>
+        <canvas class="chart" id="du-c" style="height:300px"></canvas>
+        <div class="ctl"><label>עיקום הצינור <b id="du-bv"></b></label><input type="range" id="du-b" min="0" max="1.4" step="0.01" value="0.9"></div>
+        <div class="ctl"><label>החזרה מכל דופן (ציפוי) <b id="du-gv"></b></label><input type="range" id="du-g" min="-20" max="0" step="0.5" value="-8"></div>
+        <div class="kpis" id="du-k"></div>
+      </div>
+      <div>
+        <canvas class="chart" id="gr-c" style="height:300px"></canvas>
+        <div class="ctl"><label>רוחב תא ברשת <b id="gr-av"></b></label><input type="range" id="gr-a" min="0.4" max="3" step="0.05" value="1"></div>
+        <div class="ctl"><label>עומק הרשת <b id="gr-dv"></b></label><input type="range" id="gr-d" min="0.5" max="5" step="0.1" value="2"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 8 ========== -->
+<section id="ch8" class="chapter">
+  <h2><span>8</span> חומרים בולעים</h2>
+  <p>עיצוב מטפל בכיוונים. מה שעדיין חוזר מטפלים בו בחומר. חומר בולע מכ"ם (Radar Absorbing Material, ובקיצור RAM) עובד על אותו עיקרון כמו ציפוי נגד השתקפות במשקפיים: יוצרים שני גלים מוחזרים שמבטלים זה את זה, ובנוסף מאבדים אנרגיה בתוך החומר.</p>
+  <h3>קו תמסורת</h3>
+  <p>גל מישורי שפוגע בניצב בשכבות מתנהג בדיוק כמו מתח בקו תמסורת. לכל חומר יש עכבה \(\eta = \eta_0\sqrt{\mu_r/\varepsilon_r}\) (עם \(\eta_0 \approx 377\,\Omega\) לאוויר) ומספר גל \(k = k_0\sqrt{\mu_r\varepsilon_r}\). החומרים מרוכבים: \(\varepsilon_r = \varepsilon' - j\varepsilon''\) ו-\(\mu_r = \mu'-j\mu''\), והחלק המדומה הוא ההפסד. שכבה בעובי \(d\) על מתכת היא קו שמקוצר בקצה, ולכן העכבה שרואים מבחוץ היא</p>
+  $$ Z_{\text{in}} = j\,\eta\,\tan(k d), \qquad \Gamma = \frac{Z_{\text{in}}-\eta_0}{Z_{\text{in}}+\eta_0} $$
+  <p>המטרה: \(Z_{\text{in}} = \eta_0\), ואז \(\Gamma = 0\) ואין החזרה בכלל.</p>
+  <h3>מסך סליסברי</h3>
+  <p>הפתרון הפשוט ביותר: יריעה דקה עם התנגדות משטחית של 377 Ω, במרחק \(\lambda/4\) מהמתכת. קו מקוצר באורך רבע גל נראה כמו נתק (\(\tan(\pi/2) = \infty\)), אז מבחוץ רואים רק את היריעה, שהיא בדיוק \(\eta_0\). בתדר אחד, החזרה אפס. רבע גל ב-10 גיגה-הרץ הוא 7.5 מ"מ, אבל ב-3 גיגה-הרץ כבר 2.5 ס"מ. ומחוץ לתדר המתוכנן ההתאמה נהרסת.</p>
+  <h3>שכבת דלנבך וצבע פריט</h3>
+  <p>חומר עם \(\mu_r\) ו-\(\varepsilon_r\) גבוהים מקצר את אורך הגל בתוכו פי \(\sqrt{\mu_r\varepsilon_r}\), כך שהשכבה יכולה להיות דקה. חלקיקי פריט (תחמוצות ברזל) נותנים \(\mu''\) גדול, והחדירות המגנטית שלהם יורדת עם התדר בערך כמו \(\mu_r(f) = 1 + \frac{\mu_s-1}{1+jf/f_r}\). זה מה שמאפשר לצבע בעובי מילימטר לבלוע עשרות אחוזים. המחיר: משקל של קילוגרמים למ"ר, ובמטוס עם 300 מ"ר שטח זה טון.</p>
+  <p>הגבול התאורטי מגיע מרוזנוב (Rozanov, 2000): לכל שכבה בולעת על מתכת, כאשר \(\mu_s\) היא החדירות המגנטית הסטטית, \(\left|\int_0^\infty \ln|\Gamma(\lambda)|\,d\lambda\right| \le 2\pi^2 \mu_s d\). בעברית: אי אפשר לקבל בליעה טובה בתחום רחב עם שכבה דקה. רוחב סרט עולה עובי.</p>
+  <div class="lab" id="lab-ram">
+    <div class="lab-head">מעבדה 8: תכנון שכבה בולעת</div>
+    <div class="lab-body two">
+      <div>
+        <div class="seg" id="ram-type"></div>
+        <div id="ram-ctl"></div>
+        <canvas class="chart" id="ram-c" style="height:260px"></canvas>
+      </div>
+      <div>
+        <div class="ctl"><label>תדר לאנימציה <b id="ram-fv"></b></label><input type="range" id="ram-f" min="0" max="1.25" step="0.005" value="1"></div>
+        <canvas class="chart" id="ram-w" style="height:300px"></canvas>
+        <p class="note">השדה החשמלי לאורך הציר, משמאל לימין: אוויר, השכבה (מוצללת) ומתכת. בתוך השכבה הגל דועך. באוויר, הגל הנכנס והמוחזר מתאבכים. כשההחזרה אפס, באוויר רואים גל נע נקי. כשהיא אחת, רואים גל עומד עם צמתים קבועים.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 9 ========== -->
+<section id="ch9" class="chapter">
+  <h2><span>9</span> חום</h2>
+  <p>כל גוף מקרין. הקרינות הספקטרלית של גוף שחור בטמפרטורה \(T\) נתונה בחוק פלאנק:</p>
+  $$ B_\lambda(T) = \frac{2hc^2}{\lambda^5}\,\frac{1}{e^{hc/\lambda k_B T}-1} $$
+  <p>שתי תוצאות שימושיות: השיא נמצא ב-\(\lambda_{\max} = 2898/T\) מיקרון (חוק וין), וההספק הכולל למ"ר הוא \(\varepsilon\sigma_{SB}T^4\) (סטפן-בולצמן). חלקים של מנוע ב-900K מקרינים בשיא סביב 3 מיקרון, ולכן חיישני חום וראשי טילים עובדים בחלון האטמוספרי של 3–5 מיקרון. עור המטוס, בסביבות 250–300K, מקרין סביב 10 מיקרון, בחלון של 8–12.</p>
+  <h3>מאיפה החום</h3>
+  <ul>
+    <li><b>חלקי מנוע לוהטים</b> שנראים מאחור. הפתרון: נחיר שטוח ורחב מעל הכנף (F-117, B-2) שמסתיר אותם מלמטה, וקירור.</li>
+    <li><b>סילון הפליטה</b>: גז חם, ובעיקר פחמן דו-חמצני שמקרין חזק סביב 4.3 מיקרון. הפתרון: ערבוב עם אוויר קר מהמעקף, נחיר שמפזר את הסילון לרצועה רחבה שמתקררת מהר.</li>
+    <li><b>חימום אווירודינמי</b>: אוויר שנעצר על העור מתחמם. טמפרטורת ההתאוששות היא</li>
+  </ul>
+  $$ T_{\text{skin}} = T_\infty\left(1 + r\,\frac{\gamma-1}{2}M^2\right) \approx T_\infty(1+0.17M^2) $$
+  <p>בגובה 11 ק"מ (\(T_\infty = 217\)K) במאך 1.6, העור מגיע ל-311K: כמעט 100 מעלות מעל הסביבה. לכן טיסה על-קולית ממושכת פוגעת בחמקנות התרמית, גם בלי מבער אחורי.</p>
+  <p>חיישן IRST מגלה מטרה כשעוצמת הקרינה שלה \(J\) (וואט לסטרדיאן), אחרי הנחתה באטמוספרה, עוברת את סף הרגישות שלו: \(J e^{-\beta R}/R^2 \ge \mathrm{NEI}\). כאן הטווח תלוי בשורש <i>הריבועי</i> של העוצמה (רק הלוך), ולכן קשה הרבה יותר להקטין אותו.</p>
+  <div class="lab" id="lab-planck">
+    <div class="lab-head">מעבדה 9: פלאנק וחלונות</div>
+    <div class="lab-body two">
+      <canvas class="chart" id="pl-c" style="height:300px"></canvas>
+      <div>
+        <div class="ctl"><label>טמפרטורה <b id="pl-tv"></b></label><input type="range" id="pl-t" min="200" max="2000" step="5" value="850"></div>
+        <div class="kpis" id="pl-k"></div>
+        <div class="ctl"><label>מאך (לחימום העור בגובה 11 ק"מ) <b id="pl-mv"></b></label><input type="range" id="pl-m" min="0" max="3" step="0.05" value="1.6"></div>
+        <div class="kpis" id="pl-k2"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 10 ========== -->
+<section id="ch10" class="chapter">
+  <h2><span>10</span> המחיר האווירודינמי</h2>
+  <p>הצורה הטובה ביותר למכ"ם כמעט אף פעם אינה הצורה הטובה ביותר לאוויר. שלוש דוגמאות מתמטיות:</p>
+  <h3>גרר גל וכלל השטחים</h3>
+  <p>במהירות על-קולית, גוף דק מייצר גלי הלם שגרר הגל שלהם תלוי רק בפילוג שטח החתך \(S(x)\) לאורכו (כלל השטחים של ויטקומב). תאוריית הגוף הדק של פון קרמן נותנת:</p>
+  $$ \frac{D}{q} = -\frac{1}{2\pi}\int_0^L\!\!\int_0^L S''(x_1)\,S''(x_2)\,\ln|x_1-x_2|\,dx_1dx_2 $$
+  <p>עם ההחלפה \(x = \frac{L}{2}(1-\cos\theta)\) ופיתוח \(S'(x) = \sum_n A_n\sin n\theta\), האינטגרל הכפול הופך לסכום פשוט:</p>
+  $$ \frac{D}{q} = \frac{\pi}{4}\sum_{n=1}^\infty n\,A_n^2 $$
+  <p>כל איבר חיובי, אז הגרר מינימלי כשיש רק את האיבר ההכרחי. לנפח ואורך נתונים זה גוף סירס-האק, \(S(x) = S_{\max}(1-\xi^2)^{3/2}\), שנותן \(D/q = 9\pi S_{\max}^2/2L^2\). מטוס חמקן צריך תא חימוש פנימי (גבנון בנפח), פאות שטוחות וזנבות מוטים, וכל אלה מקשים לעקוב אחרי העקומה.</p>
+  <div class="lab" id="lab-area">
+    <div class="lab-head">מעבדה 10: גבנון אחד, כמה גרר</div>
+    <div class="lab-body two">
+      <canvas class="chart" id="ar-c" style="height:280px"></canvas>
+      <div>
+        <div class="ctl"><label>גודל הגבנון (תא חימוש) <b id="ar-sv"></b></label><input type="range" id="ar-s" min="0" max="1" step="0.01" value="0.4"></div>
+        <div class="ctl"><label>מיקום לאורך הגוף <b id="ar-xv"></b></label><input type="range" id="ar-x" min="0.15" max="0.85" step="0.01" value="0.35"></div>
+        <canvas class="chart" id="ar-b" style="height:150px"></canvas>
+        <div class="kpis" id="ar-k"></div>
+      </div>
+    </div>
+  </div>
+  <h3>יציבות כיוונית בזנב מוטה</h3>
+  <p>במצב החלקה בזווית \(\beta\), זנב אנכי מייצר כוח צד שמחזיר את האף לרוח. אם הזנב מוטה בזווית \(\Gamma\) מהאנך, הזווית שהוא "רואה" קטנה פי \(\cos\Gamma\), והרכיב הצידי של הכוח קטן שוב פי \(\cos\Gamma\). ביחד:</p>
+  $$ C_{n_\beta,\text{tail}} \propto \frac{S_v\,l_v}{S\,b}\,C_{L_\alpha,v}\cos^2\Gamma $$
+  <p>ב-28° (F-22) נשאר 78%. ב-50° (F-117) נשארים 41%. בלי זנב בכלל (B-2), צריך בקרה פעילה: הגאים מפוצלים בקצות הכנפיים שנפתחים כבלמים בצד אחד, ומחשב טיסה שמתקן ללא הפסקה.</p>
+  <h3>ספנה וגרר מושרה</h3>
+  <p>ספנה גבוהה מרחיקה את הקוץ של הקצה המוביל מהאף, אבל מקטינה את מנת הממדים \(A = b^2/S\) ואת יעילות אוסוולד \(e\), ובהם תלוי הגרר המושרה: \(C_{D_i} = C_L^2/\pi A e\). ה-F-117, עם ספנה של 67.5°, היה איטי, רגיש ונקרא בפי הטייסים "הגובלין". הכנף של ה-B-2, עם ספנה מתונה ומוטה של 52 מטר, דווקא יעילה מאוד, אבל אין לה זנב.</p>
+  <p>בשולחן המתכנן, בלשונית "המחיר האווירודינמי", כל המספרים האלה מחושבים מהצורה שלכם.</p>
+</section>
+
+<!-- ========== 11 ========== -->
+<section id="ch11" class="chapter">
+  <h2><span>11</span> היסטוריה קצרה</h2>
+  <div class="timeline" id="timeline"></div>
+  <p class="note">הערכים המספריים של σ למטוסים אמיתיים מסווגים. מה שמתפרסם הוא הערכות ודליפות, ולכן לא הצגנו אותם כעובדה. הצורות בשולחן המתכנן הן בהשראת המטוסים, לא העתק שלהם.</p>
+</section>
+
+</article>
+</div>
+<footer>חמקן · אקדמיה. כל הנוסחאות כאן ממומשות בקוד של הדף (js/core), ואפשר לבדוק אותן בכלי הבדיקה tools/test_core.mjs.</footer>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const go = () => window.renderMathInElement ? renderMathInElement(document.body, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false, strict: false }) : setTimeout(go, 50);
+  go();
+});
+</script>
+<script type="module" src="js/academy/main.js"></script>
+</body>
+</html>
