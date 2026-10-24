@@ -470,6 +470,10 @@ function layoutUI() {
   // the plan lives in the list, so asking for the plan brings the list back
   R.toggle('nolist', !S.ui.list && S.view === 'map');
   $('#sheet').hidden = S.clean || (!S.ui.list && S.view === 'map');
+  const fold = $('#sheetFold'), off = !S.ui.list;
+  fold.classList.toggle('off', off);
+  fold.title = off ? 'הצגת רשימת האירועים' : 'הסתרת רשימת האירועים';
+  fold.setAttribute('aria-label', fold.title);
   $('#cleanBtn')?.classList.toggle('on', S.clean);
   if ($('#cleanBtn')) $('#cleanBtn').innerHTML = S.clean ? ICON.shrink : ICON.full;
 }
@@ -1388,6 +1392,7 @@ function setupEvents() {
     if (t.closest('[data-clean]')) return setClean(!S.clean);
     if (t.closest('[data-gonow]')) { stopPlay(); return goNow(); }
     if (t.closest('[data-showclose]')) return toggleShowPanel(false);
+    if (t.closest('[data-fold]')) { S.ui.list = !S.ui.list; return applyUI(); }
     if (t.closest('[data-uireset]')) { S.ui = { ...UI_DEF }; applyUI(); return toggleShowPanel(true); }
     if (!$('#showPanel').hidden && !t.closest('#showPanel')) toggleShowPanel(false);
     const star = t.closest('[data-star]');
