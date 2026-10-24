@@ -1037,12 +1037,18 @@ const Explore = (() => {
       world.push(entry);
 
       const photos = mediaOf(entry).filter((p) => p.thumb || p.full);
+      // A photo that knows where it was taken (`at`, read off the original's
+      // EXIF) hangs there. The rest, which is every photo uploaded before
+      // 24/10/2026, are spread evenly along the line among themselves.
+      const loose = photos.filter((p) => !p.at);
       photos.forEach((p, i) => {
         // A waypoint has one coordinate and possibly several pictures, so they
         // are fanned onto a small ring rather than left in one pile.
         let at;
-        if (path.length > 1) {
-          at = alongPath(path, (i + 0.5) / photos.length);
+        if (p.at) {
+          at = p.at;
+        } else if (path.length > 1) {
+          at = alongPath(path, (loose.indexOf(p) + 0.5) / loose.length);
         } else {
           const a = (i / Math.max(photos.length, 1)) * 360 + 40;
           const d = destination(path[0][0], path[0][1], a, photos.length > 1 ? 26 : 0);

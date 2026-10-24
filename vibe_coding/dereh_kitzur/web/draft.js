@@ -171,10 +171,11 @@ const Drafts = (() => {
 
   /** A stored record, presented the way the rest of the app expects a segment. */
   function toSegment(rec) {
-    const photos = (rec.photos || []).map((blob) => {
+    const photos = (rec.photos || []).map((blob, i) => {
       const url = URL.createObjectURL(blob);
       urls.push(url);
-      return { thumb: url, full: url };
+      const at = (rec.photoAt || [])[i];
+      return at ? { thumb: url, full: url, at } : { thumb: url, full: url };
     });
     // A video is not a file to store, only an id to remember, so it lives in a
     // second field on the record and joins the pictures here - one gallery, one
@@ -925,11 +926,23 @@ const Drafts = (() => {
     const rec = rows.find((r) => r.id === id);
     if (!rec) return;
     rec.photos = rec.photos || [];
-    for (const file of files) rec.photos.push(await shrink(file));
+    // A parallel list rather than a field on each entry, so that `rec.photos`
+    // stays a list of blobs. The location is read now because shrink() is
+    // where it is lost.
+    rec.photoAt = rec.photoAt || [];
+    for (const file of files) {
+      rec.photoAt[rec.photos.length] = await Exif.locate(file);
+      rec.photos.push(await shrink(file));
+    }
     rec.updated = Date.now();
     await put(rec);
     await reload();
   }
+
+  /** A draft's photos as Store.uploadAll takes them: each blob with the
+   *  location attachPhotos read off the original. */
+  const uploads = (rec) => ((rec && rec.photos) || [])
+    .map((blob, i) => ({ blob, at: (rec.photoAt || [])[i] || null }));
 
   /** A video on a draft: nothing is downloaded and nothing is stored but the
    *  id, so this works offline and costs the device nothing. It travels with
@@ -1318,8 +1331,8 @@ ${tracks}
     say('מפרסם…');
     try {
       const { id, doc } = seg.trip
-        ? await Store.publishTrip(seg, (rec && rec.photos) || [], say)
-        : await Store.publish(seg, (rec && rec.photos) || [], say);
+        ? await Store.publishTrip(seg, uploads(rec), say)
+        : await Store.publish(seg, uploads(rec), say);
       await drop(seg.id);
       await reload();
       await reloadShared(doc);
@@ -1411,7 +1424,7 @@ ${tracks}
     field.disabled = true;
     say('שולח…');
     try {
-      await Store.submit(seg, (rec && rec.photos) || [], (t) => say(t));
+      await Store.submit(seg, uploads(rec), (t) => say(t));
       await drop(seg.id);
       deselect();
       await reload();
