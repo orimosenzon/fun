@@ -180,6 +180,7 @@ const svg = d3.select('#pie').attr('viewBox', `${-W / 2} ${-W / 2} ${W} ${W}`);
 const gSlices = svg.append('g');
 const gLabels = svg.append('g');
 const gCenter = svg.append('g').attr('class', 'center');
+const gHint = svg.append('g').attr('class', 'hint');
 const arc = d3.arc().innerRadius(R0).outerRadius(R).cornerRadius(4).padAngle(0.008);
 const pieLayout = d3.pie().value((d) => d.value).sort(null);
 const tip = $('#tooltip');
@@ -225,7 +226,8 @@ function drawCenter(node) {
   lines.forEach((l, i) => gCenter.append('text').attr('class', 'center-name').attr('text-anchor', 'middle')
     .attr('y', -22 - (lines.length - 1 - i) * 18).text(l));
   gCenter.append('text').attr('class', 'center-total').attr('text-anchor', 'middle').attr('y', 12).text(money(node.value));
-  if (up) gCenter.append('text').attr('class', 'center-back').attr('text-anchor', 'middle').attr('y', 40).text('↩ חזרה');
+  gCenter.append('text').attr('class', up ? 'center-back' : 'center-hint').attr('text-anchor', 'middle').attr('y', 42)
+    .text(up ? 'לחצו כאן לחזרה ↩' : 'לחצו על פלח לפירוט 👆');
 }
 function wrap(s, n) {
   const words = s.split(' '); const out = [''];
@@ -237,6 +239,12 @@ function wrap(s, n) {
 }
 
 function bindSlices(sel) {
+  // הכיוון החוצה מהמרכז, לאנימציית הרמז
+  sel.each(function (a) {
+    const m = (a.startAngle + a.endAngle) / 2;
+    this.style.setProperty('--dx', `${(Math.sin(m) * 7).toFixed(1)}px`);
+    this.style.setProperty('--dy', `${(-Math.cos(m) * 7).toFixed(1)}px`);
+  });
   sel.on('click', (ev, a) => select(a.data))
     .on('mousemove', (ev, a) => showTip(ev, a))
     .on('mouseleave', () => { tip.hidden = true; hot(null); });
@@ -270,8 +278,31 @@ function hot(d) {
   d3.selectAll('#chart .line').classed('dim', (s) => d && s.node !== d);
 }
 
+// רמז חד-פעמי: הפלח הגדול בולט ופועם ואצבע מקישה עליו, עד הלחיצה הראשונה (נזכר בדפדפן)
+let hintPlanned = false;
+function planHint() {
+  if (hintPlanned || store.get('pieLearned')) return;
+  hintPlanned = true;
+  setTimeout(playHint, 1000);
+}
+function playHint() {
+  if (store.get('pieLearned') || busy || !arcsNow.length) return;
+  const big = arcsNow.reduce((a, b) => (b.endAngle - b.startAngle > a.endAngle - a.startAngle ? b : a));
+  gSlices.selectAll('path.slice').filter((a) => a.key === big.key).classed('nudge', true);
+  gLabels.selectAll('text').filter((a) => a.key === big.key).classed('hint-hide', true);
+  const [x, y] = arc.centroid(big);
+  gHint.append('text').attr('class', 'hint-hand').attr('text-anchor', 'middle').attr('x', x).attr('y', y + 30).text('👆');
+  setTimeout(clearHint, 3 * 1300);
+}
+function clearHint() {
+  gHint.selectAll('*').remove();
+  gSlices.selectAll('path.nudge').classed('nudge', false);
+  gLabels.selectAll('text.hint-hide').classed('hint-hide', false);
+}
+function learned() { store.set('pieLearned', '1'); clearHint(); }
 function afterMove(node, arcs) {
   arcsNow = arcs;
+  planHint();
   drawCenter(node); drawSide(node, arcs); drawCrumbs(node); drawChart(); syncURL();
 }
 
@@ -350,6 +381,7 @@ function zoomOut(to) {
 let busy = false;
 function select(d) {
   if (busy) return;
+  learned();
   if (d.kind === 'item') { openItem(d); return; }
   busy = true; setTimeout(() => { busy = false; }, DUR * 2 + 50);
   zoomIn(d);
@@ -409,8 +441,9 @@ function drawSide(node, arcs) {
       <span class="name" title="${esc(c.name)}">${esc(c.name)}${salaryTag}</span>
       <span class="amt">${money(c.value)}</span>
       <span class="bar"><i style="width:${(c.value / max) * 100}%;background:${col}"></i></span>
-      <span class="meta">${pct(c.value, node.value)}${ch2 ? ` · <span class="chg ${ch2.cls}">${ch2.text}</span>` : ''}${mine2 ? ` · <span class="mine-share">${moneyFull(mine2)}</span>` : ''}</span>`;
-    li.addEventListener('click', () => (c.kind === 'item' ? openItem(c) : select(c)));
+      <span class="meta">${pct(c.value, node.value)}${ch2 ? ` · <span class="chg ${ch2.cls}">${ch2.text}</span>` : ''}${mine2 ? ` · <span class="mine-share">${moneyFull(mine2)}</span>` : ''}</span>
+      ${c.kind === 'item' ? '<span class="go det">פרטים</span>' : '<span class="go" aria-hidden="true">›</span>'}`;
+    li.addEventListener('click', () => { learned(); if (c.kind === 'item') openItem(c); else select(c); });
     li.addEventListener('mouseenter', () => hot(li._d));
     li.addEventListener('mouseleave', () => hot(null));
     list.appendChild(li);
