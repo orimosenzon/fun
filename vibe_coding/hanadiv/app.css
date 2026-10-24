@@ -635,7 +635,7 @@ html.clean #cleanbar {
 /* the pill sits at the top centre, so the map's own buttons move down out of its way on a phone */
 @media (max-width: 899px) { html.clean .maplibregl-ctrl-top-right { margin-top: calc(env(safe-area-inset-top) + 52px); } }
 
-#showPanel {
+#showPanel, #sharePanel {
   position: fixed; z-index: 15; background: var(--paper); box-shadow: var(--shadow); padding: 12px 16px 16px;
   direction: rtl; overflow-y: auto; overscroll-behavior: contain;
   /* a phone gets it from the bottom, where the thumb is */
@@ -643,7 +643,8 @@ html.clean #cleanbar {
   padding-bottom: calc(16px + env(safe-area-inset-bottom)); animation: rise .25s cubic-bezier(.2, .8, .2, 1);
 }
 @media (min-width: 900px) {
-  #showPanel { inset: auto; bottom: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; border-radius: 18px; animation: fade .2s; }
+  #showPanel, #sharePanel { inset: auto; bottom: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; border-radius: 18px; animation: fade .2s; }
+  #sharePanel { width: 400px; }
 }
 .sphead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .sphead b { font-size: 17px; }
@@ -677,3 +678,12 @@ html.preview .vm .dot::after { animation: none; display: none; }
 html.preview .sec h3 .livedot { display: none; }
 html.preview .gt .nowline { background: var(--ink); }
 .tag.at { background: #e8eef4; color: var(--ink); }
+
+/* ---------- sharing what is on screen ---------- */
+.shnote { margin: 0 0 8px; font-size: 14px; color: var(--ink2); line-height: 1.5; }
+.shlink { display: flex; gap: 8px; margin: 12px 0 10px; }
+.shlink input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font: 500 15px Rubik, sans-serif; color: var(--ink); background: #fff; }
+.shlink .btn { flex: none; justify-content: center; }
+.shbtns { display: flex; gap: 8px; }
+.shbtns .btn { flex: 1; justify-content: center; padding: 10px 12px; }
+.shbtns svg { width: 18px; height: 18px; }

@@ -308,8 +308,7 @@ const DEM = {
   attribution: 'Elevation: Mapzen / AWS Open Data',
 };
 const TILTED = 58, TERRAIN_X = 2.5;
-const LOOK = (() => { try { return JSON.parse(localStorage.getItem('hanadiv-look')) || {}; } catch (e) { return {}; } })();
-S.sat = !!LOOK.sat; S.tilt = !!LOOK.tilt;
+S.sat = false; S.tilt = false;  // set from the address in main()
 
 let map;
 const markers = new Map();
@@ -321,7 +320,8 @@ function setupMap() {
   } catch (e) { /* mirrored labels are bad, a blank map is worse */ }
   map = new maplibregl.Map({
     container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: CENTER, zoom: 13.4, pitch: S.tilt ? TILTED : 0, maxPitch: 65,
+    center: S.cam ? [S.cam.lng, S.cam.lat] : CENTER, zoom: S.cam ? S.cam.zoom : 13.4,
+    bearing: S.cam ? S.cam.bearing : 0, pitch: S.cam ? S.cam.pitch : S.tilt ? TILTED : 0, maxPitch: 65,
     // a phone's screen of 3 pixels to the point would draw 9 for each one seen, over the relief twice
     pixelRatio: Math.min(devicePixelRatio || 1, 2),
     attributionControl: { compact: true, customAttribution: `אורי מוסנזון · <a href="${SRC}" target="_blank" rel="noopener">GPL-3.0</a>` },
@@ -383,11 +383,21 @@ function setupMap() {
     drawRoute();
     // frame the moshava: venues further than 3 km (the outskirts, Caesarea's beach) are left out of the opening view
     const near = [...S.venues.values()].filter(v => v.geo && dist(v.geo, { lat: CENTER[1], lng: CENTER[0] }) < (innerWidth < 600 ? 1600 : 3000));
-    if (near.length && !S.sel) {
+    if (near.length && !S.sel && !S.cam) {
       const b = new maplibregl.LngLatBounds();
       near.forEach(v => b.extend([v.geo.lng, v.geo.lat]));
       map.fitBounds(b, { padding: fitPad(), duration: 0, maxZoom: 15 });
     }
+    // a link can carry an open popup on the map, with the event it was showing
+    const at = S.init && S.init.at && S.venues.get(S.init.at);
+    if (at && at.geo && S.view !== 'grid') {
+      const f = S.init.f && S.byId.get(S.init.f);
+      S.focus = f && f.vkey === at.key ? f : null;
+      openVenue(at, false); markFocus();
+    }
+    S.camReady = true;
+    map.on('moveend', setHashSoon);
+    setHashSoon();
   });
   map.on('click', () => closePopup());
   map.on('movestart', () => map.getContainer().classList.add('moving'));
@@ -407,7 +417,7 @@ function setupMap() {
   map.on('zoom', scale); scale();
 }
 function applyLook() {
-  try { localStorage.setItem('hanadiv-look', JSON.stringify({ sat: S.sat, tilt: S.tilt })); } catch (e) { /* private window */ }
+  setHashSoon();
   $('#satBtn')?.classList.toggle('on', S.sat);
   $('#tiltBtn')?.classList.toggle('on', S.tilt);
   document.body.classList.toggle('sat', S.sat);
@@ -433,9 +443,10 @@ function groundCamera() {
 /* Each viewer picks what stays on screen: the hour strip, the kind chips, the list, and on
    the map the places already over, the ones later in the day, and the street names. "Map
    only" clears everything but the map and a small clock, full screen where the browser
-   allows it (not on an iPhone). The choices are remembered; map-only lasts the visit. */
+   allows it (not on an iPhone). The choices live in the address, like the rest of the state:
+   the plain address shows everything, and a link brings back exactly what was on screen. */
 const UI_DEF = { strip: true, chips: true, list: true, done: true, idle: true, labels: true };
-S.ui = { ...UI_DEF, ...(() => { try { return JSON.parse(localStorage.getItem('hanadiv-ui')) || {}; } catch (e) { return {}; } })() };
+S.ui = { ...UI_DEF };
 S.clean = false;
 const SHOW_ROWS = [
   ['על המסך', [['strip', 'סרגל השעות'], ['chips', 'סינון לפי סוג'], ['list', 'רשימת האירועים ליד המפה']]],
@@ -455,7 +466,6 @@ function toggleShowPanel(open = $('#showPanel').hidden) {
   if (open) p.innerHTML = showPanelHTML();
 }
 function applyUI() {
-  try { localStorage.setItem('hanadiv-ui', JSON.stringify(S.ui)); } catch (e) { /* private window */ }
   layoutUI();
   applyLabels();
   if (map) map.resize();
@@ -607,7 +617,7 @@ function focusEvent(e) {
   const pad = { top: Math.min(wide ? 330 : 300, map.getContainer().clientHeight * .58), bottom: wide ? 20 : 140, left: 10, right: 10 };
   map.flyTo({ center: [e.vgeo.lng, e.vgeo.lat], zoom: Math.max(map.getZoom(), 15), offset: off(pad), duration: 700 });
   map.once('moveend', fitPopup);
-  drawMarkers(); markFocus(true);
+  drawMarkers(); markFocus(true); setHashSoon();
 }
 function markFocus(scroll) {
   $$('#sheetBody .ev').forEach(c => c.classList.toggle('focus', !!S.focus && c.dataset.ev === S.focus.id));
@@ -647,11 +657,11 @@ function openVenue(v, fly) {
   if (!v.geo) return;
   S.popup = new maplibregl.Popup({ closeButton: false, maxWidth: '300px', offset: popOffset(v), focusAfterOpen: false, anchor: 'bottom' })
     .setLngLat([v.geo.lng, v.geo.lat]).setHTML(S.focus ? eventPopHTML(S.focus) : venueHTML(v)).addTo(map);
-  S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); } });
+  S.popup.on('close', () => { if (S.sel === v) { S.sel = null; S.focus = null; drawMarkers(); markFocus(); setHashSoon(); } });
   if (fly) { map.flyTo({ center: [v.geo.lng, v.geo.lat], zoom: Math.max(map.getZoom(), 15.5), offset: off(fitPad()) }); map.once('moveend', fitPopup); }
   else requestAnimationFrame(fitPopup);
   if ($('#sheet').dataset.snap === 'full') snap('peek');
-  drawMarkers();
+  drawMarkers(); setHashSoon();
 }
 /* A popup opened near the edge of the map would run off it (or hide under the sheet on a
    phone), so the map slides until all of it is in sight. When the map is too short to hold
@@ -670,7 +680,7 @@ function fitPopup() {
   else if (r.right > right) dx = r.right - right;
   if (dx || dy) map.panBy([dx, dy], { duration: 350 });
 }
-function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; S.focus = null; }
+function closePopup() { if (S.popup) { const p = S.popup; S.popup = null; p.remove(); } S.sel = null; S.focus = null; setHashSoon(); }
 
 /* ---------- the list ---------- */
 
@@ -1278,7 +1288,7 @@ function stopPlay() {
 
 /* ---------- sheet ---------- */
 
-function snap(s) { $('#sheet').dataset.snap = s; }
+function snap(s) { $('#sheet').dataset.snap = s; setHashSoon(); }
 function setupSheet() {
   const sheet = $('#sheet'), grab = $('#grab');
   let y0 = null, h0 = 0, moved = false;
@@ -1312,23 +1322,56 @@ function setupSheet() {
 
 /* ---------- url ---------- */
 
+/* The address holds the whole state of the app, so a reload or a link brings back exactly
+   what was on screen: day and time (none while following the real clock), view, open card,
+   what is hidden, map-only, filters and search, aerial photo and 3D, the camera, the popup on
+   the map and how high the phone's sheet is. Only what differs from the plain address is
+   written, so the plain address is the app with everything showing. The personal plan stays
+   in the browser; a shared link may carry it as an offer to add. */
 let hashTimer;
 function setHashSoon() { clearTimeout(hashTimer); hashTimer = setTimeout(setHash, 400); }
-function setHash() {
+function stateParams() {
   const p = new URLSearchParams();
   p.set('d', S.day.slice(8));
   if (!S.follow) p.set('t', hm(S.t));  // following the clock: a reload should come back to now
   if (S.view !== 'map') p.set('v', S.view);
   if (S.detail) S.detail.place ? p.set('place', S.detail.place.key) : p.set('e', S.detail.id);
-  history.replaceState(null, '', '#' + p.toString().replace(/%3A/g, ':'));
+  const hide = Object.keys(UI_DEF).filter(k => !S.ui[k]);
+  if (hide.length) p.set('hide', hide.join(','));
+  if (S.clean) p.set('full', '1');
+  if (S.filt.size) p.set('g', [...S.filt].join(','));
+  if (S.kids) p.set('kids', '1');
+  if (S.access) p.set('acc', '1');
+  if (S.q) p.set('q', S.q);
+  if (!S.onlyMine) p.set('all', '1');
+  if (S.sat) p.set('sat', '1');
+  if (S.tilt) p.set('3d', '1');
+  if (S.sel && S.view !== 'grid') { p.set('at', S.sel.key); if (S.focus) p.set('f', S.focus.id); }
+  const sh = $('#sheet').dataset.snap;
+  if (innerWidth < 900 && sh !== 'mid') p.set('sh', sh);
+  if (map && S.camReady) {
+    const c = map.getCenter(), b = Math.round(map.getBearing()), pt = Math.round(map.getPitch());
+    p.set('m', [c.lat.toFixed(5), c.lng.toFixed(5), +map.getZoom().toFixed(2), ...(b || pt ? [b, pt] : [])].join(','));
+  }
+  return p;
 }
+const query = p => p.toString().replace(/%3A/g, ':').replace(/%2C/g, ',');
+function setHash() { history.replaceState(null, '', '#' + query(stateParams())); }
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   const d = p.get('d') && S.days.find(x => x.slice(8) === p.get('d').padStart(2, '0'));
   const t = p.get('t') && /^(\d\d?):(\d\d)$/.exec(p.get('t'));
+  const m = (p.get('m') || '').split(',').map(Number);
+  const list = k => (p.get(k) || '').split(',').filter(Boolean);
   return {
     day: d, t: t ? +t[1] * 60 + +t[2] : null, view: p.get('v'), e: p.get('e'), place: p.get('place'),
     plan: p.get('plan') ? p.get('plan').split(/[,.]/).filter(id => S.byId.has(id)) : null,
+    hide: list('hide').filter(k => k in UI_DEF), full: p.has('full'),
+    g: list('g').filter(g => S.groups.includes(g)), kids: p.has('kids'), acc: p.has('acc'), q: p.get('q') || '',
+    all: p.has('all'), sat: p.has('sat'), tilt: p.has('3d'), at: p.get('at'), f: p.get('f'),
+    sh: ['peek', 'mid', 'full'].includes(p.get('sh')) ? p.get('sh') : null,
+    cam: m.length >= 3 && m.slice(0, 3).every(Number.isFinite) && Math.abs(m[0] - CENTER[1]) < 1 && Math.abs(m[1] - CENTER[0]) < 1
+      ? { lat: m[0], lng: m[1], zoom: clamp(m[2], 8, 20), bearing: m[3] || 0, pitch: clamp(m[4] || 0, 0, 65) } : null,
   };
 }
 
@@ -1367,13 +1410,52 @@ function locate() {
   }, () => { toast('לא קיבלנו מיקום. אפשר לאשר אותו בהגדרות הדפדפן.'); S.watch = null; }, { enableHighAccuracy: true, maximumAge: 30000 });
 }
 
-function share() {
-  const url = `${location.origin}${location.pathname}#d=${S.day.slice(8)}&plan=${[...S.plan].join(',')}`;
-  return shareUrl(url, `התוכנית שלי לפסטיבל דרך הנדיב (${S.plan.size} אירועים)`);
+/* Sharing sends the state on screen as a short link. The long address goes to is.gd, which
+   answers browsers directly and keeps the part after # through its redirect; if it does not
+   answer, the full address is shared instead. The plan joins only when asked for. */
+const shortened = new Map();
+async function shorten(url) {
+  if (shortened.has(url)) return shortened.get(url);
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const r = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(url), { signal: ctl.signal });
+    const j = await r.json();
+    if (!j.shorturl) throw new Error(j.errormessage || 'no link');
+    shortened.set(url, j.shorturl);
+    return j.shorturl;
+  } finally { clearTimeout(timer); }
 }
+function shareLink(withPlan) {
+  const p = stateParams();
+  if (withPlan && S.plan.size) { p.set('plan', [...S.plan].join(',')); p.set('v', 'plan'); }
+  return `${location.origin}${location.pathname}#${query(p)}`;
+}
+let shareSeq = 0;
+function share(withPlan = S.view === 'plan' && S.plan.size > 0) {
+  toggleShowPanel(false);
+  const box = $('#sharePanel');
+  box.hidden = false;
+  box.innerHTML = `<div class="sphead"><b>שיתוף</b><button class="iconbtn" data-shareclose aria-label="סגירה">${ICON.x}</button></div>
+    <p class="shnote">מי שיפתח את הקישור יראה בדיוק את מה שעל המסך שלך: ${S.follow ? 'השעה שלו עכשיו' : `${dayName(S.day, true)} ב-${hm(S.t)}`}, התצוגה, המפה, הסינון ומה שמוסתר.</p>
+    ${S.plan.size ? `<label class="sw"><span>לצרף את התוכנית שלי (${S.plan.size})</span><input type="checkbox" data-shareplan ${withPlan ? 'checked' : ''}><i></i></label>` : ''}
+    <div class="shlink"><input id="shareUrl" readonly dir="ltr" value="מקצר את הקישור..."><button class="btn warm" data-copy>העתקה</button></div>
+    <div class="shbtns">${navigator.share ? `<button class="btn" data-native>${ICON.share}שליחה</button>` : ''}<a class="btn wa" id="shareWa" target="_blank" rel="noopener">${ICON.wa}וואטסאפ</a></div>`;
+  fillShare(withPlan);
+}
+async function fillShare(withPlan) {
+  const seq = ++shareSeq, long = shareLink(withPlan);
+  let url = long;
+  try { url = await shorten(long); } catch (e) { /* the long one works too */ }
+  if (seq !== shareSeq || $('#sharePanel').hidden) return;
+  const inp = $('#shareUrl'); inp.value = url; inp.dataset.plan = withPlan ? '1' : '';
+  const text = withPlan ? `התוכנית שלי לפסטיבל דרך הנדיב (${S.plan.size} אירועים)` : 'דרך הנדיב · מה קורה עכשיו';
+  $('#shareWa').href = 'https://wa.me/?text=' + encodeURIComponent(`${text}\n${url}`);
+}
+function closeShare() { shareSeq++; $('#sharePanel').hidden = true; }
 // a host can send their place's own schedule to their guests
-function sharePlace(v) {
-  const url = `${location.origin}${location.pathname}#place=${encodeURIComponent(v.key)}`;
+async function sharePlace(v) {
+  let url = `${location.origin}${location.pathname}#place=${encodeURIComponent(v.key)}`;
+  try { url = await shorten(url); } catch (e) { /* the long one works too */ }
   return shareUrl(url, `${v.title} בפסטיבל דרך הנדיב: כל האירועים`);
 }
 async function shareUrl(url, text) {
@@ -1383,6 +1465,7 @@ async function shareUrl(url, text) {
 }
 
 function setupEvents() {
+  $('#sharePanel').addEventListener('change', ev => { if (ev.target.dataset.shareplan != null) { $('#shareUrl').value = 'מקצר את הקישור...'; fillShare(ev.target.checked); } });
   $('#showPanel').addEventListener('change', ev => {
     const k = ev.target.dataset.ui; if (!k) return;
     S.ui[k] = ev.target.checked; applyUI(); $('#showPanel').innerHTML = showPanelHTML();
@@ -1393,6 +1476,17 @@ function setupEvents() {
     if (t.closest('[data-gonow]')) { stopPlay(); return goNow(); }
     if (t.closest('[data-showclose]')) return toggleShowPanel(false);
     if (t.closest('[data-fold]')) { S.ui.list = !S.ui.list; return applyUI(); }
+    if (t.closest('[data-shareclose]')) return closeShare();
+    if (t.closest('[data-copy]')) {
+      const u = $('#shareUrl').value;
+      return navigator.clipboard.writeText(u).then(() => toast('הקישור הועתק'), () => { $('#shareUrl').select(); });
+    }
+    if (t.closest('[data-native]')) {
+      const u = $('#shareUrl').value;
+      return navigator.share({ title: 'דרך הנדיב · מה קורה עכשיו', url: u }).catch(() => {});
+    }
+    if (t.closest('#sharePanel')) return;
+    if (!$('#sharePanel').hidden && !t.closest('[data-share]')) closeShare();
     if (t.closest('[data-uireset]')) { S.ui = { ...UI_DEF }; applyUI(); return toggleShowPanel(true); }
     if (!$('#showPanel').hidden && !t.closest('#showPanel')) toggleShowPanel(false);
     const star = t.closest('[data-star]');
@@ -1405,9 +1499,9 @@ function setupEvents() {
     if (t.closest('[data-close]')) return closeDetail();
     const ics = t.closest('[data-ics]'); if (ics) { const e = S.byId.get(ics.dataset.ics); return downloadIcs([e], e.name.slice(0, 40)); }
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
-    if (t.closest('[data-share]')) return share();
+    if (t.closest('[data-share]')) return t.closest('#shareBtn') && !$('#sharePanel').hidden ? closeShare() : share();
     if (t.closest('[data-clear-plan]')) { if (confirm('לנקות את כל התוכנית?')) { S.plan.clear(); savePlan(); render(); redrawAll(); } return; }
-    if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); history.replaceState(null, '', location.pathname); redrawAll(); return render(); }
+    if (t.closest('[data-import]')) { S.shared.forEach(id => S.plan.add(id)); S.shared = null; savePlan(); toast('התוכנית נוספה'); setHash(); redrawAll(); return render(); }
     if (t.closest('[data-dismiss]')) { S.shared = null; return render(); }
     if (t.closest('[data-onlymine]')) { S.onlyMine = !S.onlyMine; return render(); }
     if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
@@ -1434,6 +1528,7 @@ function setupEvents() {
   document.addEventListener('keydown', ev => {
     if (ev.key !== 'Escape') return;
     if (S.detail) closeDetail();
+    else if (!$('#sharePanel').hidden) closeShare();
     else if (!$('#showPanel').hidden) toggleShowPanel(false);
     else if (S.clean) setClean(false);
   });
@@ -1472,12 +1567,20 @@ async function main() {
   // a shared link keeps its time; otherwise the app opens on the real time of day, following it
   S.follow = h.t == null;
   S.t = h.t != null ? h.t : Math.round(clamp(israelNow().m, S.lo, S.hi) / STEP) * STEP;
-  if (h.plan && h.plan.length) S.shared = h.plan;
+  if (h.plan && h.plan.length && h.plan.some(id => !S.plan.has(id))) S.shared = h.plan;
+  S.init = h;
+  h.hide.forEach(k => S.ui[k] = false);
+  h.g.forEach(g => S.filt.add(g));
+  S.kids = h.kids; S.access = h.acc; S.onlyMine = !h.all;
+  if (h.q) { S.q = h.q; $('#q').value = h.q; $('#searchRow').hidden = false; $('#searchBtn').classList.add('on'); }
+  S.sat = h.sat; S.tilt = h.tilt || !!(h.cam && h.cam.pitch >= 10); S.cam = h.cam;
+  // map-only from a link: set before the map frames itself (the browser's full screen needs a tap, so not that)
+  S.clean = h.full && !S.shared && (h.view || 'map') === 'map';
   $('#sub').textContent = `פסטיבל ${dayName(S.days[0]).split(' ')[1]}–${dayName(S.days.at(-1)).split(' ')[1]} · ${S.events.length} אירועים ב-${S.venues.size} מקומות`;
   setupEvents(); setupStrip(); setupSheet(); setupMap();
   drawDays(); drawChips(); drawStrip();
-  setView(h.plan ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
-  if (!h.plan && innerWidth < 900) snap('mid');
+  setView(S.shared ? 'plan' : h.view && ['map', 'grid', 'plan'].includes(h.view) ? h.view : 'map');
+  if (innerWidth < 900) snap(h.sh || 'mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
   else if (h.place && S.venues.has(h.place)) openPlace(S.venues.get(h.place));
   setInterval(() => { if (S.follow && !S.playing) goNow(true); else render(); drawDays(); }, 30000);  // the real clock under a look-ahead ticks too
