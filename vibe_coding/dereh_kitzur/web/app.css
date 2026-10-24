@@ -150,6 +150,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .sel-ring::after { animation: none; opacity: 0; }
 }
 
+/* A photo on the spot it was taken (paintPhotoPins in app.js). White rim and
+ * a dark outline for the same reason as the selection ring: it belongs to no
+ * layer and has to read over the street map and the satellite photo alike.
+ * The selected trail's own are a size larger than the neighbours'. */
+.photo-pin {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ddd;
+  box-shadow: 0 0 0 1px rgba(20, 20, 20, .7), 0 2px 6px rgba(0, 0, 0, .35);
+  cursor: pointer;
+}
+.photo-pin.own { width: 44px; height: 44px; border-width: 3px; z-index: 1; }
+.photo-pin img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* No transform here: MapLibre positions a marker by its element's transform. */
+.photo-pin:hover { z-index: 2; border-color: #ffd54f; }
+body.flying .photo-pin { display: none; }
+
 /* ---------- floating buttons ---------- */
 
 .fab {

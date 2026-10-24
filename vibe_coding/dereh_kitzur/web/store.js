@@ -789,16 +789,38 @@ const Store = (() => {
     return rel;
   }
 
+  /** Each entry is a picked file, or `{ blob, at }` from a draft, which shrank
+   *  its photos on the way into IndexedDB and read their location first
+   *  because shrinking loses it. A file is asked for its location here, before
+   *  encodeImage does the same. */
   async function uploadAll(blobs, name, onStep) {
     const photos = [];
     let n = 0;
-    for (const blob of blobs || []) {
+    for (const entry of blobs || []) {
       n++;
+      const blob = entry instanceof Blob ? entry : entry.blob;
+      const at = (entry instanceof Blob ? null : entry.at) || await Exif.locate(blob);
       if (onStep && (blobs.length > 1)) onStep(`מעלה תמונה ${n} מתוך ${blobs.length}…`);
-      photos.push(await uploadPhoto(blob, name, onStep));
+      const rel = await uploadPhoto(blob, name, onStep);
+      photos.push(at ? { ...rel, at } : rel);
     }
     return photos;
   }
+
+  /** The content hash a photo is stored under, from either of its paths. */
+  const photoKey = (p) => ((p && (p.full || p.thumb)) || '').match(/([0-9a-f]{14})(?:_t)?\.webp/)?.[1] || null;
+
+  /** Locations for photos already on an item, keyed by photoKey: what
+   *  `placeFromOriginals` in app.js found by matching the original files
+   *  against the uploaded ones. A null clears a location. */
+  const setPhotoPlaces = (id, places, name, home = 'trails') =>
+    onItem(home, id, (it) => {
+      (it.photos || []).forEach((p) => {
+        const k = photoKey(p);
+        if (!k || !(k in places)) return;
+        if (places[k]) p.at = places[k]; else delete p.at;
+      });
+    }, `מיקום תמונות: ${name}`);
 
   /* ---------- links ---------- */
 
@@ -1490,7 +1512,7 @@ const Store = (() => {
     load, asset, cleanLinks, stat, statVisit,
     isEditor, editor, editing, named, setName, enable, disable, resume, writable,
     publish, publishTrip, remove, reshape, splitOut, rename, setLinks, setNote, setColor,
-    addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb,
+    addPhotos, removePhoto, addVideo, youtubeId, youtubeThumb, photoKey, setPhotoPlaces,
     addLayer, editLayer, removeLayer, setLayer,
     pinPlace, unpinPlace, movePlaces,
     queue, submit, approve, reject,

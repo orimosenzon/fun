@@ -585,12 +585,73 @@ const byId = (id) => Layers.item(id);
  *  already unambiguous - a ring on top of it would say less, not more. */
 function markSelection(item) {
   if (selMarker) { selMarker.remove(); selMarker = null; }
+  paintPhotoPins();   // the selected trail's own photos come and go with it
   if (!map || !item || item.path || item.lat == null || item.lng == null) return;
   const node = document.createElement('div');
   node.className = 'sel-ring';
   selMarker = new maplibregl.Marker({ element: node })
     .setLngLat([item.lng, item.lat])
     .addTo(map);
+}
+
+/* ---------- photos where they were taken ----------
+ *
+ * A photo whose original carried a location (`at`, see exif.js) is drawn on
+ * the map as a small round thumbnail on that spot. The selected trail shows
+ * all of its own at any zoom, since you opened it to look at it; everybody
+ * else's appear once the map is close enough that a street fits the screen,
+ * because at the scale of the moshava they would be a carpet of dots.
+ *
+ * HTML markers, pooled by photo, for the reason the selection ring is one: a
+ * picture needs no sprite sheet that way, and it sits above every layer
+ * without being reinserted when the basemap changes. */
+
+const PHOTO_PIN_ZOOM = 16;
+const PHOTO_PIN_MAX = 80;
+const photoPins = new Map();   // item id, photo index and hash -> marker
+
+function paintPhotoPins() {
+  if (!map) return;
+  const want = new Map();
+  const add = (it) => {
+    (it.photos || []).forEach((p, i) => {
+      if (!p.at || p.yt || want.size >= PHOTO_PIN_MAX) return;
+      want.set(`${it.id}:${i}:${Store.photoKey(p) || p.thumb}`, { it, p, i });
+    });
+  };
+
+  const sel = selectedId ? byId(selectedId) : null;
+  if (sel) add(sel);
+  if (map.getZoom() >= PHOTO_PIN_ZOOM) {
+    const b = map.getBounds();
+    for (const it of [...Layers.visibleSegments(), ...Layers.visibleWaypoints()]) {
+      if (it === sel || !(it.photos || []).some((p) => p.at)) continue;
+      const inView = (it.photos || []).some((p) => p.at && b.contains([p.at[1], p.at[0]]));
+      if (inView) add(it);
+    }
+  }
+
+  for (const [key, m] of photoPins) {
+    if (!want.has(key)) { m.remove(); photoPins.delete(key); }
+  }
+  for (const [key, { it, p, i }] of want) {
+    let m = photoPins.get(key);
+    if (!m) {
+      const node = document.createElement('button');
+      node.type = 'button';
+      node.className = 'photo-pin';
+      node.innerHTML = `<img src="${p.thumb}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();   // a click on the map under it would deselect
+        if (selectedId !== it.id) select(it.id, false);
+        openLightbox(byId(it.id) || it, i);
+      });
+      m = new maplibregl.Marker({ element: node }).setLngLat([p.at[1], p.at[0]]).addTo(map);
+      node.setAttribute('aria-label', `תמונה: ${it.name || ''}`);   // the marker wrote its own
+      photoPins.set(key, m);
+    }
+    m.getElement().classList.toggle('own', !!sel && it.id === sel.id);
+  }
 }
 
 function select(id, fit = true) {
@@ -932,6 +993,11 @@ function mediaActs(it, layer) {
       <label class="act" style="cursor:pointer"><span class="lbl">הוספת תמונות
         <span class="hint">מוקטנות ומועלות לריפו הנתונים</span></span>
         <input type="file" accept="image/*" multiple hidden data-pub="photos"></label>
+      ${(it.photos || []).some((p) => !p.yt) ? `<label class="act" style="cursor:pointer"><span class="lbl">מיקום התמונות במפה
+        <span class="hint">${(it.photos || []).some((p) => p.at)
+          ? `${(it.photos || []).filter((p) => p.at).length} מתוך ${(it.photos || []).filter((p) => !p.yt).length} ממוקמות. `
+          : ''}לבחור שוב את הקבצים המקוריים מהטלפון, והמיקום נלקח מהם</span></span>
+        <input type="file" accept="image/*" multiple hidden data-pub="places"></label>` : ''}
       <button class="act" data-pub="video"><span class="lbl">הוספת סרטון יוטיוב
         <span class="hint">יוצג יחד עם התמונות, ונפתח בגדול בדפדוף</span></span></button>
       <button class="act" data-pub="note"><span class="lbl">${noted ? 'שינוי ההערה' : 'הערה'}
@@ -1580,6 +1646,20 @@ function wirePublished(it) {
       return;
     }
 
+    if (act === 'places') {
+      node.addEventListener('change', async () => {
+        if (!node.files || !node.files.length) return;
+        const files = [...node.files];
+        node.value = '';
+        try {
+          await placeFromOriginals(it, files, home, say);
+        } catch (err) {
+          say('נכשל: ' + err.message, true);
+        }
+      });
+      return;
+    }
+
     if (act === 'photos') {
       node.addEventListener('change', async () => {
         if (!node.files || !node.files.length) return;
@@ -1983,7 +2063,121 @@ function startPinning(it) {
   Arrange.open(it);
 }
 
-/* ---------- lightbox ---------- */
+/* ---------- locations for photos already uploaded ----------
+ *
+ * Until 24/10/2026 every upload threw the location away (see exif.js), and the
+ * uploaded files cannot give it back. The originals on the phone still have
+ * it. So an editor picks them again, and each original is matched to the
+ * uploaded photo that looks like it: both are drawn at 16x16 in grey and
+ * compared by correlation, which shrugs off the re-encoding and the resizing.
+ * Matching by the content hash would have been exact, but the hash is of the
+ * browser's own WebP output, and a different phone or Chrome version would
+ * not reproduce it. */
+
+function loadImage(src, cors) {
+  return new Promise((done, fail) => {
+    const img = new Image();
+    if (cors) img.crossOrigin = 'anonymous';
+    img.onload = () => done(img);
+    img.onerror = () => fail(new Error('לא הצלחתי לקרוא תמונה'));
+    img.src = src;
+  });
+}
+
+const SIG = 16;
+async function imageSignature(src, cors) {
+  const img = await loadImage(src, cors);
+  // Halved step by step: one drawImage from 4000 pixels to 16 samples a
+  // handful of them, and a 500 pixel thumbnail and its 4000 pixel original
+  // would then be compared on two different handfuls.
+  let from = img, w = img.naturalWidth, h = img.naturalHeight;
+  while (w > SIG * 2 || h > SIG * 2) {
+    w = Math.max(SIG, Math.ceil(w / 2)); h = Math.max(SIG, Math.ceil(h / 2));
+    const step = document.createElement('canvas');
+    step.width = w; step.height = h;
+    step.getContext('2d').drawImage(from, 0, 0, w, h);
+    from = step;
+  }
+  const c = document.createElement('canvas');
+  c.width = c.height = SIG;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(from, 0, 0, SIG, SIG);
+  const px = g.getImageData(0, 0, SIG, SIG).data;
+  const v = new Float32Array(SIG * SIG);
+  let mean = 0;
+  for (let i = 0; i < v.length; i++) {
+    v[i] = 0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2];
+    mean += v[i];
+  }
+  mean /= v.length;
+  let norm = 0;
+  for (let i = 0; i < v.length; i++) { v[i] -= mean; norm += v[i] * v[i]; }
+  norm = Math.sqrt(norm) || 1;
+  for (let i = 0; i < v.length; i++) v[i] /= norm;
+  return v;
+}
+
+const likeness = (a, b) => a.reduce((sum, x, i) => sum + x * b[i], 0);
+const SAME_PHOTO = 0.9;   // correlation; the same picture re-encoded scores ~0.99
+
+async function placeFromOriginals(it, files, home, say) {
+  const uploaded = (it.photos || []).filter((p) => !p.yt && Store.photoKey(p));
+  say('קורא את המיקום מהקבצים…');
+  const originals = [];
+  let noPlace = 0, redacted = 0;
+  for (const file of files) {
+    const { at, redacted: gone } = (await Exif.read(file)) || {};
+    if (gone) redacted++;
+    if (!at) { noPlace++; continue; }
+    const url = URL.createObjectURL(file);
+    try { originals.push({ at, sig: await imageSignature(url, false) }); }
+    finally { URL.revokeObjectURL(url); }
+  }
+  if (!originals.length && redacted) {
+    say(`הטלפון מחק את המיקום מהקבצים בדרך לכאן (${redacted} מתוך ${files.length}). ` +
+      (window.Capacitor ? 'כדאי לנסות מהאתר בכרום במקום מהאפליקציה, ' : '') +
+      'ובבחירה לפתוח את הקבצים דרך "קבצים" או "עיון" במקום הגלריה.', true);
+    return;
+  }
+  if (!originals.length) {
+    say(`באף אחד מ-${files.length} הקבצים אין מיקום. אולי הטלפון מחק אותו בבחירה, ` +
+      'או שתגי המיקום במצלמה היו כבויים.', true);
+    return;
+  }
+
+  say('משווה לתמונות שכבר עלו…');
+  const sigs = [];
+  for (const p of uploaded) {
+    try { sigs.push(await imageSignature(p.thumb, true)); } catch (err) { sigs.push(null); }
+  }
+
+  // Every pair, best first, each side used once.
+  const pairs = [];
+  originals.forEach((o, a) => sigs.forEach((s, b) => {
+    if (s) pairs.push({ a, b, score: likeness(o.sig, s) });
+  }));
+  pairs.sort((x, y) => y.score - x.score);
+  const usedA = new Set(), usedB = new Set(), places = {};
+  for (const { a, b, score } of pairs) {
+    if (score < SAME_PHOTO) break;
+    if (usedA.has(a) || usedB.has(b)) continue;
+    usedA.add(a); usedB.add(b);
+    places[Store.photoKey(uploaded[b])] = originals[a].at;
+  }
+
+  const n = Object.keys(places).length;
+  if (!n) { say('לא מצאתי אף קובץ שמתאים לתמונות של השביל הזה.', true); return; }
+  say('שומר…');
+  await reloadAfter(home, await Store.setPhotoPlaces(it.id, places, it.name, home));
+  select(it.id, false);
+  const unmatched = originals.length - n;
+  // select() redrew the pane, and with it the status line `say` was bound to.
+  detailSay()(`מוקמו ${n} מתוך ${uploaded.length} תמונות.` +
+    (noPlace ? ` ב-${noPlace} קבצים לא היה מיקום.` : '') +
+    (unmatched ? ` ${unmatched} קבצים לא התאימו לאף תמונה כאן.` : ''));
+}
+
+/* ---------- lightbox ---------- *//* ---------- lightbox ---------- */
 
 let lbPhotos = [], lbIndex = 0, lbTitle = '';
 
@@ -3671,6 +3865,7 @@ async function boot() {
     // `moveend`, so a link that lands on Houten shows it during the flight
     // rather than only once the camera has settled.
     map.on('move', updateHomeButton);
+    map.on('moveend', paintPhotoPins);
     updateHomeButton();
 
     if (wanted && Layers.item(wanted)) select(wanted, !view);
