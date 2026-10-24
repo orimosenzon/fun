@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>חמקן: שולחן המתכנן</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="description" content="מעצבים מטוס חמקן ורואים בזמן אמת את חתך המכ״ם שלו (אופטיקה פיזיקלית על כל פאה), את המחיר האווירודינמי, את החתימה התרמית, ומנסים לחדור מערך הגנה אווירית.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="logo">
+    <svg viewBox="0 0 68 44"><path d="M34 2 L66 38 L48 34 L34 42 L20 34 L2 38 Z" fill="none" stroke="#4fd1ff" stroke-width="2.5" stroke-linejoin="round"/><path d="M34 2 L34 42" stroke="#4fd1ff" stroke-width="1.2" opacity=".5"/></svg>
+    חמקן <small>שולחן המתכנן</small>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn primary" href="academy.html">🎓 האקדמיה: המתמטיקה והפיזיקה</a>
+</header>
+
+<div class="layout">
+  <!-- ======== בקרות ======== -->
+  <aside id="controls" class="card">
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+  </aside>
+
+  <!-- ======== מרכז ======== -->
+  <main>
+    <div class="card" id="viewWrap">
+      <div id="view"></div>
+      <div class="overlay">
+        <button class="btn on" data-v="parts">צבעי חלקים</button>
+        <button class="btn" data-v="heat">מי מחזיר למכ"ם</button>
+        <button class="btn" data-v="bubble">בועת RCS</button>
+        <button class="btn on" data-v="edges">קצוות מפזרים</button>
+        <button class="btn on" data-v="beam">קרן המכ"ם</button>
+      </div>
+      <div class="busy" id="busy">מחשב…</div>
+      <div class="legend3d" id="legend3d">גררו לסיבוב · גלגלת לזום. הקרן הצהובה מגיעה מהמכ"ם; לחיצה על התרשים הקוטבי מזיזה אותה.</div>
+      <div class="radarCtl">
+        <div class="ctl"><label>כיוון המכ"ם (אזימוט) <b id="azv">0°</b></label><input type="range" id="az" min="-180" max="180" step="1" value="20"></div>
+        <div class="ctl"><label>גובה המכ"ם יחסית למטוס <b id="elv">-5°</b></label><input type="range" id="el" min="-60" max="60" step="1" value="-3"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="tabs" id="tabs">
+        <button data-t="shape" class="on">צורה וקצוות</button>
+        <button data-t="aero">המחיר האווירודינמי</button>
+        <button data-t="ir">חום</button>
+        <button data-t="mission">מבחן חדירה</button>
+        <button data-t="more">אתגרים נוספים</button>
+      </div>
+
+      <section class="tabpane on" id="t-shape">
+        <div class="two">
+          <div>
+            <div class="pane-title">מבט מלמעלה: לאן מכוונים הקצוות</div>
+            <canvas class="chart" id="plan" style="height:280px"></canvas>
+            <p class="note">כל קצה ישר מחזיר "קוץ" חזק בכיוון אחד בלבד: הניצב אליו. הצבע מסמן את כיוון הניצב, והפרח שבפינה סוכם את עוצמת הקוצים לפי כיוון (∝L²). מתכנן חמקן מנסה לרכז את כל הקוצים בכמה כיוונים מעטים, רחוק מהאף. סמנו "יישור קצוות" ותראו את הפרח מתכווץ לקרניים בודדות.</p>
+          </div>
+          <div>
+            <div class="pane-title">הציפוי הבולע: מקדם ההחזרה לפי תדר</div>
+            <canvas class="chart" id="ramChart" style="height:280px"></canvas>
+            <p class="note" id="ramNote"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabpane" id="t-aero">
+        <div class="kpis" id="aeroKpis"></div>
+        <div class="two">
+          <div>
+            <div class="pane-title">כלל השטחים: שטח החתך לאורך המטוס</div>
+            <canvas class="chart" id="areaChart"></canvas>
+            <p class="note">גרר הגל בטיסה על-קולית תלוי בשינויים בשטח החתך A(x) ולא בצורה עצמה. הגוף הכי טוב לנפח נתון הוא גוף סירס-האק (הקו המקווקו). כל "גבנון" בעקומה מוסיף גרר. פאות שטוחות וחלל פנימי לחימוש מקשים לעקוב אחריה.</p>
+          </div>
+          <div>
+            <div class="pane-title">יציבות כיוונית: מי מחזיק את האף ברוח</div>
+            <canvas class="chart" id="cnChart"></canvas>
+            <p class="note" id="cnNote"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabpane" id="t-ir">
+        <div class="mapbar">
+          <div class="ctl"><label>מהירות (מאך) <b id="irMv">0.9</b></label><input type="range" id="irM" min="0.3" max="2.2" step="0.05" value="0.9"></div>
+          <div class="ctl"><label>גובה <b id="irHv">10 ק"מ</b></label><input type="range" id="irH" min="0" max="18" step="0.5" value="10"></div>
+          <label class="chk"><input type="checkbox" id="irAB"> מבער אחורי</label>
+          <label class="chk"><input type="checkbox" id="irLW"> חיישן גל ארוך (8–12 מיקרון)</label>
+        </div>
+        <div class="two">
+          <div>
+            <div class="pane-title">טווח גילוי של חיישן חום (IRST) לפי זווית מבט</div>
+            <canvas class="chart" id="irChart"></canvas>
+          </div>
+          <div>
+            <div class="pane-title">חוק פלאנק: כמה כל גוף מקרין בכל אורך גל</div>
+            <canvas class="chart" id="planckChart"></canvas>
+          </div>
+        </div>
+        <div class="kpis" id="irKpis"></div>
+        <p class="note">מכ"ם אפשר להטעות בצורה. חום אי אפשר: כל גוף חם מקרין. המתכנן מסתיר את החלקים הלוהטים של המנוע (נחיר שטוח מעל הכנף, כמו ב-F-117 וב-B-2), מערבב אוויר קר לסילון, ונמנע מטיסה על-קולית ארוכה שמחממת את העור. שימו לב שהעור מתחמם עם המהירות לפי T = T∞(1 + 0.17·M²) והמבער האחורי הופך כל מטוס למדורה.</p>
+      </section>
+
+      <section class="tabpane" id="t-mission">
+        <div class="mapbar">
+          <button class="btn primary" id="mPlay">▶ טוס</button>
+          <button class="btn" id="mReset">↺ איפוס</button>
+          <div class="ctl"><label>גובה טיסה <b id="mAltv">9 ק"מ</b></label><input type="range" id="mAlt" min="0.05" max="15" step="0.05" value="9"></div>
+          <label class="chk"><input type="checkbox" id="mRef"> השוואה למטוס קונבנציונלי</label>
+          <span class="tiny">לחיצה על המפה מוסיפה נקודת ציון; לחיצה ימנית על מכ"ם מחליפה את סוגו.</span>
+        </div>
+        <div id="mapWrap"><canvas id="map"></canvas></div>
+        <div class="two" style="margin-top:8px">
+          <div class="log" id="mLog"></div>
+          <p class="note">כל מכ"ם מחשב בכל רגע מאיזו זווית הוא רואה את המטוס (אזימוט וגובה יחסית לכיוון הטיסה), שולף את σ מהתבנית שחושבה לתדר שלו, ובודק אם המטרה בתוך R₁·σ^¼ ומעל האופק. הטבעות הן טווחי הגילוי לחזית המטוס. מכ"ם VHF מגלה גם חמקנים, אבל הקרן שלו רחבה מכדי להנחות טיל, ולכן הוא מסומן ב"גילוי בלבד".</p>
+        </div>
+      </section>
+
+      <section class="tabpane" id="t-more">
+        <div class="mapbar">
+          <label class="chk"><input type="checkbox" id="xBay"> לפתוח את דלתות תא החימוש</label>
+          <label class="chk"><input type="checkbox" id="xExt"> חימוש ומכלים מתחת לכנף</label>
+        </div>
+        <div class="kpis" id="moreKpis"></div>
+        <div class="chall" id="chall"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ======== עמודת מכ"ם ======== -->
+  <aside id="side">
+    <div class="card">
+      <h3>חתך מכ"ם (RCS) סביב המטוס</h3>
+      <div class="bands" id="bands"></div>
+      <canvas id="polar"></canvas>
+      <div class="tiny" id="polarNote"></div>
+      <div class="aspect" id="aspect"></div>
+    </div>
+    <div class="card ranges">
+      <h3>מאיזה מרחק יראו אותו (מול האף)</h3>
+      <div id="ranges"></div>
+      <div class="tiny">R = R₁·σ^¼: כדי לחצות את הטווח צריך להקטין את σ פי 16. זה כל הסיפור של חמקנות.</div>
+    </div>
+  </aside>
+</div>
+<footer>
+  המודל הוא כלי לימוד: אופטיקה פיזיקלית סקלרית על משולשים (נוסחת גורדון) עם הצללה פשוטה, ועוד מקדם קצה מפושט, פתחי אוויר, תא טייס ואנטנה כמפזרים נקודתיים. הצורות בהשראת מטוסים אמיתיים ולא העתק שלהם. הנתונים האמיתיים של מטוסים חמקנים מסווגים.
+</footer>
+<script type="module" src="js/app/main.js"></script>
+</body>
+</html>
