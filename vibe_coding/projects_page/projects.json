@@ -1240,6 +1240,46 @@
           ]
         },
         {
+          "title": "חמקן: שולחן המתכנן",
+          "icon": "✈️",
+          "theme": "t-blue",
+          "dir": "stealth",
+          "tags": [
+            "חתך מכ\"ם",
+            "אופטיקה פיזיקלית",
+            "Three.js",
+            "KaTeX",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#7dd3fc\">איך מעצבים מטוס שהמכ\"ם כמעט לא רואה?</strong><br> משנים את צורת המטוס (פאות, ספנה, שיני מסור, הטיית זנבות, ציפוי בולע, פתחי אוויר) ורואים בזמן אמת את חתך המכ\"ם בכל כיוון ובארבעה תדרים, מחושב באופטיקה פיזיקלית על כל משולש. ועוד: המחיר האווירודינמי, החתימה התרמית, וטיסה דרך מערך מכ\"מים. לצדו אקדמיה עם 11 פרקים של מתמטיקה ופיזיקה ו-11 מעבדות, שתיים בתלת-ממד.",
+          "links": [
+            {
+              "href": "stealth/index.html",
+              "style": "live",
+              "label": "▶ לתכנן",
+              "external": false
+            },
+            {
+              "href": "stealth/academy.html",
+              "style": "secondary",
+              "label": "🎓 האקדמיה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/stealth",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "פרדס חנה תלת-ממד",
           "icon": "🏘️",
           "theme": "t-green",
