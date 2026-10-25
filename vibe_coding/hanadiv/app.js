@@ -769,6 +769,7 @@ function myNext() {
 function savePlan() {
   planMemo = null;
   try { localStorage.setItem('hanadiv-plan', JSON.stringify([...S.plan])); } catch (e) { /* private window */ }
+  if (typeof planChanged === 'function') planChanged();  // sync.js: up to the account
   const n = S.plan.size;
   $('#planCount').textContent = n || '';
 }
@@ -850,11 +851,13 @@ function drawPlan() {
       <ol><li>לוחצים ★ ליד כל אירוע שרוצים: ברשימה, בבועה על המפה, בכרטיס האירוע או בלוח הזמנים של מקום.</li>
       <li>כאן הם מסתדרים לפי שעות, עם זמן ההליכה ביניהם ואזהרה כששניים מתנגשים, ובין אירוע לאירוע מוצע מה עוד נכנס בחלון.</li>
       <li>התוכנית זוהרת בכל האפליקציה: על המפה, בלוח הזמנים, בפס השעות ובימים. ואפשר לשלוח אותה לחברים בקישור.</li></ol></div>`;
+    if (typeof syncBarHTML === 'function') h += syncBarHTML();
     $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus(); return;
   }
   h += myNextHTML();
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
-    <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>`;
+    <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>
+    ${typeof syncBarHTML === 'function' ? syncBarHTML() : ''}`;
   for (const d of S.days) {
     const all = list.filter(e => e.date === d);
     if (!all.length) continue;
@@ -1002,6 +1005,7 @@ const ICON = {
   cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  cloud: '<svg viewBox="0 0 24 24"><path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.5 9.5 4.3 4.3 0 0 0 7 18z"/></svg>',
   walk: '<svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="m9 21 2.5-6 2.5 2v4M10.5 9.5 13 8l2.5 4 3 1M13 8l-1.5 6.5M10.5 9.5 7 11.5v3"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
   sat: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg>',
@@ -1583,6 +1587,7 @@ async function main() {
   if (innerWidth < 900) snap(h.sh || 'mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
   else if (h.place && S.venues.has(h.place)) openPlace(S.venues.get(h.place));
-  setInterval(() => { if (S.follow && !S.playing) goNow(true); else render(); drawDays(); }, 30000);  // the real clock under a look-ahead ticks too
+  setInterval(() => { if (S.follow && !S.playing) goNow(true); else render(); drawDays(); }, 30000);
+  if (typeof syncBoot === 'function') syncBoot();  // the real clock under a look-ahead ticks too
 }
 main();

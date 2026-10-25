@@ -1,0 +1,15 @@
+rules_version = '2';
+// Each person's plan is one document, plans/{uid}, that only they can read or write.
+// It holds event ids and a time, nothing else.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /plans/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['ids', 'updated'])
+        && request.resource.data.ids is list && request.resource.data.ids.size() <= 400
+        && request.resource.data.updated is timestamp;
+    }
+  }
+}
