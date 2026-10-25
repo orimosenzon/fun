@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הלמה של ספרנר</title>
+<style>
+  :root {
+    --bg: #f4f2ec;
+    --card: #ffffff;
+    --ink: #1d1d24;
+    --muted: #6b6b76;
+    --line: #c9c6bd;
+    --grid: #8f8c84;
+    --shade: #dcdad3;
+    --vertex: #ffffff;
+    --accent: #2f4fa8;
+    --b: #2f6fe0;
+    --d: #f08a1c;
+    --d-fill: rgba(240, 138, 28, 0.28);
+    --z: #8a3fd1;
+    --j: #d8323a;
+    --e: #1f9d55;
+    --n: #b07d00;
+    --walk-bb: #8f8c84;
+    --walk-bc: #1f9d55;
+    --walk-cc: #8a3fd1;
+    --hl: #fff2b8;
+    --hl-strong: #ffe27a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17171c; --card: #22222a; --ink: #ecebe6; --muted: #a09fa8;
+      --line: #4a4954; --grid: #777684; --shade: #3a3944; --vertex: #2c2c35;
+      --accent: #8fa8ff; --b: #5b93ff; --d: #ffa040; --d-fill: rgba(255, 160, 64, 0.25);
+      --z: #b77cff; --j: #ff5a62; --e: #3ccf7f; --n: #e0b030;
+      --walk-bb: #8a8996; --walk-bc: #3ccf7f; --walk-cc: #b77cff;
+      --hl: #3d3720; --hl-strong: #5c5020;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17171c; --card: #22222a; --ink: #ecebe6; --muted: #a09fa8;
+    --line: #4a4954; --grid: #777684; --shade: #3a3944; --vertex: #2c2c35;
+    --accent: #8fa8ff; --b: #5b93ff; --d: #ffa040; --d-fill: rgba(255, 160, 64, 0.25);
+    --z: #b77cff; --j: #ff5a62; --e: #3ccf7f; --n: #e0b030;
+    --walk-bb: #8a8996; --walk-bc: #3ccf7f; --walk-cc: #b77cff;
+    --hl: #3d3720; --hl-strong: #5c5020;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  body {
+    font-family: 'Segoe UI', 'Noto Sans Hebrew', Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    padding: 20px 16px 48px; line-height: 1.6;
+  }
+  header { max-width: 1280px; margin: 0 auto 18px; }
+  header h1 { font-size: 1.8rem; color: var(--accent); }
+  header p { color: var(--muted); }
+  header a { color: var(--accent); }
+
+  .layout {
+    max-width: 1280px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .card { background: var(--card); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+  /* ── הוכחה ── */
+  .proof { max-height: calc(100vh - 40px); overflow-y: auto; position: sticky; top: 20px; }
+  @media (max-width: 900px) {
+    .proof { max-height: 60vh; position: static; order: 2; }
+    .stage { order: 1; }
+  }
+  .proof h2 { font-size: 1.15rem; margin-bottom: 4px; color: var(--accent); }
+  .proof .src { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+  .para {
+    border-inline-start: 4px solid transparent; padding: 8px 12px; margin-bottom: 8px;
+    border-radius: 8px; cursor: pointer; transition: background .2s, border-color .2s;
+  }
+  .para:hover { background: color-mix(in srgb, var(--hl) 50%, transparent); }
+  .para.active { background: var(--hl); border-inline-start-color: var(--accent); }
+  .para .tag { font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 2px; }
+  .para.lemma { border: 2px solid var(--accent); }
+  .sent { border-radius: 4px; transition: background .2s; }
+  .sent.on { background: var(--hl-strong); box-shadow: 0 0 0 2px var(--hl-strong); }
+  .gloss {
+    display: block; margin-top: 6px; font-size: 0.88rem; color: var(--muted);
+    background: color-mix(in srgb, var(--bg) 70%, transparent); border-radius: 6px; padding: 4px 8px;
+  }
+  .gloss::before { content: "במשולש שלנו (n=2): "; font-weight: 700; }
+
+  .m { font-family: 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif; font-style: italic; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+  .sym {
+    font-family: 'Cambria Math', 'Times New Roman', serif; font-style: italic; font-weight: 700;
+    padding: 0 3px; border-radius: 4px; direction: ltr; unicode-bidi: isolate; cursor: help;
+    transition: background .2s, color .2s, box-shadow .2s;
+  }
+  .sym-b { color: var(--b); } .sym-d { color: var(--d); } .sym-z { color: var(--z); }
+  .sym-j { color: var(--j); } .sym-e { color: var(--e); } .sym-n { color: var(--n); }
+  .sym.lit { color: #fff !important; box-shadow: 0 0 0 2px currentColor; }
+  .sym-b.lit { background: var(--b); } .sym-d.lit { background: var(--d); } .sym-z.lit { background: var(--z); }
+  .sym-j.lit { background: var(--j); } .sym-e.lit { background: var(--e); } .sym-n.lit { background: var(--n); }
+
+  /* ── שרטוט ── */
+  .stage { display: flex; flex-direction: column; gap: 12px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    padding: 7px 13px; border-radius: 8px; font-size: 0.92rem; cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--card); border-color: var(--accent); }
+  .btn.on { background: var(--accent); color: var(--card); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .toolbar label { font-size: 0.92rem; display: flex; align-items: center; gap: 6px; }
+  .toolbar input[type=range] { width: 110px; }
+
+  svg { width: 100%; height: auto; display: block; user-select: none; }
+  .edge { stroke: var(--grid); stroke-width: 1; }
+  .edge-hit { stroke: transparent; stroke-width: 14; }
+  .edge-hit.clickable { cursor: pointer; }
+  .edge-hit.clickable:hover + .edge, .edge.hov { stroke: var(--b); stroke-width: 3; }
+  .tri { fill: transparent; }
+  .tri.complete { fill: var(--shade); }
+  .tri.complete.clickable { cursor: pointer; }
+  .tri.complete.clickable:hover { fill: color-mix(in srgb, var(--shade) 60%, var(--walk-cc)); }
+  .outline { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .vx circle { fill: var(--vertex); stroke: var(--grid); stroke-width: 1.2; cursor: pointer; }
+  .vx:hover circle { stroke: var(--accent); stroke-width: 2.5; }
+  .vx text { fill: var(--ink); font-size: 15px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .vx.fixed circle { cursor: default; stroke: var(--ink); }
+  .corner { fill: var(--ink); font-size: 17px; font-style: italic; font-family: 'Times New Roman', serif; text-anchor: middle; }
+  .bottom-face { stroke: var(--b); stroke-width: 7; stroke-opacity: .25; stroke-linecap: round; }
+  .seg01 { stroke: var(--b); stroke-width: 5; stroke-linecap: round; opacity: .8; }
+
+  .hl-b { stroke: var(--b); stroke-width: 6; stroke-linecap: round; }
+  .hl-e { stroke: var(--e); stroke-width: 6; stroke-linecap: round; }
+  .hl-d { fill: var(--d-fill); stroke: var(--d); stroke-width: 3; }
+  .hl-next { fill: none; stroke: var(--d); stroke-width: 2; stroke-dasharray: 6 5; }
+  .hl-done { fill: color-mix(in srgb, var(--e) 35%, transparent); stroke: var(--e); stroke-width: 3; }
+  .ring-z { fill: none; stroke: var(--z); stroke-width: 4; }
+  .ring-j { fill: none; stroke: var(--j); stroke-width: 4; }
+  .tagbox rect { stroke: none; }
+  .tagbox text { fill: #fff; font: italic 700 16px 'Times New Roman', serif; text-anchor: middle; dominant-baseline: central; }
+  .trail { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
+  .trail-dot { fill: var(--ink); }
+  .walk { fill: none; stroke-width: 3; stroke-linejoin: round; opacity: .9; }
+  .walk.bb { stroke: var(--walk-bb); } .walk.bc { stroke: var(--walk-bc); } .walk.cc { stroke: var(--walk-cc); }
+  .pulse { animation: pulse .9s ease-in-out 2; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  .status {
+    min-height: 3.2em; background: var(--hl); border-radius: 10px; padding: 10px 14px; font-size: 0.97rem;
+  }
+  .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .count { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .count .big { font-size: 1.6rem; font-weight: 800; }
+  .count .lbl { font-size: 0.85rem; color: var(--muted); }
+  .par { font-size: 0.8rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; margin-inline-start: 6px; vertical-align: middle; }
+  .par.odd { background: color-mix(in srgb, var(--e) 25%, transparent); color: var(--e); }
+  .par.even { background: color-mix(in srgb, var(--j) 20%, transparent); color: var(--j); }
+  .eq { font-size: 0.95rem; line-height: 1.9; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-inline-end: 5px; }
+  .help { font-size: 0.88rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>הלמה של ספרנר</h1>
+  <p>ההוכחה מתוך <a href="https://www.cs.ubc.ca/~jiang/papers/NashReport.pdf" target="_blank" rel="noopener">Jiang &amp; Leyton-Brown, A Tutorial on the Proof of the Existence of Nash Equilibria</a>, עם הדגמה חיה על המשולש מאיור 1. זו הלבנה הראשונה בדרך לנאש: ספרנר ← בראואר ← נאש. · <a href="index.html">להדגמת שיווי משקל נאש</a></p>
+</header>
+
+<div class="layout">
+
+  <!-- ═════════ ההוכחה ═════════ -->
+  <section class="card proof" id="proof">
+    <h2>ההוכחה, צעד אחר צעד</h2>
+    <div class="src">לחיצה על פסקה מציגה אותה בשרטוט. האותיות הצבעוניות הן אותן אותיות שמסומנות על המשולש.</div>
+
+    <div class="para lemma" data-p="lemma">
+      <span class="tag">למה 15 (ספרנר)</span>
+      תהי <span class="m">T<sub>n</sub> = x<sup>0</sup>⋯x<sup>n</sup></span> מחולקת סימפליציאלית, ויהי <span class="m">L</span> תיוג תקין של החלוקה.
+      <span class="sent" data-s="lemma">אז מספר תתי־הסימפלקסים המתויגים במלואם הוא <b>אי־זוגי</b>.</span>
+      <span class="gloss">משולש גדול שמחולק למשולשונים. תיוג תקין: כל קודקוד מקבל תווית של אחד מקודקודי הפאה הקטנה ביותר שהוא יושב עליה. הפינות קבועות, נקודה על צלע מקבלת אחת משתי התוויות של קצות הצלע, ונקודה פנימית מקבלת כל תווית. משולשון "מתויג במלואו" נושא את שלוש התוויות 0, 1, 2 (באפור).</span>
+    </div>
+
+    <div class="para" data-p="base0">
+      <span class="tag">בסיס האינדוקציה</span>
+      מוכיחים באינדוקציה על <span class="m">n</span>. המקרה <span class="m">n = 0</span> טריוויאלי: הסימפלקס הוא נקודה אחת <span class="m">x<sup>0</sup></span>, התיוג היחיד הוא <span class="m">L(x<sup>0</sup>) = 0</span>, ויש בדיוק תת־סימפלקס מתויג במלואו אחד: <span class="m">x<sup>0</sup></span> עצמה.
+    </div>
+
+    <div class="para" data-p="induct">
+      <span class="tag">הנחת האינדוקציה</span>
+      נניח שהטענה נכונה ל־<span class="m">n−1</span>. החלוקה של <span class="m">T<sub>n</sub></span> משרה חלוקה על הפאה <span class="m">T<sub>n−1</sub> = x<sup>0</sup>⋯x<sup>n−1</sup></span>, והתיוג <span class="m">L</span> המצומצם אליה הוא תיוג תקין שלה.
+      <span class="sent" data-s="induct">לכן לפי הנחת האינדוקציה יש על <span class="m">T<sub>n−1</sub></span> מספר <b>אי־זוגי</b> של תתי־סימפלקסים מממד <span class="m">n−1</span> עם התוויות <span class="m">(0,…,n−1)</span>.</span>
+      <span class="gloss">הפאה היא הצלע התחתונה <span class="m">x<sup>0</sup>x<sup>1</sup></span> (מודגשת בכחול). עליה יש מספר אי־זוגי של קטעים שקצותיהם 0 ו־1. באיור 1 יש ארבעה קטעים ושלושה מהם כאלה.</span>
+    </div>
+
+    <div class="para" data-p="b">
+      <span class="tag">תחילת ההליכה</span>
+      <span class="sent" data-s="b">ההליכה מתחילה בתת־סימפלקס מממד <span class="m">n−1</span> עם התוויות <span class="m">(0,…,n−1)</span> על הפאה <span class="m">T<sub>n−1</sub></span>; נקרא לו <span class="sym sym-b" data-sym="b">b</span>.</span>
+      <span class="gloss"><span class="sym sym-b" data-sym="b">b</span> הוא קטע 01 על הצלע התחתונה. לוחצים על קטע כזה בשרטוט כדי להתחיל ממנו.</span>
+    </div>
+
+    <div class="para" data-p="d">
+      <span class="tag">המשולשון שמעל b</span>
+      <span class="sent" data-s="d">קיים תת־סימפלקס יחיד <span class="sym sym-d" data-sym="d">d</span> מממד <span class="m">n</span> ש־<span class="sym sym-b" data-sym="b">b</span> היא פאה שלו; הקודקודים של <span class="sym sym-d" data-sym="d">d</span> הם הקודקודים של <span class="sym sym-b" data-sym="b">b</span> ועוד קודקוד אחד <span class="sym sym-z" data-sym="z">z</span>.</span>
+    </div>
+
+    <div class="para" data-p="complete">
+      <span class="tag">סוף טוב</span>
+      <span class="sent" data-s="complete">אם <span class="sym sym-z" data-sym="z">z</span> מתויג <span class="sym sym-n" data-sym="n">n</span>, מצאנו תת־סימפלקס מתויג במלואו וההליכה נגמרת.</span>
+    </div>
+
+    <div class="para" data-p="j">
+      <span class="tag">תווית כפולה</span>
+      <span class="sent" data-s="j">אחרת ל־<span class="sym sym-d" data-sym="d">d</span> יש התוויות <span class="m">(0,…,n−1)</span>, כשאחת מהן (נאמר <span class="sym sym-j" data-sym="j">j</span>) מופיעה פעמיים והתווית <span class="sym sym-n" data-sym="n">n</span> חסרה.</span>
+      <span class="sent" data-s="e">במקרה זה יש בדיוק עוד פאה אחת של <span class="sym sym-d" data-sym="d">d</span> מממד <span class="m">n−1</span> שנושאת את התוויות <span class="m">(0,…,n−1)</span>. כל פאה של <span class="sym sym-d" data-sym="d">d</span> מתקבלת מהשמטת קודקוד אחד, ומכיוון שרק <span class="sym sym-j" data-sym="j">j</span> חוזרת, לפאה יש את כל התוויות אם ורק אם השמטנו את אחד משני הקודקודים שמתויגים <span class="sym sym-j" data-sym="j">j</span>. <span class="sym sym-b" data-sym="b">b</span> היא פאה אחת כזאת, ולכן יש בדיוק עוד אחת, ונקרא לה <span class="sym sym-e" data-sym="e">e</span>.</span>
+      <span class="gloss">אם למשולשון יש צלע 01, אז הוא מתויג במלואו, או שיש לו בדיוק עוד צלע 01 אחת.</span>
+    </div>
+
+    <div class="para" data-p="cross">
+      <span class="tag">ממשיכים מ־e</span>
+      ממשיכים את ההליכה מ־<span class="sym sym-e" data-sym="e">e</span>. פאה מממד <span class="m">n−1</span> של תת־סימפלקס היא או על פאה של <span class="m">T<sub>n</sub></span>, או החיתוך של בדיוק שני תתי־סימפלקסים.
+      <span class="sent" data-s="stop">אם <span class="sym sym-e" data-sym="e">e</span> על פאה של <span class="m">T<sub>n</sub></span>, עוצרים.</span>
+      <span class="sent" data-s="cross">אחרת נכנסים לתת־סימפלקס היחיד האחר ש־<span class="sym sym-e" data-sym="e">e</span> היא פאה שלו. הוא מתויג במלואו או שיש בו תווית אחת כפולה, וממשיכים בדיוק כמו עם <span class="sym sym-d" data-sym="d">d</span>.</span>
+      <span class="gloss">הצלע <span class="sym sym-e" data-sym="e">e</span> נהיית ה"<span class="sym sym-b" data-sym="b">b</span>" של המשולשון הבא.</span>
+    </div>
+
+    <div class="para" data-p="ends">
+      <span class="tag">איפה הליכה נגמרת</span>
+      ההליכה נקבעת לגמרי לפי נקודת ההתחלה שלה.
+      <span class="sent" data-s="ends">היא נגמרת או במשולשון מתויג במלואו, או בתת־סימפלקס עם התוויות <span class="m">(0,…,n−1)</span> על הפאה <span class="m">T<sub>n−1</sub></span>. היא לא יכולה להיגמר על אף פאה אחרת, כי התיוג תקין.</span>
+      <span class="sent" data-s="reverse">כל הליכה אפשר ללכת גם אחורה: מתחילים מהסוף, הולכים לפי אותו כלל וחוזרים להתחלה. לכן אם הליכה מתחילה ב־<span class="m">t</span> על <span class="m">T<sub>n−1</sub></span> ונגמרת ב־<span class="m">t′</span> על <span class="m">T<sub>n−1</sub></span>, אז <span class="m">t ≠ t′</span>.</span>
+      <span class="gloss">על הצלעות הימנית והשמאלית אין אף קטע 01: שמאלה יש רק 0 ו־2, ימינה רק 1 ו־2. לכן ההליכה לא יכולה לצאת מהמשולש דרכן.</span>
+    </div>
+
+    <div class="para" data-p="count1">
+      <span class="tag">ספירה, חלק א</span>
+      <span class="sent" data-s="count1">מספר נקודות ההתחלה על <span class="m">T<sub>n−1</sub></span> אי־זוגי. הליכות שמתחילות ונגמרות על הפאה מתחלקות לזוגות, ולכן יש מספר <b>אי־זוגי</b> של הליכות מהפאה שנגמרות במשולשון מתויג במלואו.</span>
+      כולן נגמרות במשולשונים שונים, כי לתת־סימפלקס מתויג במלואו יש בדיוק פאה אחת עם <span class="m">(0,…,n−1)</span> שאפשר להיכנס דרכה.
+    </div>
+
+    <div class="para" data-p="count2">
+      <span class="tag">ספירה, חלק ב</span>
+      <span class="sent" data-s="count2">לא לכל משולשון מתויג במלואו מגיעים מהפאה. הליכה אחורה ממשולשון כזה נגמרת לפעמים במשולשון מתויג במלואו אחר, אבל הליכות כאלה רק מצמידות אותם לזוגות.</span>
+      <span class="sent" data-s="total">לכן: מספר זוגי של משולשונים בזוגות, ועוד מספר אי־זוגי שמגיעים אליהם מהפאה. סך הכל: <b>אי־זוגי</b>. ∎</span>
+    </div>
+  </section>
+
+  <!-- ═════════ השרטוט ═════════ -->
+  <section class="card stage">
+    <div class="toolbar">
+      <label>חלוקה <input type="range" id="N" min="2" max="12" value="4"> <span id="Nval">4</span></label>
+      <button class="btn" id="btnPaper">התיוג מאיור 1</button>
+      <button class="btn" id="btnRandom">תיוג אקראי</button>
+    </div>
+
+    <svg id="svg" viewBox="0 0 600 545" aria-label="משולש מחולק ומתויג"></svg>
+
+    <div class="toolbar">
+      <button class="btn" id="btnPrev" title="צעד אחורה">→ צעד אחורה</button>
+      <button class="btn primary" id="btnNext" title="צעד קדימה">צעד קדימה ←</button>
+      <button class="btn" id="btnPlay">▶ הפעלה</button>
+      <button class="btn" id="btnAll">כל ההליכות</button>
+      <button class="btn" id="btnClear">ניקוי</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="counts">
+      <div class="count"><div class="big" id="cBottom">0</div><div class="lbl">קטעי 01 על הצלע התחתונה <span id="pBottom"></span></div></div>
+      <div class="count"><div class="big" id="cComplete">0</div><div class="lbl">משולשונים מתויגים במלואם <span id="pComplete"></span></div></div>
+    </div>
+    <div class="eq" id="eq" hidden></div>
+    <div class="legend" id="legend" hidden>
+      <span><i style="background:var(--walk-bb)"></i>מהצלע אל הצלע (זוג)</span>
+      <span><i style="background:var(--walk-bc)"></i>מהצלע אל משולשון מלא</span>
+      <span><i style="background:var(--walk-cc)"></i>משולשון מלא אל משולשון מלא (זוג)</span>
+    </div>
+    <div class="help">
+      לחיצה על קודקוד מחליפה את התווית שלו (רק בין התוויות שהתיוג התקין מרשה).
+      לחיצה על קטע 01 בצלע התחתונה מתחילה ממנו הליכה. לחיצה על משולשון אפור מתחילה ממנו הליכה אחורה.
+      מקלדת: חיצים לצעדים.
+    </div>
+  </section>
+</div>
+
+<script>
+// ─────────────────────────── גאומטריה ───────────────────────────
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+const X0 = [50, 500], X1 = [550, 500], X2 = [300, 500 - 500 * Math.sqrt(3) / 2];
+const PAPER = [ // איור 1, שורה אחר שורה מלמטה
+  [0, 1, 0, 1, 1],
+  [0, 0, 1, 2],
+  [2, 2, 1],
+  [0, 1],
+  [2],
+];
+
+let N = 4;
+let V = [], T = [], E = [], L = [];
+let vidOf = {};
+
+function build(n) {
+  N = n; V = []; T = []; E = []; vidOf = {};
+  for (let j = 0; j <= N; j++) for (let i = 0; i <= N - j; i++) {
+    const x = X0[0] + i * (X1[0] - X0[0]) / N + j * (X2[0] - X0[0]) / N;
+    const y = X0[1] + j * (X2[1] - X0[1]) / N;
+    const allowed = [];
+    if (i + j < N) allowed.push(0);
+    if (i > 0) allowed.push(1);
+    if (j > 0) allowed.push(2);
+    vidOf[i + ',' + j] = V.length;
+    V.push({ i, j, x, y, allowed });
+  }
+  const ek = {};
+  const edgeOf = (a, b) => {
+    const k = a < b ? a + '-' + b : b + '-' + a;
+    if (!(k in ek)) { ek[k] = E.length; E.push({ a: Math.min(a, b), b: Math.max(a, b), tris: [] }); }
+    return ek[k];
+  };
+  const addTri = (a, b, c) => {
+    const t = T.length;
+    const es = [edgeOf(b, c), edgeOf(a, c), edgeOf(a, b)]; // es[k] מול הקודקוד k
+    T.push({ v: [a, b, c], e: es });
+    es.forEach(e => E[e].tris.push(t));
+  };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N - j; i++) {
+    addTri(vidOf[i + ',' + j], vidOf[(i + 1) + ',' + j], vidOf[i + ',' + (j + 1)]);
+    if (i + j <= N - 2) addTri(vidOf[(i + 1) + ',' + j], vidOf[(i + 1) + ',' + (j + 1)], vidOf[i + ',' + (j + 1)]);
+  }
+  E.forEach(e => { e.bottom = V[e.a].j === 0 && V[e.b].j === 0; e.boundary = e.tris.length === 1; });
+}
+
+function labelPaper() { L = V.map(v => PAPER[v.j][v.i]); }
+function labelRandom() { L = V.map(v => v.allowed[Math.floor(Math.random() * v.allowed.length)]); }
+
+const is01 = e => { const p = L[E[e].a], q = L[E[e].b]; return (p === 0 && q === 1) || (p === 1 && q === 0); };
+const isComplete = t => new Set(T[t].v.map(v => L[v])).size === 3;
+const mid = e => [(V[E[e].a].x + V[E[e].b].x) / 2, (V[E[e].a].y + V[E[e].b].y) / 2];
+const cen = t => [T[t].v.reduce((s, v) => s + V[v].x, 0) / 3, T[t].v.reduce((s, v) => s + V[v].y, 0) / 3];
+const other = (e, t) => E[e].tris.find(x => x !== t);
+const zOf = (t, e) => T[t].v.find(v => v !== E[e].a && v !== E[e].b);
+
+// ─────────────────────────── הליכות ───────────────────────────
+// צמתים: {tri, in, out}. in=null כשמתחילים בתוך משולשון מלא, out=null כשנגמרים במשולשון מלא.
+function walkFrom(tri, inEdge, nodes = []) {
+  for (let guard = 0; guard < 100000; guard++) {
+    if (isComplete(tri)) { nodes.push({ tri, in: inEdge, out: null }); return { nodes, end: { type: 'complete', tri } }; }
+    const out = T[tri].e.find(e => e !== inEdge && is01(e));
+    nodes.push({ tri, in: inEdge, out });
+    if (E[out].boundary) return { nodes, end: { type: 'boundary', edge: out } };
+    inEdge = out; tri = other(out, tri);
+  }
+}
+function forwardWalk(b) { return { start: { type: 'boundary', edge: b }, ...walkFrom(E[b].tris[0], b) }; }
+function reverseWalk(c) {
+  const out = T[c].e.find(is01);
+  const nodes = [{ tri: c, in: null, out }];
+  const start = { type: 'complete', tri: c };
+  if (E[out].boundary) return { start, nodes, end: { type: 'boundary', edge: out } };
+  return { start, ...walkFrom(other(out, c), out, nodes) };
+}
+
+function analyze() {
+  const bottom01 = E.map((_, i) => i).filter(i => E[i].bottom && is01(i));
+  const complete = T.map((_, i) => i).filter(isComplete);
+  const usedB = new Set(), usedC = new Set(), walks = [];
+  for (const b of bottom01) {
+    if (usedB.has(b)) continue;
+    const w = forwardWalk(b); usedB.add(b);
+    if (w.end.type === 'boundary') { usedB.add(w.end.edge); w.kind = 'bb'; }
+    else { usedC.add(w.end.tri); w.kind = 'bc'; }
+    walks.push(w);
+  }
+  for (const c of complete) {
+    if (usedC.has(c)) continue;
+    const w = reverseWalk(c); usedC.add(c);
+    if (w.end.type === 'complete') { usedC.add(w.end.tri); w.kind = 'cc'; }
+    else w.kind = 'bc';
+    walks.push(w);
+  }
+  return { bottom01, complete, walks };
+}
+
+function walkPoints(w) {
+  const pts = [];
+  pts.push(w.start.type === 'boundary' ? mid(w.start.edge) : cen(w.start.tri));
+  w.nodes.forEach((nd, k) => {
+    if (k > 0 || w.start.type === 'boundary') pts.push(cen(nd.tri));
+    if (nd.out != null) pts.push(mid(nd.out));
+  });
+  return pts;
+}
+
+// ─────────────────────────── מצב ההדגמה ───────────────────────────
+// frames: רשימת צעדים, כל צעד = {ph, k}. ph קובע איזה משפט בהוכחה מודגש.
+let mode = 'idle';     // idle | lemma | induct | walk | all
+let walk = null, frames = [], fi = 0, playTimer = null;
+
+function makeFrames(w) {
+  const fr = [];
+  const last = w.nodes.length - 1;
+  w.nodes.forEach((nd, k) => {
+    if (nd.in == null) fr.push({ ph: 'rc', k });
+    else { if (k === 0) fr.push({ ph: 'b', k }); fr.push({ ph: 'd', k }); }
+    if (nd.out == null) { fr.push({ ph: 'complete', k }); return; }
+    if (nd.in != null) fr.push({ ph: 'j', k });
+    fr.push({ ph: 'e', k });
+    fr.push({ ph: k === last ? 'stop' : 'cross', k });
+  });
+  fr.push({ ph: 'end', k: last });
+  return fr;
+}
+
+function startWalk(w) {
+  stopPlay();
+  walk = w; frames = makeFrames(w); fi = 0; mode = 'walk';
+  render();
+}
+
+// לאיזה משפט/פסקה בהוכחה כל צעד שייך
+const PH_SENT = { b: 'b', d: 'd', complete: 'complete', j: 'j', e: 'e', stop: 'stop', cross: 'cross', end: 'ends', rc: 'count2' };
+const PH_PARA = { b: 'b', d: 'd', complete: 'complete', j: 'j', e: 'j', stop: 'cross', cross: 'cross', end: 'ends', rc: 'count2' };
+const PH_SYMS = { b: ['b'], d: ['d', 'z', 'b'], complete: ['z', 'n'], j: ['j', 'n', 'd'], e: ['e', 'b'], stop: ['e'], cross: ['e', 'd'], end: [], rc: ['e'] };
+
+// ─────────────────────────── ציור ───────────────────────────
+function el(tag, attrs, parent = svg) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  parent.appendChild(n); return n;
+}
+const ptsAttr = pts => pts.map(p => p.join(',')).join(' ');
+const triPts = t => ptsAttr(T[t].v.map(v => [V[v].x, V[v].y]));
+
+function tag(letter, x, y, color) {
+  const g = el('g', { class: 'tagbox' });
+  el('rect', { x: x - 11, y: y - 11, width: 22, height: 22, rx: 6, fill: color }, g);
+  el('text', { x, y }, g).textContent = letter;
+  return g;
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function render() {
+  svg.innerHTML = '';
+  const an = analyze();
+  const R = N <= 6 ? 13 : N <= 9 ? 11 : 9;
+
+  // משולשונים
+  T.forEach((t, ti) => {
+    const p = el('polygon', { points: triPts(ti), class: 'tri' + (isComplete(ti) ? ' complete clickable' : '') });
+    if (isComplete(ti)) p.addEventListener('click', () => startWalk(reverseWalk(ti)));
+  });
+  // צלע תחתונה = T_{n-1}
+  if (mode === 'induct') el('line', { x1: X0[0], y1: X0[1], x2: X1[0], y2: X1[1], class: 'bottom-face' });
+  // צלעות
+  E.forEach((e, ei) => {
+    const a = V[e.a], b = V[e.b];
+    const clickable = e.bottom && is01(ei);
+    const hit = el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge-hit' + (clickable ? ' clickable' : '') });
+    el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge' });
+    if (clickable) hit.addEventListener('click', () => startWalk(forwardWalk(ei)));
+  });
+  if (mode === 'induct') an.bottom01.forEach(ei => { const a = V[E[ei].a], b = V[E[ei].b]; el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'seg01 pulse' }); });
+  el('polygon', { points: ptsAttr([X0, X1, X2]), class: 'outline' });
+
+  // כל ההליכות
+  if (mode === 'all') an.walks.forEach(w => {
+    const pts = walkPoints(w);
+    el('polyline', { points: ptsAttr(pts), class: 'walk ' + w.kind });
+    pts.forEach((p, i) => { if (i === 0 || i === pts.length - 1) el('circle', { cx: p[0], cy: p[1], r: 4, fill: css('--walk-' + w.kind) }); });
+  });
+
+  // ההליכה הנוכחית
+  const overlay = [];
+  if (mode === 'walk' && walk) drawWalkFrame(overlay);
+
+  // קודקודים
+  V.forEach((v, vi) => {
+    const g = el('g', { class: 'vx' + (v.allowed.length === 1 ? ' fixed' : '') });
+    el('circle', { cx: v.x, cy: v.y, r: R }, g);
+    const tx = el('text', { x: v.x, y: v.y }, g); tx.textContent = L[vi];
+    if (N > 8) tx.style.fontSize = '12px';
+    g.addEventListener('click', () => cycleLabel(vi));
+  });
+  overlay.forEach(f => f()); // טבעות ותגיות מעל הקודקודים
+
+  // שמות הפינות
+  [[X0, 'x⁰', -22, 18], [X1, 'x¹', 22, 18], [X2, 'x²', 0, -20]].forEach(([p, s, dx, dy]) => {
+    el('text', { x: p[0] + dx, y: p[1] + dy, class: 'corner' }).textContent = s;
+  });
+
+  updatePanel(an);
+}
+
+function drawWalkFrame(overlay) {
+  const f = frames[fi], nd = walk.nodes[f.k];
+  // השביל שכבר עברנו
+  const pts = [];
+  pts.push(walk.start.type === 'boundary' ? mid(walk.start.edge) : cen(walk.start.tri));
+  for (let k = 0; k <= f.k; k++) {
+    const n = walk.nodes[k];
+    if (k > 0 || walk.start.type === 'boundary') { if (k < f.k || !['b'].includes(f.ph)) pts.push(cen(n.tri)); }
+    const pastE = k < f.k || ['e', 'stop', 'cross', 'end'].includes(f.ph);
+    if (n.out != null && pastE) pts.push(mid(n.out));
+  }
+  if (pts.length > 1) el('polyline', { points: ptsAttr(pts), class: 'trail' });
+  pts.forEach(p => el('circle', { cx: p[0], cy: p[1], r: 3.5, class: 'trail-dot' }));
+
+  const ph = f.ph;
+  const edgeLine = (e, cls) => { const a = V[E[e].a], b = V[E[e].b]; el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }); };
+  const edgeTag = (e, letter, color, t) => {
+    const m = mid(e), c = cen(t);
+    const dx = m[0] - c[0], dy = m[1] - c[1], d = Math.hypot(dx, dy) || 1;
+    overlay.push(() => tag(letter, m[0] + dx / d * 16, m[1] + dy / d * 16, color));
+  };
+
+  if (ph === 'complete' || (ph === 'end' && walk.end.type === 'complete' && f.k === walk.nodes.length - 1)) {
+    el('polygon', { points: triPts(nd.tri), class: 'hl-done pulse' });
+  } else if (ph !== 'rc' && ph !== 'end') {
+    el('polygon', { points: triPts(nd.tri), class: ph === 'b' ? 'hl-next' : 'hl-d' });
+  } else if (ph === 'rc') {
+    el('polygon', { points: triPts(nd.tri), class: 'hl-done' });
+  }
+  if (ph !== 'b' && ph !== 'rc' && ph !== 'end') overlay.push(() => { const c = cen(nd.tri); tag('d', c[0], c[1] + (nd.in != null && V[E[nd.in].a].y > c[1] ? -14 : 14), css('--d')); });
+
+  if (nd.in != null && ['b', 'd', 'j', 'complete', 'e'].includes(ph)) {
+    edgeLine(nd.in, 'hl-b');
+    edgeTag(nd.in, 'b', css('--b'), nd.tri);
+  }
+  if (nd.in != null && ['d', 'complete'].includes(ph)) {
+    const z = zOf(nd.tri, nd.in);
+    overlay.push(() => {
+      el('circle', { cx: V[z].x, cy: V[z].y, r: 19, class: 'ring-z' });
+      const c = cen(nd.tri), dx = V[z].x - c[0], dy = V[z].y - c[1], d = Math.hypot(dx, dy);
+      tag('z', V[z].x + dx / d * 30, V[z].y + dy / d * 30, css('--z'));
+    });
+  }
+  if (ph === 'j') {
+    const lab = T[nd.tri].v.map(v => L[v]);
+    const jv = lab.find((x, i) => lab.indexOf(x) !== i);
+    T[nd.tri].v.filter(v => L[v] === jv).forEach(v => overlay.push(() => el('circle', { cx: V[v].x, cy: V[v].y, r: 19, class: 'ring-j' })));
+  }
+  if (nd.out != null && ['e', 'stop', 'cross', 'rc'].includes(ph)) {
+    edgeLine(nd.out, 'hl-e' + (ph === 'stop' ? ' pulse' : ''));
+    edgeTag(nd.out, 'e', css('--e'), nd.tri);
+  }
+  if (ph === 'cross') {
+    const nt = other(nd.out, nd.tri);
+    el('polygon', { points: triPts(nt), class: 'hl-next' });
+  }
+  if (ph === 'end') {
+    if (walk.end.type === 'boundary') edgeLine(walk.end.edge, 'hl-e pulse');
+    else el('polygon', { points: triPts(walk.end.tri), class: 'hl-done pulse' });
+  }
+}
+
+// ─────────────────────────── טקסט וסנכרון עם ההוכחה ───────────────────────────
+const labelsStr = t => T[t].v.map(v => L[v]).sort().join(', ');
+function stepText() {
+  const f = frames[fi], nd = walk.nodes[f.k];
+  const n = 'משולשון מס׳ ' + (f.k + 1);
+  switch (f.ph) {
+    case 'b': return `מתחילים בקטע b על הצלע התחתונה. התוויות שלו 0 ו־1, בדיוק (0,…,n−1).`;
+    case 'd': {
+      const z = zOf(nd.tri, nd.in);
+      return `${n} הוא d: המשולשון היחיד מהצד הזה של b. הקודקוד השלישי שלו, z, מתויג ${L[z]}.`;
+    }
+    case 'complete': return `z מתויג 2 = n. ל־d יש התוויות 0, 1, 2. מצאנו משולשון מתויג במלואו, וההליכה נגמרת כאן.`;
+    case 'j': {
+      const lab = T[nd.tri].v.map(v => L[v]);
+      const jv = lab.find((x, i) => lab.indexOf(x) !== i);
+      return `התוויות של d הן ${labelsStr(nd.tri)}. התווית j = ${jv} מופיעה פעמיים (מסומנת באדום), והתווית n = 2 חסרה.`;
+    }
+    case 'e': return nd.in == null
+      ? `ל־d יש בדיוק צלע 01 אחת. היא e.`
+      : `משמיטים את הקודקוד האחר שמתויג j ומקבלים את הצלע e: עוד צלע עם 0 ו־1. היא היחידה מלבד b.`;
+    case 'stop': return `e יושבת על שפת המשולש הגדול, ולכן עוצרים. (זה יכול לקרות רק בצלע התחתונה.)`;
+    case 'cross': return `e היא צלע פנימית, משותפת לשני משולשונים בדיוק. עוברים דרכה למשולשון המקווקו, ושם e תשמש כ־b.`;
+    case 'rc': return `הליכה אחורה: מתחילים במשולשון מתויג במלואו. יש לו בדיוק צלע 01 אחת, ויוצאים דרכה.`;
+    case 'end': {
+      const s = walk.start.type === 'boundary' ? 'מהצלע התחתונה' : 'ממשולשון מלא';
+      const t = walk.end.type === 'boundary' ? 'בקטע 01 אחר על הצלע התחתונה' : 'במשולשון מתויג במלואו';
+      return `סוף ההליכה: יצאנו ${s} והגענו ${t}, אחרי ${walk.nodes.length} משולשונים. כלל ההליכה דטרמיניסטי והפיך, ולכן ההליכה הזאת מצמידה את נקודת ההתחלה לנקודת הסוף.`;
+    }
+  }
+}
+
+function setActive(paraId, sentId, syms) {
+  document.querySelectorAll('.para').forEach(p => p.classList.toggle('active', p.dataset.p === paraId));
+  document.querySelectorAll('.sent').forEach(s => s.classList.toggle('on', s.dataset.s === sentId));
+  document.querySelectorAll('.sym').forEach(s => s.classList.toggle('lit', syms.includes(s.dataset.sym) && !!s.closest('.para.active')));
+  const p = document.querySelector(`.para[data-p="${paraId}"]`);
+  const box = document.getElementById('proof');
+  if (p && box.scrollHeight > box.clientHeight) {
+    const top = p.offsetTop - box.offsetTop;
+    if (top < box.scrollTop || top + p.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTo({ top: top - 40, behavior: 'smooth' });
+  }
+}
+
+const parity = n => `<span class="par ${n % 2 ? 'odd' : 'even'}">${n % 2 ? 'אי־זוגי' : 'זוגי'}</span>`;
+
+function updatePanel(an) {
+  document.getElementById('cBottom').textContent = an.bottom01.length;
+  document.getElementById('cComplete').textContent = an.complete.length;
+  document.getElementById('pBottom').innerHTML = parity(an.bottom01.length);
+  document.getElementById('pComplete').innerHTML = parity(an.complete.length);
+  const st = document.getElementById('status');
+  const eq = document.getElementById('eq'), lg = document.getElementById('legend');
+  eq.hidden = lg.hidden = mode !== 'all';
+  document.getElementById('btnAll').classList.toggle('on', mode === 'all');
+  const inWalk = mode === 'walk';
+  document.getElementById('btnPrev').disabled = !inWalk || fi === 0;
+  document.getElementById('btnNext').disabled = inWalk && fi === frames.length - 1;
+  document.getElementById('btnPlay').disabled = !inWalk;
+
+  if (mode === 'walk') {
+    const f = frames[fi];
+    st.textContent = `צעד ${fi + 1}/${frames.length}. ` + stepText();
+    setActive(PH_PARA[f.ph], PH_SENT[f.ph], PH_SYMS[f.ph]);
+  } else if (mode === 'all') {
+    const bb = an.walks.filter(w => w.kind === 'bb').length, bc = an.walks.filter(w => w.kind === 'bc').length, cc = an.walks.filter(w => w.kind === 'cc').length;
+    st.innerHTML = `כל ההליכות יחד. כל הליכה מצמידה שני קצוות, אז אין קטע 01 בצלע התחתונה ואין משולשון מלא שנשאר בלי בן זוג.`;
+    eq.innerHTML =
+      `קטעי 01 בצלע: <b>${an.bottom01.length}</b> = 2·<b>${bb}</b> (זוגות צלע־צלע) + <b>${bc}</b> (הליכות אל משולשון מלא) ⇐ ${bc} ${parity(bc)}<br>` +
+      `משולשונים מלאים: <b>${an.complete.length}</b> = <b>${bc}</b> (מגיעים אליהם מהצלע) + 2·<b>${cc}</b> (זוגות מלא־מלא) ⇐ ${parity(an.complete.length)}`;
+    setActive('count2', 'total', []);
+  } else if (mode === 'induct') {
+    st.textContent = `על הצלע התחתונה יש ${an.bottom01.length} קטעי 01 (מהבהבים בכחול). זה תמיד מספר אי־זוגי: הולכים משמאל (0) לימין (1), וכל מעבר בין 0 ל־1 הוא קטע כזה. מתחילים ב־0, נגמרים ב־1, אז מספר המעברים אי־זוגי.`;
+    setActive('induct', 'induct', []);
+  } else if (mode === 'lemma') {
+    st.textContent = `יש ${an.complete.length} משולשונים מתויגים במלואם (באפור). נסו לשנות תוויות: המספר משתנה, אבל תמיד נשאר אי־זוגי.`;
+    setActive('lemma', 'lemma', []);
+  } else if (mode === 'base0') {
+    st.textContent = 'נקודה אחת עם תווית 0 היא תת־סימפלקס אחד מתויג במלואו. אחת זה אי־זוגי.';
+    setActive('base0', '', []);
+  } else {
+    st.textContent = 'בחרו פסקה בהוכחה, לחצו על קטע 01 בצלע התחתונה, או לחצו "צעד קדימה".';
+    setActive('', '', []);
+  }
+}
+
+// ─────────────────────────── אינטראקציה ───────────────────────────
+function cycleLabel(vi) {
+  const a = V[vi].allowed;
+  if (a.length === 1) return;
+  L[vi] = a[(a.indexOf(L[vi]) + 1) % a.length];
+  if (mode === 'walk') mode = 'lemma';
+  walk = null; stopPlay(); render();
+}
+
+function firstWalk() {
+  const an = analyze();
+  if (an.bottom01.length) startWalk(forwardWalk(an.bottom01[0]));
+}
+function next() {
+  if (mode !== 'walk') return firstWalk();
+  if (fi < frames.length - 1) { fi++; render(); } else stopPlay();
+}
+function prev() { if (mode === 'walk' && fi > 0) { fi--; render(); } }
+function stopPlay() { clearInterval(playTimer); playTimer = null; document.getElementById('btnPlay').textContent = '▶ הפעלה'; }
+function togglePlay() {
+  if (playTimer) return stopPlay();
+  if (fi === frames.length - 1) fi = 0;
+  document.getElementById('btnPlay').textContent = '⏸ עצירה';
+  playTimer = setInterval(() => { if (fi >= frames.length - 1) stopPlay(); else { fi++; render(); } }, 1400);
+  render();
+}
+
+document.querySelectorAll('.para').forEach(p => p.addEventListener('click', ev => {
+  const id = p.dataset.p;
+  stopPlay();
+  if (id === 'lemma' || id === 'induct' || id === 'base0') { mode = id; walk = null; render(); return; }
+  if (id === 'count1' || id === 'count2' || id === 'ends') { mode = 'all'; walk = null; render(); return; }
+  // פסקאות ההליכה: מציגים את הצעד המתאים בהליכה הנוכחית (או בראשונה)
+  if (mode !== 'walk') firstWalk();
+  if (mode !== 'walk') return;
+  const want = { b: ['b'], d: ['d'], complete: ['complete'], j: ['j', 'e'], cross: ['cross', 'stop'] }[id] || [];
+  const k = frames.findIndex(f => want.includes(f.ph));
+  if (k >= 0) { fi = k; render(); }
+}));
+
+// ריחוף על אות בהוכחה מבהב את האלמנט שלה בשרטוט
+document.querySelectorAll('.sym').forEach(s => s.addEventListener('mouseenter', () => {
+  const cls = { b: '.hl-b', d: '.hl-d', z: '.ring-z', j: '.ring-j', e: '.hl-e' }[s.dataset.sym];
+  if (!cls) return;
+  svg.querySelectorAll(cls).forEach(n => { n.classList.remove('pulse'); void n.getBBox(); n.classList.add('pulse'); });
+}));
+
+document.getElementById('N').addEventListener('input', ev => {
+  const n = +ev.target.value;
+  document.getElementById('Nval').textContent = n;
+  stopPlay(); walk = null; if (mode === 'walk') mode = 'lemma';
+  build(n);
+  if (n === 4) labelPaper(); else labelRandom();
+  render();
+});
+document.getElementById('btnPaper').onclick = () => {
+  document.getElementById('N').value = 4; document.getElementById('Nval').textContent = 4;
+  stopPlay(); build(4); labelPaper(); walk = null; mode = 'lemma'; render();
+};
+document.getElementById('btnRandom').onclick = () => { stopPlay(); labelRandom(); walk = null; if (mode === 'walk') mode = 'lemma'; render(); };
+document.getElementById('btnNext').onclick = next;
+document.getElementById('btnPrev').onclick = prev;
+document.getElementById('btnPlay').onclick = togglePlay;
+document.getElementById('btnAll').onclick = () => { stopPlay(); walk = null; mode = mode === 'all' ? 'idle' : 'all'; render(); };
+document.getElementById('btnClear').onclick = () => { stopPlay(); walk = null; mode = 'idle'; render(); };
+document.addEventListener('keydown', ev => {
+  // בעמוד מימין לשמאל: חץ שמאלה = קדימה
+  if (ev.key === 'ArrowLeft') { ev.preventDefault(); next(); }
+  if (ev.key === 'ArrowRight') { ev.preventDefault(); prev(); }
+});
+
+build(4); labelPaper(); render();
+</script>
+</body>
+</html>
