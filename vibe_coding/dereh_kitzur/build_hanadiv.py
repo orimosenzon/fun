@@ -156,6 +156,16 @@ FIXES = {
                                    why="the node הצפירה and הבוטנים share in OSM"),
     "גינת אגוז - דירה 35 קומה 9": dict(lat=32.467710, lng=34.955967, source="osm",
                                        why="a flat on גינת אגוז; centre of OSM way 69024212"),
+    # Added 25/10/2026. הידית האחורית turned into a procession: it gathers at
+    # 17:30 at רחבת יד לבנים (the venue it now names) and walks to the theatre,
+    # with a sentence in the street field. The pin goes where people arrive.
+    "לאחר התהלוכה - האירוע הראשי בתיאטרון הידית - רחוב מעלה פינת רבי עקיבא 4":
+        dict(lat=32.475430, lng=34.973730, source="osm",
+             why="the procession's start, רחבת יד לבנים, as הדקלים 90; the theatre is in the description"),
+    "מעלה פינת רבי עקיבא 4": dict(lat=32.475430, lng=34.973730, source="osm",
+                                  why="the same procession, rewritten the same day: 'מפגש ברחבת בית יד לבנים'"),
+    "רחוב המעלה 4": dict(lat=32.474976, lng=34.969912, source="landmark",
+                         why="the theatre, as המעלה 4 with 'רחוב' in front"),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The
