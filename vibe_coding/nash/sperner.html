@@ -251,6 +251,14 @@
       <span class="sent" data-s="count2">לא לכל משולשון מתויג במלואו מגיעים מהפאה. הליכה אחורה ממשולשון כזה נגמרת לפעמים במשולשון מתויג במלואו אחר, אבל הליכות כאלה רק מצמידות אותם לזוגות.</span>
       <span class="sent" data-s="total">לכן: מספר זוגי של משולשונים בזוגות, ועוד מספר אי־זוגי שמגיעים אליהם מהפאה. סך הכל: <b>אי־זוגי</b>. ∎</span>
     </div>
+
+    <div class="para" data-p="rwalk">
+      <span class="tag">פירוט: למה המסלול העליון באיור 1 מתחיל למעלה ולא בבסיס</span>
+      <span class="sent" data-s="rwhy">ההליכות מהבסיס מגיעות למספר אי־זוגי של משולשונים מלאים, אבל הלמה מדברת על <b>כל</b> המשולשונים המלאים. ייתכן שיש משולשונים מלאים שאף הליכה מהבסיס לא מגיעה אליהם, כמו שני המשולשונים העליונים באיור 1. צריך להראות שהם לא מקלקלים את הזוגיות, ולכן מתחילים הליכה מהם עצמם.</span>
+      <span class="sent" data-s="rhow">איך מציירים אותה: בוחרים משולשון מלא שאף הליכה עוד לא הגיעה אליו. מבין שלוש הצלעות שלו בדיוק אחת מחברת 0 ל־1, ויוצאים דרכה (היא ה־<span class="sym sym-e" data-sym="e">e</span>). משם ממשיכים לפי הכלל הרגיל: נכנסים למשולשון שמעבר לצלע. אם הוא מלא, עוצרים. אם לא, יוצאים דרך צלע ה־01 השנייה שלו, וחוזר חלילה.</span>
+      <span class="sent" data-s="rend">ההליכה הזאת לא יכולה להגיע לבסיס. אילו הגיעה לקטע 01 בבסיס, ההליכה שיוצאת מאותו קטע הייתה אותה הליכה בכיוון ההפוך, והייתה מגיעה למשולשון שלנו. אבל כבר עברנו על כל ההליכות מהבסיס, והוא לא היה באף אחת מהן. דרך הצלעות הצדדיות אי אפשר לצאת, ולהסתובב לנצח אי אפשר כי כל צעד הפיך. לכן ההליכה נגמרת במשולשון מלא אחר, שגם אליו לא הגיעו מהבסיס. כך כל המשולשונים "הנוספים" מתחלקים לזוגות.</span>
+      <span class="gloss">באיור 1, למשולשון העליון (2 למעלה, 0 ו־1 למטה) צלע ה־01 היא הבסיס שלו. מעבר לה נמצא המשולשון ההפוך שה־2 באמצע שלו, וגם הוא מלא. לכן ההליכה נגמרת אחרי צעד אחד, ושני המשולשונים הם זוג.</span>
+    </div>
   </section>
 
   <!-- ═════════ השרטוט ═════════ -->
@@ -266,6 +274,7 @@
     <div class="toolbar">
       <button class="btn" id="btnPrev" title="צעד אחורה">→ צעד אחורה</button>
       <button class="btn primary" id="btnNext" title="צעד קדימה">צעד קדימה ←</button>
+      <button class="btn" id="btnSkip">להליכה הבאה ⇠</button>
       <button class="btn" id="btnPlay">▶ הפעלה</button>
       <button class="btn" id="btnAll">כל ההליכות</button>
       <button class="btn" id="btnClear">ניקוי</button>
@@ -284,8 +293,9 @@
       <span><i style="background:var(--walk-cc)"></i>משולשון מלא אל משולשון מלא (זוג)</span>
     </div>
     <div class="help">
+      "צעד קדימה" ו"הפעלה" עוברים על <b>כל</b> ההליכות לפי הסדר של ההוכחה: קודם מכל קטעי ה־01 בצלע התחתונה, ואחר כך מהמשולשונים המלאים שנשארו. הליכה שהסתיימה נשארת מצוירת בצבע שלה.
       לחיצה על קודקוד מחליפה את התווית שלו (רק בין התוויות שהתיוג התקין מרשה).
-      לחיצה על קטע 01 בצלע התחתונה מתחילה ממנו הליכה. לחיצה על משולשון אפור מתחילה ממנו הליכה אחורה.
+      לחיצה על קטע 01 בצלע התחתונה או על משולשון אפור קופצת להליכה שעוברת שם.
       מקלדת: חיצים לצעדים.
     </div>
   </section>
@@ -401,9 +411,10 @@ function walkPoints(w) {
 }
 
 // ─────────────────────────── מצב ההדגמה ───────────────────────────
-// frames: רשימת צעדים, כל צעד = {ph, k}. ph קובע איזה משפט בהוכחה מודגש.
-let mode = 'idle';     // idle | lemma | induct | walk | all
-let walk = null, frames = [], fi = 0, playTimer = null;
+// סיור על כל ההליכות לפי סדר ההוכחה: קודם מכל קטעי 01 בבסיס, ואז מהמשולשונים המלאים שנשארו.
+// frames: רשימת צעדים {wi, ph, k}. wi = מספר ההליכה, k = המשולשון בתוכה, ph קובע איזה משפט בהוכחה מודגש.
+let mode = 'idle';     // idle | lemma | base0 | induct | tour | all
+let tour = null, walk = null, frames = [], fi = 0, playTimer = null;
 
 function makeFrames(w) {
   const fr = [];
@@ -420,16 +431,53 @@ function makeFrames(w) {
   return fr;
 }
 
-function startWalk(w) {
-  stopPlay();
-  walk = w; frames = makeFrames(w); fi = 0; mode = 'walk';
-  render();
+function buildTour() {
+  const an = analyze();
+  frames = [];
+  an.walks.forEach((w, wi) => {
+    frames.push({ wi, ph: w.start.type === 'boundary' ? 'introB' : 'introC', k: 0 });
+    makeFrames(w).forEach(f => frames.push({ ...f, wi }));
+  });
+  frames.push({ wi: an.walks.length, ph: 'summary', k: 0 });
+  tour = { an, walks: an.walks };
 }
 
-// לאיזה משפט/פסקה בהוכחה כל צעד שייך
-const PH_SENT = { b: 'b', d: 'd', complete: 'complete', j: 'j', e: 'e', stop: 'stop', cross: 'cross', end: 'ends', rc: 'count2' };
-const PH_PARA = { b: 'b', d: 'd', complete: 'complete', j: 'j', e: 'j', stop: 'cross', cross: 'cross', end: 'ends', rc: 'count2' };
-const PH_SYMS = { b: ['b'], d: ['d', 'z', 'b'], complete: ['z', 'n'], j: ['j', 'n', 'd'], e: ['e', 'b'], stop: ['e'], cross: ['e', 'd'], end: [], rc: ['e'] };
+function startTour(wi = 0) {
+  stopPlay();
+  buildTour(); mode = 'tour';
+  fi = Math.max(0, frames.findIndex(f => f.wi === wi));
+  render();
+}
+// לחיצה על קטע בבסיס או על משולשון מלא: קופצים להליכה שמתחילה או נגמרת שם
+function startTourAt(match) {
+  const wi = analyze().walks.findIndex(match);
+  startTour(Math.max(0, wi));
+}
+const touches = (w, type, key, id) =>
+  (w.start.type === type && w.start[key] === id) || (w.end.type === type && w.end[key] === id);
+
+// לאיזה פסקה/משפט בהוכחה כל צעד שייך, ואילו אותיות נדלקות
+const PH = {
+  introB: ['b', 'b', ['b']],
+  introC: ['rwalk', 'rwhy', []],
+  rc: ['rwalk', 'rhow', ['e']],
+  b: ['b', 'b', ['b']],
+  d: ['d', 'd', ['d', 'z', 'b']],
+  complete: ['complete', 'complete', ['z', 'n']],
+  j: ['j', 'j', ['j', 'n', 'd']],
+  e: ['j', 'e', ['e', 'b']],
+  stop: ['cross', 'stop', ['e']],
+  cross: ['cross', 'cross', ['e', 'd']],
+  end: ['ends', 'ends', []],
+  summary: ['count2', 'total', []],
+};
+function phInfo(f) {
+  if (walk && walk.start.type === 'complete') {
+    if (f.ph === 'e' && walk.nodes[f.k].in == null) return ['rwalk', 'rhow', ['e']];
+    if (f.ph === 'end') return ['rwalk', 'rend', []];
+  }
+  return PH[f.ph];
+}
 
 // ─────────────────────────── ציור ───────────────────────────
 function el(tag, attrs, parent = svg) {
@@ -448,6 +496,12 @@ function tag(letter, x, y, color) {
 }
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
+function drawWalkLine(w) {
+  const pts = walkPoints(w);
+  el('polyline', { points: ptsAttr(pts), class: 'walk ' + w.kind });
+  [pts[0], pts[pts.length - 1]].forEach(p => el('circle', { cx: p[0], cy: p[1], r: 4, fill: css('--walk-' + w.kind) }));
+}
+
 function render() {
   svg.innerHTML = '';
   const an = analyze();
@@ -456,7 +510,7 @@ function render() {
   // משולשונים
   T.forEach((t, ti) => {
     const p = el('polygon', { points: triPts(ti), class: 'tri' + (isComplete(ti) ? ' complete clickable' : '') });
-    if (isComplete(ti)) p.addEventListener('click', () => startWalk(reverseWalk(ti)));
+    if (isComplete(ti)) p.addEventListener('click', () => startTourAt(w => touches(w, 'complete', 'tri', ti)));
   });
   // צלע תחתונה = T_{n-1}
   if (mode === 'induct') el('line', { x1: X0[0], y1: X0[1], x2: X1[0], y2: X1[1], class: 'bottom-face' });
@@ -466,21 +520,20 @@ function render() {
     const clickable = e.bottom && is01(ei);
     const hit = el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge-hit' + (clickable ? ' clickable' : '') });
     el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge' });
-    if (clickable) hit.addEventListener('click', () => startWalk(forwardWalk(ei)));
+    if (clickable) hit.addEventListener('click', () => startTourAt(w => touches(w, 'boundary', 'edge', ei)));
   });
   if (mode === 'induct') an.bottom01.forEach(ei => { const a = V[E[ei].a], b = V[E[ei].b]; el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'seg01 pulse' }); });
   el('polygon', { points: ptsAttr([X0, X1, X2]), class: 'outline' });
 
-  // כל ההליכות
-  if (mode === 'all') an.walks.forEach(w => {
-    const pts = walkPoints(w);
-    el('polyline', { points: ptsAttr(pts), class: 'walk ' + w.kind });
-    pts.forEach((p, i) => { if (i === 0 || i === pts.length - 1) el('circle', { cx: p[0], cy: p[1], r: 4, fill: css('--walk-' + w.kind) }); });
-  });
-
-  // ההליכה הנוכחית
+  // הליכות שכבר הסתיימו נשארות מצוירות בצבע שלהן
   const overlay = [];
-  if (mode === 'walk' && walk) drawWalkFrame(overlay);
+  if (mode === 'all') an.walks.forEach(drawWalkLine);
+  if (mode === 'tour') {
+    const f = frames[fi];
+    tour.walks.forEach((w, wi) => { if (wi < f.wi) drawWalkLine(w); });
+    walk = f.ph === 'summary' ? null : tour.walks[f.wi];
+    if (walk) drawWalkFrame(overlay);
+  }
 
   // קודקודים
   V.forEach((v, vi) => {
@@ -501,20 +554,7 @@ function render() {
 }
 
 function drawWalkFrame(overlay) {
-  const f = frames[fi], nd = walk.nodes[f.k];
-  // השביל שכבר עברנו
-  const pts = [];
-  pts.push(walk.start.type === 'boundary' ? mid(walk.start.edge) : cen(walk.start.tri));
-  for (let k = 0; k <= f.k; k++) {
-    const n = walk.nodes[k];
-    if (k > 0 || walk.start.type === 'boundary') { if (k < f.k || !['b'].includes(f.ph)) pts.push(cen(n.tri)); }
-    const pastE = k < f.k || ['e', 'stop', 'cross', 'end'].includes(f.ph);
-    if (n.out != null && pastE) pts.push(mid(n.out));
-  }
-  if (pts.length > 1) el('polyline', { points: ptsAttr(pts), class: 'trail' });
-  pts.forEach(p => el('circle', { cx: p[0], cy: p[1], r: 3.5, class: 'trail-dot' }));
-
-  const ph = f.ph;
+  const f = frames[fi], nd = walk.nodes[f.k], ph = f.ph;
   const edgeLine = (e, cls) => { const a = V[E[e].a], b = V[E[e].b]; el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: cls }); };
   const edgeTag = (e, letter, color, t) => {
     const m = mid(e), c = cen(t);
@@ -522,14 +562,32 @@ function drawWalkFrame(overlay) {
     overlay.push(() => tag(letter, m[0] + dx / d * 16, m[1] + dy / d * 16, color));
   };
 
-  if (ph === 'complete' || (ph === 'end' && walk.end.type === 'complete' && f.k === walk.nodes.length - 1)) {
-    el('polygon', { points: triPts(nd.tri), class: 'hl-done pulse' });
-  } else if (ph !== 'rc' && ph !== 'end') {
-    el('polygon', { points: triPts(nd.tri), class: ph === 'b' ? 'hl-next' : 'hl-d' });
-  } else if (ph === 'rc') {
-    el('polygon', { points: triPts(nd.tri), class: 'hl-done' });
+  // פתיחת הליכה: רק מסמנים מאיפה היא יוצאת
+  if (ph === 'introB') { edgeLine(walk.start.edge, 'hl-b pulse'); edgeTag(walk.start.edge, 'b', css('--b'), nd.tri); return; }
+  if (ph === 'introC') { el('polygon', { points: triPts(walk.start.tri), class: 'hl-done pulse' }); return; }
+
+  // השביל שכבר עברנו
+  const pts = [];
+  pts.push(walk.start.type === 'boundary' ? mid(walk.start.edge) : cen(walk.start.tri));
+  for (let k = 0; k <= f.k; k++) {
+    const n = walk.nodes[k];
+    if ((k > 0 || walk.start.type === 'boundary') && (k < f.k || ph !== 'b')) pts.push(cen(n.tri));
+    const pastE = k < f.k || ['e', 'stop', 'cross', 'end'].includes(ph);
+    if (n.out != null && pastE) pts.push(mid(n.out));
   }
-  if (ph !== 'b' && ph !== 'rc' && ph !== 'end') overlay.push(() => { const c = cen(nd.tri); tag('d', c[0], c[1] + (nd.in != null && V[E[nd.in].a].y > c[1] ? -14 : 14), css('--d')); });
+  if (pts.length > 1) el('polyline', { points: ptsAttr(pts), class: 'trail' });
+  pts.forEach(p => el('circle', { cx: p[0], cy: p[1], r: 3.5, class: 'trail-dot' }));
+
+  if (ph === 'end') {
+    if (walk.start.type === 'complete') el('polygon', { points: triPts(walk.start.tri), class: 'hl-done' });
+    if (walk.end.type === 'boundary') edgeLine(walk.end.edge, 'hl-e pulse');
+    else el('polygon', { points: triPts(walk.end.tri), class: 'hl-done pulse' });
+    return;
+  }
+  if (ph === 'complete') el('polygon', { points: triPts(nd.tri), class: 'hl-done pulse' });
+  else if (nd.in == null) el('polygon', { points: triPts(nd.tri), class: 'hl-done' });
+  else el('polygon', { points: triPts(nd.tri), class: ph === 'b' ? 'hl-next' : 'hl-d' });
+  if (nd.in != null && ph !== 'b') overlay.push(() => { const c = cen(nd.tri); tag('d', c[0], c[1] + (V[E[nd.in].a].y > c[1] ? -14 : 14), css('--d')); });
 
   if (nd.in != null && ['b', 'd', 'j', 'complete', 'e'].includes(ph)) {
     edgeLine(nd.in, 'hl-b');
@@ -552,14 +610,7 @@ function drawWalkFrame(overlay) {
     edgeLine(nd.out, 'hl-e' + (ph === 'stop' ? ' pulse' : ''));
     edgeTag(nd.out, 'e', css('--e'), nd.tri);
   }
-  if (ph === 'cross') {
-    const nt = other(nd.out, nd.tri);
-    el('polygon', { points: triPts(nt), class: 'hl-next' });
-  }
-  if (ph === 'end') {
-    if (walk.end.type === 'boundary') edgeLine(walk.end.edge, 'hl-e pulse');
-    else el('polygon', { points: triPts(walk.end.tri), class: 'hl-done pulse' });
-  }
+  if (ph === 'cross') el('polygon', { points: triPts(other(nd.out, nd.tri)), class: 'hl-next' });
 }
 
 // ─────────────────────────── טקסט וסנכרון עם ההוכחה ───────────────────────────
@@ -568,10 +619,19 @@ function stepText() {
   const f = frames[fi], nd = walk.nodes[f.k];
   const n = 'משולשון מס׳ ' + (f.k + 1);
   switch (f.ph) {
+    case 'introB': {
+      const b01 = tour.an.bottom01;
+      const ord = b01.indexOf(walk.start.edge) + 1;
+      const skipped = b01.slice(0, ord - 1).filter(e => !tour.walks.some(w => w.start.type === 'boundary' && w.start.edge === e)).length;
+      return `מתחילים מקטע ה־01 מספר ${ord} מתוך ${b01.length} בצלע התחתונה (סופרים משמאל).` +
+        (skipped ? ` מדלגים על ${skipped === 1 ? 'קטע אחד' : skipped + ' קטעים'} שכבר היו סוף של הליכה קודמת: ההליכה ממנו היא אותה הליכה בכיוון ההפוך.` : '');
+    }
+    case 'introC': return `כל ${tour.an.bottom01.length} קטעי ה־01 בצלע התחתונה כבר טופלו. אבל המשולשון המהבהב מתויג במלואו, ואף הליכה מהבסיס לא הגיעה אליו. כדי שגם הוא ייספר נכון, מתחילים הליכה ממנו עצמו, לפי אותו כלל.`;
+    case 'rc': return `המשולשון הזה מתויג במלואו, ולכן מבין שלוש הצלעות שלו בדיוק אחת מחברת 0 ל־1. זאת הדלת היחידה שלו, ויוצאים דרכה.`;
     case 'b': return `מתחילים בקטע b על הצלע התחתונה. התוויות שלו 0 ו־1, בדיוק (0,…,n−1).`;
     case 'd': {
       const z = zOf(nd.tri, nd.in);
-      return `${n} הוא d: המשולשון היחיד מהצד הזה של b. הקודקוד השלישי שלו, z, מתויג ${L[z]}.`;
+      return `${n} הוא d: המשולשון שמעבר ל־b. הקודקוד השלישי שלו, z, מתויג ${L[z]}.`;
     }
     case 'complete': return `z מתויג 2 = n. ל־d יש התוויות 0, 1, 2. מצאנו משולשון מתויג במלואו, וההליכה נגמרת כאן.`;
     case 'j': {
@@ -580,15 +640,15 @@ function stepText() {
       return `התוויות של d הן ${labelsStr(nd.tri)}. התווית j = ${jv} מופיעה פעמיים (מסומנת באדום), והתווית n = 2 חסרה.`;
     }
     case 'e': return nd.in == null
-      ? `ל־d יש בדיוק צלע 01 אחת. היא e.`
+      ? `זאת צלע ה־01 היחידה של המשולשון, והיא e.`
       : `משמיטים את הקודקוד האחר שמתויג j ומקבלים את הצלע e: עוד צלע עם 0 ו־1. היא היחידה מלבד b.`;
     case 'stop': return `e יושבת על שפת המשולש הגדול, ולכן עוצרים. (זה יכול לקרות רק בצלע התחתונה.)`;
     case 'cross': return `e היא צלע פנימית, משותפת לשני משולשונים בדיוק. עוברים דרכה למשולשון המקווקו, ושם e תשמש כ־b.`;
-    case 'rc': return `הליכה אחורה: מתחילים במשולשון מתויג במלואו. יש לו בדיוק צלע 01 אחת, ויוצאים דרכה.`;
     case 'end': {
-      const s = walk.start.type === 'boundary' ? 'מהצלע התחתונה' : 'ממשולשון מלא';
-      const t = walk.end.type === 'boundary' ? 'בקטע 01 אחר על הצלע התחתונה' : 'במשולשון מתויג במלואו';
-      return `סוף ההליכה: יצאנו ${s} והגענו ${t}, אחרי ${walk.nodes.length} משולשונים. כלל ההליכה דטרמיניסטי והפיך, ולכן ההליכה הזאת מצמידה את נקודת ההתחלה לנקודת הסוף.`;
+      const steps = `אחרי ${walk.nodes.length} משולשונים`;
+      if (walk.kind === 'bb') return `סוף ההליכה: ${steps} חזרנו לקטע 01 אחר בצלע התחתונה. שני הקטעים האלה הם זוג, ולכן לא נתחיל הליכה מהקטע השני (היא הייתה אותה הליכה, הפוכה).`;
+      if (walk.kind === 'bc') return `סוף ההליכה: ${steps} הגענו למשולשון מלא. כל הליכה כזאת מהבסיס "מוצאת" משולשון מלא משלה.`;
+      return `סוף ההליכה: ${steps} הגענו למשולשון מלא אחר. שני המשולשונים האלה הם זוג: כל אחד הוא סוף ההליכה מהשני, ואף הליכה מהבסיס לא מגיעה אליהם. לכן הם מוסיפים 2 לספירה ולא משנים את הזוגיות.`;
     }
   }
 }
@@ -606,6 +666,7 @@ function setActive(paraId, sentId, syms) {
 }
 
 const parity = n => `<span class="par ${n % 2 ? 'odd' : 'even'}">${n % 2 ? 'אי־זוגי' : 'זוגי'}</span>`;
+const kindCount = (ws, k) => ws.filter(w => w.kind === k).length;
 
 function updatePanel(an) {
   document.getElementById('cBottom').textContent = an.bottom01.length;
@@ -614,23 +675,35 @@ function updatePanel(an) {
   document.getElementById('pComplete').innerHTML = parity(an.complete.length);
   const st = document.getElementById('status');
   const eq = document.getElementById('eq'), lg = document.getElementById('legend');
-  eq.hidden = lg.hidden = mode !== 'all';
+  const inTour = mode === 'tour';
+  eq.hidden = lg.hidden = !(mode === 'all' || inTour);
   document.getElementById('btnAll').classList.toggle('on', mode === 'all');
-  const inWalk = mode === 'walk';
-  document.getElementById('btnPrev').disabled = !inWalk || fi === 0;
-  document.getElementById('btnNext').disabled = inWalk && fi === frames.length - 1;
-  document.getElementById('btnPlay').disabled = !inWalk;
+  document.getElementById('btnPrev').disabled = !inTour || fi === 0;
+  document.getElementById('btnNext').disabled = inTour && fi === frames.length - 1;
+  document.getElementById('btnSkip').disabled = inTour && frames[fi].ph === 'summary';
 
-  if (mode === 'walk') {
-    const f = frames[fi];
-    st.textContent = `צעד ${fi + 1}/${frames.length}. ` + stepText();
-    setActive(PH_PARA[f.ph], PH_SENT[f.ph], PH_SYMS[f.ph]);
-  } else if (mode === 'all') {
-    const bb = an.walks.filter(w => w.kind === 'bb').length, bc = an.walks.filter(w => w.kind === 'bc').length, cc = an.walks.filter(w => w.kind === 'cc').length;
-    st.innerHTML = `כל ההליכות יחד. כל הליכה מצמידה שני קצוות, אז אין קטע 01 בצלע התחתונה ואין משולשון מלא שנשאר בלי בן זוג.`;
-    eq.innerHTML =
-      `קטעי 01 בצלע: <b>${an.bottom01.length}</b> = 2·<b>${bb}</b> (זוגות צלע־צלע) + <b>${bc}</b> (הליכות אל משולשון מלא) ⇐ ${bc} ${parity(bc)}<br>` +
+  const summary = (ws) => {
+    const bb = kindCount(ws, 'bb'), bc = kindCount(ws, 'bc'), cc = kindCount(ws, 'cc');
+    return `קטעי 01 בצלע: <b>${an.bottom01.length}</b> = 2·<b>${bb}</b> (זוגות צלע־צלע) + <b>${bc}</b> (הליכות אל משולשון מלא) ⇐ ${bc} ${parity(bc)}<br>` +
       `משולשונים מלאים: <b>${an.complete.length}</b> = <b>${bc}</b> (מגיעים אליהם מהצלע) + 2·<b>${cc}</b> (זוגות מלא־מלא) ⇐ ${parity(an.complete.length)}`;
+  };
+
+  if (inTour) {
+    const f = frames[fi], W = tour.walks.length;
+    if (f.ph === 'summary') {
+      st.textContent = `עברנו על כל ${W} ההליכות. כל קטע 01 בבסיס וכל משולשון מלא הוא קצה של הליכה אחת בדיוק, ולכן אפשר לספור אותם דרך ההליכות:`;
+      eq.innerHTML = summary(tour.walks);
+      setActive('count2', 'total', []);
+      return;
+    }
+    const done = tour.walks.slice(0, f.wi);
+    st.textContent = `הליכה ${f.wi + 1} מתוך ${W}, צעד ${fi + 1}/${frames.length}. ` + stepText();
+    eq.innerHTML = `הליכות שהסתיימו: ${done.length}. מהצלע אל הצלע: <b>${kindCount(done, 'bb')}</b> · מהצלע אל משולשון מלא: <b>${kindCount(done, 'bc')}</b> · משולשון מלא אל משולשון מלא: <b>${kindCount(done, 'cc')}</b>`;
+    const [pa, se, sy] = phInfo(f);
+    setActive(pa, se, sy);
+  } else if (mode === 'all') {
+    st.innerHTML = `כל ההליכות יחד. כל הליכה מצמידה שני קצוות, אז אין קטע 01 בצלע התחתונה ואין משולשון מלא שנשאר בלי בן זוג.`;
+    eq.innerHTML = summary(an.walks);
     setActive('count2', 'total', []);
   } else if (mode === 'induct') {
     st.textContent = `על הצלע התחתונה יש ${an.bottom01.length} קטעי 01 (מהבהבים בכחול). זה תמיד מספר אי־זוגי: הולכים משמאל (0) לימין (1), וכל מעבר בין 0 ל־1 הוא קטע כזה. מתחילים ב־0, נגמרים ב־1, אז מספר המעברים אי־זוגי.`;
@@ -642,49 +715,63 @@ function updatePanel(an) {
     st.textContent = 'נקודה אחת עם תווית 0 היא תת־סימפלקס אחד מתויג במלואו. אחת זה אי־זוגי.';
     setActive('base0', '', []);
   } else {
-    st.textContent = 'בחרו פסקה בהוכחה, לחצו על קטע 01 בצלע התחתונה, או לחצו "צעד קדימה".';
+    st.textContent = 'לחצו "צעד קדימה" או "הפעלה" כדי לעבור על כל ההליכות, או בחרו פסקה בהוכחה.';
     setActive('', '', []);
   }
 }
 
 // ─────────────────────────── אינטראקציה ───────────────────────────
+function resetDemo() { stopPlay(); tour = null; walk = null; if (mode === 'tour') mode = 'lemma'; }
+
 function cycleLabel(vi) {
   const a = V[vi].allowed;
   if (a.length === 1) return;
   L[vi] = a[(a.indexOf(L[vi]) + 1) % a.length];
-  if (mode === 'walk') mode = 'lemma';
-  walk = null; stopPlay(); render();
+  resetDemo(); render();
 }
 
-function firstWalk() {
-  const an = analyze();
-  if (an.bottom01.length) startWalk(forwardWalk(an.bottom01[0]));
-}
 function next() {
-  if (mode !== 'walk') return firstWalk();
+  if (mode !== 'tour') return startTour(0);
   if (fi < frames.length - 1) { fi++; render(); } else stopPlay();
 }
-function prev() { if (mode === 'walk' && fi > 0) { fi--; render(); } }
+function prev() { if (mode === 'tour' && fi > 0) { fi--; render(); } }
+function skip() {
+  if (mode !== 'tour') return startTour(0);
+  const wi = frames[fi].wi;
+  const k = frames.findIndex(f => f.wi > wi);
+  if (k >= 0) { fi = k; render(); }
+}
 function stopPlay() { clearInterval(playTimer); playTimer = null; document.getElementById('btnPlay').textContent = '▶ הפעלה'; }
 function togglePlay() {
   if (playTimer) return stopPlay();
-  if (fi === frames.length - 1) fi = 0;
+  if (mode !== 'tour') { buildTour(); mode = 'tour'; fi = 0; }
+  else if (fi === frames.length - 1) fi = 0;
   document.getElementById('btnPlay').textContent = '⏸ עצירה';
-  playTimer = setInterval(() => { if (fi >= frames.length - 1) stopPlay(); else { fi++; render(); } }, 1400);
+  playTimer = setInterval(() => { if (fi >= frames.length - 1) stopPlay(); else { fi++; render(); } }, 1300);
   render();
 }
 
-document.querySelectorAll('.para').forEach(p => p.addEventListener('click', ev => {
+document.querySelectorAll('.para').forEach(p => p.addEventListener('click', () => {
   const id = p.dataset.p;
   stopPlay();
-  if (id === 'lemma' || id === 'induct' || id === 'base0') { mode = id; walk = null; render(); return; }
-  if (id === 'count1' || id === 'count2' || id === 'ends') { mode = 'all'; walk = null; render(); return; }
-  // פסקאות ההליכה: מציגים את הצעד המתאים בהליכה הנוכחית (או בראשונה)
-  if (mode !== 'walk') firstWalk();
-  if (mode !== 'walk') return;
+  if (id === 'lemma' || id === 'induct' || id === 'base0') { mode = id; tour = walk = null; render(); return; }
+  if (id === 'count1' || id === 'count2' || id === 'ends') { mode = 'all'; tour = walk = null; render(); return; }
+  if (mode !== 'tour') { buildTour(); mode = 'tour'; fi = 0; }
+  if (id === 'rwalk') {
+    const k = frames.findIndex(f => f.ph === 'introC');
+    if (k >= 0) { fi = k; render(); return; }
+    mode = 'lemma'; tour = walk = null; render();
+    document.getElementById('status').textContent = 'בתיוג הזה כל המשולשונים המלאים מגיעים מהבסיס, אז אין הליכה כזאת. נסו "התיוג מאיור 1", "תיוג אקראי" או חלוקה עדינה יותר.';
+    setActive('rwalk', 'rwhy', []);
+    return;
+  }
+  // פסקאות ההליכה: קופצים לצעד המתאים, עדיף בהליכה הנוכחית
   const want = { b: ['b'], d: ['d'], complete: ['complete'], j: ['j', 'e'], cross: ['cross', 'stop'] }[id] || [];
-  const k = frames.findIndex(f => want.includes(f.ph));
-  if (k >= 0) { fi = k; render(); }
+  const wi = frames[fi].wi;
+  let k = frames.findIndex(f => f.wi === wi && want.includes(f.ph));
+  if (k < 0) k = frames.findIndex(f => want.includes(f.ph));
+  if (k >= 0) fi = k;
+  render();
 }));
 
 // ריחוף על אות בהוכחה מבהב את האלמנט שלה בשרטוט
@@ -697,21 +784,22 @@ document.querySelectorAll('.sym').forEach(s => s.addEventListener('mouseenter', 
 document.getElementById('N').addEventListener('input', ev => {
   const n = +ev.target.value;
   document.getElementById('Nval').textContent = n;
-  stopPlay(); walk = null; if (mode === 'walk') mode = 'lemma';
+  resetDemo();
   build(n);
   if (n === 4) labelPaper(); else labelRandom();
   render();
 });
 document.getElementById('btnPaper').onclick = () => {
   document.getElementById('N').value = 4; document.getElementById('Nval').textContent = 4;
-  stopPlay(); build(4); labelPaper(); walk = null; mode = 'lemma'; render();
+  resetDemo(); build(4); labelPaper(); mode = 'lemma'; render();
 };
-document.getElementById('btnRandom').onclick = () => { stopPlay(); labelRandom(); walk = null; if (mode === 'walk') mode = 'lemma'; render(); };
+document.getElementById('btnRandom').onclick = () => { resetDemo(); labelRandom(); render(); };
 document.getElementById('btnNext').onclick = next;
 document.getElementById('btnPrev').onclick = prev;
+document.getElementById('btnSkip').onclick = skip;
 document.getElementById('btnPlay').onclick = togglePlay;
-document.getElementById('btnAll').onclick = () => { stopPlay(); walk = null; mode = mode === 'all' ? 'idle' : 'all'; render(); };
-document.getElementById('btnClear').onclick = () => { stopPlay(); walk = null; mode = 'idle'; render(); };
+document.getElementById('btnAll').onclick = () => { stopPlay(); tour = walk = null; mode = mode === 'all' ? 'idle' : 'all'; render(); };
+document.getElementById('btnClear').onclick = () => { stopPlay(); tour = walk = null; mode = 'idle'; render(); };
 document.addEventListener('keydown', ev => {
   // בעמוד מימין לשמאל: חץ שמאלה = קדימה
   if (ev.key === 'ArrowLeft') { ev.preventDefault(); next(); }
