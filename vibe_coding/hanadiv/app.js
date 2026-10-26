@@ -380,6 +380,11 @@ function setupMap() {
     map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addLayer({ id: 'route-case', type: 'line', source: 'route', paint: { 'line-color': '#fff', 'line-width': 7, 'line-opacity': .9 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
     map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': '#1d2b3a', 'line-width': 3.5, 'line-dasharray': [1.5, 1.2] }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+    // arrowheads along the line, pointing from each event to the next one
+    map.addImage('route-arrow', arrowImage(), { pixelRatio: 2 });
+    map.addLayer({ id: 'route-arrows', type: 'symbol', source: 'route', layout: {
+      'symbol-placement': 'line', 'symbol-spacing': 110, 'icon-image': 'route-arrow',
+      'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
     drawRoute();
     // frame the moshava: venues further than 3 km (the outskirts, Caesarea's beach) are left out of the opening view
     const near = [...S.venues.values()].filter(v => v.geo && dist(v.geo, { lat: CENTER[1], lng: CENTER[0] }) < (innerWidth < 600 ? 1600 : 3000));
@@ -890,6 +895,18 @@ function drawPlan() {
 // The day's plan as a dashed line from place to place, in time order. It is straight, not
 // along the streets, so each leg carries its walking time to say what the line is.
 let hopMarkers = [];
+// a white-edged arrowhead pointing east; the line layer turns it along each leg
+function arrowImage() {
+  const n = 48, c = document.createElement('canvas');
+  c.width = c.height = n;
+  const g = c.getContext('2d');
+  g.lineJoin = 'round';
+  g.beginPath(); g.moveTo(10, 8); g.lineTo(40, 24); g.lineTo(10, 40); g.lineTo(17, 24); g.closePath();
+  g.strokeStyle = '#fff'; g.lineWidth = 7; g.stroke();
+  g.fillStyle = '#1d2b3a'; g.fill();
+  return g.getImageData(0, 0, n, n);
+}
+
 function drawRoute() {
   if (!map || !map.getSource('route')) return;
   const evs = S.view === 'plan' ? planList().filter(e => e.date === S.day && e.vgeo) : [];

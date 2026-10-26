@@ -218,10 +218,12 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 }
 .hop svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hop.late { color: #c0392b; border-color: #c0392b; }
+/* the place's number in the day's plan grows with its picture and sits on its rim, top left */
 .planno {
-  width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px;
+  --d: calc(var(--s) * var(--k)); --b: clamp(22px, calc(var(--d) * .3), 56px);
+  width: var(--b); height: var(--b); border-radius: 50%; background: var(--ink); color: #fff; font-size: calc(var(--b) * .55);
   font-weight: 700; display: grid; place-items: center; border: 2px solid #fff;
-  transform: translate(calc(-50% - 15px * var(--k) - 6px), calc(-50% - 15px * var(--k) - 4px)); position: absolute; z-index: 2;
+  transform: translate(calc(-50% - var(--d) * .36), calc(-50% - var(--d) * .36)); position: absolute; z-index: 2;
   pointer-events: none;
 }
 
