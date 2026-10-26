@@ -18,7 +18,7 @@ const FB = {
 const FB_SDK = 'https://www.gstatic.com/firebasejs/10.14.1/';
 // Each joins once it is switched on in the Firebase console (Facebook also needs an app on
 // Meta's side). With none, nothing about accounts shows.
-const PROVIDERS = [];
+const PROVIDERS = ['google'];
 const SIGNED = 'hanadiv-signed';  // this browser has a session to restore
 
 let fb = null, unsub = null, pushTimer = null, applying = false;
