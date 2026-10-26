@@ -169,7 +169,13 @@ function drawAcct() {
 // the line in the plan view that says where the plan lives
 function syncBarHTML() {
   if (!PROVIDERS.length) return '';
-  if (!S.user) return `<div class="syncbar"><span>${ICON.cloud}התוכנית שמורה רק במכשיר הזה.</span><button class="more" data-login>לשמור בחשבון, לכל המכשירים</button></div>`;
+  if (!S.user) {
+    // with a single way in, the button signs in right away; otherwise it opens the choice
+    const one = PROVIDERS.length === 1 && !inApp ? PROVIDERS[0] : null;
+    const act = one ? `data-signin="${one}"` : 'data-login';
+    const label = one ? `${BRAND[one][1]}<span>כניסה עם ${BRAND[one][0]}</span>` : '<span>כניסה לחשבון</span>';
+    return `<div class="syncbar off"><span>${ICON.cloud}<span><b>התוכנית שמורה רק במכשיר הזה.</b> מתחברים כדי לראות אותה גם בטלפון וגם במחשב.</span></span><button class="btn login ${one || ''}" ${act}>${label}</button></div>`;
+  }
   const pic = S.user.photo ? `<img src="${esc(S.user.photo)}" alt="" referrerpolicy="no-referrer">` : ICON.cloud;
   return `<div class="syncbar on"><span>${pic}${S.synced ? 'מסונכרן עם החשבון של' : 'מתחבר לחשבון של'} ${esc(S.user.name)}</span><span class="syncact"><button class="more" data-logout>יציאה</button><button class="more" data-forget>מחיקה מהחשבון</button></span></div>`;
 }
