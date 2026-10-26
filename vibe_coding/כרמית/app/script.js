@@ -8,6 +8,7 @@ const reportScreen = $('report-screen');
 const intro = $('intro');
 const startBtn = $('start-btn');
 const progressText = $('progress-text');
+const progressFill = $('progress-fill');
 const riddleImage = $('riddle-image');
 const riddleQuestion = $('riddle-question');
 const hintBox = $('hint-box');
@@ -31,8 +32,8 @@ let results = [];
 let hintUsed = false;
 let answered = false;
 
-const PRAISES = ['כל הכבוד! 🎉', 'מעולה! 💪', 'וואו, צדקתם! ⭐', 'איזה כישרון! 🏆', 'נכון מאוד! 👏'];
-const CONSOLATIONS = ['לא נורא, ננסה את הבאה! התשובה הייתה:', 'הפעם לא. התשובה הנכונה היא:', 'קרוב, אבל לא. התשובה:'];
+const PRAISES = ['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
+const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -64,7 +65,9 @@ function showRiddle() {
   const r = riddle();
   hintUsed = false;
   answered = false;
-  progressText.textContent = `חידה ${current + 1} מתוך ${order.length}`;
+  const pad = (n) => String(n).padStart(2, '0');
+  progressText.textContent = `${pad(current + 1)} / ${pad(order.length)}`;
+  progressFill.style.width = `${(current / order.length) * 100}%`;
   riddleImage.src = r.image;
   riddleQuestion.textContent = r.question || '';
   riddleQuestion.classList.toggle('hidden', !r.question);
@@ -74,7 +77,7 @@ function showRiddle() {
   answerInput.disabled = false;
   // An image answer can't be typed: the player thinks, reveals it, and says whether they got it.
   answerInput.classList.toggle('hidden', isImageAnswer(r));
-  submitBtn.textContent = isImageAnswer(r) ? '👀 הצגת התשובה' : 'בדיקת תשובה';
+  submitBtn.innerHTML = isImageAnswer(r) ? 'הצגת התשובה' : 'בדיקה <kbd>↵</kbd>';
   answerImage.classList.add('hidden');
   answerImage.removeAttribute('src');
   selfCheck.classList.add('hidden');
@@ -83,7 +86,7 @@ function showRiddle() {
   nextBtn.classList.add('hidden');
   submitBtn.disabled = false;
   hintBtn.disabled = !r.hint;
-  hintBtn.textContent = r.hint ? '💡 רמז' : '💡 אין רמז לחידה זו';
+  hintBtn.textContent = r.hint ? 'רמז' : 'אין רמז';
   if (!isImageAnswer(r)) answerInput.focus();
 }
 
@@ -125,14 +128,21 @@ function finish(correct, userAnswer) {
     feedback.textContent = pick(PRAISES);
     feedback.className = 'feedback correct';
   } else {
-    feedback.textContent = isImageAnswer(r) ? 'לא נורא, ננסה את הבאה!' : `${pick(CONSOLATIONS)} ${primaryAnswer(r)}`;
+    feedback.textContent = isImageAnswer(r) ? 'לא הפעם. הלאה.' : `${pick(CONSOLATIONS)} `;
+    if (!isImageAnswer(r)) {
+      const ans = document.createElement('span');
+      ans.className = 'ans';
+      ans.textContent = primaryAnswer(r);
+      feedback.appendChild(ans);
+    }
     feedback.className = 'feedback wrong';
   }
 
   answerInput.disabled = true;
   submitBtn.disabled = true;
   nextBtn.classList.remove('hidden');
-  nextBtn.textContent = current + 1 < order.length ? 'לחידה הבאה ←' : 'לדוח הסופי ←';
+  nextBtn.textContent = current + 1 < order.length ? 'הבאה ←' : 'לתוצאות ←';
+  progressFill.style.width = `${((current + 1) / order.length) * 100}%`;
   nextBtn.focus();
 }
 
@@ -164,13 +174,13 @@ function showReport() {
   quizScreen.classList.add('hidden');
   reportScreen.classList.remove('hidden');
   const score = results.filter((r) => r.correct).length;
-  scoreHeadline.textContent = `הציון הסופי: ${score} מתוך ${results.length}`;
+  scoreHeadline.innerHTML = `הציון שלכם<span class="score"><b>${score}</b>/${results.length}</span>`;
   scoreSub.textContent =
     score === results.length
-      ? 'ניקוד מושלם! 🏆'
+      ? 'ניקוד מושלם. אין מה להוסיף.'
       : score >= results.length * 0.7
-      ? 'כל הכבוד, תוצאה מצוינת! ⭐'
-      : 'יפה מאוד, אפשר תמיד לשחק שוב! 💪';
+      ? 'תוצאה מרשימה.'
+      : 'יש עוד מה לפצח. סיבוב נוסף?';
   reportBody.innerHTML = '';
   results.forEach((res, i) => {
     const r = res.riddle;
@@ -182,7 +192,7 @@ function showReport() {
       cell(res.userAnswer),
       cell(isImageAnswer(r) ? thumb(r.answerImage) : primaryAnswer(r)),
       cell(res.hintUsed ? 'כן' : 'לא'),
-      cell(res.correct ? '✔️' : '❌'),
+      cell(res.correct ? '✓' : '✗'),
     );
     reportBody.appendChild(tr);
   });
@@ -204,7 +214,7 @@ answerInput.addEventListener('keydown', (e) => {
 
 try {
   RIDDLES = await loadRiddles();
-  intro.innerHTML = `${RIDDLES.length} חידות מחכות לכם.<br>מוכנים לפתור?`;
+  intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
   startBtn.disabled = RIDDLES.length === 0;
 } catch (e) {
   console.error(e);

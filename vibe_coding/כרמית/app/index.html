@@ -5,36 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>חידות לכרמית</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <header>
       <img class="logo" src="logo.jpg" alt="Wordplay & Wonder">
-      <h1>🎉 חידות לכרמית 🎉</h1>
+      <h1>חידות לכרמית</h1>
+      <p class="tagline">WORDPLAY <b>&amp;</b> WONDER</p>
     </header>
 
     <section id="start-screen" class="screen">
       <p id="intro" class="intro">טוענים את החידות…</p>
-      <button id="start-btn" class="primary-btn" disabled>בואו נתחיל!</button>
+      <button id="start-btn" class="primary-btn" disabled>מתחילים</button>
+
+      <section class="about">
+        <p class="kicker">// מאחורי החידות</p>
+        <h2>חידות שהן גם אמנות</h2>
+        <p class="lede">כרמית יוצרת אמנות ויזואלית עם תוכן חידתי: חידות שמשלבות צבעים, שפות ומשחקי מילים.</p>
+        <div class="pillars">
+          <div class="pillar">
+            <span class="idx">01</span>
+            <h3>רבדי משמעות</h3>
+            <p>משחקי מילים שמזמינים להתבונן בפרטים ולחשוף קשרים סמויים.</p>
+          </div>
+          <div class="pillar">
+            <span class="idx">02</span>
+            <h3>עברית <span class="x">×</span> <span dir="ltr">English</span></h3>
+            <p>סינרגיה בין שתי השפות. השילוב ביניהן מוליד משמעות חדשה, גדולה מסך חלקיה.</p>
+          </div>
+          <div class="pillar">
+            <span class="idx">03</span>
+            <h3 dir="ltr">aha moment</h3>
+            <p>רגע הפיצוח, שבו מחייכים ומתפעלים מהפתרון.</p>
+          </div>
+        </div>
+        <figure class="sketch">
+          <img src="sketch.jpg" alt="סקיצה בכתב יד של הלוגו Wordplay & Wonder" loading="lazy">
+          <figcaption>הסקיצה הראשונה של הלוגו, מהמחברת של כרמית</figcaption>
+        </figure>
+      </section>
     </section>
 
     <section id="quiz-screen" class="screen hidden">
-      <div class="progress"><span id="progress-text"></span></div>
+      <div class="progress"><span id="progress-text"></span><span class="progress-bar"><i id="progress-fill"></i></span></div>
       <div class="riddle-card">
         <img id="riddle-image" src="" alt="חידה">
         <p id="riddle-question" class="question"></p>
         <div id="hint-box" class="hint-box hidden"></div>
         <input type="text" id="answer-input" placeholder="הקלידו את התשובה כאן" autocomplete="off">
         <div class="buttons-row">
-          <button id="hint-btn" class="secondary-btn">💡 רמז</button>
-          <button id="submit-btn" class="primary-btn">בדיקת תשובה</button>
+          <button id="hint-btn" class="secondary-btn">רמז</button>
+          <button id="submit-btn" class="primary-btn">בדיקה <kbd>↵</kbd></button>
         </div>
         <img id="answer-image" class="answer-image hidden" alt="התשובה">
         <div id="self-check" class="buttons-row hidden">
-          <button id="self-yes" class="primary-btn">✔️ צדקתי</button>
-          <button id="self-no" class="secondary-btn">❌ לא צדקתי</button>
+          <button id="self-yes" class="primary-btn">צדקתי</button>
+          <button id="self-no" class="secondary-btn">לא צדקתי</button>
         </div>
         <div id="feedback" class="feedback hidden"></div>
         <button id="next-btn" class="primary-btn hidden">לחידה הבאה ←</button>
@@ -51,15 +79,15 @@
               <th>#</th>
               <th>חידה</th>
               <th>תשובתכם</th>
-              <th>התשובה הנכונה</th>
-              <th>רמז?</th>
+              <th>התשובה</th>
+              <th>רמז</th>
               <th>תוצאה</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <button id="restart-btn" class="primary-btn">לשחק שוב</button>
+      <button id="restart-btn" class="primary-btn">סיבוב נוסף</button>
     </section>
 
     <footer><a href="admin.html">ניהול חידות</a></footer>
