@@ -41,6 +41,7 @@ function onUser(u) {
   if (!u) {
     S.user = null;
     try { localStorage.removeItem(SIGNED); } catch (e) { /* private window */ }
+    drawAcct();
     return render();
   }
   S.user = { uid: u.uid, name: u.displayName || u.email || 'החשבון שלך', photo: u.photoURL };
@@ -61,6 +62,7 @@ function onUser(u) {
     }
     setPlan(remote);
   }, () => toast('לא הצלחנו לקרוא את התוכנית מהחשבון. היא נשמרת במכשיר הזה בינתיים.'));
+  drawAcct();
   render();
 }
 
@@ -139,6 +141,12 @@ const BRAND = {
 function openLogin() {
   const box = $('#loginPanel');
   box.hidden = false;
+  if (S.user) {
+    box.innerHTML = `<div class="sphead"><b>התוכנית שלי בכל מכשיר</b><button class="iconbtn" data-loginclose aria-label="סגירה">${ICON.x}</button></div>
+      ${syncBarHTML()}
+      <p class="shnote">כל מכשיר שמתחברים ממנו לאותו חשבון מציג את אותה תוכנית.</p>`;
+    return;
+  }
   box.innerHTML = `<div class="sphead"><b>התוכנית שלי בכל מכשיר</b><button class="iconbtn" data-loginclose aria-label="סגירה">${ICON.x}</button></div>
     <p class="shnote">מתחברים פעם אחת בכל מכשיר, בטלפון ובמחשב, והתוכנית אותה תוכנית: כוכב שמסמנים באחד מופיע מיד בשני. מה שכבר סימנתם כאן מצטרף לחשבון.</p>
     ${inApp ? '<p class="loginwarn">גוגל לא מאפשרת להתחבר מתוך הדפדפן של פייסבוק, אינסטגרם או טיקטוק. כדאי לפתוח את הקישור בכרום או בספארי (בתפריט ⋮ או ···).</p>' : ''}
@@ -146,6 +154,17 @@ function openLogin() {
     <p class="loginfine">נשמרים רק מספרי האירועים שסימנתם, בלי פרסום ובלי מיילים. <a href="privacy.html" target="_blank" rel="noopener">פרטיות</a></p>`;
 }
 function closeLogin() { $('#loginPanel').hidden = true; }
+
+// the round button in the toolbar: a person when signed out, the account's picture when in
+const PERSON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+function drawAcct() {
+  const b = $('#acctBtn');
+  if (!b) return;
+  b.hidden = !PROVIDERS.length;
+  b.classList.toggle('in', !!S.user);
+  b.innerHTML = S.user && S.user.photo ? `<img src="${esc(S.user.photo)}" alt="" referrerpolicy="no-referrer">` : PERSON;
+  b.title = b.ariaLabel = S.user ? `מחובר: ${S.user.name}` : 'התוכנית שלי בכל מכשיר';
+}
 
 // the line in the plan view that says where the plan lives
 function syncBarHTML() {
@@ -169,5 +188,6 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('#log
 // a session from an earlier visit (or a sign-in that went by redirect) comes back by itself;
 // main() calls this once the programme is loaded, so the account's ids have events to match
 function syncBoot() {
+  drawAcct();
   try { if (localStorage.getItem(SIGNED)) fbLoad().catch(() => {}); } catch (e) { /* private window */ }
 }
