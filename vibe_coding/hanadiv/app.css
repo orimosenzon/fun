@@ -698,6 +698,9 @@ html.preview .gt .nowline { background: var(--ink); }
 .syncbar img { width: 22px; height: 22px; border-radius: 50%; flex: none; }
 .syncbar.on { background: #e8f3ec; color: #1d5b3a; }
 .syncbar .more { padding: 2px 0; font-size: 13.5px; }
+.syncbar.off { padding: 12px; }
+.syncbar.off b { color: var(--ink); }
+.syncbar .btn.login { margin-top: 0; padding: 9px 14px; font-size: 14.5px; }
 .btn.login { width: 100%; justify-content: center; gap: 10px; padding: 12px 14px; font-size: 15.5px; margin-top: 8px; }
 .btn.login.google { background: #fff; color: #1f1f1f; border: 1px solid #c7c7c7; }
 .btn.login.facebook { background: #1877f2; color: #fff; }
