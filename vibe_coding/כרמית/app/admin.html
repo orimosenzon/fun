@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול חידות</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>🛠️ ניהול חידות</h1>
+      <p class="top-links"><a href="index.html">← חזרה למשחק</a></p>
+    </header>
+
+    <section id="login-screen" class="screen">
+      <p id="login-msg" class="intro">הכניסה לאזור הניהול היא עם חשבון Google.</p>
+      <button id="login-btn" class="primary-btn">כניסה עם Google</button>
+    </section>
+
+    <section id="admin-screen" class="screen hidden">
+      <div class="who"><span id="who"></span> · <button id="logout-btn" class="link-btn">יציאה</button></div>
+
+      <form id="riddle-form" class="riddle-card admin-form">
+        <h2 id="form-title">חידה חדשה</h2>
+
+        <label class="field">
+          <span>תמונת החידה *</span>
+          <input type="file" id="image-file" accept="image/*">
+        </label>
+        <img id="image-preview" class="preview hidden" alt="">
+
+        <label class="field">
+          <span>טקסט מתחת לתמונה (לא חובה)</span>
+          <input type="text" id="question" autocomplete="off">
+        </label>
+
+        <label class="field">
+          <span>רמז (לא חובה)</span>
+          <input type="text" id="hint" autocomplete="off">
+        </label>
+
+        <fieldset class="field">
+          <legend>התשובה היא</legend>
+          <label class="inline"><input type="radio" name="answer-type" value="text" checked> טקסט</label>
+          <label class="inline"><input type="radio" name="answer-type" value="image"> תמונה</label>
+        </fieldset>
+
+        <div id="text-answers" class="field">
+          <span>תשובות אפשריות. כל אחת מהן תתקבל כנכונה, ⭐ מסמן את התשובה העיקרית שמוצגת לשחקן</span>
+          <div id="answers-list"></div>
+          <button type="button" id="add-answer" class="link-btn">+ עוד תשובה אפשרית</button>
+        </div>
+
+        <div id="image-answer" class="field hidden">
+          <label class="field">
+            <span>תמונת התשובה *</span>
+            <input type="file" id="answer-file" accept="image/*">
+          </label>
+          <img id="answer-preview" class="preview hidden" alt="">
+        </div>
+
+        <div id="form-error" class="feedback wrong hidden"></div>
+        <div class="buttons-row">
+          <button type="submit" id="save-btn" class="primary-btn">שמירה</button>
+          <button type="button" id="cancel-btn" class="secondary-btn hidden">ביטול עריכה</button>
+        </div>
+      </form>
+
+      <h2 class="list-title">החידות (<span id="count">0</span>)</h2>
+      <div id="riddle-list" class="riddle-list"></div>
+    </section>
+  </div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

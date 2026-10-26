@@ -1,0 +1,19 @@
+rules_version = '2';
+// Everyone can read the riddles (the game is public); only Ori and Carmit can add, edit or delete.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && request.auth.token.email in ['orimosenzon@gmail.com', 'carmitconsari@gmail.com'];
+    }
+    match /riddles/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.image is string
+        && request.resource.data.answerType in ['text', 'image']
+        && request.resource.data.answers is list
+        && request.resource.data.primary is int;
+    }
+  }
+}
