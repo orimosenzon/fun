@@ -470,6 +470,11 @@ def build(report):
             place["access"] = " · ".join(access)
         if e.get("maxNumberOfPeople"):
             place["seats"] = int(e["maxNumberOfPeople"])
+        # the festival's own count (added 27.10.2026); never derive it from attendees,
+        # which also holds the waiting list
+        av = e.get("availability")
+        if av:
+            place["avail"] = {k: av[k] for k in ("availableSeats", "isFull", "hasWaitingList", "registrationOpen") if k in av}
         if not geo:
             del place["geo"]
         out.append(place)
