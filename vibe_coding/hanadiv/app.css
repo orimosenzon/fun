@@ -56,6 +56,8 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
   width: 100%; font: inherit; font-size: 16px; padding: 9px 14px;
   border-radius: 999px; border: 1px solid var(--line); background: #fff;
 }
+#qinfo { margin: 6px 14px 0; font-size: 13.5px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+#qinfo .more { font-size: 13.5px; padding: 0; }
 
 #days { display: flex; gap: 6px; margin: 8px 0 4px; }
 #days button {
