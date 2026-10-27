@@ -747,3 +747,6 @@ html.preview .gt .nowline { background: var(--ink); }
 .syncact [data-forget] { color: var(--ink3); }
 .planbar .btn.gcal { background: #1a73e8; color: #fff; border-color: #1a73e8; }
 .planbar .btn.gcal:hover { background: #1765cc; }
+.tag.full { background: #fdecea; color: #b3261e; }
+.tag.few { background: #fff4d6; color: #8a5a00; }
+.availfull { color: #b3261e; }

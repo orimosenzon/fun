@@ -98,7 +98,7 @@ function prepare(doc) {
       id: p.id.replace(/^hanadiv-/, ''), name: p.name.replace(/\s*·\s*יום (חמישי|שישי|שבת)\s*$/, ''),
       group: p.group, craft: p.craft, date: p.date, start: h * 60 + m, dur, durLabel,
       audience: p.audience, note: p.note, url: p.url, links: p.links || [], photos: p.photos || [],
-      street: a.street, place: a.place, directions: a.directions, access: p.access || '', seats: p.seats, vkey,
+      street: a.street, place: a.place, directions: a.directions, access: p.access || '', seats: p.seats, avail: p.avail || null, vkey,
       geo: p.geo ? { lat: p.geo.lat, lng: p.geo.lng } : null,
     };
     e.end = e.start + dur;
@@ -753,7 +753,7 @@ function card(e, opts = {}) {
     <div class="ph" style="${ph}"></div>
     <div class="body"><div class="nm">${esc(e.name)}</div>
       <div class="where">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}${e.vgeo ? '' : ' · לא על המפה'}</div>
-      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}${cl}${opts.join && !isOver(e) ? `<a class="tag join" data-join href="${esc(joinUrl(e))}" target="_blank" rel="noopener">להרשמה ↗</a>` : ''}</div></div>
+      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}${cl}${availTag(e)}${opts.join && !isOver(e) ? `<a class="tag join" data-join href="${esc(joinUrl(e))}" target="_blank" rel="noopener">להרשמה ↗</a>` : ''}</div></div>
     <button class="star ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}" aria-label="לתוכנית שלי">${STAR}</button>${prog}</div>`;
 }
 // The festival site opens its own sign-up for ?join=1 (added for us by its developer on 27.10.2026).
@@ -817,11 +817,26 @@ const CREDIT = `<footer class="site-footer">
   <span class="footer-sep">·</span>
   <span class="footer-credit"><img src="avatar.png" alt="">אורי מוסנזון</span>
 </footer>`;
+const updatedAt = () => new Date(S.updated).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 function updatedLabel() {
   if (!S.updated) return '';
-  const d = new Date(S.updated);
-  const t = d.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-  return `התוכנייה נמשכת מאתר הפסטיבל כל לילה. עדכון אחרון: ${t}`;
+  return `התוכנייה נמשכת מאתר הפסטיבל כל לילה. עדכון אחרון: ${updatedAt()}`;
+}
+/* Seats, as the festival counts them (its `availability`, read with the nightly pull).
+   Only "full" and "few left" earn a tag; the card says the number and how old it is. */
+const FEW = 10;
+function availTag(e) {
+  const a = e.avail;
+  if (!a || isOver(e)) return '';
+  if (a.isFull) return `<span class="tag full">${a.registrationOpen ? 'מלא · רשימת המתנה' : 'מלא'}</span>`;
+  return a.availableSeats <= FEW ? `<span class="tag few">${a.availableSeats === 1 ? 'נשאר מקום אחד' : `נשארו ${a.availableSeats}`}</span>` : '';
+}
+function availLine(e) {
+  const a = e.avail;
+  if (!a) return e.seats ? ` · עד ${e.seats} משתתפים` : '';
+  const when = S.updated ? ` <small>(נכון ל-${updatedAt()})</small>` : '';
+  if (a.isFull) return `<br><b class="availfull">מלא</b>${a.registrationOpen ? ', אפשר להצטרף לרשימת ההמתנה' : ''}${when}`;
+  return `<br>${a.availableSeats === 1 ? 'נשאר מקום אחד' : `נשארו ${a.availableSeats} מקומות`}${e.seats ? ` מתוך ${e.seats}` : ''}${when}`;
 }
 
 /* ---------- my plan ---------- */
@@ -1190,13 +1205,13 @@ function openDetail(e) {
         <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
         <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}
           ${v.events.length > 1 ? `<br><button class="linkish" data-place="${esc(v.key)}">לוח הזמנים של המקום (${v.events.length} אירועים)</button>` : ''}</span></div>
-        <div>${ICON.ppl}<span>${esc(e.audience)}${e.seats ? ` · עד ${e.seats} משתתפים` : ''}</span></div>
+        <div>${ICON.ppl}<span>${esc(e.audience)}${availLine(e)}</span></div>
         ${e.access ? `<div>${ICON.acc}<span>${esc(e.access)}</span></div>` : ''}
       </div>
       <div class="actions">
         <button class="btn ${S.plan.has(e.id) ? 'warm' : ''}" data-star="${e.id}">${STAR}${S.plan.has(e.id) ? 'בתוכנית שלי' : 'לתוכנית שלי'}</button>
         ${wa.map(l => `<a class="btn wa" target="_blank" rel="noopener" href="${esc(l.url)}">${ICON.wa}${esc(l.title)}</a>`).join('')}
-        <a class="btn join" target="_blank" rel="noopener" href="${esc(joinUrl(e))}">${ICON.ext}הרשמה באתר הנדיב</a>
+        <a class="btn join" target="_blank" rel="noopener" href="${esc(joinUrl(e))}">${ICON.ext}${e.avail?.isFull ? 'לרשימת ההמתנה באתר הנדיב' : 'הרשמה באתר הנדיב'}</a>
         <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע</a>
         ${nav}
         <a class="btn ghost" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" data-gadd="${e.id}">${ICON.gcal}ליומן Google</a>
