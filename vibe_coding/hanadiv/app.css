@@ -307,6 +307,8 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .tag.live { background: #fde6e4; color: #b62a20; font-weight: 600; }
 .tag.soon { background: #fff1d6; color: var(--accent-ink); font-weight: 600; }
 .tag.walk { background: #e6effc; color: #1a5bb8; }
+.tag.join { background: #2e7d4f; color: #fff; text-decoration: none; font-weight: 500; }
+.btn.join { background: #2e7d4f; border-color: #2e7d4f; color: #fff; }
 .tag.kid { background: #e3f6ee; color: #1d7a52; }
 .ev .prog { position: absolute; bottom: 0; inset-inline-start: 0; height: 3px; background: var(--c); opacity: .8; }
 .star { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; color: #c9c0b1; }

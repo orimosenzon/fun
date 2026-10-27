@@ -753,9 +753,13 @@ function card(e, opts = {}) {
     <div class="ph" style="${ph}"></div>
     <div class="body"><div class="nm">${esc(e.name)}</div>
       <div class="where">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}${e.vgeo ? '' : ' · לא על המפה'}</div>
-      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}${cl}</div></div>
+      <div class="when"><span class="hrs">${day}${rng(e.start, e.end)}</span>${r && !opts.noRel ? `<span class="tag ${r.cls}">${r.txt}</span>` : ''}${walk}${kid}${cl}${opts.join && !isOver(e) ? `<a class="tag join" data-join href="${esc(joinUrl(e))}" target="_blank" rel="noopener">להרשמה ↗</a>` : ''}</div></div>
     <button class="star ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}" aria-label="לתוכנית שלי">${STAR}</button>${prog}</div>`;
 }
+// The festival site opens its own sign-up for ?join=1 (added for us by its developer on 27.10.2026).
+// Login and registration stay there; the map never touches users or seats.
+const isOver = (e, n = israelNow()) => e.date < n.date || (e.date === n.date && e.end <= n.m);
+const joinUrl = e => e.url + (e.url.includes('?') ? '&' : '?') + 'join=1';
 const STAR = '<svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
 
 function byNear(a, b) {
@@ -921,7 +925,7 @@ function drawPlan() {
     h += `<div class="planday ${d === S.day ? 'today' : ''}"><h4 data-day="${d}"><span>${dayName(d)}</span><small>${all.length} אירועים${mins_ ? ' · ' + mins(mins_) : ''}</small></h4>${planMini(all, d)}`;
     if (evs[0]) h += gapHTML(null, evs[0], d, 'מה אפשר לפני');
     evs.forEach((e, i) => {
-      h += card(e, { noRel: d !== S.day, dim: true });
+      h += card(e, { noRel: d !== S.day, dim: true, join: true });
       const nx = evs[i + 1];
       if (!nx) return;
       const gap = nx.start - e.end;
@@ -935,7 +939,7 @@ function drawPlan() {
       if (gap >= 30) h += gapHTML(e, nx, d, 'מה נכנס בחלון');
     });
     if (evs.length) h += gapHTML(evs.at(-1), null, d, 'מה אפשר אחרי');
-    if (long.length) h += `<div class="sec"><h3 style="font-size:14px">פתוח לאורך היום</h3></div>` + long.map(e => card(e, { noRel: true })).join('');
+    if (long.length) h += `<div class="sec"><h3 style="font-size:14px">פתוח לאורך היום</h3></div>` + long.map(e => card(e, { noRel: true, join: true })).join('');
     h += '</div>';
   }
   if (S.onlyMine) h += `<div class="empty">על המפה מופיעים רק המקומות שבתוכנית, ממוספרים לפי הסדר. <button class="more" data-onlymine>להציג גם את כל השאר</button></div>`;
@@ -1174,13 +1178,14 @@ function openDetail(e) {
         <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
         <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}
           ${v.events.length > 1 ? `<br><button class="linkish" data-place="${esc(v.key)}">לוח הזמנים של המקום (${v.events.length} אירועים)</button>` : ''}</span></div>
-        <div>${ICON.ppl}<span>${esc(e.audience)}${e.seats ? ` · ${e.seats} מקומות` : ''}</span></div>
+        <div>${ICON.ppl}<span>${esc(e.audience)}${e.seats ? ` · עד ${e.seats} משתתפים` : ''}</span></div>
         ${e.access ? `<div>${ICON.acc}<span>${esc(e.access)}</span></div>` : ''}
       </div>
       <div class="actions">
         <button class="btn ${S.plan.has(e.id) ? 'warm' : ''}" data-star="${e.id}">${STAR}${S.plan.has(e.id) ? 'בתוכנית שלי' : 'לתוכנית שלי'}</button>
         ${wa.map(l => `<a class="btn wa" target="_blank" rel="noopener" href="${esc(l.url)}">${ICON.wa}${esc(l.title)}</a>`).join('')}
-        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע והרשמה</a>
+        <a class="btn join" target="_blank" rel="noopener" href="${esc(joinUrl(e))}">${ICON.ext}הרשמה באתר הנדיב</a>
+        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע</a>
         ${nav}
         <a class="btn ghost" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" data-gadd="${e.id}">${ICON.gcal}ליומן Google</a>
         <button class="btn ghost" data-ics="${e.id}">${ICON.cal}קובץ יומן</button>
@@ -1245,7 +1250,7 @@ function gcalUrl(e) {
     action: 'TEMPLATE', text: e.name, ctz: 'Asia/Jerusalem',
     dates: `${icsTime(e.date, e.start)}/${icsTime(e.date, e.end)}`,
     location: [e.place, e.street, 'פרדס חנה-כרכור'].filter(Boolean).join(', '),
-    details: `${e.note.slice(0, 700)}\n\nעמוד האירוע והרשמה: ${e.url}\nבמפת הפסטיבל: ${location.origin}${location.pathname}#e=${e.id}`,
+    details: `${e.note.slice(0, 700)}\n\nהרשמה: ${joinUrl(e)}\nבמפת הפסטיבל: ${location.origin}${location.pathname}#e=${e.id}`,
   });
   return 'https://calendar.google.com/calendar/render?' + q;
 }
@@ -1608,6 +1613,7 @@ function setupEvents() {
     if (t.closest('[data-clearfilt]')) { S.filt.clear(); S.kids = S.access = false; return filtersChanged(); }
     if (t.closest('[data-calclose]')) return closeCal();
     const ga = t.closest('[data-gadd]'); if (ga) return gcalAdded(ga.dataset.gadd);
+    if (t.closest('[data-join]')) return;
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
     if (t.closest('#sharePanel, #calPanel')) return;
     if (!$('#sharePanel').hidden && !t.closest('[data-share]')) closeShare();
