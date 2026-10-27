@@ -155,10 +155,20 @@ function qMatch(e) {
 // under the search box: how many, on which days, and that Enter goes to the first
 function drawQInfo() {
   const box = $('#qinfo');
+  const none = !!S.q && !S.events.some(passes);
+  box.classList.toggle('none', none);
+  $('#q').classList.toggle('none', none);
   if (!S.q) { box.hidden = true; return; }
   const hits = S.events.filter(passes);
   box.hidden = false;
-  if (!hits.length) { box.innerHTML = `לא נמצא אירוע עם „${esc(S.q)}”.`; return; }
+  if (!hits.length) {
+    // the other filters may be what hides it; say so, and offer the way out
+    const other = S.filt.size || S.kids || S.access;
+    box.innerHTML = `${ICON.search}<span><b>לא נמצא אף אירוע עם „${esc(S.q)}”</b>
+      ${other ? 'גם הסינון לפי סוג פעיל.' : 'באף אחד משלושת הימים. אפשר לנסות מילה אחרת או קצרה יותר.'}</span>
+      ${other ? '<button class="more" data-clearfilt>לחפש בלי הסינון</button>' : ''}`;
+    return;
+  }
   const per = S.days.map(d => [d, hits.filter(e => e.date === d).length]).filter(([, n]) => n);
   box.innerHTML = `<b>${hits.length === 1 ? 'אירוע אחד' : hits.length + ' אירועים'}</b>: ${per.map(([d, n]) => `${dayName(d, true)} ${n}`).join(' · ')}
     <button class="more" data-qgo>להראות ${hits.length === 1 ? 'אותו' : 'את הראשון'} ←</button>`;
@@ -166,7 +176,11 @@ function drawQInfo() {
 // Enter, or the button: the first hit still to come (or the first at all), on the map
 function qGo() {
   const hits = S.events.filter(passes).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
-  if (!hits.length) return;
+  if (!hits.length) {
+    // Enter with nothing to show still answers: the box shakes and the line says why
+    const q = $('#q'); q.classList.remove('shake'); void q.offsetWidth; q.classList.add('shake');
+    return toast(`לא נמצא אירוע עם „${S.q}”`);
+  }
   const n = israelNow(), e = hits.find(x => x.date > n.date || (x.date === n.date && x.end > n.m)) || hits[0];
   stopPlay(); S.follow = false;
   $('#q').blur();
@@ -1049,6 +1063,7 @@ function regridSoon() {
 /* ---------- detail card ---------- */
 
 const ICON = {
+  search: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21M8 8l5 5M13 8l-5 5"/></svg>',
   clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   pin: '<svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
   ppl: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.5 6-5.5s5.4 2.1 6 5.5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.6c2.4.2 4 1.9 4.5 4.6"/></svg>',
@@ -1590,6 +1605,7 @@ function setupEvents() {
       return navigator.share({ title: 'דרך הנדיב · מה קורה עכשיו', url: u }).catch(() => {});
     }
     if (t.closest('[data-qgo]')) return qGo();
+    if (t.closest('[data-clearfilt]')) { S.filt.clear(); S.kids = S.access = false; return filtersChanged(); }
     if (t.closest('[data-calclose]')) return closeCal();
     const ga = t.closest('[data-gadd]'); if (ga) return gcalAdded(ga.dataset.gadd);
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');

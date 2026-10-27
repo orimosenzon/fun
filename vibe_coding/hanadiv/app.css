@@ -58,6 +58,16 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 }
 #qinfo { margin: 6px 14px 0; font-size: 13.5px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 #qinfo .more { font-size: 13.5px; padding: 0; }
+/* nothing found: the box turns red and the line below says so out loud */
+#q.none { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192, 57, 43, .15); }
+#qinfo.none { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: #fdecea; color: #8e2a1f;
+  flex-wrap: nowrap; align-items: center; gap: 10px; font-size: 14px; }
+#qinfo.none svg { width: 22px; height: 22px; flex: none; stroke: #c0392b; }
+#qinfo.none span { display: flex; flex-direction: column; gap: 2px; }
+#qinfo.none b { color: #8e2a1f; font-size: 15px; }
+#qinfo.none .more { color: #8e2a1f; flex: none; }
+#q.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 
 #days { display: flex; gap: 6px; margin: 8px 0 4px; }
 #days button {
