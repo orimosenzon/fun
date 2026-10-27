@@ -132,11 +132,47 @@ function passes(e) {
   if (S.filt.size && !S.filt.has(e.group)) return false;
   if (S.kids && e.audience === 'רק למבוגרים') return false;
   if (S.access && !/(^|· )נגיש/.test(e.access)) return false;
-  if (S.q) {
-    const hay = `${e.name} ${e.craft} ${e.group} ${e.note} ${e.place} ${e.street}`;
-    if (!S.q.split(/\s+/).every(w => hay.includes(w))) return false;
-  }
+  if (S.q && !qMatch(e)) return false;
   return true;
+}
+
+/* Search in Hebrew: "חייזרים" should find "החייזרי", and "לחמים" should find "לחם". Both sides
+   lose their final letters and case; each word of the query also tries itself without a
+   plural ending and without the little words glued to its front (ו, ה, ב, ל, מ, ש, כ). */
+const FINALS = { 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' };
+const qNorm = s => s.toLowerCase().replace(/[םןץףך]/g, c => FINALS[c]).replace(/["'״׳]/g, '');
+function qForms(w) {
+  const out = new Set([w]);
+  for (const f of [...out]) { const s = f.replace(/^ו?[הבלמשכ]/, ''); if (s.length >= 4) out.add(s); }
+  for (const f of [...out]) { const s = f.replace(/(ימ|ות|יות)$/, ''); if (s.length >= 3) out.add(s); }
+  return [...out];
+}
+function qMatch(e) {
+  const hay = e._hay || (e._hay = qNorm(`${e.name} ${e.craft} ${e.group} ${e.note} ${e.place} ${e.street}`));
+  if (S._q !== S.q) { S._q = S.q; S._qw = qNorm(S.q).split(/\s+/).filter(Boolean).map(qForms); }
+  return S._qw.every(forms => forms.some(f => hay.includes(f)));
+}
+// under the search box: how many, on which days, and that Enter goes to the first
+function drawQInfo() {
+  const box = $('#qinfo');
+  if (!S.q) { box.hidden = true; return; }
+  const hits = S.events.filter(passes);
+  box.hidden = false;
+  if (!hits.length) { box.innerHTML = `לא נמצא אירוע עם „${esc(S.q)}”.`; return; }
+  const per = S.days.map(d => [d, hits.filter(e => e.date === d).length]).filter(([, n]) => n);
+  box.innerHTML = `<b>${hits.length === 1 ? 'אירוע אחד' : hits.length + ' אירועים'}</b>: ${per.map(([d, n]) => `${dayName(d, true)} ${n}`).join(' · ')}
+    <button class="more" data-qgo>להראות ${hits.length === 1 ? 'אותו' : 'את הראשון'} ←</button>`;
+}
+// Enter, or the button: the first hit still to come (or the first at all), on the map
+function qGo() {
+  const hits = S.events.filter(passes).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+  if (!hits.length) return;
+  const n = israelNow(), e = hits.find(x => x.date > n.date || (x.date === n.date && x.end > n.m)) || hits[0];
+  stopPlay(); S.follow = false;
+  $('#q').blur();
+  if (S.view !== 'map') setView('map');
+  setDay(e.date); setT(e.start);
+  focusEvent(e);
 }
 const dayEvents = () => S.events.filter(e => e.date === S.day && passes(e));
 function status(e, t = S.t) {
@@ -1313,7 +1349,7 @@ function setDay(d) {
   render();
 }
 function filtersChanged() {
-  drawChips(); drawDays(); drawStrip();
+  drawChips(); drawDays(); drawStrip(); drawQInfo();
   if (S.view === 'grid') drawGrid();
   render();
 }
@@ -1553,6 +1589,7 @@ function setupEvents() {
       const u = $('#shareUrl').value;
       return navigator.share({ title: 'דרך הנדיב · מה קורה עכשיו', url: u }).catch(() => {});
     }
+    if (t.closest('[data-qgo]')) return qGo();
     if (t.closest('[data-calclose]')) return closeCal();
     const ga = t.closest('[data-gadd]'); if (ga) return gcalAdded(ga.dataset.gadd);
     if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
@@ -1624,6 +1661,10 @@ function setupEvents() {
   };
   let qt;
   $('#q').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { S.q = $('#q').value.trim(); filtersChanged(); }, 180); });
+  $('#q').addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter') return;
+    clearTimeout(qt); S.q = $('#q').value.trim(); filtersChanged(); qGo();
+  });
 }
 
 /* ---------- start ---------- */
@@ -1646,7 +1687,7 @@ async function main() {
   h.hide.forEach(k => S.ui[k] = false);
   h.g.forEach(g => S.filt.add(g));
   S.kids = h.kids; S.access = h.acc; S.onlyMine = !h.all;
-  if (h.q) { S.q = h.q; $('#q').value = h.q; $('#searchRow').hidden = false; $('#searchBtn').classList.add('on'); }
+  if (h.q) { S.q = h.q; $('#q').value = h.q; $('#searchRow').hidden = false; $('#searchBtn').classList.add('on'); drawQInfo(); }
   S.sat = h.sat; S.tilt = h.tilt || !!(h.cam && h.cam.pitch >= 10); S.cam = h.cam;
   // map-only from a link: set before the map frames itself (the browser's full screen needs a tap, so not that)
   S.clean = h.full && !S.shared && (h.view || 'map') === 'map';
