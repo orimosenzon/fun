@@ -767,7 +767,19 @@ function byNear(a, b) {
   return (a.vgeo ? dist(S.me, a.vgeo) : 1e9) - (b.vgeo ? dist(S.me, b.vgeo) : 1e9);
 }
 
-function drawList() { $('#sheetBody').innerHTML = myNextHTML() + listHTML(); markFocus(); }
+function drawList() { $('#sheetBody').innerHTML = (S.q ? searchHTML() : myNextHTML() + listHTML()); markFocus(); }
+// While searching, the list is the results: every hit on all three days, in time order,
+// so a hit on Saturday shows up even when the clock is on Thursday.
+function searchHTML() {
+  const hits = S.events.filter(passes).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+  if (!hits.length) return `<div class="empty">לא נמצא אף אירוע עם „${esc(S.q)}”. <button class="more" data-qclear>לנקות את החיפוש</button></div>`;
+  let h = `<div class="sec"><h3>תוצאות החיפוש</h3><span class="meta">${hits.length === 1 ? 'אירוע אחד' : hits.length + ' אירועים'} · <button class="linkish" data-qclear>ניקוי</button></span></div>`;
+  for (const d of S.days) {
+    const evs = hits.filter(e => e.date === d);
+    if (evs.length) h += `<h4 class="qday">${dayName(d)}</h4>` + evs.map(e => card(e, { noRel: d !== S.day })).join('');
+  }
+  return h;
+}
 function listHTML() {
   const evs = dayEvents();
   const live = evs.filter(e => status(e) === 'live' && !e.long).sort((a, b) => byNear(a, b) || a.end - b.end);
@@ -1610,6 +1622,7 @@ function setupEvents() {
       return navigator.share({ title: 'דרך הנדיב · מה קורה עכשיו', url: u }).catch(() => {});
     }
     if (t.closest('[data-qgo]')) return qGo();
+    if (t.closest('[data-qclear]')) { $('#q').value = ''; S.q = ''; return filtersChanged(); }
     if (t.closest('[data-clearfilt]')) { S.filt.clear(); S.kids = S.access = false; return filtersChanged(); }
     if (t.closest('[data-calclose]')) return closeCal();
     const ga = t.closest('[data-gadd]'); if (ga) return gcalAdded(ga.dataset.gadd);
