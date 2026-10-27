@@ -861,7 +861,7 @@ function drawPlan() {
   }
   h += myNextHTML();
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
-    <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn ghost" data-ics-all>${ICON.cal}ליומן</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>
+    <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn gcal" data-cal>${ICON.gcal}ליומן Google</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>
     ${typeof syncBarHTML === 'function' ? syncBarHTML() : ''}`;
   for (const d of S.days) {
     const all = list.filter(e => e.date === d);
@@ -1020,6 +1020,8 @@ const ICON = {
   nav: '<svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg>',
   ext: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  // a calendar page in Google's four colours
+  gcal: '<svg class="gc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3" fill="#fff" stroke="#4285f4" stroke-width="2"/><path d="M3 9.5h18" stroke="#4285f4" stroke-width="2"/><path d="M8 2.5v3.5M16 2.5v3.5" stroke="#ea4335" stroke-width="2" stroke-linecap="round"/><path d="m8.5 15 2.3 2.2 4.7-4.7" stroke="#34a853" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="18" r="1.4" fill="#fbbc05" stroke="none"/></svg>',
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   cloud: '<svg viewBox="0 0 24 24"><path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.5 9.5 4.3 4.3 0 0 0 7 18z"/></svg>',
@@ -1129,7 +1131,8 @@ function openDetail(e) {
         ${wa.map(l => `<a class="btn wa" target="_blank" rel="noopener" href="${esc(l.url)}">${ICON.wa}${esc(l.title)}</a>`).join('')}
         <a class="btn ghost" target="_blank" rel="noopener" href="${esc(e.url)}">${ICON.ext}עמוד האירוע והרשמה</a>
         ${nav}
-        <button class="btn ghost" data-ics="${e.id}">${ICON.cal}ליומן</button>
+        <a class="btn ghost" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" data-gadd="${e.id}">${ICON.gcal}ליומן Google</a>
+        <button class="btn ghost" data-ics="${e.id}">${ICON.cal}קובץ יומן</button>
         ${v.geo ? `<button class="btn ghost" data-showmap="${e.id}">${ICON.pin}על המפה</button>` : ''}
       </div>
       <div class="note">${noteHTML(e.note)}</div>
@@ -1180,6 +1183,50 @@ function downloadIcs(evs, name) {
   a.href = URL.createObjectURL(blob); a.download = name + '.ics'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+
+/* Google Calendar. Writing into someone's calendar straight from the page needs a calendar
+   permission that Google only grants an app after weeks of review, and until then it greets
+   people with an "unverified app" warning. So each event goes through Google's own "new event"
+   page instead, filled in and waiting for one tap on Save; the panel lists the plan and ticks
+   off what was sent. The ticks are this browser's only (a convenience, nothing to sync). */
+function gcalUrl(e) {
+  const q = new URLSearchParams({
+    action: 'TEMPLATE', text: e.name, ctz: 'Asia/Jerusalem',
+    dates: `${icsTime(e.date, e.start)}/${icsTime(e.date, e.end)}`,
+    location: [e.place, e.street, 'פרדס חנה-כרכור'].filter(Boolean).join(', '),
+    details: `${e.note.slice(0, 700)}\n\nעמוד האירוע והרשמה: ${e.url}\nבמפת הפסטיבל: ${location.origin}${location.pathname}#e=${e.id}`,
+  });
+  return 'https://calendar.google.com/calendar/render?' + q;
+}
+const GCAL = 'hanadiv-gcal';
+function gcalDone() { try { return new Set(JSON.parse(localStorage.getItem(GCAL)) || []); } catch (e) { return new Set(); } }
+function gcalAdded(id) {
+  const s = gcalDone(); s.add(id);
+  try { localStorage.setItem(GCAL, JSON.stringify([...s])); } catch (e) { /* private window */ }
+  // after the tab with Google opens, the list shows what is left
+  if (!$('#calPanel').hidden) setTimeout(openCal, 300);
+}
+function openCal() {
+  toggleShowPanel(false); closeShare();
+  const box = $('#calPanel'), evs = planList(), done = gcalDone();
+  box.hidden = false;
+  const left = evs.filter(e => !done.has(e.id)).length;
+  let h = `<div class="sphead"><b>${ICON.gcal}ליומן Google</b><button class="iconbtn" data-calclose aria-label="סגירה">${ICON.x}</button></div>`;
+  if (!evs.length) return box.innerHTML = h + '<p class="shnote">התוכנית ריקה. מסמנים ★ על אירועים, והם יופיעו כאן.</p>';
+  h += `<p class="shnote">לוחצים "הוספה", גוגל פותח את האירוע מוכן עם השעה, המקום והקישור, ונשאר רק ללחוץ "שמירה".
+    ${left ? `<b>${left === evs.length ? `${evs.length} אירועים בתוכנית` : `נשארו ${left} מתוך ${evs.length}`}</b>` : '<b>כל התוכנית ביומן.</b>'}</p><div class="callist">`;
+  let day = '';
+  for (const e of evs) {
+    if (e.date !== day) { day = e.date; h += `<h5>${dayName(day)}</h5>`; }
+    const ok = done.has(e.id);
+    h += `<div class="calrow ${ok ? 'done' : ''}"><span><b>${esc(e.name)}</b><small>${rng(e.start, e.end)} · ${esc(e.place)}</small></span>
+      <a class="btn ${ok ? 'ghost' : 'gcal'}" href="${esc(gcalUrl(e))}" target="_blank" rel="noopener" data-gadd="${e.id}">${ok ? '✓ נוסף' : 'הוספה'}</a></div>`;
+  }
+  h += `</div><p class="calfile">הכל בבת אחת, בקובץ: <button class="more" data-ics-all>הורדת קובץ יומן</button><br>
+    נפתח מיד באייפון ובאאוטלוק. ליומן Google במחשב: הגדרות, ואז "ייבוא וייצוא".</p>`;
+  box.innerHTML = h;
+}
+function closeCal() { $('#calPanel').hidden = true; }
 
 /* ---------- chips, days, views ---------- */
 
@@ -1506,8 +1553,13 @@ function setupEvents() {
       const u = $('#shareUrl').value;
       return navigator.share({ title: 'דרך הנדיב · מה קורה עכשיו', url: u }).catch(() => {});
     }
-    if (t.closest('#sharePanel')) return;
+    if (t.closest('[data-calclose]')) return closeCal();
+    const ga = t.closest('[data-gadd]'); if (ga) return gcalAdded(ga.dataset.gadd);
+    if (t.closest('[data-ics-all]')) return downloadIcs(planList(), 'דרך הנדיב - התוכנית שלי');
+    if (t.closest('#sharePanel, #calPanel')) return;
     if (!$('#sharePanel').hidden && !t.closest('[data-share]')) closeShare();
+    if (!$('#calPanel').hidden && !t.closest('[data-cal]')) closeCal();
+    if (t.closest('[data-cal]')) return openCal();
     if (t.closest('[data-uireset]')) { S.ui = { ...UI_DEF }; applyUI(); return toggleShowPanel(true); }
     if (!$('#showPanel').hidden && !t.closest('#showPanel')) toggleShowPanel(false);
     const star = t.closest('[data-star]');
@@ -1550,6 +1602,7 @@ function setupEvents() {
     if (ev.key !== 'Escape') return;
     if (S.detail) closeDetail();
     else if (!$('#sharePanel').hidden) closeShare();
+    else if (!$('#calPanel').hidden) closeCal();
     else if (!$('#showPanel').hidden) toggleShowPanel(false);
     else if (S.clean) setClean(false);
   });
