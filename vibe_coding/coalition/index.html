@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>61: הקדנציה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- מסך פתיחה -->
+<section id="menu" class="screen">
+  <div class="menu-card">
+    <div class="logo">61</div>
+    <h1>הקדנציה</h1>
+    <p class="sub">משחק סאטירה פוליטית. אתה ראש הממשלה. יש לך 66 מנדטים, שש מפלגות רעבות וארבע שנים. תשרוד.</p>
+    <label class="players">שחקנים:
+      <select id="playerCount">
+        <option>1</option><option>2</option><option selected>3</option><option>4</option>
+      </select>
+    </label>
+    <div id="names"></div>
+    <button class="big teal" id="btnNew">קדנציה חדשה</button>
+    <button class="big teal" id="btnResume" hidden>המשך קדנציה</button>
+    <div class="toggles">
+      <button class="gold" id="btnMusic">🎵<br>מוזיקה: כבוי</button>
+      <button class="gold" id="btnSfx">🔈<br>אפקטים: פועל</button>
+    </div>
+    <details class="howto">
+      <summary>איך משחקים</summary>
+      <ul>
+        <li>כל תור הוא רבעון. קדנציה מלאה היא 16 רבעונים.</li>
+        <li>בכל רבעון מגיע משבר, ואתה בוחר איך להגיב. כל בחירה משמחת מישהו ומרגיזה מישהו אחר.</li>
+        <li>יש לך 3 נקודות הון פוליטי לרבעון לפעולות: כספים קואליציוניים, מינוי לשר, פגישות לילה ועוד.</li>
+        <li>מפלגה שהשביעות שלה יורדת מתחת ל-15 בסוף רבעון עוזבת את הקואליציה. פחות מ-61 מנדטים והממשלה נופלת.</li>
+        <li>בסוף הקדנציה יש בחירות. הניקוד: סקרים, מנדטים ותקציב שנשאר.</li>
+      </ul>
+    </details>
+    <div id="leaderboard"></div>
+  </div>
+</section>
+
+<!-- מסך המשחק -->
+<section id="game" class="screen" hidden>
+  <header class="hud">
+    <div class="who"><span id="hudPlayer"></span><small id="hudQuarter"></small></div>
+    <div class="stat"><span>מנדטים</span><b id="hudSeats"></b></div>
+    <div class="stat"><span>סקרים</span><b id="hudPolls"></b></div>
+    <div class="stat"><span>תקציב (מיליארד)</span><b id="hudBudget"></b></div>
+    <div class="stat"><span>הון פוליטי</span><b id="hudAP"></b></div>
+    <div class="stat"><span>תיקים פנויים</span><b id="hudMin"></b></div>
+  </header>
+
+  <div class="board">
+    <div class="parties" id="parties"></div>
+    <div class="center">
+      <div class="event" id="event"></div>
+      <div class="actions" id="actions"></div>
+      <button class="big teal" id="btnEnd">סיום רבעון ⏭</button>
+      <ol class="log" id="log"></ol>
+    </div>
+  </div>
+</section>
+
+<!-- חלון -->
+<div id="modal" hidden><div class="modal-box" id="modalBox"></div></div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
