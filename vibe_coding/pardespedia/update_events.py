@@ -812,7 +812,7 @@ def _same_event(a, b) -> bool:
         return False
     ta, tb = _clock_times(a["time"]), _clock_times(b["time"])
     if ta and tb and not (ta & tb):        # no shared showing -> different events
-        return False
+        return _retimed_listing(a, b)
     na, nb = norm(a["name"]), norm(b["name"])
     if bool(na and nb) and (na in nb or nb in na):
         return True
@@ -841,10 +841,33 @@ def _same_listing(a, b, ta: set, tb: set) -> bool:
         return False
     if not (ta and tb and ta == tb):
         return False
+    return _same_venue(a, b)
+
+
+def _same_venue(a, b) -> bool:
     va, vb = norm(a["venue"]), norm(b["venue"])
     # containment, not equality: one feed says "השוק הישן", the other
     # "השוק הישן, האורנים 12, פרדס חנה" for the same room
     return bool(va and vb) and (va in vb or vb in va)
+
+
+def _title_words(s: str) -> set:
+    return {w for w in (norm(t) for t in re.split(r"[\s\-‖|:–—]+", s or "")) if len(w) >= 3}
+
+
+def _retimed_listing(a, b) -> bool:
+    """One event that a second aggregator lists at the wrong hour.
+
+    "עמק הופעות" stamps every TuesJazz evening with the series' usual 20:00,
+    even the one its own text moves to 18:30 — "ג'אז משפחות ב-TuesJazz" at
+    20:00 beside the hub's "ג׳אז משפחות בשוק הישן" at 18:30 on 2026-10-27.
+    A time conflict alone cannot tell that apart from two shows in one room,
+    so it takes all three: different sources, the same venue, and titles
+    sharing at least two words. Within one feed a time conflict still means
+    two events."""
+    if _source_of(a) == _source_of(b) or not _same_venue(a, b):
+        return False
+    return len(_title_words(a["name"]) & _title_words(b["name"])) >= 2
 
 
 def merge_showtimes(rows: list) -> list:
