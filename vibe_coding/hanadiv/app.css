@@ -750,3 +750,4 @@ html.preview .gt .nowline { background: var(--ink); }
 .tag.full { background: #fdecea; color: #b3261e; }
 .tag.few { background: #fff4d6; color: #8a5a00; }
 .availfull { color: #b3261e; }
+.tag.closed { background: #ececec; color: #555; }
