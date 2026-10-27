@@ -168,6 +168,15 @@ FIXES = {
                          why="the theatre, as המעלה 4 with 'רחוב' in front"),
 }
 
+# Events pinned by their id, whatever address the host types next. הידית האחורית
+# rewrote its address three times in three days (on 27/10 to 'מעלה 4', which B144
+# put 200 m west of the theatre), and each time the pin went somewhere else. It
+# gathers at 17:30 at רחבת יד לבנים, so that is where it stays.
+EVENT_AT = {
+    2261: dict(lat=32.475430, lng=34.973730, source="osm",
+               why="the procession's start, רחבת יד לבנים, as הדקלים 90"),
+}
+
 # The festival's fourteen genres, folded into groups a legend can hold. The
 # genre itself stays on the pin as the second chip.
 GROUPS = [
@@ -385,6 +394,8 @@ def build(report):
         rec = next((r for r in recs if text(r["description"]) == text(e["placeDescription"])), recs[0] if recs else None)
         geo = locate(rec, key, known, cache)
         venues[key] = (rec, geo)
+        if e["eventID"] in EVENT_AT:      # an event that is not where its address says
+            geo = {k: EVENT_AT[e["eventID"]][k] for k in ("lat", "lng", "source")}
 
         title = text(e["title"])
         # A title is a label on the map. One host wrote a paragraph into the
