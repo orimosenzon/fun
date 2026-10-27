@@ -639,7 +639,7 @@ html.clean #cleanbar {
 /* the pill sits at the top centre, so the map's own buttons move down out of its way on a phone */
 @media (max-width: 899px) { html.clean .maplibregl-ctrl-top-right { margin-top: calc(env(safe-area-inset-top) + 52px); } }
 
-#showPanel, #sharePanel, #loginPanel {
+#showPanel, #sharePanel, #loginPanel, #calPanel {
   position: fixed; z-index: 15; background: var(--paper); box-shadow: var(--shadow); padding: 12px 16px 16px;
   direction: rtl; overflow-y: auto; overscroll-behavior: contain;
   /* a phone gets it from the bottom, where the thumb is */
@@ -647,9 +647,27 @@ html.clean #cleanbar {
   padding-bottom: calc(16px + env(safe-area-inset-bottom)); animation: rise .25s cubic-bezier(.2, .8, .2, 1);
 }
 @media (min-width: 900px) {
-  #showPanel, #sharePanel, #loginPanel { inset: auto; bottom: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; border-radius: 18px; animation: fade .2s; }
-  #sharePanel { width: 400px; }
+  #showPanel, #sharePanel, #loginPanel, #calPanel { inset: auto; bottom: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; border-radius: 18px; animation: fade .2s; }
+  #sharePanel, #calPanel { width: 420px; }
+  #calPanel { max-height: 86vh; }
 }
+
+/* ---------- to Google Calendar ---------- */
+svg.gc { fill: none; }
+.btn.gcal { background: #fff; color: #1a56c4; border: 1.5px solid #4285f4; }
+.btn.gcal:hover { background: #eef4ff; }
+#calPanel .sphead b { display: flex; align-items: center; gap: 8px; }
+#calPanel .sphead svg.gc { width: 24px; height: 24px; }
+.callist h5 { margin: 14px 0 4px; font-size: 13px; color: var(--ink3); font-weight: 600; }
+.calrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1ece2; }
+.calrow > span { display: flex; flex-direction: column; min-width: 0; }
+.calrow b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calrow small { font-size: 12.5px; color: var(--ink2); }
+.calrow .btn { flex: none; padding: 7px 14px; font-size: 14px; }
+.calrow.done b { color: var(--ink2); }
+.calrow.done .btn { color: #1e7e44; border-color: #cfe8d8; }
+.calfile { font-size: 12.5px; color: var(--ink3); margin: 14px 0 0; line-height: 1.6; }
+.calfile .more { font-size: 12.5px; padding: 0; }
 .sphead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .sphead b { font-size: 17px; }
 .cleango { width: 100%; justify-content: center; padding: 11px 14px; font-size: 15px; margin-bottom: 6px; }
@@ -712,3 +730,5 @@ html.preview .gt .nowline { background: var(--ink); }
 .loginfine a { color: inherit; }
 .syncact { display: flex; gap: 14px; }
 .syncact [data-forget] { color: var(--ink3); }
+.planbar .btn.gcal { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+.planbar .btn.gcal:hover { background: #1765cc; }
