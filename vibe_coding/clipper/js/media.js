@@ -13,7 +13,10 @@ C.media = (() => {
     v.muted = true;
     v.preload = 'auto';
     v.playsInline = true;
-    try { await C.loadVideo(v, blob); } catch (e) { console.warn('thumbs', e); return; }
+    const t0 = performance.now();
+    let ok = 0, fail = 0;
+    C.log.info('thumbs start', { count });
+    try { await C.loadVideo(v, blob); } catch (e) { C.log.error('thumbs: video did not load', String(e)); return; }
     const w = Math.round((height * v.videoWidth) / v.videoHeight) || height;
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = height;
@@ -28,12 +31,17 @@ C.media = (() => {
     for (const i of order) {
       if (my !== token) break;
       const t = Math.min(duration - 0.05, ((i + 0.5) * duration) / count);
-      try { await C.seekTo(v, t); } catch { continue; }
+      try { await C.seekTo(v, t); } catch (e) {
+        if (++fail <= 3) C.log.warn('thumb seek failed', { t: +t.toFixed(2), err: String(e) });
+        continue;
+      }
+      ok++;
       ctx.drawImage(v, 0, 0, w, height);
       const bmp = await createImageBitmap(cv);
       if (my !== token) break;
       onThumb(i, t, bmp);
     }
+    C.log.info('thumbs done', { ok, fail, ms: Math.round(performance.now() - t0), cancelled: my !== token });
     URL.revokeObjectURL(v._url);
     v.removeAttribute('src');
     v.load();
@@ -41,11 +49,15 @@ C.media = (() => {
 
   /** צורת גל: מקסימום עוצמה לכל 1/100 שנייה. קבצים ענקיים מדלגים כדי לא לחנוק את הזיכרון. */
   async function buildPeaks(blob) {
-    if (blob.size > 600 * 1024 * 1024) return null;
+    if (blob.size > 600 * 1024 * 1024) { C.log.info('peaks skipped: file too big'); return null; }
+    const t0 = performance.now();
     try {
+      C.log.info('peaks start', { mb: +(blob.size / 1048576).toFixed(1) });
       const buf = await blob.arrayBuffer();
+      C.log.info('peaks file read', { ms: Math.round(performance.now() - t0) });
       const ac = new OfflineAudioContext(1, 1, 8000);
       const audio = await ac.decodeAudioData(buf);
+      C.log.info('peaks decoded', { ms: Math.round(performance.now() - t0), sec: +audio.duration.toFixed(1), ch: audio.numberOfChannels, rate: audio.sampleRate });
       const rate = 100;
       const n = Math.ceil(audio.duration * rate);
       const peaks = new Float32Array(n);
@@ -59,10 +71,11 @@ C.media = (() => {
           peaks[i] = m;
         }
       }
+      C.log.info('peaks done', { ms: Math.round(performance.now() - t0) });
       return { rate, peaks };
     } catch (e) {
       // סרטון בלי פס קול, או קודק שהדפדפן לא מפענח כאודיו בלבד
-      console.warn('peaks', e);
+      C.log.warn('peaks failed', { ms: Math.round(performance.now() - t0), err: String(e) });
       return null;
     }
   }
