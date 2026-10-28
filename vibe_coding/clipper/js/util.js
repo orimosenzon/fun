@@ -37,7 +37,7 @@ C.toast = (msg, ms = 3500) => {
 
 /** מחכה לאירוע אחד על אלמנט, עם timeout כדי שלא ניתקע לנצח */
 C.once = (el, ev, ms = 8000) => new Promise((res, rej) => {
-  const t = setTimeout(() => { el.removeEventListener(ev, h); rej(new Error(`timeout: ${ev}`)); }, ms);
+  const t = setTimeout(() => { el.removeEventListener(ev, h); rej(new Error(`timeout: ${ev} (${ms}ms, readyState ${el.readyState}, error ${el.error?.code ?? '-'})`)); }, ms);
   const h = () => { clearTimeout(t); res(); };
   el.addEventListener(ev, h, { once: true });
 });
@@ -56,7 +56,7 @@ C.loadVideo = async (v, blob) => {
   if (v._url) URL.revokeObjectURL(v._url);
   v._url = URL.createObjectURL(blob);
   const p = C.once(v, 'loadeddata', 30000);
-  const err = new Promise((_, rej) => v.addEventListener('error', () => rej(new Error('decode')), { once: true }));
+  const err = new Promise((_, rej) => v.addEventListener('error', () => rej(new Error(`decode: code ${v.error?.code} ${v.error?.message || ''}`)), { once: true }));
   v.src = v._url;
   v.load();
   await Promise.race([p, err]);

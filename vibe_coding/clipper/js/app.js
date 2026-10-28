@@ -311,10 +311,19 @@
     if (!file.type.startsWith('video/') && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name)) { toast(t('badFile')); return; }
     stopAll();
     toast(t('loading'), 1500);
+    C.log.info('open file', { name: file.name, type: file.type, mb: +(file.size / 1048576).toFixed(1) });
     try {
-      await C.loadVideo(src, file);
+      await C.log.time('load video', () => C.loadVideo(src, file));
     } catch (e) {
       toast(t('loadFailed'), 6000);
+      return;
+    }
+    C.log.info('video', { w: src.videoWidth, h: src.videoHeight, dur: +src.duration.toFixed(2) });
+    // הדפדפן פתח את הקובץ אבל לא את הווידאו שבו (אצלנו: HEVC מאייפון בכרום על לינוקס). רק קול, בלי תמונה.
+    if (!src.videoWidth || !src.videoHeight) {
+      C.log.error('no picture: the browser cannot decode this video codec', { name: file.name, type: file.type });
+      src.removeAttribute('src'); src.load();
+      toast(t('noPicture'), 10000);
       return;
     }
     S.file = file;
@@ -336,6 +345,7 @@
     tl.setThumbCount(n);
     C.media.buildThumbs(file, S.dur, n, 56 * (window.devicePixelRatio || 1), (i, _t, bmp) => tl.setThumb(i, bmp));
     C.media.buildPeaks(file).then((p) => { if (S.file === file && p) tl.setPeaks(p); });
+    C.log.info('settings', { platform: S.set.platform, format: S.set.format, use: S.set.use, list: B.items.filter((it) => it.n).length });
   }
 
   $('fileInput').addEventListener('change', (e) => { openFile(e.target.files[0]); e.target.value = ''; });
@@ -465,6 +475,7 @@
     // ~0.15 ביט לפיקסל בשנייה ב-30fps: 1080×1920 ≈ 9.3Mbps. מספיק בשביל לשרוד את הדחיסה החוזרת של הרשתות.
     const bitrate = Math.round(W * H * 30 * 0.15);
     const t0 = performance.now();
+    C.log.info('export start', { W, H, mime: fmt.mime, bitrate, parts: parts.map((p) => `${p.label} ${p.from.toFixed(2)}-${p.to.toFixed(2)}`) });
     const seq = S.seq = C.sequencer.run({
       parts, canvas: cv, look: look(), fades: S.set.fades,
       record: { mime: fmt.mime, bitrate },
@@ -478,6 +489,7 @@
     try { blob = await seq.done; } catch (e) { err = e; console.error(e); }
     S.seq = null;
     window.__lastStats = seq.stats;   // לבדיקות: קצב הלולאה בכל חלק
+    C.log[err ? 'error' : 'info']('export end', { mb: blob ? +(blob.size / 1048576).toFixed(2) : null, err: err ? String(err) : null, s: Math.round((performance.now() - t0) / 1000), stats: seq.stats });
     const seconds = parts.reduce((s, p) => s + p.to - p.from, 0);
     return { blob, err, fmt, W, H, seconds, took: (performance.now() - t0) / 1000, stats: seq.stats };
   }
@@ -500,7 +512,6 @@
   $('btnExport').addEventListener('click', async () => {
     if (S.mode === 'export') return;
     if (!checkReady()) return;
-    if (tooLong() && !confirm(t('confirmTooLong'))) return;
     if (!beginExport()) return;
     $('result').hidden = true;
     $('progress').hidden = false;
@@ -716,8 +727,6 @@
     if (!S.file) { toast(t('noVideo')); return; }
     const list = chosen();
     if (!list.length) { toast(t('batchNoneSelected')); return; }
-    const max = plat()?.maxSec;
-    if (max && list.some((it) => C.batch.length(it) + brandSeconds() > max + 0.05) && !confirm(t('batchConfirmLong'))) return;
     // בכרום ובאדג' שומרים ישר לתיקייה, וכל קובץ משתחרר מהזיכרון מיד. בשאר הדפדפנים: הורדה רגילה לכל קובץ.
     let dir = null;
     if (window.showDirectoryPicker) {
@@ -892,6 +901,7 @@
   };
 
   async function applyBrand(kind, blob, from) {
+    C.log.info('brand', { kind, from, name: blob?.name || null, kb: blob ? Math.round(blob.size / 1024) : 0 });
     S.brand[kind] = blob || null;
     S.brandFrom[kind] = blob ? from : null;
     const th = $(SLOT[kind].thumb);
@@ -914,7 +924,7 @@
           await C.seekTo(v, Math.min(0.5, v.duration / 2));
           c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
           th.appendChild(c);
-        } catch (e) { console.warn(kind, e); S.brand[kind] = null; }
+        } catch (e) { C.log.error('brand load failed', { kind, err: String(e) }); S.brand[kind] = null; }
       } else {
         v.removeAttribute('src'); v.load();
       }
@@ -1074,6 +1084,7 @@
   $('resultDlg').addEventListener('close', () => $('resultVideo').pause());
 
   // ── שפה ────────────────────────────────────────────────────────────────
+  $('btnLog').addEventListener('click', () => C.log.download());
   $('btnLang').addEventListener('click', () => {
     C.setLang(C.lang === 'he' ? 'en' : 'he');
     renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch(); renderStruct();
