@@ -1270,7 +1270,7 @@ function downloadIcs(evs, name) {
     lines.push('BEGIN:VEVENT', `UID:hanadiv-${e.id}@pardespedia.info`, `DTSTAMP:${icsTime('2026-10-01', 0)}`,
       `DTSTART:${icsTime(e.date, e.start)}`, `DTEND:${icsTime(e.date, e.end)}`,
       `SUMMARY:${fold(e.name)}`, `LOCATION:${fold([e.place, e.street, 'פרדס חנה-כרכור'].filter(Boolean).join(', '))}`,
-      `DESCRIPTION:${fold(e.url + '\n\n' + e.note.slice(0, 600))}`, `URL:${e.url}`);
+      `DESCRIPTION:${fold(`במפת הפסטיבל: ${appUrl(e)}\nעמוד האירוע: ${e.url}\n\n${e.note.slice(0, 600)}`)}`, `URL:${appUrl(e)}`);
     if (e.vgeo) lines.push(`GEO:${e.vgeo.lat};${e.vgeo.lng}`);
     lines.push('END:VEVENT');
   }
@@ -1286,12 +1286,14 @@ function downloadIcs(evs, name) {
    people with an "unverified app" warning. So each event goes through Google's own "new event"
    page instead, filled in and waiting for one tap on Save; the panel lists the plan and ticks
    off what was sent. The ticks are this browser's only (a convenience, nothing to sync). */
+// the event opened in the app, on its own day; the link goes first so it is seen without scrolling
+const appUrl = e => `${location.origin}${location.pathname}#d=${e.date.slice(8)}&e=${e.id}`;
 function gcalUrl(e) {
   const q = new URLSearchParams({
     action: 'TEMPLATE', text: e.name, ctz: 'Asia/Jerusalem',
     dates: `${icsTime(e.date, e.start)}/${icsTime(e.date, e.end)}`,
     location: [e.place, e.street, 'פרדס חנה-כרכור'].filter(Boolean).join(', '),
-    details: `${e.note.slice(0, 700)}\n\n${regState(e) === 'closed' ? 'עמוד האירוע' : 'הרשמה'}: ${regState(e) === 'closed' ? e.url : joinUrl(e)}\nבמפת הפסטיבל: ${location.origin}${location.pathname}#e=${e.id}`,
+    details: `במפת הפסטיבל: ${appUrl(e)}\n${regState(e) === 'closed' ? 'עמוד האירוע' : 'הרשמה'}: ${regState(e) === 'closed' ? e.url : joinUrl(e)}\n\n${e.note.slice(0, 700)}`,
   });
   return 'https://calendar.google.com/calendar/render?' + q;
 }
