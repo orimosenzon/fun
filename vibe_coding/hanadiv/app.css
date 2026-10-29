@@ -51,15 +51,30 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .iconbtn.on { color: #1a73e8; }
 #acctBtn.in { color: #1a73e8; }
 #acctBtn img { width: 28px; height: 28px; border-radius: 50%; }
-#searchRow { margin-top: 8px; }
-#q {
-  width: 100%; font: inherit; font-size: 16px; padding: 9px 14px;
-  border-radius: 999px; border: 1px solid var(--line); background: #fff;
+/* people tapped the magnifier and saw nothing happen: the box now opens under the button,
+   slides in with a flash, and the button stays dark while it is open */
+#searchBtn.on { background: var(--ink); color: #fff; }
+#searchRow { margin-top: 8px; animation: qopen .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes qopen { from { opacity: 0; transform: translateY(-10px); } }
+.qbox {
+  display: flex; align-items: center; gap: 6px; padding: 0 6px 0 0;
+  border-radius: 999px; border: 2px solid var(--accent); background: #fff;
+  box-shadow: 0 0 0 4px rgba(246, 161, 27, .22); animation: qflash 1.2s ease-out;
 }
+@keyframes qflash { 0% { box-shadow: 0 0 0 12px rgba(246, 161, 27, .5); } 100% { box-shadow: 0 0 0 4px rgba(246, 161, 27, .22); } }
+.qbox > svg { flex: none; color: var(--accent-ink); }
+#q {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 9px 4px;
+  border: 0; outline: none; background: none; -webkit-appearance: none; appearance: none;
+}
+#q::-webkit-search-cancel-button { display: none; }
+#qClose { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--ink2); }
+#qClose:hover { background: rgba(29, 43, 58, .08); }
+#qClose svg { width: 18px; height: 18px; }
 #qinfo { margin: 6px 14px 0; font-size: 13.5px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 #qinfo .more { font-size: 13.5px; padding: 0; }
 /* nothing found: the box turns red and the line below says so out loud */
-#q.none { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192, 57, 43, .15); }
+.qbox:has(#q.none) { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192, 57, 43, .15); animation: none; }
 #qinfo.none { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: #fdecea; color: #8e2a1f;
   flex-wrap: nowrap; align-items: center; gap: 10px; font-size: 14px; }
 #qinfo.none svg { width: 22px; height: 22px; flex: none; stroke: #c0392b; }
