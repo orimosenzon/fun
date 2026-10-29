@@ -26,5 +26,7 @@ done
 : > "$OUT_DIR/list.txt"
 for scene in $SCENES; do echo "file '$scene.mp4'" >> "$OUT_DIR/list.txt"; done
 
-ffmpeg -loglevel error -y -f concat -safe 0 -i "$OUT_DIR/list.txt" -c copy "videos/$NAME.mp4"
+# the narration of each scene ends before its fade-out; aresample fills those gaps with real silence
+ffmpeg -loglevel error -y -f concat -safe 0 -i "$OUT_DIR/list.txt" \
+    -c:v copy -af aresample=async=1 -c:a aac -b:a 192k -movflags +faststart "videos/$NAME.mp4"
 echo "done: videos/$NAME.mp4"

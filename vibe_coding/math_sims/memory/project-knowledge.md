@@ -2,23 +2,25 @@
 
 **מטרה:** סרטוני סימולציות מתמטיות עם ManimGL (הספרייה של 3b1b). נפתח 28/10/2026.
 
-**סטאק:** Python 3.10 ב-`.venv` של הפרויקט, manimgl 1.7.2, numpy, mpmath. LaTeX מ-TinyTeX (`~/.TinyTeX/bin/x86_64-linux` חייב להיות ב-PATH, `render.sh` דואג לזה). פונט Rubik ב-`~/.local/share/fonts`.
+**סטאק:** Python 3.10 ב-`.venv` של הפרויקט, manimgl 1.7.2, numpy, mpmath, edge-tts (קריינות). LaTeX מ-TinyTeX (`~/.TinyTeX/bin/x86_64-linux` חייב להיות ב-PATH, `render.sh` דואג לזה). פונט Rubik ב-`~/.local/share/fonts`.
 
 ## החלטות
 - ManimGL ולא ManimCE, כי אורי ביקש את הספרייה של סנדרסון.
 - חישובים כבדים (mpmath) נעשים מראש ב-`compute/` ונשמרים ל-`data/*.npz`, הסצנות רק קוראות.
 - כל הכיתוביות בעברית דרך `heb()` שעוטפת ביטויים לטיניים ב-LRI/PDI. בלי מספרים שליליים בתוך כיתובית עברית (מתבלגן), ובלי מקף ארוך.
+- קריינות: `HebrewScene.say/caption(say=...)` מוסיפות mp3 מ-edge-tts (`he-IL-AvriNeural`, מטמון ב-`audio/`, מחוץ ל-git) דרך `add_sound`, והזמן של הסצנה נגזר מאורך הדיבור. טקסט ההקראה במילים, לא בסימנים.
 - סרטון = קובץ סצנות עם רשימת `SCENES` בסוף, `render.sh` מרנדר ומאחד עם ffmpeg.
 
 ## מלכודות ב-ManimGL 1.7.2
 - `ComplexPlane.n2p` לא וקטורי. למערך משתמשים ב-`plane.c2p(z.real, z.imag)`.
 - `set_opacity` / `fade` על polyline צובעים גם את המילוי (או קורסים). לעמעום: `set_stroke(opacity=...)`.
 - `animate.set_value` על Integer משעה את ה-updaters שלו. לשים updater על ValueTracker נפרד.
+- `bool()` של מובג'קט בלי ילדים (Rectangle, SurroundingRectangle) הוא False, כי `__len__` סופר submobjects. לא לכתוב `x or y` על מובג'קטים, רק `is None`.
+- ChangeDecimalToValue ו-`animate` על אותו מספר באותו play קורסים (shape mismatch). צבע אחרי ה-play.
+- render בלי `-w` (גם עם `-s`) פותח חלון ונתקע. לבדיקת פריים: `-w` ואז ffmpeg על ה-mp4.
 
 ## סרטונים
-- `videos/zeta_primes.mp4` (28/10/2026): זטה והראשוניים, 9 סצנות, 3:07.
+- `videos/zeta_primes.mp4` (28/10/2026): זטה והראשוניים. גרסה 3 (אותו יום): 14 סצנות עם קריינות. מכפלת אוילר בארבעה צעדים בהשראת גדי אלכסנדרוביץ' (gadial.net), עם קרדיט בסוף. אורי ביקש טור הנדסי דרך נוסחת הסכום והגבול (לא הוכחת קיזוז), ולא אהב את גרסת הנפה.
 
 ## צעדים הבאים אפשריים
-- קריינות (TTS עברי) מסונכרנת לסצנות
 - סרטונים נוספים בסדרה
-- כרטיס בדף הפרויקטים
