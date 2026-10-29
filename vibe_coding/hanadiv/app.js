@@ -1750,14 +1750,18 @@ function setupEvents() {
   $('#playBtn').onclick = play;
   $('#nowBtn').onclick = () => { stopPlay(); goNow(); };
   $('#meBtn').onclick = locate;
-  $('#searchBtn').onclick = () => {
-    const row = $('#searchRow'); row.hidden = !row.hidden;
-    $('#searchBtn').classList.toggle('on', !row.hidden);
-    if (!row.hidden) $('#q').focus(); else if (S.q) { S.q = ''; $('#q').value = ''; filtersChanged(); }
+  const setSearch = open => {
+    $('#searchRow').hidden = !open;
+    $('#searchBtn').classList.toggle('on', open);
+    $('#searchBtn').setAttribute('aria-expanded', open);
+    if (open) $('#q').focus(); else if (S.q) { S.q = ''; $('#q').value = ''; filtersChanged(); }
   };
+  $('#searchBtn').onclick = () => setSearch($('#searchRow').hidden);
+  $('#qClose').onclick = () => setSearch(false);
   let qt;
   $('#q').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { S.q = $('#q').value.trim(); filtersChanged(); }, 180); });
   $('#q').addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') return setSearch(false);
     if (ev.key !== 'Enter') return;
     clearTimeout(qt); S.q = $('#q').value.trim(); filtersChanged(); qGo();
   });

@@ -26,10 +26,6 @@
       <span class="sub" id="sub">פסטיבל 29–31.10 · פרדס חנה-כרכור</span>
     </div>
   </div>
-  <div id="searchRow" hidden>
-    <input id="q" type="search" placeholder="חיפוש: ג'אז, יוגה, סדנת קרמיקה, שם רחוב..." autocomplete="off" enterkeyhint="search">
-    <div id="qinfo" hidden aria-live="polite"></div>
-  </div>
   <nav id="days" role="tablist"></nav>
   <section id="clock">
     <div class="clockhead">
@@ -45,6 +41,15 @@
       <button id="shareBtn" class="iconbtn" data-share aria-label="שיתוף מה שעל המסך" title="שיתוף מה שעל המסך"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button>
       <button id="meBtn" class="iconbtn" aria-label="מה קרוב אליי"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="8"/></svg></button>
       </div>
+    </div>
+    <!-- right under the button that opens it, where the eye already is -->
+    <div id="searchRow" hidden>
+      <div class="qbox">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+        <input id="q" type="search" placeholder="חיפוש: ג'אז, יוגה, סדנת קרמיקה, שם רחוב..." autocomplete="off" enterkeyhint="search">
+        <button id="qClose" aria-label="סגירת החיפוש" title="סגירת החיפוש"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div id="qinfo" hidden aria-live="polite"></div>
     </div>
     <div class="realnow" id="realNow"></div>
     <div id="strip" tabindex="0" role="slider" aria-label="שעה ביום">
