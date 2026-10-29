@@ -28,7 +28,11 @@ const DATA_URLS = [
 const CENTER = [34.978, 32.4735];
 const SOON = 60;            // minutes ahead that count as "starting soon"
 const LONG = 240;           // events this long are exhibitions, open all day
-const WALK_M_PER_MIN = 75;  // with 1.3 for streets not being straight lines
+const WALK_M_PER_MIN = 83;  // 5 km/h, like Google Maps
+const DETOUR = 1.25;        // streets vs. straight line, median of OSRM foot routes between the venues
+const DRIVE_M_PER_MIN = 450;  // 27 km/h through town; OSRM's 34 is an empty road
+const DRIVE_DETOUR = 1.33;    // median of OSRM car routes between the venues, one-way streets and all
+const PARK = 3;               // minutes to park and walk to the door
 const STEP = 5;
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -43,7 +47,9 @@ const S = {
   day: null, t: 600, lo: 480, hi: 1440,
   view: 'map', filt: new Set(), kids: false, access: false, q: '',
   plan: new Set(), onlyMine: true, me: null, sel: null, playing: null, moreLater: false, shared: null,
+  mode: 'car',  // or 'walk': how the times between places are counted
 };
+try { if (localStorage.getItem('hanadiv-mode') === 'walk') S.mode = 'walk'; } catch (e) { /* private window */ }
 
 /* ---------- data ---------- */
 
@@ -201,7 +207,23 @@ function dist(a, b) {
   const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(x));
 }
-const walkMin = (a, b) => Math.max(1, Math.round(dist(a, b) * 1.3 / WALK_M_PER_MIN));
+const walkMin = (a, b) => Math.max(1, Math.round(dist(a, b) * DETOUR / WALK_M_PER_MIN));
+const driveMin = (a, b) => Math.round(PARK + dist(a, b) * DRIVE_DETOUR / DRIVE_M_PER_MIN);
+// getting from a to b the way the user chose, except that nobody drives what is quicker on foot
+function trip(a, b) {
+  const w = walkMin(a, b);
+  if (S.mode === 'walk') return { m: w, walk: true };
+  const d = driveMin(a, b);
+  return d < w ? { m: d, walk: false } : { m: w, walk: true };
+}
+const how = t => t.walk ? 'הליכה' : 'נסיעה';
+function setMode(m) {
+  S.mode = m;
+  try { localStorage.setItem('hanadiv-mode', m); } catch (e) { /* private window */ }
+  toast(m === 'walk' ? 'הזמנים בין המקומות עכשיו ברגל' : 'הזמנים בין המקומות עכשיו ברכב, עם חנייה');
+  render();
+  if (S.detail && S.detail.id) openDetail(S.detail);
+}
 function mins(n) {
   n = Math.round(n);
   if (n < 60) return `${n} דק׳`;
@@ -743,7 +765,8 @@ function card(e, opts = {}) {
   const r = relLabel(e);
   const st = status(e);
   const ph = e.photos[0] ? `background-image:url('${esc(e.photos[0].thumb)}')` : '';
-  const walk = S.me && e.vgeo ? `<span class="tag walk">${walkMin(S.me, e.vgeo)} דק׳ הליכה</span>` : '';
+  const tr = S.me && e.vgeo ? trip(S.me, e.vgeo) : null;
+  const walk = tr ? `<span class="tag walk">${tr.m} דק׳ ${how(tr)}</span>` : '';
   const kid = e.audience !== 'רק למבוגרים' ? `<span class="tag kid">${e.audience === 'רק לילדים' ? 'לילדים' : 'למשפחה'}</span>` : '';
   const prog = st === 'live' && !e.long ? `<div class="prog" style="width:${(S.t - e.start) / e.dur * 100}%"></div>` : '';
   const day = opts.showDay ? `${dayName(e.date, true)} · ` : '';
@@ -895,12 +918,12 @@ function myNextHTML() {
   const e = myNext(); if (!e) return '';
   const st = status(e);
   const ph = e.photos[0] ? `background-image:url('${esc(e.photos[0].thumb)}')` : '';
-  const w = S.me && e.vgeo ? walkMin(S.me, e.vgeo) : null;
+  const tr = S.me && e.vgeo ? trip(S.me, e.vgeo) : null, w = tr && tr.m;
   const now = isNow();
   const head = st === 'live' ? `${now ? 'עכשיו' : 'ב-' + hm(S.t)} בתוכנית שלך · עד ${hm(e.end)}`
     : `הבא בתוכנית שלך · ${e.start === S.t ? (now ? 'מתחיל עכשיו' : 'מתחיל ב-' + hm(S.t)) : now ? 'בעוד ' + mins(e.start - S.t) : 'ב-' + hm(e.start)}`;
   let go = '';
-  if (w != null && st !== 'live') go = now && e.start - w <= S.t ? `<em class="go">לצאת עכשיו · ${w} דק׳ הליכה</em>` : `<em>לצאת ב-${hm(e.start - w)} · ${w} דק׳ הליכה</em>`;
+  if (w != null && st !== 'live') go = now && e.start - w <= S.t ? `<em class="go">לצאת עכשיו · ${w} דק׳ ${how(tr)}</em>` : `<em>לצאת ב-${hm(e.start - w)} · ${w} דק׳ ${how(tr)}</em>`;
   const rest = planList().filter(o => o.date === S.day && o.start > e.start && !o.long).length;
   return `<div class="mynext ${st}" data-ev="${e.id}" style="--c:${e.c}"><div class="ph" style="${ph}"></div>
     <div class="body"><small>★ ${head}</small><b>${esc(e.name)}</b>
@@ -908,9 +931,9 @@ function myNextHTML() {
       ${rest ? `<span class="rest">ואחריו עוד ${rest} בתוכנית היום</span>` : ''}</div></div>`;
 }
 
-// walking time between two events, guessing ten minutes when one of them is not on the map
-const hop = (a, b) => a.vgeo && b.vgeo ? (a.vkey === b.vkey ? 0 : walkMin(a.vgeo, b.vgeo)) : 10;
-/* Events that fit in a free window of the plan, with the walk there and on to the next. */
+// time to get between two events, guessing ten minutes when one of them is not on the map
+const hop = (a, b) => a.vgeo && b.vgeo ? (a.vkey === b.vkey ? 0 : trip(a.vgeo, b.vgeo).m) : 10;
+/* Events that fit in a free window of the plan, with the way there and on to the next. */
 function fits(prev, next, d) {
   return S.events.filter(o => o.date === d && !isMine(o) && !o.long && passes(o)
     && (!prev || o.start >= prev.end + hop(prev, o))
@@ -949,7 +972,7 @@ function drawPlan() {
     h += `<div class="sec"><h3>התוכנית שלי</h3></div><div class="planhelp">
       <p><b>בונים תוכנית בשלושה צעדים:</b></p>
       <ol><li>לוחצים ★ ליד כל אירוע שרוצים: ברשימה, בבועה על המפה, בכרטיס האירוע או בלוח הזמנים של מקום.</li>
-      <li>כאן הם מסתדרים לפי שעות, עם זמן ההליכה ביניהם ואזהרה כששניים מתנגשים, ובין אירוע לאירוע מוצע מה עוד נכנס בחלון.</li>
+      <li>כאן הם מסתדרים לפי שעות, עם זמן הדרך ביניהם (ברכב או ברגל) ואזהרה כששניים מתנגשים, ובין אירוע לאירוע מוצע מה עוד נכנס בחלון.</li>
       <li>התוכנית זוהרת בכל האפליקציה: על המפה, בלוח הזמנים, בפס השעות ובימים. ואפשר לשלוח אותה לחברים בקישור.</li></ol></div>`;
     if (typeof syncBarHTML === 'function') h += syncBarHTML();
     $('#sheetBody').innerHTML = h + '<div class="divider"></div>' + listHTML(); markFocus(); return;
@@ -957,6 +980,7 @@ function drawPlan() {
   h += myNextHTML();
   h += `<div class="sec"><h3>התוכנית שלי</h3><span class="meta">${list.length} אירועים</span></div>
     <div class="planbar"><button class="btn ${S.onlyMine ? 'warm' : 'ghost'}" data-onlymine>${S.onlyMine ? 'רק התוכנית שלי' : 'הכל, עם התוכנית'}</button><button class="btn" data-share>${ICON.share}שיתוף</button><button class="btn gcal" data-cal>${ICON.gcal}ליומן Google</button><button class="btn ghost" data-clear-plan>ניקוי</button></div>
+    <div class="modesw" role="group" aria-label="זמני הדרך בין המקומות"><span>זמני הדרך:</span><button class="${S.mode === 'car' ? 'on' : ''}" data-mode="car">${ICON.car}ברכב</button><button class="${S.mode === 'walk' ? 'on' : ''}" data-mode="walk">${ICON.walk}ברגל</button></div>
     ${typeof syncBarHTML === 'function' ? syncBarHTML() : ''}`;
   for (const d of S.days) {
     const all = list.filter(e => e.date === d);
@@ -970,12 +994,13 @@ function drawPlan() {
       const nx = evs[i + 1];
       if (!nx) return;
       const gap = nx.start - e.end;
-      const walk = e.vgeo && nx.vgeo ? (e.vkey === nx.vkey ? 0 : walkMin(e.vgeo, nx.vgeo)) : null;
+      const tr = e.vgeo && nx.vgeo && e.vkey !== nx.vkey ? trip(e.vgeo, nx.vgeo) : null;
+      const walk = tr ? tr.m : e.vgeo && nx.vgeo ? 0 : null, w = tr ? how(tr) : '';
       let cls = '', txt;
       if (gap < 0) { cls = 'bad'; txt = `חופף לבא אחריו (${mins(-gap)}). צריך לבחור, או לצאת מוקדם`; }
-      else if (walk != null && walk > gap) { cls = 'bad'; txt = `${mins(walk)} הליכה, ויש רק ${gap ? mins(gap) : 'אפס דקות'}`; }
-      else if (walk != null && walk + 5 > gap) { cls = 'tight'; txt = `צפוף: ${mins(walk)} הליכה, ${mins(gap)} ביניהם`; }
-      else txt = `${gap ? mins(gap) + ' הפסקה' : 'מיד אחרי'}${walk ? ` · ${mins(walk)} הליכה` : walk === 0 ? ' · באותו מקום' : ''}`;
+      else if (walk != null && walk > gap) { cls = 'bad'; txt = `${mins(walk)} ${w}, ויש רק ${gap ? mins(gap) : 'אפס דקות'}`; }
+      else if (walk != null && walk + 5 > gap) { cls = 'tight'; txt = `צפוף: ${mins(walk)} ${w}, ${mins(gap)} ביניהם`; }
+      else txt = `${gap ? mins(gap) + ' הפסקה' : 'מיד אחרי'}${walk ? ` · ${mins(walk)} ${w}` : walk === 0 ? ' · באותו מקום' : ''}`;
       h += `<div class="gap ${cls}">${txt}</div>`;
       if (gap >= 30) h += gapHTML(e, nx, d, 'מה נכנס בחלון');
     });
@@ -988,7 +1013,8 @@ function drawPlan() {
 }
 
 // The day's plan as a dashed line from place to place, in time order. It is straight, not
-// along the streets, so each leg carries its walking time to say what the line is.
+// along the streets, so each leg carries its travel time to say what the line is. A tap on
+// one switches between car and foot.
 let hopMarkers = [];
 // a white-edged arrowhead pointing east; the line layer turns it along each leg
 function arrowImage() {
@@ -1011,11 +1037,12 @@ function drawRoute() {
   for (let i = 1; i < evs.length; i++) {
     const a = evs[i - 1], b = evs[i];
     if (a.vkey === b.vkey) continue;
-    const w = walkMin(a.vgeo, b.vgeo), gap = b.start - a.end;
+    const tr = trip(a.vgeo, b.vgeo), w = tr.m, gap = b.start - a.end;
     const el = document.createElement('div');
     el.className = 'hop' + (gap < w && !a.long && !b.long ? ' late' : '');
-    el.title = `הליכה מ${a.place} אל ${b.place}, בערך ${w} דקות${gap < w ? ' (יותר מהזמן שיש בין האירועים)' : ''}`;
-    el.innerHTML = `${ICON.walk}${w} דק׳`;
+    el.dataset.mode = S.mode === 'car' ? 'walk' : 'car';
+    el.title = `${how(tr)} מ${a.place} אל ${b.place}, בערך ${w} דקות${gap < w ? ' (יותר מהזמן שיש בין האירועים)' : ''}. לחיצה עוברת ל${S.mode === 'car' ? 'זמני הליכה' : 'זמני נסיעה'}`;
+    el.innerHTML = `${tr.walk ? ICON.walk : ICON.car}${w} דק׳`;
     const mk = new maplibregl.Marker({ element: el, anchor: 'center' })
       .setLngLat([(a.vgeo.lng + b.vgeo.lng) / 2, (a.vgeo.lat + b.vgeo.lat) / 2]).addTo(map);
     mk._updateOpacity = () => {};  // the same graphics-card stall as the venue pictures
@@ -1121,6 +1148,7 @@ const ICON = {
   share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   cloud: '<svg viewBox="0 0 24 24"><path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.5 9.5 4.3 4.3 0 0 0 7 18z"/></svg>',
+  car: '<svg viewBox="0 0 24 24"><path d="M4 16.5v-4l2-5A1.6 1.6 0 0 1 7.5 6.5h9A1.6 1.6 0 0 1 18 7.5l2 5v4zM4 12.5h16"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/></svg>',
   walk: '<svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="m9 21 2.5-6 2.5 2v4M10.5 9.5 13 8l2.5 4 3 1M13 8l-1.5 6.5M10.5 9.5 7 11.5v3"/></svg>',
   list: '<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
   sat: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/></svg>',
@@ -1204,9 +1232,10 @@ function openDetail(e) {
   const W = S.hi - S.lo;
   const tl = `<div class="timeline"><b style="right:${(e.start - S.lo) / W * 100}%;width:${Math.min(e.dur, S.hi - e.start) / W * 100}%"></b>${e.date === S.day ? `<i style="right:${(S.t - S.lo) / W * 100}%"></i>` : ''}</div>`;
   const nav = v.geo ? `<a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${v.geo.lat},${v.geo.lng}&navigate=yes">${ICON.nav}ווייז</a>
-     <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.geo.lat},${v.geo.lng}&travelmode=walking&hl=iw">גוגל מפות</a>` : '';
+     <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.geo.lat},${v.geo.lng}&travelmode=${S.mode === 'walk' ? 'walking' : 'driving'}&hl=iw">גוגל מפות</a>` : '';
   const others = v.events.filter(o => o.id !== e.id);
-  const walk = S.me && v.geo ? ` · ${walkMin(S.me, v.geo)} דק׳ הליכה ממך` : '';
+  const tr = S.me && v.geo ? trip(S.me, v.geo) : null;
+  const walk = tr ? ` · ${tr.m} דק׳ ${how(tr)} ממך` : '';
   const wa = waLinks(e), links = e.links.filter(l => !isWa(l.url));
   $('#detailCard').style.setProperty('--c', e.c);
   $('#detailCard').innerHTML = `<button class="x" data-close aria-label="סגירה">${ICON.x}</button>${gallery}
@@ -1568,7 +1597,7 @@ function locate() {
   S.watch = navigator.geolocation.watchPosition(pos => {
     const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     if (dist(me, { lat: CENTER[1], lng: CENTER[0] }) > 15000) {
-      if (first) toast('אתם רחוקים מהפסטיבל, אז אין טעם במרחקי הליכה. בפרדס חנה זה יעבוד.');
+      if (first) toast('אתם רחוקים מהפסטיבל, אז אין טעם בזמני דרך ממך. בפרדס חנה זה יעבוד.');
       navigator.geolocation.clearWatch(S.watch); S.watch = null; return;
     }
     S.me = me; btn.classList.add('on'); drawMe();
@@ -1639,6 +1668,7 @@ function setupEvents() {
   });
   document.addEventListener('click', ev => {
     const t = ev.target;
+    const md = t.closest('[data-mode]'); if (md) { if (md.dataset.mode !== S.mode) setMode(md.dataset.mode); return; }
     if (t.closest('[data-clean]')) return setClean(!S.clean);
     if (t.closest('[data-gonow]')) { stopPlay(); return goNow(); }
     if (t.closest('[data-showclose]')) return toggleShowPanel(false);

@@ -222,11 +222,11 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
   width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff;
   box-shadow: 0 0 0 6px rgba(26, 115, 232, .25);
 }
-/* walking time on each leg of the plan's route */
+/* travel time on each leg of the plan's route; a tap switches car and foot */
 .hop {
   display: flex; align-items: center; gap: 3px; padding: 2px 8px 2px 6px; border-radius: 999px; direction: rtl;
   background: #fff; color: var(--ink); font: 700 12px Rubik, sans-serif; white-space: nowrap;
-  border: 1.5px solid var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.18); pointer-events: auto; cursor: default;
+  border: 1.5px solid var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.18); pointer-events: auto; cursor: pointer;
 }
 .hop svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hop.late { color: #c0392b; border-color: #c0392b; }
@@ -327,6 +327,15 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .gap.bad { color: #b62a20; font-weight: 600; }
 .gap.tight { color: var(--accent-ink); }
 .planbar { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+/* car or foot for the times between places */
+.modesw { display: flex; align-items: center; gap: 4px; margin: -2px 0 10px; font-size: 13px; color: #6b7280; }
+.modesw span { margin-inline-end: 4px; }
+.modesw button {
+  display: flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font: 600 13px Rubik, sans-serif;
+}
+.modesw button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.modesw svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
   background: var(--ink); color: #fff; font-weight: 500; font-size: 14px; text-decoration: none;
