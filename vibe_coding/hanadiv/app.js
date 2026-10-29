@@ -81,7 +81,9 @@ async function load() {
     try {
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), 7000);
-      const r = await fetch(url, { signal: ctl.signal });
+      // no-cache: ask the server every time (an etag makes it cheap), so a fix published
+      // during the festival reaches a phone that loaded the programme an hour ago
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-cache' });
       clearTimeout(timer);
       if (r.ok) return await r.json();
     } catch (e) { /* next */ }
