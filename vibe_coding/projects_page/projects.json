@@ -1023,6 +1023,35 @@
               "label": "LIVE"
             }
           ]
+        },
+        {
+          "title": "אדמאמא: 1999–2018",
+          "icon": "🌱",
+          "theme": "t-green",
+          "dir": "adamama",
+          "tags": [
+            "היסטוריה",
+            "פרמקלצ'ר",
+            "SVG",
+            "Vanilla JS"
+          ],
+          "desc": "משחק היסטוריה על החווה האקולוגית של גור ועירית רותם בניר משה, שנבנה מארכיון גזירי עיתונות. עשרה פרקים מ-1999 עד 2018. בכל פרק גזיר ואתגר קטן: מערבבים טיט לבית אדמה, מרימים טחנת רוח, ממיינים קומפוסט. החרוזים, המטבע של הקהילה, הם הניקוד.",
+          "links": [
+            {
+              "href": "adamama/app/index.html",
+              "style": "primary",
+              "label": "▶ לשחק",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/adamama",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "<svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\"><path d=\"M4 60 H68\" stroke=\"#a3e635\" stroke-width=\"1.5\"/><path d=\"M14 60 A16 16 0 0 1 46 60\" fill=\"rgba(180,110,50,.55)\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/><circle cx=\"30\" cy=\"52\" r=\"3\" fill=\"#38bdf8\"/><line x1=\"56\" y1=\"60\" x2=\"56\" y2=\"26\" stroke=\"#e5e7eb\" stroke-width=\"1.5\"/><path d=\"M56 26 L66 18 M56 26 L46 18 M56 26 L56 38\" stroke=\"#a3e635\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>",
+          "anchor": "adamama"
         }
       ]
     },
