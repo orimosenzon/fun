@@ -111,10 +111,26 @@ function prepare(doc) {
     e.long = dur >= LONG;
     e.c = S.colors[e.group] || '#607d8b';
     S.events.push(e);
-    let v = S.venues.get(vkey);
-    if (!v) S.venues.set(vkey, v = { key: vkey, street: a.street, place: a.place, events: [], pts: [] });
-    v.events.push(e);
-    if (e.geo) v.pts.push(e.geo);
+    // An event that moves (a procession that gathers in one place and plays in another) has
+    // stops, each with its hour. Every stop is a place on the map of its own, holding a stand-in
+    // for the event that is live from its hour to the next stop's; the stand-ins share the
+    // event's id, so the plan, the list and the timetable still see one event.
+    let legs = [e];
+    if (p.stops && p.stops.length > 1) {
+      const hmin = s => { const [a, b] = s.split(':').map(Number); return a * 60 + b; };
+      e.vkey = `${e.id}~0`;
+      e.legs = legs = p.stops.map((s, i) => Object.assign(Object.create(e), {
+        leg: i, label: s.label, place: s.label, street: '', vkey: `${e.id}~${i}`, geo: { lat: s.lat, lng: s.lng },
+        start: hmin(s.hour), end: i + 1 < p.stops.length ? hmin(p.stops[i + 1].hour) : e.end,
+      }));
+      legs.forEach(l => { l.dur = l.end - l.start; l.long = false; });
+    }
+    for (const x of legs) {
+      let v = S.venues.get(x.vkey);
+      if (!v) S.venues.set(x.vkey, v = { key: x.vkey, street: x.street, place: x.place, events: [], pts: [] });
+      v.events.push(x);
+      if (x.geo) v.pts.push(x.geo);
+    }
   }
   for (const v of S.venues.values()) {
     v.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
@@ -124,6 +140,8 @@ function prepare(doc) {
     v.stages = [...new Set(v.events.map(e => e.place))];
     v.title = v.stages.length > 1 ? v.street || v.place : v.place;
   }
+  // a moving event stands where it starts, for the plan's route and the walking times
+  for (const e of S.events) if (e.legs) { e.venue = e.legs[0].venue; e.vgeo = e.legs[0].vgeo; }
   S.events.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start || a.name.localeCompare(b.name, 'he'));
   S.byId = new Map(S.events.map(e => [e.id, e]));
   S.days = [...new Set(S.events.map(e => e.date))].sort();
@@ -131,6 +149,11 @@ function prepare(doc) {
   S.hi = Math.min(26 * 60, Math.ceil(Math.max(...S.events.map(e => e.start + Math.min(e.dur, 120))) / 60) * 60);
 }
 const avg = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+// the stop of a moving event: the one at this place, else the one on (or next) at the playhead
+function legOf(e, v) {
+  if (!e || !e.legs) return e;
+  return e.legs.find(l => v ? l.vkey === v.key : S.t < l.end) || (v ? e : e.legs.at(-1));
+}
 
 /* ---------- helpers over the playhead ---------- */
 
@@ -468,7 +491,7 @@ function setupMap() {
     // a link can carry an open popup on the map, with the event it was showing
     const at = S.init && S.init.at && S.venues.get(S.init.at);
     if (at && at.geo && S.view !== 'grid') {
-      const f = S.init.f && S.byId.get(S.init.f);
+      const f = S.init.f && legOf(S.byId.get(S.init.f), at);
       S.focus = f && f.vkey === at.key ? f : null;
       openVenue(at, false); markFocus();
     }
@@ -671,6 +694,7 @@ function eventPopHTML(e) {
     <h4>${esc(e.name)}</h4>
     <div class="addr">${dayName(e.date, true)} ${rng(e.start, e.end)}${r ? ` <span class="tag ${r.cls}">${r.txt}</span>` : ''}</div>
     <div class="addr">${esc(e.place)}${e.street && e.street !== e.place ? ' · ' + esc(e.street) : ''}</div>
+    ${e.legs ? `<div class="legs">${e.legs.map(l => `<button class="leg ${l === e ? 'on' : ''}" data-legev="${e.id}" data-leg="${l.leg}"><b dir="ltr">${hm(l.start)}</b>${esc(l.label)}</button>`).join('<span>←</span>')}</div>` : ''}
     <div class="pact"><button class="btn" data-detail="${e.id}">לפרטים</button>
       <button class="btn ghost ${S.plan.has(e.id) ? 'on' : ''}" data-star="${e.id}">${STAR}</button>
       <a class="btn ghost" target="_blank" rel="noopener" href="https://waze.com/ul?ll=${e.vgeo.lat},${e.vgeo.lng}&navigate=yes">${ICON.nav}</a>
@@ -680,7 +704,8 @@ function eventPopHTML(e) {
 
 /* A pick in the list (or in a popup) flies to the place, lights it up and
    shows the event there; the full card is one more tap. */
-function focusEvent(e) {
+function focusEvent(e, v) {
+  e = legOf(e, v);
   if (!e.vgeo) return openDetail(e);
   if (S.view === 'grid') setView('map');
   if (e.date !== S.day) setDay(e.date);
@@ -1247,6 +1272,7 @@ function openDetail(e) {
       <div class="facts">
         <div>${ICON.clock}<span>${dayName(e.date)} · ${rng(e.start, e.end)} (${esc(e.durLabel)})${tl}</span></div>
         <div>${ICON.pin}<span><b>${esc(e.place)}</b>${e.street && e.street !== e.place ? ', ' + esc(e.street) : ''}${walk}${e.directions ? `<br><small>${esc(e.directions)}</small>` : ''}
+          ${e.legs ? e.legs.map(l => `<br><button class="linkish" data-legev="${e.id}" data-leg="${l.leg}"><span dir="ltr">${hm(l.start)}</span> ${esc(l.label)}</button>`).join('') : ''}
           ${v.events.length > 1 ? `<br><button class="linkish" data-place="${esc(v.key)}">לוח הזמנים של המקום (${v.events.length} אירועים)</button>` : ''}</span></div>
         <div>${ICON.ppl}<span>${esc(e.audience)}${availLine(e)}</span></div>
         ${e.access ? `<div>${ICON.acc}<span>${esc(e.access)}</span></div>` : ''}
@@ -1712,6 +1738,8 @@ function setupEvents() {
     if (t.closest('[data-onlymine]')) { S.onlyMine = !S.onlyMine; return render(); }
     if (t.closest('[data-more]')) { S.moreLater = true; return render(); }
     if (t.closest('[data-clear]')) { S.filt.clear(); S.kids = S.access = false; S.q = ''; $('#q').value = ''; return filtersChanged(); }
+    const lg = t.closest('[data-legev]');
+    if (lg) { const e = S.byId.get(lg.dataset.legev); if (S.detail) closeDetail(); return focusEvent(e, e.legs[+lg.dataset.leg].venue); }
     const sm = t.closest('[data-showmap]');
     if (sm) { const e = S.byId.get(sm.dataset.showmap); closeDetail(); if (e.date !== S.day) setDay(e.date); setT(e.start); return focusEvent(e); }
     const vn = t.closest('[data-venue]');
@@ -1722,7 +1750,7 @@ function setupEvents() {
     if (evEl) {
       const e = S.byId.get(evEl.dataset.ev);
       // the list and the popups point at the map; the timetable and the full card open the card
-      return t.closest('#sheetBody, .maplibregl-popup') && S.view !== 'grid' ? focusEvent(e) : openDetail(e);
+      return t.closest('#sheetBody, .maplibregl-popup') && S.view !== 'grid' ? focusEvent(e, t.closest('.maplibregl-popup') && S.sel) : openDetail(e);
     }
     const day = t.closest('[data-day]'); if (day) return setDay(day.dataset.day);
     const g = t.closest('[data-g]');

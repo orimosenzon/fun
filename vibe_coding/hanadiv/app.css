@@ -437,6 +437,12 @@ body.view-grid #sheet { display: none; }
 .wa-inline svg { width: 14px; height: 14px; stroke: #fff; }
 .card .note a[href^="tel:"] { color: #1a5bb8; white-space: nowrap; }
 .linkish { color: #1a5bb8; font-size: 13.5px; padding: 4px 0 0; text-decoration: underline; text-underline-offset: 3px; }
+/* a moving event's stops in its popup: the one shown is filled, a tap flies to the other */
+.legs { display: flex; align-items: center; gap: 4px; margin: 6px 0 2px; font-size: 12.5px; }
+.legs > span { color: var(--ink2); }
+.legs .leg { flex: 1; display: grid; gap: 1px; text-align: start; padding: 5px 8px; border-radius: 9px; border: 1.5px solid var(--c); color: inherit; line-height: 1.3; }
+.legs .leg b { font-size: 13px; }
+.legs .leg.on { background: color-mix(in srgb, var(--c) 16%, #fff); }
 .pmore { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .pmore .more { display: inline-flex; align-items: center; gap: 4px; }
 .pmore .more svg { width: 14px; height: 14px; stroke: var(--accent-ink); }

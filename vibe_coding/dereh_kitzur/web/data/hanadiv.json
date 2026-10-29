@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-27T14:38:47Z",
+ "updated": "2026-10-28T22:05:04Z",
  "source": "https://2026.hanadiv.org/",
  "name": "אירועי דרך הנדיב 2026",
  "festival": {
@@ -48,34 +48,6 @@
  ],
  "places": [
   {
-   "id": "hanadiv-2330",
-   "name": "פיסול באבנים",
-   "group": "סדנאות ויצירה",
-   "craft": "אמנות פלסטית",
-   "when": "יום חמישי 29.10 · 08:00 · שעה",
-   "date": "2026-10-29",
-   "hour": "08:00",
-   "audience": "לכל המשפחה",
-   "note": "ניפגש בשבת בשעה 17.00 על שפת הים כ200 מ' דרומה מהחניה של חוף הקשתות..ניצור יחד תערוכה מרגשת על שפת הים ונצלם סרטוני וידאו. נא להביא דלי ומשהו טעים לחלוק · נלמד איזון אבנים ובניית קשתות · בהנחיית גבריאל רענן · חניה בחוף הקשתות הדרומי בקיסריה",
-   "url": "https://2026.hanadiv.org/event-page/2330",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/ea3b0506a7c9e1d6b9d9df8f438d53190db05232bba374e92ed6ab40b0f55b11.webp",
-     "full": "https://api.hanadiv.org/images/ea3b0506a7c9e1d6b9d9df8f438d53190db05232bba374e92ed6ab40b0f55b11.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.475098,
-    "lng": 34.969912,
-    "source": "landmark",
-    "spread": true
-   },
-   "address": "רחוב המעלה 4, כניסה 1 · תאטרון הידית",
-   "access": "יש חניה · בחוץ",
-   "seats": 21
-  },
-  {
    "id": "hanadiv-2115",
    "name": "יוגה תרפיה · יום חמישי",
    "group": "סדנאות ויצירה",
@@ -101,7 +73,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2235",
@@ -128,7 +106,13 @@
    },
    "address": "סמטת צאלון 4 · סטודיו",
    "access": "יש חניה · בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2078",
@@ -144,8 +128,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp",
-     "full": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp"
+     "thumb": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp",
+     "full": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp"
     }
    ],
    "geo": {
@@ -155,7 +139,13 @@
    },
    "address": "עמל 1 · חורשת האלונים ברחוב עמל פינת הצפירה",
    "access": "יש חניה · בחוץ",
-   "seats": 25
+   "seats": 25,
+   "avail": {
+    "availableSeats": 4,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2327",
@@ -183,7 +173,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 39,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2275",
@@ -220,7 +216,13 @@
    },
    "address": "המלאכה 8 · סטודיו",
    "access": "בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2226",
@@ -247,7 +249,13 @@
    },
    "address": "לאה גולדברג, 12 12, כניסה ג · הבית שלי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 26
+   "seats": 26,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2201",
@@ -274,7 +282,13 @@
    },
    "address": "הדרים 73, כניסה 3 · סלון",
    "access": "בפנים",
-   "seats": 14
+   "seats": 14,
+   "avail": {
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2200",
@@ -306,7 +320,13 @@
    },
    "address": "דרך הבנים 31 · סטודיו לצורפות",
    "access": "בפנים",
-   "seats": 6
+   "seats": 6,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2128",
@@ -333,7 +353,13 @@
    },
    "address": "המושב/מעלה גיבורים 5 · דירה",
    "access": "יש חניה · בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2104",
@@ -361,7 +387,13 @@
    },
    "address": "חברון 1 · בית לאומנות הגראז׳",
    "access": "יש חניה · בפנים",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 15,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2328",
@@ -389,7 +421,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 31,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2354",
@@ -422,7 +460,13 @@
    },
    "address": "המושב 44 · בנגורה - מרחב סדנאות",
    "access": "יש חניה · בפנים",
-   "seats": 41
+   "seats": 41,
+   "avail": {
+    "availableSeats": 12,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2207",
@@ -443,14 +487,20 @@
     }
    ],
    "geo": {
-    "lat": 32.474915,
-    "lng": 34.970037,
+    "lat": 32.475087,
+    "lng": 34.969912,
     "source": "landmark",
     "spread": true
    },
    "address": "המעלה 4, כניסה 2 · המרתף של תאטרון הידית",
    "access": "יש חניה · בפנים",
-   "seats": 22
+   "seats": 22,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2357",
@@ -477,7 +527,13 @@
    },
    "address": "כוכבית 2 · בית",
    "access": "יש חניה",
-   "seats": 10
+   "seats": 10,
+   "avail": {
+    "availableSeats": 8,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2355",
@@ -505,7 +561,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 4,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2129",
@@ -533,7 +595,13 @@
    },
    "address": "המושב 5 · דירה",
    "access": "יש חניה · בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2343",
@@ -560,7 +628,13 @@
    },
    "address": "הצפירה 28 · חצר בית",
    "access": "יש חניה",
-   "seats": 42
+   "seats": 42,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2319",
@@ -588,7 +662,13 @@
    },
    "address": "אתרוג 5 · מרכז קהילתי נווה פרדסים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2312",
@@ -616,7 +696,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב - חדר אומנות",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2295",
@@ -643,7 +729,13 @@
    },
    "address": "הצפירה פינת הבוטנים 15 · חורשת האלונים",
    "access": "יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 49
+   "seats": 49,
+   "avail": {
+    "availableSeats": 27,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2279",
@@ -670,7 +762,13 @@
    },
    "address": "אחוזה 30 · מרכז הפיס",
    "access": "נגיש · בפנים",
-   "seats": 10
+   "seats": 10,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2266",
@@ -702,7 +800,13 @@
    },
    "address": "האורנים 18 · הואדי, מול האורנים 18",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 150
+   "seats": 150,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2256",
@@ -735,7 +839,13 @@
    },
    "address": "הגדוד 8 · סטודיו חיבור נכון - תאטרון, מודעות, תנועה ויצירה.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2353",
@@ -763,7 +873,13 @@
    },
    "address": "המושב 44 · בנגורה - תיפוף ומחול אפריקאי",
    "access": "יש חניה · בפנים",
-   "seats": 49
+   "seats": 49,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2322",
@@ -791,7 +907,13 @@
    },
    "address": "אתרוג 5 · מרכז קהילתי נווה פרדסים - גינה קהילתית",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2320",
@@ -819,7 +941,13 @@
    },
    "address": "אתרוג 5 · מרכז קהילתי נווה פרדסים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 7,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2318",
@@ -847,7 +975,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב - חדר אומנות",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 20,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2205",
@@ -875,7 +1009,13 @@
    },
    "address": "אחוזה 43 · הבית 43",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2329",
@@ -903,7 +1043,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב - הלובי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 15,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2321",
@@ -931,7 +1077,13 @@
    },
    "address": "אתרוג 5 · מרכז קהילתי נווה פרדסים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 13,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2289",
@@ -959,7 +1111,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2268",
@@ -987,7 +1145,13 @@
    },
    "address": "שביל התלמיד 2 · בית הראשונים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 26
+   "seats": 26,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2243",
@@ -1017,14 +1181,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477911,
+    "lat": 32.4779,
     "lng": 34.965959,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 77,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2227",
@@ -1057,7 +1227,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2188",
@@ -1089,7 +1265,13 @@
    },
    "address": "האורנים 1, כניסה 1 · הוואדי של השיקשוק",
    "access": "יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 70
+   "seats": 70,
+   "avail": {
+    "availableSeats": 19,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2151",
@@ -1117,7 +1299,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 272,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2103",
@@ -1154,7 +1342,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 290,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2314",
@@ -1182,7 +1376,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב - חדר אומנות",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2261",
@@ -1203,14 +1403,33 @@
     }
    ],
    "geo": {
-    "lat": 32.475541,
-    "lng": 34.97373,
-    "source": "osm",
-    "spread": true
+    "lat": 32.4754,
+    "lng": 34.97315,
+    "source": "osm"
    },
    "address": "מעלה 4 · מפגש ברחבת בית יד לבנים, תהלוכה עד לאמפי בצד רבי עקיבא והמשך הערב שם |",
    "access": "נגיש · בחוץ",
-   "seats": 120
+   "seats": 120,
+   "avail": {
+    "availableSeats": 102,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   },
+   "stops": [
+    {
+     "hour": "17:30",
+     "label": "רחבת יד לבנים · מפגש ותהלוכה",
+     "lat": 32.4754,
+     "lng": 34.97315
+    },
+    {
+     "hour": "19:15",
+     "label": "האמפי, בצד רבי עקיבא · המופעים",
+     "lat": 32.47515,
+     "lng": 34.96996
+    }
+   ]
   },
   {
    "id": "hanadiv-2167",
@@ -1231,14 +1450,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477906,
+    "lat": 32.477895,
     "lng": 34.966053,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 94,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2138",
@@ -1266,38 +1491,13 @@
    },
    "address": "אבן גבירול 14 · מועדון אור",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 12
-  },
-  {
-   "id": "hanadiv-2294",
-   "name": "מופע מוזיקה",
-   "group": "מוסיקה",
-   "craft": "מוסיקה",
-   "when": "יום חמישי 29.10 · 18:00 · 30 דק׳",
-   "date": "2026-10-29",
-   "hour": "18:00",
-   "audience": "לכל המשפחה",
-   "note": "מופע חומרים מקוריים בעיבודים אלקטרונים מרקידים · מופע Live Set - Dance · בהנחיית שרה לנסקי · הבוסתן הקהילתי בכרכור נמצא ליד שלולית החורף. מבנה שמוקף בסוללת עפר גדולה ובתוכו גן קסום שמטופח ע\"י מתנדבים מ 2010. יש אזור חצי מקורה, אזור מדורה + פינת ישיבה מרווחת.",
-   "url": "https://2026.hanadiv.org/event-page/2294",
-   "links": [
-    {
-     "url": "https://open.spotify.com/artist/0SGnze4RpGnen5OSOldj58?si=F9gaxlMBRGSTUPu8JKYmbA",
-     "title": "ספוטיפיי"
-    },
-    {
-     "url": "https://www.instagram.com/s/aGlnaGxpZ2h0OjE4NjM0MTEwNzY2MDI3NzEx?stkn=MTc4cWo4NDgxeHV0dA==",
-     "title": "אינסטגרם"
-    }
-   ],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp",
-     "full": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp"
-    }
-   ],
-   "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
-   "access": "יש חניה · ידידותי לחיות",
-   "seats": 50
+   "seats": 12,
+   "avail": {
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2285",
@@ -1318,14 +1518,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477891,
+    "lat": 32.47788,
     "lng": 34.966145,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 276,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2276",
@@ -1362,7 +1568,13 @@
    },
    "address": "המלאכה 8 · סטודיו",
    "access": "בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2101",
@@ -1399,7 +1611,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 295,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2089",
@@ -1427,7 +1645,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 8,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2085",
@@ -1438,7 +1662,7 @@
    "date": "2026-10-29",
    "hour": "18:00",
    "audience": "רק למבוגרים",
-   "note": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון בציור. · סדנת יצירה ציור וקולאז ויצירות לקישוט הבית · בהנחיית מרים ברנהרד",
+   "note": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון בציור. · סדנת יצירה ציור וקולאז ויצירות לקישוט הבית · בהנחיית מרים ברנהרד · קומה 9 דירה 35",
    "url": "https://2026.hanadiv.org/event-page/2085",
    "links": [],
    "photos": [
@@ -1448,14 +1672,20 @@
     }
    ],
    "geo": {
-    "lat": 32.467821,
-    "lng": 34.955967,
-    "source": "osm",
+    "lat": 32.467815,
+    "lng": 34.955999,
+    "source": "festival",
     "spread": true
    },
-   "address": "גינת אגוז - דירה 35 קומה 9 9, כניסה 35 · סלון ביתי",
+   "address": "גינת אגוז 9 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 71
+   "seats": 71,
+   "avail": {
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2350",
@@ -1483,7 +1713,13 @@
    },
    "address": "הבוטנים 54 · הסלון במתנס",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2171",
@@ -1511,7 +1747,13 @@
    },
    "address": "האורנים 66 · סככה מקורה",
    "access": "יש חניה",
-   "seats": 80
+   "seats": 80,
+   "avail": {
+    "availableSeats": 42,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2150",
@@ -1539,7 +1781,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 277,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2074",
@@ -1566,7 +1814,13 @@
    },
    "address": "נטע 10 · ההרצאה מתקיימת בסלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 21
+   "seats": 21,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2359",
@@ -1603,7 +1857,13 @@
    },
    "address": "גינת אגוז 7 · V&A Studio",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 18
+   "seats": 18,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2344",
@@ -1624,14 +1884,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477866,
+    "lat": 32.477854,
     "lng": 34.966234,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · בית הספר \"שבילים\" , מתחם בית הספר היסודי. הכוונה לכיתה הספציפית תינתן ביום האירוע",
    "access": "בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2302",
@@ -1652,14 +1918,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477832,
+    "lat": 32.477819,
     "lng": 34.966319,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 188,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2292",
@@ -1681,7 +1953,13 @@
    ],
    "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
    "access": "יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 31,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2229",
@@ -1713,7 +1991,13 @@
    },
    "address": "הבוטנים 54 · קונסרבטוריון במתנס",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2170",
@@ -1740,7 +2024,13 @@
    },
    "address": "שביל התלמיד 7 · אגף לשירותי רווחה וקהילה פרדס חנה כרכור",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 41
+   "seats": 41,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2163",
@@ -1761,14 +2051,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477788,
+    "lat": 32.477775,
     "lng": 34.966397,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 86,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2124",
@@ -1805,7 +2101,13 @@
    },
    "address": "הנדיב 86 · סלון ביתי",
    "access": "בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2108",
@@ -1842,7 +2144,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 71,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2297",
@@ -1863,14 +2171,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477737,
-    "lng": 34.966469,
+    "lat": 32.477722,
+    "lng": 34.966468,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 300,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2251",
@@ -1898,7 +2212,13 @@
    },
    "address": "שביל התלמיד 2 · בית הראשונים פרדס חנה כרכור",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 71
+   "seats": 71,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2210",
@@ -1930,7 +2250,13 @@
    },
    "address": "הדקלים 78, כניסה בניין a · ״הקוסמת״ מארחת בסלון",
    "access": "יש חניה · בפנים",
-   "seats": 45
+   "seats": 45,
+   "avail": {
+    "availableSeats": 12,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2152",
@@ -1958,7 +2284,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 279,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2094",
@@ -1995,7 +2327,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 8,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2069",
@@ -2032,7 +2370,13 @@
    },
    "address": "המגינים 18, כניסה ב · בבית שלי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 6
+   "seats": 6,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2331",
@@ -2069,7 +2413,13 @@
    },
    "address": "הנשיא 53 · בית פרטי",
    "access": "בפנים",
-   "seats": 9
+   "seats": 9,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2326",
@@ -2097,7 +2447,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 67,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2306",
@@ -2130,7 +2486,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2274",
@@ -2157,13 +2519,19 @@
    },
    "address": "הדקלים 44 · הסלון 44",
    "access": "בפנים",
-   "seats": 40
+   "seats": 74,
+   "avail": {
+    "availableSeats": 28,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2247",
    "name": "סדנאת ריקודי בטן",
-   "group": "סדנאות ויצירה",
-   "craft": "סדנא חווייתית",
+   "group": "גוף ותנועה",
+   "craft": "תנועה ומחול",
    "when": "יום חמישי 29.10 · 20:00 · שעה",
    "date": "2026-10-29",
    "hour": "20:00",
@@ -2185,7 +2553,13 @@
    },
    "address": "הבוטנים 54 · הסלון במתנס",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2225",
@@ -2222,7 +2596,13 @@
    },
    "address": "האורנים 66 · סככה מקורה",
    "access": "יש חניה",
-   "seats": 80
+   "seats": 80,
+   "avail": {
+    "availableSeats": 46,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2183",
@@ -2258,7 +2638,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 46,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2127",
@@ -2288,14 +2674,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477678,
-    "lng": 34.966532,
+    "lat": 32.477663,
+    "lng": 34.96653,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 284,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2113",
@@ -2306,7 +2698,7 @@
    "date": "2026-10-29",
    "hour": "20:00",
    "audience": "לכל המשפחה",
-   "note": "מופיעים בפעמים האחרונות לפני גיוס · הלהקה ארטיקופיקו מופיעה בפסטיבל · בהנחיית טל קופ · הבמה נמצאת על הדשא של מתנס פרדס חנה.",
+   "note": "מופיעים בפעמים האחרונות לפני גיוס · אינדי רוק ישראלי מפוצץ · בהנחיית טל קופ · הבמה נמצאת על הדשא של מתנס פרדס חנה.",
    "url": "https://2026.hanadiv.org/event-page/2113",
    "links": [
     {
@@ -2332,7 +2724,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 124,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2338",
@@ -2360,7 +2758,13 @@
    },
    "address": "הבוטנים 54 · הלובי של המתנס המחודש",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 144
+   "seats": 144,
+   "avail": {
+    "availableSeats": 52,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2213",
@@ -2387,7 +2791,13 @@
    },
    "address": "הבנים 35 · דירה בבניין משותף",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 25
+   "seats": 25,
+   "avail": {
+    "availableSeats": 10,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2166",
@@ -2408,14 +2818,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477613,
-    "lng": 34.966585,
+    "lat": 32.477597,
+    "lng": 34.966582,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 104,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2156",
@@ -2452,7 +2868,13 @@
    },
    "address": "פומלית 2 · בית פרטי בבניין",
    "access": "נגיש · בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2281",
@@ -2481,14 +2903,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477543,
-    "lng": 34.966629,
+    "lat": 32.477525,
+    "lng": 34.966624,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 284,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2259",
@@ -2523,7 +2951,13 @@
    },
    "address": "שלדג 1, כניסה 1 · שלדג 1 בית פרטי",
    "access": "נגיש · יש חניה",
-   "seats": 70
+   "seats": 70,
+   "avail": {
+    "availableSeats": 61,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2195",
@@ -2550,7 +2984,13 @@
    },
    "address": "יונה 60, כניסה ב · בית פרטי, סלון + גינה",
    "access": "נגיש · בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 20,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2190",
@@ -2587,7 +3027,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 108,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2147",
@@ -2615,7 +3061,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 245,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2122",
@@ -2643,7 +3095,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 195,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2096",
@@ -2670,7 +3128,13 @@
    },
    "address": "חרמון 5 · הקליניקה של לוסיה תרפיה",
    "access": "יש חניה · בפנים",
-   "seats": 11
+   "seats": 11,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2273",
@@ -2691,14 +3155,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477469,
-    "lng": 34.966661,
+    "lat": 32.47745,
+    "lng": 34.966654,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 88,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2230",
@@ -2735,7 +3205,13 @@
    },
    "address": "הבוטנים 54 · הסלון במתנס",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 24,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2352",
@@ -2772,7 +3248,13 @@
    },
    "address": "חברון 1 · בית לאומנות הגראז׳",
    "access": "יש חניה · בפנים",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 48,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2217",
@@ -2805,7 +3287,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 97,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2173",
@@ -2831,14 +3319,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477392,
-    "lng": 34.966682,
+    "lat": 32.477372,
+    "lng": 34.966673,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 113,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2111",
@@ -2875,7 +3369,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 283,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2317",
@@ -2911,7 +3411,13 @@
    },
    "address": "המושב 69 · מרכז דיאן",
    "access": "יש חניה · בפנים",
-   "seats": 22
+   "seats": 22,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2076",
@@ -2944,7 +3450,13 @@
    },
    "address": "הדקלים 95, כניסה קומה 2 · קליניקה קהילתית \"דרך המשי\" בית פעם שישי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 101
+   "seats": 101,
+   "avail": {
+    "availableSeats": 17,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2071",
@@ -2971,7 +3483,13 @@
    },
    "address": "יונה 44 · גן הציפורים - שכונת רמז",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2356",
@@ -3004,7 +3522,13 @@
    },
    "address": "פומלית 2 · במטבח הפרטי שלי (מטבח לא כשר למי שזה חשוב)",
    "access": "יש חניה · בפנים",
-   "seats": 3
+   "seats": 3,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2240",
@@ -3037,7 +3561,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2232",
@@ -3065,7 +3595,13 @@
    },
    "address": "קק\"ל 5 · חורשת האורנים ברחוב קק״ל",
    "access": "יש חניה · בחוץ",
-   "seats": 44
+   "seats": 44,
+   "avail": {
+    "availableSeats": 13,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2144",
@@ -3093,7 +3629,13 @@
    },
    "address": "אתרוג 8 · מרכז קהילתי נווה פרדסים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2116",
@@ -3121,7 +3663,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2067",
@@ -3158,7 +3706,13 @@
    },
    "address": "המגינים 18, כניסה ב · בבית שלי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 6
+   "seats": 6,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2308",
@@ -3186,7 +3740,13 @@
    },
    "address": "גן עוז 12 · גינת גן עוז בקצה רחוב גן עוז בפרדס חנה",
    "access": "יש חניה · בחוץ",
-   "seats": 31
+   "seats": 31,
+   "avail": {
+    "availableSeats": 18,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2203",
@@ -3217,7 +3777,13 @@
    ],
    "address": "1 · בשיתוף מרכז הצעירים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 32
+   "seats": 32,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2341",
@@ -3245,7 +3811,13 @@
    },
    "address": "הבוטנים 54 · קונסרבטוריון במתנס",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2298",
@@ -3272,7 +3844,13 @@
    },
    "address": "נחלה 22 · בבית משפחת לבבי",
    "access": "יש חניה · בפנים",
-   "seats": 17
+   "seats": 17,
+   "avail": {
+    "availableSeats": 9,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2282",
@@ -3299,7 +3877,13 @@
    },
    "address": "מיצפור 20, כניסה א · בית פרטי",
    "access": "בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2277",
@@ -3336,7 +3920,13 @@
    },
    "address": "המלאכה 8 · סטודיו",
    "access": "בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2271",
@@ -3363,7 +3953,13 @@
    },
    "address": "ביל\"ו 10 · נרבתא - בית תרבות",
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2223",
@@ -3391,7 +3987,13 @@
    },
    "address": "נטע 6 · הסלון של אודליה",
    "access": "בפנים",
-   "seats": 59
+   "seats": 59,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2220",
@@ -3418,7 +4020,13 @@
    },
    "address": "ברקת 27 · חורשה, שטח ירוק בין רחוב ברקת לרחוב יהלום",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 12
+   "seats": 12,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2149",
@@ -3451,7 +4059,13 @@
    },
    "address": "אחוזה 43 · הבית 43",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2112",
@@ -3488,7 +4102,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 276,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2081",
@@ -3516,7 +4136,13 @@
    },
    "address": "הבוטנים 54 · הלובי של המתנס המחודש",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 144
+   "seats": 144,
+   "avail": {
+    "availableSeats": 109,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2084",
@@ -3543,7 +4169,13 @@
    },
    "address": "ניר 3 · סטודיו ביתי בכרכור",
    "access": "בפנים",
-   "seats": 12
+   "seats": 12,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2056",
@@ -3571,7 +4203,13 @@
    },
    "address": "אתרוג 8 · דירה פרטית בשכונת נווה פרדסים באווירה ביתית",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 4
+   "seats": 4,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2360",
@@ -3608,7 +4246,13 @@
    },
    "address": "גינת אגוז 7 · V&A Studio",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 16,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2351",
@@ -3636,7 +4280,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2348",
@@ -3664,7 +4314,13 @@
    },
    "address": "חברון 1 · בית לאומנות הגראז׳",
    "access": "יש חניה",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 47,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2311",
@@ -3692,7 +4348,13 @@
    },
    "address": "אחוזה 24 · מרכז פיס לגיל הזהב",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 57,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2290",
@@ -3719,7 +4381,13 @@
    ],
    "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
    "access": "יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2254",
@@ -3747,7 +4415,13 @@
    },
    "address": "הגדוד 8 · סטודיו חיבור נכון - תיאטרון מודעות תנועה יצירה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 17
+   "seats": 17,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2218",
@@ -3775,7 +4449,13 @@
    },
    "address": "אבן גבירול 14 · מועדון אור",
    "access": "יש חניה · בפנים",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 6,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2143",
@@ -3803,7 +4483,13 @@
    },
    "address": "אתרוג 8 · מרכז קהילתי נווה פרדסים",
    "access": "נגיש · יש חניה",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 84,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2110",
@@ -3840,7 +4526,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 286,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2070",
@@ -3877,7 +4569,13 @@
    },
    "address": "המגינים 18, כניסה ב · סטודיו פילאטיס מכשירים, אינטימי בבית שלי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 2
+   "seats": 2,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2299",
@@ -3909,7 +4607,13 @@
     "spread": true
    },
    "address": "נטע 6 · הסלון של אודליה",
-   "seats": 59
+   "seats": 59,
+   "avail": {
+    "availableSeats": 5,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2296",
@@ -3936,7 +4640,13 @@
    },
    "address": "תמר 9 · גן משחקים ברחוב תמר",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 278,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2249",
@@ -3973,7 +4683,13 @@
    },
    "address": "הבוטנים 54 · הסלון במתנס",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2095",
@@ -4009,7 +4725,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 52,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2347",
@@ -4037,7 +4759,13 @@
    },
    "address": "אשל 3 · בית פרטי. חצר ירוקה.",
    "access": "יש חניה",
-   "seats": 9
+   "seats": 9,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2334",
@@ -4074,7 +4802,13 @@
    },
    "address": "הנשיא 53 · בית פרטי",
    "access": "בפנים",
-   "seats": 9
+   "seats": 9,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2332",
@@ -4106,7 +4840,13 @@
    },
    "address": "שחף 26 · מרחב סטודיו וחצר מרווחת",
    "access": "נגיש · בפנים",
-   "seats": 64
+   "seats": 64,
+   "avail": {
+    "availableSeats": 50,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2313",
@@ -4134,7 +4874,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2307",
@@ -4170,7 +4916,13 @@
    },
    "address": "השופטים פינת נילי 34 · גינה קהילתית עמק החובזות. בוויז גינה קהילתית עמק החובזות.",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 80
+   "seats": 80,
+   "avail": {
+    "availableSeats": 61,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2236",
@@ -4181,7 +4933,7 @@
    "date": "2026-10-30",
    "hour": "12:00",
    "audience": "רק למבוגרים",
-   "note": "הרצאה ומבוא להומורדרמה ואימון פרדוקסלי - כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים · בהרצאה קצרה ישתף אלכס סטרניק, מאמן, מרצה ומנחה בינ״ל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה-70 ע״י תלמידו של דר ויקטור פרנקל, דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). ההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו.... נלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. כיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות. אחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים. וכמובן לא נשכח להזכיר את דר ויקטור פרנקל... התחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. בואו. מרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004. · איך עושים שלום עם חלקים נאבקים באמצעות הגזמה, הגחכה וליצנות? גישת פרקליט השטן בטיפול. כוחה של הבחירה לפגוש את הטרגי מכל בריפוי. · בהנחיית אלכס סטרניק",
+   "note": "הרצאה ומבוא להומורדרמה ואימון פרדוקסלי - כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים · בהרצאה קצרה ישתף אלכס סטרניק, מאמן, מרצה ומנחה בינ״ל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה-70 ע״י תלמידו של דר ויקטור פרנקל, דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). ההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו.... נלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. כיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות. אחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים. וכמובן לא נשכח להזכיר את דר ויקטור פרנקל... התחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. בואו. מרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004. · איך עושים שלום עם חלקים נאבקים באמצעות הגזמה, הגחכה וליצנות? גישת פרקליט השטן בטיפול. כוחה של הבחירה לפגוש את הטרגי מכל בריפוי. · בהנחיית אלכס סטרניק · קומה 9 דירה 35",
    "url": "https://2026.hanadiv.org/event-page/2236",
    "links": [
     {
@@ -4200,14 +4952,20 @@
     }
    ],
    "geo": {
-    "lat": 32.467599,
-    "lng": 34.955967,
-    "source": "osm",
+    "lat": 32.467593,
+    "lng": 34.955999,
+    "source": "festival",
     "spread": true
    },
-   "address": "גינת אגוז - דירה 35 קומה 9 9, כניסה 35 · סלון ביתי",
+   "address": "גינת אגוז 9 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 71
+   "seats": 71,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2234",
@@ -4240,7 +4998,13 @@
    },
    "address": "הבוטנים 54 · קונסרבטוריון במתנס",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2185",
@@ -4277,7 +5041,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 123,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2114",
@@ -4313,7 +5083,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 276,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2252",
@@ -4341,7 +5117,13 @@
    },
    "address": "אבן גבירול 14 · מועדון אור",
    "access": "יש חניה · בפנים",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 13,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2174",
@@ -4369,7 +5151,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 259,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2132",
@@ -4397,14 +5185,20 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 72,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2072",
    "name": "ציור על קירות בצבעים אקריליים",
    "group": "סדנאות ויצירה",
    "craft": "ציור",
-   "when": "יום שישי 30.10 · 12:30 · 10 דק׳",
+   "when": "יום שישי 30.10 · 12:30 · שעה ו-10 דק׳",
    "date": "2026-10-30",
    "hour": "12:30",
    "audience": "רק למבוגרים",
@@ -4413,8 +5207,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp",
-     "full": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp"
+     "thumb": "https://api.hanadiv.org/images/b085832c445d02bcf46f0a37f23086475bc3b4d3afdbb5504d4686a557ba549d.webp",
+     "full": "https://api.hanadiv.org/images/b085832c445d02bcf46f0a37f23086475bc3b4d3afdbb5504d4686a557ba549d.webp"
     }
    ],
    "geo": {
@@ -4425,7 +5219,13 @@
    },
    "address": "הצפירה 10 · רחבת כניסה לבניין הצפירה 10",
    "access": "יש חניה · בחוץ",
-   "seats": 21
+   "seats": 21,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2358",
@@ -4453,7 +5253,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2272",
@@ -4486,7 +5292,13 @@
    },
    "address": "הבוטנים 54 · הסלון במתנס",
    "access": "נגיש · יש חניה",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 6,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2260",
@@ -4514,7 +5326,13 @@
    },
    "address": "הבוטנים 54 · הלובי של המתנס המחודש",
    "access": "נגיש · יש חניה",
-   "seats": 144
+   "seats": 144,
+   "avail": {
+    "availableSeats": 95,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2191",
@@ -4551,7 +5369,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 123,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2177",
@@ -4583,7 +5407,13 @@
    },
    "address": "נעורים 27 · בית הקפה \"קפה ויעל\"",
    "access": "נגיש",
-   "seats": 60
+   "seats": 60,
+   "avail": {
+    "availableSeats": 9,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2158",
@@ -4604,14 +5434,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477313,
-    "lng": 34.966691,
+    "lat": 32.477293,
+    "lng": 34.966679,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 109,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2100",
@@ -4647,7 +5483,13 @@
    },
    "address": "הבוטנים 54 · במה בראש",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 277,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2073",
@@ -4675,7 +5517,13 @@
    },
    "address": "הצפירה 10 · רחבת כניסה לבניין הצפירה 10",
    "access": "יש חניה · בחוץ",
-   "seats": 21
+   "seats": 21,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2133",
@@ -4703,7 +5551,50 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 80,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
+  },
+  {
+   "id": "hanadiv-2294",
+   "name": "מופע מוזיקה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 14:00 · 30 דק׳",
+   "date": "2026-10-30",
+   "hour": "14:00",
+   "audience": "לכל המשפחה",
+   "note": "מופע חומרים מקוריים בעיבודים אלקטרונים מרקידים · מופע Live Set - Dance · בהנחיית שרה לנסקי · הבוסתן הקהילתי בכרכור נמצא ליד שלולית החורף. מבנה שמוקף בסוללת עפר גדולה ובתוכו גן קסום שמטופח ע\"י מתנדבים מ 2010. יש אזור חצי מקורה, אזור מדורה + פינת ישיבה מרווחת.",
+   "url": "https://2026.hanadiv.org/event-page/2294",
+   "links": [
+    {
+     "url": "https://open.spotify.com/artist/0SGnze4RpGnen5OSOldj58?si=F9gaxlMBRGSTUPu8JKYmbA",
+     "title": "ספוטיפיי"
+    },
+    {
+     "url": "https://www.instagram.com/s/aGlnaGxpZ2h0OjE4NjM0MTEwNzY2MDI3NzEx?stkn=MTc4cWo4NDgxeHV0dA==",
+     "title": "אינסטגרם"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp",
+     "full": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp"
+    }
+   ],
+   "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
+   "access": "יש חניה · ידידותי לחיות",
+   "seats": 50,
+   "avail": {
+    "availableSeats": 39,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2209",
@@ -4740,7 +5631,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 96,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2118",
@@ -4761,14 +5658,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477234,
-    "lng": 34.966688,
+    "lat": 32.477214,
+    "lng": 34.966673,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 246,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2337",
@@ -4796,7 +5699,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2159",
@@ -4817,14 +5726,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477155,
-    "lng": 34.966673,
+    "lat": 32.477136,
+    "lng": 34.966654,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 108,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2284",
@@ -4853,14 +5768,20 @@
     }
    ],
    "geo": {
-    "lat": 32.47708,
-    "lng": 34.966647,
+    "lat": 32.477061,
+    "lng": 34.966624,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 47,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2255",
@@ -4893,7 +5814,13 @@
    },
    "address": "הגדוד 8 · סטודיו חיבור נכון - תיאטרון מודעות תנועה יצירה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 17
+   "seats": 17,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2197",
@@ -4921,7 +5848,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 278,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2182",
@@ -4958,7 +5891,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 65,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2134",
@@ -4995,35 +5934,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
-  },
-  {
-   "id": "hanadiv-2107",
-   "name": "מסה קריטית - רכיבת אופניים קהילתית",
-   "group": "גוף ותנועה",
-   "craft": "ספורט",
-   "when": "יום שישי 30.10 · 15:00 · שעה",
-   "date": "2026-10-30",
-   "hour": "15:00",
-   "audience": "לכל המשפחה",
-   "note": "נפגש כולנו ברחבת יד לבנים ביום שישי בשעה 1500 ונצא יחדיו לרכיבה. המסלול יפורסם יומיים לפני האירוע פה בדף האירוע · מסה קריטית היא רכיבת אופניים קהילתית ונעימה לכל המשפחה בשביל הספורט, החוויה וקידום תרבות האופניים במושבה! · בהנחיית ארז בן קיקי",
-   "url": "https://2026.hanadiv.org/event-page/2107",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp",
-     "full": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.475319,
-    "lng": 34.97373,
-    "source": "osm",
-    "spread": true
-   },
-   "address": "הדקלים 90 · רחבת יד לבנים מול בניין המועצה",
-   "access": "נגיש · יש חניה · בחוץ",
-   "seats": 300
+   "seats": 128,
+   "avail": {
+    "availableSeats": 57,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2315",
@@ -5053,7 +5970,13 @@
    ],
    "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
    "access": "יש חניה · ידידותי לחיות",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 45,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2265",
@@ -5080,7 +6003,13 @@
    },
    "address": "פלמ\"ח 6 · בית הפירות",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 77
+   "seats": 77,
+   "avail": {
+    "availableSeats": 38,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2160",
@@ -5101,14 +6030,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477007,
-    "lng": 34.966609,
+    "lat": 32.476989,
+    "lng": 34.966582,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 103,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2120",
@@ -5134,14 +6069,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476939,
-    "lng": 34.96656,
+    "lat": 32.476923,
+    "lng": 34.96653,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 276,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2303",
@@ -5171,14 +6112,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476877,
-    "lng": 34.966501,
+    "lat": 32.476864,
+    "lng": 34.966468,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 286,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2233",
@@ -5206,7 +6153,13 @@
    },
    "address": "רבי עקיבא 15 · סניף אקרופוליס החדשה, לימוד פילוסופיה כדרך חיים",
    "access": "יש חניה · ידידותי לחיות",
-   "seats": 60
+   "seats": 60,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2222",
@@ -5233,7 +6186,13 @@
    ],
    "address": "קריית החינוך מועצה אזורית מנשה 1 · בית המחול מנשה",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 79
+   "seats": 79,
+   "avail": {
+    "availableSeats": 32,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2155",
@@ -5261,7 +6220,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 260,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2224",
@@ -5289,7 +6254,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 289,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2164",
@@ -5314,44 +6285,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476822,
-    "lng": 34.966434,
+    "lat": 32.476811,
+    "lng": 34.966397,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
-  },
-  {
-   "id": "hanadiv-2300",
-   "name": "דרור גולדשטיין- מופע אקוסטי",
-   "group": "מוסיקה",
-   "craft": "מוסיקה",
-   "when": "יום שישי 30.10 · 18:00 · שעה",
-   "date": "2026-10-30",
-   "hour": "18:00",
-   "audience": "לכל המשפחה",
-   "note": "דרור גולדשטיין הוא אמן רב־תחומי שמביא לבמה את הלב הפועם והנשמה הרחבה שלו. השירים שלו נוגעים בנימים הכי עדינים של הנפש, וההופעה היא מסע בין מים שקטים של רגש לבין סערה סוחפת של שמחה, חיות, ואמונה שהכול יכול להיות טוב יותר. במהלך העשור האחרון, הופיע דרור ברחבי אירופה, קנדה, אנגליה וסין עם פרויקטים מוזיקליים שונים, כולל השתתפות בפסטיבלים מובילים ובאירועי תעשייה בינלאומיים. רפרטואר העשייה שלו כולל חמישה אלבומים ושני מיני־אלבומים (EPs) של חומרים מקוריים, אשר יצאו במסגרת להקותיו הקודמות: Zoo Harmonics, Little Pirates ו־Nipel Twist – כל אחת מהן בעלת סאונד וזהות ייחודיים, אך כולן נושאות את החותם האנרגטי והאותנטי של דרור. · מסע מוזיקלי בין מים שקטים לבין סערה סוחפת של שמחה · בהנחיית ג'ני וסילנקו · המקום הוא אתר טבע פסטורלי על גבעה עם עץ אלון עתיק במרכזה ומסביבו עצים נוספים. האירוע מתבצע בחיק הטבע. יש לכתוב 'האלון הבודד' בגוגל מפס או בווייז.",
-   "url": "https://2026.hanadiv.org/event-page/2300",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/6ac35638f8f2fea1386c51aeaefdcd54939d1f1e8831f5876c88579792872243.webp",
-     "full": "https://api.hanadiv.org/images/6ac35638f8f2fea1386c51aeaefdcd54939d1f1e8831f5876c88579792872243.webp"
-    },
-    {
-     "yt": "7M7J7ucg-Jg",
-     "thumb": "https://i.ytimg.com/vi/7M7J7ucg-Jg/hqdefault.jpg"
-    },
-    {
-     "yt": "V4gP_Z_XfWY",
-     "thumb": "https://i.ytimg.com/vi/V4gP_Z_XfWY/hqdefault.jpg"
-    }
-   ],
-   "address": "אחוזה 130 · האלון הבודד",
-   "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 100
+   "seats": 300,
+   "avail": {
+    "availableSeats": 90,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2286",
@@ -5372,14 +6319,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476775,
-    "lng": 34.966359,
+    "lat": 32.476767,
+    "lng": 34.966319,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 278,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2136",
@@ -5406,7 +6359,13 @@
    },
    "address": "קדמה 41, כניסה 3 · בית פרטי",
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
-   "seats": 15
+   "seats": 15,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2109",
@@ -5438,7 +6397,13 @@
    },
    "address": "אחוזה 43 · הבית 43",
    "access": "נגיש · יש חניה",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2157",
@@ -5463,14 +6428,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476736,
-    "lng": 34.966277,
+    "lat": 32.476732,
+    "lng": 34.966234,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 119,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2199",
@@ -5497,7 +6468,13 @@
    },
    "address": "הבוטנים 37, כניסה 2 · בית פרטי",
    "access": "יש חניה · בפנים",
-   "seats": 21
+   "seats": 21,
+   "avail": {
+    "availableSeats": 11,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2141",
@@ -5523,13 +6500,19 @@
    ],
    "geo": {
     "lat": 32.476706,
-    "lng": 34.96619,
+    "lng": 34.966145,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 85,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2125",
@@ -5566,7 +6549,13 @@
    },
    "address": "הנדיב 86 · סלון ביתי",
    "access": "בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2121",
@@ -5595,14 +6584,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476686,
-    "lng": 34.966099,
+    "lat": 32.476691,
+    "lng": 34.966053,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 245,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2098",
@@ -5638,7 +6633,13 @@
    },
    "address": "אחוזה 43 · הבית 43",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 13,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2146",
@@ -5666,7 +6667,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 264,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2202",
@@ -5693,7 +6700,13 @@
    },
    "address": "נבטים 4 · סטודיו ביתי",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2161",
@@ -5714,14 +6727,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476676,
-    "lng": 34.966006,
+    "lat": 32.476686,
+    "lng": 34.965959,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 111,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2333",
@@ -5748,7 +6767,13 @@
    },
    "address": "הצפירה 12 · פרדסים שכונת נווה אשר",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 41,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2310",
@@ -5769,14 +6794,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476676,
-    "lng": 34.965912,
+    "lat": 32.476691,
+    "lng": 34.965865,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 21,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2340",
@@ -5804,7 +6835,13 @@
    },
    "address": "קקל 5 · חורשת קקל",
    "access": "יש חניה · בחוץ",
-   "seats": 160
+   "seats": 160,
+   "avail": {
+    "availableSeats": 41,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2323",
@@ -5832,7 +6869,13 @@
    },
    "address": "גן עוז 12 · גינת גן עוז, בקצה רחוב גן עוז בפרדס חנה",
    "access": "יש חניה · בחוץ",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 10,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2248",
@@ -5853,14 +6896,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476686,
-    "lng": 34.965819,
+    "lat": 32.476706,
+    "lng": 34.965773,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2117",
@@ -5888,7 +6937,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2364",
@@ -5916,7 +6971,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 293,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2336",
@@ -5944,7 +7005,13 @@
    },
    "address": "הצבי 8, כניסה א׳ · הסלון של מרכז אלון",
    "access": "יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2324",
@@ -5972,7 +7039,13 @@
    },
    "address": "השופטים פינת נילי 34 · גינה קהילתית עמק החובזות. בוויז גינה קהילתית עמק החובזות.",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 80
+   "seats": 80,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2278",
@@ -5998,14 +7071,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476706,
-    "lng": 34.965728,
+    "lat": 32.476732,
+    "lng": 34.965684,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · פלייבק בשבילים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 40,
+   "avail": {
+    "availableSeats": 10,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2263",
@@ -6042,35 +7121,13 @@
    },
    "address": "השופטים 12 · חצר בית גדולה",
    "access": "בחוץ",
-   "seats": 20
-  },
-  {
-   "id": "hanadiv-2231",
-   "name": "מתגלגלים- חיבור בתנועה הורים וילדים",
-   "group": "גוף ותנועה",
-   "craft": "תנועה ומחול",
-   "when": "יום שבת 31.10 · 10:00 · 30 דק׳",
-   "date": "2026-10-31",
-   "hour": "10:00",
-   "audience": "לכל המשפחה",
-   "note": "נוכחות יחד במשחק, מגע וצחוק מייצרים שפה משותפת דרך הגוף · להורים וילדים בני 2-5 · בהנחיית מאיה נחמיאס · מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!! נתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
-   "url": "https://2026.hanadiv.org/event-page/2231",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/b0641db1fd299515cedb8d4eb2e5111e06cdf335b772ce4a6d77de0c51e64b5b.webp",
-     "full": "https://api.hanadiv.org/images/b0641db1fd299515cedb8d4eb2e5111e06cdf335b772ce4a6d77de0c51e64b5b.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.476736,
-    "lng": 34.965641,
-    "source": "festival",
-    "spread": true
-   },
-   "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
-   "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2178",
@@ -6102,7 +7159,13 @@
    },
    "address": "הדקלים 100 · סטודיו GoART פרדס חנה",
    "access": "יש חניה · בפנים",
-   "seats": 48
+   "seats": 48,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2176",
@@ -6124,7 +7187,13 @@
    ],
    "address": "מרחוב הנורית - הוראות הגעה 1 · חוות החזון הירוק",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2077",
@@ -6157,7 +7226,13 @@
    },
    "address": "הדקלים 95, כניסה קומה 2 · קליניקה קהילתית \"דרך המשי\" בית פעם שבת",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2242",
@@ -6184,7 +7259,13 @@
    },
    "address": "האורנים 33, כניסה אין · הוואדי הירוק שלאורך רחוב האורנים (איפה שהשיקשוק)",
    "access": "יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 50
+   "seats": 50,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2237",
@@ -6205,14 +7286,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476775,
-    "lng": 34.965559,
+    "lat": 32.476767,
+    "lng": 34.965599,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 35,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2215",
@@ -6239,7 +7326,13 @@
    },
    "address": "העליה 10 · אצלי בבית",
    "access": "יש חניה · בחוץ",
-   "seats": 19
+   "seats": 19,
+   "avail": {
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2198",
@@ -6267,7 +7360,13 @@
    },
    "address": "ארבל 42 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2193",
@@ -6299,7 +7398,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 34,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2102",
@@ -6330,7 +7435,13 @@
     "source": "osm"
    },
    "address": "ברקאי 7 · בית פרטי",
-   "seats": 61
+   "seats": 61,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2093",
@@ -6360,14 +7471,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476822,
-    "lng": 34.965484,
+    "lat": 32.476811,
+    "lng": 34.965521,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 288,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2349",
@@ -6395,7 +7512,13 @@
    },
    "address": "אשל 3 · בית פרטי. חצר ירוקה.",
    "access": "יש חניה",
-   "seats": 9
+   "seats": 9,
+   "avail": {
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2335",
@@ -6432,7 +7555,13 @@
    },
    "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
    "access": "נגיש · יש חניה",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 14,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2267",
@@ -6453,14 +7582,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476877,
-    "lng": 34.965417,
+    "lat": 32.476864,
+    "lng": 34.96545,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 278,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2264",
@@ -6497,7 +7632,13 @@
    },
    "address": "השופטים 12 · חצר בית גדולה",
    "access": "בחוץ",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2221",
@@ -6524,7 +7665,13 @@
    ],
    "address": "קריית החינוך מועצה אזורית מנשה 1 · בית המחול מנשה",
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
-   "seats": 110
+   "seats": 110,
+   "avail": {
+    "availableSeats": 81,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2196",
@@ -6552,7 +7699,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 284,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2214",
@@ -6573,14 +7726,20 @@
     }
    ],
    "geo": {
-    "lat": 32.476939,
-    "lng": 34.965358,
+    "lat": 32.476923,
+    "lng": 34.965388,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 84,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2305",
@@ -6601,14 +7760,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477007,
-    "lng": 34.965309,
+    "lat": 32.476989,
+    "lng": 34.965336,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 97,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2270",
@@ -6629,14 +7794,20 @@
     }
    ],
    "geo": {
-    "lat": 32.47708,
-    "lng": 34.965271,
+    "lat": 32.477061,
+    "lng": 34.965294,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2194",
@@ -6664,7 +7835,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 152,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2162",
@@ -6690,14 +7867,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477155,
-    "lng": 34.965245,
+    "lat": 32.477136,
+    "lng": 34.965264,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 106,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2288",
@@ -6722,14 +7905,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477234,
-    "lng": 34.96523,
+    "lat": 32.477214,
+    "lng": 34.965245,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 277,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2228",
@@ -6750,14 +7939,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477313,
-    "lng": 34.965227,
+    "lat": 32.477293,
+    "lng": 34.965239,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2363",
@@ -6785,7 +7980,13 @@
    },
    "address": "גינת אגוז 7 · V&A Studio",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 10,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2325",
@@ -6807,7 +8008,13 @@
    ],
    "address": "שפת הים 13 · שפת הים קיסריה",
    "access": "יש חניה · בחוץ",
-   "seats": 71
+   "seats": 71,
+   "avail": {
+    "availableSeats": 25,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2287",
@@ -6833,14 +8040,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477392,
-    "lng": 34.965236,
+    "lat": 32.477372,
+    "lng": 34.965245,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · פלייבק בשבילים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 40,
+   "avail": {
+    "availableSeats": 16,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2245",
@@ -6851,7 +8064,7 @@
    "date": "2026-10-31",
    "hour": "16:00",
    "audience": "רק למבוגרים",
-   "note": "* סוד יכולת הבריאה של הרימון: המיסטיקה של עוררות החושניות, זרימת חיים חיונית ושפע. * הפרדוקס הקבלי של הזרעים: פרספקטיבה חדשה על \"פוטנציאל\" ואיך הוא מתממש. * קריסת הזמן הליניארי: התחברות לציר זמן פנימי לקפיצת זמן שיאיץ את הגשמת הרצונות שלך בקלות ובחן. * טקס בריאה מקודש: כוונות משותפות ומוזיקה שייתנו צורה פיזית למה שמחכה להוולד בשבילך השנה. מָה לְהָבִיא: 2 רימונים, ריח טוב של שמן אתרי או בשם טבעי כלי הקשה/פעמונים/חליל/מפוחית. לו\"ז: 13:30 התכנסות. 14:00 בדיוק - תחילת הטקס שימו לב: כדי לשמור על קדושה ומיקוד המרחב, לא ניתן יהיה להיכנס לאחר תחילת הטקס ב-14:00. מחכה לראות אתכן.ם. פרנסואז✨ נ.ב : אם תוכלו להביאו כרית או כישא קטן איתכם זה יהיה נפלא! · טקס יצירת מציאות דרך הזכרות חוכמה עתיקה חדשה · בהנחיית פרנסואז מיקאל",
+   "note": "* סוד יכולת הבריאה של הרימון: המיסטיקה של עוררות החושניות, זרימת חיים חיונית ושפע. * הפרדוקס הקבלי של הזרעים: פרספקטיבה חדשה על \"פוטנציאל\" ואיך הוא מתממש. * קריסת הזמן הליניארי: התחברות לציר זמן פנימי לקפיצת זמן שיאיץ את הגשמת הרצונות שלך בקלות ובחן. * טקס בריאה מקודש: כוונות משותפות ומוזיקה שייתנו צורה פיזית למה שמחכה להוולד בשבילך השנה. מָה לְהָבִיא: 2 רימונים, ריח טוב של שמן אתרי או בשם טבעי. כלי הקשה/פעמונים/חליל/מפוחית.נ.ב : אם תוכלו להביא גם כרית או כיסא קטן איתכם זה יהיה נפלא! לו\"ז: 15:30 התכנסות. 16:00 בדיוק - תחילת הטקס שימו לב: כדי לשמור על קדושה ומיקוד המרחב, לא ניתן יהיה להיכנס לאחר תחילת הטקס ב-14:00. מחכה לראות אתכן.ם. פרנסואז✨ · טקס יצירת מציאות דרך הזכרות חוכמה עתיקה חדשה · בהנחיית פרנסואז מיקאל",
    "url": "https://2026.hanadiv.org/event-page/2245",
    "links": [
     {
@@ -6876,7 +8089,13 @@
    },
    "address": "עמ\"ל 45 · בית פרטי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2241",
@@ -6909,7 +8128,13 @@
    },
    "address": "ארבל 42 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2172",
@@ -6930,14 +8155,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477469,
-    "lng": 34.965257,
+    "lat": 32.47745,
+    "lng": 34.965264,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 95,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2148",
@@ -6965,7 +8196,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 254,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2137",
@@ -7001,7 +8238,13 @@
    },
    "address": "פומלית 24, כניסה 2 · בית פרטי בבניין. פומלית 2, קומה 6 דירה 24",
    "access": "נגיש · בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2280",
@@ -7022,14 +8265,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477543,
-    "lng": 34.965289,
+    "lat": 32.477525,
+    "lng": 34.965294,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 279,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2181",
@@ -7061,7 +8310,13 @@
    },
    "address": "הנשיא 4 · בית פרטי",
    "access": "נגיש · יש חניה",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2130",
@@ -7089,7 +8344,13 @@
    },
    "address": "המושב 5 · דירה",
    "access": "יש חניה · בפנים",
-   "seats": 7
+   "seats": 7,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2180",
@@ -7117,7 +8378,13 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 255,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2139",
@@ -7143,14 +8410,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477613,
-    "lng": 34.965333,
+    "lat": 32.477597,
+    "lng": 34.965336,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 110,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2346",
@@ -7177,7 +8450,13 @@
    },
    "address": "הדקלים 117 · הדקלים 117",
    "access": "ידידותי לחיות · בחוץ",
-   "seats": 35
+   "seats": 35,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2304",
@@ -7198,14 +8477,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477678,
-    "lng": 34.965386,
+    "lat": 32.477663,
+    "lng": 34.965388,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 60,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2258",
@@ -7227,7 +8512,13 @@
    ],
    "address": "אחוזה 130 · האלון הבודד",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 94,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2097",
@@ -7254,7 +8545,13 @@
    },
    "address": "המייסדים 90 · בית פרטי",
    "access": "בפנים",
-   "seats": 60
+   "seats": 60,
+   "avail": {
+    "availableSeats": 36,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2184",
@@ -7291,7 +8588,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 89,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2269",
@@ -7317,7 +8620,13 @@
     "source": "b144"
    },
    "address": "הגאון 11 · סלון בבית פרטי",
-   "seats": 20
+   "seats": 20,
+   "avail": {
+    "availableSeats": 15,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2140",
@@ -7338,14 +8647,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477737,
-    "lng": 34.965449,
+    "lat": 32.477722,
+    "lng": 34.96545,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 119,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2087",
@@ -7366,14 +8681,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477788,
+    "lat": 32.477775,
     "lng": 34.965521,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 21,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2262",
@@ -7406,7 +8727,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 57,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2091",
@@ -7434,7 +8761,13 @@
    },
    "address": "אחוזה 43 · הבית 43",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 30
+   "seats": 30,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2246",
@@ -7466,18 +8799,24 @@
    },
    "address": "בווייז - האולם בית תרבות מקומי פרכו\"ר. להגיע לרחבת האוטובוסים ברח׳ ההגנה פינת צנחנים, ולהמשיך לפי השילוט במקום. · \"האולם\" בית תרבות מקומי פרכו״ר.",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 30,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2238",
-   "name": "גילי קמחי - הופעה אקוסטית",
+   "name": "גילי קמחי - בין כאב לריפוי",
    "group": "מוסיקה",
    "craft": "מוסיקה",
    "when": "יום שבת 31.10 · 20:00 · שעה",
    "date": "2026-10-31",
    "hour": "20:00",
    "audience": "רק למבוגרים",
-   "note": "גילי קמחי, זמרת-חוקרת ייחודית ומסקרנת, במופע שכולו Story Telling של חוויות מתוך עולמה הפנימי ומחיי היומיום. אהבה, קנאה, משפחה, היפוכונדריה, פסימיות ואופטימיות, יוגשו עטופים במילים חדות, לחנים מפתיעים, קול עוצמתי וליווי מינימליסטי בקלידים וגיטרה. · מוזיקה מקורית וקאברים מפתיעים · בהנחיית גילי קמחי",
+   "note": "זמרת-חוקרת אמיצה ומסקרנת, במופע שכולו Story Telling של חוויות מעולמה הפנימי ומחיי היומיום, דרך שירים מקוריים וקאברים ייחודיים. אהבה, בדידות, היפוכונדריה, פסימיות ואופטימיות, יוגשו עטופים במילים כנות, קול עוצמתי ועיבודים אקוסטיים מפתיעים. אורחים מיוחדים: אלעד דן ואביעד חיים ג’אן · מוזיקה מקורית וקאברים ייחודיים · בהנחיית גילי קמחי",
    "url": "https://2026.hanadiv.org/event-page/2238",
    "links": [
     {
@@ -7503,7 +8842,13 @@
    },
    "address": "רבי עקיבא 15 · סניף אקרופוליס החדשה, לימוד פילוסופיה כדרך חיים",
    "access": "יש חניה · ידידותי לחיות · בפנים",
-   "seats": 60
+   "seats": 60,
+   "avail": {
+    "availableSeats": 52,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2211",
@@ -7530,7 +8875,13 @@
    },
    "address": "תרפ\"ט 24 · בית מירי ומומו צ'רניץ",
    "access": "בחוץ",
-   "seats": 40
+   "seats": 40,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2204",
@@ -7557,7 +8908,13 @@
    },
    "address": "דרך הבנים 20 · רחבת המועצה",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 200
+   "seats": 200,
+   "avail": {
+    "availableSeats": 164,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2186",
@@ -7589,7 +8946,13 @@
    },
    "address": "נעורים 23, כניסה 1 · בחצר של כסיף",
    "access": "נגיש · יש חניה · בחוץ",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 76,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2135",
@@ -7626,7 +8989,13 @@
    },
    "address": "המושב 44 · בית בנגורה",
    "access": "בפנים",
-   "seats": 128
+   "seats": 128,
+   "avail": {
+    "availableSeats": 73,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2119",
@@ -7656,14 +9025,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477832,
+    "lat": 32.477819,
     "lng": 34.965599,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 254,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2216",
@@ -7695,7 +9070,13 @@
    },
    "address": "הבוטנים 54 · חנה - בר קהילתי. במה למוסיקה אלטרנטיבית",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 130
+   "seats": 130,
+   "avail": {
+    "availableSeats": 112,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2189",
@@ -7721,14 +9102,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477866,
+    "lat": 32.477854,
     "lng": 34.965684,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 104,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2126",
@@ -7765,7 +9152,13 @@
    },
    "address": "הנדיב 86 · סלון ביתי",
    "access": "בפנים",
-   "seats": 16
+   "seats": 16,
+   "avail": {
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2088",
@@ -7791,14 +9184,20 @@
     }
    ],
    "geo": {
-    "lat": 32.474915,
-    "lng": 34.969787,
+    "lat": 32.474865,
+    "lng": 34.969912,
     "source": "landmark",
     "spread": true
    },
    "address": "המעלה 4 · אמפי פרדס חנה",
    "access": "נגיש · יש חניה",
-   "seats": 100
+   "seats": 100,
+   "avail": {
+    "availableSeats": 36,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2283",
@@ -7828,14 +9227,20 @@
     }
    ],
    "geo": {
-    "lat": 32.477891,
+    "lat": 32.47788,
     "lng": 34.965773,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · במת הג'אז ומוסיקת עולם",
    "access": "נגיש · יש חניה",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 287,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   },
   {
    "id": "hanadiv-2179",
@@ -7865,20 +9270,26 @@
     }
    ],
    "geo": {
-    "lat": 32.477906,
+    "lat": 32.477895,
     "lng": 34.965865,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · אמפי פנימי שבילים",
    "access": "נגיש · יש חניה · ידידותי לחיות",
-   "seats": 300
+   "seats": 300,
+   "avail": {
+    "availableSeats": 116,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
   }
  ],
  "stats": {
-  "events": 256,
-  "venues": 92,
-  "placed": 245,
-  "photos": 296
+  "events": 252,
+  "venues": 90,
+  "placed": 242,
+  "photos": 290
  }
 }

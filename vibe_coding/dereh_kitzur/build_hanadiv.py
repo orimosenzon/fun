@@ -107,8 +107,9 @@ FIXES = {
                     why="OSM building; B144 agrees"),
     "המעלה 4": dict(lat=32.474976, lng=34.969912, source="landmark",
                     why="Amudanan marker for בית העם - אמפיתיאטרון"),
-    "הדקלים 90": dict(lat=32.475430, lng=34.973730, source="osm",
-                      why="OSM node יד לבנים; the plaza is the memorial's"),
+    "הדקלים 90": dict(lat=32.475400, lng=34.973150, source="osm",
+                      why="רחבת יד לבנים: the open ground between the memorial (OSM way 679126565) and הדקלים, "
+                          "40 m west of the building, which is where the pin was until 29/10/2026"),
     # Added 6/10/2026, when the programme grew from 46 events to 114.
     "ההגנה 0": dict(lat=32.474830, lng=34.981190, source="osm",
                     why="no house number; OSM way 1525472043 is האולם itself, 180 m from the API point"),
@@ -160,9 +161,9 @@ FIXES = {
     # 17:30 at רחבת יד לבנים (the venue it now names) and walks to the theatre,
     # with a sentence in the street field. The pin goes where people arrive.
     "לאחר התהלוכה - האירוע הראשי בתיאטרון הידית - רחוב מעלה פינת רבי עקיבא 4":
-        dict(lat=32.475430, lng=34.973730, source="osm",
+        dict(lat=32.475400, lng=34.973150, source="osm",
              why="the procession's start, רחבת יד לבנים, as הדקלים 90; the theatre is in the description"),
-    "מעלה פינת רבי עקיבא 4": dict(lat=32.475430, lng=34.973730, source="osm",
+    "מעלה פינת רבי עקיבא 4": dict(lat=32.475400, lng=34.973150, source="osm",
                                   why="the same procession, rewritten the same day: 'מפגש ברחבת בית יד לבנים'"),
     "רחוב המעלה 4": dict(lat=32.474976, lng=34.969912, source="landmark",
                          why="the theatre, as המעלה 4 with 'רחוב' in front"),
@@ -172,9 +173,18 @@ FIXES = {
 # rewrote its address three times in three days (on 27/10 to 'מעלה 4', which B144
 # put 200 m west of the theatre), and each time the pin went somewhere else. It
 # gathers at 17:30 at רחבת יד לבנים, so that is where it stays.
+#
+# `stops` is for an event that moves: each stop is a place with the hour it
+# starts there, and the app gives every stop a pin of its own that is live
+# from its hour to the next stop's. The first stop is the event's own geo.
+# הידית האחורית walks from the plaza at 17:30 and plays at the amphitheatre
+# from 19:15 (the ribbon, then the shows), on its north side by רבי עקיבא:
+# the timetable in its description, 29/10/2026.
 EVENT_AT = {
-    2261: dict(lat=32.475430, lng=34.973730, source="osm",
-               why="the procession's start, רחבת יד לבנים, as הדקלים 90"),
+    2261: dict(lat=32.475400, lng=34.973150, source="osm",
+               why="the procession's start, רחבת יד לבנים, as הדקלים 90",
+               stops=[dict(hour="17:30", label="רחבת יד לבנים · מפגש ותהלוכה", lat=32.475400, lng=34.973150),
+                      dict(hour="19:15", label="האמפי, בצד רבי עקיבא · המופעים", lat=32.475150, lng=34.969960)]),
 }
 
 # The festival's fourteen genres, folded into groups a legend can hold. The
@@ -477,6 +487,9 @@ def build(report):
             place["avail"] = {k: av[k] for k in ("availableSeats", "isFull", "hasWaitingList", "registrationOpen") if k in av}
         if not geo:
             del place["geo"]
+        stops = EVENT_AT.get(e["eventID"], {}).get("stops")
+        if stops:
+            place["stops"] = [{k: s[k] for k in ("hour", "label", "lat", "lng")} for s in stops]
         out.append(place)
 
     save_json(API_POSITIONS, dict(sorted(known.items())))
