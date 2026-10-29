@@ -5,7 +5,7 @@
  *
  * אינטראקציות:
  *   סרגל            גרירה = הזזת סמן הניגון
- *   פס הקטעים       לחיצה על קטע מהרשימה = בחירה שלו
+ *   פס הקטעים       לחיצה על קטע מהרשימה = בחירה שלו. מתחתיו פסים סגולים: הכיתובים
  *   תמונות/גל       לחיצה = קפיצה; גרירה = קטע חדש; גרירת קצה = שינוי התחלה/סוף
  *                   (גרירה בתוך הקטע יוצרת קטע חדש ולא מזיזה אותו: כשהקטע הוא כל
  *                   הסרטון אין שום מקום "מחוצה לו", ובחירה מחדש היא הפעולה הנפוצה)
@@ -31,7 +31,8 @@ C.Timeline = function (canvas, wrap, cb) {
   let selIn = 0, selOut = 0;
   let thumbs = [], thumbCount = 0, thumbAspect = 16 / 9;
   let peaks = null;
-  let ranges = [];   // קטעים מהרשימה: { a, b, n, key, on, cur }
+  let ranges = [];   // קטעים מהרשימה: { a, b, n, k, key, on, cur }
+  let caps = [];     // כיתובים: { a, b, cur }
   let drag = null;
   let dirty = true;
 
@@ -201,6 +202,12 @@ C.Timeline = function (canvas, wrap, cb) {
       }
     }
     ctx.textAlign = 'start';
+    for (const c of caps) {
+      const x1 = t2x(c.a), x2 = t2x(c.b);
+      if (x2 < 0 || x1 > W) continue;
+      ctx.fillStyle = c.cur ? '#e9d5ff' : '#a855f7';
+      ctx.fillRect(x1, TRACK_TOP, Math.max(2, x2 - x1), c.cur ? 5 : 3);
+    }
 
     // סמן ניגון
     const xp = Math.round(t2x(playhead)) + 0.5;
@@ -247,7 +254,7 @@ C.Timeline = function (canvas, wrap, cb) {
     if (y < TRACK_TOP) {
       const t = x2t(x);
       const r = ranges.find((q) => t >= q.a && t <= q.b) || ranges.find((q) => Math.abs(t2x(q.a) - x) < 4 || Math.abs(t2x(q.b) - x) < 4);
-      return r ? { kind: 'lane', key: r.key } : { kind: 'ruler' };
+      return r ? { kind: 'lane', key: r.key, k: r.k } : { kind: 'ruler' };
     }
     if (selOut > selIn) {
       const xi = t2x(selIn), xo = t2x(selOut);
@@ -259,12 +266,13 @@ C.Timeline = function (canvas, wrap, cb) {
 
   const CURSORS = { over: 'pointer', lane: 'pointer', ruler: 'col-resize', in: 'ew-resize', out: 'ew-resize', track: 'crosshair' };
 
+  /** fromUser = סוג הגרירה ('in' / 'out' / 'track'), כדי שהאפליקציה תדע אם הקטע דויק או נבחר מחדש */
   function setSel(a, b, fromUser) {
     a = C.clamp(a, 0, dur); b = C.clamp(b, 0, dur);
     if (b < a) [a, b] = [b, a];
     selIn = a; selOut = b;
     dirty = true;
-    if (fromUser) cb.onSelect?.(selIn, selOut);
+    if (fromUser) cb.onSelect?.(selIn, selOut, fromUser);
   }
 
   function centerOverview(x) {
@@ -286,7 +294,7 @@ C.Timeline = function (canvas, wrap, cb) {
     const z = zone(x, y);
     canvas.setPointerCapture(e.pointerId);
     drag = { kind: z.kind, x0: x, t0: x2t(x), in0: selIn, out0: selOut, moved: false };
-    if (z.kind === 'lane') { drag = null; cb.onRange?.(z.key); return; }
+    if (z.kind === 'lane') { drag = null; cb.onRange?.(z.key, z.k); return; }
     if (z.kind === 'over') centerOverview(x);
     else if (z.kind === 'ruler') { cb.onScrub?.(true); cb.onSeek?.(C.clamp(x2t(x), 0, dur)); }
   });
@@ -300,10 +308,10 @@ C.Timeline = function (canvas, wrap, cb) {
     switch (drag.kind) {
       case 'over': centerOverview(x); break;
       case 'ruler': cb.onSeek?.(t); break;
-      case 'in': setSel(Math.min(t, selOut - MIN_SEL), selOut, true); cb.onSeek?.(selIn); break;
-      case 'out': setSel(selIn, Math.max(t, selIn + MIN_SEL), true); cb.onSeek?.(selOut); break;
+      case 'in': setSel(Math.min(t, selOut - MIN_SEL), selOut, 'in'); cb.onSeek?.(selIn); break;
+      case 'out': setSel(selIn, Math.max(t, selIn + MIN_SEL), 'out'); cb.onSeek?.(selOut); break;
       case 'track':
-        if (drag.moved) { setSel(drag.t0, t, true); cb.onSeek?.(t); }
+        if (drag.moved) { setSel(drag.t0, t, 'track'); cb.onSeek?.(t); }
         break;
     }
     edgeScroll(x);
@@ -315,7 +323,7 @@ C.Timeline = function (canvas, wrap, cb) {
     drag = null;
     if (d.kind === 'ruler') cb.onScrub?.(false);
     if (d.kind === 'track' && !d.moved) cb.onSeek?.(C.clamp(d.t0, 0, dur));
-    if (d.kind === 'track' && d.moved && selOut - selIn < MIN_SEL) setSel(d.in0, d.out0, true);
+    if (d.kind === 'track' && d.moved && selOut - selIn < MIN_SEL) setSel(d.in0, d.out0, 'track');
     canvas.style.cursor = '';
   }
   canvas.addEventListener('pointerup', endDrag);
@@ -365,6 +373,7 @@ C.Timeline = function (canvas, wrap, cb) {
     setThumb(i, bmp) { thumbs[i] = bmp; dirty = true; },
     setPeaks(p) { peaks = p; dirty = true; },
     setRanges(list) { ranges = list || []; dirty = true; },
+    setCaptions(list) { caps = list || []; dirty = true; },
     setSelection(a, b) { setSel(a, b, false); },
     setPlayhead(t, follow) {
       playhead = t;

@@ -6,7 +6,9 @@
 <title>Clipper</title>
 <!-- ?v= בקבצים: לשנות בכל עדכון, אחרת דפדפן עלול לערבב HTML חדש עם CSS/JS ישנים מהמטמון -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20261027a">
+<link rel="stylesheet" href="css/style.css?v=20261028a">
+<!-- גופנים לכיתובים (js/fonts.js). בלי רשת הכיתובים יוצאים בגופן חלופי -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bebas+Neue&family=Caveat:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700&family=Heebo:wght@400;700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Rubik:wght@400;700&display=swap">
 </head>
 <body>
 
@@ -91,8 +93,9 @@
   <aside class="panel">
     <nav class="tabs" role="tablist">
       <button class="tab" data-tab="clips" role="tab"><span class="tn">1</span><span><b data-i18n="tabClips">סרטונים</b><small id="sumClips"></small></span></button>
-      <button class="tab" data-tab="format" role="tab"><span class="tn">2</span><span><b data-i18n="tabFormat">פורמט</b><small id="sumFormat"></small></span></button>
-      <button class="tab" data-tab="brand" role="tab"><span class="tn">3</span><span><b data-i18n="tabBrand">מיתוג</b><small id="sumBrand"></small></span></button>
+      <button class="tab" data-tab="text" role="tab"><span class="tn">2</span><span><b data-i18n="tabText">טקסט</b><small id="sumText"></small></span></button>
+      <button class="tab" data-tab="format" role="tab"><span class="tn">3</span><span><b data-i18n="tabFormat">פורמט</b><small id="sumFormat"></small></span></button>
+      <button class="tab" data-tab="brand" role="tab"><span class="tn">4</span><span><b data-i18n="tabBrand">מיתוג</b><small id="sumBrand"></small></span></button>
     </nav>
 
     <div class="panes">
@@ -103,9 +106,18 @@
           <div class="sel-grid">
             <label data-i18n="lblIn">התחלה</label>
             <input class="time-input" id="inIn" value="0:00.00">
+            <div class="nudge" dir="ltr">
+              <button data-nudge="in:-1">−1</button><button data-nudge="in:-0.1">−0.1</button><button data-nudge="in:0.1">+0.1</button><button data-nudge="in:1">+1</button>
+              <button class="listen" data-listen="in" data-i18n-title="tipListenIn">▶</button>
+            </div>
             <label data-i18n="lblOut">סוף</label>
             <input class="time-input" id="inOut" value="0:00.00">
+            <div class="nudge" dir="ltr">
+              <button data-nudge="out:-1">−1</button><button data-nudge="out:-0.1">−0.1</button><button data-nudge="out:0.1">+0.1</button><button data-nudge="out:1">+1</button>
+              <button class="listen" data-listen="out" data-i18n-title="tipListenOut">▶</button>
+            </div>
           </div>
+          <div class="hint" data-i18n="nudgeHint">הזזה בשניות או בעשיריות. ▶ משמיע את שתי השניות שליד החיתוך.</div>
           <div class="len-row">
             <span><span data-i18n="lblLen">אורך הקטע</span> <span class="mono" id="selLen">0:00.00</span></span>
             <span><span data-i18n="lblTotal">עם פתיחה וסיום</span> <span class="mono" id="totalLen">0:00.00</span></span>
@@ -135,21 +147,63 @@
         </div>
       </div>
 
-      <!-- 2. פורמט וטקסט -->
-      <div class="pane" data-pane="format" role="tabpanel" hidden>
+      <!-- 2. טקסט -->
+      <div class="pane" data-pane="text" role="tabpanel" hidden>
         <div class="card">
-          <h3 data-i18n="secFormat">איפה הסרטון יעלה</h3>
-          <div class="platforms" id="platforms"></div>
-          <div class="hint" id="platformNote"></div>
-          <div class="sub-label" data-i18n="lblRatio">יחס</div>
-          <div class="seg" id="segFormat">
-            <button data-v="9:16">9:16</button>
-            <button data-v="1:1">1:1</button>
-            <button data-v="4:5">4:5</button>
-            <button data-v="16:9">16:9</button>
-            <button data-v="source" data-i18n="fmtSource">מקור</button>
+          <div class="card-head">
+            <h3 data-i18n="secCaps">כיתובים על הסרטון</h3>
+            <div class="head-actions">
+              <button class="btn small" id="btnCapAdd" data-i18n="capAdd">+ כיתוב כאן</button>
+            </div>
           </div>
-          <div class="hint" id="formatHint"></div>
+          <div class="hint" data-i18n="capHint">כיתוב מופיע ברגע מסוים בהקלטה, בכל סרטון שמכסה את הרגע הזה. כדי להוסיף: עצור את הניגון בנקודה הרצויה ולחץ "+ כיתוב כאן".</div>
+          <div class="cap-list" id="capList"></div>
+          <div class="cap-edit" id="capEdit" hidden>
+            <textarea id="inCapText" rows="2" data-i18n-ph="capPh" placeholder="הטקסט"></textarea>
+            <div class="cap-times">
+              <label data-i18n="capFrom">מופיע</label>
+              <input class="time-input" id="inCapA">
+              <button class="btn small ghost" id="btnCapA" data-i18n="capHere" data-i18n-title="tipCapHere">מכאן</button>
+              <label data-i18n="capTo">נעלם</label>
+              <input class="time-input" id="inCapB">
+              <button class="btn small ghost" id="btnCapB" data-i18n="capHereEnd" data-i18n-title="tipCapHereEnd">עד כאן</button>
+            </div>
+            <div class="row">
+              <span data-i18n="capFont">גופן</span>
+              <select id="selCapFont"></select>
+              <label class="mini"><input type="checkbox" id="chkCapBold"><b data-i18n="capBold">מודגש</b></label>
+            </div>
+            <label class="row">
+              <span data-i18n="lblSize">גודל</span>
+              <input type="range" id="rngCapSize" min="2" max="16" step="0.5" value="6">
+              <input type="color" id="inCapColor" value="#ffffff" data-i18n-title="capColor">
+            </label>
+            <div class="row">
+              <span data-i18n="capStyle">רקע</span>
+              <div class="seg compact" id="segCapStyle">
+                <button data-v="outline" data-i18n="capOutline">קו מתאר</button>
+                <button data-v="box" data-i18n="capBox">תיבה</button>
+                <button data-v="plain" data-i18n="capPlain">בלי</button>
+              </div>
+              <input type="color" id="inCapBg" value="#000000" data-i18n-title="capBgColor">
+            </div>
+            <div class="row">
+              <span data-i18n="capPlace">מיקום</span>
+              <div class="seg compact" id="segCapPlace">
+                <button data-place="top" data-i18n="capTop">למעלה</button>
+                <button data-place="mid" data-i18n="capMid">באמצע</button>
+                <button data-place="bottom" data-i18n="capBottom">למטה</button>
+              </div>
+            </div>
+            <div class="hint" data-i18n="capDragHint">או גרור את הכיתוב על התצוגה, לכל מקום.</div>
+            <div class="cap-actions">
+              <button class="btn small ghost" id="btnCapPlay" data-i18n="capPlay">▶ נגן</button>
+              <button class="btn small ghost" id="btnCapDup" data-i18n="capDup">שכפל</button>
+              <button class="btn small ghost" id="btnCapDel" data-i18n="capDel">מחק</button>
+              <span class="spacer"></span>
+              <button class="btn small" id="btnCapDone" data-i18n="capDone">סיום</button>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -168,6 +222,24 @@
             </label>
           </div>
         </div>
+      </div>
+
+      <!-- 3. פורמט -->
+      <div class="pane" data-pane="format" role="tabpanel" hidden>
+        <div class="card">
+          <h3 data-i18n="secFormat">איפה הסרטון יעלה</h3>
+          <div class="platforms" id="platforms"></div>
+          <div class="hint" id="platformNote"></div>
+          <div class="sub-label" data-i18n="lblRatio">יחס</div>
+          <div class="seg" id="segFormat">
+            <button data-v="9:16">9:16</button>
+            <button data-v="1:1">1:1</button>
+            <button data-v="4:5">4:5</button>
+            <button data-v="16:9">16:9</button>
+            <button data-v="source" data-i18n="fmtSource">מקור</button>
+          </div>
+          <div class="hint" id="formatHint"></div>
+        </div>
 
         <div class="card">
           <h3 data-i18n="secOutput">הקובץ</h3>
@@ -185,7 +257,7 @@
         </div>
       </div>
 
-      <!-- 3. מיתוג -->
+      <!-- 4. מיתוג -->
       <div class="pane" data-pane="brand" role="tabpanel" hidden>
         <div class="card">
           <h3 data-i18n="secStruct">ממה כל סרטון בנוי</h3>
@@ -341,16 +413,17 @@
 <video id="outroVideo" playsinline preload="auto" hidden></video>
 <video id="outroTallVideo" playsinline preload="auto" hidden></video>
 
-<script src="js/log.js?v=20261027a"></script>
-<script src="js/i18n.js?v=20261027a"></script>
-<script src="js/util.js?v=20261027a"></script>
-<script src="js/store.js?v=20261027a"></script>
-<script src="js/platforms.js?v=20261027a"></script>
-<script src="js/compose.js?v=20261027a"></script>
-<script src="js/batch.js?v=20261027a"></script>
-<script src="js/media.js?v=20261027a"></script>
-<script src="js/timeline.js?v=20261027a"></script>
-<script src="js/sequencer.js?v=20261027a"></script>
-<script src="js/app.js?v=20261027a"></script>
+<script src="js/log.js?v=20261028a"></script>
+<script src="js/i18n.js?v=20261028a"></script>
+<script src="js/util.js?v=20261028a"></script>
+<script src="js/store.js?v=20261028a"></script>
+<script src="js/platforms.js?v=20261028a"></script>
+<script src="js/fonts.js?v=20261028a"></script>
+<script src="js/compose.js?v=20261028a"></script>
+<script src="js/batch.js?v=20261028a"></script>
+<script src="js/media.js?v=20261028a"></script>
+<script src="js/timeline.js?v=20261028a"></script>
+<script src="js/sequencer.js?v=20261028a"></script>
+<script src="js/app.js?v=20261028a"></script>
 </body>
 </html>

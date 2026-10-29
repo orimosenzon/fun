@@ -74,6 +74,7 @@ C.compose = (() => {
    * מצייר פריים אחד.
    * @param src   וידאו (או תמונה) לצייר
    * @param o     { zoom, px, py, fill ('blur' | 'color'), fillColor, text: { top, bottom, size, color } או null,
+   *                captions: [כיתוב] או null (רק על הקטע, לא על פתיחה וסיום),
    *                fade (0..1, 1 = שקוף לגמרי לשחור), logo, logoOn, corner, logoSize, logoOpacity, safe }
    */
   function draw(ctx, src, W, H, o) {
@@ -87,6 +88,7 @@ C.compose = (() => {
       ctx.drawImage(src, r.x, r.y, r.w, r.h);
     }
     if (o.text) drawText(ctx, W, H, r, o);
+    if (o.captions && src) for (const c of activeCaptions(o.captions, src.currentTime)) drawCaption(ctx, W, H, c);
     if (o.logoOn && o.logo) drawLogo(ctx, o.logo, W, H, o);
     if (o.fade > 0) {
       ctx.fillStyle = `rgba(0,0,0,${C.clamp(o.fade, 0, 1)})`;
@@ -153,6 +155,69 @@ C.compose = (() => {
     ctx.restore();
   }
 
+  // ── כיתובים: טקסט חופשי בזמן ובמקום שבוחרים ────────────────────────────
+  /**
+   * כיתוב = { id, text, a, b, x, y, font, size, bold, color, style, bg }
+   *   a, b   מתי הוא מופיע ונעלם, בשניות של סרטון המקור. ככה הוא מופיע בכל סרטון
+   *          מהרשימה שמכסה את הרגע הזה, ובמקום הנכון גם אם הקטע מתארך או מתקצר.
+   *   x, y   מרכז הכיתוב, כשבר מרוחב וגובה הפריים
+   *   size   גובה האות באחוזים מהצלע הקצרה (כמו הטקסט ברצועות)
+   *   style  'outline' (קו מתאר כהה) | 'box' (מלבן בצבע bg) | 'plain'
+   */
+  const activeCaptions = (list, t) => list.filter((c) => c.text && t >= c.a && t < c.b);
+
+  /** איך הכיתוב נפרש בפריים: שורות, גודל אות, והמלבן שהוא תופס */
+  function captionLayout(ctx, W, H, c) {
+    const fs = Math.max(6, Math.round((Math.min(W, H) * (c.size ?? 6)) / 100));
+    ctx.font = `${c.bold && !C.font(c.font).noBold ? 700 : 400} ${fs}px ${C.fontStack(c.font)}`;
+    const lines = wrap(ctx, c.text.trim(), W * 0.9);
+    const lh = fs * 1.25;
+    const w = Math.max(...lines.map((ln) => ctx.measureText(ln).width), fs);
+    const h = lines.length * lh;
+    const pad = c.style === 'box' ? fs * 0.35 : fs * 0.1;
+    // לא נותנים לכיתוב לברוח מהפריים, גם אם גררו אותו לקצה
+    const cx = C.clamp(c.x * W, w / 2 + pad, W - w / 2 - pad);
+    const cy = C.clamp(c.y * H, h / 2 + pad, H - h / 2 - pad);
+    return { lines, fs, lh, cx, cy, box: { x: cx - w / 2 - pad, y: cy - h / 2 - pad, w: w + 2 * pad, h: h + 2 * pad } };
+  }
+
+  function drawCaption(ctx, W, H, c) {
+    ctx.save();
+    const L = captionLayout(ctx, W, H, c);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.direction = /[\u0590-\u05FF\u0600-\u06FF]/.test(c.text) ? 'rtl' : 'ltr';
+    if (c.style === 'box') {
+      ctx.fillStyle = c.bg || '#000000';
+      ctx.globalAlpha = 0.7;
+      const b = L.box, rr = L.fs * 0.25;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(b.x, b.y, b.w, b.h, rr); else ctx.rect(b.x, b.y, b.w, b.h);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    L.lines.forEach((ln, i) => {
+      const y = L.cy - (L.lines.length * L.lh) / 2 + L.lh * (i + 0.5);
+      if (c.style === 'outline') {
+        ctx.lineWidth = L.fs * 0.16;
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.strokeText(ln, L.cx, y);
+      }
+      ctx.fillStyle = c.color || '#ffffff';
+      ctx.fillText(ln, L.cx, y);
+    });
+    ctx.restore();
+  }
+
+  /** המלבן של הכיתוב בפריים בגודל W×H: לגרירה ולמסגרת המקווקוות בתצוגה */
+  function captionBox(ctx, W, H, c) {
+    ctx.save();
+    const b = captionLayout(ctx, W, H, c).box;
+    ctx.restore();
+    return b;
+  }
+
   function drawLogo(ctx, img, W, H, o) {
     const [iw, ih] = srcDims(img);
     if (!iw) return;
@@ -173,5 +238,5 @@ C.compose = (() => {
     ctx.restore();
   }
 
-  return { outputSize, draw, place, coverZoom };
+  return { outputSize, draw, place, coverZoom, activeCaptions, captionBox };
 })();
