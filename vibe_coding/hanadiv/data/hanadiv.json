@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-27T17:44:25Z",
+ "updated": "2026-10-28T22:05:04Z",
  "source": "https://2026.hanadiv.org/",
  "name": "אירועי דרך הנדיב 2026",
  "festival": {
@@ -47,40 +47,6 @@
   }
  ],
  "places": [
-  {
-   "id": "hanadiv-2330",
-   "name": "פיסול באבנים",
-   "group": "סדנאות ויצירה",
-   "craft": "אמנות פלסטית",
-   "when": "יום חמישי 29.10 · 08:00 · שעה",
-   "date": "2026-10-29",
-   "hour": "08:00",
-   "audience": "לכל המשפחה",
-   "note": "ניפגש בשבת בשעה 17.00 על שפת הים כ200 מ' דרומה מהחניה של חוף הקשתות..ניצור יחד תערוכה מרגשת על שפת הים ונצלם סרטוני וידאו. נא להביא דלי ומשהו טעים לחלוק · נלמד איזון אבנים ובניית קשתות · בהנחיית גבריאל רענן · חניה בחוף הקשתות הדרומי בקיסריה",
-   "url": "https://2026.hanadiv.org/event-page/2330",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/ea3b0506a7c9e1d6b9d9df8f438d53190db05232bba374e92ed6ab40b0f55b11.webp",
-     "full": "https://api.hanadiv.org/images/ea3b0506a7c9e1d6b9d9df8f438d53190db05232bba374e92ed6ab40b0f55b11.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.475098,
-    "lng": 34.969912,
-    "source": "landmark",
-    "spread": true
-   },
-   "address": "רחוב המעלה 4, כניסה 1 · תאטרון הידית",
-   "access": "יש חניה · בחוץ",
-   "seats": 21,
-   "avail": {
-    "availableSeats": 16,
-    "isFull": false,
-    "hasWaitingList": false,
-    "registrationOpen": true
-   }
-  },
   {
    "id": "hanadiv-2115",
    "name": "יוגה תרפיה · יום חמישי",
@@ -162,8 +128,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp",
-     "full": "https://api.hanadiv.org/images/0a92f18fde244f0253e89cf5fb3f29908f54160d49c33397bb2b8806d71e46cd.webp"
+     "thumb": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp",
+     "full": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp"
     }
    ],
    "geo": {
@@ -175,7 +141,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 25,
    "avail": {
-    "availableSeats": 8,
+    "availableSeats": 4,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -209,7 +175,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 40,
+    "availableSeats": 39,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -423,7 +389,7 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 16,
+    "availableSeats": 15,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -457,7 +423,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 35,
+    "availableSeats": 31,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -496,7 +462,7 @@
    "access": "יש חניה · בפנים",
    "seats": 41,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 12,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -521,8 +487,8 @@
     }
    ],
    "geo": {
-    "lat": 32.474915,
-    "lng": 34.970037,
+    "lat": 32.475087,
+    "lng": 34.969912,
     "source": "landmark",
     "spread": true
    },
@@ -530,9 +496,9 @@
    "access": "יש חניה · בפנים",
    "seats": 22,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -563,7 +529,7 @@
    "access": "יש חניה",
    "seats": 10,
    "avail": {
-    "availableSeats": 10,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -597,7 +563,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 4,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -698,8 +664,8 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -732,7 +698,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 6,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -765,7 +731,7 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 49,
    "avail": {
-    "availableSeats": 33,
+    "availableSeats": 27,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -836,8 +802,8 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 150,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -909,9 +875,9 @@
    "access": "יש חניה · בפנים",
    "seats": 49,
    "avail": {
-    "availableSeats": 20,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -943,7 +909,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 20,
    "avail": {
-    "availableSeats": 13,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1113,7 +1079,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 14,
+    "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1215,7 +1181,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477911,
+    "lat": 32.4779,
     "lng": 34.965959,
     "source": "festival",
     "spread": true
@@ -1224,7 +1190,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 83,
+    "availableSeats": 77,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1301,7 +1267,7 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 70,
    "avail": {
-    "availableSeats": 17,
+    "availableSeats": 19,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1335,7 +1301,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 274,
+    "availableSeats": 272,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1378,7 +1344,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 291,
+    "availableSeats": 290,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1437,20 +1403,33 @@
     }
    ],
    "geo": {
-    "lat": 32.475541,
-    "lng": 34.97373,
-    "source": "osm",
-    "spread": true
+    "lat": 32.4754,
+    "lng": 34.97315,
+    "source": "osm"
    },
    "address": "מעלה 4 · מפגש ברחבת בית יד לבנים, תהלוכה עד לאמפי בצד רבי עקיבא והמשך הערב שם |",
    "access": "נגיש · בחוץ",
    "seats": 120,
    "avail": {
-    "availableSeats": 107,
+    "availableSeats": 102,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
-   }
+   },
+   "stops": [
+    {
+     "hour": "17:30",
+     "label": "רחבת יד לבנים · מפגש ותהלוכה",
+     "lat": 32.4754,
+     "lng": 34.97315
+    },
+    {
+     "hour": "19:15",
+     "label": "האמפי, בצד רבי עקיבא · המופעים",
+     "lat": 32.47515,
+     "lng": 34.96996
+    }
+   ]
   },
   {
    "id": "hanadiv-2167",
@@ -1471,7 +1450,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477906,
+    "lat": 32.477895,
     "lng": 34.966053,
     "source": "festival",
     "spread": true
@@ -1521,43 +1500,6 @@
    }
   },
   {
-   "id": "hanadiv-2294",
-   "name": "מופע מוזיקה",
-   "group": "מוסיקה",
-   "craft": "מוסיקה",
-   "when": "יום חמישי 29.10 · 18:00 · 30 דק׳",
-   "date": "2026-10-29",
-   "hour": "18:00",
-   "audience": "לכל המשפחה",
-   "note": "מופע חומרים מקוריים בעיבודים אלקטרונים מרקידים · מופע Live Set - Dance · בהנחיית שרה לנסקי · הבוסתן הקהילתי בכרכור נמצא ליד שלולית החורף. מבנה שמוקף בסוללת עפר גדולה ובתוכו גן קסום שמטופח ע\"י מתנדבים מ 2010. יש אזור חצי מקורה, אזור מדורה + פינת ישיבה מרווחת.",
-   "url": "https://2026.hanadiv.org/event-page/2294",
-   "links": [
-    {
-     "url": "https://open.spotify.com/artist/0SGnze4RpGnen5OSOldj58?si=F9gaxlMBRGSTUPu8JKYmbA",
-     "title": "ספוטיפיי"
-    },
-    {
-     "url": "https://www.instagram.com/s/aGlnaGxpZ2h0OjE4NjM0MTEwNzY2MDI3NzEx?stkn=MTc4cWo4NDgxeHV0dA==",
-     "title": "אינסטגרם"
-    }
-   ],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp",
-     "full": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp"
-    }
-   ],
-   "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
-   "access": "יש חניה · ידידותי לחיות",
-   "seats": 50,
-   "avail": {
-    "availableSeats": 39,
-    "isFull": false,
-    "hasWaitingList": false,
-    "registrationOpen": true
-   }
-  },
-  {
    "id": "hanadiv-2285",
    "name": "לזגינקה - רוקדים את המסורת הקווקזית בתנועת…",
    "group": "גוף ותנועה",
@@ -1576,7 +1518,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477891,
+    "lat": 32.47788,
     "lng": 34.966145,
     "source": "festival",
     "spread": true
@@ -1705,7 +1647,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1720,7 +1662,7 @@
    "date": "2026-10-29",
    "hour": "18:00",
    "audience": "רק למבוגרים",
-   "note": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון בציור. · סדנת יצירה ציור וקולאז ויצירות לקישוט הבית · בהנחיית מרים ברנהרד",
+   "note": "נקבל את סודות היצירה של האדם כולם מוזמנים גם בלי ניסיון בציור. · סדנת יצירה ציור וקולאז ויצירות לקישוט הבית · בהנחיית מרים ברנהרד · קומה 9 דירה 35",
    "url": "https://2026.hanadiv.org/event-page/2085",
    "links": [],
    "photos": [
@@ -1730,18 +1672,18 @@
     }
    ],
    "geo": {
-    "lat": 32.467821,
-    "lng": 34.955967,
-    "source": "osm",
+    "lat": 32.467815,
+    "lng": 34.955999,
+    "source": "festival",
     "spread": true
    },
-   "address": "גינת אגוז - דירה 35 קומה 9 9, כניסה 35 · סלון ביתי",
+   "address": "גינת אגוז 9 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
    "seats": 71,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -1807,7 +1749,7 @@
    "access": "יש חניה",
    "seats": 80,
    "avail": {
-    "availableSeats": 46,
+    "availableSeats": 42,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1841,7 +1783,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 278,
+    "availableSeats": 277,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1917,7 +1859,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 18,
    "avail": {
-    "availableSeats": 16,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1942,7 +1884,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477866,
+    "lat": 32.477854,
     "lng": 34.966234,
     "source": "festival",
     "spread": true
@@ -1951,7 +1893,7 @@
    "access": "בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 1,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -1976,7 +1918,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477832,
+    "lat": 32.477819,
     "lng": 34.966319,
     "source": "festival",
     "spread": true
@@ -1985,7 +1927,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 197,
+    "availableSeats": 188,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2013,7 +1955,7 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 50,
    "avail": {
-    "availableSeats": 32,
+    "availableSeats": 31,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2084,9 +2026,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 41,
    "avail": {
-    "availableSeats": 6,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -2109,7 +2051,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477788,
+    "lat": 32.477775,
     "lng": 34.966397,
     "source": "festival",
     "spread": true
@@ -2118,7 +2060,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 89,
+    "availableSeats": 86,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2204,7 +2146,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 77,
+    "availableSeats": 71,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2229,8 +2171,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477737,
-    "lng": 34.966469,
+    "lat": 32.477722,
+    "lng": 34.966468,
     "source": "festival",
     "spread": true
    },
@@ -2274,7 +2216,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -2310,7 +2252,7 @@
    "access": "יש חניה · בפנים",
    "seats": 45,
    "avail": {
-    "availableSeats": 13,
+    "availableSeats": 12,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2344,7 +2286,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 282,
+    "availableSeats": 279,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2387,7 +2329,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2475,7 +2417,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -2577,19 +2519,19 @@
    },
    "address": "הדקלים 44 · הסלון 44",
    "access": "בפנים",
-   "seats": 40,
+   "seats": 74,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
+    "availableSeats": 28,
+    "isFull": false,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
   {
    "id": "hanadiv-2247",
    "name": "סדנאת ריקודי בטן",
-   "group": "סדנאות ויצירה",
-   "craft": "סדנא חווייתית",
+   "group": "גוף ותנועה",
+   "craft": "תנועה ומחול",
    "when": "יום חמישי 29.10 · 20:00 · שעה",
    "date": "2026-10-29",
    "hour": "20:00",
@@ -2656,7 +2598,7 @@
    "access": "יש חניה",
    "seats": 80,
    "avail": {
-    "availableSeats": 47,
+    "availableSeats": 46,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2698,7 +2640,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
    "seats": 130,
    "avail": {
-    "availableSeats": 45,
+    "availableSeats": 46,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2732,8 +2674,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477678,
-    "lng": 34.966532,
+    "lat": 32.477663,
+    "lng": 34.96653,
     "source": "festival",
     "spread": true
    },
@@ -2741,7 +2683,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 285,
+    "availableSeats": 284,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2756,7 +2698,7 @@
    "date": "2026-10-29",
    "hour": "20:00",
    "audience": "לכל המשפחה",
-   "note": "מופיעים בפעמים האחרונות לפני גיוס · הלהקה ארטיקופיקו מופיעה בפסטיבל · בהנחיית טל קופ · הבמה נמצאת על הדשא של מתנס פרדס חנה.",
+   "note": "מופיעים בפעמים האחרונות לפני גיוס · אינדי רוק ישראלי מפוצץ · בהנחיית טל קופ · הבמה נמצאת על הדשא של מתנס פרדס חנה.",
    "url": "https://2026.hanadiv.org/event-page/2113",
    "links": [
     {
@@ -2784,7 +2726,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 125,
+    "availableSeats": 124,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2818,7 +2760,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 144,
    "avail": {
-    "availableSeats": 62,
+    "availableSeats": 52,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2851,7 +2793,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 25,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2876,8 +2818,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477613,
-    "lng": 34.966585,
+    "lat": 32.477597,
+    "lng": 34.966582,
     "source": "festival",
     "spread": true
    },
@@ -2885,7 +2827,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 102,
+    "availableSeats": 104,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -2961,8 +2903,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477543,
-    "lng": 34.966629,
+    "lat": 32.477525,
+    "lng": 34.966624,
     "source": "festival",
     "spread": true
    },
@@ -2970,7 +2912,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 291,
+    "availableSeats": 284,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3044,7 +2986,7 @@
    "access": "נגיש · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 22,
+    "availableSeats": 20,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3087,7 +3029,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 109,
+    "availableSeats": 108,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3121,7 +3063,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 253,
+    "availableSeats": 245,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3213,8 +3155,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477469,
-    "lng": 34.966661,
+    "lat": 32.47745,
+    "lng": 34.966654,
     "source": "festival",
     "spread": true
    },
@@ -3222,7 +3164,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 94,
+    "availableSeats": 88,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3347,7 +3289,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 102,
+    "availableSeats": 97,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3377,8 +3319,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477392,
-    "lng": 34.966682,
+    "lat": 32.477372,
+    "lng": 34.966673,
     "source": "festival",
     "spread": true
    },
@@ -3386,7 +3328,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 114,
+    "availableSeats": 113,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3471,8 +3413,8 @@
    "access": "יש חניה · בפנים",
    "seats": 22,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -3510,7 +3452,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 101,
    "avail": {
-    "availableSeats": 22,
+    "availableSeats": 17,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3655,7 +3597,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 44,
    "avail": {
-    "availableSeats": 17,
+    "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3800,7 +3742,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 31,
    "avail": {
-    "availableSeats": 21,
+    "availableSeats": 18,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3937,7 +3879,7 @@
    "access": "בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 3,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4162,7 +4104,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 279,
+    "availableSeats": 276,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4196,7 +4138,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 144,
    "avail": {
-    "availableSeats": 110,
+    "availableSeats": 109,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4509,7 +4451,7 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 7,
+    "availableSeats": 6,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4543,7 +4485,7 @@
    "access": "נגיש · יש חניה",
    "seats": 100,
    "avail": {
-    "availableSeats": 82,
+    "availableSeats": 84,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4667,7 +4609,7 @@
    "address": "נטע 6 · הסלון של אודליה",
    "seats": 59,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 5,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4700,7 +4642,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 300,
    "avail": {
-    "availableSeats": 282,
+    "availableSeats": 278,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4785,7 +4727,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 54,
+    "availableSeats": 52,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4821,7 +4763,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -4900,7 +4842,7 @@
    "access": "נגיש · בפנים",
    "seats": 64,
    "avail": {
-    "availableSeats": 55,
+    "availableSeats": 50,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4936,7 +4878,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -4976,7 +4918,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 80,
    "avail": {
-    "availableSeats": 68,
+    "availableSeats": 61,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4991,7 +4933,7 @@
    "date": "2026-10-30",
    "hour": "12:00",
    "audience": "רק למבוגרים",
-   "note": "הרצאה ומבוא להומורדרמה ואימון פרדוקסלי - כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים · בהרצאה קצרה ישתף אלכס סטרניק, מאמן, מרצה ומנחה בינ״ל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה-70 ע״י תלמידו של דר ויקטור פרנקל, דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). ההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו.... נלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. כיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות. אחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים. וכמובן לא נשכח להזכיר את דר ויקטור פרנקל... התחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. בואו. מרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004. · איך עושים שלום עם חלקים נאבקים באמצעות הגזמה, הגחכה וליצנות? גישת פרקליט השטן בטיפול. כוחה של הבחירה לפגוש את הטרגי מכל בריפוי. · בהנחיית אלכס סטרניק",
+   "note": "הרצאה ומבוא להומורדרמה ואימון פרדוקסלי - כשפסיכותראפיה, ליצנות וחכמת הטריקסטר נפגשים · בהרצאה קצרה ישתף אלכס סטרניק, מאמן, מרצה ומנחה בינ״ל להומורדרמה ואימון פרדוקסלי את עקרונות השיטה. השיטה פותחה בגרמניה בשנות ה-70 ע״י תלמידו של דר ויקטור פרנקל, דר מיכאל טיטצה (שהסמיך את אלכס לעסוק בתחום). ההומורדרמה מאפשרת מפגש משחקי, מתיידד, נועז ומוגזם עם חלקים ברגשי נפשי והנרטיב מאחוריהם : כמו אשמה, בושה , הלקאה עצמית, ריצוי, נקמה, כעס וכו.... נלמד את עקרונות השיטה, כיצד עובד לחץ חיובי דרך עבודת הליצנות, מהי גישת ה devli's advocate, ומה קורה כשמהטפל\\מאמן מוותר על הסטטוס המקצועי שלו ויורד לרמת המיועץ. כיצד עקרונות אלו מתיישבים עם פילוסופיית דאדא באמנות. אחכ נתנסה על הבמה עם מס משתתפים שיעלו על הבמה וישחקו ויגחיכו את הצדדים החלשים. וכמובן לא נשכח להזכיר את דר ויקטור פרנקל... התחום יעניין בין היתר דרמה תראפיסטים, פסיכודרמטיסטים, פסיכותראפיסטים, לוגותראפיסטים, ליצנים, מאמנים בתקשורת מקרבת, מטפלים בגשטלט אך כל אדם שמוכן להתנסות בגישות ההופכות את הנורמות המקובלות. בואו. מרצה: אלכס סטרניק, תזונאי קליני, מאמן ומרצה בינל להומודררמה וליצנות טיפולית התערבותית, לחץ חיובי EuStress , תראפיה בצחוק וכלים עוקפי שכל דרך תיאטרון אילתורי, נונסנס, ג'יבריש . מביא השיטה יוגה צחוק לישראל- 2004. · איך עושים שלום עם חלקים נאבקים באמצעות הגזמה, הגחכה וליצנות? גישת פרקליט השטן בטיפול. כוחה של הבחירה לפגוש את הטרגי מכל בריפוי. · בהנחיית אלכס סטרניק · קומה 9 דירה 35",
    "url": "https://2026.hanadiv.org/event-page/2236",
    "links": [
     {
@@ -5010,12 +4952,12 @@
     }
    ],
    "geo": {
-    "lat": 32.467599,
-    "lng": 34.955967,
-    "source": "osm",
+    "lat": 32.467593,
+    "lng": 34.955999,
+    "source": "festival",
     "spread": true
    },
-   "address": "גינת אגוז - דירה 35 קומה 9 9, כניסה 35 · סלון ביתי",
+   "address": "גינת אגוז 9 · סלון ביתי",
    "access": "נגיש · יש חניה · בפנים",
    "seats": 71,
    "avail": {
@@ -5101,7 +5043,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 125,
+    "availableSeats": 123,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5177,7 +5119,7 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 14,
+    "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5211,7 +5153,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 262,
+    "availableSeats": 259,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5245,7 +5187,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 75,
+    "availableSeats": 72,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5256,7 +5198,7 @@
    "name": "ציור על קירות בצבעים אקריליים",
    "group": "סדנאות ויצירה",
    "craft": "ציור",
-   "when": "יום שישי 30.10 · 12:30 · 10 דק׳",
+   "when": "יום שישי 30.10 · 12:30 · שעה ו-10 דק׳",
    "date": "2026-10-30",
    "hour": "12:30",
    "audience": "רק למבוגרים",
@@ -5265,8 +5207,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp",
-     "full": "https://api.hanadiv.org/images/b757567fba5b81d06ec5107c099a6474247562071bb7345154ab3c32dcd5bdeb.webp"
+     "thumb": "https://api.hanadiv.org/images/b085832c445d02bcf46f0a37f23086475bc3b4d3afdbb5504d4686a557ba549d.webp",
+     "full": "https://api.hanadiv.org/images/b085832c445d02bcf46f0a37f23086475bc3b4d3afdbb5504d4686a557ba549d.webp"
     }
    ],
    "geo": {
@@ -5352,7 +5294,7 @@
    "access": "נגיש · יש חניה",
    "seats": 30,
    "avail": {
-    "availableSeats": 7,
+    "availableSeats": 6,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5386,7 +5328,7 @@
    "access": "נגיש · יש חניה",
    "seats": 144,
    "avail": {
-    "availableSeats": 96,
+    "availableSeats": 95,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5467,7 +5409,7 @@
    "access": "נגיש",
    "seats": 60,
    "avail": {
-    "availableSeats": 19,
+    "availableSeats": 9,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5492,8 +5434,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477313,
-    "lng": 34.966691,
+    "lat": 32.477293,
+    "lng": 34.966679,
     "source": "festival",
     "spread": true
    },
@@ -5501,7 +5443,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 112,
+    "availableSeats": 109,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5611,7 +5553,44 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 82,
+    "availableSeats": 80,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
+  },
+  {
+   "id": "hanadiv-2294",
+   "name": "מופע מוזיקה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שישי 30.10 · 14:00 · 30 דק׳",
+   "date": "2026-10-30",
+   "hour": "14:00",
+   "audience": "לכל המשפחה",
+   "note": "מופע חומרים מקוריים בעיבודים אלקטרונים מרקידים · מופע Live Set - Dance · בהנחיית שרה לנסקי · הבוסתן הקהילתי בכרכור נמצא ליד שלולית החורף. מבנה שמוקף בסוללת עפר גדולה ובתוכו גן קסום שמטופח ע\"י מתנדבים מ 2010. יש אזור חצי מקורה, אזור מדורה + פינת ישיבה מרווחת.",
+   "url": "https://2026.hanadiv.org/event-page/2294",
+   "links": [
+    {
+     "url": "https://open.spotify.com/artist/0SGnze4RpGnen5OSOldj58?si=F9gaxlMBRGSTUPu8JKYmbA",
+     "title": "ספוטיפיי"
+    },
+    {
+     "url": "https://www.instagram.com/s/aGlnaGxpZ2h0OjE4NjM0MTEwNzY2MDI3NzEx?stkn=MTc4cWo4NDgxeHV0dA==",
+     "title": "אינסטגרם"
+    }
+   ],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp",
+     "full": "https://api.hanadiv.org/images/aee03feaf0e3917d98502f22b562cbdf943681c41654b4da4f78a62385df9be3.webp"
+    }
+   ],
+   "address": "ירושלים 52 · הבוסתן הקהילתי בכרכור",
+   "access": "יש חניה · ידידותי לחיות",
+   "seats": 50,
+   "avail": {
+    "availableSeats": 39,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5654,7 +5633,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 98,
+    "availableSeats": 96,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5679,8 +5658,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477234,
-    "lng": 34.966688,
+    "lat": 32.477214,
+    "lng": 34.966673,
     "source": "festival",
     "spread": true
    },
@@ -5688,7 +5667,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 250,
+    "availableSeats": 246,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5722,7 +5701,7 @@
    "access": "יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5747,8 +5726,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477155,
-    "lng": 34.966673,
+    "lat": 32.477136,
+    "lng": 34.966654,
     "source": "festival",
     "spread": true
    },
@@ -5789,8 +5768,8 @@
     }
    ],
    "geo": {
-    "lat": 32.47708,
-    "lng": 34.966647,
+    "lat": 32.477061,
+    "lng": 34.966624,
     "source": "festival",
     "spread": true
    },
@@ -5914,7 +5893,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 66,
+    "availableSeats": 65,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5957,41 +5936,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 63,
-    "isFull": false,
-    "hasWaitingList": false,
-    "registrationOpen": true
-   }
-  },
-  {
-   "id": "hanadiv-2107",
-   "name": "מסה קריטית - רכיבת אופניים קהילתית",
-   "group": "גוף ותנועה",
-   "craft": "ספורט",
-   "when": "יום שישי 30.10 · 15:00 · שעה",
-   "date": "2026-10-30",
-   "hour": "15:00",
-   "audience": "לכל המשפחה",
-   "note": "נפגש כולנו ברחבת יד לבנים ביום שישי בשעה 1500 ונצא יחדיו לרכיבה. המסלול יפורסם יומיים לפני האירוע פה בדף האירוע · מסה קריטית היא רכיבת אופניים קהילתית ונעימה לכל המשפחה בשביל הספורט, החוויה וקידום תרבות האופניים במושבה! · בהנחיית ארז בן קיקי",
-   "url": "https://2026.hanadiv.org/event-page/2107",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp",
-     "full": "https://api.hanadiv.org/images/f8028f020afc4fe192ed29fc688a15d061f43c55d5af86a1b1f102ef558e78f2.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.475319,
-    "lng": 34.97373,
-    "source": "osm",
-    "spread": true
-   },
-   "address": "הדקלים 90 · רחבת יד לבנים מול בניין המועצה",
-   "access": "נגיש · יש חניה · בחוץ",
-   "seats": 300,
-   "avail": {
-    "availableSeats": 272,
+    "availableSeats": 57,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6060,7 +6005,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 77,
    "avail": {
-    "availableSeats": 42,
+    "availableSeats": 38,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6085,8 +6030,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477007,
-    "lng": 34.966609,
+    "lat": 32.476989,
+    "lng": 34.966582,
     "source": "festival",
     "spread": true
    },
@@ -6124,8 +6069,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476939,
-    "lng": 34.96656,
+    "lat": 32.476923,
+    "lng": 34.96653,
     "source": "festival",
     "spread": true
    },
@@ -6133,7 +6078,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 279,
+    "availableSeats": 276,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6167,8 +6112,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476877,
-    "lng": 34.966501,
+    "lat": 32.476864,
+    "lng": 34.966468,
     "source": "festival",
     "spread": true
    },
@@ -6176,7 +6121,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 287,
+    "availableSeats": 286,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6243,7 +6188,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 79,
    "avail": {
-    "availableSeats": 37,
+    "availableSeats": 32,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6277,7 +6222,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 262,
+    "availableSeats": 260,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6311,7 +6256,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 291,
+    "availableSeats": 289,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6340,8 +6285,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476822,
-    "lng": 34.966434,
+    "lat": 32.476811,
+    "lng": 34.966397,
     "source": "festival",
     "spread": true
    },
@@ -6349,7 +6294,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 91,
+    "availableSeats": 90,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6374,8 +6319,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476775,
-    "lng": 34.966359,
+    "lat": 32.476767,
+    "lng": 34.966319,
     "source": "festival",
     "spread": true
    },
@@ -6383,7 +6328,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 283,
+    "availableSeats": 278,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6416,9 +6361,9 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
    "seats": 15,
    "avail": {
-    "availableSeats": 1,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -6483,8 +6428,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476736,
-    "lng": 34.966277,
+    "lat": 32.476732,
+    "lng": 34.966234,
     "source": "festival",
     "spread": true
    },
@@ -6525,7 +6470,7 @@
    "access": "יש חניה · בפנים",
    "seats": 21,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6555,7 +6500,7 @@
    ],
    "geo": {
     "lat": 32.476706,
-    "lng": 34.96619,
+    "lng": 34.966145,
     "source": "festival",
     "spread": true
    },
@@ -6563,7 +6508,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 91,
+    "availableSeats": 85,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6639,8 +6584,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476686,
-    "lng": 34.966099,
+    "lat": 32.476691,
+    "lng": 34.966053,
     "source": "festival",
     "spread": true
    },
@@ -6648,7 +6593,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 250,
+    "availableSeats": 245,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6690,7 +6635,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6724,7 +6669,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 267,
+    "availableSeats": 264,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6782,8 +6727,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476676,
-    "lng": 34.966006,
+    "lat": 32.476686,
+    "lng": 34.965959,
     "source": "festival",
     "spread": true
    },
@@ -6824,7 +6769,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 50,
    "avail": {
-    "availableSeats": 46,
+    "availableSeats": 41,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6849,8 +6794,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476676,
-    "lng": 34.965912,
+    "lat": 32.476691,
+    "lng": 34.965865,
     "source": "festival",
     "spread": true
    },
@@ -6858,7 +6803,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 300,
    "avail": {
-    "availableSeats": 22,
+    "availableSeats": 21,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6892,7 +6837,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 160,
    "avail": {
-    "availableSeats": 44,
+    "availableSeats": 41,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6926,7 +6871,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 30,
    "avail": {
-    "availableSeats": 16,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6951,8 +6896,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476686,
-    "lng": 34.965819,
+    "lat": 32.476706,
+    "lng": 34.965773,
     "source": "festival",
     "spread": true
    },
@@ -7028,7 +6973,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 297,
+    "availableSeats": 293,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7062,9 +7007,9 @@
    "access": "יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 3,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7096,9 +7041,9 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 80,
    "avail": {
-    "availableSeats": 28,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7126,17 +7071,17 @@
     }
    ],
    "geo": {
-    "lat": 32.476706,
-    "lng": 34.965728,
+    "lat": 32.476732,
+    "lng": 34.965684,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · פלייבק בשבילים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20,
+   "seats": 40,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
+    "availableSeats": 10,
+    "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -7185,40 +7130,6 @@
    }
   },
   {
-   "id": "hanadiv-2231",
-   "name": "מתגלגלים- חיבור בתנועה הורים וילדים",
-   "group": "גוף ותנועה",
-   "craft": "תנועה ומחול",
-   "when": "יום שבת 31.10 · 10:00 · 30 דק׳",
-   "date": "2026-10-31",
-   "hour": "10:00",
-   "audience": "לכל המשפחה",
-   "note": "נוכחות יחד במשחק, מגע וצחוק מייצרים שפה משותפת דרך הגוף · להורים וילדים בני 2-5 · בהנחיית מאיה נחמיאס · מתחם הילדים ״אינדיגו״ חוזר בפעם השלישית!!! נתראה בבית ספר ״שבילים״ פרדס חנה כרכור",
-   "url": "https://2026.hanadiv.org/event-page/2231",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/b0641db1fd299515cedb8d4eb2e5111e06cdf335b772ce4a6d77de0c51e64b5b.webp",
-     "full": "https://api.hanadiv.org/images/b0641db1fd299515cedb8d4eb2e5111e06cdf335b772ce4a6d77de0c51e64b5b.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.476736,
-    "lng": 34.965641,
-    "source": "festival",
-    "spread": true
-   },
-   "address": "החורש 36 · אינדיגו - מתחם ילדים בבית ספר שבילים",
-   "access": "נגיש · יש חניה",
-   "seats": 300,
-   "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
-   }
-  },
-  {
    "id": "hanadiv-2178",
    "name": "יוצרים יחד בסטודיו GoART - לב המושבה",
    "group": "סדנאות ויצירה",
@@ -7250,8 +7161,8 @@
    "access": "יש חניה · בפנים",
    "seats": 48,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -7375,8 +7286,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476775,
-    "lng": 34.965559,
+    "lat": 32.476767,
+    "lng": 34.965599,
     "source": "festival",
     "spread": true
    },
@@ -7384,7 +7295,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 37,
+    "availableSeats": 35,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7417,7 +7328,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 19,
    "avail": {
-    "availableSeats": 2,
+    "availableSeats": 1,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7489,7 +7400,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 40,
+    "availableSeats": 34,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7526,8 +7437,8 @@
    "address": "ברקאי 7 · בית פרטי",
    "seats": 61,
    "avail": {
-    "availableSeats": 1,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -7560,8 +7471,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476822,
-    "lng": 34.965484,
+    "lat": 32.476811,
+    "lng": 34.965521,
     "source": "festival",
     "spread": true
    },
@@ -7603,7 +7514,7 @@
    "access": "יש חניה",
    "seats": 9,
    "avail": {
-    "availableSeats": 2,
+    "availableSeats": 1,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7646,7 +7557,7 @@
    "access": "נגיש · יש חניה",
    "seats": 20,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 14,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7671,8 +7582,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476877,
-    "lng": 34.965417,
+    "lat": 32.476864,
+    "lng": 34.96545,
     "source": "festival",
     "spread": true
    },
@@ -7680,7 +7591,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 300,
    "avail": {
-    "availableSeats": 285,
+    "availableSeats": 278,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7790,7 +7701,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 285,
+    "availableSeats": 284,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7815,8 +7726,8 @@
     }
    ],
    "geo": {
-    "lat": 32.476939,
-    "lng": 34.965358,
+    "lat": 32.476923,
+    "lng": 34.965388,
     "source": "festival",
     "spread": true
    },
@@ -7824,7 +7735,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 85,
+    "availableSeats": 84,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7849,8 +7760,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477007,
-    "lng": 34.965309,
+    "lat": 32.476989,
+    "lng": 34.965336,
     "source": "festival",
     "spread": true
    },
@@ -7858,7 +7769,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 106,
+    "availableSeats": 97,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7883,8 +7794,8 @@
     }
    ],
    "geo": {
-    "lat": 32.47708,
-    "lng": 34.965271,
+    "lat": 32.477061,
+    "lng": 34.965294,
     "source": "festival",
     "spread": true
    },
@@ -7926,7 +7837,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 163,
+    "availableSeats": 152,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7956,8 +7867,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477155,
-    "lng": 34.965245,
+    "lat": 32.477136,
+    "lng": 34.965264,
     "source": "festival",
     "spread": true
    },
@@ -7965,7 +7876,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 108,
+    "availableSeats": 106,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7994,8 +7905,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477234,
-    "lng": 34.96523,
+    "lat": 32.477214,
+    "lng": 34.965245,
     "source": "festival",
     "spread": true
    },
@@ -8003,7 +7914,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 278,
+    "availableSeats": 277,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8028,8 +7939,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477313,
-    "lng": 34.965227,
+    "lat": 32.477293,
+    "lng": 34.965239,
     "source": "festival",
     "spread": true
    },
@@ -8071,7 +7982,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 14,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8099,7 +8010,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 71,
    "avail": {
-    "availableSeats": 39,
+    "availableSeats": 25,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8129,18 +8040,18 @@
     }
    ],
    "geo": {
-    "lat": 32.477392,
-    "lng": 34.965236,
+    "lat": 32.477372,
+    "lng": 34.965245,
     "source": "festival",
     "spread": true
    },
    "address": "החורש 36 · פלייבק בשבילים",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 20,
+   "seats": 40,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
+    "availableSeats": 16,
+    "isFull": false,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -8153,7 +8064,7 @@
    "date": "2026-10-31",
    "hour": "16:00",
    "audience": "רק למבוגרים",
-   "note": "* סוד יכולת הבריאה של הרימון: המיסטיקה של עוררות החושניות, זרימת חיים חיונית ושפע. * הפרדוקס הקבלי של הזרעים: פרספקטיבה חדשה על \"פוטנציאל\" ואיך הוא מתממש. * קריסת הזמן הליניארי: התחברות לציר זמן פנימי לקפיצת זמן שיאיץ את הגשמת הרצונות שלך בקלות ובחן. * טקס בריאה מקודש: כוונות משותפות ומוזיקה שייתנו צורה פיזית למה שמחכה להוולד בשבילך השנה. מָה לְהָבִיא: 2 רימונים, ריח טוב של שמן אתרי או בשם טבעי כלי הקשה/פעמונים/חליל/מפוחית. לו\"ז: 13:30 התכנסות. 14:00 בדיוק - תחילת הטקס שימו לב: כדי לשמור על קדושה ומיקוד המרחב, לא ניתן יהיה להיכנס לאחר תחילת הטקס ב-14:00. מחכה לראות אתכן.ם. פרנסואז✨ נ.ב : אם תוכלו להביאו כרית או כישא קטן איתכם זה יהיה נפלא! · טקס יצירת מציאות דרך הזכרות חוכמה עתיקה חדשה · בהנחיית פרנסואז מיקאל",
+   "note": "* סוד יכולת הבריאה של הרימון: המיסטיקה של עוררות החושניות, זרימת חיים חיונית ושפע. * הפרדוקס הקבלי של הזרעים: פרספקטיבה חדשה על \"פוטנציאל\" ואיך הוא מתממש. * קריסת הזמן הליניארי: התחברות לציר זמן פנימי לקפיצת זמן שיאיץ את הגשמת הרצונות שלך בקלות ובחן. * טקס בריאה מקודש: כוונות משותפות ומוזיקה שייתנו צורה פיזית למה שמחכה להוולד בשבילך השנה. מָה לְהָבִיא: 2 רימונים, ריח טוב של שמן אתרי או בשם טבעי. כלי הקשה/פעמונים/חליל/מפוחית.נ.ב : אם תוכלו להביא גם כרית או כיסא קטן איתכם זה יהיה נפלא! לו\"ז: 15:30 התכנסות. 16:00 בדיוק - תחילת הטקס שימו לב: כדי לשמור על קדושה ומיקוד המרחב, לא ניתן יהיה להיכנס לאחר תחילת הטקס ב-14:00. מחכה לראות אתכן.ם. פרנסואז✨ · טקס יצירת מציאות דרך הזכרות חוכמה עתיקה חדשה · בהנחיית פרנסואז מיקאל",
    "url": "https://2026.hanadiv.org/event-page/2245",
    "links": [
     {
@@ -8180,9 +8091,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 4,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -8244,8 +8155,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477469,
-    "lng": 34.965257,
+    "lat": 32.47745,
+    "lng": 34.965264,
     "source": "festival",
     "spread": true
    },
@@ -8253,7 +8164,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 93,
+    "availableSeats": 95,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8329,9 +8240,9 @@
    "access": "נגיש · בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -8354,8 +8265,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477543,
-    "lng": 34.965289,
+    "lat": 32.477525,
+    "lng": 34.965294,
     "source": "festival",
     "spread": true
    },
@@ -8363,7 +8274,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 287,
+    "availableSeats": 279,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8401,7 +8312,7 @@
    "access": "נגיש · יש חניה",
    "seats": 40,
    "avail": {
-    "availableSeats": 5,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8469,7 +8380,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 258,
+    "availableSeats": 255,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8499,8 +8410,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477613,
-    "lng": 34.965333,
+    "lat": 32.477597,
+    "lng": 34.965336,
     "source": "festival",
     "spread": true
    },
@@ -8541,8 +8452,8 @@
    "access": "ידידותי לחיות · בחוץ",
    "seats": 35,
    "avail": {
-    "availableSeats": 3,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
     "registrationOpen": true
    }
@@ -8566,8 +8477,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477678,
-    "lng": 34.965386,
+    "lat": 32.477663,
+    "lng": 34.965388,
     "source": "festival",
     "spread": true
    },
@@ -8575,7 +8486,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 65,
+    "availableSeats": 60,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8603,7 +8514,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 100,
    "avail": {
-    "availableSeats": 55,
+    "availableSeats": 94,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8636,7 +8547,7 @@
    "access": "בפנים",
    "seats": 60,
    "avail": {
-    "availableSeats": 38,
+    "availableSeats": 36,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8711,7 +8622,7 @@
    "address": "הגאון 11 · סלון בבית פרטי",
    "seats": 20,
    "avail": {
-    "availableSeats": 17,
+    "availableSeats": 15,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8736,8 +8647,8 @@
     }
    ],
    "geo": {
-    "lat": 32.477737,
-    "lng": 34.965449,
+    "lat": 32.477722,
+    "lng": 34.96545,
     "source": "festival",
     "spread": true
    },
@@ -8745,7 +8656,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 120,
+    "availableSeats": 119,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8770,7 +8681,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477788,
+    "lat": 32.477775,
     "lng": 34.965521,
     "source": "festival",
     "spread": true
@@ -8890,7 +8801,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 8,
+    "availableSeats": 30,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8933,7 +8844,7 @@
    "access": "יש חניה · ידידותי לחיות · בפנים",
    "seats": 60,
    "avail": {
-    "availableSeats": 54,
+    "availableSeats": 52,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8999,7 +8910,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 200,
    "avail": {
-    "availableSeats": 166,
+    "availableSeats": 164,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9037,7 +8948,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 100,
    "avail": {
-    "availableSeats": 78,
+    "availableSeats": 76,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9080,7 +8991,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 74,
+    "availableSeats": 73,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9114,7 +9025,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477832,
+    "lat": 32.477819,
     "lng": 34.965599,
     "source": "festival",
     "spread": true
@@ -9123,7 +9034,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 257,
+    "availableSeats": 254,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9161,7 +9072,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 114,
+    "availableSeats": 112,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9191,7 +9102,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477866,
+    "lat": 32.477854,
     "lng": 34.965684,
     "source": "festival",
     "spread": true
@@ -9200,7 +9111,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 105,
+    "availableSeats": 104,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9273,8 +9184,8 @@
     }
    ],
    "geo": {
-    "lat": 32.474915,
-    "lng": 34.969787,
+    "lat": 32.474865,
+    "lng": 34.969912,
     "source": "landmark",
     "spread": true
    },
@@ -9316,7 +9227,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477891,
+    "lat": 32.47788,
     "lng": 34.965773,
     "source": "festival",
     "spread": true
@@ -9325,7 +9236,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 288,
+    "availableSeats": 287,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9359,7 +9270,7 @@
     }
    ],
    "geo": {
-    "lat": 32.477906,
+    "lat": 32.477895,
     "lng": 34.965865,
     "source": "festival",
     "spread": true
@@ -9368,7 +9279,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 118,
+    "availableSeats": 116,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9376,9 +9287,9 @@
   }
  ],
  "stats": {
-  "events": 255,
-  "venues": 92,
-  "placed": 245,
-  "photos": 293
+  "events": 252,
+  "venues": 90,
+  "placed": 242,
+  "photos": 290
  }
 }
