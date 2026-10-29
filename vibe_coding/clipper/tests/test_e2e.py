@@ -125,6 +125,7 @@ with sync_playwright() as p:
     page.mouse.move(cx, cy); page.mouse.wheel(0, 300)
     z = page.evaluate("__clipper.set.zoom")
     check(z < cz - 0.1, f"גלגלת למטה מקטינה (זום {z:.2f})")
+    page.click("[data-tab='text']")
     page.check("#chkText")
     page.fill("#inTextTop", "מפגש 9: נשימה")
     page.fill("#inTextBottom", "יורם · סדנת תנועה")
@@ -132,6 +133,7 @@ with sync_playwright() as p:
     page.screenshot(path=OUT / "1b_framing.png")
     page.click('[data-frame="whole"]')
     page.uncheck("#chkText")
+    page.click("[data-tab='format']")
     check(page.evaluate("__clipper.set.zoom") == 1, "'כל התמונה' מחזיר לזום 1")
 
     print("ייצוא")

@@ -22,6 +22,7 @@
       zoom: 1, px: 0.5, py: 0.5, fill: 'blur', fillColor: '#000000',      // המסגור הכללי
       textOn: false, textTop: '', textBottom: '', textSize: 7, textColor: '#ffffff',
       batchText: '',
+      captions: {},        // כיתובים לכל הקלטה: { 'שם|אורך': [כיתוב] }, ראה compose.js
       frames: {},          // מסגור נפרד לסרטונים מהרשימה: { 'מ-עד+מ-עד': { zoom, px, py } }
       corner: 'tr', logoSize: 18, logoOpacity: 0.9, logoAll: false,
       use: { intro: true, outro: true, logo: true },   // מה נכנס לסרטון (הקבצים נשארים גם כשלא מסומן)
@@ -37,6 +38,12 @@
   // ── עזרים ──────────────────────────────────────────────────────────────
   const plat = () => C.platform(S.set.platform);
   const safe = () => plat()?.safe || C.DEFAULT_SAFE;
+  // כיתובים נשמרים לפי ההקלטה (שם + אורך), כי הזמנים שלהם הם רגעים בהקלטה הזו
+  const capKey = () => (S.file ? `${S.file.name}|${Math.round(S.dur)}` : null);
+  const caps = () => { const k = capKey(); return k ? (S.set.captions[k] ||= []) : []; };
+  let capSel = null;     // id של הכיתוב שנערך
+  let capDrag = null;    // גרירת כיתוב על התצוגה
+  const capCur = () => caps().find((c) => c.id === capSel) || null;
   // ── מסגור לכל סרטון ─────────────────────────────────────────────────────
   // כשסרטון מהרשימה מסומן, הגרירה והזום חלים רק עליו (נשמר לפי הטווחים, כך שעריכה של
   // טקסט אחר בשורה לא מאבדת אותו). סרטון בלי מסגור משלו משתמש במסגור הכללי.
@@ -58,6 +65,7 @@
   const look = () => ({
     ...frameLook(F()), fill: S.set.fill, fillColor: S.set.fillColor,
     text: S.set.textOn ? { top: S.set.textTop, bottom: S.set.textBottom, size: S.set.textSize, color: S.set.textColor } : null,
+    captions: caps(),
     logo: logoOn() ? S.logoImg : null, safe: safe(),
     corner: S.set.corner, logoSize: S.set.logoSize, logoOpacity: S.set.logoOpacity,
   });
@@ -138,6 +146,7 @@
     if (S.mode === 'sequence' || S.mode === 'export') { drawGhost(); return; }
     C.compose.draw(pctx, S.file ? src : null, preview.width, preview.height, { ...look(), logoOn: logoOn(), fade: 0 });
     drawGuides(pctx, preview.width, preview.height);
+    drawCapFrame();
     setBadge(S.file ? 'stageMain' : '');
     drawGhost();
     if (S.mode === 'idle') snapMain();
@@ -224,6 +233,15 @@
   preview.addEventListener('pointerdown', (e) => {
     if (!canFrame()) return;
     preview.setPointerCapture(e.pointerId);
+    // כיתוב שמוצג עכשיו נגרר במקום התמונה
+    const hit = pointers.size === 0 && capAt(toFrame(e));
+    if (hit) {
+      selectCap(hit.id, false);
+      capDrag = { id: hit.id, start: toFrame(e), x: hit.x, y: hit.y };
+      pointers.set(e.pointerId, toFrame(e));
+      preview.classList.add('grabbing');
+      return;
+    }
     pointers.set(e.pointerId, toFrame(e));
     const r = C.compose.place(src, preview.width, preview.height, look());
     drag = { start: toFrame(e), px: F().px, py: F().py, sx: preview.width - r.w, sy: preview.height - r.h, pinch: null };
@@ -234,6 +252,16 @@
     preview.classList.add('grabbing');
   });
   preview.addEventListener('pointermove', (e) => {
+    if (capDrag && pointers.has(e.pointerId)) {
+      const c = caps().find((x) => x.id === capDrag.id);
+      const p = toFrame(e);
+      if (c) {
+        c.x = clamp(capDrag.x + (p[0] - capDrag.start[0]) / preview.width, 0, 1);
+        c.y = clamp(capDrag.y + (p[1] - capDrag.start[1]) / preview.height, 0, 1);
+        capChanged();
+      }
+      return;
+    }
     if (!drag || !pointers.has(e.pointerId)) return;
     const p = toFrame(e);
     pointers.set(e.pointerId, p);
@@ -250,7 +278,7 @@
   });
   const endDrag = (e) => {
     pointers.delete(e.pointerId);
-    if (pointers.size === 0) { drag = null; preview.classList.remove('grabbing'); }
+    if (pointers.size === 0) { drag = null; capDrag = null; preview.classList.remove('grabbing'); }
   };
   preview.addEventListener('pointerup', endDrag);
   preview.addEventListener('pointercancel', endDrag);
@@ -290,16 +318,21 @@
     S.selIn = a; S.selOut = b;
     if (!fromTimeline) tl.setSelection(a, b);
     updateTimes();
+    writeBack();        // שורה מהרשימה מסומנת: הדיוק נכתב אליה
     updateBatchSum();   // הסיכום למטה ובלשונית תלוי באורך הקטע
   }
 
   // ── טיימליין ───────────────────────────────────────────────────────────
   const tl = C.Timeline($('timeline'), $('tlWrap'), {
     onSeek: (tt) => { stopAll(); src.currentTime = tt; tl.setPlayhead(tt); updateTimes(); },
-    onSelect: (a, b) => setSelection(a, b, true),
+    onSelect: (a, b, kind) => {
+      // גרירה של קטע חדש היא בחירה חדשה, לא דיוק של השורה המסומנת. הזזת קצה כן מדייקת אותה.
+      if (kind === 'track' && B.cur) { B.cur = null; markCur(); }
+      setSelection(a, b, true);
+    },
     onScrub: (on) => { S.scrubbing = on; },
     onZoom: () => { $('rngZoom').value = tl.getZoom01(); },
-    onRange: (key) => { const it = B.items.find((x) => x.text === key); if (it) showItem(it); },
+    onRange: (key, k) => { const it = B.items.find((x) => x.text === key); if (it) showItem(it, k); },
   });
 
   src.addEventListener('seeked', () => { drawPreview(); tl.setPlayhead(src.currentTime); updateTimes(); });
@@ -334,8 +367,11 @@
     sizePreview();
     tl.setDuration(S.dur, src.videoWidth / src.videoHeight);
     $('rngZoom').value = 0;
-    // ברירת מחדל: כל הסרטון, עד דקה
+    // ברירת מחדל: כל הסרטון, עד דקה. בלי שורה מסומנת, כדי שהבחירה הזו לא תיכתב לרשימה
+    B.cur = null; capSel = null;
     setSelection(0, Math.min(S.dur, 60));
+    renderCaps();
+    Promise.all(caps().map(C.ensureFont)).then(drawPreview);
     drawPreview();
     updateTimes();
     B.status.clear();
@@ -426,7 +462,7 @@
   function buildParts(ranges = [[S.selIn, S.selOut]], frame = F()) {
     const parts = [];
     // פתיחה וסיום אף פעם לא נחתכים: יש בהם טקסט וכתובות שחייבים להיראות במלואם
-    const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null };
+    const brandLook = { zoom: 1, px: 0.5, py: 0.5, text: null, captions: null };
     if (useIntro()) parts.push({ video: introV, from: 0, to: introV.duration, logo: S.set.logoAll && logoOn(), look: brandLook, label: t('stageIntro') });
     ranges.forEach(([from, to], k) => parts.push({
       video: src, from, to, logo: logoOn(), look: frameLook(frame),
@@ -468,6 +504,7 @@
   // ── ייצוא ──────────────────────────────────────────────────────────────
   /** מקליט רצף אחד לקובץ. ההתקדמות מדווחת דרך onProgress(שבר, תווית). */
   async function makeVideo(parts, onProgress) {
+    await Promise.all(caps().map(C.ensureFont));   // קנבס לא מחכה לגופן, אז מחכים לו לפני שמתחילים
     const fmt = C.sequencer.pickFormat();
     const { W, H } = outSize();
     const cv = document.createElement('canvas');
@@ -630,17 +667,17 @@
 
   /** הקטעים מהרשימה כפסים ממוספרים על הטיימליין */
   function sendRanges() {
-    tl.setRanges(B.items.filter(okItem).flatMap((it) => it.ranges.map(([a, b]) => ({
-      a, b, n: it.n, key: it.text, on: !B.off.has(it.text), cur: B.cur === it.text,
+    tl.setRanges(B.items.filter(okItem).flatMap((it) => it.ranges.map(([a, b], k) => ({
+      a, b, n: it.n, k, key: it.text, on: !B.off.has(it.text), cur: B.cur === it.text,
     }))));
   }
 
-  function showItem(it) {
+  /** k = איזה טווח בשורה (בשורה עם And). הוא נבחר על הטיימליין, ועליו חלים הדיוקים. */
+  function showItem(it, k = 0) {
     if (!S.file || S.mode === 'export') return;
     stopAll();
-    B.cur = it.text; markCur();
-    // הטווח הראשון נבחר על הטיימליין; בשורה עם And רואים את כולם ב-▶
-    const [a, b] = it.ranges[0];
+    B.cur = it.text; B.curRange = clamp(k, 0, it.ranges.length - 1); markCur();
+    const [a, b] = it.ranges[B.curRange];
     setSelection(a, b);
     src.currentTime = a;
     const pad = Math.max(2, (b - a) * 0.15);
@@ -675,6 +712,7 @@
 
   function renderTabSums() {
     const c = chosen();
+    $('sumText').textContent = caps().length ? t('sumCaps', caps().length) : S.set.textOn ? t('sumBands') : '';
     $('sumClips').textContent = B.items.some((it) => it.n) ? t('sumList', c.length) : S.file ? t('sumOne', short(S.selOut - S.selIn)) : '';
     $('sumFormat').textContent = `${platName()} · ${S.set.format === 'source' ? t('fmtSource') : S.set.format}`;
     const parts = [useIntro() && t('blkIntro'), useOutro() && t('blkOutro'), logoOn() && t('slotLogo')].filter(Boolean);
@@ -799,6 +837,214 @@
   $('btnBatchCancel').addEventListener('click', () => { B.cancel = true; if (S.seq) S.seq.abort(); });
 
   $('btnCancel').addEventListener('click', () => { if (S.seq) S.seq.abort(); });
+
+  // ── דיוק: הזזת ההתחלה והסוף בשניות ובעשיריות ───────────────────────────
+  document.querySelectorAll('[data-nudge]').forEach((b) => b.addEventListener('click', () => {
+    if (!S.file) return;
+    const [w, d] = b.dataset.nudge.split(':');
+    if (w === 'in') setSelection(clamp(S.selIn + +d, 0, S.selOut - 0.1), S.selOut);
+    else setSelection(S.selIn, clamp(S.selOut + +d, S.selIn + 0.1, S.dur));
+    stopAll();
+    src.currentTime = w === 'in' ? S.selIn : S.selOut;   // רואים את הפריים שבו חותכים
+  }));
+  // שתי השניות שליד החיתוך: אחרי ההתחלה, ולפני הסוף. בדרך כלל שומעים איפה לחתוך לפני שרואים
+  document.querySelectorAll('[data-listen]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.listen === 'in') play(S.selIn, Math.min(S.selOut, S.selIn + 2));
+    else play(Math.max(S.selIn, S.selOut - 2), S.selOut);
+  }));
+
+  /** כששורה מהרשימה מסומנת, כל שינוי בקטע נכתב לשורה עצמה (כולל חלקי שנייה, 02.49,5) */
+  let wbTimer = null;
+  function writeBack() {
+    const it = curItem();
+    const k = B.curRange || 0;
+    if (!it || !it.ranges[k]) return;
+    const [a0, b0] = it.ranges[k];
+    if (Math.abs(a0 - S.selIn) < 0.005 && Math.abs(b0 - S.selOut) < 0.005) return;
+    const text = C.batch.setRange(it.text, k, S.selIn, S.selOut);
+    const lines = normLines(S.set.batchText).split('\n');
+    lines[it.line - 1] = lines[it.line - 1].replace(it.text, text);
+    S.set.batchText = lines.join('\n');
+    $('inBatch').value = S.set.batchText;
+    // מה שנשמר לפי הטקסט או הטווחים של השורה עובר איתה
+    const fr = S.set.frames[frameKey(it)];
+    if (fr) { delete S.set.frames[frameKey(it)]; S.set.frames[frameKey(C.batch.parse(text)[0])] = fr; }
+    if (B.off.delete(it.text)) B.off.add(text);
+    B.status.delete(it.text);
+    B.cur = text;
+    renderBatch();
+    clearTimeout(wbTimer);
+    wbTimer = setTimeout(saveSettings, 400);
+    toast(t('batchUpdated', curItem()?.n, text), 2500);
+  }
+
+  // ── כיתובים ────────────────────────────────────────────────────────────
+  const CAP_DEFAULT = { font: 'rubik', size: 6, bold: true, color: '#ffffff', style: 'outline', bg: '#000000', x: 0.5, y: 0.86 };   // y: בפועל לפי האזור הבטוח
+
+  function renderCaps() {
+    const list = [...caps()].sort((p, q) => p.a - q.a);
+    const box = $('capList');
+    box.innerHTML = '';
+    for (const c of list) {
+      const b = document.createElement('button');
+      b.className = 'cap-item';
+      b.classList.toggle('cur', c.id === capSel);
+      const tm = document.createElement('span'); tm.className = 'ct'; tm.textContent = `${short(c.a)}–${short(c.b)}`;
+      const tx = document.createElement('span'); tx.className = 'cx'; tx.textContent = c.text || '…';
+      tx.style.fontFamily = C.fontStack(c.font);
+      b.append(tm, tx);
+      b.addEventListener('click', () => selectCap(c.id, true));
+      box.appendChild(b);
+    }
+    $('btnCapAdd').disabled = !S.file;
+    const c = capCur();
+    $('capEdit').hidden = !c;
+    if (c) {
+      if (document.activeElement !== $('inCapText')) $('inCapText').value = c.text;
+      if (document.activeElement !== $('inCapA')) $('inCapA').value = fmtTime(c.a);
+      if (document.activeElement !== $('inCapB')) $('inCapB').value = fmtTime(c.b);
+      $('selCapFont').value = c.font;
+      $('chkCapBold').checked = !!c.bold;
+      $('chkCapBold').disabled = !!C.font(c.font).noBold;
+      $('rngCapSize').value = c.size;
+      $('inCapColor').value = c.color;
+      $('inCapBg').value = c.bg;
+      $('inCapBg').hidden = c.style !== 'box';
+      document.querySelectorAll('#segCapStyle button').forEach((x) => x.classList.toggle('on', x.dataset.v === c.style));
+    }
+    tl.setCaptions(caps().map((x) => ({ a: x.a, b: x.b, cur: x.id === capSel })));
+    renderTabSums();
+  }
+
+  function fillFonts() {
+    $('selCapFont').innerHTML = '';
+    for (const f of C.FONTS) {
+      const o = document.createElement('option');
+      o.value = f.id; o.textContent = f.name; o.style.fontFamily = f.css;
+      $('selCapFont').appendChild(o);
+    }
+  }
+
+  /** seek: לקפוץ לרגע שבו הכיתוב מופיע, כדי לראות אותו בתצוגה */
+  function selectCap(id, seek) {
+    capSel = id;
+    const c = capCur();
+    if (c && seek) { stopAll(); src.currentTime = Math.min(c.a + 0.05, (c.a + c.b) / 2); }
+    if (S.set.tab !== 'text') setTab('text');
+    renderCaps();
+    drawPreview();
+  }
+
+  let capTimer = null;
+  function capChanged(fontToo) {
+    renderCaps();
+    if (S.mode !== 'play') drawPreview();
+    if (fontToo) { const c = capCur(); if (c) C.ensureFont(c).then(() => drawPreview()); }
+    clearTimeout(capTimer);
+    capTimer = setTimeout(saveSettings, 400);
+  }
+
+  /** הכיתוב העליון שמוצג עכשיו מתחת לנקודה, אם יש */
+  function capAt([X, Y]) {
+    if (!S.file) return null;
+    const on = C.compose.activeCaptions(caps(), src.currentTime);
+    for (let i = on.length - 1; i >= 0; i--) {
+      const r = C.compose.captionBox(pctx, preview.width, preview.height, on[i]);
+      if (X >= r.x && X <= r.x + r.w && Y >= r.y && Y <= r.y + r.h) return on[i];
+    }
+    return null;
+  }
+
+  /** מסגרת מקווקוות סביב הכיתוב שנערך. רק בתצוגה, לא בקובץ. */
+  function drawCapFrame() {
+    const c = capCur();
+    if (!c || !S.file || !C.compose.activeCaptions([c], src.currentTime).length) return;
+    const r = C.compose.captionBox(pctx, preview.width, preview.height, c);
+    pctx.save();
+    pctx.strokeStyle = '#c084fc';
+    pctx.lineWidth = 1.5;
+    pctx.setLineDash([5, 4]);
+    pctx.strokeRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+    pctx.restore();
+  }
+
+  $('btnCapAdd').addEventListener('click', () => {
+    if (!S.file) { toast(t('noVideo')); return; }
+    stopAll();
+    const a = src.currentTime;
+    // כיתוב חדש מקבל את העיצוב של הקודם, כדי שכל הכיתובים ייראו אותו דבר בלי לבחור שוב
+    const prev = capCur() || caps()[caps().length - 1] || { ...CAP_DEFAULT, y: placeY('bottom') };
+    const style = Object.fromEntries(Object.keys(CAP_DEFAULT).map((k) => [k, prev[k] ?? CAP_DEFAULT[k]]));
+    const c = { ...style, id: Date.now().toString(36), text: t('capNew'), a, b: Math.min(S.dur, a + 3) };
+    caps().push(c);
+    selectCap(c.id, true);
+    capChanged(true);
+    $('inCapText').focus();
+    $('inCapText').select();
+  });
+  $('inCapText').addEventListener('input', (e) => { const c = capCur(); if (c) { c.text = e.target.value; capChanged(true); } });
+  for (const [id, which] of [['inCapA', 'a'], ['inCapB', 'b']]) {
+    const el = $(id);
+    const commit = () => {
+      const c = capCur(); if (!c) return;
+      const v = parseTime(el.value);
+      if (!isNaN(v)) setCapTime(c, which, v);
+      el.value = fmtTime(c[which]);
+    };
+    el.addEventListener('change', commit);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { commit(); el.blur(); } });
+  }
+  /** שינוי ההופעה מזיז גם את ההיעלמות (אותו אורך), אם הוא היה עובר אותה */
+  function setCapTime(c, which, v) {
+    v = clamp(v, 0, S.dur);
+    if (which === 'a') {
+      const len = c.b - c.a;
+      c.a = v;
+      if (c.b <= v + 0.1) c.b = Math.min(S.dur, v + Math.max(0.5, len));
+      stopAll(); src.currentTime = Math.min(c.a + 0.05, c.b);
+    } else {
+      c.b = Math.max(v, c.a + 0.1);
+    }
+    capChanged();
+  }
+  $('btnCapA').addEventListener('click', () => { const c = capCur(); if (c) setCapTime(c, 'a', src.currentTime); });
+  $('btnCapB').addEventListener('click', () => {
+    const c = capCur(); if (!c) return;
+    if (src.currentTime <= c.a) { toast(t('capEndBeforeStart')); return; }
+    setCapTime(c, 'b', src.currentTime);
+  });
+  $('selCapFont').addEventListener('change', (e) => { const c = capCur(); if (c) { c.font = e.target.value; capChanged(true); } });
+  $('chkCapBold').addEventListener('change', (e) => { const c = capCur(); if (c) { c.bold = e.target.checked; capChanged(true); } });
+  $('rngCapSize').addEventListener('input', (e) => { const c = capCur(); if (c) { c.size = +e.target.value; capChanged(); } });
+  $('inCapColor').addEventListener('input', (e) => { const c = capCur(); if (c) { c.color = e.target.value; capChanged(); } });
+  $('inCapBg').addEventListener('input', (e) => { const c = capCur(); if (c) { c.bg = e.target.value; capChanged(); } });
+  $('segCapStyle').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); const c = capCur(); if (!b || !c) return;
+    c.style = b.dataset.v; capChanged();
+  });
+  /** למעלה / באמצע / למטה, בתוך האזור הבטוח של הרשת, כדי שהכפתורים שלה לא יכסו את הכיתוב */
+  const placeY = (k) => (k === 'top' ? safe().top + 0.05 : k === 'bottom' ? 1 - safe().bottom - 0.05 : 0.5);
+  $('segCapPlace').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); const c = capCur(); if (!b || !c) return;
+    c.x = 0.5; c.y = placeY(b.dataset.place); capChanged();
+  });
+  $('btnCapPlay').addEventListener('click', () => { const c = capCur(); if (c) play(Math.max(0, c.a - 1), Math.min(S.dur, c.b + 0.5)); });
+  $('btnCapDup').addEventListener('click', () => {
+    const c = capCur(); if (!c) return;
+    const len = c.b - c.a;
+    const d = { ...c, id: Date.now().toString(36), a: Math.min(S.dur - 0.1, c.b), b: Math.min(S.dur, c.b + len) };
+    caps().push(d);
+    selectCap(d.id, true);
+    capChanged();
+  });
+  $('btnCapDel').addEventListener('click', () => {
+    const list = caps(), i = list.findIndex((c) => c.id === capSel);
+    if (i < 0) return;
+    list.splice(i, 1);
+    capSel = null;
+    capChanged();
+  });
+  $('btnCapDone').addEventListener('click', () => { capSel = null; capChanged(); });
 
   // ── הגדרות פורמט ───────────────────────────────────────────────────────
   function syncControls() {
@@ -1087,16 +1333,18 @@
   $('btnLog').addEventListener('click', () => C.log.download());
   $('btnLang').addEventListener('click', () => {
     C.setLang(C.lang === 'he' ? 'en' : 'he');
-    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch(); renderStruct();
+    renderPlatforms(); sizePreview(); renderBrandStatus(); drawPreview(); updateTimes(); renderBatch(); renderStruct(); renderCaps();
   });
 
   // ── אתחול ──────────────────────────────────────────────────────────────
   (async () => {
     C.applyI18n();
+    fillFonts();
     const saved = await C.store.get('settings');
     if (saved) { delete saved.fit; delete saved.focus; Object.assign(S.set, saved); }   // fit/focus: לפני שהיה מסגור חופשי
     if (S.set.platform && C.platform(S.set.platform)?.format !== S.set.format) S.set.platform = null;
     S.set.use = { intro: true, outro: true, logo: true, ...(S.set.use || {}) };
+    S.set.captions ||= {};
     syncControls();
     setTab(S.set.tab || 'clips');
     renderBatch();

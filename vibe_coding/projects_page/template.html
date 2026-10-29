@@ -306,8 +306,8 @@
         /* The arrows sit beside the picture, level with its middle: big, wide
            and short, so no one misses that there is more to see. They stand
            outside the face when the screen has room, and over its edges when
-           it does not. Prev is on the right: on a right-to-left page that is
-           back. */
+           it does not. Next is on the right, so one press to the right brings
+           the second slide. */
         .stage-arrow {
             --aw: 92px;
             --gap: max(calc(-1 * (var(--aw) + 28px)), calc((var(--sw) - 100vw) / 2 + 8px));
@@ -328,8 +328,8 @@
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
             animation: stage-arrow-call 1.6s ease-in-out 1s 2;
         }
-        .stage-prev { right: var(--gap); }
-        .stage-next { left: var(--gap); }
+        .stage-next { right: var(--gap); }
+        .stage-prev { left: var(--gap); }
         .stage-arrow:hover {
             background: #4f46e5;
             border-color: #a5b4fc;
@@ -846,7 +846,7 @@
         j = (j + n) % n;
         if (j === idx || busy) return;
         if (!dir) dir = j > idx ? 1 : -1;
-        var k = (front - dir + 3) % 3;
+        var k = (front + dir + 3) % 3;
         var img = fill(k, slides[j]);
         busy = true;
         // wait (briefly) for the picture, so the face does not roll in empty
@@ -854,7 +854,7 @@
         Promise.race([ready, new Promise(function (r) { setTimeout(r, 600); })])
             .catch(function () {})
             .then(function () {
-                rot += dir * 120;
+                rot -= dir * 120;
                 inner.style.setProperty('--rot', rot + 'deg');
                 front = k; idx = j;
                 mark(true);
@@ -903,19 +903,19 @@
         p.addEventListener('click', function () { go(i); schedule(); });
     });
     stage.addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowLeft') { step(1); e.preventDefault(); }
-        else if (e.key === 'ArrowRight') { step(-1); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { step(1); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft') { step(-1); e.preventDefault(); }
     });
 
-    // swipe: dragging the picture to the right brings in the next one from
-    // the left, the way the roll goes
+    // swipe: dragging the picture to the left brings in the next one from
+    // the right, the way the roll goes
     var flip = stage.querySelector('.stage-flip'), x0 = null, y0 = 0, dragged = false;
     flip.addEventListener('pointerdown', function (e) { x0 = e.clientX; y0 = e.clientY; dragged = false; });
     flip.addEventListener('pointerup', function (e) {
         if (x0 === null) return;
         var dx = e.clientX - x0, dy = e.clientY - y0;
         x0 = null;
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { dragged = true; step(dx > 0 ? 1 : -1); }
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { dragged = true; step(dx < 0 ? 1 : -1); }
     });
     flip.addEventListener('dragstart', function (e) { e.preventDefault(); });
     faces.forEach(function (f) {

@@ -95,6 +95,7 @@
         {
           "title": "Letras — מילות שירים",
           "icon": "🎤",
+          "stage_second": true,
           "theme": "t-purple",
           "tags": [
             "Flask",
