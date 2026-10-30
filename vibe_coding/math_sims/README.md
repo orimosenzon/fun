@@ -54,6 +54,24 @@
 ./render.sh --hd scenes/constructions.py
 ```
 
+## הסרטון השלישי: מי יקים את הממשלה?
+
+`videos/coalition.mp4`, 1080p, כ-15.5 דקות. תשעת תרחישי הקואליציה של האפליקציה [coalition26](../coalition26/) אחרי הבחירות לכנסת ה-26:
+לכל תרחיש, חצי עיגול של הכנסת שמתארגן מחדש, ספירת קולות בהצבעת האמון, מד יציבות עם הגורמים, ההבטחות שנשברות,
+איפה נוחתת המדיניות בנושאים המרכזיים, ומה צריך לקרות. בפתיחה: הכנסת והגושים, וכלל "יותר בעד מנגד". בסוף: השוואה.
+
+המספרים לא מועתקים ביד. `compute/coalition_data.mjs` טוען את `coalition26/data.js` ואת פונקציות החישוב מתוך `app.js` עצמו,
+ומייצא ל-`data/coalition26.json`. הקריינות כתובה ביד, ו-`scenes/coalition.py` נכשל בטעינה אם המספרים בה לא תואמים לנתונים.
+
+```bash
+node compute/coalition_data.mjs            # אחרי כל שינוי ב-data.js
+./render.sh --hd scenes/coalition.py
+```
+
+בדיקת הגייה: `compute/check_speech.py` מקריא שורות ומתמלל בחזרה עם ivrit-ai
+(`PYTHONPATH=~/.local/lib/python3.10/site-packages .venv/bin/python compute/check_speech.py "שורה"`).
+כך התגלה ש-ח"כים נקרא "קיים", ולכן בקריינות כתוב "חברי כנסת".
+
 התשתית המשותפת (עברית, קריינות, כיתוביות) נמצאת ב-`scenes/common.py`. בזטה יש עדיין עותק משלה.
 
 ## הרצה
