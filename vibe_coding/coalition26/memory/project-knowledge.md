@@ -24,6 +24,10 @@
 ## בדיקה
 `python3 -m http.server 8765` בתיקייה. סקריפט Playwright שמוודא שכל תרחיש נטען, מתאים לכרטיס, ועובר/נכשל כצפוי היה ב-scratchpad של הסשן; כדאי להעביר ל-`tools/` אם ממשיכים.
 
+## פריסה
+LIVE ב-GitHub Pages (ה-push הוא הפריסה): https://orimosenzon.github.io/fun/vibe_coding/coalition26/
+קישור מקוצר לפרסום: https://is.gd/miyakim. כרטיס בדף הפרויקטים.
+תצוגה מקדימה ואייקון: `python3 tools/make_assets.py` מייצר og.png, favicon.svg, favicon-32.png ו-apple-touch-icon.png מתוך data.js. להריץ מחדש אם המנדטים משתנים.
+
 ## הבא
-- להעלות לאוויר (Pages דרך ריפו fun) ולהוסיף כרטיס בדף הפרויקטים.
 - לעקוב אחרי המו"מ ולעדכן data.js.
