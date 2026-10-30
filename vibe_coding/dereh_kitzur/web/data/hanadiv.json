@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-28T22:05:04Z",
+ "updated": "2026-10-29T22:05:06Z",
  "source": "https://2026.hanadiv.org/",
  "name": "אירועי דרך הנדיב 2026",
  "festival": {
@@ -66,7 +66,7 @@
     }
    ],
    "geo": {
-    "lat": 32.475535,
+    "lat": 32.475524,
     "lng": 35.0013,
     "source": "osm",
     "spread": true
@@ -78,7 +78,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -111,40 +111,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
-   }
-  },
-  {
-   "id": "hanadiv-2078",
-   "name": "מעגל שיחה וכתיבה לאמהות בטבע",
-   "group": "סדנאות ויצירה",
-   "craft": "סדנא חווייתית",
-   "when": "יום חמישי 29.10 · 09:30 · שעתיים",
-   "date": "2026-10-29",
-   "hour": "09:30",
-   "audience": "רק למבוגרים",
-   "note": "מפגש שבו נגע בנושאים של אמהות, הריון ולידה, הגוף והנפש והמעבר לאמהות, נדבר על יצירה ונתנסה בתרגילי כתיבה. המפגש בהנחיית נעה ישראלי רוזנברג מחברת הספר \"חדר המתנה\" (הוצאת כנרת זמורה) · מעגל שיחה וכתיבה לאמהות, בהשראת הספר \"חדר המתנה\" · בהנחיית נעה ישראלי רוזנברג",
-   "url": "https://2026.hanadiv.org/event-page/2078",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp",
-     "full": "https://api.hanadiv.org/images/27368aad0e09db651ae050c709ddb5fc4be211183432e4d826c307af1234cdc1.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.461181,
-    "lng": 34.977432,
-    "source": "festival"
-   },
-   "address": "עמל 1 · חורשת האלונים ברחוב עמל פינת הצפירה",
-   "access": "יש חניה · בחוץ",
-   "seats": 25,
-   "avail": {
-    "availableSeats": 4,
-    "isFull": false,
-    "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -178,7 +145,7 @@
     "availableSeats": 39,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -221,7 +188,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -254,7 +221,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -284,10 +251,10 @@
    "access": "בפנים",
    "seats": 14,
    "avail": {
-    "availableSeats": 1,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -325,19 +292,19 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
    "id": "hanadiv-2128",
-   "name": "קונסטלציה וכתיבה",
+   "name": "קונסטלציה וכתיבה 0544952979",
    "group": "סדנאות ויצירה",
    "craft": "סדנא חווייתית",
    "when": "יום חמישי 29.10 · 11:00 · 3 שעות",
    "date": "2026-10-29",
    "hour": "11:00",
    "audience": "רק למבוגרים",
-   "note": "מפגש בן 3 שעות בו נחווה מפגש קונסטלטיבי ומתוכו ניצור טקסטים מן הנשמה · סדנה בה המשלבת קונסטלציה מערכתית וכתיבה · בהנחיית סהר עדס · ינתנו בהמשך",
+   "note": "מפגש בן 3 שעות בו נחווה מפגש קונסטלטיבי ומתוכו ניצור טקסטים מן הנשמה 0544952979 · סדנה בה המשלבת קונסטלציה מערכתית וכתיבה0544952979 · בהנחיית סהר עדס · ינתנו בהמשך",
    "url": "https://2026.hanadiv.org/event-page/2128",
    "links": [],
    "photos": [
@@ -358,7 +325,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -370,7 +337,7 @@
    "date": "2026-10-29",
    "hour": "11:00",
    "audience": "לכל המשפחה",
-   "note": "אהלן חברים נעים להכיר, נהוראי רצון, צייר מפרדס חנה. אני פותח את ביתי אחרי תקופה לא פשוטה אני מצייר על חפצים וחומרים שנזרקו והפכו עבורי למצע ליצירה — מדלתות וחלונות ועד טלוויזיות ישנות. דרך הציור אני מבקש להחזיר צבע לחפצים שנשכחו, ולהפיץ את האמנות שלי ברחבי המושבה, במקומות שבהם אנשים חיים, עוברים ונפגשים. מבחינתי, אמנות לא חייבת להישאר בין ארבעה קירות של גלריה. היא יכולה לצאת לרחוב, לפגוש אנשים ולהפוך חלק מהמרחב המקומי בנוסף אני מארח אומן מקומי בשם מיכאל קרלמן (קצ'יין) הוא אמן בינלאומי יליד קייב, בוגר בהצטיינות של המכון לאמנויות בקייב. מאז עלייתו לישראל ב־1992 הציג את עבודותיו בתערוכות ובגלריות בארץ ובעולם, בין היתר בניו יורק, טורונטו ודבלין. יצירתו משלבת צבעוניות עשירה, טקסטורות עמוקות וטכניקות ייחודיות באקריליק, עם השפעות אמנותיות של מארק שאגאל. לאורך השנים הציג בתערוכות בינלאומיות, השתתף בפרויקטים אמנותיים ויצירותיו נמכרו במכירות פומביות ברחבי העולם. כעת, במסגרת יוזמה תרבותית מקומית לקראת פסטיבל הנדיב, אני פותח את ביתי לאחר תקופה לא פשוטה ומארח את מיכאל למפגש שמחבר בין אמנות, קהילה ואנשים. · בית פתוח · בהנחיית נהוראי רצון · יש מדרגות בכניסה חניה צמוד למקום",
+   "note": "*חברים יקרים* לצערי בעקבות נסיבות אישיות בלתי צפויות אני נאלץ לבטל את התערוכה שתוכננה למחר. לא פשוט לי לבטל ברגע האחרון ואני מתנצל בפני כולם על השינוי ותודה על ההבנה ❤️ בברכה נהוראי רצון הגראז׳ חברון 1 (לא הצלחתי להוריד את היוזמה שלי של חמישי ושישי ❤️) אהלן חברים נעים להכיר, נהוראי רצון, צייר מפרדס חנה. אני פותח את ביתי אחרי תקופה לא פשוטה אני מצייר על חפצים וחומרים שנזרקו והפכו עבורי למצע ליצירה — מדלתות וחלונות ועד טלוויזיות ישנות. דרך הציור אני מבקש להחזיר צבע לחפצים שנשכחו, ולהפיץ את האמנות שלי ברחבי המושבה, במקומות שבהם אנשים חיים, עוברים ונפגשים. מבחינתי, אמנות לא חייבת להישאר בין ארבעה קירות של גלריה. היא יכולה לצאת לרחוב, לפגוש אנשים ולהפוך חלק מהמרחב המקומי בנוסף אני מארח אומן מקומי בשם מיכאל קרלמן (קצ'יין) הוא אמן בינלאומי יליד קייב, בוגר בהצטיינות של המכון לאמנויות בקייב. מאז עלייתו לישראל ב־1992 הציג את עבודותיו בתערוכות ובגלריות בארץ ובעולם, בין היתר בניו יורק, טורונטו ודבלין. יצירתו משלבת צבעוניות עשירה, טקסטורות עמוקות וטכניקות ייחודיות באקריליק, עם השפעות אמנותיות של מארק שאגאל. לאורך השנים הציג בתערוכות בינלאומיות, השתתף בפרויקטים אמנותיים ויצירותיו נמכרו במכירות פומביות ברחבי העולם. כעת, במסגרת יוזמה תרבותית מקומית לקראת פסטיבל הנדיב, אני פותח את ביתי לאחר תקופה לא פשוטה ומארח את מיכאל למפגש שמחבר בין אמנות, קהילה ואנשים. · בית פתוח · בהנחיית נהוראי רצון · יש מדרגות בכניסה חניה צמוד למקום",
    "url": "https://2026.hanadiv.org/event-page/2104",
    "links": [],
    "photos": [
@@ -389,10 +356,10 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 17,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -423,10 +390,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 31,
+    "availableSeats": 28,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -462,10 +429,10 @@
    "access": "יש חניה · בפנים",
    "seats": 41,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -496,10 +463,10 @@
    "access": "יש חניה · בפנים",
    "seats": 22,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -529,10 +496,10 @@
    "access": "יש חניה",
    "seats": 10,
    "avail": {
-    "availableSeats": 8,
+    "availableSeats": 7,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -563,22 +530,22 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 4,
+    "availableSeats": 9,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
    "id": "hanadiv-2129",
-   "name": "כתיבה קונסטלטיבית · יום חמישי",
+   "name": "כתיבה קונסטלטיבית ליצירת קשר סהר עדס… · יום חמישי",
    "group": "הרצאות ומילים",
    "craft": "הגות ושירה",
    "when": "יום חמישי 29.10 · 15:30 · 3 שעות",
    "date": "2026-10-29",
    "hour": "15:30",
    "audience": "רק למבוגרים",
-   "note": "סדנה המשלבת קונסטלציה וכתיבה · לעורר את רוח הכתיבה באמצעות השראה מעולמות הקונסטלציה המערכתית משפחתית · בהנחיית סהר עדס",
+   "note": "כתיבה קונסטלטיבית ליצירת קשר סהר עדס 054-4-952979 · סדנה המשלבת קונסטלציה וכתיבה 054-4-952979 · לעורר את רוח הכתיבה באמצעות השראה מעולמות הקונסטלציה המערכתית משפחתית · בהנחיית סהר עדס",
    "url": "https://2026.hanadiv.org/event-page/2129",
    "links": [],
    "photos": [
@@ -600,7 +567,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -633,7 +600,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -667,7 +634,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -698,10 +665,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 2,
-    "isFull": false,
-    "hasWaitingList": false,
-    "registrationOpen": true
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
+    "registrationOpen": false
    }
   },
   {
@@ -731,10 +698,10 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 49,
    "avail": {
-    "availableSeats": 27,
+    "availableSeats": 3,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -767,7 +734,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -802,10 +769,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 150,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
+    "availableSeats": 1,
+    "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -844,7 +811,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -858,7 +825,12 @@
    "audience": "לכל המשפחה",
    "note": "נפגשים לשעה של צחוק, דמיון, המון תרגילים מגניבים מעולמות האקרו יוגה והקרקס- שמחברים את המשפחה יחד. · מפגש חוויתי, של משחק, תנועה, איזון ואמון בין הורים וילדים · בהנחיית שקד לב אור · יש חניה מס שלי זמין בוואטצאפ -למקרה שהסתבכתם- 0526627836",
    "url": "https://2026.hanadiv.org/event-page/2353",
-   "links": [],
+   "links": [
+    {
+     "url": "https://chat.whatsapp.com/D3GcVmMmzY5LtWBdWu9wi5?s=cl&p=i&mlu=4&ilr=4&iam=2",
+     "title": "קבוצת ווטסאפ"
+    }
+   ],
    "photos": [
     {
      "thumb": "https://api.hanadiv.org/images/6ba23180170ca3be514a9dcb5c8ecec105974ea8f54c76bcb5dd398c80125605.webp",
@@ -877,20 +849,20 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
    "id": "hanadiv-2322",
-   "name": "מסע אל ים האהבה - סיפורי אהבה וארוטיקה",
+   "name": "סיפורי אהבה וארוטיקה - מסע אל ים האהבה",
    "group": "הרצאות ומילים",
    "craft": "הרצאה",
    "when": "יום חמישי 29.10 · 16:30 · שעה וחצי",
    "date": "2026-10-29",
    "hour": "16:30",
    "audience": "רק למבוגרים",
-   "note": "ד\"ר יואל שלום פרץ, סופר, מרצה ומתרגם בהרצאה מרתקת המביאה סיפורי עם וסיפורים מודרניים בנושאי אהבה וארוטיקה · הרצאה בנושא סיפורי עם וסיפורים מודרניים הקשורים לאהבה ואירוטיקה · בהנחיית סמדר לב",
+   "note": "ד\"ר יואל שלום פרץ, סופר, מרצה ומתרגם במופע מרתק המביאה סיפורי עם וסיפורים מודרניים בנושאי אהבה וארוטיקה · מופע סיפורים - סיפורי אהבה ואירוטיקה · בהנחיית סמדר לב",
    "url": "https://2026.hanadiv.org/event-page/2322",
    "links": [],
    "photos": [
@@ -909,10 +881,10 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 20,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -943,10 +915,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 7,
+    "availableSeats": 6,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -980,7 +952,7 @@
     "availableSeats": 20,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1014,7 +986,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1045,10 +1017,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 16,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1082,7 +1054,7 @@
     "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1116,7 +1088,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1150,7 +1122,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1190,10 +1162,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 77,
+    "availableSeats": 68,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1231,8 +1203,8 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -1267,10 +1239,10 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 70,
    "avail": {
-    "availableSeats": 19,
+    "availableSeats": 5,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1301,10 +1273,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 272,
+    "availableSeats": 274,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1344,10 +1316,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 290,
+    "availableSeats": 289,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1378,10 +1350,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -1411,10 +1383,10 @@
    "access": "נגיש · בחוץ",
    "seats": 120,
    "avail": {
-    "availableSeats": 102,
+    "availableSeats": 105,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    },
    "stops": [
     {
@@ -1462,7 +1434,7 @@
     "availableSeats": 94,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1493,10 +1465,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 12,
    "avail": {
-    "availableSeats": 2,
+    "availableSeats": 4,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1527,10 +1499,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 276,
+    "availableSeats": 274,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1573,7 +1545,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1613,10 +1585,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 295,
+    "availableSeats": 291,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1647,10 +1619,10 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 8,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1681,10 +1653,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 71,
    "avail": {
-    "availableSeats": 3,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1715,10 +1687,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -1749,10 +1721,10 @@
    "access": "יש חניה",
    "seats": 80,
    "avail": {
-    "availableSeats": 42,
+    "availableSeats": 30,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1783,10 +1755,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 277,
+    "availableSeats": 267,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1819,7 +1791,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1831,7 +1803,7 @@
    "date": "2026-10-29",
    "hour": "19:00",
    "audience": "רק למבוגרים",
-   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי · חניה חינם באזורי כחול-לבן בסביבה. יש מעלית, נגיש לבעלי מוגבלויות.",
+   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי · - חייגו 36 באינטרקום. חניה חינם באזורי כחול-לבן בסביבה. יש מעלית, נגיש לבעלי מוגבלויות.",
    "url": "https://2026.hanadiv.org/event-page/2359",
    "links": [
     {
@@ -1857,12 +1829,12 @@
    },
    "address": "גינת אגוז 7 · V&A Studio",
    "access": "נגיש · יש חניה · בפנים",
-   "seats": 18,
+   "seats": 15,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1891,12 +1863,12 @@
    },
    "address": "החורש 36 · בית הספר \"שבילים\" , מתחם בית הספר היסודי. הכוונה לכיתה הספציפית תינתן ביום האירוע",
    "access": "בפנים",
-   "seats": 40,
+   "seats": 50,
    "avail": {
-    "availableSeats": 1,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1927,10 +1899,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 188,
+    "availableSeats": 183,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1955,10 +1927,10 @@
    "access": "יש חניה · ידידותי לחיות · בחוץ",
    "seats": 50,
    "avail": {
-    "availableSeats": 31,
+    "availableSeats": 36,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -1970,7 +1942,7 @@
    "date": "2026-10-29",
    "hour": "19:00",
    "audience": "לכל המשפחה",
-   "note": "בשיטת הכפתור תלמדו לנגן קצב ואקורדים בתוך שעה אחת. בואו ללמוד מאהבה שמעיה שהכשיר 6000 נגני גיטרה בישראל סדנה חוויתית וכיפית++ מתאימה למתחילים מה דרוש? להביא איתכם גיטרה מתאים מגילאי 11 ועד 88 · ניפגש לסדנת הכרות בשיטת הכפתור - בסופה תנגנו שיר אמיתי בגיטרה · בהנחיית אהבה שמעיה · -",
+   "note": "בשיטת הכפתור תלמדו לנגן קצב ואקורדים בתוך שעה אחת. ניגש במתנס, עליה מהרמפה - כיתת שקד בואו ללמוד מאהבה שמעיה שהכשיר 6000 נגני גיטרה בישראל סדנה חוויתית וכיפית++ מתאימה למתחילים מה דרוש? להביא איתכם גיטרה מתאים מגילאי 11 ועד 88 · ניפגש לסדנת הכרות בשיטת הכפתור - בסופה תנגנו שיר אמיתי בגיטרה · בהנחיית אהבה שמעיה · -",
    "url": "https://2026.hanadiv.org/event-page/2229",
    "links": [],
    "photos": [
@@ -1996,7 +1968,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2026,10 +1998,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 41,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 3,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -2060,10 +2032,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 86,
+    "availableSeats": 88,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2106,7 +2078,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2146,10 +2118,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 71,
+    "availableSeats": 66,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2180,10 +2152,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 300,
+    "availableSeats": 297,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2214,10 +2186,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 71,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 2,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -2252,10 +2224,10 @@
    "access": "יש חניה · בפנים",
    "seats": 45,
    "avail": {
-    "availableSeats": 12,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2286,10 +2258,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 279,
+    "availableSeats": 270,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2329,10 +2301,10 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 8,
-    "isFull": false,
+    "availableSeats": 0,
+    "isFull": true,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2374,8 +2346,8 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -2418,7 +2390,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2452,7 +2424,7 @@
     "availableSeats": 67,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2491,7 +2463,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2521,10 +2493,10 @@
    "access": "בפנים",
    "seats": 74,
    "avail": {
-    "availableSeats": 28,
+    "availableSeats": 9,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2555,10 +2527,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
-    "registrationOpen": true
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": false
    }
   },
   {
@@ -2601,7 +2573,7 @@
     "availableSeats": 46,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2640,10 +2612,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בפנים",
    "seats": 130,
    "avail": {
-    "availableSeats": 46,
+    "availableSeats": 33,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2683,10 +2655,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 284,
+    "availableSeats": 279,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2726,10 +2698,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 124,
+    "availableSeats": 122,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2760,10 +2732,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 144,
    "avail": {
-    "availableSeats": 52,
+    "availableSeats": 46,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2793,10 +2765,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 25,
    "avail": {
-    "availableSeats": 10,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2827,10 +2799,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 104,
+    "availableSeats": 105,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2870,10 +2842,10 @@
    "access": "נגיש · בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 3,
+    "availableSeats": 6,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2912,10 +2884,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 284,
+    "availableSeats": 282,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2953,10 +2925,10 @@
    "access": "נגיש · יש חניה",
    "seats": 70,
    "avail": {
-    "availableSeats": 61,
+    "availableSeats": 54,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -2989,7 +2961,7 @@
     "availableSeats": 20,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3029,10 +3001,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 108,
+    "availableSeats": 105,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3063,10 +3035,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 245,
+    "availableSeats": 216,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3097,10 +3069,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 195,
+    "availableSeats": 193,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3133,7 +3105,7 @@
     "availableSeats": 0,
     "isFull": true,
     "hasWaitingList": true,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3164,10 +3136,10 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 88,
+    "availableSeats": 83,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3207,10 +3179,10 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 24,
+    "availableSeats": 23,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3250,10 +3222,10 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 48,
+    "availableSeats": 47,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3289,10 +3261,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 97,
+    "availableSeats": 88,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3328,10 +3300,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 113,
+    "availableSeats": 115,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3371,10 +3343,10 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 283,
+    "availableSeats": 281,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
+    "registrationOpen": false
    }
   },
   {
@@ -3382,9 +3354,9 @@
    "name": "יסודות הזן, תיאוריה ותרגול מעשי (6:45-7:45)",
    "group": "סדנאות ויצירה",
    "craft": "סדנא חווייתית",
-   "when": "יום שישי 30.10 · 08:00 · שעה",
+   "when": "יום שישי 30.10 · 06:45 · שעה",
    "date": "2026-10-30",
-   "hour": "08:00",
+   "hour": "06:45",
    "audience": "רק למבוגרים",
    "note": "זן בודהיזם במסורת הקוריאנית, המוכר בקוריאה בשם סון (Seon - 선), הוא זרם ייחודי ומרתק שהתפתח במקביל לצ'אן הסיני ולזן היפני, אך שמר על מאפיינים תרבותיים ורוחניים הייחודיים לו. במאה ה-20, הזן הקוריאני נפתח לעולם המערבי, בעיקר בזכות המאסטר הגדול סונג סאן שהנגיש את התרגול הקוריאני המסורתי לאנשי המערב בשפה פשוטה וישירה (\"Don't Know Mind\"). במפגש זה נסביר על יסודות תורת הזן ונתנסה בתרגול מעשי. את התרגול יעביר מורה זן מוסמך במסורת זו. * *** שימו לב. המפגש יערך בין השעות 6:45-7:45 בבוקר **** · מפגש היכרות עם זן בודהיזם מהמסורת הקוריאנית (המפגש יערך בין השעות 6:45-7:45 בבוקר) · בהנחיית בועז פרנקלין · שיוך ארוע רק בתאום עם בעל המקום לינק למפה להגעה https://maps.app.goo.gl/rEPoRrTtKMVVXsbS8",
    "url": "https://2026.hanadiv.org/event-page/2317",
@@ -3415,7 +3387,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -3452,9 +3424,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 101,
    "avail": {
-    "availableSeats": 17,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -3597,9 +3569,9 @@
    "access": "יש חניה · בחוץ",
    "seats": 44,
    "avail": {
-    "availableSeats": 13,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -3622,7 +3594,7 @@
     }
    ],
    "geo": {
-    "lat": 32.468724,
+    "lat": 32.468735,
     "lng": 34.957456,
     "source": "festival",
     "spread": true
@@ -3656,8 +3628,8 @@
     }
    ],
    "geo": {
-    "lat": 32.475457,
-    "lng": 35.001459,
+    "lat": 32.475424,
+    "lng": 35.001462,
     "source": "osm",
     "spread": true
    },
@@ -3710,7 +3682,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -3742,9 +3714,9 @@
    "access": "יש חניה · בחוץ",
    "seats": 31,
    "avail": {
-    "availableSeats": 18,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -3833,8 +3805,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/89209800c23b2d08f3399d5ba7a0e348be3f98cb3fe4933977ff100f8a170ca9.webp",
-     "full": "https://api.hanadiv.org/images/89209800c23b2d08f3399d5ba7a0e348be3f98cb3fe4933977ff100f8a170ca9.webp"
+     "thumb": "https://api.hanadiv.org/images/3cd8975042416a8d4d55449ef5c5a016abaca4a3cb514d85a99e508302acc8f6.webp",
+     "full": "https://api.hanadiv.org/images/3cd8975042416a8d4d55449ef5c5a016abaca4a3cb514d85a99e508302acc8f6.webp"
     }
    ],
    "geo": {
@@ -3846,7 +3818,7 @@
    "access": "יש חניה · בפנים",
    "seats": 17,
    "avail": {
-    "availableSeats": 9,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -3879,7 +3851,7 @@
    "access": "בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 2,
+    "availableSeats": 1,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4104,7 +4076,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 276,
+    "availableSeats": 268,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4138,7 +4110,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 144,
    "avail": {
-    "availableSeats": 109,
+    "availableSeats": 98,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4153,7 +4125,7 @@
    "date": "2026-10-30",
    "hour": "10:30",
    "audience": "רק למבוגרים",
-   "note": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה. בסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור. בהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה. *התכנית* פתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי. סיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך. *על התהליך* נשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים. המיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות! *שני הכלים הפשוטים שנלמד* מאתר חזותי: חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף. כלי להשוואת גדלים: שיפוד עץ – כלי פשוט ויעיל מאוד. · נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון. · בהנחיית ישראל ינקלוביץ' · בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
+   "note": "תהליך יצירתי הוא מסע מהנה הצופן בחובו גילויים יקרי ערך. אתם מוזמנים לקחת פסק זמן ולהצטרף לסדנת ציור מתוך התבוננות – הזדמנות נהדרת להתנסות חווייתית, מעשירה ומרגיעה. בסדנה בת שעתיים נצייר בנחת ומתוך תשומת לב מספר חפצים שיעמדו לפנינו. נלמד שני כלים פשוטים שיעזרו לנו בתהליך. לא דרוש ידע קודם בציור. בהדרכת ישראל ינקלוביץ׳ – צייר, פסיכותרפיסט גוף-נפש. בעל רקע אקדמי רב־תחומי במדעים והנדסה. *התכנית* פתיחה: הסבר קצר על ציור מהתבוננות והדגמה של שני הכלים שנלמד. התנסות מעשית: ציור טבע דומם מזוויות התבוננות שונות בקצב אישי. סיכום: מעגל קצר לשיתוף החוויה והתובנות מהתהליך. *על התהליך* נשתדל להיות רכים לעצמנו ולא לדרוש תוצאה מעולה מהניסיון הראשון. במהלך הסדנה נלמד להבחין בין מה שבאמת עומד לנגד עינינו לבין מה שאנחנו מדמיינים. המיומנות של ציור אינה מוכרת לרובנו – נעז להיכנס לתוך המרחב החדש הזה ונתבונן בתחושות שזה מעורר. הציור אינו מתהווה לכדי דבר מובן אלא לקראת סופו. בכל פעם מוסיפים קו ועוד קו, כך שבאופן טבעי אנחנו מרוכזים יותר בתהליך מאשר בתוצאה – דבר המביא שקט, עונג .. ותוצאות מעולות! *שני הכלים הפשוטים שנלמד* מאתר חזותי: חור מלבני בקרטון שיעזור לנו למקם את מה שנצייר במסגרת הדף. כלי להשוואת גדלים: שיפוד עץ – כלי פשוט ויעיל מאוד. טלפון לבירורים 054-8802025 · נצייר בנחת מספר חפצים שיעמדו לפנינו. נכיר שני כלים פשוטים שיעזרו בתהליך. נתבונן בעצמנו, נהנה ונלמד המון. · בהנחיית ישראל ינקלוביץ' · בד הצללה מעל החניה בכניסה לבית. ממשיכים במעבר ויורדים במדרגות לסטודיו.",
    "url": "https://2026.hanadiv.org/event-page/2084",
    "links": [],
    "photos": [
@@ -4196,8 +4168,8 @@
     }
    ],
    "geo": {
-    "lat": 32.468541,
-    "lng": 34.957581,
+    "lat": 32.468602,
+    "lng": 34.957614,
     "source": "festival",
     "spread": true
    },
@@ -4220,7 +4192,7 @@
    "date": "2026-10-30",
    "hour": "11:00",
    "audience": "רק למבוגרים",
-   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי",
+   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי · - חייגו 36 באינטרקום",
    "url": "https://2026.hanadiv.org/event-page/2360",
    "links": [
     {
@@ -4248,43 +4220,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 16,
+    "availableSeats": 12,
     "isFull": false,
     "hasWaitingList": false,
-    "registrationOpen": true
-   }
-  },
-  {
-   "id": "hanadiv-2351",
-   "name": "סדנת נשימה מעגלית",
-   "group": "סדנאות ויצירה",
-   "craft": "סדנא חווייתית",
-   "when": "יום שישי 30.10 · 11:00 · שעתיים",
-   "date": "2026-10-30",
-   "hour": "11:00",
-   "audience": "רק למבוגרים",
-   "note": "מרחב לעצור לרגע, לחזור אל הנשימה ולהתחבר לעצמנו. בסשן נשלב תרגול נשימה עמוק עם כמה טכניקות פשוטות לוויסות מערכת העצבים, הפחתת עומס ושקט בראש. זמן לנשום, להרגיש, לשחרר קצת, ולצאת עם כלים שאפשר לקחת גם לחיי היום־יום. · סשן נשימה מעגלית מונחה לוויסות והרגעה ומשולב בלימוד טכניקות נשימה ליומיום · בהנחיית תומר עמיאל · יש חניה בשפע במגרש החניה של בית ספר שדות. הבית מוקף בגדר כחולה",
-   "url": "https://2026.hanadiv.org/event-page/2351",
-   "links": [],
-   "photos": [
-    {
-     "thumb": "https://api.hanadiv.org/images/7de20ed90ffa580092ef8b03fb799f6225ccd5c874c35101ac62ef04786416f2.webp",
-     "full": "https://api.hanadiv.org/images/7de20ed90ffa580092ef8b03fb799f6225ccd5c874c35101ac62ef04786416f2.webp"
-    }
-   ],
-   "geo": {
-    "lat": 32.475303,
-    "lng": 35.001459,
-    "source": "osm",
-    "spread": true
-   },
-   "address": "ארבל 14, כניסה 5 · סטודיו ליוגה",
-   "access": "נגיש · יש חניה · בפנים",
-   "seats": 20,
-   "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -4297,7 +4235,7 @@
    "date": "2026-10-30",
    "hour": "11:00",
    "audience": "לכל המשפחה",
-   "note": "היי לכולם אני פותח את ביתי אחרי תקופה לא פשוטה נעים להכיר, אני נהוראי רצון, צייר מקומי פשוט מפרדס חנה. אני מצייר על חפצים וחומרים שנזרקו לפח והפכו עבורי למצע ליצירה מדלתות וחלונות ועד טלוויזיות ישנות. דרך הציור אני מבקש להחזיר צבע לחפצים שנשכחו, ולהפיץ את האמנות שלי ברחבי המושבה, במקומות שבהם אנשים חיים, עוברים ונפגשים. מבחינתי, אמנות לא חייבת להישאר בין ארבעה קירות של גלריה. היא יכולה לצאת לרחוב, לפגוש אנשים ולהפוך חלק מהמרחב המקומי בנוסף אני מארח אומן מקומי בשם מיכאל קרלמן (קצ'יין) הוא אמן בינלאומי יליד קייב, בוגר בהצטיינות של המכון לאמנויות בקייב. מאז עלייתו לישראל ב־1992 הציג את עבודותיו בתערוכות ובגלריות בארץ ובעולם, בין היתר בניו יורק, טורונטו ודבלין. יצירתו משלבת צבעוניות עשירה, טקסטורות עמוקות וטכניקות ייחודיות באקריליק, עם השפעות אמנותיות של מארק שאגאל. לאורך השנים הציג בתערוכות בינלאומיות, השתתף בפרויקטים אמנותיים ויצירותיו נמכרו במכירות פומביות ברחבי העולם. כעת, במסגרת יוזמה תרבותית מקומית לקראת פסטיבל הנדיב, אני פותח את ביתי לאחר תקופה לא פשוטה ומארח את מיכאל למפגש שמחבר בין אמנות, קהילה ואנשים. · תערוכה של אומנות מקומית · בהנחיית נהוראי רצון · יש מדרגות בכניסה חניה צמוד למקום",
+   "note": "*חברים יקרים* לצערי בעקבות נסיבות אישיות בלתי צפויות אני נאלץ לבטל את התערוכה שתוכננה למחר. לא פשוט לי לבטל ברגע האחרון ואני מתנצל בפני כולם על השינוי ותודה על ההבנה ❤️ בברכה נהוראי רצון הגראז׳ חברון 1 (לא הצלחתי להוריד את היוזמה שלי של חמישי ושישי ❤️) היי לכולם אני פותח את ביתי אחרי תקופה לא פשוטה נעים להכיר, אני נהוראי רצון, צייר מקומי פשוט מפרדס חנה. אני מצייר על חפצים וחומרים שנזרקו לפח והפכו עבורי למצע ליצירה מדלתות וחלונות ועד טלוויזיות ישנות. דרך הציור אני מבקש להחזיר צבע לחפצים שנשכחו, ולהפיץ את האמנות שלי ברחבי המושבה, במקומות שבהם אנשים חיים, עוברים ונפגשים. מבחינתי, אמנות לא חייבת להישאר בין ארבעה קירות של גלריה. היא יכולה לצאת לרחוב, לפגוש אנשים ולהפוך חלק מהמרחב המקומי בנוסף אני מארח אומן מקומי בשם מיכאל קרלמן (קצ'יין) הוא אמן בינלאומי יליד קייב, בוגר בהצטיינות של המכון לאמנויות בקייב. מאז עלייתו לישראל ב־1992 הציג את עבודותיו בתערוכות ובגלריות בארץ ובעולם, בין היתר בניו יורק, טורונטו ודבלין. יצירתו משלבת צבעוניות עשירה, טקסטורות עמוקות וטכניקות ייחודיות באקריליק, עם השפעות אמנותיות של מארק שאגאל. לאורך השנים הציג בתערוכות בינלאומיות, השתתף בפרויקטים אמנותיים ויצירותיו נמכרו במכירות פומביות ברחבי העולם. כעת, במסגרת יוזמה תרבותית מקומית לקראת פסטיבל הנדיב, אני פותח את ביתי לאחר תקופה לא פשוטה ומארח את מיכאל למפגש שמחבר בין אמנות, קהילה ואנשים. · תערוכה של אומנות מקומית · בהנחיית נהוראי רצון · יש מדרגות בכניסה חניה צמוד למקום",
    "url": "https://2026.hanadiv.org/event-page/2348",
    "links": [],
    "photos": [
@@ -4350,7 +4288,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 57,
+    "availableSeats": 55,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4391,14 +4329,14 @@
   },
   {
    "id": "hanadiv-2254",
-   "name": "טקס קונסטלטיבי",
+   "name": "טקס קונסטלטיבי סהר עדס 054-4-952979",
    "group": "סדנאות ויצירה",
    "craft": "סדנא חווייתית",
    "when": "יום שישי 30.10 · 11:00 · 3 שעות",
    "date": "2026-10-30",
    "hour": "11:00",
    "audience": "רק למבוגרים",
-   "note": "שילוב בין קונסטלציה לטקס אישי טרנספורמטיבי · שילוב בין קונסטלציה לטקס · בהנחיית סהר עדס · החניה במגרש כורכר בפינת הרחובות הגדוד ודרור מרחק הליכה של 5 דק מהסטודיו",
+   "note": "שילוב בין קונסטלציה לטקס אישי טרנספורמטיבי סהר עדס 0544952979 054-4-952979 · שילוב בין קונסטלציה לטקס סהר עדס 0544952979 · בהנחיית סהר עדס · החניה במגרש כורכר בפינת הרחובות הגדוד ודרור מרחק הליכה של 5 דק מהסטודיו",
    "url": "https://2026.hanadiv.org/event-page/2254",
    "links": [],
    "photos": [
@@ -4451,9 +4389,9 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 6,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -4476,8 +4414,8 @@
     }
    ],
    "geo": {
-    "lat": 32.468541,
-    "lng": 34.957331,
+    "lat": 32.468469,
+    "lng": 34.957456,
     "source": "festival",
     "spread": true
    },
@@ -4485,7 +4423,7 @@
    "access": "נגיש · יש חניה",
    "seats": 100,
    "avail": {
-    "availableSeats": 84,
+    "availableSeats": 83,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4528,7 +4466,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 286,
+    "availableSeats": 282,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4609,7 +4547,7 @@
    "address": "נטע 6 · הסלון של אודליה",
    "seats": 59,
    "avail": {
-    "availableSeats": 5,
+    "availableSeats": 3,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4657,7 +4595,7 @@
    "date": "2026-10-30",
    "hour": "11:30",
    "audience": "רק למבוגרים",
-   "note": "שמתם לב שתהליך משמעותי ורחב מימדים עובר על האנושות? ניכר שאנחנו בתקופת מהפך. זרמים רוחניים ואף מדעיים ידעו על בא העת הזו וחכמי הקבלה חשפו סוד שיאפשר לדורנו לצלוח את המעבר ברחמים (בטוב) ולא בדינים (יסורים). בהרצאה: • נגלה את 3 העקרונות המנחים ו- 4 אבני הדרך ליצירת מהפך מיטיב במציאות הקולקטיבית, בהתבסס על הפיזיקה והמטאפיזיקה • נחשוף את הסוד הקבלי מתוך הכתובים. • נגלה כיצד השימוש בו ע\"י מסה קריטית של אנשים, יכול לנתב את המציאות לטובת העולם כולו. • נבין מה תפקידו של העם היהודי בתהליך הזה. · האם ואם כן כיצד ניתן ליצור מהפך מיטיב במציאות הקולקטיבית בעזרת התודעה · בהנחיית פרנסואז מיקאל · -",
+   "note": "שמתם לב שתהליך משמעותי ורחב מימדים עובר על האנושות? ניכר שאנחנו בתקופת מהפך. זרמים רוחניים ואף מדעיים ידעו על בא העת הזו וחכמי הקבלה חשפו סוד שיאפשר לדורנו לצלוח את המעבר ברחמים (בטוב) ולא בדינים (יסורים). בהרצאה: • נגלה את 3 העקרונות המנחים ו- 4 אבני הדרך ליצירת מהפך מיטיב במציאות הקולקטיבית, בהתבסס על הפיזיקה והקבלה. • נחשוף את הסוד הקבלי מתוך הכתובים למהפך קולקטיבי מיטיב. • נגלה כיצד השימוש בו ע\"י מסה קריטית של אנשים, יכול לנתב את המציאות לטובת העולם כולו. • נבין מה תפקידו של העם היהודי בתהליך הזה. · האם ואם כן כיצד ניתן ליצור מהפך מיטיב במציאות הקולקטיבית בעזרת התודעה · בהנחיית פרנסואז מיקאל · -",
    "url": "https://2026.hanadiv.org/event-page/2249",
    "links": [
     {
@@ -4685,7 +4623,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 4,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4727,7 +4665,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 52,
+    "availableSeats": 53,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4761,9 +4699,9 @@
    "access": "יש חניה",
    "seats": 9,
    "avail": {
-    "availableSeats": 0,
-    "isFull": true,
-    "hasWaitingList": true,
+    "availableSeats": 1,
+    "isFull": false,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -4806,7 +4744,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -4842,7 +4780,7 @@
    "access": "נגיש · בפנים",
    "seats": 64,
    "avail": {
-    "availableSeats": 50,
+    "availableSeats": 48,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -4878,7 +4816,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": true,
+    "hasWaitingList": false,
     "registrationOpen": true
    }
   },
@@ -4918,7 +4856,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 80,
    "avail": {
-    "availableSeats": 61,
+    "availableSeats": 60,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5043,7 +4981,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 123,
+    "availableSeats": 121,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5119,7 +5057,7 @@
    "access": "יש חניה · בפנים",
    "seats": 50,
    "avail": {
-    "availableSeats": 13,
+    "availableSeats": 9,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5153,7 +5091,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 259,
+    "availableSeats": 247,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5187,7 +5125,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 72,
+    "availableSeats": 71,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5235,7 +5173,7 @@
    "when": "יום שישי 30.10 · 13:00 · שעה",
    "date": "2026-10-30",
    "hour": "13:00",
-   "audience": "רק לילדים",
+   "audience": "רק למבוגרים",
    "note": "לביטוי הקולי שלנו יש השפעה חזקה על הסביבה, על הצורה בה אנשים רואים אותך ועל המקום שאת/ה תופסים בעולם. בסדנה \"השמיע/י קולך\" נקבל כלים יעילים ופשוטים לביצוע בהפקת הקול, שישנו את הביטחון, הנוכחות והעוצמה שלך. · לחיות בביטחון, בנוכחות ולהאיר בעוצמה, באמצעות הקול שלך. · בהנחיית שורי שטרול · יש חניה בשפע במגרש החניה של בית ספר שדות. הבית מוקף בגדר כחולה",
    "url": "https://2026.hanadiv.org/event-page/2358",
    "links": [],
@@ -5246,8 +5184,8 @@
     }
    ],
    "geo": {
-    "lat": 32.475225,
-    "lng": 35.0013,
+    "lat": 32.475264,
+    "lng": 35.0014,
     "source": "osm",
     "spread": true
    },
@@ -5255,7 +5193,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 5,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5294,9 +5232,9 @@
    "access": "נגיש · יש חניה",
    "seats": 30,
    "avail": {
-    "availableSeats": 6,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -5328,7 +5266,7 @@
    "access": "נגיש · יש חניה",
    "seats": 144,
    "avail": {
-    "availableSeats": 95,
+    "availableSeats": 78,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5371,7 +5309,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 123,
+    "availableSeats": 119,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5386,7 +5324,7 @@
    "date": "2026-10-30",
    "hour": "13:00",
    "audience": "רק למבוגרים",
-   "note": "מוזמנים למפגש Death Cafe קהילתי חודשי ב \"קפה ויעל\". Death Cafe הוא קונספט מסוים, המתקיים בצורה דומה במקומות שונים בעולם. הוא שיחה בקבוצה, במרחב בטוח, שמותר לדבר בה על המוות וכל מה שקשור אליו, מעל קפה ועוגה. המנחים הינם אנשי מקצוע בתחום, אך זו לא הרצאה או שיעור, אלא שיחה פתוחה, המאפשרת ללמוד זה מנסיונו של זה. · מוזמנים לDeath cafe המסורתי של פסטיבל הנדיב, זו השנה השמינית, בבית הקפה קפה ויעל · בהנחיית מיכל גוטמן",
+   "note": "מוזמנים למפגש Death Cafe קהילתי חודשי ב \"קפה ויעל\". Death Cafe הוא קונספט מסוים, המתקיים בצורה דומה במקומות שונים בעולם. הוא שיחה בקבוצה, במרחב בטוח, שמותר לדבר בה על המוות וכל מה שקשור אליו, מעל קפה ועוגה. המנחים הינם אנשי מקצוע בתחום, אך זו לא הרצאה או שיעור, אלא שיחה פתוחה, המאפשרת ללמוד זה מנסיונו של זה. חשוב: בבקשה להגיע בזמן (או מעט מוקדם יותר כדי להספיק להזמין קפה ועוגה) : לא יהיה ניתן להצטרף לארוע באיחור. תודה! · מוזמנים לDeath cafe המסורתי של פסטיבל הנדיב, זו השנה השמינית, בבית הקפה קפה ויעל · בהנחיית מיכל גוטמן",
    "url": "https://2026.hanadiv.org/event-page/2177",
    "links": [
     {
@@ -5409,9 +5347,9 @@
    "access": "נגיש",
    "seats": 60,
    "avail": {
-    "availableSeats": 9,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -5443,7 +5381,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 109,
+    "availableSeats": 105,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5485,7 +5423,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 277,
+    "availableSeats": 271,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5590,7 +5528,7 @@
    "access": "יש חניה · ידידותי לחיות",
    "seats": 50,
    "avail": {
-    "availableSeats": 39,
+    "availableSeats": 32,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5633,7 +5571,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 96,
+    "availableSeats": 85,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5667,7 +5605,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 246,
+    "availableSeats": 219,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5701,7 +5639,7 @@
    "access": "יש חניה · בפנים",
    "seats": 20,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 10,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5735,7 +5673,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 108,
+    "availableSeats": 105,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5777,7 +5715,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 47,
+    "availableSeats": 44,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5850,7 +5788,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 278,
+    "availableSeats": 271,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5893,7 +5831,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 65,
+    "availableSeats": 49,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5936,7 +5874,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 57,
+    "availableSeats": 33,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -5972,7 +5910,7 @@
    "access": "יש חניה · ידידותי לחיות",
    "seats": 50,
    "avail": {
-    "availableSeats": 45,
+    "availableSeats": 43,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6005,7 +5943,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 77,
    "avail": {
-    "availableSeats": 38,
+    "availableSeats": 31,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6039,7 +5977,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 103,
+    "availableSeats": 101,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6078,7 +6016,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 276,
+    "availableSeats": 270,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6121,7 +6059,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 286,
+    "availableSeats": 280,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6188,7 +6126,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 79,
    "avail": {
-    "availableSeats": 32,
+    "availableSeats": 22,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6222,7 +6160,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 260,
+    "availableSeats": 250,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6256,7 +6194,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 289,
+    "availableSeats": 281,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6328,7 +6266,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 278,
+    "availableSeats": 275,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6437,7 +6375,41 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 119,
+    "availableSeats": 113,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
+  },
+  {
+   "id": "hanadiv-2365",
+   "name": "סיפורי אהבה וארוטיקה - מופע סיפורים",
+   "group": "אחר",
+   "craft": "רב תחומי",
+   "when": "יום שישי 30.10 · 20:30 · שעה וחצי",
+   "date": "2026-10-30",
+   "hour": "20:30",
+   "audience": "רק למבוגרים",
+   "note": "ד\"ר יואל פרץ, אמן הסיפורים מזמים אתכם למסע קסום בים האהבה והתשוקה דיתקקים בביתו ביום שישי 20:30 בערב · מסע בים האהבה - סיפורי עם וסיפורים מודרניים על אהבה תשוקה וארוטיקה · בהנחיית yoel perez",
+   "url": "https://2026.hanadiv.org/event-page/2365",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/45e3b93a99ea231f00b07c515924380801ab497eb12d0e4ab8331b612c8e481e.webp",
+     "full": "https://api.hanadiv.org/images/45e3b93a99ea231f00b07c515924380801ab497eb12d0e4ab8331b612c8e481e.webp"
+    }
+   ],
+   "geo": {
+    "lat": 32.468602,
+    "lng": 34.957298,
+    "source": "festival",
+    "spread": true
+   },
+   "address": "אתרוג 8 · בית פרטח",
+   "access": "בפנים",
+   "seats": 16,
+   "avail": {
+    "availableSeats": 14,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6470,7 +6442,7 @@
    "access": "יש חניה · בפנים",
    "seats": 21,
    "avail": {
-    "availableSeats": 11,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6508,7 +6480,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 85,
+    "availableSeats": 82,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6593,7 +6565,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 245,
+    "availableSeats": 236,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6635,7 +6607,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 30,
    "avail": {
-    "availableSeats": 13,
+    "availableSeats": 9,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6669,7 +6641,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 264,
+    "availableSeats": 258,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6736,7 +6708,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 111,
+    "availableSeats": 108,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6769,7 +6741,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 50,
    "avail": {
-    "availableSeats": 41,
+    "availableSeats": 37,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6837,7 +6809,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 160,
    "avail": {
-    "availableSeats": 41,
+    "availableSeats": 39,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6871,7 +6843,7 @@
    "access": "יש חניה · בחוץ",
    "seats": 30,
    "avail": {
-    "availableSeats": 10,
+    "availableSeats": 2,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -6930,8 +6902,8 @@
     }
    ],
    "geo": {
-    "lat": 32.475303,
-    "lng": 35.001141,
+    "lat": 32.475264,
+    "lng": 35.0012,
     "source": "osm",
     "spread": true
    },
@@ -6973,7 +6945,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 293,
+    "availableSeats": 289,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7080,9 +7052,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 10,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7163,7 +7135,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7295,7 +7267,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 35,
+    "availableSeats": 20,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7328,9 +7300,9 @@
    "access": "יש חניה · בחוץ",
    "seats": 19,
    "avail": {
-    "availableSeats": 1,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7400,7 +7372,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 34,
+    "availableSeats": 20,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7439,7 +7411,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7480,7 +7452,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 288,
+    "availableSeats": 281,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7514,9 +7486,9 @@
    "access": "יש חניה",
    "seats": 9,
    "avail": {
-    "availableSeats": 1,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -7548,8 +7520,8 @@
     }
    ],
    "geo": {
-    "lat": 32.475457,
-    "lng": 35.001141,
+    "lat": 32.475424,
+    "lng": 35.001138,
     "source": "osm",
     "spread": true
    },
@@ -7557,7 +7529,7 @@
    "access": "נגיש · יש חניה",
    "seats": 20,
    "avail": {
-    "availableSeats": 14,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7591,7 +7563,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 300,
    "avail": {
-    "availableSeats": 278,
+    "availableSeats": 262,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7667,7 +7639,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות · בחוץ",
    "seats": 110,
    "avail": {
-    "availableSeats": 81,
+    "availableSeats": 58,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7701,7 +7673,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 284,
+    "availableSeats": 279,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7735,7 +7707,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 84,
+    "availableSeats": 80,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7769,7 +7741,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 97,
+    "availableSeats": 48,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7837,7 +7809,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 152,
+    "availableSeats": 124,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7876,7 +7848,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 106,
+    "availableSeats": 102,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7914,7 +7886,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 277,
+    "availableSeats": 259,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -7963,7 +7935,7 @@
    "date": "2026-10-31",
    "hour": "16:00",
    "audience": "רק למבוגרים",
-   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה וחצי. * אנא הודיעו לנו אם אתם באים עם ילדים מתחת לגיל 12. · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי",
+   "note": "היכן עובדים האמני טבע? באיזה כלים משתמשים? איזה מקומות ואיזה דברים מהווים להם השראה? מה עושים בימי הסערה? ומה עושים אם פוגשים חיות בר? ואם הולכים לאיבוד? תוכלו לשאול את הציירים בעצמכם וגם תוכלו לראות את התהליך העבודה של האמן בזמן אמת. בסיור מיוחד זה תזכו להיכנס אל קודש הקדשים של האמנים - הסטודיו. זו הזדמנות לראות את ציורים בסביבתם הטבעית ולהכיר את היוצרים וגם צ'אנס להיחשף לסביבת העבודה של האמן ולראות את תהליכי העבודה מרמת הרעיון, הסקיצות, העבודות הלא גמורות ועד לביצוע. זהו סיור אינטימי ומיוחד המאפשר הצצה נדירה לאחורי הקלעים של עולם האמנות. משך המפגש כשעה וחצי. * אנא הודיעו לנו אם אתם באים עם ילדים מתחת לגיל 12. · מפגש, תערוכה וביקור בסדנת האמנים · בהנחיית V&A סטשינסקי · חייגו 36 באינטרקום",
    "url": "https://2026.hanadiv.org/event-page/2363",
    "links": [],
    "photos": [
@@ -8010,9 +7982,9 @@
    "access": "יש חניה · בחוץ",
    "seats": 71,
    "avail": {
-    "availableSeats": 25,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -8049,9 +8021,9 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 40,
    "avail": {
-    "availableSeats": 16,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -8164,7 +8136,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 95,
+    "availableSeats": 90,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8198,7 +8170,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 254,
+    "availableSeats": 246,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8240,9 +8212,9 @@
    "access": "נגיש · בפנים",
    "seats": 16,
    "avail": {
-    "availableSeats": 2,
-    "isFull": false,
-    "hasWaitingList": false,
+    "availableSeats": 0,
+    "isFull": true,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -8274,7 +8246,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 279,
+    "availableSeats": 272,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8310,9 +8282,9 @@
    },
    "address": "הנשיא 4 · בית פרטי",
    "access": "נגיש · יש חניה",
-   "seats": 40,
+   "seats": 64,
    "avail": {
-    "availableSeats": 2,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8320,14 +8292,14 @@
   },
   {
    "id": "hanadiv-2130",
-   "name": "כתיבה קונסטלטיבית · יום שבת",
-   "group": "הרצאות ומילים",
-   "craft": "הגות ושירה",
-   "when": "יום שבת 31.10 · 17:00 · 3 שעות",
+   "name": "כתיבה קונסטלטיבית ליצירת קשר סהר עדס… · יום שבת",
+   "group": "סדנאות ויצירה",
+   "craft": "סדנא חווייתית",
+   "when": "יום שבת 31.10 · 17:00 · 3 שעות וחצי",
    "date": "2026-10-31",
    "hour": "17:00",
    "audience": "רק למבוגרים",
-   "note": "באמצעות קונסטלציה נגיע לעומקים חדשים, ומשם תנבע כתיבה חדשה · סדנה המשלבת בין עולמות הקונסטלציה המערכתית משפחתית לכתיבה · בהנחיית סהר עדס",
+   "note": "כתיבה קונסטלטיבית ליצירת קשר סהר עדס 054-4-952979 · באמצעות קונסטלציה נגיע לעומקים חדשים, ומשם תנבע כתיבה חדשה · סדנה המשלבת בין עולמות הקונסטלציה המערכתית משפחתית לכתיבה · בהנחיית סהר עדס",
    "url": "https://2026.hanadiv.org/event-page/2130",
    "links": [],
    "photos": [
@@ -8380,7 +8352,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 255,
+    "availableSeats": 250,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8454,7 +8426,7 @@
    "avail": {
     "availableSeats": 0,
     "isFull": true,
-    "hasWaitingList": false,
+    "hasWaitingList": true,
     "registrationOpen": true
    }
   },
@@ -8486,7 +8458,7 @@
    "access": "נגיש · יש חניה",
    "seats": 300,
    "avail": {
-    "availableSeats": 60,
+    "availableSeats": 46,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8506,15 +8478,15 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/784edb2010a6257d5dfc0c82d6bad07934c5e7232d611325e5cb58a18fce3ec1.webp",
-     "full": "https://api.hanadiv.org/images/784edb2010a6257d5dfc0c82d6bad07934c5e7232d611325e5cb58a18fce3ec1.webp"
+     "thumb": "https://api.hanadiv.org/images/a879aae9eee44e61edf6daae96a0b10233e7c2032d150152df80739f67f407e0.webp",
+     "full": "https://api.hanadiv.org/images/a879aae9eee44e61edf6daae96a0b10233e7c2032d150152df80739f67f407e0.webp"
     }
    ],
    "address": "אחוזה 130 · האלון הבודד",
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 100,
    "avail": {
-    "availableSeats": 94,
+    "availableSeats": 89,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8547,7 +8519,7 @@
    "access": "בפנים",
    "seats": 60,
    "avail": {
-    "availableSeats": 36,
+    "availableSeats": 33,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8590,7 +8562,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 130,
    "avail": {
-    "availableSeats": 89,
+    "availableSeats": 85,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8622,7 +8594,7 @@
    "address": "הגאון 11 · סלון בבית פרטי",
    "seats": 20,
    "avail": {
-    "availableSeats": 15,
+    "availableSeats": 11,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8676,8 +8648,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/a43a69bda5964ba055c5da87d45d65202b20652cbc301931f5dec4d041ffaac2.webp",
-     "full": "https://api.hanadiv.org/images/a43a69bda5964ba055c5da87d45d65202b20652cbc301931f5dec4d041ffaac2.webp"
+     "thumb": "https://api.hanadiv.org/images/c321b2ed2395cb95846f42471fa03d105e79c8899499da339c81d4d2a72c8f5d.webp",
+     "full": "https://api.hanadiv.org/images/c321b2ed2395cb95846f42471fa03d105e79c8899499da339c81d4d2a72c8f5d.webp"
     }
    ],
    "geo": {
@@ -8690,7 +8662,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 21,
+    "availableSeats": 13,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8801,7 +8773,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 30,
+    "availableSeats": 8,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8844,7 +8816,7 @@
    "access": "יש חניה · ידידותי לחיות · בפנים",
    "seats": 60,
    "avail": {
-    "availableSeats": 52,
+    "availableSeats": 54,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8897,8 +8869,8 @@
    "links": [],
    "photos": [
     {
-     "thumb": "https://api.hanadiv.org/images/eec0654d002077475bd1ee6401f9e62572cadaa71805a630a8c92f6dc939a8c9.webp",
-     "full": "https://api.hanadiv.org/images/eec0654d002077475bd1ee6401f9e62572cadaa71805a630a8c92f6dc939a8c9.webp"
+     "thumb": "https://api.hanadiv.org/images/c0d66b848852c561e7770879cc3d4257e2599f7a458779f2e98ab5472384f35d.webp",
+     "full": "https://api.hanadiv.org/images/c0d66b848852c561e7770879cc3d4257e2599f7a458779f2e98ab5472384f35d.webp"
     }
    ],
    "geo": {
@@ -8910,7 +8882,7 @@
    "access": "נגיש · יש חניה · בחוץ",
    "seats": 200,
    "avail": {
-    "availableSeats": 164,
+    "availableSeats": 161,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -8991,7 +8963,7 @@
    "access": "בפנים",
    "seats": 128,
    "avail": {
-    "availableSeats": 73,
+    "availableSeats": 64,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9034,7 +9006,7 @@
    "access": "נגיש · יש חניה · בפנים",
    "seats": 300,
    "avail": {
-    "availableSeats": 254,
+    "availableSeats": 250,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9111,7 +9083,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 104,
+    "availableSeats": 103,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9193,7 +9165,44 @@
    "access": "נגיש · יש חניה",
    "seats": 100,
    "avail": {
-    "availableSeats": 36,
+    "availableSeats": 33,
+    "isFull": false,
+    "hasWaitingList": false,
+    "registrationOpen": true
+   }
+  },
+  {
+   "id": "hanadiv-2366",
+   "name": "מאור פרץ בהופעה",
+   "group": "מוסיקה",
+   "craft": "מוסיקה",
+   "when": "יום שבת 31.10 · 21:00 · שעה",
+   "date": "2026-10-31",
+   "hour": "21:00",
+   "audience": "רק למבוגרים",
+   "note": "מופע 360 בסלון. שירים על הורות, ספק והשלמה · שירי פולק מקוריים בעברית · בהנחיית לירון שניר",
+   "url": "https://2026.hanadiv.org/event-page/2366",
+   "links": [],
+   "photos": [
+    {
+     "thumb": "https://api.hanadiv.org/images/15c1b08ac0b38322dea1ff1fd57126f7fab9266ad0d538ebcb2f7e79e8120748.webp",
+     "full": "https://api.hanadiv.org/images/15c1b08ac0b38322dea1ff1fd57126f7fab9266ad0d538ebcb2f7e79e8120748.webp"
+    },
+    {
+     "yt": "A3pHOtbQfYE",
+     "thumb": "https://i.ytimg.com/vi/A3pHOtbQfYE/hqdefault.jpg"
+    }
+   ],
+   "geo": {
+    "lat": 32.475612,
+    "lng": 35.001635,
+    "source": "b144"
+   },
+   "address": "ארבל 36 · סלון מרווח וכיפי",
+   "access": "בפנים",
+   "seats": 38,
+   "avail": {
+    "availableSeats": 37,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9279,7 +9288,7 @@
    "access": "נגיש · יש חניה · ידידותי לחיות",
    "seats": 300,
    "avail": {
-    "availableSeats": 116,
+    "availableSeats": 113,
     "isFull": false,
     "hasWaitingList": false,
     "registrationOpen": true
@@ -9290,6 +9299,6 @@
   "events": 252,
   "venues": 90,
   "placed": 242,
-  "photos": 290
+  "photos": 291
  }
 }
