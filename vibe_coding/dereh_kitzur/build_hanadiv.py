@@ -187,6 +187,13 @@ EVENT_AT = {
                       dict(hour="19:15", label="האמפי, בצד רבי עקיבא · המופעים", lat=32.475150, lng=34.969960)]),
 }
 
+# Events whose real hour is not the one in the API, by id. The festival's form
+# seems to start the day at 08:00, so a dawn sitting went in as 08:00 with its
+# true hours in the title: "(6:45-7:45)" (30/10/2026).
+EVENT_HOUR = {
+    2317: dict(hour="06:45", why="the title and the description both say 6:45-7:45; the API has 08:00"),
+}
+
 # The festival's fourteen genres, folded into groups a legend can hold. The
 # genre itself stays on the pin as the second chip.
 GROUPS = [
@@ -399,6 +406,8 @@ def build(report):
     for e in sorted(events, key=lambda e: (e["date"], e["hour"])):
         if int(e.get("status", 1)) != 1 or e.get("virtual"):
             continue
+        if e["eventID"] in EVENT_HOUR:
+            e = {**e, "hour": EVENT_HOUR[e["eventID"]]["hour"]}
         key = address_key(e["street"], e["houseNumber"])
         recs = by_address.get(key, [])
         rec = next((r for r in recs if text(r["description"]) == text(e["placeDescription"])), recs[0] if recs else None)
