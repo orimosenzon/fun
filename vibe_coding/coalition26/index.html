@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מי יקים את הממשלה?</title>
+<meta name="description" content="כל הדרכים האפשריות להגיע ל-61 אחרי הבחירות לכנסת ה-26: מי מוותר על מה, אילו הבטחות נשברות, כמה יציבה כל ממשלה ומה זה אומר עלינו.">
+<meta property="og:title" content="מי יקים את הממשלה?">
+<meta property="og:description" content="בנו קואליציה מתוצאות הבחירות לכנסת ה-26 ותראו מה היא תעלה לנו.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'><circle cx='20' cy='50' r='9' fill='%232a5bd7'/><circle cx='35' cy='25' r='9' fill='%230f9e9e'/><circle cx='50' cy='15' r='9' fill='%236b4fd8'/><circle cx='65' cy='25' r='9' fill='%23e04848'/><circle cx='80' cy='50' r='9' fill='%23c9a227'/></svg>">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <div>
+      <p class="eyebrow">הבחירות לכנסת ה-26 · 27 באוקטובר 2026</p>
+      <h1>מי יקים את הממשלה?</h1>
+      <p class="sub">אף גוש לא הגיע ל-61. כאן אפשר לבדוק כל דרך אפשרית להרכיב ממשלה, ולראות מה כל אחת תעלה: מי מוותר על מה, אילו הבטחות נשברות, כמה זה יחזיק, ומה זה אומר לחיים שלנו.</p>
+    </div>
+    <button id="theme" class="icon-btn" type="button" aria-label="החלפת מצב תצוגה">◐</button>
+  </div>
+</header>
+
+<main>
+  <section class="wrap results-strip" aria-labelledby="res-h">
+    <div class="rs-head">
+      <h2 id="res-h">תוצאות האמת</h2>
+      <a href="#full-results" class="link">טבלה מלאה ומקורות ↓</a>
+    </div>
+    <div id="resbar" class="resbar" role="img" aria-label="חלוקת 120 המנדטים בין 11 המפלגות"></div>
+    <div class="blocs">
+      <div><b>53</b><span>גוש נתניהו</span><small>ליכוד, עוצמה, סמוטריץ', ש"ס, יהדות התורה</small></div>
+      <div><b>19</b><span>המפלגות הערביות</span><small>רע"מ, הרשימה המשותפת</small></div>
+      <div><b>48</b><span>גוש השינוי</span><small>ישר!, ביחד, הדמוקרטים, ישראל ביתנו</small></div>
+    </div>
+  </section>
+
+  <section class="wrap" aria-labelledby="sc-h">
+    <h2 id="sc-h" class="sec-h">תרחישים שעל השולחן</h2>
+    <p class="sec-sub">כל אחד מהם נבדק מול העמדות וההבטחות שהמפלגות פרסמו. לחצו כדי לראות את הממשלה מתרכבת.</p>
+    <div id="gallery" class="gallery"></div>
+  </section>
+
+  <div class="wrap bench">
+    <div class="builder">
+      <div class="step">
+        <h2 class="sec-h"><span class="stepn">1</span>מי מרכיב?</h2>
+        <div class="modes">
+          <button type="button" class="mode-btn" data-mode="N" aria-pressed="false">
+            <i style="--pc:#2a5bd7"></i><b>בנימין נתניהו</b><small>הליכוד · 27 · המפלגה הגדולה</small>
+          </button>
+          <button type="button" class="mode-btn" data-mode="E" aria-pressed="false">
+            <i style="--pc:#0f9e9e"></i><b>גדי איזנקוט</b><small>ישר! · 21 · מוביל גוש השינוי</small>
+          </button>
+        </div>
+      </div>
+      <div class="step">
+        <h2 class="sec-h"><span class="stepn">2</span>מי מצטרף?</h2>
+        <p class="sec-sub">רק צירופים אפשריים באמת. מפלגה עם 🔒 פוסלת מישהו שכבר בפנים (או שהוא פוסל אותה); לחיצה עליה מסבירה למה. למפלגות הערביות ולחרדים יש גם אפשרות לתמוך מבחוץ או להימנע.</p>
+        <div id="chips" class="chips"></div>
+        <p id="hint" class="hint" aria-live="polite"></p>
+        <button id="reset" type="button" class="link-btn">↺ התחלה מחדש</button>
+      </div>
+      <div id="analysis" class="analysis" aria-live="polite"></div>
+    </div>
+
+    <aside class="stage-col">
+      <div id="stage" class="stage">
+        <div class="stage-h"><span id="pm-line">תוצאות הבחירות</span></div>
+        <div class="hemi-wrap">
+          <svg id="hemi" role="img" aria-label="מליאת הכנסת: 120 מושבים"></svg>
+          <div class="center-count">
+            <div id="burst" class="burst">רוב!</div>
+            <b id="count">120</b>
+            <span id="count-sub"></span>
+          </div>
+          <div id="tip" class="tip" hidden></div>
+        </div>
+        <p id="opp-line" class="opp-line"></p>
+        <ul class="legend">
+          <li><i class="lg in"></i>בקואליציה</li>
+          <li><i class="lg sup"></i>תומכת מבחוץ</li>
+          <li><i class="lg abs"></i>נמנעת</li>
+          <li><i class="lg opp"></i>אופוזיציה</li>
+        </ul>
+        <div id="vote" class="vote idle"></div>
+      </div>
+      <div id="flash" class="flash" role="status" hidden></div>
+    </aside>
+  </div>
+
+  <section id="full-results" class="wrap full" aria-labelledby="fr-h">
+    <h2 id="fr-h" class="sec-h">התוצאות המלאות</h2>
+    <div class="stats">
+      <div><b>77.9%</b><span>שיעור הצבעה</span></div>
+      <div><b>5,690,778</b><span>קולות כשרים</span></div>
+      <div><b>3.25%</b><span>אחוז החסימה (184,947 קולות)</span></div>
+      <div><b>2.72%</b><span>המילואימניקים והכלכלית החדשה, הרשימה הגדולה שלא עברה</span></div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="restable">
+        <thead><tr><th>רשימה</th><th>בראשות</th><th class="num">קולות</th><th class="num">אחוז</th><th class="num">מנדטים</th><th>הערות</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="res-note" class="note"></p>
+
+    <div class="two">
+      <div>
+        <h3>מה קורה מעכשיו</h3>
+        <ol id="timeline" class="timeline"></ol>
+      </div>
+      <div>
+        <h3>איך זה עובד</h3>
+        <ul class="method">
+          <li><b>הצבעת אמון:</b> ממשלה צריכה יותר קולות "בעד" מ"נגד". נמנעים לא נספרים, ולכן ממשלת מיעוט יכולה לקום אם מספיק ח"כים נמנעים.</li>
+          <li><b>מה "אפשרי":</b> חסמנו רק צירופים שהצדדים פוסלים זה את זה באופן מוחלט. הבטחות שאפשר להפר (ופוליטיקאים הפרו בעבר) לא חוסמות, אבל מופיעות בניתוח עם המחיר שלהן.</li>
+          <li><b>מי מוותר על מה:</b> לכל מפלגה מיקום וחשיבות בשבעה נושאים. המדיניות הצפויה היא ממוצע משוקלל לפי גודל, חשיבות, ראשות הממשלה וכוח הפלה. זו הערכה, לא תחזית.</li>
+          <li><b>יציבות:</b> מודל פשוט ושקוף, כל רכיב שלו מוצג. אפשר להתווכח איתו.</li>
+          <li><b>עדכני ל:</b> 30 באוקטובר 2026. עמדות משתנות מהר במשא ומתן.</li>
+        </ul>
+      </div>
+    </div>
+    <h3>מקורות</h3>
+    <ul id="sources" class="sources"></ul>
+  </section>
+</main>
+<footer class="wrap foot">
+  <p>אתר עצמאי ולא מפלגתי. הניתוחים הם הערכות על סמך הצהרות פומביות ודיווחים בתקשורת.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

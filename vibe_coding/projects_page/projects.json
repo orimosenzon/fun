@@ -1025,6 +1025,40 @@
           ]
         },
         {
+          "title": "מי יקים את הממשלה?",
+          "icon": "🏛️",
+          "theme": "t-orange",
+          "dir": "coalition26",
+          "tags": [
+            "בחירות 2026",
+            "קואליציה",
+            "ויזואליזציה",
+            "d3"
+          ],
+          "desc": "<strong style=\"color:#fdba74\">אף גוש לא הגיע ל-61. אז מה כן אפשרי?</strong><br> כל הדרכים להרכיב ממשלה מתוצאות האמת של הבחירות לכנסת ה-26, רק צירופים אפשריים באמת. מליאה מונפשת שמתמלאת מפלגה אחרי מפלגה, הצבעת אמון, ולכל ממשלה: אילו הבטחות נשברות, מי מוותר על מה, כמה היא יציבה ומה זה אומר עלינו.",
+          "links": [
+            {
+              "href": "coalition26/index.html",
+              "style": "live",
+              "label": "▶ לבנות קואליציה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/coalition26",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ],
+          "illus": ""
+        },
+        {
           "title": "אדמאמא: 1999–2018",
           "icon": "🌱",
           "theme": "t-green",
