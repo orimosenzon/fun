@@ -671,6 +671,18 @@
    "entry": "בתשלום (במחיר הכניסה לגן הלאומי), בהרשמה מראש",
    "url": "https://www.parks.org.il/activity/caesarea-2-2/",
    "image_file": "אירוע-קלאסיקה-על-מסך-ענק-קיסריה-28-9.jpg"
+  },
+  {
+   "name": "מסה קריטית",
+   "date": "2026-10-30",
+   "time": "14:00",
+   "category": "קהילה",
+   "venue": "רחבת יד לבנים",
+   "entry": "חינם",
+   "url": "https://pardes-events-hub.lovable.app/event/0aa5454a-a3df-4bd4-bc5a-0f3cb366242c",
+   "organizer": "קהילה על גלגלים",
+   "description": "הרכיבה הקהילתית שתוכננה ליום שישי בוטלה.",
+   "cancelled": true
   }
  ]
 }

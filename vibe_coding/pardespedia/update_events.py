@@ -784,6 +784,9 @@ def fetch_manual() -> list:
             r["image_file"] = ev.get("image_file")  # reference an existing wiki file
             r["video_id"] = ev.get("video")          # inline curated video
             r["pin"] = bool(ev.get("pin"))           # show even if beyond the window
+            # a cancellation heard of outside the feeds: the manual entry
+            # replaces the feed's row (collect() prefers "man-") and says so
+            r["cancelled"] = bool(ev.get("cancelled"))
             rows.append(r)
     return rows
 
@@ -1278,26 +1281,33 @@ def build_card(r, today: dt.date) -> str:
     )
 
 
-def build_board(rows: list, today: dt.date) -> str:
+def build_board(rows: list, today: dt.date, fest=None, end: dt.date = None) -> str:
     """The week's events as cards, always in chronological order, under a
     heading per day. Replaced the sortable table on 28/9/2026 at Ori's
     request: sorting was traded for a readable board with a big flyer and
-    the full details of each event."""
-    if not rows:
+    the full details of each event. A festival day opens with the festival's
+    block, even on a day with no other event."""
+    fest_days = {d for d in (fest["by_day"] if fest else {})
+                 if today <= d and (end is None or d <= end)}
+    if not rows and not fest_days:
         return "''לא ידוע כרגע על אירועים בשבוע הקרוב.''"
-    out, current = [], None
+    by_day = {}
     for r in rows:
-        if r["date"] != current:
-            current = r["date"]
-            out.append(
-                '<div style="font-size:120%; font-weight:bold; color:#a8674e; '
-                'border-bottom:2px solid #e3bcac; margin:22px 0 4px; padding-bottom:3px;">'
-                f'{_day_label(current, today)}</div>')
-        out.append(build_card(r, today))
+        by_day.setdefault(r["date"], []).append(r)
+    out = []
+    for d in sorted(set(by_day) | fest_days):
+        out.append(
+            '<div style="font-size:120%; font-weight:bold; color:#a8674e; '
+            'border-bottom:2px solid #e3bcac; margin:22px 0 4px; padding-bottom:3px;">'
+            f'{_day_label(d, today)}'
+            + (" · 🎉 דרך הנדיב" if d in fest_days else "") + '</div>')
+        if d in fest_days:
+            out.append(build_festival_day(fest, d))
+        out.extend(build_card(r, today) for r in by_day.get(d, []))
     return "\n".join(out)
 
 
-def build_today_block(today_rows: list, today: dt.date) -> str:
+def build_today_block(today_rows: list, today: dt.date, fest=None) -> str:
     """Compact highlight box for events happening *today* (at most TODAY_MAX),
     meant to sit above the fold so a visitor immediately sees what's on today.
     Lives between the TODAY_AUTO markers, near the top of the main page.
@@ -1307,12 +1317,14 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
     heading = (f"📅 יום {HE_WEEKDAYS[today.weekday()]} בפרדס חנה-כרכור"
                f'<span style="font-weight:normal; font-size:82%; color:#8a6a5c;">'
                f" · {he_date(today)} · מה קורה היום?</span>")
+    banner = (build_festival_banner(fest, today, compact=True) + "\n") if fest else ""
     if not today_rows:
         body = (
             f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
             f'padding:10px 16px; margin:0 0 16px;">\n'
             f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
-            f'<div style="font-size:94%; margin-top:4px;">לא ידוע על אירועים היום. '
+            + banner +
+            f'<div style="font-size:94%; margin-top:4px;">לא ידוע על אירועים {"נוספים " if fest else ""}היום. '
             f'מה קורה בשבוע הקרוב: ראו את [[#אירועי תרבות ובילוי קרובים|לוח האירועים]] בהמשך הדף.</div>\n'
             f'</div>'
         )
@@ -1336,7 +1348,7 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
         f'<div style="background:#fdf3ef; border:1px solid #e3bcac; border-radius:10px; '
         f'padding:10px 16px; margin:0 0 16px;">\n'
         f'<div style="font-size:118%; font-weight:bold; color:#a8674e;">{heading}</div>\n'
-        + "\n".join(cards) +
+        + banner + "\n".join(cards) +
         f'\n<div style="font-size:88%; margin-top:8px;">שעות, תיאור וקישורים: '
         f'[[#אירועי תרבות ובילוי קרובים|בלוח האירועים]] בהמשך הדף.</div>'
         f'\n</div>'
@@ -1344,7 +1356,7 @@ def build_today_block(today_rows: list, today: dt.date) -> str:
     return f"{TODAY_AUTO_START}\n{body}\n{TODAY_AUTO_END}"
 
 
-def build_main_block(rows: list, today: dt.date, days: int) -> str:
+def build_main_block(rows: list, today: dt.date, days: int, fest=None) -> str:
     """The full events board (image + video columns) for the main page.
 
     Lives between the AUTO markers inside the "אירועי תרבות ובילוי קרובים"
@@ -1363,13 +1375,199 @@ def build_main_block(rows: list, today: dt.date, days: int) -> str:
     body = (
         f"מה קורה במושבה בשבוע הקרוב: '''אירועי תרבות ובילוי''', לפי סדר הימים והשעות. "
         f"'''עודכן לאחרונה:''' {he_date(today)} · מציג אירועים עד {he_date(end)}.\n\n"
-        f"{build_board(rows, today)}\n\n"
+        + (build_festival_banner(fest, today) + "\n\n" if fest else "") +
+        f"{build_board(rows, today, fest, end)}\n\n"
         f"{cap_note}"
         f"אירועים שכבר התקיימו נשמרים ב[[ארכיון אירועי התרבות]]. "
         f"מקורות הנתונים: {ES_LABEL}; {MATNAS_LABEL}; {HAULAM_LABEL}; {HUB_LABEL}; {EMEK_LABEL}. "
         f"ייתכנו אירועים נוספים שאינם מופיעים בלוחות אלה."
     )
     return f"{AUTO_START}\n{body}\n{AUTO_END}"
+
+
+# --- festival: "דרך הנדיב" (29-31/10/2026) ----------------------------------
+# A festival of ~250 events in ~90 homes and yards does not fit the board as
+# cards (the per-venue cap would also hide most of it). Instead, while it is
+# near or on, the board gets a festive banner and every festival day gets one
+# block: counts per kind, the evening's stage shows, and a link on every line
+# into our app "דרך הנדיב · מה קורה עכשיו" (vibe_coding/hanadiv), which is
+# where the whole programme lives on a map (Ori, 29/10/2026). The data is the
+# app's own file, refreshed nightly by dereh_kitzur/cron_hanadiv.sh.
+
+FEST_DATA_URLS = [
+    "https://raw.githubusercontent.com/orimosenzon/derech-kitzur-data/main/data/hanadiv.json",
+    os.path.join(HERE, "..", "dereh_kitzur", "web", "data", "hanadiv.json"),
+]
+FEST_APP = "https://orimosenzon.github.io/fun/vibe_coding/hanadiv/"
+FEST_ARTICLE = "דרך הנדיב 2026"
+FEST_LEAD_DAYS = 7          # the banner starts this many days before day one
+FEST_EVENING = "17:00"      # "the evening's stages" start here
+FEST_STAGE_GROUPS = ("מוסיקה", "במה ותערוכות", "קולנוע")
+FEST_EVENING_MAX = 14       # stage lines per day; the rest is one click away
+FEST_GROUP_ICON = {"מוסיקה": "🎵", "סדנאות ויצירה": "🎨", "גוף ותנועה": "🧘",
+                   "הרצאות ומילים": "🧑‍🏫", "ילדים ומשפחה": "🧸", "במה ותערוכות": "🎭",
+                   "קולנוע": "🎬", "אירוח": "☕", "אחר": "✨"}
+FEST_GOLD, FEST_DEEP = "#f6a11b", "#7a3e12"
+
+
+def load_festival(today: dt.date):
+    """The festival's data if today is within its banner window, else None."""
+    data = None
+    for src in FEST_DATA_URLS:
+        try:
+            if src.startswith("http"):
+                resp = requests.get(src, timeout=20)
+                resp.raise_for_status()
+                data = resp.json()
+            else:
+                with open(src, encoding="utf-8") as f:
+                    data = json.load(f)
+            break
+        except Exception as exc:
+            print(f"  festival data {src}: FAILED ({exc})", file=sys.stderr)
+    if not data:
+        return None
+    try:
+        start = dt.date.fromisoformat(data["festival"]["from"])
+        until = dt.date.fromisoformat(data["festival"]["until"])
+    except (KeyError, ValueError):
+        return None
+    if not (start - dt.timedelta(days=FEST_LEAD_DAYS) <= today <= until):
+        return None
+    by_day = {}
+    for p in data.get("places", []):
+        try:
+            by_day.setdefault(dt.date.fromisoformat(p["date"]), []).append(p)
+        except (KeyError, ValueError):
+            continue
+    for evs in by_day.values():
+        evs.sort(key=lambda p: p.get("hour") or "99")
+    venues = {(p.get("address") or "").split("·")[0].strip()
+              for evs in by_day.values() for p in evs}
+    return {"name": data["festival"].get("name") or "פסטיבל דרך הנדיב",
+            "start": start, "until": until, "by_day": by_day,
+            "total": sum(len(v) for v in by_day.values()), "venues": len(venues - {""})}
+
+
+def fest_link(text: str, color: str = "", **params) -> str:
+    """An external link into the app; params become its #hash state. A link
+    keeps the skin's blue unless the colour is set inside its text."""
+    h = "&".join(f"{k}={urllib.parse.quote(str(v), safe=':,')}" for k, v in params.items())
+    text = re.sub(r"[\[\]]", "", text).strip()
+    if color:
+        text = f'<span style="color:{color};">{text}</span>'
+    return f"[{FEST_APP}{'#' + h if h else ''} {text}]"
+
+
+def _fest_name(p) -> str:
+    # the app appends " · יום חמישי" to repeating events; the day is the heading
+    name = re.sub(r"\s*·\s*יום \S+$", "", p.get("name") or "")
+    return clean_name(name) or "אירוע"
+
+
+def _fest_place(p) -> str:
+    """"במת הג'אז ומוסיקת עולם" rather than "החורש 36 · במת הג'אז..."."""
+    parts = [s.strip() for s in (p.get("address") or "").split("·") if s.strip()]
+    place = parts[-1] if parts else ""
+    return wiki_escape(place[:38] + ("…" if len(place) > 38 else ""))
+
+
+def is_festival_row(r, fest) -> bool:
+    """A feed's own listing of a festival event. The festival block lists the
+    whole programme, so these would only repeat it in a smaller voice."""
+    return (bool(fest) and not r.get("pin") and fest["start"] <= r["date"] <= fest["until"]
+            and "הנדיב" in (r.get("name") or ""))
+
+
+def build_festival_banner(fest, today: dt.date, compact: bool = False) -> str:
+    """The festive strip: what, when, how big, and the way into the app."""
+    if today < fest["start"]:
+        n = (fest["start"] - today).days
+        when = "מחר!" if n == 1 else f"בעוד {n} ימים"
+        lead = f"🎉 {fest['name']} מתחיל {when}"
+    elif today == fest["until"]:
+        lead = f"🎉 היום היום האחרון של {fest['name']}!"
+    else:
+        lead = f"🎉 {fest['name']} מתקיים עכשיו ברחבי המושבה!"
+    today_n = len(fest["by_day"].get(today, []))
+    span = (f"{fest['start'].day}–{fest['until'].day} ב{HE_MONTHS[fest['until'].month]}")
+    facts = (f"{span} · '''{fest['total']}''' אירועים ב-'''{fest['venues']}''' מקומות"
+             + (f" · '''{today_n}''' מהם היום" if today_n else "")
+             + " · יצירה עצמית, בבתים, בחצרות ובבמות, ורובם בחינם")
+    app_kw = {"d": f"{today.day:02d}"} if today_n else {}
+    button = (f'<span style="display:inline-block; background:{FEST_DEEP}; color:#fff; '
+              f'border-radius:999px; padding:5px 16px; margin:8px 4px 0; font-weight:bold;">'
+              f'{fest_link("🗺️ מה קורה עכשיו? המפה החיה של הפסטיבל ›", color="#fff", **app_kw)}</span>')
+    more = (f'<div style="font-size:90%; margin-top:6px;">כל התוכנית, לפי שעה ומקום, עם '
+            f'"התוכנית שלי" וזמני הליכה: באפליקציה "דרך הנדיב · מה קורה עכשיו". '
+            f'רקע וסיפור הפסטיבל: [[{FEST_ARTICLE}]] · [[פסטיבל דרך הנדיב]].</div>')
+    img = ("" if compact else
+           f'<div style="flex:0 0 auto;">[[קובץ:דרך הנדיב 2026 - אפליקציית מה קורה עכשיו.jpg|'
+           f'220px|link={FEST_APP}|האפליקציה "דרך הנדיב · מה קורה עכשיו"]]</div>\n')
+    return (
+        f'<div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; '
+        f'background:linear-gradient(135deg,#fff4dc,#ffe2b8 55%,#ffd0a0); '
+        f'border:2px solid {FEST_GOLD}; border-radius:14px; padding:12px 16px; margin:{"0 0 10px" if compact else "10px 0 14px"};">\n'
+        + img +
+        f'<div style="flex:1 1 260px; min-width:0; text-align:center;">\n'
+        f'<div style="font-size:{"115" if compact else "135"}%; font-weight:bold; color:{FEST_DEEP};">{lead}</div>\n'
+        f'<div style="margin-top:4px;">{facts}</div>\n'
+        f'<div>{button}</div>\n'
+        + ("" if compact else more + "\n") +
+        f'</div>\n</div>'
+    )
+
+
+def build_festival_day(fest, d: dt.date) -> str:
+    """One festival day on the board: the day at a glance, then its evening."""
+    evs = fest["by_day"].get(d, [])
+    if not evs:
+        return ""
+    dd = f"{d.day:02d}"
+    counts = {}
+    for p in evs:
+        counts[p.get("group") or "אחר"] = counts.get(p.get("group") or "אחר", 0) + 1
+    chips = " ".join(
+        f'<span style="display:inline-block; background:#fff; border:1px solid {FEST_GOLD}; '
+        f'border-radius:999px; padding:1px 10px; margin:3px 2px 0; font-size:88%;">'
+        f'{fest_link(FEST_GROUP_ICON.get(g, "✨") + f" {g} · {n}", d=dd, g=g)}</span>'
+        for g, n in sorted(counts.items(), key=lambda kv: -kv[1]))
+    evening = [p for p in evs if p.get("group") in FEST_STAGE_GROUPS
+               and (p.get("hour") or "") >= FEST_EVENING]
+    lines = [
+        f'<div style="break-inside:avoid; padding:2px 0;">'
+        f"'''{p['hour']}''' "
+        f"{fest_link(_fest_name(p), d=dd, t=p['hour'], e=p['id'])}"
+        f'<span style="color:#8a6a5c; font-size:90%;"> · {_fest_place(p)}</span></div>'
+        for p in evening[:FEST_EVENING_MAX]]
+    rest = len(evening) - FEST_EVENING_MAX
+    evening_html = ""
+    if lines:
+        evening_html = (
+            f'<div style="font-weight:bold; color:{FEST_DEEP}; margin-top:10px;">🌙 הערב על הבמות</div>\n'
+            f'<div style="columns:2 280px; column-gap:22px; margin-top:4px;">\n'
+            + "\n".join(lines) + "\n</div>\n"
+            + (f'<div style="font-size:90%; margin-top:4px;">'
+               + fest_link(f"ועוד {rest} מופעים הערב, וכל השאר, במפת האפליקציה ›", d=dd, t=FEST_EVENING)
+               + '</div>\n'
+               if rest > 0 else ""))
+    day_start = evs[0].get("hour") or ""
+    return (
+        f'<div style="background:#fffaf0; border:2px solid {FEST_GOLD}; border-radius:12px; '
+        f'padding:12px 14px; margin:10px 0;">\n'
+        f'<div style="font-size:125%; font-weight:bold; color:{FEST_DEEP}; line-height:1.3;">'
+        f'🎪 {fest["name"]}: {len(evs)} אירועים ביום הזה'
+        + (f'<span style="font-weight:normal; font-size:75%; color:#8a6a5c;"> · מ-{day_start} בבוקר ועד הלילה</span>'
+           if day_start else "") + '</div>\n'
+        f'<div style="margin-top:4px;">{chips}</div>\n'
+        + evening_html +
+        f'<div style="margin-top:10px; font-weight:bold;">'
+        f'{fest_link("🗺️ כל אירועי היום על המפה, עם זמני הליכה ›", d=dd)}'
+        f' · [[{FEST_ARTICLE}|המדריך בפרדספדיה]]</div>\n'
+        f'<div style="font-size:85%; color:#8a6a5c; margin-top:4px;">'
+        f'ההרשמה והתוכנית הרשמית באתר הפסטיבל; בחלק מהסדנאות המקומות מוגבלים.</div>\n'
+        f'</div>'
+    )
 
 
 # --- statistics (manual numbers in the main-page stats table) ---------------
@@ -1425,6 +1623,12 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
         return
     existing = page["wikitext"]
     today = dt.date.today()
+    fest = load_festival(today)
+    if fest:
+        dropped = [r["name"] for r in rows if is_festival_row(r, fest)]
+        rows = [r for r in rows if not is_festival_row(r, fest)]
+        print(f"  festival: {fest['total']} events; feed listings folded in: {dropped}",
+              file=sys.stderr)
 
     # rows are already chronologically sorted (collect() sorts by "sort").
     # Pull out at most TODAY_MAX of today's events for the top highlight box.
@@ -1438,8 +1642,8 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     # and again as full cards on the board, because the card carries the
     # details (hours, description, links) and today is what matters most
     # (Ori, 28/9/2026). Until then the board dropped whatever the box showed.
-    today_block = build_today_block(today_shown, today)
-    main_block = build_main_block(rows, today, days)
+    today_block = build_today_block(today_shown, today, fest)
+    main_block = build_main_block(rows, today, days, fest)
 
     if TODAY_AUTO_START in existing and TODAY_AUTO_END in existing:
         new = splice_marked(existing, TODAY_AUTO_START, TODAY_AUTO_END, today_block)
