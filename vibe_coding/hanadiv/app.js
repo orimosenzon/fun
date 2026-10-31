@@ -159,6 +159,8 @@ function legOf(e, v) {
 
 /* ---------- helpers over the playhead ---------- */
 
+// S.filt holds the categories picked; empty means all of them, NONE alone means none yet
+const NONE = '∅';
 function passes(e) {
   if (S.filt.size && !S.filt.has(e.group)) return false;
   if (S.kids && e.audience === 'רק למבוגרים') return false;
@@ -839,7 +841,7 @@ function listHTML() {
   let h = '';
   const filtered = S.filt.size || S.kids || S.access || S.q;
   if (!evs.length) {
-    h += `<div class="empty">${filtered ? `אין ב${dayName(S.day, true)} אירועים שמתאימים לסינון. <button class="more" data-clear>לנקות את הסינון</button>` : 'אין אירועים ביום הזה.'}</div>`;
+    h += `<div class="empty">${S.filt.size === 1 && S.filt.has(NONE) ? 'כל הקטגוריות כבויות. בוחרים למעלה אחת או יותר.' : filtered ? `אין ב${dayName(S.day, true)} אירועים שמתאימים לסינון. <button class="more" data-clear>לנקות את הסינון</button>` : 'אין אירועים ביום הזה.'}</div>`;
   }
   h += `<div class="sec"><h3>${live.length && isNow() ? '<span class="livedot"></span>קורה עכשיו, ' : `${dayName(S.day, true)}, `}ב-${hm(S.t)}</h3><span class="meta">${live.length} אירועים</span></div>`;
   if (live.length) h += live.map(e => card(e)).join('');
@@ -1403,7 +1405,9 @@ function drawChips() {
   const counts = {};
   S.events.forEach(e => counts[e.group] = (counts[e.group] || 0) + 1);
   const gs = S.groups.filter(g => counts[g]);
+  const all = !S.filt.size;
   $('#chips').innerHTML =
+    `<button class="chip all ${all ? 'on' : ''}" data-allg title="${all ? 'לכבות את כל הקטגוריות ולבחור רק כמה' : 'להדליק את כל הקטגוריות'}">הכל</button>` +
     gs.map(g => `<button class="chip ${S.filt.has(g) ? 'on' : S.filt.size ? 'off' : ''}" data-g="${esc(g)}" style="--c:${S.colors[g]}"><i></i>${esc(g)}</button>`).join('') +
     `<button class="chip sep ${S.kids ? 'on' : ''}" data-kids style="--c:#1d7a52">מתאים לילדים</button>` +
     `<button class="chip ${S.access ? 'on' : ''}" data-access style="--c:#1a5bb8">נגיש</button>`;
@@ -1575,7 +1579,8 @@ function stateParams() {
   const hide = Object.keys(UI_DEF).filter(k => !S.ui[k]);
   if (hide.length) p.set('hide', hide.join(','));
   if (S.clean) p.set('full', '1');
-  if (S.filt.size) p.set('g', [...S.filt].join(','));
+  const g = [...S.filt].filter(x => x !== NONE);
+  if (g.length) p.set('g', g.join(','));
   if (S.kids) p.set('kids', '1');
   if (S.access) p.set('acc', '1');
   if (S.q) p.set('q', S.q);
@@ -1777,7 +1782,9 @@ function setupEvents() {
     }
     const day = t.closest('[data-day]'); if (day) return setDay(day.dataset.day);
     const g = t.closest('[data-g]');
-    if (g) { const n = g.dataset.g; S.filt.has(n) ? S.filt.delete(n) : S.filt.add(n); return filtersChanged(); }
+    if (g) { const n = g.dataset.g; S.filt.delete(NONE); S.filt.has(n) ? S.filt.delete(n) : S.filt.add(n); return filtersChanged(); }
+    // "all": every category on, or (when they all are) every one off, to pick just a few after
+    if (t.closest('[data-allg]')) { S.filt.size ? S.filt.clear() : S.filt.add(NONE); return filtersChanged(); }
     if (t.closest('[data-kids]')) { S.kids = !S.kids; return filtersChanged(); }
     if (t.closest('[data-access]')) { S.access = !S.access; return filtersChanged(); }
     const view = t.closest('[data-view]'); if (view) return setView(view.dataset.view);

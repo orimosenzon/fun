@@ -145,6 +145,7 @@ h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
 .chip.on i { background: #fff; }
 .chip.off { opacity: .45; }
 .chip.sep { margin-inline-start: 4px; }
+.chip.all { font-weight: 600; margin-inline-end: 4px; }
 
 /* ---------- stage ---------- */
 /* A place's popup may rise over the header when the map is too short to hold it, so the map
