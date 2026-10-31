@@ -1147,6 +1147,11 @@ function tickGrid() {
 // on and what comes next to its left. While the playhead moves the bars only fade and the
 // view slides; once it rests, the rows are re-ordered for the new time and the view goes
 // back to the top, where the places with something on now are.
+// It follows only a playhead someone moved. Once the timetable itself is scrolled or touched
+// (S.gridHold), the ticking clock moves just the red line and the view stays where it is,
+// until "now", the strip, play, a day or the view is chosen again.
+let clockTick = false;
+function holdGrid() { S.gridHold = true; clearTimeout(regridTimer); }
 function followGrid(smooth) {
   const g = $('#grid');
   const x = NAMEW + (S.t - S.lo) * PPM;
@@ -1156,7 +1161,7 @@ function scrollGridToNow() { followGrid(true); $('#grid').scrollTo({ top: 0 }); 
 let regridTimer;
 function regridSoon() {
   clearTimeout(regridTimer);
-  regridTimer = setTimeout(() => { if (S.view === 'grid' && !S.playing) { drawGrid(); followGrid(); $('#grid').scrollTop = 0; } }, 350);
+  regridTimer = setTimeout(() => { if (S.view === 'grid' && !S.playing && !S.gridHold && !S.detail) { drawGrid(); followGrid(); $('#grid').scrollTop = 0; } }, 350);
 }
 
 /* ---------- detail card ---------- */
@@ -1414,7 +1419,7 @@ function setView(v) {
   $('#grid').hidden = v !== 'grid';
   if (v === 'plan') snap('mid');
   render();
-  if (v === 'grid') { drawGrid(); scrollGridToNow(); }
+  if (v === 'grid') { S.gridHold = false; drawGrid(); scrollGridToNow(); S.gridT = S.t; }
   else if (map) map.resize();  // before any camera move: a resize cuts an animation short
   if (v === 'plan' && map) {
     const pts = planList().filter(e => e.date === S.day && e.vgeo);
@@ -1449,7 +1454,11 @@ function render() {
     if (map) drawMarkers();
     drawRoute();
     if (S.view === 'plan') drawPlan(); else drawList();
-    if (S.view === 'grid') { tickGrid(); followGrid(); regridSoon(); }
+    if (S.view === 'grid') {
+      tickGrid();
+      if (S.t !== S.gridT && !S.gridHold && !S.detail) { followGrid(); regridSoon(); }
+      S.gridT = S.t;
+    }
     $('#nowBtn').classList.toggle('on', now);
     setHashSoon();
   });
@@ -1457,6 +1466,7 @@ function render() {
 function setT(t) {
   t = clamp(t, S.lo, S.hi);
   if (t === S.t) return;
+  if (!clockTick) S.gridHold = false;
   S.t = t; render();
 }
 function setDay(d) {
@@ -1464,7 +1474,8 @@ function setDay(d) {
   S.day = d; S.moreLater = false;
   closePopup();
   drawDays(); drawStrip();
-  if (S.view === 'grid') { drawGrid(); scrollGridToNow(); }
+  if (S.view === 'grid' && !(clockTick && S.gridHold)) { S.gridHold = false; drawGrid(); scrollGridToNow(); S.gridT = S.t; }
+  else if (S.view === 'grid') drawGrid();
   if (S.view === 'plan') setView('plan');
   render();
 }
@@ -1480,6 +1491,7 @@ function filtersChanged() {
 function goNow(quiet) {
   const n = israelNow();
   S.follow = true;
+  if (!quiet) { S.gridHold = false; S.gridT = null; }  // pressing "now" brings the timetable back to it too
   const today = S.days.includes(n.date);
   if (today) setDay(n.date);
   const m = Math.round(clamp(n.m, S.lo, S.hi) / STEP) * STEP;
@@ -1649,10 +1661,17 @@ async function shorten(url) {
     return j.shorturl;
   } finally { clearTimeout(timer); }
 }
+// A plan goes out through plan/<n>/, a page of its own for the preview in WhatsApp and
+// Facebook ("my plan · n events"); it passes the visitor on to the app. See tools/make_share.py.
+const PLAN_PAGES = 60;
 function shareLink(withPlan) {
   const p = stateParams();
-  if (withPlan && S.plan.size) { p.set('plan', [...S.plan].join(',')); p.set('v', 'plan'); }
-  return `${location.origin}${location.pathname}#${query(p)}`;
+  let path = '';
+  if (withPlan && S.plan.size) {
+    p.set('plan', [...S.plan].join(',')); p.set('v', 'plan');
+    path = S.plan.size <= PLAN_PAGES ? `plan/${S.plan.size}/` : 'plan/';
+  }
+  return new URL(path, location.origin + location.pathname).href + '#' + query(p);
 }
 let shareSeq = 0;
 function share(withPlan = S.view === 'plan' && S.plan.size > 0) {
@@ -1689,6 +1708,8 @@ async function shareUrl(url, text) {
 }
 
 function setupEvents() {
+  // a hand on the timetable (wheel, finger, scrollbar, keys) keeps it where it is
+  for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) $('#grid').addEventListener(t, holdGrid, { passive: true });
   $('#sharePanel').addEventListener('change', ev => { if (ev.target.dataset.shareplan != null) { $('#shareUrl').value = 'מקצר את הקישור...'; fillShare(ev.target.checked); } });
   $('#showPanel').addEventListener('change', ev => {
     const k = ev.target.dataset.ui; if (!k) return;
@@ -1828,7 +1849,7 @@ async function main() {
   if (innerWidth < 900) snap(h.sh || 'mid');
   if (h.e && S.byId.has(h.e)) openDetail(S.byId.get(h.e));
   else if (h.place && S.venues.has(h.place)) openPlace(S.venues.get(h.place));
-  setInterval(() => { if (S.follow && !S.playing) goNow(true); else render(); drawDays(); }, 30000);
+  setInterval(() => { clockTick = true; if (S.follow && !S.playing) goNow(true); else render(); clockTick = false; drawDays(); }, 30000);
   if (typeof syncBoot === 'function') syncBoot();  // the real clock under a look-ahead ticks too
 }
 main();
