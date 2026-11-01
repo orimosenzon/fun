@@ -5302,6 +5302,17 @@
    "url": "https://pardeshanna.eventschedule.com/being-03-11/JjyQxM",
    "venue": "מרכז Being"
   },
+  "2026-11-03--השבוע-ב-TuesJazz": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-03",
+   "entry": "חינם",
+   "image_file": "אירוע-es-tti537.jpg",
+   "name": "השבוע ב-TuesJazz",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/hashuk-03-11/tti537",
+   "venue": "השוק הישן"
+  },
   "2026-11-03--כיתות-האמן-הקומיות-חוזרות-למרכז-הצעירים": {
    "category": "קהילה",
    "date": "2026-11-03",
@@ -5345,6 +5356,61 @@
    "time": "17:00",
    "url": "https://pardespedia.info/wiki/סדנה_קהילתית_לתיקון_אופניים",
    "venue": "המשאלה"
+  },
+  "2026-11-05--הזנה-קהילתית-בגן-הציפורים": {
+   "category": "קהילה",
+   "date": "2026-11-05",
+   "entry": "חינם",
+   "image_file": "אירוע-הזנה-קהילתית-גן-הציפורים.jpg",
+   "name": "הזנה קהילתית בגן הציפורים",
+   "source": "לוח האירועים",
+   "time": "17:00",
+   "url": "",
+   "venue": "גן הציפורים"
+  },
+  "2026-11-05--להקת-D-Moves": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-05",
+   "entry": "חינם",
+   "image_file": "אירוע-es-UEZWlb.jpg",
+   "name": "להקת D-Moves",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/shevet-15-8/UEZWlb",
+   "venue": "בירה שבט"
+  },
+  "2026-11-05--מארק-מושייב-והלהקה": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-05",
+   "entry": "₪70",
+   "image_file": "אירוע-emek-f7aqEW.jpg",
+   "name": "מארק מושייב והלהקה",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://emeklive.co.il/narbata-05-11/f7aqEW",
+   "venue": "נרבתא"
+  },
+  "2026-11-06--שוק-השיקשוק": {
+   "category": "קהילה",
+   "date": "2026-11-06",
+   "entry": "חינם",
+   "image_file": "shik-2-19-3.jpg",
+   "name": "שוק השיקשוק",
+   "source": "לוח האירועים",
+   "time": "11:00",
+   "url": "https://pardespedia.info/wiki/שיקשוק",
+   "venue": "רחוב האורנים (צפונית לכיכר השמונה)"
+  },
+  "2026-11-07--רותם-בר-אור": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-07",
+   "entry": "₪85",
+   "image_file": "אירוע-es-9oVkDn.jpg",
+   "name": "רותם בר אור",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/unicorn-07-11/9oVkDn",
+   "venue": "יוניקורן"
   }
  }
 }

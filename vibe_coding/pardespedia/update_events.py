@@ -388,8 +388,37 @@ def clean_blurb(text: str, name: str = "") -> str:
     return s
 
 
+def clean_url(url: str) -> str:
+    """Unwrap Facebook's outbound redirect (l.facebook.com/l.php?u=...) to the
+    real target and drop fbclid. The wiki's spam filter blocks l.php, and one
+    such link in a feed used to fail the whole main-page edit."""
+    u = (url or "").strip()
+    p = urllib.parse.urlsplit(u)
+    if p.netloc.endswith("facebook.com") and p.path == "/l.php":
+        target = urllib.parse.parse_qs(p.query).get("u", [""])[0]
+        if not target:
+            return ""
+        u = target
+        p = urllib.parse.urlsplit(u)
+    q = [(k, v) for k, v in urllib.parse.parse_qsl(p.query, keep_blank_values=True)
+         if k != "fbclid"]
+    return urllib.parse.urlunsplit(p._replace(query=urllib.parse.urlencode(q)))
+
+
+def _clean_links(links) -> list:
+    out = []
+    for label, u in links or []:
+        cu = clean_url(u)
+        if not cu:
+            continue
+        # a label guessed from the redirect ("פייסבוק") is re-guessed from the target
+        out.append((link_label(cu) if label == link_label(u) else label, cu))
+    return out
+
+
 def _row(d, time, name, url, category, venue, entry, key, image_url, date_label=None,
          desc="", duration=None, people="", links=None, cancelled=False) -> dict:
+    url, links = clean_url(url), _clean_links(links)
     return {"date": d, "time": time, "name": clean_name(name), "url": url or "",
             # card details: a short blurb, how long it runs (hours), who is on
             # stage or organising, extra links beyond the main one (label, url),
