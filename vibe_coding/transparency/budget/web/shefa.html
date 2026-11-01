@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שפ"ע במספרים</title>
+<meta name="description" content="פסולת, גזם, גינון ציבורי, שטח ציבורי, תנועה והוצאה לתושב בפרדס חנה-כרכור: המספרים שיש, ומה עוד חסר.">
+<meta property="og:title" content="שפ&quot;ע במספרים: פרדס חנה-כרכור">
+<meta property="og:description" content="כמה טונות גזם, כמה עולה טון, כמה הולך לגינון, כמה שטח ציבורי וכמה מכוניות. ומה המועצה עוד לא פרסמה.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="kicker">רוצים שקיפות · פרדס חנה-כרכור · <a href="./">לאן הולך הכסף</a></p>
+    <h1>שפ"ע במספרים</h1>
+    <p class="lede">שירותים לתושב: פסולת וגזם, גינון ציבורי, שטח ציבורי, תנועה, וכמה המועצה מוציאה על כל תושב.
+      לכל שאלה: המספר הכי טוב שיש לו מקור פתוח, ההשוואה לרשויות דומות, ומה עוד חסר ואיך מבקשים אותו.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="sh-toc" aria-label="פרקים">
+    <a href="#money">הוצאה לתושב</a><a href="#waste">פסולת וגזם</a><a href="#garden">גינון</a>
+    <a href="#space">שטח ציבורי</a><a href="#traffic">תנועה</a><a href="#missing">מה חסר</a>
+  </nav>
+
+  <div id="hero" class="v-kpis sh-hero"></div>
+
+  <section class="value" id="money" aria-labelledby="money-h">
+    <h2 id="money-h">כמה המועצה מוציאה על כל תושב?</h2>
+    <p class="v-lede">כל ההוצאות בתקציב הרגיל, חלקי מספר התושבים. כולל כסף שמגיע ממשרדי הממשלה ועובר דרך המועצה
+      (בעיקר חינוך ורווחה), ולא כולל תקציבי פיתוח.</p>
+    <div id="money-kpis" class="v-kpis"></div>
+    <figure class="v-fig">
+      <h3>הוצאה לתושב בתקציב הרגיל, בש"ח</h3>
+      <div class="v-legend"><span><i class="v-line home"></i>פרדס חנה-כרכור</span><span><i class="v-line peer"></i>חציון רשויות דומות</span></div>
+      <div class="v-plot sh-plot"><div id="money-chart"></div></div>
+    </figure>
+    <p class="note">שקלים של כל שנה, בלי תיקון לאינפלציה. המקור: הלמ"ס, "הרשויות המקומיות בישראל".</p>
+  </section>
+
+  <section class="value" id="waste" aria-labelledby="waste-h">
+    <h2 id="waste-h">פסולת וגזם</h2>
+    <p class="v-lede">כמה נאסף, כמה זה עולה, ולאן הכסף הולך לאורך השנים.</p>
+    <div id="waste-kpis" class="v-kpis"></div>
+    <div id="audit" class="sh-callout"></div>
+    <div class="v-charts">
+      <figure class="v-fig">
+        <h3>תקציב שפ"ע לפי מחלקה, מיליוני ש"ח</h3>
+        <div id="spend-legend" class="v-legend"></div>
+        <div class="v-plot sh-plot"><div id="spend-chart"></div></div>
+        <p class="note">לפי ספר התקציב של כל שנה (מה שתוכנן). צפי הביצוע מופיע בריחוף, כשיש.
+          "איסוף אשפה" כאן בלי פינוי הגזם, שמוצג בנפרד.</p>
+      </figure>
+      <figure class="v-fig">
+        <h3>פסולת ביתית, מסחרית וגזם, טונות בשנה</h3>
+        <div class="v-plot sh-plot"><div id="tons-chart"></div></div>
+        <p class="note">מחושב מהלמ"ס: ק"ג ליום לנפש, כפול 365, כפול מספר התושבים. כולל גזם. עד 2017 הלמ"ס
+          עיגל את הק"ג לנפש לספרה אחת, ולכן הקפיצות של 2016–2017 גסות.</p>
+      </figure>
+    </div>
+    <div class="sh-gap">
+      <h3>פילוח לפי סוג (פלסטיק, זכוכית, נייר): לא פורסם</h3>
+      <p>המועצה מדווחת כל שנה למשרד להגנת הסביבה ב"טופס 1" כמה טונות נאספו מכל זרם: מעורב, גזם, גרוטאות,
+        אריזות (פח כתום), נייר וקרטון, זכוכית (פח סגול), בקבוקים. הנתון הזה לא מתפרסם לכל רשות, והלמ"ס מפרסם
+        ממנו רק את אחוז המחזור הכולל. רשויות אחרות מעלות את הטופס לאתר שלהן. זו הבקשה הראשונה ברשימה
+        <a href="#missing">בסוף העמוד</a>.</p>
+    </div>
+  </section>
+
+  <section class="value" id="garden" aria-labelledby="garden-h">
+    <h2 id="garden-h">גינון ציבורי</h2>
+    <p class="v-lede">מחלקת "גנים ונטיעות" בתקציב: קבלני גינון, גיזום עצים, מים לגנים ושכר. ובנוסף, כמה מים
+      הולכים לגינון ציבורי, לפי תאגיד המים.</p>
+    <div id="garden-kpis" class="v-kpis"></div>
+    <div class="v-charts">
+      <figure class="v-fig">
+        <h3>מים לגנים וגיזום עצים בתקציב, מיליוני ש"ח</h3>
+        <div id="lines-legend" class="v-legend"></div>
+        <div class="v-plot sh-plot"><div id="lines-chart"></div></div>
+      </figure>
+      <figure class="v-fig">
+        <h3>מים לגינון ציבורי, מ"ק לתושב בשנה</h3>
+        <div class="v-legend"><span><i class="v-line home"></i>פרדס חנה-כרכור</span><span><i class="v-line peer"></i>חציון רשויות דומות</span></div>
+        <div class="v-plot sh-plot"><div id="water-chart"></div></div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="value" id="space" aria-labelledby="space-h">
+    <h2 id="space-h">כמה שטח ציבורי יש, והאם הוא גדל?</h2>
+    <p class="v-lede">שתי תשובות שונות, כי "שטח ציבורי" הוא שני דברים: מה שמסומן כציבורי בתוכניות (גם אם עוד
+      לא פותח), ומה שנראה בפועל מהאוויר.</p>
+    <div id="space-kpis" class="v-kpis"></div>
+    <h3 class="sh-h3">מה רואים בפועל: שימושי קרקע לפי הלמ"ס, קמ"ר</h3>
+    <div class="v-table-wrap"><table id="land-table" class="sh-table"></table></div>
+    <p class="note">הלמ"ס מחלק את המפה לריבועים של 100 על 100 מטר וקובע לכל ריבוע את השימוש העיקרי בו. גינה
+      קטנה בתוך שכונה נבלעת ב"מגורים", ולכן המספר של גינון ופארקים נמוך מהמציאות. גם השיטה השתפרה בין הסקרים,
+      כך שחלק מהשינוי הוא מדידה ולא שינוי בשטח. המגמה שבולטת בכל זאת: המגורים מתפשטים (7.2 ← 8.1 קמ"ר)
+      ושטח השיפוט כמעט לא משתנה.</p>
+    <div class="sh-gap">
+      <h3>מה חסר: שטחים ציבוריים לפי שנה</h3>
+      <p>כדי לדעת אם השטח הציבורי גדל או קטן צריך רשימה של המגרשים הציבוריים (שצ"פ ומבני ציבור) עם שנת הייעוד
+        או השינוי, כולל מגרשים שיועדו מחדש למגורים. למועצה יש מאגר נכסים כזה (חובה לפי נוהל משרד הפנים).</p>
+    </div>
+  </section>
+
+  <section class="value" id="traffic" aria-labelledby="traffic-h">
+    <h2 id="traffic-h">תנועה</h2>
+    <p class="v-lede">כמה מכוניות יש ביישוב, כמה תאונות, ואיפה נספרה התנועה.</p>
+    <div id="traffic-kpis" class="v-kpis"></div>
+    <div class="v-charts">
+      <figure class="v-fig">
+        <h3>רכב פרטי לכל 1,000 תושבים</h3>
+        <div class="v-legend"><span><i class="v-line home"></i>פרדס חנה-כרכור</span><span><i class="v-line peer"></i>חציון רשויות דומות</span></div>
+        <div class="v-plot sh-plot"><div id="cars-chart"></div></div>
+      </figure>
+      <figure class="v-fig">
+        <h3>תאונות דרכים עם נפגעים, לכל 10,000 תושבים</h3>
+        <div class="v-legend"><span><i class="v-line home"></i>פרדס חנה-כרכור</span><span><i class="v-line peer"></i>חציון רשויות דומות</span></div>
+        <div class="v-plot sh-plot"><div id="acc-chart"></div></div>
+      </figure>
+    </div>
+    <div class="sh-gap">
+      <h3>כמה מכוניות עוברות ביישוב? נספר, אבל לא פורסם</h3>
+      <p>משרד התחבורה מחזיק מאגר של ספירות תנועה. בתוך גבול השיפוט נעשו <strong id="traffic-n"></strong> ספירות,
+        האחרונות ב-2024 (צומת כרכור, דרך הנדיב, דרך הבנים, דרך למרחב, דרך פיק"א). המיקומים פתוחים, אבל קובצי
+        הספירה עצמם (כמה כלי רכב בכל רבע שעה, לכל כיוון) נעולים מאחורי התחברות. אפשר לבקש אותם מנתיבי ישראל או
+        מהמועצה, לפי מספר הספירה.</p>
+      <details class="v-details"><summary>כל הספירות בתוך היישוב</summary>
+        <div class="v-table-wrap"><table id="counts-table" class="sh-table"></table></div></details>
+    </div>
+  </section>
+
+  <section class="value" id="missing" aria-labelledby="missing-h">
+    <h2 id="missing-h">מה חסר, ואיך מבקשים</h2>
+    <p class="v-lede">כל אחד מאלה קיים אצל המועצה או אצל משרד ממשלתי, ואפשר לבקש אותו. הנוסח מוכן להעתקה,
+      לפנייה למועצה או לבקשה לפי חוק חופש המידע.</p>
+    <ol id="asks" class="sh-asks"></ol>
+  </section>
+
+  <section class="about">
+    <h2>מאיפה המספרים</h2>
+    <p><strong>ספרי התקציב של המועצה</strong> 2013–2026 (כמו בעמוד <a href="./">לאן הולך הכסף</a>).
+      <strong>הלמ"ס</strong>, <a href="https://www.cbs.gov.il/he/publications/Pages/2019/%D7%94%D7%A8%D7%A9%D7%95%D7%99%D7%95%D7%AA-%D7%94%D7%9E%D7%A7%D7%95%D7%9E%D7%99%D7%95%D7%AA-%D7%91%D7%99%D7%A9%D7%A8%D7%90%D7%9C-%D7%A7%D7%95%D7%91%D7%A6%D7%99-%D7%A0%D7%AA%D7%95%D7%A0%D7%99%D7%9D-%D7%9C%D7%A2%D7%99%D7%91%D7%95%D7%93-1999-2017.aspx" target="_blank" rel="noopener">הרשויות המקומיות בישראל, קובצי נתונים לעיבוד</a> 2016–2024.
+      <strong>דוח מבקר המועצה על 2022</strong>, שהוצג במליאה ב-6/3/2025 (<a id="audit-link" href="#" target="_blank" rel="noopener">פרוטוקול, עמ' 16–24</a>).
+      <strong>משרד התחבורה</strong>, <a href="https://data.gov.il/dataset/sfirot" target="_blank" rel="noopener">מיקומי ספירות תנועה</a>.
+      <strong>מינהל התכנון</strong>, ייעודי הקרקע בתוכניות (Xplan), דרך השכבה של <a href="../../../dereh_kitzur/web/">דרך קיצור</a>.</p>
+    <p id="peers" class="note"></p>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="sh-tip" class="v-tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="shefa.js?v=2"></script>
+</body>
+</html>

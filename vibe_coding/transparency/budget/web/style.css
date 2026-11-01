@@ -299,3 +299,37 @@ h1 { margin: 4px 0 6px; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; }
 .list li:hover .go, .list li.hot .go { background: var(--surface); }
 .list li .bar { grid-row: 2; } .list li .meta { grid-row: 2; }
 #pie text.pct.hint-hide { opacity: 0 !important; }
+
+/* שפ"ע במספרים (shefa.html) */
+.kicker a { color: var(--accent); }
+.sh-toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 4px; }
+.sh-toc a {
+  font-size: 14px; color: var(--text-2); text-decoration: none; background: var(--surface-2);
+  padding: 5px 12px; border-radius: 999px;
+}
+.sh-toc a:hover { color: var(--text); }
+.sh-hero { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.sh-hero .v-tile { background: var(--surface); box-shadow: var(--shadow); }
+.value { scroll-margin-top: 12px; }
+.sh-plot { position: relative; }
+.sh-callout {
+  border-inline-start: 4px solid var(--s2); background: var(--surface-2); border-radius: 12px;
+  padding: 12px 16px; margin: 4px 0 18px;
+}
+.sh-callout h3 { margin: 0 0 6px; font-size: 16px; }
+.sh-callout ul { margin: 0; padding-inline-start: 20px; color: var(--text-2); }
+.sh-callout li { margin: 4px 0; }
+.sh-callout a, .sh-gap a { color: var(--accent); }
+.sh-gap { border: 1px dashed var(--line); border-radius: 12px; padding: 12px 16px; margin-top: 18px; }
+.sh-gap h3 { margin: 0 0 4px; font-size: 16px; }
+.sh-gap p { margin: 0; color: var(--text-2); max-width: 80ch; }
+.sh-h3 { margin: 16px 0 6px; font-size: 16px; }
+.sh-table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 4px; }
+.sh-table th, .sh-table td { text-align: start; padding: 5px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.sh-table th { color: var(--text-2); font-weight: 500; }
+.sh-table tr.home td { font-weight: 700; }
+.sh-asks { margin: 8px 0 0; padding-inline-start: 22px; }
+.sh-asks li { margin: 0 0 14px; }
+.sh-asks p { margin: 2px 0 6px; color: var(--text-2); max-width: 80ch; }
+.sh-copy { font-size: 13px; padding: 4px 12px; }
+.mine-link { display: inline-block; margin-top: 8px; color: var(--accent); font-weight: 500; }
