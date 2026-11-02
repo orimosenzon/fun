@@ -319,6 +319,27 @@ footer a, .top-links a { color: var(--muted); }
 footer a:hover, .top-links a:hover { color: var(--cyan); }
 .top-links { margin: 8px 0 0; font-size: 0.9rem; }
 
+/* the way back to the start: every quiz, as a player */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(94, 231, 255, 0.45);
+  background: rgba(94, 231, 255, 0.06);
+  color: var(--cyan);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.home-btn:hover { background: rgba(94, 231, 255, 0.14); border-color: var(--cyan); }
+#home-btn { margin-bottom: 14px; }
+#home-btn.hidden { display: none; }
+.link-as-btn { text-decoration: none; display: inline-block; }
+.header-end { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
 /* ---------- admin ---------- */
 
 .link-btn {

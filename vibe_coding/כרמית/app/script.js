@@ -205,6 +205,10 @@ $('self-yes').addEventListener('click', () => selfGrade(true));
 $('self-no').addEventListener('click', () => selfGrade(false));
 nextBtn.addEventListener('click', nextRiddle);
 restartBtn.addEventListener('click', startQuiz);
+$('home-btn').addEventListener('click', (e) => {
+  const midQuiz = !quizScreen.classList.contains('hidden') && (current > 0 || answered);
+  if (midQuiz && !confirm('לצאת מהשעשועון? ההתקדמות בסיבוב הזה לא תישמר.')) e.preventDefault();
+});
 answerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     if (!answered) submitAnswer();
@@ -239,6 +243,7 @@ try {
   if (!quizId) {
     showGallery(await loadQuizzes());
   } else {
+    $('home-btn').classList.remove('hidden');
     const quiz = await loadQuiz(quizId);
     if (!quiz) {
       intro.innerHTML = 'השעשועון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל השעשועונים</a>';
