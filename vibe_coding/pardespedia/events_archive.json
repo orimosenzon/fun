@@ -5313,6 +5313,17 @@
    "url": "https://pardeshanna.eventschedule.com/hashuk-03-11/tti537",
    "venue": "השוק הישן"
   },
+  "2026-11-03--יוגה-לגיל-השלישי": {
+   "category": "קהילה",
+   "date": "2026-11-03",
+   "entry": "₪50",
+   "image_file": "אירוע-hub-dea719d9-5202-428a-9720-83d95e386e83.jpg",
+   "name": "יוגה לגיל השלישי",
+   "source": "לוח האירועים",
+   "time": "10:00",
+   "url": "https://pardes-events-hub.lovable.app/event/dea719d9-5202-428a-9720-83d95e386e83",
+   "venue": "פרדס חנה"
+  },
   "2026-11-03--כיתות-האמן-הקומיות-חוזרות-למרכז-הצעירים": {
    "category": "קהילה",
    "date": "2026-11-03",
@@ -5323,6 +5334,17 @@
    "time": "21:00",
    "url": "https://pardes-events-hub.lovable.app/event/8b1afa36-9404-47cd-b854-4294779188da",
    "venue": "המושב"
+  },
+  "2026-11-04--השבוע-בחנה-בר": {
+   "category": "קהילה",
+   "date": "2026-11-04",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-e746a7e6-36cc-41a5-a291-b79f00115afa.jpg",
+   "name": "השבוע בחנה בר",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardes-events-hub.lovable.app/event/e746a7e6-36cc-41a5-a291-b79f00115afa",
+   "venue": "הבוטנים 54"
   },
   "2026-11-04--מלהקת-הנח-ל-עד-שיר-לשלום-האחים-אסנר-עושים-כבוד-למירי-אלוני": {
    "category": "מופעים והופעות",
@@ -5368,6 +5390,17 @@
    "url": "",
    "venue": "גן הציפורים"
   },
+  "2026-11-05--יוגה-לגיל-השלישי": {
+   "category": "קהילה",
+   "date": "2026-11-05",
+   "entry": "₪50",
+   "image_file": "אירוע-hub-3e9a8d93-b1dd-458e-8cbd-1a75c0ddec76.jpg",
+   "name": "יוגה לגיל השלישי",
+   "source": "לוח האירועים",
+   "time": "16:00",
+   "url": "https://pardes-events-hub.lovable.app/event/3e9a8d93-b1dd-458e-8cbd-1a75c0ddec76",
+   "venue": "פרדס חנה"
+  },
   "2026-11-05--להקת-D-Moves": {
    "category": "מופעים והופעות",
    "date": "2026-11-05",
@@ -5390,6 +5423,17 @@
    "url": "https://emeklive.co.il/narbata-05-11/f7aqEW",
    "venue": "נרבתא"
   },
+  "2026-11-05--סוניה-ג׳ייקוב-בנד": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-05",
+   "entry": "חינם",
+   "image_file": "אירוע-emek-9uns2D.jpg",
+   "name": "סוניה ג׳ייקוב & בנד",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://emeklive.co.il/caesarea-05-11/9uns2D",
+   "venue": "מתחם CR סנטר (קיסריה)"
+  },
   "2026-11-06--שוק-השיקשוק": {
    "category": "קהילה",
    "date": "2026-11-06",
@@ -5411,6 +5455,28 @@
    "time": "20:00",
    "url": "https://pardeshanna.eventschedule.com/unicorn-07-11/9oVkDn",
    "venue": "יוניקורן"
+  },
+  "2026-11-08--במה-פתוחה-39": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-08",
+   "entry": "חינם",
+   "image_file": "אירוע-es-FYnW7C.jpg",
+   "name": "במה פתוחה #39",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/patricks-08-11/FYnW7C",
+   "venue": "פטריקס (קיסריה)"
+  },
+  "2026-11-08--שירתו-של-אידיוט-המיטב-של-פיטר-שאב": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-08",
+   "entry": "",
+   "image_file": "אירוע-hl-99.jpg",
+   "name": "שירתו של אידיוט-המיטב של פיטר שאב",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://haulam-phk.smarticket.co.il/event/99",
+   "venue": "האולם — בית תרבות מקומי פרכו\"ר"
   }
  }
 }
