@@ -76,7 +76,16 @@
             <h2>בשעשועון <span id="in-count" class="count"></span></h2>
             <button id="quiz-new-riddle" class="primary-btn small">+ חידה חדשה</button>
           </div>
-          <p class="help">גוררים כדי לשנות את הסדר. זה הסדר שבו השחקן יראה את החידות.</p>
+          <p class="help">גוררים כדי לשנות את הסדר. זה הסדר שבו השחקן יראה את החידות. מסמנים חידות (Shift לטווח) כדי להעתיק או להעביר אותן לשעשועון אחר.</p>
+          <div id="pick-bar" class="pick-bar">
+            <label class="inline pick-all"><input type="checkbox" id="pick-all"> <span id="pick-count">בחירת הכל</span></label>
+            <span id="pick-actions" class="pick-actions hidden">
+              <select id="pick-target" class="pick-target" aria-label="לאיזה שעשועון"></select>
+              <button id="pick-copy" class="primary-btn small">העתקה</button>
+              <button id="pick-move" class="secondary-btn small">העברה</button>
+              <button id="pick-clear" class="link-btn muted">ניקוי</button>
+            </span>
+          </div>
           <ol id="quiz-list" class="quiz-list"></ol>
         </section>
 
@@ -84,8 +93,12 @@
           <div class="pane-head">
             <h2>להוסיף מהמאגר <span id="out-count" class="count"></span></h2>
           </div>
-          <input type="search" id="side-search" class="search" placeholder="חיפוש">
-          <p class="help">לוחצים על חידה או גוררים אותה לשעשועון.</p>
+          <div class="side-filters">
+            <input type="search" id="side-search" class="search" placeholder="חיפוש">
+            <select id="side-source" class="pick-target" aria-label="מאיפה"></select>
+          </div>
+          <p class="help">לוחצים על חידה או גוררים אותה לשעשועון. אפשר לסנן לפי שעשועון אחר ולהוסיף את כל החידות שלו.</p>
+          <button id="side-add-all" class="secondary-btn small hidden"></button>
           <div id="side-pool" class="side-pool"></div>
         </section>
       </div>

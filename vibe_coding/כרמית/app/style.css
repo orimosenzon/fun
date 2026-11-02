@@ -723,6 +723,26 @@ body.admin #app { max-width: 1080px; }
   cursor: grab;
 }
 .q-item:hover { border-color: #3a4153; }
+.q-item.picked { border-color: rgba(94, 231, 255, 0.55); background: rgba(94, 231, 255, 0.06); }
+.q-item .pick, .pick-all input { width: 17px; height: 17px; margin: 0; flex: none; accent-color: var(--cyan); cursor: pointer; }
+.pick-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 34px; padding-inline-start: 9px; }
+.pick-all { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--muted); cursor: pointer; }
+.pick-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pick-target {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  max-width: 100%;
+}
+.pick-target:focus { outline: none; border-color: var(--cyan); }
+.side-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.side-filters .search { flex: 1 1 140px; width: auto; }
+.side-filters .pick-target { flex: 1 1 140px; }
+#side-add-all { align-self: flex-start; }
 .q-item.dragging { opacity: 0.35; }
 .q-item .grip { color: #4a5164; font-size: 1.1rem; }
 .q-item .num { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); width: 1.6em; }

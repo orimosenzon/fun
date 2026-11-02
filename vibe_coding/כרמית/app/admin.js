@@ -15,6 +15,8 @@ let riddles = [];        // the pool, newest first
 let byId = new Map();
 let quizzes = [];
 let current = null;      // the quiz open in the quiz view
+let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
+let lastPick = null;     // anchor for shift-click ranges
 
 let editing = null;      // id of the riddle being edited in the dialog, or null for a new one
 let addToQuiz = null;    // a new riddle saved from the quiz view joins this quiz
@@ -270,8 +272,11 @@ async function deleteRiddle(r) {
 
 function openQuiz(q) {
   current = q;
+  picked = new Set();
+  lastPick = null;
   $('quiz-title').value = q.title;
   $('side-search').value = '';
+  $('side-source').value = '';
   $('play-link').href = playUrl(q);
   setSaveState('');
   renderQuiz();
@@ -288,6 +293,7 @@ function renderQuiz() {
   $('in-count').textContent = rs.length;
   $('quiz-stats').textContent = rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות';
   renderQuizList(rs);
+  renderSideSource();
   renderSidePool();
 }
 
@@ -362,9 +368,14 @@ function renderQuizList(rs) {
     list.appendChild(el('li', 'empty-drop', 'גוררים לכאן חידות מהמאגר, או לוחצים עליהן'));
   }
   rs.forEach((r, i) => {
-    const li = el('li', 'q-item');
+    const li = el('li', picked.has(r.id) ? 'q-item picked' : 'q-item');
     li.draggable = true;
     li.dataset.id = r.id;
+    const box = el('input', 'pick');
+    box.type = 'checkbox';
+    box.checked = picked.has(r.id);
+    box.title = 'סימון להעתקה או העברה';
+    box.addEventListener('click', (e) => togglePick(r.id, box.checked, e.shiftKey));
     const img = el('img');
     img.src = r.image;
     img.alt = '';
@@ -376,7 +387,7 @@ function renderQuizList(rs) {
     const out = el('button', 'icon-btn', '✕');
     out.title = 'הוצאה מהשעשועון (החידה נשארת במאגר)';
     out.addEventListener('click', () => setIds(current.riddleIds.filter((id) => id !== r.id)));
-    li.append(el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, edit, out);
+    li.append(box, el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, edit, out);
     li.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', r.id);
       e.dataTransfer.effectAllowed = 'move';
@@ -385,15 +396,116 @@ function renderQuizList(rs) {
     li.addEventListener('dragend', () => li.classList.remove('dragging'));
     list.appendChild(li);
   });
+  renderPickBar(rs);
 }
+
+// ---------- copy / move checked riddles to another quiz ----------
+
+function togglePick(id, on, range) {
+  const ids = quizRiddles(current).map((r) => r.id);
+  const a = ids.indexOf(lastPick);
+  const b = ids.indexOf(id);
+  const span = range && a >= 0 ? ids.slice(Math.min(a, b), Math.max(a, b) + 1) : [id];
+  span.forEach((x) => (on ? picked.add(x) : picked.delete(x)));
+  lastPick = id;
+  renderQuizList(quizRiddles(current));
+}
+
+const pickedIds = () => quizRiddles(current).map((r) => r.id).filter((id) => picked.has(id));
+
+function renderPickBar(rs) {
+  const n = pickedIds().length;
+  $('pick-bar').classList.toggle('hidden', !rs.length);
+  $('pick-all').checked = n > 0 && n === rs.length;
+  $('pick-all').indeterminate = n > 0 && n < rs.length;
+  $('pick-count').textContent = n ? `נבחרו ${n}` : 'בחירת הכל';
+  $('pick-actions').classList.toggle('hidden', !n);
+  const sel = $('pick-target');
+  const keep = sel.value;
+  sel.innerHTML = '';
+  sel.appendChild(new Option('לשעשועון…', ''));
+  quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(q.title || 'ללא שם', q.id)));
+  sel.appendChild(new Option('+ שעשועון חדש…', 'new'));
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
+}
+
+$('pick-all').addEventListener('change', (e) => {
+  picked = new Set(e.target.checked ? current.riddleIds : []);
+  lastPick = null;
+  renderQuizList(quizRiddles(current));
+});
+$('pick-clear').addEventListener('click', () => { picked = new Set(); renderQuizList(quizRiddles(current)); });
+$('pick-copy').addEventListener('click', () => transfer(false));
+$('pick-move').addEventListener('click', () => transfer(true));
+
+// Copy appends the checked riddles to the target quiz, skipping ones already there; move also takes them out of this one.
+async function transfer(move) {
+  const ids = pickedIds();
+  const choice = $('pick-target').value;
+  if (!ids.length) return;
+  if (!choice) { $('pick-target').focus(); return toast('בוחרים קודם לאיזה שעשועון'); }
+  let target;
+  let dup = 0;
+  try {
+    if (choice === 'new') {
+      const title = prompt('שם לשעשועון החדש:', 'שעשועון חדש');
+      if (title == null) return;
+      const data = { title: title.trim() || 'שעשועון חדש', cover: '', riddleIds: ids, by: auth.currentUser.email };
+      const ref = await fs.addDoc(fs.collection(db, 'quizzes'), { ...data, created: fs.serverTimestamp() });
+      target = { id: ref.id, ...data };
+      quizzes.unshift(target);
+    } else {
+      target = quizzes.find((q) => q.id === choice);
+      const fresh = ids.filter((id) => !target.riddleIds.includes(id));
+      dup = ids.length - fresh.length;
+      const riddleIds = [...target.riddleIds, ...fresh];
+      await fs.updateDoc(fs.doc(db, 'quizzes', target.id), { riddleIds, updated: fs.serverTimestamp() });
+      target.riddleIds = riddleIds;
+    }
+    if (move) await saveQuiz({ riddleIds: current.riddleIds.filter((id) => !picked.has(id)) });
+  } catch (err) {
+    return toast(`הפעולה נכשלה: ${err.message}`);
+  }
+  const n = ids.length;
+  const verb = move ? (n === 1 ? 'הועברה' : 'הועברו') : (n === 1 ? 'הועתקה' : 'הועתקו');
+  const extra = !dup ? '' : dup === n ? ' (כבר היו שם)' : dup === 1 ? ' (אחת מהן כבר הייתה שם)' : ` (${dup} מהן כבר היו שם)`;
+  toast(`${n === 1 ? 'חידה אחת' : `${n} חידות`} ${verb} ל"${target.title}"${extra}`);
+  picked = new Set();
+  renderQuiz();
+  $('pick-target').value = target.id; // a quiz just created stays the target for the next batch
+}
+
+// The side pool can be narrowed to the riddles of one other quiz, to pull from it.
+function renderSideSource() {
+  const sel = $('side-source');
+  const keep = sel.value;
+  sel.innerHTML = '';
+  sel.appendChild(new Option('מכל המאגר', ''));
+  sel.appendChild(new Option('רק כאלה שלא בשום שעשועון', 'none'));
+  quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(`מתוך: ${q.title || 'ללא שם'}`, q.id)));
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
+}
+
+let sideShown = [];
 
 function renderSidePool() {
   const term = $('side-search').value.trim().toLowerCase();
+  const source = $('side-source').value;
   const out = riddles.filter((r) => !current.riddleIds.includes(r.id));
   $('out-count').textContent = out.length;
+  let from = out;
+  if (source === 'none') from = out.filter((r) => !quizzesWith(r.id).length);
+  else if (source) {
+    const src = quizzes.find((q) => q.id === source);
+    from = src ? quizRiddles(src).filter((r) => !current.riddleIds.includes(r.id)) : out;
+  }
+  sideShown = from.filter((x) => matches(x, term));
+  const all = $('side-add-all');
+  all.classList.toggle('hidden', !(source || term) || sideShown.length < 2);
+  all.textContent = `+ הוספת כל ה-${sideShown.length} לסוף השעשועון`;
   const box = $('side-pool');
   box.innerHTML = '';
-  for (const r of out.filter((x) => matches(x, term))) {
+  for (const r of sideShown) {
     const item = el('button', 'side-item');
     item.draggable = true;
     item.title = 'הוספה לשעשועון';
@@ -411,10 +523,16 @@ function renderSidePool() {
     box.appendChild(item);
   }
   if (!box.children.length) {
-    box.appendChild(el('p', 'help', term ? 'לא נמצאו חידות.' : 'כל החידות שבמאגר כבר בשעשועון הזה.'));
+    box.appendChild(el('p', 'help', term || source ? 'לא נמצאו חידות.' : 'כל החידות שבמאגר כבר בשעשועון הזה.'));
   }
 }
 $('side-search').addEventListener('input', renderSidePool);
+$('side-source').addEventListener('change', renderSidePool);
+$('side-add-all').addEventListener('click', () => {
+  const n = sideShown.length;
+  setIds([...current.riddleIds, ...sideShown.map((r) => r.id)]);
+  toast(`${n} חידות נוספו לסוף השעשועון`);
+});
 
 // Dropping on the list inserts at the pointer: reorders a riddle already in it, or adds one from the pool.
 const list = $('quiz-list');
