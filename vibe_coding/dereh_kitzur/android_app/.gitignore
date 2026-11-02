@@ -7,3 +7,4 @@ android/capacitor-cordova-android-plugins/build/
 *.keystore
 *.jks
 keystore.properties
+derech-kitzur.apk

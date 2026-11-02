@@ -740,9 +740,56 @@ const Drafts = (() => {
     document.body.appendChild(box);
   }
 
+  /* In a browser a walk stops being heard the moment the screen goes off, and
+   * the next fix after it comes back is joined to the last one by a straight
+   * line. The page cannot prevent that; it can say so, before the walk (once
+   * per phone) and after a gap, and point Android walkers to the app, which
+   * records with the screen off. */
+  const SETUP_APK = 'setup.html?os=apk';
+  const OFF_GAP_MS = 20000;
+  const TOLD_SCREEN = 'dk.toldScreen.v1';
+
+  function tellScreen(after) {
+    const android = /Android/i.test(navigator.userAgent);
+    const box = document.createElement('div');
+    box.className = 'dk-modal';
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);'
+      + 'display:flex;align-items:center;justify-content:center;padding:16px';
+    const head = after
+      ? `ההקלטה עצרה ל-${after < 2 ? 'כדקה' : `כ-${after} דקות`}`
+      : 'המסך צריך להישאר דלוק';
+    const why = after
+      ? 'כשהמסך כבה הדפדפן הפסיק לקבל מיקום, אז הקטע מאז הוא קו ישר ולא הדרך שהלכת.'
+      : 'בדפדפן ההקלטה נעצרת ברגע שהמסך כבה, והקטע שהלכת בינתיים יוצא קו ישר.';
+    box.innerHTML = '<div dir="rtl" style="background:#fff;color:#111;border-radius:14px;'
+      + 'padding:18px;max-width:380px;font-size:15px;line-height:1.5">'
+      + `<b style="display:block;font-size:17px;margin-bottom:6px">${head}</b>`
+      + `<p style="margin:0 0 8px">${why}</p>`
+      + (android
+        ? '<p style="margin:0 0 14px">באפליקציית האנדרואיד של דרך קיצור ההקלטה <b>ממשיכה גם כשהמסך כבוי</b> והטלפון בכיס.</p>'
+        : '<p style="margin:0 0 14px">בינתיים: להשאיר את המסך דלוק עד סוף ההליכה.</p>')
+      + '<div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">'
+      + (android ? '<button data-a="app" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#6a1b9a;color:#fff">התקנת האפליקציה</button>' : '')
+      + '<button data-a="close" style="border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;background:#eee;color:#333">הבנתי</button></div></div>';
+    box.addEventListener('click', (e) => {
+      const a = e.target.dataset && e.target.dataset.a;
+      if (a === 'app') { glog('open setup apk'); window.open(SETUP_APK, '_blank'); }
+      if (a === 'app' || a === 'close' || e.target === box) box.remove();
+    });
+    document.body.appendChild(box);
+  }
+
   function onVisibility() {
     glog('visibility', document.visibilityState);
-    if (!document.hidden) holdScreen();
+    if (!ed || ed.mode !== 'walk' || Native.isApp) return;
+    if (document.hidden) { ed.hiddenAt = Date.now(); return; }
+    holdScreen();
+    const gone = ed.hiddenAt ? Date.now() - ed.hiddenAt : 0;
+    ed.hiddenAt = 0;
+    if (gone > OFF_GAP_MS && !ed.paused && ed.path.length) {
+      glog('back after', `${Math.round(gone / 1000)}s`);
+      tellScreen(Math.max(1, Math.round(gone / 60000)));
+    }
   }
 
   function startEditor(mode, existing) {
@@ -812,6 +859,11 @@ const Drafts = (() => {
     }
     document.addEventListener('visibilitychange', onVisibility);
     holdScreen();
+    if (!Native.isApp) {
+      let told = false;
+      try { told = !!localStorage.getItem(TOLD_SCREEN); localStorage.setItem(TOLD_SCREEN, '1'); } catch (err) { /* tell anyway */ }
+      if (!told) tellScreen(0);
+    }
 
     const mine = ed;
     const onFix = (pos) => {

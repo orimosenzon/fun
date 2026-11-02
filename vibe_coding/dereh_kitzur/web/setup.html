@@ -257,6 +257,8 @@
   .splash img { width: 96px; height: 96px; border-radius: 24px; }
   .toggle { width: 42px; height: 24px; border-radius: 99px; background: #34c759; position: relative; flex: none; }
   .toggle::after { content: ""; position: absolute; top: 2px; left: 20px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+  .toggle.off { background: #b9c2bd; }
+  .toggle.off::after { left: 2px; }
 
   /* the one thing to press: a pulsing gold ring and a pointing hand */
   .tap { position: relative; cursor: pointer; z-index: 2; }
@@ -349,6 +351,8 @@
   'use strict';
 
   var APP = './index.html?src=setup';
+  // One fixed address; a new build replaces the file on the same release.
+  var APK = 'https://github.com/orimosenzon/fun/releases/download/dk-android/derech-kitzur.apk';
   var HERE = 'https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/setup.html';
   var ua = navigator.userAgent;
 
@@ -433,6 +437,32 @@
     locationAndroid: [
       { html: '<div class="page"><div class="ph-title">🗺️ המפה</div><div class="ph-line"></div></div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:var(--accent);color:var(--card);font-weight:800">📍 איפה אני</span></div>', say: 'לחץ "איפה אני" במפה' },
       { html: '<div class="page under"></div><div class="dialog" style="top:70px"><h4>לאפשר לדרך קיצור לגשת למיקום של המכשיר?</h4><span class="opt tap" data-tap="1">בזמן השימוש באפליקציה</span><span class="opt">רק הפעם</span><span class="opt">אין הרשאה</span></div>', say: 'בחר "בזמן השימוש באפליקציה"' }
+    ],
+    apkDownload: [
+      { html: page() + chromeTop(false) + '<div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:var(--accent);color:var(--card);font-weight:800">⬇️ הורדת האפליקציה</span></div>', say: 'לחץ על כפתור ההורדה' },
+      { html: page(true) + chromeTop(false) + '<div class="dialog"><h4>הקובץ הזה עלול להזיק. להוריד את derech-kitzur.apk בכל זאת?</h4><div class="btns"><span>ביטול</span><span class="tap" data-tap="1">הורדה בכל זאת</span></div></div>', say: 'אם כרום שואל, "הורדה בכל זאת"' },
+      { html: page() + chromeTop(false) + '<div class="bar bottom" style="justify-content:space-between"><span style="font-size:12.5px">derech-kitzur.apk הורד</span><span class="tap" data-tap="1" style="color:#1a73e8;font-weight:800;padding:4px 8px;border-radius:8px">פתיחה</span></div>', say: 'כשההורדה מסתיימת לחץ "פתיחה"' }
+    ],
+    apkAllow: [
+      { html: page(true) + '<div class="dialog"><h4>מטעמי אבטחה, אסור לטלפון להתקין אפליקציות לא ידועות מהמקור הזה.</h4><div class="btns"><span>ביטול</span><span class="tap" data-tap="1">הגדרות</span></div></div>', say: 'לחץ "הגדרות"' },
+      { html: '<div class="page" style="padding-top:40px"><div class="ph-title">← התקנת אפליקציות לא ידועות</div><div class="group" style="background:var(--screen);border-radius:12px;padding:6px 0;margin-top:14px"><div style="display:flex;align-items:center;gap:10px;padding:10px 12px"><span style="font-size:22px">🌐</span><b style="flex:1">Chrome</b></div><div class="tap" data-tap="1" style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px">התר מהמקור הזה<span class="toggle off"></span></div></div></div>', say: 'הדלק את "התר מהמקור הזה"' },
+      { html: '<div class="page" style="padding-top:40px"><div class="ph-title"><span class="tap" data-tap="1" style="padding:2px 6px;border-radius:8px">←</span> התקנת אפליקציות לא ידועות</div><div class="group" style="background:var(--screen);border-radius:12px;padding:6px 0;margin-top:14px"><div style="display:flex;align-items:center;gap:10px;padding:10px 12px"><span style="font-size:22px">🌐</span><b style="flex:1">Chrome</b></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px">התר מהמקור הזה<span class="toggle"></span></div></div></div>', say: 'דלוק. עכשיו חזרה אחורה ←' }
+    ],
+    apkInstall: [
+      { html: page(true) + '<div class="dialog"><div class="who"><img src="icon-192.png" alt=""><div><b>דרך קיצור</b></div></div><h4>להתקין את האפליקציה הזו?</h4><div class="btns"><span>ביטול</span><span class="tap" data-tap="1">התקנה</span></div></div>', say: 'לחץ "התקנה"' },
+      { html: page(true) + '<div class="dialog"><h4>🛡️ Play Protect: אפליקציה לא מוכרת</h4><p style="margin:0 0 10px;font-size:13px;color:var(--muted)">המפתח של האפליקציה לא מוכר ל-Play Protect.</p><span class="opt">אישור</span><span class="opt tap" data-tap="1" style="background:transparent">פרטים נוספים ⌄</span></div>', say: 'אם קופץ Play Protect: "פרטים נוספים"' },
+      { html: page(true) + '<div class="dialog"><h4>🛡️ Play Protect: אפליקציה לא מוכרת</h4><p style="margin:0 0 10px;font-size:13px;color:var(--muted)">המפתח של האפליקציה לא מוכר ל-Play Protect.</p><span class="opt">אישור</span><span class="opt tap" data-tap="1">התקנה בכל זאת</span></div>', say: 'ואז "התקנה בכל זאת"' },
+      { html: '<div class="splash"><img src="icon-192.png" alt="">האפליקציה הותקנה<span style="color:#1a73e8">פתיחה</span></div>', say: '', last: true }
+    ],
+    apkPerms: [
+      { html: '<div class="page"><div class="ph-title">🗺️ המפה</div><div class="ph-line"></div></div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:#8e24aa;color:#fff;font-weight:800">● הקלטת שביל</span></div>', say: 'לחץ "הקלטת שביל"' },
+      { html: '<div class="page under"></div><div class="dialog" style="top:50px"><h4>לאפשר לדרך קיצור לגשת למיקום של המכשיר?</h4><div style="display:flex;gap:8px;margin-bottom:10px"><span class="opt" style="flex:1;margin:0;outline:2px solid var(--accent-2)">🎯 מדויק</span><span class="opt" style="flex:1;margin:0;background:transparent">משוער</span></div><span class="opt tap" data-tap="1">בזמן השימוש באפליקציה</span><span class="opt">רק הפעם</span><span class="opt">אין הרשאה</span></div>', say: 'השאר "מדויק" ולחץ "בזמן השימוש באפליקציה"' },
+      { html: '<div class="page under"></div><div class="dialog"><h4>לאפשר לדרך קיצור לשלוח לך התראות?</h4><span class="opt tap" data-tap="1">אישור</span><span class="opt">אין הרשאה</span></div>', say: 'לחץ "אישור". ההתראה היא הסימן שההקלטה רצה' }
+    ],
+    apkTest: [
+      { html: '<div class="page"><div class="ph-title">🗺️ מקליט · 12 נקודות</div></div><div style="position:absolute;top:0;inset-inline:0;background:var(--sheet);padding:22px 12px 10px;font-size:12.5px;border-radius:0 0 14px 14px"><b>דרך קיצור מקליטה שביל</b><br>ההקלטה ממשיכה גם כשהמסך כבוי.</div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:#333;color:#fff;font-weight:800">⏻ כיבוי מסך</span></div>', say: 'יש התראה למעלה? כבה את המסך' },
+      { html: '<div style="position:absolute;inset:0;background:#000;display:grid;place-items:center;color:#888;text-align:center"><div>🚶 ... 🚶 ... 🚶<br><br><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:#222;color:#ddd;font-weight:800">הדלקת מסך</span></div></div>', say: 'הולכים קצת, ומדליקים שוב' },
+      { html: '<div class="page"><div class="ph-title">🗺️ מקליט · 58 נקודות</div><svg viewBox="0 0 200 200" style="width:100%;height:240px"><path d="M20 180 C 60 150, 50 110, 90 100 S 150 60, 180 20" fill="none" stroke="#8e24aa" stroke-width="5" stroke-linecap="round"/></svg></div>', say: '', last: true }
     ],
     locationIOS: [
       { html: '<div class="page"><div class="ph-title">🗺️ המפה</div><div class="ph-line"></div></div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:var(--accent);color:var(--card);font-weight:800">📍 איפה אני</span></div>', say: 'לחץ "איפה אני" במפה' },
@@ -550,7 +580,66 @@
            'בגרסאות חדשות הוא לפעמים מסתתר מאחורי "עוד" בתחתית התפריט.']
   };
 
+  /* The full Android app: the only way a walk goes on recording with the
+     screen off. It comes as a file from GitHub, so Android asks three times
+     whether we are sure; each of those gets its own step. */
+  var APK_STEPS = [
+    {
+      title: 'מורידים את האפליקציה',
+      body: function () {
+        return '<p class="what">זו האפליקציה המלאה של דרך קיצור. היא <b>ממשיכה להקליט שביל גם כשהמסך כבוי</b> והטלפון בכיס.</p>'
+          + (browser === 'inapp' ? '<div class="badge warn"><span class="e">⚠️</span><span>הדף פתוח בתוך אפליקציה אחרת. אם ההורדה לא מתחילה, פתח אותו בכרום (שלוש הנקודות ← פתיחה בכרום).</span></div>' : '')
+          + '<a class="primary-btn" href="' + APK + '">⬇️ הורדת האפליקציה<small>קובץ אחד, 4 מגה</small></a>'
+          + '<p style="color:var(--muted);font-size:.85em">כרום עשוי להזהיר שהקובץ "עלול להזיק". זה מה שהוא אומר על כל אפליקציה שלא באה מחנות Play. לחץ <b>הורדה בכל זאת</b>.</p>';
+      },
+      demo: 'apkDownload',
+      help: ['פספסת את "פתיחה"? פתח את אפליקציית <b>הקבצים</b> (או "הקבצים שלי") ← <b>הורדות</b> ← לחץ על derech-kitzur.apk.',
+             'אפשר גם למשוך את שורת ההתראות למטה וללחוץ על ההורדה שהסתיימה.']
+    },
+    {
+      title: 'מתירים התקנה מכרום',
+      body: function () {
+        return '<p class="what">בפעם הראשונה אנדרואיד שואל אם מותר לכרום להתקין אפליקציות. זה <b>חד פעמי</b>.</p>'
+          + '<ol><li>בחלון שקופץ לחץ <b>הגדרות</b>.</li><li>הדלק את <b>התר מהמקור הזה</b>.</li><li>חזור אחורה עם כפתור החזרה של הטלפון.</li></ol>';
+      },
+      demo: 'apkAllow',
+      help: ['לא קפץ חלון כזה? מעולה, ההרשאה כבר קיימת. עבור לשלב הבא.',
+             'בשיאומי: אולי יבקשו להמתין כמה שניות לפני שאפשר לאשר. זה תקין.']
+    },
+    {
+      title: 'מתקינים',
+      body: function () {
+        return '<ol><li>לחץ <b>התקנה</b>.</li><li>אם מופיעה אזהרה של <b>Play Protect</b>, לחץ <b>פרטים נוספים</b> ואז <b>התקנה בכל זאת</b>.</li></ol>'
+          + '<div class="badge"><span class="e">🛡️</span><span>Play Protect מזהיר כי האפליקציה לא בחנות Play, לא כי מצא בה משהו. היא לא אוספת דבר ואין בה פרסומות.</span></div>';
+      },
+      demo: 'apkInstall',
+      help: ['כתוב "האפליקציה לא הותקנה"? אם התקנת פעם גרסת ניסיון של דרך קיצור, מחק אותה קודם (לחיצה ארוכה על האייקון ← הסרה) ונסה שוב.',
+             'Play Protect שלח לסריקה? אפשר לבחור "לא עכשיו" ולהמשיך.']
+    },
+    {
+      title: 'פותחים ומאשרים',
+      body: function () {
+        return '<p class="what">פתח את דרך קיצור (מהאייקון או מ"פתיחה"), ולחץ <b>הקלטת שביל</b>. האפליקציה תבקש שני אישורים:</p>'
+          + '<ol><li><b>מיקום</b>: השאר <b>מדויק</b> ובחר <b>בזמן השימוש באפליקציה</b>.</li><li><b>התראות</b>: לחץ <b>אישור</b>.</li></ol>'
+          + '<div class="badge"><span class="e">🔔</span><span>ההתראה "דרך קיצור מקליטה שביל" היא מה שמשאיר את ההקלטה חיה כשהמסך כבוי. בלעדיה אנדרואיד עלול לעצור אותה.</span></div>';
+      },
+      demo: 'apkPerms',
+      help: ['סירבת בטעות? לחיצה ארוכה על האייקון ← פרטי האפליקציה ← הרשאות ← מיקום: "רק בזמן השימוש", ו"מיקום מדויק" דלוק. גם התראות: מותר.']
+    },
+    {
+      title: 'בודקים: מסך כבוי',
+      body: function () {
+        return '<p class="what">הבדיקה האמיתית: מתחילים הקלטה, <b>מכבים את המסך</b>, הולכים דקה או שתיים, ומדליקים. השביל צריך <b>לעקוב אחרי הדרך</b> ולא לקפוץ בקו ישר.</p>'
+          + '<div class="badge"><span class="e">🧹</span><span>יש לך גם את קיצור הדרך מהדפדפן? אפשר למחוק אותו (לחיצה ארוכה ← הסרה) כדי לא להתבלבל בין שני האייקונים. הסגול עם ההקלטה הוא תמיד באפליקציה.</span></div>';
+      },
+      demo: 'apkTest',
+      help: ['עדיין קו ישר? הגדרות הטלפון ← אפליקציות ← דרך קיצור ← <b>סוללה</b> ← <b>ללא הגבלה</b>. בסמסונג ובשיאומי חיסכון הסוללה עוצר אפליקציות ברקע גם כשיש להן התראה.',
+             'בשיאומי: גם <b>הפעלה אוטומטית</b> דלוקה לדרך קיצור.']
+    }
+  ];
+
   var TRACKS = {
+    apk: function () { return APK_STEPS; },
     android: function () {
       return [stepOpenAndroid(), browser === 'samsung' ? {
         title: 'מוסיפים למסך הבית',
@@ -566,6 +655,7 @@
   var track = null, steps = [], i = 0;
 
   function choose(t) {
+    if (t === 'android-web') t = 'android';
     track = t;
     steps = TRACKS[t]();
     i = 0;
@@ -597,18 +687,20 @@
   function demoOf(s) { return typeof s.demo === 'function' ? s.demo() : s.demo ? DEMOS[s.demo] : null; }
 
   function renderStart(focus) {
-    var mine = isIOS ? 'ios' : isAndroid ? 'android' : '';
-    var opt = function (id, e, name, sub) {
+    var mine = isIOS ? 'ios' : isAndroid ? 'apk' : '';
+    var opt =function (id, e, name, sub) {
       return '<button class="choice' + (mine === id ? ' mine' : '') + '" type="button" data-track="' + id + '"><span class="e">' + e + '</span><span><b>' + name + '</b><small>' + sub + '</small></span>' + (mine === id ? '<span class="tag">הטלפון שלך</span>' : '') + '</button>';
     };
     var desktop = !isIOS && !isAndroid;
     card.innerHTML = '<h1 tabindex="-1">איזה טלפון יש לך?</h1>'
-      + '<p class="what">נעבור יחד כמה צעדים קטנים. בכל צעד יש הדגמה שאפשר ללחוץ עליה. <b>אין מה להוריד ואין הרשמה.</b></p>'
+      + '<p class="what">נעבור יחד כמה צעדים קטנים. בכל צעד יש הדגמה שאפשר ללחוץ עליה. <b>בלי הרשמה ובלי סיסמה.</b></p>'
       + (desktop ? '<div class="badge warn"><span class="e">💻</span><span>נראה שאתה במחשב. ההתקנה נעשית <b>בטלפון</b>: סרוק את הקוד עם המצלמה של הטלפון, והדף הזה ייפתח שם.</span></div><div class="qr" id="qr" aria-label="קוד QR לדף הזה"></div><span class="addr">' + HERE.replace('https://', '') + '</span><div class="row-btns"><a class="ghost-btn" href="https://wa.me/?text=' + encodeURIComponent('התקנת דרך קיצור: ' + HERE) + '" target="_blank" rel="noopener">💬 שלח לעצמי בוואטסאפ</a><button class="ghost-btn" type="button" data-copy>📋 העתקת הכתובת</button></div><p style="color:var(--muted);font-size:.85em;margin-top:16px">רוצה בכל זאת לראות את ההוראות? בחר טלפון:</p>' : '')
       + '<div class="choices">'
-      + (mine === 'ios' ? opt('ios', '🍎', 'אייפון', 'ספארי או כרום') + opt('android', '🤖', 'אנדרואיד', 'סמסונג, שיאומי, פיקסל וכל השאר')
-                        : opt('android', '🤖', 'אנדרואיד', 'סמסונג, שיאומי, פיקסל וכל השאר') + opt('ios', '🍎', 'אייפון', 'ספארי או כרום'))
+      + (mine === 'ios' ? optIOS() + optApk() + optWeb() : optApk() + optWeb() + optIOS())
       + '</div>';
+    function optApk() { return opt('apk', '🤖', 'אנדרואיד: האפליקציה המלאה', 'מומלץ. מקליטה שבילים גם כשהמסך כבוי'); }
+    function optWeb() { return opt('android-web', '🌐', 'אנדרואיד: קיצור דרך מהדפדפן', 'בלי להוריד קובץ. ההקלטה נעצרת כשהמסך כבה'); }
+    function optIOS() { return opt('ios', '🍎', 'אייפון', 'ספארי או כרום. ההקלטה עובדת רק כשהמסך דלוק'); }
     back.hidden = true;
     next.innerHTML = mine ? 'מתחילים ←' : 'בחר טלפון';
     next.disabled = !mine;
@@ -620,10 +712,11 @@
   function renderDone(focus) {
     card.innerHTML = '<div class="done-big" aria-hidden="true">🎉</div><h1 tabindex="-1" style="text-align:center">זהו, סיימת!</h1>'
       + '<p class="what" style="text-align:center">דרך קיצור על הטלפון שלך. מעכשיו פותחים אותה מהאייקון, והשבילים תמיד עדכניים.</p>'
-      + '<a class="primary-btn" href="' + APP + '">🗺️ פתח את המפה</a>'
+      + (track === 'apk' ? '<p class="what" style="text-align:center"><b>מהאייקון</b>, ולא מהדפדפן: רק שם ההקלטה ממשיכה עם מסך כבוי.</p>'
+                         : '<a class="primary-btn" href="' + APP + '">🗺️ פתח את המפה</a>')
       + '<div class="row-btns" style="justify-content:center"><button class="ghost-btn" type="button" data-share>💚 שלח את ההסבר לחבר</button><button class="ghost-btn" type="button" data-restart>↺ מההתחלה</button></div>';
     back.hidden = false;
-    next.innerHTML = 'פתח את המפה ←';
+    next.innerHTML = track === 'apk' ? '↺ מההתחלה' : 'פתח את המפה ←';
     next.disabled = false;
     wire();
     if (focus) card.querySelector('h1').focus({ preventScroll: true });
@@ -707,8 +800,8 @@
 
   /* ---------- nav ---------- */
   next.onclick = function () {
-    if (!track) { var m = isIOS ? 'ios' : isAndroid ? 'android' : ''; if (m) choose(m); return; }
-    if (i >= steps.length) { location.href = APP; return; }
+    if (!track) { var m = isIOS ? 'ios' : isAndroid ? 'apk' : ''; if (m) choose(m); return; }
+    if (i >= steps.length) { if (track === 'apk') { track = null; render(true); } else location.href = APP; return; }
     i++; render(true);
   };
   back.onclick = function () {
@@ -744,9 +837,11 @@
   }
 
   /* ---------- resume where the reader left off (same browser tab) ---------- */
+  // A link that names the track (?os=apk, from the app's own warning) wins.
   var pos = (store('pos') || '').split(':');
-  if (TRACKS[pos[0]]) { track = pos[0]; steps = TRACKS[track](); i = Math.min(+pos[1] || 0, steps.length - 1); }
-  else if (/[?&]os=(ios|android)/.test(location.search)) { track = RegExp.$1; steps = TRACKS[track](); }
+  var asked = /[?&]os=(ios|android|apk)/.exec(location.search);
+  if (asked) { track = asked[1]; steps = TRACKS[track](); }
+  else if (TRACKS[pos[0]]) { track = pos[0]; steps = TRACKS[track](); i = Math.min(+pos[1] || 0, steps.length - 1); }
   render(false);
 })();
 </script>

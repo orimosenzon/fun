@@ -29,7 +29,22 @@ at `~/android-sdk` (`android/local.properties`).
     ./build.sh          # the real app, loads the live site
     ./build.sh dev      # loads http://127.0.0.1:8790 to try unpushed web changes
 
-The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Install
+    ./build.sh release  # signed, for handing out: derech-kitzur.apk
+
+The release key is `~/.android/derech-kitzur-release.jks`, its passwords in
+`~/.android/derech-kitzur-release.properties` (made 2/11/2026, outside the
+repo). Every APK handed out must be signed with it, or phones refuse it as an
+update; losing it means everyone uninstalls and reinstalls. Keep a backup.
+
+People download the release APK from the GitHub release `dk-android` of
+`orimosenzon/fun`, always at the same address (`setup.html` links to it):
+https://github.com/orimosenzon/fun/releases/download/dk-android/derech-kitzur.apk
+A new build replaces the file there:
+`gh release upload dk-android derech-kitzur.apk --clobber -R orimosenzon/fun`.
+Bump `versionCode` in `android/app/build.gradle` first, or Android will not
+offer it as an update.
+
+The debug APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Install
 with `adb install -r <apk>`, or copy it to the phone and open it.
 
 `python3 make_icons.py` redraws the launcher icons and splash from
@@ -49,9 +64,6 @@ CDP). Playwright's `connect_over_cdp` does not work against a WebView.
 
 ## Not done yet
 
-- A release signing key. The first APK given out sets the key for every later
-  update, and losing it means people have to uninstall and reinstall. So the
-  key should be made once and kept somewhere safe.
 - Opening GPX/KML files from WhatsApp straight into the app.
 - Google Play: developer account, privacy policy, data safety form, closed
   test (12 testers × 14 days for a new personal account).

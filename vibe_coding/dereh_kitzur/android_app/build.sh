@@ -31,5 +31,14 @@ EOF
   echo "dev build: loads http://127.0.0.1:8790"
 fi
 
+if [ "${1:-}" = "release" ]; then
+  # Signed with ~/.android/derech-kitzur-release.jks; this is the APK people
+  # download (setup.html links to it on the GitHub release "dk-android").
+  (cd android && ./gradlew assembleRelease -q 2>&1 | grep -v '^Note:' || true)
+  cp android/app/build/outputs/apk/release/app-release.apk derech-kitzur.apk
+  ls -la derech-kitzur.apk
+  exit
+fi
+
 (cd android && ./gradlew assembleDebug -q 2>&1 | grep -v '^Note:' || true)
 ls -la android/app/build/outputs/apk/debug/app-debug.apk
