@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מתקינים את דרך קיצור</title>
+<meta name="description" content="אשף צעד אחר צעד: מתקינים את דרך קיצור על הטלפון, באייפון ובאנדרואיד, עם הדגמה שאפשר ללחוץ עליה בכל שלב.">
+<meta name="theme-color" content="#1b5e20">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="דרך קיצור">
+<meta property="og:locale" content="he_IL">
+<meta property="og:title" content="מתקינים את דרך קיצור בטלפון">
+<meta property="og:description" content="כמה צעדים קטנים, אחד אחרי השני, עם הדגמה בכל שלב. בלי הורדה ובלי הרשמה.">
+<meta property="og:url" content="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/setup.html">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<!-- Inside the app's scope, like install.html: installing from this page
+     installs the app itself, so the wizard can ask the browser directly. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="דרך קיצור">
+<script>
+  // Opened from the home-screen icon. iOS may keep this page's address rather
+  // than the manifest's start_url, so the icon would land here; send it on.
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
+    location.replace('./index.html?src=home');
+  }
+</script>
+<style>
+  :root {
+    --accent: #1b5e20;
+    --accent-2: #2e7d32;
+    --accent-soft: #e6f2e7;
+    --gold: #f2a900;
+    --ink: #17201b;
+    --muted: #55645c;
+    --line: #d7e0db;
+    --card: #ffffff;
+    --bg: #f2f6f3;
+    --phone: #1d2420;
+    --screen: #ffffff;
+    --chrome-bar: #f1f3f4;
+    --sheet: #f2f2f7;
+    --ring: #f2a900;
+    --ok: #1b7a31;
+    --fs: 19px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --accent: #7fd18a;
+      --accent-2: #5fbf6c;
+      --accent-soft: #1d3322;
+      --ink: #eaf1ec;
+      --muted: #a7b6ad;
+      --line: #33423a;
+      --card: #1a221d;
+      --bg: #111713;
+      --phone: #000000;
+      --screen: #202622;
+      --chrome-bar: #2c332f;
+      --sheet: #2a2f2c;
+      --ok: #7fd18a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --accent: #7fd18a; --accent-2: #5fbf6c; --accent-soft: #1d3322; --ink: #eaf1ec;
+    --muted: #a7b6ad; --line: #33423a; --card: #1a221d; --bg: #111713; --phone: #000;
+    --screen: #202622; --chrome-bar: #2c332f; --sheet: #2a2f2c; --ok: #7fd18a;
+  }
+  :root.big { --fs: 23px; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, "Segoe UI", Rubik, Arial, sans-serif;
+    font-size: var(--fs);
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 120px; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+  /* ---------- top: brand, text size, progress ---------- */
+  .top { display: flex; align-items: center; gap: 12px; }
+  .top img { width: 52px; height: 52px; border-radius: 14px; flex: none; }
+  .top .name { font-weight: 800; font-size: 1.05em; line-height: 1.2; }
+  .top .name span { display: block; font-weight: 400; font-size: .72em; color: var(--muted); }
+  .tsize {
+    margin-inline-start: auto; flex: none;
+    min-width: 56px; min-height: 48px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--card); cursor: pointer; font-weight: 700;
+  }
+  .tsize[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+  .progress { margin: 16px 0 6px; }
+  .progress .label { font-size: .78em; color: var(--muted); margin-bottom: 6px; }
+  .dots { display: flex; gap: 6px; }
+  .dots i {
+    flex: 1; height: 10px; border-radius: 99px; background: var(--line);
+    transition: background .3s;
+  }
+  .dots i.done { background: var(--accent-2); }
+  .dots i.now { background: var(--gold); }
+
+  /* ---------- the step card ---------- */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+    padding: 20px 18px 22px; margin-top: 12px;
+    box-shadow: 0 6px 24px rgba(20, 50, 30, .07);
+  }
+  .card h1 { margin: 0 0 8px; font-size: 1.45em; line-height: 1.25; }
+  .card h1 .n {
+    display: inline-grid; place-items: center; width: 1.5em; height: 1.5em;
+    border-radius: 50%; background: var(--accent); color: var(--card);
+    font-size: .8em; margin-inline-end: 8px; vertical-align: .1em;
+  }
+  .card p { margin: 8px 0; }
+  .card .what { font-size: 1.05em; }
+  .card b { color: var(--accent); }
+  .badge {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px 14px; border-radius: 14px; margin: 12px 0;
+    background: var(--accent-soft); font-size: .92em;
+  }
+  .badge.warn { background: #fff4d6; color: #4a3800; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.warn { background: #3a2f10; color: #ffe7a6; } }
+  .badge .e { font-size: 1.3em; line-height: 1.1; }
+
+  /* the big choice buttons on the first screen */
+  .choices { display: grid; gap: 12px; margin: 16px 0 4px; }
+  .choice {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 16px 18px; min-height: 76px; text-align: start;
+    background: var(--card); border: 2px solid var(--line); border-radius: 18px; cursor: pointer;
+  }
+  .choice .e { font-size: 2em; line-height: 1; }
+  .choice b { display: block; font-size: 1.08em; color: var(--ink); }
+  .choice small { color: var(--muted); font-size: .8em; }
+  .choice.mine { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .choice .tag {
+    margin-inline-start: auto; font-size: .7em; font-weight: 700; color: var(--accent);
+    background: var(--accent-soft); padding: 4px 10px; border-radius: 99px; white-space: nowrap;
+  }
+
+  .primary-btn {
+    display: block; width: 100%; margin: 14px 0 4px; padding: 16px 18px; min-height: 60px;
+    border: 0; border-radius: 16px; background: var(--accent); color: var(--card);
+    font-size: 1.08em; font-weight: 800; cursor: pointer; text-align: center; text-decoration: none;
+  }
+  .primary-btn small { display: block; font-weight: 400; font-size: .72em; opacity: .9; }
+  .ghost-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 8px 16px; border-radius: 14px; cursor: pointer;
+    background: transparent; border: 1px solid var(--line); font-size: .9em;
+  }
+
+  /* ---------- the practice phone ---------- */
+  .demo { margin: 18px 0 6px; }
+  .demo-head {
+    display: flex; align-items: center; gap: 8px; font-size: .8em; color: var(--muted); margin-bottom: 8px;
+  }
+  .demo-head .again { margin-inline-start: auto; min-height: 40px; padding: 4px 12px; font-size: .95em; }
+  .phone {
+    position: relative; width: min(300px, 100%); margin: 0 auto;
+    background: var(--phone); border-radius: 34px; padding: 10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.18);
+  }
+  .screen {
+    position: relative; height: 400px; border-radius: 26px; overflow: hidden;
+    background: var(--screen); font-size: 14px; line-height: 1.35; color: var(--ink);
+  }
+  .demo-say {
+    min-height: 2.8em; margin: 12px auto 0; max-width: 340px; text-align: center;
+    font-weight: 700; font-size: .95em; color: var(--accent);
+  }
+  .demo-say.win { color: var(--ok); }
+
+  /* what's on a fake screen */
+  .bar {
+    position: absolute; inset-inline: 0; display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--chrome-bar);
+  }
+  .bar.top { top: 0; padding-top: 22px; }
+  .bar.bottom { bottom: 0; padding-bottom: 18px; justify-content: space-around; }
+  .url {
+    flex: 1; height: 32px; border-radius: 99px; background: var(--screen);
+    display: flex; align-items: center; padding: 0 12px; direction: ltr;
+    font-size: 12px; color: var(--muted); overflow: hidden; white-space: nowrap;
+  }
+  .ico {
+    flex: none; width: 36px; height: 36px; display: grid; place-items: center;
+    border-radius: 50%; border: 0; background: transparent; cursor: default; padding: 0;
+  }
+  .ico svg { width: 22px; height: 22px; }
+  .page {
+    position: absolute; inset: 0; padding: 74px 14px 60px;
+    background: linear-gradient(var(--accent-soft), var(--screen) 60%);
+  }
+  .page .ph-line { height: 10px; border-radius: 6px; background: var(--line); margin: 10px 0; }
+  .page .ph-title { font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+  .page.under { filter: brightness(.55); }
+
+  .menu {
+    position: absolute; top: 20px; inset-inline-end: 6px; width: 72%;
+    background: var(--screen); border-radius: 14px; padding: 6px 0;
+    box-shadow: 0 8px 28px rgba(0,0,0,.3); animation: pop .18s ease-out;
+  }
+  .menu.at-bottom { top: auto; bottom: 64px; inset-inline-end: 8px; }
+  .menu .it { display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 13.5px; }
+  .menu .it .mi { width: 18px; text-align: center; opacity: .7; }
+  .sheet {
+    position: absolute; inset-inline: 0; bottom: 0; top: 64px;
+    background: var(--sheet); border-radius: 16px 16px 0 0; padding: 10px 10px 0;
+    animation: rise .22s ease-out; overflow: hidden;
+  }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 9px; background: var(--line); margin: 0 auto 10px; }
+  .sheet .apps { display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; }
+  .sheet .apps i { width: 46px; height: 46px; border-radius: 12px; background: var(--line); }
+  .sheet .group { background: var(--screen); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+  .sheet .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px;
+  }
+  .sheet .row:last-child { border-bottom: 0; }
+  .dialog {
+    position: absolute; inset-inline: 14px; top: 110px; background: var(--screen);
+    border-radius: 22px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    animation: pop .18s ease-out;
+  }
+  .dialog h4 { margin: 0 0 12px; font-size: 16px; }
+  .dialog .who { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .dialog .who img { width: 40px; height: 40px; border-radius: 10px; }
+  .dialog .who small { display: block; color: var(--muted); direction: ltr; text-align: end; }
+  .dialog .btns { display: flex; justify-content: flex-end; gap: 6px; }
+  .dialog .btns span, .dialog .opt {
+    padding: 8px 14px; border-radius: 99px; font-weight: 700; color: var(--accent-2);
+  }
+  .dialog .opt { display: block; text-align: center; margin: 6px 0; background: var(--accent-soft); }
+  .home {
+    position: absolute; inset: 0; padding: 44px 16px 16px;
+    background: linear-gradient(160deg, #4b6cb7, #182848);
+    display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 18px 10px;
+  }
+  .home .app { text-align: center; font-size: 10.5px; color: #fff; }
+  .home .app i { display: block; width: 50px; height: 50px; margin: 0 auto 4px; border-radius: 14px; background: rgba(255,255,255,.28); }
+  .home .app img { display: block; width: 50px; height: 50px; margin: 0 auto 4px; border-radius: 14px; }
+  .splash {
+    position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px;
+    background: var(--screen); animation: pop .25s ease-out; text-align: center; font-weight: 800;
+  }
+  .splash img { width: 96px; height: 96px; border-radius: 24px; }
+  .toggle { width: 42px; height: 24px; border-radius: 99px; background: #34c759; position: relative; flex: none; }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 20px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+
+  /* the one thing to press: a pulsing gold ring and a pointing hand */
+  .tap { position: relative; cursor: pointer; z-index: 2; }
+  .tap::before {
+    content: ""; position: absolute; inset: -4px; border-radius: inherit; min-width: 100%;
+    border: 3px solid var(--ring); animation: pulse 1.3s ease-in-out infinite; pointer-events: none;
+  }
+  .menu .it.tap, .sheet .row.tap { background: rgba(242, 169, 0, .16); border-radius: 10px; font-weight: 700; }
+  .hand {
+    position: absolute; z-index: 5; font-size: 30px; pointer-events: none;
+    animation: poke 1.3s ease-in-out infinite; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35));
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.08); } }
+  @keyframes poke { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-4px,-6px); } }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes rise { from { transform: translateY(40%); } to { transform: none; } }
+
+  /* ---------- help, nav ---------- */
+  details.help { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.help summary {
+    cursor: pointer; font-weight: 700; color: var(--muted); min-height: 44px;
+    display: flex; align-items: center; gap: 8px; list-style: none;
+  }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help ul { margin: 6px 0 0; padding-inline-start: 22px; font-size: .9em; }
+  details.help li { margin: 6px 0; }
+
+  nav.steps {
+    position: fixed; inset-inline: 0; bottom: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--line);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  nav.steps .in { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; }
+  nav.steps button {
+    min-height: 58px; border-radius: 16px; cursor: pointer; font-weight: 800;
+  }
+  #back { flex: 0 0 auto; padding: 0 18px; background: var(--card); border: 1px solid var(--line); }
+  #next { flex: 1; border: 0; background: var(--accent); color: var(--card); font-size: 1.05em; }
+  #next[disabled] { opacity: .45; cursor: default; }
+  #back[hidden] { display: none; }
+
+  .qr { display: grid; place-items: center; margin: 14px auto; padding: 14px; background: #fff; border-radius: 16px; width: fit-content; }
+  .addr {
+    display: block; margin: 8px 0; padding: 10px 12px; direction: ltr; text-align: center;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .72em;
+    background: var(--bg); border: 1px dashed var(--line); border-radius: 12px; overflow-wrap: anywhere;
+  }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+  .done-big { font-size: 4.2em; text-align: center; line-height: 1; margin: 6px 0 10px; animation: pop .4s ease-out; }
+  .toast {
+    position: fixed; top: 16px; inset-inline: 16px; z-index: 20; max-width: 520px; margin: 0 auto;
+    background: var(--accent); color: var(--card); padding: 14px 16px; border-radius: 16px;
+    font-weight: 800; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.25); animation: pop .2s;
+  }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 360px) { .screen { height: 370px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <img src="icon-192.png" alt="">
+    <div class="name">דרך קיצור<span>מתקינים על הטלפון, צעד אחרי צעד</span></div>
+    <button class="tsize" id="tsize" type="button" aria-pressed="false" aria-label="הגדלת הטקסט">א+</button>
+  </div>
+
+  <div class="progress" id="progress" hidden>
+    <div class="label" id="plabel"></div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+  </div>
+
+  <section class="card" id="card" aria-live="polite"></section>
+</main>
+
+<nav class="steps" aria-label="מעבר בין שלבים">
+  <div class="in">
+    <button id="back" type="button">→ חזרה</button>
+    <button id="next" type="button">הבא ←</button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+
+  var APP = './index.html?src=setup';
+  var HERE = 'https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/setup.html';
+  var ua = navigator.userAgent;
+
+  /* ---------- who is reading ---------- */
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/.test(ua);
+  // In-app browsers (Facebook, Instagram, Android WebViews) cannot install.
+  var inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|; wv\)/.test(ua);
+  var browser = isIOS
+    ? (/CriOS/.test(ua) ? 'chrome' : /FxiOS|EdgiOS/.test(ua) ? 'other' : inApp ? 'inapp' : 'safari')
+    : isAndroid
+      ? (inApp ? 'inapp' : /SamsungBrowser/.test(ua) ? 'samsung' : /Firefox|OPR|EdgA|MiuiBrowser|YaBrowser/.test(ua) ? 'other' : 'chrome')
+      : 'desktop';
+  // Safari 26 tucked Share behind the ⋯ button.
+  var safariVer = +((/Version\/(\d+)/.exec(ua) || [])[1] || 0);
+
+  /* ---------- small helpers ---------- */
+  function store(k, v) {
+    try { if (v === undefined) return localStorage.getItem('dk-setup-' + k); localStorage.setItem('dk-setup-' + k, v); } catch (e) { return null; }
+  }
+  function $(id) { return document.getElementById(id); }
+  var SVG = {
+    dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+    hdots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7"/></svg>',
+    burger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    fwd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h10a4 4 0 014 4v12H9a4 4 0 01-4-4z"/></svg>',
+    tabs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="13" height="13" rx="2"/><path d="M8 20h11a1 1 0 001-1V8"/></svg>',
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11l8-7 8 7v9H4z"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>'
+  };
+  function ico(name, tap) { return '<span class="ico' + (tap ? ' tap' : '') + '" data-tap="' + (tap ? 1 : '') + '">' + SVG[name] + '</span>'; }
+  var PAGE = '<div class="page%"><div class="ph-title">דרך קיצור · התקנה</div><div class="ph-line" style="width:80%"></div><div class="ph-line" style="width:60%"></div><div class="ph-line" style="width:70%"></div><div class="ph-line" style="width:40%"></div></div>';
+  function page(dim) { return PAGE.replace('%', dim ? ' under' : ''); }
+  var URL_TXT = '<span class="url">orimosenzon.github.io/…/setup</span>';
+
+  /* ---------- the fake screens. Each scene is HTML with one .tap target;
+     tapping it moves to the next scene, and the last one says well done. ---------- */
+  var chromeTop = function (tapDots) { return '<div class="bar top">' + ico('home') + URL_TXT + ico('tabs') + ico('dots', tapDots) + '</div>'; };
+  var DIALOG_INSTALL = '<div class="dialog"><h4>להתקין את האפליקציה?</h4><div class="who"><img src="icon-192.png" alt=""><div><b>דרך קיצור</b><small>orimosenzon.github.io</small></div></div>'
+    + '<div class="btns"><span>ביטול</span><span class="tap" data-tap="1">התקנה</span></div></div>';
+
+  var DEMOS = {
+    chromeOpen: [
+      { html: page() + '<div class="bar top">' + '<span class="ico">✕</span>' + URL_TXT + ico('dots', true) + '</div>', say: 'לחץ על שלוש הנקודות בפינה' },
+      { html: page(true) + '<div class="bar top"><span class="ico">✕</span>' + URL_TXT + ico('dots') + '</div><div class="menu"><div class="it"><span class="mi">↻</span>רענון</div><div class="it"><span class="mi">⎘</span>העתקת הקישור</div><div class="it tap" data-tap="1"><span class="mi">◎</span>פתיחה בכרום</div><div class="it"><span class="mi">↗</span>שיתוף</div></div>', say: 'עכשיו "פתיחה בכרום"' }
+    ],
+    chromeInstall: [
+      { html: page() + chromeTop(true), say: 'לחץ על שלוש הנקודות ⋮' },
+      { html: page(true) + chromeTop(false) + '<div class="menu"><div class="it"><span class="mi">＋</span>כרטיסייה חדשה</div><div class="it"><span class="mi">🕘</span>היסטוריה</div><div class="it"><span class="mi">⤓</span>הורדות</div><div class="it"><span class="mi">↗</span>שיתוף…</div><div class="it"><span class="mi">⌕</span>חיפוש בדף</div><div class="it tap" data-tap="1"><span class="mi">📲</span>התקנת האפליקציה</div><div class="it"><span class="mi">🖥</span>גרסה למחשב</div><div class="it"><span class="mi">⚙</span>הגדרות</div></div>', say: 'בחר "התקנת האפליקציה" (או "הוספה למסך הבית")' },
+      { html: page(true) + chromeTop(false) + DIALOG_INSTALL, say: 'ולסיום "התקנה"' }
+    ],
+    samsungInstall: [
+      { html: page() + '<div class="bar top">' + URL_TXT + '</div><div class="bar bottom">' + ico('back') + ico('fwd') + ico('home') + ico('tabs') + ico('burger', true) + '</div>', say: 'לחץ על שלושת הקווים ≡ למטה' },
+      { html: page(true) + '<div class="bar top">' + URL_TXT + '</div><div class="menu at-bottom"><div class="it"><span class="mi">★</span>הוסף לסימניות</div><div class="it tap" data-tap="1"><span class="mi">＋</span>הוסף דף ל…</div><div class="it"><span class="mi">↗</span>שתף</div><div class="it"><span class="mi">⚙</span>הגדרות</div></div><div class="bar bottom">' + ico('back') + ico('fwd') + ico('home') + ico('tabs') + ico('burger') + '</div>', say: 'בחר "הוסף דף ל…"' },
+      { html: page(true) + '<div class="bar top">' + URL_TXT + '</div><div class="menu at-bottom"><div class="it"><span class="mi">★</span>סימניות</div><div class="it"><span class="mi">⚡</span>גישה מהירה</div><div class="it tap" data-tap="1"><span class="mi">📱</span>מסך הבית</div></div>', say: 'ואז "מסך הבית"' },
+      { html: page(true) + '<div class="dialog"><h4>הוספה למסך הבית</h4><div class="who"><img src="icon-192.png" alt=""><div><b>דרך קיצור</b></div></div><div class="btns"><span>ביטול</span><span class="tap" data-tap="1">הוסף</span></div></div>', say: 'לחץ "הוסף"' }
+    ],
+    // Three different-looking iPhone browsers, one demo each.
+    iosShare: {
+      safari: [
+        { html: page() + '<div class="bar bottom">' + ico('back') + ico('fwd') + ico('share', true) + ico('book') + ico('tabs') + '</div>', say: 'לחץ על כפתור השיתוף: ריבוע עם חץ למעלה' }
+      ],
+      safari26: [
+        { html: page() + '<div class="bar bottom">' + ico('back') + URL_TXT + ico('hdots', true) + '</div>', say: 'לחץ על שלוש הנקודות ⋯ שליד הכתובת' },
+        { html: page(true) + '<div class="menu at-bottom"><div class="it"><span class="mi">★</span>הוסף לסימניות</div><div class="it"><span class="mi">⧉</span>כרטיסייה חדשה</div><div class="it tap" data-tap="1"><span class="mi">↗</span>שיתוף</div></div><div class="bar bottom">' + ico('back') + URL_TXT + ico('hdots') + '</div>', say: 'עכשיו "שיתוף"' }
+      ],
+      chrome: [
+        { html: page() + '<div class="bar top">' + URL_TXT + ico('share', true) + '</div><div class="bar bottom">' + ico('back') + ico('fwd') + ico('plus') + ico('tabs') + ico('hdots') + '</div>', say: 'לחץ על כפתור השיתוף, בקצה שורת הכתובת למעלה' }
+      ]
+    },
+    iosAdd: [
+      { html: page(true) + '<div class="sheet"><div class="grab"></div><div class="apps"><i></i><i></i><i></i><i></i></div><div class="group"><div class="row">העתק<span>⧉</span></div><div class="row">הוסף לסימניות<span>📖</span></div><div class="row">הוסף למועדפים<span>☆</span></div><div class="row">חיפוש בעמוד<span>⌕</span></div><div class="row tap" data-tap="1">הוסף למסך הבית<span>⊞</span></div><div class="row">סימון<span>✎</span></div></div></div>', say: 'גלול מטה ובחר "הוסף למסך הבית"' },
+      { html: '<div class="sheet" style="top:20px"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px 14px"><span style="color:#0a84ff">ביטול</span><b>הוספה למסך הבית</b><span class="tap" data-tap="1" style="color:#0a84ff;font-weight:800;padding:2px 6px;border-radius:8px">הוסף</span></div><div class="group"><div class="row" style="justify-content:flex-start;gap:12px"><img src="icon-192.png" alt="" style="width:48px;height:48px;border-radius:12px">דרך קיצור</div></div><div class="group"><div class="row">פתח כאפליקציית רשת<span class="toggle"></span></div></div></div>', say: 'לחץ "הוסף" בפינה למעלה' }
+    ],
+    findIcon: [
+      { html: '<div class="home">' + appGrid() + '</div>', say: 'מצא את האייקון הירוק ולחץ עליו' },
+      { html: '<div class="splash"><img src="icon-192.png" alt="">דרך קיצור<small style="font-weight:400;color:var(--muted)">המפה נפתחת על כל המסך</small></div>', say: '' , last: true }
+    ],
+    locationAndroid: [
+      { html: '<div class="page"><div class="ph-title">🗺️ המפה</div><div class="ph-line"></div></div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:var(--accent);color:var(--card);font-weight:800">📍 איפה אני</span></div>', say: 'לחץ "איפה אני" במפה' },
+      { html: '<div class="page under"></div><div class="dialog" style="top:70px"><h4>לאפשר לדרך קיצור לגשת למיקום של המכשיר?</h4><span class="opt tap" data-tap="1">בזמן השימוש באפליקציה</span><span class="opt">רק הפעם</span><span class="opt">אין הרשאה</span></div>', say: 'בחר "בזמן השימוש באפליקציה"' }
+    ],
+    locationIOS: [
+      { html: '<div class="page"><div class="ph-title">🗺️ המפה</div><div class="ph-line"></div></div><div class="bar bottom"><span class="tap" data-tap="1" style="padding:8px 14px;border-radius:99px;background:var(--accent);color:var(--card);font-weight:800">📍 איפה אני</span></div>', say: 'לחץ "איפה אני" במפה' },
+      { html: '<div class="page under"></div><div class="dialog" style="top:90px;text-align:center"><h4>"דרך קיצור" מבקשת להשתמש במיקום הנוכחי שלך</h4><span class="opt">אל תאפשר</span><span class="opt tap" data-tap="1">אפשר</span></div>', say: 'לחץ "אפשר"' }
+    ]
+  };
+  function appGrid() {
+    var s = '', names = ['שעון', 'מצלמה', 'תמונות', 'הודעות', 'מפות', 'מזג אוויר', 'הגדרות', 'מחשבון'];
+    for (var i = 0; i < names.length; i++) s += '<div class="app"><i></i>' + names[i] + '</div>';
+    return s + '<div class="app tap" data-tap="1" style="border-radius:14px"><img src="icon-192.png" alt="">דרך קיצור</div>';
+  }
+
+  /* ---------- the tracks ---------- */
+  var deferred = null;
+  var installed = false;
+
+  var STEP_INSTALL_CHROME = {
+    title: 'מתקינים',
+    body: function () {
+      return '<p class="what">עושים את זה <b>כאן, על הדף הזה</b>. התפריט ייפתח מעליו.</p>'
+        + (deferred ? '<button class="primary-btn" id="go-install" type="button">📲 התקן עכשיו<small>הכרום שלך יודע לעשות את זה בלחיצה אחת</small></button>'
+                       + '<p style="text-align:center;color:var(--muted);font-size:.85em">ייפתח חלון קטן. לחץ בו <b>התקנה</b>.</p>'
+                     : '<ol><li>לחץ על <b>שלוש הנקודות ⋮</b> בפינה העליונה של המסך.</li><li>בחר <b>התקנת האפליקציה</b> או <b>הוספה למסך הבית</b>.</li><li>בחלון שנפתח לחץ <b>התקנה</b>.</li></ol>');
+    },
+    demo: 'chromeInstall',
+    help: ['אין בתפריט "התקנה" או "הוספה למסך הבית"? רענן את הדף ונסה שוב, לפעמים הכרום צריך שנייה.',
+           'יצא חלון "הוספה למסך הבית" עם "הוספה אוטומטית"? זה אותו דבר. לחץ "הוספה".',
+           'כתוב "פתיחה באפליקציה"? מעולה, היא כבר מותקנת. עבור לשלב הבא.']
+  };
+
+  function stepFindIcon() {
+    return {
+      title: 'מוצאים את האייקון',
+      body: function () {
+        return '<p class="what">צא למסך הבית של הטלפון. יש שם עכשיו אייקון <b>ירוק עם דרך זהובה</b>, בשם "דרך קיצור".</p>'
+          + '<p style="text-align:center"><img src="icon-192.png" alt="האייקון של דרך קיצור" width="88" height="88" style="border-radius:22px;box-shadow:0 6px 18px rgba(27,94,32,.3)"></p>'
+          + '<p>לחץ עליו. המפה נפתחת על כל המסך, <b>בלי שורת כתובת</b>. זה הסימן שהצליח.</p>';
+      },
+      demo: 'findIcon',
+      help: isIOS
+        ? ['לא רואה אותו? החלק ימינה עד העמוד האחרון במסך הבית, או משוך את המסך מטה וחפש "דרך קיצור".']
+        : ['לא רואה אותו? לפעמים הוא נכנס רק למגירת האפליקציות (החלקה למעלה מתחתית המסך). אפשר ללחוץ עליו לחיצה ארוכה ולגרור למסך הבית.',
+           'אפשר גם לחפש "דרך קיצור" בשורת החיפוש של הטלפון.']
+    };
+  }
+  function stepLocation() {
+    return {
+      title: 'מאשרים מיקום (לא חובה)',
+      body: function () {
+        return '<p class="what">כדי לראות <b>איפה אתה על המפה</b>, לחץ באפליקציה על "איפה אני" ואשר את המיקום.</p>'
+          + '<div class="badge"><span class="e">🔒</span><span>המיקום נשאר בטלפון שלך. לא שומרים אותו ולא שולחים אותו לשום מקום, אלא אם תבחר להקליט שביל.</span></div>';
+      },
+      demo: isIOS ? 'locationIOS' : 'locationAndroid',
+      help: isIOS
+        ? ['סירבת בטעות? הגדרות ← פרטיות ← שירותי מיקום ← אתרים של ספארי ← "בזמן השימוש".']
+        : ['סירבת בטעות? לחיצה ארוכה על האייקון ← פרטי האפליקציה ← הרשאות ← מיקום ← "רק בזמן השימוש".',
+           'בחר "מיקום מדויק". עם מיקום משוער הנקודה קופצת על המפה.']
+    };
+  }
+
+  function stepOpenAndroid() {
+    var ok = browser === 'chrome', sam = browser === 'samsung';
+    return {
+      title: ok ? 'אתה בכרום' : sam ? 'אתה בדפדפן של סמסונג' : 'פותחים את הדף בכרום',
+      body: function () {
+        if (ok) return '<div class="badge"><span class="e">✅</span><span><b>מצוין.</b> הדף הזה פתוח בכרום, ומכאן מתקינים. אפשר לעבור לשלב הבא.</span></div>';
+        if (sam) return '<div class="badge"><span class="e">✅</span><span><b>מצוין.</b> גם מהדפדפן של סמסונג אפשר להתקין. ההוראות הבאות מותאמות אליו.</span></div>';
+        return '<p class="what">הדף נפתח בתוך אפליקציה אחרת (וואטסאפ, פייסבוק וכדומה), ומשם <b>אי אפשר להתקין</b>. צריך לפתוח אותו בכרום.</p>'
+          + '<ol><li>לחץ על <b>שלוש הנקודות ⋮</b> בפינה.</li><li>בחר <b>פתיחה בכרום</b> (או "פתיחה בדפדפן").</li><li>בכרום, ממשיכים מאותו מקום.</li></ol>'
+          + copyBox();
+      },
+      demo: ok || sam ? null : 'chromeOpen',
+      help: ['אין "פתיחה בכרום"? העתק את הכתובת (הכפתור למעלה), פתח את כרום והדבק בשורת הכתובת.']
+    };
+  }
+  function stepOpenIOS() {
+    var ok = browser === 'safari' || browser === 'chrome';
+    return {
+      title: ok ? (browser === 'safari' ? 'אתה בספארי' : 'אתה בכרום') : 'פותחים את הדף בספארי',
+      body: function () {
+        if (ok) return '<div class="badge"><span class="e">✅</span><span><b>מצוין.</b> מהדפדפן הזה מתקינים. אפשר לעבור לשלב הבא.</span></div>';
+        return '<p class="what">הדף נפתח בתוך אפליקציה אחרת, ומשם <b>אי אפשר להתקין</b>. צריך לפתוח אותו ב<b>ספארי</b>.</p>'
+          + '<ol><li>חפש את <b>המצפן</b> 🧭 או את <b>שלוש הנקודות</b> בפינה.</li><li>בחר <b>פתח בספארי</b>.</li></ol>' + copyBox();
+      },
+      help: ['אין "פתח בספארי"? העתק את הכתובת (הכפתור למעלה), פתח את ספארי והדבק בשורת הכתובת.']
+    };
+  }
+  function copyBox() {
+    return '<span class="addr">' + HERE.replace('https://', '') + '</span><div class="row-btns"><button class="ghost-btn" type="button" data-copy>📋 העתקת הכתובת</button></div>';
+  }
+
+  var iosVariant = store('ios') || (browser === 'chrome' ? 'chrome' : safariVer >= 26 ? 'safari26' : 'safari');
+  var STEP_IOS_SHARE = {
+    title: 'פותחים את תפריט השיתוף',
+    body: function () {
+      var v = [['safari', 'ספארי: שורה למטה עם ריבוע וחץ'], ['safari26', 'ספארי חדש: הכתובת למטה ולידה ⋯'], ['chrome', 'כרום: כתובת למעלה']];
+      return '<p class="what">עושים את זה <b>כאן, על הדף הזה</b>. איך נראה הדפדפן שלך?</p><div class="row-btns" role="radiogroup">'
+        + v.map(function (x) { return '<button class="ghost-btn" type="button" role="radio" aria-checked="' + (iosVariant === x[0]) + '" data-variant="' + x[0] + '"' + (iosVariant === x[0] ? ' style="border-color:var(--accent);background:var(--accent-soft);font-weight:700"' : '') + '>' + x[1] + '</button>'; }).join('')
+        + '</div>'
+        + (iosVariant === 'safari26' ? '<ol><li>לחץ על <b>⋯</b> שליד שורת הכתובת, למטה.</li><li>בחר <b>שיתוף</b>.</li></ol>'
+           : iosVariant === 'chrome' ? '<ol><li>לחץ על <b>כפתור השיתוף</b> בקצה שורת הכתובת, למעלה.</li></ol>'
+           : '<ol><li>לחץ על <b>כפתור השיתוף</b> בשורה התחתונה: ריבוע עם חץ שיוצא ממנו למעלה.</li></ol>');
+    },
+    demo: function () { return DEMOS.iosShare[iosVariant]; },
+    help: ['לא רואה את השורה התחתונה? גלול קצת למעלה בדף, או הקש פעם אחת בתחתית המסך, והיא תחזור.']
+  };
+  var STEP_IOS_ADD = {
+    title: 'הוסף למסך הבית',
+    body: function () {
+      return '<ol><li>בתפריט שנפתח, <b>גלול למטה</b> ולחץ <b>הוסף למסך הבית</b>.</li><li>לחץ <b>הוסף</b> בפינה העליונה.</li></ol>'
+        + '<div class="badge"><span class="e">💡</span><span>אם מופיע מתג "פתח כאפליקציית רשת", השאר אותו <b>דלוק</b>.</span></div>';
+    },
+    demo: 'iosAdd',
+    help: ['אין "הוסף למסך הבית"? גלול עד הסוף, לחץ "עריכת פעולות" והוסף אותו משם.',
+           'בגרסאות חדשות הוא לפעמים מסתתר מאחורי "עוד" בתחתית התפריט.']
+  };
+
+  var TRACKS = {
+    android: function () {
+      return [stepOpenAndroid(), browser === 'samsung' ? {
+        title: 'מוסיפים למסך הבית',
+        body: function () { return '<p class="what">עושים את זה <b>כאן, על הדף הזה</b>.</p><ol><li>לחץ על <b>≡</b> בפינה התחתונה.</li><li>בחר <b>הוסף דף ל…</b> ואז <b>מסך הבית</b>.</li><li>לחץ <b>הוסף</b>.</li></ol>'; },
+        demo: 'samsungInstall',
+        help: ['אם יש בשורת הכתובת אייקון עם חץ למטה, אפשר ללחוץ עליו ישר ולבחור "התקן".']
+      } : STEP_INSTALL_CHROME, stepFindIcon(), stepLocation()];
+    },
+    ios: function () { return [stepOpenIOS(), STEP_IOS_SHARE, STEP_IOS_ADD, stepFindIcon(), stepLocation()]; }
+  };
+
+  /* ---------- state ---------- */
+  var track = null, steps = [], i = 0;
+
+  function choose(t) {
+    track = t;
+    steps = TRACKS[t]();
+    i = 0;
+    render(true);
+  }
+
+  /* ---------- rendering ---------- */
+  var card = $('card'), next = $('next'), back = $('back');
+
+  function render(focus) {
+    $('progress').hidden = !track || i >= steps.length;
+    if (!track) return renderStart(focus);
+    if (i >= steps.length) return renderDone(focus);
+    var s = steps[i];
+    $('plabel').textContent = 'שלב ' + (i + 1) + ' מתוך ' + steps.length;
+    $('dots').innerHTML = steps.map(function (_, k) { return '<i class="' + (k < i ? 'done' : k === i ? 'now' : '') + '"></i>'; }).join('');
+    card.innerHTML = '<h1 tabindex="-1"><span class="n">' + (i + 1) + '</span>' + s.title + '</h1>'
+      + s.body()
+      + (demoOf(s) ? '<div class="demo"><div class="demo-head"><span>👇 נסה כאן קודם, זה רק תרגול</span><button class="ghost-btn again" type="button" data-again>↺ מההתחלה</button></div><div class="phone"><div class="screen" id="screen"></div></div><div class="demo-say" id="say"></div></div>' : '')
+      + (s.help && s.help.length ? '<details class="help"><summary>🙋 נתקעתי</summary><ul>' + s.help.map(function (h) { return '<li>' + h + '</li>'; }).join('') + '</ul></details>' : '');
+    back.hidden = false;
+    next.innerHTML = i === steps.length - 1 ? 'סיימתי ✓' : 'עשיתי, הלאה ←';
+    next.disabled = false;
+    if (demoOf(s)) playDemo(demoOf(s));
+    wire();
+    if (focus) { card.querySelector('h1').focus({ preventScroll: true }); scrollTo(0, 0); }
+    store('pos', track + ':' + i);
+  }
+  function demoOf(s) { return typeof s.demo === 'function' ? s.demo() : s.demo ? DEMOS[s.demo] : null; }
+
+  function renderStart(focus) {
+    var mine = isIOS ? 'ios' : isAndroid ? 'android' : '';
+    var opt = function (id, e, name, sub) {
+      return '<button class="choice' + (mine === id ? ' mine' : '') + '" type="button" data-track="' + id + '"><span class="e">' + e + '</span><span><b>' + name + '</b><small>' + sub + '</small></span>' + (mine === id ? '<span class="tag">הטלפון שלך</span>' : '') + '</button>';
+    };
+    var desktop = !isIOS && !isAndroid;
+    card.innerHTML = '<h1 tabindex="-1">איזה טלפון יש לך?</h1>'
+      + '<p class="what">נעבור יחד כמה צעדים קטנים. בכל צעד יש הדגמה שאפשר ללחוץ עליה. <b>אין מה להוריד ואין הרשמה.</b></p>'
+      + (desktop ? '<div class="badge warn"><span class="e">💻</span><span>נראה שאתה במחשב. ההתקנה נעשית <b>בטלפון</b>: סרוק את הקוד עם המצלמה של הטלפון, והדף הזה ייפתח שם.</span></div><div class="qr" id="qr" aria-label="קוד QR לדף הזה"></div><span class="addr">' + HERE.replace('https://', '') + '</span><div class="row-btns"><a class="ghost-btn" href="https://wa.me/?text=' + encodeURIComponent('התקנת דרך קיצור: ' + HERE) + '" target="_blank" rel="noopener">💬 שלח לעצמי בוואטסאפ</a><button class="ghost-btn" type="button" data-copy>📋 העתקת הכתובת</button></div><p style="color:var(--muted);font-size:.85em;margin-top:16px">רוצה בכל זאת לראות את ההוראות? בחר טלפון:</p>' : '')
+      + '<div class="choices">'
+      + (mine === 'ios' ? opt('ios', '🍎', 'אייפון', 'ספארי או כרום') + opt('android', '🤖', 'אנדרואיד', 'סמסונג, שיאומי, פיקסל וכל השאר')
+                        : opt('android', '🤖', 'אנדרואיד', 'סמסונג, שיאומי, פיקסל וכל השאר') + opt('ios', '🍎', 'אייפון', 'ספארי או כרום'))
+      + '</div>';
+    back.hidden = true;
+    next.innerHTML = mine ? 'מתחילים ←' : 'בחר טלפון';
+    next.disabled = !mine;
+    wire();
+    if (desktop) drawQR();
+    if (focus) card.querySelector('h1').focus({ preventScroll: true });
+  }
+
+  function renderDone(focus) {
+    card.innerHTML = '<div class="done-big" aria-hidden="true">🎉</div><h1 tabindex="-1" style="text-align:center">זהו, סיימת!</h1>'
+      + '<p class="what" style="text-align:center">דרך קיצור על הטלפון שלך. מעכשיו פותחים אותה מהאייקון, והשבילים תמיד עדכניים.</p>'
+      + '<a class="primary-btn" href="' + APP + '">🗺️ פתח את המפה</a>'
+      + '<div class="row-btns" style="justify-content:center"><button class="ghost-btn" type="button" data-share>💚 שלח את ההסבר לחבר</button><button class="ghost-btn" type="button" data-restart>↺ מההתחלה</button></div>';
+    back.hidden = false;
+    next.innerHTML = 'פתח את המפה ←';
+    next.disabled = false;
+    wire();
+    if (focus) card.querySelector('h1').focus({ preventScroll: true });
+    store('pos', '');
+  }
+
+  /* ---------- the practice phone ---------- */
+  function playDemo(scenes) {
+    var k = 0, screen = $('screen'), say = $('say');
+    function show() {
+      var sc = scenes[k];
+      screen.innerHTML = sc.html;
+      say.className = 'demo-say';
+      say.textContent = sc.say ? '👉 ' + sc.say : '';
+      var t = screen.querySelector('[data-tap="1"]');
+      if (!t) { win(); return; }
+      t.setAttribute('role', 'button');
+      t.setAttribute('tabindex', '0');
+      t.setAttribute('aria-label', 'תרגול: ' + (sc.say || 'לחץ'));
+      // A hand pointing at the target, placed in the screen's own coordinates.
+      var r = t.getBoundingClientRect(), s = screen.getBoundingClientRect();
+      var hand = document.createElement('span');
+      hand.className = 'hand'; hand.textContent = '👆'; hand.setAttribute('aria-hidden', 'true');
+      hand.style.left = Math.min(s.width - 34, Math.max(0, r.left - s.left + r.width / 2 - 12)) + 'px';
+      hand.style.top = Math.min(s.height - 36, r.bottom - s.top - 4) + 'px';
+      if (r.bottom - s.top > s.height - 50) hand.style.top = (r.top - s.top - 34) + 'px', hand.style.transform = 'rotate(180deg)';
+      screen.appendChild(hand);
+      var go = function (e) { e.preventDefault(); k++; if (k < scenes.length) show(); else win(); };
+      t.addEventListener('click', go);
+      t.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(e); });
+    }
+    function win() {
+      if (!scenes[k] || !scenes[k].last) screen.querySelectorAll('.hand').forEach(function (h) { h.remove(); });
+      say.className = 'demo-say win';
+      say.textContent = '✅ בדיוק ככה! עכשיו עשה את אותו הדבר בטלפון, ואז "עשיתי, הלאה".';
+    }
+    show();
+    card.querySelector('[data-again]').onclick = function () { k = 0; show(); };
+  }
+
+  /* ---------- buttons inside the card ---------- */
+  function wire() {
+    card.querySelectorAll('[data-track]').forEach(function (b) { b.onclick = function () { choose(b.dataset.track); }; });
+    card.querySelectorAll('[data-variant]').forEach(function (b) { b.onclick = function () { iosVariant = b.dataset.variant; store('ios', iosVariant); render(false); }; });
+    card.querySelectorAll('[data-copy]').forEach(function (b) {
+      b.onclick = function () {
+        var done = function () { b.textContent = '✓ הועתק'; };
+        if (navigator.clipboard) navigator.clipboard.writeText(HERE).then(done, function () { prompt('העתק את הכתובת:', HERE); });
+        else prompt('העתק את הכתובת:', HERE);
+      };
+    });
+    var r = card.querySelector('[data-restart]');
+    if (r) r.onclick = function () { track = null; render(true); };
+    var sh = card.querySelector('[data-share]');
+    if (sh) sh.onclick = function () {
+      var data = { title: 'דרך קיצור', text: 'ככה מתקינים את דרך קיצור, מפת השבילים של פרדס חנה-כרכור:', url: HERE };
+      if (navigator.share) navigator.share(data).catch(function () {});
+      else location.href = 'https://wa.me/?text=' + encodeURIComponent(data.text + ' ' + HERE);
+    };
+    var gi = card.querySelector('#go-install');
+    if (gi) gi.onclick = function () {
+      if (!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.then(function (c) { deferred = null; if (c.outcome === 'accepted') onInstalled(); else render(false); });
+    };
+  }
+
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3500);
+  }
+
+  function onInstalled() {
+    if (installed) return;
+    installed = true;
+    toast('🎉 מותקן! עכשיו נמצא את האייקון');
+    if (track === 'android' && steps[i] && steps[i].demo !== 'findIcon') { i = 2; render(true); }
+  }
+
+  /* ---------- nav ---------- */
+  next.onclick = function () {
+    if (!track) { var m = isIOS ? 'ios' : isAndroid ? 'android' : ''; if (m) choose(m); return; }
+    if (i >= steps.length) { location.href = APP; return; }
+    i++; render(true);
+  };
+  back.onclick = function () {
+    if (!track) return;
+    if (i === 0) { track = null; render(true); return; }
+    i--; render(true);
+  };
+
+  /* ---------- text size ---------- */
+  var big = store('big') === '1';
+  function applyBig() { document.documentElement.classList.toggle('big', big); $('tsize').setAttribute('aria-pressed', big); $('tsize').textContent = big ? 'א-' : 'א+'; }
+  $('tsize').onclick = function () { big = !big; store('big', big ? '1' : '0'); applyBig(); if (track && i < steps.length) render(false); };
+  applyBig();
+
+  /* ---------- the browser's own install offer ---------- */
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e;
+    if (track === 'android' && steps[i] === STEP_INSTALL_CHROME) render(false);
+  });
+  addEventListener('appinstalled', onInstalled);
+
+  /* ---------- QR, desktop only ---------- */
+  function drawQR() {
+    var box = $('qr');
+    if (!box) return;
+    var paint = function () { try { box.innerHTML = ''; new QRCode(box, { text: HERE, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M }); } catch (e) { box.remove(); } };
+    if (window.QRCode) return paint();
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = paint; s.onerror = function () { box.remove(); };
+    document.head.appendChild(s);
+  }
+
+  /* ---------- resume where the reader left off (same browser tab) ---------- */
+  var pos = (store('pos') || '').split(':');
+  if (TRACKS[pos[0]]) { track = pos[0]; steps = TRACKS[track](); i = Math.min(+pos[1] || 0, steps.length - 1); }
+  else if (/[?&]os=(ios|android)/.test(location.search)) { track = RegExp.$1; steps = TRACKS[track](); }
+  render(false);
+})();
+</script>
+</body>
+</html>
