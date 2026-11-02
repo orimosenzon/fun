@@ -1,4 +1,4 @@
-// The game plays one quiz (שעשועון), index.html?q=<id>, in the order Carmit set.
+// The game plays one quiz (שעשועון), index.html?q=<id>, in the order Carmit set, or shuffled if the quiz says so.
 // Without ?q= the start screen lists all the quizzes to choose from.
 import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER } from './fb.js';
 
@@ -28,6 +28,7 @@ const reportBody = document.querySelector('#report-table tbody');
 const restartBtn = $('restart-btn');
 
 let RIDDLES = [];
+let SHUFFLE = false;     // the quiz asks for a fresh random order on every start
 let order = [];
 let current = 0;
 let results = [];
@@ -46,6 +47,12 @@ const isImageAnswer = (r) => r.answerType === 'image';
 
 function startQuiz() {
   order = RIDDLES.map((_, i) => i);
+  if (SHUFFLE) {
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+  }
   current = 0;
   results = [];
   startScreen.classList.add('hidden');
@@ -237,6 +244,7 @@ try {
       intro.innerHTML = 'השעשועון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל השעשועונים</a>';
     } else {
       RIDDLES = quiz.riddles;
+      SHUFFLE = !!quiz.shuffle;
       document.title = `${quiz.title} · חידות לכרמית`;
       $('quiz-intro').classList.remove('hidden');
       // Without a cover of its own the header logo already stands in for it.

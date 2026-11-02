@@ -10,8 +10,8 @@ FS = """
 const store = window.__store = { riddles: {}, quizzes: {} };
 let n = 0;
 const img = '%s';
-for (let i = 1; i <= 6; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, created: i };
-store.quizzes.qa = { title: 'אלף', cover: '', riddleIds: ['r1', 'r2', 'r3', 'r4'], created: 2 };
+for (let i = 1; i <= 6; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, question: 'Q' + i, created: i };
+store.quizzes.qa = { title: 'אלף', cover: '', riddleIds: ['r1', 'r2', 'r3', 'r4'], created: 2, shuffle: location.hash === '#shuf' };
 store.quizzes.qb = { title: 'בית', cover: '', riddleIds: ['r5', 'r2'], created: 1 };
 window.__writes = [];
 export const getFirestore = () => ({});
@@ -99,9 +99,28 @@ with sync_playwright() as p:
     page.wait_for_timeout(200)
     check(sorted(ids("qa")) == ["r1", "r2", "r3", "r4", "r5", "r6"], f"add all: {ids('qa')}")
 
+    # order: fixed / shuffle
+    check(page.is_checked('input[name="quiz-order"][value="fixed"]'), "order defaults to fixed")
+    page.click('.seg:has(input[value="shuffle"])')
+    page.wait_for_timeout(200)
+    check(page.evaluate("window.__store.quizzes.qa.shuffle") is True, "shuffle saved")
+    check("אקראי" in page.text_content("#order-help"), "help text explains random order")
+
     page.fill("#side-search", "")
     page.locator("#quiz-list .pick").nth(1).click()
     page.screenshot(path=sys.argv[2])
+
+    # the game: fixed order always starts with Q1, shuffled order varies between starts
+    game = BASE.replace("admin.html", "index.html?q=qa")
+    def first_riddle(hash_):
+        page.goto("about:blank")
+        page.goto(game + hash_)
+        page.click("#start-btn")
+        return page.text_content("#riddle-question")
+    fixed = {first_riddle("") for _ in range(4)}
+    check(fixed == {"Q1"}, f"fixed order starts with Q1: {fixed}")
+    shuf = {first_riddle("#shuf") for _ in range(10)}
+    check(len(shuf) > 1, f"shuffled order varies: {sorted(shuf)}")
     b.close()
 
 print("ALL OK" if ok else "SOME FAILED")

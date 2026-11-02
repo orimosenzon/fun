@@ -145,7 +145,8 @@ function renderQuizGrid() {
     stack.appendChild(front);
     card.appendChild(stack);
     const cap = el('div', 'caption');
-    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות'));
+    const count = rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות';
+    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', q.shuffle ? `${count} · בסדר אקראי` : count));
     card.appendChild(cap);
     card.addEventListener('mouseenter', () => schedulePeek(card, q));
     card.addEventListener('mouseleave', hidePeek);
@@ -279,6 +280,7 @@ function openQuiz(q) {
   $('side-source').value = '';
   $('play-link').href = playUrl(q);
   setSaveState('');
+  renderOrder();
   renderQuiz();
   scrollTo({ top: 0 });
 }
@@ -323,6 +325,19 @@ $('quiz-title').addEventListener('input', () => {
   saveTimer = setTimeout(() => saveQuiz({ title: $('quiz-title').value.trim() }), 600);
 });
 $('quiz-title').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+
+// The player sees the riddles in the order set here, or reshuffled on every start.
+function renderOrder() {
+  const shuffle = !!current.shuffle;
+  document.querySelector(`input[name="quiz-order"][value="${shuffle ? 'shuffle' : 'fixed'}"]`).checked = true;
+  $('order-help').textContent = shuffle
+    ? 'השחקן יקבל את החידות בסדר אקראי, חדש בכל משחק. הסדר כאן משמש רק לתצוגה המקדימה.'
+    : 'גוררים כדי לשנות את הסדר. זה הסדר שבו השחקן יראה את החידות.';
+}
+document.querySelectorAll('input[name="quiz-order"]').forEach((r) => r.addEventListener('change', () => {
+  saveQuiz({ shuffle: r.value === 'shuffle' });
+  renderOrder();
+}));
 
 $('cover-btn').addEventListener('click', () => $('cover-file').click());
 $('cover-file').addEventListener('change', async (e) => {

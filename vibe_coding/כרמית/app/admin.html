@@ -63,6 +63,11 @@
             <span id="quiz-stats"></span>
             <span id="save-state" class="save-state"></span>
           </div>
+          <div class="order-row" role="radiogroup" aria-label="סדר החידות">
+            <span class="order-label">סדר החידות לשחקן:</span>
+            <label class="seg"><input type="radio" name="quiz-order" value="fixed"><span>כפי שקבעתי</span></label>
+            <label class="seg"><input type="radio" name="quiz-order" value="shuffle"><span>אקראי 🔀</span></label>
+          </div>
           <div class="hero-actions">
             <button id="share-btn" class="primary-btn small">העתקת קישור לשליחה</button>
             <a id="play-link" class="secondary-btn small" target="_blank" rel="noopener">לשחק בו ↗</a>
@@ -78,7 +83,7 @@
             <h2>בשעשועון <span id="in-count" class="count"></span></h2>
             <button id="quiz-new-riddle" class="primary-btn small">+ חידה חדשה</button>
           </div>
-          <p class="help">גוררים כדי לשנות את הסדר. זה הסדר שבו השחקן יראה את החידות. מסמנים חידות (Shift לטווח) כדי להעתיק או להעביר אותן לשעשועון אחר.</p>
+          <p class="help"><span id="order-help"></span> מסמנים חידות (Shift לטווח) כדי להעתיק או להעביר אותן לשעשועון אחר.</p>
           <div id="pick-bar" class="pick-bar">
             <label class="inline pick-all"><input type="checkbox" id="pick-all"> <span id="pick-count">בחירת הכל</span></label>
             <span id="pick-actions" class="pick-actions hidden">

@@ -696,6 +696,22 @@ body.admin #app { max-width: 1080px; }
 .hero-meta { display: flex; gap: 14px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
 .save-state.saved { color: var(--lime); }
 .save-state.error { color: var(--coral); }
+.order-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.88rem; }
+.order-label { color: var(--muted); margin-inline-end: 4px; }
+.seg { position: relative; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.seg span:hover { border-color: #3a4153; color: var(--text); }
+.seg input:checked + span { border-color: var(--cyan); color: var(--cyan); background: rgba(94, 231, 255, 0.08); }
+.seg input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
 
 .panes { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start; }
