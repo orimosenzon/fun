@@ -1,4 +1,6 @@
-import { loadRiddles, primaryAnswer, isCorrect } from './fb.js';
+// The game plays one quiz (שעשועון), index.html?q=<id>, in the order Carmit set.
+// Without ?q= the start screen lists all the quizzes to choose from.
+import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER } from './fb.js';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -35,15 +37,6 @@ let answered = false;
 const PRAISES = ['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -52,7 +45,7 @@ const riddle = () => RIDDLES[order[current]];
 const isImageAnswer = (r) => r.answerType === 'image';
 
 function startQuiz() {
-  order = shuffle(RIDDLES.map((_, i) => i));
+  order = RIDDLES.map((_, i) => i);
   current = 0;
   results = [];
   startScreen.classList.add('hidden');
@@ -212,10 +205,49 @@ answerInput.addEventListener('keydown', (e) => {
   }
 });
 
+function showGallery(quizzes) {
+  const playable = quizzes.filter((q) => q.riddleIds.length);
+  intro.textContent = playable.length ? 'בחרו שעשועון:' : 'עוד אין שעשועונים. בקרוב.';
+  const gallery = $('gallery');
+  gallery.classList.remove('hidden');
+  for (const q of playable) {
+    const a = document.createElement('a');
+    a.className = 'gallery-card';
+    a.href = `?q=${q.id}`;
+    const img = document.createElement('img');
+    img.src = q.cover || DEFAULT_COVER;
+    img.alt = '';
+    if (!q.cover) img.className = 'default';
+    const title = document.createElement('b');
+    title.textContent = q.title;
+    const n = document.createElement('span');
+    n.textContent = `${q.riddleIds.length} חידות`;
+    a.append(img, title, n);
+    gallery.appendChild(a);
+  }
+}
+
 try {
-  RIDDLES = await loadRiddles();
-  intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
-  startBtn.disabled = RIDDLES.length === 0;
+  const quizId = new URLSearchParams(location.search).get('q');
+  if (!quizId) {
+    showGallery(await loadQuizzes());
+  } else {
+    const quiz = await loadQuiz(quizId);
+    if (!quiz) {
+      intro.innerHTML = 'השעשועון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל השעשועונים</a>';
+    } else {
+      RIDDLES = quiz.riddles;
+      document.title = `${quiz.title} · חידות לכרמית`;
+      $('quiz-intro').classList.remove('hidden');
+      // Without a cover of its own the header logo already stands in for it.
+      $('quiz-cover').src = quiz.cover;
+      $('quiz-cover').classList.toggle('hidden', !quiz.cover);
+      $('quiz-name').textContent = quiz.title;
+      intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
+      startBtn.classList.remove('hidden');
+      startBtn.disabled = RIDDLES.length === 0;
+    }
+  }
 } catch (e) {
   console.error(e);
   intro.textContent = 'לא הצלחנו לטעון את החידות. בדקו את החיבור לאינטרנט ונסו לרענן את הדף.';

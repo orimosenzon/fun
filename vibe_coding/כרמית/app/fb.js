@@ -19,6 +19,25 @@ export async function loadRiddles() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// A quiz (שעשועון) is { title, cover (data URL or ''), riddleIds (ordered) }; the riddles stay in the pool.
+export async function loadQuizzes() {
+  const snap = await fs.getDocs(fs.query(fs.collection(db, 'quizzes'), fs.orderBy('created', 'desc')));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function loadQuiz(id) {
+  const snap = await fs.getDoc(fs.doc(db, 'quizzes', id));
+  if (!snap.exists()) return null;
+  const quiz = { id: snap.id, ...snap.data() };
+  const docs = await Promise.all(quiz.riddleIds.map((rid) => fs.getDoc(fs.doc(db, 'riddles', rid))));
+  // A riddle deleted from the pool simply drops out of the quiz.
+  quiz.riddles = docs.filter((d) => d.exists()).map((d) => ({ id: d.id, ...d.data() }));
+  return quiz;
+}
+
+// Shown wherever a quiz has no cover of its own.
+export const DEFAULT_COVER = 'logo.jpg';
+
 export function primaryAnswer(r) {
   return r.answerType === 'text' ? (r.answers[r.primary] ?? r.answers[0] ?? '') : '';
 }

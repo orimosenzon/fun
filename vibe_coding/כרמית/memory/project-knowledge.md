@@ -4,7 +4,11 @@
 - **החידות ב-Firestore** מ-26/10/2026, בפרויקט `carmit-riddles` של orimosenzon@gmail.com, בקולקציה `riddles`. אין יותר riddles.js ו-build_riddles.py.
 - **מבנה חידה:** `image` (data URL), `question` ו-`hint` (אופציונליים), `answerType` ('text' או 'image'), `answers` (רשימה), `primary` (האינדקס של התשובה העיקרית), `answerImage`, `by`, `created`.
 - התמונות נשמרות בתוך המסמך (JPEG, צלע ארוכה עד 1280, פחות מ-380K תווים לתמונה). לכן לא צריך Storage ולא חיוב.
-- **ניהול:** `app/admin.html` עם כניסת Google. רק orimosenzon@gmail.com ו-carmitconsari@gmail.com מורשים. האכיפה ב-`firebase/firestore.rules`, והפריסה ב-`firebase/deploy_rules.sh` (דרך gcloud, בלי firebase login).
+- **שעשועונים (מ-02/11/2026):** קולקציה `quizzes`: `title`, `cover` (data URL או ''), `riddleIds` (רשימה מסודרת), `by`, `created`. `riddles` הוא המאגר הכללי, וחידה יכולה להופיע בכמה שעשועונים. השחקן משחק ב-`index.html?q=<id>` לפי הסדר שנקבע. בלי `?q=` מוצגת גלריית כל השעשועונים שיש בהם חידות. שעשועון בלי שער: בגלריה ובניהול מוצג `logo.jpg`, ובדף המשחק לא מוצג שער כי הלוגו כבר בכותרת. מחיקת חידה מהמאגר מוציאה אותה מכל השעשועונים.
+- "השעשועון הראשון" (YIAgWziD4umRqJWLQmGd) נוצר עם כל 17 החידות שהיו במאגר.
+- **ניהול:** גלריית שעשועונים (שער עם חידות מוטות מאחוריו, ותצוגה מקדימה במעבר עכבר), טאב "מאגר החידות", ומסך שעשועון (שם שנשמר אוטומטית, שער, העתקת קישור, גרירה לשינוי הסדר ולהוספה מהמאגר). טופס החידה נפתח בחלון. ניתוב: `#pool`, `#quiz/<id>`.
+- **בדיקה מקומית של הניהול בלי Google:** Playwright שמחליף את `firebase-auth.js` במודול מזויף (route). הקריאות אמיתיות, והכתיבות נחסמות על ידי הכללים.
+- **ניהול (הרשאות):** `app/admin.html` עם כניסת Google. רק orimosenzon@gmail.com ו-carmitconsari@gmail.com מורשים. האכיפה ב-`firebase/firestore.rules`, והפריסה ב-`firebase/deploy_rules.sh` (דרך gcloud, בלי firebase login).
 - **תשובה בתמונה:** השחקן חושב, לוחץ "הצגת התשובה" ומסמן לבד אם צדק.
 - **בדיקת תשובה טקסטואלית:** לא תלויה ברישיות, ברווחים, בפיסוק או באותיות סופיות. נכון = שווה לאחת התשובות האפשריות.
 - `tools/seed_firestore.py` טען את 16 החידות הראשונות (seed-01..16). **לא להריץ שוב**, הוא ידרוס עריכות מהאדמין.

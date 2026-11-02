@@ -3,78 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ניהול חידות</title>
+<title>ניהול שעשועונים</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="admin">
   <div id="app">
-    <header>
-      <h1>ניהול חידות</h1>
-      <p class="tagline">ADMIN <b>//</b> WORDPLAY &amp; WONDER</p>
-      <p class="top-links"><a href="index.html">← חזרה למשחק</a></p>
+    <header class="admin-header">
+      <a href="#" class="brand"><img src="logo.jpg" alt=""><span><b>ניהול השעשועונים</b><small>ADMIN // WORDPLAY &amp; WONDER</small></span></a>
+      <div class="who hidden" id="who-box"><span id="who"></span> · <button id="logout-btn" class="link-btn">יציאה</button></div>
     </header>
 
     <section id="login-screen" class="screen">
       <p id="login-msg" class="intro">הכניסה לאזור הניהול היא עם חשבון Google.</p>
       <button id="login-btn" class="primary-btn">כניסה עם Google</button>
+      <p class="top-links"><a href="index.html">← חזרה למשחק</a></p>
     </section>
 
-    <section id="admin-screen" class="screen hidden">
-      <div class="who"><span id="who"></span> · <button id="logout-btn" class="link-btn">יציאה</button></div>
+    <!-- home: all quizzes, and the shared pool of riddles -->
+    <section id="home-view" class="view hidden">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="quizzes" role="tab">השעשועונים <span id="quiz-count" class="count"></span></button>
+        <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
+      </nav>
 
-      <form id="riddle-form" class="riddle-card admin-form">
-        <h2 id="form-title">חידה חדשה</h2>
+      <div id="tab-quizzes">
+        <p class="help">כל שעשועון הוא אוסף חידות עם קישור משלו, שאפשר לשלוח למישהו לשחק. מעבר עם העכבר מראה מה יש בפנים, ולחיצה פותחת לעריכה.</p>
+        <div id="quiz-grid" class="quiz-grid"></div>
+      </div>
 
-        <label class="field">
-          <span>תמונת החידה *</span>
-          <input type="file" id="image-file" accept="image/*">
-        </label>
-        <img id="image-preview" class="preview hidden" alt="">
-
-        <label class="field">
-          <span>טקסט מתחת לתמונה (לא חובה)</span>
-          <input type="text" id="question" autocomplete="off">
-        </label>
-
-        <label class="field">
-          <span>רמז (לא חובה)</span>
-          <input type="text" id="hint" autocomplete="off">
-        </label>
-
-        <fieldset class="field">
-          <legend>התשובה היא</legend>
-          <label class="inline"><input type="radio" name="answer-type" value="text" checked> טקסט</label>
-          <label class="inline"><input type="radio" name="answer-type" value="image"> תמונה</label>
-        </fieldset>
-
-        <div id="text-answers" class="field">
-          <span>תשובות אפשריות. כל אחת מהן תתקבל כנכונה, ⭐ מסמן את התשובה העיקרית שמוצגת לשחקן</span>
-          <div id="answers-list"></div>
-          <button type="button" id="add-answer" class="link-btn">+ עוד תשובה אפשרית</button>
+      <div id="tab-pool" class="hidden">
+        <div class="pool-bar">
+          <input type="search" id="pool-search" class="search" placeholder="חיפוש לפי תשובה, טקסט או רמז">
+          <button id="pool-new" class="primary-btn small">+ חידה חדשה</button>
         </div>
+        <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה שעשועונים, ועריכה שלה כאן משנה אותה בכולם.</p>
+        <div id="pool-grid" class="pool-grid"></div>
+      </div>
+    </section>
 
-        <div id="image-answer" class="field hidden">
-          <label class="field">
-            <span>תמונת התשובה *</span>
-            <input type="file" id="answer-file" accept="image/*">
-          </label>
-          <img id="answer-preview" class="preview hidden" alt="">
+    <!-- one quiz -->
+    <section id="quiz-view" class="view hidden">
+      <a href="#" class="back">→ כל השעשועונים</a>
+
+      <div class="quiz-hero">
+        <button id="cover-btn" class="cover-edit" title="החלפת תמונת השער">
+          <img id="cover-img" alt="">
+          <span class="cover-hint">החלפת תמונה</span>
+        </button>
+        <input type="file" id="cover-file" accept="image/*" hidden>
+        <div class="hero-main">
+          <label class="kicker" for="quiz-title">// שעשועון</label>
+          <input id="quiz-title" class="title-input" maxlength="80" placeholder="שם השעשועון" autocomplete="off">
+          <div class="hero-meta">
+            <span id="quiz-stats"></span>
+            <span id="save-state" class="save-state"></span>
+          </div>
+          <div class="hero-actions">
+            <button id="share-btn" class="primary-btn small">העתקת קישור לשליחה</button>
+            <a id="play-link" class="secondary-btn small" target="_blank" rel="noopener">לשחק בו ↗</a>
+            <button id="cover-remove" class="link-btn muted">הסרת תמונת השער</button>
+            <button id="quiz-delete" class="link-btn del">מחיקת השעשועון</button>
+          </div>
         </div>
+      </div>
 
-        <div id="form-error" class="feedback wrong hidden"></div>
-        <div class="buttons-row">
-          <button type="submit" id="save-btn" class="primary-btn">שמירה</button>
-          <button type="button" id="cancel-btn" class="secondary-btn hidden">ביטול עריכה</button>
-        </div>
-      </form>
+      <div class="panes">
+        <section class="pane pane-quiz">
+          <div class="pane-head">
+            <h2>בשעשועון <span id="in-count" class="count"></span></h2>
+            <button id="quiz-new-riddle" class="primary-btn small">+ חידה חדשה</button>
+          </div>
+          <p class="help">גוררים כדי לשנות את הסדר. זה הסדר שבו השחקן יראה את החידות.</p>
+          <ol id="quiz-list" class="quiz-list"></ol>
+        </section>
 
-      <h2 class="list-title">החידות (<span id="count">0</span>)</h2>
-      <div id="riddle-list" class="riddle-list"></div>
+        <section class="pane pane-pool">
+          <div class="pane-head">
+            <h2>להוסיף מהמאגר <span id="out-count" class="count"></span></h2>
+          </div>
+          <input type="search" id="side-search" class="search" placeholder="חיפוש">
+          <p class="help">לוחצים על חידה או גוררים אותה לשעשועון.</p>
+          <div id="side-pool" class="side-pool"></div>
+        </section>
+      </div>
     </section>
   </div>
+
+  <!-- floating preview of a quiz's riddles, on hover -->
+  <div id="peek" class="peek" aria-hidden="true"></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <dialog id="riddle-dialog">
+    <form id="riddle-form" class="riddle-card admin-form">
+      <div class="dialog-head">
+        <h2 id="form-title">חידה חדשה</h2>
+        <button type="button" class="link-btn close" id="dialog-close" title="סגירה">✕</button>
+      </div>
+
+      <label class="drop" id="image-drop">
+        <input type="file" id="image-file" accept="image/*" hidden>
+        <img id="image-preview" class="preview hidden" alt="">
+        <span class="drop-hint">תמונת החידה *<small>לחיצה לבחירה, או גרירת קובץ לכאן</small></span>
+      </label>
+
+      <label class="field">
+        <span>טקסט מתחת לתמונה (לא חובה)</span>
+        <input type="text" id="question" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span>רמז (לא חובה)</span>
+        <input type="text" id="hint" autocomplete="off">
+      </label>
+
+      <fieldset class="field">
+        <legend>התשובה היא</legend>
+        <label class="inline"><input type="radio" name="answer-type" value="text" checked> טקסט</label>
+        <label class="inline"><input type="radio" name="answer-type" value="image"> תמונה</label>
+      </fieldset>
+
+      <div id="text-answers" class="field">
+        <span>תשובות אפשריות. כל אחת מהן תתקבל כנכונה, ⭐ מסמן את התשובה העיקרית שמוצגת לשחקן</span>
+        <div id="answers-list"></div>
+        <button type="button" id="add-answer" class="link-btn">+ עוד תשובה אפשרית</button>
+      </div>
+
+      <div id="image-answer" class="field hidden">
+        <label class="drop" id="answer-drop">
+          <input type="file" id="answer-file" accept="image/*" hidden>
+          <img id="answer-preview" class="preview hidden" alt="">
+          <span class="drop-hint">תמונת התשובה *<small>לחיצה לבחירה, או גרירת קובץ לכאן</small></span>
+        </label>
+      </div>
+
+      <div id="form-error" class="feedback wrong hidden"></div>
+      <div class="buttons-row">
+        <button type="submit" id="save-btn" class="primary-btn">שמירה</button>
+        <button type="button" id="cancel-btn" class="secondary-btn">ביטול</button>
+      </div>
+    </form>
+  </dialog>
 
   <script type="module" src="admin.js"></script>
 </body>
