@@ -25,7 +25,10 @@
 <script>
   // Opened from the home-screen icon. iOS may keep this page's address rather
   // than the manifest's start_url, so the icon would land here; send it on.
-  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
+  // Only on iOS: on Android, Chrome opens any link inside the scope in the
+  // installed shortcut, and that is how people reach the APK steps from it
+  // (2/11/2026: the redirect bounced Ori from the wizard to the map).
+  if (navigator.standalone === true) {
     location.replace('./index.html?src=home');
   }
 </script>
