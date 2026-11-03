@@ -12,14 +12,19 @@ import re
 import sys
 from pathlib import Path
 
-GA_ID = "G-GG46M915KH"
+GA_ID = "G-SJEBVTNZFY"
 SNIPPET = f"""<!-- GA:auto -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
-  gtag('config', '{GA_ID}');
+  (function(){{
+    var p = location.pathname.split('/').filter(Boolean);
+    var i = p.indexOf('vibe_coding');
+    var app = (i >= 0 ? p[i+1] : p[1]) || 'home';
+    gtag('config', '{GA_ID}', {{content_group: decodeURIComponent(app).replace(/\\.html?$/, '')}});
+  }})();
 </script>
 """
 SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "site-packages"}
