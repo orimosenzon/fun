@@ -753,6 +753,73 @@
         .t-red     { --accent:#f87171; --icon-bg:rgba(90,20,20,0.5);  --tag-bg:rgba(90,20,20,0.7); }
         .t-orange  { --accent:#fb923c; --icon-bg:rgba(90,40,10,0.5);  --tag-bg:rgba(90,40,10,0.7); }
 
+        /* ── Visits per project (filled from stats.json) ── */
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .stats-ranges { display: flex; gap: 6px; }
+        .stats-ranges button, .stats-more {
+            font: inherit;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            background: #131e2e;
+            border: 1px solid #1e2e42;
+            border-radius: 20px;
+            padding: 4px 12px;
+            cursor: pointer;
+        }
+        .stats-ranges button:hover, .stats-more:hover { color: #e2e8f0; }
+        .stats-ranges button[aria-pressed="true"] {
+            color: #e2e8f0;
+            border-color: #818cf8;
+            background: rgba(129,140,248,0.15);
+        }
+        .stats-totals { font-size: 0.8rem; color: #64748b; }
+        .stats-totals b { color: #cbd5e1; font-weight: 700; }
+        .stats-list {
+            list-style: none;
+            background: #0c1726;
+            border: 1px solid #1a2840;
+            border-radius: 16px;
+            padding: 10px;
+        }
+        .stats-list a {
+            display: grid;
+            grid-template-columns: 1.6em 1.6em minmax(0, 11em) 1fr 4.5em;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.86rem;
+        }
+        .stats-list a:hover { background: #131e2e; }
+        .stats-rank { color: #475569; font-size: 0.72rem; text-align: center; }
+        .stats-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-track { height: 8px; background: #131e2e; border-radius: 4px; overflow: hidden; }
+        .stats-fill {
+            display: block;
+            height: 100%;
+            width: var(--w);
+            background: var(--accent, #818cf8);
+            border-radius: 4px;
+        }
+        .stats-num { text-align: left; font-variant-numeric: tabular-nums; font-weight: 600; }
+        .stats-empty { padding: 14px; color: #64748b; font-size: 0.85rem; text-align: center; }
+        .stats-more { display: block; margin: 12px auto 0; }
+        .stats-note { margin-top: 10px; font-size: 0.72rem; color: #475569; text-align: center; }
+        @media (max-width: 520px) {
+            .stats-list a { grid-template-columns: 1.6em minmax(0, 1fr) 4.5em; }
+            .stats-rank, .stats-track { display: none; }
+        }
+
         /* ── Footer ── */
         footer {
             text-align: center;
@@ -774,6 +841,8 @@
 {{TOC}}
 
 {{SECTIONS}}
+
+{{STATS}}
     <footer>
         ✦ Built with Claude Code &nbsp;&bull;&nbsp; Vibe Coding &nbsp;&bull;&nbsp; אורי מוסנזון
     </footer>
@@ -1015,6 +1084,76 @@
             back.classList.toggle('show', !entries[0].isIntersecting);
         }).observe(toc);
     }
+})();
+</script>
+<script>
+// Visits per project. stats.json is written at deploy time by analytics.py;
+// without it (local preview, failed fetch) the section simply stays hidden.
+(function () {
+    var box = document.getElementById('stats');
+    if (!box || !window.fetch) return;
+    var meta = JSON.parse(document.getElementById('stats-meta').textContent);
+    var list = box.querySelector('.stats-list');
+    var more = box.querySelector('.stats-more');
+    var btns = Array.prototype.slice.call(box.querySelectorAll('.stats-ranges button'));
+    var TOP = 12, fmt = new Intl.NumberFormat('he-IL');
+    var stats, range = 1, open = false;
+    try { range = +localStorage.getItem('stats-range') || 1; } catch (e) {}
+
+    function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
+    }
+
+    function render() {
+        btns.forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.r === range); });
+        var t = stats.totals;
+        box.querySelector('.stats-totals').innerHTML =
+            '<b>' + fmt.format(t.views[range]) + '</b> צפיות · <b>' + fmt.format(t.users[range]) + '</b> מבקרים';
+        var rows = Object.keys(stats.apps)
+            .filter(function (a) { return meta[a] && stats.apps[a][range] > 0; })
+            .sort(function (a, b) { return stats.apps[b][range] - stats.apps[a][range]; });
+        if (!rows.length) {
+            list.innerHTML = '<li class="stats-empty">עוד אין כניסות בטווח הזה</li>';
+            more.hidden = true;
+            return;
+        }
+        var max = stats.apps[rows[0]][range];
+        list.innerHTML = rows.slice(0, open ? rows.length : TOP).map(function (a, i) {
+            var m = meta[a], v = stats.apps[a][range];
+            return '<li class="' + esc(m.theme) + '"><a href="#' + esc(a) + '">' +
+                '<span class="stats-rank">' + (i + 1) + '</span>' +
+                '<span class="stats-icon">' + m.icon + '</span>' +
+                '<span class="stats-name">' + esc(m.name) + '</span>' +
+                '<span class="stats-track"><span class="stats-fill" style="--w:' + Math.max(2, v / max * 100).toFixed(1) + '%"></span></span>' +
+                '<span class="stats-num">' + fmt.format(v) + '</span></a></li>';
+        }).join('');
+        more.hidden = rows.length <= TOP;
+        more.textContent = open ? 'הצג פחות' : 'הצג את כל ה-' + rows.length;
+    }
+
+    btns.forEach(function (b) {
+        b.addEventListener('click', function () {
+            range = +b.dataset.r;
+            try { localStorage.setItem('stats-range', range); } catch (e) {}
+            render();
+        });
+    });
+    more.addEventListener('click', function () { open = !open; render(); });
+
+    fetch('projects_page/stats.json', { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw r; return r.json(); })
+        .then(function (s) {
+            stats = s;
+            var since = new Date(s.since), up = new Date(s.updated);
+            box.querySelector('.stats-since').textContent = 'מאז ' + since.getDate() + '.' + (since.getMonth() + 1);
+            box.querySelector('.stats-updated').textContent = 'עודכן ' +
+                up.toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+            render();
+            box.hidden = false;
+            var link = document.querySelector('.toc-stats');
+            if (link) link.hidden = false;
+        })
+        .catch(function () {});
 })();
 </script>
 </body>

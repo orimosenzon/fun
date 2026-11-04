@@ -47,6 +47,25 @@ GitHub Pages משרת רק מה שנדחף. פרויקט שקיים מקומית
 בדף יחזיר 404. זה מה שקרה ל-golem, sidekick, wikivoice, bloom ו-ירדן.
 `haskala` מסומן `"private": true` כי הוא בריפו נפרד בכוונה.
 
+## Google Analytics וסטטיסטיקות כניסות (מ-3.11.2026)
+הפרויקט אחראי מעכשיו גם על המדידה של כל האפליקציות ב-GitHub Pages.
+
+- **התג:** `.github/scripts/inject_analytics.py` (בשורש הריפו) מוסיף gtag לכל קובץ HTML
+  **בזמן הפריסה** ב-`pages.yml`. קבצי המקור לא משתנים, ואפליקציה חדשה מקבלת את התג לבד.
+  דף שכבר טוען gtag מדולג. נשלח גם `content_group` עם שם התיקייה של האפליקציה.
+- **Property:** "Vibe coding" (ID 562055020), stream `G-SJEBVTNZFY`, בחשבון
+  www.orimosenzon.com של orimosenzon@gmail.com. מזהה ישן `G-GG46M915KH` שייך ל-letras, לא לגעת.
+- **משיכת נתונים:** `analytics.py` → `stats.json` (ב-.gitignore). כל page path משויך
+  לכרטיס שהקישור שלו הוא ה-prefix הארוך ביותר; symlinks ישנים בשורש (fable וכו') מתורגמים.
+  ה-workflow מריץ אותו בכל פריסה ובנוסף כל 6 שעות (cron), עם `continue-on-error`.
+- **גישה:** Service Account `ga-reader@orimosenzon-vc-analytics.iam.gserviceaccount.com`
+  בפרויקט GCP `orimosenzon-vc-analytics`, Viewer ב-Property. מפתח מקומי:
+  `~/.config/vc-analytics/ga-reader.json`; ב-GitHub: secret `GA_SA_KEY`.
+- **בדף:** אזור "📈 כניסות לאפליקציות" בסוף (`render_stats` + סקריפט בתבנית), עם 7 ימים /
+  30 יום / מההתחלה. מוסתר כל עוד stats.json לא נטען, ולכן לוקאלית הוא לא מופיע אלא אם
+  מריצים `python3 projects_page/analytics.py` קודם.
+- האפליקציות ב-HF Spaces, Railway ו-unlisted-ori.pages.dev **לא נמדדות** (דומיינים אחרים).
+
 ## הערות תוכן
 - `factotum`, `billing-check` מחוץ לדף בכוונה — ב-`SKIP` ב-`build.py`.
 - `map_search / smart_map / ms / ms_es / ms_mob / wip / tmp.html` הן איטרציות

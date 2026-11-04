@@ -4,6 +4,9 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+  # refresh the visit counts on the projects page (projects_page/analytics.py)
+  schedule:
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: read
@@ -23,6 +26,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Fetch visit stats
+        env:
+          GA_SA_KEY: ${{ secrets.GA_SA_KEY }}
+        # a GA hiccup must not block the deploy; the page hides the section
+        continue-on-error: true
+        run: |
+          pip install --quiet google-auth requests
+          python3 vibe_coding/projects_page/analytics.py
       - name: Inject Google Analytics
         run: python3 .github/scripts/inject_analytics.py .
       - name: Setup Pages

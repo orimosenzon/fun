@@ -171,6 +171,37 @@ def render_try(data: dict) -> str:
     </div>"""
 
 
+def render_stats(data: dict) -> str:
+    """Visits per project. The numbers come from stats.json, which analytics.py
+    writes at deploy time, so the section stays hidden until the script loads
+    it; here we only ship the names and icons it is keyed by (card anchors)."""
+    meta = {}
+    for s in data["sections"]:
+        for p in s["projects"]:
+            name, sub = short_name(p["title"])
+            meta[p["_anchor"]] = {"name": name, "icon": p.get("icon", ""), "theme": p.get("theme", "t-indigo")}
+    meta_json = json.dumps(meta, ensure_ascii=False).replace("</", "<\\/")
+    return f"""    <section class="stats" id="stats" hidden>
+        <div class="section-header">
+            <span class="section-emoji">📈</span>
+            <span class="section-title">כניסות לאפליקציות</span>
+            <span class="section-count stats-updated"></span>
+        </div>
+        <div class="stats-bar">
+            <div class="stats-ranges" role="group" aria-label="טווח זמן">
+                <button type="button" data-r="0">7 ימים</button>
+                <button type="button" data-r="1">30 יום</button>
+                <button type="button" data-r="2" class="stats-since">מההתחלה</button>
+            </div>
+            <div class="stats-totals"></div>
+        </div>
+        <ol class="stats-list"></ol>
+        <button type="button" class="stats-more" hidden>הצג את כולם</button>
+        <p class="stats-note">צפיות בדפים לפי Google Analytics. דף הפרויקטים עצמו לא נספר כאן.</p>
+        <script type="application/json" id="stats-meta">{meta_json}</script>
+    </section>"""
+
+
 def lead_text(desc: str) -> str:
     """One line for the stage caption: the bold opening sentence most cards
     start with, or else the first sentence of the description."""
@@ -278,6 +309,7 @@ def render_toc(data: dict) -> str:
         <div class="toc-bar">
             <span class="toc-title">תוכן עניינים</span>
             <a href="#try" class="toc-try">🚀 {len(try_projects(data))} פרויקטים live</a>
+            <a href="#stats" class="toc-try toc-stats" hidden>📈 כניסות</a>
             <button type="button" class="toc-sort-all">מיין הכל א–ת</button>
         </div>
         <div class="toc-grid">
@@ -426,6 +458,7 @@ def build() -> str:
     html = html.replace("{{TOC}}", render_toc(data))
     html = html.replace("{{TRY}}", render_try(data))
     html = html.replace("{{SECTIONS}}", sections)
+    html = html.replace("{{STATS}}", render_stats(data))
     OUTPUT.write_text(html, encoding="utf-8")
     n = sum(len(s["projects"]) for s in data["sections"])
     return f"built {OUTPUT} — {len(data['sections'])} sections, {n} projects"
