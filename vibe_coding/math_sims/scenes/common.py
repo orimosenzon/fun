@@ -51,6 +51,21 @@ def use_gemini(voice="Algenib", model="gemini-3.8-flash-tts"):
     NARRATOR = ("gemini", voice, model)
 
 
+PHONIKUD_DIR = Path.home() / "tools/phonikud-models"
+
+
+def use_phonikud(model="model.onnx"):
+    """קריינות מקומית ב-Phonikud (קול של שאול אמסטרדמסקי, CC BY-NC, לשימוש חינוכי בלבד).
+    הטקסט מנוקד קודם לפי ההקשר, והניקוד נרשם ב-audio/said_<סרטון>.log כדי שאפשר לקרוא אותו ולתקן.
+    בבדיקת זיהוי דיבור (3/11/2026) הקול פחות ברור מ-Hila: 24-31% שגיאות מילים מול 14%. לא בשימוש.
+    מילה שכתובה בניקוד ידני בטקסט ההקראה נשארת כמו שהיא. מודלים ב-~/tools/phonikud-models."""
+    global NARRATOR
+    NARRATOR = ("phonikud", model)
+
+
+_phonikud = None
+
+
 def _env(name, var):
     for line in (Path.home() / ".config/ai" / name).read_text().splitlines():
         if line.startswith(var + "="):
@@ -110,6 +125,54 @@ def _gemini_tts(text, path):
     _save_trimmed(AudioSegment.from_file(io.BytesIO(data), format="wav"), path)
 
 
+NIQQUD = re.compile(r"[֑-ׇ|]")
+NIKUD = {}  # ניקוד קבוע למילים שהמנקד טועה בהן תמיד, לפי הכתיב בלי ניקוד. למשל {"גלואה": "גָּלוּאָה"}
+
+
+def nikud(text):
+    """הטקסט המנוקד שהקריין יקרא: ניקוד אוטומטי לפי ההקשר, ואחריו מילים שנוקדו ביד או ב-NIKUD."""
+    global _phonikud
+    if _phonikud is None:
+        from phonikud_onnx import Phonikud
+        _phonikud = Phonikud(str(PHONIKUD_DIR / "phonikud-1.0.int8.onnx"))
+    words = text.split()
+    auto = _phonikud.add_diacritics(NIQQUD.sub("", text)).split()
+    if len(auto) != len(words):  # לא אמור לקרות; בלי יישור משתמשים בניקוד האוטומטי כמו שהוא
+        return " ".join(auto)
+    out = []
+    for given, guess in zip(words, auto):
+        bare = NIQQUD.sub("", given)
+        core = bare.strip(".,:;!?\"'()")
+        # המנקד מפריד תחיליות ב-|, למשל "וְ|הָ|רַצְיוֹנָלִיִּים": המילון חל גם על מה שאחרי התחיליות
+        prefix = guess[:guess.rfind("|") + 1]
+        stem = NIQQUD.sub("", guess[len(prefix):]).strip(".,:;!?\"'()")
+        if given != bare:  # ניקוד ידני
+            out.append(given)
+        elif core in NIKUD:
+            out.append(bare.replace(core, NIKUD[core]))
+        elif prefix and stem in NIKUD:
+            out.append(prefix + guess[len(prefix):].replace(guess[len(prefix):].strip(".,:;!?\"'()"), NIKUD[stem]))
+        else:
+            # מתג אחרי תנועה מלאה (לא שווא) נהגה כ-e מיותר: "מִֽסְפָּר" יוצא miespar
+            out.append(re.sub("([ֱ-ׇֻ])ֽ", r"\1", guess))
+    return " ".join(out)
+
+
+def _phonikud_tts(text, path):
+    import soundfile as sf
+    from phonikud import phonemize
+    from piper_onnx import Piper
+
+    global _piper
+    if "_piper" not in globals():
+        _piper = Piper(str(PHONIKUD_DIR / NARRATOR[1]), str(PHONIKUD_DIR / "model.config.json"))
+    samples, rate = _piper.create(phonemize(text), is_phonemes=True,  # text כבר מנוקד, ראו tts()
+                                  length_scale=1.2, noise_scale=0.64, noise_w=1.0)
+    buf = io.BytesIO()
+    sf.write(buf, samples, rate, format="WAV", subtype="PCM_16")
+    _save_trimmed(AudioSegment.from_file(io.BytesIO(buf.getvalue()), format="wav").normalize(1.0), path)
+
+
 def _save_trimmed(audio, path):
     """חותך את השקט שבקצוות, כדי שהתזמון ייקבע לפי הדיבור עצמו."""
     lead = silence.detect_leading_silence(audio, silence_threshold=-45)
@@ -125,6 +188,12 @@ def tts(text):
     for written, spoken in SPOKEN.items():
         text = text.replace(written, spoken)
     engine = NARRATOR[0]
+    if engine == "phonikud":
+        text = nikud(text)  # המטמון לפי הטקסט המנוקד: תיקון ניקוד מייצר הקלטה חדשה
+    # יומן של מה שנשלח לקריין, לקריאה ולבדיקה בזיהוי דיבור: audio/said_<סרטון>.log
+    import sys
+    with (AUDIO_DIR / f"said_{Path(sys.argv[1]).stem if len(sys.argv) > 1 else 'x'}.log").open("a") as f:
+        f.write(f"{engine}\t{text}\n")
     if engine == "edge":
         key = hashlib.sha1(f"{VOICE}|{text}".encode()).hexdigest()[:16]
         path = AUDIO_DIR / f"{key}.mp3"
@@ -136,7 +205,7 @@ def tts(text):
         if engine == "edge":
             asyncio.run(edge_tts.Communicate(text, VOICE).save(str(path)))
         else:
-            {"azure": _azure_tts, "gemini": _gemini_tts}[engine](text, path)
+            {"azure": _azure_tts, "gemini": _gemini_tts, "phonikud": _phonikud_tts}[engine](text, path)
     return path, AudioSegment.from_file(path).duration_seconds
 
 

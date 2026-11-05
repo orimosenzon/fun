@@ -1367,6 +1367,12 @@
               "external": false
             },
             {
+              "href": "math_sims/videos/galois.mp4",
+              "style": "live",
+              "label": "▶ תורת גלואה",
+              "external": false
+            },
+            {
               "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/math_sims",
               "style": "secondary",
               "label": "📁 קוד מקור",
