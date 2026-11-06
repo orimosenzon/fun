@@ -1,5 +1,9 @@
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
+const MAX_IMAGE_SIDE = 1600;
+const MAX_IMAGES = 4;
+const MAX_REPORTS = 20;
+let reports = 0;
 let me = null;
 
 function el(tag, props = {}, ...children) {
@@ -13,15 +17,42 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+// Sends browser-side failures to the server log, so they can be read without asking the user.
+// The address hash is left out because a login link keeps its token there.
+function report(message, stack) {
+  if (reports >= MAX_REPORTS) return;
+  reports++;
+  fetch('/api/client-log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: String(message), stack, path: location.pathname }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+window.addEventListener('error', (e) => report(e.message, e.error?.stack));
+window.addEventListener('unhandledrejection', (e) => report(e.reason?.message ?? e.reason, e.reason?.stack));
+
 async function api(path, { method = 'GET', body } = {}) {
-  const response = await fetch(`/api${path}`, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const isFile = body instanceof Blob;
+  let response;
+  try {
+    response = await fetch(`/api${path}`, {
+      method,
+      headers: body ? { 'Content-Type': isFile ? body.type : 'application/json' } : {},
+      body: isFile ? body : body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    report(`${method} ${path}: ${err.message}`);
+    throw new Error('אין חיבור לשרת, נסו שוב');
+  }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error ?? 'משהו השתבש, נסו שוב');
-  return data;
+  if (response.ok) return data;
+  if (response.status < 500) throw new Error(data.error ?? 'הבקשה נדחתה');
+
+  const code = data.requestId ?? response.headers.get('X-Request-Id');
+  if (!data.requestId) report(`${method} ${path}: ${response.status} without a server log`);
+  throw new Error(`${data.error ?? 'משהו השתבש, נסו שוב'}${code ? ` (קוד ${code})` : ''}`);
 }
 
 function go(path) {
@@ -63,6 +94,23 @@ function video(id) {
   return button;
 }
 
+// Shrinks the photo and re-encodes it, which also drops the GPS location the phone stored in it.
+async function prepareImage(file) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = el('canvas', { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) });
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+}
+
+function gallery(ids) {
+  return el('div', { className: `gallery n${ids.length}` }, ...ids.map((id) => el('a', { href: `/api/images/${id}`, target: '_blank' },
+    el('img', { src: `/api/images/${id}`, alt: 'תמונה מהפוסט', loading: 'lazy' }))));
+}
+
 function when(ms) {
   return new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(ms);
 }
@@ -94,7 +142,8 @@ function postCard(post, { onDeleted } = {}) {
     el('div', { className: 'meta' },
       el('span', { className: 'author', dir: 'auto' }, post.author.name),
       el('span', { className: 'muted' }, `${when(post.createdAt)} · ${post.audience === 'public' ? 'ציבורי' : 'חברים'}`)),
-    richText(post.body),
+    post.body ? richText(post.body) : null,
+    post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
     actions);
 }
@@ -119,6 +168,31 @@ async function composer(onPosted) {
   }
   explain();
 
+  let photos = [];
+  const previews = el('div', { className: 'previews' });
+  const showPhotos = () => previews.replaceChildren(...photos.map((photo) => el('button', {
+    className: 'preview',
+    type: 'button',
+    title: 'הסרת התמונה',
+    onclick: () => {
+      photos = photos.filter((other) => other !== photo);
+      showPhotos();
+    },
+  }, el('img', { src: URL.createObjectURL(photo), alt: 'תמונה שנבחרה' }))));
+  const picker = el('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true });
+  picker.addEventListener('change', async () => {
+    error.hidden = true;
+    try {
+      for (const file of [...picker.files].slice(0, MAX_IMAGES - photos.length)) photos.push(await prepareImage(file));
+      showPhotos();
+    } catch {
+      error.textContent = 'אי אפשר לקרוא את התמונה הזו';
+      error.hidden = false;
+    }
+    picker.value = '';
+  });
+  const addPhoto = el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, 'הוספת תמונה');
+
   const submit = el('button', { type: 'submit' }, 'פרסום');
   return el('form', {
     className: 'card',
@@ -127,7 +201,9 @@ async function composer(onPosted) {
       submit.disabled = true;
       error.hidden = true;
       try {
-        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience() } });
+        const uploads = photos.map((photo) => api('/images', { method: 'POST', body: photo }));
+        const images = (await Promise.all(uploads)).map((upload) => upload.id);
+        await api('/posts', { method: 'POST', body: { body: text.value, audience: audience(), images } });
         onPosted();
       } catch (err) {
         error.textContent = err.message;
@@ -135,7 +211,7 @@ async function composer(onPosted) {
         submit.disabled = false;
       }
     },
-  }, text, el('div', { className: 'row spread' }, choices, submit), note, error);
+  }, text, previews, picker, el('div', { className: 'row spread' }, choices, addPhoto, submit), note, error);
 }
 
 async function feedPage() {
@@ -173,6 +249,7 @@ function comment(item, reload) {
     return node;
   }
   node.append(richText(item.body));
+  if (item.youtubeId) node.append(video(item.youtubeId));
   if (item.canRemove) {
     node.append(el('button', {
       className: 'plain danger',

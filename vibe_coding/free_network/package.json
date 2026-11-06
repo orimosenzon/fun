@@ -5,7 +5,8 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "migrate": "wrangler d1 migrations apply free-network --local",
-    "dev": "npm run migrate && wrangler dev --port 8787 --var DEV_LOGIN:1",
+    "dev": "npm run migrate && mkdir -p logs && wrangler dev --port 8787 --var DEV_LOGIN:1 2>&1 | tee -a logs/dev.log",
+    "logs": "node tools/logs.mjs",
     "test": "node tools/test_api.mjs"
   },
   "dependencies": {

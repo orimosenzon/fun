@@ -40,11 +40,13 @@ function client(port = PORT) {
     const response = await fetch(`http://localhost:${port}/api${path}`, {
       method,
       headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
+      body: Buffer.isBuffer(body) ? body : body ? JSON.stringify(body) : undefined,
     });
     const setCookie = response.headers.get('set-cookie');
     if (setCookie) cookie = setCookie.split(';')[0];
-    return { status: response.status, data: await response.json() };
+    const bytes = await response.arrayBuffer();
+    const isJson = response.headers.get('content-type')?.includes('json');
+    return { status: response.status, bytes, data: isJson ? JSON.parse(Buffer.from(bytes)) : null };
   };
 }
 
@@ -151,6 +153,14 @@ test('a YouTube link in the text becomes a video', async () => {
   assert.equal((await anon('GET', `/posts/${id}`)).data.post.youtubeId, null);
 });
 
+test('a YouTube link in a comment becomes a video, until the comment is removed', async () => {
+  const { id } = (await bob.call('POST', `/posts/${publicPost}/comments`, { body: 'https://youtu.be/dQw4w9WgXcQ' })).data;
+  const find = async () => (await anon('GET', `/posts/${publicPost}`)).data.comments.find((item) => item.id === id);
+  assert.equal((await find()).youtubeId, 'dQw4w9WgXcQ');
+  await bob.call('DELETE', `/comments/${id}`);
+  assert.equal((await find()).youtubeId, null);
+});
+
 test('only the author can delete a post, and it disappears', async () => {
   const { id } = (await alice.call('POST', '/posts', { body: 'זמני', audience: 'public' })).data;
   assert.equal((await bob.call('DELETE', `/posts/${id}`)).status, 404);
@@ -158,9 +168,93 @@ test('only the author can delete a post, and it disappears', async () => {
   assert.equal((await anon('GET', `/posts/${id}`)).status, 404);
 });
 
+// A tiny JPEG shaped like a phone photo: an Exif block holding a location, then the picture data.
+function phoneJpeg() {
+  const exif = Buffer.from('Exif\0\0GPS-32.47,34.97');
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x4a, 0x46]),
+    Buffer.from([0xff, 0xe1, (exif.length + 2) >> 8, (exif.length + 2) & 255]), exif,
+    Buffer.from([0xff, 0xdb, 0x00, 0x04, 0x01, 0x02]),
+    Buffer.from([0xff, 0xda, 0x00, 0x02, 0x11, 0x22, 0x33, 0xff, 0xd9]),
+  ]);
+}
+
+const upload = (user, data) => user.call('POST', '/images', data);
+const fetchImage = (user, id) => user('GET', `/images/${id}`);
+
+test('location data never survives an upload', async () => {
+  const { status, data } = await upload(alice, phoneJpeg());
+  assert.equal(status, 201);
+  const { id } = (await alice.call('POST', '/posts', { body: '', audience: 'public', images: [data.id] })).data;
+  assert.deepEqual((await anon('GET', `/posts/${id}`)).data.post.images, [data.id]);
+  const stored = Buffer.from((await anon('GET', `/images/${data.id}`)).bytes);
+  assert.ok(!stored.includes('GPS'));
+  assert.ok(stored.includes(Buffer.from([0xff, 0xda, 0x00, 0x02, 0x11, 0x22, 0x33, 0xff, 0xd9])));
+});
+
+test('only JPEG files within the size limit are accepted', async () => {
+  assert.equal((await upload(alice, Buffer.from('<svg onload="alert(1)"/>'))).status, 415);
+  assert.equal((await upload(alice, Buffer.alloc(1024 * 1024 + 1))).status, 413);
+});
+
+test('an image follows the audience of its post', async () => {
+  const image = (await upload(alice, phoneJpeg())).data.id;
+  assert.equal((await fetchImage(alice.call, image)).status, 200);
+  assert.equal((await fetchImage(bob.call, image)).status, 404);
+  await alice.call('POST', '/posts', { body: 'פרטי', audience: 'friends', images: [image] });
+  assert.equal((await fetchImage(bob.call, image)).status, 200);
+  assert.equal((await fetchImage(carol.call, image)).status, 404);
+  assert.equal((await fetchImage(anon, image)).status, 404);
+});
+
+test('an image cannot be attached twice or by someone else', async () => {
+  const image = (await upload(alice, phoneJpeg())).data.id;
+  assert.equal((await bob.call('POST', '/posts', { body: 'x', audience: 'public', images: [image] })).status, 400);
+  assert.equal((await alice.call('POST', '/posts', { body: 'x', audience: 'friends', images: [image] })).status, 201);
+  assert.equal((await alice.call('POST', '/posts', { body: 'y', audience: 'public', images: [image] })).status, 400);
+});
+
+test('deleting a post deletes its images', async () => {
+  const image = (await upload(alice, phoneJpeg())).data.id;
+  const { id } = (await alice.call('POST', '/posts', { body: 'x', audience: 'public', images: [image] })).data;
+  assert.equal((await fetchImage(anon, image)).status, 200);
+  await alice.call('DELETE', `/posts/${id}`);
+  assert.equal((await fetchImage(alice.call, image)).status, 404);
+});
+
+test('a post needs text or an image, and at most four images', async () => {
+  assert.equal((await alice.call('POST', '/posts', { body: '  ', audience: 'public' })).status, 400);
+  const images = [];
+  for (let i = 0; i < 5; i++) images.push((await upload(alice, phoneJpeg())).data.id);
+  assert.equal((await alice.call('POST', '/posts', { body: 'x', audience: 'public', images })).status, 400);
+});
+
 test('name search treats wildcards literally', async () => {
   assert.equal((await bob.call('GET', '/users?q=al')).data.users.length, 1);
   assert.equal((await bob.call('GET', '/users?q=%25%25')).data.users.length, 0);
+});
+
+test('a crash reaches the log with a code the user can quote', async () => {
+  const state = join(root, String(PROD_PORT));
+  const wrangler = ['wrangler', 'd1', 'execute', 'free-network', '--local', '--persist-to', state, '--command'];
+  execFileSync('npx', [...wrangler, 'DROP TABLE images'], { stdio: 'ignore', env: { ...process.env, CI: '1' } });
+  const { status, data } = await client(PROD_PORT)('GET', '/posts/1');
+  assert.equal(status, 500);
+  assert.match(data.requestId, /^[0-9a-f]{8}$/);
+  assert.ok(!JSON.stringify(data).includes('images'));
+  const log = execFileSync('node', ['tools/logs.mjs', '--persist-to', state, '--id', data.requestId], { encoding: 'utf8' });
+  assert.match(log, /no such table: images/);
+  assert.match(log, /GET \/api\/posts\/1 500/);
+});
+
+test('browser errors are logged, and post text is not', async () => {
+  const state = join(root, String(PORT));
+  await client()('POST', '/client-log', { message: 'TypeError: boom', stack: 'at app.js:1', path: '/p/1' });
+  await alice.call('POST', '/posts', { body: 'טקסט סודי', audience: 'nobody' });
+  const log = execFileSync('node', ['tools/logs.mjs', '--persist-to', state], { encoding: 'utf8' });
+  assert.match(log, /TypeError: boom/);
+  assert.match(log, /POST \/api\/posts 400/);
+  assert.ok(!log.includes('טקסט סודי'));
 });
 
 test('without DEV_LOGIN a login link is never returned', async () => {
