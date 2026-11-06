@@ -1,0 +1,17 @@
+{
+  "name": "free-network",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "migrate": "wrangler d1 migrations apply free-network --local",
+    "dev": "npm run migrate && wrangler dev --port 8787 --var DEV_LOGIN:1",
+    "test": "node tools/test_api.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.13.16"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
+  }
+}
