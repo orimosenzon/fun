@@ -13,6 +13,10 @@ const MAX_NAME = 60;
 const MAX_IMAGE_BYTES = 1024 * 1024;
 const MAX_IMAGES_PER_POST = 4;
 const IMAGES_PER_DAY = 40;
+// R2 has no spending cap of its own and bills past its free tier (10 GB, 1M writes a month).
+// These limits keep the whole network inside it, whatever anyone does.
+const STORAGE_LIMIT_BYTES = 8 * 1024 ** 3;
+const UPLOADS_PER_DAY = 2000;
 const DEMO_SESSION = 'demo';
 const DEMO_WRITES = ['/api/auth/demo', '/api/auth/logout'];
 
@@ -425,11 +429,21 @@ app.post('/api/images', requireUser, async (c) => {
   const clean = stripJpegMetadata(data);
   if (!clean) return c.json({ error: 'רק תמונות JPEG' }, 415);
 
+  const usage = await c.env.DB
+    .prepare('SELECT COALESCE(SUM(bytes), 0) AS bytes, COUNT(CASE WHEN created_at > ? THEN 1 END) AS today FROM images')
+    .bind(now - 24 * 60 * 60 * 1000)
+    .first();
+  const storageLimit = Number(c.env.STORAGE_LIMIT_BYTES ?? STORAGE_LIMIT_BYTES);
+  const uploadLimit = Number(c.env.UPLOADS_PER_DAY ?? UPLOADS_PER_DAY);
+  if (usage.bytes + clean.length > storageLimit || usage.today >= uploadLimit) {
+    return c.json({ error: 'אי אפשר להעלות תמונות כרגע, הגענו למגבלת האחסון של הרשת' }, 429);
+  }
+
   const id = randomToken();
   await c.env.IMAGES.put(id, clean, { httpMetadata: { contentType: 'image/jpeg' } });
   await c.env.DB
-    .prepare('INSERT INTO images (id, owner_id, created_at) VALUES (?, ?, ?)')
-    .bind(id, user.id, now)
+    .prepare('INSERT INTO images (id, owner_id, created_at, bytes) VALUES (?, ?, ?, ?)')
+    .bind(id, user.id, now, clean.length)
     .run();
   return c.json({ id }, 201);
 });

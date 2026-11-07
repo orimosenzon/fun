@@ -8,6 +8,8 @@ import { join } from 'node:path';
 const PORT = 8799;
 const PROD_PORT = 8798;
 const DEMO_PORT = 8796;
+const STORAGE_PORT = 8795;
+const UPLOADS_PORT = 8794;
 const root = mkdtempSync(join(tmpdir(), 'free-network-test-'));
 const servers = [];
 
@@ -51,8 +53,8 @@ function client(port = PORT) {
   };
 }
 
-async function signUp(name) {
-  const call = client();
+async function signUp(name, port = PORT) {
+  const call = client(port);
   const { data } = await call('POST', '/auth/request', { email: `${name}@example.com` });
   const token = data.devLink.split('#token=')[1];
   assert.equal((await call('POST', '/auth/verify', { token })).status, 200);
@@ -258,6 +260,23 @@ test('browser errors are logged, and post text is not', async () => {
   assert.ok(!log.includes('טקסט סודי'));
 });
 
+test('uploads stop at the storage limit, for everyone', async () => {
+  const first = await signUp('first', STORAGE_PORT);
+  const second = await signUp('second', STORAGE_PORT);
+  assert.equal((await upload(first, phoneJpeg())).status, 201);
+  const refused = await upload(second, phoneJpeg());
+  assert.equal(refused.status, 429);
+  assert.match(refused.data.error, /מגבלת האחסון/);
+});
+
+test('uploads stop at the daily limit of the whole network', async () => {
+  const first = await signUp('first', UPLOADS_PORT);
+  const second = await signUp('second', UPLOADS_PORT);
+  assert.equal((await upload(first, phoneJpeg())).status, 201);
+  assert.equal((await upload(second, phoneJpeg())).status, 201);
+  assert.equal((await upload(first, phoneJpeg())).status, 429);
+});
+
 test('the demo opens with one click and shows the invented feed', async () => {
   const call = client(DEMO_PORT);
   assert.equal((await call('GET', '/me')).data.demo, true);
@@ -312,7 +331,9 @@ try {
   startServer(PORT, ['--var', 'DEV_LOGIN:1']);
   startServer(PROD_PORT, []);
   startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
-  await Promise.all([waitFor(PORT), waitFor(PROD_PORT), waitFor(DEMO_PORT)]);
+  startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);
+  startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
+  await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT].map(waitFor));
   for (const [name, fn] of tests) {
     try {
       await fn();

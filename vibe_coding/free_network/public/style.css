@@ -344,11 +344,45 @@ input[type="radio"] { accent-color: var(--brand); }
 
 .why .section-note { margin: 0 0 16px; color: var(--muted); }
 
-.claims { margin: 0; padding: 0; list-style: none; counter-reset: claim; }
+.manifesto { font-size: 18px; }
 
-.claims.continue-2 { counter-reset: claim 5; }
-.claims.continue-3 { counter-reset: claim 10; }
-.claims.continue-4 { counter-reset: claim 15; }
+.manifesto p { margin: 0 0 12px; }
+
+.manifesto p.flush { margin: 0; }
+
+.reason { margin-bottom: 14px; }
+
+.reason summary {
+  display: block;
+  padding: 18px 20px;
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  list-style: none;
+}
+
+.reason summary::-webkit-details-marker { display: none; }
+
+.reason summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.reason summary h3 { margin: 0 0 6px; font-size: 21px; font-weight: 700; line-height: 1.35; }
+
+.reason summary p { margin: 0 0 10px; }
+
+.reason .more { color: var(--brand); font-size: 15px; font-weight: 550; }
+
+.reason .more::after { content: " ◂"; }
+
+.reason[open] .more::after { content: " ▾"; }
+
+.reason-note { margin: 14px 6px; }
+
+.reason .claims { margin-top: 14px; }
+
+.legend { margin: 24px 6px 0; color: var(--muted); font-size: 15px; }
+
+.claims { margin: 0; padding: 0; list-style: none; counter-reset: claim; }
 
 .claim {
   counter-increment: claim;
