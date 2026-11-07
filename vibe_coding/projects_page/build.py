@@ -412,10 +412,15 @@ def render_header(data: dict) -> str:
         f'<div class="stat-label">{label}</div></div>'
         for n, label in stats
     )
+    # subtitle and meta are optional: no key, no empty <p> taking up space
+    lines = [f"        <h1>{meta['title']}</h1>"]
+    if meta.get("subtitle"):
+        lines.append(f'        <p class="header-sub">{meta["subtitle"]}</p>')
+    if meta.get("meta"):
+        lines.append(f'        <p class="header-meta">{meta["meta"]}</p>')
+    head_html = "\n".join(lines)
     return f"""    <header>
-        <h1>{meta.get('title', '✦ Vibe Coding')}</h1>
-        <p class="header-sub">{meta.get('subtitle', '')}</p>
-        <p class="header-meta">{meta.get('meta', '')}</p>
+{head_html}
         <div class="header-stats">
 {stat_html}
         </div>
