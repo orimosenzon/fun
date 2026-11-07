@@ -1065,6 +1065,12 @@
           "icon": "🌳",
           "theme": "t-green",
           "dir": "free_network",
+          "badges": [
+            {
+              "type": "live",
+              "label": "דמו"
+            }
+          ],
           "tags": [
             "Cloudflare Workers",
             "D1",
@@ -1072,8 +1078,14 @@
             "Hono",
             "Vanilla JS"
           ],
-          "desc": "<strong style=\"color:#34d399\">רשת חברתית ללא מטרות רווח, שמתחילה מפרדס חנה-כרכור.</strong><br> פיד כרונולוגי בלי אלגוריתם נסתר, כל התגובות לפי הסדר, בלי פרסומות, ושקיפות מלאה לגבי מי יראה כל פוסט. בבנייה, עוד לא פתוחה לציבור.",
+          "desc": "<strong style=\"color:#34d399\">רשת חברתית ללא מטרות רווח, שמתחילה מפרדס חנה-כרכור.</strong><br> פיד כרונולוגי בלי אלגוריתם נסתר, כל התגובות לפי הסדר, בלי פרסומות, ושקיפות מלאה לגבי מי יראה כל פוסט. בבנייה, עוד לא פתוחה לציבור. בקישור יש דמו לצפייה בלבד, עם אנשים ופוסטים בדויים.",
           "links": [
+            {
+              "href": "https://free-network-demo.orimosenzon.workers.dev",
+              "style": "live",
+              "label": "▶ לדמו",
+              "external": true
+            },
             {
               "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/free_network",
               "style": "primary",

@@ -15,6 +15,7 @@ const ICONS = {
   leaf: 'M11 20A7 7 0 0 1 4 13C4 7 10 4 20 4c0 10-3 16-9 16zM4 21c2-6 6-9 11-11',
 };
 let me = null;
+let demo = false;
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -336,8 +337,12 @@ function friendAction(label, method, id, { plain = false } = {}) {
     className: plain ? 'plain' : '',
     type: 'button',
     onclick: async () => {
-      await api(`/friends/${id}`, { method });
-      route();
+      try {
+        await api(`/friends/${id}`, { method });
+        route();
+      } catch (err) {
+        alert(err.message);
+      }
     },
   }, label);
 }
@@ -370,11 +375,21 @@ async function friendsPage() {
 function loginPage() {
   const email = el('input', { type: 'email', required: true, placeholder: 'כתובת מייל', dir: 'ltr' });
   const message = el('p', { className: 'muted' });
+  const demoEntry = el('div', { className: 'card' },
+    el('p', { style: 'margin-top: 0' }, 'כאן אפשר להציץ בממשק עם אנשים ופוסטים בדויים.'),
+    el('div', { className: 'row' }, el('button', {
+      type: 'button',
+      onclick: async () => {
+        await api('/auth/demo', { method: 'POST' });
+        await start();
+        go('/');
+      },
+    }, 'כניסה לדמו')));
   app.replaceChildren(el('section', { className: 'hero' },
     el('img', { src: '/favicon.svg', alt: '' }),
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
     el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
-  el('form', {
+  demo ? demoEntry : el('form', {
     className: 'card',
     onsubmit: async (e) => {
       e.preventDefault();
@@ -394,7 +409,7 @@ function loginPage() {
     el('li', {}, el('strong', {}, 'החברים שלך באמת יראו'), 'כל פוסט מגיע לפיד של כל החברים, בלי סינון.'),
     el('li', {}, el('strong', {}, 'כל התגובות, לפי הסדר'), 'בלי "הרלוונטיות ביותר" ובלי תגובות שנעלמות.'),
     el('li', {}, el('strong', {}, 'בלי פרסומות'), 'עמותה ללא מטרות רווח. אין מי שמרוויח מהזמן שלך.')),
-  el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
+  demo ? '' : el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
 }
 
 function namePage() {
@@ -416,12 +431,12 @@ function namePage() {
 }
 
 function renderNav() {
-  const why = el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
+  const why = demo ? null : el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
   if (!me) {
-    nav.replaceChildren(why, link('/login', 'כניסה'));
+    nav.replaceChildren(...[why, link('/login', 'כניסה')].filter(Boolean));
     return;
   }
-  nav.replaceChildren(link('/friends', labelled('user', 'חברים')), why, el('button', {
+  nav.replaceChildren(...[link('/friends', labelled('user', 'חברים')), why, el('button', {
     className: 'plain',
     type: 'button',
     onclick: async () => {
@@ -430,7 +445,7 @@ function renderNav() {
       go('/login');
       renderNav();
     },
-  }, labelled('logout', 'יציאה')));
+  }, labelled('logout', 'יציאה'))].filter(Boolean));
 }
 
 async function route() {
@@ -456,7 +471,8 @@ async function start() {
       alert(err.message);
     }
   }
-  ({ user: me } = await api('/me'));
+  ({ user: me, demo } = await api('/me'));
+  document.getElementById('demo-banner').hidden = !demo;
   renderNav();
   if (location.pathname === '/login' && me) history.replaceState(null, '', '/');
   await route();

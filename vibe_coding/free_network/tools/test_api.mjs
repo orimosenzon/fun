@@ -7,16 +7,17 @@ import { join } from 'node:path';
 
 const PORT = 8799;
 const PROD_PORT = 8798;
+const DEMO_PORT = 8796;
 const root = mkdtempSync(join(tmpdir(), 'free-network-test-'));
 const servers = [];
 
 // Each server needs its own database directory: two cannot share one.
-function startServer(port, extraArgs) {
+function startServer(port, extraArgs, { database = 'free-network', seed } = {}) {
   const state = join(root, String(port));
-  execFileSync('npx', ['wrangler', 'd1', 'migrations', 'apply', 'free-network', '--local', '--persist-to', state], {
-    stdio: 'ignore',
-    env: { ...process.env, CI: '1' },
-  });
+  const envArgs = extraArgs.filter((arg) => arg.startsWith('--env') || arg === 'demo');
+  const quiet = { stdio: 'ignore', env: { ...process.env, CI: '1' } };
+  execFileSync('npx', ['wrangler', 'd1', 'migrations', 'apply', database, '--local', '--persist-to', state, ...envArgs], quiet);
+  if (seed) execFileSync('npx', ['wrangler', 'd1', 'execute', database, '--local', '--persist-to', state, ...envArgs, '--file', seed], quiet);
   const server = spawn('npx', ['wrangler', 'dev', '--port', String(port), '--inspector-port', String(port + 1000),
     '--persist-to', state, ...extraArgs], { stdio: 'ignore', detached: true });
   servers.push(server);
@@ -257,6 +258,49 @@ test('browser errors are logged, and post text is not', async () => {
   assert.ok(!log.includes('טקסט סודי'));
 });
 
+test('the demo opens with one click and shows the invented feed', async () => {
+  const call = client(DEMO_PORT);
+  assert.equal((await call('GET', '/me')).data.demo, true);
+  assert.equal((await call('POST', '/auth/demo')).status, 200);
+  assert.equal((await call('GET', '/me')).data.user.name, 'אורח בדמו');
+  assert.equal((await call('GET', '/feed')).data.posts.length, 4);
+});
+
+test('the demo refuses every write and stores nothing', async () => {
+  const call = client(DEMO_PORT);
+  await call('POST', '/auth/demo');
+  const writes = [
+    ['POST', '/posts', { body: 'x', audience: 'public' }],
+    ['POST', '/posts/3/comments', { body: 'x' }],
+    ['PUT', '/me', { name: 'x' }],
+    ['POST', '/friends/5'],
+    ['DELETE', '/friends/2'],
+    ['POST', '/auth/request', { email: 'x@example.com' }],
+    ['POST', '/client-log', { message: 'x' }],
+  ];
+  for (const [method, path, body] of writes) assert.equal((await call(method, path, body)).status, 403, path);
+  assert.equal((await call('GET', '/feed')).data.posts.length, 4);
+  assert.equal((await call('GET', '/friends')).data.friends.length, 3);
+});
+
+test('logging out of the demo leaves it open for the next visitor', async () => {
+  const first = client(DEMO_PORT);
+  await first('POST', '/auth/demo');
+  await first('POST', '/auth/logout');
+  const second = client(DEMO_PORT);
+  await second('POST', '/auth/demo');
+  assert.equal((await second('GET', '/me')).data.user.id, 1);
+});
+
+test('the demo does not serve /why, and demo login exists only there', async () => {
+  for (const path of ['/why', '/why.html']) {
+    const response = await fetch(`http://localhost:${DEMO_PORT}${path}`, { redirect: 'manual' });
+    assert.equal(response.status, 302, path);
+    assert.equal(response.headers.get('location'), '/', path);
+  }
+  assert.equal((await client(PROD_PORT)('POST', '/auth/demo')).status, 404);
+});
+
 test('without DEV_LOGIN a login link is never returned', async () => {
   const { status, data } = await client(PROD_PORT)('POST', '/auth/request', { email: 'y@example.com' });
   assert.equal(status, 503);
@@ -267,7 +311,8 @@ let failed = 0;
 try {
   startServer(PORT, ['--var', 'DEV_LOGIN:1']);
   startServer(PROD_PORT, []);
-  await Promise.all([waitFor(PORT), waitFor(PROD_PORT)]);
+  startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
+  await Promise.all([waitFor(PORT), waitFor(PROD_PORT), waitFor(DEMO_PORT)]);
   for (const [name, fn] of tests) {
     try {
       await fn();

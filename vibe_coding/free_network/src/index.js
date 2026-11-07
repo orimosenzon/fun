@@ -13,6 +13,8 @@ const MAX_NAME = 60;
 const MAX_IMAGE_BYTES = 1024 * 1024;
 const MAX_IMAGES_PER_POST = 4;
 const IMAGES_PER_DAY = 40;
+const DEMO_SESSION = 'demo';
+const DEMO_WRITES = ['/api/auth/demo', '/api/auth/logout'];
 
 const FRIEND_IDS = `
   SELECT addressee_id FROM friendships WHERE requester_id = ?1 AND status = 'accepted'
@@ -97,6 +99,20 @@ function isLocalhost(c) {
   return ['localhost', '127.0.0.1'].includes(new URL(c.req.url).hostname);
 }
 
+function isDemo(c) {
+  return c.env.DEMO === '1';
+}
+
+function startSession(c, token) {
+  setCookie(c, SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: new URL(c.req.url).protocol === 'https:',
+    path: '/',
+    maxAge: SESSION_MS / 1000,
+  });
+}
+
 function serializePost(row, viewer) {
   return {
     id: row.id,
@@ -148,6 +164,18 @@ async function loadVisiblePost(c, id) {
 }
 
 const app = new Hono();
+
+// The demo is public and has no moderation, so nothing a visitor sends is ever stored.
+// This runs first so that refused writes do not fill the log either.
+app.use('/api/*', async (c, next) => {
+  if (isDemo(c) && !['GET', 'HEAD'].includes(c.req.method) && !DEMO_WRITES.includes(c.req.path)) {
+    return c.json({ error: 'זו גרסת הדגמה לצפייה בלבד, אז שום דבר לא נשמר כאן' }, 403);
+  }
+  await next();
+});
+
+// Only requests from the demo reach this: nowhere else does /why go through the worker.
+app.get('/why*', (c) => c.redirect('/'));
 
 function requestLog(c, fields) {
   return {
@@ -264,26 +292,27 @@ app.post('/api/auth/verify', async (c) => {
     .prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
     .bind(await sha256(session), user.id, now + SESSION_MS)
     .run();
-  setCookie(c, SESSION_COOKIE, session, {
-    httpOnly: true,
-    sameSite: 'Lax',
-    secure: new URL(c.req.url).protocol === 'https:',
-    path: '/',
-    maxAge: SESSION_MS / 1000,
-  });
+  startSession(c, session);
+  return c.json({ ok: true });
+});
+
+// Every visitor shares one guest account. Its session row comes from tools/demo_seed.sql.
+app.post('/api/auth/demo', (c) => {
+  if (!isDemo(c)) return c.json({ error: 'לא נמצא' }, 404);
+  startSession(c, DEMO_SESSION);
   return c.json({ ok: true });
 });
 
 app.post('/api/auth/logout', async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
-  if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
+  if (token && !isDemo(c)) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.json({ ok: true });
 });
 
 app.get('/api/me', (c) => {
   const user = c.get('user');
-  return c.json({ user: user ? { id: user.id, name: user.name } : null });
+  return c.json({ user: user ? { id: user.id, name: user.name } : null, demo: isDemo(c) });
 });
 
 app.put('/api/me', requireUser, async (c) => {

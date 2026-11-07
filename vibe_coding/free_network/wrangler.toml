@@ -18,3 +18,23 @@ migrations_dir = "migrations"
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "free-network-images"
+
+# A public, read-only showcase with invented content. It has its own database and no image
+# storage, and leaves out /why, which is not cleared for publication yet.
+[env.demo]
+name = "free-network-demo"
+
+[env.demo.vars]
+DEMO = "1"
+
+[env.demo.assets]
+directory = "public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/why", "/why.html"]
+
+[[env.demo.d1_databases]]
+binding = "DB"
+database_name = "free-network-demo"
+database_id = "b678c8d3-e381-4cab-a5ad-4580f729fd44"
+migrations_dir = "migrations"

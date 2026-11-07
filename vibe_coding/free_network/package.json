@@ -7,7 +7,8 @@
     "migrate": "wrangler d1 migrations apply free-network --local",
     "dev": "npm run migrate && mkdir -p logs && wrangler dev --port 8787 --var DEV_LOGIN:1 2>&1 | tee -a logs/dev.log",
     "logs": "node tools/logs.mjs",
-    "test": "node tools/test_api.mjs"
+    "test": "node tools/test_api.mjs",
+    "deploy:demo": "wrangler d1 migrations apply free-network-demo --env demo --remote && wrangler d1 execute free-network-demo --env demo --remote --file tools/demo_seed.sql && wrangler deploy --env demo"
   },
   "dependencies": {
     "hono": "^4.13.16"

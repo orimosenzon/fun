@@ -196,6 +196,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 .error { color: var(--danger); font-size: 15px; }
 
+.demo-banner { margin: 0; padding: 8px 16px; background: var(--citrus-soft); font-size: 14.5px; text-align: center; }
+
 .avatar {
   flex: none;
   display: inline-flex;
