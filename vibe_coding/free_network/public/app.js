@@ -4,6 +4,16 @@ const MAX_IMAGE_SIDE = 1600;
 const MAX_IMAGES = 4;
 const MAX_REPORTS = 20;
 let reports = 0;
+const ICONS = {
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8',
+  info: 'M12 22a10 10 0 1 0 0-20a10 10 0 0 0 0 20M12 16v-4M12 8h.01',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  comment: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+  trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
+  image: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.5 10a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3M21 15l-5-5L5 21',
+  leaf: 'M11 20A7 7 0 0 1 4 13C4 7 10 4 20 4c0 10-3 16-9 16zM4 21c2-6 6-9 11-11',
+};
 let me = null;
 
 function el(tag, props = {}, ...children) {
@@ -60,8 +70,23 @@ function go(path) {
   route();
 }
 
-function link(path, text) {
-  return el('a', { href: path, onclick: (e) => { e.preventDefault(); go(path); } }, text);
+function link(path, ...content) {
+  return el('a', { href: path, onclick: (e) => { e.preventDefault(); go(path); } }, ...content);
+}
+
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', ICONS[name]);
+  svg.append(path);
+  return svg;
+}
+
+function labelled(name, text) {
+  return el('span', { className: 'with-icon' }, icon(name), el('span', { className: 'label' }, text));
 }
 
 // Text is added as text nodes only, so user content can never become HTML.
@@ -81,7 +106,7 @@ function richText(text) {
 
 // Nothing is requested from Google, not even a thumbnail, until the reader clicks.
 function video(id) {
-  const button = el('button', { className: 'video', type: 'button' }, '▶ סרטון מיוטיוב, לחצו לטעינה');
+  const button = el('button', { className: 'video', type: 'button' }, el('span', { className: 'play' }), 'סרטון מיוטיוב, לחצו לטעינה');
   button.addEventListener('click', () => {
     button.replaceWith(el('div', { className: 'video' }, el('iframe', {
       src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1`,
@@ -111,16 +136,20 @@ function gallery(ids) {
     el('img', { src: `/api/images/${id}`, alt: 'תמונה מהפוסט', loading: 'lazy' }))));
 }
 
+function avatar(user, { small = false } = {}) {
+  return el('span', { className: `avatar c${(user.id - 1) % 6}${small ? ' small' : ''}`, ariaHidden: 'true' }, [...user.name][0] ?? '?');
+}
+
 function when(ms) {
   return new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(ms);
 }
 
 function postCard(post, { onDeleted } = {}) {
   const url = `/p/${post.id}`;
-  const count = post.commentCount === 1 ? 'תגובה אחת' : `${post.commentCount} תגובות`;
-  const actions = el('div', { className: 'row spread' }, link(url, post.commentCount ? count : 'להגיב'));
+  const count = post.commentCount ? `תגובות (${post.commentCount})` : 'להגיב';
+  const actions = el('div', { className: 'row spread' }, link(url, labelled('comment', count)));
   if (post.audience === 'public') {
-    const copy = el('button', { className: 'plain', type: 'button' }, 'העתקת קישור');
+    const copy = el('button', { className: 'plain', type: 'button' }, labelled('link', 'העתקת קישור'));
     copy.addEventListener('click', async () => {
       await navigator.clipboard.writeText(new URL(url, location.origin).href);
       copy.textContent = 'הועתק';
@@ -136,12 +165,12 @@ function postCard(post, { onDeleted } = {}) {
         await api(`/posts/${post.id}`, { method: 'DELETE' });
         onDeleted?.();
       },
-    }, 'מחיקה'));
+    }, labelled('trash', 'מחיקה')));
   }
   return el('article', { className: 'card' },
-    el('div', { className: 'meta' },
+    el('div', { className: 'head' }, avatar(post.author), el('div', { className: 'who' },
       el('span', { className: 'author', dir: 'auto' }, post.author.name),
-      el('span', { className: 'muted' }, `${when(post.createdAt)} · ${post.audience === 'public' ? 'ציבורי' : 'חברים'}`)),
+      el('span', { className: 'muted' }, `${when(post.createdAt)} · ${post.audience === 'public' ? 'ציבורי' : 'חברים'}`))),
     post.body ? richText(post.body) : null,
     post.images.length ? gallery(post.images) : null,
     post.youtubeId ? video(post.youtubeId) : null,
@@ -151,7 +180,7 @@ function postCard(post, { onDeleted } = {}) {
 async function composer(onPosted) {
   const { friends } = await api('/audience');
   const text = el('textarea', { placeholder: 'מה חדש?', maxLength: 5000, dir: 'auto' });
-  const note = el('p', { className: 'muted' });
+  const note = el('p', { className: 'note' });
   const error = el('p', { className: 'error', hidden: true });
   const radio = (value, label, checked) => el('label', {},
     el('input', { type: 'radio', name: 'audience', value, checked, onchange: explain }), label);
@@ -191,7 +220,7 @@ async function composer(onPosted) {
     }
     picker.value = '';
   });
-  const addPhoto = el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, 'הוספת תמונה');
+  const addPhoto = el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, labelled('image', 'הוספת תמונה'));
 
   const submit = el('button', { type: 'submit' }, 'פרסום');
   return el('form', {
@@ -211,7 +240,7 @@ async function composer(onPosted) {
         submit.disabled = false;
       }
     },
-  }, text, previews, picker, el('div', { className: 'row spread' }, choices, addPhoto, submit), note, error);
+  }, el('div', { className: 'composer-top' }, avatar(me), text), previews, picker, el('div', { className: 'row spread' }, choices, addPhoto, submit), note, error);
 }
 
 async function feedPage() {
@@ -225,7 +254,9 @@ async function feedPage() {
     if (posts.length) oldest = posts.at(-1).id;
     more.hidden = !hasMore;
     if (!list.children.length) {
-      list.append(el('p', { className: 'muted' }, 'עוד אין פוסטים. כדאי להתחיל בלמצוא חברים.'));
+      list.append(el('div', { className: 'card empty' },
+        el('h2', {}, 'שקט כאן בינתיים'),
+        el('p', { className: 'muted' }, 'כתבו את הפוסט הראשון, או ', link('/friends', 'מצאו חברים'), ' מהשכונה.')));
     }
   }
   more.addEventListener('click', load);
@@ -233,25 +264,26 @@ async function feedPage() {
 
   app.replaceChildren(
     await composer(route),
-    el('p', { className: 'muted' }, 'הפיד כולל את כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
+    el('p', { className: 'feed-rule' }, 'כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
     list,
     more);
 }
 
 function comment(item, reload) {
-  const node = el('div', { className: 'comment' },
-    el('div', { className: 'meta' },
+  const bubble = el('div', { className: 'bubble' },
+    el('div', { className: 'comment-head' },
       el('span', { className: 'author', dir: 'auto' }, item.author.name),
       el('span', { className: 'muted' }, when(item.createdAt))));
+  const node = el('div', { className: 'comment' }, avatar(item.author, { small: true }), bubble);
   if (item.removedBy) {
     const by = item.removedBy === 'author' ? 'הכותב' : 'בעל הפוסט';
-    node.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
+    bubble.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
     return node;
   }
-  node.append(richText(item.body));
-  if (item.youtubeId) node.append(video(item.youtubeId));
+  bubble.append(richText(item.body));
+  if (item.youtubeId) bubble.append(video(item.youtubeId));
   if (item.canRemove) {
-    node.append(el('button', {
+    bubble.append(el('button', {
       className: 'plain danger',
       type: 'button',
       onclick: async () => {
@@ -266,8 +298,8 @@ function comment(item, reload) {
 
 async function postPage(id) {
   const { post, comments } = await api(`/posts/${id}`);
-  const section = el('section', { className: 'card' },
-    el('h2', {}, 'תגובות'),
+  const section = el('section', { className: 'card thread' },
+    el('h2', {}, 'תגובות', icon('leaf')),
     el('p', { className: 'muted' }, 'כל התגובות, לפי סדר הכתיבה.'),
     ...comments.map((item) => comment(item, route)));
 
@@ -275,6 +307,7 @@ async function postPage(id) {
     const text = el('textarea', { placeholder: 'כתיבת תגובה', maxLength: 2000, dir: 'auto' });
     const error = el('p', { className: 'error', hidden: true });
     section.append(el('form', {
+      style: 'margin-top: 16px',
       onsubmit: async (e) => {
         e.preventDefault();
         try {
@@ -293,7 +326,9 @@ async function postPage(id) {
 }
 
 function person(user, ...actions) {
-  return el('div', { className: 'person' }, el('span', { dir: 'auto' }, user.name), el('div', { className: 'row' }, ...actions));
+  return el('div', { className: 'person' },
+    el('div', { className: 'head' }, avatar(user, { small: true }), el('span', { dir: 'auto' }, user.name)),
+    el('div', { className: 'row', style: 'margin-top: 0' }, ...actions));
 }
 
 function friendAction(label, method, id, { plain = false } = {}) {
@@ -335,7 +370,11 @@ async function friendsPage() {
 function loginPage() {
   const email = el('input', { type: 'email', required: true, placeholder: 'כתובת מייל', dir: 'ltr' });
   const message = el('p', { className: 'muted' });
-  app.replaceChildren(el('form', {
+  app.replaceChildren(el('section', { className: 'hero' },
+    el('img', { src: '/favicon.svg', alt: '' }),
+    el('h1', {}, 'השכונה שלך, בלי הרעש'),
+    el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
+  el('form', {
     className: 'card',
     onsubmit: async (e) => {
       e.preventDefault();
@@ -347,11 +386,15 @@ function loginPage() {
       }
     },
   },
-  el('h1', {}, 'כניסה'),
-  el('p', { className: 'muted' }, 'הרשת החופשית של פרדס חנה-כרכור. בלי פרסומות, בלי סיסמה ובלי אלגוריתם נסתר.'),
+  el('p', { style: 'margin-top: 0' }, 'נכנסים עם קישור למייל, בלי סיסמה.'),
   email,
   el('div', { className: 'row' }, el('button', { type: 'submit' }, 'שליחת קישור כניסה')),
-  message));
+  message),
+  el('ul', { className: 'promises' },
+    el('li', {}, el('strong', {}, 'החברים שלך באמת יראו'), 'כל פוסט מגיע לפיד של כל החברים, בלי סינון.'),
+    el('li', {}, el('strong', {}, 'כל התגובות, לפי הסדר'), 'בלי "הרלוונטיות ביותר" ובלי תגובות שנעלמות.'),
+    el('li', {}, el('strong', {}, 'בלי פרסומות'), 'עמותה ללא מטרות רווח. אין מי שמרוויח מהזמן שלך.')),
+  el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
 }
 
 function namePage() {
@@ -373,11 +416,12 @@ function namePage() {
 }
 
 function renderNav() {
+  const why = el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
   if (!me) {
-    nav.replaceChildren(link('/login', 'כניסה'));
+    nav.replaceChildren(why, link('/login', 'כניסה'));
     return;
   }
-  nav.replaceChildren(link('/friends', 'חברים'), el('button', {
+  nav.replaceChildren(link('/friends', labelled('user', 'חברים')), why, el('button', {
     className: 'plain',
     type: 'button',
     onclick: async () => {
@@ -386,7 +430,7 @@ function renderNav() {
       go('/login');
       renderNav();
     },
-  }, 'יציאה'));
+  }, labelled('logout', 'יציאה')));
 }
 
 async function route() {

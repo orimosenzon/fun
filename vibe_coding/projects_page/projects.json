@@ -1061,6 +1061,28 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "הרשת החופשית",
+          "icon": "🌳",
+          "theme": "t-green",
+          "dir": "free_network",
+          "tags": [
+            "Cloudflare Workers",
+            "D1",
+            "R2",
+            "Hono",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#34d399\">רשת חברתית ללא מטרות רווח, שמתחילה מפרדס חנה-כרכור.</strong><br> פיד כרונולוגי בלי אלגוריתם נסתר, כל התגובות לפי הסדר, בלי פרסומות, ושקיפות מלאה לגבי מי יראה כל פוסט. בבנייה, עוד לא פתוחה לציבור.",
+          "links": [
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/free_network",
+              "style": "primary",
+              "label": "קוד מקור",
+              "external": true
+            }
+          ]
+        },
+        {
           "title": "רוצים שקיפות: לאן הולך הכסף",
           "icon": "🥧",
           "theme": "t-green",

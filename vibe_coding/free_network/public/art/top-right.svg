@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 520">
+<defs>
+<symbol id="leaf" viewBox="0 0 100 160" overflow="visible">
+  <path d="M50 150C14 118 6 66 50 8c44 58 36 110 0 142z" fill="#f0d9b1" stroke="#9b7344" stroke-width="3"/>
+  <path d="M50 158V30M50 118 24 92M50 118l26-26M50 88 28 64M50 88l22-24M50 60 37 45M50 60l13-15" fill="none" stroke="#9b7344" stroke-width="2.4" stroke-linecap="round"/>
+</symbol>
+<symbol id="oak" viewBox="0 0 120 190" overflow="visible">
+  <path d="M60 180c-8-22-40-14-42-36-1-14 14-16 10-28-5-13-20-18-14-36 5-14 20-8 26-20 5-11 2-32 20-50 18 18 15 39 20 50 6 12 21 6 26 20 6 18-9 23-14 36-4 12 11 14 10 28-2 22-34 14-42 36z" fill="#f0d9b1" stroke="#9b7344" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M60 188V44M60 136l-26-16M60 136l26-16M60 100 38 82M60 100l22-18M60 70 48 56M60 70l12-14" fill="none" stroke="#9b7344" stroke-width="2.4" stroke-linecap="round"/>
+</symbol>
+<symbol id="tree" viewBox="0 0 170 190" overflow="visible">
+  <path d="M74 186c6-22 6-42 2-62h20c-4 20-4 40 4 62" fill="#e8cfa3" stroke="#9b7344" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M86 150l-16-18M88 140l16-16" fill="none" stroke="#9b7344" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M60 126c-26 6-48-14-40-38-16-16-6-42 18-42 4-26 40-36 58-16 24-8 46 12 38 36 18 16 8 44-16 46-10 18-40 22-58 14z" fill="#f0d9b1" stroke="#9b7344" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M46 84c6-8 16-8 22-2M92 62c6-6 16-6 20 2M84 104c6-6 14-6 20 0" fill="none" stroke="#9b7344" stroke-width="2.2" stroke-linecap="round"/>
+</symbol>
+<symbol id="house" viewBox="0 0 90 90" overflow="visible">
+  <path d="M16 42v44h58V42" fill="#f4e3c6" stroke="#9b7344" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M6 46 45 8l39 38" fill="none" stroke="#9b7344" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M38 86V60h15v26M24 50h10v11H24zM57 50h10v11H57z" fill="none" stroke="#9b7344" stroke-width="2.6" stroke-linejoin="round"/>
+</symbol>
+</defs>
+<use href="#oak" xlink:href="#oak" x="170" y="150" width="110" height="175" transform="rotate(-16 225.0 237.5)"/><use href="#leaf" xlink:href="#leaf" x="130" y="30" width="52" height="84" transform="rotate(-22 156.0 72.0)"/><use href="#leaf" xlink:href="#leaf" x="76" y="270" width="32" height="52" transform="rotate(-40 92.0 296.0)"/><use href="#leaf" xlink:href="#leaf" x="226" y="360" width="30" height="48" transform="rotate(70 241.0 384.0)"/><circle cx="120" cy="160" r="3" fill="none" stroke="#9b7344" stroke-width="2"/><circle cx="190" cy="120" r="2.5" fill="none" stroke="#9b7344" stroke-width="2"/><circle cx="250" cy="90" r="3" fill="none" stroke="#9b7344" stroke-width="2"/><circle cx="60" cy="240" r="2.5" fill="none" stroke="#9b7344" stroke-width="2"/>
+</svg>
