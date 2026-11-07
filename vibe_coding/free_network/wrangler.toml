@@ -38,3 +38,27 @@ binding = "DB"
 database_name = "free-network-demo"
 database_id = "b678c8d3-e381-4cab-a5ad-4580f729fd44"
 migrations_dir = "migrations"
+
+# The real network, open only to people the admin invites. Login links replace email for now.
+[env.pilot]
+name = "free-network"
+
+[env.pilot.vars]
+INVITE_ONLY = "1"
+ADMIN_EMAIL = "admin@invite.invalid"
+
+[env.pilot.assets]
+directory = "public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[env.pilot.d1_databases]]
+binding = "DB"
+database_name = "free-network-pilot"
+database_id = "38b23e87-9b69-49fb-81c9-d6bcc7ddaea7"
+migrations_dir = "migrations"
+
+[[env.pilot.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "free-network-images"

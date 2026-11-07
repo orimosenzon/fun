@@ -31,10 +31,10 @@ https://www.youtube.com/watch?v=aqz-KE-bpKQ', 'aqz-KE-bpKQ', 'public', (unixepoc
   (3, 2, 'מחר בבוקר פוגשים בגינה הקהילתית לשתילה. מביאים כפפות, יהיה קפה.', NULL, 'public', (unixepoch() - 86400) * 1000),
   (4, 3, 'נמצא חתול ג''ינג''י ליד תחנת האוטובוס. רגוע, עם קולר כחול. מי מכיר?', NULL, 'friends', (unixepoch() - 3 * 3600) * 1000);
 
-INSERT INTO comments (post_id, author_id, body, created_at, removed_by) VALUES
-  (1, 2, 'עבד אצלנו מישהו מצוין, אשלח לך את הטלפון בפרטי.', (unixepoch() - 86400 * 3 + 1800) * 1000, NULL),
-  (3, 3, 'אגיע עם האחיינים!', (unixepoch() - 80000) * 1000, NULL),
-  (3, 4, NULL, (unixepoch() - 79000) * 1000, 'author'),
-  (3, 5, 'כאן יש הסבר טוב על שתילה בחורף, גם מי שלא כתב את הפוסט יכול לשים קישור לחיץ: https://he.wikipedia.org/wiki/גינה_קהילתית', (unixepoch() - 78000) * 1000, NULL),
-  (3, 2, 'תודה! מעולה.', (unixepoch() - 77000) * 1000, NULL),
-  (4, 4, 'נראה לי שזה החתול של השכנים ממול, בודקת.', (unixepoch() - 2 * 3600) * 1000, NULL);
+INSERT INTO comments (id, post_id, author_id, body, created_at, removed_by, parent_id) VALUES
+  (1, 1, 2, 'עבד אצלנו מישהו מצוין, אשלח לך את הטלפון בפרטי.', (unixepoch() - 86400 * 3 + 1800) * 1000, NULL, NULL),
+  (2, 3, 3, 'אגיע עם האחיינים!', (unixepoch() - 80000) * 1000, NULL, NULL),
+  (3, 3, 4, NULL, (unixepoch() - 79000) * 1000, 'author', NULL),
+  (4, 3, 5, 'כאן יש הסבר טוב על שתילה בחורף, גם מי שלא כתב את הפוסט יכול לשים קישור לחיץ: https://he.wikipedia.org/wiki/גינה_קהילתית', (unixepoch() - 78000) * 1000, NULL, NULL),
+  (5, 3, 2, 'תודה! מעולה.', (unixepoch() - 77000) * 1000, NULL, 4),
+  (6, 4, 4, 'נראה לי שזה החתול של השכנים ממול, בודקת.', (unixepoch() - 2 * 3600) * 1000, NULL, NULL);

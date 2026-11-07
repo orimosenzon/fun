@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -10,6 +11,36 @@ const PROD_PORT = 8798;
 const DEMO_PORT = 8796;
 const STORAGE_PORT = 8795;
 const UPLOADS_PORT = 8794;
+const PILOT_PORT = 8793;
+const YOUTUBE_PORT = 8792;
+const VIDEO_ID = 'abcdefghijk';
+const youtubeRequests = [];
+
+// Stands in for YouTube, and records what the worker sends it.
+const fakeYoutube = createServer((request, response) => {
+  if (request.url === '/token') {
+    let body = '';
+    request.on('data', (part) => { body += part; });
+    request.on('end', () => {
+      const code = new URLSearchParams(body).get('code');
+      const claims = { iss: 'https://accounts.google.com', aud: code === 'wrong-audience' ? 'other' : 'test-client', sub: code };
+      const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ id_token: `x.${encoded}.y` }));
+    });
+    return;
+  }
+  youtubeRequests.push(request);
+  if (request.url.startsWith('/oembed') && request.url.includes(VIDEO_ID)) {
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({ title: 'סרטון לדוגמה' }));
+  } else if (request.url === `/vi/${VIDEO_ID}/hqdefault.jpg`) {
+    response.end(Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
+  } else {
+    response.statusCode = 404;
+    response.end();
+  }
+});
 const root = mkdtempSync(join(tmpdir(), 'free-network-test-'));
 const servers = [];
 
@@ -39,7 +70,7 @@ async function waitFor(port) {
 
 function client(port = PORT) {
   let cookie = '';
-  return async function call(method, path, body) {
+  const call = async function call(method, path, body) {
     const response = await fetch(`http://localhost:${port}/api${path}`, {
       method,
       headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}) },
@@ -51,6 +82,8 @@ function client(port = PORT) {
     const isJson = response.headers.get('content-type')?.includes('json');
     return { status: response.status, bytes, data: isJson ? JSON.parse(Buffer.from(bytes)) : null };
   };
+  call.cookie = () => cookie;
+  return call;
 }
 
 async function signUp(name, port = PORT) {
@@ -260,6 +293,138 @@ test('browser errors are logged, and post text is not', async () => {
   assert.ok(!log.includes('טקסט סודי'));
 });
 
+test('a comment can be an image, and it follows the audience of the post', async () => {
+  const noa = await signUp('noa');
+  const yael = await signUp('yael');
+  const outsider = await signUp('outsider');
+  await noa.call('POST', `/friends/${yael.id}`);
+  await yael.call('POST', `/friends/${noa.id}`);
+  const { data: { id: postId } } = await noa.call('POST', '/posts', { body: 'לחברים', audience: 'friends' });
+  const image = (await upload(yael, phoneJpeg())).data.id;
+  assert.equal((await yael.call('POST', `/posts/${postId}/comments`, { image })).status, 201);
+  const { data } = await noa.call('GET', `/posts/${postId}`);
+  assert.equal(data.comments[0].image, image);
+  assert.equal(data.comments[0].body, '');
+  assert.equal((await fetchImage(noa.call, image)).status, 200);
+  assert.equal((await fetchImage(outsider.call, image)).status, 404);
+  assert.equal((await fetchImage(anon, image)).status, 404);
+});
+
+test('a comment needs text or an image, and an image is used once', async () => {
+  const roni = await signUp('roni');
+  const { data: { id: postId } } = await roni.call('POST', '/posts', { body: 'x', audience: 'public' });
+  assert.equal((await roni.call('POST', `/posts/${postId}/comments`, { body: '  ' })).status, 400);
+  const image = (await upload(roni, phoneJpeg())).data.id;
+  assert.equal((await alice.call('POST', `/posts/${postId}/comments`, { image })).status, 400);
+  assert.equal((await roni.call('POST', `/posts/${postId}/comments`, { image })).status, 201);
+  assert.equal((await roni.call('POST', `/posts/${postId}/comments`, { image })).status, 400);
+  assert.equal((await roni.call('POST', '/posts', { body: '', audience: 'public', images: [image] })).status, 400);
+});
+
+test('removing a comment or its post really deletes the image', async () => {
+  const tal = await signUp('tal');
+  const { data: { id: postId } } = await tal.call('POST', '/posts', { body: 'x', audience: 'public' });
+  const first = (await upload(tal, phoneJpeg())).data.id;
+  const second = (await upload(tal, phoneJpeg())).data.id;
+  const { data: { id: commentId } } = await tal.call('POST', `/posts/${postId}/comments`, { image: first });
+  await tal.call('POST', `/posts/${postId}/comments`, { body: 'עם תמונה', image: second });
+  await tal.call('DELETE', `/comments/${commentId}`);
+  assert.equal((await fetchImage(tal.call, first)).status, 404);
+  assert.equal((await tal.call('GET', `/posts/${postId}`)).data.comments[0].image, null);
+  assert.equal((await fetchImage(anon, second)).status, 200);
+  await tal.call('DELETE', `/posts/${postId}`);
+  assert.equal((await fetchImage(tal.call, second)).status, 404);
+});
+
+test('a reply to a reply stays at the second level, and replies cannot cross posts', async () => {
+  const omer = await signUp('omer');
+  const { data: { id: postId } } = await omer.call('POST', '/posts', { body: 'x', audience: 'public' });
+  const { data: { id: otherPost } } = await omer.call('POST', '/posts', { body: 'y', audience: 'public' });
+  const send = (id, body, parentId) => omer.call('POST', `/posts/${id}/comments`, { body, parentId });
+  const top = (await send(postId, 'ראשונה')).data.id;
+  const reply = (await send(postId, 'תשובה', top)).data.id;
+  await send(postId, 'תשובה לתשובה', reply);
+  const { comments } = (await anon('GET', `/posts/${postId}`)).data;
+  assert.deepEqual(comments.map((item) => item.parentId), [null, top, top]);
+  assert.equal((await send(otherPost, 'זר', top)).status, 404);
+  await omer.call('DELETE', `/comments/${reply}`);
+  assert.equal((await send(postId, 'להוסרה', reply)).status, 404);
+});
+
+test('a video title and picture come through the server, without the reader', async () => {
+  const dan = await signUp('dan');
+  assert.equal((await dan.call('GET', `/youtube/${VIDEO_ID}`)).data.title, 'סרטון לדוגמה');
+  const picture = await dan.call('GET', `/youtube/${VIDEO_ID}/thumb`);
+  assert.equal(picture.status, 200);
+  assert.equal(Buffer.from(picture.bytes).length, 4);
+  assert.equal(youtubeRequests.length, 2);
+  for (const { headers } of youtubeRequests) assert.equal(headers.cookie, undefined);
+});
+
+test('a missing video falls back quietly, and odd addresses are refused', async () => {
+  assert.equal((await anon('GET', '/youtube/zzzzzzzzzzz')).data.title, null);
+  assert.equal((await anon('GET', '/youtube/zzzzzzzzzzz/thumb')).status, 404);
+  assert.equal((await anon('GET', '/youtube/short')).status, 404);
+  assert.equal((await anon('GET', '/youtube/..%2f..%2fetc00/thumb')).status, 404);
+});
+
+const setPicture = (user, kind, imageId) => user.call('PUT', '/me/images', { kind, imageId });
+
+test('a profile picture appears beside posts and comments, even for visitors', async () => {
+  const dana = await signUp('dana');
+  const { data: { id } } = await upload(dana, phoneJpeg());
+  assert.equal((await setPicture(dana, 'avatar', id)).status, 200);
+  const { data: post } = await dana.call('POST', '/posts', { body: 'שלום', audience: 'public' });
+  await dana.call('POST', `/posts/${post.id}/comments`, { body: 'תגובה' });
+  const { data } = await anon('GET', `/posts/${post.id}`);
+  assert.equal(data.post.author.avatar, id);
+  assert.equal(data.comments[0].author.avatar, id);
+  assert.equal((await fetchImage(anon, id)).status, 200);
+});
+
+test('replacing or removing a picture deletes the old one', async () => {
+  const eli = await signUp('eli');
+  const first = (await upload(eli, phoneJpeg())).data.id;
+  const second = (await upload(eli, phoneJpeg())).data.id;
+  await setPicture(eli, 'cover', first);
+  await setPicture(eli, 'cover', second);
+  assert.equal((await fetchImage(anon, first)).status, 404);
+  assert.equal((await eli.call('GET', '/me')).data.user.cover, second);
+  await setPicture(eli, 'cover', null);
+  assert.equal((await fetchImage(anon, second)).status, 404);
+  assert.equal((await eli.call('GET', '/me')).data.user.cover, null);
+});
+
+test('a picture cannot be stolen, reused, or moved into a post', async () => {
+  const gal = await signUp('gal');
+  const own = (await upload(gal, phoneJpeg())).data.id;
+  assert.equal((await setPicture(alice, 'avatar', own)).status, 400);
+  assert.equal((await setPicture(gal, 'nonsense', own)).status, 400);
+  await setPicture(gal, 'avatar', own);
+  assert.equal((await setPicture(gal, 'cover', own)).status, 400);
+  assert.equal((await gal.call('POST', '/posts', { body: '', audience: 'public', images: [own] })).status, 400);
+});
+
+test('a profile shows a stranger only public posts, and a friend everything', async () => {
+  const hila = await signUp('hila');
+  const ido = await signUp('ido');
+  await hila.call('POST', '/posts', { body: 'לכולם', audience: 'public' });
+  await hila.call('POST', '/posts', { body: 'לחברים', audience: 'friends' });
+  const stranger = (await ido.call('GET', `/users/${hila.id}`)).data;
+  assert.deepEqual(stranger.posts.map((post) => post.body), ['לכולם']);
+  assert.equal(stranger.friendship, null);
+  await ido.call('POST', `/friends/${hila.id}`);
+  assert.equal((await ido.call('GET', `/users/${hila.id}`)).data.friendship, 'outgoing');
+  assert.equal((await hila.call('GET', `/users/${ido.id}`)).data.friendship, 'incoming');
+  await hila.call('POST', `/friends/${ido.id}`);
+  const friend = (await ido.call('GET', `/users/${hila.id}`)).data;
+  assert.deepEqual(friend.posts.map((post) => post.body), ['לחברים', 'לכולם']);
+  assert.equal(friend.friendship, 'friends');
+  assert.equal((await hila.call('GET', `/users/${hila.id}`)).data.friendship, 'self');
+  assert.equal((await client()('GET', `/users/${hila.id}`)).status, 401);
+  assert.equal((await ido.call('GET', '/users/99999')).status, 404);
+});
+
 test('uploads stop at the storage limit, for everyone', async () => {
   const first = await signUp('first', STORAGE_PORT);
   const second = await signUp('second', STORAGE_PORT);
@@ -275,6 +440,129 @@ test('uploads stop at the daily limit of the whole network', async () => {
   assert.equal((await upload(first, phoneJpeg())).status, 201);
   assert.equal((await upload(second, phoneJpeg())).status, 201);
   assert.equal((await upload(first, phoneJpeg())).status, 429);
+});
+
+async function openInvite(link) {
+  const call = client(PILOT_PORT);
+  const verified = await call('POST', '/auth/verify', { token: link.split('#token=')[1] });
+  return { call, verified };
+}
+
+test('the admin invites a member, and the link works once', async () => {
+  const boss = await signUp('boss', PILOT_PORT);
+  assert.equal((await boss.call('GET', '/me')).data.user.admin, true);
+  const { status, data } = await boss.call('POST', '/admin/invites', {});
+  assert.equal(status, 201);
+  const member = await openInvite(data.link);
+  assert.equal(member.verified.status, 200);
+  await member.call('PUT', '/me', { name: 'חברה' });
+  assert.equal((await member.call('GET', '/me')).data.user.admin, false);
+  assert.equal((await openInvite(data.link)).verified.status, 400);
+});
+
+test('someone who joins by invitation starts as a friend of the admin', async () => {
+  const boss = await signUp('boss', PILOT_PORT);
+  const { data } = await boss.call('POST', '/admin/invites', {});
+  const { call } = await openInvite(data.link);
+  assert.equal((await boss.call('GET', '/friends')).data.friends.some((user) => user.name === ''), false);
+  await call('PUT', '/me', { name: 'מוזמנת' });
+  await boss.call('POST', '/posts', { body: 'ברוכה הבאה', audience: 'friends' });
+  assert.equal((await call('GET', '/feed')).data.posts[0].body, 'ברוכה הבאה');
+  assert.ok((await boss.call('GET', '/friends')).data.friends.some((user) => user.name === 'מוזמנת'));
+});
+
+test('the waiting friend requests are counted, for the addressee only', async () => {
+  const shir = await signUp('shir');
+  const ziv = await signUp('ziv');
+  await shir.call('POST', `/friends/${ziv.id}`);
+  assert.equal((await ziv.call('GET', '/me')).data.user.friendRequests, 1);
+  assert.equal((await shir.call('GET', '/me')).data.user.friendRequests, 0);
+  await ziv.call('POST', `/friends/${shir.id}`);
+  assert.equal((await ziv.call('GET', '/me')).data.user.friendRequests, 0);
+});
+
+// Plays both redirects of a Google sign-in, with `code` standing for who chose to sign in.
+async function googleFlow(code, { user, link = false, forgedState = false } = {}) {
+  const base = `http://localhost:${PILOT_PORT}/api/auth/google`;
+  const session = user?.call.cookie() ?? '';
+  const start = await fetch(`${base}${link ? '?link=1' : ''}`, { redirect: 'manual', headers: { Cookie: session } });
+  const state = new URL(start.headers.get('location'), base).searchParams.get('state');
+  const stateCookie = start.headers.get('set-cookie')?.split(';')[0] ?? '';
+  const back = await fetch(`${base}/callback?code=${code}&state=${forgedState ? 'forged' : state}`, {
+    redirect: 'manual',
+    headers: { Cookie: [session, stateCookie].filter(Boolean).join('; ') },
+  });
+  const cookie = back.headers.getSetCookie().find((line) => line.startsWith('session='))?.split(';')[0];
+  return { result: new URL(back.headers.get('location'), base).searchParams.get('google'), cookie };
+}
+
+test('a linked Google account opens the same account on another device', async () => {
+  const lior = await signUp('lior', PILOT_PORT);
+  assert.equal((await googleFlow('google-lior', { user: lior, link: true })).result, 'linked');
+  assert.equal((await lior.call('GET', '/me')).data.user.googleLinked, true);
+  const { result, cookie } = await googleFlow('google-lior');
+  assert.equal(result, 'login');
+  const me = await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers: { Cookie: cookie } });
+  assert.equal((await me.json()).user.id, lior.id);
+});
+
+test('Google never creates an account, and a forged redirect gets nothing', async () => {
+  const boss = await signUp('boss', PILOT_PORT);
+  const before = (await boss.call('GET', '/admin/overview')).data.users;
+  const unknown = await googleFlow('google-stranger');
+  assert.equal(unknown.result, 'unknown');
+  assert.equal(unknown.cookie, undefined);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.users, before);
+  const forged = await googleFlow('google-lior', { forgedState: true });
+  assert.equal(forged.result, 'failed');
+  assert.equal(forged.cookie, undefined);
+  assert.equal((await googleFlow('wrong-audience')).result, 'failed');
+});
+
+test('one Google account belongs to one person, and it can be unlinked', async () => {
+  const maya = await signUp('maya', PILOT_PORT);
+  assert.equal((await googleFlow('google-lior', { user: maya, link: true })).result, 'taken');
+  assert.equal((await googleFlow('google-maya', { user: maya, link: true })).result, 'linked');
+  assert.equal((await maya.call('DELETE', '/me/google')).status, 200);
+  assert.equal((await googleFlow('google-maya')).result, 'unknown');
+});
+
+test('without Google settings the routes do not exist', async () => {
+  const response = await fetch(`http://localhost:${PROD_PORT}/api/auth/google`, { redirect: 'manual' });
+  assert.equal(response.status, 404);
+  assert.equal((await client(PROD_PORT)('GET', '/me')).data.googleLogin, false);
+});
+
+test('a new login link returns a member to the same account', async () => {
+  const boss = await signUp('boss', PILOT_PORT);
+  const { data: { members } } = await boss.call('GET', '/admin/overview');
+  const known = members.find((user) => user.name === 'חברה');
+  const { data } = await boss.call('POST', '/admin/invites', { userId: known.id });
+  const { call } = await openInvite(data.link);
+  assert.equal((await call('GET', '/me')).data.user.id, known.id);
+  assert.equal((await boss.call('POST', '/admin/invites', { userId: 9999 })).status, 404);
+});
+
+test('only the admin reaches the admin screen', async () => {
+  const stranger = await signUp('stranger', PILOT_PORT);
+  assert.equal((await stranger.call('GET', '/admin/overview')).status, 403);
+  assert.equal((await stranger.call('POST', '/admin/invites', {})).status, 403);
+  const nobody = client(PILOT_PORT);
+  assert.equal((await nobody('GET', '/admin/overview')).status, 401);
+  assert.equal((await nobody('POST', '/admin/invites', {})).status, 401);
+  assert.equal((await nobody('GET', '/me')).data.inviteOnly, true);
+  assert.equal((await client(PROD_PORT)('GET', '/admin/overview')).status, 401);
+});
+
+test('the admin screen reports usage against the limits', async () => {
+  const boss = await signUp('boss', PILOT_PORT);
+  await upload(boss, phoneJpeg());
+  const { usage, users } = (await boss.call('GET', '/admin/overview')).data;
+  assert.equal(usage.today, 1);
+  assert.equal(usage.bytes, 23);
+  assert.equal(usage.storageLimit, 8 * 1024 ** 3);
+  assert.equal(usage.uploadLimit, 2000);
+  assert.ok(users >= 3);
 });
 
 test('the demo opens with one click and shows the invented feed', async () => {
@@ -328,12 +616,16 @@ test('without DEV_LOGIN a login link is never returned', async () => {
 
 let failed = 0;
 try {
-  startServer(PORT, ['--var', 'DEV_LOGIN:1']);
+  await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
+  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:http://localhost:${YOUTUBE_PORT}`]);
   startServer(PROD_PORT, []);
   startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
   startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);
   startServer(UPLOADS_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'UPLOADS_PER_DAY:2']);
-  await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT].map(waitFor));
+  startServer(PILOT_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'INVITE_ONLY:1', '--var', 'ADMIN_EMAIL:boss@example.com',
+    '--var', 'GOOGLE_CLIENT_ID:test-client', '--var', 'GOOGLE_CLIENT_SECRET:test-secret',
+    '--var', `GOOGLE_TOKEN_URL:http://localhost:${YOUTUBE_PORT}/token`]);
+  await Promise.all([PORT, PROD_PORT, DEMO_PORT, STORAGE_PORT, UPLOADS_PORT, PILOT_PORT].map(waitFor));
   for (const [name, fn] of tests) {
     try {
       await fn();
@@ -351,6 +643,7 @@ try {
       // Already gone.
     }
   }
+  fakeYoutube.close();
   rmSync(root, { recursive: true, force: true });
 }
 console.log(failed ? `${failed} failed` : `all ${tests.length} passed`);

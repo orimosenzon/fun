@@ -12,10 +12,23 @@ const ICONS = {
   link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
   trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
   image: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.5 10a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3M21 15l-5-5L5 21',
+  home: 'M3 11l9-8 9 8M5 10v10h14V10',
+  settings: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  camera: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8a4 4 0 0 0 0 8',
   leaf: 'M11 20A7 7 0 0 1 4 13C4 7 10 4 20 4c0 10-3 16-9 16zM4 21c2-6 6-9 11-11',
 };
 let me = null;
 let demo = false;
+let inviteOnly = false;
+let googleLogin = false;
+const GOOGLE_MESSAGES = {
+  linked: 'חשבון הגוגל חובר. מעכשיו אפשר להיכנס איתו מכל מכשיר.',
+  unknown: 'חשבון הגוגל הזה לא מחובר לאף משתמש. נכנסים פעם אחת עם קישור ההזמנה, ואז מחברים את גוגל מהדף האישי.',
+  taken: 'חשבון הגוגל הזה כבר מחובר למשתמש אחר.',
+  failed: 'הכניסה עם גוגל לא הצליחה, נסו שוב.',
+};
+const scrollByPath = new Map();
+history.scrollRestoration = 'manual';
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -66,13 +79,29 @@ async function api(path, { method = 'GET', body } = {}) {
   throw new Error(`${data.error ?? 'משהו השתבש, נסו שוב'}${code ? ` (קוד ${code})` : ''}`);
 }
 
-function go(path) {
+async function go(path) {
+  scrollByPath.set(location.pathname, scrollY);
   history.pushState(null, '', path);
-  route();
+  await route();
+  scrollTo(0, 0);
 }
 
 function link(path, ...content) {
   return el('a', { href: path, onclick: (e) => { e.preventDefault(); go(path); } }, ...content);
+}
+
+// On a phone this opens the share sheet, so a link goes straight to WhatsApp.
+async function shareLink(url, button) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ url });
+    } catch {
+      // The reader closed the share sheet.
+    }
+    return;
+  }
+  await navigator.clipboard.writeText(url);
+  button.textContent = 'הועתק';
 }
 
 function icon(name) {
@@ -105,9 +134,20 @@ function richText(text) {
   return node;
 }
 
-// Nothing is requested from Google, not even a thumbnail, until the reader clicks.
+// The picture and title come through our server. Nothing reaches Google until the reader clicks.
 function video(id) {
-  const button = el('button', { className: 'video', type: 'button' }, el('span', { className: 'play' }), 'סרטון מיוטיוב, לחצו לטעינה');
+  const title = el('span', { className: 'video-title', dir: 'auto' }, 'סרטון מיוטיוב, לחצו לטעינה');
+  const picture = el('img', {
+    className: 'video-picture',
+    src: `/api/youtube/${id}/thumb`,
+    alt: '',
+    loading: 'lazy',
+    onerror: () => picture.remove(),
+  });
+  const button = el('button', { className: 'video', type: 'button' }, picture, el('span', { className: 'play' }), title);
+  api(`/youtube/${id}`).then((details) => {
+    if (details.title) title.textContent = details.title;
+  }).catch(() => {});
   button.addEventListener('click', () => {
     button.replaceWith(el('div', { className: 'video' }, el('iframe', {
       src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1`,
@@ -137,8 +177,14 @@ function gallery(ids) {
     el('img', { src: `/api/images/${id}`, alt: 'תמונה מהפוסט', loading: 'lazy' }))));
 }
 
-function avatar(user, { small = false } = {}) {
-  return el('span', { className: `avatar c${(user.id - 1) % 6}${small ? ' small' : ''}`, ariaHidden: 'true' }, [...user.name][0] ?? '?');
+function avatar(user, { small = false, large = false } = {}) {
+  const size = small ? ' small' : large ? ' large' : '';
+  const content = user.avatar ? el('img', { src: `/api/images/${user.avatar}`, alt: '' }) : [...user.name][0] ?? '?';
+  return el('span', { className: `avatar c${(user.id - 1) % 6}${size}`, ariaHidden: 'true' }, content);
+}
+
+function profileLink(user, ...content) {
+  return link(`/u/${user.id}`, ...content);
 }
 
 function when(ms) {
@@ -150,11 +196,8 @@ function postCard(post, { onDeleted } = {}) {
   const count = post.commentCount ? `תגובות (${post.commentCount})` : 'להגיב';
   const actions = el('div', { className: 'row spread' }, link(url, labelled('comment', count)));
   if (post.audience === 'public') {
-    const copy = el('button', { className: 'plain', type: 'button' }, labelled('link', 'העתקת קישור'));
-    copy.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(new URL(url, location.origin).href);
-      copy.textContent = 'הועתק';
-    });
+    const copy = el('button', { className: 'plain', type: 'button' }, labelled('link', navigator.share ? 'שיתוף' : 'העתקת קישור'));
+    copy.addEventListener('click', () => shareLink(new URL(url, location.origin).href, copy));
     actions.append(copy);
   }
   if (post.mine) {
@@ -169,8 +212,8 @@ function postCard(post, { onDeleted } = {}) {
     }, labelled('trash', 'מחיקה')));
   }
   return el('article', { className: 'card' },
-    el('div', { className: 'head' }, avatar(post.author), el('div', { className: 'who' },
-      el('span', { className: 'author', dir: 'auto' }, post.author.name),
+    el('div', { className: 'head' }, profileLink(post.author, avatar(post.author)), el('div', { className: 'who' },
+      profileLink(post.author, el('span', { className: 'author', dir: 'auto' }, post.author.name)),
       el('span', { className: 'muted' }, `${when(post.createdAt)} · ${post.audience === 'public' ? 'ציבורי' : 'חברים'}`))),
     post.body ? richText(post.body) : null,
     post.images.length ? gallery(post.images) : null,
@@ -180,7 +223,12 @@ function postCard(post, { onDeleted } = {}) {
 
 async function composer(onPosted) {
   const { friends } = await api('/audience');
-  const text = el('textarea', { placeholder: 'מה חדש?', maxLength: 5000, dir: 'auto' });
+  const text = el('textarea', {
+    placeholder: 'מה חדש?',
+    maxLength: 5000,
+    dir: 'auto',
+    onfocus: () => text.closest('form').classList.add('open'),
+  });
   const note = el('p', { className: 'note' });
   const error = el('p', { className: 'error', hidden: true });
   const radio = (value, label, checked) => el('label', {},
@@ -225,7 +273,7 @@ async function composer(onPosted) {
 
   const submit = el('button', { type: 'submit' }, 'פרסום');
   return el('form', {
-    className: 'card',
+    className: 'card composer',
     onsubmit: async (e) => {
       e.preventDefault();
       submit.disabled = true;
@@ -241,7 +289,8 @@ async function composer(onPosted) {
         submit.disabled = false;
       }
     },
-  }, el('div', { className: 'composer-top' }, avatar(me), text), previews, picker, el('div', { className: 'row spread' }, choices, addPhoto, submit), note, error);
+  }, el('div', { className: 'composer-top' }, avatar(me), text),
+  el('div', { className: 'composer-more' }, previews, picker, el('div', { className: 'row spread' }, choices, addPhoto, submit), note, error));
 }
 
 async function feedPage() {
@@ -270,21 +319,24 @@ async function feedPage() {
     more);
 }
 
-function comment(item, reload) {
+function comment(item, reload, onReply) {
   const bubble = el('div', { className: 'bubble' },
     el('div', { className: 'comment-head' },
-      el('span', { className: 'author', dir: 'auto' }, item.author.name),
+      profileLink(item.author, el('span', { className: 'author', dir: 'auto' }, item.author.name)),
       el('span', { className: 'muted' }, when(item.createdAt))));
-  const node = el('div', { className: 'comment' }, avatar(item.author, { small: true }), bubble);
+  const node = el('div', { className: `comment${item.parentId ? ' reply' : ''}` }, profileLink(item.author, avatar(item.author, { small: true })), bubble);
   if (item.removedBy) {
     const by = item.removedBy === 'author' ? 'הכותב' : 'בעל הפוסט';
     bubble.append(el('p', { className: 'text removed' }, `התגובה הוסרה על ידי ${by}`));
     return node;
   }
-  bubble.append(richText(item.body));
+  if (item.body) bubble.append(richText(item.body));
+  if (item.image) bubble.append(gallery([item.image]));
   if (item.youtubeId) bubble.append(video(item.youtubeId));
+  const actions = el('div', { className: 'comment-actions' });
+  if (onReply) actions.append(el('button', { className: 'plain', type: 'button', onclick: onReply }, 'הגבה'));
   if (item.canRemove) {
-    bubble.append(el('button', {
+    actions.append(el('button', {
       className: 'plain danger',
       type: 'button',
       onclick: async () => {
@@ -294,7 +346,73 @@ function comment(item, reload) {
       },
     }, 'הסרה'));
   }
+  if (actions.children.length) bubble.append(actions);
   return node;
+}
+
+function commentForm(postId, parentId, placeholder) {
+  const text = el('textarea', { placeholder, maxLength: 2000, dir: 'auto' });
+  const error = el('p', { className: 'error', hidden: true });
+  const submit = el('button', { type: 'submit' }, 'תגובה');
+  const previews = el('div', { className: 'previews' });
+  const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
+  let photo = null;
+  const showPhoto = () => previews.replaceChildren(...(photo ? [el('button', {
+    className: 'preview',
+    type: 'button',
+    title: 'הסרת התמונה',
+    onclick: () => {
+      photo = null;
+      showPhoto();
+    },
+  }, el('img', { src: URL.createObjectURL(photo), alt: 'תמונה שנבחרה' }))] : []));
+  picker.addEventListener('change', async () => {
+    error.hidden = true;
+    try {
+      photo = await prepareImage(picker.files[0]);
+      showPhoto();
+    } catch {
+      error.textContent = 'אי אפשר לקרוא את התמונה הזו';
+      error.hidden = false;
+    }
+    picker.value = '';
+  });
+  return el('form', {
+    className: 'comment-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      submit.disabled = true;
+      error.hidden = true;
+      try {
+        const image = photo ? (await api('/images', { method: 'POST', body: photo })).id : null;
+        await api(`/posts/${postId}/comments`, { method: 'POST', body: { body: text.value, image, parentId } });
+        route();
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+        submit.disabled = false;
+      }
+    },
+  }, text, previews, picker, el('div', { className: 'row spread' },
+    el('button', { className: 'plain', type: 'button', onclick: () => picker.click() }, labelled('image', 'הוספת תמונה')),
+    submit), error);
+}
+
+function commentThread(postId, top, replies) {
+  const group = el('div', { className: 'comment-group' });
+  const openReply = () => {
+    let form = group.querySelector('.reply-form');
+    if (!form) {
+      form = commentForm(postId, top.id, 'כתיבת תגובה לתגובה');
+      form.classList.add('reply-form');
+      group.append(form);
+    }
+    form.querySelector('textarea').focus();
+  };
+  const onReply = me?.name ? openReply : null;
+  group.append(comment(top, route, top.removedBy ? null : onReply),
+    ...replies.map((item) => comment(item, route, top.removedBy ? null : onReply)));
+  return group;
 }
 
 async function postPage(id) {
@@ -302,33 +420,17 @@ async function postPage(id) {
   const section = el('section', { className: 'card thread' },
     el('h2', {}, 'תגובות', icon('leaf')),
     el('p', { className: 'muted' }, 'כל התגובות, לפי סדר הכתיבה.'),
-    ...comments.map((item) => comment(item, route)));
+    ...comments.filter((item) => !item.parentId).map((top) => commentThread(id, top,
+      comments.filter((item) => item.parentId === top.id))));
 
-  if (me?.name) {
-    const text = el('textarea', { placeholder: 'כתיבת תגובה', maxLength: 2000, dir: 'auto' });
-    const error = el('p', { className: 'error', hidden: true });
-    section.append(el('form', {
-      style: 'margin-top: 16px',
-      onsubmit: async (e) => {
-        e.preventDefault();
-        try {
-          await api(`/posts/${id}/comments`, { method: 'POST', body: { body: text.value } });
-          route();
-        } catch (err) {
-          error.textContent = err.message;
-          error.hidden = false;
-        }
-      },
-    }, text, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'תגובה')), error));
-  } else {
-    section.append(el('p', {}, link('/login', 'התחברו'), ' כדי להגיב.'));
-  }
+  if (me?.name) section.append(commentForm(id, null, 'כתיבת תגובה'));
+  else section.append(el('p', {}, link('/login', 'התחברו'), ' כדי להגיב.'));
   app.replaceChildren(postCard(post, { onDeleted: () => go('/') }), section);
 }
 
 function person(user, ...actions) {
   return el('div', { className: 'person' },
-    el('div', { className: 'head' }, avatar(user, { small: true }), el('span', { dir: 'auto' }, user.name)),
+    el('div', { className: 'head' }, profileLink(user, avatar(user, { small: true }), el('span', { dir: 'auto' }, user.name))),
     el('div', { className: 'row', style: 'margin-top: 0' }, ...actions));
 }
 
@@ -339,6 +441,7 @@ function friendAction(label, method, id, { plain = false } = {}) {
     onclick: async () => {
       try {
         await api(`/friends/${id}`, { method });
+        await refreshMe();
         route();
       } catch (err) {
         alert(err.message);
@@ -372,9 +475,141 @@ async function friendsPage() {
   app.replaceChildren(card);
 }
 
+async function savePicture(kind, imageId) {
+  await api('/me/images', { method: 'PUT', body: { kind, imageId } });
+  ({ user: me } = await api('/me'));
+  await route();
+}
+
+// On your own page, a picture is its own button: pressing it replaces it.
+function editablePicture(kind, label, content, error) {
+  const picker = el('input', { type: 'file', accept: 'image/*', hidden: true });
+  const button = el('button', {
+    className: `picture-edit ${kind}-edit`,
+    type: 'button',
+    ariaLabel: label,
+    title: label,
+    onclick: () => picker.click(),
+  }, content, el('span', { className: 'badge' }, icon('camera')));
+  picker.addEventListener('change', async () => {
+    error.hidden = true;
+    button.classList.add('busy');
+    try {
+      const { id } = await api('/images', { method: 'POST', body: await prepareImage(picker.files[0]) });
+      await savePicture(kind, id);
+    } catch (err) {
+      error.textContent = err.message;
+      error.hidden = false;
+      button.classList.remove('busy');
+    }
+  });
+  return [button, picker];
+}
+
+async function profilePage(id) {
+  const { user, friendship, posts, hasMore } = await api(`/users/${id}`);
+  const list = el('div');
+  const more = el('button', { className: 'plain', type: 'button', hidden: !hasMore }, 'פוסטים ישנים יותר');
+  let oldest = posts.at(-1)?.id;
+  const show = (items) => list.append(...items.map((post) => postCard(post, { onDeleted: route })));
+  show(posts);
+  more.addEventListener('click', async () => {
+    const next = await api(`/users/${id}?before=${oldest}`);
+    show(next.posts);
+    oldest = next.posts.at(-1)?.id ?? oldest;
+    more.hidden = !next.hasMore;
+  });
+  if (!posts.length) list.append(el('p', { className: 'feed-rule' }, 'אין כאן פוסטים שאפשר להציג.'));
+
+  const mine = friendship === 'self';
+  const error = el('p', { className: 'error', hidden: true });
+  const face = avatar(user, { large: true });
+  const cover = el('div', { className: 'cover' }, user.cover ? el('img', { src: `/api/images/${user.cover}`, alt: '' }) : null);
+  const body = el('div', { className: 'profile-body' },
+    ...(mine ? editablePicture('avatar', 'החלפת תמונת הפרופיל', face, error) : [face]),
+    el('h1', { dir: 'auto' }, user.name));
+  if (mine) {
+    const remove = (kind, label) => el('button', {
+      className: 'plain danger',
+      type: 'button',
+      onclick: () => confirm('להסיר את התמונה?') && savePicture(kind, null),
+    }, label);
+    const google = !googleLogin ? null : me.googleLinked
+      ? el('div', { className: 'row' }, el('span', { className: 'muted' }, 'חשבון גוגל מחובר לכניסה.'), el('button', {
+        className: 'plain',
+        type: 'button',
+        onclick: async () => {
+          if (!confirm('לנתק את חשבון הגוגל? אחרי זה אפשר יהיה להיכנס רק עם קישור.')) return;
+          await api('/me/google', { method: 'DELETE' });
+          await refreshMe();
+          route();
+        },
+      }, 'ניתוק'))
+      : el('div', { className: 'row' }, el('a', { className: 'button-link', href: '/api/auth/google?link=1' }, 'חיבור חשבון גוגל'));
+    body.append(
+      error,
+      google,
+      el('p', { className: 'note' }, 'לחיצה על תמונה מחליפה אותה. התמונות האלה גלויות כמו השם שלך, גם למי שקורא פוסט ציבורי בלי להתחבר.'),
+      el('div', { className: 'row' },
+        user.avatar ? remove('avatar', 'הסרת תמונת הפרופיל') : null,
+        user.cover ? remove('cover', 'הסרת תמונת הכותרת') : null,
+        el('button', { className: 'plain phone-only', type: 'button', onclick: logout }, 'יציאה מהחשבון')));
+  } else if (friendship === 'incoming') {
+    body.append(el('div', { className: 'row' }, friendAction('אישור בקשת החברות', 'POST', user.id)));
+  } else if (friendship === 'outgoing') {
+    body.append(el('p', { className: 'muted' }, 'בקשת החברות ממתינה לאישור.'));
+  } else if (!friendship) {
+    body.append(el('div', { className: 'row' }, friendAction('בקשת חברות', 'POST', user.id)));
+  }
+
+  app.replaceChildren(el('section', { className: 'card profile' },
+    ...(mine ? editablePicture('cover', 'החלפת תמונת הכותרת', cover, error) : [cover]), body), list, more);
+}
+
+function meter(label, value, max, text) {
+  return el('div', { className: 'meter' },
+    el('div', { className: 'row spread' }, el('span', {}, label), el('span', { className: 'muted' }, `${text} · ${(value / max * 100).toFixed(1)}%`)),
+    el('progress', { value, max }));
+}
+
+async function adminPage() {
+  const { usage, users, posts, comments, members } = await api('/admin/overview');
+  const gb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
+  const result = el('div');
+
+  async function invite(userId) {
+    const { link: url } = await api('/admin/invites', { method: 'POST', body: { userId } });
+    const copy = el('button', { type: 'button' }, navigator.share ? 'שליחה' : 'העתקה');
+    copy.addEventListener('click', () => shareLink(url, copy));
+    result.replaceChildren(
+      el('input', { type: 'text', readOnly: true, value: url, dir: 'ltr' }),
+      el('p', { className: 'note' }, 'הקישור עובד פעם אחת, במשך שבוע. שלחו אותו רק לאדם שהוא מיועד לו.'),
+      el('div', { className: 'row' }, copy));
+  }
+
+  app.replaceChildren(
+    el('section', { className: 'card' },
+      el('h1', {}, 'ניהול'),
+      el('p', { className: 'muted' }, `${users} משתמשים · ${posts} פוסטים · ${comments} תגובות`),
+      meter('אחסון תמונות', usage.bytes, usage.storageLimit, `${gb(usage.bytes)} מתוך ${gb(usage.storageLimit)}GB`),
+      meter('העלאות ב-24 השעות האחרונות', usage.today, usage.uploadLimit, `${usage.today} מתוך ${usage.uploadLimit}`)),
+    el('section', { className: 'card' },
+      el('h2', {}, 'הזמנת חבר'),
+      el('div', { className: 'row' }, el('button', { type: 'button', onclick: () => invite() }, 'יצירת קישור הזמנה')),
+      result,
+      el('h2', {}, 'חברי הרשת'),
+      ...members.map((member) => person({ ...member, name: member.name || 'עוד לא בחר שם' }, el('button', {
+        className: 'plain',
+        type: 'button',
+        onclick: () => invite(member.id),
+      }, 'קישור כניסה חדש')))));
+}
+
 function loginPage() {
   const email = el('input', { type: 'email', required: true, placeholder: 'כתובת מייל', dir: 'ltr' });
   const message = el('p', { className: 'muted' });
+  const inviteNote = el('div', { className: 'card' },
+    el('p', { className: 'flush' }, 'הרשת נמצאת בניסוי סגור. נכנסים רק עם קישור אישי ממי שהזמין אתכם.'));
   const demoEntry = el('div', { className: 'card' },
     el('p', { style: 'margin-top: 0' }, 'כאן אפשר להציץ בממשק עם אנשים ופוסטים בדויים.'),
     el('div', { className: 'row' }, el('button', {
@@ -389,7 +624,9 @@ function loginPage() {
     el('img', { src: '/favicon.svg', alt: '' }),
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
     el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
-  demo ? demoEntry : el('form', {
+  googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'כבר חיברת חשבון גוגל?'),
+    el('div', { className: 'row' }, el('a', { className: 'button-link', href: '/api/auth/google' }, 'כניסה עם גוגל'))) : '',
+  demo ? demoEntry : inviteOnly ? inviteNote : el('form', {
     className: 'card',
     onsubmit: async (e) => {
       e.preventDefault();
@@ -430,31 +667,56 @@ function namePage() {
   }, el('h1', {}, 'ברוכים הבאים'), name, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'המשך')), error));
 }
 
+async function logout() {
+  await api('/auth/logout', { method: 'POST' });
+  me = null;
+  go('/login');
+  renderNav();
+}
+
+async function refreshMe() {
+  ({ user: me } = await api('/me'));
+  renderNav();
+}
+
 function renderNav() {
   const why = demo ? null : el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
   if (!me) {
     nav.replaceChildren(...[why, link('/login', 'כניסה')].filter(Boolean));
     return;
   }
-  nav.replaceChildren(...[link('/friends', labelled('user', 'חברים')), why, el('button', {
-    className: 'plain',
+  const admin = me.admin ? link('/admin', labelled('settings', 'ניהול')) : null;
+  const mine = me.name ? link(`/u/${me.id}`, labelled('image', 'הדף שלי')) : null;
+  const home = link('/', labelled('home', 'בית'));
+  home.classList.add('phone-only');
+  const friends = link('/friends', labelled('user', 'חברים'));
+  if (me.friendRequests) {
+    friends.classList.add('has-count');
+    friends.append(el('span', { className: 'count', ariaLabel: `${me.friendRequests} בקשות חברות` }, String(me.friendRequests)));
+  }
+  nav.replaceChildren(...[home, mine, friends, admin, why, el('button', {
+    className: 'plain desktop-only',
     type: 'button',
-    onclick: async () => {
-      await api('/auth/logout', { method: 'POST' });
-      me = null;
-      go('/login');
-      renderNav();
-    },
+    onclick: logout,
   }, labelled('logout', 'יציאה'))].filter(Boolean));
+  markNav();
+}
+
+function markNav() {
+  for (const item of nav.querySelectorAll('a')) item.classList.toggle('active', item.pathname === location.pathname);
 }
 
 async function route() {
+  markNav();
   const post = location.pathname.match(/^\/p\/(\d+)$/);
+  const profile = location.pathname.match(/^\/u\/(\d+)$/);
   try {
     if (post) await postPage(post[1]);
     else if (!me) loginPage();
     else if (!me.name) namePage();
+    else if (profile) await profilePage(profile[1]);
     else if (location.pathname === '/friends') await friendsPage();
+    else if (location.pathname === '/admin') await adminPage();
     else await feedPage();
   } catch (err) {
     app.replaceChildren(el('p', { className: 'error' }, err.message));
@@ -463,21 +725,36 @@ async function route() {
 
 async function start() {
   const token = new URLSearchParams(location.hash.slice(1)).get('token');
+  let linkFailed = false;
   if (token) {
     history.replaceState(null, '', '/');
     try {
       await api('/auth/verify', { method: 'POST', body: { token } });
-    } catch (err) {
-      alert(err.message);
+    } catch {
+      linkFailed = true;
     }
   }
-  ({ user: me, demo } = await api('/me'));
+  ({ user: me, demo, inviteOnly, googleLogin } = await api('/me'));
+  // Opening an old link again is normal: someone already logged in just continues to the site.
+  const google = new URLSearchParams(location.search).get('google');
+  if (google) {
+    history.replaceState(null, '', location.pathname);
+    if (GOOGLE_MESSAGES[google]) alert(GOOGLE_MESSAGES[google]);
+  }
+  if (linkFailed && !me) alert('הקישור הזה כבר נוצל או שפג תוקפו. בקשו קישור כניסה חדש ממי שהזמין אתכם.');
   document.getElementById('demo-banner').hidden = !demo;
   renderNav();
   if (location.pathname === '/login' && me) history.replaceState(null, '', '/');
   await route();
 }
 
-window.addEventListener('popstate', route);
+// A phone keeps the page open for days, so the count is refreshed on coming back to it.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && me) refreshMe().catch(() => {});
+});
+window.addEventListener('popstate', async () => {
+  await route();
+  scrollTo(0, scrollByPath.get(location.pathname) ?? 0);
+});
 window.addEventListener('hashchange', start);
 start();
