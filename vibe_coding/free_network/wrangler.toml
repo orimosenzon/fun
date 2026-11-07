@@ -46,6 +46,7 @@ name = "free-network"
 [env.pilot.vars]
 INVITE_ONLY = "1"
 ADMIN_EMAIL = "admin@invite.invalid"
+GOOGLE_CLIENT_ID = "499440299994-1jorad0ruokmg0hdlkrv60dmm314jqt2.apps.googleusercontent.com"
 
 [env.pilot.assets]
 directory = "public"

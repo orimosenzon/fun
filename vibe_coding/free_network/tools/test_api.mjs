@@ -22,8 +22,10 @@ const fakeYoutube = createServer((request, response) => {
     let body = '';
     request.on('data', (part) => { body += part; });
     request.on('end', () => {
-      const code = new URLSearchParams(body).get('code');
+      // A code like "google-x" is a person with no address; "google-x:a@b.com" has one, "!" unverified.
+      const [code, email] = new URLSearchParams(body).get('code').split(':');
       const claims = { iss: 'https://accounts.google.com', aud: code === 'wrong-audience' ? 'other' : 'test-client', sub: code };
+      if (email) Object.assign(claims, { email: email.replace('!', ''), email_verified: !email.includes('!') });
       const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify({ id_token: `x.${encoded}.y` }));
@@ -442,6 +444,13 @@ test('uploads stop at the daily limit of the whole network', async () => {
   assert.equal((await upload(first, phoneJpeg())).status, 429);
 });
 
+// One admin for all pilot tests: logins are rate limited per address, as in production.
+let bossAccount;
+async function theBoss() {
+  bossAccount ??= await signUp('boss', PILOT_PORT);
+  return bossAccount;
+}
+
 async function openInvite(link) {
   const call = client(PILOT_PORT);
   const verified = await call('POST', '/auth/verify', { token: link.split('#token=')[1] });
@@ -449,7 +458,7 @@ async function openInvite(link) {
 }
 
 test('the admin invites a member, and the link works once', async () => {
-  const boss = await signUp('boss', PILOT_PORT);
+  const boss = await theBoss();
   assert.equal((await boss.call('GET', '/me')).data.user.admin, true);
   const { status, data } = await boss.call('POST', '/admin/invites', {});
   assert.equal(status, 201);
@@ -461,7 +470,7 @@ test('the admin invites a member, and the link works once', async () => {
 });
 
 test('someone who joins by invitation starts as a friend of the admin', async () => {
-  const boss = await signUp('boss', PILOT_PORT);
+  const boss = await theBoss();
   const { data } = await boss.call('POST', '/admin/invites', {});
   const { call } = await openInvite(data.link);
   assert.equal((await boss.call('GET', '/friends')).data.friends.some((user) => user.name === ''), false);
@@ -507,7 +516,7 @@ test('a linked Google account opens the same account on another device', async (
 });
 
 test('Google never creates an account, and a forged redirect gets nothing', async () => {
-  const boss = await signUp('boss', PILOT_PORT);
+  const boss = await theBoss();
   const before = (await boss.call('GET', '/admin/overview')).data.users;
   const unknown = await googleFlow('google-stranger');
   assert.equal(unknown.result, 'unknown');
@@ -527,6 +536,34 @@ test('one Google account belongs to one person, and it can be unlinked', async (
   assert.equal((await googleFlow('google-maya')).result, 'unknown');
 });
 
+test('an invited Google address joins linked, as a friend, and the invitation is used up', async () => {
+  const boss = await theBoss();
+  assert.equal((await boss.call('POST', '/admin/google-invites', { email: 'New.Friend@Gmail.com' })).data.email, 'newfriend@gmail.com');
+  assert.equal((await boss.call('GET', '/admin/overview')).data.googleInvites.length, 1);
+  const joined = await googleFlow('google-new:newfriend@gmail.com');
+  assert.equal(joined.result, 'joined');
+  const headers = { Cookie: joined.cookie };
+  const me = await (await fetch(`http://localhost:${PILOT_PORT}/api/me`, { headers })).json();
+  assert.equal(me.user.googleLinked, true);
+  assert.equal(me.user.name, '');
+  const friends = await (await fetch(`http://localhost:${PILOT_PORT}/api/friends`, { headers })).json();
+  assert.deepEqual(friends.friends.map((user) => user.name), ['boss']);
+  assert.equal((await boss.call('GET', '/admin/overview')).data.googleInvites.length, 0);
+  assert.equal((await googleFlow('google-new:newfriend@gmail.com')).result, 'login');
+  assert.equal((await googleFlow('google-other:newfriend@gmail.com')).result, 'unknown');
+});
+
+test('a Google invitation needs a verified address, and only the admin can send or cancel one', async () => {
+  const boss = await theBoss();
+  await boss.call('POST', '/admin/google-invites', { email: 'careful@gmail.com' });
+  assert.equal((await googleFlow('google-careful:careful@gmail.com!')).result, 'unknown');
+  const stranger = await signUp('stranger', PILOT_PORT);
+  assert.equal((await stranger.call('POST', '/admin/google-invites', { email: 'x@gmail.com' })).status, 403);
+  assert.equal((await boss.call('POST', '/admin/google-invites', { email: 'not an address' })).status, 400);
+  await boss.call('DELETE', '/admin/google-invites/careful%40gmail.com');
+  assert.equal((await googleFlow('google-careful:careful@gmail.com')).result, 'unknown');
+});
+
 test('without Google settings the routes do not exist', async () => {
   const response = await fetch(`http://localhost:${PROD_PORT}/api/auth/google`, { redirect: 'manual' });
   assert.equal(response.status, 404);
@@ -534,7 +571,7 @@ test('without Google settings the routes do not exist', async () => {
 });
 
 test('a new login link returns a member to the same account', async () => {
-  const boss = await signUp('boss', PILOT_PORT);
+  const boss = await theBoss();
   const { data: { members } } = await boss.call('GET', '/admin/overview');
   const known = members.find((user) => user.name === 'חברה');
   const { data } = await boss.call('POST', '/admin/invites', { userId: known.id });
@@ -555,7 +592,7 @@ test('only the admin reaches the admin screen', async () => {
 });
 
 test('the admin screen reports usage against the limits', async () => {
-  const boss = await signUp('boss', PILOT_PORT);
+  const boss = await theBoss();
   await upload(boss, phoneJpeg());
   const { usage, users } = (await boss.call('GET', '/admin/overview')).data;
   assert.equal(usage.today, 1);
@@ -614,6 +651,23 @@ test('without DEV_LOGIN a login link is never returned', async () => {
   assert.equal(data.devLink, undefined);
 });
 
+// A run cut short must not leave servers holding the ports for the next one.
+function stopServers() {
+  for (const server of servers) {
+    try {
+      process.kill(-server.pid);
+    } catch {
+      // Already gone.
+    }
+  }
+}
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    stopServers();
+    process.exit(1);
+  });
+}
+
 let failed = 0;
 try {
   await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
@@ -636,13 +690,7 @@ try {
     }
   }
 } finally {
-  for (const server of servers) {
-    try {
-      process.kill(-server.pid);
-    } catch {
-      // Already gone.
-    }
-  }
+  stopServers();
   fakeYoutube.close();
   rmSync(root, { recursive: true, force: true });
 }

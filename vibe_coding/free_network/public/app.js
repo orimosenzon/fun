@@ -183,6 +183,10 @@ function avatar(user, { small = false, large = false } = {}) {
   return el('span', { className: `avatar c${(user.id - 1) % 6}${size}`, ariaHidden: 'true' }, content);
 }
 
+function googleButton(href, label) {
+  return el('a', { className: 'google-button', href }, el('img', { src: '/google.svg', alt: '' }), label);
+}
+
 function profileLink(user, ...content) {
   return link(`/u/${user.id}`, ...content);
 }
@@ -545,7 +549,7 @@ async function profilePage(id) {
           route();
         },
       }, 'ניתוק'))
-      : el('div', { className: 'row' }, el('a', { className: 'button-link', href: '/api/auth/google?link=1' }, 'חיבור חשבון גוגל'));
+      : el('div', { className: 'row' }, googleButton('/api/auth/google?link=1', 'חיבור חשבון Google'));
     body.append(
       error,
       google,
@@ -573,7 +577,7 @@ function meter(label, value, max, text) {
 }
 
 async function adminPage() {
-  const { usage, users, posts, comments, members } = await api('/admin/overview');
+  const { usage, users, posts, comments, members, googleInvites } = await api('/admin/overview');
   const gb = (bytes) => (bytes / 1024 ** 3).toFixed(2);
   const result = el('div');
 
@@ -587,14 +591,60 @@ async function adminPage() {
       el('div', { className: 'row' }, copy));
   }
 
+  const gmail = el('input', { type: 'email', placeholder: 'name@gmail.com', dir: 'ltr', required: true });
+  const gmailResult = el('div');
+  const gmailForm = el('form', {
+    onsubmit: async (e) => {
+      e.preventDefault();
+      try {
+        const { email } = await api('/admin/google-invites', { method: 'POST', body: { email: gmail.value } });
+        const text = `הזמנתי אותך לרשת החופשית. נכנסים כאן עם חשבון ה-Google שלך (${email}): ${location.origin}`;
+        const send = el('button', { type: 'button' }, navigator.share ? 'שליחת ההזמנה' : 'העתקת ההזמנה');
+        send.addEventListener('click', async () => {
+          if (navigator.share) {
+            await navigator.share({ text }).catch(() => {});
+          } else {
+            await navigator.clipboard.writeText(text);
+            send.textContent = 'הועתק';
+          }
+        });
+        gmailResult.replaceChildren(el('p', { className: 'note' }, `${email} יכול עכשיו להיכנס עם Google, וייפתח לו חשבון שמחובר אליך כחבר.`),
+          el('div', { className: 'row' }, send));
+        gmail.value = '';
+        showPending((await api('/admin/overview')).googleInvites);
+      } catch (err) {
+        gmailResult.replaceChildren(el('p', { className: 'error' }, err.message));
+      }
+    },
+  }, gmail, el('div', { className: 'row' }, el('button', { type: 'submit' }, 'הזמנה')));
+  const pendingBox = el('div');
+  function showPending(list) {
+    pendingBox.replaceChildren(...(list.length ? [el('h2', {}, 'ממתינים לכניסה')] : []), ...list.map((item) => el('div', { className: 'person' },
+      el('span', { dir: 'ltr' }, item.email),
+      el('button', {
+        className: 'plain danger',
+        type: 'button',
+        onclick: async () => {
+          await api(`/admin/google-invites/${encodeURIComponent(item.email)}`, { method: 'DELETE' });
+          showPending(list.filter((other) => other !== item));
+        },
+      }, 'ביטול'))));
+  }
+  showPending(googleInvites);
+
   app.replaceChildren(
     el('section', { className: 'card' },
       el('h1', {}, 'ניהול'),
       el('p', { className: 'muted' }, `${users} משתמשים · ${posts} פוסטים · ${comments} תגובות`),
       meter('אחסון תמונות', usage.bytes, usage.storageLimit, `${gb(usage.bytes)} מתוך ${gb(usage.storageLimit)}GB`),
       meter('העלאות ב-24 השעות האחרונות', usage.today, usage.uploadLimit, `${usage.today} מתוך ${usage.uploadLimit}`)),
+    googleLogin ? el('section', { className: 'card' },
+      el('h2', {}, 'הזמנה לפי חשבון Google'),
+      el('p', { className: 'muted' }, 'החבר נכנס עם Google בעצמו, ומקבל חשבון שמחובר לגוגל ואליך. כל עוד האפליקציה בגוגל במצב בדיקה, צריך להוסיף את הכתובת גם ל-',
+        el('a', { href: 'https://console.cloud.google.com/auth/audience?project=free-network-514020', target: '_blank', rel: 'noopener' }, 'Test users'), '.'),
+      gmailForm, gmailResult, pendingBox) : null,
     el('section', { className: 'card' },
-      el('h2', {}, 'הזמנת חבר'),
+      el('h2', {}, 'הזמנה בקישור'),
       el('div', { className: 'row' }, el('button', { type: 'button', onclick: () => invite() }, 'יצירת קישור הזמנה')),
       result,
       el('h2', {}, 'חברי הרשת'),
@@ -625,7 +675,7 @@ function loginPage() {
     el('h1', {}, 'השכונה שלך, בלי הרעש'),
     el('p', {}, 'הרשת החופשית של פרדס חנה-כרכור. מקום לחברים ולשכנים, שלא מנסה למכור לך כלום.')),
   googleLogin ? el('div', { className: 'card' }, el('p', { className: 'flush' }, 'כבר חיברת חשבון גוגל?'),
-    el('div', { className: 'row' }, el('a', { className: 'button-link', href: '/api/auth/google' }, 'כניסה עם גוגל'))) : '',
+    el('div', { className: 'row' }, googleButton('/api/auth/google', 'כניסה עם Google'))) : '',
   demo ? demoEntry : inviteOnly ? inviteNote : el('form', {
     className: 'card',
     onsubmit: async (e) => {
@@ -682,7 +732,7 @@ async function refreshMe() {
 function renderNav() {
   const why = demo ? null : el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
   if (!me) {
-    nav.replaceChildren(...[why, link('/login', 'כניסה')].filter(Boolean));
+    nav.replaceChildren(...[why, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
     return;
   }
   const admin = me.admin ? link('/admin', labelled('settings', 'ניהול')) : null;

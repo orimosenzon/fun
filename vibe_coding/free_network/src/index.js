@@ -151,6 +151,14 @@ function googleRedirectUri(c) {
   return `${new URL(c.req.url).origin}/api/auth/google/callback`;
 }
 
+// Gmail ignores dots and case in the name part, so an invitation matches however it was typed.
+export function normalizeGoogleEmail(value) {
+  const email = String(value).trim().toLowerCase();
+  const [name, domain] = email.split('@');
+  if (!name || !domain) return null;
+  return ['gmail.com', 'googlemail.com'].includes(domain) ? `${name.split('+')[0].replace(/\./g, '')}@gmail.com` : email;
+}
+
 // Trades the code from Google's redirect for Google's id of this person. The token arrives
 // straight from Google over TLS, so its claims are checked but its signature need not be.
 async function googleSubject(c, code) {
@@ -169,7 +177,9 @@ async function googleSubject(c, code) {
     const payload = tokens.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     const claims = JSON.parse(atob(payload));
     const fromGoogle = ['https://accounts.google.com', 'accounts.google.com'].includes(claims.iss);
-    return fromGoogle && claims.aud === c.env.GOOGLE_CLIENT_ID && typeof claims.sub === 'string' ? claims.sub : null;
+    if (!fromGoogle || claims.aud !== c.env.GOOGLE_CLIENT_ID || typeof claims.sub !== 'string') return null;
+    const verified = claims.email_verified === true || claims.email_verified === 'true';
+    return { sub: claims.sub, email: verified && claims.email ? normalizeGoogleEmail(claims.email) : null };
   } catch {
     return null;
   }
@@ -393,7 +403,7 @@ app.get('/api/auth/google', (c) => {
     client_id: c.env.GOOGLE_CLIENT_ID,
     redirect_uri: googleRedirectUri(c),
     response_type: 'code',
-    scope: 'openid',
+    scope: 'openid email',
     prompt: 'select_account',
     state,
   });
@@ -408,8 +418,9 @@ app.get('/api/auth/google/callback', async (c) => {
 
   const code = c.req.query('code');
   if (!state || state !== c.req.query('state') || !code) return finish('failed');
-  const subject = await googleSubject(c, code);
-  if (!subject) return finish('failed');
+  const google = await googleSubject(c, code);
+  if (!google) return finish('failed');
+  const subject = google.sub;
 
   const owner = await c.env.DB.prepare('SELECT id FROM users WHERE google_sub = ?').bind(subject).first();
   if (mode === 'link') {
@@ -419,9 +430,28 @@ app.get('/api/auth/google/callback', async (c) => {
     await c.env.DB.prepare('UPDATE users SET google_sub = ? WHERE id = ?').bind(subject, user.id).run();
     return finish('linked');
   }
-  if (!owner) return finish('unknown');
-  await createSession(c, owner.id);
-  return finish('login');
+  if (owner) {
+    await createSession(c, owner.id);
+    return finish('login');
+  }
+
+  // Someone new signs in with the address they were invited by: their account starts linked.
+  const invite = google.email && await c.env.DB
+    .prepare('DELETE FROM google_invites WHERE email = ? RETURNING invited_by')
+    .bind(google.email)
+    .first();
+  if (!invite) return finish('unknown');
+  const now = Date.now();
+  const user = await c.env.DB
+    .prepare('INSERT INTO users (email, google_sub, created_at) VALUES (?, ?, ?) RETURNING id')
+    .bind(`member-${randomToken().slice(0, 16).toLowerCase()}@invite.invalid`, subject, now)
+    .first();
+  await c.env.DB
+    .prepare(`INSERT INTO friendships (requester_id, addressee_id, status, created_at) VALUES (?, ?, 'accepted', ?)`)
+    .bind(invite.invited_by, user.id, now)
+    .run();
+  await createSession(c, user.id);
+  return finish('joined');
 });
 
 // Every visitor shares one guest account. Its session row comes from tools/demo_seed.sql.
@@ -819,7 +849,27 @@ app.get('/api/admin/overview', requireAdmin, async (c) => {
       (SELECT COUNT(*) FROM comments WHERE removed_by IS NULL) AS comments`),
     db.prepare('SELECT id, name, avatar_id AS avatar, created_at AS joinedAt FROM users ORDER BY id'),
   ]);
-  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results });
+  const { results: googleInvites } = await db
+    .prepare('SELECT email, created_at AS createdAt FROM google_invites ORDER BY created_at DESC')
+    .all();
+  return c.json({ usage: await imageUsage(c), ...counts.results[0], members: members.results, googleInvites });
+});
+
+app.post('/api/admin/google-invites', requireAdmin, async (c) => {
+  const raw = (await readJson(c)).email;
+  const email = typeof raw === 'string' && raw.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())
+    ? normalizeGoogleEmail(raw) : null;
+  if (!email) return c.json({ error: 'כתובת לא תקינה' }, 400);
+  await c.env.DB
+    .prepare('INSERT INTO google_invites (email, invited_by, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING')
+    .bind(email, c.get('user').id, Date.now())
+    .run();
+  return c.json({ email }, 201);
+});
+
+app.delete('/api/admin/google-invites/:email', requireAdmin, async (c) => {
+  await c.env.DB.prepare('DELETE FROM google_invites WHERE email = ?').bind(c.req.param('email')).run();
+  return c.json({ ok: true });
 });
 
 // Without a mail service, the admin hands out login links: a new member, or a new link for
