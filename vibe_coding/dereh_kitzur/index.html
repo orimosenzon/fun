@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <title>דרך קיצור</title>
+<!-- The short URL is the one people share, with ?layers=… on it, and a meta
+     refresh drops the query string. This carries it across; the refresh stays
+     for a browser without scripts. -->
+<script>location.replace('web/' + location.search + location.hash);</script>
 <meta http-equiv="refresh" content="0; url=web/">
 <link rel="canonical" href="web/">
 
