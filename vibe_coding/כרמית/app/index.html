@@ -12,22 +12,15 @@
 </head>
 <body>
   <div id="app">
-    <a id="home-btn" class="home-btn hidden" href="index.html">⌂ כל השעשועונים</a>
+    <a id="home-btn" class="home-btn hidden" href="index.html">⌂ כל החידונים</a>
     <header>
-      <a href="index.html" title="לכל השעשועונים"><img class="logo" src="logo.jpg" alt="Wordplay & Wonder"></a>
+      <a href="index.html" title="לכל החידונים"><img class="logo" src="logo.jpg" alt="Wordplay & Wonder"></a>
       <h1>חידות לכרמית</h1>
       <p class="tagline">WORDPLAY <b>&amp;</b> WONDER</p>
+      <p class="motif">עברית <span class="x">×</span> <span dir="ltr">English</span>: כשהשפות נפגשות נולדת משמעות חדשה</p>
     </header>
 
     <section id="start-screen" class="screen">
-      <div id="quiz-intro" class="quiz-intro hidden">
-        <img id="quiz-cover" alt="">
-        <h2 id="quiz-name"></h2>
-      </div>
-      <p id="intro" class="intro">טוענים את החידות…</p>
-      <button id="start-btn" class="primary-btn hidden" disabled>מתחילים</button>
-      <div id="gallery" class="gallery hidden"></div>
-
       <section class="about">
         <p class="kicker">// מאחורי החידות</p>
         <h2>חידות שהן גם אמנות</h2>
@@ -46,9 +39,20 @@
           <div class="pillar">
             <span class="idx">03</span>
             <h3 dir="ltr">aha moment</h3>
-            <p>רגע הפיצוח, שבו מחייכים ומתפעלים מהפתרון.</p>
+            <p>רגע הפיצוח בו המחשבה מתהפכת והחיוך מתפשט.</p>
           </div>
         </div>
+      </section>
+      <div id="quiz-intro" class="quiz-intro hidden">
+        <img id="quiz-cover" alt="">
+        <h2 id="quiz-name"></h2>
+        <span id="quiz-level" class="level-badge"></span>
+      </div>
+      <p id="intro" class="intro">טוענים את החידות…</p>
+      <button id="start-btn" class="primary-btn hidden" disabled>מתחילים</button>
+      <div id="gallery" class="gallery hidden"></div>
+
+      <section class="about-sketch">
         <figure class="sketch">
           <img src="sketch.jpg" alt="סקיצה בכתב יד של הלוגו Wordplay & Wonder" loading="lazy">
           <figcaption>הסקיצה הראשונה של הלוגו, מהמחברת של כרמית</figcaption>
@@ -75,6 +79,10 @@
         <div id="feedback" class="feedback hidden"></div>
         <button id="next-btn" class="primary-btn hidden">לחידה הבאה ←</button>
       </div>
+      <div class="nav-row">
+        <button id="prev-btn" class="link-btn">→ הקודמת</button>
+        <button id="skip-btn" class="link-btn">דלג ←</button>
+      </div>
     </section>
 
     <section id="report-screen" class="screen hidden">
@@ -96,8 +104,8 @@
         </table>
       </div>
       <div class="buttons-row">
-        <button id="restart-btn" class="primary-btn">סיבוב נוסף</button>
-        <a href="index.html" class="secondary-btn link-as-btn">לכל השעשועונים</a>
+        <a id="next-level-btn" href="index.html" class="primary-btn link-as-btn hidden"></a>
+        <a id="report-home-btn" href="index.html" class="primary-btn link-as-btn">לכל החידונים</a>
       </div>
     </section>
 

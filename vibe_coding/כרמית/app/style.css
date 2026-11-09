@@ -76,6 +76,10 @@ header h1 {
   direction: ltr;
 }
 .tagline b { color: var(--lime); font-weight: 500; }
+/* Hebrew x English is the heart of the riddles, so it stays in view on every screen. */
+.motif { margin: 10px 0 0; font-size: 0.92rem; color: var(--text); }
+.motif .x { color: var(--amber); margin: 0 2px; }
+.motif [dir="ltr"] { color: var(--cyan); }
 
 /* ---------- layout ---------- */
 
@@ -239,6 +243,11 @@ kbd {
 }
 .feedback.correct { color: var(--lime); background: rgba(182, 243, 107, 0.08); border: 1px solid rgba(182, 243, 107, 0.3); }
 .feedback.wrong { color: #ffb3b3; background: rgba(255, 107, 107, 0.08); border: 1px solid rgba(255, 107, 107, 0.3); }
+/* back and skip, under the riddle card */
+.nav-row { width: 100%; display: flex; justify-content: space-between; margin-top: 10px; }
+.nav-row .link-btn { background: none; border: 0; padding: 6px 2px; font: inherit; font-size: 0.92rem; color: var(--muted); cursor: pointer; }
+.nav-row .link-btn:hover:not(:disabled) { color: var(--cyan); }
+.nav-row .link-btn:disabled { visibility: hidden; }
 .feedback .ans { color: var(--text); font-family: var(--mono); }
 
 .answer-image {
@@ -438,9 +447,8 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
 
 .about {
   width: 100%;
-  margin-top: 36px;
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -469,6 +477,17 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
 .pillar .x { color: var(--muted); font-weight: 400; }
 .pillar p { margin: 0; font-size: 0.9rem; color: var(--muted); }
 
+.about-sketch {
+  width: 100%;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* On a quiz page the about sits down here, above the sketch. */
+.about-sketch .about { padding-bottom: 0; border-bottom: 0; }
 .sketch { margin: 10px 0 0; text-align: center; }
 .sketch img {
   width: min(300px, 75%);
@@ -482,7 +501,7 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
   .pillars { grid-template-columns: 1fr; }
 }
 
-/* ---------- admin: quizzes (שעשועונים) ---------- */
+/* ---------- admin: quizzes (חידונים) ---------- */
 
 body.admin #app { max-width: 1080px; }
 
@@ -902,7 +921,23 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 }
 .quiz-intro h2 { margin: 0; font-size: 1.6rem; text-align: center; }
 
-.gallery { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.gallery { width: 100%; display: flex; flex-direction: column; gap: 26px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.level { scroll-margin-top: 20px; }
+.level-head { margin: 0 0 10px; font-size: 1.1rem; display: flex; align-items: baseline; gap: 8px; }
+.level-head .idx { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+.level-easy .level-head { color: var(--lime); }
+.level-medium .level-head { color: var(--amber); }
+.level-hard .level-head { color: var(--violet); }
+.level.locked .level-head { color: var(--muted); }
+.level-note { margin: -4px 0 10px; font-size: 0.88rem; color: var(--muted); }
+.gallery-card.locked { cursor: not-allowed; opacity: 0.4; filter: grayscale(0.8); }
+.gallery-card.locked:hover { border-color: var(--line); transform: none; }
+.level-badge { font-family: var(--mono); font-size: 0.78rem; border: 1px solid currentColor; border-radius: 999px; padding: 2px 10px; }
+.level-badge.level-easy { color: var(--lime); }
+.level-badge.level-medium { color: var(--amber); }
+.level-badge.level-hard { color: var(--violet); }
+.level-badge:empty { display: none; }
 .gallery-card {
   display: flex;
   flex-direction: column;

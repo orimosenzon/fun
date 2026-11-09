@@ -1,6 +1,8 @@
-// The game plays one quiz (שעשועון), index.html?q=<id>, in the order Carmit set, or shuffled if the quiz says so.
-// Without ?q= the start screen lists all the quizzes to choose from.
-import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER } from './fb.js';
+// The game plays one quiz (חידון), index.html?q=<id>, in the order Carmit set, or shuffled if the quiz says so.
+// Without ?q= the start screen lists all the quizzes to choose from, by difficulty level.
+// Every visit starts at the easy level; finishing a quiz opens the next level, for this visit only
+// (sessionStorage, so a new visit starts again from easy, as Carmit wants).
+import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf } from './fb.js';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -21,22 +23,47 @@ const answerImage = $('answer-image');
 const selfCheck = $('self-check');
 const feedback = $('feedback');
 const nextBtn = $('next-btn');
+const prevBtn = $('prev-btn');
+const skipBtn = $('skip-btn');
 
 const scoreHeadline = $('score-headline');
 const scoreSub = $('score-sub');
 const reportBody = document.querySelector('#report-table tbody');
-const restartBtn = $('restart-btn');
 
 let RIDDLES = [];
+let LEVEL = 'easy';      // the level of the quiz being played
 let SHUFFLE = false;     // the quiz asks for a fresh random order on every start
 let order = [];
 let current = 0;
-let results = [];
+let results = [];        // results[i] is what happened at position i: answered or skipped
 let hintUsed = false;
 let answered = false;
 
 const PRAISES = ['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
+
+// ---------- levels ----------
+
+const DONE_KEY = 'carmit-levels-done';
+function doneLevels() {
+  try { return new Set(JSON.parse(sessionStorage.getItem(DONE_KEY)) || []); } catch { return new Set(); }
+}
+function markDone(level) {
+  const done = doneLevels();
+  done.add(level);
+  try { sessionStorage.setItem(DONE_KEY, JSON.stringify([...done])); } catch { /* private mode: the level opens for this page only */ }
+}
+// A level is open once every lower level that has quizzes was finished. A level with no quizzes never blocks.
+function openLevels(quizzes) {
+  const done = doneLevels();
+  const open = new Set();
+  for (const L of LEVELS) {
+    open.add(L.id);
+    const present = quizzes.some((q) => levelOf(q) === L.id);
+    if (present && !done.has(L.id)) break;
+  }
+  return open;
+}
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -87,6 +114,24 @@ function showRiddle() {
   submitBtn.disabled = false;
   hintBtn.disabled = !r.hint;
   hintBtn.textContent = r.hint ? 'רמז' : 'אין רמז';
+  prevBtn.disabled = current === 0;
+  skipBtn.classList.remove('hidden');
+  skipBtn.textContent = current + 1 < order.length ? 'דלג ←' : 'דלג לתוצאות ←';
+  // Back on a riddle already answered: show it as it was. The answer was already seen, so no second try.
+  const done = results[current];
+  if (done && !done.skipped) {
+    hintUsed = done.hintUsed;
+    if (hintUsed) useHint();
+    answered = true;
+    if (isImageAnswer(r)) {
+      answerImage.src = r.answerImage;
+      answerImage.classList.remove('hidden');
+    } else {
+      answerInput.value = done.userAnswer;
+    }
+    showDone(done);
+    return;
+  }
   if (!isImageAnswer(r)) answerInput.focus();
 }
 
@@ -107,6 +152,9 @@ function submitAnswer() {
     answerImage.src = r.answerImage;
     answerImage.classList.remove('hidden');
     selfCheck.classList.remove('hidden');
+    // The answer is in view now: the player grades themselves before moving on.
+    prevBtn.disabled = true;
+    skipBtn.classList.add('hidden');
     return;
   }
   answered = true;
@@ -120,9 +168,13 @@ function selfGrade(correct) {
 }
 
 function finish(correct, userAnswer) {
-  const r = riddle();
-  results.push({ riddle: r, userAnswer, hintUsed, correct });
+  results[current] = { riddle: riddle(), userAnswer, hintUsed, correct };
+  showDone(results[current]);
+  nextBtn.focus();
+}
 
+function showDone({ correct }) {
+  const r = riddle();
   feedback.classList.remove('hidden');
   if (correct) {
     feedback.textContent = pick(PRAISES);
@@ -143,7 +195,19 @@ function finish(correct, userAnswer) {
   nextBtn.classList.remove('hidden');
   nextBtn.textContent = current + 1 < order.length ? 'הבאה ←' : 'לתוצאות ←';
   progressFill.style.width = `${((current + 1) / order.length) * 100}%`;
-  nextBtn.focus();
+  prevBtn.disabled = current === 0;
+  skipBtn.classList.add('hidden');
+}
+
+function skipRiddle() {
+  results[current] = { riddle: riddle(), userAnswer: '(דילגתם)', hintUsed, correct: false, skipped: true };
+  nextRiddle();
+}
+
+function prevRiddle() {
+  if (current === 0) return;
+  current--;
+  showRiddle();
 }
 
 function nextRiddle() {
@@ -173,6 +237,7 @@ function thumb(src) {
 function showReport() {
   quizScreen.classList.add('hidden');
   reportScreen.classList.remove('hidden');
+  results = results.filter(Boolean);
   const score = results.filter((r) => r.correct).length;
   scoreHeadline.innerHTML = `הציון שלכם<span class="score"><b>${score}</b>/${results.length}</span>`;
   scoreSub.textContent =
@@ -180,7 +245,9 @@ function showReport() {
       ? 'ניקוד מושלם. אין מה להוסיף.'
       : score >= results.length * 0.7
       ? 'תוצאה מרשימה.'
-      : 'יש עוד מה לפצח. סיבוב נוסף?';
+      : 'יש עוד מה לפצח.';
+  markDone(LEVEL);
+  offerNextLevel();
   reportBody.innerHTML = '';
   results.forEach((res, i) => {
     const r = res.riddle;
@@ -192,7 +259,7 @@ function showReport() {
       cell(res.userAnswer),
       cell(isImageAnswer(r) ? thumb(r.answerImage) : primaryAnswer(r)),
       cell(res.hintUsed ? 'כן' : 'לא'),
-      cell(res.correct ? '✓' : '✗'),
+      cell(res.skipped ? '–' : res.correct ? '✓' : '✗'),
     );
     reportBody.appendChild(tr);
   });
@@ -204,10 +271,11 @@ submitBtn.addEventListener('click', submitAnswer);
 $('self-yes').addEventListener('click', () => selfGrade(true));
 $('self-no').addEventListener('click', () => selfGrade(false));
 nextBtn.addEventListener('click', nextRiddle);
-restartBtn.addEventListener('click', startQuiz);
+skipBtn.addEventListener('click', skipRiddle);
+prevBtn.addEventListener('click', prevRiddle);
 $('home-btn').addEventListener('click', (e) => {
   const midQuiz = !quizScreen.classList.contains('hidden') && (current > 0 || answered);
-  if (midQuiz && !confirm('לצאת מהשעשועון? ההתקדמות בסיבוב הזה לא תישמר.')) e.preventDefault();
+  if (midQuiz && !confirm('לצאת מהחידון? ההתקדמות לא תישמר.')) e.preventDefault();
 });
 answerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -216,26 +284,71 @@ answerInput.addEventListener('keydown', (e) => {
   }
 });
 
+// After a quiz: if the next level has quizzes, invite the player there.
+async function offerNextLevel() {
+  const i = LEVELS.findIndex((L) => L.id === LEVEL);
+  const next = LEVELS[i + 1];
+  if (!next) return;
+  try {
+    const quizzes = (await loadQuizzes()).filter((q) => q.riddleIds.length && levelOf(q) === next.id);
+    if (!quizzes.length) return;
+    const btn = $('next-level-btn');
+    btn.textContent = `ממשיכים לרמה ${next.name} ←`;
+    btn.href = quizzes.length === 1 ? `?q=${quizzes[0].id}` : `index.html#level-${next.id}`;
+    btn.classList.remove('hidden');
+    $('report-home-btn').className = 'secondary-btn link-as-btn';
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 function showGallery(quizzes) {
   const playable = quizzes.filter((q) => q.riddleIds.length);
-  intro.textContent = playable.length ? 'בחרו שעשועון:' : 'עוד אין שעשועונים. בקרוב.';
+  intro.textContent = playable.length ? 'מתחילים מהרמה הקלה. כל חידון שמסיימים פותח את הרמה הבאה.' : 'עוד אין חידונים. בקרוב.';
   const gallery = $('gallery');
   gallery.classList.remove('hidden');
-  for (const q of playable) {
-    const a = document.createElement('a');
-    a.className = 'gallery-card';
-    a.href = `?q=${q.id}`;
-    const img = document.createElement('img');
-    img.src = q.cover || DEFAULT_COVER;
-    img.alt = '';
-    if (!q.cover) img.className = 'default';
-    const title = document.createElement('b');
-    title.textContent = q.title;
-    const n = document.createElement('span');
-    n.textContent = `${q.riddleIds.length} חידות`;
-    a.append(img, title, n);
-    gallery.appendChild(a);
-  }
+  const open = openLevels(playable);
+  LEVELS.forEach((L, i) => {
+    const qs = playable.filter((q) => levelOf(q) === L.id);
+    if (!qs.length) return;
+    const locked = !open.has(L.id);
+    const section = document.createElement('section');
+    section.className = `level level-${L.id}${locked ? ' locked' : ''}`;
+    section.id = `level-${L.id}`;
+    const head = document.createElement('h3');
+    head.className = 'level-head';
+    head.innerHTML = `<span class="idx">0${i + 1}</span> רמה ${L.name}${locked ? ' <span class="lock">🔒</span>' : ''}`;
+    section.appendChild(head);
+    if (locked) {
+      const prev = LEVELS.slice(0, i).reverse().find((P) => playable.some((q) => levelOf(q) === P.id));
+      const note = document.createElement('p');
+      note.className = 'level-note';
+      note.textContent = `נפתחת אחרי שמסיימים חידון ברמה ${prev.name}.`;
+      section.appendChild(note);
+    }
+    const grid = document.createElement('div');
+    grid.className = 'gallery-grid';
+    for (const q of qs) grid.appendChild(galleryCard(q, locked));
+    section.appendChild(grid);
+    gallery.appendChild(section);
+  });
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function galleryCard(q, locked) {
+  const a = document.createElement(locked ? 'div' : 'a');
+  a.className = `gallery-card${locked ? ' locked' : ''}`;
+  if (!locked) a.href = `?q=${q.id}`;
+  const img = document.createElement('img');
+  img.src = q.cover || DEFAULT_COVER;
+  img.alt = '';
+  if (!q.cover) img.className = 'default';
+  const title = document.createElement('b');
+  title.textContent = q.title;
+  const n = document.createElement('span');
+  n.textContent = `${q.riddleIds.length} חידות`;
+  a.append(img, title, n);
+  return a;
 }
 
 try {
@@ -246,9 +359,12 @@ try {
     $('home-btn').classList.remove('hidden');
     const quiz = await loadQuiz(quizId);
     if (!quiz) {
-      intro.innerHTML = 'השעשועון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל השעשועונים</a>';
+      intro.innerHTML = 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
     } else {
       RIDDLES = quiz.riddles;
+      LEVEL = levelOf(quiz);
+      // On a quiz page the cover and the start button come first; the about moves down.
+      document.querySelector('.about-sketch').prepend(document.querySelector('.about'));
       SHUFFLE = !!quiz.shuffle;
       document.title = `${quiz.title} · חידות לכרמית`;
       $('quiz-intro').classList.remove('hidden');
@@ -256,6 +372,8 @@ try {
       $('quiz-cover').src = quiz.cover;
       $('quiz-cover').classList.toggle('hidden', !quiz.cover);
       $('quiz-name').textContent = quiz.title;
+      $('quiz-level').textContent = `רמה ${LEVELS.find((L) => L.id === LEVEL).name}`;
+      $('quiz-level').className = `level-badge level-${LEVEL}`;
       intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
       startBtn.classList.remove('hidden');
       startBtn.disabled = RIDDLES.length === 0;

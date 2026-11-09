@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ניהול שעשועונים</title>
+<title>ניהול חידונים</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="robots" content="noindex">
@@ -14,9 +14,9 @@
 <body class="admin">
   <div id="app">
     <header class="admin-header">
-      <a href="#" class="brand"><img src="logo.jpg" alt=""><span><b>ניהול השעשועונים</b><small>ADMIN // WORDPLAY &amp; WONDER</small></span></a>
+      <a href="#" class="brand"><img src="logo.jpg" alt=""><span><b>ניהול החידונים</b><small>ADMIN // WORDPLAY &amp; WONDER</small></span></a>
       <div class="header-end">
-        <a href="index.html" class="home-btn">⌂ למשחק, כל השעשועונים</a>
+        <a href="index.html" class="home-btn">⌂ למשחק, כל החידונים</a>
         <div class="who hidden" id="who-box"><span id="who"></span> · <button id="logout-btn" class="link-btn">יציאה</button></div>
       </div>
     </header>
@@ -30,12 +30,12 @@
     <!-- home: all quizzes, and the shared pool of riddles -->
     <section id="home-view" class="view hidden">
       <nav class="tabs" role="tablist">
-        <button class="tab active" data-tab="quizzes" role="tab">השעשועונים <span id="quiz-count" class="count"></span></button>
+        <button class="tab active" data-tab="quizzes" role="tab">החידונים <span id="quiz-count" class="count"></span></button>
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
       </nav>
 
       <div id="tab-quizzes">
-        <p class="help">כל שעשועון הוא אוסף חידות עם קישור משלו, שאפשר לשלוח למישהו לשחק. מעבר עם העכבר מראה מה יש בפנים, ולחיצה פותחת לעריכה.</p>
+        <p class="help">כל חידון הוא אוסף חידות עם קישור משלו, שאפשר לשלוח למישהו לשחק. מעבר עם העכבר מראה מה יש בפנים, ולחיצה פותחת לעריכה.</p>
         <div id="quiz-grid" class="quiz-grid"></div>
       </div>
 
@@ -44,14 +44,14 @@
           <input type="search" id="pool-search" class="search" placeholder="חיפוש לפי תשובה, טקסט או רמז">
           <button id="pool-new" class="primary-btn small">+ חידה חדשה</button>
         </div>
-        <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה שעשועונים, ועריכה שלה כאן משנה אותה בכולם.</p>
+        <p class="help">כל החידות שנוצרו אי פעם. חידה יכולה להופיע בכמה חידונים, ועריכה שלה כאן משנה אותה בכולם.</p>
         <div id="pool-grid" class="pool-grid"></div>
       </div>
     </section>
 
     <!-- one quiz -->
     <section id="quiz-view" class="view hidden">
-      <a href="#" class="back">→ כל השעשועונים</a>
+      <a href="#" class="back">→ כל החידונים</a>
 
       <div class="quiz-hero">
         <button id="cover-btn" class="cover-edit" title="החלפת תמונת השער">
@@ -60,8 +60,8 @@
         </button>
         <input type="file" id="cover-file" accept="image/*" hidden>
         <div class="hero-main">
-          <label class="kicker" for="quiz-title">// שעשועון</label>
-          <input id="quiz-title" class="title-input" maxlength="80" placeholder="שם השעשועון" autocomplete="off">
+          <label class="kicker" for="quiz-title">// חידון</label>
+          <input id="quiz-title" class="title-input" maxlength="80" placeholder="שם החידון" autocomplete="off">
           <div class="hero-meta">
             <span id="quiz-stats"></span>
             <span id="save-state" class="save-state"></span>
@@ -71,11 +71,18 @@
             <label class="seg"><input type="radio" name="quiz-order" value="fixed"><span>כפי שקבעתי</span></label>
             <label class="seg"><input type="radio" name="quiz-order" value="shuffle"><span>אקראי 🔀</span></label>
           </div>
+          <div class="order-row" role="radiogroup" aria-label="רמת קושי">
+            <span class="order-label">רמת קושי:</span>
+            <label class="seg"><input type="radio" name="quiz-level" value="easy"><span>קלה</span></label>
+            <label class="seg"><input type="radio" name="quiz-level" value="medium"><span>בינונית</span></label>
+            <label class="seg"><input type="radio" name="quiz-level" value="hard"><span>קשה</span></label>
+          </div>
+          <p class="help level-help">השחקן מתחיל ברמה הקלה. רמה בינונית נפתחת לו אחרי שסיים חידון קל, וקשה אחרי שסיים חידון בינוני.</p>
           <div class="hero-actions">
             <button id="share-btn" class="primary-btn small">העתקת קישור לשליחה</button>
             <a id="play-link" class="secondary-btn small" target="_blank" rel="noopener">לשחק בו ↗</a>
             <button id="cover-remove" class="link-btn muted">הסרת תמונת השער</button>
-            <button id="quiz-delete" class="link-btn del">מחיקת השעשועון</button>
+            <button id="quiz-delete" class="link-btn del">מחיקת החידון</button>
           </div>
         </div>
       </div>
@@ -83,14 +90,14 @@
       <div class="panes">
         <section class="pane pane-quiz">
           <div class="pane-head">
-            <h2>בשעשועון <span id="in-count" class="count"></span></h2>
+            <h2>בחידון <span id="in-count" class="count"></span></h2>
             <button id="quiz-new-riddle" class="primary-btn small">+ חידה חדשה</button>
           </div>
-          <p class="help"><span id="order-help"></span> מסמנים חידות (Shift לטווח) כדי להעתיק או להעביר אותן לשעשועון אחר.</p>
+          <p class="help"><span id="order-help"></span> מסמנים חידות (Shift לטווח) כדי להעתיק או להעביר אותן לחידון אחר.</p>
           <div id="pick-bar" class="pick-bar">
             <label class="inline pick-all"><input type="checkbox" id="pick-all"> <span id="pick-count">בחירת הכל</span></label>
             <span id="pick-actions" class="pick-actions hidden">
-              <select id="pick-target" class="pick-target" aria-label="לאיזה שעשועון"></select>
+              <select id="pick-target" class="pick-target" aria-label="לאיזה חידון"></select>
               <button id="pick-copy" class="primary-btn small">העתקה</button>
               <button id="pick-move" class="secondary-btn small">העברה</button>
               <button id="pick-clear" class="link-btn muted">ניקוי</button>
@@ -107,7 +114,7 @@
             <input type="search" id="side-search" class="search" placeholder="חיפוש">
             <select id="side-source" class="pick-target" aria-label="מאיפה"></select>
           </div>
-          <p class="help">לוחצים על חידה או גוררים אותה לשעשועון. אפשר לסנן לפי שעשועון אחר ולהוסיף את כל החידות שלו.</p>
+          <p class="help">לוחצים על חידה או גוררים אותה לחידון. אפשר לסנן לפי חידון אחר ולהוסיף את כל החידות שלו.</p>
           <button id="side-add-all" class="secondary-btn small hidden"></button>
           <div id="side-pool" class="side-pool"></div>
         </section>

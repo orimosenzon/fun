@@ -19,7 +19,7 @@ export async function loadRiddles() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-// A quiz (שעשועון) is { title, cover (data URL or ''), riddleIds (ordered) }; the riddles stay in the pool.
+// A quiz (חידון) is { title, cover (data URL or ''), riddleIds (ordered) }; the riddles stay in the pool.
 export async function loadQuizzes() {
   const snap = await fs.getDocs(fs.query(fs.collection(db, 'quizzes'), fs.orderBy('created', 'desc')));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -34,6 +34,14 @@ export async function loadQuiz(id) {
   quiz.riddles = docs.filter((d) => d.exists()).map((d) => ({ id: d.id, ...d.data() }));
   return quiz;
 }
+
+// Difficulty levels, in the order the player climbs them. A quiz saved before levels existed counts as easy.
+export const LEVELS = [
+  { id: 'easy', name: 'קלה' },
+  { id: 'medium', name: 'בינונית' },
+  { id: 'hard', name: 'קשה' },
+];
+export const levelOf = (q) => (LEVELS.some((L) => L.id === q.level) ? q.level : 'easy');
 
 // Shown wherever a quiz has no cover of its own.
 export const DEFAULT_COVER = 'logo.jpg';

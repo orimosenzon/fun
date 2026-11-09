@@ -1,7 +1,7 @@
-// Ori and Carmit manage quizzes (שעשועונים) here: titled, ordered selections from one shared pool of riddles.
+// Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, primaryAnswer, DEFAULT_COVER } from './fb.js';
+import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, primaryAnswer, DEFAULT_COVER, LEVELS, levelOf } from './fb.js';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -124,7 +124,7 @@ function renderQuizGrid() {
   grid.innerHTML = '';
 
   const add = el('button', 'quiz-card new-quiz');
-  add.innerHTML = '<span class="plus">+</span><span>שעשועון חדש</span>';
+  add.innerHTML = '<span class="plus">+</span><span>חידון חדש</span>';
   add.addEventListener('click', createQuiz);
   grid.appendChild(add);
 
@@ -146,7 +146,8 @@ function renderQuizGrid() {
     card.appendChild(stack);
     const cap = el('div', 'caption');
     const count = rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות';
-    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', q.shuffle ? `${count} · בסדר אקראי` : count));
+    const level = LEVELS.find((L) => L.id === levelOf(q)).name;
+    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', [`רמה ${level}`, count, q.shuffle && 'בסדר אקראי'].filter(Boolean).join(' · ')));
     card.appendChild(cap);
     card.addEventListener('mouseenter', () => schedulePeek(card, q));
     card.addEventListener('mouseleave', hidePeek);
@@ -155,7 +156,7 @@ function renderQuizGrid() {
 }
 
 async function createQuiz() {
-  const data = { title: 'שעשועון חדש', cover: '', riddleIds: [], by: auth.currentUser.email };
+  const data = { title: 'חידון חדש', cover: '', riddleIds: [], level: 'easy', by: auth.currentUser.email };
   const ref = await fs.addDoc(fs.collection(db, 'quizzes'), { ...data, created: fs.serverTimestamp() });
   quizzes.unshift({ id: ref.id, ...data });
   location.hash = `#quiz/${ref.id}`;
@@ -178,7 +179,7 @@ function showPeek(card, q) {
   peek.innerHTML = '';
   peek.appendChild(el('div', 'peek-title', q.title || 'ללא שם'));
   if (!rs.length) {
-    peek.appendChild(el('p', 'peek-empty', 'השעשועון ריק. לחיצה פותחת אותו כדי להוסיף חידות.'));
+    peek.appendChild(el('p', 'peek-empty', 'החידון ריק. לחיצה פותחת אותו כדי להוסיף חידות.'));
   } else {
     const grid = el('div', 'peek-grid');
     rs.slice(0, 12).forEach((r, i) => {
@@ -237,7 +238,7 @@ function renderPool() {
         chips.appendChild(chip);
       });
     } else {
-      chips.appendChild(el('span', 'chip lonely', 'לא בשום שעשועון'));
+      chips.appendChild(el('span', 'chip lonely', 'לא בשום חידון'));
     }
     body.appendChild(chips);
     const actions = el('div', 'tile-actions');
@@ -281,6 +282,7 @@ function openQuiz(q) {
   $('play-link').href = playUrl(q);
   setSaveState('');
   renderOrder();
+  renderLevel();
   renderQuiz();
   scrollTo({ top: 0 });
 }
@@ -339,6 +341,14 @@ document.querySelectorAll('input[name="quiz-order"]').forEach((r) => r.addEventL
   renderOrder();
 }));
 
+// The player climbs easy → medium → hard; a quiz from before levels existed counts as easy.
+function renderLevel() {
+  document.querySelector(`input[name="quiz-level"][value="${levelOf(current)}"]`).checked = true;
+}
+document.querySelectorAll('input[name="quiz-level"]').forEach((r) => r.addEventListener('change', () => {
+  saveQuiz({ level: r.value });
+}));
+
 $('cover-btn').addEventListener('click', () => $('cover-file').click());
 $('cover-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -357,15 +367,15 @@ $('share-btn').addEventListener('click', async () => {
     await navigator.clipboard.writeText(url);
     toast('הקישור הועתק. אפשר להדביק ולשלוח.');
   } catch {
-    prompt('הקישור לשעשועון:', url);
+    prompt('הקישור לחידון:', url);
   }
 });
 
 $('quiz-delete').addEventListener('click', async () => {
-  if (!confirm(`למחוק את השעשועון "${current.title}"?\nהחידות עצמן נשארות במאגר.`)) return;
+  if (!confirm(`למחוק את החידון "${current.title}"?\nהחידות עצמן נשארות במאגר.`)) return;
   await fs.deleteDoc(fs.doc(db, 'quizzes', current.id));
   quizzes = quizzes.filter((q) => q !== current);
-  toast('השעשועון נמחק');
+  toast('החידון נמחק');
   location.hash = '';
 });
 
@@ -400,7 +410,7 @@ function renderQuizList(rs) {
     const edit = el('button', 'link-btn', 'עריכה');
     edit.addEventListener('click', () => openRiddle(r));
     const out = el('button', 'icon-btn', '✕');
-    out.title = 'הוצאה מהשעשועון (החידה נשארת במאגר)';
+    out.title = 'הוצאה מהחידון (החידה נשארת במאגר)';
     out.addEventListener('click', () => setIds(current.riddleIds.filter((id) => id !== r.id)));
     li.append(box, el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, edit, out);
     li.addEventListener('dragstart', (e) => {
@@ -438,9 +448,9 @@ function renderPickBar(rs) {
   const sel = $('pick-target');
   const keep = sel.value;
   sel.innerHTML = '';
-  sel.appendChild(new Option('לשעשועון…', ''));
+  sel.appendChild(new Option('לחידון…', ''));
   quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(q.title || 'ללא שם', q.id)));
-  sel.appendChild(new Option('+ שעשועון חדש…', 'new'));
+  sel.appendChild(new Option('+ חידון חדש…', 'new'));
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
 }
 
@@ -458,14 +468,14 @@ async function transfer(move) {
   const ids = pickedIds();
   const choice = $('pick-target').value;
   if (!ids.length) return;
-  if (!choice) { $('pick-target').focus(); return toast('בוחרים קודם לאיזה שעשועון'); }
+  if (!choice) { $('pick-target').focus(); return toast('בוחרים קודם לאיזה חידון'); }
   let target;
   let dup = 0;
   try {
     if (choice === 'new') {
-      const title = prompt('שם לשעשועון החדש:', 'שעשועון חדש');
+      const title = prompt('שם לחידון החדש:', 'חידון חדש');
       if (title == null) return;
-      const data = { title: title.trim() || 'שעשועון חדש', cover: '', riddleIds: ids, by: auth.currentUser.email };
+      const data = { title: title.trim() || 'חידון חדש', cover: '', riddleIds: ids, level: 'easy', by: auth.currentUser.email };
       const ref = await fs.addDoc(fs.collection(db, 'quizzes'), { ...data, created: fs.serverTimestamp() });
       target = { id: ref.id, ...data };
       quizzes.unshift(target);
@@ -496,7 +506,7 @@ function renderSideSource() {
   const keep = sel.value;
   sel.innerHTML = '';
   sel.appendChild(new Option('מכל המאגר', ''));
-  sel.appendChild(new Option('רק כאלה שלא בשום שעשועון', 'none'));
+  sel.appendChild(new Option('רק כאלה שלא בשום חידון', 'none'));
   quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(`מתוך: ${q.title || 'ללא שם'}`, q.id)));
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
 }
@@ -517,20 +527,20 @@ function renderSidePool() {
   sideShown = from.filter((x) => matches(x, term));
   const all = $('side-add-all');
   all.classList.toggle('hidden', !(source || term) || sideShown.length < 2);
-  all.textContent = `+ הוספת כל ה-${sideShown.length} לסוף השעשועון`;
+  all.textContent = `+ הוספת כל ה-${sideShown.length} לסוף החידון`;
   const box = $('side-pool');
   box.innerHTML = '';
   for (const r of sideShown) {
     const item = el('button', 'side-item');
     item.draggable = true;
-    item.title = 'הוספה לשעשועון';
+    item.title = 'הוספה לחידון';
     const img = el('img');
     img.src = r.image;
     img.alt = '';
     const n = quizzesWith(r.id).length;
     item.append(img, el('span', r.answerType === 'image' ? 'tag' : 'ans', riddleLabel(r)),
-      el('span', 'uses', n ? `ב-${plural(n, 'שעשועון אחד', 'שעשועונים')}` : 'חדשה'), el('span', 'add', '+'));
-    item.addEventListener('click', () => { setIds([...current.riddleIds, r.id]); toast('נוספה לסוף השעשועון'); });
+      el('span', 'uses', n ? `ב-${plural(n, 'חידון אחד', 'חידונים')}` : 'חדשה'), el('span', 'add', '+'));
+    item.addEventListener('click', () => { setIds([...current.riddleIds, r.id]); toast('נוספה לסוף החידון'); });
     item.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', r.id);
       e.dataTransfer.effectAllowed = 'copyMove';
@@ -538,7 +548,7 @@ function renderSidePool() {
     box.appendChild(item);
   }
   if (!box.children.length) {
-    box.appendChild(el('p', 'help', term || source ? 'לא נמצאו חידות.' : 'כל החידות שבמאגר כבר בשעשועון הזה.'));
+    box.appendChild(el('p', 'help', term || source ? 'לא נמצאו חידות.' : 'כל החידות שבמאגר כבר בחידון הזה.'));
   }
 }
 $('side-search').addEventListener('input', renderSidePool);
@@ -546,7 +556,7 @@ $('side-source').addEventListener('change', renderSidePool);
 $('side-add-all').addEventListener('click', () => {
   const n = sideShown.length;
   setIds([...current.riddleIds, ...sideShown.map((r) => r.id)]);
-  toast(`${n} חידות נוספו לסוף השעשועון`);
+  toast(`${n} חידות נוספו לסוף החידון`);
 });
 
 // Dropping on the list inserts at the pointer: reorders a riddle already in it, or adds one from the pool.
@@ -715,7 +725,7 @@ function openRiddle(r, quiz = null) {
       r.answers.forEach((a, i) => addAnswerRow(a, i === r.primary));
     }
     const n = quizzesWith(r.id).length;
-    if (n > 1) $('form-title').textContent += ` (מופיעה ב-${n} שעשועונים)`;
+    if (n > 1) $('form-title').textContent += ` (מופיעה ב-${n} חידונים)`;
   }
   dialog.showModal();
 }
@@ -767,7 +777,7 @@ $('riddle-form').addEventListener('submit', async (e) => {
       byId.set(r.id, r);
       if (addToQuiz && addToQuiz === current) {
         await saveQuiz({ riddleIds: [...current.riddleIds, r.id] });
-        toast('החידה נשמרה ונוספה לשעשועון');
+        toast('החידה נשמרה ונוספה לחידון');
       } else {
         toast('החידה נשמרה במאגר');
       }
