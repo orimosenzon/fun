@@ -1,0 +1,662 @@
+<title>חילוץ מידע הדדי</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,400;1,400&display=swap">
+<style>
+/* Layout: one reading column for argument, widening to a two-pane lab; I-diagram circles (X, Y, T) are the visual system */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --sunk:#eaeef2; --ink:#17202b; --muted:#566273; --rule:#d5dbe2;
+  --x:#2b5ca6; --y:#c0561d; --t:#1f8457; --accent:#1f8457; --neg:#b0243c;
+  --t0:#1f8457; --t1:#2b5ca6; --t2:#c0561d; --t3:#7d4bb8; --t4:#a8870f; --t5:#c0366a;
+  --display:"Frank Ruhl Libre", "David", "Times New Roman", serif;
+  --body:"IBM Plex Sans Hebrew", "Arial Hebrew", Arial, sans-serif;
+  --math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1318; --surface:#171d24; --sunk:#1d242d; --ink:#e4e8ee; --muted:#98a3b2; --rule:#2a333e;
+    --x:#76a4ea; --y:#f0915a; --t:#4fc48f; --accent:#4fc48f; --neg:#f2738a;
+    --t0:#4fc48f; --t1:#76a4ea; --t2:#f0915a; --t3:#b18be6; --t4:#d9b83e; --t5:#ef7aa6;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#171d24; --sunk:#1d242d; --ink:#e4e8ee; --muted:#98a3b2; --rule:#2a333e;
+  --x:#76a4ea; --y:#f0915a; --t:#4fc48f; --accent:#4fc48f; --neg:#f2738a;
+  --t0:#4fc48f; --t1:#76a4ea; --t2:#f0915a; --t3:#b18be6; --t4:#d9b83e; --t5:#ef7aa6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.7}
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 80px}
+.wrap{max-width:1080px;margin-inline:auto;display:flex;flex-direction:column;gap:84px}
+section{display:flex;flex-direction:column;gap:20px;min-width:0}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:14px}
+.prose p{margin:0}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2.6rem,7vw,4.6rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(1.7rem,3.6vw,2.4rem);font-weight:700}
+h3{font-size:1.3rem;font-weight:700}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.eyebrow b{color:var(--accent);font-weight:500}
+.m{font-family:var(--math);font-style:italic;direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-size:1.05em}
+.eq{font-family:var(--math);font-style:italic;direction:ltr;text-align:center;font-size:1.2rem;padding:14px 12px;background:var(--sunk);border-radius:6px;overflow-x:auto;white-space:nowrap}
+.en{direction:ltr;unicode-bidi:isolate}
+a{color:var(--accent)}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:center}
+.hero .lede{font-size:1.15rem;max-width:58ch;margin:0}
+.hero figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:center}
+.hero figure svg{width:100%;max-width:340px;height:auto}
+.hero figcaption{font-size:.88rem;color:var(--muted);text-align:center;max-width:36ch}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+
+.verdict{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:24px 26px;display:flex;flex-direction:column;gap:12px}
+.verdict ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:10px}
+
+/* corners map */
+.corners{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.corner{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px 0;border-bottom:1px solid var(--rule)}
+.corner svg{width:64px;height:58px}
+.corner .who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.corner .who b{font-size:1.05rem}
+.corner .who .src{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.corner .who .note{font-size:.92rem;color:var(--muted)}
+.wchips{display:flex;gap:6px;flex-wrap:wrap;direction:ltr;font-family:var(--math);font-style:italic}
+.wchip{background:var(--sunk);border-radius:4px;padding:1px 7px;font-size:.92rem;white-space:nowrap}
+.wchip.inf{background:var(--t);color:var(--bg)}
+.corner .act{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+@media (max-width:640px){.corner{grid-template-columns:56px minmax(0,1fr)}.corner .act{grid-column:1 / -1;align-items:flex-start;flex-direction:row;flex-wrap:wrap}}
+.legend-dots{display:flex;gap:18px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.legend-dots span{display:inline-flex;gap:6px;align-items:center}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid var(--t)}
+.dot.full{background:var(--t)} .dot.half{background:color-mix(in srgb,var(--t) 35%,transparent)}
+
+button{font:inherit;cursor:pointer}
+.btn{background:transparent;border:1px solid var(--rule);color:var(--ink);border-radius:6px;padding:5px 12px;font-size:.88rem;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn.primary:hover{color:var(--bg);filter:brightness(1.08)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* lab */
+.lab{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:22px;display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:28px}
+@media (max-width:860px){.lab{grid-template-columns:1fr;padding:16px}}
+.controls{display:flex;flex-direction:column;gap:18px;min-width:0}
+.ctl{display:flex;flex-direction:column;gap:6px}
+.ctl label,.ctl .lbl{font-size:.86rem;font-weight:600}
+.ctl .row{display:flex;gap:10px;align-items:center}
+.ctl input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+.ctl output{font-family:var(--mono);font-size:.85rem;min-width:3.2em;text-align:center;background:var(--sunk);border-radius:4px;padding:1px 6px}
+.ctl .hint{font-size:.8rem;color:var(--muted);line-height:1.4}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.results{display:flex;flex-direction:column;gap:18px;min-width:0}
+.res-top{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:640px){.res-top{grid-template-columns:auto auto}.res-top .vennbox{grid-column:1 / -1}}
+.mat{display:flex;flex-direction:column;gap:6px;align-items:center}
+.mat .cap{font-size:.8rem;color:var(--muted);font-family:var(--mono)}
+.grid{display:grid;gap:2px;direction:ltr}
+.cell{width:26px;height:26px;background:var(--sunk);border-radius:3px;display:flex;align-items:center;justify-content:center;position:relative}
+.cell i{display:block;background:var(--ink);border-radius:2px}
+.vennbox svg{width:100%;max-width:330px;height:auto;display:block;margin-inline:auto}
+.readout{font-size:.98rem;background:var(--sunk);border-radius:8px;padding:12px 14px}
+table.atoms{border-collapse:collapse;width:100%;font-size:.9rem}
+table.atoms td{padding:5px 6px;border-bottom:1px solid var(--rule);vertical-align:middle}
+table.atoms td.v{font-family:var(--mono);text-align:left;direction:ltr;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.atoms td.s{direction:ltr;text-align:left;font-family:var(--math);font-style:italic;white-space:nowrap}
+.tbl-wrap{overflow-x:auto}
+.neg{color:var(--neg)}
+.status{font-family:var(--mono);font-size:.78rem;color:var(--muted);min-height:1.2em}
+.tries{display:flex;flex-direction:column;gap:8px}
+.tries button{text-align:right;white-space:normal;line-height:1.45}
+
+/* xor widget */
+.xor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:28px;align-items:center;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:22px}
+@media (max-width:760px){.xor{grid-template-columns:1fr;padding:16px}}
+
+/* two columns */
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.two ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:10px}
+.col-h{font-family:var(--mono);font-size:.8rem;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:12px}
+
+/* open questions */
+.qs{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule)}
+.q{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:24px;padding:18px 0;border-bottom:1px solid var(--rule)}
+.q h3{font-size:1.12rem}
+.q p{margin:0}
+@media (max-width:760px){.q{grid-template-columns:1fr;gap:8px}}
+
+/* directions */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card p{margin:0;font-size:.96rem}
+.chip{align-self:flex-start;font-family:var(--mono);font-size:.74rem;padding:2px 8px;border-radius:20px;border:1px solid var(--rule);color:var(--muted)}
+.card .first{font-size:.9rem;border-top:1px dashed var(--rule);padding-top:10px;color:var(--muted)}
+.card .first b{color:var(--ink)}
+
+.refs{font-size:.86rem;color:var(--muted);columns:2 320px;column-gap:32px}
+.refs p{margin:0 0 6px;break-inside:avoid}
+footer{font-size:.84rem;color:var(--muted);border-top:1px solid var(--rule);padding-top:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="page" dir="rtl" lang="he">
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+    <div class="eyebrow"><b>קריאה חוזרת</b> · תזה 2004 · מאמר 2001</div>
+    <h1>חילוץ מידע הדדי</h1>
+    <p class="lede">קראתי את עבודת המאסטר שלך, <span class="en">Mutual Information Extraction</span> (ספטמבר 2004), ואת המאמר <span class="en">Multivariate Information Bottleneck</span> של פרידמן, מוסנזון, סלונים ותשבי (UAI 2001). כאן מה שאני רואה בהם היום: איפה הם עומדים ביחס למה שקרה בתחום מאז, מעבדה קטנה שמריצה את הבעיה מהתזה בדפדפן, וכיוונים להמשך.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 300 230" role="img" aria-label="דיאגרמת מידע: T ממלא בדיוק את החיתוך של X ו-Y">
+      <circle cx="110" cy="110" r="80" fill="var(--x)" fill-opacity=".08" stroke="var(--x)" stroke-width="2"/>
+      <circle cx="190" cy="110" r="80" fill="var(--y)" fill-opacity=".08" stroke="var(--y)" stroke-width="2"/>
+      <path d="M150,40.72 A80,80 0 0 1 150,179.28 A80,80 0 0 1 150,40.72 Z" fill="var(--t)" fill-opacity=".85"/>
+      <text x="150" y="117" text-anchor="middle" font-family="STIX Two Text, serif" font-style="italic" font-size="26" fill="var(--bg)">T</text>
+      <text x="48" y="36" font-family="STIX Two Text, serif" font-style="italic" font-size="22" fill="var(--x)">X</text>
+      <text x="240" y="36" font-family="STIX Two Text, serif" font-style="italic" font-size="22" fill="var(--y)">Y</text>
+      <text x="150" y="218" text-anchor="middle" font-family="STIX Two Text, serif" font-style="italic" font-size="15" fill="var(--muted)">I(X;Y|T) = 0,   H(T) = I(X;Y)</text>
+    </svg>
+    <figcaption>המחלץ המושלם מפרק 3: משתנה שממלא בדיוק את החיתוך, לא פחות ולא יותר.</figcaption>
+  </figure>
+</header>
+
+<!-- VERDICT -->
+<section>
+  <div class="verdict">
+    <div class="eyebrow">בקצרה</div>
+    <ul>
+      <li><b>השאלה שלך הקדימה את זמנה.</b> "מה X אומר על Y, ולא רק כמה" היא היום שאלה מרכזית: היא עומדת בבסיס הספרות על פירוק מידע לחלקים (<span class="en">Partial Information Decomposition</span>, מ-2010), על ייצוגים ברשתות עמוקות ועל פרשנות של מודלים.</li>
+      <li><b>הניסוח הכללי בתזה הוא מפה.</b> ארבעה משקלים על ארבעה "אטומים" של דיאגרמת המידע (סעיפים 4.3–4.4). אם מציבים בהם 0, ערך סופי או אינסוף מקבלים לפחות שישה מושגים מוכרים, וחלקם הוגדרו רק אחרי 2004. בתזה זה מופיע כרשימת מקרים פרטיים. כדאי להציג אותו כמפה, וזה החלק שהכי שווה להחיות.</li>
+      <li><b>הפרק על Yeung מקטין את העבודה.</b> המשפט על התאמה בין מידע לקבוצות אכן היה ידוע (Hu ב-1962, Yeung ב-1991). אבל התרומה שלך היא השימוש באטומים כשפה לתכנון פונקציות מטרה, וזה כבר משהו אחר.</li>
+      <li><b>מה חסר:</b> חיבור לספרות על "מידע משותף" (גאץ' וקרנר, ויינר), ניסויים, והרצה של משוואת נקודת השבת מפרק 5. את שלושתם אפשר להשלים היום בכמה ערבים. המעבדה למטה היא התחלה.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- THE QUESTION -->
+<section>
+  <div class="eyebrow"><b>פרק 3</b> · השאלה</div>
+  <h2>לא כמה, אלא מה</h2>
+  <div class="prose">
+    <p>נתונים שני משתנים <span class="m">X</span> ו-<span class="m">Y</span> עם התפלגות משותפת. <span class="m">I(X;Y)</span> אומר כמה ביטים הם חולקים, אבל לא אומר מה הם חולקים. ההצעה שלך: לייצג את התלות כמשתנה חדש <span class="m">T</span>, "מחלץ", שמכיל את כל התלות ורק אותה:</p>
+    <div class="eq">I(X;Y | T) = 0 &nbsp;&nbsp;and&nbsp;&nbsp; H(T) = I(X;Y)</div>
+    <p>בסעיף 3.3 אתה מוכיח שמחלץ כזה קיים רק אם <span class="m">T</span> הוא פונקציה של <span class="m">X</span> וגם פונקציה של <span class="m">Y</span>, כלומר המטריצה מתפרקת לבלוקים בלתי תלויים. זו בדיוק הנקודה שבה שלושה מושגים קלאסיים מתלכדים: המידע המשותף של גאץ' וקרנר (1973), המידע ההדדי, והמידע המשותף של ויינר (1975). בדרך כלל מתקיים <span class="m">C<sub>GK</sub> ≤ I(X;Y) ≤ C<sub>W</sub></span>, ושוויון בשני הצדדים קורה רק במבנה הבלוקים שציירת באיור 3.2. התזה לא מצטטת את שני המאמרים האלה, והם הקרובים ביותר לשאלה שלה.</p>
+    <p>הדוגמה הרפואית בפתיחה (תרופה, חלבון, התקף לב) טובה יותר ממה שנראה. משתנה <span class="m">T</span> שמפריד בין <span class="m">X</span> ל-<span class="m">Y</span> הוא מה שרייכנבך (1956) קרא לו "סיבה משותפת". יש כאן גם מגבלה שכדאי לכתוב במפורש: התנאי <span class="m">X − T − Y</span> זהה כשהחלבון מתווך (<span class="m">X → T → Y</span>) וכשהוא סיבה משותפת (<span class="m">X ← T → Y</span>). סטטיסטיקה לבדה מוצאת את הצל של המנגנון. כדי לדעת את הכיוון צריך התערבות. זה בדיוק המקום שבו הספרות על למידת ייצוגים סיבתיים (<span class="en">causal representation learning</span>) נמצאת היום.</p>
+  </div>
+</section>
+
+<!-- THE MAP -->
+<section id="map">
+  <div class="eyebrow"><b>סעיפים 4.3–4.4</b> · התובנה המרכזית</div>
+  <h2>כל צווארי הבקבוק הם פינות של מטרה אחת</h2>
+  <div class="prose">
+    <p>בסעיף 4.3 אתה מפרק את <span class="m">H(T)</span> לאטומים של דיאגרמת המידע ומקבל את המטרה הכללית:</p>
+    <div class="eq">ω₁·I(X;Y|T) + ω₂·I(X;T|Y) + ω₃·I(Y;T|X) + ω₄·H(T|X,Y)</div>
+    <p>האיבר הראשון הוא התלות שלא נלכדה. שלושת האחרים הם מה ש-<span class="m">T</span> מכיל ואינו חלק מהתלות: מידע על <span class="m">X</span> בלבד, מידע על <span class="m">Y</span> בלבד, ורעש פרטי. כל משקל יכול להיות 0 (לא אכפת), סופי (מחיר), או אינסוף (אילוץ). זו הטבלה שהייתי שם במרכז התזה:</p>
+  </div>
+  <div class="legend-dots">
+    <span><i class="dot full"></i> משקל אינסופי (אילוץ)</span>
+    <span><i class="dot half"></i> משקל סופי (מחיר)</span>
+    <span><i class="dot"></i> משקל 0 (חופשי)</span>
+  </div>
+  <div class="corners" id="corners"></div>
+  <div class="prose">
+    <p class="small muted">שתי הערות. (1) <span class="en">Conditional Entropy Bottleneck</span> של פישר (2020) נמצא באותה פינה כמו צוואר הבקבוק הקלאסי, והטיעון שלו בעד האיבר <span class="m">I(X;T|Y)</span> כ"מידע עודף" הוא בדיוק הקריאה שלך בסעיף 4.3. (2) המשוואה המקורית שלך (3.2) עם <span class="m">ω₁ → ∞</span> היא "המידע המשותף המדויק" שקומאר, לי ואל-גמאל הגדירו ונתנו לו משמעות אופרטיבית ב-2014.</p>
+  </div>
+</section>
+
+<!-- LAB -->
+<section id="lab">
+  <div class="eyebrow"><b>פרק 5</b> · מעבדה</div>
+  <h2>להריץ את המטרה</h2>
+  <div class="prose">
+    <p>הפותר כאן מבוסס על למה 1 מפרק 5: כל מטרה כזו היא צירוף ליניארי של אנטרופיות משותפות, והנגזרת לפי <span class="m">P(t|x,y)</span> היא <span class="m">log P</span> של תת־הקבוצה המתאימה. במקום איטרציית נקודת שבת אני מריץ ירידת גרדיאנט על <span class="en">softmax</span> עם כמה אתחולים אקראיים, כי לא כל צירוף משקלים מתכנס בנקודת שבת. "אינסוף" כאן הוא משקל 200.</p>
+  </div>
+  <div class="lab">
+    <div class="controls">
+      <div class="ctl">
+        <span class="lbl">התפלגות <span class="m">P(X,Y)</span></span>
+        <div class="seg" id="distSeg"></div>
+      </div>
+      <div class="ctl">
+        <label for="eps">רעש אחיד <span class="m">ε</span></label>
+        <div class="row"><input type="range" id="eps" min="0" max="0.5" step="0.01"><output id="epsOut"></output></div>
+      </div>
+      <div class="ctl">
+        <label for="kk">מספר ערכים אפשריים ל-<span class="m">T</span></label>
+        <div class="row"><input type="range" id="kk" min="2" max="6" step="1"><output id="kOut"></output></div>
+      </div>
+      <div class="ctl">
+        <span class="lbl">פינה מוכנה</span>
+        <div class="seg" id="cornerSeg"></div>
+      </div>
+      <div id="wctls" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+    <div class="results">
+      <div class="res-top">
+        <div class="mat"><div class="grid" id="gridP"></div><div class="cap">P(X,Y)</div></div>
+        <div class="mat"><div class="grid" id="gridT"></div><div class="cap">argmax T(x,y)</div></div>
+        <div class="vennbox" id="vennLab"></div>
+      </div>
+      <div class="readout" id="readout"></div>
+      <div class="tbl-wrap"><table class="atoms" id="atomTable"></table></div>
+      <div class="status" id="status"></div>
+      <div class="tries">
+        <div class="lbl" style="font-size:.86rem;font-weight:600">כדאי לנסות</div>
+        <button class="btn" data-try="0">בלוקים ללא רעש, פינת גאץ' וקרנר: <span class="m">H(T)</span> שווה ל-<span class="m">I(X;Y)</span>, וכל המידע של <span class="m">T</span> נמצא באטום המרכזי. זה המחלץ המושלם.</button>
+        <button class="btn" data-try="1">אותם בלוקים עם רעש: לפי ההגדרה המדויקת, המידע המשותף של גאץ' וקרנר קופץ לאפס (כשלכל תא יש הסתברות חיובית, כל פונקציה משותפת היא קבועה). בגרסה הרכה, עם משקל גדול אבל סופי, נשאר <span class="m">T</span> שלוכד חלק גדול מהמבנה. זה היתרון של המטרה הרכה שלך.</button>
+        <button class="btn" data-try="2">"ארבעה מלבנים" (דוגמה 1 מפרק 7) עם פונקציה של שני המשתנים ו-4 ערכים: נמצאים ארבעת המלבנים, והתלות נלכדת כמעט כולה.</button>
+        <button class="btn" data-try="3">אותה מטריצה עם סטטיסטי מספיק (פונקציה של X בלבד): צריך את כל 6 הערכים. זו הטענה של פרק 7 במספרים.</button>
+        <button class="btn" data-try="4">אלכסון רועש עם ויינר: <span class="m">H(T)</span> גדול מ-<span class="m">I(X;Y)</span>. אין כאן מבנה בלוקים, ולכן לכידה מלאה של התלות עולה בביטים עודפים.</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LAMBDA -->
+<section>
+  <div class="eyebrow"><b>סעיף 4.2.1</b> · האטום המרכזי</div>
+  <h2>כש-Λ שלילי</h2>
+  <div class="xor">
+    <div class="prose">
+      <p>הגדרת <span class="m">Λ(X;Y;T) = I(X;Y) − I(X;Y|T)</span>, הראית שהוא סימטרי, ונתת את הדוגמה של <span class="m">T = X ⊕ Y</span> שבה <span class="m">Λ = −1</span>. לאותו גודל קראו מקגיל (1954) "מידע אינטראקציה" ובל (2003) "<span class="en">co-information</span>".</p>
+      <p>הדוגמה הזו היא הדוגמה הקנונית של <b>סינרגיה</b>: מידע שאף משתנה לא נושא לבד, ושמופיע רק כשמסתכלים על שניהם יחד. וויליאמס וביר (2010) הציעו לפרק את המידע לחלקים כפולים, ייחודיים וסינרגטיים, ו-<span class="m">Λ</span> שווה בדיוק לחלק הכפול פחות החלק הסינרגטי. השאלה שפתחה את התזה, מה טיבה של התלות, היא בדיוק השאלה שהתחום הזה מנסה לפתור, ועדיין אין עליה הסכמה.</p>
+      <div class="ctl">
+        <label for="xc">תלות בין <span class="m">X</span> ל-<span class="m">Y</span> (מתאם)</label>
+        <div class="row"><input type="range" id="xc" min="0" max="0.9" step="0.05" value="0"><output id="xcOut"></output></div>
+      </div>
+      <div class="ctl">
+        <label for="xe">רעש ב-<span class="m">T = X ⊕ Y</span></label>
+        <div class="row"><input type="range" id="xe" min="0" max="0.5" step="0.02" value="0"><output id="xeOut"></output></div>
+      </div>
+    </div>
+    <div class="vennbox" id="vennXor"></div>
+  </div>
+</section>
+
+<!-- THE PAPER -->
+<section>
+  <div class="eyebrow"><b>UAI 2001</b> · המאמר</div>
+  <h2>צוואר בקבוק רב־משתני</h2>
+  <div class="prose">
+    <p>המאמר מכליל את צוואר הבקבוק של תשבי, פריירה וביאלק בעזרת שתי רשתות בייסיאניות. הרשת <span class="m">G<sub>in</sub></span> אומרת מי דוחס את מי. הרשת <span class="m">G<sub>out</sub></span> אומרת מה צריך להישמר. מתקבלות שתי לגרנז'יאנות: <span class="m">I<sup>G<sub>in</sub></sup> − β·I<sup>G<sub>out</sub></sup></span>, ו-<span class="m">I<sup>G<sub>in</sub></sup> + γ·D<sub>KL</sub>(P‖G<sub>out</sub>)</span>. יש משוואות עקביות־עצמית (משפט 7.1), הוכחת התכנסות לגרסה האסינכרונית (משפט 8.1), אנילינג דטרמיניסטי עם התפצלויות, ושתי דוגמאות: צוואר מקביל וצוואר סימטרי, על נתונים סינתטיים ועל 20 <span class="en">Newsgroups</span>.</p>
+    <p><b>הקשר לתזה הדוק יותר ממה שהתזה עצמה אומרת:</b></p>
+    <ul style="margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:8px">
+      <li>המחלץ הקרטזי מסעיף 7.3, זוג <span class="m">(X̂, Ŷ)</span> שמפריד בין <span class="m">X</span> ל-<span class="m">Y</span>, הוא בדיוק הגרסה השנייה של <span class="m">G<sub>out</sub></span> בצוואר הסימטרי (איור 2b): <span class="m">T<sub>X</sub></span> ו-<span class="m">T<sub>Y</sub></span> שיחד מפרידים בין המשתנים.</li>
+      <li>לפי טענה 3.2 במאמר, <span class="m">D<sub>KL</sub>(P‖G<sub>out</sub>)</span> הוא סכום של מידעים הדדיים מותנים, כלומר סכום של אטומים בדיאגרמת המידע. המסגרת של התזה נותנת דרך לקרוא כל <span class="m">G<sub>out</sub></span> כרשימה של אטומים שמענישים, וכך גם להמציא רשתות חדשות.</li>
+      <li>למה 1 בפרק 5 היא אותו חישוב שעומד מאחורי משפט 7.1 במאמר, רק עבור משקלים כלליים במקום רשת.</li>
+    </ul>
+    <p><b>מה קרה למאמר.</b> גרסה מורחבת יצאה ב-2006 ב-<span class="en">Neural Computation</span> (סלונים, פרידמן ותשבי). צוואר הבקבוק עצמו הפך מאז לשפה נפוצה בלמידה עמוקה: תשבי וזסלבסקי (2015), שוורץ־זיו ותשבי (2017) והביקורת של סאקס ועמיתיו (2018), <span class="en">Variational IB</span> של אלמי ועמיתיו (2017) שהפך את הרעיון לשכבה שאפשר לאמן, וגרסאות מבוזרות ורב־תצוגתיות. הצוואר המקביל קרוב ברוחו למה שנקרא היום ייצוגים מפורקים (<span class="en">disentangled</span>), והסימטרי קרוב לקו־קלסטרינג מבוסס מידע של דילון ועמיתיו (2003). נפתלי תשבי נפטר ב-2021.</p>
+  </div>
+</section>
+
+<!-- HONEST ASSESSMENT -->
+<section>
+  <div class="eyebrow"><b>הערכה</b></div>
+  <h2>מה עמד במבחן הזמן, ומה הייתי מתקן</h2>
+  <div class="two">
+    <div>
+      <div class="col-h">עמד</div>
+      <ul>
+        <li>השאלה עצמה, והמוטיבציה הסיבתית שלה.</li>
+        <li>הפירוק לאטומים בסעיפים 4.3–4.4 כשפה לתכנון מטרות. בשנים שאחרי, כמה מאמרים טובים הגיעו לפינות שונות של המפה הזו, כל אחד בנפרד.</li>
+        <li>ההוכחה של משפט 1 בבנייה מפורשת (קבוצות האטומים, המעבר ההפיך בין ערכי איחודים לערכי אטומים). זה נקי וקריא, והנספח מסודר.</li>
+        <li>הרעיון שחיפוש הסטטיסטי הטוב ביותר בגודל נתון קשה, דרך רדוקציה מ-<span class="en">Subset-Sum</span>.</li>
+        <li>דוגמה 1 בפרק 7: הדגמה חדה לכך שפונקציה של שני המשתנים יכולה להיות קטנה בהרבה מכל פונקציה של אחד מהם.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="col-h">הייתי מתקן</div>
+      <ul>
+        <li>להוסיף את גאץ' וקרנר ואת ויינר. הם התשובה הקלאסית לשאלה של פרק 3, ו-<span class="m">Λ</span> הוא מידע האינטראקציה של מקגיל.</li>
+        <li>בסעיף 6.3 כתוב "רדוקציה ל-<span class="en">Subset-Sum</span>" כשהכוונה היא רדוקציה ממנו. חשוב מזה: <span class="en">Subset-Sum</span> קשה רק במובן החלש (יש לו אלגוריתם פסאודו־פולינומי), והרדוקציה צריכה <span class="m">|Y|</span> גדול. כשהמשתנה הרלוונטי בינארי יש אלגוריתם פולינומי.</li>
+        <li>פרק 5 נעצר במשוואה. היא לא הורצה אפילו פעם אחת, ולא נבדק אם היא מתכנסת.</li>
+        <li>אין אף ניסוי. התזה אומרת את זה בעצמה, בכנות.</li>
+        <li>בפרק 7, אלגוריתם ה-<span class="en">GCP</span> דורש שורות "דומות" בדיוק. על נתונים אמיתיים צריך סובלנות, ואז הוא הופך לקו־קלסטרינג.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- OPEN QUESTIONS -->
+<section>
+  <div class="eyebrow"><b>פרק 8</b> · שאלות שהשארת פתוחות</div>
+  <h2>ומה ידוע עליהן היום</h2>
+  <div class="qs">
+    <div class="q">
+      <h3>כמה רחוק האלגוריתם החמדן מהאופטימום?</h3>
+      <p>כשהמשתנה הרלוונטי בינארי, הקוונטייזר האופטימלי שומר על הסדר של יחס הנראות, ויש תכנון דינמי פולינומי (קורקוסקי ויאגי, 2014). במקרה הכללי הבעיה קשה. יש חסמים על כמה מידע הולך לאיבוד בקוונטיזציה (למשל <span class="en">information-distilling quantizers</span> של בהט, נזר, אורדנטליך ופוליאנסקי, 2021). מדידה אמפירית של הפער של האלגוריתם החמדן על מטריצות קטנות עדיין שווה לעשות, והיא קלה.</p>
+    </div>
+    <div class="q">
+      <h3>האם משוואת פרק 5 מתכנסת?</h3>
+      <p>בצוואר הבקבוק הקלאסי איטרציות בסגנון בלאהוט־ארימוטו מתכנסות לנקודה מקומית. כשחלק מהמקדמים שליליים, כמו בפינת ויינר, אין ערובה, והבעיה לא קמורה. לכן המעבדה כאן משתמשת בגרדיאנט עם כמה אתחולים. גם זה פתרון מקומי בלבד.</p>
+    </div>
+    <div class="q">
+      <h3>האם אלגוריתם השריג מפרק 7 עובד על נתונים?</h3>
+      <p>לא נבדק. בגרסה עם סובלנות לרעש הוא קרוב לקו־קלסטרינג מבוסס מידע (דילון, מלאלה ומודהה, 2003) ולצוואר הסימטרי מהמאמר. מה שייחודי בגרסה שלך הוא השימוש במבנה השריג כדי לגזום את החיפוש, וזה ראוי להשוואה.</p>
+    </div>
+    <div class="q">
+      <h3>הבעיה הכללית: משתנה מפריד עם אנטרופיה מינימלית</h3>
+      <p>זה המידע המשותף המדויק של 2014. אם מבקשים מספר ערכים מינימלי במקום אנטרופיה מינימלית, מקבלים את הדרגה האי־שלילית של המטריצה <span class="m">P(X,Y)</span>, וחישוב שלה הוא <span class="en">NP</span>-קשה (ואוואסיס, 2009). הגרסה הדטרמיניסטית מפרק 7, פונקציה של שני המשתנים, נראית לי פחות נחקרה. שווה סקירת ספרות לפני שמשקיעים בה.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DIRECTIONS -->
+<section>
+  <div class="eyebrow"><b>המשך</b></div>
+  <h2>כיוונים ורעיונות</h2>
+  <div class="cards">
+    <div class="card">
+      <span class="chip">ערב עד שבוע</span>
+      <h3>להחיות את פרק 5 כספרייה</h3>
+      <p>הפותר בדף הזה הוא גרסת צעצוע. גרסה אמיתית: ספריית Python שמקבלת משקלים על כל האטומים, גם עבור יותר משלושה משתנים (למשל <span class="m">X, Y, T₁, T₂</span> מהמאמר), מחשבת גרדיאנט לפי למה 1, ומציירת את מישור המידע עם אנילינג. זה הכלי שהיה חסר ב-2004.</p>
+      <p class="first"><b>צעד ראשון:</b> להעביר את הפותר ל-numpy ולבדוק אותו מול הפתרון הסגור של צוואר בקבוק גאוסי (צ'צ'יק ועמיתיו, 2005).</p>
+    </div>
+    <div class="card">
+      <span class="chip">כמה שבועות</span>
+      <h3>פתק קצר: מפת הפינות</h3>
+      <p>הטבלה שלמעלה, עם הוכחות קצרות לכל פינה, היא פתק טוב ל-<span class="en">arXiv</span> אם היא לא קיימת כבר. ייתכן שחלק ממנה קיים, ולכן הסדר הוא: קודם ספרות, אחר כך כתיבה.</p>
+      <p class="first"><b>צעד ראשון:</b> לקרוא את הסקירה של זאידי, אסטלה־אגרי ושמאי (<span class="en">Entropy</span>, 2020) ואת <span class="en">Bottleneck Problems</span> של אסודה וקלמון (2020), ולבדוק אם המיפוי מופיע שם במפורש.</p>
+    </div>
+    <div class="card">
+      <span class="chip">יום־יומיים</span>
+      <h3>פער החמדן</h3>
+      <p>עונה על השאלה שהשארת פתוחה בפרק 8. עבור <span class="m">|X| ≤ 10</span> אפשר לעבור על כל החלוקות (115,975 חלוקות של 10 איברים) ולמדוד כמה רחוק האלגוריתם האגלומרטיבי מהאופטימום, על מטריצות אקראיות ומובנות.</p>
+      <p class="first"><b>צעד ראשון:</b> סקריפט שמשווה חמדן, חיפוש מלא, ותכנון דינמי למקרה הבינארי. התוצאה היא גרף אחד.</p>
+    </div>
+    <div class="card">
+      <span class="chip">מחקר</span>
+      <h3>מחלצים לסינרגיה</h3>
+      <p>להגדיר מחלץ שלוכד רק את החלק הכפול של המידע, ומחלץ אחר שלוכד רק את הסינרגטי. כש-<span class="m">Λ</span> שלילי, המחלץ חייב להיות פונקציה של שני המשתנים, וכאן פרק 7 חוזר לתמונה. כיוון פתוח באמת, ומתאים לשאלה המקורית שלך.</p>
+      <p class="first"><b>צעד ראשון:</b> להריץ את הפותר על משפחת ההתפלגויות של ה-XOR למעלה ולראות אילו פינות מוצאות את הסינרגיה.</p>
+    </div>
+    <div class="card">
+      <span class="chip">סוף שבוע</span>
+      <h3>צוואר סימטרי על עברית</h3>
+      <p>הניסוי של פרק 7 שלא נעשה, על נתונים שכבר יש לך: מטריצת הופעות משותפות של מילה והקשר מוויקיפדיה העברית, צוואר סימטרי או אלגוריתם השריג, והשוואה לאשכולות של GloVe מפרויקט "שיכון".</p>
+      <p class="first"><b>צעד ראשון:</b> 2,000 מילים × 300 הקשרים, ואז להריץ את הפותר מהדף על גרסה מוקטנת.</p>
+    </div>
+    <div class="card">
+      <span class="chip">שבוע</span>
+      <h3>סדרת סרטונים: מידע בעיגולים</h3>
+      <p>ב-math_sims, בעברית: אנטרופיה כשטח, המחלץ המושלם כעדשה, <span class="m">Λ</span> שלילי עם XOR, ומפת הפינות. החומר מתאים גם כפרק על צוואר הבקבוק ב-deepcourse.</p>
+      <p class="first"><b>צעד ראשון:</b> סצנה אחת ב-ManimGL: שני עיגולים, ומשתנה שלישי שמתכווץ עד שהוא ממלא בדיוק את החיתוך.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REFS -->
+<section>
+  <div class="eyebrow"><b>מקורות</b> שהוזכרו</div>
+  <div class="refs en" dir="ltr" style="text-align:left">
+    <p>Mosenzon, O. <i>Mutual Information Extraction</i>. M.Sc. thesis, 2004.</p>
+    <p>Friedman, Mosenzon, Slonim, Tishby. Multivariate Information Bottleneck. UAI 2001.</p>
+    <p>Slonim, Friedman, Tishby. Multivariate Information Bottleneck. Neural Computation, 2006.</p>
+    <p>Tishby, Pereira, Bialek. The Information Bottleneck Method. Allerton, 1999.</p>
+    <p>Slonim, Tishby. Agglomerative Information Bottleneck. NIPS 1999.</p>
+    <p>Gács, Körner. Common information is far less than mutual information. 1973.</p>
+    <p>Wyner. The common information of two dependent random variables. IEEE T-IT, 1975.</p>
+    <p>Kumar, Li, El Gamal. Exact common information. ISIT 2014.</p>
+    <p>McGill. Multivariate information transmission. 1954.</p>
+    <p>Bell. The co-information lattice. ICA 2003.</p>
+    <p>Hu Kuo Ting. On the amount of information. 1962.</p>
+    <p>Yeung. A new outlook on Shannon's information measures. IEEE T-IT, 1991.</p>
+    <p>Williams, Beer. Nonnegative decomposition of multivariate information. 2010.</p>
+    <p>Dhillon, Mallela, Modha. Information-theoretic co-clustering. KDD 2003.</p>
+    <p>Chechik, Globerson, Tishby, Weiss. Information bottleneck for Gaussian variables. JMLR 2005.</p>
+    <p>Alemi, Fischer, Dillon, Murphy. Deep Variational Information Bottleneck. ICLR 2017.</p>
+    <p>Strouse, Schwab. The Deterministic Information Bottleneck. Neural Computation, 2017.</p>
+    <p>Fischer. The Conditional Entropy Bottleneck. Entropy, 2020.</p>
+    <p>Kurkoski, Yagi. Quantization of binary-input discrete memoryless channels. IEEE T-IT, 2014.</p>
+    <p>Bhatt, Nazer, Ordentlich, Polyanskiy. Information-distilling quantizers. IEEE T-IT, 2021.</p>
+    <p>Vavasis. On the complexity of nonnegative matrix factorization. SIAM J. Optim., 2009.</p>
+    <p>Zaidi, Estella-Aguerri, Shamai. On the Information Bottleneck Problems. Entropy, 2020.</p>
+    <p>Asoodeh, Calmon. Bottleneck Problems: An Information and Estimation-Theoretic View. Entropy, 2020.</p>
+  </div>
+  <footer>הוכן ב-9 בנובמבר 2026 מתוך שני קובצי ה-PDF בתיקייה <span class="en">information_theory</span>. הפרטים הביבליוגרפיים מהזיכרון, וכדאי לאמת אותם לפני ציטוט.</footer>
+</section>
+
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const LN2=Math.LN2, INF=200;
+const WSTEPS=[0,0.25,0.5,1,2,4,8,16,Infinity];
+const wNum=v=>v===Infinity?INF:v;
+const wTxt=v=>v===Infinity?"∞":String(v);
+function wIdx(v){if(v===Infinity)return 8;let b=0;for(let i=0;i<8;i++){if(Math.abs(WSTEPS[i]-v)<Math.abs(WSTEPS[b]-v))b=i;}return b;}
+function rngOf(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(u===0)u=r();v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const lg=v=>Math.log(v+1e-30)/LN2;
+function H(a){let s=0;for(const v of a)if(v>1e-15)s-=v*Math.log(v);return s/LN2;}
+
+/* ---------- distributions ---------- */
+function distBlocks(){const n=6,P=new Array(36).fill(0),w=[.5,.3,.2],u=[.65,.35],v=[.3,.7];
+  for(let b=0;b<3;b++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)P[(2*b+i)*n+2*b+j]=w[b]*u[i]*v[j];return{n:6,P};}
+function distRect4(){const n=6,P=new Array(36).fill(0),W=[[.4,.1],[.08,.42]];
+  const U={"00":[.7,.2,.1],"01":[.1,.2,.7],"10":[.6,.1,.3],"11":[.15,.7,.15]};
+  const V={"00":[.1,.7,.2],"01":[.6,.3,.1],"10":[.2,.2,.6],"11":[.7,.15,.15]};
+  for(let r=0;r<2;r++)for(let c=0;c<2;c++){const key=""+r+c;for(let i=0;i<3;i++)for(let j=0;j<3;j++)P[(3*r+i)*n+3*c+j]=W[r][c]*U[key][i]*V[key][j];}
+  return{n:6,P};}
+function distDiag(){const n=5,P=new Array(25).fill(0);for(let i=0;i<5;i++)P[i*5+i]=.2;return{n:5,P};}
+function distRandom(seed){const r=rngOf(seed),n=6,P=[];for(let i=0;i<36;i++){const x=r();P.push(x*x*x);}return{n:6,P};}
+const DISTS={blocks:{name:"בלוקים",make:distBlocks},rect4:{name:"ארבעה מלבנים",make:distRect4},diag:{name:"אלכסון",make:distDiag},random:{name:"אקראי",make:null}};
+
+/* ---------- corners ---------- */
+const I_=Infinity;
+const CORNERS=[
+ {id:"orig",name:"המטרה המקורית",src:"התזה, משוואה 3.2",w:[4,1,1,1],note:"משקל אחד ללכידה, משקל שווה לכל המידע העודף."},
+ {id:"mss",name:"סטטיסטי מספיק מינימלי",src:"Fisher, 1922 · התזה, מקרה 6",w:[I_,1,I_,I_],note:"פונקציה של X ששומרת את כל המידע על Y."},
+ {id:"gk",name:"המידע המשותף של גאץ' וקרנר",src:"Gács & Körner, 1973",w:[1,I_,I_,I_],note:"פונקציה של X וגם של Y. אצלך זה תנאי השוויון בסעיף 3.3."},
+ {id:"wyner",name:"המידע המשותף של ויינר",src:"Wyner, 1975",w:[I_,1,1,0],note:"מפריד מלא, מינימום I(X,Y;T). רעש פרטי בחינם."},
+ {id:"ib",name:"צוואר בקבוק מידע",src:"Tishby, Pereira, Bialek, 1999 · מקרה 5",w:[4,1,I_,0],note:"פונקציה סטוכסטית של X. ω₁ משחק את התפקיד של β."},
+ {id:"dib",name:"צוואר בקבוק דטרמיניסטי",src:"Slonim & Tishby 1999; Strouse & Schwab 2017 · מקרה 4",w:[4,1,I_,I_],note:"פונקציה של X בלבד. זה המקרה של פרק 6."},
+ {id:"exact",name:"מידע משותף מדויק",src:"Kumar, Li, El Gamal, 2014 · מקרה 1",w:[I_,1,1,1],note:"מפריד עם אנטרופיה מינימלית. משוואה 3.2 עם ω₁ → ∞."},
+ {id:"f2",name:"פונקציה של שני המשתנים",src:"התזה, פרק 7",w:[I_,1,1,I_],note:"מפריד דטרמיניסטי של (X,Y). כל ערך הוא מלבן קומבינטורי."}
+];
+
+/* ---------- atoms ---------- */
+function atoms3(p,nx,ny,nt){
+  const pX=new Float64Array(nx),pY=new Float64Array(ny),pT=new Float64Array(nt),pXY=new Float64Array(nx*ny),pXT=new Float64Array(nx*nt),pYT=new Float64Array(ny*nt);
+  for(let x=0;x<nx;x++)for(let y=0;y<ny;y++)for(let t=0;t<nt;t++){const v=p[(x*ny+y)*nt+t];pX[x]+=v;pY[y]+=v;pT[t]+=v;pXY[x*ny+y]+=v;pXT[x*nt+t]+=v;pYT[y*nt+t]+=v;}
+  const hX=H(pX),hY=H(pY),hT=H(pT),hXY=H(pXY),hXT=H(pXT),hYT=H(pYT),hXYT=H(p);
+  return{hX,hY,hT,hXY,
+    x:hXYT-hYT, y:hXYT-hXT, t:hXYT-hXY,
+    xy:hXT+hYT-hT-hXYT, xt:hXY+hYT-hY-hXYT, yt:hXY+hXT-hX-hXYT,
+    c:hX+hY+hT-hXY-hXT-hYT+hXYT, Ixy:hX+hY-hXY, pT};
+}
+
+/* ---------- solver (gradient of Σ c_S H(S), chapter 5 lemma 1) ---------- */
+function solve(P,nx,ny,k,w,seed){
+  const [w1,w2,w3,w4]=w.map(wNum);
+  const N=nx*ny,M=N*k,RESTARTS=6,ITERS=450,lr=.12,b1=.9,b2=.999;
+  let cXYT,cXT,cYT,cT;
+  function coefs(s){ /* constraints (∞) are warmed up from 1 to INF over the first 60% of steps */
+    const e=w.map(v=>v===Infinity?1+(INF-1)*s:v);
+    cXYT=-e[0]-e[1]-e[2]+e[3];cXT=e[0]+e[2];cYT=e[0]+e[1];cT=-e[0];
+  }
+  const rng=rngOf(seed);
+  const q=new Float64Array(M),p=new Float64Array(M),pXT=new Float64Array(nx*k),pYT=new Float64Array(ny*k),pT=new Float64Array(k),g=new Float64Array(M);
+  function forward(z){
+    pXT.fill(0);pYT.fill(0);pT.fill(0);
+    for(let x=0;x<nx;x++)for(let y=0;y<ny;y++){const xy=x*ny+y,o=xy*k;let mx=-1e9;for(let t=0;t<k;t++)if(z[o+t]>mx)mx=z[o+t];let s=0;for(let t=0;t<k;t++){q[o+t]=Math.exp(z[o+t]-mx);s+=q[o+t];}
+      for(let t=0;t<k;t++){q[o+t]/=s;const v=P[xy]*q[o+t];p[o+t]=v;pXT[x*k+t]+=v;pYT[y*k+t]+=v;pT[t]+=v;}}
+  }
+  let best=null;
+  for(let r=0;r<RESTARTS;r++){
+    const z=new Float64Array(M),m=new Float64Array(M),v=new Float64Array(M);
+    for(let i=0;i<M;i++)z[i]=gauss(rng)*1.5;
+    for(let it=1;it<=ITERS;it++){
+      forward(z);
+      coefs(Math.min(1,it/(ITERS*.6)));
+      const c1=1-Math.pow(b1,it),c2=1-Math.pow(b2,it);
+      for(let x=0;x<nx;x++)for(let y=0;y<ny;y++){const xy=x*ny+y,o=xy*k,Pxy=P[xy];if(Pxy<=0)continue;
+        let mean=0;
+        for(let t=0;t<k;t++){const i=o+t;const G=-Pxy*(cXYT*lg(p[i])+cXT*lg(pXT[x*k+t])+cYT*lg(pYT[y*k+t])+cT*lg(pT[t]));g[i]=G;mean+=q[i]*G;}
+        for(let t=0;t<k;t++){const i=o+t,gr=q[i]*(g[i]-mean);m[i]=b1*m[i]+(1-b1)*gr;v[i]=b2*v[i]+(1-b2)*gr*gr;z[i]-=lr*(m[i]/c1)/(Math.sqrt(v[i]/c2)+1e-9);}
+      }
+    }
+    forward(z);
+    const a=atoms3(p,nx,ny,k);
+    const obj=w1*a.xy+w2*a.xt+w3*a.yt+w4*a.t;
+    if(!best||obj<best.obj)best={obj,q:q.slice(),a};
+    /* polish: hard assignment, then moves of a cell / a whole row / a whole column, kept only if they lower the objective */
+    const lab=new Int8Array(N);
+    for(let xy=0;xy<N;xy++){let bt=0;for(let t=1;t<k;t++)if(q[xy*k+t]>q[xy*k+bt])bt=t;lab[xy]=bt;}
+    const hp=new Float64Array(M);
+    const hobj=()=>{hp.fill(0);for(let xy=0;xy<N;xy++)hp[xy*k+lab[xy]]=P[xy];const b=atoms3(hp,nx,ny,k);return[w1*b.xy+w2*b.xt+w3*b.yt+w4*b.t,b];};
+    const units=[];
+    for(let x=0;x<nx;x++)units.push([...Array(ny).keys()].map(y=>x*ny+y));
+    for(let y=0;y<ny;y++)units.push([...Array(nx).keys()].map(x=>x*ny+y));
+    for(let xy=0;xy<N;xy++)units.push([xy]);
+    let cur=hobj()[0];
+    for(let sweep=0;sweep<10;sweep++){let imp=false;
+      for(const u of units){const old=u.map(i=>lab[i]);
+        for(let t=0;t<k;t++){u.forEach(i=>lab[i]=t);const o=hobj()[0];if(o<cur-1e-9){cur=o;imp=true;old.fill(t);}else u.forEach((i,j)=>lab[i]=old[j]);}
+      }
+      if(!imp)break;}
+    if(cur<best.obj){const [o,b]=hobj();const hq=new Float64Array(M);for(let xy=0;xy<N;xy++)hq[xy*k+lab[xy]]=1;best={obj:o,q:hq,a:b};}
+  }
+  return best;
+}
+
+/* ---------- venn ---------- */
+const POS={x:[78,82],y:[222,82],t:[150,212],xy:[150,70],xt:[104,150],yt:[196,150],c:[150,122]};
+function fmt(v){return Math.abs(v)<.005?"0":v.toFixed(2);}
+function venn(a,w){
+  const W=w||null;
+  const wmap={xy:0,xt:1,yt:2,t:3};
+  let s='<svg viewBox="0 0 300 275" role="img" aria-label="דיאגרמת מידע של X, Y ו-T">';
+  s+='<circle cx="115" cy="102" r="82" fill="var(--x)" fill-opacity=".07" stroke="var(--x)" stroke-width="1.6"/>';
+  s+='<circle cx="185" cy="102" r="82" fill="var(--y)" fill-opacity=".07" stroke="var(--y)" stroke-width="1.6"/>';
+  s+='<circle cx="150" cy="162" r="82" fill="var(--t)" fill-opacity=".09" stroke="var(--t)" stroke-width="1.6"/>';
+  s+='<text x="20" y="34" font-family="STIX Two Text,serif" font-style="italic" font-size="20" fill="var(--x)">X</text>';
+  s+='<text x="268" y="34" font-family="STIX Two Text,serif" font-style="italic" font-size="20" fill="var(--y)">Y</text>';
+  s+='<text x="150" y="270" text-anchor="middle" font-family="STIX Two Text,serif" font-style="italic" font-size="20" fill="var(--t)">T</text>';
+  for(const key in POS){
+    const [px,py]=POS[key],val=a[key];
+    const neg=val<-.005;
+    const bold=key==="c"||(W&&key in wmap&&wNum(W[wmap[key]])>0);
+    s+='<text x="'+px+'" y="'+py+'" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="'+(key==="c"?15:13)+'" font-weight="'+(bold?600:400)+'" fill="'+(neg?"var(--neg)":"var(--ink)")+'">'+fmt(val)+'</text>';
+    if(W&&key in wmap){const wv=W[wmap[key]];s+='<text x="'+px+'" y="'+(py+14)+'" text-anchor="middle" font-family="STIX Two Text,serif" font-style="italic" font-size="11" fill="var(--muted)">ω'+"₁₂₃₄"[wmap[key]]+'='+wTxt(wv)+'</text>';}
+  }
+  return s+'</svg>';
+}
+function miniVenn(w){
+  const keys=["xy","xt","yt","t"];
+  let s='<svg viewBox="0 0 300 275" aria-hidden="true">';
+  s+='<circle cx="115" cy="102" r="82" fill="none" stroke="var(--x)" stroke-width="7"/>';
+  s+='<circle cx="185" cy="102" r="82" fill="none" stroke="var(--y)" stroke-width="7"/>';
+  s+='<circle cx="150" cy="162" r="82" fill="none" stroke="var(--t)" stroke-width="7"/>';
+  keys.forEach((k,i)=>{const [x,y]=POS[k],v=w[i];const yy=k==="t"?205:y-4;
+    if(v===Infinity)s+='<circle cx="'+x+'" cy="'+yy+'" r="22" fill="var(--t)"/>';
+    else if(v>0)s+='<circle cx="'+x+'" cy="'+yy+'" r="22" fill="var(--t)" fill-opacity=".35" stroke="var(--t)" stroke-width="5"/>';
+    else s+='<circle cx="'+x+'" cy="'+yy+'" r="20" fill="none" stroke="var(--t)" stroke-width="5"/>';});
+  return s+'</svg>';
+}
+
+/* ---------- corners list ---------- */
+const cornersEl=document.getElementById("corners");
+CORNERS.forEach(c=>{
+  const row=document.createElement("div");row.className="corner";
+  const chips=c.w.map((v,i)=>'<span class="wchip'+(v===Infinity?" inf":"")+'">ω'+"₁₂₃₄"[i]+'='+wTxt(v)+'</span>').join("");
+  row.innerHTML=miniVenn(c.w)+'<div class="who"><b>'+c.name+'</b><span class="src en">'+c.src+'</span><span class="note">'+c.note+'</span></div><div class="act"><div class="wchips">'+chips+'</div><button class="btn" data-corner="'+c.id+'">פתח במעבדה</button></div>';
+  cornersEl.appendChild(row);
+});
+
+/* ---------- lab state ---------- */
+const state={dist:"blocks",eps:.06,k:4,w:[4,1,1,1],corner:"orig",seed:11};
+const distSeg=document.getElementById("distSeg"),cornerSeg=document.getElementById("cornerSeg"),wctls=document.getElementById("wctls");
+for(const id in DISTS){const b=document.createElement("button");b.className="btn";b.textContent=DISTS[id].name;b.dataset.dist=id;distSeg.appendChild(b);}
+const reroll=document.createElement("button");reroll.className="btn";reroll.textContent="הגרל מחדש";reroll.id="reroll";distSeg.appendChild(reroll);
+CORNERS.forEach(c=>{const b=document.createElement("button");b.className="btn";b.textContent=c.name;b.dataset.cornerSeg=c.id;cornerSeg.appendChild(b);});
+const WLAB=[["ω₁","תלות שלא נלכדה","I(X;Y|T)"],["ω₂","מידע על X שאינו על Y","I(X;T|Y)"],["ω₃","מידע על Y שאינו על X","I(Y;T|X)"],["ω₄","רעש פרטי","H(T|X,Y)"]];
+WLAB.forEach((l,i)=>{const d=document.createElement("div");d.className="ctl";
+  d.innerHTML='<label for="w'+i+'"><span class="m">'+l[0]+'</span> '+l[1]+' <span class="m">'+l[2]+'</span></label><div class="row"><input type="range" id="w'+i+'" min="0" max="8" step="1"><output id="w'+i+'Out"></output></div>';
+  wctls.appendChild(d);});
+
+const $=id=>document.getElementById(id);
+function syncControls(){
+  $("eps").value=state.eps;$("epsOut").textContent=state.eps.toFixed(2);
+  $("kk").value=state.k;$("kOut").textContent=state.k;
+  state.w.forEach((v,i)=>{$("w"+i).value=wIdx(v);$("w"+i+"Out").textContent=wTxt(v);});
+  distSeg.querySelectorAll("[data-dist]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.dist===state.dist));
+  reroll.hidden=state.dist!=="random";
+  cornerSeg.querySelectorAll("[data-corner-seg]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cornerSeg===state.corner));
+}
+function currentP(){
+  const d=state.dist==="random"?distRandom(state.seed):DISTS[state.dist].make();
+  const n=d.n,s=d.P.reduce((a,b)=>a+b,0),U=1/(n*n);
+  return{n,P:d.P.map(v=>(1-state.eps)*v/s+state.eps*U)};
+}
+let timer=null;
+function schedule(){$("status").textContent="מחשב…";clearTimeout(timer);timer=setTimeout(run,40);}
+function run(){
+  const {n,P}=currentP(),k=state.k;
+  const t0=performance.now();
+  const r=solve(P,n,n,k,state.w,7);
+  const ms=Math.round(performance.now()-t0);
+  // order T values by mass for stable colours
+  const order=[...Array(k).keys()].sort((a,b)=>r.a.pT[b]-r.a.pT[a]);const rank=new Array(k);order.forEach((t,i)=>rank[t]=i);
+  const maxP=Math.max(...P);
+  let gp="",gt="";
+  for(let x=0;x<n;x++)for(let y=0;y<n;y++){const xy=x*n+y,sz=Math.round(24*Math.sqrt(P[xy]/maxP));
+    gp+='<div class="cell" title="P='+P[xy].toFixed(3)+'"><i style="width:'+sz+'px;height:'+sz+'px"></i></div>';
+    let bt=0,bq=0;for(let t=0;t<k;t++){const v=r.q[xy*k+t];if(v>bq){bq=v;bt=t;}}
+    gt+='<div class="cell" title="T='+(rank[bt]+1)+', q='+bq.toFixed(2)+'" style="background:var(--t'+rank[bt]+');opacity:'+(0.25+0.75*bq).toFixed(2)+'"></div>';}
+  $("gridP").style.gridTemplateColumns="repeat("+n+",26px)";$("gridT").style.gridTemplateColumns="repeat("+n+",26px)";
+  $("gridP").innerHTML=gp;$("gridT").innerHTML=gt;
+  const a=r.a;
+  $("vennLab").innerHTML=venn(a,state.w);
+  const used=a.pT.filter(v=>v>.01).length;
+  const hT=a.c+a.xt+a.yt+a.t, irr=a.xt+a.yt+a.t;
+  const frac=a.Ixy>1e-6?Math.max(0,a.c)/a.Ixy:0;
+  $("readout").innerHTML='<span class="m">I(X;Y)</span> = <b class="en">'+a.Ixy.toFixed(3)+'</b> ביט. <span class="m">T</span> משתמש ב-'+used+' ערכים, <span class="m">H(T)</span> = <b class="en">'+hT.toFixed(3)+'</b>. הוא לוכד <b>'+Math.round(frac*100)+'%</b> מהתלות (<span class="m">Λ / I(X;Y)</span>) ומשלם <b class="en">'+irr.toFixed(3)+'</b> ביטים של מידע שאינו חלק ממנה.';
+  const rows=[["תלות שנלכדה","Λ(X;Y;T)",a.c],["תלות שלא נלכדה","I(X;Y|T)",a.xy],["מידע על X בלבד","I(X;T|Y)",a.xt],["מידע על Y בלבד","I(Y;T|X)",a.yt],["רעש פרטי","H(T|X,Y)",a.t],["X שלא הוסבר","H(X|Y,T)",a.x],["Y שלא הוסבר","H(Y|X,T)",a.y]];
+  $("atomTable").innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td class="s">'+r[1]+'</td><td class="v'+(r[2]<-.005?" neg":"")+'">'+r[2].toFixed(3)+'</td></tr>').join("");
+  $("status").textContent="6 אתחולים × 450 צעדים · "+ms+" ms";
+}
+function applyCorner(id){const c=CORNERS.find(c=>c.id===id);if(!c)return;state.w=c.w.slice();state.corner=id;}
+
+distSeg.addEventListener("click",e=>{const b=e.target.closest("[data-dist]");if(!b)return;state.dist=b.dataset.dist;if(state.dist==="diag"&&state.eps<.2)state.eps=.3;syncControls();schedule();});
+reroll.addEventListener("click",()=>{state.seed=(state.seed*7919+13)%100000;schedule();});
+cornerSeg.addEventListener("click",e=>{const b=e.target.closest("[data-corner-seg]");if(!b)return;applyCorner(b.dataset.cornerSeg);syncControls();schedule();});
+$("eps").addEventListener("input",e=>{state.eps=+e.target.value;$("epsOut").textContent=state.eps.toFixed(2);schedule();});
+$("kk").addEventListener("input",e=>{state.k=+e.target.value;$("kOut").textContent=state.k;schedule();});
+for(let i=0;i<4;i++)$("w"+i).addEventListener("input",e=>{state.w[i]=WSTEPS[+e.target.value];state.corner=null;syncControls();schedule();});
+cornersEl.addEventListener("click",e=>{const b=e.target.closest("[data-corner]");if(!b)return;applyCorner(b.dataset.corner);syncControls();schedule();$("lab").scrollIntoView({behavior:"smooth",block:"start"});});
+const TRIES=[
+ {dist:"blocks",eps:0,k:4,corner:"gk"},
+ {dist:"blocks",eps:.12,k:4,corner:"gk"},
+ {dist:"rect4",eps:0,k:4,corner:"f2"},
+ {dist:"rect4",eps:0,k:6,corner:"mss"},
+ {dist:"diag",eps:.3,k:5,corner:"wyner"}];
+document.querySelectorAll("[data-try]").forEach(b=>b.addEventListener("click",()=>{const t=TRIES[+b.dataset.try];state.dist=t.dist;state.eps=t.eps;state.k=t.k;applyCorner(t.corner);syncControls();schedule();}));
+
+/* ---------- xor widget ---------- */
+function runXor(){
+  const c=+$("xc").value,e=+$("xe").value;
+  $("xcOut").textContent=c.toFixed(2);$("xeOut").textContent=e.toFixed(2);
+  const p=new Float64Array(8);
+  for(let x=0;x<2;x++)for(let y=0;y<2;y++){const pxy=(x===y?(1+c):(1-c))/4;const t0=x^y;p[(x*2+y)*2+t0]+=pxy*(1-e);p[(x*2+y)*2+(1-t0)]+=pxy*e;}
+  $("vennXor").innerHTML=venn(atoms3(p,2,2,2),null);
+}
+$("xc").addEventListener("input",runXor);$("xe").addEventListener("input",runXor);
+
+syncControls();run();runXor();
+})();
+</script>

@@ -1837,6 +1837,38 @@
               "label": "▶ פתח את הגרף"
             }
           ]
+        },
+        {
+          "title": "חילוץ מידע הדדי",
+          "icon": "∩",
+          "theme": "t-green",
+          "dir": "information_theory",
+          "tags": [
+            "תורת האינפורמציה",
+            "Information Bottleneck",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#34d399\">קריאה חוזרת בתזת המאסטר שלי (2004) ובמאמר Multivariate Information Bottleneck (UAI 2001).</strong><br> מפה שמראה איך סטטיסטי מספיק, המידע המשותף של גאץ' וקרנר ושל ויינר וצוואר הבקבוק הם פינות של מטרה אחת, מעבדה שמריצה את המטרה בדפדפן, וכיוונים להמשך.",
+          "links": [
+            {
+              "href": "information_theory/index.html",
+              "style": "live",
+              "label": "▶ לדף",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/information_theory",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
         }
       ]
     },
