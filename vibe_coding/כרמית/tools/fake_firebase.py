@@ -29,7 +29,9 @@ export const updateDoc = async (d, patch) => { Object.assign(store[d.name][d.id]
 export const deleteDoc = async (d) => { delete store[d.name][d.id]; };
 """ % IMG
 AUTH = """
-export const getAuth = () => ({ currentUser: { email: 'orimosenzon@gmail.com' } });
+// A test sets window.__NO_USER (an init script) to play signed out.
+const theAuth = { currentUser: window.__NO_USER ? null : { email: 'orimosenzon@gmail.com' } };
+export const getAuth = () => theAuth;
 export const onAuthStateChanged = (auth, cb) => setTimeout(() => cb(auth.currentUser), 0);
 export const signInWithPopup = async () => {};
 export const signOut = async () => {};

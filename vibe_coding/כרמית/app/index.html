@@ -12,9 +12,12 @@
 </head>
 <body>
   <div id="app">
-    <a id="home-btn" class="home-btn hidden" href="index.html">⌂ כל החידונים</a>
+    <nav class="topbar">
+      <a id="home-btn" class="home-btn hidden" href="index.html">⌂ כל החידונים</a>
+      <a id="admin-btn" class="admin-btn hidden" href="admin.html">🔑 כניסה לניהול</a>
+    </nav>
     <header>
-      <a href="index.html" title="לכל החידונים"><img class="logo" src="logo.jpg" alt="Wordplay & Wonder"></a>
+      <a id="logo-link" href="index.html" title="לכל החידונים"><img class="logo" src="logo.jpg" alt="Wordplay & Wonder"></a>
       <h1 dir="ltr">Wordplay <span class="amp">&amp;</span> Wonder</h1>
       <p class="motif"><span class="langs">עברית <span class="x">×</span> <span dir="ltr">English</span></span>כשהשפות נפגשות נולדת משמעות חדשה.</p>
     </header>
@@ -109,7 +112,6 @@
       </div>
     </section>
 
-    <footer><a href="admin.html">ניהול חידות</a></footer>
   </div>
 
   <script type="module" src="script.js"></script>

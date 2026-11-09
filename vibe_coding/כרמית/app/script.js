@@ -2,7 +2,9 @@
 // Without ?q= the start screen shows the path: the quizzes Carmit chose for players, in her order.
 // The player has no choice: only the next quiz on the path is open, and finishing it opens the one after.
 // Progress lasts for this visit only (sessionStorage), so a new visit starts again from the first quiz.
-import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf, playerPath } from './fb.js';
+// Two ways into a quiz: ?p=<id> is a step on the path; ?q=<id> is a quiz sent to someone on its own (solo):
+// they see only that quiz, never the start screen or the other quizzes.
+import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf, playerPath, watchAdmin } from './fb.js';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -237,8 +239,10 @@ function showReport() {
       : score >= results.length * 0.7
       ? 'תוצאה מרשימה.'
       : 'יש עוד מה לפצח.';
-  markDone(QUIZ_ID);
-  offerNextQuiz();
+  if (!SOLO) {
+    markDone(QUIZ_ID);
+    offerNextQuiz();
+  }
   reportBody.innerHTML = '';
   results.forEach((res, i) => {
     const r = res.riddle;
@@ -287,7 +291,7 @@ async function offerNextQuiz() {
     }
     const btn = $('next-level-btn');
     btn.textContent = `לחידון הבא: ${next.title} ←`;
-    btn.href = `?q=${next.id}`;
+    btn.href = `?p=${next.id}`;
     btn.classList.remove('hidden');
     $('report-home-btn').className = 'secondary-btn link-as-btn';
   } catch (e) {
@@ -314,7 +318,7 @@ function showGallery(quizzes) {
 function galleryCard(q, i, state) {
   const a = document.createElement(state === 'next' ? 'a' : 'div');
   a.className = `gallery-card ${state}`;
-  if (state === 'next') a.href = `?q=${q.id}`;
+  if (state === 'next') a.href = `?p=${q.id}`;
   const img = document.createElement('img');
   img.src = q.cover || DEFAULT_COVER;
   img.alt = '';
@@ -331,15 +335,31 @@ function galleryCard(q, i, state) {
   return a;
 }
 
+const params = new URLSearchParams(location.search);
+const SOLO = !params.has('p') && params.has('q');
+if (SOLO) {
+  document.body.classList.add('solo');
+  $('logo-link').removeAttribute('href');
+}
+
+// The way into the admin: one clear button on the start screen; once Ori or Carmit is signed in, on every screen.
+const ON_START = !params.has('p') && !params.has('q');
+if (ON_START) $('admin-btn').classList.remove('hidden');
+watchAdmin((isAdmin) => {
+  $('admin-btn').textContent = isAdmin ? '⚙ לממשק הניהול' : '🔑 כניסה לניהול';
+  $('admin-btn').classList.toggle('hidden', !isAdmin && !ON_START);
+}).catch((e) => console.error(e));
+
 try {
-  const quizId = new URLSearchParams(location.search).get('q');
+  const quizId = params.get('p') || params.get('q');
   if (!quizId) {
     showGallery(await loadQuizzes());
   } else {
-    $('home-btn').classList.remove('hidden');
+    if (!SOLO) $('home-btn').classList.remove('hidden');
     const quiz = await loadQuiz(quizId);
     if (!quiz) {
-      intro.innerHTML = 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
+      intro.innerHTML = SOLO ? 'החידון הזה לא נמצא. אולי הוא נמחק.'
+        : 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
     } else {
       RIDDLES = quiz.riddles;
       QUIZ_ID = quiz.id;

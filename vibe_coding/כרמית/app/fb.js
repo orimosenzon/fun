@@ -53,6 +53,13 @@ export function playerPath(quizzes) {
   return playable.map((q, i) => [q, i]).sort(([a, i], [b, j]) => rank(a) - rank(b) || i - j).map(([q]) => q);
 }
 
+// Calls back with true when Ori or Carmit is signed in (the sign-in is shared with admin.html).
+// Loaded after the game itself, so a player never waits for it.
+export async function watchAdmin(cb) {
+  const au = await import(`${SDK}firebase-auth.js`);
+  au.onAuthStateChanged(au.getAuth(app), (user) => cb(!!user && ADMINS.includes((user.email || '').toLowerCase())));
+}
+
 // Shown wherever a quiz has no cover of its own.
 export const DEFAULT_COVER = 'logo.jpg';
 

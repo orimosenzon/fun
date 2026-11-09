@@ -57,14 +57,14 @@ with sync_playwright() as p:
     check(page.locator(".gallery-card.locked").count() == 2, "the rest are locked")
 
     page.click("a.gallery-card.next")
-    page.wait_for_url("**?q=qh")
+    page.wait_for_url("**?p=qh")
     page.wait_for_selector("#start-btn:visible")
     check("קשה" in page.text_content("#quiz-level"), "the quiz page shows its level")
     play_through(page, "wrong")  # no threshold: finishing is enough
     page.wait_for_selector("#next-level-btn:visible")
     check("קל" in page.text_content("#next-level-btn"), f"the report leads to the next quiz: {page.text_content('#next-level-btn')!r}")
     page.click("#next-level-btn")
-    page.wait_for_url("**?q=qe")
+    page.wait_for_url("**?p=qe")
     page.wait_for_selector("#start-btn:visible")
     check(page.text_content("#quiz-name") == "קל", "the next-quiz button opens it")
 
