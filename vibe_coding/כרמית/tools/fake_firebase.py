@@ -6,7 +6,7 @@ IMG = "data:image/gif;base64,R0lGODlhAQABAAAAACw="
 APP = "export const initializeApp = () => ({});"
 FS = """
 const img = '%s';
-const store = window.__store = { riddles: {}, quizzes: {} };
+const store = window.__store = { riddles: {}, quizzes: {}, letters: structuredClone(window.__LETTERS || {}) };
 for (let i = 1; i <= 4; i++) store.riddles['r' + i] = { image: img, answerType: 'text', answers: ['ANS' + i], primary: 0, created: i };
 store.quizzes.qold = { title: 'ישן', cover: '', riddleIds: ['r1'], created: 4 };
 store.quizzes.qe = { title: 'קל', cover: '', riddleIds: ['r1', 'r2'], level: 'easy', created: 3 };

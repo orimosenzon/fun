@@ -4,7 +4,9 @@
 // Progress lasts for this visit only (sessionStorage), so a new visit starts again from the first quiz.
 // Two ways into a quiz: ?p=<id> is a step on the path; ?q=<id> is a quiz sent to someone on its own (solo):
 // they see only that quiz, never the start screen or the other quizzes.
-import { loadQuiz, loadQuizzes, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf, playerPath, watchAdmin } from './fb.js';
+// A marketing letter (?m=<id>) shows above a solo quiz, and its link button again after it.
+import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf, playerPath, watchAdmin,
+  hasHeading, fillHeading, safeUrl } from './fb.js';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -335,6 +337,25 @@ function galleryCard(q, i, state) {
   return a;
 }
 
+function showLetter(letter) {
+  $('letter').classList.remove('hidden');
+  $('letter-text').textContent = letter.text || '';
+  $('letter-text').classList.toggle('hidden', !letter.text);
+  if (letter.image) {
+    $('letter-img').src = letter.image;
+    $('letter-img').classList.remove('hidden');
+  }
+  const url = safeUrl(letter.linkUrl);
+  if (!url) return;
+  const label = letter.linkText || 'לפרטים נוספים';
+  for (const a of [$('letter-cta-top'), $('letter-cta')]) {
+    a.href = url;
+    a.textContent = `${label} ↗`;
+  }
+  $('letter-cta-top').classList.remove('hidden');
+  $('letter-end').classList.remove('hidden');
+}
+
 const params = new URLSearchParams(location.search);
 const SOLO = !params.has('p') && params.has('q');
 if (SOLO) {
@@ -356,7 +377,10 @@ try {
     showGallery(await loadQuizzes());
   } else {
     if (!SOLO) $('home-btn').classList.remove('hidden');
-    const quiz = await loadQuiz(quizId);
+    const [quiz, letter] = await Promise.all([
+      loadQuiz(quizId),
+      SOLO && params.get('m') ? loadLetter(params.get('m')).catch(() => null) : null,
+    ]);
     if (!quiz) {
       intro.innerHTML = SOLO ? 'החידון הזה לא נמצא. אולי הוא נמחק.'
         : 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
@@ -376,9 +400,18 @@ try {
         $('quiz-note').textContent = note;
         $('quiz-note').classList.remove('hidden');
       }
+      if (letter) showLetter(letter);
       $('quiz-level').textContent = `רמה ${LEVELS.find((L) => L.id === levelOf(quiz)).name}`;
       $('quiz-level').className = `level-badge level-${levelOf(quiz)}`;
-      intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
+      // The quiz's own heading, set in the admin, replaces the usual Hebrew × English line.
+      const custom = hasHeading(quiz.heading);
+      if (custom) {
+        fillHeading($('quiz-heading'), quiz.heading);
+        $('quiz-heading').classList.remove('hidden');
+        $('motif').classList.add('hidden');
+      }
+      intro.innerHTML = custom ? `<span class="num">${RIDDLES.length}</span> חידות.<br>מוכנים?`
+        : `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
       startBtn.classList.remove('hidden');
       startBtn.disabled = RIDDLES.length === 0;
     }

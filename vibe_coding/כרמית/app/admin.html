@@ -33,7 +33,13 @@
         <button class="tab active" data-tab="quizzes" role="tab">החידונים <span id="quiz-count" class="count"></span></button>
         <button class="tab" data-tab="path" role="tab">מה השחקן רואה <span id="path-count" class="count"></span></button>
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
+        <button class="tab" data-tab="letters" role="tab">שליחה לשיווק <span id="all-letters-count" class="count"></span></button>
       </nav>
+
+      <div id="tab-letters" class="hidden">
+        <p class="help">כל המכתבים הנלווים, מכל החידונים. כל מכתב הוא קישור לחידון אחד, עם המכתב מעליו. מכתב חדש כותבים מתוך החידון עצמו.</p>
+        <ul id="all-letters" class="letters-list"></ul>
+      </div>
 
       <div id="tab-quizzes">
         <p class="help">כל חידון הוא אוסף חידות עם קישור משלו, שאפשר לשלוח למישהו לשחק. מעבר עם העכבר מראה מה יש בפנים, ולחיצה פותחת לעריכה.</p>
@@ -95,10 +101,25 @@
             <label class="seg"><input type="radio" name="quiz-level" value="hard"><span>קשה</span></label>
           </div>
           <p class="help level-help">הרמה מופיעה לשחקן כתווית על החידון. את הסדר שבו השחקן עובר בין החידונים קובעים בלשונית "מה השחקן רואה".</p>
-          <label class="share-note">
-            <span class="order-label">טקסט נלווה למי שמקבל את הקישור (לא חובה). יופיע בראש החידון:</span>
-            <textarea id="share-note" rows="2" maxlength="600" placeholder="למשל: היי דנה, הכנתי לך חידון קטן. בהצלחה!"></textarea>
-          </label>
+          <div class="heading-edit">
+            <span class="order-label">הכותרת שמעל החידון. השורה הראשונה מודגשת, ואפשר להוסיף תמונה:</span>
+            <div class="heading-row">
+              <button id="heading-img-btn" class="heading-img-btn" title="תמונה לכותרת (לא חובה)">
+                <img id="heading-img" class="hidden" alt=""><span id="heading-img-hint">+ תמונה</span>
+              </button>
+              <input type="file" id="heading-file" accept="image/*" hidden>
+              <textarea id="heading-text" rows="3" maxlength="400" placeholder="ריק = ההסבר הרגיל:&#10;עברית × English&#10;כשהשפות נפגשות נולדת משמעות חדשה."></textarea>
+            </div>
+            <div class="heading-tools">
+              <select id="heading-from" class="pick-target" aria-label="כותרת מחידון אחר"></select>
+              <button id="heading-img-remove" class="link-btn muted hidden">הסרת התמונה</button>
+              <button id="heading-reset" class="link-btn muted hidden">חזרה להסבר הרגיל</button>
+            </div>
+            <div class="heading-preview-wrap">
+              <span class="kicker">// כך זה ייראה לשחקן</span>
+              <p id="heading-preview" class="motif heading"></p>
+            </div>
+          </div>
           <div class="hero-actions">
             <button id="share-btn" class="primary-btn small">העתקת קישור לשליחה</button>
             <a id="play-link" class="secondary-btn small" target="_blank" rel="noopener">לשחק בו ↗</a>
@@ -107,6 +128,15 @@
           </div>
         </div>
       </div>
+
+      <section class="pane letters-pane">
+        <div class="pane-head">
+          <h2>שליחה כאמצעי שיווק <span id="letters-count" class="count"></span></h2>
+          <button id="letter-new" class="primary-btn small">+ מכתב נלווה חדש</button>
+        </div>
+        <p class="help">כותבים מכתב נלווה ומקבלים קישור. מי שפותח אותו מגיע ישר לחידון הזה בלבד, בלי שאר האתר, והמכתב מופיע מעליו: טקסט, תמונה וכפתור לאן שרוצים (אתר, וואטסאפ, הרשמה). בסוף החידון הכפתור מופיע שוב. אפשר מכתב נפרד לכל קהל או ערוץ.</p>
+        <ul id="letters-list" class="letters-list"></ul>
+      </section>
 
       <div class="panes">
         <section class="pane pane-quiz">
@@ -146,6 +176,8 @@
   <!-- floating preview of a quiz's riddles, on hover -->
   <div id="peek" class="peek" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status"></div>
+  <!-- the usual line above a quiz without a heading of its own (as in index.html), for the heading preview -->
+  <template id="default-motif"><span class="langs">עברית <span class="x">×</span> <span dir="ltr">English</span></span>כשהשפות נפגשות נולדת משמעות חדשה.</template>
 
   <dialog id="riddle-dialog">
     <form id="riddle-form" class="riddle-card admin-form">
@@ -194,6 +226,38 @@
       <div class="buttons-row">
         <button type="submit" id="save-btn" class="primary-btn">שמירה</button>
         <button type="button" id="cancel-btn" class="secondary-btn">ביטול</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="letter-dialog">
+    <form id="letter-form" class="riddle-card admin-form">
+      <div class="dialog-head">
+        <h2 id="letter-form-title">מכתב נלווה</h2>
+        <button type="button" class="link-btn close" id="letter-close" title="סגירה">✕</button>
+      </div>
+      <label class="field">
+        <span>שם המכתב (רק לך, כדי לזהות אותו ברשימה)</span>
+        <input type="text" id="letter-name" maxlength="80" autocomplete="off" placeholder="למשל: פוסט בפייסבוק, נובמבר">
+      </label>
+      <label class="drop" id="letter-drop">
+        <input type="file" id="letter-file" accept="image/*" hidden>
+        <img id="letter-preview" class="preview hidden" alt="">
+        <span class="drop-hint">תמונה למכתב (לא חובה)<small>לחיצה לבחירה, או גרירת קובץ לכאן</small></span>
+      </label>
+      <button type="button" id="letter-img-remove" class="link-btn muted hidden">הסרת התמונה</button>
+      <label class="field">
+        <span>המכתב, כפי שיופיע מעל החידון</span>
+        <textarea id="letter-text" rows="6" maxlength="2000" placeholder="למשל: שלום! אני כרמית, ואני יוצרת חידות שמשלבות צילום ומשחקי מילים בעברית ובאנגלית. הנה חידון קטן לטעימה..."></textarea>
+      </label>
+      <div class="field two">
+        <label><span>טקסט הכפתור (לא חובה)</span><input type="text" id="letter-link-text" maxlength="60" autocomplete="off" placeholder="לסדנה הקרובה"></label>
+        <label><span>לאן הכפתור מוביל</span><input type="text" id="letter-link-url" dir="ltr" autocomplete="off" placeholder="https://… או wa.me/972…"></label>
+      </div>
+      <div id="letter-error" class="feedback wrong hidden"></div>
+      <div class="buttons-row">
+        <button type="submit" id="letter-save" class="primary-btn">שמירה והעתקת הקישור</button>
+        <button type="button" id="letter-cancel" class="secondary-btn">ביטול</button>
       </div>
     </form>
   </dialog>

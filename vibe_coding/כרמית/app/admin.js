@@ -1,7 +1,8 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, primaryAnswer, DEFAULT_COVER, LEVELS, levelOf } from './fb.js';
+import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, loadLetters, primaryAnswer, DEFAULT_COVER, LEVELS, levelOf,
+  hasHeading, fillHeading, safeUrl } from './fb.js';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -14,6 +15,7 @@ const MAX_B64 = 380_000; // two images must fit together in one 1 MiB document
 let riddles = [];        // the pool, newest first
 let byId = new Map();
 let quizzes = [];
+let letters = [];        // marketing letters, each tied to one quiz (quizId)
 let current = null;      // the quiz open in the quiz view
 let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
 let lastPick = null;     // anchor for shift-click ranges
@@ -33,7 +35,7 @@ const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
-const playUrl = (q, note) => new URL(`index.html?q=${q.id}${note ? `&n=${note}` : ''}`, location.href).href;
+const playUrl = (q, letter) => new URL(`index.html?q=${q.id}${letter ? `&m=${letter.id}` : ''}`, location.href).href;
 
 function toast(msg) {
   const t = $('toast');
@@ -72,7 +74,8 @@ au.onAuthStateChanged(auth, async (user) => {
 });
 
 async function reload() {
-  [riddles, quizzes] = await Promise.all([loadRiddles(), loadQuizzes()]);
+  [riddles, quizzes, letters] = await Promise.all([loadRiddles(), loadQuizzes(),
+    loadLetters().catch((e) => { console.error(e); return []; })]);
   byId = new Map(riddles.map((r) => [r.id, r]));
 }
 
@@ -89,7 +92,7 @@ function route() {
   $('quiz-view').classList.toggle('hidden', !quiz);
   if (quiz) return openQuiz(quiz);
   current = null;
-  setTab({ '#pool': 'pool', '#path': 'path' }[location.hash] || 'quizzes');
+  setTab({ '#pool': 'pool', '#path': 'path', '#letters': 'letters' }[location.hash] || 'quizzes');
   renderHome();
 }
 
@@ -98,6 +101,7 @@ function setTab(tab) {
   $('tab-quizzes').classList.toggle('hidden', tab !== 'quizzes');
   $('tab-pool').classList.toggle('hidden', tab !== 'pool');
   $('tab-path').classList.toggle('hidden', tab !== 'path');
+  $('tab-letters').classList.toggle('hidden', tab !== 'letters');
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
   history.replaceState(null, '', t.dataset.tab === 'quizzes' ? location.pathname : `#${t.dataset.tab}`);
@@ -112,6 +116,7 @@ function renderHome() {
   renderQuizGrid();
   renderPath();
   renderPool();
+  renderAllLetters();
 }
 
 // ---------- the path: which quizzes players see, and in what order ----------
@@ -381,8 +386,11 @@ function openQuiz(q) {
   $('side-search').value = '';
   $('side-source').value = '';
   $('play-link').href = playUrl(q);
-  $('share-note').value = '';
+  clearTimeout(headingTimer);
+  $('heading-text').value = (q.heading || {}).text || '';
   setSaveState('');
+  renderHeading();
+  renderLetters();
   renderOrder();
   renderLevel();
   renderQuiz();
@@ -463,25 +471,235 @@ $('cover-file').addEventListener('change', async (e) => {
 });
 $('cover-remove').addEventListener('click', async () => { await saveQuiz({ cover: '' }); renderQuiz(); });
 
-// A note for the person the link goes to: kept in the quiz under a short id (quiz.notes[id]), so every
-// link can carry its own words and the link itself stays short.
-async function noteId(text) {
-  const notes = current.notes || {};
-  const known = Object.keys(notes).find((id) => notes[id] === text);
-  if (known) return known;
-  const id = Math.random().toString(36).slice(2, 8);
-  await saveQuiz({ notes: { ...notes, [id]: text } });
-  return id;
-}
+$('share-btn').addEventListener('click', () => copyLink(playUrl(current)));
 
-$('share-btn').addEventListener('click', async () => {
-  const text = $('share-note').value.trim();
-  const url = playUrl(current, text ? await noteId(text) : '');
+async function copyLink(url) {
   try {
     await navigator.clipboard.writeText(url);
     toast('הקישור הועתק. אפשר להדביק ולשלוח.');
   } catch {
     prompt('הקישור לחידון:', url);
+  }
+}
+
+// ---------- the heading above the quiz ----------
+
+const headingKey = (h) => `${(h.text || '').trim()}|${h.image || ''}`;
+
+function renderHeading() {
+  const h = current.heading || {};
+  $('heading-img').src = h.image || '';
+  $('heading-img').classList.toggle('hidden', !h.image);
+  $('heading-img-hint').classList.toggle('hidden', !!h.image);
+  $('heading-img-remove').classList.toggle('hidden', !h.image);
+  $('heading-reset').classList.toggle('hidden', !hasHeading(h));
+  // The preview shows exactly what the player will see, the usual line when there is no heading.
+  const preview = $('heading-preview');
+  if (hasHeading(h)) fillHeading(preview, h);
+  else preview.innerHTML = $('default-motif').innerHTML;
+  // Headings of the other quizzes, each once, to take over as they are.
+  const sel = $('heading-from');
+  sel.innerHTML = '';
+  sel.appendChild(new Option('לקחת כותרת מחידון אחר…', ''));
+  const seen = new Map();
+  for (const q of quizzes) {
+    if (q === current || !hasHeading(q.heading) || headingKey(q.heading) === headingKey(h)) continue;
+    const k = headingKey(q.heading);
+    if (!seen.has(k)) seen.set(k, { heading: q.heading, titles: [] });
+    seen.get(k).titles.push(q.title || 'ללא שם');
+  }
+  for (const [k, { heading, titles }] of seen) {
+    const first = (heading.text || '').trim().split('\n')[0] || '(תמונה בלבד)';
+    const label = `${heading.image ? '🖼 ' : ''}${first.length > 40 ? `${first.slice(0, 40)}…` : first}  ·  מתוך: ${titles.join(', ')}`;
+    sel.appendChild(new Option(label, k));
+  }
+  if (seen.size) sel.appendChild(new Option('ההסבר הרגיל (עברית × English)', 'default'));
+  sel.disabled = !seen.size;
+  if (!seen.size) sel.options[0].text = 'אין עוד כותרות בחידונים אחרים';
+  sel.value = '';
+}
+
+function saveHeading(h) {
+  saveQuiz({ heading: { text: (h.text || '').trim(), image: h.image || '' } });
+  $('heading-text').value = current.heading.text;
+  renderHeading();
+}
+
+let headingTimer = null;
+$('heading-text').addEventListener('input', () => {
+  clearTimeout(headingTimer);
+  setSaveState('saving');
+  // The preview follows every keystroke; the save waits for a pause.
+  const h = { ...(current.heading || {}), text: $('heading-text').value };
+  if (hasHeading(h)) fillHeading($('heading-preview'), h);
+  else $('heading-preview').innerHTML = $('default-motif').innerHTML;
+  headingTimer = setTimeout(async () => {
+    await saveQuiz({ heading: { text: $('heading-text').value.trim(), image: (current.heading || {}).image || '' } });
+    renderHeading();
+  }, 600);
+});
+$('heading-from').addEventListener('change', (e) => {
+  const k = e.target.value;
+  if (!k) return;
+  if (k === 'default') return saveHeading({ text: '', image: '' });
+  const src = quizzes.find((q) => q !== current && hasHeading(q.heading) && headingKey(q.heading) === k);
+  if (src) { saveHeading(src.heading); toast(`הכותרת של "${src.title}" הועתקה לחידון הזה`); }
+});
+$('heading-img-btn').addEventListener('click', () => $('heading-file').click());
+$('heading-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    saveHeading({ text: $('heading-text').value, image: await readImage(file, 600, 120_000) });
+  } catch (err) { toast(err.message); }
+});
+$('heading-img-remove').addEventListener('click', () => saveHeading({ text: $('heading-text').value, image: '' }));
+$('heading-reset').addEventListener('click', () => {
+  if (confirm('למחוק את הכותרת של החידון ולחזור להסבר הרגיל?')) saveHeading({ text: '', image: '' });
+});
+
+// ---------- marketing letters ----------
+
+function letterRow(letter, withQuiz) {
+  const q = quizzes.find((x) => x.id === letter.quizId);
+  const li = el('li', 'letter-row');
+  if (letter.image) {
+    const img = el('img');
+    img.src = letter.image;
+    img.alt = '';
+    li.appendChild(img);
+  }
+  const meta = el('div', 'meta');
+  meta.appendChild(el('b', '', letter.name || 'מכתב ללא שם'));
+  const text = (letter.text || '').replace(/\s+/g, ' ').trim();
+  meta.appendChild(el('div', 'sub', text.length > 120 ? `${text.slice(0, 120)}…` : text || '(בלי טקסט)'));
+  const extra = [];
+  if (withQuiz) extra.push(`חידון: ${q ? q.title || 'ללא שם' : 'נמחק'}`);
+  if (safeUrl(letter.linkUrl)) extra.push(`כפתור: ${letter.linkText || 'לפרטים נוספים'} → ${letter.linkUrl}`);
+  if (extra.length) meta.appendChild(el('div', 'sub mono', extra.join(' · ')));
+  li.appendChild(meta);
+  const actions = el('div', 'tile-actions');
+  if (q) {
+    const copy = el('button', 'primary-btn small', 'העתקת קישור');
+    copy.addEventListener('click', () => copyLink(playUrl(q, letter)));
+    const view = el('a', 'link-btn', 'תצוגה ↗');
+    view.href = playUrl(q, letter);
+    view.target = '_blank';
+    view.rel = 'noopener';
+    actions.append(copy, view);
+  }
+  if (withQuiz && q) {
+    const open = el('a', 'link-btn', 'לחידון');
+    open.href = `#quiz/${q.id}`;
+    actions.appendChild(open);
+  } else {
+    const edit = el('button', 'link-btn', 'עריכה');
+    edit.addEventListener('click', () => openLetter(letter));
+    actions.appendChild(edit);
+  }
+  const del = el('button', 'link-btn del', 'מחיקה');
+  del.addEventListener('click', () => deleteLetter(letter));
+  actions.appendChild(del);
+  li.appendChild(actions);
+  return li;
+}
+
+function renderLetters() {
+  const mine = letters.filter((l) => l.quizId === current.id);
+  $('letters-count').textContent = mine.length || '';
+  const list = $('letters-list');
+  list.innerHTML = '';
+  mine.forEach((l) => list.appendChild(letterRow(l, false)));
+}
+
+function renderAllLetters() {
+  $('all-letters-count').textContent = letters.length;
+  const list = $('all-letters');
+  list.innerHTML = '';
+  letters.forEach((l) => list.appendChild(letterRow(l, true)));
+  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים. פותחים חידון ולוחצים "+ מכתב נלווה חדש".'));
+}
+
+async function deleteLetter(letter) {
+  if (!confirm(`למחוק את המכתב "${letter.name || 'ללא שם'}"?\nמי שיפתח את הקישור שלו יגיע לחידון בלי המכתב.`)) return;
+  try {
+    await fs.deleteDoc(fs.doc(db, 'letters', letter.id));
+  } catch (err) { return toast(`המחיקה נכשלה: ${err.message}`); }
+  letters = letters.filter((l) => l !== letter);
+  toast('המכתב נמחק');
+  current ? renderLetters() : renderAllLetters();
+}
+
+const letterDialog = $('letter-dialog');
+let letterEditing = null;
+let letterImage = '';
+
+function letterError(msg) {
+  $('letter-error').textContent = msg;
+  $('letter-error').classList.toggle('hidden', !msg);
+}
+function setLetterImage(data) {
+  letterImage = data;
+  showPreview($('letter-preview'), data);
+  $('letter-img-remove').classList.toggle('hidden', !data);
+}
+
+function openLetter(letter) {
+  letterEditing = letter;
+  $('letter-form').reset();
+  letterError('');
+  $('letter-form-title').textContent = letter ? 'עריכת מכתב נלווה' : `מכתב נלווה לחידון "${current.title}"`;
+  $('letter-name').value = letter?.name || '';
+  $('letter-text').value = letter?.text || '';
+  $('letter-link-text').value = letter?.linkText || '';
+  $('letter-link-url').value = letter?.linkUrl || '';
+  setLetterImage(letter?.image || '');
+  $('letter-save').textContent = letter ? 'שמירה' : 'שמירה והעתקת הקישור';
+  letterDialog.showModal();
+}
+$('letter-new').addEventListener('click', () => openLetter(null));
+$('letter-close').addEventListener('click', () => letterDialog.close());
+$('letter-cancel').addEventListener('click', () => letterDialog.close());
+$('letter-img-remove').addEventListener('click', () => setLetterImage(''));
+letterDialog.addEventListener('click', (e) => { if (e.target === letterDialog) letterDialog.close(); });
+
+$('letter-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  letterError('');
+  const data = {
+    quizId: current.id,
+    name: $('letter-name').value.trim(),
+    text: $('letter-text').value.trim(),
+    image: letterImage,
+    linkText: $('letter-link-text').value.trim(),
+    linkUrl: $('letter-link-url').value.trim(),
+    by: auth.currentUser.email,
+  };
+  if (!data.text && !data.image) return letterError('צריך לכתוב משהו במכתב, או לבחור תמונה.');
+  if (data.linkUrl && !safeUrl(data.linkUrl)) return letterError('הכתובת של הכפתור לא נראית תקינה.');
+  if (data.linkText && !data.linkUrl) return letterError('לכפתור יש טקסט אבל אין לאן הוא מוביל.');
+  if (data.linkUrl) data.linkUrl = safeUrl(data.linkUrl);
+  $('letter-save').disabled = true;
+  try {
+    if (letterEditing) {
+      await fs.updateDoc(fs.doc(db, 'letters', letterEditing.id), { ...data, updated: fs.serverTimestamp() });
+      Object.assign(letterEditing, data);
+      toast('המכתב עודכן. הקישור נשאר אותו קישור.');
+    } else {
+      const ref = await fs.addDoc(fs.collection(db, 'letters'), { ...data, created: fs.serverTimestamp() });
+      const letter = { id: ref.id, ...data };
+      letters.unshift(letter);
+      letterDialog.close();
+      renderLetters();
+      return copyLink(playUrl(current, letter));
+    }
+    letterDialog.close();
+    renderLetters();
+  } catch (err) {
+    letterError(`השמירה נכשלה: ${err.message}`);
+  } finally {
+    $('letter-save').disabled = false;
   }
 });
 
@@ -705,13 +923,13 @@ list.addEventListener('drop', (e) => {
 
 // ---------- images ----------
 
-function readImage(file) {
+function readImage(file, maxSide = MAX_SIDE, maxB64 = MAX_B64) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+      let scale = Math.min(1, maxSide / Math.max(img.width, img.height));
       for (let attempt = 0; attempt < 8; attempt++) {
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * scale);
@@ -722,7 +940,7 @@ function readImage(file) {
         ctx.drawImage(img, 0, 0, c.width, c.height);
         for (const q of [0.85, 0.75, 0.65, 0.55]) {
           const data = c.toDataURL('image/jpeg', q);
-          if (data.length < MAX_B64) return resolve(data);
+          if (data.length < maxB64) return resolve(data);
         }
         scale *= 0.8;
       }
@@ -740,11 +958,11 @@ function showPreview(img, data) {
 }
 
 // A drop zone takes a click (file picker) or a dragged-in file.
-function dropZone(zone, input, preview, set) {
+function dropZone(zone, input, preview, set, onError = showError, size = []) {
   const take = async (file) => {
     if (!file) return;
-    try { const data = await readImage(file); set(data); showPreview(preview, data); showError(''); }
-    catch (err) { showError(err.message); }
+    try { const data = await readImage(file, ...size); set(data); showPreview(preview, data); onError(''); }
+    catch (err) { onError(err.message); }
   };
   input.addEventListener('change', (e) => { take(e.target.files[0]); e.target.value = ''; });
   zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
@@ -761,6 +979,7 @@ for (const ev of ['dragover', 'drop']) {
 }
 dropZone($('image-drop'), $('image-file'), $('image-preview'), (d) => { image = d; });
 dropZone($('answer-drop'), $('answer-file'), $('answer-preview'), (d) => { answerImage = d; });
+dropZone($('letter-drop'), $('letter-file'), $('letter-preview'), setLetterImage, letterError, [1000, 300_000]);
 
 // ---------- answers ----------
 

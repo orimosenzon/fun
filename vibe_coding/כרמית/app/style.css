@@ -768,12 +768,6 @@ body.admin #app { max-width: 1080px; }
 .seg span:hover { border-color: #3a4153; color: var(--text); }
 .seg input:checked + span { border-color: var(--cyan); color: var(--cyan); background: rgba(94, 231, 255, 0.08); }
 .seg input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 2px; }
-.share-note { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-.share-note textarea {
-  font: inherit; font-size: 0.92rem; color: var(--text); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: vertical;
-}
-.share-note textarea:focus { outline: none; border-color: var(--cyan); }
 /* the note that came with a sent quiz, at the top of the quiz */
 .quiz-note {
   width: 100%; margin: 0 0 6px; padding: 14px 16px; white-space: pre-wrap; text-align: center;
@@ -996,3 +990,64 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 #path-out .path-item { cursor: pointer; }
 #path-out .path-item:hover { border-color: rgba(182, 243, 107, 0.5); }
 .help.warn { color: var(--amber); margin-top: 6px; }
+
+/* ---------- a quiz's own heading, in place of the usual Hebrew × English line ---------- */
+.motif.heading { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.motif.heading img { max-width: min(220px, 60vw); max-height: 140px; border-radius: 10px; margin-bottom: 8px; object-fit: contain; }
+.motif.heading .rest { white-space: pre-wrap; }
+
+/* admin: editing the heading */
+.heading-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; font-size: 0.88rem; }
+.heading-row { display: flex; gap: 8px; align-items: stretch; }
+.heading-row textarea, .admin-form textarea {
+  flex: 1; min-width: 0; font: inherit; font-size: 0.92rem; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: vertical;
+}
+.heading-row textarea:focus, .admin-form textarea:focus { outline: none; border-color: var(--cyan); }
+.heading-img-btn {
+  flex: none; width: 84px; padding: 0; border: 1px dashed var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--muted); font: inherit; font-size: 0.8rem; cursor: pointer; overflow: hidden;
+}
+.heading-img-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.heading-img-btn img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.heading-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.heading-tools select { max-width: 100%; }
+.heading-preview-wrap {
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+.heading-preview-wrap .kicker { display: block; text-align: start; font-family: var(--mono); font-size: 0.75rem; }
+.heading-preview-wrap .motif { margin-top: 6px; }
+
+/* admin: marketing letters */
+.letters-pane { margin: 18px 0; }
+.letters-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.letter-row {
+  display: flex; gap: 12px; align-items: center; padding: 10px 12px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
+}
+.letter-row img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; }
+.letter-row .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.letter-row .tile-actions { padding: 0; gap: 10px; align-items: center; flex-wrap: wrap; }
+.letter-row .tile-actions a { text-decoration: none; }
+.sub.mono { font-family: var(--mono); font-size: 0.74rem; }
+.field.two { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.field.two label { display: flex; flex-direction: column; gap: 4px; }
+.field.two span { font-size: 0.88rem; color: var(--muted); }
+#letter-img-remove { align-self: flex-start; }
+@media (max-width: 760px) {
+  .letter-row { flex-wrap: wrap; }
+  .letter-row .tile-actions { width: 100%; justify-content: flex-start; }
+  .field.two { grid-template-columns: 1fr; }
+}
+
+/* player: the letter that came with a marketing link, above the quiz; its button again after it */
+.letter {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 6px;
+  padding: 18px; text-align: center;
+  background: rgba(255, 200, 87, 0.06); border: 1px solid rgba(255, 200, 87, 0.35); border-radius: 14px;
+}
+.letter img { max-width: 100%; max-height: 320px; border-radius: 10px; object-fit: contain; aspect-ratio: auto; box-shadow: none; width: auto; }
+.letter p { margin: 0; white-space: pre-wrap; font-size: 1.05rem; line-height: 1.7; }
+.letter-link { color: var(--amber); font-weight: 600; }
+.letter-end { display: flex; justify-content: center; }

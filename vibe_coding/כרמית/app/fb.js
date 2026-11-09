@@ -35,6 +35,53 @@ export async function loadQuiz(id) {
   return quiz;
 }
 
+// A marketing letter: { quizId, name (for the admin only), text, image, linkText, linkUrl }. Its link opens that
+// one quiz on its own with the letter above it; the link button shows again after the quiz.
+export async function loadLetter(id) {
+  const snap = await fs.getDoc(fs.doc(db, 'letters', id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export async function loadLetters() {
+  const snap = await fs.getDocs(fs.query(fs.collection(db, 'letters'), fs.orderBy('created', 'desc')));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Only web, mail, phone and WhatsApp links; a bare address gets https://.
+export function safeUrl(u) {
+  const s = (u || '').trim();
+  if (!s) return '';
+  const full = /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : `https://${s}`;
+  return /^(https?:|mailto:|tel:)/i.test(full) ? full : '';
+}
+
+// A quiz's heading: { text, image }, shown under the title instead of the usual Hebrew × English line.
+// The first line of the text is the headline, the rest is the explanation under it.
+export const hasHeading = (h) => !!(h && ((h.text || '').trim() || h.image));
+
+export function fillHeading(box, h) {
+  box.innerHTML = '';
+  if (h.image) {
+    const img = document.createElement('img');
+    img.src = h.image;
+    img.alt = '';
+    box.appendChild(img);
+  }
+  const [first, ...rest] = (h.text || '').trim().split('\n');
+  if (first) {
+    const b = document.createElement('span');
+    b.className = 'langs';
+    b.textContent = first;
+    box.appendChild(b);
+  }
+  if (rest.join('\n').trim()) {
+    const p = document.createElement('span');
+    p.className = 'rest';
+    p.textContent = rest.join('\n').trim();
+    box.appendChild(p);
+  }
+}
+
 // Difficulty levels, in the order the player climbs them. A quiz saved before levels existed counts as easy.
 export const LEVELS = [
   { id: 'easy', name: 'קלה' },

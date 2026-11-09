@@ -24,5 +24,14 @@ service cloud.firestore {
         && request.resource.data.cover is string
         && request.resource.data.riddleIds is list;
     }
+    // A marketing letter: shown above one quiz to whoever opens its link (index.html?q=<quiz>&m=<letter>).
+    match /letters/{id} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.quizId is string
+        && request.resource.data.text is string
+        && request.resource.data.image is string;
+    }
   }
 }
