@@ -768,6 +768,18 @@ body.admin #app { max-width: 1080px; }
 .seg span:hover { border-color: #3a4153; color: var(--text); }
 .seg input:checked + span { border-color: var(--cyan); color: var(--cyan); background: rgba(94, 231, 255, 0.08); }
 .seg input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.share-note { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.share-note textarea {
+  font: inherit; font-size: 0.92rem; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; resize: vertical;
+}
+.share-note textarea:focus { outline: none; border-color: var(--cyan); }
+/* the note that came with a sent quiz, at the top of the quiz */
+.quiz-note {
+  width: 100%; margin: 0 0 6px; padding: 14px 16px; white-space: pre-wrap; text-align: center;
+  font-size: 1.05rem; line-height: 1.6; color: var(--text);
+  background: rgba(255, 200, 87, 0.06); border: 1px solid rgba(255, 200, 87, 0.35); border-radius: 14px;
+}
 .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
 
 .panes { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start; }

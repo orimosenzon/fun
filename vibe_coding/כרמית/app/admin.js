@@ -33,7 +33,7 @@ const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
-const playUrl = (q) => new URL(`index.html?q=${q.id}`, location.href).href;
+const playUrl = (q, note) => new URL(`index.html?q=${q.id}${note ? `&n=${note}` : ''}`, location.href).href;
 
 function toast(msg) {
   const t = $('toast');
@@ -381,6 +381,7 @@ function openQuiz(q) {
   $('side-search').value = '';
   $('side-source').value = '';
   $('play-link').href = playUrl(q);
+  $('share-note').value = '';
   setSaveState('');
   renderOrder();
   renderLevel();
@@ -462,8 +463,20 @@ $('cover-file').addEventListener('change', async (e) => {
 });
 $('cover-remove').addEventListener('click', async () => { await saveQuiz({ cover: '' }); renderQuiz(); });
 
+// A note for the person the link goes to: kept in the quiz under a short id (quiz.notes[id]), so every
+// link can carry its own words and the link itself stays short.
+async function noteId(text) {
+  const notes = current.notes || {};
+  const known = Object.keys(notes).find((id) => notes[id] === text);
+  if (known) return known;
+  const id = Math.random().toString(36).slice(2, 8);
+  await saveQuiz({ notes: { ...notes, [id]: text } });
+  return id;
+}
+
 $('share-btn').addEventListener('click', async () => {
-  const url = playUrl(current);
+  const text = $('share-note').value.trim();
+  const url = playUrl(current, text ? await noteId(text) : '');
   try {
     await navigator.clipboard.writeText(url);
     toast('הקישור הועתק. אפשר להדביק ולשלוח.');

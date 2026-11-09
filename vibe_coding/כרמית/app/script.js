@@ -370,6 +370,12 @@ try {
       $('quiz-cover').src = quiz.cover;
       $('quiz-cover').classList.toggle('hidden', !quiz.cover);
       $('quiz-name').textContent = quiz.title;
+      // A note sent along with the link (?n=<id>), shown at the top of the quiz.
+      const note = (quiz.notes || {})[params.get('n')];
+      if (note) {
+        $('quiz-note').textContent = note;
+        $('quiz-note').classList.remove('hidden');
+      }
       $('quiz-level').textContent = `רמה ${LEVELS.find((L) => L.id === levelOf(quiz)).name}`;
       $('quiz-level').className = `level-badge level-${levelOf(quiz)}`;
       intro.innerHTML = `<span class="num">${RIDDLES.length}</span> חידות של משחקי מילים, עברית ואנגלית.<br>מוכנים?`;
