@@ -31,12 +31,29 @@
     <section id="home-view" class="view hidden">
       <nav class="tabs" role="tablist">
         <button class="tab active" data-tab="quizzes" role="tab">החידונים <span id="quiz-count" class="count"></span></button>
+        <button class="tab" data-tab="path" role="tab">מה השחקן רואה <span id="path-count" class="count"></span></button>
         <button class="tab" data-tab="pool" role="tab">מאגר החידות <span id="pool-count" class="count"></span></button>
       </nav>
 
       <div id="tab-quizzes">
         <p class="help">כל חידון הוא אוסף חידות עם קישור משלו, שאפשר לשלוח למישהו לשחק. מעבר עם העכבר מראה מה יש בפנים, ולחיצה פותחת לעריכה.</p>
         <div id="quiz-grid" class="quiz-grid"></div>
+      </div>
+
+      <div id="tab-path" class="hidden">
+        <p class="help">השחקן רואה רק את החידונים שבמסלול, בסדר הזה, ולא בוחר: רק הבא בתור פתוח, וכל חידון שהוא מסיים פותח את הבא. בכל ביקור חדש הוא מתחיל שוב מהראשון. גוררים כדי לשנות את הסדר.</p>
+        <p id="path-fallback" class="help warn hidden">עוד לא נקבע מסלול, אז השחקן רואה כרגע את כל החידונים, הקלים קודם. ברגע שמוסיפים חידון ראשון למסלול, השחקן יראה רק את מה שבמסלול.</p>
+        <div class="panes path-panes">
+          <section class="pane">
+            <div class="pane-head"><h2>במסלול, לפי הסדר <span id="path-in-count" class="count"></span></h2></div>
+            <ol id="path-list" class="quiz-list"></ol>
+          </section>
+          <section class="pane">
+            <div class="pane-head"><h2>לא מוצגים לשחקן <span id="path-out-count" class="count"></span></h2></div>
+            <p class="help">לוחצים או גוררים כדי להוסיף לסוף המסלול. חידון בלי חידות לא יוצג גם אם הוא במסלול.</p>
+            <ol id="path-out" class="quiz-list"></ol>
+          </section>
+        </div>
       </div>
 
       <div id="tab-pool" class="hidden">

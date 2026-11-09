@@ -89,7 +89,7 @@ function route() {
   $('quiz-view').classList.toggle('hidden', !quiz);
   if (quiz) return openQuiz(quiz);
   current = null;
-  setTab(location.hash === '#pool' ? 'pool' : 'quizzes');
+  setTab({ '#pool': 'pool', '#path': 'path' }[location.hash] || 'quizzes');
   renderHome();
 }
 
@@ -97,9 +97,10 @@ function setTab(tab) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
   $('tab-quizzes').classList.toggle('hidden', tab !== 'quizzes');
   $('tab-pool').classList.toggle('hidden', tab !== 'pool');
+  $('tab-path').classList.toggle('hidden', tab !== 'path');
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
-  history.replaceState(null, '', t.dataset.tab === 'pool' ? '#pool' : location.pathname);
+  history.replaceState(null, '', t.dataset.tab === 'quizzes' ? location.pathname : `#${t.dataset.tab}`);
   route();
 }));
 
@@ -109,7 +110,107 @@ function renderHome() {
   $('quiz-count').textContent = quizzes.length;
   $('pool-count').textContent = riddles.length;
   renderQuizGrid();
+  renderPath();
   renderPool();
+}
+
+// ---------- the path: which quizzes players see, and in what order ----------
+
+const onPath = () => quizzes.filter((q) => Number.isInteger(q.path)).sort((a, b) => a.path - b.path);
+
+// Writes the new positions: only quizzes whose position changed are saved.
+async function setPath(ids) {
+  const writes = [];
+  for (const q of quizzes) {
+    const i = ids.indexOf(q.id);
+    const pos = i < 0 ? null : i;
+    if ((Number.isInteger(q.path) ? q.path : null) === pos) continue;
+    q.path = pos;
+    writes.push(fs.updateDoc(fs.doc(db, 'quizzes', q.id), { path: pos, updated: fs.serverTimestamp() }));
+  }
+  renderPath();
+  try {
+    await Promise.all(writes);
+    toast('הסדר נשמר');
+  } catch (err) {
+    toast(`השמירה נכשלה: ${err.message}`);
+  }
+}
+
+function pathRow(q, i) {
+  const li = el('li', 'q-item path-item');
+  li.dataset.id = q.id;
+  const img = coverImg(q);
+  const meta = el('div', 'meta');
+  meta.appendChild(el('b', '', q.title || 'ללא שם'));
+  const n = quizRiddles(q).length;
+  const level = LEVELS.find((L) => L.id === levelOf(q)).name;
+  meta.appendChild(el('div', 'sub', [`רמה ${level}`, n ? plural(n, 'חידה אחת', 'חידות') : 'אין חידות, לא יוצג'].join(' · ')));
+  const open = el('a', 'link-btn', 'עריכה');
+  open.href = `#quiz/${q.id}`;
+  if (i === null) {
+    li.title = 'הוספה לסוף המסלול';
+    li.append(img, meta, open, el('span', 'add', '+'));
+    li.addEventListener('click', (e) => { if (e.target !== open) setPath([...onPath().map((x) => x.id), q.id]); });
+  } else {
+    const out = el('button', 'icon-btn', '✕');
+    out.title = 'הוצאה מהמסלול (החידון לא נמחק)';
+    out.addEventListener('click', () => setPath(onPath().map((x) => x.id).filter((id) => id !== q.id)));
+    li.append(el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, open, out);
+  }
+  li.draggable = true;
+  li.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', `quiz:${q.id}`);
+    e.dataTransfer.effectAllowed = 'move';
+    requestAnimationFrame(() => li.classList.add('dragging'));
+  });
+  li.addEventListener('dragend', () => li.classList.remove('dragging'));
+  return li;
+}
+
+function renderPath() {
+  const path = onPath();
+  const rest = quizzes.filter((q) => !path.includes(q));
+  $('path-count').textContent = path.length;
+  $('path-in-count').textContent = path.length;
+  $('path-out-count').textContent = rest.length;
+  $('path-fallback').classList.toggle('hidden', path.length > 0);
+  const list = $('path-list');
+  list.innerHTML = '';
+  if (!path.length) list.appendChild(el('li', 'empty-drop', 'גוררים לכאן חידונים, או לוחצים עליהם'));
+  path.forEach((q, i) => list.appendChild(pathRow(q, i)));
+  const out = $('path-out');
+  out.innerHTML = '';
+  rest.forEach((q) => out.appendChild(pathRow(q, null)));
+}
+
+// Dropping on the path list inserts at the pointer: reorders a quiz on it, or adds one from the side.
+{
+  const list = $('path-list');
+  const marker = el('li', 'drop-marker');
+  const at = (y) => {
+    const items = [...list.querySelectorAll('.q-item:not(.dragging)')];
+    const i = items.findIndex((it) => y < it.getBoundingClientRect().top + it.offsetHeight / 2);
+    return { items, i: i < 0 ? items.length : i };
+  };
+  list.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const { items, i } = at(e.clientY);
+    if (items[i]) list.insertBefore(marker, items[i]);
+    else list.appendChild(marker);
+  });
+  list.addEventListener('dragleave', (e) => { if (!list.contains(e.relatedTarget)) marker.remove(); });
+  list.addEventListener('drop', (e) => {
+    e.preventDefault();
+    marker.remove();
+    const [, id] = e.dataTransfer.getData('text/plain').match(/^quiz:(.+)$/) || [];
+    if (!id || !quizzes.some((q) => q.id === id)) return;
+    const { items, i } = at(e.clientY);
+    const before = items[i]?.dataset.id;
+    const ids = onPath().map((q) => q.id).filter((x) => x !== id);
+    ids.splice(before ? ids.indexOf(before) : ids.length, 0, id);
+    setPath(ids);
+  });
 }
 
 function coverImg(q) {

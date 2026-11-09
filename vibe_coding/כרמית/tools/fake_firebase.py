@@ -12,6 +12,8 @@ store.quizzes.qold = { title: 'ישן', cover: '', riddleIds: ['r1'], created: 4
 store.quizzes.qe = { title: 'קל', cover: '', riddleIds: ['r1', 'r2'], level: 'easy', created: 3 };
 store.quizzes.qm = { title: 'בינוני', cover: '', riddleIds: ['r3'], level: 'medium', created: 2 };
 store.quizzes.qh = { title: 'קשה', cover: '', riddleIds: ['r4'], level: 'hard', created: 1 };
+// A test sets window.__PATH (an init script) to put quizzes on the player's path, in that order.
+(window.__PATH || []).forEach((id, i) => { store.quizzes[id].path = i; });
 export const getFirestore = () => ({});
 export const collection = (db, name) => ({ name });
 export const doc = (db, name, id) => ({ name, id });

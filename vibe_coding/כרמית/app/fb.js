@@ -43,6 +43,16 @@ export const LEVELS = [
 ];
 export const levelOf = (q) => (LEVELS.some((L) => L.id === q.level) ? q.level : 'easy');
 
+// The path: the quizzes players see, in Carmit's order (quiz.path is the position; no path = not shown).
+// Until any quiz has a position, every quiz with riddles is on it, easy first, so the game never goes empty.
+export function playerPath(quizzes) {
+  const playable = quizzes.filter((q) => q.riddleIds.length);
+  const placed = playable.filter((q) => Number.isInteger(q.path)).sort((a, b) => a.path - b.path);
+  if (placed.length) return placed;
+  const rank = (q) => LEVELS.findIndex((L) => L.id === levelOf(q));
+  return playable.map((q, i) => [q, i]).sort(([a, i], [b, j]) => rank(a) - rank(b) || i - j).map(([q]) => q);
+}
+
 // Shown wherever a quiz has no cover of its own.
 export const DEFAULT_COVER = 'logo.jpg';
 

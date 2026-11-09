@@ -77,7 +77,11 @@ header h1 {
 }
 .tagline b { color: var(--lime); font-weight: 500; }
 /* Hebrew x English is the heart of the riddles, so it stays in view on every screen. */
-.motif { margin: 10px 0 0; font-size: 0.92rem; color: var(--text); }
+.motif { margin: 12px 0 0; font-size: 1rem; color: var(--text); }
+.motif .langs { display: block; font-weight: 700; font-size: 1.1rem; margin-bottom: 2px; }
+header h1 .amp { font-family: var(--mono); font-weight: 400; }
+.lede-top { margin: 0 0 6px; text-align: center; color: var(--muted); font-size: 1.05rem; }
+
 .motif .x { color: var(--amber); margin: 0 2px; }
 .motif [dir="ltr"] { color: var(--cyan); }
 
@@ -447,8 +451,6 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
 
 .about {
   width: 100%;
-  padding-bottom: 26px;
-  border-bottom: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -486,8 +488,6 @@ fieldset.field legend { width: 100%; margin-bottom: 6px; }
   flex-direction: column;
   gap: 14px;
 }
-/* On a quiz page the about sits down here, above the sketch. */
-.about-sketch .about { padding-bottom: 0; border-bottom: 0; }
 .sketch { margin: 10px 0 0; text-align: center; }
 .sketch img {
   width: min(300px, 75%);
@@ -923,16 +923,20 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 
 .gallery { width: 100%; display: flex; flex-direction: column; gap: 26px; }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-.level { scroll-margin-top: 20px; }
-.level-head { margin: 0 0 10px; font-size: 1.1rem; display: flex; align-items: baseline; gap: 8px; }
-.level-head .idx { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); font-weight: 400; }
-.level-easy .level-head { color: var(--lime); }
-.level-medium .level-head { color: var(--amber); }
-.level-hard .level-head { color: var(--violet); }
-.level.locked .level-head { color: var(--muted); }
-.level-note { margin: -4px 0 10px; font-size: 0.88rem; color: var(--muted); }
-.gallery-card.locked { cursor: not-allowed; opacity: 0.4; filter: grayscale(0.8); }
-.gallery-card.locked:hover { border-color: var(--line); transform: none; }
+/* the path: done ✓, the next one open and lit, the rest locked */
+.gallery-card { position: relative; }
+.gallery-card .step {
+  position: absolute; top: 16px; right: 16px;
+  font-style: normal; font-family: var(--mono); font-size: 0.8rem;
+  background: rgba(10, 12, 16, 0.8); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px;
+}
+.gallery-card.next { border-color: var(--cyan); box-shadow: 0 0 0 1px rgba(94, 231, 255, 0.25), 0 14px 40px rgba(94, 231, 255, 0.12); }
+.gallery-card.next .step { color: var(--cyan); border-color: var(--cyan); }
+.gallery-card.done .step { color: var(--lime); border-color: var(--lime); }
+.gallery-card.done { opacity: 0.75; }
+.gallery-card.locked, .gallery-card.done { cursor: default; }
+.gallery-card.locked { opacity: 0.4; filter: grayscale(0.8); }
+.gallery-card.locked:hover, .gallery-card.done:hover { border-color: var(--line); transform: none; }
 .level-badge { font-family: var(--mono); font-size: 0.78rem; border: 1px solid currentColor; border-radius: 999px; padding: 2px 10px; }
 .level-badge.level-easy { color: var(--lime); }
 .level-badge.level-medium { color: var(--amber); }
@@ -955,3 +959,12 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 .gallery-card b { font-size: 1.02rem; }
 .gallery-card span { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); }
 .quiz-intro img.default, .gallery-card img.default { object-fit: contain; background: #0d0f14; }
+
+/* ---------- admin: the path players see ---------- */
+.path-panes { grid-template-columns: 1fr 1fr; margin-top: 12px; }
+.path-item img { object-fit: cover; background: #0d0f14; }
+.path-item img.default { object-fit: contain; }
+.path-item .add { font-family: var(--mono); font-size: 1.2rem; color: var(--lime); width: 1.2em; text-align: center; }
+#path-out .path-item { cursor: pointer; }
+#path-out .path-item:hover { border-color: rgba(182, 243, 107, 0.5); }
+.help.warn { color: var(--amber); margin-top: 6px; }
