@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מה בונים לנו</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="תוכנית לפרויקט שקיפות תכנונית בפרדס חנה-כרכור: מה החוק מחייב לפרסם, מה באמת מתפרסם, ואיזו מערכת כדאי לבנות כדי שכל תושב ידע בזמן מה מתוכנן לידו.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Secular+One&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a single reading column on "tracing paper", with the plan's blue line (קו כחול) as the one accent.
+   Status colors follow the planning-board convention: green = done, amber = partial, red = missing. */
+:root{
+  color-scheme:light;
+  --bg:#f3f5f7; --paper:#ffffff; --paper-2:#e9edf2; --ink:#18202b; --muted:#566273; --line:#d3dae3;
+  --blue:#1d4fc4; --blue-soft:#e2e9fa;
+  --ok:#1f7a4d; --ok-bg:#e1f3e9; --part:#8a5a00; --part-bg:#fdf0d2; --miss:#a32b1f; --miss-bg:#fbe3df;
+  --unk:#4c5867; --unk-bg:#e6eaef; --rule:#1d4fc4; --rule-bg:#e2e9fa;
+  --f-display:"Secular One","Heebo",system-ui,sans-serif;
+  --f-body:"Heebo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+    --blue:#7ea2ff; --blue-soft:#1d2a47;
+    --ok:#6fd3a0; --ok-bg:#16301f; --part:#f0c46a; --part-bg:#3a2f14; --miss:#ff9a8c; --miss-bg:#3c1f1b;
+    --unk:#b4bfcd; --unk-bg:#28313d; --rule:#7ea2ff; --rule-bg:#1d2a47;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+  --blue:#7ea2ff; --blue-soft:#1d2a47;
+  --ok:#6fd3a0; --ok-bg:#16301f; --part:#f0c46a; --part-bg:#3a2f14; --miss:#ff9a8c; --miss-bg:#3c1f1b;
+  --unk:#b4bfcd; --unk-bg:#28313d; --rule:#7ea2ff; --rule-bg:#1d2a47;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.7}
+.wrap{max-width:880px;margin:0 auto;padding-block:0 96px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+a{color:var(--blue)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;line-height:1.2}
+h1{font-size:clamp(38px,8vw,60px);margin:0 0 12px}
+h2{font-size:clamp(26px,4.5vw,34px);margin:0 0 10px}
+h3{font-size:21px;margin:0 0 6px}
+p{margin:0 0 14px}
+.lead{font-size:19px;color:var(--ink);max-width:62ch}
+.muted{color:var(--muted)}
+.eyebrow{font-size:13px;letter-spacing:.06em;color:var(--blue);font-weight:700}
+.mono{font-family:var(--f-mono);font-size:.86em}
+section{padding-block:48px 8px;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+
+/* hero: the accordion-folded sheet (גרמושקה) with a dashed blue line across it */
+header.hero{padding-block:40px 32px;display:grid;grid-template-columns:1fr 200px;gap:28px;align-items:center}
+.fold{height:170px;max-width:100%;border:1px solid var(--line);background:
+  repeating-linear-gradient(90deg,var(--paper) 0 32px,var(--paper-2) 32px 40px);
+  position:relative;transform:perspective(500px) rotateY(-14deg)}
+.fold::after{content:"";position:absolute;inset:34px 26px;border:2.5px dashed var(--blue);border-radius:30% 12% 26% 18%}
+.fold span{position:absolute;bottom:8px;inset-inline-start:10px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+@media (max-width:640px){header.hero{grid-template-columns:1fr}.fold{height:110px}}
+
+.callout{background:var(--paper);border:1px solid var(--line);border-inline-start:5px solid var(--blue);padding:18px 20px;margin:18px 0}
+.callout p:last-child{margin:0}
+
+/* two tracks */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.tab{font:inherit;font-weight:700;border:1.5px solid var(--blue);background:transparent;color:var(--blue);padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--blue);color:var(--paper)}
+.track{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:700px){.track{grid-template-columns:1fr}}
+.steps{list-style:none;margin:0;padding:0;position:relative}
+.steps::before{content:"";position:absolute;inset-block:14px;inset-inline-start:13px;border-inline-start:2px dashed var(--line)}
+.steps li{position:relative;margin:0 0 6px}
+.step{width:100%;text-align:start;font:inherit;background:transparent;border:0;color:var(--ink);cursor:pointer;
+  display:flex;gap:10px;align-items:center;padding:6px 4px;border-radius:8px}
+.step:hover{background:var(--paper-2)}
+.dot{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;
+  background:var(--paper);border:2px solid var(--line);position:relative;z-index:1}
+.step.win .dot{border-color:var(--miss);color:var(--miss)}
+.step[aria-current="true"]{background:var(--blue-soft)}
+.step[aria-current="true"] .dot{border-color:var(--blue);background:var(--blue);color:var(--paper)}
+.step small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.detail{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+.detail dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:14px 0 0}
+.detail dt{font-weight:700;color:var(--muted);font-size:14px}
+.detail dd{margin:0}
+@media (max-width:480px){.detail dl{grid-template-columns:1fr}.detail dt{margin-top:6px}}
+
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.s-ok{background:var(--ok-bg);color:var(--ok)}
+.s-partial{background:var(--part-bg);color:var(--part)}
+.s-missing{background:var(--miss-bg);color:var(--miss)}
+.s-unknown{background:var(--unk-bg);color:var(--unk)}
+.s-rule{background:var(--rule-bg);color:var(--rule)}
+
+/* answer grid */
+.cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+@media (max-width:760px){.cases{grid-template-columns:1fr}}
+.case{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.case .clock{font-family:var(--f-mono);font-size:26px;color:var(--blue);line-height:1}
+.case p{margin:0;font-size:15.5px}
+
+/* calculator */
+.calc{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:end;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px;margin-top:16px}
+.calc label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700;color:var(--muted)}
+.calc input,.calc select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.calc output{flex-basis:100%;font-size:18px}
+.calc output b{font-family:var(--f-mono);color:var(--blue)}
+
+/* law cards */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:4px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.laws{display:grid;gap:10px}
+.law{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 16px}
+.law .sec{font-family:var(--f-mono);font-size:13px;color:var(--blue);padding-top:4px}
+.law h3{font-family:var(--f-body);font-weight:700;font-size:17px;margin:0}
+.law .local{grid-column:2;display:flex;gap:10px;align-items:baseline;font-size:15px;color:var(--muted)}
+.law .local .pill{flex:none}
+@media (max-width:560px){.law{grid-template-columns:1fr}.law .local{grid-column:1;flex-direction:column;gap:4px}}
+.tally{display:flex;gap:8px;flex-wrap:wrap;font-size:14px}
+
+/* comparison table */
+.tablewrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
+thead th{font-size:13px;color:var(--muted);font-weight:700}
+tbody th{font-weight:700;white-space:nowrap}
+td.y{color:var(--ok);font-weight:700} td.n{color:var(--miss);font-weight:700} td.p{color:var(--part);font-weight:700}
+tr.ours{background:var(--blue-soft)}
+
+/* architecture */
+.layers{display:grid;gap:0;margin-top:16px}
+.layer{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:16px 0;border-bottom:1px dashed var(--line)}
+.layer:last-child{border-bottom:0}
+.layer .name{font-family:var(--f-display);font-size:20px;color:var(--blue)}
+.layer ul{margin:0;padding-inline-start:18px}
+.layer li{margin-bottom:4px}
+@media (max-width:560px){.layer{grid-template-columns:1fr;gap:4px}}
+
+.phases{display:grid;gap:12px;margin-top:16px}
+.phase{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px}
+.phase .n{font-family:var(--f-mono);font-size:28px;color:var(--blue);line-height:1}
+.phase h3{margin-bottom:4px}
+.phase p{margin:0;font-size:15.5px}
+.phase .out{margin-top:6px;font-size:14px;color:var(--muted)}
+
+.decisions{counter-reset:d;list-style:none;padding:0;margin:16px 0 0;display:grid;gap:12px}
+.decisions li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+.decisions li b{display:block;margin-bottom:2px}
+.rec{color:var(--blue);font-weight:700}
+
+footer{margin-top:48px;font-size:14px;color:var(--muted)}
+footer ul{padding-inline-start:18px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">רוצים שקיפות · תוכנית עבודה · 9/11/2026</div>
+    <h1>מה בונים לנו</h1>
+    <p class="lead">כמעט כל מה שמתוכנן לבנות במושבה כבר מפורסם איפשהו. הבעיה היא שהוא מפוזר בין חמישה אתרים, בשפה של מתכננים, ומאחורי קפצ'ה. מערכת אחת שעושה מזה סדר תאפשר לכל תושב לדעת בזמן מה קורה ליד הבית, וגם תראה בבירור מה חסר.</p>
+  </div>
+  <div class="fold" aria-hidden="true"><span>תשריט · קו כחול</span></div>
+</header>
+
+<main>
+
+<section id="gramushka">
+  <div class="eyebrow">קודם כל, תיקון מונחים</div>
+  <h2>גרמושקה היא של היתר, לא של תוכנית</h2>
+  <p>"גרמושקה" (מרוסית <span lang="ru">гармошка</span>, אקורדיון) היא סט השרטוטים של <b>בקשה להיתר בנייה</b>: חזיתות, חתכים ותוכנית קומות, מקופלים כמו מפוח. היא שייכת לבית אחד. את מה שמשנה שכונה שלמה קובעת <b>תוכנית</b> (תב"ע, תכנית בניין עיר): תקנון במילים ותשריט צבעוני.</p>
+  <p>לכל אחד מהשניים יש מסלול אחר, חובות פרסום אחרות וחלון התנגדות אחר. כדאי להכיר את שניהם, כי המערכת צריכה לכסות את שניהם.</p>
+
+  <div class="tabs" role="tablist" aria-label="מסלול">
+    <button class="tab" role="tab" id="tab-plan" aria-selected="true" data-track="plan">תוכנית (תב"ע)</button>
+    <button class="tab" role="tab" id="tab-permit" aria-selected="false" data-track="permit">היתר בנייה (גרמושקה)</button>
+  </div>
+  <div class="track">
+    <ol class="steps" id="steps" aria-label="שלבים"></ol>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+  <p class="muted" style="margin-top:12px;font-size:14px">שלבים עם עיגול אדום הם השלבים שבהם תושב יכול להתנגד. לחצו על שלב כדי לראות מה מתפרסם בו, איפה, ומה המצב אצלנו.</p>
+</section>
+
+<section id="answer">
+  <div class="eyebrow">המחקר הקטן</div>
+  <h2>איך תושב משיג את המסמכים בזמן ההתנגדויות?</h2>
+  <p>להשיג את המסמך זה החלק הקל. החלק הקשה הוא לדעת שהשעון כבר מתקתק. זה תלוי באיזה מקרה מדובר:</p>
+  <div class="cases">
+    <div class="case">
+      <span class="pill s-rule" style="align-self:start">תוכנית בהפקדה</span>
+      <div class="clock">חודשיים</div>
+      <p>מהפרסום <b>המאוחר</b> בעיתון (סעיף 102), ואפשר להאריך לשלושה. התקנון, התשריט והנספחים פתוחים להורדה בדף התוכנית ב<a href="https://mavat.iplan.gov.il" target="_blank" rel="noopener">מבא"ת</a>, בלי הרשמה. בתוכניות של הוועדה המחוזית אפשר גם להגיש התנגדות מקוונת משם.</p>
+      <p class="muted">הבעיה: תוכניות בסמכות הוועדה המקומית נרשמות שם בלי תאריך עיתון ובלי מועד אחרון.</p>
+    </div>
+    <div class="case">
+      <span class="pill s-partial" style="align-self:start">בקשה עם הקלה או שימוש חורג</span>
+      <div class="clock">15 יום</div>
+      <p>מהפרסום, ולמי שקיבל הודעה אישית, מיום המסירה (סעיף 149). השכנים הגובלים מקבלים הודעה, ותלוי שלט בחזית. את הגרמושקה עצמה רואים בעיון במשרדי הוועדה: לפי פסיקת העליון (עע"מ 1662/14) יש לציבור זכות עיון בבקשה ובצרופותיה בלי בקשת חופש מידע.</p>
+      <p class="muted">הבעיה: ההודעות האלה לא מגיעות לאתר הארצי בכלל, רק לאתר הוועדה שמאחורי קפצ'ה.</p>
+    </div>
+    <div class="case">
+      <span class="pill s-unknown" style="align-self:start">בקשה רגילה, לפי התב"ע</span>
+      <div class="clock">אין חלון</div>
+      <p>בקשה שתואמת את התוכנית לא מתפרסמת, ואין זכות התנגדות. ההיתר החתום עולה לאתר הוועדה תוך 5 ימים ממתן ההיתר (תקנה 61(ב) לתקנות הרישוי), ובאתר הבנייה חייבים להציג אותו לכל מי שמבקש (תקנה 61(ג)).</p>
+      <p class="muted">כאן ההשפעה היא מוקדם יותר: בשלב התוכנית שאפשרה את הבנייה.</p>
+    </div>
+  </div>
+
+  <div class="calc" id="calc">
+    <label for="c-type">סוג
+      <select id="c-type">
+        <option value="plan">תוכנית בהפקדה (חודשיים)</option>
+        <option value="plan3">תוכנית, הוארך לשלושה חודשים</option>
+        <option value="149">הקלה או שימוש חורג (15 יום)</option>
+      </select>
+    </label>
+    <label for="c-date">תאריך הפרסום האחרון בעיתון
+      <input type="date" id="c-date">
+    </label>
+    <output id="c-out" for="c-type c-date"></output>
+  </div>
+  <p class="muted" style="font-size:14px;margin-top:8px">מחשבון עזר בלבד. המועד הקובע הוא זה שמופיע בהודעה עצמה ובדף התוכנית.</p>
+</section>
+
+<section id="law">
+  <div class="eyebrow">מה החוק מחייב היום</div>
+  <h2>חובות הפרסום, ומה מהן מתקיים במושבה</h2>
+  <p>כל שורה היא חובה מחוק התכנון והבנייה או מתקנות הרישוי, עם מה שמצאנו בבדיקות שעשינו מספטמבר עד היום. השורות האדומות והצהובות הן חומר הגלם ללחץ על הוועדה.</p>
+  <div class="tally" id="tally"></div>
+  <div class="filters" role="group" aria-label="סינון לפי מצב">
+    <button class="chip" data-f="all" aria-pressed="true">הכול</button>
+    <button class="chip" data-f="missing" aria-pressed="false">לא מתקיים</button>
+    <button class="chip" data-f="partial" aria-pressed="false">חלקי</button>
+    <button class="chip" data-f="unknown" aria-pressed="false">עוד לא נבדק</button>
+    <button class="chip" data-f="rule" aria-pressed="false">כללי משחק</button>
+  </div>
+  <div class="laws" id="laws"></div>
+</section>
+
+<section id="landscape">
+  <div class="eyebrow">מה כבר קיים</div>
+  <h2>מעירים, האתרים הרשמיים, ומה שכבר בנינו</h2>
+  <p><a href="https://meirim.org" target="_blank" rel="noopener">מעירים</a> היא עמותה שבנתה בדיוק את הרעיון הזה ברמה הארצית: נרשמים לפי כתובת ומקבלים התראה על תוכנית חדשה בסביבה, וגם על רישיונות כריתת עצים. האתר עדיין עונה, והקוד פתוח (<a href="https://github.com/meirim-org/meirim" target="_blank" rel="noopener">MIT ב-GitHub</a>), אבל השינוי האחרון בקוד היה בדצמבר 2024. מה שחשוב יותר: מעירים קוראים רק את המאגר הארצי, ולכן הם עיוורים בדיוק לשני החורים שמצאנו אצלנו.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th scope="col"></th><th scope="col">תוכניות מחוזיות</th><th scope="col">תוכניות מקומיות, עם מועד</th><th scope="col">הקלות (149)</th><th scope="col">היתרים</th><th scope="col">פרוטוקולים</th><th scope="col">"מה חסר"</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">מבא"ת / Xplan</th><td class="y">כן</td><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td><td class="p">רק מחוזית</td><td class="n">לא</td></tr>
+        <tr><th scope="row">מעירים</th><td class="y">כן</td><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td></tr>
+        <tr><th scope="row">אתר הוועדה המקומית</th><td class="p">חלקי</td><td class="p">מאחורי קפצ'ה</td><td class="p">מאחורי קפצ'ה</td><td class="p">מאחורי קפצ'ה</td><td class="n">לא</td><td class="n">לא</td></tr>
+        <tr><th scope="row">אתר המועצה</th><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td><td class="n">לא</td><td class="y">349 פרוטוקולים</td><td class="n">לא</td></tr>
+        <tr><th scope="row">דרך קיצור (היום)</th><td class="y">כן, חי</td><td class="y">כן, מקרון יומי</td><td class="n">לא</td><td class="n">לא</td><td class="y">בחיפוש</td><td class="n">לא</td></tr>
+        <tr class="ours"><th scope="row">מה בונים לנו (היעד)</th><td class="y">כן</td><td class="y">כן</td><td class="p">שלב 3</td><td class="p">שלב 3</td><td class="y">כן</td><td class="y">כן</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:14px;margin-top:8px">בדרך קיצור כבר עובדים: חלקות פתוחות להתנגדות באדום זוהר על המפה, קרון בוקר שקורא את דפי מבא"ת ומתריע גם על החלונות שהמאגר הארצי מפספס, וחיפוש בפרוטוקולים. רוב העבודה הקשה של איסוף הנתונים כבר נעשתה.</p>
+</section>
+
+<section id="system">
+  <div class="eyebrow">ההמלצה</div>
+  <h2>איזו מערכת לבנות</h2>
+  <p>הלב של המערכת הוא רעיון אחד: <b>לכל תוכנית ולכל בקשה יש ציר זמן</b>, וכל אירוע בו מגיע עם מקור ותאריך. כשציר הזמן שלם, תושב רואה מה קרה ומה יקרה. וכשהחוק אומר שאחרי אירוע א' חייב לבוא פרסום ב' תוך כך וכך ימים, המערכת יכולה לבדוק את זה לבד, ולסמן באדום כשהוא לא הגיע.</p>
+
+  <div class="layers">
+    <div class="layer">
+      <div class="name">איסוף</div>
+      <ul>
+        <li><b>Xplan</b> (שירות המפה של מינהל התכנון): קווים כחולים, שלב, יחידות דיור. חי מהדפדפן.</li>
+        <li><b>מבא"ת</b>: שלבי פרסום עם קודים, מועד אחרון, גושים וחלקות, מסמכים. קרון יומי (כבר קיים).</li>
+        <li><b>פרוטוקולים והחלטות</b> של הוועדה המקומית ורשות הרישוי מאתר המועצה (כבר נאספים לחיפוש).</li>
+        <li><b>ילקוט הפרסומים</b>: הודעות ברשומות, מקור עצמאי לבדיקה.</li>
+        <li><b>אתר הוועדה המקומית</b>: הקלות, היתרים, הודעות. בגלל הקפצ'ה, בהתחלה ידני או בדיקה שבועית של מתנדב, עד שהמועצה תפתח פיד.</li>
+        <li><b>תושבים</b>: צילום של שלט הפקדה או הודעה שהגיעה בדואר, דרך טופס פשוט.</li>
+      </ul>
+    </div>
+    <div class="layer">
+      <div class="name">ציר זמן</div>
+      <ul>
+        <li>רשומה אחת לכל תוכנית ולכל בקשה, מקושרת לגוש, חלקה וכתובת.</li>
+        <li>כל אירוע עם מקור, תאריך ורמת ודאות (רשמי / מחושב / דיווח תושב).</li>
+        <li>"כללי חובה" שנגזרים מהחוק: הפקדה מחייבת עיתונים, שלט ואינטרנט; החלטה מחייבת פרסום תוך 3 ימים; היתר מחייב פרסום תוך 5 ימים; דוח שנתי עד 30 ביוני.</li>
+      </ul>
+    </div>
+    <div class="layer">
+      <div class="name">שלושה מסכים</div>
+      <ul>
+        <li><b>"פתוח עכשיו"</b>: כל מה שאפשר להתנגד לו היום, עם ספירה לאחור, במשפט אחד בעברית פשוטה ("+261 דירות ו-940 מ"ר מסחר ליד אחוזת נעורים").</li>
+        <li><b>"הכתובת שלי"</b>: מפה וציר זמן לכל מה שחל על החלקה ומה מתוכנן סביבה, והרשמה להתראה במייל.</li>
+        <li><b>"מה חסר"</b>: לוח פומבי של חובות פרסום שלא התקיימו, עם תאריך, סעיף חוק, ונוסח פנייה מוכן להעתקה.</li>
+      </ul>
+    </div>
+    <div class="layer">
+      <div class="name">לחץ</div>
+      <ul>
+        <li>ערכת התנגדות: מה מותר, למי מגישים, תבנית עם תצהיר, והתנגדות קבוצתית לפי סעיף 103א(ב).</li>
+        <li>דוח חודשי קצר למועצה ולוועדה, שנוצר ישירות מלוח "מה חסר".</li>
+        <li>בקשות חופש מידע מוכנות למה שאין בשום מקום.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">בשלבים</h3>
+  <div class="phases">
+    <div class="phase"><div class="n">1</div><div><h3>פתוח עכשיו</h3><p>דף אחד שמתעדכן כל בוקר מהקרון הקיים: מה פתוח להתנגדות במושבה, עד מתי, ובמה מדובר. הדבר הכי שימושי שאפשר להוציא הכי מהר.</p><div class="out">תוצר: דף ציבורי + הודעה שבועית לקבוצה.</div></div></div>
+    <div class="phase"><div class="n">2</div><div><h3>הכתובת שלי והתראות</h3><p>חיפוש לפי כתובת או גוש וחלקה, ציר זמן לכל תוכנית, והרשמה להתראה במייל כשמשהו בטווח שנבחר נכנס להפקדה.</p><div class="out">תוצר: מה שמעירים נותנים, עם הכיסוי המקומי שחסר להם.</div></div></div>
+    <div class="phase"><div class="n">3</div><div><h3>מה חסר</h3><p>הפעלת כללי החובה על כל צירי הזמן, ולוח פומבי של פערים. במקביל, פנייה רשמית לוועדה: פיד פתוח בלי קפצ'ה להודעות סעיף 149, להפקדות ולהיתרים.</p><div class="out">תוצר: לוח פערים, דוח חודשי, ובקשה כתובה למועצה.</div></div></div>
+    <div class="phase"><div class="n">4</div><div><h3>הקלות והיתרים</h3><p>אם הוועדה פותחת פיד, מחברים אותו. אם לא, בדיקה שבועית של מתנדב ודיווחי תושבים על שלטים. זה החור הכי גדול והכי קשה.</p><div class="out">תוצר: כיסוי מלא של המסלול השני.</div></div></div>
+  </div>
+
+  <h3 style="margin-top:28px">החלטות שנשארו לך</h3>
+  <ol class="decisions">
+    <li><b>אתר נפרד, או עוד שכבה בדרך קיצור?</b> <span class="rec">ההמלצה שלי: אתר נפרד עם שם ומשימה ברורים, שמשתמש באותו צינור נתונים.</span> דרך קיצור היא מפה לכל דבר, ותושב שרוצה לדעת "מה בונים לי" צריך כתובת אחת, פשוטה, שאפשר לשלוח בוואטסאפ. המפה בדרך קיצור ממשיכה להציג את אותם נתונים.</li>
+    <li><b>לבנות מאפס או לקחת את הקוד של מעירים?</b> <span class="rec">ההמלצה שלי: לקרוא את הקוד שלהם וללמוד ממנו, לא להתבסס עליו.</span> מה שמייחד את הפרויקט הוא הנתונים המקומיים, שאין להם, והצינור שלנו כבר קורא את מבא"ת טוב יותר.</li>
+    <li><b>איך שולחים התראות?</b> <span class="rec">ההמלצה שלי: מייל בלבד בהתחלה, דרך שירות חינמי.</span> וואטסאפ דורש חשבון עסקי ועולה כסף לכל הודעה.</li>
+    <li><b>מי בקבוצה עושה את העבודה הידנית?</b> בדיקה שבועית של אתר הוועדה ואישור דיווחי שלטים לוקחים בערך חצי שעה בשבוע. בלי זה, שלב 4 לא יקרה.</li>
+  </ol>
+</section>
+
+<section id="open">
+  <div class="eyebrow">לפני שכותבים קוד</div>
+  <h2>מה עוד צריך לבדוק</h2>
+  <ul>
+    <li>האם ההיתרים שמתפרסמים באתר הוועדה כוללים את השרטוטים עצמם, או רק את טופס ההיתר.</li>
+    <li>האם הוועדה מפרסמת סדר יום לפני כל ישיבה (סעיף 44(ד)) והחלטות תוך 3 ימים (סעיף 48ה(ב)).</li>
+    <li>איפה ההקלטות של ישיבות הוועדה. החוק מחייב להקליט כל ישיבה חוץ מרשות רישוי, ולתת לציבור להאזין.</li>
+    <li>איפה מתפרסמות הודעות על הכנת תוכנית (סעיפים 77 ו-78). זו ההתראה המוקדמת ביותר, חודשים לפני ההפקדה.</li>
+    <li>לקרוא את פסק הדין בעניין זכות העיון בעצמנו. כרגע הוא מוכר לנו רק מסיכומים של משרדי עורכי דין.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <b>מקורות</b>
+  <ul>
+    <li><a href="https://he.wikisource.org/wiki/%D7%97%D7%95%D7%A7_%D7%94%D7%AA%D7%9B%D7%A0%D7%95%D7%9F_%D7%95%D7%94%D7%91%D7%A0%D7%99%D7%99%D7%94" target="_blank" rel="noopener">חוק התכנון והבנייה, נוסח מלא בוויקיטקסט</a> (סעיפים 1ב, 1ג, 44, 48ד, 48ה, 48ו, 89, 89א, 100, 102, 103א, 149)</li>
+    <li><a href="https://he.wikisource.org/wiki/%D7%AA%D7%A7%D7%A0%D7%95%D7%AA_%D7%94%D7%AA%D7%9B%D7%A0%D7%95%D7%9F_%D7%95%D7%94%D7%91%D7%A0%D7%99%D7%99%D7%94_(%D7%A8%D7%99%D7%A9%D7%95%D7%99_%D7%91%D7%A0%D7%99%D7%99%D7%94)" target="_blank" rel="noopener">תקנות התכנון והבנייה (רישוי בנייה), התשע"ו-2016</a> (תקנות 61 עד 64)</li>
+    <li><a href="https://od-nadlan.co.il/?p=4798" target="_blank" rel="noopener">סיכום על זכות העיון בהיתר ובבקשה</a> (עע"מ 1662/14)</li>
+    <li><a href="https://github.com/meirim-org/meirim" target="_blank" rel="noopener">הקוד של מעירים</a>, ו<a href="https://meirim.org" target="_blank" rel="noopener">האתר</a></li>
+    <li>התחקירים של רוצים שקיפות: תכנון (24/9/2026), חלונות התנגדות (27/9/2026), הוועדה המקומית (26–27/9/2026)</li>
+  </ul>
+</footer>
+</div>
+
+<script>
+const TRACKS = {
+  plan: [
+    {t:"הכנת תוכנית", s:"סעיפים 77–78", what:"מוסד התכנון רשאי לפרסם שמכינים תוכנית, ולקבוע תנאים להיתרים בזמן ההכנה.", where:"רשומות ועיתונים, אם בכלל פורסם.", docs:"בדרך כלל עוד אין מסמכים.", local:["unknown","לא בדקנו עדיין איפה הודעות כאלה מופיעות אצלנו."]},
+    {t:"הגשה וקליטה", s:"מבא\"ת", what:"התוכנית נקלטת, מקבלת מספר (308-... או 353-...) ודף במבא\"ת.", where:"מבא\"ת. הקו הכחול מופיע ב-Xplan.", docs:"לעיתים כבר אפשר להוריד תקנון ותשריט.", local:["ok","נקרא אוטומטית. כאן אפשר לתפוס תוכנית חודשים לפני ההפקדה."]},
+    {t:"החלטה להפקיד", s:"סעיפים 85–86", what:"הוועדה דנה ומחליטה להפקיד, בדרך כלל בתנאים.", where:"פרוטוקול הוועדה. ההחלטה עצמה צריכה לעלות לאתר תוך 3 ימים (סעיף 48ה).", docs:"פרוטוקול הישיבה.", local:["partial","פרוטוקולים של הוועדה המקומית מתפרסמים. פרסום ההחלטה תוך 3 ימים לא נבדק."]},
+    {t:"הפקדה", s:"סעיפים 89, 89א, 1ב", win:true, what:"מכאן רץ השעון: חודשיים מהפרסום המאוחר בעיתון להגיש התנגדות.", where:"רשומות, שני עיתונים יומיים ועיתון מקומי, אינטרנט, לוחות מודעות, שלט בשטח, ובתוכנית עד 3 דונם גם הודעה אישית לגובלים.", docs:"כל מסמכי התוכנית, להורדה במבא\"ת ולעיון במשרדי הוועדה.", local:["partial","תוכניות מחוזיות: תקין. תוכניות בסמכות מקומית: בלי תאריכי עיתון ובלי מועד אחרון במבא\"ת, וחלקן תקועות \"בהפקדה\" מ-2023."]},
+    {t:"דיון בהתנגדויות", s:"סעיף 106", what:"המתנגדים מוזמנים להשמיע את טענותיהם, והוועדה מחליטה לקבל, לדחות או לשנות.", where:"פרוטוקול. החלטה באתר תוך 3 ימים.", docs:"פרוטוקול, ולעיתים דוח חוקר.", local:["partial","פרוטוקולים כן. הקלטות של הישיבות לא מצאנו."]},
+    {t:"אישור ופרסום ברשומות", s:"סעיף 117", what:"מהפרסום ברשומות התוכנית תקפה, ומכוחה יוצאים היתרים.", where:"רשומות, עיתונים, אינטרנט.", docs:"הנוסח המאושר במבא\"ת.", local:["ok","מופיע גם במבא\"ת וגם ב-Xplan."]}
+  ],
+  permit: [
+    {t:"בקשה להיתר", s:"רישוי זמין", what:"האדריכל מגיש את הגרמושקה במערכת \"רישוי זמין\". בעלי זכויות שלא חתמו מקבלים הודעה ועותק.", where:"לא מתפרסם לציבור.", docs:"הגרמושקה. זכות עיון במשרדי הוועדה (עע\"מ 1662/14).", local:["missing","אין שום רשימה פומבית של בקשות חדשות מחוץ לחיפוש עם קפצ'ה."]},
+    {t:"פרסום הקלה או שימוש חורג", s:"סעיף 149", win:true, what:"רק אם הבקשה חורגת מהתב\"ע: 15 יום להתנגד.", where:"עיתון, שלט בחזית, הודעה לגובלים, אתר הוועדה. לא מועבר לאתר הארצי (סעיף 1ב(ב)).", docs:"הבקשה, בעיון במשרדי הוועדה.", local:["partial","רק באתר הוועדה, מאחורי קפצ'ה. החור הכי גדול."]},
+    {t:"דיון והחלטה", s:"רשות רישוי / ועדת משנה", what:"בקשה רגילה נדונה ברשות רישוי, ובקשה עם הקלה בוועדה. ההחלטה היא בדרך כלל \"לאשר בתנאים\".", where:"פרוטוקול. רשות רישוי פטורה מהקלטה.", docs:"פרוטוקול הישיבה.", local:["partial","פרוטוקולים מתפרסמים באתר המועצה. זה המקום היחיד שמראה החלטה לפני שיש היתר."]},
+    {t:"השלמת תנאים", s:"", what:"אגרות, אישורי כיבוי אש, חשמל וכו'. הסטטוס: \"ממתינה להפקת היתר\". יכול להימשך חודשים.", where:"לא מתפרסם.", docs:"אין.", local:["unknown","הפער בין ההחלטה להיתר. הציבור לא רואה אותו."]},
+    {t:"הפקת היתר", s:"תקנה 61(ב)", what:"ההיתר החתום עולה לאתר הוועדה תוך 5 ימים. חסוי רק אם בעל הזכות ביקש ונימק (תקנות 62–64).", where:"אתר הוועדה המקומית.", docs:"קובץ ההיתר. לא ברור אם כולל את השרטוטים.", local:["partial","מתפרסם מאחורי קפצ'ה. עמידה ב-5 ימים לא נבדקה."]},
+    {t:"בנייה", s:"תקנה 61(ג)", what:"העתק ההיתר נמצא אצל האחראי לביקורת באתר, וחייבים להציג אותו לכל פונה.", where:"באתר הבנייה עצמו.", docs:"ההיתר.", local:["rule","זכות שכדאי שתושבים יכירו."]}
+  ]
+};
+const LABEL = {ok:"מתקיים", partial:"חלקי", missing:"לא מתקיים", unknown:"עוד לא נבדק", rule:"כלל"};
+
+const stepsEl = document.getElementById("steps"), detailEl = document.getElementById("detail");
+let track = "plan", cur = 3;
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function renderTrack(){
+  const arr = TRACKS[track];
+  stepsEl.innerHTML = arr.map((x,i)=>`<li><button class="step${x.win?" win":""}" data-i="${i}" aria-current="${i===cur}"><span class="dot">${i+1}</span><span>${esc(x.t)}${x.s?`<small>${esc(x.s)}</small>`:""}</span></button></li>`).join("");
+  const x = arr[cur];
+  detailEl.innerHTML = `<h3>${esc(x.t)}</h3>${x.win?'<span class="pill s-missing">כאן אפשר להתנגד</span>':""}
+    <p style="margin-top:10px">${esc(x.what)}</p>
+    <dl><dt>איפה מתפרסם</dt><dd>${esc(x.where)}</dd><dt>מסמכים</dt><dd>${esc(x.docs)}</dd>
+    <dt>אצלנו</dt><dd><span class="pill s-${x.local[0]}">${LABEL[x.local[0]]}</span> ${esc(x.local[1])}</dd></dl>`;
+}
+stepsEl.addEventListener("click", e=>{const b=e.target.closest(".step"); if(!b) return; cur=+b.dataset.i; renderTrack();});
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  track=t.dataset.track; cur = track==="plan"?3:1;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===t));
+  renderTrack();
+}));
+renderTrack();
+
+/* deadline calculator */
+const cType=document.getElementById("c-type"), cDate=document.getElementById("c-date"), cOut=document.getElementById("c-out");
+const today = new Date(); today.setHours(0,0,0,0);
+const ex = new Date(today); ex.setDate(ex.getDate()-20);
+cDate.value = ex.toISOString().slice(0,10);
+function calc(){
+  if(!cDate.value){cOut.textContent="";return}
+  const d = new Date(cDate.value+"T00:00:00");
+  const end = new Date(d);
+  if(cType.value==="149") end.setDate(end.getDate()+15);
+  else end.setMonth(end.getMonth() + (cType.value==="plan3"?3:2));
+  const left = Math.round((end-today)/864e5);
+  const fmt = end.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
+  cOut.innerHTML = left>=0
+    ? `מועד אחרון משוער: <b>${fmt}</b>. נשארו <b>${left}</b> ימים.`
+    : `המועד עבר ב-<b>${fmt}</b>, לפני ${-left} ימים.`;
+}
+cType.addEventListener("change",calc); cDate.addEventListener("input",calc); calc();
+
+/* law cards */
+const LAWS = [
+  {sec:"1ב(א)", t:"כל הודעה שמתפרסמת בעיתון עולה גם לאינטרנט, במדור \"הודעות בענייני תכנון ובניה\"", st:"partial", l:"ההודעות נמצאות באתר הוועדה, אבל כל חיפוש בו דורש קפצ'ה."},
+  {sec:"1ג(א)", t:"אתר הפרסום פתוח בלי תשלום, מאפשר אחזור והפקת פלט, ושום דבר לא יורד ממנו", st:"partial", l:"לאדם אחד הקפצ'ה מסתדרת. מעקב קבוע וניטור היא חוסמת."},
+  {sec:"1ב(ב)", t:"הוועדה המקומית מעבירה את ההודעות שלה לאתר הארצי (חוץ מהקלות ושימוש חורג)", st:"partial", l:"תוכניות בסמכות מקומית נרשמות במבא\"ת בלי תאריכי עיתון ובלי מועד אחרון. ב-27/9: תשע פתוחות בפועל, רק לחמש היה תאריך באתר הארצי."},
+  {sec:"89, 89א", t:"הפקדה: רשומות, שני עיתונים יומיים ועיתון מקומי, לוחות מודעות, שלט בשטח, והודעה אישית לגובלים בתוכנית עד 3 דונם", st:"unknown", l:"אין רישום ציבורי של שלטים ושל מסירה לשכנים. כאן תושבים יכולים לעזור, בצילום שלט."},
+  {sec:"44(ד)", t:"סדר היום של כל ישיבה באתר, זמן סביר לפני הדיון", st:"unknown", l:"לא נבדק עדיין."},
+  {sec:"48ה(ב)", t:"כל החלטה של מוסד תכנון באתר תוך 3 ימים", st:"unknown", l:"לא נבדק. בהיתרים, רק הפרוטוקול מראה מה הוחלט עד שההיתר מופק."},
+  {sec:"48ד(ה)", t:"פרוטוקול כל ישיבה באינטרנט, והקלטת הישיבה פתוחה להאזנה בלי תשלום", st:"partial", l:"349 פרוטוקולים מ-2014 עד 2026 באתר המועצה, פתוחים. הקלטות לא מצאנו."},
+  {sec:"48ו", t:"דוח שנתי של הוועדה באתר, עד חצי שנה מסוף השנה", st:"missing", l:"חסרים 2021 ו-2023. ל-2022 יש רק חציון. קובץ התוכניות של 2024 שייך בכלל לעמק חפר."},
+  {sec:"תקנה 61(ב)", t:"היתר חתום באתר הוועדה תוך 5 ימים ממתן ההיתר", st:"partial", l:"ההיתרים באתר, מאחורי קפצ'ה. לא בדקנו עמידה ב-5 ימים, ולא אם השרטוטים מצורפים."},
+  {sec:"149", t:"הקלה ושימוש חורג: עיתון, שלט בחזית, הודעה לגובלים. 15 יום להתנגד", st:"partial", l:"החוק עצמו פוטר מהעברה לאתר הארצי. נשאר רק אתר הוועדה, מאחורי קפצ'ה."},
+  {sec:"102", t:"חלון התנגדות לתוכנית: חודשיים מהפרסום המאוחר בעיתון, אפשר להאריך לשלושה", st:"rule", l:"בנתונים יוצא בפועל כ-63 יום, כי העיתון המקומי מתפרסם אחרון."},
+  {sec:"100, 103א", t:"כל מי שרואה את עצמו נפגע רשאי להתנגד. בכתב, מנומק, עם תצהיר. בנושאי טבע, נוף ואיכות חיים מספיק תצהיר אחד להתנגדות קבוצתית", st:"rule", l:"כלי חשוב לקבוצה: לא צריך להיות שכן גובל."},
+  {sec:"תקנות 62–64", t:"היתר חסוי רק לפי בקשה מנומקת: פרטיות, סוד מסחרי או ביטחון", st:"rule", l:"ברירת המחדל היא שההיתר פומבי."},
+  {sec:"עע\"מ 1662/14", t:"לציבור זכות עיון בבקשה להיתר ובצרופותיה, בלי בקשת חופש מידע", st:"rule", l:"מוכר לנו מסיכומים של עורכי דין. צריך לקרוא את פסק הדין עצמו."}
+];
+const lawsEl=document.getElementById("laws"), tallyEl=document.getElementById("tally");
+let filt="all";
+function renderLaws(){
+  lawsEl.innerHTML = LAWS.filter(x=>filt==="all"||x.st===filt).map(x=>
+    `<article class="law"><div class="sec">${esc(x.sec)}</div><h3>${esc(x.t)}</h3>
+     <div class="local"><span class="pill s-${x.st}">${LABEL[x.st]}</span><span>${esc(x.l)}</span></div></article>`).join("");
+}
+const counts = LAWS.reduce((a,x)=>(a[x.st]=(a[x.st]||0)+1,a),{});
+tallyEl.innerHTML = ["missing","partial","unknown","rule"].map(k=>`<span class="pill s-${k}">${LABEL[k]}: ${counts[k]||0}</span>`).join("");
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+  filt=c.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c)); renderLaws();
+}));
+renderLaws();
+</script>
+</body>
+</html>
