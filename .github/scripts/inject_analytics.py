@@ -3,7 +3,8 @@
 
 Runs inside the Pages workflow on the checked-out tree, so source files stay
 untouched and every new app gets analytics automatically.
-Pages that already load gtag are skipped.
+Pages that already load gtag are skipped, and so are pages that opt out with
+<!-- no-analytics --> (e.g. free_network, which promises no third-party scripts).
 
   python3 inject_analytics.py [root]          # inject in place
   python3 inject_analytics.py [root] --check  # only report what would change
@@ -43,7 +44,7 @@ def main():
             html = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        if "googletagmanager.com/gtag" in html:
+        if "googletagmanager.com/gtag" in html or "<!-- no-analytics -->" in html:
             skipped.append(path)
             continue
         m = HEAD_OPEN.search(html)
