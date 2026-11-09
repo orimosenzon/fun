@@ -5621,6 +5621,17 @@
    "url": "https://pardeshanna.eventschedule.com/ruti-10-11/MnMdFB",
    "venue": "רותי"
   },
+  "2026-11-11--באנו-חושך-לגרש": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-11",
+   "entry": "תרומת לב 70-100 ש״ח",
+   "image_file": "אירוע-hub-c8977de4-76ef-4aa7-8611-b6c209dcd185.jpg",
+   "name": "באנו חושך לגרש",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://pardes-events-hub.lovable.app/event/c8977de4-76ef-4aa7-8611-b6c209dcd185",
+   "venue": "ההסתדרות 8א"
+  },
   "2026-11-11--במה-פתוחה-לכל-ביטוי": {
    "category": "מופעים והופעות",
    "date": "2026-11-11",
@@ -5631,6 +5642,17 @@
    "time": "19:30",
    "url": "https://pardeshanna.eventschedule.com/narbata-11-11/uLPWJG",
    "venue": "נרבתא"
+  },
+  "2026-11-11--י-The-Great-Machine": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-11",
+   "entry": "חינם",
+   "image_file": "אירוע-emek-XWryGf.jpg",
+   "name": "י The Great Machine",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://emeklive.co.il/ruti-11-11/XWryGf",
+   "venue": "רותי"
   },
   "2026-11-11--יוני-פוליקר-והסופלאקיס": {
    "category": "מופעים והופעות",
@@ -5730,6 +5752,28 @@
    "time": "12:30",
    "url": "https://pardeshanna.eventschedule.com/traklin-13-11/q0gvkd",
    "venue": "טרקלין"
+  },
+  "2026-11-14--Fish-Chill-מופע-ליצנות": {
+   "category": "אמנות ותרבות",
+   "date": "2026-11-14",
+   "entry": "₪55",
+   "image_file": "",
+   "name": "Fish & Chill – מופע ליצנות",
+   "source": "לוח האירועים",
+   "time": "10:30",
+   "url": "https://pardeshanna.eventschedule.com/fish-chill/IfXw9s",
+   "venue": "קרקס שבזי עין שמר (עין שמר)"
+  },
+  "2026-11-14--גון-בן-ארי": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-14",
+   "entry": "₪85",
+   "image_file": "אירוע-es-nBIMuw.jpg",
+   "name": "גון בן ארי",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/unicorn-14-11/nBIMuw",
+   "venue": "יוניקורן"
   }
  }
 }
