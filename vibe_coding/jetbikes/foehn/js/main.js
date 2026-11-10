@@ -316,4 +316,5 @@ async function boot() {
   addEventListener('pointerdown', () => audio.start(), { once: true }); addEventListener('keydown', () => audio.start(), { once: true });
   window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, U, sun };
 }
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot().catch((e) => { const el = $('err'); el.style.display = 'block'; el.textContent += (e.stack || e) + '\n'; console.error(e); });

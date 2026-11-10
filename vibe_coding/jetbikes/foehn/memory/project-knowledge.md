@@ -2,6 +2,7 @@
 
 ## מה זה
 הפרויקט השלישי של האופנוע המעופף (אחרי opus5 ו-jetbike_game). נפתח 10/11/2026 בבקשה: "יותר טוב בפיזיקה, בגרפיקה ובמשחקיות".
+LIVE: https://orimosenzon.github.io/fun/vibe_coding/jetbikes/foehn/ (GitHub Pages, push = פריסה). אפליקציית רשת: manifest + sw.js (רשת קודם).
 משחק דפדפן, ES modules, Three.js 0.169 מקומי ב-`lib/`. בלי בנייה. `python3 -m http.server` → index.html.
 
 ## החלטות מפתח
