@@ -896,6 +896,35 @@
           "anchor": "jetbike_game"
         },
         {
+          "title": "FÖHN — אופנוע סילון בעמק אלפיני",
+          "icon": "🏔️",
+          "theme": "t-cyan",
+          "tags": [
+            "Three.js",
+            "Tilt-jet 6DOF",
+            "Control Allocation",
+            "Procedural Alps",
+            "WebAudio"
+          ],
+          "desc": "הדור השלישי של האופנוע המעופף: ארבעה מנועי סילון מוטים וכנף, מחשב טיסה שמקצה 15 מפעילים בכל רגע, עמק אלפיני אפוי עם סחיפה, אגם מחזיר אור, קניון ו-150 אלף עצים. שישה אירועים עם מדליות, רוח רפאים של השיא, וטיסה חופשית.",
+          "links": [
+            {
+              "href": "jetbikes/foehn/index.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/jetbikes/foehn",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- Mountains + flight path through a ring -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <polygon points=\"4,62 20,30 36,62\"  fill=\"rgba(8,60,70,.5)\" stroke=\"#22d3ee\" stroke-width=\"1.2\" opacity=\".7\"/>\n                    <polygon points=\"26,62 46,20 66,62\" fill=\"rgba(8,60,70,.7)\" stroke=\"#22d3ee\" stroke-width=\"1.2\"/>\n                    <ellipse cx=\"36\" cy=\"30\" rx=\"9\" ry=\"11\" stroke=\"#fbbf24\" stroke-width=\"2\" fill=\"none\"/>\n                    <path d=\"M6 40 C 20 34, 28 32, 36 30 S 56 24, 68 16\" stroke=\"#22d3ee\" stroke-width=\"1.5\" stroke-dasharray=\"3 3\" fill=\"none\"/>\n                    <circle cx=\"36\" cy=\"30\" r=\"2.5\" fill=\"#22d3ee\"/>\n                    <line x1=\"31\" y1=\"33\" x2=\"27\" y2=\"36\" stroke=\"#f97316\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n                </svg>\n            ",
+          "anchor": "foehn"
+        },
+        {
           "title": "פיפין — הרפתקה בארץ התיכונה",
           "icon": "🧙",
           "theme": "t-amber",

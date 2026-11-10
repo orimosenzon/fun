@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>FÖHN · אופנוע סילון בעמק אלפיני</title>
+<meta name="description" content="משחק טיסה בדפדפן: אופנוע סילון עם מנועים מוטים בעמק אלפיני. שישה אירועים, מדליות, רוח רפאים של השיא שלך.">
+<style>
+:root { --glass: rgba(10,16,24,.55); --line: rgba(255,255,255,.14); --gold: #ffc440; --acc: #ff7a2a; --cy: #6fe3ff; --txt: #eef3f8; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0b1016; color: var(--txt); overflow: hidden; font-family: "Heebo", "Rubik", "Segoe UI", Arial, sans-serif; -webkit-user-select: none; user-select: none; touch-action: none; }
+canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.panel { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+#hud { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s; }
+#hud.on { opacity: 1; }
+#top { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; padding: 8px 22px 10px; min-width: 210px; }
+#timer { font-size: 38px; font-weight: 700; letter-spacing: 1px; line-height: 1.05; }
+#cpn { font-size: 14px; opacity: .85; }
+#delta { font-size: 17px; font-weight: 700; height: 22px; transition: opacity .5s; }
+#delta.good { color: #6dff9a; } #delta.bad { color: #ff7d6b; }
+#evt { position: absolute; top: 14px; right: 16px; padding: 10px 14px; font-size: 13px; line-height: 1.55; max-width: 250px; }
+#evt b { font-size: 16px; }
+#evt .m { display: inline-block; margin-inline-end: 9px; }
+#spd { position: absolute; bottom: 18px; left: 18px; padding: 12px 16px; direction: ltr; text-align: left; min-width: 215px; }
+#kmh { font-size: 54px; font-weight: 800; line-height: .95; }
+#spd small { font-size: 13px; opacity: .7; margin-left: 6px; }
+#spd .row { display: flex; gap: 14px; font-size: 14px; margin-top: 6px; opacity: .95; }
+#spd .row span b { font-weight: 700; font-size: 16px; }
+#vt { height: 5px; background: rgba(255,255,255,.14); border-radius: 3px; margin-top: 8px; position: relative; }
+#vt i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cy); border-radius: 3px; }
+#vt u { position: absolute; top: -4px; width: 3px; height: 13px; background: #fff; border-radius: 2px; }
+#eng { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 10px 16px; display: flex; gap: 16px; align-items: flex-end; direction: ltr; }
+.bar { width: 9px; height: 54px; background: rgba(255,255,255,.12); border-radius: 4px; position: relative; overflow: hidden; }
+.bar i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#ffd27a, #ff7a2a); border-radius: 4px; }
+.grp { display: flex; gap: 4px; align-items: flex-end; } .lbl { font-size: 11px; opacity: .7; text-align: center; margin-top: 4px; direction: rtl; }
+.wide { width: 120px; height: 9px; background: rgba(255,255,255,.12); border-radius: 5px; overflow: hidden; position: relative; margin: 5px 0; }
+.wide i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+#heat i { background: linear-gradient(90deg, #ffd27a, #ff3b1f); } #fuel i { background: linear-gradient(90deg, #5fd0ff, #8dffb0); }
+#heat.lock { outline: 2px solid #ff3b1f; }
+#noz { width: 54px; height: 54px; position: relative; }
+#noz svg { width: 54px; height: 54px; }
+#map { position: absolute; bottom: 18px; right: 18px; padding: 6px; }
+#map canvas { display: block; border-radius: 10px; width: 190px; height: 190px; }
+#msg { position: absolute; top: 27%; left: 0; right: 0; text-align: center; font-size: 44px; font-weight: 800; text-shadow: 0 2px 18px rgba(0,0,0,.6); opacity: 0; transition: opacity .25s; }
+#msg.on { opacity: 1; } #msg small { display: block; font-size: 19px; font-weight: 500; margin-top: 6px; }
+#warn { position: absolute; top: 40%; left: 0; right: 0; text-align: center; font-size: 20px; font-weight: 700; color: #ffcf5a; text-shadow: 0 2px 10px #000; opacity: 0; }
+#warn.on { opacity: 1; }
+#arrow { position: absolute; width: 0; height: 0; opacity: 0; }
+#arrow i { position: absolute; left: -15px; top: -15px; width: 30px; height: 30px; border-top: 5px solid var(--gold); border-right: 5px solid var(--gold); transform: rotate(45deg); filter: drop-shadow(0 0 6px rgba(0,0,0,.7)); }
+#arrow span { position: absolute; top: 20px; left: -40px; width: 80px; text-align: center; font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px #000; }
+#score { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700; text-shadow: 0 1px 6px #000; }
+#hint { position: absolute; bottom: 118px; left: 0; right: 0; text-align: center; font-size: 15px; opacity: .92; text-shadow: 0 1px 6px #000; }
+kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); font: 600 12px ui-monospace, monospace; direction: ltr; }
+
+#menu, #pause, #finish, #help { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
+#menu.on, #pause.on, #finish.on, #help.on { display: flex; }
+#menu { background: linear-gradient(180deg, rgba(6,10,16,.25), rgba(6,10,16,.72)); justify-content: flex-start; padding-top: 5vh; }
+#pause, #finish, #help { background: rgba(6,10,16,.6); }
+h1 { font-size: clamp(54px, 9vw, 104px); margin: 0; letter-spacing: 10px; font-weight: 900; direction: ltr; text-shadow: 0 4px 40px rgba(0,0,0,.6); }
+h1 span { color: var(--acc); }
+.sub { font-size: clamp(15px, 2vw, 20px); opacity: .9; margin: 2px 0 20px; text-shadow: 0 1px 8px #000; text-align: center; }
+#cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 12px; width: min(1040px, 96vw); }
+.card { padding: 13px 15px; cursor: pointer; pointer-events: auto; transition: transform .15s, border-color .15s, background .15s; text-align: start; color: inherit; font: inherit; }
+.card:hover, .card:focus { transform: translateY(-3px); border-color: var(--gold); background: rgba(20,30,44,.7); outline: none; }
+.card h3 { margin: 0 0 4px; font-size: 19px; display: flex; justify-content: space-between; align-items: center; }
+.card p { margin: 0 0 8px; font-size: 13.5px; opacity: .85; min-height: 36px; line-height: 1.35; }
+.card .meta { font-size: 12.5px; opacity: .85; display: flex; justify-content: space-between; }
+.medal { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin-inline-start: 3px; background: rgba(255,255,255,.14); }
+.medal.g3 { background: var(--gold); box-shadow: 0 0 8px var(--gold); } .medal.g2 { background: #d6dde4; } .medal.g1 { background: #c98248; }
+.rowbtn { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+button.b { pointer-events: auto; cursor: pointer; font: inherit; font-weight: 600; color: var(--txt); padding: 9px 18px; border-radius: 10px; background: var(--glass); border: 1px solid var(--line); }
+button.b:hover { border-color: var(--gold); } button.b.pri { background: var(--acc); border-color: transparent; color: #1a0d04; }
+.box { padding: 22px 28px; max-width: 640px; width: 100%; pointer-events: auto; }
+.box h2 { margin: 0 0 10px; font-size: 28px; }
+#ftime { font-size: 62px; font-weight: 800; line-height: 1; }
+#fmedal { font-size: 22px; font-weight: 700; margin: 8px 0; }
+table.keys { width: 100%; border-collapse: collapse; font-size: 14.5px; } table.keys td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
+table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text-align: left; }
+#load { position: fixed; inset: 0; background: #0b1016; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: opacity .6s; z-index: 10; }
+#load.off { opacity: 0; pointer-events: none; }
+#load .t { font-size: 46px; font-weight: 900; letter-spacing: 8px; direction: ltr; } #load .t span { color: var(--acc); }
+#lbar { width: min(340px, 70vw); height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; } #lbar i { display: block; height: 100%; width: 0; background: var(--acc); transition: width .2s; }
+#ltxt { font-size: 14px; opacity: .75; }
+#err { position: fixed; left: 10px; right: 10px; top: 10px; background: #7a1020; color: #fff; padding: 10px 14px; border-radius: 8px; font: 13px ui-monospace, monospace; display: none; z-index: 20; direction: ltr; white-space: pre-wrap; }
+#touch { position: fixed; inset: 0; pointer-events: none; display: none; } #touch.on { display: block; }
+#touch .stick { position: absolute; left: 22px; bottom: 150px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid var(--line); pointer-events: auto; }
+#touch .stick i { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.4); }
+#touch button { position: absolute; pointer-events: auto; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.14); color: #fff; font: 700 13px sans-serif; }
+#touch button.act { background: rgba(255,122,42,.6); }
+@media (max-width: 760px) { #evt, #map { display: none; } #kmh { font-size: 40px; } #spd { min-width: 150px; padding: 8px 10px; bottom: 300px; } #eng { transform: translateX(-50%) scale(.8); bottom: 6px; } #timer { font-size: 28px; } #hint { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="top" class="panel"><div id="timer" class="num">0:00.00</div><div id="cpn"></div><div id="delta" class="num"></div></div>
+  <div id="score" class="num"></div>
+  <div id="evt" class="panel"></div>
+  <div id="spd" class="panel">
+    <div><span id="kmh" class="num">0</span><small>km/h</small></div>
+    <div id="vt"><i></i><u></u></div>
+    <div class="row"><span>ALT <b id="agl" class="num">0</b> m</span><span>V/S <b id="vs" class="num">0</b></span><span><b id="gg" class="num">1.0</b> g</span></div>
+  </div>
+  <div id="eng" class="panel">
+    <div><div class="grp"><div class="bar"><i id="e0"></i></div><div class="bar"><i id="e1"></i></div><div class="bar"><i id="e2"></i></div><div class="bar"><i id="e3"></i></div></div><div class="lbl">דחף</div></div>
+    <div><div id="noz"><svg viewBox="-27 -27 54 54"><circle r="24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2"/><path d="M -24 0 A 24 24 0 0 0 0 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/><g id="nozA"><rect x="-4" y="-5" width="24" height="10" rx="4" fill="#dfe6ee"/><path d="M -4 -4 L -20 0 L -4 4 Z" fill="#ff7a2a"/></g></svg></div><div class="lbl">נחירים</div></div>
+    <div><div class="wide" id="heat"><i></i></div><div class="lbl">חום מבער</div><div class="wide" id="fuel"><i></i></div><div class="lbl">דלק</div></div>
+  </div>
+  <div id="map" class="panel"><canvas width="380" height="380"></canvas></div>
+  <div id="msg"></div><div id="warn"></div>
+  <div id="arrow"><i></i><span class="num"></span></div>
+  <div id="hint"></div>
+</div>
+
+<div id="menu">
+  <h1>F<span>Ö</span>HN</h1>
+  <div class="sub">אופנוע סילון עם מנועים מוטים, עמק אלפיני אחד, שישה אירועים</div>
+  <div id="cards"></div>
+  <div class="rowbtn">
+    <button class="b" id="bTime"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp">מקשים ועזרה</button>
+  </div>
+</div>
+
+<div id="pause"><div class="box panel"><h2>הפסקה</h2>
+  <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume">המשך</button><button class="b" id="pRestart">התחלה מחדש</button><button class="b" id="pMenu">תפריט ראשי</button><button class="b" id="pHelp">מקשים</button></div>
+</div></div>
+
+<div id="finish"><div class="box panel" style="text-align:center">
+  <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div>
+  <div class="rowbtn"><button class="b pri" id="fRetry">שוב <kbd>R</kbd></button><button class="b" id="fNext">האירוע הבא</button><button class="b" id="fMenu">תפריט</button></div>
+</div></div>
+
+<div id="help"><div class="box panel"><h2>איך טסים</h2>
+  <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9">מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מטה את המנועים, מזיז את המדפים ומחלק את הדחף. במהירות נמוכה האופנוע מרחף על הסילונים, ומעל כ-220 קמ"ש הכנף נושאת אותו.</p>
+  <table class="keys">
+    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>פנייה. האופנוע נוטה לבד; פנייה חדה מאוד עולה במהירות</td></tr>
+    <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td>למשוך לטפס, לדחוף לרדת (אפשר להפוך בהגדרות)</td></tr>
+    <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td>מהירות יעד למעלה ולמטה. המחשב שומר עליה</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>מבער. כ-7 שניות עד שהוא מתחמם, ומתקרר מהר יותר בטיסה מהירה</td></tr>
+    <tr><td><kbd>Shift</kbd></td><td>בלם: מעצור אוויר ונחירים קדימה, עד ריחוף</td></tr>
+    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td>הזזה הצידה בריחוף, לנחיתה מדויקת</td></tr>
+    <tr><td><kbd>C</kbd></td><td>מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
+    <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td>התחלה מחדש · הפסקה · השתקה</td></tr>
+  </table>
+  <p style="margin:10px 0 0;font-size:14px;opacity:.85">נחיתה: לבלום עד ריחוף מעל המעגל, ואז לדחוף <kbd>↑</kbd> בעדינות. המחשב מאט את הירידה קרוב לקרקע. שלט משחק נתמך.</p>
+  <div class="rowbtn"><button class="b pri" id="hClose">הבנתי</button></div>
+</div></div>
+
+<div id="touch">
+  <div class="stick"><i></i></div>
+  <button data-k="up" style="right:24px;bottom:230px">מהר</button><button data-k="down" style="right:24px;bottom:150px">לאט</button>
+  <button data-k="boost" style="right:104px;bottom:190px">מבער</button><button data-k="brake" style="right:184px;bottom:150px">בלם</button>
+  <button data-k="key" data-code="Escape" style="right:14px;top:14px;width:46px;height:46px">II</button>
+  <button data-k="key" data-code="KeyC" style="right:70px;top:14px;width:46px;height:46px">cam</button>
+</div>
+
+<div id="load"><div class="t">F<span>Ö</span>HN</div><div id="lbar"><i></i></div><div id="ltxt">טוען את העמק…</div></div>
+<div id="err"></div>
+<script>
+  window.addEventListener('error', (e) => { const el = document.getElementById('err'); el.style.display = 'block'; el.textContent += (e.message || e) + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : '') + '\n'; });
+  window.addEventListener('unhandledrejection', (e) => { const el = document.getElementById('err'); el.style.display = 'block'; el.textContent += (e.reason && e.reason.stack || e.reason) + '\n'; });
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
