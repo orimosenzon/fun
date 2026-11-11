@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שכונות פרדס חנה-כרכור</title>
+<meta name="description" content="כלי אינטראקטיבי לחלוקת פרדס חנה-כרכור ל-10 עד 13 שכונות, עם איזון בין מספר תושבים לשטח">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --surface-2: #efede7; --line: #dcd9cf;
+  --text: #1f1e1b; --text-2: #55534c; --muted: #8a877d;
+  --accent: #2a78d6; --accent-ink: #ffffff; --warn: #b4520b;
+  --region-border: #1f1e1b; --boundary: #1f1e1b;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141413; --surface: #1d1d1b; --surface-2: #262624; --line: #383835;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d84;
+    --accent: #3987e5; --accent-ink: #ffffff; --warn: #f0a050;
+    --region-border: #f0efec; --boundary: #f0efec;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141413; --surface: #1d1d1b; --surface-2: #262624; --line: #383835;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8d84;
+  --accent: #3987e5; --accent-ink: #ffffff; --warn: #f0a050;
+  --region-border: #f0efec; --boundary: #f0efec;
+  --shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font-family: Assistant, system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+header { padding: 18px 20px 10px; max-width: 1500px; margin: 0 auto; }
+h1 { font-size: 26px; margin: 0 0 4px; font-weight: 800; letter-spacing: -.01em; }
+.sub { color: var(--text-2); margin: 0; max-width: 900px; }
+.layout { display: grid; grid-template-columns: 400px 1fr; gap: 14px; padding: 10px 20px 20px; max-width: 1500px; margin: 0 auto; }
+.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+.card h2 { font-size: 15px; margin: 0 0 10px; font-weight: 700; }
+#mapwrap { position: relative; min-height: 640px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); }
+#map { position: absolute; inset: 0; background: var(--surface-2); }
+.seg { display: flex; gap: 6px; }
+.seg button { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ctl { margin-top: 12px; }
+.ctl label.t { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; }
+.ctl label.t span.v { color: var(--text-2); font-weight: 400; }
+.ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 12.5px; margin-top: -2px; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
+.chk { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; font-size: 14px; cursor: pointer; }
+.chk input { margin-top: 4px; accent-color: var(--accent); }
+.chk small { display: block; color: var(--muted); }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.btn { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.tile { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.tile .n { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.tile .l { font-size: 12.5px; color: var(--text-2); }
+.target { font-size: 13px; color: var(--text-2); margin-top: 8px; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.5em; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: right; font-weight: 600; color: var(--text-2); font-size: 12.5px; padding: 4px 4px; border-bottom: 1px solid var(--line); }
+td { padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--surface-2); }
+tr.row.sel td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sw { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-weight: 800; font-size: 12.5px; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,.6); }
+.nm { font-size: 12.5px; color: var(--text-2); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev { display: inline-block; min-width: 40px; }
+.dev.big { color: var(--warn); font-weight: 700; }
+.warn { color: var(--warn); }
+#pareto { width: 100%; height: auto; display: block; }
+#pareto text { fill: var(--text-2); font-family: Assistant, sans-serif; font-size: 11px; }
+.legend-row { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.maptools { position: absolute; top: 10px; left: 54px; z-index: 500; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.maptools .seg { background: var(--surface); padding: 4px; border-radius: 10px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.maptools .seg button { padding: 4px 10px; font-size: 13px; font-weight: 600; flex: none; }
+.hover { position: absolute; bottom: 10px; left: 10px; z-index: 500; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; box-shadow: var(--shadow); max-width: 260px; pointer-events: none; }
+.hover:empty { display: none; }
+.ramp { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-2); background: var(--surface); padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); }
+.ramp i { display: inline-block; width: 18px; height: 10px; }
+.lbl { background: transparent; border: 0; }
+.lbl div { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); text-shadow: 0 0 2px rgba(0,0,0,.5); font-family: Assistant, sans-serif; }
+.statlbl { background: var(--surface); color: var(--text); border: 1px solid var(--line); font-family: Assistant, sans-serif; font-size: 12px; padding: 1px 6px; border-radius: 6px; box-shadow: none; }
+.statlbl::before { display: none; }
+.tip { position: fixed; z-index: 1000; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; box-shadow: var(--shadow); pointer-events: none; display: none; }
+.about { max-width: 1500px; margin: 0 auto; padding: 0 20px 40px; }
+.about details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; }
+.about summary { font-weight: 700; cursor: pointer; }
+.about p, .about li { color: var(--text-2); max-width: 900px; }
+.about a { color: var(--accent); }
+.editnote { font-size: 13px; color: var(--text-2); margin-top: 8px; display: none; }
+.editing .editnote { display: block; }
+.editing #map { cursor: crosshair; }
+.leaflet-container { font-family: Assistant, sans-serif; }
+.leaflet-tile-pane { filter: grayscale(.75) brightness(1.04); opacity: .85; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(.85) contrast(.9); opacity: .9; } }
+:root[data-theme="dark"] .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(.85) contrast(.9); opacity: .9; }
+@media (max-width: 900px) {
+  header { padding: 14px 16px 6px; }
+  h1 { font-size: 21px; }
+  .layout { grid-template-columns: 1fr; padding: 8px 16px 16px; }
+  #mapwrap { min-height: 62vh; order: -1; }
+  .about { padding: 0 16px 30px; }
+  .tiles .n { font-size: 19px; }
+  .maptools { left: 52px; right: 8px; }
+  .maptools .seg button { padding: 4px 7px; font-size: 12.5px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>חלוקת פרדס חנה-כרכור לשכונות</h1>
+  <p class="sub">10 עד 13 שכונות, עם כמה שיותר שוויון במספר התושבים ובשטח. שני השיקולים מושכים לכיוונים שונים: רוב התושבים גרים במרכז, ורוב השטח הוא חקלאות, תעשייה ושטח פתוח. שחקו עם המשקלים וראו מה יוצא.</p>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <div class="card">
+      <h2>הגדרות</h2>
+      <div class="ctl" style="margin-top:0">
+        <label class="t">מספר שכונות</label>
+        <div class="seg" id="kseg" role="group" aria-label="מספר שכונות"></div>
+      </div>
+      <div class="ctl">
+        <label class="t" for="alpha">מה חשוב יותר? <span class="v" id="alphaV"></span></label>
+        <input type="range" id="alpha" min="0" max="100" step="5">
+        <div class="ends"><span>שטח שווה</span><span>תושבים שווים</span></div>
+      </div>
+      <div class="ctl">
+        <label class="t" for="mu">צורת השכונות <span class="v" id="muV"></span></label>
+        <input type="range" id="mu" min="0" max="4" step="0.25">
+        <div class="ends"><span>איזון מדויק, גבולות מפותלים</span><span>גבולות קצרים וישרים</span></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="inh">
+        <span>לספור רק שטח מיושב<small>אזור התעשייה והשטח הפתוח (כ-5.6 קמ"ר בלי תושבים) עדיין שייכים לשכונות, אבל לא נספרים בהשוואת השטחים</small></span></label>
+      <div class="btns">
+        <button class="btn" id="reco">חזרה להמלצה</button>
+        <button class="btn" id="again">פתרון אחר</button>
+        <button class="btn" id="edit">עריכה ידנית</button>
+        <button class="btn" id="share">העתק קישור</button>
+        <button class="btn" id="export">הורד GeoJSON</button>
+      </div>
+      <div class="editnote">בחרו שכונה בטבלה (או לחצו עליה במפה) ו"צבעו" תאים בגרירה עם העכבר. המספרים מתעדכנים תוך כדי.</div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>עד כמה החלוקה שוויונית</h2>
+      <div class="tiles">
+        <div class="tile"><div class="n" id="mP">—</div><div class="l">סטייה מקסימלית בתושבים</div></div>
+        <div class="tile"><div class="n" id="mA">—</div><div class="l">סטייה מקסימלית בשטח</div></div>
+        <div class="tile"><div class="n" id="mC">—</div><div class="l">אורך גבולות בין שכונות</div></div>
+      </div>
+      <div class="target" id="target"></div>
+    </div>
+
+    <div class="card">
+      <h2>הטרייד-אוף: כל נקודה היא חלוקה</h2>
+      <svg id="pareto" viewBox="0 0 360 230" role="img" aria-label="גרף טרייד-אוף בין סטייה בתושבים לסטייה בשטח"></svg>
+      <div class="target">ציר אופקי: סטייה מקסימלית בשטח. ציר אנכי: סטייה מקסימלית בתושבים. הפינה השמאלית התחתונה היא האידיאל. לחיצה על נקודה בוחרת אותה.</div>
+    </div>
+
+    <div class="card">
+      <h2>השכונות</h2>
+      <table>
+        <thead><tr><th></th><th>רחובות מרכזיים</th><th>תושבים</th><th>±</th><th id="areaH">קמ"ר</th><th>±</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div class="maptools">
+      <div class="seg" id="viewseg">
+        <button data-v="regions" aria-pressed="true">שכונות</button>
+        <button data-v="density" aria-pressed="false">צפיפות</button>
+        <button data-v="stats" aria-pressed="false">אזורים סטטיסטיים</button>
+      </div>
+      <div class="ramp" id="ramp" style="display:none"></div>
+    </div>
+    <div class="hover" id="hover"></div>
+  </div>
+</div>
+
+<section class="about">
+  <details open>
+    <summary>מאיפה הנתונים ואיך זה מחושב</summary>
+    <ul>
+      <li><b>גבול שטח השיפוט:</b> OpenStreetMap (22.8 קמ"ר).</li>
+      <li><b>תושבים:</b> מפקד האוכלוסין 2022 של הלמ"ס לפי 12 אזורים סטטיסטיים (44,170 תושבים), דרך <a href="https://services.arcgis.com/b6zSqPB0TQc3mBgU/arcgis/rest/services/%D7%9E%D7%A4%D7%A7%D7%93_2022/FeatureServer" target="_blank" rel="noopener">שכבת המפקד ב-ArcGIS</a>. בתוך כל אזור סטטיסטי האוכלוסייה מפוזרת על מבני המגורים לפי שטח הבנייה (מיפוי מבנים מ-OpenStreetMap), ואז כל המספרים מוגדלים באופן אחיד לאומדן העדכני: <b>47,194 תושבים</b> (נכון ל-1/10/2026, <a href="https://www.btl.gov.il/mediniyut/situation/statistics/btlstatistics.aspx?id=7800&type=1" target="_blank" rel="noopener">ביטוח לאומי</a>).</li>
+      <li><b>רשת:</b> המפה מחולקת לתאים של 100×100 מטר (2,418 תאים). כל שכונה היא אוסף רציף של תאים.</li>
+      <li><b>האלגוריתם:</b> מתחיל מחלוקה "גאומטרית" מאוזנת (כל תא הולך למרכז הקרוב, עם תיקון שמאזן את המשקלים), מתקן חלקים מנותקים, ואז מעביר תאי גבול בין שכונות כל עוד זה משפר את הציון: סכום ריבועי הסטיות בתושבים ובשטח, לפי המשקל שבחרתם, ועוד קנס על אורך הגבולות.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>מגבלות שכדאי לדעת</summary>
+    <ul>
+      <li>הגידול מ-2022 (כ-7%) מחולק באופן אחיד. שכונות שנבנו או התאכלסו אחרי המפקד מיוצגות בחסר, ואזורים ותיקים אולי ביתר.</li>
+      <li>מספר הקומות כמעט לא ממופה, ולכן בתוך כל אזור סטטיסטי בניין דירות נספר כמו בית פרטי באותו גודל. הסכום של כל אזור סטטיסטי נשמר נכון.</li>
+      <li>הגבולות עוקבים אחרי רשת התאים, לא אחרי רחובות. זו טיוטה לדיון: אחרי שבוחרים כיוון, כדאי ליישר את הגבולות לרחובות, לשבילים ולגבולות טבעיים.</li>
+      <li>החלוקה לא לוקחת בחשבון זהות קהילתית, היסטוריה של שכונות קיימות, בתי ספר או מוסדות. אלה שיקולים חשובים שנשארים לבני האדם.</li>
+    </ul>
+  </details>
+</section>
+<div class="tip" id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data.js"></script>
+<script src="partition.js"></script>
+<script>
+'use strict';
+const D = window.DATA;
+const CS = D.source.cell;
+// נבחר בסריקה (k, alpha, mu, זרע): הסטייה המקסימלית הנמוכה ביותר עם גבולות סבירים
+const RECO = { k: 12, alpha: 0.6, mu: 1, inh: false, seed: 8 };
+const PAL_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
+const PAL_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+const RAMP_L = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+const RAMP_D = ['#0d366b', '#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#cde2fb'];
+const DENS_BINS = [5, 20, 40, 70, 110, 170]; // תושבים לדונם*10 = לתא של 1 הקטאר
+const isDark = () => document.documentElement.dataset.theme === 'dark' ||
+  (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+const pal = () => isDark() ? PAL_DARK : PAL_LIGHT;
+
+// ---------- גאומטריה ----------
+const g = D.grid;
+function ll(x, y) { return [g.lat[0] * x + g.lat[1] * y + g.lat[2], g.lon[0] * x + g.lon[1] * y + g.lon[2]]; }
+const corner = (i, j) => ll(g.x0 + i * CS, g.y0 + j * CS);
+// הופכי של ההתאמה האפינית
+const det = g.lon[0] * g.lat[1] - g.lon[1] * g.lat[0];
+function cellAt(lat, lon) {
+  const a = lon - g.lon[2], b = lat - g.lat[2];
+  const x = (a * g.lat[1] - b * g.lon[1]) / det, y = (b * g.lon[0] - a * g.lat[0]) / det;
+  const i = Math.floor((x - g.x0) / CS), j = Math.floor((y - g.y0) / CS);
+  const G0 = Gs[0] || prep(false);
+  const c = G0.idx.get(i + ',' + j);
+  return c === undefined ? -1 : c;
+}
+
+// ---------- מצב ----------
+const Gs = {};
+function prep(inh) { const key = inh ? 1 : 0; return Gs[key] || (Gs[key] = Partition.prepare(D, { inhabitedOnly: inh })); }
+let st = Object.assign({}, RECO);
+let reg = null, edited = false, selected = -1, view = 'regions', editing = false;
+const cache = new Map();
+const keyOf = (s) => [s.k, s.alpha.toFixed(2), s.mu, s.inh ? 1 : 0, s.seed].join('|');
+function solveFor(s) {
+  const key = keyOf(s);
+  if (!cache.has(key)) {
+    const G = prep(s.inh);
+    const r = Partition.solve(G, { k: s.k, alpha: s.alpha, mu: s.mu, seed: s.seed, restarts: 2 });
+    cache.set(key, { reg: r.reg, sum: Partition.summary(G, r.reg, s.k) });
+  }
+  return cache.get(key);
+}
+
+// ---------- מפה ----------
+const map = L.map('map', { zoomControl: true, preferCanvas: true, attributionControl: true });
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+}).addTo(map);
+const renderer = L.canvas({ padding: 0.3 });
+const n = D.cells.length;
+const cellLayers = D.cells.map((c) => L.polygon([corner(c[0], c[1]), corner(c[0] + 1, c[1]), corner(c[0] + 1, c[1] + 1), corner(c[0], c[1] + 1)],
+  { renderer, stroke: false, fillOpacity: 0.45, interactive: false }).addTo(map));
+const bndLayer = L.polygon(D.boundary, { renderer, fill: false, weight: 2.5, color: '#1f1e1b', interactive: false }).addTo(map);
+const railLayer = L.polyline(D.rail, { renderer, weight: 2, dashArray: '6 5', color: '#55534c', interactive: false }).addTo(map);
+let borderLayer = null, labelLayer = L.layerGroup().addTo(map);
+const statLayer = L.layerGroup();
+D.stats.forEach((s) => {
+  const p = L.polygon(s.poly, { renderer, fill: false, weight: 2, color: '#6250d6', dashArray: '4 3', interactive: false });
+  statLayer.addLayer(p);
+  const label = s.pop ? `אזור ${s.id}: ${s.pop.toLocaleString('he-IL')} תושבים` : `אזור ${s.id}: ${s.func}`;
+  statLayer.addLayer(L.tooltip({ permanent: true, direction: 'center', className: 'statlbl' }).setLatLng(p.getBounds().getCenter()).setContent(label));
+});
+map.fitBounds(bndLayer.getBounds(), { padding: [10, 10] });
+// גובה המפה נקבע לפי הפאנל, שמשתנה אחרי הרינדור הראשון
+let fitted = false;
+new ResizeObserver(() => {
+  map.invalidateSize();
+  if (!fitted && reg) { fitted = true; map.fitBounds(bndLayer.getBounds(), { padding: [10, 10] }); }
+}).observe(document.getElementById('mapwrap'));
+
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+// צביעת מפה: שכונות סמוכות מקבלות צבעים שונים
+let colorOf = [];
+function colorRegions(G, k) {
+  const adj = Array.from({ length: k }, () => new Map());
+  for (let c = 0; c < G.n; c++) for (const m of G.N4[c]) if (m >= 0 && reg[m] !== reg[c]) {
+    adj[reg[c]].set(reg[m], (adj[reg[c]].get(reg[m]) || 0) + 1);
+  }
+  const order = [...Array(k).keys()].sort((a, b) => adj[b].size - adj[a].size);
+  const col = new Array(k).fill(-1);
+  for (const j of order) {
+    const used = new Set([...adj[j].keys()].map((q) => col[q]));
+    let c = 0; while (used.has(c) && c < 7) c++;
+    col[j] = c;
+  }
+  colorOf = col;
+}
+const regColor = (j) => pal()[colorOf[j] % 8];
+
+function densColor(p) {
+  const r = isDark() ? RAMP_D : RAMP_L;
+  let b = 0; while (b < DENS_BINS.length && p >= DENS_BINS[b]) b++;
+  return p < 1 ? null : r[b];
+}
+
+function paintCells() {
+  for (let c = 0; c < n; c++) {
+    const L_ = cellLayers[c];
+    if (view === 'density') {
+      const dens = D.cells[c][3] / (D.cells[c][2] / 1e4);
+      const col = densColor(dens);
+      L_.setStyle({ fillColor: col || 'transparent', fillOpacity: col ? 0.75 : 0 });
+    } else if (view === 'stats') {
+      L_.setStyle({ fillOpacity: 0 });
+    } else {
+      const j = reg[c];
+      L_.setStyle({ fillColor: regColor(j), fillOpacity: selected < 0 ? 0.45 : (j === selected ? 0.7 : 0.18) });
+    }
+  }
+  bndLayer.setStyle({ color: css('--boundary') });
+}
+
+function drawBorders(G) {
+  if (borderLayer) map.removeLayer(borderLayer);
+  const segs = [];
+  D.cells.forEach((c, k) => {
+    const [i, j] = c;
+    const right = G.N4[k][0], up = G.N4[k][1];
+    if (right >= 0 && reg[right] !== reg[k]) segs.push([corner(i + 1, j), corner(i + 1, j + 1)]);
+    if (up >= 0 && reg[up] !== reg[k]) segs.push([corner(i, j + 1), corner(i + 1, j + 1)]);
+  });
+  borderLayer = L.polyline(segs, { renderer, weight: view === 'regions' ? 2.2 : 1.5, color: css('--region-border'), opacity: view === 'regions' ? 0.9 : 0.55, interactive: false }).addTo(map);
+}
+
+// ---------- שמות לפי רחובות ----------
+const streetTotal = new Map();
+D.cells.forEach((c) => c[5].forEach(([s, len]) => streetTotal.set(s, (streetTotal.get(s) || 0) + len)));
+function regionInfo(G, k) {
+  const info = Array.from({ length: k }, () => ({ streets: new Map(), sx: 0, sy: 0, sw: 0, cells: [] }));
+  for (let c = 0; c < n; c++) {
+    const r = info[reg[c]];
+    r.cells.push(c);
+    const w = G.Ar[c];
+    r.sx += G.X[c] * w; r.sy += G.Y[c] * w; r.sw += w;
+    for (const [s, len] of D.cells[c][5]) r.streets.set(s, (r.streets.get(s) || 0) + len);
+  }
+  info.forEach((r) => {
+    // רחוב "מאפיין": ארוך בתוך השכונה, ורובו נמצא בה
+    const sc = [...r.streets].map(([s, len]) => [s, len * (len / streetTotal.get(s))]).sort((a, b) => b[1] - a[1]);
+    r.names = sc.slice(0, 2).map(([s]) => D.streets[s]).filter(Boolean);
+    const cx = r.sx / r.sw, cy = r.sy / r.sw;
+    let best = r.cells[0], bd = Infinity;
+    for (const c of r.cells) { const d = (G.X[c] - cx) ** 2 + (G.Y[c] - cy) ** 2; if (d < bd) { bd = d; best = c; } }
+    r.anchor = best;
+  });
+  return info;
+}
+
+function drawLabels(info) {
+  labelLayer.clearLayers();
+  info.forEach((r, j) => {
+    const c = D.cells[r.anchor];
+    const pos = ll(g.x0 + (c[0] + 0.5) * CS, g.y0 + (c[1] + 0.5) * CS);
+    const m = L.marker(pos, { icon: L.divIcon({ className: 'lbl', html: `<div style="background:${regColor(j)}">${j + 1}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false });
+    m.on('click', () => toggleSel(j));
+    labelLayer.addLayer(m);
+  });
+}
+
+// ---------- פאנל ----------
+const fmt = (x) => Math.round(x).toLocaleString('he-IL');
+const pct = (x) => (x >= 0 ? '+' : '−') + Math.abs(Math.round(x * 100)) + '%';
+let lastInfo = null;
+function renderAll() {
+  const G = prep(st.inh);
+  const k = st.k;
+  const sum = Partition.summary(G, reg, k);
+  colorRegions(G, k);
+  paintCells();
+  drawBorders(G);
+  const info = regionInfo(G, k);
+  lastInfo = info;
+  drawLabels(info);
+  document.getElementById('mP').textContent = '±' + Math.round(sum.maxP * 100) + '%';
+  document.getElementById('mA').textContent = '±' + Math.round(sum.maxA * 100) + '%';
+  document.getElementById('mC').textContent = sum.cutKm.toFixed(0) + ' ק"מ';
+  const At = G.At / k / 1e6;
+  document.getElementById('target').textContent =
+    `יעד לשכונה: כ-${fmt(G.Pt / k)} תושבים ו-${At.toFixed(2)} קמ"ר${st.inh ? ' מיושבים' : ''}. ` +
+    `"סטייה" = כמה השכונה רחוקה מהיעד.`;
+  document.getElementById('areaH').textContent = st.inh ? 'קמ"ר מיושב' : 'קמ"ר';
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  for (let j = 0; j < k; j++) {
+    const comps = Partition.components(G, reg, j).length;
+    const tr = document.createElement('tr');
+    tr.className = 'row' + (j === selected ? ' sel' : '');
+    const big = (v) => Math.abs(v) > 0.15 ? ' big' : '';
+    tr.innerHTML = `<td><span class="sw" style="background:${regColor(j)}">${j + 1}</span></td>
+      <td><div class="nm" title="${info[j].names.join(', ')}">${comps > 1 ? '<span class="warn" title="השכונה מנותקת">⚠ מנותקת</span> ' : ''}${info[j].names.join(', ') || '—'}</div></td>
+      <td class="num">${fmt(sum.pops[j])}</td><td class="num"><span class="dev${big(sum.pd[j])}">${pct(sum.pd[j])}</span></td>
+      <td class="num">${(sum.areas[j] / 1e6).toFixed(2)}</td><td class="num"><span class="dev${big(sum.ad[j])}">${pct(sum.ad[j])}</span></td>`;
+    tr.onclick = () => toggleSel(j);
+    tb.appendChild(tr);
+  }
+  drawPareto(sum);
+  writeHash();
+  if (!fitted) { fitted = true; requestAnimationFrame(() => { map.invalidateSize(); map.fitBounds(bndLayer.getBounds(), { padding: [10, 10] }); }); }
+}
+
+// במצב עריכה לחיצה תמיד בוחרת; אחרת לחיצה שנייה מבטלת
+function toggleSel(j) { select(editing || j !== selected ? j : -1); }
+function select(j) {
+  selected = j;
+  paintCells();
+  document.querySelectorAll('#tbody tr').forEach((tr, q) => tr.classList.toggle('sel', q === j));
+}
+
+// ---------- גרף טרייד-אוף ----------
+const ALPHAS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+let paretoToken = 0, paretoPts = [];
+function startPareto() {
+  const tok = ++paretoToken;
+  paretoPts = [];
+  const base = Object.assign({}, st);
+  let q = 0;
+  const step = () => {
+    if (tok !== paretoToken) return;
+    if (q >= ALPHAS.length) { setStatus(''); return; }
+    const s = Object.assign({}, base, { alpha: ALPHAS[q] });
+    const r = solveFor(s);
+    paretoPts.push({ alpha: ALPHAS[q], P: r.sum.maxP, A: r.sum.maxA });
+    q++;
+    setStatus(`מחשב את עקומת הטרייד-אוף… ${q}/${ALPHAS.length}`);
+    drawPareto(currentSum());
+    setTimeout(step, 0);
+  };
+  setTimeout(step, 30);
+}
+function currentSum() { return Partition.summary(prep(st.inh), reg, st.k); }
+
+function drawPareto(sum) {
+  const svg = document.getElementById('pareto');
+  const W = 360, H = 230, ml = 40, mr = 14, mt = 12, mb = 32;
+  const pts = paretoPts.slice();
+  const allP = pts.map((p) => p.P).concat([sum.maxP]), allA = pts.map((p) => p.A).concat([sum.maxA]);
+  const nice = (v) => { const s = [0.25, 0.5, 1, 1.5, 2, 2.5, 3]; return s.find((x) => x >= v) || Math.ceil(v); };
+  const xMax = nice(Math.max(0.25, ...allA)), yMax = nice(Math.max(0.25, ...allP));
+  // ציר X משמאל לימין גם בדף RTL: כמו בכל גרף מספרי
+  const X = (a) => ml + (a / xMax) * (W - ml - mr), Y = (p) => H - mb - (p / yMax) * (H - mt - mb);
+  const ink = css('--text-2'), grid = css('--line'), acc = css('--accent');
+  let h = '';
+  const ticks = (max) => [0, max / 2, max];
+  ticks(yMax).forEach((t) => { h += `<line x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}" stroke="${grid}" stroke-width="1"/><text x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end" direction="ltr">${Math.round(t * 100)}%</text>`; });
+  ticks(xMax).forEach((t) => { h += `<text x="${X(t)}" y="${H - mb + 15}" text-anchor="middle" direction="ltr">${Math.round(t * 100)}%</text>`; });
+  h += `<text x="${(ml + W - mr) / 2}" y="${H - 3}" text-anchor="middle">סטייה בשטח →</text>`;
+  h += `<text x="12" y="${(mt + H - mb) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(mt + H - mb) / 2})">סטייה בתושבים →</text>`;
+  if (pts.length > 1) {
+    h += `<polyline fill="none" stroke="${ink}" stroke-opacity=".35" stroke-width="1.5" points="${pts.map((p) => X(p.A) + ',' + Y(p.P)).join(' ')}"/>`;
+  }
+  pts.forEach((p) => {
+    const lbl = p.alpha === 0 ? 'רק שטח' : p.alpha === 1 ? 'רק תושבים' : '';
+    h += `<circle class="pp" data-a="${p.alpha}" data-p="${p.P}" data-x="${p.A}" cx="${X(p.A)}" cy="${Y(p.P)}" r="5" fill="${ink}" fill-opacity=".55" stroke="${css('--surface')}" stroke-width="2" style="cursor:pointer"/>`;
+    if (lbl) h += `<text x="${X(p.A) + (p.alpha === 0 ? -8 : 8)}" y="${Y(p.P) - 8}" text-anchor="${p.alpha === 0 ? 'end' : 'start'}">${lbl}</text>`;
+  });
+  // הנקודה הנוכחית
+  h += `<circle cx="${X(sum.maxA)}" cy="${Y(sum.maxP)}" r="8" fill="${acc}" stroke="${css('--surface')}" stroke-width="2"/>`;
+  h += `<text x="${X(sum.maxA)}" y="${Y(sum.maxP) - 12}" text-anchor="middle" style="fill:${css('--text')};font-weight:700">${edited ? 'החלוקה שלכם' : 'עכשיו'}</text>`;
+  // אזורי לחיצה גדולים
+  pts.forEach((p) => { h += `<circle class="hit" data-a="${p.alpha}" data-p="${p.P}" data-x="${p.A}" cx="${X(p.A)}" cy="${Y(p.P)}" r="13" fill="transparent" style="cursor:pointer"/>`; });
+  svg.innerHTML = h;
+  svg.querySelectorAll('.hit').forEach((el) => {
+    el.addEventListener('mousemove', (e) => showTip(e, `${Math.round(el.dataset.a * 100)}% משקל לתושבים<br>סטייה בתושבים ±${Math.round(el.dataset.p * 100)}%<br>סטייה בשטח ±${Math.round(el.dataset.x * 100)}%`));
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('click', () => { st.alpha = +el.dataset.a; syncControls(); recompute(false); });
+  });
+}
+const tip = document.getElementById('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = (e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 12) + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+
+// ---------- בקרות ----------
+const kseg = document.getElementById('kseg');
+[10, 11, 12, 13].forEach((k) => {
+  const b = document.createElement('button'); b.textContent = k; b.dataset.k = k;
+  b.onclick = () => { st.k = k; selected = -1; syncControls(); recompute(true); };
+  kseg.appendChild(b);
+});
+const $a = document.getElementById('alpha'), $m = document.getElementById('mu'), $i = document.getElementById('inh');
+function syncControls() {
+  kseg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.k === st.k));
+  $a.value = Math.round(st.alpha * 100);
+  document.getElementById('alphaV').textContent = `${Math.round(st.alpha * 100)}% תושבים · ${100 - Math.round(st.alpha * 100)}% שטח`;
+  $m.value = st.mu;
+  document.getElementById('muV').textContent = ['חופשי', 'מעט', 'בינוני', 'חזק', 'חזק מאוד'][Math.min(4, Math.round(st.mu))];
+  $i.checked = st.inh;
+}
+let deb = null;
+$a.addEventListener('input', () => { st.alpha = $a.value / 100; syncControls(); debounce(false); });
+$m.addEventListener('input', () => { st.mu = +$m.value; syncControls(); debounce(true); });
+$i.addEventListener('change', () => { st.inh = $i.checked; recompute(true); });
+function debounce(pareto) { clearTimeout(deb); deb = setTimeout(() => recompute(pareto), 180); }
+document.getElementById('reco').onclick = () => { st = Object.assign({}, RECO); selected = -1; syncControls(); recompute(true); };
+document.getElementById('again').onclick = () => { st.seed++; recompute(true); };
+function setStatus(t) { document.getElementById('status').textContent = t; }
+
+let lastParetoKey = '';
+function recompute(pareto) {
+  setStatus('מחשב…');
+  setTimeout(() => {
+    reg = Int32Array.from(solveFor(st).reg);
+    edited = false;
+    if (selected >= st.k) selected = -1;
+    renderAll();
+    const pk = [st.k, st.mu, st.inh, st.seed].join('|');
+    if (pareto || pk !== lastParetoKey) { lastParetoKey = pk; startPareto(); } else setStatus('');
+  }, 10);
+}
+
+// תצוגת מפה
+document.querySelectorAll('#viewseg button').forEach((b) => b.onclick = () => {
+  view = b.dataset.v;
+  document.querySelectorAll('#viewseg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  if (view === 'stats') statLayer.addTo(map); else map.removeLayer(statLayer);
+  if (view === 'regions') labelLayer.addTo(map); else map.removeLayer(labelLayer);
+  const ramp = document.getElementById('ramp');
+  if (view === 'density') {
+    const r = isDark() ? RAMP_D : RAMP_L;
+    ramp.innerHTML = 'תושבים לדונם: ' + ['<0.5', '0.5', '2', '4', '7', '11', '17+'].map((t, q) => `<i style="background:${r[q]}"></i>${q === 0 || q === 6 ? t : ''}`).join('');
+    ramp.style.display = 'flex';
+  } else ramp.style.display = 'none';
+  paintCells(); drawBorders(prep(st.inh));
+});
+
+// ריחוף ועריכה
+const hover = document.getElementById('hover');
+let painting = false;
+map.on('mousemove', (e) => {
+  const c = cellAt(e.latlng.lat, e.latlng.lng);
+  if (c < 0) { hover.innerHTML = ''; return; }
+  const d = D.cells[c];
+  const st_ = D.stats.find((s) => s.id === d[4]);
+  const streets = d[5].map(([s]) => D.streets[s]).filter(Boolean).slice(0, 2).join(', ');
+  hover.innerHTML = `<b>שכונה ${reg[c] + 1}</b>${streets ? ' · ' + streets : ''}<br>בריבוע הזה (10 דונם): כ-${Math.round(d[3])} תושבים<br>אזור סטטיסטי ${d[4]}${st_ && st_.pop ? '' : ' (ללא תושבים)'}`;
+  if (painting) paintAt(c);
+});
+map.on('mouseout', () => { hover.innerHTML = ''; });
+map.on('click', (e) => {
+  if (editing) return;
+  const c = cellAt(e.latlng.lat, e.latlng.lng);
+  if (c >= 0 && view === 'regions') toggleSel(reg[c]);
+});
+map.on('mousedown', (e) => {
+  if (!editing) return;
+  const c = cellAt(e.latlng.lat, e.latlng.lng);
+  if (c < 0) return;
+  if (selected < 0) { select(reg[c]); return; }
+  painting = true; paintAt(c);
+});
+document.addEventListener('mouseup', () => { if (painting) { painting = false; edited = true; renderAll(); } });
+function paintAt(c) {
+  if (reg[c] === selected) return;
+  reg[c] = selected;
+  cellLayers[c].setStyle({ fillColor: regColor(selected), fillOpacity: 0.7 });
+}
+document.getElementById('edit').onclick = (e) => {
+  editing = !editing;
+  e.target.classList.toggle('on', editing);
+  document.body.classList.toggle('editing', editing);
+  if (editing) map.dragging.disable(); else map.dragging.enable();
+  if (editing && selected < 0) select(0);
+  if (editing && view !== 'regions') document.querySelector('#viewseg button[data-v="regions"]').click();
+};
+
+// ---------- שיתוף וייצוא ----------
+function writeHash() {
+  let h = `k=${st.k}&a=${st.alpha.toFixed(2)}&m=${st.mu}&i=${st.inh ? 1 : 0}&s=${st.seed}`;
+  if (edited) h += '&r=' + Array.from(reg, (v) => v.toString(36)).join('');
+  history.replaceState(null, '', '#' + h);
+}
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.has('k')) return null;
+  st = { k: Math.min(13, Math.max(10, +p.get('k') || 12)), alpha: Math.min(1, Math.max(0, +p.get('a'))), mu: +p.get('m') || 0, inh: p.get('i') === '1', seed: +p.get('s') || 1 };
+  const r = p.get('r');
+  return r && r.length === n ? Int32Array.from(r, (ch) => Math.min(st.k - 1, parseInt(ch, 36) || 0)) : null;
+}
+document.getElementById('share').onclick = async () => {
+  writeHash();
+  try { await navigator.clipboard.writeText(location.href); setStatus('הקישור הועתק. מי שיפתח אותו יראה בדיוק את החלוקה הזו.'); }
+  catch { setStatus('לא הצלחתי להעתיק. הקישור נמצא בשורת הכתובת.'); }
+};
+document.getElementById('export').onclick = () => {
+  const G = prep(st.inh), sum = Partition.summary(G, reg, st.k);
+  const feats = [];
+  for (let j = 0; j < st.k; j++) {
+    const polys = [];
+    for (let c = 0; c < n; c++) if (reg[c] === j) {
+      const [i, jj] = D.cells[c];
+      const ring = [corner(i, jj), corner(i + 1, jj), corner(i + 1, jj + 1), corner(i, jj + 1), corner(i, jj)].map(([la, lo]) => [+lo.toFixed(6), +la.toFixed(6)]);
+      polys.push([ring]);
+    }
+    feats.push({ type: 'Feature', properties: { shchuna: j + 1, streets: lastInfo[j].names.join(', '), population: Math.round(sum.pops[j]), area_km2: +(sum.areas[j] / 1e6).toFixed(3) }, geometry: { type: 'MultiPolygon', coordinates: polys } });
+  }
+  const blob = new Blob([JSON.stringify({ type: 'FeatureCollection', features: feats })], { type: 'application/geo+json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `shchunot-${st.k}.geojson`; a.click();
+};
+
+// ---------- התחלה ----------
+const fromHash = readHash();
+syncControls();
+if (fromHash) {
+  setStatus('מחשב…');
+  setTimeout(() => { reg = fromHash; edited = true; renderAll(); lastParetoKey = [st.k, st.mu, st.inh, st.seed].join('|'); startPareto(); }, 10);
+} else recompute(true);
+</script>
+</body>
+</html>
