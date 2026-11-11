@@ -55,6 +55,7 @@
     <button data-k="65">👊 אמצע</button><button data-k="83">🦶 אמצע</button>
     <button data-k="90">👊 נמוך</button><button data-k="88">🦶 נמוך</button>
     <button data-k="69" style="grid-column: span 2">🌀 מוואשי גרי</button>
+    <button data-k="68">⟲ סלטה אחורה</button><button data-k="70">סלטה קדימה ⟳</button>
   </div>
 </div>
 <table class="keys">
@@ -63,6 +64,7 @@
   <tr><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>Z</kbd></td><td>אגרוף גבוה, אמצעי, נמוך</td></tr>
   <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
   <tr><td><kbd>E</kbd></td><td>מוואשי גרי, בעיטה סיבובית: אטית יותר, ופגיעה שלה שווה שתיים (תוספת שלנו)</td></tr>
+  <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות (תוספת שלנו)</td></tr>
   <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
 </table>
 <div class="note">גרסת פיתוח מקומית. המשחק: ג'ורדן מכנר, 1984.</div>
@@ -72,13 +74,14 @@ import { CPU_HZ } from './src/vm/machine.js';
 import { Display } from './src/display.js';
 import { Speaker } from './src/speaker.js';
 import { installMawashi } from './src/ext/mawashi.js';
+import { installFlip } from './src/ext/flip.js';
 
 const $ = (id) => document.getElementById(id);
 const display = new Display($('scr')), speaker = new Speaker(CPU_HZ);
 let dsk, m, running = false, paused = false, muted = false, last = 0;
 try { dsk = new Uint8Array(await (await fetch('data/karateka.dsk')).arrayBuffer()); if (dsk.length !== 143360) throw 0; }
 catch { $('msg').textContent = 'קובץ הנתונים של המשחק (data/karateka.dsk) חסר.'; $('start').disabled = true; }
-const boot = () => { m = new GameMachine(dsk); installMawashi(m); window.machine = m; };
+const boot = () => { m = new GameMachine(dsk); installMawashi(m); installFlip(m); window.machine = m; };
 
 function loading() { const d = m.drive; return d.motor || m.cpu.cycles - d.offAt < CPU_HZ; }
 function frame(t) {

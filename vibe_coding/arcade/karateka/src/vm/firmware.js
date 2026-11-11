@@ -24,11 +24,14 @@ export class GameMachine extends Machine {
 
   // Extensions to the game: call fn when the game proper reaches addr, provided the code
   // there is the code we expect. fn returns true when it has replaced the instruction.
-  hook(addr, bytes, fn) { this.hookAt[addr] = 1; this.hooks.set(addr, { bytes, fn }); }
+  hook(addr, bytes, fn) { this.hookAt[addr] = 1; if (!this.hooks.has(addr)) this.hooks.set(addr, []); this.hooks.get(addr).push({ bytes, fn }); }
   runHook(pc) {
-    const h = this.hooks.get(pc), m = this.ram;
-    for (let i = 0; i < h.bytes.length; i++) if (m[pc + i] !== h.bytes[i]) return false;
-    return h.fn();
+    const m = this.ram;
+    next: for (const h of this.hooks.get(pc)) {
+      for (let i = 0; i < h.bytes.length; i++) if (m[pc + i] !== h.bytes[i]) continue next;
+      if (h.fn()) return true;
+    }
+    return false;
   }
 
   rts() { const c = this.cpu; let t = c.pop(); t |= c.pop() << 8; c.pc = (t + 1) & 0xffff; c.cycles += 6; }

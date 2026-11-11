@@ -10,7 +10,7 @@
 import { CHAMBER, KICK, ART_Y, ART_ANCHOR } from './mawashi_art.js';
 
 const KEY_E = 0x45, KEY_S = 0x53;
-const ARM_WINDOW = 400000;      // cycles (about 0.4 s) the game has to accept the key press
+const ARM_WINDOW = 1500000;     // cycles (about 1.5 s) the game has to accept the key press
 const POSE = { STANCE: 6, STEP: 5, CHAMBER: 1, KICK: 3 };
 // zero page of the fighter being worked on: pose, animation index, attack id, facing, x
 const Z = { POSE: 0x20, X: 0x22, ANIM: 0x25, ATTACK: 0x2b, FACING: 0x2c, SHIFT: 0x50, PAGE: 0x07 };
