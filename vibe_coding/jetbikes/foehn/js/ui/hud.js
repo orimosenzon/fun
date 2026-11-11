@@ -3,10 +3,10 @@ import { T } from '../sim/terrain.js';
 import { G, FUEL0, TILT_MAX } from '../sim/bike.js';
 import { V_MAX } from '../sim/fcs.js';
 import { len, yprOf } from '../sim/vmath.js';
+import { t, evName } from '../i18n.js';
 
 const $ = (id) => document.getElementById(id);
 export const fmtTime = (t) => { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };
-const REASON = { ground: 'פגעת בקרקע', hard: 'נחיתה קשה מדי', water: 'נפלת למים', tree: 'עץ', building: 'בניין', ring: 'פגעת בטבעת', bounds: 'יצאת מגבולות העמק', fuel: 'נגמר הדלק' };
 
 export class Hud {
   constructor() {
@@ -35,17 +35,17 @@ export class Hud {
   show(on) { this.el.classList.toggle('on', on); }
   setEvent(game) {
     const ev = game.ev, m = ev.medals;
-    let h = `<b>${ev.name}</b><br>`;
+    let h = `<b>${evName(ev)}</b><br>`;
     if (m) h += `<span class="m"><i class="medal g3"></i> <span class="num">${fmtTime(m[0])}</span></span><span class="m"><i class="medal g2"></i> <span class="num">${fmtTime(m[1])}</span></span><span class="m"><i class="medal g1"></i> <span class="num">${fmtTime(m[2])}</span></span><br>`;
-    if (game.best) h += `השיא שלך: <span class="num">${fmtTime(game.best.time)}</span>`;
-    else if (m) h += 'עוד אין לך שיא כאן';
+    if (game.best) h += `${t('hud.best')}<span class="num">${fmtTime(game.best.time)}</span>`;
+    else if (m) h += t('hud.noBest');
     $('evt').innerHTML = h;
     $('top').style.display = m ? '' : 'none'; $('score').style.display = m ? 'none' : '';
     $('delta').textContent = '';
   }
   message(text, sub = '', dur = 1.6) { const e = $('msg'); e.innerHTML = text + (sub ? `<small>${sub}</small>` : ''); e.classList.add('on'); this.msgT = dur; }
   warn(text) { const e = $('warn'); e.textContent = text; e.classList.add('on'); this.warnT = 0.5; }
-  crash(reason) { this.message('💥', REASON[reason] || reason, 2.2); }
+  crash(reason) { this.message('💥', t('reason.' + reason), 2.2); }
   delta(d) {
     const e = $('delta');
     if (d === null || d === undefined) { e.textContent = ''; return; }
@@ -88,8 +88,8 @@ export class Hud {
     $('fuel').firstElementChild.style.width = b.fuel / FUEL0 * 100 + '%';
     if (game.ev.medals) {
       $('timer').textContent = fmtTime(game.total);
-      $('cpn').innerHTML = `נקודה <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · עונשין <span class="num">+${game.penalty}</span>` : '');
-    } else $('score').innerHTML = `${Math.floor(game.score).toLocaleString('en')} נק'` + (game.combo > 1 ? ` · <span style="color:#ffc440">×${game.combo}</span>` : '');
+      $('cpn').innerHTML = `${t('hud.cp')} <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · ${t('hud.penalty')} <span class="num">+${game.penalty}</span>` : '');
+    } else $('score').innerHTML = `${Math.floor(game.score).toLocaleString('en')} ${t('hud.pts')}` + (game.combo > 1 ? ` · <span style="color:#ffc440">×${game.combo}</span>` : '');
     this.drawMap(game);
   }
   drawMap(game) {

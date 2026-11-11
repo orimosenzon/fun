@@ -19,6 +19,7 @@ import { Post } from './render/post.js';
 import { Input } from './ui/input.js';
 import { Audio } from './ui/audio.js';
 import { Hud, fmtTime } from './ui/hud.js';
+import { t, evName, evTag, lang, setLang, langUrl } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -36,12 +37,12 @@ if (Q.get('time') && TIMES[Q.get('time')]) save.set.time = Q.get('time');
 if (Q.get('q')) save.set.quality = Q.get('q');
 
 async function boot() {
-  await load(0.03, 'טוען את העמק…');
+  await load(0.03, t('load.valley'));
   const [meta, buf] = await Promise.all([fetch('assets/meta.json').then((r) => r.json()), fetch('assets/terrain.bin').then((r) => r.arrayBuffer())]);
   initTerrain(buf, meta);
-  await load(0.12, 'שותל 150,000 עצים…');
+  await load(0.12, t('load.trees'));
   buildScenery();
-  await load(0.25, 'מגלף את ההרים…');
+  await load(0.25, t('load.mountains'));
 
   // ---------------- renderer ----------------
   const canvas = $('c');
@@ -73,12 +74,12 @@ async function boot() {
   scene.fog = new THREE.FogExp2(0x8899aa, 0.00004);
 
   await buildTerrain(scene, (p) => load(0.25 + 0.3 * p));
-  await load(0.56, 'מטיל צללים…');
+  await load(0.56, t('load.shadows'));
   const sky = buildSky(scene);
   buildWater(scene, renderer);
-  await load(0.62, 'יער…');
+  await load(0.62, t('load.forest'));
   buildForest(scene);
-  await load(0.7, 'כפר ובקתות…');
+  await load(0.7, t('load.village'));
   const props = buildProps(scene);
   const gates = new Gates(scene);
   const model = buildBike(); scene.add(model.root);
@@ -100,7 +101,7 @@ async function boot() {
     exposure = { morning: 1.0, noon: 0.8, afternoon: 0.9, golden: 1.05, dusk: 1.6 }[key] || 1;
   }
   let exposure = 1;
-  await load(0.78, 'מדליק את השמש…');
+  await load(0.78, t('load.sun'));
   applyTime(save.set.time);
 
   // ---------------- game ----------------
@@ -125,8 +126,8 @@ async function boot() {
   }
   function hintFor(id) {
     const first = !save.best[id];
-    if (id === 'first' && first) hud.hint('<kbd>↓</kbd> להמריא · <kbd>W</kbd> להאיץ · <kbd>←</kbd> <kbd>→</kbd> לפנות · בסוף: <kbd>Shift</kbd> לבלום, <kbd>↑</kbd> לנחות על המעגל');
-    else if (id === 'free') hud.hint('טוס מהר ונמוך כדי לצבור נקודות. נחיתה על משטח ממלאת דלק');
+    if (id === 'first' && first) hud.hint(t('hint.first'));
+    else if (id === 'free') hud.hint(t('hint.free'));
     else hud.hint('');
     setTimeout(() => hud.hint(''), 14000);
   }
@@ -139,17 +140,25 @@ async function boot() {
     for (const ev of [...EVENTS, FREE]) {
       const b = save.best[ev.id], card = document.createElement('button'); card.className = 'card panel';
       const medals = ev.medals ? [1, 2, 3].map((k) => `<i class="medal ${b && b.medal >= k ? 'g' + k : ''}"></i>`).join('') : '';
-      card.innerHTML = `<h3><span>${ev.name}</span><span>${medals}</span></h3><p>${ev.tag}</p><div class="meta"><span>${ev.medals ? 'זהב: <span class="num">' + fmtTime(ev.medals[0]) + '</span>' : 'בלי שעון'}</span><span>${b ? 'שיא: <span class="num">' + fmtTime(b.time) + '</span>' : ''}</span></div>`;
+      card.innerHTML = `<h3><span>${evName(ev)}</span><span>${medals}</span></h3><p>${evTag(ev)}</p><div class="meta"><span>${ev.medals ? t('card.gold') + '<span class="num">' + fmtTime(ev.medals[0]) + '</span>' : t('card.noClock')}</span><span>${b ? t('card.best') + '<span class="num">' + fmtTime(b.time) + '</span>' : ''}</span></div>`;
       card.onclick = () => { audio.start(); audio.click(); startEvent(ev.id); };
       el.appendChild(card);
     }
-    $('bTime').textContent = 'שעה: ' + TIMES[save.set.time].name;
-    $('bQual').textContent = 'איכות: ' + { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[save.set.quality];
-    $('bInv').textContent = 'ציר גובה: ' + (save.set.invert ? 'דחיפה = טיפוס' : 'משיכה = טיפוס');
+    $('bTime').textContent = t('set.time') + t('time.' + save.set.time);
+    $('bQual').textContent = t('set.quality') + t('q.' + save.set.quality);
+    $('bInv').textContent = t('set.axis') + t(save.set.invert ? 'axis.inv' : 'axis.norm');
+    $('bLang').textContent = t('lang.other'); $('bShare').textContent = t('share');
   }
   $('bTime').onclick = () => { const k = Object.keys(TIMES); save.set.time = k[(k.indexOf(save.set.time) + 1) % k.length]; persist(); applyTime(save.set.time); buildCards(); };
   $('bQual').onclick = () => { const k = ['low', 'medium', 'high']; save.set.quality = k[(k.indexOf(save.set.quality) + 1) % 3]; qual = QUAL[save.set.quality]; persist(); resize(); buildCards(); };
   $('bInv').onclick = () => { save.set.invert = !save.set.invert; input.invert = save.set.invert; persist(); buildCards(); };
+  $('bLang').onclick = () => { setLang(lang === 'he' ? 'en' : 'he'); buildCards(); hud.setEvent(game); };
+  $('bShare').onclick = async () => {
+    const url = langUrl();
+    if (navigator.share) { try { await navigator.share({ title: 'FÖHN', text: t('share.text'), url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(url); } catch { prompt('', url); return; }
+    const b = $('bShare'); b.textContent = t('share.copied'); setTimeout(() => (b.textContent = t('share')), 1800);
+  };
   $('bHelp').onclick = $('pHelp').onclick = () => $('help').classList.add('on');
   $('hClose').onclick = () => $('help').classList.remove('on');
   $('pResume').onclick = () => setPause(false);
@@ -164,27 +173,27 @@ async function boot() {
       if (mode !== 'play') { if (e.type === 'crash') fx.explode(e.p, e.v, e.water); if (e.type === 'respawn' && auto) auto.reset(); if (e.type === 'finish') setTimeout(() => mode === 'menu' && startEvent('tour', true), 2500); continue; }
       switch (e.type) {
         case 'count': hud.message(String(e.n), '', 0.8); audio.count(false); break;
-        case 'go': if (game.ev.medals) { hud.message('צא!', '', 0.9); audio.count(true); } break;
-        case 'gate': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (e.perfect) hud.message('', 'מרכז מושלם', 0.7); flash = 0.06; break;
-        case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last) hud.message('נחיתה!', 'להמריא ולהמשיך', 1.4); break;
-        case 'miss': audio.miss(); hud.message('', 'פספסת טבעת · +4 שניות', 1.2); break;
+        case 'go': if (game.ev.medals) { hud.message(t('go'), '', 0.9); audio.count(true); } break;
+        case 'gate': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (e.perfect) hud.message('', t('perfect'), 0.7); flash = 0.06; break;
+        case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last) hud.message(t('landed'), t('landed.sub'), 1.4); break;
+        case 'miss': audio.miss(); hud.message('', t('missed'), 1.2); break;
         case 'crash': fx.explode(e.p, e.v, e.water); audio.crash(e.water); hud.crash(e.reason); break;
-        case 'warn': hud.warn('חזור לעמק!'); audio.warn(); break;
+        case 'warn': hud.warn(t('warn.back')); audio.warn(); break;
         case 'finish': onFinish(e); break;
       }
     }
     game.events.length = 0;
   }
   function onFinish(r) {
-    const id = game.ev.id, names = ['', 'ארד', 'כסף', 'זהב'];
+    const id = game.ev.id;
     if (r.isBest) { save.best[id] = { time: r.time, splits: r.splits, medal: Math.max(r.medal, (save.best[id] || {}).medal || 0), ghost: r.ghost.length < 60000 ? b64(r.ghost) : null, _g: r.ghost }; }
     else save.best[id].medal = Math.max(save.best[id].medal || 0, r.medal);
     try { const c = { ...save, best: Object.fromEntries(Object.entries(save.best).map(([k, v]) => [k, { time: v.time, splits: v.splits, medal: v.medal, ghost: v.ghost }])) }; localStorage.setItem(KEY, JSON.stringify(c)); } catch { /* quota */ }
-    $('fname').textContent = game.ev.name; $('ftime').textContent = fmtTime(r.time);
-    $('fmedal').innerHTML = r.medal ? `<i class="medal g${r.medal}" style="width:20px;height:20px"></i> מדליית ${names[r.medal]}` : 'בלי מדליה הפעם';
-    $('fbest').innerHTML = r.isBest ? (r.prev ? `שיא אישי חדש! קודם: <span class="num">${fmtTime(r.prev)}</span>` : 'שיא ראשון נקבע') : `השיא שלך: <span class="num">${fmtTime(r.prev)}</span>`;
+    $('fname').textContent = evName(game.ev); $('ftime').textContent = fmtTime(r.time);
+    $('fmedal').innerHTML = r.medal ? `<i class="medal g${r.medal}" style="width:20px;height:20px"></i> ${t('medal.' + r.medal)}` : t('medal.none');
+    $('fbest').innerHTML = r.isBest ? (r.prev ? `${t('fin.newBest')}<span class="num">${fmtTime(r.prev)}</span>` : t('fin.firstBest')) : `${t('fin.best')}<span class="num">${fmtTime(r.prev)}</span>`;
     const m = game.ev.medals, nextT = r.medal < 3 ? m[2 - r.medal] : null;
-    $('fstat').innerHTML = `התרסקויות: ${r.crashes} · טבעות שפוספסו: ${r.misses}` + (nextT ? ` · למדליה הבאה: <span class="num">${fmtTime(nextT)}</span>` : '');
+    $('fstat').innerHTML = `${t('fin.crashes')}${r.crashes} · ${t('fin.misses')}${r.misses}` + (nextT ? ` · ${t('fin.next')}<span class="num">${fmtTime(nextT)}</span>` : '');
     setTimeout(() => { if (mode === 'play' && game.state === 'finished') { $('finish').classList.add('on'); $('touch').classList.remove('on'); } }, 1800);
   }
 
@@ -274,9 +283,9 @@ async function boot() {
       gates.update(game, time);
       audio.engine(b, alive && mode === 'play', camera.position.distanceTo(model.root.position), camMode === 'cockpit');
       if (mode === 'play') {
-        if (b.abLock && Math.floor(time * 4) % 2 === 0 && ctl.boost) hud.warn('המבער התחמם');
-        else if (b.stall > 0.6 && b.airspeed > 30) hud.warn('הזדקרות');
-        else if (b.fuel < 8 && Math.floor(time * 2) % 2 === 0) hud.warn('דלק אוזל');
+        if (b.abLock && Math.floor(time * 4) % 2 === 0 && ctl.boost) hud.warn(t('warn.heat'));
+        else if (b.stall > 0.6 && b.airspeed > 30) hud.warn(t('warn.stall'));
+        else if (b.fuel < 8 && Math.floor(time * 2) % 2 === 0) hud.warn(t('warn.fuel'));
       }
       updateCamera(dt);
     }
@@ -307,7 +316,7 @@ async function boot() {
   }
 
   // ---------------- go ----------------
-  await load(0.9, 'מחמם מנועים…');
+  await load(0.9, t('load.engines'));
   toMenu();
   if (Q.get('event')) { startEvent(Q.get('event')); if (Q.has('demo')) { auto = new Autopilot(game); game.stateT = 0.01; } }
   frame(performance.now());

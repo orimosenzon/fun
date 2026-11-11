@@ -38,7 +38,7 @@ canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
 #eng { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 10px 16px; display: flex; gap: 16px; align-items: flex-end; direction: ltr; }
 .bar { width: 9px; height: 54px; background: rgba(255,255,255,.12); border-radius: 4px; position: relative; overflow: hidden; }
 .bar i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#ffd27a, #ff7a2a); border-radius: 4px; }
-.grp { display: flex; gap: 4px; align-items: flex-end; } .lbl { font-size: 11px; opacity: .7; text-align: center; margin-top: 4px; direction: rtl; }
+.grp { display: flex; gap: 4px; align-items: flex-end; } .lbl { font-size: 11px; opacity: .7; text-align: center; margin-top: 4px; }
 .wide { width: 120px; height: 9px; background: rgba(255,255,255,.12); border-radius: 5px; overflow: hidden; position: relative; margin: 5px 0; }
 .wide i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
 #heat i { background: linear-gradient(90deg, #ffd27a, #ff3b1f); } #fuel i { background: linear-gradient(90deg, #5fd0ff, #8dffb0); }
@@ -109,9 +109,9 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <div class="row"><span>ALT <b id="agl" class="num">0</b> m</span><span>V/S <b id="vs" class="num">0</b></span><span><b id="gg" class="num">1.0</b> g</span></div>
   </div>
   <div id="eng" class="panel">
-    <div><div class="grp"><div class="bar"><i id="e0"></i></div><div class="bar"><i id="e1"></i></div><div class="bar"><i id="e2"></i></div><div class="bar"><i id="e3"></i></div></div><div class="lbl">דחף</div></div>
-    <div><div id="noz"><svg viewBox="-27 -27 54 54"><circle r="24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2"/><path d="M -24 0 A 24 24 0 0 0 0 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/><g id="nozA"><rect x="-4" y="-5" width="24" height="10" rx="4" fill="#dfe6ee"/><path d="M -4 -4 L -20 0 L -4 4 Z" fill="#ff7a2a"/></g></svg></div><div class="lbl">נחירים</div></div>
-    <div><div class="wide" id="heat"><i></i></div><div class="lbl">חום מבער</div><div class="wide" id="fuel"><i></i></div><div class="lbl">דלק</div></div>
+    <div><div class="grp"><div class="bar"><i id="e0"></i></div><div class="bar"><i id="e1"></i></div><div class="bar"><i id="e2"></i></div><div class="bar"><i id="e3"></i></div></div><div class="lbl" data-i18n="eng.thrust">דחף</div></div>
+    <div><div id="noz"><svg viewBox="-27 -27 54 54"><circle r="24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2"/><path d="M -24 0 A 24 24 0 0 0 0 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/><g id="nozA"><rect x="-4" y="-5" width="24" height="10" rx="4" fill="#dfe6ee"/><path d="M -4 -4 L -20 0 L -4 4 Z" fill="#ff7a2a"/></g></svg></div><div class="lbl" data-i18n="eng.noz">נחירים</div></div>
+    <div><div class="wide" id="heat"><i></i></div><div class="lbl" data-i18n="eng.heat">חום מבער</div><div class="wide" id="fuel"><i></i></div><div class="lbl" data-i18n="eng.fuel">דלק</div></div>
   </div>
   <div id="map" class="panel"><canvas width="380" height="380"></canvas></div>
   <div id="msg"></div><div id="warn"></div>
@@ -121,47 +121,47 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
 
 <div id="menu">
   <h1>F<span>Ö</span>HN</h1>
-  <div class="sub">אופנוע סילון עם מנועים מוטים, עמק אלפיני אחד, שישה אירועים</div>
+  <div class="sub" data-i18n="sub">אופנוע סילון עם מנועים מוטים, עמק אלפיני אחד, שישה אירועים</div>
   <div id="cards"></div>
   <div class="rowbtn">
-    <button class="b" id="bTime"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp">מקשים ועזרה</button>
+    <button class="b" id="bTime"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
   </div>
 </div>
 
-<div id="pause"><div class="box panel"><h2>הפסקה</h2>
-  <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume">המשך</button><button class="b" id="pRestart">התחלה מחדש</button><button class="b" id="pMenu">תפריט ראשי</button><button class="b" id="pHelp">מקשים</button></div>
+<div id="pause"><div class="box panel"><h2 data-i18n="p.title">הפסקה</h2>
+  <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume" data-i18n="p.resume">המשך</button><button class="b" id="pRestart" data-i18n="p.restart">התחלה מחדש</button><button class="b" id="pMenu" data-i18n="p.menu">תפריט ראשי</button><button class="b" id="pHelp" data-i18n="p.keys">מקשים</button></div>
 </div></div>
 
 <div id="finish"><div class="box panel" style="text-align:center">
   <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div>
-  <div class="rowbtn"><button class="b pri" id="fRetry">שוב <kbd>R</kbd></button><button class="b" id="fNext">האירוע הבא</button><button class="b" id="fMenu">תפריט</button></div>
+  <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
 </div></div>
 
-<div id="help"><div class="box panel"><h2>איך טסים</h2>
-  <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9">מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מטה את המנועים, מזיז את המדפים ומחלק את הדחף. במהירות נמוכה האופנוע מרחף על הסילונים, ומעל כ-220 קמ"ש הכנף נושאת אותו.</p>
+<div id="help"><div class="box panel"><h2 data-i18n="h.title">איך טסים</h2>
+  <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9" data-i18n="h.intro">מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מטה את המנועים, מזיז את המדפים ומחלק את הדחף. במהירות נמוכה האופנוע מרחף על הסילונים, ומעל כ-220 קמ"ש הכנף נושאת אותו.</p>
   <table class="keys">
-    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>פנייה. האופנוע נוטה לבד; פנייה חדה מאוד עולה במהירות</td></tr>
-    <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td>למשוך לטפס, לדחוף לרדת (אפשר להפוך בהגדרות)</td></tr>
-    <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td>מהירות יעד למעלה ולמטה. המחשב שומר עליה</td></tr>
-    <tr><td><kbd>Space</kbd></td><td>מבער. כ-7 שניות עד שהוא מתחמם, ומתקרר מהר יותר בטיסה מהירה</td></tr>
-    <tr><td><kbd>Shift</kbd></td><td>בלם: מעצור אוויר ונחירים קדימה, עד ריחוף</td></tr>
-    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td>הזזה הצידה בריחוף, לנחיתה מדויקת</td></tr>
-    <tr><td><kbd>C</kbd></td><td>מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
-    <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td>התחלה מחדש · הפסקה · השתקה</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td data-i18n="h.turn">פנייה. האופנוע נוטה לבד; פנייה חדה מאוד עולה במהירות</td></tr>
+    <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td data-i18n="h.pitch">למשוך לטפס, לדחוף לרדת (אפשר להפוך בהגדרות)</td></tr>
+    <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td data-i18n="h.speed">מהירות יעד למעלה ולמטה. המחשב שומר עליה</td></tr>
+    <tr><td><kbd>Space</kbd></td><td data-i18n="h.boost">מבער. כ-7 שניות עד שהוא מתחמם, ומתקרר מהר יותר בטיסה מהירה</td></tr>
+    <tr><td><kbd>Shift</kbd></td><td data-i18n="h.brake">בלם: מעצור אוויר ונחירים קדימה, עד ריחוף</td></tr>
+    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td data-i18n="h.strafe">הזזה הצידה בריחוף, לנחיתה מדויקת</td></tr>
+    <tr><td><kbd>C</kbd></td><td data-i18n="h.cam">מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
+    <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td data-i18n="h.misc">התחלה מחדש · הפסקה · השתקה</td></tr>
   </table>
-  <p style="margin:10px 0 0;font-size:14px;opacity:.85">נחיתה: לבלום עד ריחוף מעל המעגל, ואז לדחוף <kbd>↑</kbd> בעדינות. המחשב מאט את הירידה קרוב לקרקע. שלט משחק נתמך.</p>
-  <div class="rowbtn"><button class="b pri" id="hClose">הבנתי</button></div>
+  <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.land">נחיתה: לבלום עד ריחוף מעל המעגל, ואז לדחוף <kbd>↑</kbd> בעדינות. המחשב מאט את הירידה קרוב לקרקע. שלט משחק נתמך.</p>
+  <div class="rowbtn"><button class="b pri" id="hClose" data-i18n="h.close">הבנתי</button></div>
 </div></div>
 
 <div id="touch">
   <div class="stick"><i></i></div>
-  <button data-k="up" style="right:24px;bottom:230px">מהר</button><button data-k="down" style="right:24px;bottom:150px">לאט</button>
-  <button data-k="boost" style="right:104px;bottom:190px">מבער</button><button data-k="brake" style="right:184px;bottom:150px">בלם</button>
+  <button data-k="up" style="right:24px;bottom:230px" data-i18n="t.up">מהר</button><button data-k="down" style="right:24px;bottom:150px" data-i18n="t.down">לאט</button>
+  <button data-k="boost" style="right:104px;bottom:190px" data-i18n="t.boost">מבער</button><button data-k="brake" style="right:184px;bottom:150px" data-i18n="t.brake">בלם</button>
   <button data-k="key" data-code="Escape" style="right:14px;top:14px;width:46px;height:46px">II</button>
   <button data-k="key" data-code="KeyC" style="right:70px;top:14px;width:46px;height:46px">cam</button>
 </div>
 
-<div id="load"><div class="t">F<span>Ö</span>HN</div><div id="lbar"><i></i></div><div id="ltxt">טוען את העמק…</div></div>
+<div id="load"><div class="t">F<span>Ö</span>HN</div><div id="lbar"><i></i></div><div id="ltxt"></div></div>
 <div id="err"></div>
 <script>
   window.addEventListener('error', (e) => { const el = document.getElementById('err'); el.style.display = 'block'; el.textContent += (e.message || e) + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : '') + '\n'; });
