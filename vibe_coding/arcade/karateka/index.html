@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Karateka</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0c0c0e; color: #ddd; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; min-height: 100vh; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+  .screen { position: relative; width: min(100%, 980px, calc((100vh - 230px) * 280 / 192)); min-width: 280px; }
+  canvas { display: block; width: 100%; aspect-ratio: 280 / 192; image-rendering: pixelated; background: #000; border-radius: 6px; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: rgba(0, 0, 0, .72); border-radius: 6px; text-align: center; padding: 16px; }
+  .overlay[hidden] { display: none; }
+  /* full screen: the whole picture has to fit, so the height limits the width on wide monitors */
+  .screen:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; }
+  .screen:fullscreen canvas { width: min(100vw, calc(100vh * 280 / 192)); border-radius: 0; }
+  button { font: inherit; color: #eee; background: #26262b; border: 1px solid #55555e; border-radius: 8px; padding: 8px 16px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  button:active, button.on { background: #4a4a55; }
+  .big { font-size: 20px; padding: 12px 34px; background: #b3401f; border-color: #e0633c; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; font-size: 14px; }
+  .pad { display: none; width: min(100%, 980px); justify-content: space-between; gap: 12px; direction: ltr; }
+  .pad .grp { display: grid; gap: 6px; }
+  .pad button { min-width: 56px; min-height: 48px; font-size: 18px; padding: 6px; }
+  .move { grid-template-columns: repeat(2, 1fr); }
+  .hits { grid-template-columns: repeat(2, 1fr); }
+  @media (pointer: coarse) { .pad { display: flex; } .keys { display: none; } }
+  table { border-collapse: collapse; font-size: 14px; } td { padding: 3px 12px; border-bottom: 1px solid #2c2c33; }
+  kbd { background: #2c2c33; border-radius: 4px; padding: 1px 7px; font-family: ui-monospace, monospace; }
+  .note { max-width: 760px; font-size: 13px; color: #8a8a94; text-align: center; line-height: 1.5; }
+  .note a { color: #6cf; }
+</style>
+</head>
+<body>
+<h1>KARATEKA</h1>
+<div class="screen">
+  <canvas id="scr" width="280" height="192"></canvas>
+  <div class="overlay" id="ov"><button class="big" id="start">התחל</button><div id="msg" class="note"></div></div>
+</div>
+<div class="bar">
+  <button id="pause">השהה</button>
+  <button id="mute">השתק</button>
+  <button id="full">מסך מלא</button>
+  <button id="restart">התחל מחדש</button>
+</div>
+<div class="pad" id="pad">
+  <div class="grp move">
+    <button data-k="8">◀</button><button data-k="21">▶</button>
+    <button data-k="32" style="grid-column: span 2">עמידה / קרב</button>
+    <button data-k="66" style="grid-column: span 2">קידה</button>
+  </div>
+  <div class="grp hits">
+    <button data-k="81">👊 גבוה</button><button data-k="87">🦶 גבוה</button>
+    <button data-k="65">👊 אמצע</button><button data-k="83">🦶 אמצע</button>
+    <button data-k="90">👊 נמוך</button><button data-k="88">🦶 נמוך</button>
+    <button data-k="69" style="grid-column: span 2">🌀 מוואשי גרי</button>
+  </div>
+</div>
+<table class="keys">
+  <tr><td><kbd>רווח</kbd></td><td>התחלת משחק, מעבר בין עמידה לעמדת קרב</td></tr>
+  <tr><td><kbd>→</kbd> <kbd>←</kbd></td><td>ריצה (בעמידה), התקדמות ונסיגה (בעמדת קרב)</td></tr>
+  <tr><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>Z</kbd></td><td>אגרוף גבוה, אמצעי, נמוך</td></tr>
+  <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
+  <tr><td><kbd>E</kbd></td><td>מוואשי גרי, בעיטה סיבובית: אטית יותר, ופגיעה שלה שווה שתיים (תוספת שלנו)</td></tr>
+  <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
+</table>
+<div class="note">גרסת פיתוח מקומית. המשחק: ג'ורדן מכנר, 1984.</div>
+<script type="module">
+import { GameMachine } from './src/vm/firmware.js';
+import { CPU_HZ } from './src/vm/machine.js';
+import { Display } from './src/display.js';
+import { Speaker } from './src/speaker.js';
+import { installMawashi } from './src/ext/mawashi.js';
+
+const $ = (id) => document.getElementById(id);
+const display = new Display($('scr')), speaker = new Speaker(CPU_HZ);
+let dsk, m, running = false, paused = false, muted = false, last = 0;
+try { dsk = new Uint8Array(await (await fetch('data/karateka.dsk')).arrayBuffer()); if (dsk.length !== 143360) throw 0; }
+catch { $('msg').textContent = 'קובץ הנתונים של המשחק (data/karateka.dsk) חסר.'; $('start').disabled = true; }
+const boot = () => { m = new GameMachine(dsk); installMawashi(m); window.machine = m; };
+
+function loading() { const d = m.drive; return d.motor || m.cpu.cycles - d.offAt < CPU_HZ; }
+function frame(t) {
+  if (!running) return;
+  requestAnimationFrame(frame);
+  if (paused) { last = t; return; }
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  const c0 = m.cpu.cycles;
+  m.selectInput();
+  try { m.runTo(c0 + dt * CPU_HZ); } catch (e) { running = false; $('ov').hidden = false; $('start').hidden = true; $('msg').textContent = 'המשחק נעצר: ' + e.message; return; }
+  const clicks = m.speaker; m.speaker = [];
+  if (!muted) speaker.push(clicks, c0, m.cpu.cycles);
+  // the floppy is not part of the fun: while the drive spins, run as fast as we can
+  if (loading()) { const stop = performance.now() + 10; while (loading() && performance.now() < stop) m.runTo(m.cpu.cycles + 20000); m.speaker = []; }
+  const v = m.video;
+  if (v.hires && !v.text) display.draw(m.ram, v.page2 ? 0x4000 : 0x2000);
+}
+function start() { speaker.start(); if (!m) boot(); $('ov').hidden = true; if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); } }
+$('start').onclick = start;
+$('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'המשך' : 'השהה'; };
+$('mute').onclick = () => { muted = !muted; $('mute').textContent = muted ? 'הפעל קול' : 'השתק'; };
+$('full').onclick = () => { const el = document.querySelector('.screen'); (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.()); };
+$('restart').onclick = () => { boot(); start(); };
+
+const KEYMAP = { ArrowLeft: 0x08, ArrowRight: 0x15, ArrowUp: 0x0b, ArrowDown: 0x0a, Enter: 0x0d, Escape: 0x1b, ' ': 0x20 };
+addEventListener('keydown', (e) => {
+  if (!m || e.metaKey || e.altKey) return;
+  let k = KEYMAP[e.key];
+  if (k === undefined && e.key.length === 1) { const ch = e.key.toUpperCase().charCodeAt(0); if (ch < 0x80) k = e.ctrlKey ? ch & 0x1f : ch; }
+  if (k !== undefined) { m.pressKey(k); e.preventDefault(); }
+});
+// touch pad: like the Apple keyboard, a held key repeats
+for (const b of document.querySelectorAll('#pad button')) {
+  let timer = 0; const k = +b.dataset.k;
+  const down = (e) => { e.preventDefault(); if (!m) return; b.classList.add('on'); m.pressKey(k); clearInterval(timer); timer = setInterval(() => m.pressKey(k), 100); };
+  const up = () => { b.classList.remove('on'); clearInterval(timer); };
+  b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && running && !paused) $('pause').onclick(); });
+</script>
+</body>
+</html>

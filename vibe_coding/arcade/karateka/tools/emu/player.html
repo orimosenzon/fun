@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karateka: המקור (רפרנס מקומי)</title>
+<style>
+  body { margin: 0; background: #111; color: #ddd; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; }
+  canvas { width: min(96vw, 840px); aspect-ratio: 280 / 192; image-rendering: pixelated; background: #000; border: 1px solid #333; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  button { font: inherit; padding: 6px 14px; background: #2a2a2a; color: #eee; border: 1px solid #555; border-radius: 6px; cursor: pointer; }
+  table { border-collapse: collapse; font-size: 14px; } td { padding: 2px 10px; border-bottom: 1px solid #333; }
+  kbd { background: #333; border-radius: 4px; padding: 1px 6px; font-family: monospace; }
+  .note { max-width: 840px; font-size: 13px; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+<h3 style="margin:0">Karateka: המשחק המקורי באמולטור (רפרנס מקומי בלבד)</h3>
+<canvas id="scr" width="280" height="192"></canvas>
+<div class="bar">
+  <button id="start">הפעלה</button>
+  <button id="turbo">דילוג על הטעינה (מהיר)</button>
+  <button id="reset">אתחול</button>
+  <span id="status"></span>
+</div>
+<table>
+  <tr><td><kbd>רווח</kbd></td><td>התחלת משחק, מעבר בין עמידה לעמדת קרב</td></tr>
+  <tr><td><kbd>→</kbd> <kbd>←</kbd></td><td>תנועה</td></tr>
+  <tr><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>Z</kbd></td><td>אגרוף גבוה, אמצעי, נמוך</td></tr>
+  <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
+  <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
+</table>
+<div class="note">זה לא השחזור שלנו. זה המשחק המקורי שרץ באמולטור שכתבנו ככלי מדידה, כדי שיהיה מול מה להשוות. לא לפרסום.</div>
+<script type="module">
+import { Machine, CPU_HZ, hgrToIndexed, PALETTE } from './machine.mjs';
+const bin = async (u) => new Uint8Array(await (await fetch(u)).arrayBuffer());
+const R = '../../reference/';
+const [rom, diskRom, dsk] = await Promise.all([bin(R + 'roms/fpbasic.bin'), bin(R + 'roms/disk2.bin'), bin(R + 'disks/Karateka_1984_Broderbund_a3.dsk')]);
+let m;
+const boot = () => { m = new Machine({ rom, diskRom, dsk }); m.cpu.pc = 0xc600; window.m = m; };
+boot();
+const ctx = document.getElementById('scr').getContext('2d');
+const img = ctx.createImageData(280, 192);
+const draw = () => {
+  const idx = hgrToIndexed(m.hgrPage());
+  for (let i = 0; i < idx.length; i++) { const p = PALETTE[idx[i]]; img.data[i * 4] = p[0]; img.data[i * 4 + 1] = p[1]; img.data[i * 4 + 2] = p[2]; img.data[i * 4 + 3] = 255; }
+  ctx.putImageData(img, 0, 0);
+};
+const KEYMAP = { ArrowLeft: 0x08, ArrowRight: 0x15, ArrowUp: 0x0b, ArrowDown: 0x0a, Enter: 0x0d, Escape: 0x1b, ' ': 0x20 };
+addEventListener('keydown', (e) => {
+  let k = KEYMAP[e.key];
+  if (k === undefined && e.key.length === 1) k = e.ctrlKey ? (e.key.toUpperCase().charCodeAt(0) & 0x1f) : e.key.toUpperCase().charCodeAt(0);
+  if (k !== undefined) { m.pressKey(k); e.preventDefault(); }
+});
+// audio: 1-bit speaker, toggles resampled per chunk
+let ac = null, level = 0.25, playAt = 0, running = false, turbo = 0;
+const RATE = 44100;
+function pushAudio(c0, c1) {
+  const tg = m.speaker; m.speaker = [];
+  if (!ac || turbo) return;
+  const n = Math.round((c1 - c0) / CPU_HZ * RATE);
+  if (!tg.length && level === 0) { /* silence */ }
+  const buf = ac.createBuffer(1, n, RATE), d = buf.getChannelData(0);
+  let ti = 0;
+  for (let i = 0; i < n; i++) {
+    const cyc = c0 + (i + 1) * CPU_HZ / RATE;
+    let acc = 0, prev = c0 + i * CPU_HZ / RATE;
+    while (ti < tg.length && tg[ti] < cyc) { acc += level * (tg[ti] - prev); prev = tg[ti]; level = -level; ti++; }
+    acc += level * (cyc - prev);
+    d[i] = tg.length ? acc / (CPU_HZ / RATE) : 0;
+  }
+  const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
+  const now = ac.currentTime;
+  if (playAt < now + 0.02 || playAt > now + 0.3) playAt = now + 0.06;
+  src.start(playAt); playAt += n / RATE;
+}
+let lastT = 0, debt = 0;
+function frame(t) {
+  if (!running) return;
+  const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+  let cycles = dt * CPU_HZ;
+  if (turbo) { cycles = CPU_HZ * 1.5; if (m.cpu.cycles > turbo) turbo = 0; }
+  const c0 = m.cpu.cycles;
+  m.runTo(c0 + cycles);
+  pushAudio(c0, m.cpu.cycles);
+  draw();
+  document.getElementById('status').textContent = (m.cpu.cycles / CPU_HZ).toFixed(0) + ' שניות';
+  requestAnimationFrame(frame);
+}
+document.getElementById('start').onclick = () => { if (!ac) ac = new AudioContext(); if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(frame); } };
+document.getElementById('turbo').onclick = () => { turbo = m.cpu.cycles + 9 * CPU_HZ; document.getElementById('start').onclick(); };
+document.getElementById('reset').onclick = () => { boot(); };
+draw();
+</script>
+</body>
+</html>
