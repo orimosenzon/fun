@@ -840,6 +840,35 @@
       "grid": "projects",
       "projects": [
         {
+          "title": "איש-ציפור",
+          "icon": "🪶",
+          "theme": "t-cyan",
+          "tags": [
+            "Three.js",
+            "Flight Physics",
+            "Blade Element",
+            "WebAudio",
+            "RTL"
+          ],
+          "desc": "דוור של אי קטן מוצא שורש שמחזק לו את הזרועות, בונה לעצמו כנפיים, ועף. הפיזיקה אמיתית: כל כנף מחולקת לרצועות שכל אחת מהן מרגישה את האוויר שלה, כך שגלישה, הזדקרות, משק כנפיים, רוח שעולה על מצוק ואוויר חם נובעים מאותו חישוב. חמישה פרקים: קפיצה מהמצוק, המראה מהחוף, טיפוס עם העיטים, צלילת בז ב-200 קמ\"ש וחלוקת דואר מהאוויר.",
+          "links": [
+            {
+              "href": "birdman/index.html",
+              "style": "primary",
+              "label": "▶ שחק עכשיו",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/birdman",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "illus": "                <!-- A man with wings over the sea, sun behind -->\n                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <circle cx=\"54\" cy=\"18\" r=\"8\" fill=\"#fbbf24\" opacity=\".85\"/>\n                    <path d=\"M4 38 C16 24 28 27 34 34 L36 31 L38 34 C44 27 56 24 68 38 C56 34 47 37 40 42 L38 56 L36 49 L34 56 L32 42 C25 37 16 34 4 38Z\" fill=\"rgba(8,60,70,.6)\" stroke=\"#22d3ee\" stroke-width=\"1.4\" stroke-linejoin=\"round\"/>\n                    <circle cx=\"36\" cy=\"30\" r=\"3\" fill=\"#22d3ee\"/>\n                    <path d=\"M6 64 Q18 60 30 64 T54 64 T70 63\" stroke=\"#22d3ee\" stroke-width=\"1.3\" opacity=\".6\" fill=\"none\"/>\n                </svg>\n            ",
+          "anchor": "birdman"
+        },
+        {
           "title": "Fable — אופנוע סילון מעופף",
           "icon": "🚀",
           "theme": "t-cyan",

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>איש-ציפור</title>
+<meta name="description" content="משחק תלת-ממדי בדפדפן: דוור שמצא שורש שמחזק את הזרועות, בנה לעצמו כנפיים, ועף. פיזיקת תעופה אמיתית: גלישה, משק כנפיים, אוויר חם וצלילת בז.">
+<meta name="theme-color" content="#0d1b2a">
+<link rel="icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --glass: rgba(12,22,34,.52); --line: rgba(255,255,255,.16); --gold: #ffc94a; --txt: #f3f1ea; --serif: "Frank Ruhl Libre", "David Libre", "David", serif; --sans: "Heebo", "Rubik", "Segoe UI", Arial, sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0d1b2a; color: var(--txt); overflow: hidden; font-family: var(--sans); -webkit-user-select: none; user-select: none; touch-action: none; }
+canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.panel { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+kbd { display: inline-block; min-width: 24px; padding: 1px 7px; margin: 0 2px; border-radius: 6px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35); font: 600 13px var(--sans); text-align: center; }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .5s; }
+#hud.on { opacity: 1; }
+#obj { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 22px; font-size: 17px; font-weight: 500; text-align: center; max-width: min(720px, 92vw); line-height: 1.5; transition: opacity .3s; }
+#obj.big { font-size: 30px; font-weight: 800; padding: 14px 30px; border-color: var(--gold); animation: pulse .7s infinite alternate; }
+#obj:empty { opacity: 0; }
+@keyframes pulse { from { box-shadow: 0 0 0 0 rgba(255,201,74,.0); } to { box-shadow: 0 0 34px 4px rgba(255,201,74,.55); } }
+#chap { position: absolute; top: 16px; right: 16px; padding: 8px 14px; font-size: 13px; line-height: 1.4; }
+#chap b { font-family: var(--serif); font-size: 17px; display: block; }
+#inst { position: absolute; bottom: 18px; left: 18px; padding: 12px 16px 10px; direction: ltr; text-align: left; min-width: 190px; }
+#kmh { font-size: 50px; font-weight: 800; line-height: .95; }
+#inst small { font-size: 13px; opacity: .7; margin-left: 5px; }
+#inst .row { display: flex; gap: 16px; font-size: 14px; margin-top: 7px; align-items: baseline; }
+#inst .row b { font-size: 19px; font-weight: 700; }
+#vario { font-weight: 700; }
+#vario.up { color: #7dffa0; } #vario.dn { color: #ffa48a; }
+#root { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); padding: 9px 16px 10px; width: min(330px, 60vw); text-align: center; font-size: 12.5px; }
+#root .bar { height: 10px; background: rgba(255,255,255,.14); border-radius: 6px; overflow: hidden; margin-top: 6px; direction: ltr; }
+#root .bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff8a2a, #ffd35a); border-radius: 6px; transform-origin: left; }
+#root.low .bar i { background: #ff4b3a; }
+#root .lbl { display: flex; justify-content: space-between; opacity: .9; }
+#keys { position: absolute; bottom: 18px; right: 18px; padding: 10px 14px; font-size: 13px; line-height: 2; }
+#keys div { display: flex; justify-content: space-between; gap: 14px; }
+#flash { position: absolute; top: 24%; left: 0; right: 0; text-align: center; font-family: var(--serif); font-size: 52px; font-weight: 900; text-shadow: 0 2px 22px rgba(0,0,0,.6); opacity: 0; transition: opacity .3s; }
+#flash.on { opacity: 1; } #flash small { display: block; font-family: var(--sans); font-size: 18px; font-weight: 500; margin-top: 6px; }
+#warn { position: absolute; top: 38%; left: 0; right: 0; text-align: center; font-size: 19px; font-weight: 700; color: #ffcf5a; text-shadow: 0 2px 10px #000; opacity: 0; }
+#warn.on { opacity: 1; }
+#tgt { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform; }
+#tgt i { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border: 3px solid var(--gold); border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,.6); }
+#tgt.off i { border-radius: 0; border-width: 4px 4px 0 0; border-color: var(--gold); width: 16px; height: 16px; left: -8px; top: -8px; }
+#tgt span { position: absolute; top: 16px; left: -40px; width: 80px; text-align: center; font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px #000; }
+#vig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,10,.95) 100%); opacity: 0; }
+#speedvig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(255,255,255,0) 55%, rgba(255,255,255,.5) 130%); opacity: 0; }
+#white { position: fixed; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
+
+.screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+.screen.on { display: flex; }
+#menu { background: linear-gradient(180deg, rgba(8,16,28,.25) 0%, rgba(8,16,28,0) 35%, rgba(8,16,28,.65) 100%); justify-content: space-between; }
+#menu h1 { font-family: var(--serif); font-weight: 900; font-size: clamp(64px, 13vw, 150px); margin: 4vh 0 0; letter-spacing: 1px; text-shadow: 0 6px 40px rgba(0,0,0,.45); line-height: 1; }
+#menu .tag { font-size: clamp(16px, 2.2vw, 22px); opacity: .95; margin-top: 12px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+#menu .bottom { margin-bottom: 4vh; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.btn { pointer-events: auto; padding: 14px 34px; border-radius: 40px; border: 1px solid rgba(255,255,255,.5); background: rgba(255,255,255,.12); backdrop-filter: blur(8px); font-size: 20px; font-weight: 700; transition: transform .15s, background .15s; }
+.btn:hover { transform: scale(1.04); background: rgba(255,255,255,.22); }
+.btn.gold { background: var(--gold); color: #2a1c00; border-color: transparent; }
+.btn.small { font-size: 15px; padding: 9px 20px; font-weight: 500; }
+#chapters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 760px; }
+#chapters button { pointer-events: auto; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(8px); font-size: 14px; }
+#chapters button[disabled] { opacity: .4; cursor: default; }
+#chapters button b { display: block; font-family: var(--serif); font-size: 16px; }
+#loading { font-size: 15px; opacity: .85; }
+#card { justify-content: flex-end; background: linear-gradient(180deg, rgba(8,16,28,0) 40%, rgba(8,16,28,.8) 100%); cursor: pointer; }
+#card p { font-family: var(--serif); font-size: clamp(21px, 3vw, 32px); line-height: 1.6; max-width: 900px; margin: 0 0 22px; text-shadow: 0 2px 14px rgba(0,0,0,.7); min-height: 3.2em; }
+#card .more { font-size: 14px; opacity: .8; margin-bottom: 5vh; }
+#done, #pause { background: rgba(8,16,28,.55); backdrop-filter: blur(5px); }
+#done .box, #pause .box { padding: 30px 38px; max-width: 640px; }
+#done h2, #pause h2 { font-family: var(--serif); font-size: 40px; margin: 0 0 8px; }
+#done p { font-family: var(--serif); font-size: 21px; line-height: 1.6; margin: 10px 0 22px; }
+#done .time { font-size: 15px; opacity: .85; margin-bottom: 18px; }
+.rowb { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#pause .opt { margin: 14px 0 22px; font-size: 15px; line-height: 2.2; }
+#pause label { pointer-events: auto; cursor: pointer; }
+#titlecard { position: fixed; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; transition: opacity .8s; }
+#titlecard.on { opacity: 1; }
+#titlecard small { font-size: 16px; letter-spacing: 3px; opacity: .9; }
+#titlecard b { display: block; font-family: var(--serif); font-size: clamp(48px, 8vw, 92px); font-weight: 900; text-shadow: 0 4px 30px rgba(0,0,0,.55); }
+#err { position: fixed; left: 8px; bottom: 8px; color: #ff9a8a; font: 12px monospace; white-space: pre-wrap; direction: ltr; text-align: left; max-width: 90vw; }
+
+#touch { position: fixed; inset: 0; pointer-events: none; display: none; }
+body.touch #touch.on { display: block; }
+body.touch #keys { display: none; }
+body.touch #inst { bottom: auto; top: 70px; left: 10px; transform: scale(.8); transform-origin: top left; }
+body.touch #root { bottom: auto; top: 64px; }
+#stick { position: absolute; left: 22px; bottom: 22px; width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.3); pointer-events: auto; }
+#knob { position: absolute; left: 45px; top: 45px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.4); }
+.tb { position: absolute; right: 22px; width: 104px; height: 104px; border-radius: 50%; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.35); pointer-events: auto; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; }
+.tb.on { background: rgba(255,201,74,.55); }
+#bflap { bottom: 22px; } #btuck { bottom: 140px; width: 78px; height: 78px; right: 35px; font-size: 14px; }
+#bpause { position: absolute; top: 12px; left: 12px; width: 40px; height: 40px; border-radius: 10px; pointer-events: auto; background: var(--glass); border: 1px solid var(--line); font-size: 16px; display: flex; align-items: center; justify-content: center; }
+@media (max-width: 700px) { #chap { display: none; } #obj { font-size: 14px; top: 10px; } #obj.big { font-size: 22px; } #flash { font-size: 36px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vig"></div><div id="speedvig"></div><div id="white"></div>
+
+<div id="hud">
+  <div id="obj" class="panel"></div>
+  <div id="chap" class="panel"><b></b><span class="num"></span></div>
+  <div id="inst" class="panel">
+    <div><span id="kmh" class="num">0</span><small>קמ"ש</small></div>
+    <div class="row"><span><b id="alt" class="num">0</b><small>מ' גובה</small></span><span id="vario" class="num">0.0</span></div>
+  </div>
+  <div id="root" class="panel">
+    <div class="lbl"><span>כוח השורש</span><span class="num" id="pw"></span></div>
+    <div class="bar"><i id="stam"></i></div>
+  </div>
+  <div id="keys" class="panel">
+    <div><span>כנפיים: פרישה ומשק</span><kbd>רווח</kbd></div>
+    <div><span>היגוי</span><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></span></div>
+    <div><span>קיפול וצלילה</span><kbd>Shift</kbd></div>
+    <div><span>מהתחלה / עצירה</span><span><kbd>R</kbd><kbd>P</kbd></span></div>
+  </div>
+  <div id="flash"></div>
+  <div id="warn">הזדקרות! הורד את האף</div>
+  <div id="tgt"><i></i><span class="num"></span></div>
+</div>
+<div id="titlecard"><small></small><b></b></div>
+
+<div id="menu" class="screen on">
+  <div>
+    <h1>איש-ציפור</h1>
+    <div class="tag">סיפור על דוור, על שורש אחד מוזר, ועל זוג כנפיים</div>
+  </div>
+  <div class="bottom">
+    <div id="loading">טוען את האי…</div>
+    <button id="bstart" class="btn gold" style="display:none">התחל את הסיפור</button>
+    <div id="chapters"></div>
+  </div>
+</div>
+
+<div id="card" class="screen"><p></p><div class="more">לחץ או הקש <kbd>רווח</kbd> להמשך</div></div>
+
+<div id="done" class="screen"><div class="box panel">
+  <h2></h2><p></p><div class="time num"></div>
+  <div class="rowb"><button id="bnext" class="btn gold">הפרק הבא</button><button id="bagain" class="btn small">שוב</button><button id="bfly" class="btn small">להמשיך לעוף</button><button id="bmenu" class="btn small">תפריט</button></div>
+</div></div>
+
+<div id="pause" class="screen"><div class="box panel">
+  <h2>הפסקה</h2>
+  <div class="opt">
+    <label><input type="checkbox" id="oinv"> היפוך ציר: <kbd>↑</kbd> מוריד את האף (כמו במטוס)</label><br>
+    <label><input type="checkbox" id="omute"> השתק</label><br>
+    <label><input type="checkbox" id="ovario" checked> צפצוף כשהאוויר עולה (וריו)</label>
+  </div>
+  <div class="rowb"><button id="bresume" class="btn gold">המשך</button><button id="brestart" class="btn small">הפרק מהתחלה</button><button id="bmenu2" class="btn small">תפריט</button></div>
+</div></div>
+
+<div id="touch">
+  <div id="stick"><div id="knob"></div></div>
+  <div id="bflap" class="tb">כנפיים</div>
+  <div id="btuck" class="tb">קיפול</div>
+  <div id="bpause">❚❚</div>
+</div>
+<div id="err"></div>
+<script>
+  addEventListener('error', (e) => { document.getElementById('err').textContent += (e.message || e) + '\n'; });
+  addEventListener('unhandledrejection', (e) => { document.getElementById('err').textContent += (e.reason && e.reason.stack || e.reason) + '\n'; });
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
