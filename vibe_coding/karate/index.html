@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>שוטוקאן: קומיטה</title>
+<meta name="description" content="קרב קראטה תלת־ממדי בסגנון שוטוקאן: צוקי, גרי ואוקה, עם עמידות ותנועות נאמנות לשיטה.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥋</text></svg>">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+:root { --ink:#17120e; --paper:#f2ead6; --red:#c8281e; --gold:#d9a441; --wood:#4a301c; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; overflow:hidden; background:var(--ink); color:var(--paper);
+  font-family: "Noto Sans Hebrew", "Heebo", "Segoe UI", Arial, sans-serif; -webkit-user-select:none; user-select:none; touch-action:none; }
+#c { position:fixed; inset:0; width:100%; height:100%; display:block; cursor:grab; }
+button { font:inherit; color:inherit; cursor:pointer; }
+
+/* פסי חיים */
+#hud { position:fixed; top:0; left:0; right:0; padding:12px 16px; display:flex; gap:14px; align-items:flex-start; direction:ltr; pointer-events:none; }
+.side { flex:1; min-width:0; }
+.name { display:flex; justify-content:space-between; font-weight:700; font-size:15px; letter-spacing:.03em; margin-bottom:4px; text-shadow:0 1px 3px #000; }
+.side.r .name { flex-direction:row-reverse; }
+.name small { font-weight:400; opacity:.75; }
+.bar { position:relative; height:16px; background:rgba(0,0,0,.55); border:2px solid var(--paper); border-radius:3px; overflow:hidden; }
+.bar i, .bar u { position:absolute; top:0; bottom:0; left:0; }
+.side.l .bar i, .side.l .bar u { left:auto; right:0; }
+.bar u { background:var(--gold); opacity:.8; }
+#hp0 { background:linear-gradient(#e2473b,#a81d14); }
+#hp1 { background:linear-gradient(#ffffff,#cfc8b6); }
+.bar.flash { animation:fl .35s; }
+@keyframes fl { 0%{ box-shadow:0 0 0 0 #fff; filter:brightness(2.2);} 100%{ box-shadow:0 0 18px 6px transparent; filter:none;} }
+.tech { height:22px; margin-top:5px; font-size:15px; font-weight:600; text-shadow:0 1px 3px #000; direction:rtl; white-space:nowrap; }
+.side.l .tech { text-align:left; } .side.r .tech { text-align:right; }
+.tech i { font-weight:400; opacity:.7; font-size:12px; margin-inline-start:6px; direction:ltr; display:inline-block; }
+#mid { display:flex; gap:6px; pointer-events:auto; }
+#mid button { width:36px; height:36px; border-radius:50%; border:1px solid rgba(242,234,214,.4); background:rgba(23,18,14,.6); font-size:15px; }
+
+#banner { position:fixed; top:24%; left:0; right:0; text-align:center; pointer-events:none; opacity:0; transform:scale(.9); transition:opacity .18s, transform .18s; }
+#banner.show { opacity:1; transform:none; }
+#banner b { display:block; font-size:clamp(40px,8vw,84px); font-weight:800; text-shadow:0 3px 0 var(--red), 0 6px 22px #000; }
+#banner span { display:block; font-size:16px; opacity:.85; text-shadow:0 1px 4px #000; direction:rtl; }
+
+/* תפריט */
+.overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(15,11,8,.72); padding:16px; overflow:auto; touch-action:pan-y; }
+.overlay.show { display:flex; }
+.card { background:var(--paper); color:var(--ink); border-radius:6px; padding:26px 28px; max-width:560px; width:100%; border-top:8px solid var(--red); box-shadow:0 20px 60px #000; }
+.card h1 { margin:0; font-size:38px; line-height:1.1; }
+.card h1 span { color:var(--red); }
+.kanji { float:left; font-size:44px; line-height:1; color:var(--red); font-family:"Noto Serif CJK JP","Yu Mincho",serif; writing-mode:vertical-rl; margin-inline-start:10px; }
+.card p { margin:10px 0 16px; line-height:1.55; font-size:15px; }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.row button { flex:1; min-width:84px; padding:10px 8px; border:2px solid var(--ink); background:transparent; border-radius:4px; font-weight:600; }
+.row button.sel { background:var(--ink); color:var(--paper); }
+.go { width:100%; padding:14px; font-size:20px; font-weight:800; background:var(--red); color:#fff; border:0; border-radius:4px; margin-top:6px; }
+.ghost { width:100%; padding:10px; background:transparent; border:0; text-decoration:underline; margin-top:6px; font-size:14px; }
+#help { display:none; margin-top:12px; font-size:13.5px; }
+#help.show { display:block; }
+#help table { width:100%; border-collapse:collapse; }
+#help td, #help th { padding:4px 6px; border-bottom:1px solid rgba(23,18,14,.15); text-align:right; }
+#help th { font-size:12px; opacity:.6; font-weight:600; }
+kbd { display:inline-block; min-width:22px; text-align:center; padding:1px 5px; border:1px solid var(--ink); border-bottom-width:2px; border-radius:4px; font:600 12px ui-monospace,monospace; direction:ltr; background:#fff; }
+.p2 { display:none; } body.two .p2 { display:table-cell; }
+#help ul { margin:10px 0 0; padding-inline-start:18px; line-height:1.6; }
+#end .card { text-align:center; max-width:400px; }
+#result { font-size:30px; font-weight:800; margin:4px 0 16px; }
+
+/* מגע */
+#touch { display:none; position:fixed; left:0; right:0; bottom:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; align-items:flex-end; direction:ltr; pointer-events:none; }
+body.touch #touch { display:flex; }
+#touch .pad { display:grid; gap:6px; pointer-events:auto; }
+#touch .dir { grid-template-columns:repeat(3,52px); grid-template-rows:repeat(2,52px); }
+#touch .act { grid-template-columns:repeat(4,58px); grid-auto-rows:46px; direction:rtl; }
+#touch button { border-radius:10px; border:1px solid rgba(242,234,214,.45); background:rgba(23,18,14,.55); font-size:12.5px; font-weight:600; padding:0; line-height:1.1; }
+#touch .dir button { font-size:20px; }
+#touch button.on { background:var(--red); }
+#touch .blk { border-color:#9fd0ff; }
+body.debug #hud, body.debug #touch, body.debug .overlay { display:none !important; }
+@media (max-width:560px) { .name { font-size:13px; } .card { padding:18px; } .card h1 { font-size:30px; } #touch .act { grid-template-columns:repeat(3,56px); } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="side l">
+    <div class="name"><span>אָקָא <small>AKA</small></span></div>
+    <div class="bar" id="bar0"><u id="gh0" style="width:100%"></u><i id="hp0" style="width:100%"></i></div>
+    <div class="tech" id="tech0"></div>
+  </div>
+  <div id="mid"><button id="pause" title="תפריט">☰</button><button id="mute" title="צליל">🔊</button></div>
+  <div class="side r">
+    <div class="name"><span>שִׁירוֹ <small>SHIRO</small></span></div>
+    <div class="bar" id="bar1"><u id="gh1" style="width:100%"></u><i id="hp1" style="width:100%"></i></div>
+    <div class="tech" id="tech1"></div>
+  </div>
+</div>
+
+<div id="banner"></div>
+
+<div id="touch">
+  <div class="pad dir">
+    <span></span><button data-k="KeyW">▲</button><span></span>
+    <button data-k="KeyA">◀</button><button data-k="KeyS">▼</button><button data-k="KeyD">▶</button>
+  </div>
+  <div class="pad act">
+    <button data-k="KeyF">קיזאמי</button><button data-k="KeyG">גיאקו</button><button data-k="KeyH">אוי־צוקי</button><button data-k="KeyC" class="blk">חסימה</button>
+    <button data-k="KeyR">מאה־גרי</button><button data-k="KeyT">מאוואשי</button><button data-k="KeyY">יוקו</button><button data-k="KeyX" class="blk">שוטו</button>
+    <button data-k="KeyV">אושירו</button>
+  </div>
+</div>
+
+<div class="overlay show" id="menu">
+  <div class="card">
+    <div class="kanji">松濤館</div>
+    <h1>שוטוקאן: <span>קומיטה</span></h1>
+    <p>קרב בין שני קראטקה. כל פגיעה מורידה מפס החיים, ומי שהפס שלו מתרוקן מפסיד. הפגיעה נקבעת לפי המרחק האמיתי: אגרוף שלא מגיע, לא פוגע.</p>
+    <div class="row">
+      <button data-mode="cpu" data-diff="0">מחשב: קל</button>
+      <button data-mode="cpu" data-diff="1" class="sel">מחשב: בינוני</button>
+      <button data-mode="cpu" data-diff="2">מחשב: קשה</button>
+      <button data-mode="2p">שני שחקנים</button>
+    </div>
+    <button class="go" id="start">הַגִ׳ימֶה</button>
+    <button class="ghost" id="resume" style="display:none">חזרה לקרב</button>
+    <button class="ghost" id="helpBtn">איך משחקים</button>
+    <div id="help">
+      <table>
+        <tr><th>פעולה</th><th>אקא (שמאל)</th><th class="p2">שירו (ימין)</th></tr>
+        <tr><td>תנועה קדימה ואחורה (יורי־אשי)</td><td><kbd>D</kbd> <kbd>A</kbd></td><td class="p2"><kbd>←</kbd> <kbd>→</kbd></td></tr>
+        <tr><td>גובה: ג׳ודאן / גדאן (בהחזקה)</td><td><kbd>W</kbd> <kbd>S</kbd></td><td class="p2"><kbd>↑</kbd> <kbd>↓</kbd></td></tr>
+        <tr><td>קיזאמי־צוקי · גיאקו־צוקי · אוי־צוקי</td><td><kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd></td><td class="p2"><kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd></td></tr>
+        <tr><td>מאה־גרי · מאוואשי־גרי · יוקו־גרי</td><td><kbd>R</kbd> <kbd>T</kbd> <kbd>Y</kbd></td><td class="p2"><kbd>U</kbd> <kbd>I</kbd> <kbd>O</kbd></td></tr>
+        <tr><td>אושירו־גרי</td><td><kbd>V</kbd></td><td class="p2"><kbd>P</kbd></td></tr>
+        <tr><td>חסימה (בהחזקה)</td><td><kbd>C</kbd></td><td class="p2"><kbd>M</kbd></td></tr>
+        <tr><td>שוטו־אוקה בקוקוטסו־דאצ׳י</td><td><kbd>X</kbd></td><td class="p2"><kbd>N</kbd></td></tr>
+      </table>
+      <ul>
+        <li>החסימה נקבעת לפי הגובה: <kbd>W</kbd>+<kbd>C</kbd> אגה־אוקה נגד ג׳ודאן, <kbd>C</kbd> לבד אודה־אוקה נגד צ׳ודאן, <kbd>S</kbd>+<kbd>C</kbd> גדאן־בראי נגד מאה־גרי ואושירו־גרי.</li>
+        <li>גם ההתקפה: <kbd>W</kbd> עם אגרוף או בעיטה שולח לג׳ודאן. קיזאמי הולך לג׳ודאן, ו־<kbd>S</kbd> מוריד אותו לצ׳ודאן.</li>
+        <li>חסימה מוצלחת מעכבת את התוקף. זה הרגע לגיאקו־צוקי.</li>
+        <li>פגיעה ביריב בזמן שהוא תוקף (דה־אי) מורידה פי אחד וחצי.</li>
+        <li>במשחק יחיד אפשר גם בחיצים. גרירה מסובבת את המצלמה, גלגלת מקרבת.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="end">
+  <div class="card">
+    <div id="result"></div>
+    <button class="go" id="again">קרב נוסף</button>
+    <button class="ghost" id="toMenu">תפריט</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
