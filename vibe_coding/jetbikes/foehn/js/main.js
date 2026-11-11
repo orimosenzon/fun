@@ -178,7 +178,7 @@ async function boot() {
         case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last) hud.message(t('landed'), t('landed.sub'), 1.4); break;
         case 'miss': audio.miss(); hud.message('', t('missed'), 1.2); break;
         case 'crash': fx.explode(e.p, e.v, e.water); audio.crash(e.water); hud.crash(e.reason); break;
-        case 'warn': hud.warn(t('warn.back')); audio.warn(); break;
+        case 'warn': if (e.text === 'offpad') hud.message('', t('warn.offpad'), 1.2); else { hud.warn(t('warn.back')); audio.warn(); } break;
         case 'finish': onFinish(e); break;
       }
     }

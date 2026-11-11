@@ -76,6 +76,10 @@ export class Game {
       if (ctl.brake) this.vt = Math.max(0, Math.min(this.vt, fwd) - 30 * dt);
       if (ctl.boost && !b.abLock) this.vt = clamp(Math.max(this.vt, fwd + 3), V_MIN, V_MAX + 30);
       else if (this.vt > V_MAX) this.vt = Math.max(V_MAX, Math.min(this.vt, fwd));
+      // touchdown cuts the engines: resting on the skids with no throttle, climb or boost asked
+      // for, any leftover target speed (a few km/h, or backwards after S) would keep the flight
+      // computer awake and lift the bike off again
+      if (b.contactN > 0.25 * b.mp.m * G && len(b.v) < 4 && !(ctl.throttle > 0) && !ctl.boost && (ctl.pitch || 0) <= 0.05) this.vt = 0;
     }
     const inp = this.state === 'finished' ? { turn: 0, pitch: 0, vt: 0, brake: true }
       : { turn: ctl.turn || 0, pitch: ctl.pitch || 0, strafe: ctl.strafe || 0, vt: this.vt, boost: !!ctl.boost, brake: !!ctl.brake };
@@ -112,6 +116,8 @@ export class Game {
       } else {
         const onPad = Math.hypot(p[0] - c.p[0], p[2] - c.p[2]) < c.r;
         if (onPad && b.contactN > 0.5 * b.mp.m * G && len(b.v) < 1.0) { this.landT += 1 / 120; if (this.landT > 0.45) { this.landT = 0; this.pass(c, Math.hypot(p[0] - c.p[0], p[2] - c.p[2]) / c.r); } } else this.landT = 0;
+        // parked beside the circle: say so, otherwise it looks as if the landing just didn't count
+        if (!onPad && b.contactN > 0.5 * b.mp.m * G && len(b.v) < 1.0 && this.tick % 60 === 0) this.emit('warn', { text: 'offpad' });
       }
     }
     if (reason) { this.crash(reason); this.prevP = p.slice(); return; }
