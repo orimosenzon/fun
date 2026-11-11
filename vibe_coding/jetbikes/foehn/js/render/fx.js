@@ -1,9 +1,10 @@
-// Effects: jet plumes with shock diamonds, dust / spray / snow kicked up where a jet really
+// Effects: a plume on each of the five nozzles, sized by the thrust that really leaves it (shock
+// diamonds, after-burner flame on the rear one), dust / spray / snow kicked up where a jet really
 // hits the surface, wing-tip vapour in hard turns, explosion and splash.
 import * as THREE from '../../lib/three.module.min.js';
 import { U } from './env.js';
 import { groundAt, waterAt } from '../sim/terrain.js';
-import { ENG, PODS, G } from '../sim/bike.js';
+import { ENG, LIFT, REAR, G } from '../sim/bike.js';
 import { qrot, add, scale, len } from '../sim/vmath.js';
 
 const PLUME_FRAG = /* glsl */`
@@ -79,8 +80,9 @@ export class FX {
     this.soft = new Particles(scene, 2600, false);
     this.fire = new Particles(scene, 900, true);
     // plumes
-    this.plumes = model.pods.map((p, i) => {
-      const g = new THREE.CylinderGeometry(0.035, 0.08, 1, 14, 12, true); g.translate(0, 0.5, 0); g.rotateZ(Math.PI / 2);   // along -x, uv.y = 0 at the nozzle
+    this.plumes = model.nozzles.map((p, i) => {
+      const k = p.r / 0.078;
+      const g = new THREE.CylinderGeometry(0.035 * k, 0.08 * k, 1, 16, 12, true); g.translate(0, 0.5, 0); g.rotateZ(Math.PI / 2);   // along -x, uv.y = 0 at the nozzle
       const m = new THREE.ShaderMaterial({
         uniforms: { uPow: { value: 0 }, uAb: { value: 0 }, uTime: U.uTime, uSeed: { value: i } },
         vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalMatrix * normal; vV = -mv.xyz; gl_Position = projectionMatrix * mv; }',
@@ -100,22 +102,25 @@ export class FX {
 
   update(dt, b, wind, alive) {
     const r = Math.random;
-    let ab = 0, wash = 0, wx = 0, wz = 0;
-    for (let i = 0; i < 4; i++) {
-      const e = b.eng[i], pw = alive ? Math.min(1, e.Tdry / (ENG.tmax * 0.9)) : 0;
+    let wash = 0, wx = 0, wz = 0;
+    const ab = alive ? b.abOut : 0, sw = Math.max(b.tilt, Math.PI / 2);
+    for (let i = 0; i < 5; i++) {
+      // thrust of this nozzle, its exit and the direction its gas leaves in (body frame)
+      const rear = i === 4, T = rear ? b.R : b.L[i];
+      const pw = alive ? Math.min(1, rear ? b.R / (1 + ENG.abGain * b.eng.ab) / (ENG.tmax * 0.75) : T / 1500) : 0;
       const pl = this.plumes[i];
-      pl.m.uniforms.uPow.value = pw; pl.m.uniforms.uAb.value = alive ? e.ab : 0;
-      const L = 0.5 + 1.5 * pw + 2.6 * e.ab;
-      pl.mesh.scale.set(L, 1 + 0.5 * e.ab, 1 + 0.5 * e.ab);
+      pl.m.uniforms.uPow.value = pw; pl.m.uniforms.uAb.value = rear ? ab * 0.55 : 0;
+      const L = rear ? 0.6 + 1.5 * pw + 2.2 * ab : 0.35 + 1.5 * pw;
+      pl.mesh.scale.set(L, 1 + (rear ? 0.2 * ab : 0), 1 + (rear ? 0.2 * ab : 0));
       pl.mesh.visible = alive && pw > 0.02;
-      ab = Math.max(ab, e.ab);
       if (!alive) continue;
       // where does this jet hit the surface?
-      const th = b.tilt + b.va[i];
-      const dirB = [-Math.cos(th), -Math.sin(th), -Math.sin(b.vb[i])];
+      let dirB, exit;
+      if (rear) { const a = REAR.cant + b.rp, cy = Math.cos(b.ry); dirB = [-Math.cos(a) * cy, -Math.sin(a) * cy, -Math.sin(b.ry)]; exit = REAR.p; }
+      else { const th = sw + b.va[i]; dirB = [-Math.cos(th), -Math.sin(th), 0]; exit = LIFT[i].p; }
       const dW = qrot(b.q, dirB);
-      if (dW[1] > -0.25) continue;
-      const exitW = b.toWorld([PODS[i].p[0] - ENG.podLen * Math.cos(b.tilt), PODS[i].p[1] - ENG.podLen * Math.sin(b.tilt), PODS[i].p[2]]);
+      if (dW[1] > -0.2) continue;
+      const exitW = b.toWorld(exit);
       const reach = 5 + 13 * pw;
       let hit = null, isWater = false;
       for (let s = 0.5; s < reach; s += 0.8) {
@@ -123,7 +128,7 @@ export class FX {
         if (q[1] <= sy) { hit = [q[0], sy, q[2]]; isWater = wl > gy; hit.d = s; break; }
       }
       if (!hit) continue;
-      const k = Math.max(0, e.T / ENG.tmax - 0.12) * (1 - hit.d / reach);
+      const k = Math.max(0, T / 1450 - 0.12) * (1 - hit.d / reach);
       if (isWater) { wash += k; wx += hit[0] * k; wz += hit[2] * k; }
       this.acc += k * dt * 70;
       while (this.acc > 1) {
@@ -139,7 +144,8 @@ export class FX {
     this.washStrength += ((wash > 0 ? Math.min(1, wash * 0.8) : 0) - this.washStrength) * Math.min(1, dt * 4);
     if (wash > 0) this.washPos = [wx / wash, wz / wash];
     // after-burner light on the surroundings
-    this.light.intensity = ab * 260; this.light.position.set(b.p[0], b.p[1] - 0.2, b.p[2]);
+    const lp = b.toWorld([REAR.p[0] - 1.2, REAR.p[1], 0]);
+    this.light.intensity = ab * 30; this.light.position.set(lp[0], lp[1], lp[2]);
     // wing-tip vapour in hard, fast turns
     if (alive) {
       const g = len([b.acc[0], b.acc[1] + G, b.acc[2]]) / G;

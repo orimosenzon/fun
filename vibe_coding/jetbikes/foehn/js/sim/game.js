@@ -76,11 +76,11 @@ export class Game {
       if (ctl.brake) this.vt = Math.max(0, Math.min(this.vt, fwd) - 30 * dt);
       if (ctl.boost && !b.abLock) this.vt = clamp(Math.max(this.vt, fwd + 3), V_MIN, V_MAX + 30);
       else if (this.vt > V_MAX) this.vt = Math.max(V_MAX, Math.min(this.vt, fwd));
-      // touchdown cuts the engines: resting on the skids with no throttle, climb or boost asked
-      // for, any leftover target speed (a few km/h, or backwards after S) would keep the flight
-      // computer awake and lift the bike off again
-      if (b.contactN > 0.25 * b.mp.m * G && len(b.v) < 4 && !(ctl.throttle > 0) && !ctl.boost && (ctl.pitch || 0) <= 0.05) this.vt = 0;
     }
+    // touchdown cuts the engine: resting on the skids with no throttle, climb or boost asked
+    // for, any leftover target speed (a few km/h, or backwards after S) would keep the flight
+    // computer awake and lift the bike off again
+    if (b.contactN > 0.25 * b.mp.m * G && len(b.v) < 4 && !ctl.boost && (ctl.pitch || 0) <= 0.05 && (ctl.vt !== undefined ? Math.abs(ctl.vt) < 3 : !(ctl.throttle > 0))) this.vt = 0;
     const inp = this.state === 'finished' ? { turn: 0, pitch: 0, vt: 0, brake: true }
       : { turn: ctl.turn || 0, pitch: ctl.pitch || 0, strafe: ctl.strafe || 0, vt: this.vt, boost: !!ctl.boost, brake: !!ctl.brake };
     this.sim.advance(dt, inp, () => this.onTick());

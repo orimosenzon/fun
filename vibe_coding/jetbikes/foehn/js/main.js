@@ -207,8 +207,10 @@ async function boot() {
     const k = clamp((V - 6) / 20, 0, 1), fh = [Math.cos(yaw), 0, -Math.sin(yaw)];
     let dir = [lerp(fh[0], b.v[0] / (V || 1), k), lerp(0, b.v[1] / (V || 1), k) * 0.6, lerp(fh[2], b.v[2] / (V || 1), k)];
     const dl = Math.hypot(dir[0], dir[1], dir[2]) || 1; dir = dir.map((v) => v / dl);
-    const shake = fx.shake * 0.5 + b.eng[0].ab * 0.035 + Math.max(0, V - 80) * 0.0006;
-    let targetFov = 56 + Math.min(15, V * 0.15) + b.eng[0].ab * 4;
+    // the camera feels the after-burner, the speed, and the ground rushing by close underneath
+    const rush = clamp((V - 35) / 60, 0, 1) * clamp(1 - b.agl / 14, 0, 1);
+    const shake = fx.shake * 0.5 + b.abOut * 0.045 + Math.max(0, V - 80) * 0.0006 + rush * 0.02;
+    let targetFov = 56 + Math.min(15, V * 0.15) + b.abOut * 7 + rush * 3;
     if (camMode === 'free') { /* placed by hand (debug, screenshots) */ } else if (camMode === 'cockpit') {
       const p = b.toWorld([-0.02, 1.80, 0]);
       camera.position.set(p[0], p[1], p[2]);
@@ -275,7 +277,7 @@ async function boot() {
       onEvents();
       const b = game.bike, alive = game.state !== 'crashed';
       lean += ((ctl.turn || 0) - lean) * Math.min(1, dt * 5);
-      model.root.visible = alive; model.update(b, time, lean);
+      model.root.visible = alive; model.update(b, time, lean, dt);
       const gp = mode === 'play' && game.state === 'fly' ? game.ghostAt(game.total) : null;
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
@@ -303,7 +305,7 @@ async function boot() {
     renderer.setRenderTarget(post.main); renderer.clear(); renderer.render(scene, camera);
     if (sun.shadow.map) { U.uShadowMap.value = sun.shadow.map.texture; U.uShadowMat.value.copy(sun.shadow.matrix); U.uShadowOn.value = 1; }
     flash = Math.max(0, flash - dt * 0.5);
-    post.finish(camera, s, { blur: camMode === 'cine' ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (camMode === 'cine' ? 0 : 1) + b.eng[0].ab * 0.25, time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays: 1 });
+    post.finish(camera, s, { blur: camMode === 'cine' ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (camMode === 'cine' ? 0 : 1) + b.abOut * 0.3, time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays: 1 });
     if (!paused) hud.update(dt, game, camera, viewW, viewH);
     // adaptive resolution
     fpsAcc += dt; fpsN++;

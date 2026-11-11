@@ -27,13 +27,13 @@ export class Audio {
   engine(b, alive, camDist = 8, cockpit = false) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime, set = (p, v, k = 0.06) => p.setTargetAtTime(v, t, k);
-    let N = 0, T = 0, ab = 0;
-    for (const e of b.eng) { N += e.N / 4; T += e.T / 4; ab = Math.max(ab, e.ab); }
+    // one big engine: its spool speed sets the pitch of the whine, the thrust of all five nozzles the roar
+    const N = b.eng.N, T = b.thrust / 4, ab = b.abOut;
     const th = alive ? Math.min(1.5, T / 1400) : 0, att = 1 / (1 + camDist / 60), ck = cockpit ? 0.7 : 1;
-    set(this.roar.g.gain, th * 0.55 * att * ck); set(this.roar.f.frequency, 180 + th * 900);
+    set(this.roar.g.gain, th * 0.6 * att * ck); set(this.roar.f.frequency, 150 + th * 800);
     set(this.hiss.g.gain, th * 0.10 * att); set(this.hiss.f.frequency, 1800 + N * 2500);
-    for (const w of this.whine) { set(w.o.frequency, (500 + N * 2900) * w.det); set(w.f.frequency, 500 + N * 2900); set(w.g.gain, alive ? (0.012 + 0.03 * N) * att : 0); }
-    set(this.abn.g.gain, ab * (0.9 + 0.3 * Math.random()) * att, 0.03); set(this.subG.gain, ab * 0.35 * att + th * 0.08 * att);
+    for (const w of this.whine) { set(w.o.frequency, (320 + N * 2100) * w.det); set(w.f.frequency, 320 + N * 2100); set(w.g.gain, alive ? (0.012 + 0.03 * N) * att : 0); }
+    set(this.abn.g.gain, ab * (1.0 + 0.3 * Math.random()) * att, 0.03); set(this.subG.gain, ab * 0.4 * att + th * 0.1 * att);
     const V = b.airspeed;
     set(this.wind.g.gain, alive ? Math.min(0.5, V * V / 22000) * (cockpit ? 1.3 : 0.8) : 0, 0.2); set(this.wind.f.frequency, 300 + V * 14);
   }

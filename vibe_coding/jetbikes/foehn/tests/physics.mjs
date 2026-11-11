@@ -12,9 +12,9 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
 
 { // 1. hover: thrust carries exactly the weight
   const s = air(); run(s, 8, { turn: 0, pitch: 0, vt: 0, noFloor: true });
-  const b = s.bike, lift = b.thrust * Math.sin(b.tilt), W = b.mp.m * G;
+  const b = s.bike, lift = b.lift, W = b.mp.m * G;
   ok('hover holds height', Math.abs(b.v[1]) < 0.1 && len(b.v) < 0.5, `vz=${b.v[1].toFixed(3)} V=${len(b.v).toFixed(2)}`);
-  ok('hover thrust = weight', Math.abs(lift / W - 1) < 0.02, `T sin(tilt)/W=${(lift / W).toFixed(3)}`);
+  ok('hover thrust = weight', Math.abs(lift / W - 1) < 0.02, `lift pipes/W=${(lift / W).toFixed(3)} rear=${b.R.toFixed(0)} N`);
 }
 { // 2. cruise: the wing carries most of the weight, height is held
   const s = air(75); let y0;
@@ -60,7 +60,7 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
   ok('deterministic', a.p[0] === b.p[0] && a.q[1] === b.q[1]);
 }
 { // 8. thin air: the hover margin shrinks with altitude
-  const m = (alt) => { const s = new Sim(); s.reset([2500, alt, 1500], 0, 0.01); run(s, 5, { turn: 0, pitch: 1, vt: 0, noFloor: true }); return s.bike.v[1]; };
+  const m = (alt) => { const s = new Sim(); s.reset([2500, alt, 1500], 0, 0.01); run(s, 1.5, { turn: 0, pitch: 1, vt: 0, noFloor: true }); return s.bike.v[1]; };   // still accelerating: thrust-limited
   const lo = m(1500), hi = m(3600);
   ok('climb rate falls with altitude', hi < lo, `1500 m: ${lo.toFixed(1)} m/s, 3600 m: ${hi.toFixed(1)} m/s`);
 }
