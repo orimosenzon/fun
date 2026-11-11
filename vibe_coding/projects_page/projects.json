@@ -1244,6 +1244,39 @@
           ]
         },
         {
+          "title": "שכונות פרדס חנה-כרכור",
+          "icon": "🗺️",
+          "theme": "t-green",
+          "dir": "shchunot",
+          "tags": [
+            "Leaflet",
+            "למ\"ס",
+            "OpenStreetMap",
+            "אופטימיזציה"
+          ],
+          "desc": "<strong style=\"color:#34d399\">איך מחלקים את המושבה ל-10 עד 13 שכונות שוות?</strong><br> פרויקט של יוסי לוי: כמה שיותר שוויון גם במספר התושבים וגם בשטח. מפקד 2022 של הלמ\"ס לפי אזורים סטטיסטיים, מפוזר על מבני המגורים לרשת של ריבועי 10 דונם. אלגוריתם בונה שכונות רציפות, ומחוונים מאפשרים לשחק עם המשקל בין תושבים לשטח ועם צורת השכונות. גרף טרייד-אוף מראה מה עולה כל אחוז של שוויון. אפשר גם לערוך ידנית, לשתף קישור לחלוקה ולהוריד GeoJSON.",
+          "links": [
+            {
+              "href": "shchunot/index.html",
+              "style": "live",
+              "label": "▶ לחלק לשכונות",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/shchunot",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "מי יקים את הממשלה?",
           "icon": "🏛️",
           "theme": "t-orange",
