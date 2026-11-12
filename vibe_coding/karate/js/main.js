@@ -6,6 +6,8 @@ import { TECH, KAMAE, poseAt } from './techniques.js';
 import { Match, ARENA } from './fight.js';
 import { makeAI } from './ai.js';
 import { Rig } from './rig.js';
+import { buildKata, timeline, kataPoseAt, moveLabel, stanceLabel, moveHead } from './kata.js';
+import { KATAS } from './katas.js';
 
 const Q = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -208,6 +210,7 @@ function keyDown(code) {
   if (MAP2[code]) pressed[mode === '2p' ? 1 : 0].push(MAP2[code]);
 }
 addEventListener('keydown', (e) => {
+  if (kata.on) { kataKey(e); return; }
   if (e.code === 'Escape') { togglePause(); return; }
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   if (!e.repeat) keyDown(e.code);
@@ -247,7 +250,7 @@ let az = 0, userAz = 0, zoom = 1, camX = 0, shake = 0, camDist = 6;
   let drag = null;
   const c = $('c');
   c.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, a: userAz }; c.setPointerCapture(e.pointerId); });
-  c.addEventListener('pointermove', (e) => { if (drag) userAz = Math.max(-1.3, Math.min(1.3, drag.a - (e.clientX - drag.x) * 0.006)); });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const a = drag.a - (e.clientX - drag.x) * 0.006; userAz = kata.on ? a : Math.max(-1.3, Math.min(1.3, a)); });
   c.addEventListener('pointerup', () => { drag = null; });
   c.addEventListener('wheel', (e) => { zoom = Math.max(0.6, Math.min(1.8, zoom * (e.deltaY > 0 ? 1.08 : 0.93))); e.preventDefault(); }, { passive: false });
   c.addEventListener('dblclick', () => { userAz = 0; zoom = 1; });
@@ -357,6 +360,155 @@ for (const b of document.querySelectorAll('[data-mode]')) b.onclick = () => {
 };
 $('helpBtn').onclick = () => $('help').classList.toggle('show');
 
+
+// ---------- מצב קאטה ----------
+const kata = { on: false, def: null, K: null, TL: null, t: 0, playing: false, stepMode: false, stepIdx: -1, speed: 1, shown: -9, view: 0, pose: {}, pos: [0, 0], cam: [0, 0], kimeAge: 9 };
+const VIEWS = [['מלפנים', 0], ['מאחור', Math.PI], ['מימין', -Math.PI / 2], ['משמאל', Math.PI / 2]];
+const GROUPS = { heian: 'הייאן', tekki: 'טקי', adv: 'קאטות מתקדמות', basic: 'יסוד' };
+function buildKataMenu() {
+  const g = $('kGrid'); g.innerHTML = '';
+  let last = null;
+  for (const k of KATAS) {
+    if (k.group !== last) { last = k.group; const h = document.createElement('h3'); h.textContent = GROUPS[k.group] || ''; if (h.textContent) g.appendChild(h); }
+    const b = document.createElement('button');
+    b.innerHTML = `<b>${k.he}</b><small>${k.ja} · ${k.mean || ''}</small>`;
+    b.onclick = () => openKata(k.id);
+    g.appendChild(b);
+  }
+}
+function kataWorld(p) { return [kata.pos[0] - p[2], kata.pos[1] + p[0]]; }   // מערכת הקאטה -> עולם: חזית הקאטה אל המצלמה
+function openKata(id) {
+  const def = KATAS.find((k) => k.id === id); if (!def) return;
+  audio();
+  const k = kata; k.def = def; k.K = buildKata(def); k.TL = timeline(k.K);
+  // ממרכזים את האמבוסן (תוואי הקאטה) בדוג'ו
+  let x0 = 0, x1 = 0, z0 = 0, z1 = 0;
+  for (const s of k.K.steps) { x0 = Math.min(x0, s.pose.pel[0]); x1 = Math.max(x1, s.pose.pel[0]); z0 = Math.min(z0, s.pose.pel[2]); z1 = Math.max(z1, s.pose.pel[2]); }
+  k.pos = [(z0 + z1) / 2, -0.6 - (x0 + x1) / 2];
+  k.t = 0; k.playing = false; k.stepIdx = -1; k.shown = -9; k.on = true; started = false; paused = false;
+  k.cam = kataWorld(k.K.open.pel);
+  document.body.classList.add('kata');
+  for (const o of ['menu', 'end', 'kataMenu']) $(o).classList.remove('show');
+  rigs[1].group.visible = false; rigs[0].group.rotation.y = -Math.PI / 2;
+  $('kName').innerHTML = `${def.he}<small>${def.ja}</small>`;
+  const L = $('kList'); L.innerHTML = '';
+  k.K.steps.forEach((s, i) => {
+    const d = document.createElement('div'), l = moveLabel(s), st = stanceLabel(s);
+    if (s.m.sub) d.className = 'sub';
+    if (s.m.via) d.style.display = 'none';
+    d.innerHTML = `<em>${s.m.sub ? '' : s.count}</em><span>${l.he || '(מעבר)'}${s.m.kiai ? ' · קיאי' : ''}<small>${s.m.yame ? '' : st.he}</small></span>`;
+    d.onclick = () => kataJump(i);
+    L.appendChild(d);
+  });
+  const P = $('kProg'); P.querySelectorAll('i').forEach((x) => x.remove());
+  for (const m of k.TL.marks) { const i = document.createElement('i'); i.style.left = (m.tk / k.TL.total * 100) + '%'; P.appendChild(i); }
+  kataUI();
+}
+function closeKata(toKumite) {
+  kata.on = false; kata.playing = false;
+  document.body.classList.remove('kata', 'list');
+  rigs[1].group.visible = true; rigs[0].group.rotation.y = 0;
+  $(toKumite ? 'menu' : 'kataMenu').classList.add('show');
+}
+function kataJump(i) {
+  const k = kata, n = k.K.steps.length; i = moveHead(k.K, Math.max(0, Math.min(n - 1, i)));
+  k.t = k.TL.marks[i].t0 + 1e-4; k.stepIdx = i; k.playing = true; kataUI();
+}
+function kataCur() { return kataPoseAt(kata.K, kata.TL, kata.t, {}).i; }
+function kataNext() {
+  const k = kata, i = kataCur();
+  if (k.stepMode) { if (k.t >= k.TL.marks[k.TL.marks.length - 1].t1 - 0.01) return; let j = k.t <= k.TL.marks[0].t0 && !k.playing ? 0 : i + 1; while (j < k.K.steps.length - 1 && k.K.steps[j].m.via && moveHead(k.K, j) <= i) j++; kataJump(j); }
+  else kataJump(i + 1);
+}
+function kataPrev() { const i = moveHead(kata.K, Math.max(0, kataCur())); kataJump(kata.playing && kata.t - kata.TL.marks[i].t0 > 0.5 ? i : i - 1); }
+function kataAgain() { kataJump(Math.max(0, kataCur())); }
+function kataToggle() {
+  const k = kata; audio();
+  if (k.playing) { k.playing = false; }
+  else {
+    if (k.t >= k.TL.total - 0.05) { k.t = 0; k.stepIdx = -1; }
+    if (k.stepMode) { kataNext(); return; }
+    k.playing = true;
+  }
+  kataUI();
+}
+function kataUI() {
+  const k = kata;
+  $('kPlay').textContent = k.playing ? 'עצור' : (k.stepMode ? 'בצע' : (k.t >= k.TL.total - 0.05 ? 'מהתחלה' : 'נגן'));
+  $('kStep').classList.toggle('sel', k.stepMode);
+  $('kListBtn').classList.toggle('sel', document.body.classList.contains('list'));
+  $('kView').textContent = VIEWS[k.view][0];
+  $('kSpeedV').textContent = '×' + k.speed.toFixed(2).replace(/0$/, '');
+}
+function kataKey(e) {
+  if (e.code === 'Space') { e.preventDefault(); kataToggle(); }
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyN') { e.preventDefault(); kataNext(); }
+  else if (e.code === 'ArrowRight' || e.code === 'KeyP') { e.preventDefault(); kataPrev(); }
+  else if (e.code === 'KeyR') kataAgain();
+  else if (e.code === 'Escape') closeKata(false);
+}
+$('kataBtn').onclick = () => { $('menu').classList.remove('show'); buildKataMenu(); $('kataMenu').classList.add('show'); };
+$('kToKumite').onclick = () => { $('kataMenu').classList.remove('show'); $('menu').classList.add('show'); };
+$('kMenu').onclick = () => { closeKata(false); buildKataMenu(); };
+$('kPlay').onclick = kataToggle; $('kNext').onclick = kataNext; $('kPrev').onclick = kataPrev; $('kAgain').onclick = kataAgain;
+$('kStep').onclick = () => { kata.stepMode = !kata.stepMode; if (kata.stepMode && kata.playing) kata.stepIdx = Math.max(0, kataCur()); kataUI(); };
+$('kSpeed').oninput = (e) => { kata.speed = +e.target.value; kataUI(); };
+$('kView').onclick = () => { kata.view = (kata.view + 1) % VIEWS.length; userAz = 0; kataUI(); };
+$('kListBtn').onclick = () => { document.body.classList.toggle('list'); kataUI(); };
+$('kMute').onclick = () => { muted = !muted; $('kMute').textContent = $('mute').textContent = muted ? '🔇' : '🔊'; };
+$('kProg').onclick = (e) => { const r = $('kProg').getBoundingClientRect(); const t = (e.clientX - r.left) / r.width * kata.TL.total; const i = kata.TL.marks.findIndex((m) => t < m.t1); kataJump(i < 0 ? kata.TL.marks.length - 1 : i); };
+
+let kAz = 0;
+function kataFrame(dt) {
+  const k = kata, marks = k.TL.marks, n = marks.length;
+  if (k.playing) {
+    const t0 = k.t; k.t += dt * k.speed;
+    for (let i = 0; i < n; i++) {
+      if (t0 < marks[i].tk && k.t >= marks[i].tk) {
+        const m = k.K.steps[i].m;
+        if (!m.soft) { play('kime', true); if (m.stomp) play('stomp'); }
+        if (m.kiai) play('kiai');
+      }
+    }
+    while (k.stepMode && k.stepIdx >= 0 && k.stepIdx < n - 1 && k.K.steps[k.stepIdx].m.via && k.t >= marks[k.stepIdx].t1) k.stepIdx++;
+    if (k.stepMode && k.stepIdx >= 0 && k.t >= marks[k.stepIdx].t1 - 0.002) { k.t = marks[k.stepIdx].t1 - 0.002; k.playing = false; kataUI(); }
+    if (k.t >= k.TL.total) { k.t = k.TL.total; k.playing = false; kataUI(); }
+  }
+  const r = kataPoseAt(k.K, k.TL, k.t, k.pose);
+  if (r.i !== k.shown) {
+    k.shown = r.i;
+    if (r.i < 0) { $('kMove').innerHTML = 'יוֹי'; $('kJa').textContent = 'yoi'; $('kStance').textContent = stanceLabel({ m: { st: k.def.start || 'hachiji' } }).he; }
+    else {
+      const s = k.K.steps[r.i], l = moveLabel(s), st = stanceLabel(s);
+      $('kMove').innerHTML = `${s.m.yame ? '' : `<em>${s.count}/${k.K.count}</em>`}${l.he || '(מעבר)'}${s.m.kiai ? '<u>קיאי!</u>' : ''}`;
+      $('kJa').textContent = l.ja || '';
+      $('kStance').textContent = (s.m.yame ? '' : st.he) + (s.m.note ? (s.m.yame ? '' : ' · ') + s.m.note : '');
+    }
+    const L = $('kList').children;
+    const hi = r.i < 0 ? -1 : (() => { let j = r.i; while (k.K.steps[j].m.via && j < L.length - 1) j++; return j; })();
+    for (let i = 0; i < L.length; i++) L[i].classList.toggle('cur', i === hi);
+    if (hi >= 0 && document.body.classList.contains('list')) L[hi].scrollIntoView({ block: 'nearest' });
+  }
+  $('kFill').style.width = (k.t / k.TL.total * 100) + '%';
+  // קימה: שקיעה ורעד קצר, כמו בקומיטה
+  const p = clonePose(r.pose), a = r.kimeAge, soft = r.i >= 0 && k.K.steps[r.i].m.soft;
+  if (a < 0.4 && !soft) {
+    const lock = Math.exp(-a / 0.11), ring = Math.exp(-a / 0.05) * Math.cos(a * 70);
+    p.pel[1] -= 0.014 * lock; p.rot[1] += 0.02 * ring; p.hL[1] += 0.006 * ring; p.hR[1] += 0.006 * ring;
+  } else if (!k.playing || a > 0.4) { p.pel[1] += Math.sin(time * 1.9) * 0.004; }
+  rigs[0].update(solve(p));
+  rigs[0].group.position.set(k.pos[0], 0, k.pos[1]);
+  const w = kataWorld(r.pose.pel), f = Math.min(1, dt * 3.5);
+  k.cam[0] += (w[0] - k.cam[0]) * f; k.cam[1] += (w[1] - k.cam[1]) * f;
+  let want = VIEWS[k.view][1] + userAz; kAz += (want - kAz) * Math.min(1, dt * 6);
+  const narrow = camera.aspect < 1 ? Math.min(1 / camera.aspect, 2.2) : 1;
+  const d = 5.0 * zoom * (0.55 + 0.45 * narrow);
+  camera.position.set(k.cam[0] + Math.sin(kAz) * d, 1.5, k.cam[1] + Math.cos(kAz) * d);
+  camera.lookAt(k.cam[0], camera.aspect < 1 ? 0.78 : 0.95, k.cam[1]);
+  renderer.render(scene, camera);
+}
+window.__kata = kata;
+
 // שכבת חיים מעל התנוחה המחושבת. לא משפיעה על הפגיעות, רק על מה שרואים.
 // בקמאה: נשימה מהבטן, לחץ קל קדימה ואחורה. ברגע הקימה: כל הגוף ננעל ושוקע, עם רעד קצר שדועך.
 const tmpPose = [null, null];
@@ -412,6 +564,8 @@ function frame(now) {
     return;
   }
 
+  if (kata.on) { kataFrame(dt); return; }
+
   if (started && !paused) {
     acc += dt;
     while (acc >= DT) {
@@ -437,4 +591,14 @@ function frame(now) {
 window.__match = match;
 if (debugPose) { document.body.classList.add('debug'); for (const f of match.f) { f.tech = null; } }
 if (Q.get('auto')) startMatch();
+if (Q.get('kata')) {
+  // ?kata=heian1 פותח קאטה; &step=7 מקפיא בשיא התנועה השביעית (&ph=prep להכנה), &view=0..3, &az=, &zoom=, &play=1
+  openKata(Q.get('kata'));
+  if (Q.has('view')) kata.view = +Q.get('view');
+  if (Q.has('az')) userAz = +Q.get('az');
+  if (Q.has('zoom')) zoom = +Q.get('zoom');
+  if (Q.has('step')) { const m = kata.TL.marks[+Q.get('step') - 1]; kata.t = Q.get('ph') === 'prep' ? m.tp : m.tk + 0.6 * (m.t1 - m.tk) * 0 + 0.001; kAz = VIEWS[kata.view][1] + userAz; kata.cam = kataWorld(kataPoseAt(kata.K, kata.TL, kata.t, {}).pose.pel); }
+  if (Q.get('ui') === '0') document.body.classList.add('debug');
+  if (Q.get('play')) kata.playing = true;
+}
 requestAnimationFrame(frame);
