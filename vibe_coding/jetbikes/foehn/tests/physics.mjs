@@ -1,7 +1,7 @@
 // Physics and flight-control checks. node tests/physics.mjs
 import { loadWorld, deg } from './util.mjs';
 import { Sim } from '../js/sim/sim.js';
-import { G, aeroWrench, mkW, WING, massProps, SURF } from '../js/sim/bike.js';
+import { G, aeroWrench, mkW } from '../js/sim/bike.js';
 import { yprOf, len } from '../js/sim/vmath.js';
 import { makeWind } from '../js/sim/wind.js';
 const meta = loadWorld();
@@ -16,13 +16,13 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
   ok('hover holds height', Math.abs(b.v[1]) < 0.1 && len(b.v) < 0.5, `vz=${b.v[1].toFixed(3)} V=${len(b.v).toFixed(2)}`);
   ok('hover thrust = weight', Math.abs(lift / W - 1) < 0.02, `lift pipes/W=${(lift / W).toFixed(3)} rear=${b.R.toFixed(0)} N`);
 }
-{ // 2. cruise: the wing carries most of the weight, height is held
+{ // 2. cruise: no wing, so the lift nozzles still carry the whole weight; height is held
   const s = air(75); let y0;
   run(s, 6, { turn: 0, pitch: 0, vt: 75, noFloor: true }); y0 = s.bike.p[1];
   run(s, 6, { turn: 0, pitch: 0, vt: 75, noFloor: true });
-  const b = s.bike, A = aeroWrench(b.vAirB, b.w, b.rho, b, b.mp.cg, mkW());
-  ok('cruise holds height', Math.abs(b.p[1] - y0) < 1.5, `dy=${(b.p[1] - y0).toFixed(2)}`);
-  ok('cruise is wing-borne', A.F[1] / (b.mp.m * G) > 0.8 && b.tilt < 0.1, `aero lift/W=${(A.F[1] / (b.mp.m * G)).toFixed(2)} tilt=${deg(b.tilt).toFixed(0)}`);
+  const b = s.bike, A = aeroWrench(b.vAirB, b.w, b.rho, b, b.mp.cg, mkW()), W = b.mp.m * G;
+  ok('cruise holds height and speed', Math.abs(b.p[1] - y0) < 1.5 && Math.abs(len(b.v) - 75) < 2, `dy=${(b.p[1] - y0).toFixed(2)} V=${len(b.v).toFixed(1)}`);
+  ok('cruise is thrust-borne', Math.abs(A.F[1]) / W < 0.1 && Math.abs(b.lift / W - 1) < 0.12, `aero lift/W=${(A.F[1] / W).toFixed(2)} lift nozzles/W=${(b.lift / W).toFixed(2)} pitch=${deg(yprOf(b.q)[1]).toFixed(1)}`);
 }
 { // 3. hard turn: load factor matches the bank, no height lost
   const s = air(70); run(s, 3, { turn: 0, pitch: 0, vt: 70, noFloor: true });
@@ -45,13 +45,11 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
   ok('lands softly, no crash', vTouch !== null && vTouch > -1.6 && !s.bike.crash, `touch-down ${vTouch && vTouch.toFixed(2)} m/s`);
   ok('idles on the ground', s.bike.thrust < 400, `T=${s.bike.thrust.toFixed(0)} N`);
 }
-{ // 6. strip aerodynamics: lift slope below the stall, lift loss beyond it
-  const cg = massProps(60).cg, w = [0, 0, 0], ctl = { da: 0, de: 0, dr: 0, brake: 0 }, V = 60, rho = 1.1;
-  const L = (a) => { const o = aeroWrench([V * Math.cos(a), -V * Math.sin(a), 0], w, rho, ctl, cg, mkW()); return o.F[1] * Math.cos(a) + o.F[0] * Math.sin(a); };   // wind-axis lift
-  const slope = (L(0.04) - L(0.0)) / 0.04 / (0.5 * rho * V * V), ref = SURF.filter((s) => s.n[1]).reduce((a, s) => a + s.S * s.cla, 0);
-  ok('lift slope matches finite-wing theory', Math.abs(slope / ref - 1) < 0.08, `dCL*S/da=${slope.toFixed(2)} theory=${ref.toFixed(2)}`);
-  const post = (L(0.36) - L(0.26)) / 0.1 / (0.5 * rho * V * V);
-  ok('lift curve breaks at the stall', post < 0.35 * slope, `slope beyond the stall=${post.toFixed(2)}`);
+{ // 6. U-turn at 200 km/h: tight, and no height lost
+  const s = air(55); run(s, 3, { turn: 0, pitch: 0, vt: 55, noFloor: true });
+  const b = s.bike, y0 = b.p[1], h0 = Math.atan2(-b.v[2], b.v[0]), z0 = b.p[2]; let t = 0, w = 0;
+  while (t < 20) { s.tick({ turn: 1, pitch: 0, vt: 55, noFloor: true }); t += 1 / 120; w = Math.max(w, Math.abs(b.p[2] - z0)); if (Math.cos(Math.atan2(-b.v[2], b.v[0]) - h0) < -0.999) break; }
+  ok('U-turn from 200 km/h', t < 5 && w < 120 && Math.abs(b.p[1] - y0) < 4, `${t.toFixed(1)} s, ${w.toFixed(0)} m wide, dy=${(b.p[1] - y0).toFixed(1)}`);
 }
 { // 7. hover in gusty wind stays put; the run is deterministic
   const mk = () => { const s = new Sim(makeWind({ speed: 8, gust: 1.5, seed: 3 })); s.reset([2500, 2400, 1500], 0, 0.01); run(s, 20, { turn: 0, pitch: 0, vt: 0, noFloor: true }); return s.bike; };
@@ -59,9 +57,9 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
   ok('holds position in 8 m/s gusty wind', Math.hypot(a.p[0] - 2500, a.p[2] - 1500) < 25 && Math.abs(a.p[1] - 2400) < 4, `drift=${Math.hypot(a.p[0] - 2500, a.p[2] - 1500).toFixed(1)} m dy=${(a.p[1] - 2400).toFixed(1)}`);
   ok('deterministic', a.p[0] === b.p[0] && a.q[1] === b.q[1]);
 }
-{ // 8. thin air: the hover margin shrinks with altitude
-  const m = (alt) => { const s = new Sim(); s.reset([2500, alt, 1500], 0, 0.01); run(s, 1.5, { turn: 0, pitch: 1, vt: 0, noFloor: true }); return s.bike.v[1]; };   // still accelerating: thrust-limited
+{ // 8. thin air: the engine still breathes, so it pulls less up high
+  const m = (alt) => { const s = new Sim(); s.reset([2500, alt, 1500], 0, 40); let T = 0; run(s, 4, { turn: 1, pitch: 1, vt: 95, boost: true, noFloor: true }, () => { T = Math.max(T, s.bike.thrust); }); return T; };
   const lo = m(1500), hi = m(3600);
-  ok('climb rate falls with altitude', hi < lo, `1500 m: ${lo.toFixed(1)} m/s, 3600 m: ${hi.toFixed(1)} m/s`);
+  ok('thrust falls with altitude', hi < 0.9 * lo, `everything asked at once: ${(lo / 1000).toFixed(1)} kN at 1500 m, ${(hi / 1000).toFixed(1)} kN at 3600 m`);
 }
 console.log(fail ? `${fail} FAILED` : 'ALL PASS'); process.exit(fail ? 1 : 0);

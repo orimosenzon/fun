@@ -212,7 +212,7 @@ async function boot() {
     const shake = fx.shake * 0.5 + b.abOut * 0.045 + Math.max(0, V - 80) * 0.0006 + rush * 0.02;
     let targetFov = 56 + Math.min(15, V * 0.15) + b.abOut * 7 + rush * 3;
     if (camMode === 'free') { /* placed by hand (debug, screenshots) */ } else if (camMode === 'cockpit') {
-      const p = b.toWorld([-0.02, 1.80, 0]);
+      const p = b.toWorld([0.16, 1.5, 0]);
       camera.position.set(p[0], p[1], p[2]);
       tmpQ.set(b.q[1], b.q[2], b.q[3], b.q[0]);
       camera.quaternion.copy(tmpQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0))).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.10, -lean * 0.25, 0)));
@@ -230,12 +230,12 @@ async function boot() {
       camera.position.copy(cine.p); camLook.lerp(tmpV, 1 - Math.exp(-dt * 9)); camera.up.set(0, 1, 0); camera.lookAt(camLook);
       targetFov = clamp(2200 / (d + 30), 16, 55);
     } else {
-      const dist = camMode === 'close' ? 4.4 : 6.4 + V * 0.008, h = camMode === 'close' ? 1.2 : 1.9;
+      const dist = camMode === 'close' ? 3.1 : 4.8 + V * 0.008, h = camMode === 'close' ? 0.95 : 1.5;
       tmpV.set(b.p[0] - dir[0] * dist, b.p[1] - dir[1] * dist + h, b.p[2] - dir[2] * dist);
       if (!camInit) { camPos.copy(tmpV); camInit = true; }
       camPos.lerp(tmpV, 1 - Math.exp(-dt * (5 + V * 0.06)));
       // stay close enough at speed, and above the ground
-      const dx = camPos.x - b.p[0], dy = camPos.y - b.p[1], dz = camPos.z - b.p[2], dd = Math.hypot(dx, dy, dz), mx = dist + 4;
+      const dx = camPos.x - b.p[0], dy = camPos.y - b.p[1], dz = camPos.z - b.p[2], dd = Math.hypot(dx, dy, dz), mx = dist + 2.5;
       if (dd > mx) camPos.set(b.p[0] + dx / dd * mx, b.p[1] + dy / dd * mx, b.p[2] + dz / dd * mx);
       camPos.y = Math.max(camPos.y, surfaceAt(camPos.x, camPos.z) + 0.9);
       camera.position.copy(camPos);

@@ -1,26 +1,26 @@
-// Flight control system of the F-4: a "unified" control law in the spirit of modern STOVL
+// Flight control system of the F-5: a "unified" control law in the spirit of modern STOVL
 // fighters. The rider never commands an actuator. The stick asks for a velocity vector
 // (turn rate, climb rate, forward speed, side-step) and the computer works out
 //   1. the acceleration that takes the bike there,
-//   2. the attitude (bank for the turn, angle of attack for wing lift) and the thrust vector
-//      that produce this acceleration, given what the wing can carry at this airspeed,
-//   3. how much gas the one engine must make and how the diverter shares it between the rear
-//      nozzle and the lift pipes (height first: the rear nozzle gets what the lift does not need),
-//   4. a control allocation: 13 effectors (the shares of the 4 lift pipes, their 4 vanes, two
-//      axes of rear-nozzle vectoring, ailerons, elevator, rudder) solved every tick by bounded
-//      weighted least squares for the wanted moment. The lift valves can only re-distribute the
-//      gas there is, so their sum is a constraint of the problem.
+//   2. the attitude (bank for the turn, a little pitch) and the thrust vector that produce it.
+//      There is no wing: every newton of lift is thrust, at any speed,
+//   3. how much air the one engine must move and how the diverter shares it between the rear
+//      nozzle and the lift nozzles (height first: the rear nozzle gets what the lift does not need),
+//   4. a control allocation: 10 effectors (the shares of the 4 lift nozzles, their 4 vanes, two
+//      axes of rear-nozzle vectoring) solved every tick by bounded weighted least squares for
+//      the wanted moment. The lift valves can only re-distribute the air there is, so their sum
+//      is a constraint of the problem.
 // Every force still passes through the simulated engine, valves, servos and aerodynamics.
 import { clamp, lerp, sstep, dot, cross, len, qmul, qconj, qnorm, qinvrot, qrot, qFromYPR, qFromBasis, yprOf, m3v, wrapPi, solve } from './vmath.js';
 const dot4 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-import { G, ENG, TILT_MAX, VANE_MAX, VEC_MAX, SHARE_MIN, SHARE_MAX, LIM, WING, aeroWrench, propWrench, ramWrench, liftFrac, mkW, newCmd, thrustOfN } from './bike.js';
+import { G, ENG, TILT_MAX, VANE_MAX, VEC_MAX, SHARE_MIN, SHARE_MAX, REAR, aeroWrench, propWrench, ramWrench, liftFrac, mkW, newCmd, thrustOfN } from './bike.js';
 import { surfaceAt } from './terrain.js';
 
-const NU = 13, NR = 5;
+const NU = 10, NR = 5;
 export const FCS_HZ = 120;
 export const V_MAX = 95, V_MIN = -8;
 
-export const V_CORNER = 18, HAIR_T0 = 0.5, HAIR_T1 = 1.3;   // corner speed (m/s) and how long full stick must be held
+export const V_CORNER = 24, HAIR_T0 = 0.5, HAIR_T1 = 1.3;   // corner speed (m/s) and how long full stick must be held
 export class FCS {
   constructor(bike) {
     this.bike = bike;
@@ -31,7 +31,7 @@ export class FCS {
     this.reset();
   }
   reset() {
-    this.turn = 0; this.pitch = 0; this.strafe = 0; this.hold = 0;
+    this.turn = 0; this.pitch = 0; this.strafe = 0; this.hold = 0; this.rollNeed = 0;
     this.iV = 0; this.iZ = 0; this.yawRef = null; this.tiltCmd = this.bike.tilt;
     this.idle = true; this.obstacle = this.obstacle || null;
     this.tele = { phiDes: 0, thetaDes: 0, aCmd: [0, 0, 0], wb: 0, sat: 0, vzDes: 0, floor: false };
@@ -57,7 +57,6 @@ export class FCS {
     const v = b.v, Vf = dot(v, fh), Vr = dot(v, rh), Vu = v[1];
     const Vh = Math.hypot(v[0], v[2]), V = len(v), Va = b.airspeed;
     const qbar = 0.5 * b.rho * Va * Va;
-    const wb = sstep(24, 52, b.vAirB[0]);                       // 0 jet-borne .. 1 wing-borne
     const onGround = b.contactN > 0.25 * W;
 
     // ----- ground idle -----
@@ -75,12 +74,12 @@ export class FCS {
     const boost = !!inp.boost && !b.abLock && !inp.brake;
     const eV = vtIn - Vf;
     this.iV = clamp(this.iV + 0.25 * eV * dt, -1.5, 1.5);
-    let aF = boost ? 16 : clamp(0.85 * eV + this.iV, -12, 10);
-    // how hard can it turn? As hard as the lift there is right now allows: the lift pipes at full
-    // gas plus the wing. Slow, that is the engine alone (thrust/weight about 1.6, so 50 degrees of bank).
+    let aF = boost ? clamp(1.2 * (V_MAX + 30 - Vf), -4, 20) : clamp(0.85 * eV + this.iV, -14, 14);   // with nothing but drag in the way, the overdrive needs a top speed too
+    // how hard can it turn? As hard as the thrust allows: the bank at which the lift nozzles at
+    // full power still carry the weight (and no more than the rider can take, about 3.4 g).
     const Tavail = thrustOfN(1, b.sigma) * ENG.ductEta;
-    const liftCap = 0.9 * Tavail + qbar * WING.S * WING.clUse;
-    const phiLim = clamp(Math.acos(Math.min(1, W / (0.96 * liftCap))), 0.62, 1.32);
+    const liftCap = 0.9 * Tavail;
+    const phiLim = clamp(Math.acos(Math.min(1, W / (0.96 * liftCap))), 0.62, 1.27);
     const rateMax = Math.min(1.3, G * Math.tan(phiLim) / Math.max(Math.abs(Vf), 6));
     const yawRateCmd = -this.turn * rateMax;
     const low = 1 - sstep(16, 30, Math.abs(Vf));
@@ -110,7 +109,7 @@ export class FCS {
     const eZ = vzDes - Vu;
     this.iZ = clamp(this.iZ + 0.35 * eZ * dt, -2, 2);
     // jet-borne, thrust is also the attitude control power: never let it fall too low
-    let aU = clamp(1.9 * eZ + this.iZ, -lerp(0.55, 1.0, wb) * G, 1.9 * G);
+    let aU = clamp(1.9 * eZ + this.iZ, -1.0 * G, 1.9 * G);
 
     // what can the airframe actually deliver? Protect height first, then the turn, then speed.
     const need = m * Math.hypot(aR, aU + G);
@@ -121,63 +120,30 @@ export class FCS {
     // bank limit (also keeps roll reversals on the short way round, through wings-level)
     const aRmax = Math.tan(phiLim) * Math.max(aU + G, 0.35 * G);
     aR = clamp(aR, -aRmax, aRmax);
-    // speed changes act along the flight path once wing-borne (along the heading when hovering)
-    let th = fh;
-    if (wb > 0 && V > 5) {
-      th = [lerp(fh[0], v[0] / V, wb), lerp(0, v[1] / V, wb), lerp(fh[2], v[2] / V, wb)];
-      const l = len(th) || 1; th = [th[0] / l, th[1] / l, th[2] / l];
-    }
-    const f = [aF * th[0] + aR * rh[0], aF * th[1] + aU + G, aF * th[2] + aR * rh[2]];   // specific force, world
-    this.tele.aCmd = [aF, aU, aR]; this.tele.vzDes = vzDes; this.tele.wb = wb;
+    const f = [aF * fh[0] + aR * rh[0], aU + G, aF * fh[2] + aR * rh[2]];   // specific force, world
+    this.tele.aCmd = [aF, aU, aR]; this.tele.vzDes = vzDes; this.tele.wb = 0;
 
     // ----- 2. attitude -----
     const phiDes = clamp(Math.atan2(aR, Math.max(aU + G, 0.35 * G)), -phiLim, phiLim);
     // jet-borne: lean back to brake (flare), a touch forward to accelerate; thrust tilt does the rest
     // (and stay level close to the ground so that all four skids arrive together)
     const lvl = inp.noFloor ? 1 : clamp(0.12 + 0.11 * b.agl, 0, 1);
-    const thLow = clamp(-0.5 * aF / G, -0.20, 0.42) * (1 - 0.6 * sstep(8, 30, Vf) * (aF > 0 ? 1 : 0)) * lvl;
-    // wing-borne: angle of attack for the lift the manoeuvre needs
-    // wing-borne: build the attitude straight from the flow. Nose = air velocity pitched up by
-    // the angle of attack the manoeuvre needs, "up" = direction of the lift that is wanted.
-    // This holds angle of attack and zero sideslip at any bank angle.
-    const va = qrot(b.q, b.vAirB);
-    const vhat = Va > 2 ? [va[0] / Va, va[1] / Va, va[2] / Va] : fh;
-    const fv = dot(f, vhat);
-    // direction of "up" uses a floored vertical part, so a push-over cannot roll the bike on its back
-    const fa = [aR * rh[0], Math.max(aU + G, 0.35 * G), aR * rh[2]], fav = dot(fa, vhat);
-    let fp = [fa[0] - fav * vhat[0], fa[1] - fav * vhat[1], fa[2] - fav * vhat[2]];
-    let fpl = len(fp);
-    if (fpl < 0.5) { fp = [-vhat[0] * vhat[1], 1 - vhat[1] * vhat[1], -vhat[2] * vhat[1]]; fpl = len(fp) || 1; }
-    const lhat = [fp[0] / fpl, fp[1] / fpl, fp[2] / fpl];
-    const Lreq = m * len([f[0] - fv * vhat[0], f[1] - fv * vhat[1], f[2] - fv * vhat[2]]);
-    // the jets never go below a floor while the air is slow (their thrust is the control power
-    // of the vanes); the wing is asked for the rest
-    const kq0 = qbar / (qbar + 900);
-    const Tmin = 0.42 * W * (1 - kq0);
-    // braking: hand the weight from the wing to the jets, whose nozzles then point up and forward
-    const kb = clamp((-aF - 2) / 5, 0, 1) * (1 - sstep(70, 90, Va));
-    const TupFloor = Math.max(Tmin * Math.max(0, Math.sin(this.tiltCmd)), kb * 0.95 * W);
-    const qSa = qbar * WING.S * WING.cla, Tfwd = b.R;
-    const alphaDes = clamp((Lreq - TupFloor + qSa * WING.a0) / Math.max(qSa + Tfwd, 1), -0.10, WING.alphaMax);
-    const ca = Math.cos(alphaDes), sa = Math.sin(alphaDes);
-    const xw = [vhat[0] * ca + lhat[0] * sa, vhat[1] * ca + lhat[1] * sa, vhat[2] * ca + lhat[2] * sa];
-    const yw = [lhat[0] * ca - vhat[0] * sa, lhat[1] * ca - vhat[1] * sa, lhat[2] * ca - vhat[2] * sa];
-    const qWing = qFromBasis(xw, yw, cross(xw, yw));
-    // jet-borne: classic heading / pitch / bank
+    // (leaning back is for the last of a stop: at speed it would only fly the bike upward on its own belly,
+    // and there the air brake and the drag do the work)
+    const thLow = clamp(-0.5 * aF / G, -0.20, 0.42) * (aF > 0 ? 1 - 0.6 * sstep(8, 30, Vf) : 1 - 0.85 * sstep(22, 55, Vf)) * lvl;
+    // the nose follows the flight path, so the bike climbs and dives like a bike on a hill
     const gamma = Math.atan2(Vu, Math.max(Vh, 6));
-    const wq = sstep(14, 32, Va), slack = (1 - wq) * 0.7;
-    const thetaH = clamp(thLow, Math.max(-0.9, gamma - 0.11 - slack), Math.min(0.9, gamma + WING.alphaMax + slack));
+    const thetaH = clamp(thLow + gamma * sstep(10, 30, Va), -1.0, 1.0);
     const beta = b.vAirB[2] / Math.max(Va, 12);
     const yawRateH = yawRateCmd - 2.2 * beta * sstep(8, 26, Va);
     this.yawRef = yaw + clamp(wrapPi(this.yawRef + yawRateH * dt - yaw), -0.3, 0.3);
-    const qHover = qFromYPR(this.yawRef, thetaH, phiDes);
-    // blend the two laws through the transition
-    let qDes = qWing;
-    if (wb < 0.999) {
-      const s = dot4(qHover, qWing) < 0 ? -1 : 1;
-      qDes = qnorm([lerp(qHover[0], s * qWing[0], wb), lerp(qHover[1], s * qWing[1], wb), lerp(qHover[2], s * qWing[2], wb), lerp(qHover[3], s * qWing[3], wb)]);
-    }
-    const yawRate = lerp(yawRateH, -aR / Math.max(Vh, 10), wb);
+    const qDes = qFromYPR(this.yawRef, thetaH, phiDes);
+    // The lift nozzles are the only roll control there is (no ailerons), and their roll moment
+    // is their thrust times the 0.2 m they stand off the centre line. So they never run dry, and
+    // they are opened further whenever the roll moment asked for needs it (a side wind on the
+    // rider's back at speed, for instance).
+    const Tmin = Math.max(0.3 * W, Math.min(1.6 * W, Math.abs(this.rollNeed) / 0.10));
+    const yawRate = yawRateH;
     const thetaDes = Math.asin(clamp(2 * (qDes[0] * qDes[3] + qDes[1] * qDes[2]), -1, 1));   // for telemetry
     let qe = qmul(qconj(b.q), qDes);
     if (qe[0] < 0) qe = [-qe[0], -qe[1], -qe[2], -qe[3]];
@@ -185,7 +151,7 @@ export class FCS {
     const wff = qinvrot(b.q, [0, yawRate, 0]);
     // rate and angular-acceleration limits keep the demand inside what the effectors can give
     const wDes = [clamp(5.0 * 2 * qe[1], -2.0, 2.0) + wff[0], clamp(3.2 * 2 * qe[2], -1.2, 1.2) + wff[1], clamp(4.6 * 2 * qe[3], -1.3, 1.3) + wff[2]];
-    const aL = [lerp(4.2, 10, kq0), lerp(1.2, 2.6, kq0), lerp(2.6, 5, kq0)];
+    const aL = [7, 2.2, 4];
     const wdot = [clamp(11 * (wDes[0] - b.w[0]), -aL[0], aL[0]), clamp(6.5 * (wDes[1] - b.w[1]), -aL[1], aL[1]), clamp(10 * (wDes[2] - b.w[2]), -aL[2], aL[2])];
     const Iw = m3v(mp.I, b.w), gyro = cross(b.w, Iw);
     const tauDes = m3v(mp.I, wdot); tauDes[0] += gyro[0]; tauDes[1] += gyro[1]; tauDes[2] += gyro[2];
@@ -194,21 +160,16 @@ export class FCS {
     this.tele.phiDes = phiDes; this.tele.thetaDes = thetaDes;
 
     // ----- 3. thrust vector: how much gas, and where it goes -----
-    const surf = { da: b.da, de: b.de, dr: b.dr, brake: b.brake };
+    const surf = b;
     const A0 = aeroWrench(b.vAirB, b.w, b.rho, surf, cg, this._a0);
     const R0 = ramWrench(b.vAirB, b.w, b.eng.Tdry, cg, this._r0);
     const Fb = qinvrot(b.q, [m * f[0], m * f[1], m * f[2]]);
     let Fx = Fb[0] - A0.F[0] - R0.F[0];
-    // jet-borne: thrust fills in whatever lift is missing right now. Wing-borne: thrust only
-    // carries what the wing cannot at the commanded angle of attack (so it does not chase
-    // the short lag of the pitch loop).
-    const FyNow = Fb[1] - A0.F[1] - R0.F[1];
-    const FyWing = Math.max(0, Fb[1] - qSa * (alphaDes - WING.a0) * 1.04);
-    // while the air is slow the lift pipes are the roll and pitch control: they never run dry
-    const Fy = Math.max(lerp(FyNow, Math.min(FyWing, Math.max(FyNow, 0) + 0.5 * W), wb), Tmin * (1 - wb));
+    // thrust fills in whatever lift is missing right now
+    const Fy = Math.max(Fb[1] - A0.F[1] - R0.F[1], Tmin);
     // one engine: height comes first, the rear nozzle gets the gas the lift pipes do not need
     const ab = 1 + ENG.abGain * b.eng.ab, eta = ENG.ductEta, Gmax = thrustOfN(1, b.sigma);
-    const cant = Math.cos(0.126);
+    const cant = Math.cos(REAR.cant);
     if (Fx > 0) Fx = Math.min(Fx, Math.max(0.12 * Gmax, Gmax - Math.max(Fy, 0) / eta) * ab * cant);
     const mag = Math.hypot(Fx, Fy);
     const tiltNew = clamp(Fy <= 0 ? (Fx > 0 ? 0 : TILT_MAX) : Math.atan2(Fy, Fx), 0, TILT_MAX);
@@ -233,15 +194,6 @@ export class FCS {
     }
     u0[8] = b.rp; lo[8] = -VEC_MAX * 0.95 - b.rp; hi[8] = VEC_MAX * 0.95 - b.rp;
     u0[9] = b.ry; lo[9] = -VEC_MAX * 0.95 - b.ry; hi[9] = VEC_MAX * 0.95 - b.ry;
-    // surfaces only work while their own flow is attached: keep each inside its linear range
-    const vx = Math.max(b.vAirB[0], 5), aw = Math.atan2(-b.vAirB[1], vx);
-    const daMax = clamp((WING.stall - 0.035 - Math.abs(aw - WING.a0)) / 0.45, 0.07, LIM.da);
-    const at = Math.atan2(-(b.vAirB[1] - b.w[2] * 1.07), vx);      // local flow angle at the tailplane
-    const deLo = clamp(at - 0.27, -LIM.de, LIM.de - 0.05), deHi = clamp(at + 0.27, -LIM.de + 0.05, LIM.de);
-    u0[10] = b.da; lo[10] = Math.min(-daMax - b.da, 0); hi[10] = Math.max(daMax - b.da, 0);
-    u0[11] = b.de; lo[11] = Math.min(deLo - b.de, 0); hi[11] = Math.max(deHi - b.de, 0);
-    u0[12] = b.dr; lo[12] = -LIM.dr - b.dr; hi[12] = LIM.dr - b.dr;
-
     // Jacobian by finite differences through the same force model the physics uses.
     // rows: [sum of lift thrust, -, Mx, My, Mz]
     const J = this.J;
@@ -253,22 +205,16 @@ export class FCS {
     }
     n.rp += 0.01; row(propWrench(n, cg, this._w1), P0, 0.01, 8, 0); n.rp -= 0.01;
     n.ry += 0.01; row(propWrench(n, cg, this._w1), P0, 0.01, 9, 0); n.ry -= 0.01;
-    const keys = ['da', 'de', 'dr'];
-    for (let k = 0; k < 3; k++) {
-      surf[keys[k]] += 0.02;
-      row(aeroWrench(b.vAirB, b.w, b.rho, surf, cg, this._a1), A0, 0.02, 10 + k, 0);
-      surf[keys[k]] -= 0.02;
-    }
     // preferred positions: equal shares, vanes, nozzle and surfaces centred
     const pref = this._pref || (this._pref = new Float64Array(NU));
     for (let i = 0; i < 4; i++) { pref[i] = Ltot * 0.25 - u0[i]; pref[4 + i] = -u0[4 + i]; }
     for (let i = 8; i < NU; i++) pref[i] = -u0[i];
     const tq = [tauDes[0] - A0.Tq[0] - R0.Tq[0], tauDes[1] - A0.Tq[1] - R0.Tq[1], tauDes[2] - A0.Tq[2] - R0.Tq[2]];
+    this.rollNeed += (tq[0] - this.rollNeed) * 0.5;
     const e = [0, 0, tq[0] - P0.Tq[0], tq[1] - P0.Tq[1], tq[2] - P0.Tq[2]];
     const du = wls(J, e, WV, WU, pref, lo, hi, null);
     for (let i = 0; i < 4; i++) { cmd.s[i] = Math.max(1e-3, (u0[i] + du[i]) / b.gfx[i]); cmd.va[i] = u0[4 + i] + du[4 + i]; }
     cmd.rp = u0[8] + du[8]; cmd.ry = u0[9] + du[9];
-    cmd.da = u0[10] + du[10]; cmd.de = u0[11] + du[11]; cmd.dr = u0[12] + du[12];
     this.tele.sat = wls.sat; this.tele.tau = tauDes; this.tele.tq = tq; this.tele.F = [Fx, Fy];
     return cmd;
   }
@@ -277,7 +223,7 @@ export class FCS {
 // row weights: [sum of lift (N), -, Mx, My, Mz (N m)]
 const WV = [0.5, 0, 6 / 200, 2.5 / 200, 6 / 200];
 // effector weights (cost of leaving the preferred position): lift thrust per N, angles per rad
-const WU = [4e-4, 4e-4, 4e-4, 4e-4, 1.2, 1.2, 1.2, 1.2, 0.3, 0.3, 0.2, 0.2, 0.2];
+const WU = [4e-4, 4e-4, 4e-4, 4e-4, 1.2, 1.2, 1.2, 1.2, 0.3, 0.3];
 
 const _A = new Float64Array(NU * NU), _b = new Float64Array(NU), _du = new Float64Array(NU), _fix = new Int8Array(NU), _res = new Float64Array(NR);
 // Bounded weighted least squares by the redistributed pseudo-inverse: solve, clip what

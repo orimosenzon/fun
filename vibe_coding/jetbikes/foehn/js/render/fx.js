@@ -18,7 +18,7 @@ void main() {
   // shock diamonds: standing pressure pattern, spacing grows with thrust
   float dia = pow(0.5 + 0.5 * cos(x * (30.0 - 12.0 * uPow) - 0.6), 5.0) * exp(-x * 3.2);
   vec3 dry = vec3(0.35, 0.55, 1.0) * (0.10 * exp(-x * 5.0) + 0.25 * dia * uPow) * uPow;
-  vec3 ab = (mix(vec3(1.0, 0.55, 0.22), vec3(0.55, 0.45, 1.0), smoothstep(0.0, 0.5, x)) * exp(-x * 2.3) * 2.4 + vec3(1.4, 1.1, 0.9) * dia * 4.0) * uAb;
+  vec3 ab = (mix(vec3(0.75, 0.9, 1.0), vec3(0.55, 0.35, 1.0), smoothstep(0.0, 0.5, x)) * exp(-x * 2.3) * 2.4 + vec3(0.9, 1.1, 1.4) * dia * 4.0) * uAb;
   float fade = smoothstep(1.0, 0.75, x);
   gl_FragColor = vec4((dry + ab) * core * flick * fade * 3.0, 1.0);
 }`;

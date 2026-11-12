@@ -1,31 +1,31 @@
-// FÖHN F-4 "one big engine" jet motorcycle: geometry, mass properties, the engine and its five
-// nozzles, aerodynamics and the rigid-body integrator.
+// FÖHN F-5 "fusion" jet motorcycle: geometry, mass properties, the engine and its five nozzles,
+// aerodynamics and the rigid-body integrator.
 //
 // Body / design frame: x forward, y up, z to the rider's RIGHT. Design-frame origin is on the
-// ground under the middle of the bike (skid soles at y = 0); the physics works about the centre
-// of gravity, which moves as fuel burns.
+// ground under the middle of the bike (stand soles at y = 0); the physics works about the centre
+// of gravity.
+//
+// The premise: an engine far beyond today's. A compact fusion core heats the air that the
+// compressor swallows, so there is no fuel to burn and thrust to spare (about four times the
+// weight). The bike has NO wing and no control surface: it looks like a motorcycle without wheels
+// and flies on thrust alone. Everything else is ordinary mechanics.
 //
 // What is modelled
 //   * 6-DOF rigid body, 600 Hz, exact exponential-map attitude update, full inertia tensor,
-//     gyroscopic coupling of the single big rotor and the reaction of spooling it.
-//   * ONE turbofan the rider sits on (the size of a business-jet engine). Its gas goes through a
-//     diverter to five exits, like the direct-lift STOVL fighters:
-//       - the rear nozzle: thrust forward, after-burner, two-axis vectoring (+-15 deg);
-//       - four lift pipes under the engine (front/rear, left/right): thrust up. Each has a fast
-//         butterfly valve (its share of the lift gas) and a fore-aft vane (+-12 deg). The four
-//         elbows can also swing 26 deg forward together: that is the brake.
-//     The spool is slow (FADEC acceleration limits, thrust ~ N^3.2, density lapse); the valves
-//     are fast but can only re-distribute the gas the engine makes right now. Splitting the gas
-//     costs thrust: half back and half down gives 0.71 of the force of all of it one way.
-//     Intake momentum ("ram") drag at the nose intake, duct losses, a thermal budget for the
-//     after-burner, fuel burn.
-//   * Strip-theory aerodynamics: 4 wing strips, 2 all-moving tailplanes, 2 intake strakes, fin.
-//     Every strip sees its own local airflow (v + w x r), so roll/pitch/yaw damping, adverse
-//     yaw, weathercock stability and asymmetric stall all come out of the model. Lift is linear
-//     up to the stall and blends into flat-plate behaviour beyond it; induced drag from the
-//     aspect ratio. Ailerons, elevator, rudder and an air brake.
-//   * Bluff-body drag of bike + rider per axis with separate centres of pressure.
-//   * Jet suck-down near the ground, spring-damper skids with Coulomb friction, crash probes.
+//     gyroscopic coupling of the rotor and the reaction of spooling it.
+//   * ONE engine between the rider's knees. Its hot air goes through a diverter to five exits:
+//       - the rear nozzle (where the exhaust of a motorcycle is): thrust forward, overdrive,
+//         two-axis vectoring (+-15 deg);
+//       - four lift nozzles where the wheels would be (two in the front hub, two in the rear):
+//         thrust up. Each has a fast valve (its share of the lift air) and a fore-aft vane
+//         (+-12 deg). The four can also swing 26 deg forward together: that is the brake.
+//     The spool is slow (acceleration limits, thrust ~ N^3.2, density lapse: it still breathes
+//     air); the valves are fast but can only re-distribute the air the engine moves right now.
+//     Splitting it costs thrust: half back and half down gives 0.71 of the force of all of it
+//     one way. Intake momentum ("ram") drag, duct losses, a thermal budget for the overdrive.
+//   * Aerodynamics: bluff-body drag of bike + rider per axis with separate centres of pressure,
+//     rate damping, an air brake. No lift from the air: weight, turns and climbs are all thrust.
+//   * Jet suck-down near the ground, spring-damper stand with Coulomb friction, crash probes.
 import { add, sub, scale, madd, dot, cross, len, qmul, qnorm, qrot, qinvrot, qexp, m3v, m3inv, clamp } from './vmath.js';
 import { groundAt, normalAt, waterAt, airDensity } from './terrain.js';
 
@@ -34,27 +34,25 @@ const RHO0 = 1.225, D2R = Math.PI / 180;
 
 // ---------------- propulsion ----------------
 export const ENG = {
-  tmax: 7000,            // N of gas thrust, sea-level static, dry, all of it through one nozzle
-  abGain: 0.6,           // after-burner adds 60 % to whatever leaves through the rear nozzle
-  ductEta: 0.94,         // the bends of the lift pipes cost 6 %
+  tmax: 14000,           // N of thrust, sea-level static, without overdrive, all of it through one nozzle
+  abGain: 0.5,           // overdrive adds 50 % to whatever leaves through the rear nozzle
+  ductEta: 0.94,         // the bends of the lift ducts cost 6 %
   exp: 3.2,              // thrust ~ N^3.2
-  idleN: 0.36,
-  ve: 560,               // m/s exhaust speed (intake momentum drag = mdot * V)
-  tsfc: 3.3e-5,          // kg/(N s) dry (a turbofan)
-  tsfcAb: 1.0e-4,        // kg/(N s) for the after-burner part
-  rotorI: 0.014, omegaMax: 4600,   // kg m^2, rad/s: one big spool, its momentum lies along +x
-  axisY: 0.70, radius: 0.27,
+  idleN: 0.30,
+  ve: 900,               // m/s exhaust speed: fusion heat makes it far hotter than a burner could (ram drag = mdot * V)
+  rotorI: 0.012, omegaMax: 4600,   // kg m^2, rad/s: the spool, its momentum lies along +x
+  axisY: 0.60, radius: 0.2,
 };
 // lift pipe exits (design frame) and the rear nozzle. The rear nozzle is canted so that its
 // neutral thrust line passes through the centre of gravity (the rider sits above the engine).
 export const LIFT = [
-  { name: 'FL', p: [0.68, 0.38, -0.33] },
-  { name: 'FR', p: [0.68, 0.38, 0.33] },
-  { name: 'RL', p: [-0.80, 0.38, -0.33] },
-  { name: 'RR', p: [-0.80, 0.38, 0.33] },
+  { name: 'FL', p: [0.74, 0.22, -0.20] },
+  { name: 'FR', p: [0.74, 0.22, 0.20] },
+  { name: 'RL', p: [-0.70, 0.22, -0.20] },
+  { name: 'RR', p: [-0.70, 0.22, 0.20] },
 ];
-export const REAR = { p: [-1.42, 0.70, 0], cant: 7.2 * D2R };
-export const INTAKE = [1.34, 0.70, 0];
+export const REAR = { p: [-1.08, 0.70, 0], cant: 0 };   // cant is set below, once the centre of gravity is known
+export const INTAKE = [0.95, 0.72, 0];
 export const TILT_MAX = 116 * D2R, VANE_MAX = 12 * D2R, VEC_MAX = 15 * D2R;
 export const SHARE_MIN = 0.10, SHARE_MAX = 0.45;
 export const LIM = { da: 25 * D2R, de: 22 * D2R, dr: 25 * D2R };
@@ -89,22 +87,20 @@ export class Turbofan {
 // ---------------- mass ----------------
 // [mass kg, centre (design frame), box size x,y,z]
 const FIXED = [
-  [118, [-0.06, 0.70, 0], [2.2, 0.5, 0.5]],     // the engine: fan, core, jet pipe, after-burner
-  [13, [-0.02, 0.50, 0], [1.6, 0.25, 0.7]],     // diverter, lift pipes and their valves
-  [30, [0.0, 0.92, 0], [2.0, 0.16, 0.30]],      // spine frame, wiring
-  [12, [0.50, 1.00, 0], [0.8, 0.30, 0.40]],     // fairing, intake lip
-  [14, [-0.40, 0.98, 0], [0.6, 0.14, 0.30]],    // seat, battery, flight computers
-  [14, [-0.12, 0.86, 0], [0.7, 0.06, 2.5]],     // wing
-  [6, [-1.05, 1.08, 0], [0.4, 0.6, 0.9]],       // tailplanes + fin
-  [9, [0, 0.2, 0], [1.3, 0.4, 0.9]],            // skids
-  [37, [-0.28, 1.33, 0], [0.34, 0.56, 0.40]],   // rider: torso
-  [5.5, [-0.08, 1.74, 0], [0.26, 0.28, 0.24]],  // head + helmet
-  [27, [0.02, 0.92, 0], [0.70, 0.30, 0.66]],    // legs
-  [8.5, [0.18, 1.30, 0], [0.50, 0.14, 0.60]],   // arms
-  [6, [-0.30, 1.02, 0], [0.30, 0.15, 0.36]],    // hips, boots
+  [140, [0.0, 0.60, 0], [0.9, 0.5, 0.4]],       // fusion core, shielding, compressor and turbine
+  [14, [0.0, 0.40, 0], [1.5, 0.2, 0.4]],        // diverter, lift ducts and their valves
+  [26, [0.0, 0.75, 0], [1.6, 0.2, 0.28]],       // frame, fork, swing arm
+  [12, [0.62, 0.95, 0], [0.6, 0.4, 0.4]],       // front fairing, screen, bars
+  [12, [-0.55, 0.85, 0], [0.7, 0.2, 0.28]],     // seat, tail, exhaust nozzle
+  [6, [0, 0.12, 0], [1.2, 0.2, 0.6]],           // stand
+  [37, [-0.18, 1.12, 0], [0.50, 0.40, 0.40]],   // rider: torso (leaning over the tank)
+  [5.5, [0.10, 1.40, 0], [0.26, 0.28, 0.24]],   // head + helmet
+  [27, [-0.08, 0.74, 0], [0.60, 0.30, 0.52]],   // legs
+  [8.5, [0.25, 1.12, 0], [0.50, 0.14, 0.60]],   // arms
+  [6, [-0.30, 0.86, 0], [0.30, 0.15, 0.36]],    // hips, boots
 ];
-const TANK = { c: [0.10, 0.84, 0], s: [0.9, 0.4, 0.66] };   // saddle tank wrapped over the engine
-export const FUEL0 = 85;
+const TANK = { c: [0.18, 0.92, 0], s: [0.5, 0.25, 0.3] };   // coolant and the gram of deuterium
+export const FUEL0 = 10;   // kg; nothing is burnt, so the mass stays
 
 export function massProps(fuel) {
   const items = [...FIXED, [fuel, TANK.c, TANK.s]];
@@ -123,27 +119,15 @@ export function massProps(fuel) {
   I[3] = I[1]; I[6] = I[2]; I[7] = I[5];
   return { m, cg, I, Iinv: m3inv(I) };
 }
+{ const c = massProps(FUEL0).cg; REAR.cant = Math.atan2(c[1] - REAR.p[1], c[0] - REAR.p[0]); }   // the rear thrust line passes through the centre of gravity
 
 // ---------------- aerodynamics ----------------
+// No wing, no fin. (The strip model stays for anyone who wants to bolt a surface on.)
 const claOf = (AR) => 2 * Math.PI * AR / (2 + Math.sqrt(4 + AR * AR));
 const strip = (name, r, n, S, AR, a0, ctrl, gain, tau, stall = 16) => ({ name, r, n, c: [1, 0, 0], S, AR, cla: claOf(AR), a0: a0 * D2R, ctrl, gain, tau, cd0: 0.012, stall: stall * D2R });
-export const SURF = [
-  // the wing has leading-edge slats (the flow stays attached to 22 degrees): it is what turns the bike
-  strip('wingLi', [-0.02, 0.86, -0.52], [0, 1, 0], 0.78, 3.0, -5.5, null, 0, 0, 22),
-  strip('wingRi', [-0.02, 0.86, 0.52], [0, 1, 0], 0.78, 3.0, -5.5, null, 0, 0, 22),
-  strip('wingLo', [-0.06, 0.86, -1.16], [0, 1, 0], 0.72, 3.0, -4.5, 'da', +1, 0.45, 22),
-  strip('wingRo', [-0.06, 0.86, 1.16], [0, 1, 0], 0.72, 3.0, -4.5, 'da', -1, 0.45, 22),
-  strip('tailL', [-1.08, 0.98, -0.34], [0, 1, 0], 0.22, 2.4, 0, 'de', -1, 1.0, 18),
-  strip('tailR', [-1.08, 0.98, 0.34], [0, 1, 0], 0.22, 2.4, 0, 'de', -1, 1.0, 18),
-  strip('strakeL', [0.95, 0.72, -0.40], [0, 1, 0], 0.08, 1.4, 0, null, 0, 0, 20),
-  strip('strakeR', [0.95, 0.72, 0.40], [0, 1, 0], 0.08, 1.4, 0, null, 0, 0, 20),
-  strip('fin', [-1.10, 1.30, 0], [0, 0, 1], 0.30, 1.6, 0, 'dr', +1, 0.5, 20),
-];
-export const WING = { S: 3.0, cla: claOf(3.0), a0: -5.0 * D2R, stall: 22 * D2R };
-WING.alphaMax = WING.stall + WING.a0 - 4.5 * D2R;   // body angle of attack the computer will not exceed
-WING.clUse = WING.cla * (WING.alphaMax - WING.a0);
+export const SURF = [];
 // bluff body (bike + rider): drag area for flow along each body axis and its centre of pressure
-export const BODY = { cda: [0.46, 1.25, 1.15], cp: [[0.05, 1.05, 0], [-0.08, 0.9, 0], [-0.16, 1.0, 0]], brakeCda: 0.75, brakeCp: [-0.55, 1.05, 0] };
+export const BODY = { cda: [0.40, 1.05, 0.95], cp: [[0.05, 0.98, 0], [-0.10, 0.85, 0], [-0.22, 0.92, 0]], brakeCda: 0.6, brakeCp: [-0.45, 0.95, 0] };
 
 // Forces of one strip in the local air flow. Returns [cl, cd] at effective angle of attack a.
 function clcd(s, a) {
@@ -243,12 +227,12 @@ export function ramWrench(vB, w, Tdry, cg, out) {
 }
 
 export const mkW = () => ({ F: [0, 0, 0], Tq: [0, 0, 0], stall: 0 });
-export const SKIDS = [[0.58, 0, -0.42], [0.58, 0, 0.42], [-0.62, 0, -0.42], [-0.62, 0, 0.42]];
-// points of the airframe and rider that must not touch anything (design frame)
+export const SKIDS = [[0.50, 0, -0.30], [0.50, 0, 0.30], [-0.52, 0, -0.30], [-0.52, 0, 0.30]];
+// points of the bike and rider that must not touch anything (design frame)
 export const PROBES = [
-  [1.42, 0.70, 0], [-1.55, 0.74, 0], [-0.08, 1.9, 0], [-1.15, 1.66, 0],       // intake lip, nozzle, helmet, fin tip
-  [-0.1, 0.86, -1.26], [-0.1, 0.86, 1.26],                                      // wing tips
-  [0.9, 0.42, 0], [-0.9, 0.42, 0],                                              // engine belly
+  [1.10, 0.80, 0], [-1.22, 0.78, 0], [0.12, 1.58, 0], [-0.9, 1.0, 0],          // nose, exhaust, helmet, tail
+  [0.50, 1.04, -0.36], [0.50, 1.04, 0.36],                                      // bar ends
+  [0.74, 0.2, 0], [-0.70, 0.2, 0],                                              // the two hubs
 ];
 export const newCmd = () => ({ G: 0, ab: 0, tilt: Math.PI / 2, s: [1, 1, 1, 1], va: [0, 0, 0, 0], rp: 0, ry: 0, da: 0, de: 0, dr: 0, brake: 0 });
 
@@ -269,7 +253,7 @@ export class Bike {
     this.q = [Math.cos(yaw / 2), 0, Math.sin(yaw / 2), 0];
     this.v = [Math.cos(yaw) * speed, 0, -Math.sin(yaw) * speed];
     this.w = [0, 0, 0];
-    this.tilt = speed > 40 ? 0.1 : Math.PI / 2;
+    this.tilt = speed > 40 ? 1.0 : Math.PI / 2;
     this.va = [0, 0, 0, 0]; this.sh = [0.25, 0.25, 0.25, 0.25]; this.rp = 0; this.ry = 0;
     this.L = [0, 0, 0, 0]; this.R = 0; this.abOut = 0;          // thrust leaving each lift pipe and the rear nozzle right now (N)
     this.da = 0; this.de = 0; this.dr = 0; this.brake = 0;
@@ -281,7 +265,7 @@ export class Bike {
     this.airspeed = speed; this.vAirB = [speed, 0, 0]; this.sigma = 1; this.rho = RHO0; this.stall = 0;
     this.gfx = [1, 1, 1, 1];
     this.agl = 0; this.groundY = pos[1]; this.overWater = false;
-    const e = this.eng; e.on = true; e.ab = 0; e.N = speed > 0 ? 0.85 : ENG.idleN; e.update(1e-3, 0, 0, 1);
+    const e = this.eng; e.on = true; e.ab = 0; e.N = speed > 0 ? 0.66 : ENG.idleN; e.update(1e-3, 0, 0, 1);
   }
 
   arm(d) { const c = this.mp.cg; return [d[0] - c[0], d[1] - c[1], d[2] - c[2]]; }
@@ -335,7 +319,7 @@ export class Bike {
       this.gfx[i] = 1 - (0.05 * Math.exp(-hn / 0.8) + 0.03 * Math.exp(-hn / 2.4)) * s0;
       this.L[i] = gasL * this.sh[i] * this.gfx[i];
     }
-    const flow = e.on ? ENG.tsfc * e.Tdry + ENG.tsfcAb * gasR * ENG.abGain * e.ab + 0.012 : 0;
+    const flow = 0;                                    // fusion: the reaction mass is air
     const H = [ENG.rotorI * ENG.omegaMax * e.N, 0, 0];
 
     // --- air data ---

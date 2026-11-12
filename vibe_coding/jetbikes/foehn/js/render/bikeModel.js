@@ -1,19 +1,23 @@
-// The F-4 and its rider, built from primitives in the design frame of the physics
-// (x forward, y up, z right; origin on the ground under the bike). One big engine with the rider
-// astride it; the rear nozzle, the four lift pipes, elevator, ailerons, rudder and air brake move
-// with the simulated actuators, every nozzle glows with the gas that really leaves it.
+// The F-5 and its rider, built from primitives in the design frame of the physics
+// (x forward, y up, z right; origin on the ground under the bike). It is a motorcycle with the
+// wheels taken away: fork, fairing, tank, seat, swing arm. Where the wheels were there are two
+// hubs with a pair of lift nozzles each, where the exhaust was there is the rear nozzle, and
+// between the rider's knees the fusion core. No wing, no fin. The nozzles move with the simulated
+// actuators and glow with the air that really leaves them.
 import * as THREE from '../../lib/three.module.min.js';
-import { LIFT, REAR, ENG, INTAKE, SKIDS } from '../sim/bike.js';
+import { LIFT, REAR, ENG, INTAKE, SKIDS, massProps, FUEL0 } from '../sim/bike.js';
 
 export function buildBike(ghost = false) {
   const root = new THREE.Group();          // origin = centre of gravity
   const d = new THREE.Group(); root.add(d);  // design frame, shifted by -cg every frame
   const M = (o) => (ghost ? new THREE.MeshBasicMaterial({ color: 0x66ddff, transparent: true, opacity: 0.22, depthWrite: false }) : o);
-  const paint = M(new THREE.MeshPhysicalMaterial({ color: 0xf2f0ea, roughness: 0.35, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.08 }));
+  const paint = M(new THREE.MeshPhysicalMaterial({ color: 0xf2f0ea, roughness: 0.32, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.06 }));
   const accent = M(new THREE.MeshPhysicalMaterial({ color: 0xe8500a, roughness: 0.35, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.1 }));
   const carbon = M(new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.45, metalness: 0.4 }));
   const steel = M(new THREE.MeshStandardMaterial({ color: 0x8d9299, roughness: 0.3, metalness: 0.9 }));
-  const titan = M(new THREE.MeshStandardMaterial({ color: 0x7a6a5c, roughness: 0.35, metalness: 0.95 }));
+  const gold = M(new THREE.MeshStandardMaterial({ color: 0xb08a3c, roughness: 0.3, metalness: 1.0 }));
+  const hot = M(new THREE.MeshStandardMaterial({ color: 0x4a4650, roughness: 0.4, metalness: 0.95 }));
+  const dark = M(new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.7, metalness: 0.3 }));
   const rubber = M(new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.9 }));
   const suit = M(new THREE.MeshStandardMaterial({ color: 0x1d2c4a, roughness: 0.75 }));
   const suit2 = M(new THREE.MeshStandardMaterial({ color: 0xe8500a, roughness: 0.7 }));
@@ -24,127 +28,148 @@ export function buildBike(ghost = false) {
   const add = (geo, mat, x, y, z, parent = d) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = !ghost; m.receiveShadow = !ghost; parent.add(m); all.push(m); return m; };
   const box = (sx, sy, sz) => new THREE.BoxGeometry(sx, sy, sz);
   const cylX = (r0, r1, len, seg = 16) => { const g = new THREE.CylinderGeometry(r0, r1, len, seg); g.rotateZ(-Math.PI / 2); return g; };   // axis along +x, r0 at +x end
+  const cylZ = (r, len, seg = 20) => { const g = new THREE.CylinderGeometry(r, r, len, seg); g.rotateX(Math.PI / 2); return g; };              // axis along z
   const ell = (rx, ry, rz) => { const g = new THREE.SphereGeometry(1, 20, 14); g.scale(rx, ry, rz); return g; };
-  const slab = (pts, thick) => {      // wing-like plate: planform in (x,z), thickness in y
-    const s = new THREE.Shape(); s.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) s.lineTo(pts[i][0], pts[i][1]);
-    const g = new THREE.ExtrudeGeometry(s, { depth: thick, bevelEnabled: true, bevelThickness: thick * 0.4, bevelSize: thick * 0.6, bevelSegments: 2 });
-    g.rotateX(Math.PI / 2); g.translate(0, thick / 2, 0);     // shape (x, y) -> (x, z)
-    return g;
-  };
-
-  // ----- the engine -----
-  const EY = ENG.axisY, ER = ENG.radius;
-  const hot = M(new THREE.MeshStandardMaterial({ color: 0x5a4a40, roughness: 0.42, metalness: 0.95 }));
-  const dark = M(new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.7, metalness: 0.3 }));
-  const tube = (r0, r1, len, mat) => { const g = new THREE.CylinderGeometry(r0, r1, len, 28, 1, true); g.rotateZ(-Math.PI / 2); const m = mat.clone(); m.side = THREE.DoubleSide; return [g, m]; };
-  { const [g, m] = tube(ER + 0.03, ER + 0.008, 0.2, accent); add(g, m, INTAKE[0] - 0.08, EY, 0); }   // intake lip, open: you look at the fan
-  { const [g, m] = tube(ER - 0.005, ER - 0.005, 0.2, dark); add(g, m, INTAKE[0] - 0.08, EY, 0).castShadow = false; }
-  add(cylX(ER + 0.008, ER + 0.012, 0.72, 28), paint, 0.82, EY, 0);                          // fan cowl
-  add(cylX(ER + 0.012, ER + 0.012, 0.62, 28), carbon, 0.15, EY, 0);                         // compressor / diverter casing
-  add(cylX(ER + 0.012, ER - 0.02, 0.56, 28), steel, -0.44, EY, 0);                          // turbine casing
-  add(cylX(ER - 0.02, ER - 0.045, 0.52, 28), hot, -0.98, EY, 0);                            // jet pipe, after-burner
-  for (const x of [0.46, -0.16, -0.72, -1.22]) add(cylX(ER + 0.02, ER + 0.02, 0.035, 28), x < -0.5 ? hot : steel, x, EY, 0).scale.set(1, x < -0.5 ? 0.93 : 1.02, x < -0.5 ? 0.93 : 1.02);   // flanges
-  if (!ghost) {
-    const fanD = add(new THREE.CircleGeometry(ER - 0.01, 28), dark, 1.185, EY, 0); fanD.rotation.y = Math.PI / 2;
-  }
-  // fan: blades and spinner turn with the spool
-  const fan = new THREE.Group(); fan.position.set(1.2, EY, 0); d.add(fan);
-  for (let k = 0; k < 14; k++) { const bl = add(box(0.012, ER - 0.03, 0.07), steel, 0, 0, 0, fan); bl.geometry.translate(0, (ER - 0.03) / 2 + 0.02, 0); bl.rotation.x = k / 14 * Math.PI * 2; bl.rotation.y = 0.5; bl.castShadow = false; }
-  { const sp = add(new THREE.ConeGeometry(0.085, 0.2, 16), accent, 0.1, 0, 0, fan); sp.rotation.z = -Math.PI / 2; }
-  // accessory gearbox and plumbing under the belly, stripes
-  add(box(0.5, 0.07, 0.22), steel, 0.12, EY - ER - 0.02, 0);
-  for (const s of [-1, 1]) { add(cylX(0.014, 0.014, 1.5, 6), steel, -0.2, EY + 0.1, s * (ER + 0.012)); add(cylX(0.011, 0.011, 1.1, 6), accent, -0.1, EY - 0.12, s * (ER + 0.005)); }
-  add(cylX(ER + 0.008, ER + 0.014, 0.07, 28), accent, 0.50, EY, 0);
-  // rear nozzle: convergent petals on a two-axis swivel
-  const rear = new THREE.Group(); rear.position.set(-1.24, EY, 0); d.add(rear);
-  { const [g, m] = tube(ER - 0.04, ER - 0.075, 0.34, hot); add(g, m, -0.15, 0, 0, rear); }                        // nozzle shell, open at the back
-  { const [g, m] = tube(ER - 0.07, ER - 0.1, 0.5, dark); add(g, m, -0.02, 0, 0, rear).castShadow = false; }        // liner you look into
-  for (let k = 0; k < 16; k++) { const pt = add(box(0.3, 0.012, 0.075), titan, -0.17, 0, 0, rear); pt.geometry.translate(0, ER - 0.05, 0); pt.geometry.rotateZ(0.1); pt.rotation.x = k / 16 * Math.PI * 2; pt.castShadow = false; }
-  const rearGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0), toneMapped: false });
-  if (!ghost) {
-    const g1 = add(new THREE.CircleGeometry(ER - 0.09, 24), rearGlow, 0.18, 0, 0, rear); g1.rotation.y = -Math.PI / 2; g1.castShadow = false;   // flame holder, deep inside
-    for (let k = 0; k < 3; k++) { const v = add(box(0.01, 2 * (ER - 0.1), 0.02), dark, 0.16, 0, 0, rear); v.rotation.x = k / 3 * Math.PI; v.castShadow = false; }
-  }
-  const rearNoz = new THREE.Group(); rearNoz.position.set(-0.3, 0, 0); rear.add(rearNoz);      // plume attaches here, exhaust along -x
-  // lift pipes: an elbow out of the engine's flank, a short nozzle that swings fore-aft
-  const lifts = LIFT.map((P) => {
-    const sgn = Math.sign(P.p[2]);
-    add(cylX(0.1, 0.1, 0.2, 14), steel, P.p[0], EY - 0.12, sgn * (ER - 0.02)).rotation.y = Math.PI / 2;      // stub out of the casing
-    add(new THREE.SphereGeometry(0.105, 14, 10), steel, P.p[0], EY - 0.12, P.p[2]);                          // elbow
-    const g = new THREE.Group(); g.position.set(P.p[0], EY - 0.12, P.p[2]); d.add(g);
-    add(new THREE.CylinderGeometry(0.1, 0.082, 0.2, 16), hot, 0, -0.1, 0, g);
-    add(new THREE.CylinderGeometry(0.088, 0.088, 0.025, 16), accent, 0, -0.03, 0, g);
-    const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0), toneMapped: false });
-    if (!ghost) { const gl = add(new THREE.CircleGeometry(0.076, 16), glowMat, 0, -0.203, 0, g); gl.rotation.x = Math.PI / 2; gl.castShadow = false; }
-    const noz = new THREE.Group(); noz.position.set(0, P.p[1] - (EY - 0.12), 0); noz.rotation.z = Math.PI / 2; g.add(noz);   // local -x = straight down
-    return { g, noz, glowMat };
-  });
-  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.076 })), { noz: rearNoz, r: ER - 0.09 }];
-
-  // ----- airframe: a saddle, a tank and flying surfaces bolted to the engine -----
-  add(ell(0.50, 0.15, 0.20), paint, 0.86, EY + ER + 0.03, 0);                           // nose fairing over the fan cowl
-  add(ell(0.26, 0.07, 0.205), accent, 0.98, EY + ER + 0.0, 0);
-  add(ell(0.44, 0.17, 0.25), paint, 0.30, EY + ER + 0.05, 0);                           // saddle tank
-  add(ell(0.30, 0.03, 0.215), accent, 0.30, EY + ER + 0.16, 0);
-  add(box(0.62, 0.09, 0.30), rubber, -0.36, 0.99, 0);                                   // seat
-  add(ell(0.34, 0.07, 0.19), carbon, -0.42, 0.955, 0);
-  add(ell(0.42, 0.08, 0.15), paint, -0.9, EY + ER - 0.02, 0);                           // fin root fairing
-  const ws = add(ell(0.2, 0.2, 0.17), glass, 0.72, 1.12, 0); ws.rotation.z = -0.5;      // wind screen
-  const head = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.4, 4.2), toneMapped: false });
-  if (!ghost) add(ell(0.03, 0.04, 0.07), head, 1.33, EY + ER + 0.04, 0);                // head lamp
-  // wing with ailerons
-  const wingPts = [[0.10, -1.5], [0.62, -0.26], [0.62, 0.26], [0.10, 1.5], [-0.36, 1.5], [-0.46, 0.26], [-0.46, -0.26], [-0.36, -1.5]];   // tapered, swept leading edge (same area as the physics)
-  add(slab(wingPts, 0.045), paint, -0.08, 0.84, 0);
-  add(box(0.5, 0.05, 0.04), accent, -0.21, 0.86, -1.51); add(box(0.5, 0.05, 0.04), accent, -0.21, 0.86, 1.51);     // tip rails
-  const ail = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-0.4, 0.86, s * 1.04); d.add(g); add(box(0.16, 0.025, 0.78), accent, -0.08, 0, 0, g); return g; });
-  // intake strakes, tailplanes (all-moving), fin and rudder
-  for (const s of [-1, 1]) add(slab([[0.2, 0], [0.14, s * 0.22], [-0.12, s * 0.22], [-0.2, 0]], 0.025), accent, 0.95, 0.72, s * (ER - 0.02));
-  const tails = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-1.05, 0.98, s * 0.36); d.add(g); add(slab([[0.2, -0.24], [0.2, 0.24], [-0.2, 0.24], [-0.2, -0.24]], 0.03), paint, 0, 0, 0, g); return g; });
-  add(slab([[0.28, 0], [-0.1, 0.68], [-0.34, 0.68], [-0.3, 0]], 0.035), paint, -1.0, 0.94, 0).rotation.x = -Math.PI / 2;
-  const rud = new THREE.Group(); rud.position.set(-1.3, 1.3, 0); d.add(rud); add(box(0.14, 0.5, 0.025), accent, -0.07, 0, 0, rud);
-  // air brake petals behind the seat
-  const brakes = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-0.62, 1.02, s * 0.19); d.add(g); add(box(0.34, 0.18, 0.015), carbon, -0.17, 0, 0, g); return g; });
-  // skids
-  for (const s of [-1, 1]) {
-    add(cylX(0.025, 0.025, 1.5, 8), steel, -0.02, 0.03, s * 0.42);
-    add(cylX(0.03, 0.03, 0.12, 8), steel, 0.76, 0.07, s * 0.42).rotation.z = 0.7;
-    for (const x of [0.5, -0.55]) { const st = add(new THREE.CylinderGeometry(0.02, 0.02, 0.56, 8), steel, x, 0.28, s * 0.33); st.rotation.x = s * 0.33; }
-  }
-  // handlebars and dash
-  add(box(0.03, 0.03, 0.62), steel, 0.52, 1.22, 0);
-  for (const s of [-1, 1]) add(cylX(0.022, 0.022, 0.13, 8), rubber, 0.50, 1.22, s * 0.29).rotation.y = Math.PI / 2;
-  add(box(0.05, 0.22, 0.05), steel, 0.56, 1.12, 0).rotation.z = 0.3;
-  add(box(0.02, 0.1, 0.2), new THREE.MeshBasicMaterial({ color: ghost ? 0x66ddff : 0x0a2a33 }), 0.6, 1.2, 0).rotation.z = -0.6;
-
-  // ----- rider -----
-  const rider = new THREE.Group(); rider.position.set(-0.36, 1.02, 0); d.add(rider);        // hips
-  const torso = new THREE.Group(); rider.add(torso); torso.rotation.z = -0.62;              // leaning forward
-  add(new THREE.CapsuleGeometry(0.155, 0.36, 6, 12), suit, 0, 0.3, 0, torso).scale.set(0.85, 1, 1.15);
-  add(box(0.02, 0.3, 0.2), suit2, -0.13, 0.36, 0, torso);
-  const headG = new THREE.Group(); headG.position.set(0.02, 0.66, 0); torso.add(headG); headG.rotation.z = 0.5;
-  add(ell(0.135, 0.14, 0.125), helmet, 0, 0.06, 0, headG);
-  add(ell(0.075, 0.055, 0.108), visor, 0.078, 0.065, 0, headG);
-  add(box(0.2, 0.025, 0.02), accent, -0.02, 0.2, 0, headG);
-  const limb = (a, b, r, mat, parent) => {     // capsule between two points (parent space)
+  const tube = (r0, r1, len, mat) => { const g = new THREE.CylinderGeometry(r0, r1, len, 24, 1, true); g.rotateZ(-Math.PI / 2); const m = mat.clone(); m.side = THREE.DoubleSide; return [g, m]; };
+  const glowMat = () => new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0), toneMapped: false });
+  // a beam or a limb between two points
+  const beam = (a, b, r, mat, parent = d, capsule = false) => {
     const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b), len = va.distanceTo(vb);
-    const m = add(new THREE.CapsuleGeometry(r, Math.max(0.01, len - 2 * r), 4, 8), mat, 0, 0, 0, parent);
+    const m = add(capsule ? new THREE.CapsuleGeometry(r, Math.max(0.01, len - 2 * r), 4, 8) : new THREE.CylinderGeometry(r, r, len, 10), mat, 0, 0, 0, parent);
     m.position.copy(va).add(vb).multiplyScalar(0.5);
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize());
     return m;
   };
+  // bodywork: a side profile (x, y) extruded across the bike
+  const prof = (pts, width, bev = 0.02) => {
+    const sh = new THREE.Shape(); sh.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.002, width - 2 * bev), bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3 });
+    g.translate(0, 0, -(width - 2 * bev) / 2); return g;
+  };
+  // a fender: the part of a wheel's outline that is still there
+  const fender = (cx, cy, r, a0, a1, w, mat) => {
+    const pts = [], n = 12;
+    for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; pts.push([cx + Math.cos(a) * (r + 0.022), cy + Math.sin(a) * (r + 0.022)]); }
+    for (let k = n; k >= 0; k--) { const a = a0 + (a1 - a0) * k / n; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+    return add(prof(pts, w, 0.008), mat, 0, 0, 0);
+  };
+
+  const EY = ENG.axisY, HUBY = 0.34, FX = LIFT[0].p[0], RX = LIFT[2].p[0];
+
+  // ----- the fusion core: a drum between the rider's knees, like the engine of a motorcycle -----
+  add(cylZ(0.2, 0.3, 28), carbon, 0.02, EY, 0);
   for (const s of [-1, 1]) {
-    limb([-0.36, 1.04, s * 0.15], [0.1, 0.95, s * 0.31], 0.075, suit, d);       // thigh
-    limb([0.1, 0.95, s * 0.31], [-0.12, 0.58, s * 0.345], 0.058, suit, d);      // shin
-    add(box(0.26, 0.08, 0.1), rubber, -0.08, 0.53, s * 0.35);                   // boot on the peg
-    add(cylX(0.015, 0.015, 0.2, 6), steel, -0.1, 0.49, s * 0.31).rotation.y = Math.PI / 2;
-    limb([-0.04, 1.43, s * 0.2], [0.24, 1.25, s * 0.3], 0.052, suit, d);         // upper arm
-    limb([0.24, 1.25, s * 0.3], [0.5, 1.23, s * 0.29], 0.044, suit2, d);         // forearm
+    add(cylZ(0.17, 0.035, 28), steel, 0.02, EY, s * 0.165);                       // end bells
+    add(cylZ(0.075, 0.03, 20), gold, 0.02, EY, s * 0.19);
+    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; add(cylZ(0.012, 0.02, 6), steel, 0.02 + Math.cos(a) * 0.135, EY + Math.sin(a) * 0.135, s * 0.185); }   // bolts
+  }
+  for (let k = -2; k <= 2; k++) add(cylZ(0.213, 0.012, 28), steel, 0.02, EY, k * 0.05);   // cooling ribs around the field coils
+  // the window into the core: a ring that shines with the reactor's power
+  const coreGlow = glowMat();
+  if (!ghost) for (const s of [-1, 1]) { const g = new THREE.TorusGeometry(0.115, 0.013, 8, 28); const r = add(g, coreGlow, 0.02, EY, s * 0.186); r.castShadow = false; }
+  // compressor in front of it, fed by the intake in the nose
+  add(cylX(0.1, 0.14, 0.4, 20), steel, 0.4, EY + 0.08, 0).rotation.z = 0.15;
+  { const [g, m] = tube(0.105, 0.1, 0.3, carbon); add(g, m, INTAKE[0] - 0.19, INTAKE[1] + 0.03, 0); }
+  { const [g, m] = tube(0.096, 0.09, 0.3, dark); add(g, m, INTAKE[0] - 0.19, INTAKE[1] + 0.03, 0).castShadow = false; }
+  const fan = new THREE.Group(); fan.position.set(INTAKE[0] - 0.2, INTAKE[1] + 0.03, 0); fan.scale.setScalar(0.72); d.add(fan);
+  for (let k = 0; k < 11; k++) { const bl = add(box(0.01, 0.105, 0.045), steel, 0, 0, 0, fan); bl.geometry.translate(0, 0.066, 0); bl.rotation.x = k / 11 * Math.PI * 2; bl.rotation.y = 0.5; bl.castShadow = false; }
+  { const sp = add(new THREE.ConeGeometry(0.04, 0.1, 12), accent, 0.05, 0, 0, fan); sp.rotation.z = -Math.PI / 2; }
+  // exhaust: from the core, under the seat, to the rear nozzle
+  beam([-0.16, EY + 0.02, 0], [REAR.p[0] + 0.2, REAR.p[1], 0], 0.06, hot);
+  const rear = new THREE.Group(); rear.position.set(REAR.p[0] + 0.14, REAR.p[1], 0); d.add(rear);
+  { const [g, m] = tube(0.115, 0.09, 0.22, hot); add(g, m, -0.03, 0, 0, rear); }
+  { const [g, m] = tube(0.1, 0.082, 0.26, dark); add(g, m, -0.01, 0, 0, rear).castShadow = false; }
+  for (let k = 0; k < 12; k++) { const pt = add(box(0.2, 0.01, 0.05), steel, -0.03, 0, 0, rear); pt.geometry.translate(0, 0.107, 0); pt.geometry.rotateZ(0.11); pt.rotation.x = k / 12 * Math.PI * 2; pt.castShadow = false; }
+  const rearGlow = glowMat();
+  if (!ghost) { const g1 = add(new THREE.CircleGeometry(0.08, 20), rearGlow, 0.1, 0, 0, rear); g1.rotation.y = -Math.PI / 2; g1.castShadow = false; }
+  const rearNoz = new THREE.Group(); rearNoz.position.set(-0.14, 0, 0); rear.add(rearNoz);      // plume attaches here, exhaust along -x
+  beam([0.2, 0.42, 0], [FX - 0.05, HUBY + 0.02, 0], 0.045, hot); beam([-0.14, 0.42, 0], [RX + 0.05, HUBY + 0.02, 0], 0.045, hot);   // ducts to the two hubs
+
+  // ----- frame, fork and swing arm -----
+  for (const s of [-1, 1]) {
+    beam([0.30, 0.88, s * 0.13], [-0.2, 0.62, s * 0.15], 0.026, steel);               // frame spar
+    beam([-0.2, 0.62, s * 0.15], [-0.62, 0.9, s * 0.09], 0.018, steel);               // seat sub-frame
+    beam([0.52, 1.03, s * 0.11], [FX, HUBY, s * 0.11], 0.026, gold);                  // fork leg
+    beam([0.61, 0.76, s * 0.11], [FX, HUBY, s * 0.11], 0.033, steel);                 // fork slider
+    beam([-0.2, 0.56, s * 0.13], [RX, HUBY, s * 0.13], 0.035, steel);                 // swing arm
+  }
+  add(cylZ(0.035, 0.3, 12), steel, 0.52, 1.03, 0);                                    // yoke
+  beam([-0.3, 0.8, 0], [-0.52, 0.5, 0], 0.022, gold);                                 // rear shock
+  // the hubs where the wheels were, and what is left of the mudguards
+  for (const x of [FX, RX]) { add(cylZ(0.085, 0.3, 20), carbon, x, HUBY, 0); add(cylZ(0.05, 0.47, 16), steel, x, HUBY, 0); }
+  fender(FX, HUBY, 0.3, 0.75, 2.25, 0.13, paint);
+  fender(RX, HUBY, 0.3, 0.95, 2.5, 0.15, carbon);
+  // lift nozzles: one at each end of each hub, swinging fore-aft
+  const lifts = LIFT.map((P) => {
+    const g = new THREE.Group(); g.position.set(P.p[0], HUBY, P.p[2]); d.add(g);
+    add(new THREE.SphereGeometry(0.088, 14, 10), steel, 0, 0, 0, g);
+    add(new THREE.CylinderGeometry(0.085, 0.07, 0.12, 16), hot, 0, -0.06, 0, g);
+    add(new THREE.CylinderGeometry(0.076, 0.076, 0.02, 16), accent, 0, -0.015, 0, g);
+    const gm = glowMat();
+    if (!ghost) { const gl = add(new THREE.CircleGeometry(0.064, 16), gm, 0, -0.122, 0, g); gl.rotation.x = Math.PI / 2; gl.castShadow = false; }
+    const noz = new THREE.Group(); noz.position.set(0, P.p[1] - HUBY, 0); noz.rotation.z = Math.PI / 2; g.add(noz);   // local -x = straight down
+    return { g, noz, glowMat: gm };
+  });
+  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.064 })), { noz: rearNoz, r: 0.08 }];
+
+  // ----- bodywork -----
+  add(prof([[0.99, 0.93], [0.94, 1.04], [0.74, 1.15], [0.46, 1.09], [0.42, 0.92], [0.62, 0.85], [0.88, 0.85]], 0.34, 0.04), paint, 0, 0, 0);          // nose fairing
+  add(prof([[0.96, 0.9], [0.88, 0.87], [0.64, 0.87], [0.5, 0.93], [0.9, 0.94]], 0.36, 0.015), accent, 0, 0, 0);                                         // its stripe
+  for (const s of [-1, 1]) {                                                                                                                          // side fairings, open around the core
+    add(prof([[0.64, 0.87], [0.42, 0.94], [0.28, 0.84], [0.25, 0.6], [0.3, 0.44], [0.5, 0.42], [0.58, 0.58]], 0.03, 0.012), paint, 0, 0, s * 0.17);
+    add(prof([[0.56, 0.6], [0.3, 0.52], [0.31, 0.46], [0.5, 0.45]], 0.034, 0.008), accent, 0, 0, s * 0.172);
+  }
+  add(prof([[0.52, 0.42], [0.47, 0.33], [-0.22, 0.31], [-0.3, 0.38], [-0.2, 0.41]], 0.24, 0.03), paint, 0, 0, 0);                                      // belly pan
+  { const ws = add(ell(0.16, 0.13, 0.14), glass, 0.68, 1.15, 0); ws.rotation.z = -0.7; }                                                              // screen
+  add(prof([[0.44, 1.05], [0.3, 1.12], [0.06, 1.1], [-0.1, 0.99], [-0.14, 0.9], [0.42, 0.9]], 0.3, 0.05), paint, 0, 0, 0);                              // tank
+  add(prof([[0.36, 1.1], [0.3, 1.135], [0.08, 1.115], [-0.04, 1.04]], 0.1, 0.012), accent, 0, 0, 0);
+  add(prof([[-0.1, 0.96], [-0.14, 0.89], [-0.56, 0.9], [-0.58, 0.97], [-0.34, 0.94]], 0.25, 0.03), rubber, 0, 0, 0);                                    // seat
+  add(prof([[-0.5, 0.88], [-0.56, 0.98], [-1.0, 1.08], [-1.02, 1.03], [-0.76, 0.9]], 0.2, 0.035), paint, 0, 0, 0);                                      // tail
+  add(prof([[-0.62, 1.0], [-0.98, 1.085], [-0.99, 1.06], [-0.7, 0.98]], 0.21, 0.01), accent, 0, 0, 0);
+  const head = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.4, 4.2), toneMapped: false });
+  if (!ghost) for (const s of [-1, 1]) add(ell(0.02, 0.03, 0.05), head, 0.975, 0.97, s * 0.075);   // twin head lamps
+  // bars, mirrors, dash, pegs
+  for (const s of [-1, 1]) {
+    beam([0.52, 1.04, s * 0.1], [0.47, 1.04, s * 0.34], 0.014, steel);
+    beam([0.47, 1.04, s * 0.24], [0.47, 1.04, s * 0.35], 0.021, rubber);
+    beam([0.6, 1.08, s * 0.15], [0.68, 1.2, s * 0.28], 0.008, carbon); add(ell(0.012, 0.03, 0.05), carbon, 0.68, 1.21, s * 0.29);
+    beam([-0.2, 0.6, s * 0.14], [-0.16, 0.46, s * 0.23], 0.012, steel); add(cylZ(0.014, 0.1, 8), steel, -0.16, 0.46, s * 0.26);
+  }
+  add(box(0.02, 0.08, 0.16), new THREE.MeshBasicMaterial({ color: ghost ? 0x66ddff : 0x0a2a33 }), 0.58, 1.1, 0).rotation.z = -0.6;
+  // air brake petals on the tail
+  const brakes = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-0.56, 0.95, s * 0.115); d.add(g); add(box(0.3, 0.1, 0.012), carbon, -0.15, 0, 0, g); return g; });
+  // the stand it rests on: folds up against the belly in flight
+  const stand = [];
+  for (const s of [-1, 1]) for (const k of [0, 2]) {
+    const x = SKIDS[k][0], g = new THREE.Group(); g.position.set(x * 0.7, 0.36, s * 0.1); d.add(g);
+    beam([0, 0, 0], [x * 0.3, -0.34, s * 0.2], 0.017, steel, g);
+    add(box(0.16, 0.02, 0.06), rubber, x * 0.3, -0.348, s * 0.2, g);
+    stand.push({ g, s, k: 0 });
+  }
+
+  // ----- rider: knees on the tank, chest over it -----
+  const rider = new THREE.Group(); rider.position.set(-0.34, 1.02, 0); d.add(rider);        // hips
+  const torso = new THREE.Group(); rider.add(torso); torso.rotation.z = -0.95;
+  add(new THREE.CapsuleGeometry(0.155, 0.36, 6, 12), suit, 0, 0.3, 0, torso).scale.set(0.85, 1, 1.15);
+  add(box(0.02, 0.3, 0.2), suit2, -0.13, 0.36, 0, torso);
+  const headG = new THREE.Group(); headG.position.set(0.02, 0.66, 0); torso.add(headG); headG.rotation.z = 0.85;
+  add(ell(0.135, 0.14, 0.125), helmet, 0, 0.06, 0, headG);
+  add(ell(0.075, 0.055, 0.108), visor, 0.078, 0.065, 0, headG);
+  add(box(0.2, 0.025, 0.02), accent, -0.02, 0.2, 0, headG);
+  for (const s of [-1, 1]) {
+    beam([-0.34, 1.0, s * 0.13], [0.12, 0.87, s * 0.22], 0.075, suit, d, true);       // thigh
+    beam([0.12, 0.87, s * 0.22], [-0.15, 0.54, s * 0.25], 0.058, suit, d, true);      // shin
+    beam([-0.24, 0.5, s * 0.26], [-0.04, 0.48, s * 0.26], 0.045, rubber, d, true);    // boot on the peg
+    beam([0.06, 1.3, s * 0.2], [0.28, 1.15, s * 0.31], 0.052, suit, d, true);         // upper arm
+    beam([0.28, 1.15, s * 0.31], [0.46, 1.07, s * 0.3], 0.044, suit2, d, true);       // forearm
   }
 
   // lights
-  const lamp = (c, x, y, z) => { const mat = new THREE.MeshBasicMaterial({ color: c.clone(), toneMapped: false }); if (!ghost) add(new THREE.SphereGeometry(0.022, 8, 6), mat, x, y, z); return mat; };
-  const navL = lamp(new THREE.Color(8, 0.2, 0.1), -0.02, 0.9, -1.27), navR = lamp(new THREE.Color(0.2, 8, 0.4), -0.02, 0.9, 1.27), strobe = lamp(new THREE.Color(9, 9, 9), -1.44, 1.02, 0);
+  const lamp = (c, x, y, z, r = 0.02) => { const mat = new THREE.MeshBasicMaterial({ color: c.clone(), toneMapped: false }); if (!ghost) add(new THREE.SphereGeometry(r, 8, 6), mat, x, y, z); return mat; };
+  const navL = lamp(new THREE.Color(8, 0.2, 0.1), 0.47, 1.04, -0.36, 0.014), navR = lamp(new THREE.Color(0.2, 8, 0.4), 0.47, 1.04, 0.36, 0.014);
+  const tailLamp = lamp(new THREE.Color(6, 0.3, 0.2), -1.02, 1.05, 0, 0.028), strobe = lamp(new THREE.Color(9, 9, 9), -0.9, 1.09, 0, 0.014);
 
+  const cg0 = massProps(FUEL0).cg;
   const model = {
     root, nozzles, design: d, all,
     update(b, time, lean = 0, dt = 1 / 60) {
@@ -153,31 +178,33 @@ export function buildBike(ghost = false) {
       root.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
       const e = b.eng, sweep = Math.max(b.tilt, Math.PI / 2) - Math.PI / 2;
       fan.rotation.x += e.N * 55 * dt;
-      // metal glows with the temperature of the gas and with how much of it passes
-      const heat = Math.max(0, e.N - 0.3) / 0.7, h2 = heat * heat;
+      // the core shines with its power; each nozzle with the air that passes through it
+      const heat = Math.max(0, e.N - 0.25) / 0.75, h2 = heat * heat, od = b.abOut;
+      const flick = 0.92 + 0.08 * Math.sin(time * 47) * Math.sin(time * 13.1);
+      coreGlow.color.setRGB((0.25 + 1.6 * h2 + 5 * od) * flick, (0.9 + 4.2 * h2 + 4 * od) * flick, (1.4 + 6.5 * h2 + 6 * od) * flick);
       for (let i = 0; i < 4; i++) {
-        const l = lifts[i], f = Math.min(1, b.L[i] / 1100);
+        const l = lifts[i], f = Math.min(1, b.L[i] / 1600);
         l.g.rotation.z = sweep + b.va[i];
-        l.glowMat.color.setRGB(h2 * 2.6 * f, h2 * 0.8 * f, heat * 0.12 * f);
+        l.glowMat.color.setRGB(h2 * 1.2 * f, h2 * 1.9 * f, h2 * 3.2 * f);
       }
       rear.rotation.set(0, -b.ry, REAR.cant + b.rp);
-      const fr = Math.min(1, b.R / 2500), ab = b.abOut;
-      rearGlow.color.setRGB(h2 * 2.4 * fr + ab * 10, h2 * 0.75 * fr + ab * 4, heat * 0.12 * fr + ab * 4.5);
-      ail[0].rotation.z = -b.da; ail[1].rotation.z = b.da;       // +da rolls right: right aileron up
-      tails[0].rotation.z = -b.de; tails[1].rotation.z = -b.de;
-      rud.rotation.y = b.dr;
+      const fr = Math.min(1, b.R / 5000);
+      rearGlow.color.setRGB(h2 * 1.2 * fr + od * 7, h2 * 1.9 * fr + od * 6, h2 * 3.2 * fr + od * 11);
       brakes[0].rotation.y = -b.brake * 1.0; brakes[1].rotation.y = b.brake * 1.0;
+      const down = b.agl < 2.5 ? 1 : 0;
+      for (const st of stand) { st.k += (down - st.k) * Math.min(1, dt * 4); st.g.rotation.x = st.s * (1 - st.k) * 1.25; st.g.scale.setScalar(0.35 + 0.65 * st.k); }
+      tailLamp.color.setRGB(b.brake > 0.3 ? 16 : 3, 0.3, 0.2);
       // rider leans into the turn and tucks at speed
       torso.rotation.x += (lean * 0.32 - torso.rotation.x) * 0.1;
       const tuck = Math.min(1, b.airspeed / 70);
-      torso.rotation.z += (-0.62 - 0.22 * tuck - torso.rotation.z) * 0.08;
-      headG.rotation.z = 0.5 + 0.22 * tuck; headG.rotation.y = -lean * 0.4;
+      torso.rotation.z += (-0.95 - 0.12 * tuck - torso.rotation.z) * 0.08;
+      headG.rotation.z = 0.85 + 0.12 * tuck; headG.rotation.y = -lean * 0.4;
       const blink = (time * 1.1) % 1;
       strobe.color.setScalar(blink < 0.06 || (blink > 0.14 && blink < 0.2) ? 14 : 0.05);
       navL.color.setRGB(8, 0.2, 0.1); navR.color.setRGB(0.2, 8, 0.4);
     },
     // show the ghost of the best run: pose = [x,y,z,qw,qx,qy,qz]
-    setPose(pose) { root.position.set(pose[0], pose[1], pose[2]); root.quaternion.set(pose[4], pose[5], pose[6], pose[3]).normalize(); d.position.set(0.06, -0.87, 0); },
+    setPose(pose) { root.position.set(pose[0], pose[1], pose[2]); root.quaternion.set(pose[4], pose[5], pose[6], pose[3]).normalize(); d.position.set(-cg0[0], -cg0[1], -cg0[2]); },
   };
   return model;
 }

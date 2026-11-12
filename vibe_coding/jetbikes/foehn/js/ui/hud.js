@@ -87,7 +87,6 @@ export class Hud {
     $('rpm').textContent = Math.round(b.eng.N * 100);
     $('nozA').setAttribute('transform', `rotate(${b.tilt * 180 / Math.PI})`);
     $('heat').firstElementChild.style.width = b.heat * 100 + '%'; $('heat').classList.toggle('lock', b.abLock);
-    $('fuel').firstElementChild.style.width = b.fuel / FUEL0 * 100 + '%';
     if (game.ev.medals) {
       $('timer').textContent = fmtTime(game.total);
       $('cpn').innerHTML = `${t('hud.cp')} <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · ${t('hud.penalty')} <span class="num">+${game.penalty}</span>` : '');

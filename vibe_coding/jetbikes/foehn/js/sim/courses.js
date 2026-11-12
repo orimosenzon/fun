@@ -39,7 +39,7 @@ export const EVENTS = [
   },
   {
     id: 'lake', name: 'ספרינט האגם', tag: 'נמוך מעל המים, סביב האי וחזרה למזח',
-    start: { pad: 'pier', yaw: 0.75 }, wind: { speed: 3, gust: 0.8, heading: 0.2 }, medals: [78, 90, 118],
+    start: { pad: 'pier', yaw: 0.75 }, wind: { speed: 3, gust: 0.8, heading: 0.2 }, medals: [74, 86, 112],
     cps: () => [G(atX('main', 1750, 200), 9), G(atX('main', 2150, 150), 6, 10), G(atX('main', 2500, 190), 6, 10),
       G(atX('main', 2900, 210), 7, 10), G(atX('main', 3250, 200), 7, 10), G(atX('main', 3560, 190), 8, 13),
       G(atX('main', 3800, 0), 10, 14), G(atX('main', 3560, -190), 9, 13), G(atX('main', 3200, -200), 7, 10), G([2800, 1120], 8, 11),
@@ -48,13 +48,13 @@ export const EVENTS = [
   },
   {
     id: 'gorge', name: 'הקניון', tag: 'טיפוס של 900 מטר בתוך קניון צר עד האגם העליון',
-    start: { pad: 'base', yaw: 0.35 }, wind: { speed: 4, gust: 1.2, heading: -1.2 }, medals: [104, 118, 152],
+    start: { pad: 'base', yaw: 0.35 }, wind: { speed: 4, gust: 1.2, heading: -1.2 }, medals: [92, 106, 138],
     cps: () => [G([-1350, 2050], 25, 14), G([-880, 1700], 30, 13), ...along('gorge', 0.02, 0.74, 24, 30, 11, 3), H(on('gorge', 0.80), 1740), H(on('gorge', 0.88), 1930),
       G([-300, -3400], 30, 15, { finish: true })],
   },
   {
     id: 'pass', name: 'מעבר ההר', tag: 'אוויר דליל: מעל הרכס ב-2,300 מטר וצלילה חזרה לעמק',
-    start: { pad: 'hutTarn', yaw: 2.35 }, wind: { speed: 7, gust: 1.6, heading: 0.5 }, medals: [146, 165, 212],
+    start: { pad: 'hutTarn', yaw: 2.35 }, wind: { speed: 7, gust: 1.6, heading: 0.5 }, medals: [134, 152, 196],
     cps: () => [G(on('pass', 0.10), 40, 15), G(on('pass', 0.2), 30, 14), G(on('pass', 0.31), 14, 13), G(on('pass', 0.42), 30, 14),
       G(on('pass', 0.54), 35, 14), G(on('pass', 0.66), 35, 14), G(on('pass', 0.78), 35, 14), G(on('pass', 0.9), 30, 14),
       G([-4250, 1560], 28, 15), G([-3500, 2020], 24, 15), G([-2600, 2400], 24, 15), L('base')],
@@ -68,7 +68,7 @@ export const EVENTS = [
   },
   {
     id: 'tour', name: 'הסיבוב הגדול', tag: 'כל העמק: טיפוס למעבר ההר, ירידה מהירה דרך הקניון, הכפר וסיבוב סביב האי',
-    start: { pad: 'base', yaw: 3.0 }, wind: { speed: 5, gust: 1.2, heading: 0.3 }, medals: [272, 305, 385],
+    start: { pad: 'base', yaw: 3.0 }, wind: { speed: 5, gust: 1.2, heading: 0.3 }, medals: [258, 290, 366],
     cps: () => [G([-2600, 2420], 24, 15), G([-3500, 2020], 24, 15), G([-4250, 1560], 28, 15),
       ...along('pass', 0.94, 0.06, 16, 34, 14, 2),
       G([-420, -3400], 22, 14), H(on('gorge', 0.88), 1935), H(on('gorge', 0.80), 1740), ...along('gorge', 0.72, 0.03, 24, 30, 12, 4),
