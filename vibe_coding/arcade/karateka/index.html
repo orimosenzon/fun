@@ -44,6 +44,14 @@
   <button id="full">מסך מלא</button>
   <button id="restart">התחל מחדש</button>
 </div>
+<div class="bar">
+  <button id="save">💾 שמור מצב</button>
+  <button id="load">📂 טען מצב</button>
+  <button id="export">הורד לקובץ</button>
+  <button id="import">טען מקובץ</button>
+  <input type="file" id="importFile" accept=".json" hidden>
+  <span id="saveInfo" class="note"></span>
+</div>
 <div class="pad" id="pad">
   <div class="grp move">
     <button data-k="8">◀</button><button data-k="21">▶</button>
@@ -66,6 +74,7 @@
   <tr><td><kbd>E</kbd></td><td>מוואשי גרי, בעיטה סיבובית: אטית יותר, ופגיעה שלה שווה שתיים (תוספת שלנו)</td></tr>
   <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות (תוספת שלנו)</td></tr>
   <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
+  <tr><td>💾 📂</td><td>שמירת המצב הנוכחי וחזרה אליו (תוספת שלנו). "הורד לקובץ" מעביר משחק למחשב אחר</td></tr>
 </table>
 <div class="note">המשחק: ג'ורדן מכנר, 1984. האתר לא כולל את קובץ הדיסק של המשחק.</div>
 <script type="module">
@@ -75,6 +84,7 @@ import { Display } from './src/display.js';
 import { Speaker } from './src/speaker.js';
 import { installMawashi } from './src/ext/mawashi.js';
 import { installFlip } from './src/ext/flip.js';
+import { saveState, loadState } from './src/savestate.js';
 
 const $ = (id) => document.getElementById(id);
 const display = new Display($('scr')), speaker = new Speaker(CPU_HZ);
@@ -124,6 +134,42 @@ $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ?
 $('mute').onclick = () => { muted = !muted; $('mute').textContent = muted ? 'הפעל קול' : 'השתק'; };
 $('full').onclick = () => { const el = document.querySelector('.screen'); (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.()); };
 $('restart').onclick = () => { boot(); start(); };
+
+// save states: one slot kept by the browser, plus files to move a game between devices
+const SLOT = 'karateka.state';
+const when = (t) => new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+const info = (text) => { $('saveInfo').textContent = text; };
+const slotTime = () => { try { return JSON.parse(localStorage.getItem(SLOT))?.savedAt; } catch { return null; } };
+const showSlot = () => { const t = slotTime(); info(t ? `מצב שמור: ${when(t)}` : ''); $('load').disabled = !t; };
+const snapshot = () => ({ ...saveState(m), savedAt: Date.now() });
+function restore(s) {
+  if (!dsk) return info('קודם צריך לטעון את קובץ הדיסק');
+  if (!m) boot();
+  try { loadState(m, s); } catch (e) { return info(e.message); }
+  start();
+  const v = m.video; if (v.hires && !v.text) display.draw(m.ram, v.page2 ? 0x4000 : 0x2000);
+  info(`נטען המצב מ-${when(s.savedAt)}`);
+}
+$('save').onclick = () => {
+  if (!m) return info('אין עדיין משחק לשמור');
+  try { localStorage.setItem(SLOT, JSON.stringify(snapshot())); showSlot(); info('נשמר ✓ ' + $('saveInfo').textContent); }
+  catch { info('הדפדפן לא מאפשר לשמור כאן. אפשר להוריד לקובץ.'); }
+};
+$('load').onclick = () => { try { const s = JSON.parse(localStorage.getItem(SLOT)); if (s) restore(s); } catch { info('המצב השמור פגום'); } };
+$('export').onclick = () => {
+  if (!m) return info('אין עדיין משחק לשמור');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(snapshot())], { type: 'application/json' }));
+  a.download = `karateka-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('import').onclick = () => $('importFile').click();
+$('importFile').onchange = async () => {
+  const f = $('importFile').files[0]; $('importFile').value = '';
+  if (!f) return;
+  try { restore(JSON.parse(await f.text())); } catch { info('זה לא קובץ מצב שמור של המשחק'); }
+};
+showSlot();
 
 const KEYMAP = { ArrowLeft: 0x08, ArrowRight: 0x15, ArrowUp: 0x0b, ArrowDown: 0x0a, Enter: 0x0d, Escape: 0x1b, ' ': 0x20 };
 addEventListener('keydown', (e) => {
