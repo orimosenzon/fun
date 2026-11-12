@@ -277,7 +277,7 @@ def publish(client, led: dict, today: dt.date, dry_run: bool = False) -> None:
     if cur.get("exists") and (cur.get("wikitext") or "").strip() == text.strip():
         print("  archive unchanged", file=sys.stderr)
         return
-    client.edit_page(ARCHIVE_PAGE, text, summary="עדכון ארכיון אירועי התרבות")
+    client.edit_page_spam_safe(ARCHIVE_PAGE, text, summary="עדכון ארכיון אירועי התרבות")
 
 
 def main():

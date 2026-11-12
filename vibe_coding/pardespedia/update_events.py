@@ -1713,7 +1713,7 @@ def update_main_page(client, rows: list, days: int, dry_run: bool) -> None:
     if new == existing:
         print("Main page summary — no change.")
         return
-    client.edit_page(MAIN_TITLE, new,
+    client.edit_page_spam_safe(MAIN_TITLE, new,
                      summary="עדכון אוטומטי: לוח אירועי תרבות ובילוי + סטטיסטיקה בעמוד הראשי")
 
 

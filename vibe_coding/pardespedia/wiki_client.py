@@ -5,11 +5,33 @@ Handles authentication, reading, editing, and creating pages.
 
 import json
 import os
+import re
 import sys
 import requests
 
 API_URL = "https://pardespedia.info/api.php"
 CREDS_FILE = os.path.join(os.path.dirname(__file__), "credentials.json")
+
+
+def spam_triggers(msg: str) -> list:
+    """Pull the blocked fragments out of the spam-filter error text, e.g.
+    '...triggered our spam filter: forms.gle and linktr.ee/p' -> both."""
+    m = re.search(r"triggered our spam filter:\s*(.+)$", msg, re.S)
+    if not m:
+        return []
+    parts = re.split(r",\s*|\s+and\s+", m.group(1).strip().rstrip("."))
+    return [p.strip() for p in parts if p.strip()]
+
+
+def strip_links(text: str, triggers) -> str:
+    """Remove external links containing any trigger: [url label] -> label,
+    a bare url -> nothing."""
+    for t in triggers:
+        esc = re.escape(t)
+        text = re.sub(r"\[(?:https?:)?//[^\s\]]*" + esc + r"[^\s\]]*\s+([^\]]*)\]", r"\1", text)
+        text = re.sub(r"\[(?:https?:)?//[^\s\]]*" + esc + r"[^\s\]]*\]", "", text)
+        text = re.sub(r"(?:https?:)?//[^\s\]|<>\"]*" + esc + r"[^\s\]|<>\"]*", "", text)
+    return text
 
 
 def load_credentials():
@@ -125,6 +147,27 @@ class WikiClient:
         edit_result = result["edit"]
         print(f"{'Created' if edit_result.get('new') else 'Edited'}: {title} (rev {edit_result.get('newrevid')})")
         return edit_result
+
+    def edit_page_spam_safe(self, title: str, content: str, summary: str = "",
+                            max_rounds: int = 3) -> dict:
+        """edit_page that survives the spam blacklist: when the filter names
+        blocked links, strip them (keeping a [url label]'s label) and retry.
+        One blocked link in a feed used to fail the whole edit night after night."""
+        for _ in range(max_rounds):
+            try:
+                return self.edit_page(title, content, summary=summary)
+            except RuntimeError as exc:
+                msg = str(exc)
+                if "spam filter" not in msg:
+                    raise
+                triggers = spam_triggers(msg)
+                cleaned = strip_links(content, triggers)
+                if not triggers or cleaned == content:
+                    raise
+                print(f"  spam filter blocked {triggers}; links removed, retrying",
+                      file=sys.stderr)
+                content = cleaned
+        return self.edit_page(title, content, summary=summary)
 
     def move_page(self, from_title: str, to_title: str, reason: str = "", leave_redirect: bool = True) -> dict:
         """Rename/move a page. Returns API result."""
