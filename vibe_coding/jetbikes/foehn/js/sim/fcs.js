@@ -20,6 +20,7 @@ const NU = 13, NR = 5;
 export const FCS_HZ = 120;
 export const V_MAX = 95, V_MIN = -8;
 
+export const V_CORNER = 18, HAIR_T0 = 0.5, HAIR_T1 = 1.3;   // corner speed (m/s) and how long full stick must be held
 export class FCS {
   constructor(bike) {
     this.bike = bike;
@@ -30,7 +31,7 @@ export class FCS {
     this.reset();
   }
   reset() {
-    this.turn = 0; this.pitch = 0; this.strafe = 0;
+    this.turn = 0; this.pitch = 0; this.strafe = 0; this.hold = 0;
     this.iV = 0; this.iZ = 0; this.yawRef = null; this.tiltCmd = this.bike.tilt;
     this.idle = true; this.obstacle = this.obstacle || null;
     this.tele = { phiDes: 0, thetaDes: 0, aCmd: [0, 0, 0], wb: 0, sat: 0, vzDes: 0, floor: false };
@@ -44,6 +45,12 @@ export class FCS {
     this.turn += (clamp(inp.turn, -1, 1) - this.turn) * k1;
     this.pitch += (clamp(inp.pitch, -1, 1) - this.pitch) * k1;
     this.strafe += (clamp(inp.strafe || 0, -1, 1) - this.strafe) * k1;
+    // hairpin: a turn held at full stick is a request to come round, not to keep the speed. The
+    // computer lets the speed fall to the corner speed, where the lift pipes turn the bike tightest,
+    // and gives it back when the stick is released.
+    this.hold = Math.abs(inp.turn) > 0.9 ? Math.min(this.hold + dt, 2) : Math.max(0, this.hold - 3 * dt);
+    const hair = sstep(HAIR_T0, HAIR_T1, this.hold);
+    const vtIn = inp.vt > V_CORNER ? lerp(inp.vt, V_CORNER, hair) : inp.vt;
 
     const [yaw, pitch, roll] = yprOf(b.q);
     const fh = [Math.cos(yaw), 0, -Math.sin(yaw)], rh = [Math.sin(yaw), 0, Math.cos(yaw)];
@@ -66,11 +73,15 @@ export class FCS {
 
     // ----- 1. wanted acceleration -----
     const boost = !!inp.boost && !b.abLock && !inp.brake;
-    const eV = inp.vt - Vf;
+    const eV = vtIn - Vf;
     this.iV = clamp(this.iV + 0.25 * eV * dt, -1.5, 1.5);
     let aF = boost ? 16 : clamp(0.85 * eV + this.iV, -12, 10);
-    const phiLim = lerp(0.62, 1.24, wb);
-    const rateMax = Math.min(1.0, G * Math.tan(phiLim) / Math.max(Math.abs(Vf), 6));
+    // how hard can it turn? As hard as the lift there is right now allows: the lift pipes at full
+    // gas plus the wing. Slow, that is the engine alone (thrust/weight about 1.6, so 50 degrees of bank).
+    const Tavail = thrustOfN(1, b.sigma) * ENG.ductEta;
+    const liftCap = 0.9 * Tavail + qbar * WING.S * WING.clUse;
+    const phiLim = clamp(Math.acos(Math.min(1, W / (0.96 * liftCap))), 0.62, 1.32);
+    const rateMax = Math.min(1.3, G * Math.tan(phiLim) / Math.max(Math.abs(Vf), 6));
     const yawRateCmd = -this.turn * rateMax;
     const low = 1 - sstep(16, 30, Math.abs(Vf));
     let aR = -Vf * yawRateCmd + low * clamp(1.3 * (this.strafe * 7 - Vr), -5, 5);
@@ -102,8 +113,6 @@ export class FCS {
     let aU = clamp(1.9 * eZ + this.iZ, -lerp(0.55, 1.0, wb) * G, 1.9 * G);
 
     // what can the airframe actually deliver? Protect height first, then the turn, then speed.
-    const Tavail = thrustOfN(1, b.sigma) * ENG.ductEta;
-    const liftCap = 0.9 * Tavail + qbar * WING.S * WING.clUse;
     const need = m * Math.hypot(aR, aU + G);
     if (need > liftCap) {
       const k = Math.sqrt(Math.max(0, liftCap * liftCap / (m * m) - (aU + G) * (aU + G)));

@@ -27,7 +27,7 @@ const air = (v = 0) => { const s = new Sim(); s.reset([2500, 2400, 1500], 0, v |
 { // 3. hard turn: load factor matches the bank, no height lost
   const s = air(70); run(s, 3, { turn: 0, pitch: 0, vt: 70, noFloor: true });
   const y0 = s.bike.p[1]; let gmax = 0;
-  run(s, 6, { turn: 1, pitch: 0, vt: 70, noFloor: true }, () => { gmax = Math.max(gmax, Math.hypot(s.bike.acc[0], s.bike.acc[1] + G, s.bike.acc[2]) / G); });
+  run(s, 6, { turn: 0.85, pitch: 0, vt: 70, noFloor: true }, () => { gmax = Math.max(gmax, Math.hypot(s.bike.acc[0], s.bike.acc[1] + G, s.bike.acc[2]) / G); });
   const roll = yprOf(s.bike.q)[2];
   ok('turn: bank and load factor agree', Math.abs(1 / Math.cos(roll) - gmax) < 0.5 && gmax > 2.0, `bank=${deg(roll).toFixed(0)} n=${gmax.toFixed(2)} 1/cos=${(1 / Math.cos(roll)).toFixed(2)}`);
   ok('turn holds height', Math.abs(s.bike.p[1] - y0) < 6, `dy=${(s.bike.p[1] - y0).toFixed(1)}`);

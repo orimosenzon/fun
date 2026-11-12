@@ -93,10 +93,10 @@ export function buildBike(ghost = false) {
   const head = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.4, 4.2), toneMapped: false });
   if (!ghost) add(ell(0.03, 0.04, 0.07), head, 1.33, EY + ER + 0.04, 0);                // head lamp
   // wing with ailerons
-  const wingPts = [[0.12, -1.25], [0.46, -0.24], [0.46, 0.24], [0.12, 1.25], [-0.28, 1.25], [-0.34, 0.24], [-0.34, -0.24], [-0.28, -1.25]];   // tapered, swept leading edge (same area as the physics)
+  const wingPts = [[0.10, -1.5], [0.62, -0.26], [0.62, 0.26], [0.10, 1.5], [-0.36, 1.5], [-0.46, 0.26], [-0.46, -0.26], [-0.36, -1.5]];   // tapered, swept leading edge (same area as the physics)
   add(slab(wingPts, 0.045), paint, -0.08, 0.84, 0);
-  add(box(0.44, 0.05, 0.04), accent, -0.08, 0.86, -1.26); add(box(0.44, 0.05, 0.04), accent, -0.08, 0.86, 1.26);     // tip rails
-  const ail = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-0.32, 0.86, s * 0.86); d.add(g); add(box(0.16, 0.025, 0.62), accent, -0.08, 0, 0, g); return g; });
+  add(box(0.5, 0.05, 0.04), accent, -0.21, 0.86, -1.51); add(box(0.5, 0.05, 0.04), accent, -0.21, 0.86, 1.51);     // tip rails
+  const ail = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-0.4, 0.86, s * 1.04); d.add(g); add(box(0.16, 0.025, 0.78), accent, -0.08, 0, 0, g); return g; });
   // intake strakes, tailplanes (all-moving), fin and rudder
   for (const s of [-1, 1]) add(slab([[0.2, 0], [0.14, s * 0.22], [-0.12, s * 0.22], [-0.2, 0]], 0.025), accent, 0.95, 0.72, s * (ER - 0.02));
   const tails = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(-1.05, 0.98, s * 0.36); d.add(g); add(slab([[0.2, -0.24], [0.2, 0.24], [-0.2, 0.24], [-0.2, -0.24]], 0.03), paint, 0, 0, 0, g); return g; });

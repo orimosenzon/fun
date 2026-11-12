@@ -61,7 +61,7 @@ const EN = {
   'f.retry': 'Again <kbd>R</kbd>', 'f.next': 'Next event', 'f.menu': 'Menu',
   'h.title': 'How to fly',
   'h.intro': 'You ride one big jet engine. The flight computer does the hard part: you ask for a direction, height and speed, and it decides how much of the engine’s gas leaves through the four lift pipes under you and how much through the rear nozzle. In a hover all the gas goes down. Above about 200 km/h the wing carries you and all the gas goes back. In between the gas is shared, so accelerating out of a hover is slower: that is where the afterburner helps most.',
-  'h.turn': 'Turn. The bike banks by itself. In a hard turn the lift pipes open to help the wing, and that costs speed',
+  'h.turn': 'Turn. The bike banks by itself. Hold the key for a hairpin: the computer sheds speed and swings you round in a small space, then gives the speed back when you let go. That is how you return to a missed ring',
   'h.pitch': 'Pull to climb, push to descend (can be flipped in the settings)',
   'h.speed': 'Target speed up and down. The computer holds it',
   'h.boost': 'Afterburner: a flame in the rear nozzle, 60% more forward thrust. About 7 seconds until it overheats; cools faster in fast flight',

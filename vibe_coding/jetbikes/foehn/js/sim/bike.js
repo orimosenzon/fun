@@ -128,17 +128,18 @@ export function massProps(fuel) {
 const claOf = (AR) => 2 * Math.PI * AR / (2 + Math.sqrt(4 + AR * AR));
 const strip = (name, r, n, S, AR, a0, ctrl, gain, tau, stall = 16) => ({ name, r, n, c: [1, 0, 0], S, AR, cla: claOf(AR), a0: a0 * D2R, ctrl, gain, tau, cd0: 0.012, stall: stall * D2R });
 export const SURF = [
-  strip('wingLi', [-0.02, 0.86, -0.45], [0, 1, 0], 0.52, 3.1, -5.5, null, 0, 0, 17),
-  strip('wingRi', [-0.02, 0.86, 0.45], [0, 1, 0], 0.52, 3.1, -5.5, null, 0, 0, 17),
-  strip('wingLo', [-0.06, 0.86, -0.98], [0, 1, 0], 0.48, 3.1, -4.5, 'da', +1, 0.45, 17),
-  strip('wingRo', [-0.06, 0.86, 0.98], [0, 1, 0], 0.48, 3.1, -4.5, 'da', -1, 0.45, 17),
-  strip('tailL', [-1.08, 0.98, -0.34], [0, 1, 0], 0.17, 2.4, 0, 'de', -1, 1.0, 18),
-  strip('tailR', [-1.08, 0.98, 0.34], [0, 1, 0], 0.17, 2.4, 0, 'de', -1, 1.0, 18),
+  // the wing has leading-edge slats (the flow stays attached to 22 degrees): it is what turns the bike
+  strip('wingLi', [-0.02, 0.86, -0.52], [0, 1, 0], 0.78, 3.0, -5.5, null, 0, 0, 22),
+  strip('wingRi', [-0.02, 0.86, 0.52], [0, 1, 0], 0.78, 3.0, -5.5, null, 0, 0, 22),
+  strip('wingLo', [-0.06, 0.86, -1.16], [0, 1, 0], 0.72, 3.0, -4.5, 'da', +1, 0.45, 22),
+  strip('wingRo', [-0.06, 0.86, 1.16], [0, 1, 0], 0.72, 3.0, -4.5, 'da', -1, 0.45, 22),
+  strip('tailL', [-1.08, 0.98, -0.34], [0, 1, 0], 0.22, 2.4, 0, 'de', -1, 1.0, 18),
+  strip('tailR', [-1.08, 0.98, 0.34], [0, 1, 0], 0.22, 2.4, 0, 'de', -1, 1.0, 18),
   strip('strakeL', [0.95, 0.72, -0.40], [0, 1, 0], 0.08, 1.4, 0, null, 0, 0, 20),
   strip('strakeR', [0.95, 0.72, 0.40], [0, 1, 0], 0.08, 1.4, 0, null, 0, 0, 20),
   strip('fin', [-1.10, 1.30, 0], [0, 0, 1], 0.30, 1.6, 0, 'dr', +1, 0.5, 20),
 ];
-export const WING = { S: 2.0, cla: claOf(3.1), a0: -5.0 * D2R, stall: 17 * D2R };
+export const WING = { S: 3.0, cla: claOf(3.0), a0: -5.0 * D2R, stall: 22 * D2R };
 WING.alphaMax = WING.stall + WING.a0 - 4.5 * D2R;   // body angle of attack the computer will not exceed
 WING.clUse = WING.cla * (WING.alphaMax - WING.a0);
 // bluff body (bike + rider): drag area for flow along each body axis and its centre of pressure

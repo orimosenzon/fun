@@ -53,12 +53,12 @@ export class Autopilot {
     const tgt = path[k];
     const dx = tgt[0] - p[0], dz = tgt[2] - p[2], dh = Math.hypot(dx, dz) || 1;
     const err = wrapPi(Math.atan2(-dz, dx) - yaw);
-    out.turn = clamp(-2.6 * err, -1, 1);
+    out.turn = clamp(-2.6 * err, -0.88, 0.88);   // short of full stick: the demo rider plans its own speed, no hairpin
     const vzDes = V * (tgt[1] - p[1]) / Math.max(dh, 20) + 0.9 * (path[bi][1] - p[1]);
     out.pitch = liftOff ? 1 : clamp(vzDes / Math.max(8, 0.62 * V), -1, 1);
 
     // ----- speed: what the bends ahead allow -----
-    const aLat = 13 * this.skill;
+    const aLat = 11.5 * this.skill;
     let vLim = V_MAX + 30;
     const hdg = (a, c) => Math.atan2(-(path[c][2] - path[a][2]), path[c][0] - path[a][0]);
     const horizon = 3.0 * V + 60;
