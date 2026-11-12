@@ -67,7 +67,7 @@
   <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות (תוספת שלנו)</td></tr>
   <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
 </table>
-<div class="note">גרסת פיתוח מקומית. המשחק: ג'ורדן מכנר, 1984.</div>
+<div class="note">המשחק: ג'ורדן מכנר, 1984. האתר לא כולל את קובץ הדיסק של המשחק.</div>
 <script type="module">
 import { GameMachine } from './src/vm/firmware.js';
 import { CPU_HZ } from './src/vm/machine.js';
@@ -79,8 +79,27 @@ import { installFlip } from './src/ext/flip.js';
 const $ = (id) => document.getElementById(id);
 const display = new Display($('scr')), speaker = new Speaker(CPU_HZ);
 let dsk, m, running = false, paused = false, muted = false, last = 0;
-try { dsk = new Uint8Array(await (await fetch('data/karateka.dsk')).arrayBuffer()); if (dsk.length !== 143360) throw 0; }
-catch { $('msg').textContent = 'קובץ הנתונים של המשחק (data/karateka.dsk) חסר.'; $('start').disabled = true; }
+// the disk image is not on the public site: the player loads their own copy once, and the browser keeps it
+const DSK_SIZE = 143360, STORE = 'karateka.dsk';
+const remember = (d) => { try { let s = ''; for (let i = 0; i < d.length; i += 8192) s += String.fromCharCode(...d.subarray(i, i + 8192)); localStorage.setItem(STORE, btoa(s)); } catch {} };
+const recall = () => { try { const s = localStorage.getItem(STORE); if (!s) return null; const d = Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); return d.length === DSK_SIZE ? d : null; } catch { return null; } };
+try { dsk = new Uint8Array(await (await fetch('data/karateka.dsk')).arrayBuffer()); if (dsk.length !== DSK_SIZE) throw 0; }
+catch { dsk = recall(); }
+if (!dsk) {
+  $('start').hidden = true;
+  $('msg').innerHTML = 'כדי לשחק צריך את קובץ הדיסק של המשחק, <b>karateka.dsk</b>.<br>בחר אותו או גרור אותו לכאן. הדפדפן יזכור אותו לפעם הבאה.<br><br>';
+  const pick = document.createElement('input'); pick.type = 'file'; pick.accept = '.dsk,.do';
+  const load = async (f) => {
+    const d = new Uint8Array(await f.arrayBuffer());
+    if (d.length !== DSK_SIZE) { $('msg').firstChild.textContent = 'זה לא נראה כמו קובץ הדיסק הנכון. '; return; }
+    dsk = d; remember(d); $('msg').textContent = ''; $('start').hidden = false;
+  };
+  pick.onchange = () => pick.files[0] && load(pick.files[0]);
+  $('msg').append(pick);
+  const ov = $('ov');
+  ov.addEventListener('dragover', (e) => e.preventDefault());
+  ov.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && !dsk) load(f); });
+}
 const boot = () => { m = new GameMachine(dsk); installMawashi(m); installFlip(m); window.machine = m; };
 
 function loading() { const d = m.drive; return d.motor || m.cpu.cycles - d.offAt < CPU_HZ; }
