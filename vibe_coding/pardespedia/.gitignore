@@ -22,3 +22,4 @@ committees_cron.log
 protocol_cache/
 hood_maps/
 drive_scan_cron.log
+cron_alert_state.json

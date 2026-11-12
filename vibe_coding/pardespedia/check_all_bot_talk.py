@@ -33,7 +33,7 @@ USER_TALK_NS = 3
 # Edit-summary prefixes of the bot's own maintenance edits. These touch a talk
 # page without saying anything to anybody, so they must not count as "the bot
 # had the last word". Keep in sync with archive_bot_talk.py's summaries.
-HOUSEKEEPING_PREFIXES = ("ארכוב אוטומטי", "רענון תיבת הארכיונים")
+HOUSEKEEPING_PREFIXES = ("ארכוב אוטומטי", "רענון תיבת הארכיונים", "התראת cron")
 
 
 def is_housekeeping(comment):
