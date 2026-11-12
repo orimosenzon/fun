@@ -11,7 +11,9 @@ export function buildBike(ghost = false) {
   const root = new THREE.Group();          // origin = centre of gravity
   const d = new THREE.Group(); root.add(d);  // design frame, shifted by -cg every frame
   const M = (o) => (ghost ? new THREE.MeshBasicMaterial({ color: 0x66ddff, transparent: true, opacity: 0.22, depthWrite: false }) : o);
-  const paint = M(new THREE.MeshPhysicalMaterial({ color: 0xf2f0ea, roughness: 0.32, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.06 }));
+  const paint = M(new THREE.MeshPhysicalMaterial({ color: 0xc6cbd3, roughness: 0.3, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.06 }));
+  const blue = M(new THREE.MeshPhysicalMaterial({ color: 0x1b3a86, roughness: 0.3, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 }));
+  const can = M(new THREE.MeshStandardMaterial({ color: 0xb9bdc4, roughness: 0.24, metalness: 1.0 }));
   const accent = M(new THREE.MeshPhysicalMaterial({ color: 0xe8500a, roughness: 0.35, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.1 }));
   const carbon = M(new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.45, metalness: 0.4 }));
   const steel = M(new THREE.MeshStandardMaterial({ color: 0x8d9299, roughness: 0.3, metalness: 0.9 }));
@@ -19,11 +21,11 @@ export function buildBike(ghost = false) {
   const hot = M(new THREE.MeshStandardMaterial({ color: 0x4a4650, roughness: 0.4, metalness: 0.95 }));
   const dark = M(new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.7, metalness: 0.3 }));
   const rubber = M(new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.9 }));
-  const suit = M(new THREE.MeshStandardMaterial({ color: 0x1d2c4a, roughness: 0.75 }));
+  const suit = M(new THREE.MeshStandardMaterial({ color: 0x25272b, roughness: 0.7 }));
   const suit2 = M(new THREE.MeshStandardMaterial({ color: 0xe8500a, roughness: 0.7 }));
-  const helmet = M(new THREE.MeshPhysicalMaterial({ color: 0xf5f5f5, roughness: 0.2, clearcoat: 1 }));
-  const visor = M(new THREE.MeshPhysicalMaterial({ color: 0x4a3520, roughness: 0.08, metalness: 1.0 }));
-  const glass = M(new THREE.MeshPhysicalMaterial({ color: 0x88aacc, roughness: 0.05, transparent: true, opacity: 0.35 }));
+  const helmet = M(new THREE.MeshPhysicalMaterial({ color: 0x1b1c20, roughness: 0.25, clearcoat: 1 }));
+  const visor = M(new THREE.MeshPhysicalMaterial({ color: 0x0a0a0c, roughness: 0.08, metalness: 1.0 }));
+  const glass = M(new THREE.MeshPhysicalMaterial({ color: 0x1c2630, roughness: 0.05, transparent: true, opacity: 0.6 }));
   const all = [];
   const add = (geo, mat, x, y, z, parent = d) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = !ghost; m.receiveShadow = !ghost; parent.add(m); all.push(m); return m; };
   const box = (sx, sy, sz) => new THREE.BoxGeometry(sx, sy, sz);
@@ -46,13 +48,6 @@ export function buildBike(ghost = false) {
     const g = new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.002, width - 2 * bev), bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3 });
     g.translate(0, 0, -(width - 2 * bev) / 2); return g;
   };
-  // a fender: the part of a wheel's outline that is still there
-  const fender = (cx, cy, r, a0, a1, w, mat) => {
-    const pts = [], n = 12;
-    for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; pts.push([cx + Math.cos(a) * (r + 0.022), cy + Math.sin(a) * (r + 0.022)]); }
-    for (let k = n; k >= 0; k--) { const a = a0 + (a1 - a0) * k / n; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
-    return add(prof(pts, w, 0.008), mat, 0, 0, 0);
-  };
 
   const EY = ENG.axisY, HUBY = 0.34, FX = LIFT[0].p[0], RX = LIFT[2].p[0];
 
@@ -69,20 +64,37 @@ export function buildBike(ghost = false) {
   if (!ghost) for (const s of [-1, 1]) { const g = new THREE.TorusGeometry(0.115, 0.013, 8, 28); const r = add(g, coreGlow, 0.02, EY, s * 0.186); r.castShadow = false; }
   // compressor in front of it, fed by the intake in the nose
   add(cylX(0.1, 0.14, 0.4, 20), steel, 0.4, EY + 0.08, 0).rotation.z = 0.15;
-  { const [g, m] = tube(0.105, 0.1, 0.3, carbon); add(g, m, INTAKE[0] - 0.19, INTAKE[1] + 0.03, 0); }
-  { const [g, m] = tube(0.096, 0.09, 0.3, dark); add(g, m, INTAKE[0] - 0.19, INTAKE[1] + 0.03, 0).castShadow = false; }
+  { const [g, m] = tube(0.105, 0.1, 0.2, blue); add(g, m, INTAKE[0] - 0.2, INTAKE[1] + 0.03, 0); }
+  { const [g, m] = tube(0.096, 0.09, 0.2, dark); add(g, m, INTAKE[0] - 0.2, INTAKE[1] + 0.03, 0).castShadow = false; }
   const fan = new THREE.Group(); fan.position.set(INTAKE[0] - 0.2, INTAKE[1] + 0.03, 0); fan.scale.setScalar(0.72); d.add(fan);
   for (let k = 0; k < 11; k++) { const bl = add(box(0.01, 0.105, 0.045), steel, 0, 0, 0, fan); bl.geometry.translate(0, 0.066, 0); bl.rotation.x = k / 11 * Math.PI * 2; bl.rotation.y = 0.5; bl.castShadow = false; }
   { const sp = add(new THREE.ConeGeometry(0.04, 0.1, 12), accent, 0.05, 0, 0, fan); sp.rotation.z = -Math.PI / 2; }
   // exhaust: from the core, under the seat, to the rear nozzle
-  beam([-0.16, EY + 0.02, 0], [REAR.p[0] + 0.2, REAR.p[1], 0], 0.06, hot);
-  const rear = new THREE.Group(); rear.position.set(REAR.p[0] + 0.14, REAR.p[1], 0); d.add(rear);
-  { const [g, m] = tube(0.115, 0.09, 0.22, hot); add(g, m, -0.03, 0, 0, rear); }
-  { const [g, m] = tube(0.1, 0.082, 0.26, dark); add(g, m, -0.01, 0, 0, rear).castShadow = false; }
-  for (let k = 0; k < 12; k++) { const pt = add(box(0.2, 0.01, 0.05), steel, -0.03, 0, 0, rear); pt.geometry.translate(0, 0.107, 0); pt.geometry.rotateZ(0.11); pt.rotation.x = k / 12 * Math.PI * 2; pt.castShadow = false; }
+  // The main engine: a jet pipe the size of a fighter's, slung under the tail. A polished can,
+  // then the nozzle: a ring of petals that open when the overdrive lights.
+  const RY = REAR.p[1], RXN = REAR.p[0] + 0.25;                                        // the nozzle swivels about (RXN, RY)
+  beam([-0.16, EY + 0.02, 0], [-0.46, RY, 0], 0.07, hot);
+  add(cylX(0.07, 0.165, 0.16, 28), hot, -0.52, RY, 0);                                 // diffuser cone
+  add(cylX(0.165, 0.165, -0.6 - RXN, 32), can, (RXN - 0.6) / 2, RY, 0);   // the can
+  for (const x of [-0.62, (RXN - 0.6) / 2, RXN - 0.03]) add(cylX(0.172, 0.172, 0.03, 32), x === RXN - 0.03 ? dark : steel, x, RY, 0);
+  for (const s of [-1, 1]) beam([-0.62, 0.93, s * 0.07], [-0.7, RY + 0.15, s * 0.07], 0.014, steel);   // hangers from the sub-frame
+  const rear = new THREE.Group(); rear.position.set(RXN, RY, 0); d.add(rear);
+  { const [g, m] = tube(0.15, 0.118, 0.25, dark); add(g, m, -0.125, 0, 0, rear).castShadow = false; }     // liner you look into
+  const petals = [];
+  for (let k = 0; k < 18; k++) {
+    const ring = new THREE.Group(); ring.rotation.x = k / 18 * Math.PI * 2; rear.add(ring);
+    const pv = new THREE.Group(); pv.position.set(0, 0.166, 0); ring.add(pv);
+    add(box(0.26, 0.011, 0.062), hot, -0.13, 0, 0, pv).castShadow = false;
+    add(box(0.05, 0.014, 0.03), steel, -0.035, 0.006, 0, pv).castShadow = false;       // actuator link
+    petals.push(pv);
+  }
   const rearGlow = glowMat();
-  if (!ghost) { const g1 = add(new THREE.CircleGeometry(0.08, 20), rearGlow, 0.1, 0, 0, rear); g1.rotation.y = -Math.PI / 2; g1.castShadow = false; }
-  const rearNoz = new THREE.Group(); rearNoz.position.set(-0.14, 0, 0); rear.add(rearNoz);      // plume attaches here, exhaust along -x
+  if (!ghost) {
+    const g1 = add(new THREE.CircleGeometry(0.14, 24), rearGlow, 0.0, 0, 0, rear); g1.rotation.y = -Math.PI / 2; g1.castShadow = false;
+    for (let k = 0; k < 4; k++) { const v = add(box(0.012, 0.28, 0.016), dark, -0.012, 0, 0, rear); v.rotation.x = k / 4 * Math.PI; v.castShadow = false; }   // flame holder
+    add(new THREE.SphereGeometry(0.04, 10, 8), dark, -0.012, 0, 0, rear).castShadow = false;
+  }
+  const rearNoz = new THREE.Group(); rearNoz.position.set(-0.25, 0, 0); rear.add(rearNoz);      // plume attaches here, exhaust along -x
   beam([0.2, 0.42, 0], [FX - 0.05, HUBY + 0.02, 0], 0.045, hot); beam([-0.14, 0.42, 0], [RX + 0.05, HUBY + 0.02, 0], 0.045, hot);   // ducts to the two hubs
 
   // ----- frame, fork and swing arm -----
@@ -95,37 +107,37 @@ export function buildBike(ghost = false) {
   }
   add(cylZ(0.035, 0.3, 12), steel, 0.52, 1.03, 0);                                    // yoke
   beam([-0.3, 0.8, 0], [-0.52, 0.5, 0], 0.022, gold);                                 // rear shock
-  // the hubs where the wheels were, and what is left of the mudguards
-  for (const x of [FX, RX]) { add(cylZ(0.085, 0.3, 20), carbon, x, HUBY, 0); add(cylZ(0.05, 0.47, 16), steel, x, HUBY, 0); }
-  fender(FX, HUBY, 0.3, 0.75, 2.25, 0.13, paint);
-  fender(RX, HUBY, 0.3, 0.95, 2.5, 0.15, carbon);
-  // lift nozzles: one at each end of each hub, swinging fore-aft
+  // where the wheels were: an axle, and a lift engine at each end of it, swinging fore-aft
+  for (const x of [FX, RX]) add(cylZ(0.04, 0.4, 16), steel, x, HUBY, 0);
   const lifts = LIFT.map((P) => {
     const g = new THREE.Group(); g.position.set(P.p[0], HUBY, P.p[2]); d.add(g);
-    add(new THREE.SphereGeometry(0.088, 14, 10), steel, 0, 0, 0, g);
-    add(new THREE.CylinderGeometry(0.085, 0.07, 0.12, 16), hot, 0, -0.06, 0, g);
-    add(new THREE.CylinderGeometry(0.076, 0.076, 0.02, 16), accent, 0, -0.015, 0, g);
+    add(new THREE.CylinderGeometry(0.094, 0.094, 0.25, 20), can, 0, 0.065, 0, g);
+    add(new THREE.SphereGeometry(0.094, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), can, 0, 0.19, 0, g).scale.set(1, 0.45, 1);
+    for (const y of [0.15, -0.045]) add(new THREE.CylinderGeometry(0.099, 0.099, 0.022, 20), y > 0 ? accent : steel, 0, y, 0, g);
+    add(new THREE.CylinderGeometry(0.1, 0.084, 0.075, 20), dark, 0, -0.088, 0, g);
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; add(box(0.012, 0.07, 0.03), hot, Math.cos(a) * 0.094, -0.088, Math.sin(a) * 0.094, g).rotation.y = -a; }
     const gm = glowMat();
-    if (!ghost) { const gl = add(new THREE.CircleGeometry(0.064, 16), gm, 0, -0.122, 0, g); gl.rotation.x = Math.PI / 2; gl.castShadow = false; }
+    if (!ghost) { const gl = add(new THREE.CircleGeometry(0.076, 18), gm, 0, -0.127, 0, g); gl.rotation.x = Math.PI / 2; gl.castShadow = false; }
     const noz = new THREE.Group(); noz.position.set(0, P.p[1] - HUBY, 0); noz.rotation.z = Math.PI / 2; g.add(noz);   // local -x = straight down
     return { g, noz, glowMat: gm };
   });
-  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.064 })), { noz: rearNoz, r: 0.08 }];
+  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.074 })), { noz: rearNoz, r: 0.12 }];
 
   // ----- bodywork -----
   add(prof([[0.99, 0.93], [0.94, 1.04], [0.74, 1.15], [0.46, 1.09], [0.42, 0.92], [0.62, 0.85], [0.88, 0.85]], 0.34, 0.04), paint, 0, 0, 0);          // nose fairing
   add(prof([[0.96, 0.9], [0.88, 0.87], [0.64, 0.87], [0.5, 0.93], [0.9, 0.94]], 0.36, 0.015), accent, 0, 0, 0);                                         // its stripe
   for (const s of [-1, 1]) {                                                                                                                          // side fairings, open around the core
-    add(prof([[0.64, 0.87], [0.42, 0.94], [0.28, 0.84], [0.25, 0.6], [0.3, 0.44], [0.5, 0.42], [0.58, 0.58]], 0.03, 0.012), paint, 0, 0, s * 0.17);
-    add(prof([[0.56, 0.6], [0.3, 0.52], [0.31, 0.46], [0.5, 0.45]], 0.034, 0.008), accent, 0, 0, s * 0.172);
+    add(prof([[0.66, 0.88], [0.44, 0.96], [0.26, 0.9], [0.2, 0.74], [0.3, 0.6], [0.24, 0.47], [0.5, 0.45], [0.64, 0.56], [0.72, 0.72]], 0.03, 0.012), paint, 0, 0, s * 0.17);
+    add(prof([[0.64, 0.56], [0.5, 0.45], [0.24, 0.47], [-0.12, 0.38], [-0.2, 0.33], [0.5, 0.31], [0.66, 0.42]], 0.032, 0.012), blue, 0, 0, s * 0.165);
+    add(prof([[0.6, 0.6], [0.34, 0.53], [0.3, 0.49], [0.56, 0.52]], 0.034, 0.008), accent, 0, 0, s * 0.172);
   }
-  add(prof([[0.52, 0.42], [0.47, 0.33], [-0.22, 0.31], [-0.3, 0.38], [-0.2, 0.41]], 0.24, 0.03), paint, 0, 0, 0);                                      // belly pan
-  { const ws = add(ell(0.16, 0.13, 0.14), glass, 0.68, 1.15, 0); ws.rotation.z = -0.7; }                                                              // screen
+  add(prof([[0.54, 0.4], [0.5, 0.31], [-0.22, 0.31], [-0.3, 0.38], [-0.2, 0.41]], 0.3, 0.03), blue, 0, 0, 0);                                         // belly pan
+  { const ws = add(ell(0.2, 0.13, 0.145), glass, 0.66, 1.17, 0); ws.rotation.z = -0.75; }                                                              // screen
   add(prof([[0.44, 1.05], [0.3, 1.12], [0.06, 1.1], [-0.1, 0.99], [-0.14, 0.9], [0.42, 0.9]], 0.3, 0.05), paint, 0, 0, 0);                              // tank
   add(prof([[0.36, 1.1], [0.3, 1.135], [0.08, 1.115], [-0.04, 1.04]], 0.1, 0.012), accent, 0, 0, 0);
   add(prof([[-0.1, 0.96], [-0.14, 0.89], [-0.56, 0.9], [-0.58, 0.97], [-0.34, 0.94]], 0.25, 0.03), rubber, 0, 0, 0);                                    // seat
-  add(prof([[-0.5, 0.88], [-0.56, 0.98], [-1.0, 1.08], [-1.02, 1.03], [-0.76, 0.9]], 0.2, 0.035), paint, 0, 0, 0);                                      // tail
-  add(prof([[-0.62, 1.0], [-0.98, 1.085], [-0.99, 1.06], [-0.7, 0.98]], 0.21, 0.01), accent, 0, 0, 0);
+  add(prof([[-0.5, 0.9], [-0.56, 0.99], [-1.04, 1.2], [-1.07, 1.15], [-0.76, 0.97]], 0.2, 0.035), paint, 0, 0, 0);                                      // tail, kicked up over the jet pipe
+  add(prof([[-0.62, 1.02], [-1.02, 1.205], [-1.04, 1.18], [-0.7, 1.0]], 0.21, 0.01), blue, 0, 0, 0);
   const head = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.4, 4.2), toneMapped: false });
   if (!ghost) for (const s of [-1, 1]) add(ell(0.02, 0.03, 0.05), head, 0.975, 0.97, s * 0.075);   // twin head lamps
   // bars, mirrors, dash, pegs
@@ -161,13 +173,14 @@ export function buildBike(ghost = false) {
     beam([0.12, 0.87, s * 0.22], [-0.15, 0.54, s * 0.25], 0.058, suit, d, true);      // shin
     beam([-0.24, 0.5, s * 0.26], [-0.04, 0.48, s * 0.26], 0.045, rubber, d, true);    // boot on the peg
     beam([0.06, 1.3, s * 0.2], [0.28, 1.15, s * 0.31], 0.052, suit, d, true);         // upper arm
-    beam([0.28, 1.15, s * 0.31], [0.46, 1.07, s * 0.3], 0.044, suit2, d, true);       // forearm
+    beam([0.28, 1.15, s * 0.31], [0.46, 1.07, s * 0.3], 0.044, suit, d, true);        // forearm
+    add(new THREE.SphereGeometry(0.058, 10, 8), suit2, 0.28, 1.15, s * 0.31); add(new THREE.SphereGeometry(0.078, 10, 8), suit2, 0.12, 0.87, s * 0.22);   // elbow and knee guards
   }
 
   // lights
   const lamp = (c, x, y, z, r = 0.02) => { const mat = new THREE.MeshBasicMaterial({ color: c.clone(), toneMapped: false }); if (!ghost) add(new THREE.SphereGeometry(r, 8, 6), mat, x, y, z); return mat; };
   const navL = lamp(new THREE.Color(8, 0.2, 0.1), 0.47, 1.04, -0.36, 0.014), navR = lamp(new THREE.Color(0.2, 8, 0.4), 0.47, 1.04, 0.36, 0.014);
-  const tailLamp = lamp(new THREE.Color(6, 0.3, 0.2), -1.02, 1.05, 0, 0.028), strobe = lamp(new THREE.Color(9, 9, 9), -0.9, 1.09, 0, 0.014);
+  const tailLamp = lamp(new THREE.Color(6, 0.3, 0.2), -1.07, 1.17, 0, 0.03), strobe = lamp(new THREE.Color(9, 9, 9), -0.96, 1.2, 0, 0.014);
 
   const cg0 = massProps(FUEL0).cg;
   const model = {
@@ -189,6 +202,7 @@ export function buildBike(ghost = false) {
       }
       rear.rotation.set(0, -b.ry, REAR.cant + b.rp);
       const fr = Math.min(1, b.R / 5000);
+      for (const pv of petals) pv.rotation.z = 0.19 - 0.13 * od;                 // the nozzle opens for the overdrive
       rearGlow.color.setRGB(h2 * 1.2 * fr + od * 7, h2 * 1.9 * fr + od * 6, h2 * 3.2 * fr + od * 11);
       brakes[0].rotation.y = -b.brake * 1.0; brakes[1].rotation.y = b.brake * 1.0;
       const down = b.agl < 2.5 ? 1 : 0;

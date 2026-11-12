@@ -51,7 +51,7 @@ export const LIFT = [
   { name: 'RL', p: [-0.70, 0.22, -0.20] },
   { name: 'RR', p: [-0.70, 0.22, 0.20] },
 ];
-export const REAR = { p: [-1.08, 0.70, 0], cant: 0 };   // cant is set below, once the centre of gravity is known
+export const REAR = { p: [-1.27, 0.76, 0], cant: 0 };   // cant is set below, once the centre of gravity is known
 export const INTAKE = [0.95, 0.72, 0];
 export const TILT_MAX = 116 * D2R, VANE_MAX = 12 * D2R, VEC_MAX = 15 * D2R;
 export const SHARE_MIN = 0.10, SHARE_MAX = 0.45;
@@ -230,7 +230,7 @@ export const mkW = () => ({ F: [0, 0, 0], Tq: [0, 0, 0], stall: 0 });
 export const SKIDS = [[0.50, 0, -0.30], [0.50, 0, 0.30], [-0.52, 0, -0.30], [-0.52, 0, 0.30]];
 // points of the bike and rider that must not touch anything (design frame)
 export const PROBES = [
-  [1.10, 0.80, 0], [-1.22, 0.78, 0], [0.12, 1.58, 0], [-0.9, 1.0, 0],          // nose, exhaust, helmet, tail
+  [1.10, 0.80, 0], [-1.3, 0.76, 0], [0.12, 1.58, 0], [-1.0, 1.15, 0],          // nose, exhaust, helmet, tail
   [0.50, 1.04, -0.36], [0.50, 1.04, 0.36],                                      // bar ends
   [0.74, 0.2, 0], [-0.70, 0.2, 0],                                              // the two hubs
 ];
