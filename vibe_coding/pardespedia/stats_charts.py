@@ -139,16 +139,19 @@ def chart_growth(per_month, path):
         i = months.index(month)
         ax.plot([i], [cumulative[i]], "o", color=SERIES_1, markersize=8,
                 markeredgecolor=SURFACE, markeredgewidth=2, zorder=5)
+        # the first point sits on the y axis: push its label right, off the tick numbers
+        first = i == 0 or i < len(months) * 0.05
         ax.annotate(he(label), (i, cumulative[i]),
-                    textcoords="offset points", xytext=(0, 14),
-                    ha="center", fontsize=10, color=INK, fontweight="bold")
+                    textcoords="offset points", xytext=(12, 12) if first else (0, 14),
+                    ha="left" if first else "center", fontsize=10, color=INK,
+                    fontweight="bold")
 
     year_ticks = [i for i, m in enumerate(months) if m.endswith("-01")]
     ax.set_xticks(year_ticks)
     ax.set_xticklabels([months[i][:4] for i in year_ticks], fontsize=9)
     ax.set_xlim(-1, len(months) + 3)
     ax.set_ylim(0, max(cumulative) * 1.22)
-    ax.set_title(he("גידול פרדספדיה: דפים שנוצרו במרחב הראשי, 2019–2026"),
+    ax.set_title(he(f"גידול פרדספדיה: דפים שנוצרו במרחב הראשי, {months[0][:4]}–{months[-1][:4]}"),
                  fontweight="bold", pad=26)
     # יחידת המדידה בשורה אופקית — תווית ציר מסובבת בעברית נקראת רע
     ax.text(0, 1.04, he("דפים (מצטבר, כולל הפניות)"), transform=ax.transAxes,
@@ -183,7 +186,7 @@ def chart_edits(human, bot, path):
     ax.set_xticks(year_ticks)
     ax.set_xticklabels([months[i][:4] for i in year_ticks], fontsize=9)
     ax.set_xlim(-1, len(months))
-    ax.set_title(he("קצב העריכה בפרדספדיה — תושבים לעומת הבוט"),
+    ax.set_title(he("קצב העריכה בפרדספדיה: תושבים לעומת הבוט"),
                  fontweight="bold", pad=34)
     ax.text(0, 1.04, he("עריכות בחודש"), transform=ax.transAxes,
             fontsize=9.5, color=INK_2, ha="left")
