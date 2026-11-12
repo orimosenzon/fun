@@ -176,7 +176,8 @@ async function boot() {
         case 'go': if (game.ev.medals) { hud.message(t('go'), '', 0.9); audio.count(true); } break;
         case 'gate': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (e.perfect) hud.message('', t('perfect'), 0.7); flash = 0.06; break;
         case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last) hud.message(t('landed'), t('landed.sub'), 1.4); break;
-        case 'miss': audio.miss(); hud.message('', t('missed'), 1.2); break;
+        case 'miss': audio.miss(); hud.message('', t('missed'), 2.2); break;
+        case 'wrongway': audio.miss(); hud.message('', t('wrongway'), 2.2); break;
         case 'crash': fx.explode(e.p, e.v, e.water); audio.crash(e.water); hud.crash(e.reason); break;
         case 'warn': if (e.text === 'offpad') hud.message('', t('warn.offpad'), 1.2); else { hud.warn(t('warn.back')); audio.warn(); } break;
         case 'finish': onFinish(e); break;

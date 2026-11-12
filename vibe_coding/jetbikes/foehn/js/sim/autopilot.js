@@ -8,7 +8,7 @@ import { V_MAX } from './fcs.js';
 export class Autopilot {
   constructor(game, skill = 1) { this.game = game; this.i = 0; this.skill = skill; this.boostT = 0; }
   // after a respawn: pick the line up again at the check-point just passed
-  reset() { const g = this.game; this.i = g.cp > 0 ? g.cps[g.cp - 1].pathIndex : 0; }
+  reset() { const g = this.game; this.i = g.cp > 0 ? g.cps[g.cp - 1].pathIndex : 0; this.around = null; }
 
   update() {
     const g = this.game, b = g.bike, path = g.build.path, p = b.p;
@@ -17,6 +17,24 @@ export class Autopilot {
     // progress along the reference line (never backwards, never past the next check-point's node)
     const cp = g.nextCp;
     const cap = cp ? cp.pathIndex + 3 : path.length - 1;
+    // Missed the ring (already beyond its plane, and it is still the next one)? Go round: first back
+    // to a point on the ring's axis well before it, then slowly down the axis and through.
+    if (this.around && (g.cp !== this.around.cp || !cp || cp.type !== 'ring')) { this.i = g.cp > 0 ? g.cps[g.cp - 1].pathIndex : 0; this.around = null; }
+    if (cp && cp.type === 'ring') {
+      const n = cp.n, along = (p[0] - cp.p[0]) * n[0] + (p[1] - cp.p[1]) * n[1] + (p[2] - cp.p[2]) * n[2];
+      if (along > 6 && (this.around ? this.around.ph === 2 : this.i >= cp.pathIndex - 1)) this.around = { cp: g.cp, ph: 1 };
+      if (this.around) {
+        const a = this.around, back = a.ph === 1 ? 230 : Math.max(0, -along - 45);
+        const q = [cp.p[0] - n[0] * back, cp.p[1] - n[1] * back + (a.ph === 1 ? 25 : 0), cp.p[2] - n[2] * back];
+        const dx = q[0] - p[0], dz = q[2] - p[2], dh = Math.hypot(dx, dz);
+        if (a.ph === 1 && dh < 60) a.ph = 2;
+        const [yaw0] = yprOf(b.q), V0 = len(b.v);
+        out.turn = clamp(-2.6 * wrapPi(Math.atan2(-dz, dx) - yaw0), -1, 1);
+        out.vt = a.ph === 1 ? 38 : 28;
+        out.pitch = clamp((Math.max(V0, 15) * (q[1] - p[1]) / Math.max(dh, 25)) / Math.max(8, 0.62 * V0), -1, 1);
+        return out;
+      }
+    }
     let best = 1e18, bi = this.i;
     for (let k = this.i; k <= Math.min(cap, this.i + 80, path.length - 1); k++) {
       const q = path[k], d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 * 0.3 + (q[2] - p[2]) ** 2;
@@ -58,7 +76,7 @@ export class Autopilot {
     out.pitch = liftOff ? 1 : clamp(vzDes / Math.max(8, 0.62 * V), -1, 1);
 
     // ----- speed: what the bends ahead allow -----
-    const aLat = 11.5 * this.skill;
+    const aLat = 8 * this.skill;
     let vLim = V_MAX + 30;
     const hdg = (a, c) => Math.atan2(-(path[c][2] - path[a][2]), path[c][0] - path[a][0]);
     const horizon = 3.0 * V + 60;

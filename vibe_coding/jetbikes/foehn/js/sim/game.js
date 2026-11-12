@@ -9,7 +9,7 @@ import { S, hitScenery, canopyAt } from './scenery.js';
 import { buildEvent, eventById } from './courses.js';
 import { clamp, dot, sub, len, yprOf, qrot } from './vmath.js';
 
-export const MISS_PENALTY = 4, CRASH_WAIT = 2.4;
+export const CRASH_WAIT = 2.4;
 const BODY_PTS = [PROBES[0], PROBES[1], PROBES[2], PROBES[4], PROBES[5], [0, 0.5, 0]];
 
 export class Game {
@@ -105,13 +105,15 @@ export class Game {
     if (!reason && c) {
       if (c.type === 'ring') {
         const d0 = dot(sub(this.prevP, c.p), c.n), d1 = dot(sub(p, c.p), c.n);
-        if (d0 < 0 && d1 >= 0) {
-          const t = d0 / (d0 - d1);
+        // The rings are flown in their order and in their direction, always. A ring that was
+        // missed stays the next one: come round and fly through it the right way.
+        if ((d0 < 0) !== (d1 < 0)) {
+          const fwd = d0 < 0, t = d0 / (d0 - d1);
           const hit = [this.prevP[0] + (p[0] - this.prevP[0]) * t - c.p[0], this.prevP[1] + (p[1] - this.prevP[1]) * t - c.p[1], this.prevP[2] + (p[2] - this.prevP[2]) * t - c.p[2]];
           const r = len(hit);
-          if (r < c.r - 0.9) this.pass(c, r / c.r);
-          else if (r < c.r + 1.1) reason = 'ring';
-          else if (r < c.r * 12) { this.penalty += MISS_PENALTY; this.misses++; this.emit('miss', { index: this.cp, off: r, dy: hit[1] }); this.advance(c, false); }
+          if (r >= c.r - 0.9 && r < c.r + 1.1) reason = 'ring';                 // the rim is solid from either side
+          else if (r < c.r) { if (fwd) this.pass(c, r / c.r); else this.emit('wrongway', { index: this.cp }); }
+          else if (fwd && r < c.r * 12) { this.misses++; this.emit('miss', { index: this.cp, off: r, dy: hit[1] }); }
         }
       } else {
         const onPad = Math.hypot(p[0] - c.p[0], p[2] - c.p[2]) < c.r;
