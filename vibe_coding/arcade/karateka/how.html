@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>איך Karateka רץ בדפדפן</title>
+<meta name="description" content="קוד המכונה המקורי מ-1984 רץ על מחשב אפל II שכתבנו ב-JavaScript, ומהלכים חדשים מוזרקים לתוכו בלי לשנות בו בית אחד. הסבר אינטראקטיבי.">
+<meta property="og:title" content="איך Karateka רץ בדפדפן">
+<meta property="og:description" content="קוד המכונה המקורי מ-1984 רץ על מחשב אפל II שכתבנו ב-JavaScript, ומהלכים חדשים מוזרקים לתוכו בלי לשנות בו בית אחד.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/arcade/karateka/how-og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a reading column; every interactive part is a chooser at the side with its
+   explanation right next to it. Two colours carry the page, both Apple II hi-res colours:
+   orange = code we wrote, blue = the 1984 original. */
+:root {
+  --bg: #f2f4f8; --surface: #ffffff; --fg: #161b26; --muted: #586275; --line: #d3dae6;
+  --ours: #b8400f; --ours-bg: #fdeee5; --orig: #0a6a9c; --orig-bg: #e2f1fa; --code-bg: #e9edf4; --now: #fff1b8;
+  --body: "Heebo", "Arial Hebrew", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1118; --surface: #171c27; --fg: #e6eaf2; --muted: #97a1b6; --line: #2b3345;
+  --ours: #ff8d60; --ours-bg: #2b1b13; --orig: #55d1fb; --orig-bg: #0f2532; --code-bg: #1d2331; --now: #4a3d0c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1118; --surface: #171c27; --fg: #e6eaf2; --muted: #97a1b6; --line: #2b3345;
+  --ours: #ff8d60; --ours-bg: #2b1b13; --orig: #55d1fb; --orig-bg: #0f2532; --code-bg: #1d2331; --now: #4a3d0c; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.65;
+  padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 980px; margin-inline: auto; display: flex; flex-direction: column; gap: 48px; }
+section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+section > p, section > h1, section > h2, section > ul, .text { max-width: 720px; }
+h1 { font-size: clamp(28px, 6vw, 42px); font-weight: 800; line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-size: 25px; font-weight: 800; line-height: 1.25; margin: 0; text-wrap: balance; }
+h3 { margin: 0; font-size: 18px; }
+p { margin: 0; }
+ul { margin: 0; padding-inline-start: 22px; }
+a { color: var(--orig); }
+.lead { font-size: 19px; }
+.muted { color: var(--muted); font-size: 15px; }
+code, .ltr { font-family: var(--mono); direction: ltr; unicode-bidi: isolate; font-size: 0.88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+b.ours { color: var(--ours); } b.orig { color: var(--orig); }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-inline-end: 6px; vertical-align: -1px; }
+.dot.ours { background: var(--ours); } .dot.orig { background: var(--orig); }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; }
+
+button { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--orig); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+pre { margin: 0; background: var(--code-bg); border-radius: 6px; padding: 10px 12px; overflow-x: auto; direction: ltr; text-align: left; font-family: var(--mono); font-size: 14px; line-height: 1.5; }
+.tag { font-size: 13px; font-weight: 700; }
+
+/* the three parts */
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.part { border-radius: 6px; padding: 14px 16px; border-top: 5px solid; display: flex; flex-direction: column; gap: 4px; }
+.part.ours { background: var(--ours-bg); border-color: var(--ours); } .part.orig { background: var(--orig-bg); border-color: var(--orig); }
+
+/* chooser at the side, explanation next to it */
+.md { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 12px; align-items: start; }
+.md-list { display: flex; flex-direction: column; gap: 4px; }
+.md-list button { text-align: start; display: flex; flex-direction: column; gap: 1px; padding: 9px 12px; border-inline-start-width: 6px; }
+.md-list button b { font-weight: 700; } .md-list button small { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+.md-list button.ours { border-inline-start-color: var(--ours); } .md-list button.orig { border-inline-start-color: var(--orig); }
+.md-list button[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.md .panel { min-height: 100%; }
+@media (max-width: 720px) {
+  .md { grid-template-columns: 1fr; }
+  .md-list { flex-direction: row; flex-wrap: wrap; }
+  .md-list button { padding: 6px 10px; } .md-list button small { display: none; }
+}
+.verdict { border-inline-start: 4px solid var(--muted); padding-inline-start: 12px; }
+.verdict.hit { border-inline-start-color: var(--ours); }
+
+/* the processor, step by step */
+.cpu { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 820px) { .cpu { grid-template-columns: 1fr; } }
+.listing { overflow-x: auto; }
+.listing table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.listing td { padding: 4px 8px; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.listing td.he { white-space: normal; min-width: 150px; font-size: 14.5px; }
+.listing td.bytes { color: var(--muted); }
+.listing tr.now td { background: var(--now); font-weight: 600; }
+.listing tr.gap td { border-bottom: 3px double var(--line); }
+.regs { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 15px; align-items: center; }
+.regs dt { color: var(--muted); } .regs dd { margin: 0; font-weight: 700; }
+.pips { display: inline-flex; gap: 4px; vertical-align: middle; }
+.pip { width: 16px; height: 16px; border-radius: 2px; background: var(--orig); } .pip.off { background: var(--line); }
+#say { min-height: 3.3em; }
+
+/* the little screens */
+.screen { background: #000; border-radius: 6px; padding: 10px; display: flex; justify-content: center; }
+canvas { image-rendering: pixelated; max-width: 100%; height: auto; display: block; }
+.viewer { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 720px) { .viewer { grid-template-columns: 1fr; } }
+.flags { display: flex; gap: 6px; flex-wrap: wrap; }
+.flag { font-size: 13px; border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; color: var(--muted); }
+.flag.on { color: var(--fg); border-color: var(--fg); font-weight: 700; }
+.bits { display: grid; grid-template-columns: repeat(28, minmax(0, 1fr)); gap: 2px; direction: ltr; max-width: 720px; }
+.bit { aspect-ratio: 1; padding: 0; border-radius: 2px; min-width: 0; }
+.bit[aria-pressed="true"] { background: var(--fg); }
+#rowOut { width: 100%; } .rowscreen { max-width: 720px; }
+table.plain { border-collapse: collapse; width: 100%; font-size: 15px; }
+table.plain td, table.plain th { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.plain th { font-size: 13px; color: var(--muted); font-weight: 700; }
+.wide { overflow-x: auto; }
+.qa { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
+.qa div { display: flex; flex-direction: column; gap: 4px; }
+footer { color: var(--muted); font-size: 15px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+<section>
+  <h1>איך Karateka רץ בדפדפן</h1>
+  <p class="lead">לא כתבנו את המשחק מחדש. קוד המכונה המקורי מ-1984 רץ כמו שהוא, על מחשב אפל II קטן שכתבנו ב-JavaScript. המהלכים החדשים, כמו בעיטת העגור, מוזרקים לתוכו בלי לשנות בו בית אחד.</p>
+  <p>הדף הזה מסביר איך זה אפשרי. בכל חלק יש משהו שאפשר ללחוץ עליו ולראות בעצמך.</p>
+  <p><a href="./">למשחק עצמו</a></p>
+</section>
+
+<section>
+  <h2>שלושה חלקים</h2>
+  <div class="parts">
+    <div class="part orig"><b>המשחק</b><span>רצף של בתים על דיסקט, כפי שג'ורדן מכנר כתב אותם ב-1984. אלה פקודות למעבד של אפל II, לא קוד שאנשים קוראים.</span></div>
+    <div class="part ours"><b>המחשב</b><span>תוכנית JavaScript של כ-450 שורות שמתנהגת כמו אפל II: מעבד, זיכרון, מקלדת, רמקול, כונן. היא קוראת את הבתים של המשחק ומבצעת אותם.</span></div>
+    <div class="part ours"><b>התוספות</b><span>מהלכים חדשים, גם הם ב-JavaScript. הם לא נמצאים בתוך המשחק אלא לצידו, והמחשב מפעיל אותם ברגעים הנכונים.</span></div>
+  </div>
+  <div class="legend"><span><span class="dot ours"></span>קוד שכתבנו</span><span><span class="dot orig"></span>המקור, 1984</span></div>
+</section>
+
+<section>
+  <h2>מה זה שפת מכונה, ואיך מעבד מריץ אותה</h2>
+  <p>מעבד מבין רק מספרים. הבית <code>A5</code> אומר לו "טען ערך מהזיכרון", הבית <code>C6</code> אומר "הפחת אחד". מתכנתים של אז כתבו באסמבלי, שפה שבה לכל פקודה כזאת יש שם קצר וקריא: <code>LDA</code>, <code>DEC</code>. התרגום מאסמבלי לבתים הוא אחד לאחד, ולכן אפשר גם ללכת בכיוון ההפוך: לקחת את הבתים מהדיסקט ולהציג אותם שוב כפקודות קריאות. את קוד המקור של המשחק אין לנו. יש לנו רק את הבתים, וכלי קטן שמפרק אותם לפקודות.</p>
+  <p>למטה רצה שגרה אמיתית מתוך Karateka, 17 בתים: "היריב סופג מכה". המעבד שמריץ אותה כאן הוא גרסה מוקטנת של המעבד שכתבנו. לחץ על "צעד" וראה מה כל פקודה עושה.</p>
+  <div class="cpu">
+    <div class="panel">
+      <div class="listing"><table id="listing" dir="ltr"></table></div>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <button id="stepBtn">צעד</button><button id="runBtn">הרץ עד הסוף</button><button id="resetBtn">מהתחלה</button>
+      </div>
+      <dl class="regs">
+        <dt>הפקודה הבאה</dt><dd class="ltr" id="rPC"></dd>
+        <dt>אוגר A</dt><dd class="ltr" id="rA"></dd>
+        <dt>נקודות החיים של היריב <span class="ltr">$B7</span></dt><dd><span class="pips" id="pips"></span> <span id="rHP"></span></dd>
+        <dt>היריב חי <span class="ltr">$5E</span></dt><dd id="rAlive"></dd>
+      </dl>
+      <p id="say" aria-live="polite"></p>
+      <div class="row"><span class="muted">נקודות בהתחלה:</span><span class="row" id="hpBtns"></span></div>
+      <div class="row"><button id="hookBtn" aria-pressed="false">הזרקה של בעיטת העגור: כבויה</button></div>
+    </div>
+  </div>
+  <p>זה כל מה שמעבד עושה: קורא בית, מבין איזו פקודה זו, מבצע, ועובר לבא. למעבד של אפל II יש כ-150 פקודות כאלה, ורובן שורה אחת ב-JavaScript.</p>
+</section>
+
+<section>
+  <h2>איך מוסיפים מהלך בלי לשנות את המשחק</h2>
+  <p>באפל II אמיתי המעבד הוא שבב. כדי שיריץ קוד חדש היינו חייבים לשנות את הבתים של המשחק, כך שיקפצו אל הקוד שלנו. אצלנו המעבד הוא תוכנה שכתבנו, ולכן הקריאה לקוד החדש יושבת בתוך המעבד ולא בתוך המשחק. זו הלולאה שלו, בפישוט:</p>
+  <pre>step() {
+  const pc = cpu.pc;                        // the address of the next instruction
+  if (hooks.has(pc) &amp;&amp; runHook(pc)) return; // one of ours is registered here? run it
+  cpu.step();                               // otherwise: run the original instruction
+}</pre>
+  <p>לפני כל פקודה המעבד שואל: האם הכתובת שאני עומד להריץ נמצאת ברשימה? הרשימה היא טבלה ב-JavaScript, מחוץ לזיכרון של האפל. המשחק לא יודע שהיא קיימת.</p>
+  <p>זה אותו רעיון כמו נקודת עצירה בדיבאגר: מסמנים שורה, התוכנית נעצרת שם, משנים משתנה וממשיכים, והקוד של התוכנית לא השתנה. כאן אף אחד לא עוצר ידנית. הפונקציה שלנו רצה לבד בכל פעם שהמעבד מגיע לכתובת.</p>
+  <p><b>נסה בעצמך:</b> חזור להדגמה למעלה, הדלק את "הזרקה של בעיטת העגור" והרץ מהתחלה. היריב יאבד שתי נקודות במקום אחת, והבתים של השגרה נשארים אותם בתים. זו ההזרקה האמיתית מהמשחק, בפישוט קל:</p>
+  <pre>m.hook(0x7292, [0x20, 0x0c, 0x0b], () =&gt; {
+  if (craneKickLanded) ram[0xB7]--;   // one more point off the opponent
+  return false;                       // and let the original instruction run
+});</pre>
+  <p>שלושת המספרים בסוגריים הם הבתים שאנחנו מצפים למצוא בכתובת (<code>JSR $0B0C</code>). אם יש שם משהו אחר, ההזרקה לא פועלת. כך קוד אחר שנטען לאותה כתובת לא נפגע.</p>
+</section>
+
+<section>
+  <h2>בעיטת העגור, תחנה אחר תחנה</h2>
+  <p>בעיטת העגור מ"קראטה קיד" היא רעיון של Arik Shemesh: עמידה על רגל אחת בידיים פרושות, ניתור, ובעיטה ברגל שעמד עליה. היא נוגעת במשחק בשש כתובות במהלך כל פריים. בחר תחנה מהרשימה, והחלף בין שני המצבים כדי לראות מה ההזרקה עושה בכל אחד.</p>
+  <div class="md">
+    <div class="md-list" id="stations"></div>
+    <div class="panel">
+      <div class="row">
+        <button id="modeIdle" aria-pressed="false">אף מקש חדש לא נלחץ</button>
+        <button id="modeCrane" aria-pressed="true">לחצו C, בעיטת העגור</button>
+      </div>
+      <div id="stationPanel" class="panel" style="border:0;padding:0" aria-live="polite"></div>
+    </div>
+  </div>
+  <p><b>ומה עם הקצב?</b> מהירות המשחק נגזרת מספירת מחזורי המעבד. לכן כשאנחנו מציירים במקום המשחק, אנחנו מוסיפים לספירה את מספר המחזורים שהמקור היה מבזבז על הציור. בלי זה המשחק היה מאיץ בכל בעיטה.</p>
+</section>
+
+<section>
+  <h2>מאיפה מגיע הציור של המהלכים החדשים</h2>
+  <p>במשחק המקורי אין תנוחה של עגור, אז ציירנו אותה. כל תנוחה מוגדרת כזוויות מפרקים של דמות אחת. הדמות מצוירת לפיקסלים בסגנון המקור, לפי המידות של הלוחם במשחק, והתוצאה נשמרת בקובץ שהמשחק טוען. אלה ארבעת הפריימים של בעיטת העגור.</p>
+  <div class="viewer">
+    <div class="screen"><canvas id="art" width="100" height="70" style="width:320px"></canvas></div>
+    <div class="panel">
+      <div class="row" id="frameBtns"></div>
+      <h3 id="frameName"></h3>
+      <div class="flags" id="flags"></div>
+      <p class="muted">הזוויות שמגדירות את התנוחה:</p>
+      <pre id="pose"></pre>
+    </div>
+  </div>
+  <p class="muted">הדגלים הם מה שקוד ההזרקה קורא: כמה פריימים להחזיק את התנוחה, אם היריב יכול לפגוע, ובאיזה פריים הבעיטה נשפטת.</p>
+</section>
+
+<section>
+  <h2>למה העור מצויר בפסים</h2>
+  <p>במסך של אפל II אין צבע לכל פיקסל. פיקסל דולק לבדו נראה צבעוני, והצבע תלוי אם העמודה שלו זוגית. שני פיקסלים דולקים צמודים נראים לבנים. פיקסל כבוי בודד בין שניים דולקים מתמלא בצבע. לכן המקור מצייר עור כפסים של פיקסל בודד, והציור שלנו עושה אותו דבר. הדלק וכבה פיקסלים בשורה כדי לראות.</p>
+  <div class="bits" id="bits"></div>
+  <div class="screen rowscreen"><canvas id="rowOut" width="28" height="3"></canvas></div>
+  <div class="row">
+    <button id="pSkin">עור (פסים)</button><button id="pWhite">בגד לבן</button><button id="pLine">קו שחור על לבן</button><button id="pClear">נקה</button>
+    <button id="hiBit" aria-pressed="true">ביט פלטה: כחול וכתום</button>
+  </div>
+</section>
+
+<section>
+  <h2>ממה בנוי המחשב שכתבנו</h2>
+  <p>אפשר לכתוב אפל II ב-450 שורות כי המחשב עצמו פשוט מאוד. אין בו שבב גרפיקה: המסך הוא אזור בזיכרון, והדפדפן פשוט מצייר אותו. אין בו שבב קול: הרמקול הוא ביט אחד שהתוכנה מזיזה. המקלדת היא כתובת אחת בזיכרון.</p>
+  <p>וזה לא אמולטור כללי. הוא מממש רק את מה ש-Karateka צריך, וסביר שתוכנות אפל אחרות לא ירוצו עליו. באמולטור מלא רוב העבודה היא בתזמון מסך מדויק, בכרטיסי הרחבה ובהגנות העתקה. בחר שכבה מהרשימה:</p>
+  <div class="md">
+    <div class="md-list" id="stack"></div>
+    <div class="panel" id="layerPanel" aria-live="polite"></div>
+  </div>
+</section>
+
+<section>
+  <h2>שאלות שעולות</h2>
+  <div class="qa">
+    <div><b>אז שיניתם את קוד המשחק?</b><span>לא. אף בית של המשחק לא שונה. כל התוספות הן פונקציות JavaScript שהמעבד שלנו מפעיל כשהוא מגיע לכתובות מסוימות.</span></div>
+    <div><b>אתם מבינים את כל קוד המכונה של המשחק?</b><span>רק חלק ממנו. קראנו את רשימת הפקודות, הרצנו את המשחק ובדקנו אילו כתובות רצות ואילו בתים משתנים. כך זיהינו את מה שהיה נחוץ: איפה נקרא הקלט, איפה מצויר הלוחם, איפה נשפטת פגיעה ואיפה שמורות נקודות החיים. את רוב המשחק לא פענחנו.</span></div>
+    <div><b>באיזו שפה כתבתם?</b><span>הכול JavaScript: המחשב, הדף, המהלכים החדשים, כלי הציור והבדיקות. לא כתבנו אף שורת אסמבלי. הדבר היחיד בשפת מכונה הוא המשחק עצמו.</span></div>
+    <div><b>למה לא לכתוב את המשחק מחדש?</b><span>זו הייתה התוכנית המקורית: לתרגם שגרה אחר שגרה ולבדוק כל אחת מול המקור. בינתיים תורגם רק מנוע הציור, והוא עדיין לא מחובר למשחק החי. להריץ את המקור יצא מהיר יותר, והוא נאמן בהגדרה.</span></div>
+    <div><b>איפה המשחק עצמו?</b><span>קובץ הדיסק לא נמצא באתר. הדף מבקש מהשחקן קובץ דיסק משלו, והקוד שלנו הוא רק המחשב שמריץ אותו.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>איך יודעים שזה נאמן למקור</h2>
+  <div class="wide"><table class="plain">
+    <tr><th>מה נבדק</th><th>תוצאה</th></tr>
+    <tr><td>המחשב שלנו מול אמולטור ייחוס עם ה-ROM האמיתי של אפל, על קטע ההדגמה של המשחק</td><td>514 פריימים זהים, בלי הבדל תזמון</td></tr>
+    <tr><td>משחק עם התוספות מותקנות, כשאף מקש חדש לא נלחץ</td><td>כל פריים וכל ספירת מחזורים זהים למשחק בלי התוספות</td></tr>
+    <tr><td>שמירת מצב וטעינה למחשב חדש</td><td>המשחק ממשיך זהה פריים אחרי פריים, גם מאמצע סלטה</td></tr>
+    <tr><td>בעיטת העגור מול השומר הראשון</td><td>פוגעת, מורידה שתי נקודות, ולא משאירה שאריות על הרקע</td></tr>
+  </table></div>
+  <p><b>מה לא נבדק.</b> שלבים 2 ו-3 והסיום. הבוט שבודק את המשחק נהרג בשער שבסוף שלב 1. הסיכון שם הוא קריאה לקושחה של אפל שלא מימשנו. במקרה כזה המשחק נעצר עם הודעה, ולא ממשיך בשקט בצורה שגויה.</p>
+</section>
+
+<footer>
+  Karateka: ג'ורדן מכנר, 1984. המחשב, הדף והתוספות: אורי מוסנזון, נכתבו יחד עם Claude. בעיטת העגור: רעיון של Arik Shemesh.
+  <a href="./">למשחק</a>
+</footer>
+</main>
+
+<script>
+const ART = [{"ax":11,"top":-43,"hold":2,"rows":["o#o.................o#o..","o#o#.....######....#o#o..",".#o#....######.....#o#...",".#o##...####o#....##o#...","..####..##o#o....####....","..####..##o#o#...####....","...####.##o#o#..####.....","...#####.#o#oo.#####.....","....######o########......","....###############......",".....#############.......",".......#########.........",".......#########.........",".......#########.........",".......#########.........",".......#########.........","......ooooooooo#########.","......oooo###############",".......##################",".......#################.",".......##########oo#####.",".......##########oo####..",".......##########.#####..",".......#########.######..","........#######..#####...","........#######..#####...","........#######..####....","........#######.##o##....",".........#####..##o#.....",".........#####..##o#.....",".........#####....o#o....",".........#####....o#o....",".........#####.....#o....",".........#####...........",".........#####...........",".........#####...........",".........#####...........",".........#####...........",".........#####...........",".........####............",".........#o#o#...........",".........#o#o#o#o........",".........#o#o#o#.........","..........##............."]},{"ax":14,"top":-46,"move":1,"air":true,"swish":true,"rows":["............######..........","...........######........o#.",".o.........####o#.......#o#.","#o#........##o#o.......o#o#.","#o#o#......##o#o#.....#o#o..",".o#o##.....##o#o#....#####..","..#o###.....#o#o#...#####...","...#####....#o###..#####....","....###################.....",".....##################.....","......################......",".......#############........","..........########o.........","..........#########.........","..........#########.........","..........##oooooooo........",".........oooo###ooo.........","..........##########........","..........#############.....","..........################..","..........#################.","..........##################","..........##################","...........#########oo#####.","...........########oo#####o.",".............###...o######..","....................#####o..","...................######o..","...................####oo##.","..................#####oo##.","..................#o######..","..................#o#oo###..","..................#o#oo##...","....................#o###...","....................#o#o#...",".....................o#o#...",".....................##o#...",".......................o#o..",".......................o#o..","........................#o.."]},{"ax":15,"top":-47,"move":1,"air":true,"hold":1,"swish":true,"strike":true,"rows":["...........######............................","..........######.............................","..........####o#.............................","..........##o#o..............................","..........##o#o#.............................","..........##o#o#.............................","...........#o#o#.............................","..........##o####.........................o#o","..........########.....#o#............##o#o#o",".........#########....o#o#........####o#o#o..",".........#########...#o#o#....########o#o#...",".........#########.###o#o..##############....",".........###############oo##############.....",".......################oo############........",".....#########oo######oo##########...........","..########oooo#oo###############.............","o#o######ooo###oo##oo########................","o#o####....######ooo#######..................","o#o#.......#############.....................","...........###########.......................","............########.........................","............########.........................","............########.........................",".............########........................","..............#######........................","...............######........................","...............#######.......................","................######.......................","................######.......................",".................#####.......................",".................#####.......................",".................#####.......................",".................#####.......................",".................#####.......................",".................#####.......................",".................#####.......................",".................####........................",".................####........................",".................#o##........................",".................#o#o........................","..................o#o........................","...................#o#.......................","....................o#.......................","....................o#......................."]},{"ax":5,"top":-42,"hold":1,"rows":[".######............","######.............","####o#.............","##o#o..............","##o#o#.............","##o#o#.............",".#o#o#.............",".#o####............",".#######.......#o..",".########.....o#o..","#########....#o#o..","#########..###o#...","#########.####ooo..",".#############oo...",".############oo....",".###ooo#####oo.....","oooo##oo###o.......",".#######oooo######.",".##################",".##################",".##################",".#################.","..#########oo#####.","..#######...#####..","...######..######..","...######..#####...","...######..#####...","...######.#####....","...######.##o##....","...######.##o#.....","...######.##o#.....","...######..#o#o....","...######...o#o....","...#####.....#o....","...#####...........","...#####...........","...#####...........","...#####...........","...#####...........","...###o#o..........","...#o#o#o#o........","....o#o#o#o........","....###............"]}];
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const pick = (buttons, chosen) => buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === chosen)));
+const hex = (n, w = 2) => '$' + n.toString(16).toUpperCase().padStart(w, '0');
+
+// ---- a pocket 6502: the nine instructions this routine needs, running the game's own bytes
+const PROG = [
+  { a: 0x7292, b: [0x20, 0x0c, 0x0b], asm: 'JSR $0B0C', he: 'קרא לשגרה "היריב סופג מכה"' },
+  { a: 0x7295, b: [0xa9, 0x01], asm: 'LDA #$01', he: 'המשך המשחק', gap: true },
+  { a: 0x0b0c, b: [0x4c, 0xd2, 0x0b], asm: 'JMP $0BD2', he: 'קפוץ אל השגרה עצמה', gap: true },
+  { a: 0x0bd2, b: [0xa5, 0xb7], asm: 'LDA $B7', he: 'טען את נקודות החיים של היריב' },
+  { a: 0x0bd4, b: [0xf0, 0x0c], asm: 'BEQ $0BE2', he: 'אם אפס, אין מה להוריד: דלג לסוף' },
+  { a: 0x0bd6, b: [0xa9, 0x00], asm: 'LDA #$00', he: 'טען את המספר אפס' },
+  { a: 0x0bd8, b: [0x85, 0x5c], asm: 'STA $5C', he: 'אפס מונה פנימי' },
+  { a: 0x0bda, b: [0xc6, 0xb7], asm: 'DEC $B7', he: 'הורד ליריב נקודה אחת' },
+  { a: 0x0bdc, b: [0xd0, 0x04], asm: 'BNE $0BE2', he: 'אם נשארו לו נקודות, דלג לסוף' },
+  { a: 0x0bde, b: [0xa9, 0x00], asm: 'LDA #$00', he: 'טען את המספר אפס' },
+  { a: 0x0be0, b: [0x85, 0x5e], asm: 'STA $5E', he: 'סמן: היריב כבר לא חי' },
+  { a: 0x0be2, b: [0x60], asm: 'RTS', he: 'חזור אל מי שקרא לשגרה' },
+];
+const ram = new Uint8Array(0x10000);
+let cpu, startHP = 3, hookOn = false, said = '';
+const rows = new Map();
+PROG.forEach((L) => { const tr = el('tr', L.gap ? 'gap' : ''); const he = el('td', 'he', L.he); he.dir = 'rtl';
+  tr.append(el('td', 'ltr', hex(L.a, 4)), el('td', 'ltr bytes', L.b.map((x) => x.toString(16).toUpperCase().padStart(2, '0')).join(' ')), el('td', 'ltr', L.asm), he);
+  $('listing').append(tr); rows.set(L.a, tr); });
+function reset() {
+  ram.fill(0); PROG.forEach((L) => ram.set(L.b, L.a)); ram[0xb7] = startHP; ram[0x5e] = 1;
+  cpu = { pc: 0x7292, a: 0, z: 0, stack: [], done: false, hooked: false };
+  said = 'המעבד עומד לפני הפקודה המסומנת. לחץ על "צעד".'; show();
+}
+function step() {
+  if (cpu.done) return;
+  const pc = cpu.pc;
+  if (hookOn && pc === 0x7292 && !cpu.hooked) {   // what GameMachine.step() does before every instruction
+    cpu.hooked = true; if (ram[0xb7] > 1) ram[0xb7]--;
+    said = 'המעבד הגיע לכתובת $7292, והיא ברשימת ההזרקות. הפונקציה שלנו רצה והורידה ליריב נקודה. עכשיו תרוץ הפקודה המקורית, כרגיל.'; return show();
+  }
+  const op = ram[pc], lo = ram[pc + 1], word = lo | (ram[pc + 2] << 8), rel = pc + 2 + (lo < 128 ? lo : lo - 256);
+  const nz = (v) => { cpu.z = v === 0 ? 1 : 0; return v; };
+  switch (op) {
+    case 0x20: cpu.stack.push(pc + 3); cpu.pc = word; break;
+    case 0x4c: cpu.pc = word; break;
+    case 0xa5: cpu.a = nz(ram[lo]); cpu.pc += 2; break;
+    case 0xa9: cpu.a = nz(lo); cpu.pc += 2; break;
+    case 0x85: ram[lo] = cpu.a; cpu.pc += 2; break;
+    case 0xc6: ram[lo] = nz((ram[lo] - 1) & 255); cpu.pc += 2; break;
+    case 0xf0: cpu.pc = cpu.z ? rel : pc + 2; break;
+    case 0xd0: cpu.pc = cpu.z ? pc + 2 : rel; break;
+    case 0x60: cpu.pc = cpu.stack.pop(); break;
+  }
+  const L = PROG.find((x) => x.a === pc);
+  said = 'בוצע: ' + L.he + '.';
+  if (op === 0xf0 || op === 0xd0) said += cpu.pc === rel ? ' התנאי התקיים, קופצים.' : ' התנאי לא התקיים, ממשיכים לפקודה הבאה.';
+  if (cpu.pc === 0x7295) { cpu.done = true; said = `השגרה חזרה אל המשחק. היריב התחיל עם ${startHP} נקודות ונשאר עם ${ram[0xb7]}.` + (ram[0x5e] ? '' : ' הוא מת.'); }
+  show();
+}
+function show() {
+  rows.forEach((tr, a) => tr.classList.toggle('now', a === cpu.pc));
+  $('rPC').textContent = hex(cpu.pc, 4); $('rA').textContent = hex(cpu.a);
+  $('pips').replaceChildren(...[0, 1, 2].map((i) => el('span', 'pip' + (i < ram[0xb7] ? '' : ' off'))));
+  $('rHP').textContent = ram[0xb7]; $('rAlive').textContent = ram[0x5e] ? 'כן' : 'לא';
+  $('say').textContent = said; $('stepBtn').disabled = $('runBtn').disabled = cpu.done;
+}
+$('stepBtn').onclick = step;
+$('runBtn').onclick = () => { for (let i = 0; i < 40 && !cpu.done; i++) step(); };
+$('resetBtn').onclick = reset;
+const hpBtns = [1, 2, 3].map((n) => { const b = el('button', '', String(n)); b.onclick = () => { startHP = n; pick(hpBtns, b); reset(); }; $('hpBtns').append(b); return b; });
+pick(hpBtns, hpBtns[2]);
+$('hookBtn').onclick = () => { hookOn = !hookOn; $('hookBtn').setAttribute('aria-pressed', String(hookOn)); $('hookBtn').textContent = 'הזרקה של בעיטת העגור: ' + (hookOn ? 'פועלת' : 'כבויה'); reset(); };
+reset();
+
+// ---- the layers
+const LAYERS = [
+  { who: 'ours', name: 'הדף בדפדפן', file: 'index.html, display.js, speaker.js', points: [
+    'מצייר את זיכרון המסך של האפל (280 על 192 נקודות) על המסך שלך, לפי כללי הצבע של המחשב המקורי.',
+    'הופך את הקליקים של הרמקול לקול, ומעביר מקשים וכפתורי מגע למחשב.',
+    'בזמן שהכונן מסתובב הוא מריץ את המחשב הכי מהר שאפשר, ולכן הטעינה לוקחת שבריר שנייה במקום חצי דקה.' ] },
+  { who: 'ours', name: 'המהלכים החדשים', file: 'mawashi.js, flip.js, acro_art.js', points: [
+    'מוואשי גרי (E), סלטות (F, D) ובעיטת העגור (C).',
+    'הקוד הזה לא מחליף את המשחק. הוא צופה בכמה כתובות בזיכרון ומתערב רק בזמן שהשחקן מבצע מהלך חדש.',
+    'כשאף מקש חדש לא נלחץ, הוא לא משנה אף בית ואף מחזור.' ] },
+  { who: 'ours', name: 'רשימת ההזרקות', file: 'GameMachine.hook()', points: [
+    'טבלה של כתובות בקוד המקורי, ולכל אחת פונקציה שלנו שרצה כשהמעבד מגיע אליה.',
+    'הפונקציה יכולה לשנות אוגר או בית בזיכרון ולתת למקור להמשיך, או לבצע את העבודה בעצמה ולחזור.',
+    'ההזרקות פועלות רק אחרי שהמשחק עצמו נטען, ורק אם הבתים בכתובת הם מה שציפינו.' ] },
+  { who: 'ours', name: 'המעבד והמחשב', file: 'cpu6502.js, machine.js', points: [
+    'מעבד 6502 שמריץ פקודה אחר פקודה וסופר מחזורים: 166 שורות.',
+    '64K זיכרון, מקלדת, רמקול, מתגי המסך וכונן דיסקטים שמגיש את המסלולים בקידוד המקורי: 173 שורות.',
+    'אין כאן שום ידע על Karateka. זה מחשב כללי, מינימלי.' ] },
+  { who: 'ours', name: 'תחליפי הקושחה', file: 'firmware.js', points: [
+    'באפל אמיתי יש ROM, שבב עם תוכנת מערכת של אפל. אצלנו אין אותו בכלל.',
+    'המשחק צריך ממנו מעט מאוד: את אתחול הכונן, לולאת השהיה אחת (שמומשה עם ספירת מחזורים מדויקת), שלוש שגרות אתחול מסך ובית שמזהה את דגם המחשב.',
+    'כל אחד מאלה הוא פונקציית JavaScript קצרה, 110 שורות בסך הכול. קריאה לשגרה שלא מימשנו עוצרת את המשחק עם הודעה.' ] },
+  { who: 'orig', name: 'המשחק עצמו', file: 'karateka.dsk, 143,360 bytes', points: [
+    'קוד המכונה של Karateka, הציורים, הצלילים ומערכת ההפעלה של הדיסק, בדיוק כפי שנצרבו ב-1984.',
+    'כל מה שקורה במשחק מוחלט כאן: התנועה, הבינה של היריבים, הפגיעות, הגלילה, הציור.',
+    'הקובץ לא נמצא באתר.' ] },
+];
+const layerBtns = LAYERS.map((L) => {
+  const b = el('button', L.who); b.append(el('b', '', L.name), el('small', 'ltr', L.file));
+  b.onclick = () => { pick(layerBtns, b); const p = $('layerPanel'); p.replaceChildren(el('h3', '', L.name));
+    const tag = el('div', 'tag', L.who === 'ours' ? 'קוד שכתבנו' : 'המקור, 1984'); tag.style.color = `var(--${L.who})`; p.append(tag);
+    const ul = el('ul'); L.points.forEach((t) => ul.append(el('li', '', t))); p.append(ul); };
+  $('stack').append(b); return b;
+});
+layerBtns[3].click();
+
+// ---- the stations of one frame
+const STATIONS = [
+  { addr: '$6E00', name: 'קלט השחקן', code: '6E00  LDA $C4      ; keyboard or joystick?\n6E02  BNE $6E69',
+    idle: 'שום דבר לא ממתין. הפקודה המקורית רצה כרגיל והמשחק קורא את המקלדת.',
+    crane: 'אם הלוחם בעמדת קרב שקטה, הרצף מתחיל. כל עוד הרצף נמשך, שגרת הקלט המקורית מדולגת, כך שמקשים אחרים לא משפיעים באמצע הבעיטה.' },
+  { addr: '$6400', name: 'צעד אנימציה', code: '6400  LDA #$FF\n6402  STA $2B      ; "no attack this frame"',
+    idle: 'עובר הלאה. המשחק מקדם את האנימציה של הלוחם בעצמו.',
+    crane: 'מקדמים את הפריים שלנו (או מחזיקים אותו עוד פריים), מזיזים את הלוחם עמודה קדימה אם יש מקום, ומפעילים את צליל השריקה. המקור ממשיך לרוץ וחושב שהלוחם עומד בעמדת קרב.' },
+  { addr: '$B942', name: 'האם השחקן פגע', code: 'B942  LDY $6B      ; the player\'s attack (FF = none)\nB944  JSR $7366    ; judge it against the opponent\nB947  STA $41      ; the result',
+    idle: 'עובר הלאה. המשחק שופט את ההתקפה שהשחקן באמת ביצע.',
+    crane: 'בפריים של הבעיטה מחליפים את הפקודה הראשונה: במקום "אין התקפה" שמים באוגר Y את המספר 0, שהוא הבעיטה הגבוהה של המשחק, וממשיכים מ-$B944. מכאן המשחק עצמו מחליט אם זו פגיעה, לפי המרחק ולפי התנוחה של היריב, בטבלאות המקוריות שלו.' },
+  { addr: '$B963', name: 'האם היריב פגע', code: 'B960  JSR $7366    ; judge the opponent\'s attack\nB963  STA $40      ; the result',
+    idle: 'עובר הלאה. אם היריב פגע, השחקן סופג.',
+    crane: 'בשני הפריימים שבהם הלוחם באוויר, תוצאה של פגיעה מתאפסת לפני שהיא נשמרת: המכה חולפת מתחתיו. בעמידה על רגל אחת ובנחיתה לא נוגעים בתוצאה, והוא חשוף.' },
+  { addr: '$7292', name: 'היריב סופג', code: '7292  JSR $0B0C    ; one point off the opponent',
+    idle: 'עובר הלאה. פגיעה רגילה מורידה נקודה אחת.',
+    crane: 'אם הפגיעה באה מבעיטת העגור, מורידים ליריב נקודה נוספת לפני שהמקור מוריד את שלו. כך יוצא שתיים. זו השגרה שרצה בהדגמה למעלה.' },
+  { addr: '$6811', name: 'ציור הלוחם', code: '6811  LDX $20      ; which pose\n6813  LDA $50      ; fine scroll position',
+    idle: 'עובר הלאה. המשחק מצייר את הלוחם מהציורים המקוריים.',
+    crane: 'מציירים את הפריים שלנו ישר לזיכרון המסך וחוזרים בלי להריץ את שגרת הציור המקורית. לספירת המחזורים מוסיפים את מה שהמקור היה מבזבז על ציור, בערך 17,000 מחזורים. מה שציירנו מעל הרצועה שהמשחק מצייר מחדש נרשם, ומוחזר בפריים הבא.' },
+];
+let mode = 'crane', station = 2;
+const stationBtns = STATIONS.map((S, i) => { const b = el('button', 'ours'); b.append(el('b', '', S.name), el('small', 'ltr', S.addr)); b.onclick = () => { station = i; showStation(); }; $('stations').append(b); return b; });
+function showStation() {
+  const S = STATIONS[station], p = $('stationPanel'); pick(stationBtns, stationBtns[station]);
+  const v = el('div', 'verdict' + (mode === 'crane' ? ' hit' : ''));
+  v.append(el('div', 'tag', mode === 'crane' ? 'ההזרקה מתערבת' : 'ההזרקה לא עושה כלום'), el('div', '', S[mode]));
+  p.replaceChildren(el('h3', '', S.name), v, el('p', 'muted', 'הקוד המקורי בכתובת הזאת:'), el('pre', '', S.code));
+}
+const setMode = (m) => { mode = m; pick([$('modeIdle'), $('modeCrane')], m === 'idle' ? $('modeIdle') : $('modeCrane')); showStation(); };
+$('modeIdle').onclick = () => setMode('idle'); $('modeCrane').onclick = () => setMode('crane');
+showStation();
+
+// ---- Apple II hi-res colours: the same rule the game's display uses
+const PALETTE = ['#000000', '#ffffff', '#ff44fd', '#14f53c', '#14cffd', '#ff6a3c'];
+function colours(bits, hi) {   // bits: array of 0/1 along a row
+  return bits.map((on, x) => { const l = bits[x - 1] || 0, r = bits[x + 1] || 0;
+    if (on) return (l || r) ? 1 : (hi ? ((x & 1) ? 5 : 4) : ((x & 1) ? 3 : 2));
+    return (l && r) ? (hi ? ((x & 1) ? 4 : 5) : ((x & 1) ? 2 : 3)) : 0; });
+}
+
+// ---- the crane kick frames
+const FRAMES = [
+  { name: 'עמידת העגור', pose: "T: 180, head: 0,\nleg:  [102, 122, 24],   // the raised knee\nleg2: [0, 2, 90],       // the standing leg\narm:  [122, 28], arm2: [-122, -28]" },
+  { name: 'הניתור', pose: "T: 183, head: -2, hip: 27,\nleg:  [74, 104, 30],    // the standing leg folds\nleg2: [58, 66, 30],     // the raised one starts down\narm:  [104, 34], arm2: [-104, -34]" },
+  { name: 'הבעיטה', pose: "T: 193, head: -9, hip: 29,\nleg:  [97, 2, 118], reach: 1.2,   // front snap kick\nleg2: [8, 22, 30],\narm:  [34, 84], arm2: [-58, -26]" },
+  { name: 'הנחיתה', pose: "T: 185, head: -3,\nleg:  [84, 112, 30],    // the kicking leg snapped back\nleg2: [-2, 6, 90],      // down on the other leg\narm:  [44, 84], arm2: [24, 92]" },
+];
+const actx = $('art').getContext('2d');
+function drawFrame(i) {
+  const f = ART[i], W = 100, H = 70, FLOOR = 62, X0 = 40;
+  actx.fillStyle = '#000'; actx.fillRect(0, 0, W, H);
+  f.rows.forEach((row, k) => { const y = FLOOR + f.top + k; const bits = new Array(W).fill(0);
+    [...row].forEach((ch, c) => { if (ch === '#') bits[X0 - f.ax + c] = 1; });
+    colours(bits, 1).forEach((col, x) => { if (col) { actx.fillStyle = PALETTE[col]; actx.fillRect(x, y, 1, 1); } }); });
+  actx.fillStyle = '#555'; actx.fillRect(0, FLOOR + 1, W, 1);
+  $('frameName').textContent = FRAMES[i].name; $('pose').textContent = FRAMES[i].pose;
+  const flags = [[`מוחזק ${(f.hold || 0) + 1} פריימים`, !!f.hold], ['באוויר: מכות לא פוגעות', !!f.air], ['כאן הבעיטה נשפטת', !!f.strike], [`זז ${f.move || 0} עמודות`, !!f.move], ['צליל שריקה', !!f.swish]];
+  $('flags').replaceChildren(...flags.map(([t, on]) => el('span', 'flag' + (on ? ' on' : ''), t)));
+  pick(frameBtns, frameBtns[i]);
+}
+const frameBtns = FRAMES.map((F, i) => { const b = el('button', '', (i + 1) + '. ' + F.name); b.onclick = () => { stop(); drawFrame(i); }; $('frameBtns').append(b); return b; });
+let timer = 0;
+const playBtn = el('button', '', 'נגן'); $('frameBtns').append(playBtn);
+function stop() { clearTimeout(timer); timer = 0; playBtn.textContent = 'נגן'; }
+playBtn.onclick = () => { if (timer) return stop(); playBtn.textContent = 'עצור'; let i = 0;
+  const tick = () => { drawFrame(i); const hold = (ART[i].hold || 0) + 1; i = (i + 1) % ART.length; timer = setTimeout(tick, 200 * hold + (i === 0 ? 600 : 0)); }; tick(); };
+drawFrame(0);
+
+// ---- the colour row
+const N = 28, row = new Array(N).fill(0); let hiBit = 1;
+const rctx = $('rowOut').getContext('2d');
+const bitBtns = row.map((_, i) => { const b = el('button', 'bit'); b.setAttribute('aria-label', 'פיקסל ' + (i + 1)); b.onclick = () => { row[i] ^= 1; paintRow(); }; $('bits').append(b); return b; });
+function paintRow() { bitBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(!!row[i])));
+  colours(row, hiBit).forEach((col, x) => { rctx.fillStyle = PALETTE[col]; rctx.fillRect(x, 0, 1, 3); }); }
+const preset = (fn) => () => { for (let i = 0; i < N; i++) row[i] = fn(i); paintRow(); };
+$('pSkin').onclick = preset((i) => (i > 3 && i < 24 && i % 2) ? 1 : 0);
+$('pWhite').onclick = preset((i) => (i > 3 && i < 24) ? 1 : 0);
+$('pLine').onclick = preset((i) => (i > 3 && i < 24 && i !== 13 && i !== 14) ? 1 : 0);
+$('pClear').onclick = preset(() => 0);
+$('hiBit').onclick = () => { hiBit ^= 1; $('hiBit').setAttribute('aria-pressed', String(!!hiBit)); $('hiBit').textContent = hiBit ? 'ביט פלטה: כחול וכתום' : 'ביט פלטה: ירוק וסגול'; paintRow(); };
+$('pSkin').onclick();
+</script>
+</body>
+</html>
