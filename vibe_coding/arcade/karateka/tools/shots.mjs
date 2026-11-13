@@ -1,6 +1,6 @@
 // The additions as the player sees them: plays a move in the real game and saves every
 // frame the screen showed, side by side.
-// usage: node tools/shots.mjs out.png <E|F|D> [show] [walk N]   (show = force the floor routine)
+// usage: node tools/shots.mjs out.png <E|F|D|C> [show] [walk N]   (show = force the floor routine)
 import { startGame } from './lab.mjs';
 import { installMawashi } from '../src/ext/mawashi.js';
 import { installFlip } from '../src/ext/flip.js';

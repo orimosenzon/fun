@@ -30,6 +30,7 @@
   kbd { background: #2c2c33; border-radius: 4px; padding: 1px 7px; font-family: ui-monospace, monospace; }
   .note { max-width: 760px; font-size: 13px; color: #8a8a94; text-align: center; line-height: 1.5; }
   .note a { color: #6cf; }
+  .credits { max-width: 760px; font-size: 14px; text-align: center; line-height: 1.7; border: 1px solid #3a3a44; border-radius: 8px; padding: 8px 18px; background: #16161a; }
 </style>
 </head>
 <body>
@@ -63,6 +64,7 @@
     <button data-k="65">👊 אמצע</button><button data-k="83">🦶 אמצע</button>
     <button data-k="90">👊 נמוך</button><button data-k="88">🦶 נמוך</button>
     <button data-k="69" style="grid-column: span 2">🌀 מוואשי גרי</button>
+    <button data-k="67" style="grid-column: span 2">🕊️ בעיטת העגור</button>
     <button data-k="68">⟲ סלטה אחורה</button><button data-k="70">סלטה קדימה ⟳</button>
   </div>
 </div>
@@ -73,9 +75,11 @@
   <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
   <tr><td><kbd>E</kbd></td><td>מוואשי גרי, בעיטה סיבובית: אטית יותר, ופגיעה שלה שווה שתיים (תוספת שלנו)</td></tr>
   <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות. מדי פעם, כשיש מקום, היא הופכת לסדרת קרקע שלמה (תוספת שלנו)</td></tr>
+  <tr><td><kbd>C</kbd></td><td>בעיטת העגור מ"קראטה קיד": עמידה על רגל אחת בידיים פרושות, ניתור, ובעיטה קדמית לפנים ברגל שעמד עליה. פגיעה שלה שווה שתיים, אבל בעמידה על רגל אחת הוא חשוף (רעיון של Arik Shemesh)</td></tr>
   <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
   <tr><td>💾 📂</td><td>שמירת המצב הנוכחי וחזרה אליו (תוספת שלנו). "הורד לקובץ" מעביר משחק למחשב אחר</td></tr>
 </table>
+<div class="credits"><b>תוספות שהציעו שחקנים</b><br>🕊️ בעיטת העגור מ"קראטה קיד" (<kbd>C</kbd>): רעיון של <b>Arik Shemesh</b></div>
 <div class="note">המשחק: ג'ורדן מכנר, 1984. האתר לא כולל את קובץ הדיסק של המשחק.</div>
 <script type="module">
 import { GameMachine } from './src/vm/firmware.js';

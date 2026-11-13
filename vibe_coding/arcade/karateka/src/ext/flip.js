@@ -7,15 +7,21 @@
 //
 // Every so often, when there is room for it, the somersault turns into a whole floor routine:
 // a handspring into a double somersault twice as high, a stuck landing and a salute.
+//
+// The crane kick (C) is Arik Shemesh's idea, and it is the one from The Karate Kid (1984): the fighter
+// stands on one leg with his knee up and his arms spread, hops, and snaps a front kick to the face
+// with the leg he was standing on. The kick itself is judged by the game, as one of its own high
+// kicks thrown from where he is, and a clean hit takes two points. On one leg he can be hit.
 // The figure is not taken from the game: it is a jointed model drawn in tools/figure.mjs,
 // posed after slow-motion footage of gymnasts and frozen into acro_art.js.
 import { blitArt } from './mawashi.js';
 import { ART } from './acro_art.js';
 
-const KEY_F = 0x46, KEY_D = 0x44;
+const KEY_F = 0x46, KEY_D = 0x44, KEY_C = 0x43;
 const PATIENCE = 3;              // frames a key press waits for the fighter to be ready
 const Z = { POSE: 0x20, TOP: 0x21, X: 0x22, STEP: 0x27, STEP2: 0x28, ATTACK: 0x2b, FACING: 0x2c, SHIFT: 0x50, PAGE: 0x07 };
-const ENEMY_X = 0x72, ENEMY_ALIVE = 0x5e, PLAYER_ALIVE = 0x5d, SWISH = 0x45, STANCE = 6;
+const ENEMY_X = 0x72, ENEMY_ALIVE = 0x5e, PLAYER_ALIVE = 0x5d, ENEMY_HEALTH = 0xb7, SWISH = 0x45, STANCE = 6;
+const HIGH_KICK = 0;             // the game's own number for the high kick, in its table of attacks
 const MIN_X = 3, MAX_X = 0x22, MIN_GAP = 8;
 const FLOOR = 161, HIP = 16;     // the floor row, and how far in front of the fighter's anchor his hips are
 const SHOW_ODDS = 5;             // one somersault in so many becomes the floor routine
@@ -26,7 +32,7 @@ export function installFlip(m) {
   const r = m.ram, c = m.cpu;
   // `under` remembers what was on the screen above the strip the game repaints itself
   // (one list per graphics page), so a high jump leaves no trail on the scenery
-  const st = { want: 0, polls: 0, frame: -1, held: 0, seq: 'front', dir: 0, inAir: false, flips: 0, shows: 0, dodged: 0, always: false, under: { 32: [], 64: [] } };
+  const st = { want: 0, polls: 0, frame: -1, held: 0, seq: 'front', dir: 0, inAir: false, flips: 0, shows: 0, dodged: 0, always: false, crane: false, cranes: 0, craneHits: 0, struck: false, landing: false, under: { 32: [], 64: [] } };
   m.flip = st;
   const player = () => r[Z.FACING] < 0x80;
   const flying = () => st.frame >= 0;
@@ -37,22 +43,27 @@ export function installFlip(m) {
 
   const pressKey = m.pressKey.bind(m);
   m.pressKey = (k) => {
-    if ((k === KEY_F || k === KEY_D) && m.inGame) { st.want = k === KEY_F ? 1 : -1; st.polls = PATIENCE; } else { st.want = 0; pressKey(k); }
+    if ((k === KEY_F || k === KEY_D || k === KEY_C) && m.inGame) { st.want = k === KEY_D ? -1 : 1; st.crane = k === KEY_C; st.polls = PATIENCE; } else { st.want = 0; pressKey(k); }
   };
 
   // the player's input for this frame
   m.hook(0x6e00, [0xa5, 0xc4, 0xd0, 0x65], () => {
     // this is the first thing the game does in a frame: clean the page it is about to paint, before it scrolls the scenery
     if (st.under[r[Z.PAGE]]?.length) restore(r[Z.PAGE]);
+    st.landing = false;
     if (!flying()) {
       if (!st.want || !player()) return false;
       if (st.polls-- <= 0) { st.want = 0; return false; }
       const ready = r[Z.POSE] === STANCE && r[Z.TOP] === STANCE && r[Z.STEP] === 0 && r[Z.STEP2] === 0 && r[PLAYER_ALIVE];
       if (!ready) return false;
       const plain = st.want > 0 ? 'front' : 'back', show = plain + 'Show';
-      const room = !blocked(r[Z.X] + st.want * travel(show), st.want);
-      st.seq = room && lucky() ? show : plain;
-      st.frame = 0; st.held = 0; st.dir = st.want; st.want = 0; st.first = true; st.flips++; if (st.seq === show) st.shows++;
+      if (st.crane) { st.seq = 'crane'; st.cranes++; }
+      else {
+        const room = !blocked(r[Z.X] + st.want * travel(show), st.want);
+        st.seq = room && lucky() ? show : plain;
+        st.flips++; if (st.seq === show) st.shows++;
+      }
+      st.frame = 0; st.held = 0; st.dir = st.want; st.want = 0; st.first = true; st.struck = false;
     }
     c.cycles += 60; m.rts(); return true;   // in the air the keys do nothing
   });
@@ -83,6 +94,18 @@ export function installFlip(m) {
   // the opponent's attack on the player has just been judged (result in A): in the air it misses
   m.hook(0xb963, [0x85, 0x40, 0x20, 0x1e, 0x70], () => {
     if (flying() && st.inAir && c.a !== 0) { c.a = 0; st.dodged++; }
+    return false;
+  });
+  // the game is about to judge the player's attack on the opponent: on the frame the crane kick
+  // snaps out, it judges a high kick (the fighter himself is still in his stance, attacking nothing)
+  m.hook(0xb942, [0xa4, 0x6b, 0x20, 0x66, 0x73], () => {
+    if (!flying() || st.struck || !ART[st.seq][st.frame].strike) return false;
+    st.struck = st.landing = true;
+    c.y = HIGH_KICK; c.z = 1; c.n = 0; c.pc = 0xb944; c.cycles += 3; return true;
+  });
+  // the opponent takes the hit: a crane kick takes a second point
+  m.hook(0x7292, [0x20, 0x0c, 0x0b], () => {
+    if (st.landing) { st.landing = false; st.craneHits++; if (r[ENEMY_HEALTH] > 1) r[ENEMY_HEALTH]--; }
     return false;
   });
 }
