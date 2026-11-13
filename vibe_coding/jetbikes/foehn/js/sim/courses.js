@@ -2,6 +2,7 @@
 // relative to the baked terrain when an event is built.
 import { groundAt, surfaceAt, T } from './terrain.js';
 import { clamp } from './vmath.js';
+import { castleCourse } from './castle.js';
 
 // helper: point on a valley centre line at a given x (main valley) or index fraction, shifted sideways
 function on(valley, t, off = 0) {
@@ -76,6 +77,11 @@ export const EVENTS = [
       G([2620, 1540], 7, 11), G([2960, 1380], 8, 12), G([2900, 1130], 8, 12), G([2560, 1160], 8, 11), G(atX('main', 2100, -60), 7, 11),
       G([1560, 2150], 10, 12, { finish: true })],
   },
+  {
+    id: 'castle', name: 'המבצר', tag: 'דרך השער, האולם הגדול, המסדרונות והמגדל, החוצה מעל התהום ומתחת לגשר',
+    start: { pad: 'castle', yaw: 0, up: [6, 7.5, 44] }, wind: { speed: 2, gust: 0.4, heading: 0.3 }, medals: [58, 72, 100],
+    cps: castleCourse,
+  },
 ];
 export const FREE = { id: 'free', name: 'טיסה חופשית', tag: 'בלי שעון. ניקוד על טיסה מהירה וקרובה לקרקע', start: { pad: 'base', yaw: 0 }, wind: { speed: 4, gust: 1, heading: 0.3 }, medals: null, cps: () => [] };
 
@@ -113,10 +119,11 @@ export function buildEvent(ev) {
   const start = { p: [sp[0], sp[1], sp[2]], yaw: ev.start.yaw, pad: ev.start.pad };
   const cps = ev.cps().map((c) => {
     if (c.land) { const p = pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15) }; }
-    return { type: c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish };
+    return { type: c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow };
   });
   // reference line: start (lifted), check-points (landings approached from above)
-  const nodes = [[start.p[0], start.p[1] + 22, start.p[2]], [start.p[0] + Math.cos(start.yaw) * 70, start.p[1] + 26, start.p[2] - Math.sin(start.yaw) * 70]];
+  const up = ev.start.up || [22, 26, 70];     // how the line leaves the pad: height above it, then height and distance of the first node
+  const nodes = [[start.p[0], start.p[1] + up[0], start.p[2]], [start.p[0] + Math.cos(start.yaw) * up[2], start.p[1] + up[1], start.p[2] - Math.sin(start.yaw) * up[2]]];
   const nodeOf = [];
   for (const c of cps) { nodeOf.push(nodes.length); nodes.push(c.type === 'land' ? [c.p[0], c.p[1] + 24, c.p[2]] : c.p); }
   const path = catmull(nodes, 10);
@@ -146,6 +153,10 @@ export function buildEvent(ev) {
     for (const [i, y] of pin) path[i][1] = y;
   }
   for (let i = 0; i < path.length; i++) path[i][1] = Math.max(path[i][1], surfaceAt(path[i][0], path[i][2]) + 5);
+  // confined stretches (the fortress) carry the speed the demo rider keeps there
+  const capOf = new Map();
+  cps.forEach((c, k) => { if (c.slow) capOf.set(nodeOf[k], c.v); });
+  for (const q of path) { const v = capOf.get(q.seg + 1) ?? capOf.get(q.seg); if (v) q.v = v; }
   let s = 0;
   path[0].s = 0;
   for (let i = 1; i < path.length; i++) { s += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1], path[i][2] - path[i - 1][2]); path[i].s = s; }

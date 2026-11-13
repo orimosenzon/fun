@@ -3,6 +3,7 @@ import { T, groundAt, normalAt, waterAt } from './terrain.js';
 import { fbm, hash2, mulberry32 } from './noise.js';
 import { clamp, sstep } from './vmath.js';
 import { EVENTS, buildEvent } from './courses.js';
+import { buildCastle, hitCastle } from './castle.js';
 
 export const S = { trees: null, count: 0, cellOf: null, cellStart: null, grid: 48, gn: 0, props: [], mask: null, ready: false };
 const TREELINE = 1980;
@@ -58,6 +59,7 @@ function makeMask() {
 }
 
 export function buildScenery() {
+  buildCastle();
   S.props = makeProps();
   S.mask = makeMask();
   const n = T.n, c = T.cell, half = T.half;
@@ -110,6 +112,7 @@ export function buildScenery() {
 
 // Does the point (world) touch a tree (trunk or the cone of its crown) or a building?
 export function hitScenery(p, pad = 0.35) {
+  if (hitCastle(p, pad)) return 'wall';
   const half = T.half, gs = S.grid, gn = S.gn;
   const ci = Math.floor((p[0] + half) / gs), cj = Math.floor((p[2] + half) / gs);
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {

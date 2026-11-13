@@ -13,6 +13,8 @@ import { buildSky } from './render/sky.js';
 import { buildWater, renderReflection, water } from './render/water.js';
 import { buildForest, updateForest } from './render/forest.js';
 import { buildProps, Gates } from './render/props.js';
+import { buildCastleMesh } from './render/castle.js';
+import { hitCastle, nearCastle } from './sim/castle.js';
 import { buildBike } from './render/bikeModel.js';
 import { FX } from './render/fx.js';
 import { Post } from './render/post.js';
@@ -81,6 +83,7 @@ async function boot() {
   buildForest(scene);
   await load(0.7, t('load.village'));
   const props = buildProps(scene);
+  const castle = buildCastleMesh(scene);
   const gates = new Gates(scene);
   const model = buildBike(); scene.add(model.root);
   const ghost = buildBike(true); ghost.root.visible = false; scene.add(ghost.root);
@@ -93,7 +96,7 @@ async function boot() {
     bakeSunShadow(sunInfo.sun);
     sun.color.copy(U.uSunCol.value); hemi.color.copy(U.uAmbSky.value); hemi.groundColor.copy(U.uAmbGnd.value);
     const hz = skyColor(U.uSunAz.value + 1.6, 0.03); scene.fog.color.setRGB(hz[0], hz[1], hz[2]);
-    props.setNight(clamp(1 - sunInfo.sun[1] / 0.16, 0, 1));
+    props.setNight(clamp(1 - sunInfo.sun[1] / 0.16, 0, 1)); castle.setNight(clamp(1 - sunInfo.sun[1] / 0.24, 0, 1));
     // reflections on the bike: the sky itself
     const es = new THREE.Scene(); const s2 = sky.clone(); es.add(s2);
     if (envRT) envRT.dispose();
@@ -128,6 +131,7 @@ async function boot() {
     const first = !save.best[id];
     if (id === 'first' && first) hud.hint(t('hint.first'));
     else if (id === 'free') hud.hint(t('hint.free'));
+    else if (id === 'castle' && first) hud.hint(t('hint.castle'));
     else hud.hint('');
     setTimeout(() => hud.hint(''), 14000);
   }
@@ -226,7 +230,8 @@ async function boot() {
         const side = Math.random() < 0.5 ? -1 : 1, ahead = 2.2 + Math.random() * 1.5;
         const x = b.p[0] + b.v[0] * ahead + fw[2] * side * (14 + Math.random() * 40) + fh[0] * 40, z = b.p[2] + b.v[2] * ahead - fw[0] * side * (14 + Math.random() * 40) + fh[2] * 40;
         const y = Math.max(surfaceAt(x, z) + 2.5 + Math.random() * 10, b.p[1] + b.v[1] * ahead - 12 + Math.random() * 16);
-        cine.p.set(x, y, z); cine.t = 5 + Math.random() * 3; if (!camInit) camLook.copy(tmpV); camInit = true;
+        cine.p.set(x, y, z); cine.t = 5 + Math.random() * 3;
+        if (hitCastle([x, y, z], 2)) cine.t = 0;                 // inside a wall: pick again next frame if (!camInit) camLook.copy(tmpV); camInit = true;
       }
       camera.position.copy(cine.p); camLook.lerp(tmpV, 1 - Math.exp(-dt * 9)); camera.up.set(0, 1, 0); camera.lookAt(camLook);
       targetFov = clamp(2200 / (d + 30), 16, 55);
@@ -239,6 +244,14 @@ async function boot() {
       const dx = camPos.x - b.p[0], dy = camPos.y - b.p[1], dz = camPos.z - b.p[2], dd = Math.hypot(dx, dy, dz), mx = dist + 2.5;
       if (dd > mx) camPos.set(b.p[0] + dx / dd * mx, b.p[1] + dy / dd * mx, b.p[2] + dz / dd * mx);
       camPos.y = Math.max(camPos.y, surfaceAt(camPos.x, camPos.z) + 0.9);
+      if (nearCastle(b.p)) {
+        // between walls: never let masonry come between the camera and the bike
+        const ax = b.p[0], ay = b.p[1] + 0.9, az = b.p[2];
+        for (let k = 1; k <= 12; k++) {
+          const u = k / 12;
+          if (hitCastle([ax + (camPos.x - ax) * u, ay + (camPos.y - ay) * u, az + (camPos.z - az) * u], 0.45)) { const f = Math.max(0.12, (k - 1) / 12); camPos.set(ax + (camPos.x - ax) * f, ay + (camPos.y - ay) * f, az + (camPos.z - az) * f); break; }
+        }
+      }
       camera.position.copy(camPos);
       camLook.set(b.p[0] + dir[0] * 9, b.p[1] + dir[1] * 9 + 1.0, b.p[2] + dir[2] * 9);
       // bank a little with the bike
@@ -283,7 +296,7 @@ async function boot() {
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
-      gates.update(game, time);
+      gates.update(game, time); castle.update(time, game.sim.windW);
       audio.engine(b, alive && mode === 'play', camera.position.distanceTo(model.root.position), camMode === 'cockpit');
       if (mode === 'play') {
         if (b.abLock && Math.floor(time * 4) % 2 === 0 && ctl.boost) hud.warn(t('warn.heat'));

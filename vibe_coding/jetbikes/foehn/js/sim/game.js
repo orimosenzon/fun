@@ -148,7 +148,7 @@ export class Game {
     const b = this.bike;
     // where a crash puts you back: at the check-point just passed, flying along the course
     if (c.type === 'land') this.respawnPose = { p: c.p, yaw: yprOf(b.q)[0], speed: 0 };
-    else this.respawnPose = { p: c.p, yaw: Math.atan2(-c.n[2], c.n[0]), speed: clamp(len(b.v), 30, 45), pitch: Math.asin(clamp(c.n[1], -1, 1)) };
+    else this.respawnPose = { p: c.p, yaw: Math.atan2(-c.n[2], c.n[0]), speed: c.slow ? clamp(len(b.v), 12, Math.min(c.v, 20)) : clamp(len(b.v), 30, 45), pitch: Math.asin(clamp(c.n[1], -1, 1)) };
     this.cp++;
     if (this.cp >= this.cps.length) this.finish();
   }

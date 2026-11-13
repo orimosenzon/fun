@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fbm, ridged, gnoise, mulberry32 } from '../js/sim/noise.js';
+import { SITE, FORECOURT, siteHeight } from '../js/sim/castleSite.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const N = 1025, CELL = 12, HALF = (N - 1) * CELL / 2;       // 12.288 km square
@@ -271,6 +272,18 @@ for (const [name, [x, z, r, amt = 1]] of Object.entries(PADS)) {
   if (name === 'hutLedge') y += 6;
   forDisc(x, z, r * 2.6, (k, d) => { const t = (1 - sstep(r, r * 2.6, d)) * amt; H[k] = H[k] * (1 - t) + y * t; });
   pads[name] = [x, +y.toFixed(2), z, r];
+}
+
+// ---------- the fortress rock: a plateau cut into the ridge end, cliffs below it, a dry moat ----------
+{
+  const HS = 4000 / 65535, y = Math.round(SITE.y / HS) * HS;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const lx = -HALF + i * CELL - SITE.x, lz = -HALF + j * CELL - SITE.z;
+    if (lx < -420 || lx > 320 || Math.abs(lz) > 280) continue;
+    const k = j * N + i;
+    H[k] = siteHeight(lx, lz, H[k], 2 * fbm((lx + 900) / 180, (lz + 900) / 180, 2, 131));
+  }
+  pads.castle = [SITE.x + FORECOURT.x, +y.toFixed(2), SITE.z + FORECOURT.z, FORECOURT.r];
 }
 
 // ---------- write ----------
