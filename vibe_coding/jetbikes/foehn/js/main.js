@@ -225,13 +225,15 @@ async function boot() {
     } else if (camMode === 'cine') {
       cine.t -= dt;
       const d = cine.p.distanceTo(tmpV.set(b.p[0], b.p[1], b.p[2]));
-      if (cine.t <= 0 || d > 420 || !camInit) {
+      if (cine.t <= 0 || d > 560 || !camInit) {
         // a new vantage point ahead of the bike, beside its path, low over the ground
-        const side = Math.random() < 0.5 ? -1 : 1, ahead = 2.2 + Math.random() * 1.5;
+        // (never further ahead than the bike can be followed from: at 450 km/h a point 3 s ahead was already out of range, and the view jumped every frame)
+        const side = Math.random() < 0.5 ? -1 : 1, ahead = Math.min(2.2 + Math.random() * 1.5, 300 / Math.max(V, 1));
         const x = b.p[0] + b.v[0] * ahead + fw[2] * side * (14 + Math.random() * 40) + fh[0] * 40, z = b.p[2] + b.v[2] * ahead - fw[0] * side * (14 + Math.random() * 40) + fh[2] * 40;
         const y = Math.max(surfaceAt(x, z) + 2.5 + Math.random() * 10, b.p[1] + b.v[1] * ahead - 12 + Math.random() * 16);
         cine.p.set(x, y, z); cine.t = 5 + Math.random() * 3;
-        if (hitCastle([x, y, z], 2)) cine.t = 0;                 // inside a wall: pick again next frame if (!camInit) camLook.copy(tmpV); camInit = true;
+        if (hitCastle([x, y, z], 2)) cine.t = 0;                 // inside a wall: pick again next frame
+        if (!camInit) camLook.copy(tmpV); camInit = true;
       }
       camera.position.copy(cine.p); camLook.lerp(tmpV, 1 - Math.exp(-dt * 9)); camera.up.set(0, 1, 0); camera.lookAt(camLook);
       targetFov = clamp(2200 / (d + 30), 16, 55);
