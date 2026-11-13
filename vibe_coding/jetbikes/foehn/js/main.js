@@ -334,7 +334,7 @@ async function boot() {
   // ---------------- go ----------------
   await load(0.9, t('load.engines'));
   toMenu();
-  if (Q.get('event')) { startEvent(Q.get('event')); if (Q.has('demo')) { auto = new Autopilot(game); game.stateT = 0.01; } }
+  if (Q.get('event') && [...EVENTS, FREE].some((e) => e.id === Q.get('event'))) { startEvent(Q.get('event')); if (Q.has('demo')) { auto = new Autopilot(game); game.stateT = 0.01; } }
   frame(performance.now());
   await load(1, '');
   $('load').classList.add('off');

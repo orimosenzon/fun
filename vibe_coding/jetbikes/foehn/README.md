@@ -11,7 +11,7 @@
 
 **משחק חי:** https://orimosenzon.github.io/fun/vibe_coding/jetbikes/foehn/ . אפשר להתקין אותו כאפליקציה (manifest + service worker), ואחרי טעינה ראשונה הוא עובד גם בלי רשת.
 
-**להרצה:** `python3 -m http.server 8790` בתיקייה, ואז `http://localhost:8790/`. אין שלב בנייה ואין תלות ברשת: Three.js נמצא ב-`lib/`.
+**להרצה:** `python3 tools/serve.py` בתיקייה, ואז `http://localhost:8791/`. (שרת שאוסר על הדפדפן לשמור עותקים: עם `python3 -m http.server` כרום מחזיק לפעמים קבצים ישנים, ודף שמורכב מקבצים ישנים וחדשים נשבר.) אין שלב בנייה ואין תלות ברשת: Three.js נמצא ב-`lib/`.
 
 ## מה חדש לעומת שני הקודמים
 
