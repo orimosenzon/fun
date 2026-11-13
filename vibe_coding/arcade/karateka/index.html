@@ -72,7 +72,7 @@
   <tr><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>Z</kbd></td><td>אגרוף גבוה, אמצעי, נמוך</td></tr>
   <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
   <tr><td><kbd>E</kbd></td><td>מוואשי גרי, בעיטה סיבובית: אטית יותר, ופגיעה שלה שווה שתיים (תוספת שלנו)</td></tr>
-  <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות (תוספת שלנו)</td></tr>
+  <tr><td><kbd>F</kbd> <kbd>D</kbd></td><td>סלטה באוויר קדימה ואחורה: באוויר המכות של היריב לא פוגעות. מדי פעם, כשיש מקום, היא הופכת לסדרת קרקע שלמה (תוספת שלנו)</td></tr>
   <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
   <tr><td>💾 📂</td><td>שמירת המצב הנוכחי וחזרה אליו (תוספת שלנו). "הורד לקובץ" מעביר משחק למחשב אחר</td></tr>
 </table>
@@ -110,7 +110,8 @@ if (!dsk) {
   ov.addEventListener('dragover', (e) => e.preventDefault());
   ov.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && !dsk) load(f); });
 }
-const boot = () => { m = new GameMachine(dsk); installMawashi(m); installFlip(m); window.machine = m; };
+// ?show in the address makes every somersault the full floor routine (normally it is an occasional surprise)
+const boot = () => { m = new GameMachine(dsk); installMawashi(m); installFlip(m); m.flip.always = new URLSearchParams(location.search).has('show'); window.machine = m; };
 
 function loading() { const d = m.drive; return d.motor || m.cpu.cycles - d.offAt < CPU_HZ; }
 function frame(t) {

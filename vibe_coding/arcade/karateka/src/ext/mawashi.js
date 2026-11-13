@@ -3,11 +3,13 @@
 // The original program keeps running untouched. This module watches a few of its
 // addresses and steps in only while the player performs the new kick:
 //   - the kick borrows the game's own middle-kick sequence (same reach, same hit test)
-//   - it is drawn here, from our own two poses (chamber and kick), instead of by the game
+//   - it is drawn here, from our own five frames (knee up, hips turning, two of the leg
+//     at full reach, snap back), instead of by the game
 //   - it is slower than the other kicks (the chamber and the kick are each held one more
 //     frame) and a clean hit takes two points off the opponent instead of one
 // With E never pressed, nothing in here changes a single byte or cycle of the game.
-import { CHAMBER, KICK, ART_Y, ART_ANCHOR } from './mawashi_art.js';
+// The frames are posed after a Shotokan black belt filmed from the side (tools/flip_frames.mjs).
+import { ART } from './acro_art.js';
 
 const KEY_E = 0x45, KEY_S = 0x53;
 const ARM_WINDOW = 1500000;     // cycles (about 1.5 s) the game has to accept the key press
@@ -15,27 +17,37 @@ const POSE = { STANCE: 6, STEP: 5, CHAMBER: 1, KICK: 3 };
 // zero page of the fighter being worked on: pose, animation index, attack id, facing, x
 const Z = { POSE: 0x20, X: 0x22, ANIM: 0x25, ATTACK: 0x2b, FACING: 0x2c, SHIFT: 0x50, PAGE: 0x07 };
 const ENEMY_HEALTH = 0xb7, PLAYER_POSE = 0x60;
+const FLOOR = 161, HIP = 16;    // the floor row, and how far in front of the fighter's anchor his hips are
+const REPAINTED = [114, 163];   // the rows the game paints afresh every frame
 
-export function blitArt(mem, base, px0, rows, y0 = ART_Y, anchor = ART_ANCHOR) {
+// Paint a frame of our art: px0 is where its `anchor` column goes, y0 its first row.
+// Above the strip the game repaints, every byte we change is noted in `under` as
+// address, what was there, what we left there, so that it can be put back later.
+export function blitArt(mem, base, px0, rows, y0, anchor, under) {
+  const touched = under && new Map();
   rows.forEach((row, i) => {
     const y = y0 + i; if (y < 0 || y > 191) return;
     const b = base + (((y & 7) << 10) | (((y >> 3) & 7) << 7) | ((y >> 6) * 40));
+    const keep = touched && (y < REPAINTED[0] || y > REPAINTED[1]);
     for (let c = 0; c < row.length; c++) {
       const ch = row[c]; if (ch === '.') continue;
       const x = px0 - anchor + c; if (x < 0 || x >= 280) continue;
       const a = b + ((x / 7) | 0), bit = 1 << (x % 7);
+      if (keep && !touched.has(a)) touched.set(a, mem[a]);
       mem[a] = ch === '#' ? mem[a] | bit | 0x80 : (mem[a] & ~bit) | 0x80;
     }
   });
+  if (touched) for (const [a, was] of touched) under.push(a, was, mem[a]);
 }
 
 export function installMawashi(m) {
   const r = m.ram, c = m.cpu;
-  const st = { armedAt: -1, active: false, begun: false, holdChamber: 0, holdKick: 0, kicks: 0, hits: 0 };
+  // chambers / reaches: how many frames of each have been shown in this kick, which picks the art
+  const st = { armedAt: -1, active: false, begun: false, holdChamber: 0, holdKick: 0, chambers: 0, reaches: 0, kicks: 0, hits: 0 };
   m.mawashi = st;
   const player = () => r[Z.FACING] < 0x80;
   const armed = () => st.armedAt >= 0 && c.cycles - st.armedAt < ARM_WINDOW;
-  const begin = () => { st.active = true; st.holdChamber = 1; st.holdKick = 1; st.kicks++; };
+  const begin = () => { st.active = true; st.holdChamber = 1; st.holdKick = 1; st.chambers = 0; st.reaches = 0; st.kicks++; };
 
   const pressKey = m.pressKey.bind(m);
   m.pressKey = (k) => {
@@ -68,9 +80,13 @@ export function installMawashi(m) {
   // draw the fighter
   m.hook(0x6811, [0xa6, 0x20, 0xa5, 0x50], () => {
     if (!st.active || !player()) return false;
-    const art = r[Z.POSE] === POSE.CHAMBER ? CHAMBER : r[Z.POSE] === POSE.KICK ? KICK : null;
-    if (!art) return false;
-    blitArt(r, r[Z.PAGE] << 8, 7 * r[Z.X] + r[Z.SHIFT], art);
+    const pose = r[Z.POSE];
+    let n;
+    if (pose === POSE.CHAMBER) n = st.reaches ? 4 : Math.min(st.chambers++, 1);   // knee up, then hips turning; after the kick, the snap back
+    else if (pose === POSE.KICK) n = 2 + Math.min(st.reaches++, 1);
+    else return false;
+    const f = ART.mawashi[n];
+    blitArt(r, r[Z.PAGE] << 8, 7 * r[Z.X] + r[Z.SHIFT] + HIP, f.rows, FLOOR + f.top, f.ax);
     c.cycles += 17120 + 1232 * r[Z.SHIFT]; // what the game spends drawing its own middle kick
     m.rts(); return true;
   });
