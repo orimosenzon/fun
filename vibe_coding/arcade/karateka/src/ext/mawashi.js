@@ -9,14 +9,28 @@
 //     frame) and a clean hit takes two points off the opponent instead of one
 // With E never pressed, nothing in here changes a single byte or cycle of the game.
 // The frames are posed after a Shotokan black belt filmed from the side (tools/flip_frames.mjs).
+//
+// Two more kicks work the same way, both Yaniv Waldman's idea:
+//   - yoko-geri kekomi (Y), the side thrust kick: the longest kick there is, it lands from one
+//     step further away than the others, for the usual one point
+//   - ushiro-geri (U), the back kick: he has to turn his back first, so it is the slowest, and
+//     the heel takes three points
 import { ART } from './acro_art.js';
 
-const KEY_E = 0x45, KEY_S = 0x53;
+const KEY_S = 0x53;
+// art: the frames in acro_art.js, of which the first `pre` lead up to the kick, two are the kick and one the way back;
+// chamber / kick: how many more frames than the game's own kick each part is held; extra: points on top of the usual one;
+// reach: how many columns further away than the game's kicks it still lands
+const KICKS = {
+  0x45: { art: 'mawashi', pre: 2, chamber: 1, kick: 1, extra: 1, reach: 0 },   // E
+  0x59: { art: 'yoko', pre: 2, chamber: 1, kick: 1, extra: 0, reach: 2 },      // Y
+  0x55: { art: 'ushiro', pre: 3, chamber: 2, kick: 1, extra: 2, reach: 0 },    // U
+};
 const ARM_WINDOW = 1500000;     // cycles (about 1.5 s) the game has to accept the key press
 const POSE = { STANCE: 6, STEP: 5, CHAMBER: 1, KICK: 3 };
 // zero page of the fighter being worked on: pose, animation index, attack id, facing, x
 const Z = { POSE: 0x20, X: 0x22, ANIM: 0x25, ATTACK: 0x2b, FACING: 0x2c, SHIFT: 0x50, PAGE: 0x07 };
-const ENEMY_HEALTH = 0xb7, PLAYER_POSE = 0x60;
+const ENEMY_HEALTH = 0xb7, PLAYER_POSE = 0x60, PLAYER_ATTACK = 0x6b, GAP = 0x33;
 const FLOOR = 161, HIP = 16;    // the floor row, and how far in front of the fighter's anchor his hips are
 const REPAINTED = [114, 163];   // the rows the game paints afresh every frame
 
@@ -43,15 +57,16 @@ export function blitArt(mem, base, px0, rows, y0, anchor, under) {
 export function installMawashi(m) {
   const r = m.ram, c = m.cpu;
   // chambers / reaches: how many frames of each have been shown in this kick, which picks the art
-  const st = { armedAt: -1, active: false, begun: false, holdChamber: 0, holdKick: 0, chambers: 0, reaches: 0, kicks: 0, hits: 0 };
+  const st = { armedAt: -1, want: 0x45, kind: 0x45, active: false, begun: false, holdChamber: 0, holdKick: 0, chambers: 0, reaches: 0, kicks: 0, hits: 0, far: 0 };
   m.mawashi = st;
   const player = () => r[Z.FACING] < 0x80;
   const armed = () => st.armedAt >= 0 && c.cycles - st.armedAt < ARM_WINDOW;
-  const begin = () => { st.active = true; st.holdChamber = 1; st.holdKick = 1; st.chambers = 0; st.reaches = 0; st.kicks++; };
+  const kind = () => KICKS[st.kind];
+  const begin = () => { st.kind = st.want; st.active = true; st.holdChamber = kind().chamber; st.holdKick = kind().kick; st.chambers = 0; st.reaches = 0; st.kicks++; };
 
   const pressKey = m.pressKey.bind(m);
   m.pressKey = (k) => {
-    if (k === KEY_E && m.inGame) { st.armedAt = c.cycles; pressKey(KEY_S); } else { st.armedAt = -1; pressKey(k); }
+    if (KICKS[k] && m.inGame) { st.armedAt = c.cycles; st.want = k; pressKey(KEY_S); } else { st.armedAt = -1; pressKey(k); }
   };
 
   // a kick starts from the fighting stance
@@ -81,18 +96,26 @@ export function installMawashi(m) {
   m.hook(0x6811, [0xa6, 0x20, 0xa5, 0x50], () => {
     if (!st.active || !player()) return false;
     const pose = r[Z.POSE];
+    const k = kind();
     let n;
-    if (pose === POSE.CHAMBER) n = st.reaches ? 4 : Math.min(st.chambers++, 1);   // knee up, then hips turning; after the kick, the snap back
-    else if (pose === POSE.KICK) n = 2 + Math.min(st.reaches++, 1);
+    if (pose === POSE.CHAMBER) n = st.reaches ? k.pre + 2 : Math.min(st.chambers++, k.pre - 1);   // the way up to the kick, frame by frame; after the kick, the snap back
+    else if (pose === POSE.KICK) n = k.pre + Math.min(st.reaches++, 1);
     else return false;
-    const f = ART.mawashi[n];
+    const f = ART[k.art][n];
     blitArt(r, r[Z.PAGE] << 8, 7 * r[Z.X] + r[Z.SHIFT] + HIP, f.rows, FLOOR + f.top, f.ax);
     c.cycles += 17120 + 1232 * r[Z.SHIFT]; // what the game spends drawing its own middle kick
     m.rts(); return true;
   });
   // the opponent takes the hit
   m.hook(0x7292, [0x20, 0x0c, 0x0b], () => {
-    if (st.active && r[PLAYER_POSE] === POSE.KICK) { st.hits++; if (r[ENEMY_HEALTH] > 1) r[ENEMY_HEALTH]--; }
+    if (st.active && r[PLAYER_POSE] === POSE.KICK) { st.hits++; for (let i = 0; i < kind().extra; i++) if (r[ENEMY_HEALTH] > 1) r[ENEMY_HEALTH]--; }
+    return false;
+  });
+  // the game is about to judge the player's attack, and has just measured the distance between the two:
+  // the side thrust kick is judged as if the opponent stood a step nearer
+  m.hook(0xb942, [0xa4, 0x6b, 0x20, 0x66, 0x73], () => {
+    const k = kind();
+    if (st.active && k.reach && r[PLAYER_ATTACK] !== 0xff && r[PLAYER_POSE] === POSE.KICK && r[GAP] > 9 && r[GAP] <= 9 + k.reach) { r[GAP] -= k.reach; st.far++; }
     return false;
   });
 }

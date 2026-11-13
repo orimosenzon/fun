@@ -4,6 +4,6 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 rm -rf public && mkdir -p public/data
-cp -r ../index.html ../src public/
+cp -r ../index.html ../how.html ../how-og.png ../src public/
 cp ../data/karateka.dsk public/data/
 npx --yes wrangler@4 deploy

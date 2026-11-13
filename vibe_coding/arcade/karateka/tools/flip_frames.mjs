@@ -13,6 +13,7 @@ const stand = { T: 180, leg: [3, 4, 90], leg2: [-6, 2, 90] };
 const air = (R, hip, more = {}) => ({ ...tuck, R, hip, air: true, ...more });
 const salute = { ...stand, T: 183, head: 6, arm: [140, -6], arm2: [220, 6], order: ['arm2', 'leg2', 'torso', 'leg', 'arm', 'head'] };
 const crane = { T: 180, head: 0, leg: [102, 122, 24], leg2: [0, 2, 90], arm: [122, 28], arm2: [-122, -28] };   // the crane stance: on one leg, knee up, arms out like wings
+const back = { flip: true, lookBack: true };   // his back to the opponent, looking at him over the shoulder
 const straight = { T: 180, head: 0, leg: [2, 3, 20], arm: [172, 4], torsoLine: false };   // stretched out, toes pointed
 
 // mawashi-geri, after a Shotokan black belt filmed from the side in slow motion: the knee comes up
@@ -27,6 +28,26 @@ export const SEQ = {
     kick(214, 96, 2, { arm: [-46, 16], arm2: [26, 112], wide: 10.8, foot: 98, reach: 1.22 }),         // full extension
     kick(216, 98, 0, { arm: [-52, 12], arm2: [26, 112], wide: 10.8, foot: 102, reach: 1.22 }),
     kick(198, 98, 108, { arm: [8, 64], arm2: [36, 98], wide: 10.4 }),                                   // snapped back
+  ],
+  // yoko-geri kekomi, the side thrust kick (Yaniv Waldman's idea): the knee comes up high and folded, the hips
+  // turn side-on, and the heel drives straight out at the ribs with the hip pushed in behind it, the foot's
+  // edge leading and the body leaning away in one line with the leg
+  yoko: [
+    kick(188, 120, 150, { arm: [46, 92], arm2: [30, 102], wide: 10.2 }),
+    kick(206, 106, 98, { arm: [24, 72], arm2: [34, 100], wide: 10.6, foot: 40 }),
+    kick(226, 93, 0, { arm: [40, 6], arm2: [26, 112], wide: 10.8, foot: 24, reach: 1.3, dx: 6, leg2: [-48, 5, -80] }),   // the standing foot has pivoted, heel to the target
+    kick(228, 94, 0, { arm: [42, 4], arm2: [26, 112], wide: 10.8, foot: 22, reach: 1.3, dx: 6, leg2: [-50, 5, -80] }),
+    kick(200, 106, 122, { arm: [24, 72], arm2: [34, 100], wide: 10.4 }),
+  ],
+  // ushiro-geri, the back kick (Yaniv Waldman's idea): he turns his back on the opponent, looks over his
+  // shoulder, folds the knee under him and drives the heel straight back, the body leaning forward away from it
+  ushiro: [
+    { T: 180, head: 0, wide: 10.6, leg: [8, 10, 90], leg2: [-8, 6, 90], arm: [34, 108], arm2: [22, 100] },                       // the pivot, feet together
+    { ...back, T: 170, head: 8, leg: [92, 128], leg2: [12, 8, 90], arm: [52, 108], arm2: [44, 100] },                             // back turned, knee up
+    { ...back, T: 150, head: 26, leg: [42, 112, 20], leg2: [34, 10, 90], arm: [58, 104], arm2: [50, 100] },                       // the heel cocked at the target
+    { ...back, T: 128, head: 44, leg: [-40, 2, 12], leg2: [57, 9, 90], reach: 1.16, arm: [62, 100], arm2: [54, 100] },      // the heel driven straight back
+    { ...back, T: 125, head: 46, leg: [-38, 0, 10], leg2: [60, 9, 90], reach: 1.16, arm: [62, 100], arm2: [54, 100] },
+    { ...back, T: 162, head: 14, leg: [58, 118, 20], leg2: [22, 8, 90], arm: [54, 106], arm2: [46, 100] },                        // the leg snaps back under him
   ],
   // the crane kick of The Karate Kid (1984), Arik Shemesh's idea: the fighter stands on one leg, knee up and
   // arms spread, hops, and snaps a front kick to the face with the leg he was standing on (a stylised
@@ -93,7 +114,7 @@ export const SEQ = {
 
 // the art of one frame, and where its top-left corner goes relative to the floor row
 export function frameArt(f) {
-  const rows = patch(draw(f), f.patch);
+  const rows = patch(draw(f, { dx: f.dx ?? 0 }), f.patch);
   let low = 0; rows.forEach((r, i) => { if (/[#o]/.test(r)) low = i; });
   const hip = f.hip ?? low - CY;            // standing: the lowest pixel is on the floor
   return { rows, top: -(hip + CY), hip };   // top = rows above the floor row where the grid starts
@@ -121,10 +142,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const [out, ...names] = process.argv.slice(2);
   const seqs = names.length ? names : Object.keys(SEQ);
-  const FLOOR = 120, PH = 130, per = 7, tiles = [];
+  const FLOOR = 120, PH = 130, per = 5, tiles = [];
   for (const name of seqs) for (let i = 0; i < SEQ[name].length; i += per) {
     const mem = new Uint8Array(0x10000).fill(0x80);
-    SEQ[name].slice(i, i + per).forEach((f, k) => { const a = frameArt(f); blitArt(mem, 0x2000, 20 + k * 39, a.rows, FLOOR + a.top, CX); });
+    SEQ[name].slice(i, i + per).forEach((f, k) => { const a = frameArt(f); blitArt(mem, 0x2000, 24 + k * 54, a.rows, FLOOR + a.top, CX); });
     const idx = hgrToIndexed(mem.subarray(0x2000, 0x4000));
     for (let x = 0; x < 280; x++) if (!idx[(FLOOR + 1) * 280 + x]) idx[(FLOOR + 1) * 280 + x] = 6;
     tiles.push(idx.subarray(0, 280 * PH));

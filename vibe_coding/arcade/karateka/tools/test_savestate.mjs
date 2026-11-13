@@ -16,7 +16,7 @@ function machine(fight) {
   return m;
 }
 const play = (m, keys) => { for (const k of keys) { m.press(k); m.run(0.4); } };
-const MORE = ['RIGHT', 'RIGHT', 'S', 'E', 'RIGHT', 'F', 'A', 'D', 'RIGHT', 'RIGHT', 'E', 'Q', 'X', 'F', 'RIGHT', 'C', 'W'];
+const MORE = ['RIGHT', 'RIGHT', 'S', 'E', 'RIGHT', 'F', 'A', 'D', 'RIGHT', 'RIGHT', 'E', 'Q', 'X', 'F', 'RIGHT', 'C', 'Y', 'RIGHT', 'U', 'W'];
 const roundTrip = (m) => JSON.parse(JSON.stringify(saveState(m)));
 
 function compare(a, what) {

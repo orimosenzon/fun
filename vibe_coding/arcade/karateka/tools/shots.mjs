@@ -1,6 +1,6 @@
 // The additions as the player sees them: plays a move in the real game and saves every
 // frame the screen showed, side by side.
-// usage: node tools/shots.mjs out.png <E|F|D|C> [show] [walk N]   (show = force the floor routine)
+// usage: node tools/shots.mjs out.png <E|Y|U|F|D|C> [show] [walk N]   (show = force the floor routine)
 import { startGame } from './lab.mjs';
 import { installMawashi } from '../src/ext/mawashi.js';
 import { installFlip } from '../src/ext/flip.js';
@@ -19,7 +19,7 @@ for (let i = 0; i < walk; i++) { m.press('RIGHT'); run(0.5); }
 const busy = () => m.flip.frame >= 0 || m.mawashi.active;
 const x0 = m.ram[0x62];
 rec = true; for (let i = 0; i < 20 && !busy(); i++) { m.press(key); run(0.3); }
-for (let i = 0; i < 200 && (m.flip.frame >= 0 || i < (key === 'E' ? 22 : 4)); i++) run(0.1);
+for (let i = 0; i < 200 && (m.flip.frame >= 0 || i < ('EYU'.includes(key) ? 22 : 4)); i++) run(0.1);
 run(0.4);
 // a window that follows the fighter, enlarged
 const X0 = Math.max(0, Math.min(280 - 130, 7 * x0 - (key === 'D' ? 80 : 20))), CW = 130, Y0 = opts.includes('show') ? 50 : 84, PH = 170 - Y0, per = 6;

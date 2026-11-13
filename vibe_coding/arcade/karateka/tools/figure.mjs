@@ -5,7 +5,7 @@
 //
 // Angles are in degrees. A direction of 0 points down, 90 forward (the fighter faces right),
 // 180 up. Limb angles are relative to the body, so a pose can be turned as a whole (R).
-export const W = 60, H = 60, CX = 29, CY = 30;   // grid; the hip sits at (CX, CY) before the frame's own offset
+export const W = 72, H = 60, CX = 29, CY = 30;   // grid; the hip sits at (CX, CY) before the frame's own offset
 
 const LEN = { torso: 10.4, neck: 4.2, upper: 6.6, fore: 6.6, thigh: 10.6, shin: 10.6, foot: 4.6 };   // measured on the game's own fighter
 // the hero's head in the fighting stance, copied by eye from the screen: hair, face, a dark eye, the neck
@@ -19,6 +19,7 @@ const add = (p, d, l) => [p[0] + d[0] * l, p[1] + d[1] * l];
 //   K knee bend, F direction of the foot (default: square to the shin)
 //   reach: the near leg drawn longer, as the game does with a leg kicking towards the opponent
 //   wide: the body turned towards the camera
+//   flip: the whole figure faces left (his back to the opponent); lookBack: the head turned the other way
 export function joints(p) {
   const R = p.R ?? 0, T = (p.T ?? 180) + R, down = T - 180;
   const hip = [0, 0], neck = add(hip, dir(T), LEN.torso), head = add(neck, dir(T + (p.head ?? 0)), LEN.neck);
@@ -30,7 +31,8 @@ export function joints(p) {
 
 export function draw(p, { dx = 0, dy = 0 } = {}) {
   const g = Array.from({ length: H }, () => Array(W).fill('.'));
-  const j = joints(p), O = ([x, y]) => [CX + dx + x, CY + dy + y];
+  const sx = p.flip ? -1 : 1, faceLeft = !!p.flip !== !!p.lookBack;
+  const j = joints(p), O = ([x, y]) => [CX + dx + sx * x, CY + dy + y];
   const opaque = (ch) => ch !== '.';
   // a tapered limb between two points; `line` draws the black edge where it covers what is already there
   function limb(a, b, w1, w2, ch, line = true, joint = 0) {   // joint: no edge this close to the limb's root
@@ -68,14 +70,14 @@ export function draw(p, { dx = 0, dy = 0 } = {}) {
       const [hx, hy] = O(j.head);
       if (Math.abs(tilt) <= 40) {            // upright enough: the hero's own head, as the game draws it
         const x0 = 2 * Math.round((hx - 3) / 2), y0 = Math.round(hy - 4);
-        HEAD.forEach((row, i) => [...row].forEach((ch, k) => { if (ch !== '.' && g[y0 + i]?.[x0 + k] !== undefined) g[y0 + i][x0 + k] = ch; }));
+        HEAD.forEach((row, i) => [...(faceLeft ? [...row].reverse().join('') : row)].forEach((ch, k) => { if (ch !== '.' && g[y0 + i]?.[x0 + k] !== undefined) g[y0 + i][x0 + k] = ch; }));
         return;
       }
       limb(add(j.neck, t, -0.5), add(j.neck, t, 2), 3.4, 3.4, 's', false);
       // turned over: the same idea by rule, white hair over the top and down the back, the face in skin
       for (let r = Math.floor(hy - 6); r <= hy + 6; r++) for (let c = Math.floor(hx - 6); c <= hx + 6; c++) {
         if (r < 0 || r >= H || c < 0 || c >= W) continue;
-        const u = (c - hx) * t[0] + (r - hy) * t[1], v = (c - hx) * f[0] + (r - hy) * f[1];   // u: towards the crown, v: towards the face
+        const X = (c - hx) * sx, u = X * t[0] + (r - hy) * t[1], v = X * f[0] + (r - hy) * f[1];   // u: towards the crown, v: towards the face
         if ((u / 4.1) ** 2 + (v / 3.1) ** 2 > 1) continue;
         g[r][c] = v > -0.7 && u < 1.3 ? 's' : '#';
       }
