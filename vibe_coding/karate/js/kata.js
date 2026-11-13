@@ -3,7 +3,7 @@
 // המנוע מחשב ממנה תנוחה מלאה (בפורמט של body.js) במערכת הצירים של הדוג'ו:
 // x אל החזית (שומן), z ימינה, y למעלה. הכיוון F הוא הכיוון שאליו עומדים בתחילת הקאטה.
 
-import { D2R, Ry, mv, add, sub, chestOf, clonePose } from './body.js';
+import { D2R, Ry, mv, add, sub, chestOf, clonePose, solidify } from './body.js';
 
 const PI = Math.PI;
 export const DIR = { F: 0, FR: 45, R: 90, BR: 135, B: 180, BL: -135, L: -90, FL: -45 };
@@ -29,7 +29,7 @@ export const STANCE = {
   // קוסה־דאצ'י בקפיצה קדימה (הייאן יודאן): הרגל המובילה נטועה, השנייה משוכלת מאחוריה על כרית כף הרגל
   kosa: { he: 'קוסה־דאצ׳י', ja: 'kosa-dachi', fr: [0.10, 0.02], bk: [-0.14, -0.07], frYaw: 0, bkYaw: 35, bkPt: 45, bkLift: 0.05, h: 0.70, px: 0.02, lean: 8, kf: [1, -0.1], kb: [0.8, -0.5] },
   // צעד שיכול הצידה (טקי): הרגל המובילה חוצה מלפנים אל הצד של השנייה
-  kosaY: { he: 'קוסה־דאצ׳י', ja: 'kosa-dachi', fr: [0.07, 0.08], bk: [-0.05, -0.08], frYaw: 15, bkYaw: -10, h: 0.75, px: 0, lean: 0, kf: [1, 0.3], kb: [1, -0.3], side: true },
+  kosaY: { he: 'קוסה־דאצ׳י', ja: 'kosa-dachi', fr: [0.03, 0.08], bk: [0, -0.08], frYaw: 15, bkYaw: -10, h: 0.75, px: 0, lean: 0, kf: [1, 0.3], kb: [1, -0.3], side: true },
   // עמידת עגור על רגל אחת: הרגל המובילה מורמת אל ברך הרגל התומכת
   tsuru: { he: 'צורו־אשי־דאצ׳י', ja: 'tsuru-ashi-dachi', fr: [0.07, 0.02], bk: [0, 0.07], frYaw: 0, bkYaw: 0, frPt: 55, frLift: 0.40, h: 0.90, px: 0, lean: 0, kf: [1, -0.3], kb: [1, 0], side: true, oneLeg: true },
   // עמידה זקופה כללית לתנועות ביניים
@@ -93,7 +93,7 @@ export const ARM = {
   // שוטו־אוצ׳י: מכת סכין מבחוץ פנימה בגובה הצוואר
   shutouchi: {
     he: 'שוטו־אוצ׳י', ja: 'shuto-uchi', hip: 's',
-    f: (s) => ({ h: [0.46, 0.18, s * 0.02], e: [0, -1, s * 0.6], g: [PI, 1] }),
+    f: (s) => ({ h: [0.50, 0.10, s * 0.02], e: [0, -1, s * 0.6], g: [PI, 1] }),
     p: (s) => ({ h: [-0.05, 0.20, s * 0.30], e: [-0.4, 0, s * 1], g: [0, 1] }),
   },
   // אורקן: מכת גב האגרוף, מהמרפק, אל הפנים
@@ -120,7 +120,7 @@ export const ARM = {
   palmSide: { he: '', hip: '', f: (s) => ({ h: [0.40, 0.08, s * 0.04], e: [0, -1, s * 0.4], g: [PI / 2, 1] }) },
   haishu: { he: 'האישו־אוקה', ja: 'haishu-uke', hip: 'h', f: (s) => ({ h: [0.38, 0.12, s * 0.12], e: [0, -1, s * 0.3], g: [PI / 2 + 0.4, 1] }), p: (s) => ({ h: [0.06, -0.18, -s * 0.16], e: [0, -1, s], g: [0, 1] }) },
   // יד פתוחה מעל המצח, גב היד כלפי חוץ (היד השנייה בהייאן יודאן)
-  hitai: { he: '', hip: '', f: (s) => ({ h: [0.20, 0.30, -s * 0.06], e: [0.3, -0.1, s * 1], g: [2.4, 1] }) },
+  hitai: { he: '', hip: '', f: (s) => ({ h: [0.15, 0.36, s * 0.06], e: [0.3, -0.1, s * 1], g: [2.4, 1] }) },
   haito: { he: 'הייטו־אוצ׳י', ja: 'haito-uchi', hip: 's', f: (s) => ({ h: [0.46, 0.20, -s * 0.06], e: [0, -1, s * 0.5], g: [PI, 1] }), p: (s) => ({ h: [0.00, -0.30, s * 0.30], e: [0, -1, s], g: [PI, 1] }) },
   teisho: { he: 'טיישו', ja: 'teisho', hip: 's', f: (s) => ({ h: [0.50, -0.06, -s * 0.0], e: [0, -1, s * 0.3], g: [PI / 2, 1] }) },
   sukui: { he: 'סוקוי־אוקה', ja: 'sukui-uke', hip: 'h', f: (s) => ({ h: [0.40, -0.18, s * 0.04], e: [0, -1, s * 0.5], g: [PI, 1] }), p: (s) => ({ h: [0.30, -0.45, s * 0.20], e: [0, -1, s], g: [PI, 1] }) },
@@ -138,11 +138,11 @@ export const ARM = {
   },
   jujiG: {
     he: 'ג׳וג׳י־אוקה גדאן', ja: 'gedan juji-uke', hip: '', two: true,
-    f: (s) => ({ h: [0.42, -0.36, -s * 0.03], e: [0, -1, s * 0.4], g: [0, 0] }),
+    f: (s) => ({ h: [0.42 + s * 0.02, -0.36 + s * 0.045, -s * 0.03], e: [0, -1, s * 0.4], g: [0, 0] }),
   },
   jujiJ: {
     he: 'ג׳וג׳י־אוקה ג׳ודאן', ja: 'jodan juji-uke', hip: '', two: true,
-    f: (s) => ({ h: [0.30, 0.32, -s * 0.04], e: [0.3, -0.4, s * 1], g: [2.4, 1] }),
+    f: (s) => ({ h: [0.30 + s * 0.048, 0.32, -s * 0.04], e: [0.3, -0.4, s * 1], g: [2.4, 1] }),
   },
   morote: { he: 'מורוטה־צוקי', ja: 'morote-zuki', hip: '', two: true, lv: true, f: (s, lv) => ({ h: [0.55, Y[lv], s * 0.10], e: [0, -1, s * 0.3], g: [0, 0] }) },
   // יאמה־צוקי: יד עליונה לג'ודאן, תחתונה אורה־צוקי
@@ -162,9 +162,9 @@ export const ARM = {
   uraIn: { he: '', hip: '', body: true, f: (s) => ({ h: [0.30, 0.02, -s * 0.12], e: [0, -1, s * 0.3], g: [PI, 0] }) },
   shoulder: { he: '', hip: '', body: true, f: (s) => ({ h: [0.13, 0.03, -s * 0.15], e: [0.3, -0.7, s * 1], g: [PI / 2, 0] }) },
   kLbot: { he: 'קושי־גמאה', ja: 'koshi-gamae', hip: '', body: true, f: () => ({ h: [-0.02, -0.31, -0.20], e: [-1, -0.2, -0.3], g: [PI, 0] }) },
-  kLtop: { he: '', hip: '', body: true, f: () => ({ h: [0.0, -0.24, -0.19], e: [0.4, -0.5, 1], g: [PI / 2, 0] }) },
+  kLtop: { he: '', hip: '', body: true, f: () => ({ h: [0.0, -0.21, -0.19], e: [0.4, -0.5, 1], g: [PI / 2, 0] }) },
   kRbot: { he: 'קושי־גמאה', ja: 'koshi-gamae', hip: '', body: true, f: () => ({ h: [-0.02, -0.31, 0.20], e: [-1, -0.2, 0.3], g: [PI, 0] }) },
-  kRtop: { he: '', hip: '', body: true, f: () => ({ h: [0.0, -0.24, 0.19], e: [0.4, -0.5, -1], g: [PI / 2, 0] }) },
+  kRtop: { he: '', hip: '', body: true, f: () => ({ h: [0.0, -0.21, 0.19], e: [0.4, -0.5, -1], g: [PI / 2, 0] }) },
   hipFist: { he: '', hip: '', body: true, f: (s) => ({ h: [0.03, -0.30, s * 0.21], e: [-0.25, 0, s * 1], g: [PI / 2, 0] }) },
   overShoulder: { he: '', hip: '', body: true, f: (s) => ({ h: [0.03, 0.05, -s * 0.22], e: [0.8, -0.5, s * 0.3], g: [0, 0] }) },
   tateShuto: { he: 'טטה־שוטו־אוקה', ja: 'tate shuto-uke', hip: '', f: (s) => ({ h: [0.52, -0.04, 0], e: [0, -1, s * 0.3], g: [PI / 2, 1] }) },
@@ -174,6 +174,37 @@ export const ARM = {
   gedanShuto: { he: 'גדאן שוטו־אוצ׳י', ja: 'gedan shuto-uchi', hip: '', f: (s) => ({ h: [0.42, -0.42, -s * 0.04], e: [0, 0.2, s * 1], g: [PI / 2, 1] }) },
   manjiHi: { he: '', hip: '', body: true, f: (s) => ({ h: [-0.06, 0.34, s * 0.30], e: [0, -1, s * 0.6], g: [2.9, 0] }) },
   ageZuki: { he: '', hip: '', f: (s) => ({ h: [0.30, 0.30, 0], e: [0, -1, s * 0.3], g: [PI, 0] }) },
+  nagashiJ: { he: 'נגשי־אוקה ג׳ודאן', ja: 'jodan nagashi-uke', hip: '', body: true, f: (s) => ({ h: [0.10, 0.28, s * 0.13], e: [0.4, -0.6, s * 1], g: [PI / 2, 0] }) },
+  uraUchi: { he: 'אורה־צוקי ג׳ודאן', ja: 'jodan ura-zuki', hip: '', f: (s) => ({ h: [0.36, 0.20, s * 0.02], e: [0, -1, s * 0.25], g: [PI, 0] }) },
+  underElbow: { he: '', hip: '', body: true, f: (s) => ({ h: [0.19, -0.13, -s * 0.09], e: [-0.2, -0.4, s * 1], g: [0, 0] }) },
+  soete: { he: '', hip: '', f: (s) => ({ h: [0.27, -0.06, -s * 0.10], e: [0, -1, s * 0.7], g: [PI / 2, 1] }) },
+  ageBoth: { he: 'מורוטה אגה־אוקה', ja: 'morote age-uke', hip: '', two: true, f: (s) => ({ h: [0.20, 0.36, s * 0.07], e: [0.2, -0.3, s * 1], g: [2.6, 0] }) },
+  hasami: { he: 'טטסוי האסאמי־אוצ׳י', ja: 'tettsui hasami-uchi', hip: '', two: true, f: (s) => ({ h: [0.40, -0.10, s * 0.10], e: [0, -0.4, s * 1], g: [PI / 2, 0] }), p: (s) => ({ h: [0.10, 0.20, s * 0.42], e: [0, -1, s * 0.3], g: [PI / 2, 0] }) },
+  grabHi: { he: '', hip: '', f: (s) => ({ h: [0.44, 0.02, s * 0.03], e: [0, -1, s * 0.5], g: [0.6, 1] }) },
+  grabLo: { he: '', hip: '', f: (s) => ({ h: [0.38, -0.10, -s * 0.05], e: [0, -1, s * 0.6], g: [PI / 2, 1] }) },
+  sideHi: { he: '', hip: '', f: (s) => ({ h: [0.02, 0.38, s * 0.36], e: [0, -1, s * 0.6], g: [PI / 2, 0] }) },
+  openUp: { he: '', hip: '', two: true, f: (s) => ({ h: [0.26, 0.52, s * 0.05], e: [0.3, -1, s * 0.6], g: [1.2, 1] }) },
+  openSide: { he: '', hip: '', two: true, f: (s) => ({ h: [0.10, 0.10, s * 0.50], e: [0, -1, 0], g: [PI / 2, 1] }) },
+  openLow: { he: '', hip: '', two: true, f: (s) => ({ h: [0.24, -0.42, s * 0.05], e: [-0.4, 0, s * 1], g: [PI / 2, 1] }) },
+  yamaTop: { he: 'יאמה־צוקי', ja: 'yama-zuki', hip: '', f: (s) => ({ h: [0.50, 0.22, -s * 0.03], e: [0, -0.6, s * 1], g: [0, 0] }) },
+  yamaBot: { he: '', hip: '', f: (s) => ({ h: [0.44, -0.30, -s * 0.03], e: [0, -1, s * 0.15], g: [PI, 0] }) },
+  sukuiG: { he: 'סוקוי־אוקה', ja: 'sukui-uke', hip: '', f: (s) => ({ h: [0.36, -0.40, s * 0.10], e: [-0.3, 0.2, s * 1], g: [PI, 0] }) },
+  gedanSide: { he: 'גדאן־בראי', ja: 'gedan-barai', hip: '', body: true, f: (s) => ({ h: [0.14, -0.42, s * 0.36], e: [-0.6, 0.2, s * 0.6], g: [0, 0] }) },
+  chestFist: { he: '', hip: '', body: true, f: (s) => ({ h: [0.17, -0.10, s * 0.10], e: [-0.2, -0.3, s * 1], g: [0, 0] }) },
+  jujiOpenG: { he: 'ג׳וג׳י־אוקה גדאן', ja: 'gedan juji-uke', hip: '', two: true, f: (s) => ({ h: [0.42 + s * 0.02, -0.36 + s * 0.045, -s * 0.04], e: [0, -1, s * 0.4], g: [0, 1] }) },
+  ageShutoJ: { he: '', hip: '', f: (s) => ({ h: [0.20, 0.36, -s * 0.02], e: [0.25, -0.2, s * 1], g: [2.6, 1] }) },
+  shutoG: { he: 'שוטו־אוקה גדאן', ja: 'gedan shuto-uke', hip: 'h', pair: 'shuto2', f: (s) => ({ h: [0.42, -0.36, s * 0.08], e: [-0.3, 0.2, s * 1], g: [0.6, 1] }), p: (s) => ({ h: [0.04, 0.18, -s * 0.17], e: [0, -1, s * 0.3], g: [PI, 1] }) },
+  otoshi: { he: 'אוטושי־צוקי', ja: 'otoshi-zuki', hip: '', body: true, f: (s) => ({ h: [0.30, -0.52, s * 0.04], e: [-0.3, 0.3, s * 1], g: [0, 0] }) },
+  meetLow: { he: '', hip: '', two: true, body: true, f: (s) => ({ h: [0.22, -0.40, s * 0.035 + 0.0], e: [-0.4, 0, s * 1], g: [s < 0 ? PI : 0, 1] }) },
+  crossChest: { he: '', hip: '', two: true, body: true, f: (s) => ({ h: [0.25 + s * 0.05, -0.08, -s * 0.05], e: [-0.2, -0.6, s * 1], g: [PI / 2, 1] }) },
+  otoshiU: { he: 'אוטושי־אוקה', ja: 'otoshi-uke', hip: '', f: (s) => ({ h: [0.40, -0.04, 0], e: [0, -1, s * 0.6], g: [PI / 2, 0] }), p: (s) => ({ h: [0.10, 0.45, s * 0.10], e: [0.3, -1, s * 0.5], g: [PI / 2, 0] }) },
+  gedanBoth: { he: 'ריוואן גדאן־בראי', ja: 'ryowan gedan-barai', hip: '', two: true, body: true, f: (s) => ({ h: [0.22, -0.42, s * 0.30], e: [-0.6, 0.2, s * 0.6], g: [0, 0] }), p: (s) => ({ h: [0.22, 0.05, -s * 0.06 ], e: [0, -1, s], g: [PI, 0] }) },
+  jujiJF: { he: 'ג׳וג׳י־אוקה ג׳ודאן', ja: 'jodan juji-uke', hip: '', two: true, f: (s) => ({ h: [0.30 + s * 0.048, 0.32, -s * 0.04], e: [0.3, -0.4, s * 1], g: [2.4, 0] }) },
+  jiai: { he: '', hip: '', two: true, body: true, f: (s) => ({ h: [0.22 + (s < 0 ? 0.05 : 0), 0.06, s * 0.035], e: [-0.2, -1, s * 0.8], g: [PI / 2, s < 0 ? 1 : 0] }) },
+  sideZuki: { he: '', hip: '', f: (s) => ({ h: [0.56, -0.07, 0], e: [0, -1, s * 0.2], g: [0, 0] }) },
+  ageZukiJ: { he: 'אגה־צוקי', ja: 'age-zuki', hip: 's', f: (s) => ({ h: [0.44, 0.22, -s * 0.01], e: [0, -1, s * 0.3], g: [PI / 2, 0] }) },
+  kokoHi: { he: '', hip: '', f: (s) => ({ h: [0.38, 0.30, -s * 0.02], e: [0, -1, s * 0.5], g: [PI, 1] }) },
+  kokoLo: { he: '', hip: '', f: (s) => ({ h: [0.34, -0.32, -s * 0.02], e: [-0.3, 0, s * 1], g: [0, 1] }) },
   osaeLow: { he: 'אוסאה־אוקה', ja: 'osae-uke', hip: '', two: true, body: true, f: (s) => ({ h: [0.14, -0.30, 0.13 + s * 0.03], e: [-0.3, -0.3, s * 1], g: [PI / 2, 1] }) },
 };
 
@@ -210,9 +241,10 @@ function hikite(p, s, hipYaw) {
 // ---------- בעיטות ----------
 // מוגדרות יחסית לאגן, במערכת כיוון הבעיטה (x אל המטרה). foot: מיקום הקרסול, kn: כיוון הברך.
 export const KICK = {
-  mae: { he: 'מאה־גרי', ja: 'mae-geri', lv: { c: [0.80, 0.02], j: [0.70, 0.42], g: [0.80, -0.30] }, ch: [0.32, -0.30], kn: [1, 0.6, 0], fp: 50 },
-  yoko: { he: 'יוקו־גרי קאגה', ja: 'yoko-geri keage', lv: { c: [0.85, 0.08], j: [0.78, 0.40], g: [0.85, -0.25] }, ch: [0.22, -0.30], kn: [0.2, 1, 0], fp: 0, sideways: true },
+  mae: { he: 'מאה־גרי', ja: 'mae-geri', lv: { c: [0.86, 0.06], j: [0.74, 0.46], g: [0.80, -0.30] }, ch: [0.32, -0.30], kn: [1, 0.6, 0], fp: 50 },
+  yoko: { he: 'יוקו־גרי קאגה', ja: 'yoko-geri keage', lv: { c: [0.93, 0.16], j: [0.84, 0.44], g: [0.90, -0.25] }, ch: [0.22, -0.30], kn: [0.2, 1, 0], fp: 0, sideways: true },
   yokoK: { he: 'יוקו־גרי קקומי', ja: 'yoko-geri kekomi', lv: { c: [0.88, 0.04], j: [0.80, 0.36], g: [0.88, -0.25] }, ch: [0.25, -0.25], kn: [0.2, 1, 0], fp: 0, sideways: true },
+  fumi: { he: 'גדאן־קקומי', ja: 'gedan kekomi', lv: { c: [0.62, -0.50], j: [0.62, -0.50], g: [0.62, -0.50] }, ch: [0.26, -0.22], kn: [1, 0.5, 0], fp: -10 },
   mika: { he: 'מיקזוקי־גרי', ja: 'mikazuki-geri', lv: { c: [0.42, 0.30], j: [0.40, 0.40], g: [0.40, 0.0] }, ch: [0.20, -0.25], kn: [1, 0.6, 0], fp: 20, inward: true },
   nami: { he: 'נמי־גאשי', ja: 'nami-gaeshi', lv: { c: [0.18, -0.48], j: [0.18, -0.48], g: [0.18, -0.48] }, ch: [0.18, -0.48], kn: [1, 0.3, 0], fp: 20, inward: true, small: true },
   hiza: { he: 'הייזה־גרי', ja: 'hiza-geri', lv: { c: [0.28, -0.40], j: [0.28, -0.40], g: [0.28, -0.40] }, ch: [0.20, -0.40], kn: [1, 1, 0], fp: 60, small: true },
@@ -282,6 +314,7 @@ export function composeMove(prev, m) {
       if (Math.sign(hip - prev.hip) !== want) hip += want * 2 * PI;
     }
   }
+  if (m.spin) hip += rad(m.spin);
   const lookYaw = unwrapNear(aimYaw(m.look, th), hip);
 
   // תנוחה
@@ -295,7 +328,7 @@ export function composeMove(prev, m) {
   const fy = {};
   for (const f of ['L', 'R']) {
     p['f' + f] = [feet[f][0], lift[f], feet[f][1]];
-    fy[f] = unwrapNear(th + yaw[f], prev.fy[f]);
+    fy[f] = unwrapNear(th + yaw[f], prev.fy[f]) + (m.spin ? rad(m.spin) : 0);
     p['f' + f + 'r'] = [fy[f], pt[f], 0];
     const kk = f === lead ? S.kf : S.kb;
     const out = f === 'L' ? -1 : 1;                   // כלפי חוץ
@@ -349,7 +382,9 @@ export function composeMove(prev, m) {
     p['f' + leg] = [pf[leg][0], 0, pf[leg][1]];
     const hipY = 0.88;
     const back = toRel(kd, [K.sideways ? -0.06 : -0.04, 0, 0]);
-    p.pel = [pf[sup][0] + back[0] + (K.sideways ? toRel(kd, [0, 0, 0])[0] : 0), hipY, pf[sup][1] + back[2]];
+    p.pel = [pf[sup][0] + back[0], hipY, pf[sup][1] + back[2]];
+    if (m.keep && prev.pose) p.pel = prev.pose.pel.slice();
+    if (m.jumpH) { p.pel[1] += m.jumpH; p['f' + sup][1] = m.jumpH + 0.12; p['k' + sup] = toRel(kd, [1, 0.6, 0]); }
     if (K.sideways) {
       // הגוף בניצב לכיוון הבעיטה, נוטה מעט הרחק ממנה
       p.rot[2] = rad(14) * (leg === 'L' ? 1 : -1);
@@ -362,6 +397,7 @@ export function composeMove(prev, m) {
     p['k' + leg] = toRel(kd, K.kn);
     p['k' + sup] = toRel(th, [1, 0, 0]);
     p['f' + sup + 'r'] = [unwrapNear(th + (K.sideways ? rad(-sgn * 60) : rad(sgn * 15)), prev.fy[sup]), 0, 0];
+    if (m.keep && prev.pose) { p['k' + sup] = prev.pose['k' + sup].slice(); p['f' + sup + 'r'] = prev.pose['f' + sup + 'r'].slice(); }
     const chm = add([p.pel[0], p.pel[1], p.pel[2]], toRel(kd, [K.ch[0], K.ch[1], zOff * 0.5]));
     post = clonePose(p);
     post['f' + leg] = [chm[0], Math.max(0.05, chm[1] - 0.04), chm[2]];
@@ -383,12 +419,13 @@ export function composeMove(prev, m) {
     if (mvf === 'L' || mvf === 'R') {
       const anc = mvf === 'L' ? 'R' : 'L', s = mvf === 'L' ? -1 : 1;
       const a = prevPose['f' + anc], hy = prep.rot[0];
-      const side = rot2(hy, 0, s * 0.10);
+      const side = rot2(hy, 0, s * 0.17);
       prep['f' + mvf] = [a[0] + side[0], 0.035, a[2] + side[1]];
       prep['f' + anc] = a.slice();
       prep['f' + mvf + 'r'] = mid('f' + mvf + 'r');
       prep['f' + anc + 'r'] = mid('f' + anc + 'r', 0.6);
       prep['k' + mvf] = toRel(hy, [1, 0, 0]);
+      if (m.knee) { prep['f' + mvf][1] = 0.40; prep['k' + mvf] = toRel(hy, [1, 0.6, s * 0.3]); prep['f' + mvf + 'r'][1] = rad(25); prep.pel[1] = Math.max(prep.pel[1], 0.84); }
       prep['k' + anc] = mid('k' + anc);
     } else {
       for (const f of ['L', 'R']) { prep['f' + f] = mid('f' + f); prep['f' + f + 'r'] = mid('f' + f + 'r'); prep['k' + f] = mid('k' + f); }
@@ -443,6 +480,7 @@ export function buildKata(kata) {
   // תנוחת פתיחה
   const startMove = { st: kata.start || 'hachiji', dir: 'F', L: kata.startArms || 'yoi', R: kata.startArms || 'yoi' };
   const open = composeMove(st, startMove);
+  solidify(open.pose);
   st = open.state;
   let count = 0;
   const lastM = kata.moves[kata.moves.length - 1];
@@ -454,6 +492,7 @@ export function buildKata(kata) {
     cont = !!m.via;
     const [dur, hold] = TEMPO[m.t || 'n'];
     const [vd] = TEMPO.f;
+    for (const q of [c.pose, c.prep, c.air, c.post]) if (q) solidify(q);
     out.push({ m, count, dur: m.dur || (m.via && !m.t ? vd : dur), hold: m.via ? (m.hold ?? 0.05) : (m.hold ?? hold) + (m.kiai ? 0.5 : 0), ...c });
     st = c.state;
   }
@@ -509,12 +548,41 @@ export function timeline(K) {
 
 const sm = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
 const late = (u, s, pw) => Math.pow(Math.max(0, (u - s) / (1 - s)), pw);
+// אינטרפולציה בין שתי תנוחות. הידיים עוברות במערכת הגוף (מסתובבות יחד עם החזה) ולא בקו ישר בחלל,
+// כדי שבסיבוב היד תישאר לפני הגוף ולא תחצה אותו.
+const BA = 0.20, BB = 0.27;   // חצאי הצירים של הגו כולל עובי היד
+const CORE = ['pel', 'rot', 'head', 'tw'], FEET = ['fL', 'fR', 'kL', 'kR', 'fLr', 'fRr'];
+const lerpV = (x, y, t, o) => { for (let i = 0; i < x.length; i++) o[i] = x[i] + (y[i] - x[i]) * t; return o; };
 function lerpChain(a, b, u, chain, out) {
-  for (const k in a) {
-    const g = k[0] === 'h' && k !== 'head' || k[0] === 'e' || k[0] === 'g' ? 'arms' : (k === 'pel' || k === 'rot' || k === 'head' ? 'core' : (k === 'tw' ? 'core' : 'feet'));
-    const t = chain[g](u), x = a[k], y = b[k];
-    if (Array.isArray(x)) { const o = out[k] || (out[k] = new Array(x.length)); for (let i = 0; i < x.length; i++) o[i] = x[i] + (y[i] - x[i]) * t; }
-    else out[k] = x + (y - x) * t;
+  const tc = chain.core(u), tf = chain.feet(u), ta = chain.arms(u);
+  for (const k of CORE) { if (k === 'tw') out.tw = a.tw + (b.tw - a.tw) * tc; else out[k] = lerpV(a[k], b[k], tc, out[k] || []); }
+  for (const k of FEET) out[k] = lerpV(a[k], b[k], tf, out[k] || []);
+  const ya = a.rot[0] + a.tw, yb = b.rot[0] + b.tw, yt = out.rot[0] + out.tw;
+  const Ra = Ry(-ya), Rb = Ry(-yb), Rt = Ry(yt);
+  for (const s of ['L', 'R']) {
+    {
+      const k = 'e' + s, la = mv(Ra, a[k]), lb = mv(Rb, b[k]);
+      out[k] = mv(Rt, [la[0] + (lb[0] - la[0]) * ta, la[1] + (lb[1] - la[1]) * ta, la[2] + (lb[2] - la[2]) * ta]);
+    }
+    {
+      // היד: קו ישר כשהוא עובר מחוץ לגוף. כשהקו הישר חוצה את הגו, היד עוקפת אותו מלפנים במסלול מעגלי סביב עמוד השדרה.
+      const k = 'h' + s, la = mv(Ra, a[k]), lb = mv(Rb, b[k]);
+      let x = la[0] + (lb[0] - la[0]) * ta, z = la[2] + (lb[2] - la[2]) * ta;
+      const y = la[1] + (lb[1] - la[1]) * ta;
+      const rl = Math.hypot(x / BA, z / BB);
+      if (rl < 1.3 && y < 0.22) {
+        const pa = Math.atan2(la[2] / BB, la[0] / BA), pb = Math.atan2(lb[2] / BB, lb[0] / BA);
+        let dl = pb - pa; while (dl > PI) dl -= 2 * PI; while (dl < -PI) dl += 2 * PI;
+        if (Math.abs(pa + dl) > PI) dl -= Math.sign(dl) * 2 * PI;      // לא דרך הגב
+        const ph = pa + dl * ta;
+        const ra = Math.max(1.02, Math.hypot(la[0] / BA, la[2] / BB)), rb = Math.max(1.02, Math.hypot(lb[0] / BA, lb[2] / BB));
+        const rc = ra + (rb - ra) * ta;
+        const w = sm((1.3 - rl) / 0.45) * sm((0.22 - y) / 0.16);
+        x += (Math.cos(ph) * rc * BA - x) * w; z += (Math.sin(ph) * rc * BB - z) * w;
+      }
+      out[k] = mv(Rt, [x, y, z]);
+    }
+    out['g' + s] = lerpV(a['g' + s], b['g' + s], ta, out['g' + s] || []);
   }
   return out;
 }

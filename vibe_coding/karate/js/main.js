@@ -1,7 +1,7 @@
 // main.js: סצנה, דוג'ו, מצלמה, קלט, ממשק וצליל.
 
 import * as THREE from 'three';
-import { solve, clonePose } from './body.js';
+import { solve, clonePose, solidify } from './body.js';
 import { TECH, KAMAE, poseAt } from './techniques.js';
 import { Match, ARENA } from './fight.js';
 import { makeAI } from './ai.js';
@@ -496,7 +496,7 @@ function kataFrame(dt) {
     const lock = Math.exp(-a / 0.11), ring = Math.exp(-a / 0.05) * Math.cos(a * 70);
     p.pel[1] -= 0.014 * lock; p.rot[1] += 0.02 * ring; p.hL[1] += 0.006 * ring; p.hR[1] += 0.006 * ring;
   } else if (!k.playing || a > 0.4) { p.pel[1] += Math.sin(time * 1.9) * 0.004; }
-  rigs[0].update(solve(p));
+  rigs[0].update(solve(solidify(p, 4, 0.12)));
   rigs[0].group.position.set(k.pos[0], 0, k.pos[1]);
   const w = kataWorld(r.pose.pel), f = Math.min(1, dt * 3.5);
   k.cam[0] += (w[0] - k.cam[0]) * f; k.cam[1] += (w[1] - k.cam[1]) * f;

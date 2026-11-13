@@ -178,3 +178,88 @@ export function distToSeg(p, a, b) {
   const t = clamp(dot(ap, ab) / (dot(ab, ab) || 1), 0, 1);
   return len(sub(ap, mul(ab, t)));
 }
+
+// ---------- גוף מוצק ----------
+// מתקן תנוחה כך שהידיים לא חודרות לגו, לראש, לירכיים או זו לזו. הגו הוא גליל אליפטי סביב עמוד השדרה,
+// הראש כדור, הירכיים והאמות קפסולות. נקודה שחדרה נדחפת החוצה אל פני השטח, והיד כולה זזה איתה.
+const tr = (M, v) => [M[0][0] * v[0] + M[1][0] * v[1] + M[2][0] * v[2], M[0][1] * v[0] + M[1][1] * v[1] + M[2][1] * v[2], M[0][2] * v[0] + M[1][2] * v[1] + M[2][2] * v[2]];
+const TORSO = { a: 0.150, b: 0.222, y0: -0.16, y1: 0.50 };
+function pushTorso(pt, J, r) {
+  const l = tr(J.B, sub(pt, J.pel));
+  if (l[1] < TORSO.y0 - r || l[1] > TORSO.y1 + r * 0.3) return null;
+  // הגו צר מעט במותן ורחב בחזה
+  const u = clamp(l[1] / TORSO.y1, 0, 1);
+  const a = TORSO.a - 0.012 * (1 - u) + r, b = TORSO.b - 0.03 * (1 - u) + r;
+  const q = (l[0] * l[0]) / (a * a) + (l[2] * l[2]) / (b * b);
+  if (q >= 1) return null;
+  let x = l[0], z = l[2];
+  if (q < 1e-6) { x = 1e-3; z = 0; }
+  // דוחפים אל פני האליפסה. נקודה שנמצאת בחצי הקדמי נדחפת קדימה ולא דרך הגוף אל הגב
+  const k = 1 / Math.sqrt((x * x) / (a * a) + (z * z) / (b * b));
+  const nl = [x * k, l[1], z * k];
+  return sub(add(J.pel, mv(J.B, nl)), pt);
+}
+function pushSphere(pt, c, R) {
+  const d = sub(pt, c), L = len(d);
+  if (L >= R) return null;
+  return L < 1e-5 ? [R, 0, 0] : mul(d, (R - L) / L);
+}
+function pushCapsule(pt, a, b, R) {
+  const ab = sub(b, a), t = clamp(dot(sub(pt, a), ab) / (dot(ab, ab) || 1), 0, 1);
+  return pushSphere(pt, add(a, mul(ab, t)), R);
+}
+// הנקודות הקרובות ביותר בין שני קטעים
+function segSeg(p1, q1, p2, q2) {
+  const d1 = sub(q1, p1), d2 = sub(q2, p2), r = sub(p1, p2);
+  const a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r);
+  let s, t;
+  const c = dot(d1, r), b = dot(d1, d2), den = a * e - b * b;
+  s = den > 1e-9 ? clamp((b * f - c * e) / den, 0, 1) : 0;
+  t = e > 1e-9 ? (b * s + f) / e : 0;
+  if (t < 0) { t = 0; s = clamp(-c / (a || 1), 0, 1); } else if (t > 1) { t = 1; s = clamp((b - c) / (a || 1), 0, 1); }
+  return [add(p1, mul(d1, s)), add(p2, mul(d2, t)), s, t];
+}
+const ARM_R = 0.047, ARM_GAP = 0.094;
+export function solidify(p, iters = 4, cap = 0) {
+  const h0 = cap ? [p.hL.slice(), p.hR.slice()] : null;
+  for (let it = 0; it < iters; it++) {
+    const J = solve(p);
+    let moved = false;
+    for (const s of ['L', 'R']) {
+      const el = J['el' + s], wr = J['wr' + s], dir = norm(sub(wr, el));
+      const pts = [[wr, 1], [add(wr, mul(dir, 0.10)), 1], [add(el, mul(sub(wr, el), 0.5)), 2]];
+      let c = [0, 0, 0];
+      for (const [pt, w] of pts) {
+        for (const d of [
+          pushTorso(pt, J, ARM_R), pushSphere(pt, J.head, 0.118 + ARM_R),
+          pushCapsule(pt, J.hipL, J.knL, 0.092 + ARM_R), pushCapsule(pt, J.hipR, J.knR, 0.092 + ARM_R),
+        ]) if (d) c = add(c, mul(d, w));
+      }
+      if (len(c) > 1e-4) { p['h' + s] = add(p['h' + s], c); moved = true; }
+      // מרפק שנכנס לגו: מסובבים את כיוון המרפק החוצה
+      const de = pushTorso(el, J, ARM_R);
+      if (de && len(de) > 1e-3) { p['e' + s] = add(norm(p['e' + s]), mul(de, 14)); moved = true; }
+    }
+    // האמות זו מול זו
+    {
+      const eL = J.elL, eR = J.elR;
+      const tL = add(J.wrL, mul(norm(sub(J.wrL, eL)), 0.12)), tR = add(J.wrR, mul(norm(sub(J.wrR, eR)), 0.12));
+      const [a, b, sa, sb] = segSeg(eL, tL, eR, tR);
+      const d = sub(a, b), L = len(d);
+      if (L < ARM_GAP) {
+        // אם הן ממש חוצות זו את זו, הקדמית היא זו ששורש כף היד שלה קדמי יותר במערכת החזה
+        let n;
+        if (L > 0.012) n = mul(d, 1 / L);
+        else { const fx = [J.C[0][0], J.C[1][0], J.C[2][0]]; n = mul(fx, dot(sub(J.wrL, J.wrR), fx) >= 0 ? 1 : -1); }
+        const push = (ARM_GAP - L) * 0.5;
+        // הדחיפה חלשה ליד המרפק (שם היד לא יכולה לזוז) וחזקה ליד כף היד
+        p.hL = add(p.hL, mul(n, push * (0.5 + sa))); p.hR = sub(p.hR, mul(n, push * (0.5 + sb)));
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  // תיקון גדול בפריים בודד נראה כקפיצה. בתנועה מהירה מגבילים אותו; תנוחות המפתח כבר מתוקנות במלואן.
+  if (cap) ['hL', 'hR'].forEach((k, i) => { const d = sub(p[k], h0[i]), L = len(d); if (L > cap) p[k] = add(h0[i], mul(d, cap / L)); });
+  return p;
+}
