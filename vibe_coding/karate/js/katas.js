@@ -210,6 +210,73 @@ kata('tekki1', 'tekki', 'טקי שודאן', 'Tekki Shodan', 'רוכב הברז�
   moves: [...tekki1Half('R', false), ...tekki1Half('L', true)],
 });
 
+// טקי נידאן. a הצד שאליו הולכים.
+const tkTop = (side) => (side === 'R' ? { L: 'kRtop', R: 'kRbot' } : { L: 'kLbot', R: 'kLtop' });
+const tkCross = (b, look) => S('kosaY', b, 'F', b, { via: true, t: 'n', look, L: 'hold', R: 'hold' });
+function tekki2Open(a) {
+  const b = a === 'R' ? 'L' : 'R';
+  return [
+    S('kosaY', b, 'F', b, { L: 'hijiUp', look: a, t: 's', he: 'הרמת המרפקים', ja: 'ryo hiji kamae', note: 'האגרופים מול החזה, המרפקים לצדדים' }),
+    KB('L', 'F', a, { [a]: 'uchi@' + a, [b]: 'underElbow', look: a, knee: true, stomp: true, he: 'סוקומן־אוקה', ja: 'sokumen-uke', note: 'האגרוף השני תומך ליד המרפק' }),
+    S('kosaY', b, 'F', b, { [a]: 'gedan@' + a, [b]: 'soeteLow@' + a, look: a, he: 'גדאן־אוקה, כף היד תומכת', ja: 'soete gedan-uke' }),
+    KB('L', 'F', a, { [a]: 'uchi@' + a, [b]: 'soete@' + a, look: a, he: 'אודה־אוקה, כף היד תומכת', ja: 'soete ude-uke' }),
+  ];
+}
+function tekki2Close(a, kiai) {
+  const b = a === 'R' ? 'L' : 'R';
+  return [
+    KB('L', 'F', 0, { ...tkTop(a), look: a, t: 'm' }),
+    KB('L', 'F', a, { [a]: 'empi@F', [b]: 'palmT@F', look: a, knee: true, stomp: true, he: 'מאה־אמפי, כף היד תומכת', ja: 'soete mae-empi' }),
+    KB('L', 'F', 0, { [a]: 'tateShuto@' + a, [b]: 'hiki', look: a, t: 's', he: 'צוקאמי־אוקה', ja: 'tsukami-uke', note: 'היד נפתחת לצד ותופסת' }),
+    KB('L', 'F', 0, { [b]: 'kagi', [a]: 'hiki', look: a }),
+    tkCross(b, 'F'),
+    KB('L', 'F', a, { [a]: 'uchi@F', [b]: 'hiki', look: 'F', knee: true, stomp: true }),
+    KB('L', 'F', 0, { [a]: 'nagashiJ', [b]: 'gedan@F', look: 'F', t: 'f', he: 'נגשי־אוקה ג׳ודאן + גדאן־אוקה', ja: 'jodan nagashi-uke, gedan-uke' }),
+    KB('L', 'F', 0, { [a]: 'uraUchi@F', [b]: 'underElbow', look: 'F', t: 'f', hold: 0.5, ...(kiai ? { kiai: true } : {}) }),
+  ];
+}
+kata('tekki2', 'tekki', 'טקי נידאן', 'Tekki Nidan', 'רוכב הברזל, שנייה', {
+  startArms: 'yoi',
+  moves: [...tekki2Open('R'), ...tekki2Open('L'), ...tekki2Close('R', false), ...tekki2Close('L', true)],
+});
+
+// טקי סנדאן
+const t3Block = (a, kiai) => {
+  const b = a === 'R' ? 'L' : 'R';
+  return [
+    KB('L', 'F', 0, { [a]: 'uchi@F', [b]: 'gedan@F', look: 'F', t: 'f', he: 'אודה־אוקה + גדאן־אוקה', ja: 'ude-uke, gedan-uke' }),
+    KB('L', 'F', 0, { [a]: 'nagashiJ', [b]: 'underElbow', look: 'F', t: 'f', he: 'נגשי־אוקה ג׳ודאן', ja: 'jodan nagashi-uke' }),
+    KB('L', 'F', 0, { [a]: 'uraUchi@F', [b]: 'underElbow', look: 'F', t: 'f', hold: 0.5, ...(kiai ? { kiai: true } : {}) }),
+  ];
+};
+const t3Side = (a) => {
+  const b = a === 'R' ? 'L' : 'R';
+  return [
+    KB('L', 'F', 0, { ...tkTop(a), look: 'F', t: 'm' }),
+    KB('L', 'F', 0, { [a]: 'tsuki_c@F', [b]: 'soete@F', look: 'F', he: 'צוקי צ׳ודאן, כף היד תומכת', ja: 'soete chudan-zuki' }),
+    tkCross(b, a),
+    KB('L', 'F', a, { [a]: 'gedan@' + a, [b]: 'soeteLow@' + a, look: a, knee: true, stomp: true, he: 'גדאן־אוקה אל הצד', ja: 'sokumen gedan-uke' }),
+    KB('L', 'F', 0, { [a]: 'overHead', [b]: 'hiki', look: 'F', via: true, t: 'm' }),
+    KB('L', 'F', 0, { ...tkTop(a), look: 'F', t: 'f', he: 'היד חוזרת בקשת מעל הראש אל המותן', ja: 'koshi-gamae' }),
+    KB('L', 'F', 0, { [a]: 'tsuki_c@F', [b]: 'soete@F', look: 'F', he: 'צוקי צ׳ודאן, כף היד תומכת', ja: 'soete chudan-zuki' }),
+  ];
+};
+kata('tekki3', 'tekki', 'טקי סנדאן', 'Tekki Sandan', 'רוכב הברזל, שלישית', {
+  startArms: 'yoi',
+  moves: [
+    KB('L', 'F', 'R', { L: 'uchi@F', R: 'hiki', look: 'F', knee: true, stomp: true }),
+    ...t3Block('R'), ...t3Side('R'), ...t3Block('L'),
+    tkCross('R', 'F'),
+    KB('L', 'F', 'L', { R: 'uchi@F', L: 'hiki', look: 'F', knee: true, stomp: true }),
+    ...t3Block('L'), ...t3Side('L'),
+    KB('L', 'F', 0, { R: 'tateShuto@R', L: 'hiki', look: 'R', t: 's', he: 'צוקאמי־אוקה', ja: 'tsukami-uke' }),
+    KB('L', 'F', 0, { L: 'kagi', R: 'hiki', look: 'R' }),
+    tkCross('L', 'F'),
+    KB('L', 'F', 'R', { R: 'uchi@F', L: 'hiki', look: 'F', knee: true, stomp: true }),
+    ...t3Block('R', true),
+  ],
+});
+
 // ---------- קאטות מתקדמות ----------
 kata('bassai', 'adv', 'בסאי', 'Bassai', 'לפרוץ את המבצר', {
   start: 'heisoku', startArms: 'cover',
@@ -438,5 +505,128 @@ kata('empi', 'adv', 'אמפי', 'Empi', 'מעוף הסנונית', {
     Z('R', 'F', 0, { R: 'kokoHi', L: 'kokoLo', t: 'm', he: 'אחיזה והרמה', ja: 'koko-gamae', note: 'יד ימין למעלה, שמאל למטה' }),
     KO('R', 'F', 0, { R: 'shuto', air: true, airH: 0.3, spin: -360, go: ['F', 0.5], kiai: true, note: 'קפיצה עם סיבוב מלא שמאלה' }),
     KO('L', 'F', 'R', { L: 'shuto', note: 'צעד לאחור' }),
+  ],
+});
+
+// ---------- הנגטסו ----------
+const HG = (lead, dir, mv, o) => S('hangetsu', lead, dir, mv, o);
+const hgSet = (lead, d, extra = {}) => {       // אודה־אוקה, גיאקו־צוקי, צוקי
+  const o = lead === 'L' ? 'R' : 'L';
+  return [
+    HG(lead, d, lead, { [lead]: 'uchi', ...extra }),
+    HG(lead, d, 0, { [o]: 'tsuki_c', t: 'f' }),
+    HG(lead, d, 0, { [lead]: 'tsuki_c', t: 'f', hold: 0.4, he: 'צוקי צ׳ודאן', ja: 'chudan-zuki' }),
+  ];
+};
+const hgKick = (lead, d) => {                  // אורקן בקוקוטסו, מאה־גרי, גדאן־בראי, גיאקו־צוקי, אגה־אוקה
+  const o = lead === 'L' ? 'R' : 'L';
+  return [
+    KO(lead, d, 0, { [lead]: 'uraken', [o]: 'hiki', t: 's', turn: '-', he: 'אורקן (בקשת איטית)', ja: 'uraken' }),
+    S('heisoku', o, d, o, { via: true, t: 'n', L: 'hold', R: 'hold' }),
+    KK('mae', lead, d, d),
+    HG(lead, d, lead, { [lead]: 'gedan', t: 'f' }),
+    HG(lead, d, 0, { [o]: 'tsuki_c', t: 'f' }),
+    HG(lead, d, 0, { [lead]: 'age', t: 'f', hold: 0.4 }),
+  ];
+};
+kata('hangetsu', 'adv', 'הנגטסו', 'Hangetsu', 'חצי ירח', {
+  drift: 2.2,
+  moves: [
+    HG('L', 'F', 'L', { L: 'uchi', t: 's' }),
+    HG('L', 'F', 0, { R: 'tsuki_c', t: 's' }),
+    HG('R', 'F', 'R', { R: 'uchi', t: 's' }),
+    HG('R', 'F', 0, { L: 'tsuki_c', t: 's' }),
+    HG('L', 'F', 'L', { L: 'uchi', t: 's' }),
+    HG('L', 'F', 0, { R: 'tsuki_c', t: 's' }),
+    HG('L', 'F', 0, { L: 'hijiUp', t: 's', he: 'האגרופים נמשכים אל החזה', ja: '', note: 'אגרופי איפון־קן, המרפקים לצדדים' }),
+    HG('L', 'F', 0, { L: 'morote_c', t: 's', he: 'מורוטה איפון־קן', ja: 'morote ippon-ken', note: 'שתי הידיים נדחפות קדימה לאט' }),
+    HG('L', 'F', 0, { L: 'yamaO', t: 's', he: 'יאמה־גמאה', ja: 'yama-gamae', note: 'הידיים הפתוחות עולות לצדי הראש' }),
+    HG('L', 'F', 0, { L: 'sideOpenLow', t: 's', he: 'הידיים יורדות לצדדים', ja: 'ryosho gedan' }),
+    HG('R', 'B', 0, { R: 'uchiO', L: 'gedanO', turn: '-', t: 'm', he: 'שוטו אודה־אוקה + גדאן', ja: 'shuto ude-uke, gedan-uke', note: 'בסיום היד העליונה מסתובבת ותופסת' }),
+    HG('L', 'B', 'L', { L: 'uchiO', R: 'gedanO', t: 'm', he: 'שוטו אודה־אוקה + גדאן', ja: 'shuto ude-uke, gedan-uke' }),
+    HG('R', 'B', 'R', { R: 'uchiO', L: 'gedanO', t: 'm', he: 'שוטו אודה־אוקה + גדאן', ja: 'shuto ude-uke, gedan-uke' }),
+    ...hgSet('R', 'L'),
+    ...hgSet('L', 'R', { turn: '-' }),
+    ...hgSet('R', 'B'),
+    ...hgKick('L', 'F'),
+    ...hgKick('R', 'B'),
+    KO('L', 'F', 0, { L: 'uraken', R: 'hiki', t: 's', turn: '-', he: 'אורקן (בקשת איטית)', ja: 'uraken' }),
+    KK('mika', 'R', 'F', 'F', { L: 'palmSide', note: 'הבעיטה פוגעת בכף יד שמאל' }),
+    HG('L', 'F', 'R', { R: 'tsuki_g', L: 'hiki', kiai: true, he: 'גדאן־צוקי', ja: 'gedan-zuki', note: 'רגל ימין נוחתת מאחור' }),
+    S('neko', 'L', 'F', 'L', { L: 'teishoG', t: 's', he: 'טיישו גדאן בשתי הידיים', ja: 'ryosho gedan-uke', note: 'הרגל הקדמית נמשכת לאחור לנקו־אשי' }),
+  ],
+});
+
+// ---------- ג'וטה ----------
+kata('jutte', 'adv', 'ג׳וטה', 'Jutte', 'עשר ידיים', {
+  start: 'heisoku', startArms: 'jiai', end: { mv: 'R' }, drift: 2.5,
+  moves: [
+    Z('R', 'F', 'L', { R: 'kake', L: 'hiki', t: 's', note: 'רגל שמאל נסוגה, פרק כף היד לוחץ' }),
+    Z('L', 'FL', 'L', { R: 'teisho', L: 'osae', t: 's', he: 'מורוטה טיישו', ja: 'teisho morote-uke', note: 'יד אחת לוחצת מטה, השנייה דוחפת' }),
+    Z('R', 'R', 0, { L: 'haito', R: 'hiki', t: 'm' }),
+    KB('R', 'L', 'R', { R: 'teisho@F', L: 'hiki', look: 'F', knee: true, turn: '-', he: 'טיישו־אוצ׳י', ja: 'teisho-uchi' }),
+    KB('L', 'R', 'L', { L: 'teisho@F', R: 'hiki', look: 'F', knee: true, turn: '+', he: 'טיישו־אוצ׳י', ja: 'teisho-uchi' }),
+    KB('R', 'L', 'R', { R: 'teisho@F', L: 'hiki', look: 'F', knee: true, turn: '-', he: 'טיישו־אוצ׳י', ja: 'teisho-uchi' }),
+    S('heisoku', 'L', 'F', 'L', { L: 'jujiJF', t: 'm', turn: '+' }),
+    KB('L', 'F', 'L', { L: 'gedanBoth', he: 'ריוואן גדאן קקיוואקה', ja: 'ryowan gedan kakiwake' }),
+    KB('L', 'F', 0, { L: 'yamaF', t: 'm', stomp: true, he: 'יאמה־גמאה', ja: 'yama-gamae', note: 'הזרועות בצורת הר' }),
+    KB('L', 'R', 'L', { L: 'yamaF', look: 'F', knee: true, stomp: true, turn: '+', note: 'פומיקומי, כל הגוף מסתובב' }),
+    KB('R', 'L', 'R', { L: 'yamaF', look: 'F', knee: true, stomp: true, turn: '-', note: 'פומיקומי' }),
+    KB('L', 'R', 'L', { L: 'yamaF', look: 'F', knee: true, stomp: true, turn: '+', note: 'פומיקומי' }),
+    S('hachiji', 'L', 'B', 'L', { L: 'side', R: 'side', t: 's', turn: '+', he: 'עמידה טבעית, הידיים יורדות', ja: 'shizentai' }),
+    Z('R', 'B', 'R', { R: 'kokoHi', L: 'kokoLo', t: 'm', he: 'בו־אוקה (תפיסת מקל)', ja: 'bo-uke', note: 'יד אחת למעלה, השנייה למטה' }),
+    S('tsuru', 'L', 'B', 'L', { L: 'kRtop', R: 'kRbot', t: 'm', he: 'משיכת המקל אל המותן', ja: 'bo-dori', note: 'הברך מורמת' }),
+    Z('L', 'B', 'L', { L: 'kokoHi', R: 'kokoLo', stomp: true, he: 'דחיפת המקל', ja: 'bo-tsukidashi' }),
+    S('tsuru', 'R', 'B', 'R', { L: 'kLbot', R: 'kLtop', t: 'm', he: 'משיכת המקל אל המותן', ja: 'bo-dori', note: 'הברך מורמת' }),
+    Z('R', 'B', 'R', { R: 'kokoHi', L: 'kokoLo', stomp: true, he: 'דחיפת המקל', ja: 'bo-tsukidashi' }),
+    Z('L', 'L', 'L', { L: 'age', turn: '-' }),
+    Z('R', 'R', 0, { R: 'age' }),
+    Z('L', 'B', 'L', { L: 'age', turn: '+' }),
+    Z('R', 'B', 'R', { R: 'age', kiai: true }),
+  ],
+});
+
+// ---------- גנקאקו ----------
+const gkCrane = (leg, d, face, last) => {      // עמידת עגור, יוקו־גרי קאגה עם אורקן, ואז צוקי
+  const o = leg === 'L' ? 'R' : 'L';
+  const koshi = leg === 'R' ? { L: 'kLbot', R: 'kLtop' } : { L: 'kRtop', R: 'kRbot' };
+  return [
+    S('tsuru', leg, face, leg, { ...koshi, look: d, t: 'm', he: 'עמידת העגור, קושי־גמאה', ja: 'tsuru-ashi-dachi' }),
+    KK('yoko', leg, d, face, { [leg]: 'uraken@' + d, look: d }),
+    Z(leg, d, leg, last ? { [leg]: 'tsuki_c', kiai: true } : { [o]: 'tsuki_c' }),
+  ];
+};
+kata('gankaku', 'adv', 'גנקאקו', 'Gankaku', 'עגור על סלע', {
+  drift: 5,
+  moves: [
+    KO('R', 'F', 'L', { L: 'awase@FR', t: 'm', he: 'אוואסה־אוקה ג׳ודאן לצד', ja: 'jodan awase-uke', note: 'רגל שמאל נסוגה, שתי הידיים הפתוחות לצד ימין' }),
+    KO('R', 'F', 0, { L: 'osaeLow', t: 'm' }),
+    Z('R', 'F', 0, { L: 'tsuki_c', t: 'f', he: 'צוקי צ׳ודאן', ja: 'chudan-zuki' }),
+    Z('R', 'F', 0, { R: 'tsuki_c', t: 'f', hold: 0.4, he: 'צוקי צ׳ודאן', ja: 'chudan-zuki' }),
+    Z('L', 'B', 0, { R: 'gedan', L: 'hiki', turn: '-', note: 'סיבוב שמאלה' }),
+    Z('R', 'F', 0, { L: 'jujiJ', turn: '-', t: 'm' }),
+    Z('R', 'F', 0, { L: 'crossChest', t: 's', he: 'הידיים יורדות אל החזה', ja: '' }),
+    KK('mae', 'L', 'F', 'F', { via: true, t: 'x', hold: 0 }),
+    KK('mae', 'R', 'F', 'F', { lv: 'j', jumpH: 0.30, he: 'נידאן־גרי', ja: 'nidan-geri', note: 'בעיטה כפולה בקפיצה' }),
+    Z('R', 'F', 'R', { L: 'jujiG' }),
+    Z('L', 'B', 0, { L: 'jujiG', turn: '-' }),
+    Z('R', 'F', 0, { L: 'jujiOpenG', turn: '+' }),
+    KO('L', 'F', 'L', { L: 'shutoG' }),
+    Z('R', 'F', 'R', { L: 'kakiwakeO', t: 's', he: 'קקיוואקה־אוקה בידיים פתוחות', ja: 'ryosho kakiwake-uke' }),
+    KB('R', 'L', 'L', { L: 'gedanBoth', turn: '-', he: 'ריוואן גדאן קקיוואקה', ja: 'ryowan gedan kakiwake' }),
+    S('heisoku', 'L', 'L', 'R', { R: 'gedan@F', L: 'manjiHi', look: 'F', t: 'm', he: 'מנג׳י־גמאה', ja: 'manji-gamae' }),
+    KB('L', 'R', 'R', { L: 'gedanBoth', turn: '+', he: 'ריוואן גדאן קקיוואקה', ja: 'ryowan gedan kakiwake' }),
+    S('heisoku', 'L', 'R', 'L', { L: 'gedan@F', R: 'manjiHi', look: 'F', t: 'm', he: 'מנג׳י־גמאה', ja: 'manji-gamae' }),
+    S('hiza', 'L', 'L', 'L', { R: 'tsuki_g', L: 'hiki', turn: '-', he: 'אוטושי־צוקי בכריעה', ja: 'otoshi-zuki', note: 'ברך ימין יורדת לרצפה' }),
+    KO('L', 'L', 0, { L: 'gedan', R: 'manjiHi', he: 'מנג׳י־אוקה', ja: 'manji-uke' }),
+    S('hachiji', 'L', 'F', 'L', { L: 'hipFist', R: 'hipFist', t: 'm', he: 'ריוקן קושי־גמאה', ja: 'ryoken koshi-gamae', note: 'האגרופים על המותניים' }),
+    S('hachiji', 'L', 'F', 0, { L: 'hipFist', R: 'hipFist', tw: 50, t: 'f', he: 'סיבוב המותניים ימינה', ja: '' }),
+    S('hachiji', 'L', 'F', 0, { L: 'hipFist', R: 'hipFist', tw: -50, t: 'f', he: 'סיבוב המותניים שמאלה', ja: '' }),
+    ...gkCrane('R', 'R', 'F'),
+    ...gkCrane('L', 'L', 'F'),
+    ...gkCrane('R', 'R', 'F'),
+    KO('L', 'L', 'L', { L: 'shuto', turn: '-' }),
+    Z('L', 'L', 0, { R: 'empi', L: 'palmT', he: 'מאה־אמפי', ja: 'mae-empi' }),
+    ...gkCrane('R', 'B', 'R', true),
   ],
 });
