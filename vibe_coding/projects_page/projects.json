@@ -1211,6 +1211,46 @@
           ]
         },
         {
+          "title": "רוצים שקיפות: מה בונים לנו",
+          "icon": "🏗️",
+          "theme": "t-green",
+          "dir": "transparency/ma-bonim",
+          "tags": [
+            "Xplan",
+            "מבא\"ת",
+            "Leaflet",
+            "Shapely",
+            "Vanilla JS"
+          ],
+          "desc": "<strong style=\"color:#34d399\">מה מתוכנן להיבנות בפרדס חנה-כרכור, ומתי אפשר להתנגד.</strong><br> כל תוכנית שפתוחה עכשיו להתנגדות עם ספירה לאחור, מה בדרך ומה אושר בשנה האחרונה, מתעדכן כל בוקר ממינהל התכנון, כולל חלונות שהאתר הארצי לא מציג. ובדף \"על הנייר\": שבילים, דרכים וגינות שהתוכניות ייעדו לציבור, מול הבעלות בטאבו ומה שקיים בשטח. 173 שבילים שהקרקע שלהם כבר ציבורית ואין בהם מעבר, מדורגים לפי ההליכה שפתיחתם תחסוך. חלק מיוזמת שקיפות מוניציפלית.",
+          "links": [
+            {
+              "href": "transparency/ma-bonim/index.html",
+              "style": "live",
+              "label": "▶ מה בונים לנו",
+              "external": false
+            },
+            {
+              "href": "transparency/ma-bonim/gaps.html",
+              "style": "secondary",
+              "label": "🗺️ על הנייר",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/transparency/ma-bonim",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "רוצים שקיפות: תקציב המדינה",
           "icon": "🇮🇱",
           "theme": "t-blue",
