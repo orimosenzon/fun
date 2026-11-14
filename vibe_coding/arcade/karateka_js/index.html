@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>מחווה ל-Karateka ב-JavaScript</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0c0c0e; color: #ddd; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; min-height: 100vh; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+  .screen { position: relative; width: min(100%, 980px, calc((100vh - 230px) * 280 / 192)); min-width: 280px; }
+  canvas { display: block; width: 100%; aspect-ratio: 280 / 192; image-rendering: pixelated; background: #000; border-radius: 6px; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: rgba(0, 0, 0, .72); border-radius: 6px; text-align: center; padding: 16px; }
+  .overlay[hidden] { display: none; }
+  .screen:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; }
+  .screen:fullscreen canvas { width: min(100vw, calc(100vh * 280 / 192)); border-radius: 0; }
+  button { font: inherit; color: #eee; background: #26262b; border: 1px solid #55555e; border-radius: 8px; padding: 8px 16px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  button:active, button.on { background: #4a4a55; }
+  .big { font-size: 20px; padding: 12px 34px; background: #b3401f; border-color: #e0633c; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; font-size: 14px; }
+  .pad { display: none; width: min(100%, 980px); justify-content: space-between; gap: 12px; direction: ltr; }
+  .pad .grp { display: grid; gap: 6px; grid-template-columns: repeat(2, 1fr); }
+  .pad button { min-width: 56px; min-height: 48px; font-size: 18px; padding: 6px; }
+  @media (pointer: coarse) { .pad { display: flex; } .keys { display: none; } }
+  table { border-collapse: collapse; font-size: 14px; } td { padding: 3px 12px; border-bottom: 1px solid #2c2c33; }
+  kbd { background: #2c2c33; border-radius: 4px; padding: 1px 7px; font-family: ui-monospace, monospace; }
+  .note { max-width: 760px; font-size: 13px; color: #8a8a94; text-align: center; line-height: 1.5; }
+  .note a { color: #6cf; }
+</style>
+</head>
+<body>
+<h1>מחווה ל-Karateka, כתובה מחדש ב-JavaScript</h1>
+<div class="screen">
+  <canvas id="scr" width="280" height="192"></canvas>
+  <div class="overlay" id="ov"><button class="big" id="start">התחל</button><div id="msg" class="note"></div></div>
+</div>
+<div class="bar">
+  <button id="pause">השהה</button>
+  <button id="mute">השתק</button>
+  <button id="full">מסך מלא</button>
+  <button id="restart">התחל מחדש</button>
+</div>
+<div class="pad" id="pad">
+  <div class="grp">
+    <button data-k="8">◀</button><button data-k="21">▶</button>
+    <button data-k="32" style="grid-column: span 2">עמידה / קרב</button>
+    <button data-k="66" style="grid-column: span 2">קידה</button>
+  </div>
+  <div class="grp">
+    <button data-k="81">👊 גבוה</button><button data-k="87">🦶 גבוה</button>
+    <button data-k="65">👊 אמצע</button><button data-k="83">🦶 אמצע</button>
+    <button data-k="90">👊 נמוך</button><button data-k="88">🦶 נמוך</button>
+  </div>
+</div>
+<table class="keys">
+  <tr><td><kbd>רווח</kbd></td><td>מעבר בין עמידה לעמדת קרב</td></tr>
+  <tr><td><kbd>→</kbd> <kbd>←</kbd></td><td>ריצה (בעמידה), התקדמות ונסיגה (בעמדת קרב)</td></tr>
+  <tr><td><kbd>Q</kbd> <kbd>A</kbd> <kbd>Z</kbd></td><td>אגרוף גבוה, אמצעי, נמוך</td></tr>
+  <tr><td><kbd>W</kbd> <kbd>S</kbd> <kbd>X</kbd></td><td>בעיטה גבוהה, אמצעית, נמוכה</td></tr>
+  <tr><td><kbd>B</kbd></td><td>קידה</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td>השהיה</td></tr>
+</table>
+<div class="note">
+  כאן לא רץ אמולטור, לא רץ הקוד המקורי ואין צורך בדיסק של המשחק. כל שגרה נכתבה מחדש ב-JavaScript ונבדקה מול המקור בית אחרי בית,
+  והציורים, הדמויות, המנגינות והצלילים הם שלנו: צוירו והולחנו מחדש בקוד.
+  <br>בשלב הזה כתובה הסצנה הראשונה (הצוק והדרך אל השער). מחווה ל-Karateka של ג'ורדן מכנר, 1984.
+</div>
+<script type="module">
+import { Player } from './src/shell/player.js';
+
+const $ = (id) => document.getElementById(id);
+let player, paused = false;
+function stopped(why) { $('ov').hidden = false; $('start').hidden = false; $('start').textContent = 'שחק שוב'; $('msg').textContent = why === 'next' ? 'עברת את הסצנה הראשונה. ההמשך (המבצר) עוד לא נכתב מחדש.' : ''; }
+function start() {
+  try { if (!player) player = new Player($('scr'), { onEnd: stopped }); else if (player.state === 'stopped') player.newGame(); }
+  catch (e) { $('msg').textContent = 'המשחק לא עלה: ' + e.message; return; }
+  window.player = player; $('ov').hidden = true; paused = false; $('pause').textContent = 'השהה'; player.start();
+}
+$('start').onclick = start;
+$('pause').onclick = () => { if (!player) return; paused = !paused; player.pause(paused); $('pause').textContent = paused ? 'המשך' : 'השהה'; };
+$('mute').onclick = () => { if (!player) return; player.muted = !player.muted; $('mute').textContent = player.muted ? 'הפעל קול' : 'השתק'; };
+$('full').onclick = () => { const el = document.querySelector('.screen'); (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.()); };
+$('restart').onclick = () => { if (player) { player.newGame(); start(); } };
+
+// keys by where they sit on the keyboard, so that a Hebrew layout plays the same
+const CODES = { ArrowLeft: 0x08, ArrowRight: 0x15, Space: 0x20, Escape: 0x1b, KeyQ: 0x51, KeyA: 0x41, KeyZ: 0x5a, KeyW: 0x57, KeyS: 0x53, KeyX: 0x58, KeyB: 0x42 };
+addEventListener('keydown', (e) => {
+  if (!player || e.metaKey || e.altKey || e.ctrlKey) return;
+  const k = CODES[e.code]; if (k === undefined) return;
+  player.key(k); e.preventDefault();
+});
+for (const b of document.querySelectorAll('#pad button')) {
+  let timer = 0; const k = +b.dataset.k;
+  const down = (e) => { e.preventDefault(); if (!player) return; b.classList.add('on'); player.key(k); clearInterval(timer); timer = setInterval(() => player.key(k), 100); };
+  const up = () => { b.classList.remove('on'); clearInterval(timer); };
+  b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && player?.running) $('pause').onclick(); });
+</script>
+</body>
+</html>
