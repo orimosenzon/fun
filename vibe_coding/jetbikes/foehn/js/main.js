@@ -203,7 +203,7 @@ async function boot() {
   }
 
   // ---------------- cameras ----------------
-  const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
+  const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpV2 = new THREE.Vector2();
   camera.worldToScreen = (x, y, z) => { tmpV.set(x, y, z).applyMatrix4(camera.matrixWorldInverse); const behind = tmpV.z > 0; tmpV.applyMatrix4(camera.projectionMatrix); return { x: tmpV.x, y: tmpV.y, behind }; };
   function updateCamera(dt) {
     const b = game.bike, V = len(b.v), [yaw] = yprOf(b.q);
@@ -298,7 +298,7 @@ async function boot() {
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
-      gates.update(game, time); castle.update(time, game.sim.windW);
+      gates.update(game, time); castle.update(time, game.sim.windW, camera.position, renderer.getDrawingBufferSize(tmpV2).y, camera.fov);
       audio.engine(b, alive && mode === 'play', camera.position.distanceTo(model.root.position), camMode === 'cockpit');
       if (mode === 'play') {
         if (b.abLock && Math.floor(time * 4) % 2 === 0 && ctl.boost) hud.warn(t('warn.heat'));

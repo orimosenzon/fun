@@ -20,8 +20,15 @@ const solid = [['inside the keep', 61, 40, -20], ['curtain wall', 0, 10, -100], 
   ['corner tower', 150, 20, 105], ['its roof', 150, 60, 105], ['keystone of the bridge', -192, -1.5, 0], ['pillar of the east arcade', 124, 4, -49.5], ['roof of the hall', 60, 30, 56], ['spire of the keep', 61, 110, -4]];
 for (const [name, x, y, z] of solid) ok(`solid: ${name}`, hitCastle(W(x, y, z), 0), '');
 const air = [['gate tunnel', -150, 7, 0], ['nave of the hall', 60, 10, 56], ['window of the hall', 19.5, 8, 44], ['outer ward', -90, 10, 20], ['east gallery', 133, 8, -20], ['arcade opening', 124, 4, -44.25],
-  ['passage of the keep', 61, 7, -4], ['alley under a flying arch', 61.5, 8, 28], ['postern', -5, 6, 100], ['under the bridge', -192, -12, 0], ['above the roof of the hall, beside the ridge', 60, 40, 44], ['just above the battlements', 0, 28, -100]];
+  ['passage of the keep', 61, 7, -4], ['alley under a flying arch', 61.5, 8, 28], ['postern', -5, 6, 100], ['under the bridge', -192, -12, 0], ['above the roof of the hall, beside the ridge', 60, 40, 44], ['just above the battlements', -110, 28, -100], ['the chapel nave', -90, 6, -78], ['the chapel door', -98, 4, -67]];
 for (const [name, x, y, z] of air) ok(`free:  ${name}`, !hitCastle(W(x, y, z), 0.35), '');
+// furnishings
+const torches = C.deco.filter((d) => d.t === 'torch');
+ok('every torch hangs on a wall', torches.every((d) => d.nx || d.nz), `${torches.length} torches`);
+const count = (t) => C.deco.filter((d) => d.t === t).length;
+console.log(`furnishings: ${count('armor')} suits of armour, ${count('statue')} statues, ${count('shield')} shields, ${count('banner')} banners, ${count('tapestry')} tapestries, ${count('chandelier')} chandeliers, ${count('brazier')} fire baskets`);
+ok('a statue is in the way', hitCastle(W(46, 3, -10.3), 0), '');
+ok('but a banner is not', !hitCastle(W(47, 16, 51.7), 0.35), '');
 // the course
 const b = buildEvent(eventById('castle'));
 let worst = 1e9, at = null, low = 1e9;
