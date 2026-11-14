@@ -880,7 +880,17 @@ def _same_venue(a, b) -> bool:
     va, vb = norm(a["venue"]), norm(b["venue"])
     # containment, not equality: one feed says "השוק הישן", the other
     # "השוק הישן, האורנים 12, פרדס חנה" for the same room
-    return bool(va and vb) and (va in vb or vb in va)
+    if va and vb:
+        return va in vb or vb in va
+    # One side has no venue at all. "חיבור מקומי" left it blank for Narbata's
+    # jazz jam on 2026-11-18 and named the place only in the title ("גאם סשן
+    # גאז בנרבתא") and the organizer field, so the evening was listed twice
+    # beside "עמק הופעות"'s "ג'אז Jam Session" at נרבתא. Look for the known
+    # venue there instead. Short venue strings are too generic to trust.
+    known, bare = (va, b) if va else (vb, a)
+    if len(known) < 4:
+        return False
+    return known in norm(bare["name"]) or known in norm(bare.get("people", ""))
 
 
 def _title_words(s: str) -> set:
@@ -1038,6 +1048,13 @@ def collect(start: dt.date, end: dt.date) -> list:
             deduped.append(r)
         elif r["key"].startswith("man-") and not deduped[dup]["key"].startswith("man-"):
             deduped[dup] = r  # the manual entry carries curated details + wiki link
+        else:
+            # the kept listing wins, but a field it left blank (the hub's
+            # venue-less jazz jam) is taken from the duplicate, so the card
+            # keeps its map link
+            for f in ("venue", "people"):
+                if not deduped[dup].get(f) and r.get(f):
+                    deduped[dup][f] = r[f]
     # cap before merge_venue_day so the limit counts events, not table rows
     return merge_venue_day(cap_per_venue(merge_showtimes(deduped)))
 
