@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>על הנייר</title>
+<meta name="description" content="שבילים, דרכים וגינות שהתוכניות ייעדו לציבור בפרדס חנה-כרכור, ומה קרה להם בפועל: של מי הקרקע, ואם אפשר לעבור בה.">
+<meta property="og:title" content="על הנייר · פרדס חנה-כרכור">
+<meta property="og:description" content="173 שבילים שהקרקע שלהם כבר ציבורית ואין בהם מעבר. ועוד דרכים וגינות שמעולם לא הופקעו.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%222%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%231d4fc4%22 stroke-width=%222%22 stroke-dasharray=%223 2%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Secular+One&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* The visual language of index.html. Each finding has its own colour, and the
+   colour is the same on the map, the chip and the card. */
+:root{
+  color-scheme:light;
+  --bg:#f3f5f7; --paper:#ffffff; --paper-2:#e9edf2; --ink:#18202b; --muted:#566273; --line:#d3dae3;
+  --blue:#1d4fc4; --blue-soft:#e2e9fa;
+  --c-closed:#c2410c; --c-unexp_path:#7c3aed; --c-unexp_road:#a16207; --c-open_priv:#15803d; --c-open_built:#be123c;
+  --f-display:"Secular One","Heebo",system-ui,sans-serif;
+  --f-body:"Heebo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+    --blue:#7ea2ff; --blue-soft:#1d2a47;
+    --c-closed:#fb923c; --c-unexp_path:#a78bfa; --c-unexp_road:#facc15; --c-open_priv:#4ade80; --c-open_built:#fb7185;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+  --blue:#7ea2ff; --blue-soft:#1d2a47;
+  --c-closed:#fb923c; --c-unexp_path:#a78bfa; --c-unexp_road:#facc15; --c-open_priv:#4ade80; --c-open_built:#fb7185;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.65}
+.wrap{max-width:980px;margin:0 auto;padding-block:0 80px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+a{color:var(--blue)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2{font-family:var(--f-display);font-weight:400;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(34px,7vw,52px);margin:0}
+h2{font-size:clamp(23px,4vw,29px);margin:0 0 8px}
+h3{margin:0}
+p{margin:0 0 12px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.mono{font-family:var(--f-mono)}
+
+nav.crumbs{padding-top:20px;font-size:14px}
+header.top{padding-block:14px 8px}
+header.top .sub{font-size:18px;max-width:62ch;margin-top:6px}
+section{padding-block:28px 4px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:16px}
+.tile{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-top:4px solid var(--c);
+  cursor:pointer;text-align:start;font:inherit;color:inherit}
+.tile[aria-pressed="false"]{opacity:.45}
+.tile b{display:block;font-family:var(--f-mono);font-size:30px;line-height:1.1;color:var(--c)}
+.tile span{display:block;font-weight:700;font-size:15px;line-height:1.3}
+.tile small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+.mapbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:16px;font-size:14px;color:var(--muted)}
+#map{height:460px;border:1px solid var(--line);border-radius:10px;margin:8px 0 0;background:var(--paper-2)}
+.leaflet-container{font-family:var(--f-body)}
+.leaflet-popup-content{font-size:14px;line-height:1.5;margin:10px 12px}
+
+.group{margin-top:26px}
+.ghead{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;justify-content:space-between}
+.ghead h2{display:flex;gap:10px;align-items:center}
+.dot{width:14px;height:14px;border-radius:4px;background:var(--c);display:inline-block;flex:none}
+.what{background:var(--paper);border:1px solid var(--line);border-inline-start:4px solid var(--c);border-radius:10px;padding:10px 14px;margin:6px 0 10px;font-size:15px}
+.what p:last-child{margin:0}
+
+.list{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:2px 14px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:start}
+.row:last-child{border-bottom:0}
+.row .big{font-family:var(--f-mono);font-size:22px;line-height:1.1;color:var(--c);text-align:center}
+.row .big small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted)}
+.row .name{font-weight:700}
+.row .info{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 12px}
+.row .acts{display:flex;flex-direction:column;gap:2px;font-size:14px;text-align:end;white-space:nowrap}
+.row button.link{all:unset;color:var(--blue);cursor:pointer;text-decoration:underline}
+.row button.link:focus-visible{outline:3px solid var(--blue)}
+.own{display:inline-flex;height:8px;width:90px;border-radius:4px;overflow:hidden;background:var(--paper-2);vertical-align:middle;margin-inline-start:4px}
+.own i{display:block;height:100%}
+@media (max-width:560px){
+  .row{grid-template-columns:64px minmax(0,1fr)}
+  .row .acts{grid-column:2;flex-direction:row;gap:14px;text-align:start}
+}
+button.more{font:inherit;margin-top:8px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);padding:5px 14px;border-radius:999px;cursor:pointer;font-weight:500}
+
+.status{padding:14px 0;color:var(--muted)}
+.err{color:var(--c-open_built)}
+table.sum{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table.sum th,table.sum td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:start}
+table.sum td.n{font-family:var(--f-mono);text-align:end}
+.scroll{overflow-x:auto}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+footer p,section p{max-width:72ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="crumbs"><a href="./">מה בונים לנו</a> · על הנייר</nav>
+<header class="top">
+  <h1>על הנייר</h1>
+  <p class="sub">שבילים, דרכים וגינות שהתוכניות בפרדס חנה-כרכור ייעדו לציבור. לכל אחד מהם בדקנו של מי הקרקע לפי הטאבו, ואם אפשר לעבור בו היום.</p>
+  <div class="tiles" id="tiles"></div>
+</header>
+
+<main>
+<section id="map-sec" aria-label="מפה">
+  <div class="mapbar"><span>לחיצה על ריבוע למעלה מסתירה או מציגה סוג. במפה אפשר לעבור לתצלום אוויר (בפינה).</span></div>
+  <div id="map" role="region" aria-label="מפת הממצאים"></div>
+</section>
+
+<div id="groups"><div class="status">טוען את הממצאים…</div></div>
+
+<section id="method">
+  <h2>איך זה נבדק</h2>
+  <p>לכל מגרש שתוכנית מאושרת ייעדה לשביל, לדרך או לשטח ציבורי פתוח (שצ"פ) שאלנו שלוש שאלות:</p>
+  <p><b>מה הייעוד.</b> הקומפילציה של הוועדה המקומית: כ-11 אלף מגרשים, כולל התוכניות הישנות שסרוקות רק כתמונה, ומעליה תוכניות חדשות ממינהל התכנון.<br>
+  <b>של מי הקרקע.</b> סוג הבעלים בכל חלקה רשומה, מפנקסי המקרקעין דרך govmap. "ציבורי" כאן הוא המועצה או מקרקעי ישראל.<br>
+  <b>מה יש בשטח.</b> כל שביל ורחוב שמופה ב-OpenStreetMap, כל קיצור דרך שמופה בדרך קיצור, וכל בניין ב-OpenStreetMap.</p>
+  <p>שבילים צמודים חוברו לפרוזדור אחד. "חוסך" הוא ההפרש בין ההליכה היום, ברשת השבילים והרחובות, ובין ההליכה אם הפרוזדור היה פתוח.</p>
+  <h3 style="margin-top:14px">מה הבדיקה לא רואה</h3>
+  <p>שביל שהולכים בו אבל לא מופה ייראה כאן סגור. גדר לא נראית בכלל, כי כמעט אין גדרות במפה הפתוחה. מגרש שרוב הקרקע שלו לא רשומה בטאבו (למשל לאורך מסילת הרכבת) הושמט, כי אי אפשר לדעת של מי הוא. במדגם של 24 ממצאים מול תצלום אוויר רובם התאימו, אבל <b>כל ממצא הוא מקום ללכת ולבדוק, לא פסק דין.</b></p>
+  <div class="scroll"><table class="sum" id="sum"></table></div>
+</section>
+</main>
+
+<footer>
+  <p id="src"></p>
+  <p>הנתונים נבנים בסקריפט <span class="mono">build_gaps.py</span> של <a href="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/index.html">דרך קיצור</a>. חלק מפרויקט <a href="../ma-bonim-lanu.html">רוצים שקיפות · מה בונים לנו</a>.</p>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const DATA = '../../dereh_kitzur/web/data/gaps.json';
+  const PAGE = 15;
+
+  // What each finding means and what can be done about it. Order = order on the page.
+  const CLASSES = {
+    closed: {
+      one: 'שביל ציבורי בלי מעבר',
+      short: 'שבילים ציבוריים בלי מעבר',
+      what: '<p>הקרקע כבר רשומה על שם המועצה או המדינה, והתוכנית קבעה שיהיה כאן שביל. אבל אין בו מעבר: הוא מגודר, צמח עליו גן של שכן, או שפשוט מעולם לא נסלל.</p>'
+          + '<p><b>מה אפשר לעשות:</b> לבקש מהמועצה לפתוח אותו. אין צורך בהפקעה או בפיצוי, רק בהחלטה ובעבודה. זו הדרישה הכי חזקה של דרך קיצור. אם יש שם כבר שביל שלא מופה, מוסיפים אותו בדרך קיצור.</p>'
+    },
+    unexp_path: {
+      one: 'שביל שלא הופקע',
+      short: 'שבילים שלא הופקעו',
+      what: '<p>התוכנית קבעה שביל, אבל הקרקע עדיין בבעלות פרטית ואין בה מעבר. כלומר אף אחד לא הפקיע אותה.</p>'
+          + '<p><b>מה אפשר לעשות:</b> הוועדה המקומית רשאית להפקיע קרקע שיועדה לצורכי ציבור (סעיפים 188 עד 190 לחוק התכנון והבנייה). שביל ששווה להילחם עליו הוא שביל שחוסך הרבה הליכה. אפשר לשאול את המועצה למה הוא לא הופקע.</p>'
+    },
+    unexp_road: {
+      one: 'דרך שלא הופקעה',
+      short: 'דרכים שלא הופקעו',
+      what: '<p>התוכנית קבעה דרך, אבל הקרקע עדיין פרטית ושום דבר לא נסלל. חלקן דרכים שתוכננו לפני עשורים ונשכחו, וחלקן הרחבות שעוד לא בוצעו.</p>'
+          + '<p><b>למה זה חשוב:</b> דרך מתוכננת היא גם הבטחה וגם איום. מי שגר ליד אחת מהן צריך לדעת שיום אחד היא עלולה להיסלל. מי שמחפש מעבר להולכי רגל יכול לבקש לפתוח את התוואי כבר עכשיו כשביל.</p>'
+    },
+    open_priv: {
+      one: 'שצ"פ בבעלות פרטית',
+      short: 'שצ"פים בבעלות פרטית',
+      what: '<p>שטח שהתוכנית ייעדה לגינה או לשטח פתוח לציבור, ועדיין רשום על שם בעלים פרטיים.</p>'
+          + '<p><b>מה אפשר לעשות:</b> לשאול את המועצה אם יש כוונה להפקיע ומתי. שצ"פ שלא הופקע לא יהפוך לגינה מעצמו.</p>'
+    },
+    open_built: {
+      one: 'שצ"פ שעומדים עליו בניינים',
+      short: 'שצ"פים שעומדים עליהם בניינים',
+      what: '<p>שטח פתוח לציבור, שעשירית ממנו לפחות מכוסה בבניינים. יש לזה שני הסברים שונים מאוד. בתוכנית חדשה (מספר שמתחיל ב-308 או 353) זו בדרך כלל גינה מתוכננת במקום בניין שעוד לא נהרס. בתוכנית ישנה (ש/...) זו עלולה להיות בנייה על קרקע ציבורית.</p>'
+    }
+  };
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const num = (n) => Number(n).toLocaleString('he-IL');
+  const pct = (x) => Math.round(x * 100);
+  const isNew = (plan) => /^\d{3}-/.test(plan);
+  const gmaps = (at) => `https://www.google.com/maps/@${at[0]},${at[1]},90m/data=!3m1!1e3?hl=iw`;
+
+  let map, shown = new Set(Object.keys(CLASSES)), layers = {}, byId = new Map();
+
+  function initMap() {
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, attribution: '© OpenStreetMap' });
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, maxNativeZoom: 18, attribution: 'Esri, Maxar' });
+    map = L.map('map', { layers: [osm], scrollWheelZoom: false }).setView([32.472, 34.97], 14);
+    L.control.layers({ 'מפה': osm, 'תצלום אוויר': sat }, null, { position: 'topleft' }).addTo(map);
+  }
+
+  function ownerBar(p) {
+    const other = Math.max(0, 1 - p.pub - p.priv);
+    return `<span class="own" title="ציבורי ${pct(p.pub)}%, פרטי ${pct(p.priv)}%">`
+      + `<i style="width:${pct(p.pub)}%;background:#1565c0"></i><i style="width:${pct(p.priv)}%;background:#ffd54f"></i>`
+      + `<i style="width:${pct(other)}%;background:#9e9e9e"></i></span>`;
+  }
+
+  function ownerText(p) {
+    if (p.mun >= 0.5) return 'של המועצה';
+    if (p.pub >= 0.5) return 'של המדינה';
+    if (p.priv >= 0.5) return 'פרטית';
+    return 'מעורבת';
+  }
+
+  function title(p) {
+    const where = p.st ? `ליד ${p.st}` : 'בלי רחוב קרוב';
+    return where;
+  }
+
+  function big(p) {
+    if (p.c === 'closed' || p.c === 'unexp_path') {
+      if (p.save != null) return `${num(p.save)}<small>מ' נחסכים</small>`;
+      return `${num(p.len)}<small>מ' אורך</small>`;
+    }
+    return `${num(p.a)}<small>מ"ר</small>`;
+  }
+
+  function details(p, sep) {
+    const bits = [];
+    if (p.len) bits.push(`${num(p.len)} מ' אורך`);
+    if (p.c === 'closed' || p.c === 'unexp_path') {
+      if (p.save != null) bits.push(`היום ${num(p.net)} מ' מצד לצד`);
+      else if (p.ends < 2) bits.push(p.ends ? 'צד אחד שלו לא מתחבר לשום שביל' : 'לא מתחבר לשום שביל קיים');
+    }
+    bits.push(`קרקע ${ownerText(p)} ${ownerBar(p)}`);
+    if (p.c === 'open_built') bits.push(`${pct(p.built)}% מתחת לבניינים`);
+    const plans = p.plans.slice(0, 3).map(esc).join(', ') + (p.plans.length > 3 ? '…' : '');
+    bits.push(`תוכנית ${plans}`);
+    if (p.c === 'open_built') bits.push(p.plans.some(isNew) ? 'תוכנית חדשה: כנראה גינה מתוכננת' : 'תוכנית ישנה');
+    return sep ? bits.join(sep) : bits.map((b) => `<span>${b}</span>`).join('');
+  }
+
+  function row(f, i) {
+    const p = f.properties;
+    return `<div class="row" style="--c:var(--c-${p.c})">
+      <div class="big">${big(p)}</div>
+      <div><div class="name">${esc(title(p))}</div><div class="info">${details(p)}</div></div>
+      <div class="acts"><button class="link" data-id="${i}">במפה</button>
+        <a href="${gmaps(p.at)}" target="_blank" rel="noopener">תצלום בגוגל</a></div>
+    </div>`;
+  }
+
+  function popup(p) {
+    return `<b>${esc(CLASSES[p.c].one)}</b> · ${esc(title(p))}<br>`
+      + `${details(p, '<br>')}<br><a href="${gmaps(p.at)}" target="_blank" rel="noopener">תצלום בגוגל</a>`;
+  }
+
+  function render(doc) {
+    const feats = doc.features;
+    feats.forEach((f, i) => byId.set(String(i), f));
+
+    // tiles
+    const tiles = document.getElementById('tiles');
+    tiles.innerHTML = Object.entries(CLASSES).map(([k, c]) => {
+      const fs = feats.filter((f) => f.properties.c === k);
+      const dunam = fs.reduce((s, f) => s + f.properties.a, 0) / 1000;
+      return `<button class="tile" style="--c:var(--c-${k})" data-k="${k}" aria-pressed="true">
+        <b>${fs.length}</b><span>${esc(c.short)}</span><small>${dunam.toFixed(1)} דונם</small></button>`;
+    }).join('');
+    tiles.addEventListener('click', (e) => {
+      const t = e.target.closest('.tile'); if (!t) return;
+      const k = t.dataset.k, on = !shown.has(k);
+      on ? shown.add(k) : shown.delete(k);
+      t.setAttribute('aria-pressed', String(on));
+      on ? layers[k].addTo(map) : map.removeLayer(layers[k]);
+      document.getElementById('g-' + k).hidden = !on;
+    });
+
+    // map
+    for (const k of Object.keys(CLASSES)) {
+      const color = css(`--c-${k}`);
+      layers[k] = L.geoJSON({ type: 'FeatureCollection', features: feats.filter((f) => f.properties.c === k) }, {
+        style: { color, weight: 2, fillColor: color, fillOpacity: 0.45 },
+        onEachFeature: (f, l) => { l.bindPopup(popup(f.properties)); f._layer = l; }
+      }).addTo(map);
+    }
+
+    // lists
+    const groups = document.getElementById('groups');
+    groups.innerHTML = Object.entries(CLASSES).map(([k, c]) => {
+      const fs = feats.map((f, i) => [f, i]).filter(([f]) => f.properties.c === k);
+      return `<section class="group" id="g-${k}" style="--c:var(--c-${k})">
+        <div class="ghead"><h2><span class="dot"></span>${esc(c.short)}</h2><span class="muted small mono">${fs.length}</span></div>
+        <div class="what">${c.what}</div>
+        <div class="list" data-k="${k}">${fs.slice(0, PAGE).map(([f, i]) => row(f, i)).join('')}</div>
+        ${fs.length > PAGE ? `<button class="more" data-k="${k}" data-n="${PAGE}">עוד ${Math.min(PAGE, fs.length - PAGE)} מתוך ${fs.length - PAGE}</button>` : ''}
+      </section>`;
+    }).join('');
+    groups.addEventListener('click', (e) => {
+      const go = e.target.closest('button.link');
+      if (go) {
+        const f = byId.get(go.dataset.id);
+        const k = f.properties.c;
+        if (!shown.has(k)) document.querySelector(`.tile[data-k="${k}"]`).click();
+        map.fitBounds(f._layer.getBounds(), { maxZoom: 18, padding: [40, 40] });
+        f._layer.openPopup();
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      const more = e.target.closest('button.more');
+      if (more) {
+        const k = more.dataset.k, n = Number(more.dataset.n);
+        const fs = feats.map((f, i) => [f, i]).filter(([f]) => f.properties.c === k);
+        document.querySelector(`.list[data-k="${k}"]`).insertAdjacentHTML('beforeend', fs.slice(n, n + PAGE).map(([f, i]) => row(f, i)).join(''));
+        const left = fs.length - n - PAGE;
+        if (left > 0) { more.dataset.n = n + PAGE; more.textContent = `עוד ${Math.min(PAGE, left)} מתוך ${left}`; }
+        else more.remove();
+      }
+    });
+
+    // summary table
+    const S = doc.summary, names = { path: 'שביל', newroad: 'דרך מוצעת', road: 'דרך מאושרת', open: 'שצ"פ' };
+    document.getElementById('sum').innerHTML =
+      '<tr><th>ייעוד</th><th>מגרשים</th><th>דונם</th><th>מתוכם פרטי</th><th>פרטי ונסלל</th><th>ציבורי ובלי מעבר</th></tr>'
+      + Object.entries(names).map(([k, n]) => {
+        const s = S[k];
+        return `<tr><td>${n}</td><td class="n">${num(s.lots)}</td><td class="n">${s.dunam}</td><td class="n">${s.priv}</td><td class="n">${s.priv_walked}</td><td class="n">${s.pub_closed}</td></tr>`;
+      }).join('');
+    document.getElementById('src').innerHTML = `<b>מקורות.</b> ${esc(doc.source)}. עודכן ${esc(doc.updated.split('-').reverse().join('/'))}.`;
+  }
+
+  initMap();
+  fetch(DATA).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(render)
+    .catch((e) => { document.getElementById('groups').innerHTML = `<div class="status err">לא הצלחתי לטעון את הנתונים (${esc(e.message)}).</div>`; });
+})();
+</script>
+</body>
+</html>

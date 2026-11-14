@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מה בונים לנו</title>
+<meta name="description" content="מה פתוח עכשיו להתנגדות בפרדס חנה-כרכור, מה בדרך, ומה אושר. מתעדכן כל בוקר ממינהל התכנון.">
+<meta property="og:title" content="מה בונים לנו · פרדס חנה-כרכור">
+<meta property="og:description" content="כל תוכנית בנייה שפתוחה עכשיו להתנגדות במושבה, עם ספירה לאחור. מתעדכן כל בוקר.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%222%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%231d4fc4%22 stroke-width=%222%22 stroke-dasharray=%223 2%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Secular+One&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Same visual language as the plan page (../ma-bonim-lanu.html): tracing paper, the plan's blue line as accent,
+   red only for "you can still object". */
+:root{
+  color-scheme:light;
+  --bg:#f3f5f7; --paper:#ffffff; --paper-2:#e9edf2; --ink:#18202b; --muted:#566273; --line:#d3dae3;
+  --blue:#1d4fc4; --blue-soft:#e2e9fa;
+  --open:#b3261e; --open-bg:#fbe3df; --soon:#8a5a00; --soon-bg:#fdf0d2; --ok:#1f7a4d; --ok-bg:#e1f3e9;
+  --f-display:"Secular One","Heebo",system-ui,sans-serif;
+  --f-body:"Heebo",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+    --blue:#7ea2ff; --blue-soft:#1d2a47;
+    --open:#ff8f80; --open-bg:#3c1f1b; --soon:#f0c46a; --soon-bg:#3a2f14; --ok:#6fd3a0; --ok-bg:#16301f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161d; --paper:#19202a; --paper-2:#222b37; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3846;
+  --blue:#7ea2ff; --blue-soft:#1d2a47;
+  --open:#ff8f80; --open-bg:#3c1f1b; --soon:#f0c46a; --soon-bg:#3a2f14; --ok:#6fd3a0; --ok-bg:#16301f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.65}
+.wrap{max-width:920px;margin:0 auto;padding-block:0 80px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+a{color:var(--blue)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2{font-family:var(--f-display);font-weight:400;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(34px,7vw,52px);margin:0}
+h2{font-size:clamp(24px,4vw,30px);margin:0}
+p{margin:0 0 12px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.mono{font-family:var(--f-mono)}
+
+header.top{padding-block:32px 8px;display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between}
+header.top .sub{font-size:18px;max-width:58ch;margin-top:6px}
+.fresh{font-size:14px;color:var(--muted)}
+
+section{padding-block:32px 8px}
+.sechead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.count{font-family:var(--f-mono);font-size:15px;color:var(--muted)}
+
+#map{height:320px;border:1px solid var(--line);border-radius:10px;margin:14px 0;background:var(--paper-2)}
+.leaflet-container{font-family:var(--f-body)}
+
+.cards{display:grid;gap:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+  display:grid;grid-template-columns:92px minmax(0,1fr);gap:4px 18px}
+.clock{grid-row:span 3;text-align:center;border-inline-end:1px dashed var(--line);padding-inline-end:14px}
+.clock b{display:block;font-family:var(--f-mono);font-size:38px;line-height:1;color:var(--open)}
+.clock span{font-size:13px;color:var(--muted)}
+.card.soon .clock b{color:var(--open)}
+.card h3{margin:0;font-size:19px;line-height:1.35}
+.card .adds{font-weight:700}
+.card .meta{font-size:14.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px}
+.card .how{grid-column:2;font-size:14.5px;background:var(--paper-2);border-radius:8px;padding:8px 12px;margin-top:6px}
+.card .links{grid-column:2;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:15px;margin-top:4px}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;padding:1px 9px;border-radius:999px;white-space:nowrap}
+.t-open{background:var(--open-bg);color:var(--open)}
+.t-soon{background:var(--soon-bg);color:var(--soon)}
+.t-blue{background:var(--blue-soft);color:var(--blue)}
+.t-ok{background:var(--ok-bg);color:var(--ok)}
+@media (max-width:520px){
+  .card{grid-template-columns:1fr}
+  .clock{grid-row:auto;border:0;padding:0;text-align:start;display:flex;gap:8px;align-items:baseline}
+  .clock b{display:inline;font-size:30px}
+  .card .how,.card .links{grid-column:1}
+}
+.empty{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:18px}
+
+.share{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+button.btn{font:inherit;font-weight:700;border:1.5px solid var(--blue);background:var(--blue);color:var(--paper);padding:7px 16px;border-radius:999px;cursor:pointer}
+button.btn.ghost{background:transparent;color:var(--blue)}
+#share-text{width:100%;min-height:150px;font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px}
+
+.list{display:grid;gap:0;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .name{font-weight:500}
+.row .name a{color:var(--ink);text-decoration:none}
+.row .name a:hover{text-decoration:underline;color:var(--blue)}
+.row .side{text-align:end;font-size:14px;color:var(--muted);white-space:nowrap}
+.row .info{grid-column:1 / -1;font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+@media (max-width:520px){.row{grid-template-columns:1fr}.row .side{text-align:start}}
+details.more{margin-top:10px}
+details.more summary{cursor:pointer;color:var(--blue);font-weight:500}
+.status{padding:10px 0;color:var(--muted)}
+.err{color:var(--open)}
+
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+footer p{max-width:70ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>מה בונים לנו</h1>
+    <p class="sub">תוכניות הבנייה בפרדס חנה-כרכור: מה פתוח עכשיו להתנגדות, מה בדרך, ומה אושר.</p>
+    <p class="small"><a href="gaps.html">על הנייר</a>: שבילים, דרכים וגינות שהתוכניות ייעדו לציבור, ומה קרה להם בפועל.</p>
+  </div>
+  <div class="fresh" id="fresh">טוען…</div>
+</header>
+
+<main>
+<section id="open">
+  <div class="sechead"><h2>פתוח עכשיו להתנגדות</h2><span class="count" id="open-count"></span></div>
+  <p class="muted small">כל מי שרואה את עצמו נפגע רשאי להתנגד, לא רק שכנים. ההתנגדות מוגשת בכתב, מנומקת, עם תצהיר.</p>
+  <div id="map" role="region" aria-label="מפת התוכניות הפתוחות להתנגדות"></div>
+  <div class="cards" id="open-list"><div class="status">טוען את התוכניות הפתוחות…</div></div>
+  <div class="share">
+    <button class="btn" id="copy">העתקת סיכום לוואטסאפ</button>
+    <span class="small muted" id="copy-note" aria-live="polite"></span>
+  </div>
+  <textarea id="share-text" hidden readonly aria-label="סיכום לשליחה"></textarea>
+</section>
+
+<section id="coming">
+  <div class="sechead"><h2>בדרך להתנגדות</h2><span class="count" id="coming-count"></span></div>
+  <p class="muted small">הוועדה כבר החליטה להפקיד אותן, או שהן בדיון. חלון ההתנגדות שלהן עוד לא נפתח, וזה הזמן להתעניין.</p>
+  <div id="coming-list"><div class="status">שואל את מינהל התכנון…</div></div>
+</section>
+
+<section id="approved">
+  <div class="sechead"><h2>אושרו בשנה האחרונה</h2><span class="count" id="approved-count"></span></div>
+  <p class="muted small">תוכניות שפורסמו ברשומות למתן תוקף. מכוחן יוצאים עכשיו היתרי בנייה.</p>
+  <div id="approved-list"><div class="status">שואל את מינהל התכנון…</div></div>
+</section>
+</main>
+
+<footer>
+  <p><b>מאיפה המידע.</b> התוכניות הפתוחות נבדקות כל בוקר מול שירות המפה של מינהל התכנון (Xplan) ומול דף כל תוכנית במבא"ת, כי האתר הארצי לא מציג חלק מהחלונות, בעיקר של תוכניות הוועדה המקומית. כשהמועד מחושב ולא רשום, זה כתוב ליד התוכנית. הרשימות "בדרך" ו"אושרו" נשאלות ישירות מ-Xplan כשהדף נפתח.</p>
+  <p><b>מה עוד לא כאן.</b> בקשות להיתר עם הקלה או שימוש חורג (15 יום להתנגד) מתפרסמות רק באתר הוועדה המקומית, מאחורי קפצ'ה. אנחנו עובדים על זה.</p>
+  <p>חלק מפרויקט <a href="../ma-bonim-lanu.html">רוצים שקיפות · מה בונים לנו</a>. המפה המלאה של התוכניות נמצאת ב<a href="https://orimosenzon.github.io/fun/vibe_coding/dereh_kitzur/web/index.html">דרך קיצור</a>.</p>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
