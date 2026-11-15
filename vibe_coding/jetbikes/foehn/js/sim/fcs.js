@@ -30,6 +30,8 @@ export const FEEL = {
   strafe: 9,         // m/s: side-step speed in the hover
   gust: 0.5,         // share of the air's side force that the side nozzles cancel on their own
   hairpin: 1,        // 1: a held full turn sheds speed by itself. 0: the rider brakes
+  recoil: 1.0,       // m/s: how hard a shot shoves the bike back (and throws its nose up)
+  muzzle: 300,       // m/s: speed of the round. Slower means more lead and more drop
 };
 export const FEEL_DEFAULT = { ...FEEL };
 export const FCS_HZ = 120;

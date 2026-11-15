@@ -13,6 +13,7 @@ const only = process.argv[2] && !process.argv[2].startsWith('-') ? process.argv[
 let fail = 0;
 for (const ev of EVENTS) {
   if (only && ev.id !== only) continue;
+  if (ev.gun) continue;            // the demo rider does not shoot (tests/gun.mjs)
   const g = new Game(); g.load(ev.id);
   const ap = new Autopilot(g);
   const log = [];

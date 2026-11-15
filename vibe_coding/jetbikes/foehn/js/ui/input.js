@@ -19,7 +19,7 @@ export class Input {
       pitch: ((k('ArrowDown') ? 1 : 0) - (k('ArrowUp') ? 1 : 0)) * (this.invert ? -1 : 1),
       strafe: (k('KeyD') ? 1 : 0) - (k('KeyA') ? 1 : 0),
       throttle: (k('KeyW') ? 1 : 0) - (k('KeyS') ? 1 : 0),
-      boost: k('Space'), brake: k('ShiftLeft') || k('ShiftRight') || k('KeyB'),
+      boost: k('Space'), brake: k('ShiftLeft') || k('ShiftRight') || k('KeyB'), fire: k('KeyF') || k('KeyX'),
     };
     // gamepad: left stick turn / pitch, right stick x side-step, triggers throttle, A boost, B brake
     const gp = navigator.getGamepads ? [...navigator.getGamepads()].find((g) => g && g.connected) : null;
@@ -31,11 +31,12 @@ export class Input {
       if (rt > 0.05 || lt > 0.05) c.throttle = rt - lt;
       if (gp.buttons[0] && gp.buttons[0].pressed) c.boost = true;
       if (gp.buttons[1] && gp.buttons[1].pressed) c.brake = true;
+      if (gp.buttons[5] && gp.buttons[5].pressed) c.fire = true;
       const edge = (i, code) => { const p = gp.buttons[i] && gp.buttons[i].pressed; if (p && !this.padPrev[i]) this.pressed.push(code); this.padPrev[i] = p; };
       edge(3, 'KeyC'); edge(2, 'KeyR'); edge(9, 'Escape'); edge(0, 'PadA');
     }
     const t = this.touch;
-    if (t.on) { if (t.turn) c.turn = t.turn; if (t.pitch) c.pitch = t.pitch; if (t.throttle) c.throttle = t.throttle; if (t.strafe) c.strafe = t.strafe; c.boost = c.boost || t.boost; c.brake = c.brake || t.brake; }
+    if (t.on) { if (t.turn) c.turn = t.turn; if (t.pitch) c.pitch = t.pitch; if (t.throttle) c.throttle = t.throttle; if (t.strafe) c.strafe = t.strafe; c.boost = c.boost || t.boost; c.brake = c.brake || t.brake; c.fire = c.fire || !!t.fire; }
     return c;
   }
   // on-screen stick and buttons for phones

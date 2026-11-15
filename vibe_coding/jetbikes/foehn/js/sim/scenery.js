@@ -52,6 +52,7 @@ function makeMask() {
   for (const p of S.props) disc(p.x, p.z, Math.max(p.w, p.d) * 0.9 + 6);
   // the racing lines of all events (only where they run low)
   for (const ev of EVENTS) {
+    if (ev.gun) continue;                    // the balloons of a shooting range may hide behind trees
     const b = buildEvent(ev);
     for (const q of b.path) if (q[1] - groundAt(q[0], q[2]) < 34) disc(q[0], q[2], 34);
   }

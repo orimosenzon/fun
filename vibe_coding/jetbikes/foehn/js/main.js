@@ -19,6 +19,7 @@ import { buildSky } from './render/sky.js';
 import { buildWater, renderReflection, water } from './render/water.js';
 import { buildForest, updateForest } from './render/forest.js';
 import { buildProps, Gates } from './render/props.js';
+import { Targets } from './render/targets.js';
 import { buildCastleMesh } from './render/castle.js';
 import { hitCastle, nearCastle, indoor } from './sim/castle.js';
 import { buildBike } from './render/bikeModel.js';
@@ -93,7 +94,7 @@ async function boot() {
   await load(0.7, t('load.village'));
   const props = buildProps(scene);
   const castle = buildCastleMesh(scene);
-  const gates = new Gates(scene);
+  const gates = new Gates(scene), targets = new Targets(scene);
   const model = buildBike(); scene.add(model.root);
   const ghost = buildBike(true); ghost.root.visible = false; scene.add(ghost.root);
   const fx = new FX(scene, model);
@@ -138,7 +139,8 @@ async function boot() {
     game.load(id, demo ? null : bestOf(id));
     rec.reset(); run = demo ? 0 : Date.now(); runN = 0;
     auto = demo ? new Autopilot(game) : null;
-    gates.setEvent(game.build); hud.setEvent(game);
+    gates.setEvent(game.build); targets.setEvent(game); hud.setEvent(game);
+    $('tFire').style.display = !demo && game.gunOn ? '' : 'none';
     mode = demo ? 'menu' : 'play'; paused = false; camInit = false; audio.streak = 0;
     if (!demo) { camMode = camMode === 'cine' ? 'chase' : camMode; hud.show(true); ['menu', 'pause', 'finish', 'help'].forEach((m) => $(m).classList.remove('on')); if (touchUI) $('touch').classList.add('on'); hintFor(id); }
     else { hud.show(false); game.stateT = 0.01; camMode = 'cine'; cine.t = 0; }
@@ -149,6 +151,7 @@ async function boot() {
     if (id === 'first' && first) hud.hint(t('hint.first'));
     else if (id === 'free') hud.hint(t('hint.free'));
     else if (id === 'castle' && first) hud.hint(t('hint.castle'));
+    else if (id === 'hunt') hud.hint(t('hint.hunt'));
     else hud.hint('');
     setTimeout(() => hud.hint(''), 14000);
   }
@@ -199,7 +202,24 @@ async function boot() {
   function setPause(p) { if (mode !== 'play') return; paused = p; $('pause').classList.toggle('on', p); if (audio.ctx) p ? audio.ctx.suspend() : audio.ctx.resume(); }
   addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && game.state === 'fly') setPause(true); });
 
-  const REC_EVENTS = ['go', 'gate', 'land', 'crash', 'respawn'];
+  const REC_EVENTS = ['go', 'gate', 'land', 'crash', 'respawn', 'shot', 'shotEnd', 'pop'];
+  // what the gun does to eyes and ears, in the flight and again in its replay
+  function gunFx(e) {
+    const r = Math.random;
+    if (e.type === 'shot') {
+      audio.shot(); fx.shake = Math.max(fx.shake, 0.25);
+      for (let i = 0; i < 10; i++) fx.fire.spawn(e.p, [e.v[0] * 0.06 + (r() - 0.5) * 5, e.v[1] * 0.06 + (r() - 0.5) * 5, e.v[2] * 0.06 + (r() - 0.5) * 5], [3, 2, 0.8], 0.9, 0.35 + 0.3 * r(), 0.09 + 0.07 * r(), 3, 3);
+      const bv = game.bike.v;                                             // the puff of the muzzle leaves with the bike, or the rider flies through it
+      for (let i = 0; i < 3; i++) fx.soft.spawn(e.p, [bv[0] + (e.v[0] - bv[0]) * 0.03 + (r() - 0.5) * 2, bv[1] + 0.5 + r(), bv[2] + (e.v[2] - bv[2]) * 0.03 + (r() - 0.5) * 2], [0.8, 0.8, 0.8], 0.16, 0.12 + 0.1 * r(), 0.35 + 0.25 * r(), 1.2, 2.5);
+    } else if (e.type === 'pop') {
+      audio.pop();
+      for (let i = 0; i < 46; i++) { const a = r() * 6.283, u = r() * 2 - 1, q = Math.sqrt(1 - u * u), sp = 6 + 16 * r(); fx.soft.spawn(e.p, [Math.cos(a) * q * sp, u * sp, Math.sin(a) * q * sp], i % 3 ? [0.95, 0.25, 0.15] : [1, 0.85, 0.5], 0.9, 0.25 + 0.35 * r(), 0.5 + 0.6 * r(), 0.6, 2.2, 6); }
+    } else if (e.type === 'shotEnd' && (e.end === 'ground' || e.end === 'water' || e.end === 'wall')) {
+      const w = e.end === 'water', c = w ? [0.85, 0.9, 0.95] : [0.5, 0.44, 0.34];
+      if (camera.position.distanceTo(tmpV.set(e.p[0], e.p[1], e.p[2])) < 400) audio.thud(w);
+      for (let i = 0; i < 16; i++) fx.soft.spawn(e.p, [(r() - 0.5) * 6, 3 + 9 * r(), (r() - 0.5) * 6], c, 0.6, 0.4 + 0.5 * r(), 0.7 + 0.7 * r(), 2.5, 1.2, w ? 9 : 3);
+    }
+  }
   function onEvents() {
     for (const e of game.events) {
       if (mode !== 'play') { if (e.type === 'crash') fx.explode(e.p, e.v, e.water); if (e.type === 'respawn' && auto) auto.reset(); if (e.type === 'finish') setTimeout(() => mode === 'menu' && startEvent('tour', true), 2500); continue; }
@@ -214,6 +234,8 @@ async function boot() {
         case 'crash': fx.explode(e.p, e.v, e.water); audio.crash(e.water); hud.crash(e.reason); break;
         case 'warn': if (e.text === 'offpad') hud.message('', t('warn.offpad'), 1.2); else { hud.warn(t('warn.back')); audio.warn(); } break;
         case 'finish': onFinish(e); break;
+        case 'shot': case 'pop': case 'shotEnd': gunFx(e); break;
+        case 'shotMiss': hud.message('', t('gun.miss'), 0.9); break;
       }
     }
     game.events.length = 0;
@@ -228,7 +250,7 @@ async function boot() {
     $('fmedal').innerHTML = r.medal ? `<i class="medal g${r.medal}" style="width:20px;height:20px"></i> ${t('medal.' + r.medal)}` : t('medal.none');
     $('fbest').innerHTML = r.isBest ? (r.prev ? `${t('fin.newBest')}<span class="num">${fmtTime(r.prev)}</span>` : t('fin.firstBest')) : `${t('fin.best')}<span class="num">${fmtTime(r.prev)}</span>`;
     const m = game.ev.medals, nextT = r.medal < 3 ? m[2 - r.medal] : null;
-    $('fstat').innerHTML = `${t('fin.crashes')}${r.crashes} · ${t('fin.misses')}${r.misses}` + (nextT ? ` · ${t('fin.next')}<span class="num">${fmtTime(nextT)}</span>` : '');
+    $('fstat').innerHTML = (game.ev.gun ? `${t('fin.shots')}${r.shots} · ${t('fin.crashes')}${r.crashes}` : `${t('fin.crashes')}${r.crashes} · ${t('fin.misses')}${r.misses}`) + (nextT ? ` · ${t('fin.next')}<span class="num">${fmtTime(nextT)}</span>` : '');
     setTimeout(() => { if (mode === 'play' && game.state === 'finished') { $('finish').classList.add('on'); $('touch').classList.remove('on'); } }, 1800);
   }
 
@@ -238,7 +260,8 @@ async function boot() {
   function startReplay(opts = {}) {
     if (rp || rec.duration < 2 || (mode !== 'play' && !opts.library)) return;
     if (opts.video && !filmType()) { alert(t('v.unsupported')); return; }
-    rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1, library: !!opts.library, meta: opts.meta || runMeta(), film: null };
+    rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1, library: !!opts.library, meta: opts.meta || runMeta(), film: null, popped: new Set(), flying: [],
+      shots: rec.events.filter((e) => e.type === 'shot').map((e) => ({ t: e.t, p: e.p, v: e.v, end: (rec.events.find((x) => x.type === 'shotEnd' && x.id === e.id && x.t >= e.t) || { t: e.t + 4 }).t })) };
     mode = 'replay'; paused = false; if (audio.ctx) audio.ctx.resume();
     ['pause', 'finish', 'help', 'touch'].forEach((m) => $(m).classList.remove('on')); hud.show(false); ghost.root.visible = false;
     $('replay').classList.add('on'); $('rfade').classList.add('on');
@@ -268,7 +291,12 @@ async function boot() {
       if (e.t <= was || e.t > rp.t) continue;
       if (e.type === 'crash') { fx.explode(e.p, e.v, e.water); audio.crash(e.water); }
       else if (e.type === 'gate' || e.type === 'land') { audio.gate(e.perfect, e.last); flash = 0.06; }
+      else if (e.type === 'shot' || e.type === 'pop' || e.type === 'shotEnd') gunFx(e);
     }
+    // balloons already shot at this moment of the film, and the rounds in the air (their flight is plain ballistics)
+    rp.popped.clear(); for (const e of rec.events) if (e.type === 'pop' && e.t <= rp.t) rp.popped.add(e.k);
+    rp.flying.length = 0;
+    for (const sh of rp.shots) { const u = rp.t - sh.t; if (u >= 0 && rp.t < sh.end) rp.flying.push({ p: [sh.p[0] + sh.v[0] * u, sh.p[1] + sh.v[1] * u - 0.5 * G * u * u, sh.p[2] + sh.v[2] * u], v: [sh.v[0], sh.v[1] - G * u, sh.v[2]] }); }
     if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && (me.film ? endFilm() : stopReplay()), 650); }
     const sec = Math.floor(rp.t - rec.t0);
     if (sec !== rp.sec) { rp.sec = sec; $('rtime').textContent = fmtTime(sec).replace(/\.\d+$/, ''); }
@@ -345,7 +373,7 @@ async function boot() {
     let d = null; try { d = await flights.get(m.id); } catch { /* gone */ }
     if (!d || !eventById(m.ev) || rp || mode !== 'menu') return;
     run = 0;
-    game.load(m.ev, null); game.events.length = 0; auto = null; gates.setEvent(game.build);
+    game.load(m.ev, null); game.events.length = 0; auto = null; gates.setEvent(game.build); targets.setEvent(game);
     if (!rec.load(d)) { toMenu(); return; }
     libEnv = { weather: save.set.weather, time: save.set.time };            // the film gets the weather and the hour it was flown in
     if (m.wx !== save.set.weather || m.tod !== save.set.time) { save.set.weather = WEATHER[m.wx] ? m.wx : 'clear'; applyTime(TIMES[m.tod] ? m.tod : save.set.time); }
@@ -476,6 +504,7 @@ async function boot() {
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
+      targets.update(time, rp ? (k) => !rp.popped.has(k) : (k) => !game.cps0[k].popped, rp || game.state === 'finished' ? null : game.nextCp, rp ? rp.flying : game.gun.shots);
       gates.update(game, time); gates.matDisc.visible = !rp; if (rp) gates.beam.visible = false;      // the beacon and the glass of the next ring are for the rider, not for the film
       castle.update(time, game.sim.windW, camera.position, renderer.getDrawingBufferSize(tmpV2).y, camera.fov);
       audio.engine(b, alive && mode !== 'menu', camera.position.distanceTo(model.root.position), rp ? !!rp.o.on : camMode === 'cockpit');
@@ -522,7 +551,7 @@ async function boot() {
     const TKEY = 'foehn.feel';
     try { Object.assign(FEEL, JSON.parse(localStorage.getItem(TKEY)) || {}); } catch { /* nothing saved */ }
     const rows = [['stick', 'עיכוב המוט (שנ\')', 0.02, 0.2, 0.01], ['rollRate', 'קצב גלגול', 1.5, 6, 0.1], ['rollAcc', 'תאוצת גלגול', 5, 30, 1], ['yawRate', 'קצב סבסוב', 1, 3.5, 0.1], ['yawAcc', 'תאוצת סבסוב', 2, 14, 0.5],
-      ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1]];
+      ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1], ['recoil', 'רתע הירייה (מ/שנ\')', 0, 4, 0.1], ['muzzle', 'מהירות הכדור (מ/שנ\')', 120, 600, 10]];
     const el = document.createElement('div'); el.id = 'tune'; el.className = 'panel'; document.body.appendChild(el);
     const draw = () => {
       el.innerHTML = '<b>תחושת הרכיבה</b>' + rows.map(([k, name, a, b, st]) => `<label><span>${name}</span><span class="num" id="tv_${k}">${FEEL[k]}</span></label><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${FEEL[k]}">`).join('') + '<div class="rowbtn"><button class="b" id="tReset">איפוס</button><button class="b" id="tCopy">העתקה</button></div>';

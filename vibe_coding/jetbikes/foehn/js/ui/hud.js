@@ -2,7 +2,8 @@
 import { T } from '../sim/terrain.js';
 import { G, FUEL0, ENG, SIDE_MAX } from '../sim/bike.js';
 import { V_MAX } from '../sim/fcs.js';
-import { len, yprOf } from '../sim/vmath.js';
+import { len, yprOf, qrot } from '../sim/vmath.js';
+import { GUN } from '../sim/gun.js';
 import { t, evName } from '../i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -73,6 +74,26 @@ export class Hud {
       } else ar.style.opacity = 0;
     } else ar.style.opacity = 0;
 
+    // the gun: where the barrel points 300 m out, and a mark on every balloon still up
+    const gun = game.gunOn && game.state === 'fly', aim = $('aim'), marks = $('tmarks').children;
+    aim.style.opacity = gun ? 1 : 0;
+    let nm = 0;
+    if (gun) {
+      const f = qrot(b.q, [1, 0, 0]), v = cam.worldToScreen(b.p[0] + f[0] * 300, b.p[1] + f[1] * 300, b.p[2] + f[2] * 300);
+      if (v.behind) aim.style.opacity = 0; else { aim.style.left = (v.x * 0.5 + 0.5) * viewW + 'px'; aim.style.top = (-v.y * 0.5 + 0.5) * viewH + 'px'; }
+      aim.classList.toggle('wait', game.gun.cool > 0 || b.abLock);
+      aim.style.setProperty('--load', (1 - game.gun.cool / GUN.period).toFixed(2));
+      for (let k = game.cp; k < game.cps.length && nm < marks.length; k++) {
+        const c = game.cps[k]; if (c.type !== 'target') continue;
+        const s = cam.worldToScreen(c.p[0], c.p[1], c.p[2]); if (s.behind || Math.abs(s.x) > 1 || Math.abs(s.y) > 1) continue;
+        const d = Math.hypot(c.p[0] - b.p[0], c.p[1] - b.p[1], c.p[2] - b.p[2]); if (d > 650 && k !== game.cp) continue;       // far ones would only clutter the view
+        const m = marks[nm++];
+        m.style.display = 'block'; m.style.left = (s.x * 0.5 + 0.5) * viewW + 'px'; m.style.top = (-s.y * 0.5 + 0.5) * viewH + 'px';
+        m.firstElementChild.textContent = d.toFixed(0);
+      }
+    }
+    for (; nm < marks.length; nm++) marks[nm].style.display = 'none';
+
     this.acc += dt; if (this.acc < 0.066) return; this.acc = 0;
     const V = len(b.v);
     $('kmh').textContent = (V * 3.6).toFixed(0);
@@ -99,7 +120,7 @@ export class Hud {
     $('heat').firstElementChild.style.width = b.heat * 100 + '%'; $('heat').classList.toggle('lock', b.abLock);
     if (game.ev.medals) {
       $('timer').textContent = fmtTime(game.total);
-      $('cpn').innerHTML = `${t('hud.cp')} <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · ${t('hud.penalty')} <span class="num">+${game.penalty}</span>` : '');
+      $('cpn').innerHTML = `${t(game.ev.gun ? 'hud.balloons' : 'hud.cp')} <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · ${t('hud.penalty')} <span class="num">+${game.penalty}</span>` : '');
     } else $('score').innerHTML = `${Math.floor(game.score).toLocaleString('en')} ${t('hud.pts')}` + (game.combo > 1 ? ` · <span style="color:#ffc440">×${game.combo}</span>` : '');
     this.drawMap(game);
   }
@@ -113,7 +134,7 @@ export class Hud {
       if (i < game.cp) return;
       const x = tx(c.p[0]), y = tz(c.p[2]); if (x < -8 || y < -8 || x > W + 8 || y > W + 8) return;
       g.beginPath(); g.arc(x, y, i === game.cp ? 9 : 5, 0, 7);
-      g.fillStyle = i === game.cp ? '#ffc440' : 'rgba(120,225,255,.85)'; g.fill();
+      g.fillStyle = i === game.cp ? '#ffc440' : c.type === 'target' ? 'rgba(255,110,90,.95)' : 'rgba(120,225,255,.85)'; g.fill();
       if (c.type === 'land') { g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke(); }
     });
     const [yaw] = yprOf(b.q);

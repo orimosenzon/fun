@@ -65,6 +65,19 @@ export class Audio {
     if (perfect) this.blip(f * 2, 0.5, 'sine', 0.1, 0, 0.12);
     if (last) [0, 4, 7, 12].forEach((s, i) => this.blip(523.25 * Math.pow(2, s / 12), 0.6, 'triangle', 0.2, 0, 0.15 + i * 0.11));
   }
+  // noise through a filter that closes: the body of a shot, a pop, a splash
+  burst(dur, f0, f1, gain, pow = 3) {
+    if (!this.ctx) return;
+    const c = this.ctx, t = c.currentTime, n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, pow);
+    const s = c.createBufferSource(); s.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = c.createGain(); g.gain.value = gain;
+    s.connect(f); f.connect(g); g.connect(this.master); s.start();
+  }
+  shot() { this.burst(0.45, 5200, 220, 1.1, 4); this.blip(120, 0.22, 'sine', 0.7, 0.35); this.blip(900, 0.06, 'square', 0.12, 0.3); }
+  pop() { this.burst(0.16, 7000, 900, 0.9, 2); this.blip(420, 0.12, 'triangle', 0.25, 0.4); }
+  thud(water) { this.burst(water ? 0.5 : 0.25, water ? 3000 : 1400, water ? 500 : 160, 0.3, 2.5); }
   miss() { this.streak = 0; this.blip(180, 0.3, 'sawtooth', 0.16, 0.6); }
   count(go) { this.blip(go ? 880 : 440, go ? 0.5 : 0.16, 'square', 0.12); }
   click() { this.blip(700, 0.05, 'triangle', 0.1); }

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0b1016">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="משחק טיסה בדפדפן: אופנוע בלי גלגלים, עם מנוע היתוך, בעמק אלפיני עם מבצר על ההר. שבעה אירועים, מדליות, רוח רפאים של השיא שלך.">
+<meta name="description" content="משחק טיסה בדפדפן: אופנוע בלי גלגלים, עם מנוע היתוך, בעמק אלפיני עם מבצר על ההר. שמונה אירועים, מדליות, רוח רפאים של השיא שלך.">
 <style>
 :root { --glass: rgba(10,16,24,.55); --line: rgba(255,255,255,.14); --gold: #ffc440; --acc: #ff7a2a; --cy: #6fe3ff; --txt: #eef3f8; }
 * { box-sizing: border-box; }
@@ -60,6 +60,13 @@ canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
 #arrow { position: absolute; width: 0; height: 0; opacity: 0; }
 #arrow i { position: absolute; left: -15px; top: -15px; width: 30px; height: 30px; border-top: 5px solid var(--gold); border-right: 5px solid var(--gold); transform: rotate(45deg); filter: drop-shadow(0 0 6px rgba(0,0,0,.7)); }
 #arrow span { position: absolute; top: 20px; left: -40px; width: 80px; text-align: center; font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px #000; }
+#aim { position: absolute; width: 0; height: 0; opacity: 0; --load: 1; }
+#aim::before { content: ''; position: absolute; left: -15px; top: -15px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,.8), inset 0 0 5px rgba(0,0,0,.6); }
+#aim i { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px #000; }
+#aim.wait::before { border-color: rgba(255,255,255,.35); transform: scale(calc(1.7 - 0.7 * var(--load))); } #aim.wait i { opacity: .4; }
+#tmarks b { position: absolute; display: none; width: 0; height: 0; }
+#tmarks b::before { content: ''; position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border: 1.5px solid rgba(255,120,95,.95); transform: rotate(45deg); box-shadow: 0 0 4px rgba(0,0,0,.6); }
+#tmarks span { position: absolute; top: 18px; left: -30px; width: 60px; text-align: center; font-size: 11px; font-weight: 600; text-shadow: 0 1px 3px #000; opacity: .9; }
 #score { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700; text-shadow: 0 1px 6px #000; }
 #hint { position: absolute; bottom: 118px; left: 0; right: 0; text-align: center; font-size: 15px; opacity: .92; text-shadow: 0 1px 6px #000; }
 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); font: 600 12px ui-monospace, monospace; direction: ltr; }
@@ -148,12 +155,13 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div id="map" class="panel"><canvas width="380" height="380"></canvas></div>
   <div id="msg"></div><div id="warn"></div>
   <div id="arrow"><i></i><span class="num"></span></div>
+  <div id="aim"><i></i></div><div id="tmarks"><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b></div>
   <div id="hint"></div>
 </div>
 
 <div id="menu">
   <h1>F<span>Ö</span>HN</h1>
-  <div class="sub" data-i18n="sub">אופנוע בלי גלגלים, עם מנוע היתוך. עמק אלפיני אחד, מבצר על ההר, שבעה אירועים</div>
+  <div class="sub" data-i18n="sub">אופנוע בלי גלגלים, עם מנוע היתוך. עמק אלפיני אחד, מבצר על ההר, שמונה אירועים</div>
   <div id="cards"></div>
   <div class="rowbtn">
     <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHist" data-i18n="b.hist">הטיסות שלי</button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
@@ -194,6 +202,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <tr><td><kbd>Space</kbd></td><td data-i18n="h.boost">דחף־יתר: 50% יותר דחף קדימה, עד 450 קמ"ש. כ-7 שניות עד שהליבה מתחממת, והיא מתקררת מהר יותר בטיסה מהירה</td></tr>
     <tr><td><kbd>Shift</kbd></td><td data-i18n="h.brake">בלם: מעצור אוויר, ונחירי ההרמה נוטים קדימה, עד ריחוף</td></tr>
     <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td data-i18n="h.strafe">נחירי הצד. בריחוף: הזזה הצידה, לנחיתה מדויקת. בטיסה: בעיטת צד, דחיפה ישרה הצידה של יותר מ-1 g, מיד, בלי להטות את האופנוע ובלי לסובב את האף. מחממת את הליבה כמו דחף־יתר</td></tr>
+    <tr><td><kbd>F</kbd></td><td data-i18n="h.fire">התותח שבחרטום (בציד הבלונים ובטיסה חופשית). יורה כדור אחד לאן שהאף מצביע, פעם בשנייה וחצי. הכדור איטי ונופל בדרך: למטרה רחוקה מכוונים קצת מעליה. כל ירייה דוחפת את האופנוע אחורה, מרימה לו את האף ומחממת את הליבה.</td></tr>
     <tr><td><kbd>C</kbd></td><td data-i18n="h.cam">מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
     <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td data-i18n="h.misc">התחלה מחדש · הפסקה · השתקה</td></tr>
   </table>
@@ -206,6 +215,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="stick"><i></i></div>
   <button data-k="up" style="right:24px;bottom:230px" data-i18n="t.up">מהר</button><button data-k="down" style="right:24px;bottom:150px" data-i18n="t.down">לאט</button>
   <button data-k="boost" style="right:104px;bottom:190px" data-i18n="t.boost">מבער</button><button data-k="brake" style="right:184px;bottom:150px" data-i18n="t.brake">בלם</button>
+  <button data-k="fire" id="tFire" style="right:104px;bottom:270px;display:none" data-i18n="t.fire">אש</button>
   <button data-k="sl" style="left:22px;bottom:292px;width:56px;height:56px">◀</button><button data-k="sr" style="left:96px;bottom:292px;width:56px;height:56px">▶</button>
   <button data-k="key" data-code="Escape" style="right:14px;top:14px;width:46px;height:46px">II</button>
   <button data-k="key" data-code="KeyC" style="right:70px;top:14px;width:46px;height:46px">cam</button>

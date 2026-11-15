@@ -8,6 +8,7 @@ import { T, groundAt } from './terrain.js';
 import { S, hitScenery, canopyAt } from './scenery.js';
 import { buildEvent, eventById } from './courses.js';
 import { indoor } from './castle.js';
+import { Gun } from './gun.js';
 import { clamp, dot, sub, len, yprOf, qrot } from './vmath.js';
 
 export const CRASH_WAIT = 2.4;
@@ -26,6 +27,7 @@ export class Game {
     this.score = 0; this.combo = 1; this.lowT = 0;
     this.crashes = 0; this.misses = 0; this.landT = 0; this.stateT = 0; this.tick = 0;
     this.respawnPose = null;
+    this.gun = new Gun();
     this.windLevel = 1; this.windSeed = 7;   // the UI sets these (0 calm .. 3 storm; a new seed for every run)
   }
   emit(type, data = {}) { this.events.push({ type, ...data }); }
@@ -33,7 +35,7 @@ export class Game {
   load(id, best = null) {
     const ev = eventById(id);
     this.ev = ev; this.build = buildEvent(ev); this.best = best;
-    this.cps = this.build.real;
+    this.cps0 = this.build.real;
     this.setWind(this.windLevel, this.windSeed);
     this.restart();
   }
@@ -44,6 +46,9 @@ export class Game {
   }
   restart() {
     const st = this.build.start;
+    // balloons are shot in any order: the one that is hit changes places with the next in line, so cp still counts them
+    this.cps = this.cps0.slice(); this.cps0.forEach((c, k) => { c.k = k; c.popped = false; });
+    this.gun.reset();
     this.sim.reset(st.p, st.yaw); this.sim.t = 0;
     this.cp = 0; this.time = 0; this.penalty = 0; this.vt = 0; this.ghost = []; this.splits = [];
     this.score = 0; this.combo = 1; this.lowT = 0; this.crashes = 0; this.misses = 0; this.landT = 0; this.tick = 0;
@@ -54,6 +59,13 @@ export class Game {
   }
   get total() { return this.time + this.penalty; }
   get nextCp() { return this.cps[this.cp] || null; }
+  get gunOn() { return !!this.ev.gun || this.ev.id === 'free'; }
+  popTarget(c, off) {
+    const j = this.cps.indexOf(c); if (j < this.cp || c.popped) return;
+    this.cps[j] = this.cps[this.cp]; this.cps[this.cp] = c; c.popped = true;
+    this.emit('pop', { k: c.k, p: c.p.slice() });
+    this.pass(c, off);
+  }
 
   // ctl: { turn, pitch, strafe, throttle (-1..1), boost, brake } or autopilot { vt }
   update(dt, ctl) {
@@ -90,6 +102,7 @@ export class Game {
     if (b.contactN > 0.25 * b.mp.m * G && len(b.v) < 4 && !ctl.boost && (ctl.pitch || 0) <= 0.05 && (ctl.vt !== undefined ? Math.abs(ctl.vt) < 3 : !(ctl.throttle > 0))) this.vt = 0;
     const inp = this.state === 'finished' ? { turn: 0, pitch: 0, vt: 0, brake: true }
       : { turn: ctl.turn || 0, pitch: ctl.pitch || 0, strafe: ctl.strafe || 0, vt: this.vt, boost: !!ctl.boost, brake: !!ctl.brake };
+    if (ctl.fire && this.gunOn && this.state === 'fly') this.gun.trigger = true;
     this.sim.advance(dt, inp, () => this.onTick());
     if (this.state === 'fly' && this.ev.id !== 'free') this.time += dt;
   }
@@ -97,6 +110,7 @@ export class Game {
   onTick() {
     const b = this.bike, p = b.p;
     this.tick++;
+    this.gun.step(1 / 120, this);
     if (this.state !== 'fly') { this.prevP = p.slice(); return; }
     // --- crashes ---
     let reason = b.crash;
@@ -122,7 +136,7 @@ export class Game {
           else if (r < c.r) { if (fwd) this.pass(c, r / c.r); else this.emit('wrongway', { index: this.cp }); }
           else if (fwd && r < c.r * 12) { this.misses++; this.emit('miss', { index: this.cp, off: r, dy: hit[1] }); }
         }
-      } else {
+      } else if (c.type === 'land') {
         const onPad = Math.hypot(p[0] - c.p[0], p[2] - c.p[2]) < c.r;
         if (onPad && b.contactN > 0.5 * b.mp.m * G && len(b.v) < 1.0) { this.landT += 1 / 120; if (this.landT > 0.45) { this.landT = 0; this.pass(c, Math.hypot(p[0] - c.p[0], p[2] - c.p[2]) / c.r); } } else this.landT = 0;
         // parked beside the circle: say so, otherwise it looks as if the landing just didn't count
@@ -154,7 +168,8 @@ export class Game {
   advance(c, passed) {
     const b = this.bike;
     // where a crash puts you back: at the check-point just passed, flying along the course
-    if (c.type === 'land') this.respawnPose = { p: c.p, yaw: yprOf(b.q)[0], speed: 0 };
+    if (c.type === 'target') this.respawnPose = { p: [b.p[0], Math.max(b.p[1], groundAt(b.p[0], b.p[2]) + 30), b.p[2]], yaw: yprOf(b.q)[0], speed: 30, pitch: 0 };   // after a balloon: where the shot was fired from, with air underneath
+    else if (c.type === 'land') this.respawnPose = { p: c.p, yaw: yprOf(b.q)[0], speed: 0 };
     else this.respawnPose = { p: c.p, yaw: Math.atan2(-c.n[2], c.n[0]), speed: c.slow ? clamp(len(b.v), 12, Math.min(c.v, 20)) : clamp(len(b.v), 30, 45), pitch: Math.asin(clamp(c.n[1], -1, 1)) };
     this.cp++;
     if (this.cp >= this.cps.length) this.finish();
@@ -164,7 +179,7 @@ export class Game {
     const medal = !m ? 0 : t <= m[0] ? 3 : t <= m[1] ? 2 : t <= m[2] ? 1 : 0;
     const isBest = !this.best || t < this.best.time;
     this.state = 'finished';
-    this.result = { time: t, medal, isBest, prev: this.best ? this.best.time : null, crashes: this.crashes, misses: this.misses, splits: this.splits.slice(), ghost: new Float32Array(this.ghost) };
+    this.result = { time: t, medal, isBest, prev: this.best ? this.best.time : null, crashes: this.crashes, misses: this.misses, shots: this.gun.fired, hits: this.gun.hits, splits: this.splits.slice(), ghost: new Float32Array(this.ghost) };
     this.emit('finish', this.result);
   }
   crash(reason) {

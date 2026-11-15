@@ -121,6 +121,7 @@ export class Gates {
     this.items = [];
     const up = new THREE.Vector3(0, 0, 1);
     build.real.forEach((c, i) => {
+      if (c.type === 'target') return;                // balloons are drawn by render/targets.js
       const obj = new THREE.Group();
       obj.position.set(c.p[0], c.p[1], c.p[2]);
       let ring, disc = null;

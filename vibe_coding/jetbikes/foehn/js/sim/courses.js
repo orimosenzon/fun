@@ -22,6 +22,7 @@ function atX(valley, x, off = 0) {
 }
 const G = (p, agl, r = 11, extra = {}) => ({ x: p[0], z: p[1], agl, r, ...extra });
 const L = (pad) => ({ land: pad });
+const B = (p, agl, r = 2.2) => ({ x: p[0], z: p[1], agl, r, target: true });   // a tethered balloon to shoot
 const H = (p, alt) => ({ x: p[0], z: p[1], alt, r: 30, hint: true });   // invisible navigation node at an absolute altitude
 // nodes along a valley centre line from fraction t0 to t1: a ring every `every` nodes, hints between
 function along(valley, t0, t1, n, agl, r, every) {
@@ -82,6 +83,14 @@ export const EVENTS = [
     start: { pad: 'castle', yaw: 0, up: [6, 7.5, 44] }, wind: { speed: 2, gust: 0.4, heading: 0.3 }, medals: [58, 72, 100],
     cps: castleCourse,
   },
+  {
+    // no rings: ten balloons, shot in any order with the nose gun. The clock stops with the last one,
+    // and every round that hits nothing costs two seconds.
+    id: 'hunt', name: 'ציד בלונים', tag: 'עשרה בלונים, תותח אחד בחרטום. מכוונים עם האופנוע כולו, וכל החטאה עולה שתי שניות', gun: true,
+    start: { pad: 'base', yaw: 0 }, wind: { speed: 2, gust: 0.5, heading: 0.3 }, medals: [75, 105, 160],
+    cps: () => [B([-1250, 2300], 22), B([-1000, 2130], 38), B([-800, 2340], 24), B([-540, 1910], 52), B([-300, 2060], 26),
+      B([-60, 1750], 34), B([150, 1960], 62), B([330, 1790], 22), B([560, 2000], 44), B([770, 1860], 28)],
+  },
 ];
 export const FREE = { id: 'free', name: 'טיסה חופשית', tag: 'בלי שעון. ניקוד על טיסה מהירה וקרובה לקרקע', start: { pad: 'base', yaw: 0 }, wind: { speed: 4, gust: 1, heading: 0.3 }, medals: null, cps: () => [] };
 
@@ -119,7 +128,7 @@ export function buildEvent(ev) {
   const start = { p: [sp[0], sp[1], sp[2]], yaw: ev.start.yaw, pad: ev.start.pad };
   const cps = ev.cps().map((c) => {
     if (c.land) { const p = pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15) }; }
-    return { type: c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow };
+    return { type: c.target ? 'target' : c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow };
   });
   // reference line: start (lifted), check-points (landings approached from above)
   const up = ev.start.up || [22, 26, 70];     // how the line leaves the pad: height above it, then height and distance of the first node

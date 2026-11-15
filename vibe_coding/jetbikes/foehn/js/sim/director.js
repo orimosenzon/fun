@@ -169,6 +169,7 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
     anchors.push(A); lastRing = e.t;
     if (e.last) zones.push({ a: e.t - 0.7, b: e.t + 0.6, r: 0.35 });
   }
+  for (const e of evs) if (e.type === 'pop') zones.push({ a: e.t - 0.55, b: e.t + 0.3, r: 0.4 });      // the round on its way to a balloon, slowly
   anchors.sort((x, y) => x.a - y.a);
 
   // ---- cut the flight into shots ----
