@@ -5830,6 +5830,17 @@
    "url": "https://pardeshanna.eventschedule.com/unicorn-14-11/nBIMuw",
    "venue": "יוניקורן"
   },
+  "2026-11-14--ערב-הופעות-אינדי": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-14",
+   "entry": "חינם",
+   "image_file": "אירוע-emek-1SU25c.jpg",
+   "name": "ערב הופעות אינדי",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://emeklive.co.il/hana-14-11/1SU25c",
+   "venue": "חנה בר"
+  },
   "2026-11-15--במה-פתוחה-40": {
    "category": "מופעים והופעות",
    "date": "2026-11-15",
@@ -5993,7 +6004,18 @@
    "source": "לוח האירועים",
    "time": "19:30",
    "url": "https://pardes-events-hub.lovable.app/event/d055735e-668f-477a-ba49-1ec487e47c70",
-   "venue": ""
+   "venue": "נרבתא"
+  },
+  "2026-11-18--הטוב-הרע-והעצלן-עם-הרב-ד-ר-לייבל-וולף": {
+   "category": "רוחניות והתפתחות אישית",
+   "date": "2026-11-18",
+   "entry": "",
+   "image_file": "אירוע-es-dXr2iI.jpg",
+   "name": "הטוב, הרע והעצלן עם הרב ד\"ר לייבל וולף",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/the-good-the-bad-and-the-lazy-w-rabbi-dr-laibl-wolf/dXr2iI",
+   "venue": "מרכז ללימוד תורה"
   },
   "2026-11-18--הרצאה-על-הבר-עם-ערן-שטרן": {
    "category": "הרצאות וסדנאות",
@@ -6038,6 +6060,94 @@
    "time": "17:00",
    "url": "https://pardespedia.info/wiki/סדנה_קהילתית_לתיקון_אופניים",
    "venue": "המשאלה"
+  },
+  "2026-11-19--הזנה-קהילתית-בגן-הציפורים": {
+   "category": "קהילה",
+   "date": "2026-11-19",
+   "entry": "חינם",
+   "image_file": "אירוע-הזנה-קהילתית-גן-הציפורים.jpg",
+   "name": "הזנה קהילתית בגן הציפורים",
+   "source": "לוח האירועים",
+   "time": "17:00",
+   "url": "",
+   "venue": "גן הציפורים"
+  },
+  "2026-11-19--להקת-MotherRockerz": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-19",
+   "entry": "חינם",
+   "image_file": "אירוע-es-M3B6FB.jpg",
+   "name": "להקת MotherRockerz",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/shevet-19-11/M3B6FB",
+   "venue": "בירה שבט"
+  },
+  "2026-11-19--קלאסיקל-בבית-הראשונים": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-19",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-0dfce7f9-1279-43c6-84d3-84fc80e02bb8.jpg",
+   "name": "קלאסיקל בבית הראשונים",
+   "source": "לוח האירועים",
+   "time": "17:30",
+   "url": "https://pardes-events-hub.lovable.app/event/0dfce7f9-1279-43c6-84d3-84fc80e02bb8",
+   "venue": "בית הראשונים, שביל התלמיד 2"
+  },
+  "2026-11-19--שלישיית-יותם-זילברשטיין": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-19",
+   "entry": "₪70",
+   "image_file": "אירוע-es-P7FjqM.jpg",
+   "name": "שלישיית יותם זילברשטיין",
+   "source": "לוח האירועים",
+   "time": "20:30",
+   "url": "https://pardeshanna.eventschedule.com/jazzway-19-11/P7FjqM",
+   "venue": "דרך הג'אז"
+  },
+  "2026-11-20--האוסף-בגאז-סייל-יריד-יד-שניה-וינטג-ואספנות": {
+   "category": "קהילה",
+   "date": "2026-11-20",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-01ec0e58-9f1f-4fd6-b9d6-36f669b668ac.jpg",
+   "name": "האוסף - בגאז'סייל יריד יד שניה וינטג' ואספנות",
+   "source": "לוח האירועים",
+   "time": "09:00",
+   "url": "https://pardes-events-hub.lovable.app/event/01ec0e58-9f1f-4fd6-b9d6-36f669b668ac",
+   "venue": "אנדרטת הנחל פרדס חנה כרכור"
+  },
+  "2026-11-20--סיור-בית-הראשונים-לאדמות-כרכור": {
+   "category": "tour",
+   "date": "2026-11-20",
+   "entry": "₪40",
+   "image_file": "אירוע-hub-7aa197cb-fe4b-4e3f-9f06-b6761d165c00.jpg",
+   "name": "סיור בית הראשונים לאדמות כרכור",
+   "source": "לוח האירועים",
+   "time": "08:30",
+   "url": "https://pardes-events-hub.lovable.app/event/7aa197cb-fe4b-4e3f-9f06-b6761d165c00",
+   "venue": "בית הראשונים"
+  },
+  "2026-11-20--קבלת-שבת-חורפית-20-11": {
+   "category": "קהילה",
+   "date": "2026-11-20",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-eee4527e-98bc-4dfd-b06b-38f8df1e8326.jpg",
+   "name": "קבלת שבת חורפית 20.11",
+   "source": "לוח האירועים",
+   "time": "17:30",
+   "url": "https://pardes-events-hub.lovable.app/event/eee4527e-98bc-4dfd-b06b-38f8df1e8326",
+   "venue": "סמטת זריחה 4 א"
+  },
+  "2026-11-21--להקת-עלמא": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-21",
+   "entry": "₪80",
+   "image_file": "אירוע-es-ILFBs0.jpg",
+   "name": "להקת עלמא",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://pardeshanna.eventschedule.com/unicorn-21-11/ILFBs0",
+   "venue": "יוניקורן"
   }
  }
 }
