@@ -2,7 +2,10 @@
 // Heights are interpolated on the same two triangles per cell that the renderer draws.
 import { clamp } from './vmath.js';
 
-export const T = { n: 0, cell: 12, half: 0, H: null, meta: null, lakes: [], ready: false };
+// T.ext: another world may stand in for the valley. When it is set ({ groundAt, normalAt, waterAt }),
+// the bike, its flight computer and the effects fly over that world instead (the Mandelbrot
+// landscape in ../../mandelscape does this). Nothing in this game sets it.
+export const T = { n: 0, cell: 12, half: 0, H: null, meta: null, lakes: [], ready: false, ext: null };
 
 export function initTerrain(arrayBuffer, meta) {
   const u = new Uint16Array(arrayBuffer);
@@ -13,6 +16,7 @@ export function initTerrain(arrayBuffer, meta) {
 }
 
 export function groundAt(x, z) {
+  if (T.ext) return T.ext.groundAt(x, z);
   const n = T.n, H = T.H;
   let gx = (x + T.half) / T.cell, gz = (z + T.half) / T.cell;
   gx = clamp(gx, 0, n - 1.0001); gz = clamp(gz, 0, n - 1.0001);
@@ -24,6 +28,7 @@ export function groundAt(x, z) {
 
 // smooth normal (central differences over one cell)
 export function normalAt(x, z) {
+  if (T.ext) return T.ext.normalAt(x, z);
   const e = T.cell * 0.5;
   const nx = groundAt(x - e, z) - groundAt(x + e, z), nz = groundAt(x, z - e) - groundAt(x, z + e);
   const l = Math.hypot(nx, 2 * e, nz);
@@ -32,6 +37,7 @@ export function normalAt(x, z) {
 
 // water level at (x,z), or -Infinity when there is no lake there
 export function waterAt(x, z) {
+  if (T.ext) return T.ext.waterAt(x, z);
   for (const L of T.lakes) if (x > L.x0 && x < L.x1 && z > L.z0 && z < L.z1) return L.level;
   return -Infinity;
 }

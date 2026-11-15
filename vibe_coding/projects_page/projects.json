@@ -1925,6 +1925,46 @@
           "illus": "                <svg width=\"72\" height=\"72\" viewBox=\"0 0 72 72\" fill=\"none\">\n                    <!-- Torus-like wireframe -->\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1.4\" opacity=\".85\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"18\" ry=\"6\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1.2\" opacity=\".55\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".4\" transform=\"rotate(20 36 36)\"/>\n                    <ellipse cx=\"36\" cy=\"36\" rx=\"26\" ry=\"10\" fill=\"none\" stroke=\"#22d3ee\" stroke-width=\"1\" opacity=\".4\" transform=\"rotate(-20 36 36)\"/>\n                    <circle cx=\"36\" cy=\"36\" r=\"2.2\" fill=\"#22d3ee\"/>\n                </svg>\n            "
         },
         {
+          "title": "מנדלברוט: מפה ונוף",
+          "icon": "🌋",
+          "theme": "t-indigo",
+          "dir": "mandelscape",
+          "tags": [
+            "WebGL2",
+            "Perturbation + BLA",
+            "Distance Estimate",
+            "Three.js",
+            "זום עד 10^32"
+          ],
+          "desc": "<strong style=\"color:#a5b4fc\">קבוצת מנדלברוט כמפה חדה וכנוף שטסים מעליו.</strong><br> במפה: זום עד 10^32, תמונה שממשיכה להתחדד כשהיא עומדת, ומספר איטרציות שמתאים את עצמו למקום. בטיסה: הקבוצה היא אגם, הקרקע עולה לפי המרחק ממנה, וכל פס צבע הוא מדרגה בשטח. טסים על ה-F-5 של FÖHN, וכדי לרדת לפרטים פשוט יורדים: קרוב למים האופנוע מתכווץ והעולם גדל סביבו.",
+          "links": [
+            {
+              "href": "mandelscape/index.html",
+              "style": "live",
+              "label": "▶ פתח את המפה",
+              "external": false
+            },
+            {
+              "href": "mandelscape/index.html?fly",
+              "style": "secondary",
+              "label": "🏍️ ישר לטיסה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/mandelscape",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "חוקר קבוצת מנדלברוט",
           "icon": "🌀",
           "theme": "t-indigo",

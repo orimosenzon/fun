@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>מנדלברוט: מפה ונוף</title>
+<meta name="description" content="חוקר קבוצת מנדלברוט: מפה חדה עד זום של 10 בחזקת 32, ונוף תלת־ממדי שטסים מעליו על אופנוע סילון.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23061a4a%22/%3E%3Ccircle cx=%2218%22 cy=%2216%22 r=%228%22/%3E%3Ccircle cx=%228%22 cy=%2216%22 r=%224%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050c; --panel:rgba(9,12,24,.80); --line:rgba(130,170,255,.20);
+  --text:#eef1fb; --dim:#8f98b4; --accent:#3ad6ff; --accent2:#ff5ec4; --danger:#ff5470; --gold:#ffc24a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);overscroll-behavior:none;
+  font-family:'Heebo',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+body.map #c{cursor:grab} body.map #c.dragging{cursor:grabbing} body.fly #c{cursor:none}
+#orbit{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;display:none}
+.num{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+
+header{position:fixed;top:0;right:0;left:0;padding:12px 20px;display:flex;align-items:center;gap:14px;
+  pointer-events:none;z-index:5;background:linear-gradient(to bottom,rgba(4,5,12,.72),transparent)}
+header h1{font-weight:800;font-size:1.1rem;letter-spacing:.02em;white-space:nowrap}
+header .sub{color:var(--dim);font-size:.8rem;font-weight:300}
+#modes{pointer-events:auto;display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;backdrop-filter:blur(10px)}
+#modes button{border:0;background:transparent;color:var(--dim);font:inherit;font-size:.86rem;font-weight:600;padding:7px 16px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
+#modes button.on{background:linear-gradient(135deg,var(--accent),#7fe9ff);color:#03131c}
+#togglePanel{position:fixed;top:12px;left:16px;z-index:7;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:8px 14px;font:inherit;font-size:.82rem;cursor:pointer;backdrop-filter:blur(10px)}
+
+#panel{position:fixed;top:62px;right:16px;width:304px;max-height:calc(100% - 128px);overflow-y:auto;z-index:6;
+  background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:16px 18px;
+  scrollbar-width:thin;scrollbar-color:rgba(120,160,255,.3) transparent;transition:transform .35s ease,opacity .35s ease}
+#panel.hidden{transform:translateX(120%);opacity:0;pointer-events:none}
+#panel h2{font-size:.7rem;font-weight:600;color:var(--dim);letter-spacing:.14em;margin:16px 0 8px}
+#panel h2:first-child{margin-top:0}
+body.map .fly-only, body.fly .map-only{display:none!important}
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;
+  padding:9px 12px;color:var(--text);font:inherit;font-size:.86rem;cursor:pointer;transition:border-color .2s,background .2s;text-align:right;width:100%}
+.preset:hover{border-color:var(--accent);background:rgba(58,214,255,.08)}
+.preset .z{color:var(--dim);font-size:.7rem}
+.palettes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pal{height:30px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:border-color .2s,transform .1s}
+.pal:hover{transform:scale(1.04)} .pal.active{border-color:#fff}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:.86rem}
+.row output{color:var(--accent);font-size:.78rem;min-width:2.6em;text-align:left}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.btn{display:block;width:100%;border:none;border-radius:11px;padding:11px;margin-top:8px;font:inherit;font-size:.92rem;font-weight:600;cursor:pointer;
+  color:#03131c;background:linear-gradient(135deg,var(--accent),#7fe9ff);transition:filter .2s,transform .1s;text-align:center;text-decoration:none}
+.btn:hover{filter:brightness(1.12)} .btn:active{transform:scale(.98)}
+.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--line)}
+.btn.rec{background:linear-gradient(135deg,var(--accent2),#ff9bdc);color:#2a0018}
+.btn.go{background:linear-gradient(135deg,var(--gold),#ffe08a);color:#2a1a00}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{color:var(--dim);font-size:.74rem;line-height:1.5;margin-top:6px}
+
+#status{position:fixed;bottom:14px;right:16px;left:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;z-index:5;pointer-events:none;font-size:.74rem;color:var(--dim)}
+#coords,#hint{background:rgba(4,5,12,.6);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px)}
+#coords{text-align:left}
+body.fly #hint{display:none}
+
+/* ---------- flight ---------- */
+#hud{position:fixed;inset:0;z-index:4;pointer-events:none;display:none}
+body.fly #hud{display:block}
+#hTop{position:absolute;top:58px;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 1px 8px #000}
+#hZoom{font-size:1.5rem;font-weight:800;letter-spacing:.02em}
+#hZoom small{font-size:.72rem;font-weight:400;color:var(--dim);display:block;letter-spacing:.1em}
+#hMsg{margin-top:6px;font-size:.92rem;font-weight:600;color:var(--gold);min-height:1.4em;transition:opacity .3s}
+#hGauge{position:absolute;left:22px;top:50%;transform:translateY(-50%);width:54px;height:230px}
+#hGauge .bar{position:absolute;left:22px;top:0;bottom:0;width:6px;border-radius:3px;background:rgba(255,255,255,.14)}
+#hGauge .band{position:absolute;left:22px;width:6px;border-radius:3px;background:linear-gradient(to top,var(--accent2),var(--accent))}
+#hGauge .me{position:absolute;left:8px;width:34px;height:2px;background:#fff;box-shadow:0 0 8px #fff}
+#hGauge .lab{position:absolute;left:36px;font-size:.66rem;color:var(--dim);white-space:nowrap;transform:translateY(50%)}
+#hGauge .val{position:absolute;left:36px;font-size:.8rem;font-weight:600;white-space:nowrap;transform:translateY(50%);text-shadow:0 1px 6px #000}
+#hSpeed{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 1px 8px #000;font-size:1.25rem;font-weight:800}
+#hSpeed small{font-size:.7rem;font-weight:400;color:var(--dim);margin-inline-start:4px}
+#hHeat{width:120px;height:4px;border-radius:2px;background:rgba(255,255,255,.14);margin:6px auto 0;overflow:hidden}
+#hHeat i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--danger))}
+#mini{position:absolute;left:18px;bottom:56px;width:190px;height:190px;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.5);overflow:hidden}
+#mini i{position:absolute;left:50%;top:50%;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:18px solid #fff;
+  margin:-11px 0 0 -7px;filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 2px #000);transform-origin:50% 61%}
+#mini span{position:absolute;right:6px;bottom:4px;font-size:.62rem;color:#fff;text-shadow:0 0 4px #000,0 0 4px #000}
+#keys{position:absolute;right:50%;transform:translateX(50%);bottom:74px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px;
+  font-size:.82rem;line-height:1.9;backdrop-filter:blur(10px);max-width:min(560px,92vw);transition:opacity .6s}
+#keys b{display:inline-block;min-width:1.6em;text-align:center;background:rgba(255,255,255,.12);border-radius:5px;padding:0 6px;margin:0 2px;font-weight:600;direction:ltr}
+#keys.off{opacity:0}
+#fade{position:fixed;inset:0;background:#02030a;z-index:9;opacity:0;pointer-events:none;transition:opacity .28s}
+#fade.on{opacity:1}
+#touch{position:fixed;inset:0;z-index:8;pointer-events:none;display:none}
+#touch.on{display:block}
+#touch .stick{position:absolute;right:26px;bottom:calc(30px + env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--line);pointer-events:auto;touch-action:none}
+#touch .stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(255,255,255,.35)}
+#touch .tb{position:absolute;left:12px;display:flex;flex-wrap:wrap;gap:10px;width:134px;bottom:calc(14px + env(safe-area-inset-bottom))}
+#touch button{pointer-events:auto;touch-action:none;width:62px;height:50px;border-radius:14px;border:1px solid var(--line);background:rgba(9,12,24,.6);color:var(--text);font:inherit;font-size:.8rem;font-weight:600}
+#touch button.act{background:var(--accent);color:#03131c}
+
+/* ---------- recording ---------- */
+#recOverlay{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:48px;pointer-events:none}
+#recOverlay.show{display:flex}
+#recCard{pointer-events:auto;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);border-radius:16px;padding:16px 22px;width:min(420px,90%);display:flex;flex-direction:column;gap:10px}
+#recCard .title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.95rem}
+#recCard .dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+#recBar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+#recBar>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#recCard button{align-self:center;width:auto;padding:8px 22px;margin-top:2px}
+.overlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(2,3,8,.72);backdrop-filter:blur(6px)}
+.overlay.show{display:flex}
+.card{background:#0b0f1f;border:1px solid var(--line);border-radius:20px;padding:22px;width:min(560px,92%);display:flex;flex-direction:column;gap:14px;max-height:92%;overflow:auto}
+.card video{width:100%;border-radius:12px;background:#000}
+.card .actions{display:flex;gap:10px} .card .actions .btn{margin-top:0}
+.card h3{font-size:1.05rem} .card p,.card li{font-size:.88rem;line-height:1.7;color:#cfd5e8} .card ul{padding-inline-start:18px}
+#err{position:fixed;left:10px;bottom:10px;right:10px;z-index:99;display:none;background:#300;color:#fbb;padding:10px;border-radius:8px;font:12px monospace;white-space:pre-wrap;direction:ltr;text-align:left;max-height:40%;overflow:auto}
+
+@media (max-width:700px),(pointer:coarse) and (max-width:900px){
+  header{padding:9px 12px;gap:8px} header h1{font-size:.95rem} header .sub{display:none}
+  #panel{top:auto;bottom:0;right:0;left:0;width:auto;max-height:60dvh;border-radius:22px 22px 0 0;border-bottom:none;padding:10px 18px calc(16px + env(safe-area-inset-bottom));transition:transform .3s ease,opacity .3s ease}
+  #panel.hidden{transform:translateY(110%);opacity:0}
+  #panel::before{content:'';display:block;width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:2px auto 10px}
+  .preset{padding:13px 14px;font-size:.95rem} .btn{padding:14px;font-size:1rem} .pal{height:38px}
+  input[type=range]{height:30px} input[type=checkbox]{width:20px;height:20px} .row{margin:10px 0;font-size:.95rem}
+  #togglePanel{top:auto;left:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));padding:12px 18px;font-size:.95rem;font-weight:600;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+  body.fly #togglePanel{top:10px;bottom:auto;right:auto;left:10px;padding:8px 12px;font-size:.8rem}
+  #status{bottom:calc(14px + env(safe-area-inset-bottom));left:14px;right:auto;flex-direction:column;align-items:flex-start;gap:6px}
+  #hint{display:none} #coords{font-size:.62rem;max-width:62vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.fly #status{display:none}
+  #mini{width:110px;height:110px;top:52px;bottom:auto;left:auto;right:10px} #hGauge{left:8px;height:150px;top:auto;bottom:calc(150px + env(safe-area-inset-bottom));transform:none} #keys{display:none}
+  #hSpeed{font-size:1rem;bottom:calc(10px + env(safe-area-inset-bottom))} #hZoom{font-size:1.15rem} #hTop{top:50px}
+  #recOverlay{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="map">
+
+<canvas id="c"></canvas>
+<canvas id="orbit"></canvas>
+
+<header>
+  <h1>מנדלברוט: מפה ונוף</h1>
+  <div id="modes"><button id="mMap" class="on">מפה</button><button id="mFly">טיסה</button></div>
+  <span class="sub map-only">גלילה: זום · גרירה: תנועה · לחיצה כפולה: צלילה</span>
+  <span class="sub fly-only">הקבוצה היא אגם, והגובה הוא המרחק ממנה. יורדים נמוך כדי לצלול פנימה</span>
+</header>
+
+<button id="togglePanel">לוח בקרה</button>
+
+<div id="panel">
+  <h2>מקומות מרשימים</h2>
+  <div class="presets" id="presets"></div>
+
+  <h2>צבעוניות</h2>
+  <div class="palettes" id="palettes"></div>
+  <div class="row"><label for="density">צפיפות הפסים</label><input type="range" id="density" min="0.15" max="2" step="0.05" value="0.55"><output id="densityOut"></output></div>
+  <div class="row map-only"><label for="relief">תבליט</label><input type="range" id="relief" min="0" max="1" step="0.05" value="0.35"><output id="reliefOut"></output></div>
+  <div class="row"><label for="cycle">מחזור צבעים חי</label><input type="checkbox" id="cycle"></div>
+
+  <h2 class="map-only">איכות</h2>
+  <div class="row map-only"><label for="quality">עומק חישוב</label><input type="range" id="quality" min="0.5" max="3" step="0.1" value="1"><output id="qualityOut"></output></div>
+  <div class="row map-only"><label for="orbitChk">מסלול האיטרציות של הנקודה שמתחת לסמן</label><input type="checkbox" id="orbitChk"></div>
+
+  <h2 class="fly-only">הנוף</h2>
+  <div class="row fly-only"><label for="slope">תלילות ההרים</label><input type="range" id="slope" min="0.2" max="0.9" step="0.05" value="0.5"><output id="slopeOut"></output></div>
+  <div class="row fly-only"><label for="inv">היפוך ציר העלרוד</label><input type="checkbox" id="inv"></div>
+  <div class="row fly-only"><label for="snd">קול המנוע</label><input type="checkbox" id="snd" checked></div>
+  <div class="row fly-only"><label for="fineChk">פירוט גבוה (כרטיס מסך חזק)</label><input type="checkbox" id="fineChk"></div>
+
+  <h2 class="map-only">סרטון צלילה</h2>
+  <div class="row map-only"><label for="dur">משך בשניות</label><input type="range" id="dur" min="5" max="60" step="1" value="16"><output id="durOut">16</output></div>
+  <div class="row map-only"><label for="fromHome">להתחיל מהמבט המלא</label><input type="checkbox" id="fromHome" checked></div>
+  <button class="btn rec map-only" id="recBtn">הקלטת צלילה אל המבט הנוכחי</button>
+
+  <h2>פעולות</h2>
+  <button class="btn go map-only" id="flyHere">לטוס כאן על האופנוע</button>
+  <button class="btn go fly-only" id="toMap">למפה של המקום הזה</button>
+  <button class="btn secondary" id="snapBtn">שמירת תמונה</button>
+  <button class="btn secondary" id="linkBtn">העתקת קישור למקום הזה</button>
+  <button class="btn secondary" id="fsBtn">מסך מלא</button>
+  <button class="btn secondary fly-only" id="helpBtn">איך טסים</button>
+  <button class="btn secondary" id="resetBtn">חזרה להתחלה</button>
+  <p class="note map-only">כשהתמונה עומדת היא ממשיכה להתחדד לבד: עד שמונה דגימות לכל פיקסל.</p>
+</div>
+
+<div id="status"><span id="hint">בחרו מקום מהרשימה, או גללו פנימה. הכפתור הצהוב מעביר לטיסה מעל אותו מקום</span><span id="coords" class="num"></span></div>
+
+<div id="hud">
+  <div id="hTop"><div id="hZoom"><small>הגדלה</small><span class="num" id="hZoomV">×1</span></div><div id="hMsg"></div></div>
+  <div id="hGauge"><div class="bar"></div><div class="band" id="gBand"></div><div class="lab" id="gHi">מתרחקים</div><div class="lab" id="gLo">צוללים</div><div class="me" id="gMe"></div><div class="val num" id="gVal"></div></div>
+  <div id="mini"><i id="miniArrow"></i><span class="num" id="miniScale"></span></div>
+  <div id="keys">
+    <b>←</b><b>→</b> פנייה · <b>↑</b><b>↓</b> צלילה וטיפוס · <b>W</b><b>S</b> מהירות · <b>A</b><b>D</b> הזזה הצידה · <b>רווח</b> מבער · <b>Shift</b> בלם<br>
+    <b>C</b> מצלמה · <b>M</b> מפה · <b>R</b> חזרה לאוויר · <b>H</b> עזרה. מתחת לקו התחתון של מד הגובה העולם גדל סביבך
+  </div>
+  <div id="hSpeed"><span class="num" id="hSpeedV">0</span><small>קמ"ש</small><div id="hHeat"><i></i></div></div>
+</div>
+<div id="touch">
+  <div class="tb"><button data-k="up">מהר</button><button data-k="down">לאט</button><button data-k="boost">מבער</button><button data-k="brake">בלם</button></div>
+  <div class="stick"><i></i></div>
+</div>
+<div id="fade"></div>
+
+<div id="recOverlay"><div id="recCard">
+  <div class="title"><span class="dot"></span><span id="recLabel">מקליט צלילה…</span></div>
+  <div id="recBar"><div></div></div>
+  <button class="btn secondary" id="recCancel">ביטול</button>
+</div></div>
+
+<div class="overlay" id="resultOverlay"><div class="card">
+  <div style="font-weight:600">הסרטון מוכן</div>
+  <video id="resultVideo" controls loop playsinline></video>
+  <div class="actions"><a class="btn" id="dlBtn" download="mandelbrot-dive.webm">הורדת הקובץ</a><button class="btn secondary" id="closeResult">סגירה</button></div>
+</div></div>
+
+<div class="overlay" id="helpOverlay"><div class="card">
+  <h3>איך טסים, ואיך יורדים לפרטים</h3>
+  <p>הנוף הוא קבוצת מנדלברוט עצמה. הקבוצה היא האגם השחור, וגובה הקרקע בכל נקודה הוא המרחק שלה מהחוף. לכן הפרטים הקטנים נמצאים תמיד למטה, ליד המים, ובכל קנה מידה הנוף נראה דומה.</p>
+  <ul>
+    <li><b>צלילה פנימה:</b> מד הגובה משמאל מסמן רצועה. כשיורדים מתחת לקו התחתון שלה, האופנוע לא מתקרב למים אלא מתכווץ, והעולם גדל סביבו. ממשיכים לרדת, ממשיכים להתקרב, עד פי 10 בחזקת 30.</li>
+    <li><b>התרחקות:</b> מטפסים מעל הקו העליון, והאופנוע גדל חזרה.</li>
+    <li><b>לאן לצלול:</b> מעל המים או מעל קו החוף. מעל יבשה גבוהה אין לאן לרדת. המפה הקטנה מראה את הסביבה, והחץ הוא האופנוע.</li>
+    <li><b>קיצור דרך:</b> מקש M עובר למפה של המקום שבו נמצאים. שם בוחרים נקודה, והכפתור הצהוב מחזיר לטיסה בדיוק מעליה.</li>
+  </ul>
+  <p><span class="num">← →</span> פנייה · <span class="num">↑ ↓</span> צלילה וטיפוס · <span class="num">W S</span> מהירות · <span class="num">A D</span> הזזה הצידה (במהירות: בעיטת צד) · רווח מבער · <span class="num">Shift</span> בלם · <span class="num">C</span> מצלמה · <span class="num">R</span> חזרה לאוויר</p>
+  <p>האופנוע הוא ה־F-5 של FÖHN, עם אותה פיזיקה ואותו מחשב טיסה. אפשר גם לנחות על היבשה.</p>
+  <div class="actions"><button class="btn" id="helpClose">הבנתי, לטוס</button></div>
+</div></div>
+
+<pre id="err"></pre>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

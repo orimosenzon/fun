@@ -55,6 +55,7 @@ TWEAKS = {
     "lagrange": {"frame": "#lab-mtn", "dpr": 2, "wait": 3000},
     "hanadiv": {"hash": "#d=30&t=11:30", "wait": 9000},
     "free_network": {"click": ["text=כניסה לדמו"], "wait": 2500},
+    "mandelscape": {"gpu": True, "hash": "?fly&nohelp", "wait": 9000},
     "phonebot": {"click": ["[data-mode=map]"], "frame": ".simgrid", "wait": 12000},
 }
 

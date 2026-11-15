@@ -603,7 +603,7 @@ def check() -> int:
                 continue
             if re.match(r"https?:|mailto:", href):
                 continue
-            path = href.rstrip("/")
+            path = re.split(r"[?#]", href, 1)[0].rstrip("/")  # a query or a hash is not part of the file
             if not (ROOT / path).exists():
                 broken.append((p["title"], href))
             elif path not in tracked and not any(t.startswith(path + "/") for t in tracked):
