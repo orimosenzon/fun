@@ -137,10 +137,13 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
 
   // is the bike really in the picture, the whole shot long?  Returns the number of bad samples.
   const tmp = {};
-  const blocked = (cam, P, a, b, maxD) => {
+  // dense: a camera that travels (the orbit) is looked at four times a second, or it can pass
+  // through a tree between two looks
+  const blocked = (cam, P, a, b, maxD, dense) => {
     let bad = 0;
-    for (let i = 0; i <= 8; i++) {
-      const t = lerp(a, b, i / 8), o = cam(t, tmp), s = P(t), d = len(sub(o.p, s.p));
+    const N = dense ? Math.max(8, Math.ceil((b - a) * 4)) : 8;
+    for (let i = 0; i <= N; i++) {
+      const t = lerp(a, b, i / N), o = cam(t, tmp), s = P(t), d = len(sub(o.p, s.p));
       if (o.p[1] < surfaceAt(o.p[0], o.p[2]) + 0.3 || hitCastle(o.p, 0.5) || hitScenery(o.p, 0.6)) return 99;
       if (d > maxD || d < 1.2) { bad += 3; continue; }
       const steps = clamp(Math.ceil(d / 6), 6, 40);
@@ -183,13 +186,14 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
       for (let i = 0; i < tries; i++) {
         const side = (i % 2 ? -1 : 1) * (rnd() < 0.5 ? -1 : 1);
         const cam = type === 'ring' ? mk.ring(A.c, side) : type === 'crash' ? mk.crash(A.t, side) : mk[type](a, b, side);
-        if (type === 'onboard' || blocked(cam, mk.P, a, b, maxD) <= tol) return { a, b, type, cam };
+        if (type === 'onboard' || blocked(cam, mk.P, a, b, maxD, type === 'orbit') <= tol) return { a, b, type, cam };
       }
       return null;
     };
     let shot = null;
     if (A && A.a - t < 1.7 && A.a <= seg.b) {
       A.used = true;
+      if (A.kind === 'ring' && hist[hist.length - 1] === 'ring') continue;      // two rings close together: the second one gets an ordinary shot
       shot = pick(A.kind, t, A.b, 6, 500, 2);
       if (!shot) continue;                                   // no clear view from there: ordinary shots take over
     } else {

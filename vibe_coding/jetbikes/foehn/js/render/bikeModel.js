@@ -166,9 +166,9 @@ export function buildBike(ghost = false) {
   // the stand it rests on: folds up against the belly in flight
   const stand = [];
   for (const s of [-1, 1]) for (const k of [0, 2]) {
-    const x = SKIDS[k][0], g = new THREE.Group(); g.position.set(x * 0.7, 0.36, s * 0.1); d.add(g);
-    beam([0, 0, 0], [x * 0.3, -0.34, s * 0.2], 0.017, steel, g);
-    add(box(0.16, 0.02, 0.06), rubber, x * 0.3, -0.348, s * 0.2, g);
+    const x = SKIDS[k][0], out = Math.abs(SKIDS[k][2]) - 0.1, g = new THREE.Group(); g.position.set(x * 0.7, 0.36, s * 0.1); d.add(g);
+    beam([0, 0, 0], [x * 0.3, -0.34, s * out], 0.017, steel, g);
+    add(box(0.16, 0.02, 0.06), rubber, x * 0.3, -0.348, s * out, g);
     stand.push({ g, s, k: 0 });
   }
 

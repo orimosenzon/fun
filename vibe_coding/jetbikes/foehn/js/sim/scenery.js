@@ -99,6 +99,9 @@ export function buildScenery() {
   S.cellStart = cnts; S.order = order; S.ready = true;
   // canopy map (24 m cells): height of the highest tree top, what a terrain radar would see
   const cg = S.cg = 24, cn = S.cn = Math.ceil(2 * half / cg), can = S.canopy = new Float32Array(cn * cn).fill(-1e9);
+  // buildings: the cells only say that one is near; canopyAt then looks at its real outline. A hut
+  // stands beside its landing pad, and a whole cell of roof put the radar's floor ten metres above the pad.
+  const roofs = S.roofs = new Float32Array(cn * cn).fill(-1e9);
   for (let k = 0; k < S.count; k++) {
     const x = S.trees[k * 5], z = S.trees[k * 5 + 2], top = S.trees[k * 5 + 1] + S.trees[k * 5 + 3], r = 0.2 * S.trees[k * 5 + 3] + 2;
     const i0 = Math.max(0, Math.floor((x - r + half) / cg)), i1 = Math.min(cn - 1, Math.floor((x + r + half) / cg));
@@ -107,7 +110,7 @@ export function buildScenery() {
   }
   for (const b of S.props) {
     const r = Math.max(b.w, b.d) / 2 + 3, top = b.y + (b.steeple || b.h * 1.5);
-    for (let j = Math.floor((b.z - r + half) / cg); j <= Math.floor((b.z + r + half) / cg); j++) for (let i = Math.floor((b.x - r + half) / cg); i <= Math.floor((b.x + r + half) / cg); i++) { const q = j * cn + i; if (q >= 0 && q < cn * cn) can[q] = Math.max(can[q], top); }
+    for (let j = Math.floor((b.z - r + half) / cg); j <= Math.floor((b.z + r + half) / cg); j++) for (let i = Math.floor((b.x - r + half) / cg); i <= Math.floor((b.x + r + half) / cg); i++) { const q = j * cn + i; if (q >= 0 && q < cn * cn) roofs[q] = Math.max(roofs[q], top); }
   }
 }
 
@@ -141,8 +144,22 @@ export function hitScenery(p, pad = 0.35) {
 }
 
 // top of whatever stands at (x,z): tree canopy or roof, or -inf on open ground
-export function canopyAt(x, z) {
+// coarse: the whole 24 m cell counts as the roof in it. That is what the radar wants at speed,
+// when it only looks at two points ahead; slow, over a landing pad, it wants the real outline.
+export function canopyAt(x, z, coarse = false) {
   if (!S.canopy) return -1e9;
   const i = Math.floor((x + T.half) / S.cg), j = Math.floor((z + T.half) / S.cg);
-  return i < 0 || j < 0 || i >= S.cn || j >= S.cn ? -1e9 : S.canopy[j * S.cn + i];
+  if (i < 0 || j < 0 || i >= S.cn || j >= S.cn) return -1e9;
+  let top = S.canopy[j * S.cn + i];
+  if (coarse) return Math.max(top, S.roofs[j * S.cn + i]);
+  if (S.roofs[j * S.cn + i] > top) {
+    for (const b of S.props) {
+      const dx = x - b.x, dz = z - b.z;
+      if (Math.abs(dx) > 40 || Math.abs(dz) > 40) continue;
+      const c = Math.cos(b.yaw), s = Math.sin(b.yaw), lx = dx * c - dz * s, lz = dx * s + dz * c;
+      if (Math.abs(lx) < b.w / 2 + ROOF_PAD && Math.abs(lz) < b.d / 2 + ROOF_PAD) top = Math.max(top, b.y + (b.steeple || b.h * 1.5));
+    }
+  }
+  return top;
 }
+const ROOF_PAD = 4;      // m around a building that the radar still counts as roof

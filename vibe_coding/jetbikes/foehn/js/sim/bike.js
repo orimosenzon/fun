@@ -240,7 +240,8 @@ export function ramWrench(vB, w, Tdry, cg, out) {
 }
 
 export const mkW = () => ({ F: [0, 0, 0], Tq: [0, 0, 0], stall: 0 });
-export const SKIDS = [[0.50, 0, -0.30], [0.50, 0, 0.30], [-0.52, 0, -0.30], [-0.52, 0, 0.30]];
+// (the feet stand 0.84 m apart: at 0.6 m a gentle landing on a slope of a few degrees rolled the bike over)
+export const SKIDS = [[0.50, 0, -0.42], [0.50, 0, 0.42], [-0.52, 0, -0.42], [-0.52, 0, 0.42]];
 // points of the bike and rider that must not touch anything (design frame)
 export const PROBES = [
   [1.10, 0.80, 0], [-1.3, 0.76, 0], [0.12, 1.58, 0], [-1.0, 1.15, 0],          // nose, exhaust, helmet, tail

@@ -50,7 +50,7 @@ export class FCS {
   reset() {
     this.turn = 0; this.pitch = 0; this.strafe = 0; this.hold = 0; this.rollNeed = 0;
     this.iV = 0; this.iZ = 0; this.yawRef = null; this.tiltCmd = this.bike.tilt;
-    this.idle = true; this.obstacle = this.obstacle || null;
+    this.idle = true; this.downT = 1; this.low = false; this.obstacle = this.obstacle || null;
     this.tele = { phiDes: 0, thetaDes: 0, aCmd: [0, 0, 0], wb: 0, sat: 0, vzDes: 0, floor: false };
     const c = this.cmd; c.G = 0; c.s.fill(1); c.va.fill(0); c.sd.fill(0); c.kick = 0; c.rp = c.ry = 0; c.da = c.de = c.dr = c.brake = c.ab = 0; c.tilt = this.bike.tilt;
   }
@@ -78,7 +78,12 @@ export class FCS {
 
     // ----- ground idle -----
     const wantsUp = inp.pitch > 0.05 || Math.abs(inp.vt) > 0.5 || Math.abs(inp.strafe || 0) > 0.05 || inp.boost;
-    if ((onGround || (b.contactN > 0.06 * W && this.pitch < 0.02)) && !wantsUp && V < 4) {
+    // The engine is cut only once the bike has sat on the ground for a moment. Cutting it at the
+    // first touch of one skid left nothing to hold the bike level, and on uneven ground a firm
+    // touch-down on one corner rolled it onto its side.
+    const down = (onGround || (b.contactN > 0.06 * W && this.pitch < 0.02)) && !wantsUp && V < 4;
+    this.downT = down ? this.downT + dt : 0;
+    if (down && (this.idle || this.downT > 0.35)) {
       this.idle = true;
       cmd.G = 0; cmd.s.fill(1); cmd.va.fill(0); cmd.sd.fill(0); cmd.kick = 0; cmd.rp = cmd.ry = 0; cmd.da = cmd.de = cmd.dr = 0; cmd.ab = 0; cmd.brake = 0; cmd.tilt = Math.PI / 2;
       this.iV = this.iZ = 0; this.yawRef = yaw; this.tiltCmd = Math.PI / 2;
@@ -109,25 +114,37 @@ export class FCS {
 
     let vzDes = this.pitch * Math.max(8, 0.62 * V);
     // radar-altimeter floor: looks 0.6 s ahead; released when the rider deliberately descends slowly (landing)
-    const landing = this.pitch < -0.2 && Va < 16;
+    const landing = this.pitch < -0.2 && Math.min(Va, V) < 16;      // (by the ground speed too: in a gale the air alone is faster than that)
     const ax = b.p[0] + v[0] * 0.6, az = b.p[2] + v[2] * 0.6;
     // the radar also sees tree tops and roofs (the game supplies them through this.obstacle)
     const obst = this.obstacle;
-    const top = (x, z) => (obst ? Math.max(surfaceAt(x, z), obst(x, z) + 1.5) : surfaceAt(x, z));
+    const coarse = V > 12, top = (x, z) => (obst ? Math.max(surfaceAt(x, z), obst(x, z, coarse) + 1.5) : surfaceAt(x, z));
     const ax2 = b.p[0] + v[0] * 1.3, az2 = b.p[2] + v[2] * 1.3;
     const hBike = b.p[1] - cg[1];
     const aglAhead = Math.min(hBike - top(ax, az), hBike - top(ax2, az2) + Math.max(0, 0.25 * Vh));
     const hHere = obst ? Math.min(b.agl, hBike - top(b.p[0], b.p[2])) : b.agl;
     const hmin = Math.min(hHere, aglAhead), floorH = 1.6 + 0.07 * Va;
     this.tele.floor = false;
+    // Once the rider has brought the bike down below the floor, the floor stays out of the way
+    // until they climb, speed up or fly off: letting go of the stick a metre above the pad used
+    // to send the bike back up to the floor, and the landing had to be started again.
+    if (landing && hmin < floorH + 0.5) this.low = true;
+    else if (inp.pitch > 0.05 || inp.boost || V > 12 || hmin > floorH + 4) this.low = false;
     if (!landing && !inp.noFloor) {
       // never sink faster than can still be arrested above the floor; below it, climb
-      const f = hmin < floorH ? 2.2 * (floorH - hmin) : -1.5 * (hmin - floorH) - 0.5;
+      // (and no faster than the thrust can stop in the room that is left: a held dive used to reach
+      // the floor at 20 m/s and go straight through it)
+      // (low: only what a slow taxi over the ground needs)
+      const room = hmin - (this.low ? 0.6 : floorH), roomL = Math.max(0, room + 0.25 * Math.min(0, Vu));
+      const f = room < 0 ? -2.2 * room : -Math.min(1.5 * room, lerp(Math.sqrt(2 * 14 * roomL), 1.5 * room, sstep(70, 100, V))) - 0.5;      // (at racing speed the old rule stands: there the dives are flown on purpose)
       if (f > vzDes) { vzDes = f; this.tele.floor = true; }
     }
     if (onGround && this.pitch <= 0.05) vzDes = Math.min(vzDes, 0);
+    if (down) vzDes = Math.min(vzDes, -0.4);                  // touching, and not asked to leave: settle
     // automatic landing flare: the lower, the slower
-    if (!inp.noFloor && Va < 25) vzDes = Math.max(vzDes, -(0.6 + 0.48 * Math.max(0, landing ? b.agl : hmin)));
+    // (the height is taken where the bike will be in half a second: the thrust answers late, and
+    // without the lead the skids met the ground three times faster than the flare asks)
+    if (!inp.noFloor && Math.min(Va, V) < 25) vzDes = Math.max(vzDes, -(0.6 + 0.48 * Math.max(0, (landing ? b.agl : hmin) + 0.5 * Math.min(0, Vu))));
     const eZ = vzDes - Vu;
     this.iZ = clamp(this.iZ + 0.35 * eZ * dt, -2, 2);
     // jet-borne, thrust is also the attitude control power: never let it fall too low

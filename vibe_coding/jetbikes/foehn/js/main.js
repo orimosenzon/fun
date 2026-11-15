@@ -7,7 +7,7 @@ import { Autopilot } from './sim/autopilot.js';
 import { Recorder } from './sim/replay.js';
 import { planReplay } from './sim/director.js';
 import { flights } from './ui/history.js';
-import { Film, filmType } from './ui/film.js';
+import { StepFilm, LiveFilm, filmCaps, FPS } from './ui/film.js';
 import { EVENTS, FREE, eventById } from './sim/courses.js';
 import { len, yprOf, qrot, clamp, lerp } from './sim/vmath.js';
 import { G } from './sim/bike.js';
@@ -26,7 +26,7 @@ import { buildBike } from './render/bikeModel.js';
 import { FX } from './render/fx.js';
 import { Post } from './render/post.js';
 import { Input } from './ui/input.js';
-import { Audio } from './ui/audio.js';
+import { Audio, renderSound } from './ui/audio.js';
 import { Hud, fmtTime } from './ui/hud.js';
 import { t, evName, evTag, lang, setLang, langUrl } from './i18n.js';
 
@@ -124,6 +124,7 @@ async function boot() {
   const game = new Game(), input = new Input(), audio = new Audio(), hud = new Hud();
   input.invert = save.set.invert;
   const rec = new Recorder(game);
+  let fcaps = null; filmCaps().then((c) => { fcaps = c; });      // how this browser can make a video file, if at all
   let rp = null;                          // the replay that is on screen now, if any
   let auto = null, mode = 'menu', paused = false, camMode = Q.get('cam') || 'chase', time = 0, flash = 0;
   const CAMS = ['chase', 'close', 'cockpit', 'cine'];
@@ -259,7 +260,7 @@ async function boot() {
   // the recorded state is written into the bike frame by frame, and put back when it is over.
   function startReplay(opts = {}) {
     if (rp || rec.duration < 2 || (mode !== 'play' && !opts.library)) return;
-    if (opts.video && !filmType()) { alert(t('v.unsupported')); return; }
+    if (opts.video && !fcaps) { alert(t('v.unsupported')); return; }
     rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1, library: !!opts.library, meta: opts.meta || runMeta(), film: null, popped: new Set(), flying: [],
       shots: rec.events.filter((e) => e.type === 'shot').map((e) => ({ t: e.t, p: e.p, v: e.v, end: (rec.events.find((x) => x.type === 'shotEnd' && x.id === e.id && x.t >= e.t) || { t: e.t + 4 }).t })) };
     mode = 'replay'; paused = false; if (audio.ctx) audio.ctx.resume();
@@ -271,6 +272,7 @@ async function boot() {
   function stopReplay() {
     if (!rp) return;
     if (rp.film) rp.film.cancel();
+    audio.tape = null;
     rec.restore(rp.saved); lean = rp.lean;
     const wasPaused = rp.wasPaused, library = rp.library; rp = null; mode = 'play'; camInit = false;
     $('replay').classList.remove('on'); $('rfade').classList.remove('on'); $('replay').classList.remove('hold', 'film');
@@ -297,7 +299,8 @@ async function boot() {
     rp.popped.clear(); for (const e of rec.events) if (e.type === 'pop' && e.t <= rp.t) rp.popped.add(e.k);
     rp.flying.length = 0;
     for (const sh of rp.shots) { const u = rp.t - sh.t; if (u >= 0 && rp.t < sh.end) rp.flying.push({ p: [sh.p[0] + sh.v[0] * u, sh.p[1] + sh.v[1] * u - 0.5 * G * u * u, sh.p[2] + sh.v[2] * u], v: [sh.v[0], sh.v[1] - G * u, sh.v[2]] }); }
-    if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && (me.film ? endFilm() : stopReplay()), 650); }
+    if (rp.t >= rec.t1 && !rp.ending && rp.film && rp.film.step) { rp.ending = true; rp.last = true; }      // the film ends on this very frame
+    else if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && (me.film ? endFilm() : stopReplay()), 650); }
     const sec = Math.floor(rp.t - rec.t0);
     if (sec !== rp.sec) { rp.sec = sec; $('rtime').textContent = fmtTime(sec).replace(/\.\d+$/, ''); }
     $('rprog').style.width = (100 * (rp.t - rec.t0) / Math.max(1, rec.duration)).toFixed(2) + '%';
@@ -306,18 +309,28 @@ async function boot() {
   // ---- the replay as a video file ----
   function startFilm() {
     if (!rp || rp.film) return;
-    if (!filmType()) { alert(t('v.unsupported')); return; }
+    if (!fcaps) { alert(t('v.unsupported')); return; }
     audio.start();
     rp.t = rec.t0; rp.ending = false; rp.hold = false; rp.sec = -1; lean = rec.apply(rp.t);
     $('rfade').classList.remove('on'); $('replay').classList.remove('hold'); $('replay').classList.add('film');
     const m = rp.meta, d = new Date(m.id), z = (n) => String(n).padStart(2, '0');
-    rp.film = new Film(canvas, { text: flightTitle(m) + ' · ' + d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB'), rtl: lang === 'he' }, audio.tap());
+    const cap = { text: flightTitle(m) + ' · ' + d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB'), rtl: lang === 'he' };
+    $('rrec').innerHTML = t('r.rec');
+    if (fcaps.step) {
+      // made frame by frame (ui/film.js): count the frames first, slow motion and all
+      let n = 0; for (let u = rec.t0; u < rec.t1; u += Math.max(0.05, rp.plan.rate(u)) / FPS) n++;
+      rp.film = new StepFilm(canvas, cap, fcaps.step, n / FPS);
+      audio.tape = []; audio.tapeT = 0; audio.streak = 0;
+    } else rp.film = new LiveFilm(canvas, cap, fcaps.live, audio.tap());
     rp.name = `foehn-${m.ev}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.${rp.film.ext}`;
   }
   async function endFilm() {
-    const film = rp.film, name = rp.name; rp.film = null;
-    const blob = await film.finish();
-    stopReplay();
+    const me = rp, film = rp.film, name = rp.name, tape = audio.tape; audio.tape = null;
+    rp.wrap = true; rp.last = false; $('rrec').innerHTML = t('r.wrap'); $('rfade').classList.add('on');
+    let blob = null;
+    try { blob = film.step ? await film.finish(await renderSound(tape, film.time)) : await film.finish(); } catch (e) { console.error(e); if (rp === me) alert(t('v.failed')); }
+    if (rp !== me) return;                           // cancelled while the file was being closed
+    rp.film = null; stopReplay();
     if (blob && blob.size) showFilm(blob, name);
   }
   let filmUrl = null;
@@ -368,7 +381,7 @@ async function boot() {
   }
   async function watchFlight(m, video) {
     if (rp || mode !== 'menu') return;
-    if (video && !filmType()) { alert(t('v.unsupported')); return; }
+    if (video && !fcaps) { alert(t('v.unsupported')); return; }
     audio.start();
     let d = null; try { d = await flights.get(m.id); } catch { /* gone */ }
     if (!d || !eventById(m.ev) || rp || mode !== 'menu') return;
@@ -485,7 +498,9 @@ async function boot() {
       }
     }
     input.pressed.length = 0;
-    if (!paused && !(rp && rp.hold)) {
+    const stepping = rp && rp.film && rp.film.step && !rp.wrap;     // a film is being made: every frame is 1/60 s of it, however long it took
+    if (stepping) { dt = 1 / FPS; audio.tapeT = rp.film.time; }
+    if (!paused && !(rp && rp.hold) && !(stepping && rp.film.full)) {
       const realDt = dt;
       let ctl = lastCtl;
       if (rp) dt = replayStep(realDt);
@@ -534,7 +549,7 @@ async function boot() {
     if (sun.shadow.map) { U.uShadowMap.value = sun.shadow.map.texture; U.uShadowMat.value.copy(sun.shadow.matrix); U.uShadowOn.value = 1; }
     flash = Math.max(0, flash - dt * 0.5);
     post.finish(camera, s, { blur: film ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (film ? 0 : 1) + b.abOut * (film ? 0 : 0.3), time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays });
-    if (rp && rp.film) rp.film.grab(Math.max(1 - (rp.t - rec.t0) / 0.5, 1 - (rec.t1 - rp.t) / 0.6, 0));
+    if (rp && rp.film && !rp.wrap && !(stepping && rp.film.full)) { rp.film.grab(Math.max(1 - (rp.t - rec.t0) / 0.5, 1 - (rec.t1 - rp.t) / 0.6, 0)); if (rp.last) endFilm(); }
     if (!paused && !rp) hud.update(dt, game, camera, viewW, viewH);
     // adaptive resolution
     fpsAcc += dt; fpsN++;

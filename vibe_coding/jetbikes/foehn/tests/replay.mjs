@@ -59,7 +59,7 @@ for (const [id, level] of [['first', 1], ['lake', 3], ['castle', 1], ['pass', 2]
     sh.forEach((x, i) => {
       kinds[x.type] = (kinds[x.type] || 0) + 1;
       if (i && Math.abs(x.a - sh[i - 1].b) > 1e-6) bad(`${id}: gap or overlap at shot ${i}`);
-      if (i && x.type === sh[i - 1].type && x.type !== 'onboard') same++;
+      if (i && x.type === sh[i - 1].type && x.type !== 'onboard') { same++; if (process.env.DBG) console.log("   same", x.type, sh[i - 1].a.toFixed(1), x.a.toFixed(1), x.b.toFixed(1)); }
       const d = x.b - x.a; if (d < 1.2) short++; if (d > 9.5) long++;
       const o = {};
       for (let k = 0; k <= 20; k++) {
