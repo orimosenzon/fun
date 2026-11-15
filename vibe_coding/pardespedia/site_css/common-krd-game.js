@@ -20,9 +20,10 @@
 		'.krd-js .krd-choice{display:block;width:100%;text-align:right;cursor:pointer;background:#fff;border:1px solid #d9c9b0;border-radius:10px;padding:10px 14px;margin:7px 0;font-size:102%;font-family:inherit;color:#222;line-height:1.45}',
 		'.krd-js .krd-choice:hover:not([disabled]){border-color:' + BROWN + ';background:#fffaf2}',
 		'.krd-js .krd-choice[disabled]{cursor:default}',
-		'.krd-js .krd-choice.krd-right{background:#e7f5ea;border-color:#34a853}',
-		'.krd-js .krd-choice.krd-wrong{background:#fdecea;border-color:#d93025}',
-		'.krd-js .krd-choice.krd-dim{opacity:.55}',
+		'.krd-js .krd-choice.krd-picked{background:#f3e7d6;border-color:' + BROWN + ';box-shadow:inset -4px 0 0 ' + BROWN + '}',
+		'.krd-js .krd-btn-small{padding:6px 16px;font-size:95%}',
+		'.krd-js .krd-x{cursor:pointer;border:0;background:none;color:#8a6a5c;font-size:120%;padding:0 4px;font-family:inherit}',
+		'.krd-js .krd-link{cursor:pointer;border:0;background:none;color:' + BROWN + ';font-weight:bold;padding:6px 2px;font-family:inherit;font-size:95%}',
 		'.krd-js .krd-fade{animation:krdIn .25s ease}',
 		'@keyframes krdIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'
 	].join( '\n' );
@@ -138,8 +139,8 @@
 		line.appendChild( el( 'div', 'position:absolute;left:0;right:0;top:10px;height:3px;border-radius:2px;background:#e3d5c0' ) );
 		qs.forEach( function ( q, i ) {
 			if ( isNaN( q.year ) ) { return; }
-			var bg = i === cur ? BROWN : ( answers[ i ] === undefined ? '#fff' :
-				( answers[ i ] === q.correct ? '#34a853' : '#d93025' ) );
+			// בזמן המשחק לא מגלים מה נכון: שאלה שנענתה פשוט מתמלאת
+			var bg = i === cur ? BROWN : ( answers[ i ] === undefined ? '#fff' : '#c9b08f' );
 			var size = i === cur ? 18 : 12;
 			line.appendChild( el( 'div', 'position:absolute;transform:translateX(50%);right:' + pos( q.year, min, max ) +
 				'%;top:' + ( 11.5 - size / 2 ) + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + bg +
@@ -248,6 +249,13 @@
 		return '📚 הסיפור כנראה מפתיע. הוא מחכה למטה.';
 	}
 
+	function button( label, cls, onclick, style ) {
+		var b = el( 'button', style || '', label );
+		b.className = cls;
+		b.onclick = onclick;
+		return b;
+	}
+
 	function init( root ) {
 		if ( root.getAttribute( 'data-krd' ) ) { return; }
 		root.setAttribute( 'data-krd', '1' );
@@ -263,50 +271,52 @@
 		var first = Math.floor( Math.min.apply( null, years ) ), last = Math.ceil( Math.max.apply( null, years ) );
 		var min = first - 2, max = last + 1;
 
-		var $static = $( root ).find( '.krd-questions, .krd-nojs, .krd-timeline, .krd-story' );
-		var $timeline = $( root ).find( '.krd-timeline' ), $story = $( root ).find( '.krd-story' );
+		// הנתונים (השאלות, הציר, הסיפור) מוסתרים; הציר והסיפור יועברו לתוצאות בסוף
+		var data = $( root ).find( '.krd-data' )[ 0 ];
+		var timeline = $( root ).find( '.krd-timeline' )[ 0 ];
+		var story = $( root ).find( '.krd-story' )[ 0 ];
+		if ( data ) { data.style.setProperty( 'display', 'none', 'important' ); }
 		$( root ).addClass( 'krd-js' );
-		$static.hide();
 
-		var stage = el( 'div', 'margin-top:10px' );
-		$( root ).find( '.krd-head' ).after( stage );
+		var head = $( root ).find( '.krd-head' )[ 0 ];
+		var teaser = $( root ).find( '.krd-teaser' )[ 0 ];
+		var play = button( 'שחקו ›', 'krd-btn krd-btn-small', function () { start(); } );
+		play.style.cssText = 'flex:0 0 auto';
+		head.appendChild( play );
+		var meta = el( 'span', 'color:#8a6a5c', ' · ' + qs.length + ' שאלות, ' + first + '–' + new Date().getFullYear() );
+		if ( teaser ) { teaser.appendChild( meta ); }
+
+		var stage = el( 'div', 'display:none;margin-top:10px;border-top:1px solid #e7dcc8;padding-top:10px' );
+		head.parentNode.insertBefore( stage, head.nextSibling );
 
 		var answers, cur;
 
 		// גלילה לראש המשחק, מתחת לסרגל העליון הדביק של האתר
 		function top() {
-			// הסרגל הוא מה שנמצא בראש החלון ומיקומו fixed או sticky
 			var off = 10, n = document.elementFromPoint( window.innerWidth / 2, 3 );
 			while ( n && n !== document.body ) {
 				var ps = getComputedStyle( n ).position;
 				if ( ps === 'fixed' || ps === 'sticky' ) { off += n.getBoundingClientRect().bottom; break; }
 				n = n.parentElement;
 			}
-			window.scrollTo( { top: root.getBoundingClientRect().top + window.pageYOffset - off, behavior: 'smooth' } );
+			var y = root.getBoundingClientRect().top + window.pageYOffset - off;
+			if ( root.getBoundingClientRect().top < off ) { window.scrollTo( { top: y, behavior: 'smooth' } ); }
 		}
 
 		function start() {
 			answers = [];
 			cur = 0;
-			$timeline.hide();
-			$story.hide();
-			$( root ).find( '.krd-era' ).remove();
+			play.style.display = 'none';
+			stage.style.display = '';
 			question();
 		}
 
-		function intro() {
+		function close() {
 			stage.innerHTML = '';
-			var box = el( 'div', 'text-align:center;padding:10px 0 4px' );
-			box.className = 'krd-fade';
-			box.appendChild( progressAxis( qs, -1, [], min, max ) );
-			box.appendChild( el( 'div', 'margin:6px 0 14px;color:#5a4632;line-height:1.5',
-				qs.length + ' שאלות לאורך ' + ( last - first ) + ' שנים, מ-' + first + ' ועד היום. ' +
-				'בסוף: ציון, התשובות הנכונות, ציר הזמן המלא והסיפור.' ) );
-			var b = el( 'button', '', 'מתחילים ›' );
-			b.className = 'krd-btn';
-			b.onclick = start;
-			box.appendChild( b );
-			stage.appendChild( box );
+			stage.style.display = 'none';
+			play.style.display = '';
+			play.textContent = answers && answers.length === qs.length ? 'עוד פעם ›' : 'שחקו ›';
+			top();
 		}
 
 		function question() {
@@ -314,47 +324,38 @@
 			stage.innerHTML = '';
 			var box = el( 'div' );
 			box.className = 'krd-fade';
-			box.appendChild( el( 'div', 'display:flex;justify-content:space-between;align-items:center;font-size:85%;color:#8a6a5c',
-				'<span>שאלה ' + ( cur + 1 ) + ' מתוך ' + qs.length + '</span><span>' +
-				'ציון: ' + answers.filter( function ( a, i ) { return a === qs[ i ].correct; } ).length + '</span>' ) );
+
+			var bar = el( 'div', 'display:flex;justify-content:space-between;align-items:center;font-size:85%;color:#8a6a5c' );
+			bar.appendChild( el( 'span', '', 'שאלה ' + ( cur + 1 ) + ' מתוך ' + qs.length ) );
+			bar.appendChild( button( '✕', 'krd-x', close ) );
+			box.appendChild( bar );
 			box.appendChild( progressAxis( qs, cur, answers, min, max ) );
+
 			if ( q.yearLabel ) {
 				box.appendChild( el( 'span', 'display:inline-block;background:' + BROWN + ';color:#fff;border-radius:999px;padding:1px 12px;font-size:88%;font-weight:bold', esc( q.yearLabel ) ) );
 			}
-			box.appendChild( el( 'div', 'font-size:112%;font-weight:bold;margin:8px 0 6px;line-height:1.5', q.html ) );
-			var buttons = [];
+			box.appendChild( el( 'div', 'font-size:110%;font-weight:bold;margin:8px 0 6px;line-height:1.5', q.html ) );
 			q.opts.forEach( function ( o ) {
-				var b = el( 'button', '', '<b>' + esc( o.key ) + '.</b> ' + o.html );
-				b.className = 'krd-choice';
-				b.onclick = function () { answer( o.key, buttons, box ); };
+				var b = button( '<b>' + esc( o.key ) + '.</b> ' + o.html, 'krd-choice' + ( answers[ cur ] === o.key ? ' krd-picked' : '' ), function () {
+					answers[ cur ] = o.key;
+					$( box ).find( '.krd-choice' ).removeClass( 'krd-picked' ).prop( 'disabled', true );
+					b.className += ' krd-picked';
+					setTimeout( function () {
+						if ( cur === qs.length - 1 && answers.filter( Boolean ).length === qs.length ) { results(); } else { cur = Math.min( cur + 1, qs.length - 1 ); question(); }
+					}, 380 );
+				} );
 				b.setAttribute( 'data-key', o.key );
-				buttons.push( b );
 				box.appendChild( b );
 			} );
-			stage.appendChild( box );
-		}
 
-		function answer( key, buttons, box ) {
-			var q = qs[ cur ];
-			answers[ cur ] = key;
-			buttons.forEach( function ( b ) {
-				var k = b.getAttribute( 'data-key' );
-				b.disabled = true;
-				if ( k === q.correct ) { b.className += ' krd-right'; } else if ( k === key ) { b.className += ' krd-wrong'; } else { b.className += ' krd-dim'; }
-			} );
-			var ok = key === q.correct;
-			var ex = el( 'div', 'margin:10px 0 6px;padding:10px 14px;background:#fff;border-right:4px solid ' + ( ok ? '#34a853' : '#d93025' ) +
-				';border-radius:8px;line-height:1.6', '<b>' + ( ok ? '✅ נכון!' : '❌ לא בדיוק. התשובה הנכונה: ' + esc( q.correct ) + '.' ) + '</b> ' + q.explain );
-			ex.className = 'krd-fade';
-			box.appendChild( ex );
-			var last = cur === qs.length - 1;
-			var next = el( 'button', 'margin-top:6px', last ? 'לתוצאות ›' : 'השאלה הבאה ›' );
-			next.className = 'krd-btn';
-			next.onclick = function () {
-				if ( last ) { results(); } else { cur++; question(); }
-				top();
-			};
-			box.appendChild( next );
+			var nav = el( 'div', 'display:flex;justify-content:space-between;margin-top:6px' );
+			nav.appendChild( cur > 0 ? button( '‹ הקודמת', 'krd-link', function () { cur--; question(); } ) : el( 'span' ) );
+			if ( answers[ cur ] && cur < qs.length - 1 ) {
+				nav.appendChild( button( 'הבאה ›', 'krd-link', function () { cur++; question(); } ) );
+			}
+			box.appendChild( nav );
+			stage.appendChild( box );
+			top();
 		}
 
 		function results() {
@@ -362,43 +363,48 @@
 			stage.innerHTML = '';
 			var box = el( 'div' );
 			box.className = 'krd-fade';
-			box.appendChild( el( 'div', 'text-align:center;margin:6px 0 4px', '<span style="font-size:260%;font-weight:bold;color:' + BROWN + '">' +
-				score + ' / ' + qs.length + '</span>' ) );
-			box.appendChild( el( 'div', 'text-align:center;font-size:110%;margin-bottom:12px', verdict( score, qs.length ) ) );
 
-			var list = el( 'div', '' );
+			var bar = el( 'div', 'display:flex;justify-content:flex-end' );
+			bar.appendChild( button( '✕', 'krd-x', close ) );
+			box.appendChild( bar );
+			box.appendChild( el( 'div', 'text-align:center;margin:0 0 2px', '<span style="font-size:250%;font-weight:bold;color:' + BROWN + '">' +
+				score + ' / ' + qs.length + '</span>' ) );
+			box.appendChild( el( 'div', 'text-align:center;font-size:108%;margin-bottom:12px', verdict( score, qs.length ) ) );
+
+			box.appendChild( el( 'div', 'font-size:118%;font-weight:bold;color:' + BROWN + ';margin:6px 0', '✔ התשובות שלך' ) );
 			qs.forEach( function ( q, i ) {
 				var ok = answers[ i ] === q.correct;
 				var mine = q.opts.filter( function ( o ) { return o.key === answers[ i ]; } )[ 0 ];
 				var right = q.opts.filter( function ( o ) { return o.key === q.correct; } )[ 0 ];
-				var row = el( 'div', 'background:#fff;border:1px solid #e7dcc8;border-right:5px solid ' + ( ok ? '#34a853' : '#d93025' ) +
-					';border-radius:8px;padding:8px 12px;margin:6px 0;line-height:1.5' );
-				row.innerHTML = '<div style="font-size:82%;color:#8a6a5c">' + ( ok ? '✅' : '❌' ) + ' ' + esc( q.yearLabel ) + '</div>' +
+				box.appendChild( el( 'div', 'background:#fff;border:1px solid #e7dcc8;border-right:5px solid ' + ( ok ? '#34a853' : '#d93025' ) +
+					';border-radius:8px;padding:8px 12px;margin:6px 0;line-height:1.55',
+					'<div style="font-size:82%;color:#8a6a5c">' + ( ok ? '✅' : '❌' ) + ' ' + esc( q.yearLabel ) + '</div>' +
 					'<div style="font-weight:bold">' + q.html + '</div>' +
-					( ok ? '<div>ענית: ' + ( right ? right.html : esc( q.correct ) ) + '</div>' :
+					( ok ? '<div style="color:#1e7e34">ענית נכון: ' + ( right ? right.html : '' ) + '</div>' :
 						'<div style="color:#b3261e">ענית: ' + ( mine ? mine.html : '' ) + '</div>' +
-						'<div style="color:#1e7e34">התשובה הנכונה: ' + ( right ? right.html : esc( q.correct ) ) + '</div>' );
-				list.appendChild( row );
+						'<div style="color:#1e7e34">התשובה הנכונה: ' + ( right ? right.html : esc( q.correct ) ) + '</div>' ) +
+					( q.explain ? '<div style="margin-top:4px;color:#444;font-size:95%">' + q.explain + '</div>' : '' ) ) );
 			} );
-			box.appendChild( list );
 
-			var again = el( 'button', 'margin:12px 0 4px', '↺ משחק חוזר' );
-			again.className = 'krd-btn krd-btn-light';
-			again.onclick = start;
-			box.appendChild( again );
-			stage.appendChild( box );
-
-			// ציר הזמן הגרפי, הכרטיסים והסיפור
-			if ( events.length ) {
+			// ציר הזמן הגרפי והכרטיסים, ואחריהם הסיפור
+			if ( timeline && events.length ) {
+				$( timeline ).find( '.krd-era' ).remove();
 				var era = eraTimeline( periods, events, min, max, root.clientWidth - 60 );
-				era.className = 'krd-era krd-fade';
-				$timeline.show().find( '.krd-timeline-title' ).after( era );
+				era.className = 'krd-era';
+				$( timeline ).find( '.krd-timeline-title' ).after( era );
 				decorateEvents( events );
+				$( timeline ).show();
+				box.appendChild( timeline );
 			}
-			$story.show();
-		}
+			if ( story ) { $( story ).show(); box.appendChild( story ); }
 
-		intro();
+			var end = el( 'div', 'display:flex;gap:10px;justify-content:center;margin:14px 0 4px' );
+			end.appendChild( button( '↺ משחק חוזר', 'krd-btn krd-btn-light', start ) );
+			end.appendChild( button( 'סגירה', 'krd-btn krd-btn-light', close ) );
+			box.appendChild( end );
+			stage.appendChild( box );
+			top();
+		}
 	}
 
 	mw.loader.using( 'mediawiki.util' ).then( function () {

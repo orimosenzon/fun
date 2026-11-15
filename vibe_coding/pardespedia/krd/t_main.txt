@@ -1,34 +1,37 @@
-<div class="krd-quiz" style="border:2px solid #e7dcc8; background:#fbf6ee; border-radius:14px; padding:14px 18px; margin:18px 0; max-width:820px; clear:both;">
-<div class="krd-head">
-<div style="font-size:135%; font-weight:bold; color:#7a5c3e;">🏆 {{{כותרת|למי מגיע הקרדיט?}}}</div>
-<div style="font-size:85%; color:#8a6a5c; margin-top:2px;">משחק של [[פרדספדיה]]</div>
-<div style="margin-top:8px; line-height:1.55;">{{{פתיח|}}}</div>
+<div class="krd-quiz" style="border:1px solid #e3d5c0; background:#fbf6ee; border-radius:12px; padding:10px 14px; margin:14px 0; max-width:820px; clear:both;">
+<div class="krd-head" style="display:flex; align-items:center; gap:10px;">
+<div style="font-size:150%; line-height:1;">🏆</div>
+<div class="krd-head-text" style="flex:1 1 auto; min-width:0;">
+<div style="font-weight:bold; color:#7a5c3e; font-size:108%;">{{{כותרת|למי מגיע הקרדיט?}}}</div>
+<div class="krd-teaser" style="font-size:90%; color:#5a4632; line-height:1.4;">{{{פתיח|כמה אתם יודעים על ההיסטוריה של המקום?}}}</div>
 </div>
-<div class="krd-nojs" style="font-size:85%; color:#8a6a5c; margin:10px 0 0;">אפשר לנסות לענות על כל שאלה, ואז לפתוח את התשובה.</div>
+</div>
+<div class="krd-data mw-collapsible mw-collapsed" data-expandtext="הצגת השאלות, ציר הזמן והסיפור" data-collapsetext="הסתרה" style="margin-top:6px;">
 <div class="krd-questions">
 {{{שאלות}}}
 </div>
 <div class="krd-periods" style="display:none;">{{{תקופות|{{למי מגיע הקרדיט/ראשי המועצה}}}}}</div>
 <div class="krd-timeline">
-<div class="krd-timeline-title" style="font-size:125%; font-weight:bold; color:#7a5c3e; margin:20px 0 10px;">🕰️ ציר הזמן</div>
+<div class="krd-timeline-title" style="font-size:118%; font-weight:bold; color:#7a5c3e; margin:18px 0 10px;">🕰️ ציר הזמן</div>
 <div class="krd-ev-list" style="margin-right:12px; padding-top:4px;">
 {{{ציר זמן}}}
 </div>
 </div>
-<div class="krd-story" style="margin-top:16px; padding:12px 16px; background:#fff; border:1px solid #e7dcc8; border-radius:10px; line-height:1.6;">
-<div style="font-size:125%; font-weight:bold; color:#7a5c3e; margin-bottom:6px;">📜 הסיפור המלא</div>
+<div class="krd-story" style="margin-top:14px; padding:12px 16px; background:#fff; border:1px solid #e7dcc8; border-radius:10px; line-height:1.6;">
+<div style="font-size:118%; font-weight:bold; color:#7a5c3e; margin-bottom:6px;">📜 הסיפור המלא</div>
 {{{סיפור}}}
+</div>
 </div>
 </div><includeonly>[[קטגוריה:למי מגיע הקרדיט]]</includeonly><noinclude>
 == מה זה ==
-משחק "למי מגיע הקרדיט?": סדרת שאלות לאורך ציר הזמן של מקום או מפעל במושבה. הקורא עונה על שאלה אחרי שאלה, ובסוף מקבל ציון, פירוט של מה ענה נכון ומה התשובות הנכונות, ציר זמן גרפי עם התאריכים וראשי המועצה, והסיפור המלא.
+משחק "למי מגיע הקרדיט?": חידון של כמה שאלות לאורך ציר הזמן של מקום או מפעל במושבה. בדף הוא מופיע כשורת הזמנה קטנה עם כפתור "שחקו". הקורא עונה על השאלות אחת אחרי השנייה, בלי לדעת בינתיים אם צדק, ובסוף מקבל ציון, פירוט של מה ענה נכון ומה התשובות הנכונות עם הסבר, ציר זמן גרפי עם התאריכים וראשי המועצה, והסיפור המלא.
 
-את המשחק מפעיל קוד ב[[מדיה ויקי:Common.js]]. בלי הקוד הדף נשאר קריא: השאלות מוצגות עם תשובה שנפתחת בלחיצה, וציר הזמן כרשימה.
+את המשחק מפעיל קוד ב[[מדיה ויקי:Common.js]]. בלי הקוד נשארת שורת ההזמנה, ומתחתיה אפשר לפתוח את השאלות (עם תשובה מתקפלת לכל אחת), את ציר הזמן ואת הסיפור.
 
 == איך כותבים משחק ==
 <pre>
 {{למי מגיע הקרדיט
-| פתיח = משפט או שניים: על מה המשחק.
+| פתיח = משפט אחד קצר שמזמין לשחק.
 | שאלות =
 {{למי מגיע הקרדיט/שאלה
  | שנה = 1948
@@ -45,9 +48,11 @@
 }}
 </pre>
 
-* '''שאלה:''' 2 עד 4 תשובות (תשובה ריקה לא תוצג במשחק). '''נכונה''' היא האות של התשובה הנכונה. '''שנה''' היא מה שיוצג (למשל "2017–2018"), והמשחק ממקם את השאלה על הציר לפי השנה הראשונה שבה.
-* '''אירוע:''' '''שנה''' היא מספר למיקום על הציר, ומותר שבר: 1952.3 הוא בערך אפריל 1952. '''תאריך''' הוא מה שיוצג. ראש המועצה של האירוע נקבע לבד לפי השנה. כשאירוע נופל ממש על חילופי ראשים, אפשר לכתוב אותו במפורש: <code>ראש מועצה = הגר פרי-יגור</code>, בדיוק כפי שהשם כתוב ברשימה.
-* '''תקופות''' (לא חובה): ברירת המחדל היא [[תבנית:למי מגיע הקרדיט/ראשי המועצה]], הרשימה של ראשי המועצה. משחק על נושא אחר יכול לתת רשימת תקופות משלו בתבנית [[תבנית:למי מגיע הקרדיט/תקופה]].
+* '''פתיח:''' משפט אחד. שורת ההזמנה צריכה להישאר קטנה.
+* '''שאלה:''' 2 עד 4 תשובות (תשובה ריקה לא תוצג במשחק). '''נכונה''' היא האות של התשובה הנכונה. '''שנה''' היא מה שיוצג (למשל "2017–2018"), והמשחק ממקם את השאלה על הציר לפי השנה הראשונה שבה. כדאי לסדר את השאלות לפי הזמן.
+* '''הסבר:''' מוצג רק בסוף, בפירוט התוצאות.
+* '''אירוע:''' '''שנה''' היא מספר למיקום על הציר, ומותר שבר: 1952.3 הוא בערך אפריל 1952. '''תאריך''' הוא מה שיוצג. ראש המועצה של האירוע נקבע לבד לפי השנה. כשאירוע נופל על חילופי ראשים, אפשר לכתוב <code>ראש מועצה = הגר פרי-יגור</code>, בדיוק כפי שהשם כתוב ברשימה. לאירוע שאין לייחס לאף ראש מועצה (למשל "עשורים של הזנחה"): <code>ראש מועצה = -</code>.
+* '''תקופות''' (לא חובה): ברירת המחדל היא [[תבנית:למי מגיע הקרדיט/ראשי המועצה]]. משחק על נושא אחר יכול לתת רשימה משלו בתבנית [[תבנית:למי מגיע הקרדיט/תקופה]].
 * '''כל תשובה והסבר נשענים על מקור.''' כדאי לסיים את הסיפור במה שעוד לא ידוע, כהזמנה לתושבים להשלים.
 * כל ערך עם משחק נכנס ל[[:קטגוריה:למי מגיע הקרדיט]].
 </noinclude>
