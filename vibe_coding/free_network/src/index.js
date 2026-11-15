@@ -18,6 +18,8 @@ const IMAGES_PER_DAY = 40;
 // These limits keep the whole network inside it, whatever anyone does.
 const STORAGE_LIMIT_BYTES = 8 * 1024 ** 3;
 const UPLOADS_PER_DAY = 2000;
+// A place is kept to two decimals of a degree, about a kilometre: a neighbourhood, not a house.
+const PLACE_DECIMALS = 2;
 const YOUTUBE_ID = /^[\w-]{11}$/;
 const VIDEO_CACHE_SECONDS = 24 * 60 * 60;
 const GOOGLE_STATE_COOKIE = 'google_state';
@@ -102,6 +104,10 @@ async function readJson(c) {
 
 function parseId(value) {
   return /^\d{1,15}$/.test(value) ? Number(value) : null;
+}
+
+function place(row) {
+  return row.lat === null || row.lat === undefined ? null : { lat: row.lat, lng: row.lng };
 }
 
 function isLocalhost(c) {
@@ -312,7 +318,7 @@ app.use('/api/*', async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (token) {
     const user = await c.env.DB
-      .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub FROM sessions s JOIN users u ON u.id = s.user_id
+      .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ? AND s.expires_at > ?`)
       .bind(await sha256(token), Date.now())
       .first();
@@ -489,6 +495,7 @@ app.get('/api/me', async (c) => {
       admin: isAdmin(c),
       friendRequests: waiting.n,
       googleLinked: !!user.google_sub,
+      place: place(user),
     } : null,
     demo: isDemo(c),
     inviteOnly: c.env.INVITE_ONLY === '1',
@@ -505,6 +512,23 @@ app.put('/api/me', requireUser, async (c) => {
 
 app.delete('/api/me/google', requireUser, async (c) => {
   await c.env.DB.prepare('UPDATE users SET google_sub = NULL WHERE id = ?').bind(c.get('user').id).run();
+  return c.json({ ok: true });
+});
+
+// Sharing a place is one decision: it is stored when shared and erased when not. The member
+// picks the spot, and it is rounded here so the server never holds anything more exact.
+app.put('/api/me/place', requireUser, async (c) => {
+  const { lat, lng } = await readJson(c);
+  const valid = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  if (!valid) return c.json({ error: 'מיקום לא תקין' }, 400);
+  const round = (value) => Number(value.toFixed(PLACE_DECIMALS));
+  const saved = { lat: round(lat), lng: round(lng) };
+  await c.env.DB.prepare('UPDATE users SET lat = ?, lng = ? WHERE id = ?').bind(saved.lat, saved.lng, c.get('user').id).run();
+  return c.json({ place: saved });
+});
+
+app.delete('/api/me/place', requireUser, async (c) => {
+  await c.env.DB.prepare('UPDATE users SET lat = NULL, lng = NULL WHERE id = ?').bind(c.get('user').id).run();
   return c.json({ ok: true });
 });
 
@@ -813,6 +837,17 @@ app.get('/api/friends', requireUser, async (c) => {
     incoming: results.filter((r) => r.status === 'pending' && !r.outgoing).map(person),
     outgoing: results.filter((r) => r.status === 'pending' && r.outgoing).map(person),
   });
+});
+
+// The globe: every friend, and the place of those who chose to share one. Only friends are
+// ever listed, so a place reaches nobody else.
+app.get('/api/globe', requireUser, async (c) => {
+  const { results } = await c.env.DB
+    .prepare(`SELECT id, name, avatar_id AS avatar, lat, lng FROM users
+      WHERE id IN (${FRIEND_IDS}) AND name <> '' ORDER BY name`)
+    .bind(c.get('user').id)
+    .all();
+  return c.json({ friends: results.map((row) => ({ id: row.id, name: row.name, avatar: row.avatar, place: place(row) })) });
 });
 
 // Asking someone who already asked you accepts their request.

@@ -448,6 +448,59 @@ test('uploads stop at the daily limit of the whole network', async () => {
 
 // One admin for all pilot tests: logins are rate limited per address, as in production.
 let bossAccount;
+test('a place reaches friends only, rounded to about a kilometre', async () => {
+  const dana = await signUp('dana-globe');
+  const eli = await signUp('eli-globe');
+  const stranger = await signUp('stranger-globe');
+  await dana.call('POST', `/friends/${eli.id}`);
+  await eli.call('POST', `/friends/${dana.id}`);
+
+  const mine = () => eli.call('GET', '/globe').then(({ data }) => data.friends.find((friend) => friend.id === dana.id));
+  assert.equal((await mine()).place, null);
+  assert.equal((await dana.call('GET', '/me')).data.user.place, null);
+
+  const saved = await dana.call('PUT', '/me/place', { lat: 32.471234, lng: 34.976789 });
+  assert.deepEqual(saved.data.place, { lat: 32.47, lng: 34.98 });
+  assert.deepEqual((await mine()).place, { lat: 32.47, lng: 34.98 });
+  assert.deepEqual((await dana.call('GET', '/me')).data.user.place, { lat: 32.47, lng: 34.98 });
+
+  const others = (await stranger.call('GET', '/globe')).data.friends;
+  assert.equal(others.length, 0);
+  assert.equal(JSON.stringify((await stranger.call('GET', `/users/${dana.id}`)).data).includes('32.47'), false);
+  assert.equal((await anon('GET', '/globe')).status, 401);
+});
+
+test('switching sharing off erases the place, and ending a friendship ends the view', async () => {
+  const dana = await signUp('dana-globe2');
+  const eli = await signUp('eli-globe2');
+  await dana.call('POST', `/friends/${eli.id}`);
+  await eli.call('POST', `/friends/${dana.id}`);
+  await dana.call('PUT', '/me/place', { lat: 10, lng: 20 });
+  assert.equal((await dana.call('DELETE', '/me/place')).status, 200);
+  assert.equal((await eli.call('GET', '/globe')).data.friends[0].place, null);
+  assert.equal((await dana.call('GET', '/me')).data.user.place, null);
+
+  await dana.call('PUT', '/me/place', { lat: 10, lng: 20 });
+  await eli.call('DELETE', `/friends/${dana.id}`);
+  assert.equal((await eli.call('GET', '/globe')).data.friends.length, 0);
+});
+
+test('a place must be a real point on the earth', async () => {
+  const { call } = await signUp('fay-globe');
+  for (const body of [{}, { lat: '32', lng: 34 }, { lat: 91, lng: 0 }, { lat: 0, lng: 181 }, { lat: null, lng: null }]) {
+    assert.equal((await call('PUT', '/me/place', body)).status, 400, JSON.stringify(body));
+  }
+  assert.equal((await anon('PUT', '/me/place', { lat: 1, lng: 1 })).status, 401);
+});
+
+test('the demo globe has friends on the earth and friends on the cloud', async () => {
+  const call = client(DEMO_PORT);
+  await call('POST', '/auth/demo');
+  const { friends } = (await call('GET', '/globe')).data;
+  assert.equal(friends.length, 8);
+  assert.equal(friends.filter((friend) => !friend.place).length, 2);
+});
+
 async function theBoss() {
   bossAccount ??= await signUp('boss', PILOT_PORT);
   return bossAccount;
@@ -623,10 +676,12 @@ test('the demo refuses every write and stores nothing', async () => {
     ['DELETE', '/friends/2'],
     ['POST', '/auth/request', { email: 'x@example.com' }],
     ['POST', '/client-log', { message: 'x' }],
+    ['PUT', '/me/place', { lat: 1, lng: 1 }],
+    ['DELETE', '/me/place'],
   ];
   for (const [method, path, body] of writes) assert.equal((await call(method, path, body)).status, 403, path);
   assert.equal((await call('GET', '/feed')).data.posts.length, 4);
-  assert.equal((await call('GET', '/friends')).data.friends.length, 3);
+  assert.equal((await call('GET', '/friends')).data.friends.length, 8);
 });
 
 test('logging out of the demo leaves it open for the next visitor', async () => {

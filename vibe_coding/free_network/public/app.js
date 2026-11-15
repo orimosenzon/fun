@@ -1,4 +1,7 @@
+import { friendsGlobe } from '/globe.js';
+
 const app = document.getElementById('app');
+const SIDE_GLOBE = matchMedia('(min-width: 1000px)');
 const nav = document.getElementById('nav');
 const MAX_IMAGE_SIDE = 1600;
 const MAX_IMAGES = 4;
@@ -26,6 +29,8 @@ const ICONS = {
   reply: 'M9 14L4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4',
   eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6',
   check: 'M20 6L9 17l-5-5',
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
 };
 let me = null;
 let demo = false;
@@ -464,6 +469,17 @@ function seenStore(value) {
   }
 }
 
+async function globe() {
+  const { friends } = await api('/globe');
+  return friendsGlobe({ me, friends, ui: { el, icon, avatar, go, api, tell, demo } });
+}
+
+async function globePage() {
+  app.replaceChildren(el('div', { className: 'card globe-page' },
+    el('h1', {}, 'החברים שלי בעולם'),
+    await globe()));
+}
+
 async function feedPage() {
   const list = el('div', { className: 'feed' });
   const more = el('button', { className: 'ghost more', type: 'button', hidden: true }, 'פוסטים ישנים יותר');
@@ -511,12 +527,15 @@ async function feedPage() {
   });
   await load();
 
-  app.replaceChildren(
+  // Beside the feed when the screen is wide. On a phone the globe has its own page.
+  const side = SIDE_GLOBE.matches ? el('aside', { className: 'globe-side' }, await globe()) : null;
+  app.replaceChildren(...[
+    side,
     await composer(route),
     el('p', { className: 'feed-rule' }, 'כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
     list,
     more,
-    end);
+    end].filter(Boolean));
 }
 
 function comment(item, reload, onReply) {
@@ -989,7 +1008,8 @@ function renderNav() {
     friends.classList.add('has-count');
     friends.append(el('span', { className: 'count', ariaLabel: `${me.friendRequests} בקשות חברות` }, String(me.friendRequests)));
   }
-  nav.replaceChildren(...[home, mine, friends, admin, why, el('button', {
+  const world = link('/globe', labelled('globe', 'גלובוס'));
+  nav.replaceChildren(...[home, mine, friends, world, admin, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,
@@ -1032,6 +1052,7 @@ async function show(post, profile) {
   else if (!me.name) namePage();
   else if (profile) await profilePage(profile[1]);
   else if (location.pathname === '/friends') await friendsPage();
+  else if (location.pathname === '/globe') await globePage();
   else if (location.pathname === '/admin') await adminPage();
   else await feedPage();
 }

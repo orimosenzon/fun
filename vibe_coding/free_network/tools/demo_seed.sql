@@ -11,7 +11,21 @@ INSERT INTO users (id, email, name, created_at) VALUES
   (3, 'yoav@demo.invalid', 'יואב הבדוי', 0),
   (4, 'tamar@demo.invalid', 'תמר הדוגמה', 0),
   (5, 'amit@demo.invalid', 'עמית לדוגמה', 0),
-  (6, 'shira@demo.invalid', 'שירה מהדמו', 0);
+  (6, 'shira@demo.invalid', 'שירה מהדמו', 0),
+  (7, 'dana@demo.invalid', 'דנה הבדויה', 0),
+  (8, 'ron@demo.invalid', 'רון מהדוגמה', 0),
+  (9, 'maya@demo.invalid', 'מאיה הדמיונית', 0),
+  (10, 'gil@demo.invalid', 'גיל לדוגמה', 0),
+  (11, 'yael@demo.invalid', 'יעל מהסיפור', 0);
+
+-- Where the invented friends appear on the globe. Those left out rest on the cloud.
+UPDATE users SET lat = 32.47, lng = 34.97 WHERE id = 1;
+UPDATE users SET lat = 32.48, lng = 34.99 WHERE id = 2;
+UPDATE users SET lat = 32.52, lng = 34.95 WHERE id = 4;
+UPDATE users SET lat = 32.08, lng = 34.78 WHERE id = 7;
+UPDATE users SET lat = 52.52, lng = 13.4 WHERE id = 8;
+UPDATE users SET lat = 40.71, lng = -74.01 WHERE id = 9;
+UPDATE users SET lat = -33.87, lng = 151.21 WHERE id = 11;
 
 -- The hash of the fixed demo session token. It opens only the guest account, which cannot write.
 INSERT INTO sessions (token_hash, user_id, expires_at) VALUES
@@ -21,6 +35,11 @@ INSERT INTO friendships (requester_id, addressee_id, status, created_at) VALUES
   (1, 2, 'accepted', 0),
   (1, 3, 'accepted', 0),
   (4, 1, 'accepted', 0),
+  (1, 7, 'accepted', 0),
+  (8, 1, 'accepted', 0),
+  (1, 9, 'accepted', 0),
+  (10, 1, 'accepted', 0),
+  (1, 11, 'accepted', 0),
   (5, 1, 'pending', 0),
   (1, 6, 'pending', 0);
 
