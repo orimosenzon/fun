@@ -1,0 +1,8 @@
+<div class="krd-ev" data-year="{{{שנה}}}" data-head="{{{ראש מועצה|}}}" style="position:relative; padding:0 24px 16px 0; border-right:3px solid #d9c9b0;">
+<div class="krd-ev-dot" style="position:absolute; right:-9px; top:2px; width:15px; height:15px; border-radius:50%; background:#7a5c3e; box-shadow:0 0 0 3px #fbf6ee;"></div>
+<div class="krd-ev-date" style="font-weight:bold; color:#7a5c3e;">{{{תאריך}}}</div>
+<div class="krd-ev-title" style="font-weight:bold; margin-top:1px;">{{{כותרת}}}</div>
+<div class="krd-ev-text" style="color:#444; line-height:1.55; margin-top:2px;">{{{תיאור|}}}</div>
+</div><noinclude>
+אירוע בציר הזמן של המשחק [[תבנית:למי מגיע הקרדיט]]. ההוראות שם.
+</noinclude>

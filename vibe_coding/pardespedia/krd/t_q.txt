@@ -1,0 +1,13 @@
+<div class="krd-q" data-correct="{{{נכונה}}}" data-year="{{{שנה}}}" style="background:#fff; border:1px solid #e3d5c0; border-radius:12px; padding:10px 14px; margin:10px 0;">
+<span class="krd-q-year" style="display:inline-block; background:#7a5c3e; color:#fff; border-radius:999px; padding:1px 12px; font-size:88%; font-weight:bold;">{{{שנה}}}</span>
+<div class="krd-q-text" style="font-weight:bold; margin:6px 0; line-height:1.5;">{{{שאלה}}}</div>
+<div class="krd-opt" data-key="א" style="margin:3px 0;">'''א.''' <span class="krd-opt-text">{{{א|}}}</span></div>
+<div class="krd-opt" data-key="ב" style="margin:3px 0;">'''ב.''' <span class="krd-opt-text">{{{ב|}}}</span></div>
+<div class="krd-opt" data-key="ג" style="margin:3px 0;">'''ג.''' <span class="krd-opt-text">{{{ג|}}}</span></div>
+<div class="krd-opt" data-key="ד" style="margin:3px 0;">'''ד.''' <span class="krd-opt-text">{{{ד|}}}</span></div>
+<div class="krd-explain mw-collapsible mw-collapsed" data-expandtext="הצגת התשובה" data-collapsetext="הסתרה" style="margin-top:6px; padding:6px 10px; background:#fffdf7; border-right:4px solid #d9a441; border-radius:6px; line-height:1.55;">
+'''התשובה: {{{נכונה}}}.''' <span class="krd-explain-body">{{{הסבר}}}</span>
+</div>
+</div><noinclude>
+שאלה אחת במשחק [[תבנית:למי מגיע הקרדיט]]. ההוראות שם.
+</noinclude>
