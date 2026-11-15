@@ -93,7 +93,6 @@
         {
           "title": "Letras — מילות שירים",
           "icon": "🎤",
-          "stage_second": true,
           "theme": "t-purple",
           "tags": [
             "Flask",
@@ -666,7 +665,6 @@
         {
           "title": "דרך הנדיב: מה קורה עכשיו",
           "icon": "🎪",
-          "stage_first": true,
           "theme": "t-orange",
           "tags": [
             "MapLibre GL",
@@ -954,6 +952,7 @@
         {
           "title": "FÖHN — אופנוע סילון בעמק אלפיני",
           "icon": "🏔️",
+          "stage_first": true,
           "theme": "t-cyan",
           "tags": [
             "Three.js",
@@ -1321,7 +1320,6 @@
           "icon": "🏛️",
           "theme": "t-orange",
           "dir": "coalition26",
-          "stage_second": true,
           "tags": [
             "בחירות 2026",
             "קואליציה",

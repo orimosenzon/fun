@@ -18,6 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DATA = HERE / "projects.json"
+STATS = HERE / "stats.json"  # written by analytics.py; not in git
 TEMPLATE = HERE / "template.html"
 OUTPUT = ROOT / "index.html"
 
@@ -235,8 +236,18 @@ def render_stage(data: dict) -> str:
         })
     if not slides:
         return ""
-    # "stage_first": true puts a project at the front of the rotation, "stage_second" right after it
-    slides.sort(key=lambda s: s.pop("first"))
+    # "stage_first": true puts a project at the front of the rotation, "stage_second"
+    # right after it; the rest go by popularity (views in the last 30 days). The
+    # page re-sorts them in the browser with the fresh stats.json from the deploy,
+    # so the local copy here only sets the order a reader sees before it loads.
+    views = {}
+    try:
+        views = {a: v[1] for a, v in json.loads(STATS.read_text())["apps"].items()}
+    except (OSError, ValueError, KeyError, IndexError):
+        pass
+    slides.sort(key=lambda s: (s["first"], -views.get(s["anchor"], 0)))
+    for s in slides:
+        s["pin"] = s.pop("first") < 2
     first = slides[0]
     pills = "\n".join(
         f'            <button class="stage-pill" type="button" data-i="{i}">'

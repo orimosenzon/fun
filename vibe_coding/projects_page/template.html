@@ -838,11 +838,12 @@
 {{STAGE}}
 {{TRY}}
 
+{{STATS}}
+
 {{TOC}}
 
 {{SECTIONS}}
 
-{{STATS}}
     <footer>
         ✦ Built with Claude Code &nbsp;&bull;&nbsp; Vibe Coding &nbsp;&bull;&nbsp; אורי מוסנזון
     </footer>
@@ -852,6 +853,10 @@
 // Stage: roll the prism one face per step. Three faces, many projects, so the
 // face about to swing in gets the target project's screenshot first. Next
 // arrives from the left, which is "forward" on a right-to-left page.
+// stats.json (visits per project, written at deploy time by analytics.py) is
+// fetched once here and shared: the stage orders by it, the stats section shows it.
+window.vcStats = window.fetch ? fetch('projects_page/stats.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw r; return r.json(); }) : null;
 (function () {
     var stage = document.getElementById('stage');
     if (!stage) return;
@@ -968,9 +973,30 @@
         setSpeed(+slider.value, true);
         if (!playing) setPlaying(true); else schedule();
     });
-    pills.forEach(function (p, i) {
-        p.addEventListener('click', function () { go(i); schedule(); });
+    pills.forEach(function (p) {
+        p.addEventListener('click', function () { go(pills.indexOf(p)); schedule(); });
     });
+
+    // Pinned projects ("pin", from stage_first/stage_second) stay in front;
+    // the rest follow by views in the last 30 days, ties keeping build order.
+    // The build already sorted by its own copy of the stats; this catches up
+    // with the deploy's fresher one without moving the slide on screen.
+    function resort(apps) {
+        var cur = slides[idx];
+        var views = function (s) { var a = apps[s.anchor]; return a ? a[1] || 0 : 0; };
+        var rest = slides.filter(function (s) { return !s.pin; })
+            .map(function (s, i) { return [s, i]; })
+            .sort(function (a, b) { return views(b[0]) - views(a[0]) || a[1] - b[1]; })
+            .map(function (x) { return x[0]; });
+        var order = slides.filter(function (s) { return s.pin; }).concat(rest);
+        pills = order.map(function (s) { return pills[slides.indexOf(s)]; });
+        pills.forEach(function (p, i) { p.dataset.i = i; strip.appendChild(p); });
+        slides = order;
+        idx = slides.indexOf(cur);
+        mark(false);
+        preload(idx + 1); preload(idx - 1);
+    }
+    if (window.vcStats) window.vcStats.then(function (s) { resort(s.apps || {}); }).catch(function () {});
     stage.addEventListener('keydown', function (e) {
         if (e.key === 'ArrowRight') { step(1); e.preventDefault(); }
         else if (e.key === 'ArrowLeft') { step(-1); e.preventDefault(); }
@@ -1091,7 +1117,7 @@
 // without it (local preview, failed fetch) the section simply stays hidden.
 (function () {
     var box = document.getElementById('stats');
-    if (!box || !window.fetch) return;
+    if (!box || !window.vcStats) return;
     var meta = JSON.parse(document.getElementById('stats-meta').textContent);
     var list = box.querySelector('.stats-list');
     var more = box.querySelector('.stats-more');
@@ -1140,8 +1166,7 @@
     });
     more.addEventListener('click', function () { open = !open; render(); });
 
-    fetch('projects_page/stats.json', { cache: 'no-cache' })
-        .then(function (r) { if (!r.ok) throw r; return r.json(); })
+    window.vcStats
         .then(function (s) {
             stats = s;
             var since = new Date(s.since), up = new Date(s.updated);
