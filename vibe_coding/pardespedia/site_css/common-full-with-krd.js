@@ -140,7 +140,7 @@
    ------------------------------------------------------------
    התוכן כולו כתוב בוויקיטקסט, בתבניות (שאלות, אירועי ציר הזמן,
    תקופות ראשי המועצה). הקוד כאן רק הופך אותו למשחק: שאלה אחרי
-   שאלה, ציון ופירוט בסוף, ואז ציר זמן גרפי והסיפור המלא.
+   שאלה, ציון ופירוט בסוף, ואז ציר זמן גרפי, עוגת קרדיטים והסיפור המלא.
    בלי הקוד הזה הדף עדיין קריא: השאלות עם תשובה מתקפלת והציר
    כרשימה.
    ============================================================ */
@@ -253,6 +253,16 @@
 		} ).get().filter( function ( e ) { return !isNaN( e.year ); } );
 	}
 
+	function readSlices( root ) {
+		return $( root ).find( '.krd-slice' ).map( function () {
+			return {
+				pct: parseFloat( this.getAttribute( 'data-pct' ) ),
+				name: txt( $( this ).find( '.krd-slice-name' )[ 0 ] ),
+				why: html( $( this ).find( '.krd-slice-why' )[ 0 ] )
+			};
+		} ).get().filter( function ( s ) { return s.pct > 0 && s.name; } );
+	}
+
 	/* ---------- גרפיקה: הציר ---------- */
 
 	// מיקום על הציר, מימין לשמאל (השנה הראשונה בצד ימין, כמו קריאה בעברית)
@@ -345,6 +355,78 @@
 		return wrap;
 	}
 
+	// עוגת הקרדיטים: טבעת SVG ולצידה מקרא עם הנימוק לכל נתח.
+	// נתח ששמו כולל שם של ראש מועצה מקבל את הצבע שלו בציר הזמן.
+	function pieChart( slices, periods ) {
+		var total = slices.reduce( function ( a, s ) { return a + s.pct; }, 0 );
+		var used = {};
+		slices.forEach( function ( s ) {
+			s.color = null;
+			periods.forEach( function ( p ) {
+				if ( !s.color && s.name.indexOf( p.name ) !== -1 ) { s.color = p.color; }
+			} );
+			if ( /לא ידוע/.test( s.name ) ) { s.color = '#b9b2a6'; }
+			if ( s.color ) { used[ s.color ] = 1; }
+		} );
+		var free = PALETTE.filter( function ( c ) { return !used[ c ]; } ), n = 0;
+		slices.forEach( function ( s ) {
+			if ( !s.color ) { s.color = free[ n++ % free.length ]; }
+		} );
+
+		var R = 100, r = 52, C = 110, a = -Math.PI / 2, svg = '';
+		function pt( rad, ang ) { return ( C + rad * Math.cos( ang ) ).toFixed( 2 ) + ' ' + ( C + rad * Math.sin( ang ) ).toFixed( 2 ); }
+		slices.forEach( function ( s, i ) {
+			var share = s.pct / total, b = a + share * 2 * Math.PI, big = share > 0.5 ? 1 : 0;
+			var shown = Math.round( share * 100 );
+			s.shown = shown;
+			// נתח יחיד של 100%: קשת מלאה לא מצטיירת, ולכן שני חצאים
+			var d = share > 0.999 ?
+				'M' + pt( R, a ) + 'A' + R + ' ' + R + ' 0 1 1 ' + pt( R, a + Math.PI ) + 'A' + R + ' ' + R + ' 0 1 1 ' + pt( R, a ) +
+				'M' + pt( r, a ) + 'A' + r + ' ' + r + ' 0 1 0 ' + pt( r, a + Math.PI ) + 'A' + r + ' ' + r + ' 0 1 0 ' + pt( r, a ) + 'Z' :
+				'M' + pt( R, a ) + 'A' + R + ' ' + R + ' 0 ' + big + ' 1 ' + pt( R, b ) +
+				'L' + pt( r, b ) + 'A' + r + ' ' + r + ' 0 ' + big + ' 0 ' + pt( r, a ) + 'Z';
+			svg += '<path class="krd-pie-seg" data-i="' + i + '" d="' + d + '" fill="' + s.color +
+				'" fill-rule="evenodd" stroke="#fff" stroke-width="2" style="cursor:pointer;transition:opacity .15s"><title>' +
+				esc( s.name ) + ': ' + shown + '%</title></path>';
+			if ( share >= 0.07 ) {
+				var m = ( a + b ) / 2, lr = ( R + r ) / 2;
+				svg += '<text x="' + ( C + lr * Math.cos( m ) ).toFixed( 1 ) + '" y="' + ( C + lr * Math.sin( m ) + 5 ).toFixed( 1 ) +
+					'" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff" style="pointer-events:none" direction="ltr">' + shown + '%</text>';
+			}
+			a = b;
+		} );
+		svg += '<text x="' + C + '" y="' + ( C + 12 ) + '" text-anchor="middle" font-size="34" style="pointer-events:none">🏆</text>';
+
+		var wrap = el( 'div', 'display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:center;margin-top:6px' );
+		wrap.className = 'krd-pie-chart';
+		wrap.appendChild( el( 'div', 'flex:0 0 auto;width:220px;max-width:70%',
+			'<svg viewBox="0 0 220 220" width="100%" role="img" aria-label="עוגת הקרדיטים" style="display:block">' + svg + '</svg>' ) );
+		var legend = el( 'div', 'flex:1 1 260px;min-width:0' );
+		slices.forEach( function ( s, i ) {
+			var row = el( 'div', 'display:flex;gap:8px;align-items:flex-start;padding:4px 6px;border-radius:8px;transition:background .15s',
+				'<span style="flex:0 0 auto;width:13px;height:13px;border-radius:4px;margin-top:5px;background:' + s.color + '"></span>' +
+				'<div style="min-width:0"><b>' + esc( s.name ) + '</b> · <b style="color:' + BROWN + '">' + s.shown + '%</b>' +
+				( s.why ? '<div style="color:#444;font-size:92%;line-height:1.45">' + s.why + '</div>' : '' ) + '</div>' );
+			row.className = 'krd-pie-row';
+			row.setAttribute( 'data-i', i );
+			legend.appendChild( row );
+		} );
+		wrap.appendChild( legend );
+
+		// ריחוף או נגיעה בנתח או בשורה מדגישים את שניהם
+		function light( i ) {
+			$( wrap ).find( '.krd-pie-seg' ).each( function () {
+				this.style.opacity = ( i === null || this.getAttribute( 'data-i' ) === String( i ) ) ? '1' : '.3';
+			} );
+			$( wrap ).find( '.krd-pie-row' ).each( function () {
+				this.style.background = this.getAttribute( 'data-i' ) === String( i ) ? '#f6ecdc' : '';
+			} );
+		}
+		$( wrap ).on( 'mouseenter click', '.krd-pie-seg, .krd-pie-row', function () { light( this.getAttribute( 'data-i' ) ); } );
+		$( wrap ).on( 'mouseleave', '.krd-pie-seg, .krd-pie-row', function () { light( null ); } );
+		return wrap;
+	}
+
 	function flash( node ) {
 		var old = node.style.background;
 		node.style.transition = 'background .4s';
@@ -400,6 +482,7 @@
 		var periods = readPeriods( root );
 		var qs = readQuestions( root );
 		var events = readEvents( root, periods );
+		var slices = readSlices( root );
 		if ( !qs.length ) { return; }
 
 		var years = qs.map( function ( q ) { return q.year; } )
@@ -412,6 +495,7 @@
 		var data = $( root ).find( '.krd-data' )[ 0 ];
 		var timeline = $( root ).find( '.krd-timeline' )[ 0 ];
 		var story = $( root ).find( '.krd-story' )[ 0 ];
+		var pie = $( root ).find( '.krd-pie' )[ 0 ];
 		if ( data ) { data.style.setProperty( 'display', 'none', 'important' ); }
 		$( root ).addClass( 'krd-js' );
 
@@ -523,7 +607,7 @@
 					( q.explain ? '<div style="margin-top:4px;color:#444;font-size:95%">' + q.explain + '</div>' : '' ) ) );
 			} );
 
-			// ציר הזמן הגרפי והכרטיסים, ואחריהם הסיפור
+			// ציר הזמן הגרפי והכרטיסים, ואחריהם העוגה והסיפור
 			if ( timeline && events.length ) {
 				$( timeline ).find( '.krd-era' ).remove();
 				var era = eraTimeline( periods, events, min, max, root.clientWidth - 60 );
@@ -532,6 +616,13 @@
 				decorateEvents( events );
 				$( timeline ).show();
 				box.appendChild( timeline );
+			}
+			// עוגת הקרדיטים: הפסים של הגרסה בלי הקוד מוחלפים בעוגה ובמקרא
+			if ( pie && slices.length ) {
+				$( pie ).find( '.krd-pie-chart' ).remove();
+				$( pie ).find( '.krd-pie-slices' ).hide().after( pieChart( slices, periods ) );
+				$( pie ).show();
+				box.appendChild( pie );
 			}
 			if ( story ) { $( story ).show(); box.appendChild( story ); }
 

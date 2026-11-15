@@ -1,7 +1,9 @@
 """Plays the "למי מגיע הקרדיט?" game on the live page.
 
-Usage: python3 krd/test_game.py <screenshot dir> [desk|phone]
+Usage: python3 krd/test_game.py <screenshot dir> [desk|phone] [local]
 If the engine is not yet in MediaWiki:Common.js it is injected from krd_game.js.
+"local" tests krd_game.js even when an older engine is already live: the widget
+is replaced by a fresh copy from the parse API and the local engine is injected.
 Chrome is launched with --single-process (the machine is often short on memory),
 so each run opens one page only: run desk and phone separately.
 """
@@ -10,7 +12,9 @@ from playwright.sync_api import sync_playwright
 
 S = sys.argv[1] if len(sys.argv) > 1 else "."
 ONLY = sys.argv[2] if len(sys.argv) > 2 else "desk"
-URL = "https://pardespedia.info/wiki/גן_יד_לבנים"
+LOCAL = "local" in sys.argv[3:]
+PAGE = os.environ.get("KRD_PAGE", "גן יד לבנים")  # KRD_PAGE=<title> tests another article
+URL = "https://pardespedia.info/wiki/" + PAGE.replace(" ", "_")
 HERE = os.path.dirname(os.path.abspath(__file__))
 VP = {"desk": {'width': 1200, 'height': 900}, "phone": {'width': 390, 'height': 844}}[ONLY]
 WRONG = {1, 4, 7}
@@ -32,6 +36,13 @@ with sync_playwright() as p:
     pg.locator('.krd-quiz').screenshot(path=f"{S}/{ONLY}_nojs.png")
     print("no-engine widget height:", pg.locator('.krd-quiz').bounding_box()['height'])
     injected = pg.locator('.krd-js').count() == 0
+    if LOCAL and not injected:
+        pg.evaluate("""async () => {
+            const r = await fetch('/api.php?action=parse&page=' + encodeURIComponent(document.title.split(' – ')[0]) + '&prop=text&format=json&formatversion=2');
+            const doc = new DOMParser().parseFromString((await r.json()).parse.text, 'text/html');
+            document.querySelector('.krd-quiz').replaceWith(document.importNode(doc.querySelector('.krd-quiz'), true));
+        }""")
+        injected = True
     if injected:
         pg.add_script_tag(path=os.path.join(HERE, "krd_game.js"))
         pg.wait_for_timeout(800)
@@ -70,6 +81,15 @@ with sync_playwright() as p:
     check(pg.locator('.krd-era').count() == 1, "graphic timeline drawn")
     check(pg.locator('.krd-story').is_visible(), "story shown")
     check(pg.get_by_text('התשובה הנכונה:').count() == len(WRONG), "correct answers listed for the wrong ones")
+    if pg.locator('.krd-slice').count():
+        n = pg.locator('.krd-slice').count()
+        check(pg.locator('.krd-pie').is_visible(), "credit pie shown")
+        check(pg.locator('.krd-pie-seg').count() == n, f"pie has {n} slices")
+        check(pg.locator('.krd-pie-row').count() == n, "pie legend row per slice")
+        check(not pg.locator('.krd-pie-slices').is_visible(), "fallback bars hidden")
+        box = pg.locator('.krd-pie').bounding_box()
+        check(box['width'] <= VP['width'], "pie fits the viewport")
+        pg.locator('.krd-pie').screenshot(path=f"{S}/{ONLY}_pie.png")
     pg.locator('.krd-quiz').screenshot(path=f"{S}/{ONLY}_results.png")
     pg.locator('.krd-era').screenshot(path=f"{S}/{ONLY}_era.png")
 

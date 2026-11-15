@@ -1,0 +1,7 @@
+<div class="krd-slice" data-pct="{{{אחוז}}}" style="margin:8px 0;">
+<div><span class="krd-slice-name" style="font-weight:bold;">{{{שם}}}</span> · <span class="krd-slice-pct" style="font-weight:bold; color:#7a5c3e;">{{{אחוז}}}%</span></div>
+<div style="background:#eee6d8; border-radius:6px; height:9px; overflow:hidden; margin:2px 0;"><div style="width:{{{אחוז}}}%; height:9px; background:#7a5c3e;"></div></div>
+<div class="krd-slice-why" style="color:#444; font-size:92%;">{{{על מה|}}}</div>
+</div><noinclude>
+נתח אחד בעוגת הקרדיטים של [[תבנית:למי מגיע הקרדיט]]. '''שם''', '''אחוז''' (מספר, בלי הסימן %), ו'''על מה''' (משפט קצר). ההוראות שם.
+</noinclude>
