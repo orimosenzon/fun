@@ -2,7 +2,7 @@
 export class Input {
   constructor() {
     this.keys = new Set(); this.pressed = [];        // key-down edges, drained by the game
-    this.invert = false; this.touch = { turn: 0, pitch: 0, throttle: 0, boost: false, brake: false, on: false };
+    this.invert = false; this.touch = { turn: 0, pitch: 0, throttle: 0, strafe: 0, boost: false, brake: false, on: false };
     addEventListener('keydown', (e) => {
       if (e.repeat) return;
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -35,7 +35,7 @@ export class Input {
       edge(3, 'KeyC'); edge(2, 'KeyR'); edge(9, 'Escape'); edge(0, 'PadA');
     }
     const t = this.touch;
-    if (t.on) { if (t.turn) c.turn = t.turn; if (t.pitch) c.pitch = t.pitch; if (t.throttle) c.throttle = t.throttle; c.boost = c.boost || t.boost; c.brake = c.brake || t.brake; }
+    if (t.on) { if (t.turn) c.turn = t.turn; if (t.pitch) c.pitch = t.pitch; if (t.throttle) c.throttle = t.throttle; if (t.strafe) c.strafe = t.strafe; c.boost = c.boost || t.boost; c.brake = c.brake || t.brake; }
     return c;
   }
   // on-screen stick and buttons for phones
@@ -48,7 +48,7 @@ export class Input {
     const end = () => { t.turn = t.pitch = 0; knob.style.transform = ''; };
     stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
     for (const b of root.querySelectorAll('[data-k]')) {
-      const k = b.dataset.k, set = (v) => { if (k === 'up') t.throttle = v ? 1 : 0; else if (k === 'down') t.throttle = v ? -1 : 0; else if (k === 'key') { if (v) this.pressed.push(b.dataset.code); } else t[k] = v; b.classList.toggle('act', v); };
+      const k = b.dataset.k, set = (v) => { if (k === 'up') t.throttle = v ? 1 : 0; else if (k === 'down') t.throttle = v ? -1 : 0; else if (k === 'sl' || k === 'sr') t.strafe = v ? (k === 'sl' ? -1 : 1) : 0; else if (k === 'key') { if (v) this.pressed.push(b.dataset.code); } else t[k] = v; b.classList.toggle('act', v); };
       b.addEventListener('pointerdown', (e) => { e.preventDefault(); set(true); }); b.addEventListener('pointerup', () => set(false)); b.addEventListener('pointercancel', () => set(false)); b.addEventListener('pointerleave', () => set(false));
     }
   }

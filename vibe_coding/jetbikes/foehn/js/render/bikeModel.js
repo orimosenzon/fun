@@ -5,7 +5,7 @@
 // between the rider's knees the fusion core. No wing, no fin. The nozzles move with the simulated
 // actuators and glow with the air that really leaves them.
 import * as THREE from '../../lib/three.module.min.js';
-import { LIFT, REAR, ENG, INTAKE, SKIDS, massProps, FUEL0 } from '../sim/bike.js';
+import { LIFT, REAR, SIDE, SIDE_MAX, ENG, INTAKE, SKIDS, massProps, FUEL0 } from '../sim/bike.js';
 
 export function buildBike(ghost = false) {
   const root = new THREE.Group();          // origin = centre of gravity
@@ -121,7 +121,20 @@ export function buildBike(ghost = false) {
     const noz = new THREE.Group(); noz.position.set(0, P.p[1] - HUBY, 0); noz.rotation.z = Math.PI / 2; g.add(noz);   // local -x = straight down
     return { g, noz, glowMat: gm };
   });
-  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.074 })), { noz: rearNoz, r: 0.12 }];
+  // side nozzles: a short stub on each side of the nose and of the jet pipe, blowing straight out
+  const sides = [];
+  SIDE.forEach((P, pair) => {
+    for (const sgn of [-1, 1]) {
+      const g = new THREE.Group(); g.position.set(P.p[0], P.p[1], sgn * P.p[2]); g.rotation.y = sgn * Math.PI / 2; d.add(g);   // local -x = outward
+      add(cylX(0.05, 0.04, 0.09, 14), hot, 0.0, 0, 0, g).castShadow = false;
+      add(cylX(0.047, 0.047, 0.016, 14), steel, -0.045, 0, 0, g).castShadow = false;
+      const gm = glowMat();
+      if (!ghost) { const gl = add(new THREE.CircleGeometry(0.036, 14), gm, -0.054, 0, 0, g); gl.rotation.y = -Math.PI / 2; gl.castShadow = false; }
+      const noz = new THREE.Group(); noz.position.set(-0.05, 0, 0); g.add(noz);
+      sides.push({ noz, glowMat: gm, pair, sgn });
+    }
+  });
+  const nozzles = [...lifts.map((l) => ({ noz: l.noz, r: 0.074 })), { noz: rearNoz, r: 0.12 }, ...sides.map((s) => ({ noz: s.noz, r: 0.05 }))];
 
   // ----- bodywork -----
   add(prof([[0.99, 0.93], [0.94, 1.04], [0.74, 1.15], [0.46, 1.09], [0.42, 0.92], [0.62, 0.85], [0.88, 0.85]], 0.34, 0.04), paint, 0, 0, 0);          // nose fairing
@@ -184,7 +197,7 @@ export function buildBike(ghost = false) {
 
   const cg0 = massProps(FUEL0).cg;
   const model = {
-    root, nozzles, design: d, all,
+    root, nozzles, sides, design: d, all,
     update(b, time, lean = 0, dt = 1 / 60) {
       d.position.set(-b.mp.cg[0], -b.mp.cg[1], -b.mp.cg[2]);
       root.position.set(b.p[0], b.p[1], b.p[2]);
@@ -200,6 +213,7 @@ export function buildBike(ghost = false) {
         l.g.rotation.z = sweep + b.va[i];
         l.glowMat.color.setRGB(h2 * 1.2 * f, h2 * 1.9 * f, h2 * 3.2 * f);
       }
+      for (const s of sides) { const f = Math.min(1, Math.max(0, -s.sgn * b.sd[s.pair]) / (0.6 * SIDE_MAX)), k = 1 + 5 * b.kick; s.glowMat.color.setRGB(1.2 * f * k, 1.9 * f * k, 3.2 * f * k); }   // the exit on the right pushes the bike left
       rear.rotation.set(0, -b.ry, REAR.cant + b.rp);
       const fr = Math.min(1, b.R / 5000);
       for (const pv of petals) pv.rotation.z = 0.19 - 0.13 * od;                 // the nozzle opens for the overdrive

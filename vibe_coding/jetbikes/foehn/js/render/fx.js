@@ -4,7 +4,7 @@
 import * as THREE from '../../lib/three.module.min.js';
 import { U } from './env.js';
 import { groundAt, waterAt } from '../sim/terrain.js';
-import { ENG, LIFT, REAR, G } from '../sim/bike.js';
+import { ENG, LIFT, REAR, SIDE_MAX, G } from '../sim/bike.js';
 import { qrot, add, scale, len } from '../sim/vmath.js';
 
 const PLUME_FRAG = /* glsl */`
@@ -76,7 +76,7 @@ class Particles {
 
 export class FX {
   constructor(scene, model) {
-    this.scene = scene;
+    this.scene = scene; this.sides = model.sides;
     this.soft = new Particles(scene, 2600, false);
     this.fire = new Particles(scene, 900, true);
     // plumes
@@ -140,6 +140,14 @@ export class FX {
         else if (hit[1] > 2380) this.soft.spawn(p, v, [0.93, 0.95, 0.98], 0.5, 0.6 + r() * 0.6, 1.0 + r() * 0.9, 3.2, 1.3, 1.2);
         else { const c = 0.34 + 0.14 * r(); this.soft.spawn(p, v, [c, c * 0.86, c * 0.64], 0.34, 0.7 + r() * 0.7, 1.2 + r() * 1.4, 3.4, 1.1, 0.4); }
       }
+    }
+    // side nozzles: short plumes straight out, violet when the rider kicks
+    for (let i = 5; i < this.plumes.length; i++) {
+      const s = this.sides[i - 5], pl = this.plumes[i];
+      const pw = alive ? Math.min(1, Math.max(0, -s.sgn * b.sd[s.pair]) / (0.7 * SIDE_MAX)) : 0;
+      pl.m.uniforms.uPow.value = Math.min(1, pw * 1.6); pl.m.uniforms.uAb.value = b.kick * pw * 0.45;
+      pl.mesh.scale.set(0.2 + 0.9 * pw + 0.8 * b.kick * pw, 1 + 0.25 * b.kick, 1 + 0.25 * b.kick);
+      pl.mesh.visible = pw > 0.04;
     }
     this.washStrength += ((wash > 0 ? Math.min(1, wash * 0.8) : 0) - this.washStrength) * Math.min(1, dt * 4);
     if (wash > 0) this.washPos = [wx / wash, wz / wash];

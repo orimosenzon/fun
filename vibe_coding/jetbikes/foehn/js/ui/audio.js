@@ -18,6 +18,9 @@ export class Audio {
     this.hiss = chain(noise(), 'bandpass', 2600, 0.8);
     this.wind = chain(noise(), 'bandpass', 500, 0.6);
     this.abn = chain(noise(), 'lowpass', 140, 1.2);
+    this.sidej = chain(noise(), 'bandpass', 3400, 1.3);       // side nozzles
+    this.rain = chain(noise(), 'highpass', 2200, 0.5);
+    this.gale = chain(noise(), 'bandpass', 320, 2.2);         // the wind itself, heard when it gusts
     this.whine = [0, 1].map((i) => { const o = c.createOscillator(); o.type = 'sawtooth'; o.start(); const r = chain(o, 'bandpass', 2000, 6); r.o = o; r.det = 1 + i * 0.013; return r; });
     this.sub = c.createOscillator(); this.sub.type = 'sine'; this.sub.frequency.value = 55; this.sub.start();
     this.subG = c.createGain(); this.subG.gain.value = 0; this.sub.connect(this.subG); this.subG.connect(this.master);
@@ -34,8 +37,17 @@ export class Audio {
     set(this.hiss.g.gain, th * 0.10 * att); set(this.hiss.f.frequency, 1800 + N * 2500);
     for (const w of this.whine) { set(w.o.frequency, (320 + N * 2100) * w.det); set(w.f.frequency, 320 + N * 2100); set(w.g.gain, alive ? (0.012 + 0.03 * N) * att : 0); }
     set(this.abn.g.gain, ab * (1.0 + 0.3 * Math.random()) * att, 0.03); set(this.subG.gain, ab * 0.4 * att + th * 0.1 * att);
+    const sj = alive ? Math.min(1, (Math.abs(b.sd[0]) + Math.abs(b.sd[1])) / 3000) : 0;
+    set(this.sidej.g.gain, sj * (0.16 + 0.3 * b.kick) * att, 0.02); set(this.sidej.f.frequency, 3000 + 1500 * b.kick);
     const V = b.airspeed;
     set(this.wind.g.gain, alive ? Math.min(0.5, V * V / 22000) * (cockpit ? 1.3 : 0.8) : 0, 0.2); set(this.wind.f.frequency, 300 + V * 14);
+  }
+  // rain on the helmet (0..1) and the wind that is blowing right now (m/s)
+  weather(rain, wind, on) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.rain.g.gain.setTargetAtTime(on ? rain * 0.10 : 0, t, 0.3);
+    this.gale.g.gain.setTargetAtTime(on ? Math.min(0.55, wind * wind / 900) : 0, t, 0.15); this.gale.f.frequency.setTargetAtTime(240 + wind * 14, t, 0.2);
   }
   blip(freq, dur = 0.12, type = 'sine', gain = 0.2, slide = 0, delay = 0) {
     if (!this.ctx) return;

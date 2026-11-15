@@ -21,7 +21,7 @@ export function buildSky(scene) {
         float mu = dot(d, uSunDir);
         // sun disc with limb darkening, and a tight glow
         float disc = smoothstep(0.99985, 0.99996, mu);
-        col += uSunCol * (disc * 60.0 + pow(max(mu, 0.0), 900.0) * 3.0 + pow(max(mu, 0.0), 60.0) * 0.12);
+        col += uSunCol * (disc * 60.0 + pow(max(mu, 0.0), 900.0) * 3.0 + pow(max(mu, 0.0), 60.0) * 0.12) * (1.0 - uWx.x);   // no sun disc through an overcast
         if (d.y > 0.004) {
           // cumulus deck
           float t = (uCloud.y - cameraPosition.y) / d.y;
@@ -39,6 +39,7 @@ export function buildSky(scene) {
           vec3 lit = uSunCol * (0.5 + 0.9 * shade + 2.2 * fwd * edge) + uAmbSky * 0.9;
           vec3 dark = uAmbSky * 0.55 + uSunCol * 0.06;
           vec3 cc = mix(dark, lit, 0.25 + 0.75 * shade) * 0.52;
+          cc = mix(cc, skyLUT(d) * (0.78 + 0.34 * shade), uWx.x);                 // an overcast is lit from within, evenly
           float far = exp(-t / 52000.0);
           cc = mix(skyLUT(normalize(vec3(d.x, 0.03, d.z))), cc, far);
           col = mix(col, cc, dens * smoothstep(0.004, 0.05, d.y) * (0.35 + 0.65 * far) * 0.96);

@@ -74,7 +74,7 @@ export class Autopilot {
     const tgt = path[k];
     const dx = tgt[0] - p[0], dz = tgt[2] - p[2], dh = Math.hypot(dx, dz) || 1;
     const err = wrapPi(Math.atan2(-dz, dx) - yaw);
-    out.turn = clamp(-2.6 * err, -0.88, 0.88);   // short of full stick: the demo rider plans its own speed, no hairpin
+    out.turn = clamp(-2.0 * err, -0.88, 0.88);   // (the gain suits the quick roll the side nozzles give) short of full stick: the demo rider plans its own speed, no hairpin
     const vzDes = V * (tgt[1] - p[1]) / Math.max(dh, 20) + 0.9 * (path[bi][1] - p[1]);
     out.pitch = liftOff ? 1 : clamp(vzDes / Math.max(8, 0.62 * V), -1, 1);
 

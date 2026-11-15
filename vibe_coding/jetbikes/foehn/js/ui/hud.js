@@ -1,6 +1,6 @@
 // Heads-up display (DOM overlay) and the mini-map.
 import { T } from '../sim/terrain.js';
-import { G, FUEL0, ENG } from '../sim/bike.js';
+import { G, FUEL0, ENG, SIDE_MAX } from '../sim/bike.js';
 import { V_MAX } from '../sim/fcs.js';
 import { len, yprOf } from '../sim/vmath.js';
 import { t, evName } from '../i18n.js';
@@ -84,6 +84,16 @@ export class Hud {
     $('vt').lastElementChild.style.left = Math.max(0, Math.min(100, game.vt / vmax * 100)) + '%';
     for (let i = 0; i < 4; i++) $('e' + i).style.height = Math.min(100, b.L[i] / 20) + '%';
     $('e4').style.height = Math.min(100, b.R / (ENG.tmax * (1 + ENG.abGain)) * 100) + '%'; $('e4').style.background = b.abOut > 0.3 ? 'linear-gradient(#bfe8ff,#7a6bff)' : '';
+    for (let i = 0; i < 2; i++) {
+      const e = $('s' + i), w = Math.min(50, Math.abs(b.sd[i]) / SIDE_MAX * 50);      // the bar grows the way the bike is pushed
+      e.style.width = w + '%'; e.style.left = (b.sd[i] >= 0 ? 50 : 50 - w) + '%'; e.style.background = b.kick > 0.3 ? 'linear-gradient(90deg,#bfe8ff,#7a6bff)' : '';
+    }
+    // the wind right now: how hard, and which way it pushes (up = from behind)
+    const w = game.sim.windW, ws = Math.hypot(w[0], w[2]), [yw] = yprOf(b.q);
+    $('wnd').classList.toggle('on', game.windLevel > 0);
+    $('wspd').textContent = (ws * 3.6).toFixed(0);
+    $('wdir').style.transform = `rotate(${Math.atan2(w[0] * Math.sin(yw) + w[2] * Math.cos(yw), w[0] * Math.cos(yw) - w[2] * Math.sin(yw)) * 180 / Math.PI}deg)`;
+    $('wdir').style.color = ws > 16 ? '#ff7d6b' : ws > 9 ? '#ffcf5a' : '';
     $('rpm').textContent = Math.round(b.eng.N * 100);
     $('nozA').setAttribute('transform', `rotate(${b.tilt * 180 / Math.PI})`);
     $('heat').firstElementChild.style.width = b.heat * 100 + '%'; $('heat').classList.toggle('lock', b.abLock);

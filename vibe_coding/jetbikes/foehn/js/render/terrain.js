@@ -167,8 +167,9 @@ void main() {
   float shore = inLake * (1.0 - smoothstep(0.3, 2.6, h - uLake.x)) * (1.0 - rockW);
   col = mix(col, vec3(0.42, 0.40, 0.34) * (0.7 + 0.5 * nC), shore);
   // snow: above the snow line, less on steep and sun-facing rock, drifts in gullies
-  float snowLine = 2330.0 + (nA - 0.5) * 420.0 - (1.0 - aux.g) * 500.0 - n.z * 60.0;
-  float snow = smoothstep(snowLine - 60.0, snowLine + 90.0, h) * (1.0 - smoothstep(0.38, 0.62, slope + (nB - 0.5) * 0.2));
+  col *= 1.0 - 0.3 * uWx.y;                                                                  // rain: wet ground is darker
+  float snowLine = 2330.0 + (nA - 0.5) * 420.0 - (1.0 - aux.g) * 500.0 - n.z * 60.0 - uWx.z * 2200.0;   // (snowfall: down to the valley floor)
+  float snow = smoothstep(snowLine - 60.0, snowLine + 90.0, h) * (1.0 - smoothstep(0.38 + 0.26 * uWx.z, 0.62 + 0.3 * uWx.z, slope + (nB - 0.5) * 0.2));
   snow = max(snow, smoothstep(snowLine - 300.0, snowLine - 80.0, h) * smoothstep(0.5, 0.75, nA * 0.6 + nB * 0.4) * (1.0 - rockW) * 0.85);
   col = mix(col, vec3(0.86, 0.89, 0.93), snow);
   // --- light ---
@@ -298,8 +299,9 @@ async function buildBackdrop(scene, mat) {
         float slope = 1.0 - normalize(vN).y + (nB - 0.5) * 0.1;
         vec3 col = mix(vec3(0.07, 0.13, 0.04), vec3(0.30, 0.29, 0.10), smoothstep(1500.0, 2150.0, vW.y));
         col = mix(col, vec3(0.37, 0.355, 0.33) * (0.8 + 0.4 * nA), smoothstep(0.15, 0.3, slope));
-        float sl = 2330.0 + (nA - 0.5) * 420.0;
-        col = mix(col, vec3(0.86, 0.89, 0.93), smoothstep(sl - 60.0, sl + 90.0, vW.y) * (1.0 - smoothstep(0.4, 0.62, slope + (nB - 0.5) * 0.2)));
+        col *= 1.0 - 0.3 * uWx.y;
+        float sl = 2330.0 + (nA - 0.5) * 420.0 - uWx.z * 2200.0;
+        col = mix(col, vec3(0.86, 0.89, 0.93), smoothstep(sl - 60.0, sl + 90.0, vW.y) * (1.0 - smoothstep(0.4 + 0.26 * uWx.z, 0.62 + 0.3 * uWx.z, slope + (nB - 0.5) * 0.2)));
         vec3 light = uSunCol * max(dot(n, uSunDir), 0.0) * cloudShadow(vW) + mix(uAmbGnd, uAmbSky, n.y * 0.5 + 0.5) * 0.45 + skyLUT(normalize(n + vec3(0.0, 0.55, 0.0))) * 0.75;
         gl_FragColor = vec4(applyFog(col * light, vW), 1.0);
       }`,

@@ -73,6 +73,7 @@ void main() {
   vec3 V = normalize(cameraPosition - vW);
   float back = pow(max(dot(-V, uSunDir), 0.0), 4.0) * 0.6;
   vec3 light = uSunCol * (diff + back) * sunVis + (mix(uAmbGnd, uAmbSky, vN.y * 0.5 + 0.5) * 0.5 + skyLUT(normalize(vN + vec3(0.0, 0.5, 0.0))) * 0.8) * (0.35 + 0.65 * abs(vShade)) * aux.g;
+  col = mix(col, vec3(0.60, 0.64, 0.70), uWx.z * 0.62) * (1.0 - 0.2 * uWx.y);                  // snow on the branches, or wet needles
   gl_FragColor = vec4(applyFog(col * light, vW), 1.0);
 }`;
 

@@ -43,6 +43,12 @@ canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
 .wide i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
 #heat i { background: linear-gradient(90deg, #ffd27a, #ff3b1f); } #fuel i { background: linear-gradient(90deg, #5fd0ff, #8dffb0); }
 #heat.lock { outline: 2px solid #ff3b1f; }
+.sj { width: 70px; height: 9px; background: rgba(255,255,255,.12); border-radius: 5px; position: relative; margin: 9px 0; }
+.sj::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(255,255,255,.4); }
+.sj i { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; background: linear-gradient(90deg, #ffd27a, #ff7a2a); border-radius: 5px; }
+#spd #wnd { display: none; } #spd #wnd.on { display: flex; } #wdir { display: inline-block; font-style: normal; font-weight: 700; width: 16px; text-align: center; }
+#tune { position: fixed; top: 10px; left: 10px; z-index: 15; padding: 10px 12px; font-size: 12.5px; width: 250px; pointer-events: auto; direction: rtl; max-height: 94vh; overflow: auto; }
+#tune label { display: flex; justify-content: space-between; margin-top: 6px; } #tune input { width: 100%; } #tune .rowbtn { margin-top: 8px; gap: 6px; } #tune button.b { padding: 4px 10px; font-size: 12px; }
 #noz { width: 54px; height: 54px; position: relative; }
 #noz svg { width: 54px; height: 54px; }
 #map { position: absolute; bottom: 18px; right: 18px; padding: 6px; }
@@ -58,6 +64,21 @@ canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
 #hint { position: absolute; bottom: 118px; left: 0; right: 0; text-align: center; font-size: 15px; opacity: .92; text-shadow: 0 1px 6px #000; }
 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); font: 600 12px ui-monospace, monospace; direction: ltr; }
 
+#replay { position: fixed; inset: 0; display: none; pointer-events: none; --bar: max(5vh, calc((100vh - 100vw / 2.39) / 2)); }
+#replay.on { display: block; }
+#replay .lb { position: absolute; left: 0; right: 0; top: 0; height: var(--bar); background: #000; }
+#replay .lb.bot { top: auto; bottom: 0; }
+#rprog { position: absolute; left: 0; top: 0; height: 2px; width: 0; background: var(--acc); opacity: .8; }
+#rtag { position: absolute; top: calc(var(--bar) + 12px); inset-inline-start: 18px; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 1px 5px #000; opacity: .9; }
+#rtag b { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #e33; margin-inline-end: 8px; animation: rblink 1.4s steps(2) infinite; }
+#replay.hold #rtag b { animation: none; border-radius: 1px; background: #fff; }
+@keyframes rblink { 50% { opacity: .15; } }
+#rhint { position: absolute; bottom: 0; left: 0; right: 0; height: var(--bar); display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; opacity: .6; }
+#rExit { position: absolute; top: calc(var(--bar) + 8px); inset-inline-end: 14px; pointer-events: auto; padding: 5px 12px; }
+#rfade { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity .55s; }
+#rfade.on { opacity: 1; transition: none; }
+#replay.on #rfade.out { opacity: 1; }
+@media (pointer: coarse) { #rhint { display: none; } }
 #menu, #pause, #finish, #help { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
 #menu.on, #pause.on, #finish.on, #help.on { display: flex; }
 #menu { background: linear-gradient(180deg, rgba(6,10,16,.25), rgba(6,10,16,.72)); justify-content: flex-start; padding-top: 5vh; }
@@ -107,11 +128,13 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <div><span id="kmh" class="num">0</span><small>km/h</small></div>
     <div id="vt"><i></i><u></u></div>
     <div class="row"><span>ALT <b id="agl" class="num">0</b> m</span><span>V/S <b id="vs" class="num">0</b></span><span><b id="gg" class="num">1.0</b> g</span></div>
+    <div class="row" id="wnd"><span>WIND <i id="wdir">↑</i> <b id="wspd" class="num">0</b> km/h</span></div>
   </div>
   <div id="eng" class="panel">
     <div><div class="grp"><div class="bar"><i id="e0"></i></div><div class="bar"><i id="e1"></i></div><div class="bar"><i id="e2"></i></div><div class="bar"><i id="e3"></i></div></div><div class="lbl" data-i18n="eng.thrust">נחירי הרמה</div></div>
     <div><div id="noz"><svg viewBox="-27 -27 54 54"><circle r="24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2"/><path d="M -24 0 A 24 24 0 0 0 0 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/><g id="nozA"><rect x="-4" y="-5" width="24" height="10" rx="4" fill="#dfe6ee"/><path d="M -4 -4 L -20 0 L -4 4 Z" fill="#ff7a2a"/></g></svg></div><div class="lbl" data-i18n="eng.noz">כיוון הדחף</div></div>
     <div><div class="grp"><div class="bar fat"><i id="e4"></i></div></div><div class="lbl" data-i18n="eng.rear">נחיר אחורי</div></div>
+    <div><div class="sj"><i id="s0"></i></div><div class="sj"><i id="s1"></i></div><div class="lbl" data-i18n="eng.side">נחירי צד</div></div>
     <div><div class="wide" id="heat"><i></i></div><div class="lbl"><span data-i18n="eng.rpm">סל"ד</span> <span id="rpm" class="num">0</span>% · <span data-i18n="eng.heat">חום ליבה</span></div><div id="fuel" hidden><i></i></div></div>
   </div>
   <div id="map" class="panel"><canvas width="380" height="380"></canvas></div>
@@ -125,18 +148,23 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="sub" data-i18n="sub">אופנוע בלי גלגלים, עם מנוע היתוך. עמק אלפיני אחד, מבצר על ההר, שבעה אירועים</div>
   <div id="cards"></div>
   <div class="rowbtn">
-    <button class="b" id="bTime"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
+    <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
   </div>
 </div>
 
 <div id="pause"><div class="box panel"><h2 data-i18n="p.title">הפסקה</h2>
-  <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume" data-i18n="p.resume">המשך</button><button class="b" id="pRestart" data-i18n="p.restart">התחלה מחדש</button><button class="b" id="pMenu" data-i18n="p.menu">תפריט ראשי</button><button class="b" id="pHelp" data-i18n="p.keys">מקשים</button></div>
+  <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume" data-i18n="p.resume">המשך</button><button class="b" id="pRestart" data-i18n="p.restart">התחלה מחדש</button><button class="b" id="pReplay" data-i18n="p.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="pMenu" data-i18n="p.menu">תפריט ראשי</button><button class="b" id="pHelp" data-i18n="p.keys">מקשים</button></div>
 </div></div>
 
 <div id="finish"><div class="box panel" style="text-align:center">
   <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div>
-  <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
+  <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fReplay" data-i18n="f.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
 </div></div>
+
+<div id="replay"><div class="lb"></div><div class="lb bot"><i id="rprog"></i></div>
+  <div id="rtag"><b></b><span data-i18n="r.tag">הילוך חוזר</span> <span id="rtime" class="num"></span></div>
+  <div id="rhint" data-i18n="r.hint"><kbd>Esc</kbd> חזרה · <kbd>רווח</kbd> עצירה · <kbd>←</kbd> <kbd>→</kbd> דילוג · <kbd>C</kbd> השוט הבא</div>
+  <button class="b" id="rExit" aria-label="close">✕</button><div id="rfade"></div></div>
 
 <div id="help"><div class="box panel"><h2 data-i18n="h.title">איך טסים</h2>
   <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9" data-i18n="h.intro">אתה רוכב על אופנוע בלי גלגלים ובלי כנפיים. בין הברכיים שלך יש ליבת היתוך שמחממת אוויר, והדחף שלה גדול פי ארבעה ממשקל האופנוע. מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מחליט כמה אוויר יוצא מארבעת נחירי ההרמה שבמקום הגלגלים וכמה מהנחיר האחורי. אין עילוי מהאוויר: כל מה שמחזיק אותך, מסובב אותך ומאיץ אותך הוא דחף.</p>
@@ -146,10 +174,11 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td data-i18n="h.speed">מהירות יעד למעלה ולמטה. המחשב שומר עליה</td></tr>
     <tr><td><kbd>Space</kbd></td><td data-i18n="h.boost">דחף־יתר: 50% יותר דחף קדימה, עד 450 קמ"ש. כ-7 שניות עד שהליבה מתחממת, והיא מתקררת מהר יותר בטיסה מהירה</td></tr>
     <tr><td><kbd>Shift</kbd></td><td data-i18n="h.brake">בלם: מעצור אוויר, ונחירי ההרמה נוטים קדימה, עד ריחוף</td></tr>
-    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td data-i18n="h.strafe">הזזה הצידה בריחוף, לנחיתה מדויקת</td></tr>
+    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td data-i18n="h.strafe">נחירי הצד. בריחוף: הזזה הצידה, לנחיתה מדויקת. בטיסה: בעיטת צד, דחיפה ישרה הצידה של יותר מ-1 g, מיד, בלי להטות את האופנוע ובלי לסובב את האף. מחממת את הליבה כמו דחף־יתר</td></tr>
     <tr><td><kbd>C</kbd></td><td data-i18n="h.cam">מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
     <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td data-i18n="h.misc">התחלה מחדש · הפסקה · השתקה</td></tr>
   </table>
+  <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.wx">מזג האוויר והרוח נקבעים בתפריט הראשי. גשם ושלג משנים את מה שרואים. הרוח משנה את הטיסה: ככל שהיא חזקה יותר, המשבים שלה חזקים ופחות צפויים, והם באים מכל כיוון. מד הרוח שליד מד המהירות מראה לאן היא דוחפת אותך ברגע זה.</p>
   <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.land">נחיתה: לבלום עד ריחוף מעל המעגל, ואז לדחוף <kbd>↑</kbd> בעדינות. המחשב מאט את הירידה קרוב לקרקע ומכבה את המנועים במגע. האירוע נגמר כשעומדים בתוך המעגל. שלט משחק נתמך.</p>
   <div class="rowbtn"><button class="b pri" id="hClose" data-i18n="h.close">הבנתי</button></div>
 </div></div>
@@ -158,6 +187,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="stick"><i></i></div>
   <button data-k="up" style="right:24px;bottom:230px" data-i18n="t.up">מהר</button><button data-k="down" style="right:24px;bottom:150px" data-i18n="t.down">לאט</button>
   <button data-k="boost" style="right:104px;bottom:190px" data-i18n="t.boost">מבער</button><button data-k="brake" style="right:184px;bottom:150px" data-i18n="t.brake">בלם</button>
+  <button data-k="sl" style="left:22px;bottom:292px;width:56px;height:56px">◀</button><button data-k="sr" style="left:96px;bottom:292px;width:56px;height:56px">▶</button>
   <button data-k="key" data-code="Escape" style="right:14px;top:14px;width:46px;height:46px">II</button>
   <button data-k="key" data-code="KeyC" style="right:70px;top:14px;width:46px;height:46px">cam</button>
 </div>

@@ -12,6 +12,15 @@ export const TIMES = {
   dusk: { name: 'דמדומים', az: 3.05, el: 0.06, cloud: 0.55, haze: 1.5 },
 };
 
+// Weather. "ov" is how overcast it is; under an overcast the sky table turns to an even grey
+// (and with it the haze, the ambient light and every reflection), the sun all but goes, and the
+// air thickens. Rain wets the ground; snow covers it down to the valley floor.
+export const WEATHER = {
+  clear: { ov: 0, cloud: 0, sun: 1, sky: 1, fog: 1, fog2: 4e-5, wet: 0, snow: 0 },
+  rain: { ov: 1, cloud: 0.98, sun: 0.07, sky: 0.62, fog: 26, fog2: 4.6e-4, wet: 1, snow: 0 },
+  snow: { ov: 1, cloud: 0.98, sun: 0.12, sky: 1.0, fog: 40, fog2: 6.0e-4, wet: 0, snow: 1 },
+};
+
 // uniforms shared (by reference) between all custom materials
 export const U = {
   uSunDir: { value: new THREE.Vector3(0, 1, 0) },
@@ -28,6 +37,7 @@ export const U = {
   uCloud: { value: new THREE.Vector4(0.46, 4300, 0, 0) },          // coverage, altitude
   uClipY: { value: -1e9 },
   uSunAz: { value: 0 },
+  uWx: { value: new THREE.Vector4(0, 0, 0, 0) },                   // overcast, wet ground, snow cover, -
 };
 
 const RE = 6360e3, RA = 6460e3, HR = 8000, HM = 1200;
@@ -81,7 +91,7 @@ const LW = 96, LH = 48, SUN_I = 22;
 export const lutV = (el) => Math.sqrt(Math.min(1, Math.max(0, (el + 0.12) / (Math.PI / 2 + 0.12))));
 let lutData = null;
 
-export function setTime(key, renderer) {
+export function setTime(key, renderer, wx = WEATHER.clear) {
   const t = TIMES[key];
   const s = [Math.cos(t.el) * Math.cos(t.az), Math.sin(t.el), Math.cos(t.el) * Math.sin(t.az)];
   U.uSunDir.value.set(s[0], s[1], s[2]); U.uSunAz.value = t.az;
@@ -97,6 +107,16 @@ export function setTime(key, renderer) {
       f32[k] = c[0] * SUN_I; f32[k + 1] = c[1] * SUN_I; f32[k + 2] = c[2] * SUN_I; f32[k + 3] = 1;
     }
   }
+  if (wx.ov > 0) {
+    // overcast: the light of the whole sky, spread evenly, a little brighter overhead
+    let M = 0, n = 0;
+    for (let j = Math.floor(LH * 0.3); j < LH; j++) for (let i = 0; i < LW; i += 2) { const q = (j * LW + i) * 4; M += 0.3 * f32[q] + 0.55 * f32[q + 1] + 0.15 * f32[q + 2]; n++; }
+    M = M / n * wx.sky;
+    for (let j = 0; j < LH; j++) {
+      const g = M * (0.72 + 0.5 * (j + 0.5) / LH);
+      for (let i = 0; i < LW; i++) { const q = (j * LW + i) * 4; f32[q] += (g * 0.93 - f32[q]) * wx.ov; f32[q + 1] += (g * 0.97 - f32[q + 1]) * wx.ov; f32[q + 2] += (g * 1.04 - f32[q + 2]) * wx.ov; }
+    }
+  }
   lutData = f32;
   const half = new Uint16Array(f32.length);
   for (let i = 0; i < f32.length; i++) half[i] = THREE.DataUtils.toHalfFloat(Math.min(f32[i], 60000));
@@ -106,7 +126,7 @@ export function setTime(key, renderer) {
   U.uSkyLUT.value = tex;
   // direct sun
   const tr = sunTransmittance(s, 1400, t.haze);
-  const k = SUN_I * 0.115;
+  const k = SUN_I * 0.115 * wx.sun;
   U.uSunCol.value.setRGB(tr[0] * k, tr[1] * k, tr[2] * k);
   // ambient: mean of the upper sky, a little bounce from below
   const amb = [0, 0, 0]; let n = 0;
@@ -118,8 +138,9 @@ export function setTime(key, renderer) {
   U.uAmbSky.value.setRGB(amb[0] * ak, amb[1] * ak, amb[2] * ak);
   const sc = U.uSunCol.value, up = Math.max(0.05, s[1]);
   U.uAmbGnd.value.setRGB(0.10 * sc.r * up + amb[0] * ak * 0.25, 0.10 * sc.g * up + amb[1] * ak * 0.25, 0.07 * sc.b * up + amb[2] * ak * 0.2);
-  U.uCloud.value.x = t.cloud;
-  U.uFog.value.set(2.0e-5 * t.haze, 1 / 1700, 900, 1);
+  U.uCloud.value.x = Math.max(t.cloud, wx.cloud);
+  U.uFog.value.set(2.0e-5 * t.haze * wx.fog, wx.ov > 0 ? 1 / 5000 : 1 / 1700, 900, 1);
+  U.uWx.value.set(wx.ov, wx.wet, wx.snow, 0);
   return { sun: s, key };
 }
 // sky radiance looked up on the CPU (for lights, fog of built-in materials)
@@ -145,7 +166,7 @@ export function makeNoiseTexture() {
 export const GLSL_COMMON = /* glsl */`
 uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmbSky; uniform vec3 uAmbGnd;
 uniform sampler2D uSkyLUT; uniform sampler2D uNoise; uniform vec4 uFog; uniform float uTime; uniform vec4 uCloud;
-uniform float uSunAz; uniform float uClipY;
+uniform float uSunAz; uniform float uClipY; uniform vec4 uWx;
 const float PI = 3.14159265;
 float vnoise(vec2 p) { return texture2D(uNoise, p / 256.0).r; }          // smooth value noise, period 256
 vec4 vnoise4(vec2 p) { return texture2D(uNoise, p / 256.0); }

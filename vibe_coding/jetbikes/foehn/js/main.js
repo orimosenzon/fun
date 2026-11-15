@@ -4,17 +4,21 @@ import { initTerrain, groundAt, surfaceAt, T } from './sim/terrain.js';
 import { buildScenery } from './sim/scenery.js';
 import { Game } from './sim/game.js';
 import { Autopilot } from './sim/autopilot.js';
+import { Recorder } from './sim/replay.js';
+import { planReplay } from './sim/director.js';
 import { EVENTS, FREE } from './sim/courses.js';
 import { len, yprOf, qrot, clamp, lerp } from './sim/vmath.js';
 import { G } from './sim/bike.js';
-import { U, TIMES, setTime, makeNoiseTexture, skyColor } from './render/env.js';
+import { U, TIMES, WEATHER, setTime, makeNoiseTexture, skyColor } from './render/env.js';
+import { buildWeather } from './render/weather.js';
+import { FEEL, FEEL_DEFAULT } from './sim/fcs.js';
 import { buildTerrain, updateTerrain, bakeSunShadow } from './render/terrain.js';
 import { buildSky } from './render/sky.js';
 import { buildWater, renderReflection, water } from './render/water.js';
 import { buildForest, updateForest } from './render/forest.js';
 import { buildProps, Gates } from './render/props.js';
 import { buildCastleMesh } from './render/castle.js';
-import { hitCastle, nearCastle } from './sim/castle.js';
+import { hitCastle, nearCastle, indoor } from './sim/castle.js';
 import { buildBike } from './render/bikeModel.js';
 import { FX } from './render/fx.js';
 import { Post } from './render/post.js';
@@ -30,13 +34,16 @@ const load = (p, text) => { $('lbar').firstElementChild.style.width = Math.round
 // ---------------- persistent state ----------------
 const KEY = 'foehn.v1';
 const save = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })();
-save.best = save.best || {}; save.set = Object.assign({ time: 'afternoon', quality: 'high', invert: false }, save.set || {});
+save.best = save.best || {}; save.set = Object.assign({ time: 'afternoon', quality: 'high', invert: false, weather: 'clear', wind: 1 }, save.set || {});
 const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch { /* private mode */ } };
 const b64 = (f32) => { const u = new Uint8Array(f32.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = (s) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Float32Array(u.buffer); };
 const bestOf = (id) => { const b = save.best[id]; if (!b) return null; if (!b._g && b.ghost) { try { b._g = unb64(b.ghost); } catch { b._g = null; } } return { time: b.time, splits: b.splits, ghost: b._g, medal: b.medal }; };
 if (Q.get('time') && TIMES[Q.get('time')]) save.set.time = Q.get('time');
 if (Q.get('q')) save.set.quality = Q.get('q');
+if (WEATHER[Q.get('wx')]) save.set.weather = Q.get('wx');
+if (Q.has('wind')) save.set.wind = Math.max(0, Math.min(3, +Q.get('wind') | 0));
+if (!WEATHER[save.set.weather]) save.set.weather = 'clear';
 
 async function boot() {
   await load(0.03, t('load.valley'));
@@ -88,12 +95,15 @@ async function boot() {
   const model = buildBike(); scene.add(model.root);
   const ghost = buildBike(true); ghost.root.visible = false; scene.add(ghost.root);
   const fx = new FX(scene, model);
+  const weather = buildWeather(scene);
   const pmrem = new THREE.PMREMGenerator(renderer);
   let envRT = null;
 
   function applyTime(key) {
-    sunInfo = setTime(key, renderer);
+    const wx = WEATHER[save.set.weather];
+    sunInfo = setTime(key, renderer, wx);
     bakeSunShadow(sunInfo.sun);
+    weather.set(save.set.weather); scene.fog.density = wx.fog2; rays = 1 - wx.ov;
     sun.color.copy(U.uSunCol.value); hemi.color.copy(U.uAmbSky.value); hemi.groundColor.copy(U.uAmbGnd.value);
     const hz = skyColor(U.uSunAz.value + 1.6, 0.03); scene.fog.color.setRGB(hz[0], hz[1], hz[2]);
     props.setNight(clamp(1 - sunInfo.sun[1] / 0.16, 0, 1)); castle.setNight(clamp(1 - sunInfo.sun[1] / 0.24, 0, 1));
@@ -101,15 +111,17 @@ async function boot() {
     const es = new THREE.Scene(); const s2 = sky.clone(); es.add(s2);
     if (envRT) envRT.dispose();
     envRT = pmrem.fromScene(es, 0, 1, 70000); scene.environment = envRT.texture; scene.environmentIntensity = 0.55;
-    exposure = { morning: 1.0, noon: 0.8, afternoon: 0.9, golden: 1.05, dusk: 1.6 }[key] || 1;
+    exposure = ({ morning: 1.0, noon: 0.8, afternoon: 0.9, golden: 1.05, dusk: 1.6 }[key] || 1) * (wx.ov ? 1.25 : 1);
   }
-  let exposure = 1;
+  let exposure = 1, rays = 1;
   await load(0.78, t('load.sun'));
   applyTime(save.set.time);
 
   // ---------------- game ----------------
   const game = new Game(), input = new Input(), audio = new Audio(), hud = new Hud();
   input.invert = save.set.invert;
+  const rec = new Recorder(game);
+  let rp = null;                          // the replay that is on screen now, if any
   let auto = null, mode = 'menu', paused = false, camMode = Q.get('cam') || 'chase', time = 0, flash = 0;
   const CAMS = ['chase', 'close', 'cockpit', 'cine'];
   const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), cine = { p: new THREE.Vector3(), t: 0 };
@@ -119,7 +131,9 @@ async function boot() {
   $('touch').classList.remove('on');
 
   function startEvent(id, demo = false) {
+    game.windLevel = save.set.wind; game.windSeed = Q.has('seed') ? +Q.get('seed') : 1 + Math.floor(Math.random() * 1e6);   // no two runs get the same gusts
     game.load(id, demo ? null : bestOf(id));
+    rec.reset();
     auto = demo ? new Autopilot(game) : null;
     gates.setEvent(game.build); hud.setEvent(game);
     mode = demo ? 'menu' : 'play'; paused = false; camInit = false; audio.streak = 0;
@@ -149,11 +163,14 @@ async function boot() {
       el.appendChild(card);
     }
     $('bTime').textContent = t('set.time') + t('time.' + save.set.time);
+    $('bWx').textContent = t('set.wx') + t('wx.' + save.set.weather); $('bWind').textContent = t('set.wind') + t('wind.' + save.set.wind);
     $('bQual').textContent = t('set.quality') + t('q.' + save.set.quality);
     $('bInv').textContent = t('set.axis') + t(save.set.invert ? 'axis.inv' : 'axis.norm');
     $('bLang').textContent = t('lang.other'); $('bShare').textContent = t('share');
   }
   $('bTime').onclick = () => { const k = Object.keys(TIMES); save.set.time = k[(k.indexOf(save.set.time) + 1) % k.length]; persist(); applyTime(save.set.time); buildCards(); };
+  $('bWx').onclick = () => { const k = Object.keys(WEATHER); save.set.weather = k[(k.indexOf(save.set.weather) + 1) % k.length]; persist(); applyTime(save.set.time); buildCards(); };
+  $('bWind').onclick = () => { save.set.wind = (save.set.wind + 1) % 4; persist(); game.setWind(save.set.wind); buildCards(); };
   $('bQual').onclick = () => { const k = ['low', 'medium', 'high']; save.set.quality = k[(k.indexOf(save.set.quality) + 1) % 3]; qual = QUAL[save.set.quality]; persist(); resize(); buildCards(); };
   $('bInv').onclick = () => { save.set.invert = !save.set.invert; input.invert = save.set.invert; persist(); buildCards(); };
   $('bLang').onclick = () => { setLang(lang === 'he' ? 'en' : 'he'); buildCards(); hud.setEvent(game); };
@@ -166,15 +183,19 @@ async function boot() {
   $('bHelp').onclick = $('pHelp').onclick = () => $('help').classList.add('on');
   $('hClose').onclick = () => $('help').classList.remove('on');
   $('pResume').onclick = () => setPause(false);
+  $('pReplay').onclick = $('fReplay').onclick = () => startReplay();
+  $('rExit').onclick = () => stopReplay();
   $('pRestart').onclick = $('fRetry').onclick = () => startEvent(game.ev.id);
   $('pMenu').onclick = $('fMenu').onclick = toMenu;
   $('fNext').onclick = () => { const i = EVENTS.findIndex((e) => e.id === game.ev.id); startEvent(i >= 0 && i < EVENTS.length - 1 ? EVENTS[i + 1].id : 'free'); };
   function setPause(p) { if (mode !== 'play') return; paused = p; $('pause').classList.toggle('on', p); if (audio.ctx) p ? audio.ctx.suspend() : audio.ctx.resume(); }
   addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && game.state === 'fly') setPause(true); });
 
+  const REC_EVENTS = ['go', 'gate', 'land', 'crash', 'respawn'];
   function onEvents() {
     for (const e of game.events) {
       if (mode !== 'play') { if (e.type === 'crash') fx.explode(e.p, e.v, e.water); if (e.type === 'respawn' && auto) auto.reset(); if (e.type === 'finish') setTimeout(() => mode === 'menu' && startEvent('tour', true), 2500); continue; }
+      if (REC_EVENTS.includes(e.type)) rec.mark(e.type, e);
       switch (e.type) {
         case 'count': hud.message(String(e.n), '', 0.8); audio.count(false); break;
         case 'go': if (game.ev.medals) { hud.message(t('go'), '', 0.9); audio.count(true); } break;
@@ -202,10 +223,57 @@ async function boot() {
     setTimeout(() => { if (mode === 'play' && game.state === 'finished') { $('finish').classList.add('on'); $('touch').classList.remove('on'); } }, 1800);
   }
 
+  // ---------------- replay ----------------
+  // The run that was just flown, cut like a film (sim/director.js). Nothing is simulated again:
+  // the recorded state is written into the bike frame by frame, and put back when it is over.
+  function startReplay() {
+    if (mode !== 'play' || rp || rec.duration < 2) return;
+    rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1 };
+    mode = 'replay'; paused = false; if (audio.ctx) audio.ctx.resume();
+    ['pause', 'finish', 'help', 'touch'].forEach((m) => $(m).classList.remove('on')); hud.show(false); ghost.root.visible = false;
+    $('replay').classList.add('on'); $('rfade').classList.add('on');
+    requestAnimationFrame(() => requestAnimationFrame(() => $('rfade').classList.remove('on')));      // fade in from black
+  }
+  function stopReplay() {
+    if (!rp) return;
+    rec.restore(rp.saved); lean = rp.lean;
+    const wasPaused = rp.wasPaused; rp = null; mode = 'play'; camInit = false;
+    $('replay').classList.remove('on'); $('rfade').classList.remove('on'); $('replay').classList.remove('hold'); hud.show(true);
+    if (game.state === 'finished') $('finish').classList.add('on'); else if (wasPaused) setPause(true); else if (touchUI) $('touch').classList.add('on');
+  }
+  function replaySeek(t) { rp.t = clamp(t, rec.t0, rec.t1 - 0.5); lean = rec.apply(rp.t); }
+  // one frame of the replay; returns the time that passed in the recording (less than dt in slow motion)
+  function replayStep(dt) {
+    const sdt = dt * rp.plan.rate(rp.t), was = rp.t;
+    rp.t = Math.min(rp.t + sdt, rec.t1);
+    lean = rec.apply(rp.t);
+    for (const e of rec.events) {
+      if (e.t <= was || e.t > rp.t) continue;
+      if (e.type === 'crash') { fx.explode(e.p, e.v, e.water); audio.crash(e.water); }
+      else if (e.type === 'gate' || e.type === 'land') { audio.gate(e.perfect, e.last); flash = 0.06; }
+    }
+    if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && stopReplay(), 650); }
+    const sec = Math.floor(rp.t - rec.t0);
+    if (sec !== rp.sec) { rp.sec = sec; $('rtime').textContent = fmtTime(sec).replace(/\.\d+$/, ''); }
+    $('rprog').style.width = (100 * (rp.t - rec.t0) / Math.max(1, rec.duration)).toFixed(2) + '%';
+    return sdt;
+  }
+  function replayCamera() {
+    const b = game.bike, o = rp.o; o.on = false;
+    rp.plan.shotAt(rp.t).cam(rp.t, o);
+    camera.position.set(o.p[0], o.p[1], o.p[2]); camera.up.set(o.up[0], o.up[1], o.up[2]); camera.lookAt(o.l[0], o.l[1], o.l[2]);
+    // a camera bolted to the bike shakes with it; one on the ground shakes when the bike thunders past
+    const d = Math.hypot(o.p[0] - b.p[0], o.p[1] - b.p[1], o.p[2] - b.p[2]), alive = game.state !== 'crashed';
+    const shake = fx.shake * 0.5 + (!alive ? 0 : o.on ? b.abOut * 0.03 + Math.max(0, len(b.v) - 80) * 0.0004 : Math.min(0.1, b.thrust / 14000 * 60 / (d * d + 60) * 0.12));
+    if (shake > 0.001) { camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake; camera.position.z += (Math.random() - 0.5) * shake; }
+    fov = o.fov; camera.fov = fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  }
+
   // ---------------- cameras ----------------
   const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpV2 = new THREE.Vector2();
   camera.worldToScreen = (x, y, z) => { tmpV.set(x, y, z).applyMatrix4(camera.matrixWorldInverse); const behind = tmpV.z > 0; tmpV.applyMatrix4(camera.projectionMatrix); return { x: tmpV.x, y: tmpV.y, behind }; };
   function updateCamera(dt) {
+    if (rp) return replayCamera();
     const b = game.bike, V = len(b.v), [yaw] = yprOf(b.q);
     const fw = qrot(b.q, [1, 0, 0]), up = qrot(b.q, [0, 1, 0]);
     // direction of travel, blending from heading (hover) to velocity (flight)
@@ -269,14 +337,21 @@ async function boot() {
   // ---------------- frame ----------------
   resize();
   let last = performance.now(), fpsAcc = 0, fpsN = 0;
-  const hideInRefl = [model.root, ghost.root, fx.soft.pts, fx.fire.pts, gates.group, gates.beam];
+  const hideInRefl = [model.root, ghost.root, fx.soft.pts, fx.fire.pts, gates.group, gates.beam, ...weather.objects];
   function frame(now) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    let dt = Math.min(0.05, (now - last) / 1000); last = now;
     // keys
     for (const k of input.pressed) {
       if (k === 'KeyM') { audio.setMuted(!audio.muted); }
-      if (mode === 'play') {
+      if (mode === 'replay') {
+        if (k === 'Escape' || k === 'Enter' || k === 'KeyV' || k === 'PadA') stopReplay();
+        else if (k === 'Space' || k === 'KeyP') { rp.hold = !rp.hold; $('replay').classList.toggle('hold', rp.hold); }
+        else if (k === 'ArrowRight') replaySeek(rp.t + 5);
+        else if (k === 'ArrowLeft') replaySeek(rp.t - 5);
+        else if (k === 'KeyC') { const sh = rp.plan.shotAt(rp.t); if (sh.b < rec.t1 - 0.6) replaySeek(sh.b + 0.01); }
+      } else if (mode === 'play') {
+        if (k === 'KeyV' && (paused || game.state === 'finished')) { startReplay(); continue; }
         if (k === 'Escape' || k === 'KeyP') { if ($('help').classList.contains('on')) $('help').classList.remove('on'); else setPause(!paused); }
         if (k === 'KeyR') startEvent(game.ev.id);
         if (k === 'KeyC') { camMode = CAMS[(CAMS.indexOf(camMode) + 1) % CAMS.length]; camInit = false; }
@@ -285,34 +360,45 @@ async function boot() {
       }
     }
     input.pressed.length = 0;
-    if (!paused) {
+    if (!paused && !(rp && rp.hold)) {
+      const realDt = dt;
+      let ctl = lastCtl;
+      if (rp) dt = replayStep(realDt);
+      else {
+        ctl = auto ? auto.update() : input.read();
+        lastCtl = ctl;
+        game.update(dt, ctl);
+        if (mode === 'play') rec.push(dt, lean);
+        onEvents();
+        lean += ((ctl.turn || 0) - lean) * Math.min(1, dt * 5);
+      }
       time += dt; U.uTime.value = time;
-      const ctl = auto ? auto.update() : input.read();
-      lastCtl = ctl;
-      game.update(dt, ctl);
-      onEvents();
       const b = game.bike, alive = game.state !== 'crashed';
-      lean += ((ctl.turn || 0) - lean) * Math.min(1, dt * 5);
       model.root.visible = alive; model.update(b, time, lean, dt);
       const gp = mode === 'play' && game.state === 'fly' ? game.ghostAt(game.total) : null;
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
-      gates.update(game, time); castle.update(time, game.sim.windW, camera.position, renderer.getDrawingBufferSize(tmpV2).y, camera.fov);
-      audio.engine(b, alive && mode === 'play', camera.position.distanceTo(model.root.position), camMode === 'cockpit');
+      gates.update(game, time); gates.matDisc.visible = !rp; if (rp) gates.beam.visible = false;      // the beacon and the glass of the next ring are for the rider, not for the film
+      castle.update(time, game.sim.windW, camera.position, renderer.getDrawingBufferSize(tmpV2).y, camera.fov);
+      audio.engine(b, alive && mode !== 'menu', camera.position.distanceTo(model.root.position), rp ? !!rp.o.on : camMode === 'cockpit');
       if (mode === 'play') {
         if (b.abLock && Math.floor(time * 4) % 2 === 0 && ctl.boost) hud.warn(t('warn.heat'));
         else if (b.stall > 0.6 && b.airspeed > 30) hud.warn(t('warn.stall'));
         else if (b.fuel < 8 && Math.floor(time * 2) % 2 === 0) hud.warn(t('warn.fuel'));
       }
       updateCamera(dt);
+      dt = realDt;
+      const roof = indoor([camera.position.x, camera.position.y, camera.position.z]), wNow = game.sim.windW;
+      weather.update(dt, camera, wNow, roof, renderer.getDrawingBufferSize(tmpV2).y);
+      audio.weather(save.set.weather === 'rain' ? 1 - 0.7 * roof : 0, Math.hypot(wNow[0], wNow[1], wNow[2]) * (1 - 0.6 * roof), mode !== 'menu');
     }
     // ---- render ----
     const b = game.bike;
     updateTerrain(camera); updateForest(camera, qual.forest);
     sky.position.copy(camera.position); sky.updateMatrix();
     // shadow frustum follows the bike
-    const s = sunInfo.sun, fx0 = b.p[0], fy0 = b.p[1], fz0 = b.p[2];
+    const film = !!rp || camMode === 'cine', s = sunInfo.sun, fx0 = b.p[0], fy0 = b.p[1], fz0 = b.p[2];
     sun.target.position.set(fx0, fy0, fz0); sun.position.set(fx0 + s[0] * 400, fy0 + s[1] * 400, fz0 + s[2] * 400); sun.target.updateMatrixWorld();
     sun.intensity = s[1] > 0.02 ? Math.PI : 0;
     if (qual.refl) renderReflection(renderer, scene, camera, hideInRefl, (v) => { updateTerrain(v, 2.5); });
@@ -321,8 +407,8 @@ async function boot() {
     renderer.setRenderTarget(post.main); renderer.clear(); renderer.render(scene, camera);
     if (sun.shadow.map) { U.uShadowMap.value = sun.shadow.map.texture; U.uShadowMat.value.copy(sun.shadow.matrix); U.uShadowOn.value = 1; }
     flash = Math.max(0, flash - dt * 0.5);
-    post.finish(camera, s, { blur: camMode === 'cine' ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (camMode === 'cine' ? 0 : 1) + b.abOut * 0.3, time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays: 1 });
-    if (!paused) hud.update(dt, game, camera, viewW, viewH);
+    post.finish(camera, s, { blur: film ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (film ? 0 : 1) + b.abOut * (film ? 0 : 0.3), time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays });
+    if (!paused && !rp) hud.update(dt, game, camera, viewW, viewH);
     // adaptive resolution
     fpsAcc += dt; fpsN++;
     if (fpsAcc > 1.5) {
@@ -333,6 +419,23 @@ async function boot() {
     }
   }
 
+  // ---------------- ?tune: the numbers of the ride, as sliders ----------------
+  if (Q.has('tune')) {
+    const TKEY = 'foehn.feel';
+    try { Object.assign(FEEL, JSON.parse(localStorage.getItem(TKEY)) || {}); } catch { /* nothing saved */ }
+    const rows = [['stick', 'עיכוב המוט (שנ\')', 0.02, 0.2, 0.01], ['rollRate', 'קצב גלגול', 1.5, 6, 0.1], ['rollAcc', 'תאוצת גלגול', 5, 30, 1], ['yawRate', 'קצב סבסוב', 1, 3.5, 0.1], ['yawAcc', 'תאוצת סבסוב', 2, 14, 0.5],
+      ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1]];
+    const el = document.createElement('div'); el.id = 'tune'; el.className = 'panel'; document.body.appendChild(el);
+    const draw = () => {
+      el.innerHTML = '<b>תחושת הרכיבה</b>' + rows.map(([k, name, a, b, st]) => `<label><span>${name}</span><span class="num" id="tv_${k}">${FEEL[k]}</span></label><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${FEEL[k]}">`).join('') + '<div class="rowbtn"><button class="b" id="tReset">איפוס</button><button class="b" id="tCopy">העתקה</button></div>';
+      for (const i of el.querySelectorAll('input')) i.oninput = () => { FEEL[i.dataset.k] = +i.value; $('tv_' + i.dataset.k).textContent = i.value; try { localStorage.setItem(TKEY, JSON.stringify(FEEL)); } catch { /* private mode */ } };
+      $('tReset').onclick = () => { Object.assign(FEEL, FEEL_DEFAULT); try { localStorage.removeItem(TKEY); } catch { /* private mode */ } draw(); };
+      $('tCopy').onclick = async () => { const s = JSON.stringify(FEEL); try { await navigator.clipboard.writeText(s); $('tCopy').textContent = 'הועתק'; } catch { prompt('', s); } };
+    };
+    draw();
+    el.addEventListener('pointerup', () => document.activeElement && document.activeElement.blur());   // or the arrow keys would move the slider instead of the bike
+  }
+
   // ---------------- go ----------------
   await load(0.9, t('load.engines'));
   toMenu();
@@ -341,7 +444,7 @@ async function boot() {
   await load(1, '');
   $('load').classList.add('off');
   addEventListener('pointerdown', () => audio.start(), { once: true }); addEventListener('keydown', () => audio.start(), { once: true });
-  window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, U, sun };
+  window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, get rp() { return rp; }, U, sun };
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot().catch((e) => { const el = $('err'); el.style.display = 'block'; el.textContent += (e.stack || e) + '\n'; console.error(e); });

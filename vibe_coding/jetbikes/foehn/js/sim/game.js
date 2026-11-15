@@ -1,12 +1,13 @@
 // Game rules, free of any DOM or rendering so the whole thing also runs headless in tests:
 // events, check-points, landings, crashes, respawns, timing, medals, ghost recording.
 import { Sim } from './sim.js';
-import { makeWind } from './wind.js';
+import { windFor } from './wind.js';
 import { V_MAX, V_MIN } from './fcs.js';
 import { G, PROBES, FUEL0 } from './bike.js';
 import { T, groundAt } from './terrain.js';
 import { S, hitScenery, canopyAt } from './scenery.js';
 import { buildEvent, eventById } from './courses.js';
+import { indoor } from './castle.js';
 import { clamp, dot, sub, len, yprOf, qrot } from './vmath.js';
 
 export const CRASH_WAIT = 2.4;
@@ -25,6 +26,7 @@ export class Game {
     this.score = 0; this.combo = 1; this.lowT = 0;
     this.crashes = 0; this.misses = 0; this.landT = 0; this.stateT = 0; this.tick = 0;
     this.respawnPose = null;
+    this.windLevel = 1; this.windSeed = 7;   // the UI sets these (0 calm .. 3 storm; a new seed for every run)
   }
   emit(type, data = {}) { this.events.push({ type, ...data }); }
 
@@ -32,8 +34,13 @@ export class Game {
     const ev = eventById(id);
     this.ev = ev; this.build = buildEvent(ev); this.best = best;
     this.cps = this.build.real;
-    this.sim.wind = makeWind({ ...ev.wind, seed: 7 });
+    this.setWind(this.windLevel, this.windSeed);
     this.restart();
+  }
+  setWind(level, seed = this.windSeed) { this.windLevel = level; this.windSeed = seed; if (!this.ev) return;
+    // inside the halls of the fortress the walls keep most of the wind out
+    const w = windFor(this.ev.wind, level, seed);
+    this.sim.wind = Object.assign((p, t, agl) => { const v = w(p, t, agl), k = 1 - 0.88 * indoor(p); if (k < 1) { v[0] *= k; v[1] *= k; v[2] *= k; } return v; }, { dir: w.dir, speed: w.speed });
   }
   restart() {
     const st = this.build.start;

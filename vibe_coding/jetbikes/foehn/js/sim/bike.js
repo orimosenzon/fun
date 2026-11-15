@@ -52,6 +52,15 @@ export const LIFT = [
   { name: 'RR', p: [-0.70, 0.22, 0.20] },
 ];
 export const REAR = { p: [-1.27, 0.76, 0], cant: 0 };   // cant is set below, once the centre of gravity is known
+// Side nozzles: a pair of small exits at the nose and a pair on the jet pipe at the tail, blowing
+// straight out to the left or to the right. They bleed air from the same engine. Fired together
+// they push the bike sideways (and, standing a little above the centre of gravity, roll it into
+// the push); fired against each other they swing the nose. Only one exit of a pair is open at a
+// time, so each pair is one signed thrust: positive pushes the bike to the rider's right.
+export const SIDE = [{ name: 'nose', p: [0.93, 0.86, 0.17] }, { name: 'tail', p: [-0.96, 0.86, 0.19] }];
+export const SIDE_MAX = 2400;          // N, each pair
+export const SIDE_BLEED = 0.30;        // the most of the engine's air the side nozzles may take
+export const SIDE_AB = 1.5;            // the rider's side kick lights a reheat in them: 2.5 times the thrust, and heat
 export const INTAKE = [0.95, 0.72, 0];
 export const TILT_MAX = 116 * D2R, VANE_MAX = 12 * D2R, VEC_MAX = 15 * D2R;
 export const SHARE_MIN = 0.10, SHARE_MAX = 0.45;
@@ -212,6 +221,10 @@ export function propWrench(n, cg, out) {
     Fx += fx; Fy += fy; Fz += fz;
     Tx += ry * fz - rz * fy; Ty += rz * fx - rx * fz; Tz += rx * fy - ry * fx;
   }
+  if (n.sd) for (let i = 0; i < 2; i++) {
+    const fz = n.sd[i], p = SIDE[i].p, rx = p[0] - cg[0], ry = p[1] - cg[1];
+    Fz += fz; Tx += ry * fz; Ty -= rx * fz;
+  }
   out.F[0] = Fx; out.F[1] = Fy; out.F[2] = Fz; out.Tq[0] = Tx; out.Tq[1] = Ty; out.Tq[2] = Tz;
   return out;
 }
@@ -234,7 +247,7 @@ export const PROBES = [
   [0.50, 1.04, -0.36], [0.50, 1.04, 0.36],                                      // bar ends
   [0.74, 0.2, 0], [-0.70, 0.2, 0],                                              // the two hubs
 ];
-export const newCmd = () => ({ G: 0, ab: 0, tilt: Math.PI / 2, s: [1, 1, 1, 1], va: [0, 0, 0, 0], rp: 0, ry: 0, da: 0, de: 0, dr: 0, brake: 0 });
+export const newCmd = () => ({ G: 0, ab: 0, tilt: Math.PI / 2, s: [1, 1, 1, 1], va: [0, 0, 0, 0], rp: 0, ry: 0, sd: [0, 0], kick: 0, da: 0, de: 0, dr: 0, brake: 0 });
 
 const servo = (x, target, lag, rate, dt) => x + clamp((target - x) / lag, -rate, rate) * dt;
 
@@ -255,6 +268,7 @@ export class Bike {
     this.w = [0, 0, 0];
     this.tilt = speed > 40 ? 1.0 : Math.PI / 2;
     this.va = [0, 0, 0, 0]; this.sh = [0.25, 0.25, 0.25, 0.25]; this.rp = 0; this.ry = 0;
+    this.sd = [0, 0]; this.sdv = [0, 0]; this.kick = 0;         // side nozzles: thrust now (N, signed), valve position, reheat
     this.L = [0, 0, 0, 0]; this.R = 0; this.abOut = 0;          // thrust leaving each lift pipe and the rear nozzle right now (N)
     this.da = 0; this.de = 0; this.dr = 0; this.brake = 0;
     this.heat = 0; this.abLock = false;
@@ -271,7 +285,7 @@ export class Bike {
   arm(d) { const c = this.mp.cg; return [d[0] - c[0], d[1] - c[1], d[2] - c[2]]; }
   toWorld(d) { return add(this.p, qrot(this.q, this.arm(d))); }
   get lift() { return this.L[0] + this.L[1] + this.L[2] + this.L[3]; }
-  get thrust() { return this.lift + this.R; }
+  get thrust() { return this.lift + this.R + Math.abs(this.sd[0]) + Math.abs(this.sd[1]); }
 
   step(dt, cmd, windW) {
     if (this._mpAge-- <= 0) { this.mp = massProps(this.fuel); this._mpAge = 30; }
@@ -304,13 +318,23 @@ export class Bike {
     const e = this.eng;
     const abWanted = cmd.ab > 0.5 && !this.abLock && this.fuel > 0 ? 1 : 0;
     const abNow = e.ab;
-    this.heat = clamp(this.heat + (abNow * 0.15 - (1 - abNow) * (0.055 + 0.06 * Math.min(1, this.airspeed / 80))) * dt, 0, 1);
+    // the side kick heats the core as well (about 4 s of it), and is cut with the overdrive when the core is too hot
+    this.kick = servo(this.kick, this.abLock ? 0 : clamp(cmd.kick || 0, 0, 1), 0.05, 12, dt);
+    const hot = Math.max(abNow, 0), kickNow = this.kick * clamp((Math.abs(this.sd[0]) + Math.abs(this.sd[1])) / 1500, 0, 1);
+    this.heat = clamp(this.heat + (hot * 0.15 + kickNow * 0.24 - (1 - Math.max(hot, kickNow)) * (0.055 + 0.06 * Math.min(1, this.airspeed / 80))) * dt, 0, 1);
     if (this.heat >= 1) this.abLock = true; else if (this.heat < 0.45) this.abLock = false;
 
     // --- the engine and where its gas goes ---
     e.update(dt, cmd.G, abWanted, sigma);
+    // side nozzles first: fast valves, but they can only bleed a share of the air there is
+    const sab = 1 + SIDE_AB * this.kick, csd = cmd.sd || [0, 0];
+    for (let i = 0; i < 2; i++) this.sdv[i] = servo(this.sdv[i], clamp(csd[i], -SIDE_MAX, SIDE_MAX), 0.03, 90000, dt);
+    const gasWant = (Math.abs(this.sdv[0]) + Math.abs(this.sdv[1])) / sab, gasCap = SIDE_BLEED * e.Tdry;
+    const ks = gasWant > gasCap ? gasCap / gasWant : 1, gasS = gasWant * ks;
+    this.sd[0] = this.sdv[0] * ks; this.sd[1] = this.sdv[1] * ks;
+    const Tmain = e.Tdry - gasS;
     const fl = liftFrac(this.tilt), s0 = Math.sin(Math.max(this.tilt, Math.PI / 2));
-    const gasR = e.Tdry * (1 - fl), gasL = e.Tdry * fl * ENG.ductEta;
+    const gasR = Tmain * (1 - fl), gasL = Tmain * fl * ENG.ductEta;
     this.R = gasR * (1 + ENG.abGain * e.ab);
     this.abOut = e.ab * clamp(gasR / (0.12 * ENG.tmax), 0, 1);   // how much flame there really is: reheat needs gas in the jet pipe
     for (let i = 0; i < 4; i++) {

@@ -25,7 +25,7 @@ export function makeWind({ heading = 0.25, speed = 4, gust = 1, seed = 7 } = {})
     const steep = Math.hypot(n[0], n[2]) / n[1];
     const decay = Math.exp(-agl / 280);
     const w = [dir[0] * speed * prof, clamp(speed * prof * slope * decay, -7, 7), dir[2] * speed * prof];
-    const sig = gust * (0.35 + 0.11 * speed) * (1 + 1.4 * Math.min(steep, 1.5) * decay);
+    const sig = Math.min(gust * (0.35 + 0.11 * speed) * (1 + 1.4 * Math.min(steep, 1.5) * decay), 10);
     const along = p[0] * dir[0] + p[2] * dir[2], across = -p[0] * dir[2] + p[2] * dir[0];
     for (const m of modes) {
       const k = 6.283 * m.f / U;
@@ -41,3 +41,13 @@ export function makeWind({ heading = 0.25, speed = 4, gust = 1, seed = 7 } = {})
   return wind;
 }
 export const calm = Object.assign(() => [0, 0, 0], { dir: [1, 0, 0], speed: 0 });
+
+// The rider chooses how hard it blows. Level 1 is the wind each event was designed with; above
+// it both the mean wind and, more than that, the gusts grow, and the gusts are what makes the
+// bike hard to hold: they come from every side and no two runs are the same (the seed).
+export const WIND_LEVELS = ['calm', 'breeze', 'strong', 'storm'];
+export function windFor(ev = {}, level = 1, seed = 7) {
+  if (level <= 0) return calm;
+  const k = [0, 1, 2.2, 3.4][level], g = [0, 1, 2.2, 3.4][level], s0 = [0, 0, 9, 15][level], g0 = [0, 0, 2.2, 3.4][level];
+  return makeWind({ heading: ev.heading ?? 0.25, speed: Math.max((ev.speed ?? 4) * k, s0), gust: Math.max((ev.gust ?? 1) * g, g0), seed });
+}

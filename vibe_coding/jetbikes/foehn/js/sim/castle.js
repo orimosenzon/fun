@@ -341,6 +341,14 @@ export function hitCastle(p, pad = 0.35) {
   for (const s of C.solids) if (inside(s, x, y, z, pad)) return true;
   return false;
 }
+// how far under a roof is the world point? 0 in the open .. 1 well inside a hall
+export function indoor(p) {
+  if (!C.ready || !nearCastle(p, 0)) return 0;
+  const x = p[0] - SITE.x, z = p[2] - SITE.z, y = p[1] - C.y0;
+  let k = 0;
+  for (const r of ROOMS) k = Math.max(k, Math.min(1, Math.max(0, Math.min(x - r[0], r[1] - x, y - r[2], r[3] - y, z - r[4], r[5] - z) * 0.5)));
+  return k;
+}
 export const nearCastle = (p, margin = 60) => Math.abs(p[0] - SITE.x + 24) < 200 + margin && Math.abs(p[2] - SITE.z) < 132 + margin;
 
 // ----- the course through it: [x, z, y, ring radius or 0 for a navigation node, speed the demo rider keeps] -----
