@@ -6,7 +6,9 @@ import { Game } from './sim/game.js';
 import { Autopilot } from './sim/autopilot.js';
 import { Recorder } from './sim/replay.js';
 import { planReplay } from './sim/director.js';
-import { EVENTS, FREE } from './sim/courses.js';
+import { flights } from './ui/history.js';
+import { Film, filmType } from './ui/film.js';
+import { EVENTS, FREE, eventById } from './sim/courses.js';
 import { len, yprOf, qrot, clamp, lerp } from './sim/vmath.js';
 import { G } from './sim/bike.js';
 import { U, TIMES, WEATHER, setTime, makeNoiseTexture, skyColor } from './render/env.js';
@@ -132,8 +134,9 @@ async function boot() {
 
   function startEvent(id, demo = false) {
     game.windLevel = save.set.wind; game.windSeed = Q.has('seed') ? +Q.get('seed') : 1 + Math.floor(Math.random() * 1e6);   // no two runs get the same gusts
+    if (mode === 'play') saveRun();                  // the run that is being left goes into the history
     game.load(id, demo ? null : bestOf(id));
-    rec.reset();
+    rec.reset(); run = demo ? 0 : Date.now(); runN = 0;
     auto = demo ? new Autopilot(game) : null;
     gates.setEvent(game.build); hud.setEvent(game);
     mode = demo ? 'menu' : 'play'; paused = false; camInit = false; audio.streak = 0;
@@ -185,6 +188,11 @@ async function boot() {
   $('pResume').onclick = () => setPause(false);
   $('pReplay').onclick = $('fReplay').onclick = () => startReplay();
   $('rExit').onclick = () => stopReplay();
+  $('rSave').onclick = () => startFilm();
+  $('fFilm').onclick = () => startReplay({ video: true });
+  $('bHist').onclick = () => openHistory();
+  $('hiClose').onclick = () => $('hist').classList.remove('on');
+  addEventListener('pagehide', () => saveRun());
   $('pRestart').onclick = $('fRetry').onclick = () => startEvent(game.ev.id);
   $('pMenu').onclick = $('fMenu').onclick = toMenu;
   $('fNext').onclick = () => { const i = EVENTS.findIndex((e) => e.id === game.ev.id); startEvent(i >= 0 && i < EVENTS.length - 1 ? EVENTS[i + 1].id : 'free'); };
@@ -211,7 +219,8 @@ async function boot() {
     game.events.length = 0;
   }
   function onFinish(r) {
-    const id = game.ev.id;
+    const id = game.ev.id, mine = run;
+    setTimeout(() => run === mine && saveRun(), 7600);          // once the seconds after the line are on tape too
     if (r.isBest) { save.best[id] = { time: r.time, splits: r.splits, medal: Math.max(r.medal, (save.best[id] || {}).medal || 0), ghost: r.ghost.length < 60000 ? b64(r.ghost) : null, _g: r.ghost }; }
     else save.best[id].medal = Math.max(save.best[id].medal || 0, r.medal);
     try { const c = { ...save, best: Object.fromEntries(Object.entries(save.best).map(([k, v]) => [k, { time: v.time, splits: v.splits, medal: v.medal, ghost: v.ghost }])) }; localStorage.setItem(KEY, JSON.stringify(c)); } catch { /* quota */ }
@@ -226,19 +235,27 @@ async function boot() {
   // ---------------- replay ----------------
   // The run that was just flown, cut like a film (sim/director.js). Nothing is simulated again:
   // the recorded state is written into the bike frame by frame, and put back when it is over.
-  function startReplay() {
-    if (mode !== 'play' || rp || rec.duration < 2) return;
-    rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1 };
+  function startReplay(opts = {}) {
+    if (rp || rec.duration < 2 || (mode !== 'play' && !opts.library)) return;
+    if (opts.video && !filmType()) { alert(t('v.unsupported')); return; }
+    rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1, library: !!opts.library, meta: opts.meta || runMeta(), film: null };
     mode = 'replay'; paused = false; if (audio.ctx) audio.ctx.resume();
     ['pause', 'finish', 'help', 'touch'].forEach((m) => $(m).classList.remove('on')); hud.show(false); ghost.root.visible = false;
     $('replay').classList.add('on'); $('rfade').classList.add('on');
     requestAnimationFrame(() => requestAnimationFrame(() => $('rfade').classList.remove('on')));      // fade in from black
+    if (opts.video) startFilm();
   }
   function stopReplay() {
     if (!rp) return;
+    if (rp.film) rp.film.cancel();
     rec.restore(rp.saved); lean = rp.lean;
-    const wasPaused = rp.wasPaused; rp = null; mode = 'play'; camInit = false;
-    $('replay').classList.remove('on'); $('rfade').classList.remove('on'); $('replay').classList.remove('hold'); hud.show(true);
+    const wasPaused = rp.wasPaused, library = rp.library; rp = null; mode = 'play'; camInit = false;
+    $('replay').classList.remove('on'); $('rfade').classList.remove('on'); $('replay').classList.remove('hold', 'film');
+    if (library) {                                   // a flight from the history: back to the list, and the day as it was set
+      save.set.weather = libEnv.weather; applyTime(libEnv.time);
+      mode = 'menu'; toMenu(); openHistory(); return;
+    }
+    hud.show(true);
     if (game.state === 'finished') $('finish').classList.add('on'); else if (wasPaused) setPause(true); else if (touchUI) $('touch').classList.add('on');
   }
   function replaySeek(t) { rp.t = clamp(t, rec.t0, rec.t1 - 0.5); lean = rec.apply(rp.t); }
@@ -252,12 +269,90 @@ async function boot() {
       if (e.type === 'crash') { fx.explode(e.p, e.v, e.water); audio.crash(e.water); }
       else if (e.type === 'gate' || e.type === 'land') { audio.gate(e.perfect, e.last); flash = 0.06; }
     }
-    if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && stopReplay(), 650); }
+    if (rp.t >= rec.t1 && !rp.ending) { const me = rp; rp.ending = true; $('rfade').classList.add('on'); setTimeout(() => rp === me && (me.film ? endFilm() : stopReplay()), 650); }
     const sec = Math.floor(rp.t - rec.t0);
     if (sec !== rp.sec) { rp.sec = sec; $('rtime').textContent = fmtTime(sec).replace(/\.\d+$/, ''); }
     $('rprog').style.width = (100 * (rp.t - rec.t0) / Math.max(1, rec.duration)).toFixed(2) + '%';
     return sdt;
   }
+  // ---- the replay as a video file ----
+  function startFilm() {
+    if (!rp || rp.film) return;
+    if (!filmType()) { alert(t('v.unsupported')); return; }
+    audio.start();
+    rp.t = rec.t0; rp.ending = false; rp.hold = false; rp.sec = -1; lean = rec.apply(rp.t);
+    $('rfade').classList.remove('on'); $('replay').classList.remove('hold'); $('replay').classList.add('film');
+    const m = rp.meta, d = new Date(m.id), z = (n) => String(n).padStart(2, '0');
+    rp.film = new Film(canvas, { text: flightTitle(m) + ' · ' + d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB'), rtl: lang === 'he' }, audio.tap());
+    rp.name = `foehn-${m.ev}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.${rp.film.ext}`;
+  }
+  async function endFilm() {
+    const film = rp.film, name = rp.name; rp.film = null;
+    const blob = await film.finish();
+    stopReplay();
+    if (blob && blob.size) showFilm(blob, name);
+  }
+  let filmUrl = null;
+  function showFilm(blob, name) {
+    if (filmUrl) URL.revokeObjectURL(filmUrl);
+    filmUrl = URL.createObjectURL(blob);
+    const a = $('vSave'); a.href = filmUrl; a.download = name;
+    $('vNote').textContent = `${name} · ${(blob.size / 1048576).toFixed(1)} MB`;
+    const file = new File([blob], name, { type: blob.type }), can = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    $('vShare').style.display = can ? '' : 'none';
+    $('vShare').onclick = () => navigator.share({ files: [file], title: 'FÖHN', text: t('share.text') }).catch(() => {});
+    $('vid').classList.add('on');
+    a.click();                                        // straight into the downloads folder; the button is there to do it again
+  }
+  $('vClose').onclick = () => { $('vid').classList.remove('on'); if (filmUrl) { URL.revokeObjectURL(filmUrl); filmUrl = null; } };
+
+  // ---- the history of flights ----
+  // Every run of ten seconds or more is kept in this browser (ui/history.js), finished or not.
+  let run = 0, runN = 0, libEnv = null;      // the id (start time) of the run being flown, and how much of it is saved
+  const runMeta = () => {
+    const r = (rp ? rp.saved.state : game.state) === 'finished' ? game.result : null;
+    return { id: run || Date.now(), ev: game.ev.id, done: !!r, time: r ? r.time : null, medal: r ? r.medal : 0, crashes: game.crashes, misses: game.misses, dur: rec.duration, wx: save.set.weather, tod: save.set.time, wind: save.set.wind, score: Math.round(game.score) };
+  };
+  function saveRun() {
+    const cnt = rec.n - rec.base;
+    if (!run || cnt === runN || rec.duration < 10) return;
+    runN = cnt;
+    flights.put(runMeta(), rec.dump()).catch((e) => console.warn('flight not saved', e));
+  }
+  const flightTitle = (m) => { const ev = eventById(m.ev); return (ev ? evName(ev) : m.ev) + (m.done && m.time != null ? ' · ' + fmtTime(m.time) : ''); };
+  async function openHistory() {
+    const el = $('hlist'); $('hist').classList.add('on');
+    let list = [];
+    try { list = await flights.list(); } catch { /* no storage here */ }
+    if (!list.length) { el.innerHTML = `<p style="opacity:.75">${t('hi.empty')}</p>`; return; }
+    el.innerHTML = '';
+    for (const m of list) {
+      const row = document.createElement('div'); row.className = 'hrow';
+      const when = new Date(m.id).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' });
+      const medal = m.medal ? ` <i class="medal g${m.medal}"></i>` : '', mm = Math.floor(m.dur / 60), ss = String(Math.floor(m.dur % 60)).padStart(2, '0');
+      row.innerHTML = `<div><b>${flightTitle(m)}</b>${medal}${m.done || m.ev === 'free' ? '' : ` <span class="und">${t('hi.undone')}</span>`}<br><small><span class="num">${when}</span> · <span class="num">${mm}:${ss}</span> · ${t('wx.' + m.wx)} · ${t('set.wind')}${t('wind.' + m.wind)}</small></div>`
+        + `<div class="hb"><button class="b" data-a="w">${t('hi.watch')}</button><button class="b" data-a="v">${t('hi.film')}</button><button class="b" data-a="d" aria-label="delete">✕</button></div>`;
+      row.querySelector('[data-a=w]').onclick = () => watchFlight(m, false);
+      row.querySelector('[data-a=v]').onclick = () => watchFlight(m, true);
+      row.querySelector('[data-a=d]').onclick = async () => { if (!confirm(t('hi.delq'))) return; await flights.del(m.id).catch(() => {}); openHistory(); };
+      el.appendChild(row);
+    }
+  }
+  async function watchFlight(m, video) {
+    if (rp || mode !== 'menu') return;
+    if (video && !filmType()) { alert(t('v.unsupported')); return; }
+    audio.start();
+    let d = null; try { d = await flights.get(m.id); } catch { /* gone */ }
+    if (!d || !eventById(m.ev) || rp || mode !== 'menu') return;
+    run = 0;
+    game.load(m.ev, null); game.events.length = 0; auto = null; gates.setEvent(game.build);
+    if (!rec.load(d)) { toMenu(); return; }
+    libEnv = { weather: save.set.weather, time: save.set.time };            // the film gets the weather and the hour it was flown in
+    if (m.wx !== save.set.weather || m.tod !== save.set.time) { save.set.weather = WEATHER[m.wx] ? m.wx : 'clear'; applyTime(TIMES[m.tod] ? m.tod : save.set.time); }
+    ['menu', 'hist'].forEach((x) => $(x).classList.remove('on'));
+    startReplay({ library: true, video, meta: m });
+  }
+
   function replayCamera() {
     const b = game.bike, o = rp.o; o.on = false;
     rp.plan.shotAt(rp.t).cam(rp.t, o);
@@ -345,7 +440,9 @@ async function boot() {
     for (const k of input.pressed) {
       if (k === 'KeyM') { audio.setMuted(!audio.muted); }
       if (mode === 'replay') {
-        if (k === 'Escape' || k === 'Enter' || k === 'KeyV' || k === 'PadA') stopReplay();
+        if (k === 'Escape' || ((k === 'Enter' || k === 'KeyV' || k === 'PadA') && !rp.film)) stopReplay();
+        else if (rp.film) { /* nothing else while the film is being recorded */ }
+        else if (k === 'KeyS') startFilm();
         else if (k === 'Space' || k === 'KeyP') { rp.hold = !rp.hold; $('replay').classList.toggle('hold', rp.hold); }
         else if (k === 'ArrowRight') replaySeek(rp.t + 5);
         else if (k === 'ArrowLeft') replaySeek(rp.t - 5);
@@ -408,6 +505,7 @@ async function boot() {
     if (sun.shadow.map) { U.uShadowMap.value = sun.shadow.map.texture; U.uShadowMat.value.copy(sun.shadow.matrix); U.uShadowOn.value = 1; }
     flash = Math.max(0, flash - dt * 0.5);
     post.finish(camera, s, { blur: film ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (film ? 0 : 1) + b.abOut * (film ? 0 : 0.3), time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays });
+    if (rp && rp.film) rp.film.grab(Math.max(1 - (rp.t - rec.t0) / 0.5, 1 - (rec.t1 - rp.t) / 0.6, 0));
     if (!paused && !rp) hud.update(dt, game, camera, viewW, viewH);
     // adaptive resolution
     fpsAcc += dt; fpsN++;
@@ -444,7 +542,7 @@ async function boot() {
   await load(1, '');
   $('load').classList.add('off');
   addEventListener('pointerdown', () => audio.start(), { once: true }); addEventListener('keydown', () => audio.start(), { once: true });
-  window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, get rp() { return rp; }, U, sun };
+  window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, flights, openHistory, get rp() { return rp; }, U, sun };
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot().catch((e) => { const el = $('err'); el.style.display = 'block'; el.textContent += (e.stack || e) + '\n'; console.error(e); });

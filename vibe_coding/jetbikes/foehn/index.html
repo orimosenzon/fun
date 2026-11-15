@@ -74,15 +74,23 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5
 #replay.hold #rtag b { animation: none; border-radius: 1px; background: #fff; }
 @keyframes rblink { 50% { opacity: .15; } }
 #rhint { position: absolute; bottom: 0; left: 0; right: 0; height: var(--bar); display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12.5px; opacity: .6; }
-#rExit { position: absolute; top: calc(var(--bar) + 8px); inset-inline-end: 14px; pointer-events: auto; padding: 5px 12px; }
 #rfade { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity .55s; }
 #rfade.on { opacity: 1; transition: none; }
 #replay.on #rfade.out { opacity: 1; }
 @media (pointer: coarse) { #rhint { display: none; } }
-#menu, #pause, #finish, #help { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
-#menu.on, #pause.on, #finish.on, #help.on { display: flex; }
+#rbtn { position: absolute; top: calc(var(--bar) + 8px); inset-inline-end: 14px; display: flex; gap: 8px; }
+#rbtn button.b { padding: 5px 12px; font-size: 13px; }
+#rrec { display: none; position: absolute; bottom: 0; left: 0; right: 0; height: var(--bar); align-items: center; justify-content: center; gap: 5px; font-size: 13.5px; color: #ffb4a8; }
+#replay.film #rrec { display: flex; } #replay.film #rhint, #replay.film #rSave { display: none; }
+#hlist { max-height: 56vh; overflow: auto; }
+.hrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--line); }
+.hrow small { opacity: .7; } .hrow .und { font-size: 12px; opacity: .6; } .hrow .medal { display: inline-block; width: 13px; height: 13px; vertical-align: -1px; }
+.hb { display: flex; gap: 6px; flex-shrink: 0; } .hb button.b { padding: 5px 11px; font-size: 13px; }
+a.b { pointer-events: auto; cursor: pointer; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 10px; background: var(--acc); color: #1a0d04; }
+#menu, #pause, #finish, #help, #hist, #vid { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
+#menu.on, #pause.on, #finish.on, #help.on, #hist.on, #vid.on { display: flex; }
 #menu { background: linear-gradient(180deg, rgba(6,10,16,.25), rgba(6,10,16,.72)); justify-content: flex-start; padding-top: 5vh; }
-#pause, #finish, #help { background: rgba(6,10,16,.6); }
+#pause, #finish, #help, #hist, #vid { background: rgba(6,10,16,.6); }
 h1 { font-size: clamp(54px, 9vw, 104px); margin: 0; letter-spacing: 10px; font-weight: 900; direction: ltr; text-shadow: 0 4px 40px rgba(0,0,0,.6); }
 h1 span { color: var(--acc); }
 .sub { font-size: clamp(15px, 2vw, 20px); opacity: .9; margin: 2px 0 20px; text-shadow: 0 1px 8px #000; text-align: center; }
@@ -148,7 +156,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="sub" data-i18n="sub">אופנוע בלי גלגלים, עם מנוע היתוך. עמק אלפיני אחד, מבצר על ההר, שבעה אירועים</div>
   <div id="cards"></div>
   <div class="rowbtn">
-    <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
+    <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHist" data-i18n="b.hist">הטיסות שלי</button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
   </div>
 </div>
 
@@ -158,13 +166,24 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
 
 <div id="finish"><div class="box panel" style="text-align:center">
   <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div>
-  <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fReplay" data-i18n="f.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
+  <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fReplay" data-i18n="f.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="fFilm" data-i18n="f.film">הורדת סרטון</button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
 </div></div>
 
 <div id="replay"><div class="lb"></div><div class="lb bot"><i id="rprog"></i></div>
   <div id="rtag"><b></b><span data-i18n="r.tag">הילוך חוזר</span> <span id="rtime" class="num"></span></div>
   <div id="rhint" data-i18n="r.hint"><kbd>Esc</kbd> חזרה · <kbd>רווח</kbd> עצירה · <kbd>←</kbd> <kbd>→</kbd> דילוג · <kbd>C</kbd> השוט הבא</div>
-  <button class="b" id="rExit" aria-label="close">✕</button><div id="rfade"></div></div>
+  <div id="rbtn"><button class="b" id="rSave" data-i18n="r.save">הורדת סרטון</button><button class="b" id="rExit" aria-label="close">✕</button></div><div id="rrec" data-i18n="r.rec">מקליט את הסרטון. השאר את הלשונית פתוחה עד הסוף · <kbd>Esc</kbd> ביטול</div><div id="rfade"></div></div>
+
+<div id="hist"><div class="box panel"><h2 data-i18n="hi.title">הטיסות שלי</h2>
+  <p style="margin:0 0 10px;font-size:13.5px;opacity:.75" data-i18n="hi.note">כל טיסה של עשר שניות ומעלה נשמרת בדפדפן הזה, עד 60 האחרונות. אפשר לצפות בה שוב או להוריד אותה כסרטון.</p>
+  <div id="hlist"></div>
+  <div class="rowbtn"><button class="b pri" id="hiClose" data-i18n="hi.close">סגירה</button></div>
+</div></div>
+
+<div id="vid"><div class="box panel" style="text-align:center"><h2 data-i18n="v.ready">הסרטון מוכן</h2>
+  <p id="vNote" class="num" style="opacity:.8;font-size:14px;margin:0"></p>
+  <div class="rowbtn"><a class="b pri" id="vSave" data-i18n="v.save">שמירה לקובץ</a><button class="b" id="vShare" data-i18n="v.share">שיתוף</button><button class="b" id="vClose" data-i18n="hi.close">סגירה</button></div>
+</div></div>
 
 <div id="help"><div class="box panel"><h2 data-i18n="h.title">איך טסים</h2>
   <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9" data-i18n="h.intro">אתה רוכב על אופנוע בלי גלגלים ובלי כנפיים. בין הברכיים שלך יש ליבת היתוך שמחממת אוויר, והדחף שלה גדול פי ארבעה ממשקל האופנוע. מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מחליט כמה אוויר יוצא מארבעת נחירי ההרמה שבמקום הגלגלים וכמה מהנחיר האחורי. אין עילוי מהאוויר: כל מה שמחזיק אותך, מסובב אותך ומאיץ אותך הוא דחף.</p>

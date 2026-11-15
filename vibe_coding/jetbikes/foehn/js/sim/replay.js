@@ -64,6 +64,34 @@ export class Recorder {
   }
   mark(type, data = {}) { this.events.push({ ...data, type, t: this.t }); }
 
+  // ---- keeping a flight for later (the history of flights) ----
+  names() { return this.fields.map(([obj, key, n]) => [obj === this.game.bike ? 'b' : 'e', key, n || 1]); }
+  // the whole recording as one array, with the names of its columns
+  dump() {
+    const cnt = this.n - this.base, frames = new Float32Array(cnt * this.W);
+    for (let k = 0; k < cnt; k += CH) { const m = Math.min(CH, cnt - k) * this.W; frames.set(this.blocks[k >> 10].subarray(0, m), k * this.W); }
+    return { hdr: HDR, W: this.W, layout: this.names(), frames, events: this.events.filter((e) => e.t >= this.t0) };
+  }
+  // put a kept flight back. The columns are matched by name, so a flight recorded before the
+  // bike gained (or lost) a part still plays: what it does not know stays at zero.
+  load(d) {
+    this.reset();
+    if (!d || d.hdr !== HDR || !d.frames || !d.W) return false;
+    const at = {}; let o = d.hdr;
+    for (const [tag, key, n] of d.layout) { at[tag + '.' + key] = [o, n]; o += n; }
+    const src = new Int32Array(this.W).fill(-1); for (let j = 0; j < HDR; j++) src[j] = j;
+    let j = HDR;
+    for (const [tag, key, n] of this.names()) { const s = at[tag + '.' + key]; for (let i = 0; i < n; i++, j++) if (s && i < s[1]) src[j] = s[0] + i; }
+    const cnt = Math.min(Math.floor(d.frames.length / d.W), MAX_BLOCKS * CH);
+    for (let i = 0; i < cnt; i++) {
+      if ((i >> 10) >= this.blocks.length) this.blocks.push(new Float32Array(CH * this.W));
+      const a = this.blocks[i >> 10], ao = (i & (CH - 1)) * this.W, so = i * d.W;
+      for (let c = 0; c < this.W; c++) a[ao + c] = src[c] < 0 ? 0 : d.frames[so + src[c]];
+    }
+    this.n = cnt; this.t = this.t1; this.events = (d.events || []).slice();
+    return cnt > 1;
+  }
+
   // the state of everything right now, to put back when the replay is over
   snapshot() { const a = new Float32Array(this.W); this.write(a, 0, 0); return { a, cp: this.game.cp, state: this.game.state }; }
   restore(s) { this.read(s.a, 0, s.a, 0, 0); this.game.cp = s.cp; this.game.state = s.state; }

@@ -37,6 +37,18 @@ for (const [id, level] of [['first', 1], ['lake', 3], ['castle', 1], ['pass', 2]
   rec.restore(live);
   if (len(sub(g.bike.p, pEnd)) > 0.01 || g.state !== 'finished') bad(`${id}: state not restored after the replay`);
 
+  // --- a flight kept in the history comes back the same, also when the bike has changed since ---
+  const kept = structuredClone(rec.dump()), g2 = new Game(); g2.load(id);
+  const rec2 = new Recorder(g2);
+  if (!rec2.load(kept) || rec2.n !== rec.n - rec.base || Math.abs(rec2.duration - rec.duration) > 1e-3) bad(`${id}: kept flight did not load`);
+  else { const tm = rec.t0 + rec.duration * 0.37, x = rec.at(tm), y = rec2.at(tm); if (len(sub(x.p, y.p)) > 1e-3 || x.cp !== y.cp || rec2.events.length !== rec.events.length) bad(`${id}: kept flight differs`); }
+  const old = structuredClone(kept); old.layout = [['b', 'gone', 2], ...old.layout.filter((f) => f[1] !== 'heat')];       // a part that no longer exists, and one that did not exist yet
+  { const w = old.W + 2 - 1, n = old.frames.length / old.W, f = new Float32Array(n * w), hi = kept.layout.findIndex((q) => q[1] === 'heat'); let ho = kept.hdr; for (let k = 0; k < hi; k++) ho += kept.layout[k][2];
+    for (let i = 0; i < n; i++) { const r = kept.frames.subarray(i * kept.W, (i + 1) * kept.W); f.set(r.subarray(0, kept.hdr), i * w); f.set(r.subarray(kept.hdr, ho), i * w + kept.hdr + 2); f.set(r.subarray(ho + 1), i * w + ho + 2); }
+    old.frames = f; old.W = w; }
+  if (!rec2.load(old)) bad(`${id}: flight from an older bike did not load`);
+  else { const tm = rec.t0 + rec.duration * 0.61, x = rec.at(tm), y = rec2.at(tm); rec2.apply(tm); if (len(sub(x.p, y.p)) > 1e-3 || len(sub(x.q, y.q)) > 1e-3 || g2.bike.heat !== 0) bad(`${id}: flight from an older bike plays wrong`); }
+
   // --- the edit ---
   for (let seed = 1; seed <= 3; seed++) {
     let s = seed * 7919; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);

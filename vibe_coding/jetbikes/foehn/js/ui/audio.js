@@ -25,6 +25,8 @@ export class Audio {
     this.sub = c.createOscillator(); this.sub.type = 'sine'; this.sub.frequency.value = 55; this.sub.start();
     this.subG = c.createGain(); this.subG.gain.value = 0; this.sub.connect(this.subG); this.subG.connect(this.master);
   }
+  // the sound of the game as a stream, for recording a film (null before the first key or tap)
+  tap() { if (!this.ctx) return null; if (!this._tap) { this._tap = this.ctx.createMediaStreamDestination(); this.master.connect(this._tap); } return this._tap.stream; }
   setMuted(m) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : this.vol; }
   // every frame
   engine(b, alive, camDist = 8, cockpit = false) {
