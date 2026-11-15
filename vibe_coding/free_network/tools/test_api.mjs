@@ -6,13 +6,15 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const PORT = 8799;
-const PROD_PORT = 8798;
-const DEMO_PORT = 8796;
-const STORAGE_PORT = 8795;
-const UPLOADS_PORT = 8794;
-const PILOT_PORT = 8793;
-const YOUTUBE_PORT = 8792;
+// Other projects' servers sometimes sit on these ports. TEST_PORT_BASE=18792 npm test moves them all.
+const BASE = Number(process.env.TEST_PORT_BASE ?? 8792);
+const PORT = BASE + 7;
+const PROD_PORT = BASE + 6;
+const DEMO_PORT = BASE + 4;
+const STORAGE_PORT = BASE + 3;
+const UPLOADS_PORT = BASE + 2;
+const PILOT_PORT = BASE + 1;
+const YOUTUBE_PORT = BASE;
 const VIDEO_ID = 'abcdefghijk';
 const youtubeRequests = [];
 
@@ -636,12 +638,16 @@ test('logging out of the demo leaves it open for the next visitor', async () => 
   assert.equal((await second('GET', '/me')).data.user.id, 1);
 });
 
-test('the demo does not serve /why, and demo login exists only there', async () => {
+test('the demo serves /why without the unreviewed claims, and demo login exists only there', async () => {
   for (const path of ['/why', '/why.html']) {
-    const response = await fetch(`http://localhost:${DEMO_PORT}${path}`, { redirect: 'manual' });
-    assert.equal(response.status, 302, path);
-    assert.equal(response.headers.get('location'), '/', path);
+    const response = await fetch(`http://localhost:${DEMO_PORT}${path}`);
+    assert.equal(response.status, 200, path);
+    const html = await response.text();
+    assert.match(html, /רשת חברתית היא דבר חשוב מדי/, path);
+    assert.doesNotMatch(html, /data-unreviewed|איך זה בא לידי ביטוי|class="claim"/, path);
   }
+  const full = await (await fetch(`http://localhost:${PORT}/why`)).text();
+  assert.match(full, /איך זה בא לידי ביטוי/);
   assert.equal((await client(PROD_PORT)('POST', '/auth/demo')).status, 404);
 });
 

@@ -253,8 +253,14 @@ app.use('/api/*', async (c, next) => {
   await next();
 });
 
-// Only the demo routes /why through the worker, to keep it closed there.
-app.get('/why*', (c) => c.redirect('/'));
+// Only the demo routes /why through the worker. The philosophy is public there, but the
+// claims about Facebook have not been checked by a lawyer yet, so they are cut out.
+app.get('/why*', async (c) => {
+  const page = await c.env.ASSETS.fetch(new URL('/why', c.req.url));
+  return new HTMLRewriter()
+    .on('[data-unreviewed]', { element: (element) => element.remove() })
+    .transform(page);
+});
 
 function requestLog(c, fields) {
   return {

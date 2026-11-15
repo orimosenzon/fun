@@ -941,7 +941,7 @@ function loginPage() {
     promise('eye', 'החברים שלך באמת יראו', 'כל פוסט מגיע לפיד של כל החברים, בלי סינון.'),
     promise('comment', 'כל התגובות, לפי הסדר', 'בלי "הרלוונטיות ביותר" ובלי תגובות שנעלמות.'),
     promise('leaf', 'בלי פרסומות', 'פרויקט ללא מטרות רווח, שיעבור לעמותה. אין מי שמרוויח מהזמן שלך.')),
-  demo ? '' : el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
+  el('p', { className: 'feed-rule' }, el('a', { href: '/why' }, 'למה בכלל צריך רשת חדשה?')));
 }
 
 function namePage() {
@@ -976,7 +976,7 @@ async function refreshMe() {
 }
 
 function renderNav() {
-  const why = demo ? null : el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
+  const why = el('a', { href: '/why' }, labelled('info', 'למה אנחנו'));
   if (!me) {
     nav.replaceChildren(...[why, link('/login', labelled('user', 'כניסה'))].filter(Boolean));
     return;
