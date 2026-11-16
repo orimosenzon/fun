@@ -27,6 +27,12 @@ UPDATE users SET lat = 52.52, lng = 13.4 WHERE id = 8;
 UPDATE users SET lat = 40.71, lng = -74.01 WHERE id = 9;
 UPDATE users SET lat = -33.87, lng = 151.21 WHERE id = 11;
 
+-- What the update has to tell: a line from two friends, one who moved, one who just joined.
+UPDATE users SET status_text = 'חזרנו מהצפון, הכול ירוק. מי בא לקפה בשבת?', status_at = (unixepoch() - 3600 * 5) * 1000 WHERE id = 2;
+UPDATE users SET status_text = 'שבוע ראשון בעבודה החדשה, מתרגלת לרכבת התחתית', status_at = (unixepoch() - 86400 * 2) * 1000 WHERE id = 9;
+UPDATE users SET place_at = (unixepoch() - 86400 * 3) * 1000 WHERE id = 8;
+UPDATE users SET created_at = (unixepoch() - 86400 * 4) * 1000 WHERE id = 10;
+
 -- The hash of the fixed demo session token. It opens only the guest account, which cannot write.
 INSERT INTO sessions (token_hash, user_id, expires_at) VALUES
   ('2a97516c354b68848cdbd8f54a226a0a55b21ed138e207ad6c5cbb9c00aa5aea', 1, 4102444800000);

@@ -217,7 +217,9 @@ export function friendsGlobe({ me, friends, ui }) {
       },
     }, avatar(first, { small: true }),
     many ? el('span', { className: 'pin-count' }, String(group.people.length)) : null,
-    el('span', { className: 'pin-name', dir: 'auto' }, many ? `${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}` : names[0]));
+    el('span', { className: `pin-name${!many && first.status ? ' with-status' : ''}`, dir: 'auto' },
+      many ? `${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}` : names[0],
+      !many && first.status ? el('span', { className: 'pin-status' }, first.status) : null));
     return node;
   }
 
@@ -548,6 +550,9 @@ export function friendsGlobe({ me, friends, ui }) {
     if (!arrived) flyTo({ ...start, zoom: 1 }, 1600);
     arrived = true;
   }).observe(stage);
+
+  // The update asks for this when a friend has moved.
+  root.addEventListener('fly', (e) => flyTo({ ...e.detail, zoom: Math.max(view.zoom, 5) }, 1200));
 
   renderCloud();
   renderControls();

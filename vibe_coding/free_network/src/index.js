@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { outsideNews } from './digest.js';
 import { writeLog } from './log.js';
 
 const SESSION_COOKIE = 'session';
@@ -20,6 +21,10 @@ const STORAGE_LIMIT_BYTES = 8 * 1024 ** 3;
 const UPLOADS_PER_DAY = 2000;
 // A place is kept to two decimals of a degree, about a kilometre: a neighbourhood, not a house.
 const PLACE_DECIMALS = 2;
+// "What's up" is one line, and it is erased a week after it was written.
+const MAX_STATUS = 140;
+const STATUS_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const YOUTUBE_ID = /^[\w-]{11}$/;
 const VIDEO_CACHE_SECONDS = 24 * 60 * 60;
 const GOOGLE_STATE_COOKIE = 'google_state';
@@ -108,6 +113,10 @@ function parseId(value) {
 
 function place(row) {
   return row.lat === null || row.lat === undefined ? null : { lat: row.lat, lng: row.lng };
+}
+
+function status(row, now = Date.now()) {
+  return row.status_text && row.status_at > now - STATUS_MS ? { text: row.status_text, at: row.status_at } : null;
 }
 
 function isLocalhost(c) {
@@ -318,7 +327,7 @@ app.use('/api/*', async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (token) {
     const user = await c.env.DB
-      .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng FROM sessions s JOIN users u ON u.id = s.user_id
+      .prepare(`SELECT u.id, u.name, u.email, u.avatar_id, u.cover_id, u.google_sub, u.lat, u.lng, u.status_text, u.status_at FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ? AND s.expires_at > ?`)
       .bind(await sha256(token), Date.now())
       .first();
@@ -496,6 +505,7 @@ app.get('/api/me', async (c) => {
       friendRequests: waiting.n,
       googleLinked: !!user.google_sub,
       place: place(user),
+      status: status(user),
     } : null,
     demo: isDemo(c),
     inviteOnly: c.env.INVITE_ONLY === '1',
@@ -523,12 +533,26 @@ app.put('/api/me/place', requireUser, async (c) => {
   if (!valid) return c.json({ error: 'מיקום לא תקין' }, 400);
   const round = (value) => Number(value.toFixed(PLACE_DECIMALS));
   const saved = { lat: round(lat), lng: round(lng) };
-  await c.env.DB.prepare('UPDATE users SET lat = ?, lng = ? WHERE id = ?').bind(saved.lat, saved.lng, c.get('user').id).run();
+  await c.env.DB.prepare('UPDATE users SET lat = ?, lng = ?, place_at = ? WHERE id = ?').bind(saved.lat, saved.lng, Date.now(), c.get('user').id).run();
   return c.json({ place: saved });
 });
 
 app.delete('/api/me/place', requireUser, async (c) => {
-  await c.env.DB.prepare('UPDATE users SET lat = NULL, lng = NULL WHERE id = ?').bind(c.get('user').id).run();
+  await c.env.DB.prepare('UPDATE users SET lat = NULL, lng = NULL, place_at = NULL WHERE id = ?').bind(c.get('user').id).run();
+  return c.json({ ok: true });
+});
+
+// One line for friends. Writing a new one replaces the old, and deleting really deletes.
+app.put('/api/me/status', requireUser, async (c) => {
+  const text = cleanText((await readJson(c)).text, MAX_STATUS);
+  if (!text) return c.json({ error: `צריך משפט אחד, עד ${MAX_STATUS} תווים` }, 400);
+  const at = Date.now();
+  await c.env.DB.prepare('UPDATE users SET status_text = ?, status_at = ? WHERE id = ?').bind(text, at, c.get('user').id).run();
+  return c.json({ status: { text, at } });
+});
+
+app.delete('/api/me/status', requireUser, async (c) => {
+  await c.env.DB.prepare('UPDATE users SET status_text = NULL, status_at = NULL WHERE id = ?').bind(c.get('user').id).run();
   return c.json({ ok: true });
 });
 
@@ -843,11 +867,69 @@ app.get('/api/friends', requireUser, async (c) => {
 // ever listed, so a place reaches nobody else.
 app.get('/api/globe', requireUser, async (c) => {
   const { results } = await c.env.DB
-    .prepare(`SELECT id, name, avatar_id AS avatar, lat, lng FROM users
+    .prepare(`SELECT id, name, avatar_id AS avatar, lat, lng, status_text, status_at FROM users
       WHERE id IN (${FRIEND_IDS}) AND name <> '' ORDER BY name`)
     .bind(c.get('user').id)
     .all();
-  return c.json({ friends: results.map((row) => ({ id: row.id, name: row.name, avatar: row.avatar, place: place(row) })) });
+  return c.json({ friends: results.map((row) => ({
+    id: row.id, name: row.name, avatar: row.avatar, place: place(row), status: status(row)?.text ?? null,
+  })) });
+});
+
+// The update: a short, finite list of what happened lately, in widening circles. Friends come
+// from the network itself, with no ranking: each list is simply the newest first. The rest
+// comes from sources outside it, which the server reads so the reader's browser does not.
+app.get('/api/update', requireUser, async (c) => {
+  const db = c.env.DB;
+  const me = c.get('user').id;
+  const now = Date.now();
+  const person = (row) => ({ id: row.id, name: row.name, avatar: row.avatar });
+  const friend = `u.id IN (${FRIEND_IDS}) AND u.name <> ''`;
+  const seen = parseId(c.req.query('seen') ?? '');
+  // An expired line is erased, not just hidden.
+  await db.prepare('UPDATE users SET status_text = NULL, status_at = NULL WHERE status_at <= ?').bind(now - STATUS_MS).run();
+
+  const [statuses, fresh, replies, moved, joined, quiet] = (await db.batch([
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.status_text, u.status_at FROM users u
+      WHERE ${friend} AND u.status_text IS NOT NULL ORDER BY u.status_at DESC LIMIT 8`).bind(me),
+    // Posts the reader has not seen yet. What was seen is known only to their device, which says so
+    // here. A device that remembers nothing gets the last three days.
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, COUNT(*) AS n, MAX(p.id) AS newest FROM posts p
+      JOIN users u ON u.id = p.author_id
+      WHERE ${friend} AND p.deleted_at IS NULL AND p.created_at > ?2 AND p.id > ?3
+      GROUP BY u.id ORDER BY newest DESC LIMIT 5`).bind(me, now - (seen ? 14 : 3) * DAY_MS, seen ?? 0),
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, m.post_id, m.created_at, p.author_id = ?1 AS on_mine
+      FROM comments m JOIN posts p ON p.id = m.post_id JOIN users u ON u.id = m.author_id
+      LEFT JOIN comments parent ON parent.id = m.parent_id
+      WHERE m.author_id <> ?1 AND m.removed_by IS NULL AND p.deleted_at IS NULL AND m.created_at > ?2
+        AND (p.author_id = ?1 OR parent.author_id = ?1)
+      ORDER BY m.id DESC LIMIT 4`).bind(me, now - 7 * DAY_MS),
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.lat, u.lng, u.place_at FROM users u
+      WHERE ${friend} AND u.lat IS NOT NULL AND u.place_at > ?2 ORDER BY u.place_at DESC LIMIT 3`).bind(me, now - 14 * DAY_MS),
+    db.prepare(`SELECT u.id, u.name, u.avatar_id AS avatar, u.created_at FROM users u
+      WHERE ${friend} AND u.created_at > ?2 ORDER BY u.created_at DESC LIMIT 3`).bind(me, now - 14 * DAY_MS),
+    // Friends who have been here a month and said nothing in that time: a nudge to get in touch.
+    db.prepare(`SELECT * FROM (SELECT u.id, u.name, u.avatar_id AS avatar,
+        (SELECT MAX(created_at) FROM posts WHERE author_id = u.id AND deleted_at IS NULL) AS last
+      FROM users u WHERE ${friend} AND u.created_at < ?2 AND u.status_text IS NULL)
+      WHERE last IS NULL OR last < ?2 ORDER BY last IS NULL, last LIMIT 2`).bind(me, now - 30 * DAY_MS),
+  ])).map((part) => part.results);
+
+  const news = await outsideNews(c.env, now);
+  return c.json({
+    friends: {
+      statuses: statuses.map((row) => ({ user: person(row), text: row.status_text, at: row.status_at })),
+      fresh: fresh.map((row) => ({ user: person(row), count: row.n })),
+      replies: replies.map((row) => ({ user: person(row), postId: row.post_id, at: row.created_at, onMine: !!row.on_mine })),
+      moved: moved.map((row) => ({ user: person(row), place: place(row), at: row.place_at })),
+      joined: joined.map((row) => ({ user: person(row), at: row.created_at })),
+      quiet: quiet.filter((row) => ![...moved, ...joined].some((other) => other.id === row.id))
+        .map((row) => ({ user: person(row), last: row.last })),
+    },
+    community: { events: news.events.slice(0, 5), moreEvents: Math.max(0, news.events.length - 5), plans: news.plans.slice(0, 3) },
+    country: news.country.slice(0, 5),
+    world: news.world.slice(0, 4),
+  });
 });
 
 // Asking someone who already asked you accepts their request.

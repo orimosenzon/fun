@@ -1,7 +1,9 @@
 import { friendsGlobe } from '/globe.js';
+import { updatePanel } from '/update.js';
 
 const app = document.getElementById('app');
 const SIDE_GLOBE = matchMedia('(min-width: 1000px)');
+const SIDE_UPDATE = matchMedia('(min-width: 1340px)');
 const nav = document.getElementById('nav');
 const MAX_IMAGE_SIDE = 1600;
 const MAX_IMAGES = 4;
@@ -31,6 +33,7 @@ const ICONS = {
   check: 'M20 6L9 17l-5-5',
   plus: 'M12 5v14M5 12h14',
   minus: 'M5 12h14',
+  sun: 'M12 17a5 5 0 1 0 0-10a5 5 0 0 0 0 10M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
 };
 let me = null;
 let demo = false;
@@ -480,6 +483,22 @@ async function globePage() {
     await globe()));
 }
 
+// Turns the globe to a place. Without a globe on the screen, its page opens first.
+async function flyGlobe(spot) {
+  const waits = !document.querySelector('.globe');
+  if (waits) await go('/globe');
+  setTimeout(() => document.querySelector('.globe')?.dispatchEvent(new CustomEvent('fly', { detail: spot })), waits ? 400 : 0);
+}
+
+function update() {
+  seenUpTo ??= seenStore();
+  return updatePanel({ me, seen: seenUpTo, ui: { el, icon, avatar, link, api, when, tell, demo, flyGlobe } });
+}
+
+function updatePage() {
+  app.replaceChildren(el('div', { className: 'card update-page' }, update()));
+}
+
 async function feedPage() {
   const list = el('div', { className: 'feed' });
   const more = el('button', { className: 'ghost more', type: 'button', hidden: true }, 'פוסטים ישנים יותר');
@@ -527,10 +546,13 @@ async function feedPage() {
   });
   await load();
 
-  // Beside the feed when the screen is wide. On a phone the globe has its own page.
+  // Beside the feed when the screen is wide: the globe on one side, the update on the other.
+  // On a narrower screen each has its own page.
   const side = SIDE_GLOBE.matches ? el('aside', { className: 'globe-side' }, await globe()) : null;
+  const news = SIDE_UPDATE.matches ? el('aside', { className: 'card update-side' }, update()) : null;
   app.replaceChildren(...[
     side,
+    news,
     await composer(route),
     el('p', { className: 'feed-rule' }, 'כל הפוסטים שלך ושל החברים שלך, מהחדש לישן. זה כל האלגוריתם.'),
     list,
@@ -1009,7 +1031,8 @@ function renderNav() {
     friends.append(el('span', { className: 'count', ariaLabel: `${me.friendRequests} בקשות חברות` }, String(me.friendRequests)));
   }
   const world = link('/globe', labelled('globe', 'גלובוס'));
-  nav.replaceChildren(...[home, mine, friends, world, admin, why, el('button', {
+  const news = link('/update', labelled('sun', 'העדכון'));
+  nav.replaceChildren(...[home, news, mine, friends, world, admin, why, el('button', {
     className: 'plain desktop-only',
     type: 'button',
     onclick: logout,
@@ -1053,6 +1076,7 @@ async function show(post, profile) {
   else if (profile) await profilePage(profile[1]);
   else if (location.pathname === '/friends') await friendsPage();
   else if (location.pathname === '/globe') await globePage();
+  else if (location.pathname === '/update') updatePage();
   else if (location.pathname === '/admin') await adminPage();
   else await feedPage();
 }

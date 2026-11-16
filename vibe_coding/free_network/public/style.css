@@ -1154,3 +1154,110 @@ dialog { color: var(--text); font: inherit; }
       url(/art/bottom-right.svg) right bottom / min(26vw, 380px) auto no-repeat;
   }
 }
+
+/* A friend's "what's up" line, under their name on the globe. */
+.pin-name.with-status { width: max-content; max-width: 210px; padding: 4px 10px; white-space: normal; text-align: center; border-radius: 12px; }
+
+.pin-status { display: block; font-size: 12.5px; line-height: 1.35; opacity: 0.88; }
+
+/* The update: a short list in widening circles, and then it ends. */
+.update-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+
+.update-head h2 { margin: 0; font-size: 21px; font-weight: 750; }
+
+.update-date { color: var(--muted); font-size: 13.5px; }
+
+.update-body > .bone { margin-top: 14px; }
+
+.update-ring { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-strong); }
+
+.update-ring h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; color: var(--citrus-ink); font-size: 14.5px; font-weight: 650; }
+
+.update-ring h3 .icon { width: 17px; height: 17px; }
+
+.update-ring h4 { margin: 10px 0 2px; color: var(--muted); font-size: 13px; font-weight: 600; }
+
+.update-item, button.update-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: calc(100% + 12px);
+  min-height: 0;
+  margin: 0 -6px;
+  padding: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: start;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+a.update-item:hover, button.update-item:hover { background: var(--hover); }
+
+button.update-item { cursor: pointer; }
+
+.update-item .avatar { flex: none; }
+
+.update-text { min-width: 0; overflow-wrap: anywhere; }
+
+.update-small { display: block; color: var(--muted); font-size: 13.5px; }
+
+.update-quote { color: var(--text); font-size: 15px; }
+
+.update-none { margin: 6px 0 0; color: var(--muted); font-size: 14.5px; }
+
+.update-status { margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--line-strong); }
+
+.update-status form { display: flex; gap: 8px; align-items: center; }
+
+.update-status input { flex: 1; min-width: 0; margin: 0; font-size: 15px; }
+
+.update-status-actions { display: flex; gap: 4px; padding-inline-start: 38px; }
+
+.update-news { margin: 0; padding: 0; list-style: none; }
+
+.update-news li { position: relative; padding: 5px 0; padding-inline-start: 14px; font-size: 14.5px; line-height: 1.45; }
+
+.update-news li::before { content: ""; position: absolute; inset-inline-start: 0; top: 0.8em; width: 5px; height: 5px; background: var(--line-strong); border-radius: 50%; }
+
+.update-news a { color: var(--text); text-decoration: none; }
+
+.update-news a:hover { text-decoration: underline; }
+
+.update-source { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; }
+
+.update-source a { color: var(--muted); }
+
+.update-end { margin: 18px 0 0; padding-top: 12px; color: var(--quiet); font-size: 13.5px; text-align: center; border-top: 1px solid var(--line-strong); }
+
+/* Beside the feed, across from the globe, when the screen has room for all three. */
+.update-side { display: none; }
+
+@media (min-width: 1340px) {
+  :root {
+    --update-w: clamp(280px, 22vw, 360px);
+    --globe-w: min(clamp(270px, calc(100vw - 732px - var(--update-w)), 430px), calc(100dvh - 330px));
+  }
+
+  .update-side {
+    position: fixed;
+    top: 78px;
+    right: calc((max(var(--update-w) + 56px, 50vw - 310px) - var(--update-w)) / 2);
+    display: block;
+    width: var(--update-w);
+    max-height: calc(100dvh - 96px);
+    margin: 0;
+    overflow: hidden auto;
+    scrollbar-width: thin;
+  }
+
+  main:has(> .update-side) { margin-inline-start: max(calc(var(--update-w) + 56px), calc(50vw - 310px)); }
+
+  body:has(.update-side)::before { background: none; }
+}

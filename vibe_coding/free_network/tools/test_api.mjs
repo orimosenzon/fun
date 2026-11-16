@@ -17,6 +17,7 @@ const PILOT_PORT = BASE + 1;
 const YOUTUBE_PORT = BASE;
 const VIDEO_ID = 'abcdefghijk';
 const youtubeRequests = [];
+const digestRequests = [];
 
 // Stands in for YouTube, and records what the worker sends it.
 const fakeYoutube = createServer((request, response) => {
@@ -32,6 +33,35 @@ const fakeYoutube = createServer((request, response) => {
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify({ id_token: `x.${encoded}.y` }));
     });
+    return;
+  }
+  // The sources of the update: two Wikipedias, the Pardespedia events board and the building plans.
+  if (request.url.startsWith('/w/api.php') || request.url.startsWith('/api.php') || request.url === '/plans.json') {
+    digestRequests.push(request.url);
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(Date.now());
+    const [, month, day] = today.split('-').map(Number);
+    const heMonth = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'][month - 1];
+    const card = (title) => `<div style="font-size:125%; font-weight:bold; line-height:1.3;">${title}</div>
+<div style="margin-top:3px;"><span style="display:inline-block; width:1.7em;">🕗</span>20:30</div>
+<div style="margin-top:3px;"><span style="display:inline-block; width:1.7em;">📍</span>[https://maps.example/?q=1 בית הראשונים]</div>`;
+    const body = request.url === '/plans.json' ? { plans: [
+      { num: '308-1', name: 'תוכנית', address: 'דרך הבנים', adds: '12 יחידות דיור', shuts: '2999-01-01', hidden: false },
+      { num: '308-2', name: 'נסגרה', shuts: '2000-01-01', hidden: false },
+      { num: '308-3', name: 'מוסתרת', shuts: '2999-01-01', hidden: true }] }
+      : request.url.startsWith('/api.php') ? { parse: { wikitext: `== אירועים ==
+<!-- AUTO:START -->
+<div style="font-size:120%; border-bottom:2px solid #e3bcac; margin:22px 0 4px;">יום כלשהו, ${day} ב${heMonth} · היום</div>
+${card('[https://events.example/1 ערב ג\'אז]')}
+${card('[https://events.example/2 הופעה] <span>בוטל</span>')}
+<div style="font-size:120%; border-bottom:2px solid #e3bcac; margin:22px 0 4px;">יום רחוק, ${day} ב${heMonth}</div>
+${card('מאוחר יותר באותו יום')}
+<!-- AUTO:END -->
+<div style="font-size:125%; font-weight:bold; line-height:1.3;">מחוץ ללוח</div>` } }
+        : request.url.includes('In_the_news')
+          ? { parse: { text: '<div><ul><li>The <a href="/wiki/Sea">sea</a> sees <b><a href="/wiki/Big_Wave" title="x">a big wave</a></b> <i>(pictured)</i>.</li></ul><ul><li>Ongoing</li></ul></div>' } }
+          : { parse: { text: '<div><ul><li><a href="/wiki/%D7%92%D7%A9%D7%9D" title="גשם">גשם</a> <small>(בתמונה)</small> ירד &amp; ירד ב<a href="/wiki/X">צפון</a> (<a rel="nofollow" class="external text" href="https://news.example/1">אתר</a>)</li>\n<li>ידיעה שנייה</li></ul></div>' } };
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify(body));
     return;
   }
   youtubeRequests.push(request);
@@ -470,6 +500,78 @@ test('a place reaches friends only, rounded to about a kilometre', async () => {
   assert.equal((await anon('GET', '/globe')).status, 401);
 });
 
+test('a what\'s up line reaches friends only, and deleting it erases it', async () => {
+  const dana = await signUp('dana-status');
+  const eli = await signUp('eli-status');
+  const stranger = await signUp('stranger-status');
+  await dana.call('POST', `/friends/${eli.id}`);
+  await eli.call('POST', `/friends/${dana.id}`);
+
+  assert.equal((await dana.call('PUT', '/me/status', { text: 'x'.repeat(141) })).status, 400);
+  assert.equal((await dana.call('PUT', '/me/status', { text: '  ' })).status, 400);
+  assert.equal((await anon('PUT', '/me/status', { text: 'שלום' })).status, 401);
+  assert.equal((await dana.call('PUT', '/me/status', { text: ' עברנו דירה ' })).data.status.text, 'עברנו דירה');
+  assert.equal((await dana.call('GET', '/me')).data.user.status.text, 'עברנו דירה');
+
+  const seenBy = async (who) => (await who.call('GET', '/update')).data.friends.statuses.map((item) => item.text);
+  assert.deepEqual(await seenBy(eli), ['עברנו דירה']);
+  assert.deepEqual(await seenBy(stranger), []);
+  assert.deepEqual(await seenBy(dana), []);
+  assert.equal((await eli.call('GET', '/globe')).data.friends[0].status, 'עברנו דירה');
+
+  assert.equal((await dana.call('DELETE', '/me/status')).status, 200);
+  assert.deepEqual(await seenBy(eli), []);
+  assert.equal((await dana.call('GET', '/me')).data.user.status, null);
+  assert.equal((await eli.call('GET', '/globe')).data.friends[0].status, null);
+});
+
+test('the update tells what friends did: new posts, replies, a new place, a new member', async () => {
+  const dana = await signUp('dana-update');
+  const eli = await signUp('eli-update');
+  const stranger = await signUp('stranger-update');
+  await dana.call('POST', `/friends/${eli.id}`);
+  await eli.call('POST', `/friends/${dana.id}`);
+  assert.equal((await anon('GET', '/update')).status, 401);
+
+  const mine = (await eli.call('POST', '/posts', { body: 'הפוסט שלי', audience: 'public' })).data.id;
+  const first = (await dana.call('POST', '/posts', { body: 'ראשון', audience: 'friends' })).data.id;
+  await dana.call('POST', '/posts', { body: 'שני', audience: 'friends' });
+  await dana.call('POST', `/posts/${mine}/comments`, { body: 'תגובה' });
+  await stranger.call('POST', `/posts/${mine}/comments`, { body: 'גם אני' });
+  await eli.call('POST', `/posts/${mine}/comments`, { body: 'אני עונה לעצמי' });
+  await dana.call('PUT', '/me/place', { lat: 48.85, lng: 2.35 });
+
+  const { friends } = (await eli.call('GET', `/update?seen=${first}`)).data;
+  assert.deepEqual(friends.fresh, [{ user: { id: dana.id, name: 'dana-update', avatar: null }, count: 1 }]);
+  assert.deepEqual(friends.replies.map((item) => [item.user.id, item.postId, item.onMine]), [[stranger.id, mine, true], [dana.id, mine, true]]);
+  assert.deepEqual(friends.moved.map((item) => [item.user.id, item.place]), [[dana.id, { lat: 48.85, lng: 2.35 }]]);
+  assert.deepEqual(friends.joined.map((item) => item.user.id), [dana.id]);
+  assert.deepEqual(friends.quiet, []);
+  assert.equal((await eli.call('GET', '/update')).data.friends.fresh[0].count, 2);
+
+  // Nothing about people who are not friends, and nothing once the place is switched off.
+  const outside = (await stranger.call('GET', '/update')).data.friends;
+  assert.deepEqual([outside.fresh, outside.moved, outside.joined, outside.replies], [[], [], [], []]);
+  await dana.call('DELETE', '/me/place');
+  assert.deepEqual((await eli.call('GET', '/update')).data.friends.moved, []);
+});
+
+test('news from outside is read by the server, cleaned to plain text, and kept', async () => {
+  const eli = await signUp('eli-news');
+  const { community, country, world } = (await eli.call('GET', '/update')).data;
+  assert.deepEqual(community.events.map((event) => [event.name, event.url, event.time, event.venue]),
+    [['ערב ג\'אז', 'https://events.example/1', '20:30', 'בית הראשונים'], ['מאוחר יותר באותו יום', null, '20:30', 'בית הראשונים']]);
+  assert.deepEqual(community.plans.map((plan) => [plan.title, plan.adds, plan.url.split('#')[1]]), [['דרך הבנים', '12 יחידות דיור', 'p-308-1']]);
+  assert.deepEqual(country, [
+    { text: 'גשם ירד & ירד בצפון', url: 'https://he.wikipedia.org/wiki/%D7%92%D7%A9%D7%9D' },
+    { text: 'ידיעה שנייה', url: null }]);
+  assert.deepEqual(world, [{ text: 'The sea sees a big wave.', url: 'https://en.wikipedia.org/wiki/Big_Wave' }]);
+
+  const fetched = digestRequests.length;
+  await eli.call('GET', '/update');
+  assert.equal(digestRequests.length, fetched);
+});
+
 test('switching sharing off erases the place, and ending a friendship ends the view', async () => {
   const dana = await signUp('dana-globe2');
   const eli = await signUp('eli-globe2');
@@ -732,7 +834,9 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 let failed = 0;
 try {
   await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
-  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:http://localhost:${YOUTUBE_PORT}`]);
+  const fake = `http://localhost:${YOUTUBE_PORT}`;
+  startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
+    '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`]);
   startServer(PROD_PORT, []);
   startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
   startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);
