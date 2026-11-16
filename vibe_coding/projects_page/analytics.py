@@ -17,7 +17,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -63,6 +63,53 @@ def run_report(session, dimensions, metrics):
         idx = names.index(dims.pop())
         out.append((dims, idx, [int(float(m["value"])) for m in row["metricValues"]]))
     return out
+
+
+def run_daily(session, dimensions, metrics):
+    """One runReport from SINCE to today, split by day. Rows as (YYYY-MM-DD, dims, values)."""
+    body = {
+        "dateRanges": [{"startDate": SINCE, "endDate": "today"}],
+        "dimensions": [{"name": "date"}] + [{"name": d} for d in dimensions],
+        "metrics": [{"name": m} for m in metrics],
+        "limit": 100000,
+    }
+    r = session.post(
+        f"https://analyticsdata.googleapis.com/v1beta/properties/{PROPERTY}:runReport",
+        json=body, timeout=60,
+    )
+    r.raise_for_status()
+    out = []
+    for row in r.json().get("rows", []):
+        d, *dims = [x["value"] for x in row["dimensionValues"]]
+        out.append((f"{d[:4]}-{d[4:6]}-{d[6:]}", dims, [int(float(m["value"])) for m in row["metricValues"]]))
+    return out
+
+
+def daily_series(session, prefixes):
+    """Views per day for every card, the projects page and the rest, plus
+    visitors per day, all as arrays aligned to "dates" (every day from SINCE
+    to today, zeros included, so the page can slice any interval)."""
+    start = datetime.strptime(SINCE, "%Y-%m-%d").date()
+    today = datetime.now(timezone.utc).date()
+    dates = [(start + timedelta(days=i)).isoformat() for i in range((today - start).days + 1)]
+    at = {d: i for i, d in enumerate(dates)}
+    zeros = lambda: [0] * len(dates)
+    apps, home, other, users = {}, zeros(), zeros(), zeros()
+    for d, (path,), (views,) in run_daily(session, ["pagePath"], ["screenPageViews"]):
+        if d not in at:
+            continue
+        path = normalize(path)
+        anchor = owner(path, prefixes)
+        if anchor:
+            apps.setdefault(anchor, zeros())[at[d]] += views
+        elif path in (SITE, SITE.rstrip("/")):
+            home[at[d]] += views
+        else:
+            other[at[d]] += views
+    for d, _, (u,) in run_daily(session, [], ["totalUsers"]):
+        if d in at:
+            users[at[d]] = u
+    return {"dates": dates, "apps": apps, "home": home, "other": other, "users": users}
 
 
 def normalize(path: str) -> str:
@@ -148,6 +195,7 @@ def main():
         "home": home,
         "other": other,
         "totals": totals,
+        "daily": daily_series(session, prefixes),
     }
     OUT.write_text(json.dumps(stats, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"wrote {OUT}: {len(apps)} apps, {totals['views'][-1]} views since {SINCE}")

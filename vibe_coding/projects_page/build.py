@@ -173,32 +173,59 @@ def render_try(data: dict) -> str:
 
 
 def render_stats(data: dict) -> str:
-    """Visits per project. The numbers come from stats.json, which analytics.py
+    """The views explorer: KPIs, a chart of views over time for the projects
+    the reader picks, a brush to choose any range, and a ranking table that is
+    also the picker. The numbers come from stats.json, which analytics.py
     writes at deploy time, so the section stays hidden until the script loads
     it; here we only ship the names and icons it is keyed by (card anchors)."""
     meta = {}
     for s in data["sections"]:
         for p in s["projects"]:
-            name, sub = short_name(p["title"])
-            meta[p["_anchor"]] = {"name": name, "icon": p.get("icon", ""), "theme": p.get("theme", "t-indigo")}
+            name, sub = short_name(re.sub(r"<[^>]+>", "", p["title"]))
+            meta[p["_anchor"]] = {"name": name, "sub": sub, "icon": p.get("icon", "")}
     meta_json = json.dumps(meta, ensure_ascii=False).replace("</", "<\\/")
+    seg = lambda k, opts, label: (
+        f'<div class="stats-seg" data-k="{k}" role="group" aria-label="{label}">'
+        + "".join(f'<button type="button" data-v="{v}">{t}</button>' for v, t in opts) + "</div>")
+    kpi = lambda k, label: (
+        f'<div class="stats-kpi"><div class="stats-kpi-label">{label}</div>'
+        f'<div class="stats-kpi-value" data-k="{k}">–</div><div class="stats-kpi-sub" data-k="{k}-sub"></div></div>')
     return f"""    <section class="stats" id="stats" hidden>
         <div class="section-header">
             <span class="section-emoji">📈</span>
-            <span class="section-title">כניסות לאפליקציות</span>
+            <span class="section-title">צפיות בפרויקטים</span>
             <span class="section-count stats-updated"></span>
         </div>
-        <div class="stats-bar">
-            <div class="stats-ranges" role="group" aria-label="טווח זמן">
-                <button type="button" data-r="0">7 ימים</button>
-                <button type="button" data-r="1">30 יום</button>
-                <button type="button" data-r="2" class="stats-since">מההתחלה</button>
+        <div class="stats-panel">
+            <div class="stats-kpis">
+                {kpi("views", "צפיות באתר")}
+                {kpi("users", "מבקרים")}
+                {kpi("peak", "היום החזק")}
+                {kpi("chg", "שינוי")}
             </div>
-            <div class="stats-totals"></div>
+            <div class="stats-tools">
+                {seg("preset", [("7", "7 ימים"), ("14", "14 יום"), ("30", "30 יום"), ("all", "הכל")], "טווח זמן")}
+                {seg("gran", [("d", "יומי"), ("w", "שבועי")], "רזולוציה")}
+                {seg("mode", [("v", "צפיות"), ("c", "מצטבר")], "תצוגה")}
+                {seg("log", [("0", "ליניארי"), ("1", "לוגריתמי")], "סקאלה")}
+                <span class="stats-range-label"></span>
+            </div>
+            <div class="stats-chart" tabindex="0" aria-label="גרף צפיות. חיצים ימינה ושמאלה עוברים בין הימים">
+                <div class="stats-empty-chart" hidden>בחרו פרויקטים מהטבלה למטה כדי לראות אותם בגרף</div>
+                <div class="stats-tip" hidden></div>
+            </div>
+            <div class="stats-nav" aria-hidden="true"></div>
+            <div class="stats-nav-hint">גררו את החלון, משכו את הקצוות או סמנו טווח חדש על הרצועה</div>
+            <div class="stats-table-head">
+                <span class="stats-table-sum grow"></span>
+                <span class="stats-toast" aria-live="polite"></span>
+                <button type="button" class="stats-btn" data-act="top">5 המובילים</button>
+                <button type="button" class="stats-btn" data-act="clear">נקה בחירה</button>
+            </div>
+            <ol class="stats-rows"></ol>
+            <button type="button" class="stats-btn stats-more" hidden></button>
+            <p class="stats-note">צפיות בדפים לפי Google Analytics, מאז 3.11.2026. דף הפרויקטים עצמו נספר רק בסיכומים שלמעלה. היום הנוכחי עוד לא נגמר, ולכן הקטע האחרון בגרף מקווקו.</p>
         </div>
-        <ol class="stats-list"></ol>
-        <button type="button" class="stats-more" hidden>הצג את כולם</button>
-        <p class="stats-note">צפיות בדפים לפי Google Analytics. דף הפרויקטים עצמו לא נספר כאן.</p>
         <script type="application/json" id="stats-meta">{meta_json}</script>
     </section>"""
 
