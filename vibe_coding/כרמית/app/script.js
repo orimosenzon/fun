@@ -6,7 +6,7 @@
 // they see only that quiz, never the start screen or the other quizzes.
 // A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl } from './fb.js';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611161418';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');

@@ -23,12 +23,16 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     ctx = b.new_context(viewport={"width": 1200, "height": 1000})
     copied = []
+    shorts = []
 
     # ---- letters: written on their own, marked before/after inside a quiz, one share link ----
     admin = ctx.new_page()
     stub(admin)
     # Catch what the share button copies.
-    admin.add_init_script("navigator.clipboard.writeText = async (t) => { window.__copied = t; };")
+    admin.add_init_script("""
+      navigator.clipboard.writeText = async (t) => { window.__copied = t; };
+      navigator.clipboard.write = async (items) => { window.__copied = await (await items[0].getType('text/plain')).text(); };
+    """)
     admin.goto(BASE + "admin.html#letters")
     admin.wait_for_selector("#tab-letters:visible")
 
@@ -39,6 +43,19 @@ with sync_playwright() as p:
         admin.fill("#letter-link-url", link)
         admin.click("#letter-save")
         admin.wait_for_timeout(300)
+
+    def share():
+        """Copies the share link: a short link; appends where its code leads, as the old long form, to `copied`."""
+        admin.evaluate("window.__copied = null")
+        admin.click("#share-btn")
+        admin.wait_for_function("window.__copied")
+        short = admin.evaluate("window.__copied")
+        check("/carmit/?" in short, f"admin: a short link: {short}")
+        code = short.split("?")[1]
+        link = admin.evaluate(f"window.__store.links['{code}']")
+        url = BASE + f"index.html?q={link['q']}" + (f"&b={link['b']}" if link["b"] else "") + (f"&a={link['a']}" if link["a"] else "")
+        copied.append(url)
+        shorts.append(short)
 
     admin.click("#letter-new-home")
     admin.click("#letter-save")
@@ -57,8 +74,7 @@ with sync_playwright() as p:
     admin.wait_for_selector("#quiz-view:visible")
     check(admin.locator("#letters-list li").count() == 3, "admin: the quiz lists every letter")
     check("בלי מכתבים" in admin.inner_text("#share-with"), "admin: nothing marked, the link goes without letters")
-    admin.click("#share-btn")
-    copied.append(admin.evaluate("window.__copied"))
+    share()
     check(copied[-1].endswith("index.html?q=qe"), f"admin: plain link: {copied[-1]}")
 
     def mark(name, role):
@@ -75,20 +91,21 @@ with sync_playwright() as p:
     q = admin.evaluate("window.__store.quizzes.qe")
     check(q["opening"] == by["עוד אחד"] and admin.locator("#letters-list li.picked").count() == 2, "admin: one letter per place")
     mark("פתיחה", "opening")
-    admin.click("#share-btn")
-    copied.append(admin.evaluate("window.__copied"))
+    share()
     both = copied[-1]
     check(f"b={by['פתיחה']}" in both and f"a={by['סגירה']}" in both, f"admin: the one link carries both letters: {both}")
-    check(admin.get_attribute("#play-link", "href") == both, "admin: 'play it' opens the same link")
+    check(admin.get_attribute("#play-link", "href").endswith(both.split("/app/")[1]), "admin: 'play it' opens the same quiz and letters")
+    n_links = len(admin.evaluate("window.__store.links"))
+    share()
+    check(shorts[-1] == shorts[-2] and len(admin.evaluate("window.__store.links")) == n_links,
+          "admin: the same choice gets the same short link again")
     mark("סגירה", "none")
-    admin.click("#share-btn")
-    copied.append(admin.evaluate("window.__copied"))
+    share()
     before_only = copied[-1]
     check("a=" not in before_only and "b=" in before_only, f"admin: before only: {before_only}")
     mark("פתיחה", "none")
     mark("סגירה", "closing")
-    admin.click("#share-btn")
-    copied.append(admin.evaluate("window.__copied"))
+    share()
     after_only = copied[-1]
     check("b=" not in after_only and "a=" in after_only, f"admin: after only: {after_only}")
 
@@ -115,6 +132,16 @@ with sync_playwright() as p:
     check(page.is_hidden("#letter"), "player: after only, nothing above the quiz")
     finish_quiz(page)
     check(page.is_visible("#letter-after") and page.is_hidden("#letter-end"), "player: the letter after, no button")
+
+    # The short page forwards to the quiz with its letters (Firestore's REST answer faked).
+    links = admin.evaluate("window.__store.links")
+    both_code = [c for c, l in links.items() if l["b"] and l["a"]][0]
+    page.route("**/firestore.googleapis.com/**", lambda r: r.fulfill(json={"fields": {k: {"stringValue": v} for k, v in links[r.request.url.split("/links/")[1].split("?")[0]].items() if k in "qba"}}))
+    page.goto(shorts[0].split("?")[0] + f"?{both_code}")
+    page.wait_for_selector("#start-btn:visible")
+    check(page.inner_text("#letter-text") == "שלום מלפני", f"short page: forwarded to the quiz with its letter: {page.url}")
+    meta = page.request.get(shorts[0].split("?")[0]).text()
+    check('og:title" content="חידות כרמית כונסרי"' in meta and "logo.jpg" in meta, "short page: preview title and logo")
 
     play(before_only)
     finish_quiz(page)

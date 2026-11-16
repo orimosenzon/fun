@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Short links to Carmit's riddles: orimosenzon.github.io/fun/carmit/?<code>. WhatsApp and Facebook read the
+     preview below (they don't run scripts); a person is forwarded to the quiz that links/<code> in Firestore names.
+     The app itself is in vibe_coding/כרמית/app/; codes are made by its admin, on "העתקת קישור לשליחה". -->
+<title>חידות כרמית כונסרי</title>
+<meta name="description" content="Wordplay & Wonder · חידות ויזואליות שמשלבות צילום ומשחקי מילים בעברית ובאנגלית">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="Wordplay & Wonder">
+<meta property="og:title" content="חידות כרמית כונסרי">
+<meta property="og:description" content="Wordplay & Wonder · חידות ויזואליות שמשלבות צילום ומשחקי מילים בעברית ובאנגלית">
+<meta property="og:image" content="https://orimosenzon.github.io/fun/vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA/app/logo.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="640">
+<meta property="og:image:height" content="597">
+<meta property="og:image:alt" content="Wordplay & Wonder">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="../vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA/app/favicon.png">
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 16px; box-sizing: border-box; background: #0b0d12; color: #e8eaf0;
+    font-family: system-ui, sans-serif; text-align: center;
+  }
+  img { width: 140px; height: auto; border-radius: 16px; }
+  p { margin: 0; color: #9aa1b2; }
+  a { color: #5ee7ff; }
+</style>
+</head>
+<body>
+  <img src="../vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA/app/logo.jpg" alt="Wordplay & Wonder">
+  <p id="msg">טוענים את החידון…</p>
+  <script>
+    const APP = new URL('../vibe_coding/%D7%9B%D7%A8%D7%9E%D7%99%D7%AA/app/index.html', location.href);
+    const DOC = 'https://firestore.googleapis.com/v1/projects/carmit-riddles/databases/(default)/documents/links/';
+    const KEY = 'AIzaSyBH4Mu3MdsovurJBUiAFmCdnvp6VQW0nW0';  // the app's public web key; the rules guard the data
+    const code = location.search.slice(1).split('&')[0];
+    function fail() {
+      document.getElementById('msg').innerHTML = 'הקישור הזה לא נמצא. <a href="' + APP.href + '">לחידות של כרמית</a>';
+    }
+    if (!/^[a-z0-9]{4,12}$/.test(code)) {
+      location.replace(APP.href);
+    } else {
+      fetch(DOC + code + '?key=' + KEY)
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((d) => {
+          const f = d.fields || {};
+          const val = (k) => (f[k] && f[k].stringValue) || '';
+          if (!val('q')) return fail();
+          const url = new URL(APP);
+          url.searchParams.set('q', val('q'));
+          if (val('b')) url.searchParams.set('b', val('b'));
+          if (val('a')) url.searchParams.set('a', val('a'));
+          location.replace(url.href);
+        })
+        .catch(fail);
+    }
+  </script>
+</body>
+</html>

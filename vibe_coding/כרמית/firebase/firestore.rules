@@ -33,5 +33,16 @@ service cloud.firestore {
         && request.resource.data.text is string
         && request.resource.data.image is string;
     }
+    // A short link (orimosenzon.github.io/fun/carmit/?<code>): which quiz and which letters it opens.
+    // Never changed once made, so a link that was sent always opens the same thing.
+    match /links/{code} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && code.matches('^[a-z0-9]{4,12}$')
+        && request.resource.data.q is string
+        && request.resource.data.b is string
+        && request.resource.data.a is string;
+      allow update, delete: if false;
+    }
   }
 }

@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
 import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, loadLetters, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611161418';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -474,15 +474,54 @@ $('cover-file').addEventListener('change', async (e) => {
 });
 $('cover-remove').addEventListener('click', async () => { await saveQuiz({ cover: '' }); renderQuiz(); });
 
-$('share-btn').addEventListener('click', () => copyLink(playUrl(current)));
+// ---------- short links ----------
+// What gets sent is a short link, orimosenzon.github.io/fun/carmit/?<code>. That page carries the preview
+// (Wordplay & Wonder logo, "חידות כרמית כונסרי") and forwards to the quiz. links/<code> says where to: the quiz
+// and its letters. The same quiz with the same letters always gets the same code back.
+const SHORT_BASE = new URL('../../../carmit/', location.href).href;
+const CODE_CHARS = 'abcdefghijkmnpqrstuvwxyz23456789';  // no l, o, 0, 1: nothing to misread
 
+function randomCode() {
+  return [...crypto.getRandomValues(new Uint8Array(6))].map((n) => CODE_CHARS[n % CODE_CHARS.length]).join('');
+}
+
+async function shortLink(q) {
+  const { opening, closing } = chosen(q);
+  const target = { q: q.id, b: opening ? opening.id : '', a: closing ? closing.id : '' };
+  const key = `${target.q}|${target.b}|${target.a}`;
+  const found = await fs.getDocs(fs.query(fs.collection(db, 'links'), fs.where('key', '==', key)));
+  if (found.docs.length) return SHORT_BASE + '?' + found.docs[0].id;
+  for (let i = 0; i < 5; i++) {
+    const code = randomCode();
+    if ((await fs.getDoc(fs.doc(db, 'links', code))).exists()) continue;
+    await fs.setDoc(fs.doc(db, 'links', code), { ...target, key, by: auth.currentUser.email, created: fs.serverTimestamp() });
+    return SHORT_BASE + '?' + code;
+  }
+  throw new Error('no free code');
+}
+
+$('share-btn').addEventListener('click', () => {
+  const quiz = current;
+  // Made inside the click itself: Safari on a phone only lets a click copy, not something that finishes later.
+  const url = shortLink(quiz).catch((err) => {
+    console.error(err);
+    toast('לא הצלחנו ליצור קישור קצר, הועתק הקישור הארוך.');
+    return playUrl(quiz);
+  });
+  copyLink(url);
+});
+
+// url may be a promise of the link (the short link is still being made).
 async function copyLink(url) {
   try {
-    await navigator.clipboard.writeText(url);
-    toast('הקישור הועתק. אפשר להדביק ולשלוח.');
+    if (typeof ClipboardItem === 'undefined') throw new Error('no ClipboardItem');
+    const blob = Promise.resolve(url).then((u) => new Blob([u], { type: 'text/plain' }));
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
   } catch {
-    prompt('הקישור לחידון:', url);
+    const u = await url;
+    try { await navigator.clipboard.writeText(u); } catch { return prompt('הקישור לחידון:', u); }
   }
+  toast(`הקישור הועתק: ${await url}`);
 }
 
 // ---------- the heading above the quiz ----------
