@@ -95,6 +95,13 @@ precision highp float;
 ${GLSL_COMMON}
 uniform sampler2D uHeight, uNormal, uAux, uShadowMap; uniform mat4 uShadowMat; uniform float uShadowOn; uniform vec4 uWorld;
 uniform vec4 uLake; uniform vec4 uLakeBox; uniform float uFar;
+// Photographs of real ground (assets/ground, from Poly Haven, CC0). Each one is divided by its own
+// mean colour, so it adds only what the painted ground lacks (blades, pebbles, cracks) and the
+// colours stay the ones chosen below. From far away the mip-maps return the mean: nothing changes.
+uniform sampler2D uTRock, uTGrass, uTGravel, uTRockN, uTGrassN; uniform float uDetail;
+const vec3 ROCK_MEAN = vec3(0.2323, 0.1455, 0.0838), GRASS_MEAN = vec3(0.2918, 0.2482, 0.1198), GRAVEL_MEAN = vec3(0.2980, 0.2361, 0.1510);
+// (half of the photograph's own colour is kept: all of it would tint the pale limestone with the brown of another rock)
+vec3 photo(sampler2D t, vec2 uv, vec3 mean) { vec3 r = min(texture2D(t, uv).rgb / mean, vec3(2.6)); return mix(vec3(dot(r, vec3(0.3, 0.55, 0.15))), r, 0.5); }
 varying vec3 vW;
 float shadowTap(vec2 uv, float z) { return step(z, unpackRGBAToDepth(texture2D(uShadowMap, uv))); }
 float realShadow(vec3 wp) {
@@ -135,6 +142,12 @@ void main() {
   vec2 dm = vec2(fbm3(vW.xz / 19.0 + 5.0) - fbm3(vW.xz / 19.0 - 5.0), fbm3(vW.zx / 19.0 + 9.0) - fbm3(vW.zx / 19.0 - 9.0));
   vec2 df = vec2(vnoise(vW.xz / 0.37 + 3.0) - vnoise(vW.xz / 0.37 - 3.0), vnoise(vW.zx / 0.37 + 5.0) - vnoise(vW.zx / 0.37 - 5.0));
   vec3 tang = normalize(vec3(n.x, 0.0, n.z) + 1e-4);
+  // the relief of the photographs: turf seen from above, rock from the side on the walls
+  float photoN = uDetail * (1.0 - smoothstep(40.0, 260.0, dist));
+  vec2 gn = texture2D(uTGrassN, vW.xz / 3.1).xy * 2.0 - 1.0;
+  vec2 rT = texture2D(uTRockN, vW.xz / 9.0).xy * 2.0 - 1.0, rX = texture2D(uTRockN, vW.zy / 9.0).xy * 2.0 - 1.0, rZ = texture2D(uTRockN, vW.xy / 9.0).xy * 2.0 - 1.0;
+  vec3 rockN = mix(vec3(rT.x, 0.0, rT.y), (vec3(0.0, rX.y, rX.x) * wX + vec3(rZ.x, rZ.y, 0.0) * wZ) / (wX + wZ), steep);
+  n = normalize(n + (vec3(gn.x, 0.0, gn.y) * 0.45 * (1.0 - rockW) + rockN * 0.9 * rockW) * photoN);
   n = normalize(n + vec3(dm.x, 0.0, dm.y) * (1.5 * rockW + 0.10) * midK + vec3(dn.x, 0.0, dn.y) * (1.0 * rockW + 0.22) * nearK
       + vec3(df.x, 0.0, df.y) * (0.5 * rockW + 0.25) * (1.0 - smoothstep(20.0, 110.0, dist))
       + (tang * 0.9 - vec3(0.0, 0.5, 0.0)) * ledge * 1.3 * rockW * midK);
@@ -151,6 +164,16 @@ void main() {
   grass = mix(grass, mix(vec3(0.75, 0.62, 0.10), vec3(0.72, 0.68, 0.78), step(0.5, nC)), fl * 0.55);
   vec3 forest = vec3(0.028, 0.058, 0.024) * (0.8 + 0.5 * nB);
   vec3 col = mix(grass, forest, smoothstep(0.1, 0.7, aux.b) * 0.92);
+  // two sizes of every photograph, multiplied: the small one is the ground under the bike, the
+  // large one breaks the repetition that the eye finds from the air
+  float photoK = uDetail * (1.0 - smoothstep(1200.0, 3200.0, dist));
+  // (the photograph of the turf is flat, lit from straight above: its contrast is raised to read at all)
+  vec3 turf = photo(uTGrass, vW.xz / 3.1, GRASS_MEAN) * mix(vec3(1.0), photo(uTGrass, vW.xz / 23.0, GRASS_MEAN), 0.8);
+  col *= mix(vec3(1.0), pow(turf, vec3(1.45)), photoK);
+  vec3 gravelP = mix(vec3(1.0), photo(uTGravel, vW.xz / 4.3, GRAVEL_MEAN) * mix(vec3(1.0), photo(uTGravel, vW.xz / 31.0, GRAVEL_MEAN), 0.6), 0.9 * photoK);
+  vec3 rockNear = mix(photo(uTRock, vW.xz / 9.0, ROCK_MEAN), (photo(uTRock, vW.zy / 9.0, ROCK_MEAN) * wX + photo(uTRock, vW.xy / 9.0, ROCK_MEAN) * wZ) / (wX + wZ), steep);
+  vec3 rockFar = mix(photo(uTRock, vW.xz / 67.0, ROCK_MEAN), (photo(uTRock, vW.zy / 67.0, ROCK_MEAN) * wX + photo(uTRock, vW.xy / 67.0, ROCK_MEAN) * wZ) / (wX + wZ), steep);
+  vec3 rockP = mix(vec3(1.0), rockNear * mix(vec3(1.0), rockFar, 0.7), 0.9 * photoK);
   // rock: banded limestone, weathered streaks, lichen
   vec3 rock = mix(vec3(0.27, 0.25, 0.225), vec3(0.47, 0.44, 0.40), st1 * 0.35 + st2 * 0.65);
   rock = mix(rock, vec3(0.42, 0.33, 0.24), smoothstep(0.5, 0.85, nA) * 0.45);               // iron-stained bands
@@ -159,13 +182,13 @@ void main() {
   rock *= 0.72 + 0.56 * mix(fbm3(vW.xz / 6.0), sD, steep);
   rock *= 0.88 + 0.24 * mix(nD, sE, steep) * nearK;
   float cav = mix(0.5, sD * 0.6 + sC * 0.4, rockW);                                         // crevices take less sky light
-  vec3 scree = vec3(0.37, 0.355, 0.33) * (0.72 + 0.4 * nC) * (0.85 + 0.3 * nD);
+  vec3 scree = vec3(0.37, 0.355, 0.33) * (0.72 + 0.4 * nC) * (0.85 + 0.3 * nD) * gravelP;
   col = mix(col, scree, smoothstep(0.09, 0.19, slopeL + (nB - 0.5) * 0.1) * (0.3 + 0.7 * alp) * (1.0 - 0.6 * smoothstep(0.1, 0.6, aux.b)));
-  col = mix(col, rock, rockW);
+  col = mix(col, rock * rockP, rockW);
   // shore and lake bed
   float inLake = step(uLakeBox.x, vW.x) * step(vW.x, uLakeBox.z) * step(uLakeBox.y, vW.z) * step(vW.z, uLakeBox.w);
   float shore = inLake * (1.0 - smoothstep(0.3, 2.6, h - uLake.x)) * (1.0 - rockW);
-  col = mix(col, vec3(0.42, 0.40, 0.34) * (0.7 + 0.5 * nC), shore);
+  col = mix(col, vec3(0.42, 0.40, 0.34) * (0.7 + 0.5 * nC) * gravelP, shore);
   // snow: above the snow line, less on steep and sun-facing rock, drifts in gullies
   col *= 1.0 - 0.3 * uWx.y;                                                                  // rain: wet ground is darker
   float snowLine = 2330.0 + (nA - 0.5) * 420.0 - (1.0 - aux.g) * 500.0 - n.z * 60.0 - uWx.z * 2200.0;   // (snowfall: down to the valley floor)
@@ -235,6 +258,17 @@ export async function buildTerrain(scene, yieldFn) {
     uniforms: { ...U, uLake: { value: new THREE.Vector4(lake.level, 0, 0, 0) }, uLakeBox: { value: new THREE.Vector4(lake.x0, lake.z0, lake.x1 + 300, lake.z1) }, uFar: { value: 0 } },
   });
   terrain.mat = mat;
+  // the photographs arrive when they arrive: until then the ground is the painted one
+  const TEX = { uTRock: 'rock', uTGrass: 'grass', uTGravel: 'gravel', uTRockN: 'rock_n', uTGrassN: 'grass_n' };
+  const loader = new THREE.TextureLoader(); let left = Object.keys(TEX).length;
+  mat.uniforms.uDetail = { value: 0 };
+  for (const [u, name] of Object.entries(TEX)) {
+    mat.uniforms[u] = { value: null };
+    loader.load(`assets/ground/${name}.jpg`, (t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (!name.endsWith('_n')) t.colorSpace = THREE.SRGBColorSpace;
+      mat.uniforms[u].value = t; if (--left === 0) mat.uniforms.uDetail.value = 1;
+    });
+  }
   const group = new THREE.Group();
   const nc = (T.n - 1) / CH;
   for (let cj = 0; cj < nc; cj++) {

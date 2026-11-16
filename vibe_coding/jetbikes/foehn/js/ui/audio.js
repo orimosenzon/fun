@@ -17,7 +17,7 @@ export class Audio {
   note(name, args) { if (this.tape) this.tape.push([this.tapeT, name, args]); }
   build(c) {
     this.ctx = c;
-    this.master = c.createGain(); this.master.gain.value = this.vol;
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : this.vol;
     const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 5;
     this.master.connect(comp); comp.connect(c.destination);
     // noise source

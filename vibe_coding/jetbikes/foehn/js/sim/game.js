@@ -46,6 +46,7 @@ export class Game {
   }
   restart() {
     const st = this.build.start;
+    if (this.ev.env) this.setWind(this.ev.env.wind);
     // balloons are shot in any order: the one that is hit changes places with the next in line, so cp still counts them
     this.cps = this.cps0.slice(); this.cps0.forEach((c, k) => { c.k = k; c.popped = false; });
     this.gun.reset();
@@ -163,6 +164,8 @@ export class Game {
     this.splits.push(t);
     const delta = this.best && this.best.splits && this.best.splits[i] !== undefined ? t - this.best.splits[i] : null;
     this.emit(c.type === 'land' ? 'land' : 'gate', { index: i, time: t, delta, perfect: off < 0.3, last: i === this.cps.length - 1 });
+    // an event with a day of its own: this check-point turns the hour, the weather and the wind
+    if (c.stage) { this.setWind(c.stage.wind); this.emit('stage', { env: c.stage }); }
     this.advance(c, true);
   }
   advance(c, passed) {

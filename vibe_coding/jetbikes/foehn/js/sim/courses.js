@@ -21,7 +21,7 @@ function atX(valley, x, off = 0) {
   return [a[0] + tx * u - tz / l * off, a[1] + tz * u + tx / l * off];
 }
 const G = (p, agl, r = 11, extra = {}) => ({ x: p[0], z: p[1], agl, r, ...extra });
-const L = (pad) => ({ land: pad });
+const L = (pad, extra = {}) => ({ land: pad, ...extra });
 const B = (p, agl, r = 2.2) => ({ x: p[0], z: p[1], agl, r, target: true });   // a tethered balloon to shoot
 const H = (p, alt) => ({ x: p[0], z: p[1], alt, r: 30, hint: true });   // invisible navigation node at an absolute altitude
 // nodes along a valley centre line from fraction t0 to t1: a ring every `every` nodes, hints between
@@ -84,6 +84,30 @@ export const EVENTS = [
     cps: castleCourse,
   },
   {
+    // Everything the valley has, in one flight, for showing it off: the day passes and the weather
+    // turns as the rider goes. A check-point with a stage changes the hour, the weather and the
+    // wind when it is passed (env: how the flight begins). The wind itself always follows the
+    // ground: it lifts on the slope it blows against, sinks behind it, and gusts near the walls.
+    id: 'day', name: 'יום בעמק', tag: 'מבוקר עד דמדומים: עדרים באחו, הכפר, האגם, גשם בקניון, סופת שלג ברכס, המבצר ונחיתה בבית',
+    start: { pad: 'base', yaw: 0 }, wind: { speed: 4, gust: 1, heading: 0.3 }, medals: [400, 450, 560],
+    env: { time: 'morning', weather: 'clear', wind: 1 },
+    cps: () => [
+      // morning over the meadows, the herds and the village
+      G([-1480, 2330], 12, 17), G([-1050, 2220], 14, 17), G([-640, 1990], 12, 16), G([-250, 1830], 12, 16), G([110, 1840], 12, 16), G([340, 1960], 16, 16),
+      G([700, 2110], 24, 16, { stage: { time: 'noon', weather: 'clear', wind: 1 } }),
+      // noon on the lake, round the island
+      G(atX('main', 1500, 60), 10, 12), G(atX('main', 2200, 150), 7, 11), G([2620, 1540], 7, 11), G([2960, 1380], 8, 12), G([2900, 1130], 8, 12), G([2560, 1160], 8, 11),
+      G(atX('main', 2150, -40), 9, 14), H(atX('main', 1500, -40), 965), G([520, 1700], 30, 16), G([-150, 1640], 28, 15, { stage: { time: 'afternoon', weather: 'rain', wind: 2 } }),
+      // the afternoon turns to rain in the gorge, to snow higher up, and to a storm on the open ridge
+      ...along('gorge', 0.03, 0.74, 24, 30, 14, 3).map((c, i) => (i === 15 ? { ...c, stage: { time: 'afternoon', weather: 'snow', wind: 2 } } : c)), H(on('gorge', 0.80), 1740), H(on('gorge', 0.88), 1930), G([-320, -3420], 24, 24, { stage: { time: 'afternoon', weather: 'snow', wind: 3 } }),      // out of the gorge: now the storm
+      // a wide turn over the tarn, then along the ridge to the fortress, as the sky clears into the golden hour
+      H([-560, -3620], 1990), H([-820, -3380], 2150), H([-900, -2950], 2430), H([-830, -2370], 2380), G([-1360, -1330], 2400 - 1895, 26, { stage: { time: 'golden', weather: 'clear', wind: 1 } }), H([-1640, -820], 2420), H([-1820, -480], 2360), L('castle'),
+      ...castleCourse().map((c, i, a) => ({ ...c, finish: false, ...(i === a.length - 1 ? { stage: { time: 'dusk', weather: 'clear', wind: 1 } } : {}) })),
+      // dusk: down the mountain to the lights of the base
+      // (the course leaves the fortress northwards, under the bridge: round its north side, where the ground falls away, and then south)
+      H([-1836, -520], 2262), H([-1690, -650], 2235), H([-1400, -560], 2160), H([-1240, -200], 2010), H([-1300, 320], 1720), H([-1600, 1000], 1350), H([-1780, 1600], 1090), L('base')],
+  },
+  {
     // no rings: ten balloons, shot in any order with the nose gun. The clock stops with the last one,
     // and every round that hits nothing costs two seconds.
     id: 'hunt', name: 'ציד בלונים', tag: 'עשרה בלונים, תותח אחד בחרטום. מכוונים עם האופנוע כולו, וכל החטאה עולה שתי שניות', gun: true,
@@ -127,8 +151,8 @@ export function buildEvent(ev) {
   const sp = pads[ev.start.pad];
   const start = { p: [sp[0], sp[1], sp[2]], yaw: ev.start.yaw, pad: ev.start.pad };
   const cps = ev.cps().map((c) => {
-    if (c.land) { const p = pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15) }; }
-    return { type: c.target ? 'target' : c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow };
+    if (c.land) { const p = pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15), stage: c.stage }; }
+    return { type: c.target ? 'target' : c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow, stage: c.stage };
   });
   // reference line: start (lifted), check-points (landings approached from above)
   const up = ev.start.up || [22, 26, 70];     // how the line leaves the pad: height above it, then height and distance of the first node

@@ -18,6 +18,9 @@ import { buildTerrain, updateTerrain, bakeSunShadow } from './render/terrain.js'
 import { buildSky } from './render/sky.js';
 import { buildWater, renderReflection, water } from './render/water.js';
 import { buildForest, updateForest } from './render/forest.js';
+import { Fauna } from './sim/fauna.js';
+import { buildFauna } from './render/fauna.js';
+import { buildFlora } from './render/flora.js';
 import { buildProps, Gates } from './render/props.js';
 import { Targets } from './render/targets.js';
 import { buildCastleMesh } from './render/castle.js';
@@ -38,7 +41,9 @@ const load = (p, text) => { $('lbar').firstElementChild.style.width = Math.round
 const KEY = 'foehn.v1';
 const save = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })();
 save.best = save.best || {}; save.set = Object.assign({ time: 'afternoon', quality: 'high', invert: false, weather: 'clear', wind: 1 }, save.set || {});
-const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch { /* private mode */ } };
+// (while an event runs its own day, the rider's own hour, weather and wind are held here and are what is kept)
+let envHold = null;
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(envHold ? { ...save, set: { ...save.set, ...envHold } } : save)); } catch { /* private mode */ } };
 const b64 = (f32) => { const u = new Uint8Array(f32.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = (s) => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Float32Array(u.buffer); };
 const bestOf = (id) => { const b = save.best[id]; if (!b) return null; if (!b._g && b.ghost) { try { b._g = unb64(b.ghost); } catch { b._g = null; } } return { time: b.time, splits: b.splits, ghost: b._g, medal: b.medal }; };
@@ -91,6 +96,11 @@ async function boot() {
   buildWater(scene, renderer);
   await load(0.62, t('load.forest'));
   buildForest(scene);
+  // the animals: placed at once, drawn as soon as their models have arrived
+  const fauna = new Fauna(), ZERO3 = [0, 0, 0]; let herds = { update() {}, meshes: [] };
+  buildFauna(scene, fauna).then((h) => { herds = h; }).catch((e) => console.warn('no animals:', e));
+  let flora = { update() {} };
+  buildFlora(scene, fauna).then((f) => { flora = f; }).catch((e) => console.warn('no plants:', e));
   await load(0.7, t('load.village'));
   const props = buildProps(scene);
   const castle = buildCastleMesh(scene);
@@ -124,6 +134,10 @@ async function boot() {
   const game = new Game(), input = new Input(), audio = new Audio(), hud = new Hud();
   input.invert = save.set.invert;
   const rec = new Recorder(game);
+  // the sound switch in the corner (and the M key); the choice is kept for the next visit
+  const setMute = (m) => { audio.setMuted(m); save.set.muted = m; persist(); const b = $('mute'); b.classList.toggle('muted', m); b.title = t(m ? 'mute.off' : 'mute.on'); b.setAttribute('aria-label', b.title); };
+  setMute(!!save.set.muted);
+  $('mute').onclick = (e) => { setMute(!audio.muted); e.currentTarget.blur(); };
   let fcaps = null; filmCaps().then((c) => { fcaps = c; });      // how this browser can make a video file, if at all
   let rp = null;                          // the replay that is on screen now, if any
   let auto = null, mode = 'menu', paused = false, camMode = Q.get('cam') || 'chase', time = 0, flash = 0;
@@ -134,10 +148,25 @@ async function boot() {
   if (touchUI) input.enableTouch($('touch'));
   $('touch').classList.remove('on');
 
+  // ---- an event may carry the hour, the weather and the wind with it ('day': they change as it goes) ----
+  const envKey = (e) => e.time + '/' + e.weather + '/' + e.wind;
+  const envNow = () => ({ time: save.set.time, weather: save.set.weather, wind: save.set.wind });
+  function setEnv(e) {
+    if (!envHold) envHold = envNow();
+    if (envKey(e) === envKey(envNow())) return;
+    const sky = e.time !== save.set.time || e.weather !== save.set.weather;
+    save.set.time = e.time; save.set.weather = e.weather; save.set.wind = e.wind;
+    if (sky) applyTime(e.time);
+    game.setWind(e.wind);
+  }
+  function restoreEnv() { if (!envHold) return; const e = envHold; envHold = null; const sky = e.time !== save.set.time || e.weather !== save.set.weather; Object.assign(save.set, e); if (sky) applyTime(e.time); }
+  const envText = (e) => t('time.' + e.time) + ' · ' + t('wx.' + e.weather) + ' · ' + t('set.wind') + t('wind.' + e.wind);
   function startEvent(id, demo = false) {
+    restoreEnv();
     game.windLevel = save.set.wind; game.windSeed = Q.has('seed') ? +Q.get('seed') : 1 + Math.floor(Math.random() * 1e6);   // no two runs get the same gusts
     if (mode === 'play') saveRun();                  // the run that is being left goes into the history
-    game.load(id, demo ? null : bestOf(id));
+    game.load(id, demo ? null : bestOf(id)); fauna.reset();
+    if (game.ev.env) setEnv(game.ev.env);              // an event with a day of its own begins at its own hour
     rec.reset(); run = demo ? 0 : Date.now(); runN = 0;
     auto = demo ? new Autopilot(game) : null;
     gates.setEvent(game.build); targets.setEvent(game); hud.setEvent(game);
@@ -225,6 +254,7 @@ async function boot() {
     for (const e of game.events) {
       if (mode !== 'play') { if (e.type === 'crash') fx.explode(e.p, e.v, e.water); if (e.type === 'respawn' && auto) auto.reset(); if (e.type === 'finish') setTimeout(() => mode === 'menu' && startEvent('tour', true), 2500); continue; }
       if (REC_EVENTS.includes(e.type)) rec.mark(e.type, e);
+      if (e.type === 'stage') { setEnv(e.env); rec.mark('stage', { env: e.env }); hud.message('', envText(e.env), 3.2); }      // the day moves on
       switch (e.type) {
         case 'count': hud.message(String(e.n), '', 0.8); audio.count(false); break;
         case 'go': if (game.ev.medals) { hud.message(t('go'), '', 0.9); audio.count(true); } break;
@@ -263,6 +293,7 @@ async function boot() {
     if (opts.video && !fcaps) { alert(t('v.unsupported')); return; }
     rp = { saved: rec.snapshot(), wasPaused: paused, lean, plan: planReplay(rec, game.cps, game.bike.mp.cg), t: rec.t0, hold: false, o: {}, ending: false, sec: -1, library: !!opts.library, meta: opts.meta || runMeta(), film: null, popped: new Set(), flying: [],
       shots: rec.events.filter((e) => e.type === 'shot').map((e) => ({ t: e.t, p: e.p, v: e.v, end: (rec.events.find((x) => x.type === 'shotEnd' && x.id === e.id && x.t >= e.t) || { t: e.t + 4 }).t })) };
+    rp.envLive = game.ev.env ? envNow() : null;
     mode = 'replay'; paused = false; if (audio.ctx) audio.ctx.resume();
     ['pause', 'finish', 'help', 'touch'].forEach((m) => $(m).classList.remove('on')); hud.show(false); ghost.root.visible = false;
     $('replay').classList.add('on'); $('rfade').classList.add('on');
@@ -274,6 +305,7 @@ async function boot() {
     if (rp.film) rp.film.cancel();
     audio.tape = null;
     rec.restore(rp.saved); lean = rp.lean;
+    if (rp.envLive) { if (rp.library) envHold = null; else setEnv(rp.envLive); }      // the day as it was when the replay began (a flight from the history puts its own back below)
     const wasPaused = rp.wasPaused, library = rp.library; rp = null; mode = 'play'; camInit = false;
     $('replay').classList.remove('on'); $('rfade').classList.remove('on'); $('replay').classList.remove('hold', 'film');
     if (library) {                                   // a flight from the history: back to the list, and the day as it was set
@@ -296,6 +328,10 @@ async function boot() {
       else if (e.type === 'shot' || e.type === 'pop' || e.type === 'shotEnd') gunFx(e);
     }
     // balloons already shot at this moment of the film, and the rounds in the air (their flight is plain ballistics)
+    if (rp.envLive) {                                // the hour and the weather of this moment of the film
+      let e = game.ev.env; for (const x of rec.events) if (x.type === 'stage' && x.t <= rp.t) e = x.env;
+      setEnv(e);
+    }
     rp.popped.clear(); for (const e of rec.events) if (e.type === 'pop' && e.t <= rp.t) rp.popped.add(e.k);
     rp.flying.length = 0;
     for (const sh of rp.shots) { const u = rp.t - sh.t; if (u >= 0 && rp.t < sh.end) rp.flying.push({ p: [sh.p[0] + sh.v[0] * u, sh.p[1] + sh.v[1] * u - 0.5 * G * u * u, sh.p[2] + sh.v[2] * u], v: [sh.v[0], sh.v[1] - G * u, sh.v[2]] }); }
@@ -479,7 +515,7 @@ async function boot() {
     let dt = Math.min(0.05, (now - last) / 1000); last = now;
     // keys
     for (const k of input.pressed) {
-      if (k === 'KeyM') { audio.setMuted(!audio.muted); }
+      if (k === 'KeyM') setMute(!audio.muted);
       if (mode === 'replay') {
         if (k === 'Escape' || ((k === 'Enter' || k === 'KeyV' || k === 'PadA') && !rp.film)) stopReplay();
         else if (rp.film) { /* nothing else while the film is being recorded */ }
@@ -518,6 +554,7 @@ async function boot() {
       const gp = mode === 'play' && game.state === 'fly' ? game.ghostAt(game.total) : null;
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
+      fauna.update(dt, b.p, alive ? b.v : ZERO3);
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
       targets.update(time, rp ? (k) => !rp.popped.has(k) : (k) => !game.cps0[k].popped, rp || game.state === 'finished' ? null : game.nextCp, rp ? rp.flying : game.gun.shots);
       gates.update(game, time); gates.matDisc.visible = !rp; if (rp) gates.beam.visible = false;      // the beacon and the glass of the next ring are for the rider, not for the film
@@ -536,7 +573,7 @@ async function boot() {
     }
     // ---- render ----
     const b = game.bike;
-    updateTerrain(camera); updateForest(camera, qual.forest);
+    updateTerrain(camera); updateForest(camera, qual.forest); herds.update(camera, 1500 * qual.forest); flora.update(camera, qual.forest);
     sky.position.copy(camera.position); sky.updateMatrix();
     // shadow frustum follows the bike
     const film = !!rp || camMode === 'cine', s = sunInfo.sun, fx0 = b.p[0], fy0 = b.p[1], fz0 = b.p[2];
@@ -586,7 +623,7 @@ async function boot() {
   await load(1, '');
   $('load').classList.add('off');
   addEventListener('pointerdown', () => audio.start(), { once: true }); addEventListener('keydown', () => audio.start(), { once: true });
-  window.game = game; window.dbg = { scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, flights, openHistory, get rp() { return rp; }, U, sun };
+  window.game = game; window.dbg = { fauna, get herds() { return herds; }, get flora() { return flora; }, scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, flights, openHistory, get rp() { return rp; }, U, sun };
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot().catch((e) => { const el = $('err'); el.style.display = 'block'; el.textContent += (e.stack || e) + '\n'; console.error(e); });

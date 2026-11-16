@@ -4,19 +4,29 @@ import { fbm, hash2, mulberry32 } from './noise.js';
 import { clamp, sstep } from './vmath.js';
 import { EVENTS, buildEvent } from './courses.js';
 import { buildCastle, hitCastle } from './castle.js';
+import { SHAPES } from './buildings.js';
 
 export const S = { trees: null, count: 0, cellOf: null, cellStart: null, grid: 48, gn: 0, props: [], mask: null, ready: false };
 const TREELINE = 1980;
 
 function makeProps() {
   const P = T.meta.pads, out = [];
-  const add = (type, x, z, yaw, w, d, h, extra = {}) => out.push({ type, x, z, y: groundAt(x, z), yaw, w, d, h, ...extra });
+  // Houses, huts and barns are drawn from models (assets/models). The box the bike can hit is made
+  // from the model's own proportions at the height asked for, so it is the building one sees.
+  const CHALETS = ['houseA', 'houseB', 'houseC', 'houseA', 'houseD', 'houseB', 'houseE'];
+  const modelOf = (o) => (o.type === 'chalet' ? CHALETS[o.seed % CHALETS.length] : o.type === 'hut' ? 'hut' : o.type === 'barn' ? (o.seed % 2 ? 'barnA' : 'barnB') : o.type === 'boathouse' ? 'houseE' : o.type === 'well' ? 'well' : null);
+  const add = (type, x, z, yaw, w, d, h, extra = {}) => {
+    const o = { type, x, z, y: groundAt(x, z), yaw, w, d, h, ...extra }, m = modelOf(o);
+    if (m) { const sh = SHAPES[m], H = h * 1.45; o.model = m; o.size = H; o.w = sh[0] * H; o.d = sh[2] * H; }      // (the box reaches up to h * 1.45: the ridge of the roof)
+    out.push(o);
+  };
   // home base: hangar and tower beside the pad
   add('hangar', P.base[0] - 12, P.base[2] + 52, 0, 30, 18, 8);
   add('tower', P.base[0] + 34, P.base[2] + 50, 0, 5, 5, 15);
   // village: chalets on rings around the square, a church
   const r = mulberry32(4711), vx = P.village[0], vz = P.village[2];
   add('church', vx + 44, vz - 30, 0.3, 10, 20, 11, { steeple: 27 });
+  add('well', vx + 21, vz + 13, 0.4, 2, 2, 2.0);                 // beside the square, clear of the landing circle
   let n = 0;
   for (let ring = 0; ring < 3; ring++) {
     const R = 46 + ring * 34, cnt = 8 + ring * 5;
@@ -30,7 +40,7 @@ function makeProps() {
   // mountain huts beside their pads
   for (const name of ['hutTarn', 'hutAlp', 'hutLedge', 'hutCol']) {
     const p = P[name], a = hash2(p[0], p[2], 3) * 6.283;
-    add('hut', p[0] + Math.cos(a) * (p[3] * 0.5 + 9), p[2] + Math.sin(a) * (p[3] * 0.5 + 9), a + 1.57, 9, 7, 4.6, { seed: 100 + out.length });
+    add('hut', p[0] + Math.cos(a) * (p[3] * 0.5 + 9), p[2] + Math.sin(a) * (p[3] * 0.5 + 9), a + 1.57, 9, 7, 3.7, { seed: 100 + out.length });
   }
   add('boathouse', P.pier[0] - 26, P.pier[2] + 20, -0.6, 9, 6, 4.2, { seed: 200 });
   // a few lonely hay barns on the meadows

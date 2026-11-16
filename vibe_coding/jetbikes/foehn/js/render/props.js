@@ -2,6 +2,7 @@
 import * as THREE from '../../lib/three.module.min.js';
 import { T, groundAt } from '../sim/terrain.js';
 import { S } from '../sim/scenery.js';
+import { loadModels, poseGeometry } from './fauna.js';
 
 function canvasTex(w, h, draw, repeat) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -66,7 +67,29 @@ export function buildProps(scene) {
   const metal = new THREE.MeshStandardMaterial({ color: 0x9aa3ab, roughness: 0.45, metalness: 0.7 });
   const glass = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: 0.1, metalness: 0.6, emissive: 0x88ccff, emissiveIntensity: 0.3 });
   const mk = (geo, mat, x, y, z, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; };
+  // the buildings that have a model (assets/models): drawn when the file has arrived
+  const house = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }), night = { value: 0 };
+  house.onBeforeCompile = (sh) => {                       // the window panes glow at night
+    sh.uniforms.uNight = night;
+    sh.vertexShader = 'attribute float aLit; varying float vLit;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vLit = aLit;');
+    sh.fragmentShader = 'uniform float uNight; varying float vLit;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vec3(1.0, 0.7, 0.34) * vLit * uNight;');
+  };
+  loadModels().then((file) => {
+    const geos = {};
+    for (const p of S.props) {
+      if (!p.model || !file.head.models[p.model]) continue;
+      if (!geos[p.model]) {
+        const g = poseGeometry(file, file.head.models[p.model], 'still'), c = g.attributes.color, n = c.count, col = new Float32Array(n * 3), lit = new Float32Array(n);
+        for (let i = 0; i < n; i++) { for (let k = 0; k < 3; k++) col[i * 3 + k] = c.getComponent(i, k) ** 2; lit[i] = c.getW(i) < 0.5 ? 1 : 0; }
+        g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('aLit', new THREE.BufferAttribute(lit, 1));
+        geos[p.model] = g;
+      }
+      const m = mk(geos[p.model], house, p.x, p.y - 0.12, p.z, group); m.rotation.y = p.yaw; m.scale.setScalar(p.size);
+      if (p.type !== 'well') { const base = mk(new THREE.BoxGeometry(p.w * 0.93, 2.4, p.d * 0.93), stone, p.x, p.y - 1.1, p.z, group); base.rotation.y = p.yaw; }      // a footing, for the side that hangs over the slope
+    }
+  }).catch((e) => console.warn('no building models:', e));
   for (const p of S.props) {
+    if (p.model) continue;
     const b = new THREE.Group(); b.position.set(p.x, p.y - 0.4, p.z); b.rotation.y = p.yaw;
     if (p.type === 'chalet' || p.type === 'hut' || p.type === 'barn' || p.type === 'boathouse') {
       mk(new THREE.BoxGeometry(p.w, p.h, p.d), p.type === 'barn' || p.type === 'boathouse' ? new THREE.MeshStandardMaterial({ color: 0x4d3120, roughness: 0.95 }) : wood, 0, p.h / 2, 0, b);
@@ -101,7 +124,7 @@ export function buildProps(scene) {
   const pier = T.meta.pads.pier;
   mk(new THREE.BoxGeometry(34, 0.5, 34), new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.9 }), pier[0], pier[1] - 0.3, pier[2], group);
   scene.add(group);
-  return { group, wood, setNight(k) { wood.emissiveIntensity = k * 2.2; } };
+  return { group, wood, setNight(k) { wood.emissiveIntensity = k * 2.2; night.value = k * 2.2; } };
 }
 
 // ---------- check-points ----------
