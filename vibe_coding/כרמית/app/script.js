@@ -4,8 +4,8 @@
 // Progress lasts for this visit only (sessionStorage), so a new visit starts again from the first quiz.
 // Two ways into a quiz: ?p=<id> is a step on the path; ?q=<id> is a quiz sent to someone on its own (solo):
 // they see only that quiz, never the start screen or the other quizzes.
-// A marketing letter (?m=<id>) shows above a solo quiz, and its link button again after it.
-import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, LEVELS, levelOf, playerPath, watchAdmin,
+// A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
+import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
   hasHeading, fillHeading, safeUrl } from './fb.js';
 
 const $ = (id) => document.getElementById(id);
@@ -43,7 +43,10 @@ let results = [];        // results[i] is what happened at position i: answered 
 let hintUsed = false;
 let answered = false;
 
-const PRAISES = ['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
+// A phone or tablet: a finger is the main pointer and there is no on-screen hover.
+const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+const PRAISES =['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
 
 // ---------- the path ----------
@@ -127,7 +130,10 @@ function showRiddle() {
     showDone(done);
     return;
   }
-  if (!isImageAnswer(r)) answerInput.focus();
+  // On a touch screen focusing the box would pop up the keyboard and hide most of the picture,
+  // so there the player taps the box when ready to type. With a real keyboard, type straight away.
+  if (!isImageAnswer(r) && !TOUCH) answerInput.focus();
+  else if (document.activeElement === answerInput) answerInput.blur();
 }
 
 function useHint() {
@@ -276,6 +282,9 @@ $('home-btn').addEventListener('click', (e) => {
 });
 answerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
+    // Answering moves the focus to "next"; without this the same Enter press would click it too,
+    // and the player would never see whether they were right.
+    e.preventDefault();
     if (!answered) submitAnswer();
     else nextRiddle();
   }
@@ -331,29 +340,42 @@ function galleryCard(q, i, state) {
   const title = document.createElement('b');
   title.textContent = q.title;
   const n = document.createElement('span');
-  const level = LEVELS.find((L) => L.id === levelOf(q)).name;
-  n.textContent = `${q.riddleIds.length} חידות · רמה ${level}`;
+  n.textContent = [`${q.riddleIds.length} חידות`, levelLabel(q)].filter(Boolean).join(' · ');
   a.append(img, step, title, n);
   return a;
 }
 
-function showLetter(letter) {
-  $('letter').classList.remove('hidden');
-  $('letter-text').textContent = letter.text || '';
-  $('letter-text').classList.toggle('hidden', !letter.text);
+function fillLetter(box, img, p, letter) {
+  box.classList.remove('hidden');
+  p.textContent = letter.text || '';
+  p.classList.toggle('hidden', !letter.text);
   if (letter.image) {
-    $('letter-img').src = letter.image;
-    $('letter-img').classList.remove('hidden');
+    img.src = letter.image;
+    img.classList.remove('hidden');
   }
-  const url = safeUrl(letter.linkUrl);
-  if (!url) return;
-  const label = letter.linkText || 'לפרטים נוספים';
-  for (const a of [$('letter-cta-top'), $('letter-cta')]) {
-    a.href = url;
-    a.textContent = `${label} ↗`;
+}
+
+function fillButton(a, letter) {
+  a.href = safeUrl(letter.linkUrl);
+  a.textContent = `${letter.linkText || 'לפרטים נוספים'} ↗`;
+}
+
+// The letter before the quiz (רישא) sits above it with its button; the one after (סיפא) is on the results
+// screen with its own button. With no button after, the button of the letter before comes back at the end.
+function showLetters(before, after) {
+  if (before) {
+    fillLetter($('letter'), $('letter-img'), $('letter-text'), before);
+    if (safeUrl(before.linkUrl)) {
+      fillButton($('letter-cta-top'), before);
+      $('letter-cta-top').classList.remove('hidden');
+    }
   }
-  $('letter-cta-top').classList.remove('hidden');
-  $('letter-end').classList.remove('hidden');
+  if (after) fillLetter($('letter-after'), $('letter-after-img'), $('letter-after-text'), after);
+  const end = [after, before].find((l) => l && safeUrl(l.linkUrl));
+  if (end) {
+    fillButton($('letter-cta'), end);
+    $('letter-end').classList.remove('hidden');
+  }
 }
 
 const params = new URLSearchParams(location.search);
@@ -377,10 +399,9 @@ try {
     showGallery(await loadQuizzes());
   } else {
     if (!SOLO) $('home-btn').classList.remove('hidden');
-    const [quiz, letter] = await Promise.all([
-      loadQuiz(quizId),
-      SOLO && params.get('m') ? loadLetter(params.get('m')).catch(() => null) : null,
-    ]);
+    // A letter that was deleted since the link was sent just isn't there.
+    const letterParam = (key) => (SOLO && params.get(key) ? loadLetter(params.get(key)).catch(() => null) : null);
+    const [quiz, before, after] = await Promise.all([loadQuiz(quizId), letterParam('b') || letterParam('m'), letterParam('a')]);
     if (!quiz) {
       intro.innerHTML = SOLO ? 'החידון הזה לא נמצא. אולי הוא נמחק.'
         : 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
@@ -400,9 +421,10 @@ try {
         $('quiz-note').textContent = note;
         $('quiz-note').classList.remove('hidden');
       }
-      if (letter) showLetter(letter);
-      $('quiz-level').textContent = `רמה ${LEVELS.find((L) => L.id === levelOf(quiz)).name}`;
+      showLetters(before, after);
+      $('quiz-level').textContent = levelLabel(quiz);
       $('quiz-level').className = `level-badge level-${levelOf(quiz)}`;
+      $('quiz-level').classList.toggle('hidden', !levelLabel(quiz));
       // The quiz's own heading, set in the admin, replaces the usual Hebrew × English line.
       const custom = hasHeading(quiz.heading);
       if (custom) {

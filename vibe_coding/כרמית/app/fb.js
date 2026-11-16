@@ -35,8 +35,8 @@ export async function loadQuiz(id) {
   return quiz;
 }
 
-// A marketing letter: { quizId, name (for the admin only), text, image, linkText, linkUrl }. Its link opens that
-// one quiz on its own with the letter above it; the link button shows again after the quiz.
+// A letter: { name (for the admin only), text, image, linkText, linkUrl }, not tied to any quiz. A sent link names
+// the letter before the quiz (b=<id>) and the one after it (a=<id>); old links used m=<id> for the one before.
 export async function loadLetter(id) {
   const snap = await fs.getDoc(fs.doc(db, 'letters', id));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
@@ -88,7 +88,14 @@ export const LEVELS = [
   { id: 'medium', name: 'בינונית' },
   { id: 'hard', name: 'קשה' },
 ];
-export const levelOf = (q) => (LEVELS.some((L) => L.id === q.level) ? q.level : 'easy');
+// 'none': a quiz that mixes riddles of different difficulty, so it carries no level label.
+export const NO_LEVEL = 'none';
+export const levelOf = (q) => (q.level === NO_LEVEL || LEVELS.some((L) => L.id === q.level) ? q.level : 'easy');
+// "רמה קלה" etc., or '' for a quiz without a level.
+export const levelLabel = (q) => {
+  const L = LEVELS.find((x) => x.id === levelOf(q));
+  return L ? `רמה ${L.name}` : '';
+};
 
 // The path: the quizzes players see, in Carmit's order (quiz.path is the position; no path = not shown).
 // Until any quiz has a position, every quiz with riddles is on it, easy first, so the game never goes empty.
@@ -96,7 +103,8 @@ export function playerPath(quizzes) {
   const playable = quizzes.filter((q) => q.riddleIds.length);
   const placed = playable.filter((q) => Number.isInteger(q.path)).sort((a, b) => a.path - b.path);
   if (placed.length) return placed;
-  const rank = (q) => LEVELS.findIndex((L) => L.id === levelOf(q));
+  // A quiz without a level goes after the levelled ones.
+  const rank = (q) => { const i = LEVELS.findIndex((L) => L.id === levelOf(q)); return i < 0 ? LEVELS.length : i; };
   return playable.map((q, i) => [q, i]).sort(([a, i], [b, j]) => rank(a) - rank(b) || i - j).map(([q]) => q);
 }
 

@@ -1,7 +1,6 @@
 """Drives admin.html and the player with stubbed Firebase to test (1) a quiz's own heading (text and an optional
-image) in place of the usual Hebrew × English line, written in the admin or taken over from another quiz;
-(2) marketing letters: a letter written in the admin for one quiz gives a link that opens only that quiz,
-with the letter above it and its button again after it.
+image) in place of the usual Hebrew × English line, written in the admin or taken over from another quiz.
+Letters are tested in test_letters_levels_focus.py.
 Usage: python3 tools/test_heading_letters.py http://localhost:8766/app/   (a server rooted at the project folder)"""
 import json
 import sys
@@ -68,57 +67,6 @@ with sync_playwright() as p:
     page.wait_for_selector(".gallery-card")
     check(page.is_visible("#motif"), "player: the start screen keeps the usual line")
 
-    # ---- marketing letters ----
-    admin.goto(BASE + "admin.html#quiz/qe")
-    admin.wait_for_selector("#quiz-list")
-    check(admin.locator("#letters-list li").count() == 0, "admin: no letters yet")
-    admin.click("#letter-new")
-    admin.fill("#letter-name", "פוסט בפייסבוק")
-    admin.fill("#letter-text", "שלום!\nאני כרמית, והנה חידון לטעימה.")
-    admin.fill("#letter-link-text", "לסדנה הקרובה")
-    admin.fill("#letter-link-url", "javascript:alert(1)")
-    admin.click("#letter-save")
-    check(admin.is_visible("#letter-error"), "admin: a bad link address is refused")
-    admin.fill("#letter-link-url", "example.com/workshop")
-    admin.click("#letter-save")
-    admin.wait_for_timeout(300)
-    letters = admin.evaluate("window.__store.letters")
-    check(len(letters) == 1, f"admin: the letter is saved: {letters}")
-    lid, letter = next(iter(letters.items()))
-    check(letter["quizId"] == "qe" and letter["linkUrl"] == "https://example.com/workshop", f"admin: tied to the quiz, address completed: {letter}")
-    url = shared[-1] if shared else ""
-    check(url.endswith(f"index.html?q=qe&m={lid}"), f"admin: saving hands over the link: {url}")
-    check(admin.locator("#letters-list li").count() == 1, "admin: the letter is listed in the quiz")
-    admin.goto(BASE + "admin.html#letters")
-    admin.wait_for_selector("#tab-letters:visible")
-    check(admin.locator("#all-letters li").count() == 1 and "קל" in admin.inner_text("#all-letters"), "admin: the marketing tab lists it with its quiz")
-    admin.screenshot(path="/tmp/claude-1000/letters_tab.png", full_page=True)
-
-    page = ctx.new_page()
-    page.add_init_script(f"window.__NO_USER = true; window.__LETTERS = {json.dumps(letters)};")
-    stub(page)
-    page.goto(BASE + f"index.html?q=qe&m={lid}")
-    page.wait_for_selector("#letter:visible")
-    check(page.inner_text("#letter-text") == "שלום!\nאני כרמית, והנה חידון לטעימה.", "player: the letter shows, line breaks kept")
-    check(page.get_attribute("#letter-cta-top", "href") == "https://example.com/workshop", "player: the letter's button")
-    check(page.is_hidden("#gallery") and page.is_hidden("#home-btn"), "player: only this quiz, nothing else")
-    page.screenshot(path="/tmp/claude-1000/letter_player.png", full_page=True)
-    page.click("#start-btn")
-    while not page.is_visible("#report-screen"):
-        page.click("#skip-btn")
-    check(page.is_visible("#letter-cta") and "לסדנה הקרובה" in page.inner_text("#letter-cta"), "player: the button again after the quiz")
-    page.goto(BASE + "index.html?q=qe")
-    page.wait_for_selector("#start-btn:visible")
-    check(page.is_hidden("#letter"), "player: no letter without one in the link")
-    page.goto(BASE + "index.html?q=qe")
-    page.wait_for_selector("#start-btn:visible")
-    page.click("#start-btn")
-    while not page.is_visible("#report-screen"):
-        page.click("#skip-btn")
-    check(page.is_hidden("#letter-end"), "player: no button after a quiz without a letter")
-    page.goto(BASE + "index.html?q=qe&m=nosuch")
-    page.wait_for_selector("#start-btn:visible")
-    check(page.is_hidden("#letter"), "player: a deleted letter just leaves the quiz")
     b.close()
 
 print("ALL PASS" if fake_firebase.ok else "SOME FAILED")

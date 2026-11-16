@@ -1,7 +1,7 @@
 // Ori and Carmit manage quizzes (חידונים) here: titled, ordered selections from one shared pool of riddles.
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
-import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, loadLetters, primaryAnswer, DEFAULT_COVER, LEVELS, levelOf,
+import { app, db, fs, ADMINS, loadRiddles, loadQuizzes, loadLetters, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
   hasHeading, fillHeading, safeUrl } from './fb.js';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
@@ -15,7 +15,7 @@ const MAX_B64 = 380_000; // two images must fit together in one 1 MiB document
 let riddles = [];        // the pool, newest first
 let byId = new Map();
 let quizzes = [];
-let letters = [];        // marketing letters, each tied to one quiz (quizId)
+let letters = [];        // letters to send along with a quiz, before it or after it (any quiz)
 let current = null;      // the quiz open in the quiz view
 let picked = new Set();  // riddle ids checked in the quiz list, to copy or move to another quiz
 let lastPick = null;     // anchor for shift-click ranges
@@ -35,7 +35,12 @@ const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
-const playUrl = (q, letter) => new URL(`index.html?q=${q.id}${letter ? `&m=${letter.id}` : ''}`, location.href).href;
+// The link to send: the quiz on its own, with the letters chosen in it right now (b = before, a = after).
+function playUrl(q) {
+  const { opening, closing } = chosen(q);
+  const extra = (opening ? `&b=${opening.id}` : '') + (closing ? `&a=${closing.id}` : '');
+  return new URL(`index.html?q=${q.id}${extra}`, location.href).href;
+}
 
 function toast(msg) {
   const t = $('toast');
@@ -149,8 +154,7 @@ function pathRow(q, i) {
   const meta = el('div', 'meta');
   meta.appendChild(el('b', '', q.title || 'ללא שם'));
   const n = quizRiddles(q).length;
-  const level = LEVELS.find((L) => L.id === levelOf(q)).name;
-  meta.appendChild(el('div', 'sub', [`רמה ${level}`, n ? plural(n, 'חידה אחת', 'חידות') : 'אין חידות, לא יוצג'].join(' · ')));
+  meta.appendChild(el('div', 'sub', [levelLabel(q), n ? plural(n, 'חידה אחת', 'חידות') : 'אין חידות, לא יוצג'].filter(Boolean).join(' · ')));
   const open = el('a', 'link-btn', 'עריכה');
   open.href = `#quiz/${q.id}`;
   if (i === null) {
@@ -252,8 +256,7 @@ function renderQuizGrid() {
     card.appendChild(stack);
     const cap = el('div', 'caption');
     const count = rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות';
-    const level = LEVELS.find((L) => L.id === levelOf(q)).name;
-    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', [`רמה ${level}`, count, q.shuffle && 'בסדר אקראי'].filter(Boolean).join(' · ')));
+    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', [levelLabel(q), count, q.shuffle && 'בסדר אקראי'].filter(Boolean).join(' · ')));
     card.appendChild(cap);
     card.addEventListener('mouseenter', () => schedulePeek(card, q));
     card.addEventListener('mouseleave', hidePeek);
@@ -385,7 +388,6 @@ function openQuiz(q) {
   $('quiz-title').value = q.title;
   $('side-search').value = '';
   $('side-source').value = '';
-  $('play-link').href = playUrl(q);
   clearTimeout(headingTimer);
   $('heading-text').value = (q.heading || {}).text || '';
   setSaveState('');
@@ -452,6 +454,7 @@ document.querySelectorAll('input[name="quiz-order"]').forEach((r) => r.addEventL
 }));
 
 // The player climbs easy → medium → hard; a quiz from before levels existed counts as easy.
+// 'none' is for a quiz that mixes levels: no label at all.
 function renderLevel() {
   document.querySelector(`input[name="quiz-level"][value="${levelOf(current)}"]`).checked = true;
 }
@@ -559,11 +562,23 @@ $('heading-reset').addEventListener('click', () => {
   if (confirm('למחוק את הכותרת של החידון ולחזור להסבר הרגיל?')) saveHeading({ text: '', image: '' });
 });
 
-// ---------- marketing letters ----------
+// ---------- letters ----------
+// A letter stands on its own: text, a picture and a button, none of it tied to a quiz. In a quiz Carmit marks
+// which letter goes before it (quiz.opening, רישא) and which after it (quiz.closing, סיפא), and the one share
+// button turns that choice into the link. The link carries the letters itself, so a link already sent stays as it was.
 
-function letterRow(letter, withQuiz) {
-  const q = quizzes.find((x) => x.id === letter.quizId);
+function letterById(id) { return letters.find((l) => l.id === id); }
+function letterGist(l) {
+  const t = (l.text || '').replace(/\s+/g, ' ').trim();
+  return t.length > 110 ? `${t.slice(0, 110)}…` : t || (l.image ? '(תמונה בלבד)' : '');
+}
+function letterName(l) { return l.name || 'מכתב ללא שם'; }
+// The quiz's chosen letters, skipping one that was deleted since.
+function chosen(q) { return { opening: letterById(q.opening) || null, closing: letterById(q.closing) || null }; }
+
+function letterCard(letter) {
   const li = el('li', 'letter-row');
+  li.dataset.id = letter.id;
   if (letter.image) {
     const img = el('img');
     img.src = letter.image;
@@ -571,64 +586,116 @@ function letterRow(letter, withQuiz) {
     li.appendChild(img);
   }
   const meta = el('div', 'meta');
-  meta.appendChild(el('b', '', letter.name || 'מכתב ללא שם'));
-  const text = (letter.text || '').replace(/\s+/g, ' ').trim();
-  meta.appendChild(el('div', 'sub', text.length > 120 ? `${text.slice(0, 120)}…` : text || '(בלי טקסט)'));
-  const extra = [];
-  if (withQuiz) extra.push(`חידון: ${q ? q.title || 'ללא שם' : 'נמחק'}`);
-  if (safeUrl(letter.linkUrl)) extra.push(`כפתור: ${letter.linkText || 'לפרטים נוספים'} → ${letter.linkUrl}`);
-  if (extra.length) meta.appendChild(el('div', 'sub mono', extra.join(' · ')));
+  meta.appendChild(el('b', '', letterName(letter)));
+  meta.appendChild(el('div', 'sub', letterGist(letter)));
+  if (safeUrl(letter.linkUrl)) meta.appendChild(el('div', 'sub mono', `כפתור: ${letter.linkText || 'לפרטים נוספים'} → ${letter.linkUrl}`));
   li.appendChild(meta);
-  const actions = el('div', 'tile-actions');
-  if (q) {
-    const copy = el('button', 'primary-btn small', 'העתקת קישור');
-    copy.addEventListener('click', () => copyLink(playUrl(q, letter)));
-    const view = el('a', 'link-btn', 'תצוגה ↗');
-    view.href = playUrl(q, letter);
-    view.target = '_blank';
-    view.rel = 'noopener';
-    actions.append(copy, view);
-  }
-  if (withQuiz && q) {
-    const open = el('a', 'link-btn', 'לחידון');
-    open.href = `#quiz/${q.id}`;
-    actions.appendChild(open);
-  } else {
-    const edit = el('button', 'link-btn', 'עריכה');
-    edit.addEventListener('click', () => openLetter(letter));
-    actions.appendChild(edit);
-  }
-  const del = el('button', 'link-btn del', 'מחיקה');
-  del.addEventListener('click', () => deleteLetter(letter));
-  actions.appendChild(del);
-  li.appendChild(actions);
   return li;
 }
 
+// In the quiz: every letter, each marked as not sent, before the quiz or after it.
 function renderLetters() {
-  const mine = letters.filter((l) => l.quizId === current.id);
-  $('letters-count').textContent = mine.length || '';
   const list = $('letters-list');
   list.innerHTML = '';
-  mine.forEach((l) => list.appendChild(letterRow(l, false)));
+  const { opening, closing } = chosen(current);
+  for (const letter of letters) {
+    const li = letterCard(letter);
+    const role = letter === opening ? 'opening' : letter === closing ? 'closing' : 'none';
+    li.classList.toggle('picked', role !== 'none');
+    const seg = el('div', 'order-row letter-role');
+    seg.setAttribute('role', 'radiogroup');
+    seg.setAttribute('aria-label', `תפקיד המכתב "${letterName(letter)}"`);
+    for (const [value, label] of [['none', 'לא נשלח'], ['opening', 'רישא: לפני'], ['closing', 'סיפא: אחרי']]) {
+      const lab = el('label', 'seg');
+      const input = el('input');
+      input.type = 'radio';
+      input.name = `role-${letter.id}`;
+      input.value = value;
+      input.checked = value === role;
+      input.addEventListener('change', () => setRole(letter, value));
+      lab.append(input, el('span', '', label));
+      seg.appendChild(lab);
+    }
+    const edit = el('button', 'link-btn', 'עריכה');
+    edit.addEventListener('click', () => openLetter(letter));
+    const del = el('button', 'link-btn del', 'מחיקה');
+    del.addEventListener('click', () => deleteLetter(letter));
+    const actions = el('div', 'tile-actions');
+    actions.append(seg, edit, del);
+    li.appendChild(actions);
+    list.appendChild(li);
+  }
+  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים. "+ מכתב חדש" כותב את הראשון.'));
+  renderShare();
 }
 
+// One letter per place: marking a letter "before" takes the place from the one that held it.
+function setRole(letter, role) {
+  const { opening, closing } = chosen(current);
+  const patch = { opening: opening ? opening.id : '', closing: closing ? closing.id : '' };
+  if (patch.opening === letter.id) patch.opening = '';
+  if (patch.closing === letter.id) patch.closing = '';
+  if (role !== 'none') patch[role] = letter.id;
+  saveQuiz(patch);
+  renderLetters();
+}
+
+// The one place a link comes from: the share button, with the letters chosen right now.
+function renderShare() {
+  const { opening, closing } = chosen(current);
+  $('play-link').href = playUrl(current);
+  const parts = [opening && `לפני החידון: "${letterName(opening)}"`, closing && `אחרי החידון: "${letterName(closing)}"`].filter(Boolean);
+  $('share-with').textContent = parts.length ? `הקישור יישלח עם מכתב ${parts.join(', ומכתב ')}.` : 'הקישור יישלח בלי מכתבים.';
+}
+
+// The letters tab: all letters, to write, edit and delete; which quizzes they are marked in.
 function renderAllLetters() {
-  $('all-letters-count').textContent = letters.length;
+  $('all-letters-count').textContent = letters.length || '';
   const list = $('all-letters');
   list.innerHTML = '';
-  letters.forEach((l) => list.appendChild(letterRow(l, true)));
-  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים. פותחים חידון ולוחצים "+ מכתב נלווה חדש".'));
+  for (const letter of letters) {
+    const li = letterCard(letter);
+    const uses = quizzes.filter((q) => q.opening === letter.id || q.closing === letter.id)
+      .map((q) => `${q.title || 'ללא שם'} (${q.opening === letter.id ? 'לפני' : 'אחרי'})`);
+    if (uses.length) li.querySelector('.meta').appendChild(el('div', 'sub', `מסומן ב: ${uses.join(', ')}`));
+    const actions = el('div', 'tile-actions');
+    const edit = el('button', 'link-btn', 'עריכה');
+    edit.addEventListener('click', () => openLetter(letter));
+    const del = el('button', 'link-btn del', 'מחיקה');
+    del.addEventListener('click', () => deleteLetter(letter));
+    actions.append(edit, del);
+    li.appendChild(actions);
+    list.appendChild(li);
+  }
+  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים.'));
+}
+
+function refreshLetters() {
+  renderAllLetters();
+  if (current) renderLetters();
 }
 
 async function deleteLetter(letter) {
-  if (!confirm(`למחוק את המכתב "${letter.name || 'ללא שם'}"?\nמי שיפתח את הקישור שלו יגיע לחידון בלי המכתב.`)) return;
+  const uses = quizzes.filter((q) => q.opening === letter.id || q.closing === letter.id).map((q) => `"${q.title || 'ללא שם'}"`);
+  const where = uses.length ? `\nהוא מסומן ב: ${uses.join(', ')}, והסימון יוסר.` : '';
+  if (!confirm(`למחוק את המכתב "${letterName(letter)}"?${where}\nמי שיפתח קישור שנשלח איתו יגיע לחידון בלי המכתב.`)) return false;
   try {
     await fs.deleteDoc(fs.doc(db, 'letters', letter.id));
+    // Quizzes that had it marked go back to no letter in that place.
+    for (const q of quizzes) {
+      const patch = {};
+      if (q.opening === letter.id) patch.opening = '';
+      if (q.closing === letter.id) patch.closing = '';
+      if (Object.keys(patch).length) {
+        Object.assign(q, patch);
+        await fs.updateDoc(fs.doc(db, 'quizzes', q.id), patch);
+      }
+    }
   } catch (err) { return toast(`המחיקה נכשלה: ${err.message}`); }
   letters = letters.filter((l) => l !== letter);
   toast('המכתב נמחק');
-  current ? renderLetters() : renderAllLetters();
+  refreshLetters();
+  return true;
 }
 
 const letterDialog = $('letter-dialog');
@@ -649,26 +716,29 @@ function openLetter(letter) {
   letterEditing = letter;
   $('letter-form').reset();
   letterError('');
-  $('letter-form-title').textContent = letter ? 'עריכת מכתב נלווה' : `מכתב נלווה לחידון "${current.title}"`;
+  $('letter-form-title').textContent = letter ? 'עריכת מכתב' : 'מכתב חדש';
   $('letter-name').value = letter?.name || '';
   $('letter-text').value = letter?.text || '';
   $('letter-link-text').value = letter?.linkText || '';
   $('letter-link-url').value = letter?.linkUrl || '';
   setLetterImage(letter?.image || '');
-  $('letter-save').textContent = letter ? 'שמירה' : 'שמירה והעתקת הקישור';
+  $('letter-delete').classList.toggle('hidden', !letter);
   letterDialog.showModal();
 }
 $('letter-new').addEventListener('click', () => openLetter(null));
+$('letter-new-home').addEventListener('click', () => openLetter(null));
 $('letter-close').addEventListener('click', () => letterDialog.close());
 $('letter-cancel').addEventListener('click', () => letterDialog.close());
 $('letter-img-remove').addEventListener('click', () => setLetterImage(''));
+$('letter-delete').addEventListener('click', async () => {
+  if (await deleteLetter(letterEditing)) letterDialog.close();
+});
 letterDialog.addEventListener('click', (e) => { if (e.target === letterDialog) letterDialog.close(); });
 
 $('letter-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   letterError('');
   const data = {
-    quizId: current.id,
     name: $('letter-name').value.trim(),
     text: $('letter-text').value.trim(),
     image: letterImage,
@@ -685,17 +755,14 @@ $('letter-form').addEventListener('submit', async (e) => {
     if (letterEditing) {
       await fs.updateDoc(fs.doc(db, 'letters', letterEditing.id), { ...data, updated: fs.serverTimestamp() });
       Object.assign(letterEditing, data);
-      toast('המכתב עודכן. הקישור נשאר אותו קישור.');
+      toast('המכתב עודכן. גם מי שכבר קיבל קישור איתו יראה את הגרסה החדשה.');
     } else {
       const ref = await fs.addDoc(fs.collection(db, 'letters'), { ...data, created: fs.serverTimestamp() });
-      const letter = { id: ref.id, ...data };
-      letters.unshift(letter);
-      letterDialog.close();
-      renderLetters();
-      return copyLink(playUrl(current, letter));
+      letters.unshift({ id: ref.id, ...data });
+      toast('המכתב נשמר');
     }
     letterDialog.close();
-    renderLetters();
+    refreshLetters();
   } catch (err) {
     letterError(`השמירה נכשלה: ${err.message}`);
   } finally {

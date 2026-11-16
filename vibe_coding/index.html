@@ -753,71 +753,161 @@
         .t-red     { --accent:#f87171; --icon-bg:rgba(90,20,20,0.5);  --tag-bg:rgba(90,20,20,0.7); }
         .t-orange  { --accent:#fb923c; --icon-bg:rgba(90,40,10,0.5);  --tag-bg:rgba(90,40,10,0.7); }
 
-        /* ── Visits per project (filled from stats.json) ── */
-        .stats-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
+        /* ── Views explorer (filled from stats.json) ── */
+        .stats {
+            --s-surface: #0c1726;
+            --s-line: #1a2840;
+            --s-grid: #15233a;
+            --s-ink: #e2e8f0;
+            --s-ink-2: #94a3b8;
+            --s-ink-3: #64748b;
+            --s-up: #34d399;
+            --s-down: #f87171;
+            scroll-margin-top: 16px;
+        }
+        .stats .section-header { margin-top: 36px; }
+        .stats-panel {
+            background: var(--s-surface);
+            border: 1px solid var(--s-line);
+            border-radius: 18px;
+            padding: 16px;
+        }
+        .stats-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
             margin-bottom: 14px;
         }
-        .stats-ranges { display: flex; gap: 6px; }
-        .stats-ranges button, .stats-more {
-            font: inherit;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #94a3b8;
-            background: #131e2e;
-            border: 1px solid #1e2e42;
-            border-radius: 20px;
-            padding: 4px 12px;
-            cursor: pointer;
+        .stats-kpi {
+            background: #0f1d31;
+            border: 1px solid var(--s-line);
+            border-radius: 12px;
+            padding: 10px 12px;
+            min-width: 0;
         }
-        .stats-ranges button:hover, .stats-more:hover { color: #e2e8f0; }
-        .stats-ranges button[aria-pressed="true"] {
-            color: #e2e8f0;
-            border-color: #818cf8;
-            background: rgba(129,140,248,0.15);
+        .stats-kpi-label { font-size: 0.72rem; color: var(--s-ink-3); }
+        .stats-kpi-value {
+            font-family: 'Inter', 'Heebo', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--s-ink);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.25;
+            white-space: nowrap;
         }
-        .stats-totals { font-size: 0.8rem; color: #64748b; }
-        .stats-totals b { color: #cbd5e1; font-weight: 700; }
-        .stats-list {
-            list-style: none;
-            background: #0c1726;
-            border: 1px solid #1a2840;
-            border-radius: 16px;
-            padding: 10px;
-        }
-        .stats-list a {
-            display: grid;
-            grid-template-columns: 1.6em 1.6em minmax(0, 11em) 1fr 4.5em;
+        .stats-kpi-sub { font-size: 0.72rem; color: var(--s-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-up { color: var(--s-up); }
+        .stats-down { color: var(--s-down); }
+        .stats-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 14px;
             align-items: center;
-            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .stats-seg {
+            display: inline-flex;
+            background: #0f1d31;
+            border: 1px solid var(--s-line);
+            border-radius: 10px;
+            padding: 2px;
+        }
+        .stats-seg button, .stats-btn {
+            font: inherit;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--s-ink-2);
+            background: none;
+            border: 0;
+            border-radius: 8px;
+            padding: 5px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .stats-seg button:hover, .stats-btn:hover { color: var(--s-ink); }
+        .stats-seg button[aria-pressed="true"] { color: #fff; background: #26365a; }
+        .stats-seg button:focus-visible, .stats-btn:focus-visible, .stats-row:focus-visible { outline: 2px solid #818cf8; outline-offset: 1px; }
+        .stats-range-label { margin-inline-start: auto; font-size: 0.76rem; color: var(--s-ink-2); font-variant-numeric: tabular-nums; }
+        .stats-chart { position: relative; direction: ltr; touch-action: pan-y; }
+        .stats-chart svg, .stats-nav svg { display: block; width: 100%; overflow: visible; }
+        .stats-chart text, .stats-nav text { font-family: 'Inter', 'Heebo', sans-serif; font-size: 11px; fill: var(--s-ink-3); }
+        .stats-chart .end-label { font-size: 11.5px; font-weight: 600; fill: var(--s-ink-2); }
+        .stats-tip {
+            position: absolute;
+            top: 8px;
+            pointer-events: none;
+            direction: rtl;
+            background: rgba(9,17,31,0.96);
+            border: 1px solid #2a3b5c;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            color: var(--s-ink);
+            min-width: 150px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+            z-index: 3;
+        }
+        .stats-tip-date { color: var(--s-ink-2); margin-bottom: 4px; font-size: 0.72rem; }
+        .stats-tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.6; }
+        .stats-tip-row b { margin-inline-start: auto; padding-inline-start: 12px; font-variant-numeric: tabular-nums; }
+        .stats-sw { width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--c); }
+        .stats-empty-chart {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--s-ink-3); font-size: 0.85rem; direction: rtl;
+        }
+        .stats [hidden] { display: none !important; }
+        .stats-nav { direction: ltr; margin-top: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+        .stats-nav .brush { fill: rgba(129,140,248,0.14); stroke: #818cf8; stroke-width: 1; cursor: grab; }
+        .stats-nav .brush:active { cursor: grabbing; }
+        .stats-nav .handle { fill: #818cf8; cursor: ew-resize; }
+        .stats-nav-hint { font-size: 0.7rem; color: var(--s-ink-3); text-align: center; margin-top: 2px; }
+        .stats-table-head {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            margin: 18px 0 6px;
+            font-size: 0.78rem; color: var(--s-ink-2);
+        }
+        .stats-table-head .stats-btn { background: #0f1d31; border: 1px solid var(--s-line); }
+        .stats-table-head .grow { flex: 1; }
+        .stats-rows { list-style: none; }
+        .stats-row {
+            display: grid;
+            grid-template-columns: 18px 1.4em minmax(0, 1fr) 96px 4.2em 4.4em;
+            align-items: center;
+            gap: 10px;
             padding: 6px 8px;
             border-radius: 10px;
-            color: #cbd5e1;
-            text-decoration: none;
+            cursor: pointer;
             font-size: 0.86rem;
+            color: #cbd5e1;
         }
-        .stats-list a:hover { background: #131e2e; }
-        .stats-rank { color: #475569; font-size: 0.72rem; text-align: center; }
-        .stats-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stats-track { height: 8px; background: #131e2e; border-radius: 4px; overflow: hidden; }
-        .stats-fill {
-            display: block;
-            height: 100%;
-            width: var(--w);
-            background: var(--accent, #818cf8);
-            border-radius: 4px;
+        .stats-row:hover { background: #111f35; }
+        .stats-row[aria-pressed="true"] { background: #13223a; }
+        .stats-check {
+            width: 16px; height: 16px; border-radius: 5px;
+            border: 1.5px solid #3b4d6b;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: #09111f; font-weight: 800;
         }
-        .stats-num { text-align: left; font-variant-numeric: tabular-nums; font-weight: 600; }
-        .stats-empty { padding: 14px; color: #64748b; font-size: 0.85rem; text-align: center; }
-        .stats-more { display: block; margin: 12px auto 0; }
-        .stats-note { margin-top: 10px; font-size: 0.72rem; color: #475569; text-align: center; }
-        @media (max-width: 520px) {
-            .stats-list a { grid-template-columns: 1.6em minmax(0, 1fr) 4.5em; }
-            .stats-rank, .stats-track { display: none; }
+        .stats-row[aria-pressed="true"] .stats-check { background: var(--c); border-color: var(--c); }
+        .stats-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .stats-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-name small { color: var(--s-ink-3); font-size: 0.72rem; }
+        .stats-name a { color: var(--s-ink-3); text-decoration: none; font-size: 0.8rem; flex: none; padding: 0 2px; }
+        .stats-name a:hover { color: var(--s-ink); }
+        .stats-spark { display: block; width: 96px; height: 24px; direction: ltr; }
+        .stats-num { text-align: left; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--s-ink); }
+        .stats-chg { text-align: left; font-variant-numeric: tabular-nums; font-size: 0.76rem; color: var(--s-ink-3); }
+        .stats-note { margin-top: 12px; font-size: 0.72rem; color: #475569; text-align: center; }
+        .stats-toast { font-size: 0.75rem; color: #fbbf24; min-height: 1em; }
+        @media (max-width: 640px) {
+            .stats-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-panel { padding: 12px; }
+            .stats-range-label { margin-inline-start: 0; width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .stats-row { grid-template-columns: 18px 1.4em minmax(0, 1fr) 4em 4em; gap: 8px; }
+            .stats-spark { display: none; }
         }
 
         /* ── Footer ── */
@@ -893,11 +983,11 @@
             <button class="stage-pill" type="button" data-i="5"><span>🏛️</span> רוצים שקיפות</button>
             <button class="stage-pill" type="button" data-i="6"><span>🪶</span> איש-ציפור</button>
             <button class="stage-pill" type="button" data-i="7"><span>🏁</span> MJ-5</button>
-            <button class="stage-pill" type="button" data-i="8"><span>🚀</span> Fable</button>
-            <button class="stage-pill" type="button" data-i="9"><span>λ</span> כופלי לגרנז'</button>
-            <button class="stage-pill" type="button" data-i="10"><span>📐</span> מתמטיקה תיכונית</button>
-            <button class="stage-pill" type="button" data-i="11"><span>🌀</span> חוקר קבוצת מנדלברוט</button>
-            <button class="stage-pill" type="button" data-i="12"><span>🎲</span> 2048 ולמידת חיזוק</button>
+            <button class="stage-pill" type="button" data-i="8"><span>🎲</span> 2048 ולמידת חיזוק</button>
+            <button class="stage-pill" type="button" data-i="9"><span>🚀</span> Fable</button>
+            <button class="stage-pill" type="button" data-i="10"><span>λ</span> כופלי לגרנז'</button>
+            <button class="stage-pill" type="button" data-i="11"><span>📐</span> מתמטיקה תיכונית</button>
+            <button class="stage-pill" type="button" data-i="12"><span>🌀</span> חוקר קבוצת מנדלברוט</button>
             <button class="stage-pill" type="button" data-i="13"><span>🎤</span> Letras</button>
             <button class="stage-pill" type="button" data-i="14"><span>⚖️</span> שיווי משקל נאש</button>
             <button class="stage-pill" type="button" data-i="15"><span>🌳</span> פרדספדיה</button>
@@ -930,9 +1020,47 @@
             </label>
             <span class="stage-count" aria-live="polite"><b>1</b> / 33</span>
         </div>
-        <script type="application/json" id="stage-data">[{"name": "FÖHN", "sub": "אופנוע סילון בעמק אלפיני", "icon": "🏔️", "theme": "t-cyan", "lead": "הדור השלישי של האופנוע המעופף: ארבעה מנועי סילון מוטים וכנף, מחשב טיסה שמקצה 15 מפעילים בכל רגע, עמק אלפיני אפוי עם סחיפה, אגם מחזיר אור, קניון ו-150 אלף עצים.", "href": "jetbikes/foehn/index.html", "ext": false, "img": "projects_page/shots/big/foehn.webp", "anchor": "foehn", "pin": true}, {"name": "דרך קיצור", "sub": "שבילי פרדס חנה-כרכור", "icon": "🥾", "theme": "t-green", "lead": "מדריך לרשת קיצורי הדרך של המושבה, וגם מסד הנתונים של היוזמה.", "href": "dereh_kitzur/", "ext": false, "img": "projects_page/shots/big/dereh_kitzur.webp", "anchor": "dereh_kitzur", "pin": false}, {"name": "רוצים שקיפות", "sub": "לאן הולך הכסף", "icon": "🥧", "theme": "t-green", "lead": "תקציב המועצה פרדס חנה-כרכור כעוגה שנכנסים לתוכה.", "href": "transparency/budget/web/index.html", "ext": false, "img": "projects_page/shots/big/transparency-budget.webp", "anchor": "transparency-budget", "pin": false}, {"name": "דרך הנדיב", "sub": "מה קורה עכשיו", "icon": "🎪", "theme": "t-orange", "lead": "מפה חיה של יותר מ-240 אירועים בפסטיבל דרך הנדיב (29–31.10.2026) בפרדס חנה-כרכור.", "href": "hanadiv/", "ext": false, "img": "projects_page/shots/big/hanadiv.webp", "anchor": "hanadiv", "pin": false}, {"name": "רוצים שקיפות", "sub": "תקציב המדינה", "icon": "🇮🇱", "theme": "t-blue", "lead": "תקציב המדינה 1997–2026 כעוגה, עד רמת תקנה.", "href": "transparency/state_budget/web/index.html", "ext": false, "img": "projects_page/shots/big/transparency-state_budget.webp", "anchor": "transparency-state_budget", "pin": false}, {"name": "רוצים שקיפות", "sub": "מה אמרו במועצה", "icon": "🏛️", "theme": "t-green", "lead": "חיפוש ושאלות בכל ישיבות מליאת המועצה פרדס חנה-כרכור.", "href": "https://orimosenzon-phk-council.hf.space", "ext": true, "img": "projects_page/shots/big/transparency.webp", "anchor": "transparency", "pin": false}, {"name": "איש-ציפור", "sub": "", "icon": "🪶", "theme": "t-cyan", "lead": "דוור של אי קטן מוצא שורש שמחזק לו את הזרועות, בונה לעצמו כנפיים, ועף.", "href": "birdman/index.html", "ext": false, "img": "projects_page/shots/big/birdman.webp", "anchor": "birdman", "pin": false}, {"name": "MJ-5", "sub": "מסלול העמק", "icon": "🏁", "theme": "t-cyan", "lead": "משחק טיסה על המנוע של סרט MJ-5: חמישה מנועי סילון אמיתיים עם השהיית סחרור וכנפוני הסטה, מחשב טיסה שמתרגם את הסטיק לפקודות מנוע, 12 טבעות מעל האגם ודרך קניון, ונחיתה…", "href": "jetbikes/jetbike_game/index.html", "ext": false, "img": "projects_page/shots/big/jetbike_game.webp", "anchor": "jetbike_game", "pin": false}, {"name": "Fable", "sub": "אופנוע סילון מעופף", "icon": "🚀", "theme": "t-cyan", "lead": "משחק טיסה תלת־ממדי עם פיזיקת גוף קשיח אמיתית: מנוע סילון אחורי, שלושה צינורות עילוי שמטים ומגלגלים את האופנוע, עולם פרוצדורלי של הרים ועמקים, ומסלול 16 טבעות נגד השעון.", "href": "jetbikes/fable/index.html", "ext": false, "img": "projects_page/shots/big/fable.webp", "anchor": "fable", "pin": false}, {"name": "כופלי לגרנז'", "sub": "אופטימיזציה תחת אילוצים", "icon": "λ", "theme": "t-purple", "lead": "מה בעצם אומר הכופל λ? המחיר של האילוץ.", "href": "lagrange/index.html", "ext": false, "img": "projects_page/shots/big/lagrange.webp", "anchor": "lagrange", "pin": false}, {"name": "מתמטיקה תיכונית", "sub": "חפיפת משולשים", "icon": "📐", "theme": "t-amber", "lead": "אפליקציה אינטראקטיבית שנבנתה בשביל עומר, תלמיד שלומד חפיפת משולשים.", "href": "high_school_math/congruence/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math.webp", "anchor": "high_school_math", "pin": false}, {"name": "חוקר קבוצת מנדלברוט", "sub": "", "icon": "🌀", "theme": "t-indigo", "lead": "זום אינטראקטיבי לתוך קבוצת מנדלברוט, עם מסך נלווה שמראה את מסלול האיטרציות של כל נקודה שבוחרים — למה היא בורחת לאינסוף או נשארת בפנים.", "href": "mandelbrot/index.html", "ext": false, "img": "projects_page/shots/big/mandelbrot.webp", "anchor": "mandelbrot", "pin": false}, {"name": "2048 ולמידת חיזוק", "sub": "", "icon": "🎲", "theme": "t-amber", "lead": "המשחק 2048, וחמישה סוכנים שלמדו לשחק בו לבד.", "href": "2048/game/index.html", "ext": false, "img": "projects_page/shots/big/2048.webp", "anchor": "2048", "pin": false}, {"name": "Letras", "sub": "מילות שירים", "icon": "🎤", "theme": "t-purple", "lead": "מחפשים שיר — האפליקציה מציגה מילים מסונכרנות עם הסרטון.", "href": "https://fun-production-d221.up.railway.app/", "ext": true, "img": "projects_page/shots/big/letras.webp", "anchor": "letras", "pin": false}, {"name": "שיווי משקל נאש", "sub": "הדגמה", "icon": "⚖️", "theme": "t-green", "lead": "אסטרטגיות מעורבות והלמה של ספרנר.", "href": "nash/index.html", "ext": false, "img": "projects_page/shots/big/nash.webp", "anchor": "nash", "pin": false}, {"name": "פרדספדיה", "sub": "ויקי קהילתי", "icon": "🌳", "theme": "t-green", "lead": "הוויקי של פרדס חנה-כרכור, ובוט שמתחזק אותו: כותב ערכים חדשים, מעבה קיימים ממקורות, מאתר תמונות ברישיון חופשי, ומרענן לוח אירועי תרבות שמתעדכן לבד.", "href": "https://pardespedia.info", "ext": true, "img": "projects_page/shots/big/pardespedia.webp", "anchor": "pardespedia", "pin": false}, {"name": "One Prompt", "sub": "תוכנה מפרומפט אחד", "icon": "✦", "theme": "t-purple", "lead": "אוסף תוכנות שכל אחת נכתבה מפרומפט בודד, בלי סבב תיקונים.", "href": "one_prompt/index.html", "ext": false, "img": "projects_page/shots/big/one_prompt.webp", "anchor": "one_prompt", "pin": false}, {"name": "סודוקו עם רמזים חכמים", "sub": "", "icon": "🎯", "theme": "t-indigo", "lead": "פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.", "href": "soduku.html", "ext": false, "img": "projects_page/shots/big/soduku.webp", "anchor": "soduku", "pin": false}, {"name": "Solar System Simulation", "sub": "", "icon": "🪐", "theme": "t-orange", "lead": "סימולציה real-time של מערכת השמש עם מסלולים פלנטריים.", "href": "solar.html", "ext": false, "img": "projects_page/shots/big/solar.webp", "anchor": "solar", "pin": false}, {"name": "הרשת החופשית", "sub": "", "icon": "🌳", "theme": "t-green", "lead": "רשת חברתית ללא מטרות רווח, שמתחילה מפרדס חנה-כרכור.", "href": "https://free-network-demo.orimosenzon.workers.dev", "ext": true, "img": "projects_page/shots/big/free_network.webp", "anchor": "free_network", "pin": false}, {"name": "מי יקים את הממשלה?", "sub": "", "icon": "🏛️", "theme": "t-orange", "lead": "אף גוש לא הגיע ל-61. אז מה כן אפשרי?", "href": "coalition26/index.html", "ext": false, "img": "projects_page/shots/big/coalition26.webp", "anchor": "coalition26", "pin": false}, {"name": "רודסטר", "sub": "המכונית שנצמדת לקירות", "icon": "🏎️", "theme": "t-red", "lead": "נוהגים ברודסטר המעופף שטסלה הציגה ב-15 באוקטובר 2026.", "href": "roadster/index.html", "ext": false, "img": "projects_page/shots/big/roadster.webp", "anchor": "roadster", "pin": false}, {"name": "אופטימוס 3", "sub": "רובוט הומנואידי", "icon": "🤖", "theme": "t-amber", "lead": "מפעילים את הרובוט ההומנואידי של טסלה, עם פיזיקה אמיתית של MuJoCo בדפדפן.", "href": "optimus/index.html", "ext": false, "img": "projects_page/shots/big/optimus.webp", "anchor": "optimus", "pin": false}, {"name": "מסלול", "sub": "מה צריך כדי להגיע לחלל", "icon": "🛰️", "theme": "t-blue", "lead": "כדור הארץ, רקטות ולוויינים בתלת־ממד, מדויקים פיזיקלית.", "href": "orbit/index.html", "ext": false, "img": "projects_page/shots/big/orbit.webp", "anchor": "orbit", "pin": false}, {"name": "פונבוט", "sub": "תושבת רובוטית לטלפון", "icon": "🤖", "theme": "t-orange", "lead": "הטלפון הישן מהמגירה הוא המוח. חסרים לו רק גלגלים.", "href": "phonebot/index.html", "ext": false, "img": "projects_page/shots/big/phonebot.webp", "anchor": "phonebot", "pin": false}, {"name": "חמקן", "sub": "שולחן המתכנן", "icon": "✈️", "theme": "t-blue", "lead": "איך מעצבים מטוס שהמכ\"ם כמעט לא רואה?", "href": "stealth/index.html", "ext": false, "img": "projects_page/shots/big/stealth.webp", "anchor": "stealth", "pin": false}, {"name": "מתמטיקה", "sub": "שברים עשרוניים", "icon": "🔢", "theme": "t-amber", "lead": "מסלול לימוד אינטראקטיבי לעידו, מאפס: חותכים שוקולד לעשיריות, צובעים ריבוע מאה, בונים מספרים מקוביות שמתאחדות ומתפרטות, עושים זום על ציר המספרים, משחקים דו-קרב נגד…", "href": "high_school_math/decimals/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math-2.webp", "anchor": "high_school_math-2", "pin": false}, {"name": "Central Park Development Model", "sub": "", "icon": "🗽", "theme": "t-orange", "lead": "מה יקרה לערך הנדל\"ן של מנהטן אם יבנו מגדלים על סנטרל פארק?", "href": "manhattan_project/index.html", "ext": true, "img": "projects_page/shots/big/manhattan_project.webp", "anchor": "manhattan_project", "pin": false}, {"name": "Bezier Curve Animation Editor", "sub": "", "icon": "✨", "theme": "t-purple", "lead": "עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes.", "href": "animate/animate.html", "ext": false, "img": "projects_page/shots/big/animate.webp", "anchor": "animate", "pin": false}, {"name": "Prime Number Spirals", "sub": "", "icon": "🔢", "theme": "t-cyan", "lead": "ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה.", "href": "primes.html", "ext": false, "img": "projects_page/shots/big/primes.webp", "anchor": "primes", "pin": false}, {"name": "מנדלברוט", "sub": "מפה ונוף", "icon": "🌋", "theme": "t-indigo", "lead": "קבוצת מנדלברוט כמפה חדה וכנוף שטסים מעליו.", "href": "mandelscape/index.html", "ext": false, "img": "projects_page/shots/big/mandelscape.webp", "anchor": "mandelscape", "pin": false}, {"name": "ζ", "sub": "ההמשכה האנליטית של זטא", "icon": "🔮", "theme": "t-purple", "lead": "איך פונקציה שמוגדרת רק מימין לקו אחד מקבלת ערכים בכל המישור המרוכב.", "href": "zeta.html", "ext": false, "img": "projects_page/shots/big/zeta.webp", "anchor": "zeta", "pin": false}, {"name": "צפיפות אנרגטית של מצברים", "sub": "", "icon": "🔋", "theme": "t-amber", "lead": "כמה אנרגיה נדחסה לקילוגרם סוללה, מעופרת-חומצה של המאה ה-19 ועד ליתיום-יון של היום — וכמה איטית העלייה הזאת באמת.", "href": "battery_density_chart.html", "ext": false, "img": "projects_page/shots/big/battery_density_chart.webp", "anchor": "battery_density_chart", "pin": false}]</script>
+        <script type="application/json" id="stage-data">[{"name": "FÖHN", "sub": "אופנוע סילון בעמק אלפיני", "icon": "🏔️", "theme": "t-cyan", "lead": "הדור השלישי של האופנוע המעופף: ארבעה מנועי סילון מוטים וכנף, מחשב טיסה שמקצה 15 מפעילים בכל רגע, עמק אלפיני אפוי עם סחיפה, אגם מחזיר אור, קניון ו-150 אלף עצים.", "href": "jetbikes/foehn/index.html", "ext": false, "img": "projects_page/shots/big/foehn.webp", "anchor": "foehn", "pin": true}, {"name": "דרך קיצור", "sub": "שבילי פרדס חנה-כרכור", "icon": "🥾", "theme": "t-green", "lead": "מדריך לרשת קיצורי הדרך של המושבה, וגם מסד הנתונים של היוזמה.", "href": "dereh_kitzur/", "ext": false, "img": "projects_page/shots/big/dereh_kitzur.webp", "anchor": "dereh_kitzur", "pin": false}, {"name": "רוצים שקיפות", "sub": "לאן הולך הכסף", "icon": "🥧", "theme": "t-green", "lead": "תקציב המועצה פרדס חנה-כרכור כעוגה שנכנסים לתוכה.", "href": "transparency/budget/web/index.html", "ext": false, "img": "projects_page/shots/big/transparency-budget.webp", "anchor": "transparency-budget", "pin": false}, {"name": "דרך הנדיב", "sub": "מה קורה עכשיו", "icon": "🎪", "theme": "t-orange", "lead": "מפה חיה של יותר מ-240 אירועים בפסטיבל דרך הנדיב (29–31.10.2026) בפרדס חנה-כרכור.", "href": "hanadiv/", "ext": false, "img": "projects_page/shots/big/hanadiv.webp", "anchor": "hanadiv", "pin": false}, {"name": "רוצים שקיפות", "sub": "תקציב המדינה", "icon": "🇮🇱", "theme": "t-blue", "lead": "תקציב המדינה 1997–2026 כעוגה, עד רמת תקנה.", "href": "transparency/state_budget/web/index.html", "ext": false, "img": "projects_page/shots/big/transparency-state_budget.webp", "anchor": "transparency-state_budget", "pin": false}, {"name": "רוצים שקיפות", "sub": "מה אמרו במועצה", "icon": "🏛️", "theme": "t-green", "lead": "חיפוש ושאלות בכל ישיבות מליאת המועצה פרדס חנה-כרכור.", "href": "https://orimosenzon-phk-council.hf.space", "ext": true, "img": "projects_page/shots/big/transparency.webp", "anchor": "transparency", "pin": false}, {"name": "איש-ציפור", "sub": "", "icon": "🪶", "theme": "t-cyan", "lead": "דוור של אי קטן מוצא שורש שמחזק לו את הזרועות, בונה לעצמו כנפיים, ועף.", "href": "birdman/index.html", "ext": false, "img": "projects_page/shots/big/birdman.webp", "anchor": "birdman", "pin": false}, {"name": "MJ-5", "sub": "מסלול העמק", "icon": "🏁", "theme": "t-cyan", "lead": "משחק טיסה על המנוע של סרט MJ-5: חמישה מנועי סילון אמיתיים עם השהיית סחרור וכנפוני הסטה, מחשב טיסה שמתרגם את הסטיק לפקודות מנוע, 12 טבעות מעל האגם ודרך קניון, ונחיתה…", "href": "jetbikes/jetbike_game/index.html", "ext": false, "img": "projects_page/shots/big/jetbike_game.webp", "anchor": "jetbike_game", "pin": false}, {"name": "2048 ולמידת חיזוק", "sub": "", "icon": "🎲", "theme": "t-amber", "lead": "המשחק 2048, וחמישה סוכנים שלמדו לשחק בו לבד.", "href": "2048/game/index.html", "ext": false, "img": "projects_page/shots/big/2048.webp", "anchor": "2048", "pin": false}, {"name": "Fable", "sub": "אופנוע סילון מעופף", "icon": "🚀", "theme": "t-cyan", "lead": "משחק טיסה תלת־ממדי עם פיזיקת גוף קשיח אמיתית: מנוע סילון אחורי, שלושה צינורות עילוי שמטים ומגלגלים את האופנוע, עולם פרוצדורלי של הרים ועמקים, ומסלול 16 טבעות נגד השעון.", "href": "jetbikes/fable/index.html", "ext": false, "img": "projects_page/shots/big/fable.webp", "anchor": "fable", "pin": false}, {"name": "כופלי לגרנז'", "sub": "אופטימיזציה תחת אילוצים", "icon": "λ", "theme": "t-purple", "lead": "מה בעצם אומר הכופל λ? המחיר של האילוץ.", "href": "lagrange/index.html", "ext": false, "img": "projects_page/shots/big/lagrange.webp", "anchor": "lagrange", "pin": false}, {"name": "מתמטיקה תיכונית", "sub": "חפיפת משולשים", "icon": "📐", "theme": "t-amber", "lead": "אפליקציה אינטראקטיבית שנבנתה בשביל עומר, תלמיד שלומד חפיפת משולשים.", "href": "high_school_math/congruence/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math.webp", "anchor": "high_school_math", "pin": false}, {"name": "חוקר קבוצת מנדלברוט", "sub": "", "icon": "🌀", "theme": "t-indigo", "lead": "זום אינטראקטיבי לתוך קבוצת מנדלברוט, עם מסך נלווה שמראה את מסלול האיטרציות של כל נקודה שבוחרים — למה היא בורחת לאינסוף או נשארת בפנים.", "href": "mandelbrot/index.html", "ext": false, "img": "projects_page/shots/big/mandelbrot.webp", "anchor": "mandelbrot", "pin": false}, {"name": "Letras", "sub": "מילות שירים", "icon": "🎤", "theme": "t-purple", "lead": "מחפשים שיר — האפליקציה מציגה מילים מסונכרנות עם הסרטון.", "href": "https://fun-production-d221.up.railway.app/", "ext": true, "img": "projects_page/shots/big/letras.webp", "anchor": "letras", "pin": false}, {"name": "שיווי משקל נאש", "sub": "הדגמה", "icon": "⚖️", "theme": "t-green", "lead": "אסטרטגיות מעורבות והלמה של ספרנר.", "href": "nash/index.html", "ext": false, "img": "projects_page/shots/big/nash.webp", "anchor": "nash", "pin": false}, {"name": "פרדספדיה", "sub": "ויקי קהילתי", "icon": "🌳", "theme": "t-green", "lead": "הוויקי של פרדס חנה-כרכור, ובוט שמתחזק אותו: כותב ערכים חדשים, מעבה קיימים ממקורות, מאתר תמונות ברישיון חופשי, ומרענן לוח אירועי תרבות שמתעדכן לבד.", "href": "https://pardespedia.info", "ext": true, "img": "projects_page/shots/big/pardespedia.webp", "anchor": "pardespedia", "pin": false}, {"name": "One Prompt", "sub": "תוכנה מפרומפט אחד", "icon": "✦", "theme": "t-purple", "lead": "אוסף תוכנות שכל אחת נכתבה מפרומפט בודד, בלי סבב תיקונים.", "href": "one_prompt/index.html", "ext": false, "img": "projects_page/shots/big/one_prompt.webp", "anchor": "one_prompt", "pin": false}, {"name": "סודוקו עם רמזים חכמים", "sub": "", "icon": "🎯", "theme": "t-indigo", "lead": "פאזל סודוקו עם מערכת רמזים חכמה, אימות קלט והדגשת תאים נכונים ושגויים.", "href": "soduku.html", "ext": false, "img": "projects_page/shots/big/soduku.webp", "anchor": "soduku", "pin": false}, {"name": "Solar System Simulation", "sub": "", "icon": "🪐", "theme": "t-orange", "lead": "סימולציה real-time של מערכת השמש עם מסלולים פלנטריים.", "href": "solar.html", "ext": false, "img": "projects_page/shots/big/solar.webp", "anchor": "solar", "pin": false}, {"name": "הרשת החופשית", "sub": "", "icon": "🌳", "theme": "t-green", "lead": "רשת חברתית ללא מטרות רווח, שמתחילה מפרדס חנה-כרכור.", "href": "https://free-network-demo.orimosenzon.workers.dev", "ext": true, "img": "projects_page/shots/big/free_network.webp", "anchor": "free_network", "pin": false}, {"name": "מי יקים את הממשלה?", "sub": "", "icon": "🏛️", "theme": "t-orange", "lead": "אף גוש לא הגיע ל-61. אז מה כן אפשרי?", "href": "coalition26/index.html", "ext": false, "img": "projects_page/shots/big/coalition26.webp", "anchor": "coalition26", "pin": false}, {"name": "רודסטר", "sub": "המכונית שנצמדת לקירות", "icon": "🏎️", "theme": "t-red", "lead": "נוהגים ברודסטר המעופף שטסלה הציגה ב-15 באוקטובר 2026.", "href": "roadster/index.html", "ext": false, "img": "projects_page/shots/big/roadster.webp", "anchor": "roadster", "pin": false}, {"name": "אופטימוס 3", "sub": "רובוט הומנואידי", "icon": "🤖", "theme": "t-amber", "lead": "מפעילים את הרובוט ההומנואידי של טסלה, עם פיזיקה אמיתית של MuJoCo בדפדפן.", "href": "optimus/index.html", "ext": false, "img": "projects_page/shots/big/optimus.webp", "anchor": "optimus", "pin": false}, {"name": "מסלול", "sub": "מה צריך כדי להגיע לחלל", "icon": "🛰️", "theme": "t-blue", "lead": "כדור הארץ, רקטות ולוויינים בתלת־ממד, מדויקים פיזיקלית.", "href": "orbit/index.html", "ext": false, "img": "projects_page/shots/big/orbit.webp", "anchor": "orbit", "pin": false}, {"name": "פונבוט", "sub": "תושבת רובוטית לטלפון", "icon": "🤖", "theme": "t-orange", "lead": "הטלפון הישן מהמגירה הוא המוח. חסרים לו רק גלגלים.", "href": "phonebot/index.html", "ext": false, "img": "projects_page/shots/big/phonebot.webp", "anchor": "phonebot", "pin": false}, {"name": "חמקן", "sub": "שולחן המתכנן", "icon": "✈️", "theme": "t-blue", "lead": "איך מעצבים מטוס שהמכ\"ם כמעט לא רואה?", "href": "stealth/index.html", "ext": false, "img": "projects_page/shots/big/stealth.webp", "anchor": "stealth", "pin": false}, {"name": "מתמטיקה", "sub": "שברים עשרוניים", "icon": "🔢", "theme": "t-amber", "lead": "מסלול לימוד אינטראקטיבי לעידו, מאפס: חותכים שוקולד לעשיריות, צובעים ריבוע מאה, בונים מספרים מקוביות שמתאחדות ומתפרטות, עושים זום על ציר המספרים, משחקים דו-קרב נגד…", "href": "high_school_math/decimals/index.html", "ext": false, "img": "projects_page/shots/big/high_school_math-2.webp", "anchor": "high_school_math-2", "pin": false}, {"name": "Central Park Development Model", "sub": "", "icon": "🗽", "theme": "t-orange", "lead": "מה יקרה לערך הנדל\"ן של מנהטן אם יבנו מגדלים על סנטרל פארק?", "href": "manhattan_project/index.html", "ext": true, "img": "projects_page/shots/big/manhattan_project.webp", "anchor": "manhattan_project", "pin": false}, {"name": "Bezier Curve Animation Editor", "sub": "", "icon": "✨", "theme": "t-purple", "lead": "עורך אנימציה אינטראקטיבי של עקומות בזייה עם תמיכה ב-timeline ו-keyframes.", "href": "animate/animate.html", "ext": false, "img": "projects_page/shots/big/animate.webp", "anchor": "animate", "pin": false}, {"name": "Prime Number Spirals", "sub": "", "icon": "🔢", "theme": "t-cyan", "lead": "ויזואליזציה של מספרים ראשוניים בדפוסי ספירלה.", "href": "primes.html", "ext": false, "img": "projects_page/shots/big/primes.webp", "anchor": "primes", "pin": false}, {"name": "מנדלברוט", "sub": "מפה ונוף", "icon": "🌋", "theme": "t-indigo", "lead": "קבוצת מנדלברוט כמפה חדה וכנוף שטסים מעליו.", "href": "mandelscape/index.html", "ext": false, "img": "projects_page/shots/big/mandelscape.webp", "anchor": "mandelscape", "pin": false}, {"name": "ζ", "sub": "ההמשכה האנליטית של זטא", "icon": "🔮", "theme": "t-purple", "lead": "איך פונקציה שמוגדרת רק מימין לקו אחד מקבלת ערכים בכל המישור המרוכב.", "href": "zeta.html", "ext": false, "img": "projects_page/shots/big/zeta.webp", "anchor": "zeta", "pin": false}, {"name": "צפיפות אנרגטית של מצברים", "sub": "", "icon": "🔋", "theme": "t-amber", "lead": "כמה אנרגיה נדחסה לקילוגרם סוללה, מעופרת-חומצה של המאה ה-19 ועד ליתיום-יון של היום — וכמה איטית העלייה הזאת באמת.", "href": "battery_density_chart.html", "ext": false, "img": "projects_page/shots/big/battery_density_chart.webp", "anchor": "battery_density_chart", "pin": false}]</script>
     </section>
 
+    <section class="stats" id="stats" hidden>
+        <div class="section-header">
+            <span class="section-emoji">📈</span>
+            <span class="section-title">צפיות בפרויקטים</span>
+            <span class="section-count stats-updated"></span>
+        </div>
+        <div class="stats-panel">
+            <div class="stats-kpis">
+                <div class="stats-kpi"><div class="stats-kpi-label">צפיות באתר</div><div class="stats-kpi-value" data-k="views">–</div><div class="stats-kpi-sub" data-k="views-sub"></div></div>
+                <div class="stats-kpi"><div class="stats-kpi-label">מבקרים</div><div class="stats-kpi-value" data-k="users">–</div><div class="stats-kpi-sub" data-k="users-sub"></div></div>
+                <div class="stats-kpi"><div class="stats-kpi-label">היום החזק</div><div class="stats-kpi-value" data-k="peak">–</div><div class="stats-kpi-sub" data-k="peak-sub"></div></div>
+                <div class="stats-kpi"><div class="stats-kpi-label">שינוי</div><div class="stats-kpi-value" data-k="chg">–</div><div class="stats-kpi-sub" data-k="chg-sub"></div></div>
+            </div>
+            <div class="stats-tools">
+                <div class="stats-seg" data-k="preset" role="group" aria-label="טווח זמן"><button type="button" data-v="7">7 ימים</button><button type="button" data-v="14">14 יום</button><button type="button" data-v="30">30 יום</button><button type="button" data-v="all">הכל</button></div>
+                <div class="stats-seg" data-k="gran" role="group" aria-label="רזולוציה"><button type="button" data-v="d">יומי</button><button type="button" data-v="w">שבועי</button></div>
+                <div class="stats-seg" data-k="mode" role="group" aria-label="תצוגה"><button type="button" data-v="v">צפיות</button><button type="button" data-v="c">מצטבר</button></div>
+                <div class="stats-seg" data-k="log" role="group" aria-label="סקאלה"><button type="button" data-v="0">ליניארי</button><button type="button" data-v="1">לוגריתמי</button></div>
+                <span class="stats-range-label"></span>
+            </div>
+            <div class="stats-chart" tabindex="0" aria-label="גרף צפיות. חיצים ימינה ושמאלה עוברים בין הימים">
+                <div class="stats-empty-chart" hidden>בחרו פרויקטים מהטבלה למטה כדי לראות אותם בגרף</div>
+                <div class="stats-tip" hidden></div>
+            </div>
+            <div class="stats-nav" aria-hidden="true"></div>
+            <div class="stats-nav-hint">גררו את החלון, משכו את הקצוות או סמנו טווח חדש על הרצועה</div>
+            <div class="stats-table-head">
+                <span class="stats-table-sum grow"></span>
+                <span class="stats-toast" aria-live="polite"></span>
+                <button type="button" class="stats-btn" data-act="top">5 המובילים</button>
+                <button type="button" class="stats-btn" data-act="clear">נקה בחירה</button>
+            </div>
+            <ol class="stats-rows"></ol>
+            <button type="button" class="stats-btn stats-more" hidden></button>
+            <p class="stats-note">צפיות בדפים לפי Google Analytics, מאז 3.11.2026. דף הפרויקטים עצמו נספר רק בסיכומים שלמעלה. היום הנוכחי עוד לא נגמר, ולכן הקטע האחרון בגרף מקווקו.</p>
+        </div>
+        <script type="application/json" id="stats-meta">{"transparency": {"name": "רוצים שקיפות", "sub": "מה אמרו במועצה", "icon": "🏛️"}, "2048": {"name": "2048 ולמידת חיזוק", "sub": "", "icon": "🎲"}, "letras": {"name": "Letras", "sub": "מילות שירים", "icon": "🎤"}, "nash": {"name": "שיווי משקל נאש", "sub": "הדגמה", "icon": "⚖️"}, "embedding": {"name": "Word Embeddings", "sub": "שיכון מילים", "icon": "🧠"}, "golem": {"name": "Golem", "sub": "תוסף VS Code", "icon": "🤖"}, "sidekick": {"name": "Sidekick", "sub": "דיבאג אינטגרציות", "icon": "🔍"}, "wikivoice": {"name": "WikiVoice", "sub": "ויקיפדיה מדברת", "icon": "🔊"}, "claude-auto": {"name": "Claude Auto", "sub": "עוזר קולי לנהיגה", "icon": "🚗"}, "agents-101": {"name": "Agents 101", "sub": "LangChain, LangGraph & MCP", "icon": "🤖"}, "nudge": {"name": "Nudge", "sub": "ניהול כספים קולי", "icon": "🌱"}, "deepcourse": {"name": "Deep Course", "sub": "קורס למידה עמוקה", "icon": "🎓"}, "g4": {"name": "g4", "sub": "Gemma 4 מקומי", "icon": "🟢"}, "dragon-cloud": {"name": "Dragon Cloud", "sub": "LLM סיני בענן", "icon": "🐉"}, "archon": {"name": "Archon", "sub": "שחזור משחק קומודור 64", "icon": "⚔️"}, "haskala": {"name": "Haskala", "sub": "אדמיניסטרציה של כיתה", "icon": "📝"}, "remez": {"name": "Remez", "sub": "רמזים ל-OCR עברי", "icon": "💡"}, "openclaw": {"name": "OpenClaw", "sub": "סוכן קולי", "icon": "🦾"}, "pardespedia": {"name": "פרדספדיה", "sub": "ויקי קהילתי", "icon": "🌳"}, "one_prompt": {"name": "One Prompt", "sub": "תוכנה מפרומפט אחד", "icon": "✦"}, "vedit": {"name": "vedit", "sub": "עורך וידאו בדפדפן", "icon": "🎬"}, "dereh_kitzur": {"name": "דרך קיצור", "sub": "שבילי פרדס חנה-כרכור", "icon": "🥾"}, "hanadiv": {"name": "דרך הנדיב", "sub": "מה קורה עכשיו", "icon": "🎪"}, "photomap": {"name": "photomap", "sub": "מפת התמונות", "icon": "🗺️"}, "inbal": {"name": "Inbal", "sub": "אתר קרמיקה", "icon": "🏺"}, "road-to-recovery": {"name": "בדרך להחלמה", "sub": "", "icon": "🚑"}, "ori": {"name": "Smart Business Search", "sub": "", "icon": "🗺️"}, "bloom": {"name": "Bloom", "sub": "מצא את הפרחים שלך", "icon": "🌸"}, "birdman": {"name": "איש-ציפור", "sub": "", "icon": "🪶"}, "karate": {"name": "שוטוקאן", "sub": "קומיטה", "icon": "🥋"}, "fable": {"name": "Fable", "sub": "אופנוע סילון מעופף", "icon": "🚀"}, "jetbike_game": {"name": "MJ-5", "sub": "מסלול העמק", "icon": "🏁"}, "foehn": {"name": "FÖHN", "sub": "אופנוע סילון בעמק אלפיני", "icon": "🏔️"}, "pipin": {"name": "פיפין", "sub": "הרפתקה בארץ התיכונה", "icon": "🧙"}, "mmx": {"name": "Dirt Bike Racing", "sub": "", "icon": "🏍️"}, "soduku": {"name": "סודוקו עם רמזים חכמים", "sub": "", "icon": "🎯"}, "solar": {"name": "Solar System Simulation", "sub": "", "icon": "🪐"}, "coalition": {"name": "61", "sub": "הקדנציה", "icon": "🗳️"}, "adamama": {"name": "אדמאמא", "sub": "1999–2018", "icon": "🌱"}, "free_network": {"name": "הרשת החופשית", "sub": "", "icon": "🌳"}, "transparency-budget": {"name": "רוצים שקיפות", "sub": "לאן הולך הכסף", "icon": "🥧"}, "transparency-ma-bonim": {"name": "רוצים שקיפות", "sub": "מה בונים לנו", "icon": "🏗️"}, "transparency-state_budget": {"name": "רוצים שקיפות", "sub": "תקציב המדינה", "icon": "🇮🇱"}, "shchunot": {"name": "שכונות פרדס חנה-כרכור", "sub": "", "icon": "🗺️"}, "coalition26": {"name": "מי יקים את הממשלה?", "sub": "", "icon": "🏛️"}, "roadster": {"name": "רודסטר", "sub": "המכונית שנצמדת לקירות", "icon": "🏎️"}, "optimus": {"name": "אופטימוס 3", "sub": "רובוט הומנואידי", "icon": "🤖"}, "orbit": {"name": "מסלול", "sub": "מה צריך כדי להגיע לחלל", "icon": "🛰️"}, "lagrange": {"name": "כופלי לגרנז'", "sub": "אופטימיזציה תחת אילוצים", "icon": "λ"}, "math_sims": {"name": "סרטוני מתמטיקה", "sub": "זטה, סרגל ומחוגה, פורייה", "icon": "ζ"}, "phonebot": {"name": "פונבוט", "sub": "תושבת רובוטית לטלפון", "icon": "🤖"}, "stealth": {"name": "חמקן", "sub": "שולחן המתכנן", "icon": "✈️"}, "pardes3d": {"name": "פרדס חנה תלת-ממד", "sub": "", "icon": "🏘️"}, "high_school_math": {"name": "מתמטיקה תיכונית", "sub": "חפיפת משולשים", "icon": "📐"}, "high_school_math-2": {"name": "מתמטיקה", "sub": "שברים עשרוניים", "icon": "🔢"}, "high_school_math-3": {"name": "מתמטיקה", "sub": "אחוזים", "icon": "💯"}, "manhattan_project": {"name": "Central Park Development Model", "sub": "", "icon": "🗽"}, "esla_vibe": {"name": "esla_vibe", "sub": "אלגברה לינארית", "icon": "📐"}, "animate": {"name": "Bezier Curve Animation Editor", "sub": "", "icon": "✨"}, "empires": {"name": "Historical Empires on the Map", "sub": "", "icon": "🌍"}, "primes": {"name": "Prime Number Spirals", "sub": "", "icon": "🔢"}, "pgn2study": {"name": "PGN2Study", "sub": "פאזלים לשחמט", "icon": "♟"}, "surfaces": {"name": "surfaces", "sub": "משטחים פרמטריים", "icon": "🌐"}, "mandelscape": {"name": "מנדלברוט", "sub": "מפה ונוף", "icon": "🌋"}, "mandelbrot": {"name": "חוקר קבוצת מנדלברוט", "sub": "", "icon": "🌀"}, "zeta": {"name": "ζ", "sub": "ההמשכה האנליטית של זטא", "icon": "🔮"}, "battery_density_chart": {"name": "צפיפות אנרגטית של מצברים", "sub": "", "icon": "🔋"}, "information_theory": {"name": "חילוץ מידע הדדי", "sub": "", "icon": "∩"}, "karina": {"name": "Mind · Heart · Body · Spirit", "sub": "", "icon": "🌌"}}</script>
+    </section>
     <div class="section-header" id="try">
         <span class="section-emoji">🚀</span>
         <span class="section-title">פרויקטים live: נסו עכשיו בדפדפן</span>
@@ -1309,25 +1437,6 @@
         </a>
     </div>
 
-    <section class="stats" id="stats" hidden>
-        <div class="section-header">
-            <span class="section-emoji">📈</span>
-            <span class="section-title">כניסות לאפליקציות</span>
-            <span class="section-count stats-updated"></span>
-        </div>
-        <div class="stats-bar">
-            <div class="stats-ranges" role="group" aria-label="טווח זמן">
-                <button type="button" data-r="0">7 ימים</button>
-                <button type="button" data-r="1">30 יום</button>
-                <button type="button" data-r="2" class="stats-since">מההתחלה</button>
-            </div>
-            <div class="stats-totals"></div>
-        </div>
-        <ol class="stats-list"></ol>
-        <button type="button" class="stats-more" hidden>הצג את כולם</button>
-        <p class="stats-note">צפיות בדפים לפי Google Analytics. דף הפרויקטים עצמו לא נספר כאן.</p>
-        <script type="application/json" id="stats-meta">{"transparency": {"name": "רוצים שקיפות", "icon": "🏛️", "theme": "t-green"}, "2048": {"name": "2048 ולמידת חיזוק", "icon": "🎲", "theme": "t-amber"}, "letras": {"name": "Letras", "icon": "🎤", "theme": "t-purple"}, "nash": {"name": "שיווי משקל נאש", "icon": "⚖️", "theme": "t-green"}, "embedding": {"name": "Word Embeddings", "icon": "🧠", "theme": "t-cyan"}, "golem": {"name": "Golem", "icon": "🤖", "theme": "t-indigo"}, "sidekick": {"name": "Sidekick", "icon": "🔍", "theme": "t-blue"}, "wikivoice": {"name": "WikiVoice", "icon": "🔊", "theme": "t-teal"}, "claude-auto": {"name": "Claude Auto", "icon": "🚗", "theme": "t-amber"}, "agents-101": {"name": "Agents 101", "icon": "🤖", "theme": "t-indigo"}, "nudge": {"name": "Nudge", "icon": "🌱", "theme": "t-green"}, "deepcourse": {"name": "Deep Course", "icon": "🎓", "theme": "t-green"}, "g4": {"name": "g4", "icon": "🟢", "theme": "t-green"}, "dragon-cloud": {"name": "Dragon Cloud", "icon": "🐉", "theme": "t-red"}, "archon": {"name": "Archon", "icon": "⚔️", "theme": "t-amber"}, "haskala": {"name": "Haskala", "icon": "📝", "theme": "t-teal"}, "remez": {"name": "Remez", "icon": "💡", "theme": "t-teal"}, "openclaw": {"name": "OpenClaw", "icon": "🦾", "theme": "t-purple"}, "pardespedia": {"name": "פרדספדיה", "icon": "🌳", "theme": "t-green"}, "one_prompt": {"name": "One Prompt", "icon": "✦", "theme": "t-purple"}, "vedit": {"name": "vedit", "icon": "🎬", "theme": "t-indigo"}, "dereh_kitzur": {"name": "דרך קיצור", "icon": "🥾", "theme": "t-green"}, "hanadiv": {"name": "דרך הנדיב", "icon": "🎪", "theme": "t-orange"}, "photomap": {"name": "photomap", "icon": "🗺️", "theme": "t-blue"}, "inbal": {"name": "Inbal", "icon": "🏺", "theme": "t-pink"}, "road-to-recovery": {"name": "בדרך להחלמה", "icon": "🚑", "theme": "t-green"}, "ori": {"name": "Smart Business Search", "icon": "🗺️", "theme": "t-blue"}, "bloom": {"name": "Bloom", "icon": "🌸", "theme": "t-pink"}, "birdman": {"name": "איש-ציפור", "icon": "🪶", "theme": "t-cyan"}, "karate": {"name": "שוטוקאן", "icon": "🥋", "theme": "t-red"}, "fable": {"name": "Fable", "icon": "🚀", "theme": "t-cyan"}, "jetbike_game": {"name": "MJ-5", "icon": "🏁", "theme": "t-cyan"}, "foehn": {"name": "FÖHN", "icon": "🏔️", "theme": "t-cyan"}, "pipin": {"name": "פיפין", "icon": "🧙", "theme": "t-amber"}, "mmx": {"name": "Dirt Bike Racing", "icon": "🏍️", "theme": "t-red"}, "soduku": {"name": "סודוקו עם רמזים חכמים", "icon": "🎯", "theme": "t-indigo"}, "solar": {"name": "Solar System Simulation", "icon": "🪐", "theme": "t-orange"}, "coalition": {"name": "61", "icon": "🗳️", "theme": "t-orange"}, "adamama": {"name": "אדמאמא", "icon": "🌱", "theme": "t-green"}, "free_network": {"name": "הרשת החופשית", "icon": "🌳", "theme": "t-green"}, "transparency-budget": {"name": "רוצים שקיפות", "icon": "🥧", "theme": "t-green"}, "transparency-ma-bonim": {"name": "רוצים שקיפות", "icon": "🏗️", "theme": "t-green"}, "transparency-state_budget": {"name": "רוצים שקיפות", "icon": "🇮🇱", "theme": "t-blue"}, "shchunot": {"name": "שכונות פרדס חנה-כרכור", "icon": "🗺️", "theme": "t-green"}, "coalition26": {"name": "מי יקים את הממשלה?", "icon": "🏛️", "theme": "t-orange"}, "roadster": {"name": "רודסטר", "icon": "🏎️", "theme": "t-red"}, "optimus": {"name": "אופטימוס 3", "icon": "🤖", "theme": "t-amber"}, "orbit": {"name": "מסלול", "icon": "🛰️", "theme": "t-blue"}, "lagrange": {"name": "כופלי לגרנז'", "icon": "λ", "theme": "t-purple"}, "math_sims": {"name": "סרטוני מתמטיקה", "icon": "ζ", "theme": "t-purple"}, "phonebot": {"name": "פונבוט", "icon": "🤖", "theme": "t-orange"}, "stealth": {"name": "חמקן", "icon": "✈️", "theme": "t-blue"}, "pardes3d": {"name": "פרדס חנה תלת-ממד", "icon": "🏘️", "theme": "t-green"}, "high_school_math": {"name": "מתמטיקה תיכונית", "icon": "📐", "theme": "t-amber"}, "high_school_math-2": {"name": "מתמטיקה", "icon": "🔢", "theme": "t-amber"}, "high_school_math-3": {"name": "מתמטיקה", "icon": "💯", "theme": "t-amber"}, "manhattan_project": {"name": "Central Park Development Model", "icon": "🗽", "theme": "t-orange"}, "esla_vibe": {"name": "esla_vibe", "icon": "📐", "theme": "t-blue"}, "animate": {"name": "Bezier Curve Animation Editor", "icon": "✨", "theme": "t-purple"}, "empires": {"name": "Historical Empires on the Map", "icon": "🌍", "theme": "t-amber"}, "primes": {"name": "Prime Number Spirals", "icon": "🔢", "theme": "t-cyan"}, "pgn2study": {"name": "PGN2Study", "icon": "♟", "theme": "t-amber"}, "surfaces": {"name": "surfaces", "icon": "🌐", "theme": "t-cyan"}, "mandelscape": {"name": "מנדלברוט", "icon": "🌋", "theme": "t-indigo"}, "mandelbrot": {"name": "חוקר קבוצת מנדלברוט", "icon": "🌀", "theme": "t-indigo"}, "zeta": {"name": "ζ", "icon": "🔮", "theme": "t-purple"}, "battery_density_chart": {"name": "צפיפות אנרגטית של מצברים", "icon": "🔋", "theme": "t-amber"}, "information_theory": {"name": "חילוץ מידע הדדי", "icon": "∩", "theme": "t-green"}, "karina": {"name": "Mind · Heart · Body · Spirit", "icon": "🌌", "theme": "t-teal"}}</script>
-    </section>
 
     <nav class="toc" id="toc" aria-label="תוכן עניינים">
         <div class="toc-bar">
@@ -3993,72 +4102,449 @@ window.vcStats = window.fetch ? fetch('projects_page/stats.json', { cache: 'no-c
 })();
 </script>
 <script>
-// Visits per project. stats.json is written at deploy time by analytics.py;
-// without it (local preview, failed fetch) the section simply stays hidden.
+// Views explorer. stats.json is written at deploy time by analytics.py, with a
+// "daily" block: one array per project, a value per day since tracking began.
+// The reader picks projects (rows of the table double as the legend), a range
+// (presets or the brush on the navigator) and how to show it; everything is
+// recomputed from the daily arrays. Without the file the section stays hidden.
 (function () {
     var box = document.getElementById('stats');
     if (!box || !window.vcStats) return;
     var meta = JSON.parse(document.getElementById('stats-meta').textContent);
-    var list = box.querySelector('.stats-list');
-    var more = box.querySelector('.stats-more');
-    var btns = Array.prototype.slice.call(box.querySelectorAll('.stats-ranges button'));
-    var TOP = 12, fmt = new Intl.NumberFormat('he-IL');
-    var stats, range = 1, open = false;
-    try { range = +localStorage.getItem('stats-range') || 1; } catch (e) {}
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    // categorical slots, dark steps; a project keeps its slot while selected
+    var COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c', '#9085e9', '#e66767'];
+    var MAXSEL = COLORS.length, TOP = 10;
+    var fmt = new Intl.NumberFormat('he-IL');
+    var DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    var $ = function (s) { return box.querySelector(s); };
+    var chartEl = $('.stats-chart'), navEl = $('.stats-nav'), tip = $('.stats-tip');
+    var rowsEl = $('.stats-rows'), moreBtn = $('.stats-more'), toast = $('.stats-toast');
 
-    function esc(s) {
-        return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
+    var D, N, ANCH, SITE, USERS;   // dates, day count, projects with data, all views per day, visitors per day
+    var st = { sel: null, slot: {}, i0: 0, i1: 0, preset: '30', gran: 'd', mode: 'v', log: false };
+    var open = false, hover = null, geo = null;
+
+    function load() {
+        try {
+            var s = JSON.parse(localStorage.getItem('stats-view') || '{}');
+            ['sel', 'slot', 'preset', 'gran', 'mode', 'log'].forEach(function (k) { if (k in s) st[k] = s[k]; });
+        } catch (e) {}
+    }
+    function save() {
+        try {
+            localStorage.setItem('stats-view', JSON.stringify({
+                sel: st.sel, slot: st.slot, preset: st.preset, gran: st.gran, mode: st.mode, log: st.log }));
+        } catch (e) {}
+    }
+    function el(tag, attrs, parent) {
+        var e = document.createElementNS(SVGNS, tag);
+        for (var k in attrs) e.setAttribute(k, attrs[k]);
+        if (parent) parent.appendChild(e);
+        return e;
+    }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+    function day(i) { var p = D[i].split('-'); return new Date(+p[0], p[1] - 1, +p[2]); }
+    function dm(i) { var d = day(i); return d.getDate() + '.' + (d.getMonth() + 1); }
+    function sum(a, i0, i1) { var t = 0; for (var i = i0; i <= i1; i++) t += a[i] || 0; return t; }
+    function color(a) { return COLORS[st.slot[a]]; }
+
+    // ── range ──
+    function applyPreset(p) {
+        st.preset = p;
+        st.i1 = N - 1;
+        st.i0 = p === 'all' ? 0 : Math.max(0, N - +p);
     }
 
-    function render() {
-        btns.forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.r === range); });
-        var t = stats.totals;
-        box.querySelector('.stats-totals').innerHTML =
-            '<b>' + fmt.format(t.views[range]) + '</b> צפיות · <b>' + fmt.format(t.users[range]) + '</b> מבקרים';
-        var rows = Object.keys(stats.apps)
-            .filter(function (a) { return meta[a] && stats.apps[a][range] > 0; })
-            .sort(function (a, b) { return stats.apps[b][range] - stats.apps[a][range]; });
-        if (!rows.length) {
-            list.innerHTML = '<li class="stats-empty">עוד אין כניסות בטווח הזה</li>';
-            more.hidden = true;
-            return;
+    // buckets of day indices inside the window: one per day, or per week
+    // (Sunday to Saturday, the Israeli week), clipped to the window
+    function buckets() {
+        var out = [];
+        for (var i = st.i0; i <= st.i1; i++) {
+            if (st.gran === 'w' && out.length && day(i).getDay() !== 0) out[out.length - 1].b = i;
+            else out.push({ a: i, b: i });
         }
-        var max = stats.apps[rows[0]][range];
-        list.innerHTML = rows.slice(0, open ? rows.length : TOP).map(function (a, i) {
-            var m = meta[a], v = stats.apps[a][range];
-            return '<li class="' + esc(m.theme) + '"><a href="#' + esc(a) + '">' +
-                '<span class="stats-rank">' + (i + 1) + '</span>' +
-                '<span class="stats-icon">' + m.icon + '</span>' +
-                '<span class="stats-name">' + esc(m.name) + '</span>' +
-                '<span class="stats-track"><span class="stats-fill" style="--w:' + Math.max(2, v / max * 100).toFixed(1) + '%"></span></span>' +
-                '<span class="stats-num">' + fmt.format(v) + '</span></a></li>';
-        }).join('');
-        more.hidden = rows.length <= TOP;
-        more.textContent = open ? 'הצג פחות' : 'הצג את כל ה-' + rows.length;
+        return out;
+    }
+    function series(arr, bs) {
+        var acc = 0;
+        return bs.map(function (k) {
+            var v = sum(arr, k.a, k.b);
+            if (st.mode === 'c') { acc += v; return acc; }
+            return v;
+        });
     }
 
-    btns.forEach(function (b) {
-        b.addEventListener('click', function () {
-            range = +b.dataset.r;
-            try { localStorage.setItem('stats-range', range); } catch (e) {}
-            render();
+    // ── y scale ──
+    function niceStep(max, n) {
+        var raw = max / n, p = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / p;
+        return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * p;
+    }
+    function yscale(max, h) {
+        if (st.log) {
+            var top = Math.log10(1 + Math.max(max, 9));
+            var ticks = [0];
+            for (var t = 1; t <= max * 1.0001 || ticks.length < 2; t *= 10) ticks.push(t);
+            top = Math.max(top, Math.log10(1 + ticks[ticks.length - 1]));
+            return { f: function (v) { return h - Math.log10(1 + v) / top * h; }, ticks: ticks };
+        }
+        var step = niceStep(Math.max(max, 4), 4), top2 = Math.ceil(Math.max(max, 1) / step) * step, tk = [];
+        for (var v = 0; v <= top2 + 1e-9; v += step) tk.push(Math.round(v * 100) / 100);
+        return { f: function (v) { return h - v / top2 * h; }, ticks: tk };
+    }
+    function short(v) { return v >= 10000 ? Math.round(v / 1000) + 'K' : v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'K' : String(v); }
+
+    // ── main chart ──
+    function drawChart() {
+        var W = chartEl.clientWidth || 600, narrow = W < 560;
+        var H = narrow ? 230 : 300;
+        var sel = st.sel.filter(function (a) { return SERIES[a]; });
+        var labels = sel.length && sel.length <= 4 && !narrow;
+        var m = { l: 40, r: labels ? 104 : 14, t: 12, b: 26 }, w = W - m.l - m.r, h = H - m.t - m.b;
+        var bs = buckets(), n = bs.length;
+        var data = sel.map(function (a) { return { a: a, v: series(SERIES[a], bs) }; });
+        var max = 0;
+        data.forEach(function (d) { d.v.forEach(function (v) { if (v > max) max = v; }); });
+        var y = yscale(max, h);
+        var x = function (k) { return n === 1 ? w / 2 : k / (n - 1) * w; };
+        var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, height: H, role: 'img',
+            'aria-label': 'צפיות לאורך זמן בפרויקטים שנבחרו' });
+        var g = el('g', { transform: 'translate(' + m.l + ',' + m.t + ')' }, svg);
+        y.ticks.forEach(function (t) {
+            var yy = y.f(t);
+            el('line', { x1: 0, x2: w, y1: yy, y2: yy, stroke: t === 0 ? '#2a3b5c' : '#15233a', 'stroke-width': 1 }, g);
+            el('text', { x: -8, y: yy + 4, 'text-anchor': 'end' }, g).textContent = short(t);
+        });
+        // x labels: as many as fit, always the last
+        var every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(w / 58))));
+        for (var k = 0; k < n; k++) {
+            if ((n - 1 - k) % every) continue;
+            el('text', { x: x(k), y: h + 18, 'text-anchor': n === 1 ? 'middle' : k === 0 ? 'start' : k === n - 1 ? 'end' : 'middle' }, g)
+                .textContent = st.gran === 'w' ? dm(bs[k].a) + '–' + dm(bs[k].b) : dm(bs[k].a);
+        }
+        // today is still running: its point is drawn dashed
+        var partial = bs[n - 1].b === N - 1;
+        data.forEach(function (d) {
+            var c = color(d.a), pts = d.v.map(function (v, k) { return [x(k), y.f(v)]; });
+            var line = function (p) { return 'M' + p.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join('L'); };
+            if (n === 1) {
+                el('circle', { cx: pts[0][0], cy: pts[0][1], r: 4.5, fill: c, stroke: '#0c1726', 'stroke-width': 2 }, g);
+                return;
+            }
+            if (sel.length === 1) {
+                var area = line(pts) + 'L' + x(n - 1) + ',' + h + 'L0,' + h + 'Z';
+                var gid = 'sg-' + d.a.replace(/[^a-z0-9]/gi, '');
+                var grad = el('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, el('defs', {}, svg));
+                el('stop', { offset: 0, 'stop-color': c, 'stop-opacity': 0.32 }, grad);
+                el('stop', { offset: 1, 'stop-color': c, 'stop-opacity': 0 }, grad);
+                el('path', { d: area, fill: 'url(#' + gid + ')' }, g);
+            }
+            var solid = partial ? pts.slice(0, n - 1) : pts;
+            if (solid.length > 1) el('path', { d: line(solid), fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+            if (partial) el('path', { d: line(pts.slice(n - 2)), fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-dasharray': '3 4', 'stroke-linecap': 'round' }, g);
+        });
+        // direct labels at the line ends, nudged apart so they never overlap
+        if (labels && n > 1) {
+            var ends = data.map(function (d) { return { d: d, y: y.f(d.v[n - 1]) }; }).sort(function (a, b) { return a.y - b.y; });
+            for (var i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+            var over = ends.length ? ends[ends.length - 1].y - h : 0;
+            if (over > 0) ends.forEach(function (e) { e.y -= over; });
+            ends.forEach(function (e) {
+                var mt = meta[e.d.a];
+                el('circle', { cx: w + 8, cy: e.y, r: 3.5, fill: color(e.d.a) }, g);
+                var t = el('text', { x: w + 15, y: e.y + 4, class: 'end-label' }, g);
+                t.textContent = mt.name.length > 12 ? mt.name.slice(0, 11) + '…' : mt.name;
+            });
+        }
+        var cross = el('g', { class: 'cross', visibility: 'hidden' }, g);
+        el('line', { y1: 0, y2: h, stroke: '#64748b', 'stroke-width': 1, 'stroke-dasharray': '2 3' }, cross);
+        data.forEach(function (d) { el('circle', { r: 4.5, fill: color(d.a), stroke: '#0c1726', 'stroke-width': 2, 'data-a': d.a }, cross); });
+        el('rect', { x: -m.l, y: -m.t, width: W, height: H, fill: 'transparent', class: 'hit' }, g);
+        chartEl.querySelector('svg') ? chartEl.replaceChild(svg, chartEl.querySelector('svg')) : chartEl.insertBefore(svg, tip);
+        geo = { svg: svg, m: m, w: w, n: n, x: x, y: y, bs: bs, data: data, cross: cross, W: W };
+        var empty = chartEl.querySelector('.stats-empty-chart');
+        empty.hidden = sel.length > 0;
+        if (hover !== null) showTip(Math.min(hover, n - 1)); else tip.hidden = true;
+    }
+
+    function showTip(k) {
+        if (!geo || !geo.data.length) { tip.hidden = true; return; }
+        hover = k;
+        var px = geo.x(k);
+        geo.cross.setAttribute('visibility', 'visible');
+        geo.cross.querySelector('line').setAttribute('x1', px);
+        geo.cross.querySelector('line').setAttribute('x2', px);
+        geo.data.forEach(function (d) {
+            var c = geo.cross.querySelector('circle[data-a="' + d.a + '"]');
+            c.setAttribute('cx', px); c.setAttribute('cy', geo.y.f(d.v[k]));
+        });
+        var b = geo.bs[k], d0 = day(b.a);
+        var head = st.gran === 'w' ? 'שבוע ' + dm(b.a) + '–' + dm(b.b) : 'יום ' + DAYS[d0.getDay()] + ', ' + dm(b.a);
+        if (b.b === N - 1) head += ' (עד עכשיו)';
+        if (st.mode === 'c') head += ' · מצטבר';
+        var rows = geo.data.slice().sort(function (p, q) { return q.v[k] - p.v[k]; });
+        tip.innerHTML = '<div class="stats-tip-date">' + head + '</div>' + rows.map(function (d) {
+            return '<div class="stats-tip-row"><span class="stats-sw" style="--c:' + color(d.a) + '"></span>' +
+                '<span>' + meta[d.a].icon + ' ' + esc(meta[d.a].name) + '</span><b>' + fmt.format(d.v[k]) + '</b></div>';
+        }).join('');
+        tip.hidden = false;
+        var sx = geo.svg.getBoundingClientRect().width / geo.W, left = (geo.m.l + px) * sx;
+        var tw = tip.offsetWidth, cw = chartEl.clientWidth;
+        tip.style.left = Math.max(0, Math.min(cw - tw, left > cw / 2 ? left - tw - 14 : left + 14)) + 'px';
+    }
+    function hideTip() {
+        hover = null;
+        tip.hidden = true;
+        if (geo) geo.cross.setAttribute('visibility', 'hidden');
+    }
+    function pointK(e) {
+        var r = geo.svg.getBoundingClientRect(), sx = geo.W / r.width;
+        var px = (e.clientX - r.left) * sx - geo.m.l;
+        return geo.n === 1 ? 0 : Math.max(0, Math.min(geo.n - 1, Math.round(px / geo.w * (geo.n - 1))));
+    }
+    chartEl.addEventListener('pointermove', function (e) { if (geo) showTip(pointK(e)); });
+    chartEl.addEventListener('pointerdown', function (e) { if (geo) showTip(pointK(e)); });
+    chartEl.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hideTip(); });
+    chartEl.addEventListener('keydown', function (e) {
+        if (!geo) return;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            var k = hover === null ? geo.n - 1 : hover + (e.key === 'ArrowRight' ? 1 : -1);
+            showTip(Math.max(0, Math.min(geo.n - 1, k)));
+            e.preventDefault();
+        } else if (e.key === 'Escape') hideTip();
+    });
+    chartEl.addEventListener('blur', hideTip);
+
+    // ── navigator: all site views per day, with a brush for the window ──
+    var nav = null, drag = null;
+    function drawNav() {
+        var W = navEl.clientWidth || 600, H = 46, m = { l: 40, r: 14 }, w = W - m.l - m.r;
+        var max = Math.max.apply(null, SITE.concat([1]));
+        var x = function (i) { return N === 1 ? w / 2 : i / (N - 1) * w; };
+        var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + (H + 14), height: H + 14 });
+        var g = el('g', { transform: 'translate(' + m.l + ',0)' }, svg);
+        var pts = SITE.map(function (v, i) { return x(i).toFixed(1) + ',' + (H - v / max * (H - 4)).toFixed(1); });
+        el('path', { d: 'M0,' + H + 'L' + pts.join('L') + 'L' + x(N - 1) + ',' + H + 'Z', fill: 'rgba(129,140,248,0.16)' }, g);
+        el('path', { d: 'M' + pts.join('L'), fill: 'none', stroke: '#6366f1', 'stroke-width': 1.25 }, g);
+        el('line', { x1: 0, x2: w, y1: H, y2: H, stroke: '#2a3b5c' }, g);
+        el('text', { x: 0, y: H + 12, 'text-anchor': 'start' }, g).textContent = dm(0);
+        el('text', { x: w, y: H + 12, 'text-anchor': 'end' }, g).textContent = dm(N - 1);
+        // the window spans whole days: from the start of i0 to the end of i1
+        var half = N > 1 ? w / (N - 1) / 2 : w / 2;
+        var bx0 = Math.max(0, x(st.i0) - half), bx1 = Math.min(w, x(st.i1) + half);
+        el('rect', { x: -m.l, y: 0, width: m.l, height: H, fill: 'transparent' }, g);
+        el('rect', { x: 0, y: 0, width: bx0, height: H, fill: 'rgba(9,17,31,0.55)' }, g);
+        el('rect', { x: bx1, y: 0, width: w - bx1, height: H, fill: 'rgba(9,17,31,0.55)' }, g);
+        el('rect', { x: bx0, y: 0, width: bx1 - bx0, height: H, rx: 4, class: 'brush', 'data-h': 'move' }, g);
+        [bx0, bx1].forEach(function (hx, j) {
+            el('rect', { x: hx - 5, y: H / 2 - 13, width: 10, height: 26, rx: 4, class: 'handle', 'data-h': j ? 'b' : 'a' }, g);
+        });
+        navEl.innerHTML = '';
+        navEl.appendChild(svg);
+        nav = { svg: svg, m: m, w: w, W: W };
+    }
+    function navDay(e) {
+        var r = nav.svg.getBoundingClientRect(), px = (e.clientX - r.left) * nav.W / r.width - nav.m.l;
+        return Math.max(0, Math.min(N - 1, Math.round(px / nav.w * (N - 1))));
+    }
+    navEl.addEventListener('pointerdown', function (e) {
+        if (!nav || N < 2) return;
+        var h = e.target.getAttribute && e.target.getAttribute('data-h'), d = navDay(e);
+        drag = { h: h || 'new', d0: d, i0: st.i0, i1: st.i1 };
+        navEl.setPointerCapture(e.pointerId);
+        if (!h) setWindow(d, d);
+        e.preventDefault();
+    });
+    navEl.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var d = navDay(e), dd = d - drag.d0;
+        if (drag.h === 'move') {
+            dd = Math.max(-drag.i0, Math.min(N - 1 - drag.i1, dd));
+            setWindow(drag.i0 + dd, drag.i1 + dd);
+        } else if (drag.h === 'a') setWindow(Math.min(d, drag.i1 - 1), drag.i1);
+        else if (drag.h === 'b') setWindow(drag.i0, Math.max(d, drag.i0 + 1));
+        else setWindow(Math.min(drag.d0, d), Math.max(drag.d0, d));
+    });
+    function endDrag() {
+        if (!drag) return;
+        drag = null;
+        if (st.i1 - st.i0 < 1) setWindow(Math.max(0, st.i1 - 1), Math.max(st.i1, 1));
+    }
+    navEl.addEventListener('pointerup', endDrag);
+    navEl.addEventListener('pointercancel', endDrag);
+    function setWindow(a, b) {
+        if (a === st.i0 && b === st.i1) return;
+        st.i0 = a; st.i1 = b;
+        // a window that still matches a preset keeps its button lit
+        st.preset = b === N - 1 ? (a === 0 ? 'all' : ['7', '14', '30'].filter(function (p) { return N - +p === a; })[0] || null) : null;
+        render();
+    }
+
+    // ── KPIs ──
+    function kpis() {
+        var len = st.i1 - st.i0 + 1, views = sum(SITE, st.i0, st.i1);
+        var users = sum(USERS, st.i0, st.i1) / len;
+        var peak = st.i0;
+        for (var i = st.i0; i <= st.i1; i++) if (SITE[i] > SITE[peak]) peak = i;
+        $('[data-k="views"]').textContent = fmt.format(views);
+        $('[data-k="views-sub"]').textContent = fmt.format(Math.round(views / len)) + ' ביום בממוצע';
+        $('[data-k="users"]').textContent = fmt.format(Math.round(users));
+        $('[data-k="users-sub"]').textContent = 'מבקרים שונים ביום, בממוצע';
+        $('[data-k="peak"]').textContent = fmt.format(SITE[peak]);
+        var top = ANCH.slice().sort(function (a, b) { return SERIES[b][peak] - SERIES[a][peak]; })[0];
+        $('[data-k="peak-sub"]').textContent = 'ב-' + dm(peak) + (top && SERIES[top][peak] ? ', בעיקר ' + meta[top].name : '');
+        var c = $('[data-k="chg"]'), cs = $('[data-k="chg-sub"]');
+        if (st.i0 - len >= 0) {
+            var prev = sum(SITE, st.i0 - len, st.i0 - 1);
+            c.innerHTML = change(views, prev);
+            cs.textContent = 'מול ' + len + ' הימים שלפני (' + fmt.format(prev) + ')';
+        } else {
+            c.innerHTML = '<span>—</span>';
+            cs.textContent = 'אין עוד תקופה קודמת להשוואה';
+        }
+    }
+    function change(now, prev) {
+        if (!prev) return now ? '<span class="stats-up">חדש</span>' : '<span>—</span>';
+        var p = Math.round((now - prev) / prev * 100);
+        return '<span class="' + (p > 0 ? 'stats-up' : p < 0 ? 'stats-down' : '') + '">' +
+            (p > 0 ? '▲ ' : p < 0 ? '▼ ' : '') + fmt.format(Math.abs(p)) + '%</span>';
+    }
+
+    // ── table: ranking for the window, and the picker for the chart ──
+    function spark(arr) {
+        var a = arr.slice(st.i0, st.i1 + 1), mx = Math.max.apply(null, a.concat([1])), n = a.length;
+        var pts = a.map(function (v, i) {
+            return (n === 1 ? 48 : i / (n - 1) * 94 + 1).toFixed(1) + ',' + (22 - v / mx * 20).toFixed(1);
+        });
+        return pts.join(' ');
+    }
+    function drawTable() {
+        var len = st.i1 - st.i0 + 1;
+        var rows = ANCH.map(function (a) {
+            return { a: a, v: sum(SERIES[a], st.i0, st.i1), p: st.i0 - len >= 0 ? sum(SERIES[a], st.i0 - len, st.i0 - 1) : null };
+        }).sort(function (p, q) { return q.v - p.v || q.p - p.p; });
+        var active = rows.filter(function (r) { return r.v > 0 || st.sel.indexOf(r.a) >= 0; });
+        var shown = open ? rows : active.slice(0, TOP);
+        st.sel.forEach(function (a) {   // a selected project is always visible in the table
+            if (!shown.some(function (r) { return r.a === a; })) shown.push(rows.filter(function (r) { return r.a === a; })[0]);
+        });
+        rowsEl.innerHTML = shown.map(function (r, i) {
+            var mt = meta[r.a], on = st.sel.indexOf(r.a) >= 0, c = on ? color(r.a) : '#475569';
+            return '<li class="stats-row" role="button" tabindex="0" aria-pressed="' + on + '" data-a="' + esc(r.a) + '" style="--c:' + c + '">' +
+                '<span class="stats-check">' + (on ? '✓' : '') + '</span>' +
+                '<span class="stats-icon">' + mt.icon + '</span>' +
+                '<span class="stats-name"><span>' + esc(mt.name) + (mt.sub ? ' <small>' + esc(mt.sub) + '</small>' : '') + '</span>' +
+                '<a href="#' + esc(r.a) + '" title="לכרטיס של הפרויקט" aria-label="לכרטיס של ' + esc(mt.name) + '">↗</a></span>' +
+                '<svg class="stats-spark" viewBox="0 0 96 24" aria-hidden="true"><polyline points="' + spark(SERIES[r.a]) +
+                '" fill="none" stroke="' + c + '" stroke-width="1.5" stroke-linejoin="round"/></svg>' +
+                '<span class="stats-num">' + fmt.format(r.v) + '</span>' +
+                '<span class="stats-chg">' + (r.p === null ? '—' : change(r.v, r.p)) + '</span></li>';
+        }).join('');
+        var rest = rows.length - shown.length;
+        moreBtn.hidden = !open && rest <= 0;
+        moreBtn.textContent = open ? 'הצג רק את הפעילים' : 'עוד ' + rest + ' פרויקטים';
+        $('.stats-table-sum').textContent = 'צפיות ב-' + len + (len === 1 ? ' יום' : ' ימים') + ' · לחיצה על שורה מוסיפה או מורידה מהגרף';
+    }
+    function toggle(a) {
+        var i = st.sel.indexOf(a);
+        if (i >= 0) { st.sel.splice(i, 1); delete st.slot[a]; }
+        else {
+            if (st.sel.length >= MAXSEL) {
+                toast.textContent = 'עד ' + MAXSEL + ' פרויקטים בגרף בבת אחת. הורד אחד כדי להוסיף.';
+                clearTimeout(toggle.t); toggle.t = setTimeout(function () { toast.textContent = ''; }, 3500);
+                return;
+            }
+            st.sel.push(a);
+            assign(a);
+        }
+        save(); render();
+    }
+    function assign(a) {
+        var used = st.sel.map(function (s) { return st.slot[s]; });
+        if (st.slot[a] === undefined || used.filter(function (u) { return u === st.slot[a]; }).length > 1)
+            for (var k = 0; k < MAXSEL; k++) if (used.indexOf(k) < 0) { st.slot[a] = k; break; }
+    }
+    rowsEl.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;
+        var r = e.target.closest('.stats-row');
+        if (r) toggle(r.dataset.a);
+    });
+    rowsEl.addEventListener('keydown', function (e) {
+        var r = e.target.closest('.stats-row');
+        if (r && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            var a = r.dataset.a;
+            toggle(a);
+            var again = rowsEl.querySelector('.stats-row[data-a="' + a + '"]');
+            if (again) again.focus();
+        }
+    });
+    moreBtn.addEventListener('click', function () { open = !open; drawTable(); });
+    function pickTop(k) {
+        var len = st.i1 - st.i0 + 1;
+        st.sel = ANCH.slice().sort(function (a, b) { return sum(SERIES[b], st.i0, st.i1) - sum(SERIES[a], st.i0, st.i1); })
+            .filter(function (a) { return sum(SERIES[a], st.i0, st.i1) > 0; }).slice(0, k);
+        st.slot = {};
+        st.sel.forEach(function (a, i) { st.slot[a] = i; });
+        save(); render();
+    }
+    $('[data-act="top"]').addEventListener('click', function () { pickTop(5); });
+    $('[data-act="clear"]').addEventListener('click', function () { st.sel = []; st.slot = {}; save(); render(); });
+
+    // ── toolbar ──
+    box.querySelectorAll('.stats-seg').forEach(function (seg) {
+        seg.addEventListener('click', function (e) {
+            var b = e.target.closest('button');
+            if (!b) return;
+            var k = seg.dataset.k, v = b.dataset.v;
+            if (k === 'preset') applyPreset(v);
+            else if (k === 'log') st.log = v === '1';
+            else st[k] = v;
+            save(); render();
         });
     });
-    more.addEventListener('click', function () { open = !open; render(); });
+    function syncTools() {
+        box.querySelectorAll('.stats-seg').forEach(function (seg) {
+            var k = seg.dataset.k, cur = k === 'log' ? (st.log ? '1' : '0') : st[k];
+            seg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === cur); });
+        });
+        var len = st.i1 - st.i0 + 1;
+        $('.stats-range-label').textContent = dm(st.i0) + ' – ' + dm(st.i1) + ' · ' + len + (len === 1 ? ' יום' : ' ימים');
+    }
 
-    window.vcStats
-        .then(function (s) {
-            stats = s;
-            var since = new Date(s.since), up = new Date(s.updated);
-            box.querySelector('.stats-since').textContent = 'מאז ' + since.getDate() + '.' + (since.getMonth() + 1);
-            box.querySelector('.stats-updated').textContent = 'עודכן ' +
-                up.toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-            render();
-            box.hidden = false;
-            var link = document.querySelector('.toc-stats');
-            if (link) link.hidden = false;
-        })
-        .catch(function () {});
+    var SERIES;
+    function render() { syncTools(); kpis(); drawChart(); drawNav(); drawTable(); }
+
+    window.vcStats.then(function (s) {
+        if (!s.daily || !s.daily.dates || !s.daily.dates.length) return;
+        D = s.daily.dates; N = D.length;
+        SERIES = {};
+        Object.keys(s.daily.apps).forEach(function (a) { if (meta[a]) SERIES[a] = s.daily.apps[a]; });
+        ANCH = Object.keys(SERIES);
+        USERS = s.daily.users || D.map(function () { return 0; });
+        SITE = D.map(function (_, i) {
+            var t = (s.daily.home[i] || 0) + (s.daily.other[i] || 0);
+            for (var a in s.daily.apps) t += s.daily.apps[a][i] || 0;
+            return t;
+        });
+        load();
+        if (st.preset) applyPreset(st.preset); else applyPreset('30');
+        if (st.sel) {
+            st.sel = st.sel.filter(function (a) { return SERIES[a]; }).slice(0, MAXSEL);
+            st.sel.forEach(assign);
+        }
+        var up = new Date(s.updated);
+        $('.stats-updated').textContent = 'עודכן ' +
+            up.toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+        box.hidden = false;
+        if (!st.sel) pickTop(5); else render();
+        var link = document.querySelector('.toc-stats');
+        if (link) link.hidden = false;
+        var w = box.clientWidth;
+        if ('ResizeObserver' in window) new ResizeObserver(function () {
+            if (box.clientWidth !== w) { w = box.clientWidth; drawChart(); drawNav(); }
+        }).observe(box);
+    }).catch(function () {});
 })();
 </script>
 </body>
