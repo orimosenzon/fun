@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { outsideNews } from './digest.js';
+import { outsideNews, israelNews, PICTURE_HOSTS } from './digest.js';
 import { writeLog } from './log.js';
 
 const SESSION_COOKIE = 'session';
@@ -785,6 +785,29 @@ app.get('/api/youtube/:id', async (c) => {
   return c.json({ title: typeof details?.title === 'string' ? details.title : null });
 });
 
+// A picture from outside, passed through this server so the reader's browser contacts nobody else.
+const pictureUrl = (src) => `/api/picture?src=${encodeURIComponent(src)}`;
+const withPicture = (item) => ({ ...item, image: item.image ? pictureUrl(item.image) : null });
+
+app.get('/api/picture', requireUser, async (c) => {
+  let src;
+  try {
+    src = new URL(c.req.query('src') ?? '');
+  } catch {
+    return c.json({ error: 'לא נמצא' }, 404);
+  }
+  if (src.protocol !== 'https:' || !PICTURE_HOSTS.includes(src.host)) return c.json({ error: 'לא נמצא' }, 404);
+  const response = await fetch(src, {
+    headers: { 'User-Agent': 'free-network-digest/1.0 (https://free-network.orimosenzon.workers.dev)' },
+    cf: { cacheEverything: true, cacheTtl: 86400 },
+  }).catch(() => null);
+  const type = response?.headers.get('Content-Type') ?? '';
+  if (!response?.ok || !/^image\/(jpeg|png|gif|webp)/.test(type)) return c.json({ error: 'לא נמצא' }, 404);
+  return new Response(response.body, {
+    headers: { 'Content-Type': type, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' },
+  });
+});
+
 app.get('/api/youtube/:id/thumb', async (c) => {
   const id = c.req.param('id');
   if (!YOUTUBE_ID.test(id)) return c.json({ error: 'לא נמצא' }, 404);
@@ -926,9 +949,14 @@ app.get('/api/update', requireUser, async (c) => {
       quiet: quiet.filter((row) => ![...moved, ...joined].some((other) => other.id === row.id))
         .map((row) => ({ user: person(row), last: row.last })),
     },
-    community: { events: news.events.slice(0, 5), moreEvents: Math.max(0, news.events.length - 5), plans: news.plans.slice(0, 3) },
-    country: news.country.slice(0, 5),
-    world: news.world.slice(0, 4),
+    community: {
+      events: news.events.slice(0, 12).map(withPicture),
+      moreEvents: Math.max(0, news.events.length - 12),
+      plans: news.plans.slice(0, 5),
+    },
+    israel: israelNews(news).map(withPicture),
+    country: news.country.slice(0, 6).map(withPicture),
+    world: news.world.slice(0, 6).map(withPicture),
   });
 });
 

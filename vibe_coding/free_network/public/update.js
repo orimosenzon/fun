@@ -1,11 +1,15 @@
-// The update: what happened lately, in circles that widen from friends to the world.
-// It is short on purpose and it ends. Nothing here is ranked: each list is newest first.
+// The update: what happened lately, in circles that widen from friends to the moshava,
+// Israel and the world. Each circle folds into one line with a peek at what is inside, and
+// opens to a short list with pictures. The reader's device remembers which circles they keep
+// open. Nothing here is ranked: each list is newest first.
 
 const BOARD_URL = 'https://pardespedia.info/wiki/עמוד_ראשי#אירועי_תרבות_ובילוי_קרובים';
 const PLANS_URL = 'https://orimosenzon.github.io/fun/vibe_coding/transparency/ma-bonim/';
 const HE_NEWS_URL = 'https://he.wikipedia.org/wiki/תבנית:חדשות_ואקטואליה';
 const EN_NEWS_URL = 'https://en.wikipedia.org/wiki/Portal:Current_events';
 const DAY_MS = 86400000;
+const SHOWN = 4;
+const OPEN_KEY = 'update-open';
 
 const format = (options) => new Intl.DateTimeFormat('he-IL', options);
 
@@ -26,116 +30,226 @@ function quietFor(last) {
   return months === 2 ? 'חודשיים' : `${months} חודשים`;
 }
 
-export function updatePanel({ me, seen, ui }) {
+function daysLeft(day) {
+  const days = Math.round((Date.parse(`${day}T12:00`) - Date.parse(`${localDay(Date.now())}T12:00`)) / DAY_MS);
+  if (days <= 0) return 'היום אחרון';
+  if (days === 1) return 'נשאר יום';
+  if (days === 2) return 'נשארו יומיים';
+  return `נשארו ${days} ימים`;
+}
+
+// Beside the feed the friends and the moshava start open; above it, on a narrow screen,
+// everything starts folded so the posts are not pushed down. Each place remembers on its own.
+function openRings(top) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(top ? `${OPEN_KEY}-top` : OPEN_KEY));
+    if (Array.isArray(saved)) return new Set(saved);
+  } catch {
+    // No storage: the defaults below.
+  }
+  return new Set(top ? [] : ['friends', 'moshava']);
+}
+
+function keepOpen(kind, open, top) {
+  try {
+    const rings = openRings(top);
+    if (open) rings.add(kind);
+    else rings.delete(kind);
+    localStorage.setItem(top ? `${OPEN_KEY}-top` : OPEN_KEY, JSON.stringify([...rings]));
+  } catch {
+    // Nothing to remember it in.
+  }
+}
+
+// `all` opens every circle, for the update's own page; `top` is the update above the posts.
+export function updatePanel({ me, seen, ui, all = false, top = false }) {
   const { el, icon, avatar, link, api, when, tell, demo, flyGlobe } = ui;
   const body = el('div', { className: 'update-body' },
     el('div', { className: 'bone' }), el('div', { className: 'bone short' }), el('div', { className: 'bone' }));
   const root = el('section', { className: 'update' },
     el('header', { className: 'update-head' },
-      el('h2', {}, 'העדכון'),
+      el('h2', {}, all ? 'העדכון' : link('/update', 'העדכון')),
       el('span', { className: 'update-date' }, format({ weekday: 'long', day: 'numeric', month: 'long' }).format(Date.now()))),
     body);
+  const open = openRings(top);
 
-  const outside = (url, ...content) => el('a', { className: 'update-item', href: url, target: '_blank', rel: 'noopener' }, ...content);
-  const line = (main, small) => el('span', { className: 'update-text', dir: 'auto' }, main, small ? el('span', { className: 'update-small' }, small) : null);
+  const outside = (url, className, ...content) => (url
+    ? el('a', { className, href: url, target: '_blank', rel: 'noopener' }, ...content)
+    : el('div', { className }, ...content));
+  const picture = (src) => el('img', { src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => e.target.remove() });
+  const thumb = (src, fallback) => el('span', { className: 'row-thumb' }, src ? picture(src) : null, src ? null : fallback);
 
-  function personRow(user, main, small, path = `/u/${user.id}`) {
-    const row = link(path, avatar(user, { small: true }), line(main, small));
-    row.className = 'update-item';
-    return row;
+  // A folded circle: one line with a peek, and the list inside.
+  function ring(kind, pictureName, title, peek, ...children) {
+    const details = el('details', { className: `update-ring ring-${kind}`, open: all || open.has(kind) },
+      el('summary', {},
+        el('span', { className: 'ring-icon' }, icon(pictureName)),
+        el('span', { className: 'ring-title' }, title),
+        el('span', { className: 'ring-peek', dir: 'auto' }, peek),
+        el('span', { className: 'ring-chevron' }, icon('left'))),
+      el('div', { className: 'ring-body' }, ...children.flat().filter(Boolean)));
+    if (!all) details.addEventListener('toggle', () => keepOpen(kind, details.open, top));
+    return details;
   }
 
-  function ring(picture, title, ...children) {
-    return el('section', { className: 'update-ring' }, el('h3', {}, icon(picture), title), ...children.flat().filter(Boolean));
+  // The first few rows, and a button for the rest.
+  function rows(list) {
+    const items = list.flat().filter(Boolean);
+    if (all || items.length <= SHOWN + 1) return items;
+    const rest = items.slice(SHOWN);
+    rest.forEach((item) => { item.hidden = true; });
+    const more = el('button', {
+      className: 'plain ring-more',
+      type: 'button',
+      onclick: () => {
+        rest.forEach((item) => { item.hidden = false; });
+        more.remove();
+      },
+    }, `ועוד ${rest.length}`);
+    return [...items, more];
   }
 
-  // The reader's own line: write one, change it, or delete it.
-  function statusBox() {
-    const box = el('div', { className: 'update-status' });
-    function draw(editing) {
-      if (me.status && !editing) {
-        box.replaceChildren(
-          el('div', { className: 'update-item' }, avatar(me, { small: true }),
-            line(me.status.text, el('span', {}, 'השורה שלך, ', when(me.status.at), '. נמחקת מעצמה אחרי שבוע.'))),
-          el('div', { className: 'update-status-actions' },
-            el('button', { className: 'plain', type: 'button', onclick: () => draw(true) }, 'שינוי'),
-            el('button', {
-              className: 'plain danger',
-              type: 'button',
-              onclick: async () => {
-                try {
-                  await api('/me/status', { method: 'DELETE' });
-                  me.status = null;
-                  draw(false);
-                } catch (err) {
-                  tell(err.message);
-                }
-              },
-            }, 'מחיקה')));
-        return;
-      }
-      const input = el('input', { type: 'text', maxLength: 140, dir: 'auto', placeholder: 'מה נשמע? משפט אחד לחברים', ariaLabel: 'מה נשמע? משפט אחד לחברים', value: me.status?.text ?? '' });
-      box.replaceChildren(el('form', {
-        onsubmit: async (e) => {
-          e.preventDefault();
-          if (!input.value.trim()) return;
-          try {
-            ({ status: me.status } = await api('/me/status', { method: 'PUT', body: { text: input.value } }));
-            draw(false);
-          } catch (err) {
-            tell(err.message);
-          }
-        },
-      }, input, el('button', { className: 'small', type: 'submit' }, 'שיתוף')),
-      el('p', { className: 'update-source' }, 'רק החברים שלך רואים, והשורה נמחקת מעצמה אחרי שבוע.'));
-      if (editing) input.focus();
+  // A friend as a round picture, with what is new about them underneath.
+  function bubble(user, { badge, mark, caption, quote, path, onclick }) {
+    const content = [
+      el('span', { className: `face-ring${mark ? ` ${mark}` : ''}` }, avatar(user, { large: true }), badge ? el('span', { className: 'face-badge' }, badge) : null),
+      el('span', { className: 'face-name', dir: 'auto' }, user.name),
+      quote ? el('span', { className: 'face-quote', dir: 'auto' }, quote) : null,
+      caption ? el('span', { className: 'face-caption' }, caption) : null,
+    ];
+    if (onclick) return el('button', { className: 'face', type: 'button', onclick }, ...content);
+    const node = link(path ?? `/u/${user.id}`, ...content);
+    node.className = 'face';
+    return node;
+  }
+
+  // The reader's own bubble: their line for friends, written or changed in place.
+  function myBubble() {
+    const wrap = el('div', { className: 'face-mine' });
+    const form = el('form', { className: 'status-form', hidden: true });
+    function draw() {
+      wrap.replaceChildren(bubble(me, {
+        badge: me.status ? null : icon('plus'),
+        mark: 'mine',
+        quote: me.status?.text ?? null,
+        caption: me.status ? 'השורה שלך' : 'מה נשמע?',
+        onclick: () => openForm(),
+      }));
     }
-    draw(false);
-    return box;
+    function openForm() {
+      const input = el('input', { type: 'text', maxLength: 140, dir: 'auto', placeholder: 'מה נשמע? משפט אחד לחברים', ariaLabel: 'מה נשמע? משפט אחד לחברים', value: me.status?.text ?? '' });
+      form.replaceChildren(
+        input,
+        el('button', { className: 'small', type: 'submit' }, 'שיתוף'),
+        me.status ? el('button', {
+          className: 'plain danger',
+          type: 'button',
+          onclick: async () => {
+            try {
+              await api('/me/status', { method: 'DELETE' });
+              me.status = null;
+              form.hidden = true;
+              draw();
+            } catch (err) {
+              tell(err.message);
+            }
+          },
+        }, 'מחיקה') : null,
+        el('button', { className: 'plain', type: 'button', onclick: () => { form.hidden = true; } }, 'ביטול'),
+        el('p', { className: 'update-source' }, 'רק החברים שלך רואים, והשורה נמחקת מעצמה אחרי שבוע.'));
+      form.hidden = false;
+      input.focus();
+    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = form.querySelector('input').value.trim();
+      if (!text) return;
+      try {
+        ({ status: me.status } = await api('/me/status', { method: 'PUT', body: { text } }));
+        form.hidden = true;
+        draw();
+      } catch (err) {
+        tell(err.message);
+      }
+    });
+    draw();
+    return { bubble: wrap, form };
   }
 
   function friendsRing({ statuses, fresh, replies, moved, joined, quiet }) {
-    const rows = [
-      ...statuses.map((item) => personRow(item.user, el('strong', {}, item.user.name), el('span', { className: 'update-quote' }, item.text))),
-      ...replies.map((item) => personRow(item.user, `תגובה מ${item.user.name} ${item.onMine ? 'לפוסט שלך' : 'לתגובה שלך'}`, when(item.at), `/p/${item.postId}`)),
-      ...fresh.map((item) => personRow(item.user, item.user.name, item.count === 1 ? 'פוסט חדש שעוד לא ראית' : `${item.count} פוסטים חדשים שעוד לא ראית`)),
-      ...moved.map((item) => {
-        const row = el('button', { className: 'update-item', type: 'button', onclick: () => flyGlobe(item.place) },
-          avatar(item.user, { small: true }), line(item.user.name, 'מקום חדש על הגלובוס. לחיצה מסובבת אותו לשם.'));
-        return row;
-      }),
-      ...joined.map((item) => personRow(item.user, item.user.name, el('span', {}, 'חדש ברשת, מ', when(item.at)))),
-      ...quiet.map((item) => personRow(item.user,
-        item.last ? `לא שמעת מ${item.user.name} כבר ${quietFor(item.last)}` : `עוד לא שמעת כאן מ${item.user.name}`,
-        'אולי זה הזמן לכתוב כמה מילים')),
+    const people = [
+      ...replies.map((item) => [item.user, bubble(item.user, {
+        badge: icon('comment'), mark: 'hot', path: `/p/${item.postId}`,
+        caption: item.onMine ? 'הגיב לפוסט שלך' : 'ענה לתגובה שלך',
+      })]),
+      ...fresh.map((item) => [item.user, bubble(item.user, {
+        badge: String(item.count), mark: 'hot',
+        caption: item.count === 1 ? 'פוסט חדש' : 'פוסטים חדשים',
+      })]),
+      ...statuses.map((item) => [item.user, bubble(item.user, { quote: item.text, mark: 'says' })]),
+      ...moved.map((item) => [item.user, bubble(item.user, {
+        badge: icon('globe'), mark: 'moved', caption: 'במקום חדש', onclick: () => flyGlobe(item.place),
+      })]),
+      ...joined.map((item) => [item.user, bubble(item.user, { badge: 'חדש', mark: 'new', caption: el('span', {}, 'הצטרף ', when(item.at)) })]),
+      ...quiet.map((item) => [item.user, bubble(item.user, {
+        mark: 'quiet', caption: item.last ? `שקט כבר ${quietFor(item.last)}. אולי לכתוב?` : 'עוד לא כתב כאן. אולי לכתוב?',
+      })]),
     ];
-    return ring('users', 'החברים שלי',
-      demo ? null : statusBox(),
-      rows.length ? rows : el('p', { className: 'update-none' }, 'שקט אצל החברים בימים האחרונים.'));
+    const faces = [...new Map(people.map(([user]) => [user.id, user])).values()];
+    const peek = faces.length
+      ? el('span', { className: 'peek-faces' }, ...faces.slice(0, 4).map((user) => avatar(user, { small: true })),
+        faces.length > 4 ? el('span', { className: 'peek-count' }, `+${faces.length - 4}`) : null)
+      : 'שקט';
+    const mine = demo ? null : myBubble();
+    return ring('friends', 'users', 'החברים', peek,
+      el('div', { className: 'faces' }, mine?.bubble, ...people.map(([, node]) => node)),
+      mine?.form,
+      people.length ? null : el('p', { className: 'update-none' }, 'שקט אצל החברים בימים האחרונים.'));
   }
 
   function communityRing({ events, moreEvents, plans }) {
     if (!events.length && !plans.length) return null;
     const short = (day) => format({ day: 'numeric', month: 'numeric' }).format(new Date(`${day}T12:00`));
-    return ring('home', 'במושבה',
-      events.length ? el('h4', {}, 'אירועים קרובים') : null,
-      events.map((event) => {
-        const content = line(event.name, [eventDay(event.day), event.time, event.venue].filter(Boolean).join(' · '));
-        return event.url ? outside(event.url, content) : el('div', { className: 'update-item' }, content);
-      }),
+    const today = events.filter((event) => eventDay(event.day) === 'היום').length;
+    const peek = today ? `${today} אירועים היום` : events.length ? events[0].name : `${plans.length} תוכניות פתוחות`;
+    return ring('moshava', 'home', 'במושבה', peek,
+      rows(events.map((event) => outside(event.url, 'update-row',
+        thumb(event.image, '🎭'),
+        el('span', { className: 'row-text' },
+          el('span', { className: 'row-chip' }, [eventDay(event.day), event.time].filter(Boolean).join(' · ')),
+          el('span', { className: 'row-title', dir: 'auto' }, event.name),
+          event.venue ? el('span', { className: 'row-small' }, event.venue) : null)))),
       events.length ? el('p', { className: 'update-source' },
-        el('a', { href: BOARD_URL, target: '_blank', rel: 'noopener' }, moreEvents ? `עוד ${moreEvents} אירועים השבוע בפרדספדיה` : 'לוח האירועים בפרדספדיה')) : null,
+        el('a', { href: BOARD_URL, target: '_blank', rel: 'noopener' }, moreEvents ? `עוד ${moreEvents} אירועים בפרדספדיה` : 'לוח האירועים בפרדספדיה')) : null,
       plans.length ? el('h4', {}, 'תוכניות בנייה שאפשר להתנגד להן') : null,
-      plans.map((plan) => outside(plan.url, line(plan.title, [plan.adds, `עד ${short(plan.shuts)}`].filter(Boolean).join(' · ')))),
+      plans.map((plan) => outside(plan.url, 'update-row plan',
+        el('span', { className: 'row-thumb plan-art' }, '🏗️'),
+        el('span', { className: 'row-text' },
+          el('span', { className: 'row-chip urgent' }, `${daysLeft(plan.shuts)}, עד ${short(plan.shuts)}`),
+          el('span', { className: 'row-title', dir: 'auto' }, plan.title),
+          plan.adds ? el('span', { className: 'row-small' }, plan.adds) : null))),
       plans.length ? el('p', { className: 'update-source' },
         el('a', { href: PLANS_URL, target: '_blank', rel: 'noopener' }, 'כל התוכניות ב"מה בונים לנו"')) : null);
   }
 
-  function newsRing(title, items, sourceUrl, sourceLabel, dir) {
+  function newsRows(items, dir) {
+    return rows(items.map((item) => outside(item.url, `update-row news${item.key ? ` ch-${item.key}` : ''}`,
+      thumb(item.image, icon('globe')),
+      el('span', { className: 'row-text' },
+        item.channel ? el('span', { className: 'row-chip channel' }, item.channel) : null,
+        el('span', { className: 'row-title', dir }, item.text)))));
+  }
+
+  // Israel: headlines from four channels in turn, each marked with its channel.
+  function israelRing(items) {
+    if (!items?.length) return null;
+    return ring('israel', 'flag', 'בישראל', items[0].text, newsRows(items, 'rtl'),
+      el('p', { className: 'update-source' }, 'כותרות מ-N12, חדשות 13, עכשיו 14 וכאן חדשות, לסירוגין.'));
+  }
+
+  function newsRing(kind, title, items, sourceUrl, sourceLabel, dir) {
     if (!items.length) return null;
-    return ring('globe', title,
-      el('ul', { className: 'update-news', dir }, ...items.map((item) => el('li', {},
-        item.url ? el('a', { href: item.url, target: '_blank', rel: 'noopener' }, item.text) : item.text))),
+    return ring(kind, 'globe', title, items[0].text, newsRows(items, dir),
       el('p', { className: 'update-source' }, el('a', { href: sourceUrl, target: '_blank', rel: 'noopener' }, sourceLabel), ', ברישיון CC BY-SA'));
   }
 
@@ -143,9 +257,10 @@ export function updatePanel({ me, seen, ui }) {
     body.replaceChildren(...[
       friendsRing(data.friends),
       communityRing(data.community),
-      newsRing('בארץ ובעולם', data.country, HE_NEWS_URL, 'מתוך ויקיפדיה העברית', 'rtl'),
-      newsRing('בעולם, באנגלית', data.world, EN_NEWS_URL, 'מתוך ויקיפדיה האנגלית', 'ltr'),
-      el('p', { className: 'update-end' }, 'זה כל העדכון. אין לו המשך לגלול אליו.')].filter(Boolean));
+      israelRing(data.israel),
+      newsRing('country', 'בעולם', data.country, HE_NEWS_URL, 'מתוך ויקיפדיה העברית', 'rtl'),
+      newsRing('world', 'בעולם, באנגלית', data.world, EN_NEWS_URL, 'מתוך ויקיפדיה האנגלית', 'ltr'),
+      all ? el('p', { className: 'update-end' }, 'זה כל העדכון. אין לו המשך לגלול אליו.') : null].filter(Boolean));
   }).catch((err) => {
     body.replaceChildren(el('p', { className: 'error' }, err.message));
   });

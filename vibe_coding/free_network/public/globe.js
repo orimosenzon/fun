@@ -94,6 +94,9 @@ export function friendsGlobe({ me, friends, ui }) {
   let pinKey = '';
   let pinNodes = [];
   let arrived = !!viewMemory;
+  // While the reader's own picture travels between the cloud and the earth, its pin or its
+  // seat on the cloud waits empty, and the traveler stands in for it.
+  let travelling = false;
 
   function located() {
     const people = friends.filter((friend) => friend.place);
@@ -207,7 +210,7 @@ export function friendsGlobe({ me, friends, ui }) {
     const many = group.people.length > 1;
     const names = group.people.map((person) => (person.mine ? 'אני' : person.name));
     const node = el('a', {
-      className: `globe-pin${group.people.some((person) => person.mine) ? ' mine' : ''}`,
+      className: `globe-pin${group.people.some((person) => person.mine) ? ` mine${travelling ? ' waiting' : ''}` : ''}`,
       href: `/u/${first.id}`,
       ariaLabel: names.join(', '),
       onclick: (e) => {
@@ -258,7 +261,7 @@ export function friendsGlobe({ me, friends, ui }) {
     cloud.replaceChildren(
       el('div', { className: 'cloud-riders' },
         ...seated.map((person) => el('a', {
-          className: `cloud-rider${person.mine ? ' mine' : ''}`,
+          className: `cloud-rider${person.mine ? ` mine${travelling ? ' waiting' : ''}` : ''}`,
           href: `/u/${person.id}`,
           title: person.mine ? 'אני' : person.name,
           ariaLabel: person.mine ? 'אני' : person.name,
@@ -445,30 +448,113 @@ export function friendsGlobe({ me, friends, ui }) {
     redraw();
   }
 
+  const centre = (rect) => rect && { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  const settle = (node) => node?.animate([{ transform: 'scale(0.4)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
+
+  // The reader's picture floats between two points on the screen: down from the cloud under a
+  // parachute, or up to it under a balloon. It sways a little and lands with a bounce.
+  function travel(from, to, down) {
+    if (reduceMotion || !from || !to) return Promise.resolve();
+    const base = root.getBoundingClientRect();
+    const gear = el('span', { className: 'traveler-gear' }, down ? '🪂' : '🎈');
+    const traveler = el('div', { className: 'globe-traveler', ariaHidden: 'true' }, gear, avatar(me, { small: true }));
+    root.append(traveler);
+    const [x0, y0, x1, y1] = [from.x - base.left, from.y - base.top, to.x - base.left, to.y - base.top];
+    const steps = 40;
+    const frames = Array.from({ length: steps + 1 }, (_, i) => {
+      const t = i / steps;
+      // Down: a small hop off the cloud, then a slow fall. Up: a slow start, then the balloon takes it.
+      const eased = down ? t * t * (3 - 2 * t) : t ** 1.6;
+      const hop = down ? -26 * Math.sin(Math.min(1, t * 3) * Math.PI) * (1 - t) : 0;
+      const sway = Math.sin(t * Math.PI * 4) * 16 * Math.sin(t * Math.PI);
+      const x = x0 + (x1 - x0) * eased + sway;
+      const y = y0 + (y1 - y0) * eased + hop;
+      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${(sway * 0.9).toFixed(1)}deg)` };
+    });
+    const flight = traveler.animate(frames, { duration: down ? 1700 : 1500, easing: 'linear', fill: 'forwards' });
+    gear.animate(down
+      ? [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1)', offset: 0.18 }, { opacity: 1, transform: 'scale(1)', offset: 0.85 }, { opacity: 0, transform: 'translateY(-14px) scale(0.6)' }]
+      : [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1.1)', offset: 0.25 }, { opacity: 1, transform: 'scale(1)', offset: 0.9 }, { opacity: 0 }],
+    { duration: down ? 1700 : 1500, fill: 'forwards' });
+    return flight.finished.then(() => {
+      if (down) {
+        // Landing: a ripple spreads on the ground where the picture touched it.
+        const ripple = el('span', { className: 'globe-ripple' });
+        ripple.style.transform = `translate(${x1}px, ${y1}px)`;
+        root.append(ripple);
+        ripple.animate([{ opacity: 0.9, scale: 0.2 }, { opacity: 0, scale: 2.4 }], { duration: 700, easing: 'ease-out' }).finished.then(() => ripple.remove());
+      }
+      traveler.remove();
+    }).catch(() => traveler.remove());
+  }
+
+  // The cloud opens before someone arrives on it and folds away once nobody is left.
+  function resizeCloud(open) {
+    if (reduceMotion || cloud.hidden) return Promise.resolve();
+    const height = cloud.offsetHeight;
+    const frames = [{ height: '0px', opacity: 0, marginBottom: '0px' }, { height: `${height}px`, opacity: 1, marginBottom: '4px' }];
+    return cloud.animate(open ? frames : frames.reverse(), { duration: 450, easing: 'ease-in-out', fill: open ? 'none' : 'forwards' }).finished.catch(() => {});
+  }
+
   async function save(spot) {
+    const wasOnCloud = !me.place;
+    const from = wasOnCloud ? centre(cloud.querySelector('.cloud-rider.mine')?.getBoundingClientRect()) : null;
     try {
       const { place } = await api('/me/place', { method: 'PUT', body: roundPlace(spot) });
       me.place = place;
       lastPlace(me.id, place);
       choosing = false;
+      travelling = !!from && !reduceMotion;
       setPicking(false);
+      flyTo({ ...place, zoom: Math.max(view.zoom, 3) }, travelling ? 1100 : 700);
+      if (!travelling) {
+        renderCloud();
+        return;
+      }
+      // Until the picture lands, its seat on the cloud stays where it was, empty.
+      cloud.querySelector('.cloud-rider.mine')?.classList.add('waiting');
+      await travel(from, centre(stage.getBoundingClientRect()), true);
+      travelling = false;
+      pinKey = '-';
+      draw();
+      settle(pins.querySelector('.globe-pin.mine'));
+      const empty = !friends.some((friend) => !friend.place);
+      if (empty) await resizeCloud(false);
       renderCloud();
-      flyTo({ ...place, zoom: Math.max(view.zoom, 3) });
+      // The folded height was held until the cloud was hidden; let go of it for the next time.
+      for (const held of cloud.getAnimations()) if (!(held instanceof CSSAnimation)) held.cancel();
     } catch (err) {
+      travelling = false;
       tell(err.message);
     }
   }
 
   async function hide() {
+    const pinned = pins.querySelector('.globe-pin.mine');
+    const stageBefore = stage.getBoundingClientRect();
+    const fromPin = centre(pinned?.getBoundingClientRect());
     try {
       await api('/me/place', { method: 'DELETE' });
       me.place = null;
       choosing = false;
+      travelling = !!fromPin && !reduceMotion;
+      const wasHidden = cloud.hidden;
       pinKey = '-';
       renderControls();
       renderCloud();
       redraw();
+      if (!travelling) return;
+      if (wasHidden) await resizeCloud(true);
+      // The cloud may have pushed the earth down; the picture starts where its pin stood.
+      const shift = stage.getBoundingClientRect();
+      const from = { x: fromPin.x + shift.left - stageBefore.left, y: fromPin.y + shift.top - stageBefore.top };
+      const seat = cloud.querySelector('.cloud-rider.mine');
+      await travel(from, centre(seat?.getBoundingClientRect()), false);
+      travelling = false;
+      seat?.classList.remove('waiting');
+      settle(seat);
     } catch (err) {
+      travelling = false;
       tell(err.message);
       renderControls();
     }

@@ -36,6 +36,26 @@ const fakeYoutube = createServer((request, response) => {
     return;
   }
   // The sources of the update: two Wikipedias, the Pardespedia events board and the building plans.
+  // The Israeli channels: two with pictures, one through a headline service, one that fails.
+  if (request.url.startsWith('/feed/')) {
+    digestRequests.push(request.url);
+    const channel = request.url.slice(6, -4);
+    const item = (title, minutes, extra = '') => `<item><title>${title}</title><link>https://${channel}.example/${minutes}</link>
+<pubDate>${new Date(Date.now() - minutes * 60000).toUTCString()}</pubDate>${extra}</item>`;
+    const feeds = {
+      n12: item('ידיעה ישנה ב-N12', 90) + item('ידיעה חדשה ב-N12 &amp; עוד', 5, '<image>https://img.mako.co.il/a.jpg</image>'),
+      c14: item('<![CDATA[כותרת בערוץ 14]]>', 10, '<content:encoded><![CDATA[<p><img src="https://www.c14.co.il/b.jpg"></p>]]></content:encoded>'),
+      kan: item('כותרת בכאן - כאן 11', 20, '<source url="https://www.kan.org.il">כאן 11</source>') + item('כתובת לא בטוחה', 1).replace('https://kan.example', 'javascript:alert(1)//'),
+    };
+    if (!feeds[channel]) {
+      response.statusCode = 403;
+      response.end();
+      return;
+    }
+    response.setHeader('Content-Type', 'application/rss+xml');
+    response.end(`<?xml version="1.0"?><rss><channel>${feeds[channel]}</channel></rss>`);
+    return;
+  }
   if (request.url.startsWith('/w/api.php') || request.url.startsWith('/api.php') || request.url === '/plans.json') {
     digestRequests.push(request.url);
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(Date.now());
@@ -51,12 +71,17 @@ const fakeYoutube = createServer((request, response) => {
       : request.url.startsWith('/api.php') ? { parse: { wikitext: `== אירועים ==
 <!-- AUTO:START -->
 <div style="font-size:120%; border-bottom:2px solid #e3bcac; margin:22px 0 4px;">יום כלשהו, ${day} ב${heMonth} · היום</div>
+<div>[[קובץ:ערב ג'אז.jpg|200px|ערב ג'אז]]</div>
 ${card('[https://events.example/1 ערב ג\'אז]')}
 ${card('[https://events.example/2 הופעה] <span>בוטל</span>')}
 <div style="font-size:120%; border-bottom:2px solid #e3bcac; margin:22px 0 4px;">יום רחוק, ${day} ב${heMonth}</div>
 ${card('מאוחר יותר באותו יום')}
 <!-- AUTO:END -->
 <div style="font-size:125%; font-weight:bold; line-height:1.3;">מחוץ ללוח</div>` } }
+        : request.url.includes('prop=pageimages')
+          ? { query: { normalized: [{ from: 'גשם', to: 'גשם' }], pages: [
+            { title: 'גשם', thumbnail: { source: 'https://upload.wikimedia.org/rain.jpg' } },
+            { title: 'Big Wave', thumbnail: { source: 'https://evil.example/wave.jpg' } }] } }
         : request.url.includes('In_the_news')
           ? { parse: { text: '<div><ul><li>The <a href="/wiki/Sea">sea</a> sees <b><a href="/wiki/Big_Wave" title="x">a big wave</a></b> <i>(pictured)</i>.</li></ul><ul><li>Ongoing</li></ul></div>' } }
           : { parse: { text: '<div><ul><li><a href="/wiki/%D7%92%D7%A9%D7%9D" title="גשם">גשם</a> <small>(בתמונה)</small> ירד &amp; ירד ב<a href="/wiki/X">צפון</a> (<a rel="nofollow" class="external text" href="https://news.example/1">אתר</a>)</li>\n<li>ידיעה שנייה</li></ul></div>' } };
@@ -561,11 +586,28 @@ test('news from outside is read by the server, cleaned to plain text, and kept',
   const { community, country, world } = (await eli.call('GET', '/update')).data;
   assert.deepEqual(community.events.map((event) => [event.name, event.url, event.time, event.venue]),
     [['ערב ג\'אז', 'https://events.example/1', '20:30', 'בית הראשונים'], ['מאוחר יותר באותו יום', null, '20:30', 'בית הראשונים']]);
+  // Pictures come through this server, and only from the hosts it trusts.
+  const picture = (item) => item.image && new URL(item.image, 'http://x').searchParams.get('src');
+  assert.equal(picture(community.events[0]), `https://pardespedia.info/index.php?title=Special:Redirect/file/${encodeURIComponent("ערב ג'אז.jpg")}&width=480`);
+  assert.equal(community.events[1].image, null);
   assert.deepEqual(community.plans.map((plan) => [plan.title, plan.adds, plan.url.split('#')[1]]), [['דרך הבנים', '12 יחידות דיור', 'p-308-1']]);
   assert.deepEqual(country, [
-    { text: 'גשם ירד & ירד בצפון', url: 'https://he.wikipedia.org/wiki/%D7%92%D7%A9%D7%9D' },
-    { text: 'ידיעה שנייה', url: null }]);
-  assert.deepEqual(world, [{ text: 'The sea sees a big wave.', url: 'https://en.wikipedia.org/wiki/Big_Wave' }]);
+    { text: 'גשם ירד & ירד בצפון', url: 'https://he.wikipedia.org/wiki/%D7%92%D7%A9%D7%9D', image: `/api/picture?src=${encodeURIComponent('https://upload.wikimedia.org/rain.jpg')}` },
+    { text: 'ידיעה שנייה', url: null, image: null }]);
+  assert.deepEqual(world, [{ text: 'The sea sees a big wave.', url: 'https://en.wikipedia.org/wiki/Big_Wave', image: null }]);
+
+  // Israel: one headline from each channel in turn, newest first within each, a failing channel skipped.
+  const { israel } = (await eli.call('GET', '/update')).data;
+  assert.deepEqual(israel.map((item) => [item.channel, item.text, item.url, picture(item)]), [
+    ['N12', 'ידיעה חדשה ב-N12 & עוד', 'https://n12.example/5', 'https://img.mako.co.il/a.jpg'],
+    ['עכשיו 14', 'כותרת בערוץ 14', 'https://c14.example/10', 'https://www.c14.co.il/b.jpg'],
+    ['כאן חדשות', 'כותרת בכאן', 'https://kan.example/20', null],
+    ['N12', 'ידיעה ישנה ב-N12', 'https://n12.example/90', null]]);
+
+  // The picture route passes on nothing from elsewhere, and nothing to a stranger.
+  assert.equal((await eli.call('GET', `/picture?src=${encodeURIComponent('https://evil.example/x.jpg')}`)).status, 404);
+  assert.equal((await eli.call('GET', `/picture?src=${encodeURIComponent('http://upload.wikimedia.org/x.jpg')}`)).status, 404);
+  assert.equal((await anon('GET', `/picture?src=${encodeURIComponent('https://upload.wikimedia.org/x.jpg')}`)).status, 401);
 
   const fetched = digestRequests.length;
   await eli.call('GET', '/update');
@@ -836,7 +878,8 @@ try {
   await new Promise((resolve) => fakeYoutube.listen(YOUTUBE_PORT, resolve));
   const fake = `http://localhost:${YOUTUBE_PORT}`;
   startServer(PORT, ['--var', 'DEV_LOGIN:1', '--var', `YOUTUBE_ORIGIN:${fake}`, '--var', `WIKI_HE_ORIGIN:${fake}`,
-    '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`]);
+    '--var', `WIKI_EN_ORIGIN:${fake}`, '--var', `PARDESPEDIA_ORIGIN:${fake}`, '--var', `PLANS_URL:${fake}/plans.json`,
+    ...['N12', 'C13', 'C14', 'KAN'].flatMap((name) => ['--var', `${name}_FEED:${fake}/feed/${name.toLowerCase()}.xml`])]);
   startServer(PROD_PORT, []);
   startServer(DEMO_PORT, ['--env', 'demo'], { database: 'free-network-demo', seed: 'tools/demo_seed.sql' });
   startServer(STORAGE_PORT, ['--var', 'DEV_LOGIN:1', '--var', 'STORAGE_LIMIT_BYTES:30']);

@@ -2,8 +2,10 @@ import { friendsGlobe } from '/globe.js';
 import { updatePanel } from '/update.js';
 
 const app = document.getElementById('app');
-const SIDE_GLOBE = matchMedia('(min-width: 1000px)');
-const SIDE_UPDATE = matchMedia('(min-width: 1340px)');
+// Beside the feed: the update on the left once there is room for it, and the globe on the
+// right once there is room for both.
+const SIDE_UPDATE = matchMedia('(min-width: 1000px)');
+const SIDE_GLOBE = matchMedia('(min-width: 1240px)');
 const nav = document.getElementById('nav');
 const MAX_IMAGE_SIDE = 1600;
 const MAX_IMAGES = 4;
@@ -33,6 +35,7 @@ const ICONS = {
   check: 'M20 6L9 17l-5-5',
   plus: 'M12 5v14M5 12h14',
   minus: 'M5 12h14',
+  flag: 'M4 22V4M4 4h13l-2 4 2 4H4',
   sun: 'M12 17a5 5 0 1 0 0-10a5 5 0 0 0 0 10M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
 };
 let me = null;
@@ -490,13 +493,13 @@ async function flyGlobe(spot) {
   setTimeout(() => document.querySelector('.globe')?.dispatchEvent(new CustomEvent('fly', { detail: spot })), waits ? 400 : 0);
 }
 
-function update() {
+function update({ all = false, top = false } = {}) {
   seenUpTo ??= seenStore();
-  return updatePanel({ me, seen: seenUpTo, ui: { el, icon, avatar, link, api, when, tell, demo, flyGlobe } });
+  return updatePanel({ me, seen: seenUpTo, all, top, ui: { el, icon, avatar, link, api, when, tell, demo, flyGlobe } });
 }
 
 function updatePage() {
-  app.replaceChildren(el('div', { className: 'card update-page' }, update()));
+  app.replaceChildren(el('div', { className: 'card update-page' }, update({ all: true })));
 }
 
 async function feedPage() {
@@ -546,10 +549,12 @@ async function feedPage() {
   });
   await load();
 
-  // Beside the feed when the screen is wide: the globe on one side, the update on the other.
-  // On a narrower screen each has its own page.
+  // Beside the feed: the update on the left, folded into a line per circle, and the globe on
+  // the right. On a narrow screen the folded update sits above the posts instead.
   const side = SIDE_GLOBE.matches ? el('aside', { className: 'globe-side' }, await globe()) : null;
-  const news = SIDE_UPDATE.matches ? el('aside', { className: 'card update-side' }, update()) : null;
+  const news = SIDE_UPDATE.matches
+    ? el('aside', { className: 'card update-side' }, update())
+    : el('aside', { className: 'card update-top' }, update({ top: true }));
   app.replaceChildren(...[
     side,
     news,
