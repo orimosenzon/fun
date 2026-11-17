@@ -6,7 +6,7 @@
 // they see only that quiz, never the start screen or the other quizzes.
 // A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611161418';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611170941';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -43,8 +43,11 @@ let results = [];        // results[i] is what happened at position i: answered 
 let hintUsed = false;
 let answered = false;
 
-// A phone or tablet: a finger is the main pointer and there is no on-screen hover.
-const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
+// Was the last tap a finger? Then focusing the answer box would pop up the keyboard. Judged by the tap itself:
+// some Android phones (Samsung, newer Android) claim hover and a fine pointer, so a media query alone says "computer".
+let lastPointer = matchMedia('(any-pointer: coarse)').matches ? 'touch' : '';
+addEventListener('pointerdown', (e) => { lastPointer = e.pointerType; }, { capture: true, passive: true });
+const fingerFirst = () => lastPointer === 'touch' || lastPointer === 'pen';
 
 const PRAISES =['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
@@ -132,7 +135,7 @@ function showRiddle() {
   }
   // On a touch screen focusing the box would pop up the keyboard and hide most of the picture,
   // so there the player taps the box when ready to type. With a real keyboard, type straight away.
-  if (!isImageAnswer(r) && !TOUCH) answerInput.focus();
+  if (!isImageAnswer(r) && !fingerFirst()) answerInput.focus();
   else if (document.activeElement === answerInput) answerInput.blur();
 }
 

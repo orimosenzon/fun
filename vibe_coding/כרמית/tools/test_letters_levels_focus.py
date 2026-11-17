@@ -237,6 +237,24 @@ with sync_playwright() as p:
     check(pg.is_visible("#feedback") and pg.is_visible("#next-btn"), "phone: Enter answers and stays to show the result")
     pg.tap("#next-btn")
     check(pg.evaluate("document.activeElement.id") != "answer-input", "phone: next riddle, the box is not focused")
+    # A phone that claims hover and a fine pointer (Samsung, newer Android): the tap itself decides.
+    odd = b.new_context(viewport={"width": 412, "height": 900}, has_touch=True)
+    pg = odd.new_page()
+    # Answer every media query about pointers the way such a phone does: hover, fine pointer.
+    pg.add_init_script("""window.__NO_USER = true;
+      const real = window.matchMedia.bind(window);
+      window.matchMedia = (q) => /hover|pointer/.test(q)
+        ? { matches: /hover: hover|pointer: fine/.test(q), media: q, addEventListener() {}, removeEventListener() {} } : real(q);""")
+    stub(pg)
+    pg.goto(BASE + "index.html?q=qe")
+    pg.wait_for_selector("#start-btn:visible")
+    check(pg.evaluate("matchMedia('(hover: hover)').matches"), "odd phone: the browser claims hover")
+    pg.tap("#start-btn")
+    check(pg.evaluate("document.activeElement.id") != "answer-input", "odd phone: started with a finger, the box is not focused")
+    pg.tap("#skip-btn")
+    check(pg.evaluate("document.activeElement.id") != "answer-input", "odd phone: next riddle, still not focused")
+    pg.click("#prev-btn")
+    check(pg.evaluate("document.activeElement.id") == "answer-input", "odd phone: with a mouse click, focused again")
     b.close()
 
 print("ALL PASS" if fake_firebase.ok else "SOME FAILED")
