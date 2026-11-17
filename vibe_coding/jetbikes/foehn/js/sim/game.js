@@ -29,6 +29,17 @@ export class Game {
     this.respawnPose = null;
     this.gun = new Gun();
     this.windLevel = 1; this.windSeed = 7;   // the UI sets these (0 calm .. 3 storm; a new seed for every run)
+    this.fig = { loop: 0, roll: 0, inv: false, loops: 0, rolls: 0 };   // aerobatic figures: how far round the bike has come
+  }
+  // Aerobatic mode (sim/fcs.js, acroLaw): the stick turns the bike itself. Only in the air.
+  get acro() { return this.sim.fcs.aerobatic; }
+  toggleAcro(on = !this.sim.fcs.aerobatic) {
+    const f = this.sim.fcs, was = f.aerobatic;
+    if (this.state !== 'fly' && on) return false;
+    const now = f.setAcro(on, 'rider');                                 // (leaving is reported from onTick, like the safety net)
+    if (now && !was) { this.fig.loop = this.fig.roll = 0; this.fig.inv = false; this.emit('acro', { on: true }); }
+    else if (on && !now && !f.rec) this.emit('acro', { on: false, why: 'air' });          // refused: the bike stands on the ground
+    return now;
   }
   emit(type, data = {}) { this.events.push({ type, ...data }); }
 
@@ -53,6 +64,7 @@ export class Game {
     this.sim.reset(st.p, st.yaw); this.sim.t = 0;
     this.cp = 0; this.time = 0; this.penalty = 0; this.vt = 0; this.ghost = []; this.splits = [];
     this.score = 0; this.combo = 1; this.lowT = 0; this.crashes = 0; this.misses = 0; this.landT = 0; this.tick = 0;
+    this.fig = { loop: 0, roll: 0, inv: false, loops: 0, rolls: 0 };
     this.respawnPose = { p: st.p, yaw: st.yaw, speed: 0 };
     this.state = 'countdown'; this.stateT = this.ev.id === 'free' ? 0.01 : 3;
     this.prevP = this.bike.p.slice();
@@ -112,6 +124,20 @@ export class Game {
     const b = this.bike, p = b.p;
     this.tick++;
     this.gun.step(1 / 120, this);
+    // --- aerobatics: the computer may have taken the bike back; smoke; figures flown ---
+    const fc = this.sim.fcs, fig = this.fig;
+    if (fc.bail) { this.emit('acro', { on: false, why: fc.bail }); fc.bail = null; }
+    b.smoke = fc.aerobatic && this.state === 'fly';
+    if (fc.aerobatic) {
+      // a loop is once round in pitch that went over the top (a flat circle on its side is a turn);
+      // a roll is once round the nose. A pause between the quarters of a roll does not spoil it.
+      fig.loop += b.w[2] / 120; fig.roll += b.w[0] / 120;
+      if (Math.abs(b.w[2]) < 0.2) fig.loop *= 1 - 1 / 180;
+      if (Math.abs(b.w[0]) < 0.3) fig.roll *= 1 - 1 / 480;
+      if (Math.abs(fig.loop) > 1.2 && qrot(b.q, [0, 1, 0])[1] < -0.5) fig.inv = true;
+      if (Math.abs(fig.loop) >= 6.1) { if (fig.inv && this.state === 'fly') { fig.loops++; this.score += 400; this.emit('trick', { kind: 'loop', n: fig.loops }); } fig.loop -= Math.sign(fig.loop) * 2 * Math.PI; fig.inv = false; }
+      if (Math.abs(fig.roll) >= 6.1) { if (this.state === 'fly') { fig.rolls++; this.score += 250; this.emit('trick', { kind: 'roll', n: fig.rolls }); } fig.roll -= Math.sign(fig.roll) * 2 * Math.PI; }
+    }
     if (this.state !== 'fly') { this.prevP = p.slice(); return; }
     // --- crashes ---
     let reason = b.crash;

@@ -118,6 +118,9 @@ export class Hud {
     $('rpm').textContent = Math.round(b.eng.N * 100);
     $('nozA').setAttribute('transform', `rotate(${b.tilt * 180 / Math.PI})`);
     $('heat').firstElementChild.style.width = b.heat * 100 + '%'; $('heat').classList.toggle('lock', b.abLock);
+    const fc = game.sim.fcs, ab = $('acroB');
+    ab.classList.toggle('on', fc.acro && game.state === 'fly'); ab.classList.toggle('rec', fc.rec);
+    if (fc.acro) ab.textContent = t(fc.rec ? 'acro.rec' : 'acro.badge');
     if (game.ev.medals) {
       $('timer').textContent = fmtTime(game.total);
       $('cpn').innerHTML = `${t(game.ev.gun ? 'hud.balloons' : 'hud.cp')} <span class="num">${Math.min(game.cp + 1, game.cps.length)} / ${game.cps.length}</span>` + (game.penalty ? ` · ${t('hud.penalty')} <span class="num">+${game.penalty}</span>` : '');

@@ -33,7 +33,7 @@ export class Input {
       if (gp.buttons[1] && gp.buttons[1].pressed) c.brake = true;
       if (gp.buttons[5] && gp.buttons[5].pressed) c.fire = true;
       const edge = (i, code) => { const p = gp.buttons[i] && gp.buttons[i].pressed; if (p && !this.padPrev[i]) this.pressed.push(code); this.padPrev[i] = p; };
-      edge(3, 'KeyC'); edge(2, 'KeyR'); edge(9, 'Escape'); edge(0, 'PadA');
+      edge(3, 'KeyC'); edge(2, 'KeyR'); edge(9, 'Escape'); edge(0, 'PadA'); edge(4, 'KeyQ');
     }
     const t = this.touch;
     if (t.on) { if (t.turn) c.turn = t.turn; if (t.pitch) c.pitch = t.pitch; if (t.throttle) c.throttle = t.throttle; if (t.strafe) c.strafe = t.strafe; c.boost = c.boost || t.boost; c.brake = c.brake || t.brake; c.fire = c.fire || !!t.fire; }

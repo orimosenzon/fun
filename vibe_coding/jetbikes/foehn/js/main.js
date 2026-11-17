@@ -144,6 +144,7 @@ async function boot() {
   const CAMS = ['chase', 'close', 'cockpit', 'cine'];
   const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), cine = { p: new THREE.Vector3(), t: 0 };
   let camInit = false, fov = 64, lean = 0, lastCtl = { turn: 0, pitch: 0 };
+  const camUp = new THREE.Vector3(0, 1, 0); let acroCam = 0, camInvT = 0, camInv = false, acroSeen = false;      // the chase camera in aerobatic mode
   const touchUI = Q.has('touch') || matchMedia('(pointer: coarse)').matches;
   if (touchUI) input.enableTouch($('touch'));
   $('touch').classList.remove('on');
@@ -267,6 +268,14 @@ async function boot() {
         case 'finish': onFinish(e); break;
         case 'shot': case 'pop': case 'shotEnd': gunFx(e); break;
         case 'shotMiss': hud.message('', t('gun.miss'), 0.9); break;
+        // aerobatic mode: on, off (the rider, the safety net, the ground), and the figures flown
+        case 'acro':
+          if (e.on) { hud.message('', t('acro.on') + (acroSeen ? '' : '<br>' + t('acro.keys')), acroSeen ? 1.2 : 5); acroSeen = true; audio.click(); }
+          else if (e.why === 'net') { hud.message('', t('acro.net'), 2.2); audio.warn(); }
+          else if (e.why === 'air') hud.message('', t('acro.air'), 1.6);
+          else hud.message('', t('acro.off'), 1.2);
+          break;
+        case 'trick': hud.message('', t('trick.' + e.kind) + (e.n > 1 ? ' ×' + e.n : ''), 1.1); audio.gate(true, false); break;
       }
     }
     game.events.length = 0;
@@ -479,7 +488,39 @@ async function boot() {
       targetFov = clamp(2200 / (d + 30), 16, 55);
     } else {
       const dist = camMode === 'close' ? 3.1 : 4.8 + V * 0.008, h = camMode === 'close' ? 0.95 : 1.5;
-      tmpV.set(b.p[0] - dir[0] * dist, b.p[1] - dir[1] * dist + h, b.p[2] - dir[2] * dist);
+      // Aerobatic mode. The camera stays behind the bike on its true line of flight, over the top of
+      // a loop as well, and its own "up" is carried along that line: so a loop turns the world over,
+      // and a roll does not (the bike rolls in front of a steady horizon). The horizon is then eased
+      // level again, the right way up or, when the bike has been on its back for a moment, upside down.
+      const fc = game.sim.fcs;
+      acroCam += ((fc.acro ? 1 : 0) - acroCam) * Math.min(1, dt * (fc.acro ? 6 : 2.5));
+      if (!fc.acro && acroCam < 0.003) { acroCam = 0; camUp.set(0, 1, 0); camInvT = 0; camInv = false; }
+      let ox = 0, oy = h, oz = 0;
+      if (acroCam > 0) {
+        const dA = [lerp(fw[0], b.v[0] / (V || 1), k), lerp(fw[1], b.v[1] / (V || 1), k), lerp(fw[2], b.v[2] / (V || 1), k)];
+        dir = [lerp(dir[0], dA[0], acroCam), lerp(dir[1], dA[1], acroCam), lerp(dir[2], dA[2], acroCam)];
+        const l = Math.hypot(dir[0], dir[1], dir[2]) || 1; dir = dir.map((v) => v / l);
+        const D = tmpV.set(dir[0], dir[1], dir[2]);
+        camUp.addScaledVector(D, -camUp.dot(D));
+        if (camUp.lengthSq() < 1e-4) camUp.set(up[0], up[1], up[2]).addScaledVector(D, -(up[0] * dir[0] + up[1] * dir[1] + up[2] * dir[2]));
+        camUp.normalize();
+        // level horizon: world up, seen square to the line of flight (it means nothing when flying straight up or down)
+        const hx = -dir[1] * dir[0], hy = 1 - dir[1] * dir[1], hz = -dir[1] * dir[2], hl = Math.hypot(hx, hy, hz);
+        if (hl > 0.25) {
+          const s = (up[0] * hx + up[1] * hy + up[2] * hz) / hl;
+          camInvT = clamp(camInvT + (s < -0.35 ? dt : s > 0.35 ? -dt : 0), 0, 0.5);
+          if (camInvT >= 0.5) camInv = true; else if (camInvT <= 0) camInv = false;
+          const g = (camInv ? -1 : 1) / hl, tx = hx * g, ty = hy * g, tz = hz * g;
+          const c = camUp.x * tx + camUp.y * ty + camUp.z * tz;
+          const sn = dir[0] * (camUp.y * tz - camUp.z * ty) + dir[1] * (camUp.z * tx - camUp.x * tz) + dir[2] * (camUp.x * ty - camUp.y * tx);
+          let ang = Math.atan2(sn, c);
+          if (Math.abs(ang) > 2.9) ang = Math.abs(ang) * (b.w[0] < 0 ? -1 : 1);          // right over: turn the way the bike rolls
+          const st = clamp(ang, -2.4 * dt, 2.4 * dt) * clamp((hl - 0.25) / 0.35, 0, 1), cs = Math.cos(st), sj = Math.sin(st);
+          camUp.set(camUp.x * cs + (dir[1] * camUp.z - dir[2] * camUp.y) * sj, camUp.y * cs + (dir[2] * camUp.x - dir[0] * camUp.z) * sj, camUp.z * cs + (dir[0] * camUp.y - dir[1] * camUp.x) * sj).normalize();
+        }
+        ox = camUp.x * h * acroCam; oy = lerp(h, camUp.y * h, acroCam); oz = camUp.z * h * acroCam;
+      }
+      tmpV.set(b.p[0] - dir[0] * dist + ox, b.p[1] - dir[1] * dist + oy, b.p[2] - dir[2] * dist + oz);
       if (!camInit) { camPos.copy(tmpV); camInit = true; }
       camPos.lerp(tmpV, 1 - Math.exp(-dt * (5 + V * 0.06)));
       // stay close enough at speed, and above the ground
@@ -495,10 +536,11 @@ async function boot() {
         }
       }
       camera.position.copy(camPos);
-      camLook.set(b.p[0] + dir[0] * 9, b.p[1] + dir[1] * 9 + 1.0, b.p[2] + dir[2] * 9);
+      camLook.set(b.p[0] + dir[0] * 9 + ox / h, b.p[1] + dir[1] * 9 + oy / h, b.p[2] + dir[2] * 9 + oz / h);
       // bank a little with the bike
       const roll = yprOf(b.q)[2];
       camera.up.set(Math.sin(roll * 0.28) * fh[2] * -1, 1, Math.sin(roll * 0.28) * fh[0]).normalize();
+      if (acroCam > 0) camera.up.lerp(camUp, acroCam).normalize();
       camera.lookAt(camLook);
     }
     if (shake > 0.001) { camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake; camera.position.z += (Math.random() - 0.5) * shake; }
@@ -528,6 +570,7 @@ async function boot() {
         if (k === 'KeyV' && (paused || game.state === 'finished')) { startReplay(); continue; }
         if (k === 'Escape' || k === 'KeyP') { if ($('help').classList.contains('on')) $('help').classList.remove('on'); else setPause(!paused); }
         if (k === 'KeyR') startEvent(game.ev.id);
+        if (k === 'KeyQ' && !paused) game.toggleAcro();
         if (k === 'KeyC') { camMode = CAMS[(CAMS.indexOf(camMode) + 1) % CAMS.length]; camInit = false; }
         if (k === 'KeyH') $('help').classList.toggle('on');
         if ((k === 'Enter' || k === 'PadA') && game.state === 'finished') startEvent(game.ev.id);
@@ -603,7 +646,8 @@ async function boot() {
     const TKEY = 'foehn.feel';
     try { Object.assign(FEEL, JSON.parse(localStorage.getItem(TKEY)) || {}); } catch { /* nothing saved */ }
     const rows = [['stick', 'עיכוב המוט (שנ\')', 0.02, 0.2, 0.01], ['rollRate', 'קצב גלגול', 1.5, 6, 0.1], ['rollAcc', 'תאוצת גלגול', 5, 30, 1], ['yawRate', 'קצב סבסוב', 1, 3.5, 0.1], ['yawAcc', 'תאוצת סבסוב', 2, 14, 0.5],
-      ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1], ['recoil', 'רתע הירייה (מ/שנ\')', 0, 4, 0.1], ['muzzle', 'מהירות הכדור (מ/שנ\')', 120, 600, 10]];
+      ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1], ['recoil', 'רתע הירייה (מ/שנ\')', 0, 4, 0.1], ['muzzle', 'מהירות הכדור (מ/שנ\')', 120, 600, 10],
+      ['acroRoll', 'אירובטי: קצב גלגול', 2, 7, 0.1], ['acroPitch', 'אירובטי: קצב עלרוד', 0.8, 3, 0.1], ['acroYaw', 'אירובטי: הגה', 0.3, 2, 0.1], ['detent', 'אירובטי: מגרעת (מעלות)', 0, 15, 1], ['net', 'אירובטי: רשת ביטחון', 0, 1, 1]];
     const el = document.createElement('div'); el.id = 'tune'; el.className = 'panel'; document.body.appendChild(el);
     const draw = () => {
       el.innerHTML = '<b>תחושת הרכיבה</b>' + rows.map(([k, name, a, b, st]) => `<label><span>${name}</span><span class="num" id="tv_${k}">${FEEL[k]}</span></label><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${FEEL[k]}">`).join('') + '<div class="rowbtn"><button class="b" id="tReset">איפוס</button><button class="b" id="tCopy">העתקה</button></div>';

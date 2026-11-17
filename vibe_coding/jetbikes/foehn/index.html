@@ -68,6 +68,8 @@ canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
 #tmarks b::before { content: ''; position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border: 1.5px solid rgba(255,120,95,.95); transform: rotate(45deg); box-shadow: 0 0 4px rgba(0,0,0,.6); }
 #tmarks span { position: absolute; top: 18px; left: -30px; width: 60px; text-align: center; font-size: 11px; font-weight: 600; text-shadow: 0 1px 3px #000; opacity: .9; }
 #score { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700; text-shadow: 0 1px 6px #000; }
+#acroB { position: absolute; top: 132px; left: 50%; transform: translateX(-50%); padding: 3px 14px; border-radius: 14px; background: rgba(255,122,42,.88); font-weight: 700; font-size: 14px; letter-spacing: .04em; opacity: 0; transition: opacity .2s; }
+#acroB.on { opacity: 1; } #acroB.rec { background: rgba(255,207,90,.95); color: #151515; }
 #hint { position: absolute; bottom: 118px; left: 0; right: 0; text-align: center; font-size: 15px; opacity: .92; text-shadow: 0 1px 6px #000; }
 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); font: 600 12px ui-monospace, monospace; direction: ltr; }
 
@@ -159,6 +161,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div id="msg"></div><div id="warn"></div>
   <div id="arrow"><i></i><span class="num"></span></div>
   <div id="aim"><i></i></div><div id="tmarks"><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b><b><span class="num"></span></b></div>
+  <div id="acroB"></div>
   <div id="hint"></div>
 </div>
 
@@ -206,10 +209,12 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <tr><td><kbd>Shift</kbd></td><td data-i18n="h.brake">בלם: מעצור אוויר, ונחירי ההרמה נוטים קדימה, עד ריחוף</td></tr>
     <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td data-i18n="h.strafe">נחירי הצד. בריחוף: הזזה הצידה, לנחיתה מדויקת. בטיסה: בעיטת צד, דחיפה ישרה הצידה של יותר מ-1 g, מיד, בלי להטות את האופנוע ובלי לסובב את האף. מחממת את הליבה כמו דחף־יתר</td></tr>
     <tr><td><kbd>F</kbd></td><td data-i18n="h.fire">התותח שבחרטום (בציד הבלונים ובטיסה חופשית). יורה כדור אחד לאן שהאף מצביע, פעם בשנייה וחצי. הכדור איטי ונופל בדרך: למטרה רחוקה מכוונים קצת מעליה. כל ירייה דוחפת את האופנוע אחורה, מרימה לו את האף ומחממת את הליבה.</td></tr>
+    <tr><td><kbd>Q</kbd></td><td data-i18n="h.acro">מצב אירובטי, הדלקה וכיבוי (באוויר). המקשים מסובבים עכשיו את האופנוע עצמו: <kbd>←</kbd> <kbd>→</kbd> מגלגלים אותו, <kbd>↓</kbd> <kbd>↑</kbd> מושכים ודוחפים את האף, <kbd>A</kbd> <kbd>D</kbd> הם ההגה. משחררים, והוא נשאר בדיוק במצב שבו עזבת אותו</td></tr>
     <tr><td><kbd>C</kbd></td><td data-i18n="h.cam">מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
     <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td data-i18n="h.misc">התחלה מחדש · הפסקה · השתקה</td></tr>
   </table>
   <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.wx">מזג האוויר והרוח נקבעים בתפריט הראשי. גשם ושלג משנים את מה שרואים. הרוח משנה את הטיסה: ככל שהיא חזקה יותר, המשבים שלה חזקים ופחות צפויים, והם באים מכל כיוון. מד הרוח שליד מד המהירות מראה לאן היא דוחפת אותך ברגע זה.</p>
+  <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.acro2">אירובטיקה: מחזיקים <kbd>↓</kbd> לאורך כל הסיבוב ויוצא לופ (כ-4 g; כדאי להתחיל מ-200 קמ"ש ומעלה). מחזיקים <kbd>←</kbd> או <kbd>→</kbd> ויוצא גלגול, ומשחררים קצת לפני הסוף: קרוב לישר, לצד, להפוך, לאופקי או לאנכי האופנוע מתיישב בדיוק שם. המסלול הולך אחרי האף, והמחשב נושא את המשקל בכל מקום שהנחירים מסוגלים. על הגב הם לא מסוגלים: שם האופנוע נופל, אז ממשיכים למשוך. על הצד המשקל תלוי על נחירי הצד ומחמם את הליבה. <kbd>Q</kbd> שוב, והמחשב מגלגל לישר ומיישר; הוא גם לוקח את האופנוע בעצמו כשהקרקע קרובה מדי בשביל לצאת מזה אחר כך.</p>
   <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.land">נחיתה: לבלום עד ריחוף מעל המעגל, ואז לדחוף <kbd>↑</kbd> בעדינות. המחשב מאט את הירידה קרוב לקרקע ומכבה את המנועים במגע. האירוע נגמר כשעומדים בתוך המעגל. שלט משחק נתמך.</p>
   <div class="rowbtn"><button class="b pri" id="hClose" data-i18n="h.close">הבנתי</button></div>
 </div></div>
@@ -222,6 +227,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <button data-k="sl" style="left:22px;bottom:292px;width:56px;height:56px">◀</button><button data-k="sr" style="left:96px;bottom:292px;width:56px;height:56px">▶</button>
   <button data-k="key" data-code="Escape" style="right:14px;top:14px;width:46px;height:46px">II</button>
   <button data-k="key" data-code="KeyC" style="right:70px;top:14px;width:46px;height:46px">cam</button>
+  <button data-k="key" data-code="KeyQ" style="right:126px;top:14px;width:46px;height:46px" data-i18n="t.acro">לופ</button>
 </div>
 
 <div id="load"><div class="t">F<span>Ö</span>HN</div><div id="lbar"><i></i></div><div id="ltxt"></div></div>

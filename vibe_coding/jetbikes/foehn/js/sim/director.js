@@ -8,7 +8,7 @@
 import { surfaceAt, groundAt } from './terrain.js';
 import { hitCastle, indoor } from './castle.js';
 import { hitScenery } from './scenery.js';
-import { qrot, clamp, lerp, norm, sub, len, cross, madd, add } from './vmath.js';
+import { qrot, clamp, lerp, sstep, norm, sub, len, cross, madd, add } from './vmath.js';
 
 const UP = [0, 1, 0], DEG = 180 / Math.PI;
 const lensFor = (d, size, lo, hi) => clamp(2 * Math.atan(size / Math.max(d, 0.5)) * DEG, lo, hi);
@@ -82,7 +82,8 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
           const now = P(t), s = now, d = dirOf(t - 0.12), r = rightOf(d);       // it swings out a little late in the turns
           o.p = floor([s.p[0] - d[0] * dist + r[0] * side * 0.9, s.p[1] - d[1] * dist + h, s.p[2] - d[2] * dist + r[2] * side * 0.9], 0.7);
           o.l = [now.p[0] + d[0] * 8, now.p[1] + d[1] * 8 + 0.6, now.p[2] + d[2] * 8];
-          o.up = norm(add(UP, madd([0, 0, 0], qrot(now.q, UP), 0.5))); o.fov = f; return o;
+          const steepK = sstep(0.45, 0.85, Math.abs(d[1]));                     // on the way up or down a loop the world's "up" lies along the lens: take the bike's own
+          o.up = norm(madd([0, 1 - steepK, 0], qrot(now.q, UP), 0.5 + 1.5 * steepK)); o.fov = f; return o;
         };
       },
       // flying backwards ahead of the bike, on the rider's face
@@ -91,7 +92,7 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
         return (t, o) => {
           const s = P(t), d = dirOf(t, 0.6), r = rightOf(d), u = (t - a) / (b - a);
           o.p = floor([s.p[0] + d[0] * (7 - 1.8 * u) + r[0] * side * off, s.p[1] + d[1] * (7 - 1.8 * u) + h, s.p[2] + d[2] * (7 - 1.8 * u) + r[2] * side * off], 0.7);
-          o.l = body(s); o.l[1] += 0.3; o.up = UP; o.fov = 40; return o;
+          o.l = body(s); o.l[1] += 0.3; o.up = Math.abs(d[1]) > 0.7 ? qrot(s.q, UP) : UP; o.fov = 40; return o;
         };
       },
       // a camera ship flying alongside, drifting slowly from the nose to the tail

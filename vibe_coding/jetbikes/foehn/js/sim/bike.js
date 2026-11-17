@@ -272,6 +272,7 @@ export class Bike {
     this.sd = [0, 0]; this.sdv = [0, 0]; this.kick = 0;         // side nozzles: thrust now (N, signed), valve position, reheat
     this.L = [0, 0, 0, 0]; this.R = 0; this.abOut = 0;          // thrust leaving each lift pipe and the rear nozzle right now (N)
     this.da = 0; this.de = 0; this.dr = 0; this.brake = 0;
+    this.smoke = false;                                           // display smoke (aerobatic mode); kept on the flight recorder
     this.heat = 0; this.abLock = false;
     this.t = 0;
     this.Hprev = null;

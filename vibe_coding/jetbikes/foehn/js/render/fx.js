@@ -93,7 +93,7 @@ export class FX {
     });
     this.light = new THREE.PointLight(0xffa050, 0, 60, 1.6); scene.add(this.light);
     this.flash = new THREE.PointLight(0xffc080, 0, 400, 1.2); scene.add(this.flash);
-    this.flashT = 0; this.acc = 0; this.shake = 0;
+    this.flashT = 0; this.acc = 0; this.shake = 0; this.smokeAcc = 0;
     this.washStrength = 0; this.washPos = [0, 0];
     this.debris = [];
     const dg = new THREE.TetrahedronGeometry(0.25), dm = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
@@ -158,6 +158,16 @@ export class FX {
     if (alive) {
       const g = len([b.acc[0], b.acc[1] + G, b.acc[2]]) / G;
       if (g > 2.0 && b.airspeed > 45) for (const z of [-1.27, 1.27]) if (r() < dt * 90) this.soft.spawn(b.toWorld([-0.2, 0.86, z]), scale(b.v, 0.05), [0.95, 0.96, 1.0], 0.16 * Math.min(1, g - 1.9), 0.22, 0.55, 0.9, 0.5, 0);
+    }
+    // display smoke (aerobatic mode): a white trail that hangs where the bike has been, so the figure can be read in the sky
+    if (alive && b.smoke) {
+      const V = len(b.v), ex = b.toWorld([REAR.p[0] - 0.6, REAR.p[1], 0]), bk = qrot(b.q, [-1, 0, 0]);
+      this.smokeAcc += dt * Math.max(26, V / 0.75);
+      while (this.smokeAcc > 1) {
+        this.smokeAcc -= 1;
+        const j = r() * dt;
+        this.soft.spawn([ex[0] - b.v[0] * j + (r() - 0.5) * 0.25, ex[1] - b.v[1] * j + (r() - 0.5) * 0.25, ex[2] - b.v[2] * j + (r() - 0.5) * 0.25], [bk[0] * 5 + (r() - 0.5) * 1.5, bk[1] * 5 + (r() - 0.5) * 1.5, bk[2] * 5 + (r() - 0.5) * 1.5], [0.97, 0.97, 1.0], 0.46, 0.5 + 0.3 * r(), 6.5 + 2 * r(), 1.25, 1.8, -0.12);
+      }
     }
     if (this.flashT > 0) { this.flashT -= dt; this.flash.intensity = 60000 * Math.max(0, this.flashT / 0.5) ** 2; } else this.flash.intensity = 0;
     this.shake = Math.max(0, this.shake - dt * 1.6);
