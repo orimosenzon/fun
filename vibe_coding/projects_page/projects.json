@@ -1316,6 +1316,38 @@
           ]
         },
         {
+          "title": "אקדמאים לפי יישוב",
+          "icon": "🎓",
+          "theme": "t-blue",
+          "dir": "academics",
+          "tags": [
+            "למ\"ס",
+            "מפקד 2022",
+            "טבלה"
+          ],
+          "desc": "<strong style=\"color:#e0a640\">באיזה יישוב יש הכי הרבה אקדמאים?</strong><br> אחוז בעלי השכלה אקדמית מבני 15 ומעלה בכל 1,181 היישובים שהלמ\"ס פרסמה להם נתון, לפי מפקד 2022. הנתון הרשמי הוא לפי אזור סטטיסטי, ומחובר כאן לרמת יישוב. חיפוש לפי שם, סינון לפי גודל יישוב ומיון לפי כל עמודה.",
+          "links": [
+            {
+              "href": "academics/index.html",
+              "style": "live",
+              "label": "▶ לטבלה",
+              "external": false
+            },
+            {
+              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/academics",
+              "style": "secondary",
+              "label": "📁 קוד מקור",
+              "external": true
+            }
+          ],
+          "badges": [
+            {
+              "type": "live",
+              "label": "LIVE"
+            }
+          ]
+        },
+        {
           "title": "מי יקים את הממשלה?",
           "icon": "🏛️",
           "theme": "t-orange",

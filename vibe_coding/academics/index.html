@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>אקדמאים לפי יישוב</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Rubik:wght@500;700&display=swap">
+<style>
+/* פריסה: כותרת קצרה, סרגל חיפוש דביק, טבלה אחת עם פס אחוז לכל שורה */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b2330; --muted: #5f6b7c;
+  --line: #e1e5eb; --accent: #1f5f8b; --bar: #c98a1c; --bar-bg: #eef0f3; --hit: #fff3d6;
+  --f-display: "Rubik", "Assistant", system-ui, sans-serif;
+  --f-body: "Assistant", system-ui, "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161c; --surface: #1a2029; --fg: #e6eaf0; --muted: #98a3b3;
+  --line: #2b333f; --accent: #7db8e3; --bar: #e0a640; --bar-bg: #262d38; --hit: #3a3220; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161c; --surface: #1a2029; --fg: #e6eaf0; --muted: #98a3b3;
+  --line: #2b333f; --accent: #7db8e3; --bar: #e0a640; --bar-bg: #262d38; --hit: #3a3220; color-scheme: dark }
+
+html { direction: rtl; }
+* { -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 40px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
+header { padding-top: 28px; display: grid; gap: 6px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 65ch; }
+
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.search { position: relative; }
+#q { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; padding: 12px 44px 12px 14px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); }
+#q:focus { outline: none; border-color: var(--accent); }
+.search svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--muted); fill: none; }
+#clear { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: var(--muted); font-size: 1.3rem; cursor: pointer; padding: 4px 8px; }
+.row2 { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: .92rem; border: 0; background: transparent; color: var(--fg); padding: 6px 12px; cursor: pointer; }
+.seg button + button { border-right: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+.seg button:focus-visible, th button:focus-visible, #clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#count { color: var(--muted); font-size: .92rem; }
+
+.tablebox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: .82rem; color: var(--muted); font-weight: 600; letter-spacing: .02em; background: var(--surface); }
+th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+th button[data-dir]::after { content: " ▼"; font-size: .7em; }
+th button[data-dir="asc"]::after { content: " ▲"; }
+tbody tr:last-child td { border-bottom: 0; }
+td.rank { color: var(--muted); width: 3.5em; }
+td.name { font-weight: 600; white-space: normal; min-width: 8em; }
+td.name mark { background: var(--hit); color: inherit; border-radius: 3px; padding: 0 1px; }
+td.num { color: var(--muted); }
+td.pct { width: 45%; min-width: 150px; }
+.pc { display: flex; align-items: center; gap: 10px; }
+.pc b { min-width: 3.4em; font-weight: 700; }
+.bar { flex: 1; height: 8px; background: var(--bar-bg); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--bar); border-radius: 4px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.more { display: block; margin: 0 auto; font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--accent); padding: 8px 18px; border-radius: 8px; cursor: pointer; }
+footer { color: var(--muted); font-size: .88rem; display: grid; gap: 6px; max-width: 70ch; }
+footer a { color: var(--accent); }
+@media (max-width: 520px) { th, td { padding: 8px 8px; } td.num, th.num { display: none; } td.pct { min-width: 120px; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>כמה אקדמאים יש בכל יישוב</h1>
+    <p class="sub">אחוז בעלי השכלה אקדמית מבני 15 ומעלה, לפי מפקד האוכלוסין 2022 של הלמ"ס. <span id="total">1,181</span> יישובים, מהגבוה לנמוך.</p>
+  </header>
+
+  <div class="controls">
+    <div class="search">
+      <svg viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="q" type="search" placeholder="חפש יישוב, למשל פרדס חנה" autocomplete="off" aria-label="חיפוש יישוב">
+      <button id="clear" type="button" aria-label="נקה חיפוש" hidden>×</button>
+    </div>
+    <div class="row2">
+      <div class="seg" role="group" aria-label="גודל יישוב">
+        <button type="button" data-min="0" aria-pressed="true">כל היישובים</button>
+        <button type="button" data-min="2000" aria-pressed="false">2,000+ תושבים</button>
+        <button type="button" data-min="20000" aria-pressed="false">20,000+ תושבים</button>
+      </div>
+      <span id="count" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr>
+        <th><button type="button" data-k="rank">מקום</button></th>
+        <th><button type="button" data-k="name">יישוב</button></th>
+        <th class="num"><button type="button" data-k="pop">תושבים</button></th>
+        <th><button type="button" data-k="pct">אחוז אקדמאים</button></th>
+      </tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+    <div id="empty" class="empty" hidden>לא נמצא יישוב בשם הזה. נסה חלק מהשם, או בחר "כל היישובים".</div>
+  </div>
+  <button id="more" class="more" type="button" hidden>הצג עוד</button>
+
+  <footer>
+    <p>המקום מחושב מחדש לפי סינון הגודל שבחרת. כך, למשל, פרדס חנה-כרכור במקום 602 מכל היישובים ובמקום 21 בין היישובים עם 20,000 תושבים ומעלה.</p>
+    <p>הלמ"ס מפרסמת את הנתון לפי אזור סטטיסטי. ביישוב שיש בו כמה אזורים, האחוז הוא ממוצע משוקלל לפי מספר התושבים, ולכן זה קירוב שעשוי לסטות בכמה עשיריות מהמספר הרשמי. ביישוב שהוא אזור אחד זה המספר המדויק. ביישובים קטנים מאוד האחוז רגיש לכל משפחה. <span id="missing">206</span> יישובים חסרים כי לא פורסם להם נתון השכלה.</p>
+    <p>מקור: <a href="https://www.cbs.gov.il/he/Surveys/Pages/Population-Census.aspx" target="_blank" rel="noopener">מפקד האוכלוסין 2022, הלמ"ס</a>, שכבת "מפקד_2022" לפי אזורים סטטיסטיים, השדה "אחוז בעלי השכלה אקדמית (15+)".</p>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+// RAW ו-META מגיעים מ-data.js: [שם, תושבים, אחוז, מספר אזורים, סמל יישוב]
+const data = RAW.map((r, i) => ({ name: r[0], pop: r[1], pct: r[2], areas: r[3], i }));
+const norm = s => s.replace(/[\s\-–־'"׳״*().]/g, "").replace(/ייה/g, "יה").replace(/וו/g, "ו");
+data.forEach(d => d.key = norm(d.name));
+const fmt = new Intl.NumberFormat("he-IL");
+const PAGE = 200;
+let st = { min: 0, k: "rank", dir: "asc", q: "", shown: PAGE };
+try { const m = +localStorage.getItem("acad-min"); if ([0, 2000, 20000].includes(m)) st.min = m; } catch (e) {}
+
+const tb = document.getElementById("tb"), q = document.getElementById("q"),
+  clear = document.getElementById("clear"), more = document.getElementById("more"),
+  empty = document.getElementById("empty"), count = document.getElementById("count");
+
+function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function highlight(name, qq) {
+  if (!qq) return esc(name);
+  // מיפוי אותיות השם לאותיות המנורמלות כדי לסמן את ההתאמה
+  const nq = norm(qq);
+  for (let s = 0; s < name.length; s++) {
+    for (let e = s + 1; e <= name.length; e++) {
+      const part = norm(name.slice(s, e));
+      if (part === nq) return esc(name.slice(0, s)) + "<mark>" + esc(name.slice(s, e)) + "</mark>" + esc(name.slice(e));
+      if (part.length > nq.length) break;
+    }
+  }
+  return esc(name);
+}
+
+function render() {
+  const pool = data.filter(d => d.pop >= st.min);
+  pool.forEach((d, j) => d.r = j + 1); // pool כבר ממוין לפי אחוז יורד
+  const nq = norm(st.q);
+  let rows = nq ? pool.filter(d => d.key.includes(nq)) : pool.slice();
+  if (nq) rows.sort((a, b) => (b.key.startsWith(nq) - a.key.startsWith(nq)) || (a.key === nq ? -1 : b.key === nq ? 1 : 0) || a.r - b.r);
+  const m = st.dir === "asc" ? 1 : -1;
+  if (!nq || st.k !== "rank") {
+    const f = { rank: d => d.r, name: d => d.name, pop: d => d.pop, pct: d => d.pct }[st.k];
+    rows.sort((a, b) => { const x = f(a), y = f(b); return (typeof x === "string" ? x.localeCompare(y, "he") : x - y) * m; });
+  }
+  const view = rows.slice(0, st.shown);
+  tb.innerHTML = view.map(d => `<tr>
+    <td class="rank">${d.r}</td>
+    <td class="name">${highlight(d.name, st.q)}</td>
+    <td class="num">${fmt.format(d.pop)}</td>
+    <td class="pct"><div class="pc"><b>${d.pct.toFixed(1)}%</b><span class="bar"><i style="width:${d.pct}%"></i></span></div></td>
+  </tr>`).join("");
+  empty.hidden = rows.length > 0;
+  more.hidden = rows.length <= st.shown;
+  more.textContent = `הצג עוד (${fmt.format(rows.length - st.shown)} נוספים)`;
+  count.textContent = nq ? `${fmt.format(rows.length)} תוצאות מתוך ${fmt.format(pool.length)} יישובים` : `${fmt.format(pool.length)} יישובים`;
+  document.querySelectorAll("th button").forEach(b => { if (b.dataset.k === st.k) b.dataset.dir = st.dir; else delete b.dataset.dir; });
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.min === st.min));
+}
+
+q.addEventListener("input", () => { st.q = q.value.trim(); st.shown = PAGE; clear.hidden = !q.value; render(); });
+clear.addEventListener("click", () => { q.value = ""; st.q = ""; clear.hidden = true; st.shown = PAGE; render(); q.focus(); });
+more.addEventListener("click", () => { st.shown += PAGE * 3; render(); });
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  st.min = +b.dataset.min; st.shown = PAGE; try { localStorage.setItem("acad-min", st.min); } catch (e) {} render();
+}));
+document.querySelectorAll("th button").forEach(b => b.addEventListener("click", () => {
+  const k = b.dataset.k;
+  if (st.k === k) st.dir = st.dir === "asc" ? "desc" : "asc";
+  else { st.k = k; st.dir = (k === "rank" || k === "name") ? "asc" : "desc"; }
+  render();
+}));
+document.getElementById("total").textContent = fmt.format(META.with_data);
+document.getElementById("missing").textContent = fmt.format(META.localities - META.with_data);
+render();
+</script>
+</body>
+</html>
