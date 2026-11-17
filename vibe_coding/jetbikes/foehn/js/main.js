@@ -226,6 +226,8 @@ async function boot() {
   $('fFilm').onclick = () => startReplay({ video: true });
   $('bHist').onclick = () => openHistory();
   $('hiClose').onclick = () => $('hist').classList.remove('on');
+  $('bCred').onclick = () => $('cred').classList.add('on');
+  $('cClose').onclick = () => $('cred').classList.remove('on');
   addEventListener('pagehide', () => saveRun());
   $('pRestart').onclick = $('fRetry').onclick = () => startEvent(game.ev.id);
   $('pMenu').onclick = $('fMenu').onclick = toMenu;
@@ -647,7 +649,7 @@ async function boot() {
     try { Object.assign(FEEL, JSON.parse(localStorage.getItem(TKEY)) || {}); } catch { /* nothing saved */ }
     const rows = [['stick', 'עיכוב המוט (שנ\')', 0.02, 0.2, 0.01], ['rollRate', 'קצב גלגול', 1.5, 6, 0.1], ['rollAcc', 'תאוצת גלגול', 5, 30, 1], ['yawRate', 'קצב סבסוב', 1, 3.5, 0.1], ['yawAcc', 'תאוצת סבסוב', 2, 14, 0.5],
       ['bank', 'הטיה מרבית (רדיאן)', 1.0, 1.33, 0.01], ['kick', 'בעיטת צד (מ/שנ²)', 0, 20, 1], ['strafe', 'הזזה בריחוף (מ/שנ\')', 5, 14, 1], ['gust', 'בלימת משבים', 0, 1, 0.05], ['hairpin', 'פניית סיכה אוטומטית', 0, 1, 1], ['recoil', 'רתע הירייה (מ/שנ\')', 0, 4, 0.1], ['muzzle', 'מהירות הכדור (מ/שנ\')', 120, 600, 10],
-      ['acroRoll', 'אירובטי: קצב גלגול', 2, 7, 0.1], ['acroPitch', 'אירובטי: קצב עלרוד', 0.8, 3, 0.1], ['acroYaw', 'אירובטי: הגה', 0.3, 2, 0.1], ['detent', 'אירובטי: מגרעת (מעלות)', 0, 15, 1], ['net', 'אירובטי: רשת ביטחון', 0, 1, 1]];
+      ['acroRoll', 'אירובטי: קצב גלגול', 2, 7, 0.1], ['acroPitch', 'אירובטי: קצב עלרוד', 0.8, 3, 0.1], ['acroYaw', 'אירובטי: הגה', 0.3, 2, 0.1], ['detent', 'אירובטי: מגרעת (מעלות)', 0, 15, 1], ['net', 'אירובטי: רשת ביטחון', 0, 1, 1], ['dive', 'צלילה: הגה גובה (0 = רק מכבה הרמה)', 0, 1, 0.05]];
     const el = document.createElement('div'); el.id = 'tune'; el.className = 'panel'; document.body.appendChild(el);
     const draw = () => {
       el.innerHTML = '<b>תחושת הרכיבה</b>' + rows.map(([k, name, a, b, st]) => `<label><span>${name}</span><span class="num" id="tv_${k}">${FEEL[k]}</span></label><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${FEEL[k]}">`).join('') + '<div class="rowbtn"><button class="b" id="tReset">איפוס</button><button class="b" id="tCopy">העתקה</button></div>';

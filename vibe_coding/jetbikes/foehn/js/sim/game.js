@@ -114,7 +114,7 @@ export class Game {
     // computer awake and lift the bike off again
     if (b.contactN > 0.25 * b.mp.m * G && len(b.v) < 4 && !ctl.boost && (ctl.pitch || 0) <= 0.05 && (ctl.vt !== undefined ? Math.abs(ctl.vt) < 3 : !(ctl.throttle > 0))) this.vt = 0;
     const inp = this.state === 'finished' ? { turn: 0, pitch: 0, vt: 0, brake: true }
-      : { turn: ctl.turn || 0, pitch: ctl.pitch || 0, strafe: ctl.strafe || 0, vt: this.vt, boost: !!ctl.boost, brake: !!ctl.brake };
+      : { turn: ctl.turn || 0, pitch: ctl.pitch || 0, strafe: ctl.strafe || 0, vt: this.vt, boost: !!ctl.boost, brake: !!ctl.brake, noDive: !!ctl.noDive };
     if (ctl.fire && this.gunOn && this.state === 'fly') this.gun.trigger = true;
     this.sim.advance(dt, inp, () => this.onTick());
     if (this.state === 'fly' && this.ev.id !== 'free') this.time += dt;

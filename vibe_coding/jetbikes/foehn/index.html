@@ -96,10 +96,15 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5
 .hrow small { opacity: .7; } .hrow .und { font-size: 12px; opacity: .6; } .hrow .medal { display: inline-block; width: 13px; height: 13px; vertical-align: -1px; }
 .hb { display: flex; gap: 6px; flex-shrink: 0; } .hb button.b { padding: 5px 11px; font-size: 13px; }
 a.b { pointer-events: auto; cursor: pointer; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 10px; background: var(--acc); color: #1a0d04; }
-#menu, #pause, #finish, #help, #hist, #vid { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
-#menu.on, #pause.on, #finish.on, #help.on, #hist.on, #vid.on { display: flex; }
+#menu, #pause, #finish, #help, #hist, #vid, #cred { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
+#menu.on, #pause.on, #finish.on, #help.on, #hist.on, #vid.on, #cred.on { display: flex; }
+#cred h3 { margin: 14px 0 6px; font-size: 15px; opacity: .8; }
+#cred .cr { margin: 0 0 10px; font-size: 14.5px; line-height: 1.5; }
+#cred .cr b { display: block; }
+#cred .cr small { opacity: .65; }
+#cred a { color: #ffb070; }
 #menu { background: linear-gradient(180deg, rgba(6,10,16,.25), rgba(6,10,16,.72)); justify-content: flex-start; padding-top: 5vh; }
-#pause, #finish, #help, #hist, #vid { background: rgba(6,10,16,.6); }
+#pause, #finish, #help, #hist, #vid, #cred { background: rgba(6,10,16,.6); }
 h1 { font-size: clamp(54px, 9vw, 104px); margin: 0; letter-spacing: 10px; font-weight: 900; direction: ltr; text-shadow: 0 4px 40px rgba(0,0,0,.6); }
 h1 span { color: var(--acc); }
 .sub { font-size: clamp(15px, 2vw, 20px); opacity: .9; margin: 2px 0 20px; text-shadow: 0 1px 8px #000; text-align: center; }
@@ -170,7 +175,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="sub" data-i18n="sub">אופנוע בלי גלגלים, עם מנוע היתוך. עמק אלפיני אחד, מבצר על ההר, תשעה אירועים</div>
   <div id="cards"></div>
   <div class="rowbtn">
-    <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHist" data-i18n="b.hist">הטיסות שלי</button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
+    <button class="b" id="bTime"></button><button class="b" id="bWx"></button><button class="b" id="bWind"></button><button class="b" id="bQual"></button><button class="b" id="bInv"></button><button class="b" id="bHist" data-i18n="b.hist">הטיסות שלי</button><button class="b" id="bHelp" data-i18n="b.help">מקשים ועזרה</button><button class="b" id="bCred" data-i18n="b.cred">תודות</button><button class="b" id="bLang"></button><button class="b" id="bShare"></button>
   </div>
 </div>
 
@@ -199,11 +204,20 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="rowbtn"><a class="b pri" id="vSave" data-i18n="v.save">שמירה לקובץ</a><button class="b" id="vShare" data-i18n="v.share">שיתוף</button><button class="b" id="vClose" data-i18n="hi.close">סגירה</button></div>
 </div></div>
 
+<div id="cred"><div class="box panel"><h2 data-i18n="c.title">תודות</h2>
+  <p style="margin:0 0 6px;font-size:14px;opacity:.8" data-i18n="c.intro">FÖHN משתפר בזכות מי שטס בו וכותב מה הרגיש. הצעה שנכנסה למשחק נרשמת כאן עם שם מי שהציע אותה.</p>
+  <h3 data-i18n="c.ideas">הצעות של רוכבים</h3>
+  <div class="cr"><b data-i18n="c.reshef.who">רשף מאיר</b><span data-i18n="c.reshef.what">צלילה עם הגה גובה: כשדוחפים את האף למטה הוא יורד מיד, והנחיר האחורי דוחף את האופנוע כלפי מטה. קודם הדחיפה רק כיבתה את הדחף, וקשה היה לרדת מהר כשצריך.</span> <small data-i18n="c.reshef.when">נובמבר 2026</small></div>
+  <h3 data-i18n="c.assets">ציורים ומודלים</h3>
+  <p class="cr" data-i18n="c.assets.text">החיות, הבתים, הסלעים והצמחים: <bdi><a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> (CC0)</bdi><br>צילומי הקרקע: <bdi><a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> (CC0)</bdi></p>
+  <div class="rowbtn"><button class="b pri" id="cClose" data-i18n="hi.close">סגירה</button></div>
+</div></div>
+
 <div id="help"><div class="box panel"><h2 data-i18n="h.title">איך טסים</h2>
   <p style="margin:0 0 10px;font-size:14.5px;line-height:1.5;opacity:.9" data-i18n="h.intro">אתה רוכב על אופנוע בלי גלגלים ובלי כנפיים. בין הברכיים שלך יש ליבת היתוך שמחממת אוויר, והדחף שלה גדול פי ארבעה ממשקל האופנוע. מחשב הטיסה עושה את העבודה הקשה: אתה מבקש כיוון, גובה ומהירות, והוא מחליט כמה אוויר יוצא מארבעת נחירי ההרמה שבמקום הגלגלים וכמה מהנחיר האחורי. אין עילוי מהאוויר: כל מה שמחזיק אותך, מסובב אותך ומאיץ אותך הוא דחף.</p>
   <table class="keys">
     <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td data-i18n="h.turn">פנייה. האופנוע נוטה לבד, עד 3.4 g. לחיצה ארוכה היא פניית סיכה: המחשב מוריד מהירות ומסובב אותך במקום צר, ומחזיר את המהירות כשמשחררים</td></tr>
-    <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td data-i18n="h.pitch">למשוך לטפס, לדחוף לרדת (אפשר להפוך בהגדרות)</td></tr>
+    <tr><td><kbd>↓</kbd> <kbd>↑</kbd></td><td data-i18n="h.pitch">למשוך לטפס, לדחוף לרדת (אפשר להפוך בהגדרות). בטיסה, דחיפה היא הגה גובה: האף יורד מיד, והנחיר האחורי דוחף את האופנוע לצלילה מהירה יותר מנפילה. המחשב עדיין לא נותן לצלול לתוך הקרקע</td></tr>
     <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td data-i18n="h.speed">מהירות יעד למעלה ולמטה. המחשב שומר עליה</td></tr>
     <tr><td><kbd>Space</kbd></td><td data-i18n="h.boost">דחף־יתר: 50% יותר דחף קדימה, עד 450 קמ"ש. כ-7 שניות עד שהליבה מתחממת, והיא מתקררת מהר יותר בטיסה מהירה</td></tr>
     <tr><td><kbd>Shift</kbd></td><td data-i18n="h.brake">בלם: מעצור אוויר, ונחירי ההרמה נוטים קדימה, עד ריחוף</td></tr>

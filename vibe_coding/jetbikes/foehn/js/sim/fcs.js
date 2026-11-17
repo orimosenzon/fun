@@ -32,6 +32,7 @@ export const FEEL = {
   hairpin: 1,        // 1: a held full turn sheds speed by itself. 0: the rider brakes
   recoil: 1.0,       // m/s: how hard a shot shoves the bike back (and throws its nose up)
   muzzle: 300,       // m/s: speed of the round. Slower means more lead and more drop
+  dive: 1,           // 0: the down stick only cuts the lift (the old law). 1: it is an elevator, the nose leads the dive
   // aerobatic mode (the stick turns the bike itself, see acroLaw below)
   acroRoll: 4.0,     // rad/s: roll rate at full stick (a full roll in about a second and a half)
   acroPitch: 1.7,    // rad/s: the fastest the nose may be pulled round (at speed the thrust sets the limit, not this)
@@ -252,7 +253,11 @@ export class FCS {
       // with their reheat: a flat shove to that side, at once, with no bank and no turn of the nose.
       const kickIn = b.abLock ? 0 : (1 - low) * this.strafe, aK = kickIn * FEEL.kick;
 
-      let vzDes = this.pitch * Math.max(8, 0.62 * V);
+      // Diving: the stick is an elevator. The nose goes down first and the rear nozzle drives the bike
+      // down along it, faster than a fall (suggested by Reshef Meir: cutting the lift alone left the nose
+      // level and took four seconds to lose 50 m). Climbing keeps the old law.
+      const dive = Math.max(0, -this.pitch) * sstep(8, 20, Va) * (inp.noDive ? 0 : FEEL.dive);
+      let vzDes = this.pitch * Math.max(8, lerp(0.62 * V, Math.min(1.0 * Math.max(Vh, 12), Math.sqrt(Math.max(0, V_MAX * V_MAX - Vh * Vh))), dive));   // (by the speed over the ground: by the whole speed the dive fed itself)
       // radar-altimeter floor: looks 0.6 s ahead; released when the rider deliberately descends slowly (landing)
       const landing = this.pitch < -0.2 && Math.min(Va, V) < 16;      // (by the ground speed too: in a gale the air alone is faster than that)
       const ax = b.p[0] + v[0] * 0.6, az = b.p[2] + v[2] * 0.6;
@@ -276,7 +281,9 @@ export class FCS {
         // the floor at 20 m/s and go straight through it)
         // (low: only what a slow taxi over the ground needs)
         const room = hmin - (this.low ? 0.6 : floorH), roomL = Math.max(0, room + 0.25 * Math.min(0, Vu));
-        const f = room < 0 ? -2.2 * room : -Math.min(1.5 * room, lerp(Math.sqrt(2 * 14 * roomL), 1.5 * room, sstep(70, 100, V))) - 0.5;      // (at racing speed the old rule stands: there the dives are flown on purpose)
+        // (nose down in a dive the thrust first has to be brought round: count on less, and on the time that takes)
+        const elev = !inp.noDive && FEEL.dive > 0, dn = elev ? Math.max(0, Math.sin(-pitch)) : 0, aArr = 14 * (1 - 0.6 * dn), roomD = Math.max(0, roomL + 1.2 * dn * Math.min(0, Vu));
+        const f = room < 0 ? -2.2 * room : -Math.min(1.5 * room, lerp(Math.sqrt(2 * aArr * roomD), 1.5 * room, sstep(70, 100, elev ? Math.hypot(Vh, Math.min(V, 0.62 * Vh)) : V))) - 0.5;      // (at racing speed the old rule stands: there the dives are flown on purpose)
         if (f > vzDes) { vzDes = f; this.tele.floor = true; }
       }
       if (onGround && this.pitch <= 0.05) vzDes = Math.min(vzDes, 0);
@@ -288,7 +295,10 @@ export class FCS {
       const eZ = vzDes - Vu;
       this.iZ = clamp(this.iZ + 0.35 * eZ * dt, -2, 2);
       // jet-borne, thrust is also the attitude control power: never let it fall too low
-      let aU = clamp(1.9 * eZ + this.iZ, -1.0 * G, 1.9 * G);
+      // (nose down, the rear nozzle can push downward too: up to its thrust times the sine of the dive)
+      const noseDn = Math.max(0, Math.sin(-pitch));
+      const diveNow = this.tele.floor || landing || this.low ? 0 : dive;   // (the radar or a landing has the bike: no dive)
+      let aU = clamp(1.9 * eZ + this.iZ, -(1.0 + 1.3 * noseDn * Math.min(1, 3 * diveNow)) * G, 1.9 * G);
 
       // what can the airframe actually deliver? Protect height first, then the turn, then speed.
       const need = m * Math.hypot(aR, aU + G);
@@ -312,7 +322,9 @@ export class FCS {
       const thLow = clamp(-0.5 * aF / G, -0.20, 0.42) * (aF > 0 ? 1 - 0.6 * sstep(8, 30, Vf) : 1 - 0.85 * sstep(22, 55, Vf)) * lvl;
       // the nose follows the flight path, so the bike climbs and dives like a bike on a hill
       const gamma = Math.atan2(Vu, Math.max(Vh, 6));
-      const thetaH = clamp(thLow + gamma * sstep(10, 30, Va), -1.0, 1.0);
+      // (diving, the nose leads the path: it goes to where the stick asks the path to go, at once)
+      const gammaCmd = Math.atan2(Math.min(vzDes, 0), Math.max(Vh, 6));
+      const thetaH = clamp(thLow + lerp(gamma, Math.min(gamma, 1.15 * gammaCmd), Math.min(1, 1.5 * diveNow)) * sstep(10, 30, Va), -1.0, 1.0);
       const beta = b.vAirB[2] / Math.max(Va, 12);
       const yawRateH = yawRateCmd - clamp(2.2 * beta, -1.1, 1.1) * sstep(8, 26, Va) * (1 - Math.abs(kickIn));   // (during a kick the nose holds its heading: the bike crabs)
       this.yawRef = yaw + clamp(wrapPi(this.yawRef + yawRateH * dt - yaw), -0.3, 0.3);

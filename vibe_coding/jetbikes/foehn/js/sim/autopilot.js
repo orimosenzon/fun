@@ -12,7 +12,7 @@ export class Autopilot {
 
   update() {
     const g = this.game, b = g.bike, path = g.build.path, p = b.p;
-    const out = { turn: 0, pitch: 0, strafe: 0, vt: 0, boost: false, brake: false };
+    const out = { turn: 0, pitch: 0, strafe: 0, vt: 0, boost: false, brake: false, noDive: true };   // (it flies the lift law it was tuned on)
     if (g.state !== 'fly' || path.length < 4) return out;
     // progress along the reference line (never backwards, never past the next check-point's node)
     const cp = g.nextCp;
