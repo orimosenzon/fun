@@ -39,7 +39,16 @@ body { background: var(--bg); color: var(--text); font-family: Assistant, system
 header { padding: 18px 20px 10px; max-width: 1500px; margin: 0 auto; }
 h1 { font-size: 26px; margin: 0 0 4px; font-weight: 800; letter-spacing: -.01em; }
 .sub { color: var(--text-2); margin: 0; max-width: 900px; }
-.layout { display: grid; grid-template-columns: 400px 1fr; gap: 14px; padding: 10px 20px 20px; max-width: 1500px; margin: 0 auto; }
+.layout { display: grid; grid-template-columns: 380px 1fr 340px; gap: 14px; padding: 10px 20px 20px; max-width: 1800px; margin: 0 auto; }
+.side { min-width: 0; }
+.side .card { position: sticky; top: 10px; }
+.side input.nmi { width: 100%; min-width: 0; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 4px; }
+.side input.nmi:hover, .side input.nmi:focus { border-color: var(--line); background: var(--surface-2); outline: none; }
+.side .st { font-size: 11.5px; color: var(--muted); padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.side small.dev { display: block; min-width: 0; font-size: 11.5px; color: var(--muted); }
+.side small.dev.big { color: var(--warn); font-weight: 700; }
+.side tfoot td { font-weight: 700; border-bottom: 0; }
+@media (max-width: 1350px) { .layout { grid-template-columns: 380px 1fr; } .side { grid-column: 2; } .side .card { position: static; } }
 .panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
 .card h2 { font-size: 15px; margin: 0 0 10px; font-weight: 700; }
@@ -101,6 +110,8 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .editnote { font-size: 13px; color: var(--text-2); margin-top: 8px; display: none; }
 .editing .editnote { display: block; }
 .editing #map { cursor: crosshair; }
+#map.grab .leaflet-interactive, #map.grab { cursor: grab; }
+#map.dragging-border, #map.dragging-border .leaflet-interactive { cursor: grabbing; }
 .leaflet-container { font-family: Assistant, sans-serif; }
 .leaflet-tile-pane { filter: grayscale(.75) brightness(1.04); opacity: .85; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(.85) contrast(.9); opacity: .9; } }
@@ -110,6 +121,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   h1 { font-size: 21px; }
   .layout { grid-template-columns: 1fr; padding: 8px 16px 16px; }
   #mapwrap { min-height: 62vh; order: -1; }
+  .side { grid-column: auto; }
   .about { padding: 0 16px 30px; }
   .tiles .n { font-size: 19px; }
   .maptools { left: 52px; right: 8px; }
@@ -120,7 +132,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 <body>
 <header>
   <h1>חלוקת פרדס חנה-כרכור לשכונות</h1>
-  <p class="sub">10 עד 13 שכונות, עם כמה שיותר שוויון במספר התושבים ובשטח. שני השיקולים מושכים לכיוונים שונים: רוב התושבים גרים במרכז, ורוב השטח הוא חקלאות, תעשייה ושטח פתוח. שחקו עם המשקלים וראו מה יוצא.</p>
+  <p class="sub">10 עד 13 שכונות, עם כמה שיותר שוויון במספר התושבים ובשטח. שני השיקולים מושכים לכיוונים שונים: רוב התושבים גרים במרכז, ורוב השטח הוא חקלאות, תעשייה ושטח פתוח. לכן לפני החלוקה אנחנו קוטמים את השטחים שאין בהם תושבים, ומחלקים רק את השטח המיושב. שחקו עם המשקלים וראו מה יוצא.</p>
 </header>
 
 <div class="layout">
@@ -139,18 +151,26 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
       <div class="ctl">
         <label class="t" for="mu">צורת השכונות <span class="v" id="muV"></span></label>
         <input type="range" id="mu" min="0" max="4" step="0.25">
-        <div class="ends"><span>איזון מדויק, גבולות מפותלים</span><span>גבולות קצרים וישרים</span></div>
+        <div class="ends"><span>איזון מדויק, גם לאורך רחובות קטנים</span><span>גבולות קצרים, לאורך כבישים ראשיים</span></div>
       </div>
-      <label class="chk"><input type="checkbox" id="inh">
-        <span>לספור רק שטח מיושב<small>אזור התעשייה והשטח הפתוח (כ-5.6 קמ"ר בלי תושבים) עדיין שייכים לשכונות, אבל לא נספרים בהשוואת השטחים</small></span></label>
+      <label class="chk"><input type="checkbox" id="trimOn">
+        <span>לחלק רק את השטח המיושב<small>שדות, פרדסים, אזור התעשייה ושטח פתוח נקטמים לפני החלוקה. הם עדיין מסומנים בצבע חלש של השכונה הקרובה, אבל השטח שלהם לא נספר והגבולות לא נקבעים לפיהם</small></span></label>
+      <div class="ctl" id="trimCtl">
+        <label class="t" for="trim">כמה תושבים מותר שיגורו בשטח הקטום? <span class="v" id="trimV"></span></label>
+        <input type="range" id="trim" min="0" max="10" step="0.5">
+        <div class="ends"><span>רק שטח ריק לגמרי</span><span>גם משקים ובתים מפוזרים</span></div>
+        <div class="target" id="trimInfo"></div>
+      </div>
       <div class="btns">
         <button class="btn" id="reco">חזרה להמלצה</button>
         <button class="btn" id="again">פתרון אחר</button>
         <button class="btn" id="edit">עריכה ידנית</button>
         <button class="btn" id="share">העתק קישור</button>
         <button class="btn" id="export">הורד GeoJSON</button>
+        <button class="btn" id="pdf">ייצוא ל-PDF</button>
       </div>
-      <div class="editnote">בחרו שכונה בטבלה (או לחצו עליה במפה) ו"צבעו" תאים בגרירה עם העכבר. המספרים מתעדכנים תוך כדי.</div>
+      <div class="editnote">בחרו שכונה בטבלה (או לחצו עליה במפה) ו"צבעו" בלוקים בגרירה עם העכבר. המספרים מתעדכנים תוך כדי.</div>
+      <div class="target">טיפ: אפשר גם לתפוס כל גבול בין שתי שכונות ולגרור אותו. הבלוקים שהגבול עובר עליהם עוברים לשכונה השכנה.</div>
       <div class="status" id="status"></div>
     </div>
 
@@ -159,7 +179,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
       <div class="tiles">
         <div class="tile"><div class="n" id="mP">—</div><div class="l">סטייה מקסימלית בתושבים</div></div>
         <div class="tile"><div class="n" id="mA">—</div><div class="l">סטייה מקסימלית בשטח</div></div>
-        <div class="tile"><div class="n" id="mC">—</div><div class="l">אורך גבולות בין שכונות</div></div>
+        <div class="tile"><div class="n" id="mC">—</div><div class="l">גבולות לאורך כביש ראשי, ואדי או חורשה</div></div>
       </div>
       <div class="target" id="target"></div>
     </div>
@@ -170,13 +190,6 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
       <div class="target">ציר אופקי: סטייה מקסימלית בשטח. ציר אנכי: סטייה מקסימלית בתושבים. הפינה השמאלית התחתונה היא האידיאל. לחיצה על נקודה בוחרת אותה.</div>
     </div>
 
-    <div class="card">
-      <h2>השכונות</h2>
-      <table>
-        <thead><tr><th></th><th>רחובות מרכזיים</th><th>תושבים</th><th>±</th><th id="areaH">קמ"ר</th><th>±</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
   </aside>
 
   <div id="mapwrap">
@@ -191,6 +204,18 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     </div>
     <div class="hover" id="hover"></div>
   </div>
+
+  <aside class="side">
+    <div class="card">
+      <h2>השכונות</h2>
+      <table>
+        <thead><tr><th>מס'</th><th>שם השכונה</th><th id="areaH">שטח (קמ"ר)</th><th>תושבים</th></tr></thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+      <div class="target">אפשר לשנות שם בלחיצה עליו. השם המוצע הוא שני הרחובות שהכי מאפיינים את השכונה. מתחת לכל מספר: הסטייה מהיעד.</div>
+    </div>
+  </aside>
 </div>
 
 <section class="about">
@@ -199,7 +224,9 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     <ul>
       <li><b>גבול שטח השיפוט:</b> OpenStreetMap (22.8 קמ"ר).</li>
       <li><b>תושבים:</b> מפקד האוכלוסין 2022 של הלמ"ס לפי 12 אזורים סטטיסטיים (44,170 תושבים), דרך <a href="https://services.arcgis.com/b6zSqPB0TQc3mBgU/arcgis/rest/services/%D7%9E%D7%A4%D7%A7%D7%93_2022/FeatureServer" target="_blank" rel="noopener">שכבת המפקד ב-ArcGIS</a>. בתוך כל אזור סטטיסטי האוכלוסייה מפוזרת על מבני המגורים לפי שטח הבנייה (מיפוי מבנים מ-OpenStreetMap), ואז כל המספרים מוגדלים באופן אחיד לאומדן העדכני: <b>47,194 תושבים</b> (נכון ל-1/10/2026, <a href="https://www.btl.gov.il/mediniyut/situation/statistics/btlstatistics.aspx?id=7800&type=1" target="_blank" rel="noopener">ביטוח לאומי</a>).</li>
-      <li><b>רשת:</b> המפה מחולקת לתאים של 100×100 מטר (2,418 תאים). כל שכונה היא אוסף רציף של תאים.</li>
+      <li><b>בלוקים וגבולות טבעיים:</b> המפה מחולקת לבלוקים שתחומים ברחובות, ואדיות, שולי חורשות ופארקים, המסילה וגבול המועצה (מ-OpenStreetMap). כל שכונה היא אוסף רציף של בלוקים שלמים, ולכן כל גבול בין שכונות עובר לאורך אחד מהם. לגבול יש מחיר לפי הסוג: כביש ראשי או מאסף, ואדי וחורשה זולים, רחוב שכונתי יקר יותר, וסמטה או שביל יקרים מאוד. במפה גבול בולט מסומן בקו מלא, וגבול לאורך רחוב קטן או שביל בקו מקווקו.</li>
+      <li><b>שטח:</b> נספר רק השטח המיושב, כלומר עד 30 מטר מבתי מגורים. כך פרדס גדול עם משק אחד לא נחשב כאילו כולו שכונה.</li>
+      <li><b>קיטום:</b> לפני החלוקה מורידים את הבלוקים בלי תושבים (שדות, פרדסים, אזור התעשייה, שטח פתוח). במחוון אפשר לקטום גם בלוקים דלילים, מהדליל לצפוף, עד שבשטח הקטום גרים האחוז שבחרתם מהתושבים. חורים קטנים בתוך היישוב חוזרים פנימה: חור שגרים בו תמיד, וחור ריק אם הוא עד 100 דונם (גן, מגרש, בית ספר), ונשאר רק הרצף המיושב הגדול. משקים מבודדים שנשארו בחוץ נספרים בשכונה הקרובה, והשטח הקטום משויך אליה בצבע חלש, בלי להיכנס להשוואת השטחים.</li>
       <li><b>האלגוריתם:</b> מתחיל מחלוקה "גאומטרית" מאוזנת (כל תא הולך למרכז הקרוב, עם תיקון שמאזן את המשקלים), מתקן חלקים מנותקים, ואז מעביר תאי גבול בין שכונות כל עוד זה משפר את הציון: סכום ריבועי הסטיות בתושבים ובשטח, לפי המשקל שבחרתם, ועוד קנס על אורך הגבולות.</li>
     </ul>
   </details>
@@ -208,7 +235,7 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     <ul>
       <li>הגידול מ-2022 (כ-7%) מחולק באופן אחיד. שכונות שנבנו או התאכלסו אחרי המפקד מיוצגות בחסר, ואזורים ותיקים אולי ביתר.</li>
       <li>מספר הקומות כמעט לא ממופה, ולכן בתוך כל אזור סטטיסטי בניין דירות נספר כמו בית פרטי באותו גודל. הסכום של כל אזור סטטיסטי נשמר נכון.</li>
-      <li>הגבולות עוקבים אחרי רשת התאים, לא אחרי רחובות. זו טיוטה לדיון: אחרי שבוחרים כיוון, כדאי ליישר את הגבולות לרחובות, לשבילים ולגבולות טבעיים.</li>
+      <li>הבלוקים טובים כמו המיפוי ב-OpenStreetMap. רחוב או ואדי שלא מופו לא יכולים לשמש גבול, ויש בלוקים גדולים עם יותר מאלף תושבים. בגלל זה קשה יותר לאזן מאשר ברשת ריבועים: הסטיות גדולות יותר, והן המחיר של גבולות טבעיים.</li>
       <li>החלוקה לא לוקחת בחשבון זהות קהילתית, היסטוריה של שכונות קיימות, בתי ספר או מוסדות. אלה שיקולים חשובים שנשארים לבני האדם.</li>
     </ul>
   </details>
@@ -216,14 +243,13 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 <div class="tip" id="tip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="data.js"></script>
-<script src="partition.js"></script>
+<script src="data.js?v=blocks1"></script>
+<script src="partition.js?v=blocks1"></script>
 <script>
 'use strict';
 const D = window.DATA;
-const CS = D.source.cell;
-// נבחר בסריקה (k, alpha, mu, זרע): הסטייה המקסימלית הנמוכה ביותר עם גבולות סבירים
-const RECO = { k: 12, alpha: 0.6, mu: 1, inh: false, seed: 8 };
+// נבחר בסריקה על בלוקים טבעיים, שטח מיושב בלבד (קיטום 0%): סטייה מקס' 24% תושבים, 23% שטח
+const RECO = { k: 12, alpha: 0.5, mu: 0.5, inh: false, trim: 0, seed: 6 };
 const PAL_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
 const PAL_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
 const RAMP_L = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
@@ -234,31 +260,32 @@ const isDark = () => document.documentElement.dataset.theme === 'dark' ||
 const pal = () => isDark() ? PAL_DARK : PAL_LIGHT;
 
 // ---------- גאומטריה ----------
-const g = D.grid;
-function ll(x, y) { return [g.lat[0] * x + g.lat[1] * y + g.lat[2], g.lon[0] * x + g.lon[1] * y + g.lon[2]]; }
-const corner = (i, j) => ll(g.x0 + i * CS, g.y0 + j * CS);
-// הופכי של ההתאמה האפינית
-const det = g.lon[0] * g.lat[1] - g.lon[1] * g.lat[0];
-function cellAt(lat, lon) {
-  const a = lon - g.lon[2], b = lat - g.lat[2];
-  const x = (a * g.lat[1] - b * g.lon[1]) / det, y = (b * g.lon[0] - a * g.lat[0]) / det;
-  const i = Math.floor((x - g.x0) / CS), j = Math.floor((y - g.y0) / CS);
-  const G0 = Gs[0] || prep(false);
-  const c = G0.idx.get(i + ',' + j);
-  return c === undefined ? -1 : c;
-}
+// כל בלוק הוא מצולע (lat, lon). השכנויות (D.adj) נושאות את קו הגבול המשותף ואת סוגו.
+const B = D.blocks;
+// גרסה ישנה של data.js מהמטמון (לפני הבלוקים): עדיף הודעה ברורה מקריסה
+if (!B) { document.body.insertAdjacentHTML('afterbegin', '<div style="padding:16px;background:#fde;color:#900;font-weight:700">הדפדפן טען גרסה ישנה של הנתונים. רעננו את הדף בכוח (Ctrl+Shift+R).</div>'); throw new Error('stale data.js'); }
+const KIND_STRONG = new Set(['ראשי', 'מאסף', 'ואדי', 'חורשה', 'פארק', 'מסילה']);
 
 // ---------- מצב ----------
 const Gs = {};
-function prep(inh) { const key = inh ? 1 : 0; return Gs[key] || (Gs[key] = Partition.prepare(D, { inhabitedOnly: inh })); }
+// trim >= 0: קיטום שטחים לא מיושבים (ראו partition.js). trim < 0: כל השטח, כמו בגרסה הראשונה
+function prep(s) {
+  const key = s.trim >= 0 ? 't' + s.trim : (s.inh ? 'i' : 'all');
+  return Gs[key] || (Gs[key] = Partition.prepare(D, s.trim >= 0 ? { trim: s.trim } : { inhabitedOnly: s.inh }));
+}
+const trimmed = (G, c) => G.keep && !G.keep[c];
 let st = Object.assign({}, RECO);
 let reg = null, edited = false, selected = -1, view = 'regions', editing = false;
+let keepNames = true; // בטעינה מקישור: השמות מהקישור נשמרים בחישוב הראשון
+let names = []; // שמות שהמשתמש נתן. מתאפסים כשמחשבים חלוקה חדשה
+const regionName = (j) => names[j] || (lastInfo && lastInfo[j] && lastInfo[j].names.length ? lastInfo[j].names.join(' / ') : 'שכונה ' + (j + 1));
 const cache = new Map();
-const keyOf = (s) => [s.k, s.alpha.toFixed(2), s.mu, s.inh ? 1 : 0, s.seed].join('|');
+const keyOf = (s) => [s.k, s.alpha.toFixed(2), s.mu, s.inh ? 1 : 0, s.trim, s.seed].join('|');
+const paretoKey = (s) => [s.k, s.mu, s.inh, s.trim, s.seed].join('|');
 function solveFor(s) {
   const key = keyOf(s);
   if (!cache.has(key)) {
-    const G = prep(s.inh);
+    const G = prep(s);
     const r = Partition.solve(G, { k: s.k, alpha: s.alpha, mu: s.mu, seed: s.seed, restarts: 2 });
     cache.set(key, { reg: r.reg, sum: Partition.summary(G, r.reg, s.k) });
   }
@@ -271,9 +298,14 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 const renderer = L.canvas({ padding: 0.3 });
-const n = D.cells.length;
-const cellLayers = D.cells.map((c) => L.polygon([corner(c[0], c[1]), corner(c[0] + 1, c[1]), corner(c[0] + 1, c[1] + 1), corner(c[0], c[1] + 1)],
-  { renderer, stroke: false, fillOpacity: 0.45, interactive: false }).addTo(map));
+const n = B.length;
+const blockLayers = B.map((b, c) => {
+  const p = L.polygon(b[7], { renderer, stroke: false, fillOpacity: 0.45 }).addTo(map);
+  p.on('mouseover', () => hoverBlock(c));
+  p.on('mousedown', (e) => blockDown(c, e));
+  p.on('click', () => blockClick(c));
+  return p;
+});
 const bndLayer = L.polygon(D.boundary, { renderer, fill: false, weight: 2.5, color: '#1f1e1b', interactive: false }).addTo(map);
 const railLayer = L.polyline(D.rail, { renderer, weight: 2, dashArray: '6 5', color: '#55534c', interactive: false }).addTo(map);
 let borderLayer = null, labelLayer = L.layerGroup().addTo(map);
@@ -298,7 +330,7 @@ function css(v) { return getComputedStyle(document.documentElement).getPropertyV
 let colorOf = [];
 function colorRegions(G, k) {
   const adj = Array.from({ length: k }, () => new Map());
-  for (let c = 0; c < G.n; c++) for (const m of G.N4[c]) if (m >= 0 && reg[m] !== reg[c]) {
+  for (let c = 0; c < G.n; c++) for (const m of G.N[c]) if (reg[m] !== reg[c]) {
     adj[reg[c]].set(reg[m], (adj[reg[c]].get(reg[m]) || 0) + 1);
   }
   const order = [...Array(k).keys()].sort((a, b) => adj[b].size - adj[a].size);
@@ -319,45 +351,123 @@ function densColor(p) {
 }
 
 function paintCells() {
+  const G = prep(st);
   for (let c = 0; c < n; c++) {
-    const L_ = cellLayers[c];
+    const L_ = blockLayers[c];
     if (view === 'density') {
-      const dens = D.cells[c][3] / (D.cells[c][2] / 1e4);
+      const dens = B[c][3] / (B[c][2] / 1e4);
       const col = densColor(dens);
       L_.setStyle({ fillColor: col || 'transparent', fillOpacity: col ? 0.75 : 0 });
     } else if (view === 'stats') {
       L_.setStyle({ fillOpacity: 0 });
     } else {
       const j = reg[c];
-      L_.setStyle({ fillColor: regColor(j), fillOpacity: selected < 0 ? 0.45 : (j === selected ? 0.7 : 0.18) });
+      const op = selected < 0 ? 0.45 : (j === selected ? 0.7 : 0.18);
+      L_.setStyle({ fillColor: regColor(j), fillOpacity: trimmed(G, c) ? op * 0.25 : op });
     }
   }
   bndLayer.setStyle({ color: css('--boundary') });
 }
 
+// גבולות בין שכונות: קווי הגבול המשותף של בלוקים שכנים משכונות שונות.
+// גבול בולט (כביש ראשי, ואדי, חורשה) בקו מלא, רחוב קטן או שביל בקו מקווקו.
 function drawBorders(G) {
   if (borderLayer) map.removeLayer(borderLayer);
-  const segs = [];
-  D.cells.forEach((c, k) => {
-    const [i, j] = c;
-    const right = G.N4[k][0], up = G.N4[k][1];
-    if (right >= 0 && reg[right] !== reg[k]) segs.push([corner(i + 1, j), corner(i + 1, j + 1)]);
-    if (up >= 0 && reg[up] !== reg[k]) segs.push([corner(i, j + 1), corner(i + 1, j + 1)]);
-  });
-  borderLayer = L.polyline(segs, { renderer, weight: view === 'regions' ? 2.2 : 1.5, color: css('--region-border'), opacity: view === 'regions' ? 0.9 : 0.55, interactive: false }).addTo(map);
+  const strong = [], weak = [];
+  for (const [a, b, , , kind, lines] of D.adj) {
+    if (reg[a] === reg[b] || trimmed(G, a) || trimmed(G, b)) continue;
+    (KIND_STRONG.has(D.kinds[kind]) ? strong : weak).push(...lines);
+  }
+  const w = view === 'regions' ? 2.6 : 1.6, op = view === 'regions' ? 0.95 : 0.55, col = css('--region-border');
+  const layers = [
+    L.polyline(strong, { renderer, weight: w + 0.6, color: col, opacity: op, interactive: false }),
+    L.polyline(weak, { renderer, weight: w, color: col, opacity: op, dashArray: '5 4', interactive: false }),
+  ];
+  // "ידיות" שקופות ורחבות לגרירת גבול (רק בתצוגת שכונות)
+  if (view === 'regions') {
+    for (const [a, b, , , , lines] of D.adj) {
+      if (reg[a] === reg[b] || trimmed(G, a) || trimmed(G, b)) continue;
+      const h = L.polyline(lines, { renderer, weight: 14, opacity: 0, interactive: true, className: 'bhandle' });
+      h.on('mousedown', (e) => startBorderDrag(reg[a], reg[b], e));
+      h.on('mouseover', () => { if (!borderDrag) document.getElementById('map').classList.add('grab'); });
+      h.on('mouseout', () => document.getElementById('map').classList.remove('grab'));
+      layers.push(h);
+    }
+  }
+  borderLayer = L.layerGroup(layers).addTo(map);
 }
+
+// ---------- גרירת גבול ----------
+// תופסים גבול בין שתי שכונות וגוררים: כל בלוק שהעכבר נכנס אליו בצד השני עובר לשכונה
+// "הדוחפת", בתנאי שהוא נוגע בה ושהשכונה שממנה הוא יוצא נשארת רציפה.
+// הצד הדוחף נקבע לפי הכיוון הראשון של הגרירה.
+let borderDrag = null;
+const bbox = B.map((b) => { let a = Infinity, c = -Infinity, d = Infinity, e = -Infinity; for (const [la, lo] of b[7][0]) { a = Math.min(a, la); c = Math.max(c, la); d = Math.min(d, lo); e = Math.max(e, lo); } return [a, c, d, e]; });
+function inRing(r, la, lo) {
+  let ins = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const [ai, oi] = r[i], [aj, oj] = r[j];
+    if ((ai > la) !== (aj > la) && lo < (oj - oi) * (la - ai) / (aj - ai) + oi) ins = !ins;
+  }
+  return ins;
+}
+function blockAt(ll_) {
+  for (let c = 0; c < n; c++) {
+    const [a, b, d, e] = bbox[c];
+    if (ll_.lat < a || ll_.lat > b || ll_.lng < d || ll_.lng > e) continue;
+    const rr = B[c][7];
+    if (inRing(rr[0], ll_.lat, ll_.lng) && !rr.slice(1).some((h) => inRing(h, ll_.lat, ll_.lng))) return c;
+  }
+  return -1;
+}
+function startBorderDrag(ra, rb, e) {
+  if (editing && painting) return;
+  L.DomEvent.stop(e);
+  borderDrag = { pair: [ra, rb], push: -1, moved: 0 };
+  map.dragging.disable();
+  document.getElementById('map').classList.add('dragging-border');
+}
+map.on('mousemove', (e) => {
+  if (!borderDrag) return;
+  const c = blockAt(e.latlng);
+  if (c < 0) return;
+  const G = prep(st);
+  if (trimmed(G, c)) return;
+  const [ra, rb] = borderDrag.pair;
+  if (borderDrag.push < 0) {
+    // הבלוק הראשון שנכנסים אליו קובע את הכיוון: הגבול זז לתוכו
+    if (reg[c] === ra) borderDrag.push = rb; else if (reg[c] === rb) borderDrag.push = ra; else return;
+  }
+  const push = borderDrag.push, victim = push === ra ? rb : ra;
+  if (reg[c] !== victim) return;
+  if (!G.N[c].some((m) => reg[m] === push && !trimmed(G, m))) return;
+  if (!Partition.removable(G, reg, c)) return;
+  reg[c] = push;
+  // בלוקים קטומים שמשויכים לבלוק הזה הולכים איתו
+  if (G.host) for (let q = 0; q < n; q++) if (G.host[q] === c) reg[q] = push;
+  borderDrag.moved++;
+  paintCells(); drawBorders(G);
+});
+document.addEventListener('mouseup', () => {
+  if (!borderDrag) return;
+  const moved = borderDrag.moved;
+  borderDrag = null;
+  map.dragging.enable();
+  document.getElementById('map').classList.remove('dragging-border', 'grab');
+  if (moved) { edited = true; renderAll(); }
+});
 
 // ---------- שמות לפי רחובות ----------
 const streetTotal = new Map();
-D.cells.forEach((c) => c[5].forEach(([s, len]) => streetTotal.set(s, (streetTotal.get(s) || 0) + len)));
+B.forEach((c) => c[6].forEach(([s, len]) => streetTotal.set(s, (streetTotal.get(s) || 0) + len)));
 function regionInfo(G, k) {
   const info = Array.from({ length: k }, () => ({ streets: new Map(), sx: 0, sy: 0, sw: 0, cells: [] }));
   for (let c = 0; c < n; c++) {
     const r = info[reg[c]];
     r.cells.push(c);
-    const w = G.Ar[c];
+    const w = trimmed(G, c) ? 0 : G.Ar[c];
     r.sx += G.X[c] * w; r.sy += G.Y[c] * w; r.sw += w;
-    for (const [s, len] of D.cells[c][5]) r.streets.set(s, (r.streets.get(s) || 0) + len);
+    for (const [s, len] of B[c][6]) r.streets.set(s, (r.streets.get(s) || 0) + len);
   }
   info.forEach((r) => {
     // רחוב "מאפיין": ארוך בתוך השכונה, ורובו נמצא בה
@@ -365,7 +475,7 @@ function regionInfo(G, k) {
     r.names = sc.slice(0, 2).map(([s]) => D.streets[s]).filter(Boolean);
     const cx = r.sx / r.sw, cy = r.sy / r.sw;
     let best = r.cells[0], bd = Infinity;
-    for (const c of r.cells) { const d = (G.X[c] - cx) ** 2 + (G.Y[c] - cy) ** 2; if (d < bd) { bd = d; best = c; } }
+    for (const c of r.cells) { if (trimmed(G, c)) continue; const d = (G.X[c] - cx) ** 2 + (G.Y[c] - cy) ** 2; if (d < bd) { bd = d; best = c; } }
     r.anchor = best;
   });
   return info;
@@ -374,8 +484,7 @@ function regionInfo(G, k) {
 function drawLabels(info) {
   labelLayer.clearLayers();
   info.forEach((r, j) => {
-    const c = D.cells[r.anchor];
-    const pos = ll(g.x0 + (c[0] + 0.5) * CS, g.y0 + (c[1] + 0.5) * CS);
+    const pos = blockLayers[r.anchor].getBounds().getCenter();
     const m = L.marker(pos, { icon: L.divIcon({ className: 'lbl', html: `<div style="background:${regColor(j)}">${j + 1}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false });
     m.on('click', () => toggleSel(j));
     labelLayer.addLayer(m);
@@ -387,7 +496,7 @@ const fmt = (x) => Math.round(x).toLocaleString('he-IL');
 const pct = (x) => (x >= 0 ? '+' : '−') + Math.abs(Math.round(x * 100)) + '%';
 let lastInfo = null;
 function renderAll() {
-  const G = prep(st.inh);
+  const G = prep(st);
   const k = st.k;
   const sum = Partition.summary(G, reg, k);
   colorRegions(G, k);
@@ -398,12 +507,16 @@ function renderAll() {
   drawLabels(info);
   document.getElementById('mP').textContent = '±' + Math.round(sum.maxP * 100) + '%';
   document.getElementById('mA').textContent = '±' + Math.round(sum.maxA * 100) + '%';
-  document.getElementById('mC').textContent = sum.cutKm.toFixed(0) + ' ק"מ';
+  document.getElementById('mC').textContent = Math.round(sum.strongShare * 100) + '%';
+  document.getElementById('mC').title = `${sum.cutKm.toFixed(1)} ק"מ גבולות בין שכונות`;
   const At = G.At / k / 1e6;
   document.getElementById('target').textContent =
-    `יעד לשכונה: כ-${fmt(G.Pt / k)} תושבים ו-${At.toFixed(2)} קמ"ר${st.inh ? ' מיושבים' : ''}. ` +
+    `יעד לשכונה: כ-${fmt(G.Pt / k)} תושבים ו-${At.toFixed(2)} קמ"ר${st.inh || G.keep ? ' מיושבים' : ''}. ` +
     `"סטייה" = כמה השכונה רחוקה מהיעד.`;
-  document.getElementById('areaH').textContent = st.inh ? 'קמ"ר מיושב' : 'קמ"ר';
+  document.getElementById('areaH').textContent = st.inh || G.keep ? 'קמ"ר מיושב' : 'קמ"ר';
+  document.getElementById('trimInfo').textContent = G.keep
+    ? `נשארו ${(G.At / 1e6).toFixed(1)} מתוך ${D.source.area_km2} קמ"ר. בשטח הקטום גרים כ-${fmt(G.trimPop)} תושבים (${(G.trimPop / G.Pt * 100).toFixed(1)}%), והם נספרים בשכונה הקרובה.`
+    : '';
   const tb = document.getElementById('tbody');
   tb.innerHTML = '';
   for (let j = 0; j < k; j++) {
@@ -412,12 +525,17 @@ function renderAll() {
     tr.className = 'row' + (j === selected ? ' sel' : '');
     const big = (v) => Math.abs(v) > 0.15 ? ' big' : '';
     tr.innerHTML = `<td><span class="sw" style="background:${regColor(j)}">${j + 1}</span></td>
-      <td><div class="nm" title="${info[j].names.join(', ')}">${comps > 1 ? '<span class="warn" title="השכונה מנותקת">⚠ מנותקת</span> ' : ''}${info[j].names.join(', ') || '—'}</div></td>
-      <td class="num">${fmt(sum.pops[j])}</td><td class="num"><span class="dev${big(sum.pd[j])}">${pct(sum.pd[j])}</span></td>
-      <td class="num">${(sum.areas[j] / 1e6).toFixed(2)}</td><td class="num"><span class="dev${big(sum.ad[j])}">${pct(sum.ad[j])}</span></td>`;
+      <td><input class="nmi" aria-label="שם שכונה ${j + 1}">${comps > 1 ? '<div class="st warn">⚠ השכונה מנותקת</div>' : ''}<div class="st" title="${info[j].names.join(', ')}">${info[j].names.join(', ')}</div></td>
+      <td class="num">${(sum.areas[j] / 1e6).toFixed(2)}<small class="dev${big(sum.ad[j])}">${pct(sum.ad[j])}</small></td>
+      <td class="num">${fmt(sum.pops[j])}<small class="dev${big(sum.pd[j])}">${pct(sum.pd[j])}</small></td>`;
+    const inp = tr.querySelector('input');
+    inp.value = regionName(j);
+    inp.addEventListener('click', (e) => e.stopPropagation());
+    inp.addEventListener('change', () => { names[j] = inp.value.trim(); if (!names[j]) inp.value = regionName(j); writeHash(); });
     tr.onclick = () => toggleSel(j);
     tb.appendChild(tr);
   }
+  document.getElementById('tfoot').innerHTML = `<tr><td></td><td>סה"כ</td><td class="num">${(G.At / 1e6).toFixed(2)}</td><td class="num">${fmt(G.Pt)}</td></tr>`;
   drawPareto(sum);
   writeHash();
   if (!fitted) { fitted = true; requestAnimationFrame(() => { map.invalidateSize(); map.fitBounds(bndLayer.getBounds(), { padding: [10, 10] }); }); }
@@ -452,7 +570,7 @@ function startPareto() {
   };
   setTimeout(step, 30);
 }
-function currentSum() { return Partition.summary(prep(st.inh), reg, st.k); }
+function currentSum() { return Partition.summary(prep(st), reg, st.k); }
 
 function drawPareto(sum) {
   const svg = document.getElementById('pareto');
@@ -501,19 +619,25 @@ const kseg = document.getElementById('kseg');
   b.onclick = () => { st.k = k; selected = -1; syncControls(); recompute(true); };
   kseg.appendChild(b);
 });
-const $a = document.getElementById('alpha'), $m = document.getElementById('mu'), $i = document.getElementById('inh');
+const $a = document.getElementById('alpha'), $m = document.getElementById('mu'), $to = document.getElementById('trimOn'), $t = document.getElementById('trim');
+let lastTrim = 0;
 function syncControls() {
   kseg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.k === st.k));
   $a.value = Math.round(st.alpha * 100);
   document.getElementById('alphaV').textContent = `${Math.round(st.alpha * 100)}% תושבים · ${100 - Math.round(st.alpha * 100)}% שטח`;
   $m.value = st.mu;
   document.getElementById('muV').textContent = ['חופשי', 'מעט', 'בינוני', 'חזק', 'חזק מאוד'][Math.min(4, Math.round(st.mu))];
-  $i.checked = st.inh;
+  $to.checked = st.trim >= 0;
+  if (st.trim >= 0) { lastTrim = st.trim; $t.value = st.trim; }
+  $t.disabled = st.trim < 0;
+  document.getElementById('trimCtl').style.opacity = st.trim < 0 ? 0.45 : 1;
+  document.getElementById('trimV').textContent = st.trim < 0 ? '' : st.trim === 0 ? 'אף אחד' : `עד ${st.trim}%`;
 }
 let deb = null;
 $a.addEventListener('input', () => { st.alpha = $a.value / 100; syncControls(); debounce(false); });
 $m.addEventListener('input', () => { st.mu = +$m.value; syncControls(); debounce(true); });
-$i.addEventListener('change', () => { st.inh = $i.checked; recompute(true); });
+$to.addEventListener('change', () => { st.trim = $to.checked ? lastTrim : -1; syncControls(); recompute(true); });
+$t.addEventListener('input', () => { st.trim = +$t.value; syncControls(); debounce(true); });
 function debounce(pareto) { clearTimeout(deb); deb = setTimeout(() => recompute(pareto), 180); }
 document.getElementById('reco').onclick = () => { st = Object.assign({}, RECO); selected = -1; syncControls(); recompute(true); };
 document.getElementById('again').onclick = () => { st.seed++; recompute(true); };
@@ -525,9 +649,11 @@ function recompute(pareto) {
   setTimeout(() => {
     reg = Int32Array.from(solveFor(st).reg);
     edited = false;
+    if (!keepNames) names = [];
+    keepNames = false;
     if (selected >= st.k) selected = -1;
     renderAll();
-    const pk = [st.k, st.mu, st.inh, st.seed].join('|');
+    const pk = paretoKey(st);
     if (pareto || pk !== lastParetoKey) { lastParetoKey = pk; startPareto(); } else setStatus('');
   }, 10);
 }
@@ -544,39 +670,35 @@ document.querySelectorAll('#viewseg button').forEach((b) => b.onclick = () => {
     ramp.innerHTML = 'תושבים לדונם: ' + ['<0.5', '0.5', '2', '4', '7', '11', '17+'].map((t, q) => `<i style="background:${r[q]}"></i>${q === 0 || q === 6 ? t : ''}`).join('');
     ramp.style.display = 'flex';
   } else ramp.style.display = 'none';
-  paintCells(); drawBorders(prep(st.inh));
+  paintCells(); drawBorders(prep(st));
 });
 
 // ריחוף ועריכה
 const hover = document.getElementById('hover');
 let painting = false;
-map.on('mousemove', (e) => {
-  const c = cellAt(e.latlng.lat, e.latlng.lng);
-  if (c < 0) { hover.innerHTML = ''; return; }
-  const d = D.cells[c];
+function hoverBlock(c) {
+  const d = B[c];
   const st_ = D.stats.find((s) => s.id === d[4]);
-  const streets = d[5].map(([s]) => D.streets[s]).filter(Boolean).slice(0, 2).join(', ');
-  hover.innerHTML = `<b>שכונה ${reg[c] + 1}</b>${streets ? ' · ' + streets : ''}<br>בריבוע הזה (10 דונם): כ-${Math.round(d[3])} תושבים<br>אזור סטטיסטי ${d[4]}${st_ && st_.pop ? '' : ' (ללא תושבים)'}`;
+  const streets = d[6].map(([s]) => D.streets[s]).filter(Boolean).slice(0, 2).join(', ');
+  hover.innerHTML = `<b>שכונה ${reg[c] + 1}</b>${streets ? ' · ' + streets : ''}<br>בבלוק הזה (${fmt(d[2] / 1000)} דונם, מתוכם ${fmt(d[8] / 1000)} מיושבים): כ-${fmt(d[3])} תושבים${trimmed(prep(st), c) ? ' · <b>קטום</b>' : ''}<br>אזור סטטיסטי ${d[4]}${st_ && st_.pop ? '' : ' (ללא תושבים)'}`;
   if (painting) paintAt(c);
-});
+}
 map.on('mouseout', () => { hover.innerHTML = ''; });
-map.on('click', (e) => {
+function blockClick(c) {
   if (editing) return;
-  const c = cellAt(e.latlng.lat, e.latlng.lng);
-  if (c >= 0 && view === 'regions') toggleSel(reg[c]);
-});
-map.on('mousedown', (e) => {
+  if (view === 'regions') toggleSel(reg[c]);
+}
+function blockDown(c, e) {
   if (!editing) return;
-  const c = cellAt(e.latlng.lat, e.latlng.lng);
-  if (c < 0) return;
+  L.DomEvent.stop(e);
   if (selected < 0) { select(reg[c]); return; }
   painting = true; paintAt(c);
-});
+}
 document.addEventListener('mouseup', () => { if (painting) { painting = false; edited = true; renderAll(); } });
 function paintAt(c) {
   if (reg[c] === selected) return;
   reg[c] = selected;
-  cellLayers[c].setStyle({ fillColor: regColor(selected), fillOpacity: 0.7 });
+  blockLayers[c].setStyle({ fillColor: regColor(selected), fillOpacity: 0.7 });
 }
 document.getElementById('edit').onclick = (e) => {
   editing = !editing;
@@ -589,14 +711,19 @@ document.getElementById('edit').onclick = (e) => {
 
 // ---------- שיתוף וייצוא ----------
 function writeHash() {
-  let h = `k=${st.k}&a=${st.alpha.toFixed(2)}&m=${st.mu}&i=${st.inh ? 1 : 0}&s=${st.seed}`;
+  let h = `k=${st.k}&a=${st.alpha.toFixed(2)}&m=${st.mu}&i=${st.inh ? 1 : 0}&t=${st.trim}&s=${st.seed}`;
   if (edited) h += '&r=' + Array.from(reg, (v) => v.toString(36)).join('');
+  if (names.some(Boolean)) h += '&n=' + encodeURIComponent(Array.from({ length: st.k }, (_, j) => names[j] || '').join('|'));
   history.replaceState(null, '', '#' + h);
 }
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   if (!p.has('k')) return null;
-  st = { k: Math.min(13, Math.max(10, +p.get('k') || 12)), alpha: Math.min(1, Math.max(0, +p.get('a'))), mu: +p.get('m') || 0, inh: p.get('i') === '1', seed: +p.get('s') || 1 };
+  st = { k: Math.min(13, Math.max(10, +p.get('k') || 12)), alpha: Math.min(1, Math.max(0, +p.get('a'))), mu: +p.get('m') || 0, inh: p.get('i') === '1', seed: +p.get('s') || 1,
+    // קישורים ישנים (בלי t) נפתחים כמו שהיו: בלי קיטום
+    trim: p.has('t') ? Math.min(10, +p.get('t')) : -1 };
+  if (!(st.trim >= -1)) st.trim = -1;
+  names = p.has('n') ? p.get('n').split('|') : [];
   const r = p.get('r');
   return r && r.length === n ? Int32Array.from(r, (ch) => Math.min(st.k - 1, parseInt(ch, 36) || 0)) : null;
 }
@@ -606,14 +733,13 @@ document.getElementById('share').onclick = async () => {
   catch { setStatus('לא הצלחתי להעתיק. הקישור נמצא בשורת הכתובת.'); }
 };
 document.getElementById('export').onclick = () => {
-  const G = prep(st.inh), sum = Partition.summary(G, reg, st.k);
+  const G = prep(st), sum = Partition.summary(G, reg, st.k);
   const feats = [];
   for (let j = 0; j < st.k; j++) {
     const polys = [];
     for (let c = 0; c < n; c++) if (reg[c] === j) {
-      const [i, jj] = D.cells[c];
-      const ring = [corner(i, jj), corner(i + 1, jj), corner(i + 1, jj + 1), corner(i, jj + 1), corner(i, jj)].map(([la, lo]) => [+lo.toFixed(6), +la.toFixed(6)]);
-      polys.push([ring]);
+      const rings = B[c][7].map((r) => r.map(([la, lo]) => [lo, la]));
+      polys.push(rings);
     }
     feats.push({ type: 'Feature', properties: { shchuna: j + 1, streets: lastInfo[j].names.join(', '), population: Math.round(sum.pops[j]), area_km2: +(sum.areas[j] / 1e6).toFixed(3) }, geometry: { type: 'MultiPolygon', coordinates: polys } });
   }
@@ -621,12 +747,134 @@ document.getElementById('export').onclick = () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `shchunot-${st.k}.geojson`; a.click();
 };
 
+// ---------- ייצוא ל-PDF ----------
+// בונה דוח להדפסה (מפה כ-SVG וקטורי, טבלה, הגדרות ושיטה) ופותח את חלון ההדפסה,
+// שבו בוחרים "שמירה כ-PDF". המפה נבנית מחדש בלי אריחי רקע, כדי שתהיה חדה בכל גודל.
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function reportMap(G, info) {
+  const W = 760, H = 640, pad = 14;
+  let la0 = Infinity, la1 = -Infinity, lo0 = Infinity, lo1 = -Infinity;
+  D.boundary.forEach((r) => r.forEach(([la, lo]) => { la0 = Math.min(la0, la); la1 = Math.max(la1, la); lo0 = Math.min(lo0, lo); lo1 = Math.max(lo1, lo); }));
+  const kx = Math.cos(((la0 + la1) / 2) * Math.PI / 180);
+  const sc = Math.min((W - 2 * pad) / ((lo1 - lo0) * kx), (H - 2 * pad) / (la1 - la0));
+  const ox = (W - (lo1 - lo0) * kx * sc) / 2, oy = (H - (la1 - la0) * sc) / 2;
+  const P = ([la, lo]) => ((lo - lo0) * kx * sc + ox).toFixed(1) + ',' + ((la1 - la) * sc + oy).toFixed(1);
+  const path = (rings) => rings.map((r) => 'M' + r.map(P).join('L') + 'Z').join('');
+  const line = (ls) => ls.map((l) => 'M' + l.map(P).join('L')).join('');
+  const pl = PAL_LIGHT;
+  let h = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%">`;
+  B.forEach((b, c) => {
+    const t = trimmed(G, c);
+    h += `<path d="${path(b[7])}" fill="${pl[colorOf[reg[c]] % 8]}" fill-opacity="${t ? 0.13 : 0.55}" fill-rule="evenodd" stroke="none"/>`;
+  });
+  let strong = '', weak = '';
+  for (const [a, b, , , kind, lines] of D.adj) {
+    if (reg[a] === reg[b] || trimmed(G, a) || trimmed(G, b)) continue;
+    if (KIND_STRONG.has(D.kinds[kind])) strong += line(lines); else weak += line(lines);
+  }
+  h += `<path d="${strong}" fill="none" stroke="#1f1e1b" stroke-width="2.2" stroke-linejoin="round"/>`;
+  h += `<path d="${weak}" fill="none" stroke="#1f1e1b" stroke-width="1.6" stroke-dasharray="5 3"/>`;
+  h += `<path d="${D.rail.length ? line(D.rail) : ''}" fill="none" stroke="#55534c" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  h += `<path d="${path(D.boundary)}" fill="none" stroke="#1f1e1b" stroke-width="2.4"/>`;
+  info.forEach((r, j) => {
+    const ll_ = blockLayers[r.anchor].getBounds().getCenter();
+    const [x, y] = P([ll_.lat, ll_.lng]).split(',');
+    h += `<circle cx="${x}" cy="${y}" r="11" fill="${pl[colorOf[j] % 8]}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${+y + 4.5}" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fff" font-family="Assistant, Arial, sans-serif">${j + 1}</text>`;
+  });
+  return h + '</svg>';
+}
+function exportPdf() {
+  const G = prep(st), k = st.k, sum = Partition.summary(G, reg, k), info = lastInfo;
+  writeHash();
+  const today = new Date().toLocaleDateString('he-IL');
+  const pl = PAL_LIGHT;
+  const big = (v) => Math.abs(v) > 0.15 ? ' class="big"' : '';
+  let rows = '';
+  for (let j = 0; j < k; j++) {
+    rows += `<tr><td><span class="sw" style="background:${pl[colorOf[j] % 8]}">${j + 1}</span></td><td><b>${esc(regionName(j))}</b><div class="st">${esc(info[j].names.join(', '))}</div></td>
+      <td class="n">${(sum.areas[j] / 1e6).toFixed(2)}</td><td class="n"${big(sum.ad[j])}>${pct(sum.ad[j])}</td>
+      <td class="n">${fmt(sum.pops[j])}</td><td class="n"${big(sum.pd[j])}>${pct(sum.pd[j])}</td></tr>`;
+  }
+  const trimTxt = G.keep
+    ? `לפני החלוקה נקטמו השטחים הלא מיושבים${st.trim > 0 ? ` (מותר עד ${st.trim}% מהתושבים בשטח הקטום)` : ''}. נשארו ${(G.At / 1e6).toFixed(2)} קמ"ר מיושבים. בשטח הקטום גרים כ-${fmt(G.trimPop)} תושבים (${(G.trimPop / G.Pt * 100).toFixed(1)}%), והם נספרים בשכונה הקרובה.`
+    : 'החלוקה נעשתה על כל שטח השיפוט, בלי קיטום.';
+  const doc = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<title>חלוקת פרדס חנה-כרכור ל-${k} שכונות</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 14mm 12mm; }
+body { font-family: Assistant, Arial, sans-serif; color: #1f1e1b; margin: 0; font-size: 11.5pt; }
+h1 { font-size: 19pt; margin: 0 0 2mm; } h2 { font-size: 13pt; margin: 6mm 0 2mm; }
+.meta { color: #55534c; font-size: 10pt; }
+.tiles { display: flex; gap: 4mm; margin: 4mm 0; }
+.tile { flex: 1; border: 1px solid #ddd; border-radius: 3mm; padding: 2mm 3mm; }
+.tile b { display: block; font-size: 16pt; }
+.tile span { font-size: 9.5pt; color: #55534c; }
+.map { border: 1px solid #ddd; border-radius: 3mm; padding: 2mm; break-inside: avoid; }
+.legend { font-size: 9.5pt; color: #55534c; margin-top: 1mm; }
+table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+th { text-align: right; border-bottom: 1.5px solid #1f1e1b; padding: 1.5mm; font-size: 9.5pt; }
+td { border-bottom: 1px solid #e3e1da; padding: 1.5mm; vertical-align: middle; }
+tr { break-inside: avoid; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.big { color: #c0392b; font-weight: 700; }
+tfoot td { font-weight: 800; border-bottom: 0; }
+.sw { display: inline-flex; align-items: center; justify-content: center; width: 6.5mm; height: 6.5mm; border-radius: 50%; color: #fff; font-weight: 800; font-size: 9.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.st { font-size: 9pt; color: #8a877d; }
+svg, .sw { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+ul { padding-inline-start: 5mm; margin: 0; } li { margin-bottom: 1mm; font-size: 10pt; color: #33312c; }
+.page2 { break-before: page; }
+a { color: #2a78d6; word-break: break-all; }
+</style></head><body>
+<h1>חלוקת פרדס חנה-כרכור ל-${k} שכונות</h1>
+<div class="meta">טיוטה לדיון · הופק ב-${today} · ${fmt(G.Pt)} תושבים (אומדן 1/10/2026)</div>
+<div class="tiles">
+  <div class="tile"><b>±${Math.round(sum.maxP * 100)}%</b><span>סטייה מקסימלית בתושבים</span></div>
+  <div class="tile"><b>±${Math.round(sum.maxA * 100)}%</b><span>סטייה מקסימלית בשטח${G.keep ? ' המיושב' : ''}</span></div>
+  <div class="tile"><b>${Math.round(sum.strongShare * 100)}%</b><span>מהגבולות לאורך כביש ראשי, ואדי או חורשה (${sum.cutKm.toFixed(1)} ק"מ גבולות)</span></div>
+</div>
+<div class="map">${reportMap(G, info)}
+<div class="legend">קו מלא עבה: גבול שטח השיפוט וגבול בין שכונות לאורך כביש ראשי או מאסף, ואדי, חורשה או מסילה. קו מקווקו: גבול לאורך רחוב שכונתי, סמטה או שביל. צבע חלש: שטח קטום (לא מיושב) שמשויך לשכונה הקרובה.</div></div>
+<div class="page2">
+<h2>השכונות</h2>
+<table><thead><tr><th>מס'</th><th>שם השכונה ורחובות מרכזיים</th><th>שטח (קמ"ר${G.keep ? ' מיושב' : ''})</th><th>סטייה</th><th>תושבים</th><th>סטייה</th></tr></thead>
+<tbody>${rows}</tbody>
+<tfoot><tr><td></td><td>סה"כ · יעד לשכונה: כ-${fmt(G.Pt / k)} תושבים ו-${(G.At / k / 1e6).toFixed(2)} קמ"ר</td><td class="n">${(G.At / 1e6).toFixed(2)}</td><td></td><td class="n">${fmt(G.Pt)}</td><td></td></tr></tfoot></table>
+<h2>הגדרות החלוקה</h2>
+<ul>
+<li>מספר שכונות: ${k}. משקל: ${Math.round(st.alpha * 100)}% שוויון בתושבים, ${100 - Math.round(st.alpha * 100)}% שוויון בשטח. מחיר גבולות: ${st.mu}. זרע: ${st.seed}.${edited ? ' <b>החלוקה נערכה ידנית.</b>' : ''}</li>
+<li>${trimTxt}</li>
+<li>קישור לחלוקה הזו בכלי (אפשר להמשיך לערוך ממנו): <a href="${esc(location.href)}">${esc(location.href)}</a></li>
+</ul>
+<h2>מאיפה הנתונים ואיך זה מחושב</h2>
+<ul>
+<li><b>תושבים:</b> מפקד האוכלוסין 2022 של הלמ"ס לפי 12 אזורים סטטיסטיים, מפוזר בתוך כל אזור על מבני המגורים לפי שטח הבנייה (OpenStreetMap), ומוגדל באופן אחיד לאומדן העדכני (47,194, ביטוח לאומי, 1/10/2026).</li>
+<li><b>גבולות טבעיים:</b> השטח מחולק לבלוקים שתחומים ברחובות, ואדיות, שולי חורשות ופארקים, המסילה וגבול המועצה. כל שכונה היא אוסף רציף של בלוקים שלמים, ולכן כל גבול עובר לאורך אחד מהם. כביש ראשי, ואדי וחורשה הם גבול מועדף, רחוב קטן או שביל פחות.</li>
+<li><b>שטח:</b> נספר השטח המיושב, עד 30 מטר מבתי מגורים.</li>
+<li><b>מגבלות:</b> הגידול מאז 2022 מחולק באופן אחיד. מספר הקומות כמעט לא ממופה. רחוב או ואדי שלא מופו ב-OpenStreetMap לא יכולים לשמש גבול. החלוקה לא מתחשבת בזהות קהילתית, בהיסטוריה של שכונות או במוסדות. אלה שיקולים שנשארים לבני האדם.</li>
+</ul></div>
+</body></html>`;
+  let fr = document.getElementById('pdfFrame');
+  if (fr) fr.remove();
+  fr = document.createElement('iframe');
+  fr.id = 'pdfFrame';
+  fr.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
+  document.body.appendChild(fr);
+  fr.contentDocument.open(); fr.contentDocument.write(doc); fr.contentDocument.close();
+  const go = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { setStatus('לא הצלחתי לפתוח את חלון ההדפסה.'); } };
+  // מחכים לגופן, אחרת העברית מודפסת בגופן ברירת מחדל
+  const fonts = fr.contentDocument.fonts;
+  Promise.race([fonts ? fonts.ready : Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => setTimeout(go, 150));
+  setStatus('נפתח חלון ההדפסה. בחרו "שמירה כ-PDF" (Save as PDF).');
+}
+document.getElementById('pdf').onclick = exportPdf;
+
 // ---------- התחלה ----------
 const fromHash = readHash();
 syncControls();
 if (fromHash) {
   setStatus('מחשב…');
-  setTimeout(() => { reg = fromHash; edited = true; renderAll(); lastParetoKey = [st.k, st.mu, st.inh, st.seed].join('|'); startPareto(); }, 10);
+  setTimeout(() => { reg = fromHash; edited = true; renderAll(); lastParetoKey = paretoKey(st); startPareto(); }, 10);
 } else recompute(true);
 </script>
 </body>

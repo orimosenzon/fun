@@ -13,6 +13,8 @@ op() { # op <file> <overpass query>, עם ניסיונות חוזרים על ש�
 op boundary.json '[out:json][timeout:240];rel(1392849);out geom;'
 op buildings.json '[out:json][timeout:180];way["building"](32.444,34.941,32.506,35.015);out tags geom;'
 op streets.json '[out:json][timeout:120];(way["highway"]["name"](32.444,34.941,32.506,35.015);way["railway"="rail"](32.444,34.941,32.506,35.015););out tags geom;'
+# גבולות טבעיים לבלוקים: כל הדרכים (גם בלי שם), ואדיות ותעלות, חורשות ופארקים
+op barriers.json '[out:json][timeout:180];(way["highway"](32.444,34.941,32.506,35.015);way["waterway"](32.444,34.941,32.506,35.015);way["natural"="wood"](32.444,34.941,32.506,35.015);way["landuse"="forest"](32.444,34.941,32.506,35.015);way["leisure"="park"](32.444,34.941,32.506,35.015);rel["natural"="wood"](32.444,34.941,32.506,35.015);rel["landuse"="forest"](32.444,34.941,32.506,35.015););out tags geom;'
 # מפקד 2022 לפי אזורים סטטיסטיים (סמל יישוב 7800)
 curl -s -G --max-time 60 'https://services.arcgis.com/b6zSqPB0TQc3mBgU/arcgis/rest/services/מפקד_2022/FeatureServer/0/query' \
   --data-urlencode f=geojson --data-urlencode "where=SEMEL_YISHUV=7800" --data-urlencode outSR=4326 \

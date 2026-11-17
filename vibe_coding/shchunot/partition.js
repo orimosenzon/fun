@@ -1,12 +1,16 @@
-// חלוקת רשת תאים ל-k שכונות רציפות, עם איזון בין אוכלוסייה לשטח.
+// חלוקת גרף של בלוקים ל-k שכונות רציפות, עם איזון בין אוכלוסייה לשטח.
+// בלוק = שטח שתחום בגבולות טבעיים (רחובות, ואדיות, שולי חורשות, מסילה; ראו build_data.py).
+// שכונה היא אוסף של בלוקים שלמים, ולכן כל גבול בין שכונות עובר לאורך גבול טבעי.
+// לכל שכנות יש "מחיר": אורך הגבול המשותף כפול משקל לפי סוגו (כביש ראשי, ואדי וחורשה
+// זולים, סמטה יקרה), כך שהאלגוריתם מעדיף לחתוך לאורך גבולות בולטים.
 // עובד גם בדפדפן (window.Partition) וגם ב-Node (module.exports).
 //
 // שלבים:
 //  1. זרעים בשיטת k-means++ משוקללת (מחולל אקראי עם seed, כדי שהתוצאה תהיה ניתנת לשחזור).
-//  2. דיאגרמת חזקה מאוזנת: כל תא הולך למרכז שממזער d² - b_j, וה-b_j מתכווננים
-//     עד שלכל שכונה "משקל" דומה (ערבוב של אוכלוסייה ושטח לפי alpha). זה נותן אזורים קומפקטיים.
+//  2. דיאגרמת חזקה מאוזנת: כל בלוק הולך למרכז שממזער d² - b_j, וה-b_j מתכווננים
+//     עד שלכל שכונה "משקל" דומה (ערבוב של אוכלוסייה ושטח לפי alpha).
 //  3. תיקון רציפות: חלקים מנותקים מוצמדים לשכנה.
-//  4. חיפוש מקומי: העברת תאי גבול בין שכונות כשזה משפר את פונקציית המטרה,
+//  4. חיפוש מקומי: העברת בלוקי גבול בין שכונות כשזה משפר את פונקציית המטרה,
 //     בלי לנתק אף שכונה.
 (function (root) {
   'use strict';
@@ -19,32 +23,104 @@
     };
   }
 
-  // מכין מבנה רשת מהנתונים הגולמיים
-  // opts.inhabitedOnly: שטח של אזורים סטטיסטיים בלי תושבים (תעשייה, שטח פתוח) לא נספר בשטח
+  // בונה גרף: nodes = [{x, y, area, pop}], edges = [[a, b, len, cost]]
+  function graph(nodes, edges, areaOf) {
+    const n = nodes.length;
+    const X = new Float64Array(n), Y = new Float64Array(n), A = new Float64Array(n), Ar = new Float64Array(n), P = new Float64Array(n);
+    nodes.forEach((b, q) => { X[q] = b.x; Y[q] = b.y; Ar[q] = b.area; A[q] = areaOf ? areaOf(q) : b.area; P[q] = b.pop; });
+    const N = Array.from({ length: n }, () => []), W = Array.from({ length: n }, () => []), Ln = Array.from({ length: n }, () => []);
+    for (const [a, b, len, cost] of edges) {
+      N[a].push(b); W[a].push(cost); Ln[a].push(len);
+      N[b].push(a); W[b].push(cost); Ln[b].push(len);
+    }
+    let Pt = 0, At = 0;
+    for (let q = 0; q < n; q++) { Pt += P[q]; At += A[q]; }
+    return { n, X, Y, A, Ar, P, N, W, Ln, Pt, At };
+  }
+  const nodesOf = (D) => D.blocks.map((b) => ({ x: b[0], y: b[1], area: b[2], pop: b[3] }));
+
+  // קיטום: אילו בלוקים נשארים בתחום החלוקה.
+  // trim = אחוז התושבים שמותר שיגורו בשטח הקטום. הבלוקים נקטמים מהדליל לצפוף:
+  // ב-0 נקטמים רק בלוקים בלי תושבים בכלל (חקלאות, תעשייה, שטח פתוח), ומעליו גם
+  // בלוקים דלילים. אחר כך חורים בתוך היישוב חוזרים פנימה: חור שגרים בו תמיד,
+  // וחור ריק רק אם הוא קטן (גן, מגרש, בית ספר). נשאר רק הרצף הגדול.
+  // בלוק קטום עדיין שייך לשכונה: לזו של הבלוק המיושב הקרוב. התושבים שלו נספרים, השטח לא.
+  const HOLE_MAX = 100000; // מ"ר
+  function trimMask(D, trim) {
+    const B = D.blocks, n = B.length;
+    const G = graph(nodesOf(D), D.adj);
+    const ord = [...Array(n).keys()].sort((a, b) => B[a][3] / B[a][2] - B[b][3] / B[b][2]);
+    const keep = new Uint8Array(n).fill(1);
+    let cum = 0;
+    for (const c of ord) {
+      if (B[c][3] > 0 && cum + B[c][3] > trim / 100 * G.Pt) break;
+      keep[c] = 0; cum += B[c][3];
+    }
+    const comps = (want) => {
+      const seen = new Uint8Array(n), out = [];
+      for (let c = 0; c < n; c++) {
+        if (keep[c] !== want || seen[c]) continue;
+        const q = [c]; seen[c] = 1;
+        for (let i = 0; i < q.length; i++) for (const m of G.N[q[i]]) if (keep[m] === want && !seen[m]) { seen[m] = 1; q.push(m); }
+        out.push(q);
+      }
+      return out;
+    };
+    for (const q of comps(0)) {
+      if (q.some((c) => B[c][5])) continue; // נוגע בגבול המועצה: לא חור
+      const area = q.reduce((s, c) => s + B[c][2], 0);
+      if (area <= HOLE_MAX || q.some((c) => B[c][3] > 0)) for (const c of q) keep[c] = 1;
+    }
+    const main = comps(1).sort((a, b) => b.length - a.length)[0];
+    keep.fill(0);
+    for (const c of main) keep[c] = 1;
+    return keep;
+  }
+
+  // opts.trim (0 ומעלה): קיטום שטחים לא מיושבים. G נשאר על כל הבלוקים (לתצוגה ולסיכום),
+  //   ו-G.sub הוא גרף הבלוקים שנשארו, שעליו פותרים.
+  // opts.inhabitedOnly: בלי קיטום, אבל שטח של אזורים סטטיסטיים בלי תושבים לא נספר.
   function prepare(D, opts) {
     opts = opts || {};
-    const n = D.cells.length;
-    const X = new Float64Array(n), Y = new Float64Array(n);
-    const A = new Float64Array(n), Ar = new Float64Array(n), P = new Float64Array(n);
-    const idx = new Map();
-    const cs = D.source.cell;
-    const empty = new Set(D.stats.filter((s) => !s.pop).map((s) => s.id));
-    D.cells.forEach((c, k) => {
-      X[k] = (c[0] + 0.5) * cs; Y[k] = (c[1] + 0.5) * cs;
-      Ar[k] = c[2]; A[k] = opts.inhabitedOnly && empty.has(c[4]) ? 0 : c[2]; P[k] = c[3];
-      idx.set(c[0] + ',' + c[1], k);
-    });
-    // שכנים: 4 צדדים, ו-8 לבדיקת טבעת
-    const N4 = [], N8 = [];
-    const d4 = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-    const d8 = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
-    D.cells.forEach((c) => {
-      N4.push(d4.map(([dx, dy]) => idx.has((c[0] + dx) + ',' + (c[1] + dy)) ? idx.get((c[0] + dx) + ',' + (c[1] + dy)) : -1));
-      N8.push(d8.map(([dx, dy]) => idx.has((c[0] + dx) + ',' + (c[1] + dy)) ? idx.get((c[0] + dx) + ',' + (c[1] + dy)) : -1));
-    });
-    let Pt = 0, At = 0;
-    for (let k = 0; k < n; k++) { Pt += P[k]; At += A[k]; }
-    return { n, X, Y, A, Ar, P, N4, N8, Pt, At, idx };
+    const nodes = nodesOf(D);
+    if (!(opts.trim >= 0)) {
+      const empty = new Set(D.stats.filter((s) => !s.pop).map((s) => s.id));
+      return graph(nodes, D.adj, opts.inhabitedOnly ? (q) => (empty.has(D.blocks[q][4]) ? 0 : D.blocks[q][2]) : null);
+    }
+    const keep = trimMask(D, opts.trim);
+    const n = nodes.length;
+    const kept = []; for (let c = 0; c < n; c++) if (keep[c]) kept.push(c);
+    const subOf = new Int32Array(n).fill(-1); kept.forEach((c, q) => { subOf[c] = q; });
+    // בלוק קטום → הבלוק המיושב הקרוב
+    const host = new Int32Array(n);
+    for (let c = 0; c < n; c++) {
+      if (keep[c]) { host[c] = c; continue; }
+      let best = -1, bd = Infinity;
+      for (const q of kept) { const d = (nodes[q].x - nodes[c].x) ** 2 + (nodes[q].y - nodes[c].y) ** 2; if (d < bd) { bd = d; best = q; } }
+      host[c] = best;
+    }
+    const settled = (q) => D.blocks[q][8];
+    const subNodes = kept.map((c) => Object.assign({}, nodes[c], { pop: 0, area: settled(c) }));
+    for (let c = 0; c < n; c++) subNodes[subOf[host[c]]].pop += nodes[c].pop;
+    const subEdges = D.adj.filter((e) => keep[e[0]] && keep[e[1]]).map((e) => [subOf[e[0]], subOf[e[1]], e[2], e[3]]);
+    // השטח שנספר הוא השטח המיושב בבלוק (רדיוס 30 מ' סביב בתים), כדי שפרדס עם משק אחד
+    // לא ייחשב כאילו כולו שכונה
+    const G = graph(nodes, D.adj, (q) => (keep[q] ? settled(q) : 0));
+    G.sub = graph(subNodes, subEdges);
+    G.keep = keep; G.host = host; G.subOf = subOf; G.trim = opts.trim;
+    G.trimPop = 0; G.trimArea = 0;
+    for (let c = 0; c < n; c++) if (!keep[c]) { G.trimPop += G.P[c]; G.trimArea += G.Ar[c]; }
+    return G;
+  }
+
+  const live = (G, c) => !G.keep || G.keep[c];
+  // מחיר גבול: מטר של רחוב שכונתי (משקל 3) לכל 100 מ' כמו צלע של תא ברשת הישנה
+  const CUT_SCALE = 450000;
+
+  function cutCost(G, reg) {
+    let cut = 0;
+    for (let c = 0; c < G.n; c++) G.N[c].forEach((m, q) => { if (m > c && reg[m] !== reg[c] && live(G, c) && live(G, m)) cut += G.W[c][q]; });
+    return cut;
   }
 
   function objective(G, reg, k, opt) {
@@ -54,11 +130,8 @@
     for (let j = 0; j < k; j++) {
       bal += opt.alpha * (pops[j] / Pt - 1) ** 2 + (1 - opt.alpha) * (areas[j] / At - 1) ** 2;
     }
-    let cut = 0;
-    for (let c = 0; c < G.n; c++) for (const m of G.N4[c]) if (m > c && reg[m] !== reg[c]) cut++;
-    return bal + opt.mu * cut / CUT_SCALE;
+    return bal + opt.mu * cutCost(G, reg) / CUT_SCALE;
   }
-  const CUT_SCALE = 1500;
 
   function loads(G, reg, k) {
     const pops = new Float64Array(k), areas = new Float64Array(k);
@@ -91,7 +164,7 @@
   function powerBalance(G, k, W, C) {
     const reg = new Int32Array(G.n);
     const b = new Float64Array(k);
-    const S = G.At / k; // סקאלת מרחק בריבוע
+    const S = G.At / k;
     const target = 1 / k;
     for (let it = 0; it < 120; it++) {
       for (let c = 0; c < G.n; c++) {
@@ -119,21 +192,21 @@
     return reg;
   }
 
+  // רכיבי קשירות של שכונה j (רק בלוקים שבתחום החלוקה)
   function components(G, reg, j) {
-    const seen = new Map();
+    const seen = new Uint8Array(G.n);
     const comps = [];
     for (let c = 0; c < G.n; c++) {
-      if (reg[c] !== j || seen.has(c)) continue;
-      const comp = [c]; seen.set(c, comps.length);
+      if (reg[c] !== j || seen[c] || !live(G, c)) continue;
+      const comp = [c]; seen[c] = 1;
       for (let q = 0; q < comp.length; q++) {
-        for (const m of G.N4[comp[q]]) if (m >= 0 && reg[m] === j && !seen.has(m)) { seen.set(m, comps.length); comp.push(m); }
+        for (const m of G.N[comp[q]]) if (reg[m] === j && !seen[m] && live(G, m)) { seen[m] = 1; comp.push(m); }
       }
       comps.push(comp);
     }
     return comps;
   }
 
-  // מצמיד חלקים מנותקים לשכנה הגדולה. מחזיר רשימת שכונות ריקות (אם יש).
   function fixContiguity(G, reg, k) {
     for (let round = 0; round < 6; round++) {
       let changed = false;
@@ -143,7 +216,7 @@
         comps.sort((a, b) => b.length - a.length);
         for (let q = 1; q < comps.length; q++) {
           const cnt = new Map();
-          for (const c of comps[q]) for (const m of G.N4[c]) if (m >= 0 && reg[m] !== j) cnt.set(reg[m], (cnt.get(reg[m]) || 0) + 1);
+          for (const c of comps[q]) G.N[c].forEach((m, e) => { if (reg[m] !== j) cnt.set(reg[m], (cnt.get(reg[m]) || 0) + G.Ln[c][e]); });
           let best = -1, bv = -1;
           for (const [r, v] of cnt) if (v > bv) { bv = v; best = r; }
           if (best >= 0) { for (const c of comps[q]) reg[c] = best; changed = true; }
@@ -153,32 +226,20 @@
     }
   }
 
-  // האם הסרת c מהשכונה שלה משאירה אותה רציפה?
+  // האם הוצאת c מהשכונה שלה משאירה אותה רציפה?
   function removable(G, reg, c) {
     const j = reg[c];
-    const ring = G.N8[c].map((m) => m >= 0 && reg[m] === j);
-    // שכני 4 באותה שכונה: אינדקסים זוגיים בטבעת
-    let same4 = 0; for (let q = 0; q < 8; q += 2) if (ring[q]) same4++;
-    if (same4 === 0) return false; // תא בודד: לא מוציאים (משאיר שכונה ריקה או מנותקת)
-    if (same4 === 1) return true;
-    // מספר רצפים של תאים באותה שכונה בטבעת (בלי פינות שלא נוגעות בצד)
-    let runs = 0;
-    for (let q = 0; q < 8; q++) if (ring[q] && !ring[(q + 7) % 8]) runs++;
-    if (runs === 1) return true;
-    return fullCheck(G, reg, c);
-  }
-
-  function fullCheck(G, reg, c) {
-    const j = reg[c];
-    const start = G.N4[c].find((m) => m >= 0 && reg[m] === j);
-    const need = G.N4[c].filter((m) => m >= 0 && reg[m] === j);
-    const seen = new Set([start, c]);
-    const st = [start];
-    while (st.length) {
+    const same = G.N[c].filter((m) => reg[m] === j);
+    if (same.length === 0) return false;
+    if (same.length === 1) return true;
+    const need = new Set(same);
+    const seen = new Uint8Array(G.n); seen[c] = 1; seen[same[0]] = 1;
+    const st = [same[0]]; need.delete(same[0]);
+    while (st.length && need.size) {
       const x = st.pop();
-      for (const m of G.N4[x]) if (m >= 0 && reg[m] === j && !seen.has(m)) { seen.add(m); st.push(m); }
+      for (const m of G.N[x]) if (reg[m] === j && !seen[m]) { seen[m] = 1; need.delete(m); st.push(m); }
     }
-    return need.every((m) => seen.has(m));
+    return need.size === 0;
   }
 
   function localSearch(G, reg, k, opt, maxPass) {
@@ -194,13 +255,12 @@
         const r = reg[c];
         let bestS = -1, bestD = -1e-12;
         const tried = new Set();
-        for (const m of G.N4[c]) {
-          if (m < 0) continue;
+        for (const m of G.N[c]) {
           const s = reg[m];
           if (s === r || tried.has(s)) continue;
           tried.add(s);
           let dcut = 0;
-          for (const q of G.N4[c]) if (q >= 0) dcut += (reg[q] !== s) - (reg[q] !== r);
+          G.N[c].forEach((q, e) => { dcut += G.W[c][e] * ((reg[q] !== s) - (reg[q] !== r)); });
           const d = term(pops[r] - G.P[c], areas[r] - G.A[c]) + term(pops[s] + G.P[c], areas[s] + G.A[c])
             - term(pops[r], areas[r]) - term(pops[s], areas[s]) + mu * dcut;
           if (d < bestD) { bestD = d; bestS = s; }
@@ -221,7 +281,7 @@
     return G._sumAr;
   }
 
-  // שכונה שנשארה ריקה מקבלת תא גבול מהשכונה הכבדה ביותר, וגדלה בחיפוש המקומי
+  // שכונה שנשארה ריקה מקבלת בלוק גבול מהשכונה הכבדה ביותר, וגדלה בחיפוש המקומי
   function fillEmpty(G, reg, k, W) {
     for (let guard = 0; guard < k; guard++) {
       const L = new Float64Array(k), cnt = new Int32Array(k);
@@ -229,7 +289,6 @@
       const j = cnt.findIndex((v) => v === 0);
       if (j < 0) return;
       let r = 0; for (let q = 1; q < k; q++) if (L[q] > L[r]) r = q;
-      // תא בשכונה r שהכי רחוק ממרכזה וניתן להוצאה
       let sx = 0, sy = 0, sw = 0;
       for (let c = 0; c < G.n; c++) if (reg[c] === r) { sx += G.X[c]; sy += G.Y[c]; sw++; }
       sx /= sw; sy /= sw;
@@ -244,20 +303,22 @@
     }
   }
 
-  // opt: {k, alpha (0=שטח בלבד, 1=אוכלוסייה בלבד), mu (קומפקטיות), seed, restarts}
+  // opt: {k, alpha (0=שטח בלבד, 1=אוכלוסייה בלבד), mu (מחיר גבולות), seed, restarts}
   function solve(G, opt) {
+    if (G.sub) {
+      const r = solve(G.sub, opt);
+      const reg = new Int32Array(G.n);
+      for (let c = 0; c < G.n; c++) reg[c] = r.reg[G.subOf[G.host[c]]];
+      return { reg, obj: r.obj };
+    }
     const k = opt.k;
-    // משקל לשלב הגאומטרי: תמיד קצת שטח אמיתי, כדי שגם שדות ריקים "ימשכו" מישהו.
-    // ההתחלה הגאומטרית נעשית בכמה ערבובים שונים (לא רק alpha עצמו), כי לפעמים
-    // התחלה "מוטה אוכלוסייה" מגיעה לפתרון טוב יותר גם כשהמטרה היא איזון.
     const geoAlphas = [...new Set([opt.alpha, Math.min(0.9, opt.alpha + 0.2), 0.75])];
     const mkW = (al) => {
       const W = new Float64Array(G.n);
       const ap = Math.min(al, 0.95);
-      for (let c = 0; c < G.n; c++) W[c] = ap * G.P[c] / G.Pt + (1 - ap) * (0.9 * G.A[c] / G.At + 0.1 * G.Ar[c] / sumAr(G));
+      for (let c = 0; c < G.n; c++) W[c] = ap * G.P[c] / G.Pt + (1 - ap) * (0.9 * G.A[c] / (G.At || 1) + 0.1 * G.Ar[c] / sumAr(G));
       return W;
     };
-    // גם בחיפוש המקומי: אחוז קטן של שטח, כדי ששכונה תקועה תמיד תוכל לגדול
     opt = Object.assign({}, opt, { alpha: Math.min(opt.alpha, 0.98) });
     let best = null, bestObj = Infinity;
     const restarts = opt.restarts || 2;
@@ -268,28 +329,35 @@
       const reg = powerBalance(G, k, W, C);
       fixContiguity(G, reg, k);
       fillEmpty(G, reg, k, W);
-      localSearch(G, reg, k, opt, 60);
+      localSearch(G, reg, k, opt, 80);
       const o = objective(G, reg, k, opt);
       if (o < bestObj) { bestObj = o; best = reg; }
     }
     return { reg: best, obj: bestObj };
   }
 
+  // NATURAL: משקל למטר עד שבו גבול נחשב "בולט" (כביש ראשי, מאסף, ואדי, חורשה, פארק, מסילה)
+  const NATURAL = 1.7;
   function summary(G, reg, k) {
     const { pops, areas } = loads(G, reg, k);
     const Pt = G.Pt / k, At = G.At / k;
     const pd = Array.from(pops, (p) => p / Pt - 1), ad = Array.from(areas, (a) => a / At - 1);
     const rms = (v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0) / v.length);
-    let cut = 0;
-    for (let c = 0; c < G.n; c++) for (const m of G.N4[c]) if (m > c && reg[m] !== reg[c]) cut++;
+    let len = 0, strong = 0;
+    for (let c = 0; c < G.n; c++) G.N[c].forEach((m, e) => {
+      if (m > c && reg[m] !== reg[c] && live(G, c) && live(G, m)) {
+        len += G.Ln[c][e];
+        if (G.W[c][e] <= NATURAL * G.Ln[c][e]) strong += G.Ln[c][e];
+      }
+    });
     return {
       pops: Array.from(pops), areas: Array.from(areas), pd, ad,
       maxP: Math.max(...pd.map(Math.abs)), maxA: Math.max(...ad.map(Math.abs)),
-      rmsP: rms(pd), rmsA: rms(ad), cutKm: cut * 0.1,
+      rmsP: rms(pd), rmsA: rms(ad), cutKm: len / 1000, strongShare: len ? strong / len : 1,
     };
   }
 
-  const API = { prepare, solve, summary, objective, components, removable, loads };
+  const API = { prepare, trimMask, solve, summary, objective, components, removable, loads, NATURAL };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Partition = API;
 })(typeof window !== 'undefined' ? window : globalThis);
