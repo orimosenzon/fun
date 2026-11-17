@@ -6050,6 +6050,17 @@
    "url": "https://pardes-events-hub.lovable.app/event/a347567c-d69e-41e6-ba3f-0e25fb77b129",
    "venue": "הבוטנים 54"
   },
+  "2026-11-18--השבוע-בחנה-בר": {
+   "category": "קהילה · הרצאות וסדנאות",
+   "date": "2026-11-18",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-85cee31c-2f0e-4de2-9882-d3dff2bad824.jpg",
+   "name": "השבוע בחנה בר",
+   "source": "לוח האירועים",
+   "time": "20:00, 20:30",
+   "url": "https://pardes-events-hub.lovable.app/event/85cee31c-2f0e-4de2-9882-d3dff2bad824",
+   "venue": "הבוטנים 54"
+  },
   "2026-11-18--להקת-Yamas": {
    "category": "מופעים והופעות",
    "date": "2026-11-18",
@@ -6149,6 +6160,17 @@
    "url": "https://pardes-events-hub.lovable.app/event/01ec0e58-9f1f-4fd6-b9d6-36f669b668ac",
    "venue": "אנדרטת הנחל פרדס חנה כרכור"
   },
+  "2026-11-20--יריד-החלפת-בגדים": {
+   "category": "קהילה",
+   "date": "2026-11-20",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-8e3a1b7a-76c3-40ee-bfe3-a3d8d7301fe2.jpg",
+   "name": "יריד החלפת בגדים",
+   "source": "לוח האירועים",
+   "time": "11:00",
+   "url": "https://pardes-events-hub.lovable.app/event/8e3a1b7a-76c3-40ee-bfe3-a3d8d7301fe2",
+   "venue": "הבוסתן הקהילתי כרכור רחוב ירושלים 53"
+  },
   "2026-11-20--סיור-בית-הראשונים-לאדמות-כרכור": {
    "category": "tour",
    "date": "2026-11-20",
@@ -6181,6 +6203,61 @@
    "time": "20:00",
    "url": "https://pardeshanna.eventschedule.com/unicorn-21-11/ILFBs0",
    "venue": "יוניקורן"
+  },
+  "2026-11-21--מפגש-עם-ספר-הידע": {
+   "category": "קהילה",
+   "date": "2026-11-21",
+   "entry": "חינם",
+   "image_file": "אירוע-hub-9aa512da-da2a-41c9-a6f8-a5df4d7fbfeb.jpg",
+   "name": "מפגש עם ספר הידע",
+   "source": "לוח האירועים",
+   "time": "16:30",
+   "url": "https://pardes-events-hub.lovable.app/event/9aa512da-da2a-41c9-a6f8-a5df4d7fbfeb",
+   "venue": "המייסדים 90 כרכור"
+  },
+  "2026-11-22--במה-פתוחה-41": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-22",
+   "entry": "חינם",
+   "image_file": "אירוע-es-2dQHtM.jpg",
+   "name": "במה פתוחה #41",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/patricks-22-11/2dQHtM",
+   "venue": "פטריקס (קיסריה)"
+  },
+  "2026-11-23--הטריו-Truberry": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-23",
+   "entry": "חינם",
+   "image_file": "אירוע-es-VzpKj6.jpg",
+   "name": "הטריו Truberry",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/ruti-23-11/VzpKj6",
+   "venue": "רותי"
+  },
+  "2026-11-23--להקת-4Play": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-23",
+   "entry": "חינם",
+   "image_file": "אירוע-es-Dp59nB.jpg",
+   "name": "להקת 4Play",
+   "source": "לוח האירועים",
+   "time": "21:00",
+   "url": "https://pardeshanna.eventschedule.com/patricks-23-11/Dp59nB",
+   "venue": "פטריקס (קיסריה)"
+  },
+  "2026-11-23--מאנדיי-Blue": {
+   "category": "מופעים והופעות",
+   "date": "2026-11-23",
+   "entry": "חינם",
+   "image_file": "אירוע-emek-9qoODn.jpg",
+   "name": "מאנדיי Blue",
+   "source": "לוח האירועים",
+   "time": "20:00",
+   "url": "https://emeklive.co.il/traklin-23-11/9qoODn",
+   "venue": "טרקלין"
   }
  }
 }

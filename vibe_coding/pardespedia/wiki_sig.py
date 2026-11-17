@@ -18,4 +18,4 @@ MONTHS = [
     "ביולי", "באוגוסט", "בספטמבר", "באוקטובר", "בנובמבר", "בדצמבר",
 ]
 
-print(f"{now:%H:%M}, {now.day} {MONTHS[now.month - 1]} {now.year} (IDT)")
+print(f"{now:%H:%M}, {now.day} {MONTHS[now.month - 1]} {now.year} ({now.tzname()})")
