@@ -429,14 +429,20 @@ const Drafts = (() => {
   async function restore() {
     await ready;
     const rec = liveRecord();
-    if (!rec || ed) return;
+    if (!rec || ed) {
+      if (Native.isApp) glog('restore', rec ? 'skipped (editor already open)' : 'nothing to restore');
+      return;
+    }
     const when = new Date(rec.at).toLocaleTimeString('he-IL',
       { hour: '2-digit', minute: '2-digit' });
+    glog('restore offered', liveDescription(rec), `savedAt=${when}`);
     if (!confirm(`נשארה עבודה שלא נשמרה מ-${when}: ${liveDescription(rec)}.\n\n`
                + 'להמשיך מאיפה שהפסקת?')) {
+      glog('restore declined');
       localStorage.removeItem(LIVE);
       return;
     }
+    glog('restore accepted');
     // The draft being edited comes back from IndexedDB, so the name, the note
     // and the photos already on it are all still there; only the geometry is
     // taken from the mirror, because the mirror is the newer of the two.
@@ -634,23 +640,51 @@ const Drafts = (() => {
    * and nothing sends it anywhere unless they press share. */
 
   const GPS_LOG = 'dk.gpslog.v1';
-  const GPS_LOG_MAX = 800;          // lines; about an hour of walking
+  const GPS_LOG_MAX = 3000;         // lines; a few hours of walking
 
+  /* Inside the app every line also goes to the app's own log file (see
+   * Native.log), marked P for page; the app's own lines there are marked N. */
   function glog(...parts) {
+    const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const line = `${t} P ${parts.join(' ')}`;
+    Native.log(line);
     try {
-      const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
       const lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]');
-      lines.push(`${t} ${parts.join(' ')}`);
+      lines.push(line);
       localStorage.setItem(GPS_LOG, JSON.stringify(lines.slice(-GPS_LOG_MAX)));
     } catch (err) {
       /* a log is never allowed to be why the recording fails */
     }
   }
 
-  function showGpsLog() {
+  /* What happens to the page itself, logged in the app always (it is the
+   * suspect when a walk with the screen off is forgotten), and in a browser
+   * only while a walk is on. */
+  function wireLifecycle() {
+    const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+    if (Native.isApp) {
+      glog('==== page boot', `nav=${nav.type || '?'}`, `fileLog=${Native.hasFileLog()}`,
+        `mirror=${(() => { const r = liveRecord(); return r ? liveDescription(r) : 'none'; })()}`);
+    }
+    const note = (what) => () => {
+      if (Native.isApp || (ed && ed.mode === 'walk')) glog(what, `visibility=${document.visibilityState}`);
+    };
+    document.addEventListener('freeze', note('page freeze'));
+    document.addEventListener('resume', note('page resume'));
+    window.addEventListener('pagehide', note('pagehide'));
+    window.addEventListener('pageshow', note('pageshow'));
+    document.addEventListener('visibilitychange', () => {
+      if (Native.isApp && !(ed && ed.mode === 'walk')) glog('visibility', document.visibilityState);
+    });
+  }
+
+  async function showGpsLog() {
     let lines = [];
     try { lines = JSON.parse(localStorage.getItem(GPS_LOG) || '[]'); } catch (err) { /* empty */ }
-    const text = lines.length ? lines.join('\n') : '(הלוג ריק. עוד לא הוקלטה הליכה בטלפון הזה.)';
+    const file = await Native.readLog();
+    const text = file != null
+      ? (file.trim() || '(הלוג ריק.)')
+      : lines.length ? lines.join('\n') : '(הלוג ריק. עוד לא הוקלטה הליכה בטלפון הזה.)';
     const box = document.createElement('div');
     box.className = 'dk-modal';
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;color:#111;'
@@ -666,6 +700,7 @@ const Drafts = (() => {
       if (a === 'close') box.remove();
       if (a === 'clear' && confirm('למחוק את הלוג?')) {
         try { localStorage.removeItem(GPS_LOG); } catch (err) { /* nothing to drop */ }
+        await Native.clearLog();
         box.remove();
       }
       if (a === 'copy') {
@@ -866,8 +901,17 @@ const Drafts = (() => {
     }
 
     const mine = ed;
+    // A beat every 30 s while the walk is on. Beats with no fixes between them
+    // mean the page is alive but deaf; no beats at all mean the page itself
+    // was frozen or gone.
+    ed.beat = setInterval(() => {
+      if (ed !== mine) return;
+      const since = mine.lastFixAt ? `${Math.round((Date.now() - mine.lastFixAt) / 1000)}s ago` : 'never';
+      glog('js beat', `pts=${mine.path.length}`, `lastFix=${since}`, `visibility=${document.visibilityState}`);
+    }, 30000);
     const onFix = (pos) => {
       if (ed !== mine) return;        // a native fix still on its way after stop
+      ed.lastFixAt = Date.now();
       const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
       const age = Date.now() - pos.timestamp;
       const note = (verdict) => glog('fix', `acc=${Math.round(acc)}`,
@@ -934,6 +978,7 @@ const Drafts = (() => {
   function stopEditor(quiet) {
     if (ed && ed.mode === 'walk') glog('---- walk stop', `${ed.path.length}pts`);
     document.removeEventListener('visibilitychange', onVisibility);
+    if (ed && ed.beat) clearInterval(ed.beat);
     if (ed && ed.lock) { const lock = ed.lock; ed.lock = null; lock.release().catch(() => {}); }
     if (ed && ed.watch != null) navigator.geolocation.clearWatch(ed.watch);
     if (ed && ed.unwatch) ed.unwatch.then((stop) => stop && stop());
@@ -1776,7 +1821,14 @@ ${tracks}
 
   function init() {
     wire();
+    wireLifecycle();
     if (new URLSearchParams(location.search).has('gpslog')) showGpsLog();
+    // In the app there is no address bar to add ?gpslog to, so it is in ☰.
+    const logBtn = el('gpslog-btn');
+    if (logBtn && Native.isApp) {
+      logBtn.hidden = false;
+      logBtn.addEventListener('click', () => showGpsLog());
+    }
     keepStorage();                    // not awaited: the drafts must not wait on it
     // Held so that restore(), which the app calls later and from outside, can
     // wait for the stored drafts rather than race them.

@@ -20,6 +20,33 @@ const Native = (() => {
   const isApp = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
   const plugin = (name) => (isApp && cap.Plugins && cap.Plugins[name]) || null;
 
+  /* ---------- the walk log, app side ----------
+   * From APK 1.2 the app keeps its own log file (DkLog.java): what Android did
+   * to the activity, the screen, the WebView and the location service. The
+   * page's lines go into the same file, so one timeline survives a reload or
+   * a killed process. On an older APK, or in a browser, there is no file and
+   * the page's localStorage log is all there is. */
+  const dkLog = () => plugin('DkLog');
+  const hasFileLog = () => !!dkLog();
+
+  function log(line) {
+    const p = dkLog();
+    if (p) p.log({ line }).catch(() => {});
+  }
+
+  async function readLog() {
+    const p = dkLog();
+    if (!p) return null;
+    try { return (await p.read()).text; } catch (err) { return null; }
+  }
+
+  async function clearLog() {
+    const p = dkLog();
+    if (p) await p.clear().catch(() => {});
+  }
+
+  const stamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false });
+
   /** Start hearing the GPS for a walk. `onFix` gets a position shaped like the
    *  browser's own (coords.latitude/longitude/accuracy, timestamp) so the
    *  recorder does not care which one it came from. Resolves to a stop(). */
@@ -52,14 +79,18 @@ const Native = (() => {
       stale: false,
       distanceFilter: 0
     }, (loc, err) => {
-      if (err) { onError(err); return; }
+      if (err) { log(`${stamp()} P watcher error ${err.code || ''} ${err.message || ''}`); onError(err); return; }
       if (!loc) return;
       onFix({
         coords: { latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy },
         timestamp: loc.time || Date.now()
       });
     });
-    return () => geo.removeWatcher({ id }).catch(() => {});
+    log(`${stamp()} P watcher added id=${id}`);
+    return () => {
+      log(`${stamp()} P watcher removed id=${id}`);
+      return geo.removeWatcher({ id }).catch(() => {});
+    };
   }
 
   /** The app's own page in the phone's settings, where its location
@@ -121,9 +152,14 @@ const Native = (() => {
     const app = plugin('App');
     if (app) app.addListener('backButton', onBack);
     if (isApp) document.documentElement.classList.add('in-app');
+    if (app) {
+      app.addListener('appStateChange', (s) => log(`${stamp()} P app ${s.isActive ? 'active' : 'inactive'}`));
+      app.addListener('pause', () => log(`${stamp()} P app pause`));
+      app.addListener('resume', () => log(`${stamp()} P app resume`));
+    }
   }
 
   wire();
 
-  return { isApp, watchWalk, openSettings };
+  return { isApp, watchWalk, openSettings, log, readLog, clearLog, hasFileLog };
 })();
