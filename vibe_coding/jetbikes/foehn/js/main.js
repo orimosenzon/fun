@@ -230,7 +230,7 @@ async function boot() {
   $('bCred').onclick = () => $('cred').classList.add('on');
   // the opening film: once on the first visit, and again from the menu
   let story = null;
-  const runStory = (from = 0) => { if (story || mode !== 'menu') return; try { localStorage.setItem('foehn.story', '1'); } catch { /* private mode */ } story = playStory({ lang, audio, from, onEnd: () => { story = null; if (mode === 'menu' && camMode === 'chase') { camMode = 'cine'; cine.t = 0; camInit = false; } }, onScene: (id) => { if (id === 'fly' && mode === 'menu') { startEvent('tour', true); camMode = 'chase'; camInit = false; } } }); };   // (the last scene is the real valley: the bike lifts off the pad as the drawing dissolves)
+  const runStory = (from = 0, gate = false) => { if (story || mode !== 'menu') return; try { localStorage.setItem('foehn.story', '1'); } catch { /* private mode */ } story = playStory({ lang, audio, from, gate, wake: () => audio.start(), onEnd: () => { story = null; if (mode === 'menu' && camMode === 'chase') { camMode = 'cine'; cine.t = 0; camInit = false; } }, onScene: (id) => { if (id === 'fly' && mode === 'menu') { startEvent('tour', true); camMode = 'chase'; camInit = false; } } }); };   // (the last scene is the real valley: the bike lifts off the pad as the drawing dissolves)
   $('bStory').onclick = (e) => { e.currentTarget.blur(); audio.start(); setTimeout(() => runStory(0), 60); };
   $('cClose').onclick = () => $('cred').classList.remove('on');
   addEventListener('pagehide', () => saveRun());
@@ -674,9 +674,9 @@ async function boot() {
   await load(1, '');
   $('load').classList.add('off');
   { let seen = true; try { seen = !!localStorage.getItem('foehn.story'); } catch { /* private mode */ }
-    if (Q.has('story') || (!seen && !navigator.webdriver && !Q.has('event') && !Q.has('nostory') && !Q.has('tune'))) runStory(+Q.get('story') || 0); }
+    if (Q.has('story') || (!seen && !navigator.webdriver && !Q.has('event') && !Q.has('nostory') && !Q.has('tune'))) runStory(+Q.get('story') || 0, !Q.has('story') || Q.get('story') === 'first'); }   // (?story=N: from scene N. ?story=first: as on a first visit)
   addEventListener('pointerdown', () => audio.start(), { once: true }); addEventListener('keydown', () => audio.start(), { once: true });
-  window.game = game; window.dbg = { fauna, get herds() { return herds; }, get flora() { return flora; }, scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, flights, openHistory, get rp() { return rp; }, U, sun };
+  window.game = game; window.dbg = { get story() { return story; }, fauna, get herds() { return herds; }, get flora() { return flora; }, scene, camera, renderer, post, setCam: (m) => { camMode = m; camInit = false; }, free: (x, y, z, lx, ly, lz, f = 55) => { camMode = 'free'; camera.position.set(x, y, z); camera.up.set(0, 1, 0); camera.lookAt(lx, ly, lz); fov = f; }, hud: (on) => hud.show(on), applyTime, get mode() { return mode; }, startEvent, startReplay, stopReplay, rec, flights, openHistory, get rp() { return rp; }, U, sun };
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot().catch((e) => { const el = $('err'); el.style.display = 'block'; el.textContent += (e.stack || e) + '\n'; console.error(e); });

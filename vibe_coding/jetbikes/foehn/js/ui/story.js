@@ -3,11 +3,13 @@
 // the past, a blueprint for the plan, and at the end the drawing dissolves into the live valley.
 // playStory({ lang, audio, from, onEnd }) -> { stop() }.  ?story=N in the URL starts at scene N.
 
+import { VOICE_LEN } from './story_voice.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 const INK = '#2b2118', PAPER = '#e9dcc0', BLUE = '#0c3156', LINE = '#dff1ff', CY = '#6fe3ff', ACC = '#ff7a2a';
 
 // ---- the words (subtitles), per scene: [seconds into the scene, he, en] ----
-const SCENES = [
+export const SCENES = [
   { id: 'lake', dur: 10, subs: [
     [0.8, 'שווייץ, 1969. הווארד יוז, טייס, ממציא ואחד האנשים העשירים בעולם, מתאהב בפיזיקאית ישראלית.', 'Switzerland, 1969. Howard Hughes, pilot, inventor and one of the richest men alive, falls in love with an Israeli physicist.'],
     [6.4, 'איש לא יודע על זה.', 'Nobody knows.']] },
@@ -97,6 +99,13 @@ const CSS = `
 #story .ttl b { color: ${ACC}; font-weight: 900; } #story .ttl.on { opacity: 1; transform: scale(1); }
 #story .skip { position: absolute; top: 16px; inset-inline-end: 18px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: rgba(10,16,24,.5); border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: 7px 16px; cursor: pointer; opacity: .75; }
 #story .skip:hover { opacity: 1; border-color: #ffc440; }
+#story .gate { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; text-align: center; background: rgba(6,10,16,.72); }
+#story.gated .gate { display: flex; } #story.gated .skip, #story.gated .bar { display: none; }
+#story .gate .gt { font-size: clamp(54px, 11vw, 130px); font-weight: 900; letter-spacing: .12em; direction: ltr; line-height: 1; } #story .gate .gt b { color: ${ACC}; font-weight: 900; }
+#story .gate p { margin: 0 0 8px; font-size: clamp(16px, 2.2vw, 22px); opacity: .9; }
+#story .gate > div:last-child { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+#story .gate button { font: inherit; font-weight: 700; font-size: 17px; padding: 12px 26px; border-radius: 12px; cursor: pointer; color: #fff; background: rgba(10,16,24,.6); border: 1px solid rgba(255,255,255,.25); }
+#story .gate button.gp { background: ${ACC}; border-color: transparent; color: #1a0d04; } #story .gate button:hover { border-color: #ffc440; }
 #story .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: ${ACC}; opacity: .8; }
 body.story-on #menu, body.story-on #mute { opacity: 0 !important; pointer-events: none; }
 #menu { transition: opacity 1s; }
@@ -261,56 +270,88 @@ const DEFS = `<defs>
 </defs>`;
 
 export const STORY_SCENES = SCENES.length;
-export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, onScene = null } = {}) {
+export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, onScene = null, gate = false, wake = null } = {}) {
   const L = (he, en) => (lang === 'en' ? en : he);
   if (!document.getElementById('story-css')) { const s = document.createElement('style'); s.id = 'story-css'; s.textContent = CSS; document.head.appendChild(s); }
   const root = document.createElement('div'); root.id = 'story';
   const draw = { lake: sceneLake, born: sceneBorn, attic: sceneAttic, plan: scenePlan, study: sceneStudy, core: sceneCore, crash: sceneCrash, fly: sceneFly };
-  root.innerHTML = `<svg xmlns="${NS}" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">${DEFS}${SCENES.map((s) => `<g class="sc" data-id="${s.id}" style="--dur:${s.dur + 2}s"></g>`).join('')}</svg>
-    <div class="ttl">F<b>Ö</b>HN</div><div class="sub"><span></span></div><button class="skip" type="button">${L('דילוג', 'Skip')} ›</button><div class="bar"></div>`;
+  root.innerHTML = `<svg xmlns="${NS}" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">${DEFS}${SCENES.map((s) => `<g class="sc" data-id="${s.id}" style="--dur:${s.dur + 4}s"></g>`).join('')}</svg>
+    <div class="ttl">F<b>Ö</b>HN</div><div class="sub"><span></span></div><button class="skip" type="button">${L('דילוג', 'Skip')} ›</button><div class="bar"></div>
+    <div class="gate"><div class="gt">F<b>Ö</b>HN</div><p>${L('לפני שטסים: הסיפור של יקיר, בפחות משתי דקות', 'Before you fly: Yakir\'s story, in under two minutes')}</p>
+      <div><button class="gp" type="button">▶ ${L('לצפות בסיפור', 'Watch the story')}</button><button class="gs" type="button">${L('ישר למשחק', 'Straight to the game')}</button></div></div>`;
   document.body.appendChild(root); document.body.classList.add('story-on');
   const groups = [...root.querySelectorAll('.sc')], sub = root.querySelector('.sub span'), ttl = root.querySelector('.ttl'), bar = root.querySelector('.bar');
-  const total = SCENES.reduce((a, s) => a + s.dur, 0), starts = []; { let a = 0; for (const s of SCENES) { starts.push(a); a += s.dur; } }
-  let cur = -1, subK = '', done = false, raf = 0;
-  const t0 = performance.now() - 1000 * (starts[Math.max(0, Math.min(SCENES.length - 1, from))] || 0);
-  const pad = makePad(audio);
+  // The timing follows the narration: a line never starts before the one before it has been said,
+  // and a scene lasts until its last line is over.
+  const VL = VOICE_LEN[lang] || [];
+  const TL = SCENES.map((s, i) => {
+    let free = 0;
+    const subs = s.subs.map((u, k) => { const at = Math.max(u[0], free), d = (VL[i] && VL[i][k]) || 0; free = at + d + 0.45; return { at, d, text: L(u[1], u[2]), url: d ? new URL(`../../assets/story/${lang}/${s.id}_${k}.mp3`, import.meta.url).href : null }; });
+    return { id: s.id, subs, dur: Math.max(s.dur, free + 1.1) };
+  });
+  const total = TL.reduce((a, s) => a + s.dur, 0), starts = []; { let a = 0; for (const s of TL) { starts.push(a); a += s.dur; } }
+  let cur = -1, subK = '', done = false, running = false, raf = 0, t0 = 0, pad = { scene() {}, stop() {} }, voice = null;
+  const clips = new Map();
+  const clip = (url) => { if (!clips.has(url)) { const a = new window.Audio(url); a.preload = 'auto'; clips.set(url, a); } return clips.get(url); };
+  const say = (u) => {
+    if (voice) { voice.pause(); voice = null; }
+    if (!u || !u.url || (audio && audio.muted)) return;
+    voice = clip(u.url); try { voice.currentTime = 0; } catch { /* not loaded yet */ }
+    voice.volume = 1; const p = voice.play(); if (p && p.catch) p.catch(() => {});      // (no click yet: the browser keeps it silent, the subtitles carry the film)
+  };
 
   function show(i) {
     if (cur >= 0) { const g = groups[cur]; g.classList.remove('on'); setTimeout(() => { if (cur !== groups.indexOf(g)) g.innerHTML = ''; }, 1600); }
-    cur = i; const s = SCENES[i], g = groups[i];
+    cur = i; const s = TL[i], g = groups[i];
     g.innerHTML = draw[s.id](L);                    // (built when shown, so that every animation starts from its beginning)
     void g.getBoundingClientRect(); g.classList.add('on');
     root.classList.toggle('reveal', s.id === 'fly');
+    for (const u of s.subs) if (u.url) clip(u.url);                                    // start fetching this scene's lines, and the next one's
+    if (TL[i + 1]) for (const u of TL[i + 1].subs) if (u.url) clip(u.url);
     pad.scene(i); if (onScene) onScene(s.id);
   }
   function tick(now) {
     if (done) return;
     const T = (now - t0) / 1000;
     if (T >= total) { stop(); return; }
-    let i = SCENES.length - 1; while (i > 0 && T < starts[i]) i--;
+    let i = TL.length - 1; while (i > 0 && T < starts[i]) i--;
     if (i !== cur) show(i);
-    const ts = T - starts[i], s = SCENES[i];
-    let line = null; for (const u of s.subs) if (ts >= u[0]) line = u;
-    const hide = ts > s.dur - 0.7 || !line, key = hide ? '' : i + ':' + line[0];
-    if (key !== subK) { subK = key; sub.classList.remove('on'); if (!hide) setTimeout(() => { if (subK === key) { sub.textContent = L(line[1], line[2]); sub.classList.add('on'); } }, 350); }
+    const ts = T - starts[i], s = TL[i];
+    let line = null; for (const u of s.subs) if (ts >= u.at) line = u;
+    const hide = ts > s.dur - 0.7 || !line, key = hide ? '' : i + ':' + line.at;
+    if (key !== subK) {
+      subK = key; sub.classList.remove('on');
+      if (!hide) { say(line); setTimeout(() => { if (subK === key) { sub.textContent = line.text; sub.classList.add('on'); } }, 350); }
+    }
     ttl.classList.toggle('on', s.id === 'fly' && ts > 5.5 && ts < s.dur - 0.8);
     bar.style.width = (100 * T / total).toFixed(2) + '%';
     raf = requestAnimationFrame(tick);
   }
+  function begin() {
+    if (running || done) return; running = true;
+    root.classList.remove('gated', 'reveal');
+    if (wake) wake();                                 // (we are inside a click or a key here: the sound may start)
+    pad = makePad(audio);
+    t0 = performance.now() - 1000 * (starts[Math.max(0, Math.min(TL.length - 1, from))] || 0);
+    raf = requestAnimationFrame(tick);
+  }
   function stop() {
     if (done) return; done = true; cancelAnimationFrame(raf); removeEventListener('keydown', onKey, true);
+    if (voice) voice.pause(); for (const a of clips.values()) a.src = '';
     pad.stop(); root.classList.remove('on'); document.body.classList.remove('story-on');
     setTimeout(() => root.remove(), 950);
     if (onEnd) onEnd();
   }
   function onKey(e) {
     e.stopImmediatePropagation();                     // the game below must not see the keys
+    if (!running) { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); begin(); } else if (e.code === 'Escape') stop(); return; }
     if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); stop(); }
   }
   addEventListener('keydown', onKey, true);
-  root.querySelector('.skip').onclick = stop;
-  requestAnimationFrame(() => { root.classList.add('on'); raf = requestAnimationFrame(tick); });
-  return { stop, get scene() { return cur; } };
+  root.querySelector('.skip').onclick = stop; root.querySelector('.gs').onclick = stop; root.querySelector('.gp').onclick = begin;
+  if (gate) root.classList.add('gated', 'reveal');
+  requestAnimationFrame(() => { root.classList.add('on'); if (!gate) begin(); });
+  return { stop, get scene() { return cur; }, get total() { return total; }, get speaking() { return !!voice && !voice.paused && voice.currentTime > 0; } };
 }
 
 // A quiet pad under the film: two detuned voices per note through a slow low-pass, one chord per scene.
@@ -321,7 +362,7 @@ function makePad(audio) {
   if (c.state !== 'running') c.resume().catch(() => {});   // (right after the click that made it, it may still be waking up)
   const out = c.createGain(); out.gain.value = 0; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.Q.value = 0.4;
   lp.connect(out); out.connect(audio.master || c.destination);
-  out.gain.linearRampToValueAtTime(0.32, c.currentTime + 3);
+  out.gain.linearRampToValueAtTime(0.2, c.currentTime + 3);     // (quiet: it sits under the narrator)
   // D minor, wandering, and opening to D major when the bike finally flies
   const CH = [[146.8, 220, 349.2], [130.8, 196, 329.6], [116.5, 174.6, 293.7], [110, 164.8, 277.2], [146.8, 220, 349.2], [174.6, 261.6, 392], [98, 146.8, 233.1], [146.8, 220, 370, 440]];
   let voices = [];
