@@ -103,9 +103,17 @@ const CSS = `
 #story.gated .gate { display: flex; } #story.gated .skip, #story.gated .bar { display: none; }
 #story .gate .gt { font-size: clamp(54px, 11vw, 130px); font-weight: 900; letter-spacing: .12em; direction: ltr; line-height: 1; } #story .gate .gt b { color: ${ACC}; font-weight: 900; }
 #story .gate p { margin: 0 0 8px; font-size: clamp(16px, 2.2vw, 22px); opacity: .9; }
-#story .gate > div:last-child { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+#story .gate > div { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 #story .gate button { font: inherit; font-weight: 700; font-size: 17px; padding: 12px 26px; border-radius: 12px; cursor: pointer; color: #fff; background: rgba(10,16,24,.6); border: 1px solid rgba(255,255,255,.25); }
 #story .gate button.gp { background: ${ACC}; border-color: transparent; color: #1a0d04; } #story .gate button:hover { border-color: #ffc440; }
+#story .gate button.gd { margin-top: 26px; font-size: 13.5px; font-weight: 500; padding: 7px 14px; background: none; border: 1px dashed rgba(255,255,255,.3); opacity: .7; }
+#story .gate button.gd:hover { opacity: 1; }
+#story i { font-style: normal; font-weight: 800; font-size: .82em; letter-spacing: .04em; color: #1a0d04; background: #ffc440; border-radius: 5px; padding: 1px 7px; margin-inline-end: 8px; }
+#story .dv { position: absolute; inset: 0; display: none; background: #000; }
+#story.draft .dv { display: block; } #story.draft .skip, #story.draft .bar, #story.draft .sub, #story.draft svg { display: none; }
+#story .dv video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+#story .dtag { position: absolute; top: 16px; inset-inline-start: 18px; font-size: 14px; color: #fff; background: rgba(10,16,24,.6); border-radius: 9px; padding: 6px 12px; pointer-events: none; }
+#story .dx { position: absolute; top: 14px; inset-inline-end: 16px; font: inherit; font-size: 16px; color: #fff; background: rgba(10,16,24,.6); border: 1px solid rgba(255,255,255,.25); border-radius: 10px; padding: 6px 13px; cursor: pointer; }
 #story .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: ${ACC}; opacity: .8; }
 body.story-on #menu, body.story-on #mute { opacity: 0 !important; pointer-events: none; }
 #menu { transition: opacity 1s; }
@@ -270,15 +278,18 @@ const DEFS = `<defs>
 </defs>`;
 
 export const STORY_SCENES = SCENES.length;
-export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, onScene = null, gate = false, wake = null } = {}) {
+export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, onScene = null, gate = false, wake = null, first = true, draft = false } = {}) {
   const L = (he, en) => (lang === 'en' ? en : he);
   if (!document.getElementById('story-css')) { const s = document.createElement('style'); s.id = 'story-css'; s.textContent = CSS; document.head.appendChild(s); }
   const root = document.createElement('div'); root.id = 'story';
   const draw = { lake: sceneLake, born: sceneBorn, attic: sceneAttic, plan: scenePlan, study: sceneStudy, core: sceneCore, crash: sceneCrash, fly: sceneFly };
   root.innerHTML = `<svg xmlns="${NS}" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">${DEFS}${SCENES.map((s) => `<g class="sc" data-id="${s.id}" style="--dur:${s.dur + 4}s"></g>`).join('')}</svg>
     <div class="ttl">F<b>Ö</b>HN</div><div class="sub"><span></span></div><button class="skip" type="button">${L('דילוג', 'Skip')} ›</button><div class="bar"></div>
-    <div class="gate"><div class="gt">F<b>Ö</b>HN</div><p>${L('לפני שטסים: הסיפור של יקיר, בפחות משתי דקות', 'Before you fly: Yakir\'s story, in under two minutes')}</p>
-      <div><button class="gp" type="button">▶ ${L('לצפות בסיפור', 'Watch the story')}</button><button class="gs" type="button">${L('ישר למשחק', 'Straight to the game')}</button></div></div>`;
+    <div class="gate"><div class="gt">F<b>Ö</b>HN</div><p>${first ? L('לפני שטסים: הסיפור של יקיר, בפחות משתי דקות', 'Before you fly: Yakir\'s story, in under two minutes') : L('הסיפור של יקיר, בפחות משתי דקות', 'Yakir\'s story, in under two minutes')}</p>
+      <div><button class="gp" type="button">▶ ${L('לצפות בסיפור', 'Watch the story')}</button><button class="gs" type="button">${first ? L('ישר למשחק', 'Straight to the game') : L('חזרה', 'Back')}</button></div>
+      ${draft ? `<button class="gd" type="button"><i>${L('טיוטה', 'Draft')}</i>${L('ניסוי ראשון בגרסה מצולמת, נוצרה בבינה מלאכותית', 'A first try at a live-action version, made with AI')} ›</button>` : ''}</div>
+    <div class="dv"><video playsinline controls preload="none" poster="${new URL('../../assets/story/draft.jpg', import.meta.url).href}"></video>
+      <div class="dtag"><i>${L('טיוטה', 'Draft')}</i>${L('ניסוי ראשון. הסרט הזה עוד ישתנה', 'A first try. This film will change')}</div><button class="dx" type="button">✕</button></div>`;
   document.body.appendChild(root); document.body.classList.add('story-on');
   const groups = [...root.querySelectorAll('.sc')], sub = root.querySelector('.sub span'), ttl = root.querySelector('.ttl'), bar = root.querySelector('.bar');
   // The timing follows the narration: a line never starts before the one before it has been said,
@@ -327,6 +338,13 @@ export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, o
     bar.style.width = (100 * T / total).toFixed(2) + '%';
     raf = requestAnimationFrame(tick);
   }
+  // the draft of a live-action film (made with Google Flow): a side door, clearly marked as a draft
+  function showDraft() {
+    if (running || done) return; running = true;
+    root.classList.remove('gated', 'reveal'); root.classList.add('draft');
+    const v = root.querySelector('video'); v.src = new URL('../../assets/story/draft.mp4', import.meta.url).href;
+    v.muted = !!(audio && audio.muted); v.onended = stop; const p = v.play(); if (p && p.catch) p.catch(() => {});
+  }
   function begin() {
     if (running || done) return; running = true;
     root.classList.remove('gated', 'reveal');
@@ -338,6 +356,7 @@ export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, o
   function stop() {
     if (done) return; done = true; cancelAnimationFrame(raf); removeEventListener('keydown', onKey, true);
     if (voice) voice.pause(); for (const a of clips.values()) a.src = '';
+    const dv = root.querySelector('video'); dv.pause(); dv.removeAttribute('src'); dv.load();
     pad.stop(); root.classList.remove('on'); document.body.classList.remove('story-on');
     setTimeout(() => root.remove(), 950);
     if (onEnd) onEnd();
@@ -345,10 +364,12 @@ export function playStory({ lang = 'he', audio = null, from = 0, onEnd = null, o
   function onKey(e) {
     e.stopImmediatePropagation();                     // the game below must not see the keys
     if (!running) { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); begin(); } else if (e.code === 'Escape') stop(); return; }
+    if (root.classList.contains('draft')) { if (e.code === 'Escape') stop(); return; }   // (space and the arrows belong to the video player)
     if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); stop(); }
   }
   addEventListener('keydown', onKey, true);
-  root.querySelector('.skip').onclick = stop; root.querySelector('.gs').onclick = stop; root.querySelector('.gp').onclick = begin;
+  root.querySelector('.skip').onclick = stop; root.querySelector('.gs').onclick = stop; root.querySelector('.gp').onclick = begin; root.querySelector('.dx').onclick = stop;
+  if (draft) root.querySelector('.gd').onclick = showDraft;
   if (gate) root.classList.add('gated', 'reveal');
   requestAnimationFrame(() => { root.classList.add('on'); if (!gate) begin(); });
   return { stop, get scene() { return cur; }, get total() { return total; }, get speaking() { return !!voice && !voice.paused && voice.currentTime > 0; } };

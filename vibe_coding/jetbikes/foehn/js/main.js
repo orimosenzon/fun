@@ -230,8 +230,8 @@ async function boot() {
   $('bCred').onclick = () => $('cred').classList.add('on');
   // the opening film: once on the first visit, and again from the menu
   let story = null;
-  const runStory = (from = 0, gate = false) => { if (story || mode !== 'menu') return; try { localStorage.setItem('foehn.story', '1'); } catch { /* private mode */ } story = playStory({ lang, audio, from, gate, wake: () => audio.start(), onEnd: () => { story = null; if (mode === 'menu' && camMode === 'chase') { camMode = 'cine'; cine.t = 0; camInit = false; } }, onScene: (id) => { if (id === 'fly' && mode === 'menu') { startEvent('tour', true); camMode = 'chase'; camInit = false; } } }); };   // (the last scene is the real valley: the bike lifts off the pad as the drawing dissolves)
-  $('bStory').onclick = (e) => { e.currentTarget.blur(); audio.start(); setTimeout(() => runStory(0), 60); };
+  const runStory = (from = 0, gate = false, first = true) => { if (story || mode !== 'menu') return; try { localStorage.setItem('foehn.story', '1'); } catch { /* private mode */ } story = playStory({ lang, audio, from, gate, first, draft: !first, wake: () => audio.start(), onEnd: () => { story = null; if (mode === 'menu' && camMode === 'chase') { camMode = 'cine'; cine.t = 0; camInit = false; } }, onScene: (id) => { if (id === 'fly' && mode === 'menu') { startEvent('tour', true); camMode = 'chase'; camInit = false; } } }); };   // (the last scene is the real valley: the bike lifts off the pad as the drawing dissolves)
+  $('bStory').onclick = (e) => { e.currentTarget.blur(); audio.start(); setTimeout(() => runStory(0, true, false), 60); };   // (from the menu: the film, or the draft of the live-action one)
   $('cClose').onclick = () => $('cred').classList.remove('on');
   addEventListener('pagehide', () => saveRun());
   $('pRestart').onclick = $('fRetry').onclick = () => startEvent(game.ev.id);
