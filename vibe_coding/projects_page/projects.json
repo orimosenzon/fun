@@ -867,65 +867,6 @@
           "anchor": "birdman"
         },
         {
-          "title": "קראטקה: מחווה ב-JavaScript",
-          "icon": "🥋",
-          "stage_second": true,
-          "theme": "t-red",
-          "dir": "arcade",
-          "tags": [
-            "Apple II",
-            "6502",
-            "Reverse Engineering",
-            "Vanilla JS"
-          ],
-          "desc": "<strong style=\"color:#f87171\">Karateka של ג׳ורדן מכנר (1984), כתוב מחדש ב-JavaScript שגרה אחר שגרה.</strong><br> כל שגרה של קוד ה-6502 המקורי תורגמה ביד ונבדקה מול המקור בית אחרי בית, עם אמולטור Apple II שכתבנו ככלי מדידה. הציורים, הדמויות והמנגינות שלנו, רק טבלאות הכללים מהמקור, כך שהמשחק לא צריך את הדיסק. הסצנה הראשונה גמורה: הצוק, השומרים והקרב.",
-          "links": [
-            {
-              "href": "arcade/karateka_js/index.html",
-              "style": "primary",
-              "label": "▶ שחק עכשיו",
-              "external": false
-            },
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/arcade/karateka_js",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
-            }
-          ],
-          "anchor": "karateka"
-        },
-        {
-          "title": "Archon: קומודור 64 בדפדפן",
-          "icon": "♟️",
-          "stage_second": true,
-          "theme": "t-purple",
-          "dir": "arcade",
-          "tags": [
-            "Commodore 64",
-            "6510",
-            "VIC-II",
-            "SID",
-            "Vanilla JS"
-          ],
-          "desc": "<strong style=\"color:#c4b5fd\">Archon (1983) המקורי, רץ על אמולטור קומודור 64 שכתבנו מאפס ב-JavaScript.</strong><br> מעבד 6510 עם כל הפקודות וספירת מחזורים, שבב הגרפיקה VIC-II שורה אחר שורה עם ספרייטים ופסיקות רסטר, שעוני CIA ושבב הקול SID עם פילטר. מקלדת, ג׳ויפד ומגע, ושני שחקנים על מקלדת אחת. מעל המשחק אפשר להוסיף הרחבות בלי לגעת בקוד שלו, והראשונה היא נשיפת אש לדרקון. את ה-ROM ואת הדיסק כל שחקן טוען בעצמו.",
-          "links": [
-            {
-              "href": "arcade/archon/index.html",
-              "style": "primary",
-              "label": "▶ לאמולטור",
-              "external": false
-            },
-            {
-              "href": "https://github.com/orimosenzon/fun/tree/master/vibe_coding/arcade/archon",
-              "style": "secondary",
-              "label": "📁 קוד מקור",
-              "external": true
-            }
-          ],
-          "anchor": "arcade-archon"
-        },
-        {
           "title": "שוטוקאן: קומיטה",
           "icon": "🥋",
           "theme": "t-red",
