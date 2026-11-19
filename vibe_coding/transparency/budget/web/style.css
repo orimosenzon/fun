@@ -333,3 +333,44 @@ h1 { margin: 4px 0 6px; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; }
 .sh-asks p { margin: 2px 0 6px; color: var(--text-2); max-width: 80ch; }
 .sh-copy { font-size: 13px; padding: 4px 12px; }
 .mine-link { display: inline-block; margin-top: 8px; color: var(--accent); font-weight: 500; }
+
+/* תב"רים וקרנות הרשות (tabar.html) */
+.tb-flow { display: flex; align-items: center; gap: 10px; margin: 8px 0 14px; }
+.tb-col { display: flex; flex-direction: column; gap: 8px; flex: 1 1 0; min-width: 0; }
+.tb-arrow { color: var(--text-3); font-size: 22px; flex: 0 0 auto; }
+.tb-box { border-radius: 12px; padding: 10px 12px; background: var(--surface-2); border-inline-start: 4px solid var(--other); }
+.tb-box strong { display: block; font-size: 15px; }
+.tb-box span { display: block; color: var(--text-2); font-size: 13px; margin-top: 2px; }
+.tb-in { border-color: var(--s3); } .tb-fund { border-color: var(--s1); } .tb-out { border-color: var(--s2); }
+.tb-side { border-style: dashed; border-inline-start-style: solid; }
+.tb-points { margin: 0; padding-inline-start: 20px; color: var(--text-2); max-width: 85ch; }
+.tb-points li { margin: 6px 0; }
+.tb-points strong { color: var(--text); }
+@media (max-width: 640px) {
+  .tb-flow { flex-direction: column; align-items: stretch; }
+  .tb-arrow { transform: rotate(-90deg); align-self: center; }
+}
+.tb-bars { display: grid; gap: 6px; margin: 12px 0 8px; }
+.tb-bar { display: grid; grid-template-columns: minmax(110px, 190px) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 14px; }
+.tb-bar-l { color: var(--text); }
+.tb-bar-track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.tb-bar-fill { height: 100%; background: var(--s1); border-radius: 4px; }
+.tb-bar-v { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
+@media (max-width: 520px) { .tb-bar { grid-template-columns: 1fr auto; } .tb-bar-track { grid-column: 1 / -1; grid-row: 2; } }
+.tb-filter { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 4px 0 10px; }
+.tb-filter input[type="search"] {
+  flex: 1 1 260px; font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--text);
+}
+.tb-filter label { color: var(--text-2); font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.tb-ap td { vertical-align: top; }
+.tb-ap td a { color: var(--accent); }
+.tb-ap .tb-src { color: var(--text-2); font-size: 13px; }
+.tb-ap { min-width: 640px; }
+.tb-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 0; padding: 10px 14px;
+  border-radius: 12px; background: var(--surface-2); border-inline-start: 4px solid var(--s2); font-size: 14px; color: var(--text-2);
+}
+.tb-banner a { color: var(--accent); font-weight: 500; }
+.tb-ap tr.tb-unsure td { color: var(--text-2); }
+.tb-filter select { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); }

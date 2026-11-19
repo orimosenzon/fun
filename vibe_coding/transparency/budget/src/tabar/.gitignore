@@ -1,0 +1,5 @@
+# מקורות גולמיים: גדולים, וכולם זמינים באתר המועצה או ב-data.gov.il.
+# build_tabar.py מוריד את audited/ מחדש אם חסר. נשמר בריפו רק approvals.json.
+*
+!.gitignore
+!approvals.json
