@@ -31,6 +31,9 @@
   .dpad::after { content: ''; position: absolute; inset: 62px; border-radius: 50%; background: #33333a; }
   .fire { width: 110px; height: 110px; border-radius: 50%; background: #5a2630; border: 1px solid #a05562; font-size: 16px; }
   .fire.down { background: #8a3445; }
+  .breath { width: 76px; height: 76px; border-radius: 50%; background: #6a4416; border: 1px solid #c08a3a; font-size: 14px; }
+  .breath.down { background: #a8691c; }
+  .buttons { display: flex; align-items: center; gap: 12px; }
   .status { font-size: 13px; color: #888; min-height: 18px; }
 </style>
 </head>
@@ -63,7 +66,7 @@
 </div>
 
 <div class="pad" id="pad">
-  <button class="fire" id="fire">אש</button>
+  <div class="buttons"><button class="fire" id="fire">אש</button><button class="breath" id="breath" hidden>נשיפה</button></div>
   <div class="dpad" id="dpad"></div>
 </div>
 
@@ -76,6 +79,7 @@ import { D64 } from './src/vm/d64.js';
 import { AudioOut } from './src/audio.js';
 import { Input } from './src/input.js';
 import { JOY } from './src/vm/c64.js';
+import { armBreath } from './src/ext/breath.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
@@ -88,14 +92,21 @@ const files = {};            // kernal, basic, chargen, disk
 const audio = new AudioOut();
 const input = new Input();
 let machine = null, image = null, running = false;
-window.archon = { get machine() { return machine; }, input, audio };
+// Additions to the original game (src/ext/). "?pure" plays it exactly as it was.
+const extensions = !params.has('pure');
+let breath = null;
+if (extensions) { input.onSpecial = (port) => { if (breath) breath.press(port); }; $('breath').hidden = false; }
+window.archon = { get machine() { return machine; }, get breath() { return breath; }, input, audio };
 
 function helpText() {
   const k = (...keys) => keys.map((x) => `<kbd>${x}</kbd>`).join(' ');
+  const extra = !extensions ? '' : input.twoPlayers
+    ? `<br><b>תוספת שלנו, נשיפת אש של הדרקון:</b> ${k('Enter')} בזמן קרב. הדרקון נעצר ושורף חלק גדול מהזירה, ואחר כך צריך להמתין כמה שניות`
+    : `<br><b>תוספת שלנו, נשיפת אש של הדרקון:</b> ${k('X')} או ${k('Enter')} בזמן קרב. הדרקון נעצר ושורף חלק גדול מהזירה, ואחר כך צריך להמתין כמה שניות`;
   const intro = `במסך הפתיחה: ${k('Esc')} מדלג, ${k('F3')} מי משחק, ${k('F5')} מי פותח, ${k('F7')} מתחיל`;
   $('help').innerHTML = input.twoPlayers
-    ? `<b>אור, בצד שמאל:</b> ${k('W', 'A', 'S', 'D')} ואש במקש ${k('F')}<br><b>אופל, בצד ימין:</b> חצים ואש במקש ${k('Space')}<br>${intro}`
-    : `<b>תנועה:</b> מקשי החצים &nbsp;·&nbsp; <b>בחירה ואש:</b> ${k('Space')}<br>על הלוח: מביאים את המסגרת אל כלי, לוחצים אש, מזיזים אותו ולוחצים שוב. בקרב: מחזיקים אש ומכוונים<br>${intro}`;
+    ? `<b>אור, בצד שמאל:</b> ${k('W', 'A', 'S', 'D')} ואש במקש ${k('F')}<br><b>אופל, בצד ימין:</b> חצים ואש במקש ${k('Space')}${extra}<br>${intro}`
+    : `<b>תנועה:</b> מקשי החצים &nbsp;·&nbsp; <b>בחירה ואש:</b> ${k('Space')}<br>על הלוח: מביאים את המסגרת אל כלי, לוחצים אש, מזיזים אותו ולוחצים שוב. בקרב: מחזיקים אש ומכוונים${extra}<br>${intro}`;
 }
 
 function identify(name, bytes) {
@@ -135,6 +146,8 @@ function build() {
   machine = new C64({ kernal: files.kernal, basic: files.basic, chargen: files.chargen, model: modelName, sampleRate: audio.sampleRate });
   machine.disk = new D64(files.disk);
   input.machine = machine;
+  breath = null;
+  if (extensions) armBreath(machine, (ext) => { breath = ext; });
   canvas.width = WIDTH; canvas.height = machine.model.rows;
   document.documentElement.style.setProperty('--par', machine.model.par);
   document.documentElement.style.setProperty('--rows', machine.model.rows);
@@ -200,6 +213,10 @@ for (const ev of ['pointerup', 'pointercancel']) dpad.addEventListener(ev, () =>
 const fire = $('fire');
 fire.addEventListener('pointerdown', (e) => { fire.setPointerCapture(e.pointerId); input.touch |= JOY.FIRE; fire.classList.add('down'); input.apply(); });
 for (const ev of ['pointerup', 'pointercancel']) fire.addEventListener(ev, () => { input.touch &= ~JOY.FIRE; fire.classList.remove('down'); input.apply(); });
+
+const breathBtn = $('breath');
+breathBtn.addEventListener('pointerdown', () => { breathBtn.classList.add('down'); input.special('a'); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) breathBtn.addEventListener(ev, () => breathBtn.classList.remove('down'));
 
 input.twoPlayers = pref('two', '0') === '1';
 $('two').classList.toggle('on', input.twoPlayers);

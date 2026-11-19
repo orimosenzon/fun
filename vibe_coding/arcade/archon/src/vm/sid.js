@@ -171,6 +171,7 @@ export class SID {
     if (modeVol & 0x20) mix += this.bp;
     if (modeVol & 0x40) mix += hp;
     mix *= (modeVol & 15) / 15;
+    if (this.extra) mix += this.extra();   // sound added by a game extension
     if (this.outLen < this.out.length) this.out[this.outLen++] = mix > 1 ? 1 : mix < -1 ? -1 : mix;
   }
 

@@ -1,0 +1,9 @@
+name = "archon"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# public/ is assembled by deploy.sh (it holds the ROMs and the disk image, so it stays out of git)
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true

@@ -6,6 +6,11 @@ import { KEYS, JOY } from './vm/c64.js';
 const STICK_A = { ArrowUp: JOY.UP, ArrowDown: JOY.DOWN, ArrowLeft: JOY.LEFT, ArrowRight: JOY.RIGHT, Space: JOY.FIRE, Numpad0: JOY.FIRE };
 const STICK_B = { KeyW: JOY.UP, KeyS: JOY.DOWN, KeyA: JOY.LEFT, KeyD: JOY.RIGHT, KeyF: JOY.FIRE, ShiftLeft: JOY.FIRE };
 
+// A second button for each set, which the C64 joystick never had. Game extensions use it
+// (in Archon: the dragon's fire breath). Reported through onSpecial(port index).
+const SPECIAL_A = new Set(['Enter', 'ShiftRight', 'NumpadEnter']);
+const SPECIAL_B = new Set(['KeyE', 'KeyG', 'KeyX']);
+
 // Everything else goes to the C64 keyboard by physical position.
 const KEYMAP = {
   F1: ['F1'], F3: ['F3'], F5: ['F5'], F7: ['F7'],
@@ -25,6 +30,15 @@ export class Input {
     this.touch = 0;                      // from the on-screen pad
     this.pads = [0, 0];
     this.held = new Map();               // code → C64 keys it is holding
+    this.onSpecial = null;               // (port index) => {}, second button pressed
+    this.padSpecial = [false, false];
+  }
+
+  // Second button of set 'a' or 'b': same routing to the ports as the sticks.
+  special(set) {
+    if (!this.onSpecial) return;
+    if (!this.twoPlayers) { this.onSpecial(0); this.onSpecial(1); }
+    else this.onSpecial(set === 'a' ? 1 : 0);
   }
 
   attach(target = window) {
@@ -38,6 +52,7 @@ export class Input {
     const code = e.code;
     if (code in STICK_A) { this.sticks.a = down ? this.sticks.a | STICK_A[code] : this.sticks.a & ~STICK_A[code]; e.preventDefault(); this.apply(); return; }
     if (code in STICK_B) { this.sticks.b = down ? this.sticks.b | STICK_B[code] : this.sticks.b & ~STICK_B[code]; e.preventDefault(); this.apply(); return; }
+    if (this.onSpecial && (SPECIAL_A.has(code) || SPECIAL_B.has(code))) { if (down && !e.repeat) this.special(SPECIAL_A.has(code) ? 'a' : 'b'); e.preventDefault(); return; }
     const keys = KEYMAP[code];
     if (!keys) return;
     e.preventDefault();
@@ -78,7 +93,10 @@ export class Input {
       if (ax[1] > 0.5 || bt(13)) v |= JOY.DOWN;
       if (ax[0] < -0.5 || bt(14)) v |= JOY.LEFT;
       if (ax[0] > 0.5 || bt(15)) v |= JOY.RIGHT;
-      if (bt(0) || bt(1) || bt(2) || bt(3)) v |= JOY.FIRE;
+      if (bt(0) || (!this.onSpecial && (bt(1) || bt(2) || bt(3)))) v |= JOY.FIRE;
+      const sp = !!(bt(1) || bt(2) || bt(3));
+      if (sp && !this.padSpecial[i]) this.special(i ? 'b' : 'a');
+      this.padSpecial[i] = sp;
       if (this.pads[i] !== v) { this.pads[i] = v; changed = true; }
       i++;
     }

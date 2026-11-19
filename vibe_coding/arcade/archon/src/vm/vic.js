@@ -180,7 +180,7 @@ export class VIC {
 
     if (visible) {
       this.fb.set(col.subarray(0, WIDTH), row * WIDTH);
-      if (row === m.rows - 1) { this.frameReady = true; this.frames++; }
+      if (row === m.rows - 1) { this.frameReady = true; this.frames++; if (this.onFrame) this.onFrame(); }
     }
   }
 
