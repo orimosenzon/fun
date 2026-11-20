@@ -115,6 +115,7 @@ float realShadow(vec3 wp) {
 }
 void main() {
   if (vW.y < uClipY) discard;
+  if (uHole.z > 0.0 && distance(vW.xz, uHole.xy) < uHole.z) discard;
   vec2 uv = (vW.xz + uWorld.x) / (2.0 * uWorld.x) * (uWorld.z - 1.0) / uWorld.z + 0.5 / uWorld.z;
   vec3 n = texture2D(uNormal, uv, -1.0).xyz; n.xz = n.xz * 2.0 - 1.0; n = normalize(n);
   vec4 aux = texture2D(uAux, uv);

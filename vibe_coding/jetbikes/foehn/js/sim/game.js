@@ -8,6 +8,7 @@ import { T, groundAt } from './terrain.js';
 import { S, hitScenery, canopyAt } from './scenery.js';
 import { buildEvent, eventById } from './courses.js';
 import { indoor } from './castle.js';
+import { syncUnder } from './tunnel.js';
 import { Gun } from './gun.js';
 import { clamp, dot, sub, len, yprOf, qrot } from './vmath.js';
 
@@ -18,7 +19,7 @@ export class Game {
   constructor() {
     this.sim = new Sim();
     this.bike = this.sim.bike;
-    this.sim.fcs.obstacle = canopyAt;
+    this.sim.fcs.obstacle = (x, z, coarse) => (T.under !== null ? -1e9 : canopyAt(x, z, coarse));      // (no tree tops over a tunnel)
     this.state = 'idle';       // idle | countdown | fly | crashed | finished
     this.events = [];          // drained by the UI every frame
     this.build = null; this.cp = 0; this.time = 0; this.penalty = 0; this.vt = 0;
@@ -53,7 +54,7 @@ export class Game {
   setWind(level, seed = this.windSeed) { this.windLevel = level; this.windSeed = seed; if (!this.ev) return;
     // inside the halls of the fortress the walls keep most of the wind out
     const w = windFor(this.ev.wind, level, seed);
-    this.sim.wind = Object.assign((p, t, agl) => { const v = w(p, t, agl), k = 1 - 0.88 * indoor(p); if (k < 1) { v[0] *= k; v[1] *= k; v[2] *= k; } return v; }, { dir: w.dir, speed: w.speed });
+    this.sim.wind = Object.assign((p, t, agl) => { if (T.under !== null) return [0, 0, 0]; const v = w(p, t, agl), k = 1 - 0.88 * indoor(p); if (k < 1) { v[0] *= k; v[1] *= k; v[2] *= k; } return v; }, { dir: w.dir, speed: w.speed });
   }
   restart() {
     const st = this.build.start;
@@ -61,7 +62,7 @@ export class Game {
     // balloons are shot in any order: the one that is hit changes places with the next in line, so cp still counts them
     this.cps = this.cps0.slice(); this.cps0.forEach((c, k) => { c.k = k; c.popped = false; });
     this.gun.reset();
-    this.sim.reset(st.p, st.yaw); this.sim.t = 0;
+    syncUnder(st.p); this.sim.reset(st.p, st.yaw); this.sim.t = 0;
     this.cp = 0; this.time = 0; this.penalty = 0; this.vt = 0; this.ghost = []; this.splits = [];
     this.score = 0; this.combo = 1; this.lowT = 0; this.crashes = 0; this.misses = 0; this.landT = 0; this.tick = 0;
     this.fig = { loop: 0, roll: 0, inv: false, loops: 0, rolls: 0 };
@@ -83,6 +84,7 @@ export class Game {
   // ctl: { turn, pitch, strafe, throttle (-1..1), boost, brake } or autopilot { vt }
   update(dt, ctl) {
     const b = this.bike;
+    syncUnder(b.p);                                                     // above the ground or below it? (js/sim/tunnel.js)
     if (this.state === 'countdown') {
       const before = Math.ceil(this.stateT);
       this.stateT -= dt;
@@ -123,6 +125,7 @@ export class Game {
   onTick() {
     const b = this.bike, p = b.p;
     this.tick++;
+    syncUnder(p);
     this.gun.step(1 / 120, this);
     // --- aerobatics: the computer may have taken the bike back; smoke; figures flown ---
     const fc = this.sim.fcs, fig = this.fig;
@@ -219,12 +222,14 @@ export class Game {
   }
   respawn() {
     const r = this.respawnPose, b = this.bike, fuel = b.fuel;
+    syncUnder([r.p[0], r.p[1] + 1, r.p[2]]);
     if (r.speed > 0) {
       this.sim.reset(r.p, r.yaw, r.speed);
       b.v[1] = Math.sin(r.pitch || 0) * r.speed;
       this.vt = r.speed;
     } else { this.sim.reset([r.p[0], groundAt(r.p[0], r.p[2]), r.p[2]], r.yaw); this.vt = 0; }
     b.fuel = Math.max(fuel, 10);
+    syncUnder(b.p);
     this.state = 'fly'; this.prevP = b.p.slice();
     this.emit('respawn');
   }

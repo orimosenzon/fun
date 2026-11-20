@@ -96,8 +96,16 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5
 .hrow small { opacity: .7; } .hrow .und { font-size: 12px; opacity: .6; } .hrow .medal { display: inline-block; width: 13px; height: 13px; vertical-align: -1px; }
 .hb { display: flex; gap: 6px; flex-shrink: 0; } .hb button.b { padding: 5px 11px; font-size: 13px; }
 a.b { pointer-events: auto; cursor: pointer; font-weight: 600; text-decoration: none; padding: 9px 18px; border-radius: 10px; background: var(--acc); color: #1a0d04; }
-#menu, #pause, #finish, #help, #hist, #vid, #cred { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
-#menu.on, #pause.on, #finish.on, #help.on, #hist.on, #vid.on, #cred.on { display: flex; }
+#menu, #pause, #finish, #help, #hist, #vid, #cred, #brief { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 18px; overflow: auto; }
+#menu.on, #pause.on, #finish.on, #help.on, #hist.on, #vid.on, #cred.on, #brief.on { display: flex; }
+#brief { background: rgba(6,10,16,.94); }
+#brief .hand { direction: ltr; text-align: left; font: italic 21px/1.5 "Segoe Script", "Bradley Hand", "Snell Roundhand", "Comic Sans MS", cursive; color: #e9dcb8; margin: 4px 0 6px; padding: 14px 18px; background: rgba(233,220,184,.07); border-left: 3px solid #c8b46a; border-radius: 4px; }
+#brief .hand small { display: block; text-align: right; opacity: .7; font-size: 15px; }
+#brief .tr { font-size: 16px; line-height: 1.6; opacity: .92; margin: 8px 0; }
+#brief .note { font-size: 14.5px; line-height: 1.6; opacity: .75; margin: 10px 0 4px; }
+#brief svg { display: block; margin: 6px auto 0; width: 210px; height: 120px; }
+#fstory { font-size: 15px; line-height: 1.6; margin: 12px auto 2px; max-width: 480px; color: #e9dcb8; }
+#fstory:empty { display: none; }
 #cred h3 { margin: 14px 0 6px; font-size: 15px; opacity: .8; }
 #cred .cr { margin: 0 0 10px; font-size: 14.5px; line-height: 1.5; }
 #cred .cr b { display: block; }
@@ -134,6 +142,10 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
 #mute { position: fixed; top: 10px; left: 10px; z-index: 30; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: var(--txt); background: var(--glass); border: 1px solid var(--line); opacity: .8; }
 #mute:hover { opacity: 1; } #mute svg { width: 20px; height: 20px; } #mute .off { display: none; } #mute.muted .on { display: none; } #mute.muted .off { display: inline; } #mute.muted { color: #ffb4a8; }
 #err { position: fixed; left: 10px; right: 10px; top: 10px; background: #7a1020; color: #fff; padding: 10px 14px; border-radius: 8px; font: 13px ui-monospace, monospace; display: none; z-index: 20; direction: ltr; white-space: pre-wrap; }
+/* U: the clean screen, nothing but the bike and the land */
+body.clean #hud, body.clean #mute, body.clean #tune, body.clean #rtag, body.clean #rhint, body.clean #rbtn { opacity: 0 !important; pointer-events: none !important; transition: opacity .3s; }
+#cleanTip { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 31; padding: 6px 14px; border-radius: 999px; font-size: 13.5px; color: var(--txt); background: var(--glass); border: 1px solid var(--line); opacity: 0; pointer-events: none; }
+#cleanTip.on { animation: cleanTip 2.4s ease-out; } @keyframes cleanTip { 0%, 70% { opacity: .9; } 100% { opacity: 0; } }
 #touch { position: fixed; inset: 0; pointer-events: none; display: none; } #touch.on { display: block; }
 #touch .stick { position: absolute; left: 22px; bottom: 150px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid var(--line); pointer-events: auto; }
 #touch .stick i { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.4); }
@@ -183,8 +195,17 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
   <div class="rowbtn" style="justify-content:flex-start"><button class="b pri" id="pResume" data-i18n="p.resume">המשך</button><button class="b" id="pRestart" data-i18n="p.restart">התחלה מחדש</button><button class="b" id="pReplay" data-i18n="p.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="pMenu" data-i18n="p.menu">תפריט ראשי</button><button class="b" id="pHelp" data-i18n="p.keys">מקשים</button></div>
 </div></div>
 
+<div id="brief"><div class="box panel">
+  <h2 data-i18n="brief.title">השורה האחרונה</h2>
+  <div class="hand">There was a second ring. Bigger than the one they show the visitors. We never switched it on, and nobody will tell you it was ever dug. What I left there is for the boy, when he is grown.<small>H.</small></div>
+  <svg viewBox="0 0 210 120" fill="none" stroke="#e9dcb8" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M150 4 C205 40 205 96 138 118" stroke-dasharray="1 5"/><path d="M-20 60 A130 130 0 0 1 150 4 M138 118 A130 130 0 0 1 60 121" opacity=".55"/><path d="M38 66 c10 -12 44 -16 62 -8 c10 5 4 16 -12 19 c-18 4 -44 3 -50 -11 z"/><path d="M146 52 c8 -7 26 -6 30 2 c3 8 -8 13 -20 12 c-10 -1 -15 -8 -10 -14 z"/><circle cx="163" cy="58" r="2.4" fill="#e9dcb8"/><path d="M172 44 l14 -14 m0 0 l-7 1 m7 -1 l-1 7" stroke-width="1.2"/></svg>
+  <p class="tr" id="briefHe" data-i18n="brief.he">"הייתה טבעת שנייה. גדולה מזו שמראים למבקרים. אף פעם לא הפעלנו אותה, ואף אחד לא יספר לך שחפרו אותה. מה שהשארתי שם הוא בשביל הילד, כשיגדל."</p>
+  <p class="note" data-i18n="brief.note">זאת השורה שבשולי התרשים. אבא של יקיר עבד ב-CERN, והוא כותב על מאיץ אחר, סודי, שננטש. איפה הוא? את זה הוא לא כותב. אבל ליד השורה יש שרבוט קטן: עיגול גדול, שני אגמים, ונקודה אחת באגם הקטן.</p>
+  <div class="rowbtn"><button class="b pri" id="briefGo" data-i18n="brief.go">לצאת לדרך</button></div>
+</div></div>
+
 <div id="finish"><div class="box panel" style="text-align:center">
-  <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div>
+  <h2 id="fname"></h2><div id="ftime" class="num"></div><div id="fmedal"></div><div id="fbest"></div><div id="fstat" style="opacity:.8;font-size:14px;margin-top:6px"></div><div id="fstory"></div>
   <div class="rowbtn"><button class="b pri" id="fRetry" data-i18n="f.retry">שוב <kbd>R</kbd></button><button class="b" id="fReplay" data-i18n="f.replay">הילוך חוזר <kbd>V</kbd></button><button class="b" id="fFilm" data-i18n="f.film">הורדת סרטון</button><button class="b" id="fNext" data-i18n="f.next">האירוע הבא</button><button class="b" id="fMenu" data-i18n="f.menu">תפריט</button></div>
 </div></div>
 
@@ -226,6 +247,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
     <tr><td><kbd>Q</kbd></td><td data-i18n="h.acro">מצב אירובטי, הדלקה וכיבוי (באוויר). המקשים מסובבים עכשיו את האופנוע עצמו: <kbd>←</kbd> <kbd>→</kbd> מגלגלים אותו, <kbd>↓</kbd> <kbd>↑</kbd> מושכים ודוחפים את האף, <kbd>A</kbd> <kbd>D</kbd> הם ההגה. משחררים, והוא נשאר בדיוק במצב שבו עזבת אותו</td></tr>
     <tr><td><kbd>C</kbd></td><td data-i18n="h.cam">מצלמה: מרדף, קרוב, עיני הרוכב, קולנועית</td></tr>
     <tr><td><kbd>R</kbd> · <kbd>Esc</kbd> · <kbd>M</kbd></td><td data-i18n="h.misc">התחלה מחדש · הפסקה · השתקה</td></tr>
+    <tr><td><kbd>U</kbd></td><td data-i18n="h.clean">מסך נקי: כל המחוונים נעלמים ונשארים רק האופנוע והנוף. לחיצה נוספת מחזירה אותם</td></tr>
   </table>
   <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.wx">מזג האוויר והרוח נקבעים בתפריט הראשי. גשם ושלג משנים את מה שרואים. הרוח משנה את הטיסה: ככל שהיא חזקה יותר, המשבים שלה חזקים ופחות צפויים, והם באים מכל כיוון. מד הרוח שליד מד המהירות מראה לאן היא דוחפת אותך ברגע זה.</p>
   <p style="margin:10px 0 0;font-size:14px;opacity:.85" data-i18n="h.acro2">אירובטיקה: מחזיקים <kbd>↓</kbd> לאורך כל הסיבוב ויוצא לופ (כ-4 g; כדאי להתחיל מ-200 קמ"ש ומעלה). מחזיקים <kbd>←</kbd> או <kbd>→</kbd> ויוצא גלגול, ומשחררים קצת לפני הסוף: קרוב לישר, לצד, להפוך, לאופקי או לאנכי האופנוע מתיישב בדיוק שם. המסלול הולך אחרי האף, והמחשב נושא את המשקל בכל מקום שהנחירים מסוגלים. על הגב הם לא מסוגלים: שם האופנוע נופל, אז ממשיכים למשוך. על הצד המשקל תלוי על נחירי הצד ומחמם את הליבה. <kbd>Q</kbd> שוב, והמחשב מגלגל לישר ומיישר; הוא גם לוקח את האופנוע בעצמו כשהקרקע קרובה מדי בשביל לצאת מזה אחר כך.</p>
@@ -246,6 +268,7 @@ table.keys td:first-child { white-space: nowrap; width: 1%; direction: ltr; text
 
 <div id="load"><div class="t">F<span>Ö</span>HN</div><div id="lbar"><i></i></div><div id="ltxt"></div></div>
 <button id="mute" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
+<div id="cleanTip"></div>
 <div id="err"></div>
 <script>
   window.addEventListener('error', (e) => { const el = document.getElementById('err'); el.style.display = 'block'; el.textContent += (e.message || e) + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : '') + '\n'; });

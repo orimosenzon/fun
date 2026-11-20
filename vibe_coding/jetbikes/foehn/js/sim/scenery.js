@@ -4,6 +4,8 @@ import { fbm, hash2, mulberry32 } from './noise.js';
 import { clamp, sstep } from './vmath.js';
 import { EVENTS, buildEvent } from './courses.js';
 import { buildCastle, hitCastle } from './castle.js';
+import { hitTunnel } from './tunnel.js';
+import { HAMLET, ISLE } from './ringSite.js';
 import { SHAPES } from './buildings.js';
 
 export const S = { trees: null, count: 0, cellOf: null, cellStart: null, grid: 48, gn: 0, props: [], mask: null, ready: false };
@@ -46,6 +48,13 @@ function makeProps() {
   // a few lonely hay barns on the meadows
   const barns = [[-3200, 2050], [-2900, 2620], [-1000, 2450], [-150, 2250], [900, 1500], [4600, 1150], [3350, -2650], [-3900, -900]];
   barns.forEach(([x, z], i) => { if (normalAt(x, z)[1] > 0.97 && waterAt(x, z) < groundAt(x, z)) add('barn', x, z, hash2(x, z, 9) * 3.14, 7, 5, 3.6, { seed: 300 + i }); });
+  // the last hamlet of the valley, on the way to the second lake: a few houses along a lane, a barn, a well
+  if (T.hole) {
+    const hx = HAMLET.x, hz = HAMLET.z;
+    [[-58, -34, 0.2], [-22, -40, -0.1], [18, -36, 0.15], [54, -30, -0.2], [-40, 30, 3.3], [2, 36, 3.0], [44, 34, 3.25]].forEach(([dx, dz, yaw], i) => add('chalet', hx + dx, hz + dz, yaw, 9 + (i % 3), 7 + (i % 2), 5.2 + 0.4 * (i % 4), { seed: 40 + i }));
+    add('barn', hx + 92, hz + 18, 0.4, 7, 5, 3.6, { seed: 320 });
+    add('well', hx + 4, hz - 4, 0.2, 2, 2, 2.0);
+  }
   return out;
 }
 
@@ -60,11 +69,12 @@ function makeMask() {
   for (const rv of T.meta.rivers) for (const p of rv.pts) disc(p[0], p[2], rv.width / 2 + 10);
   for (const [name, p] of Object.entries(T.meta.pads)) disc(p[0], p[2], name === 'village' ? 150 : p[3] * 1.5 + 14);
   for (const p of S.props) disc(p.x, p.z, Math.max(p.w, p.d) * 0.9 + 6);
+  if (T.hole) { disc(ISLE.x, ISLE.z, 44); disc(HAMLET.x, HAMLET.z, 70); }      // the bare top of the island, the lane of the hamlet
   // the racing lines of all events (only where they run low)
   for (const ev of EVENTS) {
     if (ev.gun) continue;                    // the balloons of a shooting range may hide behind trees
     const b = buildEvent(ev);
-    for (const q of b.path) if (q[1] - groundAt(q[0], q[2]) < 34) disc(q[0], q[2], 34);
+    for (const q of b.path) if (!q.under && q[1] - groundAt(q[0], q[2]) < 34) disc(q[0], q[2], 34);
   }
   return m;
 }
@@ -126,7 +136,7 @@ export function buildScenery() {
 
 // Does the point (world) touch a tree (trunk or the cone of its crown) or a building?
 export function hitScenery(p, pad = 0.35) {
-  if (hitCastle(p, pad)) return 'wall';
+  if (hitCastle(p, pad) || hitTunnel(p, pad)) return 'wall';
   const half = T.half, gs = S.grid, gn = S.gn;
   const ci = Math.floor((p[0] + half) / gs), cj = Math.floor((p[2] + half) / gs);
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {

@@ -25,6 +25,8 @@ import { buildProps, Gates } from './render/props.js';
 import { Targets } from './render/targets.js';
 import { buildCastleMesh } from './render/castle.js';
 import { hitCastle, nearCastle, indoor } from './sim/castle.js';
+import { buildTunnel } from './render/tunnel.js';
+import { hitTunnel, syncUnder, RING } from './sim/tunnel.js';
 import { buildBike } from './render/bikeModel.js';
 import { FX } from './render/fx.js';
 import { Post } from './render/post.js';
@@ -105,6 +107,8 @@ async function boot() {
   await load(0.7, t('load.village'));
   const props = buildProps(scene);
   const castle = buildCastleMesh(scene);
+  const tunnel = buildTunnel(scene);      // the ring under the second lake
+  let deep = 0;                           // 0 in the open .. 1 under the earth: where the camera is
   const gates = new Gates(scene), targets = new Targets(scene);
   const model = buildBike(); scene.add(model.root);
   const ghost = buildBike(true); ghost.root.visible = false; scene.add(ghost.root);
@@ -168,6 +172,9 @@ async function boot() {
     game.windLevel = save.set.wind; game.windSeed = Q.has('seed') ? +Q.get('seed') : 1 + Math.floor(Math.random() * 1e6);   // no two runs get the same gusts
     if (mode === 'play') saveRun();                  // the run that is being left goes into the history
     game.load(id, demo ? null : bestOf(id)); fauna.reset();
+    // an event of the story opens with its page of the story (once a visit; ?brief shows it always, ?nobrief never)
+    brief = !demo && !!game.ev.story && !briefSeen[id] && (Q.has('brief') || (!Q.has('nobrief') && !navigator.webdriver));
+    $('brief').classList.toggle('on', brief); if (brief) briefSeen[id] = true;
     if (game.ev.env) setEnv(game.ev.env);              // an event with a day of its own begins at its own hour
     rec.reset(); run = demo ? 0 : Date.now(); runN = 0;
     auto = demo ? new Autopilot(game) : null;
@@ -178,12 +185,15 @@ async function boot() {
     else { hud.show(false); game.stateT = 0.01; camMode = 'cine'; cine.t = 0; }
     ghost.root.visible = false;
   }
+  let brief = false; const briefSeen = {};
+  $('briefGo').onclick = (e) => { brief = false; $('brief').classList.remove('on'); e.currentTarget.blur(); };
   function hintFor(id) {
     const first = !save.best[id];
     if (id === 'first' && first) hud.hint(t('hint.first'));
     else if (id === 'free') hud.hint(t('hint.free'));
     else if (id === 'castle' && first) hud.hint(t('hint.castle'));
     else if (id === 'hunt') hud.hint(t('hint.hunt'));
+    else if (id === 'ring') hud.hint(t('hint.ring'));
     else hud.hint('');
     setTimeout(() => hud.hint(''), 14000);
   }
@@ -266,8 +276,8 @@ async function boot() {
       switch (e.type) {
         case 'count': hud.message(String(e.n), '', 0.8); audio.count(false); break;
         case 'go': if (game.ev.medals) { hud.message(t('go'), '', 0.9); audio.count(true); } break;
-        case 'gate': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (e.perfect) hud.message('', t('perfect'), 0.7); flash = 0.06; break;
-        case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last) hud.message(t('landed'), t('landed.sub'), 1.4); break;
+        case 'gate': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (said(e)) { /* the story speaks */ } else if (e.perfect) hud.message('', t('perfect'), 0.7); flash = 0.06; break;
+        case 'land': audio.gate(e.perfect, e.last); hud.delta(e.delta); if (!e.last && !said(e)) hud.message(t('landed'), t('landed.sub'), 1.4); break;
         case 'miss': audio.miss(); hud.message('', t('missed'), 2.2); break;
         case 'wrongway': audio.miss(); hud.message('', t('wrongway'), 2.2); break;
         case 'crash': fx.explode(e.p, e.v, e.water); audio.crash(e.water); hud.crash(e.reason); break;
@@ -287,8 +297,11 @@ async function boot() {
     }
     game.events.length = 0;
   }
+  // a check-point of a story event may have something to say when it is passed
+  const said = (e) => { const c = game.cps[e.index]; if (!c || !c.say) return false; hud.message(c.say.t ? t(c.say.t) : '', t(c.say.s), 5); return true; };
   function onFinish(r) {
     const id = game.ev.id, mine = run;
+    $('fstory').textContent = game.ev.story ? t(id + '.end') : '';
     setTimeout(() => run === mine && saveRun(), 7600);          // once the seconds after the line are on tape too
     if (r.isBest) { save.best[id] = { time: r.time, splits: r.splits, medal: Math.max(r.medal, (save.best[id] || {}).medal || 0), ghost: r.ghost.length < 60000 ? b64(r.ghost) : null, _g: r.ghost }; }
     else save.best[id].medal = Math.max(save.best[id].medal || 0, r.medal);
@@ -484,11 +497,12 @@ async function boot() {
       if (cine.t <= 0 || d > 560 || !camInit) {
         // a new vantage point ahead of the bike, beside its path, low over the ground
         // (never further ahead than the bike can be followed from: at 450 km/h a point 3 s ahead was already out of range, and the view jumped every frame)
-        const side = Math.random() < 0.5 ? -1 : 1, ahead = Math.min(2.2 + Math.random() * 1.5, 300 / Math.max(V, 1));
-        const x = b.p[0] + b.v[0] * ahead + fw[2] * side * (14 + Math.random() * 40) + fh[0] * 40, z = b.p[2] + b.v[2] * ahead - fw[0] * side * (14 + Math.random() * 40) + fh[2] * 40;
-        const y = Math.max(surfaceAt(x, z) + 2.5 + Math.random() * 10, b.p[1] + b.v[1] * ahead - 12 + Math.random() * 16);
+        const side = Math.random() < 0.5 ? -1 : 1, ahead = Math.min(2.2 + Math.random() * 1.5, 300 / Math.max(V, 1)), und = T.under !== null;      // (in the tunnel: close to its middle, under its roof)
+        const off = und ? 1 + Math.random() * 4 : 14 + Math.random() * 40, on = und ? 0 : 40;
+        const x = b.p[0] + b.v[0] * ahead + fw[2] * side * off + fh[0] * on, z = b.p[2] + b.v[2] * ahead - fw[0] * side * off + fh[2] * on;
+        const y = und ? T.under + 1.5 + Math.random() * 4 : Math.max(surfaceAt(x, z) + 2.5 + Math.random() * 10, b.p[1] + b.v[1] * ahead - 12 + Math.random() * 16);
         cine.p.set(x, y, z); cine.t = 5 + Math.random() * 3;
-        if (hitCastle([x, y, z], 2)) cine.t = 0;                 // inside a wall: pick again next frame
+        if (hitCastle([x, y, z], 2) || hitTunnel([x, y, z], 1)) cine.t = 0;                 // inside a wall: pick again next frame
         if (!camInit) camLook.copy(tmpV); camInit = true;
       }
       camera.position.copy(cine.p); camLook.lerp(tmpV, 1 - Math.exp(-dt * 9)); camera.up.set(0, 1, 0); camera.lookAt(camLook);
@@ -534,12 +548,13 @@ async function boot() {
       const dx = camPos.x - b.p[0], dy = camPos.y - b.p[1], dz = camPos.z - b.p[2], dd = Math.hypot(dx, dy, dz), mx = dist + 2.5;
       if (dd > mx) camPos.set(b.p[0] + dx / dd * mx, b.p[1] + dy / dd * mx, b.p[2] + dz / dd * mx);
       camPos.y = Math.max(camPos.y, surfaceAt(camPos.x, camPos.z) + 0.9);
-      if (nearCastle(b.p)) {
+      if (nearCastle(b.p) || T.under !== null || (T.hole && Math.hypot(b.p[0] - T.hole.x, b.p[2] - T.hole.z) < 40)) {
         // between walls: never let masonry come between the camera and the bike
         const ax = b.p[0], ay = b.p[1] + 0.9, az = b.p[2];
         for (let k = 1; k <= 12; k++) {
           const u = k / 12;
-          if (hitCastle([ax + (camPos.x - ax) * u, ay + (camPos.y - ay) * u, az + (camPos.z - az) * u], 0.45)) { const f = Math.max(0.12, (k - 1) / 12); camPos.set(ax + (camPos.x - ax) * f, ay + (camPos.y - ay) * f, az + (camPos.z - az) * f); break; }
+          const cq = [ax + (camPos.x - ax) * u, ay + (camPos.y - ay) * u, az + (camPos.z - az) * u];
+          if (hitCastle(cq, 0.45) || hitTunnel(cq, 0.45)) { const f = Math.max(0.12, (k - 1) / 12); camPos.set(ax + (camPos.x - ax) * f, ay + (camPos.y - ay) * f, az + (camPos.z - az) * f); break; }
         }
       }
       camera.position.copy(camPos);
@@ -565,6 +580,7 @@ async function boot() {
     // keys
     for (const k of input.pressed) {
       if (k === 'KeyM') setMute(!audio.muted);
+      if (k === 'KeyU' && !(rp && rp.film)) { const on = document.body.classList.toggle('clean'), tip = $('cleanTip'); tip.textContent = t(on ? 'clean.on' : 'clean.off'); tip.classList.remove('on'); void tip.offsetWidth; tip.classList.add('on'); }
       if (mode === 'replay') {
         if (k === 'Escape' || ((k === 'Enter' || k === 'KeyV' || k === 'PadA') && !rp.film)) stopReplay();
         else if (rp.film) { /* nothing else while the film is being recorded */ }
@@ -574,6 +590,7 @@ async function boot() {
         else if (k === 'ArrowLeft') replaySeek(rp.t - 5);
         else if (k === 'KeyC') { const sh = rp.plan.shotAt(rp.t); if (sh.b < rec.t1 - 0.6) replaySeek(sh.b + 0.01); }
       } else if (mode === 'play') {
+        if (brief) { if (k === 'Enter' || k === 'Space' || k === 'Escape' || k === 'PadA') $('briefGo').click(); continue; }
         if (k === 'KeyV' && (paused || game.state === 'finished')) { startReplay(); continue; }
         if (k === 'Escape' || k === 'KeyP') { if ($('help').classList.contains('on')) $('help').classList.remove('on'); else setPause(!paused); }
         if (k === 'KeyR') startEvent(game.ev.id);
@@ -586,7 +603,7 @@ async function boot() {
     input.pressed.length = 0;
     const stepping = rp && rp.film && rp.film.step && !rp.wrap;     // a film is being made: every frame is 1/60 s of it, however long it took
     if (stepping) { dt = 1 / FPS; audio.tapeT = rp.film.time; }
-    if (!paused && !(rp && rp.hold) && !(stepping && rp.film.full)) {
+    if (!paused && !brief && !(rp && rp.hold) && !(stepping && rp.film.full)) {
       const realDt = dt;
       let ctl = lastCtl;
       if (rp) dt = replayStep(realDt);
@@ -600,14 +617,15 @@ async function boot() {
       }
       time += dt; U.uTime.value = time;
       const b = game.bike, alive = game.state !== 'crashed';
+      syncUnder(b.p);                                   // (a replay writes the bike's place without the game's rules running)
       model.root.visible = alive; model.update(b, time, lean, dt);
       const gp = mode === 'play' && game.state === 'fly' ? game.ghostAt(game.total) : null;
       ghost.root.visible = !!gp; if (gp) ghost.setPose(gp);
       fx.update(dt, b, game.sim.windW, alive);
-      fauna.update(dt, b.p, alive ? b.v : ZERO3);
+      if (T.under === null) fauna.update(dt, b.p, alive ? b.v : ZERO3);      // (nobody grazing above hears a bike in the tunnel)
       water.wash.set(fx.washPos[0], fx.washPos[1], 6, fx.washStrength);
       targets.update(time, rp ? (k) => !rp.popped.has(k) : (k) => !game.cps0[k].popped, rp || game.state === 'finished' ? null : game.nextCp, rp ? rp.flying : game.gun.shots);
-      gates.update(game, time); gates.matDisc.visible = !rp; if (rp) gates.beam.visible = false;      // the beacon and the glass of the next ring are for the rider, not for the film
+      gates.update(game, time); gates.matDisc.visible = !rp; if (rp || deep > 0.02) gates.beam.visible = false;      // the beacon and the glass of the next ring are for the rider, not for the film
       castle.update(time, game.sim.windW, camera.position, renderer.getDrawingBufferSize(tmpV2).y, camera.fov);
       audio.engine(b, alive && mode !== 'menu', camera.position.distanceTo(model.root.position), rp ? !!rp.o.on : camMode === 'cockpit');
       if (mode === 'play') {
@@ -617,25 +635,31 @@ async function boot() {
       }
       updateCamera(dt);
       dt = realDt;
-      const roof = indoor([camera.position.x, camera.position.y, camera.position.z]), wNow = game.sim.windW;
+      tunnel.update(camera, b, qrot(b.q, [1, 0, 0]));
+      deep = tunnel.depth([camera.position.x, camera.position.y, camera.position.z]);
+      const roof = Math.max(deep, indoor([camera.position.x, camera.position.y, camera.position.z])), wNow = game.sim.windW;
       weather.update(dt, camera, wNow, roof, renderer.getDrawingBufferSize(tmpV2).y);
       audio.weather(save.set.weather === 'rain' ? 1 - 0.7 * roof : 0, Math.hypot(wNow[0], wNow[1], wNow[2]) * (1 - 0.6 * roof), mode !== 'menu');
     }
     // ---- render ----
     const b = game.bike;
+    const und = T.under; T.under = null;              // what grows and grazes is placed on the real ground, wherever the bike is
     updateTerrain(camera); updateForest(camera, qual.forest); herds.update(camera, 1500 * qual.forest); flora.update(camera, qual.forest);
+    T.under = und;
     sky.position.copy(camera.position); sky.updateMatrix();
     // shadow frustum follows the bike
     const film = !!rp || camMode === 'cine', s = sunInfo.sun, fx0 = b.p[0], fy0 = b.p[1], fz0 = b.p[2];
     sun.target.position.set(fx0, fy0, fz0); sun.position.set(fx0 + s[0] * 400, fy0 + s[1] * 400, fz0 + s[2] * 400); sun.target.updateMatrixWorld();
-    sun.intensity = s[1] > 0.02 ? Math.PI : 0;
+    // no daylight under the earth: what lights the bike there is the lamp of the tunnel (render/tunnel.js)
+    const dk = tunnel.depth(b.p);
+    sun.intensity = s[1] > 0.02 ? Math.PI * (1 - dk) : 0; hemi.intensity = Math.PI * 0.75 * (1 - 0.94 * dk); scene.environmentIntensity = 0.55 * (1 - 0.9 * dk);
     if (qual.refl) renderReflection(renderer, scene, camera, hideInRefl, (v) => { updateTerrain(v, 2.5); });
     else water.lakes[0].material.uniforms.uHasRefl.value = 0;
     updateTerrain(camera);
     renderer.setRenderTarget(post.main); renderer.clear(); renderer.render(scene, camera);
     if (sun.shadow.map) { U.uShadowMap.value = sun.shadow.map.texture; U.uShadowMat.value.copy(sun.shadow.matrix); U.uShadowOn.value = 1; }
     flash = Math.max(0, flash - dt * 0.5);
-    post.finish(camera, s, { blur: film ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (film ? 0 : 1) + b.abOut * (film ? 0 : 0.3), time, exposure, flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays });
+    post.finish(camera, s, { blur: film ? 0.3 : 0.5, speed: clamp((b.airspeed - 35) / 80, 0, 1) * (film ? 0 : 1) + b.abOut * (film ? 0 : 0.3), time, exposure: lerp(exposure, 1.15, deep), flash: Math.min(0.6, flash + Math.max(0, fx.flashT - 0.42) * 6), rays: rays * (1 - deep) });
     if (rp && rp.film && !rp.wrap && !(stepping && rp.film.full)) { rp.film.grab(Math.max(1 - (rp.t - rec.t0) / 0.5, 1 - (rec.t1 - rp.t) / 0.6, 0)); if (rp.last) endFilm(); }
     if (!paused && !rp) hud.update(dt, game, camera, viewW, viewH);
     // adaptive resolution

@@ -177,8 +177,9 @@ export class Gates {
       it.ring.scale.setScalar(s);
       if (next) {
         // a light beam marks the next check-point from afar
-        const h = it.c.type === 'land' ? 260 : 190;
-        this.beam.visible = true; this.beam.scale.set(it.c.type === 'land' ? it.c.r : 1.2, h, it.c.type === 'land' ? it.c.r : 1.2);
+        // (a landing under the earth: a thin beam up the shaft and out of its mouth, and none at all under a roof)
+        const h = it.c.type === 'land' ? 260 : 190, rr = it.c.type !== 'land' ? 1.2 : it.c.under ? 1.4 : it.c.r;
+        this.beam.visible = !(it.c.under && it.c.top === undefined); this.beam.scale.set(rr, h, rr);
         this.beam.position.set(it.c.p[0], it.c.p[1] + (it.c.type === 'land' ? h / 2 : it.c.r + h / 2), it.c.p[2]);
       }
     }

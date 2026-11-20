@@ -3,6 +3,7 @@
 import { groundAt, surfaceAt, T } from './terrain.js';
 import { clamp } from './vmath.js';
 import { castleCourse } from './castle.js';
+import { tunnelCourse } from './tunnel.js';
 
 // helper: point on a valley centre line at a given x (main valley) or index fraction, shifted sideways
 function on(valley, t, off = 0) {
@@ -108,6 +109,16 @@ export const EVENTS = [
       H([-1836, -520], 2262), H([-1690, -650], 2235), H([-1400, -560], 2160), H([-1240, -200], 2010), H([-1300, 320], 1720), H([-1600, 1000], 1350), H([-1780, 1600], 1090), L('base')],
   },
   {
+    // The story goes on (js/ui/story.js ends with a line Yakir has not read yet). Past the big lake,
+    // past the last hamlet of the valley, a second lake; on its island a hole; under it the ring
+    // (js/sim/tunnel.js). Down the shaft, five sector doors, and a landing in the hall behind them.
+    id: 'ring', name: 'הטבעת השנייה', tag: 'השורה האחרונה בתרשים: מעבר לאגם, אחרי הכפר האחרון, יש אי עם חור באדמה. יורדים בפיר, עוברים חמש דלתות וטסים עד האולם',
+    start: { pad: 'pier', yaw: 0.6 }, wind: { speed: 3, gust: 0.8, heading: 0.2 }, medals: [140, 170, 230], story: true,
+    cps: () => [G(atX('main', 1800, 120), 9, 12), G(atX('main', 2300, 60), 7, 11), G([2800, 1080], 8, 12), G(atX('main', 3300, 0), 7, 11), G(atX('main', 3800, 0), 8, 12),
+      G([4240, 990], 16, 14, { say: { s: 'ring.s1' } }), G([4470, 1215], 13, 13, { say: { s: 'ring.s2' } }), G([4730, 1195], 14, 14), G([4960, 1200], 8, 12, { say: { s: 'ring.s3' } }), G([5150, 1190], 9, 12, { say: { s: 'ring.s4' } }),
+      ...tunnelCourse()],
+  },
+  {
     // no rings: ten balloons, shot in any order with the nose gun. The clock stops with the last one,
     // and every round that hits nothing costs two seconds.
     id: 'hunt', name: 'ציד בלונים', tag: 'עשרה בלונים, תותח אחד בחרטום. מכוונים עם האופנוע כולו, וכל החטאה עולה שתי שניות', gun: true,
@@ -151,41 +162,46 @@ export function buildEvent(ev) {
   const sp = pads[ev.start.pad];
   const start = { p: [sp[0], sp[1], sp[2]], yaw: ev.start.yaw, pad: ev.start.pad };
   const cps = ev.cps().map((c) => {
-    if (c.land) { const p = pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15), stage: c.stage }; }
-    return { type: c.target ? 'target' : c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow, stage: c.stage };
+    // (a landing is on a pad of the map, or `at` a place of its own: lift is how high above it the line arrives,
+    // top a height to keep until right over it (the shaft), appr the height the demo rider comes in at)
+    if (c.land) { const p = c.at || pads[c.land]; return { type: 'land', pad: c.land, p: [p[0], p[1], p[2]], r: Math.min(p[3] * 0.55, 15), stage: c.stage, lift0: c.lift ?? 24, top: c.top, appr: c.appr, under: !!c.under, say: c.say }; }
+    return { type: c.target ? 'target' : c.hint ? 'hint' : 'ring', p: [c.x, c.alt !== undefined ? c.alt : surfaceAt(c.x, c.z) + c.agl, c.z], r: c.r, finish: !!c.finish, v: c.v, slow: !!c.slow, stage: c.stage, under: !!c.under, say: c.say };
   });
   // reference line: start (lifted), check-points (landings approached from above)
   const up = ev.start.up || [22, 26, 70];     // how the line leaves the pad: height above it, then height and distance of the first node
   const nodes = [[start.p[0], start.p[1] + up[0], start.p[2]], [start.p[0] + Math.cos(start.yaw) * up[2], start.p[1] + up[1], start.p[2] - Math.sin(start.yaw) * up[2]]];
   const nodeOf = [];
-  for (const c of cps) { nodeOf.push(nodes.length); nodes.push(c.type === 'land' ? [c.p[0], c.p[1] + 24, c.p[2]] : c.p); }
+  const below = [false, false];                 // nodes under the earth (js/sim/tunnel.js): the line between them is taken as it is
+  for (const c of cps) { nodeOf.push(nodes.length); nodes.push(c.type === 'land' ? [c.p[0], c.p[1] + c.lift0, c.p[2]] : c.p); below.push(c.under); }
   const path = catmull(nodes, 10);
+  for (const q of path) q.under = below[q.seg] || !!below[q.seg + 1];
   // Keep the line clear of the ground (12 m, less only where a low check-point asks for it),
   // and never ask for a climb or dive steeper than a loaded bike can fly.
   const lowAt = new Map();
-  cps.forEach((c, k) => { if (c.type !== 'land') lowAt.set(nodeOf[k], c.p[1] - surfaceAt(c.p[0], c.p[2])); });
+  cps.forEach((c, k) => { if (c.type !== 'land' && !c.under) lowAt.set(nodeOf[k], c.p[1] - surfaceAt(c.p[0], c.p[2])); });
   const ds = (i) => Math.hypot(path[i + 1][0] - path[i][0], path[i + 1][2] - path[i][2]);
   for (let i = 0; i < path.length; i++) {
     const q = path[i];
+    if (q.under) continue;
     let clear = 12;
     for (const [node, agl] of lowAt) if (agl < clear && (q.seg === node || q.seg === node - 1)) clear = Math.min(clear, Math.max(agl, 5));
     q[1] = Math.max(q[1], surfaceAt(q[0], q[2]) + clear);
   }
   for (let pass = 0; pass < 2; pass++) {
-    for (let i = path.length - 2; i >= 0; i--) path[i][1] = Math.max(path[i][1], path[i + 1][1] - 0.5 * ds(i));
-    for (let i = 1; i < path.length; i++) path[i][1] = Math.max(path[i][1], path[i - 1][1] - 0.55 * ds(i - 1));
+    for (let i = path.length - 2; i >= 0; i--) if (!path[i].under) path[i][1] = Math.max(path[i][1], path[i + 1][1] - 0.5 * ds(i));
+    for (let i = 1; i < path.length; i++) if (!path[i].under) path[i][1] = Math.max(path[i][1], path[i - 1][1] - 0.55 * ds(i - 1));
   }
   // smooth the height profile (crests make a fast bike balloon, dips need room to pull out)
   // while staying above the ground clearance and pinned to the rings
   const floor = path.map((q) => q[1]);
   const pin = new Map();
-  cps.forEach((c, k) => { if (c.type !== 'land') { const i = path.findIndex((q) => q.seg >= nodeOf[k]); if (i > 0) pin.set(i, Math.max(c.p[1], floor[i])); } });
+  cps.forEach((c, k) => { if (c.type !== 'land' && !c.under) { const i = path.findIndex((q) => q.seg >= nodeOf[k]); if (i > 0) pin.set(i, Math.max(c.p[1], floor[i])); } });
   for (let it = 0; it < 60; it++) {
     let prev = path[0][1];
-    for (let i = 1; i < path.length - 1; i++) { const cur = path[i][1]; path[i][1] = Math.max(floor[i] - 4, 0.25 * prev + 0.5 * cur + 0.25 * path[i + 1][1]); prev = cur; }
+    for (let i = 1; i < path.length - 1; i++) { const cur = path[i][1]; if (!path[i].under) path[i][1] = Math.max(floor[i] - 4, 0.25 * prev + 0.5 * cur + 0.25 * path[i + 1][1]); prev = cur; }
     for (const [i, y] of pin) path[i][1] = y;
   }
-  for (let i = 0; i < path.length; i++) path[i][1] = Math.max(path[i][1], surfaceAt(path[i][0], path[i][2]) + 5);
+  for (let i = 0; i < path.length; i++) if (!path[i].under) path[i][1] = Math.max(path[i][1], surfaceAt(path[i][0], path[i][2]) + 5);
   // confined stretches (the fortress) carry the speed the demo rider keeps there
   const capOf = new Map();
   cps.forEach((c, k) => { if (c.slow) capOf.set(nodeOf[k], c.v); });
@@ -203,7 +219,7 @@ export function buildEvent(ev) {
     const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(d[0], d[1], d[2]) || 1;
     c.n = [d[0] / l, d[1] / l, d[2] / l];
     c.s = path[i].s;
-    c.lift = path[i][1] - (c.type === 'land' ? c.p[1] + 24 : c.p[1]);
+    c.lift = path[i][1] - (c.type === 'land' ? c.p[1] + c.lift0 : c.p[1]);
   });
   const real = cps.filter((c) => c.type !== 'hint');
   return { ev, start, cps, real, path, length: s };

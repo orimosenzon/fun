@@ -16,6 +16,7 @@ void main() {
   vec2 uv = (vW.xz + uWorld.x) / (2.0 * uWorld.x) * (uWorld.z - 1.0) / uWorld.z + 0.5 / uWorld.z;
   float depth = uLevel - texture2D(uHeight, uv).r;
   if (depth < -0.02) discard;
+  if (uHole.z > 0.0 && distance(vW.xz, uHole.xy) < uHole.z) discard;
   vec4 aux = texture2D(uAux, uv);
   vec3 Vv = cameraPosition - vW; float dist = length(Vv); vec3 V = Vv / dist;
   // wind ripples at three scales, calmer far away and near the shore

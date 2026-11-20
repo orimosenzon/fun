@@ -39,7 +39,7 @@ export class Fauna {
     const list = [], R = (a, b) => a + (b - a) * rnd();
     // herds like to be where the riders pass: beside the nodes of the events, and here and there in the valley
     const spots = [];
-    for (const ev of EVENTS) for (const c of ev.cps()) if (c.x !== undefined) spots.push([c.x, c.z]);
+    for (const ev of EVENTS) for (const c of ev.cps()) if (c.x !== undefined && !c.under) spots.push([c.x, c.z]);
     const edgeOK = (x, z) => { for (let a = 0; a < 6.2; a += 0.8) if (canopyAt(x + Math.cos(a) * 45, z + Math.sin(a) * 45, true) > -1e8) return true; return false; };
     for (const [name, K] of Object.entries(KINDS)) {
       let made = 0;

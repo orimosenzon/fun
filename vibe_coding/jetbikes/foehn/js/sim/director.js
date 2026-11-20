@@ -5,7 +5,8 @@
 // the mountains, the trees and the walls so the bike is not hidden.
 // A shot is a pure function of time: camera position, look-at point, up and lens.
 // Free of any DOM or rendering, so the tests can run it.
-import { surfaceAt, groundAt } from './terrain.js';
+import { surfaceAt, groundAt, T } from './terrain.js';
+import { syncUnder } from './tunnel.js';
 import { hitCastle, indoor } from './castle.js';
 import { hitScenery } from './scenery.js';
 import { qrot, clamp, lerp, sstep, norm, sub, len, cross, madd, add } from './vmath.js';
@@ -142,9 +143,11 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
   // through a tree between two looks
   const blocked = (cam, P, a, b, maxD, dense) => {
     let bad = 0;
-    const N = dense ? Math.max(8, Math.ceil((b - a) * 4)) : 8;
-    for (let i = 0; i <= N; i++) {
-      const t = lerp(a, b, i / N), o = cam(t, tmp), s = P(t), d = len(sub(o.p, s.p));
+    const N = dense ? Math.max(8, Math.ceil((b - a) * 4)) : 8, was = T.under;
+    try { for (let i = 0; i <= N; i++) {
+      const s = P(lerp(a, b, i / N)); syncUnder(s.p);                  // the ground is the tunnel's floor while the bike is in it
+      const t = lerp(a, b, i / N), o = cam(t, tmp), d = len(sub(o.p, s.p));
+      if (T.under !== null && o.p[1] > T.under + 40) return 99;       // (and nothing films it from the open air)
       if (o.p[1] < surfaceAt(o.p[0], o.p[2]) + 0.3 || hitCastle(o.p, 0.5) || hitScenery(o.p, 0.6)) return 99;
       if (d > maxD || d < 1.2) { bad += 3; continue; }
       const steps = clamp(Math.ceil(d / 6), 6, 40);
@@ -152,7 +155,7 @@ export function planReplay(rec, cps, cg = [0, 0.7, 0], rnd = Math.random) {
         const u = k / steps, q = [lerp(o.p[0], s.p[0], u), lerp(o.p[1], s.p[1] + 0.6, u), lerp(o.p[2], s.p[2], u)];
         if (q[1] < groundAt(q[0], q[2]) + 0.05 || hitCastle(q, 0.1) || hitScenery(q, 0)) { bad++; break; }
       }
-    }
+    } } finally { T.under = was; }
     return bad;
   };
 

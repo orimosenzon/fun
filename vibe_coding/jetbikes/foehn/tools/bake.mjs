@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fbm, ridged, gnoise, mulberry32 } from '../js/sim/noise.js';
 import { SITE, FORECOURT, siteHeight } from '../js/sim/castleSite.js';
+import { LAKE2, ISLE, HOLE, ringSiteHeight, lakeNorm } from '../js/sim/ringSite.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const N = 1025, CELL = 12, HALF = (N - 1) * CELL / 2;       // 12.288 km square
@@ -286,6 +287,27 @@ for (const [name, [x, z, r, amt = 1]] of Object.entries(PADS)) {
   pads.castle = [SITE.x + FORECOURT.x, +y.toFixed(2), SITE.z + FORECOURT.z, FORECOURT.r];
 }
 
+// ---------- the second lake, its moraine and its island (below it: the ring, js/sim/tunnel.js) ----------
+let hole = null;
+{
+  const wobAt = (x, z) => 2 * fbm(x / 240, z / 240, 3, 141);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const x = -HALF + i * CELL, z = -HALF + j * CELL;
+    if (Math.abs(x - LAKE2.cx) > LAKE2.a + 520 || Math.abs(z - LAKE2.cz) > LAKE2.b + 520) continue;
+    const k = j * N + i;
+    H[k] = ringSiteHeight(x, z, H[k], wobAt(x, z), 2 * fbm(x / 30, z / 30, 2, 142));
+  }
+  // the river runs into the lake and is lost in it; it comes out again at the foot of the moraine
+  const out = rivers.find((r) => r.name === 'outlet');
+  for (const p of out.pts) {
+    const dn = lakeNorm(p[0], p[2], wobAt(p[0], p[2]));
+    if (dn < 1.03) p[1] = LAKE2.level - 0.6;
+    else if (dn < 1.3 && p[0] < LAKE2.cx) forDisc(p[0], p[2], out.width / 2 + 5, (k) => { H[k] = Math.min(H[k], p[1] - 1.3); });   // keep its bed open down to the shore
+  }
+  const HS = 4000 / 65535;
+  hole = { x: HOLE.x, z: HOLE.z, r: HOLE.r, y: HOLE.floor, rim: +(Math.round((LAKE2.level + ISLE.top) / HS) * HS).toFixed(3) };
+}
+
 // ---------- write ----------
 const toU16 = (F) => { const u = new Uint16Array(F.length); for (let i = 0; i < F.length; i++) u[i] = clamp(Math.round(F[i] / HSCALE), 0, 65535); return u; };
 fs.mkdirSync(path.join(ROOT, 'assets'), { recursive: true });
@@ -302,8 +324,9 @@ const meta = {
   lakes: [
     { name: 'lake', level: LAKE.level, x0: LAKE.x0 - 150, x1: LAKE.x1, z0: 200, z1: 3000 },
     { name: 'tarn', level: TARN.level, x0: TARN.c[0] - TARN.r - 30, x1: TARN.c[0] + TARN.r + 30, z0: TARN.c[1] - TARN.r - 30, z1: TARN.c[1] + TARN.r + 30 },
+    { name: 'lake2', level: LAKE2.level, x0: LAKE2.x0, x1: LAKE2.x1, z0: LAKE2.z0, z1: LAKE2.z1 },
   ],
-  rivers, pads,
+  rivers, pads, hole,
   valleys: Object.fromEntries(Object.entries(VALLEYS).map(([k, v]) => [k, v.pts.filter((p) => Math.abs(p[0]) < HALF && Math.abs(p[1]) < HALF).map((p) => p.map((q) => Math.round(q)))])),
 };
 fs.writeFileSync(path.join(ROOT, 'assets/meta.json'), JSON.stringify(meta));

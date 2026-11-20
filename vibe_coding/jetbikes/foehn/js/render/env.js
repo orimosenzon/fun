@@ -36,6 +36,7 @@ export const U = {
   uShadowMap: { value: null }, uShadowMat: { value: new THREE.Matrix4() }, uShadowOn: { value: 0 },
   uCloud: { value: new THREE.Vector4(0.46, 4300, 0, 0) },          // coverage, altitude
   uClipY: { value: -1e9 },
+  uHole: { value: new THREE.Vector4(0, 0, 0, 0) },                 // the shaft on the island: x, z, radius (nothing of the ground or the water is drawn inside it)
   uSunAz: { value: 0 },
   uWx: { value: new THREE.Vector4(0, 0, 0, 0) },                   // overcast, wet ground, snow cover, -
 };
@@ -166,7 +167,7 @@ export function makeNoiseTexture() {
 export const GLSL_COMMON = /* glsl */`
 uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uAmbSky; uniform vec3 uAmbGnd;
 uniform sampler2D uSkyLUT; uniform sampler2D uNoise; uniform vec4 uFog; uniform float uTime; uniform vec4 uCloud;
-uniform float uSunAz; uniform float uClipY; uniform vec4 uWx;
+uniform float uSunAz; uniform float uClipY; uniform vec4 uWx; uniform vec4 uHole;
 const float PI = 3.14159265;
 float vnoise(vec2 p) { return texture2D(uNoise, p / 256.0).r; }          // smooth value noise, period 256
 vec4 vnoise4(vec2 p) { return texture2D(uNoise, p / 256.0); }

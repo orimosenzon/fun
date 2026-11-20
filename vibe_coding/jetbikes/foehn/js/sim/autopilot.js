@@ -57,8 +57,10 @@ export class Autopilot {
         out.vt = clamp(wx * fh[0] + wz * fh[1], -7, 22);
         out.strafe = clamp((wx * rh[0] + wz * rh[1]) / 7, -1, 1);
         const hv = Math.hypot(b.v[0], b.v[2]);
-        if (d < 2.5 && hv < 1.5) out.pitch = -0.5;                           // settle
-        else out.pitch = clamp(0.3 * (20 - hAbove), -0.6, 0.8) * (hAbove < 20 || d < 12 ? 1 : 0.3);
+        const H0 = cp.appr ?? 20;                                            // (a low hall: come in under its roof)
+        if (cp.top !== undefined && d > 3.5 && p[1] > cp.top - 2) out.pitch = clamp(0.3 * (cp.top + 8 - p[1]), -0.6, 0.8);   // a shaft: stay above its mouth until right over it
+        else if (d < 2.5 && hv < 1.5) out.pitch = -0.5;                      // settle
+        else out.pitch = clamp(0.3 * (H0 - hAbove), -0.6, 0.8) * (hAbove < H0 || d < 12 ? 1 : 0.3);
         out.brake = V > sp + 8;
         return out;
       }
