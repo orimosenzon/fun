@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M.U.L.E.: איך משחקים</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0c0c0e; --panel: #17171b; --panel2: #1f1f25; --line: #34343c; --text: #dedee4; --dim: #9a9aa6;
+    --sun: #edf171; --blue: #706deb; --green: #56ac4d; --purple: #b05cba; --orange: #c9783f; --red: #c46c71; --mint: #a9ff9f;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, "Segoe UI", Arial, sans-serif; line-height: 1.75; font-size: 17px; }
+  main { max-width: 980px; margin: 0 auto; padding: 0 16px 80px; }
+  header.hero { background: var(--sun); color: #2a2412; padding: 34px 16px 28px; text-align: center; }
+  header.hero h1 { margin: 0; font-size: clamp(40px, 9vw, 76px); letter-spacing: 6px; font-family: Georgia, "Times New Roman", serif; direction: ltr; }
+  header.hero p { margin: 8px auto 0; max-width: 680px; font-size: 18px; }
+  header.hero .play { display: inline-block; margin-top: 16px; background: #2a2412; color: var(--sun); padding: 10px 26px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(12, 12, 14, .94); border-bottom: 1px solid var(--line); display: flex; gap: 4px 16px; flex-wrap: wrap; justify-content: center; padding: 8px 12px; font-size: 14px; }
+  @media (max-width: 760px) { nav.toc { position: static; } }
+  nav.toc a { color: var(--dim); text-decoration: none; }
+  nav.toc a:hover { color: var(--sun); }
+  h2 { font-size: 26px; margin: 54px 0 10px; color: var(--sun); }
+  h3 { font-size: 19px; margin: 26px 0 6px; }
+  p { margin: 10px 0; }
+  a { color: #9db0ff; }
+  .dim { color: var(--dim); }
+  .term { direction: ltr; unicode-bidi: isolate; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .92em; color: var(--mint); }
+  kbd { font: inherit; font-size: 13px; background: #222227; border: 1px solid #4a4a52; border-radius: 4px; padding: 1px 7px; color: #eee; direction: ltr; display: inline-block; }
+  button { font: inherit; color: #eee; background: #26262b; border: 1px solid #55555e; border-radius: 8px; padding: 7px 14px; cursor: pointer; touch-action: manipulation; }
+  button:hover { background: #33333a; }
+  button.on { background: #3d4a7a; border-color: #7f92d8; }
+  button:disabled { opacity: .4; cursor: default; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 14px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h4 { margin: 0 0 4px; font-size: 17px; }
+  .card p { margin: 4px 0 0; font-size: 15px; color: #c5c5cf; }
+  .card .en { direction: ltr; unicode-bidi: isolate; color: var(--dim); font-size: 13px; }
+  .loop { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin: 14px 0; counter-reset: st; }
+  .loop div { flex: 1 1 150px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
+  .loop div b { display: block; color: var(--sun); }
+  .loop div::before { counter-increment: st; content: counter(st); display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; background: var(--sun); color: #222; font-weight: 700; font-size: 13px; margin-left: 6px; float: right; }
+
+  /* The walkthrough */
+  .tour { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 16px 0; }
+  .phases { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .phases button { font-size: 14px; padding: 5px 12px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 760px) { .stage { grid-template-columns: 1fr; } }
+  .shot { position: relative; background: #000; border-radius: 8px; overflow: hidden; }
+  .shot img { display: block; width: 100%; aspect-ratio: 288 / 248; image-rendering: pixelated; }
+  .mark { position: absolute; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #e23d57; color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .5); cursor: default; direction: ltr; }
+  .mark.hot { background: #fff; color: #e23d57; }
+  .text h3 { margin: 0 0 4px; font-size: 21px; }
+  .text .count { color: var(--dim); font-size: 13px; }
+  .text .do { background: var(--panel2); border-right: 3px solid var(--sun); padding: 8px 12px; border-radius: 6px; margin-top: 10px; font-size: 15.5px; }
+  .text ol.legend { margin: 10px 0 0; padding: 0; list-style: none; font-size: 15px; }
+  .text ol.legend li { padding: 2px 0; cursor: default; }
+  .text ol.legend li span.n { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 50%; background: #e23d57; color: #fff; font-size: 12px; font-weight: 700; margin-left: 6px; direction: ltr; }
+  .navrow { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 14px; }
+  .dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; flex: 1; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: #3a3a44; cursor: pointer; }
+  .dots i.on { background: var(--sun); }
+  .dots i.gap { margin-right: 8px; }
+
+  /* Widgets */
+  .lab { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 16px 0; }
+  .lab h3 { margin-top: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .row > label { min-width: 130px; color: var(--dim); font-size: 15px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { padding: 5px 11px; font-size: 14.5px; }
+  .result { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .big { font-size: 40px; font-weight: 700; color: var(--sun); line-height: 1; direction: ltr; }
+  .units { display: flex; gap: 4px; flex-wrap: wrap; direction: ltr; }
+  .units i { width: 14px; height: 14px; background: var(--sun); border-radius: 2px; }
+  .units i.bonus { background: var(--mint); }
+  .why { font-size: 15px; color: #c5c5cf; flex: 1 1 260px; }
+  input[type=range] { accent-color: var(--sun); width: 180px; }
+  .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+  /* Auction game */
+  .pit { position: relative; height: 300px; background: #fff; border-radius: 8px; overflow: hidden; color: #333; direction: ltr; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; user-select: none; }
+  .pit .lvl { position: absolute; left: 0; right: 34px; border-top: 2px dashed #706deb; }
+  .pit .lvl.store { border-top: 2px solid #c9a227; }
+  .pit .lvl span { position: absolute; top: -18px; background: #fff; padding: 0 4px; }
+  .pit .lvl.sell span { right: 6px; } .pit .lvl.buy span { left: 6px; top: 2px; } .pit .lvl.store span { left: 6px; color: #8a6c00; }
+  .pit .who { position: absolute; width: 28px; height: 28px; border-radius: 50% 50% 40% 40%; transform: translate(-50%, -50%); transition: top .08s linear; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; }
+  .pit .who.flash { animation: fl .25s steps(2) infinite; }
+  @keyframes fl { 50% { filter: brightness(1.7); } }
+  .pit .timer { position: absolute; right: 12px; bottom: 20px; width: 8px; background: #7b7b7b; border-radius: 2px; }
+  .pit .msg { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; color: #2e2c9b; font-weight: 700; letter-spacing: 1px; }
+  .board { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; margin-top: 10px; }
+  .board b { color: var(--sun); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: right; vertical-align: top; }
+  th { background: var(--panel2); font-weight: 600; }
+  td.c { text-align: center; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  figure { margin: 0; }
+  figure img { display: block; width: 100%; aspect-ratio: 288 / 248; image-rendering: pixelated; border-radius: 8px; background: #000; }
+  figcaption { font-size: 14.5px; color: var(--dim); margin-top: 6px; }
+  ul.tips { padding-right: 20px; }
+  ul.tips li { margin: 6px 0; }
+  footer { margin-top: 60px; font-size: 14px; color: var(--dim); border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>M.U.L.E.</h1>
+  <p>ארבעה מתיישבים, כוכב לכת אחד, ופרדות רובוטיות שעושות את כל העבודה. משחק כלכלה מ-1983 שבו מנצחים בעזרת היצע וביקוש, ולא בעזרת יריות.</p>
+  <a class="play" href="index.html">למשחק ←</a>
+</header>
+
+<nav class="toc">
+  <a href="#idea">הרעיון</a>
+  <a href="#tour">סיבוב שלם, צעד אחר צעד</a>
+  <a href="#production">מחשבון ייצור</a>
+  <a href="#needs">כמה צריך כדי לשרוד</a>
+  <a href="#auction">מעבדת המכירה הפומבית</a>
+  <a href="#score">ניקוד וסיום</a>
+  <a href="#levels">שלוש הרמות</a>
+  <a href="#tips">טיפים</a>
+  <a href="#keys">מקשים</a>
+</nav>
+
+<main>
+
+<h2 id="idea">הרעיון בדקה</h2>
+<p>חללית מורידה ארבעה מתיישבים על כוכב הלכת <span class="term">Irata</span> (השם הוא <span class="term">Atari</span> בהיפוך אותיות, המחשב שעליו נכתב המשחק לראשונה) ומבטיחה לחזור בעוד כמה חודשים. עד אז צריך להקים מושבה. כל שחקן מקבל חלקות אדמה, ועל כל חלקה הוא מציב <b>פרד</b>: <span class="term">M.U.L.E.</span>, ראשי תיבות של <span class="term">Multiple Use Labor Element</span>, כלומר "יחידת עבודה רב־שימושית". זה רובוט עקשן שמציידים אותו לסוג ייצור אחד, והוא מייצר שם סחורה בכל חודש.</p>
+<p>את הסחורה סוחרים במכירה פומבית, מול השחקנים האחרים ומול החנות של המושבה. בסוף המשחק מנצח מי ששווה הכי הרבה: כסף, אדמה וסחורה. אבל יש תנאי: אם המושבה כולה לא שרדה, כולם הפסידו. לכן המשחק הוא תמיד גם תחרות וגם שיתוף פעולה.</p>
+
+<div class="cards">
+  <div class="card"><h4 style="color:var(--mint)">מזון</h4><div class="en">Food</div><p>קובע כמה <b>זמן</b> יש לך בתור. בלי מזון התור שלך נגמר כמעט לפני שהתחיל. גדל הכי טוב בעמק הנהר.</p></div>
+  <div class="card"><h4 style="color:var(--sun)">אנרגיה</h4><div class="en">Energy</div><p>כל פרד שאינו מייצר אנרגיה צריך יחידת אנרגיה כדי לעבוד. בלי אנרגיה הוא מייצר <b>אפס</b>. הכי טוב במישור.</p></div>
+  <div class="card"><h4 style="color:var(--orange)">סמיתור</h4><div class="en">Smithore</div><p>עפרה (<span class="term">smith</span> נפח + <span class="term">ore</span> עפרה) שממנה החנות בונה <b>פרדות חדשות</b>. נכרה בהרים.</p></div>
+  <div class="card"><h4 style="color:var(--blue)">קריסטייט</h4><div class="en">Crystite</div><p>גביש יקר שנמכר מחוץ לכוכב. <b>כסף טהור</b>, ורק ברמת הטורניר. מסתתר מתחת לאדמה וצריך לחפש אותו.</p></div>
+</div>
+
+<p>המשחק בנוי מסיבובים (חודשים). ברמת המתחילים יש 6, ברמות האחרות 12. כל סיבוב נראה כך:</p>
+<div class="loop">
+  <div><b>חלוקת קרקעות</b>כל שחקן יכול לתפוס חלקה אחת בחינם.</div>
+  <div><b>פיתוח</b>כל שחקן בתורו, נגד השעון: קונה פרד, מצייד אותו ומציב אותו על חלקה.</div>
+  <div><b>ייצור</b>הפרדות עובדות. לפעמים קורה משהו: רעידת אדמה, גשם חומצי, פיראטים.</div>
+  <div><b>מכירות פומביות</b>שלוש (או ארבע) ברצף, אחת לכל סחורה.</div>
+  <div><b>סיכום</b>מי מוביל ומה שווי המושבה.</div>
+</div>
+
+<h2 id="tour">סיבוב שלם, צעד אחר צעד</h2>
+<p>הצילומים כאן הם ממשחק אחד אמיתי שרץ על האמולטור שלנו: רמת מתחילים, שחקן אנושי אחד בכחול מול שלושה שחקני מחשב. אפשר לדפדף בכפתורים, בנקודות או בחצי המקלדת. העיגולים האדומים על התמונה מסבירים מה רואים.</p>
+
+<div class="tour" id="tourBox">
+  <div class="phases" id="phases"></div>
+  <div class="stage">
+    <div class="shot" id="shot"><img id="shotImg" alt=""></div>
+    <div class="text">
+      <div class="count" id="tCount"></div>
+      <h3 id="tTitle"></h3>
+      <div id="tBody"></div>
+      <ol class="legend" id="tLegend"></ol>
+      <div class="do" id="tDo"></div>
+    </div>
+  </div>
+  <div class="navrow">
+    <button id="prev">→ הקודם</button>
+    <div class="dots" id="dots"></div>
+    <button id="next">הבא ←</button>
+  </div>
+</div>
+
+<h2 id="production">מחשבון ייצור: מה כדאי לגדל איפה</h2>
+<p>כמה יחידות חלקה מייצרת בחודש? זה תלוי בשלושה דברים: סוג האדמה, מה שמגדלים עליה, ושני בונוסים שהמשחק לקח מתורת הכלכלה. שחקו עם הכפתורים.</p>
+
+<div class="lab" id="prodLab">
+  <h3>חלקה אחת</h3>
+  <div class="row"><label>האדמה</label><div class="seg" data-k="terrain">
+    <button data-v="river">עמק הנהר</button><button data-v="plain">מישור</button><button data-v="m1">הר אחד</button><button data-v="m2">שני הרים</button><button data-v="m3">שלושה הרים</button></div></div>
+  <div class="row"><label>הפרד מצויד ל</label><div class="seg" data-k="good">
+    <button data-v="food">מזון</button><button data-v="energy">אנרגיה</button><button data-v="smithore">סמיתור</button></div></div>
+  <div class="row"><label>חלקה שכנה שלך מאותו סוג</label><div class="seg" data-k="adj"><button data-v="0">אין</button><button data-v="1">יש</button></div></div>
+  <div class="row"><label>כמה חלקות מהסוג הזה יש לך בסך הכול</label><input type="range" id="same" min="1" max="9" value="1"><span class="num" id="sameV">1</span></div>
+  <div class="row"><label>יש לפרד אנרגיה?</label><div class="seg" data-k="power"><button data-v="1">כן</button><button data-v="0">לא</button></div></div>
+  <div class="result">
+    <div class="big" id="prodN">4</div>
+    <div class="units" id="prodU"></div>
+    <div class="why" id="prodWhy"></div>
+  </div>
+  <p class="dim" style="font-size:14.5px;margin-bottom:0">המספר הוא הממוצע. ברמת המתחילים הוא קבוע; ברמות האחרות הייצור בפועל זז מעט בכל חודש, ואירועים אקראיים יכולים לשנות אותו.</p>
+</div>
+
+<div class="two">
+  <div class="card"><h4>יתרון לגודל</h4><div class="en">Economies of scale</div><p>שתי חלקות <b>צמודות</b> שמייצרות אותו דבר מקבלות כל אחת יחידה נוספת. לכן כדאי לבנות גושים ולא לפזר.</p></div>
+  <div class="card"><h4>עקומת הלמידה</h4><div class="en">Learning curve</div><p>על כל <b>שלוש</b> חלקות מאותו סוג, בכל מקום במפה, כל אחת מהן מקבלת עוד יחידה. התמחות משתלמת.</p></div>
+</div>
+
+<h2 id="needs">כמה צריך כדי לשרוד</h2>
+<p>לפני כל מכירה פומבית המשחק מראה לך אם יש לך עודף או מחסור. החישוב פשוט, ואפשר לעשות אותו מראש:</p>
+<div class="lab" id="needLab">
+  <div class="row"><label>הסיבוב הבא</label><input type="range" id="nRound" min="1" max="12" value="2"><span class="num" id="nRoundV">2</span></div>
+  <div class="row"><label>פרדות שאינן של אנרגיה</label><input type="range" id="nMules" min="0" max="12" value="1"><span class="num" id="nMulesV">1</span></div>
+  <div class="row"><label>מזון במחסן עכשיו</label><input type="range" id="nFood" min="0" max="20" value="7"><span class="num" id="nFoodV">7</span></div>
+  <div class="row"><label>אנרגיה במחסן עכשיו</label><input type="range" id="nEnergy" min="0" max="20" value="3"><span class="num" id="nEnergyV">3</span></div>
+  <div class="result" style="align-items:flex-start">
+    <div class="why" id="needFood"></div>
+    <div class="why" id="needEnergy"></div>
+  </div>
+  <p class="dim" style="font-size:14.5px;margin-bottom:0">מה שנשאר במחסן אחרי השימוש מתקלקל בחלקו: חצי מהמזון ורבע מהאנרגיה. סמיתור וקריסטייט מתקלקלים רק מעל 50 יחידות. לכן לאגור מזון זה בזבוז, ולאגור אנרגיה זה סביר.</p>
+</div>
+
+<h2 id="auction">מעבדת המכירה הפומבית</h2>
+<p>זה הלב של המשחק, וגם החלק שהכי קשה להבין מקריאה. המוכרים עומדים למעלה ויורדים כדי להוריד מחיר. הקונים עומדים למטה ועולים כדי להעלות הצעה. כשקו המכירה וקו הקנייה נפגשים, יחידות עוברות ידיים אחת אחת עד שמישהו זז. החנות היא הרצפה והתקרה: היא תמיד קונה במחיר הנמוך ומוכרת במחיר הגבוה (כל עוד יש לה מלאי).</p>
+<p>כאן יש לך 5 יחידות מזון עודפות. החנות משלמת רק 15. קונה רעב אחד מטפס לאט, והוא מוכן לשלם הרבה יותר, אבל הוא לא יגיד לך כמה. נסו פעם לרוץ ישר לחנות, ופעם לחכות לו בסבלנות.</p>
+
+<div class="lab" id="aucLab">
+  <div class="pit" id="pit">
+    <div class="lvl store" id="lStoreSell"><span>החנות מוכרת ב-50</span></div>
+    <div class="lvl store" id="lStoreBuy"><span>החנות קונה ב-15</span></div>
+    <div class="lvl sell" id="lSell"><span id="lSellT"></span></div>
+    <div class="lvl buy" id="lBuy"><span id="lBuyT"></span></div>
+    <div class="who" id="wMe" style="left:48%;background:#2e2c9b">את/ה</div>
+    <div class="who" id="wBuyer" style="left:36%;background:#56ac4d">קונה</div>
+    <div class="timer" id="aTimer"></div>
+    <div class="msg" id="aMsg"></div>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:12px">
+    <button id="aStart">התחל מכירה</button>
+    <button id="aUp">▲ להעלות מחיר</button>
+    <button id="aDown">▼ להוריד מחיר</button>
+  </div>
+  <div class="board">
+    <span>נמכרו: <b class="num" id="aSold">0</b> מתוך 5</span>
+    <span>הכנסה: <b class="num" id="aCash">$0</b></span>
+    <span>מחיר ממוצע: <b class="num" id="aAvg">-</b></span>
+    <span class="dim" id="aBest"></span>
+  </div>
+  <p class="dim" style="font-size:14.5px;margin-bottom:0">במקלדת: להחזיק <kbd>W</kbd> ו-<kbd>S</kbd> (או את הכפתורים). במשחק עצמו אלה מעלה ומטה בג'ויסטיק.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><h4>תיקו? העני זוכה</h4><p>כששני שחקנים מגיעים לאותו מחיר באותו רגע, מי ששווה פחות סוחר ראשון. כך גם בחלוקת הקרקעות. המשחק תמיד עוזר למי שמפגר.</p></div>
+  <div class="card"><h4>הקו הקריטי</h4><p>ברמת המתחילים אי אפשר למכור מתחת לכמות שתצטרך בחודש הבא. ברמות האחרות מותר, ועל אחריותך.</p></div>
+  <div class="card"><h4>כשהחנות ריקה</h4><p>אין תקרה. מי שמחזיק את האנרגיה האחרונה במושבה יכול לדרוש כל מחיר, והקונה יכול רק לקוות שהמוכר ירד אליו.</p></div>
+</div>
+
+<h2 id="score">ניקוד וסיום</h2>
+<div class="two">
+  <figure><img src="guide/demo_production.png" alt="המפה בחודש האחרון של משחק הדגמה"><figcaption>החודש האחרון במשחק שהמחשב שיחק נגד עצמו. כמעט כל המפה תפוסה, וכל שחקן בנה גוש צמוד כדי לקבל את בונוס הגודל. הנקודות הקטנות בכל חלקה הן היחידות שהיא ייצרה. ההודעה למטה: החללית חזרה.</figcaption></figure>
+  <figure><img src="guide/demo_final.png" alt="טבלת הסיכום האחרונה"><figcaption>הסיכום האחרון. לכל שחקן: כסף, אדמה (500 לחלקה, ותוספת על חלק מהפרדות), וסחורה לפי המחיר האחרון במכירה. מי שבראש הוא "המייסד הראשון". השורה הצהובה היא שווי המושבה כולה.</figcaption></figure>
+</div>
+<p>שימו לב לשורה האחרונה, <span class="term">COLONY</span>. ברמה הרגילה וברמת הטורניר המושבה צריכה להגיע יחד ל-60,000 לפחות. אם לא, כולם נשלחים הביתה, כולל המנצח. מי שחונק את היריבים שלו יותר מדי חונק גם את עצמו: שחקן מרושש לא יכול לקנות ממך כלום.</p>
+
+<h2 id="levels">שלוש הרמות</h2>
+<table>
+  <tr><th></th><th>מתחילים <span class="term">Beginner</span></th><th>רגיל <span class="term">Standard</span></th><th>טורניר <span class="term">Tournament</span></th></tr>
+  <tr><th>אורך</th><td>6 חודשים</td><td>12 חודשים</td><td>12 חודשים</td></tr>
+  <tr><th>אדמה</th><td>רק חלוקה חינם</td><td>גם מכירה פומבית של חלקות אחרי כל חלוקה, ואפשר למכור חלקה משלך דרך משרד הקרקעות</td><td>כמו ברגיל</td></tr>
+  <tr><th>פרדות</th><td>מחיר קבוע של 100, ותמיד יש</td><td>יש 16 בהתחלה. כשנגמרות, החנות בונה אחת מכל 2 יחידות סמיתור שהיא קונה, והמחיר עולה ויורד</td><td>כמו ברגיל</td></tr>
+  <tr><th>הצבה</th><td>פספסת את הבית? נשמע צפצוף ומנסים שוב</td><td>פספסת? הפרד בורח</td><td>כמו ברגיל, ועם פחות זמן</td></tr>
+  <tr><th>מכירה</th><td>אי אפשר למכור מתחת לקו הקריטי. סמיתור במחיר קבוע של 50</td><td>מותר למכור הכול. כשהחנות ריקה אין תקרת מחיר</td><td>כמו ברגיל, ועוד <b>קנוניה</b></td></tr>
+  <tr><th>סחורות</th><td>מזון, אנרגיה, סמיתור</td><td>מזון, אנרגיה, סמיתור</td><td>גם קריסטייט, עם משרד הבדיקות לדגימות קרקע</td></tr>
+</table>
+<p><b>קנוניה</b> (<span class="term">Collusion</span>, מלטינית: "לשחק יחד") היא עסקה פרטית בתוך המכירה. שני שחקנים לוחצים על הכפתור בדיוק באותו רגע, המסך נצבע ורוד, ושאר השחקנים והחנות נשארים בחוץ עד שהשעון נגמר. כך מונעים מהמוביל לקנות את הסחורה שלך.</p>
+
+<h3>הדמויות</h3>
+<p>שמונה מינים, וההבדל ביניהם הוא בעיקר סכום הפתיחה. זו שיטת ההגבלה (הנדיקפ) של המשחק:</p>
+<table>
+  <tr><th>מין</th><th>כסף בפתיחה</th><th>למי</th></tr>
+  <tr><td><span class="term">Flapper</span></td><td class="num">$1600</td><td>למתחילים. גם מקבל יותר זמן בתור</td></tr>
+  <tr><td><span class="term">Bonzoid, Gollumer, Leggite, Packer, Spheroid</span></td><td class="num">$1000</td><td>רגיל. ההבדל ביניהם הוא רק המראה</td></tr>
+  <tr><td><span class="term">Humanoid</span></td><td class="num">$600</td><td>למנוסים. פחות כסף ופחות זמן</td></tr>
+  <tr><td><span class="term">Mechtron</span></td><td class="num">$1000</td><td>המחשב תמיד משחק אותו. ברמת הטורניר הוא מקבל עוד 200</td></tr>
+</table>
+
+<h2 id="tips">טיפים</h2>
+<ul class="tips">
+  <li><b>תמיד לקחת חלקה בחלוקה</b>, גם אם היא לא זו שרצית. כל חלקה שווה 500 בניקוד.</li>
+  <li><b>קודם כול לא להיות תלוי באחרים:</b> חלקת נהר למזון, ולידה חלקת מישור לאנרגיה. זה מחזיק אותך בחודשים הראשונים.</li>
+  <li><b>ללכת באלכסון.</b> זו הדרך המהירה ביותר. הרים והנהר מאטים אותך.</li>
+  <li><b>נשאר זמן? לפאב.</b> כניסה לפאב מסיימת את התור ומשלמת לך לפי הזמן שנותר. אף פעם לא לתת לשעון להיגמר סתם.</li>
+  <li><b>הוומפוס</b> (<span class="term">Wampus</span>, מפלצת ממשחק המחשב <span class="term">Hunt the Wumpus</span> מ-1973) גר במערות בהרים. כשהוא פותח דלת נדלק אור קטן על הר. מי שמגיע אליו בלי פרד, ובלי ללחוץ על הכפתור, מקבל ממנו כסף.</li>
+  <li><b>אין זמן להגיע לחלקה? להחזיר את הפרד למכלאה.</b> מקבלים בחזרה את מחיר הפרד, ומפסידים רק את הציוד.</li>
+  <li><b>אפשר להחליף.</b> לחיצה על חלקה שכבר יש בה פרד מוציאה אותו, ואפשר לקחת אותו לחנות אחרת ולהסב אותו לייצור אחר.</li>
+  <li><b>לנענע את הדמות במכירה.</b> עולים ויורדים קצת כדי לפתות את הצד השני לבוא אליך, במקום ללכת אליו.</li>
+  <li><b>כמה שווה חלקה במכירת קרקעות?</b> הכלל של דן באנטן, מתכנן המשחק: מספר החודשים שנותרו כפול 100, ועוד 500. בהתחלה משלמים הרבה, בסוף כמעט כלום.</li>
+  <li><b>לפני הסוף:</b> בשלושת החודשים האחרונים שווה להסב חלקות לסחורה היקרה ביותר, אחרי שאגרת מספיק אנרגיה.</li>
+  <li><b>הפיראטים</b> גונבים את כל הסמיתור (וברמת הטורניר את כל הקריסטייט). מי שיושב על מלאי גדול מהמר.</li>
+  <li><b>המפגר מקבל עזרה:</b> הוא זוכה בתיקו, אירועים רעים לא פוגעים בו, והמוביל אף פעם לא מקבל מזל טוב.</li>
+</ul>
+
+<h2 id="keys">מקשים בדף המשחק שלנו</h2>
+<table>
+  <tr><th>מה</th><th>שחקן יחיד</th><th>שני שחקנים</th></tr>
+  <tr><td>תנועה</td><td>מקשי החצים (או <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>)</td><td>ראשון: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> · שני: חצים</td></tr>
+  <tr><td>כפתור הג'ויסטיק</td><td><kbd>Space</kbd> (או <kbd>F</kbd>)</td><td>ראשון: <kbd>F</kbd> · שני: <kbd>Space</kbd></td></tr>
+  <tr><td>במסך הפתיחה</td><td colspan="2"><kbd>F3</kbd> רמה · <kbd>F5</kbd> מספר השחקנים האנושיים (4, 3, 2, 1, הדגמה) · <kbd>F7</kbd> התחלה · <kbd>F1</kbd> בחירת דמויות מחדש</td></tr>
+  <tr><td>הפסקה</td><td colspan="2"><kbd>P</kbd> (במחשב המקורי זה היה מקש הרווח)</td></tr>
+  <tr><td>לזרז את המחשב</td><td colspan="2">להחזיק את כפתור הג'ויסטיק בזמן ששחקני המחשב משחקים</td></tr>
+</table>
+<p class="dim">במקור אפשר היה לשחק ארבעה: שניים בג'ויסטיקים ושניים על המקלדת. בדף שלנו יש כרגע מיפוי נוח לשניים, וג'ויפד USB עובד גם הוא.</p>
+
+<footer>
+  <p><span class="term">M.U.L.E.</span> נכתב ב-1983 בידי דן באנטן, ביל באנטן, ג'ים ראשינג ואלן ווטסון (<span class="term">Ozark Softscape</span>) ויצא ב-<span class="term">Electronic Arts</span>. המוזיקה של רוי גלובר. הכללים והמספרים בדף הזה לקוחים מחוברת ההוראות המקורית ומכרטיס הפקודות של גרסת הקומודור 64, ונבדקו מול המשחק עצמו. הצילומים נוצרו על אמולטור קומודור 64 שכתבנו ב-JavaScript, מתוך משחק מתוסרט (<span class="term">tools/guide_shots.mjs</span>).</p>
+</footer>
+
+</main>
+
+<script>
+// ---------- The walkthrough ----------
+// marks: [x%, y%, text] on the screenshot.
+const STEPS = [
+  { phase: 'הכנה', img: 'title', title: 'מסך הפתיחה',
+    body: 'הפרד צועד על המסך לצלילי אחת ממנגינות הפתיחה המוכרות של התקופה. אפשר להקשיב עד הסוף, ואפשר לדלג.',
+    act: 'לחיצה על כפתור הג\'ויסטיק (<kbd>Space</kbd>) מדלגת לאפשרויות.' },
+  { phase: 'הכנה', img: 'options', title: 'רמה ומספר שחקנים',
+    body: 'שתי החלטות. <b>הרמה:</b> מתחילים, רגיל או טורניר. <b>מספר השחקנים האנושיים:</b> תמיד יש ארבעה מתיישבים, והמחשב משחק את מי שחסר. כאן בחרנו שחקן אנושי אחד.',
+    marks: [[26, 59.5, 'הרמה הנוכחית, מתחלפת ב-F3'], [17, 69, 'כמה אנושיים, מתחלף ב-F5']],
+    act: '<kbd>F3</kbd> מחליף רמה, <kbd>F5</kbd> מספר שחקנים, <kbd>F7</kbd> ממשיך. למשחק ראשון: <span class="term">BEGINNER</span> ו-<span class="term">1 PLANETEER</span>.' },
+  { phase: 'הכנה', img: 'color', title: 'בחירת צבע',
+    body: 'המלבן מחליף צבעים. הצבע שתתפוס ילווה אותך בכל המשחק: הדמות, מסגרות החלקות והשורה שלך בטבלאות.',
+    act: 'לוחצים על הכפתור כשמופיע הצבע הרצוי. אנחנו לקחנו כחול.' },
+  { phase: 'הכנה', img: 'species', title: 'בחירת דמות',
+    body: 'שמונה מינים של חייזרים מסודרים במעגל. הבחירה אינה רק קישוט: <span class="term">Flapper</span> מתחיל עם יותר כסף, <span class="term">Humanoid</span> עם פחות. פרטים בטבלת הדמויות בהמשך.',
+    act: 'מזיזים את הג\'ויסטיק לכיוון הדמות והיא נכנסת למרכז.' },
+  { phase: 'הכנה', img: 'spheroid', title: 'הדמות שלנו: Spheroid',
+    body: 'הדמות שבמרכז מקבלת את הצבע שלך ותיאור קצר והומוריסטי. הספרואידים, כך כתוב, הם חלוצים עגולים שלא סובלים פינות חדות וקווים ישרים.',
+    act: 'לחיצה על הכפתור מאשרת.' },
+  { phase: 'הכנה', img: 'colony', title: 'המושבה',
+    body: 'ארבעת המתיישבים. שלושה מהם <span class="term">Mechtron</span>, המין ששחקני המחשב תמיד בוחרים, והרביעי אנחנו, עם הכיתוב <span class="term">JOYSTICK</span>.',
+    act: 'כפתור כדי להמשיך, <kbd>F1</kbd> כדי לבחור מחדש.' },
+  { phase: 'הכנה', img: 'landing', title: 'נחיתה על Irata',
+    body: 'זו המפה שעליה מתנהל כל המשחק: 5 שורות של 9 חלקות. במרכז <b>העיר</b>, ולאורך העמודה האמצעית זורם <b>הנהר</b>. הצורות האפורות הקטנות הן <b>הרים</b>. כל השאר מישור.',
+    marks: [[55.5, 43, 'העיר: כאן קונים ומציידים פרדות'], [55, 24, 'הנהר: האדמה הטובה ביותר למזון'], [27.5, 33.5, 'הרים: כאן כורים סמיתור'], [72, 62, 'מישור: טוב לאנרגיה']],
+    act: 'רק לצפות. החללית מורידה אתכם ועוזבת.' },
+  { phase: 'הכנה', img: 'summary0', title: 'נקודת הפתיחה',
+    body: 'טבלת הסיכום הראשונה. לכולם 1000 בכסף, אפס אדמה, ו-300 בסחורה (קצת מזון וקצת אנרגיה לחודש הראשון). הטבלה הזאת תחזור בסוף כל חודש, ממוינת לפי המוביל.',
+    act: 'כל השחקנים האנושיים לוחצים על הכפתור כדי להמשיך.' },
+
+  { phase: 'קרקעות', img: 'grant', title: 'חלוקת הקרקעות',
+    body: 'מסגרת שחורה עוברת על המפה חלקה אחר חלקה, שורה אחר שורה. מי שלוחץ כשהיא על חלקה פנויה מקבל אותה בחינם. חלקה אחת לכל שחקן בכל חודש. בצילום המסגרת עומדת על חלקה שהשחקן הירוק תפס בדיוק עכשיו.',
+    marks: [[27.5, 35.5, 'המסגרת הנעה'], [55.5, 35.5, 'חלקת נהר צמודה לעיר: היעד שלנו']],
+    act: 'מחכים שהמסגרת תגיע לחלקה הרצויה ולוחצים על הכפתור. צריך תזמון.' },
+  { phase: 'קרקעות', img: 'granted', title: 'מישהו הקדים אותנו',
+    body: 'לחצנו בדיוק כשהמסגרת הגיעה לחלקת הנהר שמעל העיר, אבל שחקן המחשב הסגול לחץ באותו רגע וזכה בה. לקחנו במקומה את חלקת הנהר שמתחת לעיר, המסומנת בכחול. הירוק והכתום כבר בחרו גם הם.',
+    marks: [[55.5, 31.5, 'הסגול זכה בתיקו'], [44.5, 61.3, 'החלקה שלנו, בכחול']],
+    act: 'אם פספסתם, פשוט מחכים לחלקה טובה אחרת בהמשך המעבר. לא לוותר על חלקה.' },
+
+  { phase: 'פיתוח', img: 'yourturn', title: 'התור שלך מתחיל',
+    body: 'שלב הפיתוח. השחקנים משחקים אחד אחד, והמשחק מכריז של מי התור. החלקה שלך מהבהבת. מרגע שתלחץ, השעון רץ.',
+    act: 'כפתור כדי להתחיל. קודם כדאי להחליט מה הולכים לעשות.' },
+  { phase: 'פיתוח', img: 'town', title: 'העיר',
+    body: 'המבט מתקרב אל העיר ואתה עומד ברחוב הראשי. למעלה חנויות הציוד, למטה שירותים. ברמת המתחילים המבנים הצהובים הריקים סגורים.',
+    marks: [[68.6, 16.5, 'מזון, ציוד ב-$25'], [56, 16.5, 'אנרגיה, $50'], [43.6, 16.5, 'סמיתור, $75'], [31, 16.5, 'קריסטייט, $100 (טורניר בלבד)'], [76.5, 55, 'המכלאה: כאן קונים פרד'], [52, 65, 'הפאב'], [41.5, 56, 'משרד הקרקעות (רגיל וטורניר)'], [31, 57, 'משרד הבדיקות (טורניר)'], [86, 40, 'השעון: כשהפס נגמר, התור נגמר']],
+    act: 'הולכים ימינה אל מעל המכלאה, ואז למטה לתוכה.' },
+  { phase: 'פיתוח', img: 'corral', title: 'קונים פרד',
+    body: 'נכנסים עד הסוף אל תוך המכלאה, ופרד אפור מתחיל ללכת אחריך. הכסף ירד מ-1000 ל-900. בלי להיכנס עד הסוף לא מקבלים פרד.',
+    marks: [[76.5, 52, 'אנחנו והפרד בתוך המכלאה'], [77, 80, 'הכסף אחרי הקנייה']],
+    act: 'למטה אל תוך המכלאה, ואז חזרה למעלה אל הרחוב.' },
+  { phase: 'פיתוח', img: 'outfit', title: 'מציידים אותו',
+    body: 'פרד אפור לא יודע לעשות כלום. מכניסים אותו לאחת מחנויות הציוד, והוא יוצא ממנה בצבע שלך, מוכן לסוג ייצור אחד. החלקה שלנו על הנהר, אז בחרנו בחנות המזון.',
+    marks: [[76.5, 26, 'בתוך חנות המזון'], [15, 82.5, 'ההודעה: מציידים את הפרד']],
+    act: 'עומדים מתחת לדלת החנות ועולים פנימה. מחכים רגע עד שהציוד מסתיים.' },
+  { phase: 'פיתוח', img: 'outfitted', title: 'מוכן לעבודה',
+    body: 'הפרד יצא כחול. המשחק מסכם: 25 דולר לציוד פרד למזון, ונשארו לנו 875.',
+    marks: [[75.5, 38.5, 'הפרד, עכשיו בצבע שלנו']],
+    act: 'יוצאים מהעיר: הולכים ברחוב הראשי עד הקצה, ימינה או שמאלה.' },
+  { phase: 'פיתוח', img: 'leading', title: 'בדרך לחלקה',
+    body: 'מחוץ לעיר חוזרים למפה. הדמות והפרד קטנים עכשיו, והפרד הולך אחריך לכל מקום. הליכה על המפה אטית בהרבה מהליכה בעיר, ולכן חלקה קרובה לעיר שווה זמן.',
+    marks: [[72, 42.5, 'אנחנו והפרד, מימין לעיר'], [44.5, 61.3, 'לשם הולכים']],
+    act: 'הולכים אל החלקה. באלכסון זה הכי מהר.' },
+  { phase: 'פיתוח', img: 'onplot', title: 'מעל הבית',
+    body: 'בכל חלקה שבבעלותך יש בית קטן במרכז. צריך לעמוד בדיוק מעליו.',
+    marks: [[44.5, 61.3, 'עומדים על הבית שבמרכז החלקה']],
+    act: 'כפתור. ברמת המתחילים, אם פספסת תשמע צפצוף ותנסה שוב. ברמות האחרות הפרד בורח.' },
+  { phase: 'פיתוח', img: 'installed', title: 'הפרד מוצב',
+    body: '<span class="term">MULE INSTALLED</span>. במקום הבית מופיע עכשיו סמל המזון, והחלקה תייצר בכל חודש. נשאר לנו עוד זמן על השעון.',
+    marks: [[44.5, 61.3, 'סמל המזון במקום הבית']],
+    act: 'עם הזמן שנשאר: לקנות עוד פרד לחלקה נוספת (אם יש), לצוד וומפוס, או ללכת לפאב.' },
+  { phase: 'פיתוח', img: 'pub', title: 'הפאב',
+    body: 'חזרנו לעיר ונכנסנו לפאב. זה מסיים את התור מיד, ובתמורה מקבלים כסף מהימורים. כמה שנשאר יותר זמן על השעון, הסכום גדול יותר. הפעם: 93 דולר.',
+    marks: [[58.5, 50, 'בתוך הפאב'], [13, 82.5, 'כמה הרווחנו']],
+    act: 'תמיד לסיים את התור בפאב. זמן שנגמר סתם הוא כסף שהלך לאיבוד.' },
+  { phase: 'פיתוח', img: 'computer', title: 'תורם של האחרים',
+    body: 'שחקני המחשב משחקים את התור שלהם בלי שרואים אותם: החלקה שלהם מהבהבת, ופתאום מופיע עליה סמל. גם הם מסיימים בפאב.',
+    act: 'להחזיק את הכפתור מזרז אותם.' },
+
+  { phase: 'ייצור', img: 'event', title: 'אירוע אקראי',
+    body: 'לפני הייצור עלול לקרות משהו. כאן: <span class="term">SUNSPOT ACTIVITY</span>, פעילות כתמי שמש, שמגדילה את תפוקת האנרגיה של כולם. יש גם רעידת אדמה (חצי תפוקה במכרות), גשם חומצי (יותר מזון, פחות אנרגיה), מזיקים שאוכלים חלקת מזון, שרֵפה בחנות, ופיראטים.',
+    act: 'אין מה לעשות, רק לקחת בחשבון במכירה הפומבית.' },
+  { phase: 'ייצור', img: 'production', title: 'הייצור',
+    body: 'כל החלקות מייצרות בבת אחת. בתוך כל חלקה מופיעות נקודות קטנות, אחת לכל יחידה שיוצרה. חלקת הנהר שלנו נתנה 4 יחידות מזון.',
+    marks: [[44.5, 61.3, 'החלקה שלנו והיחידות שיוצרו'], [55.5, 35.5, 'חלקת הנהר של הסגול']],
+    act: 'כפתור כדי להמשיך אל המכירות הפומביות.' },
+
+  { phase: 'מכירה', img: 'auction_smithore', title: 'מכירה ראשונה: סמיתור',
+    body: 'המכירות באות תמיד באותו סדר: סמיתור, מזון, אנרגיה. כאן שני שחקני מחשב ירדו עם הסמיתור שלהם עד קו החנות ומוכרים לה ב-50, המחיר הקבוע של רמת המתחילים. לנו אין סמיתור, אז אנחנו רק צופים מלמטה.',
+    marks: [[12.5, 60, 'החנות ומחיר הקנייה שלה'], [61, 53.5, 'מוכרים שהגיעו לקו החנות'], [73.5, 68, 'אנחנו, בצד הקונים'], [82, 40, 'שעון המכירה']],
+    act: 'אם אין לך מה למכור ואין לך מה לקנות, פשוט מחכים.' },
+  { phase: 'מכירה', img: 'status_food_usage', title: 'מזון: מה קרה למלאי',
+    body: 'לפני כל מכירה מוצג מצב המלאי של כל שחקן כעמודה. העמודה גדלה וקטנה מול העיניים: כמה היה, כמה <b>נצרך</b> (<span class="term">USAGE</span>), כמה <b>התקלקל</b> (<span class="term">SPOILAGE</span>) וכמה <b>יוצר</b> (<span class="term">PRODUCTION</span>).',
+    marks: [[22.5, 55, 'העמודות: מלאי המזון של כל שחקן'], [33, 85.5, 'השלב שמוצג עכשיו']],
+    act: 'רק לצפות. זה הזמן להבין מי במחסור.' },
+  { phase: 'מכירה', img: 'status_food', title: 'מזון: עודף או מחסור',
+    body: 'הקו האופקי הוא <b>הקו הקריטי</b>: הכמות שתצטרך בחודש הבא. עמודה שעוברת אותו היא עודף, והמספרים שמתחת לעמודות אומרים כמה. לנו ולסגול (בעלי חלקות הנהר) יש 7 יחידות ועודף של 4. לירוק ולכתום יש בדיוק 3, בלי עודף.',
+    marks: [[72.5, 51, 'העמודה שלנו עוברת את הקו'], [22.5, 56, 'הקו הקריטי'], [87.5, 79.5, 'יחידות במלאי']],
+    act: 'עודף מוכרים. מחסור קונים, אחרת בחודש הבא יהיה לך פחות זמן.' },
+  { phase: 'מכירה', img: 'declare', title: 'מוכר או קונה?',
+    body: 'כל שחקן מכריז אם הוא מוכר (למעלה) או קונה (למטה). המשחק מציב אותך אוטומטית לפי העודף, ואפשר להחליף צד עד שהשעון הקטן נגמר. אנחנו והסגול מוכרים. למטה מוצג גם המלאי של החנות: 16 יחידות.',
+    marks: [[72.5, 21.5, 'אנחנו, בצד המוכרים'], [36.5, 27, 'גם הסגול מוכר'], [42, 66, 'הקונים למטה'], [82, 48, 'שעון ההכרזה'], [90, 85.5, 'המלאי של החנות']],
+    act: 'ג\'ויסטיק למעלה כדי למכור, למטה כדי לקנות.' },
+  { phase: 'מכירה', img: 'auction_down', title: 'המכירה מתחילה',
+    body: 'המוכרים מתחילים למעלה, במחיר של החנות (50). כל צעד למטה מוריד את המחיר שלך. המספר שמעל כל מוכר הוא המחיר שהוא מבקש כרגע (אנחנו ב-33, הסגול כבר ב-29). שני הקווים המקווקווים הם המחיר הנמוך ביותר שמבקשים וההצעה הגבוהה ביותר.',
+    marks: [[73, 43, 'אנחנו יורדים'], [62.5, 21, 'המחיר שאנחנו מבקשים כרגע'], [36, 46, 'הסגול יורד גם הוא'], [84.5, 24, 'החנות מוכרת ב-50'], [12.5, 66, 'החנות קונה ב-15'], [42, 71, 'הקונים לא זזים: אין להם מחסור']],
+    act: 'מחזיקים למטה כדי להוריד מחיר, למעלה כדי להעלות אותו בחזרה.' },
+  { phase: 'מכירה', img: 'auction_trade', title: 'עסקה',
+    body: 'אף קונה לא עלה לקראתנו, אז ירדנו עד קו החנות, ב-15. שנינו הגענו יחד, אבל רק אחד סוחר בכל רגע: הסגול, כי הוא שווה פחות מאיתנו. הדמות שלו מהבהבת, והיחידות עוברות אחת אחת. למטה נכתב כמה נסחרו.',
+    marks: [[36.5, 55, 'הסגול מוכר לחנות'], [73, 55, 'אנחנו מחכים בתור'], [18.5, 85.5, 'יחידות שנסחרו עד כה'], [9.5, 76, 'שורת הכסף מתעדכנת עם כל יחידה']],
+    act: 'כדי להפסיק לסחור פשוט זזים מהקו.' },
+  { phase: 'מכירה', img: 'auction_critical', title: 'עצירה בקו הקריטי',
+    body: 'אחרי 4 יחידות הסגול נעצר: <span class="term">SELLER AT CRITICAL LEVEL</span>. ברמת המתחילים המשחק לא נותן למכור את מה שתצטרך בחודש הבא. הוא הרוויח 60 דולר בסך הכול.',
+    act: 'ברמות הגבוהות אין עצירה כזאת, וצריך לספור לבד.' },
+  { phase: 'מכירה', img: 'auction_mine', title: 'עכשיו אנחנו',
+    body: 'התור עבר אלינו. שתי יחידות כבר נמכרו, והכסף עלה מ-968 ל-998. בסוף מכרנו את כל 4 יחידות העודף ב-15 כל אחת. זה מחיר גרוע: החנות תמכור את אותו מזון ב-50. אם אחד הקונים היה במחסור, היינו מחכים לו באמצע הדרך ומרוויחים פי שניים.',
+    marks: [[73, 55, 'אנחנו על קו החנות, סוחרים'], [90.5, 85.5, 'כבר שתי יחידות']],
+    act: 'נסו את <a href="#auction">מעבדת המכירה</a> בהמשך הדף כדי להרגיש את ההבדל.' },
+  { phase: 'מכירה', img: 'status_energy', title: 'אנרגיה',
+    body: 'המכירה השלישית עובדת בדיוק באותו אופן. לכל שחקן 3 יחידות ועודף של אחת, כי בחודש הראשון לכולם יש פרד אחד. ככל שיהיו לך יותר פרדות, תצטרך יותר אנרגיה.',
+    act: 'אנרגיה מתקלקלת לאט (רבע בחודש), אז מותר להחזיק קצת רזרבה.' },
+
+  { phase: 'סיכום', img: 'summary1', title: 'סוף החודש הראשון',
+    body: 'טבלת הסיכום, הפעם ממוינת. הירוק מוביל עם 1886, אנחנו שלישיים עם 1683. לכל שחקן: כסף, אדמה (500 לחלקה; אצל הירוק והכתום, שהציבו פרד לסמיתור, 575), וסחורה לפי מחירי המכירה האחרונה. למטה שווי המושבה כולה.',
+    marks: [[50, 22, 'המוביל'], [50, 55, 'אנחנו, במקום השלישי'], [50, 78, 'שווי המושבה']],
+    act: 'להיות אחרון זה לא נורא: האחרון זוכה בכל תיקו, בקרקעות ובמכירות. כפתור, והחודש השני מתחיל בחלוקת קרקעות חדשה.' },
+];
+
+const $ = (id) => document.getElementById(id);
+const phases = [...new Set(STEPS.map((s) => s.phase))];
+let cur = 0;
+function showStep(i) {
+  cur = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[cur];
+  $('shotImg').src = 'guide/' + s.img + '.png';
+  $('shotImg').alt = s.title;
+  $('tCount').textContent = `${s.phase} · צעד ${cur + 1} מתוך ${STEPS.length}`;
+  $('tTitle').textContent = s.title;
+  $('tBody').innerHTML = '<p>' + s.body + '</p>';
+  $('tDo').innerHTML = '<b>מה עושים:</b> ' + s.act;
+  for (const m of [...$('shot').querySelectorAll('.mark')]) m.remove();
+  $('tLegend').innerHTML = '';
+  (s.marks || []).forEach(([x, y, text], k) => {
+    const d = document.createElement('div'); d.className = 'mark'; d.style.left = x + '%'; d.style.top = y + '%'; d.textContent = k + 1; d.title = text;
+    const li = document.createElement('li'); li.innerHTML = `<span class="n">${k + 1}</span>${text}`;
+    const hot = (on) => { d.classList.toggle('hot', on); li.style.color = on ? '#fff' : ''; };
+    for (const el of [d, li]) { el.addEventListener('pointerenter', () => hot(true)); el.addEventListener('pointerleave', () => hot(false)); }
+    $('shot').appendChild(d); $('tLegend').appendChild(li);
+  });
+  [...$('dots').children].forEach((d, k) => d.classList.toggle('on', k === cur));
+  [...$('phases').children].forEach((b) => b.classList.toggle('on', b.dataset.p === s.phase));
+  $('prev').disabled = cur === 0; $('next').disabled = cur === STEPS.length - 1;
+  try { history.replaceState(null, '', '#step-' + (cur + 1)); } catch {}
+}
+for (const p of phases) { const b = document.createElement('button'); b.textContent = p; b.dataset.p = p; b.addEventListener('click', () => showStep(STEPS.findIndex((s) => s.phase === p))); $('phases').appendChild(b); }
+STEPS.forEach((s, k) => { const d = document.createElement('i'); d.title = s.title; if (k && STEPS[k - 1].phase !== s.phase) d.className = 'gap'; d.addEventListener('click', () => showStep(k)); $('dots').appendChild(d); });
+$('prev').addEventListener('click', () => showStep(cur - 1));
+$('next').addEventListener('click', () => showStep(cur + 1));
+$('shot').addEventListener('click', () => showStep(cur + 1));
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  const r = $('tourBox').getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) return;
+  if (e.key === 'ArrowLeft') { showStep(cur + 1); e.preventDefault(); }
+  if (e.key === 'ArrowRight') { showStep(cur - 1); e.preventDefault(); }
+});
+const fromHash = /^#step-(\d+)$/.exec(location.hash);
+showStep(fromHash ? +fromHash[1] - 1 : 0);
+if (!fromHash) try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+for (const s of STEPS) { const im = new Image(); im.src = 'guide/' + s.img + '.png'; }
+
+// ---------- Production calculator ----------
+const BASE = {
+  food: { river: 4, plain: 2, m1: 1, m2: 1, m3: 1 },
+  energy: { river: 2, plain: 3, m1: 1, m2: 1, m3: 1 },
+  smithore: { river: 0, plain: 1, m1: 2, m2: 3, m3: 4 },
+};
+const NAMES = { food: 'מזון', energy: 'אנרגיה', smithore: 'סמיתור', river: 'עמק הנהר', plain: 'מישור', m1: 'הר אחד', m2: 'שני הרים', m3: 'שלושה הרים' };
+const prod = { terrain: 'river', good: 'food', adj: '0', power: '1' };
+function drawProd() {
+  for (const seg of document.querySelectorAll('#prodLab .seg')) for (const b of seg.children) b.classList.toggle('on', prod[seg.dataset.k] === b.dataset.v);
+  const same = +$('same').value; $('sameV').textContent = same;
+  const base = BASE[prod.good][prod.terrain];
+  const banned = prod.good === 'smithore' && prod.terrain === 'river';
+  const noPower = prod.power === '0' && prod.good !== 'energy';
+  const adj = prod.adj === '1' && same >= 2 ? 1 : 0, learn = Math.floor(same / 3);
+  const total = banned || noPower ? 0 : base + adj + learn;
+  $('prodN').textContent = total;
+  $('prodU').innerHTML = banned || noPower ? '' : '<i></i>'.repeat(base) + '<i class="bonus"></i>'.repeat(adj + learn);
+  let why;
+  if (banned) why = 'בעמק הנהר אי אפשר לכרות: האדמה בוצית מדי. זה נכון גם לקריסטייט.';
+  else if (noPower) why = 'בלי יחידת אנרגיה שנשארה מהחודש הקודם, הפרד עומד ולא מייצר כלום. זו הסיבה הנפוצה ביותר לחודש שהלך לאיבוד.';
+  else {
+    const parts = [`בסיס של ${base} (${NAMES[prod.good]} ב${NAMES[prod.terrain]})`];
+    if (adj) parts.push('ועוד 1 על חלקה שכנה מאותו סוג');
+    if (prod.adj === '1' && same < 2) parts.push('(כדי שתהיה שכנה צריך לפחות שתי חלקות)');
+    if (learn) parts.push(`ועוד ${learn} על ${learn * 3} חלקות מאותו סוג`);
+    why = parts.join(', ') + '.';
+    const best = Object.entries(BASE).map(([g, t]) => [g, t[prod.terrain]]).sort((a, b) => b[1] - a[1])[0];
+    if (best[0] !== prod.good && best[1] > base) why += ` באדמה הזאת ${NAMES[best[0]]} נותן בסיס של ${best[1]}.`;
+    if (prod.good === 'energy') why += ' פרד של אנרגיה לא צריך אנרגיה כדי לעבוד.';
+  }
+  $('prodWhy').textContent = why;
+}
+for (const seg of document.querySelectorAll('#prodLab .seg')) for (const b of seg.children) b.addEventListener('click', () => { prod[seg.dataset.k] = b.dataset.v; drawProd(); });
+$('same').addEventListener('input', drawProd);
+drawProd();
+
+// ---------- Needs calculator ----------
+function drawNeeds() {
+  const round = +$('nRound').value, mules = +$('nMules').value, food = +$('nFood').value, energy = +$('nEnergy').value;
+  for (const k of ['nRound', 'nMules', 'nFood', 'nEnergy']) $(k + 'V').textContent = $(k).value;
+  const needF = round <= 4 ? 3 : round <= 8 ? 4 : 5, needE = mules ? mules + 1 : 0;
+  const line = (name, have, need, spoil) => {
+    const d = have - need;
+    const verdict = d > 0 ? `<b style="color:var(--mint)">עודף של ${d}</b>. אפשר למכור.` : d === 0 ? '<b>בדיוק מספיק.</b>' : `<b style="color:var(--red)">מחסור של ${-d}</b>. צריך לקנות.`;
+    const lost = Math.round(d * spoil), left = d > 0 && lost > 0 ? ` אם לא תמכור, ${lost} מהן יתקלקלו.` : '';
+    return `<b>${name}:</b> יש ${have}, צריך ${need}. ${verdict}${left}`;
+  };
+  $('needFood').innerHTML = line('מזון', food, needF, 0.5) + `<br><span class="dim">הצריכה עולה עם הזמן: 3 בחודשים 1 עד 4, אחר כך 4, ומחודש 9 כבר 5. מחסור במזון מקצר את השעון שלך.</span>`;
+  $('needEnergy').innerHTML = line('אנרגיה', energy, needE, 0.25) + `<br><span class="dim">יחידה לכל פרד שאינו של אנרגיה, ועוד אחת. במחסור, חלק מהפרדות לא ייצרו.</span>`;
+}
+for (const k of ['nRound', 'nMules', 'nFood', 'nEnergy']) $(k).addEventListener('input', drawNeeds);
+drawNeeds();
+
+// ---------- Auction lab ----------
+// Prices map to height: STORE_BUY at the bottom line, STORE_SELL at the top line.
+const A = { lo: 15, hi: 50, top: 46, bot: 246, units: 5, secs: 22 };
+let auc = null, best = 0;
+const priceY = (p) => A.bot - (p - A.lo) / (A.hi - A.lo) * (A.bot - A.top);
+const keys = { up: false, down: false };
+function aucReset() {
+  auc = { me: A.hi, buyer: A.lo, limit: 30 + Math.floor(Math.random() * 12), patience: 2 + Math.random() * 3, t: 0, sold: 0, cash: 0, tradeClock: 0, running: false, over: false, msg: 'לחצו "התחל מכירה"' };
+  aucDraw();
+}
+function aucDraw() {
+  $('lStoreSell').style.top = priceY(A.hi) + 'px'; $('lStoreBuy').style.top = priceY(A.lo) + 'px';
+  $('lSell').style.top = priceY(auc.me) + 'px'; $('lBuy').style.top = priceY(auc.buyer) + 'px';
+  $('lSellT').textContent = 'המחיר שלך: ' + Math.round(auc.me); $('lBuyT').textContent = 'ההצעה שלו: ' + Math.round(auc.buyer);
+  $('wMe').style.top = priceY(auc.me) - 14 + 'px'; $('wBuyer').style.top = priceY(auc.buyer) + 14 + 'px';
+  $('aTimer').style.height = Math.max(0, 1 - auc.t / A.secs) * 200 + 'px';
+  $('aMsg').textContent = auc.msg;
+  $('aSold').textContent = auc.sold; $('aCash').textContent = '$' + auc.cash;
+  $('aAvg').textContent = auc.sold ? '$' + (auc.cash / auc.sold).toFixed(1) : '-';
+  $('aBest').textContent = best ? `השיא שלך: $${best}. למכור הכול לחנות נותן $${A.units * A.lo}.` : '';
+}
+function aucTick(dt) {
+  if (!auc.running) return;
+  auc.t += dt;
+  if (keys.down) auc.me = Math.max(A.lo, auc.me - 14 * dt);
+  if (keys.up) auc.me = Math.min(A.hi, auc.me + 14 * dt);
+  // The buyer climbs towards what he is willing to pay; he hurries as the clock runs down.
+  if (auc.t > auc.patience) auc.buyer = Math.min(auc.limit, auc.buyer + (2.2 + 3 * auc.t / A.secs) * dt, auc.me);
+  const meets = auc.me - auc.buyer < 0.6 && auc.buyer > A.lo + 0.5, store = auc.me <= A.lo + 0.01;
+  $('wMe').classList.toggle('flash', meets || store); $('wBuyer').classList.toggle('flash', meets);
+  if ((meets || store) && auc.sold < A.units) {
+    auc.tradeClock += dt;
+    if (auc.tradeClock > 0.55) { auc.tradeClock = 0; auc.sold++; auc.cash += Math.round(meets ? auc.buyer : A.lo); auc.msg = (meets ? 'נמכר לקונה, ' : 'נמכר לחנות, ') + 'יחידות: ' + auc.sold; }
+  } else auc.tradeClock = 0;
+  if (auc.sold >= A.units || auc.t >= A.secs) {
+    auc.running = false; auc.over = true;
+    best = Math.max(best, auc.cash);
+    const left = A.units - auc.sold;
+    auc.msg = left ? `נגמר הזמן. נשארו ${left} יחידות, וחצי מהן יתקלקלו` : `מכרת הכול ב-$${auc.cash}. הקונה היה מוכן לשלם עד ${auc.limit}`;
+    $('aStart').textContent = 'עוד פעם';
+    for (const w of [$('wMe'), $('wBuyer')]) w.classList.remove('flash');
+  }
+  aucDraw();
+}
+let aLast = 0;
+function aucLoop(now) { requestAnimationFrame(aucLoop); const dt = Math.min(0.1, (now - aLast) / 1000); aLast = now; aucTick(dt); }
+requestAnimationFrame(aucLoop);
+$('aStart').addEventListener('click', () => { aucReset(); auc.running = true; auc.msg = 'המכירה התחילה'; $('aStart').blur(); });
+const holdBtn = (id, k) => { const b = $(id); b.addEventListener('pointerdown', (e) => { b.setPointerCapture(e.pointerId); keys[k] = true; }); for (const ev of ['pointerup', 'pointercancel']) b.addEventListener(ev, () => { keys[k] = false; }); };
+holdBtn('aUp', 'up'); holdBtn('aDown', 'down');
+const aucKey = (e, on) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'KeyW') keys.up = on; else if (e.code === 'KeyS') keys.down = on;
+};
+window.addEventListener('keydown', (e) => aucKey(e, true));
+window.addEventListener('keyup', (e) => aucKey(e, false));
+aucReset();
+</script>
+</body>
+</html>

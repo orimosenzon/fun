@@ -1,7 +1,7 @@
 // VIC-II video chip, rendered one raster line at a time.
 // All five graphics modes, 8 sprites with expansion, multicolour, priority and
 // both collision registers, raster interrupt, borders, bad-line cycle stealing.
-// Mid-line register changes take effect on the whole line (no cycle-exact splits).
+// A line is drawn whole, with the registers as they are near its start (no cycle-exact splits).
 
 export const MODELS = {
   // lines per frame, CPU cycles per line, CPU clock, first visible line, visible rows, pixel aspect
@@ -12,6 +12,7 @@ export const MODELS = {
 export const WIDTH = 384;      // 32 px border + 320 + 32 px border
 const LEFT = 32;               // x of the 40-column window inside a row
 const BUF = 640;
+const DRAW_AT = 14;           // CPU cycle of a line at which it is drawn
 
 // Colodore palette (Pepto's successor), RGB.
 export const PALETTE = [
@@ -46,7 +47,7 @@ export class VIC {
     this.irqStatus = 0; this.irqMask = 0;
     this.collSS = 0; this.collSB = 0;
     this.sprDma.fill(0); this.sprMc.fill(0); this.sprHalf.fill(0);
-    this.frameReady = false; this.frames = 0;
+    this.frameReady = false; this.frames = 0; this.drawn = false;
   }
 
   get irq() { return (this.irqStatus & this.irqMask) !== 0; }
@@ -90,13 +91,19 @@ export class VIC {
   }
 
   // Advance by c CPU cycles. Returns the cycles the VIC took from the CPU.
+  // A line is drawn when the beam reaches its left edge, with the registers as they are then:
+  // a raster interrupt handler that writes later in the line changes the lines below it, as on
+  // the real chip (a screen split set up on the last line of a text row takes effect on the next).
   clock(c) {
     this.lineCycle += c;
     let stolen = 0;
-    while (this.lineCycle >= this.model.cpl) {
+    for (;;) {
+      if (!this.drawn && this.lineCycle >= DRAW_AT) { this.drawn = true; this.renderLine(this.raster); }
+      if (this.lineCycle < this.model.cpl) break;
       this.lineCycle -= this.model.cpl;
       const s = this.nextLine();
       stolen += s; this.lineCycle += s;
+      this.drawn = false;
     }
     return stolen;
   }
@@ -104,7 +111,6 @@ export class VIC {
   nextLine() {
     const reg = this.reg;
     const line = this.raster;
-    this.renderLine(line);
 
     // Sprite row counters, then the Y compare for sprites starting on the next line.
     let active = 0;

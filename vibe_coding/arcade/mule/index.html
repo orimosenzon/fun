@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>M.U.L.E.</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: dark; --par: 0.75; --rows: 248; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0c0c0e; color: #ddd; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; min-height: 100vh; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 2px; }
+  .screen { position: relative; width: min(100%, 1000px, calc((100vh - 250px) * 384 * var(--par) / var(--rows))); min-width: 288px; }
+  canvas { display: block; width: 100%; aspect-ratio: calc(384 * var(--par)) / var(--rows); image-rendering: pixelated; background: #000; border-radius: 6px; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: rgba(0, 0, 0, .78); border-radius: 6px; text-align: center; padding: 16px; line-height: 1.5; }
+  .overlay[hidden] { display: none; }
+  .screen:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; width: 100vw; }
+  .screen:fullscreen canvas { width: min(100vw, calc(100vh * 384 * var(--par) / var(--rows))); border-radius: 0; }
+  button { font: inherit; color: #eee; background: #26262b; border: 1px solid #55555e; border-radius: 8px; padding: 8px 14px; cursor: pointer; touch-action: manipulation; }
+  button:hover { background: #33333a; }
+  button.on { background: #3d4a7a; border-color: #7f92d8; }
+  button.big { font-size: 18px; padding: 12px 28px; background: #3d4a7a; border-color: #7f92d8; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .bar .sep { width: 12px; }
+  .help { max-width: 760px; font-size: 14px; color: #aaa; line-height: 1.7; text-align: center; }
+  .help b { color: #ddd; font-weight: 600; }
+  kbd { font: inherit; font-size: 12px; background: #222227; border: 1px solid #4a4a52; border-radius: 4px; padding: 1px 6px; color: #ddd; direction: ltr; display: inline-block; }
+  .pad { display: none; width: 100%; max-width: 560px; justify-content: space-between; align-items: center; user-select: none; -webkit-user-select: none; touch-action: none; }
+  @media (pointer: coarse) { .pad { display: flex; } .keys { display: none; } }
+  .dpad { position: relative; width: 168px; height: 168px; border-radius: 50%; background: #1b1b20; border: 1px solid #44444c; }
+  .dpad::after { content: ''; position: absolute; inset: 62px; border-radius: 50%; background: #33333a; }
+  .fire { width: 110px; height: 110px; border-radius: 50%; background: #5a2630; border: 1px solid #a05562; font-size: 16px; }
+  .fire.down { background: #8a3445; }
+  .buttons { display: flex; align-items: center; gap: 12px; }
+  a.how { color: #9db0ff; font-size: 15px; }
+  .status { font-size: 13px; color: #888; min-height: 18px; }
+</style>
+</head>
+<body>
+<h1 dir="ltr">M.U.L.E.</h1>
+<a class="how" href="how.html">איך משחקים? מדריך עם צילומים מהמשחק</a>
+
+<div class="screen" id="screen">
+  <canvas id="canvas" width="384" height="248"></canvas>
+  <div class="overlay" id="overlay">
+    <div id="msg">טוען…</div>
+    <button class="big" id="start" hidden>התחל</button>
+    <label id="pick" hidden>
+      <button type="button" onclick="document.getElementById('files').click()">בחירת קבצים…</button>
+      <input type="file" id="files" multiple hidden>
+    </label>
+  </div>
+</div>
+
+<div class="bar" id="bar">
+  <button data-key="F3" title="רמת המשחק: מתחילים, רגיל או טורניר">F3 רמה</button>
+  <button data-key="F5" title="כמה שחקנים אנושיים, מ-4 עד 0 (הדגמה)">F5 שחקנים</button>
+  <button data-key="F7" title="תחילת המשחק">F7 התחל</button>
+  <button data-key="F1" title="בחירה מחדש של הדמויות">F1 דמויות</button>
+  <button data-key="SPACE" title="עצירה והמשך">הפסקה</button>
+  <span class="sep"></span>
+  <button id="two" title="מקלדת מפוצלת לשני שחקנים">שני שחקנים</button>
+  <button id="mute">השתקה</button>
+  <button id="model" title="קצב המכונה: אמריקאי 60 הרץ או אירופי 50 הרץ" dir="ltr">NTSC</button>
+  <button id="reset">אתחול</button>
+  <button id="full">מסך מלא</button>
+</div>
+
+<div class="pad" id="pad">
+  <div class="buttons"><button class="fire" id="fire">אש</button></div>
+  <div class="dpad" id="dpad"></div>
+</div>
+
+<div class="help keys" id="help"></div>
+<div class="status" id="status"></div>
+
+<script type="module">
+import { C64, WIDTH } from '../archon/src/vm/c64.js';
+import { D64 } from '../archon/src/vm/d64.js';
+import { AudioOut } from '../archon/src/audio.js';
+import { MuleInput } from './src/input.js';
+import { JOY } from '../archon/src/vm/c64.js';
+
+const $ = (id) => document.getElementById(id);
+const canvas = $('canvas'), ctx = canvas.getContext('2d');
+const pref = (k, d) => { try { return localStorage.getItem('mule.' + k) ?? d; } catch { return d; } };
+const setPref = (k, v) => { try { localStorage.setItem('mule.' + k, v); } catch {} };
+
+const params = new URLSearchParams(location.search);
+let modelName = params.has('pal') ? 'pal' : params.has('ntsc') ? 'ntsc' : pref('model', 'ntsc');
+const files = {};            // kernal, basic, chargen, disk
+const audio = new AudioOut();
+const input = new MuleInput();
+let machine = null, image = null, running = false;
+window.mule = { get machine() { return machine; }, input, audio };
+
+function helpText() {
+  const k = (...keys) => keys.map((x) => `<kbd>${x}</kbd>`).join(' ');
+  const intro = `בפתיחה: ${k('Space')} מדלג על הסרטון, ${k('F3')} רמה, ${k('F5')} מספר השחקנים האנושיים, ${k('F7')} מתחיל &nbsp;·&nbsp; ${k('P')} עוצר וממשיך`;
+  $('help').innerHTML = input.twoPlayers
+    ? `<b>שחקן ראשון:</b> ${k('W', 'A', 'S', 'D')} וכפתור במקש ${k('F')}<br><b>שחקן שני:</b> חצים וכפתור במקש ${k('Space')}<br>${intro}`
+    : `<b>תנועה:</b> מקשי החצים &nbsp;·&nbsp; <b>כפתור הג'ויסטיק:</b> ${k('Space')}<br>בחלוקת הקרקעות לוחצים כשהמסגרת על החלקה הרצויה. במכירה הפומבית מעלה ומטה משנים את המחיר. כשהמחשב משחק, לחיצה ארוכה מזרזת אותו<br>${intro}`;
+}
+
+function identify(name, bytes) {
+  if (bytes.length === 174848 || /\.d64$/i.test(name)) return 'disk';
+  if (bytes.length === 4096) return 'chargen';
+  if (bytes.length === 8192) return bytes[0x1ffc] === 0xe2 && bytes[0x1ffd] === 0xfc ? 'kernal' : 'basic';
+  return null;
+}
+const missing = () => ['kernal', 'basic', 'chargen', 'disk'].filter((k) => !files[k]);
+const NAMES = { kernal: 'KERNAL ROM (8K)', basic: 'BASIC ROM (8K)', chargen: 'Character ROM (4K)', disk: 'תמונת דיסק של M.U.L.E. (‎.d64)' };
+
+async function fetchData() {
+  const want = { kernal: 'data/kernal.bin', basic: 'data/basic.bin', chargen: 'data/chargen.bin', disk: 'data/mule.d64' };
+  await Promise.all(Object.entries(want).map(async ([k, url]) => {
+    try { const r = await fetch(url); if (r.ok) { const b = new Uint8Array(await r.arrayBuffer()); if (identify(url, b) === k) files[k] = b; } } catch {}
+  }));
+  ready();
+}
+
+function ready() {
+  const miss = missing();
+  if (miss.length) {
+    $('msg').innerHTML = 'כדי לשחק צריך את קובצי המכונה והמשחק, והם אינם חלק מהדף הזה.<br>חסר: ' + miss.map((k) => NAMES[k]).join(', ');
+    $('pick').hidden = false; $('start').hidden = true;
+  } else {
+    $('msg').textContent = 'M.U.L.E. (Ozark Softscape, 1983), רץ על אמולטור קומודור 64';
+    $('pick').hidden = true; $('start').hidden = false;
+  }
+}
+
+$('files').addEventListener('change', async (e) => {
+  for (const f of e.target.files) { const b = new Uint8Array(await f.arrayBuffer()); const k = identify(f.name, b); if (k) files[k] = b; }
+  ready();
+});
+
+function build() {
+  machine = new C64({ kernal: files.kernal, basic: files.basic, chargen: files.chargen, model: modelName, sampleRate: audio.sampleRate });
+  machine.disk = new D64(files.disk);
+  input.machine = machine;
+  canvas.width = WIDTH; canvas.height = machine.model.rows;
+  document.documentElement.style.setProperty('--par', machine.model.par);
+  document.documentElement.style.setProperty('--rows', machine.model.rows);
+  image = ctx.createImageData(WIDTH, machine.model.rows);
+  $('model').textContent = modelName.toUpperCase();
+  if (!machine.bootToReady()) { $('status').textContent = 'המכונה לא עלתה'; return; }
+  const prg = machine.disk.load(Uint8Array.of(0x2a));
+  if (!prg) { $('status').textContent = 'לא נמצאה תוכנית בדיסק'; return; }
+  machine.ram[0xba] = 8;   // the boot program loads the rest of the game from "the current drive"
+  machine.runProgram(prg);
+  machine.sid.drain();
+  input.releaseAll();
+}
+
+let last = 0, owed = 0, dirty = false;
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (!running || !machine) { last = now; return; }
+  input.pollGamepads();
+  let dt = now - last; last = now;
+  if (dt > 100) dt = 100;
+  owed += dt * machine.model.hz / 1000;
+  const before = machine.cycles;
+  machine.runCycles(owed, () => { machine.frameRGBA(image.data); dirty = true; });
+  owed -= machine.cycles - before;
+  audio.push(machine.sid.drain());
+  if (dirty) { ctx.putImageData(image, 0, 0); dirty = false; }
+  if (machine.cpu.jammed) { running = false; $('status').textContent = 'המעבד נתקע בכתובת $' + machine.cpu.pc.toString(16); }
+}
+requestAnimationFrame(tick);
+
+$('start').addEventListener('click', async () => {
+  $('start').disabled = true;
+  await audio.start();
+  audio.setMuted(pref('mute', '0') === '1');
+  build();
+  $('overlay').hidden = true;
+  running = true;
+});
+
+for (const b of document.querySelectorAll('[data-key]')) b.addEventListener('click', () => { input.tap(b.dataset.key); b.blur(); });
+$('two').addEventListener('click', () => { input.twoPlayers = !input.twoPlayers; $('two').classList.toggle('on', input.twoPlayers); setPref('two', input.twoPlayers ? '1' : '0'); input.apply(); helpText(); $('two').blur(); });
+$('mute').addEventListener('click', () => { audio.setMuted(!audio.muted); $('mute').classList.toggle('on', audio.muted); setPref('mute', audio.muted ? '1' : '0'); $('mute').blur(); });
+$('model').addEventListener('click', () => { modelName = modelName === 'ntsc' ? 'pal' : 'ntsc'; setPref('model', modelName); $('model').textContent = modelName.toUpperCase(); if (machine) build(); $('model').blur(); });
+$('reset').addEventListener('click', () => { if (machine) build(); $('reset').blur(); });
+$('full').addEventListener('click', () => { const s = $('screen'); if (document.fullscreenElement) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen).call(s); $('full').blur(); });
+document.addEventListener('pointerdown', () => audio.resume());
+
+// Touch pad: direction from where the finger is relative to the pad's centre.
+const dpad = $('dpad');
+function padMove(e) {
+  const r = dpad.getBoundingClientRect();
+  const x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+  let v = input.touch & JOY.FIRE;
+  if (Math.hypot(x, y) > 14) {
+    const a = Math.atan2(y, x) / Math.PI * 180, near = (c) => Math.abs(((a - c + 540) % 360) - 180) < 67.5;
+    if (near(0)) v |= JOY.RIGHT; if (near(180)) v |= JOY.LEFT; if (near(-90)) v |= JOY.UP; if (near(90)) v |= JOY.DOWN;
+  }
+  input.touch = v; input.apply();
+}
+dpad.addEventListener('pointerdown', (e) => { dpad.setPointerCapture(e.pointerId); padMove(e); });
+dpad.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') padMove(e); });
+for (const ev of ['pointerup', 'pointercancel']) dpad.addEventListener(ev, () => { input.touch &= JOY.FIRE; input.apply(); });
+const fire = $('fire');
+fire.addEventListener('pointerdown', (e) => { fire.setPointerCapture(e.pointerId); input.touch |= JOY.FIRE; fire.classList.add('down'); input.apply(); });
+for (const ev of ['pointerup', 'pointercancel']) fire.addEventListener(ev, () => { input.touch &= ~JOY.FIRE; fire.classList.remove('down'); input.apply(); });
+
+// Space is the fire button here, so the game's pause key (the C64 space bar) is on P.
+window.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !e.repeat && !e.ctrlKey && !e.metaKey) input.tap('SPACE'); });
+
+input.twoPlayers = pref('two', '0') === '1';
+$('two').classList.toggle('on', input.twoPlayers);
+$('mute').classList.toggle('on', pref('mute', '0') === '1');
+$('model').textContent = modelName.toUpperCase();
+input.attach();
+helpText();
+fetchData();
+</script>
+</body>
+</html>
