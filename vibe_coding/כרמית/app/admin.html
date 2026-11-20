@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611201410">
+<link rel="stylesheet" href="style.css?v=202611201421">
 </head>
 <body class="admin">
   <div id="app">
@@ -41,6 +41,11 @@
         <p class="help">מכתבים שאפשר לצרף לחידון כששולחים אותו: לפני החידון (רישא) או אחריו (סיפא). כל מכתב יכול לשמש כל חידון. את המכתבים לשליחה בוחרים בתוך החידון עצמו.</p>
         <p><button id="letter-new-home" class="primary-btn small">+ מכתב חדש</button></p>
         <ul id="all-letters" class="letters-list"></ul>
+        <details id="letters-archive" class="letters-archive hidden">
+          <summary>ארכיון (<span id="archive-count"></span>)</summary>
+          <p class="help">מכתבים שכבר אין בהם צורך. הם לא מופיעים ברשימות, אבל מי שקיבל קישור איתם ממשיך לראות אותם.</p>
+          <ul id="archived-letters" class="letters-list"></ul>
+        </details>
       </div>
 
       <div id="tab-stats" class="hidden">
@@ -97,7 +102,7 @@
     <!-- one quiz -->
     <section id="quiz-view" class="view hidden">
       <a href="#" class="back">→ כל החידונים</a>
-      <p id="lock-banner" class="lock-banner hidden">🔒 <b>החידון הזה קבוע.</b> אי אפשר לשנות בו כלום, וגם לא את החידות שבו, כדי שמי שקיבל אותו ימשיך לראות בדיוק את מה שנשלח. כדי לשנות: משבטים אותו ועובדים על העותק, או מבטלים את הקיבוע.</p>
+      <p id="lock-banner" class="lock-banner hidden">🔒 <b>החידון הזה קבוע.</b> אי אפשר לשנות בו כלום, וגם לא את החידות והמכתבים שמסומנים בו, כדי שמי שקיבל אותו ימשיך לראות בדיוק את מה שנשלח. כדי לשנות: משבטים אותו ועובדים על העותק, או מבטלים את הקיבוע.</p>
 
       <div class="quiz-hero">
         <button id="cover-btn" class="cover-edit" title="החלפת תמונת השער">
@@ -297,6 +302,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611201410"></script>
+  <script type="module" src="admin.js?v=202611201421"></script>
 </body>
 </html>

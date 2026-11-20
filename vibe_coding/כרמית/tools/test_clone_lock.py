@@ -3,6 +3,7 @@ quiz) and cloning a whole quiz; (2) a locked quiz: nothing in it can change, its
 from anywhere, and editing one from another quiz swaps in an editable copy there; (3) the per-quiz switch for
 the "how hard was it" question.
 Usage: python3 tools/test_clone_lock.py http://localhost:8766/app/ [screenshot-dir]"""
+import re
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -105,6 +106,67 @@ with sync_playwright() as p:
     a.click("#quiz-lock")
     a.wait_for_selector("#lock-banner", state="hidden")
     check(store("s.quizzes.qe.locked") is False and a.is_enabled("#quiz-title") and a.is_visible(".pane-pool"), "unlock: editable again")
+    ctx.close()
+
+    # ---- letters: clone, locked with a locked quiz, archive ----
+    ctx = b.new_context(viewport={"width": 1200, "height": 1000})
+    a = ctx.new_page()
+    stub(a)
+    a.add_init_script("""
+      window.__LETTERS = { L1: { name: 'נשלח', text: 'שלום', image: '', created: 2 }, L2: { name: 'אחר', text: 'היי', image: '', created: 1 } };
+      window.__PATCH = { qe: { opening: 'L1', locked: true }, qm: { closing: 'L2' } };
+    """)
+    store = lambda expr: a.evaluate(f"(() => {{ const s = window.__store; return {expr}; }})()")
+    a.goto(BASE + "admin.html#letters")
+    a.wait_for_selector("#all-letters .letter-row")
+    sent = a.locator("#all-letters .letter-row", has_text="נשלח")
+    check("🔒 קל" in sent.inner_text(), "letters: a letter in a locked quiz says so")
+    sent.get_by_role("button", name="מחיקה").click()   # the alert is accepted by the stub
+    check(store("'L1' in s.letters"), "locked letter: can't be deleted")
+    sent.get_by_role("button", name="עריכה").click()   # offers a copy instead; the stub accepts
+    a.wait_for_selector("#letter-dialog[open]")
+    check(a.inner_text("#letter-form-title") == "עריכת העותק" and a.input_value("#letter-name") == "נשלח (עותק)", "locked letter: editing opens a copy")
+    a.fill("#letter-text", "שלום חדש")
+    a.click("#letter-save")
+    a.wait_for_timeout(200)
+    texts = store("Object.values(s.letters).map((l) => l.text).sort()")
+    check(texts == ["היי", "שלום", "שלום חדש"] and store("s.letters.L1.text") == "שלום", f"locked letter: the original is untouched: {texts}")
+    # Archive: out of the lists, still there for whoever got it.
+    exact = lambda box, name: a.locator(f"{box} .letter-row").filter(has=a.locator("b", has_text=re.compile(f"^{re.escape(name)}$")))
+    exact("#all-letters", "נשלח").get_by_role("button", name="לארכיון").click()
+    a.wait_for_timeout(200)
+    check(store("s.letters.L1.archived") is True and store("s.letters.L1.text") == "שלום", "archive: the letter is kept, marked archived")
+    names = a.locator("#all-letters .letter-row b").all_inner_texts()
+    check("נשלח" not in names and a.inner_text("#archive-count") == "1" and a.inner_text("#all-letters-count") == "2", f"archive: out of the list: {names}")
+    # In the locked quiz it is still shown (it is marked there), with the choice locked.
+    a.goto(BASE + "admin.html#quiz/qe")
+    a.wait_for_selector("#letters-list .letter-row")
+    row = exact("#letters-list", "נשלח")
+    check(row.locator("input[value=opening]").is_checked() and row.locator("input[value=none]").is_disabled(), "locked quiz: its letter is shown and the choice is locked")
+    # In another quiz the archived letter is not offered.
+    a.goto(BASE + "admin.html#quiz/qm")
+    a.wait_for_function("document.querySelector('#quiz-title').value === 'בינוני'")
+    names = a.locator("#letters-list .letter-row b").all_inner_texts()
+    check(names == ["נשלח (עותק)", "אחר"], f"archive: not offered in other quizzes: {names}")
+    # A letter of a quiz that is not locked can still be edited and deleted.
+    exact("#letters-list", "אחר").get_by_role("button", name="מחיקה").click()
+    a.wait_for_timeout(200)
+    check(store("!('L2' in s.letters) && s.quizzes.qm.closing === ''"), "letters: an unlocked letter is deleted as before")
+    # Back from the archive.
+    a.goto(BASE + "admin.html#letters")
+    a.click("#letters-archive summary")
+    a.locator("#archived-letters").get_by_role("button", name="החזרה מהארכיון").click()
+    a.wait_for_timeout(200)
+    check(store("s.letters.L1.archived") is False and not a.is_visible("#letters-archive"), "archive: brought back")
+    ctx.close()
+    # The player still gets an archived letter with the link that was sent.
+    ctx = b.new_context(viewport={"width": 420, "height": 900})
+    page = ctx.new_page()
+    stub(page)
+    page.add_init_script("window.__NO_USER = true; window.__LETTERS = { L1: { name: 'x', text: 'שלום', image: '', archived: true, created: 1 } };")
+    page.goto(BASE + "index.html?q=qe&b=L1")
+    page.wait_for_selector("#start-btn:visible")
+    check(page.inner_text("#letter-text") == "שלום", "player: an archived letter still opens with its link")
     ctx.close()
 
     # ---- the player: no difficulty question when switched off ----

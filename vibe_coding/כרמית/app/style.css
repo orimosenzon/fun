@@ -1144,3 +1144,14 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
   .q-item img { margin-inline-end: auto; }
   .q-item .meta { order: 5; flex: 1 1 100%; padding: 0 2px 4px; overflow-wrap: anywhere; }
 }
+
+/* letters Carmit is done with */
+.letters-archive { margin-top: 8px; }
+.letters-archive summary { cursor: pointer; color: var(--muted); font-size: 0.95rem; padding: 6px 0; }
+.letters-archive .letters-list { margin-top: 8px; opacity: 0.8; }
+
+/* Five tabs don't fit a phone in one row (the fifth pushed the whole page wider than the screen): they wrap. */
+@media (max-width: 700px) {
+  .tabs { flex-wrap: wrap; gap: 0 2px; }
+  .tab { padding: 8px 10px; font-size: 0.95rem; white-space: nowrap; }
+}

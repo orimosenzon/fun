@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
 import { app, db, fs, ADMINS, LEVELS, loadRiddles, loadQuizzes, loadLetters, loadRatings, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201410';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201421';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -37,7 +37,9 @@ const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean)
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
 // A locked quiz (quiz.locked, "קבוע") is one that was sent and must stay as it is: nothing in it can change, and
 // neither can the riddles in it, wherever they are edited from. These are its fields that the player sees.
-const LOCKED_FIELDS = ['title', 'cover', 'riddleIds', 'shuffle', 'level', 'heading'];
+const LOCKED_FIELDS = ['title', 'cover', 'riddleIds', 'shuffle', 'level', 'heading', 'opening', 'closing'];
+// A letter marked in a locked quiz is locked with it: it can't be edited or deleted, only cloned or archived.
+const letterLockedIn = (l) => quizzes.filter((q) => q.locked && (q.opening === l.id || q.closing === l.id));
 const lockedWith = (rid) => quizzesWith(rid).filter((q) => q.locked);
 const quizNames = (qs) => qs.map((q) => `"${q.title || 'ללא שם'}"`).join(', ');
 // The link to send: the quiz on its own, with the letters chosen in it right now (b = before, a = after).
@@ -974,7 +976,9 @@ function renderLetters() {
   const list = $('letters-list');
   list.innerHTML = '';
   const { opening, closing } = chosen(current);
-  for (const letter of letters) {
+  // Archived letters stay out of the way, except one that is marked in this very quiz.
+  const shown = letters.filter((l) => !l.archived || l === opening || l === closing);
+  for (const letter of shown) {
     const li = letterCard(letter);
     const role = letter === opening ? 'opening' : letter === closing ? 'closing' : 'none';
     li.classList.toggle('picked', role !== 'none');
@@ -988,20 +992,17 @@ function renderLetters() {
       input.name = `role-${letter.id}`;
       input.value = value;
       input.checked = value === role;
+      input.disabled = !!current.locked;
       input.addEventListener('change', () => setRole(letter, value));
       lab.append(input, el('span', '', label));
       seg.appendChild(lab);
     }
-    const edit = el('button', 'link-btn', 'עריכה');
-    edit.addEventListener('click', () => openLetter(letter));
-    const del = el('button', 'link-btn del', 'מחיקה');
-    del.addEventListener('click', () => deleteLetter(letter));
     const actions = el('div', 'tile-actions');
-    actions.append(seg, edit, del);
+    actions.append(seg, ...letterButtons(letter));
     li.appendChild(actions);
     list.appendChild(li);
   }
-  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים. "+ מכתב חדש" כותב את הראשון.'));
+  if (!shown.length) list.appendChild(el('p', 'help', letters.length ? 'כל המכתבים בארכיון. אפשר להחזיר מכתב מהארכיון בלשונית "מכתבים".' : 'עוד אין מכתבים. "+ מכתב חדש" כותב את הראשון.'));
   renderShare();
 }
 
@@ -1026,24 +1027,72 @@ function renderShare() {
 
 // The letters tab: all letters, to write, edit and delete; which quizzes they are marked in.
 function renderAllLetters() {
-  $('all-letters-count').textContent = letters.length || '';
-  const list = $('all-letters');
-  list.innerHTML = '';
-  for (const letter of letters) {
+  const active = letters.filter((l) => !l.archived);
+  const archived = letters.filter((l) => l.archived);
+  $('all-letters-count').textContent = active.length || '';
+  const row = (letter) => {
     const li = letterCard(letter);
     const uses = quizzes.filter((q) => q.opening === letter.id || q.closing === letter.id)
-      .map((q) => `${q.title || 'ללא שם'} (${q.opening === letter.id ? 'לפני' : 'אחרי'})`);
+      .map((q) => `${q.locked ? '🔒 ' : ''}${q.title || 'ללא שם'} (${q.opening === letter.id ? 'לפני' : 'אחרי'})`);
     if (uses.length) li.querySelector('.meta').appendChild(el('div', 'sub', `מסומן ב: ${uses.join(', ')}`));
     const actions = el('div', 'tile-actions');
-    const edit = el('button', 'link-btn', 'עריכה');
-    edit.addEventListener('click', () => openLetter(letter));
-    const del = el('button', 'link-btn del', 'מחיקה');
-    del.addEventListener('click', () => deleteLetter(letter));
-    actions.append(edit, del);
+    actions.append(...letterButtons(letter));
     li.appendChild(actions);
-    list.appendChild(li);
-  }
-  if (!letters.length) list.appendChild(el('p', 'help', 'עוד אין מכתבים.'));
+    return li;
+  };
+  const list = $('all-letters');
+  list.innerHTML = '';
+  list.append(...active.map(row));
+  if (!active.length) list.appendChild(el('p', 'help', letters.length ? 'כל המכתבים בארכיון.' : 'עוד אין מכתבים.'));
+  // The archive: letters Carmit is done with. They are out of every list, and still open for whoever got them.
+  const wasOpen = $('letters-archive').open;
+  $('letters-archive').classList.toggle('hidden', !archived.length);
+  $('letters-archive').open = wasOpen && !!archived.length;
+  $('archive-count').textContent = archived.length;
+  $('archived-letters').replaceChildren(...archived.map(row));
+}
+
+// Edit, clone, archive, delete: the same buttons wherever a letter is listed.
+function letterButtons(letter) {
+  const btn = (cls, text, title, fn) => {
+    const b = el('button', cls, text);
+    if (title) b.title = title;
+    b.addEventListener('click', fn);
+    return b;
+  };
+  return [
+    btn('link-btn', 'עריכה', '', () => openLetter(letter)),
+    btn('link-btn', 'שיבוט', 'מכתב חדש, זהה לזה, שאפשר לשנות בלי לגעת במקור', () => cloneLetter(letter)),
+    letter.archived
+      ? btn('link-btn', 'החזרה מהארכיון', '', () => setArchived(letter, false))
+      : btn('link-btn muted', 'לארכיון', 'המכתב יוצא מהרשימות, ומי שכבר קיבל אותו ממשיך לראות אותו', () => setArchived(letter, true)),
+    btn('link-btn del', 'מחיקה', '', () => deleteLetter(letter)),
+  ];
+}
+
+async function cloneLetter(letter) {
+  const { id, created, updated, archived, ...data } = letter;
+  data.name = `${letterName(letter)} (עותק)`;
+  data.by = auth.currentUser.email;
+  let copy;
+  try {
+    const ref = await fs.addDoc(fs.collection(db, 'letters'), { ...data, created: fs.serverTimestamp() });
+    copy = { id: ref.id, ...data };
+    letters.unshift(copy);
+  } catch (err) { return toast(`השיבוט נכשל: ${err.message}`); }
+  refreshLetters();
+  toast('נוצר עותק של המכתב');
+  openLetter(copy);
+  $('letter-form-title').textContent = 'עריכת העותק';
+}
+
+async function setArchived(letter, on) {
+  try {
+    await fs.updateDoc(fs.doc(db, 'letters', letter.id), { archived: on, updated: fs.serverTimestamp() });
+  } catch (err) { return toast(`הפעולה נכשלה: ${err.message}`); }
+  letter.archived = on;
+  refreshLetters();
+  toast(on ? 'המכתב עבר לארכיון. מי שכבר קיבל אותו ממשיך לראות אותו.' : 'המכתב חזר מהארכיון');
 }
 
 function refreshLetters() {
@@ -1052,6 +1101,11 @@ function refreshLetters() {
 }
 
 async function deleteLetter(letter) {
+  const locked = letterLockedIn(letter);
+  if (locked.length) {
+    alert(`אי אפשר למחוק את המכתב: הוא מצורף לחידון קבוע (${quizNames(locked)}), ומי שקיבל את החידון רואה אותו.\nאם כבר אין בו צורך, "לארכיון" מוציא אותו מהרשימות בלי לפגוע במה שנשלח.`);
+    return false;
+  }
   const uses = quizzes.filter((q) => q.opening === letter.id || q.closing === letter.id).map((q) => `"${q.title || 'ללא שם'}"`);
   const where = uses.length ? `\nהוא מסומן ב: ${uses.join(', ')}, והסימון יוסר.` : '';
   if (!confirm(`למחוק את המכתב "${letterName(letter)}"?${where}\nמי שיפתח קישור שנשלח איתו יגיע לחידון בלי המכתב.`)) return false;
@@ -1089,6 +1143,11 @@ function setLetterImage(data) {
 }
 
 function openLetter(letter) {
+  const locked = letter ? letterLockedIn(letter) : [];
+  if (locked.length) {
+    if (confirm(`המכתב מצורף לחידון קבוע (${quizNames(locked)}), ולכן אי אפשר לשנות אותו.\nליצור עותק שלו ולערוך אותו? המכתב המקורי והחידון הקבוע לא ישתנו.`)) cloneLetter(letter);
+    return;
+  }
   letterEditing = letter;
   $('letter-form').reset();
   letterError('');
