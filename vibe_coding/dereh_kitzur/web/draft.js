@@ -708,8 +708,22 @@ const Drafts = (() => {
         catch (err) { alert('ההעתקה לא הצליחה. אפשר לסמן את הטקסט ידנית.'); }
       }
       if (a === 'share') {
+        // In the app: Android's own share sheet, the log as a file. The
+        // WebView has no navigator.share, so on an older APK the button did
+        // nothing at all (18/11/2026); there it now says so and copies.
+        if (Native.isApp) {
+          if (await Native.shareLog()) return;
+          try { await navigator.clipboard.writeText(text); } catch (err) { /* told below */ }
+          alert('בגרסה הזו של האפליקציה אין שיתוף. הלוג הועתק, אפשר להדביק אותו במייל. '
+            + 'אחרי עדכון האפליקציה הכפתור ישלח אותו כקובץ.');
+          return;
+        }
+        if (!navigator.share) {
+          alert('אין כאן שיתוף. אפשר ללחוץ "העתק" ולהדביק במייל.');
+          return;
+        }
         try { await navigator.share({ title: 'לוג GPS - דרך קיצור', text }); }
-        catch (err) { /* cancelled, or no share sheet here */ }
+        catch (err) { /* cancelled */ }
       }
     });
     document.body.appendChild(box);

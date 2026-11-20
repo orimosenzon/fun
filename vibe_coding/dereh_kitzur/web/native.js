@@ -40,6 +40,14 @@ const Native = (() => {
     try { return (await p.read()).text; } catch (err) { return null; }
   }
 
+  /** Android's share sheet with the log file attached (APK 1.3+). False when
+   *  this app is older and cannot, so the caller falls back. */
+  async function shareLog() {
+    const p = dkLog();
+    if (!p || !p.share) return false;
+    try { await p.share(); return true; } catch (err) { return false; }
+  }
+
   async function clearLog() {
     const p = dkLog();
     if (p) await p.clear().catch(() => {});
@@ -161,5 +169,5 @@ const Native = (() => {
 
   wire();
 
-  return { isApp, watchWalk, openSettings, log, readLog, clearLog, hasFileLog };
+  return { isApp, watchWalk, openSettings, log, readLog, clearLog, shareLog, hasFileLog };
 })();
