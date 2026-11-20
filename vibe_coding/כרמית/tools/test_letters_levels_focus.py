@@ -2,7 +2,8 @@
 a quiz as the letter before it (רישא) or after it (סיפא), and sent by the quiz's one share link; (2) a quiz without a level, for
 quizzes that mix difficulties; (3) on a phone the answer box is not focused on a new riddle, so the keyboard
 doesn't cover the picture; with a real keyboard it still is.
-Usage: python3 tools/test_letters_levels_focus.py http://localhost:8766/app/   (a server rooted at the project folder)"""
+Usage: python3 tools/test_letters_levels_focus.py http://localhost:8767/vibe_coding/כרמית/app/
+(a server rooted at the fun repo, so that the short page fun/carmit/ is served too)"""
 import json
 import sys
 from playwright.sync_api import sync_playwright
@@ -92,33 +93,38 @@ with sync_playwright() as p:
     check(q["opening"] == by["עוד אחד"] and admin.locator("#letters-list li.picked").count() == 2, "admin: one letter per place")
     mark("פתיחה", "opening")
     share()
-    both = copied[-1]
-    check(f"b={by['פתיחה']}" in both and f"a={by['סגירה']}" in both, f"admin: the one link carries both letters: {both}")
-    check(admin.get_attribute("#play-link", "href").endswith(both.split("/app/")[1]), "admin: 'play it' opens the same quiz and letters")
+    # The link only names the quiz: the letters are read from the quiz when the link is opened, so changing
+    # the choice in the admin changes what everyone with the link sees (Carmit's request, 21/11/2026).
+    check(copied[-1].endswith("index.html?q=qe"), f"admin: the link names only the quiz: {copied[-1]}")
+    check(admin.get_attribute("#play-link", "href").endswith("index.html?q=qe"), "admin: 'play it' opens the same quiz")
     n_links = len(admin.evaluate("window.__store.links"))
-    share()
-    check(shorts[-1] == shorts[-2] and len(admin.evaluate("window.__store.links")) == n_links,
-          "admin: the same choice gets the same short link again")
     mark("סגירה", "none")
     share()
-    before_only = copied[-1]
-    check("a=" not in before_only and "b=" in before_only, f"admin: before only: {before_only}")
-    mark("פתיחה", "none")
     mark("סגירה", "closing")
     share()
-    after_only = copied[-1]
-    check("b=" not in after_only and "a=" in after_only, f"admin: after only: {after_only}")
+    check(len(set(shorts)) == 1 and len(admin.evaluate("window.__store.links")) == n_links,
+          f"admin: one short link per quiz, whatever letters are marked: {shorts}")
+    check("פתיחה" in admin.inner_text("#share-with") and "רואה" in admin.inner_text("#share-with"), "admin: the share line says what the reader sees")
 
     letters = admin.evaluate("window.__store.letters")
-    page = ctx.new_page()
-    page.add_init_script(f"window.__NO_USER = true; window.__LETTERS = {json.dumps(letters)};")
-    stub(page)
+    page = None
 
-    def play(url):
-        page.goto(url)
+    def play(opening, closing, url=None):
+        """The quiz as it is in the admin right now (its marked letters), opened by the same old link."""
+        global page
+        if page:
+            page.close()
+        page = ctx.new_page()
+        # opening=None: a quiz from before letters were marked in quizzes (no opening/closing fields at all).
+        patch = {} if opening is None else {"qe": {"opening": by.get(opening, opening), "closing": by.get(closing, closing)}}
+        page.add_init_script(f"window.__NO_USER = true; window.__LETTERS = {json.dumps(letters)}; window.__PATCH = {json.dumps(patch)};")
+        stub(page)
+        # The short page asks Firestore's REST API where its code leads.
+        page.route("**/firestore.googleapis.com/**", lambda r: r.fulfill(json={"fields": {k: {"stringValue": v} for k, v in admin.evaluate("window.__store.links")[r.request.url.split("/links/")[1].split("?")[0]].items() if k in "qba"}}))
+        page.goto(url or copied[-1])
         page.wait_for_selector("#start-btn:visible")
 
-    play(both)
+    play("פתיחה", "סגירה")
     check(page.inner_text("#letter-text") == "שלום מלפני" and page.is_visible("#letter-cta-top"), "player: the letter before, with its button")
     check(page.is_hidden("#letter-after"), "player: the letter after waits for the end")
     check(page.is_hidden("#gallery") and page.is_hidden("#home-btn"), "player: only this quiz, nothing else")
@@ -128,34 +134,36 @@ with sync_playwright() as p:
           "player: the button of the letter before comes back at the end")
     page.screenshot(path="/tmp/claude-1000/letter_after.png", full_page=True)
 
-    play(after_only)
+    play("", "סגירה")
     check(page.is_hidden("#letter"), "player: after only, nothing above the quiz")
     finish_quiz(page)
     check(page.is_visible("#letter-after") and page.is_hidden("#letter-end"), "player: the letter after, no button")
 
-    # The short page forwards to the quiz with its letters (Firestore's REST answer faked).
-    links = admin.evaluate("window.__store.links")
-    both_code = [c for c, l in links.items() if l["b"] and l["a"]][0]
-    page.route("**/firestore.googleapis.com/**", lambda r: r.fulfill(json={"fields": {k: {"stringValue": v} for k, v in links[r.request.url.split("/links/")[1].split("?")[0]].items() if k in "qba"}}))
-    page.goto(shorts[0].split("?")[0] + f"?{both_code}")
-    page.wait_for_selector("#start-btn:visible")
-    check(page.inner_text("#letter-text") == "שלום מלפני", f"short page: forwarded to the quiz with its letter: {page.url}")
+    # A link sent while other letters were marked (it still names them) shows what is marked now.
+    play("עוד אחד", "", copied[-1] + f"&b={by['פתיחה']}&a={by['סגירה']}")
+    check(page.inner_text("#letter-text") == "סתם מכתב", "player: an old link shows the letter marked now, not the one it named")
+    finish_quiz(page)
+    check(page.is_hidden("#letter-after"), "player: an old link, the letter after was unmarked since")
+
+    # The short page forwards to the quiz, and the letters come from the quiz.
+    play("פתיחה", "", shorts[-1])
+    check(page.inner_text("#letter-text") == "שלום מלפני", f"short page: forwarded to the quiz, with the letter marked in it: {page.url}")
     meta = page.request.get(shorts[0].split("?")[0]).text()
     check('og:title" content="חידות כרמית כונסרי"' in meta and "logo.jpg" in meta, "short page: preview title and logo")
-
-    play(before_only)
     finish_quiz(page)
     check(page.is_hidden("#letter-after") and page.is_visible("#letter-cta"), "player: before only, its button at the end")
 
-    play(BASE + "index.html?q=qe")
-    check(page.is_hidden("#letter"), "player: a plain link, no letter")
+    play("", "")
+    check(page.is_hidden("#letter"), "player: nothing marked, no letter")
     finish_quiz(page)
-    check(page.is_hidden("#letter-after") and page.is_hidden("#letter-end"), "player: a plain link, nothing after")
+    check(page.is_hidden("#letter-after") and page.is_hidden("#letter-end"), "player: nothing marked, nothing after")
 
-    play(BASE + f"index.html?q=qe&m={by['פתיחה']}")
-    check(page.inner_text("#letter-text") == "שלום מלפני", "player: an old m= link still shows its letter before")
-    play(BASE + "index.html?q=qe&b=nosuch&a=nosuch")
+    play(None, None, BASE + f"index.html?q=qe&m={by['פתיחה']}")
+    check(page.inner_text("#letter-text") == "שלום מלפני", "player: a quiz from before marking: an old m= link still shows its letter")
+    play(None, None, BASE + "index.html?q=qe&b=nosuch&a=nosuch")
     check(page.is_hidden("#letter"), "player: deleted letters just leave the quiz")
+    play("nosuch", "nosuch")
+    check(page.is_hidden("#letter"), "player: a marked letter that was deleted just isn't there")
 
     # Deleting from inside the quiz, and from the edit dialog.
     admin.goto(BASE + "admin.html#quiz/qe")

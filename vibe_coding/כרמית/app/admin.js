@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
 import { app, db, fs, ADMINS, LEVELS, loadRiddles, loadQuizzes, loadLetters, loadRatings, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201421';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201841';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -42,11 +42,9 @@ const LOCKED_FIELDS = ['title', 'cover', 'riddleIds', 'shuffle', 'level', 'headi
 const letterLockedIn = (l) => quizzes.filter((q) => q.locked && (q.opening === l.id || q.closing === l.id));
 const lockedWith = (rid) => quizzesWith(rid).filter((q) => q.locked);
 const quizNames = (qs) => qs.map((q) => `"${q.title || 'ללא שם'}"`).join(', ');
-// The link to send: the quiz on its own, with the letters chosen in it right now (b = before, a = after).
+// The link to send: the quiz on its own. The player shows the letters marked in the quiz at the moment it is opened.
 function playUrl(q) {
-  const { opening, closing } = chosen(q);
-  const extra = (opening ? `&b=${opening.id}` : '') + (closing ? `&a=${closing.id}` : '');
-  return new URL(`index.html?q=${q.id}${extra}`, location.href).href;
+  return new URL(`index.html?q=${q.id}`, location.href).href;
 }
 
 function toast(msg) {
@@ -824,16 +822,19 @@ function randomCode() {
   return [...crypto.getRandomValues(new Uint8Array(6))].map((n) => CODE_CHARS[n % CODE_CHARS.length]).join('');
 }
 
+// One code per quiz: the link only names the quiz, and the letters come from the quiz itself when it is opened.
+// (links/<code> still has b and a, empty in new links; in links made before 21/11/2026 they are no longer read.)
 async function shortLink(q) {
-  const { opening, closing } = chosen(q);
-  const target = { q: q.id, b: opening ? opening.id : '', a: closing ? closing.id : '' };
-  const key = `${target.q}|${target.b}|${target.a}`;
-  const found = await fs.getDocs(fs.query(fs.collection(db, 'links'), fs.where('key', '==', key)));
-  if (found.docs.length) return SHORT_BASE + '?' + found.docs[0].id;
+  const found = await fs.getDocs(fs.query(fs.collection(db, 'links'), fs.where('q', '==', q.id)));
+  if (found.docs.length) {
+    // The newest one, so the same quiz keeps giving the link Carmit sent last.
+    const at = (d) => { const c = d.data().created; return c ? (c.toMillis ? c.toMillis() : +c) : 0; };
+    return SHORT_BASE + '?' + found.docs.map((d) => [at(d), d.id]).sort((x, y) => y[0] - x[0])[0][1];
+  }
   for (let i = 0; i < 5; i++) {
     const code = randomCode();
     if ((await fs.getDoc(fs.doc(db, 'links', code))).exists()) continue;
-    await fs.setDoc(fs.doc(db, 'links', code), { ...target, key, by: auth.currentUser.email, created: fs.serverTimestamp() });
+    await fs.setDoc(fs.doc(db, 'links', code), { q: q.id, b: '', a: '', key: `${q.id}||`, by: auth.currentUser.email, created: fs.serverTimestamp() });
     return SHORT_BASE + '?' + code;
   }
   throw new Error('no free code');
@@ -943,7 +944,9 @@ $('heading-reset').addEventListener('click', () => {
 // ---------- letters ----------
 // A letter stands on its own: text, a picture and a button, none of it tied to a quiz. In a quiz Carmit marks
 // which letter goes before it (quiz.opening, רישא) and which after it (quiz.closing, סיפא), and the one share
-// button turns that choice into the link. The link carries the letters itself, so a link already sent stays as it was.
+// button copies the quiz's link. The player reads the choice from the quiz when the link is opened, so what Carmit
+// sees here is what everyone with the link sees, also with a link sent earlier. (Until 21/11/2026 the link itself
+// carried the letters of the moment it was copied; Carmit changed a letter and the people she had sent to didn't see it.)
 
 function letterById(id) { return letters.find((l) => l.id === id); }
 function letterGist(l) {
@@ -1022,7 +1025,7 @@ function renderShare() {
   const { opening, closing } = chosen(current);
   $('play-link').href = playUrl(current);
   const parts = [opening && `לפני החידון: "${letterName(opening)}"`, closing && `אחרי החידון: "${letterName(closing)}"`].filter(Boolean);
-  $('share-with').textContent = parts.length ? `הקישור יישלח עם מכתב ${parts.join(', ומכתב ')}.` : 'הקישור יישלח בלי מכתבים.';
+  $('share-with').textContent = parts.length ? `מי שפותח את הקישור רואה מכתב ${parts.join(', ומכתב ')}.` : 'מי שפותח את הקישור רואה את החידון בלי מכתבים.';
 }
 
 // The letters tab: all letters, to write, edit and delete; which quizzes they are marked in.

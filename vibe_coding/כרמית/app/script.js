@@ -4,9 +4,11 @@
 // Progress lasts for this visit only (sessionStorage), so a new visit starts again from the first quiz.
 // Two ways into a quiz: ?p=<id> is a step on the path; ?q=<id> is a quiz sent to someone on its own (solo):
 // they see only that quiz, never the start screen or the other quizzes.
-// A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
+// A solo quiz comes with the letters marked in it right now: one before it (quiz.opening) and one after it
+// (quiz.closing). Links used to name the letters themselves (&b=, &a=, and &m= before that); those are read only
+// for a quiz from before letters were marked in quizzes, so that what Carmit sees in the admin is what is shown.
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611201421';
+  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611201841';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -460,8 +462,11 @@ try {
   } else {
     if (!SOLO) $('home-btn').classList.remove('hidden');
     // A letter that was deleted since the link was sent just isn't there.
-    const letterParam = (key) => (SOLO && params.get(key) ? loadLetter(params.get(key)).catch(() => null) : null);
-    const [quiz, before, after] = await Promise.all([loadQuiz(quizId), letterParam('b') || letterParam('m'), letterParam('a')]);
+    const letter = (id) => (SOLO && id ? loadLetter(id).catch(() => null) : null);
+    const quiz = await loadQuiz(quizId);
+    const marked = quiz && (quiz.opening !== undefined || quiz.closing !== undefined);
+    const [before, after] = await Promise.all(marked ? [letter(quiz.opening), letter(quiz.closing)]
+      : [letter(params.get('b') || params.get('m')), letter(params.get('a'))]);
     if (!quiz) {
       intro.innerHTML = SOLO ? 'החידון הזה לא נמצא. אולי הוא נמחק.'
         : 'החידון הזה לא נמצא. אולי הוא נמחק.<br><a href="index.html">לכל החידונים</a>';
