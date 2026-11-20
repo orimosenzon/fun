@@ -218,47 +218,6 @@ forDisc(TARN.c[0], TARN.c[1], TARN.r + 260, (k, d) => {
   else H[k] = Math.max(H[k], TARN.level + 0.5 + Math.min(d - r, 60) * 0.035);
 });
 
-// ---------- rivers ----------
-function riverPath(pts, i0, i1, meander) {
-  const out = [];
-  for (let i = i0; i < i1; i++) {
-    for (let t = 0; t < 1; t += 0.1) {
-      const a = pts[i], b = pts[i + 1], s = i + t;
-      const tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz);
-      const off = meander * (Math.sin(s * 0.9) * 0.6 + gnoise(s * 0.31, 3.3, 5) * 0.8);
-      out.push([a[0] + tx * t - tz / l * off, a[1] + tz * t + tx / l * off]);
-    }
-  }
-  return out;
-}
-function carveRiver(path, width, lowEnd) {
-  // water surface: just below the terrain, never rising downstream
-  const surf = path.map(([x, z]) => hAt(x, z) - 0.9);
-  for (let i = 1; i < surf.length; i++) surf[i] = Math.min(surf[i], surf[i - 1] - 0.002);
-  if (lowEnd !== undefined) for (let i = 0; i < surf.length; i++) surf[i] = Math.max(surf[i], lowEnd + (surf.length - 1 - i) * 0.004);
-  const target = new Map();
-  path.forEach(([x, z], n) => forDisc(x, z, width / 2 + 34, (k, d) => {
-    const cur = target.get(k);
-    if (!cur || d < cur[0]) target.set(k, [d, surf[n]]);
-  }));
-  for (const [k, [d, s]] of target) {
-    const t = sstep(width / 2, width / 2 + 34, d);
-    const bed = s - 1.3;
-    H[k] = bed * (1 - t) + Math.max(H[k], bed) * t;
-    if (t < 0.5) H[k] = Math.min(H[k], s - 0.25 + 3 * t);
-  }
-  return path.map(([x, z], n) => [Math.round(x * 10) / 10, +surf[n].toFixed(2), Math.round(z * 10) / 10]);
-}
-const segOf = (x) => mainPts.findIndex((p) => p[0] >= x);
-const rivers = [];
-rivers.push({ name: 'upper', width: 17, pts: carveRiver(riverPath(mainPts, segOf(-6100), segOf(LAKE.x0 + 240), 95), 17, LAKE.level) });
-rivers.push({ name: 'outlet', width: 19, pts: carveRiver(riverPath(mainPts, segOf(LAKE.x1 - 30), segOf(6100), 50), 19) });
-{
-  const g = VALLEYS.gorge.pts;
-  const p = riverPath(g, 0, g.length - 4, 2).reverse();
-  rivers.push({ name: 'gorge', width: 4.5, pts: carveRiver(p, 4.5) });
-}
-
 // ---------- landing pads / building plots ----------
 const PADS = {
   base: [-1800, 2330, 75], village: [520, 2040, 170, 0.55], hutTarn: [-640, -3300, 30], hutAlp: [3000, -2880, 30],
@@ -297,16 +256,147 @@ let hole = null;
     const k = j * N + i;
     H[k] = ringSiteHeight(x, z, H[k], wobAt(x, z), 2 * fbm(x / 30, z / 30, 2, 142));
   }
-  // the river runs into the lake and is lost in it; it comes out again at the foot of the moraine
-  const out = rivers.find((r) => r.name === 'outlet');
-  for (const p of out.pts) {
-    const dn = lakeNorm(p[0], p[2], wobAt(p[0], p[2]));
-    if (dn < 1.03) p[1] = LAKE2.level - 0.6;
-    else if (dn < 1.3 && p[0] < LAKE2.cx) forDisc(p[0], p[2], out.width / 2 + 5, (k) => { H[k] = Math.min(H[k], p[1] - 1.3); });   // keep its bed open down to the shore
-  }
   const HS = 4000 / 65535;
   hole = { x: HOLE.x, z: HOLE.z, r: HOLE.r, y: HOLE.floor, rim: +(Math.round((LAKE2.level + ISLE.top) / HS) * HS).toFixed(3) };
 }
+
+// ---------- rivers ----------
+// Every river begins somewhere that makes sense (the edge of the map, a lake that spills over, a
+// spring) and ends somewhere that does (a lake, a bigger river, the edge of the map). They are
+// cut last, into the finished ground, so nothing built later can bury them.
+const RSTEP = 6;                                                // metres between the points of a river
+const gAt = (x, z) => {
+  const fx = clamp((x + HALF) / CELL, 0, N - 1.001), fz = clamp((z + HALF) / CELL, 0, N - 1.001), i = fx | 0, j = fz | 0, u = fx - i, v = fz - j, k = j * N + i;
+  return (H[k] * (1 - u) + H[k + 1] * u) * (1 - v) + (H[k + N] * (1 - u) + H[k + N + 1] * u) * v;
+};
+function valleyLine(pts, i0, i1, meander, ease = 0) {                // ease: it starts on the middle line, and begins to wander over so many points                     // a line that wanders about the middle of a valley
+  const out = [];
+  for (let i = i0; i < i1; i++) {
+    for (let t = 0; t < 1; t += 0.1) {
+      const a = pts[i], b = pts[i + 1], s = i + t;
+      const tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz);
+      const off = meander * (Math.sin(s * 0.9) * 0.6 + gnoise(s * 0.31, 3.3, 5) * 0.8) * (ease ? sstep(i0 + 1, i0 + 1 + ease, s) : 1);
+      out.push([a[0] + tx * t - tz / l * off, a[1] + tz * t + tx / l * off]);
+    }
+  }
+  return out;
+}
+function resample(path, step = RSTEP) {
+  const out = [path[0].slice()];
+  let need = step;
+  for (let i = 1; i < path.length; i++) {
+    let a = path[i - 1], b = path[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), at = 0;
+    while (l - at >= need) { at += need; out.push([a[0] + (b[0] - a[0]) * at / l, a[1] + (b[1] - a[1]) * at / l]); need = step; }
+    need -= l - at;
+  }
+  return out;
+}
+const inMap = (p) => Math.abs(p[0]) <= HALF && Math.abs(p[1]) <= HALF;
+const LAKES = { lake: { level: LAKE.level, x0: LAKE.x0 - 150, x1: LAKE.x1, z0: 200, z1: 3000 },
+  tarn: { level: TARN.level, x0: TARN.c[0] - TARN.r - 30, x1: TARN.c[0] + TARN.r + 30, z0: TARN.c[1] - TARN.r - 30, z1: TARN.c[1] + TARN.r + 30 },
+  lake2: { level: LAKE2.level, x0: LAKE2.x0, x1: LAKE2.x1, z0: LAKE2.z0, z1: LAKE2.z1 } };
+const inRect = (L, p, m = 0) => p[0] > L.x0 - m && p[0] < L.x1 + m && p[1] > L.z0 - m && p[1] < L.z1 + m;
+const inLake = (L, p) => inRect(L, p) && gAt(p[0], p[1]) < L.level - 0.3;
+const rivers = [], springs = [], falls = [];
+// path: [x, z] points downstream. o.from / o.to: { lake } | { river } | 'spring' | 'edge'. o.fall: { after, drop, run }
+function river(name, width, path, o = {}) {
+  let P = resample(path);
+  const tangent = (i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
+  let hold = 0, y0, y1;
+  if (o.from && o.from.lake) {
+    // it leaves a lake: it starts a little way out in the water, and keeps the level of the lake until it is clear of it
+    const L = o.from.lake; let last = 0;
+    P.forEach((p, i) => { if (inLake(L, p)) last = i; });
+    P = P.slice(Math.max(0, last - 5));
+    const e = Math.min(P.length - 2, 10), l = Math.hypot(P[e + 1][0] - P[e - 1][0], P[e + 1][1] - P[e - 1][1]);
+    L.out = [+P[e][0].toFixed(1), +P[e][1].toFixed(1), +((P[e + 1][0] - P[e - 1][0]) / l).toFixed(3), +((P[e + 1][1] - P[e - 1][1]) / l).toFixed(3)];   // the lake ends here: beyond this line the water is the river's
+    hold = 7 + (o.fall ? Math.round(o.fall.after / RSTEP) : 0); y0 = L.level - 0.05;
+  }
+  if (o.to && o.to.lake) {
+    const L = o.to.lake, i = P.findIndex((p) => inLake(L, p));
+    if (i < 0) throw new Error(name + ': never reaches its lake');
+    P = P.slice(0, Math.min(P.length, i + 6)); y1 = L.level + 0.03;
+  }
+  if (o.to && o.to.river) {
+    // it joins a bigger river: straight to the nearest point of it
+    const R = o.to.river, e = P[P.length - 1];
+    let m = 0, best = 1e18; R.pts.forEach((q, i) => { const d = Math.hypot(q[0] - e[0], q[2] - e[1]); if (d < best) { best = d; m = i; } });
+    const q = R.pts[Math.min(R.pts.length - 1, m + 4)];          // (a little downstream: it runs in at an angle)
+    P = resample([...P, [q[0], q[2]]]); y1 = q[1] + 0.02;
+  }
+  const n = P.length, surf = new Float64Array(n), fl = 0.0004 * RSTEP;
+  const low = (i) => { const [tx, tz] = tangent(i), [x, z] = P[i]; let m = hAt(x, z); for (const d of width > 8 ? [width / 2 + 10, width / 2 + 22] : [width / 2 + 9]) m = Math.min(m, hAt(x - tz * d, z + tx * d), hAt(x + tz * d, z - tx * d)); return m; };
+  for (let i = 0; i < n; i++) {
+    if (i <= hold && y0 !== undefined) surf[i] = y0 - i * 0.0005;
+    else if (i === 0) surf[i] = low(0) - 0.9;
+    else if (o.fall && i > hold && i <= hold + Math.round(o.fall.run / RSTEP)) surf[i] = surf[i - 1] - o.fall.drop / Math.round(o.fall.run / RSTEP);
+    else surf[i] = Math.min(low(i) - 0.9, surf[i - 1] - fl);
+  }
+  if (y1 !== undefined) for (let i = 0; i < n; i++) surf[i] = Math.max(surf[i], y1 + (n - 1 - i) * 0.0012 * RSTEP);
+  // a big river does not drop over a step: it cuts back into it, and runs down as rapids
+  if (o.grade) for (let i = n - 2; i > hold + (o.fall ? Math.round(o.fall.run / RSTEP) : 0); i--) surf[i] = Math.min(surf[i], surf[i + 1] + o.grade * RSTEP);
+  let deep = 0; P.forEach(([x, z], i) => { deep = Math.max(deep, gAt(x, z) - surf[i]); }); console.log(' ', name, 'cuts at most', deep.toFixed(1), 'm into the ground');
+  // the bed, a strip of gravel on both sides that is just under the water, then the banks
+  const near = new Map(), d1 = width / 2 + 1 + CELL * 1.45, bank = 30;
+  P.forEach(([x, z], i) => forDisc(x, z, d1 + bank, (k, d) => { const c = near.get(k); if (!c || d < c[0]) near.set(k, [d, i]); }));
+  for (const [k, [d, i]] of near) {
+    const open = y0 === undefined ? 1 : sstep(10, 20, i);                          // (0: still at the lake)
+    const s = Math.min(surf[i], surf[Math.min(n - 1, i + 1)], surf[Math.min(n - 1, i + 2)]);
+    const mouth = y1 !== undefined && o.to.lake && s < y1 + 0.6 ? 0.5 : 0;            // (where it meets a lake, the lake floods the gravel)
+    if (d <= width / 2 + 1) H[k] = Math.min(H[k], s - 1.0 - mouth);
+    else if (d <= d1) H[k] = Math.min(H[k], s - 0.2 - mouth) * open + H[k] * (1 - open);
+    else { const t = 1 - (1 - sstep(d1, d1 + bank, d)) * open; H[k] = Math.min(H[k], s - 0.2) * (1 - t) + H[k] * t; }
+  }
+  const pts = P.map(([x, z], i) => [Math.round(x * 10) / 10, +surf[i].toFixed(2), Math.round(z * 10) / 10]);
+  const r = { name, width, from: o.from === 'spring' ? 'spring' : o.from === 'edge' ? 'edge' : 'lake', to: o.to === 'edge' ? 'edge' : o.to.lake ? 'lake' : 'river', pts };
+  rivers.push(r);
+  if (o.from === 'spring') { const [tx, tz] = tangent(2); springs.push({ name, x: pts[0][0], y: pts[0][1], z: pts[0][2], dx: +tx.toFixed(3), dz: +tz.toFixed(3) }); }
+  return r;
+}
+const segOf = (x) => mainPts.findIndex((p) => p[0] >= x);
+const upper = river('upper', 17, valleyLine(mainPts, segOf(-HALF - 150) - 2, segOf(LAKE.x0 + 600), 95).filter(inMap), { from: 'edge', to: { lake: LAKES.lake }, grade: 0.1 });
+river('outlet', 19, valleyLine(mainPts, segOf(LAKE.x1 - 260), segOf(LAKE2.cx + 100), 50, 4), { from: { lake: LAKES.lake }, to: { lake: LAKES.lake2 }, grade: 0.1 });
+river('lower', 19, valleyLine(mainPts, segOf(LAKE2.cx), segOf(HALF + 150) + 2, 50, 5).filter(inMap), { from: { lake: LAKES.lake2 }, to: 'edge', fall: { after: 96, drop: 9, run: 12 }, grade: 0.1 });
+{
+  // the tarn spills over into the slot canyon, and the canyon brings it down to the river
+  const g = VALLEYS.gorge.pts;
+  river('gorge', 4.5, valleyLine(g, 0, g.length - 1, 2).reverse(), { from: { lake: LAKES.tarn }, to: { river: upper } });
+  // a spring high in the eastern valley, and its stream down to the lake
+  const e = VALLEYS.east.pts, ie = e.findIndex((p) => p[2] > 1545);
+  river('east', 4.5, valleyLine(e, 0, ie, 12).reverse(), { from: 'spring', to: { lake: LAKES.lake } });
+  // meltwater comes out of the scree below the pass, and runs down the western valley to the river
+  const w = VALLEYS.pass.pts, col = w.reduce((m, p, i) => (p[2] > w[m][2] ? i : m), 0), iw = w.findIndex((p, i) => i > col && p[2] < 1900);
+  river('pass', 4.5, valleyLine(w, iw, w.length - 1, 10), { from: 'spring', to: { river: upper } });
+}
+// nothing may stand above the water where the water is drawn: cut what does, until nothing is left
+for (let pass = 0, bad = 1; pass < 8 && bad; pass++) {
+  bad = 0;
+  for (const r of rivers) r.pts.forEach((p, i) => {
+    const a = r.pts[Math.max(0, i - 1)], b = r.pts[Math.min(r.pts.length - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1, tx = (b[0] - a[0]) / l, tz = (b[2] - a[2]) / l;
+    for (const d of [0, -(r.width / 2 + 1), r.width / 2 + 1]) {
+      const x = p[0] - tz * d, z = p[2] + tx * d;
+      if (gAt(x, z) <= p[1] - 0.12) continue;
+      bad++;
+      const i0 = clamp(Math.floor((x + HALF) / CELL), 0, N - 2), j0 = clamp(Math.floor((z + HALF) / CELL), 0, N - 2);
+      for (const k of [j0 * N + i0, j0 * N + i0 + 1, (j0 + 1) * N + i0, (j0 + 1) * N + i0 + 1]) H[k] = Math.min(H[k], p[1] - 0.3);
+    }
+  });
+  console.log('rivers: cut', bad, 'places that stood in the water');
+}
+// the falls: where the water drops at least 8 m, steeper than 35 degrees (short level steps between two drops count as one fall)
+for (const r of rivers) {
+  const P = r.pts, steep = (i) => P[i - 1][1] - P[i][1] >= 0.4 * RSTEP;
+  for (let i = 1; i < P.length; i++) {
+    if (!steep(i)) continue;
+    let j = i;
+    for (let q = i + 1; q < P.length && q <= j + 4; q++) if (steep(q)) j = q;
+    const drop = P[i - 1][1] - P[j][1], l = Math.hypot(P[j][0] - P[i - 1][0], P[j][2] - P[i - 1][2]) || 1;
+    if (drop >= 8 && drop / l >= 0.7) falls.push({ river: r.name, width: r.width, x: P[j][0], z: P[j][2], top: P[i - 1][1], foot: P[j][1], run: +l.toFixed(1), dx: +((P[j][0] - P[i - 1][0]) / l).toFixed(3), dz: +((P[j][2] - P[i - 1][2]) / l).toFixed(3) });
+    i = j;
+  }
+}
+console.log('rivers', rivers.map((r) => `${r.name} ${r.from}>${r.to} ${(r.pts.length * RSTEP / 1000).toFixed(1)}km ${r.pts[0][1]}>${r.pts.at(-1)[1]}`).join(' | '));
+console.log('springs', JSON.stringify(springs)); console.log('falls', falls.length, falls.map((f) => `${f.river}@${Math.round(f.x)},${Math.round(f.z)} ${(f.top - f.foot).toFixed(0)}m/${f.run}m`).join(' '));
 
 // ---------- write ----------
 const toU16 = (F) => { const u = new Uint16Array(F.length); for (let i = 0; i < F.length; i++) u[i] = clamp(Math.round(F[i] / HSCALE), 0, 65535); return u; };
@@ -319,14 +409,30 @@ for (let j = 0; j < BN; j++) for (let i = 0; i < BN; i++) Bk[j * BN + i] = analy
 fs.writeFileSync(path.join(ROOT, 'assets/backdrop.bin'), Buffer.from(toU16(Bk).buffer));
 console.timeEnd('backdrop');
 
+// beyond the edge of the map the main river goes on up and down the valley, drawn on the backdrop
+const bAt = (x, z) => {
+  const fx = clamp((x + BHALF) / BCELL, 0, BN - 1.001), fz = clamp((z + BHALF) / BCELL, 0, BN - 1.001), i = fx | 0, j = fz | 0, u = fx - i, v = fz - j, k = j * BN + i;
+  return (Bk[k] * (1 - u) + Bk[k + 1] * u) * (1 - v) + (Bk[k + BN] * (1 - u) + Bk[k + BN + 1] * u) * v;
+};
+const farRiver = (path, width, [jx, joinY, jz], atEnd) => {
+  const joinP = [jx, jz];
+  const out = path.filter((p) => !inMap(p)), P = resample(atEnd ? [...out, joinP] : [joinP, ...out], 24), n = P.length;
+  return { width, pts: P.map(([x, z], i) => {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, tx = (b[0] - a[0]) / l, tz = (b[1] - a[1]) / l;
+    let y = -1e9; for (const d of [-width, 0, width]) for (const e of [-48, 0, 48]) y = Math.max(y, bAt(x - tz * d + tx * e, z + tx * d + tz * e));
+    const k = sstep(0, 200, (atEnd ? n - 1 - i : i) * 24);                      // it meets the river of the map at the map's own height
+    return [Math.round(x), +Math.max(y - 4.5, (y - 4.5) * k + joinY * (1 - k)).toFixed(1), Math.round(z)];     // (the backdrop is drawn 6 m low)
+  }) };
+};
+const far = [
+  farRiver(valleyLine(mainPts, segOf(-13500), segOf(-HALF - 150) + 2, 95), 20, rivers[0].pts[0], true),
+  farRiver(valleyLine(mainPts, segOf(HALF + 150) - 2, segOf(13500), 50), 22, rivers[2].pts.at(-1), false),
+];
+
 const meta = {
   n: N, cell: CELL, half: HALF, hscale: HSCALE, bn: BN, bcell: BCELL, bhalf: BHALF,
-  lakes: [
-    { name: 'lake', level: LAKE.level, x0: LAKE.x0 - 150, x1: LAKE.x1, z0: 200, z1: 3000 },
-    { name: 'tarn', level: TARN.level, x0: TARN.c[0] - TARN.r - 30, x1: TARN.c[0] + TARN.r + 30, z0: TARN.c[1] - TARN.r - 30, z1: TARN.c[1] + TARN.r + 30 },
-    { name: 'lake2', level: LAKE2.level, x0: LAKE2.x0, x1: LAKE2.x1, z0: LAKE2.z0, z1: LAKE2.z1 },
-  ],
-  rivers, pads, hole,
+  lakes: ['lake', 'tarn', 'lake2'].map((name) => ({ name, ...LAKES[name] })),
+  rivers, far, springs, falls, pads, hole,
   valleys: Object.fromEntries(Object.entries(VALLEYS).map(([k, v]) => [k, v.pts.filter((p) => Math.abs(p[0]) < HALF && Math.abs(p[1]) < HALF).map((p) => p.map((q) => Math.round(q)))])),
 };
 fs.writeFileSync(path.join(ROOT, 'assets/meta.json'), JSON.stringify(meta));

@@ -39,6 +39,9 @@ Object.assign(MODELS, {
   rockA: { id: 'KZdEP3uUpa', h: 1 }, rockB: { id: 'JQxF95498B', h: 1 }, rockC: { id: 's1OJ3bBzqc', h: 1 }, shards: { id: 'JmFMh7ztL9', h: 1 },
   bush: { id: '92EytlU1El', h: 1 }, berries: { id: 'TSbIxkDtxF', h: 1 }, flowers: { id: 'dOO6kMDd8L', h: 1 },
   stump: { id: 'nFvEbUX6LE', h: 1 }, log: { id: 'nwsYvcI0bC', h: 1 }, hay: { id: 'Yu8TOERkpw', h: 1 },
+  // beside the water: the boulders of the springs and the falls, moss, ferns, and cattails on the still banks
+  boulderA: { id: '54jZKTAt5p', h: 1 }, boulderB: { id: 'd2VWOdthtR', h: 1 }, boulderC: { id: 'li0YBlBEMz', h: 1 }, mossRock: { id: 'Oar39tFugM', h: 1 },
+  fern: { id: 'jqcanvH7D6', h: 1 }, reed: { id: '9vCk81sIPve', h: 1 },
 });
 // buildings. lit: the materials that are window panes (they glow at night). Their proportions go
 // into js/sim/buildings.js, so that what the bike can hit is what the rider sees.

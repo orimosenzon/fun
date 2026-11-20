@@ -30,7 +30,7 @@ function buildTextures() {
   const nt = new THREE.DataTexture(nd, n, n, THREE.RGBAFormat);
   nt.minFilter = THREE.LinearMipmapLinearFilter; nt.magFilter = THREE.LinearFilter; nt.generateMipmaps = true; nt.needsUpdate = true;
   U.uNormal.value = nt;
-  // aux: R sun visibility (baked later), G ambient occlusion, B forest cover, A unused
+  // aux: R sun visibility (baked later), G ambient occlusion, B forest cover, A the bed and the gravel of the rivers
   const ad = new Uint8Array(n * n * 4).fill(255);
   // AO from the difference to a blurred copy of the terrain (two box blurs via running sums)
   const blur = (src, r) => {
@@ -53,6 +53,13 @@ function buildTextures() {
   }
   const cb = blur(cover, 1);
   for (let k = 0; k < n * n; k++) ad[k * 4 + 2] = Math.min(1, cb[k]) * 255;
+  const bed = new Float32Array(n * n);
+  for (const r of T.meta.rivers) for (const p of r.pts) {
+    const R = r.width / 2 + 5, i0 = Math.round((p[0] + T.half) / c), j0 = Math.round((p[2] + T.half) / c), q = Math.ceil(R / c);
+    for (let j = Math.max(0, j0 - q); j <= Math.min(n - 1, j0 + q); j++) for (let i = Math.max(0, i0 - q); i <= Math.min(n - 1, i0 + q); i++) if (Math.hypot(-T.half + i * c - p[0], -T.half + j * c - p[2]) <= R) bed[j * n + i] = 1;
+  }
+  const bb = blur(bed, 1);
+  for (let k = 0; k < n * n; k++) ad[k * 4 + 3] = Math.min(1, bb[k] * 1.6) * 255;
   const at = new THREE.DataTexture(ad, n, n, THREE.RGBAFormat);
   at.minFilter = at.magFilter = THREE.LinearFilter; at.needsUpdate = true;
   U.uAux.value = at; terrain.aux = at; terrain.auxData = ad;
@@ -94,7 +101,7 @@ precision highp float;
 #include <packing>
 ${GLSL_COMMON}
 uniform sampler2D uHeight, uNormal, uAux, uShadowMap; uniform mat4 uShadowMat; uniform float uShadowOn; uniform vec4 uWorld;
-uniform vec4 uLake; uniform vec4 uLakeBox; uniform float uFar;
+uniform vec4 uLake; uniform vec4 uLakeBox, uLakeOut; uniform float uFar;
 // Photographs of real ground (assets/ground, from Poly Haven, CC0). Each one is divided by its own
 // mean colour, so it adds only what the painted ground lacks (blades, pebbles, cracks) and the
 // colours stay the ones chosen below. From far away the mip-maps return the mean: nothing changes.
@@ -189,7 +196,10 @@ void main() {
   // shore and lake bed
   float inLake = step(uLakeBox.x, vW.x) * step(vW.x, uLakeBox.z) * step(uLakeBox.y, vW.z) * step(vW.z, uLakeBox.w);
   float shore = inLake * (1.0 - smoothstep(0.3, 2.6, h - uLake.x)) * (1.0 - rockW);
+  if (uLakeOut.z != 0.0 || uLakeOut.w != 0.0) shore *= 1.0 - smoothstep(-20.0, 10.0, dot(vW.xz - uLakeOut.xy, uLakeOut.zw));     // past the outlet it is the river's gravel, not a beach
   col = mix(col, vec3(0.42, 0.40, 0.34) * (0.7 + 0.5 * nC) * gravelP, shore);
+  // the gravel of the rivers: pale stones in the bed and on the bars beside the water
+  col = mix(col, vec3(0.33, 0.32, 0.295) * (0.6 + 0.6 * nC) * (0.75 + 0.5 * nD) * gravelP, smoothstep(0.3, 0.62, aux.a * (0.55 + 0.9 * nB) + (nC - 0.5) * 0.25) * 0.9 * (1.0 - 0.7 * rockW));
   // snow: above the snow line, less on steep and sun-facing rock, drifts in gullies
   col *= 1.0 - 0.3 * uWx.y;                                                                  // rain: wet ground is darker
   float snowLine = 2330.0 + (nA - 0.5) * 420.0 - (1.0 - aux.g) * 500.0 - n.z * 60.0 - uWx.z * 2200.0;   // (snowfall: down to the valley floor)
@@ -256,7 +266,7 @@ export async function buildTerrain(scene, yieldFn) {
   const lake = T.meta.lakes[0];
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide,
-    uniforms: { ...U, uLake: { value: new THREE.Vector4(lake.level, 0, 0, 0) }, uLakeBox: { value: new THREE.Vector4(lake.x0, lake.z0, lake.x1 + 300, lake.z1) }, uFar: { value: 0 } },
+    uniforms: { ...U, uLake: { value: new THREE.Vector4(lake.level, 0, 0, 0) }, uLakeBox: { value: new THREE.Vector4(lake.x0, lake.z0, lake.x1 + 300, lake.z1) }, uLakeOut: { value: new THREE.Vector4(...(lake.out || [0, 0, 0, 0])) }, uFar: { value: 0 } },
   });
   terrain.mat = mat;
   // the photographs arrive when they arrive: until then the ground is the painted one

@@ -12,7 +12,7 @@ const CELL = 64, SUB = 10;            // 10 x 10 places to try in every square
 // size: height in metres. far: how far it is drawn. sink: how deep it sits in the ground (of its height)
 // tint: the models are painted darker than this valley (its limestone is pale, its meadows sunlit):
 // a gain on red, green, blue, and how far the colour is washed to grey
-const ROCK = [3.3, 3.0, 3.1, 0.75];
+const ROCK = [3.3, 3.0, 3.1, 0.75], BOULDER = [2.5, 2.5, 2.55, 0.97];
 const KINDS = {
   rockA: { size: [0.5, 1.5], far: 420, sink: 0.12, tint: ROCK }, rockB: { size: [0.5, 1.6], far: 420, sink: 0.14, tint: ROCK }, rockC: { size: [0.5, 1.5], far: 420, sink: 0.12, tint: ROCK },
   shards: { size: [0.4, 1.1], far: 380, sink: 0.05, tint: [1.5, 1.45, 1.4, 0.3] },
@@ -21,6 +21,10 @@ const KINDS = {
   daisies: { model: 'flowers', size: [0.5, 0.85], far: 170, sink: 0, tint: [3.6, 3.0, 1.3, 0.85] },      // the same flowers, washed pale yellow
   stump: { size: [0.4, 0.8], far: 260, sink: 0.02, tint: [1.5, 1.5, 1.4, 0] }, log: { size: [0.3, 0.5], far: 280, sink: 0.08, tint: [1.5, 1.5, 1.4, 0] },
   hay: { size: [1.3, 1.7], far: 420, sink: 0, tint: [1, 1, 1, 0] },
+  // beside the water (js/render/flora.js places them along the rivers of the map, at the springs and at the falls)
+  boulderA: { size: [1.4, 3.4], far: 1100, sink: 0.22, tint: BOULDER }, boulderB: { size: [1.4, 3.4], far: 1100, sink: 0.22, tint: BOULDER }, boulderC: { size: [1.4, 3.4], far: 1100, sink: 0.22, tint: BOULDER },
+  mossRock: { size: [0.6, 1.8], far: 520, sink: 0.15, tint: [2.4, 2.5, 2.1, 0.35] },
+  fern: { size: [0.5, 1.0], far: 190, sink: 0.02, tint: [1.5, 1.7, 1.2, 0] }, reed: { size: [1.5, 2.3], far: 260, sink: 0.03, tint: [1.5, 1.6, 1.2, 0] },
 };
 const hash = (a, b, c = 0) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 // smooth noise 0..1 with features of about s metres: where the flowers and the bushes gather
@@ -61,6 +65,56 @@ export async function buildFlora(scene, fauna) {
     const key = Math.floor((x + T.half) / CELL) * 4096 + Math.floor((z + T.half) / CELL);
     if (!fixed.has(key)) fixed.set(key, []);
     fixed.get(key).push(['hay', x, groundAt(x, z), z, 1.3 + 0.4 * hash(x, z, 9), an]);
+  }
+  // ---- beside the water ----
+  // stones in the beds of the streams and on the gravel of the rivers, cattails where the water is slow,
+  // big boulders and ferns round every spring and at the top and the foot of every fall
+  const put = (kind, x, z, sz, yaw, y) => {
+    if (!sets[kind] || Math.abs(x) > T.half - 20 || Math.abs(z) > T.half - 20) return;
+    const key = Math.floor((x + T.half) / CELL) * 4096 + Math.floor((z + T.half) / CELL);
+    if (!fixed.has(key)) fixed.set(key, []);
+    fixed.get(key).push([kind, x, (y ?? groundAt(x, z)) - KINDS[kind].sink * sz, z, sz, yaw]);
+  };
+  const BOULDERS = ['boulderA', 'boulderB', 'boulderC'], STONES = ['rockA', 'rockB', 'rockC', 'mossRock'];
+  for (const [ri, r] of (T.meta.rivers || []).entries()) {
+    const P = r.pts, big = r.width > 8, step = big ? 2 : 1;
+    for (let i = 2; i < P.length - 2; i += step) {
+      const p = P[i], a = P[i - 1], b = P[i + 1], l = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1, tx = (b[0] - a[0]) / l, tz = (b[2] - a[2]) / l, slope = (a[1] - b[1]) / l;
+      const h = (k) => hash(ri * 7919 + i, k, 77), side = h(1) < 0.5 ? -1 : 1, an = h(4) * 6.283;
+      const at = (d) => [p[0] - tz * d * side, p[2] + tx * d * side];
+      if (big) {
+        if (h(2) < 0.22) { const [x, z] = at(r.width / 2 + 1 + 13 * h(3)); if (!isWater(x, z)) put(STONES[Math.floor(h(5) * 4)], x, z, 0.5 + 1.1 * h(6) ** 2, an); }
+        if (slope < 0.012 && patch(p[0], p[2], 90, 21) > 0.55 && h(7) < 0.5) for (let k = 0; k < 5; k++) { const [x, z] = at(r.width / 2 + 0.5 + 3.5 * h(10 + k)); put('reed', x + (h(20 + k) - 0.5) * 5, z + (h(30 + k) - 0.5) * 5, 1.5 + 0.8 * h(40 + k), h(50 + k) * 6.283); }
+      } else {
+        if (h(2) < 0.5) { const [x, z] = at(h(3) < 0.3 ? r.width * 0.3 * h(8) : r.width / 2 + 0.3 + 5 * h(3)); put(STONES[Math.floor(h(5) * 4)], x, z, 0.45 + 1.0 * h(6) ** 2, an); }
+        if (h(7) < 0.05 && slope > 0.12) { const [x, z] = at(r.width / 2 + 2 + 4 * h(9)); put(BOULDERS[Math.floor(h(11) * 3)], x, z, 1.3 + 1.2 * h(12), an); }
+        if (p[1] < 1750 && h(13) < 0.22) { const [x, z] = at(r.width / 2 + 1 + 3 * h(14)); put('fern', x, z, 0.5 + 0.5 * h(15), an); }
+      }
+    }
+  }
+  // a spring: the water comes out from under a heap of boulders
+  for (const [si, sp] of (T.meta.springs || []).entries()) {
+    const h = (k) => hash(si + 31, k, 91);
+    for (let k = 0; k < 9; k++) {
+      const an = Math.atan2(-sp.dz, -sp.dx) + (k / 8 - 0.5) * 3.6, d = 3.5 + 3.5 * h(k) + (k % 2) * 2.5;      // an arc on the uphill side
+      put(BOULDERS[k % 3], sp.x + Math.cos(an) * d, sp.z + Math.sin(an) * d, 1.8 + 1.8 * h(20 + k), h(40 + k) * 6.283);
+    }
+    for (let k = 0; k < 8; k++) { const an = h(60 + k) * 6.283, d = 2 + 8 * h(70 + k); put(k < 4 ? 'mossRock' : 'fern', sp.x + Math.cos(an) * d, sp.z + Math.sin(an) * d, k < 4 ? 0.8 + 0.9 * h(80 + k) : 0.6 + 0.4 * h(80 + k), an); }
+  }
+  // a fall: boulders on both sides of the lip, and round the pool at its foot
+  for (const [fi, f] of (T.meta.falls || []).entries()) {
+    const h = (k) => hash(fi + 57, k, 93), w = f.width / 2 + 1, tall = Math.min(1.6, 1 + (f.top - f.foot) / 80);
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 3; k++) {
+        const d = w + 1.5 + 3.2 * k, back = f.run + 1 + 3 * h(k + side), x = f.x - f.dx * back - f.dz * d * side, z = f.z - f.dz * back + f.dx * d * side;
+        put(BOULDERS[(k + (side > 0 ? 1 : 0)) % 3], x, z, (2.2 + 1.6 * h(10 + k + side)) * tall, h(20 + k + side) * 6.283);
+      }
+      for (let k = 0; k < 4; k++) {
+        const d = w + 0.5 + 2.6 * k * h(30 + k), fwd = -2 + 5 * k * h(40 + k + side), x = f.x + f.dx * fwd - f.dz * d * side, z = f.z + f.dz * fwd + f.dx * d * side;
+        put(k % 2 ? 'mossRock' : BOULDERS[k % 3], x, z, k % 2 ? 1.0 + 0.8 * h(50 + k) : (1.6 + 1.4 * h(50 + k + side)) * tall, h(60 + k) * 6.283);
+        put('fern', x - f.dz * 2.5 * side, z + f.dx * 2.5 * side, 0.6 + 0.4 * h(70 + k), h(80 + k) * 6.283);
+      }
+    }
   }
   const cells = new Map();
   const cell = (ci, cj) => {
