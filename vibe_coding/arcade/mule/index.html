@@ -122,7 +122,10 @@ async function fetchData() {
 function ready() {
   const miss = missing();
   if (miss.length) {
-    $('msg').innerHTML = 'כדי לשחק צריך את קובצי המכונה והמשחק, והם אינם חלק מהדף הזה.<br>חסר: ' + miss.map((k) => NAMES[k]).join(', ');
+    // On the friends' site the files are there, behind the key: say so instead of asking for files.
+    $('msg').innerHTML = location.hostname.endsWith('.workers.dev')
+      ? 'הכניסה למשחק היא דרך הקישור המלא שקיבלת, זה שמסתיים ב-<span dir="ltr">?k=…</span><br>פתח אותו פעם אחת, והדפדפן יזכור מכאן והלאה.'
+      : 'כדי לשחק צריך את קובצי המכונה והמשחק, והם אינם חלק מהדף הזה.<br>חסר: ' + miss.map((k) => NAMES[k]).join(', ');
     $('pick').hidden = false; $('start').hidden = true;
   } else {
     $('msg').textContent = 'M.U.L.E. (Ozark Softscape, 1983), רץ על אמולטור קומודור 64';
