@@ -1135,3 +1135,12 @@ dialog::backdrop { background: rgba(5, 6, 10, 0.72); backdrop-filter: blur(3px);
 
 /* Carmit's copyright, at the end of every quiz */
 .copyright { width: 100%; margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+/* On a phone the row of a riddle in a quiz has no room for its text beside the picture and the buttons
+   (it used to be squeezed into a column one letter wide): the text gets a line of its own under them. */
+@media (max-width: 600px) {
+  .q-item { flex-wrap: wrap; gap: 6px; }
+  .q-item .grip { display: none; }
+  .q-item img { margin-inline-end: auto; }
+  .q-item .meta { order: 5; flex: 1 1 100%; padding: 0 2px 4px; overflow-wrap: anywhere; }
+}
