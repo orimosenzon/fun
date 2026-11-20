@@ -33,7 +33,7 @@
   .fire.down { background: #8a3445; }
   .buttons { display: flex; align-items: center; gap: 12px; }
   a.how { color: #9db0ff; font-size: 15px; }
-  .status { font-size: 13px; color: #888; min-height: 18px; }
+  .status { font-size: 15px; color: #f0e27a; min-height: 22px; text-align: center; max-width: 720px; }
 </style>
 </head>
 <body>
@@ -52,6 +52,7 @@
   </div>
 </div>
 
+<div class="status" id="status"></div>
 <div class="bar" id="bar">
   <button data-key="F3" title="רמת המשחק: מתחילים, רגיל או טורניר">F3 רמה</button>
   <button data-key="F5" title="כמה שחקנים אנושיים, מ-4 עד 0 (הדגמה)">F5 שחקנים</button>
@@ -72,7 +73,6 @@
 </div>
 
 <div class="help keys" id="help"></div>
-<div class="status" id="status"></div>
 
 <script type="module">
 import { C64, WIDTH } from '../archon/src/vm/c64.js';
@@ -149,6 +149,7 @@ function build() {
   if (!prg) { $('status').textContent = 'לא נמצאה תוכנית בדיסק'; return; }
   machine.ram[0xba] = 8;   // the boot program loads the rest of the game from "the current drive"
   machine.runProgram(prg);
+  autoOne = false; humans = 1; onOptions = false;
   machine.sid.drain();
   input.releaseAll();
 }
@@ -205,6 +206,42 @@ for (const ev of ['pointerup', 'pointercancel']) dpad.addEventListener(ev, () =>
 const fire = $('fire');
 fire.addEventListener('pointerdown', (e) => { fire.setPointerCapture(e.pointerId); input.touch |= JOY.FIRE; fire.classList.add('down'); input.apply(); });
 for (const ev of ['pointerup', 'pointercancel']) fire.addEventListener(ev, () => { input.touch &= ~JOY.FIRE; fire.classList.remove('down'); input.apply(); });
+
+// The game opens on "4 planeteers", four humans, and then waits for four fire buttons, which this
+// page cannot give (it has two). So the first time the options screen comes up we step it down to
+// one human, and a line under the screen says what the current screen is waiting for. The screen
+// is read from the game's text page at $0400 (ASCII with the top bit set, wide letters two cells).
+function screenText() {
+  const ram = machine.ram; let o = '';
+  for (let i = 0; i < 1000; i++) {
+    const v = ram[0x400 + i], ch = v & 0x7f;
+    if (i % 40 && !(v & 0x80) && ram[0x400 + i - 1] === (v | 0x80)) continue;
+    o += ch >= 0x20 && ch < 0x60 ? String.fromCharCode(ch) : ' ';
+  }
+  return o.replace(/\s+/g, ' ');
+}
+let autoOne = false, humans = 1, onOptions = false;
+setInterval(() => {
+  if (!running || !machine) return;
+  const t = screenText(), m = /(\d) PLANETEER/.exec(t);
+  onOptions = t.includes('PRESS F7');
+  let hint = '';
+  if (onOptions) {
+    if (m) humans = +m[1];
+    if (!autoOne && m) { if (humans > 1) { input.tap('F5'); return; } autoOne = true; }
+    hint = 'מסך הפתיחה: F5 משנה את מספר השחקנים האנושיים, F3 את הרמה. להתחלה: F7, רווח או Enter.';
+    if (humans > 2) hint = 'הדף הזה תומך בעד שני שחקנים אנושיים. לחץ F5 עד שיופיע 1 או 2, ואז F7.';
+    else if (humans === 2 && !input.twoPlayers) hint = 'לשני שחקנים אנושיים הפעל קודם את הכפתור "שני שחקנים" (WASD ו-F מול חצים ורווח), ואז F7.';
+  } else if (t.includes('EACH PLANETEER')) {
+    hint = humans > 2 || (humans === 2 && !input.twoPlayers)
+      ? 'המשחק מחכה ללחיצה מכל שחקן אנושי, ויש יותר שחקנים ממקשים. לחץ "אתחול" ובחר שחקן אחד או שניים.'
+      : 'לחץ רווח כדי להצטרף. מיד אחר כך בוחרים צבע ודמות, שוב ברווח.';
+  }
+  else if (t.includes('COLOR CHOICE')) hint = 'הצבעים מתחלפים. לחץ רווח כשמופיע הצבע שאתה רוצה.';
+  $('status').textContent = hint;
+}, 700);
+// On the options screen Space and Enter also start the game, like F7.
+window.addEventListener('keydown', (e) => { if (onOptions && autoOne && !e.repeat && (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter')) input.tap('F7'); });
 
 // Space is the fire button here, so the game's pause key (the C64 space bar) is on P.
 window.addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !e.repeat && !e.ctrlKey && !e.metaKey) input.tap('SPACE'); });
