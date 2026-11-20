@@ -6,7 +6,7 @@
 // they see only that quiz, never the start screen or the other quizzes.
 // A solo quiz can come with a letter before it (&b=<id>, or &m=<id> in older links) and one after it (&a=<id>).
 import { loadQuiz, loadQuizzes, loadLetter, primaryAnswer, isCorrect, DEFAULT_COVER, levelOf, levelLabel, playerPath, watchAdmin,
-  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611200724';
+  hasHeading, fillHeading, safeUrl, saveRating, saveVisit, isOwnDevice, randomId } from './fb.js?v=202611201149';
 
 const $ = (id) => document.getElementById(id);
 const startScreen = $('start-screen');
@@ -37,6 +37,7 @@ const reportBody = document.querySelector('#report-table tbody');
 let RIDDLES = [];
 let QUIZ_ID = null;      // the quiz being played
 let SHUFFLE = false;     // the quiz asks for a fresh random order on every start
+let ASK_RATING = true;   // after each riddle, ask how hard it was (Carmit can switch it off per quiz)
 let order = [];
 let current = 0;
 let results = [];        // results[i] is what happened at position i: answered or skipped
@@ -68,7 +69,7 @@ function noteVisit(flags = {}) {
 }
 
 function showRating(level) {
-  rateBox.classList.remove('hidden');
+  rateBox.classList.toggle('hidden', !ASK_RATING);
   rateBtns.forEach((b) => {
     const on = b.dataset.rate === level;
     b.classList.toggle('on', on);
@@ -87,6 +88,8 @@ function rate(level) {
     .catch((e) => console.error(e));
 }
 rateBtns.forEach((b) => b.addEventListener('click', () => rate(b.dataset.rate)));
+
+$('copyright-year').textContent = new Date().getFullYear();
 
 const PRAISES =['פיצחתם.', 'בדיוק.', 'חד. נכון.', 'אלגנטי.', 'נכון מאוד.'];
 const CONSOLATIONS = ['לא הפעם. התשובה:', 'לא בדיוק. התשובה:', 'כמעט. התשובה:'];
@@ -468,6 +471,7 @@ try {
       visitBase = { quiz: quiz.id, solo: SOLO };
       noteVisit();
       SHUFFLE = !!quiz.shuffle;
+      ASK_RATING = quiz.askRating !== false;
       document.title = `${quiz.title} · חידות לכרמית`;
       $('quiz-intro').classList.remove('hidden');
       // Without a cover of its own the header logo already stands in for it.

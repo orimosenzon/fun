@@ -2,7 +2,7 @@
 // Images are shrunk in the browser and kept inside the Firestore documents as data URLs, so no Storage
 // bucket (and no billing) is needed. Routing is by hash: '' = all quizzes, '#pool', '#quiz/<id>'.
 import { app, db, fs, ADMINS, LEVELS, loadRiddles, loadQuizzes, loadLetters, loadRatings, loadVisits, markOwnDevice, dayKey, primaryAnswer, DEFAULT_COVER, levelOf, levelLabel,
-  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611200724';
+  hasHeading, fillHeading, safeUrl } from './fb.js?v=202611201149';
 
 const au = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
 const auth = au.getAuth(app);
@@ -35,6 +35,11 @@ const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 const riddleLabel = (r) => (r.answerType === 'image' ? 'תשובה בתמונה' : primaryAnswer(r));
 const quizRiddles = (q) => q.riddleIds.map((id) => byId.get(id)).filter(Boolean);
 const quizzesWith = (rid) => quizzes.filter((q) => q.riddleIds.includes(rid));
+// A locked quiz (quiz.locked, "קבוע") is one that was sent and must stay as it is: nothing in it can change, and
+// neither can the riddles in it, wherever they are edited from. These are its fields that the player sees.
+const LOCKED_FIELDS = ['title', 'cover', 'riddleIds', 'shuffle', 'level', 'heading'];
+const lockedWith = (rid) => quizzesWith(rid).filter((q) => q.locked);
+const quizNames = (qs) => qs.map((q) => `"${q.title || 'ללא שם'}"`).join(', ');
 // The link to send: the quiz on its own, with the letters chosen in it right now (b = before, a = after).
 function playUrl(q) {
   const { opening, closing } = chosen(q);
@@ -505,7 +510,7 @@ function renderQuizGrid() {
     card.appendChild(stack);
     const cap = el('div', 'caption');
     const count = rs.length ? plural(rs.length, 'חידה אחת', 'חידות') : 'עוד אין חידות';
-    cap.append(el('b', '', q.title || 'ללא שם'), el('span', '', [levelLabel(q), count, q.shuffle && 'בסדר אקראי'].filter(Boolean).join(' · ')));
+    cap.append(el('b', '', `${q.locked ? '🔒 ' : ''}${q.title || 'ללא שם'}`), el('span', '', [levelLabel(q), count, q.shuffle && 'בסדר אקראי'].filter(Boolean).join(' · ')));
     card.appendChild(cap);
     card.addEventListener('mouseenter', () => schedulePeek(card, q));
     card.addEventListener('mouseleave', hidePeek);
@@ -602,9 +607,12 @@ function renderPool() {
     const actions = el('div', 'tile-actions');
     const edit = el('button', 'link-btn', 'עריכה');
     edit.addEventListener('click', () => openRiddle(r));
+    const clone = el('button', 'link-btn', 'שיבוט');
+    clone.title = 'חידה חדשה במאגר, זהה לזו, שאפשר לשנות בלי לגעת במקור';
+    clone.addEventListener('click', () => cloneRiddle(r));
     const del = el('button', 'link-btn del', 'מחיקה');
     del.addEventListener('click', () => deleteRiddle(r));
-    actions.append(edit, del);
+    actions.append(edit, clone, del);
     tile.append(img, body, actions);
     grid.appendChild(tile);
   }
@@ -613,7 +621,36 @@ function renderPool() {
 $('pool-search').addEventListener('input', renderPool);
 $('pool-new').addEventListener('click', () => openRiddle(null));
 
+// A copy of a riddle as a new riddle in the pool, opened for editing. In a quiz the copy goes right after the
+// original, or takes its place (replace), e.g. when the original can't be edited because another quiz is locked.
+async function cloneRiddle(r, quiz = null, replace = false) {
+  const { id, created, updated, ...data } = r;
+  data.by = auth.currentUser.email;
+  let copy;
+  try {
+    const ref = await fs.addDoc(fs.collection(db, 'riddles'), { ...data, created: fs.serverTimestamp() });
+    copy = { id: ref.id, ...data };
+    riddles.unshift(copy);
+    byId.set(copy.id, copy);
+    if (quiz && quiz === current && !quiz.locked) {
+      const ids = [...quiz.riddleIds];
+      const at = ids.indexOf(r.id);
+      if (at < 0) ids.push(copy.id);
+      else ids.splice(replace ? at : at + 1, replace ? 1 : 0, copy.id);
+      await saveQuiz({ riddleIds: ids });
+    }
+  } catch (err) {
+    return toast(`השיבוט נכשל: ${err.message}`);
+  }
+  current ? renderQuiz() : renderHome();
+  toast(replace ? 'נוצר עותק והוא מחליף את המקור בחידון הזה' : 'נוצר עותק של החידה');
+  openRiddle(copy);
+  $('form-title').textContent = 'עריכת העותק';
+}
+
 async function deleteRiddle(r) {
+  const locked = lockedWith(r.id);
+  if (locked.length) return alert(`אי אפשר למחוק את החידה: היא נמצאת בחידון קבוע (${quizNames(locked)}).`);
   const qs = quizzesWith(r.id);
   const where = qs.length ? `\nהיא תוסר גם מ: ${qs.map((q) => q.title).join(', ')}.` : '';
   if (!confirm(`למחוק את החידה מהמאגר? אי אפשר לבטל את זה.${where}`)) return;
@@ -644,7 +681,9 @@ function openQuiz(q) {
   renderLetters();
   renderOrder();
   renderLevel();
+  renderAsk();
   renderQuiz();
+  renderLock();
   scrollTo({ top: 0 });
 }
 
@@ -662,6 +701,45 @@ function renderQuiz() {
   renderSidePool();
 }
 
+// A locked quiz shows everything and lets nothing be changed; sending, playing, cloning and the letters stay open.
+function renderLock() {
+  const locked = !!current.locked;
+  $('quiz-view').classList.toggle('locked', locked);
+  $('lock-banner').classList.toggle('hidden', !locked);
+  $('quiz-lock').textContent = locked ? '🔓 ביטול הקיבוע' : '🔒 קיבוע החידון';
+  $('quiz-lock').title = locked ? 'החידון יחזור להיות ניתן לשינוי' : 'נועל את החידון ואת החידות שבו מפני שינויים, למשל אחרי שנשלח';
+  for (const id of ['quiz-title', 'heading-text', 'heading-img-btn', 'heading-img-remove', 'heading-reset', 'cover-btn',
+    'cover-remove', 'quiz-delete', 'quiz-new-riddle', 'pick-move']) $(id).disabled = locked;
+  document.querySelectorAll('input[name="quiz-order"], input[name="quiz-level"]').forEach((r) => { r.disabled = locked; });
+  if (locked) $('heading-from').disabled = true;
+}
+
+$('quiz-lock').addEventListener('click', async () => {
+  const lock = !current.locked;
+  if (!lock && !confirm(`לבטל את הקיבוע של "${current.title}"?
+אחרי זה אפשר יהיה לשנות אותו ואת החידות שבו, ומי שכבר קיבל אותו יראה את השינויים.`)) return;
+  await saveQuiz({ locked: lock });
+  renderHeading();
+  renderQuiz();
+  renderLock();
+  toast(lock ? 'החידון קבוע: אי אפשר לשנות אותו עד שמבטלים את הקיבוע' : 'הקיבוע בוטל');
+});
+
+// A new quiz with the same riddles (the very same ones, not copies) and the same settings. The copy is not
+// locked and not on the players' path.
+$('quiz-clone').addEventListener('click', async () => {
+  const q = current;
+  const data = { title: `${q.title || 'חידון'} (עותק)`, cover: q.cover || '', riddleIds: [...q.riddleIds], level: levelOf(q),
+    shuffle: !!q.shuffle, heading: q.heading || { text: '', image: '' }, opening: q.opening || '', closing: q.closing || '',
+    askRating: q.askRating !== false, by: auth.currentUser.email };
+  try {
+    const ref = await fs.addDoc(fs.collection(db, 'quizzes'), { ...data, created: fs.serverTimestamp() });
+    quizzes.unshift({ id: ref.id, ...data });
+    location.hash = `#quiz/${ref.id}`;
+    toast(`נוצר עותק של "${q.title}". עכשיו עורכים את העותק.`);
+  } catch (err) { toast(`השיבוט נכשל: ${err.message}`); }
+});
+
 let saveTimer = null;
 function setSaveState(s) {
   const st = $('save-state');
@@ -671,6 +749,8 @@ function setSaveState(s) {
 
 async function saveQuiz(patch) {
   const q = current;
+  // The last line of defence: whatever the screen let through, a locked quiz does not change.
+  if (q.locked && LOCKED_FIELDS.some((k) => k in patch)) return toast('החידון קבוע, אי אפשר לשנות אותו. אפשר לשבט אותו או לבטל את הקיבוע.');
   Object.assign(q, patch);
   setSaveState('saving');
   try {
@@ -709,6 +789,14 @@ function renderLevel() {
 }
 document.querySelectorAll('input[name="quiz-level"]').forEach((r) => r.addEventListener('change', () => {
   saveQuiz({ level: r.value });
+}));
+
+// quiz.askRating: whether the player is asked, after each riddle, how hard it was. On unless switched off.
+function renderAsk() {
+  document.querySelector(`input[name="quiz-ask"][value="${current.askRating === false ? 'no' : 'yes'}"]`).checked = true;
+}
+document.querySelectorAll('input[name="quiz-ask"]').forEach((r) => r.addEventListener('change', () => {
+  saveQuiz({ askRating: r.value === 'yes' });
 }));
 
 $('cover-btn').addEventListener('click', () => $('cover-file').click());
@@ -805,7 +893,7 @@ function renderHeading() {
     sel.appendChild(new Option(label, k));
   }
   if (seen.size) sel.appendChild(new Option('ההסבר הרגיל (עברית × English)', 'default'));
-  sel.disabled = !seen.size;
+  sel.disabled = !seen.size || !!current.locked;
   if (!seen.size) sel.options[0].text = 'אין עוד כותרות בחידונים אחרים';
   sel.value = '';
 }
@@ -1081,7 +1169,7 @@ function renderQuizList(rs) {
   }
   rs.forEach((r, i) => {
     const li = el('li', picked.has(r.id) ? 'q-item picked' : 'q-item');
-    li.draggable = true;
+    li.draggable = !current.locked;
     li.dataset.id = r.id;
     const box = el('input', 'pick');
     box.type = 'checkbox';
@@ -1096,10 +1184,14 @@ function renderQuizList(rs) {
     if (r.hint || r.question) meta.appendChild(el('div', 'sub', [r.question, r.hint && `רמז: ${r.hint}`].filter(Boolean).join(' · ')));
     const edit = el('button', 'link-btn', 'עריכה');
     edit.addEventListener('click', () => openRiddle(r));
+    const clone = el('button', 'link-btn', 'שיבוט');
+    clone.title = current.locked ? 'עותק של החידה במאגר, שאפשר לשנות' : 'עותק של החידה, מיד אחריה בחידון';
+    clone.addEventListener('click', () => cloneRiddle(r, current));
     const out = el('button', 'icon-btn', '✕');
     out.title = 'הוצאה מהחידון (החידה נשארת במאגר)';
     out.addEventListener('click', () => setIds(current.riddleIds.filter((id) => id !== r.id)));
-    li.append(box, el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, edit, out);
+    if (current.locked) { edit.classList.add('hidden'); out.classList.add('hidden'); }
+    li.append(box, el('span', 'grip', '⠿'), el('span', 'num', String(i + 1).padStart(2, '0')), img, meta, edit, clone, out);
     li.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', r.id);
       e.dataTransfer.effectAllowed = 'move';
@@ -1136,7 +1228,8 @@ function renderPickBar(rs) {
   const keep = sel.value;
   sel.innerHTML = '';
   sel.appendChild(new Option('לחידון…', ''));
-  quizzes.filter((q) => q !== current).forEach((q) => sel.appendChild(new Option(q.title || 'ללא שם', q.id)));
+  // A locked quiz takes no new riddles.
+  quizzes.filter((q) => q !== current && !q.locked).forEach((q) => sel.appendChild(new Option(q.title || 'ללא שם', q.id)));
   sel.appendChild(new Option('+ חידון חדש…', 'new'));
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : '';
 }
@@ -1156,6 +1249,7 @@ async function transfer(move) {
   const choice = $('pick-target').value;
   if (!ids.length) return;
   if (!choice) { $('pick-target').focus(); return toast('בוחרים קודם לאיזה חידון'); }
+  if (move && current.locked) return toast('החידון קבוע, אפשר רק להעתיק ממנו.');
   let target;
   let dup = 0;
   try {
@@ -1396,6 +1490,16 @@ function resetForm() {
 
 // r = null opens an empty form; quiz = the quiz a new riddle should join.
 function openRiddle(r, quiz = null) {
+  const locked = r ? lockedWith(r.id) : [];
+  if (locked.length) {
+    // From a quiz that is not locked itself, the editable copy takes the original's place there.
+    const here = current && !current.locked && current.riddleIds.includes(r.id);
+    const what = here ? `
+בחידון "${current.title}" העותק יחליף את המקור. בחידון הקבוע דבר לא ישתנה.` : '';
+    if (confirm(`החידה נמצאת בחידון קבוע (${quizNames(locked)}), ולכן אי אפשר לשנות אותה.
+ליצור עותק שלה ולערוך אותו?${what}`)) cloneRiddle(r, here ? current : null, true);
+    return;
+  }
   resetForm();
   addToQuiz = quiz;
   $('form-title').textContent = r ? 'עריכת חידה' : quiz ? `חידה חדשה ב"${quiz.title}"` : 'חידה חדשה למאגר';

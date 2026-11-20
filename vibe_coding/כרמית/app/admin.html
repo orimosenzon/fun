@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611200724">
+<link rel="stylesheet" href="style.css?v=202611201149">
 </head>
 <body class="admin">
   <div id="app">
@@ -97,6 +97,7 @@
     <!-- one quiz -->
     <section id="quiz-view" class="view hidden">
       <a href="#" class="back">→ כל החידונים</a>
+      <p id="lock-banner" class="lock-banner hidden">🔒 <b>החידון הזה קבוע.</b> אי אפשר לשנות בו כלום, וגם לא את החידות שבו, כדי שמי שקיבל אותו ימשיך לראות בדיוק את מה שנשלח. כדי לשנות: משבטים אותו ועובדים על העותק, או מבטלים את הקיבוע.</p>
 
       <div class="quiz-hero">
         <button id="cover-btn" class="cover-edit" title="החלפת תמונת השער">
@@ -124,6 +125,12 @@
             <label class="seg"><input type="radio" name="quiz-level" value="none"><span>בלי רמה</span></label>
           </div>
           <p class="help level-help">הרמה מופיעה לשחקן כתווית על החידון. "בלי רמה" מתאים לחידון שמערבב חידות ברמות שונות: אז אין תווית בכלל. את הסדר שבו השחקן עובר בין החידונים קובעים בלשונית "מה השחקן רואה".</p>
+          <div class="order-row" role="radiogroup" aria-label="שאלה על רמת הקושי">
+            <span class="order-label">לשאול את השחקן אחרי כל חידה כמה קשה היא הייתה לו:</span>
+            <label class="seg"><input type="radio" name="quiz-ask" value="yes"><span>כן</span></label>
+            <label class="seg"><input type="radio" name="quiz-ask" value="no"><span>לא</span></label>
+          </div>
+          <p class="help level-help">התשובות מופיעות בלשונית "סטטיסטיקה". את זה אפשר לשנות גם בחידון קבוע, כי זה לא משנה את החידות עצמן.</p>
           <div class="heading-edit">
             <span class="order-label">הכותרת שמעל החידון. השורה הראשונה מודגשת, ואפשר להוסיף תמונה:</span>
             <div class="heading-row">
@@ -146,6 +153,8 @@
           <div class="hero-actions">
             <button id="share-btn" class="primary-btn small">העתקת קישור לשליחה</button>
             <a id="play-link" class="secondary-btn small" target="_blank" rel="noopener">לשחק בו ↗</a>
+            <button id="quiz-clone" class="secondary-btn small" title="חידון חדש עם אותן חידות ואותן הגדרות">שיבוט החידון</button>
+            <button id="quiz-lock" class="secondary-btn small"></button>
             <button id="cover-remove" class="link-btn muted">הסרת תמונת השער</button>
             <button id="quiz-delete" class="link-btn del">מחיקת החידון</button>
           </div>
@@ -288,6 +297,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="admin.js?v=202611200724"></script>
+  <script type="module" src="admin.js?v=202611201149"></script>
 </body>
 </html>
