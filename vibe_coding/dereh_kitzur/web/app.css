@@ -3047,6 +3047,10 @@ body.fly-balloon .fly-intro-card.jet,
 body.fly-bike .fly-intro-card.jet,
 body:not(.fly-balloon) .fly-intro-card.balloon,
 body:not(.fly-bike) .fly-intro-card.bike { display: none; }
+/* Two bikes, one card each: the F-5 (body.fly-f5) and the first one. */
+body.fly-f5 .fly-intro-card.hog,
+body:not(.fly-f5) .fly-intro-card.f5 { display: none; }
+
 /* The bike lists more keys than the others; the card scrolls on a short
  * screen rather than pushing its foot off it. */
 .fly-intro-card.bike { max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
@@ -3244,6 +3248,32 @@ body:not(.fly-balloon):not(.fly-bike) .fly-compass .rose-drift { display: none; 
 .fly-help { inset-inline-end: 60px; font-size: 16px; font-weight: 700; }
 .fly-snd { inset-inline-end: 106px; }
 .fly-look { inset-inline-end: 152px; }
+/* The fifth round button, on the bike only: the other bike. Its name sits
+ * under it the way the view's does. */
+.fly-model {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  inset-inline-end: 198px;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgba(10, 16, 14, .5);
+  backdrop-filter: blur(4px);
+  color: #eef4f2;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+  cursor: pointer;
+}
+.fly-model[hidden] { display: none; }
+.fly-model:hover { background: rgba(30, 44, 38, .78); }
+.fly-model svg { width: 21px; height: 21px; }
+.fly-model b {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  margin-top: 3px; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+}
+@media (max-width: 560px) {
+  body.flying .fly-model { top: calc(58px + env(safe-area-inset-top, 0px)); inset-inline-end: 60px; }
+}
 .fly-x:hover, .fly-help:hover, .fly-snd:hover, .fly-look:hover { background: rgba(30, 44, 38, .78); }
 
 /* One icon, two states: the waves when the engine can be heard, a cross when

@@ -84,7 +84,7 @@ try:
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
-        page.goto(f'http://127.0.0.1:{PORT}/index.html')
+        page.goto(f'http://127.0.0.1:{PORT}/index.html?bike=hog')   # the first bike: the F-5 has tests/test_f5.py
         page.wait_for_function('() => typeof Explore !== "undefined" && typeof Bike !== "undefined" && typeof map !== "undefined" && map && map.loaded()', timeout=30000)
         time.sleep(1)
         page.evaluate('() => { const w = document.getElementById("welcome-sheet"); if (w) w.hidden = true; }')
@@ -126,7 +126,7 @@ try:
               d['bike']['canvas'] and page.evaluate('() => { const c = document.getElementById("fly-bike"); const r = c.getBoundingClientRect(); return r.width === innerWidth && r.height === innerHeight; }'))
         check('map ceilings raised for the bike', page.evaluate('() => map.getMaxPitch()') == 85 and page.evaluate('() => map.getMaxZoom()') == 24)
         check('bike intro shown, the others hidden',
-              page.locator('.fly-intro-card.bike').is_visible() and not page.locator('.fly-intro-card.jet').is_visible() and not page.locator('.fly-intro-card.balloon').is_visible())
+              page.locator('.fly-intro-card.bike.hog').is_visible() and not page.locator('.fly-intro-card.jet').is_visible() and not page.locator('.fly-intro-card.balloon').is_visible())
         check('lift bar and flight computer gauge shown', page.locator('#fly-lift').is_visible() and page.locator('#fly-fc-g').is_visible())
         check('mach and g hidden', not page.locator('#fly-mach-g').is_visible() and not page.locator('#fly-g-g').is_visible())
         check('lift bar sits under the throttle bar',
@@ -332,10 +332,12 @@ try:
         ctx2.add_init_script("try { localStorage.setItem('dk.welcome.v1', '1'); localStorage.setItem('dk.fly.craft', 'bike'); localStorage.setItem('dk.fly.sound', '0'); } catch (e) {}")
         pg = ctx2.new_page()
         pg.on('pageerror', lambda e: errors.append(str(e)))
-        pg.goto(f'http://127.0.0.1:{PORT}/index.html')
+        pg.goto(f'http://127.0.0.1:{PORT}/index.html?bike=hog')
         pg.wait_for_function('() => typeof Explore !== "undefined" && typeof map !== "undefined" && map && map.loaded()', timeout=30000)
         time.sleep(0.8)
-        pg.evaluate('() => { const w = document.getElementById("welcome-sheet"); if (w) w.hidden = true; }')
+        # The welcome sheet can open after this point on a phone, so it is
+        # taken out for good rather than hidden once.
+        pg.add_style_tag(content='#welcome-sheet { display: none !important; }')
         pg.tap('#explore')
         pg.wait_for_function('() => Explore.debug().flying', timeout=40000)
         pg.evaluate('() => document.getElementById("fly-intro").click()')

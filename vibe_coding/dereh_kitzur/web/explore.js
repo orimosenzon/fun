@@ -350,6 +350,8 @@ const Explore = (() => {
    * rig is made on the first bike flight and kept. */
   const bk = {
     rig: null, canvas: null,
+    rigs: {}, canvases: {},  // one of each per model: every bike has its own three.js and WebGL context
+    model: 'hog',            // which bike: 'hog' (the first one, the default) or 'f5' (FÖHN's, by choice)
     cam: 0,                  // 0 chase, 1 the rider's eyes; kept between flights
     lever: 0,                // the throttle lever, 0..1; the engine gets its square
     grip: false,             // the lever was last raised by the mouse button, which lets it go
@@ -359,6 +361,19 @@ const Explore = (() => {
     crashes: 0,              // this flight, for the tests
     msg: '', msgUntil: 0     // what the message line says, and until when
   };
+  /* Two bikes share the bike's place on the craft button. The FLYING HOG
+   * (bike.js, from fable) was the first, on 18/9/2026, and is the one a
+   * visitor gets. The F-5 is FÖHN's (f5.js): no wheels, no wings, flown by
+   * its computer, and only for whoever asks for it (Ori, 20/11/2026): the
+   * round ⇄ button beside the view button (and N) swaps the two where the bike
+   * stands, and the choice is remembered. `?bike=f5` in the address asks
+   * for the new one outright. */
+  const KEY_MODEL = 'dk.bikeModel.v2';   // v1 was written while the F-5 was the default
+  const MODELS = ['f5', 'hog'];
+  try { const m = localStorage.getItem(KEY_MODEL); if (MODELS.includes(m)) bk.model = m; } catch (_) { /* private mode */ }
+  { const m = new URLSearchParams(location.search).get('bike'); if (MODELS.includes(m)) bk.model = m; }
+  const bikeLib = (m = bk.model) => (m === 'f5' ? Bike5 : Bike);
+
   const tb = {               // the touch controls, fable's: a joystick and hold buttons
     steer: 0, pitch: 0,
     throttleUp: false, throttleDown: false, collUp: false, collDown: false, boost: false
@@ -415,7 +430,7 @@ const Explore = (() => {
   let elMach = null, elMachG = null, elG = null, elGG = null, coneEl = null;
   let intro = null, viewer = null, lookBtn = null, elLook = null;
   let elThrMark = null, elLift = null, elLiftFill = null, elLiftMark = null;
-  let elFc = null, elFcG = null, elMsg = null, touchEl = null;
+  let elFc = null, elFcG = null, elMsg = null, touchEl = null, elModel = null;
 
   const el = (id) => document.getElementById(id);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -1650,8 +1665,70 @@ const Explore = (() => {
     if (bk.rig.phys.firePulse(which)) Engine.pulse();
   }
 
+  /** The rig of the chosen model, made on its first ride, on a canvas of
+   *  its own. */
+  function useRig() {
+    const m = bk.model;
+    if (!bk.canvases.hog) bk.canvases.hog = el('fly-bike');
+    if (!bk.canvases.f5) {
+      const c = bk.canvases.hog.cloneNode(false);
+      c.id = 'fly-bike-f5';
+      c.hidden = true;
+      bk.canvases.hog.after(c);
+      bk.canvases.f5 = c;
+    }
+    for (const k of MODELS) bk.canvases[k].hidden = k !== m;
+    bk.canvas = bk.canvases[m];
+    if (!bk.rigs[m]) bk.rigs[m] = bikeLib().makeRig(bk.canvas);
+    bk.rig = bk.rigs[m];
+    document.body.classList.toggle('fly-f5', m === 'f5');
+    if (elModel) elModel.querySelector('b').textContent = m === 'f5' ? 'F-5' : 'HOG';
+  }
+
+  /** The bike's code, for the model chosen. If the F-5 cannot be had (it is
+   *  imported from FÖHN's own folder), the first bike flies instead. */
+  function loadBike() {
+    if (bk.model !== 'f5') return Bike.load();
+    return Bike5.load().catch((err) => {
+      console.error('bike: the F-5 did not load, flying the first bike', err);
+      bk.model = 'hog';
+      bk.fellBack = true;
+      return Bike.load();
+    });
+  }
+
+  /** N, or the model button: the other bike, standing where this one is. */
+  function bikeSwap() {
+    if (!on || craft !== 'bike' || !bk.rig || bk.swapping) return;
+    const to = bk.model === 'f5' ? 'hog' : 'f5';
+    const lib = bikeLib(to);
+    bk.swapping = true;
+    lib.load().then(() => {
+      bk.swapping = false;
+      if (!on || craft !== 'bike' || !bk.rig) return;
+      const { x, z } = bk.rig.phys.pos;
+      bk.model = to;
+      try { localStorage.setItem(KEY_MODEL, to); } catch (_) { /* fine */ }
+      useRig();
+      fitFrame();
+      bk.rig.setCamMode(bk.cam);
+      bk.rig.place(x, z, lib.yawFor(bearing));
+      bk.lever = 0;
+      bk.grip = false;
+      say(to === 'f5' ? 'F-5: האופנוע החדש, מ־FÖHN' : 'FLYING HOG', 2400);
+    }).catch((err) => {
+      bk.swapping = false;
+      console.error('bike: swap failed', err);
+      say('הדגם השני לא נטען. בדוק את החיבור', 2600);
+    });
+  }
+
   function bikeAssist() {
     if (!bk.rig) return;
+    if (bk.model === 'f5') {
+      say('ב־F-5 מחשב הטיסה תמיד פועל: בלי כנפיים ובלי גלגלים, הוא מה שמחזיק אותו באוויר', 3000);
+      return;
+    }
     const p = bk.rig.phys;
     p.assist = !p.assist;
     say(p.assist ? 'מחשב טיסה: פועל. הגובה נשמר אוטומטית'
@@ -2281,6 +2358,7 @@ const Explore = (() => {
         case 'KeyT': if (once) bikeAssist(); e.preventDefault(); return;
         case 'KeyR': if (once) bikeLevel(); e.preventDefault(); return;
         case 'KeyC': if (once) bikeCamera(); e.preventDefault(); return;
+        case 'KeyN': if (once) bikeSwap(); e.preventDefault(); return;
       }
     }
     if (/^(Key[WASDE]|Space|Arrow(Up|Down|Left|Right))$/.test(e.code)) {
@@ -2658,6 +2736,13 @@ const Explore = (() => {
             <path class="snd-off" d="M16.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
+        <button class="fly-model" id="fly-model" hidden aria-label="החלפת אופנוע" title="החלפת אופנוע (N)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8.5h14.5m0 0l-3.4-3.4m3.4 3.4l-3.4 3.4"/>
+            <path d="M20 15.5H5.5m0 0l3.4-3.4m-3.4 3.4l3.4 3.4"/>
+          </svg>
+          <b>HOG</b>
+        </button>
         <button class="fly-look" id="fly-look" aria-label="תצוגה">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <g class="look-normal">
@@ -2736,7 +2821,33 @@ const Explore = (() => {
           <p class="fly-intro-touch">אצבע על המסך תופסת את הרוח. גרירה לצדדים פונה, גרירה למטה מבעירה,
              גרירה למעלה מאווררת. הכדור מגיב באיחור, אז מבעירים מעט ומחכים.</p>
         </div>
-        <div class="fly-intro-card bike">
+        <div class="fly-intro-card bike f5">
+          <h2>אופנוע סילון: F-5</h2>
+          <p>אתה על האוכף של ה־F-5, האופנוע של FÖHN, על הקרקע בפרדס חנה־כרכור. אין לו גלגלים
+             ואין לו כנפיים: נחיר אחד מאחור וארבעה למטה, ומחשב טיסה שמחזיק אותו באוויר. אתה מבקש
+             מהירות, פנייה וטיפוס, והוא עושה את השאר. אפשר לנחות על כל שביל, ואפשר להתרסק.
+             דרכי הקיצור נדלקות כשמתקרבים אליהן, והתמונות שלהן תלויות באוויר מעל השביל.</p>
+          <ul class="fly-keys">
+            <li><kbd class="wide">עכבר</kbd><span>לצדדים לפנייה, למטה לטיפוס, למעלה לירידה</span></li>
+            <li><kbd class="wide">לחיצה</kbd><span>מאיץ כל עוד הכפתור לחוץ; כשמשחררים מאט</span></li>
+            <li><kbd>W</kbd><kbd>S</kbd><span>מנוף המהירות: נשאר איפה שעזבו. S כשהמנוף סגור הוא בלם</span></li>
+            <li><kbd>E</kbd><kbd>D</kbd><span>עלייה וירידה. מהקרקע: E מרים, או פשוט W</span></li>
+            <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><span>אותו דבר במקשים; חץ למטה מטפס</span></li>
+            <li><kbd class="wide">רווח</kbd><span>דחף־יתר</span></li>
+            <li><kbd>Z</kbd><kbd>X</kbd><kbd class="wide">Shift</kbd><span>בעיטת צד שמאלה, ימינה, וניתור</span></li>
+            <li><kbd>C</kbd><kbd>R</kbd><span>מצלמה, יישור</span></li>
+            <li><kbd>N</kbd><span>חזרה לאופנוע הרגיל, FLYING HOG. גם בכפתור ⇄ למעלה</span></li>
+            <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
+            <li><kbd>V</kbd><span>תצוגה: רגיל, נקי, שבילים</span></li>
+            <li><kbd>M</kbd><span>המנוע</span></li>
+            <li><kbd>Esc</kbd><span>יציאה</span></li>
+          </ul>
+          <p class="fly-intro-foot">הזזת העכבר סוגרת את הכרטיס הזה ותופסת את ההגה; <kbd>?</kbd> מחזיר אותו.
+             הסמן במרכז המסך הוא טיסה ישרה. אחרי ריסוק מתחילים מאותו מקום.</p>
+          <p class="fly-intro-touch">ג'ויסטיק משמאל: לצדדים פונה, למטה מטפס. מימין: מהירות, עלייה
+             וירידה, בעיטות צד, ודחף־יתר. הכפתור ⇄ למעלה מחזיר לאופנוע הרגיל.</p>
+        </div>
+        <div class="fly-intro-card bike hog">
           <h2>אופנוע סילון: FLYING HOG</h2>
           <p>אתה על האוכף של אופנוע סילון מעופף, על הקרקע, בפרדס חנה־כרכור. אתה מטה את הגוף,
              ומחשב הטיסה מטיס בשבילך את צינורות העילוי: האופנוע טס לאן שהאף מצביע, ואף ישר
@@ -2751,6 +2862,7 @@ const Explore = (() => {
             <li><kbd class="wide">רווח</kbd><span>מבער אחורי</span></li>
             <li><kbd class="wide">Shift</kbd><kbd>Z</kbd><kbd>X</kbd><span>פולסים: ניתור, גלגול שמאלה, גלגול ימינה</span></li>
             <li><kbd>C</kbd><kbd>T</kbd><kbd>R</kbd><span>מצלמה, מחשב טיסה, יישור</span></li>
+            <li><kbd>N</kbd><span>האופנוע החדש, F-5 מ־FÖHN, וחזרה. גם בכפתור ⇄ למעלה</span></li>
             <li><kbd>Enter</kbd><span>התמונות של השביל הקרוב</span></li>
             <li><kbd>V</kbd><span>תצוגה: רגיל, נקי, שבילים</span></li>
             <li><kbd>M</kbd><span>המנוע</span></li>
@@ -2815,6 +2927,8 @@ const Explore = (() => {
     elFc = el('fly-fc');
     elFcG = el('fly-fc-g');
     elMsg = el('fly-msg');
+    elModel = el('fly-model');
+    elModel.addEventListener('click', (e) => { e.stopPropagation(); elModel.blur(); bikeSwap(); });
     bk.canvas = el('fly-bike');
     buildTouch(root);
     // The jet's HUD and panel live inside the instrument layer, over the
@@ -2906,6 +3020,7 @@ const Explore = (() => {
     elMachG.hidden = isBal || isBike;
     elGG.hidden = isBal || isBike;
     elFcG.hidden = !isBike;
+    elModel.hidden = !isBike;
     elLift.hidden = !isBike;
     elThrMark.hidden = !isBike;
     elMsg.className = 'fly-msg';
@@ -2975,15 +3090,14 @@ const Explore = (() => {
         // way the map faced, and the camera comes down to it. The map's
         // pitch ceiling goes up to the chase camera's, and its zoom ceiling
         // to a parked bike's; both go back on the way out.
-        if (!bk.rig) bk.rig = Bike.makeRig(bk.canvas);
-        bk.canvas.hidden = false;
+        useRig();
         restore.maxPitch = map.getMaxPitch();
         restore.maxZoom = map.getMaxZoom();
         map.setMaxPitch(85);
         map.setMaxZoom(BIKE.ZOOM_MAX);
         fitFrame();   // again, now that there is a rig to size
         bk.rig.setCamMode(bk.cam);
-        bk.rig.place(0, 0, Bike.yawFor(bearing));
+        bk.rig.place(0, 0, bikeLib().yawFor(bearing));
         bk.rig.wantCamera(1 / 60, bk.want);
         bk.pose = bikePose(bk.want);
         target = bk.pose;
@@ -3009,6 +3123,10 @@ const Explore = (() => {
 
       intro.hidden = false;
       introTimer = setTimeout(dismissIntro, 9000);
+      if (isBike && bk.fellBack) {
+        bk.fellBack = false;
+        say('ה־F-5 לא נטען, טסים על האופנוע הרגיל', 3200);
+      }
       last = performance.now();
       raf = requestAnimationFrame(step);
     };
@@ -3017,7 +3135,7 @@ const Explore = (() => {
     // flight over a photograph of the place. The bike also waits for its
     // engine, Three.js, fetched on the first ride and kept; a fetch that
     // fails leaves the mode the way it came.
-    const ready = isBike ? Bike.load() : Promise.resolve();
+    const ready = isBike ? loadBike() : Promise.resolve();
     ready.then(() => {
       if (!on) return;
       if (baseIndex !== 1) {
@@ -3113,7 +3231,7 @@ const Explore = (() => {
     worldEl.style.transform = '';
     sky.style.transform = '';
     elThr.style.background = '';
-    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-bike', 'fly-super');
+    document.body.classList.remove('flying', 'fly-paused', 'fly-burn', 'fly-unarmed', 'fly-balloon', 'fly-bike', 'fly-f5', 'fly-super');
     Cockpit.show(false);
     delete document.body.dataset.flyView;
     coneEl.classList.remove('go');
@@ -3202,7 +3320,7 @@ const Explore = (() => {
         x: p.pos.x, y: p.pos.y, z: p.pos.z, vx: p.vel.x, vy: p.vel.y, vz: p.vel.z,
         throttle: p.throttle, spoolRear: p.spoolRear, spoolLift: p.spoolLift, collective: p.collective,
         ab: p.ab, vert: p.vert, steer: p.steer, pitchCmd: p.pitch, grounded: p.grounded, crashed: p.crashed,
-        assist: p.assist, heading: bk.rig.heading(), bank: bk.rig.bank(), nose: bk.rig.nose(),
+        model: bk.model, assist: p.assist, heading: bk.rig.heading(), bank: bk.rig.bank(), nose: bk.rig.nose(),
         w: [p.angVel.x, p.angVel.y, p.angVel.z].map((v) => +v.toFixed(2)),
         cam: bk.cam, camRoll: bk.camRoll, want: { ...bk.want }, pose: bk.pose, crashes: bk.crashes,
         visible: bk.rig.bike.group.visible, canvas: !!(bk.canvas && !bk.canvas.hidden),
